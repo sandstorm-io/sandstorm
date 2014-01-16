@@ -264,6 +264,10 @@ public:
   // =====================================================================================
 
   void setupSupervisor() {
+    // Enable no_new_privs so that once we drop privileges we can never regain them through e.g.
+    // execing a suid-root binary.  Sandboxed apps should not need that.
+    KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
+
     validateCreds();
     closeFds();
     checkPaths();
@@ -469,6 +473,7 @@ public:
 
     // OK, everything is bound, so we can chroot.
     KJ_SYSCALL(chroot("."));
+    KJ_SYSCALL(chdir("/"));
   }
 
   void maybeMountProc() {
@@ -501,10 +506,6 @@ public:
     memset(data, 0, sizeof(data));  // All capabilities disabled!
     KJ_SYSCALL(capset(&hdr, data));
 
-    // Enable no_new_privs to prevent ever regaining privileges through e.g. running a binary that
-    // is suid-root or has file "capabilities".
-    KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
-
     // Sandstorm data is private.  Don't let other users see it.  But, do grant full access to the
     // group.  The idea here is that you might have a dedicated sandstorm-sandbox user account but
     // define a special "sandstorm-admin" group which includes that account as well as a real user
@@ -516,8 +517,8 @@ public:
     // Fully enter the sandbox.  Called only by the child process.
 
     // Chroot the rest of the way into the sandbox.
-    KJ_SYSCALL(chdir("sandbox"));
-    KJ_SYSCALL(chroot("."));
+    KJ_SYSCALL(chroot("sandbox"));
+    KJ_SYSCALL(chdir("/"));
 
     // Unshare remaining namespaces that supervisor couldn't.
     KJ_SYSCALL(unshare(CLONE_NEWNET));

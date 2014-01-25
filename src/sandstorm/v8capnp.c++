@@ -1580,4 +1580,4 @@ void init(v8::Handle<v8::Object> exports) {
 }  // namespace
 }  // namespace v8capnp
 
-NODE_MODULE(capnp, v8capnp::init)
+NODE_MODULE(v8capnp, v8capnp::init)

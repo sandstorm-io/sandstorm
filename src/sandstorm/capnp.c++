@@ -549,6 +549,17 @@ public:
 };
 static constexpr EmptyHandle emptyHandle = EmptyHandle();
 
+kj::String typeName(const std::type_info& type) {
+  int status;
+  char* buf = abi::__cxa_demangle(type.name(), nullptr, nullptr, &status);
+  kj::String result = kj::heapString(buf == nullptr ? type.name() : buf);
+  free(buf);
+  return kj::mv(result);
+}
+
+#define KJV8_TYPE_ERROR(name, type) \
+  return throwTypeError(#name, typeid(type), __func__, __FILE__, __LINE__)
+
 template <typename T>
 class OwnHandle {
   // A v8 persistent handle with C++11 move semantics and RAII.
@@ -652,6 +663,16 @@ v8::Local<v8::Value> toJsException(kj::Exception&& exception) {
   return result;
 }
 
+EmptyHandle throwTypeError(kj::StringPtr name, const std::type_info& type,
+                           const char* func, const char* file, int line) {
+  kj::Exception exception(
+      kj::Exception::Nature::PRECONDITION, kj::Exception::Durability::PERMANENT,
+      file, line,
+      kj::str(func, "(): Type error in parameter '", name, "'; expected type: ", typeName(type)));
+  v8::ThrowException(toJsException(kj::mv(exception)));
+  return emptyHandle;
+}
+
 template <typename Func>
 v8::Local<v8::Value> liftKj(Func&& func) {
   // Lifts KJ code into V8 code:  Catches exceptions and manages HandleScope.  Don't forget to
@@ -714,6 +735,8 @@ public:
 
   template <typename T>
   static kj::Maybe<T&> tryUnwrap(v8::Handle<v8::Value> hdl) {
+    if (!hdl->IsObject()) return nullptr;
+
     v8::Handle<v8::Object> obj(v8::Object::Cast(*hdl));
 
     if (obj->InternalFieldCount() != 2 ||
@@ -750,8 +773,8 @@ private:
 };
 
 #define KJV8_UNWRAP(type, name, exp) \
-  auto name##_maybe = Wrapper::unwrap<type>(exp); \
-  if (name##_maybe == nullptr) return emptyHandle; \
+  auto name##_maybe = Wrapper::tryUnwrap<type>(exp); \
+  if (name##_maybe == nullptr) KJV8_TYPE_ERROR(name, type); \
   type& name = KJ_ASSERT_NONNULL(name##_maybe)
 
 // =======================================================================================
@@ -791,11 +814,17 @@ v8::Local<v8::Object> schemaToObject(capnp::ParsedSchema schema, CapnpContext& c
 }
 
 v8::Handle<v8::Value> import(const v8::Arguments& args) {
-  return liftKj([&]() -> v8::Handle<v8::Value> {
-    KJV8_UNWRAP(CapnpContext, context, args.Data());
-    KJV8_STACK_STR(displayName, args[0], 128);
-    KJV8_STACK_STR(diskPath, args[1], 128);
+  // import(displayName, diskPath, searchPath) -> schema
+  //
+  // Parses the schema file at the given path.  See capnp::SchemaParser::parseDiskFile().
+  //
+  // The returned schema is an object with members corresponding to nested schemas.
 
+  KJV8_UNWRAP(CapnpContext, context, args.Data());
+  KJV8_STACK_STR(displayName, args[0], 128);
+  KJV8_STACK_STR(diskPath, args[1], 128);
+
+  return liftKj([&]() -> v8::Handle<v8::Value> {
     kj::Array<kj::String> searchPath;
     kj::Array<kj::StringPtr> searchPathPtrs;
     if (!args[2]->IsUndefined()) {
@@ -826,10 +855,14 @@ v8::Handle<v8::Value> import(const v8::Arguments& args) {
 }
 
 v8::Handle<v8::Value> methods(const v8::Arguments& args) {
-  return liftKj([&]() -> v8::Handle<v8::Value> {
-    KJV8_UNWRAP(CapnpContext, context, args.Data());
-    KJV8_UNWRAP(capnp::Schema, schema, args[0]);
+  // methods(schema) -> {name: method}
+  //
+  // Given an interface schema, returns the list of methods.  The returned list is memoized.
 
+  KJV8_UNWRAP(CapnpContext, context, args.Data());
+  KJV8_UNWRAP(capnp::Schema, schema, args[0]);
+
+  return liftKj([&]() -> v8::Handle<v8::Value> {
     if (!schema.getProto().isInterface()) {
       v8::ThrowException(v8::Exception::Error(v8::String::New(kj::str(
           "Not an interface type: ", schema.getProto().getDisplayName()).cStr())));
@@ -855,11 +888,50 @@ struct StructBuilder {
       : root(message.getRoot<capnp::DynamicStruct>(schema)) {}
 };
 
-v8::Handle<v8::Value> newBuilder(const v8::Arguments& args) {
-  return liftKj([&]() -> v8::Handle<v8::Value> {
-    KJV8_UNWRAP(CapnpContext, context, args.Data());
-    KJV8_UNWRAP(capnp::Schema, schema, args[0]);
+kj::Maybe<capnp::DynamicStruct::Builder> unwrapBuilder(v8::Handle<v8::Value> handle) {
+  // We accept either StructBuilder or Request<DynamicStruct, DynamicStruct>.
+  typedef capnp::Request<capnp::DynamicStruct, capnp::DynamicStruct> Request;
+  capnp::DynamicStruct::Builder builder;
+  KJ_IF_MAYBE(request, Wrapper::tryUnwrap<Request>(handle)) {
+    return *request;
+  } else KJ_IF_MAYBE(builder, Wrapper::tryUnwrap<StructBuilder>(handle)) {
+    return builder->root;
+  } else {
+    return nullptr;
+  }
+}
 
+#define KJV8_UNWRAP_BUILDER(name, exp) \
+  auto name##_maybe = unwrapBuilder(exp); \
+  if (name##_maybe == nullptr) KJV8_TYPE_ERROR(name, capnp::DynamicStruct::Builder); \
+  capnp::DynamicStruct::Builder& name = KJ_ASSERT_NONNULL(name##_maybe)
+
+kj::Maybe<capnp::DynamicStruct::Reader> unwrapReader(v8::Handle<v8::Value> handle) {
+  // We accept any builder as well as Response<DynamicStruct>.
+  typedef capnp::Response<capnp::DynamicStruct> Response;
+  KJ_IF_MAYBE(response, Wrapper::tryUnwrap<Response>(handle)) {
+    return *response;
+  } else KJ_IF_MAYBE(builder, unwrapBuilder(handle)) {
+    return builder->asReader();
+  } else {
+    return nullptr;
+  }
+}
+
+#define KJV8_UNWRAP_READER(name, exp) \
+  auto name##_maybe = unwrapReader(exp); \
+  if (name##_maybe == nullptr) KJV8_TYPE_ERROR(name, capnp::DynamicStruct::Reader); \
+  capnp::DynamicStruct::Reader& name = KJ_ASSERT_NONNULL(name##_maybe)
+
+v8::Handle<v8::Value> newBuilder(const v8::Arguments& args) {
+  // newBuilder(schema) -> builder
+  //
+  // Given a struct schema, returns a new builder for that type (backed by MallocMessageBuilder).
+
+  KJV8_UNWRAP(CapnpContext, context, args.Data());
+  KJV8_UNWRAP(capnp::Schema, schema, args[0]);
+
+  return liftKj([&]() -> v8::Handle<v8::Value> {
     if (!schema.getProto().isStruct()) {
       v8::ThrowException(v8::Exception::Error(v8::String::New(kj::str(
           "Not a struct type: ", schema.getProto().getDisplayName()).cStr())));
@@ -870,23 +942,20 @@ v8::Handle<v8::Value> newBuilder(const v8::Arguments& args) {
   });
 }
 
-v8::Handle<v8::Value> builderToString(const v8::Arguments& args) {
+v8::Handle<v8::Value> structToString(const v8::Arguments& args) {
+  // structToString(builder OR reader) -> String
+  //
+  // Converts a struct builder or reader (or request or response) to a human-readable string
+  // based on Cap'n Proto text format.
+
+  KJV8_UNWRAP_READER(reader, args[0]);
+
   return liftKj([&]() -> v8::Handle<v8::Value> {
-    typedef capnp::Request<capnp::DynamicStruct, capnp::DynamicStruct> Request;
-    capnp::DynamicStruct::Builder builder;
-    KJ_IF_MAYBE(request, Wrapper::tryUnwrap<Request>(args[0])) {
-      builder = *request;
-    } else {
-      KJV8_UNWRAP(StructBuilder, structBuilder, args[0]);
-      builder = structBuilder.root;
-    }
-
-    auto schema = builder.getSchema().getProto();
-    auto name = schema.getDisplayName().slice(schema.getDisplayNamePrefixLength());
-
-    return v8::String::New(kj::str(name, builder).cStr());
+    return v8::String::New(kj::str(reader.getSchema().getProto().getDisplayName(), reader).cStr());
   });
 }
+
+// -----------------------------------------------------------------------------
 
 bool structFromJs(capnp::DynamicStruct::Builder builder, v8::Object* js);
 
@@ -978,6 +1047,8 @@ capnp::Orphan<capnp::DynamicValue> orphanFromJs(
       auto schema = field.getContainingStruct().getDependency(type.getEnum().getTypeId()).asEnum();
       KJ_IF_MAYBE(enumerant, schema.findEnumerantByName(name)) {
         return capnp::DynamicEnum(*enumerant);
+      } else if (js->IsUint32()) {
+        return capnp::DynamicEnum(schema, js->Uint32Value());
       }
       break;
     }
@@ -1031,7 +1102,7 @@ bool fieldFromJs(capnp::DynamicStruct::Builder builder, capnp::StructSchema::Fie
       }
   }
 
-  KJ_FAIL_ASSERT("Unknown field type (not slot or group).");
+  KJ_FAIL_ASSERT("Unimplemented field type (not slot or group).");
 }
 
 bool structFromJs(capnp::DynamicStruct::Builder builder, v8::Object* js) {
@@ -1053,18 +1124,16 @@ bool structFromJs(capnp::DynamicStruct::Builder builder, v8::Object* js) {
 }
 
 v8::Handle<v8::Value> fromJs(const v8::Arguments& args) {
+  // fromJs(builder, jso) -> void
+  //
+  // Copies the contents of a JS object into a struct builder.
+  //
+  // If `jso` is an array, it will be treated as an argument list ordered by ordinal.
+
+  KJV8_UNWRAP_BUILDER(builder, args[0]);
+  v8::Handle<v8::Value> jsValue = args[1];
+
   return liftKj([&]() -> v8::Handle<v8::Value> {
-    typedef capnp::Request<capnp::DynamicStruct, capnp::DynamicStruct> Request;
-    capnp::DynamicStruct::Builder builder;
-    KJ_IF_MAYBE(request, Wrapper::tryUnwrap<Request>(args[0])) {
-      builder = *request;
-    } else {
-      KJV8_UNWRAP(StructBuilder, structBuilder, args[0]);
-      builder = structBuilder.root;
-    }
-
-    v8::Handle<v8::Value> jsValue = args[1];
-
     auto schema = builder.getSchema();
 
     if (jsValue->IsArray()) {
@@ -1088,7 +1157,140 @@ v8::Handle<v8::Value> fromJs(const v8::Arguments& args) {
   });
 }
 
+// -----------------------------------------------------------------------------
+
+void fieldToJs(CapnpContext& context, v8::Handle<v8::Object> object,
+               capnp::DynamicStruct::Reader reader, capnp::StructSchema::Field field);
+
+v8::Handle<v8::Value> valueToJs(CapnpContext& context, capnp::DynamicValue::Reader value,
+                                capnp::schema::Type::Which whichType) {
+  switch (value.getType()) {
+    case capnp::DynamicValue::UNKNOWN:
+      return v8::Undefined();
+    case capnp::DynamicValue::VOID:
+      return v8::Null();
+    case capnp::DynamicValue::BOOL:
+      return v8::Boolean::New(value.as<bool>());
+    case capnp::DynamicValue::INT: {
+      if (whichType == capnp::schema::Type::INT64 ||
+          whichType == capnp::schema::Type::UINT64) {
+        // 64-bit values must be stringified to avoid losing precision.
+        return v8::String::New(kj::str(value.as<int64_t>()).cStr());
+      } else {
+        return v8::Integer::New(value.as<int32_t>());
+      }
+    }
+    case capnp::DynamicValue::UINT: {
+      if (whichType == capnp::schema::Type::INT64 ||
+          whichType == capnp::schema::Type::UINT64) {
+        // 64-bit values must be stringified to avoid losing precision.
+        return v8::String::New(kj::str(value.as<uint64_t>()).cStr());
+      } else {
+        return v8::Integer::NewFromUnsigned(value.as<uint32_t>());
+      }
+    }
+    case capnp::DynamicValue::FLOAT:
+      return v8::Number::New(value.as<double>());
+    case capnp::DynamicValue::TEXT: {
+      capnp::Text::Reader text = value.as<capnp::Text>();
+      return v8::String::New(text.begin(), text.size());
+    }
+    case capnp::DynamicValue::DATA: {
+      v8::HandleScope scope;
+      capnp::Data::Reader data = value.as<capnp::Data>();
+
+      // Unfortunately, we have to make a defensive copy because the array is mutable.
+      auto copy = kj::heapArray<byte>(data.size());
+      memcpy(copy.begin(), data.begin(), data.size());
+
+      auto obj = v8::Object::New();
+      obj->SetIndexedPropertiesToExternalArrayData(
+          copy.begin(), v8::kExternalUnsignedByteArray, copy.size());
+      // Make sure backing array is not deleted.
+      obj->SetHiddenValue(v8::String::NewSymbol("capnp::array"),
+                          context.wrapper.wrapCopy(kj::mv(copy)));
+      return scope.Close(obj);
+    }
+    case capnp::DynamicValue::LIST: {
+      v8::HandleScope scope;
+      capnp::DynamicList::Reader list = value.as<capnp::DynamicList>();
+      auto elementType = list.getSchema().whichElementType();
+      auto array = v8::Array::New(list.size());
+      for (uint i: kj::indices(list)) {
+        array->Set(i, valueToJs(context, list[i], elementType));
+      }
+      return scope.Close(array);
+    }
+    case capnp::DynamicValue::ENUM: {
+      auto enumValue = value.as<capnp::DynamicEnum>();
+      KJ_IF_MAYBE(enumerant, enumValue.getEnumerant()) {
+        return v8::String::NewSymbol(enumerant->getProto().getName().cStr());
+      } else {
+        return v8::Integer::NewFromUnsigned(enumValue.getRaw());
+      }
+    }
+    case capnp::DynamicValue::STRUCT: {
+      v8::HandleScope scope;
+      capnp::DynamicStruct::Reader reader = value.as<capnp::DynamicStruct>();
+      auto object = v8::Object::New();
+      KJ_IF_MAYBE(field, reader.which()) {
+        fieldToJs(context, object, reader, *field);
+      }
+
+      for (auto field: reader.getSchema().getNonUnionFields()) {
+        if (reader.has(field)) {
+          fieldToJs(context, object, reader, field);
+        }
+      }
+      return scope.Close(object);
+    }
+    case capnp::DynamicValue::CAPABILITY:
+      return context.wrapper.wrapCopy(value.as<capnp::DynamicCapability>());
+    case capnp::DynamicValue::ANY_POINTER:
+      // TODO(soon):  How do we represent AnyPointer?
+      return v8::Undefined();
+  }
+
+  KJ_FAIL_ASSERT("Unimplemented DynamicValue type.");
+}
+
+void fieldToJs(CapnpContext& context, v8::Handle<v8::Object> object,
+               capnp::DynamicStruct::Reader reader, capnp::StructSchema::Field field) {
+  auto proto = field.getProto();
+  switch (proto.which()) {
+    case capnp::schema::Field::SLOT:
+      object->Set(v8::String::NewSymbol(proto.getName().cStr()),
+                  valueToJs(context, reader.get(field), proto.getSlot().getType().which()));
+      return;
+    case capnp::schema::Field::GROUP:
+      // Hack:  We don't have a schema::Type instance to use here, but it turns out valueToJs()
+      //   doesn't need one when receiving a struct value.  So, uh...  provide a fake one.  :/
+      object->Set(v8::String::NewSymbol(proto.getName().cStr()),
+                  valueToJs(context, reader.get(field), capnp::schema::Type::STRUCT));
+      return;
+  }
+
+  KJ_FAIL_ASSERT("Unimplemented field type (not slot or group).");
+}
+
+v8::Handle<v8::Value> toJs(const v8::Arguments& args) {
+  // toJs(reader) -> jso
+  //
+  // Given a struct reader, builds a JS object based on the contents.
+
+  KJV8_UNWRAP(CapnpContext, context, args.Data());
+  KJV8_UNWRAP_READER(reader, args[0]);
+
+  return liftKj([&]() -> v8::Handle<v8::Value> {
+    return valueToJs(context, reader, capnp::schema::Type::STRUCT);
+  });
+}
+
+// -----------------------------------------------------------------------------
+
 class RpcConnection: public kj::Refcounted {
+  // A two-party RPC connection.
+
 public:
   RpcConnection(kj::Own<kj::AsyncIoStream>&& streamParam)
       : stream(kj::mv(streamParam)),
@@ -1124,10 +1326,14 @@ struct ConnenctionWrapper {
 };
 
 v8::Handle<v8::Value> connect(const v8::Arguments& args) {
-  return liftKj([&]() -> v8::Handle<v8::Value> {
-    KJV8_UNWRAP(CapnpContext, context, args.Data());
-    KJV8_STACK_STR(address, args[0], 64);
+  // connect(addr) -> connection
+  //
+  // Connect to the given address using the two-party protocol.
 
+  KJV8_UNWRAP(CapnpContext, context, args.Data());
+  KJV8_STACK_STR(address, args[0], 64);
+
+  return liftKj([&]() -> v8::Handle<v8::Value> {
     auto promise = context.aiop->getNetwork().parseAddress(address)
         .then([](kj::Own<kj::NetworkAddress>&& addr) {
       return addr->connect();
@@ -1140,12 +1346,17 @@ v8::Handle<v8::Value> connect(const v8::Arguments& args) {
 }
 
 v8::Handle<v8::Value> restore(const v8::Arguments& args) {
-  return liftKj([&]() -> v8::Handle<v8::Value> {
-    KJV8_UNWRAP(CapnpContext, context, args.Data());
-    KJV8_UNWRAP(ConnenctionWrapper, connectionWrapper, args[0]);
-    auto ref = toKjString(args[0]);  // TODO(soon):  Allow struct reader.
-    KJV8_UNWRAP(capnp::Schema, schema, args[2]);
+  // restore(connection, objectId, schema) -> cap
+  //
+  // Restore a SturdyRef from the other end of a two-party connection.  objectId may be a string,
+  // reader, or builder.
 
+  KJV8_UNWRAP(CapnpContext, context, args.Data());
+  KJV8_UNWRAP(ConnenctionWrapper, connectionWrapper, args[0]);
+  auto ref = toKjString(args[1]);  // TODO(soon):  Allow struct reader.
+  KJV8_UNWRAP(capnp::Schema, schema, args[2]);
+
+  return liftKj([&]() -> v8::Handle<v8::Value> {
     if (!schema.getProto().isInterface()) {
       v8::ThrowException(v8::Exception::Error(v8::String::New(kj::str(
           "Not an interface type: ", schema.getProto().getDisplayName()).cStr())));
@@ -1162,11 +1373,15 @@ v8::Handle<v8::Value> restore(const v8::Arguments& args) {
 }
 
 v8::Handle<v8::Value> castAs(const v8::Arguments& args) {
-  return liftKj([&]() -> v8::Handle<v8::Value> {
-    KJV8_UNWRAP(CapnpContext, context, args.Data());
-    KJV8_UNWRAP(capnp::DynamicCapability::Client, cap, args[0]);
-    KJV8_UNWRAP(capnp::Schema, schema, args[1]);
+  // castAs(cap, schema) -> cap
+  //
+  // Reinterpret the capability as implementing a different interface.
 
+  KJV8_UNWRAP(CapnpContext, context, args.Data());
+  KJV8_UNWRAP(capnp::DynamicCapability::Client, cap, args[0]);
+  KJV8_UNWRAP(capnp::Schema, schema, args[1]);
+
+  return liftKj([&]() -> v8::Handle<v8::Value> {
     if (!schema.getProto().isInterface()) {
       v8::ThrowException(v8::Exception::Error(v8::String::New(kj::str(
           "Not an interface type: ", schema.getProto().getDisplayName()).cStr())));
@@ -1176,11 +1391,30 @@ v8::Handle<v8::Value> castAs(const v8::Arguments& args) {
   });
 }
 
-v8::Handle<v8::Value> closeCap(const v8::Arguments& args) {
-  return liftKj([&]() -> v8::Handle<v8::Value> {
-    v8::HandleScope scope;
-    KJV8_UNWRAP(capnp::DynamicCapability::Client, cap, args[0]);
+v8::Handle<v8::Value> schemaFor(const v8::Arguments& args) {
+  // schemaFor(cap) -> schema
+  //
+  // Get the schema for a capability.  Unlike with import(), the returned object does NOT contain
+  // nested schemas, though it can be passed to methods() to obtain a method list.
 
+  KJV8_UNWRAP(CapnpContext, context, args.Data());
+  KJV8_UNWRAP(capnp::DynamicCapability::Client, cap, args[0]);
+
+  return liftKj([&]() -> v8::Handle<v8::Value> {
+    return context.wrapper.wrapCopy(capnp::Schema(cap.getSchema()));
+  });
+}
+
+v8::Handle<v8::Value> closeCap(const v8::Arguments& args) {
+  // close(cap) -> void
+  //
+  // Close the capability, discarding the underlying reference.  Doing this explicitly (rather than
+  // waiting for GC) allows the other end to more quickly receive notification that it can clean up
+  // the object.
+
+  KJV8_UNWRAP(capnp::DynamicCapability::Client, cap, args[0]);
+
+  return liftKj([&]() -> v8::Handle<v8::Value> {
     // Overwrite with a null cap.
     cap = capnp::Capability::Client(capnp::newBrokenCap("Capability has been closed."))
         .castAs<capnp::DynamicCapability>(cap.getSchema());
@@ -1190,20 +1424,45 @@ v8::Handle<v8::Value> closeCap(const v8::Arguments& args) {
 }
 
 v8::Handle<v8::Value> dupCap(const v8::Arguments& args) {
-  return liftKj([&]() -> v8::Handle<v8::Value> {
-    KJV8_UNWRAP(CapnpContext, context, args.Data());
-    KJV8_UNWRAP(capnp::DynamicCapability::Client, cap, args[0]);
+  // dup(cap) -> cap
+  //
+  // Return a new reference to the given cap which must be separately close()ed.
 
+  KJV8_UNWRAP(CapnpContext, context, args.Data());
+  KJV8_UNWRAP(capnp::DynamicCapability::Client, cap, args[0]);
+
+  return liftKj([&]() -> v8::Handle<v8::Value> {
     return context.wrapper.wrapCopy(cap);
   });
 }
 
-v8::Handle<v8::Value> request(const v8::Arguments& args) {
-  return liftKj([&]() -> v8::Handle<v8::Value> {
-    KJV8_UNWRAP(CapnpContext, context, args.Data());
-    KJV8_UNWRAP(capnp::DynamicCapability::Client, cap, args[0]);
-    KJV8_UNWRAP(capnp::InterfaceSchema::Method, method, args[1]);
+v8::Handle<v8::Value> dup2Cap(const v8::Arguments& args) {
+  // dup2(srcCap, dstCap)
+  //
+  // Overwrite dstCap so that it points to a new reference to srcCap.  The old dstCap is closed.
+  // This function is provided mainly so that after a call completes, the pipeline caps can be
+  // replaced with their resolved versions, to avoid the need to make the application close()
+  // the pipelined caps separately from the final versions.
 
+  KJV8_UNWRAP(capnp::DynamicCapability::Client, srcCap, args[0]);
+  KJV8_UNWRAP(capnp::DynamicCapability::Client, dstCap, args[1]);
+
+  return liftKj([&]() -> v8::Handle<v8::Value> {
+    dstCap = srcCap;
+    return v8::Undefined();
+  });
+}
+
+v8::Handle<v8::Value> request(const v8::Arguments& args) {
+  // request(cap, method) -> request (a builder)
+  //
+  // Start a new request.  Returns the request builder, which can also be passed to send().
+
+  KJV8_UNWRAP(CapnpContext, context, args.Data());
+  KJV8_UNWRAP(capnp::DynamicCapability::Client, cap, args[0]);
+  KJV8_UNWRAP(capnp::InterfaceSchema::Method, method, args[1]);
+
+  return liftKj([&]() -> v8::Handle<v8::Value> {
     return context.wrapper.wrapCopy(cap.newRequest(method));
   });
 }
@@ -1214,11 +1473,21 @@ struct Pipeline {
 };
 
 v8::Handle<v8::Value> send(const v8::Arguments& args) {
-  return liftKj([&]() -> v8::Handle<v8::Value> {
-    KJV8_UNWRAP(CapnpContext, context, args.Data());
-    typedef capnp::Request<capnp::DynamicStruct, capnp::DynamicStruct> Request;
-    KJV8_UNWRAP(Request, request, args[0]);
+  // send(request, callback, errorCallback) -> pipeline tree
+  //
+  // Send a request and call the callback when done, passing the final result.
+  //
+  // Calls `errorCallback` if there is an error, passing it an object describing the KJ exception
+  // (this is not a JS Error object!).
+  //
+  // Returns an object tree representing all of the promise's pipelined capabilities.  Be careful:
+  // each of these capabilities needs to be close()ed.
 
+  KJV8_UNWRAP(CapnpContext, context, args.Data());
+  typedef capnp::Request<capnp::DynamicStruct, capnp::DynamicStruct> Request;
+  KJV8_UNWRAP(Request, request, args[0]);
+
+  return liftKj([&]() -> v8::Handle<v8::Value> {
     if (!args[1]->IsFunction() || !args[2]->IsFunction()) {
       v8::ThrowException(v8::Exception::TypeError(v8::String::New("Callbacks must be functions.")));
       return emptyHandle;
@@ -1241,19 +1510,41 @@ v8::Handle<v8::Value> send(const v8::Arguments& args) {
                      capnp::Response<capnp::DynamicStruct>&& response) {
       v8::HandleScope scope;
       v8::Handle<v8::Value> args[1] = { context.wrapper.wrapCopy(kj::mv(response)) };
-      // TODO(now):  Verify that passing emptyHandle for this is OK.
-      callback->Call(emptyHandle, 1, args);
+      // TODO(cleanup):  Call() demands an Object parameter but `undefined` is not an object.  So
+      //   we pass an empty object.  Can we do better?
+      callback->Call(v8::Object::New(), 1, args);
     })).detach(kj::mvCapture(errorCallback,
           [&context](OwnHandle<v8::Function>&& errorCallback,
                      kj::Exception&& exception) {
       v8::HandleScope scope;
       v8::Handle<v8::Value> args[1] = { toJsException(kj::mv(exception)) };
-      errorCallback->Call(emptyHandle, 1, args);
+      errorCallback->Call(v8::Object::New(), 1, args);
     }));
 
+    // TODO(soon):  Add pipeline caps to return value.
     return pipeline;
   });
 }
+
+v8::Handle<v8::Value> cancel(const v8::Arguments& args) {
+  // cancel(pipeline) -> void
+  //
+  // Request cancellation of the given RPC.  If the RPC hasn't completed yet, it will be canceled
+  // and errorCallback will be called with an appropriate error.  Note that `callback` could still
+  // be called after cancel(), if it was already queued in the event loop at time of cancellation.
+
+  KJV8_UNWRAP(Pipeline, pipeline, args[0]);
+
+  return liftKj([&]() -> v8::Handle<v8::Value> {
+    pipeline.canceler->reject(kj::Exception(
+        kj::Exception::Nature::OTHER,
+        kj::Exception::Durability::PERMANENT,
+        __FILE__, __LINE__, kj::heapString("Request canceled by caller.")));
+    return v8::Undefined();
+  });
+}
+
+// -----------------------------------------------------------------------------
 
 void init(v8::Handle<v8::Object> exports) {
   liftKj([&]() -> v8::Handle<v8::Value> {
@@ -1268,19 +1559,19 @@ void init(v8::Handle<v8::Object> exports) {
     mapFunction("import", import);
     mapFunction("methods", methods);
     mapFunction("newBuilder", newBuilder);
-    mapFunction("builderToString", builderToString);
+    mapFunction("structToString", structToString);
     mapFunction("fromJs", fromJs);
-//    mapFunction("toJs", toJs);
+    mapFunction("toJs", toJs);
     mapFunction("connect", connect);
     mapFunction("restore", restore);
     mapFunction("castAs", castAs);
-//    mapFunction("schemaFor", schemaFor);
+    mapFunction("schemaFor", schemaFor);
     mapFunction("close", closeCap);
     mapFunction("dup", dupCap);
-//    mapFunction("dup2", dup2Cap);
+    mapFunction("dup2", dup2Cap);
     mapFunction("request", request);
     mapFunction("send", send);
-//    mapFunction("cancel", cancel);
+    mapFunction("cancel", cancel);
 
     return emptyHandle;
   });

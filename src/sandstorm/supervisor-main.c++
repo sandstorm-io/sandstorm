@@ -355,8 +355,10 @@ public:
     // Create or verify the pkg, var, and tmp directories.
 
     // Temporarily drop credentials for filesystem access.
-    KJ_SYSCALL(setfsuid(uid));
-    KJ_SYSCALL(setfsgid(gid));
+    uid_t olduid = geteuid();
+    gid_t oldgid = getegid();
+    KJ_SYSCALL(seteuid(uid));
+    KJ_SYSCALL(setegid(gid));
 
     // Let us be explicit about permissions for now.
     umask(0);
@@ -400,8 +402,8 @@ public:
     }
 
     // Restore superuser access (e.g. so that we can do mknod later).
-    KJ_SYSCALL(setfsuid(geteuid()));
-    KJ_SYSCALL(setfsgid(getegid()));
+    KJ_SYSCALL(seteuid(olduid));
+    KJ_SYSCALL(setegid(oldgid));
   }
 
   void unshareOuter() {

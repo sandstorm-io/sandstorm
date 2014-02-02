@@ -1,0 +1,153 @@
+/* CSS declarations go here */
+
+html {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  background-color: black;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  font-family: sans-serif;
+  color: #ccc;
+  font-weight: bold;
+  line-height: 32px;
+}
+
+#topbar {
+  position: absolute;
+  width: 100%;
+  height: 32px;
+  text-align: center;
+  z-index: -1;
+}
+
+#topbar-left {
+  float: left;
+  height: 32px;
+}
+
+#topbar-right {
+  float: right;
+  height: 32px;
+}
+
+img.icon {
+  height: 16px;
+  padding: 0 8px;
+}
+
+img.photo {
+  height: 30px;
+  padding: 0 8px;
+}
+
+img {
+  vertical-align: middle;
+}
+
+#app {
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  margin: 0;
+  background-color: white;
+  position: absolute;
+  left: 0;
+  width: 100%;
+  top: 32px;
+  bottom: 0;
+}
+
+#app iframe {
+  border-top-left-radius: 4px;
+  border-top-right-radius: 4px;
+  width: 100%;
+  height: 100%;
+  border-top: 2px solid #ccc;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  margin: 0;
+}
+
+input.search {
+  background-image: url('search.svg');
+  background-repeat: no-repeat;
+  background-position: 4px 50%;
+  border: none;
+  padding-left: 24px;
+  margin-left: 8px;
+  height: 20px;
+  border-radius: 2px;
+}
+
+div.popup {
+  display: none;
+  position: absolute;
+  border: 2px solid #ccc;
+  border-radius: 6px;
+  z-index: 100;
+  background-color: rgba(0, 0, 0, 0.9);
+  padding: 8px;
+  font-size: 85%;
+  line-height: normal;
+  font-weight: normal;
+  min-width: 250px;
+}
+
+div.popup h1 {
+  font-size: 125%;
+  font-weight: bold;
+  text-align: center;
+  border-bottom: 2px solid #ccc;
+  margin: 4px;
+}
+
+div.popup hr {
+  border: none;
+  border-bottom: 2px solid #ccc;
+  margin: 4px;
+}
+
+div.popup h2 {
+  font-size: 110%;
+  font-weight: bold;
+  margin: 4px;
+}
+
+div.chatbox {
+  margin: 8px 0;
+}
+div.chatbox input {
+  border: none;
+  height: 24px;
+  width: 242px;
+  padding: 4px;
+  border-radius: 2px;
+}
+
+span.measure-bar {
+  display: inline-block;
+  height: 4px;
+  vertical-align: middle;
+  background-color: #f44;
+}
+span.measure-bar-blank {
+  display: inline-block;
+  vertical-align: middle;
+}
+span.play-bar {
+  display: inline-block;
+  height: 4px;
+  vertical-align: middle;
+  background-color: #44f;
+}
+span.play-bar-blank {
+  display: inline-block;
+  height: 4px;
+  vertical-align: middle;
+  background-color: #ccc;
+}

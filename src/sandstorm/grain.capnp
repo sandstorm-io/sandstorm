@@ -89,9 +89,88 @@ struct Manifest {
 }
 
 # ========================================================================================
+# Powerbox
+#
+# TODO(cleanup):  Put in separate file?  Note that PowerboxCapability must be declared before
+#   UiView due to a bug in Cap'n Proto requiring superclasses to be declared before subclasses.
+#
+# The powerbox is part of the Sandstorm UI which allows users to connect applications to each
+# other.  First, one application must publish a PowerboxCapability to the powerbox via
+# `SandstormApi.publish()`.  Then, a second application may request a capability from the powerbox
+# via `SessionContext.request()`.  The user is presented with a list of capabilities from the
+# powerbox which match the requesting application's query.  The user may select one, which will
+# then be returned to the requesting app.
+#
+# Another way to connect apps is via actions.  One application may declare that it can implement
+# some action on any capability matching a particular query.  Another application may later use
+# SessionContext.offer() to offer a specific capability to the current user.  The user will be
+# presented with a list of actions that make sense for that capability and may select one.  (This
+# is much like Android intents.)
+
+interface PowerboxCapability {
+  # Capabilities to be offered to the powerbox must implement PowerboxCapability (in addition to
+  # the interface for the application functionality they provide).  PowerboxCapability provides
+  # metadata about the capability for display in the powerbox UI as well as the sharing graph
+  # (which shows inter-app capabilities).
+  #
+  # Capabilities sent directly between two grains (e.g. as an RPC parameter) rather than through
+  # the powerbox UI may also wish to implement PowerboxCapability in order to improve the sharing
+  # graph visualization.  Only persisted capabilities will ever show up in the visualization.
+
+  getPowerboxInfo @0 () -> PowerboxInfo;
+  struct PowerboxInfo {
+    title @0 :Util.LocalizedText;
+    # Title for this capability if displayed as an option in the powerbox.  Useful for
+    # distinguishing from other capabilities exported by the same grain.  Leave blank if the
+    # capability effectively represents the entire grain and so should just take the grain's title.
+    #
+    # Titles are suggestions only.  The user may override the title with their own.
+
+    verbPhrase @1 :Util.LocalizedText;
+    # Verb phrase describing what the holder of this capability can do to the grain, e.g.
+    # "can edit".  This may be displayed in the sharing UI to describe a connection between two
+    # grains.
+
+    description @2 :Util.LocalizedText;
+    # Long-form description of what the capability represents.  Should be roughly a paragraph that
+    # could be displayed e.g. in a tooltip.
+
+    interfaces @3 :List(UInt64);
+    # Type IDs of Cap'n Proto interfaces implemented by this capability.  Only interfaces which
+    # should be used for powerbox searching/matching purposes need to be listed.  Superclasses
+    # must be listed explicitly if they should be considered for matching.  The powerbox does not
+    # know anything about the actual interface schemas; it just matches the IDs.
+
+    # TODO(someday):  Icon.
+    # TODO(someday):  Other match criteria.
+  }
+}
+
+interface PowerboxAction {
+  apply @0 (cap: PowerboxCapability) -> (view :UiView);
+  # Invoke the action on the given capability, producing a view which is displayed to the user.
+}
+
+struct PowerboxQuery {
+  # When the app requests a capability from the powerbox, it provides a PowerboxQuery specifying
+  # what kind of capability it wants, in order to narrow down the options.
+
+  union {
+    conjunction @0 :List(PowerboxQuery);
+    disjunction @1 :List(PowerboxQuery);
+    # Specifies a conjunction (AND) or disjunction (OR) of other queries.
+
+    implements @2 :UInt64;
+    # The capability must list the given interface in `PowerboxInfo.interfaces`.
+
+    # TODO(someday):  Other match criteria.
+  }
+}
+
+# ========================================================================================
 # Runtime interface
 
-interface Supervisor {
+interface SandstormApi {
   # The Sandstorm platform API, exposed as the default capability over the two-way RPC connection
   # formed with the application instance.  This object specifically represents the supervisor
   # for this application instance -- two different application instances (grains) never share a
@@ -416,81 +495,5 @@ interface ViewSharingLink extends(SharingLink) {
 
     removePermissions @3 :PermissionSet;
     # Permissions to remove from those granted above.
-  }
-}
-
-# ========================================================================================
-# Powerbox
-#
-# The powerbox is part of the Sandstorm UI which allows users to connect applications to each
-# other.  First, one application must publish a PowerboxCapability to the powerbox via
-# `Supervisor.publish()`.  Then, a second application may request a capability from the powerbox
-# via `SessionContext.request()`.  The user is presented with a list of capabilities from the
-# powerbox which match the requesting application's query.  The user may select one, which will
-# then be returned to the requesting app.
-#
-# Another way to connect apps is via actions.  One application may declare that it can implement
-# some action on any capability matching a particular query.  Another application may later use
-# SessionContext.offer() to offer a specific capability to the current user.  The user will be
-# presented with a list of actions that make sense for that capability and may select one.  (This
-# is much like Android intents.)
-
-interface PowerboxCapability {
-  # Capabilities to be offered to the powerbox must implement PowerboxCapability (in addition to
-  # the interface for the application functionality they provide).  PowerboxCapability provides
-  # metadata about the capability for display in the powerbox UI as well as the sharing graph
-  # (which shows inter-app capabilities).
-  #
-  # Capabilities sent directly between two grains (e.g. as an RPC parameter) rather than through
-  # the powerbox UI may also wish to implement PowerboxCapability in order to improve the sharing
-  # graph visualization.  Only persisted capabilities will ever show up in the visualization.
-
-  getPowerboxInfo @0 () -> PowerboxInfo;
-  struct PowerboxInfo {
-    title @0 :Util.LocalizedText;
-    # Title for this capability if displayed as an option in the powerbox.  Useful for
-    # distinguishing from other capabilities exported by the same grain.  Leave blank if the
-    # capability effectively represents the entire grain and so should just take the grain's title.
-    #
-    # Titles are suggestions only.  The user may override the title with their own.
-
-    verbPhrase @1 :Util.LocalizedText;
-    # Verb phrase describing what the holder of this capability can do to the grain, e.g.
-    # "can edit".  This may be displayed in the sharing UI to describe a connection between two
-    # grains.
-
-    description @2 :Util.LocalizedText;
-    # Long-form description of what the capability represents.  Should be roughly a paragraph that
-    # could be displayed e.g. in a tooltip.
-
-    interfaces @3 :List(UInt64);
-    # Type IDs of Cap'n Proto interfaces implemented by this capability.  Only interfaces which
-    # should be used for powerbox searching/matching purposes need to be listed.  Superclasses
-    # must be listed explicitly if they should be considered for matching.  The powerbox does not
-    # know anything about the actual interface schemas; it just matches the IDs.
-
-    # TODO(someday):  Icon.
-    # TODO(someday):  Other match criteria.
-  }
-}
-
-interface PowerboxAction {
-  apply @0 (cap: PowerboxCapability) -> (view :UiView);
-  # Invoke the action on the given capability, producing a view which is displayed to the user.
-}
-
-struct PowerboxQuery {
-  # When the app requests a capability from the powerbox, it provides a PowerboxQuery specifying
-  # what kind of capability it wants, in order to narrow down the options.
-
-  union {
-    conjunction @0 :List(PowerboxQuery);
-    disjunction @1 :List(PowerboxQuery);
-    # Specifies a conjunction (AND) or disjunction (OR) of other queries.
-
-    implements @2 :UInt64;
-    # The capability must list the given interface in `PowerboxInfo.interfaces`.
-
-    # TODO(someday):  Other match criteria.
   }
 }

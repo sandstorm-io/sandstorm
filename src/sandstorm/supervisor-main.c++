@@ -24,6 +24,9 @@
 
 #include <kj/main.h>
 #include <kj/debug.h>
+#include <kj/async-io.h>
+#include <capnp/rpc-twoparty.h>
+#include <capnp/rpc.capnp.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -33,6 +36,9 @@
 #include <sys/fsuid.h>
 #include <sys/prctl.h>
 #include <sys/capability.h>
+#include <netinet/in.h>
+#include <net/if.h>
+#include <linux/sockios.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -42,7 +48,11 @@
 #include <pwd.h>
 #include <grp.h>
 
+#include <sandstorm/grain.capnp.h>
+
 namespace sandstorm {
+
+typedef unsigned int uint;
 
 class SupervisorMain {
   // Main class for the Sandstorm supervisor.  This program:
@@ -357,8 +367,8 @@ public:
     // Temporarily drop credentials for filesystem access.
     uid_t olduid = geteuid();
     gid_t oldgid = getegid();
-    KJ_SYSCALL(seteuid(uid));
     KJ_SYSCALL(setegid(gid));
+    KJ_SYSCALL(seteuid(uid));
 
     // Let us be explicit about permissions for now.
     umask(0);
@@ -478,6 +488,32 @@ public:
     KJ_SYSCALL(chdir("/"));
   }
 
+  void unshareNetwork() {
+    // Unshare the network and set up a new loopback device.
+
+    // Enter new network namespace.
+    KJ_SYSCALL(unshare(CLONE_NEWNET));
+
+    // Create a socket for our ioctls.
+    int fd;
+    KJ_SYSCALL(fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP));
+    KJ_DEFER(close(fd));
+
+    // Set the address of "lo".
+    struct ifreq ifr;
+    memset(&ifr, 0, sizeof(ifr));
+    strcpy(ifr.ifr_ifrn.ifrn_name, "lo");
+    struct sockaddr_in* addr = reinterpret_cast<struct sockaddr_in*>(&ifr.ifr_ifru.ifru_addr);
+    addr->sin_family = AF_INET;
+    addr->sin_addr.s_addr = htonl(0x7F000001);  // 127.0.0.1
+    KJ_SYSCALL(ioctl(fd, SIOCSIFADDR, &ifr));
+
+    // Set flags to enable "lo".
+    memset(&ifr.ifr_ifru, 0, sizeof(ifr.ifr_ifru));
+    ifr.ifr_ifru.ifru_flags = IFF_LOOPBACK | IFF_UP | IFF_RUNNING;
+    KJ_SYSCALL(ioctl(fd, SIOCSIFFLAGS, &ifr));
+  }
+
   void maybeMountProc() {
     // Mount proc if it was requested.  Note that this must take place after fork() to get the
     // correct pid namespace.
@@ -522,8 +558,8 @@ public:
     KJ_SYSCALL(chroot("sandbox"));
     KJ_SYSCALL(chdir("/"));
 
-    // Unshare remaining namespaces that supervisor couldn't.
-    KJ_SYSCALL(unshare(CLONE_NEWNET));
+    // Unshare the network, creating a new loopback interface.
+    unshareNetwork();
 
     // Mount proc if --proc was passed.
     maybeMountProc();
@@ -566,13 +602,113 @@ public:
     KJ_UNREACHABLE;
   }
 
+  class SandstormApiImpl: public SandstormApi::Server {
+  public:
+    // TODO(someday):  Implement API.
+//    kj::Promise<void> publish(PublishContext context) override {
+
+//    }
+
+//    kj::Promise<void> registerAction(RegisterActionContext context) override {
+
+//    }
+
+//    kj::Promise<void> shareCap(ShareCapContext context) override {
+
+//    }
+
+//    kj::Promise<void> shareView(ShareViewContext context) override {
+
+//    }
+  };
+
+  class Restorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
+  public:
+    explicit Restorer(capnp::Capability::Client&& defaultCap)
+        : defaultCap(kj::mv(defaultCap)) {}
+
+    capnp::Capability::Client restore(capnp::AnyPointer::Reader ref) override {
+      // TODO(soon):  Make it possible to export a default capability on two-party connections.
+      //   For now we use a null ref as a hack, but this is questionable because if guessable
+      //   SturdyRefs exist then you can't let just any component of your system request arbitrary
+      //   SturdyRefs.
+      if (ref.isNull()) {
+        return defaultCap;
+      }
+
+      // TODO(someday):  Implement level 2 RPC with distributed confinement.
+      KJ_FAIL_ASSERT("SturdyRefs not implemented.");
+    }
+
+  private:
+    capnp::Capability::Client defaultCap;
+  };
+
+  struct AcceptedConnection {
+    kj::Own<kj::AsyncIoStream> connection;
+    capnp::TwoPartyVatNetwork network;
+    capnp::RpcSystem<capnp::rpc::twoparty::SturdyRefHostId> rpcSystem;
+
+    explicit AcceptedConnection(Restorer& restorer, kj::Own<kj::AsyncIoStream>&& connectionParam)
+        : connection(kj::mv(connectionParam)),
+          network(*connection, capnp::rpc::twoparty::Side::SERVER),
+          rpcSystem(capnp::makeRpcServer(network, restorer)) {}
+  };
+
+  kj::Promise<void> acceptLoop(kj::ConnectionReceiver& serverPort, Restorer& restorer,
+                               kj::TaskSet& taskSet) {
+    return serverPort.accept().then([&](kj::Own<kj::AsyncIoStream>&& connection) {
+      auto connectionState = kj::heap<AcceptedConnection>(restorer, kj::mv(connection));
+      auto promise = connectionState->network.onDisconnect();
+      taskSet.add(promise.attach(kj::mv(connectionState)));
+      return acceptLoop(serverPort, restorer, taskSet);
+    });
+  }
+
+  class ErrorHandlerImpl: public kj::TaskSet::ErrorHandler {
+  public:
+    void taskFailed(kj::Exception&& exception) override {
+      KJ_LOG(ERROR, "connection failed", exception);
+    }
+  };
+
   void runSupervisor(pid_t child, int apiFd) KJ_NORETURN {
     permanentlyDropSuperuser();
 
-    // TODO(soon):  Export platform API, etc.
-    // For now, just wait for pid to exit.
-    int status;
-    KJ_SYSCALL(waitpid(child, &status, 0));
+    // TODO(soon):  Make sure all grandchildren die if supervisor dies.
+
+    // Set up the RPC connection to the app and export the supervisor interface.
+    auto ioContext = kj::setupAsyncIo();
+    auto appConnection = ioContext.lowLevelProvider->wrapSocketFd(apiFd,
+        kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC |
+        kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP);
+    capnp::TwoPartyVatNetwork appNetwork(*appConnection, capnp::rpc::twoparty::Side::SERVER);
+    Restorer appRestorer(kj::heap<SandstormApiImpl>());
+    auto server = capnp::makeRpcServer(appNetwork, appRestorer);
+
+    // Get the app's UiView by restoring a null SturdyRef from it.
+    capnp::MallocMessageBuilder message;
+    capnp::rpc::SturdyRef::Builder ref = message.getRoot<capnp::rpc::SturdyRef>();
+    auto hostId = ref.getHostId().initAs<capnp::rpc::twoparty::SturdyRefHostId>();
+    hostId.setSide(capnp::rpc::twoparty::Side::CLIENT);
+    UiView::Client app = server.restore(hostId, ref.getObjectId()).castAs<UiView>();
+
+    // Set up the external RPC interface, re-exporting the UiView.
+    // TODO(someday):  If there are multiple front-ends, or the front-ends restart a lot, we'll
+    //   want to wrap the UiView and cache session objects.  Perhaps we could do this by making
+    //   them persistable, though it's unclear how that would work with SessionContext.
+    Restorer serverRestorer(kj::mv(app));
+    ErrorHandlerImpl errorHandler;
+    kj::TaskSet tasks(errorHandler);
+    auto acceptTask = ioContext.provider->getNetwork().parseAddress("127.0.0.1", 3004).then(
+        [&](kj::Own<kj::NetworkAddress>&& addr) {
+      auto serverPort = addr->listen();
+      auto promise = acceptLoop(*serverPort, serverRestorer, tasks);
+      return promise.attach(kj::mv(serverPort));
+    });
+
+    // Wait for disconnect or accept loop failure, then exit.
+    acceptTask.exclusiveJoin(appNetwork.onDisconnect()).wait(ioContext.waitScope);
 
     context.exit();
   }

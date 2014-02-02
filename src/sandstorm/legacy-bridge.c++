@@ -1,0 +1,637 @@
+// Sandstorm - Personal Cloud Sandbox
+// Copyright (c) 2014, Kenton Varda <temporal@gmail.com>
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are met:
+//
+// 1. Redistributions of source code must retain the above copyright notice, this
+//    list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+//    this list of conditions and the following disclaimer in the documentation
+//    and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+// ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+// (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+// LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+// ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+#include <kj/main.h>
+#include <kj/debug.h>
+#include <kj/async-io.h>
+#include <capnp/rpc-twoparty.h>
+#include <capnp/rpc.capnp.h>
+#include <capnp/schema.h>
+#include <unistd.h>
+#include <map>
+#include <unordered_map>
+#include <time.h>
+#include <stdlib.h>
+
+#include <sandstorm/grain.capnp.h>
+#include <sandstorm/web-session.capnp.h>
+#include <joyent-http/http_parser.h>
+
+namespace sandstorm {
+
+#if __QTCREATOR
+#define KJ_MVCAP(var) var
+// QtCreator dosen't understand C++14 syntax yet.
+#else
+#define KJ_MVCAP(var) var = ::kj::mv(var)
+// Capture the given variable by move.  Place this in a lambda capture list.  Requires C++14.
+//
+// TODO(cleanup):  Move to libkj.
+#endif
+
+typedef unsigned int uint;
+typedef unsigned char byte;
+
+kj::Vector<kj::ArrayPtr<const char>> split(kj::ArrayPtr<const char> input, char delim) {
+  kj::Vector<kj::ArrayPtr<const char>> result;
+
+  size_t start = 0;
+  for (size_t i: kj::indices(input)) {
+    if (input[i] == delim) {
+      result.add(input.slice(start, i));
+      start = i + 1;
+    }
+  }
+  result.add(input.slice(start, input.size()));
+  return result;
+}
+
+kj::Maybe<kj::ArrayPtr<const char>> splitFirst(kj::ArrayPtr<const char>& input, char delim) {
+  for (size_t i: kj::indices(input)) {
+    if (input[i] == delim) {
+      auto result = input.slice(0, i);
+      input = input.slice(i + 1, input.size());
+      return result;
+    }
+  }
+  return nullptr;
+}
+
+kj::ArrayPtr<const char> trim(kj::ArrayPtr<const char> input) {
+  while (input.size() > 0 && input[0] == ' ') {
+    input = input.slice(1, input.size());
+  }
+  while (input.size() > 0 && input[input.size() - 1] == ' ') {
+    input = input.slice(0, input.size() - 1);
+  }
+  return input;
+}
+
+void toLower(kj::ArrayPtr<char> text) {
+  for (char& c: text) {
+    if ('A' <= c && c <= 'Z') {
+      c = c - 'A' + 'a';
+    }
+  }
+}
+
+struct HttpStatusInfo {
+  WebSession::Response::Which type;
+
+  union {
+    WebSession::Response::SuccessCode successCode;
+    struct { bool isPermanent; bool switchToGet; } redirect;
+    WebSession::Response::ClientErrorCode clientErrorCode;
+  };
+};
+
+HttpStatusInfo redirectInfo(bool isPermanent, bool switchToGet) {
+  HttpStatusInfo result;
+  result.type = WebSession::Response::REDIRECT;
+  result.redirect.isPermanent = isPermanent;
+  result.redirect.switchToGet = switchToGet;
+  return result;
+}
+
+HttpStatusDescriptor::Reader getHttpStatusAnnotation(capnp::EnumSchema::Enumerant enumerant) {
+  for (auto annotation: enumerant.getProto().getAnnotations()) {
+    if (annotation.getId() == HTTP_STATUS_ANNOTATION_ID) {
+      return annotation.getValue().getStruct().getAs<HttpStatusDescriptor>();
+    }
+  }
+  KJ_FAIL_ASSERT("Missing httpStatus annotation on status code enumerant.",
+                 enumerant.getProto().getName());
+}
+
+std::unordered_map<uint, HttpStatusInfo> makeStatusCodes() {
+  std::unordered_map<uint, HttpStatusInfo> result;
+  for (capnp::EnumSchema::Enumerant enumerant:
+       capnp::Schema::from<WebSession::Response::SuccessCode>().getEnumerants()) {
+    auto& info = result[getHttpStatusAnnotation(enumerant).getId()];
+    info.type = WebSession::Response::CONTENT;
+    info.successCode = static_cast<WebSession::Response::SuccessCode>(enumerant.getOrdinal());
+  }
+  for (capnp::EnumSchema::Enumerant enumerant:
+       capnp::Schema::from<WebSession::Response::ClientErrorCode>().getEnumerants()) {
+    auto& info = result[getHttpStatusAnnotation(enumerant).getId()];
+    info.type = WebSession::Response::CLIENT_ERROR;
+    info.clientErrorCode =
+        static_cast<WebSession::Response::ClientErrorCode>(enumerant.getOrdinal());
+  }
+
+  result[301] = redirectInfo(true, true);
+  result[302] = redirectInfo(false, true);
+  result[303] = redirectInfo(false, true);
+  result[307] = redirectInfo(false, false);
+  result[308] = redirectInfo(true, false);
+
+  return result;
+}
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wglobal-constructors"
+const std::unordered_map<uint, HttpStatusInfo> HTTP_STATUS_CODES = makeStatusCodes();
+#pragma clang diagnostic pop
+
+class HttpParser: private http_parser {
+public:
+  HttpParser() {
+    memset(&settings, 0, sizeof(settings));
+    settings.on_status = &on_status;
+    settings.on_header_field = &on_header_field;
+    settings.on_header_value = &on_header_value;
+    settings.on_body = &on_body;
+    http_parser_init(this, HTTP_RESPONSE);
+  }
+
+  void parse(kj::ArrayPtr<const char> data) {
+    size_t n = http_parser_execute(this, &settings, data.begin(), data.size());
+    if (n != data.size() || http_parser_execute(this, &settings, nullptr, 0) != 0) {
+      KJ_FAIL_ASSERT("Failed to parse HTTP response from sandboxed app.");
+    }
+  }
+
+  void build(WebSession::Response::Builder builder) {
+    auto iter = HTTP_STATUS_CODES.find(status_code);
+    HttpStatusInfo statusInfo;
+
+    if (iter != HTTP_STATUS_CODES.end()) {
+      statusInfo = iter->second;
+    } else if (status_code / 100 == 4) {
+      statusInfo.type = WebSession::Response::CLIENT_ERROR;
+      statusInfo.clientErrorCode = WebSession::Response::ClientErrorCode::BAD_REQUEST;
+    } else {
+      KJ_FAIL_REQUIRE(
+          "Application used unsupported HTTP status code.  Status codes must be whitelisted "
+          "because some have sandbox-breaking effects.", (uint)status_code, statusString);
+    }
+
+    auto cookieList = builder.initSetCookies(cookies.size());
+    for (size_t i: kj::indices(cookies)) {
+      auto cookie = cookieList[i];
+      cookie.setName(cookies[i].name);
+      cookie.setValue(cookies[i].value);
+      switch (cookies[i].expirationType) {
+        case Cookie::ExpirationType::NONE:
+          cookie.getExpires().setNone();
+          break;
+        case Cookie::ExpirationType::ABSOLUTE:
+          cookie.getExpires().setAbsolute(cookies[i].expires);
+          break;
+        case Cookie::ExpirationType::RELATIVE:
+          cookie.getExpires().setRelative(cookies[i].expires);
+          break;
+      }
+      cookie.setHttpOnly(cookies[i].httpOnly);
+    }
+
+    switch (statusInfo.type) {
+      case WebSession::Response::CONTENT: {
+        auto content = builder.initContent();
+        content.setStatusCode(statusInfo.successCode);
+
+        KJ_IF_MAYBE(encoding, findHeader("content-encoding")) {
+          content.setEncoding(*encoding);
+        }
+        KJ_IF_MAYBE(language, findHeader("content-language")) {
+          content.setLanguage(*language);
+        }
+        KJ_IF_MAYBE(mimeType, findHeader("content-type")) {
+          content.setMimeType(*mimeType);
+        }
+
+        auto data = content.initBody().initBytes(body.size());
+        memcpy(data.begin(), body.begin(), body.size());
+        break;
+      }
+      case WebSession::Response::REDIRECT: {
+        auto redirect = builder.initRedirect();
+        redirect.setIsPermanent(statusInfo.redirect.isPermanent);
+        redirect.setSwitchToGet(statusInfo.redirect.switchToGet);
+        redirect.setLocation(KJ_ASSERT_NONNULL(findHeader("Location"),
+            "Application returned redirect response missing Location header."));
+        break;
+      }
+      case WebSession::Response::CLIENT_ERROR: {
+        auto error = builder.initClientError();
+        error.setStatusCode(statusInfo.clientErrorCode);
+        auto text = error.initDescriptionHtml(body.size());
+        memcpy(text.begin(), body.begin(), body.size());
+        break;
+      }
+      case WebSession::Response::SERVER_ERROR: {
+        auto text = builder.initServerError().initDescriptionHtml(body.size());
+        memcpy(text.begin(), body.begin(), body.size());
+        break;
+      }
+    }
+  }
+
+private:
+  struct Header {
+    kj::String name;
+    kj::String value;
+  };
+
+  struct Cookie {
+    kj::String name;
+    kj::String value;
+    int64_t expires;
+
+    enum ExpirationType {
+      NONE, RELATIVE, ABSOLUTE
+    };
+    ExpirationType expirationType = NONE;
+
+    bool httpOnly = false;
+  };
+
+  http_parser_settings settings;
+  kj::String statusString;
+  kj::String lastHeaderName;
+  std::map<kj::StringPtr, Header> headers;
+  kj::Vector<char> body;
+  kj::Vector<Cookie> cookies;
+
+  kj::Maybe<kj::StringPtr> findHeader(kj::StringPtr name) {
+    auto iter = headers.find(name);
+    if (iter == headers.end()) {
+      return nullptr;
+    } else {
+      return kj::StringPtr(iter->second.value);
+    }
+  }
+
+  void onStatus(kj::ArrayPtr<const char> status) {
+    statusString = kj::heapString(status);
+  }
+
+  void onHeaderField(kj::ArrayPtr<const char> name) {
+    lastHeaderName = kj::heapString(name);
+    toLower(lastHeaderName);
+  }
+
+  void onHeaderValue(kj::ArrayPtr<const char> value) {
+    if (lastHeaderName == "set-cookie") {
+      // Really ugly cookie-parsing code.
+      // TODO(cleanup):  Clean up.
+      bool isFirst = true;
+      Cookie cookie;
+      for (auto& part: split(value, ';')) {
+        if (isFirst) {
+          isFirst = false;
+          cookie.name = kj::heapString(trim(KJ_ASSERT_NONNULL(splitFirst(part, '='),
+              "Invalid cookie header from app.", value)));
+          cookie.value = kj::heapString(trim(part));
+        } else KJ_IF_MAYBE(name, splitFirst(part, '=')) {
+          auto prop = kj::heapString(trim(*name));
+          toLower(prop);
+          if (prop == "expires") {
+            auto value = kj::heapString(trim(part));
+            // Wed, 15 Nov 1995 06:25:24 GMT
+            struct tm t;
+            memset(&t, 0, sizeof(t));
+
+            // There are three allowed formats for HTTP dates.  Ugh.
+            char* end = strptime(value.cStr(), "%a, %d %b %Y %T GMT", &t);
+            if (end == nullptr) {
+              end = strptime(value.cStr(), "%a, %d-%b-%y %T GMT", &t);
+              if (end == nullptr) {
+                end = strptime(value.cStr(), "%a %b %d %T %Y", &t);
+              }
+            }
+            KJ_ASSERT(end != nullptr && *end == '\0', "Invalid HTTP date from app.", value);
+            cookie.expires = timegm(&t);
+            cookie.expirationType = Cookie::ExpirationType::ABSOLUTE;
+          } else if (prop == "max-age") {
+            auto value = kj::heapString(trim(part));
+            char* end;
+            cookie.expires = strtoull(value.cStr(), &end, 10);
+            KJ_ASSERT(end > value.begin() && *end == '\0', "Invalid cookie max-age app.", value);
+            cookie.expirationType = Cookie::ExpirationType::RELATIVE;
+          } else {
+            // Ignore other properties:
+            //   Path:  Not useful on the modern same-origin-policy web.
+            //   Domain:  We do not allow the app to publish cookies visible to other hosts in the
+            //     domain.
+          }
+        } else {
+          auto prop = kj::heapString(trim(*name));
+          toLower(prop);
+          if (prop == "httponly") {
+            cookie.httpOnly = true;
+          } else {
+            // Ignore other properties:
+            //   Secure:  We always set this, since we always require https.
+          }
+        }
+      }
+
+    } else {
+      kj::StringPtr name = lastHeaderName;
+      auto& slot = headers[name];
+      if (slot.name != nullptr) {
+        // Multiple instances of the same header are equivalent to comma-delimited.
+        slot.value = kj::str(kj::mv(slot.value), ", ", value);
+      } else {
+        slot = Header { kj::mv(lastHeaderName), kj::heapString(value) };
+      }
+    }
+  }
+
+  void onBody(kj::ArrayPtr<const char> data) {
+    body.addAll(data);
+  }
+
+#define ON_C(lower, title) \
+  static int on_##lower(http_parser* p, const char* d, size_t s) { \
+    static_cast<HttpParser*>(p)->on##title(kj::arrayPtr(d, s)); \
+    return 0; \
+  }
+
+  ON_C(status, Status)
+  ON_C(header_field, HeaderField)
+  ON_C(header_value, HeaderValue)
+  ON_C(body, Body)
+#undef ON_C
+};
+
+kj::Promise<kj::Vector<char>> readAll(kj::AsyncIoStream& stream, kj::Vector<char>&& buffer) {
+  // TODO(perf):  Optimize Vector<char> to avoid per-element destructor calls.
+
+  size_t offset = buffer.size();
+  buffer.resize(kj::max(offset * 2, 4096));
+  size_t expected = buffer.size() - offset;
+  auto promise = stream.tryRead(buffer.begin() + offset, expected, expected);
+  return promise.then(
+      [&stream, offset, expected, KJ_MVCAP(buffer)](size_t actual) mutable
+      -> kj::Promise<kj::Vector<char>> {
+    KJ_DBG(expected, actual);
+    if (actual < expected) {
+      // Got less than expected; must be EOF.
+      buffer.resize(offset + actual);
+      return kj::mv(buffer);
+    } else {
+      // Sill going; read more.
+      return readAll(stream, kj::mv(buffer));
+    }
+  });
+}
+
+kj::Promise<kj::Vector<char>> readAll(kj::Own<kj::AsyncIoStream>&& stream) {
+  auto& streamRef = *stream;
+  return readAll(streamRef, kj::Vector<char>()).attach(kj::mv(stream));
+}
+
+class WebSessionImpl final: public WebSession::Server {
+public:
+  WebSessionImpl(kj::NetworkAddress& serverAddr,
+                 UserInfo::Reader userInfo, SessionContext::Client context,
+                 WebSession::Params::Reader params)
+      : serverAddr(serverAddr),
+        context(kj::mv(context)),
+        userDisplayName(kj::heapString(userInfo.getDisplayName().getDefaultText())),
+        basePath(kj::heapString(params.getBasePath())),
+        userAgent(kj::heapString(params.getUserAgent())),
+        acceptLanguages(kj::strArray(params.getAcceptableLanguages(), ",")) {}
+
+  kj::Promise<void> get(GetContext context) override {
+    GetParams::Reader params = context.getParams();
+    kj::String httpRequest = makeHeaders("GET", params.getPath(), params.getContext());
+    KJ_DBG(httpRequest);
+    return sendRequest(toBytes(httpRequest), context);
+  }
+
+  kj::Promise<void> post(PostContext context) override {
+    PostParams::Reader params = context.getParams();
+    auto content = params.getContent();
+    kj::String httpRequest = makeHeaders("POST", params.getPath(), params.getContext(),
+      kj::str("Content-Type: ", content.getMimeType()),
+      kj::str("Content-Length: ", content.getContent().size()));
+    return sendRequest(toBytes(httpRequest, content.getContent()), context);
+  }
+
+private:
+  kj::NetworkAddress& serverAddr;
+  SessionContext::Client context;
+  kj::String userDisplayName;
+  kj::String basePath;
+  kj::String userAgent;
+  kj::String acceptLanguages;
+
+  kj::String makeHeaders(kj::StringPtr method, kj::StringPtr path,
+                         WebSession::Context::Reader context,
+                         kj::String extraHeader1 = nullptr,
+                         kj::String extraHeader2 = nullptr) {
+    kj::Vector<kj::String> lines(16);
+
+    lines.add(kj::str(method, " /", path, " HTTP/1.1"));
+    lines.add(kj::str("Host: sandbox"));
+    lines.add(kj::str("Connection: close"));
+    if (extraHeader1 != nullptr) {
+      lines.add(kj::mv(extraHeader1));
+    }
+    if (extraHeader2 != nullptr) {
+      lines.add(kj::mv(extraHeader2));
+    }
+    lines.add(kj::str("Accept: */*"));
+    lines.add(kj::str("Accept-Encoding: gzip"));
+    lines.add(kj::str("Accept-Language: ", acceptLanguages));
+    lines.add(kj::str("User-Agent: ", userAgent));
+    lines.add(kj::str("X-Sandstorm-Username: ", userDisplayName));
+    lines.add(kj::str("X-Sandstorm-Base-Path: ", basePath));
+
+    auto cookies = context.getCookies();
+    if (cookies.size() > 0) {
+      lines.add(kj::str("Cookie: ", kj::strArray(
+            KJ_MAP(c, cookies) {
+              return kj::str(c.getKey(), "=", c.getValue());
+            }, "; ")));
+    }
+
+    lines.add(kj::str(""));
+    lines.add(kj::str(""));
+
+    return kj::strArray(lines, "\r\n");
+  }
+
+  kj::Array<byte> toBytes(kj::StringPtr text, kj::ArrayPtr<const byte> data = nullptr) {
+    auto result = kj::heapArray<byte>(text.size() + data.size());
+    memcpy(result.begin(), text.begin(), text.size());
+    memcpy(result.begin() + text.size(), data.begin(), data.size());
+    return result;
+  }
+
+  template <typename Context>
+  kj::Promise<void> sendRequest(kj::Array<byte> httpRequest, Context& context) {
+    context.releaseParams();
+    return serverAddr.connect().then(
+        [KJ_MVCAP(httpRequest)](kj::Own<kj::AsyncIoStream>&& stream) mutable {
+      kj::ArrayPtr<const byte> httpRequestRef = httpRequest;
+      auto& streamRef = *stream;
+      return streamRef.write(httpRequestRef.begin(), httpRequestRef.size())
+          .attach(kj::mv(httpRequest))
+          .then([KJ_MVCAP(stream)]() mutable {
+        stream->shutdownWrite();
+        return readAll(kj::mv(stream));
+      });
+    }).then([context](kj::Vector<char>&& buffer) mutable {
+      KJ_DBG(buffer);
+      HttpParser parser;
+      parser.parse(buffer);
+      parser.build(context.getResults());
+      KJ_DBG(context.getResults());
+    });
+  }
+};
+
+class UiViewImpl final: public UiView::Server {
+public:
+  explicit UiViewImpl(kj::NetworkAddress& serverAddress): serverAddress(serverAddress) {}
+
+//  kj::Promise<void> getViewInfo(GetViewInfoContext context) override;
+
+  kj::Promise<void> newSession(NewSessionContext context) override {
+    auto params = context.getParams();
+
+    KJ_REQUIRE(params.getSessionType() == capnp::typeId<WebSession>(),
+               "Unsupported session type.");
+
+    context.getResults(capnp::MessageSize {2, 1}).setSession(
+        kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
+                                 params.getSessionParams().getAs<WebSession::Params>()));
+
+    return kj::READY_NOW;
+  }
+
+private:
+  kj::NetworkAddress& serverAddress;
+};
+
+class LegacyBridgeMain {
+  // Main class for the Sandstorm legacy bridge.  This program is meant to run inside an
+  // application sandbox where it translates incoming requests back from HTTP-over-RPC to regular
+  // HTTP.  This is a shim meant to make it easy to port existing web frameworks into Sandstorm,
+  // but long-term apps should seek to drop this binary and instead speak Cap'n Proto directly.
+  // It is up to the app to include this binary in their package if they want it.
+
+public:
+  LegacyBridgeMain(kj::ProcessContext& context): context(context), ioContext(kj::setupAsyncIo()) {}
+
+  kj::MainFunc getMain() {
+    return kj::MainBuilder(context, "Sandstorm version 0.0",
+                           "Acts as a Sandstorm init application.  Runs <command>, then tries to "
+                           "connect to it as an HTTP server at the given address (typically, "
+                           "'127.0.0.1:<port>') in order to handle incoming requests.")
+        .expectArg("<address>", KJ_BIND_METHOD(*this, setAddress))
+        .expectOneOrMoreArgs("<command>", KJ_BIND_METHOD(*this, addCommandArg))
+        .callAfterParsing(KJ_BIND_METHOD(*this, run))
+        .build();
+  }
+
+  kj::MainBuilder::Validity setAddress(kj::StringPtr addr) {
+    return ioContext.provider->getNetwork().parseAddress(addr)
+        .then([this](kj::Own<kj::NetworkAddress>&& parsedAddr) -> kj::MainBuilder::Validity {
+      this->address = kj::mv(parsedAddr);
+      return true;
+    }, [](kj::Exception&& e) -> kj::MainBuilder::Validity {
+      return kj::heapString(e.getDescription());
+    }).wait(ioContext.waitScope);
+  }
+
+  kj::MainBuilder::Validity addCommandArg(kj::StringPtr arg) {
+    command.add(kj::heapString(arg));
+    return true;
+  }
+
+  class Restorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
+  public:
+    explicit Restorer(capnp::Capability::Client&& defaultCap)
+        : defaultCap(kj::mv(defaultCap)) {}
+
+    capnp::Capability::Client restore(capnp::AnyPointer::Reader ref) override {
+      // TODO(soon):  Make it possible to export a default capability on two-party connections.
+      //   For now we use a null ref as a hack, but this is questionable because if guessable
+      //   SturdyRefs exist then you can't let just any component of your system request arbitrary
+      //   SturdyRefs.
+      if (ref.isNull()) {
+        return defaultCap;
+      }
+
+      // TODO(someday):  Implement level 2 RPC?
+      KJ_FAIL_ASSERT("SturdyRefs not implemented.");
+    }
+
+  private:
+    capnp::Capability::Client defaultCap;
+  };
+
+  kj::MainBuilder::Validity run() {
+    pid_t child;
+    KJ_SYSCALL(child = fork());
+    if (child == 0) {
+      // We're in the child.
+      close(3);  // Close Cap'n Proto socket to avoid confusion.
+
+      char* argv[command.size() + 1];
+      for (uint i: kj::indices(command)) {
+        argv[i] = const_cast<char*>(command[i].cStr());
+      }
+      argv[command.size()] = nullptr;
+
+      char** argvp = argv;  // work-around Clang not liking lambda + vararray
+
+      KJ_SYSCALL(execv(argvp[0], argvp), argvp[0]);
+      KJ_UNREACHABLE;
+    } else {
+      // We're in the parent.
+
+      auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
+      capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
+      Restorer restorer(kj::heap<UiViewImpl>(*address));
+      auto rpcSystem = capnp::makeRpcServer(network, restorer);
+
+      // Get the SandstormApi by restoring a null SturdyRef.
+      capnp::MallocMessageBuilder message;
+      capnp::rpc::SturdyRef::Builder ref = message.getRoot<capnp::rpc::SturdyRef>();
+      auto hostId = ref.getHostId().initAs<capnp::rpc::twoparty::SturdyRefHostId>();
+      hostId.setSide(capnp::rpc::twoparty::Side::SERVER);
+      SandstormApi::Client api = rpcSystem.restore(
+          hostId, ref.getObjectId()).castAs<SandstormApi>();
+
+      // TODO(soon):  Exit when child exits.  (Signal handler?)
+      kj::NEVER_DONE.wait(ioContext.waitScope);
+    }
+  }
+
+private:
+  kj::ProcessContext& context;
+  kj::AsyncIoContext ioContext;
+  kj::Own<kj::NetworkAddress> address;
+  kj::Vector<kj::String> command;
+};
+
+}  // namespace sandstorm
+
+KJ_MAIN(sandstorm::LegacyBridgeMain)

@@ -39,6 +39,7 @@
 #include <unordered_map>
 #include <inttypes.h>
 #include <set>
+#include <stdlib.h>
 
 #include <typeinfo>
 #include <typeindex>
@@ -1161,7 +1162,9 @@ capnp::Orphan<capnp::DynamicValue> orphanFromJs(
       break;
     }
     case capnp::schema::Type::STRUCT: {
-      if (js->IsObject()) {
+      KJ_IF_MAYBE(reader, unwrapReader(js)) {
+        return orphanage.newOrphanCopy(*reader);
+      } else if (js->IsObject()) {
         auto schema = field.getContainingStruct().getDependency(
             type.getStruct().getTypeId()).asStruct();
         auto orphan = orphanage.newOrphan(schema);
@@ -1172,13 +1175,34 @@ capnp::Orphan<capnp::DynamicValue> orphanFromJs(
       }
     }
     case capnp::schema::Type::INTERFACE:
-      KJ_IF_MAYBE(cap, Wrapper::tryUnwrap<capnp::DynamicCapability::Client>(js)) {
+      if (js->IsNull()) {
+        auto cap = capnp::Capability::Client(nullptr)
+            .castAs<capnp::DynamicCapability>(field.getContainingStruct().getDependency(
+                type.getInterface().getTypeId()).asInterface());
+        return orphanage.newOrphanCopy(cap);
+      } else KJ_IF_MAYBE(cap, Wrapper::tryUnwrap<capnp::DynamicCapability::Client>(js)) {
         return orphanage.newOrphanCopy(*cap);
       }
       break;
     case capnp::schema::Type::ANY_POINTER:
-      // TODO(soon):  Support AnyPointer.  Maybe allow setting to a Builder or Reader?  And/or have
-      //   a way to specify a (schema, value) pair?
+      KJ_IF_MAYBE(reader, unwrapReader(js)) {
+        return orphanage.newOrphanCopy(*reader);
+      } else KJ_IF_MAYBE(buffer, unwrapBuffer(js)) {
+        kj::Array<capnp::word> scratch;
+        kj::ArrayPtr<const capnp::word> words;
+        if (reinterpret_cast<uintptr_t>(buffer->begin()) % sizeof(capnp::word) != 0) {
+          // Array is not aligned.  We have to make a copy.  :(
+          scratch = kj::heapArray<capnp::word>(buffer->size() / sizeof(capnp::word));
+          memcpy(scratch.begin(), buffer->begin(), buffer->size());
+          words = scratch;
+        } else {
+          // Yay, array is aligned.
+          words = kj::arrayPtr(reinterpret_cast<const capnp::word*>(buffer->begin()),
+                               buffer->size() / sizeof(capnp::word));
+        }
+        capnp::FlatArrayMessageReader reader(words);
+        return orphanage.newOrphanCopy(reader.getRoot<capnp::AnyPointer>());
+      }
       break;
   }
 
@@ -1493,6 +1517,14 @@ public:
     return rpcSystem.restore(hostId, root.getObjectId());
   }
 
+  capnp::Capability::Client importDefault() {
+    capnp::MallocMessageBuilder builder;
+    auto root = builder.getRoot<capnp::rpc::SturdyRef>();
+    auto hostId = root.getHostId().initAs<capnp::rpc::twoparty::SturdyRefHostId>();
+    hostId.setSide(capnp::rpc::twoparty::Side::SERVER);
+    return rpcSystem.restore(hostId, root.getObjectId());
+  }
+
   kj::Own<RpcConnection> addRef() {
     return kj::addRef(*this);
   }
@@ -1556,6 +1588,7 @@ v8::Handle<v8::Value> restore(const v8::Arguments& args) {
 
   KJV8_UNWRAP(CapnpContext, context, args.Data());
   KJV8_UNWRAP(ConnenctionWrapper, connectionWrapper, args[0]);
+  bool isNullRef = args[1]->IsNull();
   auto ref = toKjString(args[1]);  // TODO(soon):  Allow struct reader.
   KJV8_UNWRAP(capnp::Schema, schema, args[2]);
 
@@ -1567,8 +1600,8 @@ v8::Handle<v8::Value> restore(const v8::Arguments& args) {
     }
 
     capnp::Capability::Client client = connectionWrapper.promise.addBranch()
-        .then(kj::mvCapture(ref, [](kj::String&& ref, kj::Own<RpcConnection>&& connection) {
-      return connection->import(ref);
+        .then(kj::mvCapture(ref,[isNullRef](kj::String&& ref, kj::Own<RpcConnection>&& connection) {
+      return isNullRef ? connection->importDefault() : connection->import(ref);
     }));
 
     return context.wrapper.wrapCopy(client.castAs<capnp::DynamicCapability>(schema.asInterface()));

@@ -156,7 +156,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
 
         statusCode @10 :SuccessCode;
 
-        encoding @2 :Text = "identity";  # Content-Encoding header.
+        encoding @2 :Text;  # Content-Encoding header (optional).
         language @3 :Text;  # Content-Language header (optional).
         mimeType @4 :Text;  # Content-Type header.
 

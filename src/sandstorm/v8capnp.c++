@@ -177,7 +177,7 @@ public:
   }
 
   ~OwnedFileDescriptor() noexcept(false) {
-    if (error == nullptr) {
+    if (!stopped) {
       UV_CALL(uv_poll_stop(&uvPoller), uvLoop);
     }
 
@@ -191,9 +191,7 @@ public:
   }
 
   kj::Promise<void> onReadable() {
-    KJ_IF_MAYBE(e, error) {
-      return kj::cp(*e);
-    }
+    if (stopped) return kj::READY_NOW;
 
     KJ_REQUIRE(readable == nullptr, "Must wait for previous event to complete.");
 
@@ -207,9 +205,7 @@ public:
   }
 
   kj::Promise<void> onWritable() {
-    KJ_IF_MAYBE(e, error) {
-      return kj::cp(*e);
-    }
+    if (stopped) return kj::READY_NOW;
 
     KJ_REQUIRE(writable == nullptr, "Must wait for previous event to complete.");
 
@@ -230,7 +226,7 @@ private:
   uint flags;
   kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>> readable;
   kj::Maybe<kj::Own<kj::PromiseFulfiller<void>>> writable;
-  kj::Maybe<kj::Exception> error;
+  bool stopped = false;
   uv_poll_t uvPoller;
 
   static void pollCallback(uv_poll_t* handle, int status, int events) {
@@ -239,20 +235,22 @@ private:
 
   void pollDone(int status, int events) {
     if (status != 0) {
-      // Error.  Fail both events.
-      kj::Exception exception(
-            kj::Exception::Nature::OS_ERROR, kj::Exception::Durability::PERMANENT,
-            __FILE__, __LINE__, kj::heapString(uv_strerror(uv_last_error(uvLoop))));
+      // Error.  libuv produces a non-zero status if polling produced POLLERR.  The error code
+      // reported by libuv is always EBADF, even if the file descriptor is perfectly legitimate but
+      // has simply become disconnected.  Instead of throwing an exception, we'd rather report
+      // that the fd is now readable/writable and let the caller discover the error when they
+      // actually attempt to read/write.
       KJ_IF_MAYBE(r, readable) {
-        r->get()->reject(kj::cp(exception));
+        r->get()->fulfill();
         readable = nullptr;
       }
       KJ_IF_MAYBE(w, writable) {
-        w->get()->reject(kj::cp(exception));
+        w->get()->fulfill();
         writable = nullptr;
       }
-      error = kj::mv(exception);
-      UV_CALL(uv_poll_stop(&uvPoller), uvLoop);
+
+      // libuv automatically performs uv_poll_stop() before calling poll_cb with an error status.
+      stopped = true;
 
     } else {
       // Fire the events.
@@ -317,7 +315,7 @@ public:
       size -= n;
     }
 
-    return onReadable().then([=]() {
+    return onWritable().then([=]() {
       return write(buffer, size);
     });
   }

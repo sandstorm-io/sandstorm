@@ -167,9 +167,13 @@ public:
 
   void parse(kj::ArrayPtr<const char> data) {
     size_t n = http_parser_execute(this, &settings, data.begin(), data.size());
-    if (n != data.size() || http_parser_execute(this, &settings, nullptr, 0) != 0) {
-      KJ_FAIL_ASSERT("Failed to parse HTTP response from sandboxed app.");
+    if (n != data.size() || http_parser_execute(this, &settings, nullptr, 0) != 0 ||
+        HTTP_PARSER_ERRNO(this) != HPE_OK) {
+      const char* error = http_errno_description(HTTP_PARSER_ERRNO(this));
+      KJ_FAIL_ASSERT("Failed to parse HTTP response from sandboxed app.", error);
     }
+
+    KJ_ASSERT(status_code >= 100, (int)status_code);
   }
 
   void build(WebSession::Response::Builder builder) {
@@ -181,6 +185,8 @@ public:
     } else if (status_code / 100 == 4) {
       statusInfo.type = WebSession::Response::CLIENT_ERROR;
       statusInfo.clientErrorCode = WebSession::Response::ClientErrorCode::BAD_REQUEST;
+    } else if (status_code / 100 == 5) {
+      statusInfo.type = WebSession::Response::SERVER_ERROR;
     } else {
       KJ_FAIL_REQUIRE(
           "Application used unsupported HTTP status code.  Status codes must be whitelisted "
@@ -229,8 +235,8 @@ public:
         auto redirect = builder.initRedirect();
         redirect.setIsPermanent(statusInfo.redirect.isPermanent);
         redirect.setSwitchToGet(statusInfo.redirect.switchToGet);
-        redirect.setLocation(KJ_ASSERT_NONNULL(findHeader("Location"),
-            "Application returned redirect response missing Location header."));
+        redirect.setLocation(KJ_ASSERT_NONNULL(findHeader("location"),
+            "Application returned redirect response missing Location header.", (int)status_code));
         break;
       }
       case WebSession::Response::CLIENT_ERROR: {
@@ -298,7 +304,7 @@ private:
       // TODO(cleanup):  Clean up.
       bool isFirst = true;
       Cookie cookie;
-      for (auto& part: split(value, ';')) {
+      for (auto part: split(value, ';')) {
         if (isFirst) {
           isFirst = false;
           cookie.name = kj::heapString(trim(KJ_ASSERT_NONNULL(splitFirst(part, '='),
@@ -337,7 +343,7 @@ private:
             //     domain.
           }
         } else {
-          auto prop = kj::heapString(trim(*name));
+          auto prop = kj::heapString(trim(part));
           toLower(prop);
           if (prop == "httponly") {
             cookie.httpOnly = true;
@@ -347,6 +353,8 @@ private:
           }
         }
       }
+
+      cookies.add(kj::mv(cookie));
 
     } else {
       kj::StringPtr name = lastHeaderName;
@@ -387,7 +395,6 @@ kj::Promise<kj::Vector<char>> readAll(kj::AsyncIoStream& stream, kj::Vector<char
   return promise.then(
       [&stream, offset, expected, KJ_MVCAP(buffer)](size_t actual) mutable
       -> kj::Promise<kj::Vector<char>> {
-    KJ_DBG(expected, actual);
     if (actual < expected) {
       // Got less than expected; must be EOF.
       buffer.resize(offset + actual);
@@ -419,7 +426,6 @@ public:
   kj::Promise<void> get(GetContext context) override {
     GetParams::Reader params = context.getParams();
     kj::String httpRequest = makeHeaders("GET", params.getPath(), params.getContext());
-    KJ_DBG(httpRequest);
     return sendRequest(toBytes(httpRequest), context);
   }
 
@@ -493,15 +499,16 @@ private:
       return streamRef.write(httpRequestRef.begin(), httpRequestRef.size())
           .attach(kj::mv(httpRequest))
           .then([KJ_MVCAP(stream)]() mutable {
-        stream->shutdownWrite();
+        // Note:  Do not do stream->shutdownWrite() as some HTTP servers will decide to close the
+        // socket immediately on EOF, even if they have not actually responded to previous requests
+        // yet.
         return readAll(kj::mv(stream));
       });
     }).then([context](kj::Vector<char>&& buffer) mutable {
-      KJ_DBG(buffer);
+      KJ_ASSERT(buffer.size() > 0, "Sandboxed server returned no data.");
       HttpParser parser;
       parser.parse(buffer);
       parser.build(context.getResults());
-      KJ_DBG(context.getResults());
     });
   }
 };

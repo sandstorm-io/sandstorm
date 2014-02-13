@@ -19,6 +19,39 @@ if (Meteor.isServer) {
   var WebSession = Capnp.import("sandstorm/web-session.capnp").WebSession;
   var capnpConnection;  // prevent GC
 
+  function parseCookies(header) {
+    var result = [];
+    var reqCookies = header.split(";");
+    for (var i in reqCookies) {
+      var reqCookie = reqCookies[i];
+      var equalsPos = reqCookie.indexOf("=");
+      if (equalsPos == -1) {
+        result.push({key: reqCookie.trim(), value: ""});
+      } else {
+        result.push({key: reqCookie.slice(0, equalsPos).trim(),
+                     value: reqCookie.slice(equalsPos + 1)});
+      }
+    }
+    return result;
+  }
+
+  function makeSetCookieHeader(cookie) {
+    var result = [cookie.name, "=", cookie.value];
+
+    if ("absolute" in cookie.expires) {
+      result.push("; Expires=");
+      result.push(new Date(cookie.expires.absolute * 1000).toUTCString());
+    } else if ("relative" in cookie.expires) {
+      result.push("; Max-Age=" + cookie.expires.relative);
+    }
+
+    if (cookie.httpOnly) {
+      result.push("; HttpOnly");
+    }
+
+    return result.join("");
+  }
+
   Meteor.startup(function () {
     // code to run on server at startup
     capnpConnection = Capnp.connect("127.0.0.1:3004");
@@ -53,7 +86,7 @@ if (Meteor.isServer) {
 
     var params = Capnp.serialize(WebSession.Params, {
       basePath: "http://127.0.0.1:3004",
-      userAgent: "DummyUserAgent/1.0",
+      userAgent: "DummyUserAgent/1.0",  // TODO(soon):  Send real user agent.
       acceptableLanguages: [ "en-US", "en" ]
     });
 
@@ -66,10 +99,29 @@ if (Meteor.isServer) {
     // app should actually be in a unique throw-away origin.
     var http = Npm.require("http");
     var server = http.createServer(function (request, response) {
-      console.log("request");
-      session.get(request.url.slice(1), {})
+      var context = {};
+      if ("cookie" in request.headers) {
+        context.cookies = parseCookies(request.headers.cookie);
+      }
+
+      var promise;
+      if (request.method === "GET") {
+        promise = session.get(request.url.slice(1), context);
+      } else if (request.method === "POST") {
+        promise = session.post(request.url.slice(1), {
+            mimeType: request.headers["mime-type"],
+            content: request.read()  // TODO(now):  Properly wait for EOF
+          }, context);
+      } else {
+        throw new Error("Sandstorm only supports GET and POST requests.");
+      }
+
+      session.get(request.url.slice(1), context)
           .then(function (rpcResponse) {
-        // TODO(now):  Interpret cookies.
+        if (rpcResponse.setCookies.length > 0) {
+          response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
+        }
+
         if ("content" in rpcResponse) {
           var content = rpcResponse.content;
           var code = successCodes[content.statusCode];
@@ -77,30 +129,27 @@ if (Meteor.isServer) {
             throw new Error("Unknown status code: ", content.statusCode);
           }
 
-          var headers = {
-            "Content-Type": content.mimeType,
-          };
           if (content.encoding) {
-            headers["Content-Encoding"] = content.encoding;
+            response.setHeader("Content-Encoding", content.encoding);
           }
           if (content.language) {
-            headers["Content-Language"] = content.language;
+            response.setHeader("Content-Language", content.language);
           }
           if ("bytes" in content.body) {
-            headers["Content-Length"] = content.body.bytes.length;
+            response.setHeader("Content-Length", content.body.bytes.length);
           } else {
             // TODO(soon):  Implement streaming.
             throw new Error("Streaming not implemented.");
           }
 
-          response.writeHead(code.id, code.title, headers);
+          response.writeHead(code.id, code.title, { "Content-Type": content.mimeType });
 
           if ("bytes" in content.body) {
             response.end(content.body.bytes);
           }
         } else if ("redirect" in rpcResponse) {
           var redirect = rpcResponse.redirect;
-          var code = redirectHeaders[redirect.switchToGet * 2 + redirect.isPermanent];
+          var code = redirectCodes[redirect.switchToGet * 2 + redirect.isPermanent];
           response.writeHead(code.id, code.title, {
             "Location": redirect.location
           });

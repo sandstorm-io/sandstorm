@@ -19,6 +19,32 @@ if (Meteor.isServer) {
   var WebSession = Capnp.import("sandstorm/web-session.capnp").WebSession;
   var capnpConnection;  // prevent GC
 
+  var successCodes = {
+    ok:       { id: 200, title: "OK" },
+    created:  { id: 201, title: "Created" },
+    accepted: { id: 202, title: "Accepted" }
+  };
+  var redirectCodes = [
+    // Indexed by switchToGet * 2 + isPermanent
+    { id: 303, title: "See Other" },
+    { id: 301, title: "Moved Permanently" },
+    { id: 307, title: "Temporary Redirect" },
+    { id: 308, title: "Permanent Redirect" }
+  ];
+  var errorCodes = {
+    badRequest:            { id: 400, title: "Bad Request" },
+    forbidden:             { id: 403, title: "Forbidden" },
+    notFound:              { id: 404, title: "Not Found" },
+    methodNotAllowed:      { id: 405, title: "Method Not Allowed" },
+    notAcceptable:         { id: 406, title: "Not Acceptable" },
+    conflict:              { id: 409, title: "Conflict" },
+    gone:                  { id: 410, title: "Gone" },
+    requestEntityTooLarge: { id: 413, title: "Request Entity Too Large" },
+    requestUriTooLong:     { id: 414, title: "Request-URI Too Long" },
+    unsupportedMediaType:  { id: 415, title: "Unsupported Media Type" },
+    imATeapot:             { id: 418, title: "I'm a teapot" },
+  };
+
   function parseCookies(header) {
     var result = [];
     var reqCookies = header.split(";");
@@ -52,53 +78,51 @@ if (Meteor.isServer) {
     return result.join("");
   }
 
+  function readAll(stream, callback) {
+    var buffers = [];
+    var len = 0;
+
+    stream.on("data", function (buf) {
+      buffers.push(buf);
+      len += buf.lenth;
+    });
+    stream.on("end", function () {
+      callback(Buffer.concat(buffers), len);
+    });
+  }
+
   Meteor.startup(function () {
     // code to run on server at startup
-    capnpConnection = Capnp.connect("127.0.0.1:3004");
-    var ui = capnpConnection.restore(null, Grain.UiView);
 
     // TODO(cleanup):  Auto-generate based on annotations in web-session.capnp.
-    var successCodes = {
-      ok:       { id: 200, title: "OK" },
-      created:  { id: 201, title: "Created" },
-      accepted: { id: 202, title: "Accepted" }
-    };
-    var redirectCodes = [
-      // Indexed by switchToGet * 2 + isPermanent
-      { id: 303, title: "See Other" },
-      { id: 301, title: "Moved Permanently" },
-      { id: 307, title: "Temporary Redirect" },
-      { id: 308, title: "Permanent Redirect" }
-    ];
-    var errorCodes = {
-      badRequest:            { id: 400, title: "Bad Request" },
-      forbidden:             { id: 403, title: "Forbidden" },
-      notFound:              { id: 404, title: "Not Found" },
-      methodNotAllowed:      { id: 405, title: "Method Not Allowed" },
-      notAcceptable:         { id: 406, title: "Not Acceptable" },
-      conflict:              { id: 409, title: "Conflict" },
-      gone:                  { id: 410, title: "Gone" },
-      requestEntityTooLarge: { id: 413, title: "Request Entity Too Large" },
-      requestUriTooLong:     { id: 414, title: "Request-URI Too Long" },
-      unsupportedMediaType:  { id: 415, title: "Unsupported Media Type" },
-      imATeapot:             { id: 418, title: "I'm a teapot" },
-    };
 
-    var params = Capnp.serialize(WebSession.Params, {
-      basePath: "http://127.0.0.1:3004",
-      userAgent: "DummyUserAgent/1.0",  // TODO(soon):  Send real user agent.
-      acceptableLanguages: [ "en-US", "en" ]
-    });
+    var session = null;
 
-    var session = ui.newSession({displayName: {defaultText: "User"}}, null,
-                                "0xa50711a14d35a8ce", params).session.castAs(WebSession);
+    function startSession(request) {
+      // TODO(soon):  Open a new session for each connected client, probably via the Meteor session
+      //   manager.  They should all use the same connection, though.
 
-    // Set up a proxy on an alternate port from which we'll serve app content.
-    // The main reason for using a separate port is so that apps are in a different
-    // origin from the shell.  We additionally enable HTML sandboxing so that each
-    // app should actually be in a unique throw-away origin.
-    var http = Npm.require("http");
-    var server = http.createServer(function (request, response) {
+      capnpConnection = Capnp.connect("127.0.0.1:3004");
+      var ui = capnpConnection.restore(null, Grain.UiView);
+
+      var params = Capnp.serialize(WebSession.Params, {
+        basePath: "http://127.0.0.1:3004",
+        userAgent: "user-agent" in request.headers
+            ? request.headers["user-agent"]
+            : "UnknownAgent/0.0",
+        acceptableLanguages: "accept-language" in request.headers
+            ? request.headers["accept-language"].split(",").map(function (s) { return s.trim(); })
+            : [ "en-US", "en" ]
+      });
+      session = ui.newSession({displayName: {defaultText: "User"}}, null,
+                              "0xa50711a14d35a8ce", params).session.castAs(WebSession);
+    }
+
+    function handleRequest(request, data, response, retryCount) {
+      if (session === null) {
+        startSession(request);
+      }
+
       var context = {};
       if ("cookie" in request.headers) {
         context.cookies = parseCookies(request.headers.cookie);
@@ -110,14 +134,13 @@ if (Meteor.isServer) {
       } else if (request.method === "POST") {
         promise = session.post(request.url.slice(1), {
             mimeType: request.headers["mime-type"],
-            content: request.read()  // TODO(now):  Properly wait for EOF
+            content: data
           }, context);
       } else {
         throw new Error("Sandstorm only supports GET and POST requests.");
       }
 
-      session.get(request.url.slice(1), context)
-          .then(function (rpcResponse) {
+      promise.then(function (rpcResponse) {
         if (rpcResponse.setCookies.length > 0) {
           response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
         }
@@ -175,12 +198,33 @@ if (Meteor.isServer) {
           throw new Error("Unknown HTTP response type:\n" + JSON.stringify(rpcResponse));
         }
       }).catch(function (error) {
-        var body = error.toString();
-        response.writeHead(500, "Internal Server Error", {
-          "Content-Length": body.length,
-          "Content-Type": "text/plain"
-        });
-        response.end(body);
+        if ("nature" in error && error.nature === "networkFailure" && retryCount < 1) {
+          // Reconnect.
+          session = null;
+          handleRequest(request, data, response, retryCount + 1);
+          console.log(session);
+          return;
+        } else {
+          var body = error.toString() + "\n" +
+              "location: " + (error.cppFile || "(unknown)") + ":" + (error.line || "??") + "\n" +
+              "type: " + (error.durability || "") + " " + (error.nature || "(unknown)");
+          response.writeHead(500, "Internal Server Error", {
+            "Content-Length": body.length,
+            "Content-Type": "text/plain"
+          });
+          response.end(body);
+        }
+      });
+    }
+
+    // Set up a proxy on an alternate port from which we'll serve app content.
+    // The main reason for using a separate port is so that apps are in a different
+    // origin from the shell.  We additionally enable HTML sandboxing so that each
+    // app should actually be in a unique throw-away origin.
+    var http = Npm.require("http");
+    var server = http.createServer(function (request, response) {
+      readAll(request, function (data) {
+        handleRequest(request, data, response, 0);
       });
     });
 

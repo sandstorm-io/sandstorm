@@ -167,8 +167,7 @@ public:
 
   void parse(kj::ArrayPtr<const char> data) {
     size_t n = http_parser_execute(this, &settings, data.begin(), data.size());
-    if (n != data.size() || http_parser_execute(this, &settings, nullptr, 0) != 0 ||
-        HTTP_PARSER_ERRNO(this) != HPE_OK) {
+    if (n != data.size() || HTTP_PARSER_ERRNO(this) != HPE_OK) {
       const char* error = http_errno_description(HTTP_PARSER_ERRNO(this));
       KJ_FAIL_ASSERT("Failed to parse HTTP response from sandboxed app.", error);
     }
@@ -177,6 +176,13 @@ public:
   }
 
   void build(WebSession::Response::Builder builder) {
+    // Let the parser know about EOF.
+    if (http_parser_execute(this, &settings, nullptr, 0) != 0 ||
+        HTTP_PARSER_ERRNO(this) != HPE_OK) {
+      const char* error = http_errno_description(HTTP_PARSER_ERRNO(this));
+      KJ_FAIL_ASSERT("Failed to parse HTTP response from sandboxed app.", error);
+    }
+
     KJ_ASSERT(!upgrade,
         "Sandboxed app attempted to upgrade protocol when client did not request this.");
 
@@ -261,7 +267,8 @@ public:
     // TODO(soon):  If the app returned a normal response without upgrading, we should forward that
     //   through, as it's perfectly valid HTTP.  The WebSession interface currently does not
     //   support this.
-    KJ_ASSERT(upgrade && status_code == 101, "Sandboxed app does not support WebSocket.");
+    KJ_ASSERT(status_code == 101, "Sandboxed app does not support WebSocket.",
+              (int)upgrade, (int)status_code, statusString);
 
     KJ_IF_MAYBE(protocol, findHeader("sec-websocket-protocol")) {
       auto parts = split(*protocol, ',');
@@ -471,20 +478,16 @@ kj::Promise<ResponseHeaders> readResponseHeaders(
   size_t offset = buffer.size();
   buffer.resize(kj::max(offset * 2, 4096));
   size_t expected = buffer.size() - offset;
-  auto promise = stream.tryRead(buffer.begin() + offset, expected, expected);
+  auto promise = stream.tryRead(buffer.begin() + offset, 1, expected);
   return promise.then(
       [&stream, offset, expected, KJ_MVCAP(buffer)](size_t actual) mutable
       -> kj::Promise<ResponseHeaders> {
-    KJ_DBG(actual);
-
     if (actual < expected) {
       buffer.resize(offset + actual);
     }
 
-    KJ_DBG(kj::heapString(buffer.asPtr()));
     KJ_IF_MAYBE(result, trySeparateHeaders(buffer)) {
       // Done with headers.
-      KJ_DBG("done!");
       return kj::mv(*result);
     }
 
@@ -514,7 +517,7 @@ public:
 
   void pump() {
     // Repeatedly read from serverStream and write to clientStream.
-    tasks.add(serverStream->tryRead(buffer, sizeof(buffer), sizeof(buffer))
+    tasks.add(serverStream->tryRead(buffer, 1, sizeof(buffer))
         .then([this](size_t amount) {
       if (amount > 0) {
         sendData(kj::arrayPtr(buffer, amount));
@@ -613,8 +616,6 @@ public:
     lines.add(kj::str("Sec-WebSocket-Version: 13"));
 
     addCommonHeaders(lines, params.getContext());
-
-    KJ_DBG("WebSocket!", kj::strArray(lines, "\r\n"));
 
     auto httpRequest = toBytes(kj::strArray(lines, "\r\n"));
     WebSession::WebSocketStream::Client clientStream = params.getClientStream();

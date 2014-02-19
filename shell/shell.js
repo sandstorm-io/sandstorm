@@ -93,20 +93,19 @@ if (Meteor.isServer) {
   }
 
   function WebSocketReceiver(socket) {
-    queue = [];
+    var queue = [];
     this.go = function () {
-      var queue = this._queue;
       queue = null;
       for (var i in queue) {
         socket.write(queue[i]);
       }
     };
-    this.sendBytes = function (wsMessage) {
+    this.sendBytes = function (message) {
       // TODO(someday):  Flow control of some sort?
       if (queue === null) {
-        socket.write(wsMessage.message);
+        socket.write(message);
       } else {
-        this._queue.push(wsMessage.message);
+        queue.push(message);
       }
     };
     // TODO(soon):  Shutdown write when dropped.  Requires support for "reactToLostClient()".
@@ -232,7 +231,6 @@ if (Meteor.isServer) {
           // Reconnect.
           session = null;
           handleRequest(request, data, response, retryCount + 1);
-          console.log(session);
           return;
         } else {
           var body = error.toString() + "\n" +
@@ -283,8 +281,6 @@ if (Meteor.isServer) {
 
       var receiver = new WebSocketReceiver(socket);
 
-      console.log(session);
-
       var promise = session.openWebSocket(request.url.slice(1), context, protocols, receiver);
 
       if (head.length > 0) {
@@ -298,7 +294,7 @@ if (Meteor.isServer) {
             "Upgrade: websocket",
             "Connection: Upgrade",
             "Sec-WebSocket-Accept: " + acceptKey];
-        if (response.protocol.length > 0) {
+        if (response.protocol && response.protocol.length > 0) {
           headers.push("Sec-WebSocket-Protocol: " + response.protocol.join(", "));
         }
         headers.push("");
@@ -307,6 +303,7 @@ if (Meteor.isServer) {
         socket.write(headers.join("\r\n"));
         receiver.go();
       }).catch (function (error) {
+        // TODO(now):  Check for network error and retry like with regular requests.
         console.error("WebSocket setup failed:", error);
         socket.close();
       });

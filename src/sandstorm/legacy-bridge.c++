@@ -177,6 +177,9 @@ public:
   }
 
   void build(WebSession::Response::Builder builder) {
+    KJ_ASSERT(!upgrade,
+        "Sandboxed app attempted to upgrade protocol when client did not request this.");
+
     auto iter = HTTP_STATUS_CODES.find(status_code);
     HttpStatusInfo statusInfo;
 
@@ -252,6 +255,25 @@ public:
         break;
       }
     }
+  }
+
+  void buildForWebSocket(WebSession::OpenWebSocketResults::Builder builder) {
+    // TODO(soon):  If the app returned a normal response without upgrading, we should forward that
+    //   through, as it's perfectly valid HTTP.  The WebSession interface currently does not
+    //   support this.
+    KJ_ASSERT(upgrade && status_code == 101, "Sandboxed app does not support WebSocket.");
+
+    KJ_IF_MAYBE(protocol, findHeader("sec-websocket-protocol")) {
+      auto parts = split(*protocol, ',');
+      auto list = builder.initProtocol(parts.size());
+      for (auto i: kj::indices(parts)) {
+        auto trimmed = trim(parts[i]);
+        memcpy(list.init(i, trimmed.size()).begin(), trimmed.begin(), trimmed.size());
+      }
+    }
+
+    // TODO(soon):  Should we do more validation here, like checking the exact value of the Upgrade
+    //   header or Sec-WebSocket-Accept?
   }
 
 private:
@@ -411,6 +433,140 @@ kj::Promise<kj::Vector<char>> readAll(kj::Own<kj::AsyncIoStream>&& stream) {
   return readAll(streamRef, kj::Vector<char>()).attach(kj::mv(stream));
 }
 
+struct ResponseHeaders {
+  kj::Vector<char> headers;
+  kj::Array<byte> firstData;
+};
+
+kj::Maybe<ResponseHeaders> trySeparateHeaders(kj::Vector<char>& data) {
+  // Look for the end of the headers.  If found, consume `data` and return ResponseHeaders,
+  // otherwise leave `data` as-is and return nullptr.
+
+  char prev1 = '\0';
+  char prev2 = '\0';
+
+  for (size_t i: kj::indices(data)) {
+    char c = data[i];
+    if (c == '\n') {
+      if (prev1 == '\n' || (prev1 == '\r' && prev2 == '\n')) {
+        auto postHeaders = data.asPtr().slice(i + 1, data.size());
+        ResponseHeaders result;
+        result.firstData = kj::heapArray<byte>(reinterpret_cast<byte*>(postHeaders.begin()),
+                                               postHeaders.size());
+        data.resize(i);
+        result.headers = kj::mv(data);
+        return kj::mv(result);
+      }
+    }
+
+    prev2 = prev1;
+    prev1 = c;
+  }
+
+  return nullptr;
+}
+
+kj::Promise<ResponseHeaders> readResponseHeaders(
+    kj::AsyncIoStream& stream, kj::Vector<char>&& buffer) {
+  size_t offset = buffer.size();
+  buffer.resize(kj::max(offset * 2, 4096));
+  size_t expected = buffer.size() - offset;
+  auto promise = stream.tryRead(buffer.begin() + offset, expected, expected);
+  return promise.then(
+      [&stream, offset, expected, KJ_MVCAP(buffer)](size_t actual) mutable
+      -> kj::Promise<ResponseHeaders> {
+    KJ_DBG(actual);
+
+    if (actual < expected) {
+      buffer.resize(offset + actual);
+    }
+
+    KJ_DBG(kj::heapString(buffer.asPtr()));
+    KJ_IF_MAYBE(result, trySeparateHeaders(buffer)) {
+      // Done with headers.
+      KJ_DBG("done!");
+      return kj::mv(*result);
+    }
+
+    if (actual < expected) {
+      // Got less than expected; must be EOF.
+      return ResponseHeaders { kj::mv(buffer), nullptr };
+    } else {
+      // Sill going; read more.
+      return readResponseHeaders(stream, kj::mv(buffer));
+    }
+  });
+}
+
+kj::Promise<ResponseHeaders> readResponseHeaders(kj::AsyncIoStream& stream) {
+  return readResponseHeaders(stream, kj::Vector<char>());
+}
+
+class WebSocketPump final: public WebSession::WebSocketStream::Server,
+                           private kj::TaskSet::ErrorHandler {
+public:
+  WebSocketPump(kj::Own<kj::AsyncIoStream> serverStream,
+                WebSession::WebSocketStream::Client clientStream)
+      : serverStream(kj::mv(serverStream)),
+        clientStream(kj::mv(clientStream)),
+        upstreamOp(kj::READY_NOW),
+        tasks(*this) {}
+
+  void pump() {
+    // Repeatedly read from serverStream and write to clientStream.
+    tasks.add(serverStream->tryRead(buffer, sizeof(buffer), sizeof(buffer))
+        .then([this](size_t amount) {
+      if (amount > 0) {
+        sendData(kj::arrayPtr(buffer, amount));
+        pump();
+      } else {
+        // EOF.
+        clientStream = nullptr;
+      }
+    }));
+  }
+
+  void sendData(kj::ArrayPtr<byte> data) {
+    // Write the given bytes to clientStream.
+    auto request = clientStream.sendBytesRequest(
+        capnp::MessageSize { data.size() / sizeof(capnp::word) + 8, 0 });
+    request.setMessage(data);
+    tasks.add(request.send().then([](auto response) {}));
+  }
+
+protected:
+  kj::Promise<void> sendBytes(SendBytesContext context) override {
+    // Received bytes from the client.  Write them to serverStream.
+    auto forked = upstreamOp.then([context,this]() mutable {
+      auto message = context.getParams().getMessage();
+      return serverStream->write(message.begin(), message.size());
+    }).fork();
+    upstreamOp = forked.addBranch();
+    return forked.addBranch();
+  }
+
+private:
+  kj::Own<kj::AsyncIoStream> serverStream;
+  WebSession::WebSocketStream::Client clientStream;
+
+  kj::Promise<void> upstreamOp;
+  // The promise working on writing data to serverStream.  AsyncIoStream wants only one write() at
+  // a time, so new writes have to wait for the previous write to finish.
+
+  kj::TaskSet tasks;
+  // Pending calls to clientStream.sendBytes() and serverStream.read().
+
+  byte buffer[4096];
+
+  void taskFailed(kj::Exception&& exception) override {
+    // TODO(soon):  What do we do when a server -> client send throws?  Probably just ignore it;
+    //   WebSocket datagrams are intended to be one-way and thus the application protocol on top of
+    //   them needs to implement acks at a higher level.  If the client has disconnected, we expect
+    //   the whole pump will be destroyed shortly anyway.
+    KJ_LOG(ERROR, exception);
+  }
+};
+
 class WebSessionImpl final: public WebSession::Server {
 public:
   WebSessionImpl(kj::NetworkAddress& serverAddr,
@@ -438,6 +594,60 @@ public:
     return sendRequest(toBytes(httpRequest, content.getContent()), context);
   }
 
+  kj::Promise<void> openWebSocket(OpenWebSocketContext context) override {
+    // TODO(soon):  Use actual random Sec-WebSocket-Key?  Unclear if this has any importance when
+    //   not trying to work around broken proxies.
+
+    auto params = context.getParams();
+
+    kj::Vector<kj::String> lines(16);
+
+    lines.add(kj::str("GET /", params.getPath(), " HTTP/1.1"));
+    lines.add(kj::str("Upgrade: websocket"));
+    lines.add(kj::str("Connection: Upgrade"));
+    lines.add(kj::str("Sec-WebSocket-Key: mj9i153gxeYNlGDoKdoXOQ=="));
+    auto protocols = params.getProtocol();
+    if (protocols.size() > 0) {
+      lines.add(kj::str("Sec-WebSocket-Protocol: ", kj::strArray(params.getProtocol(), ", ")));
+    }
+    lines.add(kj::str("Sec-WebSocket-Version: 13"));
+
+    addCommonHeaders(lines, params.getContext());
+
+    KJ_DBG("WebSocket!", kj::strArray(lines, "\r\n"));
+
+    auto httpRequest = toBytes(kj::strArray(lines, "\r\n"));
+    WebSession::WebSocketStream::Client clientStream = params.getClientStream();
+
+    context.releaseParams();
+    return serverAddr.connect().then(
+        [KJ_MVCAP(httpRequest), KJ_MVCAP(clientStream), context]
+        (kj::Own<kj::AsyncIoStream>&& stream) mutable {
+      kj::ArrayPtr<const byte> httpRequestRef = httpRequest;
+      auto& streamRef = *stream;
+      return streamRef.write(httpRequestRef.begin(), httpRequestRef.size())
+          .attach(kj::mv(httpRequest))
+          .then([&streamRef]() { return readResponseHeaders(streamRef); })
+          .then([KJ_MVCAP(stream), KJ_MVCAP(clientStream), context]
+                (ResponseHeaders&& headers) mutable {
+            KJ_ASSERT(headers.headers.size() > 0, "Sandboxed server returned no data.");
+            HttpParser parser;
+            parser.parse(headers.headers);
+            auto results = context.getResults();
+            parser.buildForWebSocket(results);
+
+            auto pump = kj::heap<WebSocketPump>(kj::mv(stream), kj::mv(clientStream));
+
+            if (headers.firstData.size() > 0) {
+              pump->sendData(headers.firstData);
+            }
+
+            pump->pump();
+            results.setServerStream(kj::mv(pump));
+          });
+    });
+  }
+
 private:
   kj::NetworkAddress& serverAddr;
   SessionContext::Client context;
@@ -453,7 +663,6 @@ private:
     kj::Vector<kj::String> lines(16);
 
     lines.add(kj::str(method, " /", path, " HTTP/1.1"));
-    lines.add(kj::str("Host: sandbox"));
     lines.add(kj::str("Connection: close"));
     if (extraHeader1 != nullptr) {
       lines.add(kj::mv(extraHeader1));
@@ -464,6 +673,14 @@ private:
     lines.add(kj::str("Accept: */*"));
     lines.add(kj::str("Accept-Encoding: gzip"));
     lines.add(kj::str("Accept-Language: ", acceptLanguages));
+
+    addCommonHeaders(lines, context);
+
+    return kj::strArray(lines, "\r\n");
+  }
+
+  void addCommonHeaders(kj::Vector<kj::String>& lines, WebSession::Context::Reader context) {
+    lines.add(kj::str("Host: sandbox"));
     lines.add(kj::str("User-Agent: ", userAgent));
     lines.add(kj::str("X-Sandstorm-Username: ", userDisplayName));
     lines.add(kj::str("X-Sandstorm-Base-Path: ", basePath));
@@ -478,8 +695,6 @@ private:
 
     lines.add(kj::str(""));
     lines.add(kj::str(""));
-
-    return kj::strArray(lines, "\r\n");
   }
 
   kj::Array<byte> toBytes(kj::StringPtr text, kj::ArrayPtr<const byte> data = nullptr) {

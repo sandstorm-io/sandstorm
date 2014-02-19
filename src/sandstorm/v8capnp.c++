@@ -1857,6 +1857,10 @@ bool pipelineToJs(CapnpContext& context, capnp::DynamicStruct::Pipeline&& pipeli
   return true;
 }
 
+struct Canceler: public kj::Refcounted {
+  kj::Own<kj::PromiseFulfiller<capnp::Response<capnp::DynamicStruct>>> fulfiller;
+};
+
 v8::Handle<v8::Value> send(const v8::Arguments& args) {
   // send(request, callback, errorCallback, CapType) -> pipeline tree
   //
@@ -1884,13 +1888,17 @@ v8::Handle<v8::Value> send(const v8::Arguments& args) {
 
     auto promise = request.send();
 
-    auto canceler = kj::newPromiseAndFulfiller<capnp::Response<capnp::DynamicStruct>>();
+    auto cancelerPaf = kj::newPromiseAndFulfiller<capnp::Response<capnp::DynamicStruct>>();
 
-    v8::Handle<v8::Object> result = context.wrapper.wrapCopy(kj::mv(canceler.fulfiller));
+    auto canceler = kj::refcounted<Canceler>();
+    canceler->fulfiller = kj::mv(cancelerPaf.fulfiller);
+
+    v8::Handle<v8::Object> result = context.wrapper.wrapCopy(kj::addRef(*canceler));
 
     // Wait for results and call the callback.  Note that we can safely capture `context` by
     // reference because if the context is destroyed, the event loop will stop running.
-    promise.exclusiveJoin(kj::mv(canceler.promise))
+    promise.exclusiveJoin(kj::mv(cancelerPaf.promise))
+        .attach(kj::mv(canceler))  // Prevent cancellation from GC.
         .then(kj::mvCapture(callback,
           [&context](OwnHandle<v8::Function>&& callback,
                      capnp::Response<capnp::DynamicStruct>&& response) {
@@ -1931,11 +1939,10 @@ v8::Handle<v8::Value> cancel(const v8::Arguments& args) {
   // and errorCallback will be called with an appropriate error.  Note that `callback` could still
   // be called after cancel(), if it was already queued in the event loop at time of cancellation.
 
-  typedef kj::Own<kj::PromiseFulfiller<capnp::Response<capnp::DynamicStruct>>> Canceler;
-  KJV8_UNWRAP(Canceler, canceler, args[0]);
+  KJV8_UNWRAP(kj::Own<Canceler>, canceler, args[0]);
 
   return liftKj([&]() -> v8::Handle<v8::Value> {
-    canceler->reject(kj::Exception(
+    canceler->fulfiller->reject(kj::Exception(
         kj::Exception::Nature::OTHER,
         kj::Exception::Durability::PERMANENT,
         __FILE__, __LINE__, kj::heapString("Request canceled by caller.")));

@@ -15,6 +15,7 @@ if (Meteor.isClient) {
 if (Meteor.isServer) {
   // We don't load these until later, but prevent them fr
   var Capnp = Npm.require("sandstorm/capnp");
+  var Crypto = Npm.require("crypto");
   var Grain = Capnp.import("sandstorm/grain.capnp");
   var WebSession = Capnp.import("sandstorm/web-session.capnp").WebSession;
   var capnpConnection;  // prevent GC
@@ -88,6 +89,35 @@ if (Meteor.isServer) {
     });
     stream.on("end", function () {
       callback(Buffer.concat(buffers), len);
+    });
+  }
+
+  function WebSocketReceiver(socket) {
+    queue = [];
+    this.go = function () {
+      var queue = this._queue;
+      queue = null;
+      for (var i in queue) {
+        socket.write(queue[i]);
+      }
+    };
+    this.sendBytes = function (wsMessage) {
+      // TODO(someday):  Flow control of some sort?
+      if (queue === null) {
+        socket.write(wsMessage.message);
+      } else {
+        this._queue.push(wsMessage.message);
+      }
+    };
+    // TODO(soon):  Shutdown write when dropped.  Requires support for "reactToLostClient()".
+  }
+
+  function pumpWebSocket(socket, rpcStream) {
+    socket.on("data", function (chunk) {
+      rpcStream.sendBytes(chunk);
+    });
+    socket.on("end", function (chunk) {
+      rpcStream.close();
     });
   }
 
@@ -225,6 +255,60 @@ if (Meteor.isServer) {
     var server = http.createServer(function (request, response) {
       readAll(request, function (data) {
         handleRequest(request, data, response, 0);
+      });
+    });
+
+    server.on("upgrade", function (request, socket, head) {
+      if (session === null) {
+        startSession(request);
+      }
+
+      if (!("sec-websocket-key" in request.headers)) {
+        throw new Error("Missing Sec-WebSocket-Accept header.");
+      }
+
+      var magic = request.headers["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+      var acceptKey = Crypto.createHash("sha1").update(magic).digest("base64");
+
+      var context = {};
+      if ("cookie" in request.headers) {
+        context.cookies = parseCookies(request.headers.cookie);
+      }
+
+      var protocols = [];
+      if ("sec-websocket-protocol" in request.headers) {
+        protocols = request.headers["sec-websocket-protocol"]
+            .split(",").map(function (s) { return s.trim(); });
+      }
+
+      var receiver = new WebSocketReceiver(socket);
+
+      console.log(session);
+
+      var promise = session.openWebSocket(request.url.slice(1), context, protocols, receiver);
+
+      if (head.length > 0) {
+        promise.serverStream.sendBytes(head);
+      }
+      pumpWebSocket(socket, promise.serverStream);
+
+      promise.then(function (response) {
+        var headers = [
+            "HTTP/1.1 101 Switching Protocols",
+            "Upgrade: websocket",
+            "Connection: Upgrade",
+            "Sec-WebSocket-Accept: " + acceptKey];
+        if (response.protocol.length > 0) {
+          headers.push("Sec-WebSocket-Protocol: " + response.protocol.join(", "));
+        }
+        headers.push("");
+        headers.push("");
+
+        socket.write(headers.join("\r\n"));
+        receiver.go();
+      }).catch (function (error) {
+        console.error("WebSocket setup failed:", error);
+        socket.close();
       });
     });
 

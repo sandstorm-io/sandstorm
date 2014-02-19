@@ -127,8 +127,12 @@ function wrapLocalMethod(self, method) {
     v8capnp.releaseParams(request);
     Promise.cast(method.apply(self, params)).then(function (results) {
       if (typeof results !== "object") {
-        // Wrap single primitive return value in an array.
-        results = [results];
+        if (results === undefined) {
+          results = [];
+        } else {
+          // Wrap single primitive return value in an array.
+          results = [results];
+        }
       }
       v8capnp.fromJs(v8capnp.getResults(request), results, LocalCapWrapper);
       v8capnp.return_(request);

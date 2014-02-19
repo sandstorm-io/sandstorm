@@ -52,8 +52,8 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     # HTTP URL of the application's root directory as seen by this user, e.g.
     # "https://ioa5fiu34sm4w.example.com/i7efqesOldepw".  Never includes the trailing '/'.  Useful
     # for constructing intra-app link URLs, although in general you should try to use relative URLs
-    # whenever possible.  Note that the URL can change from session to session and from user to user,
-    # hence it is only valid for the current session.
+    # whenever possible.  Note that the URL can change from session to session and from user to
+    # user, hence it is only valid for the current session.
 
     userAgent @1 :Text;
     acceptableLanguages @2 :List(Text);
@@ -64,6 +64,13 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
 
   get @0 (path :Text, context :Context) -> Response;
   post @1 (path :Text, content :PostContent, context :Context) -> Response;
+
+  openWebSocket @2 (path :Text, context :Context,
+                    protocol :List(Text), clientStream :WebSocketStream)
+                -> (protocol :List(Text), serverStream :WebSocketStream);
+  # Open a new WebSocket.  `protocol` corresponds to the `Sec-WebSocket-Protocol` header.
+  # `clientStream` is the capability which will receive server -> client messages, while
+  # serverStream represents client -> server.
 
   struct Context {
     # Additional per-request context.
@@ -215,5 +222,14 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
 
   interface Stream {
     # TODO(someday):  Allow streaming responses.
+  }
+
+  interface WebSocketStream {
+    sendBytes @0 (message :Data);
+    # Send some bytes.  WARNING:  At present, we just send the raw bytes of the WebSocket protocol.
+    # In the future, this will be replaced with a `sendMessage()` method that sends one WebSocket
+    # datagram at a time.
+    #
+    # TODO(soon):  Send whole WebSocket datagrams.
   }
 }

@@ -107,7 +107,7 @@ function settleCaps(pipeline, final) {
 function makeMethod(cap, method) {
   return function () {
     var req = v8capnp.request(cap, method);
-    v8capnp.fromJs(req, Array.prototype.slice.call(arguments, 0));
+    v8capnp.fromJs(req, Array.prototype.slice.call(arguments, 0), LocalCapWrapper);
     var pipeline;
     var promise = new Promise(function (resolve, reject) {
       pipeline = v8capnp.send(req, resolve, reject, Capability);
@@ -121,7 +121,40 @@ function makeMethod(cap, method) {
   }
 }
 
+function wrapLocalMethod(self, method) {
+  return function (request) {
+    var params = v8capnp.toJsParams(request, Capability);
+    v8capnp.releaseParams(request);
+    Promise.cast(method.apply(self, params)).then(function (results) {
+      if (typeof results !== "object") {
+        // Wrap single primitive return value in an array.
+        results = [results];
+      }
+      v8capnp.fromJs(v8capnp.getResults(request), results, LocalCapWrapper);
+      v8capnp.return_(request);
+    }).catch(function (error) {
+      v8capnp.throw_(request, error);
+    }).catch(function (error) {
+      console.error("Cap'n Proto v8 bug when returning from incoming method call:", error);
+    });
+  }
+}
+
+function LocalCapWrapper(obj) {
+  for (var name in obj) {
+    var method = obj[name];
+    if (typeof method === "function") {
+      this[name] = wrapLocalMethod(obj, method);
+    }
+  }
+}
+
 function Capability(native, schema) {
+  // If `native` is actually a local object, wrap it as a capability.
+  if (!v8capnp.isCap(native)) {
+    native = v8capnp.newCap(schema, new LocalCapWrapper(native));
+  }
+
   v8capnp.setNative(this, native);
 
   var methods = v8capnp.methods(schema);
@@ -136,6 +169,9 @@ function Capability(native, schema) {
   this.castAs = function (newSchema) {
     return new Capability(v8capnp.castAs(native, newSchema), newSchema);
   }
+  this.schema = schema;
+
+  Object.freeze(this);
 }
 
 function Connection(native) {
@@ -154,11 +190,13 @@ exports.connect = function (addr) {
 
 exports.parse = function (schema, buffer) {
   var reader = v8capnp.fromBytes(buffer, schema);
-  return v8capnp.toJs(reader);
+  return v8capnp.toJs(reader, Capability);
 }
 
 exports.serialize = function (schema, value) {
   var builder = v8capnp.newBuilder(schema);
-  v8capnp.fromJs(builder, value);
+  v8capnp.fromJs(builder, value, LocalCapWrapper);
   return v8capnp.toBytes(builder);
 }
+
+exports.Capability = Capability;

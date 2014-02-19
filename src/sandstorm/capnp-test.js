@@ -98,11 +98,20 @@ child.stdio[1].once("readable", function() {
 
   doFiber(function() {
     var conn = capnp.connect("127.0.0.1:21311");
-    var calc = conn.restore("calculator",
-        capnp.import("capnp-samples/calculator.capnp").Calculator);
+    var Calculator = capnp.import("capnp-samples/calculator.capnp").Calculator;
+    var calc = conn.restore("calculator", Calculator);
 
     var add = calc.getOperator("add").func;
     var subtract = calc.getOperator("subtract").func;
+    var pow = {
+      call: function (params) {
+        return Math.pow(params[0], params[1]);
+      }
+    };
+
+    var localCap = new capnp.Capability(pow, Calculator.Function);
+    assert.equal(9, wait(localCap.call([3, 2])).value);
+    localCap.close();
 
     var promise = calc.evaluate(
         {call: {"function": subtract, params: [
@@ -112,10 +121,15 @@ child.stdio[1].once("readable", function() {
 
     var value = promise.value;
     assert.equal(258, wait(value.read()).value);
+    value.close();
+
+    value = calc.evaluate(
+        {call: {"function": pow, params: [{literal: 2}, {literal: 4}]}}).value;
+    assert.equal(16, wait(value.read()).value);
+    value.close();
 
     add.close();
     subtract.close();
-    value.close();
     conn.close();
   }, child);
 });

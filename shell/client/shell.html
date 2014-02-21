@@ -1,5 +1,7 @@
 <head>
   <title>Sandstorm</title>
+  <!-- TODO(soon):  Host font locally. -->
+  <link href='https://fonts.googleapis.com/css?family=Open+Sans:300,600' rel='stylesheet' type='text/css'>
 </head>
 
 <body>
@@ -20,14 +22,36 @@
   </div>
   <div id="topbar-right">
   </div>
-
-  <div id="app">
-    <iframe src="http://localhost:3003"></iframe>
-  </div>
 </body>
 
 <template name="hello">
   <h1>Hello World!</h1>
   {{greeting}}
   <input type="button" value="Click" />
+</template>
+
+<template name="grain">
+  <div id="app">
+    <iframe src="http://localhost:3003"></iframe>
+  </div>
+</template>
+
+<template name="install">
+  {{#if error}}
+    <div id="install" class="error">
+      <p>Failed to install app!  <button id="retry">Try Again</button>
+      <pre>{{error}}</pre>
+    </div>
+  {{else}}
+    <div id="install" class="instep-{{step}}">
+      <ol>
+        <li id="step-download">Download... <span class="progress">{{progress}}
+            <button id="cancelDownload">Cancel</button></span>
+        <li id="step-verify">Verify... <span class="progress">{{progress}}</span>
+        <li id="step-unpack">Unpack... <span class="progress">{{progress}}</span>
+        <li id="step-confirm">Confirm...
+        <li id="step-run">Run...
+      </ol>
+    </div>
+  {{/if}}
 </template>

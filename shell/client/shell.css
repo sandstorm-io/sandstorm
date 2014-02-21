@@ -6,14 +6,18 @@ html {
 }
 
 body {
-  background-color: black;
   padding: 0;
   margin: 0;
   width: 100%;
   height: 100%;
-  font-family: sans-serif;
+  font-family: "Open Sans", sans-serif;
+  font-weight: 300;
+}
+
+#topbar, #topbar-left, #topbar-right {
+  background-color: black;
   color: #ccc;
-  font-weight: bold;
+  font-weight: 600;
   line-height: 32px;
 }
 
@@ -49,27 +53,29 @@ img {
   vertical-align: middle;
 }
 
-#app {
+#app, #install {
   border-top-left-radius: 4px;
   border-top-right-radius: 4px;
-  margin: 0;
-  background-color: white;
-  position: absolute;
-  left: 0;
-  width: 100%;
-  top: 32px;
-  bottom: 0;
-}
-
-#app iframe {
-  border-top-left-radius: 4px;
-  border-top-right-radius: 4px;
-  width: 100%;
-  height: 100%;
   border-top: 2px solid #ccc;
   border-left: none;
   border-right: none;
   border-bottom: none;
+  margin: 0;
+  padding: 0;
+  background-color: white;
+  position: fixed;
+  left: 0;
+  width: 100%;
+  top: 32px;
+  bottom: 0px;
+  color: black;
+}
+
+#app iframe {
+  border: none;
+  padding: 0;
+  width: 100%;
+  height: 100%;
   margin: 0;
 }
 
@@ -94,13 +100,12 @@ div.popup {
   padding: 8px;
   font-size: 85%;
   line-height: normal;
-  font-weight: normal;
   min-width: 250px;
 }
 
 div.popup h1 {
   font-size: 125%;
-  font-weight: bold;
+  font-weight: 600;
   text-align: center;
   border-bottom: 2px solid #ccc;
   margin: 4px;
@@ -114,40 +119,20 @@ div.popup hr {
 
 div.popup h2 {
   font-size: 110%;
-  font-weight: bold;
+  font-weight: 600;
   margin: 4px;
 }
 
-div.chatbox {
-  margin: 8px 0;
-}
-div.chatbox input {
-  border: none;
-  height: 24px;
-  width: 242px;
-  padding: 4px;
-  border-radius: 2px;
+#install li .progress {
+  display: none;
 }
 
-span.measure-bar {
-  display: inline-block;
-  height: 4px;
-  vertical-align: middle;
-  background-color: #f44;
-}
-span.measure-bar-blank {
-  display: inline-block;
-  vertical-align: middle;
-}
-span.play-bar {
-  display: inline-block;
-  height: 4px;
-  vertical-align: middle;
-  background-color: #44f;
-}
-span.play-bar-blank {
-  display: inline-block;
-  height: 4px;
-  vertical-align: middle;
-  background-color: #ccc;
-}
+#install.instep-download #step-download { font-weight: bold; }
+#install.instep-verify   #step-verify   { font-weight: bold; }
+#install.instep-unpack   #step-unpack   { font-weight: bold; }
+#install.instep-confirm  #step-confirm  { font-weight: bold; }
+#install.instep-run      #step-run      { font-weight: bold; }
+
+#install.instep-download #step-download .progress { display: inline; }
+#install.instep-verify   #step-verify   .progress { display: inline; }
+#install.instep-unpack   #step-unpack   .progress { display: inline; }

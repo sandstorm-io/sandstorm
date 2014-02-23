@@ -50,7 +50,7 @@ struct Manifest {
     # command.
 
     executablePath @0 :Text;  # Executable filename, within the .spk package.
-    args @1 :List(Text);      # argv list; first argument should be program name.
+    args @1 :List(Text);      # Argument list, not including executable name.
 
     environ @2 :List(Util.KeyValue);
     # Environment variables to set.  The environment will be completely empty other than what you

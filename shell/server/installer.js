@@ -3,6 +3,10 @@ var Path = Npm.require("path");
 var Crypto = Npm.require("crypto");
 var ChildProcess = Npm.require("child_process");
 var Http = Npm.require("http");
+var Capnp = Npm.require("sandstorm/capnp");
+
+var Manifest = Capnp.import("sandstorm/grain.capnp").Manifest;
+
 var APPDIR = "/var/sandstorm/apps";
 var PKGDIR = "/var/sandstorm/pkgs";
 var DOWNLOADDIR = "/var/sandstorm/downloads";
@@ -59,16 +63,18 @@ function AppInstaller(appid, url, callback) {
   this.callback = callback;
 }
 
-AppInstaller.prototype.updateProgress = function (status, progress, error) {
+AppInstaller.prototype.updateProgress = function (status, progress, error, manifest) {
   this.status = status;
   this.progress = progress || -1;
   this.error = error;
+  this.manifest = manifest || null;
 
   inMeteor(this, function () {
     Apps.update({appid: this.appid}, {$set: {
       status: this.status,
       progress: this.progress,
-      error: this.error ? this.error.message : null
+      error: this.error ? this.error.message : null,
+      manifest: this.manifest
     }});
   });
 }
@@ -117,7 +123,7 @@ AppInstaller.prototype.start = function () {
   return this.wrapCallback(function () {
     this.cleanup();
     if (Fs.existsSync(this.unpackedPath)) {
-      this.done();
+      this.doAnalyze();
     } else if (Fs.existsSync(this.verifiedPath)) {
       this.doUnpack();
     } else if (Fs.existsSync(this.unverifiedPath)) {
@@ -217,17 +223,31 @@ AppInstaller.prototype.doUnpack = function() {
   });
 
   child.on("exit", this.wrapCallback(function (code, sig) {
-    if (code === 0) {
-      // Success.
-      Fs.renameSync(this.unpackingPath, this.unpackedPath);
-      this.done();
-    } else {
+    if (code !== 0) {
       throw new Error("Unzip failed.");
     }
+
+    Fs.renameSync(this.unpackingPath, this.unpackedPath);
+    this.doAnalyze();
   }));
 }
 
-AppInstaller.prototype.done = function() {
+AppInstaller.prototype.doAnalyze = function() {
+  console.log("Analyzing app:", this.verifiedPath);
+  this.updateProgress("analyze");
+
+  var manifestFilename = Path.join(this.unpackedPath, "sandstorm-manifest");
+  if (!Fs.existsSync(manifestFilename)) {
+    throw new Error("Package missing manifest.");
+  }
+
+  var manifest = Capnp.parse(Manifest, Fs.readFileSync(manifestFilename));
+
+  // Success.
+  this.done(manifest);
+}
+
+AppInstaller.prototype.done = function(manifest) {
   console.log("App ready:", this.unpackedPath);
-  this.updateProgress("ready", 1);
+  this.updateProgress("ready", 1, undefined, manifest);
 }

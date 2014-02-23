@@ -31,6 +31,7 @@
 #include <uv.h>
 #include <kj/async.h>
 #include <kj/async-io.h>
+#include <kj/vector.h>
 #include <errno.h>
 #include <unistd.h>
 #include <capnp/rpc-twoparty.h>
@@ -837,6 +838,9 @@ struct CapnpContext {
   std::unordered_map<uint64_t, OwnHandle<v8::Object>> methodSets;
   // Maps interface type ID -> object mapping method names to method schemas for that type.
 
+  kj::Vector<kj::Array<kj::String>> searchPaths;
+  kj::Vector<kj::Array<kj::StringPtr>> searchPathPtrs;
+
   CapnpContext()
     : llaiop(uv_default_loop()),
       aiop(kj::newAsyncIoProvider(llaiop)) {}
@@ -903,6 +907,10 @@ v8::Handle<v8::Value> import(const v8::Arguments& args) {
     auto& slot = context.importedFiles[schema.getProto().getId()];
     if (slot == nullptr) {
       slot = schemaToObject(schema, context, args.Data());
+
+      // We need to make sure our search paths are never deleted...
+      context.searchPaths.add(kj::mv(searchPath));
+      context.searchPathPtrs.add(kj::mv(searchPathPtrs));
     }
     return slot.get();
   });

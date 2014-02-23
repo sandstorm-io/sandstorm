@@ -47,6 +47,7 @@
 #include <dirent.h>
 #include <pwd.h>
 #include <grp.h>
+#include <iostream>
 
 #include <sandstorm/grain.capnp.h>
 
@@ -583,6 +584,13 @@ public:
       KJ_SYSCALL(dup2(apiFd, 3));
     }
 
+    // Redirect stdout to stderr, so that our own stdout serves one purpose:  to notify the parent
+    // process when we're ready to accept connections.
+    // TODO(soon):  We probably want to redirect this to a log file.  Also stdin should probably
+    //   be explicitly replaced with /dev/null, because stdin could actually be a powerful FD, e.g.
+    //   when run from the console.
+    KJ_SYSCALL(dup2(STDERR_FILENO, STDOUT_FILENO));
+
     char* argv[command.size() + 1];
     for (uint i: kj::indices(command)) {
       argv[i] = const_cast<char*>(command[i].cStr());
@@ -700,9 +708,12 @@ public:
     Restorer serverRestorer(kj::mv(app));
     ErrorHandlerImpl errorHandler;
     kj::TaskSet tasks(errorHandler);
-    auto acceptTask = ioContext.provider->getNetwork().parseAddress("127.0.0.1", 3004).then(
+    unlink("/var/socket");  // just in case.
+    auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:/var/socket", 0).then(
         [&](kj::Own<kj::NetworkAddress>&& addr) {
       auto serverPort = addr->listen();
+      // TODO(cleanup):  Don't use <iostream>, it sucks.
+      std::cout << "Listening on port: " << serverPort->getPort() << std::endl;
       auto promise = acceptLoop(*serverPort, serverRestorer, tasks);
       return promise.attach(kj::mv(serverPort));
     });

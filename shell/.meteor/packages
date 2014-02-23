@@ -8,3 +8,5 @@ autopublish
 insecure
 preserve-inputs
 iron-router
+underscore
+random

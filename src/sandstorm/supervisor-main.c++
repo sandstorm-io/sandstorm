@@ -30,8 +30,10 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <sys/mount.h>
 #include <sys/fsuid.h>
 #include <sys/prctl.h>
@@ -47,13 +49,58 @@
 #include <dirent.h>
 #include <pwd.h>
 #include <grp.h>
-#include <iostream>
 
 #include <sandstorm/grain.capnp.h>
+#include <sandstorm/supervisor.capnp.h>
 
 namespace sandstorm {
 
 typedef unsigned int uint;
+
+// =======================================================================================
+// Termination handling:  Must kill child if parent terminates.
+//
+// We also terminate automatically if we don't receive any keep-alives in a 5-minute interval.
+
+pid_t childPid;
+bool keepAlive;
+
+void signalHandler(int signo) {
+  switch (signo) {
+    case SIGALRM:
+      if (keepAlive) {
+        keepAlive = false;
+        return;
+      }
+
+      // no break; treat as SIGTERM
+    case SIGTERM:
+      kill(childPid, SIGKILL);
+      _exit(0);
+
+    default:
+      break;
+  }
+}
+
+void registerSignalHandlers(pid_t childPid_) {
+  childPid = childPid_;
+  keepAlive = true;
+
+  struct sigaction action;
+  memset(&action, 0, sizeof(action));
+  action.sa_handler = &signalHandler;
+  KJ_SYSCALL(sigaction(SIGALRM, &action, nullptr));
+  KJ_SYSCALL(sigaction(SIGTERM, &action, nullptr));
+
+  struct itimerval timer;
+  memset(&timer, 0, sizeof(timer));
+  timer.it_interval.tv_sec = 300;
+  timer.it_value.tv_sec = 300;
+  KJ_SYSCALL(setitimer(ITIMER_REAL, &timer, nullptr));
+}
+
+// =======================================================================================
 
 class SupervisorMain {
   // Main class for the Sandstorm supervisor.  This program:
@@ -219,6 +266,8 @@ public:
   kj::MainBuilder::Validity run() {
     setupSupervisor();
 
+    checkIfAlreadyRunning();  // Exits if another supervisor is still running in this sandbox.
+
     // Allocate the API socket.
     int fds[2];
     KJ_SYSCALL(socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, fds));
@@ -232,6 +281,7 @@ public:
       runChild(fds[1]);
     } else {
       // We're in the supervisor.
+      registerSignalHandlers(child);
       KJ_SYSCALL(close(fds[1]));
       runSupervisor(child, fds[0]);
     }
@@ -285,6 +335,7 @@ public:
     unshareOuter();
     setupTmpfs();
     bindDirs();
+    setupStdio();
 
     // TODO(someday):  Turn on seccomp-bpf.
 
@@ -412,6 +463,12 @@ public:
       }
     }
 
+    // Create the log file while we're still non-superuser.
+    int logfd;
+    KJ_SYSCALL(logfd = open(kj::str(varPath, "/log").cStr(),
+        O_WRONLY | O_APPEND | O_CLOEXEC | O_CREAT, 0600));
+    KJ_SYSCALL(close(logfd));
+
     // Restore superuser access (e.g. so that we can do mknod later).
     KJ_SYSCALL(seteuid(olduid));
     KJ_SYSCALL(setegid(oldgid));
@@ -446,7 +503,7 @@ public:
     // Set up the directory tree.
 
     // Create a minimal dev directory.
-    KJ_SYSCALL(mkdir("dev", 0777));
+    KJ_SYSCALL(mkdir("dev", 0755));
     KJ_SYSCALL(mknod("dev/null", S_IFCHR | 0666, makedev(1, 3)));
     KJ_SYSCALL(mknod("dev/zero", S_IFCHR | 0666, makedev(1, 5)));
     KJ_SYSCALL(mknod("dev/random", S_IFCHR | 0666, makedev(1, 8)));
@@ -487,6 +544,28 @@ public:
     // OK, everything is bound, so we can chroot.
     KJ_SYSCALL(chroot("."));
     KJ_SYSCALL(chdir("/"));
+  }
+
+  void setupStdio() {
+    // Make sure stdin is /dev/null and set stderr to go to a log file.
+
+    // We want to replace stdin with /dev/null because even if there is no input on stdin, it could
+    // inadvertently be an FD with other powers.  For example, it might be a TTY, in which case you
+    // could write to it or otherwise mess with the terminal.
+    int devNull;
+    KJ_SYSCALL(devNull = open("/dev/null", O_RDONLY | O_CLOEXEC));
+    KJ_SYSCALL(dup2(devNull, STDIN_FILENO));
+    KJ_SYSCALL(close(devNull));
+
+    // We direct stderr to a log file for debugging purposes.
+    // TODO(soon):  Rotate logs.
+    int log;
+    KJ_SYSCALL(log = open("/var/log", O_WRONLY | O_APPEND | O_CLOEXEC));
+    KJ_SYSCALL(dup2(log, STDERR_FILENO));
+    KJ_SYSCALL(close(log));
+
+    // We will later make stdout a copy of stderr specifically for the sandboxed process.  In the
+    // supervisor, stdout is how we tell our parent that we're ready to receive connections.
   }
 
   void unshareNetwork() {
@@ -571,10 +650,70 @@ public:
 
   // =====================================================================================
 
+  void checkIfAlreadyRunning() {
+    // Attempt to connect to any existing supervisor and call keepAlive().  If successful, we
+    // don't want to start a new instance; we should use the existing instance.
+
+    // TODO(soon):  There's a race condition if two supervisors are started up in rapid succession.
+    //   We could maybe avoid that with some filesystem locking.  It's currently unlikely to happen
+    //   in practice because it would require sending a request to the shell server to open the
+    //   grain, then restarting the shell server, then opening the grain again, all before the
+    //   first supervisor finished starting.  Or, I suppose, running two shell servers and trying
+    //   to open the same grain in both at once.
+
+    auto ioContext = kj::setupAsyncIo();
+
+    // Connect to the client.
+    auto addr = ioContext.provider->getNetwork().parseAddress("unix:/var/socket")
+        .wait(ioContext.waitScope);
+    kj::Own<kj::AsyncIoStream> connection;
+    KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
+      connection = addr->connect().wait(ioContext.waitScope);
+    })) {
+      // Failed to connect.  Assume socket is stale.
+      return;
+    }
+
+    // Set up RPC.
+    capnp::TwoPartyVatNetwork vatNetwork(*connection, capnp::rpc::twoparty::Side::CLIENT);
+    auto client = capnp::makeRpcClient(vatNetwork);
+
+    // Restore the default capability (the Supervisor interface).
+    capnp::MallocMessageBuilder message;
+    capnp::rpc::SturdyRef::Builder ref = message.getRoot<capnp::rpc::SturdyRef>();
+    auto hostId = ref.getHostId().initAs<capnp::rpc::twoparty::SturdyRefHostId>();
+    hostId.setSide(capnp::rpc::twoparty::Side::SERVER);
+    Supervisor::Client cap = client.restore(hostId, ref.getObjectId()).castAs<Supervisor>();
+
+    // Call keepAlive().
+    auto promise = cap.keepAliveRequest().send();
+    KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
+      promise.wait(ioContext.waitScope);
+    })) {
+      // Failed to keep-alive.  Supervisor must have died just as we were connecting to it.  Go
+      // ahead and start a new one.
+      return;
+    }
+
+    // We successfully connected and keepalived the existing supervisor, so we can exit.  The
+    // caller is expecting us to write to stdout when the stocket is ready, so do that anyway.
+    KJ_SYSCALL(write(STDOUT_FILENO, "Already running...\n", strlen("Already running...\n")));
+    _exit(0);
+    KJ_UNREACHABLE;
+  }
+
+  // =====================================================================================
+
   void runChild(int apiFd) KJ_NORETURN {
     // We are the child.
 
     enterSandbox();
+
+    // Reset all signal handlers to default.  (exec() will leave ignored signals ignored, and KJ
+    // code likes to ignore e.g. SIGPIPE.)
+    for (uint i = 0; i < SIGRTMAX; i++) {
+      signal(i, SIG_DFL);
+    }
 
     if (apiFd == 3) {
       // Socket end already has correct fd.  Unset CLOEXEC.
@@ -585,10 +724,7 @@ public:
     }
 
     // Redirect stdout to stderr, so that our own stdout serves one purpose:  to notify the parent
-    // process when we're ready to accept connections.
-    // TODO(soon):  We probably want to redirect this to a log file.  Also stdin should probably
-    //   be explicitly replaced with /dev/null, because stdin could actually be a powerful FD, e.g.
-    //   when run from the console.
+    // process when we're ready to accept connections.  We previously directed stderr to a log file.
     KJ_SYSCALL(dup2(STDERR_FILENO, STDOUT_FILENO));
 
     char* argv[command.size() + 1];
@@ -610,7 +746,7 @@ public:
     KJ_UNREACHABLE;
   }
 
-  class SandstormApiImpl: public SandstormApi::Server {
+  class SandstormApiImpl final: public SandstormApi::Server {
   public:
     // TODO(someday):  Implement API.
 //    kj::Promise<void> publish(PublishContext context) override {
@@ -628,6 +764,24 @@ public:
 //    kj::Promise<void> shareView(ShareViewContext context) override {
 
 //    }
+  };
+
+  class SupervisorImpl final: public Supervisor::Server {
+  public:
+    inline SupervisorImpl(UiView::Client&& mainView): mainView(kj::mv(mainView)) {}
+
+    kj::Promise<void> getMainView(GetMainViewContext context) {
+      context.getResults(capnp::MessageSize {4, 1}).setView(mainView);
+      return kj::READY_NOW;
+    }
+
+    kj::Promise<void> keepAlive(KeepAliveContext context) {
+      sandstorm::keepAlive = true;
+      return kj::READY_NOW;
+    }
+
+  private:
+    UiView::Client mainView;
   };
 
   class Restorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
@@ -705,15 +859,14 @@ public:
     // TODO(someday):  If there are multiple front-ends, or the front-ends restart a lot, we'll
     //   want to wrap the UiView and cache session objects.  Perhaps we could do this by making
     //   them persistable, though it's unclear how that would work with SessionContext.
-    Restorer serverRestorer(kj::mv(app));
+    Restorer serverRestorer(kj::heap<SupervisorImpl>(kj::mv(app)));
     ErrorHandlerImpl errorHandler;
     kj::TaskSet tasks(errorHandler);
-    unlink("/var/socket");  // just in case.
+    unlink("/var/socket");  // Clear stale socket, if any.
     auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:/var/socket", 0).then(
         [&](kj::Own<kj::NetworkAddress>&& addr) {
       auto serverPort = addr->listen();
-      // TODO(cleanup):  Don't use <iostream>, it sucks.
-      std::cout << "Listening on port: " << serverPort->getPort() << std::endl;
+      KJ_SYSCALL(write(STDOUT_FILENO, "Listening...\n", strlen("Listening...\n")));
       auto promise = acceptLoop(*serverPort, serverRestorer, tasks);
       return promise.attach(kj::mv(serverPort));
     });

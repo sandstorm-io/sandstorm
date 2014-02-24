@@ -200,8 +200,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
         statusCode @7 :ClientErrorCode;
 
         descriptionHtml @8 :Text;
-        # Optional extended description of the error.  If provided, should be an HTML fragment
-        # containing one or more block-level elements (typically, `<p>`s).
+        # Optional extended description of the error, as an HTML document.
       }
 
       serverError :group {
@@ -211,8 +210,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
         # except 500.
 
         descriptionHtml @9 :Text;
-        # Optional extended description of the error.  If provided, should be an HTML fragment
-        # containing one or more block-level elements (typically, `<p>`s).
+        # Optional extended description of the error, as an HTML document.
       }
 
       # TODO(someday):  Return blob directly from storage, so data doesn't have to stream through

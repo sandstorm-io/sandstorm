@@ -830,6 +830,19 @@ public:
     } else {
       // We're in the parent.
 
+      // Wait until connections are accepted.
+      bool success = false;
+      for (;;) {
+        kj::runCatchingExceptions([&]() {
+          address->connect().wait(ioContext.waitScope);
+          success = true;
+        });
+        if (success) break;
+
+        // Wait 10ms and try again.
+        usleep(10000);
+      }
+
       auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
       capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
       Restorer restorer(kj::heap<UiViewImpl>(*address));

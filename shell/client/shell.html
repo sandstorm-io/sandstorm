@@ -2,6 +2,7 @@
   <title>Sandstorm</title>
   <!-- TODO(soon):  Host font locally. -->
   <link href='https://fonts.googleapis.com/css?family=Open+Sans:300,600' rel='stylesheet' type='text/css'>
+  <script type="text/javascript" src="/logo.js"></script>
 </head>
 
 <body>
@@ -16,11 +17,11 @@
 </body>
 
 <template name="grainList">
-  <img class="icon" src="apps.svg" title="apps" id="apps-ico">
+  <img class="icon" src="/apps.svg" title="apps" id="apps-ico">
   <div id="apps" class="popup">
     <h1>My Grains</h1>
     {{#each grains}}
-    <p class="openGrain" id="openGrain-{{_id}}">{{title}}
+    <p class="openGrain" id="openGrain-{{grainid}}">{{title}}
     {{/each}}
     <hr>
     {{#each actions}}
@@ -29,9 +30,27 @@
   </div>
 </template>
 
+<template name="root">
+  <div id="intro">
+    <div id="logo">
+      <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
+      </svg>
+    </div>
+    <h1>Sandstorm</h1>
+  </div>
+</template>
+
 <template name="grain">
   <div id="app">
-    <iframe src="http://localhost:3003"></iframe>
+    {{#if error}}
+      <pre>{{error}}</pre>
+    {{else}}
+    {{#if port}}
+      <iframe src="http://localhost:{{port}}"></iframe>
+    {{else}}
+      <p>Loading app...
+    {{/if}}
+    {{/if}}
   </div>
 </template>
 

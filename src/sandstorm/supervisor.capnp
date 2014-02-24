@@ -29,45 +29,13 @@ $import "/capnp/c++.capnp".namespace("sandstorm");
 using Util = import "util.capnp";
 using Grain = import "grain.capnp";
 
-# //host/<grain-id>?action=open
+interface Supervisor {
+  # Default capability exported by the supervisor process.
 
-# The way the coordinator works is:
-# - UiViews are always persistable.  So restoring a grain means restoring a SturdyRef.  A grain ID
-#   is just a SturdyRef for the main UiView.
-# - Sessions are transient.
-# - In a single-web-server environment, we can hold the session in the HTTP server.
-# - So on a "load grain" request, we just restore the SturdyRef.
+  getMainView @0 () -> (view :Grain.UiView);
+  # Get the grain's main UiView.
 
-interface Application {
-  getEntryPoints @0 () -> (entryPoints :List(EntryPoint));
-
-  interface EntryPoint {
-    run @0 (param :Grain.PowerboxCapability) -> (view :Grain.UiView);
-  }
-}
-
-struct AppHash {
-}
-
-interface AppLoader {
-  getApp @0 (hash :AppHash) -> GetAppResponse;
-  struct GetAppResponse {
-    union {
-      notFound @0 :Void;
-      found @1 :Application;
-    }
-  }
-
-  # TODO(soon):  Load app from URL, file, raw data, etc.
-
-
-
-  # TODO(someday):  Get EntryPoints matching PowerboxCapability.
-}
-
-interface ShellSession {
-  # TODO(someday):  Implement a queue of SessionContext requests?  The shell polls for requests and
-  #   then posts responses.  Or do we want to implement Cap'n Proto all the way back to the browser
-  #   via WebSocket instead?  We wouldn't want a temporary network hiccup to kill the connection,
-  #   though.
+  keepAlive @1 ();
+  # Must call periodically to prevent supervisor from killing itself off.  Call at least once
+  # per minute.
 }

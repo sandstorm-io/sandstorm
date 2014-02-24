@@ -1,6 +1,13 @@
 Apps = new Meteor.Collection("apps");
 UserActions = new Meteor.Collection("userActions");
 Grains = new Meteor.Collection("grains");
+Sessions = new Meteor.Collection("sessions");
+
+if (Meteor.isServer) {
+  Meteor.publish("mySessions", function () {
+    return Sessions.find({userid: "testuser"});
+  });
+}
 
 Meteor.methods({
   ensureInstalled: function (appid, url) {
@@ -29,9 +36,7 @@ if (Meteor.isServer) {
   Meteor.methods({
     cancelDownload: function (appid) {
       cancelDownload(appid);
-    },
-
-    newGrain: function (appid, command) { newGrain(appid, command); }
+    }
   });
 }
 
@@ -39,11 +44,19 @@ if (Meteor.isClient) {
   var activeAppId;
   var appDatabaseId;
 
+  Template.root.events({
+    "click #logo": function (event) {
+      doLogoAnimation(event.shiftKey, 0);
+    }
+  });
+
+  Template.grain.preserve(["iframe"]);
+
   Template.grainList.events({
     "click #apps-ico": function (event) {
       var ico = event.currentTarget;
       var pop = document.getElementById("apps");
-      if (pop.style.display == "block") {
+      if (pop.style.display === "block") {
         pop.style.display = "none";
       } else {
         var rec = ico.getBoundingClientRect();
@@ -70,9 +83,23 @@ if (Meteor.isClient) {
         return;
       }
 
+      document.getElementById("apps").style.display = "none";
+      var title = window.prompt("Title?");
+
       // We need to ask the server to start a new grain, then browse to it.
-      // TODO(soon):  Prompt for title.
-      Meteor.call("newGrain", action.appid, action.command);
+      Meteor.call("newGrain", action.appid, action.command, title, function (error, grainid) {
+        if (error) {
+          console.error(error);
+        } else {
+          Router.go("grain", {grainid: grainid});
+        }
+      });
+    },
+
+    "click .openGrain": function (event) {
+      var grainid = event.currentTarget.id.split("-")[1];
+      document.getElementById("apps").style.display = "none";
+      Router.go("grain", {grainid: grainid});
     }
   });
 
@@ -122,9 +149,64 @@ if (Meteor.isClient) {
   });
 }
 
+if (Meteor.isClient) {
+  // Send keep-alive every now and then.
+  var currentSessionId;
+  Meteor.setInterval(function () {
+    if (currentSessionId) {
+      Meteor.call("keepSessionAlive", currentSessionId);
+    }
+  }, 60000);
+}
+
 Router.map(function () {
+  this.route("root", {
+    path: "/",
+    after: function () { setTimeout(initLogoAnimation, 0); }
+  });
+
   this.route("grain", {
-    path: "/"
+    path: "/grain/:grainid",
+
+    waitOn: function () {
+      return Meteor.subscribe("mySessions");
+    },
+
+    data: function () {
+      currentSessionId = undefined;
+      var grainid = this.params.grainid;
+      var err = Session.get("session-" + grainid + "-error");
+      if (err) {
+        return { error: err };
+      }
+
+      var sessionid = Session.get("session-" + grainid);
+      if (sessionid) {
+        // TODO(soon):  Use waitOn() to avoid rendering before sessions are received.
+        currentSessionId = sessionid;
+        var session = Sessions.findOne({sessionid: sessionid});
+        if (session) {
+          return { port: session.port };
+        } else {
+          Session.set("session-" + grainid, undefined);
+          return {};
+        }
+      } else {
+        Meteor.call("openSession", grainid, sessionid, function (error, sessionid) {
+          if (error) {
+            Session.set("session-" + grainid + "-error", error.message);
+          } else {
+            Session.set("session-" + grainid, sessionid);
+            Session.set("session-" + grainid + "-error", undefined);
+          }
+        });
+        return {};
+      }
+    },
+
+    unload: function () {
+      currentSessionId = undefined;
+    }
   });
 
   this.route("install", {

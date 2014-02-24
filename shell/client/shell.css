@@ -27,6 +27,7 @@ body {
   height: 32px;
   text-align: center;
   z-index: -1;
+  border-bottom: 2px solid #ccc;
 }
 
 #topbar-left {
@@ -53,22 +54,44 @@ img {
   vertical-align: middle;
 }
 
-#app, #install {
-  border-top-left-radius: 4px;
-  border-top-right-radius: 4px;
-  border-top: 2px solid #ccc;
-  border-left: none;
-  border-right: none;
-  border-bottom: none;
+#app, #install, #intro {
   margin: 0;
   padding: 0;
   background-color: white;
   position: fixed;
   left: 0;
   width: 100%;
-  top: 32px;
+  top: 34px;
   bottom: 0px;
   color: black;
+}
+
+#intro h1 {
+  text-align: center;
+  font-size: 100px;
+  font-weight: 600;
+  margin: 0 auto;
+}
+
+svg {
+  width: 400px;
+  height: 300px;
+}
+
+#logo {
+  width: 400px;
+  height: 300px;
+  margin: 64px auto 16px;
+  z-index: -1;
+}
+
+.static-logo {
+  background-image:url("logo.png");
+  background-repeat:no-repeat;
+}
+
+.dynamic-logo {
+  cursor: pointer;
 }
 
 #app iframe {
@@ -77,17 +100,6 @@ img {
   width: 100%;
   height: 100%;
   margin: 0;
-}
-
-input.search {
-  background-image: url('search.svg');
-  background-repeat: no-repeat;
-  background-position: 4px 50%;
-  border: none;
-  padding-left: 24px;
-  margin-left: 8px;
-  height: 20px;
-  border-radius: 2px;
 }
 
 div.popup {

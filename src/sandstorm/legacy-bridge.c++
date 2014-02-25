@@ -235,6 +235,50 @@ public:
         KJ_IF_MAYBE(mimeType, findHeader("content-type")) {
           content.setMimeType(*mimeType);
         }
+        KJ_IF_MAYBE(disposition, findHeader("content-disposition")) {
+          // Parse `attachment; filename="foo"`
+          // TODO(cleanup):  This is awful.  Use KJ parser library?
+          auto parts = split(*disposition, ';');
+          if (parts.size() > 1 && kj::str(trim(parts[0])) == "attachment") {
+            // Starst with "attachment;".  Parse params.
+            for (auto& part: parts.asPtr().slice(1, parts.size())) {
+              // Parse a "name=value" parameter.
+              for (size_t i: kj::indices(part)) {
+                if (part[i] == '=') {
+                  // Found '='.  Split and interpret.
+                  if (kj::heapString(trim(part.slice(0, i))) == "filename") {
+                    // It's "filename=", the one we're looking for!
+                    // We need to unquote/unescape the file name.
+                    auto filename = trim(part.slice(i + 1, part.size()));
+
+                    if (filename.size() >= 2 && filename[0] != '\"' &&
+                        filename[filename.size() - 1] == '\"') {
+                      // OK, it is in fact surrounded in quotes.  Unescape the contents.  The
+                      // escaping scheme defined in RFC 822 is very simple:  a backslash followed
+                      // by any character C is interpreted as simply C.
+                      filename = filename.slice(1, filename.size() - 1);
+
+                      kj::Vector<char> unescaped(filename.size() + 1);
+                      for (size_t j = 0; j < filename.size(); j++) {
+                        if (filename[j] == '\\') {
+                          if (++j >= filename.size()) {
+                            break;
+                          }
+                        }
+                        unescaped.add(filename[j]);
+                      }
+                      unescaped.add('\0');
+
+                      content.getDisposition().setDownload(
+                          kj::StringPtr(unescaped.begin(), unescaped.size() - 1));
+                    }
+                  }
+                  break;  // Only split at first '='.
+                }
+              }
+            }
+          }
+        }
 
         auto data = content.initBody().initBytes(body.size());
         memcpy(data.begin(), body.begin(), body.size());

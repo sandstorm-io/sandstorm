@@ -62,37 +62,72 @@ typedef unsigned int uint;
 //
 // We also terminate automatically if we don't receive any keep-alives in a 5-minute interval.
 
-pid_t childPid;
-bool keepAlive;
+pid_t childPid = 0;
+bool keepAlive = true;
+
+void killChildAndExit(int status) KJ_NORETURN;
+void killChildAndExit(int status) {
+  if (childPid != 0) {
+    kill(childPid, SIGKILL);
+  }
+  // We don't have to waitpid() because when we exit the child will be adopted by init which will
+  // automatically reap it.
+  // TODO(cleanup):  Decide what exit status is supposed to mean.  Maybe it should just always be
+  //   zero?
+  _exit(status);
+}
 
 void signalHandler(int signo) {
   switch (signo) {
+    case SIGCHLD:
+      // Oh, our child exited.  I guess we're useless now.
+      _exit(0);
+
     case SIGALRM:
       if (keepAlive) {
         keepAlive = false;
         return;
       }
+      killChildAndExit(0);
 
-      // no break; treat as SIGTERM
+    case SIGINT:
     case SIGTERM:
-      kill(childPid, SIGKILL);
-      _exit(0);
+      killChildAndExit(0);
 
     default:
-      break;
+      // Some signal that should cause death.
+      killChildAndExit(1);
   }
 }
 
-void registerSignalHandlers(pid_t childPid_) {
-  childPid = childPid_;
-  keepAlive = true;
+int DEATH_SIGNALS[] = {
+  // All signals that by default terminate the process.
+  SIGHUP, SIGINT, SIGQUIT, SIGILL, SIGABRT, SIGFPE, SIGSEGV, SIGTERM, SIGUSR1, SIGUSR2, SIGBUS,
+  SIGPOLL, SIGPROF, SIGSYS, SIGTRAP, SIGVTALRM, SIGXCPU, SIGXFSZ, SIGSTKFLT, SIGPWR
+};
 
+void registerSignalHandlers() {
+  // Create a sigaction that runs our signal handler with all signals blocked.  Our signal handler
+  // completes (or exits) quickly anyway, so let's not try to deal with it being interruptable.
   struct sigaction action;
   memset(&action, 0, sizeof(action));
   action.sa_handler = &signalHandler;
-  KJ_SYSCALL(sigaction(SIGALRM, &action, nullptr));
-  KJ_SYSCALL(sigaction(SIGTERM, &action, nullptr));
+  sigfillset(&action.sa_mask);
 
+  // SIGALRM will fire every five minutes and will kill us if no keepalive was received in that
+  // time.
+  KJ_SYSCALL(sigaction(SIGALRM, &action, nullptr));
+
+  // Other death signals simply kill us immediately.
+  for (int signo: kj::ArrayPtr<int>(DEATH_SIGNALS)) {
+    KJ_SYSCALL(sigaction(signo, &action, nullptr));
+  }
+
+  // SIGCHLD will fire when the child exits, in which case we might as well also exit.
+  action.sa_flags = SA_NOCLDSTOP;  // Only fire when child exits.
+  KJ_SYSCALL(sigaction(SIGCHLD, &action, nullptr));
+
+  // Set up the SIGALRM timer.  Note that this is not inherited over fork.
   struct itimerval timer;
   memset(&timer, 0, sizeof(timer));
   timer.it_interval.tv_sec = 300;
@@ -268,22 +303,23 @@ public:
 
     checkIfAlreadyRunning();  // Exits if another supervisor is still running in this sandbox.
 
+    registerSignalHandlers();
+
     // Allocate the API socket.
     int fds[2];
     KJ_SYSCALL(socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, fds));
 
     // Now time to run the start command, in a further chroot.
-    pid_t child;
-    KJ_SYSCALL(child = fork());
-    if (child == 0) {
+    KJ_SYSCALL(childPid = fork());
+    if (childPid == 0) {
       // We're in the child.
       KJ_SYSCALL(close(fds[0]));  // just to be safe, even though it's CLOEXEC.
       runChild(fds[1]);
     } else {
       // We're in the supervisor.
-      registerSignalHandlers(child);
+      KJ_DEFER(killChildAndExit(1));
       KJ_SYSCALL(close(fds[1]));
-      runSupervisor(child, fds[0]);
+      runSupervisor(fds[0]);
     }
   }
 
@@ -711,16 +747,24 @@ public:
 
     // Reset all signal handlers to default.  (exec() will leave ignored signals ignored, and KJ
     // code likes to ignore e.g. SIGPIPE.)
-    for (uint i = 0; i < SIGRTMAX; i++) {
-      signal(i, SIG_DFL);
+    // TODO(cleanup):  Is there a better way to do this?
+    for (uint i = 0; i < NSIG; i++) {
+      signal(i, SIG_DFL);  // Only possible error is EINVAL (invalid signum); we don't care.
     }
 
+    // Unblock all signals.  (Yes, the signal mask is inherited over exec...)
+    sigset_t sigmask;
+    sigemptyset(&sigmask);
+    KJ_SYSCALL(sigprocmask(SIG_SETMASK, &sigmask, nullptr));
+
+    // Make sure the API socket is on FD 3.
     if (apiFd == 3) {
       // Socket end already has correct fd.  Unset CLOEXEC.
       KJ_SYSCALL(fcntl(apiFd, F_SETFD, 0));
     } else {
       // dup socket to correct fd.
       KJ_SYSCALL(dup2(apiFd, 3));
+      KJ_SYSCALL(close(apiFd));
     }
 
     // Redirect stdout to stderr, so that our own stdout serves one purpose:  to notify the parent
@@ -834,7 +878,7 @@ public:
     }
   };
 
-  void runSupervisor(pid_t child, int apiFd) KJ_NORETURN {
+  void runSupervisor(int apiFd) KJ_NORETURN {
     permanentlyDropSuperuser();
 
     // TODO(soon):  Make sure all grandchildren die if supervisor dies.
@@ -873,8 +917,7 @@ public:
 
     // Wait for disconnect or accept loop failure, then exit.
     acceptTask.exclusiveJoin(appNetwork.onDisconnect()).wait(ioContext.waitScope);
-
-    context.exit();
+    killChildAndExit(1);
   }
 };
 

@@ -490,6 +490,10 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
         // TODO(soon):  Implement streaming.
         throw new Error("Streaming not implemented.");
       }
+      if (("disposition" in content) && ("download" in content.disposition)) {
+        response.setHeader("Content-Disposition", "attachment; filename=\"" +
+            content.disposition.download.replace(/([\\"\n])/g, "\\$1") + "\"");
+      }
 
       response.writeHead(code.id, code.title, { "Content-Type": content.mimeType });
 

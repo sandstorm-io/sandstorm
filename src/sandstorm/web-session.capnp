@@ -171,6 +171,11 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
           bytes @5 :Data;
           stream @6 :Stream;
         }
+
+        disposition :union {
+          normal @13 :Void;
+          download @14 :Text;  # Prompt user to save as given file name.
+        }
       }
 
       redirect :group {

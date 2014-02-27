@@ -517,6 +517,11 @@ public:
     // affects later children created by it.
     KJ_SYSCALL(unshare(CLONE_NEWNS | CLONE_NEWIPC | CLONE_NEWUTS | CLONE_NEWPID));
 
+    // To really unshare the mount namespace, we also have to make sure all mounts are private.
+    // The parameters here were derived by strace'ing `mount --make-rprivate /`.  AFAICT the flags
+    // are undocumented.  :(
+    KJ_SYSCALL(mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr));
+
     // Set a dummy host / domain so the grain can't see the real one.  (unshare(CLONE_NEWUTS) means
     // these settings only affect this process and its children.)
     KJ_SYSCALL(sethostname("sandbox", 7));

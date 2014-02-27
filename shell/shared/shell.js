@@ -85,6 +85,7 @@ if (Meteor.isClient) {
 
       document.getElementById("apps").style.display = "none";
       var title = window.prompt("Title?");
+      if (!title) return;
 
       // We need to ask the server to start a new grain, then browse to it.
       Meteor.call("newGrain", action.appid, action.command, title, function (error, grainid) {
@@ -162,7 +163,10 @@ if (Meteor.isClient) {
 Router.map(function () {
   this.route("root", {
     path: "/",
-    after: function () { setTimeout(initLogoAnimation, 0); }
+    after: function () { setTimeout(initLogoAnimation, 0); },
+    data: function () {
+      return { host: document.location.host };
+    }
   });
 
   this.route("grain", {

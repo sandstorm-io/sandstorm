@@ -153,11 +153,15 @@ AppInstaller.prototype.doDownload = function () {
       bytesExpected = parseInt(response.headers["content-length"]);
     }
 
+    var done = false;
+
     var updateDownloadProgress = _.throttle(this.wrapCallback(function () {
-      if (bytesExpected) {
-        this.updateProgress("download", bytesReceived / bytesExpected);
-      } else {
-        this.updateProgress("download", bytesReceived);
+      if (!done) {
+        if (bytesExpected) {
+          this.updateProgress("download", bytesReceived / bytesExpected);
+        } else {
+          this.updateProgress("download", bytesReceived);
+        }
       }
     }), 1000);
 
@@ -167,6 +171,7 @@ AppInstaller.prototype.doDownload = function () {
       updateDownloadProgress();
     }));
     response.on("end", this.wrapCallback(function () {
+      done = true;
       out.end();
       delete this.downloadRequest;
 

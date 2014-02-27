@@ -94,6 +94,10 @@ svg {
   cursor: pointer;
 }
 
+#intro p {
+  text-align: center;
+}
+
 #app iframe {
   border: none;
   padding: 0;

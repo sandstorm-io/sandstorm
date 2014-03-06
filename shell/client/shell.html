@@ -13,20 +13,28 @@
     Sandstorm
   </div>
   <div id="topbar-right">
+    {{loginButtons align="right"}}
   </div>
 </body>
 
 <template name="grainList">
-  <img class="icon" src="/apps.svg" title="apps" id="apps-ico">
+  {{#if currentUser}}<span id="apps-ico">Files ▾</span>{{/if}}
   <div id="apps" class="popup">
-    <h1>My Grains</h1>
+    <table><tr><td>
+    <h1>Open</h1>
     {{#each grains}}
     <p class="openGrain" id="openGrain-{{grainid}}">{{title}}
+    {{else}}
+    <p><i>You have no files...</i>
     {{/each}}
-    <hr>
+    </td><td>
+    <h1>New</h1>
     {{#each actions}}
     <p class="newGrain" id="newGrain-{{_id}}">{{title}}
+    {{else}}
+    <p><i>You have no apps...</i>
     {{/each}}
+    </td></tr><table>
   </div>
 </template>
 
@@ -38,7 +46,7 @@
     </div>
     <h1>Sandstorm</h1>
     <p>Looking for an app?
-      <a href="install?appid=81d4758636d6a947dc3e6825f080199a&url=http://{{host}}/etherpad.spk">
+      <a href="install/81d4758636d6a947dc3e6825f080199a?url=http://{{host}}/etherpad.spk">
       Try Etherpad</a>
   </div>
 </template>
@@ -60,7 +68,8 @@
 <template name="install">
   {{#if error}}
     <div id="install" class="error">
-      <p>Failed to install app!  <button id="retry">Try Again</button>
+      <p>Failed to install app!
+        {{#if step}}<button id="retry">Try Again</button>{{/if}}
       <pre>{{error}}</pre>
     </div>
   {{else}}
@@ -73,10 +82,14 @@
         <li id="step-analyze">Analyze... <span class="progress">{{progress}}</span>
         <li id="step-confirm">Confirm...
           <div class="confirm-form">
-            <p>(TODO:  Support upgrades, petnames.)
+            <p>Do you really want to install this app?
+            <!--(TODO(someday):  Support upgrades, petnames.)-->
             <p><button id="confirmInstall">Install</button>
           </div>
         <li id="step-run">Run...
+          <div class="done-notice">
+            <p>Installation complete.  Click "My Grains" to create a new grain with this app.
+          </div>
       </ol>
     </div>
   {{/if}}

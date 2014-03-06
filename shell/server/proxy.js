@@ -55,9 +55,12 @@ Meteor.methods({
   newGrain: function (appid, command, title) {
     // Create and start a new grain.
 
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Unauthorized", "Must be logged in to create grains.");
+    }
+
     var grainid = Random.id();
-    // TODO(soon):  Better default title?  Prompt user?
-    Grains.insert({ appid: appid, grainid: grainid, userid: "testuser", title: title });
+    Grains.insert({ appid: appid, grainid: grainid, userid: this.userId, title: title });
     startGrainInternal(appid, grainid, command, true);
     return grainid;
   },
@@ -103,17 +106,18 @@ Meteor.methods({
     var port = waitPromise(proxy.getPort());
 
     Sessions.insert({
-      userid: "testuser",
       grainid: grainid,
       sessionid: sessionid,
       port: port,
       timestamp: new Date().getTime()
     });
 
-    return sessionid;
+    return {sessionid: sessionid, port: port};
   },
 
   keepSessionAlive: function (sessionid) {
+    // TODO(security):  Prevent draining someone else's quota by holding open several grains shared
+    //   by them.
     Sessions.update({sessionid: sessionid}, {$set: {timestamp: new Date().getTime()}});
     proxies[sessionid].keepAlive();
   }

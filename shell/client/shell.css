@@ -33,11 +33,13 @@ body {
 #topbar-left {
   float: left;
   height: 32px;
+  padding-left: 8px;
 }
 
 #topbar-right {
   float: right;
   height: 32px;
+  padding-right: 8px;
 }
 
 img.icon {
@@ -64,6 +66,28 @@ img {
   top: 34px;
   bottom: 0px;
   color: black;
+}
+
+#apps-ico {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.openGrain, .newGrain {
+  cursor: pointer;
+}
+.openGrain:hover, .newGrain:hover {
+  background-color: #333;
+}
+
+#apps table td {
+  width: 250px;
+  padding: 8px;
+  vertical-align: top;
+}
+
+#apps table td:nth-child(1) {
+  border-right: 2px solid #ccc;
 }
 
 #intro h1 {
@@ -139,11 +163,27 @@ div.popup h2 {
   margin: 4px;
 }
 
+#install ol {
+  text-align: center;
+  list-style-type: none;
+  font-size: 200%;
+}
+#install ol p {
+  font-size: 50%;  /* revert above */
+  font-weight: 300;
+}
+
+#install pre {
+  font-family: inherit;
+  font-size: inherit;
+}
+
 #install li .progress {
   display: none;
 }
 
 #install #step-confirm .confirm-form { display: none; }
+#install #step-run     .done-notice  { display: none; }
 
 #install.instep-download #step-download { font-weight: bold; }
 #install.instep-verify   #step-verify   { font-weight: bold; }
@@ -157,3 +197,4 @@ div.popup h2 {
 #install.instep-unpack   #step-unpack   .progress { display: inline; }
 #install.instep-analyze  #step-analyze  .progress { display: inline; }
 #install.instep-confirm  #step-confirm  .confirm-form { display: block; }
+#install.instep-run      #step-run      .done-notice { display: block; }

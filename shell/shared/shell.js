@@ -4,13 +4,41 @@ Grains = new Meteor.Collection("grains");
 Sessions = new Meteor.Collection("sessions");
 
 if (Meteor.isServer) {
-  Meteor.publish("mySessions", function () {
-    return Sessions.find({userid: "testuser"});
+  Apps.allow({
+    remove: function (userId, app) {
+      // Failed downloads can be removed and restarted.
+      return app.status === "failed";
+    }
+  });
+
+  UserActions.allow({
+    insert: function (userId, action) {
+      return userId && action.userid === userId;
+    }
+  });
+
+  Meteor.publish("apps", function (appid) {
+    return Apps.find({ appid: appid });
+  });
+
+  Meteor.publish("grainsMenu", function () {
+    if (this.userId) {
+      return [
+        UserActions.find({userid: this.userId}),
+        Grains.find({userid: this.userId})
+      ];
+    } else {
+      return [];
+    }
   });
 }
 
 Meteor.methods({
   ensureInstalled: function (appid, url) {
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Unauthorized", "You must be logged in to install apps.");
+    }
+
     var app = Apps.findOne({ appid: appid });
     if (app) {
       if (app.status === "ready" || app.status === "failed") {
@@ -35,6 +63,7 @@ if (Meteor.isServer) {
 
   Meteor.methods({
     cancelDownload: function (appid) {
+      // TODO(security):  Only let user cancel download if they initiated it.
       cancelDownload(appid);
     }
   });
@@ -51,6 +80,8 @@ if (Meteor.isClient) {
   });
 
   Template.grain.preserve(["iframe"]);
+
+  Meteor.subscribe("grainsMenu");
 
   Template.grainList.events({
     "click #apps-ico": function (event) {
@@ -106,10 +137,20 @@ if (Meteor.isClient) {
 
   Template.grainList.helpers({
     grains: function () {
-      return Grains.find({userid: "testuser"}).fetch();
+      var userid = Meteor.userId();
+      if (userid) {
+        return Grains.find({userid: userid}).fetch();
+      } else {
+        return [];
+      }
     },
     actions: function () {
-      return UserActions.find({userid: "testuser"}).fetch();
+      var userid = Meteor.userId();
+      if (userid) {
+        return UserActions.find({userid: userid}).fetch();
+      } else {
+        return [];
+      }
     }
   });
 
@@ -136,7 +177,7 @@ if (Meteor.isClient) {
           var action = actions[i];
           if ("none" in action.input) {
             UserActions.insert({
-              userid: "testuser",
+              userid: Meteor.userId(),
               appid: app.appid,
               title: action.title.defaultText,
               command: action.command
@@ -155,6 +196,9 @@ if (Meteor.isClient) {
   var currentSessionId;
   Meteor.setInterval(function () {
     if (currentSessionId) {
+      // TODO(soon):  Investigate what happens in background tabs.  Maybe arrange to re-open the
+      //   app if it dies while in the background.
+      console.log("keepalive: ", new Date());
       Meteor.call("keepSessionAlive", currentSessionId);
     }
   }, 60000);
@@ -172,10 +216,6 @@ Router.map(function () {
   this.route("grain", {
     path: "/grain/:grainid",
 
-    waitOn: function () {
-      return Meteor.subscribe("mySessions");
-    },
-
     data: function () {
       currentSessionId = undefined;
       var grainid = this.params.grainid;
@@ -184,23 +224,16 @@ Router.map(function () {
         return { error: err };
       }
 
-      var sessionid = Session.get("session-" + grainid);
-      if (sessionid) {
-        // TODO(soon):  Use waitOn() to avoid rendering before sessions are received.
-        currentSessionId = sessionid;
-        var session = Sessions.findOne({sessionid: sessionid});
-        if (session) {
-          return { sessionid: sessionid, port: session.port };
-        } else {
-          Session.set("session-" + grainid, undefined);
-          return {};
-        }
+      var session = Session.get("session-" + grainid);
+      if (session) {
+        currentSessionId = session.sessionid;
+        return session;
       } else {
-        Meteor.call("openSession", grainid, sessionid, function (error, sessionid) {
+        Meteor.call("openSession", grainid, function (error, session) {
           if (error) {
             Session.set("session-" + grainid + "-error", error.message);
           } else {
-            Session.set("session-" + grainid, sessionid);
+            Session.set("session-" + grainid, session);
             Session.set("session-" + grainid + "-error", undefined);
           }
         });
@@ -214,16 +247,21 @@ Router.map(function () {
   });
 
   this.route("install", {
-    path: "/install",
+    path: "/install/:appid",
+
+    waitOn: function () {
+      // TODO(perf):  Does this subscription get stop()ed when the user browses away?
+      return Meteor.subscribe("apps", this.params.appid);
+    },
+
     data: function () {
       // TODO(soon):  Don't display until Apps subscription loaded.
 
       activeAppId = undefined;
       appDatabaseId = undefined;
 
-      if (!this.params.appid) {
-        // TODO(now):  Display upload page.
-        return { error: "You must specify an app ID." };
+      if (!Meteor.userId()) {
+        return { error: "You must log in to install apps." };
       }
 
       if (this.params.url) {
@@ -234,7 +272,7 @@ Router.map(function () {
       if (app === undefined) {
         // Apparently, this app is not installed nor installing, which implies that no URL was
         // provided, which means we cannot install it.
-        // TODO(now):  Display upload page, or at least don't display "try again" button.
+        // TODO(now):  Display upload page?
         return { error: "Unknown app ID: " + this.params.appid +
                         "\nPerhaps it hasn't been uploaded?" };
       }
@@ -261,7 +299,7 @@ Router.map(function () {
         };
       }
 
-      if (UserActions.findOne({ userid: "testuser", appid: this.params.appid })) {
+      if (UserActions.findOne({ userid: Meteor.userId(), appid: this.params.appid })) {
         // This app appears to be installed already.
         return { step: "run" };
       } else {

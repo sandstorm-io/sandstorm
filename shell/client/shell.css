@@ -1,5 +1,19 @@
 /* CSS declarations go here */
 
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: normal;
+  src: local('Open Sans Light'), local('OpenSans-Light'), url(/opensans-light.woff) format('woff');
+}
+
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: bold;
+  src: local('Open Sans Semibold'), local('OpenSans-Semibold'), url(/opensans-semibold.woff) format('woff');
+}
+
 html {
   width: 100%;
   height: 100%;
@@ -11,13 +25,13 @@ body {
   width: 100%;
   height: 100%;
   font-family: "Open Sans", sans-serif;
-  font-weight: 300;
+  font-weight: normal;
 }
 
 #topbar, #topbar-left, #topbar-right {
   background-color: black;
   color: #ccc;
-  font-weight: 600;
+  font-weight: bold;
   line-height: 32px;
 }
 
@@ -93,7 +107,7 @@ img {
 #intro h1 {
   text-align: center;
   font-size: 100px;
-  font-weight: 600;
+  font-weight: bold;
   margin: 0 auto;
 }
 
@@ -145,7 +159,7 @@ div.popup {
 
 div.popup h1 {
   font-size: 125%;
-  font-weight: 600;
+  font-weight: bold;
   text-align: center;
   border-bottom: 2px solid #ccc;
   margin: 4px;
@@ -159,7 +173,7 @@ div.popup hr {
 
 div.popup h2 {
   font-size: 110%;
-  font-weight: 600;
+  font-weight: bold;
   margin: 4px;
 }
 
@@ -170,7 +184,7 @@ div.popup h2 {
 }
 #install ol p {
   font-size: 50%;  /* revert above */
-  font-weight: 300;
+  font-weight: normal;
 }
 
 #install pre {

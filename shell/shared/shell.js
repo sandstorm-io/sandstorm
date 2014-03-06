@@ -272,7 +272,7 @@ Router.map(function () {
       if (app === undefined) {
         // Apparently, this app is not installed nor installing, which implies that no URL was
         // provided, which means we cannot install it.
-        // TODO(now):  Display upload page?
+        // TODO(soon):  Display upload page?
         return { error: "Unknown app ID: " + this.params.appid +
                         "\nPerhaps it hasn't been uploaded?" };
       }

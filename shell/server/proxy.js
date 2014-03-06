@@ -140,7 +140,6 @@ function startGrainInternal(appid, grainid, command, isNew) {
   args = args.concat(command.args);
 
   var proc = ChildProcess.spawn("sandstorm-supervisor", args, {
-    // TODO(soon): Make sure supervisor doesn't pass stdio raw into the grain.
     stdio: ["ignore", "pipe", process.stderr],
     detached: true
   });
@@ -696,6 +695,13 @@ Proxy.prototype.handleWebSocket = function (request, socket, head, retryCount) {
 
       // Note:  At this point errors are out of our hands.
     });
+  }).catch(function (error) {
+    // If we had a network failure, try reconnecting and retrying.  Only try this once, though.
+    if ("nature" in error && error.nature === "networkFailure" && retryCount < 1) {
+      self.resetConnection();
+      return self.handleWebSocket(request, socket, head, retryCount + 1);
+    } else {
+      throw error;
+    }
   });
-  // TODO(now):  Check for network error and retry like with regular requests.
 }

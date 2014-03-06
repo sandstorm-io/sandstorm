@@ -49,7 +49,7 @@
       <pre>{{error}}</pre>
     {{else}}
     {{#if port}}
-      <iframe src="http://localhost:{{port}}"></iframe>
+      <iframe src="http://localhost:{{port}}/_sandstorm-init?sessionid={{sessionid}}"></iframe>
     {{else}}
       <p>Loading app...
     {{/if}}

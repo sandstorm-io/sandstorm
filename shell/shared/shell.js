@@ -190,7 +190,7 @@ Router.map(function () {
         currentSessionId = sessionid;
         var session = Sessions.findOne({sessionid: sessionid});
         if (session) {
-          return { port: session.port };
+          return { sessionid: sessionid, port: session.port };
         } else {
           Session.set("session-" + grainid, undefined);
           return {};

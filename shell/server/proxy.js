@@ -98,7 +98,7 @@ Meteor.methods({
       startGrainInternal(grain.appid, grainid, app.manifest.continueCommand, false);
     }
 
-    var proxy = new Proxy(grainid);
+    var proxy = new Proxy(grainid, sessionid);
     proxies[sessionid] = proxy;
     var port = waitPromise(proxy.getPort());
 
@@ -189,7 +189,7 @@ Meteor.startup(function () {
   var usedPorts = {};
   Sessions.find({}).forEach(function (session) {
     // Try to recreate the proxy on the same port as before.
-    var proxy = new Proxy(session.grainid, session.port);
+    var proxy = new Proxy(session.grainid, session.sessionid, session.port);
 
     try {
       waitPromise(proxy.getPort());
@@ -237,12 +237,18 @@ function choosePort() {
   }
 }
 
-function Proxy(grainid, preferredPort) {
+function Proxy(grainid, sessionid, preferredPort) {
   this.grainid = grainid;
+  this.sessionid = sessionid;
 
   var self = this;
 
   this.server = Http.createServer(function (request, response) {
+    if (request.url === "/_sandstorm-init?sessionid=" + self.sessionid) {
+      self.doSessionInit(request, response);
+      return;
+    }
+
     readAll(request).then(function (data) {
       return self.handleRequest(request, data, response, 0);
     }).catch(function (err) {
@@ -254,7 +260,11 @@ function Proxy(grainid, preferredPort) {
       if (err.nature || err.durability) {
         body += "\ntype: " + (err.durability || "") + " " + (err.nature || "(unknown)")
       }
-      response.writeHead(500, "Internal Server Error", { "Content-Type": "text/plain" });
+      if (err instanceof Meteor.Error) {
+        response.writeHead(err.error, err.reason, { "Content-Type": "text/plain" });
+      } else {
+        response.writeHead(500, "Internal Server Error", { "Content-Type": "text/plain" });
+      }
       response.end(body);
     });
   });
@@ -362,6 +372,83 @@ Proxy.prototype.close = function () {
 }
 
 // -----------------------------------------------------------------------------
+// Session cookie management
+
+function parseCookies(request) {
+  var header = request.headers["cookie"];
+
+  var result = { cookies: [] };
+  if (header) {
+    var reqCookies = header.split(";");
+    for (var i in reqCookies) {
+      var reqCookie = reqCookies[i];
+      var equalsPos = reqCookie.indexOf("=");
+      var cookie;
+      if (equalsPos === -1) {
+        cookie = {key: reqCookie.trim(), value: ""};
+      } else {
+        cookie = {key: reqCookie.slice(0, equalsPos).trim(), value: reqCookie.slice(equalsPos + 1)};
+      }
+
+      if (cookie.key === "sandstorm-sid") {
+        if ("sessionid" in result) {
+          throw new Error("Multiple sandstorm session IDs?");
+        }
+        result.sessionid = cookie.value;
+      } else {
+        result.cookies.push(cookie);
+      }
+    }
+  }
+
+  return result;
+}
+
+function makeClearCookieHeader(cookie) {
+  return cookie.key + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+}
+
+Proxy.prototype.doSessionInit = function (request, response) {
+  var parseResult = parseCookies(request);
+
+  if (parseResult.sessionid !== this.sessionid) {
+    // We need to set the session ID cookie and clear all other cookies.
+    //
+    // TODO(soon):  We ought to clear LocalStorage too, but that's complicated, and there may be
+    //   still be other things.  Longer-term we need randomized origins.
+    var setCookieHeaders = parseResult.cookies.map(makeClearCookieHeader);
+
+    // Also set the session ID.
+    setCookieHeaders.push(["sandstorm-sid=", this.sessionid, "; Max-Age=31536000"].join(""));
+
+    response.setHeader("Set-Cookie", setCookieHeaders);
+  }
+
+  // Redirect to the app's root URL.
+  // Note:  All browsers support relative locations and the next update to HTTP/1.1 will officially
+  //   make them valid.  http://tools.ietf.org/html/draft-ietf-httpbis-p2-semantics-26#page-67
+  response.writeHead(303, "See Other", { "Location": "/" });
+  response.end();
+}
+
+Proxy.prototype.makeContext = function (request) {
+  // Parses the cookies from the request, checks that the session ID is present and valid, then
+  // returns the request context which contains the other cookies.  Throws an exception if the
+  // session ID is missing or invalid.
+
+  var parseResult = parseCookies(request);
+  if (!parseResult.sessionid || parseResult.sessionid !== this.sessionid) {
+    throw new Meteor.Error(403, "Unauthorized");
+  }
+
+  var context = {};
+  if (parseResult.cookies.length > 0) {
+    context.cookies = parseResult.cookies;
+  }
+  return context;
+}
+
+// -----------------------------------------------------------------------------
 // Regular HTTP request handling
 
 function readAll(stream) {
@@ -377,22 +464,6 @@ function readAll(stream) {
     });
     stream.on("error", reject);
   });
-}
-
-function parseCookies(header) {
-  var result = [];
-  var reqCookies = header.split(";");
-  for (var i in reqCookies) {
-    var reqCookie = reqCookies[i];
-    var equalsPos = reqCookie.indexOf("=");
-    if (equalsPos == -1) {
-      result.push({key: reqCookie.trim(), value: ""});
-    } else {
-      result.push({key: reqCookie.slice(0, equalsPos).trim(),
-                   value: reqCookie.slice(equalsPos + 1)});
-    }
-  }
-  return result;
 }
 
 function makeSetCookieHeader(cookie) {
@@ -442,14 +513,8 @@ var errorCodes = {
 Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
   var self = this;
 
-  return Promise.cast(undefined).then(function (resolve, reject) {
-    // Parse the context.
-    var context = {};
-    if ("cookie" in request.headers) {
-      context.cookies = parseCookies(request.headers.cookie);
-    }
-    return context;
-
+  return Promise.cast(undefined).then(function () {
+    return self.makeContext(request);
   }).then(function (context) {
     // Send the RPC.
     var path = request.url.slice(1);  // remove leading '/'
@@ -582,7 +647,9 @@ function pumpWebSocket(socket, rpcStream) {
 Proxy.prototype.handleWebSocket = function (request, socket, head, retryCount) {
   var self = this;
 
-  return Promise.cast(undefined).then(function (requestInfo) {
+  return Promise.cast(undefined).then(function () {
+    return self.makeContext(request);
+  }).then(function (context) {
     var path = request.url.slice(1);  // remove leading '/'
     var session = self.getSession(request);
 
@@ -592,11 +659,6 @@ Proxy.prototype.handleWebSocket = function (request, socket, head, retryCount) {
 
     var magic = request.headers["sec-websocket-key"] + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     var acceptKey = Crypto.createHash("sha1").update(magic).digest("base64");
-
-    var context = {};
-    if ("cookie" in request.headers) {
-      context.cookies = parseCookies(request.headers.cookie);
-    }
 
     var protocols = [];
     if ("sec-websocket-protocol" in request.headers) {

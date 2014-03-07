@@ -22,6 +22,25 @@ Apps = new Meteor.Collection("apps");
 UserActions = new Meteor.Collection("userActions");
 Grains = new Meteor.Collection("grains");
 Sessions = new Meteor.Collection("sessions");
+SignupKeys = new Meteor.Collection("signupKeys");
+
+function isSignedUp() {
+  var user = Meteor.user();
+  if (user && user.signupKey) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+function isAdmin() {
+  var user = Meteor.user();
+  if (user && user.isAdmin) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 if (Meteor.isServer) {
   Apps.allow({
@@ -33,7 +52,7 @@ if (Meteor.isServer) {
 
   UserActions.allow({
     insert: function (userId, action) {
-      return userId && action.userid === userId;
+      return userId && isSignedUp() && action.userid === userId;
     }
   });
 
@@ -51,12 +70,61 @@ if (Meteor.isServer) {
       return [];
     }
   });
+
+  Meteor.publish("credentials", function () {
+    if (this.userId) {
+      return Meteor.users.find({_id: this.userId}, {fields: {signupKey: 1, isAdmin: 1}});
+    } else {
+      return [];
+    }
+  });
+
+  Meteor.publish("signupKey", function (key) {
+    return SignupKeys.find(key);
+  });
+
+  Meteor.methods({
+    useSignupKey: function (key) {
+      if (!this.userId) {
+        throw new Meteor.Error(403, "Must be signed in.");
+      }
+
+      if (isSignedUp()) {
+        // Don't waste it.
+        return;
+      }
+
+      var keyInfo = SignupKeys.find(key);
+      if (!keyInfo || keyInfo.used) {
+        throw new Meteor.Error(403, "Invalid key or already used.");
+      }
+
+      Meteor.users.update(this.userId, {$set: {signupKey: key}});
+      SignupKeys.update(key, {$set: {used: true}});
+    },
+
+    createSignupKey: function (note) {
+      if (!isAdmin()) {
+        throw new Meteor.Error(403, "Must be admin to create keys.");
+      }
+
+      var key = Random.id();
+      SignupKeys.insert({_id: key, used: false, note: note});
+      return key;
+    }
+  });
 }
 
 Meteor.methods({
   ensureInstalled: function (appid, url) {
     if (!this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "You must be logged in to install apps.");
+    }
+
+    if (!isSignedUp()) {
+      throw new Meteor.Error(403, "Unauthorized",
+          "Sorry, Sandstorm is in closed alpha.  You must receive an alpha key before you " +
+          "can install apps.");
     }
 
     var app = Apps.findOne({ appid: appid });
@@ -209,6 +277,26 @@ if (Meteor.isClient) {
       }
     }
   });
+
+  Template.signupMint.events({
+    "click #create": function (event) {
+      var note = document.getElementById("key-note").value;
+
+      Meteor.call("createSignupKey", note, function (error, key) {
+        if (error) {
+          Session.set("signupMintMessage", { error: error.toString() });
+        } else {
+          Session.set("signupMintMessage", {
+            url: document.location.origin + Router.routes.signup.path({key: key})
+          });
+        }
+      });
+    },
+
+    "click #retry": function (event) {
+      Session.set("signupMintMessage", undefined);
+    },
+  });
 }
 
 if (Meteor.isClient) {
@@ -270,16 +358,24 @@ Router.map(function () {
     path: "/install/:appid",
 
     waitOn: function () {
-      // TODO(perf):  Does this subscription get stop()ed when the user browses away?
-      return Meteor.subscribe("apps", this.params.appid);
+      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
+      return [
+        Meteor.subscribe("apps", this.params.appid),
+        Meteor.subscribe("credentials")
+      ];
     },
 
     data: function () {
       activeAppId = undefined;
       appDatabaseId = undefined;
 
-      if (!Meteor.userId()) {
-        return { error: "You must log in to install apps." };
+      var userId = Meteor.userId();
+      if (!userId) {
+        return { error: "You must sign in to install apps." };
+      }
+      if (!isSignedUp()) {
+        return { error: "Sorry, Sandstorm is in closed alpha.  You must receive an alpha " +
+                        "key before you can install apps." };
       }
 
       if (this.params.url) {
@@ -323,6 +419,49 @@ Router.map(function () {
       } else {
         return { step: "confirm" };
       }
+    }
+  });
+
+  this.route("signup", {
+    path: "/signup/:key",
+
+    waitOn: function () {
+      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
+      return [
+        Meteor.subscribe("signupKey", this.params.key),
+        Meteor.subscribe("credentials")
+      ];
+    },
+
+    data: function () {
+      var keyInfo = SignupKeys.findOne(this.params.key);
+
+      var result = {
+        keyIsValid: !!keyInfo,
+        keyIsUsed: keyInfo && keyInfo.used,
+        alreadySignedUp: isSignedUp()
+      };
+
+      if (result.alreadySignedUp) {
+        Router.go("root");
+      } else if (result.keyIsValid && !result.keyIsUsed && Meteor.userId()) {
+        Meteor.call("useSignupKey", this.params.key);
+      }
+
+      return result;
+    }
+  });
+
+  this.route("signupMint", {
+    path: "/signup-mint",
+
+    waitOn: function () {
+      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
+      return Meteor.subscribe("credentials");
+    },
+
+    data: function () {
+      return Session.get("signupMintMessage") || {};
     }
   });
 });

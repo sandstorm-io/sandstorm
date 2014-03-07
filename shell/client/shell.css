@@ -89,7 +89,7 @@ img {
   vertical-align: middle;
 }
 
-#app, #install, #intro {
+#app, #install, #intro, #signup {
   margin: 0;
   padding: 0;
   background-color: white;
@@ -99,6 +99,23 @@ img {
   top: 34px;
   bottom: 0px;
   color: black;
+}
+
+.centered-box {
+  margin: 16px auto;
+  padding: 16px;
+  border-radius: 8px;
+  width: 400px;
+  background-color: #eee;
+  font-size: 125%;
+}
+
+.centered-box p:nth-child(1) {
+  margin-top: 0;
+}
+
+.centered-box p {
+  margin-bottom: 0;
 }
 
 #apps-ico {
@@ -196,6 +213,10 @@ div.popup h2 {
   margin: 4px;
 }
 
+#install {
+  padding: 8px;
+}
+
 #install ol {
   text-align: center;
   list-style-type: none;
@@ -231,3 +252,7 @@ div.popup h2 {
 #install.instep-analyze  #step-analyze  .progress { display: inline; }
 #install.instep-confirm  #step-confirm  .confirm-form { display: block; }
 #install.instep-run      #step-run      .done-notice { display: block; }
+
+#key-note {
+  width: 300px;
+}

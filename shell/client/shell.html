@@ -114,3 +114,42 @@ License along with Sandstorm.  If not, see
     </div>
   {{/if}}
 </template>
+
+<template name="signup">
+  <div id="signup">
+  <div class="centered-box">
+  {{#if keyIsValid}}
+    {{#if keyIsUsed}}
+      <p>Sorry, this signup key has already been used.
+    {{else}}
+      {{#if currentUser}}
+        <p>Please wait...
+      {{else}}
+        <p>You've been invited to join the Sandstorm alpha!  First, you have to sign in.  Click
+          "Sign in" in the upper-right.
+      {{/if}}
+    {{/if}}
+  {{else}}
+    <p>Sorry, this is not a valid signup key.
+  {{/if}}
+  </div>
+  </div>
+</template>
+
+<template name="signupMint">
+  <div id="signup">
+  <div class="centered-box">
+    {{#if error}}
+      <p>{{error}}
+      <p><button id="retry">Try Again</button>
+    {{else}}
+      {{#if url}}
+        <p>New key: <a href="{{url}}">{{url}}</a>
+        <p><button id="retry">Create Another</button>
+      {{else}}
+        <p><input id="key-note" type="text" placeholder="notes"> <button id="create">Create</button>
+      {{/if}}
+    {{/if}}
+  </div>
+  </div>
+</template>

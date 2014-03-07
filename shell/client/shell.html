@@ -43,7 +43,7 @@ License along with Sandstorm.  If not, see
     <table><tr><td>
     <h1>Open</h1>
     {{#each grains}}
-    <p class="openGrain" id="openGrain-{{grainid}}">{{title}}
+    <p class="openGrain" id="openGrain-{{_id}}">{{title}}
     {{else}}
     <p><i>You have no files...</i>
     {{/each}}
@@ -77,7 +77,7 @@ License along with Sandstorm.  If not, see
       <pre>{{error}}</pre>
     {{else}}
     {{#if port}}
-      <iframe src="http://{{hostname}}:{{port}}/_sandstorm-init?sessionid={{sessionid}}"></iframe>
+      <iframe src="http://{{hostname}}:{{port}}/_sandstorm-init?sessionid={{sessionId}}"></iframe>
     {{else}}
       <p>Loading app...
     {{/if}}

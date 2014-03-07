@@ -72,82 +72,77 @@ var runningGrains = {};
 var proxies = {};
 
 Meteor.methods({
-  newGrain: function (appid, command, title) {
+  newGrain: function (appId, command, title) {
     // Create and start a new grain.
 
     if (!this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "Must be logged in to create grains.");
     }
 
-    var grainid = Random.id();
-    Grains.insert({ appid: appid, grainid: grainid, userid: this.userId, title: title });
-    startGrainInternal(appid, grainid, command, true);
-    return grainid;
+    var grainId = Random.id();
+    Grains.insert({ _id: grainId, appId: appId, userId: this.userId, title: title });
+    startGrainInternal(appId, grainId, command, true);
+    return grainId;
   },
 
-  openSession: function (grainid) {
+  openSession: function (grainId) {
     // Open a new UI session on an existing grain.  Starts the grain if it is not already
     // running.
 
-    check(grainid, String);
+    check(grainId, String);
 
-    var sessionid = Random.id();
-
-    if (Sessions.findOne({sessionid: sessionid})) {
-      // Already done.
-      return;
-    }
+    var sessionId = Random.id();
 
     // Start the grain if it is not running.
-    var runningGrain = runningGrains[grainid];
+    var runningGrain = runningGrains[grainId];
     if (runningGrain) {
       waitPromise(runningGrain);
     } else {
-      var grain = Grains.findOne({grainid: grainid});
+      var grain = Grains.findOne(grainId);
       if (!grain) {
-        throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainid);
+        throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainId);
       }
 
-      var app = Apps.findOne({appid: grain.appid});
+      var app = Apps.findOne(grain.appId);
       if (!app) {
-        throw new Meteor.Error(500, "Grain's app not installed", "App ID: " + grain.appid);
+        throw new Meteor.Error(500, "Grain's app not installed", "App ID: " + grain.appId);
       }
 
       if (!("continueCommand" in app.manifest)) {
         throw new Meteor.Error(500, "App manifest defines no continueCommand.",
-                               "App ID: " + grain.appid);
+                               "App ID: " + grain.appId);
       }
 
-      startGrainInternal(grain.appid, grainid, app.manifest.continueCommand, false);
+      startGrainInternal(grain.appId, grainId, app.manifest.continueCommand, false);
     }
 
-    var proxy = new Proxy(grainid, sessionid);
-    proxies[sessionid] = proxy;
+    var proxy = new Proxy(grainId, sessionId);
+    proxies[sessionId] = proxy;
     var port = waitPromise(proxy.getPort());
 
     Sessions.insert({
-      grainid: grainid,
-      sessionid: sessionid,
+      _id: sessionId,
+      grainId: grainId,
       port: port,
       timestamp: new Date().getTime()
     });
 
-    return {sessionid: sessionid, port: port};
+    return {sessionId: sessionId, port: port};
   },
 
-  keepSessionAlive: function (sessionid) {
+  keepSessionAlive: function (sessionId) {
     // TODO(security):  Prevent draining someone else's quota by holding open several grains shared
     //   by them.
-    Sessions.update({sessionid: sessionid}, {$set: {timestamp: new Date().getTime()}});
-    proxies[sessionid].keepAlive();
+    Sessions.update(sessionId, {$set: {timestamp: new Date().getTime()}});
+    proxies[sessionId].keepAlive();
   }
 });
 
-function startGrainInternal(appid, grainid, command, isNew) {
+function startGrainInternal(appId, grainId, command, isNew) {
   // Starts the grain supervisor.  Must be executed in a Meteor context.  Blocks until grain is
   // started.
 
-  var args = [appid, grainid];
+  var args = [appId, grainId];
   if (isNew) args.push("-n");
   if (command.environ) {
     for (var i in command.environ) {
@@ -164,7 +159,7 @@ function startGrainInternal(appid, grainid, command, isNew) {
     detached: true
   });
   proc.on("exit", function () {
-    delete runningGrains[grainid];
+    delete runningGrains[grainId];
   });
   proc.unref();
 
@@ -183,7 +178,7 @@ function startGrainInternal(appid, grainid, command, isNew) {
     });
   });
 
-  runningGrains[grainid] = whenReady;
+  runningGrains[grainId] = whenReady;
   waitPromise(whenReady);
 }
 
@@ -192,10 +187,10 @@ var TIMEOUT_MS = 300000;
 function gcSessions() {
   var now = new Date().getTime();
   Sessions.find({timestamp: {$lt: (now - TIMEOUT_MS)}}).forEach(function (session) {
-    var proxy = proxies[session.sessionid];
+    var proxy = proxies[session._id];
     if (proxy) {
       proxy.close();
-      delete proxies[session.sessionid];
+      delete proxies[session._id];
     }
     Sessions.remove(session._id);
   });
@@ -212,7 +207,7 @@ Meteor.startup(function () {
   var usedPorts = {};
   Sessions.find({}).forEach(function (session) {
     // Try to recreate the proxy on the same port as before.
-    var proxy = new Proxy(session.grainid, session.sessionid, session.port);
+    var proxy = new Proxy(session.grainId, session._id, session.port);
 
     try {
       waitPromise(proxy.getPort());
@@ -222,7 +217,7 @@ Meteor.startup(function () {
       return;
     }
 
-    proxies[session.sessionid] = proxy;
+    proxies[session._id] = proxy;
 
     // If the port looks like one we might accidentally reassign, move nextPort past it and arrange
     // to omit it from availablePorts.
@@ -260,14 +255,14 @@ function choosePort() {
   }
 }
 
-function Proxy(grainid, sessionid, preferredPort) {
-  this.grainid = grainid;
-  this.sessionid = sessionid;
+function Proxy(grainId, sessionId, preferredPort) {
+  this.grainId = grainId;
+  this.sessionId = sessionId;
 
   var self = this;
 
   this.server = Http.createServer(function (request, response) {
-    if (request.url === "/_sandstorm-init?sessionid=" + self.sessionid) {
+    if (request.url === "/_sandstorm-init?sessionid=" + self.sessionId) {
       self.doSessionInit(request, response);
       return;
     }
@@ -334,7 +329,7 @@ Proxy.prototype.getConnection = function () {
   // TODO(perf):  Several proxies could share a connection if opening the same grain in multiple
   //   tabs.  Each should be a separate session.
   if (!this.connection) {
-    this.connection = Capnp.connect("unix:" + Path.join(GRAINDIR, this.grainid, "socket"));
+    this.connection = Capnp.connect("unix:" + Path.join(GRAINDIR, this.grainId, "socket"));
     this.supervisor = this.getConnection().restore(null, Supervisor);
     this.uiView = this.supervisor.getMainView().view;
   }
@@ -413,10 +408,10 @@ function parseCookies(request) {
       }
 
       if (cookie.key === "sandstorm-sid") {
-        if ("sessionid" in result) {
+        if (result.sessionId) {
           throw new Error("Multiple sandstorm session IDs?");
         }
-        result.sessionid = cookie.value;
+        result.sessionId = cookie.value;
       } else {
         result.cookies.push(cookie);
       }
@@ -433,7 +428,7 @@ function makeClearCookieHeader(cookie) {
 Proxy.prototype.doSessionInit = function (request, response) {
   var parseResult = parseCookies(request);
 
-  if (parseResult.sessionid !== this.sessionid) {
+  if (parseResult.sessionId !== this.sessionId) {
     // We need to set the session ID cookie and clear all other cookies.
     //
     // TODO(soon):  We ought to clear LocalStorage too, but that's complicated, and there may be
@@ -443,10 +438,13 @@ Proxy.prototype.doSessionInit = function (request, response) {
     var setCookieHeaders = parseResult.cookies.map(makeClearCookieHeader);
 
     // Also set the session ID.
-    setCookieHeaders.push(["sandstorm-sid=", this.sessionid, "; Max-Age=31536000"].join(""));
+    setCookieHeaders.push(
+        ["sandstorm-sid=", this.sessionId, "; Max-Age=31536000; HttpOnly"].join(""));
 
     response.setHeader("Set-Cookie", setCookieHeaders);
   }
+
+  response.setHeader("Cache-Control", "no-cache, private");
 
   // Redirect to the app's root URL.
   // Note:  All browsers support relative locations and the next update to HTTP/1.1 will officially
@@ -461,7 +459,7 @@ Proxy.prototype.makeContext = function (request) {
   // session ID is missing or invalid.
 
   var parseResult = parseCookies(request);
-  if (!parseResult.sessionid || parseResult.sessionid !== this.sessionid) {
+  if (!parseResult.sessionId || parseResult.sessionId !== this.sessionId) {
     throw new Meteor.Error(403, "Unauthorized");
   }
 

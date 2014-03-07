@@ -61,13 +61,33 @@ typedef unsigned int uint;
 pid_t childPid = 0;
 bool keepAlive = true;
 
-void killChildAndExit(int status) KJ_NORETURN;
-void killChildAndExit(int status) {
+void logSafely(const char* text) {
+  // Log a message in an async-signal-safe way.
+
+  while (text[0] != '\0') {
+    ssize_t n = write(STDERR_FILENO, text, strlen(text));
+    if (n < 0) return;
+    text += n;
+  }
+}
+
+#define SANDSTORM_LOG(text) \
+  logSafely("** SANDSTORM SUPERVISOR: " text "\n")
+
+void killChild() {
   if (childPid != 0) {
     kill(childPid, SIGKILL);
+    childPid = 0;
   }
+
   // We don't have to waitpid() because when we exit the child will be adopted by init which will
   // automatically reap it.
+}
+
+void killChildAndExit(int status) KJ_NORETURN;
+void killChildAndExit(int status) {
+  killChild();
+
   // TODO(cleanup):  Decide what exit status is supposed to mean.  Maybe it should just always be
   //   zero?
   _exit(status);
@@ -77,21 +97,26 @@ void signalHandler(int signo) {
   switch (signo) {
     case SIGCHLD:
       // Oh, our child exited.  I guess we're useless now.
+      SANDSTORM_LOG("Grain shutting down because child exited.");
       _exit(0);
 
     case SIGALRM:
       if (keepAlive) {
+        SANDSTORM_LOG("Grain still in use; staying up for now.");
         keepAlive = false;
         return;
       }
+      SANDSTORM_LOG("Grain no longer in use; shutting down.");
       killChildAndExit(0);
 
     case SIGINT:
     case SIGTERM:
+      SANDSTORM_LOG("Grain supervisor terminated by signal.");
       killChildAndExit(0);
 
     default:
       // Some signal that should cause death.
+      SANDSTORM_LOG("Grain supervisor crashed due to signal.");
       killChildAndExit(1);
   }
 }
@@ -156,7 +181,13 @@ class SupervisorMain {
   // discussed in Sandstorm and Cap'n Proto.)
 
 public:
-  SupervisorMain(kj::ProcessContext& context): context(context) {}
+  SupervisorMain(kj::ProcessContext& context): context(context) {
+    // Make sure we didn't inherit a weird signal mask from the parent process.  Gotta do this as
+    // early as possible so as not to confuse KJ code that deals with signals.
+    sigset_t sigset;
+    KJ_SYSCALL(sigemptyset(&sigset));
+    KJ_SYSCALL(sigprocmask(SIG_SETMASK, &sigset, nullptr));
+  }
 
   kj::MainFunc getMain() {
     return kj::MainBuilder(context, "Sandstorm version 0.0",
@@ -299,6 +330,8 @@ public:
 
     checkIfAlreadyRunning();  // Exits if another supervisor is still running in this sandbox.
 
+    SANDSTORM_LOG("Starting up grain.");
+
     registerSignalHandlers();
 
     // Allocate the API socket.
@@ -313,7 +346,7 @@ public:
       runChild(fds[1]);
     } else {
       // We're in the supervisor.
-      KJ_DEFER(killChildAndExit(1));
+      KJ_DEFER(killChild());
       KJ_SYSCALL(close(fds[1]));
       runSupervisor(fds[0]);
     }
@@ -918,6 +951,8 @@ public:
 
     // Wait for disconnect or accept loop failure, then exit.
     acceptTask.exclusiveJoin(appNetwork.onDisconnect()).wait(ioContext.waitScope);
+
+    SANDSTORM_LOG("App disconnected API socket; shutting down grain.");
     killChildAndExit(1);
   }
 };

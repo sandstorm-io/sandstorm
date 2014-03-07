@@ -60,19 +60,19 @@ if (Meteor.isServer) {
 
   UserActions.allow({
     insert: function (userId, action) {
-      return userId && isSignedUp() && action.userid === userId;
+      return userId && isSignedUp() && action.userId === userId;
     }
   });
 
-  Meteor.publish("apps", function (appid) {
-    return Apps.find({ appid: appid });
+  Meteor.publish("apps", function (appId) {
+    return Apps.find(appId);
   });
 
   Meteor.publish("grainsMenu", function () {
     if (this.userId) {
       return [
-        UserActions.find({userid: this.userId}),
-        Grains.find({userid: this.userId})
+        UserActions.find({userId: this.userId}),
+        Grains.find({userId: this.userId})
       ];
     } else {
       return [];
@@ -124,7 +124,7 @@ if (Meteor.isServer) {
 }
 
 Meteor.methods({
-  ensureInstalled: function (appid, url) {
+  ensureInstalled: function (appId, url) {
     if (!this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "You must be logged in to install apps.");
     }
@@ -135,19 +135,19 @@ Meteor.methods({
           "can install apps.");
     }
 
-    var app = Apps.findOne({ appid: appid });
+    var app = Apps.findOne(appId);
     if (app) {
       if (app.status === "ready" || app.status === "failed") {
         // Don't try to install.
         return;
       }
     } else {
-      Apps.insert({ appid: appid, status: "download", progress: 0 });
+      Apps.insert({ _id: appId, status: "download", progress: 0 });
     }
 
     // Start installing on the server side if we aren't already.
     if (!this.isSimulation) {
-      startInstall(appid, url);
+      startInstall(appId, url);
     }
   }
 });
@@ -158,17 +158,14 @@ if (Meteor.isServer) {
   var GRAINDIR = "/var/sandstorm/grains";
 
   Meteor.methods({
-    cancelDownload: function (appid) {
+    cancelDownload: function (appId) {
       // TODO(security):  Only let user cancel download if they initiated it.
-      cancelDownload(appid);
+      cancelDownload(appId);
     }
   });
 }
 
 if (Meteor.isClient) {
-  var activeAppId;
-  var appDatabaseId;
-
   Template.root.events({
     "click #logo": function (event) {
       doLogoAnimation(event.shiftKey, 0);
@@ -215,35 +212,35 @@ if (Meteor.isClient) {
       if (!title) return;
 
       // We need to ask the server to start a new grain, then browse to it.
-      Meteor.call("newGrain", action.appid, action.command, title, function (error, grainid) {
+      Meteor.call("newGrain", action.appId, action.command, title, function (error, grainId) {
         if (error) {
           console.error(error);
         } else {
-          Router.go("grain", {grainid: grainid});
+          Router.go("grain", {grainId: grainId});
         }
       });
     },
 
     "click .openGrain": function (event) {
-      var grainid = event.currentTarget.id.split("-")[1];
+      var grainId = event.currentTarget.id.split("-")[1];
       document.getElementById("apps").style.display = "none";
-      Router.go("grain", {grainid: grainid});
+      Router.go("grain", {grainId: grainId});
     }
   });
 
   Template.grainList.helpers({
     grains: function () {
-      var userid = Meteor.userId();
-      if (userid) {
-        return Grains.find({userid: userid}).fetch();
+      var userId = Meteor.userId();
+      if (userId) {
+        return Grains.find({userId: userId}).fetch();
       } else {
         return [];
       }
     },
     actions: function () {
-      var userid = Meteor.userId();
-      if (userid) {
-        return UserActions.find({userid: userid}).fetch();
+      var userId = Meteor.userId();
+      if (userId) {
+        return UserActions.find({userId: userId}).fetch();
       } else {
         return [];
       }
@@ -252,29 +249,23 @@ if (Meteor.isClient) {
 
   Template.install.events({
     "click #retry": function (event) {
-      if (appDatabaseId) {
-        Apps.remove(appDatabaseId);
-        appDatabaseId = undefined;
-      }
+      Apps.remove(this.appId);
     },
 
     "click #cancelDownload": function (event) {
-      if (activeAppId) {
-        Meteor.call("cancelDownload", activeAppId);
-        activeAppId = undefined;
-      }
+      Meteor.call("cancelDownload", this.appId);
     },
 
     "click #confirmInstall": function (event) {
-      var app = Apps.findOne(appDatabaseId);
+      var app = Apps.findOne(this.appId);
       if (app) {
         var actions = app.manifest.actions;
         for (i in actions) {
           var action = actions[i];
           if ("none" in action.input) {
             UserActions.insert({
-              userid: Meteor.userId(),
-              appid: app.appid,
+              userId: Meteor.userId(),
+              appId: app._id,
               title: action.title.defaultText,
               command: action.command
             });
@@ -330,27 +321,27 @@ Router.map(function () {
   });
 
   this.route("grain", {
-    path: "/grain/:grainid",
+    path: "/grain/:grainId",
 
     data: function () {
       currentSessionId = undefined;
-      var grainid = this.params.grainid;
-      var err = Session.get("session-" + grainid + "-error");
+      var grainId = this.params.grainId;
+      var err = Session.get("session-" + grainId + "-error");
       if (err) {
         return { error: err };
       }
 
-      var session = Session.get("session-" + grainid);
+      var session = Session.get("session-" + grainId);
       if (session) {
-        currentSessionId = session.sessionid;
+        currentSessionId = session.sessionId;
         return _.extend({ hostname: document.location.hostname }, session);
       } else {
-        Meteor.call("openSession", grainid, function (error, session) {
+        Meteor.call("openSession", grainId, function (error, session) {
           if (error) {
-            Session.set("session-" + grainid + "-error", error.message);
+            Session.set("session-" + grainId + "-error", error.message);
           } else {
-            Session.set("session-" + grainid, session);
-            Session.set("session-" + grainid + "-error", undefined);
+            Session.set("session-" + grainId, session);
+            Session.set("session-" + grainId + "-error", undefined);
           }
         });
         return {};
@@ -377,44 +368,39 @@ Router.map(function () {
   });
 
   this.route("install", {
-    path: "/install/:appid",
+    path: "/install/:appId",
 
     waitOn: function () {
       // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
       return [
-        Meteor.subscribe("apps", this.params.appid),
+        Meteor.subscribe("apps", this.params.appId),
         Meteor.subscribe("credentials")
       ];
     },
 
     data: function () {
-      activeAppId = undefined;
-      appDatabaseId = undefined;
-
       var userId = Meteor.userId();
       if (!userId) {
-        return { error: "You must sign in to install apps." };
+        return { error: "You must sign in to install apps.", appId: this.params.appId };
       }
       if (!isSignedUp()) {
         return { error: "Sorry, Sandstorm is in closed alpha.  You must receive an alpha " +
-                        "key before you can install apps." };
+                        "key before you can install apps.", appId: this.params.appId };
       }
 
       if (this.params.url) {
-        Meteor.call("ensureInstalled", this.params.appid, this.params.url);
+        Meteor.call("ensureInstalled", this.params.appId, this.params.url);
       }
 
-      var app = Apps.findOne({ appid: this.params.appid });
+      var app = Apps.findOne(this.params.appId);
       if (app === undefined) {
         // Apparently, this app is not installed nor installing, which implies that no URL was
         // provided, which means we cannot install it.
         // TODO(soon):  Display upload page?
-        return { error: "Unknown app ID: " + this.params.appid +
-                        "\nPerhaps it hasn't been uploaded?" };
+        return { error: "Unknown app ID: " + this.params.appId +
+                        "\nPerhaps it hasn't been uploaded?",
+                 appId: this.params.appId };
       }
-
-      activeAppId = this.params.appid;
-      appDatabaseId = app._id;
 
       if (app.status !== "ready") {
         var progress;
@@ -431,15 +417,16 @@ Router.map(function () {
         return {
           step: app.status,
           progress: progress,
-          error: app.status === "failed" ? app.error : null
+          error: app.status === "failed" ? app.error : null,
+          appId: this.params.appId
         };
       }
 
-      if (UserActions.findOne({ userid: Meteor.userId(), appid: this.params.appid })) {
+      if (UserActions.findOne({ userId: Meteor.userId(), appId: this.params.appId })) {
         // This app appears to be installed already.
-        return { step: "run" };
+        return { step: "run", appId: this.params.appId };
       } else {
-        return { step: "confirm" };
+        return { step: "confirm", appId: this.params.appId };
       }
     }
   });

@@ -50,16 +50,16 @@ var inMeteor = Meteor.bindEnvironment(function (self, callback) { callback.call(
 // request.  The app installation process happens in the background, completing asynchornously, but
 // we need to be in a Meteor scope to update Mongo, so that's what this does.
 
-startInstall = function (appid, url, callback) {
-  if (!(appid in installers)) {
-    var installer = new AppInstaller(appid, url);
-    installers[appid] = installer;
+startInstall = function (appId, url, callback) {
+  if (!(appId in installers)) {
+    var installer = new AppInstaller(appId, url);
+    installers[appId] = installer;
     installer.start();
   }
 }
 
-cancelDownload = function (appid) {
-  var installer = installers[appid];
+cancelDownload = function (appId) {
+  var installer = installers[appId];
 
   // Don't do anything unless a download is in progress.
   if (installer && installer.downloadRequest) {
@@ -70,14 +70,14 @@ cancelDownload = function (appid) {
   }
 }
 
-function AppInstaller(appid, url, callback) {
-  this.appid = appid;
+function AppInstaller(appId, url, callback) {
+  this.appId = appId;
   this.url = url;
   this.urlHash = Crypto.createHash("sha256").update(url).digest("hex").slice(0, 32);
   this.downloadPath = Path.join(DOWNLOADDIR, this.urlHash + ".downloading");
   this.unverifiedPath = Path.join(DOWNLOADDIR, this.urlHash + ".unverified");
-  this.verifiedPath = Path.join(DOWNLOADDIR, this.appid + ".verified");
-  this.unpackedPath = Path.join(APPDIR, this.appid);
+  this.verifiedPath = Path.join(DOWNLOADDIR, this.appId + ".verified");
+  this.unpackedPath = Path.join(APPDIR, this.appId);
   this.unpackingPath = this.unpackedPath + ".unpacking";
   this.failed = false;
   this.callback = callback;
@@ -90,7 +90,7 @@ AppInstaller.prototype.updateProgress = function (status, progress, error, manif
   this.manifest = manifest || null;
 
   inMeteor(this, function () {
-    Apps.update({appid: this.appid}, {$set: {
+    Apps.update(this.appId, {$set: {
       status: this.status,
       progress: this.progress,
       error: this.error ? this.error.message : null,
@@ -109,7 +109,7 @@ AppInstaller.prototype.wrapCallback = function (method) {
       self.failed = true;
       self.cleanup();
       self.updateProgress("failed", 0, err);
-      delete installers[self.appid];
+      delete installers[self.appId];
       console.error("Failed to install app:", err.stack);
     }
   }
@@ -225,7 +225,7 @@ AppInstaller.prototype.doVerify = function () {
     hasher.update(chunk);
   }));
   input.on("end", this.wrapCallback(function () {
-    if (hasher.digest("hex").slice(0, 32) === this.appid) {
+    if (hasher.digest("hex").slice(0, 32) === this.appId) {
       Fs.renameSync(this.unverifiedPath, this.verifiedPath);
       this.doUnpack();
     } else {

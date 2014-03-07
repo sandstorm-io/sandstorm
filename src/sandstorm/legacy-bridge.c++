@@ -2,6 +2,8 @@
 // Copyright (c) 2014, Kenton Varda <temporal@gmail.com>
 // All rights reserved.
 //
+// This file is part of the Sandstorm API, which is licensed as follows.
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are met:
 //
@@ -21,6 +23,12 @@
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+// This program is useful for including in Sandstorm application packages where
+// the application itself is a legacy HTTP web server that does not understand
+// how to speak the Cap'n Proto interface directly.  This program will start up
+// that server and then redirect incoming requests to it over standard HTTP on
+// the loopback network interface.
 
 #include <kj/main.h>
 #include <kj/debug.h>

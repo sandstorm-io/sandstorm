@@ -247,7 +247,7 @@ Router.map(function () {
       var session = Session.get("session-" + grainid);
       if (session) {
         currentSessionId = session.sessionid;
-        return session;
+        return _.extend({ hostname: document.location.hostname }, session);
       } else {
         Meteor.call("openSession", grainid, function (error, session) {
           if (error) {
@@ -275,8 +275,6 @@ Router.map(function () {
     },
 
     data: function () {
-      // TODO(soon):  Don't display until Apps subscription loaded.
-
       activeAppId = undefined;
       appDatabaseId = undefined;
 

@@ -38,7 +38,7 @@ License along with Sandstorm.  If not, see
 </body>
 
 <template name="grainList">
-  {{#if currentUser}}<span id="apps-ico">Files ▾</span>{{/if}}
+  {{#if currentUser}}<span id="apps-ico">My Grains ▾</span>{{/if}}
   <div id="apps" class="popup">
     <table><tr><td>
     <h1>Open</h1>
@@ -77,7 +77,7 @@ License along with Sandstorm.  If not, see
       <pre>{{error}}</pre>
     {{else}}
     {{#if port}}
-      <iframe src="http://localhost:{{port}}/_sandstorm-init?sessionid={{sessionid}}"></iframe>
+      <iframe src="http://{{hostname}}:{{port}}/_sandstorm-init?sessionid={{sessionid}}"></iframe>
     {{else}}
       <p>Loading app...
     {{/if}}

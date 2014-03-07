@@ -331,7 +331,7 @@ function Proxy(grainid, sessionid, preferredPort) {
 }
 
 Proxy.prototype.getConnection = function () {
-  // TODO(soon):  Several proxies could share a connection if opening the same grain in multiple
+  // TODO(perf):  Several proxies could share a connection if opening the same grain in multiple
   //   tabs.  Each should be a separate session.
   if (!this.connection) {
     this.connection = Capnp.connect("unix:" + Path.join(GRAINDIR, this.grainid, "socket"));
@@ -342,7 +342,6 @@ Proxy.prototype.getConnection = function () {
 }
 
 Proxy.prototype.getSession = function (request) {
-  // TODO(soon):  Verify session cookie.
   if (!this.session) {
     this.getConnection();  // make sure we're connected
     var params = Capnp.serialize(WebSession.Params, {
@@ -438,7 +437,9 @@ Proxy.prototype.doSessionInit = function (request, response) {
     // We need to set the session ID cookie and clear all other cookies.
     //
     // TODO(soon):  We ought to clear LocalStorage too, but that's complicated, and there may be
-    //   still be other things.  Longer-term we need randomized origins.
+    //   still be other things.  Longer-term we need to use random hostnames as origins, but that's
+    //   complicated for people running on localhost as they'd have to set up a DNS server just to
+    //   configure a wildcard DNS.
     var setCookieHeaders = parseResult.cookies.map(makeClearCookieHeader);
 
     // Also set the session ID.

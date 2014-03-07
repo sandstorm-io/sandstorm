@@ -42,6 +42,14 @@ function isAdmin() {
   }
 }
 
+if (Meteor.isClient) {
+  var url = document.location.origin + "/link-handler/%s";
+  // TODO(soon):  Once the handler is installed on Firefox, it insists on showing a butterbar again
+  //   on every load to remind the user that it is already installed, but
+  //   isProtocolHandlerRegistered() is not implemented so there's no way to avoid it!  Argh!
+  navigator.registerProtocolHandler("web+sandstorm", url, "Sandstorm");
+}
+
 if (Meteor.isServer) {
   Apps.allow({
     remove: function (userId, app) {
@@ -351,6 +359,20 @@ Router.map(function () {
 
     unload: function () {
       currentSessionId = undefined;
+    }
+  });
+
+  this.route("linkHandler", {
+    path: "/link-handler/:url",
+
+    data: function () {
+      var url = this.params.url;
+      if (url.lastIndexOf("web+sandstorm:", 0) === 0) {
+        url = url.slice("web+sandstorm:".length);
+      }
+      // TODO(cleanup):  Didn't use Router.go() because the url may contain a query term.
+      document.location = "/install/" + url;
+      return {};
     }
   });
 

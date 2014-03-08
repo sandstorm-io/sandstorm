@@ -31,66 +31,6 @@ $import "/capnp/c++.capnp".namespace("sandstorm");
 using Util = import "util.capnp";
 
 # ========================================================================================
-# Manifest file
-
-struct Manifest {
-  # This manifest file defines an application.  The file `sandstorm-manifest` at the root of the
-  # application's `.spk` package contains a serialized (binary) instance of `Manifest`.
-
-  minApiVersion @0 :UInt32;
-  maxApiVersion @1 :UInt32;
-  # Min and max API versions against which this app is known to work.  `minApiVersion` primarily
-  # exists to warn the user if their instance is too old.  If the sandstorm instance is newer than
-  # `maxApiVersion`, it may engage backwards-compatibility hacks and hide features introduced in
-  # newer versions.
-
-  struct Command {
-    # Description of a command to execute.
-    #
-    # Note that commands specified this way are NOT interpreted by a shell.  If you want shell
-    # expansion, you must include a shell binary in your app and invoke it to interpret the
-    # command.
-
-    executablePath @0 :Text;  # Executable filename, within the .spk package.
-    args @1 :List(Text);      # Argument list, not including executable name.
-
-    environ @2 :List(Util.KeyValue);
-    # Environment variables to set.  The environment will be completely empty other than what you
-    # define here.
-  }
-
-  struct Action {
-    input :union {
-      none @0 :Void;
-      # This action creates a new grain with no input.  On startup, the grain will export a `UiView`
-      # as its default capability.
-
-      capability @1 :PowerboxQuery;
-      # This action creates a new grain from a capability.  When a capability matching the query
-      # is offered to the user (e.g. by another application calling SessionContext.offer()), this
-      # action will be listed as one of the things the user can do with it.
-      #
-      # On startup, the grain will export a `PowerboxAction` as its default capability.
-    }
-
-    command @2 :Command;
-    # Command to execute (in a newly-allocated grain) to run this action.
-
-    title @3 :Util.LocalizedText;
-    # Title of this action, to display in the action selector.
-
-    description @4 :Util.LocalizedText;
-    # Description of this action, suitable for help text.
-  }
-
-  actions @2 :List(Action);
-  # Actions which this grain offers.
-
-  continueCommand @3 :Command;
-  # Command to run to restart an already-created grain.
-}
-
-# ========================================================================================
 # Powerbox
 #
 # TODO(cleanup):  Put in separate file?  Note that PowerboxCapability must be declared before

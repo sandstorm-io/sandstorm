@@ -27,7 +27,6 @@ var Promise = Npm.require("es6-promise").Promise;
 var Future = Npm.require("fibers/future");
 var Http = Npm.require("http");
 
-var Grain = Capnp.import("sandstorm/grain.capnp");
 var WebSession = Capnp.import("sandstorm/web-session.capnp").WebSession;
 var Supervisor = Capnp.import("sandstorm/supervisor.capnp").Supervisor;
 var GRAINDIR = "/var/sandstorm/grains";

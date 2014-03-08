@@ -352,7 +352,7 @@ public:
     }
   }
 
-public:
+private:
   kj::ProcessContext& context;
 
   kj::String appName;

@@ -29,9 +29,13 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <sys/mman.h>
 #include <errno.h>
 #include <sandstorm/package.capnp.h>
+#include <stdlib.h>
+#include <dirent.h>
+#include <set>
 
 namespace sandstorm {
 
@@ -172,6 +176,20 @@ kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
   return kj::AutoCloseFd(fd);
 }
 
+kj::AutoCloseFd openTemporary(kj::StringPtr near) {
+  // Creates a temporary file in the same directory as the file specified by "near", immediately
+  // unlinks it, and then returns the file descriptor,  which will be open for both read and write.
+
+  // TODO(someday):  Use O_TMPFILE?  New in Linux 3.11.
+
+  int fd;
+  auto name = kj::str(near, ".XXXXXX");
+  KJ_SYSCALL(fd = mkstemp(name.begin()));
+  kj::AutoCloseFd result(fd);
+  KJ_SYSCALL(unlink(name.cStr()));
+  return result;
+}
+
 size_t getFileSize(int fd, kj::StringPtr filename) {
   struct stat stats;
   KJ_SYSCALL(fstat(fd, &stats));
@@ -179,32 +197,123 @@ size_t getFileSize(int fd, kj::StringPtr filename) {
   return stats.st_size;
 }
 
-class MmappedFile: public kj::ArrayPtr<const byte> {
+class MemoryMapping {
 public:
-  MmappedFile(kj::StringPtr filename)
-      : fd(raiiOpen(filename, O_RDONLY)) {
+  MemoryMapping(): content(nullptr) {}
+
+  explicit MemoryMapping(int fd, kj::StringPtr filename): content(nullptr) {
     size_t size = getFileSize(fd, filename);
 
-    void* ptr = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
-    if (ptr == MAP_FAILED) {
-      KJ_FAIL_SYSCALL("mmap", errno, filename);
+    if (size != 0) {
+      void* ptr = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
+      if (ptr == MAP_FAILED) {
+        KJ_FAIL_SYSCALL("mmap", errno, filename);
+      }
+
+      content = kj::arrayPtr(reinterpret_cast<byte*>(ptr), size);
     }
-
-    kj::implicitCast<kj::ArrayPtr<const byte>&>(*this) =
-        kj::arrayPtr(reinterpret_cast<byte*>(ptr), size);
   }
 
-  ~MmappedFile() {
-    KJ_SYSCALL(munmap(const_cast<byte*>(begin()), size()));
+  ~MemoryMapping() {
+    if (content != nullptr) {
+      KJ_SYSCALL(munmap(content.begin(), content.size()));
+    }
   }
 
-  inline kj::ArrayPtr<const capnp::word> asWords() const {
-    return kj::arrayPtr(reinterpret_cast<const capnp::word*>(begin()),
-                        size() / sizeof(capnp::word));
+  KJ_DISALLOW_COPY(MemoryMapping);
+  inline MemoryMapping(MemoryMapping&& other): content(other.content) {
+    other.content = nullptr;
+  }
+  inline MemoryMapping& operator=(MemoryMapping&& other) {
+    MemoryMapping old(kj::mv(*this));
+    content = other.content;
+    other.content = nullptr;
+    return *this;
+  }
+
+  inline operator kj::ArrayPtr<const byte>() const {
+    return content;
+  }
+
+  inline operator capnp::Data::Reader() const {
+    return content;
+  }
+
+  inline operator kj::ArrayPtr<const capnp::word>() const {
+    return kj::arrayPtr(reinterpret_cast<const capnp::word*>(content.begin()),
+                        content.size() / sizeof(capnp::word));
   }
 
 private:
-  kj::AutoCloseFd fd;
+  kj::ArrayPtr<byte> content;
+};
+
+class ChildProcess {
+public:
+  enum Direction {
+    OUTPUT,
+    INPUT
+  };
+
+  ChildProcess(kj::StringPtr command, kj::StringPtr flags,
+               kj::AutoCloseFd wrappedFd, Direction direction) {
+    int pipeFds[2];
+    KJ_SYSCALL(pipe(pipeFds));
+    kj::AutoCloseFd pipeInput(pipeFds[0]), pipeOutput(pipeFds[1]);
+
+    KJ_SYSCALL(pid = fork());
+    if (pid == 0) {
+      if (direction == OUTPUT) {
+        KJ_SYSCALL(dup2(pipeInput, STDIN_FILENO));
+        KJ_SYSCALL(dup2(wrappedFd, STDOUT_FILENO));
+      } else {
+        KJ_SYSCALL(dup2(wrappedFd, STDIN_FILENO));
+        KJ_SYSCALL(dup2(pipeOutput, STDOUT_FILENO));
+      }
+      pipeInput = nullptr;
+      pipeOutput = nullptr;
+      wrappedFd = nullptr;
+
+      KJ_SYSCALL(execlp(command.cStr(), command.cStr(), flags.cStr(), (const char*)nullptr),
+                 command);
+      KJ_UNREACHABLE;
+    } else {
+      if (direction == OUTPUT) {
+        pipeFd = kj::mv(pipeOutput);
+      } else {
+        pipeFd = kj::mv(pipeInput);
+      }
+    }
+  }
+
+  ~ChildProcess() {
+    if (pid == 0) return;
+
+    // Close the pipe first, in case the child is waiting for that.
+    pipeFd = nullptr;
+
+    int status;
+    KJ_SYSCALL(waitpid(pid, &status, 0)) { return; }
+    if (status != 0) {
+      if (WIFEXITED(status)) {
+        int exitCode = WEXITSTATUS(status);
+        KJ_FAIL_ASSERT("child process failed", exitCode) { return; }
+      } else if (WIFSIGNALED(status)) {
+        int signalNumber = WTERMSIG(status);
+        KJ_FAIL_ASSERT("child process crashed", signalNumber) { return; }
+      } else {
+        KJ_FAIL_ASSERT("child process failed") { return; }
+      }
+    }
+  }
+
+  int getPipe() { return pipeFd; }
+
+  KJ_DISALLOW_COPY(ChildProcess);
+
+private:
+  kj::AutoCloseFd pipeFd;
+  pid_t pid;
 };
 
 class SpkTool {
@@ -216,17 +325,17 @@ public:
   kj::MainFunc getMain() {
     return kj::MainBuilder(context, "Sandstorm version 0.0",
           "Tool for building and checking Sandstorm package files.",
-          "Sandstorm packages are mostly just zip files, but they must be cryptographically "
-          "signed in order to prove that upgrades came from the same source.  This tool will help "
-          "you generate keys and sign your packages.")
+          "Sandstorm packages are tar.xz archives prefixed with a header containing a "
+          "cryptographic signature in order to prove that upgrades came from the same source.  "
+          "This tool will help you create and sign packages.")
         .addSubCommand("keygen", KJ_BIND_METHOD(*this, getKeygenMain),
                        "Generate a new keyfile.")
         .addSubCommand("appid", KJ_BIND_METHOD(*this, getAppidMain),
                        "Get the app ID corresponding to an existing keyfile.")
-        .addSubCommand("sign", KJ_BIND_METHOD(*this, getSignMain),
-                       "Sign a zip file to create an spk package file.")
-        .addSubCommand("verify", KJ_BIND_METHOD(*this, getVerifyMain),
-                       "Verify the package's signature.")
+        .addSubCommand("pack", KJ_BIND_METHOD(*this, getPackMain),
+                       "Create an spk from a directory tree and a signing key.")
+        .addSubCommand("unpack", KJ_BIND_METHOD(*this, getUnpackMain),
+                       "Unpack an spk to a directory, verifying its signature.")
         .build();
   }
 
@@ -297,8 +406,8 @@ private:
     }
 
     // Read the keyfile.
-    MmappedFile keyfile(arg);
-    capnp::FlatArrayMessageReader keyMessage(keyfile.asWords());
+    MemoryMapping keyfile(raiiOpen(arg, O_RDONLY), arg);
+    capnp::FlatArrayMessageReader keyMessage(keyfile);
     spk::KeyFile::Reader keyReader = keyMessage.getRoot<spk::KeyFile>();
     KJ_REQUIRE(keyReader.getPublicKey().size() == crypto_sign_PUBLICKEYBYTES &&
                keyReader.getPrivateKey().size() == crypto_sign_SECRETKEYBYTES,
@@ -310,33 +419,32 @@ private:
 
   // =====================================================================================
 
-  kj::String zipfile;
+  kj::String dirname;
   kj::String keyfile;
   kj::String spkfile;
+  kj::Vector<MemoryMapping> mappings;
 
-  kj::MainFunc getSignMain() {
+  kj::MainFunc getPackMain() {
     return kj::MainBuilder(context, "Sandstorm version 0.0",
-            "Sign <zipfile> with <keyfile>, storing the result to <output>.  If <output> is not "
-            "specified, the name will be chosen by replacing \".zip\" with \".spk\" in the input "
-            "file name.")
-        .expectArg("<zipfile>", KJ_BIND_METHOD(*this, setZipfile))
+            "Pack the contents of <dirname> as an spk, signing it using <keyfile>, and writing "
+            "the result to <output>.  If <output> is not specified, it will be formed by "
+            "appending \".spk\" to the directory name.")
+        .addOption({'o', "only-id"}, KJ_BIND_METHOD(*this, setOnlyPrintId),
+            "Only print the app ID, not the file name.")
+        .expectArg("<dirname>", KJ_BIND_METHOD(*this, setDirname))
         .expectArg("<keyfile>", KJ_BIND_METHOD(*this, setKeyfile))
         .expectOptionalArg("<output>", KJ_BIND_METHOD(*this, setSpkfile))
-        .callAfterParsing(KJ_BIND_METHOD(*this, doSign))
+        .callAfterParsing(KJ_BIND_METHOD(*this, doPack))
         .build();
   }
 
-  kj::MainBuilder::Validity setZipfile(kj::StringPtr name) {
+  kj::MainBuilder::Validity setDirname(kj::StringPtr name) {
     if (access(name.cStr(), F_OK) < 0) {
-      return "No such file.";
+      return "Not found.";
     }
 
-    zipfile = kj::heapString(name);
-
-    if (name.endsWith(".zip")) {
-      spkfile = kj::str(name.slice(0, name.size() - 4), ".spk");
-    }
-
+    dirname = kj::heapString(name);
+    spkfile = kj::str(name, ".spk");
     return true;
   }
 
@@ -354,103 +462,323 @@ private:
     return true;
   }
 
-  kj::MainBuilder::Validity doSign() {
-    if (spkfile == nullptr) {
-      return "Must specify output name (because input file is not .zip).";
+  void packFile(spk::Archive::File::Builder file, kj::StringPtr dirname, kj::StringPtr filename) {
+    // Construct an Archive.File from a disk file.
+
+    file.setName(filename);
+
+    auto path = kj::str(dirname, '/', filename);
+
+    struct stat stats;
+    KJ_SYSCALL(lstat(path.cStr(), &stats), path);
+
+    auto orphanage = capnp::Orphanage::getForMessageContaining(file);
+
+    if (S_ISREG(stats.st_mode)) {
+      MemoryMapping mapping(raiiOpen(path, O_RDONLY), path);
+      auto content = orphanage.referenceExternalData(mapping);
+      mappings.add(kj::mv(mapping));
+
+      if (stats.st_mode & S_IXUSR) {
+        file.adoptExecutable(kj::mv(content));
+      } else {
+        file.adoptRegular(kj::mv(content));
+      }
+    } else if (S_ISLNK(stats.st_mode)) {
+      auto symlink = file.initSymlink(stats.st_size);
+
+      ssize_t linkSize;
+      KJ_SYSCALL(linkSize = readlink(path.cStr(), symlink.begin(), stats.st_size), path);
+      KJ_ASSERT(linkSize == stats.st_size, "Link changed between stat() and readlink().", path);
+    } else if (S_ISDIR(stats.st_mode)) {
+      file.adoptDirectory(packDirectory(orphanage, path));
+    } else {
+      context.warning(kj::str("Cannot pack irregular file: ", path));
+    }
+  }
+
+  capnp::Orphan<capnp::List<spk::Archive::File>> packDirectory(
+      capnp::Orphanage orphanage, kj::StringPtr dirname) {
+    // Construct a list of Archive.Files from a disk directory.
+
+    DIR* dir = opendir(dirname.cStr());
+    if (dir == nullptr) {
+      KJ_FAIL_SYSCALL("opendir", errno, dirname);
+    }
+    KJ_DEFER(closedir(dir));
+
+    kj::Vector<kj::String> entries;
+
+    for (;;) {
+      errno = 0;
+      struct dirent* entry = readdir(dir);
+      if (entry == nullptr) {
+        int error = errno;
+        if (error == 0) {
+          break;
+        } else {
+          KJ_FAIL_SYSCALL("readdir", error, dirname);
+        }
+      }
+
+      kj::StringPtr name = entry->d_name;
+      if (name != "." && name != "..") {
+        entries.add(kj::heapString(entry->d_name));
+      }
     }
 
+    auto result = orphanage.newOrphan<capnp::List<spk::Archive::File>>(entries.size());
+    auto list = result.get();
+
+    for (uint i: kj::indices(entries)) {
+      packFile(list[i], dirname, entries[i]);
+    }
+
+    return result;
+  }
+
+  kj::MainBuilder::Validity doPack() {
     // Read the keyfile.
-    MmappedFile keyfile(this->keyfile);
-    capnp::FlatArrayMessageReader keyMessage(keyfile.asWords());
+    MemoryMapping keyfile(raiiOpen(this->keyfile, O_RDONLY), this->keyfile);
+    capnp::FlatArrayMessageReader keyMessage(keyfile);
     spk::KeyFile::Reader keyReader = keyMessage.getRoot<spk::KeyFile>();
     KJ_REQUIRE(keyReader.getPublicKey().size() == crypto_sign_PUBLICKEYBYTES &&
                keyReader.getPrivateKey().size() == crypto_sign_SECRETKEYBYTES,
                "Invalid key file.");
 
-    // Open and hash the zip.
-    MmappedFile zipfile(this->zipfile);
-    byte hash[crypto_hash_BYTES];
-    crypto_hash(hash, zipfile.begin(), zipfile.size());
+    auto tmpfile = openTemporary(this->spkfile);
 
-    // Generate the header.
-    capnp::MallocMessageBuilder headerMessage;
-    spk::Header::Builder header = headerMessage.getRoot<spk::Header>();
-    header.setPublicKey(keyReader.getPublicKey());
+    {
+      // Write the archive.
+      capnp::MallocMessageBuilder archiveMessage;
+      auto archive = archiveMessage.getRoot<spk::Archive>();
+      archive.adoptFiles(packDirectory(archiveMessage.getOrphanage(), dirname));
+      capnp::writeMessageToFd(tmpfile, archiveMessage);
+
+      // We can unmap all the mappings now that we've copied them.
+      mappings.resize(0);
+    }
+
+    // Map the temp file back in.
+    MemoryMapping tmpMapping(tmpfile, this->spkfile);
+    kj::ArrayPtr<const byte> tmpData = tmpMapping;
+
+    // Hash it.
+    byte hash[crypto_hash_BYTES];
+    crypto_hash(hash, tmpData.begin(), tmpData.size());
+
+    // Generate the signature.
+    capnp::MallocMessageBuilder signatureMessage;
+    spk::Signature::Builder signature = signatureMessage.getRoot<spk::Signature>();
+    signature.setPublicKey(keyReader.getPublicKey());
     unsigned long long siglen = crypto_hash_BYTES + crypto_sign_BYTES;
-    byte* signature = header.initSignature(siglen).begin();
-    crypto_sign(signature, &siglen, hash, sizeof(hash), keyReader.getPrivateKey().begin());
+    crypto_sign(signature.initSignature(siglen).begin(), &siglen,
+                hash, sizeof(hash), keyReader.getPrivateKey().begin());
 
     // Now write the whole thing out.
-    kj::FdOutputStream out(raiiOpen(spkfile, O_WRONLY | O_CREAT | O_TRUNC));
-    capnp::writeMessage(out, headerMessage);
-    out.write(zipfile.begin(), zipfile.size());
+    {
+      auto finalFile = raiiOpen(spkfile, O_WRONLY | O_CREAT | O_TRUNC);
+
+      // Write magic number uncompressed.
+      auto magic = spk::MAGIC_NUMBER.get();
+      kj::FdOutputStream(finalFile.get()).write(magic.begin(), magic.size());
+
+      // Pipe content through xz compressor.
+      ChildProcess child("xz", "-zc", kj::mv(finalFile), ChildProcess::OUTPUT);
+
+      // Write signature and archive out to the pipe.
+      kj::FdOutputStream out(child.getPipe());
+      capnp::writeMessage(out, signatureMessage);
+      out.write(tmpData.begin(), tmpData.size());
+    }
+
+    printAppId(keyReader.getPublicKey(), this->spkfile);
 
     return true;
   }
 
   // =====================================================================================
 
-  kj::MainFunc getVerifyMain() {
+  kj::MainFunc getUnpackMain() {
     return kj::MainBuilder(context, "Sandstorm version 0.0",
-            "Check that <spkfile>'s signature is valid, and then print the app ID and "
-            "file name.")
+            "Check that <spkfile>'s signature is valid.  If so, unpack it to <outdir> and "
+            "print the app ID and filename.  If <outdir> is not specified, it will be "
+            "chosen by removing the suffix \".spk\" from the input file name.")
         .addOption({'o', "only-id"}, KJ_BIND_METHOD(*this, setOnlyPrintId),
             "Only print the app ID, not the file name.")
-        .expectOneOrMoreArgs("<spkfile>", KJ_BIND_METHOD(*this, verifySpkfile))
+        .expectArg("<spkfile>", KJ_BIND_METHOD(*this, setUnpackSpkfile))
+        .expectOptionalArg("<outdir>", KJ_BIND_METHOD(*this, setUnpackDirname))
+        .callAfterParsing(KJ_BIND_METHOD(*this, doUnpack))
         .build();
   }
 
-  kj::MainBuilder::Validity validationError(kj::StringPtr filename, kj::StringPtr problem) {
-    context.error(kj::str("*** ", filename, ": ", problem));
-    return true;  // Keep processing remaining inputs.
+  kj::MainBuilder::Validity setUnpackSpkfile(kj::StringPtr name) {
+    if (access(name.cStr(), F_OK) < 0) {
+      return "Not found.";
+    }
+
+    spkfile = kj::heapString(name);
+    if (spkfile.endsWith(".spk")) {
+      dirname = kj::heapString(spkfile.slice(0, spkfile.size() - 4));
+    }
+
+    return true;
   }
 
-  kj::MainBuilder::Validity verifySpkfile(kj::StringPtr name) {
-    if (access(name.cStr(), F_OK) < 0) {
-      return "No such file.";
+  kj::MainBuilder::Validity setUnpackDirname(kj::StringPtr name) {
+    if (access(name.cStr(), F_OK) == 0) {
+      return "Already exists.";
     }
 
-    // Read the header.
-    MmappedFile spkfile(name);
-    capnp::FlatArrayMessageReader headerMessage(spkfile.asWords());
-    spk::Header::Reader header = headerMessage.getRoot<spk::Header>();
-    auto publicKey = header.getPublicKey();
-    if (publicKey.size() != crypto_sign_PUBLICKEYBYTES) {
-      return validationError(name, "Invalid public key.");
-    }
-    static const size_t SIGLEN = crypto_hash_BYTES + crypto_sign_BYTES;
-    auto signature = header.getSignature();
-    if (signature.size() != SIGLEN) {
-      return validationError(name, "Invalid signature format.");
+    dirname = kj::heapString(name);
+    return true;
+  }
+
+  kj::MainBuilder::Validity validationError(kj::StringPtr filename, kj::StringPtr problem) {
+    context.exitError(kj::str("*** ", filename, ": ", problem));
+  }
+
+  kj::MainBuilder::Validity doUnpack() {
+    if (access(dirname.cStr(), F_OK) == 0) {
+      return "Output directory already exists.";
     }
 
-    // Verify the signature.
-    byte expectedHash[SIGLEN];
-    unsigned long long hashLength = SIGLEN;
-    int result = crypto_sign_open(
-        expectedHash, &hashLength, signature.begin(), signature.size(), publicKey.begin());
-    if (result != 0) {
-      return validationError(name, "Invalid signature.");
-    }
-    if (hashLength != crypto_hash_BYTES) {
-      return validationError(name, "Wrong signature size.");
+    byte publicKey[crypto_sign_PUBLICKEYBYTES];
+    byte sigBytes[crypto_hash_BYTES + crypto_sign_BYTES];
+    byte expectedHash[sizeof(sigBytes)];
+    unsigned long long hashLength = 0;  // will be overwritten later
+
+    auto tmpfile = openTemporary(spkfile);
+
+    // Read the spk, checking the magic number, reading the signature header, and decompressing the
+    // archive to a temp file.
+    {
+      // Open the spk and check the magic number.
+      auto spkfd = raiiOpen(spkfile, O_RDONLY);
+      auto expectedMagic = spk::MAGIC_NUMBER.get();
+      byte magic[expectedMagic.size()];
+      kj::FdInputStream(spkfd.get()).read(magic, expectedMagic.size());
+      for (uint i: kj::indices(expectedMagic)) {
+        if (magic[i] != expectedMagic[i]) {
+          return validationError(spkfile, "Does not appear to be an .spk (bad magic number).");
+        }
+      }
+
+      // Decompress the remaining bytes in the SPK using xz.
+      auto child = kj::heap<ChildProcess>("xz", "-dc", kj::mv(spkfd), ChildProcess::INPUT);
+      kj::FdInputStream in(child->getPipe());
+
+      // Read in the signature.
+      {
+        capnp::InputStreamMessageReader signatureMessage(in);
+        auto signature = signatureMessage.getRoot<spk::Signature>();
+        auto pkReader = signature.getPublicKey();
+        if (pkReader.size() != sizeof(publicKey)) {
+          return validationError(spkfile, "Invalid public key.");
+        }
+        memcpy(publicKey, pkReader.begin(), sizeof(publicKey));
+        auto sigReader = signature.getSignature();
+        if (sigReader.size() != sizeof(sigBytes)) {
+          return validationError(spkfile, "Invalid signature format.");
+        }
+        memcpy(sigBytes, sigReader.begin(), sizeof(sigBytes));
+      }
+
+      // Verify the signature.
+      int result = crypto_sign_open(
+          expectedHash, &hashLength, sigBytes, sizeof(sigBytes), publicKey);
+      if (result != 0) {
+        return validationError(spkfile, "Invalid signature.");
+      }
+      if (hashLength != crypto_hash_BYTES) {
+        return validationError(spkfile, "Wrong signature size.");
+      }
+
+      // Copy archive part to a temp file.
+      kj::FdOutputStream tmpOut(tmpfile.get());
+      for (;;) {
+        byte buffer[8192];
+        size_t n = in.tryRead(buffer, 1, sizeof(buffer));
+        if (n == 0) break;
+        tmpOut.write(buffer, n);
+      }
     }
 
-    // Hash the payload.
-    auto zipfile = kj::arrayPtr(
-        reinterpret_cast<const byte*>(headerMessage.getEnd()), spkfile.end());
+    // mmap the temp file.
+    MemoryMapping tmpMapping(tmpfile, "(temp file)");
+    tmpfile = nullptr;  // We have the mapping now; don't need the fd.
+
+    // Hash the archive.
+    kj::ArrayPtr<const byte> tmpBytes = tmpMapping;
     byte hash[crypto_hash_BYTES];
-    crypto_hash(hash, zipfile.begin(), zipfile.size());
+    crypto_hash(hash, tmpBytes.begin(), tmpBytes.size());
 
     // Check that hashes match.
     if (memcmp(expectedHash, hash, crypto_hash_BYTES) != 0) {
-      return validationError(name, "Signature didn't match package contents.");
+      return validationError(spkfile, "Signature didn't match package contents.");
     }
 
-    // Note the app id.
-    printAppId(publicKey, name);
+    // Set up archive reader.
+    kj::ArrayPtr<const capnp::word> tmpWords = tmpMapping;
+    capnp::ReaderOptions options;
+    options.traversalLimitInWords = tmpWords.size();
+    capnp::FlatArrayMessageReader archiveMessage(tmpWords, options);
+
+    // Unpack.
+    KJ_SYSCALL(mkdir(dirname.cStr(), 0777), dirname);
+    unpackDir(archiveMessage.getRoot<spk::Archive>().getFiles(), dirname);
+
+    // Note the appid.
+    printAppId(publicKey, spkfile);
 
     return true;
+  }
+
+  void unpackDir(capnp::List<spk::Archive::File>::Reader files, kj::StringPtr dirname) {
+    std::set<kj::StringPtr> seen;
+
+    for (auto file: files) {
+      kj::StringPtr name = file.getName();
+      KJ_REQUIRE(name.size() != 0 && name != "." && name != ".." &&
+                 name.findFirst('/') == nullptr && name.findFirst('\0') == nullptr,
+                 "Archive contained invalid file name.", name);
+
+      KJ_REQUIRE(seen.insert(name).second, "Archive contained duplicate file name.", name);
+
+      auto path = kj::str(dirname, '/', name);
+
+      KJ_ASSERT(access(path.cStr(), F_OK) != 0, "Unpacked file already exists.", path);
+
+      switch (file.which()) {
+        case spk::Archive::File::REGULAR: {
+          auto bytes = file.getRegular();
+          kj::FdOutputStream(raiiOpen(path, O_WRONLY | O_CREAT | O_EXCL, 0666))
+              .write(bytes.begin(), bytes.size());
+          break;
+        }
+
+        case spk::Archive::File::EXECUTABLE: {
+          auto bytes = file.getExecutable();
+          kj::FdOutputStream(raiiOpen(path, O_WRONLY | O_CREAT | O_EXCL, 0777))
+              .write(bytes.begin(), bytes.size());
+          break;
+        }
+
+        case spk::Archive::File::SYMLINK: {
+          KJ_SYSCALL(symlink(file.getSymlink().cStr(), path.cStr()), path);
+          break;
+        }
+
+        case spk::Archive::File::DIRECTORY: {
+          KJ_SYSCALL(mkdir(path.cStr(), 0777), path);
+          unpackDir(file.getDirectory(), path);
+          break;
+        }
+
+        default:
+          KJ_FAIL_REQUIRE("Unknown file type in archive.");
+      }
+    }
   }
 };
 

@@ -23,6 +23,7 @@ var Path = Npm.require("path");
 var Crypto = Npm.require("crypto");
 var ChildProcess = Npm.require("child_process");
 var Http = Npm.require("http");
+var Promise = Npm.require("es6-promise").Promise;
 var Capnp = Npm.require("sandstorm/capnp");
 
 var Manifest = Capnp.import("sandstorm/package.capnp").Manifest;
@@ -73,10 +74,53 @@ cancelDownload = function (packageId) {
   }
 }
 
+doClientUpload = function (stream) {
+  return new Promise(function (resolve, reject) {
+    var id = Random.id();
+    var tmpPath = Path.join(DOWNLOADDIR, id + ".downloading");
+    var file = Fs.createWriteStream(tmpPath);
+    var hasher = Crypto.createHash("sha256");
+
+    stream.on("data", function (chunk) {
+      try {
+        hasher.update(chunk);
+        file.write(chunk);
+      } catch (err) {
+        reject(err);
+      }
+    });
+    stream.on("end", function () {
+      try {
+        file.end();
+        var packageId = hasher.digest("hex").slice(0, 32);
+        var verifiedPath = Path.join(DOWNLOADDIR, packageId + ".verified");
+        if (Fs.existsSync(verifiedPath)) {
+          Fs.unlinkSync(tmpPath);
+        } else {
+          Fs.renameSync(tmpPath, verifiedPath);
+        }
+        resolve(packageId);
+      } catch (err) {
+        reject(err);
+      }
+    });
+    stream.on("error", function (err) {
+      // TODO(soon):  This event does't seem to fire if the user leaves the page mid-upload.
+      try {
+        file.end();
+        Fs.unlinkSync(tmpPath);
+        reject(err);
+      } catch (err2) {
+        reject(err2);
+      }
+    });
+  });
+}
+
 function AppInstaller(packageId, url, appId) {
   this.packageId = packageId;
   this.url = url;
-  this.urlHash = Crypto.createHash("sha256").update(url).digest("hex").slice(0, 32);
+  this.urlHash = url && Crypto.createHash("sha256").update(url).digest("hex").slice(0, 32);
   this.downloadPath = Path.join(DOWNLOADDIR, this.urlHash + ".downloading");
   this.unverifiedPath = Path.join(DOWNLOADDIR, this.urlHash + ".unverified");
   this.verifiedPath = Path.join(DOWNLOADDIR, this.packageId + ".verified");
@@ -159,6 +203,10 @@ AppInstaller.prototype.start = function () {
 }
 
 AppInstaller.prototype.doDownload = function () {
+  if (!this.url) {
+    throw new Error("Unknown package ID, and no URL was provided.")
+  }
+
   console.log("Downloading app:", this.url);
   this.updateProgress("download");
 

@@ -33,6 +33,7 @@ var GRAINDIR = "/var/sandstorm/grains";
 
 // =======================================================================================
 // Meteor context <-> Async Node.js context adapters
+// TODO(cleanup):  Move to a different file.
 
 var inMeteorInternal = Meteor.bindEnvironment(function (callback) {
   callback();
@@ -51,7 +52,7 @@ function inMeteor(callback) {
   });
 }
 
-function promiseToFuture(promise) {
+promiseToFuture = function(promise) {
   var result = new Future();
   // TODO(cleanup):  Figure out if Meteor.bindEnvironment() is necessary here...
 //  promise.then(Meteor.bindEnvironment(result.return.bind(result)),

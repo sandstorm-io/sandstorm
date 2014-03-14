@@ -417,6 +417,47 @@ if (Meteor.isClient) {
       Session.set("signupMintMessage", undefined);
     },
   });
+
+  Template.uploadForm.events({
+    "click #uploadButton": function (event) {
+      Session.set("uploadError", undefined);
+
+      var file = document.getElementById("uploadFile").files[0];
+      if (!file) {
+        alert("Please select a file.");
+        return;
+      }
+
+      var xhr = new XMLHttpRequest();
+
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4) {
+          Session.set("uploadProgress", undefined);
+          console.log(xhr);
+          if (xhr.status == 200) {
+            console.log(xhr.responseText);
+            Router.go("install", {packageId: xhr.responseText});
+          } else {
+            Session.set("uploadError", {
+              status: xhr.status,
+              statusText: xhr.statusText,
+              response: xhr.responseText
+            });
+          }
+        }
+      };
+
+      if (xhr.upload) {
+        xhr.upload.addEventListener("progress", function (progressEvent) {
+          Session.set("uploadProgress",
+              Math.round(progressEvent.loaded / progressEvent.total * 100));
+        });
+      }
+
+      xhr.open("POST", "/upload", true);
+      xhr.send(file);
+    }
+  });
 }
 
 if (Meteor.isClient) {
@@ -509,9 +550,7 @@ Router.map(function () {
                         "key before you can install packages.", packageId: this.params.packageId };
       }
 
-      if (this.params.url) {
-        Meteor.call("ensureInstalled", this.params.packageId, this.params.url);
-      }
+      Meteor.call("ensureInstalled", this.params.packageId, this.params.url);
 
       var package = Packages.findOne(this.params.packageId);
       if (package === undefined) {
@@ -634,6 +673,58 @@ Router.map(function () {
 
     data: function () {
       return Session.get("signupMintMessage") || {};
+    }
+  });
+
+  this.route("uploadForm", {
+    path: "/install",
+
+    waitOn: function () {
+      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
+      return Meteor.subscribe("credentials");
+    },
+
+    data: function () {
+      return {
+        isSignedUp: isSignedUp(),
+        progress: Session.get("uploadProgress"),
+        error: Session.get("uploadError")
+      };
+    }
+  });
+
+  this.route("upload", {
+    path: "/upload",
+
+    where: "server",
+
+    action: function () {
+      if (this.request.method === "POST") {
+        try {
+          var self = this;
+          var packageId = promiseToFuture(doClientUpload(this.request)).wait();
+          console.log(packageId);
+          self.response.writeHead(200, {
+            "Content-Length": packageId.length,
+            "Content-Type": "text/plain"
+          });
+          self.response.write(packageId);
+          self.response.end();
+        } catch(error) {
+          console.error(error.stack);
+          self.response.writeHead(500, {
+            "Content-Type": "text/plain"
+          });
+          self.response.write(error.stack);
+          self.response.end();
+        };
+      } else {
+        this.response.writeHead(405, {
+          "Content-Type": "text/plain"
+        });
+        this.response.write("You can only POST here.");
+        this.response.end();
+      }
     }
   });
 });

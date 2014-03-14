@@ -89,7 +89,7 @@ img {
   vertical-align: middle;
 }
 
-#app, #install, #intro, #signup {
+#app, #install, #intro, #signup, #upload {
   margin: 0;
   padding: 0;
   background-color: white;

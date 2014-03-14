@@ -175,3 +175,25 @@ License along with Sandstorm.  If not, see
   </div>
   </div>
 </template>
+
+<template name="uploadForm">
+  <div id="upload">
+    <div class="centered-box">
+    {{#if isSignedUp}}
+      {{#if progress}}
+        <p>Uploading... {{progress}}%
+      {{else}}
+        {{#if error}}
+          <p>Upload failed: {{error.status}} {{error.statusText}}
+        {{else}}
+          <p>Please choose an <code>spk</code> file to install.
+        {{/if}}
+        <p><input type="file" id="uploadFile">
+           <button id="uploadButton">Upload</button>
+      {{/if}}
+    {{else}}
+      <p>Sorry, Sandstorm is in closed alpha.  To install apps, you must first be invited.
+    {{/if}}
+    </div>
+  </div>
+</template>

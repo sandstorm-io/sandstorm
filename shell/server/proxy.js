@@ -194,8 +194,8 @@ function startGrainInternal(packageId, grainId, command, isNew) {
   waitPromise(whenReady);
 }
 
-shutdownGrain = function (grain) {
-  Sessions.find({grainId: grain._id}).forEach(function (session) {
+shutdownGrain = function (grainId) {
+  Sessions.find({grainId: grainId}).forEach(function (session) {
     var proxy = proxies[session._id];
     if (proxy) {
       proxy.close();
@@ -207,7 +207,7 @@ shutdownGrain = function (grain) {
   // Try to send a shutdown.  The grain may not be running, in which case this will fail, which
   // is fine.  In fact even if the grain is running, we expect the call to fail because the grain
   // kills itself before returning.
-  var connection = Capnp.connect("unix:" + Path.join(GRAINDIR, grain._id, "socket"));
+  var connection = Capnp.connect("unix:" + Path.join(GRAINDIR, grainId, "socket"));
   var supervisor = connection.restore(null, Supervisor);
 
   supervisor.shutdown().then(function (result) {
@@ -217,6 +217,17 @@ shutdownGrain = function (grain) {
     supervisor.close();
     connection.close();
   });
+}
+
+deleteGrain = function (grainId) {
+  shutdownGrain(grainId);
+  // Give time to shut down before deleting.
+  setTimeout(function () {
+    var dir = Path.join(GRAINDIR, grainId);
+    if (Fs.existsSync(dir)) {
+      recursiveRmdir(dir);
+    }
+  }, 1000);
 }
 
 // Kill off proxies idle for >~5 minutes.

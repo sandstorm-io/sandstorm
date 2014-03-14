@@ -112,6 +112,13 @@ if (Meteor.isServer) {
     }
   });
 
+  Grains.allow({
+    update: function (userId, grain, fieldNames) {
+      return userId && grain.userId === userId &&
+          fieldNames.length === 1 && fieldNames[0] === "title";
+    }
+  });
+
   Meteor.publish("packageInfo", function (packageId) {
     var packageCursor = Packages.find(packageId);
     var package = packageCursor.fetch()[0];
@@ -138,6 +145,16 @@ if (Meteor.isServer) {
     } else {
       return [];
     }
+  });
+
+  Meteor.publish("grainTitle", function (grainId) {
+    // You can get the title of an arbitrary grain by ID, but we hide the other metadata, because:
+    // - Revealing the package ID would allow anyone with whom you share a grain to install the
+    //   same app, preventing private apps.
+    // - Revealing the owner's user ID might be undesirable for plausible deniability reasons.
+    return Grains.find({_id: grainId}, {
+      fields: { title: 1 }
+    });
   });
 
   Meteor.publish("credentials", function () {
@@ -252,11 +269,23 @@ Meteor.methods({
 
     if (!this.isSimulation) {
       Grains.find(selector).forEach(function (grain) {
-        shutdownGrain(grain);
+        shutdownGrain(grain._id);
       });
     }
 
     Grains.update(selector, { $set: { appVersion: version, packageId: packageId }});
+  },
+
+  deleteGrain: function (grainId) {
+    if (this.userId) {
+      var grain = Grains.findOne({_id: grainId, userId: this.userId});
+      if (grain) {
+        Grains.remove(grainId);
+        if (!this.isSimulation) {
+          deleteGrain(grainId);
+        }
+      }
+    }
   }
 });
 
@@ -281,6 +310,19 @@ if (Meteor.isClient) {
   });
 
   Template.grain.preserve(["iframe"]);
+  Template.grain.events({
+    "click #renameGrain": function (event) {
+      var title = window.prompt("Set new title:");
+      if (title) {
+        Grains.update(this.grainId, {$set: {title: title}});
+      }
+    },
+    "click #deleteGrain": function (event) {
+      if (window.confirm("Really delete this grain?")) {
+        Meteor.call("deleteGrain", this.grainId);
+      }
+    }
+  });
 
   Meteor.subscribe("grainsMenu");
 
@@ -288,23 +330,26 @@ if (Meteor.isClient) {
     "click #apps-ico": function (event) {
       var ico = event.currentTarget;
       var pop = document.getElementById("apps");
-      if (pop.style.display === "block") {
-        pop.style.display = "none";
-      } else {
-        var rec = ico.getBoundingClientRect();
-        pop.style.left = rec.left + "px";
-        pop.style.top = rec.bottom + 16 + "px";
-        pop.style.display = "block";
+      var rec = ico.getBoundingClientRect();
+      pop.style.left = rec.left + "px";
+      pop.style.top = rec.bottom + 16 + "px";
+      pop.style.display = "block";
 
-        var left = rec.left - Math.floor((pop.clientWidth - rec.width) / 2);
-        if (left < 8) {
-          left = 8;
-        } else if (left + pop.clientWidth > window.innerWidth) {
-          left = window.innerWidth - pop.clientWidth - 8;
-        }
-
-        pop.style.left = left + "px";
+      var left = rec.left - Math.floor((pop.clientWidth - rec.width) / 2);
+      if (left < 8) {
+        left = 8;
+      } else if (left + pop.clientWidth > window.innerWidth) {
+        left = window.innerWidth - pop.clientWidth - 8;
       }
+
+      pop.style.left = left + "px";
+
+      document.getElementById("close-apps").style.display = "block";
+    },
+
+    "click #close-apps": function (event) {
+      event.currentTarget.style.display = "none";
+      document.getElementById("apps").style.display = "none";
     },
 
     "click .newGrain": function (event) {
@@ -316,6 +361,7 @@ if (Meteor.isClient) {
       }
 
       document.getElementById("apps").style.display = "none";
+      document.getElementById("close-apps").style.display = "none";
       var title = window.prompt("Title?");
       if (!title) return;
 
@@ -332,6 +378,7 @@ if (Meteor.isClient) {
     "click .openGrain": function (event) {
       var grainId = event.currentTarget.id.split("-")[1];
       document.getElementById("apps").style.display = "none";
+      document.getElementById("close-apps").style.display = "none";
       Router.go("grain", {grainId: grainId});
     }
   });
@@ -473,30 +520,59 @@ if (Meteor.isClient) {
   }, 60000);
 }
 
+Router.configure({
+  notFoundTemplate: "notFound",
+  loadingTemplate: "loading"
+});
+
 Router.map(function () {
   this.route("root", {
     path: "/",
+    waitOn: function () { return Meteor.subscribe("credentials"); },
     after: function () { setTimeout(initLogoAnimation, 0); },
     data: function () {
-      return { host: document.location.host };
+      return {
+        host: document.location.host,
+        isSignedUp: isSignedUp()
+      };
     }
   });
 
   this.route("grain", {
     path: "/grain/:grainId",
 
+    waitOn: function () {
+      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
+      return Meteor.subscribe("grainTitle", this.params.grainId);
+    },
+
     data: function () {
       currentSessionId = undefined;
       var grainId = this.params.grainId;
+      var grain = Grains.findOne(grainId);
+      if (!grain) {
+        return { grainId: grainId, title: "Invalid Grain", error: "No such grain." };
+      }
+
+      var result = {
+        grainId: grainId,
+        title: grain.title,
+        isOwner: grain.userId && grain.userId === Meteor.userId()
+      };
+
       var err = Session.get("session-" + grainId + "-error");
       if (err) {
-        return { error: err };
+        result.error = err;
+        return result;
       }
 
       var session = Session.get("session-" + grainId);
       if (session) {
         currentSessionId = session.sessionId;
-        return _.extend({ hostname: document.location.hostname }, session);
+        result.hostname = document.location.hostname;
+        result.sessionId = session.sessionId;
+        result.port = session.port;
+        return result;
       } else {
         Meteor.call("openSession", grainId, function (error, session) {
           if (error) {
@@ -506,7 +582,7 @@ Router.map(function () {
             Session.set("session-" + grainId + "-error", undefined);
           }
         });
-        return {};
+        return result;
       }
     },
 
@@ -653,9 +729,7 @@ Router.map(function () {
         alreadySignedUp: isSignedUp()
       };
 
-      if (result.alreadySignedUp) {
-        Router.go("root");
-      } else if (result.keyIsValid && !result.keyIsUsed && Meteor.userId()) {
+      if (result.keyIsValid && !result.keyIsUsed && Meteor.userId()) {
         Meteor.call("useSignupKey", this.params.key);
       }
 

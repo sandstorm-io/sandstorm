@@ -34,7 +34,9 @@ var DOWNLOADDIR = "/var/sandstorm/downloads";
 
 var installers = {};
 
-function recursiveRmdir(dir) {
+recursiveRmdir = function (dir) {
+  // TODO(cleanup):  Put somewhere resuable, since proxy.js uses it.
+
   Fs.readdirSync(dir).forEach(function (filename) {
     filename = Path.join(dir, filename);
     if(Fs.lstatSync(filename).isDirectory()) {

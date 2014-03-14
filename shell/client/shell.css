@@ -55,24 +55,29 @@ body {
 }
 
 #topbar {
-  position: absolute;
+  position: fixed;
   width: 100%;
   height: 32px;
   text-align: center;
-  z-index: -1;
   border-bottom: 2px solid #ccc;
 }
 
 #topbar-left {
-  float: left;
+  position: fixed;
+  top: 0px;
+  left: 0px;
   height: 32px;
   padding-left: 8px;
+  z-index: 1;
 }
 
 #topbar-right {
-  float: right;
+  position: fixed;
+  top: 0px;
+  right: 0px;
   height: 32px;
   padding-right: 8px;
+  z-index: 1;
 }
 
 img.icon {
@@ -89,7 +94,7 @@ img {
   vertical-align: middle;
 }
 
-#app, #install, #intro, #signup, #upload {
+#app, #install, #intro, #signup, #upload, .main-content {
   margin: 0;
   padding: 0;
   background-color: white;
@@ -185,12 +190,22 @@ div.popup {
   position: absolute;
   border: 2px solid #ccc;
   border-radius: 6px;
-  z-index: 100;
+  z-index: 101;
   background-color: rgba(0, 0, 0, 0.9);
   padding: 8px;
   font-size: 85%;
   line-height: normal;
   min-width: 250px;
+}
+
+div.popup-closer {
+  display: none;
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  z-index: 100;
 }
 
 div.popup h1 {
@@ -213,11 +228,15 @@ div.popup h2 {
   margin: 4px;
 }
 
-#install {
-  padding: 8px;
-}
+#install {}
 
 #install ol {
+  margin: 16px auto;
+  padding: 16px;
+  border-radius: 8px;
+  width: 750px;
+  background-color: #eee;
+
   text-align: center;
   list-style-type: none;
   font-size: 200%;

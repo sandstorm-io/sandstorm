@@ -29,16 +29,28 @@ License along with Sandstorm.  If not, see
   <div id="topbar-left">
     {{> grainList}}
   </div>
-  <div id="topbar">
-    Sandstorm
-  </div>
   <div id="topbar-right">
     {{loginButtons align="right"}}
   </div>
 </body>
 
+<template name="loading">
+  <div id="topbar">Sandstorm: Loading...</div>
+  <div class="main-content">
+    <div class="centered-box">Loading...</div>
+  </div>
+</template>
+
+<template name="notFound">
+  <div id="topbar">Sandstorm: Not Found</div>
+  <div class="main-content">
+    <div class="centered-box">404 Not Found :(</div>
+  </div>
+</template>
+
 <template name="grainList">
   {{#if currentUser}}<span id="apps-ico">My Grains ▾</span>{{/if}}
+  <div id="close-apps" class="popup-closer"></div>
   <div id="apps" class="popup">
     <table><tr><td>
     <h1>Open</h1>
@@ -59,19 +71,33 @@ License along with Sandstorm.  If not, see
 </template>
 
 <template name="root">
+  <div id="topbar">Sandstorm: Home</div>
+
   <div id="intro">
     <div id="logo">
       <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
       </svg>
     </div>
     <h1>Sandstorm</h1>
-    <p>Looking for an app?
-      <a href="web+sandstorm:d7dc5dda75a45be153d674ea51d0a515?url=http://{{host}}/etherpad.spk">
-      Try Etherpad</a>
+    {{#if isSignedUp}}
+      <p>Welcome to the Sandstorm closed alpha.
+      <p><a href="http://sandstorm.io/apps">Looking for apps?</a>
+    {{else}}
+      <p>Currently in closed alpha.
+      <p>Want an invite?  <a href="http://sandstorm.io">Get on the mailing list.</a>
+    {{/if}}
   </div>
 </template>
 
 <template name="grain">
+  <div id="topbar">
+    Sandstorm: {{title}}
+    {{#if isOwner}}
+      <button id="renameGrain">Rename</button>
+      <button id="deleteGrain">Delete</button>
+    {{/if}}
+  </div>
+
   <div id="app">
     {{#if error}}
       <pre>{{error}}</pre>
@@ -86,6 +112,8 @@ License along with Sandstorm.  If not, see
 </template>
 
 <template name="install">
+  <div id="topbar">Sandstorm: Install App</div>
+
   {{#if error}}
     <div id="install" class="error">
       <p>Failed to install app!
@@ -138,27 +166,35 @@ License along with Sandstorm.  If not, see
 </template>
 
 <template name="signup">
+  <div id="topbar">Sandstorm: Claim Invite</div>
+
   <div id="signup">
   <div class="centered-box">
-  {{#if keyIsValid}}
-    {{#if keyIsUsed}}
-      <p>Sorry, this signup key has already been used.
-    {{else}}
-      {{#if currentUser}}
-        <p>Please wait...
-      {{else}}
-        <p>You've been invited to join the Sandstorm alpha!  First, you have to sign in.  Click
-          "Sign in" in the upper-right.
-      {{/if}}
-    {{/if}}
+  {{#if alreadySignedUp}}
+    <p>You're all signed up!  Now go <a href="http://sandstorm.io/apps">install some apps</a>.
   {{else}}
-    <p>Sorry, this is not a valid signup key.
+    {{#if keyIsValid}}
+      {{#if keyIsUsed}}
+        <p>Sorry, this signup key has already been used.
+      {{else}}
+        {{#if currentUser}}
+          <p>Please wait...
+        {{else}}
+          <p>You've been invited to join the Sandstorm alpha!  First, you have to sign in.  Click
+            "Sign in" in the upper-right.
+        {{/if}}
+      {{/if}}
+    {{else}}
+      <p>Sorry, this is not a valid signup key.
+    {{/if}}
   {{/if}}
   </div>
   </div>
 </template>
 
 <template name="signupMint">
+  <div id="topbar">Sandstorm: Create Invite</div>
+
   <div id="signup">
   <div class="centered-box">
     {{#if error}}
@@ -177,6 +213,8 @@ License along with Sandstorm.  If not, see
 </template>
 
 <template name="uploadForm">
+  <div id="topbar">Sandstorm: Upload App</div>
+
   <div id="upload">
     <div class="centered-box">
     {{#if isSignedUp}}

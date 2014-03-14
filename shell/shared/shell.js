@@ -18,11 +18,63 @@
 // License along with Sandstorm.  If not, see
 // <http://www.gnu.org/licenses/>.
 
-Apps = new Meteor.Collection("apps");
+Packages = new Meteor.Collection("packages");
+// Packages which are installed or downloadloading.
+//
+// Each contains:
+//   _id:  128-bit prefix of SHA-256 hash of spk file, hex-encoded.
+//   status:  String.  One of "download", "verify", "unpack", "analyze", "ready", "failed"
+//   progress:  Float.  -1 = N/A, 0-1 = fractional progress (e.g. download percentage),
+//       >1 = download byte count.
+//   error:  If status is "failed", error message string.
+//   manifest:  If status is "ready", the package manifest.  See "Manifest" in grain.capnp.
+//   appId:  If status is "ready", the application ID string.  Packages representing different
+//       versions of the same app have the same appId.  The spk tool defines the app ID format
+//       and can cryptographically verify that a package belongs to a particular app ID.
+
 UserActions = new Meteor.Collection("userActions");
+// List of actions that each user has installed which create new grains.  Each app may install
+// some number of actions (usually, one).
+//
+// Each contains:
+//   _id:  random
+//   userId:  User who has installed this action.
+//   packageId:  Package used to run this action.
+//   appId:  Same as Packages.findOne(packageId).appId; denormalized for searchability.
+//   appVersion:  Same as Packages.findOne(packageId).manifest.appVersion; denormalized for
+//       searchability.
+//   title:  Human-readable title for this action, e.g. "New Spreadsheet".
+//   command:  Manifest.Command to run this action (see package.capnp).
+
 Grains = new Meteor.Collection("grains");
+// Grains belonging to users.
+//
+// Each contains:
+//   _id:  random
+//   packageId:  _id of the package of which this grain is an instance.
+//   appId:  Same as Packages.findOne(packageId).appId; denormalized for searchability.
+//   appVersion:  Same as Packages.findOne(packageId).manifest.appVersion; denormalized for
+//       searchability.
+//   userId:  User who owns this grain.
+//   title:  Human-readable string title, as chosen by the user.
+
 Sessions = new Meteor.Collection("sessions");
+// UI sessions open to particular grains.  A new session is created each time a user opens a grain.
+//
+// Each contains:
+//   _id:  random
+//   grainId:  _id of the grain to which this session is connected.
+//   port:  TCP port number on which this session is being exported.
+//   timestamp:  Time of last keep-alive message to this session.  Sessions time out after some
+//       period.
+
 SignupKeys = new Meteor.Collection("signupKeys");
+// Invite keys which may be used by users to get access to Sandstorm.
+//
+// Each contains:
+//   _id:  random
+//   used:  Boolean indicating whether this key has already been consumed.
+//   note:  Text note assigned when creating key, to keep track of e.g. whom the key was for.
 
 function isSignedUp() {
   var user = Meteor.user();
@@ -51,21 +103,30 @@ if (Meteor.isClient) {
 }
 
 if (Meteor.isServer) {
-  Apps.allow({
-    remove: function (userId, app) {
-      // Failed downloads can be removed and restarted.
-      return app.status === "failed";
-    }
-  });
-
   UserActions.allow({
     insert: function (userId, action) {
       return userId && isSignedUp() && action.userId === userId;
+    },
+    remove: function (userId, action) {
+      return userId && action.userId === userId;
     }
   });
 
-  Meteor.publish("apps", function (appId) {
-    return Apps.find(appId);
+  Meteor.publish("packageInfo", function (packageId) {
+    var packageCursor = Packages.find(packageId);
+    var package = packageCursor.fetch()[0];
+
+    if (package && this.userId) {
+      // TODO(perf):  Grain list could be large.  In theory all we really need is to know whether
+      //   grains of newer and older versions exist.
+      return [
+        packageCursor,
+        UserActions.find({ userId: this.userId, appId: package.appId }),
+        Grains.find({ userId: this.userId, appId: package.appId })
+      ];
+    } else {
+      return packageCursor;
+    }
   });
 
   Meteor.publish("grainsMenu", function () {
@@ -124,31 +185,78 @@ if (Meteor.isServer) {
 }
 
 Meteor.methods({
-  ensureInstalled: function (appId, url) {
+  ensureInstalled: function (packageId, url) {
     if (!this.userId) {
-      throw new Meteor.Error(403, "Unauthorized", "You must be logged in to install apps.");
+      throw new Meteor.Error(403, "Unauthorized", "You must be logged in to install packages.");
     }
 
     if (!isSignedUp()) {
       throw new Meteor.Error(403, "Unauthorized",
           "Sorry, Sandstorm is in closed alpha.  You must receive an alpha key before you " +
-          "can install apps.");
+          "can install packages.");
     }
 
-    var app = Apps.findOne(appId);
+    var app = Packages.findOne(packageId);
     if (app) {
       if (app.status === "ready" || app.status === "failed") {
         // Don't try to install.
         return;
       }
     } else {
-      Apps.insert({ _id: appId, status: "download", progress: 0 });
+      Packages.insert({ _id: packageId, status: "download", progress: 0 });
     }
 
     // Start installing on the server side if we aren't already.
     if (!this.isSimulation) {
-      startInstall(appId, url);
+      startInstall(packageId, url);
     }
+  },
+
+  retryInstall: function (packageId) {
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Unauthorized", "You must be logged in to install packages.");
+    }
+
+    if (!isSignedUp()) {
+      throw new Meteor.Error(403, "Unauthorized",
+          "Sorry, Sandstorm is in closed alpha.  You must receive an alpha key before you " +
+          "can install packages.");
+    }
+
+    var pkg = Packages.findOne(packageId);
+    var appId = undefined;
+    if (pkg) {
+      if (pkg.status !== "failed") {
+        throw new Meteor.Error(403, "Unauthorized",
+            "Can't retry an install that hasn't failed.");
+      }
+      appId = pkg.appId;
+      Packages.update(packageId, {$set: {status: "download", progress: 0 }});
+    } else {
+      Packages.insert({ _id: packageId, status: "download", progress: 0 });
+    }
+
+    // Start installing on the server side if we aren't already.
+    if (!this.isSimulation) {
+      startInstall(packageId, url, appId);
+    }
+  },
+
+  upgradeGrains: function (appId, version, packageId) {
+    var selector = {
+      userId: this.userId,
+      appId: appId,
+      appVersion: { $lte: version },
+      packageId: { $ne: packageId }
+    };
+
+    if (!this.isSimulation) {
+      Grains.find(selector).forEach(function (grain) {
+        shutdownGrain(grain);
+      });
+    }
+
+    Grains.update(selector, { $set: { appVersion: version, packageId: packageId }});
   }
 });
 
@@ -158,9 +266,9 @@ if (Meteor.isServer) {
   var GRAINDIR = "/var/sandstorm/grains";
 
   Meteor.methods({
-    cancelDownload: function (appId) {
+    cancelDownload: function (packageId) {
       // TODO(security):  Only let user cancel download if they initiated it.
-      cancelDownload(appId);
+      cancelDownload(packageId);
     }
   });
 }
@@ -212,7 +320,7 @@ if (Meteor.isClient) {
       if (!title) return;
 
       // We need to ask the server to start a new grain, then browse to it.
-      Meteor.call("newGrain", action.appId, action.command, title, function (error, grainId) {
+      Meteor.call("newGrain", action.packageId, action.command, title, function (error, grainId) {
         if (error) {
           console.error(error);
         } else {
@@ -249,23 +357,32 @@ if (Meteor.isClient) {
 
   Template.install.events({
     "click #retry": function (event) {
-      Apps.remove(this.appId);
+      Meteor.call("retryInstall", this.packageId);
     },
 
     "click #cancelDownload": function (event) {
-      Meteor.call("cancelDownload", this.appId);
+      Meteor.call("cancelDownload", this.packageId);
     },
 
     "click #confirmInstall": function (event) {
-      var app = Apps.findOne(this.appId);
-      if (app) {
-        var actions = app.manifest.actions;
+      var package = Packages.findOne(this.packageId);
+      if (package) {
+        // Remove old versions.
+        UserActions.find({userId: Meteor.userId(), appId: package.appId})
+            .forEach(function (action) {
+          UserActions.remove(action._id);
+        });
+
+        // Install new.
+        var actions = package.manifest.actions;
         for (i in actions) {
           var action = actions[i];
           if ("none" in action.input) {
             UserActions.insert({
               userId: Meteor.userId(),
-              appId: app._id,
+              packageId: package._id,
+              appId: package.appId,
+              appVersion: package.manifest.appVersion,
               title: action.title.defaultText,
               command: action.command
             });
@@ -274,6 +391,10 @@ if (Meteor.isClient) {
           }
         }
       }
+    },
+
+    "click #upgradeGrains": function (event) {
+      Meteor.call("upgradeGrains", this.appId, this.version, this.packageId);
     }
   });
 
@@ -368,12 +489,12 @@ Router.map(function () {
   });
 
   this.route("install", {
-    path: "/install/:appId",
+    path: "/install/:packageId",
 
     waitOn: function () {
       // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
       return [
-        Meteor.subscribe("apps", this.params.appId),
+        Meteor.subscribe("packageInfo", this.params.packageId),
         Meteor.subscribe("credentials")
       ];
     },
@@ -381,52 +502,94 @@ Router.map(function () {
     data: function () {
       var userId = Meteor.userId();
       if (!userId) {
-        return { error: "You must sign in to install apps.", appId: this.params.appId };
+        return { error: "You must sign in to install packages.", packageId: this.params.packageId };
       }
       if (!isSignedUp()) {
         return { error: "Sorry, Sandstorm is in closed alpha.  You must receive an alpha " +
-                        "key before you can install apps.", appId: this.params.appId };
+                        "key before you can install packages.", packageId: this.params.packageId };
       }
 
       if (this.params.url) {
-        Meteor.call("ensureInstalled", this.params.appId, this.params.url);
+        Meteor.call("ensureInstalled", this.params.packageId, this.params.url);
       }
 
-      var app = Apps.findOne(this.params.appId);
-      if (app === undefined) {
+      var package = Packages.findOne(this.params.packageId);
+      if (package === undefined) {
         // Apparently, this app is not installed nor installing, which implies that no URL was
         // provided, which means we cannot install it.
         // TODO(soon):  Display upload page?
-        return { error: "Unknown app ID: " + this.params.appId +
+        return { error: "Unknown package ID: " + this.params.packageId +
                         "\nPerhaps it hasn't been uploaded?",
-                 appId: this.params.appId };
+                 packageId: this.params.packageId };
       }
 
-      if (app.status !== "ready") {
+      if (package.status !== "ready") {
         var progress;
-        if (app.progress < 0) {
+        if (package.progress < 0) {
           progress = "";  // -1 means no progress to report
-        } else if (app.progress > 1) {
+        } else if (package.progress > 1) {
           // Progress outside [0,1] indicates a byte count rather than a fraction.
           // TODO(cleanup):  This is pretty ugly.  What if exactly 1 byte had been downloaded?
-          progress = Math.round(app.progress / 1024) + " KiB";
+          progress = Math.round(package.progress / 1024) + " KiB";
         } else {
-          progress = Math.round(app.progress * 100) + "%";
+          progress = Math.round(package.progress * 100) + "%";
         }
 
         return {
-          step: app.status,
+          step: package.status,
           progress: progress,
-          error: app.status === "failed" ? app.error : null,
-          appId: this.params.appId
+          error: package.status === "failed" ? package.error : null,
+          packageId: this.params.packageId
         };
       }
 
-      if (UserActions.findOne({ userId: Meteor.userId(), appId: this.params.appId })) {
-        // This app appears to be installed already.
-        return { step: "run", appId: this.params.appId };
+      var result = {
+        packageId: this.params.packageId,
+        appId: package.appId,
+        version: package.manifest.appVersion
+      };
+
+      if (UserActions.findOne({ userId: Meteor.userId(), packageId: this.params.packageId })) {
+        // This app appears to be installed already.  Check if any grains need updating.
+
+        result.step = "run";
+
+        var existingGrains = Grains.find({ userId: Meteor.userId(), appId: package.appId }).fetch();
+
+        var maxVersion = result.version;
+
+        for (var i in existingGrains) {
+          var grain = existingGrains[i];
+          if (grain.packageId !== this.params.packageId) {
+            // Some other package version.
+            if (grain.appVersion <= result.version) {
+              result.hasOlderVersion = true;
+            } else {
+              result.hasNewerVersion = true;
+              if (grain.appVersion > maxVersion) {
+                maxVersion = grain.appVersion;
+                result.newVersionId = grain.packageId;
+              }
+            }
+          }
+        }
+
+        return result;
       } else {
-        return { step: "confirm", appId: this.params.appId };
+        // Check whether some other version is installed and whether it's an older or newer version.
+        var oldAction = UserActions.findOne({ userId: Meteor.userId(), appId: package.appId });
+
+        result.step = "confirm";
+
+        if (oldAction) {
+          if (oldAction.appVersion <= result.version) {
+            result.hasOlderVersion = true;
+          } else {
+            result.hasNewerVersion = true;
+          }
+        }
+
+        return result;
       }
     }
   });

@@ -114,6 +114,11 @@ struct Manifest {
   # loss.  This might be non-zero if the app's data store format changed drastically in the past
   # and the app is no longer able to read the old format.
 
+  appMarketingVersion @6 :Util.LocalizedText;
+  # Human-readable presentation of the app version, e.g. "2.9.17".  This will be displayed to the
+  # user to distinguish versions.  It _should_ match the way you identify versions of your app to
+  # users in documentation and marketing.
+
   minApiVersion @0 :UInt32;
   maxApiVersion @1 :UInt32;
   # Min and max API versions against which this app is known to work.  `minApiVersion` primarily

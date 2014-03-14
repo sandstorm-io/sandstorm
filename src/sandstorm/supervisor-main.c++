@@ -858,6 +858,10 @@ private:
       return kj::READY_NOW;
     }
 
+    kj::Promise<void> shutdown(ShutdownContext context) {
+      killChildAndExit(0);
+    }
+
   private:
     UiView::Client mainView;
   };

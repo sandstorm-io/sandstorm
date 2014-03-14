@@ -40,4 +40,8 @@ interface Supervisor {
   keepAlive @1 ();
   # Must call periodically to prevent supervisor from killing itself off.  Call at least once
   # per minute.
+
+  shutdown @2 ();
+  # Shut down the grain immediately.  Useful e.g. when upgrading to a newer app version.  This
+  # call will never return successfully because the process kills itself.
 }

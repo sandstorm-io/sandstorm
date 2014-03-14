@@ -71,16 +71,28 @@ var runningGrains = {};
 var proxies = {};
 
 Meteor.methods({
-  newGrain: function (appId, command, title) {
+  newGrain: function (packageId, command, title) {
     // Create and start a new grain.
 
     if (!this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "Must be logged in to create grains.");
     }
 
+    var package = Packages.findOne(packageId);
+    if (!package) {
+      throw new Meteor.Error(404, "Not Found", "No such package is installed.");
+    }
+
     var grainId = Random.id();
-    Grains.insert({ _id: grainId, appId: appId, userId: this.userId, title: title });
-    startGrainInternal(appId, grainId, command, true);
+    Grains.insert({
+      _id: grainId,
+      packageId: packageId,
+      appId: package.appId,
+      appVersion: package.manifest.version || 0,
+      userId: this.userId,
+      title: title
+    });
+    startGrainInternal(packageId, grainId, command, true);
     return grainId;
   },
 
@@ -102,17 +114,17 @@ Meteor.methods({
         throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainId);
       }
 
-      var app = Apps.findOne(grain.appId);
+      var app = Packages.findOne(grain.packageId);
       if (!app) {
-        throw new Meteor.Error(500, "Grain's app not installed", "App ID: " + grain.appId);
+        throw new Meteor.Error(500, "Grain's app not installed", "Package ID: " + grain.packageId);
       }
 
       if (!("continueCommand" in app.manifest)) {
         throw new Meteor.Error(500, "App manifest defines no continueCommand.",
-                               "App ID: " + grain.appId);
+                               "App ID: " + grain.packageId);
       }
 
-      startGrainInternal(grain.appId, grainId, app.manifest.continueCommand, false);
+      startGrainInternal(grain.packageId, grainId, app.manifest.continueCommand, false);
     }
 
     var proxy = new Proxy(grainId, sessionId);
@@ -137,11 +149,11 @@ Meteor.methods({
   }
 });
 
-function startGrainInternal(appId, grainId, command, isNew) {
+function startGrainInternal(packageId, grainId, command, isNew) {
   // Starts the grain supervisor.  Must be executed in a Meteor context.  Blocks until grain is
   // started.
 
-  var args = [appId, grainId];
+  var args = [packageId, grainId];
   if (isNew) args.push("-n");
   if (command.environ) {
     for (var i in command.environ) {
@@ -179,6 +191,31 @@ function startGrainInternal(appId, grainId, command, isNew) {
 
   runningGrains[grainId] = whenReady;
   waitPromise(whenReady);
+}
+
+shutdownGrain = function (grain) {
+  Sessions.find({grainId: grain._id}).forEach(function (session) {
+    var proxy = proxies[session._id];
+    if (proxy) {
+      proxy.close();
+      delete proxies[session._id];
+    }
+    Sessions.remove(session._id);
+  });
+
+  // Try to send a shutdown.  The grain may not be running, in which case this will fail, which
+  // is fine.  In fact even if the grain is running, we expect the call to fail because the grain
+  // kills itself before returning.
+  var connection = Capnp.connect("unix:" + Path.join(GRAINDIR, grain._id, "socket"));
+  var supervisor = connection.restore(null, Supervisor);
+
+  supervisor.shutdown().then(function (result) {
+    supervisor.close();
+    connection.close();
+  }, function (error) {
+    supervisor.close();
+    connection.close();
+  });
 }
 
 // Kill off proxies idle for >~5 minutes.
@@ -329,7 +366,7 @@ Proxy.prototype.getConnection = function () {
   //   tabs.  Each should be a separate session.
   if (!this.connection) {
     this.connection = Capnp.connect("unix:" + Path.join(GRAINDIR, this.grainId, "socket"));
-    this.supervisor = this.getConnection().restore(null, Supervisor);
+    this.supervisor = this.connection.restore(null, Supervisor);
     this.uiView = this.supervisor.getMainView().view;
   }
   return this.connection;

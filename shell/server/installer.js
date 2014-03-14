@@ -50,16 +50,19 @@ var inMeteor = Meteor.bindEnvironment(function (self, callback) { callback.call(
 // request.  The app installation process happens in the background, completing asynchornously, but
 // we need to be in a Meteor scope to update Mongo, so that's what this does.
 
-startInstall = function (appId, url, callback) {
-  if (!(appId in installers)) {
-    var installer = new AppInstaller(appId, url);
-    installers[appId] = installer;
+startInstall = function (packageId, url, appId) {
+  // appId is optional and passed only if it is already known (e.g. verified during a previous
+  // installation attempt).
+
+  if (!(packageId in installers)) {
+    var installer = new AppInstaller(packageId, url, appId);
+    installers[packageId] = installer;
     installer.start();
   }
 }
 
-cancelDownload = function (appId) {
-  var installer = installers[appId];
+cancelDownload = function (packageId) {
+  var installer = installers[packageId];
 
   // Don't do anything unless a download is in progress.
   if (installer && installer.downloadRequest) {
@@ -70,17 +73,17 @@ cancelDownload = function (appId) {
   }
 }
 
-function AppInstaller(appId, url, callback) {
-  this.appId = appId;
+function AppInstaller(packageId, url, appId) {
+  this.packageId = packageId;
   this.url = url;
   this.urlHash = Crypto.createHash("sha256").update(url).digest("hex").slice(0, 32);
   this.downloadPath = Path.join(DOWNLOADDIR, this.urlHash + ".downloading");
   this.unverifiedPath = Path.join(DOWNLOADDIR, this.urlHash + ".unverified");
-  this.verifiedPath = Path.join(DOWNLOADDIR, this.appId + ".verified");
-  this.unpackedPath = Path.join(APPDIR, this.appId);
+  this.verifiedPath = Path.join(DOWNLOADDIR, this.packageId + ".verified");
+  this.unpackedPath = Path.join(APPDIR, this.packageId);
   this.unpackingPath = this.unpackedPath + ".unpacking";
   this.failed = false;
-  this.callback = callback;
+  this.appId = appId;
 }
 
 AppInstaller.prototype.updateProgress = function (status, progress, error, manifest) {
@@ -90,11 +93,12 @@ AppInstaller.prototype.updateProgress = function (status, progress, error, manif
   this.manifest = manifest || null;
 
   inMeteor(this, function () {
-    Apps.update(this.appId, {$set: {
+    Packages.update(this.packageId, {$set: {
       status: this.status,
       progress: this.progress,
       error: this.error ? this.error.message : null,
-      manifest: this.manifest
+      manifest: this.manifest,
+      appId: this.appId
     }});
   });
 }
@@ -109,7 +113,7 @@ AppInstaller.prototype.wrapCallback = function (method) {
       self.failed = true;
       self.cleanup();
       self.updateProgress("failed", 0, err);
-      delete installers[self.appId];
+      delete installers[self.packageId];
       console.error("Failed to install app:", err.stack);
     }
   }
@@ -225,7 +229,7 @@ AppInstaller.prototype.doVerify = function () {
     hasher.update(chunk);
   }));
   input.on("end", this.wrapCallback(function () {
-    if (hasher.digest("hex").slice(0, 32) === this.appId) {
+    if (hasher.digest("hex").slice(0, 32) === this.packageId) {
       Fs.renameSync(this.unverifiedPath, this.verifiedPath);
       this.doUnpack();
     } else {
@@ -240,17 +244,23 @@ AppInstaller.prototype.doUnpack = function() {
   console.log("Unpacking app:", this.verifiedPath);
   this.updateProgress("unpack");
 
-  Fs.mkdirSync(this.unpackingPath);
-
-  var child = ChildProcess.spawn("unzip", ["-q", this.verifiedPath], {
-    cwd: this.unpackingPath,
-    stdio: "inherit"
+  var child = ChildProcess.spawn("spk", ["unpack", "-o", this.verifiedPath, this.unpackingPath], {
+    stdio: ["ignore", "pipe", process.stderr]
   });
 
-  child.on("exit", this.wrapCallback(function (code, sig) {
+  // Read in app ID from the app's stdout pipe.
+  var appId = "";
+  child.stdout.setEncoding("utf8");
+  child.stdout.on("data", function (text) {
+    appId = appId + text;
+  });
+
+  child.on("close", this.wrapCallback(function (code, sig) {
     if (code !== 0) {
-      throw new Error("Unzip failed.");
+      throw new Error("Unpack failed.");
     }
+
+    this.appId = appId.trim();
 
     Fs.renameSync(this.unpackingPath, this.unpackedPath);
     this.doAnalyze();
@@ -267,6 +277,19 @@ AppInstaller.prototype.doAnalyze = function() {
   }
 
   var manifest = Capnp.parse(Manifest, Fs.readFileSync(manifestFilename));
+
+  if (!this.appId) {
+    // TODO(someday):  Deal with this case?  It should never happen, because:
+    // - If we did doUnpack(), we should have found the appId there.
+    // - If we skipped it, it is only because we had the appId previously, so we should have
+    //   received the old appId in the constructor.
+    throw new Error(
+        "Somehow this package has been unpacked previously but we don't have its appId.  " +
+        "This should be impossible.  Unfortunately, I don't know how to deal with this state.  " +
+        "Please report this bug to the sandstorm developers.  As a work-around, if you are " +
+        "the system administrator, try deleting this package's directory from " +
+        "/var/sandstorm/apps.");
+  }
 
   // Success.
   this.done(manifest);

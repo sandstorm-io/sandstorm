@@ -653,8 +653,14 @@ private:
     // Read the spk, checking the magic number, reading the signature header, and decompressing the
     // archive to a temp file.
     {
-      // Open the spk and check the magic number.
+      // Open the spk.
       auto spkfd = raiiOpen(spkfile, O_RDONLY);
+
+      // TODO(security):  We could at this point chroot into the output directory and unshare
+      //   various resources for extra security, if not for the fact that we need to invoke xz
+      //   later on.  Maybe link against the xz library so that we don't have to exec it?
+
+      // Check the magic number.
       auto expectedMagic = spk::MAGIC_NUMBER.get();
       byte magic[expectedMagic.size()];
       kj::FdInputStream(spkfd.get()).read(magic, expectedMagic.size());

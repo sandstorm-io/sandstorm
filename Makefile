@@ -3,7 +3,7 @@ CXXFLAGS=-O2 -Wall
 CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS)
 NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 
-.PHONEY: all clean
+.PHONEY: all install uninstall clean environment
 
 all: bin/spk bin/legacy-bridge bin/sandstorm-supervisor node_modules/sandstorm/v8capnp.node node_modules/sandstorm/capnp.js node_modules/sandstorm/grain.capnp
 
@@ -45,4 +45,15 @@ tmp/genfiles: src/sandstorm/*.capnp
 	@mkdir -p tmp
 	@capnp compile --src-prefix=src -oc++:tmp  src/sandstorm/*.capnp
 	@touch tmp/genfiles
+
+install: all
+	@(test "x$(SANDSTORM_USER)" != x || (echo "Please set SANDSTORM_USER to the user:group under which Sandstorm will run.  For example:" >&2 && echo "    sudo make install SANDSTORM_USER=someuser:somegroup" >&2 && false));
+	cp bin/spk /usr/local/bin
+	cp bin/sandstorm-supervisor /usr/local/bin
+	chmod +s /usr/local/bin/sandstorm-supervisor
+	mkdir -p /var/sandstorm /var/sandstorm/apps /var/sandstorm/downloads /var/sandstorm/grains
+	chown -R $(SANDSTORM_USER) /var/sandstorm
+
+uninstall:
+	rm -rf /usr/local/bin/sandstorm-supervisor /usr/local/bin/spk
 

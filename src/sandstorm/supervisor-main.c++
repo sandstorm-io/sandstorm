@@ -49,6 +49,11 @@
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/supervisor.capnp.h>
 
+// In case kernel headers are old.
+#ifndef PR_SET_NO_NEW_PRIVS
+#define PR_SET_NO_NEW_PRIVS 38
+#endif
+
 namespace sandstorm {
 
 typedef unsigned int uint;

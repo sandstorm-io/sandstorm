@@ -569,6 +569,7 @@ Router.map(function () {
       var session = Session.get("session-" + grainId);
       if (session) {
         currentSessionId = session.sessionId;
+        result.protocol = document.location.protocol;
         result.hostname = document.location.hostname;
         result.sessionId = session.sessionId;
         result.port = session.port;

@@ -103,7 +103,7 @@ License along with Sandstorm.  If not, see
       <pre>{{error}}</pre>
     {{else}}
     {{#if port}}
-      <iframe src="http://{{hostname}}:{{port}}/_sandstorm-init?sessionid={{sessionId}}"></iframe>
+      <iframe src="{{protocol}}//{{hostname}}:{{port}}/_sandstorm-init?sessionid={{sessionId}}"></iframe>
     {{else}}
       <p>Loading app...
     {{/if}}

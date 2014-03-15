@@ -8,10 +8,12 @@ See:  [sandstorm.io](http://sandstorm.io)
 
 Please install the following:
 
-* Linux, with a reasonably recent kernel
+* Linux, with reasonably new kernel version
+* `libcap` with headers (e.g. `libcap-dev` on Debian)
+* `pkg-config` (make sure this is installed _before_ building libsodium)
 * [Clang compiler](http://clang.llvm.org/) version 3.4 or better
-* [Cap'n Proto](http://capnproto.org)
-* [libsodium](https://github.com/jedisct1/libsodium)
+* [Cap'n Proto](http://capnproto.org) from git (0.4.1 is NOT sufficient)
+* [libsodium](https://github.com/jedisct1/libsodium) latest release
 * [Meteor](http://meteor.com)
 * [Meteorite](https://github.com/oortcloud/meteorite)
 * [npm](http://npmjs.org) module `es6-promise`

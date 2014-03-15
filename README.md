@@ -13,6 +13,7 @@ Please install the following:
 * [Cap'n Proto](http://capnproto.org)
 * [libsodium](https://github.com/jedisct1/libsodium)
 * [Meteor](http://meteor.com)
+* [npm](http://npmjs.org) module `es6-promise`
 
 ## Building / installing the binaries
 

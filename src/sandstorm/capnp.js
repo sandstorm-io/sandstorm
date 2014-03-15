@@ -41,6 +41,10 @@ if ("NODE_PATH" in process.env) {
   }
 }
 
+// Also include standard places where .capnp files are installed.
+importPath.push("/usr/local/include");
+importPath.push("/usr/include");
+
 exports.import = function (filename) {
   for (var i in importPath) {
     var candidate = path.join(importPath[i], filename);

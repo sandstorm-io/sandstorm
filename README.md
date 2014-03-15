@@ -13,6 +13,7 @@ Please install the following:
 * [Cap'n Proto](http://capnproto.org)
 * [libsodium](https://github.com/jedisct1/libsodium)
 * [Meteor](http://meteor.com)
+* [Meteorite](https://github.com/oortcloud/meteorite)
 * [npm](http://npmjs.org) module `es6-promise`
 
 ## Building / installing the binaries
@@ -27,6 +28,7 @@ Note that the binary `sandstorm-supervisor` is installed setuid-root.  This is n
 ## Running the shell
 
     cd shell
+    mrt install
     meteor
 
 Now connect to: http://localhost:3000

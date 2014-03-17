@@ -94,13 +94,15 @@ function isAdmin() {
   }
 }
 
-if (Meteor.isClient) {
-  var url = document.location.origin + "/link-handler/%s";
-  // TODO(soon):  Once the handler is installed on Firefox, it insists on showing a butterbar again
-  //   on every load to remind the user that it is already installed, but
-  //   isProtocolHandlerRegistered() is not implemented so there's no way to avoid it!  Argh!
-  navigator.registerProtocolHandler("web+sandstorm", url, "Sandstorm");
-}
+// Registering a custom protocol handler...  doesn't really work right now.  Oh well.
+//
+//if (Meteor.isClient) {
+//  var url = document.location.origin + "/link-handler/%s";
+//  // TODO(soon):  Once the handler is installed on Firefox, it insists on showing a butterbar again
+//  //   on every load to remind the user that it is already installed, but
+//  //   isProtocolHandlerRegistered() is not implemented so there's no way to avoid it!  Argh!
+//  navigator.registerProtocolHandler("web+sandstorm", url, "Sandstorm");
+//}
 
 if (Meteor.isServer) {
   UserActions.allow({

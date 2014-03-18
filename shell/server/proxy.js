@@ -89,7 +89,7 @@ Meteor.methods({
       _id: grainId,
       packageId: packageId,
       appId: package.appId,
-      appVersion: package.manifest.version || 0,
+      appVersion: package.manifest.appVersion,
       userId: this.userId,
       title: title
     });

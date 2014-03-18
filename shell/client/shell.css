@@ -136,9 +136,12 @@ img {
 }
 
 #apps table td {
-  width: 250px;
   padding: 8px;
   vertical-align: top;
+}
+
+#apps table td h1 {
+  width: 250px;
 }
 
 #apps table td:nth-child(1) {

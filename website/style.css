@@ -3,7 +3,7 @@ body {
   font-weight: 300;
   font-size: 110%;
   line-height: 1.5;
-  color: #432;
+  color: #524444;
   margin: 0;
 }
 
@@ -16,13 +16,13 @@ b {
 }
 
 a {
-  color: #a62;
+  color: #cf974a;
   font-weight: 600;
   text-decoration: none;
 }
 
 a:hover {
-  color: #f80;
+  color: #ff9400;
   font-weight: 600;
   text-decoration: none;
 }
@@ -38,12 +38,12 @@ svg {
 }
 
 header {
-  background-color: #fed;
+  background-color: #f3ebe0;
   line-height: 1;
   padding: 32px 0;
   margin: 0;
   margin-bottom: 64px;
-  border-bottom: 2px solid #ba9;
+  border-bottom: 2px solid #a49f97;
 }
 
 header h1 {
@@ -97,10 +97,10 @@ h2 {
 }
 
 .bigpill>h2:first-child {
-  border-right: 1px solid #ba9;
+  border-right: 1px solid #a49f97;
 }
 .bigpill>h2:last-child {
-  border-left: 1px solid #ba9;
+  border-left: 1px solid #a49f97;
 }
 
 .bigpill h2 {
@@ -157,7 +157,7 @@ h2 {
 
 #signup-form {
   border-radius: 8px;
-  background-color: #fed;
+  background-color: #f3ebe0;
   padding: 8px;
   max-width: 430px;
   margin: 32px auto;
@@ -181,7 +181,7 @@ h2 {
 }
 
 #signup-form input[type="submit"] {
-  background-color: #cba;
+  background-color: #cdc6bd;
   border: none;
   border-radius: 4px;
   padding: 16px;

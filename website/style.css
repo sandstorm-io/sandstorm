@@ -1,0 +1,101 @@
+body {
+  font-family: "Open Sans",sans-serif;
+  font-weight: 300;
+  font-size: 110%;
+  line-height: 150%;
+}
+
+h1 {
+  font-weight: 600;
+}
+
+b {
+  font-weight: 600;
+}
+
+svg {
+  width: 400px;
+  height: 400px;
+}
+
+#logo {
+  position: absolute;
+  left: 0px;
+  top: 0px;
+  width: 400px;
+  height: 400px;
+  z-index: -1;
+}
+
+.static-logo {
+  background-image:url("logo.png");
+  background-repeat:no-repeat;
+}
+
+.dynamic-logo {
+  cursor: pointer;
+}
+
+#content {
+  position: absolute;
+  left: 300px;
+  top: 170px;
+  width: 500px;
+  text-align: justify;
+}
+
+#content>h1 {
+  margin: 0;
+}
+
+.tagline {
+  font-style: italic;
+}
+
+#signup-form {
+  border-radius: 8px;
+  background-color: #eee;
+  padding: 8px;
+}
+
+#signup-form h2 {
+  margin: 8px 16px;
+  text-align: center;
+}
+
+#signup-form input[type="email"] {
+  background-color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px;
+  width: 476px;
+  font-size: 120%;
+  margin-bottom: 8px;
+}
+
+#signup-form input[type="submit"] {
+  background-color: #aaa;
+  border: none;
+  border-radius: 4px;
+  padding: 16px;
+  font-size: 200%;
+}
+
+.note {
+  font-style: italic;
+  font-size: 75%;
+}
+
+@media screen and (max-width: 820px) {
+  #content {
+    top: 300px;
+    left: 40px;
+    width: 400px;
+    font-size: 100%;
+    line-height: 130%;
+  }
+  
+  #signup-form input[type="email"] {
+    width: 376px;
+  }
+}

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta name="viewport" content="width=480">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300,600' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" media="screen" href="style.css">
+
+    <title>Sandstorm</title>
+
+  </head>
+  <body>
+    <div id="content">
+      <h1>Sandstorm</h1>
+      <div class="tagline">Personal Cloud Sandbox</div>
+
+      <p>Sandstorm is an upcoming technology which puts you, the user, in control of your cloud
+        apps.  Sandstorm gives you a <b>personal server</b> in the cloud where your apps run, at a small
+        fraction of the price of a typical cloud VM.  Apps can be installed through an app-store-like
+        interface and are accessed through your browser just like the web apps you use today.
+        However, the app server runs in a <b>secure sandbox</b> that works for you.  The app's developer
+        <i>cannot</i> access your personal data and <i>cannot</i> take the app away from you.
+        You retain complete control.
+
+      <p>If you are a <b>developer</b>, the benefit of developing for Sandstorm is simple: <b>zero costs</b>.
+        You do not have to pay for or maintain servers.  You do not have to worry about how to
+        scale.  You do not have to carry a pager.  You do not have to implement authentication or
+        sharing -- every app gets these automatically.  You just make your app work, throw it on
+        the store, and you're done.  Your apps can be written on top of <b>any technology stack</b> that
+        runs on Linux -- no need to learn a new language.  Apps can trivially expose APIs and integrate
+        with each other using <b><a href="http://kentonv.github.io/capnproto/">Cap'n Proto</a></b> -- no
+        need for complex OAuth handshakes.  Easy integration means that even a simple app can participate
+        and create value in the Sandstorm ecosystem.
+
+      <p>Sandstorm is <b>open source software</b>.  You will always be able to run your own instance on
+        your own hardware.
+
+      <!-- mailing list signup form -->
+      <form id="signup-form" action="http://sandstorm.us7.list-manage1.com/subscribe/post?u=1a036c5ea0fc3c215793748ed&amp;id=5d9399a0af" method="post">
+        <h2>Get updates about Sandstorm</h2>
+        <input type="email" value="" name="EMAIL" placeholder="you@example.com" required><br>
+        <div style="float: right"><input type="submit" value="Subscribe"></div>
+        <strong>I'm interested in... </strong><br>
+        <input type="checkbox" name="group[9385][1]" value="1" checked>Using Sandstorm<br>
+        <input type="checkbox" name="group[9385][2]" value="2" checked>Developing apps<br clear="right">
+        <!-- iz you a bot? -->
+        <div style="position: absolute; left: -5000px;">
+          <input type="text" name="b_1a036c5ea0fc3c215793748ed_5d9399a0af" value="">
+        </div>
+      </form>
+      <!-- end mailing list signup form -->
+
+      <p style="text-align: center;">
+        Sandstorm is a project of <a href="mailto:kenton@sandstorm.io">Kenton Varda</a>.
+        <span class="g-follow" data-annotation="none" data-height="15" data-href="//plus.google.com/118187272963262049674" data-rel="author"></span>
+        <br>Want to help develop?
+        <a href="http://github.com/kentonv/sandstorm">Fork</a> -
+        <a href="https://groups.google.com/group/sandstorm-dev">Discuss</a>
+
+    </div>
+
+    <div id="logo" onclick="doLogoAnimation(event.shiftKey, 0)">
+      <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
+         <script type="text/javascript" xlink:href="logo.js"></script>
+         <script type="text/javascript">
+           initLogoAnimation();
+         </script>
+      </svg>
+    </div>
+
+    <!-- Google+ follow button. -->
+    <script type="text/javascript">
+      (function() {
+        var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+        po.src = 'https://apis.google.com/js/plusone.js';
+        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+      })();
+    </script>
+
+    <!-- Google Analytics -->
+    <script>
+      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+      ga('create', 'UA-42127409-1', 'sandstorm.io');
+      ga('send', 'pageview');
+    </script>
+  </body>
+</html>

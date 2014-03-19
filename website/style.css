@@ -59,6 +59,14 @@ header p {
   text-align: center;
 }
 
+section {
+  overflow: hidden;
+}
+
+section:nth-child(2n) {
+  background-color: #f8f8f8;
+}
+
 #logo {
   width: 400px;
   height: 300px;
@@ -81,6 +89,14 @@ h2 {
 
 .row {
   text-align: center;
+  margin: 0 auto;
+}
+
+@media screen and (max-width: 1700px) {
+  /* Don't display four boxes followed by one. */
+  .row {
+    max-width: 1100px;
+  }
 }
 
 .column {

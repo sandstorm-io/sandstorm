@@ -241,7 +241,10 @@ function doLogoAnimation(dense, extraDelay) {
 }
 
 function initLogoAnimation() {
-  if (document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#BasicStructure", "1.1")) {
+  // Don't use logo animation on browsers that don't support SVG.
+  // IE11 claims to support SVG but does not render the logo correctly, so blacklist it.
+  if (document.implementation.hasFeature("http://www.w3.org/TR/SVG11/feature#BasicStructure", "1.1") &&
+      navigator.userAgent.toLowerCase().indexOf('trident') === -1) {
     if (navigator.userAgent.toLowerCase().indexOf('firefox') > -1) {
       // Firefox needs some extra time to avoid stuttering.
       doLogoAnimation(false, 1);

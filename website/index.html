@@ -2,71 +2,147 @@
 
 <html>
   <head>
-    <meta charset='utf-8'>
+    <meta charset="utf-8">
     <meta name="viewport" content="width=480">
-    <link href='https://fonts.googleapis.com/css?family=Open+Sans:300,600' rel='stylesheet' type='text/css'>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,600" rel="stylesheet" type="text/css">
     <link rel="stylesheet" type="text/css" media="screen" href="style.css">
 
     <title>Sandstorm</title>
 
   </head>
   <body>
-    <div id="content">
+    <header>
+      <div id="logo" onclick="doLogoAnimation(event.shiftKey, 0)">
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
+           <script type="text/javascript" xlink:href="logo.js"></script>
+           <script type="text/javascript">
+             initLogoAnimation();
+           </script>
+        </svg>
+      </div>
       <h1>Sandstorm</h1>
-      <div class="tagline">Personal Cloud Sandbox</div>
+      <p>Personal Cloud Sandbox
+    </header>
 
-      <p>Sandstorm is an upcoming technology which puts you, the user, in control of your cloud
-        apps.  Sandstorm gives you a <b>personal server</b> in the cloud where your apps run, at a small
-        fraction of the price of a typical cloud VM.  Apps can be installed through an app-store-like
-        interface and are accessed through your browser just like the web apps you use today.
-        However, the app server runs in a <b>secure sandbox</b> that works for you.  The app's developer
-        <i>cannot</i> access your personal data and <i>cannot</i> take the app away from you.
-        You retain complete control.
-
-      <p>If you are a <b>developer</b>, the benefit of developing for Sandstorm is simple: <b>zero costs</b>.
-        You do not have to pay for or maintain servers.  You do not have to worry about how to
-        scale.  You do not have to carry a pager.  You do not have to implement authentication or
-        sharing -- every app gets these automatically.  You just make your app work, throw it on
-        the store, and you're done.  Your apps can be written on top of <b>any technology stack</b> that
-        runs on Linux -- no need to learn a new language.  Apps can trivially expose APIs and integrate
-        with each other using <b><a href="http://kentonv.github.io/capnproto/">Cap'n Proto</a></b> -- no
-        need for complex OAuth handshakes.  Easy integration means that even a simple app can participate
-        and create value in the Sandstorm ecosystem.
-
-      <p>Sandstorm is <b>open source software</b>.  You will always be able to run your own instance on
-        your own hardware.
-
-      <!-- mailing list signup form -->
-      <form id="signup-form" action="http://sandstorm.us7.list-manage1.com/subscribe/post?u=1a036c5ea0fc3c215793748ed&amp;id=5d9399a0af" method="post">
-        <h2>Get updates about Sandstorm</h2>
-        <input type="email" value="" name="EMAIL" placeholder="you@example.com" required><br>
-        <div style="float: right"><input type="submit" value="Subscribe"></div>
-        <strong>I'm interested in... </strong><br>
-        <input type="checkbox" name="group[9385][1]" value="1" checked>Using Sandstorm<br>
-        <input type="checkbox" name="group[9385][2]" value="2" checked>Developing apps<br clear="right">
-        <!-- iz you a bot? -->
-        <div style="position: absolute; left: -5000px;">
-          <input type="text" name="b_1a036c5ea0fc3c215793748ed_5d9399a0af" value="">
-        </div>
-      </form>
-      <!-- end mailing list signup form -->
-
-      <p style="text-align: center;">
-        Sandstorm is a project of <a href="mailto:kenton@sandstorm.io">Kenton Varda</a>.
-        <span class="g-follow" data-annotation="none" data-height="15" data-href="//plus.google.com/118187272963262049674" data-rel="author"></span>
-        <br>Want to help develop?
-        <a href="http://github.com/kentonv/sandstorm">Fork</a> -
-        <a href="https://groups.google.com/group/sandstorm-dev">Discuss</a>
-
+    <div class="bigpill">
+      <h2>The Web<br>is Broken</h2>
+      <p>When you use a web app today, you usually connect to its developers' servers.  This is
+        backwards.  Instead, your apps should run on <i>your</i> server.
     </div>
 
-    <div id="logo" onclick="doLogoAnimation(event.shiftKey, 0)">
-      <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
-         <script type="text/javascript" xlink:href="logo.js"></script>
-         <script type="text/javascript">
-           initLogoAnimation();
-         </script>
-      </svg>
+    <div class="bigpill">
+      <p>Sandstorm makes it easy to have your own personal cloud server.  Install, use, and share
+        web apps and data through a simple web interface.</p>
+      <h2>Sandstorm<br>Fixes It</h2>
+    </div>
+
+    <div class="row">
+      <div class="column">
+        <h3>All Your Data in One Place</h3>
+        <p>Why should your personal data be scattered around the internet, stored on computers
+          belonging to dozens of companies?  Keep it all in one place.
+      </div>
+      <div class="column">
+        <h3>No Disappearing Apps</h3>
+        <p>Apps running on your server do not <a href="http://reader.google.com">disappear</a> when
+          the developer stops supporting them.
+      </div>
+      <div class="column">
+        <h3>No Spying / Data Mining</h3>
+        <p>Sandstorm apps can only talk to the outside world with your explicit permission.  That
+          means they can't secretly spy on you, for advertising purposes or otherwise.
+      </div>
+      <div class="column">
+        <h3>End Walled Gardens</h3>
+        <p>Your apps shouldn't only integrate with other apps from the same developer.  They should
+          integrate with whatever apps <i>you</i> choose to use.  Sandstorm makes it easy.
+      </div>
+      <div class="column">
+        <h3>Stay Secure</h3>
+        <p>Some developers are bad at security.  With apps running in a secure sandbox on a server
+          you control, you can defend yourself against poorly-written apps &mdash; and even
+          malicious ones.
+      </div>
+    </div>
+
+    <h2>But what's in it for the developers?</h2>
+
+    <div class="row">
+      <div class="column">
+        <h3>Zero Operational Costs</h3>
+        <p>You don't have to pay for servers nor carry a pager.  Just make your app work, put it
+          on the app store, and relax.
+      </div>
+      <div class="column">
+        <h3>Just One Machine</h3>
+        <p>Since every end user is running their own instance of your app, you never need to worry
+          about scaling.  You can pretend your app only runs on a single machine.
+      </div>
+      <div class="column">
+        <h3>Security is Built-in</h3>
+        <p>You don't have to implement login.  You don't even have to implement sharing &mdash;
+          Sandstorm does that for you.  You can even export APIs and integrate with other apps
+          without thinking about OAuth.
+      </div>
+      <div class="column">
+        <h3>Any Tech Stack</h3>
+        <p>Sandstorm is a native-code sandbox.  It supports any Linux-based technology stack.  Use
+          whatever language you prefer.
+      </div>
+      <div class="column">
+        <h3>Level Playing Field</h3>
+        <p>Because Sandstorm handles security, users can safely use apps from developers they don't
+          trust.  This means new, small developers can break into the market more easily.
+      </div>
+    </div>
+
+    <h2>So where do I get it?</h2>
+
+    <div class="row">
+      <div class="column">
+        <h3>Use Our Servers...</h3>
+        <p>We offer managed Sandstorm instances.  As of March 2014, this service is in closed
+          alpha testing.  As we ramp up, we will send invites to people on the mailing list on a
+          first-come-first-serve basis &mdash; sign up below!
+      </div>
+      <div class="column">
+        <h3>...Or Run Your Own</h3>
+        <p>Sandstorm is Open Source Software.  You can find the code and installation instructions
+          at <a href="http://github.com/kentonv/sandstorm">Github</a>.  You will need a Linux
+          machine and an understanding of Linux system administration.
+      </div>
+    </div>
+
+    <!-- mailing list signup form -->
+    <form id="signup-form" action="http://sandstorm.us7.list-manage1.com/subscribe/post?u=1a036c5ea0fc3c215793748ed&amp;id=5d9399a0af" method="post">
+      <h3>Get updates about Sandstorm</h3>
+      <input type="email" value="" name="EMAIL" placeholder="you@example.com" required><br>
+      <div style="float: right"><input type="submit" value="Subscribe"></div>
+      <strong>I'm interested in... </strong><br>
+      <input type="checkbox" name="group[9385][1]" value="1" checked>Using Sandstorm<br>
+      <input type="checkbox" name="group[9385][2]" value="2" checked>Developing apps<br clear="right">
+      <!-- iz you a bot? -->
+      <div style="position: absolute; left: -5000px;">
+        <input type="text" name="b_1a036c5ea0fc3c215793748ed_5d9399a0af" value="">
+      </div>
+    </form>
+    <!-- end mailing list signup form -->
+
+    <p style="text-align: center;">
+      Sandstorm is a project of <a href="mailto:kenton@sandstorm.io">Kenton Varda</a>.
+      <span class="g-follow" data-annotation="none" data-height="15" data-href="//plus.google.com/118187272963262049674" data-rel="author"></span>
+      <br>Want to help develop?
+      <a href="http://github.com/kentonv/sandstorm">Fork</a> -
+      <a href="https://groups.google.com/group/sandstorm-dev">Discuss</a>
+
+    <!-- Fork Me banner -->
+    <div>
+      <a href="https://github.com/kentonv/sandstorm">
+        <img style="position: absolute; top: 0; right: 0; border: 0;"
+             src="https://github-camo.global.ssl.fastly.net/652c5b9acfaddf3a9c326fa6bde407b87f7be0f4/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6f72616e67655f6666373630302e706e67"
+             alt="Fork me on GitHub"
+             data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_orange_ff7600.png">
+      </a>
     </div>
 
     <!-- Google+ follow button. -->

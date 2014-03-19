@@ -189,7 +189,7 @@ function composeRect(parent, eventName, x, y, width, startT, endT, vel, parentSp
       r.setAttributeNS(null, "height", pieceWidth * 1.05);
       r.setAttributeNS(null, "x", 0);
       r.setAttributeNS(null, "y", -100);
-      r.setAttributeNS(null, "fill", "black");
+      r.setAttributeNS(null, "fill", "#432");
 
       var freezeAtMid = midX == endX && midY == endY;
 

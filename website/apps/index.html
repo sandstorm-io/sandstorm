@@ -36,7 +36,6 @@
   <body>
     <div id="content">
       <h1>Sandstorm Apps</h1>
-      <div class="tagline">Personal Cloud Sandbox</div>
 
       <p>This page is for people who already have a Sandstorm instance set up.
         Use the buttons below to install apps.
@@ -48,25 +47,16 @@
         <input type="radio" name="location" id="location-other"> Other
             <input type="text" placeholder="http://example.com" id="other-addr">
       
-      <h2>Etherpad <button onclick="install('32618df3fb42a66c747d75435cc9efef?url=http://sandstorm.io/apps/etherpad.spk')">Install</button></h2>
+      <h3>Etherpad <button onclick="install('32618df3fb42a66c747d75435cc9efef?url=http://sandstorm.io/apps/etherpad.spk')">Install</button></h3>
       <p>This is a port of <a href="http://etherpad.org/">Etherpad</a>, a collaborative document editor.
       
-      <h2>Meteor Todo List <button onclick="install('86a0fa46d5b9812333ed010bbaba56be?url=http://sandstorm.io/apps/meteor-todos.spk')">Install</button></h2>
+      <h3>Meteor Todo List <button onclick="install('86a0fa46d5b9812333ed010bbaba56be?url=http://sandstorm.io/apps/meteor-todos.spk')">Install</button></h3>
       <p>This is the "Todo List" example application that comes with the
         <a href="http://meteor.com">Meteor</a> development tools.
       
-      <h2>Your App Here</h2>
+      <h3>Your App Here</h3>
       <p>Have you written a Sandstorm app that you'd like to see here?
         <a href="mailto:kenton@sandstorm.io">Let us know.</a>
-    </div>
-
-    <div id="logo" onclick="doLogoAnimation(event.shiftKey, 0)">
-      <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
-         <script type="text/javascript" xlink:href="../logo.js"></script>
-         <script type="text/javascript">
-           initLogoAnimation();
-         </script>
-      </svg>
     </div>
 
     <!-- Google Analytics -->

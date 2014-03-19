@@ -2,10 +2,12 @@ body {
   font-family: "Open Sans",sans-serif;
   font-weight: 300;
   font-size: 110%;
-  line-height: 150%;
+  line-height: 1.5;
+  color: #432;
+  margin: 0;
 }
 
-h1 {
+h1, h2, h3 {
   font-weight: 600;
 }
 
@@ -13,18 +15,54 @@ b {
   font-weight: 600;
 }
 
+a {
+  color: #a62;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+a:hover {
+  color: #f80;
+  font-weight: 600;
+  text-decoration: none;
+}
+
 svg {
   width: 400px;
-  height: 400px;
+  height: 300px;
+}
+
+.center-block {
+  width: 800px;
+  margin: 8px auto;
+}
+
+header {
+  background-color: #fed;
+  line-height: 1;
+  padding: 32px 0;
+  margin: 0;
+  margin-bottom: 64px;
+  border-bottom: 2px solid #ba9;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 4em;
+  text-align: center;
+}
+
+header p {
+  margin-top: 0;
+  font-size: 1.5em;
+  font-style: italic;
+  text-align: center;
 }
 
 #logo {
-  position: absolute;
-  left: 0px;
-  top: 0px;
   width: 400px;
-  height: 400px;
-  z-index: -1;
+  height: 300px;
+  margin: 0 auto;
 }
 
 .static-logo {
@@ -36,31 +74,99 @@ svg {
   cursor: pointer;
 }
 
-#content {
-  position: absolute;
-  left: 300px;
-  top: 170px;
-  width: 500px;
-  text-align: justify;
+h2 {
+  font-size: 3em;
+  text-align: center;
 }
 
-#content>h1 {
+.row {
+  text-align: center;
+}
+
+.column {
+  padding: 16px;
+  display: inline-block;
+  text-align: left;
+  width: 300px;
+  vertical-align: top;
+}
+
+.bigpill {
+  width: 800px;
+  margin: 32px auto;
+}
+
+.bigpill>h2:first-child {
+  border-right: 1px solid #ba9;
+}
+.bigpill>h2:last-child {
+  border-left: 1px solid #ba9;
+}
+
+.bigpill h2 {
   margin: 0;
+  width: 260px;
+  padding: 16px;
+  display: inline-block;
+  vertical-align: middle;
 }
 
-.tagline {
-  font-style: italic;
+.bigpill p {
+  margin: 0;
+  width: 460px;
+  padding: 16px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+@media screen and (max-width: 800px) {
+  .bigpill {
+    width: auto;
+  }
+
+  .bigpill h2 {
+    text-align: center;
+    width: 80%;
+    margin: auto;
+    display: block;
+  }
+  .bigpill p {
+    width: auto;
+    display: block;
+  }
+
+  .bigpill>h2:first-child {
+    border-right: none;
+    border-bottom: 1px solid #ba9;
+  }
+  .bigpill>h2:last-child {
+    border-left: none;
+    border-top: 1px solid #ba9;
+  }
+
+  h2 {
+    font-size: 2em;
+  }
+}
+
+@media screen and (max-width: 600px) {
+  header h1 {
+    font-size: 3em;
+  }
 }
 
 #signup-form {
   border-radius: 8px;
-  background-color: #eee;
+  background-color: #fed;
   padding: 8px;
+  max-width: 430px;
+  margin: 32px auto;
 }
 
-#signup-form h2 {
+#signup-form h3 {
   margin: 8px 16px;
   text-align: center;
+  font-size: 1.5em;
 }
 
 #signup-form input[type="email"] {
@@ -68,34 +174,18 @@ svg {
   border: none;
   border-radius: 4px;
   padding: 4px;
-  width: 476px;
+  width: 422px;
   font-size: 120%;
   margin-bottom: 8px;
+  color: inherit;
 }
 
 #signup-form input[type="submit"] {
-  background-color: #aaa;
+  background-color: #cba;
   border: none;
   border-radius: 4px;
   padding: 16px;
   font-size: 200%;
-}
-
-.note {
-  font-style: italic;
-  font-size: 75%;
-}
-
-@media screen and (max-width: 820px) {
-  #content {
-    top: 300px;
-    left: 40px;
-    width: 400px;
-    font-size: 100%;
-    line-height: 130%;
-  }
-  
-  #signup-form input[type="email"] {
-    width: 376px;
-  }
+  color: inherit;
+  cursor: pointer;
 }

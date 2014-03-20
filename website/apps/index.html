@@ -11,6 +11,14 @@
     
     <script type="text/javascript">
       function install(packageId) {
+        document.getElementById("other-addr").required =
+            document.getElementById("location-other").checked;
+        var form = document.getElementById("target-form");
+        if (form.checkValidity && !form.checkValidity()) {
+          document.getElementById("fake-submit").click();
+          return;
+        }
+
         var target;
         if (document.getElementById("location-alpha").checked) {
           target = "https://alpha.sandstorm.io";
@@ -34,29 +42,39 @@
 
   </head>
   <body>
-    <div id="content">
+    <div id="apps">
       <h1>Sandstorm Apps</h1>
 
       <p>This page is for people who already have a Sandstorm instance set up.
         Use the buttons below to install apps.
 
-      <p><b>Where is your Sandstorm instance?</b><br>
+      <form id="target-form"><b>Where is your Sandstorm instance?</b><br>
         Before installing you must tell us where to install:<br>
-        <input type="radio" name="location" id="location-alpha"> Sandstorm Alpha (https://alpha.sandstorm.io)<br>
-        <input type="radio" name="location" id="location-localhost"> Local instance (http://localhost:3000)<br>
-        <input type="radio" name="location" id="location-other"> Other
+        <input type="radio" required name="location" id="location-alpha"> Sandstorm Alpha (https://alpha.sandstorm.io)<br>
+        <input type="radio" required name="location" id="location-localhost"> Local instance (http://localhost:3000)<br>
+        <input type="radio" required name="location" id="location-other"> Other
             <input type="text" placeholder="http://example.com" id="other-addr">
+        <input type="submit" id="fake-submit" style="display:none">
+      </form>
       
-      <h3>Etherpad <button onclick="install('32618df3fb42a66c747d75435cc9efef?url=http://sandstorm.io/apps/etherpad.spk')">Install</button></h3>
-      <p>This is a port of <a href="http://etherpad.org/">Etherpad</a>, a collaborative document editor.
+      <div class="app">
+        <button onclick="install('32618df3fb42a66c747d75435cc9efef?url=http://sandstorm.io/apps/etherpad.spk')">Install »</button>
+        <h3>Etherpad</h3>
+        <p>This is a port of <a href="http://etherpad.org/">Etherpad</a>, a collaborative document editor.
+      </div>
       
-      <h3>Meteor Todo List <button onclick="install('86a0fa46d5b9812333ed010bbaba56be?url=http://sandstorm.io/apps/meteor-todos.spk')">Install</button></h3>
-      <p>This is the "Todo List" example application that comes with the
+      <div class="app">
+        <button onclick="install('86a0fa46d5b9812333ed010bbaba56be?url=http://sandstorm.io/apps/meteor-todos.spk')">Install »</button>
+        <h3>Meteor Todo List</h3>
+        <p>This is the "Todo List" example application that comes with the
         <a href="http://meteor.com">Meteor</a> development tools.
+      </div>
       
-      <h3>Your App Here</h3>
-      <p>Have you written a Sandstorm app that you'd like to see here?
-        <a href="mailto:kenton@sandstorm.io">Let us know.</a>
+      <div class="app">
+        <h3>Your App Here</h3>
+        <p>Have you written a Sandstorm app that you'd like to see here?
+          <a href="mailto:kenton@sandstorm.io">Let us know.</a>
+      </div>
     </div>
 
     <!-- Google Analytics -->

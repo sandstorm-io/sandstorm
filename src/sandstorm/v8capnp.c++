@@ -24,6 +24,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#if __cplusplus >= 201300
+// Hack around stdlib bug with C++14.
+#include <initializer_list>  // force libstdc++ to include its config
+#undef _GLIBCXX_HAVE_GETS    // correct broken config
+// End hack.
+#endif
+
 #include <node.h>
 #include <node_buffer.h>
 #include <capnp/dynamic.h>

@@ -1,16 +1,30 @@
 # Sandstorm
 
 * [Introduction](#introduction)
+* [Caveats](#caveats)
 * [Prerequisites](#prerequisites)
 * [Building / installing the binaries](#building--installing-the-binaries)
 * [Running the shell](#running-the-shell)
 * [How it Works](#how-it-works)
 * [How to Port Apps](#how-to-port-apps)
 * [The Future](#the-future)
+* [Contribute](#contribute)
 
 ## Introduction
 
 See:  [sandstorm.io](http://sandstorm.io)
+
+## Caveats
+
+### *WARNING! WARNING!*
+
+Sandstorm is in the very early stages of development.  We want developers to start playing with it, but keep some things in mind:
+
+* At present, Sandstorm's sandboxing is incomplete.  Malicious code probably can escape.  Malicious code _definitely can_ DoS your server by consuming all available resources.
+* The sharing model is very primitive right now.  Simply copy/paste an app instance link to share it with others.
+* The UI stinks.  We're working on it.
+* Apps can't do a whole lot yet, since we don't have many APIs to interact with the outside world.  See our [future plans](#the-future) and [let us know](https://groups.google.com/group/sandstorm-dev) what we should build next!
+* The API (what there is of it) is not final.  It could change in a way that breaks existing apps.
 
 ## Prerequisites
 
@@ -199,3 +213,6 @@ We hope that this will enable apps like:
 
 Have a great idea for an app?  [Share it with us](https://groups.google.com/group/sandstorm-dev), and we'll help you figure out how to make it fit in Sandstorm.
 
+## Contribute
+
+Want to help?  Get on the [discussion group](https://groups.google.com/group/sandstorm-dev) and let us know!

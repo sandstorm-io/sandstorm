@@ -94,6 +94,10 @@ function isAdmin() {
   }
 }
 
+browseHome = function() {
+  Router.go("root");
+}
+
 // Registering a custom protocol handler...  doesn't really work right now.  Oh well.
 //
 //if (Meteor.isClient) {
@@ -330,28 +334,11 @@ if (Meteor.isClient) {
 
   Template.grainList.events({
     "click #apps-ico": function (event) {
-      var ico = event.currentTarget;
-      var pop = document.getElementById("apps");
-      var rec = ico.getBoundingClientRect();
-      pop.style.left = rec.left + "px";
-      pop.style.top = rec.bottom + 16 + "px";
-      pop.style.display = "block";
-
-      var left = rec.left - Math.floor((pop.clientWidth - rec.width) / 2);
-      if (left < 8) {
-        left = 8;
-      } else if (left + pop.clientWidth > window.innerWidth) {
-        left = window.innerWidth - pop.clientWidth - 8;
-      }
-
-      pop.style.left = left + "px";
-
-      document.getElementById("close-apps").style.display = "block";
+      Session.set("grainMenuOpen", true);
     },
 
     "click #close-apps": function (event) {
-      event.currentTarget.style.display = "none";
-      document.getElementById("apps").style.display = "none";
+      Session.set("grainMenuOpen", false);
     },
 
     "click .newGrain": function (event) {
@@ -362,8 +349,7 @@ if (Meteor.isClient) {
         return;
       }
 
-      document.getElementById("apps").style.display = "none";
-      document.getElementById("close-apps").style.display = "none";
+      Session.set("grainMenuOpen", false);
       var title = window.prompt("Title?");
       if (!title) return;
 
@@ -379,9 +365,12 @@ if (Meteor.isClient) {
 
     "click .openGrain": function (event) {
       var grainId = event.currentTarget.id.split("-")[1];
-      document.getElementById("apps").style.display = "none";
-      document.getElementById("close-apps").style.display = "none";
+      Session.set("grainMenuOpen", false);
       Router.go("grain", {grainId: grainId});
+    },
+
+    "click #installAppsLink": function (event) {
+      document.location = "http://sandstorm.io/apps/?host=" + document.location.origin;
     }
   });
 
@@ -401,6 +390,9 @@ if (Meteor.isClient) {
       } else {
         return [];
       }
+    },
+    menuOpen: function () {
+      return Session.get("grainMenuOpen");
     }
   });
 
@@ -535,6 +527,7 @@ Router.map(function () {
     data: function () {
       return {
         host: document.location.host,
+        origin: document.location.origin,
         isSignedUp: isSignedUp()
       };
     }
@@ -741,6 +734,7 @@ Router.map(function () {
       var result = {
         keyIsValid: !!keyInfo,
         keyIsUsed: keyInfo && keyInfo.used,
+        origin: document.location.origin,
         alreadySignedUp: isSignedUp()
       };
 

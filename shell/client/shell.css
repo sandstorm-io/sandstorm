@@ -80,6 +80,14 @@ body {
   z-index: 1;
 }
 
+#topbar a {
+  color: #ccc;
+  text-decoration: none;
+}
+#topbar a:hover {
+  color: white;
+}
+
 img.icon {
   height: 16px;
   padding: 0 8px;
@@ -110,7 +118,7 @@ img {
   margin: 16px auto;
   padding: 16px;
   border-radius: 8px;
-  width: 400px;
+  width: 600px;
   background-color: #eee;
   font-size: 125%;
 }
@@ -128,15 +136,27 @@ img {
   text-decoration: underline;
 }
 
-.openGrain, .newGrain {
+#apps p {
+  padding: 4px 8px;
+  margin: 0;
+}
+#apps .openGrain, #apps .newGrain, #installAppsLink {
   cursor: pointer;
 }
-.openGrain:hover, .newGrain:hover {
+#apps .openGrain:hover, #apps .newGrain:hover, #installAppsLink:hover {
   background-color: #333;
 }
 
+#installAppsLink {
+  border-top: 1px solid #ccc;
+}
+
+#apps table {
+  border-collapse: collapse;
+}
+
 #apps table td {
-  padding: 8px;
+  padding: 0;
   vertical-align: top;
 }
 
@@ -145,7 +165,7 @@ img {
 }
 
 #apps table td:nth-child(1) {
-  border-right: 2px solid #ccc;
+  border-right: 1px solid #ccc;
 }
 
 #intro h1 {
@@ -188,21 +208,26 @@ svg {
   margin: 0;
 }
 
+#apps {
+  left: 0px;
+}
+
 div.popup {
-  display: none;
   position: absolute;
   border: 2px solid #ccc;
-  border-radius: 6px;
+  border-top: none;
+  border-left: none;
+  border-bottom-right-radius: 4px;
   z-index: 101;
-  background-color: rgba(0, 0, 0, 0.9);
-  padding: 8px;
+  background-color: black;
+  /*background-color: rgba(0, 0, 0, 0.9);*/
+  padding: 0;
   font-size: 85%;
   line-height: normal;
   min-width: 250px;
 }
 
 div.popup-closer {
-  display: none;
   position: fixed;
   top: 0px;
   left: 0px;
@@ -215,8 +240,9 @@ div.popup h1 {
   font-size: 125%;
   font-weight: bold;
   text-align: center;
-  border-bottom: 2px solid #ccc;
-  margin: 4px;
+  border-bottom: 1px solid #ccc;
+  padding: 4px;
+  margin: 0;
 }
 
 div.popup hr {
@@ -254,6 +280,10 @@ div.popup h2 {
   font-size: inherit;
 }
 
+#install li {
+  display: none;
+}
+
 #install li .progress {
   display: none;
 }
@@ -261,12 +291,12 @@ div.popup h2 {
 #install #step-confirm .confirm-form { display: none; }
 #install #step-run     .done-notice  { display: none; }
 
-#install.instep-download #step-download { font-weight: bold; }
-#install.instep-verify   #step-verify   { font-weight: bold; }
-#install.instep-unpack   #step-unpack   { font-weight: bold; }
-#install.instep-analyze  #step-analyze  { font-weight: bold; }
-#install.instep-confirm  #step-confirm  { font-weight: bold; }
-#install.instep-run      #step-run      { font-weight: bold; }
+#install.instep-download #step-download { display: block; font-weight: bold; }
+#install.instep-verify   #step-verify   { display: block; font-weight: bold; }
+#install.instep-unpack   #step-unpack   { display: block; font-weight: bold; }
+#install.instep-analyze  #step-analyze  { display: block; font-weight: bold; }
+#install.instep-confirm  #step-confirm  { display: block; font-weight: bold; }
+#install.instep-run      #step-run      { display: block; font-weight: bold; }
 
 #install.instep-download #step-download .progress { display: inline; }
 #install.instep-verify   #step-verify   .progress { display: inline; }

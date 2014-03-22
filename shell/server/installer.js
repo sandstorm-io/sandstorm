@@ -133,6 +133,12 @@ function AppInstaller(packageId, url, appId) {
 }
 
 AppInstaller.prototype.updateProgress = function (status, progress, error, manifest) {
+  // TODO(security):  On error, we should actually delete the package from the database and only
+  //   display the error to whomever was watching at the time.  Otherwise it's easy to confuse
+  //   people by "pre-failing" packages.  (Actually, perhaps if a user tries to download an
+  //   already-downloading package but specifies a different URL, we really should initiate an
+  //   entirely separate download...  but cancel it if the first download succeeds.)
+
   this.status = status;
   this.progress = progress || -1;
   this.error = error;
@@ -215,6 +221,8 @@ AppInstaller.prototype.doDownload = function () {
   var out = Fs.createWriteStream(this.downloadPath);
   var broken = false;
 
+  // TODO(security):  It could arguably be a security problem that it's possible to probe the
+  //   server's local network (behind any firewalls) by presenting URLs here.
   var request = Http.get(this.url, this.wrapCallback(function (response) {
     if (response.statusCode !== 200) {
       throw new Error("Download failed with HTTP status code: " + response.statusCode);

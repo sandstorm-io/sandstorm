@@ -35,43 +35,46 @@ License along with Sandstorm.  If not, see
 </body>
 
 <template name="loading">
-  <div id="topbar">Sandstorm: Loading...</div>
+  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Loading...</div>
   <div class="main-content">
     <div class="centered-box">Loading...</div>
   </div>
 </template>
 
 <template name="notFound">
-  <div id="topbar">Sandstorm: Not Found</div>
+  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Not Found</div>
   <div class="main-content">
     <div class="centered-box">404 Not Found :(</div>
   </div>
 </template>
 
 <template name="grainList">
-  {{#if currentUser}}<span id="apps-ico">My Grains ▾</span>{{/if}}
-  <div id="close-apps" class="popup-closer"></div>
-  <div id="apps" class="popup">
-    <table><tr><td>
-    <h1>Open</h1>
-    {{#each grains}}
-    <p class="openGrain" id="openGrain-{{_id}}">{{title}}
-    {{else}}
-    <p><i>You have no files...</i>
-    {{/each}}
-    </td><td>
-    <h1>New</h1>
-    {{#each actions}}
-    <p class="newGrain" id="newGrain-{{_id}}">{{title}}
-    {{else}}
-    <p><i>You have no apps...</i>
-    {{/each}}
-    </td></tr><table>
-  </div>
+  {{#if currentUser}}<span id="apps-ico">My Files ▾</span>{{/if}}
+  {{#if menuOpen}}
+    <div id="close-apps" class="popup-closer"></div>
+    <div id="apps" class="popup">
+      <table><tr><td>
+      <h1>Open</h1>
+      {{#each grains}}
+      <p class="openGrain" id="openGrain-{{_id}}">{{title}}
+      {{else}}
+      <p><i>You have no files...</i>
+      {{/each}}
+      </td><td>
+      <h1>New</h1>
+      {{#each actions}}
+      <p class="newGrain" id="newGrain-{{_id}}">{{title}}
+      {{else}}
+      <p><i>You have no apps...</i>
+      {{/each}}
+      </td></tr><table>
+      <p id="installAppsLink">Install apps...
+    </div>
+  {{/if}}
 </template>
 
 <template name="root">
-  <div id="topbar">Sandstorm: Home</div>
+  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Home</div>
 
   <div id="intro">
     <div id="logo">
@@ -81,7 +84,7 @@ License along with Sandstorm.  If not, see
     <h1>Sandstorm</h1>
     {{#if isSignedUp}}
       <p>Welcome to the Sandstorm closed alpha.
-      <p><a href="http://sandstorm.io/apps">Looking for apps?</a>
+      <p><a href="http://sandstorm.io/apps/?host={{origin}}">Looking for apps?</a>
     {{else}}
       <p>Currently in closed alpha.
       <p>Want an invite?  <a href="http://sandstorm.io">Get on the mailing list.</a>
@@ -91,7 +94,7 @@ License along with Sandstorm.  If not, see
 
 <template name="grain">
   <div id="topbar">
-    Sandstorm: {{title}}
+    <a href="javascript:browseHome()">Sandstorm</a>: {{title}}
     {{#if isOwner}}
       <button id="renameGrain">Rename</button>
       <button id="deleteGrain">Delete</button>
@@ -112,7 +115,7 @@ License along with Sandstorm.  If not, see
 </template>
 
 <template name="install">
-  <div id="topbar">Sandstorm: Install App</div>
+  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Install App</div>
 
   {{#if error}}
     <div id="install" class="error">
@@ -122,15 +125,17 @@ License along with Sandstorm.  If not, see
     </div>
   {{else}}
     <div id="install" class="instep-{{step}}">
+      {{! TODO(cleanup):  The use of a list here is vestigial.  We now display only the step
+            that is currently running. }}
       <ol>
-        <li id="step-download">Download... <span class="progress">{{progress}}
+        <li id="step-download">Downloading... <span class="progress">{{progress}}
             <button id="cancelDownload">Cancel</button></span>
-        <li id="step-verify">Verify... <span class="progress">{{progress}}</span>
-        <li id="step-unpack">Unpack... <span class="progress">{{progress}}</span>
-        <li id="step-analyze">Analyze... <span class="progress">{{progress}}</span>
-        <li id="step-confirm">Confirm...
+        <li id="step-verify">Verifying... <span class="progress">{{progress}}</span>
+        <li id="step-unpack">Unpacking... <span class="progress">{{progress}}</span>
+        <li id="step-analyze">Analyzing... <span class="progress">{{progress}}</span>
+        <li id="step-confirm">Install this app?
           <div class="confirm-form">
-            <!--(TODO(someday):  Support editing action names (i.e. make them petnames).)-->
+            {{! TODO(someday):  Support editing action names (i.e. make them petnames). }}
             {{#if hasOlderVersion}}
               <p>You have an older version of this app installed.  Do you want to upgrade?
               <p><button id="confirmInstall">Upgrade</button>
@@ -145,18 +150,18 @@ License along with Sandstorm.  If not, see
             {{/if}}
             {{/if}}
           </div>
-        <li id="step-run">Run...
+        <li id="step-run">App Installed
           <div class="done-notice">
-            <p>Installation complete.  Click "My Grains" to create a new grain with this app.
+            <p>Installation complete.  Click "My Files" to create a new file with this app.
 
             {{#if hasNewerVersion}}
-              <p>Some of your grains were made with a
+              <p>Some of your files were made with a
                 <a href="{{newVersionId}}">newer version</a> of this app.  They will keep
                 using the newer version, as going backwards could break them.
             {{/if}}
             {{#if hasOlderVersion}}
-              <p>Some of your grains were made with an older version of this app.  Upgrade them?
-              <p><button id="upgradeGrains">Upgrade Grains</button>
+              <p>Some of your files were made with an older version of this app.  Upgrade them?
+              <p><button id="upgradeGrains">Upgrade Files</button>
             {{/if}}
 
           </div>
@@ -166,12 +171,12 @@ License along with Sandstorm.  If not, see
 </template>
 
 <template name="signup">
-  <div id="topbar">Sandstorm: Claim Invite</div>
+  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Claim Invite</div>
 
   <div id="signup">
   <div class="centered-box">
   {{#if alreadySignedUp}}
-    <p>You're all signed up!  Now go <a href="http://sandstorm.io/apps">install some apps</a>.
+    <p>You're all signed up!  Now go <a href="http://sandstorm.io/apps/?host={{origin}}">install some apps</a>.
   {{else}}
     {{#if keyIsValid}}
       {{#if keyIsUsed}}
@@ -193,7 +198,7 @@ License along with Sandstorm.  If not, see
 </template>
 
 <template name="signupMint">
-  <div id="topbar">Sandstorm: Create Invite</div>
+  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Create Invite</div>
 
   <div id="signup">
   <div class="centered-box">
@@ -213,7 +218,7 @@ License along with Sandstorm.  If not, see
 </template>
 
 <template name="uploadForm">
-  <div id="topbar">Sandstorm: Upload App</div>
+  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Upload App</div>
 
   <div id="upload">
     <div class="centered-box">

@@ -119,9 +119,11 @@ License along with Sandstorm.  If not, see
 
   {{#if error}}
     <div id="install" class="error">
-      <p>Failed to install app!
-        {{#if step}}<button id="retry">Try Again</button>{{/if}}
-      <pre>{{error}}</pre>
+      <div class="centered-box">
+        <p>Failed to install app!
+          {{#if step}}<button id="retry">Try Again</button>{{/if}}
+        <pre>{{error}}</pre>
+      </div>
     </div>
   {{else}}
     <div id="install" class="instep-{{step}}">
@@ -158,12 +160,14 @@ License along with Sandstorm.  If not, see
               <p>Some of your files were made with a
                 <a href="{{newVersionId}}">newer version</a> of this app.  They will keep
                 using the newer version, as going backwards could break them.
-            {{/if}}
+            {{else}}
             {{#if hasOlderVersion}}
               <p>Some of your files were made with an older version of this app.  Upgrade them?
               <p><button id="upgradeGrains">Upgrade Files</button>
+            {{else}}
+              <div id="my-files-arrow"></div>
             {{/if}}
-
+            {{/if}}
           </div>
       </ol>
     </div>

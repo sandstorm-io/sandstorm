@@ -305,6 +305,17 @@ div.popup h2 {
 #install.instep-confirm  #step-confirm  .confirm-form { display: block; }
 #install.instep-run      #step-run      .done-notice { display: block; }
 
+#my-files-arrow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 300px;
+  height: 400px;
+  z-index: -1;
+
+  background-image: url(files-arrow.svg);
+}
+
 #key-note {
   width: 300px;
 }

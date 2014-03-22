@@ -9,6 +9,29 @@
 
     <title>Sandstorm</title>
 
+    <script type="text/javascript">
+      function highlightSubscribeForm() {
+        var form = document.getElementById("signup-form");
+        form.className = "glowing-border";
+        document.location = "#signup-form";
+        document.getElementById("subscribe-email").focus();
+
+        var count = 0;
+
+        var interval = window.setInterval(function () {
+          if (count % 2 == 0) {
+            form.className = "";
+          } else {
+            form.className = "glowing-border";
+          }
+
+          if (++count > 3) {
+            clearInterval(interval);
+          }
+        }, 500);
+      }
+    </script>
+
   </head>
   <body>
     <header>
@@ -23,6 +46,7 @@
       <h1>Sandstorm</h1>
       <p>Personal Cloud Platform
       <h2>Take control of your web</h2>
+      <button onclick="highlightSubscribeForm()">Sign up »</button>
     </header>
 
     <section>
@@ -144,9 +168,10 @@
 
     <!-- mailing list signup form -->
     <form id="signup-form" action="http://sandstorm.us7.list-manage1.com/subscribe/post?u=1a036c5ea0fc3c215793748ed&amp;id=5d9399a0af" method="post">
-      <h3>Get updates about Sandstorm</h3>
-      <p>We'll let you know when there's new stuff to try out.
-      <div><input type="email" value="" name="EMAIL" placeholder="you@example.com" required><br></div>
+      <h3>Get on the list</h3>
+      <p>We'll keep you updated as development progresses
+        and send you an <b>invite key</b> when there's space.
+      <div><input type="email" value="" name="EMAIL" id="subscribe-email" placeholder="you@example.com" required><br></div>
       <div style="display: table; width: 100%;">
         <div style="display: table-cell; vertical-align: middle;">
           <strong>I'm interested in... </strong><br>
@@ -164,10 +189,21 @@
     </form>
     <!-- end mailing list signup form -->
 
-    <p style="text-align: center;">
-      Sandstorm is a project of <a href="mailto:kenton@sandstorm.io">Kenton Varda</a>.
-      <span class="g-follow" data-annotation="none" data-height="15" data-href="//plus.google.com/118187272963262049674" data-rel="author"></span>
-      <br>Want to contribute?<br>
+    <p class="footer">Sandstorm is developed by:
+    <div class="nametag">
+      <a href="https://github.com/kentonv"><img src="kenton.jpg"></a>
+      <p><b>Kenton Varda</b>
+      <br>Author, <a href="http://capnproto.org">Cap'n Proto</a>
+      <br>Author, <a href="http://protobuf.googlecode.com">Protocol Buffers v2</a>
+      <br>Owner, <a href="http://kentonsprojects.blogspot.com/2011/12/lan-party-optimized-house.html">LAN Party house</a>
+      <br><span class="g-follow" data-annotation="none" data-height="20" data-href="//plus.google.com/118187272963262049674" data-rel="author"></span>
+          <iframe allowtransparency="true" frameborder="0" scrolling="no"
+                  src="//platform.twitter.com/widgets/follow_button.html?screen_name=KentonVarda&show_count=false"
+                  style="display: inline-block; width:150px; height:20px;"></iframe>
+    </div>
+
+    <p class="footer">
+      Want to contribute?<br>
       <a href="http://github.com/kentonv/sandstorm">Github Project</a> -
       <a href="https://groups.google.com/group/sandstorm-dev">Discussion Group</a>
 

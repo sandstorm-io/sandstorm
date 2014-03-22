@@ -93,6 +93,10 @@ h2 {
   text-align: center;
 }
 
+section>p {
+  text-align: center;
+}
+
 .row, .row-wide {
   text-align: center;
   margin: 0 auto;
@@ -192,9 +196,17 @@ h2 {
 }
 
 #signup-form h3 {
-  margin: 8px 16px;
+  margin: 8px 16px 8px;
   text-align: center;
   font-size: 1.5em;
+  line-height: 1;
+}
+
+#signup-form p {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  font-size: 85%;
+  text-align: center;
 }
 
 #signup-form input[type="email"] {
@@ -255,6 +267,7 @@ h2 {
 }
 
 .app button {
+  /* Some styling borrowed from Bootstrap. */
   font-family: inherit;
   float: right;
   background-color: #428bca;
@@ -271,4 +284,3 @@ h2 {
 
   box-shadow: inset 0 1px 0 rgba(255,255,255,.15),0 1px 1px rgba(0,0,0,.075);
 }
-

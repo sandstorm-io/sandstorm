@@ -209,6 +209,10 @@ if (Meteor.isServer) {
 
 Meteor.methods({
   ensureInstalled: function (packageId, url) {
+    if (!packageId.match(/^[a-zA-Z0-9]*$/)) {
+      throw new Meteor.Error(400, "Bad package name", "The package name contains illegal characters.");
+    }
+
     if (!this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "You must be logged in to install packages.");
     }

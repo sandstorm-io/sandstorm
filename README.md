@@ -188,6 +188,20 @@ Replace `$HASH` with the first half of the SHA-256 hash of the package encoded i
 
 Note that once the package has been uploaded to a particular host, other users wishing to install the same package may omit the `?url=$URL` part of the link.  Or, put another way, when you upload via the `/install` web form, it will redirect you to `/install/$HASH`, and at that point you can simply copy-paste that URL to send to friends who use the same host.
 
+### Step 8:  Debug
+
+This is a bit hacky at the moment.
+
+Your app's console output is stored to a log file that you can find at:
+
+    /var/sandstorm/grains/$GRAINID/log
+
+Also note that some error information -- especially relating to app installation failures and startup problems -- may appear on the Sandstorm server's own log (i.e. on the terminal where you run Meteor).
+
+Obviously, you can only get at these logs if you have admin rights on the server.  We want to improve this soon, by providing some way to see app logs in the UI.
+
+Another trick that can make iteration easier is to bypass the packaging process by editing your app directly in `/var/sandstorm/apps`.  This is where Sandstorm unpacks apps when they are installed.  The system does not verify that files haven't changed between runs, so you can update the files here and reload your app rather than repeatedly installing new packages.
+
 ## The Future
 
 As of March 2014, sandboxed apps can receive and respond to HTTP and WebSocket requests from users of the Sandstorm shell interface.  That's it.  This is enough for document-editor-type apps, but not anything that needs to interact with the world.

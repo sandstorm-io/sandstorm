@@ -50,6 +50,8 @@ install: all
 	@(test "x$(SANDSTORM_USER)" != x || (echo "Please set SANDSTORM_USER to the user:group under which Sandstorm will run.  For example:" >&2 && echo "    sudo make install SANDSTORM_USER=someuser:somegroup" >&2 && false));
 	cp bin/spk /usr/local/bin
 	cp bin/sandstorm-supervisor /usr/local/bin
+	mkdir -p /usr/local/include/sandstorm
+	cp src/sandstorm/*.capnp /usr/local/include/sandstorm
 	chmod +s /usr/local/bin/sandstorm-supervisor
 	mkdir -p /var/sandstorm /var/sandstorm/apps /var/sandstorm/downloads /var/sandstorm/grains
 	chown -R $(SANDSTORM_USER) /var/sandstorm

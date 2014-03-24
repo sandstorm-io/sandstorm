@@ -221,6 +221,8 @@ public:
         .addOption({"proc"}, [this]() { setMountProc(true); return true; },
                    "Mount procfs inside the sandbox.  For security reasons, this is NOT "
                    "RECOMMENDED during normal use, but it may be useful for debugging.")
+        .addOption({"stdio"}, [this]() { keepStdio = true; return true; },
+                   "Don't redirect the sandbox's stdio.  Useful for debugging.")
         .addOption({'n', "new"}, [this]() { setIsNew(true); return true; },
                    "Initializes a new grain.  (Otherwise, runs an existing one.)")
         .expectArg("<app-name>", KJ_BIND_METHOD(*this, setAppName))
@@ -368,6 +370,7 @@ private:
   kj::Vector<kj::String> environment;
   bool isNew = false;
   bool mountProc = false;
+  bool keepStdio = false;
   uid_t uid = 0;
   gid_t gid = 0;
   gid_t gidFromUsername = 0;  // If --uid was given a username.
@@ -624,20 +627,22 @@ private:
   void setupStdio() {
     // Make sure stdin is /dev/null and set stderr to go to a log file.
 
-    // We want to replace stdin with /dev/null because even if there is no input on stdin, it could
-    // inadvertently be an FD with other powers.  For example, it might be a TTY, in which case you
-    // could write to it or otherwise mess with the terminal.
-    int devNull;
-    KJ_SYSCALL(devNull = open("/dev/null", O_RDONLY | O_CLOEXEC));
-    KJ_SYSCALL(dup2(devNull, STDIN_FILENO));
-    KJ_SYSCALL(close(devNull));
+    if (!keepStdio) {
+      // We want to replace stdin with /dev/null because even if there is no input on stdin, it
+      // could inadvertently be an FD with other powers.  For example, it might be a TTY, in which
+      // case you could write to it or otherwise mess with the terminal.
+      int devNull;
+      KJ_SYSCALL(devNull = open("/dev/null", O_RDONLY | O_CLOEXEC));
+      KJ_SYSCALL(dup2(devNull, STDIN_FILENO));
+      KJ_SYSCALL(close(devNull));
 
-    // We direct stderr to a log file for debugging purposes.
-    // TODO(soon):  Rotate logs.
-    int log;
-    KJ_SYSCALL(log = open("/var/log", O_WRONLY | O_APPEND | O_CLOEXEC));
-    KJ_SYSCALL(dup2(log, STDERR_FILENO));
-    KJ_SYSCALL(close(log));
+      // We direct stderr to a log file for debugging purposes.
+      // TODO(soon):  Rotate logs.
+      int log;
+      KJ_SYSCALL(log = open("/var/log", O_WRONLY | O_APPEND | O_CLOEXEC));
+      KJ_SYSCALL(dup2(log, STDERR_FILENO));
+      KJ_SYSCALL(close(log));
+    }
 
     // We will later make stdout a copy of stderr specifically for the sandboxed process.  In the
     // supervisor, stdout is how we tell our parent that we're ready to receive connections.

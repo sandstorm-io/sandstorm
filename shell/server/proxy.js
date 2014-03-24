@@ -158,7 +158,7 @@ function startGrainInternal(packageId, grainId, command, isNew) {
   if (isNew) args.push("-n");
   if (command.environ) {
     for (var i in command.environ) {
-      args.push(["-e", command.environ[i].key, "=", command.eviron[i].value].join(""));
+      args.push(["-e", command.environ[i].key, "=", command.environ[i].value].join(""));
     }
   }
 
@@ -207,16 +207,18 @@ shutdownGrain = function (grainId) {
   // Try to send a shutdown.  The grain may not be running, in which case this will fail, which
   // is fine.  In fact even if the grain is running, we expect the call to fail because the grain
   // kills itself before returning.
-  var connection = Capnp.connect("unix:" + Path.join(GRAINDIR, grainId, "socket"));
-  var supervisor = connection.restore(null, Supervisor);
+  try {
+    var connection = Capnp.connect("unix:" + Path.join(GRAINDIR, grainId, "socket"));
+    var supervisor = connection.restore(null, Supervisor);
 
-  supervisor.shutdown().then(function (result) {
-    supervisor.close();
-    connection.close();
-  }, function (error) {
-    supervisor.close();
-    connection.close();
-  });
+    supervisor.shutdown().then(function (result) {
+      supervisor.close();
+      connection.close();
+    }, function (error) {
+      supervisor.close();
+      connection.close();
+    });
+  } catch (err) {}
 }
 
 deleteGrain = function (grainId) {
@@ -602,7 +604,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
 
   }).then(function (rpcResponse) {
     // Translate the response.
-    if (rpcResponse.setCookies.length > 0) {
+    if (rpcResponse.setCookies && rpcResponse.setCookies.length > 0) {
       response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
     }
 

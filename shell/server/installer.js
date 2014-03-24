@@ -334,6 +334,8 @@ AppInstaller.prototype.doAnalyze = function() {
     throw new Error("Package missing manifest.");
   }
 
+  // TODO(security):  Refuse to parse overly large manifests.  Also make sure the Cap'n Proto layer
+  //   sets the traversal limit appropriately.
   var manifest = Capnp.parse(Manifest, Fs.readFileSync(manifestFilename));
 
   if (!this.appId) {

@@ -71,7 +71,14 @@ On first run, you'll have to configure some things:
 
 You can create more invite keys to distribute to other people who will share your server.  Keep in mind that currently there are no resource quotas, so anyone you give access will be able to fill up your hard drive and use all your CPU and RAM.  Therefore, it's a good idea only to invite friendly people for now.
 
-If you don't want to run the shell in developer mode, read up on how to make and use Meteor bundles.  Keep in mind that the `spk` and `sandstorm-supervisor` binaries must be available in the `PATH` wherever the shell runs.
+Tips:
+* Sandstorm serves the front-end on port 3000, but serves each app on a different port, starting from 7000 and counting up (the more files you have open at once, the more ports are used).  If there is a firewall or NAT between you and the server, you'll need to open these ports.
+* For a more production-y installation, run "meteor bundle" to build a deployment tarball, unpack it, and follow the instructions in the readme.  Keep in mind that the `spk` and `sandstorm-supervisor` binaries must be available in the `PATH` wherever the shell runs.
+* If you want to run on port 80, we recommend setting up an [nginx](http://nginx.org/) reverse proxy rather than trying to get Node to open port 80 directly.  Make sure to configure [WebSocket forwarding](http://nginx.org/en/docs/http/websocket.html), which requires nginx 1.3.13 or better.
+* If you want SSL, then you will definitely need an nginx proxy (or something equivalent).  You will further need to use a wildcard certificate, and wildcard DNS.  In SSL mode, Sandstorm switches from using ports for each app to using different host names, formed by adding `-$PORT` to the first component of the shell's host name.  For example, for `alpha.sandstorm.io`, apps are hosted from `alpha-7000.sandstorm.io`, `alpha-7001.sandstorm.io`, etc.  You will need to configure nginx to forward each of these host names to the corresponding local port number; this can be done easily with a regex rule.
+* If you are not pointing your browser strictly at `http://localhost:3000`, you need to set the environment variable `ROOT_URL` to the URL seen by the browser in order for the OAuth handshakes to work, e.g. `ROOT_URL=https://alpha.sandstorm.io meteor`.
+
+For reference, [nginx-example.conf](nginx-example.conf) contains the http server part of nginx config used by Sandstorm Alpha.
 
 ## How It Works
 

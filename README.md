@@ -33,6 +33,7 @@ Please install the following:
 * Linux, with reasonably new kernel version.  (Note:  Sandstorm currently does not work under LXC / Docker.  We'd like to fix this, but it's tricky.)
 * `libcap` with headers (e.g. `libcap-dev` on Debian/Ubuntu)
 * `pkg-config` (make sure this is installed _before_ building libsodium)
+* `XZ` for installing packages (`xz-utils` on Debian/Ubuntu)
 * [Clang compiler](http://clang.llvm.org/) version 3.4 or better.  WARNING:  Ubuntu Saucy's `clang-3.4` package is NOT Clang 3.4!  It's actually some random cut from trunk between 3.3 and 3.4, and it's not new enough.  Try <a href="http://llvm.org/apt/">the official packages from LLVM</a> instead.
 * [Cap'n Proto](http://capnproto.org) from git (do not use a release version -- Sandstorm and Cap'n Proto are being developed together, so Sandstorm often uses brand-new Cap'n Proto features)
 * [libsodium](https://github.com/jedisct1/libsodium) latest release

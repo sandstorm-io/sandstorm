@@ -112,7 +112,7 @@ I've had success with a more basic approach:
 
 Note:  Remember that if you distribute your package, you are responsible for complying with the license terms of all software you've put in it.
 
-*MongoDB Note:*  If your app uses MongoDB, please use [Kenton's fork](https://github.com/kentonv/mongo/tree/niscu) rather than the original Mongo.  Mongo is optimized for huge databases, but Sandstorm grains should be tiny.  Kenton's fork changes some hard-coded constants to make that possible.  Eventually we'd like to get this merged upstream in some form but there's no timeline for that happening.
+**MongoDB Note:**  If your app uses MongoDB, please use [Kenton's fork](https://github.com/kentonv/mongo/tree/niscu) rather than the original Mongo.  Mongo is optimized for huge databases, but Sandstorm grains should be tiny.  Kenton's fork changes some hard-coded constants to make that possible.  Eventually we'd like to get this merged upstream in some form but there's no timeline for that happening.
 
 Other databases may have similar problems.  Check disk usage under `/var/sandstorm/grains` to make sure your app's grains are of reasonable size.
 

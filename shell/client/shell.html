@@ -221,6 +221,37 @@ License along with Sandstorm.  If not, see
   </div>
 </template>
 
+<template name="invite">
+  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Send Invite</div>
+
+  <div id="invite">
+  <div class="centered-box">
+    {{#if error}}
+      <p>{{error}}
+      <p><button id="retry">Try Again</button>
+    {{else}}{{#if sent}}
+      <p>Sent!
+      <p><button id="retry">Send more</button>
+    {{else}}
+      <div style="text-align: right">
+      <p>From: <input type="text" id="invite-from" placeholder="me@example.com">
+      <p>To:
+      <textarea id="invite-emails" placeholder="E-mail addresses, one per line."></textarea>
+      <p>Subject: <input type="text" id="invite-subject" value="Join my Sandstorm server!">
+      <p>Body:
+      <textarea id="invite-message">Click on the following link to get access to my Sandstorm server!
+
+$KEY
+
+- {{currentUser.profile.name}}</textarea>
+      <p><button id="send">Send</button>
+      </div>
+    {{/if}}
+    {{/if}}
+  </div>
+  </div>
+</template>
+
 <template name="uploadForm">
   <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Upload App</div>
 

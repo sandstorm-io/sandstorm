@@ -203,6 +203,41 @@ if (Meteor.isServer) {
       var key = Random.id();
       SignupKeys.insert({_id: key, used: false, note: note});
       return key;
+    },
+
+    sendInvites: function (origin, from, list, subject, message) {
+      if (!isAdmin()) {
+        throw new Meteor.Error(403, "Must be admin to send invites.");
+      }
+
+      if (!from.trim()) {
+        throw new Meteor.Error(403, "Must enter 'from' address.");
+      }
+
+      if (!list.trim()) {
+        throw new Meteor.Error(403, "Must enter 'to' addresses.");
+      }
+
+      this.unblock();
+
+      list = list.split("\n");
+      for (var i in list) {
+        var email = list[i].trim();
+
+        var key = Random.id();
+        SignupKeys.insert({_id: key, used: false, note: "E-mail invite to " + email});
+
+        if (email) {
+          Email.send({
+            to: email,
+            from: from,
+            subject: subject,
+            text: message.replace(/\$KEY/g, origin + Router.routes.signup.path({key: key}))
+          });
+        }
+      }
+
+      return { sent: true };
     }
   });
 }
@@ -460,6 +495,28 @@ if (Meteor.isClient) {
 
     "click #retry": function (event) {
       Session.set("signupMintMessage", undefined);
+    },
+  });
+
+  Template.invite.events({
+    "click #send": function (event) {
+      var from = document.getElementById("invite-from").value;
+      var list = document.getElementById("invite-emails").value;
+      var subject = document.getElementById("invite-subject").value;
+      var message = document.getElementById("invite-message").value;
+
+      Meteor.call("sendInvites", document.location.origin, from, list, subject, message,
+                  function (error, results) {
+        if (error) {
+          Session.set("inviteMessage", { error: error.toString() });
+        } else {
+          Session.set("inviteMessage", results);
+        }
+      });
+    },
+
+    "click #retry": function (event) {
+      Session.set("inviteMessage", undefined);
     },
   });
 
@@ -759,7 +816,28 @@ Router.map(function () {
     },
 
     data: function () {
+      if (!isAdmin()) {
+        return {error: "Must be admin to mint invite keys."};
+      }
+
       return Session.get("signupMintMessage") || {};
+    }
+  });
+
+  this.route("invite", {
+    path: "/invite",
+
+    waitOn: function () {
+      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
+      return Meteor.subscribe("credentials");
+    },
+
+    data: function () {
+      if (!isAdmin()) {
+        return {error: "Must be admin to send invites."};
+      }
+
+      return Session.get("inviteMessage") || {};
     }
   });
 

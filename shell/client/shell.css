@@ -102,7 +102,7 @@ img {
   vertical-align: middle;
 }
 
-#app, #install, #intro, #signup, #upload, .main-content {
+#app, #install, #intro, #signup, #invite, #upload, .main-content {
   margin: 0;
   padding: 0;
   background-color: white;
@@ -318,4 +318,20 @@ div.popup h2 {
 
 #key-note {
   width: 300px;
+}
+
+#invite input, #invite select {
+  font: inherit;
+  font-size: inherit;
+  width: 80%;
+  box-sizing: border-box;
+}
+
+#invite textarea {
+  vertical-align: text-top;
+  width: 80%;
+  height: 200px;
+  font: inherit;
+  font-size: inherit;
+  box-sizing: border-box;
 }

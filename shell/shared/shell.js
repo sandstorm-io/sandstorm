@@ -224,16 +224,18 @@ if (Meteor.isServer) {
       for (var i in list) {
         var email = list[i].trim();
 
-        var key = Random.id();
-        SignupKeys.insert({_id: key, used: false, note: "E-mail invite to " + email});
-
         if (email) {
+          var key = Random.id();
+
+          SignupKeys.insert({_id: key, used: false, note: "E-mail invite to " + email,
+                             definitelySent: false});
           Email.send({
             to: email,
             from: from,
             subject: subject,
             text: message.replace(/\$KEY/g, origin + Router.routes.signup.path({key: key}))
           });
+          SignupKeys.update(key, {$set: {definitelySent: true}});
         }
       }
 

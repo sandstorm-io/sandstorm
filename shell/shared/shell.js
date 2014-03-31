@@ -567,12 +567,17 @@ if (Meteor.isClient) {
 if (Meteor.isClient) {
   // Send keep-alive every now and then.
   var currentSessionId;
-  Meteor.setInterval(function () {
+  var interval = Meteor.setInterval(function () {
     if (currentSessionId) {
       // TODO(soon):  Investigate what happens in background tabs.  Maybe arrange to re-open the
       //   app if it dies while in the background.
       console.log("keepalive: ", new Date());
-      Meteor.call("keepSessionAlive", currentSessionId);
+      Meteor.call("keepSessionAlive", currentSessionId, function (error, result) {
+        if (!result) {
+          // TODO(soon):  Make a UI for this.
+          console.error("Session seems to have died.  Please reload to fix.");
+        }
+      });
     }
   }, 60000);
 }

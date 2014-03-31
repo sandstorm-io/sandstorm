@@ -145,8 +145,13 @@ Meteor.methods({
   keepSessionAlive: function (sessionId) {
     // TODO(security):  Prevent draining someone else's quota by holding open several grains shared
     //   by them.
-    Sessions.update(sessionId, {$set: {timestamp: new Date().getTime()}});
-    proxies[sessionId].keepAlive();
+    if (sessionId in proxies) {
+      Sessions.update(sessionId, {$set: {timestamp: new Date().getTime()}});
+      promiseToFuture(proxies[sessionId].keepAlive()).wait();
+      return true;
+    } else {
+      return false;
+    }
   }
 });
 
@@ -408,7 +413,7 @@ Proxy.prototype.getSession = function (request) {
 
 Proxy.prototype.keepAlive = function () {
   this.getConnection();
-  this.supervisor.keepAlive();
+  return this.supervisor.keepAlive();
 }
 
 Proxy.prototype.resetConnection = function () {

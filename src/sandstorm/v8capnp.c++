@@ -539,6 +539,11 @@ public:
     return kj::heap<UvConnectionReceiver>(eventPort.getUvLoop(), fd, flags);
   }
 
+  kj::Timer& getTimer() override {
+    // TODO(soon):  Implement this.
+    KJ_FAIL_ASSERT("Timers not implemented.");
+  }
+
 private:
   UvEventPort eventPort;
   kj::WaitScope waitScope;

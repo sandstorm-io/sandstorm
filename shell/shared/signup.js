@@ -23,11 +23,14 @@
 
 if (Meteor.isServer) {
   Meteor.publish("signupKey", function (key) {
+    check(key, String);
     return SignupKeys.find(key);
   });
 
   Meteor.methods({
     useSignupKey: function (key) {
+      check(key, String);
+
       if (!this.userId) {
         throw new Meteor.Error(403, "Must be signed in.");
       }
@@ -47,6 +50,8 @@ if (Meteor.isServer) {
     },
 
     createSignupKey: function (note) {
+      check(note, String);
+
       if (!isAdmin()) {
         throw new Meteor.Error(403, "Must be admin to create keys.");
       }
@@ -57,6 +62,8 @@ if (Meteor.isServer) {
     },
 
     sendInvites: function (origin, from, list, subject, message) {
+      check([origin, from, list, subject, message], [String]);
+
       if (!isAdmin()) {
         throw new Meteor.Error(403, "Must be admin to send invites.");
       }

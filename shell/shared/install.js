@@ -23,6 +23,20 @@
 if (Meteor.isServer) {
   UserActions.allow({
     insert: function (userId, action) {
+      console.log(action);
+      check(action, {
+        _id: String,
+        userId: String,
+        packageId: String,
+        appId: String,
+        appVersion: Match.Integer,
+        title: String,
+        command: {
+          executablePath: String,
+          args: Match.Optional([String]),
+          environ: Match.Optional([{key: String, value: String}])
+        }
+      });
       return userId && isSignedUp() && action.userId === userId;
     },
     remove: function (userId, action) {
@@ -31,6 +45,8 @@ if (Meteor.isServer) {
   });
 
   Meteor.publish("packageInfo", function (packageId) {
+    check(packageId, String);
+
     var packageCursor = Packages.find(packageId);
     var package = packageCursor.fetch()[0];
 
@@ -49,6 +65,8 @@ if (Meteor.isServer) {
 
   Meteor.methods({
     cancelDownload: function (packageId) {
+      check(packageId, String);
+
       // TODO(security):  Only let user cancel download if they initiated it.
       cancelDownload(packageId);
     }
@@ -57,6 +75,9 @@ if (Meteor.isServer) {
 
 Meteor.methods({
   ensureInstalled: function (packageId, url) {
+    check(packageId, String);
+    check(url, String);
+
     if (!packageId.match(/^[a-zA-Z0-9]*$/)) {
       throw new Meteor.Error(400, "Bad package name", "The package name contains illegal characters.");
     }
@@ -88,6 +109,8 @@ Meteor.methods({
   },
 
   retryInstall: function (packageId) {
+    check(packageId, String);
+
     if (!this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "You must be logged in to install packages.");
     }
@@ -118,6 +141,10 @@ Meteor.methods({
   },
 
   upgradeGrains: function (appId, version, packageId) {
+    check(appId, String);
+    check(version, Match.Integer);
+    check(packageId, String);
+
     var selector = {
       userId: this.userId,
       appId: appId,

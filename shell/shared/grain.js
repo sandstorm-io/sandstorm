@@ -30,11 +30,13 @@ if (Meteor.isServer) {
   });
 
   Meteor.publish("grainTitle", function (grainId) {
+    check(grainId, String);
+
     // You can get the title of an arbitrary grain by ID, but we hide the other metadata, because:
     // - Revealing the package ID would allow anyone with whom you share a grain to install the
     //   same app, preventing private apps.
     // - Revealing the owner's user ID might be undesirable for plausible deniability reasons.
-    return Grains.find({_id: grainId}, {
+    return Grains.find(grainId, {
       fields: { title: 1 }
     });
   });
@@ -42,6 +44,8 @@ if (Meteor.isServer) {
 
 Meteor.methods({
   deleteGrain: function (grainId) {
+    check(grainId, String);
+
     if (this.userId) {
       var grain = Grains.findOne({_id: grainId, userId: this.userId});
       if (grain) {

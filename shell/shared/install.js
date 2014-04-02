@@ -159,14 +159,14 @@ Meteor.methods({
       });
     }
 
-    Grains.update(selector, { $set: { appVersion: version, packageId: packageId }});
+    Grains.update(selector, { $set: { appVersion: version, packageId: packageId }}, {multi: true});
   },
 });
 
 if (Meteor.isClient) {
   Template.install.events({
     "click #retry": function (event) {
-      Meteor.call("retryInstall", this.packageId, this.url);
+      Meteor.call("retryInstall", this.packageId, this.packageUrl);
     },
 
     "click #cancelDownload": function (event) {
@@ -280,7 +280,7 @@ Router.map(function () {
         // TODO(soon):  Display upload page?
         return { error: "Unknown package ID: " + this.params.packageId +
                         "\nPerhaps it hasn't been uploaded?",
-                 packageId: this.params.packageId };
+                 packageId: this.params.packageId, packageUrl: this.params.url };
       }
 
       if (package.status !== "ready") {
@@ -299,12 +299,14 @@ Router.map(function () {
           step: package.status,
           progress: progress,
           error: package.status === "failed" ? package.error : null,
-          packageId: this.params.packageId
+          packageId: this.params.packageId,
+          packageUrl: this.params.url
         };
       }
 
       var result = {
         packageId: this.params.packageId,
+        packageUrl: this.params.url,
         appId: package.appId,
         version: package.manifest.appVersion
       };

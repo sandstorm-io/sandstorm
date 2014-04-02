@@ -117,11 +117,13 @@ Router.configure({
   loadingTemplate: "loading"
 });
 
+Router.onBeforeAction("loading");
+
 Router.map(function () {
   this.route("root", {
     path: "/",
     waitOn: function () { return Meteor.subscribe("credentials"); },
-    after: function () { setTimeout(initLogoAnimation, 0); },
+    onAfterAction: function () { setTimeout(initLogoAnimation, 0); },
     data: function () {
       return {
         host: document.location.host,

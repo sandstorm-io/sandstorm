@@ -212,18 +212,16 @@ shutdownGrain = function (grainId) {
   // Try to send a shutdown.  The grain may not be running, in which case this will fail, which
   // is fine.  In fact even if the grain is running, we expect the call to fail because the grain
   // kills itself before returning.
-  try {
-    var connection = Capnp.connect("unix:" + Path.join(GRAINDIR, grainId, "socket"));
-    var supervisor = connection.restore(null, Supervisor);
+  var connection = Capnp.connect("unix:" + Path.join(GRAINDIR, grainId, "socket"));
+  var supervisor = connection.restore(null, Supervisor);
 
-    supervisor.shutdown().then(function (result) {
-      supervisor.close();
-      connection.close();
-    }, function (error) {
-      supervisor.close();
-      connection.close();
-    });
-  } catch (err) {}
+  supervisor.shutdown().then(function (result) {
+    supervisor.close();
+    connection.close();
+  }, function (error) {
+    supervisor.close();
+    connection.close();
+  });
 }
 
 deleteGrain = function (grainId) {

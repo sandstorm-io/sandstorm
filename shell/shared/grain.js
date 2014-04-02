@@ -152,7 +152,7 @@ Router.map(function () {
       }
     },
 
-    unload: function () {
+    onStop: function () {
       currentSessionId = undefined;
     }
   });

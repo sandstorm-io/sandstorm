@@ -30,7 +30,7 @@ License along with Sandstorm.  If not, see
     {{> grainList}}
   </div>
   <div id="topbar-right">
-    {{loginButtons align="right"}}
+    {{> loginButtons align="right"}}
   </div>
 </body>
 
@@ -56,19 +56,19 @@ License along with Sandstorm.  If not, see
       <table><tr><td>
       <h1>Open</h1>
       {{#each grains}}
-      <p class="openGrain" id="openGrain-{{_id}}">{{title}}
+      <p class="openGrain" id="openGrain-{{_id}}">{{title}}</p>
       {{else}}
-      <p><i>You have no files...</i>
+      <p><i>You have no files...</i></p>
       {{/each}}
       </td><td>
       <h1>New</h1>
       {{#each actions}}
-      <p class="newGrain" id="newGrain-{{_id}}">{{title}}
+      <p class="newGrain" id="newGrain-{{_id}}">{{title}}</p>
       {{else}}
-      <p><i>You have no apps...</i>
+      <p><i>You have no apps...</i></p>
       {{/each}}
-      </td></tr><table>
-      <p id="installAppsLink">Install apps...
+      </td></tr></table>
+      <p id="installAppsLink">Install apps...</p>
     </div>
   {{/if}}
 </template>
@@ -83,11 +83,11 @@ License along with Sandstorm.  If not, see
     </div>
     <h1>Sandstorm</h1>
     {{#if isSignedUp}}
-      <p>Welcome to the Sandstorm closed alpha.
-      <p><a href="http://sandstorm.io/apps/?host={{origin}}">Looking for apps?</a>
+      <p>Welcome to the Sandstorm closed alpha.</p>
+      <p><a href="http://sandstorm.io/apps/?host={{origin}}">Looking for apps?</a></p>
     {{else}}
-      <p>Currently in closed alpha.
-      <p>Want an invite?  <a href="http://sandstorm.io">Get on the mailing list.</a>
+      <p>Currently in closed alpha.</p>
+      <p>Want an invite?  <a href="http://sandstorm.io">Get on the mailing list.</a></p>
     {{/if}}
   </div>
 </template>
@@ -108,7 +108,7 @@ License along with Sandstorm.  If not, see
     {{#if appOrigin}}
       <iframe src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}"></iframe>
     {{else}}
-      <p>Loading app...
+      <p>Loading app...</p>
     {{/if}}
     {{/if}}
   </div>
@@ -121,7 +121,7 @@ License along with Sandstorm.  If not, see
     <div id="install" class="error">
       <div class="centered-box">
         <p>Failed to install app!
-          {{#if step}}<button id="retry">Try Again</button>{{/if}}
+          {{#if step}}<button id="retry">Try Again</button>{{/if}}</p>
         <pre>{{error}}</pre>
       </div>
     </div>
@@ -131,44 +131,44 @@ License along with Sandstorm.  If not, see
             that is currently running. }}
       <ol>
         <li id="step-download">Downloading... <span class="progress">{{progress}}
-            <button id="cancelDownload">Cancel</button></span>
-        <li id="step-verify">Verifying... <span class="progress">{{progress}}</span>
-        <li id="step-unpack">Unpacking... <span class="progress">{{progress}}</span>
-        <li id="step-analyze">Analyzing... <span class="progress">{{progress}}</span>
+            <button id="cancelDownload">Cancel</button></span></li>
+        <li id="step-verify">Verifying... <span class="progress">{{progress}}</span></li>
+        <li id="step-unpack">Unpacking... <span class="progress">{{progress}}</span></li>
+        <li id="step-analyze">Analyzing... <span class="progress">{{progress}}</span></li>
         <li id="step-confirm">Install this app?
           <div class="confirm-form">
             {{! TODO(someday):  Support editing action names (i.e. make them petnames). }}
             {{#if hasOlderVersion}}
-              <p>You have an older version of this app installed.  Do you want to upgrade?
-              <p><button id="confirmInstall">Upgrade</button>
+              <p>You have an older version of this app installed.  Do you want to upgrade?</p>
+              <p><button id="confirmInstall">Upgrade</button></p>
             {{else}}
             {{#if hasNewerVersion}}
               <p>You already have a newer version of this app installed.  Are
-                you sure you want to revert to this older version?
-              <p><button id="confirmInstall">Downgrade</button>
+                you sure you want to revert to this older version?</p>
+              <p><button id="confirmInstall">Downgrade</button></p>
             {{else}}
-              <p>Do you want to install this app?
-              <p><button id="confirmInstall">Install</button>
+              <p>Do you want to install this app?</p>
+              <p><button id="confirmInstall">Install</button></p>
             {{/if}}
             {{/if}}
-          </div>
+          </div></li>
         <li id="step-run">App Installed
           <div class="done-notice">
-            <p>Installation complete.  Click "My Files" to create a new file with this app.
+            <p>Installation complete.  Click "My Files" to create a new file with this app.</p>
 
             {{#if hasNewerVersion}}
               <p>Some of your files were made with a
                 <a href="{{newVersionId}}">newer version</a> of this app.  They will keep
-                using the newer version, as going backwards could break them.
+                using the newer version, as going backwards could break them.</p>
             {{else}}
             {{#if hasOlderVersion}}
-              <p>Some of your files were made with an older version of this app.  Upgrade them?
-              <p><button id="upgradeGrains">Upgrade Files</button>
+              <p>Some of your files were made with an older version of this app.  Upgrade them?</p>
+              <p><button id="upgradeGrains">Upgrade Files</button></p>
             {{else}}
               <div id="my-files-arrow"></div>
             {{/if}}
             {{/if}}
-          </div>
+          </div></li>
       </ol>
     </div>
   {{/if}}
@@ -180,21 +180,22 @@ License along with Sandstorm.  If not, see
   <div id="signup">
   <div class="centered-box">
   {{#if alreadySignedUp}}
-    <p>You're all signed up!  Now go <a href="http://sandstorm.io/apps/?host={{origin}}">install some apps</a>.
+    <p>You're all signed up!  Now go <a href="http://sandstorm.io/apps/?host={{origin}}">install
+      some apps</a>.</p>
   {{else}}
     {{#if keyIsValid}}
       {{#if keyIsUsed}}
-        <p>Sorry, this signup key has already been used.
+        <p>Sorry, this signup key has already been used.</p>
       {{else}}
         {{#if currentUser}}
-          <p>Please wait...
+          <p>Please wait...</p>
         {{else}}
           <p>You've been invited to join the Sandstorm alpha!  First, you have to sign in.  Click
-            "Sign in" in the upper-right.
+            "Sign in" in the upper-right.</p>
         {{/if}}
       {{/if}}
     {{else}}
-      <p>Sorry, this is not a valid signup key.
+      <p>Sorry, this is not a valid signup key.</p>
     {{/if}}
   {{/if}}
   </div>
@@ -207,14 +208,14 @@ License along with Sandstorm.  If not, see
   <div id="signup">
   <div class="centered-box">
     {{#if error}}
-      <p>{{error}}
-      <p><button id="retry">Try Again</button>
+      <p>{{error}}</p>
+      <p><button id="retry">Try Again</button></p>
     {{else}}
       {{#if url}}
-        <p>New key: <a href="{{url}}">{{url}}</a>
-        <p><button id="retry">Create Another</button>
+        <p>New key: <a href="{{url}}">{{url}}</a></p>
+        <p><button id="retry">Create Another</button></p>
       {{else}}
-        <p><input id="key-note" type="text" placeholder="notes"> <button id="create">Create</button>
+        <p><input id="key-note" type="text" placeholder="notes"> <button id="create">Create</button></p>
       {{/if}}
     {{/if}}
   </div>
@@ -227,24 +228,24 @@ License along with Sandstorm.  If not, see
   <div id="invite">
   <div class="centered-box">
     {{#if error}}
-      <p>{{error}}
-      <p><button id="retry">Try Again</button>
+      <p>{{error}}</p>
+      <p><button id="retry">Try Again</button></p>
     {{else}}{{#if sent}}
-      <p>Sent!
-      <p><button id="retry">Send more</button>
+      <p>Sent!</p>
+      <p><button id="retry">Send more</button></p>
     {{else}}
       <div style="text-align: right">
-      <p>From: <input type="text" id="invite-from" placeholder="me@example.com">
+      <p>From: <input type="text" id="invite-from" placeholder="me@example.com"></p>
       <p>To:
-      <textarea id="invite-emails" placeholder="E-mail addresses, one per line."></textarea>
-      <p>Subject: <input type="text" id="invite-subject" value="Join my Sandstorm server!">
+      <textarea id="invite-emails" placeholder="E-mail addresses, one per line."></textarea></p>
+      <p>Subject: <input type="text" id="invite-subject" value="Join my Sandstorm server!"></p>
       <p>Body:
       <textarea id="invite-message">Click on the following link to get access to my Sandstorm server!
 
 $KEY
 
-- {{currentUser.profile.name}}</textarea>
-      <p><button id="send">Send</button>
+- {{currentUser.profile.name}}</textarea></p>
+      <p><button id="send">Send</button></p>
       </div>
     {{/if}}
     {{/if}}
@@ -259,18 +260,18 @@ $KEY
     <div class="centered-box">
     {{#if isSignedUp}}
       {{#if progress}}
-        <p>Uploading... {{progress}}%
+        <p>Uploading... {{progress}}%</p>
       {{else}}
         {{#if error}}
-          <p>Upload failed: {{error.status}} {{error.statusText}}
+          <p>Upload failed: {{error.status}} {{error.statusText}}</p>
         {{else}}
-          <p>Please choose an <code>spk</code> file to install.
+          <p>Please choose an <code>spk</code> file to install.</p>
         {{/if}}
         <p><input type="file" id="uploadFile">
-           <button id="uploadButton">Upload</button>
+           <button id="uploadButton">Upload</button></p>
       {{/if}}
     {{else}}
-      <p>Sorry, Sandstorm is in closed alpha.  To install apps, you must first be invited.
+      <p>Sorry, Sandstorm is in closed alpha.  To install apps, you must first be invited.</p>
     {{/if}}
     </div>
   </div>

@@ -596,13 +596,21 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     // Send the RPC.
     var path = request.url.slice(1);  // remove leading '/'
     var session = self.getSession(request);
+
     if (request.method === "GET") {
       return session.get(path, context);
     } else if (request.method === "POST") {
       return session.post(path, {
-          mimeType: request.headers["content-type"],
-          content: data
-        }, context);
+        mimeType: request.headers["content-type"] || "application/octet-stream",
+        content: data
+      }, context);
+    } else if (request.method === "PUT") {
+      return session.put(path, {
+        mimeType: request.headers["content-type"] || "application/octet-stream",
+        content: data
+      }, context);
+    } else if (request.method === "DELETE") {
+      return session.delete(path, context);
     } else {
       throw new Error("Sandstorm only supports GET and POST requests.");
     }

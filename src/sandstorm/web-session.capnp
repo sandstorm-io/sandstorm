@@ -66,6 +66,8 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
 
   get @0 (path :Text, context :Context) -> Response;
   post @1 (path :Text, content :PostContent, context :Context) -> Response;
+  put @3 (path :Text, content :PutContent, context :Context) -> Response;
+  delete @4 (path :Text, context :Context) -> Response;
 
   openWebSocket @2 (path :Text, context :Context,
                     protocol :List(Text), clientStream :WebSocketStream)
@@ -80,6 +82,11 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   }
 
   struct PostContent {
+    mimeType @0 :Text;
+    content @1 :Data;
+  }
+
+  struct PutContent {
     mimeType @0 :Text;
     content @1 :Data;
   }

@@ -654,6 +654,21 @@ public:
     return sendRequest(toBytes(httpRequest, content.getContent()), context);
   }
 
+  kj::Promise<void> put(PutContext context) override {
+    PutParams::Reader params = context.getParams();
+    auto content = params.getContent();
+    kj::String httpRequest = makeHeaders("PUT", params.getPath(), params.getContext(),
+      kj::str("Content-Type: ", content.getMimeType()),
+      kj::str("Content-Length: ", content.getContent().size()));
+    return sendRequest(toBytes(httpRequest, content.getContent()), context);
+  }
+
+  kj::Promise<void> delete_(DeleteContext context) override {
+    DeleteParams::Reader params = context.getParams();
+    kj::String httpRequest = makeHeaders("DELETE", params.getPath(), params.getContext());
+    return sendRequest(toBytes(httpRequest), context);
+  }
+
   kj::Promise<void> openWebSocket(OpenWebSocketContext context) override {
     // TODO(soon):  Use actual random Sec-WebSocket-Key?  Unclear if this has any importance when
     //   not trying to work around broken proxies.

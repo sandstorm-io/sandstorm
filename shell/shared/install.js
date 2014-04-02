@@ -76,7 +76,7 @@ if (Meteor.isServer) {
 Meteor.methods({
   ensureInstalled: function (packageId, url) {
     check(packageId, String);
-    check(url, String);
+    check(url, Match.OneOf(String, undefined, null));
 
     if (!packageId.match(/^[a-zA-Z0-9]*$/)) {
       throw new Meteor.Error(400, "Bad package name", "The package name contains illegal characters.");
@@ -108,8 +108,9 @@ Meteor.methods({
     }
   },
 
-  retryInstall: function (packageId) {
+  retryInstall: function (packageId, url) {
     check(packageId, String);
+    check(url, Match.OneOf(String, undefined, null));
 
     if (!this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "You must be logged in to install packages.");
@@ -165,7 +166,7 @@ Meteor.methods({
 if (Meteor.isClient) {
   Template.install.events({
     "click #retry": function (event) {
-      Meteor.call("retryInstall", this.packageId);
+      Meteor.call("retryInstall", this.packageId, this.url);
     },
 
     "click #cancelDownload": function (event) {

@@ -59,7 +59,6 @@ Meteor.methods({
 });
 
 if (Meteor.isClient) {
-  Template.grain.preserve(["iframe"]);
   Template.grain.events({
     "click #renameGrain": function (event) {
       var title = window.prompt("Set new title:");

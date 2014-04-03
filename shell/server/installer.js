@@ -23,10 +23,8 @@ var Path = Npm.require("path");
 var Crypto = Npm.require("crypto");
 var ChildProcess = Npm.require("child_process");
 var Http = Npm.require("http");
-var Promise = Npm.require("es6-promise").Promise;
-var Capnp = Npm.require("sandstorm/capnp");
 
-var Manifest = Capnp.import("sandstorm/package.capnp").Manifest;
+var Manifest = Capnp.importSystem("sandstorm/package.capnp").Manifest;
 
 var APPDIR = "/var/sandstorm/apps";
 var PKGDIR = "/var/sandstorm/pkgs";

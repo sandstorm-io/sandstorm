@@ -18,17 +18,15 @@
 // License along with Sandstorm.  If not, see
 // <http://www.gnu.org/licenses/>.
 
-var Capnp = Npm.require("sandstorm/capnp");
 var Crypto = Npm.require("crypto");
 var ChildProcess = Npm.require("child_process");
 var Fs = Npm.require("fs");
 var Path = Npm.require("path");
-var Promise = Npm.require("es6-promise").Promise;
 var Future = Npm.require("fibers/future");
 var Http = Npm.require("http");
 
-var WebSession = Capnp.import("sandstorm/web-session.capnp").WebSession;
-var Supervisor = Capnp.import("sandstorm/supervisor.capnp").Supervisor;
+var WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;
+var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
 var GRAINDIR = "/var/sandstorm/grains";
 
 // =======================================================================================

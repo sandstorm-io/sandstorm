@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "es6-promise": {
+      "version": "0.1.1"
+    }
+  }
+}

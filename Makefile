@@ -5,7 +5,7 @@ NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 
 .PHONEY: all install uninstall clean environment
 
-all: bin/spk bin/legacy-bridge bin/sandstorm-supervisor node_modules/sandstorm/v8capnp.node node_modules/sandstorm/capnp.js node_modules/sandstorm/grain.capnp
+all: bin/spk bin/legacy-bridge bin/sandstorm-supervisor node_modules/sandstorm/grain.capnp
 
 clean:
 	rm -rf bin tmp node_modules
@@ -24,16 +24,6 @@ bin/sandstorm-supervisor: tmp/genfiles src/sandstorm/supervisor-main.c++
 	@echo "building bin/sandstorm-supervisor..."
 	@mkdir -p bin
 	@$(CXX) src/sandstorm/supervisor-main.c++ tmp/sandstorm/*.capnp.c++ -o bin/sandstorm-supervisor $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
-
-node_modules/sandstorm/v8capnp.node: src/sandstorm/v8capnp.c++
-	@echo "building node_modules/sandstorm/v8capnp.node..."
-	@mkdir -p node_modules/sandstorm
-	@$(CXX) -shared -fPIC src/sandstorm/v8capnp.c++ -o node_modules/sandstorm/v8capnp.node $(CXXFLAGS2) -lcapnpc `pkg-config capnp-rpc --cflags --libs` -I$(NODE_INCLUDE)
-
-node_modules/sandstorm/capnp.js: src/sandstorm/capnp.js
-	@echo "copying node_modules/sandstorm/capnp.js..."
-	@mkdir -p node_modules/sandstorm
-	@cp src/sandstorm/capnp.js node_modules/sandstorm/capnp.js
 
 node_modules/sandstorm/grain.capnp: src/sandstorm/*.capnp
 	@echo "copying sandstorm protocols to node_modules/sandstorm..."

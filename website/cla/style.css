@@ -1,0 +1,58 @@
+body {
+  font-family: "Open Sans",sans-serif;
+  font-weight: 300;
+  font-size: 110%;
+  line-height: 1.5;
+  width: 800px;
+  margin: auto;
+}
+
+h1, h2, h3, h4, b {
+  font-weight: 600;
+}
+
+#signature {
+  font-size: 170%;
+}
+
+#esignature {
+  width: 382px;
+  float: right;
+  font-size: 120%;
+  border: 1px solid #aaa;
+  background-color: #eee;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+#esignature h3 {
+  text-align: center;
+  margin-top: 16px;
+}
+
+#esignature table {
+  border-collapse: collapse;
+}
+
+#esignature td {
+  vertical-align: middle;
+}
+
+#esignature td:first-child {
+  width: 140px;
+}
+
+#esignature td input, #esignature textarea {
+  width: 240px;
+  box-sizing: border-box;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+#esignature textarea {
+  height: 4em;
+}
+
+@media print {
+  #esignature { display: none; }
+}

@@ -16,8 +16,8 @@ h1, h2, h3, h4, b {
 }
 
 #esignature {
-  width: 382px;
-  float: right;
+  width: 500px;
+  margin: 16px auto;
   font-size: 120%;
   border: 1px solid #aaa;
   background-color: #eee;
@@ -28,6 +28,7 @@ h1, h2, h3, h4, b {
 #esignature h3 {
   text-align: center;
   margin-top: 16px;
+  margin-bottom: 0.5em;
 }
 
 #esignature table {
@@ -43,16 +44,56 @@ h1, h2, h3, h4, b {
 }
 
 #esignature td input, #esignature textarea {
-  width: 240px;
+  width: 340px;
   box-sizing: border-box;
   font-size: inherit;
   font-family: inherit;
+  margin: 2px;
 }
 
 #esignature textarea {
   height: 4em;
 }
 
+#esignature p {
+  font-style: italic;
+  text-align: center;
+  font-size: 80%;
+  width: 400px;
+  margin: 0 auto 1em;
+}
+
+#esignature-note {
+  float: right;
+  width: 230px;
+  border: 1px solid #aaa;
+  background-color: #eee;
+  border-radius: 4px;
+  padding: 8px;
+}
+
+#esignature input[type="submit"] {
+  /* Some styling borrowed from Bootstrap. */
+  display: block;
+  margin: 8px 16px 16px auto;
+
+  font-family: inherit;
+  background-color: #428bca;
+  background-image: linear-gradient(to bottom,#428bca 0,#2d6ca2 100%);
+  background-repeat: repeat-x;
+
+  padding: 10px 16px;
+  font-size: 18px;
+  line-height: 1.33;
+  border-radius: 6px;
+  border: 1px solid #2b669a;
+  color: white;
+  cursor: pointer;
+
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.15),0 1px 1px rgba(0,0,0,.075);
+}
+
 @media print {
-  #esignature { display: none; }
+  #esignature, #esignature-note { display: none; }
+  a { text-decoration: none; color: inherit; }
 }

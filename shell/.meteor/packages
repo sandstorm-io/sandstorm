@@ -11,3 +11,5 @@ accounts-github
 accounts-ui
 accounts-google
 email
+es6-promise
+capnp

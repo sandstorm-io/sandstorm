@@ -8,7 +8,7 @@ NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 all: bin/spk bin/legacy-bridge bin/sandstorm-supervisor node_modules/sandstorm/grain.capnp
 
 clean:
-	rm -rf bin tmp node_modules
+	rm -rf bin tmp node_modules bundle shell-bundle.tar.gz
 
 bin/spk: tmp/genfiles src/sandstorm/spk.c++
 	@echo "building bin/spk..."
@@ -24,6 +24,11 @@ bin/sandstorm-supervisor: tmp/genfiles src/sandstorm/supervisor-main.c++
 	@echo "building bin/sandstorm-supervisor..."
 	@mkdir -p bin
 	@$(CXX) src/sandstorm/supervisor-main.c++ tmp/sandstorm/*.capnp.c++ -o bin/sandstorm-supervisor $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
+
+bin/run-bundle: tmp/genfiles src/sandstorm/run-bundle.c++
+	@echo "building bin/run-bundle..."
+	@mkdir -p bin
+	@$(CXX) src/sandstorm/run-bundle.c++ -o bin/run-bundle -static $(CXXFLAGS2) `pkg-config capnp --cflags --libs`
 
 node_modules/sandstorm/grain.capnp: src/sandstorm/*.capnp
 	@echo "copying sandstorm protocols to node_modules/sandstorm..."
@@ -48,4 +53,17 @@ install: all
 
 uninstall:
 	rm -rf /usr/local/bin/sandstorm-supervisor /usr/local/bin/spk
+
+# ========================================================================================
+# Mega Package
+#
+# Builds a complete downloadable chroot environment containing Sandstorm.  This is not
+# part of "make all" because most people don't actually want to build this.
+
+shell-bundle.tar.gz: shell/smart.* shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release
+	@echo "bundling meteor frontend..."
+	@cd shell && mrt bundle ../shell-bundle.tar.gz
+
+bundle: all bin/run-bundle shell-bundle.tar.gz make-bundle.sh
+	./make-bundle.sh
 

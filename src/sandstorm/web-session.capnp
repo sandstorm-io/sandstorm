@@ -187,6 +187,13 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
         }
       }
 
+      noContent :group {
+        # Return succesful, but with no content (status codes 204 and 205)
+
+        isReset @15 :Bool;
+        # Distinguishes between HTTP response 204 (isReset=False) and 205 (isReset=True)
+      }
+
       redirect :group {
         # Redirect to the given URL.
         #

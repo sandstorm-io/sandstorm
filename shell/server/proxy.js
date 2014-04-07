@@ -563,7 +563,7 @@ var successCodes = {
   accepted: { id: 202, title: "Accepted" }
 };
 var noContentSuccessCodes = [
-  // Indexed by isReset * 1
+  // Indexed by shouldResetForm * 1
   { id: 204, title: "No Content" },
   { id: 205, title: "Reset Content" }
 ];
@@ -653,7 +653,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
       }
     } else if ("noContent" in rpcResponse) {
       var noContent = rpcResponse.noContent;
-      var noContentCode = noContentSuccessCodes[noContent.isReset * 1];
+      var noContentCode = noContentSuccessCodes[noContent.shouldResetForm * 1];
       response.writeHead(noContentCode.id, noContentCode.title);
       response.end();
     } else if ("redirect" in rpcResponse) {

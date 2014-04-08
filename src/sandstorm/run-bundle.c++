@@ -597,11 +597,6 @@ private:
       // OK, enter the chroot.
       KJ_SYSCALL(chroot(dir.cStr()));
       KJ_SYSCALL(chdir("/"));
-
-      // Write ld.so.conf so that /usr/local/lib is searched for libs.
-      const char* LD_SO_CONF = "/usr/local/lib\n";
-      kj::FdOutputStream(raiiOpen("/etc/ld.so.conf", O_WRONLY | O_CREAT | O_EXCL, 0644))
-          .write(LD_SO_CONF, strlen(LD_SO_CONF));
     }
 
     // Set up path.

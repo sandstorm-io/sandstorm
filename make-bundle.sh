@@ -8,7 +8,7 @@ copyDep() {
   # Copies a file from the system into the chroot.
   
   local FILE=$1
-  local DST=bundle"$FILE"
+  local DST=bundle"${FILE/#\/usr\/local/\/usr}"
   
   if [ -e "$DST" ]; then
     # already copied
@@ -28,7 +28,7 @@ copyDep() {
     # I'm sure there's a way, but whatever...
     mkdir -p $(dirname "$DST")
     local LINK=$(readlink -f "$FILE")
-    ln -sf "$LINK" "$DST"
+    ln -sf "${LINK/#\/usr\/local/\/usr}" "$DST"
     copyDep "$LINK"
   elif [ -d "$FILE" ]; then
     # Directory.  Make it, but don't copy contents; we'll do that later.
@@ -63,7 +63,6 @@ cp bin/sandstorm-supervisor bundle/bin/sandstorm-supervisor
 cp bin/run-bundle bundle/sandstorm
 cp $METEOR_TOOLS/bin/node bundle/bin
 cp $METEOR_TOOLS/mongodb/bin/{mongo,mongod} bundle/bin
-cp /bin/busybox bundle/bin
 cp /usr/bin/xz bundle/bin
 
 # Copy over capnp schemas.
@@ -102,23 +101,6 @@ mkdir -p bundle/usr/lib
 cp -r /usr/lib/locale bundle/usr/lib
 mkdir -p bundle/usr/share/locale
 cp /usr/share/locale/locale.alias bundle/usr/share/locale
-
-# Set up busybox symlink farm.
-for command in \
-    [ [[ acpid adjtimex ar arp arping ash awk basename blockdev brctl bunzip2 bzcat bzip2 cal cat chgrp chmod chown \
-    chroot chvt clear cmp cp cpio cttyhack cut date dc dd deallocvt depmod devmem df diff dirname dmesg dnsdomainname \
-    dos2unix du dumpkmap dumpleases echo egrep env expand expr false fgrep find fold free freeramdisk fstrim ftpget \
-    ftpput getopt getty grep groups gunzip gzip halt head hexdump hostid hostname httpd hwclock id ifconfig init insmod \
-    ionice ip ipcalc kill killall klogd last less ln loadfont loadkmap logger login logname logread losetup ls lsmod \
-    lzcat lzma md5sum mdev microcom mkdir mkfifo mknod mkswap mktemp modinfo modprobe more mount mt mv nameif nc netstat \
-    nslookup od openvt patch pidof ping ping6 pivot_root poweroff printf ps pwd rdate readlink realpath reboot renice \
-    reset rev rm rmdir rmmod route rpm rpm2cpio run-parts sed seq setkeycodes setsid sh sha1sum sha256sum sha512sum sleep \
-    sort start-stop-daemon stat strings stty swapoff swapon switch_root sync sysctl syslogd tac tail tar taskset tee \
-    telnet test tftp time timeout top touch tr traceroute traceroute6 true tty udhcpc udhcpd umount uname uncompress \
-    unexpand uniq unix2dos unlzma unxz unzip uptime usleep uudecode uuencode vconfig vi watch watchdog wc wget which who \
-    whoami xargs xzcat yes zcat; do
-  ln -s busybox bundle/bin/$command
-done
 
 # Set up /var
 mkdir -p bundle/var/{log,pid,mongo} bundle/var/sandstorm/{apps,grains,downloads}

@@ -65,7 +65,7 @@ shell-bundle.tar.gz: shell/smart.* shell/client/* shell/server/* shell/shared/* 
 	@echo "bundling meteor frontend..."
 	@cd shell && mrt bundle ../shell-bundle.tar.gz
 
-bundle: bin/spk bin/run-bundle shell-bundle.tar.gz make-bundle.sh
+bundle: bin/spk bin/sandstorm-supervisor bin/run-bundle shell-bundle.tar.gz make-bundle.sh
 	./make-bundle.sh
 
 sandstorm-bundle-$(VERSION).tar.xz: bundle

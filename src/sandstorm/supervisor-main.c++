@@ -54,6 +54,10 @@
 #define PR_SET_NO_NEW_PRIVS 38
 #endif
 
+#ifndef SANDSTORM_VERSION
+#define SANDSTORM_VERSION "(unknown)"
+#endif
+
 namespace sandstorm {
 
 typedef unsigned int uint;
@@ -195,7 +199,7 @@ public:
   }
 
   kj::MainFunc getMain() {
-    return kj::MainBuilder(context, "Sandstorm version 0.0",
+    return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
                            "Runs a Sandstorm grain supervisor for the grain <grain-id>, which is "
                            "an instance of app <app-id>.  Executes <command> inside the grain "
                            "sandbox.")
@@ -557,7 +561,17 @@ private:
     // To really unshare the mount namespace, we also have to make sure all mounts are private.
     // The parameters here were derived by strace'ing `mount --make-rprivate /`.  AFAICT the flags
     // are undocumented.  :(
-    KJ_SYSCALL(mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr));
+    //
+    // Note:  We accept EINVAL as an indication that / is not a mount point, which indicates we're
+    //   running in a chroot, which means we're probably running in the Sandstorm bundle, which has
+    //   already private-mounted everything.
+    // TODO(someday):  More robustly detect when we're in the sandstorm bundle.
+    if (mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr) < 0) {
+      int error = errno;
+      if (error != EINVAL) {
+        KJ_FAIL_SYSCALL("mount(recursively remount / as private)", error);
+      }
+    }
 
     // Set a dummy host / domain so the grain can't see the real one.  (unshare(CLONE_NEWUTS) means
     // these settings only affect this process and its children.)

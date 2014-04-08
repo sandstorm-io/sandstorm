@@ -1,9 +1,10 @@
 CXX=clang++
 CXXFLAGS=-O2 -Wall
-CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS)
+VERSION=0.1-dev
+CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS) -DSANDSTORM_VERSION=\"$(VERSION)\"
 NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 
-.PHONEY: all install uninstall clean environment
+.PHONEY: all install uninstall clean environment bundle-dist
 
 all: bin/spk bin/legacy-bridge bin/sandstorm-supervisor node_modules/sandstorm/grain.capnp
 
@@ -64,6 +65,11 @@ shell-bundle.tar.gz: shell/smart.* shell/client/* shell/server/* shell/shared/* 
 	@echo "bundling meteor frontend..."
 	@cd shell && mrt bundle ../shell-bundle.tar.gz
 
-bundle: all bin/run-bundle shell-bundle.tar.gz make-bundle.sh
+bundle: bin/spk bin/run-bundle shell-bundle.tar.gz make-bundle.sh
 	./make-bundle.sh
+
+sandstorm-bundle-$(VERSION).tar.xz: bundle
+	tar Jcf sandstorm-bundle-$(VERSION).tar.xz --transform="s,^bundle/,sandstorm-bundle-$(VERSION)/," bundle
+
+bundle-dist: sandstorm-bundle-$(VERSION).tar.xz
 

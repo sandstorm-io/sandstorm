@@ -37,6 +37,10 @@
 #include <dirent.h>
 #include <set>
 
+#ifndef SANDSTORM_VERSION
+#define SANDSTORM_VERSION "(unknown)"
+#endif
+
 namespace sandstorm {
 
 typedef kj::byte byte;
@@ -323,7 +327,7 @@ public:
   SpkTool(kj::ProcessContext& context): context(context) {}
 
   kj::MainFunc getMain() {
-    return kj::MainBuilder(context, "Sandstorm version 0.0",
+    return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
           "Tool for building and checking Sandstorm package files.",
           "Sandstorm packages are tar.xz archives prefixed with a header containing a "
           "cryptographic signature in order to prove that upgrades came from the same source.  "

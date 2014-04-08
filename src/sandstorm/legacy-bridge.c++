@@ -51,6 +51,10 @@
 #include <sandstorm/web-session.capnp.h>
 #include <joyent-http/http_parser.h>
 
+#ifndef SANDSTORM_VERSION
+#define SANDSTORM_VERSION "(unknown)"
+#endif
+
 namespace sandstorm {
 
 #if __QTCREATOR
@@ -835,7 +839,7 @@ public:
   LegacyBridgeMain(kj::ProcessContext& context): context(context), ioContext(kj::setupAsyncIo()) {}
 
   kj::MainFunc getMain() {
-    return kj::MainBuilder(context, "Sandstorm version 0.0",
+    return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
                            "Acts as a Sandstorm init application.  Runs <command>, then tries to "
                            "connect to it as an HTTP server at the given address (typically, "
                            "'127.0.0.1:<port>') in order to handle incoming requests.")

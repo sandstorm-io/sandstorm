@@ -88,6 +88,20 @@ if (Meteor.isServer) {
       return [];
     }
   });
+
+  // The first user to sign in should be automatically upgraded to admin.
+  Accounts.onCreateUser(function (options, user) {
+    if (Meteor.users.find().count() === 0) {
+      user.isAdmin = true;
+      user.signupKey = "admin";
+    }
+
+    if (options.profile) {
+      user.profile = options.profile;
+    }
+
+    return user;
+  });
 }
 
 isSignedUp = function() {

@@ -140,10 +140,11 @@ img {
   padding: 4px 8px;
   margin: 0;
 }
-#apps .openGrain, #apps .newGrain, #installAppsLink {
+#apps .openGrain, #apps .newGrain, #installAppsLink, #emailInvitesLink, #urlInvitesLink {
   cursor: pointer;
 }
-#apps .openGrain:hover, #apps .newGrain:hover, #installAppsLink:hover {
+#apps .openGrain:hover, #apps .newGrain:hover,
+    #installAppsLink:hover, #emailInvitesLink:hover, #urlInvitesLink:hover {
   background-color: #333;
 }
 
@@ -305,7 +306,7 @@ div.popup h2 {
 #install.instep-confirm  #step-confirm  .confirm-form { display: block; }
 #install.instep-run      #step-run      .done-notice { display: block; }
 
-#my-files-arrow {
+#my-files-arrow, #sign-in-arrow {
   position: absolute;
   left: 0;
   top: 0;
@@ -316,8 +317,24 @@ div.popup h2 {
   background-image: url(files-arrow.svg);
 }
 
+#sign-in-arrow {
+  left: auto;
+  right: 0;
+
+  -moz-transform: scaleX(-1);
+  -o-transform: scaleX(-1);
+  -webkit-transform: scaleX(-1);
+  -ms-transform: scaleX(-1);
+  transform: scaleX(-1);
+}
+
 #key-note {
   width: 300px;
+}
+
+input.autoSelect {
+  font-family: monospace;
+  width: 450px;
 }
 
 #invite input, #invite select {

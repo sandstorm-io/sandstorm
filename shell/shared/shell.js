@@ -36,16 +36,44 @@ if (Meteor.isServer) {
       return [];
     }
   });
+
+  Meteor.publish("hasUsers", function () {
+    // Publish pseudo-collection which tells the client if there are any users at all.
+    //
+    // TODO(cleanup):  This seems overcomplicated.  Does Meteor have a better way?
+    var cursor = Meteor.users.find();
+    var self = this;
+    if (cursor.count() > 0) {
+      self.added("hasUsers", "hasUsers", {hasUsers: true});
+    } else {
+      var handle = cursor.observeChanges({
+        added: function (id) {
+          self.added("hasUsers", "hasUsers", {hasUsers: true});
+          handle.stop();
+          handle = null;
+        }
+      });
+      self.onStop(function () {
+        if (handle) handle.stop();
+      });
+    }
+    self.ready();
+  });
 }
 
 if (Meteor.isClient) {
+  HasUsers = new Meteor.Collection("hasUsers");  // dummy collection defined above
+
   Template.root.events({
     "click #logo": function (event) {
       doLogoAnimation(event.shiftKey, 0);
     }
   });
 
-  Meteor.subscribe("grainsMenu");
+  Deps.autorun(function () {
+    Meteor.subscribe("grainsMenu");
+    Meteor.subscribe("credentials");
+  });
 
   Template.grainList.events({
     "click #apps-ico": function (event) {
@@ -86,6 +114,16 @@ if (Meteor.isClient) {
 
     "click #installAppsLink": function (event) {
       document.location = "http://sandstorm.io/apps/?host=" + document.location.origin;
+    },
+
+    "click #emailInvitesLink": function (event) {
+      Session.set("grainMenuOpen", false);
+      Router.go("invite", {});
+    },
+
+    "click #urlInvitesLink": function (event) {
+      Session.set("grainMenuOpen", false);
+      Router.go("signupMint", {});
     }
   });
 
@@ -108,7 +146,8 @@ if (Meteor.isClient) {
     },
     menuOpen: function () {
       return Session.get("grainMenuOpen");
-    }
+    },
+    isAdmin: isAdmin
   });
 }
 
@@ -122,13 +161,17 @@ Router.onBeforeAction("loading");
 Router.map(function () {
   this.route("root", {
     path: "/",
-    waitOn: function () { return Meteor.subscribe("credentials"); },
+    waitOn: function () {
+      return [ Meteor.subscribe("credentials"), Meteor.subscribe("hasUsers") ];
+    },
     onAfterAction: function () { setTimeout(initLogoAnimation, 0); },
     data: function () {
       return {
         host: document.location.host,
         origin: document.location.origin,
-        isSignedUp: isSignedUp()
+        isSignedUp: isSignedUp(),
+        isAdmin: isAdmin(),
+        isFirstRun: !HasUsers.findOne("hasUsers")
       };
     }
   });

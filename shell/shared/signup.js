@@ -27,6 +27,17 @@ if (Meteor.isServer) {
     return SignupKeys.find(key);
   });
 
+  Meteor.publish("selfEmail", function () {
+    if (this.userId) {
+      return Meteor.users.find({_id: this.userId}, {fields: {
+        "services.github.email": 1,
+        "services.google.email": 1
+      }});
+    } else {
+      return [];
+    }
+  });
+
   Meteor.methods({
     useSignupKey: function (key) {
       check(key, String);
@@ -121,6 +132,10 @@ if (Meteor.isClient) {
     "click #retry": function (event) {
       Session.set("signupMintMessage", undefined);
     },
+
+    "click .autoSelect": function (event) {
+      event.currentTarget.select();
+    }
   });
 
   Template.invite.events({
@@ -198,7 +213,10 @@ Router.map(function () {
 
     waitOn: function () {
       // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
-      return Meteor.subscribe("credentials");
+      return [
+        Meteor.subscribe("credentials"),
+        Meteor.subscribe("selfEmail")
+      ];
     },
 
     data: function () {
@@ -206,7 +224,15 @@ Router.map(function () {
         return {error: "Must be admin to send invites."};
       }
 
-      return Session.get("inviteMessage") || {};
+      var me = Meteor.user();
+      var email = (me.services.google && me.services.google.email) ||
+                  (me.services.github && me.services.github.email);
+      if (email && me.profile.name) {
+        email = me.profile.name + " <" + email + ">";
+      }
+      email = email || "";
+
+      return Session.get("inviteMessage") || {email: email};
     }
   });
 });

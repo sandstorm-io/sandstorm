@@ -58,18 +58,9 @@ Note that the binary `sandstorm-supervisor` is installed setuid-root.  This is n
 
 Now connect to: http://localhost:3000
 
-On first run, you'll have to configure some things:
-* Configure the login system, by clicking the "sign-in" link in the upper-right and following the directions.
-* Sign in.
-* In a new terminal window, `cd` to the `shell` directory and run `meteor mongo`.
-* Run the Mongo command: `db.users.update({}, {$set: {isAdmin: true}})`  This makes you (and anyone who has signed in so far) an administrator.
-* `exit` out of the Mongo shell.
-* Browse to `/signup-mint` on your server.
-* Create a new invite key.
-* Click on it yourself.  This gives you permission to install apps.
-* [Install some apps](http://sandstorm.io/apps)
+Follow the on-screen instructions to configure the login system and sign yourself in.  The first user to sign in automatically becomes administrator, with the ability to invite other users.
 
-You can create more invite keys to distribute to other people who will share your server.  Keep in mind that currently there are no resource quotas, so anyone you give access will be able to fill up your hard drive and use all your CPU and RAM.  Therefore, it's a good idea only to invite friendly people for now.
+Keep in mind that currently there are no resource quotas, so anyone you give access will be able to fill up your hard drive and use all your CPU and RAM.  Therefore, it's a good idea only to invite friendly people for now.
 
 Tips:
 * Sandstorm serves the front-end on port 3000, but serves each app on a different port, starting from 7000 and counting up (the more files you have open at once, the more ports are used).  If there is a firewall or NAT between you and the server, you'll need to open these ports.

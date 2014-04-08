@@ -69,6 +69,10 @@ License along with Sandstorm.  If not, see
       {{/each}}
       </td></tr></table>
       <p id="installAppsLink">Install apps...</p>
+      {{#if isAdmin}}
+      <p id="emailInvitesLink">Invite users by e-mail...</p>
+      <p id="urlInvitesLink">Invite users by URL...</p>
+      {{/if}}
     </div>
   {{/if}}
 </template>
@@ -82,12 +86,24 @@ License along with Sandstorm.  If not, see
       </svg>
     </div>
     <h1>Sandstorm</h1>
+    {{#if isFirstRun}}
+      <p>Sign in to set up your server!</p>
+      <div id="sign-in-arrow"></div>
+    {{else}}
+    {{#if isAdmin}}
+      <p>You are an administrator of this server!</p>
+      <p>Invite your friends to use your server:<br>
+         <a href="/signup-mint">Generate invite links.</a><br>
+         <a href="/invite">Send e-mail invites.</a></p>
+    {{else}}
     {{#if isSignedUp}}
       <p>Welcome to the Sandstorm closed alpha.</p>
       <p><a href="http://sandstorm.io/apps/?host={{origin}}">Looking for apps?</a></p>
     {{else}}
       <p>Currently in closed alpha.</p>
       <p>Want an invite?  <a href="http://sandstorm.io">Get on the mailing list.</a></p>
+    {{/if}}
+    {{/if}}
     {{/if}}
   </div>
 </template>
@@ -212,10 +228,15 @@ License along with Sandstorm.  If not, see
       <p><button id="retry">Try Again</button></p>
     {{else}}
       {{#if url}}
-        <p>New key: <a href="{{url}}">{{url}}</a></p>
+        <p>New key: <input type="text" class="autoSelect" value="{{url}}" readonly></p>
+        <p>Send this key to someone to allow them to create an account on your server.</p>
         <p><button id="retry">Create Another</button></p>
       {{else}}
-        <p><input id="key-note" type="text" placeholder="notes"> <button id="create">Create</button></p>
+        <p>Use this to create a URL which you can give to someone to let them create an account
+          on your server.</p>
+        <p style="text-align: center">
+          <input id="key-note" type="text" placeholder="notes, e.g. name of the recipient">
+          <button id="create">Create</button></p>
       {{/if}}
     {{/if}}
   </div>
@@ -235,16 +256,14 @@ License along with Sandstorm.  If not, see
       <p><button id="retry">Send more</button></p>
     {{else}}
       <div style="text-align: right">
-      <p>From: <input type="text" id="invite-from" placeholder="me@example.com"></p>
+      <p>From: <input type="text" id="invite-from" placeholder="me@example.com" value="{{email}}"></p>
       <p>To:
       <textarea id="invite-emails" placeholder="E-mail addresses, one per line."></textarea></p>
       <p>Subject: <input type="text" id="invite-subject" value="Join my Sandstorm server!"></p>
       <p>Body:
-      <textarea id="invite-message">Click on the following link to get access to my Sandstorm server!
+      <textarea id="invite-message">Click on the following link to get access to my Sandstorm.io server.
 
-$KEY
-
-- {{currentUser.profile.name}}</textarea></p>
+$KEY</textarea></p>
       <p><button id="send">Send</button></p>
       </div>
     {{/if}}

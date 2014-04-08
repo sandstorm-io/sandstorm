@@ -279,7 +279,10 @@ be empty; everything will run in a chroot.
 Configuration
 =============
 
-First, you need to create a config.  Run:
+First, move the bundle to a location in your filesystem where you want it to
+live permanently.
+
+Next, you need to create a config.  Run:
 
     sudo ./setup.sh
 

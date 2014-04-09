@@ -23,7 +23,6 @@
 if (Meteor.isServer) {
   UserActions.allow({
     insert: function (userId, action) {
-      console.log(action);
       check(action, {
         _id: String,
         userId: String,
@@ -222,9 +221,7 @@ if (Meteor.isClient) {
       xhr.onreadystatechange = function () {
         if (xhr.readyState == 4) {
           Session.set("uploadProgress", undefined);
-          console.log(xhr);
           if (xhr.status == 200) {
-            console.log(xhr.responseText);
             Router.go("install", {packageId: xhr.responseText});
           } else {
             Session.set("uploadError", {
@@ -374,16 +371,14 @@ Router.map(function () {
   });
 
   this.route("upload", {
-    path: "/upload",
-
     where: "server",
+    path: "/upload",
 
     action: function () {
       if (this.request.method === "POST") {
         try {
           var self = this;
           var packageId = promiseToFuture(doClientUpload(this.request)).wait();
-          console.log(packageId);
           self.response.writeHead(200, {
             "Content-Length": packageId.length,
             "Content-Type": "text/plain"

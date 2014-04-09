@@ -156,7 +156,9 @@ Router.configure({
   loadingTemplate: "loading"
 });
 
-Router.onBeforeAction("loading");
+if (Meteor.isClient) {
+  Router.onBeforeAction("loading");
+}
 
 Router.map(function () {
   this.route("root", {

@@ -251,15 +251,21 @@ AppInstaller.prototype.doDownload = function () {
       updateDownloadProgress();
     }));
     response.on("end", this.wrapCallback(function () {
-      done = true;
-      out.end();
-      delete this.downloadRequest;
+      out.end(this.wrapCallback(function (err) {
+        if (err) throw err;
 
-      if (!this.failed) {
-        Fs.renameSync(this.downloadPath, this.unverifiedPath);
-        this.doVerify();
-      }
+        done = true;
+        delete this.downloadRequest;
+
+        if (!this.failed) {
+          Fs.renameSync(this.downloadPath, this.unverifiedPath);
+          this.doVerify();
+        }
+      }));
     }));
+
+    response.on("error", this.wrapCallback(function (err) { throw err; }));
+    out.on("error", this.wrapCallback(function (err) { throw err; }));
   }));
 
   this.downloadRequest = request;

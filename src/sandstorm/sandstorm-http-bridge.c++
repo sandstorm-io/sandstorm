@@ -47,6 +47,9 @@
 #include <time.h>
 #include <stdlib.h>
 
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <fcntl.h>
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/web-session.capnp.h>
 #include <joyent-http/http_parser.h>
@@ -888,7 +891,7 @@ public:
       //   For now we use a null ref as a hack, but this is questionable because if guessable
       //   SturdyRefs exist then you can't let just any component of your system request arbitrary
       //   SturdyRefs.
-      if (ref.isNull()) {
+      if (ref.isNull() || ref.getAs< ::capnp::Text>() == "SessionContext") {
         return defaultCap;
       }
 
@@ -900,12 +903,48 @@ public:
     capnp::Capability::Client defaultCap;
   };
 
+  class ApiRestorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
+  public:
+    explicit ApiRestorer(SandstormApi::Client&& apiCap, Restorer& restorer)
+        : apiCap(kj::mv(apiCap)), restorer(restorer) {}
+
+    capnp::Capability::Client restore(capnp::AnyPointer::Reader ref) override {
+      auto text = ref.getAs< ::capnp::Text>();
+
+      if(text == "SandstormApi")
+        return apiCap;
+      else if(text == "SessionContext")
+        return restorer.restore(ref);
+
+      KJ_FAIL_ASSERT("Ref wasn't equal to either 'SandstormApi' or 'SessionContext'");
+    }
+
+  private:
+    SandstormApi::Client apiCap;
+    Restorer& restorer;
+  };
+
   kj::MainBuilder::Validity run() {
+    int fds[2];
+    KJ_SYSCALL(socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, fds));
+
     pid_t child;
     KJ_SYSCALL(child = fork());
     if (child == 0) {
       // We're in the child.
-      close(3);  // Close Cap'n Proto socket to avoid confusion.
+      close(3);  // Close Supervisor's Cap'n Proto socket to avoid confusion.
+
+      int apiFd = fds[1];
+
+      // Make sure the API socket is on FD 4.
+      if (apiFd == 4) {
+        // Socket end already has correct fd.  Unset CLOEXEC.
+        KJ_SYSCALL(fcntl(apiFd, F_SETFD, 0));
+      } else {
+        // dup socket to correct fd.
+        KJ_SYSCALL(dup2(apiFd, 4));
+        KJ_SYSCALL(close(apiFd));
+      }
 
       char* argv[command.size() + 1];
       for (uint i: kj::indices(command)) {
@@ -945,6 +984,14 @@ public:
       hostId.setSide(capnp::rpc::twoparty::Side::SERVER);
       SandstormApi::Client api = rpcSystem.restore(
           hostId, ref.getObjectId()).castAs<SandstormApi>();
+
+      // Wrap socket to child process that will re-export SandstormApi and SessionContext
+      auto appConnection = ioContext.lowLevelProvider->wrapSocketFd(fds[0],
+          kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC |
+          kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP);
+      capnp::TwoPartyVatNetwork appNetwork(*appConnection, capnp::rpc::twoparty::Side::SERVER);
+      ApiRestorer appRestorer(kj::mv(api), restorer);
+      auto appRpcSystem = capnp::makeRpcServer(appNetwork, appRestorer);
 
       // TODO(soon):  Exit when child exits.  (Signal handler?)
       kj::NEVER_DONE.wait(ioContext.waitScope);

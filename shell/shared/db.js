@@ -81,6 +81,7 @@ Grains = new Meteor.Collection("grains");
 //   userId:  User who owns this grain.
 //   title:  Human-readable string title, as chosen by the user.
 //   lastUsed:  Date when the grain was last used by a user.
+//   publicId:  An id used to publicly identify this grain.
 
 Sessions = new Meteor.Collection("sessions");
 // UI sessions open to particular grains.  A new session is created each time a user opens a grain.

@@ -562,6 +562,11 @@ var successCodes = {
   created:  { id: 201, title: "Created" },
   accepted: { id: 202, title: "Accepted" }
 };
+var noContentSuccessCodes = [
+  // Indexed by shouldResetForm * 1
+  { id: 204, title: "No Content" },
+  { id: 205, title: "Reset Content" }
+];
 var redirectCodes = [
   // Indexed by switchToGet * 2 + isPermanent
   { id: 303, title: "See Other" },
@@ -646,6 +651,11 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
       if ("bytes" in content.body) {
         response.end(content.body.bytes);
       }
+    } else if ("noContent" in rpcResponse) {
+      var noContent = rpcResponse.noContent;
+      var noContentCode = noContentSuccessCodes[noContent.shouldResetForm * 1];
+      response.writeHead(noContentCode.id, noContentCode.title);
+      response.end();
     } else if ("redirect" in rpcResponse) {
       var redirect = rpcResponse.redirect;
       var redirectCode = redirectCodes[redirect.switchToGet * 2 + redirect.isPermanent];

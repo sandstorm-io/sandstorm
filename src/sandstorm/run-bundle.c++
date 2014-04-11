@@ -21,6 +21,8 @@
 #include <kj/main.h>
 #include <kj/debug.h>
 #include <kj/io.h>
+#include <kj/parse/common.h>
+#include <kj/parse/char.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <limits.h>
@@ -94,29 +96,6 @@ kj::String readAll(kj::StringPtr name) {
   return readAll(raiiOpen(name, O_RDONLY));
 }
 
-kj::Maybe<uint> nameToId(const char* flag, kj::StringPtr name) {
-  // Convert a user or group name to the equivalent ID number.  Set `flag` to "-u" for username,
-  // "-g" for group name.
-  //
-  // We can't use getpwnam() in a statically-linked binary, so we shell out to id(1).  lol.
-
-  int fds[2];
-  KJ_SYSCALL(pipe2(fds, O_CLOEXEC));
-
-  pid_t child;
-  KJ_SYSCALL(child = fork());
-  if (child == 0) {
-    KJ_SYSCALL(dup2(fds[1], STDOUT_FILENO));
-    KJ_SYSCALL(execlp("id", "id", flag, name.cStr(), EXEC_END_ARGS));
-    KJ_UNREACHABLE;
-  }
-
-  close(fds[1]);
-  KJ_DEFER(close(fds[0]));
-
-  return parseUInt(trim(readAll(fds[0])), 10);
-}
-
 kj::Array<kj::String> splitLines(kj::String input) {
   // Split the input into lines, trimming whitespace, and ignoring blank lines or lines that start
   // with #.
@@ -148,6 +127,120 @@ void registerAlarmHandler() {
   action.sa_handler = &alarmHandler;
   KJ_SYSCALL(sigaction(SIGALRM, &action, nullptr));
 }
+
+// =======================================================================================
+// id(1) handling
+//
+// We can't use getpwnam(), etc. in a static binary, so we shell out to id(1) instead.
+// This is to set credentials to our user account before we start the server.
+
+namespace idParser {
+// A KJ parser for the output of id(1).
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wglobal-constructors"
+
+namespace p = kj::parse;
+using Input = p::IteratorInput<char, const char*>;
+
+template <char delimiter, typename SubParser>
+auto delimited(SubParser& subParser) -> decltype(auto) {
+  // Create a parser that parses several instances of subParser separated by the given delimiter.
+
+  typedef p::OutputType<SubParser, Input> Element;
+  return p::transform(p::sequence(subParser,
+      p::many(p::sequence(p::exactChar<delimiter>(), subParser))),
+      [](Element&& first, kj::Array<Element>&& rest) {
+    auto result = kj::heapArrayBuilder<Element>(rest.size() + 1);
+    result.add(kj::mv(first));
+    for (auto& e: rest) result.add(kj::mv(e));
+    return result.finish();
+  });
+}
+
+constexpr auto nameNum = p::sequence(p::integer, p::discard(p::optional(
+    p::sequence(p::exactChar<'('>(), p::identifier, p::exactChar<')'>()))));
+
+struct Assignment {
+  kj::String name;
+  kj::Array<uint64_t> values;
+};
+
+auto assignment = p::transform(
+    p::sequence(p::identifier, p::exactChar<'='>(), delimited<','>(nameNum)),
+    [](kj::String&& name, kj::Array<uint64_t>&& ids) {
+  return Assignment { kj::mv(name), kj::mv(ids) };
+});
+
+auto parser = p::sequence(delimited<' '>(assignment), p::discardWhitespace, p::endOfInput);
+
+#pragma GCC diagnostic pop
+
+}  // namespace idParser
+
+struct UserIds {
+  uid_t uid = -1;
+  gid_t gid = -1;
+  kj::Array<gid_t> groups;
+};
+
+kj::Maybe<UserIds> getUserIds(kj::StringPtr name) {
+  // Convert a user or group name to the equivalent ID number.  Set `flag` to "-u" for username,
+  // "-g" for group name.
+  //
+  // We can't use getpwnam() in a statically-linked binary, so we shell out to id(1).  lol.
+
+  int fds[2];
+  KJ_SYSCALL(pipe2(fds, O_CLOEXEC));
+
+  pid_t child;
+  KJ_SYSCALL(child = fork());
+  if (child == 0) {
+    KJ_SYSCALL(dup2(fds[1], STDOUT_FILENO));
+    KJ_SYSCALL(execlp("id", "id", name.cStr(), EXEC_END_ARGS));
+    KJ_UNREACHABLE;
+  }
+
+  close(fds[1]);
+  KJ_DEFER(close(fds[0]));
+
+  auto idOutput = readAll(fds[0]);
+
+  int status;
+  KJ_SYSCALL(waitpid(child, &status, 0));
+  if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+    return nullptr;
+  }
+
+  idParser::Input input(idOutput.begin(), idOutput.end());
+  KJ_IF_MAYBE(assignments, idParser::parser(input)) {
+    UserIds result;
+    for (auto& assignment: *assignments) {
+      if (assignment.name == "uid") {
+        KJ_ASSERT(assignment.values.size() == 1, "failed to parse output of id(1)", idOutput);
+        result.uid = assignment.values[0];
+      } else if (assignment.name == "gid") {
+        KJ_ASSERT(assignment.values.size() == 1, "failed to parse output of id(1)", idOutput);
+        result.gid = assignment.values[0];
+      } else if (assignment.name == "groups") {
+        result.groups = KJ_MAP(g, assignment.values) -> gid_t { return g; };
+      }
+    }
+
+    KJ_ASSERT(result.uid != -1, "id(1) didn't return uid?", idOutput);
+    KJ_ASSERT(result.gid != -1, "id(1) didn't return gid?", idOutput);
+    if (result.groups.size() == 0) {
+      result.groups = kj::heapArray<gid_t>(1);
+      result.groups[0] = result.gid;
+    }
+
+    return kj::mv(result);
+  } else {
+    KJ_FAIL_ASSERT("failed to parse output of id(1)", idOutput, input.getBest() - idOutput.begin());
+  }
+}
+
+// =======================================================================================
 
 class RunBundleMain {
   // Main class for the Sandstorm bundle runner.  This is a convenience tool for running the
@@ -228,7 +321,7 @@ public:
       KJ_SYSCALL(ftruncate(pidfile, 0));
 
       // Make sure ownership is correct.
-      KJ_SYSCALL(fchown(pidfile, uid, gid));
+      KJ_SYSCALL(fchown(pidfile, uids.uid, uids.gid));
     }
 
     // Unshare PID namespace so that daemon process becomes the root process of its own PID
@@ -304,7 +397,7 @@ public:
     KJ_SYSCALL(mount("proc", "proc", "proc", MS_NOSUID | MS_NODEV | MS_NOEXEC, ""));
 
     // Make sure sandstorm-supervisor is setuid-root before we drop privs.
-    KJ_SYSCALL(chown("/bin/sandstorm-supervisor", 0, gid));
+    KJ_SYSCALL(chown("/bin/sandstorm-supervisor", 0, uids.gid));
     KJ_SYSCALL(chmod("/bin/sandstorm-supervisor", S_ISUID | 0770));
 
     dropPrivs();
@@ -475,8 +568,7 @@ private:
 
   uint port = 3000;
   uint mongoPort = 3001;
-  uid_t uid = -1;
-  gid_t gid = -1;
+  UserIds uids;
   kj::String bindIp = kj::str("127.0.0.1");
   kj::String rootUrl = nullptr;
   kj::String mailUrl = nullptr;
@@ -591,7 +683,7 @@ private:
       // Mount a tmpfs at /etc and copy over necessary config files from the host.
       KJ_SYSCALL(mount("tmpfs", kj::str(dir, "/etc").cStr(), "tmpfs",
                        MS_NOATIME | MS_NOSUID | MS_NOEXEC,
-                       kj::str("size=2m,nr_inodes=1k,mode=770,uid=", uid, ",gid=", gid).cStr()));
+                       kj::str("size=2m,nr_inodes=128,mode=755,uid=0,gid=0").cStr()));
       copyEtc(dir);
 
       // OK, enter the chroot.
@@ -605,9 +697,9 @@ private:
   }
 
   void dropPrivs() {
-    KJ_SYSCALL(setresgid(gid, gid, gid));
-    KJ_SYSCALL(setgroups(1, &gid));
-    KJ_SYSCALL(setresuid(uid, uid, uid));
+    KJ_SYSCALL(setresgid(uids.gid, uids.gid, uids.gid));
+    KJ_SYSCALL(setgroups(uids.groups.size(), uids.groups.begin()));
+    KJ_SYSCALL(setresuid(uids.uid, uids.uid, uids.uid));
   }
 
   void clearSignalMask() {
@@ -621,12 +713,14 @@ private:
 
     // Now copy over each file.
     for (auto& file: files) {
-      auto in = raiiOpen(file, O_RDONLY);
-      auto out = raiiOpen(kj::str(dir, file), O_WRONLY | O_CREAT | O_EXCL);
-      ssize_t n;
-      do {
-        KJ_SYSCALL(n = sendfile(out, in, nullptr, 1 << 20));
-      } while (n > 0);
+      if (access(file.cStr(), R_OK) == 0) {
+        auto in = raiiOpen(file, O_RDONLY);
+        auto out = raiiOpen(kj::str(dir, file), O_WRONLY | O_CREAT | O_EXCL);
+        ssize_t n;
+        do {
+          KJ_SYSCALL(n = sendfile(out, in, nullptr, 1 << 20));
+        } while (n > 0);
+      }
     }
   }
 
@@ -765,14 +859,8 @@ private:
   }
 
   kj::MainBuilder::Validity setUser(kj::StringPtr arg) {
-    KJ_IF_MAYBE(u, parseUInt(arg, 10)) {
-      uid = *u;
-      return true;
-    } else KJ_IF_MAYBE(u2, nameToId("-u", arg)) {
-      // TODO(soon):  We could be fancy and use id without a flag and parse the output...  this
-      //   would get us the complete list of groups.
-      uid = *u2;
-      gid = KJ_ASSERT_NONNULL(nameToId("-g", arg));
+    KJ_IF_MAYBE(u, getUserIds(arg)) {
+      uids = kj::mv(*u);
       return true;
     } else {
       return "invalid user name";

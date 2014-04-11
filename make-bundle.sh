@@ -114,6 +114,24 @@ cat > bundle/setup.sh << '__EOF__'
 
 set -euo pipefail
 
+KVERSION=( $(uname -r | grep -o '^[0-9.]*' | tr . ' ') )
+
+if (( KVERSION[0] < 3 || (KVERSION[0] == 3 && KVERSION[1] < 10) )); then
+  echo "Your Linux kernel version: $(uname -r)"
+  if (( KVERSION[0] == 3 && KVERSION[1] < 5 )); then
+    echo "Sorry, your kernel is too old to run Sandstorm. We recommend kernel" >&2
+    echo "version 3.10 or newer (3.5 to 3.9 *might* work)." >&2
+    exit 1
+  else
+    echo "Sandstorm has only been tested on kernel version 3.10 and newer." >&2
+    echo -n "We aren't sure if it will work for you. Try anyway? [no] " >&2
+    read TRYANYWAY
+    if [[ "x$TRYANYWAY" != x[yY]* ]]; then
+      exit 1
+    fi
+  fi
+fi
+
 # Make sure we're in the bundle directory.
 cd $(dirname $(which $0))
 
@@ -155,7 +173,19 @@ else
     CREATE_USER=$(prompt "User account '$SERVER_USER' doesn't exist. Create it?" yes)
     if [[ "x$CREATE_USER" != x[nN]* ]]; then
       adduser --system --group "$SERVER_USER"
+
+      echo "Note: Sandstorm's storage will only be accessible to the group '$SERVER_USER'."
+
+      if [ x"$SUDO_USER" != x ]; then
+        ADD_TO_GROUP=$(prompt "Add user '$SUDO_USER' to group '$SERVER_USER'?" no)
+        if [[ "x$ADD_TO_GROUP" == x[yY]* ]]; then
+          usermod -a -G "$SERVER_USER" "$SUDO_USER"
+          echo "Added. Don't forget that group changes only apply at next login."
+        fi
+      fi
     fi
+  else
+    echo "Note: Sandstorm's storage will only be accessible to the group '$(id -gn $SERVER_USER)'."
   fi
   
   PORT=$(prompt "Server main HTTP port" "3000")
@@ -199,8 +229,9 @@ fi
 GROUP=$(id -g $SERVER_USER)
 
 chown -R root:$GROUP .
-chmod -R g-w,o= .
-chmod a=rwx tmp
+chmod -R go-w .
+chmod -R o= var
+chmod ug=rwx,o= tmp
 
 # Server can write to these directories.
 chmod g+w var/{log,mongo,pid} var/sandstorm/{apps,grains,downloads}

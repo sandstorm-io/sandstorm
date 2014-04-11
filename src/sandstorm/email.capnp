@@ -4,6 +4,7 @@ $import "/capnp/c++.capnp".namespace("sandstorm");
 
 using Grain = import "grain.capnp";
 using Util = import "util.capnp";
+using WebSession = import "web-session.capnp".WebSession;
 
 struct EmailMessage {
   # Email is really complicated, but I'm going to go ahead and make a ton of
@@ -49,8 +50,16 @@ struct EmailMessage {
   attachments @12 :List(Text); # Probably should add an Attachment struct with at least Content-Type split out
 }
 
-interface EmailReceiver {
-  # A generic interface for sending/receiving email. Could be implemented with SMTP or equivalent services
+interface EmailSendPort {
+  # Represents a destination for e-mail.
+  #
+  # Usually, a port you get from the user through the powerbox will
+  # represent a particular address owned by the user.  All messages
+  # sent through the port will have the `from` field overwritten with the
+  # user's address.
 
   send @0 (email :EmailMessage);
 }
+
+interface EmailHackSession @0x9d0faf74c32bd817 extends(WebSession, EmailSendPort) {}
+interface EmailHackContext extends(Grain.SessionContext, EmailSendPort) {}

@@ -52,6 +52,7 @@
 #include <fcntl.h>
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/web-session.capnp.h>
+#include <sandstorm/email.capnp.h>
 #include <joyent-http/http_parser.h>
 
 #include "version.h"
@@ -648,7 +649,7 @@ private:
   }
 };
 
-class WebSessionImpl final: public WebSession::Server {
+class WebSessionImpl final: public EmailHackSession::Server {
 public:
   WebSessionImpl(kj::NetworkAddress& serverAddr,
                  UserInfo::Reader userInfo, SessionContext::Client context,
@@ -742,6 +743,10 @@ public:
     });
   }
 
+  kj::Promise<void> send(SendContext context) override {
+    return kj::READY_NOW;
+  }
+
 private:
   kj::NetworkAddress& serverAddr;
   SessionContext::Client context;
@@ -822,18 +827,26 @@ private:
   }
 };
 
+
+class SessionContextWrapper {
+public:
+  SessionContextWrapper() : context(nullptr) {}
+  capnp::Capability::Client context;
+};
+
 class UiViewImpl final: public UiView::Server {
 public:
-  explicit UiViewImpl(kj::NetworkAddress& serverAddress): serverAddress(serverAddress) {}
+  explicit UiViewImpl(kj::NetworkAddress& serverAddress, SessionContextWrapper & context): serverAddress(serverAddress), contextWrapper(context) {}
 
 //  kj::Promise<void> getViewInfo(GetViewInfoContext context) override;
 
   kj::Promise<void> newSession(NewSessionContext context) override {
     auto params = context.getParams();
 
-    KJ_REQUIRE(params.getSessionType() == capnp::typeId<WebSession>(),
+    KJ_REQUIRE(params.getSessionType() == capnp::typeId<EmailHackSession>(),
                "Unsupported session type.");
 
+    contextWrapper.context = params.getContext();
     context.getResults(capnp::MessageSize {2, 1}).setSession(
         kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
                                  params.getSessionParams().getAs<WebSession::Params>()));
@@ -843,6 +856,7 @@ public:
 
 private:
   kj::NetworkAddress& serverAddress;
+  SessionContextWrapper& contextWrapper;
 };
 
 class LegacyBridgeMain {
@@ -905,8 +919,8 @@ public:
 
   class ApiRestorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
   public:
-    explicit ApiRestorer(SandstormApi::Client&& apiCap, Restorer& restorer)
-        : apiCap(kj::mv(apiCap)), restorer(restorer) {}
+    explicit ApiRestorer(SandstormApi::Client&& apiCap, SessionContextWrapper& context)
+        : apiCap(kj::mv(apiCap)), contextWrapper(context) {}
 
     capnp::Capability::Client restore(capnp::AnyPointer::Reader ref) override {
       auto text = ref.getAs< ::capnp::Text>();
@@ -914,14 +928,14 @@ public:
       if(text == "SandstormApi")
         return apiCap;
       else if(text == "SessionContext")
-        return restorer.restore(ref);
+        return contextWrapper.context;
 
       KJ_FAIL_ASSERT("Ref wasn't equal to either 'SandstormApi' or 'SessionContext'");
     }
 
   private:
     SandstormApi::Client apiCap;
-    Restorer& restorer;
+    SessionContextWrapper& contextWrapper;
   };
 
   kj::MainBuilder::Validity run() {
@@ -972,9 +986,10 @@ public:
         usleep(10000);
       }
 
+      SessionContextWrapper context;
       auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
       capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
-      Restorer restorer(kj::heap<UiViewImpl>(*address));
+      Restorer restorer(kj::heap<UiViewImpl>(*address, context));
       auto rpcSystem = capnp::makeRpcServer(network, restorer);
 
       // Get the SandstormApi by restoring a null SturdyRef.
@@ -990,7 +1005,7 @@ public:
           kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC |
           kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP);
       capnp::TwoPartyVatNetwork appNetwork(*appConnection, capnp::rpc::twoparty::Side::SERVER);
-      ApiRestorer appRestorer(kj::mv(api), restorer);
+      ApiRestorer appRestorer(kj::mv(api), context);
       auto appRpcSystem = capnp::makeRpcServer(appNetwork, appRestorer);
 
       // TODO(soon):  Exit when child exits.  (Signal handler?)

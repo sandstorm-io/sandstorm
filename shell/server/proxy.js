@@ -26,6 +26,7 @@ var Future = Npm.require("fibers/future");
 var Http = Npm.require("http");
 
 var WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;
+var Email = Capnp.importSystem("sandstorm/email.capnp");
 var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
 
 var SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
@@ -476,9 +477,10 @@ Proxy.prototype.getSession = function (request) {
           ? request.headers["accept-language"].split(",").map(function (s) { return s.trim(); })
           : [ "en-US", "en" ]
     });
+    sessionContext = new Capnp.Capability({send: function(){console.log("test");}}, Email.EmailHackContext);
     this.session = this.uiView.newSession(
-        {displayName: {defaultText: "User"}}, null,
-        "0xa50711a14d35a8ce", params).session.castAs(WebSession);
+        {displayName: {defaultText: "User"}}, sessionContext,
+        "0x9d0faf74c32bd817", params).session.castAs(Email.EmailHackSession);
   }
 
   return this.session;

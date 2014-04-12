@@ -150,6 +150,27 @@ Meteor.methods({
     return {sessionId: sessionId, port: port};
   },
 
+  sendEmail: function (grainId, emailMessage) {
+    // Send an email message to a grain
+
+    check(grainId, String);
+    check(grainId, String);
+
+    var session = Meteor.call("openSession", grainId);
+
+    var proxy = proxies[session.sessionId];
+
+    try {
+      waitPromise(proxy.getSession({headers: {}}).send(emailMessage));
+    }
+    catch (e) {
+      console.log(e.message);
+      return;
+    }
+
+    console.log("Email sent");
+  },
+
   keepSessionAlive: function (sessionId) {
     // TODO(security):  Prevent draining someone else's quota by holding open several grains shared
     //   by them.
@@ -477,7 +498,7 @@ Proxy.prototype.getSession = function (request) {
           ? request.headers["accept-language"].split(",").map(function (s) { return s.trim(); })
           : [ "en-US", "en" ]
     });
-    sessionContext = new Capnp.Capability({send: function(){console.log("test");}}, Email.EmailHackContext);
+    sessionContext = new Capnp.Capability({send: function(){console.log("TODO: implement sending email");}}, Email.EmailHackContext);
     this.session = this.uiView.newSession(
         {displayName: {defaultText: "User"}}, sessionContext,
         "0x9d0faf74c32bd817", params).session.castAs(Email.EmailHackSession);

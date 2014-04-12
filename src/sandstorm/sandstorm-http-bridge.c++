@@ -744,6 +744,14 @@ public:
   }
 
   kj::Promise<void> send(SendContext context) override {
+    char fileTemplate[] = "/var/mail/tmp/XXXXXX";
+    int mailFd;
+    KJ_SYSCALL(mailFd = mkstemp(fileTemplate));
+    KJ_SYSCALL(write(mailFd, "From: test\nTo: test2\nTesting email\n", strlen("From: test\nTo: test2\nTesting email\n")));
+    close(mailFd);
+    std::string newPath(fileTemplate);
+    newPath.replace(10, 3, "new");
+    KJ_SYSCALL(rename(fileTemplate, newPath.c_str()));
     return kj::READY_NOW;
   }
 

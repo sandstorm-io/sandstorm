@@ -6,51 +6,40 @@ using Grain = import "grain.capnp";
 using Util = import "util.capnp";
 using WebSession = import "web-session.capnp".WebSession;
 
-struct EmailMessage {
-  # Email is really complicated, but I'm going to go ahead and make a ton of
-  # simplifying assumptions here.
-  #
-  # First, character encoding: According to RFC-822
-  # (https://tools.ietf.org/html/rfc822), email should only contain ASCII-US
-  # characters. For everything else, the character set is supposed to be
-  # transfer encoded to ASCII, so we should be mostly ok not handling it for
-  # now. The Cap'n Proto Text type is a superset of ASCII-US, so we'll just go
-  # ahead and use that.
-  #
-  # Second, I'm splitting out the "important" headers. These include things
-  # like from, to, cc, bcc, etc. The rest of the headers are being preserved
-  # in the rawHeaders list for now.
-  #
-  # Third, I've split the body into 3 seperate fields. bodyText corresponds
-  # to Content-Type: text/plain, or in the case that the message has no
-  # Content-Type at all then it's just the whole body. bodyHtml corresponds
-  # to Content-Type: text/html. attachments is a list of all attachments
-
-  rawHeaders @0 :List(Util.KeyValue);
-
-  date @1 :Text; # Should this be a special timestamp type? Or maybe even just a uint32 unix epoch time?
-
-  # Do we want a special email type? It is a bit weird that emails here will
-  # be text of the form: "name@domain.com <Full Name>"
-  from @2 :Text;
-  to @3 :List(Text);
-  cc @4 :List(Text);
-  bcc @5 :List(Text);
-  replyTo @6 :Text; # header is actually reply-to
-
-  # Not sure about these 2, but they can be pretty useful for mail clients
-  messageId @7 :Text; # header is actually message-id
-  inReplyTo @8 :Text; # header is actually in-reply-to
-
-  subject @9 :Text;
-
-  # All of the body elements are still of type Text, since according to RFC-822, they're also ASCII-US
-  bodyText @10 :Text;
-  bodyHtml @11 :Text;
-  attachments @12 :List(Text); # Probably should add an Attachment struct with at least Content-Type split out
+struct EmailAddress {
+  # Email addresses are (usually) of the form "example@example.org <Full Name>".
+  # This struct seperates the first and second part into distinct fields
+  address @0 :Text;
+  name @1 :Text;
 }
 
-interface EmailSendPort {
+struct EmailMessage {
+  date @0 :Int64; # Seconds since unix epoch
+
+  # These fields are special in that they're added by our incoming smtp server.
+  # These should be null for outgoing messages and will be ignored.
+  deliveredFrom @1 :EmailAddress;
+  deliveredTo @2 :EmailAddress;
+
+  from @3 :EmailAddress;
+  to @4 :List(EmailAddress);
+  cc @5 :List(EmailAddress);
+  bcc @6 :List(EmailAddress);
+  replyTo @7 :EmailAddress; # header is actually reply-to
+
+  # Not sure about these 3, but they can be pretty useful for mail clients
+  messageId @8 :Text; # header is actually message-id
+  references @9 :List(Text);
+  inReplyTo @10 :List(Text); # header is actually in-reply-to
+
+  subject @11 :Text;
+
+  bodyText @12 :Text;
+  bodyHtml @13 :Text;
+  # TODO: attachments @14 :List(Text); # Probably should add an Attachment struct with at least Content-Type split out
+}
+
+interface EmailSendPort @0xec831dbf4cc9bcca {
   # Represents a destination for e-mail.
   #
   # Usually, a port you get from the user through the powerbox will
@@ -62,4 +51,4 @@ interface EmailSendPort {
 }
 
 interface EmailHackSession @0x9d0faf74c32bd817 extends(WebSession, EmailSendPort) {}
-interface EmailHackContext extends(Grain.SessionContext, EmailSendPort) {}
+interface EmailHackContext @0xe14c1f5321159b8f extends(Grain.SessionContext, EmailSendPort) {}

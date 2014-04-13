@@ -34,8 +34,8 @@ struct EmailMessage {
 
   subject @11 :Text;
 
-  bodyText @12 :Text;
-  bodyHtml @13 :Text;
+  text @12 :Text;
+  html @13 :Text;
   # TODO: attachments @14 :List(Text); # Probably should add an Attachment struct with at least Content-Type split out
 }
 

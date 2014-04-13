@@ -778,7 +778,7 @@ public:
     WRITE_EMAIL_LIST(To, To)
     WRITE_EMAIL_LIST(Cc, CC)
     WRITE_EMAIL_LIST(Bcc, BCC)
-    
+
     #undef WRITE_FIELD
     #undef WRITE_HEADER
     #undef WRITE_EMAIL
@@ -786,11 +786,11 @@ public:
     #undef WRITE_EMAIL_LIST
 
     KJ_SYSCALL(write(mailFd, "\r\n", 2)); // Start body
-    KJ_SYSCALL(write(mailFd, email.getBodyText().cStr(), email.getBodyText().size()));
+    KJ_SYSCALL(write(mailFd, email.getText().cStr(), email.getText().size()));
     close(mailFd);
 
     std::string newPath(fileTemplate);
-    newPath.replace(10, 3, "new");
+    newPath.replace(10, 3, "new"); // replace "tmp" with "new"
     KJ_SYSCALL(rename(fileTemplate, newPath.c_str()));
 
     return kj::READY_NOW;

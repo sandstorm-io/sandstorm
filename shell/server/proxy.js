@@ -164,11 +164,8 @@ Meteor.methods({
       waitPromise(proxy.getSession({headers: {}}).send(emailMessage));
     }
     catch (e) {
-      console.log(e.message);
-      return;
+      console.error(e.message);
     }
-
-    console.log("Email sent");
   },
 
   keepSessionAlive: function (sessionId) {
@@ -410,6 +407,9 @@ function Proxy(grainId, sessionId, preferredPort) {
 
   var self = this;
 
+  var grain = Grains.findOne(this.grainId);
+  this.email = grain.email; // TODO: make this reactive
+
   this.server = Http.createServer(function (request, response) {
     if (request.url === "/_sandstorm-init?sessionid=" + self.sessionId) {
       self.doSessionInit(request, response);
@@ -498,10 +498,18 @@ Proxy.prototype.getSession = function (request) {
           ? request.headers["accept-language"].split(",").map(function (s) { return s.trim(); })
           : [ "en-US", "en" ]
     });
-    sessionContext = new Capnp.Capability({send: function(){console.log("TODO: implement sending email");}}, Email.EmailHackContext);
-    this.session = this.uiView.newSession(
-        {displayName: {defaultText: "User"}}, sessionContext,
-        "0x9d0faf74c32bd817", params).session.castAs(Email.EmailHackSession);
+
+    if (this.email) {
+      sessionContext = new Capnp.Capability({send: function(){console.log("TODO: implement sending email");}}, Email.EmailHackContext);
+      this.session = this.uiView.newSession(
+          {displayName: {defaultText: "User"}}, sessionContext,
+          "0x9d0faf74c32bd817", params).session.castAs(Email.EmailHackSession);
+    }
+    else {
+      this.session = this.uiView.newSession(
+          {displayName: {defaultText: "User"}}, null,
+          "0xa50711a14d35a8ce", params).session.castAs(WebSession);
+    }
   }
 
   return this.session;

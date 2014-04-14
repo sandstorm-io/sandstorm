@@ -744,7 +744,10 @@ public:
   }
 
   kj::Promise<void> send(SendContext context) override {
-    char fileTemplate[] = "/var/mail/tmp/XXXXXX";
+    char fileTemplate[255] = "/var/mail/tmp/";
+    strcat(fileTemplate, std::to_string(time(NULL)).c_str());
+    strcat(fileTemplate, ".XXXXXX");
+
     int mailFd;
     KJ_SYSCALL(mailFd = mkstemp(fileTemplate));
 
@@ -755,8 +758,8 @@ public:
       KJ_SYSCALL(write(mailFd, value, len)); \
       KJ_SYSCALL(write(mailFd, "\r\n", 1));
 
-    #define WRITE_FIELD(field) \
-      WRITE_HEADER(field, email.get##field().cStr(), email.get##field().size())
+    #define WRITE_FIELD(fieldName, headerName) \
+      WRITE_HEADER(headerName, email.get##fieldName().cStr(), email.get##fieldName().size())
 
     #define WRITE_EMAIL(headerName, field) \
       WRITE_HEADER(headerName, field.getAddress().cStr(), field.getAddress().size())
@@ -769,15 +772,25 @@ public:
         WRITE_EMAIL(headerName, one) \
       }
 
-    WRITE_FIELD(Subject)
+    #define WRITE_FIELD_LIST(fieldName, headerName) \
+      for(auto one : email.get##fieldName()) { \
+        WRITE_HEADER(headerName, one.cStr(), one.size()) \
+      }
+
+    WRITE_FIELD(Subject, Subject)
+    WRITE_FIELD(MessageId, Message-Id)
 
     WRITE_EMAIL_FIELD(DeliveredFrom, Delivered-From)
     WRITE_EMAIL_FIELD(DeliveredTo, Delivered-To)
     WRITE_EMAIL_FIELD(From, From)
+    WRITE_EMAIL_FIELD(ReplyTo, Reply-To)
     
     WRITE_EMAIL_LIST(To, To)
     WRITE_EMAIL_LIST(Cc, CC)
     WRITE_EMAIL_LIST(Bcc, BCC)
+
+    WRITE_FIELD_LIST(InReplyTo, In-Reply-To)
+    WRITE_FIELD_LIST(References, References)
 
     #undef WRITE_FIELD
     #undef WRITE_HEADER

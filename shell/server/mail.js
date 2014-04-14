@@ -3,7 +3,7 @@ var EmailMessage = Capnp.importSystem("sandstorm/email.capnp").EmailMessage;
 var Fiber = Npm.require("fibers");
 
 Meteor.startup(function() {
-    simplesmtp.createSimpleServer({SMTPBanner:"My Server"}, function(req){
+    simplesmtp.createSimpleServer({SMTPBanner:"Sandstorm Mail Server"}, function(req){
         var mailparser = new MailParser();
         var bufs = [];
 
@@ -24,8 +24,8 @@ Meteor.startup(function() {
                 to: mail.to,
                 cc: mail.cc || [],
                 bcc: mail.bcc || [],
-                replyTo: mail.headers['reply-to'] || [],
-                messageId: mail.headers['message-id'] || '',
+                replyTo: mail.headers['reply-to'] || {},
+                messageId: mail.headers['message-id'] || Meteor.uuid(),
                 references: mail.references || [],
                 inReplyTo: mail.inReplyTo || [],
                 subject: mail.subject || '',

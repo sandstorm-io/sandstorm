@@ -27,14 +27,14 @@ src/sandstorm/capnp-test.js
 src/sandstorm/*.ekam-rule
 src/sandstorm/legacy-bridge.c++
     What: Sandstorm API and embedded tools
-    Source URL: http://sandstorm.io
+    Source URL: https://sandstorm.io
     Copyright: Kenton Varda
     License: BSD 2-clause
     License text: See below
 
 All files not explicitly mentioned above or below
     What: Sandstorm implementation
-    Source URL: http://sandstorm.io
+    Source URL: https://sandstorm.io
     Copyright: Kenton Varda
     License: GNU AGPL v3
     License text: See below

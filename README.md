@@ -12,7 +12,7 @@
 
 ## Introduction
 
-See:  [sandstorm.io](http://sandstorm.io)
+See:  [sandstorm.io](https://sandstorm.io)
 
 ## Caveats
 

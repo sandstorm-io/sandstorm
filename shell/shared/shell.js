@@ -113,7 +113,7 @@ if (Meteor.isClient) {
     },
 
     "click #installAppsLink": function (event) {
-      document.location = "http://sandstorm.io/apps/?host=" + document.location.origin;
+      document.location = "https://sandstorm.io/apps/?host=" + document.location.origin;
     },
 
     "click #emailInvitesLink": function (event) {

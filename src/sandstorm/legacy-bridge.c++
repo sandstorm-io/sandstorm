@@ -118,10 +118,18 @@ struct HttpStatusInfo {
 
   union {
     WebSession::Response::SuccessCode successCode;
+    struct { bool shouldResetForm; } noContent;
     struct { bool isPermanent; bool switchToGet; } redirect;
     WebSession::Response::ClientErrorCode clientErrorCode;
   };
 };
+
+HttpStatusInfo noContentInfo(bool shouldResetForm) {
+  HttpStatusInfo result;
+  result.type = WebSession::Response::NO_CONTENT;
+  result.noContent.shouldResetForm = shouldResetForm;
+  return result;
+}
 
 HttpStatusInfo redirectInfo(bool isPermanent, bool switchToGet) {
   HttpStatusInfo result;
@@ -156,6 +164,9 @@ std::unordered_map<uint, HttpStatusInfo> makeStatusCodes() {
     info.clientErrorCode =
         static_cast<WebSession::Response::ClientErrorCode>(enumerant.getOrdinal());
   }
+
+  result[204] = noContentInfo(false);
+  result[205] = noContentInfo(true);
 
   result[301] = redirectInfo(true, true);
   result[302] = redirectInfo(false, true);
@@ -299,6 +310,11 @@ public:
 
         auto data = content.initBody().initBytes(body.size());
         memcpy(data.begin(), body.begin(), body.size());
+        break;
+      }
+      case WebSession::Response::NO_CONTENT: {
+        auto noContent = builder.initNoContent();
+        noContent.setShouldResetForm(statusInfo.noContent.shouldResetForm);
         break;
       }
       case WebSession::Response::REDIRECT: {

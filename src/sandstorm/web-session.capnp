@@ -187,6 +187,14 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
         }
       }
 
+      noContent :group {
+        # Return succesful, but with no content (status codes 204 and 205)
+
+        shouldResetForm @15 :Bool;
+        # If this is the response to a form submission, should the form be reset to empty?
+        # Distinguishes between HTTP response 204 (False) and 205 (True)
+      }
+
       redirect :group {
         # Redirect to the given URL.
         #

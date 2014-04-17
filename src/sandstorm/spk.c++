@@ -37,9 +37,7 @@
 #include <dirent.h>
 #include <set>
 
-#ifndef SANDSTORM_VERSION
-#define SANDSTORM_VERSION "(unknown)"
-#endif
+#include "version.h"
 
 namespace sandstorm {
 
@@ -362,7 +360,7 @@ private:
   // =====================================================================================
 
   kj::MainFunc getKeygenMain() {
-    return kj::MainBuilder(context, "Sandstorm version 0.0",
+    return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
             "Create a new key pair and store it in <output>.  It can then be used as input to "
             "the `sign` command.  Make sure to store the output in a safe place!  If you lose it, "
             "you won't be able to update your app, and if someone else gets ahold of it, they'll "
@@ -396,7 +394,7 @@ private:
   // =====================================================================================
 
   kj::MainFunc getAppidMain() {
-    return kj::MainBuilder(context, "Sandstorm version 0.0",
+    return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
             "Read <keyfile> and extract the textual app ID, printing it to stdout.")
         .addOption({'o', "only-id"}, KJ_BIND_METHOD(*this, setOnlyPrintId),
             "Only print the app ID, not the file name.")
@@ -429,7 +427,7 @@ private:
   kj::Vector<MemoryMapping> mappings;
 
   kj::MainFunc getPackMain() {
-    return kj::MainBuilder(context, "Sandstorm version 0.0",
+    return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
             "Pack the contents of <dirname> as an spk, signing it using <keyfile>, and writing "
             "the result to <output>.  If <output> is not specified, it will be formed by "
             "appending \".spk\" to the directory name.")
@@ -604,7 +602,7 @@ private:
   // =====================================================================================
 
   kj::MainFunc getUnpackMain() {
-    return kj::MainBuilder(context, "Sandstorm version 0.0",
+    return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
             "Check that <spkfile>'s signature is valid.  If so, unpack it to <outdir> and "
             "print the app ID and filename.  If <outdir> is not specified, it will be "
             "chosen by removing the suffix \".spk\" from the input file name.")

@@ -1,7 +1,9 @@
 CXX=clang++
 CXXFLAGS=-O2 -Wall
-VERSION=0.1-dev
-CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS) -DSANDSTORM_VERSION=\"$(VERSION)\"
+CHANNEL=custom
+BUILD=0
+VERSION=$(BUILD)-$(CHANNEL)
+CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DSANDSTORM_CHANNEL=$(CHANNEL)
 NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 
 .PHONEY: all install uninstall clean environment bundle-dist
@@ -25,11 +27,6 @@ bin/sandstorm-supervisor: tmp/genfiles src/sandstorm/supervisor-main.c++
 	@echo "building bin/sandstorm-supervisor..."
 	@mkdir -p bin
 	@$(CXX) src/sandstorm/supervisor-main.c++ tmp/sandstorm/*.capnp.c++ -o bin/sandstorm-supervisor $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
-
-bin/run-bundle: tmp/genfiles src/sandstorm/run-bundle.c++
-	@echo "building bin/run-bundle..."
-	@mkdir -p bin
-	@$(CXX) src/sandstorm/run-bundle.c++ -o bin/run-bundle -static $(CXXFLAGS2) `pkg-config capnp --cflags --libs`
 
 node_modules/sandstorm/grain.capnp: src/sandstorm/*.capnp
 	@echo "copying sandstorm protocols to node_modules/sandstorm..."
@@ -61,6 +58,16 @@ uninstall:
 # Builds a complete downloadable chroot environment containing Sandstorm.  This is not
 # part of "make all" because most people don't actually want to build this.
 
+bin/sign-bundle: tmp/genfiles src/sandstorm/sign-bundle.c++
+	@echo "building bin/sign-bundle..."
+	@mkdir -p bin
+	@$(CXX) src/sandstorm/sign-bundle.c++ tmp/sandstorm/*.capnp.c++ -o bin/sign-bundle $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs` -lsodium
+
+bin/run-bundle: tmp/genfiles src/sandstorm/run-bundle.c++
+	@echo "building bin/run-bundle..."
+	@mkdir -p bin
+	@$(CXX) src/sandstorm/run-bundle.c++ tmp/sandstorm/bundle.capnp.c++ -o bin/run-bundle -static $(CXXFLAGS2) `pkg-config capnp --cflags --libs` -lsodium
+
 shell-bundle.tar.gz: shell/smart.* shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release
 	@echo "bundling meteor frontend..."
 	@cd shell && mrt bundle ../shell-bundle.tar.gz
@@ -69,7 +76,7 @@ bundle: bin/spk bin/sandstorm-supervisor bin/run-bundle shell-bundle.tar.gz make
 	./make-bundle.sh
 
 sandstorm-bundle-$(VERSION).tar.xz: bundle
-	tar Jcf sandstorm-bundle-$(VERSION).tar.xz --transform="s,^bundle/,sandstorm-bundle-$(VERSION)/," bundle
+	tar Jcf sandstorm-bundle-$(VERSION).tar.xz --transform="s,^bundle,sandstorm-bundle-$(VERSION)," bundle
 
 bundle-dist: sandstorm-bundle-$(VERSION).tar.xz
 

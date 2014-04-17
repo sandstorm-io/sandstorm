@@ -49,13 +49,11 @@
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/supervisor.capnp.h>
 
+#include "version.h"
+
 // In case kernel headers are old.
 #ifndef PR_SET_NO_NEW_PRIVS
 #define PR_SET_NO_NEW_PRIVS 38
-#endif
-
-#ifndef SANDSTORM_VERSION
-#define SANDSTORM_VERSION "(unknown)"
 #endif
 
 namespace sandstorm {

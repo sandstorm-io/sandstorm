@@ -16,7 +16,6 @@ copyDep() {
   elif [[ "$FILE" == /etc/* ]]; then
     # We'll want to copy configuration (e.g. for DNS) from the host at runtime.
     if [ -f "$FILE" ]; then
-      mkdir -p $(dirname "$DST")
       echo "$FILE" >> tmp/etc.list
     fi
   elif [ -h "$FILE" ]; then
@@ -102,17 +101,14 @@ cp -r /usr/lib/locale bundle/usr/lib
 mkdir -p bundle/usr/share/locale
 cp /usr/share/locale/locale.alias bundle/usr/share/locale
 
-# Set up /var
-mkdir -p bundle/var/{log,pid,mongo} bundle/var/sandstorm/{apps,grains,downloads}
-
-# Create mount points
-mkdir -p bundle/{dev,proc,tmp}
-
 # Create run script.
 cat > bundle/setup.sh << '__EOF__'
 #! /bin/bash
 
 set -euo pipefail
+
+BUILD=@BUILD@
+CHANNEL=@CHANNEL@
 
 KVERSION=( $(uname -r | grep -o '^[0-9.]*' | tr . ' ') )
 
@@ -228,16 +224,39 @@ fi
 
 GROUP=$(id -g $SERVER_USER)
 
+# Move all the package's files into a version-specific subdirectory and then
+# set up symlinks to it.
+mkdir -p versions/sandstorm-$VERSION
+ln -s sandstorm-$VERSION versions/current
+for FILE in *; do
+  case $FILE in
+    sandstorm.conf versions )
+      ;;
+    * )
+      mv "$FILE" versions/sandstorm-$VERSION
+      ln -s "versions/current/$FILE" "$FILE"
+      ;;
+  esac
+done
+
+# Make ephemeral directories.
+mkdir -p var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads} dev proc tmp etc
+
+# Lock down ownership of files.
 chown -R root:$GROUP .
 chmod -R go-w .
 chmod -R o= var
-chmod ug=rwx,o= tmp
+
+# sandstorm-supervisor needs to be suid root in order to set up sandbox.
+chmod u+s bin/sandstorm-supervisor
 
 # Server can write to these directories.
-chmod g+w var/{log,mongo,pid} var/sandstorm/{apps,grains,downloads}
-
 # TODO(security):  If the grain IDs couldn't be trivially enumerated via Mongo
 #   anyway, we'd want to make the grains directory non-readable.
+chmod g+w var/{log,mongo,pid} var/sandstorm/{apps,grains,downloads}
+
+# tmp is fair game.
+chmod ug=rwx,o= tmp
 
 echo "Setup complete.  Now try:"
 echo "    sudo ./sandstorm start         # start the server"

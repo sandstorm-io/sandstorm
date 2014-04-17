@@ -51,9 +51,7 @@
 #include <sandstorm/web-session.capnp.h>
 #include <joyent-http/http_parser.h>
 
-#ifndef SANDSTORM_VERSION
-#define SANDSTORM_VERSION "(unknown)"
-#endif
+#include "version.h"
 
 namespace sandstorm {
 

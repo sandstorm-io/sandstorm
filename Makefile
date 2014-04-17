@@ -58,15 +58,10 @@ uninstall:
 # Builds a complete downloadable chroot environment containing Sandstorm.  This is not
 # part of "make all" because most people don't actually want to build this.
 
-bin/sign-bundle: tmp/genfiles src/sandstorm/sign-bundle.c++
-	@echo "building bin/sign-bundle..."
-	@mkdir -p bin
-	@$(CXX) src/sandstorm/sign-bundle.c++ tmp/sandstorm/*.capnp.c++ -o bin/sign-bundle $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs` -lsodium
-
-bin/run-bundle: tmp/genfiles src/sandstorm/run-bundle.c++
+bin/run-bundle: src/sandstorm/run-bundle.c++
 	@echo "building bin/run-bundle..."
 	@mkdir -p bin
-	@$(CXX) src/sandstorm/run-bundle.c++ tmp/sandstorm/bundle.capnp.c++ -o bin/run-bundle -static $(CXXFLAGS2) `pkg-config capnp --cflags --libs` -lsodium
+	@$(CXX) src/sandstorm/run-bundle.c++ -o bin/run-bundle -static $(CXXFLAGS2) `pkg-config capnp --cflags --libs`
 
 shell-bundle.tar.gz: shell/smart.* shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release
 	@echo "bundling meteor frontend..."
@@ -75,8 +70,8 @@ shell-bundle.tar.gz: shell/smart.* shell/client/* shell/server/* shell/shared/* 
 bundle: bin/spk bin/sandstorm-supervisor bin/run-bundle shell-bundle.tar.gz make-bundle.sh
 	./make-bundle.sh
 
-sandstorm-bundle-$(VERSION).tar.xz: bundle
-	tar Jcf sandstorm-bundle-$(VERSION).tar.xz --transform="s,^bundle,sandstorm-bundle-$(VERSION)," bundle
+sandstorm-$(BUILD).tar.xz: bundle
+	tar Jcf sandstorm-$(BUILD).tar.xz --transform="s,^bundle,sandstorm-$(BUILD)," bundle
 
-bundle-dist: sandstorm-bundle-$(VERSION).tar.xz
+bundle-dist: sandstorm-$(BUILD).tar.xz
 

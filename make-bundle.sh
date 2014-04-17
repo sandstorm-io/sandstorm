@@ -95,6 +95,15 @@ strace tmp/dnstest 2>&1 | grep -o '"/[^"]*"' | tr -d '"' | copyDeps
 # Dedup the etc.list and copy over.  Don't copy the ld.so.x files, though.
 cat tmp/etc.list | grep -v '/ld[.]so[.]' | sort | uniq > bundle/etc.list
 
+# Make mount points.
+mkdir -p bundle/{dev,proc,tmp,etc,var}
+
+# sandstorm-supervisor needs to be suid-root.  Actually, we just make it
+# suid-original-owner for now because tar will happily keep the suid bit while
+# changing the ownership to whomever unpacks it.  Which seems...  bad, but
+# convenient for us.
+chmod u+s bundle/bin/sandstorm-supervisor
+
 # Mongo wants these localization files.
 mkdir -p bundle/usr/lib
 cp -r /usr/lib/locale bundle/usr/lib
@@ -106,9 +115,6 @@ cat > bundle/setup.sh << '__EOF__'
 #! /bin/bash
 
 set -euo pipefail
-
-BUILD=@BUILD@
-CHANNEL=@CHANNEL@
 
 KVERSION=( $(uname -r | grep -o '^[0-9.]*' | tr . ' ') )
 
@@ -147,10 +153,20 @@ writeConfig() {
   done
 }
 
-if [ -e sandstorm.conf ]; then
-  . sandstorm.conf
+if [ -e ../sandstorm.conf ]; then
+  . ../sandstorm.conf
 else
   echo "No config file found.  Let's make one!"
+  echo
+  echo "NOTE:  The parent directory of the bundle, namely"
+  echo "  $(dirname $(pwd))"
+  echo "will become the Sandstorm installation directory. When updates are installed, "
+  echo "they will go into a new subdirectory of that directory."
+  DIR_OK=$(prompt "Is this OK?" yes)
+  if [[ "x$DIR_OK" != x[nN]* ]]; then
+    echo "Please move the bundle to a more suitable location and try again."
+    exit 1
+  exit
   
   if [ "$USER" == root ]; then
     DEFAULT_USER=sandstorm
@@ -211,10 +227,10 @@ else
   echo "blank if you don't care about these features."
   MAIL_URL=$(prompt "Mail URL" "")
   
-  writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL MAIL_URL > sandstorm.conf
+  writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL MAIL_URL > ../sandstorm.conf
   
   echo
-  echo "Config written to sandstorm.conf."
+  echo "Config written to ../sandstorm.conf."
 fi
 
 if [ $(whoami) != root ]; then
@@ -224,31 +240,13 @@ fi
 
 GROUP=$(id -g $SERVER_USER)
 
-# Move all the package's files into a version-specific subdirectory and then
-# set up symlinks to it.
-mkdir -p versions/sandstorm-$VERSION
-ln -s sandstorm-$VERSION versions/current
-for FILE in *; do
-  case $FILE in
-    sandstorm.conf versions )
-      ;;
-    * )
-      mv "$FILE" versions/sandstorm-$VERSION
-      ln -s "versions/current/$FILE" "$FILE"
-      ;;
-  esac
-done
-
-# Make ephemeral directories.
-mkdir -p var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads} dev proc tmp etc
+# Make var directories.
+mkdir -p ../var/{log,pid,mongo} ../var/sandstorm/{apps,grains,downloads}
 
 # Lock down ownership of files.
-chown -R root:$GROUP .
-chmod -R go-w .
-chmod -R o= var
-
-# sandstorm-supervisor needs to be suid root in order to set up sandbox.
-chmod u+s bin/sandstorm-supervisor
+chown -R root:$GROUP . ../var
+chmod -R go-w . ../var
+chmod -R o= ../var
 
 # Server can write to these directories.
 # TODO(security):  If the grain IDs couldn't be trivially enumerated via Mongo

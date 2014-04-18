@@ -53,6 +53,7 @@
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/web-session.capnp.h>
 #include <sandstorm/email.capnp.h>
+#include <sandstorm/hack-session.capnp.h>
 #include <joyent-http/http_parser.h>
 
 #include "version.h"
@@ -649,7 +650,7 @@ private:
   }
 };
 
-class WebSessionImpl final: public EmailHackSession::Server {
+class WebSessionImpl final: public HackSession::Server {
 public:
   WebSessionImpl(kj::NetworkAddress& serverAddr,
                  UserInfo::Reader userInfo, SessionContext::Client context,
@@ -780,8 +781,6 @@ public:
     WRITE_FIELD(Subject, Subject)
     WRITE_FIELD(MessageId, Message-Id)
 
-    WRITE_EMAIL_FIELD(DeliveredFrom, Delivered-From)
-    WRITE_EMAIL_FIELD(DeliveredTo, Delivered-To)
     WRITE_EMAIL_FIELD(From, From)
     WRITE_EMAIL_FIELD(ReplyTo, Reply-To)
     
@@ -801,6 +800,8 @@ public:
     KJ_SYSCALL(write(mailFd, "\r\n", 2)); // Start body
     KJ_SYSCALL(write(mailFd, email.getText().cStr(), email.getText().size()));
     close(mailFd);
+
+    // TODO: handle html
 
     std::string newPath(fileTemplate);
     newPath.replace(10, 3, "new"); // replace "tmp" with "new"
@@ -905,7 +906,7 @@ public:
   kj::Promise<void> newSession(NewSessionContext context) override {
     auto params = context.getParams();
 
-    KJ_REQUIRE(params.getSessionType() == capnp::typeId<EmailHackSession>(),
+    KJ_REQUIRE(params.getSessionType() == capnp::typeId<HackSession>(),
                "Unsupported session type.");
 
     contextWrapper.context = params.getContext();

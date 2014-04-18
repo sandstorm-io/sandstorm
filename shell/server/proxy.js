@@ -26,7 +26,7 @@ var Future = Npm.require("fibers/future");
 var Http = Npm.require("http");
 
 var WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;
-var Email = Capnp.importSystem("sandstorm/email.capnp");
+var HackSession = Capnp.importSystem("sandstorm/hack-session.capnp");
 var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
 
 var SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
@@ -500,10 +500,10 @@ Proxy.prototype.getSession = function (request) {
     });
 
     if (this.email) {
-      var sessionContext = new Capnp.Capability({send: sendEmail}, Email.EmailHackContext);
+      var sessionContext = new Capnp.Capability({send: sendEmail}, HackSession.HackContext);
       this.session = this.uiView.newSession(
           {displayName: {defaultText: "User"}}, sessionContext,
-          "0x9d0faf74c32bd817", params).session.castAs(Email.EmailHackSession);
+          "0x9d0faf74c32bd817", params).session.castAs(HackSession.HackSession);
     }
     else {
       this.session = this.uiView.newSession(

@@ -150,7 +150,7 @@ Meteor.methods({
     return {sessionId: sessionId, port: port};
   },
 
-  sendEmail: function (grainId, emailMessage) {
+  sendEmailToGrain: function (grainId, emailMessage) {
     // Send an email message to a grain
 
     check(grainId, String);
@@ -500,7 +500,7 @@ Proxy.prototype.getSession = function (request) {
     });
 
     if (this.email) {
-      sessionContext = new Capnp.Capability({send: function(){console.log("TODO: implement sending email");}}, Email.EmailHackContext);
+      var sessionContext = new Capnp.Capability({send: sendEmail}, Email.EmailHackContext);
       this.session = this.uiView.newSession(
           {displayName: {defaultText: "User"}}, sessionContext,
           "0x9d0faf74c32bd817", params).session.castAs(Email.EmailHackSession);

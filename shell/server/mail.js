@@ -35,9 +35,33 @@ Meteor.startup(function() {
 
             Fiber(function() {
                 Grains.find({email: deliverTo}).forEach(function(grain) {
-                    Meteor.call('sendEmail', grain._id, mailMessage);
+                    Meteor.call('sendEmailToGrain', grain._id, mailMessage);
                 });
             }).run();
         });
     }).listen(30025);
 });
+
+sendgrid = Sendgrid(Meteor.settings.SENDGRID_USERNAME, Meteor.settings.SENDGRID_PASSWORD);
+this.sendEmail = function(email) {
+    var sendGridEmail = {
+      to:       email.to[0].address,
+      // toname:   [],
+      from:     email.from.address,
+      // fromname: '',
+      subject:  email.subject,
+      text:     email.text,
+      html:     email.html,
+      // bcc:      [],
+      // replyto:  '',
+      // date:     new Date(),
+      // headers:    {}
+    };
+
+    return new Promise(function(resolve, reject) {
+        sendgrid.send(sendGridEmail, function(err, json) {
+          if (err) { reject(err); }
+          resolve();
+        });
+    });
+};

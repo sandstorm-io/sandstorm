@@ -16,26 +16,23 @@ struct EmailAddress {
 struct EmailMessage {
   date @0 :Int64; # Seconds since unix epoch
 
-  # These fields are special in that they're added by our incoming smtp server.
-  # These should be null for outgoing messages and will be ignored.
-  deliveredFrom @1 :EmailAddress;
-  deliveredTo @2 :EmailAddress;
-
-  from @3 :EmailAddress;
-  to @4 :List(EmailAddress);
-  cc @5 :List(EmailAddress);
-  bcc @6 :List(EmailAddress);
-  replyTo @7 :EmailAddress; # header is actually reply-to
+  from @1 :EmailAddress;
+  to @2 :List(EmailAddress);
+  cc @3 :List(EmailAddress);
+  bcc @4 :List(EmailAddress);
+  replyTo @5 :EmailAddress; # header is actually reply-to
 
   # Not sure about these 3, but they can be pretty useful for mail clients
-  messageId @8 :Text; # header is actually message-id
-  references @9 :List(Text);
-  inReplyTo @10 :List(Text); # header is actually in-reply-to
+  messageId @6 :Text; # header is actually message-id
+  references @7 :List(Text);
+  inReplyTo @8 :List(Text); # header is actually in-reply-to
 
-  subject @11 :Text;
+  subject @9 :Text;
 
-  text @12 :Text;
-  html @13 :Text;
+  # Seperate body into text and html fields.
+  # Any other content-types will be in the attachments field.
+  text @10 :Text;
+  html @11 :Text;
   # TODO: attachments @14 :List(Text); # Probably should add an Attachment struct with at least Content-Type split out
 }
 

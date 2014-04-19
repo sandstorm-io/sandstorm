@@ -713,7 +713,6 @@ public:
     }
 
     changeToInstallDir();
-
     const Config config = readConfig();
 
     if (updateFile == nullptr) {
@@ -733,18 +732,7 @@ public:
                "no argument.";
       }
 
-      // If the parameter consists only of lower-case letters, treat it as a channel name,
-      // otherwise treat it as a file name. Any reasonable update file should end in .tar.xz
-      // and therefore not be all letters.
-      bool isFile = false;
-      for (char c: updateFile) {
-        if (c < 'a' || c > 'z') {
-          isFile = true;
-          break;
-        }
-      }
-
-      if (isFile) {
+      if (updateFile.startsWith("/")) {
         unpackUpdate(raiiOpen(updateFile, O_RDONLY));
       } else if (!checkForUpdates(updateFile, "manual")) {
         context.exit();
@@ -1400,7 +1388,22 @@ private:
   // ---------------------------------------------------------------------------
 
   kj::MainBuilder::Validity setUpdateFile(kj::StringPtr arg) {
-    if (access(arg.cStr(), F_OK) == 0) {
+    // If the parameter consists only of lower-case letters, treat it as a channel name,
+    // otherwise treat it as a file name. Any reasonable update file should end in .tar.xz
+    // and therefore not be all letters.
+    bool isFile = false;
+    for (char c: arg) {
+      if (c < 'a' || c > 'z') {
+        isFile = true;
+        break;
+      }
+    }
+
+    if (isFile && !arg.startsWith("/")) {
+      return "Please use an absolute path. (Sorry, service(8) changes directories on us.)";
+    }
+
+    if (!isFile || access(arg.cStr(), F_OK) == 0) {
       updateFile = kj::heapString(arg);
       return true;
     } else {

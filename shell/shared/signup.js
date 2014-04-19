@@ -225,8 +225,8 @@ Router.map(function () {
       }
 
       var me = Meteor.user();
-      var email = (me.services.google && me.services.google.email) ||
-                  (me.services.github && me.services.github.email);
+      var email = (me.services && me.services.google && me.services.google.email) ||
+                  (me.services && me.services.github && me.services.github.email);
       if (email && me.profile.name) {
         email = me.profile.name + " <" + email + ">";
       }

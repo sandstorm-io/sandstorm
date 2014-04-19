@@ -156,10 +156,6 @@ Router.configure({
   loadingTemplate: "loading"
 });
 
-Meteor.startup(function () {
-  console.log(Meteor.settings);
-});
-
 if (Meteor.isClient) {
   Router.onBeforeAction("loading");
 }

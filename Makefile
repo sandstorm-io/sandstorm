@@ -1,9 +1,7 @@
 CXX=clang++
 CXXFLAGS=-O2 -Wall
-CHANNEL=custom
 BUILD=0
-VERSION=$(BUILD)-$(CHANNEL)
-CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -DSANDSTORM_CHANNEL=$(CHANNEL)
+CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD)
 NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 
 .PHONEY: all install uninstall clean environment bundle-dist
@@ -11,7 +9,7 @@ NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 all: bin/spk bin/legacy-bridge bin/sandstorm-supervisor node_modules/sandstorm/grain.capnp
 
 clean:
-	rm -rf bin tmp node_modules bundle shell-bundle.tar.gz
+	rm -rf bin tmp node_modules bundle shell-bundle.tar.gz sandstorm-*.tar.xz
 
 bin/spk: tmp/genfiles src/sandstorm/spk.c++
 	@echo "building bin/spk..."
@@ -65,7 +63,7 @@ bin/run-bundle: src/sandstorm/run-bundle.c++
 
 shell-bundle.tar.gz: shell/smart.* shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release
 	@echo "bundling meteor frontend..."
-	@cd shell && mrt bundle ../shell-bundle.tar.gz
+	@cd shell && mrt bundle ../shell-bundle.tar.gz > /dev/null
 
 bundle: bin/spk bin/sandstorm-supervisor bin/run-bundle shell-bundle.tar.gz make-bundle.sh
 	./make-bundle.sh

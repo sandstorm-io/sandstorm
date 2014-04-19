@@ -139,7 +139,7 @@ void recursivelyDelete(kj::StringPtr path) {
   // recoverable (won't throw if already unwinding).
 
   struct stat stats;
-  KJ_SYSCALL(stat(path.cStr(), &stats), path) { return; }
+  KJ_SYSCALL(lstat(path.cStr(), &stats), path) { return; }
   if (S_ISDIR(stats.st_mode)) {
     for (auto& file: listDirectory(path)) {
       recursivelyDelete(kj::str(path, "/", file));
@@ -404,8 +404,8 @@ public:
   kj::MainFunc getMain() {
     static const char* VERSION = "Sandstorm version " SANDSTORM_VERSION;
     return kj::MainBuilder(context, VERSION,
-            "Runs the Sandstorm chroot bundle as a daemon process as the given user. "
-            "(This binary must start as root.)")
+            "Controls the Sandstorm server.\n\n"
+            "Something not working? Check the logs in SANDSTORM_HOME/var/log.")
         .addSubCommand("start",
             [this]() {
               return kj::MainBuilder(context, VERSION, "Start the Sandstorm server (default).")
@@ -447,10 +447,12 @@ public:
         .addSubCommand("update",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                      "Update the Sandstorm platform to a new version. If <bundle> is provided "
-                      "(something like sandstorm-1234.tar.xz) it is used as the update. "
-                      "Otherwise, we securely check the web for an update.")
-                  .expectOptionalArg("<bundle>", KJ_BIND_METHOD(*this, setUpdateFile))
+                      "Update the Sandstorm platform to a new version. If <release> is provided "
+                      "and specifies a bundle file (something like sandstorm-1234.tar.xz) it is "
+                      "used as the update. If <release> is a channel name, e.g. \"dev\", we "
+                      "securely check the web for an update. If <release> is not provided, we "
+                      "use the channel specified in the config file.")
+                  .expectOptionalArg("<release>", KJ_BIND_METHOD(*this, setUpdateFile))
                   .callAfterParsing(KJ_BIND_METHOD(*this, update))
                   .build();
             },
@@ -468,9 +470,8 @@ public:
 
   kj::MainBuilder::Validity start() {
     if (getuid() != 0) {
-      context.exitError(
-          "You must run this program as root, so that it can chroot.  The actual live server "
-          "will not run as root.");
+      return "You must run this program as root, so that it can chroot.  The actual live server "
+             "will not run as root.";
     }
 
     changeToInstallDir();
@@ -523,7 +524,7 @@ public:
         }
 
         // Exit success.
-        context.exitInfo(kj::str("server started; PID = ", mainPid));
+        context.exitInfo(kj::str("Sandstorm started. PID = ", mainPid));
         return true;
       }
 
@@ -680,9 +681,8 @@ public:
 
   kj::MainBuilder::Validity mongo() {
     if (getuid() != 0) {
-      context.exitError(
-          "You must run this program as root, so that it can chroot.  The actual live server "
-          "will not run as root.");
+      return "You must run this program as root, so that it can chroot.  The actual live server "
+             "will not run as root.";
     }
 
     changeToInstallDir();
@@ -708,17 +708,46 @@ public:
 
   kj::MainBuilder::Validity update() {
     if (getuid() != 0) {
-      context.exitError("You must run this program as root.");
+      return "You must run this program as root.";
     }
 
     changeToInstallDir();
 
+    const Config config = readConfig();
+
     if (updateFile == nullptr) {
-      if (!checkForUpdates("manual")) {
+      if (config.updateChannel == nullptr) {
+        return "You must specify a channel.";
+      }
+
+      if (!checkForUpdates(config.updateChannel, "manual")) {
         context.exit();
       }
     } else {
-      unpackUpdate(raiiOpen(updateFile, O_RDONLY));
+      if (config.updateChannel != nullptr) {
+        return "You currently have auto-updates enabled. Please disable it before updating "
+               "manually, otherwise you'll just be switched back at the next update. Set "
+               "UPDATE_CHANNEL to \"none\" to disable. Or, if you want to manually apply "
+               "the latest update from the configured channel, run `sandstorm update` with "
+               "no argument.";
+      }
+
+      // If the parameter consists only of lower-case letters, treat it as a channel name,
+      // otherwise treat it as a file name. Any reasonable update file should end in .tar.xz
+      // and therefore not be all letters.
+      bool isFile = false;
+      for (char c: updateFile) {
+        if (c < 'a' || c > 'z') {
+          isFile = true;
+          break;
+        }
+      }
+
+      if (isFile) {
+        unpackUpdate(raiiOpen(updateFile, O_RDONLY));
+      } else if (!checkForUpdates(updateFile, "manual")) {
+        context.exit();
+      }
     }
 
     KJ_IF_MAYBE(pid, getRunningPid()) {
@@ -739,7 +768,7 @@ private:
     kj::String bindIp = kj::str("127.0.0.1");
     kj::String rootUrl = nullptr;
     kj::String mailUrl = nullptr;
-    bool autoUpdate = false;
+    kj::String updateChannel = nullptr;
   };
 
   kj::String updateFile;
@@ -941,10 +970,12 @@ private:
         config.rootUrl = kj::mv(value);
       } else if (key == "MAIL_URL") {
         config.mailUrl = kj::mv(value);
-      } else if (key == "AUTO_UPDATE") {
-        auto lower = kj::heapString(value);
-        toLower(lower);
-        config.autoUpdate = lower == "yes" || lower == "true";
+      } else if (key == "UPDATE_CHANNEL") {
+        if (value == "none") {
+          config.updateChannel = nullptr;
+        } else {
+          config.updateChannel = kj::mv(value);
+        }
       }
     }
 
@@ -957,9 +988,11 @@ private:
     // Run the update monitor process.  This process runs two subprocesses:  the sandstorm server
     // and the auto-updater.
 
+    cleanupOldVersions();
+
     auto sigfd = prepareMonitoringLoop();
 
-    pid_t updaterPid = startUpdater(config);
+    pid_t updaterPid = startUpdater(config, false);
 
     pid_t sandstormPid = fork();
     if (sandstormPid == 0) {
@@ -1000,7 +1033,7 @@ private:
           KJ_UNREACHABLE;
         } else if (updaterDied) {
           context.warning("** Updater died; restarting it");
-          updaterPid = startUpdater(config);
+          updaterPid = startUpdater(config, true);
         } else if (sandstormDied) {
           context.exitError("** Server monitor died. Aborting.");
           KJ_UNREACHABLE;
@@ -1116,6 +1149,10 @@ private:
     // pidfile.
     int status;
     KJ_SYSCALL(waitpid(outerPid, &status, 0));
+
+    KJ_ASSERT(WIFEXITED(status) && WEXITSTATUS(status) == 0,
+        "MongoDB failed on startup. Check var/log/mongo.log.");
+
     return KJ_ASSERT_NONNULL(parseUInt(trim(readAll("/var/pid/mongo.pid")), 10));
   }
 
@@ -1195,19 +1232,19 @@ private:
     }
   }
 
-  bool checkForUpdates(kj::StringPtr type) {
+  bool checkForUpdates(kj::StringPtr channel, kj::StringPtr type) {
     KJ_ASSERT(SANDSTORM_BUILD > 0, "Updates not supported for trunk builds.");
 
-    // GET updates.sandstorm.io/$channel?from=$oldBuild&type=[manual|startup|daily]
+    // GET install.sandstorm.io/$channel?from=$oldBuild&type=[manual|startup|daily]
     //     -> result is build number
-    context.warning("Checking for updates...");
+    context.warning(kj::str("Checking for updates on channel ", channel, "..."));
 
     kj::String buildStr;
 
     {
       CurlRequest updateCheck(
-          kj::str("https://updates.sandstorm.io/" SANDSTORM_CHANNEL_STR "?from=",
-                  SANDSTORM_BUILD, "&type=", type));
+          kj::str("https://install.sandstorm.io/", channel,
+                  "?from=", SANDSTORM_BUILD, "&type=", type));
       buildStr = readAll(updateCheck.getPipe());
     }
 
@@ -1219,8 +1256,7 @@ private:
     }
 
     // Start http request to download bundle.
-    auto url = kj::str("https://dl.sandstorm.io/" SANDSTORM_CHANNEL_STR "/sandstorm-",
-                       targetBuild, ".tar.xz");
+    auto url = kj::str("https://dl.sandstorm.io/", channel, "/sandstorm-", targetBuild, ".tar.xz");
     context.warning(kj::str("Downloading: ", url));
     auto download = kj::heap<CurlRequest>(url);
     int fd = download->getPipe();
@@ -1274,50 +1310,55 @@ private:
     KJ_SYSCALL(rename(tmpLink.cStr(), "../latest"));
   }
 
-  pid_t startUpdater(const Config& config) {
-    if (!config.autoUpdate) {
+  pid_t startUpdater(const Config& config, bool isRetry) {
+    if (config.updateChannel == nullptr) {
       context.warning("WARNING: Auto-updates are disabled by config.");
-      return 0;
-    } else if (kj::StringPtr(SANDSTORM_CHANNEL_STR) == "custom") {
-      context.warning("WARNING: Auto-updates are disabled because this is a custom build.");
       return 0;
     } else {
       pid_t pid = fork();
       if (pid == 0) {
-        doUpdateLoop();
+        doUpdateLoop(config.updateChannel, isRetry);
         KJ_UNREACHABLE;
       }
       return pid;
     }
   }
 
-  void doUpdateLoop() KJ_NORETURN {
+  void doUpdateLoop(kj::StringPtr channel, bool isRetry) KJ_NORETURN {
     // This is the updater process.  Run in a loop.
     auto log = raiiOpen("../var/log/updater.log", O_WRONLY | O_APPEND | O_CREAT);
     KJ_SYSCALL(dup2(log, STDOUT_FILENO));
     KJ_SYSCALL(dup2(log, STDERR_FILENO));
 
     // Wait 10 minutes before the first update attempt just to make sure the server isn't going
-    // to be shut down right away.
-    uint n = 600;
+    // to be shut down right away.  (On a retry, wait an hour so we don't overwhelm the servers
+    // when a broken package is posted.)
+    uint n = isRetry ? 3600 : 600;
     while (n > 0) n = sleep(n);
 
     // The 10-minute request is called "startup" while subsequent daily requests are called "daily".
-    kj::StringPtr type = "startup";
+    // We signal retries separately so that the server can monitor for flapping clients.
+    kj::StringPtr type = isRetry ? "retry" : "startup";
 
     for (;;) {
       // Print time.
-      time_t now;
-      time(&now);
-      context.warning(kj::str("** Time: ", ctime(&now)));
+      time_t start = time(nullptr);
+      context.warning(kj::str("** Time: ", ctime(&start)));
 
       // Check for updates.
-      if (checkForUpdates(type)) {
+      if (checkForUpdates(channel, type)) {
         // Exit so that the update can be applied.
         context.exitInfo("** Successfully updated; restarting.");
       }
 
-      // Wait a day.
+      // Wait a day.  We actually wait 10 minutes at a time, then check if a day has passed, to
+      // capture cases where the system was suspended.
+      for (;;) {
+        n = 600;
+        while (n > 0) n = sleep(n);
+        if (time(nullptr) - start >= 86400) break;
+      }
+
       n = 86400;
       while (n > 0) n = sleep(n);
       type = "daily";
@@ -1332,6 +1373,25 @@ private:
     KJ_SYSCALL(execl("../latest/sandstorm", "../latest/sandstorm",
                      "continue", kj::str(pidfileFd).cStr(), EXEC_END_ARGS));
     KJ_UNREACHABLE;
+  }
+
+  void cleanupOldVersions() {
+    for (auto& file: listDirectory("..")) {
+      if (file.startsWith("sandstorm-")) {
+        KJ_IF_MAYBE(build, parseUInt(file.slice(strlen("sandstorm-")), 10)) {
+          // build 0 is special -- it usually indicates a custom build.  So don't delete that.
+          // Also don't delete this build or newer builds.
+          if (*build > 0 && *build < SANDSTORM_BUILD) {
+            KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
+              recursivelyDelete(kj::str("../", file));
+            })) {
+              context.warning(kj::str("couldn't delete old build ", file, ": ",
+                                      exception->getDescription()));
+            }
+          }
+        }
+      }
+    }
   }
 
   // ---------------------------------------------------------------------------

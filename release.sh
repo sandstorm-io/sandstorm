@@ -2,6 +2,8 @@
 
 set -euo pipefail
 
+make clean
+
 if [ "x$(git status --porcelain)" != "x" ]; then
   echo "Please commit changes to git before releasing." >&2
   exit 1
@@ -39,7 +41,6 @@ fi
 
 echo "**** Building build $BUILD ****"
 
-make clean
 make -j bundle-dist BUILD=$BUILD
 
 echo "**** Pushing build $BUILD ****"

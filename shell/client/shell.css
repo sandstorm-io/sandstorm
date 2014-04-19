@@ -201,6 +201,10 @@ svg {
   text-align: center;
 }
 
+#intro .build-tag {
+  margin-top: 0;
+}
+
 #app iframe {
   border: none;
   padding: 0;

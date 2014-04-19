@@ -336,7 +336,7 @@ kj::Maybe<UserIds> getUserIds(kj::StringPtr name) {
 
 class CurlRequest {
 public:
-  explicit CurlRequest(kj::StringPtr url) {
+  explicit CurlRequest(kj::StringPtr url): url(kj::heapString(url)) {
     int pipeFds[2];
     KJ_SYSCALL(pipe(pipeFds));
     kj::AutoCloseFd pipeInput(pipeFds[0]), pipeOutput(pipeFds[1]);
@@ -363,16 +363,16 @@ public:
 
     int status;
     KJ_SYSCALL(waitpid(pid, &status, 0)) { return; }
-    if (status != 0) {
-      if (WIFEXITED(status)) {
-        int exitCode = WEXITSTATUS(status);
-        KJ_FAIL_ASSERT("child process failed", exitCode) { return; }
-      } else if (WIFSIGNALED(status)) {
-        int signalNumber = WTERMSIG(status);
-        KJ_FAIL_ASSERT("child process crashed", signalNumber) { return; }
-      } else {
-        KJ_FAIL_ASSERT("child process failed") { return; }
+    if (WIFEXITED(status)) {
+      int exitCode = WEXITSTATUS(status);
+      if (exitCode != 0) {
+        KJ_FAIL_ASSERT("curl failed", url, exitCode) { return; }
       }
+    } else if (WIFSIGNALED(status)) {
+      int signalNumber = WTERMSIG(status);
+      KJ_FAIL_ASSERT("curl crashed", url, signalNumber) { return; }
+    } else {
+      KJ_FAIL_ASSERT("curl failed", url) { return; }
     }
   }
 
@@ -383,6 +383,7 @@ public:
 private:
   kj::AutoCloseFd pipeFd;
   pid_t pid;
+  kj::String url;
 };
 
 // =======================================================================================
@@ -1180,6 +1181,8 @@ private:
       } else {
         KJ_SYSCALL(setenv("ROOT_URL", config.rootUrl.cStr(), true));
       }
+      KJ_SYSCALL(setenv("METEOR_SETTINGS", kj::str(
+          "{\"public\":{\"build\":", SANDSTORM_BUILD, "}}").cStr(), true));
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "main.js", EXEC_END_ARGS));
       KJ_UNREACHABLE;
     }

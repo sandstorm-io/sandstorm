@@ -156,6 +156,10 @@ Router.configure({
   loadingTemplate: "loading"
 });
 
+Meteor.startup(function () {
+  console.log(Meteor.settings);
+});
+
 if (Meteor.isClient) {
   Router.onBeforeAction("loading");
 }
@@ -168,12 +172,20 @@ Router.map(function () {
     },
     onAfterAction: function () { setTimeout(initLogoAnimation, 0); },
     data: function () {
+      var build = Meteor.settings && Meteor.settings.public && Meteor.settings.public.build;
+      if (build) {
+        build = String(Math.floor(build / 1000)) + "." + String(build % 1000);
+      } else {
+        build = "(unknown)";
+      }
+
       return {
         host: document.location.host,
         origin: document.location.origin,
         isSignedUp: isSignedUp(),
         isAdmin: isAdmin(),
-        isFirstRun: !HasUsers.findOne("hasUsers")
+        isFirstRun: !HasUsers.findOne("hasUsers"),
+        build: build
       };
     }
   });

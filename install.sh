@@ -79,7 +79,7 @@ if [ $(id -u) != 0 ]; then
   if [ "x$(basename $0)" == xbash ]; then
     # Probably ran like "curl https://sandstorm.io/install.sh | bash"
     echo "Re-running script as root..."
-    exec sudo bash -euo pipefail -c 'curl -fs https://sandstorm.io/install.sh | bash'
+    exec sudo bash -euo pipefail -c 'curl -fs https://install.sandstorm.io | bash'
   elif [ "x$(basename $0)" == xinstall.sh -a -e $0 ]; then
     # Probably ran like "bash install.sh" or "./install.sh".
     echo "Re-running script as root..."
@@ -183,7 +183,7 @@ else
   writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL MAIL_URL UPDATE_CHANNEL > sandstorm.conf
 
   echo
-  echo "Config written to sandstorm.conf."
+  echo "Config written to $PWD/sandstorm.conf."
 fi
 
 # ========================================================================================
@@ -237,8 +237,8 @@ chmod -R g=rwX,o= var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads}
 chmod g-r var/sandstorm/grains
 
 # Create useful symlinks.
-ln -sf sandstorm-$BUILD latest
-ln -sf latest/sandstorm sandstorm
+ln -sfT sandstorm-$BUILD latest
+ln -sfT latest/sandstorm sandstorm
 
 if [ -e /etc/init.d/sandstorm ]; then
   echo "WARNING: You already have a \"sandstorm\" service. Answering \"yes\" "

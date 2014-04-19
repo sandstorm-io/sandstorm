@@ -1247,7 +1247,7 @@ private:
     }
 
     // Start http request to download bundle.
-    auto url = kj::str("https://dl.sandstorm.io/", channel, "/sandstorm-", targetBuild, ".tar.xz");
+    auto url = kj::str("https://dl.sandstorm.io/sandstorm-", targetBuild, ".tar.xz");
     context.warning(kj::str("Downloading: ", url));
     auto download = kj::heap<CurlRequest>(url);
     int fd = download->getPipe();

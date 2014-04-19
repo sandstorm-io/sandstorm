@@ -34,11 +34,6 @@ BUILD=$(( BASE_BUILD > LAST_BUILD ? BASE_BUILD : LAST_BUILD + 1 ))
 
 TARBALL=sandstorm-$BUILD.tar.xz
 
-if curl -fIs "https://dl.sandstorm.io/$TARBALL" > /dev/null; then
-  echo "ERROR: It appears this build already exists on the server." >&2
-  exit 1
-fi
-
 echo "**** Building build $BUILD ****"
 
 make -j bundle-dist BUILD=$BUILD

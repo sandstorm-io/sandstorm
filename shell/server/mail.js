@@ -29,17 +29,18 @@ Meteor.startup(function() {
 
         req.pipe(mailparser);
         mailparser.on('end', function(mail) {
-            req.accept();
-
             var deliverTo = req.to[0];
-            var index = deliverTo.indexOf(' ');
-            if(index != -1)
-                deliverTo = deliverTo.slice(0, index);
+            var index = deliverTo.indexOf('@');
+            if(index == -1)
+                console.error('Delivery address is invalid because it does not contain an @ symbol: ' + deliverTo);
+
+            publicId = deliverTo.slice(0, index);
+            // TODO: validate domain as well
+
+            // TODO: check that mail's headers to/from match req.to/from
 
             var mailMessage = {
                 date: (mail.date && mail.date.getTime()) || (new Date()).getTime(),
-                deliveredTo: {address: req.to}, // TODO: parse these properly
-                deliveredFrom: {address: req.from},
                 from: mail.from[0], // TODO: check that there's only 1 from field
                 to: mail.to,
                 cc: mail.cc || [],
@@ -54,10 +55,12 @@ Meteor.startup(function() {
             };
 
             Fiber(function() {
-                Grains.find({email: deliverTo}).forEach(function(grain) {
+                Grains.find({publicId: publicId}).forEach(function(grain) {
                     Meteor.call('sendEmailToGrain', grain._id, mailMessage);
                 });
             }).run();
+
+            req.accept();
         });
     }).listen(30025);
 });

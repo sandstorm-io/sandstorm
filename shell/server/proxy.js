@@ -107,14 +107,16 @@ Meteor.methods({
       }
     }
 
-    var grainId = Random.id(22);  // 128 bits of entropy
+    var grainId = Random.id(22);
+    var publicId = Random.id(22);
     Grains.insert({
       _id: grainId,
       packageId: packageId,
       appId: appId,
       appVersion: manifest.appVersion,
       userId: this.userId,
-      title: title
+      title: title,
+      publicId: publicId
     });
     startGrainInternal(packageId, grainId, command, true);
     return grainId;

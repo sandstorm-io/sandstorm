@@ -499,17 +499,10 @@ Proxy.prototype.getSession = function (request) {
           : [ "en-US", "en" ]
     });
 
-    if (this.email) {
-      var sessionContext = new Capnp.Capability({send: sendEmail}, HackSession.HackContext);
-      this.session = this.uiView.newSession(
-          {displayName: {defaultText: "User"}}, sessionContext,
-          "0x9d0faf74c32bd817", params).session.castAs(HackSession.HackSession);
-    }
-    else {
-      this.session = this.uiView.newSession(
-          {displayName: {defaultText: "User"}}, null,
-          "0xa50711a14d35a8ce", params).session.castAs(WebSession);
-    }
+    var sessionContext = new Capnp.Capability({send: sendEmail}, HackSession.HackContext);
+    this.session = this.uiView.newSession(
+        {displayName: {defaultText: "User"}}, sessionContext,
+        "0xa50711a14d35a8ce", params).session.castAs(HackSession.HackSession);
   }
 
   return this.session;

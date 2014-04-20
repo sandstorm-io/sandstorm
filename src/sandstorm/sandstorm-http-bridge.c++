@@ -906,7 +906,7 @@ public:
   kj::Promise<void> newSession(NewSessionContext context) override {
     auto params = context.getParams();
 
-    KJ_REQUIRE(params.getSessionType() == capnp::typeId<HackSession>(),
+    KJ_REQUIRE(params.getSessionType() == capnp::typeId<WebSession>(),
                "Unsupported session type.");
 
     contextWrapper.context = params.getContext();

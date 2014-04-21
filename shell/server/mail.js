@@ -46,7 +46,7 @@ Meteor.startup(function() {
                 cc: mail.cc || [],
                 bcc: mail.bcc || [],
                 replyTo: mail.headers['reply-to'] || {},
-                messageId: mail.headers['message-id'] || Meteor.uuid(),
+                messageId: mail.headers['message-id'] || Meteor.uuid(), // TODO: append domain to conform to spec
                 references: mail.references || [],
                 inReplyTo: mail.inReplyTo || [],
                 subject: mail.subject || '',
@@ -64,27 +64,3 @@ Meteor.startup(function() {
         });
     }).listen(30025);
 });
-
-sendgrid = Sendgrid(Meteor.settings.SENDGRID_USERNAME, Meteor.settings.SENDGRID_PASSWORD);
-this.sendEmail = function(email) {
-    var sendGridEmail = {
-      to:       email.to[0].address,
-      // toname:   [],
-      from:     email.from.address,
-      // fromname: '',
-      subject:  email.subject,
-      text:     email.text,
-      html:     email.html,
-      // bcc:      [],
-      // replyto:  '',
-      // date:     new Date(),
-      // headers:    {}
-    };
-
-    return new Promise(function(resolve, reject) {
-        sendgrid.send(sendGridEmail, function(err, json) {
-          if (err) { reject(err); }
-          resolve();
-        });
-    });
-};

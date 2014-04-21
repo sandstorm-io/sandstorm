@@ -488,6 +488,50 @@ Proxy.prototype.getConnection = function () {
   return this.connection;
 }
 
+var formatAddress = function(field) {
+  if(!field)
+    return null;
+
+  if (Array.isArray(field))
+    return field.forEach(formatAddress);
+
+  if(field.name)
+    return field.name + ' <' + field.address + '>';
+
+  return field.address;
+};
+
+var rethrowException = function(error) {
+  throw error;
+};
+
+var hackSession = {
+  send: Meteor.bindEnvironment(function(email) {
+    var newEmail = {
+      from:     formatAddress(email.from),
+      to:       formatAddress(email.to),
+      cc:       formatAddress(email.cc),
+      bcc:      formatAddress(email.bcc),
+      replyTo:  formatAddress(email.replyTo),
+      subject:  email.subject,
+      text:     email.text,
+      html:     email.html
+    };
+
+    var headers = {};
+    if(email.messageId)
+      headers['message-id'] = email.messageId;
+    if(email.references)
+      headers['references'] = email.references;
+    if(email.messageId)
+      headers['in-reply-to'] = email.inReplyTo;
+
+    newEmail['headers'] = headers;
+
+    Email.send(newEmail);
+  }, rethrowException)
+};
+
 Proxy.prototype.getSession = function (request) {
   if (!this.session) {
     this.getConnection();  // make sure we're connected
@@ -501,7 +545,7 @@ Proxy.prototype.getSession = function (request) {
           : [ "en-US", "en" ]
     });
 
-    var sessionContext = new Capnp.Capability({send: sendEmail}, HackSession.HackContext);
+    var sessionContext = new Capnp.Capability(hackSession, HackSession.HackContext);
     this.session = this.uiView.newSession(
         {displayName: {defaultText: "User"}}, sessionContext,
         "0xa50711a14d35a8ce", params).session.castAs(HackSession.HackSession);

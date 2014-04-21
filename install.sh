@@ -11,11 +11,24 @@
 #     wget https://install.sandstorm.io/install.sh
 #     ./install.sh
 
+if test "x$BASH_VERSION" = x; then
+  echo "Please run this script using bash, not sh or any other shell." >&2
+  exit 1
+fi
+
 set -euo pipefail
 
-if [ ! -t 1 ]; then
-  echo "This script is interactive. Please run it on a terminal." >&2
+fail() {
+  if [ $# != 0 ]; then
+    echo "$@" | fold -s >&2
+  fi
+  echo "*** INSTALLATION FAILED ***" >&2
+  echo "Report bugs at: http://github.com/kentonv/sandstorm" >&2
   exit 1
+}
+
+if [ ! -t 1 ]; then
+  fail "This script is interactive. Please run it on a terminal."
 fi
 
 # Hack: If the script is being read in from a pipe, then FD 0 is not the terminal input. But we
@@ -52,28 +65,36 @@ prompt-yesno() {
         ;;
     esac
 
-    echo "*** Please answer \"yes\" or \"no\"." 2>&1
+    echo "*** Please answer \"yes\" or \"no\"."
   done
 }
 
 if [ x"$(uname)" != xLinux ]; then
-  echo "Sorry, the Sandstorm server only runs on Linux." >&2
-  exit 1
+  fail "Sorry, the Sandstorm server only runs on Linux."
+fi
+
+if [ x"$(uname -m)" != xx86_64 ]; then
+  fail "Sorry, tha Sandstorm server currently only runs on x86_64 machines."
 fi
 
 KVERSION=( $(uname -r | grep -o '^[0-9.]*' | tr . ' ') )
 
 if (( KVERSION[0] < 3 || (KVERSION[0] == 3 && KVERSION[1] < 10) )); then
-  echo "Your Linux kernel version: $(uname -r)"
+  echo "Detected Linux kernel version: $(uname -r)"
   if (( KVERSION[0] == 3 && KVERSION[1] < 5 )); then
-    echo "Sorry, your kernel is too old to run Sandstorm. We recommend kernel" >&2
-    echo "version 3.10 or newer (3.5 to 3.9 *might* work)." >&2
-    exit 1
+    fail "Sorry, your kernel is too old to run Sandstorm. We recommend kernel" \
+         "version 3.10 or newer (3.5 to 3.9 *might* work)."
   else
-    echo "Sandstorm has only been tested on kernel version 3.10 and newer." >&2
-    prompt-yesno "We aren't sure if it will work for you. Try anyway?" no || exit 1
+    echo "Sandstorm has only been tested on kernel version 3.10 and newer."
+    prompt-yesno "We aren't sure if it will work for you. Try anyway?" no || fail
   fi
 fi
+
+which curl > /dev/null|| fail "Please install curl(1). Sandstorm uses it to download updates."
+which tar > /dev/null || fail "Please install tar(1)."
+which xz > /dev/null || fail "Please install xz(1). (Package may be called 'xz-utils'.)"
+
+# ========================================================================================
 
 if [ $(id -u) != 0 ]; then
   if [ "x$(basename $0)" == xbash ]; then
@@ -87,15 +108,14 @@ if [ $(id -u) != 0 ]; then
   fi
 
   # Don't know how to run the script.  Let the user figure it out.
-  echo "This installer needs root privileges." >&2
-  exit 1
+  fail "This installer needs root privileges."
 fi
 
 DIR=$(prompt "Where would you like to put Sandstorm?" /opt/sandstorm)
 
 if [ -e $DIR ]; then
   echo "$DIR already exists. Sandstorm will assume ownership of all contents."
-  prompt-yesno "Is this OK?" yes || exit 1
+  prompt-yesno "Is this OK?" yes || fail
 fi
 
 mkdir -p "$DIR"
@@ -118,8 +138,7 @@ if [ -e sandstorm.conf ]; then
   echo "Found existing sandstorm.conf. Using it."
   . sandstorm.conf
   if [ "${SERVER_USER:+set}" != set ]; then
-    echo "Existing config does not set SERVER_USER. Please fix or delete it." >&2
-    exit 1
+    fail "Existing config does not set SERVER_USER. Please fix or delete it."
   fi
   if [ "${UPDATE_CHANNEL:-none}" != none ]; then
     CHANNEL=$UPDATE_CHANNEL
@@ -193,8 +212,7 @@ echo "Finding latest build for $CHANNEL channel..."
 BUILD=$(curl -fs "https://install.sandstorm.io/$CHANNEL?from=0&type=install")
 
 if [[ ! 12345 =~ ^[0-9]+$ ]]; then
-  echo "Server returned invalid build number: $BUILD" >&2
-  exit 1
+  fail "Server returned invalid build number: $BUILD"
 fi
 
 do-download() {
@@ -204,8 +222,7 @@ do-download() {
   curl -f "$URL" | tar Jxo
 
   if [ ! -e "sandstorm-$BUILD" ]; then
-    echo "ERROR: Bad package -- did not contain sandstorm-$BUILD directory." >&2
-    exit 1
+    fail "Bad package -- did not contain sandstorm-$BUILD directory."
   fi
 }
 

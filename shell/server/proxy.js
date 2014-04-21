@@ -410,7 +410,7 @@ function Proxy(grainId, sessionId, preferredPort) {
   var self = this;
 
   var grain = Grains.findOne(this.grainId);
-  this.email = grain.email; // TODO: make this reactive
+  this.publicId = grain.publicId;
 
   this.server = Http.createServer(function (request, response) {
     if (request.url === "/_sandstorm-init?sessionid=" + self.sessionId) {
@@ -505,32 +505,42 @@ var rethrowException = function(error) {
   throw error;
 };
 
-var hackSession = {
-  send: Meteor.bindEnvironment(function(email) {
-    var newEmail = {
-      from:     formatAddress(email.from),
-      to:       formatAddress(email.to),
-      cc:       formatAddress(email.cc),
-      bcc:      formatAddress(email.bcc),
-      replyTo:  formatAddress(email.replyTo),
-      subject:  email.subject,
-      text:     email.text,
-      html:     email.html
-    };
+function HackSessionImpl(grainId, publicId) {
+  this.grainId = grainId;
+  this.publicId = publicId;
+}
 
-    var headers = {};
-    if(email.messageId)
-      headers['message-id'] = email.messageId;
-    if(email.references)
-      headers['references'] = email.references;
-    if(email.messageId)
-      headers['in-reply-to'] = email.inReplyTo;
+HackSessionImpl.prototype.send = Meteor.bindEnvironment(function(email) {
+  expectedFrom = this.publicId + '@' + HOSTNAME; // HOSTNAME is defined in mail.js startup
+  if(email.from.address !== expectedFrom) {
+    console.warn("From field's address was not the expected address for this grain: " +
+      email.from.address + " instead of " + expectedFrom);
+    email.from.address = expectedFrom;
+  }
 
-    newEmail['headers'] = headers;
+  var newEmail = {
+    from:     formatAddress(email.from),
+    to:       formatAddress(email.to),
+    cc:       formatAddress(email.cc),
+    bcc:      formatAddress(email.bcc),
+    replyTo:  formatAddress(email.replyTo),
+    subject:  email.subject,
+    text:     email.text,
+    html:     email.html
+  };
 
-    Email.send(newEmail);
-  }, rethrowException)
-};
+  var headers = {};
+  if(email.messageId)
+    headers['message-id'] = email.messageId;
+  if(email.references)
+    headers['references'] = email.references;
+  if(email.messageId)
+    headers['in-reply-to'] = email.inReplyTo;
+
+  newEmail['headers'] = headers;
+
+  Email.send(newEmail);
+}, rethrowException);
 
 Proxy.prototype.getSession = function (request) {
   if (!this.session) {
@@ -545,7 +555,7 @@ Proxy.prototype.getSession = function (request) {
           : [ "en-US", "en" ]
     });
 
-    var sessionContext = new Capnp.Capability(hackSession, HackSession.HackContext);
+    var sessionContext = new Capnp.Capability(new HackSessionImpl(this.grainId, this.publicId), HackSession.HackContext);
     this.session = this.uiView.newSession(
         {displayName: {defaultText: "User"}}, sessionContext,
         "0xa50711a14d35a8ce", params).session.castAs(HackSession.HackSession);

@@ -21,46 +21,79 @@
 var EmailMessage = Capnp.importSystem("sandstorm/email.capnp").EmailMessage;
 
 var Fiber = Npm.require("fibers");
+var Url = Npm.require('url');
 
 Meteor.startup(function() {
-    simplesmtp.createSimpleServer({SMTPBanner:"Sandstorm Mail Server"}, function(req){
-        var mailparser = new MailParser();
-        var bufs = [];
+  this.HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
+  var SANDSTORM_SMTP_PORT = parseInt(process.env.SANDSTORM_SMTP_PORT, 10) || 30025;
 
-        req.pipe(mailparser);
-        mailparser.on('end', function(mail) {
-            var deliverTo = req.to[0];
-            var index = deliverTo.indexOf('@');
-            if(index == -1)
-                console.error('Delivery address is invalid because it does not contain an @ symbol: ' + deliverTo);
+  simplesmtp.createSimpleServer({SMTPBanner:"Sandstorm Mail Server"}, function(req){
+    var mailparser = new MailParser();
+    var bufs = [];
 
-            publicId = deliverTo.slice(0, index);
-            // TODO: validate domain as well
+    req.pipe(mailparser);
+    mailparser.on('end', function(mail) {
+      req.to.forEach(function(deliverTo) {
+        var parsedTo = mimelib.parseAddresses(deliverTo)[0].address;
+        var parsedFrom = mimelib.parseAddresses(req.from)[0].address;
+        var index = parsedTo.indexOf('@');
+        // simplesmtp checks addresses for us, so no need to worry that @ isn't in the address
 
-            // TODO: check that mail's headers to/from match req.to/from
+        publicId = parsedTo.slice(0, index);
+        domain = parsedTo.slice(index+1);
 
-            var mailMessage = {
-                date: (mail.date && mail.date.getTime()) || (new Date()).getTime(),
-                from: mail.from[0], // TODO: check that there's only 1 from field
-                to: mail.to,
-                cc: mail.cc || [],
-                bcc: mail.bcc || [],
-                replyTo: mail.headers['reply-to'] || {},
-                messageId: mail.headers['message-id'] || Meteor.uuid(), // TODO: append domain to conform to spec
-                references: mail.references || [],
-                inReplyTo: mail.inReplyTo || [],
-                subject: mail.subject || '',
-                text: mail.text || '',
-                html: mail.html || ''
-            };
+        if(domain !== HOSTNAME) {
+          message = "Received message with a To field of an unknown domain: " +
+            deliverTo + " instead of " + HOSTNAME;
 
-            Fiber(function() {
-                Grains.find({publicId: publicId}).forEach(function(grain) {
-                    Meteor.call('sendEmailToGrain', grain._id, mailMessage);
-                });
-            }).run();
+          console.error(message);
+          req.reject(message);
+          return;
+        }
 
-            req.accept();
-        });
-    }).listen(30025);
+        if(mail.from.length != 1)
+          console.warn("More or less than 1 `from` address seen in message's headers. Ignoring for now");
+
+        // TODO: warn the user in some way that the received message had wrong headers
+        // TODO: check the same for To/CC/BCC
+        if(parsedFrom !== mail.from[0].address) {
+          console.warn("From address was different between smtp and message's headers: " + parsedFrom + ' vs ' + mail.from[0].address);
+          mail.from[0].address = parsedFrom;
+        }
+
+        var mailMessage = {
+            date: (mail.date && mail.date.getTime()) || (new Date()).getTime(),
+            from: mail.from[0],
+            to: mail.to,
+            cc: mail.cc || [],
+            bcc: mail.bcc || [],
+            replyTo: mail.headers['reply-to'] || {},
+            messageId: mail.headers['message-id'] || Meteor.uuid() + '@' + HOSTNAME,
+            references: mail.references || [],
+            inReplyTo: mail.inReplyTo || [],
+            subject: mail.subject || '',
+            text: mail.text || '',
+            html: mail.html || ''
+        };
+
+        Fiber(function() {
+          var grains = Grains.find({publicId: publicId}).fetch();
+
+          if(grains.length < 1) {
+            message = "No grains found with the given publicId: " + publicId;
+
+            console.error(message);
+            req.reject(message);
+            return;
+          }
+
+          grains.forEach(function(grain) {
+              Meteor.call('sendEmailToGrain', grain._id, mailMessage);
+          });
+
+          req.accept();
+        }).run();
+      });
+    });
+  }).listen(SANDSTORM_SMTP_PORT);
 });

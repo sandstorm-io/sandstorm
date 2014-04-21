@@ -24,14 +24,19 @@
         }
       }
     },
-    "simplesmtp": {
-      "version": "0.3.24",
+    "mimelib": {
+      "version": "0.2.14",
       "dependencies": {
-        "rai": {
-          "version": "0.1.9"
+        "encoding": {
+          "version": "0.1.7",
+          "dependencies": {
+            "iconv-lite": {
+              "version": "0.2.11"
+            }
+          }
         },
-        "xoauth2": {
-          "version": "0.1.8"
+        "addressparser": {
+          "version": "0.2.1"
         }
       }
     }

@@ -512,7 +512,7 @@ function HackSessionImpl(grainId, publicId) {
 
 HackSessionImpl.prototype.send = Meteor.bindEnvironment(function(email) {
   expectedFrom = this.publicId + '@' + HOSTNAME; // HOSTNAME is defined in mail.js startup
-  if(email.from.address !== expectedFrom) {
+  if(email.from.address.toUpperCase() !== expectedFrom.toUpperCase()) {
     console.warn("From field's address was not the expected address for this grain: " +
       email.from.address + " instead of " + expectedFrom);
     email.from.address = expectedFrom;

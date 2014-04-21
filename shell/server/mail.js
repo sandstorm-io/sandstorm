@@ -42,7 +42,7 @@ Meteor.startup(function() {
         publicId = parsedTo.slice(0, index);
         domain = parsedTo.slice(index+1);
 
-        if(domain !== HOSTNAME) {
+        if(domain.toUpperCase() !== HOSTNAME.toUpperCase()) {
           message = "Received message with a To field of an unknown domain: " +
             deliverTo + " instead of " + HOSTNAME;
 
@@ -56,7 +56,7 @@ Meteor.startup(function() {
 
         // TODO: warn the user in some way that the received message had wrong headers
         // TODO: check the same for To/CC/BCC
-        if(parsedFrom !== mail.from[0].address) {
+        if(parsedFrom.toUpperCase() !== mail.from[0].address.toUpperCase()) {
           console.warn("From address was different between smtp and message's headers: " + parsedFrom + ' vs ' + mail.from[0].address);
           mail.from[0].address = parsedFrom;
         }
@@ -77,7 +77,8 @@ Meteor.startup(function() {
         };
 
         Fiber(function() {
-          var grains = Grains.find({publicId: publicId}).fetch();
+          var regex = new RegExp(["^",publicId,"$"].join(""),"i"); // make case insensitive search
+          var grains = Grains.find({publicId: regex}).fetch();
 
           if(grains.length < 1) {
             message = "No grains found with the given publicId: " + publicId;

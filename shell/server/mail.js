@@ -62,7 +62,7 @@ Meteor.startup(function() {
         }
 
         var mailMessage = {
-            date: (mail.date && mail.date.getTime()) || (new Date()).getTime(),
+            date: (mail.date || new Date()).toString(),
             from: mail.from[0],
             to: mail.to,
             cc: mail.cc || [],

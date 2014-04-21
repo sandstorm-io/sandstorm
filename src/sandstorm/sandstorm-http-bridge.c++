@@ -755,9 +755,11 @@ public:
     auto email = context.getParams().getEmail();
 
     #define WRITE_HEADER(key, value, len) \
-      KJ_SYSCALL(write(mailFd, #key ": ", strlen(#key ": "))); \
-      KJ_SYSCALL(write(mailFd, value, len)); \
-      KJ_SYSCALL(write(mailFd, "\r\n", 1));
+      if(len != 0) { \
+        KJ_SYSCALL(write(mailFd, #key ": ", strlen(#key ": "))); \
+        KJ_SYSCALL(write(mailFd, value, len)); \
+        KJ_SYSCALL(write(mailFd, "\r\n", 1)); \
+      }
 
     #define WRITE_FIELD(fieldName, headerName) \
       WRITE_HEADER(headerName, email.get##fieldName().cStr(), email.get##fieldName().size())
@@ -778,6 +780,7 @@ public:
         WRITE_HEADER(headerName, one.cStr(), one.size()) \
       }
 
+    // TODO: parse and write Date
     WRITE_FIELD(Subject, Subject)
     WRITE_FIELD(MessageId, Message-Id)
 

@@ -536,6 +536,9 @@ HackSessionImpl.prototype.send = Meteor.bindEnvironment(function(email) {
     headers['references'] = email.references;
   if(email.messageId)
     headers['in-reply-to'] = email.inReplyTo;
+  // if(email.date)
+  //   headers['date'] = email.date;
+  // TODO: parse and set date
 
   newEmail['headers'] = headers;
 

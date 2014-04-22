@@ -81,9 +81,6 @@
           <a href="http://ace.c9.io/">Ace</a>, and <a href="http://www.jstree.com/">jsTree</a>
           to create a Markdown-based web site editing and publishing app.  This app was stiched
           together over the course of one day by Kenton.
-        <p><b>Warning:</b>  This app currently is not "collaborative".  If multiple people try to
-          edit at the same time, they will clobber each other's changes.  We might fix this in the
-          future.
         <p><a href="https://github.com/kentonv/ssjekyll">Code on Github</a>
         <p style="text-align: center">
           <a href="https://github.com/kentonv/ssjekyll/blob/master/screenshot.png">
@@ -91,16 +88,33 @@
       </div>
 
       <div class="app">
+        <button onclick="install('4e1da8cec67250de8fa80371bc21f4eb?url=http://sandstorm.io/apps/ipython-notebook.spk')">Install »</button>
+        <h3>IPython Notebook</h3>
+        <p>A port of <a href="http://ipython.org/notebook.html">IPython Notebook</a>, a web-based
+          interactive computational environment where you can execute Python code, plot graphs,
+          render equations, and more.  Ported to Sandstorm by
+          <a href="https://github.com/jparyani">Jason Paryani</a>.
+        <p><a href="https://github.com/jparyani/ipython/tree/sandstorm-2">Code on Github</a>
+      </div>
+
+      <div class="app">
         <button onclick="install('32618df3fb42a66c747d75435cc9efef?url=http://sandstorm.io/apps/etherpad.spk')">Install »</button>
         <h3>Etherpad</h3>
-        <p>This is a port of <a href="http://etherpad.org/">Etherpad</a>, a collaborative document editor.
+        <p>This is a port of <a href="http://etherpad.org/">Etherpad</a>, a collaborative document
+          editor. Ported by Kenton. No code changes were necessary.
       </div>
-      
+
       <div class="app">
-        <button onclick="install('5151531c1748e612ec0e4fddc71190ed?url=http://sandstorm.io/apps/meteor-todos.spk')">Install »</button>
-        <h3>Meteor Todo List</h3>
-        <p>This is the "Todo List" example application that comes with the
-        <a href="http://meteor.com">Meteor</a> development tools.
+        <button onclick="install('c336de0124189a64fcaaa0fe7d95afa5?url=http://sandstorm.io/apps/ghost2.spk')">Install »</button>
+        <h3>Ghost CMS</h3>
+        <p>A port of <a href="http://ghost.org/">Ghost</a>, a beautiful-yet-powerful Markdown-based
+          blogging and website creation platform.  Made famous by its
+          <a href="https://www.kickstarter.com/projects/johnonolan/ghost-just-a-blogging-platform">Kickstarter campaign</a>
+          last year.  Ported to Sandstorm by <a href="https://github.com/Sing-Li">Sing Li</a>.
+        <p><b>Note:</b> Currently, to publish content created with this app, you must manually point
+          a static-content web server (like nginx) at the "static" directory in the app's storage.
+          If you are using Sandstorm Alpha, <a href="mailto:kenton@sandstorm.io">e-mail Kenton</a>
+          and he'll set this up for you.  (We're working on a self-service solution.)
       </div>
       
       <div class="app">
@@ -109,6 +123,25 @@
         <p>A minimalist platformer game with checkpoints, replay, and collaboration.  A port of
           <a href="http://dwrensha.ws/duoludo">duoludo</a> by
           <a href="https://github.com/dwrensha">David Renshaw</a>.
+      </div>
+
+      <div class="app">
+        <button onclick="install('b06a2f03de7dde47b5ed7de23e960e35?url=http://sandstorm.io/apps/acronymy.spk')">Install »</button>
+        <h3>Acronymy</h3>
+        <p>A little game / tech demo by David Renshaw. The objective is to define every English word
+          as an acronym of other words. The app is notable in that it is written in
+          <a href="http://www.rust-lang.org/">Rust</a> directly against the low-level Sandstorm API,
+          thus avoiding the need for an HTTP server.
+        <p>Also try <a href="https://alpha.sandstorm.io/grain/Evmjn3tJbDCJjT4Be">David's shared instance</a>.
+        <p><a href="https://github.com/dwrensha/acronymy">Code on Github</a>
+      </div>
+
+      <div class="app">
+        <button onclick="install('5151531c1748e612ec0e4fddc71190ed?url=http://sandstorm.io/apps/meteor-todos.spk')">Install »</button>
+        <h3>Meteor Todo List</h3>
+        <p>This is the "Todo List" example application that comes with the
+        <a href="http://meteor.com">Meteor</a> development tools. Ported by Kenton. No code changes
+        were necessary.
       </div>
 
       <div class="app">

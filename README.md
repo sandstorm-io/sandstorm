@@ -2,9 +2,8 @@
 
 * [Introduction](#introduction)
 * [Caveats](#caveats)
-* [Prerequisites](#prerequisites)
-* [Building / installing the binaries](#building--installing-the-binaries)
-* [Running the shell](#running-the-shell)
+* [Easy Install](#intsalling-the-easy-way)
+* [Hard Install](#installing-from-source)
 * [How it Works](#how-it-works)
 * [How to Port Apps](#how-to-port-apps)
 * [The Future](#the-future)

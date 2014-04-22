@@ -26,7 +26,25 @@ Sandstorm is in the very early stages of development.  We want developers to sta
 * Apps can't do a whole lot yet, since we don't have many APIs to interact with the outside world.  See our [future plans](#the-future) and [let us know](https://groups.google.com/group/sandstorm-dev) what we should build next!
 * The API (what there is of it) is not final.  It could change in a way that breaks existing apps.
 
-## Prerequisites
+## Intsalling the Easy Way
+
+To install on your own Linux machine, just do:
+
+    curl https://install.sandstorm.io | bash
+
+Or, if you don't like piping directly to shell, download first:
+
+    curl https://install.sandstorm.io > install.sh
+    bash install.sh
+
+This will install a self-contained and (optionally) auto-updating Sandstorm bundle. It won't touch anything on your system other than your chosen installation directory and (optional) init script.
+
+Please note that Sandstorm requires root access to set up the sandbox. If this bothers you, consider
+installing it in its own VM.
+
+## Installing from Source
+
+### Prerequisites
 
 Please install the following:
 
@@ -41,7 +59,7 @@ Please install the following:
 * [Meteorite](https://github.com/oortcloud/meteorite)
 * [npm](http://npmjs.org) module `es6-promise`
 
-## Building / installing the binaries
+### Building / installing the binaries
 
     make
     sudo make install SANDSTORM_USER=$USER:$USER
@@ -50,7 +68,7 @@ You should replace `$USER:$USER` with the user:group pair under which the sandst
 
 Note that the binary `sandstorm-supervisor` is installed setuid-root.  This is necessary because the Linux kernel sandboxing features are only available to root (except on very new kernels with UID namespaces which Sandstorm doesn't yet use).  This program is believed to be safe, but in this early stage it may be advisable not to install sandstorm on a system where malicious users may have shell access.
 
-## Running the shell
+### Running the shell
 
     cd shell
     mrt install

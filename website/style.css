@@ -59,6 +59,10 @@ header p {
   text-align: center;
 }
 
+header p.sublinks {
+  margin: 8px;
+}
+
 header h2 {
   font-size: 2em;
   font-style: italic;

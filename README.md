@@ -2,7 +2,7 @@
 
 * [Introduction](#introduction)
 * [Caveats](#caveats)
-* [Easy Install](#intsalling-the-easy-way)
+* [Easy Install](#installing-the-easy-way)
 * [Hard Install](#installing-from-source)
 * [How it Works](#how-it-works)
 * [How to Port Apps](#how-to-port-apps)

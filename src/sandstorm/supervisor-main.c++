@@ -409,8 +409,7 @@ private:
     closeFds();
     checkPaths();
     unshareOuter();
-    setupTmpfs();
-    bindDirs();
+    setupFilesystem();
     setupStdio();
 
     // TODO(someday):  Turn on seccomp-bpf.
@@ -560,16 +559,8 @@ private:
     // To really unshare the mount namespace, we also have to make sure all mounts are private.
     // The parameters here were derived by strace'ing `mount --make-rprivate /`.  AFAICT the flags
     // are undocumented.  :(
-    //
-    // Note:  We accept EINVAL as an indication that / is not a mount point, which indicates we're
-    //   running in a chroot, which means we're probably running in the Sandstorm bundle, which has
-    //   already private-mounted everything.
-    // TODO(someday):  More robustly detect when we're in the sandstorm bundle.
     if (mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr) < 0) {
-      int error = errno;
-      if (error != EINVAL) {
-        KJ_FAIL_SYSCALL("mount(recursively remount / as private)", error);
-      }
+      KJ_FAIL_SYSCALL("mount(recursively remount / as private)", errno);
     }
 
     // Set a dummy host / domain so the grain can't see the real one.  (unshare(CLONE_NEWUTS) means
@@ -578,69 +569,59 @@ private:
     KJ_SYSCALL(setdomainname("sandbox", 7));
   }
 
-  void setupTmpfs() {
-    // Create a new tmpfs for this run.  We don't use a shared one or just /tmp for two reasons:
-    // 1) tmpfs has no quota control, so a shared instance could be DoS'd by any one grain, or
-    //    just used to effectively allocate more RAM than the grain is allowed.
-    // 2) When we exit, the mount namespace disappears and the tmpfs is thus automatically
-    //    unmounted.  No need for careful cleanup, and no need to implement a risky recursive
-    //    delete.
-    KJ_SYSCALL(mount("tmpfs", "/tmp/sandstorm-grain", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
-                     kj::str("size=16m,nr_inodes=4k,mode=770,uid=", uid, ",gid=", gid).cStr()));
+  void setupFilesystem() {
+    // The root of our mount namespace will be the app package itself.  We optionally create
+    // tmp, dev, and var.  tmp is an ordinary tmpfs.  dev is a read-only tmpfs that contains
+    // a few safe device nodes.  var is the 'var/sandbox' directory inside the grain.
+    //
+    // Now for the tricky part: the supervisor needs to be able to see a little bit more.
+    // In particular, it needs to be able to see the entire var directory inside the grain.
+    // We do this by temporarily hijacking the package's usr directory.  That will become
+    // the supervisor's privileged space.  We detach it before starting the app, so the
+    // app will just see its own usr directory.
+
+    // Bind the app package to "sandbox", which will be the grain's root directory.
+    bind(pkgPath, "/tmp/sandstorm-grain", MS_NODEV | MS_RDONLY);
 
     // Change to that directory.
     KJ_SYSCALL(chdir("/tmp/sandstorm-grain"));
 
-    // Set up the directory tree.
-
-    // Create a minimal dev directory.
-    KJ_SYSCALL(mkdir("dev", 0755));
-    KJ_SYSCALL(mknod("dev/null", S_IFCHR | 0666, makedev(1, 3)));
-    KJ_SYSCALL(mknod("dev/zero", S_IFCHR | 0666, makedev(1, 5)));
-    KJ_SYSCALL(mknod("dev/random", S_IFCHR | 0666, makedev(1, 8)));
-    KJ_SYSCALL(mknod("dev/urandom", S_IFCHR | 0666, makedev(1, 9)));
-
-    // Mount point for var directory, as seen by the supervisor.
-    KJ_SYSCALL(mkdir("var", 0777));
-
-    // Temp directory.
-    KJ_SYSCALL(mkdir("tmp", 0777));
-    KJ_SYSCALL(mkdir("tmp/sandbox", 0777));  // Piece of tmp visible to sandbox.
-
-    // The root directory of the sandbox.
-    KJ_SYSCALL(mkdir("sandbox", 0777));
-
-    // Temporary directory needed for pivot_root.
-    KJ_SYSCALL(mkdir("oldroot", 0700));
-  }
-
-  void bindDirs() {
-    // Bind the app package to "sandbox", which will be the grain's root directory.
-    bind(pkgPath, "sandbox", MS_NODEV | MS_RDONLY);
-
-    // We want to give the supervisor a minimal filesystem.  It will need access to the var
-    // directory, so we need to bind-mount that into the local tree.  We can't just map it to
-    // sandbox/var because part of the var directory is supposed to be visible only to the
-    // supervisor.
-    bind(varPath, "var", MS_NODEV | MS_NOEXEC);
-
     // Optionally bind var, tmp, dev if the app requests it by having the corresponding directories
     // in the package.
-    if (access("sandbox/tmp", F_OK) == 0) {
-      bind("tmp/sandbox", "sandbox/tmp", MS_NODEV | MS_NOEXEC);
+    if (access("tmp", F_OK) == 0) {
+      // Create a new tmpfs for this run.  We don't use a shared one or just /tmp for two reasons:
+      // 1) tmpfs has no quota control, so a shared instance could be DoS'd by any one grain, or
+      //    just used to effectively allocate more RAM than the grain is allowed.
+      // 2) When we exit, the mount namespace disappears and the tmpfs is thus automatically
+      //    unmounted.  No need for careful cleanup, and no need to implement a risky recursive
+      //    delete.
+      KJ_SYSCALL(mount("sandstorm-tmp", "tmp", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
+                     kj::str("size=16m,nr_inodes=4k,mode=770,uid=", uid, ",gid=", gid).cStr()));
     }
-    if (access("sandbox/dev", F_OK) == 0) {
-      bind("dev", "sandbox/dev", MS_NOEXEC | MS_RDONLY);
+    if (access("dev", F_OK) == 0) {
+      KJ_SYSCALL(mount("sandstorm-dev", "dev", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
+                     kj::str("size=1m,nr_inodes=16,mode=755,uid=", uid, ",gid=", gid).cStr()));
+      KJ_SYSCALL(mknod("dev/null", S_IFCHR | 0666, makedev(1, 3)));
+      KJ_SYSCALL(mknod("dev/zero", S_IFCHR | 0666, makedev(1, 5)));
+      KJ_SYSCALL(mknod("dev/random", S_IFCHR | 0666, makedev(1, 8)));
+      KJ_SYSCALL(mknod("dev/urandom", S_IFCHR | 0666, makedev(1, 9)));
+      KJ_SYSCALL(mount("dev", "dev", nullptr,
+		       MS_REMOUNT | MS_NOSUID | MS_NOATIME | MS_RDONLY, nullptr));
     }
-    if (access("sandbox/var", F_OK) == 0) {
-      bind(kj::str(varPath, "/sandbox"), "sandbox/var", MS_NODEV | MS_NOEXEC);
+    if (access("var", F_OK) == 0) {
+      bind(kj::str(varPath, "/sandbox"), "var", MS_NODEV | MS_NOEXEC);
     }
 
+    // Set up the supervisor's directory.  This abuses directories that we know to already exist.
+    bind(varPath, "usr", MS_NODEV | MS_NOEXEC);
+
     // OK, everything is bound, so we can pivot_root.
-    KJ_SYSCALL(syscall(SYS_pivot_root, ".", "oldroot"));
-    KJ_SYSCALL(chdir("/"));
-    KJ_SYSCALL(umount2("oldroot", MNT_DETACH));
-    KJ_SYSCALL(rmdir("oldroot"));
+    KJ_SYSCALL(syscall(SYS_pivot_root, ".", "usr/sandbox"));
+    KJ_SYSCALL(chdir("/usr"));
+    KJ_SYSCALL(umount2("sandbox", MNT_DETACH));
+    KJ_SYSCALL(umount2("/usr", MNT_DETACH));
+
+    // Now '.' is the grain's var and '/' is the sandbox directory.
   }
 
   void setupStdio() {
@@ -706,8 +687,7 @@ private:
     // Drop all credentials.
     //
     // This unfortunately must be performed post-fork (in both parent and child), because the child
-    // needs to do one final chroot().  Perhaps if chroot() is ever enabled by no_new_privs, we can
-    // get around that.
+    // needs to do one final unshare().
 
     KJ_SYSCALL(setresgid(gid, gid, gid));
     KJ_SYSCALL(setgroups(0, nullptr));
@@ -732,9 +712,6 @@ private:
 
   void enterSandbox() {
     // Fully enter the sandbox.  Called only by the child process.
-
-    // Chroot the rest of the way into the sandbox.
-    KJ_SYSCALL(chroot("sandbox"));
     KJ_SYSCALL(chdir("/"));
 
     // Unshare the network, creating a new loopback interface.
@@ -763,7 +740,7 @@ private:
     auto ioContext = kj::setupAsyncIo();
 
     // Connect to the client.
-    auto addr = ioContext.provider->getNetwork().parseAddress("unix:/var/socket")
+    auto addr = ioContext.provider->getNetwork().parseAddress("unix:socket")
         .wait(ioContext.waitScope);
     kj::Own<kj::AsyncIoStream> connection;
     KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
@@ -973,8 +950,8 @@ private:
     Restorer serverRestorer(kj::heap<SupervisorImpl>(kj::mv(app)));
     ErrorHandlerImpl errorHandler;
     kj::TaskSet tasks(errorHandler);
-    unlink("/var/socket");  // Clear stale socket, if any.
-    auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:/var/socket", 0).then(
+    unlink("socket");  // Clear stale socket, if any.
+    auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:socket", 0).then(
         [&](kj::Own<kj::NetworkAddress>&& addr) {
       auto serverPort = addr->listen();
       KJ_SYSCALL(write(STDOUT_FILENO, "Listening...\n", strlen("Listening...\n")));

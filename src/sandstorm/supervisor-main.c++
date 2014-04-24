@@ -34,6 +34,7 @@
 #include <sys/fsuid.h>
 #include <sys/prctl.h>
 #include <sys/capability.h>
+#include <sys/syscall.h>
 #include <netinet/in.h>
 #include <net/if.h>
 #include <linux/sockios.h>
@@ -176,7 +177,7 @@ class SupervisorMain {
   // gets network access whereas the grain does not (the grain can only communicate with the world
   // through the supervisor).
   //
-  // This program is meant to be suid-root, so that it can use system calls like chroot() and
+  // This program is meant to be suid-root, so that it can use system calls like pivot_root() and
   // unshare().
   //
   // Alternatively, rather than suid, you may grant the binary "capabilities":
@@ -608,15 +609,19 @@ private:
 
     // The root directory of the sandbox.
     KJ_SYSCALL(mkdir("sandbox", 0777));
+
+    // Temporary directory needed for pivot_root.
+    KJ_SYSCALL(mkdir("oldroot", 0700));
   }
 
   void bindDirs() {
     // Bind the app package to "sandbox", which will be the grain's root directory.
     bind(pkgPath, "sandbox", MS_NODEV | MS_RDONLY);
 
-    // We want to chroot the supervisor.  It will need access to the var directory, so we need to
-    // bind-mount that into the local tree.  We can't just map it to sandbox/var because part of
-    // the var directory is supposed to be visible only to the supervisor.
+    // We want to give the supervisor a minimal filesystem.  It will need access to the var
+    // directory, so we need to bind-mount that into the local tree.  We can't just map it to
+    // sandbox/var because part of the var directory is supposed to be visible only to the
+    // supervisor.
     bind(varPath, "var", MS_NODEV | MS_NOEXEC);
 
     // Optionally bind var, tmp, dev if the app requests it by having the corresponding directories
@@ -631,9 +636,11 @@ private:
       bind(kj::str(varPath, "/sandbox"), "sandbox/var", MS_NODEV | MS_NOEXEC);
     }
 
-    // OK, everything is bound, so we can chroot.
-    KJ_SYSCALL(chroot("."));
+    // OK, everything is bound, so we can pivot_root.
+    KJ_SYSCALL(syscall(SYS_pivot_root, ".", "oldroot"));
     KJ_SYSCALL(chdir("/"));
+    KJ_SYSCALL(umount2("oldroot", MNT_DETACH));
+    KJ_SYSCALL(rmdir("oldroot"));
   }
 
   void setupStdio() {

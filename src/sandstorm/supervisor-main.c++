@@ -21,6 +21,7 @@
 #include <kj/main.h>
 #include <kj/debug.h>
 #include <kj/async-io.h>
+#include <kj/io.h>
 #include <capnp/rpc-twoparty.h>
 #include <capnp/rpc.capnp.h>
 #include <unistd.h>
@@ -226,6 +227,8 @@ public:
                    "RECOMMENDED during normal use, but it may be useful for debugging.")
         .addOption({"stdio"}, [this]() { keepStdio = true; return true; },
                    "Don't redirect the sandbox's stdio.  Useful for debugging.")
+        .addOption({"no-userns"}, [this]() { disableUserNS = true; return true; },
+                   "Do not try to use user namespaces.  Useful for debugging.")
         .addOption({'n', "new"}, [this]() { setIsNew(true); return true; },
                    "Initializes a new grain.  (Otherwise, runs an existing one.)")
         .expectArg("<app-name>", KJ_BIND_METHOD(*this, setAppName))
@@ -371,6 +374,8 @@ private:
   kj::String varPath;
   kj::Vector<kj::String> command;
   kj::Vector<kj::String> environment;
+  bool disableUserNS = false;
+  bool hasUserNS = false;
   bool isNew = false;
   bool mountProc = false;
   bool keepStdio = false;
@@ -549,7 +554,28 @@ private:
     KJ_SYSCALL(setegid(oldgid));
   }
 
+  void writeUserNSMap(const char *type, kj::StringPtr contents)
+  {
+    int fd;
+    KJ_SYSCALL(fd = open(kj::str("/proc/self/", type, "_map").cStr(), O_WRONLY | O_CLOEXEC));
+    kj::AutoCloseFd file(fd);
+    KJ_SYSCALL(write(file, contents.cStr(), contents.size()));
+  }
+
   void unshareOuter() {
+    // Try to unshare the user namespace.
+    if (!disableUserNS && unshare(CLONE_NEWUSER) == 0) {
+      hasUserNS = true;
+
+      // Map the requested user as 1000, since it costs nothing to mask the uid and gid.
+      writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
+      writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
+
+      // From now on, we need to use the internal numbering.
+      uid = 1000;
+      gid = 1000;
+    }
+
     // Unshare the mount namespace so that we can create a bunch of bindings.
     // Go ahead and unshare IPC, UTS, and PID now so we don't have to later.  Note that unsharing
     // the pid namespace is a little odd in that it doesn't actually affect this process, but
@@ -567,6 +593,22 @@ private:
     // these settings only affect this process and its children.)
     KJ_SYSCALL(sethostname("sandbox", 7));
     KJ_SYSCALL(setdomainname("sandbox", 7));
+  }
+
+  void makeCharDeviceNode(const char *name, int major, int minor)
+  {
+    // Try with mknod first.
+    auto dst = kj::str("dev/", name);
+    if (mknod(dst.cStr(), S_IFCHR | 0666, makedev(major, minor)) != 0) {
+      if (errno != EPERM)
+	KJ_FAIL_SYSCALL("mknod", errno, name);  // Unexpected failure
+
+      // Try a fallback: bind-mount the existing node.  The overmounted file's mode doesn't matter.
+      int fd;
+      KJ_SYSCALL(fd = open(dst.cStr(), O_RDONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600));
+      close(fd);
+      KJ_SYSCALL(mount(kj::str("/dev/", name).cStr(), dst.cStr(), nullptr, MS_BIND, nullptr));
+    }
   }
 
   void setupFilesystem() {
@@ -600,13 +642,13 @@ private:
     }
     if (access("dev", F_OK) == 0) {
       KJ_SYSCALL(mount("sandstorm-dev", "dev", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
-                     kj::str("size=1m,nr_inodes=16,mode=755,uid=", uid, ",gid=", gid).cStr()));
-      KJ_SYSCALL(mknod("dev/null", S_IFCHR | 0666, makedev(1, 3)));
-      KJ_SYSCALL(mknod("dev/zero", S_IFCHR | 0666, makedev(1, 5)));
-      KJ_SYSCALL(mknod("dev/random", S_IFCHR | 0666, makedev(1, 8)));
-      KJ_SYSCALL(mknod("dev/urandom", S_IFCHR | 0666, makedev(1, 9)));
+                       kj::str("size=1m,nr_inodes=16,mode=755").cStr()));
+      makeCharDeviceNode("null", 1, 3);
+      makeCharDeviceNode("zero", 1, 5);
+      makeCharDeviceNode("random", 1, 8);
+      makeCharDeviceNode("urandom", 1, 9);
       KJ_SYSCALL(mount("dev", "dev", nullptr,
-		       MS_REMOUNT | MS_NOSUID | MS_NOATIME | MS_RDONLY, nullptr));
+                       MS_REMOUNT | MS_BIND | MS_NOSUID | MS_NOEXEC | MS_NOATIME | MS_RDONLY, nullptr));
     }
     if (access("var", F_OK) == 0) {
       bind(kj::str(varPath, "/sandbox"), "var", MS_NODEV | MS_NOEXEC);

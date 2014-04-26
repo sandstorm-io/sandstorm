@@ -538,6 +538,18 @@ private:
       bind(kj::str(varPath, "/sandbox"), "var", MS_NODEV | MS_NOEXEC);
     }
 
+    // Keep /proc around if requested.
+    if (mountProc) {
+      if (access("proc", F_OK) == 0) {
+	// Mount it to retain permission to mount it.  This mount will be associated with the
+	// wrong pid namespce.  We'll fix it after forking.  We have to bind it: we can't mount
+	// a new copy because we don't have the appropriate permission on the active pid ns.
+	KJ_SYSCALL(mount("/proc", "proc", nullptr, MS_BIND, nullptr));
+      } else {
+	mountProc = false;
+      }
+    }
+
     // Set up the supervisor's directory.  This abuses directories that we know to already exist.
     bind(varPath, "usr", MS_NODEV | MS_NOEXEC);
 
@@ -600,12 +612,15 @@ private:
     KJ_SYSCALL(ioctl(fd, SIOCSIFFLAGS, &ifr));
   }
 
-  void maybeMountProc() {
+  void maybeFinishMountingProc() {
     // Mount proc if it was requested.  Note that this must take place after fork() to get the
-    // correct pid namespace.
+    // correct pid namespace.  We must keep a copy of proc mounted at all times; otherwise we
+    // lose the privilege of mounting proc.
 
-    if (mountProc && access("proc", F_OK) == 0) {
-      KJ_SYSCALL(mount("proc", "proc", "proc", MS_NOSUID | MS_NODEV | MS_NOEXEC, ""));
+    if (mountProc) {
+      KJ_SYSCALL(mount("proc", "usr", nullptr, MS_MOVE, nullptr));
+      KJ_SYSCALL(mount("proc", "proc", "proc", MS_NOSUID | MS_NODEV | MS_NOEXEC, nullptr));
+      KJ_SYSCALL(umount2("usr", MNT_DETACH));
     }
   }
 
@@ -638,7 +653,7 @@ private:
     unshareNetwork();
 
     // Mount proc if --proc was passed.
-    maybeMountProc();
+    maybeFinishMountingProc();
 
     // Now actually drop all credentials.
     permanentlyDropSuperuser();

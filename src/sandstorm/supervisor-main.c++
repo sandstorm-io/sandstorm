@@ -32,7 +32,6 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/mount.h>
-#include <sys/fsuid.h>
 #include <sys/prctl.h>
 #include <sys/capability.h>
 #include <sys/syscall.h>
@@ -177,17 +176,6 @@ class SupervisorMain {
   // The supervisor places itself into the same sandbox as the grain, except that the supervisor
   // gets network access whereas the grain does not (the grain can only communicate with the world
   // through the supervisor).
-  //
-  // This program is meant to be suid-root, so that it can use system calls like pivot_root() and
-  // unshare().
-  //
-  // Alternatively, rather than suid, you may grant the binary "capabilities":
-  //     setcap cap_setgid,cap_sys_chroot,cap_sys_admin,cap_mknod+ep BINARY
-  // In theory this reduces the attack surface by giving the supervisor only the "capabilities" it
-  // needs to do its job, although in practice it is pretty easy to carry out a privilege escalation
-  // to full root starting from any of these "capabilities", so maybe it's not worth the effort.
-  // (Note that Linux/POSIX "capabilities" are unrelated to the concept of capabilities usually
-  // discussed in Sandstorm and Cap'n Proto.)
 
 public:
   SupervisorMain(kj::ProcessContext& context): context(context) {
@@ -209,16 +197,6 @@ public:
         .addOptionWithArg({"var"}, KJ_BIND_METHOD(*this, setVar), "<path>",
                           "Set directory where grain's mutable persistent data will be stored.  "
                           "Defaults to '/var/sandstorm/grains/<grain-id>'.")
-        .addOptionWithArg({"uid"}, KJ_BIND_METHOD(*this, setUid), "<uid>",
-                          "Set the user ID under which to run the sandbox.  When running as "
-                          "root, you must specify this.  When running as non-root, you *cannot* "
-                          "specify this; your own UID will be used.  <uid> may be a name or a "
-                          "number.")
-        .addOptionWithArg({"gid"}, KJ_BIND_METHOD(*this, setGid), "<gid>",
-                          "Set the group ID under which to run the sandbox, and which will have "
-                          "read/write access to the sandbox's storage.  When running as root, "
-                          "you must specify this.  When running as non-root, you *cannot* specify "
-                          "this; your own GID will be used.  <gid> may be a name or a number.")
         .addOptionWithArg({'e', "env"}, KJ_BIND_METHOD(*this, addEnv), "<name>=<val>",
                           "Set the environment variable <name> to <val> inside the sandbox.  Note "
                           "that *no* environment variables are set by default.")
@@ -227,8 +205,6 @@ public:
                    "RECOMMENDED during normal use, but it may be useful for debugging.")
         .addOption({"stdio"}, [this]() { keepStdio = true; return true; },
                    "Don't redirect the sandbox's stdio.  Useful for debugging.")
-        .addOption({"no-userns"}, [this]() { disableUserNS = true; return true; },
-                   "Do not try to use user namespaces.  Useful for debugging.")
         .addOption({'n', "new"}, [this]() { setIsNew(true); return true; },
                    "Initializes a new grain.  (Otherwise, runs an existing one.)")
         .expectArg("<app-name>", KJ_BIND_METHOD(*this, setAppName))
@@ -275,54 +251,6 @@ public:
 
   kj::MainBuilder::Validity setVar(kj::StringPtr path) {
     varPath = realPath(kj::heapString(path));
-    return true;
-  }
-
-  kj::MainBuilder::Validity setUid(kj::StringPtr arg) {
-    // Careful to check real UID, not effective UID, so that this binary can be suid-root.
-    // TODO(someday):  Devise some way that users can safely have their Sandstorm instances run
-    //   under alternate UIDs for increased security.  Perhaps choose single-use UIDs somehow (i.e.
-    //   use a UID that isn't in /etc/passwd, never will be, and never will be used for anything
-    //   else).  This will require configuration on the part of the system administrator.  On the
-    //   bright side, UIDs are 32-bit which should provide plenty of space.
-    if (getuid() != 0) {
-      return "Only root can specify a UID.";
-    }
-
-    char* end;
-    uid = strtol(arg.cStr(), &end, 0);
-    if (arg == nullptr || *end != '\0') {
-      uid = 0;
-      struct passwd* user = getpwnam(arg.cStr());
-      if (user == nullptr) {
-        return "Invalid UID.";
-      }
-      uid = user->pw_uid;
-      gidFromUsername = user->pw_gid;
-    }
-
-    return true;
-  }
-
-  kj::MainBuilder::Validity setGid(kj::StringPtr arg) {
-    // Careful to check real UID, not effective UID, so that this binary can be suid-root.
-    // TODO(someday):  One-off group IDs?  The user should have some way to add themselves to the
-    //   group so that they can access the grain's storage.
-    if (getuid() != 0) {
-      return "Only root can specify a GID.";
-    }
-
-    char* end;
-    gid = strtol(arg.cStr(), &end, 0);
-    if (arg == nullptr || *end != '\0') {
-      gid = 0;
-      struct group* group = getgrnam(arg.cStr());
-      if (group == nullptr) {
-        return "Invalid GID.";
-      }
-      gid = group->gr_gid;
-    }
-
     return true;
   }
 
@@ -374,14 +302,9 @@ private:
   kj::String varPath;
   kj::Vector<kj::String> command;
   kj::Vector<kj::String> environment;
-  bool disableUserNS = false;
-  bool hasUserNS = false;
   bool isNew = false;
   bool mountProc = false;
   bool keepStdio = false;
-  uid_t uid = 0;
-  gid_t gid = 0;
-  gid_t gidFromUsername = 0;  // If --uid was given a username.
 
   void bind(kj::StringPtr src, kj::StringPtr dst, unsigned long flags = 0) {
     // Contrary to the documentation of MS_BIND claiming this is no longer the case after 2.6.26,
@@ -410,7 +333,6 @@ private:
     // execing a suid-root binary.  Sandboxed apps should not need that.
     KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
 
-    validateCreds();
     closeFds();
     checkPaths();
     unshareOuter();
@@ -420,26 +342,6 @@ private:
     // TODO(someday):  Turn on seccomp-bpf.
 
     // Note:  permanentlyDropSuperuser() is performed post-fork; see comment in function def.
-  }
-
-  void validateCreds() {
-    if (gid == 0) {
-      // --gid was not given.  If --uid specified a user name, use that user's default GID.
-      gid = gidFromUsername;
-    }
-    uid_t realUid = getuid();
-    if (realUid == 0) {
-      if (uid == 0) {
-        context.exitError("When running as root you must specify --uid.");
-      }
-      if (gid == 0 && gidFromUsername == 0) {
-        context.exitError("When running as root you must specify --gid.");
-      }
-    } else {
-      // User is not root, therefore they cannot specify uid/gid.
-      uid = realUid;
-      gid = getgid();
-    }
   }
 
   void closeFds() {
@@ -496,12 +398,6 @@ private:
   void checkPaths() {
     // Create or verify the pkg, var, and tmp directories.
 
-    // Temporarily drop credentials for filesystem access.
-    uid_t olduid = geteuid();
-    gid_t oldgid = getegid();
-    KJ_SYSCALL(setegid(gid));
-    KJ_SYSCALL(seteuid(uid));
-
     // Let us be explicit about permissions for now.
     umask(0);
 
@@ -548,10 +444,6 @@ private:
     KJ_SYSCALL(logfd = open(kj::str(varPath, "/log").cStr(),
         O_WRONLY | O_APPEND | O_CLOEXEC | O_CREAT, 0600));
     KJ_SYSCALL(close(logfd));
-
-    // Restore superuser access (e.g. so that we can do mknod later).
-    KJ_SYSCALL(seteuid(olduid));
-    KJ_SYSCALL(setegid(oldgid));
   }
 
   void writeUserNSMap(const char *type, kj::StringPtr contents)
@@ -563,24 +455,16 @@ private:
   }
 
   void unshareOuter() {
-    // Try to unshare the user namespace.
-    if (!disableUserNS && unshare(CLONE_NEWUSER) == 0) {
-      hasUserNS = true;
+    pid_t uid = getuid(), gid = getgid();
 
-      // Map the requested user as 1000, since it costs nothing to mask the uid and gid.
-      writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
-      writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
+    // Unshare all of the namespaces except network.  Note that unsharing the pid namespace is a
+    // little odd in that it doesn't actually affect this process, but affects later children
+    // created by it.
+    KJ_SYSCALL(unshare(CLONE_NEWUSER | CLONE_NEWNS | CLONE_NEWIPC | CLONE_NEWUTS | CLONE_NEWPID));
 
-      // From now on, we need to use the internal numbering.
-      uid = 1000;
-      gid = 1000;
-    }
-
-    // Unshare the mount namespace so that we can create a bunch of bindings.
-    // Go ahead and unshare IPC, UTS, and PID now so we don't have to later.  Note that unsharing
-    // the pid namespace is a little odd in that it doesn't actually affect this process, but
-    // affects later children created by it.
-    KJ_SYSCALL(unshare(CLONE_NEWNS | CLONE_NEWIPC | CLONE_NEWUTS | CLONE_NEWPID));
+    // Map ourselves as 1000:1000, since it costs nothing to mask the uid and gid.
+    writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
+    writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
 
     // To really unshare the mount namespace, we also have to make sure all mounts are private.
     // The parameters here were derived by strace'ing `mount --make-rprivate /`.  AFAICT the flags
@@ -638,11 +522,11 @@ private:
       //    unmounted.  No need for careful cleanup, and no need to implement a risky recursive
       //    delete.
       KJ_SYSCALL(mount("sandstorm-tmp", "tmp", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
-                     kj::str("size=16m,nr_inodes=4k,mode=770,uid=", uid, ",gid=", gid).cStr()));
+                     "size=16m,nr_inodes=4k,mode=770"));
     }
     if (access("dev", F_OK) == 0) {
       KJ_SYSCALL(mount("sandstorm-dev", "dev", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
-                       kj::str("size=1m,nr_inodes=16,mode=755").cStr()));
+                       "size=1m,nr_inodes=16,mode=755"));
       makeCharDeviceNode("null", 1, 3);
       makeCharDeviceNode("zero", 1, 5);
       makeCharDeviceNode("random", 1, 8);
@@ -726,18 +610,12 @@ private:
   }
 
   void permanentlyDropSuperuser() {
-    // Drop all credentials.
+    // Drop all Linux "capabilities".  (These are Linux/POSIX "capabilities", which are not true
+    // object-capabilities, hence the quotes.)
     //
     // This unfortunately must be performed post-fork (in both parent and child), because the child
     // needs to do one final unshare().
 
-    KJ_SYSCALL(setresgid(gid, gid, gid));
-    KJ_SYSCALL(setgroups(0, nullptr));
-    KJ_SYSCALL(setresuid(uid, uid, uid));
-
-    // Also empty the "capability" set, so that one could use file "capabilities" instead of suid
-    // on the sandstorm supervisor binary, perhaps getting added security.  (These are Linux/POSIX
-    // "capabilities", which are not true object-capabilities, hence the quotes.)
     struct __user_cap_header_struct hdr;
     struct __user_cap_data_struct data[2];
     hdr.version = _LINUX_CAPABILITY_VERSION_3;

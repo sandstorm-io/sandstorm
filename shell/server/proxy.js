@@ -409,7 +409,7 @@ function Proxy(grainId, sessionId, preferredPort) {
 
   var self = this;
 
-  var grain = Grains.findOne(this.grainId);
+  var grain = Grains.findOne({'_id': this.grainId});
   this.publicId = grain.publicId;
 
   this.server = Http.createServer(function (request, response) {

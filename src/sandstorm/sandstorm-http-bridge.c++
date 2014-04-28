@@ -894,15 +894,9 @@ private:
 };
 
 
-class SessionContextWrapper {
-public:
-  SessionContextWrapper() : context(nullptr) {}
-  capnp::Capability::Client context;
-};
-
 class UiViewImpl final: public UiView::Server {
 public:
-  explicit UiViewImpl(kj::NetworkAddress& serverAddress, SessionContextWrapper & context): serverAddress(serverAddress), contextWrapper(context) {}
+  explicit UiViewImpl(kj::NetworkAddress& serverAddress, kj::PromiseFulfillerPair<capnp::Capability::Client>& fulfillerPair): fulfillerPair(fulfillerPair), serverAddress(serverAddress) {}
 
 //  kj::Promise<void> getViewInfo(GetViewInfoContext context) override;
 
@@ -912,17 +906,18 @@ public:
     KJ_REQUIRE(params.getSessionType() == capnp::typeId<WebSession>(),
                "Unsupported session type.");
 
-    contextWrapper.context = params.getContext();
     context.getResults(capnp::MessageSize {2, 1}).setSession(
         kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
                                  params.getSessionParams().getAs<WebSession::Params>()));
+    fulfillerPair.fulfiller->fulfill(params.getContext());
 
     return kj::READY_NOW;
   }
 
+  kj::PromiseFulfillerPair<capnp::Capability::Client>& fulfillerPair;
+
 private:
   kj::NetworkAddress& serverAddress;
-  SessionContextWrapper& contextWrapper;
 };
 
 class LegacyBridgeMain {
@@ -985,8 +980,8 @@ public:
 
   class ApiRestorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
   public:
-    explicit ApiRestorer(SandstormApi::Client&& apiCap, SessionContextWrapper& context)
-        : apiCap(kj::mv(apiCap)), contextWrapper(context) {}
+    explicit ApiRestorer(SandstormApi::Client&& apiCap, capnp::Capability::Client&& sessionContext)
+        : apiCap(kj::mv(apiCap)), sessionContext(sessionContext) {}
 
     capnp::Capability::Client restore(capnp::AnyPointer::Reader ref) override {
       auto text = ref.getAs< ::capnp::Text>();
@@ -994,14 +989,14 @@ public:
       if(text == "SandstormApi")
         return apiCap;
       else if(text == "SessionContext")
-        return contextWrapper.context;
+        return sessionContext;
 
       KJ_FAIL_ASSERT("Ref wasn't equal to either 'SandstormApi' or 'SessionContext'");
     }
 
   private:
     SandstormApi::Client apiCap;
-    SessionContextWrapper& contextWrapper;
+    capnp::Capability::Client sessionContext;
   };
 
   kj::MainBuilder::Validity run() {
@@ -1052,10 +1047,11 @@ public:
         usleep(10000);
       }
 
-      SessionContextWrapper context;
+      auto fulfillerPair = kj::newPromiseAndFulfiller<capnp::Capability::Client>();
+
       auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
       capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
-      Restorer restorer(kj::heap<UiViewImpl>(*address, context));
+      Restorer restorer(kj::heap<UiViewImpl>(*address, fulfillerPair));
       auto rpcSystem = capnp::makeRpcServer(network, restorer);
 
       // Get the SandstormApi by restoring a null SturdyRef.
@@ -1071,7 +1067,7 @@ public:
           kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC |
           kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP);
       capnp::TwoPartyVatNetwork appNetwork(*appConnection, capnp::rpc::twoparty::Side::SERVER);
-      ApiRestorer appRestorer(kj::mv(api), context);
+      ApiRestorer appRestorer(kj::mv(api), kj::mv(fulfillerPair.promise));
       auto appRpcSystem = capnp::makeRpcServer(appNetwork, appRestorer);
 
       // TODO(soon):  Exit when child exits.  (Signal handler?)

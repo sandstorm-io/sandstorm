@@ -24,7 +24,6 @@ if (Meteor.isServer) {
   UserActions.allow({
     insert: function (userId, action) {
       check(action, {
-        _id: String,
         userId: String,
         packageId: String,
         appId: String,

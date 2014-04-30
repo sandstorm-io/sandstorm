@@ -82,7 +82,7 @@ Meteor.methods({
       throw new Meteor.Error(404, "Not Found", "No such package is installed.");
     }
 
-    var grainId = Random.id();
+    var grainId = Random.id(22);  // 128 bits of entropy
     Grains.insert({
       _id: grainId,
       packageId: packageId,

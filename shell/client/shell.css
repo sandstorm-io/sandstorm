@@ -189,7 +189,7 @@ svg {
 }
 
 .static-logo {
-  background-image:url("logo.png");
+  background-image:url(/logo.png);
   background-repeat:no-repeat;
 }
 
@@ -318,7 +318,7 @@ div.popup h2 {
   height: 400px;
   z-index: -1;
 
-  background-image: url(files-arrow.svg);
+  background-image: url(/files-arrow.svg);
 }
 
 #sign-in-arrow {

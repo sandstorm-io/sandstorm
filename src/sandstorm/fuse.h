@@ -29,7 +29,15 @@ namespace kj { class UnixEventPort; }
 
 namespace sandstorm {
 
-kj::Promise<void> bindFuse(kj::UnixEventPort& eventPort, int fuseFd, fuse::Node::Client root);
+struct FuseOptions {
+  bool cacheForever = false;
+  // Set true to ignore the TTL values returned by the filesystem implementation and instead
+  // assume for caching purposes that content never changes. In addition to ignoring TTLs, the
+  // page cache will not be flushed when a file is reopened.
+};
+
+kj::Promise<void> bindFuse(kj::UnixEventPort& eventPort, int fuseFd, fuse::Node::Client root,
+                           FuseOptions options = FuseOptions());
 // Export the filesystem represented by `root` on the given /dev/fuse file descriptor.
 //
 // It is the caller's responsibility to open the device and mount it, either directly or via the

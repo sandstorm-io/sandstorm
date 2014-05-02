@@ -34,6 +34,10 @@ public:
   kj::MainFunc getMain() {
     return kj::MainBuilder(context, "Fuse test, unknown version",
           "Mounts a fuse filesystem at <mount-point> which mirrors <source-dir>.")
+        .addOptionWithArg({'o', "options"}, KJ_BIND_METHOD(*this, setOptions), "<options>",
+                          "Set mount options.")
+        .addOption({'c', "cache-forever"}, KJ_BIND_METHOD(*this, setCacheForever),
+                   "Assume for caching purposes that the source directory never changes.")
         .expectArg("<mount-point>", KJ_BIND_METHOD(*this, setMountPoint))
         .expectArg("<soure-dir>", KJ_BIND_METHOD(*this, setBindTo))
         .callAfterParsing(KJ_BIND_METHOD(*this, run))
@@ -42,8 +46,20 @@ public:
 
 private:
   kj::ProcessContext& context;
+  kj::StringPtr options;
   kj::StringPtr mountPoint;
   kj::StringPtr bindTo;
+  FuseOptions bindOptions;
+
+  kj::MainBuilder::Validity setOptions(kj::StringPtr arg) {
+    options = arg;
+    return true;
+  }
+
+  kj::MainBuilder::Validity setCacheForever() {
+    bindOptions.cacheForever = true;
+    return true;
+  }
 
   kj::MainBuilder::Validity setMountPoint(kj::StringPtr arg) {
     mountPoint = arg;
@@ -77,9 +93,11 @@ private:
 
     auto root = newLoopbackFuseNode(bindTo, 1 * kj::SECONDS);
 
-    FuseMount mount(mountPoint, "");
+    FuseMount mount(mountPoint, options);
 
-    bindFuse(eventPort, mount.getFd(), kj::mv(root))
+    context.warning("FUSE mirror mounted. Ctrl+C to unmount.");
+
+    bindFuse(eventPort, mount.getFd(), kj::mv(root), bindOptions)
         .then([&]() {
           context.warning("Shutting down due to unmount.");
           mount.dontUnmount();

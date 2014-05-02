@@ -54,8 +54,9 @@ using kj::uint;
 
 class FuseDriver final: private kj::TaskSet::ErrorHandler {
 public:
-  FuseDriver(kj::UnixEventPort& eventPort, int fuseFd, fuse::Node::Client&& root)
-      : eventPort(eventPort), fuseFd(kj::mv(fuseFd)) {
+  FuseDriver(kj::UnixEventPort& eventPort, int fuseFd, fuse::Node::Client&& root,
+             FuseOptions options)
+      : eventPort(eventPort), fuseFd(kj::mv(fuseFd)), options(options) {
     nodeMap.insert(std::make_pair(FUSE_ROOT_ID, NodeMapEntry { kj::mv(root), 1 }));
 
     int flags;
@@ -76,6 +77,7 @@ public:
 private:
   kj::UnixEventPort& eventPort;
   int fuseFd;
+  FuseOptions options;
   std::unordered_map<uint64_t, kj::Promise<void>> tasks;
   kj::Own<kj::PromiseFulfiller<void>> abortReadLoop;  // Reject this to stop reading early.
 
@@ -446,10 +448,15 @@ private:
                 IdType::NODE, reply->body.nodeid, lookupResult.getNode() };
 
             translateAttrs(attrResult.getAttributes(), &reply->body.attr);
-            splitTime(lookupResult.getTtl(),
-                &reply->body.entry_valid, &reply->body.entry_valid_nsec);
-            splitTime(attrResult.getTtl(),
-                &reply->body.attr_valid, &reply->body.attr_valid_nsec);
+            if (options.cacheForever) {
+              reply->body.entry_valid = 365 * kj::DAYS / kj::SECONDS;
+              reply->body.attr_valid = 365 * kj::DAYS / kj::SECONDS;
+            } else {
+              splitTime(lookupResult.getTtl(),
+                  &reply->body.entry_valid, &reply->body.entry_valid_nsec);
+              splitTime(attrResult.getTtl(),
+                  &reply->body.attr_valid, &reply->body.attr_valid_nsec);
+            }
 
             return kj::mv(reply);
           });
@@ -462,7 +469,11 @@ private:
         addReplyTask(header.unique, EIO, node.getAttributesRequest(capnp::MessageSize {4, 0}).send()
             .then([this](auto&& response) -> kj::Own<ResponseBase> {
           auto reply = allocResponse<struct fuse_attr_out>();
-          splitTime(response.getTtl(), &reply->body.attr_valid, &reply->body.attr_valid_nsec);
+          if (options.cacheForever) {
+            reply->body.attr_valid = 365 * kj::DAYS / kj::SECONDS;
+          } else {
+            splitTime(response.getTtl(), &reply->body.attr_valid, &reply->body.attr_valid_nsec);
+          }
           translateAttrs(response.getAttributes(), &reply->body.attr);
           return kj::mv(reply);
         }));
@@ -494,6 +505,7 @@ private:
           reply->body.fh = handleCounter++;
           reply->newObject = CapToInsert { IdType::FILE, reply->body.fh, response.getFile() };
           // TODO(someday):  Fill in open_flags, especially "nonseekable"?  See FOPEN_* in fuse.h.
+          if (options.cacheForever) reply->body.open_flags |= FOPEN_KEEP_CACHE;
           return kj::mv(reply);
         }));
         break;
@@ -732,8 +744,9 @@ private:
   }
 };
 
-kj::Promise<void> bindFuse(kj::UnixEventPort& eventPort, int fuseFd, fuse::Node::Client root) {
-  auto driver = kj::heap<FuseDriver>(eventPort, fuseFd, kj::mv(root));
+kj::Promise<void> bindFuse(kj::UnixEventPort& eventPort, int fuseFd, fuse::Node::Client root,
+                           FuseOptions options) {
+  auto driver = kj::heap<FuseDriver>(eventPort, fuseFd, kj::mv(root), options);
   FuseDriver* driverPtr = driver.get();
   return driverPtr->run().attach(kj::mv(driver));
 }
@@ -760,6 +773,8 @@ protected:
     auto size = params.getSize();
     auto offset = params.getOffset();
 
+    KJ_REQUIRE(size < (1 << 22), "read too large", size);
+
     auto results = context.getResults(
         capnp::MessageSize { size / sizeof(capnp::word) + 4 });
 
@@ -777,10 +792,8 @@ protected:
     }
 
     if (size > 0) {
-      // Oops, turns out the data is less than expected. Truncate. We still send the zeros over the
-      // wire, but maybe it's worth it to avoid copying?
-      // TODO(perf): Maybe implement context.resetResults() that allows us to re-allocate the
-      //   message?
+      // Oops, we hit EOF before filling the buffer. Truncate. Note that since this is the
+      // most recent allocation, this will actually un-allocate the space in the message. :)
       auto orphan = results.disownData();
       orphan.truncate(params.getSize() - size);
       results.adoptData(kj::mv(orphan));
@@ -817,7 +830,7 @@ protected:
     }
 
     auto requestedCount = params.getCount();
-    KJ_REQUIRE(requestedCount < 8192, "Too many entries requested.", requestedCount);
+    KJ_REQUIRE(requestedCount < 8192, "readdir too large", requestedCount);
 
     kj::Vector<struct dirent> entries(requestedCount);
 

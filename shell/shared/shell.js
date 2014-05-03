@@ -169,10 +169,10 @@ Router.map(function () {
     onAfterAction: function () { setTimeout(initLogoAnimation, 0); },
     data: function () {
       var build = Meteor.settings && Meteor.settings.public && Meteor.settings.public.build;
-      if (build) {
-        build = String(Math.floor(build / 1000)) + "." + String(build % 1000);
-      } else {
+      if (!build) {
         build = "(unknown)";
+      } else if (typeof build == "number") {
+        build = String(Math.floor(build / 1000)) + "." + String(build % 1000);
       }
 
       return {

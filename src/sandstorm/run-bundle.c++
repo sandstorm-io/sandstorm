@@ -1169,8 +1169,16 @@ private:
       } else {
         KJ_SYSCALL(setenv("ROOT_URL", config.rootUrl.cStr(), true));
       }
+
+      kj::String buildstamp;
+      if (SANDSTORM_BUILD == 0) {
+        buildstamp = kj::str("\"[", trim(readAll("buildstamp")), "]\"");
+      } else {
+        buildstamp = kj::str(SANDSTORM_BUILD);
+      }
+
       KJ_SYSCALL(setenv("METEOR_SETTINGS", kj::str(
-          "{\"public\":{\"build\":", SANDSTORM_BUILD, "}}").cStr(), true));
+          "{\"public\":{\"build\":", buildstamp, "}}").cStr(), true));
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "main.js", EXEC_END_ARGS));
       KJ_UNREACHABLE;
     }
@@ -1289,7 +1297,20 @@ private:
           "Downloaded bundle did not contain the build number we expecetd.");
     }
 
-    auto targetDir = kj::str("../", files[0]);
+    kj::String targetDir;
+    if (targetBuild == 0) {
+      // Build 0 indicates a custom build. Tag it with the time.
+
+      char buffer[128];
+      time_t now = time(nullptr);
+      struct tm local;
+      localtime_r(&now, &local);
+      strftime(buffer, sizeof(buffer), "%Y-%m-%d_%H-%M-%S", &local);
+      targetDir = kj::str("../sandstorm-custom.", buffer);
+    } else {
+      targetDir = kj::str("../", files[0]);
+    }
+
     if (access(targetDir.cStr(), F_OK) != 0) {
       KJ_SYSCALL(rename(kj::str(tmpdir, '/', files[0]).cStr(), targetDir.cStr()));
     }
@@ -1297,7 +1318,7 @@ private:
     // Setup "latest" symlink, atomically.
     auto tmpLink = kj::str("../latest.", targetBuild);
     unlink(tmpLink.cStr());  // just in case; ignore failure
-    KJ_SYSCALL(symlink(kj::str("sandstorm-", targetBuild).cStr(), tmpLink.cStr()));
+    KJ_SYSCALL(symlink(targetDir.slice(3).cStr(), tmpLink.cStr()));
     KJ_SYSCALL(rename(tmpLink.cStr(), "../latest"));
   }
 
@@ -1369,10 +1390,16 @@ private:
   void cleanupOldVersions() {
     for (auto& file: listDirectory("..")) {
       if (file.startsWith("sandstorm-")) {
-        KJ_IF_MAYBE(build, parseUInt(file.slice(strlen("sandstorm-")), 10)) {
-          // build 0 is special -- it usually indicates a custom build.  So don't delete that.
-          // Also don't delete this build or newer builds.
-          if (*build > 0 && *build < SANDSTORM_BUILD) {
+        auto suffix = file.slice(strlen("sandstorm-"));
+        if (suffix.startsWith("custom.")) {
+          // This is a custom build. If we aren't currently running a custom build, go ahead and
+          // delete it.
+          if (SANDSTORM_BUILD != 0) {
+            recursivelyDelete(kj::str("../", file));
+          }
+        } else KJ_IF_MAYBE(build, parseUInt(suffix, 10)) {
+          // Only delete older builds.
+          if (*build < SANDSTORM_BUILD) {
             KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
               recursivelyDelete(kj::str("../", file));
             })) {

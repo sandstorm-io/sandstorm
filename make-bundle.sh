@@ -111,6 +111,7 @@ mkdir -p bundle/usr/share/locale
 cp /usr/share/locale/locale.alias bundle/usr/share/locale
 
 git rev-parse HEAD > bundle/git-revision
+echo "$USER@$HOSTNAME $(date)" > bundle/buildstamp
 
 cat > bundle/README.md << '__EOF__'
 # Sandstorm Bundle

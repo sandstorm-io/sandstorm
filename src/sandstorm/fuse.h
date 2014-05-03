@@ -85,6 +85,13 @@ private:
   kj::AutoCloseFd fd;
 };
 
+kj::AutoCloseFd getFdFromSocket(int sockFd);
+// Helper function to receive a single file descriptor over a Unix socket (via SCM_RIGHTS control
+// message). Note that for this function to work correctly, the socket must have *no* pending data
+// and *exactly one* file descriptor.
+//
+// TODO(cleanup): This function belongs somewhere else.
+
 }  // namespace sandstorm
 
 #endif // SANDSTORM_FUSE_H_

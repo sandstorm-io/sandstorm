@@ -11,10 +11,10 @@ all: bin/spk bin/legacy-bridge bin/sandstorm-supervisor node_modules/sandstorm/g
 clean:
 	rm -rf bin tmp node_modules bundle shell-bundle.tar.gz sandstorm-*.tar.xz
 
-bin/spk: tmp/genfiles src/sandstorm/spk.c++
+bin/spk: tmp/genfiles src/sandstorm/spk.c++ src/sandstorm/fuse.c++ src/sandstorm/union-fs.c++
 	@echo "building bin/spk..."
 	@mkdir -p bin
-	@$(CXX) src/sandstorm/spk.c++ tmp/sandstorm/*.capnp.c++ -o bin/spk $(CXXFLAGS2) `pkg-config libsodium capnp-rpc --cflags --libs`
+	@$(CXX) src/sandstorm/spk.c++ src/sandstorm/fuse.c++ src/sandstorm/union-fs.c++ tmp/sandstorm/*.capnp.c++ -o bin/spk $(CXXFLAGS2) -lcapnpc `pkg-config libsodium capnp-rpc --cflags --libs`
 
 bin/legacy-bridge: tmp/genfiles src/sandstorm/legacy-bridge.c++
 	@echo "building bin/legacy-bridge..."

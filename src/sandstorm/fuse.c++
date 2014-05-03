@@ -306,6 +306,7 @@ private:
           // case, it seems safe to move on here (without updating the cap maps).
           break;
         default:
+          KJ_DBG(response->header.unique);
           KJ_FAIL_SYSCALL("write(/dev/fuse)", error);
       }
     } else {
@@ -568,13 +569,31 @@ private:
 
         auto rpc = iter2->second.cap.readRequest(capnp::MessageSize {4, 0});
         rpc.setOffset(request.offset);
-        rpc.setCount(request.size);
+
+        // Annoyingly, request.size is actually a size, in bytes. How many entries fit into that
+        // size is dependent on the entry names as well as the size of fuse_dirent. It would be
+        // annoying for implementations to have to compute this, so instead we make an estimate
+        // based on the assumption that the average file name is between 8 and 16 characters.  If
+        // file names turn out to be shorter, this may mean we produce a short read, but that
+        // appears to be OK -- the kernel will only assume EOF if the result is completely empty.
+        // If file names turn out to be longer, we may end up truncating the resulting list and
+        // then re-requesting it.  Someday we could implement some sort of streaming here to fix
+        // this, but that will be pretty ugly and it probably doesn't actually matter that much.
+        rpc.setCount(request.size / (sizeof(struct fuse_dirent) + 16));
+
+        auto requestedSize = request.size;
         addReplyTask(header.unique, EIO, rpc.send()
-            .then([this](auto&& response) -> kj::Own<ResponseBase> {
+            .then([this, requestedSize](auto&& response) -> kj::Own<ResponseBase> {
           auto entries = response.getEntries();
           size_t totalBytes = 0;
           for (auto entry: entries) {
-            totalBytes += FUSE_DIRENT_ALIGN(FUSE_NAME_OFFSET + entry.getName().size());
+            // Carefulyl check whether we'll go over the requested size if we add this entry.  If
+            // so, break now.
+            size_t next = totalBytes + FUSE_DIRENT_ALIGN(FUSE_NAME_OFFSET + entry.getName().size());
+            if (next > requestedSize) {
+              break;
+            }
+            totalBytes = next;
           }
 
           auto bytes = kj::heapArray<kj::byte>(totalBytes);
@@ -602,7 +621,14 @@ private:
 
             memcpy(dirent.name, name.begin(), name.size());
             pos += FUSE_DIRENT_ALIGN(FUSE_NAME_OFFSET + name.size());
+
+            // Check if we truncated the list.
+            if (pos == bytes.end()) {
+              break;
+            }
           }
+
+          KJ_ASSERT(pos == bytes.end());
 
           auto bytesPtr = bytes.asPtr();  // Don't inline; param construction order is undefined.
           return allocResponse<void>(kj::mv(bytes), bytesPtr);
@@ -663,8 +689,18 @@ private:
         //     readdirplus (we currently set protocol version to pre-readdirplus to avoid it)
         // TODO(someday): Write calls.
 
-      default:
+      case FUSE_STATFS:
+      case FUSE_GETXATTR:
+      case FUSE_LISTXATTR:
+      case FUSE_GETLK:
+      case FUSE_SETLK:
+      case FUSE_SETLKW:
+      case CUSE_INIT:
         sendError(header.unique, ENOSYS);
+
+      default:
+        // All other opcodes involve writes.
+        sendError(header.unique, EROFS);
         break;
     }
 
@@ -892,8 +928,12 @@ public:
 
 protected:
   kj::Promise<void> lookup(LookupContext context) override {
+    auto name = context.getParams().getName();
+
+    KJ_REQUIRE(name != "." && name != "..", "Please implement . and .. at a higher level.");
+
     auto results = context.getResults(capnp::MessageSize {8, 1});
-    results.setNode(kj::heap<NodeImpl>(kj::str(path, '/', context.getParams().getName()), ttl));
+    results.setNode(kj::heap<NodeImpl>(kj::str(path, '/', name), ttl));
     results.setTtl(ttl / kj::NANOSECONDS);
     return kj::READY_NOW;
   }
@@ -1007,48 +1047,12 @@ FuseMount::FuseMount(kj::StringPtr path, kj::StringPtr options): path(kj::heapSt
 
     KJ_UNREACHABLE;
   } else {
+    serverEnd = nullptr;
     int childStatus;
-    kj::AutoCloseFd result;
+
     {
       KJ_DEFER(KJ_SYSCALL(waitpid(pid, &childStatus, 0)) {break;});
-
-      serverEnd = nullptr;
-
-      // Receive the fuse FD from the socket.  recvmsg() is complicated...  :/
-      struct msghdr msg;
-      memset(&msg, 0, sizeof(msg));
-
-      // Make sure we have space to receive a byte so that recvmsg() doesn't simply return
-      // immediately.
-      struct iovec iov;
-      memset(&iov, 0, sizeof(iov));
-      char buffer[1];
-      iov.iov_base = &buffer;
-      iov.iov_len = 1;
-      msg.msg_iov = &iov;
-      msg.msg_iovlen = 1;
-
-      // Allocate space to receive a cmsg.
-      struct {
-        struct cmsghdr cmsg;
-        int spaceForData[2];
-      } cmsg;
-      msg.msg_control = &cmsg;
-      msg.msg_controllen = sizeof(cmsg);
-
-      // Wait for the message.
-      KJ_SYSCALL(recvmsg(clientEnd, &msg, MSG_CMSG_CLOEXEC));
-
-      // If we didn't receive any messages, something went wrong.  An error was probably written
-      // already.
-      KJ_ASSERT(msg.msg_controllen >= sizeof(cmsg.cmsg), "fusermount didn't return an fd");
-
-      // We expect an SCM_RIGHTS message with a single FD.
-      KJ_ASSERT(cmsg.cmsg.cmsg_level == SOL_SOCKET);
-      KJ_ASSERT(cmsg.cmsg.cmsg_type == SCM_RIGHTS);
-      KJ_ASSERT(cmsg.cmsg.cmsg_len == CMSG_LEN(sizeof(int)));
-
-      fd = kj::AutoCloseFd(*reinterpret_cast<int*>(CMSG_DATA(&cmsg.cmsg)));
+      fd = getFdFromSocket(clientEnd);
     }
 
     KJ_ASSERT(WIFEXITED(childStatus) && WEXITSTATUS(childStatus) == 0, "fusermount failed");
@@ -1076,6 +1080,44 @@ FuseMount::~FuseMount() noexcept(false) {
       return;
     }
   }
+}
+
+kj::AutoCloseFd getFdFromSocket(int sockFd) {
+  // Receive the fuse FD from the socket.  recvmsg() is complicated...  :/
+  struct msghdr msg;
+  memset(&msg, 0, sizeof(msg));
+
+  // Make sure we have space to receive a byte so that recvmsg() doesn't simply return
+  // immediately.
+  struct iovec iov;
+  memset(&iov, 0, sizeof(iov));
+  char buffer[1];
+  iov.iov_base = &buffer;
+  iov.iov_len = 1;
+  msg.msg_iov = &iov;
+  msg.msg_iovlen = 1;
+
+  // Allocate space to receive a cmsg.
+  struct {
+    struct cmsghdr cmsg;
+    int spaceForData[2];
+  } cmsg;
+  msg.msg_control = &cmsg;
+  msg.msg_controllen = sizeof(cmsg);
+
+  // Wait for the message.
+  KJ_SYSCALL(recvmsg(sockFd, &msg, MSG_CMSG_CLOEXEC));
+
+  // If we didn't receive any messages, something went wrong.  An error was probably written
+  // already.
+  KJ_ASSERT(msg.msg_controllen >= sizeof(cmsg.cmsg), "fusermount didn't return an fd");
+
+  // We expect an SCM_RIGHTS message with a single FD.
+  KJ_ASSERT(cmsg.cmsg.cmsg_level == SOL_SOCKET);
+  KJ_ASSERT(cmsg.cmsg.cmsg_type == SCM_RIGHTS);
+  KJ_ASSERT(cmsg.cmsg.cmsg_len == CMSG_LEN(sizeof(int)));
+
+  return kj::AutoCloseFd(*reinterpret_cast<int*>(CMSG_DATA(&cmsg.cmsg)));
 }
 
 }  // namespace sandstorm

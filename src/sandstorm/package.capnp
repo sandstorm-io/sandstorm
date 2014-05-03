@@ -171,3 +171,45 @@ struct Manifest {
   continueCommand @3 :Command;
   # Command to run to restart an already-created grain.
 }
+
+struct SourceMap {
+  # Defines where to find files that need to be included in a package.  This is usually combined
+  # with a list of files that the package is expected to contain in order to compile a package.
+  # The list of files may come from using "spk dev" to
+
+  searchPath @0 :List(Mapping);
+  # List of directories to map into the package.
+
+  struct Mapping {
+    # Describes a directory to be mapped into the package.
+
+    packagePath @0 :Text;
+    # Path where this directory should be mapped into the package.  Must start with '/'.
+
+    sourcePath @1 :Text;
+    # Path on the local system where this directory may be found.  Relative paths are interpreted
+    # relative to the location of the package definition file.
+
+    hidePaths @2 :List(Text);
+    # Names of files or subdirectories within the directory which should be hidden when mapping
+    # this path into the spk.  Use only canonical paths here -- i.e. do not use ".", "..", or
+    # multiple consecutive slashes.  Do not use a leading slash.
+  }
+}
+
+struct PackageDefinition {
+  manifest @0 :Manifest;
+  # Manifest to write as the package's `sandstorm_manifest`.  If null, then `sandstorm-manifest`
+  # should appear in the file list.
+
+  sourceMap @1 :SourceMap;
+  # Indicates where to search for file to include in the package.
+
+  files @2 :List(Text);
+  # List of files to include in the package.  Each element should be a canonical file name
+  # (no ".", "..", or consecutive slashes) and should NOT start with '/'.
+
+  fileLists @3 :List(Text);
+  # List of basic text files which in turn contain lists of files to include in the package (one
+  # file per line).
+}

@@ -36,8 +36,17 @@
 #include <stdlib.h>
 #include <dirent.h>
 #include <set>
+#include <map>
+#include <sys/xattr.h>
+#include <capnp/schema-parser.h>
+#include <capnp/dynamic.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <kj/async-unix.h>
 
 #include "version.h"
+#include "fuse.h"
+#include "union-fs.h"
 
 namespace sandstorm {
 
@@ -338,6 +347,8 @@ public:
                        "Create an spk from a directory tree and a signing key.")
         .addSubCommand("unpack", KJ_BIND_METHOD(*this, getUnpackMain),
                        "Unpack an spk to a directory, verifying its signature.")
+        .addSubCommand("dev", KJ_BIND_METHOD(*this, getDevMain),
+                       "Run an app in dev mode.")
         .build();
   }
 
@@ -788,6 +799,253 @@ private:
       }
     }
   }
+
+  // =====================================================================================
+  // "dev" command
+
+  kj::String fileList;
+  kj::String serverBinary = kj::str("/etc/init.d/sandstorm");
+  kj::StringPtr devAppId;
+
+  capnp::SchemaParser parser;
+  kj::Vector<kj::String> importPath;
+  spk::PackageDefinition::Reader packageDef;
+  kj::String sourceDir;
+
+  kj::MainFunc getDevMain() {
+    return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
+            "Register an under-development app with a local Sandstorm server for testing "
+            "purposes, and optionally output a list of all files it depends on. <def-file> is "
+            "a `.capnp` file defining a constant named <name> of type `PackageDefinition` as "
+            "defined in `sandstorm/package.capnp`. While this command is running, the app will "
+            "replace the current package for <app-id> as installed on the server. Note that "
+            "we intentionally do not require you to supply <app-id>'s private key so that the "
+            "key need not be distributed to all developers. Your user account must be a member "
+            "of the server's group, typically \"sandstorm\".")
+        .addOptionWithArg({'l', "file-list"}, KJ_BIND_METHOD(*this, setFileListOutput), "<file>",
+            "Output a list of all files opened by the app to <file>. Useful for determining "
+            "dependencies in order to build a package. If <file> already exists, files will only "
+            "be added to the existing list. Either way, the final list is always sorted with no "
+            "duplicates.")
+        .addOptionWithArg({'I', "import-path"}, KJ_BIND_METHOD(*this, addImportPath), "<path>",
+            "Additionally search for Cap'n Proto schemas in <path>. By default, /usr/include and "
+            "/usr/local/include are searched.")
+        .addOptionWithArg({'s', "server"}, KJ_BIND_METHOD(*this, setServerDir), "<dir>",
+            "Connect to the Sandstorm server installed in <dir>. Default is to detect based on "
+            "the installed init script.")
+        .expectArg("<app-id>", KJ_BIND_METHOD(*this, setDevAppId))
+        .expectArg("<def-file>:<name>", KJ_BIND_METHOD(*this, setPackageDef))
+        .callAfterParsing(KJ_BIND_METHOD(*this, doDev))
+        .build();
+  }
+
+  kj::MainBuilder::Validity setFileListOutput(kj::StringPtr name) {
+    fileList = kj::heapString(name);
+    return true;
+  }
+
+  kj::MainBuilder::Validity setServerDir(kj::StringPtr name) {
+    if (access(name.cStr(), F_OK) != 0) {
+      return "not found";
+    }
+    serverBinary = kj::str(name, "/sandstorm");
+    return true;
+  }
+
+  kj::MainBuilder::Validity addImportPath(kj::StringPtr arg) {
+    importPath.add(kj::heapString(arg));
+    return true;
+  }
+
+  kj::MainBuilder::Validity setDevAppId(kj::StringPtr name) {
+    devAppId = name;
+    return true;
+  }
+
+  kj::MainBuilder::Validity setPackageDef(kj::StringPtr arg) {
+    KJ_IF_MAYBE(colonPos, arg.findFirst(':')) {
+      auto filename = kj::heapString(arg.slice(0, *colonPos));
+      auto constantName = arg.slice(*colonPos + 1);
+
+      if (access(filename.cStr(), F_OK) != 0) {
+        return "not found";
+      }
+
+      KJ_IF_MAYBE(slashPos, filename.findLast('/')) {
+        sourceDir = kj::heapString(filename.slice(0, *slashPos));
+      } else {
+        sourceDir = nullptr;
+      }
+
+      importPath.add(kj::heapString("/usr/local/include"));
+      importPath.add(kj::heapString("/usr/include"));
+
+      auto importPathPtrs = KJ_MAP(p, importPath) -> kj::StringPtr { return p; };
+
+      parser.loadCompiledTypeAndDependencies<spk::PackageDefinition>();
+
+      auto schema = parser.parseDiskFile(filename, filename, importPathPtrs);
+      KJ_IF_MAYBE(symbol, schema.findNested(constantName)) {
+        if (!symbol->getProto().isConst()) {
+          return "symbol is not a constant";
+        }
+
+        packageDef = symbol->asConst().as<spk::PackageDefinition>();
+
+        return true;
+      } else {
+        return "no such symbol in schema file";
+      }
+    } else {
+      return "argument missing constant name";
+    }
+  }
+
+  kj::MainBuilder::Validity doDev() {
+    // call "sandstorm dev"
+
+    // Create a unix socket over which to receive the fuse FD.
+    int serverSocket[2];
+    KJ_SYSCALL(socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, serverSocket));
+    kj::AutoCloseFd clientEnd(serverSocket[0]);
+    kj::AutoCloseFd serverEnd(serverSocket[1]);
+
+    // Run "sandstorm dev".
+    pid_t sandstormPid = fork();
+    if (sandstormPid == 0) {
+      dup2(serverEnd, STDIN_FILENO);
+      dup2(serverEnd, STDOUT_FILENO);
+
+      KJ_SYSCALL(execl(serverBinary.cStr(), serverBinary.cStr(), "dev", (char*)nullptr),
+                 serverBinary);
+      KJ_UNREACHABLE;
+    }
+
+    serverEnd = nullptr;
+
+    // Write the app ID to the socket.
+    {
+      auto msg = kj::str(devAppId, "\n");
+      kj::FdOutputStream((int)clientEnd).write(msg.begin(), msg.size());
+    }
+
+    auto fuseFd = getFdFromSocket(clientEnd);
+
+    {
+      int status;
+      KJ_SYSCALL(waitpid(sandstormPid, &status, 0));
+      KJ_ASSERT(WIFEXITED(status) && WEXITSTATUS(status) == 0,
+                "Couldn't connect to Sandstorm server.");
+    }
+
+    {
+      kj::UnixEventPort::captureSignal(SIGINT);
+      kj::UnixEventPort::captureSignal(SIGQUIT);
+      kj::UnixEventPort::captureSignal(SIGTERM);
+      kj::UnixEventPort::captureSignal(SIGHUP);
+
+      kj::UnixEventPort eventPort;
+      kj::EventLoop eventLoop(eventPort);
+      kj::WaitScope waitScope(eventLoop);
+
+      std::set<kj::String> usedFiles;
+      kj::Function<void(kj::StringPtr)> callback = [&](kj::StringPtr path) {
+        usedFiles.insert(kj::heapString(path));
+        KJ_DBG(path);
+      };
+      auto rootNode = makeUnionFs(sourceDir, packageDef.getSourceMap(), callback);
+
+      FuseOptions options;
+      options.cacheForever = true;
+
+      auto onSignal = eventPort.onSignal(SIGINT)
+          .exclusiveJoin(eventPort.onSignal(SIGQUIT))
+          .exclusiveJoin(eventPort.onSignal(SIGTERM))
+          .exclusiveJoin(eventPort.onSignal(SIGHUP))
+          .then([&](siginfo_t&& sig) {
+        context.warning(kj::str("Shutting down due to signal: ", strsignal(sig.si_signo)));
+        clientEnd = nullptr;  // close tells server to unmount.
+      });
+
+      bindFuse(eventPort, fuseFd, rootNode, options)
+          .then([&]() {
+            context.warning("Shutting down due to unmount.");
+          })
+          .exclusiveJoin(kj::mv(onSignal))
+          .wait(waitScope);
+    }
+
+    // TODO(now):  Do something with the file list.
+
+    return true;
+  }
+
+
+
+
+  class PathMapper {
+    // Looks for files in a spk::SourceMap, eventually generating list of dependencies.
+
+  public:
+    PathMapper(spk::SourceMap::Reader sourceMap)
+        : searchPath(sourceMap.getSearchPath()) {}
+
+    kj::Maybe<kj::StringPtr> mapPath(kj::StringPtr name) {
+      KJ_DBG("mapPath", name);
+      while (name.startsWith("/")) {
+        name = name.slice(1);
+      }
+
+      auto insertResult = fileMap.insert(std::make_pair(kj::heapString(name), nullptr));
+
+      if (insertResult.second) {
+        // This is a new entry.  Look it up.
+        for (auto dir: searchPath) {
+          auto virtualPath = dir.getPackagePath();
+          if (pathStartsWith(name, virtualPath)) {
+            auto subPath = name.slice(virtualPath.size());
+
+            // If the path is some file or subdirectory inside the virtual path...
+            if (subPath.size() > 0) {
+              // ... then check to see if it's hidden.
+              bool hidden = false;
+              for (auto hide: dir.getHidePaths()) {
+                // slice(1) removes "/" prefix.
+                if (pathStartsWith(subPath.slice(1), hide)) {
+                  hidden = true;
+                  break;
+                }
+              }
+              if (hidden) continue;
+            }
+
+            // Not hidden, so now check if this path exists.
+            auto candidate = kj::str(dir.getSourcePath(), subPath);
+            if (access(candidate.cStr(), F_OK) == 0) {
+              // Found!
+              insertResult.first->second = kj::mv(candidate);
+              break;
+            }
+          }
+        }
+      }
+
+      if (insertResult.first->second == nullptr) {
+        return nullptr;
+      } else {
+        return kj::StringPtr(insertResult.first->second);
+      }
+    }
+
+  private:
+    capnp::List<spk::SourceMap::Mapping>::Reader searchPath;
+    std::map<kj::String, kj::String> fileMap;  // nullptr value = not found
+
+    static bool pathStartsWith(kj::StringPtr path, kj::StringPtr prefix) {
+      return path.startsWith(prefix) &&
+          (path.size() == prefix.size() || path[prefix.size()] == '/');
+    }
+  };
 };
 
 }  // namespace sandstorm

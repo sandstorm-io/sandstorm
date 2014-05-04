@@ -24,6 +24,7 @@
 #include <sandstorm/fuse.capnp.h>
 #include <kj/time.h>
 #include <kj/io.h>
+#include <kj/function.h>
 
 namespace kj { class UnixEventPort; }
 
@@ -86,9 +87,14 @@ private:
 };
 
 kj::AutoCloseFd getFdFromSocket(int sockFd);
+kj::AutoCloseFd getFdFromSocket(int sockFd,
+    kj::Function<void(kj::ArrayPtr<const kj::byte>)> dataCallback);
 // Helper function to receive a single file descriptor over a Unix socket (via SCM_RIGHTS control
-// message). Note that for this function to work correctly, the socket must have *no* pending data
-// and *exactly one* file descriptor.
+// message). Since at least one regular data byte must be sent along with the SCM_RIGHTS message,
+// this function expects a zero byte. Any non-zero bytes received (possibly either before or after
+// the zero) are passed to `dataCallback` (which may be called multiple times). The function does
+// not return until an FD has been received or EOF is reached or an error occurs (the latter two
+// cases throw exceptions).
 //
 // TODO(cleanup): This function belongs somewhere else.
 

@@ -34,6 +34,26 @@ Packages = new Meteor.Collection("packages");
 //       versions of the same app have the same appId.  The spk tool defines the app ID format
 //       and can cryptographically verify that a package belongs to a particular app ID.
 
+DevApps = new Meteor.Collection("devapps");
+// List of applications currently made available via the dev tools running on the local machine.
+// This is normally empty; the only time it is non-empty is when a developer is using the spk tool
+// on the local machine to publish an under-development app to this server. That should only ever
+// happen on developers' desktop machines.
+//
+// While a dev app is published, it automatically appears as installed by every user of the server,
+// and it overrides all packages with the same application ID. If any instances of those packages
+// are currently open, they are killed and reset on publish.
+//
+// When the dev tool disconnects, the app is automatically unpublished, and any open instances
+// are again killed and refreshed.
+//
+// Each contains:
+//   _id:  The application ID string (as with Packages.appId).
+//   packageId:  The directory name where the dev package is mounted.
+//   timestamp:  Time when the package was last updated. If this changes while the package is
+//     published, all running instances are reset. This is used e.g. to reset the app each time
+//     changes are made to the source code.
+
 UserActions = new Meteor.Collection("userActions");
 // List of actions that each user has installed which create new grains.  Each app may install
 // some number of actions (usually, one).
@@ -101,6 +121,10 @@ if (Meteor.isServer) {
     }
 
     return user;
+  });
+
+  Meteor.publish("devapps", function () {
+    return DevApps.find();
   });
 }
 

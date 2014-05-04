@@ -43,6 +43,7 @@
 #include <time.h>
 #include <stdio.h>  // rename()
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <netdb.h>
 #include <dirent.h>
 
@@ -168,6 +169,28 @@ kj::String readAll(int fd) {
 
 kj::String readAll(kj::StringPtr name) {
   return readAll(raiiOpen(name, O_RDONLY));
+}
+
+kj::Maybe<kj::String> readLine(kj::BufferedInputStream& input) {
+  kj::Vector<char> result(80);
+
+  for (;;) {
+    auto buffer = input.tryGetReadBuffer();
+    if (buffer.size() == 0) {
+      KJ_REQUIRE(result.size() == 0, "Got partial line.");
+      return nullptr;
+    }
+    for (size_t i: kj::indices(buffer)) {
+      if (buffer[i] == '\n') {
+        input.skip(i+1);
+        result.add('\0');
+        return kj::String(result.releaseAsArray());
+      } else {
+        result.add(buffer[i]);
+      }
+    }
+    input.skip(buffer.size());
+  }
 }
 
 kj::Array<kj::String> splitLines(kj::String input) {
@@ -461,8 +484,19 @@ public:
         .addSubCommand("continue",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                      "For internal use only:  Continue running Sandstorm after an update.")
+                      "For internal use only: Continue running Sandstorm after an update. "
+                      "This command is invoked by the Sandstorm server itself. Do not run it "
+                      "directly.")
                   .expectArg("<pidfile-fd>", KJ_BIND_METHOD(*this, continue_))
+                  .build();
+            },
+            "For internal use only.")
+        .addSubCommand("dev",
+            [this]() {
+              return kj::MainBuilder(context, VERSION,
+                      "For internal use only: Run an app in dev mode. This command is "
+                      "invoked by the `spk` tool. Do not run it directly.")
+                  .callAfterParsing(KJ_BIND_METHOD(*this, dev))
                   .build();
             },
             "For internal use only.")
@@ -588,7 +622,7 @@ public:
 
   kj::MainBuilder::Validity continue_(kj::StringPtr pidfileFdStr) {
     if (getpid() != 1) {
-      return "This command is only for internal use.";
+      return "This command is only internal use only.";
     }
 
     int pidfile = KJ_ASSERT_NONNULL(parseUInt(pidfileFdStr, 10));
@@ -745,6 +779,38 @@ public:
     } else {
       context.exitInfo("Update complete.");
     }
+  }
+
+  kj::MainBuilder::Validity dev() {
+    // When called by the spk tool, stdout is a socket where we will send the fuse FD.
+    struct stat stats;
+    KJ_SYSCALL(fstat(STDOUT_FILENO, &stats));
+    if (!S_ISSOCK(stats.st_mode)) {
+      return "This command is for internal use only.";
+    }
+
+    changeToInstallDir();
+
+    // Verify that Sandstorm is running.
+    if (getRunningPid() == nullptr) {
+      context.exitError("Sandstorm is not running.");
+    }
+
+    // Connect to the devmode socket.
+    int sock_;
+    KJ_SYSCALL(sock_ = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0));
+    auto sock = kj::AutoCloseFd(sock_);
+
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strcpy(addr.sun_path, "../var/sandstorm/socket/devmode");
+    KJ_SYSCALL(connect(sock, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)));
+
+    // Send the socket back on stdout.
+    sendFd(STDOUT_FILENO, sock);
+
+    return true;
   }
 
 private:
@@ -1051,10 +1117,16 @@ private:
     }
   }
 
-  kj::MainBuilder::Validity runServerMonitor(const Config& config) KJ_NORETURN {
+  void runServerMonitor(const Config& config) KJ_NORETURN {
     // Run the server monitor, which runs node and mongo and deals with them dying.
 
     enterChroot();
+
+    pid_t devDaemonPid = fork();
+    if (devDaemonPid == 0) {
+      runDevDaemon(config);
+      KJ_UNREACHABLE;
+    }
 
     // For later use when killing children with timeout.
     registerAlarmHandler();
@@ -1095,6 +1167,10 @@ private:
             mongoDied = true;
           } else if (deadPid == nodePid) {
             nodeDied = true;
+          } else if (deadPid == devDaemonPid) {
+            // We don't restart the dev daemon since it should never crash in the first place.
+            // Just record that we already reaped it.
+            devDaemonPid = 0;
           }
         }
 
@@ -1113,6 +1189,7 @@ private:
         context.warning("** Shutting down due to signal");
         killChild("Front-end", nodePid);
         killChild("MongoDB", mongoPid);
+        if (devDaemonPid != 0) killChild("Dev daemon", devDaemonPid);
         context.exit();
       }
     }
@@ -1410,6 +1487,204 @@ private:
         }
       }
     }
+  }
+
+  void runDevDaemon(const Config& config) KJ_NORETURN {
+    clearSignalMask();
+
+    // Make sure socket directory exists (since the installer doesn't create it).
+    if (mkdir("/var/sandstorm/socket", 0770) == 0) {
+      // Set permissions.
+      KJ_SYSCALL(chown("/var/sandstorm/socket", 0, config.uids.gid));
+    } else {
+      int error = errno;
+      if (error != EEXIST) {
+        KJ_FAIL_SYSCALL("mkdir(/var/sandstorm/socket)", error);
+      }
+    }
+
+    // Create the devmode socket.
+    int sock_;
+    KJ_SYSCALL(sock_ = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0));
+    auto sock = kj::AutoCloseFd(sock_);
+
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strcpy(addr.sun_path, "/var/sandstorm/socket/devmode");
+    unlink(addr.sun_path);
+    KJ_SYSCALL(bind(sock, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)));
+    KJ_SYSCALL(listen(sock, 2));
+
+    // We don't care to reap dev sessions.
+    KJ_SYSCALL(signal(SIGCHLD, SIG_IGN));
+
+    // Please don't SIGPIPE if we write to a disconnected socket. An exception is nicer.
+    KJ_SYSCALL(signal(SIGPIPE, SIG_IGN));
+
+    for (;;) {
+      int connFd;
+      KJ_SYSCALL(connFd = accept4(sock, nullptr, nullptr, SOCK_CLOEXEC));
+      KJ_DEFER(close(connFd));
+
+      if (fork() == 0) {
+        sock = nullptr;
+        runDevSession(config, connFd);
+        KJ_UNREACHABLE;
+      }
+    }
+  }
+
+  void runDevSession(const Config& config, int fd) KJ_NORETURN {
+    auto exception = kj::runCatchingExceptions([&]() {
+      context.warning("** Accepted new dev session connection...");
+
+      // Dev error log goes to the connected session.
+      KJ_SYSCALL(dup2(fd, STDOUT_FILENO));
+      KJ_SYSCALL(dup2(fd, STDERR_FILENO));
+
+      // Restore SIGCHLD, ignored by parent process.
+      KJ_SYSCALL(signal(SIGCHLD, SIG_DFL));
+
+      kj::FdInputStream rawInput(fd);
+      kj::BufferedInputStreamWrapper input(rawInput);
+      kj::String appId;
+      KJ_IF_MAYBE(line, readLine(input)) {
+        appId = kj::mv(*line);
+      } else {
+        KJ_FAIL_ASSERT("Expected app ID.");
+      }
+
+      for (char c: appId) {
+        if (!isalnum(c)) {
+          context.exitError("Invalid app ID. Must contain only alphanumerics.");
+        }
+      }
+
+      char dir[] = "/var/sandstorm/apps/dev-XXXXXX";
+      if (mkdtemp(dir) == nullptr) {
+        KJ_FAIL_SYSCALL("mkdtemp(dir)", errno, dir);
+      }
+      KJ_DEFER(rmdir(dir));
+      KJ_SYSCALL(chown(dir, config.uids.uid, config.uids.gid));
+
+      char* pkgId = strrchr(dir, '/') + 1;
+
+      // We dont use fusermount(1) because it doesn't live in our namespace. For now, this is not
+      // a problem because we're root anyway. If in the future we use UID namespaces to avoid being
+      // root, then this gets complicated. We could include fusermount(1) in our package, but
+      // it would have to be suid-root, defeating the goal of not suing root rights.
+      auto fuseFd = raiiOpen("/dev/fuse", O_RDWR);
+
+      auto mountOptions = kj::str("fd=", fuseFd, ",rootmode=40000,"
+          "user_id=", config.uids.uid, ",group_id=", config.uids.gid);
+
+      KJ_SYSCALL(mount("/dev/fuse", dir, "fuse", MS_NOSUID|MS_NODEV, mountOptions.cStr()));
+      KJ_DEFER(umount2(dir, MNT_FORCE | UMOUNT_NOFOLLOW));
+
+      // Send the FUSE fd back to the client.
+      sendFd(fd, fuseFd);
+      fuseFd = nullptr;
+
+      // Noticy the front-end that the app exists.
+      insertDevApp(config, appId, pkgId);
+      KJ_DEFER(removeDevApp(config, appId));
+
+      for (;;) {
+        KJ_IF_MAYBE(line, readLine(input)) {
+          if (*line == "restart") {
+            updateDevApp(config, appId);
+          }
+        } else {
+          break;
+        }
+      }
+
+      // TODO(now): wait for input on FD
+      //    -> "reload" = tell front-end to kill app and reload clients
+      //    -> EOF = unmount
+    });
+
+    KJ_IF_MAYBE(e, exception) {
+      context.exitError(kj::str(*e));
+    } else {
+      context.exit();
+    }
+  }
+
+  void insertDevApp(const Config& config, kj::StringPtr appId, kj::StringPtr pkgId) {
+    mongoCommand(config, kj::str(
+        "db.devapps.insert({"
+          "_id:\"", appId, "\","
+          "packageId:\"", pkgId, "\","
+          "timestamp:", time(nullptr),
+        "})"));
+  }
+
+  void updateDevApp(const Config& config, kj::StringPtr appId) {
+    mongoCommand(config, kj::str(
+        "db.devapps.update({_id:\"", appId, "\"}, {$set: {"
+          "timestamp:", time(nullptr),
+        "}})"));
+  }
+
+  void removeDevApp(const Config& config, kj::StringPtr appId) {
+    mongoCommand(config, kj::str(
+        "db.devapps.remove({_id:\"", appId, "\"})"));
+  }
+
+  void mongoCommand(const Config& config, kj::StringPtr command) {
+    pid_t pid = fork();
+    if (pid == 0) {
+      // We don't want to unwind the stack in this subprocess.
+      KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
+        // Don't run as root.
+        dropPrivs(config.uids);
+
+        KJ_SYSCALL(execl("/bin/mongo", "/bin/mongo", "--quiet", "--eval", command.cStr(),
+                   kj::str("127.0.0.1:", config.mongoPort, "/meteor").cStr(), EXEC_END_ARGS));
+      })) {
+        context.exitError(kj::str(*exception));
+      }
+
+      KJ_UNREACHABLE;
+    }
+
+    int status;
+    KJ_SYSCALL(waitpid(pid, &status, 0)) { return; }
+    KJ_ASSERT(WIFEXITED(status) && WEXITSTATUS(status) == 0,
+              "mongo command failed", command) { return; }
+  }
+
+  void sendFd(int sendOn, int fdToSend) {
+    // Sends the fd over the given socket. A NUL byte is also sent, because at least one byte
+    // must be written along with the FD.
+
+    struct msghdr msg;
+    struct iovec iov;
+    union {
+      struct cmsghdr cmsg;
+      char cmsgSpace[CMSG_LEN(sizeof(int))];
+    };
+    memset(&msg, 0, sizeof(msg));
+    memset(&iov, 0, sizeof(iov));
+    memset(cmsgSpace, 0, sizeof(cmsgSpace));
+
+    char c = 0;
+    iov.iov_base = &c;
+    iov.iov_len = 1;
+    msg.msg_iov = &iov;
+    msg.msg_iovlen = 1;
+
+    msg.msg_control = &cmsg;
+    msg.msg_controllen = sizeof(cmsgSpace);
+
+    cmsg.cmsg_len = sizeof(cmsgSpace);
+    cmsg.cmsg_level = SOL_SOCKET;
+    cmsg.cmsg_type = SCM_RIGHTS;
+    *reinterpret_cast<int*>(CMSG_DATA(&cmsg)) = fdToSend;
+
+    KJ_SYSCALL(sendmsg(sendOn, &msg, 0));
   }
 
   // ---------------------------------------------------------------------------

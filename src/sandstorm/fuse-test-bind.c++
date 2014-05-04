@@ -22,6 +22,7 @@
 #include <kj/main.h>
 #include <kj/io.h>
 #include <kj/async-unix.h>
+#include <kj/debug.h>
 
 namespace sandstorm {
 

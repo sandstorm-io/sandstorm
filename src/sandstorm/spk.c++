@@ -923,19 +923,37 @@ private:
 
     serverEnd = nullptr;
 
-    // Write the app ID to the socket.
-    {
-      auto msg = kj::str(devAppId, "\n");
-      kj::FdOutputStream((int)clientEnd).write(msg.begin(), msg.size());
-    }
-
-    auto fuseFd = getFdFromSocket(clientEnd);
+    // "sandstorm dev" forms a connection to the server and then returns an FD for that connection.
+    auto connection = getFdFromSocket(clientEnd);
 
     {
       int status;
       KJ_SYSCALL(waitpid(sandstormPid, &status, 0));
       KJ_ASSERT(WIFEXITED(status) && WEXITSTATUS(status) == 0,
                 "Couldn't connect to Sandstorm server.");
+    }
+
+    clientEnd = nullptr;  // Don't need this anymore.
+
+    // Write the app ID to the socket.
+    {
+      auto msg = kj::str(devAppId, "\n");
+      kj::FdOutputStream((int)connection).write(msg.begin(), msg.size());
+    }
+
+    // The server connection starts by sending us the FUSE FD.
+    auto fuseFd = getFdFromSocket(connection, [](kj::ArrayPtr<const kj::byte> bytes) {
+      // Got some data. Pipe it to stdout.
+      kj::FdOutputStream(STDOUT_FILENO).write(bytes.begin(), bytes.size());
+    });
+
+    // Switch connection to async I/O.
+    {
+      int flags;
+      KJ_SYSCALL(flags = fcntl(connection, F_GETFL));
+      if ((flags & O_NONBLOCK) == 0) {
+        KJ_SYSCALL(fcntl(connection, F_SETFL, flags | O_NONBLOCK));
+      }
     }
 
     {
@@ -963,21 +981,57 @@ private:
           .exclusiveJoin(eventPort.onSignal(SIGTERM))
           .exclusiveJoin(eventPort.onSignal(SIGHUP))
           .then([&](siginfo_t&& sig) {
-        context.warning(kj::str("Shutting down due to signal: ", strsignal(sig.si_signo)));
-        clientEnd = nullptr;  // close tells server to unmount.
-      });
+        context.warning(kj::str("Requesting shutdown due to signal: ", strsignal(sig.si_signo)));
+
+        // Close pipe to request unmount.
+        KJ_SYSCALL(shutdown(connection, SHUT_WR));
+
+        return eventPort.onSignal(SIGINT)
+            .exclusiveJoin(eventPort.onSignal(SIGQUIT))
+            .exclusiveJoin(eventPort.onSignal(SIGTERM))
+            .exclusiveJoin(eventPort.onSignal(SIGHUP))
+            .then([&](siginfo_t&& sig) {
+          context.exitError("Received second signal. Aborting. You may want to restart Sandstorm.");
+        });
+      }).eagerlyEvaluate(nullptr);
+
+      auto logPipe = pipeToStdout(eventPort, connection).eagerlyEvaluate(nullptr);
+
+      context.warning("App is now available from Sandstorm server. Ctrl+C to disconnect.");
 
       bindFuse(eventPort, fuseFd, rootNode, options)
-          .then([&]() {
-            context.warning("Shutting down due to unmount.");
-          })
-          .exclusiveJoin(kj::mv(onSignal))
+          .then([&]() { context.warning("Server unmounted cleanly."); })
           .wait(waitScope);
+
+      logPipe.wait(waitScope);
     }
 
     // TODO(now):  Do something with the file list.
 
     return true;
+  }
+
+  static kj::Promise<void> pipeToStdout(kj::UnixEventPort& eventPort, int fd) {
+    // Asynchronously read all data from fd and write it to STDOUT.
+    // TODO(cleanup): Use KJ I/O facilities. Requires making it possible to construct
+    //   kj::LowLevelAsyncIoProvider directly from UnixEventPort.
+
+    for (;;) {
+      ssize_t n;
+      char buffer[1024];
+      KJ_NONBLOCKING_SYSCALL(n = read(fd, buffer, sizeof(buffer)));
+
+      if (n < 0) {
+        // Got EAGAIN.
+        return eventPort.onFdEvent(fd, POLLIN).then([&eventPort, fd](short) {
+          return pipeToStdout(eventPort, fd);
+        });
+      } else if (n == 0) {
+        return kj::READY_NOW;
+      }
+
+      kj::FdOutputStream(STDOUT_FILENO).write(buffer, n);
+    }
   }
 
 

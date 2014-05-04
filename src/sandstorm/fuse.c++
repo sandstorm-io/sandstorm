@@ -1083,6 +1083,13 @@ FuseMount::~FuseMount() noexcept(false) {
 }
 
 kj::AutoCloseFd getFdFromSocket(int sockFd) {
+  return getFdFromSocket(sockFd, [](kj::ArrayPtr<const kj::byte>) {
+    KJ_FAIL_REQUIRE("Got unexpected data on unix socket while waiting for a file descriptor.");
+  });
+}
+
+kj::AutoCloseFd getFdFromSocket(int sockFd,
+    kj::Function<void(kj::ArrayPtr<const kj::byte>)> dataCallback) {
   // Receive the fuse FD from the socket.  recvmsg() is complicated...  :/
   struct msghdr msg;
   memset(&msg, 0, sizeof(msg));
@@ -1091,33 +1098,53 @@ kj::AutoCloseFd getFdFromSocket(int sockFd) {
   // immediately.
   struct iovec iov;
   memset(&iov, 0, sizeof(iov));
-  char buffer[1];
+  kj::byte buffer[1024];
   iov.iov_base = &buffer;
-  iov.iov_len = 1;
+  iov.iov_len = sizeof(buffer);
   msg.msg_iov = &iov;
   msg.msg_iovlen = 1;
 
   // Allocate space to receive a cmsg.
-  struct {
+  union {
     struct cmsghdr cmsg;
-    int spaceForData[2];
-  } cmsg;
+    char cmsgSpace[CMSG_SPACE(sizeof(int))];
+  };
   msg.msg_control = &cmsg;
-  msg.msg_controllen = sizeof(cmsg);
 
   // Wait for the message.
-  KJ_SYSCALL(recvmsg(sockFd, &msg, MSG_CMSG_CLOEXEC));
+  for (;;) {
+    msg.msg_controllen = sizeof(cmsgSpace);
 
-  // If we didn't receive any messages, something went wrong.  An error was probably written
-  // already.
-  KJ_ASSERT(msg.msg_controllen >= sizeof(cmsg.cmsg), "fusermount didn't return an fd");
+    ssize_t n;
+    KJ_SYSCALL(n = recvmsg(sockFd, &msg, MSG_CMSG_CLOEXEC));
+    KJ_ASSERT(n > 0, "premature EOF while waiting for FD");
 
-  // We expect an SCM_RIGHTS message with a single FD.
-  KJ_ASSERT(cmsg.cmsg.cmsg_level == SOL_SOCKET);
-  KJ_ASSERT(cmsg.cmsg.cmsg_type == SCM_RIGHTS);
-  KJ_ASSERT(cmsg.cmsg.cmsg_len == CMSG_LEN(sizeof(int)));
+    for (size_t i: kj::range<size_t>(0, n)) {
+      if (buffer[i] == 0) {
+        // Yay, here's our zero byte.
+        if (i > 0) {
+          dataCallback(kj::arrayPtr(buffer, i));
+        }
+        if (n > i + 1) {
+          dataCallback(kj::arrayPtr(buffer + i + 1, n - i - 1));
+        }
 
-  return kj::AutoCloseFd(*reinterpret_cast<int*>(CMSG_DATA(&cmsg.cmsg)));
+        KJ_ASSERT(msg.msg_controllen >= sizeof(cmsg), "expected fd on socket");
+
+        // We expect an SCM_RIGHTS message with a single FD.
+        KJ_ASSERT(cmsg.cmsg_level == SOL_SOCKET);
+        KJ_ASSERT(cmsg.cmsg_type == SCM_RIGHTS);
+        KJ_ASSERT(cmsg.cmsg_len == CMSG_LEN(sizeof(int)));
+
+        return kj::AutoCloseFd(*reinterpret_cast<int*>(CMSG_DATA(&cmsg)));
+      }
+    }
+
+    // No zero bytes; all data.
+    dataCallback(kj::arrayPtr(buffer, n));
+
+    KJ_ASSERT(msg.msg_controllen == 0, "expected zero byte with fd");
+  }
 }
 
 }  // namespace sandstorm

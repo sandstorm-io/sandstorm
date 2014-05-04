@@ -540,8 +540,8 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
 
     // If the contents are mapped to a non-root location, wrap in a singleton node.
     kj::StringPtr packagePath = mapping.getPackagePath();
-    KJ_REQUIRE(packagePath.startsWith("/"), "All packagePaths in source map must be absolute.");
-    packagePath = packagePath.slice(1);
+    KJ_ASSERT(!packagePath.startsWith("/"),
+              "`packagePath` in source map should not start with '/'.");
     if (packagePath.size() > 0) {
       node = kj::heap<SingletonNode>(kj::mv(node), packagePath);
     }

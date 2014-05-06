@@ -62,6 +62,9 @@ License along with Sandstorm.  If not, see
       {{/each}}
       </td><td>
       <h1>New</h1>
+      {{#each devActions}}
+      <p class="newGrain" id="newGrain-dev-{{_id}}-{{index}}">[dev] {{title}}</p>
+      {{/each}}
       {{#each actions}}
       <p class="newGrain" id="newGrain-{{_id}}">{{title}}</p>
       {{else}}

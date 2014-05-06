@@ -30,6 +30,7 @@
 namespace sandstorm {
 
 fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap,
+                               spk::Manifest::Reader manifest,
                                kj::Function<void(kj::StringPtr)>& callback);
 // Creates a new filesystem based os `sourceMap`. Whenever a file is opened (for the first time),
 // `callback` will be invoked with the (virtual) path name.

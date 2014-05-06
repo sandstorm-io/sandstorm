@@ -21,6 +21,7 @@
 #include <kj/main.h>
 #include <kj/debug.h>
 #include <kj/async-io.h>
+#include <kj/io.h>
 #include <capnp/rpc-twoparty.h>
 #include <capnp/rpc.capnp.h>
 #include <unistd.h>
@@ -50,6 +51,7 @@
 #include <sandstorm/supervisor.capnp.h>
 
 #include "version.h"
+#include "send-fd.h"
 
 // In case kernel headers are old.
 #ifndef PR_SET_NO_NEW_PRIVS
@@ -201,12 +203,19 @@ public:
                            "Runs a Sandstorm grain supervisor for the grain <grain-id>, which is "
                            "an instance of app <app-id>.  Executes <command> inside the grain "
                            "sandbox.")
+        .addOptionWithArg({"home"}, KJ_BIND_METHOD(*this, setHome), "<path>",
+                          "Set directory where Sandstorm is installed, e.g. '/opt/sandstorm'. "
+                          "Default is to assume we're already running in the Sandstorm chroot, "
+                          "so home is the root directory. Note that this is subtly different "
+                          "from explicitly specifying '/' as home -- if an explicit home is "
+                          "set, sandstorm-supervisor attempts to contact the server and enter "
+                          "its mount namespace.")
         .addOptionWithArg({"pkg"}, KJ_BIND_METHOD(*this, setPkg), "<path>",
                           "Set directory containing the app package.  "
-                          "Defaults to '/var/sandstorm/apps/<app-name>'.")
+                          "Defaults to '$SANDSTORM_HOME/var/sandstorm/apps/<app-name>'.")
         .addOptionWithArg({"var"}, KJ_BIND_METHOD(*this, setVar), "<path>",
                           "Set directory where grain's mutable persistent data will be stored.  "
-                          "Defaults to '/var/sandstorm/grains/<grain-id>'.")
+                          "Defaults to '$SANDSTORM_HOME/var/sandstorm/grains/<grain-id>'.")
         .addOptionWithArg({"uid"}, KJ_BIND_METHOD(*this, setUid), "<uid>",
                           "Set the user ID under which to run the sandbox.  When running as "
                           "root, you must specify this.  When running as non-root, you *cannot* "
@@ -261,6 +270,11 @@ public:
       return "Invalid grain id.";
     }
     grainId = kj::heapString(id);
+    return true;
+  }
+
+  kj::MainBuilder::Validity setHome(kj::StringPtr path) {
+    homePath = realPath(kj::heapString(path));
     return true;
   }
 
@@ -368,6 +382,7 @@ private:
   kj::String grainId;
   kj::String pkgPath;
   kj::String varPath;
+  kj::String homePath;
   kj::Vector<kj::String> command;
   kj::Vector<kj::String> environment;
   bool isNew = false;
@@ -428,6 +443,7 @@ private:
     // execing a suid-root binary.  Sandboxed apps should not need that.
     KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
 
+    enterServerNs();
     validateCreds();
     closeFds();
     checkPaths();
@@ -439,6 +455,36 @@ private:
     // TODO(someday):  Turn on seccomp-bpf.
 
     // Note:  permanentlyDropSuperuser() is performed post-fork; see comment in function def.
+  }
+
+  void enterServerNs() {
+    if (homePath != nullptr) {
+      // We need to connect to the server to enter its namespace.
+      static constexpr kj::byte DEVMODE_COMMAND_GETNS = 2;  // as defined in run-bundle.c++
+
+      int sock_;
+      KJ_SYSCALL(sock_ = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0));
+      auto sock = kj::AutoCloseFd(sock_);
+
+      struct sockaddr_un addr;
+      memset(&addr, 0, sizeof(addr));
+      addr.sun_family = AF_UNIX;
+      strcpy(addr.sun_path, kj::str(homePath, "/var/sandstorm/socket/devmode").cStr());
+      KJ_SYSCALL(connect(sock, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)));
+
+      kj::FdOutputStream((int)sock).write(&DEVMODE_COMMAND_GETNS, 1);
+
+      auto ns = receiveFd(sock);
+
+      KJ_SYSCALL(setns(ns, CLONE_NEWNS));
+
+      // So... this is going to be awkward. The thing is, the server daemon actually binds
+      // HOME/var to HOME/latest/var, and then chroots into HOME/latest. So when it later mounts a
+      // dev app's FUSE FS, it's under HOME/latest/var/..., and doesn't appear under
+      // HOME/var/... at all, because that's how mounts are. So we add "/latest" onto homePath
+      // here so that we're actually looking at the directory that the server itself is using.
+      homePath = kj::str(homePath, "/latest");
+    }
   }
 
   void validateCreds() {
@@ -525,8 +571,8 @@ private:
     umask(0);
 
     // Set default paths if flags weren't provided.
-    if (pkgPath == nullptr) pkgPath = kj::str("/var/sandstorm/apps/", appName);
-    if (varPath == nullptr) varPath = kj::str("/var/sandstorm/grains/", grainId);
+    if (pkgPath == nullptr) pkgPath = kj::str(homePath, "/var/sandstorm/apps/", appName);
+    if (varPath == nullptr) varPath = kj::str(homePath, "/var/sandstorm/grains/", grainId);
 
     // Check that package exists.
     KJ_SYSCALL(access(pkgPath.cStr(), R_OK | X_OK), pkgPath);
@@ -555,7 +601,7 @@ private:
 
     // Create the temp directory if it doesn't exist.  We only need one tmpdir because we're just
     // going to bind it to a private mount anyway.
-    if (mkdir("/tmp/sandstorm-grain", 0770) < 0) {
+    if (mkdir(kj::str("/tmp/sandstorm-grain").cStr(), 0770) < 0) {
       int error = errno;
       if (error != EEXIST) {
         KJ_FAIL_SYSCALL("mkdir(\"/tmp/sandstorm-grain\")", error);

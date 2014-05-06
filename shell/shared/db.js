@@ -53,6 +53,7 @@ DevApps = new Meteor.Collection("devapps");
 //   timestamp:  Time when the package was last updated. If this changes while the package is
 //     published, all running instances are reset. This is used e.g. to reset the app each time
 //     changes are made to the source code.
+//   manifest:  The app's manifest, as with Packages.manifest.
 
 UserActions = new Meteor.Collection("userActions");
 // List of actions that each user has installed which create new grains.  Each app may install
@@ -121,10 +122,6 @@ if (Meteor.isServer) {
     }
 
     return user;
-  });
-
-  Meteor.publish("devapps", function () {
-    return DevApps.find();
   });
 }
 

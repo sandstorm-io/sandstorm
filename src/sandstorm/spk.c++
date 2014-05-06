@@ -47,6 +47,7 @@
 #include "version.h"
 #include "fuse.h"
 #include "union-fs.h"
+#include "send-fd.h"
 
 namespace sandstorm {
 
@@ -689,6 +690,7 @@ private:
 
       // Read in the signature.
       {
+        // TODO(security): Set a small limit on signature size?
         capnp::InputStreamMessageReader signatureMessage(in);
         auto signature = signatureMessage.getRoot<spk::Signature>();
         auto pkReader = signature.getPublicKey();
@@ -714,6 +716,7 @@ private:
       }
 
       // Copy archive part to a temp file.
+      // TODO(security): Set a maximum size limit, since xz could decompress to arbitrary size.
       kj::FdOutputStream tmpOut(tmpfile.get());
       for (;;) {
         byte buffer[8192];
@@ -806,6 +809,7 @@ private:
   kj::String fileList;
   kj::String serverBinary = kj::str("/etc/init.d/sandstorm");
   kj::StringPtr devAppId;
+  kj::StringPtr mountDir;
 
   capnp::SchemaParser parser;
   kj::Vector<kj::String> importPath;
@@ -833,6 +837,9 @@ private:
         .addOptionWithArg({'s', "server"}, KJ_BIND_METHOD(*this, setServerDir), "<dir>",
             "Connect to the Sandstorm server installed in <dir>. Default is to detect based on "
             "the installed init script.")
+        .addOptionWithArg({'m', "mount"}, KJ_BIND_METHOD(*this, setMountDir), "<dir>",
+            "Don't actually connect to the server. Mount the package at <dir>, so you can poke "
+            "at it.")
         .expectArg("<app-id>", KJ_BIND_METHOD(*this, setDevAppId))
         .expectArg("<def-file>:<name>", KJ_BIND_METHOD(*this, setPackageDef))
         .callAfterParsing(KJ_BIND_METHOD(*this, doDev))
@@ -849,6 +856,14 @@ private:
       return "not found";
     }
     serverBinary = kj::str(name, "/sandstorm");
+    return true;
+  }
+
+  kj::MainBuilder::Validity setMountDir(kj::StringPtr name) {
+    if (access(name.cStr(), F_OK) != 0) {
+      return "not found";
+    }
+    mountDir = name;
     return true;
   }
 
@@ -902,58 +917,60 @@ private:
   }
 
   kj::MainBuilder::Validity doDev() {
-    // call "sandstorm dev"
+    kj::AutoCloseFd fuseFd;
+    kj::Maybe<kj::AutoCloseFd> connection;
+    kj::Maybe<kj::Own<FuseMount>> fuseMount;
 
-    // Create a unix socket over which to receive the fuse FD.
-    int serverSocket[2];
-    KJ_SYSCALL(socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, serverSocket));
-    kj::AutoCloseFd clientEnd(serverSocket[0]);
-    kj::AutoCloseFd serverEnd(serverSocket[1]);
+    if (mountDir == nullptr) {
+      // call "sandstorm dev"
 
-    // Run "sandstorm dev".
-    pid_t sandstormPid = fork();
-    if (sandstormPid == 0) {
-      dup2(serverEnd, STDIN_FILENO);
-      dup2(serverEnd, STDOUT_FILENO);
+      // Create a unix socket over which to receive the fuse FD.
+      int serverSocket[2];
+      KJ_SYSCALL(socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, serverSocket));
+      kj::AutoCloseFd clientEnd(serverSocket[0]);
+      kj::AutoCloseFd serverEnd(serverSocket[1]);
 
-      KJ_SYSCALL(execl(serverBinary.cStr(), serverBinary.cStr(), "dev", (char*)nullptr),
-                 serverBinary);
-      KJ_UNREACHABLE;
-    }
+      // Run "sandstorm dev".
+      pid_t sandstormPid = fork();
+      if (sandstormPid == 0) {
+        dup2(serverEnd, STDIN_FILENO);
+        dup2(serverEnd, STDOUT_FILENO);
 
-    serverEnd = nullptr;
-
-    // "sandstorm dev" forms a connection to the server and then returns an FD for that connection.
-    auto connection = getFdFromSocket(clientEnd);
-
-    {
-      int status;
-      KJ_SYSCALL(waitpid(sandstormPid, &status, 0));
-      KJ_ASSERT(WIFEXITED(status) && WEXITSTATUS(status) == 0,
-                "Couldn't connect to Sandstorm server.");
-    }
-
-    clientEnd = nullptr;  // Don't need this anymore.
-
-    // Write the app ID to the socket.
-    {
-      auto msg = kj::str(devAppId, "\n");
-      kj::FdOutputStream((int)connection).write(msg.begin(), msg.size());
-    }
-
-    // The server connection starts by sending us the FUSE FD.
-    auto fuseFd = getFdFromSocket(connection, [](kj::ArrayPtr<const kj::byte> bytes) {
-      // Got some data. Pipe it to stdout.
-      kj::FdOutputStream(STDOUT_FILENO).write(bytes.begin(), bytes.size());
-    });
-
-    // Switch connection to async I/O.
-    {
-      int flags;
-      KJ_SYSCALL(flags = fcntl(connection, F_GETFL));
-      if ((flags & O_NONBLOCK) == 0) {
-        KJ_SYSCALL(fcntl(connection, F_SETFL, flags | O_NONBLOCK));
+        KJ_SYSCALL(execl(serverBinary.cStr(), serverBinary.cStr(), "dev", (char*)nullptr),
+                   serverBinary);
+        KJ_UNREACHABLE;
       }
+
+      serverEnd = nullptr;
+
+      // Write the app ID to the socket.
+      {
+        auto msg = kj::str(devAppId, "\n");
+        kj::FdOutputStream((int)clientEnd).write(msg.begin(), msg.size());
+      }
+
+      // The server connection starts by sending us the FUSE FD.
+      fuseFd = receiveFd(clientEnd, [](kj::ArrayPtr<const kj::byte> bytes) {
+        // Got some data. Pipe it to stdout.
+        kj::FdOutputStream(STDOUT_FILENO).write(bytes.begin(), bytes.size());
+      });
+
+      // Switch connection to async I/O.
+      {
+        int flags;
+        KJ_SYSCALL(flags = fcntl(clientEnd, F_GETFL));
+        if ((flags & O_NONBLOCK) == 0) {
+          KJ_SYSCALL(fcntl(clientEnd, F_SETFL, flags | O_NONBLOCK));
+        }
+      }
+
+      connection = kj::mv(clientEnd);
+    } else {
+      // Just mount directly.
+
+      auto mount = kj::heap<FuseMount>(mountDir, "");
+      fuseFd = mount->disownFd();
+      fuseMount = kj::mv(mount);
     }
 
     {
@@ -971,7 +988,8 @@ private:
         usedFiles.insert(kj::heapString(path));
         KJ_DBG(path);
       };
-      auto rootNode = makeUnionFs(sourceDir, packageDef.getSourceMap(), callback);
+      auto rootNode = makeUnionFs(sourceDir, packageDef.getSourceMap(),
+                                  packageDef.getManifest(), callback);
 
       FuseOptions options;
       options.cacheForever = true;
@@ -983,8 +1001,11 @@ private:
           .then([&](siginfo_t&& sig) {
         context.warning(kj::str("Requesting shutdown due to signal: ", strsignal(sig.si_signo)));
 
-        // Close pipe to request unmount.
-        KJ_SYSCALL(shutdown(connection, SHUT_WR));
+        KJ_IF_MAYBE(c, connection) {
+          // Close pipe to request unmount.
+          KJ_SYSCALL(shutdown(*c, SHUT_WR));
+        }
+        fuseMount = nullptr;
 
         return eventPort.onSignal(SIGINT)
             .exclusiveJoin(eventPort.onSignal(SIGQUIT))
@@ -995,15 +1016,29 @@ private:
         });
       }).eagerlyEvaluate(nullptr);
 
-      auto logPipe = pipeToStdout(eventPort, connection).eagerlyEvaluate(nullptr);
+      kj::Maybe<kj::Promise<void>> logPipe;
+      KJ_IF_MAYBE(c, connection) {
+        logPipe = pipeToStdout(eventPort, *c).eagerlyEvaluate(nullptr);
+      }
 
-      context.warning("App is now available from Sandstorm server. Ctrl+C to disconnect.");
+      if (connection == nullptr) {
+        context.warning("App mounted. Ctrl+C to disconnect.");
+      } else {
+        context.warning("App is now available from Sandstorm server. Ctrl+C to disconnect.");
+      }
 
       bindFuse(eventPort, fuseFd, rootNode, options)
-          .then([&]() { context.warning("Server unmounted cleanly."); })
+          .then([&]() {
+            context.warning("Unmounted cleanly.");
+            KJ_IF_MAYBE(m, fuseMount) {
+              m->get()->dontUnmount();
+            }
+          })
           .wait(waitScope);
 
-      logPipe.wait(waitScope);
+      KJ_IF_MAYBE(p, logPipe) {
+        p->wait(waitScope);
+      }
     }
 
     // TODO(now):  Do something with the file list.

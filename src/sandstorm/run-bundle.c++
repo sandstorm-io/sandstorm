@@ -23,6 +23,10 @@
 #include <kj/io.h>
 #include <kj/parse/common.h>
 #include <kj/parse/char.h>
+#include <capnp/schema.h>
+#include <capnp/dynamic.h>
+#include <capnp/serialize.h>
+#include <sandstorm/package.capnp.h>
 #include <sodium.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -48,6 +52,7 @@
 #include <dirent.h>
 
 #include "version.h"
+#include "send-fd.h"
 
 namespace sandstorm {
 
@@ -409,6 +414,172 @@ private:
   pid_t pid;
   kj::String url;
 };
+
+// =======================================================================================
+// JSON-ify Cap'n Proto message
+//
+// Used specifically to insert a dev app's manifest into the database.
+//
+// TODO(cleanup): This REALLY belongs somewhere else!
+
+static const char HEXDIGITS[] = "0123456789abcdef";
+
+static capnp::schema::Type::Which whichFieldType(const capnp::StructSchema::Field& field) {
+  auto proto = field.getProto();
+  switch (proto.which()) {
+    case capnp::schema::Field::SLOT:
+      return proto.getSlot().getType().which();
+    case capnp::schema::Field::GROUP:
+      return capnp::schema::Type::STRUCT;
+  }
+  KJ_UNREACHABLE;
+}
+
+static kj::StringTree toJson(const capnp::DynamicValue::Reader& value,
+                             capnp::schema::Type::Which which) {
+  switch (value.getType()) {
+    case capnp::DynamicValue::UNKNOWN:
+      return kj::strTree("null");
+    case capnp::DynamicValue::VOID:
+      return kj::strTree("null");
+    case capnp::DynamicValue::BOOL:
+      return kj::strTree(value.as<bool>() ? "true" : "false");
+    case capnp::DynamicValue::INT:
+      if (which == capnp::schema::Type::INT64 ||
+          which == capnp::schema::Type::UINT64) {
+        // 64-bit values must be stringified to avoid losing precision.
+        return kj::strTree('\"', value.as<int64_t>(), '\"');
+      } else {
+        return kj::strTree(value.as<int32_t>());
+      }
+    case capnp::DynamicValue::UINT:
+      if (which == capnp::schema::Type::INT64 ||
+          which == capnp::schema::Type::UINT64) {
+        // 64-bit values must be stringified to avoid losing precision.
+        return kj::strTree('\"', value.as<uint64_t>(), '\"');
+      } else {
+        return kj::strTree(value.as<uint64_t>());
+      }
+    case capnp::DynamicValue::FLOAT:
+      if (which == capnp::schema::Type::FLOAT32) {
+        return kj::strTree(value.as<float>());
+      } else {
+        return kj::strTree(value.as<double>());
+      }
+    case capnp::DynamicValue::TEXT: {
+      auto chars = value.as<capnp::Text>();
+      kj::Vector<char> escaped(chars.size());
+
+      for (char c: chars) {
+        switch (c) {
+          case '\a': escaped.addAll(kj::StringPtr("\\a")); break;
+          case '\b': escaped.addAll(kj::StringPtr("\\b")); break;
+          case '\f': escaped.addAll(kj::StringPtr("\\f")); break;
+          case '\n': escaped.addAll(kj::StringPtr("\\n")); break;
+          case '\r': escaped.addAll(kj::StringPtr("\\r")); break;
+          case '\t': escaped.addAll(kj::StringPtr("\\t")); break;
+          case '\v': escaped.addAll(kj::StringPtr("\\v")); break;
+          case '\'': escaped.addAll(kj::StringPtr("\\\'")); break;
+          case '\"': escaped.addAll(kj::StringPtr("\\\"")); break;
+          case '\\': escaped.addAll(kj::StringPtr("\\\\")); break;
+          default:
+            if (c < 0x20) {
+              escaped.add('\\');
+              escaped.add('x');
+              uint8_t c2 = c;
+              escaped.add(HEXDIGITS[c2 / 16]);
+              escaped.add(HEXDIGITS[c2 % 16]);
+            } else {
+              escaped.add(c);
+            }
+            break;
+        }
+      }
+      return kj::strTree('"', escaped, '"');
+    }
+    case capnp::DynamicValue::DATA:
+      // TODO(someday): This is a crappy encoding for bytes. It produces the semantic value we want,
+      //   but we really want to supply it as base64 and have it deserialize into a Buffer.
+      return kj::strTree('[',
+        kj::StringTree(KJ_MAP(b, value.as<capnp::Data>()) { return kj::strTree((uint)b); }, ","),
+        ']');
+
+    case capnp::DynamicValue::LIST: {
+      auto listValue = value.as<capnp::DynamicList>();
+      auto which = listValue.getSchema().whichElementType();
+      kj::Array<kj::StringTree> elements = KJ_MAP(element, listValue) {
+        return toJson(element, which);
+      };
+      return kj::strTree('[', kj::StringTree(kj::mv(elements), ","), ']');
+    }
+    case capnp::DynamicValue::ENUM: {
+      auto enumValue = value.as<capnp::DynamicEnum>();
+      KJ_IF_MAYBE(enumerant, enumValue.getEnumerant()) {
+        return kj::strTree('\"', enumerant->getProto().getName(), '\"');
+      } else {
+        // Unknown enum value; output raw number.
+        return kj::strTree(enumValue.getRaw());
+      }
+      break;
+    }
+    case capnp::DynamicValue::STRUCT: {
+      auto structValue = value.as<capnp::DynamicStruct>();
+      auto unionFields = structValue.getSchema().getUnionFields();
+      auto nonUnionFields = structValue.getSchema().getNonUnionFields();
+
+      kj::Vector<kj::StringTree> printedFields(nonUnionFields.size() + (unionFields.size() != 0));
+
+      // We try to write the union field, if any, in proper order with the rest.
+      auto which = structValue.which();
+
+      kj::StringTree unionValue;
+      KJ_IF_MAYBE(field, which) {
+        // Even if the union field has its default value, if it is not the default field of the
+        // union then we have to print it anyway.
+        auto fieldProto = field->getProto();
+        if (fieldProto.getDiscriminantValue() != 0 || structValue.has(*field)) {
+          unionValue = kj::strTree(
+              '\"', fieldProto.getName(), "\":",
+              toJson(structValue.get(*field), whichFieldType(*field)));
+        } else {
+          which = nullptr;
+        }
+      }
+
+      for (auto field: nonUnionFields) {
+        KJ_IF_MAYBE(unionField, which) {
+          if (unionField->getIndex() < field.getIndex()) {
+            printedFields.add(kj::mv(unionValue));
+            which = nullptr;
+          }
+        }
+        if (structValue.has(field)) {
+          printedFields.add(kj::strTree(
+              '\"', field.getProto().getName(), "\":",
+              toJson(structValue.get(field), whichFieldType(field))));
+        }
+      }
+      if (which != nullptr) {
+        // Union value is last.
+        printedFields.add(kj::mv(unionValue));
+      }
+
+      return kj::strTree('{', kj::StringTree(printedFields.releaseAsArray(), ","), '}');
+    }
+    case capnp::DynamicValue::CAPABILITY:
+      // TODO(someday): Implement capabilities?
+      return kj::strTree("null");
+    case capnp::DynamicValue::ANY_POINTER:
+      // TODO(someday): Convert to bytes?
+      return kj::strTree("null");
+  }
+
+  KJ_UNREACHABLE;
+}
+
+kj::StringTree toJson(capnp::DynamicStruct::Reader value) {
+  return toJson(value, capnp::schema::Type::STRUCT);
+}
 
 // =======================================================================================
 
@@ -848,7 +1019,8 @@ public:
       context.exitError("Sandstorm is not running.");
     }
 
-    // Connect to the devmode socket.
+    // Connect to the devmode socket. The server daemon listens on this socket for commands.
+    // See `runDevDaemon()`.
     int sock_;
     KJ_SYSCALL(sock_ = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0));
     auto sock = kj::AutoCloseFd(sock_);
@@ -859,8 +1031,11 @@ public:
     strcpy(addr.sun_path, "../var/sandstorm/socket/devmode");
     KJ_SYSCALL(connect(sock, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)));
 
-    // Send the socket back on stdout.
-    sendFd(STDOUT_FILENO, sock);
+    // Send the command code.
+    kj::FdOutputStream((int)sock).write(&DEVMODE_COMMAND_CONNECT, 1);
+
+    // Send our "stdout" (which is actually a socket) to the devmode server.
+    sendFd(sock, STDOUT_FILENO);
 
     return true;
   }
@@ -1571,10 +1746,11 @@ private:
 
   void runDevDaemon(const Config& config) KJ_NORETURN {
     clearSignalMask();
+    clearDevApps(config);
 
     // Make sure socket directory exists (since the installer doesn't create it).
     if (mkdir("/var/sandstorm/socket", 0770) == 0) {
-      // Set permissions.
+      // Allow group to use this directory.
       KJ_SYSCALL(chown("/var/sandstorm/socket", 0, config.uids.gid));
     } else {
       int error = errno;
@@ -1596,6 +1772,10 @@ private:
     KJ_SYSCALL(bind(sock, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)));
     KJ_SYSCALL(listen(sock, 2));
 
+    // Ensure that the group can connect to the socket.
+    KJ_SYSCALL(chown("/var/sandstorm/socket/devmode", 0, config.uids.gid));
+    KJ_SYSCALL(chmod("/var/sandstorm/socket/devmode", 0770));
+
     // We don't care to reap dev sessions.
     KJ_SYSCALL(signal(SIGCHLD, SIG_IGN));
 
@@ -1603,21 +1783,47 @@ private:
     KJ_SYSCALL(signal(SIGPIPE, SIG_IGN));
 
     for (;;) {
-      int connFd;
-      KJ_SYSCALL(connFd = accept4(sock, nullptr, nullptr, SOCK_CLOEXEC));
-      KJ_DEFER(close(connFd));
+      int connFd_;
+      KJ_SYSCALL(connFd_ = accept4(sock, nullptr, nullptr, SOCK_CLOEXEC));
+      kj::AutoCloseFd connFd(connFd_);
 
       if (fork() == 0) {
         sock = nullptr;
-        runDevSession(config, connFd);
+        runDevSession(config, kj::mv(connFd));
         KJ_UNREACHABLE;
       }
     }
   }
 
-  void runDevSession(const Config& config, int fd) KJ_NORETURN {
+  static constexpr kj::byte DEVMODE_COMMAND_CONNECT = 1;
+  // Command code sent by `sandstorm dev` command, which is invoked by `spk dev`.
+
+  static constexpr kj::byte DEVMODE_COMMAND_GETNS = 2;
+  // Command code sent by sandstorm-supervisor when it needs to enter our namespace.
+  //
+  // TODO(cleanup): This constant is also defined in supervisor-main.c++. Share them.
+
+  void runDevSession(const Config& config, kj::AutoCloseFd internalFd) KJ_NORETURN {
     auto exception = kj::runCatchingExceptions([&]() {
+      // When someone connects, we expect them to pass us a one-byte command code.
+      kj::byte commandCode;
+      kj::FdInputStream((int)internalFd).read(&commandCode, 1);
+      if (commandCode == DEVMODE_COMMAND_GETNS) {
+        // Oh, they just want to know our namespace.
+        auto nsfd = raiiOpen("/proc/self/ns/mnt", O_RDONLY);
+        sendFd(internalFd, nsfd);
+        return;
+      }
+
+      KJ_REQUIRE(commandCode == DEVMODE_COMMAND_CONNECT);
       context.warning("** Accepted new dev session connection...");
+
+      // OK, we're accepting a new dev mode connection. `internalFd` is the socket opened by
+      // the `sandstorm dev` command, implemented elsewhere in this file. All it does is pass
+      // us the file descriptor originally provided by its invoker (i.e. from the `spk` tool).
+      // So get that, then discard internalFd.
+      auto fd = receiveFd(internalFd);
+      internalFd = nullptr;
 
       // Dev error log goes to the connected session.
       KJ_SYSCALL(dup2(fd, STDOUT_FILENO));
@@ -1626,7 +1832,7 @@ private:
       // Restore SIGCHLD, ignored by parent process.
       KJ_SYSCALL(signal(SIGCHLD, SIG_DFL));
 
-      kj::FdInputStream rawInput(fd);
+      kj::FdInputStream rawInput((int)fd);
       kj::BufferedInputStreamWrapper input(rawInput);
       kj::String appId;
       KJ_IF_MAYBE(line, readLine(input)) {
@@ -1657,7 +1863,7 @@ private:
       auto fuseFd = raiiOpen("/dev/fuse", O_RDWR);
 
       auto mountOptions = kj::str("fd=", fuseFd, ",rootmode=40000,"
-          "user_id=", config.uids.uid, ",group_id=", config.uids.gid);
+          "user_id=", config.uids.uid, ",group_id=", config.uids.gid, ",allow_other");
 
       KJ_SYSCALL(mount("/dev/fuse", dir, "fuse", MS_NOSUID|MS_NODEV, mountOptions.cStr()));
       KJ_DEFER(umount2(dir, MNT_FORCE | UMOUNT_NOFOLLOW));
@@ -1666,14 +1872,22 @@ private:
       sendFd(fd, fuseFd);
       fuseFd = nullptr;
 
-      // Noticy the front-end that the app exists.
-      insertDevApp(config, appId, pkgId);
+      {
+        // Read the manifest.
+        capnp::StreamFdMessageReader reader(
+            raiiOpen(kj::str(dir, "/sandstorm-manifest"), O_RDONLY));
+
+        // Notify the front-end that the app exists.
+        insertDevApp(config, appId, pkgId, reader.getRoot<spk::Manifest>());
+      }
       KJ_DEFER(removeDevApp(config, appId));
 
       for (;;) {
         KJ_IF_MAYBE(line, readLine(input)) {
           if (*line == "restart") {
-            updateDevApp(config, appId);
+            capnp::StreamFdMessageReader reader(
+                raiiOpen(kj::str(dir, "/sandstorm-manifest"), O_RDONLY));
+            updateDevApp(config, appId, reader.getRoot<spk::Manifest>());
           }
         } else {
           break;
@@ -1692,25 +1906,32 @@ private:
     }
   }
 
-  void insertDevApp(const Config& config, kj::StringPtr appId, kj::StringPtr pkgId) {
+  void insertDevApp(const Config& config, kj::StringPtr appId, kj::StringPtr pkgId,
+                    spk::Manifest::Reader manifest) {
     mongoCommand(config, kj::str(
         "db.devapps.insert({"
           "_id:\"", appId, "\","
           "packageId:\"", pkgId, "\","
-          "timestamp:", time(nullptr),
+          "timestamp:", time(nullptr), ","
+          "manifest:", toJson(manifest),
         "})"));
   }
 
-  void updateDevApp(const Config& config, kj::StringPtr appId) {
+  void updateDevApp(const Config& config, kj::StringPtr appId, spk::Manifest::Reader manifest) {
     mongoCommand(config, kj::str(
         "db.devapps.update({_id:\"", appId, "\"}, {$set: {"
-          "timestamp:", time(nullptr),
+          "timestamp:", time(nullptr), ","
+          "manifest:", toJson(manifest),
         "}})"));
   }
 
   void removeDevApp(const Config& config, kj::StringPtr appId) {
     mongoCommand(config, kj::str(
         "db.devapps.remove({_id:\"", appId, "\"})"));
+  }
+
+  void clearDevApps(const Config& config) {
+    mongoCommand(config, kj::str("db.devapps.remove()"));
   }
 
   void mongoCommand(const Config& config, kj::StringPtr command) {
@@ -1734,37 +1955,6 @@ private:
     KJ_SYSCALL(waitpid(pid, &status, 0)) { return; }
     KJ_ASSERT(WIFEXITED(status) && WEXITSTATUS(status) == 0,
               "mongo command failed", command) { return; }
-  }
-
-  void sendFd(int sendOn, int fdToSend) {
-    // Sends the fd over the given socket. A NUL byte is also sent, because at least one byte
-    // must be written along with the FD.
-
-    struct msghdr msg;
-    struct iovec iov;
-    union {
-      struct cmsghdr cmsg;
-      char cmsgSpace[CMSG_LEN(sizeof(int))];
-    };
-    memset(&msg, 0, sizeof(msg));
-    memset(&iov, 0, sizeof(iov));
-    memset(cmsgSpace, 0, sizeof(cmsgSpace));
-
-    char c = 0;
-    iov.iov_base = &c;
-    iov.iov_len = 1;
-    msg.msg_iov = &iov;
-    msg.msg_iovlen = 1;
-
-    msg.msg_control = &cmsg;
-    msg.msg_controllen = sizeof(cmsgSpace);
-
-    cmsg.cmsg_len = sizeof(cmsgSpace);
-    cmsg.cmsg_level = SOL_SOCKET;
-    cmsg.cmsg_type = SCM_RIGHTS;
-    *reinterpret_cast<int*>(CMSG_DATA(&cmsg)) = fdToSend;
-
-    KJ_SYSCALL(sendmsg(sendOn, &msg, 0));
   }
 
   // ---------------------------------------------------------------------------
@@ -1793,6 +1983,9 @@ private:
     }
   }
 };
+
+constexpr kj::byte RunBundleMain::DEVMODE_COMMAND_CONNECT;
+constexpr kj::byte RunBundleMain::DEVMODE_COMMAND_GETNS;
 
 }  // namespace sandstorm
 

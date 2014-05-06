@@ -37,6 +37,10 @@ if (Meteor.isServer) {
     }
   });
 
+  Meteor.publish("devApps", function () {
+    return DevApps.find();
+  });
+
   Meteor.publish("hasUsers", function () {
     // Publish pseudo-collection which tells the client if there are any users at all.
     //
@@ -72,6 +76,7 @@ if (Meteor.isClient) {
 
   Deps.autorun(function () {
     Meteor.subscribe("grainsMenu");
+    Meteor.subscribe("devApps");
     Meteor.subscribe("credentials");
   });
 
@@ -85,11 +90,32 @@ if (Meteor.isClient) {
     },
 
     "click .newGrain": function (event) {
-      var id = event.currentTarget.id.split("-")[1];
-      var action = UserActions.findOne(id);
-      if (!action) {
-        console.error("no such action: ", id);
-        return;
+      var packageId;
+      var command;
+
+      var parts = event.currentTarget.id.split("-");
+      if (parts[1] === "dev") {
+        var devId = parts[2];
+        var devApp = DevApps.findOne(devId);
+        if (!devApp) {
+          console.error("no such dev app: ", devId);
+          return;
+        }
+
+        var devAction = devApp.manifest.actions[parts[3]];
+
+        packageId = devApp.packageId;
+        command = devAction.command;
+      } else {
+        var id = parts[1];
+        var action = UserActions.findOne(id);
+        if (!action) {
+          console.error("no such action: ", id);
+          return;
+        }
+
+        packageId = action.packageId;
+        command = action.command;
       }
 
       Session.set("grainMenuOpen", false);
@@ -97,7 +123,7 @@ if (Meteor.isClient) {
       if (!title) return;
 
       // We need to ask the server to start a new grain, then browse to it.
-      Meteor.call("newGrain", action.packageId, action.command, title, function (error, grainId) {
+      Meteor.call("newGrain", packageId, command, title, function (error, grainId) {
         if (error) {
           console.error(error);
         } else {
@@ -140,6 +166,26 @@ if (Meteor.isClient) {
       var userId = Meteor.userId();
       if (userId) {
         return UserActions.find({userId: userId}).fetch();
+      } else {
+        return [];
+      }
+    },
+    devActions: function () {
+      var userId = Meteor.userId();
+      if (userId) {
+        var result = [];
+        DevApps.find().forEach(function (app) {
+          if (app.manifest.actions) {
+            app.manifest.actions.forEach(function (action, i) {
+              result.push({
+                _id: app._id,
+                index: i,
+                title: action.title.defaultText
+              });
+            });
+          }
+        });
+        return result;
       } else {
         return [];
       }

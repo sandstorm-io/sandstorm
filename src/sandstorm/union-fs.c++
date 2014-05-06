@@ -21,6 +21,7 @@
 #include "union-fs.h"
 #include <kj/vector.h>
 #include <kj/debug.h>
+#include <capnp/serialize.h>
 #include <map>
 #include <set>
 #include "fuse.h"
@@ -507,12 +508,89 @@ private:
   kj::StringPtr path;
 };
 
+class SimpleDataFile final: public fuse::File::Server {
+public:
+  SimpleDataFile(kj::ArrayPtr<const capnp::word> data)
+      : data(kj::arrayPtr(reinterpret_cast<const kj::byte*>(data.begin()),
+                          data.size() * sizeof(capnp::word))) {}
+
+protected:
+  kj::Promise<void> read(ReadContext context) {
+    auto params = context.getParams();
+    auto offset = kj::min(data.size(), params.getOffset());
+    auto size = kj::min(data.size() - offset, params.getSize());
+
+    auto results = context.getResults(capnp::MessageSize { size / sizeof(capnp::word) + 4, 0 });
+    results.setData(data.slice(offset, offset + size));
+
+    return kj::READY_NOW;
+  }
+
+private:
+  kj::ArrayPtr<const kj::byte> data;
+};
+
+class SimpleDataNode final: public fuse::Node::Server {
+  // A node wrapping a byte array and exposing it as a file.
+
+public:
+  SimpleDataNode(kj::Array<capnp::word> data): data(kj::mv(data)) {}
+
+protected:
+  kj::Promise<void> lookup(LookupContext context) override {
+    KJ_FAIL_REQUIRE("not a directory");
+  }
+
+  kj::Promise<void> getAttributes(GetAttributesContext context) override {
+    auto results = context.getResults(capnp::MessageSize {
+      capnp::sizeInWords<GetAttributesResults>() +
+          capnp::sizeInWords<fuse::Node::Attributes>(),
+      0
+    });
+    results.setTtl(kj::maxValue);
+
+    auto attr = results.initAttributes();
+    attr.setInodeNumber(0);
+    attr.setType(fuse::Node::Type::REGULAR);
+    attr.setPermissions(0444);
+    attr.setLinkCount(1);
+    attr.setSize(data.size() * sizeof(capnp::word));
+
+    return kj::READY_NOW;
+  }
+
+  kj::Promise<void> openAsFile(OpenAsFileContext context) override {
+    auto results = context.getResults(capnp::MessageSize { 4, 1 });
+    results.setFile(kj::heap<SimpleDataFile>(data));
+    return kj::READY_NOW;
+  }
+
+  kj::Promise<void> openAsDirectory(OpenAsDirectoryContext context) override {
+    KJ_FAIL_REQUIRE("not a directory");
+  }
+
+  kj::Promise<void> readlink(ReadlinkContext context) override {
+    KJ_FAIL_REQUIRE("not a symlink");
+  }
+
+private:
+  kj::Array<capnp::word> data;
+};
+
 }  // namespace
 
 fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap,
+                               spk::Manifest::Reader manifest,
                                kj::Function<void(kj::StringPtr)>& callback) {
   auto searchPath = sourceMap.getSearchPath();
-  auto layers = kj::heapArrayBuilder<fuse::Node::Client>(searchPath.size());
+  auto layers = kj::heapArrayBuilder<fuse::Node::Client>(searchPath.size() + 1);
+
+  {
+    capnp::MallocMessageBuilder manifestCopy(manifest.totalSize().wordCount + 4);
+    manifestCopy.setRoot(manifest);
+    layers.add(kj::heap<SingletonNode>(kj::heap<SimpleDataNode>(
+        capnp::messageToFlatArray(manifestCopy)), "sandstorm-manifest"));
+  }
 
   for (auto mapping: searchPath) {
     kj::StringPtr sourcePath = mapping.getSourcePath();

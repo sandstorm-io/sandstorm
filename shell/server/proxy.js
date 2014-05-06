@@ -91,16 +91,27 @@ Meteor.methods({
     }
 
     var package = Packages.findOne(packageId);
-    if (!package) {
-      throw new Meteor.Error(404, "Not Found", "No such package is installed.");
+    var appId;
+    var manifest;
+    if (package) {
+      appId = package.appId;
+      manifest = package.manifest;
+    } else {
+      var devApp = DevApps.findOne({packageId: packageId});
+      if (devApp) {
+        appId = devApp._id;
+        manifest = devApp.manifest;
+      } else {
+        throw new Meteor.Error(404, "Not Found", "No such package is installed.");
+      }
     }
 
     var grainId = Random.id(22);  // 128 bits of entropy
     Grains.insert({
       _id: grainId,
       packageId: packageId,
-      appId: package.appId,
-      appVersion: package.manifest.appVersion,
+      appId: appId,
+      appVersion: manifest.appVersion,
       userId: this.userId,
       title: title
     });
@@ -126,17 +137,31 @@ Meteor.methods({
         throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainId);
       }
 
-      var app = Packages.findOne(grain.packageId);
-      if (!app) {
-        throw new Meteor.Error(500, "Grain's app not installed", "Package ID: " + grain.packageId);
+      var manifest;
+      var packageId;
+      var devApp = DevApps.findOne({_id: grain.appId});
+      if (devApp) {
+        // If a DevApp with the same app ID is currently active, we let it override the installed
+        // package, so that the grain runs using the dev app.
+        manifest = devApp.manifest;
+        packageId = devApp.packageId;
+      } else {
+        var pkg = Packages.findOne(grain.packageId);
+        if (pkg) {
+          manifest = pkg.manifest;
+          packageId = pkg._id;
+        } else {
+          throw new Meteor.Error(500, "Grain's package not installed",
+                                 "Package ID: " + grain.packageId);
+        }
       }
 
-      if (!("continueCommand" in app.manifest)) {
+      if (!("continueCommand" in manifest)) {
         throw new Meteor.Error(500, "App manifest defines no continueCommand.",
                                "App ID: " + grain.packageId);
       }
 
-      startGrainInternal(grain.packageId, grainId, app.manifest.continueCommand, false);
+      startGrainInternal(packageId, grainId, manifest.continueCommand, false);
     }
 
     var proxy = new Proxy(grainId, sessionId);
@@ -178,9 +203,8 @@ function startGrainInternal(packageId, grainId, command, isNew) {
     }
   }
 
-  if (SANDSTORM_VARDIR != "/var/sandstorm") {
-    args.push("--pkg=" + SANDSTORM_APPDIR + "/" + packageId);
-    args.push("--var=" + SANDSTORM_GRAINDIR + "/" + grainId);
+  if (SANDSTORM_ALTHOME) {
+    args.push("--home=" + SANDSTORM_ALTHOME);
   }
 
   args.push("--");

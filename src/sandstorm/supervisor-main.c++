@@ -390,7 +390,31 @@ private:
   kj::String realPath(kj::StringPtr path) {
     char* cResult = realpath(path.cStr(), nullptr);
     if (cResult == nullptr) {
-      KJ_FAIL_SYSCALL("realpath", errno, path);
+      int error = errno;
+      if (error != ENOENT) {
+        KJ_FAIL_SYSCALL("realpath", error, path);
+      }
+
+      // realpath() fails if the target doesn't exist, but our goal here is just to convert a
+      // relative path to absolute whether it exists or not. So try resolving the parent instead.
+      KJ_IF_MAYBE(slashPos, path.findLast('/')) {
+        if (*slashPos == 0) {
+          // Path is e.g. "/foo". The root directory obviously exists.
+          return kj::heapString(path);
+        } else {
+          return kj::str(realPath(kj::heapString(path.slice(0, *slashPos))),
+                         path.slice(*slashPos));
+        }
+      } else {
+        // Path is a relative path with only one component.
+        char* cwd = getcwd(nullptr, 0);
+        KJ_DEFER(free(cwd));
+        if (cwd[0] == '/' && cwd[1] == '\0') {
+          return kj::str('/', path);
+        } else {
+          return kj::str(cwd, '/', path);
+        }
+      }
     }
     auto result = kj::heapString(cResult);
     free(cResult);

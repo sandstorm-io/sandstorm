@@ -27,7 +27,20 @@ var Http = Npm.require("http");
 
 var WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;
 var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
-var GRAINDIR = "/var/sandstorm/grains";
+
+var SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
+SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
+SANDSTORM_APPDIR = SANDSTORM_VARDIR + "/apps";
+SANDSTORM_GRAINDIR = SANDSTORM_VARDIR + "/grains";
+SANDSTORM_DOWNLOADDIR = SANDSTORM_VARDIR + "/downloads";
+
+sandstormExe = function (progname) {
+  if (SANDSTORM_ALTHOME) {
+    return SANDSTORM_ALTHOME + "/latest/bin/" + progname;
+  } else {
+    return progname;
+  }
+}
 
 // =======================================================================================
 // Meteor context <-> Async Node.js context adapters
@@ -165,15 +178,30 @@ function startGrainInternal(packageId, grainId, command, isNew) {
     }
   }
 
+  if (SANDSTORM_VARDIR != "/var/sandstorm") {
+    args.push("--pkg=" + SANDSTORM_APPDIR + "/" + packageId);
+    args.push("--var=" + SANDSTORM_GRAINDIR + "/" + grainId);
+  }
+
   args.push("--");
   args.push(command.executablePath);
   args = args.concat(command.args);
 
-  var proc = ChildProcess.spawn("sandstorm-supervisor", args, {
+  var proc = ChildProcess.spawn(sandstormExe("sandstorm-supervisor"), args, {
     stdio: ["ignore", "pipe", process.stderr],
     detached: true
   });
-  proc.on("exit", function () {
+  proc.on("error", function (err) {
+    console.error(err.stack);
+    delete runningGrains[grainId];
+  });
+  proc.on("exit", function (code, sig) {
+    if (code) {
+      console.error("sandstorm-supervisor exited with code: " + code);
+    } else if (sig) {
+      console.error("sandstorm-supervisor killed by signal: " + sig);
+    }
+
     delete runningGrains[grainId];
   });
   proc.unref();
@@ -210,7 +238,7 @@ shutdownGrain = function (grainId) {
   // Try to send a shutdown.  The grain may not be running, in which case this will fail, which
   // is fine.  In fact even if the grain is running, we expect the call to fail because the grain
   // kills itself before returning.
-  var connection = Capnp.connect("unix:" + Path.join(GRAINDIR, grainId, "socket"));
+  var connection = Capnp.connect("unix:" + Path.join(SANDSTORM_GRAINDIR, grainId, "socket"));
   var supervisor = connection.restore(null, Supervisor);
 
   supervisor.shutdown().then(function (result) {
@@ -226,7 +254,7 @@ deleteGrain = function (grainId) {
   shutdownGrain(grainId);
   // Give time to shut down before deleting.
   setTimeout(function () {
-    var dir = Path.join(GRAINDIR, grainId);
+    var dir = Path.join(SANDSTORM_GRAINDIR, grainId);
     if (Fs.existsSync(dir)) {
       recursiveRmdir(dir);
     }
@@ -380,7 +408,8 @@ Proxy.prototype.getConnection = function () {
   // TODO(perf):  Several proxies could share a connection if opening the same grain in multiple
   //   tabs.  Each should be a separate session.
   if (!this.connection) {
-    this.connection = Capnp.connect("unix:" + Path.join(GRAINDIR, this.grainId, "socket"));
+    this.connection = Capnp.connect("unix:" +
+        Path.join(SANDSTORM_GRAINDIR, this.grainId, "socket"));
     this.supervisor = this.connection.restore(null, Supervisor);
     this.uiView = this.supervisor.getMainView().view;
   }

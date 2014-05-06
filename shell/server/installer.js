@@ -26,10 +26,6 @@ var Http = Npm.require("http");
 
 var Manifest = Capnp.importSystem("sandstorm/package.capnp").Manifest;
 
-var APPDIR = "/var/sandstorm/apps";
-var PKGDIR = "/var/sandstorm/pkgs";
-var DOWNLOADDIR = "/var/sandstorm/downloads";
-
 var installers = {};
 
 recursiveRmdir = function (dir) {
@@ -77,7 +73,7 @@ cancelDownload = function (packageId) {
 doClientUpload = function (stream) {
   return new Promise(function (resolve, reject) {
     var id = Random.id();
-    var tmpPath = Path.join(DOWNLOADDIR, id + ".downloading");
+    var tmpPath = Path.join(SANDSTORM_DOWNLOADDIR, id + ".downloading");
     var file = Fs.createWriteStream(tmpPath);
     var hasher = Crypto.createHash("sha256");
 
@@ -93,7 +89,7 @@ doClientUpload = function (stream) {
       try {
         file.end();
         var packageId = hasher.digest("hex").slice(0, 32);
-        var verifiedPath = Path.join(DOWNLOADDIR, packageId + ".verified");
+        var verifiedPath = Path.join(SANDSTORM_DOWNLOADDIR, packageId + ".verified");
         if (Fs.existsSync(verifiedPath)) {
           Fs.unlinkSync(tmpPath);
         } else {
@@ -121,10 +117,10 @@ function AppInstaller(packageId, url, appId) {
   this.packageId = packageId;
   this.url = url;
   this.urlHash = url && Crypto.createHash("sha256").update(url).digest("hex").slice(0, 32);
-  this.downloadPath = Path.join(DOWNLOADDIR, this.urlHash + ".downloading");
-  this.unverifiedPath = Path.join(DOWNLOADDIR, this.urlHash + ".unverified");
-  this.verifiedPath = Path.join(DOWNLOADDIR, this.packageId + ".verified");
-  this.unpackedPath = Path.join(APPDIR, this.packageId);
+  this.downloadPath = Path.join(SANDSTORM_DOWNLOADDIR, this.urlHash + ".downloading");
+  this.unverifiedPath = Path.join(SANDSTORM_DOWNLOADDIR, this.urlHash + ".unverified");
+  this.verifiedPath = Path.join(SANDSTORM_DOWNLOADDIR, this.packageId + ".verified");
+  this.unpackedPath = Path.join(SANDSTORM_APPDIR, this.packageId);
   this.unpackingPath = this.unpackedPath + ".unpacking";
   this.failed = false;
   this.appId = appId;
@@ -306,7 +302,8 @@ AppInstaller.prototype.doUnpack = function() {
   console.log("Unpacking app:", this.verifiedPath);
   this.updateProgress("unpack");
 
-  var child = ChildProcess.spawn("spk", ["unpack", "-o", this.verifiedPath, this.unpackingPath], {
+  var child = ChildProcess.spawn(sandstormExe("spk"),
+      ["unpack", "-o", this.verifiedPath, this.unpackingPath], {
     stdio: ["ignore", "pipe", process.stderr]
   });
 
@@ -352,7 +349,7 @@ AppInstaller.prototype.doAnalyze = function() {
         "This should be impossible.  Unfortunately, I don't know how to deal with this state.  " +
         "Please report this bug to the sandstorm developers.  As a work-around, if you are " +
         "the system administrator, try deleting this package's directory from " +
-        "/var/sandstorm/apps.");
+        "$SANDSTORM_HOME/var/sandstorm/apps.");
   }
 
   // Success.

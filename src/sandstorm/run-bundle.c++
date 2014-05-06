@@ -233,6 +233,7 @@ kj::AutoCloseFd prepareMonitoringLoop() {
   sigset_t sigmask;
   KJ_SYSCALL(sigemptyset(&sigmask));
   KJ_SYSCALL(sigaddset(&sigmask, SIGTERM));
+  KJ_SYSCALL(sigaddset(&sigmask, SIGINT));   // request front-end shutdown
   KJ_SYSCALL(sigaddset(&sigmask, SIGCHLD));
   KJ_SYSCALL(sigaddset(&sigmask, SIGHUP));
   KJ_SYSCALL(sigprocmask(SIG_BLOCK, &sigmask, nullptr));
@@ -444,6 +445,25 @@ public:
                   .build();
             },
             "Stop the sandstorm server.")
+        .addSubCommand("start-fe",
+            [this]() {
+              return kj::MainBuilder(context, VERSION,
+                    "Start the Sandstorm front-end after it has previously been stopped using "
+                    "the `stop-fe` command.")
+                  .callAfterParsing(KJ_BIND_METHOD(*this, startFe))
+                  .build();
+            },
+            "Undo previous stop-fe.")
+        .addSubCommand("stop-fe",
+            [this]() {
+              return kj::MainBuilder(context, VERSION,
+                    "Stop the Sandstorm front-end, but leave Mongo running. Useful when you "
+                    "want to run the front-end in dev mode in front of the existing database "
+                    "and grains.")
+                  .callAfterParsing(KJ_BIND_METHOD(*this, stopFe))
+                  .build();
+            },
+            "Stop the sandstorm front-end.")
         .addSubCommand("status",
             [this]() {
               return kj::MainBuilder(context, VERSION,
@@ -690,6 +710,38 @@ public:
     }
 
     context.exitInfo("Sandstorm server stopped.");
+  }
+
+  kj::MainBuilder::Validity startFe() {
+    return startStopFe(1);
+  }
+
+  kj::MainBuilder::Validity stopFe() {
+    return startStopFe(0);
+  }
+
+  kj::MainBuilder::Validity startStopFe(int value) {
+    changeToInstallDir();
+
+    kj::AutoCloseFd pidfile = nullptr;
+    KJ_IF_MAYBE(pf, openPidfile()) {
+      pidfile = kj::mv(*pf);
+    } else {
+      context.exitInfo("Sandstorm is not running.");
+    }
+
+    pid_t pid;
+    KJ_IF_MAYBE(p, getRunningPid(pidfile)) {
+      pid = *p;
+    } else {
+      context.exitInfo("Sandstorm is not running.");
+    }
+
+    union sigval sigval;
+    memset(&sigval, 0, sizeof(sigval));
+    sigval.sival_int = value;
+    KJ_SYSCALL(sigqueue(pid, SIGINT, sigval));
+    context.exitInfo(value == 0 ? "Requested front-end shutdown." : "Requested front-end start.");
   }
 
   kj::MainBuilder::Validity status() {
@@ -1093,6 +1145,12 @@ private:
           context.exitError("** Server monitor died. Aborting.");
           KJ_UNREACHABLE;
         }
+      } else if (siginfo.ssi_signo == SIGINT) {
+        // Pass along to server monitor.
+        union sigval sigval;
+        memset(&sigval, 0, sizeof(sigval));
+        sigval.sival_int = siginfo.ssi_int;
+        KJ_SYSCALL(sigqueue(sandstormPid, SIGINT, sigval));
       } else {
         // Kill updater if it is running.
         if (updaterPid != 0) {
@@ -1184,12 +1242,28 @@ private:
           nodePid = startNode(config);
           nodeStartTime = getTime();
         }
+      } else if (siginfo.ssi_signo == SIGINT) {
+        if (siginfo.ssi_int) {
+          // Requested startup of front-end after previous shutdown.
+          if (nodePid == 0) {
+            context.warning("** Starting front-end by admin request");
+            nodePid = startNode(config);
+            nodeStartTime = getTime();
+          } else {
+            context.warning("** Request to start front-end, but it is already running");
+          }
+        } else {
+          // Requested shutdown of the front-end but not the back-end.
+          context.warning("** Shutting down front-end by admin request");
+          killChild("Front-end", nodePid);
+          nodePid = 0;
+        }
       } else {
         // SIGTERM or something.
         context.warning("** Shutting down due to signal");
         killChild("Front-end", nodePid);
         killChild("MongoDB", mongoPid);
-        if (devDaemonPid != 0) killChild("Dev daemon", devDaemonPid);
+        killChild("Dev daemon", devDaemonPid);
         context.exit();
       }
     }
@@ -1277,6 +1351,12 @@ private:
   }
 
   void killChild(kj::StringPtr title, pid_t pid) {
+    if (pid == 0) {
+      // We use PID = 0 to indicate that a process isn't running, so there's nothing to do.
+      context.warning(kj::str("Not killing ", title, " because it is not running."));
+      return;
+    }
+
     int status;
 
     KJ_SYSCALL(kill(pid, SIGTERM));

@@ -208,8 +208,14 @@ function startGrainInternal(packageId, grainId, command, isNew) {
   }
 
   args.push("--");
-  args.push(command.executablePath);
-  args = args.concat(command.args);
+
+  // Ugly: Stay backwards-compatible with old manifests that had "executablePath" and "args" rather
+  //   than just "argv".
+  var exePath = command.deprecatedExecutablePath || command.executablePath;
+  if (exePath) {
+    args.push(exePath);
+  }
+  args = args.concat(command.argv || command.args);
 
   var proc = ChildProcess.spawn(sandstormExe("sandstorm-supervisor"), args, {
     stdio: ["ignore", "pipe", process.stderr],
@@ -231,7 +237,7 @@ function startGrainInternal(packageId, grainId, command, isNew) {
   proc.unref();
 
   var whenReady = new Promise(function (resolve, reject) {
-    proc.stdout.on("data", function () {
+    proc.stdout.on("data", function (data) {
       // Data on stdout indicates that the grain is ready.
       resolve();
     });

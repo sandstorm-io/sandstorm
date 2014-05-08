@@ -10,7 +10,7 @@ NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 
 .PHONEY: all install uninstall clean environment bundle-dist
 
-all: bin/spk bin/legacy-bridge bin/sandstorm-supervisor node_modules/sandstorm/grain.capnp
+all: bin/spk bin/sandstorm-http-bridge bin/sandstorm-supervisor node_modules/sandstorm/grain.capnp
 
 clean:
 	rm -rf bin tmp node_modules bundle shell-bundle.tar.gz sandstorm-*.tar.xz
@@ -18,12 +18,12 @@ clean:
 bin/spk: tmp/genfiles src/sandstorm/spk.c++ src/sandstorm/fuse.c++ src/sandstorm/union-fs.c++ src/sandstorm/send-fd.c++
 	@echo "building bin/spk..."
 	@mkdir -p bin
-	@$(CXX) src/sandstorm/spk.c++ src/sandstorm/fuse.c++ src/sandstorm/union-fs.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/spk $(CXXFLAGS2) -lcapnpc `pkg-config libsodium capnp-rpc --cflags --libs`
+	@$(CXX) src/sandstorm/spk.c++ src/sandstorm/fuse.c++ src/sandstorm/union-fs.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/spk -static $(CXXFLAGS2) -lcapnpc `pkg-config libsodium capnp-rpc --cflags --libs`
 
-bin/legacy-bridge: tmp/genfiles src/sandstorm/legacy-bridge.c++
-	@echo "building bin/legacy-bridge..."
+bin/sandstorm-http-bridge: tmp/genfiles src/sandstorm/sandstorm-http-bridge.c++
+	@echo "building bin/sandstorm-http-bridge..."
 	@mkdir -p bin
-	@$(CXX) src/sandstorm/legacy-bridge.c++ src/joyent-http/http_parser.c++ tmp/sandstorm/*.capnp.c++ -o bin/legacy-bridge $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
+	@$(CXX) src/sandstorm/sandstorm-http-bridge.c++ src/joyent-http/http_parser.c++ tmp/sandstorm/*.capnp.c++ -o bin/sandstorm-http-bridge -static $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
 
 bin/sandstorm-supervisor: tmp/genfiles src/sandstorm/supervisor-main.c++ src/sandstorm/send-fd.c++
 	@echo "building bin/sandstorm-supervisor..."
@@ -69,7 +69,7 @@ shell-bundle.tar.gz: shell/smart.* shell/client/* shell/server/* shell/shared/* 
 	@echo "bundling meteor frontend..."
 	@cd shell && mrt bundle ../shell-bundle.tar.gz > /dev/null
 
-bundle: bin/spk bin/sandstorm-supervisor bin/run-bundle shell-bundle.tar.gz make-bundle.sh
+bundle: bin/spk bin/sandstorm-supervisor bin/sandstorm-http-bridge bin/run-bundle shell-bundle.tar.gz make-bundle.sh
 	./make-bundle.sh
 
 sandstorm-$(BUILD).tar.xz: bundle

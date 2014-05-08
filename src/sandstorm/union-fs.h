@@ -30,12 +30,19 @@
 namespace sandstorm {
 
 fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap,
-                               spk::Manifest::Reader manifest,
+                               spk::Manifest::Reader manifest, kj::StringPtr bridgePath,
                                kj::Function<void(kj::StringPtr)>& callback);
 // Creates a new filesystem based os `sourceMap`. Whenever a file is opened (for the first time),
 // `callback` will be invoked with the (virtual) path name.
 //
+// `manifest` is used to populate the special file `/sandstorm-manifest`, and `bridgePath` is the
+// file that should be mapped as `/sandstorm-http-bridge`.
+//
 // `sourceMap` must remain valid until the returned node is destroyed.
+
+kj::Maybe<kj::String> mapFile(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap,
+                              kj::StringPtr virtualPath);
+// Maps one file from virtual path to real path.
 
 }  // namespace sandstorm
 

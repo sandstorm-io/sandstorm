@@ -90,16 +90,36 @@ if (Meteor.isClient) {
   }, 60000);
 }
 
+if (Meteor.isClient) {
+  // Every time the set of dev apps changes, force a reload of any open session.
+  Deps.autorun(function () {
+    var timestampSum = 0;
+    DevApps.find().forEach(function (app) { timestampSum += app.timestamp; });
+
+    var toRemove = [];
+    for (var key in Session.keys) {
+      if (key.slice(0, 8) === "session-") {
+        toRemove.push(key);
+      }
+    }
+    toRemove.forEach(function (key) { Session.set(key, undefined); });
+  });
+}
+
 Router.map(function () {
   this.route("grain", {
     path: "/grain/:grainId",
 
     waitOn: function () {
       // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
-      return Meteor.subscribe("grainTitle", this.params.grainId);
+      return [
+        Meteor.subscribe("grainTitle", this.params.grainId),
+        Meteor.subscribe("devApps")
+      ];
     },
 
     data: function () {
+      // Make sure that if any dev apps are published or removed, we refresh the grain view.
       currentSessionId = undefined;
       var grainId = this.params.grainId;
       var grain = Grains.findOne(grainId);

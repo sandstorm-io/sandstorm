@@ -55,8 +55,8 @@ kj::Promise<void> bindFuse(kj::UnixEventPort& eventPort, int fuseFd, fuse::Node:
 // kj::Exception gains a notion of error codes and error code namespaces.
 
 fuse::Node::Client newLoopbackFuseNode(kj::StringPtr path, kj::Duration cacheTtl);
-// Returns a "loopback" fuse node which simply mirrors the directory at the given path. Throws an
-// exception if the path doesn't exist.
+// Returns a "loopback" fuse node which simply mirrors the directory (or file) at the given path.
+// Throws an exception if the path doesn't exist.
 //
 // `cacheTtl` is the amount of time for which callers are allowed to cache path lookups and
 // attributes. It is OK to set this to zero, but performance will be reduced.

@@ -23,6 +23,8 @@
 if (Meteor.isServer) {
   UserActions.allow({
     insert: function (userId, action) {
+      // TODO(cleanup): This check keeps breaking. Use a method instead that takes the package
+      //   ID as an argument.
       check(action, {
         userId: String,
         packageId: String,
@@ -30,8 +32,10 @@ if (Meteor.isServer) {
         appVersion: Match.Integer,
         title: String,
         command: {
-          executablePath: String,
+          executablePath: Match.Optional(String),
+          deprecatedExecutablePath: Match.Optional(String),
           args: Match.Optional([String]),
+          argv: Match.Optional([String]),
           environ: Match.Optional([{key: String, value: String}])
         }
       });

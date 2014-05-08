@@ -857,19 +857,19 @@ public:
                            "Acts as a Sandstorm init application.  Runs <command>, then tries to "
                            "connect to it as an HTTP server at the given address (typically, "
                            "'127.0.0.1:<port>') in order to handle incoming requests.")
-        .expectArg("<address>", KJ_BIND_METHOD(*this, setAddress))
+        .expectArg("<port>", KJ_BIND_METHOD(*this, setPort))
         .expectOneOrMoreArgs("<command>", KJ_BIND_METHOD(*this, addCommandArg))
         .callAfterParsing(KJ_BIND_METHOD(*this, run))
         .build();
   }
 
-  kj::MainBuilder::Validity setAddress(kj::StringPtr addr) {
-    return ioContext.provider->getNetwork().parseAddress(addr)
+  kj::MainBuilder::Validity setPort(kj::StringPtr port) {
+    return ioContext.provider->getNetwork().parseAddress(kj::str("127.0.0.1:", port))
         .then([this](kj::Own<kj::NetworkAddress>&& parsedAddr) -> kj::MainBuilder::Validity {
       this->address = kj::mv(parsedAddr);
       return true;
     }, [](kj::Exception&& e) -> kj::MainBuilder::Validity {
-      return kj::heapString(e.getDescription());
+      return "invalid port";
     }).wait(ioContext.waitScope);
   }
 
@@ -915,7 +915,7 @@ public:
 
       char** argvp = argv;  // work-around Clang not liking lambda + vararray
 
-      KJ_SYSCALL(execv(argvp[0], argvp), argvp[0]);
+      KJ_SYSCALL(execvp(argvp[0], argvp), argvp[0]);
       KJ_UNREACHABLE;
     } else {
       // We're in the parent.

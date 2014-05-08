@@ -303,7 +303,7 @@ AppInstaller.prototype.doUnpack = function() {
   this.updateProgress("unpack");
 
   var child = ChildProcess.spawn(sandstormExe("spk"),
-      ["unpack", "-o", this.verifiedPath, this.unpackingPath], {
+      ["unpack", this.verifiedPath, this.unpackingPath], {
     stdio: ["ignore", "pipe", process.stderr]
   });
 

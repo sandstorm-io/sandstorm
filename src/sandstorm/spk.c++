@@ -43,6 +43,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <kj/async-unix.h>
+#include <ctype.h>
 
 #include "version.h"
 #include "fuse.h"
@@ -182,10 +183,72 @@ static_assert(BASE64_DECODER.verifyTable(), "Base32 decode table is incomplete."
 
 // =======================================================================================
 
+kj::Maybe<uint> parseUInt(kj::StringPtr s, int base) {
+  char* end;
+  uint result = strtoul(s.cStr(), &end, base);
+  if (s.size() == 0 || *end != '\0') {
+    return nullptr;
+  }
+  return result;
+}
+
 kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
   int fd;
-  KJ_SYSCALL(fd = open(name.cStr(), flags, mode));
+  KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
   return kj::AutoCloseFd(fd);
+}
+
+kj::String readAll(int fd) {
+  kj::FdInputStream input(fd);
+  kj::Vector<char> content;
+  for (;;) {
+    char buffer[4096];
+    size_t n = input.tryRead(buffer, sizeof(buffer), sizeof(buffer));
+    content.addAll(buffer, buffer + n);
+    if (n < sizeof(buffer)) {
+      // Done!
+      break;
+    }
+  }
+  content.add('\0');
+  return kj::String(content.releaseAsArray());
+}
+
+kj::String trim(kj::ArrayPtr<const char> slice) {
+  while (slice.size() > 0 && isspace(slice[0])) {
+    slice = slice.slice(1, slice.size());
+  }
+  while (slice.size() > 0 && isspace(slice[slice.size() - 1])) {
+    slice = slice.slice(0, slice.size() - 1);
+  }
+
+  return kj::heapString(slice);
+}
+
+kj::Array<kj::String> splitLines(kj::String input) {
+  // Split the input into lines, trimming whitespace, and ignoring blank lines or lines that start
+  // with #.
+
+  size_t lineStart = 0;
+  kj::Vector<kj::String> results;
+  for (size_t i = 0; i < input.size(); i++) {
+    if (input[i] == '\n' || input[i] == '#') {
+      bool hasComment = input[i] == '#';
+      input[i] = '\0';
+      auto line = trim(input.slice(lineStart, i));
+      if (line.size() > 0) {
+        results.add(kj::mv(line));
+      }
+      if (hasComment) {
+        // Ignore through newline.
+        ++i;
+        while (i < input.size() && input[i] != '\n') ++i;
+      }
+      lineStart = i + 1;
+    }
+  }
+
+  return results.releaseAsArray();
 }
 
 kj::AutoCloseFd openTemporary(kj::StringPtr near) {
@@ -201,6 +264,39 @@ kj::AutoCloseFd openTemporary(kj::StringPtr near) {
   KJ_SYSCALL(unlink(name.cStr()));
   return result;
 }
+
+class ReplacementFile {
+public:
+  explicit ReplacementFile(kj::StringPtr name): name(name) {
+    int fd_;
+    replacementName = kj::str(name, ".XXXXXX");
+    KJ_SYSCALL(fd_ = mkstemp(replacementName.begin()));
+    fd = kj::AutoCloseFd(fd_);
+  }
+  ~ReplacementFile() {
+    if (!committed) {
+      // We never wrote the file. Attempt to clean up, but don't complain if this goes wrong
+      // because we are probably in an exception unwind already.
+      unlink(replacementName.cStr());
+    }
+  }
+
+  KJ_DISALLOW_COPY(ReplacementFile);
+
+  inline int getFd() { return fd; }
+
+  void commit() {
+    fd = nullptr;
+    KJ_SYSCALL(rename(replacementName.cStr(), name.cStr()));
+    committed = true;
+  }
+
+private:
+  kj::StringPtr name;
+  kj::AutoCloseFd fd;
+  kj::String replacementName;
+  bool committed = false;
+};
 
 size_t getFileSize(int fd, kj::StringPtr filename) {
   struct stat stats;
@@ -332,59 +428,249 @@ class SpkTool {
   // Main class for the Sandstorm spk tool.
 
 public:
-  SpkTool(kj::ProcessContext& context): context(context) {}
+  SpkTool(kj::ProcessContext& context): context(context) {
+    char buf[PATH_MAX + 1];
+    ssize_t n;
+    KJ_SYSCALL(n = readlink("/proc/self/exe", buf, sizeof(buf)));
+    buf[n] = '\0';
+    exePath = kj::heapString(buf, n);
+    if (exePath.endsWith("/bin/spk")) {
+      installHome = kj::heapString(buf, n - strlen("/bin/spk"));
+    }
+  }
 
   kj::MainFunc getMain() {
-    return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
+    return addCommonOptions(OptionSet::ALL,
+        kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
           "Tool for building and checking Sandstorm package files.",
-          "Sandstorm packages are tar.xz archives prefixed with a header containing a "
-          "cryptographic signature in order to prove that upgrades came from the same source.  "
-          "This tool will help you create and sign packages.")
+          "Sandstorm packages are compressed archives cryptographically signed in order to prove "
+          "that upgrades came from the same source. This tool will help you create and sign "
+          "packages. This tool can also let you run an app in development mode on a local "
+          "Sandstorm instance, without actually building a package, and can automatically "
+          "determine your app's dependencies.\n"
+          "\n"
+          "This tool should be run inside your app's source directory. It expects to find a file "
+          "in the current directory called `sandstorm-pkgdef.capnp` which should define a "
+          "constant named `pkgdef` of type `PackageDefinition` as defined in "
+          "`/sandstorm/package.capnp`. You can usually find `package.capnp` in your Sandstorm "
+          "installation, e.g.:\n"
+          "  /opt/sandstorm/latest/usr/include/sandstorm/package.capnp\n"
+          "The file contains comments describing the package definition format, which is based "
+          "on Cap'n Proto (https://capnproto.org). You can also use the `init` command to "
+          "generate a sample definition file in the current directory.\n"
+          "\n"
+          "App signing keys are not stored in your source directory; they are instead placed "
+          "on a keyring, currently stored at `~/.sandstorm-keyring`. It is important that you "
+          "protect this file. If you lose it, you won't be able to update your app. If someone "
+          "else steals it, they will be able to publish updates to your app. Keep a backup! "
+          "(In the future, we plan to add features to better protect your keyring.)\n"
+          "\n"
+          "Note that you may combine two keyring files by simply concatenating them.")
         .addSubCommand("keygen", KJ_BIND_METHOD(*this, getKeygenMain),
-                       "Generate a new keyfile.")
-        .addSubCommand("appid", KJ_BIND_METHOD(*this, getAppidMain),
-                       "Get the app ID corresponding to an existing keyfile.")
+                       "Generate a new app ID and private key.")
+        .addSubCommand("listkeys", KJ_BIND_METHOD(*this, getListkeysMain),
+                       "List all keys on your keyring.")
+        .addSubCommand("getkey", KJ_BIND_METHOD(*this, getGetkeyMain),
+                       "Get a single key from your keyring, e.g. to send to someone.")
+        .addSubCommand("init", KJ_BIND_METHOD(*this, getInitMain),
+                       "Create a sample package definition for a new app.")
         .addSubCommand("pack", KJ_BIND_METHOD(*this, getPackMain),
                        "Create an spk from a directory tree and a signing key.")
         .addSubCommand("unpack", KJ_BIND_METHOD(*this, getUnpackMain),
                        "Unpack an spk to a directory, verifying its signature.")
         .addSubCommand("dev", KJ_BIND_METHOD(*this, getDevMain),
-                       "Run an app in dev mode.")
+                       "Run an app in dev mode."))
         .build();
   }
 
 private:
   kj::ProcessContext& context;
-  bool onlyPrintId = false;
+  kj::String exePath;
+  kj::Maybe<kj::String> installHome;
 
-  bool setOnlyPrintId() { onlyPrintId = true; return true; }
+  // Used to parse package def.
+  capnp::SchemaParser parser;
+  kj::Vector<kj::String> importPath;
+  spk::PackageDefinition::Reader packageDef;
+  kj::String sourceDir;
+  bool sawPkgDef = false;
 
-  void printAppId(kj::ArrayPtr<const byte> publicKey, kj::StringPtr filename) {
+  kj::StringPtr keyringPath = nullptr;
+  bool quiet = false;
+
+  kj::Maybe<kj::Own<MemoryMapping>> keyringMapping;
+  std::map<kj::String, kj::Own<capnp::FlatArrayMessageReader>> keyMap;
+
+  enum class OptionSet {
+    ALL, ALL_READONLY, KEYS, KEYS_READONLY
+  };
+
+  kj::MainBuilder& addCommonOptions(OptionSet options, kj::MainBuilder& builder) {
+    if (options == OptionSet::ALL || options == OptionSet::ALL_READONLY) {
+      builder.addOptionWithArg({'I', "import-path"}, KJ_BIND_METHOD(*this, addImportPath), "<path>",
+              "Additionally search for Cap'n Proto schemas in <path>. (This allows your package "
+              "definition file to import files from that directory -- this is rarely useful.)")
+          .addOptionWithArg({'p', "pkg-def"}, KJ_BIND_METHOD(*this, setPackageDef),
+                            "<def-file>:<name>",
+              "Don't read the package definition from ./sandstorm-pkgdef.capnp. Instead, read "
+              "from <def-file>, and expect the constant to be named <name>.");
+    }
+    builder.addOptionWithArg({'k', "keyring"}, KJ_BIND_METHOD(*this, setKeyringPath), "<path>",
+            "Use <path> as the keyring file, rather than $HOME/.sandstorm-keyring.");
+    if (options != OptionSet::KEYS_READONLY && options != OptionSet::ALL_READONLY) {
+      builder.addOption({'q', "quiet"}, KJ_BIND_METHOD(*this, setQuiet),
+              "Don't write the keyring warning to stderr.");
+    }
+    return builder;
+  }
+
+  kj::MainBuilder::Validity setPackageDef(kj::StringPtr arg) {
+    KJ_IF_MAYBE(colonPos, arg.findFirst(':')) {
+      auto filename = kj::heapString(arg.slice(0, *colonPos));
+      auto constantName = arg.slice(*colonPos + 1);
+
+      if (access(filename.cStr(), F_OK) != 0) {
+        return "not found";
+      }
+
+      KJ_IF_MAYBE(slashPos, filename.findLast('/')) {
+        sourceDir = kj::heapString(filename.slice(0, *slashPos));
+      } else {
+        sourceDir = nullptr;
+      }
+
+      KJ_IF_MAYBE(i, installHome) {
+        if (*i != "/usr/local" && *i != "/usr") {
+          auto candidate = kj::str(*i, "/usr/include");
+          if (access(candidate.cStr(), F_OK) == 0) {
+            importPath.add(kj::mv(candidate));
+          }
+        }
+      }
+
+      importPath.add(kj::heapString("/usr/local/include"));
+      importPath.add(kj::heapString("/usr/include"));
+
+      auto importPathPtrs = KJ_MAP(p, importPath) -> kj::StringPtr { return p; };
+
+      parser.loadCompiledTypeAndDependencies<spk::PackageDefinition>();
+
+      auto schema = parser.parseDiskFile(filename, filename, importPathPtrs);
+      KJ_IF_MAYBE(symbol, schema.findNested(constantName)) {
+        if (!symbol->getProto().isConst()) {
+          return kj::str("\"", constantName, "\" is not a constant");
+        }
+
+        packageDef = symbol->asConst().as<spk::PackageDefinition>();
+
+        return true;
+      } else {
+        return kj::str("\"", constantName, "\" not defined in schema file");
+      }
+    } else {
+      return "argument missing constant name";
+    }
+  }
+
+  void ensurePackageDefParsed() {
+    if (!sawPkgDef) {
+      auto valid = setPackageDef("sandstorm-pkgdef.capnp:pkgdef");
+      KJ_IF_MAYBE(e, valid.getError()) {
+        context.exitError(kj::str("sandstorm-pkgdef.capnp: ", *e));
+      }
+    }
+  }
+
+  void printAppId(kj::StringPtr appId) {
+    kj::String msg = kj::str(appId, "\n");
+    kj::FdOutputStream out(STDOUT_FILENO);
+    out.write(msg.begin(), msg.size());
+  }
+
+  void printAppId(kj::ArrayPtr<const byte> publicKey) {
     static_assert(crypto_sign_PUBLICKEYBYTES == 32, "Signing algorithm changed?");
     KJ_REQUIRE(publicKey.size() == crypto_sign_PUBLICKEYBYTES);
 
-    auto appId = base32Encode(publicKey);
-    kj::String msg = onlyPrintId ? kj::str(appId, "\n") : kj::str(appId, " ", filename, "\n");
-    kj::FdOutputStream out(STDOUT_FILENO);
-    out.write(msg.begin(), msg.size());
+    printAppId(base32Encode(publicKey));
+  }
+
+  kj::MainBuilder::Validity setKeyringPath(kj::StringPtr arg) {
+    if (access(arg.cStr(), F_OK) != 0) {
+      return "not found";
+    }
+    keyringPath = arg;
+    return true;
+  }
+
+  kj::MainBuilder::Validity setQuiet() {
+    quiet = true;
+    return true;
+  }
+
+  kj::AutoCloseFd openKeyring(int flags) {
+    kj::StringPtr filename;
+    kj::String ownFilename;
+    if (keyringPath == nullptr) {
+      const char* home = getenv("HOME");
+      KJ_REQUIRE(home != nullptr, "$HOME is not set!");
+      ownFilename = kj::str(home, "/.sandstorm-keyring");
+      filename = ownFilename;
+    } else {
+      filename = keyringPath;
+    }
+    if (!quiet && (flags & O_ACCMODE) != O_RDONLY) {
+      context.warning(kj::str(
+          "** WARNING: Keys are being added to:\n",
+          "**   ", filename, "\n"
+          "** Please make a backup of this file and keep it safe. If you lose your keys,\n"
+          "** you won't be able to update your app. If someone steals your keys, they\n"
+          "** will be able to post updates for your app. (Use -q to quiet this warning.)"));
+    }
+    return raiiOpen(filename, flags, 0600);
+  }
+
+  spk::KeyFile::Reader lookupKey(kj::StringPtr appid) {
+    if (keyringMapping == nullptr) {
+      auto mapping = kj::heap<MemoryMapping>(openKeyring(O_RDONLY), "(keyring)");
+      kj::ArrayPtr<const capnp::word> words = *mapping;
+      keyringMapping = kj::mv(mapping);
+
+      while (words.size() > 0) {
+        auto reader = kj::heap<capnp::FlatArrayMessageReader>(words);
+        auto key = reader->getRoot<spk::KeyFile>();
+        words = kj::arrayPtr(reader->getEnd(), words.end());
+        keyMap.insert(std::make_pair(base32Encode(key.getPublicKey()), kj::mv(reader)));
+      }
+    }
+
+    auto iter = keyMap.find(kj::str(appid));
+    if (iter == keyMap.end()) {
+      context.exitError(kj::str(appid, ": key not found in keyring"));
+    } else {
+      auto key = iter->second->getRoot<spk::KeyFile>();
+      KJ_REQUIRE(key.getPublicKey().size() == crypto_sign_PUBLICKEYBYTES &&
+                 key.getPrivateKey().size() == crypto_sign_SECRETKEYBYTES,
+                 "Invalid key in keyring.");
+      return key;
+    }
   }
 
   // =====================================================================================
 
   kj::MainFunc getKeygenMain() {
-    return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
-            "Create a new key pair and store it in <output>.  It can then be used as input to "
-            "the `sign` command.  Make sure to store the output in a safe place!  If you lose it, "
-            "you won't be able to update your app, and if someone else gets ahold of it, they'll "
-            "be able to hijack your app.")
-        .addOption({'o', "only-id"}, KJ_BIND_METHOD(*this, setOnlyPrintId),
-            "Only print the app ID, not the file name.")
-        .expectOneOrMoreArgs("<output>", KJ_BIND_METHOD(*this, genKeyFile))
+    return addCommonOptions(OptionSet::KEYS,
+        kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
+            "Create a new app ID and signing key and store it to your keyring. It will then be "
+            "used by the `pack` command to sign your app package. Note that when starting a new "
+            "app, it's better to use `spk init`. Only use `keygen` when you need to replace the "
+            "key on an existing app, e.g. because you're forking it. See `spk help` for more "
+            "info about keyrings.")
+        .callAfterParsing(KJ_BIND_METHOD(*this, doKeygen)))
         .build();
   }
 
-  kj::MainBuilder::Validity genKeyFile(kj::StringPtr arg) {
-    capnp::MallocMessageBuilder message;
+  kj::String generateKey() {
+    capnp::MallocMessageBuilder message(32);
     spk::KeyFile::Builder builder = message.getRoot<spk::KeyFile>();
 
     int result = crypto_sign_keypair(
@@ -392,83 +678,273 @@ private:
         builder.initPrivateKey(crypto_sign_SECRETKEYBYTES).begin());
     KJ_ASSERT(result == 0, "crypto_sign_keypair failed", result);
 
-    int fd;
-    KJ_SYSCALL(fd = open(arg.cStr(), O_WRONLY | O_CREAT | O_TRUNC, 0666));
-    kj::AutoCloseFd closer(fd);
-    capnp::writeMessageToFd(fd, message);
+    capnp::writeMessageToFd(openKeyring(O_WRONLY | O_APPEND | O_CREAT), message);
 
-    // Notify the caller of the app ID.
-    printAppId(builder.getPublicKey(), arg);
+    return base32Encode(builder.getPublicKey());
+  }
+
+  kj::MainBuilder::Validity doKeygen() {
+    printAppId(generateKey());
 
     return true;
   }
 
-  // =====================================================================================
-
-  kj::MainFunc getAppidMain() {
-    return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
-            "Read <keyfile> and extract the textual app ID, printing it to stdout.")
-        .addOption({'o', "only-id"}, KJ_BIND_METHOD(*this, setOnlyPrintId),
-            "Only print the app ID, not the file name.")
-        .expectOneOrMoreArgs("<keyfile>", KJ_BIND_METHOD(*this, getAppIdFromKeyfile))
+  kj::MainFunc getListkeysMain() {
+    return addCommonOptions(OptionSet::KEYS_READONLY,
+        kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
+            "List the app IDs corresponding to each key on your keyring.")
+        .callAfterParsing(KJ_BIND_METHOD(*this, doListkeys)))
         .build();
   }
 
-  kj::MainBuilder::Validity getAppIdFromKeyfile(kj::StringPtr arg) {
-    if (access(arg.cStr(), F_OK) != 0) {
-      return "No such file.";
+  kj::MainBuilder::Validity doListkeys() {
+    MemoryMapping mapping(openKeyring(O_RDONLY), "(keyring)");
+
+    kj::ArrayPtr<const capnp::word> words = mapping;
+
+    while (words.size() > 0) {
+      capnp::FlatArrayMessageReader reader(words);
+      printAppId(reader.getRoot<spk::KeyFile>().getPublicKey());
+      words = kj::arrayPtr(reader.getEnd(), words.end());
     }
 
-    // Read the keyfile.
-    MemoryMapping keyfile(raiiOpen(arg, O_RDONLY), arg);
-    capnp::FlatArrayMessageReader keyMessage(keyfile);
-    spk::KeyFile::Reader keyReader = keyMessage.getRoot<spk::KeyFile>();
-    KJ_REQUIRE(keyReader.getPublicKey().size() == crypto_sign_PUBLICKEYBYTES &&
-               keyReader.getPrivateKey().size() == crypto_sign_SECRETKEYBYTES,
-               "Invalid key file.");
+    return true;
+  }
 
-    printAppId(keyReader.getPublicKey(), arg);
+  kj::MainFunc getGetkeyMain() {
+    return addCommonOptions(OptionSet::KEYS_READONLY,
+        kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
+            "Get the the keys with the given app IDs from your keyring and write them as "
+            "Cap'n Proto message to stdout. The output is a valid keyring containing only the "
+            "IDs requested. Note that keyrings can be combined via concatenation, so someone "
+            "else can add these keys to their own keyring using a command like:\n"
+            "    cat keys >> ~/.sandstorm-keyring")
+        .expectOneOrMoreArgs("<appid>", KJ_BIND_METHOD(*this, getKey)))
+        .build();
+  }
+
+  kj::MainBuilder::Validity getKey(kj::StringPtr appid) {
+    if (isatty(STDOUT_FILENO)) {
+      return "The output is binary. You want to redirect it to a file. Pipe through cat if you "
+             "really intended to write it to your terminal. :)";
+    }
+
+    auto key = lookupKey(appid);
+    capnp::MallocMessageBuilder builder(key.totalSize().wordCount + 4);
+    builder.setRoot(key);
+    capnp::writeMessageToFd(STDOUT_FILENO, builder);
+
     return true;
   }
 
   // =====================================================================================
 
-  kj::String dirname;
-  kj::String keyfile;
+  kj::MainFunc getInitMain() {
+    return addCommonOptions(OptionSet::KEYS,
+        kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
+            "Initialize the current directory as a Sandstorm package source directory by "
+            "writing a `sandstorm-pkgdef.capnp` with a newly-created app ID. <command> "
+            "specifies the command used to start your app.")
+        .addOptionWithArg({'o', "output"}, KJ_BIND_METHOD(*this, setOutputFile), "<filename>",
+            "Write to <filename> instead of `sandstorm-pkgdef.capnp`. Use `-o -` to write to "
+            "standard output.")
+        .addOptionWithArg({'i', "app-id"}, KJ_BIND_METHOD(*this, setAppIdForInit), "<app-id>",
+            "Use <app-id> as the application ID rather than generate a new one.")
+        .addOptionWithArg({'p', "port"}, KJ_BIND_METHOD(*this, setPortForInit), "<port>",
+            "Set the HTTP port on which your server runs -- that is, the port which <command> "
+            "will bind to. Your app will be set up to use Sandstorm's HTTP bridge instead of "
+            "using the raw Sandstorm APIs.")
+        .addOption({'r', "raw"}, KJ_BIND_METHOD(*this, setUsesRawApi),
+            "Specifies that your app directly implements the raw Sandstorm API and does "
+            "not require the HTTP bridge.")
+        .expectOneOrMoreArgs("-- <command>", KJ_BIND_METHOD(*this, addCommandArg))
+        .callAfterParsing(KJ_BIND_METHOD(*this, doInit)))
+        .build();
+  }
+
+  kj::StringPtr outputFile = nullptr;
+  kj::StringPtr appIdForInit = nullptr;
+  kj::Vector<kj::StringPtr> commandArgs;
+  uint16_t httpPort = 0;
+  bool usesRawApi = false;
+
+  kj::MainBuilder::Validity setOutputFile(kj::StringPtr arg) {
+    outputFile = arg;
+    return true;
+  }
+
+  kj::MainBuilder::Validity setAppIdForInit(kj::StringPtr arg) {
+    for (char c: arg) {
+      if (!isalnum(c)) {
+        return "invalid app ID";
+      }
+    }
+    appIdForInit = arg;
+    return true;
+  }
+
+  kj::MainBuilder::Validity setPortForInit(kj::StringPtr arg) {
+    if (usesRawApi) {
+      return "You can't specify both -p and -r.";
+    }
+    KJ_IF_MAYBE(i, parseUInt(arg, 10)) {
+      if (*i < 1 || *i > 65535) {
+        return "port out-of-range";
+      } else if (*i < 1024) {
+        return "Ports under 1024 are priveleged and cannot be used by a Sandstorm app.";
+      }
+      httpPort = *i;
+      return true;
+    } else {
+      return "invalid port";
+    }
+  }
+
+  kj::MainBuilder::Validity setUsesRawApi() {
+    if (httpPort != 0) {
+      return "You can't specify both -p and -r.";
+    }
+    usesRawApi = true;
+    return true;
+  }
+
+  kj::MainBuilder::Validity addCommandArg(kj::StringPtr arg) {
+    commandArgs.add(arg);
+    return true;
+  }
+
+  uint64_t generateCapnpId() {
+    uint64_t result;
+
+    int fd;
+    KJ_SYSCALL(fd = open("/dev/urandom", O_RDONLY));
+
+    ssize_t n;
+    KJ_SYSCALL(n = read(fd, &result, sizeof(result)), "/dev/urandom");
+    KJ_ASSERT(n == sizeof(result), "Incomplete read from /dev/urandom.", n);
+
+    return result | (1ull << 63);
+  }
+
+  kj::MainBuilder::Validity doInit() {
+    if (httpPort == 0 && !usesRawApi) {
+      return "You must specify at least one of -p or -r.";
+    }
+
+    if (outputFile == nullptr) {
+      outputFile = "sandstorm-pkgdef.capnp";
+      if (access(outputFile.cStr(), F_OK) == 0) {
+        return "`sandstorm-pkgdef.capnp` already exists";
+      }
+    }
+
+    kj::String ownAppId;
+    if (appIdForInit == nullptr) {
+      ownAppId = generateKey();
+      appIdForInit = ownAppId;
+    }
+
+    auto argv = kj::str("\"", kj::strArray(commandArgs, "\", \""), "\"");
+
+    if (httpPort != 0) {
+      argv = kj::str("\"/sandstorm-http-bridge\", \"", httpPort, "\", \"--\", ", kj::mv(argv));
+    }
+
+    kj::AutoCloseFd outFd;
+    if (outputFile == "-") {
+      int fd;
+      KJ_SYSCALL(fd = dup(STDOUT_FILENO));
+      outFd = kj::AutoCloseFd(fd);
+    } else {
+      outFd = raiiOpen(outputFile, O_WRONLY | O_TRUNC | O_CREAT);
+    }
+
+    kj::FdOutputStream out(kj::mv(outFd));
+
+    auto content = kj::str(
+        "@0x", kj::hex(generateCapnpId()), ";\n"
+        "\n"
+        "using Spk = import \"/sandstorm/package.capnp\";\n"
+        "# This imports:\n"
+        "#   $SANDSTORM_HOME/latest/usr/include/sandstorm/package.capnp\n"
+        "# Check out that file to see the full, documented package definition format.\n"
+        "\n"
+        "const pkgdef :Spk.PackageDefinition = (\n"
+        "  # The package definition. Note that the spk tool looks specifically for the\n"
+        "  # \"pkgdef\" constant.\n"
+        "\n"
+        "  id = \"", appIdForInit, "\",\n"
+        "  # Your app ID is actually its public key. The private key was placed in\n"
+        "  # your keyring. All updates must be signed with the same key.\n"
+        "\n"
+        "  manifest = (\n"
+        "    # This manifest is included in your app package to tell Sandstorm\n"
+        "    # about your app.\n"
+        "\n"
+        "    appVersion = 0,  # Increment this for every release.\n"
+        "\n"
+        "    actions = [\n"
+        "      # Define your \"new document\" handlers here.\n"
+        "      ( title = (defaultText = \"New Example App Instance\"),\n"
+        "        command = .myCommand\n"
+        "        # The command to run when starting for the first time. (\".myCommand\"\n"
+        "        # is just a constant defined at the bottom of the file.)\n"
+        "      )\n"
+        "    ],\n"
+        "\n"
+        "    continueCommand = .myCommand\n"
+        "    # This is the command called to start your app back up after it has been\n"
+        "    # shut down for inactivity. Here we're using the same command as for\n"
+        "    # starting a new instance, but you could use different commands for each\n"
+        "    # case.\n"
+        "  ),\n"
+        "\n"
+        "  sourceMap = (\n"
+        "    # Here we defined where to look for files to copy into your package. The\n"
+        "    # `spk dev` command actually figures out what files your app needs\n"
+        "    # automatically by running it on a FUSE filesystem. So, the mappings\n"
+        "    # here are only to tell it where to find files that the app wants.\n"
+        "    searchPath = [\n"
+        "      ( sourcePath = \".\" ),  # Search this directory first.\n"
+        "      ( sourcePath = \"/\",    # Then search the system root directory.\n"
+        "        hidePaths = [ \"home\", \"proc\", \"sys\" ]\n"
+        "        # You probably don't want the app pulling files from these places,\n"
+        "        # so we hide them. Note that /dev, /var, and /tmp are implicitly\n"
+        "        # hidden because Sandstorm itself provides them.\n"
+        "      )\n"
+        "    ]\n"
+        "  ),\n"
+        "\n"
+        "  fileList = \"sandstorm-files.list\"\n"
+        "  # `spk dev` will write a list of all the files your app uses to this file.\n"
+        "  # You should review it later, before shipping your app.\n"
+        ");\n"
+        "\n"
+        "const myCommand :Spk.Manifest.Command = (\n"
+        "  # Here we define the command used to start up your server.\n"
+        "  argv = [", argv, "],\n"
+        "  environ = [\n"
+        "    # Note that this defines the *entire* environment seen by your app.\n"
+        "    (key = \"PATH\", value = \"/bin:/usr/bin:/usr/local/bin\")\n"
+        "  ]\n"
+        ");\n");
+
+    out.write(content.begin(), content.size());
+
+    context.exitInfo(kj::str("wrote: ", outputFile));
+  }
+
+  // =====================================================================================
+
   kj::String spkfile;
-  kj::Vector<MemoryMapping> mappings;
 
   kj::MainFunc getPackMain() {
-    return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
-            "Pack the contents of <dirname> as an spk, signing it using <keyfile>, and writing "
-            "the result to <output>.  If <output> is not specified, it will be formed by "
-            "appending \".spk\" to the directory name.")
-        .addOption({'o', "only-id"}, KJ_BIND_METHOD(*this, setOnlyPrintId),
-            "Only print the app ID, not the file name.")
-        .expectArg("<dirname>", KJ_BIND_METHOD(*this, setDirname))
-        .expectArg("<keyfile>", KJ_BIND_METHOD(*this, setKeyfile))
-        .expectOptionalArg("<output>", KJ_BIND_METHOD(*this, setSpkfile))
-        .callAfterParsing(KJ_BIND_METHOD(*this, doPack))
+    return addCommonOptions(OptionSet::ALL_READONLY,
+        kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
+            "Package the app as an spk, writing it to <output>.")
+        .expectArg("<output>", KJ_BIND_METHOD(*this, setSpkfile))
+        .callAfterParsing(KJ_BIND_METHOD(*this, doPack)))
         .build();
-  }
-
-  kj::MainBuilder::Validity setDirname(kj::StringPtr name) {
-    if (access(name.cStr(), F_OK) < 0) {
-      return "Not found.";
-    }
-
-    dirname = kj::heapString(name);
-    spkfile = kj::str(name, ".spk");
-    return true;
-  }
-
-  kj::MainBuilder::Validity setKeyfile(kj::StringPtr name) {
-    if (access(name.cStr(), F_OK) < 0) {
-      return "No such file.";
-    }
-
-    keyfile = kj::heapString(name);
-    return true;
   }
 
   kj::MainBuilder::Validity setSpkfile(kj::StringPtr name) {
@@ -476,105 +952,15 @@ private:
     return true;
   }
 
-  void packFile(spk::Archive::File::Builder file, kj::StringPtr dirname, kj::StringPtr filename) {
-    // Construct an Archive.File from a disk file.
-
-    file.setName(filename);
-
-    auto path = kj::str(dirname, '/', filename);
-
-    struct stat stats;
-    KJ_SYSCALL(lstat(path.cStr(), &stats), path);
-
-    auto orphanage = capnp::Orphanage::getForMessageContaining(file);
-
-    if (S_ISREG(stats.st_mode)) {
-      MemoryMapping mapping(raiiOpen(path, O_RDONLY), path);
-      auto content = orphanage.referenceExternalData(mapping);
-      mappings.add(kj::mv(mapping));
-
-      if (stats.st_mode & S_IXUSR) {
-        file.adoptExecutable(kj::mv(content));
-      } else {
-        file.adoptRegular(kj::mv(content));
-      }
-    } else if (S_ISLNK(stats.st_mode)) {
-      auto symlink = file.initSymlink(stats.st_size);
-
-      ssize_t linkSize;
-      KJ_SYSCALL(linkSize = readlink(path.cStr(), symlink.begin(), stats.st_size), path);
-      KJ_ASSERT(linkSize == stats.st_size, "Link changed between stat() and readlink().", path);
-    } else if (S_ISDIR(stats.st_mode)) {
-      file.adoptDirectory(packDirectory(orphanage, path));
-    } else {
-      context.warning(kj::str("Cannot pack irregular file: ", path));
-    }
-  }
-
-  capnp::Orphan<capnp::List<spk::Archive::File>> packDirectory(
-      capnp::Orphanage orphanage, kj::StringPtr dirname) {
-    // Construct a list of Archive.Files from a disk directory.
-
-    DIR* dir = opendir(dirname.cStr());
-    if (dir == nullptr) {
-      KJ_FAIL_SYSCALL("opendir", errno, dirname);
-    }
-    KJ_DEFER(closedir(dir));
-
-    kj::Vector<kj::String> entries;
-
-    for (;;) {
-      errno = 0;
-      struct dirent* entry = readdir(dir);
-      if (entry == nullptr) {
-        int error = errno;
-        if (error == 0) {
-          break;
-        } else {
-          KJ_FAIL_SYSCALL("readdir", error, dirname);
-        }
-      }
-
-      kj::StringPtr name = entry->d_name;
-      if (name != "." && name != "..") {
-        entries.add(kj::heapString(entry->d_name));
-      }
-    }
-
-    auto result = orphanage.newOrphan<capnp::List<spk::Archive::File>>(entries.size());
-    auto list = result.get();
-
-    for (uint i: kj::indices(entries)) {
-      packFile(list[i], dirname, entries[i]);
-    }
-
-    return result;
-  }
-
   kj::MainBuilder::Validity doPack() {
-    // Read the keyfile.
-    MemoryMapping keyfile(raiiOpen(this->keyfile, O_RDONLY), this->keyfile);
-    capnp::FlatArrayMessageReader keyMessage(keyfile);
-    spk::KeyFile::Reader keyReader = keyMessage.getRoot<spk::KeyFile>();
-    KJ_REQUIRE(keyReader.getPublicKey().size() == crypto_sign_PUBLICKEYBYTES &&
-               keyReader.getPrivateKey().size() == crypto_sign_SECRETKEYBYTES,
-               "Invalid key file.");
+    ensurePackageDefParsed();
 
-    auto tmpfile = openTemporary(this->spkfile);
+    spk::KeyFile::Reader key = lookupKey(packageDef.getId());
 
-    {
-      // Write the archive.
-      capnp::MallocMessageBuilder archiveMessage;
-      auto archive = archiveMessage.getRoot<spk::Archive>();
-      archive.adoptFiles(packDirectory(archiveMessage.getOrphanage(), dirname));
-      capnp::writeMessageToFd(tmpfile, archiveMessage);
-
-      // We can unmap all the mappings now that we've copied them.
-      mappings.resize(0);
-    }
+    kj::AutoCloseFd tmpfile = packToTempFile();
 
     // Map the temp file back in.
-    MemoryMapping tmpMapping(tmpfile, this->spkfile);
+    MemoryMapping tmpMapping(tmpfile, spkfile);
     kj::ArrayPtr<const byte> tmpData = tmpMapping;
 
     // Hash it.
@@ -584,10 +970,10 @@ private:
     // Generate the signature.
     capnp::MallocMessageBuilder signatureMessage;
     spk::Signature::Builder signature = signatureMessage.getRoot<spk::Signature>();
-    signature.setPublicKey(keyReader.getPublicKey());
+    signature.setPublicKey(key.getPublicKey());
     unsigned long long siglen = crypto_hash_BYTES + crypto_sign_BYTES;
     crypto_sign(signature.initSignature(siglen).begin(), &siglen,
-                hash, sizeof(hash), keyReader.getPrivateKey().begin());
+                hash, sizeof(hash), key.getPrivateKey().begin());
 
     // Now write the whole thing out.
     {
@@ -606,20 +992,177 @@ private:
       out.write(tmpData.begin(), tmpData.size());
     }
 
-    printAppId(keyReader.getPublicKey(), this->spkfile);
+    printAppId(key.getPublicKey());
 
     return true;
   }
 
+  kj::AutoCloseFd packToTempFile() {
+    // Read in the file list.
+    ArchiveNode root;
+    root.followPath("dev");
+    root.followPath("tmp");
+    root.followPath("var");
+
+    auto sourceMap = packageDef.getSourceMap();
+
+    if (packageDef.hasFileList()) {
+      auto fileListFile = packageDef.getFileList();
+      if (access(fileListFile.cStr(), F_OK) != 0) {
+        context.exitInfo(kj::str("\"", fileListFile,
+            "\" does not exist. Have you run `spk dev` yet?"));
+      }
+
+      for (auto& line: splitLines(readAll(raiiOpen(fileListFile, O_RDONLY)))) {
+        addNode(root, line, sourceMap);
+      }
+    }
+    for (auto file: packageDef.getAdditionalFiles()) {
+      addNode(root, file, sourceMap);
+    }
+
+    auto tmpfile = openTemporary(spkfile);
+
+    // Write the archive.
+    capnp::MallocMessageBuilder archiveMessage;
+    auto archive = archiveMessage.getRoot<spk::Archive>();
+    archive.adoptFiles(root.packChildren(archiveMessage.getOrphanage(), context));
+    capnp::writeMessageToFd(tmpfile, archiveMessage);
+
+    return tmpfile;
+  }
+
+  class ArchiveNode {
+    // A tree of files.
+  public:
+    ArchiveNode() {}
+
+    inline void setTarget(kj::String&& target) { this->target = kj::mv(target); }
+    inline void setData(kj::Array<capnp::word>&& data) { this->data = kj::mv(data); }
+
+    ArchiveNode& followPath(kj::StringPtr path) {
+      if (path == nullptr) return *this;
+
+      kj::String pathPart;
+      KJ_IF_MAYBE(slashPos, path.findFirst('/')) {
+        pathPart = kj::heapString(path.slice(0, *slashPos));
+        path = path.slice(*slashPos + 1);
+      } else {
+        pathPart = kj::heapString(path);
+        path = nullptr;
+      }
+
+      return children[kj::mv(pathPart)].followPath(path);
+    }
+
+    void pack(spk::Archive::File::Builder builder, kj::ProcessContext& context) {
+      auto orphanage = capnp::Orphanage::getForMessageContaining(builder);
+
+      KJ_IF_MAYBE(d, data) {
+        KJ_ASSERT(children.empty(), "got file, expected directory", target);
+        auto bytes = kj::arrayPtr(reinterpret_cast<const kj::byte*>(d->begin()),
+                                  d->size() * sizeof(capnp::word));
+        builder.adoptRegular(orphanage.referenceExternalData(bytes));
+        return;
+      }
+
+      struct stat stats;
+
+      if (target == nullptr) {
+        stats.st_mode = S_IFDIR;
+      } else {
+        KJ_SYSCALL(lstat(target.cStr(), &stats), target);
+      }
+
+      if (S_ISREG(stats.st_mode)) {
+        KJ_ASSERT(children.empty(), "got file, expected directory", target);
+
+        mapping = MemoryMapping(raiiOpen(target, O_RDONLY), target);
+        auto content = orphanage.referenceExternalData(mapping);
+
+        if (stats.st_mode & S_IXUSR) {
+          builder.adoptExecutable(kj::mv(content));
+        } else {
+          builder.adoptRegular(kj::mv(content));
+        }
+      } else if (S_ISLNK(stats.st_mode)) {
+        KJ_ASSERT(children.empty(), "got symlink, expected directory", target);
+
+        auto symlink = builder.initSymlink(stats.st_size);
+
+        ssize_t linkSize;
+        KJ_SYSCALL(linkSize = readlink(target.cStr(), symlink.begin(), stats.st_size), target);
+      } else if (S_ISDIR(stats.st_mode)) {
+        builder.adoptDirectory(packChildren(orphanage, context));
+      } else {
+        context.warning(kj::str("Cannot pack irregular file: ", target));
+        builder.initRegular(0);
+      }
+    }
+
+    capnp::Orphan<capnp::List<spk::Archive::File>> packChildren(
+        capnp::Orphanage orphanage, kj::ProcessContext& context) {
+      auto orphan = orphanage.newOrphan<capnp::List<spk::Archive::File>>(children.size());
+      auto builder = orphan.get();
+
+      uint i = 0;
+      for (auto& child: children) {
+        auto childBuilder = builder[i++];
+        childBuilder.setName(child.first);
+        child.second.pack(childBuilder, context);
+      }
+
+      return orphan;
+    }
+
+  private:
+    kj::String target;
+    // The disk path which should be used to initialize this node.
+
+    std::map<kj::String, ArchiveNode> children;
+    // Contents of this node if it is a directory.
+
+    MemoryMapping mapping;
+    // May be initialized during pack().
+
+    kj::Maybe<kj::Array<capnp::word>> data;
+    // Raw data comprising this node. Mutually exclusive with all other members.
+  };
+
+  void addNode(ArchiveNode& root, kj::StringPtr path, const spk::SourceMap::Reader& sourceMap) {
+    auto& node = root.followPath(path);
+    if (path == "sandstorm-manifest") {
+      // Serialize the manifest.
+      auto manifestReader = packageDef.getManifest();
+      capnp::MallocMessageBuilder manifestMessage(manifestReader.totalSize().wordCount + 4);
+      manifestMessage.setRoot(manifestReader);
+      node.setData(capnp::messageToFlatArray(manifestMessage));
+    } else if (path == "sandstorm-http-bridge") {
+      node.setTarget(getHttpBridgeExe());
+    } else KJ_IF_MAYBE(target, mapFile(sourceDir, sourceMap, path)) {
+      node.setTarget(kj::mv(*target));
+    } else {
+      context.exitError(kj::str("No file found to satisfy requirement: ", path));
+    }
+  }
+
+  kj::String getHttpBridgeExe() {
+    KJ_IF_MAYBE(slashPos, exePath.findLast('/')) {
+      return kj::str(exePath.slice(0, *slashPos), "/sandstorm-http-bridge");
+    } else {
+      return kj::heapString("/sandstorm-http-bridge");
+    }
+  }
+
   // =====================================================================================
+
+  kj::String dirname;
 
   kj::MainFunc getUnpackMain() {
     return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
             "Check that <spkfile>'s signature is valid.  If so, unpack it to <outdir> and "
             "print the app ID and filename.  If <outdir> is not specified, it will be "
             "chosen by removing the suffix \".spk\" from the input file name.")
-        .addOption({'o', "only-id"}, KJ_BIND_METHOD(*this, setOnlyPrintId),
-            "Only print the app ID, not the file name.")
         .expectArg("<spkfile>", KJ_BIND_METHOD(*this, setUnpackSpkfile))
         .expectOptionalArg("<outdir>", KJ_BIND_METHOD(*this, setUnpackDirname))
         .callAfterParsing(KJ_BIND_METHOD(*this, doUnpack))
@@ -751,7 +1294,7 @@ private:
     unpackDir(archiveMessage.getRoot<spk::Archive>().getFiles(), dirname);
 
     // Note the appid.
-    printAppId(publicKey, spkfile);
+    printAppId(publicKey);
 
     return true;
   }
@@ -806,49 +1349,27 @@ private:
   // =====================================================================================
   // "dev" command
 
-  kj::String fileList;
-  kj::String serverBinary = kj::str("/etc/init.d/sandstorm");
-  kj::StringPtr devAppId;
+  kj::String serverBinary;
   kj::StringPtr mountDir;
 
-  capnp::SchemaParser parser;
-  kj::Vector<kj::String> importPath;
-  spk::PackageDefinition::Reader packageDef;
-  kj::String sourceDir;
-
   kj::MainFunc getDevMain() {
-    return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
+    return addCommonOptions(OptionSet::ALL_READONLY,
+        kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
             "Register an under-development app with a local Sandstorm server for testing "
-            "purposes, and optionally output a list of all files it depends on. <def-file> is "
-            "a `.capnp` file defining a constant named <name> of type `PackageDefinition` as "
-            "defined in `sandstorm/package.capnp`. While this command is running, the app will "
-            "replace the current package for <app-id> as installed on the server. Note that "
-            "we intentionally do not require you to supply <app-id>'s private key so that the "
-            "key need not be distributed to all developers. Your user account must be a member "
-            "of the server's group, typically \"sandstorm\".")
-        .addOptionWithArg({'l', "file-list"}, KJ_BIND_METHOD(*this, setFileListOutput), "<file>",
-            "Output a list of all files opened by the app to <file>. Useful for determining "
-            "dependencies in order to build a package. If <file> already exists, files will only "
-            "be added to the existing list. Either way, the final list is always sorted with no "
-            "duplicates.")
-        .addOptionWithArg({'I', "import-path"}, KJ_BIND_METHOD(*this, addImportPath), "<path>",
-            "Additionally search for Cap'n Proto schemas in <path>. By default, /usr/include and "
-            "/usr/local/include are searched.")
+            "purposes, and optionally output a list of all files it depends on. While this "
+            "command is running, the app will replace the current package for the app's ID "
+            "installed on the server. Note that you do not need the private key corresponding "
+            "to the app ID for this, so that the key need not be distributed to all developers. "
+            "Your user account must be a member of the server's group, typically \"sandstorm\".")
         .addOptionWithArg({'s', "server"}, KJ_BIND_METHOD(*this, setServerDir), "<dir>",
             "Connect to the Sandstorm server installed in <dir>. Default is to detect based on "
-            "the installed init script.")
+            "the location of the spk executable or, failing that, the location pointed to by "
+            "the intsalled init script.")
         .addOptionWithArg({'m', "mount"}, KJ_BIND_METHOD(*this, setMountDir), "<dir>",
             "Don't actually connect to the server. Mount the package at <dir>, so you can poke "
             "at it.")
-        .expectArg("<app-id>", KJ_BIND_METHOD(*this, setDevAppId))
-        .expectArg("<def-file>:<name>", KJ_BIND_METHOD(*this, setPackageDef))
-        .callAfterParsing(KJ_BIND_METHOD(*this, doDev))
+        .callAfterParsing(KJ_BIND_METHOD(*this, doDev)))
         .build();
-  }
-
-  kj::MainBuilder::Validity setFileListOutput(kj::StringPtr name) {
-    fileList = kj::heapString(name);
-    return true;
   }
 
   kj::MainBuilder::Validity setServerDir(kj::StringPtr name) {
@@ -872,51 +1393,36 @@ private:
     return true;
   }
 
-  kj::MainBuilder::Validity setDevAppId(kj::StringPtr name) {
-    devAppId = name;
-    return true;
-  }
-
-  kj::MainBuilder::Validity setPackageDef(kj::StringPtr arg) {
-    KJ_IF_MAYBE(colonPos, arg.findFirst(':')) {
-      auto filename = kj::heapString(arg.slice(0, *colonPos));
-      auto constantName = arg.slice(*colonPos + 1);
-
-      if (access(filename.cStr(), F_OK) != 0) {
-        return "not found";
-      }
-
-      KJ_IF_MAYBE(slashPos, filename.findLast('/')) {
-        sourceDir = kj::heapString(filename.slice(0, *slashPos));
-      } else {
-        sourceDir = nullptr;
-      }
-
-      importPath.add(kj::heapString("/usr/local/include"));
-      importPath.add(kj::heapString("/usr/include"));
-
-      auto importPathPtrs = KJ_MAP(p, importPath) -> kj::StringPtr { return p; };
-
-      parser.loadCompiledTypeAndDependencies<spk::PackageDefinition>();
-
-      auto schema = parser.parseDiskFile(filename, filename, importPathPtrs);
-      KJ_IF_MAYBE(symbol, schema.findNested(constantName)) {
-        if (!symbol->getProto().isConst()) {
-          return "symbol is not a constant";
-        }
-
-        packageDef = symbol->asConst().as<spk::PackageDefinition>();
-
-        return true;
-      } else {
-        return "no such symbol in schema file";
-      }
-    } else {
-      return "argument missing constant name";
-    }
-  }
-
   kj::MainBuilder::Validity doDev() {
+    ensurePackageDefParsed();
+
+    if (serverBinary == nullptr) {
+      // Try to find the server. First try looking where `spk` is installed.
+      KJ_IF_MAYBE(i, installHome) {
+        auto candidate = kj::str(*i, "/sandstorm");
+        if (access(candidate.cStr(), F_OK) == 0) {
+          struct stat stats;
+          KJ_SYSCALL(stat(candidate.cStr(), &stats));
+          if (S_ISREG(stats.st_mode) && stats.st_mode & S_IXUSR) {
+            // Indeed!
+            serverBinary = kj::mv(candidate);
+          }
+        }
+      }
+
+      if (serverBinary == nullptr) {
+        // Try checking for an init script.
+        kj::StringPtr candidate = "/etc/init.d/sandstorm";
+        if (access(candidate.cStr(), F_OK) == 0) {
+          serverBinary = kj::str(candidate);
+        }
+      }
+
+      if (serverBinary == nullptr) {
+        return "Couldn't find Sandstorm server installation. Please use -s to specify it.";
+      }
+    }
+
     kj::AutoCloseFd fuseFd;
     kj::Maybe<kj::AutoCloseFd> connection;
     kj::Maybe<kj::Own<FuseMount>> fuseMount;
@@ -945,7 +1451,7 @@ private:
 
       // Write the app ID to the socket.
       {
-        auto msg = kj::str(devAppId, "\n");
+        auto msg = kj::str(packageDef.getId(), "\n");
         kj::FdOutputStream((int)clientEnd).write(msg.begin(), msg.size());
       }
 
@@ -973,6 +1479,8 @@ private:
       fuseMount = kj::mv(mount);
     }
 
+    std::set<kj::String> usedFiles;
+
     {
       kj::UnixEventPort::captureSignal(SIGINT);
       kj::UnixEventPort::captureSignal(SIGQUIT);
@@ -983,13 +1491,11 @@ private:
       kj::EventLoop eventLoop(eventPort);
       kj::WaitScope waitScope(eventLoop);
 
-      std::set<kj::String> usedFiles;
       kj::Function<void(kj::StringPtr)> callback = [&](kj::StringPtr path) {
         usedFiles.insert(kj::heapString(path));
-        KJ_DBG(path);
       };
       auto rootNode = makeUnionFs(sourceDir, packageDef.getSourceMap(),
-                                  packageDef.getManifest(), callback);
+                                  packageDef.getManifest(), getHttpBridgeExe(), callback);
 
       FuseOptions options;
       options.cacheForever = true;
@@ -1041,7 +1547,38 @@ private:
       }
     }
 
-    // TODO(now):  Do something with the file list.
+    // OK, we're done running. Output the file list.
+    if (packageDef.hasFileList()) {
+      context.warning("Updating file list.");
+
+      // Merge with the existing file list.
+      auto path = packageDef.getFileList();
+      if (access(path.cStr(), F_OK) == 0) {
+        auto fileList = raiiOpen(packageDef.getFileList(), O_RDONLY);
+        for (auto& line: splitLines(readAll(fileList))) {
+          usedFiles.insert(kj::mv(line));
+        }
+      }
+
+      // Now write back out.
+      ReplacementFile newFileList(path);
+      auto content = kj::str(
+          "# *** WARNING: GENERATED FILE ***\n"
+          "# This file is automatically updated and rewritten in sorted order every time\n"
+          "# the app runs in dev mode. You may manually add or remove files, but don't\n"
+          "# expect comments or ordering to be retained.\n",
+          kj::StringTree(KJ_MAP(file, usedFiles) { return kj::strTree(file); }, "\n"),
+          "\n");
+      kj::FdOutputStream(newFileList.getFd()).write(content.begin(), content.size());
+      newFileList.commit();
+    } else {
+      context.warning(
+          "Your program used the following files. (If you would specify `fileList` in \n"
+          "the package definition, I could write the list there.)\n\n");
+      auto msg = kj::str(
+          kj::StringTree(KJ_MAP(file, usedFiles) { return kj::strTree(file); }, "\n"), "\n");
+      kj::FdOutputStream(STDOUT_FILENO).write(msg.begin(), msg.size());
+    }
 
     return true;
   }
@@ -1068,73 +1605,6 @@ private:
       kj::FdOutputStream(STDOUT_FILENO).write(buffer, n);
     }
   }
-
-
-
-
-  class PathMapper {
-    // Looks for files in a spk::SourceMap, eventually generating list of dependencies.
-
-  public:
-    PathMapper(spk::SourceMap::Reader sourceMap)
-        : searchPath(sourceMap.getSearchPath()) {}
-
-    kj::Maybe<kj::StringPtr> mapPath(kj::StringPtr name) {
-      KJ_DBG("mapPath", name);
-      while (name.startsWith("/")) {
-        name = name.slice(1);
-      }
-
-      auto insertResult = fileMap.insert(std::make_pair(kj::heapString(name), nullptr));
-
-      if (insertResult.second) {
-        // This is a new entry.  Look it up.
-        for (auto dir: searchPath) {
-          auto virtualPath = dir.getPackagePath();
-          if (pathStartsWith(name, virtualPath)) {
-            auto subPath = name.slice(virtualPath.size());
-
-            // If the path is some file or subdirectory inside the virtual path...
-            if (subPath.size() > 0) {
-              // ... then check to see if it's hidden.
-              bool hidden = false;
-              for (auto hide: dir.getHidePaths()) {
-                // slice(1) removes "/" prefix.
-                if (pathStartsWith(subPath.slice(1), hide)) {
-                  hidden = true;
-                  break;
-                }
-              }
-              if (hidden) continue;
-            }
-
-            // Not hidden, so now check if this path exists.
-            auto candidate = kj::str(dir.getSourcePath(), subPath);
-            if (access(candidate.cStr(), F_OK) == 0) {
-              // Found!
-              insertResult.first->second = kj::mv(candidate);
-              break;
-            }
-          }
-        }
-      }
-
-      if (insertResult.first->second == nullptr) {
-        return nullptr;
-      } else {
-        return kj::StringPtr(insertResult.first->second);
-      }
-    }
-
-  private:
-    capnp::List<spk::SourceMap::Mapping>::Reader searchPath;
-    std::map<kj::String, kj::String> fileMap;  // nullptr value = not found
-
-    static bool pathStartsWith(kj::StringPtr path, kj::StringPtr prefix) {
-      return path.startsWith(prefix) &&
-          (path.size() == prefix.size() || path[prefix.size()] == '/');
-    }
-  };
 };
 
 }  // namespace sandstorm

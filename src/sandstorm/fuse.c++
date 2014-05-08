@@ -306,7 +306,6 @@ private:
           // case, it seems safe to move on here (without updating the cap maps).
           break;
         default:
-          KJ_DBG(response->header.unique);
           KJ_FAIL_SYSCALL("write(/dev/fuse)", error);
       }
     } else {

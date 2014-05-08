@@ -24,6 +24,7 @@
 #include <capnp/serialize.h>
 #include <map>
 #include <set>
+#include <unistd.h>
 #include "fuse.h"
 
 #if __QTCREATOR
@@ -266,6 +267,8 @@ protected:
           ttl = kj::min(ttl, layer->getTtl());
         }
       }
+
+      KJ_REQUIRE(outLayers.size() > 0, "no such file or directory");
 
       auto outResults = context.getResults(capnp::MessageSize {2, 1});
       outResults.setNode(kj::heap<UnionNode>(outLayers.releaseAsArray()));
@@ -580,10 +583,10 @@ private:
 }  // namespace
 
 fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap,
-                               spk::Manifest::Reader manifest,
+                               spk::Manifest::Reader manifest, kj::StringPtr bridgePath,
                                kj::Function<void(kj::StringPtr)>& callback) {
   auto searchPath = sourceMap.getSearchPath();
-  auto layers = kj::heapArrayBuilder<fuse::Node::Client>(searchPath.size() + 1);
+  auto layers = kj::heapArrayBuilder<fuse::Node::Client>(searchPath.size() + 2);
 
   {
     capnp::MallocMessageBuilder manifestCopy(manifest.totalSize().wordCount + 4);
@@ -591,6 +594,9 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
     layers.add(kj::heap<SingletonNode>(kj::heap<SimpleDataNode>(
         capnp::messageToFlatArray(manifestCopy)), "sandstorm-manifest"));
   }
+
+  layers.add(kj::heap<SingletonNode>(
+      newLoopbackFuseNode(bridgePath, kj::maxValue), "sandstorm-http-bridge"));
 
   for (auto mapping: searchPath) {
     kj::StringPtr sourcePath = mapping.getSourcePath();
@@ -629,6 +635,49 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
 
   auto merged = kj::heap<UnionNode>(layers.finish());
   return kj::heap<TrackingNode>(kj::mv(merged), nullptr, callback);
+}
+
+static bool pathStartsWith(kj::StringPtr path, kj::StringPtr prefix) {
+  return prefix.size() == 0 || (path.startsWith(prefix) &&
+      (path.size() == prefix.size() || path[prefix.size()] == '/'));
+}
+
+kj::Maybe<kj::String> mapFile(
+    kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap, kj::StringPtr name) {
+  for (auto dir: sourceMap.getSearchPath()) {
+    auto virtualPath = dir.getPackagePath();
+    if (pathStartsWith(name, virtualPath)) {
+      auto subPath = name.slice(virtualPath.size());
+      while (subPath.startsWith("/")) subPath = subPath.slice(1);
+
+      // If the path is some file or subdirectory inside the virtual path...
+      if (subPath.size() > 0) {
+        // ... then check to see if it's hidden.
+        bool hidden = false;
+        for (auto hide: dir.getHidePaths()) {
+          if (pathStartsWith(subPath, hide)) {
+            hidden = true;
+            break;
+          }
+        }
+        if (hidden) continue;
+      }
+
+      // Not hidden, so now check if this path exists.
+      auto sourcePath = dir.getSourcePath();
+      auto candidate = kj::str(sourcePath, sourcePath.endsWith("/") ? "" : "/", subPath);
+      if (!candidate.startsWith("/") && sourceDir.size() > 0) {
+        // Prepend `sourceDir` to relative paths, if it is non-empty.
+        candidate = kj::str(sourceDir, '/', kj::mv(candidate));
+      }
+      if (access(candidate.cStr(), F_OK) == 0) {
+        // Found!
+        return kj::mv(candidate);
+      }
+    }
+  }
+
+  return nullptr;
 }
 
 }  // namespace sandstorm

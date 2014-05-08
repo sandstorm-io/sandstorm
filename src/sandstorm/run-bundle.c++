@@ -672,6 +672,16 @@ public:
                   .build();
             },
             "Update the Sandstorm platform.")
+        .addSubCommand("devtools",
+            [this]() {
+              return kj::MainBuilder(context, VERSION,
+                      "Place symlinks in <bindir> (default: /usr/local/bin) to the dev tools "
+                      "in this package.")
+                  .expectOptionalArg("<bindir>", KJ_BIND_METHOD(*this, setDevtoolsBindir))
+                  .callAfterParsing(KJ_BIND_METHOD(*this, devtools))
+                  .build();
+            },
+            "Install Sandstorm devtools.")
         .addSubCommand("continue",
             [this]() {
               return kj::MainBuilder(context, VERSION,
@@ -1004,6 +1014,20 @@ public:
     }
   }
 
+  kj::MainBuilder::Validity devtools() {
+    auto dir = getInstallDir();
+    auto parent = kj::heapString(dir.slice(0, KJ_ASSERT_NONNULL(dir.findLast('/'))));
+
+    KJ_SYSCALL(access(kj::str(parent, "/latest").cStr(), F_OK),
+               "No \"latest\" symlink? Sandstorm doesn't seem to be installed the way I "
+               "expected it.");
+
+    auto to = kj::str(devtoolsBindir, "/spk");
+    unlink(to.cStr());
+    KJ_SYSCALL(symlink(kj::str(parent, "/latest/bin/spk").cStr(), to.cStr()));
+    context.exitInfo(kj::str("created: ", devtoolsBindir, "/spk"));
+  }
+
   kj::MainBuilder::Validity dev() {
     // When called by the spk tool, stdout is a socket where we will send the fuse FD.
     struct stat stats;
@@ -1054,17 +1078,21 @@ private:
   };
 
   kj::String updateFile;
+  kj::StringPtr devtoolsBindir = "/usr/local/bin";
 
   bool changedDir = false;
 
-  void changeToInstallDir() {
+  kj::String getInstallDir() {
     char exeNameBuf[PATH_MAX + 1];
     size_t len;
     KJ_SYSCALL(len = readlink("/proc/self/exe", exeNameBuf, sizeof(exeNameBuf) - 1));
     exeNameBuf[len] = '\0';
     kj::StringPtr exeName(exeNameBuf, len);
-    auto dir = kj::heapString(exeName.slice(0, KJ_ASSERT_NONNULL(exeName.findLast('/'))));
-    KJ_SYSCALL(chdir(dir.cStr()));
+    return kj::heapString(exeName.slice(0, KJ_ASSERT_NONNULL(exeName.findLast('/'))));
+  }
+
+  void changeToInstallDir() {
+    KJ_SYSCALL(chdir(getInstallDir().cStr()));
     changedDir = true;
   }
 
@@ -1355,12 +1383,6 @@ private:
 
     enterChroot();
 
-    pid_t devDaemonPid = fork();
-    if (devDaemonPid == 0) {
-      runDevDaemon(config);
-      KJ_UNREACHABLE;
-    }
-
     // For later use when killing children with timeout.
     registerAlarmHandler();
 
@@ -1372,6 +1394,17 @@ private:
     context.warning("** Starting MongoDB...");
     pid_t mongoPid = startMongo(config);
     int64_t mongoStartTime = getTime();
+
+    pid_t devDaemonPid = fork();
+    if (devDaemonPid == 0) {
+      // Ugh, undo the setup we *just* did. Note that we can't just fork the dev daemon earlier
+      // because it wants to connect to mongo first thing.
+      sigfd = nullptr;
+      clearSignalMask();
+      KJ_SYSCALL(signal(SIGALRM, SIG_DFL));
+      runDevDaemon(config);
+      KJ_UNREACHABLE;
+    }
 
     context.warning("** Mongo started; now starting front-end...");
     pid_t nodePid = startNode(config);
@@ -1745,7 +1778,6 @@ private:
   }
 
   void runDevDaemon(const Config& config) KJ_NORETURN {
-    clearSignalMask();
     clearDevApps(config);
 
     // Make sure socket directory exists (since the installer doesn't create it).
@@ -1872,6 +1904,11 @@ private:
       sendFd(fd, fuseFd);
       fuseFd = nullptr;
 
+      // Kill all sandstorm-supervisor processes to force a reload of the app. (In theory we could
+      // try to only kill supervisors of the specific app we're overriding, but that would take
+      // some extra work to figure out. Killing them all shouldn't hurt much.)
+      killall("/bin/sandstorm-supervisor");
+
       {
         // Read the manifest.
         capnp::StreamFdMessageReader reader(
@@ -1880,29 +1917,51 @@ private:
         // Notify the front-end that the app exists.
         insertDevApp(config, appId, pkgId, reader.getRoot<spk::Manifest>());
       }
-      KJ_DEFER(removeDevApp(config, appId));
 
-      for (;;) {
-        KJ_IF_MAYBE(line, readLine(input)) {
-          if (*line == "restart") {
-            capnp::StreamFdMessageReader reader(
-                raiiOpen(kj::str(dir, "/sandstorm-manifest"), O_RDONLY));
-            updateDevApp(config, appId, reader.getRoot<spk::Manifest>());
+      {
+        KJ_DEFER(removeDevApp(config, appId));
+
+        for (;;) {
+          KJ_IF_MAYBE(line, readLine(input)) {
+            if (*line == "restart") {
+              // Re-read the manifest.
+              capnp::StreamFdMessageReader reader(
+                  raiiOpen(kj::str(dir, "/sandstorm-manifest"), O_RDONLY));
+
+              // Kill all the supervisors again to force a reload of the app.
+              killall("/bin/sandstorm-supervisor");
+
+              // Notify front-end that the app changed.
+              updateDevApp(config, appId, reader.getRoot<spk::Manifest>());
+            }
+          } else {
+            break;
           }
-        } else {
-          break;
         }
       }
 
-      // TODO(now): wait for input on FD
-      //    -> "reload" = tell front-end to kill app and reload clients
-      //    -> EOF = unmount
+      // Kill all the supervisors again to shut down the app before we unmount it.
+      killall("/bin/sandstorm-supervisor");
     });
 
     KJ_IF_MAYBE(e, exception) {
       context.exitError(kj::str(*e));
     } else {
       context.exit();
+    }
+  }
+
+  void killall(kj::StringPtr exePath) {
+    for (auto& file: listDirectory("/proc")) {
+      KJ_IF_MAYBE(pid, parseUInt(file, 10)) {
+        char buf[exePath.size()];
+        char* bufPtr = buf;  // Clang doesn't like capturing variable-width arrays.
+        ssize_t n;
+        KJ_SYSCALL(n = readlink(kj::str("/proc/", file, "/exe").cStr(), bufPtr, exePath.size()));
+        if (n == exePath.size() && memcmp(exePath.begin(), buf, sizeof(buf)) == 0) {
+          KJ_SYSCALL(kill(*pid, SIGTERM));
+        }
+      }
     }
   }
 
@@ -1981,6 +2040,14 @@ private:
     } else {
       return "file not found";
     }
+  }
+
+  kj::MainBuilder::Validity setDevtoolsBindir(kj::StringPtr arg) {
+    if (access(arg.cStr(), F_OK) != 0) {
+      return "not found";
+    }
+    devtoolsBindir = arg;
+    return true;
   }
 };
 

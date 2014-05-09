@@ -1498,7 +1498,12 @@ private:
                                   packageDef.getManifest(), getHttpBridgeExe(), callback);
 
       FuseOptions options;
-      options.cacheForever = true;
+
+      // Caching improves performance significantly... but the ability to update code and see those
+      // updates live without restarting seems more important for this use case.
+      // TODO(perf): Implement active cache invalidation. FUSE has protocol support for it. Use
+      //   inotify at the other end to detect changes.
+//      options.cacheForever = true;
 
       auto onSignal = eventPort.onSignal(SIGINT)
           .exclusiveJoin(eventPort.onSignal(SIGQUIT))

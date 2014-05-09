@@ -1754,25 +1754,29 @@ private:
 
   void cleanupOldVersions() {
     for (auto& file: listDirectory("..")) {
-      if (file.startsWith("sandstorm-")) {
-        auto suffix = file.slice(strlen("sandstorm-"));
-        if (suffix.startsWith("custom.")) {
-          // This is a custom build. If we aren't currently running a custom build, go ahead and
-          // delete it.
-          if (SANDSTORM_BUILD != 0) {
-            recursivelyDelete(kj::str("../", file));
-          }
-        } else KJ_IF_MAYBE(build, parseUInt(suffix, 10)) {
-          // Only delete older builds.
-          if (*build < SANDSTORM_BUILD) {
-            KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
+      KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
+        if (file.startsWith("sandstorm-")) {
+          auto suffix = file.slice(strlen("sandstorm-"));
+          if (suffix.startsWith("custom.")) {
+            // This is a custom build. If we aren't currently running a custom build, go ahead and
+            // delete it.
+            if (SANDSTORM_BUILD != 0) {
               recursivelyDelete(kj::str("../", file));
-            })) {
-              context.warning(kj::str("couldn't delete old build ", file, ": ",
-                                      exception->getDescription()));
+            }
+          } else KJ_IF_MAYBE(build, parseUInt(suffix, 10)) {
+            // Only delete older builds.
+            if (*build < SANDSTORM_BUILD) {
+              KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
+                recursivelyDelete(kj::str("../", file));
+              })) {
+                context.warning(kj::str("couldn't delete old build ", file, ": ",
+                                        exception->getDescription()));
+              }
             }
           }
         }
+      })) {
+        KJ_LOG(ERROR, "Error while trying to delete old versions.", *exception);
       }
     }
   }

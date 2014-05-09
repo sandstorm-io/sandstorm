@@ -1082,6 +1082,22 @@ private:
 
         if (stats.st_mode & S_IXUSR) {
           builder.adoptExecutable(kj::mv(content));
+
+          if (target.endsWith("/mongod") || target == "mongod") {
+            context.warning(
+              "** WARNING: It looks like your app uses MongoDB. PLEASE verify that the size\n"
+              "**   of a typical instance of your app is reasonable before you distribute\n"
+              "**   it. App instance storage is found in:\n"
+              "**     $SANDSORM_HOME/var/sandstorm/grains/$GRAIN_ID\n"
+              "**   Mongo likes to pre-allocate lots of space, while Sandstorm grains\n"
+              "**   should be small, which can lead to waste. Please consider using\n"
+              "**   Kenton's fork of Mongo that preallocates less data, found here:\n"
+              "**     https://github.com/kentonv/mongo/tree/niscu\n"
+              "**   This warning will disappear if the name of the binary on your disk is\n"
+              "**   something other than \"mongod\" -- you can still map it to the name\n"
+              "**   \"mongod\" inside your package, e.g. with a mapping like:\n"
+              "**     (packagePath=\"usr/bin/mongod\", sourcePath=\"niscud\")");
+          }
         } else {
           builder.adoptRegular(kj::mv(content));
         }

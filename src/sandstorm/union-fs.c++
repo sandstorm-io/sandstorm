@@ -637,25 +637,73 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
   return kj::heap<TrackingNode>(kj::mv(merged), nullptr, callback);
 }
 
-static bool pathStartsWith(kj::StringPtr path, kj::StringPtr prefix) {
-  return prefix.size() == 0 || (path.startsWith(prefix) &&
-      (path.size() == prefix.size() || path[prefix.size()] == '/'));
+static kj::String joinPaths(kj::StringPtr a, kj::StringPtr b) {
+  // e.g. joinPaths("foo", "bar") -> "foo/bar".
+  //
+  // Special rules:
+  // - An empty operand is equivalent to ".", therefore we return the other operand.
+  // - If the right operand is absolute, we just return it.
+  // - We try to avoid adding redundant slashes, especially for the case where the left operand
+  //   is "/".
+
+  if (b.startsWith("/")) return kj::str(b);
+
+  if (a.endsWith("/") || a.size() == 0 || b.size() == 0) {
+    return kj::str(a, b);
+  }
+
+  return kj::str(a, '/', b);
+}
+
+static kj::Maybe<kj::StringPtr> tryRemovePathPrefix(kj::StringPtr path, kj::StringPtr prefix) {
+  // If `prefix` names a parent directory of `path`, then return the remainder of `path` after
+  // removing said parent. Otherwise return null.
+  //
+  // Special rules:
+  // - It can't merely be a string prefix, because the prefix must be a whole node name. E.g.
+  //   "foo" is a prefix of "foo/bar" but not of "foobar/baz".
+  // - An empty `prefix` means "current directory" and so is always matched unless `path` is
+  //   absolute.
+  // - An exact match returns an empty string.
+
+  if (!path.startsWith(prefix)) {
+    return nullptr;
+  }
+
+  if (prefix.size() == 0) {
+    // Empty prefix = current dir.
+    if (path.startsWith("/")) {
+      return nullptr;
+    } else {
+      return path;
+    }
+  }
+
+  if (path.size() == prefix.size()) {
+    // Exact match.
+    return kj::StringPtr("");
+  }
+
+  if (path[prefix.size()] == '/') {
+    // Path prefix match. Strip off prefix and slash.
+    return path.slice(prefix.size() + 1);
+  } else {
+    // It's a string prefix match but not a path prefix match.
+    return nullptr;
+  }
 }
 
 kj::Maybe<kj::String> mapFile(
     kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap, kj::StringPtr name) {
   for (auto dir: sourceMap.getSearchPath()) {
     auto virtualPath = dir.getPackagePath();
-    if (pathStartsWith(name, virtualPath)) {
-      auto subPath = name.slice(virtualPath.size());
-      while (subPath.startsWith("/")) subPath = subPath.slice(1);
-
+    KJ_IF_MAYBE(subPath, tryRemovePathPrefix(name, virtualPath)) {
       // If the path is some file or subdirectory inside the virtual path...
-      if (subPath.size() > 0) {
+      if (subPath->size() > 0) {
         // ... then check to see if it's hidden.
         bool hidden = false;
         for (auto hide: dir.getHidePaths()) {
-          if (pathStartsWith(subPath, hide)) {
+          if (tryRemovePathPrefix(*subPath, hide) != nullptr) {
             hidden = true;
             break;
           }
@@ -665,11 +713,11 @@ kj::Maybe<kj::String> mapFile(
 
       // Not hidden, so now check if this path exists.
       auto sourcePath = dir.getSourcePath();
-      auto candidate = kj::str(sourcePath, sourcePath.endsWith("/") ? "" : "/", subPath);
-      if (!candidate.startsWith("/") && sourceDir.size() > 0) {
-        // Prepend `sourceDir` to relative paths, if it is non-empty.
-        candidate = kj::str(sourceDir, '/', kj::mv(candidate));
-      }
+      auto candidate = joinPaths(sourcePath, *subPath);
+
+      // Prepend `sourceDir` to relative paths.
+      candidate = joinPaths(sourceDir, candidate);
+
       if (access(candidate.cStr(), F_OK) == 0) {
         // Found!
         return kj::mv(candidate);

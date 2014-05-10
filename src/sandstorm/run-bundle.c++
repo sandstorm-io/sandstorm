@@ -969,8 +969,7 @@ public:
     dropPrivs(config.uids);
 
     // OK, run the Mongo client!
-    KJ_SYSCALL(execl("/bin/mongo", "/bin/mongo",
-                     kj::str("127.0.0.1:", config.mongoPort, "/meteor").cStr(), EXEC_END_ARGS));
+    execMongoClient(config, {});
     KJ_UNREACHABLE;
   }
 
@@ -1395,6 +1394,9 @@ private:
     pid_t mongoPid = startMongo(config);
     int64_t mongoStartTime = getTime();
 
+    // Create the mongo user if it hasn't been created already.
+    maybeCreateMongoUser(config);
+
     pid_t devDaemonPid = fork();
     if (devDaemonPid == 0) {
       // Ugh, undo the setup we *just* did. Note that we can't just fork the dev daemon earlier
@@ -1484,11 +1486,17 @@ private:
       dropPrivs(config.uids);
       clearSignalMask();
 
+      // Note: --auth doesn't actually enable auth on the localhost interface if no users are
+      //   configured. If a user is configured, then it should be named "sandstorm" and the
+      //   password placed in "/var/mongo/passwd" (with suitable permissions on the file).
+      // TODO(security): Automatically create said user on startup if the file doesn't already
+      //   exist. We haven't done this yet because the way to create Mongo users is currently in
+      //   flux.
       KJ_SYSCALL(execl("/bin/mongod", "/bin/mongod", "--fork",
           "--bind_ip", "127.0.0.1", "--port", kj::str(config.mongoPort).cStr(),
           "--dbpath", "/var/mongo", "--logpath", "/var/log/mongo.log",
           "--pidfilepath", "/var/pid/mongo.pid",
-          "--noauth", "--nohttpinterface", "--noprealloc", "--nopreallocj", "--smallfiles",
+          "--auth", "--nohttpinterface", "--noprealloc", "--nopreallocj", "--smallfiles",
           EXEC_END_ARGS));
       KJ_UNREACHABLE;
     }
@@ -1504,6 +1512,49 @@ private:
     return KJ_ASSERT_NONNULL(parseUInt(trim(readAll("/var/pid/mongo.pid")), 10));
   }
 
+  void maybeCreateMongoUser(const Config& config) {
+    if (access("/var/mongo/passwd", F_OK) != 0) {
+      // Get 20 random bytes for password.
+      kj::byte bytes[20];
+      kj::FdInputStream random(raiiOpen("/dev/urandom", O_RDONLY));
+      random.read(bytes, sizeof(bytes));
+
+      // Base64 encode them.
+      // TODO(cleanup): Move to libkj.
+      const char* digits =
+          "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_";
+      uint buffer = 0;
+      uint bufferBits = 0;
+      kj::Vector<char> chars;
+      for (kj::byte b: bytes) {
+        buffer |= kj::implicitCast<uint>(b) << bufferBits;
+        bufferBits += 8;
+
+        while (bufferBits >= 6) {
+          chars.add(digits[buffer & 0x3f]);
+          buffer >>= 6;
+          bufferBits -= 6;
+        }
+      }
+      if (bufferBits > 0) {
+        chars.add(digits[buffer & 0x3f]);
+      }
+      chars.add('\0');
+      kj::String password(chars.releaseAsArray());
+
+      // Create the mongo user.
+      auto command = kj::str(
+        "db.addUser({user: \"sandstorm\", pwd: \"", password, "\", "
+        "roles: [\"readWriteAnyDatabase\",\"userAdminAnyDatabase\",\"dbAdminAnyDatabase\"]})");
+      mongoCommand(config, command, "admin");
+
+      // Store the password.
+      auto outFd = raiiOpen("/var/mongo/passwd", O_WRONLY | O_CREAT | O_EXCL, 0640);
+      KJ_SYSCALL(fchown(outFd, config.uids.uid, config.uids.gid));
+      kj::FdOutputStream((int)outFd).write(password.begin(), password.size());
+    }
+  }
+
   pid_t startNode(const Config& config) {
     pid_t result;
     KJ_SYSCALL(result = fork());
@@ -1511,9 +1562,20 @@ private:
       dropPrivs(config.uids);
       clearSignalMask();
 
+      kj::String authPrefix;
+      kj::StringPtr authSuffix;
+      if (access("/var/mongo/passwd", F_OK) == 0) {
+        // Read the password.
+        auto password = trim(readAll(raiiOpen("/var/mongo/passwd", O_RDONLY)));
+        authPrefix = kj::str("sandstorm:", password, "@");
+        authSuffix = "?authSource=admin";
+      }
+
       KJ_SYSCALL(setenv("PORT", kj::str(config.port).cStr(), true));
       KJ_SYSCALL(setenv("MONGO_URL",
-          kj::str("mongodb://127.0.0.1:", config.mongoPort, "/meteor").cStr(), true));
+          kj::str("mongodb://", authPrefix, "127.0.0.1:", config.mongoPort,
+                  "/meteor", authSuffix).cStr(),
+          true));
       KJ_SYSCALL(setenv("BIND_IP", config.bindIp.cStr(), true));
       if (config.mailUrl != nullptr) {
         KJ_SYSCALL(setenv("MAIL_URL", config.mailUrl.cStr(), true));
@@ -1997,7 +2059,7 @@ private:
     mongoCommand(config, kj::str("db.devapps.remove()"));
   }
 
-  void mongoCommand(const Config& config, kj::StringPtr command) {
+  void mongoCommand(const Config& config, kj::StringPtr command, kj::StringPtr db = "meteor") {
     pid_t pid = fork();
     if (pid == 0) {
       // We don't want to unwind the stack in this subprocess.
@@ -2005,8 +2067,7 @@ private:
         // Don't run as root.
         dropPrivs(config.uids);
 
-        KJ_SYSCALL(execl("/bin/mongo", "/bin/mongo", "--quiet", "--eval", command.cStr(),
-                   kj::str("127.0.0.1:", config.mongoPort, "/meteor").cStr(), EXEC_END_ARGS));
+        execMongoClient(config, {"--quiet", "--eval", command }, db);
       })) {
         context.exitError(kj::str(*exception));
       }
@@ -2018,6 +2079,40 @@ private:
     KJ_SYSCALL(waitpid(pid, &status, 0)) { return; }
     KJ_ASSERT(WIFEXITED(status) && WEXITSTATUS(status) == 0,
               "mongo command failed", command) { return; }
+  }
+
+  void execMongoClient(const Config& config,
+        std::initializer_list<kj::StringPtr> addlArgs,
+        kj::StringPtr dbName = "meteor") KJ_NORETURN {
+    auto db = kj::str("127.0.0.1:", config.mongoPort, "/", dbName);
+
+    kj::Vector<const char*> args;
+    args.add("/bin/mongo");
+
+    // If /var/mongo/passwd exists, we interpret it as containing the password for a Mongo user
+    // "sandstorm", and assume we are expected to log in as this user.
+    kj::String password;
+    if (access("/var/mongo/passwd", F_OK) == 0) {
+      password = trim(readAll(raiiOpen("/var/mongo/passwd", O_RDONLY)));
+
+      args.add("-u");
+      args.add("sandstorm");
+      args.add("-p");
+      args.add(password.cStr());
+      args.add("--authenticationDatabase");
+      args.add("admin");
+    }
+
+    for (auto& arg: addlArgs) {
+      args.add(arg.cStr());
+    }
+
+    args.add(db.cStr());
+    args.add(nullptr);
+
+    // OK, run the Mongo client!
+    KJ_SYSCALL(execv(args[0], const_cast<char**>(args.begin())));
+    KJ_UNREACHABLE;
   }
 
   // ---------------------------------------------------------------------------

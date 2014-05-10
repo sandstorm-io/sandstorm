@@ -1486,17 +1486,12 @@ private:
       dropPrivs(config.uids);
       clearSignalMask();
 
-      // Note: --auth doesn't actually enable auth on the localhost interface if no users are
-      //   configured. If a user is configured, then it should be named "sandstorm" and the
-      //   password placed in "/var/mongo/passwd" (with suitable permissions on the file).
-      // TODO(security): Automatically create said user on startup if the file doesn't already
-      //   exist. We haven't done this yet because the way to create Mongo users is currently in
-      //   flux.
       KJ_SYSCALL(execl("/bin/mongod", "/bin/mongod", "--fork",
           "--bind_ip", "127.0.0.1", "--port", kj::str(config.mongoPort).cStr(),
           "--dbpath", "/var/mongo", "--logpath", "/var/log/mongo.log",
           "--pidfilepath", "/var/pid/mongo.pid",
           "--auth", "--nohttpinterface", "--noprealloc", "--nopreallocj", "--smallfiles",
+          "--replSet", "ssrs", "--oplogSize", "16",
           EXEC_END_ARGS));
       KJ_UNREACHABLE;
     }
@@ -1508,6 +1503,14 @@ private:
 
     KJ_ASSERT(WIFEXITED(status) && WEXITSTATUS(status) == 0,
         "MongoDB failed on startup. Check var/log/mongo.log.");
+
+    // Even after the startup command exits, MongoDB takes exactly two seconds to elect itself as
+    // master of the repl set (of which it is the only damned member). Unforutnately, if Node
+    // connects during this time, it fails, sometimes without actually exiting, leaving the entire
+    // server hosed. So we have to sleep for 3 seconds here to make sure Mongo is really ready.
+    // TODO(cleanup): There must be a better way...
+    int n = 3;
+    while (n > 0) n = sleep(n);
 
     return KJ_ASSERT_NONNULL(parseUInt(trim(readAll("/var/pid/mongo.pid")), 10));
   }
@@ -1552,6 +1555,13 @@ private:
       auto outFd = raiiOpen("/var/mongo/passwd", O_WRONLY | O_CREAT | O_EXCL, 0640);
       KJ_SYSCALL(fchown(outFd, config.uids.uid, config.uids.gid));
       kj::FdOutputStream((int)outFd).write(password.begin(), password.size());
+
+      // Let's also use this opportunity to initialize the repl set to get oplog tailing. Our set
+      // isn't actually much of a set since it only contains one instance, but you need that for
+      // oplog.
+      mongoCommand(config, kj::str(
+          "rs.initiate({_id: 'ssrs', members: [{_id: 0, host: 'localhost:",
+          config.mongoPort, "'}]}"));
     }
   }
 
@@ -1569,6 +1579,12 @@ private:
         auto password = trim(readAll(raiiOpen("/var/mongo/passwd", O_RDONLY)));
         authPrefix = kj::str("sandstorm:", password, "@");
         authSuffix = "?authSource=admin";
+
+        // Oplog is only configured if we have a password.
+        KJ_SYSCALL(setenv("MONGO_OPLOG_URL",
+            kj::str("mongodb://", authPrefix, "127.0.0.1:", config.mongoPort,
+                    "/local", authSuffix).cStr(),
+            true));
       }
 
       KJ_SYSCALL(setenv("PORT", kj::str(config.port).cStr(), true));
@@ -1616,7 +1632,7 @@ private:
       // Sleep for 10 seconds to avoid burning resources on a restart loop.
       usleep(10 * 1000 * 1000);
     } else {
-      context.exitError(kj::str("** ", title, " died! Restarting it..."));
+      context.warning(kj::str("** ", title, " died! Restarting it..."));
     }
   }
 

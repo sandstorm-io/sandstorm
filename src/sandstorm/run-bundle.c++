@@ -1297,6 +1297,11 @@ private:
     // Run the update monitor process.  This process runs two subprocesses:  the sandstorm server
     // and the auto-updater.
 
+    // Fix permissions on pidfile. We do this here rather than back where we opened it because
+    // a previous version failed to do this and we want it fixed immediately on upgrade.
+    KJ_SYSCALL(fchown(pidfile, 0, config.uids.gid));
+    KJ_SYSCALL(fchmod(pidfile, 0660));
+
     cleanupOldVersions();
 
     auto sigfd = prepareMonitoringLoop();
@@ -1507,7 +1512,11 @@ private:
     // Even after the startup command exits, MongoDB takes exactly two seconds to elect itself as
     // master of the repl set (of which it is the only damned member). Unforutnately, if Node
     // connects during this time, it fails, sometimes without actually exiting, leaving the entire
-    // server hosed. So we have to sleep for 3 seconds here to make sure Mongo is really ready.
+    // server hosed. It appears that this always takes exactly two seconds from startup, since
+    // MongoDB does some sort of heartbeat every second where it checks the replset status, and it
+    // takes three of these for the election to complete, and the first of the three happens
+    // immediately on startup, meaning the last one is two seconds in. So, we'll sleep for 3
+    // seconds to be safe.
     // TODO(cleanup): There must be a better way...
     int n = 3;
     while (n > 0) n = sleep(n);
@@ -1517,6 +1526,21 @@ private:
 
   void maybeCreateMongoUser(const Config& config) {
     if (access("/var/mongo/passwd", F_OK) != 0) {
+      // We need to initialize the repl set to get oplog tailing. Our set isn't actually much of a
+      // set since it only contains one instance, but you need that for oplog.
+      mongoCommand(config, kj::str(
+          "rs.initiate({_id: 'ssrs', members: [{_id: 0, host: 'localhost:",
+          config.mongoPort, "'}]})"));
+
+      // We have to wait a few seconds for Mongo to elect itself master of the repl set. Mongo does
+      // some sort of heartbeat every second and it takes three of these for Mongo to elect itself,
+      // meaning the whole process always takes 2-3 seconds. We'll sleep for 4.
+      // TODO(cleanup): This is ugly.
+      {
+        int n = 4;
+        while (n > 0) n = sleep(n);
+      }
+
       // Get 20 random bytes for password.
       kj::byte bytes[20];
       kj::FdInputStream random(raiiOpen("/dev/urandom", O_RDONLY));
@@ -1555,13 +1579,6 @@ private:
       auto outFd = raiiOpen("/var/mongo/passwd", O_WRONLY | O_CREAT | O_EXCL, 0640);
       KJ_SYSCALL(fchown(outFd, config.uids.uid, config.uids.gid));
       kj::FdOutputStream((int)outFd).write(password.begin(), password.size());
-
-      // Let's also use this opportunity to initialize the repl set to get oplog tailing. Our set
-      // isn't actually much of a set since it only contains one instance, but you need that for
-      // oplog.
-      mongoCommand(config, kj::str(
-          "rs.initiate({_id: 'ssrs', members: [{_id: 0, host: 'localhost:",
-          config.mongoPort, "'}]}"));
     }
   }
 
@@ -1675,8 +1692,6 @@ private:
   }
 
   bool checkForUpdates(kj::StringPtr channel, kj::StringPtr type) {
-    KJ_ASSERT(SANDSTORM_BUILD > 0, "Updates not supported for trunk builds.");
-
     // GET install.sandstorm.io/$channel?from=$oldBuild&type=[manual|startup|daily]
     //     -> result is build number
     context.warning(kj::str("Checking for updates on channel ", channel, "..."));
@@ -1684,9 +1699,13 @@ private:
     kj::String buildStr;
 
     {
+      kj::String from;
+      if (SANDSTORM_BUILD > 0) {
+        from = kj::str("from=", SANDSTORM_BUILD, "&");
+      }
+
       CurlRequest updateCheck(
-          kj::str("https://install.sandstorm.io/", channel,
-                  "?from=", SANDSTORM_BUILD, "&type=", type));
+          kj::str("https://install.sandstorm.io/", channel, "?", from, "type=", type));
       buildStr = readAll(updateCheck.getPipe());
     }
 

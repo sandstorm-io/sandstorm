@@ -54,6 +54,9 @@ namespace sandstorm {
 
 typedef kj::byte byte;
 
+static const uint64_t APP_SIZE_LIMIT = 1ull << 30;
+// For now, we will refuse to unpack an app over 1 GB (decompressed size).
+
 // =======================================================================================
 // base32 encode/decode derived from google-authenticator code, Apache 2.0 license:
 //   https://code.google.com/p/google-authenticator/source/browse/libpam/base32.c
@@ -352,6 +355,8 @@ public:
                         content.size() / sizeof(capnp::word));
   }
 
+  inline size_t size() const { return content.size(); }
+
 private:
   kj::ArrayPtr<byte> content;
 };
@@ -397,20 +402,27 @@ public:
   ~ChildProcess() {
     if (pid == 0) return;
 
-    // Close the pipe first, in case the child is waiting for that.
-    pipeFd = nullptr;
+    if (unwindDetector.isUnwinding()) {
+      // An exception was thrown, so force-kill the child.
+      int status;
+      while (kill(pid, SIGKILL) < 0 && errno == EINTR) {}
+      while (waitpid(pid, &status, 0) < 0 && errno == EINTR) {}
+    } else {
+      // Close the pipe first, in case the child is waiting for that.
+      pipeFd = nullptr;
 
-    int status;
-    KJ_SYSCALL(waitpid(pid, &status, 0)) { return; }
-    if (status != 0) {
-      if (WIFEXITED(status)) {
-        int exitCode = WEXITSTATUS(status);
-        KJ_FAIL_ASSERT("child process failed", exitCode) { return; }
-      } else if (WIFSIGNALED(status)) {
-        int signalNumber = WTERMSIG(status);
-        KJ_FAIL_ASSERT("child process crashed", signalNumber) { return; }
-      } else {
-        KJ_FAIL_ASSERT("child process failed") { return; }
+      int status;
+      KJ_SYSCALL(waitpid(pid, &status, 0)) { return; }
+      if (status != 0) {
+        if (WIFEXITED(status)) {
+          int exitCode = WEXITSTATUS(status);
+          KJ_FAIL_ASSERT("child process failed", exitCode) { return; }
+        } else if (WIFSIGNALED(status)) {
+          int signalNumber = WTERMSIG(status);
+          KJ_FAIL_ASSERT("child process crashed", signalNumber) { return; }
+        } else {
+          KJ_FAIL_ASSERT("child process failed") { return; }
+        }
       }
     }
   }
@@ -422,6 +434,7 @@ public:
 private:
   kj::AutoCloseFd pipeFd;
   pid_t pid;
+  kj::UnwindDetector unwindDetector;
 };
 
 class SpkTool {
@@ -963,6 +976,13 @@ private:
     MemoryMapping tmpMapping(tmpfile, spkfile);
     kj::ArrayPtr<const byte> tmpData = tmpMapping;
 
+    if (tmpData.size() > APP_SIZE_LIMIT) {
+      context.exitError(kj::str(
+          "App exceeds uncompressed size limit of ", APP_SIZE_LIMIT >> 30, " GiB. This limit "
+          "exists for the safety of hosts, but if you feel there is a strong case for allowing "
+          "larger apps, please contact the Sandstorm developers."));
+    }
+
     // Hash it.
     byte hash[crypto_hash_BYTES];
     crypto_hash(hash, tmpData.begin(), tmpData.size());
@@ -1078,6 +1098,13 @@ private:
         KJ_ASSERT(children.empty(), "got file, expected directory", target);
 
         mapping = MemoryMapping(raiiOpen(target, O_RDONLY), target);
+
+        if (mapping.size() >= (1ull << 29)) {
+          context.exitError(kj::str(target, ": file too large. The spk format currently only "
+            "supports files up to 512MB in size. Please let the Sandstorm developers know "
+            "if you have a strong reason for needing larger files."));
+        }
+
         auto content = orphanage.referenceExternalData(mapping);
 
         if (stats.st_mode & S_IXUSR) {
@@ -1275,12 +1302,14 @@ private:
       }
 
       // Copy archive part to a temp file.
-      // TODO(security): Set a maximum size limit, since xz could decompress to arbitrary size.
       kj::FdOutputStream tmpOut(tmpfile.get());
+      uint64_t totalRead = 0;
       for (;;) {
         byte buffer[8192];
         size_t n = in.tryRead(buffer, 1, sizeof(buffer));
         if (n == 0) break;
+        totalRead += n;
+        KJ_REQUIRE(totalRead <= APP_SIZE_LIMIT, "App too big after decompress.");
         tmpOut.write(buffer, n);
       }
     }

@@ -81,6 +81,7 @@ section:nth-child(2n+1) {
   width: 400px;
   height: 300px;
   margin: 0 auto;
+  padding-left: 80px;
 }
 
 .static-logo {

@@ -36,7 +36,7 @@ TARBALL=sandstorm-$BUILD.tar.xz
 
 echo "**** Building build $BUILD ****"
 
-make -j bundle-dist BUILD=$BUILD
+make -j BUILD=$BUILD
 
 echo "**** Pushing build $BUILD ****"
 

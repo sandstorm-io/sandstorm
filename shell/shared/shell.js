@@ -142,6 +142,11 @@ if (Meteor.isClient) {
       document.location = "https://sandstorm.io/apps/?host=" + document.location.origin;
     },
 
+    "click #uploadAppLink": function (event) {
+      Session.set("grainMenuOpen", false);
+      Router.go("uploadForm", {});
+    },
+
     "click #emailInvitesLink": function (event) {
       Session.set("grainMenuOpen", false);
       Router.go("invite", {});

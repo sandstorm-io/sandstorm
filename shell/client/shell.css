@@ -140,11 +140,11 @@ img {
   padding: 4px 8px;
   margin: 0;
 }
-#apps .openGrain, #apps .newGrain, #installAppsLink, #emailInvitesLink, #urlInvitesLink {
+#apps .openGrain, #apps .newGrain, #installAppsLink, #uploadAppLink, #emailInvitesLink, #urlInvitesLink {
   cursor: pointer;
 }
-#apps .openGrain:hover, #apps .newGrain:hover,
-    #installAppsLink:hover, #emailInvitesLink:hover, #urlInvitesLink:hover {
+#apps .openGrain:hover, #apps .newGrain:hover, #installAppsLink:hover,
+    #uploadAppLink:hover, #emailInvitesLink:hover, #urlInvitesLink:hover {
   background-color: #333;
 }
 

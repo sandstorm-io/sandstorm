@@ -17,12 +17,19 @@ See:  [sandstorm.io](https://sandstorm.io)
 
 ### *WARNING! WARNING!*
 
-Sandstorm is in the very early stages of development.  We want developers to start playing with it, but keep some things in mind:
+Sandstorm is in the very early stages of development.  We want developers to start playing with it,
+but keep some things in mind:
 
-* At present, Sandstorm's sandboxing is incomplete.  Malicious code probably can escape.  Malicious code _definitely can_ DoS your server by consuming all available resources.
-* The sharing model is very primitive right now.  Simply copy/paste an app instance link to share it with others.
-* The UI stinks.  We're working on it.
-* Apps can't do a whole lot yet, since we don't have many APIs to interact with the outside world.  See our [future plans](#the-future) and [let us know](https://groups.google.com/group/sandstorm-dev) what we should build next!
+* At present, Sandstorm's sandboxing is incomplete.  Malicious code probably can escape.  Malicious
+  code _definitely can_ DoS your server by consuming all available resources.
+* The sharing model is very primitive right now.  Simply copy/paste an app instance link to share
+  it with others.
+* There are no resource quotas yet. It's probably a good idea not to invite anyone who might abuse
+  your server.
+* The UI needs work.
+* Apps can't do a whole lot yet, since we don't have many APIs to interact with the outside world.
+  See our [future plans](#the-future) and
+  [let us know](https://groups.google.com/group/sandstorm-dev) what we should build next!
 * The API (what there is of it) is not final.  It could change in a way that breaks existing apps.
 
 ## Installing the Easy Way
@@ -36,10 +43,33 @@ Or, if you don't like piping directly to shell, download first:
     curl https://install.sandstorm.io > install.sh
     bash install.sh
 
-This will install a self-contained and (optionally) auto-updating Sandstorm bundle. It won't touch anything on your system other than your chosen installation directory and (optional) init script.
+This will install a self-contained and (optionally) auto-updating Sandstorm bundle. It won't touch
+anything on your system other than your chosen installation directory and (optional) init script.
 
-Please note that Sandstorm requires root access to set up the sandbox. If this bothers you, consider
-installing it in its own VM.
+Please note that Sandstorm requires root access to set up the sandbox. If this bothers you,
+consider installing it in its own VM. Note: Sandstorm currently does not work under LXC /
+Docker, because it uses the same kernel features, and making them nest requires kernel features
+that only recently became available. We intend to fix this eventually.
+
+### Tips
+
+* Sandstorm serves the front-end on the port you choose, but serves each app on a different port,
+  starting from 7000 and counting up (the more files you have open at once, the more ports are
+  used).  If there is a firewall or NAT between you and the server, you'll need to open these ports.
+* If you want to run on port 80, we recommend setting up an [nginx](http://nginx.org/) reverse
+  proxy rather than trying to get Node to open port 80 directly.  Make sure to configure
+  [WebSocket forwarding](http://nginx.org/en/docs/http/websocket.html), which requires nginx
+  1.3.13 or better.
+* If you want SSL, then you will definitely need an nginx proxy (or something equivalent). You will
+  further need to use a wildcard certificate, and wildcard DNS. In SSL mode, Sandstorm switches
+  from using ports for each app to using different host names, formed by adding `-$PORT` to the
+  first component of the shell's host name. For example, for `alpha.sandstorm.io`, apps are hosted
+  from `alpha-7000.sandstorm.io`, `alpha-7001.sandstorm.io`, etc. You will need to configure nginx
+  to forward each of these host names to the corresponding local port number; this can be done
+  easily with a regex rule.
+
+For reference, [nginx-example.conf](nginx-example.conf) contains the http server part of nginx
+config used by Sandstorm Alpha.
 
 ## Installing from Source
 
@@ -47,12 +77,16 @@ installing it in its own VM.
 
 Please install the following:
 
-* Linux, with reasonably new kernel version.  (Note:  Sandstorm currently does not work under LXC / Docker.  We'd like to fix this, but it's tricky.)
+* Linux, with reasonably new kernel version.
 * `libcap` with headers (e.g. `libcap-dev` on Debian/Ubuntu)
 * `pkg-config` (make sure this is installed _before_ building libsodium)
 * `XZ` for installing packages (`xz-utils` on Debian/Ubuntu)
-* [Clang compiler](http://clang.llvm.org/) version 3.4 or better.  WARNING:  Ubuntu Saucy's `clang-3.4` package is NOT Clang 3.4!  It's actually some random cut from trunk between 3.3 and 3.4, and it's not new enough.  Try <a href="http://llvm.org/apt/">the official packages from LLVM</a> instead.
-* [Cap'n Proto](http://capnproto.org) from git (do not use a release version -- Sandstorm and Cap'n Proto are being developed together, so Sandstorm often uses brand-new Cap'n Proto features)
+* [Clang compiler](http://clang.llvm.org/) version 3.4 or better. WARNING: Ubuntu Saucy's
+  `clang-3.4` package is NOT Clang 3.4! It's actually some random cut from trunk between 3.3 and
+  3.4, and it's not new enough.  Try <a href="http://llvm.org/apt/">the official packages from
+  LLVM</a> instead.
+* [Cap'n Proto](http://capnproto.org) from git (do not use a release version -- Sandstorm and Cap'n
+  Proto are being developed together, so Sandstorm often uses brand-new Cap'n Proto features)
 * [libsodium](https://github.com/jedisct1/libsodium) latest release
 * [Meteor](http://meteor.com)
 * [Meteorite](https://github.com/oortcloud/meteorite)
@@ -60,33 +94,42 @@ Please install the following:
 
 ### Building / installing the binaries
 
-    make
-    sudo make install SANDSTORM_USER=$USER:$USER
+Build the Sandstorm bundle:
 
-You should replace `$USER:$USER` with the user:group pair under which the sandstorm shell will run.  The above is appropriate if you want to run it as yourself.
+    make -j
 
-Note that the binary `sandstorm-supervisor` is installed setuid-root.  This is necessary because the Linux kernel sandboxing features are only available to root (except on very new kernels with UID namespaces which Sandstorm doesn't yet use).  This program is believed to be safe, but in this early stage it may be advisable not to install sandstorm on a system where malicious users may have shell access.
+Install it:
 
-### Running the shell
+    make install
+
+This installs your locally-built bundle just as would get if you had installed using
+`https://install.sandstorm.io`. You will be asked various configuration questions. If you intend
+to hack on Sandstorm itself, you should choose to run the server to run under your local user
+account (the default is to create a separate user called `sandstorm`).
+
+If Sandstorm is already installed, you can update to your newly-built version like so:
+
+    make update
+
+Note that this only works if you installed Sandstorm to run at startup. Otherwise, you will
+have to manually do:
+
+    /path/to/sandstorm update $PWD/sandstorm-0.tar.xz
+
+### Hacking on the shell
+
+You can run the shell (front-end) in dev mode so that you can modify it without rebuilding the
+whole bundle for every change. Just do:
 
     cd shell
-    mrt install
-    meteor
+    sudo service sandstorm stop-fe
+    ./run-dev.sh
 
-Now connect to: http://localhost:3000
+Now connect to your local server like you normally would.
 
-Follow the on-screen instructions to configure the login system and sign yourself in.  The first user to sign in automatically becomes administrator, with the ability to invite other users.
+Later, when you are done hacking, you may want to restart the installed front-end:
 
-Keep in mind that currently there are no resource quotas, so anyone you give access will be able to fill up your hard drive and use all your CPU and RAM.  Therefore, it's a good idea only to invite friendly people for now.
-
-Tips:
-* Sandstorm serves the front-end on port 3000, but serves each app on a different port, starting from 7000 and counting up (the more files you have open at once, the more ports are used).  If there is a firewall or NAT between you and the server, you'll need to open these ports.
-* For a more production-y installation, run "meteor bundle" to build a deployment tarball, unpack it, and follow the instructions in the readme.  Keep in mind that the `spk` and `sandstorm-supervisor` binaries must be available in the `PATH` wherever the shell runs.
-* If you want to run on port 80, we recommend setting up an [nginx](http://nginx.org/) reverse proxy rather than trying to get Node to open port 80 directly.  Make sure to configure [WebSocket forwarding](http://nginx.org/en/docs/http/websocket.html), which requires nginx 1.3.13 or better.
-* If you want SSL, then you will definitely need an nginx proxy (or something equivalent).  You will further need to use a wildcard certificate, and wildcard DNS.  In SSL mode, Sandstorm switches from using ports for each app to using different host names, formed by adding `-$PORT` to the first component of the shell's host name.  For example, for `alpha.sandstorm.io`, apps are hosted from `alpha-7000.sandstorm.io`, `alpha-7001.sandstorm.io`, etc.  You will need to configure nginx to forward each of these host names to the corresponding local port number; this can be done easily with a regex rule.
-* If you are not pointing your browser strictly at `http://localhost:3000`, you need to set the environment variable `ROOT_URL` to the URL seen by the browser in order for the OAuth handshakes to work, e.g. `ROOT_URL=https://alpha.sandstorm.io meteor`.
-
-For reference, [nginx-example.conf](nginx-example.conf) contains the http server part of nginx config used by Sandstorm Alpha.
+    sudo service sandstorm start-fe
 
 ## How It Works
 
@@ -104,15 +147,13 @@ For reference, [nginx-example.conf](nginx-example.conf) contains the http server
 
 ## How to Port Apps
 
-### *** TEMPORARILY MISSING ***
-
-May 8, 2014: The way to port apps is in flux. Please check back in a day or
-two, or [check the mailing list](https://groups.google.com/group/sandstorm-dev).
-It's about to become much, much easier! :)
+See [the porting guide](https://github.com/kentonv/sandstorm/wiki/Porting-Guide).
 
 ## The Future
 
-As of March 2014, sandboxed apps can receive and respond to HTTP and WebSocket requests from users of the Sandstorm shell interface.  That's it.  This is enough for document-editor-type apps, but not anything that needs to interact with the world.
+As of May 2014, sandboxed apps can receive and respond to HTTP and WebSocket requests from users
+of the Sandstorm shell interface. That's it. This is enough for document-editor-type apps, but
+not anything that needs to interact with the world.
 
 However, we want to allow apps to do many more things in the future:
 
@@ -130,10 +171,12 @@ We hope that this will enable apps like:
 * E-mail / chat / communications.
 * Federated social networks.
 * Documents / spreedsheets / etc.
+* Blogging.
+* RSS readers.
 * Media storage and playback.
 * Most importantly:  Things that we don't expect!
 
-Have a great idea for an app?  [Share it with us](https://groups.google.com/group/sandstorm-dev), and we'll help you figure out how to make it fit in Sandstorm.
+Have a great idea for an app? [Share it with us](https://groups.google.com/group/sandstorm-dev), and we'll help you figure out how to make it fit in Sandstorm.
 
 ## Contribute
 

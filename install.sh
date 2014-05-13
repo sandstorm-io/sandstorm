@@ -9,14 +9,43 @@
 # script:
 #
 #     wget https://install.sandstorm.io/install.sh
-#     ./install.sh
+#     bash install.sh
+#
+# This script downloads an installs binaries, and some of those binaries must
+# run as root. This means that to use this script, you need to trust that the
+# authors are not evil, or you must use an isolated machine or VM. Of course,
+# since the Sandstorm authors' identities are widely known, if they did try to
+# do anything evil, you could easily get them arrested. That said, if you'd
+# rather install from 100% auditable source code, please check out the Github
+# repository instead.
+#
+# All downloads occur over HTTPS.
 
-if test "x$BASH_VERSION" = x; then
+if test -z "$BASH_VERSION"; then
   echo "Please run this script using bash, not sh or any other shell." >&2
   exit 1
 fi
 
+# We wrap the entire script in a big function which we only call at the very end, in order to
+# protect against the possibility of the connection dying mid-script. This protects us against
+# the problem described in this blog post:
+#   http://blog.existentialize.com/dont-pipe-to-your-shell.html
+_() {
+
 set -euo pipefail
+
+SCRIPT_NAME=$1
+shift
+
+if [ $# = 1 ] && [[ ! $1 =~ ^- ]]; then
+  BUNDLE_FILE="$1"
+elif [ $# != 0 ]; then
+  echo "usage: $SCRIPT_NAME [<bundle>]" >&2
+  echo "If <bundle> is provided, it must be the name of a Sandstorm bundle file," >&2
+  echo "like 'sandstorm-123.tar.xz', which will be installed. Otherwise, the script" >&2
+  echo "downloads a bundle from the internet via HTTP." >&2
+  exit 1
+fi
 
 fail() {
   if [ $# != 0 ]; then
@@ -42,11 +71,11 @@ exec 3<&1
 prompt() {
   local VALUE
 
-  # Hack: We read from FD 1 because when reading the script from a pipe, FD 0 is the script, not
-  #   the terminal. We checked above that FD 1 is in fact a terminal, thus we can input from it
-  #   just fine.
+  # Hack: We read from FD 3 because when reading the script from a pipe, FD 0 is the script, not
+  #   the terminal. We checked above that FD 1 (stdout) is in fact a terminal and then dup it to
+  #   FD 3, thus we can input from FD 3 here.
   read -u 3 -p "$1 [$2] " VALUE
-  if [ x"$VALUE" == x ]; then
+  if [ -z "$VALUE" ]; then
     VALUE=$2
   fi
   echo "$VALUE"
@@ -69,11 +98,11 @@ prompt-yesno() {
   done
 }
 
-if [ x"$(uname)" != xLinux ]; then
+if [ "$(uname)" != Linux ]; then
   fail "Sorry, the Sandstorm server only runs on Linux."
 fi
 
-if [ x"$(uname -m)" != xx86_64 ]; then
+if [ "$(uname -m)" != x86_64 ]; then
   fail "Sorry, tha Sandstorm server currently only runs on x86_64 machines."
 fi
 
@@ -90,21 +119,42 @@ if (( KVERSION[0] < 3 || (KVERSION[0] == 3 && KVERSION[1] < 10) )); then
   fi
 fi
 
-which curl > /dev/null|| fail "Please install curl(1). Sandstorm uses it to download updates."
+if [ -z "${BUNDLE_FILE:-}" ]; then
+  which curl > /dev/null|| fail "Please install curl(1). Sandstorm uses it to download updates."
+fi
+
 which tar > /dev/null || fail "Please install tar(1)."
 which xz > /dev/null || fail "Please install xz(1). (Package may be called 'xz-utils'.)"
 
 # ========================================================================================
+# Validate bundle file, if provided
+
+if [ -n "${BUNDLE_FILE:-}" ]; then
+  # Read the first filename out of the bundle, which should be the root directory name.
+  # We use "|| true" here because tar is going to SIGPIPE when `head` exits.
+  BUNDLE_DIR=$( (tar Jtf "$BUNDLE_FILE" || true) | head -n 1)
+  if [[ ! "$BUNDLE_DIR" =~ sandstorm-([0-9]+)/ ]]; then
+    echo "$BUNDLE_FILE: Not a valid Sandstorm bundle" >&2
+    exit 1
+  fi
+
+  BUILD=${BASH_REMATCH[1]}
+
+  # We're going to change directory, so note the bundle's full name.
+  BUNDLE_FILE=$(readlink -f "$BUNDLE_FILE")
+fi
+
+# ========================================================================================
 
 if [ $(id -u) != 0 ]; then
-  if [ "x$(basename $0)" == xbash ]; then
+  if [ "$(basename $SCRIPT_NAME)" == bash ]; then
     # Probably ran like "curl https://sandstorm.io/install.sh | bash"
     echo "Re-running script as root..."
     exec sudo bash -euo pipefail -c 'curl -fs https://install.sandstorm.io | bash'
-  elif [ "x$(basename $0)" == xinstall.sh -a -e $0 ]; then
+  elif [ "$(basename $SCRIPT_NAME)" == install.sh ] && [ -e "$0" ]; then
     # Probably ran like "bash install.sh" or "./install.sh".
     echo "Re-running script as root..."
-    exec sudo bash $0
+    exec sudo bash "$SCRIPT_NAME" "$@"
   fi
 
   # Don't know how to run the script.  Let the user figure it out.
@@ -146,7 +196,7 @@ if [ -e sandstorm.conf ]; then
 else
   SERVER_USER=$(prompt "Local user account to run server under:" sandstorm)
 
-  while [ "x$SERVER_USER" = xroot ]; do
+  while [ "$SERVER_USER" = root ]; do
     echo "Sandstorm cannot run as root!"
     SERVER_USER=$(prompt "Local user account to run server under:" sandstorm)
   done
@@ -157,7 +207,7 @@ else
 
       echo "Note: Sandstorm's storage will only be accessible to the group '$SERVER_USER'."
 
-      if [ x"$SUDO_USER" != x ]; then
+      if [ -n "${SUDO_USER:-}" ]; then
         if prompt-yesno "Add user '$SUDO_USER' to group '$SERVER_USER'?" no; then
           usermod -a -G "$SERVER_USER" "$SUDO_USER"
           echo "Added. Don't forget that group changes only apply at next login."
@@ -168,14 +218,14 @@ else
     echo "Note: Sandstorm's storage will only be accessible to the group '$(id -gn $SERVER_USER)'."
   fi
 
-  PORT=$(prompt "Server main HTTP port:" "3000")
+  PORT=$(prompt "Server main HTTP port:" 6080)
 
   while [ "$PORT" -lt 1024 ]; do
     echo "Ports below 1024 require root privileges. Sandstorm does not run as root."
     echo "To use port $PORT, you'll need to set up a reverse proxy like nginx that "
     echo "forwards to the internal higher-numbered port. The Sandstorm git repo "
     echo "contains an example nginx config for this."
-    PORT=$(prompt "Server main HTTP port:" 3000)
+    PORT=$(prompt "Server main HTTP port:" 6080)
   done
 
   MONGO_PORT=$(prompt "MongoDB port:" "$((PORT + 1))")
@@ -208,31 +258,47 @@ fi
 # ========================================================================================
 # Download
 
-echo "Finding latest build for $CHANNEL channel..."
-BUILD=$(curl -fs "https://install.sandstorm.io/$CHANNEL?from=0&type=install")
+if [ -z "${BUNDLE_FILE:-}" ]; then
+  echo "Finding latest build for $CHANNEL channel..."
+  BUILD=$(curl -fs "https://install.sandstorm.io/$CHANNEL?from=0&type=install")
+  BUILD_DIR=sandstorm-$BUILD
 
-if [[ ! 12345 =~ ^[0-9]+$ ]]; then
-  fail "Server returned invalid build number: $BUILD"
-fi
-
-do-download() {
-  rm -rf sandstorm-$BUILD
-  local URL="https://dl.sandstorm.io/sandstorm-$BUILD.tar.xz"
-  echo "Downloading: $URL"
-  curl -f "$URL" | tar Jxo
-
-  if [ ! -e "sandstorm-$BUILD" ]; then
-    fail "Bad package -- did not contain sandstorm-$BUILD directory."
+  if [[ ! 12345 =~ ^[0-9]+$ ]]; then
+    fail "Server returned invalid build number: $BUILD"
   fi
-}
 
-if [ -e sandstorm-$BUILD ]; then
-  echo "sandstorm-$BUILD is already present. Should I use it or re-download?"
-  if ! prompt-yesno "Use existing copy?" yes; then
+  do-download() {
+    rm -rf $BUILD_DIR
+    local URL="https://dl.sandstorm.io/sandstorm-$BUILD.tar.xz"
+    echo "Downloading: $URL"
+    curl -f "$URL" | tar Jxo
+
+    if [ ! -e "$BUILD_DIR" ]; then
+      fail "Bad package -- did not contain $BUILD_DIR directory."
+    fi
+  }
+
+  if [ -e $BUILD_DIR ]; then
+    echo "$BUILD_DIR is already present. Should I use it or re-download?"
+    if ! prompt-yesno "Use existing copy?" yes; then
+      do-download
+    fi
+  else
     do-download
   fi
+
 else
-  do-download
+  # Use the specified local bundle, which we already validated earlier.
+
+  if [ $BUILD = 0 ]; then
+    BUILD_DIR=sandstorm-custom.$(date +'%Y-%m-%d_%H-%M-%S')
+  else
+    BUILD_DIR=sandstorm-$BUILD
+  fi
+
+  rm -rf "$BUILD_DIR"
+  mkdir "$BUILD_DIR"
+  (cd "$BUILD_DIR" && tar Jxof "$BUNDLE_FILE" --strip=1)
 fi
 
 # ========================================================================================
@@ -254,8 +320,12 @@ chmod -R g=rwX,o= var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads}
 chmod g-r var/sandstorm/grains
 
 # Create useful symlinks.
-ln -sfT sandstorm-$BUILD latest
+ln -sfT $BUILD_DIR latest
 ln -sfT latest/sandstorm sandstorm
+
+if prompt-yesno "Install Sandstorm devtools?" yes; then
+  ./sandstorm devtools
+fi
 
 if [ -e /etc/init.d/sandstorm ]; then
   echo "WARNING: You already have a \"sandstorm\" service. Answering \"yes\" "
@@ -303,3 +373,8 @@ else
   echo "To learn how to control the server, run:"
   echo "  sudo $PWD/sandstorm help"
 fi
+
+}
+
+# Now that we know the whole script has downloaded, run it.
+_ "$0" "$@"

@@ -1,6 +1,30 @@
+# Sandstorm - Personal Cloud Sandbox
+# Copyright (c) 2014, Kenton Varda <temporal@gmail.com>
+# All rights reserved.
+#
+# This file is part of the Sandstorm platform implementation.
+#
+# Sandstorm is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# Sandstorm is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with Sandstorm.  If not, see
+# <http://www.gnu.org/licenses/>.
+
+# You may override the following vars on the command line to suit
+# your config.
 CXX=clang++
 CXXFLAGS=-O2 -Wall
 BUILD=0
+
+# You generally should not modify these.
 CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD)
 NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 
@@ -8,12 +32,18 @@ NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 #   was really no shared code. That seems to have changed. Perhaps it's time
 #   to separate compilation and linking. 
 
-.PHONEY: all install uninstall clean environment bundle-dist
+.PHONEY: all install clean
 
-all: bin/spk bin/sandstorm-http-bridge bin/sandstorm-supervisor node_modules/sandstorm/grain.capnp
+all: sandstorm-$(BUILD).tar.xz
 
 clean:
 	rm -rf bin tmp node_modules bundle shell-bundle.tar.gz sandstorm-*.tar.xz
+
+install: sandstorm-$(BUILD).tar.xz install.sh
+	@./install.sh sandstorm-$(BUILD).tar.xz
+
+update: sandstorm-$(BUILD).tar.xz
+	sudo service sandstorm update $(PWD)/sandstorm-$(BUILD).tar.xz
 
 bin/spk: tmp/genfiles src/sandstorm/spk.c++ src/sandstorm/fuse.c++ src/sandstorm/union-fs.c++ src/sandstorm/send-fd.c++
 	@echo "building bin/spk..."
@@ -41,25 +71,6 @@ tmp/genfiles: src/sandstorm/*.capnp
 	@capnp compile --src-prefix=src -oc++:tmp  src/sandstorm/*.capnp
 	@touch tmp/genfiles
 
-install: all
-	@(test "x$(SANDSTORM_USER)" != x || (echo "Please set SANDSTORM_USER to the user:group under which Sandstorm will run.  For example:" >&2 && echo "    sudo make install SANDSTORM_USER=someuser:somegroup" >&2 && false));
-	cp bin/spk /usr/local/bin
-	cp bin/sandstorm-supervisor /usr/local/bin
-	mkdir -p /usr/local/include/sandstorm
-	cp src/sandstorm/*.capnp /usr/local/include/sandstorm
-	chmod +s /usr/local/bin/sandstorm-supervisor
-	mkdir -p /var/sandstorm /var/sandstorm/apps /var/sandstorm/downloads /var/sandstorm/grains
-	chown -R $(SANDSTORM_USER) /var/sandstorm
-
-uninstall:
-	rm -rf /usr/local/bin/sandstorm-supervisor /usr/local/bin/spk
-
-# ========================================================================================
-# Mega Package
-#
-# Builds a complete downloadable chroot environment containing Sandstorm.  This is not
-# part of "make all" because most people don't actually want to build this.
-
 bin/run-bundle: src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/genfiles
 	@echo "building bin/run-bundle..."
 	@mkdir -p bin
@@ -74,6 +85,3 @@ bundle: bin/spk bin/sandstorm-supervisor bin/sandstorm-http-bridge bin/run-bundl
 
 sandstorm-$(BUILD).tar.xz: bundle
 	tar Jcf sandstorm-$(BUILD).tar.xz --transform="s,^bundle,sandstorm-$(BUILD)," bundle
-
-bundle-dist: sandstorm-$(BUILD).tar.xz
-

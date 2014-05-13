@@ -1,4 +1,24 @@
 #! /bin/bash
+#
+# Sandstorm - Personal Cloud Sandbox
+# Copyright (c) 2014, Kenton Varda <temporal@gmail.com>
+# All rights reserved.
+#
+# This file is part of the Sandstorm platform implementation.
+#
+# Sandstorm is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# Sandstorm is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public
+# License along with Sandstorm.  If not, see
+# <http://www.gnu.org/licenses/>.
 
 set -euo pipefail
 
@@ -65,6 +85,9 @@ cp $METEOR_TOOLS/bin/node bundle/bin
 cp $METEOR_TOOLS/mongodb/bin/{mongo,mongod} bundle/bin
 cp /usr/bin/xz bundle/bin
 
+# Binaries copied from Meteor aren't writable by default.
+chmod u+w bundle/bin/*
+
 # Copy over capnp schemas.
 mkdir -p bundle/usr/include/{capnp,sandstorm}
 test -e /usr/include/capnp/c++.capnp && cp /usr/include/capnp/*.capnp bundle/usr/include/capnp
@@ -110,6 +133,10 @@ mkdir -p bundle/usr/lib
 cp -r /usr/lib/locale bundle/usr/lib
 mkdir -p bundle/usr/share/locale
 cp /usr/share/locale/locale.alias bundle/usr/share/locale
+
+# Make bundle smaller by stripping stuff.
+strip bundle/sandstorm bundle/bin/*
+find bundle -name '*.so' | xargs strip
 
 git rev-parse HEAD > bundle/git-revision
 echo "$USER@$HOSTNAME $(date)" > bundle/buildstamp

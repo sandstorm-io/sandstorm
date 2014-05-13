@@ -132,36 +132,7 @@ Meteor.methods({
     if (runningGrain) {
       waitPromise(runningGrain);
     } else {
-      var grain = Grains.findOne(grainId);
-      if (!grain) {
-        throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainId);
-      }
-
-      var manifest;
-      var packageId;
-      var devApp = DevApps.findOne({_id: grain.appId});
-      if (devApp) {
-        // If a DevApp with the same app ID is currently active, we let it override the installed
-        // package, so that the grain runs using the dev app.
-        manifest = devApp.manifest;
-        packageId = devApp.packageId;
-      } else {
-        var pkg = Packages.findOne(grain.packageId);
-        if (pkg) {
-          manifest = pkg.manifest;
-          packageId = pkg._id;
-        } else {
-          throw new Meteor.Error(500, "Grain's package not installed",
-                                 "Package ID: " + grain.packageId);
-        }
-      }
-
-      if (!("continueCommand" in manifest)) {
-        throw new Meteor.Error(500, "App manifest defines no continueCommand.",
-                               "App ID: " + grain.packageId);
-      }
-
-      startGrainInternal(packageId, grainId, manifest.continueCommand, false);
+      continueGrain(grainId);
     }
 
     var proxy = new Proxy(grainId, sessionId);
@@ -190,6 +161,39 @@ Meteor.methods({
     }
   }
 });
+
+function continueGrain(grainId) {
+  var grain = Grains.findOne(grainId);
+  if (!grain) {
+    throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainId);
+  }
+
+  var manifest;
+  var packageId;
+  var devApp = DevApps.findOne({_id: grain.appId});
+  if (devApp) {
+    // If a DevApp with the same app ID is currently active, we let it override the installed
+    // package, so that the grain runs using the dev app.
+    manifest = devApp.manifest;
+    packageId = devApp.packageId;
+  } else {
+    var pkg = Packages.findOne(grain.packageId);
+    if (pkg) {
+      manifest = pkg.manifest;
+      packageId = pkg._id;
+    } else {
+      throw new Meteor.Error(500, "Grain's package not installed",
+                             "Package ID: " + grain.packageId);
+    }
+  }
+
+  if (!("continueCommand" in manifest)) {
+    throw new Meteor.Error(500, "Package manifest defines no continueCommand.",
+                           "Package ID: " + packageId);
+  }
+
+  startGrainInternal(packageId, grainId, manifest.continueCommand, false);
+}
 
 function startGrainInternal(packageId, grainId, command, isNew) {
   // Starts the grain supervisor.  Must be executed in a Meteor context.  Blocks until grain is
@@ -498,6 +502,28 @@ Proxy.prototype.close = function () {
   }
 }
 
+Proxy.prototype.maybeRetryAfterError = function (error, retryCount) {
+  // If the error may be caused by the grain dying or a network failure, try to restart it,
+  // returning a promise that resolves once restarted. Otherwise, just rethrow the error.
+  // `retryCount` should be incremented for every successful retry as part of the same request;
+  // we only want to retry once.
+
+  var self = this;
+
+  // TODO(cleanup): We also have to try on osError to catch the case where connecting to the
+  //   socket failed. We really ought to find a more robust way to detect that, though.
+  if ("nature" in error &&
+      (error.nature === "networkFailure" || error.nature === "osError") &&
+      retryCount < 1) {
+    this.resetConnection();
+    return inMeteor(function () {
+      continueGrain(self.grainId);
+    });
+  } else {
+    throw error;
+  }
+}
+
 // -----------------------------------------------------------------------------
 // Session cookie management
 
@@ -753,13 +779,9 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     }
 
   }).catch(function (error) {
-    // If we had a network failure, try reconnecting and retrying.  Only try this once, though.
-    if ("nature" in error && error.nature === "networkFailure" && retryCount < 1) {
-      self.resetConnection();
+    return self.maybeRetryAfterError(error, retryCount).then(function () {
       return self.handleRequest(request, data, response, retryCount + 1);
-    } else {
-      throw error;
-    }
+    });
   });
 }
 
@@ -843,12 +865,8 @@ Proxy.prototype.handleWebSocket = function (request, socket, head, retryCount) {
       // Note:  At this point errors are out of our hands.
     });
   }).catch(function (error) {
-    // If we had a network failure, try reconnecting and retrying.  Only try this once, though.
-    if ("nature" in error && error.nature === "networkFailure" && retryCount < 1) {
-      self.resetConnection();
+    return self.maybeRetryAfterError(error, retryCount).then(function () {
       return self.handleWebSocket(request, socket, head, retryCount + 1);
-    } else {
-      throw error;
-    }
+    });
   });
 }

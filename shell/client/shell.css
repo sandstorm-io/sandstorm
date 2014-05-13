@@ -47,7 +47,7 @@ body {
   font-weight: normal;
 }
 
-#topbar, #topbar-left, #topbar-right {
+#topbar, #topbar-left, #topbar-right, #topbar-update {
   background-color: black;
   color: #ccc;
   font-weight: bold;
@@ -60,6 +60,18 @@ body {
   height: 32px;
   text-align: center;
   border-bottom: 2px solid #ccc;
+}
+
+#topbar-update {
+  position: fixed;
+  width: 100%;
+  height: 32px;
+  text-align: center;
+  border-bottom: 2px solid #fcc;
+  background-color: #622;
+  color: #fcc;
+  z-index: 2;
+  cursor: pointer;
 }
 
 #topbar-left {

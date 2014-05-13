@@ -26,13 +26,23 @@ License along with Sandstorm.  If not, see
 </head>
 
 <body>
+  {{> topBar}}
+</body>
+
+<template name="topBar">
+  {{#if isUpdateBlocked}}
+  <div id="topbar-update">
+    Sandstorm has been updated &mdash; Click here to reload
+  </div>
+  {{else}}
   <div id="topbar-left">
     {{> grainList}}
   </div>
   <div id="topbar-right">
     {{> loginButtons align="right"}}
   </div>
-</body>
+  {{/if}}
+</template>
 
 <template name="loading">
   <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Loading...</div>

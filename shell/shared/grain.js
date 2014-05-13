@@ -88,6 +88,32 @@ if (Meteor.isClient) {
       });
     }
   }, 60000);
+
+  var blockedReload;
+  var blockedReloadDep = new Deps.Dependency;
+  var explicitlyUnblocked = false;
+  Reload._onMigrate(undefined, function (retry) {
+    if (currentSessionId && !explicitlyUnblocked) {
+      console.log("New version ready, but blocking reload because an app is open.");
+      blockedReload = retry;
+      blockedReloadDep.changed();
+      return false;
+    } else {
+      return [true];
+    }
+  });
+
+  isUpdateBlocked = function () {
+    blockedReloadDep.depend();
+    return !!blockedReload;
+  }
+  unblockUpdate = function () {
+    if (blockedReload) {
+      blockedReload();
+      explicitlyUnblocked = true;
+      blockedReloadDep.changed();
+    }
+  }
 }
 
 if (Meteor.isClient) {
@@ -174,6 +200,7 @@ Router.map(function () {
 
     onStop: function () {
       currentSessionId = undefined;
+      unblockUpdate();
     }
   });
 });

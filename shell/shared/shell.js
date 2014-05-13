@@ -68,6 +68,15 @@ if (Meteor.isServer) {
 if (Meteor.isClient) {
   HasUsers = new Meteor.Collection("hasUsers");  // dummy collection defined above
 
+  Template.topBar.helpers({
+    isUpdateBlocked: function () { return isUpdateBlocked(); }
+  });
+  Template.topBar.events({
+    "click #topbar-update": function (event) {
+      unblockUpdate();
+    }
+  });
+
   Template.root.events({
     "click #logo": function (event) {
       doLogoAnimation(event.shiftKey, 0);

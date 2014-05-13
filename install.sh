@@ -228,7 +228,7 @@ else
     PORT=$(prompt "Server main HTTP port:" 6080)
   done
 
-  MONGO_PORT=$(prompt "MongoDB port:" "$((PORT + 1))")
+  MONGO_PORT=$(prompt "Database port (choose any unused port):" "$((PORT + 1))")
   if prompt-yesno "Expose to localhost only?" yes; then
     BIND_IP=127.0.0.1
     SS_HOSTNAME=localhost
@@ -323,23 +323,17 @@ chmod g-r var/sandstorm/grains
 ln -sfT $BUILD_DIR latest
 ln -sfT latest/sandstorm sandstorm
 
-if prompt-yesno "Install Sandstorm devtools?" yes; then
-  ./sandstorm devtools
-fi
+# Install tools.
+ln -sfT $PWD/sandstorm /usr/local/bin/sandstorm
+./sandstorm devtools
 
-if [ -e /etc/init.d/sandstorm ]; then
-  echo "WARNING: You already have a \"sandstorm\" service. Answering \"yes\" "
-  echo "  here will replace it."
-fi
-
-if prompt-yesno "Start sandstorm at system boot?" yes; then
-  if [ -e /etc/init.d/sandstorm ]; then
-    if prompt-yesno "Shut down existing sandstorm service now?" yes; then
+if [ -e /etc/init.d ]; then
+  if prompt-yesno "Start sandstorm at system boot?" yes; then
+    if [ -e /etc/init.d/sandstorm ]; then
       service sandstorm stop || true
     fi
-  fi
 
-  cat > /etc/init.d/sandstorm << __EOF__
+    cat > /etc/init.d/sandstorm << __EOF__
 #! /bin/bash
 ### BEGIN INIT INFO
 # Provides:          sandstorm
@@ -358,21 +352,31 @@ DAEMON=$PWD/sandstorm
 # This requires bash, though.
 exec -a "service sandstorm" \$DAEMON "\$@"
 __EOF__
-  chmod +x /etc/init.d/sandstorm
+    chmod +x /etc/init.d/sandstorm
 
-  update-rc.d sandstorm defaults
+    update-rc.d sandstorm defaults
 
-  service sandstorm start
+    service sandstorm start
 
-  echo "Setup complete. Your server should be running."
-  echo "To learn how to control the server, run:"
-  echo "  sudo service sandstorm help"
+    echo "Setup complete. Your server should be running at:"
+    echo "  ${BASE_URL:-(unknown; bad config)}"
+    echo "To learn how to control the server, run:"
+    echo "  sandstorm help"
+    exit 0
+  fi
 else
-  echo "Setup complete. To start your server now, run:"
-  echo "  sudo $PWD/sandstorm start"
-  echo "To learn how to control the server, run:"
-  echo "  sudo $PWD/sandstorm help"
+  # TODO(someday): Support systemd init.
+  echo "Note: I don't know how to set up sandstorm to auto-run at startup on"
+  echo "  your system. :("
+  echo
 fi
+
+echo "Setup complete. To start your server now, run:"
+echo "  sudo sandstorm start"
+echo "It will then run at:"
+echo "  ${BASE_URL:-(unknown; bad config)}"
+echo "To learn how to control the server, run:"
+echo "  sandstorm help"
 
 }
 

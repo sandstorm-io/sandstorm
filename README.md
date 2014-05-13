@@ -90,7 +90,7 @@ Please install the following:
 * [libsodium](https://github.com/jedisct1/libsodium) latest release
 * [Meteor](http://meteor.com)
 * [Meteorite](https://github.com/oortcloud/meteorite)
-* [npm](http://npmjs.org) module `es6-promise`
+* [npm](http://npmjs.org) module `jsontool`
 
 ### Building / installing the binaries
 

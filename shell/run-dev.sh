@@ -44,8 +44,11 @@ if curl http://localhost:$PORT >/dev/null 2>&1; then
   exit 1
 fi
 
+MONGO_PASSWD=$(</opt/sandstorm/var/mongo/passwd)
+
 export MAIL_URL
-export MONGO_URL="mongodb://127.0.0.1:$MONGO_PORT/meteor"
+export MONGO_URL="mongodb://sandstorm:$MONGO_PASSWD@127.0.0.1:$MONGO_PORT/meteor?authSource=admin"
+export MONGO_OPLOG_URL="mongodb://sandstorm:$MONGO_PASSWD@127.0.0.1:$MONGO_PORT/local?authSource=admin"
 
 SETTINGS=$(mktemp)
 

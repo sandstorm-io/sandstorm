@@ -937,6 +937,12 @@ private:
   };
 
   void runSupervisor(int apiFd) KJ_NORETURN {
+    // We're currently in a somewhat dangerous state: our root directory is controlled
+    // by the grain.  If glibc reads, say, /etc/nsswitch.conf, the grain could take control
+    // of the supervisor.  Fix this by chrooting to the supervisor directory.
+    // TODO(someday): chroot somewhere that's guaranteed to be empty instead.
+    KJ_SYSCALL(chroot("."));
+
     permanentlyDropSuperuser();
 
     // TODO(soon):  Make sure all grandchildren die if supervisor dies.

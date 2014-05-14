@@ -379,6 +379,12 @@ private:
   gid_t gid = 0;
   gid_t gidFromUsername = 0;  // If --uid was given a username.
 
+  static kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
+    int fd;
+    KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
+    return kj::AutoCloseFd(fd);
+  }
+
   void bind(kj::StringPtr src, kj::StringPtr dst, unsigned long flags = 0) {
     // Contrary to the documentation of MS_BIND claiming this is no longer the case after 2.6.26,
     // mountflags are ignored on the initial bind.  We have to issue a subsequent remount to set
@@ -580,12 +586,9 @@ private:
     // We arrange for the the supervisor's special directory to be ".", even though it's
     // not mounted anywhere.
 
-    int tmpfd;
-
     // Set up the supervisor's directory.
     bind(varPath, "/tmp/sandstorm-grain", MS_NODEV | MS_NOEXEC);
-    KJ_SYSCALL(tmpfd = open("/tmp/sandstorm-grain", O_RDONLY | O_DIRECTORY));
-    kj::AutoCloseFd supervisor_dir(tmpfd);
+    auto supervisor_dir = raiiOpen("/tmp/sandstorm-grain", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
     KJ_SYSCALL(umount2("/tmp/sandstorm-grain", MNT_DETACH));
 
     // Bind the app package to "sandbox", which will be the grain's root directory.
@@ -621,8 +624,7 @@ private:
     }
 
     // Grab a reference to the old root directory.
-    KJ_SYSCALL(tmpfd = open("/", O_RDONLY | O_DIRECTORY));
-    kj::AutoCloseFd old_root_dir(tmpfd);
+    auto old_root_dir = raiiOpen("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
 
     // OK, everything is bound, so we can pivot_root.
     KJ_SYSCALL(syscall(SYS_pivot_root, "/tmp/sandstorm-grain", "/tmp/sandstorm-grain"));

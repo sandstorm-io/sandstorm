@@ -21,6 +21,7 @@
 #include <kj/main.h>
 #include <kj/debug.h>
 #include <kj/async-io.h>
+#include <kj/io.h>
 #include <capnp/rpc-twoparty.h>
 #include <capnp/rpc.capnp.h>
 #include <unistd.h>
@@ -576,9 +577,16 @@ private:
     //
     // Now for the tricky part: the supervisor needs to be able to see a little bit more.
     // In particular, it needs to be able to see the entire var directory inside the grain.
-    // We do this by temporarily hijacking the package's usr directory.  That will become
-    // the supervisor's privileged space.  We detach it before starting the app, so the
-    // app will just see its own usr directory.
+    // We arrange for the the supervisor's special directory to be ".", even though it's
+    // not mounted anywhere.
+
+    int tmpfd;
+
+    // Set up the supervisor's directory.
+    bind(varPath, "/tmp/sandstorm-grain", MS_NODEV | MS_NOEXEC);
+    KJ_SYSCALL(tmpfd = open("/tmp/sandstorm-grain", O_RDONLY | O_DIRECTORY));
+    kj::AutoCloseFd supervisor_dir(tmpfd);
+    KJ_SYSCALL(umount2("/tmp/sandstorm-grain", MNT_DETACH));
 
     // Bind the app package to "sandbox", which will be the grain's root directory.
     bind(pkgPath, "/tmp/sandstorm-grain", MS_NODEV | MS_RDONLY);
@@ -612,14 +620,20 @@ private:
       bind(kj::str(varPath, "/sandbox"), "var", MS_NODEV | MS_NOEXEC);
     }
 
-    // Set up the supervisor's directory.  This abuses directories that we know to already exist.
-    bind(varPath, "usr", MS_NODEV | MS_NOEXEC);
+    // Grab a reference to the old root directory.
+    KJ_SYSCALL(tmpfd = open("/", O_RDONLY | O_DIRECTORY));
+    kj::AutoCloseFd old_root_dir(tmpfd);
 
     // OK, everything is bound, so we can pivot_root.
-    KJ_SYSCALL(syscall(SYS_pivot_root, ".", "usr/sandbox"));
-    KJ_SYSCALL(chdir("/usr"));
-    KJ_SYSCALL(umount2("sandbox", MNT_DETACH));
-    KJ_SYSCALL(umount2("/usr", MNT_DETACH));
+    KJ_SYSCALL(syscall(SYS_pivot_root, "/tmp/sandstorm-grain", "/tmp/sandstorm-grain"));
+
+    // We're now in a very strange state: our root directory is the grain directory,
+    // but the old root is mounted on top of the grain directory.  As far as I can tell,
+    // there is no simple way to unmount the old root, since "/" and "/." both refer to the
+    // grain directory.  Fortunately, we kept a reference to the old root.
+    KJ_SYSCALL(fchdir(old_root_dir));
+    KJ_SYSCALL(umount2(".", MNT_DETACH));
+    KJ_SYSCALL(fchdir(supervisor_dir));
 
     // Now '.' is the grain's var and '/' is the sandbox directory.
   }

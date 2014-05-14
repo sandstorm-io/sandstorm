@@ -639,7 +639,7 @@ private:
       // We direct stderr to a log file for debugging purposes.
       // TODO(soon):  Rotate logs.
       int log;
-      KJ_SYSCALL(log = open("/var/log", O_WRONLY | O_APPEND | O_CLOEXEC));
+      KJ_SYSCALL(log = open("log", O_WRONLY | O_APPEND | O_CLOEXEC));
       KJ_SYSCALL(dup2(log, STDERR_FILENO));
       KJ_SYSCALL(close(log));
     }

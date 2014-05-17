@@ -545,6 +545,10 @@ HackSessionImpl.prototype.send = Meteor.bindEnvironment(function(email) {
   Email.send(newEmail);
 }, rethrowException);
 
+HackSessionImpl.prototype.getAddress = function() {
+  return this.publicId + '@' + HOSTNAME;
+};
+
 Proxy.prototype.getSession = function (request) {
   if (!this.session) {
     this.getConnection();  // make sure we're connected

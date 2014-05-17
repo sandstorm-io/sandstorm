@@ -30,7 +30,6 @@ $import "/capnp/c++.capnp".namespace("sandstorm");
 
 using Grain = import "grain.capnp";
 using Util = import "util.capnp";
-using WebSession = import "web-session.capnp".WebSession;
 
 struct EmailAddress {
   # Email addresses are (usually) of the form "example@example.org <Full Name>".
@@ -71,4 +70,5 @@ interface EmailSendPort @0xec831dbf4cc9bcca {
   # user's address.
 
   send @0 (email :EmailMessage);
+  getAddress @1 () -> (address :Text);
 }

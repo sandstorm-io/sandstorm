@@ -114,7 +114,7 @@ img {
   vertical-align: middle;
 }
 
-#app, #install, #intro, #signup, #invite, #upload, .main-content {
+.main-content {
   margin: 0;
   padding: 0;
   background-color: white;
@@ -367,4 +367,15 @@ input.autoSelect {
   font: inherit;
   font-size: inherit;
   box-sizing: border-box;
+}
+
+#stats td {
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px;
+  border: 1px solid #aaa;
+}
+#stats table {
+  border-collapse: collapse;
+  width: 100%;
 }

@@ -171,7 +171,7 @@ if (Meteor.isClient) {
     grains: function () {
       var userId = Meteor.userId();
       if (userId) {
-        return Grains.find({userId: userId}).fetch();
+        return Grains.find({userId: userId}, {sort: {lastUsed: -1}}).fetch();
       } else {
         return [];
       }

@@ -80,6 +80,7 @@ Grains = new Meteor.Collection("grains");
 //       searchability.
 //   userId:  User who owns this grain.
 //   title:  Human-readable string title, as chosen by the user.
+//   lastUsed:  Date when the grain was last used by a user.
 
 Sessions = new Meteor.Collection("sessions");
 // UI sessions open to particular grains.  A new session is created each time a user opens a grain.
@@ -98,6 +99,20 @@ SignupKeys = new Meteor.Collection("signupKeys");
 //   _id:  random
 //   used:  Boolean indicating whether this key has already been consumed.
 //   note:  Text note assigned when creating key, to keep track of e.g. whom the key was for.
+
+ActivityStats = new Meteor.Collection("activityStats");
+// Contains usage statistics taken on a regular interval. Each entry is a data point.
+//
+// Each contains:
+//   timestamp: Date when measurements were taken.
+//   daily: Contains stats counts pertaining to the last day before the sample time.
+//   weekly: Contains stats counts pertaining to the last seven days before the sample time.
+//   monthly: Contains stats counts pertaining to the last thirty days before the timestamp.
+//
+// Each of daily, weekly, and monthly contains:
+//   activeUsers: The number of unique users who have used a grain on the server in the time
+//       interval. Only counts logged-in users.
+//   activeGrains: The number of unique grains that have been used in the time interval.
 
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {

@@ -94,7 +94,7 @@ License along with Sandstorm.  If not, see
 <template name="root">
   <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Home</div>
 
-  <div id="intro">
+  <div id="intro" class="main-content">
     <div id="logo">
       <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
       </svg>
@@ -111,7 +111,8 @@ License along with Sandstorm.  If not, see
          <a href="https://sandstorm.io/apps/?host={{origin}}">Looking for apps?</a></p>
       <p>You are an administrator of this server! Invite your friends:<br>
          <a href="/signup-mint">Generate invite links.</a><br>
-         <a href="/invite">Send e-mail invites.</a></p>
+         <a href="/invite">Send e-mail invites.</a><br>
+         <a href="/stats">See server usage stats.</a></p>
     {{else}}
     {{#if isSignedUp}}
       <p>Welcome to the Sandstorm closed alpha.</p>
@@ -134,7 +135,7 @@ License along with Sandstorm.  If not, see
     {{/if}}
   </div>
 
-  <div id="app">
+  <div id="app" class="main-content">
     {{#if error}}
       <pre>{{error}}</pre>
     {{else}}
@@ -151,7 +152,7 @@ License along with Sandstorm.  If not, see
   <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Install App</div>
 
   {{#if error}}
-    <div id="install" class="error">
+    <div id="install" class="main-content error">
       <div class="centered-box">
         <p>Failed to install app!
           {{#if step}}<button id="retry">Try Again</button>{{/if}}</p>
@@ -159,7 +160,7 @@ License along with Sandstorm.  If not, see
       </div>
     </div>
   {{else}}
-    <div id="install" class="instep-{{step}}">
+    <div id="install" class="main-content instep-{{step}}">
       {{! TODO(cleanup):  The use of a list here is vestigial.  We now display only the step
             that is currently running. }}
       <ol>
@@ -210,7 +211,7 @@ License along with Sandstorm.  If not, see
 <template name="signup">
   <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Claim Invite</div>
 
-  <div id="signup">
+  <div id="signup" class="main-content">
   <div class="centered-box">
   {{#if alreadySignedUp}}
     <p>You're all signed up!  Now go <a href="https://sandstorm.io/apps/?host={{origin}}">install
@@ -238,7 +239,7 @@ License along with Sandstorm.  If not, see
 <template name="signupMint">
   <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Create Invite</div>
 
-  <div id="signup">
+  <div id="signup" class="main-content">
   <div class="centered-box">
     {{#if error}}
       <p>{{error}}</p>
@@ -263,7 +264,7 @@ License along with Sandstorm.  If not, see
 <template name="invite">
   <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Send Invite</div>
 
-  <div id="invite">
+  <div id="invite" class="main-content">
   <div class="centered-box">
     {{#if error}}
       <p>{{error}}</p>
@@ -292,7 +293,7 @@ $KEY</textarea></p>
 <template name="uploadForm">
   <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Upload App</div>
 
-  <div id="upload">
+  <div id="upload" class="main-content">
     <div class="centered-box">
     {{#if isSignedUp}}
       {{#if progress}}
@@ -309,6 +310,50 @@ $KEY</textarea></p>
     {{else}}
       <p>Sorry, Sandstorm is in closed alpha.  To install apps, you must first be invited.</p>
     {{/if}}
+    </div>
+  </div>
+</template>
+
+<template name="stats">
+  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Usage stats</div>
+
+  <div id="stats" class="main-content">
+    <div class="centered-box">
+      <p>Right now: {{current.activeUsers}} users, {{current.activeGrains}} grains</p>
+      <p>Today: {{today.activeUsers}} users, {{today.activeGrains}} grains</p>
+
+      <p>Previous days:</p>
+
+      <table>
+        <tr>
+          <td rowspan="2">date</td>
+          <td colspan="3">users</td>
+          <td colspan="3">grains</td>
+        </tr>
+        <tr>
+          <td>daily</td>
+          <td>weekly</td>
+          <td>monthly</td>
+          <td>daily</td>
+          <td>weekly</td>
+          <td>monthly</td>
+        </tr>
+        {{#each points}}
+          <tr>
+            <td>{{day}}</td>
+            <td>{{daily.activeUsers}}</td>
+            <td>{{weekly.activeUsers}}</td>
+            <td>{{monthly.activeUsers}}</td>
+            <td>{{daily.activeGrains}}</td>
+            <td>{{weekly.activeGrains}}</td>
+            <td>{{monthly.activeGrains}}</td>
+          </tr>
+        {{else}}
+          <tr>
+            <td colspan="7">There are no stats yet, or you are not admin.</td>
+          </tr>
+        {{/each}}
+      </table>
     </div>
   </div>
 </template>

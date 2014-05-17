@@ -154,13 +154,24 @@ Meteor.methods({
     //   by them.
     if (sessionId in proxies) {
       Sessions.update(sessionId, {$set: {timestamp: new Date().getTime()}});
-      promiseToFuture(proxies[sessionId].keepAlive()).wait();
+      var proxy = proxies[sessionId];
+      var future = promiseToFuture(proxy.keepAlive());
+      updateLastActive(proxy.grainId, this.userId);
+      future.wait();
       return true;
     } else {
       return false;
     }
   }
 });
+
+function updateLastActive(grainId, userId) {
+  var now = new Date();
+  Grains.update(grainId, {$set: {lastUsed: now}});
+  if (userId) {
+    Meteor.users.update(userId, {$set: {lastActive: now}});
+  }
+}
 
 function continueGrain(grainId) {
   var grain = Grains.findOne(grainId);
@@ -254,6 +265,9 @@ function startGrainInternal(packageId, grainId, command, isNew) {
       reject(new Error("Grain never came up."));
     });
   });
+
+  // While we're waiting...
+  updateLastActive(grainId, Meteor.userId());
 
   runningGrains[grainId] = whenReady;
   waitPromise(whenReady);

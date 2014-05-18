@@ -999,27 +999,40 @@ public:
     capnp::Capability::Client sessionContext;
   };
 
-  kj::MainBuilder::Validity run() {
-    int fds[2];
-    KJ_SYSCALL(socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, fds));
+  struct AcceptedConnection {
+    kj::Own<kj::AsyncIoStream> connection;
+    capnp::TwoPartyVatNetwork network;
+    capnp::RpcSystem<capnp::rpc::twoparty::SturdyRefHostId> rpcSystem;
 
+    explicit AcceptedConnection(ApiRestorer& restorer, kj::Own<kj::AsyncIoStream>&& connectionParam)
+        : connection(kj::mv(connectionParam)),
+          network(*connection, capnp::rpc::twoparty::Side::SERVER),
+          rpcSystem(capnp::makeRpcServer(network, restorer)) {}
+  };
+
+  kj::Promise<void> acceptLoop(kj::ConnectionReceiver& serverPort, ApiRestorer& restorer,
+                               kj::TaskSet& taskSet) {
+    return serverPort.accept().then([&](kj::Own<kj::AsyncIoStream>&& connection) {
+      auto connectionState = kj::heap<AcceptedConnection>(restorer, kj::mv(connection));
+      auto promise = connectionState->network.onDisconnect();
+      taskSet.add(promise.attach(kj::mv(connectionState)));
+      return acceptLoop(serverPort, restorer, taskSet);
+    });
+  }
+
+  class ErrorHandlerImpl: public kj::TaskSet::ErrorHandler {
+  public:
+    void taskFailed(kj::Exception&& exception) override {
+      KJ_LOG(ERROR, "connection failed", exception);
+    }
+  };
+
+  kj::MainBuilder::Validity run() {
     pid_t child;
     KJ_SYSCALL(child = fork());
     if (child == 0) {
       // We're in the child.
       close(3);  // Close Supervisor's Cap'n Proto socket to avoid confusion.
-
-      int apiFd = fds[1];
-
-      // Make sure the API socket is on FD 4.
-      if (apiFd == 4) {
-        // Socket end already has correct fd.  Unset CLOEXEC.
-        KJ_SYSCALL(fcntl(apiFd, F_SETFD, 0));
-      } else {
-        // dup socket to correct fd.
-        KJ_SYSCALL(dup2(apiFd, 4));
-        KJ_SYSCALL(close(apiFd));
-      }
 
       char* argv[command.size() + 1];
       for (uint i: kj::indices(command)) {
@@ -1046,7 +1059,6 @@ public:
         // Wait 10ms and try again.
         usleep(10000);
       }
-
       auto fulfillerPair = kj::newPromiseAndFulfiller<capnp::Capability::Client>();
 
       auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
@@ -1062,13 +1074,16 @@ public:
       SandstormApi::Client api = rpcSystem.restore(
           hostId, ref.getObjectId()).castAs<SandstormApi>();
 
-      // Wrap socket to child process that will re-export SandstormApi and SessionContext
-      auto appConnection = ioContext.lowLevelProvider->wrapSocketFd(fds[0],
-          kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC |
-          kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP);
-      capnp::TwoPartyVatNetwork appNetwork(*appConnection, capnp::rpc::twoparty::Side::SERVER);
       ApiRestorer appRestorer(kj::mv(api), kj::mv(fulfillerPair.promise));
-      auto appRpcSystem = capnp::makeRpcServer(appNetwork, appRestorer);
+      ErrorHandlerImpl errorHandler;
+      kj::TaskSet tasks(errorHandler);
+      unlink("/var/socket-api");  // Clear stale socket, if any.
+      auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:/var/socket-api", 0).then(
+          [&](kj::Own<kj::NetworkAddress>&& addr) {
+        auto serverPort = addr->listen();
+        auto promise = acceptLoop(*serverPort, appRestorer, tasks);
+        return promise.attach(kj::mv(serverPort));
+      });
 
       // TODO(soon):  Exit when child exits.  (Signal handler?)
       kj::NEVER_DONE.wait(ioContext.waitScope);

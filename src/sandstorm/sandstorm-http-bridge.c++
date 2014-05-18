@@ -1110,8 +1110,8 @@ public:
       ApiRestorer appRestorer(kj::mv(api), kj::mv(fulfillerPair.promise));
       ErrorHandlerImpl errorHandler;
       kj::TaskSet tasks(errorHandler);
-      unlink("/var/socket-api");  // Clear stale socket, if any.
-      auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:/var/socket-api", 0).then(
+      unlink("/tmp/socket-api");  // Clear stale socket, if any.
+      auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:/tmp/socket-api", 0).then(
           [&](kj::Own<kj::NetworkAddress>&& addr) {
         auto serverPort = addr->listen();
         auto promise = acceptLoop(*serverPort, appRestorer, tasks);

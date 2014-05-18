@@ -45,6 +45,7 @@ body {
   height: 100%;
   font-family: "Open Sans", sans-serif;
   font-weight: normal;
+  background-color: white;
 }
 
 #topbar, #topbar-left, #topbar-right, #topbar-update {
@@ -147,7 +148,6 @@ img {
 .main-content {
   margin: 0;
   padding: 0;
-  background-color: white;
   position: fixed;
   left: 0;
   width: 100%;

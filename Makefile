@@ -76,9 +76,8 @@ bin/run-bundle: src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/genfi
 	@mkdir -p bin
 	@$(CXX) src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/run-bundle -static $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
 
-shell/public/edit.png: icons/*
-	@# TODO(cleanup): Use fancy make rules.
-	(for icon in wrench edit trash; do convert -scale 24x24 -negate -alpha shape -evaluate multiply 0.87 icons/$$icon.svg shell/public/$$icon.png; done)
+shell/public/%.png: icons/%.svg
+	convert -scale 24x24 -negate -alpha shape -evaluate multiply 0.87 $< $@
 
 shell-bundle.tar.gz: shell/smart.* shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release shell/public/edit.png shell/public/trash.png shell/public/wrench.png
 	@echo "bundling meteor frontend..."

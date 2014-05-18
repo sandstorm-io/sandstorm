@@ -744,6 +744,20 @@ public:
     });
   }
 
+  kj::String genRandomString(const int len) {
+    auto s = kj::heapString(len);
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+
+    for (int i = 0; i < len; ++i) {
+        s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+    }
+
+    return s;
+  }
+
   kj::Promise<void> send(SendContext context) override {
     char fileTemplate[255] = "/var/mail/tmp/";
     strcat(fileTemplate, std::to_string(time(NULL)).c_str());
@@ -758,7 +772,7 @@ public:
       if(len != 0) { \
         KJ_SYSCALL(write(mailFd, #key ": ", strlen(#key ": "))); \
         KJ_SYSCALL(write(mailFd, value, len)); \
-        KJ_SYSCALL(write(mailFd, "\r\n", 1)); \
+        KJ_SYSCALL(write(mailFd, "\n", 1)); \
       }
 
     #define WRITE_FIELD(fieldName, headerName) \
@@ -794,14 +808,27 @@ public:
     WRITE_FIELD_LIST(InReplyTo, In-Reply-To)
     WRITE_FIELD_LIST(References, References)
 
-    #undef WRITE_FIELD
-    #undef WRITE_HEADER
-    #undef WRITE_EMAIL
-    #undef WRITE_EMAIL_FIELD
-    #undef WRITE_EMAIL_LIST
+    auto boundary = genRandomString(28);
+    // TODO: check if leading \n is neccessary
+    auto boundaryLine = kj::str("\n--", boundary, "\n");
+    auto contentType = kj::str("multipart/alternative; boundary=", boundary);
+    WRITE_HEADER(Content-Type, contentType.cStr(), contentType.size())
 
-    KJ_SYSCALL(write(mailFd, "\r\n", 2)); // Start body
-    KJ_SYSCALL(write(mailFd, email.getText().cStr(), email.getText().size()));
+    KJ_SYSCALL(write(mailFd, "\n", 1)); // Start body
+    if(email.getText().size() > 0) {
+      auto contentTypeText = kj::str("text/plain; charset=UTF-8");
+      KJ_SYSCALL(write(mailFd, boundaryLine.cStr(), boundaryLine.size()));
+      WRITE_HEADER(Content-Type, contentTypeText.cStr(), contentTypeText.size())
+      KJ_SYSCALL(write(mailFd, email.getText().cStr(), email.getText().size()));
+    }
+    if(email.getHtml().size() > 0) {
+      auto contentTypeHtml = kj::str("text/html; charset=UTF-8");
+      KJ_SYSCALL(write(mailFd, boundaryLine.cStr(), boundaryLine.size()));
+      WRITE_HEADER(Content-Type, contentTypeHtml.cStr(), contentTypeHtml.size())
+      KJ_SYSCALL(write(mailFd, email.getHtml().cStr(), email.getHtml().size()));
+    }
+    KJ_SYSCALL(write(mailFd, boundaryLine.cStr(), boundaryLine.size()));
+
     close(mailFd);
 
     // TODO: handle html
@@ -811,6 +838,12 @@ public:
     KJ_SYSCALL(rename(fileTemplate, newPath.c_str()));
 
     return kj::READY_NOW;
+
+    #undef WRITE_FIELD
+    #undef WRITE_HEADER
+    #undef WRITE_EMAIL
+    #undef WRITE_EMAIL_FIELD
+    #undef WRITE_EMAIL_LIST
   }
 
 private:

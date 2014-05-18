@@ -212,6 +212,7 @@ if (Meteor.isClient) {
 }
 
 Router.configure({
+  layoutTemplate: 'layout',
   notFoundTemplate: "notFound",
   loadingTemplate: "loading"
 });

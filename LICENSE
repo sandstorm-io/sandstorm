@@ -47,6 +47,23 @@ shell/public/opensans-semibold.woff
     License: Apache 2.0
     License URL: http://www.apache.org/licenses/LICENSE-2.0.html
 
+icons/edit.svg
+icons/trash.svg
+icons/wrench.svg
+    What: Icons by Naomi Atkinson from The Noun Project
+    Source URL: http://www.thenounproject.com/naomiatkinson/uploads/
+    Copyright: Naomi Atkinson
+    License: CC BY 3.0
+    License URL: http://creativecommons.org/licenses/by/3.0/us/
+
+shell/client/ansi-up.js
+    What: ansi_up library (converts ANSI escape codes to HTML)
+    Source URL: http://github.com/drudru/ansi_up
+    Copyright: Dru Nelson
+    License: MIT
+    License URL: https://github.com/drudru/ansi_up/blob/master/Readme.md
+                 (at bottom)
+
 src/joyent-http/*
     What: Node.js HTTP parsing library
     Source URL: https://github.com/joyent/http-parser

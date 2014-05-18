@@ -6,6 +6,9 @@ shell/sandstorm-shell.creator
 shell/sandstorm-shell.creator.user
 shell/sandstorm-shell.files
 shell/sandstorm-shell.includes
+shell/public/edit.png
+shell/public/trash.png
+shell/public/wrench.png
 website/sandstorm.io.config
 website/sandstorm.io.creator
 website/sandstorm.io.creator.user

@@ -91,6 +91,7 @@ Please install the following:
 * [Meteor](http://meteor.com)
 * [Meteorite](https://github.com/oortcloud/meteorite)
 * [npm](http://npmjs.org) module `jsontool`
+* ImageMagick
 
 ### Building / installing the binaries
 

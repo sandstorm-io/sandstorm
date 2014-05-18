@@ -26,8 +26,16 @@ License along with Sandstorm.  If not, see
 </head>
 
 <body>
-  {{> topBar}}
 </body>
+
+<template name="layout">
+  {{> topBar}}
+  {{> yield}}
+</template>
+
+<template name="lightLayout">
+  {{> yield}}
+</template>
 
 <template name="topBar">
   {{#if isUpdateBlocked}}
@@ -130,8 +138,9 @@ License along with Sandstorm.  If not, see
   <div id="topbar">
     <a href="javascript:browseHome()">Sandstorm</a>: {{title}}
     {{#if isOwner}}
-      <button id="renameGrain">Rename</button>
-      <button id="deleteGrain">Delete</button>
+      <button id="renameGrain" title="Rename">Rename</button>
+      <button id="deleteGrain" title="Delete">Delete</button>
+      <button id="openDebugLog" title="Show Debug Log">Log</button>
     {{/if}}
   </div>
 
@@ -145,6 +154,16 @@ License along with Sandstorm.  If not, see
       <p>Loading app...</p>
     {{/if}}
     {{/if}}
+  </div>
+</template>
+
+<template name="grainLog">
+  <div id="topbar" class="light">
+    <a href="javascript:browseHome()">Sandstorm</a>: Debug log: {{title}}
+  </div>
+
+  <div id="grainLog" class="main-content">
+    <pre>...{{{html}}}</pre>
   </div>
 </template>
 

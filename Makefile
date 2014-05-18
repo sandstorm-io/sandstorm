@@ -37,7 +37,7 @@ NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 all: sandstorm-$(BUILD).tar.xz
 
 clean:
-	rm -rf bin tmp node_modules bundle shell-bundle.tar.gz sandstorm-*.tar.xz
+	rm -rf bin tmp node_modules bundle shell-bundle.tar.gz sandstorm-*.tar.xz shell/public/edit.png shell/public/trash.png shell/public/wrench.png
 
 install: sandstorm-$(BUILD).tar.xz install.sh
 	@./install.sh sandstorm-$(BUILD).tar.xz
@@ -76,7 +76,11 @@ bin/run-bundle: src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/genfi
 	@mkdir -p bin
 	@$(CXX) src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/run-bundle -static $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
 
-shell-bundle.tar.gz: shell/smart.* shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release
+shell/public/edit.png: icons/*
+	@# TODO(cleanup): Use fancy make rules.
+	(for icon in wrench edit trash; do convert -scale 24x24 -negate -alpha shape -evaluate multiply 0.87 icons/$$icon.svg shell/public/$$icon.png; done)
+
+shell-bundle.tar.gz: shell/smart.* shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release shell/public/edit.png shell/public/trash.png shell/public/wrench.png
 	@echo "bundling meteor frontend..."
 	@cd shell && mrt bundle ../shell-bundle.tar.gz > /dev/null
 

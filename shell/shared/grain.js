@@ -70,6 +70,10 @@ if (Meteor.isClient) {
       if (window.confirm("Really delete this grain?")) {
         Meteor.call("deleteGrain", this.grainId);
       }
+    },
+    "click #openDebugLog": function (event) {
+      window.open("/grain/" + this.grainId + "/log", "_blank",
+          "menubar=no,status=no,toolbar=no,width=700,height=700");
     }
   });
 
@@ -134,6 +138,34 @@ if (Meteor.isClient) {
     toRemove.forEach(function (key) { Session.set(key, undefined); });
   });
 }
+
+if (Meteor.isClient) {
+  function maybeScrollLog() {
+    var elem = document.getElementById("grainLog");
+    if (elem) {
+      // The log already exsits. It's about to be updated. Check if it's scrolled to the bottom
+      // before the update.
+      if (elem.scrollHeight - elem.scrollTop === elem.clientHeight) {
+        // Indeed, so we want to scroll it back to the bottom after the update.
+        Deps.afterFlush(function () { scrollLogToBottom(elem); });
+      }
+    } else {
+      // No element exists yet, but it's probably about to be created, in which case we definitely
+      // want to scroll it.
+      Deps.afterFlush(function () {
+        var elem2 = document.getElementById("grainLog");
+        if (elem2) scrollLogToBottom(elem2);
+      });
+    }
+  }
+
+  function scrollLogToBottom(elem) {
+    elem.scrollTop = elem.scrollHeight;
+  }
+}
+
+GrainLog = new Meteor.Collection("grainLog");
+// Pseudo-collection created by subscribing to "grainLog", implemented in proxy.js.
 
 Router.map(function () {
   this.route("grain", {
@@ -204,6 +236,29 @@ Router.map(function () {
     onStop: function () {
       currentSessionId = undefined;
       unblockUpdate();
+    }
+  });
+
+  this.route("grainLog", {
+    path: "/grain/:grainId/log",
+    layoutTemplate: "lightLayout",
+
+    waitOn: function () {
+      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
+      return [
+        Meteor.subscribe("grainTitle", this.params.grainId),
+        Meteor.subscribe("grainLog", this.params.grainId)
+      ];
+    },
+
+    data: function () {
+      maybeScrollLog();
+      return {
+        title: Grains.findOne(this.params.grainId).title,
+        html: AnsiUp.ansi_to_html(GrainLog.find({}, {$sort: {_id: 1}})
+            .map(function (entry) { return entry.text; })
+            .join(""), {use_classes:true})
+      };
     }
   });
 });

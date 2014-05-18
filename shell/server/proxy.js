@@ -884,3 +884,49 @@ Proxy.prototype.handleWebSocket = function (request, socket, head, retryCount) {
     });
   });
 }
+
+// =======================================================================================
+// Debug log access
+
+Meteor.publish("grainLog", function (grainId) {
+  check(grainId, String);
+  var grain = Grains.findOne(grainId);
+  if (!grain || !this.userId || grain.userId !== this.userId) {
+    this.added("grainLog", 0, {text: "Only the grain owner can view the debug log."});
+    this.ready();
+    return;
+  }
+
+  var logfile = SANDSTORM_GRAINDIR + "/" + grainId + "/log";
+
+  var fd = Fs.openSync(logfile, "r");
+  var startSize = Fs.fstatSync(fd).size;
+
+  // Start tailing at EOF - 8k.
+  var offset = Math.max(0, startSize - 8192);
+
+  var self = this;
+  function doTail() {
+    for (;;) {
+      var buf = new Buffer(Math.max(1024, startSize - offset));
+      var n = Fs.readSync(fd, buf, 0, buf.length, offset);
+      if (n <= 0) break;
+      self.added("grainLog", offset, {text: buf.toString("utf8", 0, n)});
+      offset += n;
+    }
+  }
+
+  // Watch the file for changes.
+  var watcher = Fs.watch(logfile, {persistent: false}, Meteor.bindEnvironment(doTail));
+
+  // When the subscription stops, stop watching the file.
+  this.onStop(function() {
+    watcher.close();
+  });
+
+  // Read initial 8k tail data immediately.
+  doTail();
+
+  // Notify ready.
+  this.ready();
+});

@@ -39,6 +39,7 @@
 #include <sys/wait.h>
 #include <sys/sendfile.h>
 #include <sys/prctl.h>
+#include <sys/syscall.h>
 #include <sched.h>
 #include <grp.h>
 #include <errno.h>
@@ -1175,13 +1176,22 @@ private:
     // Unshare the mount namespace, so we can create some private bind mounts.
     KJ_SYSCALL(unshare(CLONE_NEWNS));
 
-    // Mount /proc in the chroot.
-    KJ_SYSCALL(mount("proc", "proc", "proc", MS_NOSUID | MS_NODEV | MS_NOEXEC, ""));
-
     // To really unshare the mount namespace, we also have to make sure all mounts are private.
     // The parameters here were derived by strace'ing `mount --make-rprivate /`.  AFAICT the flags
     // are undocumented.  :(
     KJ_SYSCALL(mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr));
+
+    // Make sure that the current directory is a mount point so that we can use pivot_root.
+    KJ_SYSCALL(mount(".", ".", nullptr, MS_BIND | MS_REC, nullptr));
+
+    // Now change directory into the new mount point.
+    char cwdBuf[PATH_MAX + 1];
+    if (!getcwd(cwdBuf, sizeof(cwdBuf)))
+      KJ_FAIL_SYSCALL("getcwd", errno);
+    KJ_SYSCALL(chdir(cwdBuf));
+
+    // Mount /proc in the chroot.
+    KJ_SYSCALL(mount("proc", "proc", "proc", MS_NOSUID | MS_NODEV | MS_NOEXEC, ""));
 
     // Bind var -> ../var, so that all versions share the same var.
     KJ_SYSCALL(mount("../var", "var", nullptr, MS_BIND, nullptr));
@@ -1200,9 +1210,10 @@ private:
                      kj::str("size=2m,nr_inodes=128,mode=755,uid=0,gid=0").cStr()));
     copyEtc();
 
-    // OK, enter the chroot.
-    KJ_SYSCALL(chroot("."));
+    // OK, change our root directory.
+    KJ_SYSCALL(syscall(SYS_pivot_root, ".", "tmp"));
     KJ_SYSCALL(chdir("/"));
+    KJ_SYSCALL(umount2("tmp", MNT_DETACH));
 
     // Set up path.
     KJ_SYSCALL(setenv("PATH", "/usr/bin:/bin", true));

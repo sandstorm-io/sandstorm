@@ -35,6 +35,7 @@
 #include <sys/fsuid.h>
 #include <sys/prctl.h>
 #include <sys/capability.h>
+#include <sys/syscall.h>
 #include <netinet/in.h>
 #include <net/if.h>
 #include <linux/sockios.h>
@@ -178,7 +179,7 @@ class SupervisorMain {
   // gets network access whereas the grain does not (the grain can only communicate with the world
   // through the supervisor).
   //
-  // This program is meant to be suid-root, so that it can use system calls like chroot() and
+  // This program is meant to be suid-root, so that it can use system calls like pivot_root() and
   // unshare().
   //
   // Alternatively, rather than suid, you may grant the binary "capabilities":
@@ -392,6 +393,12 @@ private:
   gid_t gid = 0;
   gid_t gidFromUsername = 0;  // If --uid was given a username.
 
+  static kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
+    int fd;
+    KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
+    return kj::AutoCloseFd(fd);
+  }
+
   void bind(kj::StringPtr src, kj::StringPtr dst, unsigned long flags = 0) {
     // Contrary to the documentation of MS_BIND claiming this is no longer the case after 2.6.26,
     // mountflags are ignored on the initial bind.  We have to issue a subsequent remount to set
@@ -448,8 +455,7 @@ private:
     closeFds();
     checkPaths();
     unshareOuter();
-    setupTmpfs();
-    bindDirs();
+    setupFilesystem();
     setupStdio();
 
     // TODO(someday):  Turn on seccomp-bpf.
@@ -629,16 +635,8 @@ private:
     // To really unshare the mount namespace, we also have to make sure all mounts are private.
     // The parameters here were derived by strace'ing `mount --make-rprivate /`.  AFAICT the flags
     // are undocumented.  :(
-    //
-    // Note:  We accept EINVAL as an indication that / is not a mount point, which indicates we're
-    //   running in a chroot, which means we're probably running in the Sandstorm bundle, which has
-    //   already private-mounted everything.
-    // TODO(someday):  More robustly detect when we're in the sandstorm bundle.
     if (mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr) < 0) {
-      int error = errno;
-      if (error != EINVAL) {
-        KJ_FAIL_SYSCALL("mount(recursively remount / as private)", error);
-      }
+      KJ_FAIL_SYSCALL("mount(recursively remount / as private)", errno);
     }
 
     // Set a dummy host / domain so the grain can't see the real one.  (unshare(CLONE_NEWUTS) means
@@ -647,63 +645,68 @@ private:
     KJ_SYSCALL(setdomainname("sandbox", 7));
   }
 
-  void setupTmpfs() {
-    // Create a new tmpfs for this run.  We don't use a shared one or just /tmp for two reasons:
-    // 1) tmpfs has no quota control, so a shared instance could be DoS'd by any one grain, or
-    //    just used to effectively allocate more RAM than the grain is allowed.
-    // 2) When we exit, the mount namespace disappears and the tmpfs is thus automatically
-    //    unmounted.  No need for careful cleanup, and no need to implement a risky recursive
-    //    delete.
-    KJ_SYSCALL(mount("tmpfs", "/tmp/sandstorm-grain", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
-                     kj::str("size=16m,nr_inodes=4k,mode=770,uid=", uid, ",gid=", gid).cStr()));
+  void setupFilesystem() {
+    // The root of our mount namespace will be the app package itself.  We optionally create
+    // tmp, dev, and var.  tmp is an ordinary tmpfs.  dev is a read-only tmpfs that contains
+    // a few safe device nodes.  var is the 'var/sandbox' directory inside the grain.
+    //
+    // Now for the tricky part: the supervisor needs to be able to see a little bit more.
+    // In particular, it needs to be able to see the entire var directory inside the grain.
+    // We arrange for the the supervisor's special directory to be ".", even though it's
+    // not mounted anywhere.
+
+    // Set up the supervisor's directory.
+    bind(varPath, "/tmp/sandstorm-grain", MS_NODEV | MS_NOEXEC);
+    auto supervisor_dir = raiiOpen("/tmp/sandstorm-grain", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    KJ_SYSCALL(umount2("/tmp/sandstorm-grain", MNT_DETACH));
+
+    // Bind the app package to "sandbox", which will be the grain's root directory.
+    bind(pkgPath, "/tmp/sandstorm-grain", MS_NODEV | MS_RDONLY);
 
     // Change to that directory.
     KJ_SYSCALL(chdir("/tmp/sandstorm-grain"));
 
-    // Set up the directory tree.
-
-    // Create a minimal dev directory.
-    KJ_SYSCALL(mkdir("dev", 0755));
-    KJ_SYSCALL(mknod("dev/null", S_IFCHR | 0666, makedev(1, 3)));
-    KJ_SYSCALL(mknod("dev/zero", S_IFCHR | 0666, makedev(1, 5)));
-    KJ_SYSCALL(mknod("dev/random", S_IFCHR | 0666, makedev(1, 8)));
-    KJ_SYSCALL(mknod("dev/urandom", S_IFCHR | 0666, makedev(1, 9)));
-
-    // Mount point for var directory, as seen by the supervisor.
-    KJ_SYSCALL(mkdir("var", 0777));
-
-    // Temp directory.
-    KJ_SYSCALL(mkdir("tmp", 0777));
-    KJ_SYSCALL(mkdir("tmp/sandbox", 0777));  // Piece of tmp visible to sandbox.
-
-    // The root directory of the sandbox.
-    KJ_SYSCALL(mkdir("sandbox", 0777));
-  }
-
-  void bindDirs() {
-    // Bind the app package to "sandbox", which will be the grain's root directory.
-    bind(pkgPath, "sandbox", MS_NODEV | MS_RDONLY);
-
-    // We want to chroot the supervisor.  It will need access to the var directory, so we need to
-    // bind-mount that into the local tree.  We can't just map it to sandbox/var because part of
-    // the var directory is supposed to be visible only to the supervisor.
-    bind(varPath, "var", MS_NODEV | MS_NOEXEC);
-
     // Optionally bind var, tmp, dev if the app requests it by having the corresponding directories
     // in the package.
-    if (access("sandbox/tmp", F_OK) == 0) {
-      bind("tmp/sandbox", "sandbox/tmp", MS_NODEV | MS_NOEXEC);
+    if (access("tmp", F_OK) == 0) {
+      // Create a new tmpfs for this run.  We don't use a shared one or just /tmp for two reasons:
+      // 1) tmpfs has no quota control, so a shared instance could be DoS'd by any one grain, or
+      //    just used to effectively allocate more RAM than the grain is allowed.
+      // 2) When we exit, the mount namespace disappears and the tmpfs is thus automatically
+      //    unmounted.  No need for careful cleanup, and no need to implement a risky recursive
+      //    delete.
+      KJ_SYSCALL(mount("sandstorm-tmp", "tmp", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
+                     kj::str("size=16m,nr_inodes=4k,mode=770,uid=", uid, ",gid=", gid).cStr()));
     }
-    if (access("sandbox/dev", F_OK) == 0) {
-      bind("dev", "sandbox/dev", MS_NOEXEC | MS_RDONLY);
+    if (access("dev", F_OK) == 0) {
+      KJ_SYSCALL(mount("sandstorm-dev", "dev", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
+                     kj::str("size=1m,nr_inodes=16,mode=755,uid=", uid, ",gid=", gid).cStr()));
+      KJ_SYSCALL(mknod("dev/null", S_IFCHR | 0666, makedev(1, 3)));
+      KJ_SYSCALL(mknod("dev/zero", S_IFCHR | 0666, makedev(1, 5)));
+      KJ_SYSCALL(mknod("dev/random", S_IFCHR | 0666, makedev(1, 8)));
+      KJ_SYSCALL(mknod("dev/urandom", S_IFCHR | 0666, makedev(1, 9)));
+      KJ_SYSCALL(mount("dev", "dev", nullptr,
+		       MS_REMOUNT | MS_NOSUID | MS_NOATIME | MS_RDONLY, nullptr));
     }
-    if (access("sandbox/var", F_OK) == 0) {
-      bind(kj::str(varPath, "/sandbox"), "sandbox/var", MS_NODEV | MS_NOEXEC);
+    if (access("var", F_OK) == 0) {
+      bind(kj::str(varPath, "/sandbox"), "var", MS_NODEV | MS_NOEXEC);
     }
 
-    // OK, everything is bound, so we can chroot.
-    KJ_SYSCALL(chroot("."));
-    KJ_SYSCALL(chdir("/"));
+    // Grab a reference to the old root directory.
+    auto old_root_dir = raiiOpen("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+
+    // OK, everything is bound, so we can pivot_root.
+    KJ_SYSCALL(syscall(SYS_pivot_root, "/tmp/sandstorm-grain", "/tmp/sandstorm-grain"));
+
+    // We're now in a very strange state: our root directory is the grain directory,
+    // but the old root is mounted on top of the grain directory.  As far as I can tell,
+    // there is no simple way to unmount the old root, since "/" and "/." both refer to the
+    // grain directory.  Fortunately, we kept a reference to the old root.
+    KJ_SYSCALL(fchdir(old_root_dir));
+    KJ_SYSCALL(umount2(".", MNT_DETACH));
+    KJ_SYSCALL(fchdir(supervisor_dir));
+
+    // Now '.' is the grain's var and '/' is the sandbox directory.
   }
 
   void setupStdio() {
@@ -721,7 +724,7 @@ private:
       // We direct stderr to a log file for debugging purposes.
       // TODO(soon):  Rotate logs.
       int log;
-      KJ_SYSCALL(log = open("/var/log", O_WRONLY | O_APPEND | O_CLOEXEC));
+      KJ_SYSCALL(log = open("log", O_WRONLY | O_APPEND | O_CLOEXEC));
       KJ_SYSCALL(dup2(log, STDERR_FILENO));
       KJ_SYSCALL(close(log));
     }
@@ -769,8 +772,7 @@ private:
     // Drop all credentials.
     //
     // This unfortunately must be performed post-fork (in both parent and child), because the child
-    // needs to do one final chroot().  Perhaps if chroot() is ever enabled by no_new_privs, we can
-    // get around that.
+    // needs to do one final unshare().
 
     KJ_SYSCALL(setresgid(gid, gid, gid));
     KJ_SYSCALL(setgroups(0, nullptr));
@@ -795,9 +797,6 @@ private:
 
   void enterSandbox() {
     // Fully enter the sandbox.  Called only by the child process.
-
-    // Chroot the rest of the way into the sandbox.
-    KJ_SYSCALL(chroot("sandbox"));
     KJ_SYSCALL(chdir("/"));
 
     // Unshare the network, creating a new loopback interface.
@@ -826,7 +825,7 @@ private:
     auto ioContext = kj::setupAsyncIo();
 
     // Connect to the client.
-    auto addr = ioContext.provider->getNetwork().parseAddress("unix:/var/socket")
+    auto addr = ioContext.provider->getNetwork().parseAddress("unix:socket")
         .wait(ioContext.waitScope);
     kj::Own<kj::AsyncIoStream> connection;
     KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
@@ -1009,6 +1008,12 @@ private:
   };
 
   void runSupervisor(int apiFd) KJ_NORETURN {
+    // We're currently in a somewhat dangerous state: our root directory is controlled
+    // by the grain.  If glibc reads, say, /etc/nsswitch.conf, the grain could take control
+    // of the supervisor.  Fix this by chrooting to the supervisor directory.
+    // TODO(someday): chroot somewhere that's guaranteed to be empty instead.
+    KJ_SYSCALL(chroot("."));
+
     permanentlyDropSuperuser();
 
     // TODO(soon):  Make sure all grandchildren die if supervisor dies.
@@ -1036,8 +1041,8 @@ private:
     Restorer serverRestorer(kj::heap<SupervisorImpl>(kj::mv(app)));
     ErrorHandlerImpl errorHandler;
     kj::TaskSet tasks(errorHandler);
-    unlink("/var/socket");  // Clear stale socket, if any.
-    auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:/var/socket", 0).then(
+    unlink("socket");  // Clear stale socket, if any.
+    auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:socket", 0).then(
         [&](kj::Own<kj::NetworkAddress>&& addr) {
       auto serverPort = addr->listen();
       KJ_SYSCALL(write(STDOUT_FILENO, "Listening...\n", strlen("Listening...\n")));

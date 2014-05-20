@@ -38,6 +38,7 @@
 #include <kj/main.h>
 #include <kj/debug.h>
 #include <kj/async-io.h>
+#include <kj/async-unix.h>
 #include <capnp/rpc-twoparty.h>
 #include <capnp/rpc.capnp.h>
 #include <capnp/schema.h>
@@ -46,6 +47,8 @@
 #include <unordered_map>
 #include <time.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/web-session.capnp.h>
@@ -850,7 +853,9 @@ class LegacyBridgeMain {
   // It is up to the app to include this binary in their package if they want it.
 
 public:
-  LegacyBridgeMain(kj::ProcessContext& context): context(context), ioContext(kj::setupAsyncIo()) {}
+  LegacyBridgeMain(kj::ProcessContext& context): context(context), ioContext(kj::setupAsyncIo()) {
+    kj::UnixEventPort::captureSignal(SIGCHLD);
+  }
 
   kj::MainFunc getMain() {
     return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
@@ -907,6 +912,14 @@ public:
       // We're in the child.
       close(3);  // Close Cap'n Proto socket to avoid confusion.
 
+      // Clear signal mask and reset signal disposition.
+      // TODO(cleanup): This is kind of dependent on implementation details of kj/async-unix.c++,
+      //   especially the part about SIGPIPE. It belongs in the KJ library.
+      sigset_t sigset;
+      KJ_SYSCALL(sigemptyset(&sigset));
+      KJ_SYSCALL(sigprocmask(SIG_SETMASK, &sigset, nullptr));
+      KJ_SYSCALL(signal(SIGPIPE, SIG_DFL));
+
       char* argv[command.size() + 1];
       for (uint i: kj::indices(command)) {
         argv[i] = const_cast<char*>(command[i].cStr());
@@ -919,6 +932,21 @@ public:
       KJ_UNREACHABLE;
     } else {
       // We're in the parent.
+
+      auto exitPromise = onChildExit(child).then([this](int status) {
+        KJ_ASSERT(WIFEXITED(status) || WIFSIGNALED(status));
+        if (WIFSIGNALED(status)) {
+          context.exitError(kj::str(
+              "** HTTP-BRIDGE: App server exited due to signal ", WTERMSIG(status),
+              " (", strsignal(WTERMSIG(status)), ")."));
+        } else {
+          context.exitError(kj::str(
+              "** HTTP-BRIDGE: App server exited with status code: ", WEXITSTATUS(status)));
+        }
+      }).eagerlyEvaluate([this](kj::Exception&& e) {
+        context.exitError(kj::str(
+            "** HTTP-BRIDGE: Uncaught exception waiting for child process:\n", e));
+      });
 
       // Wait until connections are accepted.
       bool success = false;
@@ -946,8 +974,8 @@ public:
       SandstormApi::Client api = rpcSystem.restore(
           hostId, ref.getObjectId()).castAs<SandstormApi>();
 
-      // TODO(soon):  Exit when child exits.  (Signal handler?)
-      kj::NEVER_DONE.wait(ioContext.waitScope);
+      exitPromise.wait(ioContext.waitScope);
+      KJ_UNREACHABLE;  // exitPromise always exits before completing
     }
   }
 
@@ -956,6 +984,19 @@ private:
   kj::AsyncIoContext ioContext;
   kj::Own<kj::NetworkAddress> address;
   kj::Vector<kj::String> command;
+
+  kj::Promise<int> onChildExit(pid_t pid) {
+    int status;
+    int waitResult;
+    KJ_SYSCALL(waitResult = waitpid(pid, &status, WNOHANG));
+    if (waitResult == 0) {
+      return ioContext.unixEventPort.onSignal(SIGCHLD).then([this,pid](siginfo_t&& info) {
+        return onChildExit(pid);
+      });
+    } else {
+      return status;
+    }
+  }
 };
 
 }  // namespace sandstorm

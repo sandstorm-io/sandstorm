@@ -21,6 +21,7 @@
 #include <kj/main.h>
 #include <kj/debug.h>
 #include <kj/async-io.h>
+#include <kj/async-unix.h>
 #include <kj/io.h>
 #include <capnp/rpc-twoparty.h>
 #include <capnp/rpc.capnp.h>
@@ -104,11 +105,6 @@ void killChildAndExit(int status) {
 
 void signalHandler(int signo) {
   switch (signo) {
-    case SIGCHLD:
-      // Oh, our child exited.  I guess we're useless now.
-      SANDSTORM_LOG("Grain shutting down because child exited.");
-      _exit(0);
-
     case SIGALRM:
       if (keepAlive) {
         SANDSTORM_LOG("Grain still in use; staying up for now.");
@@ -152,10 +148,6 @@ void registerSignalHandlers() {
   for (int signo: kj::ArrayPtr<int>(DEATH_SIGNALS)) {
     KJ_SYSCALL(sigaction(signo, &action, nullptr));
   }
-
-  // SIGCHLD will fire when the child exits, in which case we might as well also exit.
-  action.sa_flags = SA_NOCLDSTOP;  // Only fire when child exits.
-  KJ_SYSCALL(sigaction(SIGCHLD, &action, nullptr));
 
   // Set up the SIGALRM timer.  Note that this is not inherited over fork.
   struct itimerval timer;
@@ -1011,10 +1003,35 @@ private:
   void runSupervisor(int apiFd) KJ_NORETURN {
     permanentlyDropSuperuser();
 
-    // TODO(soon):  Make sure all grandchildren die if supervisor dies.
+    // TODO(soon): Somehow make sure all grandchildren die if supervisor dies. Currently SIGKILL
+    //   on the supervisor won't give it a chance to kill the sandbox pid tree. Perhaps the
+    //   supervisor should actually be the app's root process? We'd have to more carefully handle
+    //   SIGCHLD in that case and also worry about signals sent from the app process.
+
+    kj::UnixEventPort::captureSignal(SIGCHLD);
+    auto ioContext = kj::setupAsyncIo();
+
+    // Detect child exit.
+    auto exitPromise = ioContext.unixEventPort.onSignal(SIGCHLD).then([this](siginfo_t info) {
+      KJ_ASSERT(childPid != 0);
+      int status;
+      KJ_SYSCALL(waitpid(childPid, &status, 0));
+      childPid = 0;
+      KJ_ASSERT(WIFEXITED(status) || WIFSIGNALED(status));
+      if (WIFSIGNALED(status)) {
+        context.exitError(kj::str(
+            "** SANDSTORM SUPERVISOR: App exited due to signal ", WTERMSIG(status),
+            " (", strsignal(WTERMSIG(status)), ")."));
+      } else {
+        context.exitError(kj::str(
+            "** SANDSTORM SUPERVISOR: App exited with status code: ", WEXITSTATUS(status)));
+      }
+    }).eagerlyEvaluate([this](kj::Exception&& e) {
+      context.exitError(kj::str(
+          "** SANDSTORM SUPERVISOR: Uncaught exception waiting for child process:\n", e));
+    });
 
     // Set up the RPC connection to the app and export the supervisor interface.
-    auto ioContext = kj::setupAsyncIo();
     auto appConnection = ioContext.lowLevelProvider->wrapSocketFd(apiFd,
         kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC |
         kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP);
@@ -1048,7 +1065,14 @@ private:
     // Wait for disconnect or accept loop failure, then exit.
     acceptTask.exclusiveJoin(appNetwork.onDisconnect()).wait(ioContext.waitScope);
 
-    SANDSTORM_LOG("App disconnected API socket; shutting down grain.");
+    // Hmm, app disconnected API socket. The app probably exited and we just haven't gotten the
+    // signal yet, so sleep for a moment to let it arrive, so that we can report the exit status.
+    // Otherwise kill.
+    ioContext.provider->getTimer().afterDelay(1 * kj::SECONDS)
+        .exclusiveJoin(kj::mv(exitPromise))
+        .wait(ioContext.waitScope);
+
+    SANDSTORM_LOG("App disconnected API socket but didn't actually exit; killing it.");
     killChildAndExit(1);
   }
 };

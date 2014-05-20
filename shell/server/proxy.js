@@ -116,6 +116,7 @@ Meteor.methods({
       title: title
     });
     startGrainInternal(packageId, grainId, command, true);
+    updateLastActive(grainId, Meteor.userId());
     return grainId;
   },
 
@@ -134,6 +135,8 @@ Meteor.methods({
     } else {
       continueGrain(grainId);
     }
+
+    updateLastActive(grainId, Meteor.userId());
 
     var proxy = new Proxy(grainId, sessionId);
     proxies[sessionId] = proxy;
@@ -265,9 +268,6 @@ function startGrainInternal(packageId, grainId, command, isNew) {
       reject(new Error("Grain never came up."));
     });
   });
-
-  // While we're waiting...
-  updateLastActive(grainId, Meteor.userId());
 
   runningGrains[grainId] = whenReady;
   waitPromise(whenReady);

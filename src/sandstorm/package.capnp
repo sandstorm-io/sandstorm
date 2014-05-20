@@ -62,12 +62,14 @@ struct PackageDefinition {
   # by the actual running server. On subsequent runs, new files will be added, but files will never
   # be removed from the list. To reset the list, simply delete it and run `spk dev` again.
 
-  additionalFiles @4 :List(Text);
-  # Additional list of files to include in the package, other than the ones listed in the file
-  # named by `fileList`. Use this list to name files that wouldn't automatically be included,
-  # because for whatever reason the server does not actually open them when running in dev mode.
-  # This could include e.g. a readme file or copyright notice that you want people to see if they
-  # unpack your package manually.
+  alwaysInclude @4 :List(Text);
+  # Files and directories that should always be included in the package whether or not they are
+  # in the file named by `fileList`. If you name a directory here, its entire contents will be
+  # included recursively (this is not the case in `fileList`). Use this list to name files that
+  # wouldn't automatically be included, because for whatever reason the server does not actually
+  # open them when running in dev mode. This could include runtime dependencies that are too
+  # difficult to test fully, or perhaps a readme file or copyright notice that you want people to
+  # see if they unpack your package manually.
 }
 
 struct Manifest {

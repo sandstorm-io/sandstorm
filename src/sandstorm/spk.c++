@@ -201,6 +201,42 @@ kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
   return kj::AutoCloseFd(fd);
 }
 
+bool isDirectory(kj::StringPtr path) {
+  struct stat stats;
+  KJ_SYSCALL(lstat(path.cStr(), &stats));
+  return S_ISDIR(stats.st_mode);
+}
+
+kj::Array<kj::String> listDirectory(kj::StringPtr dirname) {
+  DIR* dir = opendir(dirname.cStr());
+  if (dir == nullptr) {
+    KJ_FAIL_SYSCALL("opendir", errno, dirname);
+  }
+  KJ_DEFER(closedir(dir));
+
+  kj::Vector<kj::String> entries;
+
+  for (;;) {
+    errno = 0;
+    struct dirent* entry = readdir(dir);
+    if (entry == nullptr) {
+      int error = errno;
+      if (error == 0) {
+        break;
+      } else {
+        KJ_FAIL_SYSCALL("readdir", error, dirname);
+      }
+    }
+
+    kj::StringPtr name = entry->d_name;
+    if (name != "." && name != "..") {
+      entries.add(kj::heapString(entry->d_name));
+    }
+  }
+
+  return entries.releaseAsArray();
+}
+
 kj::String readAll(int fd) {
   kj::FdInputStream input(fd);
   kj::Vector<char> content;
@@ -928,9 +964,16 @@ private:
         "    ]\n"
         "  ),\n"
         "\n"
-        "  fileList = \"sandstorm-files.list\"\n"
+        "  fileList = \"sandstorm-files.list\",\n"
         "  # `spk dev` will write a list of all the files your app uses to this file.\n"
         "  # You should review it later, before shipping your app.\n"
+        "\n"
+        "  additionalFiles = []\n"
+        "  # Fill this list with more names of files or directories that should be\n"
+        "  # included in your package, even if not listed in sandstorm-files.list.\n"
+        "  # Use this to force-include stuff that you know you need but which may\n"
+        "  # not have been detected as a dependency during `spk dev`. If you list\n"
+        "  # a directory here, its entire contents will be included recursively.\n"
         ");\n"
         "\n"
         "const myCommand :Spk.Manifest.Command = (\n"
@@ -938,7 +981,7 @@ private:
         "  argv = [", argv, "],\n"
         "  environ = [\n"
         "    # Note that this defines the *entire* environment seen by your app.\n"
-        "    (key = \"PATH\", value = \"/bin:/usr/bin:/usr/local/bin\")\n"
+        "    (key = \"PATH\", value = \"/usr/local/bin:/usr/bin:/bin\")\n"
         "  ]\n"
         ");\n");
 
@@ -1034,11 +1077,11 @@ private:
       }
 
       for (auto& line: splitLines(readAll(raiiOpen(fileListFile, O_RDONLY)))) {
-        addNode(root, line, sourceMap);
+        addNode(root, line, sourceMap, false);
       }
     }
-    for (auto file: packageDef.getAdditionalFiles()) {
-      addNode(root, file, sourceMap);
+    for (auto file: packageDef.getAlwaysInclude()) {
+      addNode(root, file, sourceMap, true);
     }
 
     auto tmpfile = openTemporary(spkfile);
@@ -1172,7 +1215,8 @@ private:
     // Raw data comprising this node. Mutually exclusive with all other members.
   };
 
-  void addNode(ArchiveNode& root, kj::StringPtr path, const spk::SourceMap::Reader& sourceMap) {
+  void addNode(ArchiveNode& root, kj::StringPtr path, const spk::SourceMap::Reader& sourceMap,
+               bool recursive) {
     auto& node = root.followPath(path);
     if (path == "sandstorm-manifest") {
       // Serialize the manifest.
@@ -1182,11 +1226,50 @@ private:
       node.setData(capnp::messageToFlatArray(manifestMessage));
     } else if (path == "sandstorm-http-bridge") {
       node.setTarget(getHttpBridgeExe());
-    } else KJ_IF_MAYBE(target, mapFile(sourceDir, sourceMap, path)) {
-      node.setTarget(kj::mv(*target));
     } else {
-      context.exitError(kj::str("No file found to satisfy requirement: ", path));
+      auto targets = mapFile(sourceDir, sourceMap, path);
+      if (targets.size() == 0) {
+        context.exitError(kj::str("No file found to satisfy requirement: ", path));
+      } else {
+        initNode(node, path, kj::mv(targets), sourceMap, recursive);
+      }
     }
+  }
+
+  void initNode(ArchiveNode& node, kj::StringPtr srcPath, kj::Array<kj::String>&& targets,
+                const spk::SourceMap::Reader& sourceMap, bool recursive) {
+    if (targets.size() == 0) {
+      // Nothing here.
+    }
+
+    if (recursive && isDirectory(targets[0])) {
+      // Primary match is a directory, so merge all of the matching directories.
+      std::set<kj::String> seen;
+      for (auto& target: targets) {
+        if (isDirectory(target)) {
+          // This is one of the directories to be merged. List it.
+          for (auto& child: listDirectory(target)) {
+            if (child != "." && child != "..") {
+              // Note that this child node could be hidden. We need to use mapFile() on it directly
+              // in order to make sure it maps to a real file. However, mapFile() will search all
+              // the matching target paths, not just the one we're on, so we make sure to ignore
+              // repeats as we scan through the targets.
+              kj::StringPtr childPtr = child;
+              if (seen.insert(kj::mv(child)).second) {
+                // This is the first time we've seen this child name. Use mapFile() to find out all
+                // the things it matches.
+                auto subPath = kj::str(srcPath, '/', childPtr);
+                auto subTargets = mapFile(sourceDir, sourceMap, subPath);
+                initNode(node.followPath(childPtr), subPath, kj::mv(subTargets), sourceMap,
+                         recursive);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    node.setTarget(kj::mv(targets[0]));
   }
 
   kj::String getHttpBridgeExe() {

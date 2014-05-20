@@ -693,8 +693,10 @@ static kj::Maybe<kj::StringPtr> tryRemovePathPrefix(kj::StringPtr path, kj::Stri
   }
 }
 
-kj::Maybe<kj::String> mapFile(
+kj::Array<kj::String> mapFile(
     kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap, kj::StringPtr name) {
+  kj::Vector<kj::String> matches;
+
   for (auto dir: sourceMap.getSearchPath()) {
     auto virtualPath = dir.getPackagePath();
     KJ_IF_MAYBE(subPath, tryRemovePathPrefix(name, virtualPath)) {
@@ -720,12 +722,12 @@ kj::Maybe<kj::String> mapFile(
 
       if (access(candidate.cStr(), F_OK) == 0) {
         // Found!
-        return kj::mv(candidate);
+        matches.add(kj::mv(candidate));
       }
     }
   }
 
-  return nullptr;
+  return matches.releaseAsArray();
 }
 
 }  // namespace sandstorm

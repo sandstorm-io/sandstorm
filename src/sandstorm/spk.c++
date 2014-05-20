@@ -1217,6 +1217,10 @@ private:
 
   void addNode(ArchiveNode& root, kj::StringPtr path, const spk::SourceMap::Reader& sourceMap,
                bool recursive) {
+    if (path.startsWith("/")) {
+      context.exitError(kj::str("Destination (in-package) path must not start with '/': ", path));
+    }
+
     auto& node = root.followPath(path);
     if (path == "sandstorm-manifest") {
       // Serialize the manifest.

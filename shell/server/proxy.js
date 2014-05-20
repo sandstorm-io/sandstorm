@@ -26,6 +26,7 @@ var Future = Npm.require("fibers/future");
 var Http = Npm.require("http");
 
 var WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;
+var HackSession = Capnp.importSystem("sandstorm/hack-session.capnp");
 var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
 
 var SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
@@ -107,13 +108,15 @@ Meteor.methods({
     }
 
     var grainId = Random.id(22);  // 128 bits of entropy
+    var publicId = Random.id(22);
     Grains.insert({
       _id: grainId,
       packageId: packageId,
       appId: appId,
       appVersion: manifest.appVersion,
       userId: this.userId,
-      title: title
+      title: title,
+      publicId: publicId
     });
     startGrainInternal(packageId, grainId, command, true);
     return grainId;
@@ -147,6 +150,24 @@ Meteor.methods({
     });
 
     return {sessionId: sessionId, port: port};
+  },
+
+  sendEmailToGrain: function (grainId, emailMessage) {
+    // Send an email message to a grain
+
+    check(grainId, String);
+    check(grainId, String);
+
+    var session = Meteor.call("openSession", grainId);
+
+    var proxy = proxies[session.sessionId];
+
+    try {
+      waitPromise(proxy.getSession({headers: {}}).send(emailMessage));
+    }
+    catch (e) {
+      console.error(e.message);
+    }
   },
 
   keepSessionAlive: function (sessionId) {
@@ -388,6 +409,9 @@ function Proxy(grainId, sessionId, preferredPort) {
 
   var self = this;
 
+  var grain = Grains.findOne({'_id': this.grainId});
+  this.publicId = grain.publicId;
+
   this.server = Http.createServer(function (request, response) {
     if (request.url === "/_sandstorm-init?sessionid=" + self.sessionId) {
       self.doSessionInit(request, response);
@@ -464,6 +488,67 @@ Proxy.prototype.getConnection = function () {
   return this.connection;
 }
 
+var formatAddress = function(field) {
+  if(!field)
+    return null;
+
+  if (Array.isArray(field))
+    return field.forEach(formatAddress);
+
+  if(field.name)
+    return field.name + ' <' + field.address + '>';
+
+  return field.address;
+};
+
+var rethrowException = function(error) {
+  throw error;
+};
+
+function HackSessionImpl(grainId, publicId) {
+  this.grainId = grainId;
+  this.publicId = publicId;
+}
+
+HackSessionImpl.prototype.send = Meteor.bindEnvironment(function(email) {
+  expectedFrom = this.publicId + '@' + HOSTNAME; // HOSTNAME is defined in mail.js startup
+  if(email.from.address.toUpperCase() !== expectedFrom.toUpperCase()) {
+    console.warn("From field's address was not the expected address for this grain: " +
+      email.from.address + " instead of " + expectedFrom);
+    email.from.address = expectedFrom;
+  }
+
+  var newEmail = {
+    from:     formatAddress(email.from),
+    to:       formatAddress(email.to),
+    cc:       formatAddress(email.cc),
+    bcc:      formatAddress(email.bcc),
+    replyTo:  formatAddress(email.replyTo),
+    subject:  email.subject,
+    text:     email.text,
+    html:     email.html
+  };
+
+  var headers = {};
+  if(email.messageId)
+    headers['message-id'] = email.messageId;
+  if(email.references)
+    headers['references'] = email.references;
+  if(email.messageId)
+    headers['in-reply-to'] = email.inReplyTo;
+  // if(email.date)
+  //   headers['date'] = email.date;
+  // TODO: parse and set date
+
+  newEmail['headers'] = headers;
+
+  Email.send(newEmail);
+}, rethrowException);
+
+HackSessionImpl.prototype.getAddress = function() {
+  return this.publicId + '@' + HOSTNAME;
+};
+
 Proxy.prototype.getSession = function (request) {
   if (!this.session) {
     this.getConnection();  // make sure we're connected
@@ -476,9 +561,11 @@ Proxy.prototype.getSession = function (request) {
           ? request.headers["accept-language"].split(",").map(function (s) { return s.trim(); })
           : [ "en-US", "en" ]
     });
+
+    var sessionContext = new Capnp.Capability(new HackSessionImpl(this.grainId, this.publicId), HackSession.HackContext);
     this.session = this.uiView.newSession(
-        {displayName: {defaultText: "User"}}, null,
-        "0xa50711a14d35a8ce", params).session.castAs(WebSession);
+        {displayName: {defaultText: "User"}}, sessionContext,
+        "0xa50711a14d35a8ce", params).session.castAs(HackSession.HackSession);
   }
 
   return this.session;

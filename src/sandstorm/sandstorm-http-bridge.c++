@@ -47,8 +47,13 @@
 #include <time.h>
 #include <stdlib.h>
 
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <fcntl.h>
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/web-session.capnp.h>
+#include <sandstorm/email.capnp.h>
+#include <sandstorm/hack-session.capnp.h>
 #include <joyent-http/http_parser.h>
 
 #include "version.h"
@@ -645,7 +650,7 @@ private:
   }
 };
 
-class WebSessionImpl final: public WebSession::Server {
+class WebSessionImpl final: public HackSession::Server {
 public:
   WebSessionImpl(kj::NetworkAddress& serverAddr,
                  UserInfo::Reader userInfo, SessionContext::Client context,
@@ -739,6 +744,108 @@ public:
     });
   }
 
+  kj::String genRandomString(const int len) {
+    auto s = kj::heapString(len);
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+
+    for (int i = 0; i < len; ++i) {
+        s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+    }
+
+    return s;
+  }
+
+  kj::Promise<void> send(SendContext context) override {
+    char fileTemplate[255] = "/var/mail/tmp/";
+    strcat(fileTemplate, std::to_string(time(NULL)).c_str());
+    strcat(fileTemplate, ".XXXXXX");
+
+    int mailFd;
+    KJ_SYSCALL(mailFd = mkstemp(fileTemplate));
+
+    auto email = context.getParams().getEmail();
+
+    #define WRITE_HEADER(key, value, len) \
+      if(len != 0) { \
+        KJ_SYSCALL(write(mailFd, #key ": ", strlen(#key ": "))); \
+        KJ_SYSCALL(write(mailFd, value, len)); \
+        KJ_SYSCALL(write(mailFd, "\n", 1)); \
+      }
+
+    #define WRITE_FIELD(fieldName, headerName) \
+      WRITE_HEADER(headerName, email.get##fieldName().cStr(), email.get##fieldName().size())
+
+    #define WRITE_EMAIL(headerName, field) \
+      WRITE_HEADER(headerName, field.getAddress().cStr(), field.getAddress().size())
+
+    #define WRITE_EMAIL_FIELD(fieldName, headerName) \
+      WRITE_EMAIL(headerName, email.get##fieldName())
+
+    #define WRITE_EMAIL_LIST(fieldName, headerName) \
+      for(auto one : email.get##fieldName()) { \
+        WRITE_EMAIL(headerName, one) \
+      }
+
+    #define WRITE_FIELD_LIST(fieldName, headerName) \
+      for(auto one : email.get##fieldName()) { \
+        WRITE_HEADER(headerName, one.cStr(), one.size()) \
+      }
+
+    // TODO: parse and write Date
+    WRITE_FIELD(Subject, Subject)
+    WRITE_FIELD(MessageId, Message-Id)
+
+    WRITE_EMAIL_FIELD(From, From)
+    WRITE_EMAIL_FIELD(ReplyTo, Reply-To)
+    
+    WRITE_EMAIL_LIST(To, To)
+    WRITE_EMAIL_LIST(Cc, CC)
+    WRITE_EMAIL_LIST(Bcc, BCC)
+
+    WRITE_FIELD_LIST(InReplyTo, In-Reply-To)
+    WRITE_FIELD_LIST(References, References)
+
+    auto boundary = genRandomString(28);
+    // TODO: check if leading \n is neccessary
+    auto boundaryLine = kj::str("\n--", boundary, "\n");
+    auto contentType = kj::str("multipart/alternative; boundary=", boundary);
+    WRITE_HEADER(Content-Type, contentType.cStr(), contentType.size())
+
+    KJ_SYSCALL(write(mailFd, "\n", 1)); // Start body
+    if(email.getText().size() > 0) {
+      auto contentTypeText = kj::str("text/plain; charset=UTF-8");
+      KJ_SYSCALL(write(mailFd, boundaryLine.cStr(), boundaryLine.size()));
+      WRITE_HEADER(Content-Type, contentTypeText.cStr(), contentTypeText.size())
+      KJ_SYSCALL(write(mailFd, email.getText().cStr(), email.getText().size()));
+    }
+    if(email.getHtml().size() > 0) {
+      auto contentTypeHtml = kj::str("text/html; charset=UTF-8");
+      KJ_SYSCALL(write(mailFd, boundaryLine.cStr(), boundaryLine.size()));
+      WRITE_HEADER(Content-Type, contentTypeHtml.cStr(), contentTypeHtml.size())
+      KJ_SYSCALL(write(mailFd, email.getHtml().cStr(), email.getHtml().size()));
+    }
+    KJ_SYSCALL(write(mailFd, boundaryLine.cStr(), boundaryLine.size()));
+
+    close(mailFd);
+
+    // TODO: handle html
+
+    std::string newPath(fileTemplate);
+    newPath.replace(10, 3, "new"); // replace "tmp" with "new"
+    KJ_SYSCALL(rename(fileTemplate, newPath.c_str()));
+
+    return kj::READY_NOW;
+
+    #undef WRITE_FIELD
+    #undef WRITE_HEADER
+    #undef WRITE_EMAIL
+    #undef WRITE_EMAIL_FIELD
+    #undef WRITE_EMAIL_LIST
+  }
+
 private:
   kj::NetworkAddress& serverAddr;
   SessionContext::Client context;
@@ -819,9 +926,10 @@ private:
   }
 };
 
+
 class UiViewImpl final: public UiView::Server {
 public:
-  explicit UiViewImpl(kj::NetworkAddress& serverAddress): serverAddress(serverAddress) {}
+  explicit UiViewImpl(kj::NetworkAddress& serverAddress, kj::PromiseFulfillerPair<capnp::Capability::Client>& fulfillerPair): fulfillerPair(fulfillerPair), serverAddress(serverAddress) {}
 
 //  kj::Promise<void> getViewInfo(GetViewInfoContext context) override;
 
@@ -834,9 +942,12 @@ public:
     context.getResults(capnp::MessageSize {2, 1}).setSession(
         kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
                                  params.getSessionParams().getAs<WebSession::Params>()));
+    fulfillerPair.fulfiller->fulfill(params.getContext());
 
     return kj::READY_NOW;
   }
+
+  kj::PromiseFulfillerPair<capnp::Capability::Client>& fulfillerPair;
 
 private:
   kj::NetworkAddress& serverAddress;
@@ -888,7 +999,7 @@ public:
       //   For now we use a null ref as a hack, but this is questionable because if guessable
       //   SturdyRefs exist then you can't let just any component of your system request arbitrary
       //   SturdyRefs.
-      if (ref.isNull()) {
+      if (ref.isNull() || ref.getAs< ::capnp::Text>() == "SessionContext") {
         return defaultCap;
       }
 
@@ -900,12 +1011,61 @@ public:
     capnp::Capability::Client defaultCap;
   };
 
+  class ApiRestorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
+  public:
+    explicit ApiRestorer(SandstormApi::Client&& apiCap, capnp::Capability::Client&& sessionContext)
+        : apiCap(kj::mv(apiCap)), sessionContext(sessionContext) {}
+
+    capnp::Capability::Client restore(capnp::AnyPointer::Reader ref) override {
+      auto text = ref.getAs< ::capnp::Text>();
+
+      if(text == "SandstormApi")
+        return apiCap;
+      else if(text == "SessionContext")
+        return sessionContext;
+
+      KJ_FAIL_ASSERT("Ref wasn't equal to either 'SandstormApi' or 'SessionContext'");
+    }
+
+  private:
+    SandstormApi::Client apiCap;
+    capnp::Capability::Client sessionContext;
+  };
+
+  struct AcceptedConnection {
+    kj::Own<kj::AsyncIoStream> connection;
+    capnp::TwoPartyVatNetwork network;
+    capnp::RpcSystem<capnp::rpc::twoparty::SturdyRefHostId> rpcSystem;
+
+    explicit AcceptedConnection(ApiRestorer& restorer, kj::Own<kj::AsyncIoStream>&& connectionParam)
+        : connection(kj::mv(connectionParam)),
+          network(*connection, capnp::rpc::twoparty::Side::SERVER),
+          rpcSystem(capnp::makeRpcServer(network, restorer)) {}
+  };
+
+  kj::Promise<void> acceptLoop(kj::ConnectionReceiver& serverPort, ApiRestorer& restorer,
+                               kj::TaskSet& taskSet) {
+    return serverPort.accept().then([&](kj::Own<kj::AsyncIoStream>&& connection) {
+      auto connectionState = kj::heap<AcceptedConnection>(restorer, kj::mv(connection));
+      auto promise = connectionState->network.onDisconnect();
+      taskSet.add(promise.attach(kj::mv(connectionState)));
+      return acceptLoop(serverPort, restorer, taskSet);
+    });
+  }
+
+  class ErrorHandlerImpl: public kj::TaskSet::ErrorHandler {
+  public:
+    void taskFailed(kj::Exception&& exception) override {
+      KJ_LOG(ERROR, "connection failed", exception);
+    }
+  };
+
   kj::MainBuilder::Validity run() {
     pid_t child;
     KJ_SYSCALL(child = fork());
     if (child == 0) {
       // We're in the child.
-      close(3);  // Close Cap'n Proto socket to avoid confusion.
+      close(3);  // Close Supervisor's Cap'n Proto socket to avoid confusion.
 
       char* argv[command.size() + 1];
       for (uint i: kj::indices(command)) {
@@ -932,10 +1092,11 @@ public:
         // Wait 10ms and try again.
         usleep(10000);
       }
+      auto fulfillerPair = kj::newPromiseAndFulfiller<capnp::Capability::Client>();
 
       auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
       capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
-      Restorer restorer(kj::heap<UiViewImpl>(*address));
+      Restorer restorer(kj::heap<UiViewImpl>(*address, fulfillerPair));
       auto rpcSystem = capnp::makeRpcServer(network, restorer);
 
       // Get the SandstormApi by restoring a null SturdyRef.
@@ -945,6 +1106,17 @@ public:
       hostId.setSide(capnp::rpc::twoparty::Side::SERVER);
       SandstormApi::Client api = rpcSystem.restore(
           hostId, ref.getObjectId()).castAs<SandstormApi>();
+
+      ApiRestorer appRestorer(kj::mv(api), kj::mv(fulfillerPair.promise));
+      ErrorHandlerImpl errorHandler;
+      kj::TaskSet tasks(errorHandler);
+      unlink("/tmp/socket-api");  // Clear stale socket, if any.
+      auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:/tmp/socket-api", 0).then(
+          [&](kj::Own<kj::NetworkAddress>&& addr) {
+        auto serverPort = addr->listen();
+        auto promise = acceptLoop(*serverPort, appRestorer, tasks);
+        return promise.attach(kj::mv(serverPort));
+      });
 
       // TODO(soon):  Exit when child exits.  (Signal handler?)
       kj::NEVER_DONE.wait(ioContext.waitScope);

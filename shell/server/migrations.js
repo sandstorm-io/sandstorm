@@ -24,6 +24,6 @@
 Meteor.startup(function () {
     // Add publicId to Grains
     Grains.find({publicId: { '$exists': false}}).forEach(function (grain) {
-        Grains.update({'_id': grain._id}, {'$set': {publicId: Random.id()}});
+        Grains.update({'_id': grain._id}, {'$set': {publicId: Random.id(22)}});
     });
 });

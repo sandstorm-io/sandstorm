@@ -107,7 +107,7 @@ Meteor.methods({
       }
     }
 
-    var grainId = Random.id(22);
+    var grainId = Random.id(22);  // 128 bits of entropy
     var publicId = Random.id(22);
     Grains.insert({
       _id: grainId,

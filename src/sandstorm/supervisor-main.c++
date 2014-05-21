@@ -64,6 +64,12 @@ namespace sandstorm {
 
 typedef unsigned int uint;
 
+static kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
+  int fd;
+  KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
+  return kj::AutoCloseFd(fd);
+}
+
 // =======================================================================================
 // Termination handling:  Must kill child if parent terminates.
 //
@@ -385,12 +391,6 @@ private:
   gid_t gid = 0;
   gid_t gidFromUsername = 0;  // If --uid was given a username.
 
-  static kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
-    int fd;
-    KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
-    return kj::AutoCloseFd(fd);
-  }
-
   void bind(kj::StringPtr src, kj::StringPtr dst, unsigned long flags = 0) {
     // Contrary to the documentation of MS_BIND claiming this is no longer the case after 2.6.26,
     // mountflags are ignored on the initial bind.  We have to issue a subsequent remount to set
@@ -627,9 +627,7 @@ private:
     // To really unshare the mount namespace, we also have to make sure all mounts are private.
     // The parameters here were derived by strace'ing `mount --make-rprivate /`.  AFAICT the flags
     // are undocumented.  :(
-    if (mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr) < 0) {
-      KJ_FAIL_SYSCALL("mount(recursively remount / as private)", errno);
-    }
+    KJ_SYSCALL(mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr));
 
     // Set a dummy host / domain so the grain can't see the real one.  (unshare(CLONE_NEWUTS) means
     // these settings only affect this process and its children.)
@@ -647,9 +645,11 @@ private:
     // We arrange for the the supervisor's special directory to be ".", even though it's
     // not mounted anywhere.
 
-    // Set up the supervisor's directory.
+    // Set up the supervisor's directory. We immediately detach it from the mount tree, only
+    // keeping a file descriptor, which we can later access via fchdir(). This prevents the
+    // supervisor dir from being accessible to the app.
     bind(varPath, "/tmp/sandstorm-grain", MS_NODEV | MS_NOEXEC);
-    auto supervisor_dir = raiiOpen("/tmp/sandstorm-grain", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    auto supervisorDir = raiiOpen("/tmp/sandstorm-grain", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
     KJ_SYSCALL(umount2("/tmp/sandstorm-grain", MNT_DETACH));
 
     // Bind the app package to "sandbox", which will be the grain's root directory.
@@ -685,7 +685,7 @@ private:
     }
 
     // Grab a reference to the old root directory.
-    auto old_root_dir = raiiOpen("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    auto oldRootDir = raiiOpen("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
 
     // OK, everything is bound, so we can pivot_root.
     KJ_SYSCALL(syscall(SYS_pivot_root, "/tmp/sandstorm-grain", "/tmp/sandstorm-grain"));
@@ -694,9 +694,9 @@ private:
     // but the old root is mounted on top of the grain directory.  As far as I can tell,
     // there is no simple way to unmount the old root, since "/" and "/." both refer to the
     // grain directory.  Fortunately, we kept a reference to the old root.
-    KJ_SYSCALL(fchdir(old_root_dir));
+    KJ_SYSCALL(fchdir(oldRootDir));
     KJ_SYSCALL(umount2(".", MNT_DETACH));
-    KJ_SYSCALL(fchdir(supervisor_dir));
+    KJ_SYSCALL(fchdir(supervisorDir));
 
     // Now '.' is the grain's var and '/' is the sandbox directory.
   }
@@ -1001,9 +1001,11 @@ private:
 
   void runSupervisor(int apiFd) KJ_NORETURN {
     // We're currently in a somewhat dangerous state: our root directory is controlled
-    // by the grain.  If glibc reads, say, /etc/nsswitch.conf, the grain could take control
+    // by the app.  If glibc reads, say, /etc/nsswitch.conf, the grain could take control
     // of the supervisor.  Fix this by chrooting to the supervisor directory.
-    // TODO(someday): chroot somewhere that's guaranteed to be empty instead.
+    // TODO(someday): chroot somewhere that's guaranteed to be empty instead, so that if the
+    //   supervisor storage is itself compromised it can't be used to execute arbitrary code in
+    //   the supervisor process.
     KJ_SYSCALL(chroot("."));
 
     permanentlyDropSuperuser();

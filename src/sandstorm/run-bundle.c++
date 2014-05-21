@@ -1186,8 +1186,9 @@ private:
 
     // Now change directory into the new mount point.
     char cwdBuf[PATH_MAX + 1];
-    if (!getcwd(cwdBuf, sizeof(cwdBuf)))
+    if (getcwd(cwdBuf, sizeof(cwdBuf)) == nullptr) {
       KJ_FAIL_SYSCALL("getcwd", errno);
+    }
     KJ_SYSCALL(chdir(cwdBuf));
 
     // Mount /proc in the chroot.

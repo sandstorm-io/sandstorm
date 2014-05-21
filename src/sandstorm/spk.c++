@@ -44,6 +44,7 @@
 #include <sys/un.h>
 #include <kj/async-unix.h>
 #include <ctype.h>
+#include <time.h>
 
 #include "version.h"
 #include "fuse.h"
@@ -1089,7 +1090,9 @@ private:
     // Write the archive.
     capnp::MallocMessageBuilder archiveMessage;
     auto archive = archiveMessage.getRoot<spk::Archive>();
-    archive.adoptFiles(root.packChildren(archiveMessage.getOrphanage(), context));
+    struct timespec defaultMTime;
+    KJ_SYSCALL(clock_gettime(CLOCK_REALTIME, &defaultMTime));
+    archive.adoptFiles(root.packChildren(archiveMessage.getOrphanage(), context, defaultMTime));
     capnp::writeMessageToFd(tmpfile, archiveMessage);
 
     return tmpfile;
@@ -1118,7 +1121,8 @@ private:
       return children[kj::mv(pathPart)].followPath(path);
     }
 
-    void pack(spk::Archive::File::Builder builder, kj::ProcessContext& context) {
+    void pack(spk::Archive::File::Builder builder, kj::ProcessContext& context,
+              struct timespec defaultMTime) {
       auto orphanage = capnp::Orphanage::getForMessageContaining(builder);
 
       KJ_IF_MAYBE(d, data) {
@@ -1133,9 +1137,13 @@ private:
 
       if (target == nullptr) {
         stats.st_mode = S_IFDIR;
+        stats.st_mtim = defaultMTime;
       } else {
         KJ_SYSCALL(lstat(target.cStr(), &stats), target);
       }
+
+      auto mtime = stats.st_mtim.tv_sec * kj::SECONDS + stats.st_mtim.tv_nsec * kj::NANOSECONDS;
+      builder.setLastModificationTimeNs(mtime / kj::NANOSECONDS);
 
       if (S_ISREG(stats.st_mode)) {
         KJ_ASSERT(children.empty(), "got file, expected directory", target);
@@ -1179,7 +1187,7 @@ private:
         ssize_t linkSize;
         KJ_SYSCALL(linkSize = readlink(target.cStr(), symlink.begin(), stats.st_size), target);
       } else if (S_ISDIR(stats.st_mode)) {
-        builder.adoptDirectory(packChildren(orphanage, context));
+        builder.adoptDirectory(packChildren(orphanage, context, defaultMTime));
       } else {
         context.warning(kj::str("Cannot pack irregular file: ", target));
         builder.initRegular(0);
@@ -1187,7 +1195,7 @@ private:
     }
 
     capnp::Orphan<capnp::List<spk::Archive::File>> packChildren(
-        capnp::Orphanage orphanage, kj::ProcessContext& context) {
+        capnp::Orphanage orphanage, kj::ProcessContext& context, struct timespec defaultMTime) {
       auto orphan = orphanage.newOrphan<capnp::List<spk::Archive::File>>(children.size());
       auto builder = orphan.get();
 
@@ -1195,7 +1203,7 @@ private:
       for (auto& child: children) {
         auto childBuilder = builder[i++];
         childBuilder.setName(child.first);
-        child.second.pack(childBuilder, context);
+        child.second.pack(childBuilder, context, defaultMTime);
       }
 
       return orphan;
@@ -1475,6 +1483,18 @@ private:
         default:
           KJ_FAIL_REQUIRE("Unknown file type in archive.");
       }
+
+      struct timespec times[2];
+      auto ns = file.getLastModificationTimeNs();
+      times[0].tv_sec = ns / 1000000000ll;
+      times[0].tv_nsec = ns % 1000000000ll;
+      if (times[0].tv_nsec < 0) {
+        // C division rounds towards zero. :(
+        ++times[0].tv_sec;
+        times[0].tv_nsec += 1000000000ll;
+      }
+      times[1] = times[0];  // Also use mtime as atime.
+      KJ_SYSCALL(utimensat(AT_FDCWD, path.cStr(), times, AT_SYMLINK_NOFOLLOW));
     }
   }
 

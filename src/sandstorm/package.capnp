@@ -230,6 +230,9 @@ struct Archive {
     # Must not contain forward slashes nor NUL characters.  Must not be "." nor "..".  Must not
     # be the same as any other file in the directory.
 
+    lastModificationTimeNs @5 :Int64;
+    # Modification timestamp to apply to the file after unpack. Measured in nanoseconds.
+
     union {
       regular @1 :Data;
       # Content of a regular file.

@@ -761,7 +761,7 @@ private:
 
     splitTime(src.getLastAccessTime(), &dst->atime, &dst->atimensec);
     splitTime(src.getLastModificationTime(), &dst->mtime, &dst->mtimensec);
-    splitTime(src.getCreationTime(), &dst->ctime, &dst->ctimensec);
+    splitTime(src.getLastStatusChangeTime(), &dst->ctime, &dst->ctimensec);
 
     dst->mode = src.getPermissions();
 
@@ -971,7 +971,7 @@ protected:
     attrs.setBlockSize(stats.st_blksize);
     attrs.setLastAccessTime(toNanos(stats.st_atim));
     attrs.setLastModificationTime(toNanos(stats.st_mtim));
-    attrs.setCreationTime(toNanos(stats.st_ctim));
+    attrs.setLastStatusChangeTime(toNanos(stats.st_ctim));
     results.setTtl(ttl / kj::NANOSECONDS);
 
     return kj::READY_NOW;

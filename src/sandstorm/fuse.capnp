@@ -84,7 +84,7 @@ interface Node {
     blockSize @10 :UInt32;   # Only for type = block device.
     lastAccessTime @11 :DateInNs;
     lastModificationTime @12 :DateInNs;
-    creationTime @13 :DateInNs;
+    lastStatusChangeTime @13 :DateInNs;  # aka ctime
   }
 }
 

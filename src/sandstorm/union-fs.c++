@@ -18,6 +18,11 @@
 // License along with Sandstorm.  If not, see
 // <http://www.gnu.org/licenses/>.
 
+// Hack around stdlib bug with C++14.
+#include <initializer_list>  // force libstdc++ to include its config
+#undef _GLIBCXX_HAVE_GETS    // correct broken config
+// End hack.
+
 #include "union-fs.h"
 #include <kj/vector.h>
 #include <kj/debug.h>

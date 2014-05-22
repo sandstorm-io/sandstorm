@@ -309,6 +309,29 @@ deleteGrain = function (grainId) {
   }, 1000);
 }
 
+getGrainSize = function (sessionId, oldSize) {
+  var proxy = proxies[sessionId];
+  if (!proxy) {
+    throw new Meteor.Error(500, "Session not running; can't get grain size.");
+  }
+
+  if (!proxy.supervisor) {
+    proxy.getConnection();
+  }
+
+  var promise;
+  if (oldSize === undefined) {
+    promise = proxy.supervisor.getGrainSize();
+  } else {
+    promise = proxy.supervisor.getGrainSizeWhenDifferent(oldSize);
+  }
+
+  var promise2 = promise.then(function (result) { return parseInt(result.size); });
+  promise2.cancel = function () { promise.cancel(); }
+
+  return promise2;
+}
+
 // Kill off proxies idle for >~5 minutes.
 var TIMEOUT_MS = 300000;
 function gcSessions() {

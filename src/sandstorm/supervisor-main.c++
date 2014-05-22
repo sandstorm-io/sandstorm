@@ -48,6 +48,8 @@
 #include <dirent.h>
 #include <pwd.h>
 #include <grp.h>
+#include <sys/inotify.h>
+#include <map>
 
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/supervisor.capnp.h>
@@ -69,6 +71,343 @@ static kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 066
   KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
   return kj::AutoCloseFd(fd);
 }
+
+// =======================================================================================
+// Directory size watcher
+
+class DiskUsageWatcher {
+  // Class which watches a directory tree, counts up the total disk usage, and fires events when
+  // it changes. Uses inotify. Which turns out to be... harder than it should be.
+
+public:
+  DiskUsageWatcher(kj::UnixEventPort& eventPort): eventPort(eventPort) {}
+
+  kj::Promise<void> init() {
+    int fd;
+    KJ_SYSCALL(fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC));
+    inotifyFd = kj::AutoCloseFd(fd);
+    totalSize = 0;
+    watchMap = kj::Vector<WatchInfo>();
+    pendingWatches.add(nullptr);  // root directory
+    return readLoop();
+  }
+
+  uint64_t getSize() { return totalSize; }
+
+  kj::Promise<uint64_t> getSizeWhenChanged(uint64_t oldSize) {
+    kj::Promise<void> trigger = nullptr;
+    if (totalSize == oldSize) {
+      auto paf = kj::newPromiseAndFulfiller<void>();
+      trigger = kj::mv(paf.promise);
+      listeners.add(kj::mv(paf.fulfiller));
+    } else {
+      trigger = kj::READY_NOW;
+    }
+
+    // Even when the value has changed, wait 100ms so that we're not streaming tons of updates
+    // whenever there is heavy disk I/O. This is just for a silly display anyway.
+    return trigger.then([this]() {
+      return eventPort.atSteadyTime(eventPort.steadyTime() + 100 * kj::MILLISECONDS);
+    }).then([this]() {
+      return totalSize;
+    });
+  }
+
+private:
+  kj::UnixEventPort& eventPort;
+  kj::AutoCloseFd inotifyFd;
+  uint64_t totalSize;
+
+  uint64_t lastUpdateSize = kj::maxValue;  // value of totalSize last time listeners were fired.
+  kj::Vector<kj::Own<kj::PromiseFulfiller<void>>> listeners;
+
+  struct ChildInfo {
+    kj::String name;
+    uint64_t size;
+  };
+  struct WatchInfo {
+    kj::String path;  // null = root directory
+    std::map<kj::StringPtr, ChildInfo> childSizes;
+  };
+  kj::Vector<WatchInfo> watchMap;
+  // Maps inotify watch descriptors to info about what is being watched.
+  //
+  // inotify always uses the lowest available number for a watch descriptor, which means we can
+  // reasonably use a vector instead of a map to store them.
+  //
+  // In fact, as it turns out, we don't ever remove entries from this "map" anyway, due to
+  // ambiguity in inotify. See comments later on.
+
+  kj::Vector<kj::String> pendingWatches;
+  // Directories we would like to watch, but we can't add watches on them just yet because we need
+  // to finish processing a list of events received from inotify before we mess with the watch
+  // descriptor table.
+
+  void addPendingWatches() {
+    // Start watching everything that has been added to the pendingWatches list.
+
+    // We treat pendingWatches as a stack here in order to get DFS traversal of the directory tree.
+    while (pendingWatches.size() > 0) {
+      auto path = kj::mv(pendingWatches.end()[-1]);
+      pendingWatches.removeLast();
+      addWatch(kj::mv(path));
+    }
+  }
+
+  void addWatch(kj::String&& path) {
+    // Start watching `path`. This is idempotent -- it's safe to watch the same path multiple
+    // times.
+
+    static const uint32_t FLAGS =
+        IN_CREATE | IN_DELETE | IN_MODIFY | IN_MOVED_FROM | IN_MOVED_TO |
+        IN_DELETE_SELF | IN_MOVE_SELF |
+        IN_DONT_FOLLOW | IN_ONLYDIR | IN_EXCL_UNLINK;
+
+    for (;;) {
+      const char* pathPtr = path == nullptr ? "." : path.cStr();
+      int wd = inotify_add_watch(inotifyFd, pathPtr,
+          FLAGS | IN_DONT_FOLLOW | IN_EXCL_UNLINK);
+
+      if (wd >= 0) {
+        if (watchMap.size() <= wd) watchMap.resize(wd + 1);
+
+        auto& watchInfo = watchMap[wd];
+
+        // Update the watch map. Note that it's possible that inotify_add_watch() returned a
+        // pre-existing watch descriptor, if we tried to add a watch on a directory we're
+        // already watching. This can happen in various race conditions. Replacing the path is
+        // harmless, so we don't bother checking for this case explicitly.
+        watchInfo.path = kj::mv(path);
+
+        // Also watch all children.
+        DIR* dir = opendir(pathPtr);
+        if (dir != nullptr) {
+          KJ_DEFER(closedir(dir));
+          for (;;) {
+            errno = 0;
+            struct dirent* entry = readdir(dir);
+            if (entry == nullptr) {
+              int error = errno;
+              if (error == 0) {
+                break;
+              } else {
+                KJ_FAIL_SYSCALL("readdir", error, pathPtr);
+              }
+            }
+
+            kj::StringPtr name = entry->d_name;
+            if (name != "." && name != "..") {
+              uint32_t mask = IN_CREATE;
+              if (entry->d_type == DT_DIR) {
+                mask |= IN_ISDIR;
+              }
+              childEvent(watchInfo, name, mask);
+            }
+          }
+        }
+
+        return;
+      }
+
+      // Error occurred.
+      int error = errno;
+      switch (error) {
+        case EINTR:
+          // Keep trying.
+          break;
+
+        case ENOENT:
+        case ENOTDIR:
+          // Apparently there is no longer a directory at this path. Perhaps it was deleted.
+          // No matter.
+          return;
+
+        case ENOSPC:
+          // No more inotify watches available.
+          // TODO(someday): Revert to some sort of polling mode? For now, fall through to error
+          //   case.
+        default:
+          KJ_FAIL_SYSCALL("inotify_add_watch", error, path);
+      }
+    }
+  }
+
+  kj::Promise<void> readLoop() {
+    addPendingWatches();
+    maybeFireEvents();
+    return eventPort.onFdEvent(inotifyFd, POLLIN).then([this](short) {
+      alignas(uint64_t) kj::byte buffer[4096];
+
+      for (;;) {
+        ssize_t n;
+        KJ_NONBLOCKING_SYSCALL(n = read(inotifyFd, buffer, sizeof(buffer)));
+
+        if (n < 0) {
+          // EAGAIN; try again later.
+          return readLoop();
+        }
+
+        KJ_ASSERT(n > 0, "inotify EOF?");
+
+        kj::byte* pos = buffer;
+        while (n > 0) {
+          // Split off one event.
+          auto event = reinterpret_cast<struct inotify_event*>(pos);
+          size_t eventSize = sizeof(struct inotify_event) + event->len;
+          KJ_ASSERT(eventSize <= n, "inotify returned partial event?");
+          KJ_ASSERT(eventSize % sizeof(size_t) == 0, "inotify event not aligned?");
+          n -= eventSize;
+          pos += eventSize;
+
+          if (event->mask & IN_Q_OVERFLOW) {
+            // Queue overflow; start over from scratch.
+            inotifyFd = nullptr;
+            return init();
+          }
+
+          KJ_ASSERT(event->wd >= 0 && event->wd < watchMap.size(), event->wd);
+          auto& slot = watchMap[event->wd];
+
+          if (event->mask & (IN_CREATE | IN_DELETE | IN_MODIFY | IN_MOVE)) {
+            childEvent(slot, event->name, event->mask);
+          }
+
+          if (event->mask & (IN_DELETE_SELF | IN_MOVE_SELF | IN_IGNORED)) {
+            // These events indicate that the directory was deleted or moved and therefore this
+            // watch descriptor is no longer valid. However, the documentation suggests that the
+            // watch descriptor is only truly invalid once IN_IGNORED is received, but in practice
+            // I see watch descriptors being reused without IN_IGNORED. In order to be as robust as
+            // possible, I'm simply never assuming that a watch decriptor is gone. inotify will
+            // naturally try to reuse watch descriptor, in which case we'll reuse the slot, so this
+            // isn't really a leak.
+
+            // We do, however, assume all children have been deleted, and remove them from the
+            // size count.
+            for (auto& child: slot.childSizes) {
+              totalSize -= child.second.size;
+            }
+            slot.childSizes.clear();
+          }
+        }
+      }
+    });
+  }
+
+  void childEvent(WatchInfo& watchInfo, kj::StringPtr name, uint32_t mask) {
+    // Called to update the child table when we receive an inotify event with the given name and
+    // event mask.
+
+    // OK, we received notification that something happened to the child named name.
+    // Unfortunately, we don't have any idea how long ago this event happened. Worse, any
+    // number of other events may have occurred since this one was generated. For example,
+    // the event may have been on a file that has subsequently been deleted, and maybe even
+    // recreated as a different kind of node. If we lstat() it, we get information about
+    // what is currently on disk, not whatever generated this event.
+    //
+    // Therefore, mask is mostly useless. We can only use the event as a hint that
+    // something happened at this child. We have to compare what we know about the child
+    // vs. what we knew in the past to determine what has changed. Note that if inotify
+    // provided a `struct stat` along with the event then we wouldn't have this problem!
+
+    auto usage = getDiskUsage(watchInfo.path, name);
+    totalSize += usage.bytes;
+
+    auto iter = watchInfo.childSizes.find(name);
+    if (usage.bytes == 0) {
+      // There is no longer a child by this name on disk. Remove whatever is in the map.
+      if (iter != watchInfo.childSizes.end()) {
+        totalSize -= iter->second.size;
+        watchInfo.childSizes.erase(iter);
+      }
+    } else if (iter == watchInfo.childSizes.end()) {
+      // There is a child by this name on disk, but not in the map. Add it.
+      ChildInfo newChild = { kj::heapString(name), usage.bytes };
+      kj::StringPtr namePtr = newChild.name;
+      KJ_ASSERT(watchInfo.childSizes.insert(std::make_pair(namePtr, kj::mv(newChild))).second);
+    } else {
+      // There is a child by this name on disk and in the map. Check for a change in size.
+      totalSize -= iter->second.size;
+      iter->second.size = usage.bytes;
+    }
+
+    // If we created a new directory, plan to start watching it later. Here we actually do
+    // look at the flags to decide whether this directory is new, because the race
+    // condition is handled differently: if this event we're handling was actually for a
+    // previous file with the same name that was then deleted and replaced, the worst case
+    // is that we end up calling addWatch() with the same path multiple times, or calling it
+    // on a path than no longer exists or is no longer a directory. addWatch() is designed
+    // to deal with these issues.
+    //
+    // OTOH, if we tried to use logic like the above, where we try to _check_ if the
+    // directory is already watched and avoid re-watching it in that case, then we have
+    // a different problem: the directory we watched before may not in fact be the same
+    // directory as exists now, and so we may end up failing to watch the new directory!
+    if ((mask & IN_ISDIR) && (mask & (IN_CREATE | IN_MOVED_TO))) {
+      // We can't actually add the new watch now because we need to process the remaining
+      // events from the last read() in order to make sure we're caught up with inotify's
+      // state.
+      pendingWatches.add(kj::mv(usage.path));
+    }
+  }
+
+  struct DiskUsage {
+    kj::String path;
+    uint64_t bytes;
+  };
+
+  DiskUsage getDiskUsage(kj::StringPtr parent, kj::StringPtr name) {
+    // Get the disk usage of the given file within the given parent directory. This is not exactly
+    // the file size; it also includes estimates of storage overhead, such as rounding up to the
+    // block size. If the file no longer exists, its size is reported as zero.
+
+    kj::String path = parent == nullptr ? kj::heapString(name) : kj::str(parent, '/', name);
+    for (;;) {
+      struct stat stats;
+      if (lstat(path.cStr(), &stats) >= 0) {
+        // Success.
+
+        DiskUsage result;
+        result.path = kj::mv(path);
+
+        // Round the size up to the nearest block; we assume 4k blocks.
+        result.bytes = (stats.st_size + 4095) & ~4095ull;
+
+        // Divide by link count so that files with many hardlinks aren't overcounted.
+        result.bytes /= stats.st_nlink;
+
+        // Add sizeof(stats) to approximate the directory entry overhead, and also add
+        // the size of the null-terminated filename rounded up to a word.
+        result.bytes += sizeof(stats) + ((name.size() + 8) & ~7ull);
+
+        return result;
+      }
+
+      // There was an error.
+      int error = errno;
+      switch (error) {
+        case EINTR:
+          // continue loop
+          break;
+        case ENOENT:   // File no longer exists...
+        case ENOTDIR:  // ... and a parent directory was replaced.
+          return {kj::mv(path), 0};
+        default:
+          // Default
+          KJ_FAIL_SYSCALL("lstat", error, path);
+      }
+    }
+  }
+
+  void maybeFireEvents() {
+    if (totalSize != lastUpdateSize) {
+      for (auto& listener: listeners) {
+        listener->fulfill();
+      }
+      listeners.resize(0);
+      lastUpdateSize = totalSize;
+    }
+  }
+};
 
 // =======================================================================================
 // Termination handling:  Must kill child if parent terminates.
@@ -442,9 +781,9 @@ private:
     // execing a suid-root binary.  Sandboxed apps should not need that.
     KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
 
+    closeFds();
     enterServerNs();
     validateCreds();
-    closeFds();
     checkPaths();
     unshareOuter();
     setupFilesystem();
@@ -475,13 +814,7 @@ private:
       auto ns = receiveFd(sock);
 
       KJ_SYSCALL(setns(ns, CLONE_NEWNS));
-
-      // So... this is going to be awkward. The thing is, the server daemon actually binds
-      // HOME/var to HOME/latest/var, and then chroots into HOME/latest. So when it later mounts a
-      // dev app's FUSE FS, it's under HOME/latest/var/..., and doesn't appear under
-      // HOME/var/... at all, because that's how mounts are. So we add "/latest" onto homePath
-      // here so that we're actually looking at the directory that the server itself is using.
-      homePath = kj::str(homePath, "/latest");
+      KJ_SYSCALL(chdir("/"));
     }
   }
 
@@ -569,8 +902,8 @@ private:
     umask(0);
 
     // Set default paths if flags weren't provided.
-    if (pkgPath == nullptr) pkgPath = kj::str(homePath, "/var/sandstorm/apps/", appName);
-    if (varPath == nullptr) varPath = kj::str(homePath, "/var/sandstorm/grains/", grainId);
+    if (pkgPath == nullptr) pkgPath = kj::str("/var/sandstorm/apps/", appName);
+    if (varPath == nullptr) varPath = kj::str("/var/sandstorm/grains/", grainId);
 
     // Check that package exists.
     KJ_SYSCALL(access(pkgPath.cStr(), R_OK | X_OK), pkgPath);
@@ -933,7 +1266,8 @@ private:
 
   class SupervisorImpl final: public Supervisor::Server {
   public:
-    inline SupervisorImpl(UiView::Client&& mainView): mainView(kj::mv(mainView)) {}
+    inline SupervisorImpl(UiView::Client&& mainView, DiskUsageWatcher& diskWatcher)
+        : mainView(kj::mv(mainView)), diskWatcher(diskWatcher) {}
 
     kj::Promise<void> getMainView(GetMainViewContext context) {
       context.getResults(capnp::MessageSize {4, 1}).setView(mainView);
@@ -949,8 +1283,22 @@ private:
       killChildAndExit(0);
     }
 
+    kj::Promise<void> getGrainSize(GetGrainSizeContext context) {
+      context.getResults(capnp::MessageSize { 2, 0 }).setSize(diskWatcher.getSize());
+      return kj::READY_NOW;
+    }
+
+    kj::Promise<void> getGrainSizeWhenDifferent(GetGrainSizeWhenDifferentContext context) {
+      auto oldSize = context.getParams().getOldSize();
+      context.releaseParams();
+      return diskWatcher.getSizeWhenChanged(oldSize).then([context](uint64_t size) mutable {
+        context.getResults(capnp::MessageSize { 2, 0 }).setSize(size);
+      });
+    }
+
   private:
     UiView::Client mainView;
+    DiskUsageWatcher& diskWatcher;
   };
 
   class Restorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
@@ -1042,6 +1390,10 @@ private:
           "** SANDSTORM SUPERVISOR: Uncaught exception waiting for child process:\n", e));
     });
 
+    // Compute grain size and watch for changes.
+    DiskUsageWatcher diskWatcher(ioContext.unixEventPort);
+    auto diskWatcherTask = diskWatcher.init();
+
     // Set up the RPC connection to the app and export the supervisor interface.
     auto appConnection = ioContext.lowLevelProvider->wrapSocketFd(apiFd,
         kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC |
@@ -1061,7 +1413,7 @@ private:
     // TODO(someday):  If there are multiple front-ends, or the front-ends restart a lot, we'll
     //   want to wrap the UiView and cache session objects.  Perhaps we could do this by making
     //   them persistable, though it's unclear how that would work with SessionContext.
-    Restorer serverRestorer(kj::heap<SupervisorImpl>(kj::mv(app)));
+    Restorer serverRestorer(kj::heap<SupervisorImpl>(kj::mv(app), diskWatcher));
     ErrorHandlerImpl errorHandler;
     kj::TaskSet tasks(errorHandler);
     unlink("socket");  // Clear stale socket, if any.
@@ -1073,8 +1425,13 @@ private:
       return promise.attach(kj::mv(serverPort));
     });
 
-    // Wait for disconnect or accept loop failure, then exit.
-    acceptTask.exclusiveJoin(appNetwork.onDisconnect()).wait(ioContext.waitScope);
+    // Wait for disconnect or accept loop failure or disk watch failure, then exit.
+    acceptTask.exclusiveJoin(kj::mv(diskWatcherTask))
+              .exclusiveJoin(appNetwork.onDisconnect())
+              .wait(ioContext.waitScope);
+
+    // Only onDisconnect() would return normally (rather than throw), so the app must have
+    // disconnected (i.e. from the Cap'n Proto API socket).
 
     // Hmm, app disconnected API socket. The app probably exited and we just haven't gotten the
     // signal yet, so sleep for a moment to let it arrive, so that we can report the exit status.

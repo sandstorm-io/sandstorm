@@ -40,7 +40,49 @@ if (Meteor.isServer) {
       fields: { title: 1 }
     });
   });
+
+  Meteor.publish("grainSize", function (sessionId) {
+    // Publish pseudo-collection containing the size of the grain opened in the given session.
+
+    var self = this;
+    var stopped = false;
+    var promise = getGrainSize(sessionId);
+
+    function getNext(oldSize) {
+      promise = getGrainSize(sessionId, oldSize);
+      promise.then(function (size) {
+        if (!stopped) {
+          self.changed("grainSizes", sessionId, {size: size});
+          getNext(size);
+        }
+      }, function (err) {
+        if (!stopped) {
+          self.error(err);
+        }
+      });
+    }
+
+    promise.then(function (size) {
+      if (!stopped) {
+        self.added("grainSizes", sessionId, {size: size});
+        self.ready();
+        getNext(size);
+      }
+    }, function (err) {
+      if (!stopped) {
+        self.error(err);
+      }
+    });
+
+    self.onStop(function () {
+      stopped = true;
+      promise.cancel();
+    });
+  });
 }
+
+var GrainSizes = new Meteor.Collection("grainSizes");
+// Pseudo-collection from above publish.
 
 Meteor.methods({
   deleteGrain: function (grainId) {
@@ -77,8 +119,45 @@ if (Meteor.isClient) {
     }
   });
 
-  // Send keep-alive every now and then.
+  Template.grain.helpers({
+    grainSize: function () {
+      if (this.sessionId) {
+        sizeEntry = GrainSizes.findOne(this.sessionId);
+        if (sizeEntry) {
+          var size = sizeEntry.size;
+          var suffix = "B";
+          if (size > 1000000000) {
+            size = size / 1000000000;
+            suffix = "GB";
+          } else if (size > 1000000) {
+            size = size / 1000000;
+            suffix = "MB";
+          } else if (size > 1000) {
+            size = size / 1000;
+            suffix = "kB";
+          }
+          return "(" + size.toPrecision(3) + suffix + ")";
+        }
+      }
+      return "";
+    }
+  });
+
   var currentSessionId;
+  var sessionGrainSizeSubscription;
+
+  function setCurrentSessionId(sessionId) {
+    if (sessionGrainSizeSubscription) {
+      sessionGrainSizeSubscription.stop();
+      sessionGrainSizeSubscription = undefined;
+    }
+    currentSessionId = sessionId;
+    if (sessionId) {
+      sessionGrainSizeSubscription = Meteor.subscribe("grainSize", sessionId);
+    }
+  }
+
+  // Send keep-alive every now and then.
   Meteor.setInterval(function () {
     if (currentSessionId) {
       // TODO(soon):  Investigate what happens in background tabs.  Maybe arrange to re-open the
@@ -181,7 +260,7 @@ Router.map(function () {
 
     data: function () {
       // Make sure that if any dev apps are published or removed, we refresh the grain view.
-      currentSessionId = undefined;
+      setCurrentSessionId(undefined);
       var grainId = this.params.grainId;
       var grain = Grains.findOne(grainId);
       if (!grain) {
@@ -202,7 +281,7 @@ Router.map(function () {
 
       var session = Session.get("session-" + grainId);
       if (session) {
-        currentSessionId = session.sessionId;
+        setCurrentSessionId(session.sessionId);
 
         if (document.location.protocol === "http:") {
           // Probably localhost, or a private server behind a firewall.  Connect to port directly,
@@ -234,7 +313,7 @@ Router.map(function () {
     },
 
     onStop: function () {
-      currentSessionId = undefined;
+      setCurrentSessionId(undefined);
       unblockUpdate();
     }
   });

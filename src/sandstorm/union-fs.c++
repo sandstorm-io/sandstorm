@@ -598,6 +598,9 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
   layers.add(kj::heap<SingletonNode>(
       newLoopbackFuseNode(bridgePath, kj::maxValue), "sandstorm-http-bridge"));
 
+  // Empty /proc/cpuinfo will be overmounted by the supervisor.
+  layers.add(kj::heap<SingletonNode>(kj::heap<SimpleDataNode>(nullptr), "proc/cpuinfo"));
+
   for (auto mapping: searchPath) {
     kj::StringPtr sourcePath = mapping.getSourcePath();
     kj::String ownSourcePath;

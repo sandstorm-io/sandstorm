@@ -969,7 +969,7 @@ private:
         "  # `spk dev` will write a list of all the files your app uses to this file.\n"
         "  # You should review it later, before shipping your app.\n"
         "\n"
-        "  additionalFiles = []\n"
+        "  alwaysInclude = []\n"
         "  # Fill this list with more names of files or directories that should be\n"
         "  # included in your package, even if not listed in sandstorm-files.list.\n"
         "  # Use this to force-include stuff that you know you need but which may\n"
@@ -1064,9 +1064,12 @@ private:
   kj::AutoCloseFd packToTempFile() {
     // Read in the file list.
     ArchiveNode root;
+
+    // Set up special files that will be over-mounted by the supervisor.
     root.followPath("dev");
     root.followPath("tmp");
     root.followPath("var");
+    root.followPath("proc").followPath("cpuinfo").setData(nullptr);
 
     auto sourceMap = packageDef.getSourceMap();
 

@@ -683,6 +683,10 @@ private:
     if (access("var", F_OK) == 0) {
       bind(kj::str(varPath, "/sandbox"), "var", MS_NODEV | MS_NOEXEC);
     }
+    if (access("proc/cpuinfo", F_OK) == 0) {
+      // Map in the real cpuinfo.
+      bind("/proc/cpuinfo", "proc/cpuinfo", MS_NOATIME | MS_NOSUID | MS_NOEXEC | MS_NODEV);
+    }
 
     // Grab a reference to the old root directory.
     auto oldRootDir = raiiOpen("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);

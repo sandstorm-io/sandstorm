@@ -4,6 +4,8 @@
 
 set -euo pipefail
 
+(cd .. && make shell-env)
+
 if [ $# -gt 0 ]; then
   SANDSTORM_HOME=$1
 elif [ -e /etc/init.d/sandstorm ]; then

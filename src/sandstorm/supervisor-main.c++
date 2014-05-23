@@ -55,6 +55,7 @@
 #include <grp.h>
 #include <sys/inotify.h>
 #include <map>
+#include <unordered_map>
 
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/supervisor.capnp.h>
@@ -88,11 +89,16 @@ public:
   DiskUsageWatcher(kj::UnixEventPort& eventPort): eventPort(eventPort) {}
 
   kj::Promise<void> init() {
+    // Start watching the current directory.
+
+    // Note: this function is also called to restart watching from scratch when the inotify event
+    //   queue overflows (hopefully rare).
+
     int fd;
     KJ_SYSCALL(fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC));
     inotifyFd = kj::AutoCloseFd(fd);
     totalSize = 0;
-    watchMap = kj::Vector<WatchInfo>();
+    watchMap.clear();
     pendingWatches.add(nullptr);  // root directory
     return readLoop();
   }
@@ -134,14 +140,8 @@ private:
     kj::String path;  // null = root directory
     std::map<kj::StringPtr, ChildInfo> childSizes;
   };
-  kj::Vector<WatchInfo> watchMap;
+  std::unordered_map<int, WatchInfo> watchMap;
   // Maps inotify watch descriptors to info about what is being watched.
-  //
-  // inotify always uses the lowest available number for a watch descriptor, which means we can
-  // reasonably use a vector instead of a map to store them.
-  //
-  // In fact, as it turns out, we don't ever remove entries from this "map" anyway, due to
-  // ambiguity in inotify. See comments later on.
 
   kj::Vector<kj::String> pendingWatches;
   // Directories we would like to watch, but we can't add watches on them just yet because we need
@@ -165,7 +165,6 @@ private:
 
     static const uint32_t FLAGS =
         IN_CREATE | IN_DELETE | IN_MODIFY | IN_MOVED_FROM | IN_MOVED_TO |
-        IN_DELETE_SELF | IN_MOVE_SELF |
         IN_DONT_FOLLOW | IN_ONLYDIR | IN_EXCL_UNLINK;
 
     for (;;) {
@@ -174,17 +173,22 @@ private:
           FLAGS | IN_DONT_FOLLOW | IN_EXCL_UNLINK);
 
       if (wd >= 0) {
-        if (watchMap.size() <= wd) watchMap.resize(wd + 1);
-
-        auto& watchInfo = watchMap[wd];
+        WatchInfo& watchInfo = watchMap[wd];
 
         // Update the watch map. Note that it's possible that inotify_add_watch() returned a
         // pre-existing watch descriptor, if we tried to add a watch on a directory we're
         // already watching. This can happen in various race conditions. Replacing the path is
-        // harmless, so we don't bother checking for this case explicitly.
+        // actually exactly what we want to do in these cases anyway.
         watchInfo.path = kj::mv(path);
 
-        // Also watch all children.
+        // In the case that we are reusing an existing watch descriptor, we want to clear out the
+        // existing contents as they may be stale due to, again, race conditions.
+        for (auto& child: watchInfo.childSizes) {
+          totalSize -= child.second.size;
+        }
+        watchInfo.childSizes.clear();
+
+        // Now repopulate the children by listing the directory.
         DIR* dir = opendir(pathPtr);
         if (dir != nullptr) {
           KJ_DEFER(closedir(dir));
@@ -202,11 +206,7 @@ private:
 
             kj::StringPtr name = entry->d_name;
             if (name != "." && name != "..") {
-              uint32_t mask = IN_CREATE;
-              if (entry->d_type == DT_DIR) {
-                mask |= IN_ISDIR;
-              }
-              childEvent(watchInfo, name, mask);
+              childEvent(watchInfo, name);
             }
           }
         }
@@ -267,50 +267,44 @@ private:
           if (event->mask & IN_Q_OVERFLOW) {
             // Queue overflow; start over from scratch.
             inotifyFd = nullptr;
+            KJ_LOG(WARNING, "inotify event queue overflow; restarting watch from scratch");
             return init();
           }
 
-          KJ_ASSERT(event->wd >= 0 && event->wd < watchMap.size(), event->wd);
-          auto& slot = watchMap[event->wd];
+          auto iter = watchMap.find(event->wd);
+          KJ_ASSERT(iter != watchMap.end(), "inotify gave unknown watch descriptor?");
 
           if (event->mask & (IN_CREATE | IN_DELETE | IN_MODIFY | IN_MOVE)) {
-            childEvent(slot, event->name, event->mask);
+            childEvent(iter->second, event->name);
           }
 
-          if (event->mask & (IN_DELETE_SELF | IN_MOVE_SELF | IN_IGNORED)) {
-            // These events indicate that the directory was deleted or moved and therefore this
-            // watch descriptor is no longer valid. However, the documentation suggests that the
-            // watch descriptor is only truly invalid once IN_IGNORED is received, but in practice
-            // I see watch descriptors being reused without IN_IGNORED. In order to be as robust as
-            // possible, I'm simply never assuming that a watch decriptor is gone. inotify will
-            // naturally try to reuse watch descriptor, in which case we'll reuse the slot, so this
-            // isn't really a leak.
+          if (event->mask & IN_IGNORED) {
+            // This watch descriptor is being removed, probably because it was deleted.
 
-            // We do, however, assume all children have been deleted, and remove them from the
-            // size count.
-            for (auto& child: slot.childSizes) {
+            // There shouldn't be any children left, but if there are, go ahead and un-count them.
+            for (auto& child: iter->second.childSizes) {
               totalSize -= child.second.size;
             }
-            slot.childSizes.clear();
+
+            watchMap.erase(iter);
           }
         }
       }
     });
   }
 
-  void childEvent(WatchInfo& watchInfo, kj::StringPtr name, uint32_t mask) {
-    // Called to update the child table when we receive an inotify event with the given name and
-    // event mask.
+  void childEvent(WatchInfo& watchInfo, kj::StringPtr name) {
+    // Called to update the child table when we receive an inotify event with the given name.
 
-    // OK, we received notification that something happened to the child named name.
+    // OK, we received notification that something happened to the child named `name`.
     // Unfortunately, we don't have any idea how long ago this event happened. Worse, any
     // number of other events may have occurred since this one was generated. For example,
     // the event may have been on a file that has subsequently been deleted, and maybe even
     // recreated as a different kind of node. If we lstat() it, we get information about
     // what is currently on disk, not whatever generated this event.
     //
-    // Therefore, mask is mostly useless. We can only use the event as a hint that
-    // something happened at this child. We have to compare what we know about the child
+    // Therefore, the inotify event mask is mostly useless. We can only use the event as a hint
+    // that something happened at this child. We have to compare what we know about the child
     // vs. what we knew in the past to determine what has changed. Note that if inotify
     // provided a `struct stat` along with the event then we wouldn't have this problem!
 
@@ -335,19 +329,15 @@ private:
       iter->second.size = usage.bytes;
     }
 
-    // If we created a new directory, plan to start watching it later. Here we actually do
-    // look at the flags to decide whether this directory is new, because the race
-    // condition is handled differently: if this event we're handling was actually for a
-    // previous file with the same name that was then deleted and replaced, the worst case
-    // is that we end up calling addWatch() with the same path multiple times, or calling it
-    // on a path than no longer exists or is no longer a directory. addWatch() is designed
-    // to deal with these issues.
-    //
-    // OTOH, if we tried to use logic like the above, where we try to _check_ if the
-    // directory is already watched and avoid re-watching it in that case, then we have
-    // a different problem: the directory we watched before may not in fact be the same
-    // directory as exists now, and so we may end up failing to watch the new directory!
-    if ((mask & IN_ISDIR) && (mask & (IN_CREATE | IN_MOVED_TO))) {
+    // If the child is a directory, plan to start watching it later. Note that IN_MODIFY events
+    // are not generated for subdirectories (only files), so if we got an event on a directory it
+    // must be create, move to, move from, or delete. In the latter two cases, the node wouldn't
+    // exist anymore, so usage.isDir would be false. So, we know this directory is either
+    // newly-created or newly moved in from elsewhere. In the creation case, we clearly need to
+    // start watching the directory. In the moved-in case, we are probably already watching the
+    // directory, however it is necessary to redo the watch because the path has changed and the
+    // directory state may have become inconsistent in the time that the path was wrong.
+    if (usage.isDir) {
       // We can't actually add the new watch now because we need to process the remaining
       // events from the last read() in order to make sure we're caught up with inotify's
       // state.
@@ -358,6 +348,7 @@ private:
   struct DiskUsage {
     kj::String path;
     uint64_t bytes;
+    bool isDir;
   };
 
   DiskUsage getDiskUsage(kj::StringPtr parent, kj::StringPtr name) {
@@ -373,6 +364,7 @@ private:
 
         DiskUsage result;
         result.path = kj::mv(path);
+        result.isDir = S_ISDIR(stats.st_mode);
 
         // Round the size up to the nearest block; we assume 4k blocks.
         result.bytes = (stats.st_size + 4095) & ~4095ull;
@@ -395,7 +387,7 @@ private:
           break;
         case ENOENT:   // File no longer exists...
         case ENOTDIR:  // ... and a parent directory was replaced.
-          return {kj::mv(path), 0};
+          return {kj::mv(path), 0, false};
         default:
           // Default
           KJ_FAIL_SYSCALL("lstat", error, path);

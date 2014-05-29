@@ -18,6 +18,11 @@
 // License along with Sandstorm.  If not, see
 // <http://www.gnu.org/licenses/>.
 
+// Hack around stdlib bug with C++14.
+#include <initializer_list>  // force libstdc++ to include its config
+#undef _GLIBCXX_HAVE_GETS    // correct broken config
+// End hack.
+
 #include "union-fs.h"
 #include <kj/vector.h>
 #include <kj/debug.h>
@@ -598,6 +603,9 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
   layers.add(kj::heap<SingletonNode>(
       newLoopbackFuseNode(bridgePath, kj::maxValue), "sandstorm-http-bridge"));
 
+  // Empty /proc/cpuinfo will be overmounted by the supervisor.
+  layers.add(kj::heap<SingletonNode>(kj::heap<SimpleDataNode>(nullptr), "proc/cpuinfo"));
+
   for (auto mapping: searchPath) {
     kj::StringPtr sourcePath = mapping.getSourcePath();
     kj::String ownSourcePath;
@@ -693,8 +701,10 @@ static kj::Maybe<kj::StringPtr> tryRemovePathPrefix(kj::StringPtr path, kj::Stri
   }
 }
 
-kj::Maybe<kj::String> mapFile(
+kj::Array<kj::String> mapFile(
     kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap, kj::StringPtr name) {
+  kj::Vector<kj::String> matches;
+
   for (auto dir: sourceMap.getSearchPath()) {
     auto virtualPath = dir.getPackagePath();
     KJ_IF_MAYBE(subPath, tryRemovePathPrefix(name, virtualPath)) {
@@ -720,12 +730,12 @@ kj::Maybe<kj::String> mapFile(
 
       if (access(candidate.cStr(), F_OK) == 0) {
         // Found!
-        return kj::mv(candidate);
+        matches.add(kj::mv(candidate));
       }
     }
   }
 
-  return nullptr;
+  return matches.releaseAsArray();
 }
 
 }  // namespace sandstorm

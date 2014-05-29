@@ -18,6 +18,11 @@
 // License along with Sandstorm.  If not, see
 // <http://www.gnu.org/licenses/>.
 
+// Hack around stdlib bug with C++14.
+#include <initializer_list>  // force libstdc++ to include its config
+#undef _GLIBCXX_HAVE_GETS    // correct broken config
+// End hack.
+
 #include "fuse.h"
 #include "send-fd.h"
 #include <linux/fuse.h>
@@ -761,7 +766,7 @@ private:
 
     splitTime(src.getLastAccessTime(), &dst->atime, &dst->atimensec);
     splitTime(src.getLastModificationTime(), &dst->mtime, &dst->mtimensec);
-    splitTime(src.getCreationTime(), &dst->ctime, &dst->ctimensec);
+    splitTime(src.getLastStatusChangeTime(), &dst->ctime, &dst->ctimensec);
 
     dst->mode = src.getPermissions();
 
@@ -971,7 +976,7 @@ protected:
     attrs.setBlockSize(stats.st_blksize);
     attrs.setLastAccessTime(toNanos(stats.st_atim));
     attrs.setLastModificationTime(toNanos(stats.st_mtim));
-    attrs.setCreationTime(toNanos(stats.st_ctim));
+    attrs.setLastStatusChangeTime(toNanos(stats.st_ctim));
     results.setTtl(ttl / kj::NANOSECONDS);
 
     return kj::READY_NOW;

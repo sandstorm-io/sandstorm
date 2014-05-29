@@ -44,4 +44,11 @@ interface Supervisor {
   shutdown @2 ();
   # Shut down the grain immediately.  Useful e.g. when upgrading to a newer app version.  This
   # call will never return successfully because the process kills itself.
+
+  getGrainSize @3 () -> (size :UInt64);
+  # Get the total storage size of the grain.
+
+  getGrainSizeWhenDifferent @4 (oldSize :UInt64) -> (size :UInt64);
+  # Wait until the storage size of the grain is different from `oldSize` and then return the new
+  # size. May occasionally return prematurely, with `size` equal to `oldSize`.
 }

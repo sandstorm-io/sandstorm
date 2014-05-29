@@ -18,9 +18,15 @@
 // License along with Sandstorm.  If not, see
 // <http://www.gnu.org/licenses/>.
 
+// Hack around stdlib bug with C++14.
+#include <initializer_list>  // force libstdc++ to include its config
+#undef _GLIBCXX_HAVE_GETS    // correct broken config
+// End hack.
+
 #include <kj/main.h>
 #include <kj/debug.h>
 #include <kj/async-io.h>
+#include <kj/async-unix.h>
 #include <kj/io.h>
 #include <capnp/rpc-twoparty.h>
 #include <capnp/rpc.capnp.h>
@@ -35,6 +41,7 @@
 #include <sys/fsuid.h>
 #include <sys/prctl.h>
 #include <sys/capability.h>
+#include <sys/syscall.h>
 #include <netinet/in.h>
 #include <net/if.h>
 #include <linux/sockios.h>
@@ -46,6 +53,9 @@
 #include <dirent.h>
 #include <pwd.h>
 #include <grp.h>
+#include <sys/inotify.h>
+#include <map>
+#include <unordered_map>
 
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/supervisor.capnp.h>
@@ -61,6 +71,340 @@
 namespace sandstorm {
 
 typedef unsigned int uint;
+
+static kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
+  int fd;
+  KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
+  return kj::AutoCloseFd(fd);
+}
+
+// =======================================================================================
+// Directory size watcher
+
+class DiskUsageWatcher {
+  // Class which watches a directory tree, counts up the total disk usage, and fires events when
+  // it changes. Uses inotify. Which turns out to be... harder than it should be.
+
+public:
+  DiskUsageWatcher(kj::UnixEventPort& eventPort): eventPort(eventPort) {}
+
+  kj::Promise<void> init() {
+    // Start watching the current directory.
+
+    // Note: this function is also called to restart watching from scratch when the inotify event
+    //   queue overflows (hopefully rare).
+
+    int fd;
+    KJ_SYSCALL(fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC));
+    inotifyFd = kj::AutoCloseFd(fd);
+    totalSize = 0;
+    watchMap.clear();
+    pendingWatches.add(nullptr);  // root directory
+    return readLoop();
+  }
+
+  uint64_t getSize() { return totalSize; }
+
+  kj::Promise<uint64_t> getSizeWhenChanged(uint64_t oldSize) {
+    kj::Promise<void> trigger = nullptr;
+    if (totalSize == oldSize) {
+      auto paf = kj::newPromiseAndFulfiller<void>();
+      trigger = kj::mv(paf.promise);
+      listeners.add(kj::mv(paf.fulfiller));
+    } else {
+      trigger = kj::READY_NOW;
+    }
+
+    // Even when the value has changed, wait 100ms so that we're not streaming tons of updates
+    // whenever there is heavy disk I/O. This is just for a silly display anyway.
+    return trigger.then([this]() {
+      return eventPort.atSteadyTime(eventPort.steadyTime() + 100 * kj::MILLISECONDS);
+    }).then([this]() {
+      return totalSize;
+    });
+  }
+
+private:
+  kj::UnixEventPort& eventPort;
+  kj::AutoCloseFd inotifyFd;
+  uint64_t totalSize;
+
+  uint64_t lastUpdateSize = kj::maxValue;  // value of totalSize last time listeners were fired.
+  kj::Vector<kj::Own<kj::PromiseFulfiller<void>>> listeners;
+
+  struct ChildInfo {
+    kj::String name;
+    uint64_t size;
+  };
+  struct WatchInfo {
+    kj::String path;  // null = root directory
+    std::map<kj::StringPtr, ChildInfo> childSizes;
+  };
+  std::unordered_map<int, WatchInfo> watchMap;
+  // Maps inotify watch descriptors to info about what is being watched.
+
+  kj::Vector<kj::String> pendingWatches;
+  // Directories we would like to watch, but we can't add watches on them just yet because we need
+  // to finish processing a list of events received from inotify before we mess with the watch
+  // descriptor table.
+
+  void addPendingWatches() {
+    // Start watching everything that has been added to the pendingWatches list.
+
+    // We treat pendingWatches as a stack here in order to get DFS traversal of the directory tree.
+    while (pendingWatches.size() > 0) {
+      auto path = kj::mv(pendingWatches.end()[-1]);
+      pendingWatches.removeLast();
+      addWatch(kj::mv(path));
+    }
+  }
+
+  void addWatch(kj::String&& path) {
+    // Start watching `path`. This is idempotent -- it's safe to watch the same path multiple
+    // times.
+
+    static const uint32_t FLAGS =
+        IN_CREATE | IN_DELETE | IN_MODIFY | IN_MOVED_FROM | IN_MOVED_TO |
+        IN_DONT_FOLLOW | IN_ONLYDIR | IN_EXCL_UNLINK;
+
+    for (;;) {
+      const char* pathPtr = path == nullptr ? "." : path.cStr();
+      int wd = inotify_add_watch(inotifyFd, pathPtr,
+          FLAGS | IN_DONT_FOLLOW | IN_EXCL_UNLINK);
+
+      if (wd >= 0) {
+        WatchInfo& watchInfo = watchMap[wd];
+
+        // Update the watch map. Note that it's possible that inotify_add_watch() returned a
+        // pre-existing watch descriptor, if we tried to add a watch on a directory we're
+        // already watching. This can happen in various race conditions. Replacing the path is
+        // actually exactly what we want to do in these cases anyway.
+        watchInfo.path = kj::mv(path);
+
+        // In the case that we are reusing an existing watch descriptor, we want to clear out the
+        // existing contents as they may be stale due to, again, race conditions.
+        for (auto& child: watchInfo.childSizes) {
+          totalSize -= child.second.size;
+        }
+        watchInfo.childSizes.clear();
+
+        // Now repopulate the children by listing the directory.
+        DIR* dir = opendir(pathPtr);
+        if (dir != nullptr) {
+          KJ_DEFER(closedir(dir));
+          for (;;) {
+            errno = 0;
+            struct dirent* entry = readdir(dir);
+            if (entry == nullptr) {
+              int error = errno;
+              if (error == 0) {
+                break;
+              } else {
+                KJ_FAIL_SYSCALL("readdir", error, pathPtr);
+              }
+            }
+
+            kj::StringPtr name = entry->d_name;
+            if (name != "." && name != "..") {
+              childEvent(watchInfo, name);
+            }
+          }
+        }
+
+        return;
+      }
+
+      // Error occurred.
+      int error = errno;
+      switch (error) {
+        case EINTR:
+          // Keep trying.
+          break;
+
+        case ENOENT:
+        case ENOTDIR:
+          // Apparently there is no longer a directory at this path. Perhaps it was deleted.
+          // No matter.
+          return;
+
+        case ENOSPC:
+          // No more inotify watches available.
+          // TODO(someday): Revert to some sort of polling mode? For now, fall through to error
+          //   case.
+        default:
+          KJ_FAIL_SYSCALL("inotify_add_watch", error, path);
+      }
+    }
+  }
+
+  kj::Promise<void> readLoop() {
+    addPendingWatches();
+    maybeFireEvents();
+    return eventPort.onFdEvent(inotifyFd, POLLIN).then([this](short) {
+      alignas(uint64_t) kj::byte buffer[4096];
+
+      for (;;) {
+        ssize_t n;
+        KJ_NONBLOCKING_SYSCALL(n = read(inotifyFd, buffer, sizeof(buffer)));
+
+        if (n < 0) {
+          // EAGAIN; try again later.
+          return readLoop();
+        }
+
+        KJ_ASSERT(n > 0, "inotify EOF?");
+
+        kj::byte* pos = buffer;
+        while (n > 0) {
+          // Split off one event.
+          auto event = reinterpret_cast<struct inotify_event*>(pos);
+          size_t eventSize = sizeof(struct inotify_event) + event->len;
+          KJ_ASSERT(eventSize <= n, "inotify returned partial event?");
+          KJ_ASSERT(eventSize % sizeof(size_t) == 0, "inotify event not aligned?");
+          n -= eventSize;
+          pos += eventSize;
+
+          if (event->mask & IN_Q_OVERFLOW) {
+            // Queue overflow; start over from scratch.
+            inotifyFd = nullptr;
+            KJ_LOG(WARNING, "inotify event queue overflow; restarting watch from scratch");
+            return init();
+          }
+
+          auto iter = watchMap.find(event->wd);
+          KJ_ASSERT(iter != watchMap.end(), "inotify gave unknown watch descriptor?");
+
+          if (event->mask & (IN_CREATE | IN_DELETE | IN_MODIFY | IN_MOVE)) {
+            childEvent(iter->second, event->name);
+          }
+
+          if (event->mask & IN_IGNORED) {
+            // This watch descriptor is being removed, probably because it was deleted.
+
+            // There shouldn't be any children left, but if there are, go ahead and un-count them.
+            for (auto& child: iter->second.childSizes) {
+              totalSize -= child.second.size;
+            }
+
+            watchMap.erase(iter);
+          }
+        }
+      }
+    });
+  }
+
+  void childEvent(WatchInfo& watchInfo, kj::StringPtr name) {
+    // Called to update the child table when we receive an inotify event with the given name.
+
+    // OK, we received notification that something happened to the child named `name`.
+    // Unfortunately, we don't have any idea how long ago this event happened. Worse, any
+    // number of other events may have occurred since this one was generated. For example,
+    // the event may have been on a file that has subsequently been deleted, and maybe even
+    // recreated as a different kind of node. If we lstat() it, we get information about
+    // what is currently on disk, not whatever generated this event.
+    //
+    // Therefore, the inotify event mask is mostly useless. We can only use the event as a hint
+    // that something happened at this child. We have to compare what we know about the child
+    // vs. what we knew in the past to determine what has changed. Note that if inotify
+    // provided a `struct stat` along with the event then we wouldn't have this problem!
+
+    auto usage = getDiskUsage(watchInfo.path, name);
+    totalSize += usage.bytes;
+
+    auto iter = watchInfo.childSizes.find(name);
+    if (usage.bytes == 0) {
+      // There is no longer a child by this name on disk. Remove whatever is in the map.
+      if (iter != watchInfo.childSizes.end()) {
+        totalSize -= iter->second.size;
+        watchInfo.childSizes.erase(iter);
+      }
+    } else if (iter == watchInfo.childSizes.end()) {
+      // There is a child by this name on disk, but not in the map. Add it.
+      ChildInfo newChild = { kj::heapString(name), usage.bytes };
+      kj::StringPtr namePtr = newChild.name;
+      KJ_ASSERT(watchInfo.childSizes.insert(std::make_pair(namePtr, kj::mv(newChild))).second);
+    } else {
+      // There is a child by this name on disk and in the map. Check for a change in size.
+      totalSize -= iter->second.size;
+      iter->second.size = usage.bytes;
+    }
+
+    // If the child is a directory, plan to start watching it later. Note that IN_MODIFY events
+    // are not generated for subdirectories (only files), so if we got an event on a directory it
+    // must be create, move to, move from, or delete. In the latter two cases, the node wouldn't
+    // exist anymore, so usage.isDir would be false. So, we know this directory is either
+    // newly-created or newly moved in from elsewhere. In the creation case, we clearly need to
+    // start watching the directory. In the moved-in case, we are probably already watching the
+    // directory, however it is necessary to redo the watch because the path has changed and the
+    // directory state may have become inconsistent in the time that the path was wrong.
+    if (usage.isDir) {
+      // We can't actually add the new watch now because we need to process the remaining
+      // events from the last read() in order to make sure we're caught up with inotify's
+      // state.
+      pendingWatches.add(kj::mv(usage.path));
+    }
+  }
+
+  struct DiskUsage {
+    kj::String path;
+    uint64_t bytes;
+    bool isDir;
+  };
+
+  DiskUsage getDiskUsage(kj::StringPtr parent, kj::StringPtr name) {
+    // Get the disk usage of the given file within the given parent directory. This is not exactly
+    // the file size; it also includes estimates of storage overhead, such as rounding up to the
+    // block size. If the file no longer exists, its size is reported as zero.
+
+    kj::String path = parent == nullptr ? kj::heapString(name) : kj::str(parent, '/', name);
+    for (;;) {
+      struct stat stats;
+      if (lstat(path.cStr(), &stats) >= 0) {
+        // Success.
+
+        DiskUsage result;
+        result.path = kj::mv(path);
+        result.isDir = S_ISDIR(stats.st_mode);
+
+        // Round the size up to the nearest block; we assume 4k blocks.
+        result.bytes = (stats.st_size + 4095) & ~4095ull;
+
+        // Divide by link count so that files with many hardlinks aren't overcounted.
+        result.bytes /= stats.st_nlink;
+
+        // Add sizeof(stats) to approximate the directory entry overhead, and also add
+        // the size of the null-terminated filename rounded up to a word.
+        result.bytes += sizeof(stats) + ((name.size() + 8) & ~7ull);
+
+        return result;
+      }
+
+      // There was an error.
+      int error = errno;
+      switch (error) {
+        case EINTR:
+          // continue loop
+          break;
+        case ENOENT:   // File no longer exists...
+        case ENOTDIR:  // ... and a parent directory was replaced.
+          return {kj::mv(path), 0, false};
+        default:
+          // Default
+          KJ_FAIL_SYSCALL("lstat", error, path);
+      }
+    }
+  }
+
+  void maybeFireEvents() {
+    if (totalSize != lastUpdateSize) {
+      for (auto& listener: listeners) {
+        listener->fulfill();
+      }
+      listeners.resize(0);
+      lastUpdateSize = totalSize;
+    }
+  }
+};
 
 // =======================================================================================
 // Termination handling:  Must kill child if parent terminates.
@@ -104,11 +448,6 @@ void killChildAndExit(int status) {
 
 void signalHandler(int signo) {
   switch (signo) {
-    case SIGCHLD:
-      // Oh, our child exited.  I guess we're useless now.
-      SANDSTORM_LOG("Grain shutting down because child exited.");
-      _exit(0);
-
     case SIGALRM:
       if (keepAlive) {
         SANDSTORM_LOG("Grain still in use; staying up for now.");
@@ -153,10 +492,6 @@ void registerSignalHandlers() {
     KJ_SYSCALL(sigaction(signo, &action, nullptr));
   }
 
-  // SIGCHLD will fire when the child exits, in which case we might as well also exit.
-  action.sa_flags = SA_NOCLDSTOP;  // Only fire when child exits.
-  KJ_SYSCALL(sigaction(SIGCHLD, &action, nullptr));
-
   // Set up the SIGALRM timer.  Note that this is not inherited over fork.
   struct itimerval timer;
   memset(&timer, 0, sizeof(timer));
@@ -178,7 +513,7 @@ class SupervisorMain {
   // gets network access whereas the grain does not (the grain can only communicate with the world
   // through the supervisor).
   //
-  // This program is meant to be suid-root, so that it can use system calls like chroot() and
+  // This program is meant to be suid-root, so that it can use system calls like pivot_root() and
   // unshare().
   //
   // Alternatively, rather than suid, you may grant the binary "capabilities":
@@ -443,13 +778,12 @@ private:
     // execing a suid-root binary.  Sandboxed apps should not need that.
     KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
 
+    closeFds();
     enterServerNs();
     validateCreds();
-    closeFds();
     checkPaths();
     unshareOuter();
-    setupTmpfs();
-    bindDirs();
+    setupFilesystem();
     setupStdio();
 
     // TODO(someday):  Turn on seccomp-bpf.
@@ -477,13 +811,7 @@ private:
       auto ns = receiveFd(sock);
 
       KJ_SYSCALL(setns(ns, CLONE_NEWNS));
-
-      // So... this is going to be awkward. The thing is, the server daemon actually binds
-      // HOME/var to HOME/latest/var, and then chroots into HOME/latest. So when it later mounts a
-      // dev app's FUSE FS, it's under HOME/latest/var/..., and doesn't appear under
-      // HOME/var/... at all, because that's how mounts are. So we add "/latest" onto homePath
-      // here so that we're actually looking at the directory that the server itself is using.
-      homePath = kj::str(homePath, "/latest");
+      KJ_SYSCALL(chdir("/"));
     }
   }
 
@@ -571,8 +899,8 @@ private:
     umask(0);
 
     // Set default paths if flags weren't provided.
-    if (pkgPath == nullptr) pkgPath = kj::str(homePath, "/var/sandstorm/apps/", appName);
-    if (varPath == nullptr) varPath = kj::str(homePath, "/var/sandstorm/grains/", grainId);
+    if (pkgPath == nullptr) pkgPath = kj::str("/var/sandstorm/apps/", appName);
+    if (varPath == nullptr) varPath = kj::str("/var/sandstorm/grains/", grainId);
 
     // Check that package exists.
     KJ_SYSCALL(access(pkgPath.cStr(), R_OK | X_OK), pkgPath);
@@ -629,17 +957,7 @@ private:
     // To really unshare the mount namespace, we also have to make sure all mounts are private.
     // The parameters here were derived by strace'ing `mount --make-rprivate /`.  AFAICT the flags
     // are undocumented.  :(
-    //
-    // Note:  We accept EINVAL as an indication that / is not a mount point, which indicates we're
-    //   running in a chroot, which means we're probably running in the Sandstorm bundle, which has
-    //   already private-mounted everything.
-    // TODO(someday):  More robustly detect when we're in the sandstorm bundle.
-    if (mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr) < 0) {
-      int error = errno;
-      if (error != EINVAL) {
-        KJ_FAIL_SYSCALL("mount(recursively remount / as private)", error);
-      }
-    }
+    KJ_SYSCALL(mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr));
 
     // Set a dummy host / domain so the grain can't see the real one.  (unshare(CLONE_NEWUTS) means
     // these settings only affect this process and its children.)
@@ -647,63 +965,74 @@ private:
     KJ_SYSCALL(setdomainname("sandbox", 7));
   }
 
-  void setupTmpfs() {
-    // Create a new tmpfs for this run.  We don't use a shared one or just /tmp for two reasons:
-    // 1) tmpfs has no quota control, so a shared instance could be DoS'd by any one grain, or
-    //    just used to effectively allocate more RAM than the grain is allowed.
-    // 2) When we exit, the mount namespace disappears and the tmpfs is thus automatically
-    //    unmounted.  No need for careful cleanup, and no need to implement a risky recursive
-    //    delete.
-    KJ_SYSCALL(mount("tmpfs", "/tmp/sandstorm-grain", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
-                     kj::str("size=16m,nr_inodes=4k,mode=770,uid=", uid, ",gid=", gid).cStr()));
+  void setupFilesystem() {
+    // The root of our mount namespace will be the app package itself.  We optionally create
+    // tmp, dev, and var.  tmp is an ordinary tmpfs.  dev is a read-only tmpfs that contains
+    // a few safe device nodes.  var is the 'var/sandbox' directory inside the grain.
+    //
+    // Now for the tricky part: the supervisor needs to be able to see a little bit more.
+    // In particular, it needs to be able to see the entire var directory inside the grain.
+    // We arrange for the the supervisor's special directory to be ".", even though it's
+    // not mounted anywhere.
+
+    // Set up the supervisor's directory. We immediately detach it from the mount tree, only
+    // keeping a file descriptor, which we can later access via fchdir(). This prevents the
+    // supervisor dir from being accessible to the app.
+    bind(varPath, "/tmp/sandstorm-grain", MS_NODEV | MS_NOEXEC);
+    auto supervisorDir = raiiOpen("/tmp/sandstorm-grain", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    KJ_SYSCALL(umount2("/tmp/sandstorm-grain", MNT_DETACH));
+
+    // Bind the app package to "sandbox", which will be the grain's root directory.
+    bind(pkgPath, "/tmp/sandstorm-grain", MS_NODEV | MS_RDONLY);
 
     // Change to that directory.
     KJ_SYSCALL(chdir("/tmp/sandstorm-grain"));
 
-    // Set up the directory tree.
-
-    // Create a minimal dev directory.
-    KJ_SYSCALL(mkdir("dev", 0755));
-    KJ_SYSCALL(mknod("dev/null", S_IFCHR | 0666, makedev(1, 3)));
-    KJ_SYSCALL(mknod("dev/zero", S_IFCHR | 0666, makedev(1, 5)));
-    KJ_SYSCALL(mknod("dev/random", S_IFCHR | 0666, makedev(1, 8)));
-    KJ_SYSCALL(mknod("dev/urandom", S_IFCHR | 0666, makedev(1, 9)));
-
-    // Mount point for var directory, as seen by the supervisor.
-    KJ_SYSCALL(mkdir("var", 0777));
-
-    // Temp directory.
-    KJ_SYSCALL(mkdir("tmp", 0777));
-    KJ_SYSCALL(mkdir("tmp/sandbox", 0777));  // Piece of tmp visible to sandbox.
-
-    // The root directory of the sandbox.
-    KJ_SYSCALL(mkdir("sandbox", 0777));
-  }
-
-  void bindDirs() {
-    // Bind the app package to "sandbox", which will be the grain's root directory.
-    bind(pkgPath, "sandbox", MS_NODEV | MS_RDONLY);
-
-    // We want to chroot the supervisor.  It will need access to the var directory, so we need to
-    // bind-mount that into the local tree.  We can't just map it to sandbox/var because part of
-    // the var directory is supposed to be visible only to the supervisor.
-    bind(varPath, "var", MS_NODEV | MS_NOEXEC);
-
     // Optionally bind var, tmp, dev if the app requests it by having the corresponding directories
     // in the package.
-    if (access("sandbox/tmp", F_OK) == 0) {
-      bind("tmp/sandbox", "sandbox/tmp", MS_NODEV | MS_NOEXEC);
+    if (access("tmp", F_OK) == 0) {
+      // Create a new tmpfs for this run.  We don't use a shared one or just /tmp for two reasons:
+      // 1) tmpfs has no quota control, so a shared instance could be DoS'd by any one grain, or
+      //    just used to effectively allocate more RAM than the grain is allowed.
+      // 2) When we exit, the mount namespace disappears and the tmpfs is thus automatically
+      //    unmounted.  No need for careful cleanup, and no need to implement a risky recursive
+      //    delete.
+      KJ_SYSCALL(mount("sandstorm-tmp", "tmp", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
+                     kj::str("size=16m,nr_inodes=4k,mode=770,uid=", uid, ",gid=", gid).cStr()));
     }
-    if (access("sandbox/dev", F_OK) == 0) {
-      bind("dev", "sandbox/dev", MS_NOEXEC | MS_RDONLY);
+    if (access("dev", F_OK) == 0) {
+      KJ_SYSCALL(mount("sandstorm-dev", "dev", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
+                     kj::str("size=1m,nr_inodes=16,mode=755,uid=", uid, ",gid=", gid).cStr()));
+      KJ_SYSCALL(mknod("dev/null", S_IFCHR | 0666, makedev(1, 3)));
+      KJ_SYSCALL(mknod("dev/zero", S_IFCHR | 0666, makedev(1, 5)));
+      KJ_SYSCALL(mknod("dev/random", S_IFCHR | 0666, makedev(1, 8)));
+      KJ_SYSCALL(mknod("dev/urandom", S_IFCHR | 0666, makedev(1, 9)));
+      KJ_SYSCALL(mount("dev", "dev", nullptr,
+		       MS_REMOUNT | MS_NOSUID | MS_NOATIME | MS_RDONLY, nullptr));
     }
-    if (access("sandbox/var", F_OK) == 0) {
-      bind(kj::str(varPath, "/sandbox"), "sandbox/var", MS_NODEV | MS_NOEXEC);
+    if (access("var", F_OK) == 0) {
+      bind(kj::str(varPath, "/sandbox"), "var", MS_NODEV | MS_NOEXEC);
+    }
+    if (access("proc/cpuinfo", F_OK) == 0) {
+      // Map in the real cpuinfo.
+      bind("/proc/cpuinfo", "proc/cpuinfo", MS_NOATIME | MS_NOSUID | MS_NOEXEC | MS_NODEV);
     }
 
-    // OK, everything is bound, so we can chroot.
-    KJ_SYSCALL(chroot("."));
-    KJ_SYSCALL(chdir("/"));
+    // Grab a reference to the old root directory.
+    auto oldRootDir = raiiOpen("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+
+    // OK, everything is bound, so we can pivot_root.
+    KJ_SYSCALL(syscall(SYS_pivot_root, "/tmp/sandstorm-grain", "/tmp/sandstorm-grain"));
+
+    // We're now in a very strange state: our root directory is the grain directory,
+    // but the old root is mounted on top of the grain directory.  As far as I can tell,
+    // there is no simple way to unmount the old root, since "/" and "/." both refer to the
+    // grain directory.  Fortunately, we kept a reference to the old root.
+    KJ_SYSCALL(fchdir(oldRootDir));
+    KJ_SYSCALL(umount2(".", MNT_DETACH));
+    KJ_SYSCALL(fchdir(supervisorDir));
+
+    // Now '.' is the grain's var and '/' is the sandbox directory.
   }
 
   void setupStdio() {
@@ -721,7 +1050,7 @@ private:
       // We direct stderr to a log file for debugging purposes.
       // TODO(soon):  Rotate logs.
       int log;
-      KJ_SYSCALL(log = open("/var/log", O_WRONLY | O_APPEND | O_CLOEXEC));
+      KJ_SYSCALL(log = open("log", O_WRONLY | O_APPEND | O_CLOEXEC));
       KJ_SYSCALL(dup2(log, STDERR_FILENO));
       KJ_SYSCALL(close(log));
     }
@@ -769,8 +1098,7 @@ private:
     // Drop all credentials.
     //
     // This unfortunately must be performed post-fork (in both parent and child), because the child
-    // needs to do one final chroot().  Perhaps if chroot() is ever enabled by no_new_privs, we can
-    // get around that.
+    // needs to do one final unshare().
 
     KJ_SYSCALL(setresgid(gid, gid, gid));
     KJ_SYSCALL(setgroups(0, nullptr));
@@ -795,9 +1123,6 @@ private:
 
   void enterSandbox() {
     // Fully enter the sandbox.  Called only by the child process.
-
-    // Chroot the rest of the way into the sandbox.
-    KJ_SYSCALL(chroot("sandbox"));
     KJ_SYSCALL(chdir("/"));
 
     // Unshare the network, creating a new loopback interface.
@@ -826,7 +1151,7 @@ private:
     auto ioContext = kj::setupAsyncIo();
 
     // Connect to the client.
-    auto addr = ioContext.provider->getNetwork().parseAddress("unix:/var/socket")
+    auto addr = ioContext.provider->getNetwork().parseAddress("unix:socket")
         .wait(ioContext.waitScope);
     kj::Own<kj::AsyncIoStream> connection;
     KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
@@ -938,7 +1263,8 @@ private:
 
   class SupervisorImpl final: public Supervisor::Server {
   public:
-    inline SupervisorImpl(UiView::Client&& mainView): mainView(kj::mv(mainView)) {}
+    inline SupervisorImpl(UiView::Client&& mainView, DiskUsageWatcher& diskWatcher)
+        : mainView(kj::mv(mainView)), diskWatcher(diskWatcher) {}
 
     kj::Promise<void> getMainView(GetMainViewContext context) {
       context.getResults(capnp::MessageSize {4, 1}).setView(mainView);
@@ -954,8 +1280,22 @@ private:
       killChildAndExit(0);
     }
 
+    kj::Promise<void> getGrainSize(GetGrainSizeContext context) {
+      context.getResults(capnp::MessageSize { 2, 0 }).setSize(diskWatcher.getSize());
+      return kj::READY_NOW;
+    }
+
+    kj::Promise<void> getGrainSizeWhenDifferent(GetGrainSizeWhenDifferentContext context) {
+      auto oldSize = context.getParams().getOldSize();
+      context.releaseParams();
+      return diskWatcher.getSizeWhenChanged(oldSize).then([context](uint64_t size) mutable {
+        context.getResults(capnp::MessageSize { 2, 0 }).setSize(size);
+      });
+    }
+
   private:
     UiView::Client mainView;
+    DiskUsageWatcher& diskWatcher;
   };
 
   class Restorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
@@ -1009,12 +1349,49 @@ private:
   };
 
   void runSupervisor(int apiFd) KJ_NORETURN {
+    // We're currently in a somewhat dangerous state: our root directory is controlled
+    // by the app.  If glibc reads, say, /etc/nsswitch.conf, the grain could take control
+    // of the supervisor.  Fix this by chrooting to the supervisor directory.
+    // TODO(someday): chroot somewhere that's guaranteed to be empty instead, so that if the
+    //   supervisor storage is itself compromised it can't be used to execute arbitrary code in
+    //   the supervisor process.
+    KJ_SYSCALL(chroot("."));
+
     permanentlyDropSuperuser();
 
-    // TODO(soon):  Make sure all grandchildren die if supervisor dies.
+    // TODO(soon): Somehow make sure all grandchildren die if supervisor dies. Currently SIGKILL
+    //   on the supervisor won't give it a chance to kill the sandbox pid tree. Perhaps the
+    //   supervisor should actually be the app's root process? We'd have to more carefully handle
+    //   SIGCHLD in that case and also worry about signals sent from the app process.
+
+    kj::UnixEventPort::captureSignal(SIGCHLD);
+    auto ioContext = kj::setupAsyncIo();
+
+    // Detect child exit.
+    auto exitPromise = ioContext.unixEventPort.onSignal(SIGCHLD).then([this](siginfo_t info) {
+      KJ_ASSERT(childPid != 0);
+      int status;
+      KJ_SYSCALL(waitpid(childPid, &status, 0));
+      childPid = 0;
+      KJ_ASSERT(WIFEXITED(status) || WIFSIGNALED(status));
+      if (WIFSIGNALED(status)) {
+        context.exitError(kj::str(
+            "** SANDSTORM SUPERVISOR: App exited due to signal ", WTERMSIG(status),
+            " (", strsignal(WTERMSIG(status)), ")."));
+      } else {
+        context.exitError(kj::str(
+            "** SANDSTORM SUPERVISOR: App exited with status code: ", WEXITSTATUS(status)));
+      }
+    }).eagerlyEvaluate([this](kj::Exception&& e) {
+      context.exitError(kj::str(
+          "** SANDSTORM SUPERVISOR: Uncaught exception waiting for child process:\n", e));
+    });
+
+    // Compute grain size and watch for changes.
+    DiskUsageWatcher diskWatcher(ioContext.unixEventPort);
+    auto diskWatcherTask = diskWatcher.init();
 
     // Set up the RPC connection to the app and export the supervisor interface.
-    auto ioContext = kj::setupAsyncIo();
     auto appConnection = ioContext.lowLevelProvider->wrapSocketFd(apiFd,
         kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC |
         kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP);
@@ -1033,11 +1410,11 @@ private:
     // TODO(someday):  If there are multiple front-ends, or the front-ends restart a lot, we'll
     //   want to wrap the UiView and cache session objects.  Perhaps we could do this by making
     //   them persistable, though it's unclear how that would work with SessionContext.
-    Restorer serverRestorer(kj::heap<SupervisorImpl>(kj::mv(app)));
+    Restorer serverRestorer(kj::heap<SupervisorImpl>(kj::mv(app), diskWatcher));
     ErrorHandlerImpl errorHandler;
     kj::TaskSet tasks(errorHandler);
-    unlink("/var/socket");  // Clear stale socket, if any.
-    auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:/var/socket", 0).then(
+    unlink("socket");  // Clear stale socket, if any.
+    auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:socket", 0).then(
         [&](kj::Own<kj::NetworkAddress>&& addr) {
       auto serverPort = addr->listen();
       KJ_SYSCALL(write(STDOUT_FILENO, "Listening...\n", strlen("Listening...\n")));
@@ -1045,10 +1422,22 @@ private:
       return promise.attach(kj::mv(serverPort));
     });
 
-    // Wait for disconnect or accept loop failure, then exit.
-    acceptTask.exclusiveJoin(appNetwork.onDisconnect()).wait(ioContext.waitScope);
+    // Wait for disconnect or accept loop failure or disk watch failure, then exit.
+    acceptTask.exclusiveJoin(kj::mv(diskWatcherTask))
+              .exclusiveJoin(appNetwork.onDisconnect())
+              .wait(ioContext.waitScope);
 
-    SANDSTORM_LOG("App disconnected API socket; shutting down grain.");
+    // Only onDisconnect() would return normally (rather than throw), so the app must have
+    // disconnected (i.e. from the Cap'n Proto API socket).
+
+    // Hmm, app disconnected API socket. The app probably exited and we just haven't gotten the
+    // signal yet, so sleep for a moment to let it arrive, so that we can report the exit status.
+    // Otherwise kill.
+    ioContext.provider->getTimer().afterDelay(1 * kj::SECONDS)
+        .exclusiveJoin(kj::mv(exitPromise))
+        .wait(ioContext.waitScope);
+
+    SANDSTORM_LOG("App disconnected API socket but didn't actually exit; killing it.");
     killChildAndExit(1);
   }
 };

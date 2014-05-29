@@ -40,9 +40,11 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
 //
 // `sourceMap` must remain valid until the returned node is destroyed.
 
-kj::Maybe<kj::String> mapFile(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap,
+kj::Array<kj::String> mapFile(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap,
                               kj::StringPtr virtualPath);
-// Maps one file from virtual path to real path.
+// Maps one file from virtual path to real path. Returns a list of all matching real paths. In
+// the case of a file, the first should be used, but in the case of a directory, they should be
+// merged.
 
 }  // namespace sandstorm
 

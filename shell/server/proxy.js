@@ -119,6 +119,7 @@ Meteor.methods({
       publicId: publicId
     });
     startGrainInternal(packageId, grainId, command, true);
+    updateLastActive(grainId, Meteor.userId());
     return grainId;
   },
 
@@ -137,6 +138,8 @@ Meteor.methods({
     } else {
       continueGrain(grainId);
     }
+
+    updateLastActive(grainId, Meteor.userId());
 
     var proxy = new Proxy(grainId, sessionId);
     proxies[sessionId] = proxy;
@@ -287,9 +290,6 @@ function startGrainInternal(packageId, grainId, command, isNew) {
     });
   });
 
-  // While we're waiting...
-  updateLastActive(grainId, Meteor.userId());
-
   runningGrains[grainId] = whenReady;
   waitPromise(whenReady);
 }
@@ -328,6 +328,29 @@ deleteGrain = function (grainId) {
       recursiveRmdir(dir);
     }
   }, 1000);
+}
+
+getGrainSize = function (sessionId, oldSize) {
+  var proxy = proxies[sessionId];
+  if (!proxy) {
+    throw new Meteor.Error(500, "Session not running; can't get grain size.");
+  }
+
+  if (!proxy.supervisor) {
+    proxy.getConnection();
+  }
+
+  var promise;
+  if (oldSize === undefined) {
+    promise = proxy.supervisor.getGrainSize();
+  } else {
+    promise = proxy.supervisor.getGrainSizeWhenDifferent(oldSize);
+  }
+
+  var promise2 = promise.then(function (result) { return parseInt(result.size); });
+  promise2.cancel = function () { promise.cancel(); }
+
+  return promise2;
 }
 
 // Kill off proxies idle for >~5 minutes.

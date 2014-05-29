@@ -20,6 +20,11 @@
 
 // This is a tool for manipulating Sandstorm .spk files.
 
+// Hack around stdlib bug with C++14.
+#include <initializer_list>  // force libstdc++ to include its config
+#undef _GLIBCXX_HAVE_GETS    // correct broken config
+// End hack.
+
 #include <kj/main.h>
 #include <kj/debug.h>
 #include <kj/io.h>
@@ -44,6 +49,7 @@
 #include <sys/un.h>
 #include <kj/async-unix.h>
 #include <ctype.h>
+#include <time.h>
 
 #include "version.h"
 #include "fuse.h"
@@ -199,6 +205,42 @@ kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
   int fd;
   KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
   return kj::AutoCloseFd(fd);
+}
+
+bool isDirectory(kj::StringPtr path) {
+  struct stat stats;
+  KJ_SYSCALL(lstat(path.cStr(), &stats));
+  return S_ISDIR(stats.st_mode);
+}
+
+kj::Array<kj::String> listDirectory(kj::StringPtr dirname) {
+  DIR* dir = opendir(dirname.cStr());
+  if (dir == nullptr) {
+    KJ_FAIL_SYSCALL("opendir", errno, dirname);
+  }
+  KJ_DEFER(closedir(dir));
+
+  kj::Vector<kj::String> entries;
+
+  for (;;) {
+    errno = 0;
+    struct dirent* entry = readdir(dir);
+    if (entry == nullptr) {
+      int error = errno;
+      if (error == 0) {
+        break;
+      } else {
+        KJ_FAIL_SYSCALL("readdir", error, dirname);
+      }
+    }
+
+    kj::StringPtr name = entry->d_name;
+    if (name != "." && name != "..") {
+      entries.add(kj::heapString(entry->d_name));
+    }
+  }
+
+  return entries.releaseAsArray();
 }
 
 kj::String readAll(int fd) {
@@ -928,9 +970,16 @@ private:
         "    ]\n"
         "  ),\n"
         "\n"
-        "  fileList = \"sandstorm-files.list\"\n"
+        "  fileList = \"sandstorm-files.list\",\n"
         "  # `spk dev` will write a list of all the files your app uses to this file.\n"
         "  # You should review it later, before shipping your app.\n"
+        "\n"
+        "  alwaysInclude = []\n"
+        "  # Fill this list with more names of files or directories that should be\n"
+        "  # included in your package, even if not listed in sandstorm-files.list.\n"
+        "  # Use this to force-include stuff that you know you need but which may\n"
+        "  # not have been detected as a dependency during `spk dev`. If you list\n"
+        "  # a directory here, its entire contents will be included recursively.\n"
         ");\n"
         "\n"
         "const myCommand :Spk.Manifest.Command = (\n"
@@ -938,7 +987,7 @@ private:
         "  argv = [", argv, "],\n"
         "  environ = [\n"
         "    # Note that this defines the *entire* environment seen by your app.\n"
-        "    (key = \"PATH\", value = \"/bin:/usr/bin:/usr/local/bin\")\n"
+        "    (key = \"PATH\", value = \"/usr/local/bin:/usr/bin:/bin\")\n"
         "  ]\n"
         ");\n");
 
@@ -1020,9 +1069,12 @@ private:
   kj::AutoCloseFd packToTempFile() {
     // Read in the file list.
     ArchiveNode root;
+
+    // Set up special files that will be over-mounted by the supervisor.
     root.followPath("dev");
     root.followPath("tmp");
     root.followPath("var");
+    root.followPath("proc").followPath("cpuinfo").setData(nullptr);
 
     auto sourceMap = packageDef.getSourceMap();
 
@@ -1034,11 +1086,11 @@ private:
       }
 
       for (auto& line: splitLines(readAll(raiiOpen(fileListFile, O_RDONLY)))) {
-        addNode(root, line, sourceMap);
+        addNode(root, line, sourceMap, false);
       }
     }
-    for (auto file: packageDef.getAdditionalFiles()) {
-      addNode(root, file, sourceMap);
+    for (auto file: packageDef.getAlwaysInclude()) {
+      addNode(root, file, sourceMap, true);
     }
 
     auto tmpfile = openTemporary(spkfile);
@@ -1046,7 +1098,9 @@ private:
     // Write the archive.
     capnp::MallocMessageBuilder archiveMessage;
     auto archive = archiveMessage.getRoot<spk::Archive>();
-    archive.adoptFiles(root.packChildren(archiveMessage.getOrphanage(), context));
+    struct timespec defaultMTime;
+    KJ_SYSCALL(clock_gettime(CLOCK_REALTIME, &defaultMTime));
+    archive.adoptFiles(root.packChildren(archiveMessage.getOrphanage(), context, defaultMTime));
     capnp::writeMessageToFd(tmpfile, archiveMessage);
 
     return tmpfile;
@@ -1075,7 +1129,8 @@ private:
       return children[kj::mv(pathPart)].followPath(path);
     }
 
-    void pack(spk::Archive::File::Builder builder, kj::ProcessContext& context) {
+    void pack(spk::Archive::File::Builder builder, kj::ProcessContext& context,
+              struct timespec defaultMTime) {
       auto orphanage = capnp::Orphanage::getForMessageContaining(builder);
 
       KJ_IF_MAYBE(d, data) {
@@ -1090,9 +1145,13 @@ private:
 
       if (target == nullptr) {
         stats.st_mode = S_IFDIR;
+        stats.st_mtim = defaultMTime;
       } else {
         KJ_SYSCALL(lstat(target.cStr(), &stats), target);
       }
+
+      auto mtime = stats.st_mtim.tv_sec * kj::SECONDS + stats.st_mtim.tv_nsec * kj::NANOSECONDS;
+      builder.setLastModificationTimeNs(mtime / kj::NANOSECONDS);
 
       if (S_ISREG(stats.st_mode)) {
         KJ_ASSERT(children.empty(), "got file, expected directory", target);
@@ -1136,7 +1195,7 @@ private:
         ssize_t linkSize;
         KJ_SYSCALL(linkSize = readlink(target.cStr(), symlink.begin(), stats.st_size), target);
       } else if (S_ISDIR(stats.st_mode)) {
-        builder.adoptDirectory(packChildren(orphanage, context));
+        builder.adoptDirectory(packChildren(orphanage, context, defaultMTime));
       } else {
         context.warning(kj::str("Cannot pack irregular file: ", target));
         builder.initRegular(0);
@@ -1144,7 +1203,7 @@ private:
     }
 
     capnp::Orphan<capnp::List<spk::Archive::File>> packChildren(
-        capnp::Orphanage orphanage, kj::ProcessContext& context) {
+        capnp::Orphanage orphanage, kj::ProcessContext& context, struct timespec defaultMTime) {
       auto orphan = orphanage.newOrphan<capnp::List<spk::Archive::File>>(children.size());
       auto builder = orphan.get();
 
@@ -1152,7 +1211,7 @@ private:
       for (auto& child: children) {
         auto childBuilder = builder[i++];
         childBuilder.setName(child.first);
-        child.second.pack(childBuilder, context);
+        child.second.pack(childBuilder, context, defaultMTime);
       }
 
       return orphan;
@@ -1172,7 +1231,12 @@ private:
     // Raw data comprising this node. Mutually exclusive with all other members.
   };
 
-  void addNode(ArchiveNode& root, kj::StringPtr path, const spk::SourceMap::Reader& sourceMap) {
+  void addNode(ArchiveNode& root, kj::StringPtr path, const spk::SourceMap::Reader& sourceMap,
+               bool recursive) {
+    if (path.startsWith("/")) {
+      context.exitError(kj::str("Destination (in-package) path must not start with '/': ", path));
+    }
+
     auto& node = root.followPath(path);
     if (path == "sandstorm-manifest") {
       // Serialize the manifest.
@@ -1182,11 +1246,50 @@ private:
       node.setData(capnp::messageToFlatArray(manifestMessage));
     } else if (path == "sandstorm-http-bridge") {
       node.setTarget(getHttpBridgeExe());
-    } else KJ_IF_MAYBE(target, mapFile(sourceDir, sourceMap, path)) {
-      node.setTarget(kj::mv(*target));
     } else {
-      context.exitError(kj::str("No file found to satisfy requirement: ", path));
+      auto targets = mapFile(sourceDir, sourceMap, path);
+      if (targets.size() == 0) {
+        context.exitError(kj::str("No file found to satisfy requirement: ", path));
+      } else {
+        initNode(node, path, kj::mv(targets), sourceMap, recursive);
+      }
     }
+  }
+
+  void initNode(ArchiveNode& node, kj::StringPtr srcPath, kj::Array<kj::String>&& targets,
+                const spk::SourceMap::Reader& sourceMap, bool recursive) {
+    if (targets.size() == 0) {
+      // Nothing here.
+    }
+
+    if (recursive && isDirectory(targets[0])) {
+      // Primary match is a directory, so merge all of the matching directories.
+      std::set<kj::String> seen;
+      for (auto& target: targets) {
+        if (isDirectory(target)) {
+          // This is one of the directories to be merged. List it.
+          for (auto& child: listDirectory(target)) {
+            if (child != "." && child != "..") {
+              // Note that this child node could be hidden. We need to use mapFile() on it directly
+              // in order to make sure it maps to a real file. However, mapFile() will search all
+              // the matching target paths, not just the one we're on, so we make sure to ignore
+              // repeats as we scan through the targets.
+              kj::StringPtr childPtr = child;
+              if (seen.insert(kj::mv(child)).second) {
+                // This is the first time we've seen this child name. Use mapFile() to find out all
+                // the things it matches.
+                auto subPath = kj::str(srcPath, '/', childPtr);
+                auto subTargets = mapFile(sourceDir, sourceMap, subPath);
+                initNode(node.followPath(childPtr), subPath, kj::mv(subTargets), sourceMap,
+                         recursive);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    node.setTarget(kj::mv(targets[0]));
   }
 
   kj::String getHttpBridgeExe() {
@@ -1388,6 +1491,18 @@ private:
         default:
           KJ_FAIL_REQUIRE("Unknown file type in archive.");
       }
+
+      struct timespec times[2];
+      auto ns = file.getLastModificationTimeNs();
+      times[0].tv_sec = ns / 1000000000ll;
+      times[0].tv_nsec = ns % 1000000000ll;
+      if (times[0].tv_nsec < 0) {
+        // C division rounds towards zero. :(
+        ++times[0].tv_sec;
+        times[0].tv_nsec += 1000000000ll;
+      }
+      times[1] = times[0];  // Also use mtime as atime.
+      KJ_SYSCALL(utimensat(AT_FDCWD, path.cStr(), times, AT_SYMLINK_NOFOLLOW));
     }
   }
 

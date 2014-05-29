@@ -51,7 +51,7 @@ var inMeteorInternal = Meteor.bindEnvironment(function (callback) {
   callback();
 });
 
-function inMeteor(callback) {
+inMeteor = function (callback) {
   // Calls the callback in a Meteor context.  Returns a Promise for its result.
   return new Promise(function (resolve, reject) {
     inMeteorInternal(function () {
@@ -66,9 +66,6 @@ function inMeteor(callback) {
 
 promiseToFuture = function(promise) {
   var result = new Future();
-  // TODO(cleanup):  Figure out if Meteor.bindEnvironment() is necessary here...
-//  promise.then(Meteor.bindEnvironment(result.return.bind(result)),
-//               Meteor.bindEnvironment(result.throw.bind(result)));
   promise.then(result.return.bind(result), result.throw.bind(result));
   return result;
 }
@@ -108,15 +105,13 @@ Meteor.methods({
     }
 
     var grainId = Random.id(22);  // 128 bits of entropy
-    var publicId = Random.id(22);
     Grains.insert({
       _id: grainId,
       packageId: packageId,
       appId: appId,
       appVersion: manifest.appVersion,
       userId: this.userId,
-      title: title,
-      publicId: publicId
+      title: title
     });
     startGrainInternal(packageId, grainId, command, true);
     updateLastActive(grainId, Meteor.userId());
@@ -155,24 +150,6 @@ Meteor.methods({
     return {sessionId: sessionId, port: port};
   },
 
-  sendEmailToGrain: function (grainId, emailMessage) {
-    // Send an email message to a grain
-
-    check(grainId, String);
-    check(grainId, String);
-
-    var session = Meteor.call("openSession", grainId);
-
-    var proxy = proxies[session.sessionId];
-
-    try {
-      waitPromise(proxy.getSession({headers: {}}).send(emailMessage));
-    }
-    catch (e) {
-      console.error(e.message);
-    }
-  },
-
   keepSessionAlive: function (sessionId) {
     // TODO(security):  Prevent draining someone else's quota by holding open several grains shared
     //   by them.
@@ -195,6 +172,45 @@ function updateLastActive(grainId, userId) {
   if (userId) {
     Meteor.users.update(userId, {$set: {lastActive: now}});
   }
+}
+
+function connectToGrain(grainId) {
+  return Capnp.connect("unix:" +
+      Path.join(SANDSTORM_GRAINDIR, grainId, "socket"));
+}
+
+openGrain = function (grainId, isRetry) {
+  // Create a Cap'n Proto connection to the given grain. Note that this function does not actually
+  // verify that the connection succeeded. Instead, if an RPC call to the connection fails, check
+  // shouldRestartGrain(). If it returns true, call continueGrain() and then openGrain()
+  // again with isRetry = true, and then retry.
+
+  if (isRetry) {
+    // Since this is a retry, try starting the grain even if we think it's already running.
+    continueGrain(grainId);
+  } else {
+    // Start the grain if it is not running.
+    var runningGrain = runningGrains[grainId];
+    if (runningGrain) {
+      waitPromise(runningGrain);
+    } else {
+      continueGrain(grainId);
+    }
+  }
+
+  return connectToGrain(grainId);
+}
+
+shouldRestartGrain = function (error, retryCount) {
+  // Given an error thrown by an RPC call to a grain, return whether or not it makes sense to try
+  // to restart the grain and retry. `retryCount` is the number of times that the request has
+  // already gone through this cycle (should be zero for the first call).
+
+  // TODO(cleanup): We also have to try on osError to catch the case where connecting to the
+  //   socket failed. We really ought to find a more robust way to detect that, though.
+  return "nature" in error &&
+      (error.nature === "networkFailure" || error.nature === "osError") &&
+      retryCount < 1;
 }
 
 function continueGrain(grainId) {
@@ -432,9 +448,6 @@ function Proxy(grainId, sessionId, preferredPort) {
 
   var self = this;
 
-  var grain = Grains.findOne({'_id': this.grainId});
-  this.publicId = grain.publicId;
-
   this.server = Http.createServer(function (request, response) {
     if (request.url === "/_sandstorm-init?sessionid=" + self.sessionId) {
       self.doSessionInit(request, response);
@@ -503,74 +516,12 @@ Proxy.prototype.getConnection = function () {
   // TODO(perf):  Several proxies could share a connection if opening the same grain in multiple
   //   tabs.  Each should be a separate session.
   if (!this.connection) {
-    this.connection = Capnp.connect("unix:" +
-        Path.join(SANDSTORM_GRAINDIR, this.grainId, "socket"));
+    this.connection = connectToGrain(this.grainId);
     this.supervisor = this.connection.restore(null, Supervisor);
     this.uiView = this.supervisor.getMainView().view;
   }
   return this.connection;
 }
-
-var formatAddress = function(field) {
-  if(!field)
-    return null;
-
-  if (Array.isArray(field))
-    return field.forEach(formatAddress);
-
-  if(field.name)
-    return field.name + ' <' + field.address + '>';
-
-  return field.address;
-};
-
-var rethrowException = function(error) {
-  throw error;
-};
-
-function HackSessionImpl(grainId, publicId) {
-  this.grainId = grainId;
-  this.publicId = publicId;
-}
-
-HackSessionImpl.prototype.send = Meteor.bindEnvironment(function(email) {
-  expectedFrom = this.publicId + '@' + HOSTNAME; // HOSTNAME is defined in mail.js startup
-  if(email.from.address.toUpperCase() !== expectedFrom.toUpperCase()) {
-    console.warn("From field's address was not the expected address for this grain: " +
-      email.from.address + " instead of " + expectedFrom);
-    email.from.address = expectedFrom;
-  }
-
-  var newEmail = {
-    from:     formatAddress(email.from),
-    to:       formatAddress(email.to),
-    cc:       formatAddress(email.cc),
-    bcc:      formatAddress(email.bcc),
-    replyTo:  formatAddress(email.replyTo),
-    subject:  email.subject,
-    text:     email.text,
-    html:     email.html
-  };
-
-  var headers = {};
-  if(email.messageId)
-    headers['message-id'] = email.messageId;
-  if(email.references)
-    headers['references'] = email.references;
-  if(email.messageId)
-    headers['in-reply-to'] = email.inReplyTo;
-  // if(email.date)
-  //   headers['date'] = email.date;
-  // TODO: parse and set date
-
-  newEmail['headers'] = headers;
-
-  Email.send(newEmail);
-}, rethrowException);
-
-HackSessionImpl.prototype.getAddress = function() {
-  return this.publicId + '@' + HOSTNAME;
-};
 
 Proxy.prototype.getSession = function (request) {
   if (!this.session) {
@@ -585,10 +536,9 @@ Proxy.prototype.getSession = function (request) {
           : [ "en-US", "en" ]
     });
 
-    var sessionContext = new Capnp.Capability(new HackSessionImpl(this.grainId, this.publicId), HackSession.HackContext);
     this.session = this.uiView.newSession(
-        {displayName: {defaultText: "User"}}, sessionContext,
-        "0xa50711a14d35a8ce", params).session.castAs(HackSession.HackSession);
+        {displayName: {defaultText: "User"}}, makeHackSessionContext(this.grainId),
+        "0xa50711a14d35a8ce", params).session.castAs(WebSession);
   }
 
   return this.session;
@@ -634,11 +584,7 @@ Proxy.prototype.maybeRetryAfterError = function (error, retryCount) {
 
   var self = this;
 
-  // TODO(cleanup): We also have to try on osError to catch the case where connecting to the
-  //   socket failed. We really ought to find a more robust way to detect that, though.
-  if ("nature" in error &&
-      (error.nature === "networkFailure" || error.nature === "osError") &&
-      retryCount < 1) {
+  if (shouldRestartGrain(error, retryCount)) {
     this.resetConnection();
     return inMeteor(function () {
       continueGrain(self.grainId);

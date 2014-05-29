@@ -58,7 +58,8 @@ struct EmailMessage {
   # Any other content-types will be in the attachments field.
   text @10 :Text;
   html @11 :Text;
-  # TODO: attachments @14 :List(Text); # Probably should add an Attachment struct with at least Content-Type split out
+  # TODO(someday): attachments @14 :List(Text);
+  #   Probably should add an Attachment struct with at least Content-Type split out
 }
 
 interface EmailSendPort @0xec831dbf4cc9bcca {

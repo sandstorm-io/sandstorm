@@ -39,6 +39,7 @@
 #include <kj/debug.h>
 #include <kj/async-io.h>
 #include <kj/async-unix.h>
+#include <kj/io.h>
 #include <capnp/rpc-twoparty.h>
 #include <capnp/rpc.capnp.h>
 #include <capnp/schema.h>
@@ -49,10 +50,11 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <sys/wait.h>
-
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <fcntl.h>
+#include <stdio.h>
+
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/web-session.capnp.h>
 #include <sandstorm/email.capnp.h>
@@ -117,6 +119,12 @@ void toLower(kj::ArrayPtr<char> text) {
       c = c - 'A' + 'a';
     }
   }
+}
+
+kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
+  int fd;
+  KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
+  return kj::AutoCloseFd(fd);
 }
 
 struct HttpStatusInfo {
@@ -653,7 +661,7 @@ private:
   }
 };
 
-class WebSessionImpl final: public HackSession::Server {
+class WebSessionImpl final: public WebSession::Server {
 public:
   WebSessionImpl(kj::NetworkAddress& serverAddr,
                  UserInfo::Reader userInfo, SessionContext::Client context,
@@ -747,108 +755,6 @@ public:
     });
   }
 
-  kj::String genRandomString(const int len) {
-    auto s = kj::heapString(len);
-    static const char alphanum[] =
-        "0123456789"
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        "abcdefghijklmnopqrstuvwxyz";
-
-    for (int i = 0; i < len; ++i) {
-        s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
-    }
-
-    return s;
-  }
-
-  kj::Promise<void> send(SendContext context) override {
-    char fileTemplate[255] = "/var/mail/tmp/";
-    strcat(fileTemplate, std::to_string(time(NULL)).c_str());
-    strcat(fileTemplate, ".XXXXXX");
-
-    int mailFd;
-    KJ_SYSCALL(mailFd = mkstemp(fileTemplate));
-
-    auto email = context.getParams().getEmail();
-
-    #define WRITE_HEADER(key, value, len) \
-      if(len != 0) { \
-        KJ_SYSCALL(write(mailFd, #key ": ", strlen(#key ": "))); \
-        KJ_SYSCALL(write(mailFd, value, len)); \
-        KJ_SYSCALL(write(mailFd, "\n", 1)); \
-      }
-
-    #define WRITE_FIELD(fieldName, headerName) \
-      WRITE_HEADER(headerName, email.get##fieldName().cStr(), email.get##fieldName().size())
-
-    #define WRITE_EMAIL(headerName, field) \
-      WRITE_HEADER(headerName, field.getAddress().cStr(), field.getAddress().size())
-
-    #define WRITE_EMAIL_FIELD(fieldName, headerName) \
-      WRITE_EMAIL(headerName, email.get##fieldName())
-
-    #define WRITE_EMAIL_LIST(fieldName, headerName) \
-      for(auto one : email.get##fieldName()) { \
-        WRITE_EMAIL(headerName, one) \
-      }
-
-    #define WRITE_FIELD_LIST(fieldName, headerName) \
-      for(auto one : email.get##fieldName()) { \
-        WRITE_HEADER(headerName, one.cStr(), one.size()) \
-      }
-
-    // TODO: parse and write Date
-    WRITE_FIELD(Subject, Subject)
-    WRITE_FIELD(MessageId, Message-Id)
-
-    WRITE_EMAIL_FIELD(From, From)
-    WRITE_EMAIL_FIELD(ReplyTo, Reply-To)
-    
-    WRITE_EMAIL_LIST(To, To)
-    WRITE_EMAIL_LIST(Cc, CC)
-    WRITE_EMAIL_LIST(Bcc, BCC)
-
-    WRITE_FIELD_LIST(InReplyTo, In-Reply-To)
-    WRITE_FIELD_LIST(References, References)
-
-    auto boundary = genRandomString(28);
-    // TODO: check if leading \n is neccessary
-    auto boundaryLine = kj::str("\n--", boundary, "\n");
-    auto contentType = kj::str("multipart/alternative; boundary=", boundary);
-    WRITE_HEADER(Content-Type, contentType.cStr(), contentType.size())
-
-    KJ_SYSCALL(write(mailFd, "\n", 1)); // Start body
-    if(email.getText().size() > 0) {
-      auto contentTypeText = kj::str("text/plain; charset=UTF-8");
-      KJ_SYSCALL(write(mailFd, boundaryLine.cStr(), boundaryLine.size()));
-      WRITE_HEADER(Content-Type, contentTypeText.cStr(), contentTypeText.size())
-      KJ_SYSCALL(write(mailFd, email.getText().cStr(), email.getText().size()));
-    }
-    if(email.getHtml().size() > 0) {
-      auto contentTypeHtml = kj::str("text/html; charset=UTF-8");
-      KJ_SYSCALL(write(mailFd, boundaryLine.cStr(), boundaryLine.size()));
-      WRITE_HEADER(Content-Type, contentTypeHtml.cStr(), contentTypeHtml.size())
-      KJ_SYSCALL(write(mailFd, email.getHtml().cStr(), email.getHtml().size()));
-    }
-    KJ_SYSCALL(write(mailFd, boundaryLine.cStr(), boundaryLine.size()));
-
-    close(mailFd);
-
-    // TODO: handle html
-
-    std::string newPath(fileTemplate);
-    newPath.replace(10, 3, "new"); // replace "tmp" with "new"
-    KJ_SYSCALL(rename(fileTemplate, newPath.c_str()));
-
-    return kj::READY_NOW;
-
-    #undef WRITE_FIELD
-    #undef WRITE_HEADER
-    #undef WRITE_EMAIL
-    #undef WRITE_EMAIL_FIELD
-    #undef WRITE_EMAIL_LIST
-  }
-
 private:
   kj::NetworkAddress& serverAddr;
   SessionContext::Client context;
@@ -929,31 +835,192 @@ private:
   }
 };
 
+class EmailSessionImpl final: public HackEmailSession::Server {
+public:
+  kj::Promise<void> send(SendContext context) override {
+    // We're receiving an e-mail. We place the message in maildir format under /var/mail.
+
+    auto email = context.getParams().getEmail();
+    auto id = genRandomString();
+
+    // TODO(perf): The following does a lot more copying than necessary.
+
+    // Construct the mail file.
+    kj::Vector<kj::String> lines;
+
+    // TODO(soon): parse and write Date
+    addHeader(lines, "To", email.getTo());
+    addHeader(lines, "From", email.getFrom());
+    addHeader(lines, "Reply-To", email.getReplyTo());
+    addHeader(lines, "CC", email.getCc());
+    addHeader(lines, "BCC", email.getBcc());
+    addHeader(lines, "Subject", email.getSubject());
+
+    addHeader(lines, "Message-Id", email.getMessageId());
+    addHeader(lines, "References", email.getReferences());
+    addHeader(lines, "In-Reply-To", email.getInReplyTo());
+
+    addHeader(lines, "Content-Type",
+        kj::str("multipart/alternative; boundary=", id));
+
+    lines.add(nullptr);  // blank line starts body.
+
+    if(email.hasText()) {
+      lines.add(kj::str("--", id));
+      addHeader(lines, "Content-Type", kj::str("text/plain; charset=UTF-8"));
+      lines.add(kj::str(email.getText()));
+    }
+    if(email.hasHtml()) {
+      lines.add(kj::str("--", id));
+      addHeader(lines, "Content-Type", kj::str("text/html; charset=UTF-8"));
+      lines.add(kj::str(email.getHtml()));
+    }
+    lines.add(kj::str("--", id, "--"));
+
+    lines.add(nullptr);
+    auto text = kj::strArray(lines, "\n");
+
+    // Write to temp file. Prefix name with _ in case `id` starts with '.'.
+    auto tmpFilename = kj::str("/var/mail/tmp/_", id);
+    auto mailFd = raiiOpen(tmpFilename, O_WRONLY | O_CREAT | O_EXCL);
+    kj::FdOutputStream((int)mailFd).write(text.begin(), text.size());
+    mailFd = nullptr;
+
+    // Move to final location.
+    KJ_SYSCALL(rename(tmpFilename.cStr(), kj::str("/var/mail/new/_", id).cStr()));
+
+    return kj::READY_NOW;
+  }
+
+private:
+  static kj::String genRandomString() {
+    // Generate a unique random string.
+
+    // Get 16 random bytes.
+    kj::byte bytes[16];
+    kj::FdInputStream(raiiOpen("/dev/urandom", O_RDONLY)).read(bytes, sizeof(bytes));
+
+    // Base64 encode, using digits safe for MIME boundary or a filename.
+    static const char DIGITS[65] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz_.";
+    uint buffer = 0;
+    uint bufBits = 0;
+    auto chars = kj::heapArrayBuilder<char>(23);
+    for (kj::byte b: bytes) {
+      buffer |= b << bufBits;
+      bufBits += 8;
+
+      while (bufBits >= 6) {
+        chars.add(DIGITS[buffer & 63]);
+        buffer >>= 6;
+        bufBits -= 6;
+      }
+    }
+    chars.add(DIGITS[buffer & 63]);
+    chars.add('\0');
+
+    return kj::String(chars.finish());
+  }
+
+  static void addHeader(kj::Vector<kj::String>& lines, kj::StringPtr name, kj::StringPtr value) {
+    if (value.size() > 0) {
+      lines.add(kj::str(name, ": ", value));
+    }
+  }
+
+  static kj::String formatAddress(EmailAddress::Reader email) {
+    auto name = email.getName();
+    auto address = email.getAddress();
+    if (name.size() == 0) {
+      return kj::str(address);
+    } else {
+      return kj::str(name, " <", address, ">");
+    }
+  }
+
+  static void addHeader(kj::Vector<kj::String>& lines, kj::StringPtr name,
+                        EmailAddress::Reader email) {
+    addHeader(lines, name, formatAddress(email));
+  }
+
+  static void addHeader(kj::Vector<kj::String>& lines, kj::StringPtr name,
+                        capnp::List<EmailAddress>::Reader emails) {
+    addHeader(lines, name, kj::strArray(KJ_MAP(e, emails) { return formatAddress(e); }, ", "));
+  }
+
+  static void addHeader(kj::Vector<kj::String>& lines, kj::StringPtr name,
+                        capnp::List<capnp::Text>::Reader items) {
+    // Used for lists of message IDs (e.g. References an In-Reply-To). Each ID should be "quoted"
+    // with <>.
+    addHeader(lines, name, kj::strArray(KJ_MAP(i, items) { return kj::str('<', i, '>'); }, " "));
+  }
+};
+
+class RedirectableCapability: public capnp::Capability::Server {
+  // A capability that forwards all requests to some target. The target can be changed over time.
+  // When no target is set, requests are queued and eventually sent to the first target provided.
+
+public:
+  inline RedirectableCapability()
+      : RedirectableCapability(kj::newPromiseAndFulfiller<capnp::Capability::Client>()) {}
+
+  void setTarget(capnp::Capability::Client target) {
+    this->target = target;
+    queueFulfiller->fulfill(kj::mv(target));
+  }
+
+  kj::Promise<void> dispatchCall(uint64_t interfaceId, uint16_t methodId,
+      capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) override {
+    auto params = context.getParams();
+    auto subRequest = target.typelessRequest(interfaceId, methodId, params.targetSize());
+    subRequest.set(params);
+    context.releaseParams();
+    return context.tailCall(kj::mv(subRequest));
+  }
+
+private:
+  capnp::Capability::Client target;
+  kj::Own<kj::PromiseFulfiller<capnp::Capability::Client>> queueFulfiller;
+
+  inline RedirectableCapability(kj::PromiseFulfillerPair<capnp::Capability::Client>&& paf)
+      : target(kj::mv(paf.promise)), queueFulfiller(kj::mv(paf.fulfiller)) {}
+  // We take advantage of the fact that Capability::Client can be constructed from
+  // Promise<Capability::Client> for the exact purpose of queueing requests.
+};
 
 class UiViewImpl final: public UiView::Server {
 public:
-  explicit UiViewImpl(kj::NetworkAddress& serverAddress, kj::PromiseFulfillerPair<capnp::Capability::Client>& fulfillerPair): fulfillerPair(fulfillerPair), serverAddress(serverAddress) {}
+  explicit UiViewImpl(kj::NetworkAddress& serverAddress,
+                      RedirectableCapability& contextCap)
+      : serverAddress(serverAddress), contextCap(contextCap) {}
 
 //  kj::Promise<void> getViewInfo(GetViewInfoContext context) override;
 
   kj::Promise<void> newSession(NewSessionContext context) override {
     auto params = context.getParams();
 
-    KJ_REQUIRE(params.getSessionType() == capnp::typeId<WebSession>(),
+    KJ_REQUIRE(params.getSessionType() == capnp::typeId<WebSession>() ||
+               params.getSessionType() == capnp::typeId<EmailSendPort>(),
                "Unsupported session type.");
 
-    context.getResults(capnp::MessageSize {2, 1}).setSession(
-        kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
-                                 params.getSessionParams().getAs<WebSession::Params>()));
-    fulfillerPair.fulfiller->fulfill(params.getContext());
+    if (params.getSessionType() == capnp::typeId<WebSession>()) {
+      context.getResults(capnp::MessageSize {2, 1}).setSession(
+          kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
+                                   params.getSessionParams().getAs<WebSession::Params>()));
+    } else if (params.getSessionType() == capnp::typeId<HackEmailSession>()) {
+      context.getResults(capnp::MessageSize {2, 1}).setSession(kj::heap<EmailSessionImpl>());
+    }
+
+    contextCap.setTarget(params.getContext());
 
     return kj::READY_NOW;
   }
 
-  kj::PromiseFulfillerPair<capnp::Capability::Client>& fulfillerPair;
-
 private:
   kj::NetworkAddress& serverAddress;
+  RedirectableCapability& contextCap;
 };
 
 class LegacyBridgeMain {
@@ -1019,17 +1086,24 @@ public:
   class ApiRestorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
   public:
     explicit ApiRestorer(SandstormApi::Client&& apiCap, capnp::Capability::Client&& sessionContext)
-        : apiCap(kj::mv(apiCap)), sessionContext(sessionContext) {}
+        : apiCap(kj::mv(apiCap)), sessionContext(kj::mv(sessionContext)) {}
 
     capnp::Capability::Client restore(capnp::AnyPointer::Reader ref) override {
-      auto text = ref.getAs< ::capnp::Text>();
-
-      if(text == "SandstormApi")
+      // TODO(soon): As in Restorer::restore() (above), SandstormApi should be the "default cap"
+      //   exported on this connection.
+      // TODO(soon): We are exporting the SessionContext for the most-recently established session
+      //   under the name "HackSessionContext", but this is a hack. We should really be sending an
+      //   HTTP header to the app along with each request that gives a session ID which can be used
+      //   as part of a "Restore" command on the Cap'n Proto socket to get the *particular*
+      //   SessionContext associated with that request.
+      if (ref.isNull() || ref.getAs< ::capnp::Text>() == "SandstormApi") {
         return apiCap;
-      else if(text == "SessionContext")
+      } else if (ref.getAs< ::capnp::Text>() == "HackSessionContext") {
         return sessionContext;
+      }
 
-      KJ_FAIL_ASSERT("Ref wasn't equal to either 'SandstormApi' or 'SessionContext'");
+      // TODO(someday):  Implement level 2 RPC?
+      KJ_FAIL_ASSERT("SturdyRefs not implemented.");
     }
 
   private:
@@ -1109,6 +1183,7 @@ public:
       });
 
       // Wait until connections are accepted.
+      // TODO(soon): Don't block pure-Cap'n-Proto RPCs on this. Just block HTTP requests.
       bool success = false;
       for (;;) {
         kj::runCatchingExceptions([&]() {
@@ -1120,11 +1195,18 @@ public:
         // Wait 10ms and try again.
         usleep(10000);
       }
-      auto fulfillerPair = kj::newPromiseAndFulfiller<capnp::Capability::Client>();
 
+      // Make a redirecting capability that will point to the most-recent SessionContext, which
+      // we dub the "hack context" since it may or may not actually be the right one to be calling.
+      // See the TODO in ApiRestorer::rsetore().
+      auto ownHackContext = kj::heap<RedirectableCapability>();
+      auto& hackContext = *ownHackContext;
+      capnp::Capability::Client hackContextClient = kj::mv(ownHackContext);
+
+      // Set up the Supervisor API socket.
       auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
       capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
-      Restorer restorer(kj::heap<UiViewImpl>(*address, fulfillerPair));
+      Restorer restorer(kj::heap<UiViewImpl>(*address, hackContext));
       auto rpcSystem = capnp::makeRpcServer(network, restorer);
 
       // Get the SandstormApi by restoring a null SturdyRef.
@@ -1135,12 +1217,15 @@ public:
       SandstormApi::Client api = rpcSystem.restore(
           hostId, ref.getObjectId()).castAs<SandstormApi>();
 
-      ApiRestorer appRestorer(kj::mv(api), kj::mv(fulfillerPair.promise));
+      // Export a Unix socket on which the application can connect and make calls directly to the
+      // Sandstorm API.
+      ApiRestorer appRestorer(kj::mv(api), kj::mv(hackContextClient));
       ErrorHandlerImpl errorHandler;
       kj::TaskSet tasks(errorHandler);
-      unlink("/tmp/socket-api");  // Clear stale socket, if any.
-      auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:/tmp/socket-api", 0).then(
-          [&](kj::Own<kj::NetworkAddress>&& addr) {
+      unlink("/tmp/sandstorm-api");  // Clear stale socket, if any.
+      auto acceptTask = ioContext.provider->getNetwork()
+          .parseAddress("unix:/tmp/sandstorm-api", 0)
+          .then([&](kj::Own<kj::NetworkAddress>&& addr) {
         auto serverPort = addr->listen();
         auto promise = acceptLoop(*serverPort, appRestorer, tasks);
         return promise.attach(kj::mv(serverPort));

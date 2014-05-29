@@ -25,10 +25,24 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 @0xbf6889795837d1e0;
+# This file defines some hacks added on top of the grain session protocol designed to expose some
+# basic ways to communicate with the outside world (such as e-mail) without requiring persistent
+# capabilities nor the Powerbox (which will take some time to implement). Once the Powerbox is
+# available, these hacks should go away. Consider them pre-deprecated.
 
 using Grain = import "grain.capnp";
 using Email = import "email.capnp";
-using WebSession = import "web-session.capnp".WebSession;
 
-interface HackSession @0x9d0faf74c32bd817 extends(WebSession, Email.EmailSendPort) {}
-interface HackContext @0xe14c1f5321159b8f extends(Grain.SessionContext, Email.EmailSendPort) {}
+interface HackSessionContext @0xe14c1f5321159b8f
+    extends(Grain.SessionContext, Email.EmailSendPort) {
+  # The SessionContext passed to a grain when newSession() is called is actually of type
+  # HackSessionContext. This is the case both when opening HackEmailSessions (below) and regular
+  # WebSessions.
+}
+
+interface HackEmailSession @0xc3b5ced7344b04a6 extends(Grain.UiSession, Email.EmailSendPort) {
+  # UiView.newSession() may be called with this type as the session type in order to deliver
+  # SMTP instead of HTTP requests. Of course, this doesn't actually implement a UI at all; it is
+  # abusing the UI session API only because the correct way to open non-UI communications
+  # channels -- i.e. persistent capabilities and Powerbox interactions -- is not implemented.
+}

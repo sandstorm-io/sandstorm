@@ -591,7 +591,7 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
                                spk::Manifest::Reader manifest, kj::StringPtr bridgePath,
                                kj::Function<void(kj::StringPtr)>& callback) {
   auto searchPath = sourceMap.getSearchPath();
-  auto layers = kj::heapArrayBuilder<fuse::Node::Client>(searchPath.size() + 2);
+  auto layers = kj::heapArrayBuilder<fuse::Node::Client>(searchPath.size() + 3);
 
   {
     capnp::MallocMessageBuilder manifestCopy(manifest.totalSize().wordCount + 4);

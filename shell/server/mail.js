@@ -27,6 +27,14 @@ var Url = Npm.require("url");
 
 var HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 
+var DAILY_LIMIT = 50;
+var RECIPIENT_LIMIT = 20;
+
+var dailySendCounts = {};
+// Maps user IDs to counts of the number of e-mails they have sent today.
+
+Meteor.setInterval(function () { dailySendCounts = {}; }, 86400);
+
 Meteor.startup(function() {
   var SANDSTORM_SMTP_PORT = parseInt(process.env.SANDSTORM_SMTP_PORT, 10) || 30025;
 
@@ -153,8 +161,10 @@ HackSessionContextImpl.prototype._getPublicId = function () {
 
   while (!this.publicId) {
     // We haven't looked up the public ID yet.
-    var grain = Grains.findOne(this.grainId, {fields: {publicId: 1}});
+    var grain = Grains.findOne(this.grainId, {fields: {publicId: 1, userId: 1}});
     if (!grain) throw new Error("Grain does not exist.");
+
+    this.userId = grain.userId;
 
     if (grain.publicId) {
       this.publicId = grain.publicId;
@@ -185,6 +195,17 @@ HackSessionContextImpl.prototype._getAddress = function () {
 
 HackSessionContextImpl.prototype.send = function (email) {
   return inMeteor(function() {
+    var recipientCount = 0;
+    recipientCount += email.to ? email.to.length : 0;
+    recipientCount += email.cc ? email.cc.length : 0;
+    recipientCount += email.bcc ? email.bcc.length : 0;
+    if (recipientCount > RECIPIENT_LIMIT) {
+      throw new Error(
+          "Sorry, Sandstorm currently only allows you to send an e-mail to " + RECIPIENT_LIMIT +
+          " recipients at a time, for spam control. Consider setting up a mailing list. " +
+          "Please feel free to contact us if this is a problem for you.");
+    }
+
     // Overwrite the "from" address with the grain's address.
     if (!email.from) {
       email.from = {};
@@ -214,6 +235,17 @@ HackSessionContextImpl.prototype.send = function (email) {
     //   headers['date'] = email.date;
 
     newEmail['headers'] = headers;
+
+    if (!(this.userId in dailySendCounts)) {
+      dailySendCounts[this.userId] = 0;
+    }
+    var sentToday = ++dailySendCounts[this.userId];
+    if (sentToday > DAILY_LIMIT) {
+      throw new Error(
+          "Sorry, you've reached your e-mail sending limit for today. Currently, Sandstorm " +
+          "limits each user to " + DAILY_LIMIT + " e-mails per day for spam control reasons. " +
+          "Please feel free to contact us if this is a problem.");
+    }
 
     Email.send(newEmail);
   });

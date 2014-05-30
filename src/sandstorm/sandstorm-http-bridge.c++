@@ -1002,7 +1002,7 @@ public:
     auto params = context.getParams();
 
     KJ_REQUIRE(params.getSessionType() == capnp::typeId<WebSession>() ||
-               params.getSessionType() == capnp::typeId<EmailSendPort>(),
+               params.getSessionType() == capnp::typeId<HackEmailSession>(),
                "Unsupported session type.");
 
     if (params.getSessionType() == capnp::typeId<WebSession>()) {

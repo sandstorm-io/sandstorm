@@ -20,6 +20,7 @@
 
 var EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 var HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
+var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
 var EmailMessage = EmailRpc.EmailMessage;
 var EmailSendPort = EmailRpc.EmailSendPort;
 
@@ -72,8 +73,8 @@ Meteor.startup(function() {
           references: mail.references || [],
           inReplyTo: mail.inReplyTo || [],
           subject: mail.subject || '',
-          text: mail.text || '',
-          html: mail.html || ''
+          text: mail.text || null,
+          html: mail.html || null
         };
 
         // Get list of grain IDs.
@@ -88,7 +89,7 @@ Meteor.startup(function() {
         }));
 
         // Deliver to each grain in parallel.
-        return Promise.all(grainPublicIds.forEach(function (publicId) {
+        return Promise.all(grainPublicIds.map(function (publicId) {
           // Wrap in a function so that we can call it recursively to retry.
           function tryDeliver(retryCount) {
             var grainId;
@@ -103,14 +104,23 @@ Meteor.startup(function() {
                 throw new Error("No such grain: ", publicId);
               }
             }).then(function (connection) {
-              var supervisor = this.connection.restore(null, Supervisor);
+              var supervisor = connection.restore(null, Supervisor);
               var uiView = supervisor.getMainView().view;
+
+              // Create an arbitrary struct to use as the session params. E-mail sessions actually
+              // require no params, but node-capnp won't let us pass null and we don't have an
+              // EmptyStruct type available, so we just use EmailAddress, but any struct type would
+              // work.
+              // TODO(cleanup): Fix node-capnp to accept null.
+              var emptyParams = Capnp.serialize(EmailRpc.EmailAddress, {});
+
               // Create a new session of type HackEmailSession. This is a short-term hack until
               // persistent capabilities and the Powerbox are implemented. A session of type
               // HackEmailSession expects a HackSessionContext and the session context and does not
               // take any session parameters.
               var session = uiView
-                  .newSession({}, makeHackSessionContext(grainId), "0xc3b5ced7344b04a6", null)
+                  .newSession({}, makeHackSessionContext(grainId),
+                              "0xc3b5ced7344b04a6", emptyParams)
                   .session.castAs(EmailSendPort);
               return session.send(mailMessage);
             }).catch(function (err) {
@@ -134,14 +144,17 @@ Meteor.startup(function() {
 });
 
 function formatAddress(field) {
-  if (!field)
+  if (!field) {
     return null;
+  }
 
-  if (Array.isArray(field))
-    return field.forEach(formatAddress);
+  if (Array.isArray(field)) {
+    return field.map(formatAddress);
+  }
 
-  if (field.name)
+  if (field.name) {
     return field.name + ' <' + field.address + '>';
+  }
 
   return field.address;
 };
@@ -175,7 +188,7 @@ HackSessionContextImpl.prototype._getPublicId = function () {
       // Carefully perform an update that becomes a no-op if anyone else has assigned a public ID
       // simultaneously.
       if (Grains.update({_id: this.grainId, publicId: { $exists: false }},
-                        { publicId: candidate }) > 0) {
+                        { $set: { publicId: candidate } }) > 0) {
         // We won the race.
         this.publicId = candidate;
       }
@@ -194,7 +207,7 @@ HackSessionContextImpl.prototype._getAddress = function () {
 }
 
 HackSessionContextImpl.prototype.send = function (email) {
-  return inMeteor(function() {
+  return inMeteor((function() {
     var recipientCount = 0;
     recipientCount += email.to ? email.to.length : 0;
     recipientCount += email.cc ? email.cc.length : 0;
@@ -248,6 +261,9 @@ HackSessionContextImpl.prototype.send = function (email) {
     }
 
     Email.send(newEmail);
+  }).bind(this)).catch(function (err) {
+    console.error("Error sending e-mail:", err.stack);
+    throw err;
   });
 };
 

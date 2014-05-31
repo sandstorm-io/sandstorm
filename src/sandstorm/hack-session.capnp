@@ -38,6 +38,14 @@ interface HackSessionContext @0xe14c1f5321159b8f
   # The SessionContext passed to a grain when newSession() is called is actually of type
   # HackSessionContext. This is the case both when opening HackEmailSessions (below) and regular
   # WebSessions.
+
+  getPublicId @0 () -> (publicId :Text, hostname :Text);
+  # Get the grain's public ID, assigning one if it isn't already assigned. The public ID is used
+  # as the e-mail address and for serving static content.
+  #
+  # Warning: Allocating a public ID means that the /var/www and /var/mail directories become
+  #   special. Do not create these directories unless you intend for them to serve their respective
+  #   purposes.
 }
 
 interface HackEmailSession @0xc3b5ced7344b04a6 extends(Grain.UiSession, Email.EmailSendPort) {

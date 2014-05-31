@@ -272,3 +272,9 @@ HackSessionContextImpl.prototype.getAddress = function() {
     return this._getAddress();
   });
 };
+
+HackSessionContextImpl.prototype.getPublicId = function() {
+  return inMeteor(function () {
+    return [ this._getPublicId(), HOSTNAME ];
+  });
+};

@@ -23,7 +23,6 @@
 var Url = Npm.require("url");
 var Fs = Npm.require("fs");
 var Dns = Npm.require("dns");
-var Connect = Npm.require("connect");
 var HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 var CACHE_TTL = 30 * 1000;  // 30 seconds
 var DNS_CACHE_TTL = CACHE_TTL;
@@ -50,8 +49,6 @@ Meteor.startup(function () {
       // Go on to Meteor.
       return next();
     }
-
-    console.log("Custom host:", host);
 
     // This is not Sandstorm's hostname! Perhaps it is a custom host.
     lookupPublicIdFromDns(host).then(function (publicId) {
@@ -105,7 +102,6 @@ function lookupPublicIdFromDns(host) {
   }).then(function (records) {
     for (var i in records) {
       var record = records[i].trim();
-      console.log(record);
       if (record.lastIndexOf("sandstorm-www=", 0) === 0) {
         var result = record.slice("sandstorm-www=".length);
         dnsCache[host] = { value: result, expiration: Date.now() + DNS_CACHE_TTL };

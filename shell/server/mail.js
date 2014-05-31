@@ -223,7 +223,15 @@ HackSessionContextImpl.prototype.send = function (email) {
     if (!email.from) {
       email.from = {};
     }
-    email.from.address = this._getAddress();
+    
+    var grainAddress = this._getAddress();
+    
+    // First check if we're changing the from address, and if so, move it to reply-to
+    if (!email.replyTo && email.from.address !== grainAddress) {
+      email.replyTo = _.clone(email.from);
+    }
+
+    email.from.address = grainAddress;
 
     var newEmail = {
       from:     formatAddress(email.from),

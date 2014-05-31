@@ -268,13 +268,13 @@ HackSessionContextImpl.prototype.send = function (email) {
 };
 
 HackSessionContextImpl.prototype.getAddress = function() {
-  return inMeteor(function () {
+  return inMeteor((function () {
     return this._getAddress();
-  });
+  }).bind(this));
 };
 
 HackSessionContextImpl.prototype.getPublicId = function() {
-  return inMeteor(function () {
+  return inMeteor((function () {
     return [ this._getPublicId(), HOSTNAME ];
-  });
+  }).bind(this));
 };

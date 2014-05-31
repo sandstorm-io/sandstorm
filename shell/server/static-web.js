@@ -80,7 +80,10 @@ Meteor.startup(function () {
           res.end("404 not found: " + req.url);
         }
       });
-    }).catch(next);
+    }).catch(function (err) {
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.end(err.message);
+    });
   });
 });
 

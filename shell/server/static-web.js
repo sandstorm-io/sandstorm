@@ -88,29 +88,35 @@ Meteor.startup(function () {
 });
 
 function lookupPublicIdFromDns(host) {
+  // Given a hostname, determine its public ID.
+  // We look for a TXT record indicating the public ID. Unfortunately, according to spec, a single
+  // hostname cannot have both a CNAME and a TXT record, because a TXT lookup on a CNAME'd host
+  // should actually be redirected to the CNAME, just like an A lookup would be. In practice lots
+  // of DNS software actually allows TXT records on CNAMEs, and it seems to work, but some software
+  // does not allow it and it's explicitly disallowed by the spec. Therefore, we instead look for
+  // the TXT record on a subdomain.
+  //
+  // I also considered having the CNAME itself point to <publicId>.<hostname>, where
+  // *.<hostname> is in turn a CNAME for the Sandstorm server. This approach seemed elegant at
+  // first, but has a number of problems, the biggest being that it breaks the ability to place a
+  // CDN like CloudFlare in front of the site.
+
   var cache = dnsCache[host];
   if (cache && Date.now() < cache.expiration) {
     return Promise.resolve(cache.value);
   }
 
   return new Promise(function (resolve, reject) {
-    Dns.resolveTxt(host, function (err, records) {
+    Dns.resolveTxt("sandstorm-www." + host, function (err, records) {
       if (err) {
-        reject(new Error("Error looking up DNS TXT records for host '" +
-                         host + "': " + err.message));
+        reject(err);
+      } else if (records.length !== 1) {
+        reject(new Error("Host 'sandstorm-www." + host + "' must have exactly one TXT record."));
       } else {
-        resolve(records);
+        var result = records[0];
+        dnsCache[host] = { value: result, expiration: Date.now() + DNS_CACHE_TTL };
+        resolve(result);
       }
     });
-  }).then(function (records) {
-    for (var i in records) {
-      var record = records[i].trim();
-      if (record.lastIndexOf("sandstorm-www=", 0) === 0) {
-        var result = record.slice("sandstorm-www=".length);
-        dnsCache[host] = { value: result, expiration: Date.now() + DNS_CACHE_TTL };
-        return result;
-      }
-    }
-    throw new Error("Host '" + host + "' has no 'sandstorm-www=' TXT record.");
   });
 }

@@ -30,6 +30,7 @@
 #include <map>
 #include <set>
 #include <unistd.h>
+#include <fcntl.h>
 #include "fuse.h"
 
 #if __QTCREATOR
@@ -728,7 +729,7 @@ kj::Array<kj::String> mapFile(
       // Prepend `sourceDir` to relative paths.
       candidate = joinPaths(sourceDir, candidate);
 
-      if (access(candidate.cStr(), F_OK) == 0) {
+      if (faccessat(AT_FDCWD, candidate.cStr(), F_OK, AT_SYMLINK_NOFOLLOW) == 0) {
         // Found!
         matches.add(kj::mv(candidate));
       }

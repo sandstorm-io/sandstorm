@@ -1103,13 +1103,13 @@ private:
 
   void checkOwnedByRoot(kj::StringPtr path, kj::StringPtr title) {
     if (access(path.cStr(), F_OK) != 0) {
-      context.exitError(kj::str(title, " not found.  Did you run setup.sh?"));
+      context.exitError(kj::str(title, " not found."));
     }
 
     struct stat stats;
     KJ_SYSCALL(stat(path.cStr(), &stats));
     if (stats.st_uid != 0) {
-      context.exitError(kj::str(title, " not owned by root.  Did you run setup.sh?"));
+      context.exitError(kj::str(title, " not owned by root."));
     }
   }
 
@@ -1175,7 +1175,7 @@ private:
     // Verify ownership is intact.
     checkOwnedByRoot("..", "Install directory");
     checkOwnedByRoot(".", "Version intsall directory");
-    checkOwnedByRoot("sandstorm", "Executable");
+    checkOwnedByRoot("sandstorm", "'sandstorm' executable");
     checkOwnedByRoot("../sandstorm.conf", "Config file");
 
     // Unshare the mount namespace, so we can create some private bind mounts.

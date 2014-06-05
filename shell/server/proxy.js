@@ -978,6 +978,7 @@ Meteor.publish("grainLog", function (grainId) {
   // When the subscription stops, stop watching the file.
   this.onStop(function() {
     watcher.close();
+    Fs.closeSync(fd);
   });
 
   // Read initial 8k tail data immediately.

@@ -223,11 +223,11 @@ img {
   padding: 4px 8px;
   margin: 0;
 }
-#apps .openGrain, #apps .newGrain, #installAppsLink, #uploadAppLink, #emailInvitesLink, #urlInvitesLink {
+#apps .openGrain, #apps .newGrain, #installAppsLink, #uploadAppLink, #emailInvitesLink, #urlInvitesLink, #aboutLink {
   cursor: pointer;
 }
 #apps .openGrain:hover, #apps .newGrain:hover, #installAppsLink:hover,
-    #uploadAppLink:hover, #emailInvitesLink:hover, #urlInvitesLink:hover {
+    #uploadAppLink:hover, #emailInvitesLink:hover, #urlInvitesLink:hover, #aboutLink:hover {
   background-color: #333;
 }
 

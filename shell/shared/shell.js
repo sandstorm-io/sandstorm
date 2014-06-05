@@ -164,6 +164,11 @@ if (Meteor.isClient) {
     "click #urlInvitesLink": function (event) {
       Session.set("grainMenuOpen", false);
       Router.go("signupMint", {});
+    },
+
+    "click #aboutLink": function (event) {
+      Session.set("grainMenuOpen", false);
+      Router.go("about", {});
     }
   });
 
@@ -221,6 +226,20 @@ if (Meteor.isClient) {
   Router.onBeforeAction("loading");
 }
 
+function getBuildInfo() {
+  var build = Meteor.settings && Meteor.settings.public && Meteor.settings.public.build;
+  var isNumber = typeof build === "number";
+  if (!build) {
+    build = "(unknown)";
+  } else if (isNumber) {
+    build = String(Math.floor(build / 1000)) + "." + String(build % 1000);
+  }
+  return {
+    build: build,
+    isUnofficial: !isNumber
+  };
+}
+
 Router.map(function () {
   this.route("root", {
     path: "/",
@@ -229,20 +248,13 @@ Router.map(function () {
     },
     onAfterAction: function () { setTimeout(initLogoAnimation, 0); },
     data: function () {
-      var build = Meteor.settings && Meteor.settings.public && Meteor.settings.public.build;
-      if (!build) {
-        build = "(unknown)";
-      } else if (typeof build == "number") {
-        build = String(Math.floor(build / 1000)) + "." + String(build % 1000);
-      }
-
       return {
         host: document.location.host,
         origin: document.location.origin,
         isSignedUp: isSignedUp(),
         isAdmin: isAdmin(),
         isFirstRun: !HasUsers.findOne("hasUsers"),
-        build: build
+        build: getBuildInfo().build
       };
     }
   });
@@ -258,6 +270,13 @@ Router.map(function () {
       // TODO(cleanup):  Didn't use Router.go() because the url may contain a query term.
       document.location = "/install/" + url;
       return {};
+    }
+  });
+
+  this.route("about", {
+    path: "/about",
+    data: function () {
+      return getBuildInfo();
     }
   });
 });

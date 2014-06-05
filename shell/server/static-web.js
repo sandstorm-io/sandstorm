@@ -109,7 +109,8 @@ function lookupPublicIdFromDns(host) {
   return new Promise(function (resolve, reject) {
     Dns.resolveTxt("sandstorm-www." + host, function (err, records) {
       if (err) {
-        reject(err);
+        reject(new Error("Error looking up DNS TXT records for host '" +
+                         host + "': " + err.message));
       } else if (records.length !== 1) {
         reject(new Error("Host 'sandstorm-www." + host + "' must have exactly one TXT record."));
       } else {

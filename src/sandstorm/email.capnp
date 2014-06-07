@@ -39,7 +39,7 @@ struct EmailAddress {
 }
 
 struct EmailMessage {
-  date @0 :Int64; # Seconds since unix epoch
+  date @0 :Int64; # Micro-seconds since unix epoch.
 
   from @1 :EmailAddress;
   to @2 :List(EmailAddress);

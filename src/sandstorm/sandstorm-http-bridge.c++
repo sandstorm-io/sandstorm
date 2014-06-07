@@ -848,7 +848,8 @@ public:
     // Construct the mail file.
     kj::Vector<kj::String> lines;
 
-    // TODO(soon): parse and write Date
+    addDateHeader(lines, email.getDate());
+
     addHeader(lines, "To", email.getTo());
     addHeader(lines, "From", email.getFrom());
     addHeader(lines, "Reply-To", email.getReplyTo());
@@ -955,6 +956,15 @@ private:
     // Used for lists of message IDs (e.g. References an In-Reply-To). Each ID should be "quoted"
     // with <>.
     addHeader(lines, name, kj::strArray(KJ_MAP(i, items) { return kj::str('<', i, '>'); }, " "));
+  }
+
+  static void addDateHeader(kj::Vector<kj::String>& lines, int64_t microseconds) {
+    time_t seconds(microseconds / 1000000);
+    struct tm *tm = gmtime(&seconds);
+    char date[40];
+    strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S %z", tm);
+
+    addHeader(lines, "Date", date);
   }
 };
 

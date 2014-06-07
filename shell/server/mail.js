@@ -65,7 +65,9 @@ Meteor.startup(function() {
         }
 
         var mailMessage = {
-          date: (mail.date || new Date()).toString(),
+          // Date should be ok represented as a javascript float, since its mantissa has a maximum
+          // value of 2^53, which equates to about the year 2255 in microseconds since the epoch
+          date: (mail.date || new Date()).getTime() * 1000,
           from: from,
           to: mail.to,
           cc: mail.cc || [],
@@ -247,15 +249,17 @@ HackSessionContextImpl.prototype.send = function (email) {
     };
 
     var headers = {};
-    if(email.messageId)
+    if (email.messageId)
       headers['message-id'] = email.messageId;
-    if(email.references)
+    if (email.references)
       headers['references'] = email.references;
-    if(email.messageId)
+    if (email.messageId)
       headers['in-reply-to'] = email.inReplyTo;
-    // TODO(someday): parse and set date
-    // if(email.date)
-    //   headers['date'] = email.date;
+    if (email.date) {
+      var date = new Date(email.date / 1000);
+      if (!isNaN(date.getTime())) // Check to make sure date is valid
+        headers['date'] = date.toUTCString();
+    }
 
     newEmail['headers'] = headers;
 

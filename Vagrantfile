@@ -15,9 +15,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # visit their sandstorm app from their browser as localhost.localdomain:6080.
   config.vm.network :forwarded_port, guest: 6080, host: 6080
 
-  # Create a private network, which allows host-only access to the machine
-  # using a specific IP.
-  config.vm.network :private_network, ip: "192.168.33.10"
+  # Forward all of 7000-7100, since these are used for hosting apps.
+  $port = 7000
+  while $port <= 7100  do
+    config.vm.network :forwarded_port, guest: $port, host: $port
+    $port += 1
+  end
 
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on

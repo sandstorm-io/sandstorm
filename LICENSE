@@ -31,6 +31,8 @@ src/sandstorm/legacy-bridge.c++
     Copyright: Kenton Varda
     License: BSD 2-clause
     License text: See below
+    Note: Uses public domain code from libb64
+          (http://libb64.sourceforge.net/)
 
 All files not explicitly mentioned above or below
     What: Sandstorm implementation

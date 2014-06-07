@@ -38,6 +38,14 @@ struct EmailAddress {
   name @1 :Text;
 }
 
+struct EmailAttachment {
+  contentType @0 :Text; # header is actually content-type
+  contentDisposition @1 :Text; # header is actually content-disposition
+  contentId @2 :Text; # header is actually content-id
+
+  content @3 :Data;
+}
+
 struct EmailMessage {
   date @0 :Int64; # Micro-seconds since unix epoch.
 
@@ -47,7 +55,6 @@ struct EmailMessage {
   bcc @4 :List(EmailAddress);
   replyTo @5 :EmailAddress; # header is actually reply-to
 
-  # Not sure about these 3, but they can be pretty useful for mail clients
   messageId @6 :Text; # header is actually message-id
   references @7 :List(Text);
   inReplyTo @8 :List(Text); # header is actually in-reply-to
@@ -58,8 +65,7 @@ struct EmailMessage {
   # Any other content-types will be in the attachments field.
   text @10 :Text;
   html @11 :Text;
-  # TODO(someday): attachments @14 :List(Text);
-  #   Probably should add an Attachment struct with at least Content-Type split out
+  attachments @12 :List(EmailAttachment);
 }
 
 interface EmailSendPort @0xec831dbf4cc9bcca {

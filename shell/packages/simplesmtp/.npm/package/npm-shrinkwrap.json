@@ -1,5 +1,46 @@
 {
   "dependencies": {
+    "mailcomposer": {
+      "version": "0.2.11",
+      "dependencies": {
+        "mimelib": {
+          "version": "0.2.16",
+          "dependencies": {
+            "encoding": {
+              "version": "0.1.7",
+              "dependencies": {
+                "iconv-lite": {
+                  "version": "0.2.11"
+                }
+              }
+            },
+            "addressparser": {
+              "version": "0.2.1"
+            }
+          }
+        },
+        "mime": {
+          "version": "1.2.11"
+        },
+        "he": {
+          "version": "0.3.6"
+        },
+        "punycode": {
+          "version": "1.2.4"
+        },
+        "follow-redirects": {
+          "version": "0.0.3",
+          "dependencies": {
+            "underscore": {
+              "version": "1.6.0"
+            }
+          }
+        },
+        "dkim-signer": {
+          "version": "0.1.2"
+        }
+      }
+    },
     "mailparser": {
       "version": "0.4.2",
       "dependencies": {

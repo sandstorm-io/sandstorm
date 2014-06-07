@@ -19,6 +19,7 @@
 // <http://www.gnu.org/licenses/>.
 
 var Http = Npm.require("http");
+var Future = Npm.require("fibers/future");
 
 var EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 var HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
@@ -64,6 +65,20 @@ Meteor.startup(function() {
           from = { address: req.from, name: false };
         }
 
+        var attachments = [];
+        if (mail.attachments) {
+          attachments = mail.attachments.map(function (attachment) {
+            var disposition = attachment.contentDisposition || "attachment";
+            disposition += ';\n\tfilename="' + (attachment.fileName || attachment.generatedFileName) + '"';
+            return {
+              contentType: attachment.contentType,
+              contentDisposition: disposition,
+              contentId: attachment.contentId,
+              content: attachment.content
+            };
+          });
+        }
+
         var mailMessage = {
           // Date should be ok represented as a javascript float, since its mantissa has a maximum
           // value of 2^53, which equates to about the year 2255 in microseconds since the epoch
@@ -78,7 +93,8 @@ Meteor.startup(function() {
           inReplyTo: mail.inReplyTo || [],
           subject: mail.subject || '',
           text: mail.text || null,
-          html: mail.html || null
+          html: mail.html || null,
+          attachments: attachments
         };
 
         // Get list of grain IDs.
@@ -210,6 +226,51 @@ HackSessionContextImpl.prototype._getAddress = function () {
   return this._getPublicId() + '@' + HOSTNAME;
 }
 
+// makePool and getPool are lifted from the Meteor email package
+var makePool = function (mailUrlString) {
+  var mailUrl = Url.parse(mailUrlString);
+  if (mailUrl.protocol !== 'smtp:')
+    throw new Error("Email protocol in $MAIL_URL (" +
+                    mailUrlString + ") must be 'smtp'");
+
+  var port = +(mailUrl.port);
+  var auth = false;
+  if (mailUrl.auth) {
+    var parts = mailUrl.auth.split(':', 2);
+    auth = {user: parts[0] && decodeURIComponent(parts[0]),
+            pass: parts[1] && decodeURIComponent(parts[1])};
+  }
+
+  var pool = simplesmtp.createClientPool(
+    port,  // Defaults to 25
+    mailUrl.hostname,  // Defaults to "localhost"
+    { secureConnection: (port === 465),
+      // XXX allow maxConnections to be configured?
+      auth: auth });
+
+  pool._future_wrapped_sendMail = _.bind(Future.wrap(pool.sendMail), pool);
+  return pool;
+};
+
+// We construct smtpPool at the first call to Email.send, so that
+// Meteor.startup code can set $MAIL_URL.
+var smtpPoolFuture = new Future();
+var configured = false;
+
+var getPool = function () {
+  // We check MAIL_URL in case someone else set it in Meteor.startup code.
+  if (!configured) {
+    configured = true;
+    var url = process.env.MAIL_URL;
+    var pool = null;
+    if (url)
+      pool = makePool(url);
+    smtpPoolFuture.return(pool);
+  }
+
+  return smtpPoolFuture.wait();
+};
+
 HackSessionContextImpl.prototype.send = function (email) {
   return inMeteor((function() {
     var recipientCount = 0;
@@ -237,7 +298,9 @@ HackSessionContextImpl.prototype.send = function (email) {
 
     email.from.address = grainAddress;
 
-    var newEmail = {
+    var mc = new MailComposer();
+
+    mc.setMessageOption({
       from:     formatAddress(email.from),
       to:       formatAddress(email.to),
       cc:       formatAddress(email.cc),
@@ -246,22 +309,31 @@ HackSessionContextImpl.prototype.send = function (email) {
       subject:  email.subject,
       text:     email.text,
       html:     email.html
-    };
+    });
 
     var headers = {};
     if (email.messageId)
-      headers['message-id'] = email.messageId;
+      mc.addHeader('message-id', email.messageId);
     if (email.references)
-      headers['references'] = email.references;
+      mc.addHeader('references', email.references);
     if (email.messageId)
-      headers['in-reply-to'] = email.inReplyTo;
+      mc.addHeader('in-reply-to', email.inReplyTo);
     if (email.date) {
       var date = new Date(email.date / 1000);
       if (!isNaN(date.getTime())) // Check to make sure date is valid
-        headers['date'] = date.toUTCString();
+        mc.addHeader('date', date.toUTCString());
     }
 
-    newEmail['headers'] = headers;
+    if (email.attachments) {
+      email.attachments.forEach(function (attachment) {
+        mc.addAttachment({
+          cid: attachment.contentId,
+          contentType: attachment.contentType,
+          contentDisposition: attachment.contentDisposition,
+          contents: attachment.content
+        });
+      });
+    }
 
     if (!(this.userId in dailySendCounts)) {
       dailySendCounts[this.userId] = 0;
@@ -274,7 +346,7 @@ HackSessionContextImpl.prototype.send = function (email) {
           "Please feel free to contact us if this is a problem.");
     }
 
-    Email.send(newEmail);
+    getPool()._future_wrapped_sendMail(mc).wait();
   }).bind(this)).catch(function (err) {
     console.error("Error sending e-mail:", err.stack);
     throw err;

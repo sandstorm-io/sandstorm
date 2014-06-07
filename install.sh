@@ -37,6 +37,20 @@ set -euo pipefail
 SCRIPT_NAME=$1
 shift
 
+# Look for a -d option, in which case, we presume the user
+# wants us to accept all defaults.
+USE_DEFAULTS="no"
+while getopts ":d" opt; do
+  case $opt in
+    d)
+      USE_DEFAULTS="yes"
+      ;;
+  esac
+done
+
+# Pass positional parameters through
+shift "$((OPTIND - 1))"
+
 if [ $# = 1 ] && [[ ! $1 =~ ^- ]]; then
   BUNDLE_FILE="$1"
 elif [ $# != 0 ]; then
@@ -44,6 +58,8 @@ elif [ $# != 0 ]; then
   echo "If <bundle> is provided, it must be the name of a Sandstorm bundle file," >&2
   echo "like 'sandstorm-123.tar.xz', which will be installed. Otherwise, the script" >&2
   echo "downloads a bundle from the internet via HTTP." >&2
+  echo '' >&2
+  echo 'If -d is specified, the script does not prompt for input; it accepts all defaults.' >&2
   exit 1
 fi
 
@@ -56,7 +72,7 @@ fail() {
   exit 1
 }
 
-if [ ! -t 1 ]; then
+if [ "no" = "$USE_DEFAULTS" ] && [ ! -t 1 ]; then
   fail "This script is interactive. Please run it on a terminal."
 fi
 
@@ -74,6 +90,12 @@ prompt() {
   # Hack: We read from FD 3 because when reading the script from a pipe, FD 0 is the script, not
   #   the terminal. We checked above that FD 1 (stdout) is in fact a terminal and then dup it to
   #   FD 3, thus we can input from FD 3 here.
+  if [ "yes" = "$USE_DEFAULTS" ] ; then
+    # Print the default.
+    echo "$2"
+    return
+  fi
+
   read -u 3 -p "$1 [$2] " VALUE
   if [ -z "$VALUE" ]; then
     VALUE=$2

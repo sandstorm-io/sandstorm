@@ -952,7 +952,7 @@ private:
 	// Mount it to retain permission to mount it.  This mount will be associated with the
 	// wrong pid namespce.  We'll fix it after forking.  We have to bind it: we can't mount
 	// a new copy because we don't have the appropriate permission on the active pid ns.
-	KJ_SYSCALL(mount("/proc", "proc", nullptr, MS_BIND, nullptr));
+	KJ_SYSCALL(mount("/proc", "proc", nullptr, MS_BIND | MS_REC, nullptr));
       } else {
 	mountProc = false;
       }

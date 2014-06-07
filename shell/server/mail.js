@@ -297,27 +297,42 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
       var buffers = [];
       var err;
 
-      if (resp.statusCode >= 500) {
-        err = new Error("Status code " + resp.statusCode + " received in response.");
-        e.nature = "networkFailure";
-        reject(err);
-      } else if (resp.statusCode >= 400) {
-        err = new Error("Status code " + resp.statusCode + " received in response.");
-        e.nature = "precondition";
-        reject(err);
-      } else if (resp.statusCode >= 300) {
-        resolve(session.httpGet(resp.headers.location));
-      } else {
-        resp.on('data', function (buf) {
-          buffers.push(buf);
-        });
-
-        resp.on('end', function() {
-          resolve({
-            content: Buffer.concat(buffers),
-            mimeType: resp.headers['content-type'] || null
+      switch (Math.floor(resp.statusCode / 100)) {
+        case 2:
+          // 2xx response -- OK.
+          resp.on('data', function (buf) {
+            buffers.push(buf);
           });
-        });
+
+          resp.on('end', function() {
+            resolve({
+              content: Buffer.concat(buffers),
+              mimeType: resp.headers['content-type'] || null
+            });
+          });
+          break;
+        case 3:
+          // 3xx response -- redirect.
+          resolve(session.httpGet(resp.headers.location));
+          break;
+        case 4:
+          // 4xx response -- client error.
+          err = new Error("Status code " + resp.statusCode + " received in response.");
+          e.nature = "precondition";
+          reject(err);
+          break;
+        case 5:
+          // 5xx response -- internal server error.
+          err = new Error("Status code " + resp.statusCode + " received in response.");
+          e.nature = "localBug";
+          reject(err);
+          break;
+        default:
+          // ???
+          err = new Error("Invalid status code " + resp.statusCode + " received in response.");
+          e.nature = "localBug";
+          reject(err);
+          break;
       }
     });
 

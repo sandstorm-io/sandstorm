@@ -48,7 +48,16 @@ interface HackSessionContext @0xe14c1f5321159b8f
   #   purposes.
 
   httpGet @1 (url: Text) -> (mimeType :Text, content :Data);
-  # This allows fetching of external urls. Only GET is supported.
+  # Perform a simple HTTP GET request, returning the content. Note that this hack is especially
+  # temporary because it allows apps to trivially leak data. Longer-term, we want the user to
+  # explicitly approve communications with external servers. However, since we don't have the
+  # infrastrucutre for that yet, and we really want an RSS reader on Sandstorm, we're temporarily
+  # adding this. As of this writing, it's possible to issue arbitrary HTTP requests from the client
+  # side anyway.
+  #
+  # This interface is very limited currently -- e.g. it does not support arbitrary headers, POSTs,
+  # etc. If you need any of these things, talk to the Sandstorm developers and we'll consider
+  # adding some more hacks, but, again, this will all go away once the Powerbox is implemented.
 }
 
 interface HackEmailSession @0xc3b5ced7344b04a6 extends(Grain.UiSession, Email.EmailSendPort) {

@@ -40,10 +40,14 @@ shift
 # Look for a -d option, in which case, we presume the user
 # wants us to accept all defaults.
 USE_DEFAULTS="no"
-while getopts ":d" opt; do
+USE_EXTERNAL_INTERFACE="no"
+while getopts ":de" opt; do
   case $opt in
     d)
       USE_DEFAULTS="yes"
+      ;;
+    e)
+      USE_EXTERNAL_INTERFACE="yes"
       ;;
   esac
 done
@@ -54,12 +58,13 @@ shift "$((OPTIND - 1))"
 if [ $# = 1 ] && [[ ! $1 =~ ^- ]]; then
   BUNDLE_FILE="$1"
 elif [ $# != 0 ]; then
-  echo "usage: $SCRIPT_NAME [<bundle>]" >&2
+  echo "usage: $SCRIPT_NAME [-d] [-e] [<bundle>]" >&2
   echo "If <bundle> is provided, it must be the name of a Sandstorm bundle file," >&2
   echo "like 'sandstorm-123.tar.xz', which will be installed. Otherwise, the script" >&2
   echo "downloads a bundle from the internet via HTTP." >&2
   echo '' >&2
   echo 'If -d is specified, the script does not prompt for input; it accepts all defaults.' >&2
+  echo 'If -e is specified, sandstorm listens on an external interface, not merely loopback.' >&2
   exit 1
 fi
 
@@ -251,12 +256,22 @@ else
   done
 
   MONGO_PORT=$(prompt "Database port (choose any unused port):" "$((PORT + 1))")
-  if prompt-yesno "Expose to localhost only?" yes; then
-    BIND_IP=127.0.0.1
-    SS_HOSTNAME=localhost
-  else
+
+  # Figure out if we want to listen on internal vs. external interfaces.
+  if [ "yes" != "$USE_EXTERNAL_INTERFACE" ]; then
+    if prompt-yesno "Expose to localhost only?" yes ; then
+      USE_EXTERNAL_INTERFACE="no"
+    else
+      USE_EXTERNAL_INTERFACE="yes"
+    fi
+  fi
+
+  if [ "yes" = "$USE_EXTERNAL_INTERFACE" ]; then
     BIND_IP=0.0.0.0
     SS_HOSTNAME=$(hostname -f)
+  else
+    BIND_IP=127.0.0.1
+    SS_HOSTNAME=localhost
   fi
   BASE_URL=$(prompt "URL users will enter in browser:" "http://$SS_HOSTNAME:$PORT")
 

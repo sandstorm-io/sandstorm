@@ -46,6 +46,9 @@ interface HackSessionContext @0xe14c1f5321159b8f
   # Warning: Allocating a public ID means that the /var/www and /var/mail directories become
   #   special. Do not create these directories unless you intend for them to serve their respective
   #   purposes.
+
+  httpGet @1 (url: Text) -> (mimeType :Text, content :Data);
+  # This allows fetching of external urls. Only GET is supported.
 }
 
 interface HackEmailSession @0xc3b5ced7344b04a6 extends(Grain.UiSession, Email.EmailSendPort) {

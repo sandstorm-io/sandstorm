@@ -18,6 +18,8 @@
 // License along with Sandstorm.  If not, see
 // <http://www.gnu.org/licenses/>.
 
+var Http = Npm.require("http");
+
 var EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 var HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
 var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
@@ -285,4 +287,45 @@ HackSessionContextImpl.prototype.getPublicId = function() {
   return inMeteor((function () {
     return [ this._getPublicId(), HOSTNAME ];
   }).bind(this));
+};
+
+HackSessionContextImpl.prototype.httpGet = function(url) {
+  var session = this;
+
+  return new Promise(function (resolve, reject) {
+    req = Http.get(url, function (resp) {
+      var buffers = [];
+      var err;
+
+      if (resp.statusCode >= 500) {
+        err = new Error("Status code " + resp.statusCode + " received in response.");
+        e.nature = "networkFailure";
+        reject(err);
+      } else if (resp.statusCode >= 400) {
+        err = new Error("Status code " + resp.statusCode + " received in response.");
+        e.nature = "precondition";
+        reject(err);
+      } else if (resp.statusCode >= 300) {
+        resolve(session.httpGet(resp.headers.location));
+      } else {
+        resp.on('data', function (buf) {
+          buffers.push(buf);
+        });
+
+        resp.on('end', function() {
+          resolve({
+            content: Buffer.concat(buffers),
+            mimeType: resp.headers['content-type'] || null
+          });
+        });
+      }
+    });
+
+    req.on('error', function (e) {
+      e.nature = "networkFailure";
+      reject(e);
+    });
+
+    req.end();
+  });
 };

@@ -450,3 +450,12 @@ input.autoSelect {
   border-collapse: collapse;
   width: 100%;
 }
+
+#about h2 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+#about p {
+  margin-top: 0;
+  margin-bottom: 1em;
+}

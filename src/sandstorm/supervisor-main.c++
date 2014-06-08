@@ -1029,9 +1029,18 @@ private:
     // lose the privilege of mounting proc.
 
     if (mountProc) {
-      KJ_SYSCALL(mount("proc", "usr", nullptr, MS_MOVE, nullptr));
+      auto oldProc = raiiOpen("proc", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+
+      // This puts the new proc onto the namespace root, which is mostly inaccessible.
+      KJ_SYSCALL(mount("proc", "/", nullptr, MS_MOVE, nullptr));
+
+      // Now mount the new proc in the right place.
       KJ_SYSCALL(mount("proc", "proc", "proc", MS_NOSUID | MS_NODEV | MS_NOEXEC, nullptr));
-      KJ_SYSCALL(umount2("usr", MNT_DETACH));
+
+      // And get rid of the old one.
+      KJ_SYSCALL(fchdir(oldProc));
+      KJ_SYSCALL(umount2(".", MNT_DETACH));
+      KJ_SYSCALL(chdir("/"));
     }
   }
 

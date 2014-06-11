@@ -121,6 +121,19 @@ void toLower(kj::ArrayPtr<char> text) {
   }
 }
 
+kj::ArrayPtr<const char> extractHostFromUrl(kj::StringPtr url) {
+  while (url.size() > 0 && 'a' <= url[0] && url[0] <= 'z') {
+    url = url.slice(1);
+  }
+  KJ_REQUIRE(url.startsWith("://"), "Base URL does not have a protocol scheme?");
+  url = url.slice(3);
+  KJ_IF_MAYBE(slashPos, url.findFirst('/')) {
+    return url.slice(0, *slashPos);
+  } else {
+    return url;
+  }
+}
+
 kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
   int fd;
   KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
@@ -445,6 +458,10 @@ private:
               end = strptime(value.cStr(), "%a, %d-%b-%y %T GMT", &t);
               if (end == nullptr) {
                 end = strptime(value.cStr(), "%a %b %d %T %Y", &t);
+                if (end == nullptr) {
+                  // Not valid per HTTP spec, but MediaWiki seems to return this format sometimes.
+                  end = strptime(value.cStr(), "%a, %d-%b-%Y %T GMT", &t);
+                }
               }
             }
             KJ_ASSERT(end != nullptr && *end == '\0', "Invalid HTTP date from app.", value);
@@ -787,7 +804,7 @@ private:
   }
 
   void addCommonHeaders(kj::Vector<kj::String>& lines, WebSession::Context::Reader context) {
-    lines.add(kj::str("Host: sandbox"));
+    lines.add(kj::str("Host: ", extractHostFromUrl(basePath)));
     lines.add(kj::str("User-Agent: ", userAgent));
     lines.add(kj::str("X-Sandstorm-Username: ", userDisplayName));
     lines.add(kj::str("X-Sandstorm-Base-Path: ", basePath));
@@ -958,7 +975,7 @@ private:
   }
 };
 
-class RedirectableCapability: public capnp::Capability::Server {
+class RedirectableCapability final: public capnp::Capability::Server {
   // A capability that forwards all requests to some target. The target can be changed over time.
   // When no target is set, requests are queued and eventually sent to the first target provided.
 

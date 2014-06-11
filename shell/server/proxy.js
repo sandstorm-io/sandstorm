@@ -523,11 +523,14 @@ Proxy.prototype.getConnection = function () {
   return this.connection;
 }
 
+var Url = Npm.require("url");
+var PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
+
 Proxy.prototype.getSession = function (request) {
   if (!this.session) {
     this.getConnection();  // make sure we're connected
     var params = Capnp.serialize(WebSession.Params, {
-      basePath: "http://127.0.0.1:3004",
+      basePath: PROTOCOL + "//" + request.headers.host,
       userAgent: "user-agent" in request.headers
           ? request.headers["user-agent"]
           : "UnknownAgent/0.0",

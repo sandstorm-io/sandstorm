@@ -997,7 +997,7 @@ private:
       // 2) When we exit, the mount namespace disappears and the tmpfs is thus automatically
       //    unmounted.  No need for careful cleanup, and no need to implement a risky recursive
       //    delete.
-      KJ_SYSCALL(mount("sandstorm-tmp", "tmp", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
+      KJ_SYSCALL(mount("sandstorm-tmp", "tmp", "tmpfs", MS_NOATIME | MS_NOSUID,
                      kj::str("size=16m,nr_inodes=4k,mode=770,uid=", uid, ",gid=", gid).cStr()));
     }
     if (access("dev", F_OK) == 0) {
@@ -1011,7 +1011,7 @@ private:
 		       MS_REMOUNT | MS_NOSUID | MS_NOATIME | MS_RDONLY, nullptr));
     }
     if (access("var", F_OK) == 0) {
-      bind(kj::str(varPath, "/sandbox"), "var", MS_NODEV | MS_NOEXEC);
+      bind(kj::str(varPath, "/sandbox"), "var", MS_NODEV);
     }
     if (access("proc/cpuinfo", F_OK) == 0) {
       // Map in the real cpuinfo.

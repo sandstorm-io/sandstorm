@@ -138,6 +138,145 @@ struct HttpStatusInfo {
   };
 };
 
+// This code is taken from libb64 which has been placed in the public domain.
+// For details, see http://sourceforge.net/projects/libb64
+typedef enum {
+  step_A, step_B, step_C
+} base64_encodestep;
+
+typedef struct {
+  base64_encodestep step;
+  char result;
+  int stepcount;
+} base64_encodestate;
+
+const int CHARS_PER_LINE = 72;
+
+void base64_init_encodestate(base64_encodestate* state_in) {
+  state_in->step = step_A;
+  state_in->result = 0;
+  state_in->stepcount = 0;
+}
+
+char base64_encode_value(char value_in) {
+  static const char* encoding = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  if (value_in > 63) return '=';
+  return encoding[(int)value_in];
+}
+
+int base64_encode_block(const char* plaintext_in, int length_in, char* code_out, base64_encodestate* state_in) {
+  const char* plainchar = plaintext_in;
+  const char* const plaintextend = plaintext_in + length_in;
+  char* codechar = code_out;
+  char result;
+  char fragment;
+
+  result = state_in->result;
+
+  switch (state_in->step) {
+    while (1) {
+  case step_A:
+      if (plainchar == plaintextend) {
+        state_in->result = result;
+        state_in->step = step_A;
+        return codechar - code_out;
+      }
+      fragment = *plainchar++;
+      result = (fragment & 0x0fc) >> 2;
+      *codechar++ = base64_encode_value(result);
+      result = (fragment & 0x003) << 4;
+  case step_B:
+      if (plainchar == plaintextend) {
+        state_in->result = result;
+        state_in->step = step_B;
+        return codechar - code_out;
+      }
+      fragment = *plainchar++;
+      result |= (fragment & 0x0f0) >> 4;
+      *codechar++ = base64_encode_value(result);
+      result = (fragment & 0x00f) << 2;
+  case step_C:
+      if (plainchar == plaintextend) {
+        state_in->result = result;
+        state_in->step = step_C;
+        return codechar - code_out;
+      }
+      fragment = *plainchar++;
+      result |= (fragment & 0x0c0) >> 6;
+      *codechar++ = base64_encode_value(result);
+      result  = (fragment & 0x03f) >> 0;
+      *codechar++ = base64_encode_value(result);
+
+      ++(state_in->stepcount);
+      if (state_in->stepcount == CHARS_PER_LINE/4) {
+        *codechar++ = '\n';
+        state_in->stepcount = 0;
+      }
+    }
+  }
+  /* control should not reach here */
+  return codechar - code_out;
+}
+
+int base64_encode_blockend(char* code_out, base64_encodestate* state_in) {
+  char* codechar = code_out;
+
+  switch (state_in->step) {
+  case step_B:
+    *codechar++ = base64_encode_value(state_in->result);
+    *codechar++ = '=';
+    *codechar++ = '=';
+    break;
+  case step_C:
+    *codechar++ = base64_encode_value(state_in->result);
+    *codechar++ = '=';
+    break;
+  case step_A:
+    break;
+  }
+  *codechar++ = '\n';
+
+  return codechar - code_out;
+}
+
+kj::String base64_encode(const kj::ArrayPtr<const byte> input) {
+  /* set up a destination buffer large enough to hold the encoded data */
+  // equivalent to ceil(input.size() / 3) * 4
+  auto numChars = (input.size() + 2) / 3 * 4;
+  auto output = kj::heapString(numChars + numChars / CHARS_PER_LINE + 1);
+  /* keep track of our encoded position */
+  char* c = output.begin();
+  /* store the number of bytes encoded by a single call */
+  int cnt = 0;
+  size_t total = 0;
+  /* we need an encoder state */
+  base64_encodestate s;
+
+  /*---------- START ENCODING ----------*/
+  /* initialise the encoder state */
+  base64_init_encodestate(&s);
+  /* gather data from the input and send it to the output */
+  cnt = base64_encode_block((const char *)input.begin(), input.size(), c, &s);
+  c += cnt;
+  total += cnt;
+
+  /* since we have encoded the entire input string, we know that 
+     there is no more input data; finalise the encoding */
+  cnt = base64_encode_blockend(c, &s);
+  c += cnt;
+  total += cnt;
+  /*---------- STOP ENCODING  ----------*/
+
+  // For the edge case, where the last line is 72+ characters, we will
+  // print 1 less newline than usual
+  while (total < output.size()) {
+    *c++ = '\n';  // Add newlines to the end, since they will be ignored safely
+    ++total;
+  }
+
+  return output;
+}
+
 HttpStatusInfo noContentInfo(bool shouldResetForm) {
   HttpStatusInfo result;
   result.type = WebSession::Response::NO_CONTENT;
@@ -848,7 +987,8 @@ public:
     // Construct the mail file.
     kj::Vector<kj::String> lines;
 
-    // TODO(soon): parse and write Date
+    addDateHeader(lines, email.getDate());
+
     addHeader(lines, "To", email.getTo());
     addHeader(lines, "From", email.getFrom());
     addHeader(lines, "Reply-To", email.getReplyTo());
@@ -865,15 +1005,20 @@ public:
 
     lines.add(nullptr);  // blank line starts body.
 
-    if(email.hasText()) {
+    if (email.hasText()) {
       lines.add(kj::str("--", id));
       addHeader(lines, "Content-Type", kj::str("text/plain; charset=UTF-8"));
+      lines.add(nullptr);
       lines.add(kj::str(email.getText()));
     }
-    if(email.hasHtml()) {
+    if (email.hasHtml()) {
       lines.add(kj::str("--", id));
       addHeader(lines, "Content-Type", kj::str("text/html; charset=UTF-8"));
+      lines.add(nullptr);
       lines.add(kj::str(email.getHtml()));
+    }
+    for (auto attachment : email.getAttachments()) {
+      addAttachment(lines, id, attachment);
     }
     lines.add(kj::str("--", id, "--"));
 
@@ -955,6 +1100,26 @@ private:
     // Used for lists of message IDs (e.g. References an In-Reply-To). Each ID should be "quoted"
     // with <>.
     addHeader(lines, name, kj::strArray(KJ_MAP(i, items) { return kj::str('<', i, '>'); }, " "));
+  }
+
+  static void addDateHeader(kj::Vector<kj::String>& lines, int64_t microseconds) {
+    time_t seconds(microseconds / 1000000);
+    struct tm *tm = gmtime(&seconds);
+    char date[40];
+    strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S %z", tm);
+
+    addHeader(lines, "Date", date);
+  }
+
+  static void addAttachment(kj::Vector<kj::String>& lines, kj::StringPtr boundaryId, EmailAttachment::Reader & attachment) {
+    lines.add(kj::str("--", boundaryId));
+    addHeader(lines, "Content-Type", attachment.getContentType());
+    addHeader(lines, "Content-Disposition", attachment.getContentDisposition());
+    addHeader(lines, "Content-Transfer-Encoding", "base64");
+    addHeader(lines, "Content-Id", attachment.getContentId());
+    lines.add(nullptr);
+
+    lines.add(base64_encode(attachment.getContent()));
   }
 };
 

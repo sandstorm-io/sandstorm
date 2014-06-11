@@ -1260,6 +1260,7 @@ private:
                 const spk::SourceMap::Reader& sourceMap, bool recursive) {
     if (targets.size() == 0) {
       // Nothing here.
+      return;
     }
 
     if (recursive && isDirectory(targets[0])) {

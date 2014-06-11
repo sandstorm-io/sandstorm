@@ -707,6 +707,10 @@ function makeSetCookieHeader(cookie) {
     result.push("; Max-Age=" + cookie.expires.relative);
   }
 
+  if (cookie.path) {
+    result.push("; Path=" + cookie.path);
+  }
+
   if (cookie.httpOnly) {
     result.push("; HttpOnly");
   }

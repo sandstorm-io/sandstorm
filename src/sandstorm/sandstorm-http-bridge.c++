@@ -262,6 +262,9 @@ public:
       auto cookie = cookieList[i];
       cookie.setName(cookies[i].name);
       cookie.setValue(cookies[i].value);
+      if (cookies[i].path != nullptr) {
+        cookie.setPath(cookies[i].path);
+      }
       switch (cookies[i].expirationType) {
         case Cookie::ExpirationType::NONE:
           cookie.getExpires().setNone();
@@ -396,6 +399,7 @@ private:
   struct Cookie {
     kj::String name;
     kj::String value;
+    kj::String path;
     int64_t expires;
 
     enum ExpirationType {
@@ -473,6 +477,8 @@ private:
             cookie.expires = strtoull(value.cStr(), &end, 10);
             KJ_ASSERT(end > value.begin() && *end == '\0', "Invalid cookie max-age app.", value);
             cookie.expirationType = Cookie::ExpirationType::RELATIVE;
+          } else if (prop == "path") {
+            cookie.path = kj::heapString(trim(part));
           } else {
             // Ignore other properties:
             //   Path:  Not useful on the modern same-origin-policy web.

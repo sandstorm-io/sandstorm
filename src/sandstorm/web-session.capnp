@@ -100,6 +100,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       relative @4 :UInt64;  # Seconds relative to time of receipt.
     }
     httpOnly @5 :Bool;
+    path @6 :Text;
 
     # We don't include "secure" because the platform automatically forces all cookies to be secure.
   }

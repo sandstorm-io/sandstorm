@@ -731,10 +731,10 @@ var noContentSuccessCodes = [
 ];
 var redirectCodes = [
   // Indexed by switchToGet * 2 + isPermanent
-  { id: 303, title: "See Other" },
-  { id: 301, title: "Moved Permanently" },
   { id: 307, title: "Temporary Redirect" },
-  { id: 308, title: "Permanent Redirect" }
+  { id: 308, title: "Permanent Redirect" },
+  { id: 303, title: "See Other" },
+  { id: 301, title: "Moved Permanently" }
 ];
 var errorCodes = {
   badRequest:            { id: 400, title: "Bad Request" },

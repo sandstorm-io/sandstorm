@@ -227,6 +227,18 @@ HackSessionContextImpl.prototype._getAddress = function () {
   return this._getPublicId() + '@' + HOSTNAME;
 }
 
+HackSessionContextImpl.prototype._getUserAddress = function () {
+  // Get the user's e-mail address.
+  //
+  // Must be called in a Meteor context.
+
+  var grain = Grains.findOne(this.grainId, {fields: {userId: 1}});
+  var user = Meteor.users.findOne(grain.userId);
+
+  var email = (user.emails && user.emails.length && user.emails[0]) || (user.services.google && user.services.google.email) || (user.services.github && user.services.github.email);
+  return {address: email.address, name: user.profile.name || ''};
+}
+
 HackSessionContextImpl.prototype.send = function (email) {
   return inMeteor((function() {
     var recipientCount = 0;
@@ -379,6 +391,12 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
 
     req.end();
   });
+};
+
+HackSessionContextImpl.prototype.getUserAddress = function() {
+  return inMeteor((function () {
+    return this._getUserAddress();
+  }).bind(this));
 };
 
 // =======================================================================================

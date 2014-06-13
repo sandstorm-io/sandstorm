@@ -58,6 +58,9 @@ interface HackSessionContext @0xe14c1f5321159b8f
   # This interface is very limited currently -- e.g. it does not support arbitrary headers, POSTs,
   # etc. If you need any of these things, talk to the Sandstorm developers and we'll consider
   # adding some more hacks, but, again, this will all go away once the Powerbox is implemented.
+
+  getUserAddress @2 () -> Email.EmailAddress;
+  # Returns the address of the user logged into Sandstorm
 }
 
 interface HackEmailSession @0xc3b5ced7344b04a6 extends(Grain.UiSession, Email.EmailSendPort) {

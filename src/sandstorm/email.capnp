@@ -77,5 +77,4 @@ interface EmailSendPort @0xec831dbf4cc9bcca {
   # user's address.
 
   send @0 (email :EmailMessage);
-  getAddress @1 () -> (address :Text);
 }

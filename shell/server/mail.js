@@ -267,12 +267,15 @@ HackSessionContextImpl.prototype.send = function (email) {
     });
 
     var headers = {};
-    if (email.messageId)
+    if (email.messageId) {
       mc.addHeader('message-id', email.messageId);
-    if (email.references)
+    }
+    if (email.references) {
       mc.addHeader('references', email.references);
-    if (email.messageId)
+    }
+    if (email.messageId) {
       mc.addHeader('in-reply-to', email.inReplyTo);
+    }
     if (email.date) {
       var date = new Date(email.date / 1000);
       if (!isNaN(date.getTime())) // Check to make sure date is valid

@@ -154,6 +154,11 @@ img {
   top: 34px;
   bottom: 0px;
   color: black;
+  overflow: auto;
+}
+
+#app.main-content {
+  overflow: hidden;
 }
 
 #grainLog {
@@ -301,11 +306,13 @@ svg {
 }
 
 div.popup {
-  position: absolute;
+  position: fixed;
+  top: 32px;
+  max-height: calc(100vh - 64px);
+
   border: 2px solid #ccc;
   border-top: none;
   border-left: none;
-  border-bottom-right-radius: 4px;
   z-index: 101;
   background-color: black;
   /*background-color: rgba(0, 0, 0, 0.9);*/
@@ -313,6 +320,9 @@ div.popup {
   font-size: 85%;
   line-height: normal;
   min-width: 250px;
+
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 div.popup-closer {

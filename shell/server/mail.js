@@ -258,13 +258,14 @@ HackSessionContextImpl.prototype.send = function (email) {
     }
     
     var grainAddress = this._getAddress();
+    var userAddress = this._getUserAddress();
     
     // First check if we're changing the from address, and if so, move it to reply-to
-    if (!email.replyTo && email.from.address !== grainAddress) {
-      email.replyTo = _.clone(email.from);
+    if (email.from.address !== grainAddress && email.from.address !== userAddress.address) {
+      throw new Error(
+        "FROM header in outgoing emails need to equal either " + grainAddress + " or " +
+        userAddress + ". Yours was: " + email.from.address);
     }
-
-    email.from.address = grainAddress;
 
     var mc = new MailComposer();
 
@@ -278,6 +279,14 @@ HackSessionContextImpl.prototype.send = function (email) {
       text:     email.text,
       html:     email.html
     });
+
+    var envelope = mc.getEnvelope();
+    envelope.from = grainAddress;
+
+    mc.setMessageOption({
+      envelope: envelope
+    });
+
 
     var headers = {};
     if (email.messageId) {

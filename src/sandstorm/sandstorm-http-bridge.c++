@@ -140,19 +140,10 @@ kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
   return kj::AutoCloseFd(fd);
 }
 
-struct HttpStatusInfo {
-  WebSession::Response::Which type;
-
-  union {
-    WebSession::Response::SuccessCode successCode;
-    struct { bool shouldResetForm; } noContent;
-    struct { bool isPermanent; bool switchToGet; } redirect;
-    WebSession::Response::ClientErrorCode clientErrorCode;
-  };
-};
-
-// This code is taken from libb64 which has been placed in the public domain.
+// =======================================================================================
+// This code is derived from libb64 which has been placed in the public domain.
 // For details, see http://sourceforge.net/projects/libb64
+
 typedef enum {
   step_A, step_B, step_C
 } base64_encodestep;
@@ -273,7 +264,7 @@ kj::String base64_encode(const kj::ArrayPtr<const byte> input) {
   c += cnt;
   total += cnt;
 
-  /* since we have encoded the entire input string, we know that 
+  /* since we have encoded the entire input string, we know that
      there is no more input data; finalise the encoding */
   cnt = base64_encode_blockend(c, &s);
   c += cnt;
@@ -289,6 +280,19 @@ kj::String base64_encode(const kj::ArrayPtr<const byte> input) {
 
   return output;
 }
+
+// =======================================================================================
+
+struct HttpStatusInfo {
+  WebSession::Response::Which type;
+
+  union {
+    WebSession::Response::SuccessCode successCode;
+    struct { bool shouldResetForm; } noContent;
+    struct { bool isPermanent; bool switchToGet; } redirect;
+    WebSession::Response::ClientErrorCode clientErrorCode;
+  };
+};
 
 HttpStatusInfo noContentInfo(bool shouldResetForm) {
   HttpStatusInfo result;

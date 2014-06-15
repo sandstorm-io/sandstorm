@@ -31,8 +31,6 @@ src/sandstorm/legacy-bridge.c++
     Copyright: Kenton Varda
     License: BSD 2-clause
     License text: See below
-    Note: Uses public domain code from libb64
-          (http://libb64.sourceforge.net/)
 
 All files not explicitly mentioned above or below
     What: Sandstorm implementation
@@ -72,6 +70,13 @@ src/joyent-http/*
     Copyright: Joyent, Inc.; Nginx, Inc.; Igor Sysoev; others.
     License: MIT
     License text: See comments at top of source files.
+
+base64 handling in src/sandstorm/legacy-bridge.c++
+    What: Code copied from libb64
+    Source URL: http://libb64.sourceforge.net/
+    Copyright: Public Domain (authored by Chris Venter)
+    License: Public Domain
+    License text: http://creativecommons.org/licenses/publicdomain/
 
 Trademarks
 ==========

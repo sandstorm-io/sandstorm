@@ -1129,8 +1129,8 @@ private:
     addHeader(lines, name, kj::strArray(KJ_MAP(i, items) { return kj::str('<', i, '>'); }, " "));
   }
 
-  static void addDateHeader(kj::Vector<kj::String>& lines, int64_t microseconds) {
-    time_t seconds(microseconds / 1000000);
+  static void addDateHeader(kj::Vector<kj::String>& lines, int64_t nanoseconds) {
+    time_t seconds(nanoseconds / 1000000000u);
     struct tm *tm = gmtime(&seconds);
     char date[40];
     strftime(date, sizeof(date), "%a, %d %b %Y %H:%M:%S %z", tm);

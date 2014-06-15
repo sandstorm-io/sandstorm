@@ -80,9 +80,10 @@ Meteor.startup(function() {
         }
 
         var mailMessage = {
-          // Date should be ok represented as a javascript float, since its mantissa has a maximum
-          // value of 2^53, which equates to about the year 2255 in microseconds since the epoch
-          date: (mail.date || new Date()).getTime() * 1000,
+          // Note that converting the date to nanoseconds actually goes outside the range of
+          // integers that Javascript can represent precisely. But this is OK because dates aren't
+          // precise anyway.
+          date: (mail.date || new Date()).getTime() * 1000000,
           from: from,
           to: mail.to,
           cc: mail.cc || [],
@@ -277,9 +278,10 @@ HackSessionContextImpl.prototype.send = function (email) {
       mc.addHeader('in-reply-to', email.inReplyTo);
     }
     if (email.date) {
-      var date = new Date(email.date / 1000);
-      if (!isNaN(date.getTime())) // Check to make sure date is valid
+      var date = new Date(email.date / 1000000);
+      if (!isNaN(date.getTime())) { // Check to make sure date is valid
         mc.addHeader('date', date.toUTCString());
+      }
     }
 
     if (email.attachments) {

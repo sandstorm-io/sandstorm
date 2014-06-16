@@ -688,7 +688,7 @@ function readAll(stream) {
     var len = 0;
     stream.on("data", function (buf) {
       buffers.push(buf);
-      len += buf.lenth;
+      len += buf.length;
     });
     stream.on("end", function () {
       resolve(Buffer.concat(buffers), len);

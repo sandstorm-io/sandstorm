@@ -116,6 +116,53 @@ if (Meteor.isClient) {
     "click #openDebugLog": function (event) {
       window.open("/grain/" + this.grainId + "/log", "_blank",
           "menubar=no,status=no,toolbar=no,width=700,height=700");
+    },
+    "click #backupGrain": function (event) {
+      console.log('test');
+      Meteor.call('backupGrain', this.grainId, function (err, id) {
+      console.log('test2');
+        if (err) {
+          throw err;
+        }
+        window.location = "/downloadBackup/" + id;
+      });
+    },
+    "click #restoreGrain": function (event) {
+      var grainId = this.grainId;
+
+      var input = document.createElement("input");
+      input.type = "file";
+      input.style = "display: none";
+
+      input.addEventListener("change", function (e) {
+        // TODO: make sure only 1 file is uploaded
+        var file = e.currentTarget.files[0];
+
+        var xhr = new XMLHttpRequest();
+
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState == 4) {
+            if (xhr.status == 200) {
+              Meteor.call('restoreGrain', xhr.responseText, grainId, function(err) {
+                // TODO: show user error
+                console.log(err);
+              });
+            } else {
+              // TODO: show user error
+              Session.set("uploadError", {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                response: xhr.responseText
+              });
+            }
+          }
+        };
+
+        xhr.open("POST", "/uploadBackup", true);
+        xhr.send(file);
+      });
+
+      input.click();
     }
   });
 

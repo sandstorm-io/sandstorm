@@ -55,7 +55,8 @@ Meteor.methods({
     var token = {
       _id: id,
       filePath: Path.join(TMPDIR, "/", id),
-      timestamp: new Date()
+      timestamp: new Date(),
+      name: grain.title
     };
 
     Fs.mkdirSync(token.filePath);
@@ -197,7 +198,6 @@ Router.map(function () {
       var fut = new Future();
       var response = this.response;
       var token = FileTokens.findOne(this.params.tokenId);
-
       var backupFile = Path.join(token.filePath, 'backup.zip');
 
       var fileSize, file;
@@ -221,10 +221,16 @@ Router.map(function () {
       });
 
       file.on("open", function () {
+        var filename = token.name + '.zip';
+        // Make first character be alpha-numeric
+        filename = filename.replace(/^[^A-Za-z0-9_]/, '_');
+        // Remove non filesystem characters
+        filename = filename.replace(new RegExp("[\\\\/:*?\"<>|]","g"), '');
+
         response.writeHead(200, headers = {
           "Content-Length": fileSize,
           "Content-Type": "application/octet-stream",
-          "Content-Disposition": "attachment; filename=" + Path.basename(backupFile)
+          "Content-Disposition": "attachment; filename=" + filename
         });
       });
 

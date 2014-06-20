@@ -129,6 +129,7 @@ FileTokens = new Meteor.Collection("fileTokens");
 // Each contains:
 //   _id:       random. Since they're unguessable, they're also used as the token
 //   filePath:  Text path on the local filesystem. Probably will be in /tmp
+//   name:      Text name that should be presented to users for this token
 //   timestamp: File creation time. Used to figure out when the token and file should be wiped.
 
 if (Meteor.isServer) {

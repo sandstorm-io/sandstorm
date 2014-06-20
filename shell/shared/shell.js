@@ -177,7 +177,7 @@ if (Meteor.isClient) {
             if (xhr.status == 200) {
               Session.set("uploadProgress", 0);
               Session.set("uploadStatus", "Unpacking");
-              Meteor.call('restoreGrain', xhr.responseText, function (err, grainId) {
+              Meteor.call("restoreGrain", xhr.responseText, function (err, grainId) {
                 if (err) {
                   Session.set("uploadStatus", undefined);
                   Session.set("uploadError", {
@@ -185,7 +185,7 @@ if (Meteor.isClient) {
                     statusText: err.reason + ": " + err.details,
                   });
                 } else {
-                  Router.go('grain', {grainId: grainId});
+                  Router.go("grain", {grainId: grainId});
                 }
               });
             } else {
@@ -208,7 +208,7 @@ if (Meteor.isClient) {
         xhr.open("POST", "/uploadBackup", true);
         xhr.send(file);
 
-        Router.go('restoreGrainStatus');
+        Router.go("restoreGrainStatus");
       });
 
       input.click();

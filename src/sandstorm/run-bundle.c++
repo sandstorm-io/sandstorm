@@ -45,6 +45,7 @@
 #include <sys/sendfile.h>
 #include <sys/prctl.h>
 #include <sys/syscall.h>
+#include <sys/utsname.h>
 #include <sched.h>
 #include <grp.h>
 #include <errno.h>
@@ -253,6 +254,48 @@ kj::AutoCloseFd prepareMonitoringLoop() {
   int sigfd;
   KJ_SYSCALL(sigfd = signalfd(-1, &sigmask, SFD_CLOEXEC));
   return kj::AutoCloseFd(sigfd);
+}
+
+// =======================================================================================
+
+struct KernelVersion {
+  uint major;
+  uint minor;
+};
+
+KernelVersion getKernelVersion() {
+  struct utsname uts;
+  KJ_SYSCALL(uname(&uts));
+  kj::StringPtr release = uts.release;
+
+  auto parser = kj::parse::transform(kj::parse::sequence(
+      kj::parse::oneOrMore(kj::parse::digit),
+      kj::parse::exactChar<'.'>(),
+      kj::parse::oneOrMore(kj::parse::digit)),
+      [](kj::Array<char> major, kj::Array<char> minor) {
+    return KernelVersion {
+      KJ_ASSERT_NONNULL(parseUInt(kj::heapString(major), 10)),
+      KJ_ASSERT_NONNULL(parseUInt(kj::heapString(minor), 10))
+    };
+  });
+  kj::parse::IteratorInput<char, const char*> input(release.begin(), release.end());
+  KJ_IF_MAYBE(version, parser(input)) {
+    return *version;
+  } else {
+    KJ_FAIL_ASSERT("Couldn't parse kernel version.", release);
+  }
+}
+
+bool isKernelNewEnough() {
+  auto version = getKernelVersion();
+  if (version.major < 3 || (version.major == 3 && version.minor < 13)) {
+    // Insufficient kernel version.
+    return false;
+  }
+
+  // unprivileged_userns_clone must be enabled (set to 1).
+  return KJ_ASSERT_NONNULL(
+      parseUInt(trim(readAll("/proc/sys/kernel/unprivileged_userns_clone")), 10));
 }
 
 // =======================================================================================
@@ -601,6 +644,15 @@ public:
     // Make sure we didn't inherit a weird signal mask from the parent process.
     clearSignalMask();
     umask(0022);
+
+    if (!kernelNewEnough) {
+      context.warning(
+          "WARNING: Your Linux kernel is too old or unprivileged user namespaces are disabled. "
+          "You need at least kernel version 3.13 and must set the "
+          "kernel.unprivileged_userns_clone sysctl to 1. The next version of Sandstorm "
+          "will require these things, so updates will be disabled for now. If in doubt, "
+          "re-run the Sandstorm installer for help.");
+    }
   }
 
   kj::MainFunc getMain() {
@@ -1086,6 +1138,7 @@ private:
   kj::StringPtr devtoolsBindir = "/usr/local/bin";
 
   bool changedDir = false;
+  bool kernelNewEnough = isKernelNewEnough();
 
   kj::String getInstallDir() {
     char exeNameBuf[PATH_MAX + 1];
@@ -1649,7 +1702,8 @@ private:
       }
 
       KJ_SYSCALL(setenv("METEOR_SETTINGS", kj::str(
-          "{\"public\":{\"build\":", buildstamp, "}}").cStr(), true));
+          "{\"public\":{\"build\":", buildstamp, ", \"kernelTooOld\":",
+          kernelNewEnough ? "false" : "true", "}}").cStr(), true));
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "main.js", EXEC_END_ARGS));
       KJ_UNREACHABLE;
     }
@@ -1709,6 +1763,15 @@ private:
   }
 
   bool checkForUpdates(kj::StringPtr channel, kj::StringPtr type) {
+    if (!kernelNewEnough) {
+      context.warning(
+          "Refusing to update because kernel is too old or unprivileged user namespaces are "
+          "disabled. You need at least kernel version 3.13 and must set the "
+          "kernel.unprivileged_userns_clone sysctl to 1. If in doubt, re-run the Sandstorm "
+          "installer for help.");
+      return false;
+    }
+
     // GET install.sandstorm.io/$channel?from=$oldBuild&type=[manual|startup|daily]
     //     -> result is build number
     context.warning(kj::str("Checking for updates on channel ", channel, "..."));

@@ -32,17 +32,20 @@ NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 #   was really no shared code. That seems to have changed. Perhaps it's time
 #   to separate compilation and linking. 
 
-.PHONEY: all install clean shell-env
+.PHONY: all install clean shell-env
 
 all: sandstorm-$(BUILD).tar.xz
 
 clean:
-	rm -rf bin tmp node_modules bundle shell-bundle.tar.gz sandstorm-*.tar.xz shell/public/edit.png shell/public/trash.png shell/public/wrench.png
+	rm -rf bin tmp node_modules bundle shell-bundle.tar.gz sandstorm-*.tar.xz shell/public/edit.png shell/public/trash.png shell/public/wrench.png .shell-env
 
 install: sandstorm-$(BUILD).tar.xz install.sh
 	@./install.sh sandstorm-$(BUILD).tar.xz
 
-shell-env: node_modules/sandstorm/grain.capnp shell/public/edit.png shell/public/trash.png shell/public/wrench.png
+shell-env: .shell-env
+
+.shell-env: node_modules/sandstorm/grain.capnp shell/public/edit.png shell/public/trash.png shell/public/wrench.png
+	@touch .shell-env
 
 update: sandstorm-$(BUILD).tar.xz
 	sudo service sandstorm update $(PWD)/sandstorm-$(BUILD).tar.xz
@@ -81,7 +84,7 @@ bin/run-bundle: src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/genfi
 shell/public/%.png: icons/%.svg
 	convert -scale 24x24 -negate -alpha shape -evaluate multiply 0.87 $< $@
 
-shell-bundle.tar.gz: shell/smart.* shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release shell-env
+shell-bundle.tar.gz: shell/smart.* shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release .shell-env
 	@echo "bundling meteor frontend..."
 	@cd shell && mrt bundle ../shell-bundle.tar.gz > /dev/null
 

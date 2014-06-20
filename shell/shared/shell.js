@@ -240,6 +240,10 @@ function getBuildInfo() {
   };
 }
 
+function isKernelTooOld() {
+  return Meteor.settings && Meteor.settings.public && Meteor.settings.public.kernelTooOld;
+}
+
 Router.map(function () {
   this.route("root", {
     path: "/",
@@ -254,7 +258,8 @@ Router.map(function () {
         isSignedUp: isSignedUp(),
         isAdmin: isAdmin(),
         isFirstRun: !HasUsers.findOne("hasUsers"),
-        build: getBuildInfo().build
+        build: getBuildInfo().build,
+        kernelTooOld: isKernelTooOld()
       };
     }
   });

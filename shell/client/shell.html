@@ -104,6 +104,19 @@ License along with Sandstorm.  If not, see
   <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Home</div>
 
   <div id="intro" class="main-content">
+    {{#if kernelTooOld}}
+      <div id="action-required">
+        <h1>Action Required</h1>
+        <p>This server is not currently receiving updates because the server's Linux kernel version
+          is too old, or because it is not configured correctly. The next update of Sandstorm will
+          require Linux kernel 3.13 or better and will require that the sysctl
+          <code>kernel.unprivileged_userns_clone</code> is set to 1 (enabled). This will allow
+          Sandstorm to run completely without root privileges using new Linux kernel features, thus
+          making you safer. If you are the server admin and you are unsure what to do, re-run the
+          Sandstorm installer.</p>
+      </div>
+    {{/if}}
+
     <div id="logo">
       <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
       </svg>

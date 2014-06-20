@@ -469,3 +469,25 @@ input.autoSelect {
   margin-top: 0;
   margin-bottom: 1em;
 }
+
+#action-required {
+  background-color: #eee;
+  border-radius: 8px;
+  width: 600px;
+  margin: 16px auto;
+  padding: 12px;
+}
+
+#action-required h1 {
+  color: red;
+  text-align: center;
+  font-size: 75px;
+  font-weight: bold;
+  margin: 0 auto;
+}
+
+#action-required p {
+  text-align: left;
+  max-width: 600px;
+  margin: 1em auto;
+}

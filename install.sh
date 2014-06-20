@@ -108,15 +108,10 @@ fi
 
 KVERSION=( $(uname -r | grep -o '^[0-9.]*' | tr . ' ') )
 
-if (( KVERSION[0] < 3 || (KVERSION[0] == 3 && KVERSION[1] < 10) )); then
-  echo "Detected Linux kernel version: $(uname -r)"
-  if (( KVERSION[0] == 3 && KVERSION[1] < 5 )); then
-    fail "Sorry, your kernel is too old to run Sandstorm. We recommend kernel" \
-         "version 3.10 or newer (3.5 to 3.9 *might* work)."
-  else
-    echo "Sandstorm has only been tested on kernel version 3.10 and newer."
-    prompt-yesno "We aren't sure if it will work for you. Try anyway?" no || fail
-  fi
+if (( KVERSION[0] < 3 || (KVERSION[0] == 3 && KVERSION[1] < 13) )); then
+  echo "Detected Linux kernel version: $(uname -r)" >&2
+  fail "Sorry, your kernel is too old to run Sandstorm. We require kernel" \
+       "version 3.13 or newer."
 fi
 
 if [ -z "${BUNDLE_FILE:-}" ]; then
@@ -159,6 +154,25 @@ if [ $(id -u) != 0 ]; then
 
   # Don't know how to run the script.  Let the user figure it out.
   fail "This installer needs root privileges."
+fi
+
+if [ "$(</proc/sys/kernel/unprivileged_userns_clone)" == "0" ]; then
+  echo "Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled."
+  echo "Currently, it is not enabled on your system."
+  if prompt-yesno "Shall I enable it for you?" yes; then
+    if [ ! -e /etc/sysctl.conf ]; then
+      fail "Can't find /etc/sysctl.conf. I don't know how to set sysctls" \
+           "permanently on your system. Please set it manually and try again."
+    fi
+    cat >> /etc/sysctl.conf << __EOF__
+
+# Enable non-root users to create sandboxes (needed by Sandstorm).
+kernel.unprivileged_userns_clone = 1
+__EOF__
+    sysctl -w kernel.unprivileged_userns_clone=1
+  else
+    fail "OK, please enable this option yourself and try again."
+  fi
 fi
 
 DIR=$(prompt "Where would you like to put Sandstorm?" /opt/sandstorm)

@@ -156,7 +156,8 @@ if [ $(id -u) != 0 ]; then
   fail "This installer needs root privileges."
 fi
 
-if [ "$(</proc/sys/kernel/unprivileged_userns_clone)" == "0" ]; then
+if [ -e /proc/sys/kernel/unprivileged_userns_clone ] && \
+   [ "$(</proc/sys/kernel/unprivileged_userns_clone)" == "0" ]; then
   echo "Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled."
   echo "Currently, it is not enabled on your system."
   if prompt-yesno "Shall I enable it for you?" yes; then

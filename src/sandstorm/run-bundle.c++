@@ -293,9 +293,14 @@ bool isKernelNewEnough() {
     return false;
   }
 
-  // unprivileged_userns_clone must be enabled (set to 1).
-  return KJ_ASSERT_NONNULL(
-      parseUInt(trim(readAll("/proc/sys/kernel/unprivileged_userns_clone")), 10));
+  // unprivileged_userns_clone, for systems that have it, must be enabled (set to 1).
+  if (access("/proc/sys/kernel/unprivileged_userns_clone", F_OK) == 0 &&
+      !KJ_ASSERT_NONNULL(parseUInt(trim(
+          readAll("/proc/sys/kernel/unprivileged_userns_clone")), 10))) {
+    return false;
+  }
+
+  return true;
 }
 
 // =======================================================================================
@@ -649,9 +654,9 @@ public:
       context.warning(
           "WARNING: Your Linux kernel is too old or unprivileged user namespaces are disabled. "
           "You need at least kernel version 3.13 and must set the "
-          "kernel.unprivileged_userns_clone sysctl to 1. The next version of Sandstorm "
-          "will require these things, so updates will be disabled for now. If in doubt, "
-          "re-run the Sandstorm installer for help.");
+          "kernel.unprivileged_userns_clone sysctl (if your system has it) to 1. The next "
+          "version of Sandstorm will require these things, so updates will be disabled for now. "
+          "If in doubt, re-run the Sandstorm installer for help.");
     }
   }
 
@@ -1767,8 +1772,8 @@ private:
       context.warning(
           "Refusing to update because kernel is too old or unprivileged user namespaces are "
           "disabled. You need at least kernel version 3.13 and must set the "
-          "kernel.unprivileged_userns_clone sysctl to 1. If in doubt, re-run the Sandstorm "
-          "installer for help.");
+          "kernel.unprivileged_userns_clone sysctl (if your system has it) to 1. If in doubt, "
+          "re-run the Sandstorm installer for help.");
       return false;
     }
 

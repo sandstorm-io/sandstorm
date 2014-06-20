@@ -110,10 +110,10 @@ License along with Sandstorm.  If not, see
         <p>This server is not currently receiving updates because the server's Linux kernel version
           is too old, or because it is not configured correctly. The next update of Sandstorm will
           require Linux kernel 3.13 or better and will require that the sysctl
-          <code>kernel.unprivileged_userns_clone</code> is set to 1 (enabled). This will allow
-          Sandstorm to run completely without root privileges using new Linux kernel features, thus
-          making you safer. If you are the server admin and you are unsure what to do, re-run the
-          Sandstorm installer.</p>
+          <code>kernel.unprivileged_userns_clone</code> (if it exists on your system) is set to 1
+          (enabled). This will allow Sandstorm to run completely without root privileges using new
+          Linux kernel features, thus making you safer. If you are the server admin and you are
+          unsure what to do, re-run the Sandstorm installer.</p>
       </div>
     {{/if}}
 

@@ -227,6 +227,18 @@ HackSessionContextImpl.prototype._getAddress = function () {
   return this._getPublicId() + '@' + HOSTNAME;
 }
 
+HackSessionContextImpl.prototype._getUserAddress = function () {
+  // Get the user's e-mail address.
+  //
+  // Must be called in a Meteor context.
+
+  var grain = Grains.findOne(this.grainId, {fields: {userId: 1}});
+  var user = Meteor.users.findOne(grain.userId);
+
+  var email = (user.emails && user.emails.length && user.emails[0]) || (user.services.google && user.services.google.email) || (user.services.github && user.services.github.email);
+  return {address: email.address, name: user.profile.name || ''};
+}
+
 HackSessionContextImpl.prototype.send = function (email) {
   return inMeteor((function() {
     var recipientCount = 0;
@@ -246,13 +258,14 @@ HackSessionContextImpl.prototype.send = function (email) {
     }
     
     var grainAddress = this._getAddress();
+    var userAddress = this._getUserAddress();
     
     // First check if we're changing the from address, and if so, move it to reply-to
-    if (!email.replyTo && email.from.address !== grainAddress) {
-      email.replyTo = _.clone(email.from);
+    if (email.from.address !== grainAddress && email.from.address !== userAddress.address) {
+      throw new Error(
+        "FROM header in outgoing emails need to equal either " + grainAddress + " or " +
+        userAddress + ". Yours was: " + email.from.address);
     }
-
-    email.from.address = grainAddress;
 
     var mc = new MailComposer();
 
@@ -266,6 +279,14 @@ HackSessionContextImpl.prototype.send = function (email) {
       text:     email.text,
       html:     email.html
     });
+
+    var envelope = mc.getEnvelope();
+    envelope.from = grainAddress;
+
+    mc.setMessageOption({
+      envelope: envelope
+    });
+
 
     var headers = {};
     if (email.messageId) {
@@ -311,12 +332,6 @@ HackSessionContextImpl.prototype.send = function (email) {
     console.error("Error sending e-mail:", err.stack);
     throw err;
   });
-};
-
-HackSessionContextImpl.prototype.getAddress = function() {
-  return inMeteor((function () {
-    return this._getAddress();
-  }).bind(this));
 };
 
 HackSessionContextImpl.prototype.getPublicId = function() {
@@ -379,6 +394,12 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
 
     req.end();
   });
+};
+
+HackSessionContextImpl.prototype.getUserAddress = function() {
+  return inMeteor((function () {
+    return this._getUserAddress();
+  }).bind(this));
 };
 
 // =======================================================================================

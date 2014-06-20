@@ -15,3 +15,7 @@ website/sandstorm.io.creator
 website/sandstorm.io.creator.user
 website/sandstorm.io.files
 website/sandstorm.io.includes
+shell-bundle.tar.gz
+sandstorm-*.tar.xz
+bundle/
+.shell-env

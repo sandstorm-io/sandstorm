@@ -16,3 +16,4 @@ capnp
 reload
 simplesmtp
 connect
+fs-extra

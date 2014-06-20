@@ -148,7 +148,7 @@ Later, when you are done hacking, you may want to restart the installed front-en
 
 ## How to Port Apps
 
-See [the porting guide](https://github.com/kentonv/sandstorm/wiki/Porting-Guide).
+See [the porting guide](https://github.com/sandstorm-io/sandstorm/wiki/Porting-Guide).
 
 ## The Future
 

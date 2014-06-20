@@ -52,7 +52,7 @@ fail() {
     echo "$@" | fold -s >&2
   fi
   echo "*** INSTALLATION FAILED ***" >&2
-  echo "Report bugs at: http://github.com/kentonv/sandstorm" >&2
+  echo "Report bugs at: http://github.com/sandstorm-io/sandstorm" >&2
   exit 1
 }
 

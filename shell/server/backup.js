@@ -23,6 +23,8 @@ var Fs = Npm.require("fs");
 var Future = Npm.require("fibers/future");
 var Path = Npm.require("path");
 
+var GrainInfo = Capnp.importSystem("sandstorm/grain.capnp").GrainInfo;
+
 var TMPDIR = "/tmp";
 // TODO: add timer that clears tokens
 
@@ -39,27 +41,40 @@ Meteor.methods({
     var id = Random.id(22);
     var token = {
       _id: id,
-      filePath: Path.join(TMPDIR, "/", id + ".zip"),
+      filePath: Path.join(TMPDIR, "/", id),
       timestamp: new Date()
     };
+    FileTokens.insert(token);
+
+    Fs.mkdirSync(token.filePath);
+    var backupFile = Path.join(token.filePath, 'backup.zip');
+    var dataDir = Path.join(token.filePath, 'data');
+    var outLog = Path.join(token.filePath, 'log');
+    var metadata = Path.join(token.filePath, 'metadata');
 
     var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox");
-    var proc = ChildProcess.spawn("zip", ["-r", token.filePath, "."], {cwd: grainDir});
+    var inLog = Path.join(SANDSTORM_GRAINDIR, grainId, "log");
+    FsExtra.copySync(grainDir, dataDir);  // TODO: does the grain need to be offline?
+    FsExtra.copySync(inLog, outLog);
+
+    var grainInfo = _.pick(grain, 'packageId', 'appId', 'appVersion', 'title');
+    Fs.writeFileSync(metadata, Capnp.serialize(GrainInfo, grainInfo));
+
+    var proc = ChildProcess.spawn("zip", ["-r", backupFile, "."], {cwd: token.filePath});
     proc.on("exit", function(code) {
       fut.return(code);
     });
     proc.on("error", function(err) {
-      fs.unlinkSync(token.filePath);
+      FsExtra.removeSync(token.filePath); // TODO: remove filetoken from collection
       fut.throw(err);
     });
 
     var code = fut.wait();
     if (code !== 0) {
-      fs.unlinkSync(token.filePath);
+      FsExtra.removeSync(token.filePath); // TODO: remove filetoken from collection
       throw new Error("Zip process failed.");
     }
 
-    FileTokens.insert(token);
     return id;
   },
   restoreGrain: function (tokenId, grainId) {
@@ -76,11 +91,12 @@ Meteor.methods({
 
     var fut = new Future();
 
+    var backupFile = Path.join(token.filePath, 'backup.zip');
     // TODO: stop grain
     var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox");
 
     // TODO: rm directory first
-    var proc = ChildProcess.spawn('unzip', ['-o', token.filePath], {cwd: grainDir});
+    var proc = ChildProcess.spawn('unzip', ['-o', backupFile], {cwd: token.filePath});
     proc.on("exit", function(code) {
       fut.return(code);
     });
@@ -90,9 +106,13 @@ Meteor.methods({
 
     var code = fut.wait();
     if (code !== 0) {
-      fs.unlinkSync(token.filePath);
+      FsExtra.removeSync(token.filePath); // TODO: remove filetoken from collection
       throw new Error("Unzip process failed.");
     }
+
+    var dataDir = Path.join(token.filePath, 'data');
+    FsExtra.removeSync(grainDir);
+    FsExtra.copySync(dataDir, grainDir);  // TODO: does the grain need to be offline?
 
     // TODO: Clean up file token?
   }
@@ -105,17 +125,20 @@ doGrainUpload = function (stream) {
     var id = Random.id();
     var token = {
       _id: id,
-      filePath: Path.join(TMPDIR, "/", id + ".zip"),
+      filePath: Path.join(TMPDIR, "/", id),
       timestamp: new Date()
     };
+    Fs.mkdirSync(token.filePath);
+    var backupFile = Path.join(token.filePath, 'backup.zip');
 
-    var file = Fs.createWriteStream(token.filePath);
+    var file = Fs.createWriteStream(backupFile);
 
     stream.on("end", function () {
       try {
         file.end();
         resolve(token);
       } catch (err) {
+        FsExtra.removeSync(token.filePath);
         reject(err);
       }
     });
@@ -123,9 +146,10 @@ doGrainUpload = function (stream) {
       // TODO(soon):  This event does"t seem to fire if the user leaves the page mid-upload.
       try {
         file.end();
-        Fs.unlinkSync(token.filePath);
+        FsExtra.removeSync(token.filePath);
         reject(err);
       } catch (err2) {
+        FsExtra.removeSync(token.filePath);
         reject(err2);
       }
     });
@@ -143,10 +167,12 @@ Router.map(function () {
       var response = this.response;
       var token = FileTokens.findOne(this.params.tokenId);
 
+      var backupFile = Path.join(token.filePath, 'backup.zip');
+
       var fileSize, file;
       try {
-        fileSize = Fs.statSync(token.filePath).size;
-        file = Fs.createReadStream(token.filePath);
+        fileSize = Fs.statSync(backupFile).size;
+        file = Fs.createReadStream(backupFile);
       } catch (error) {
         response.writeHead(404, {"Content-Type": "text/plain"});
         return response.end("File does not exist");
@@ -167,7 +193,7 @@ Router.map(function () {
         response.writeHead(200, headers = {
           "Content-Length": fileSize,
           "Content-Type": "application/octet-stream",
-          "Content-Disposition": "attachment; filename=" + Path.basename(token.filePath)
+          "Content-Disposition": "attachment; filename=" + Path.basename(backupFile)
         });
       });
 
@@ -175,6 +201,7 @@ Router.map(function () {
 
       fut.wait();
 
+      // TODO: clean up token?
       return this.response.end();
     }
   });

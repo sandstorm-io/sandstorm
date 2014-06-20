@@ -441,8 +441,7 @@ interface ViewSharingLink extends(SharingLink) {
 # Backup and Restore
 
 struct GrainInfo {
-  packageId @0 :Text;
-  appId @1 :Text;
-  appVersion @2 :Text;
-  title @3 :Text;
+  appId @0 :Text;
+  appVersion @1 :UInt32;
+  title @2 :Text;
 }

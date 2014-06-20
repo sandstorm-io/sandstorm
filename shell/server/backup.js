@@ -70,7 +70,7 @@ Meteor.methods({
     FsExtra.copySync(grainDir, dataDir);  // TODO: does the grain need to be offline?
     FsExtra.copySync(inLog, outLog);
 
-    var grainInfo = _.pick(grain, 'packageId', 'appId', 'appVersion', 'title');
+    var grainInfo = _.pick(grain, 'appId', 'appVersion', 'title');
     Fs.writeFileSync(metadata, Capnp.serialize(GrainInfo, grainInfo));
 
     var proc = ChildProcess.spawn("zip", ["-r", backupFile, "."], {cwd: token.filePath});
@@ -121,7 +121,6 @@ Meteor.methods({
     var grainInfoBuf = Fs.readFileSync(metadata);
     var grainInfo = Capnp.parse(GrainInfo, grainInfoBuf);
 
-    var package = Packages.findOne(grainInfo.packageId);
     var grainId = Random.id(22);  // 128 bits of entropy
 
     var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox");
@@ -129,11 +128,33 @@ Meteor.methods({
     FsExtra.removeSync(grainDir);
     FsExtra.copySync(dataDir, grainDir);
 
+    var package = Packages.findOne({appId: grainInfo.appId,
+                                   "manifest.appVersion": grainInfo.appVersion});
+    if (!package) {
+
+      package = Packages.find({appId: grainInfo.appId},
+        {limit: 1, sort: {'manifest.appVersion': -1}}).fetch();
+
+      if (!package) {
+        throw new Meteor.Error(500,
+                               "App id for uploaded grain not installed on this server",
+                               "App Id: " + grainInfo.appId);
+      }
+
+      package = package[0];
+      if (package.manifest.appVersion < grainInfo.appVersion) {
+        throw new Meteor.Error(500,
+                               "App version for uploaded grain is newer than any " +
+                               "installed version. You need to upgrade your app first",
+                               "App version: " + grainInfo.appVersion);
+      }
+    }
+
     Grains.insert({
       _id: grainId,
-      packageId: grainInfo.packageId,
-      appId: grainInfo.appId,
-      appVersion: grainInfo.appVersion,
+      packageId: package._id,
+      appId: package.appId,
+      appVersion: package.manifest.appVersion,
       userId: this.userId,
       title: grainInfo.title
     });

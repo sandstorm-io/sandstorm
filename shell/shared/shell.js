@@ -157,14 +157,16 @@ if (Meteor.isClient) {
     },
 
     "click #restoreGrainLink":  function (event) {
-      Session.set("grainMenuOpen", false);
       var grainId = this.grainId;
 
       var input = document.createElement("input");
       input.type = "file";
       input.style = "display: none";
+      Session.set("uploadStatus", "Uploading");
 
       input.addEventListener("change", function (e) {
+        Session.set("grainMenuOpen", false);
+
         // TODO: make sure only 1 file is uploaded
         var file = e.currentTarget.files[0];
 
@@ -172,13 +174,15 @@ if (Meteor.isClient) {
 
         xhr.onreadystatechange = function () {
           if (xhr.readyState == 4) {
-            Session.set("uploadProgress", undefined);
             if (xhr.status == 200) {
+              Session.set("uploadProgress", 0);
+              Session.set("uploadStatus", "Unpacking");
               Meteor.call('restoreGrain', xhr.responseText, function (err, grainId) {
                 if (err) {
+                  Session.set("uploadStatus", undefined);
                   Session.set("uploadError", {
                     status: 200,
-                    statusText: err,
+                    statusText: err.reason + ": " + err.details,
                   });
                 } else {
                   Router.go('grain', {grainId: grainId});
@@ -351,6 +355,7 @@ Router.map(function () {
       return {
         isSignedUp: isSignedUp(),
         progress: Session.get("uploadProgress"),
+        status: Session.get("uploadStatus"),
         error: Session.get("uploadError")
       };
     }

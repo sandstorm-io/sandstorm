@@ -356,8 +356,8 @@ $KEY</textarea></p>
   <div id="restoreGrain" class="main-content">
     <div class="centered-box">
     {{#if isSignedUp}}
-      {{#if progress}}
-        <p>Restoring... {{progress}}%</p>
+      {{#if status}}
+        <p>{{status}}... {{progress}}%</p>
       {{else}}
         {{#if error}}
           <p>Restore failed: {{error.status}} {{error.statusText}}</p>

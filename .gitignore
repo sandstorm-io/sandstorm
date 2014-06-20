@@ -9,6 +9,7 @@ shell/sandstorm-shell.includes
 shell/public/edit.png
 shell/public/trash.png
 shell/public/wrench.png
+shell/public/download.png
 website/sandstorm.io.config
 website/sandstorm.io.creator
 website/sandstorm.io.creator.user

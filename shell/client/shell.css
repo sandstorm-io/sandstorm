@@ -107,7 +107,7 @@ body {
   color: white;
 }
 
-#topbar #renameGrain, #topbar #deleteGrain, #topbar #openDebugLog {
+#topbar #renameGrain, #topbar #deleteGrain, #topbar #openDebugLog, #topbar #backupGrain {
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -129,6 +129,10 @@ body {
 
 #topbar #openDebugLog {
   background-image: url("/wrench.png");
+}
+
+#topbar #backupGrain {
+  background-image: url("/download.png");
 }
 
 img.icon {
@@ -228,11 +232,11 @@ img {
   padding: 4px 8px;
   margin: 0;
 }
-#apps .openGrain, #apps .newGrain, #installAppsLink, #uploadAppLink, #emailInvitesLink, #urlInvitesLink, #aboutLink {
+#apps .openGrain, #apps .newGrain, #installAppsLink, #uploadAppLink, #restoreGrainLink, #emailInvitesLink, #urlInvitesLink, #aboutLink {
   cursor: pointer;
 }
 #apps .openGrain:hover, #apps .newGrain:hover, #installAppsLink:hover,
-    #uploadAppLink:hover, #emailInvitesLink:hover, #urlInvitesLink:hover, #aboutLink:hover {
+    #uploadAppLink:hover, #restoreGrainLink:hover, #emailInvitesLink:hover, #urlInvitesLink:hover, #aboutLink:hover {
   background-color: #333;
 }
 

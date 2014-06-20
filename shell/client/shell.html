@@ -91,6 +91,7 @@ License along with Sandstorm.  If not, see
       </td></tr></table>
       <p id="installAppsLink">Install apps...</p>
       <p id="uploadAppLink">Upload an app...</p>
+      <p id="restoreGrainLink">Restore a grain...</p>
       {{#if isAdmin}}
       <p id="emailInvitesLink">Invite users by e-mail...</p>
       <p id="urlInvitesLink">Invite users by URL...</p>
@@ -156,7 +157,6 @@ License along with Sandstorm.  If not, see
       <button id="deleteGrain" title="Delete">Delete</button>
       <button id="openDebugLog" title="Show Debug Log">Log</button>
       <button id="backupGrain" title="Backup Grain">Backup</button>
-      <button id="restoreGrain" title="Restore Grain">Restore</button>
     {{/if}}
   </div>
 
@@ -342,6 +342,28 @@ $KEY</textarea></p>
         {{/if}}
         <p><input type="file" id="uploadFile">
            <button id="uploadButton">Upload</button></p>
+      {{/if}}
+    {{else}}
+      <p>Sorry, Sandstorm is in closed alpha.  To install apps, you must first be invited.</p>
+    {{/if}}
+    </div>
+  </div>
+</template>
+
+<template name="restoreGrainStatus">
+  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Restoring Grain</div>
+
+  <div id="restoreGrain" class="main-content">
+    <div class="centered-box">
+    {{#if isSignedUp}}
+      {{#if progress}}
+        <p>Restoring... {{progress}}%</p>
+      {{else}}
+        {{#if error}}
+          <p>Restore failed: {{error.status}} {{error.statusText}}</p>
+        {{else}}
+          <p>Restore failed. Please try again.</p>
+        {{/if}}
       {{/if}}
     {{else}}
       <p>Sorry, Sandstorm is in closed alpha.  To install apps, you must first be invited.</p>

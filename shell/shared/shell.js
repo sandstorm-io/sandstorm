@@ -156,6 +156,54 @@ if (Meteor.isClient) {
       Router.go("uploadForm", {});
     },
 
+    "click #restoreGrainLink":  function (event) {
+      var grainId = this.grainId;
+
+      var input = document.createElement("input");
+      input.type = "file";
+      input.style = "display: none";
+
+      input.addEventListener("change", function (e) {
+        // TODO: make sure only 1 file is uploaded
+        var file = e.currentTarget.files[0];
+
+        var xhr = new XMLHttpRequest();
+
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState == 4) {
+            Session.set("uploadProgress", undefined);
+            if (xhr.status == 200) {
+              Meteor.call('restoreGrain', xhr.responseText, function(err, grainId) {
+                // TODO: show user error
+                Router.go('grain', {grainId: grainId});
+              });
+            } else {
+              // TODO: show user error
+              Session.set("uploadError", {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                response: xhr.responseText
+              });
+            }
+          }
+        };
+
+        if (xhr.upload) {
+          xhr.upload.addEventListener("progress", function (progressEvent) {
+            Session.set("uploadProgress",
+                Math.floor(progressEvent.loaded / progressEvent.total * 100));
+          });
+        }
+
+        xhr.open("POST", "/uploadBackup", true);
+        xhr.send(file);
+
+        Router.go('restoreGrainStatus');
+      });
+
+      input.click();
+    },
+
     "click #emailInvitesLink": function (event) {
       Session.set("grainMenuOpen", false);
       Router.go("invite", {});
@@ -282,6 +330,23 @@ Router.map(function () {
     path: "/about",
     data: function () {
       return getBuildInfo();
+    }
+  });
+
+  this.route("restoreGrainStatus", {
+    path: "/restore",
+
+    waitOn: function () {
+      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
+      return Meteor.subscribe("credentials");
+    },
+
+    data: function () {
+      return {
+        isSignedUp: isSignedUp(),
+        progress: Session.get("uploadProgress"),
+        error: Session.get("uploadError")
+      };
     }
   });
 });

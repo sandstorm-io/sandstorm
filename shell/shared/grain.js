@@ -126,43 +126,6 @@ if (Meteor.isClient) {
         }
         window.location = "/downloadBackup/" + id;
       });
-    },
-    "click #restoreGrain": function (event) {
-      var grainId = this.grainId;
-
-      var input = document.createElement("input");
-      input.type = "file";
-      input.style = "display: none";
-
-      input.addEventListener("change", function (e) {
-        // TODO: make sure only 1 file is uploaded
-        var file = e.currentTarget.files[0];
-
-        var xhr = new XMLHttpRequest();
-
-        xhr.onreadystatechange = function () {
-          if (xhr.readyState == 4) {
-            if (xhr.status == 200) {
-              Meteor.call('restoreGrain', xhr.responseText, grainId, function(err) {
-                // TODO: show user error
-                console.log(err);
-              });
-            } else {
-              // TODO: show user error
-              Session.set("uploadError", {
-                status: xhr.status,
-                statusText: xhr.statusText,
-                response: xhr.responseText
-              });
-            }
-          }
-        };
-
-        xhr.open("POST", "/uploadBackup", true);
-        xhr.send(file);
-      });
-
-      input.click();
     }
   });
 

@@ -77,13 +77,7 @@ Meteor.methods({
 
     return id;
   },
-  restoreGrain: function (tokenId, grainId) {
-    check(grainId, String);
-    var grain = Grains.findOne(grainId);
-    if (!grain || !this.userId || grain.userId !== this.userId) {
-      throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
-    }
-
+  restoreGrain: function (tokenId) {
     var token = FileTokens.findOne(tokenId);
     if (!token) {
       throw new Meteor.Error(403, "Unauthorized", "Token was not found");
@@ -92,10 +86,7 @@ Meteor.methods({
     var fut = new Future();
 
     var backupFile = Path.join(token.filePath, 'backup.zip');
-    // TODO: stop grain
-    var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox");
 
-    // TODO: rm directory first
     var proc = ChildProcess.spawn('unzip', ['-o', backupFile], {cwd: token.filePath});
     proc.on("exit", function(code) {
       fut.return(code);
@@ -110,11 +101,29 @@ Meteor.methods({
       throw new Error("Unzip process failed.");
     }
 
+    var metadata = Path.join(token.filePath, 'metadata');
+    var grainInfoBuf = Fs.readFileSync(metadata);
+    var grainInfo = Capnp.parse(GrainInfo, grainInfoBuf);
+
+    var package = Packages.findOne(grainInfo.packageId);
+    // TODO: serialize action index?
+    var grainId = Random.id(22);  // 128 bits of entropy
+    Grains.insert({
+      _id: grainId,
+      packageId: grainInfo.packageId,
+      appId: grainInfo.appId,
+      appVersion: grainInfo.appVersion,
+      userId: this.userId,
+      title: grainInfo.title
+    });
+
+    var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox");
     var dataDir = Path.join(token.filePath, 'data');
     FsExtra.removeSync(grainDir);
     FsExtra.copySync(dataDir, grainDir);  // TODO: does the grain need to be offline?
 
     // TODO: Clean up file token?
+    return grainId;
   }
 
 

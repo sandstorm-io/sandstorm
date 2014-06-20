@@ -157,6 +157,7 @@ if (Meteor.isClient) {
     },
 
     "click #restoreGrainLink":  function (event) {
+      Session.set("grainMenuOpen", false);
       var grainId = this.grainId;
 
       var input = document.createElement("input");
@@ -173,12 +174,17 @@ if (Meteor.isClient) {
           if (xhr.readyState == 4) {
             Session.set("uploadProgress", undefined);
             if (xhr.status == 200) {
-              Meteor.call('restoreGrain', xhr.responseText, function(err, grainId) {
-                // TODO: show user error
-                Router.go('grain', {grainId: grainId});
+              Meteor.call('restoreGrain', xhr.responseText, function (err, grainId) {
+                if (err) {
+                  Session.set("uploadError", {
+                    status: 200,
+                    statusText: err,
+                  });
+                } else {
+                  Router.go('grain', {grainId: grainId});
+                }
               });
             } else {
-              // TODO: show user error
               Session.set("uploadError", {
                 status: xhr.status,
                 statusText: xhr.statusText,

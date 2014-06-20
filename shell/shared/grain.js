@@ -118,11 +118,9 @@ if (Meteor.isClient) {
           "menubar=no,status=no,toolbar=no,width=700,height=700");
     },
     "click #backupGrain": function (event) {
-      console.log('test');
       Meteor.call('backupGrain', this.grainId, function (err, id) {
-      console.log('test2');
         if (err) {
-          throw err;
+          alert('Backup failed: ' + err); // TODO: make this better UI
         }
         window.location = "/downloadBackup/" + id;
       });

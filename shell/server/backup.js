@@ -29,6 +29,12 @@ var TMPDIR = "/tmp";
 var TOKEN_CLEANUP_MINUTES = 15;
 var TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 
+var mkdir = Meteor._wrapAsync(Fs.mkdir),
+    readFile = Meteor._wrapAsync(Fs.readFile),
+    writeFile = Meteor._wrapAsync(Fs.writeFile),
+    remove = Meteor._wrapAsync(FsExtra.remove),
+    copy = Meteor._wrapAsync(FsExtra.copy);
+
 Meteor.startup(function () {
   // Cleanup tokens every TOKEN_CLEANUP_MINUTES
   Meteor.setInterval(function () {
@@ -58,7 +64,7 @@ Meteor.methods({
       name: grain.title
     };
 
-    Fs.mkdirSync(token.filePath);
+    mkdir(token.filePath);
     var backupFile = Path.join(token.filePath, 'backup.zip');
     var dataDir = Path.join(token.filePath, 'data');
     var outLog = Path.join(token.filePath, 'log');
@@ -66,24 +72,24 @@ Meteor.methods({
 
     var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox");
     var inLog = Path.join(SANDSTORM_GRAINDIR, grainId, "log");
-    FsExtra.copySync(grainDir, dataDir);  // TODO(soon): does the grain need to be offline?
-    FsExtra.copySync(inLog, outLog);
+    copy(grainDir, dataDir);  // TODO(soon): does the grain need to be offline?
+    copy(inLog, outLog);
 
     var grainInfo = _.pick(grain, 'appId', 'appVersion', 'title');
-    Fs.writeFileSync(metadata, Capnp.serialize(GrainInfo, grainInfo));
+    writeFile(metadata, Capnp.serialize(GrainInfo, grainInfo));
 
     var proc = ChildProcess.spawn("zip", ["-r", backupFile, "."], {cwd: token.filePath});
     proc.on("exit", function (code) {
       fut.return(code);
     });
     proc.on("error", function (err) {
-      FsExtra.removeSync(token.filePath);
+      remove(token.filePath);
       fut.throw(new Meteor.Error(500, 'Error in zipping procces'));
     });
 
     var code = fut.wait();
     if (code !== 0) {
-      FsExtra.removeSync(token.filePath);
+      remove(token.filePath);
       throw new Meteor.Error(500, "Zip process failed.");
     }
 
@@ -117,7 +123,7 @@ Meteor.methods({
     }
 
     var metadata = Path.join(token.filePath, 'metadata');
-    var grainInfoBuf = Fs.readFileSync(metadata);
+    var grainInfoBuf = readFile(metadata);
     var grainInfo = Capnp.parse(GrainInfo, grainInfoBuf);
     if (!grainInfo.appId) {
         throw new Meteor.Error(500,
@@ -153,7 +159,7 @@ Meteor.methods({
     var grainId = Random.id();
     var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox");
     var dataDir = Path.join(token.filePath, 'data');
-    FsExtra.copySync(dataDir, grainDir);
+    copy(dataDir, grainDir);
 
     Grains.insert({
       _id: grainId,
@@ -173,7 +179,7 @@ Meteor.methods({
     if (!token) {
       return;
     }
-    FsExtra.removeSync(token.filePath);
+    remove(token.filePath);
     FileTokens.remove({_id: tokenId});
   }
 });
@@ -186,7 +192,7 @@ doGrainUpload = function (stream) {
       filePath: Path.join(TMPDIR, "/", id),
       timestamp: new Date()
     };
-    Fs.mkdirSync(token.filePath);
+    mkdir(token.filePath);
     var backupFile = Path.join(token.filePath, 'backup.zip');
 
     var file = Fs.createWriteStream(backupFile);
@@ -196,7 +202,7 @@ doGrainUpload = function (stream) {
         file.end();
         resolve(token);
       } catch (err) {
-        FsExtra.removeSync(token.filePath);
+        remove(token.filePath);
         reject(err);
       }
     });
@@ -204,10 +210,10 @@ doGrainUpload = function (stream) {
       // TODO(soon):  This event does"t seem to fire if the user leaves the page mid-upload.
       try {
         file.end();
-        FsExtra.removeSync(token.filePath);
+        remove(token.filePath);
         reject(err);
       } catch (err2) {
-        FsExtra.removeSync(token.filePath);
+        remove(token.filePath);
         reject(err2);
       }
     });

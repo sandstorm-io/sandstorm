@@ -120,7 +120,7 @@ if (Meteor.isClient) {
     "click #backupGrain": function (event) {
       Meteor.call('backupGrain', this.grainId, function (err, id) {
         if (err) {
-          alert('Backup failed: ' + err); // TODO: make this better UI
+          alert('Backup failed: ' + err); // TODO(someday): make this better UI
         }
         window.location = "/downloadBackup/" + id;
       });

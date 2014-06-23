@@ -32,8 +32,7 @@ var TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 Meteor.startup(function () {
   // Cleanup tokens every TOKEN_CLEANUP_MINUTES
   Meteor.setInterval(function () {
-    var queryDate = new Date();
-    queryDate.setMinutes(queryDate.getMinutes() - TOKEN_CLEANUP_MINUTES);
+    var queryDate = new Date(Date.now() - TOKEN_CLEANUP_TIMER);
 
     FileTokens.find({timestamp: {$lt: queryDate}}).forEach(function (token) {
       Meteor.call('cleanupToken', token._id);
@@ -51,7 +50,7 @@ Meteor.methods({
 
     var fut = new Future();
 
-    var id = Random.id(22);
+    var id = Random.id();
     var token = {
       _id: id,
       filePath: Path.join(TMPDIR, "/", id),
@@ -67,7 +66,7 @@ Meteor.methods({
 
     var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox");
     var inLog = Path.join(SANDSTORM_GRAINDIR, grainId, "log");
-    FsExtra.copySync(grainDir, dataDir);  // TODO: does the grain need to be offline?
+    FsExtra.copySync(grainDir, dataDir);  // TODO(soon): does the grain need to be offline?
     FsExtra.copySync(inLog, outLog);
 
     var grainInfo = _.pick(grain, 'appId', 'appVersion', 'title');
@@ -120,18 +119,18 @@ Meteor.methods({
     var metadata = Path.join(token.filePath, 'metadata');
     var grainInfoBuf = Fs.readFileSync(metadata);
     var grainInfo = Capnp.parse(GrainInfo, grainInfoBuf);
-
-    var grainId = Random.id(22);  // 128 bits of entropy
-
-    var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox");
-    var dataDir = Path.join(token.filePath, 'data');
-    FsExtra.removeSync(grainDir);
-    FsExtra.copySync(dataDir, grainDir);
+    if (!grainInfo.appId) {
+        throw new Meteor.Error(500,
+                               "Metadata object for uploaded grain had no AppId");
+    }
+    if (!grainInfo.appVersion) {
+        throw new Meteor.Error(500,
+                               "Metadata object for uploaded grain had no AppVersion");
+    }
 
     var package = Packages.findOne({appId: grainInfo.appId,
                                    "manifest.appVersion": grainInfo.appVersion});
     if (!package) {
-
       package = Packages.find({appId: grainInfo.appId},
         {limit: 1, sort: {'manifest.appVersion': -1}}).fetch();
 
@@ -150,6 +149,11 @@ Meteor.methods({
       }
     }
 
+    var grainId = Random.id();
+    var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox");
+    var dataDir = Path.join(token.filePath, 'data');
+    FsExtra.copySync(dataDir, grainDir);
+
     Grains.insert({
       _id: grainId,
       packageId: package._id,
@@ -166,7 +170,7 @@ Meteor.methods({
   cleanupToken: function (tokenId) {
     var token = FileTokens.findOne(tokenId);
     if (!token) {
-      throw new Meteor.Error(500, "Token not found", "tokenId: " + tokenId);
+      return;
     }
     FsExtra.removeSync(token.filePath);
     FileTokens.remove({_id: tokenId});
@@ -231,7 +235,7 @@ Router.map(function () {
       }
 
       file.on("error", function (error) {
-        // TODO: this might not work if error occurs after open?
+        // TODO(someday): this might not work if error occurs after open?
         response.writeHead(404, {"Content-Type": "text/plain"});
         response.write("Failed to archive");
         fut.return();

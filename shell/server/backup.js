@@ -121,31 +121,32 @@ Meteor.methods({
     var grainInfo = Capnp.parse(GrainInfo, grainInfoBuf);
     if (!grainInfo.appId) {
         throw new Meteor.Error(500,
-                               "Metadata object for uploaded grain had no AppId");
+                               "Metadata object for uploaded grain has no AppId");
     }
     if (!grainInfo.appVersion) {
         throw new Meteor.Error(500,
-                               "Metadata object for uploaded grain had no AppVersion");
+                               "Metadata object for uploaded grain has no AppVersion");
     }
 
-    var package = Packages.findOne({appId: grainInfo.appId,
-                                   "manifest.appVersion": grainInfo.appVersion});
-    if (!package) {
-      package = Packages.find({appId: grainInfo.appId},
-        {limit: 1, sort: {'manifest.appVersion': -1}}).fetch();
+    var action = UserActions.findOne({appId: grainInfo.appId,
+                                   appVersion: grainInfo.appVersion});
+    if (!action) {
+      action = UserActions.find({appId: grainInfo.appId},
+        {limit: 1, sort: {'appVersion': -1}}).fetch();
 
-      if (!package) {
+      if (!action) {
         throw new Meteor.Error(500,
-                               "App id for uploaded grain not installed on this server",
+                               "App id for uploaded grain not installed",
                                "App Id: " + grainInfo.appId);
       }
 
-      package = package[0];
-      if (package.manifest.appVersion < grainInfo.appVersion) {
+      action = action[0];
+      if (action.appVersion < grainInfo.appVersion) {
         throw new Meteor.Error(500,
                                "App version for uploaded grain is newer than any " +
                                "installed version. You need to upgrade your app first",
-                               "App version: " + grainInfo.appVersion);
+                               "New version: " + grainInfo.appVersion +
+                               ", Old version: " + action.appVersion);
       }
     }
 
@@ -156,9 +157,9 @@ Meteor.methods({
 
     Grains.insert({
       _id: grainId,
-      packageId: package._id,
-      appId: package.appId,
-      appVersion: package.manifest.appVersion,
+      packageId: action.packageId,
+      appId: action.appId,
+      appVersion: action.appVersion,
       userId: this.userId,
       title: grainInfo.title
     });

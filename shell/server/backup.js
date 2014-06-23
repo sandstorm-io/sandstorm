@@ -156,7 +156,7 @@ Meteor.methods({
       }
     }
 
-    var grainId = Random.id();
+    var grainId = Random.id(22);
     var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox");
     var dataDir = Path.join(token.filePath, 'data');
     copy(dataDir, grainDir);

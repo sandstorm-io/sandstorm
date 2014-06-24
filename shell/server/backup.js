@@ -134,7 +134,7 @@ Meteor.methods({
                                "Metadata object for uploaded grain has no AppVersion");
     }
 
-    var action = UserActions.findOne({appId: grainInfo.appId});
+    var action = UserActions.findOne({appId: grainInfo.appId, userId: this.userId});
     if (!action) {
       throw new Meteor.Error(500,
                              "App id for uploaded grain not installed",

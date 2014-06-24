@@ -19,6 +19,7 @@
 // <http://www.gnu.org/licenses/>.
 
 var Http = Npm.require("http");
+var Https = Npm.require("https");
 var Future = Npm.require("fibers/future");
 
 var EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
@@ -344,7 +345,11 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
   var session = this;
 
   return new Promise(function (resolve, reject) {
-    req = Http.get(url, function (resp) {
+    var getMethod = Http.get;
+    if (url.indexOf('https://') === 0) {
+      getMethod = Https.get;
+    }
+    req = getMethod(url, function (resp) {
       var buffers = [];
       var err;
 

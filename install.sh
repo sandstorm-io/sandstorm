@@ -37,13 +37,34 @@ set -euo pipefail
 SCRIPT_NAME=$1
 shift
 
+# Look for a -d option, in which case, we presume the user
+# wants us to accept all defaults.
+USE_DEFAULTS="no"
+USE_EXTERNAL_INTERFACE="no"
+while getopts ":de" opt; do
+  case $opt in
+    d)
+      USE_DEFAULTS="yes"
+      ;;
+    e)
+      USE_EXTERNAL_INTERFACE="yes"
+      ;;
+  esac
+done
+
+# Pass positional parameters through
+shift "$((OPTIND - 1))"
+
 if [ $# = 1 ] && [[ ! $1 =~ ^- ]]; then
   BUNDLE_FILE="$1"
 elif [ $# != 0 ]; then
-  echo "usage: $SCRIPT_NAME [<bundle>]" >&2
+  echo "usage: $SCRIPT_NAME [-d] [-e] [<bundle>]" >&2
   echo "If <bundle> is provided, it must be the name of a Sandstorm bundle file," >&2
   echo "like 'sandstorm-123.tar.xz', which will be installed. Otherwise, the script" >&2
   echo "downloads a bundle from the internet via HTTP." >&2
+  echo '' >&2
+  echo 'If -d is specified, the script does not prompt for input; it accepts all defaults.' >&2
+  echo 'If -e is specified, sandstorm listens on an external interface, not merely loopback.' >&2
   exit 1
 fi
 
@@ -56,7 +77,7 @@ fail() {
   exit 1
 }
 
-if [ ! -t 1 ]; then
+if [ "no" = "$USE_DEFAULTS" ] && [ ! -t 1 ]; then
   fail "This script is interactive. Please run it on a terminal."
 fi
 
@@ -74,6 +95,12 @@ prompt() {
   # Hack: We read from FD 3 because when reading the script from a pipe, FD 0 is the script, not
   #   the terminal. We checked above that FD 1 (stdout) is in fact a terminal and then dup it to
   #   FD 3, thus we can input from FD 3 here.
+  if [ "yes" = "$USE_DEFAULTS" ] ; then
+    # Print the default.
+    echo "$2"
+    return
+  fi
+
   read -u 3 -p "$1 [$2] " VALUE
   if [ -z "$VALUE" ]; then
     VALUE=$2
@@ -244,12 +271,22 @@ else
   done
 
   MONGO_PORT=$(prompt "Database port (choose any unused port):" "$((PORT + 1))")
-  if prompt-yesno "Expose to localhost only?" yes; then
-    BIND_IP=127.0.0.1
-    SS_HOSTNAME=localhost
-  else
+
+  # Figure out if we want to listen on internal vs. external interfaces.
+  if [ "yes" != "$USE_EXTERNAL_INTERFACE" ]; then
+    if prompt-yesno "Expose to localhost only?" yes ; then
+      USE_EXTERNAL_INTERFACE="no"
+    else
+      USE_EXTERNAL_INTERFACE="yes"
+    fi
+  fi
+
+  if [ "yes" = "$USE_EXTERNAL_INTERFACE" ]; then
     BIND_IP=0.0.0.0
     SS_HOSTNAME=$(hostname -f)
+  else
+    BIND_IP=127.0.0.1
+    SS_HOSTNAME=localhost
   fi
   BASE_URL=$(prompt "URL users will enter in browser:" "http://$SS_HOSTNAME:$PORT")
 

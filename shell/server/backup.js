@@ -134,26 +134,18 @@ Meteor.methods({
                                "Metadata object for uploaded grain has no AppVersion");
     }
 
-    var action = UserActions.findOne({appId: grainInfo.appId,
-                                   appVersion: grainInfo.appVersion});
+    var action = UserActions.findOne({appId: grainInfo.appId});
     if (!action) {
-      action = UserActions.find({appId: grainInfo.appId},
-        {limit: 1, sort: {"appVersion": -1}}).fetch();
-
-      if (!action) {
-        throw new Meteor.Error(500,
-                               "App id for uploaded grain not installed",
-                               "App Id: " + grainInfo.appId);
-      }
-
-      action = action[0];
-      if (action.appVersion < grainInfo.appVersion) {
-        throw new Meteor.Error(500,
-                               "App version for uploaded grain is newer than any " +
-                               "installed version. You need to upgrade your app first",
-                               "New version: " + grainInfo.appVersion +
-                               ", Old version: " + action.appVersion);
-      }
+      throw new Meteor.Error(500,
+                             "App id for uploaded grain not installed",
+                             "App Id: " + grainInfo.appId);
+    }
+    if (action.appVersion < grainInfo.appVersion) {
+      throw new Meteor.Error(500,
+                             "App version for uploaded grain is newer than any " +
+                             "installed version. You need to upgrade your app first",
+                             "New version: " + grainInfo.appVersion +
+                             ", Old version: " + action.appVersion);
     }
 
     var grainId = Random.id(22);

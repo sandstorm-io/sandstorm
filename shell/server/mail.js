@@ -369,19 +369,19 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
         case 4:
           // 4xx response -- client error.
           err = new Error("Status code " + resp.statusCode + " received in response.");
-          e.nature = "precondition";
+          err.nature = "precondition";
           reject(err);
           break;
         case 5:
           // 5xx response -- internal server error.
           err = new Error("Status code " + resp.statusCode + " received in response.");
-          e.nature = "localBug";
+          err.nature = "localBug";
           reject(err);
           break;
         default:
           // ???
           err = new Error("Invalid status code " + resp.statusCode + " received in response.");
-          e.nature = "localBug";
+          err.nature = "localBug";
           reject(err);
           break;
       }
@@ -390,6 +390,13 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
     req.on('error', function (e) {
       e.nature = "networkFailure";
       reject(e);
+    });
+
+    req.setTimeout(5000, function () {
+      req.abort();
+      err = new Error("Request timed out.");
+      err.nature = "precondition";
+      reject(err);
     });
 
     req.end();

@@ -41,7 +41,7 @@ Meteor.startup(function () {
     var queryDate = new Date(Date.now() - TOKEN_CLEANUP_TIMER);
 
     FileTokens.find({timestamp: {$lt: queryDate}}).forEach(function (token) {
-      Meteor.call('cleanupToken', token._id);
+      Meteor.call("cleanupToken", token._id);
     });
   }, TOKEN_CLEANUP_TIMER);
 });
@@ -65,17 +65,17 @@ Meteor.methods({
     };
 
     mkdir(token.filePath);
-    var backupFile = Path.join(token.filePath, 'backup.zip');
-    var dataDir = Path.join(token.filePath, 'data');
-    var outLog = Path.join(token.filePath, 'log');
-    var metadata = Path.join(token.filePath, 'metadata');
+    var backupFile = Path.join(token.filePath, "backup.zip");
+    var dataDir = Path.join(token.filePath, "data");
+    var outLog = Path.join(token.filePath, "log");
+    var metadata = Path.join(token.filePath, "metadata");
 
     var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox");
     var inLog = Path.join(SANDSTORM_GRAINDIR, grainId, "log");
     copy(grainDir, dataDir);  // TODO(soon): does the grain need to be offline?
     copy(inLog, outLog);
 
-    var grainInfo = _.pick(grain, 'appId', 'appVersion', 'title');
+    var grainInfo = _.pick(grain, "appId", "appVersion", "title");
     writeFile(metadata, Capnp.serialize(GrainInfo, grainInfo));
 
     var proc = ChildProcess.spawn("zip", ["-r", backupFile, "."], {cwd: token.filePath});
@@ -84,7 +84,7 @@ Meteor.methods({
     });
     proc.on("error", function (err) {
       remove(token.filePath);
-      fut.throw(new Meteor.Error(500, 'Error in zipping procces'));
+      fut.throw(new Meteor.Error(500, "Error in zipping procces"));
     });
 
     var code = fut.wait();
@@ -106,23 +106,23 @@ Meteor.methods({
 
     var fut = new Future();
 
-    var backupFile = Path.join(token.filePath, 'backup.zip');
+    var backupFile = Path.join(token.filePath, "backup.zip");
 
-    var proc = ChildProcess.spawn('unzip', ['-o', backupFile], {cwd: token.filePath});
+    var proc = ChildProcess.spawn("unzip", ["-o", backupFile], {cwd: token.filePath});
     proc.on("exit", function (code) {
       fut.return(code);
     });
     proc.on("error", function (err) {
-      fut.throw(new Meteor.Error(500, 'Error in unzipping procces'));
+      fut.throw(new Meteor.Error(500, "Error in unzipping procces"));
     });
 
     var code = fut.wait();
     if (code !== 0) {
-      Meteor.call('cleanupToken', tokenId);
+      Meteor.call("cleanupToken", tokenId);
       throw new Meteor.Error(500, "Unzip process failed.");
     }
 
-    var metadata = Path.join(token.filePath, 'metadata');
+    var metadata = Path.join(token.filePath, "metadata");
     var grainInfoBuf = readFile(metadata);
     var grainInfo = Capnp.parse(GrainInfo, grainInfoBuf);
     if (!grainInfo.appId) {
@@ -138,7 +138,7 @@ Meteor.methods({
                                    appVersion: grainInfo.appVersion});
     if (!action) {
       action = UserActions.find({appId: grainInfo.appId},
-        {limit: 1, sort: {'appVersion': -1}}).fetch();
+        {limit: 1, sort: {"appVersion": -1}}).fetch();
 
       if (!action) {
         throw new Meteor.Error(500,
@@ -158,7 +158,7 @@ Meteor.methods({
 
     var grainId = Random.id(22);
     var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox");
-    var dataDir = Path.join(token.filePath, 'data');
+    var dataDir = Path.join(token.filePath, "data");
     copy(dataDir, grainDir);
 
     Grains.insert({
@@ -170,7 +170,7 @@ Meteor.methods({
       title: grainInfo.title
     });
 
-    Meteor.call('cleanupToken', tokenId);
+    Meteor.call("cleanupToken", tokenId);
     return grainId;
   },
 
@@ -193,7 +193,7 @@ doGrainUpload = function (stream) {
       timestamp: new Date()
     };
     mkdir(token.filePath);
-    var backupFile = Path.join(token.filePath, 'backup.zip');
+    var backupFile = Path.join(token.filePath, "backup.zip");
 
     var file = Fs.createWriteStream(backupFile);
 
@@ -230,7 +230,7 @@ Router.map(function () {
       var fut = new Future();
       var response = this.response;
       var token = FileTokens.findOne(this.params.tokenId);
-      var backupFile = Path.join(token.filePath, 'backup.zip');
+      var backupFile = Path.join(token.filePath, "backup.zip");
 
       var fileSize, file;
       try {
@@ -253,11 +253,11 @@ Router.map(function () {
       });
 
       file.on("open", function () {
-        var filename = token.name + '.zip';
+        var filename = token.name + ".zip";
         // Make first character be alpha-numeric
-        filename = filename.replace(/^[^A-Za-z0-9_]/, '_');
+        filename = filename.replace(/^[^A-Za-z0-9_]/, "_");
         // Remove non filesystem characters
-        filename = filename.replace(new RegExp("[\\\\/:*?\"<>|]","g"), '');
+        filename = filename.replace(new RegExp("[\\\\/:*?\"<>|]","g"), "");
 
         response.writeHead(200, headers = {
           "Content-Length": fileSize,
@@ -270,7 +270,7 @@ Router.map(function () {
 
       fut.wait();
 
-      Meteor.call('cleanupToken', this.params.tokenId);
+      Meteor.call("cleanupToken", this.params.tokenId);
       return this.response.end();
     }
   });

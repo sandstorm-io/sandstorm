@@ -436,3 +436,12 @@ interface ViewSharingLink extends(SharingLink) {
     # Permissions to remove from those granted above.
   }
 }
+
+# ========================================================================================
+# Backup and Restore
+
+struct GrainInfo {
+  appId @0 :Text;
+  appVersion @1 :UInt32;
+  title @2 :Text;
+}

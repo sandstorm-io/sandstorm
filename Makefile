@@ -37,14 +37,14 @@ NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 all: sandstorm-$(BUILD).tar.xz
 
 clean:
-	rm -rf bin tmp node_modules bundle shell-bundle.tar.gz sandstorm-*.tar.xz shell/public/edit.png shell/public/trash.png shell/public/wrench.png .shell-env
+	rm -rf bin tmp node_modules bundle shell-bundle.tar.gz sandstorm-*.tar.xz shell/public/edit.png shell/public/trash.png shell/public/wrench.png shell/public/download.png .shell-env
 
 install: sandstorm-$(BUILD).tar.xz install.sh
 	@./install.sh sandstorm-$(BUILD).tar.xz
 
 shell-env: .shell-env
 
-.shell-env: node_modules/sandstorm/grain.capnp shell/public/edit.png shell/public/trash.png shell/public/wrench.png
+.shell-env: node_modules/sandstorm/grain.capnp shell/public/edit.png shell/public/trash.png shell/public/wrench.png shell/public/download.png
 	@touch .shell-env
 
 update: sandstorm-$(BUILD).tar.xz

@@ -156,6 +156,64 @@ if (Meteor.isClient) {
       Router.go("uploadForm", {});
     },
 
+    "click #restoreGrainLink":  function (event) {
+      var grainId = this.grainId;
+
+      var input = document.createElement("input");
+      input.type = "file";
+      input.style = "display: none";
+      Session.set("uploadStatus", "Uploading");
+
+      input.addEventListener("change", function (e) {
+        Session.set("grainMenuOpen", false);
+
+        // TODO: make sure only 1 file is uploaded
+        var file = e.currentTarget.files[0];
+
+        var xhr = new XMLHttpRequest();
+
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState == 4) {
+            if (xhr.status == 200) {
+              Session.set("uploadProgress", 0);
+              Session.set("uploadStatus", "Unpacking");
+              Meteor.call("restoreGrain", xhr.responseText, function (err, grainId) {
+                if (err) {
+                  Session.set("uploadStatus", undefined);
+                  Session.set("uploadError", {
+                    status: 200,
+                    statusText: err.reason + ": " + err.details,
+                  });
+                } else {
+                  Router.go("grain", {grainId: grainId});
+                }
+              });
+            } else {
+              Session.set("uploadError", {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                response: xhr.responseText
+              });
+            }
+          }
+        };
+
+        if (xhr.upload) {
+          xhr.upload.addEventListener("progress", function (progressEvent) {
+            Session.set("uploadProgress",
+                Math.floor(progressEvent.loaded / progressEvent.total * 100));
+          });
+        }
+
+        xhr.open("POST", "/uploadBackup", true);
+        xhr.send(file);
+
+        Router.go("restoreGrainStatus");
+      });
+
+      input.click();
+    },
+
     "click #emailInvitesLink": function (event) {
       Session.set("grainMenuOpen", false);
       Router.go("invite", {});
@@ -282,6 +340,24 @@ Router.map(function () {
     path: "/about",
     data: function () {
       return getBuildInfo();
+    }
+  });
+
+  this.route("restoreGrainStatus", {
+    path: "/restore",
+
+    waitOn: function () {
+      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
+      return Meteor.subscribe("credentials");
+    },
+
+    data: function () {
+      return {
+        isSignedUp: isSignedUp(),
+        progress: Session.get("uploadProgress"),
+        status: Session.get("uploadStatus"),
+        error: Session.get("uploadError")
+      };
     }
   });
 });

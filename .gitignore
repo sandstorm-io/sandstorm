@@ -9,8 +9,13 @@ shell/sandstorm-shell.includes
 shell/public/edit.png
 shell/public/trash.png
 shell/public/wrench.png
+shell/public/download.png
 website/sandstorm.io.config
 website/sandstorm.io.creator
 website/sandstorm.io.creator.user
 website/sandstorm.io.files
 website/sandstorm.io.includes
+shell-bundle.tar.gz
+sandstorm-*.tar.xz
+bundle/
+.shell-env

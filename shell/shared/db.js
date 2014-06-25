@@ -127,6 +127,18 @@ DeleteStats = new Meteor.Collection("deleteStats");
 //   type: "grain" or "user"
 //   lastActive: Date of the user's or grain's last activity.
 
+FileTokens = new Meteor.Collection("fileTokens");
+// Tokens corresponding to files that will be accessed and later cleaned up by the server. This
+// is specifically used in routes like backupGrain/restoreGrain where the route is server-side,
+// and thus needs its own form of authentication.
+// (see https://github.com/EventedMind/iron-router/issues/649)
+//
+// Each contains:
+//   _id:       random. Since they're unguessable, they're also used as the token
+//   filePath:  Text path on the local filesystem. Probably will be in /tmp
+//   name:      Text name that should be presented to users for this token
+//   timestamp: File creation time. Used to figure out when the token and file should be wiped.
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.

@@ -91,6 +91,7 @@ License along with Sandstorm.  If not, see
       </td></tr></table>
       <p id="installAppsLink">Install apps...</p>
       <p id="uploadAppLink">Upload an app...</p>
+      <p id="restoreGrainLink">Restore a grain...</p>
       {{#if isAdmin}}
       <p id="emailInvitesLink">Invite users by e-mail...</p>
       <p id="urlInvitesLink">Invite users by URL...</p>
@@ -155,6 +156,7 @@ License along with Sandstorm.  If not, see
       <button id="renameGrain" title="Rename">Rename</button>
       <button id="deleteGrain" title="Delete">Delete</button>
       <button id="openDebugLog" title="Show Debug Log">Log</button>
+      <button id="backupGrain" title="Backup Grain">Backup</button>
     {{/if}}
   </div>
 
@@ -348,6 +350,28 @@ $KEY</textarea></p>
   </div>
 </template>
 
+<template name="restoreGrainStatus">
+  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Restoring Grain</div>
+
+  <div id="restoreGrain" class="main-content">
+    <div class="centered-box">
+    {{#if isSignedUp}}
+      {{#if status}}
+        <p>{{status}}... {{progress}}%</p>
+      {{else}}
+        {{#if error}}
+          <p>Restore failed: {{error.status}} {{error.statusText}}</p>
+        {{else}}
+          <p>Restore failed. Please try again.</p>
+        {{/if}}
+      {{/if}}
+    {{else}}
+      <p>Sorry, Sandstorm is in closed alpha.  To install apps, you must first be invited.</p>
+    {{/if}}
+    </div>
+  </div>
+</template>
+
 <template name="stats">
   <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Usage stats</div>
 
@@ -445,6 +469,7 @@ $KEY</textarea></p>
         <li><a href="http://underscorejs.org/">Underscore.js</a> (MIT license)</li>
         <li><a href="http://www.senchalabs.org/connect/">Connect middleware</a> (MIT license)</li>
         <li><a href="https://github.com/andris9/simplesmtp">Simple SMTP by Andris Reinman</a> (MIT license)</li>
+        <li><a href="https://github.com/jprichardson/node-fs-extra">fs-extra by JP Richardson</a> (MIT license)</li>
         <li><a href="https://github.com/jedisct1/libsodium">libsodium</a> (MIT license)</li>
         <li><a href="https://www.npmjs.org/package/es6-promises">ES6 Promises polyfill by Dmitry Korobkin</a> (MIT license)</li>
         <li><a href="https://www.google.com/fonts/specimen/Open+Sans">Open Sans font by Google</a> (Apache 2.0 license)</li>

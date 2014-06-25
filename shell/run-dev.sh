@@ -57,7 +57,8 @@ SETTINGS=$(mktemp)
 cat > $SETTINGS << __EOF__
 {
   "public": {
-    "buildstamp": "[local dev front-end]"
+    "buildstamp": "[local dev front-end]",
+    "allowDemoAccounts": true
   },
   "home": "$SANDSTORM_HOME"
 }

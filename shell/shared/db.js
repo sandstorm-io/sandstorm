@@ -120,12 +120,20 @@ ActivityStats = new Meteor.Collection("activityStats");
 //       interval. Only counts logged-in users.
 //   activeGrains: The number of unique grains that have been used in the time interval.
 
+DeleteStats = new Meteor.Collection("deleteStats");
+// Contains records of objects that were deleted, for stat-keeping purposes.
+//
+// Each contains:
+//   type: "grain" or "user"
+//   lastActive: Date of the user's or grain's last activity.
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.
 
     if (this.userId) {
-      return Meteor.users.find({_id: this.userId}, {fields: {signupKey: 1, isAdmin: 1}});
+      return Meteor.users.find({_id: this.userId},
+          {fields: {signupKey: 1, isAdmin: 1, expires: 1}});
     } else {
       return [];
     }
@@ -146,11 +154,31 @@ if (Meteor.isServer) {
   });
 }
 
+isDemoUser = function() {
+  // Returns true if this is a demo user.
+
+  var user = Meteor.user();
+  if (user && user.expires) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 isSignedUp = function() {
   // Returns true if the user has presented an invite key.
 
   var user = Meteor.user();
   if (user && user.signupKey) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+isSignedUpOrDemo = function () {
+  var user = Meteor.user();
+  if (user && (user.signupKey || user.expires)) {
     return true;
   } else {
     return false;

@@ -51,6 +51,11 @@ if (Meteor.isServer) {
         return;
       }
 
+      if (isDemoUser()) {
+        throw new Meteor.Error(403,
+            "Demo users cannot accept invite keys. Please sign in as a real user.");
+      }
+
       var keyInfo = SignupKeys.find(key);
       if (!keyInfo || keyInfo.used) {
         throw new Meteor.Error(403, "Invalid key or already used.");

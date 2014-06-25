@@ -39,7 +39,7 @@ if (Meteor.isServer) {
           environ: Match.Optional([{key: String, value: String}])
         }
       });
-      return userId && isSignedUp() && action.userId === userId;
+      return userId && isSignedUpOrDemo() && action.userId === userId;
     },
     remove: function (userId, action) {
       return userId && action.userId === userId;
@@ -75,23 +75,37 @@ if (Meteor.isServer) {
   });
 }
 
+function isSafeDemoAppUrl(url) {
+  // For demo accounts, we allow using a bare hash with no URL (which will never upload a new app)
+  // and we allow specifying a sandstorm.io URL.
+  return !url ||
+      url.lastIndexOf("http://sandstorm.io", 0) === 0 ||
+      url.lastIndexOf("https://sandstorm.io", 0) === 0;
+}
+
 Meteor.methods({
   ensureInstalled: function (packageId, url) {
     check(packageId, String);
     check(url, Match.OneOf(String, undefined, null));
 
     if (!packageId.match(/^[a-zA-Z0-9]*$/)) {
-      throw new Meteor.Error(400, "Bad package name", "The package name contains illegal characters.");
+      throw new Meteor.Error(400, "The package name contains illegal characters.");
     }
 
     if (!this.userId) {
-      throw new Meteor.Error(403, "Unauthorized", "You must be logged in to install packages.");
+      throw new Meteor.Error(403, "You must be logged in to install packages.");
     }
 
     if (!isSignedUp()) {
-      throw new Meteor.Error(403, "Unauthorized",
-          "Sorry, Sandstorm is in closed alpha.  You must receive an alpha key before you " +
-          "can install packages.");
+      if (isDemoUser()) {
+        if (!isSafeDemoAppUrl(url)) {
+          throw new Meteor.Error(403, "Sorry, demo users cannot upload new apps.");
+        }
+      } else {
+        throw new Meteor.Error(403,
+            "Sorry, Sandstorm is in closed alpha. You must receive an alpha key before you " +
+            "can install packages.");
+      }
     }
 
     var app = Packages.findOne(packageId);
@@ -115,13 +129,19 @@ Meteor.methods({
     check(url, Match.OneOf(String, undefined, null));
 
     if (!this.userId) {
-      throw new Meteor.Error(403, "Unauthorized", "You must be logged in to install packages.");
+      throw new Meteor.Error(403, "You must be logged in to install packages.");
     }
 
     if (!isSignedUp()) {
-      throw new Meteor.Error(403, "Unauthorized",
-          "Sorry, Sandstorm is in closed alpha.  You must receive an alpha key before you " +
-          "can install packages.");
+      if (isDemoUser()) {
+        if (!isSafeDemoAppUrl(url)) {
+          throw new Meteor.Error(403, "Sorry, demo users cannot upload new apps.");
+        }
+      } else {
+        throw new Meteor.Error(403,
+            "Sorry, Sandstorm is in closed alpha. You must receive an alpha key before you " +
+            "can install packages.");
+      }
     }
 
     var pkg = Packages.findOne(packageId);
@@ -266,9 +286,18 @@ Router.map(function () {
       if (!userId) {
         return { error: "You must sign in to install packages.", packageId: this.params.packageId };
       }
+
       if (!isSignedUp()) {
-        return { error: "Sorry, Sandstorm is in closed alpha.  You must receive an alpha " +
-                        "key before you can install packages.", packageId: this.params.packageId };
+        if (isDemoUser()) {
+          if (!isSafeDemoAppUrl(this.params.url)) {
+            return { error: "Sorry, demo users cannot upload new apps.",
+                     packageId: this.params.packageId };
+          }
+        } else {
+          return { error: "Sorry, Sandstorm is in closed alpha.  You must receive an alpha " +
+                          "key before you can install packages.",
+                   packageId: this.params.packageId };
+        }
       }
 
       Meteor.call("ensureInstalled", this.params.packageId, this.params.url);

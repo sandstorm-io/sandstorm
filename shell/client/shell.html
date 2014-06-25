@@ -141,7 +141,7 @@ License along with Sandstorm.  If not, see
       <p><a href="https://sandstorm.io/apps/?host={{origin}}">Looking for apps?</a></p>
     {{else}}
       <p>Currently in closed alpha.</p>
-      <p>Want an invite?  <a href="https://sandstorm.io">Get on the mailing list.</a></p>
+      <p>Want an invite? <a href="https://sandstorm.io">Get on the mailing list.</a></p>
     {{/if}}
     {{/if}}
     {{/if}}
@@ -388,6 +388,32 @@ $KEY</textarea></p>
           </tr>
         {{/each}}
       </table>
+    </div>
+  </div>
+</template>
+
+<template name="demo">
+  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Demo</div>
+
+  <div id="demo" class="main-content">
+    <div class="centered-box">
+      {{#if allowDemo}}
+        {{#if currentUser}}
+          <p>You are already logged in. You don't need a demo account.</p>
+        {{else}}
+          {{#if loggingIn}}
+            <p>Logging in...</p>
+          {{else}}
+            <p>Want to try Sandstorm on this server? Just enter a name to create a demo account:</p>
+            <p><input id="demo-display-name" type="text" placeholder="John Doe">
+               <button id="createDemoUser">Create</button></p>
+            <p>This account will expire and be deleted after one hour. To get an invite code for a
+              permanent account, <a href="https://sandstorm.io">get on the mailing list.</a></p>
+          {{/if}}
+        {{/if}}
+      {{else}}
+        <p>Sorry, this server does not allow demo accounts.</p>
+      {{/if}}
     </div>
   </div>
 </template>

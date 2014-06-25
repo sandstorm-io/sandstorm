@@ -23,8 +23,10 @@ var DAY_MS = 24*60*60*1000;
 if (Meteor.isServer) {
   function computeStats(since) {
     return {
-      activeUsers: Meteor.users.find({lastActive: {$gt: since}}).count(),
-      activeGrains: Grains.find({lastUsed: {$gt: since}}).count()
+      activeUsers: Meteor.users.find({lastActive: {$gt: since}}).count() +
+          DeleteStats.find({type: "user", lastActive: {$gt: since}}).count(),
+      activeGrains: Grains.find({lastUsed: {$gt: since}}).count() +
+          DeleteStats.find({type: "grain", lastActive: {$gt: since}}).count()
     }
   }
 

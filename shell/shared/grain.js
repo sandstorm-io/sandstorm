@@ -92,6 +92,9 @@ Meteor.methods({
       var grain = Grains.findOne({_id: grainId, userId: this.userId});
       if (grain) {
         Grains.remove(grainId);
+        if (grain.lastUsed) {
+          DeleteStats.insert({type: "grain", lastActive: grain.lastUsed});
+        }
         if (!this.isSimulation) {
           deleteGrain(grainId);
         }

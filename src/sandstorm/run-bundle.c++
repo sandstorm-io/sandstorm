@@ -1137,6 +1137,7 @@ private:
     kj::String rootUrl = nullptr;
     kj::String mailUrl = nullptr;
     kj::String updateChannel = nullptr;
+    bool allowDemoAccounts = false;
   };
 
   kj::String updateFile;
@@ -1360,6 +1361,8 @@ private:
         } else {
           config.updateChannel = kj::mv(value);
         }
+      } else if (key == "ALLOW_DEMO_ACCOUNTS") {
+        config.allowDemoAccounts = value == "true" || value == "yes";
       }
     }
 
@@ -1707,8 +1710,10 @@ private:
       }
 
       KJ_SYSCALL(setenv("METEOR_SETTINGS", kj::str(
-          "{\"public\":{\"build\":", buildstamp, ", \"kernelTooOld\":",
-          kernelNewEnough ? "false" : "true", "}}").cStr(), true));
+          "{\"public\":{\"build\":", buildstamp,
+          ", \"kernelTooOld\":", kernelNewEnough ? "false" : "true",
+          ", \"allowDemoAccounts\":", config.allowDemoAccounts ? "true" : "false",
+          "}}").cStr(), true));
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "main.js", EXEC_END_ARGS));
       KJ_UNREACHABLE;
     }

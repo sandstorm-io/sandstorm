@@ -255,7 +255,7 @@ Router.map(function () {
       return {
         host: document.location.host,
         origin: document.location.origin,
-        isSignedUp: isSignedUp(),
+        isSignedUp: isSignedUpOrDemo(),
         isAdmin: isAdmin(),
         isFirstRun: !HasUsers.findOne("hasUsers"),
         build: getBuildInfo().build,

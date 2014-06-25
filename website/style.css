@@ -350,12 +350,25 @@ p.link-button-box {
   text-align: center;
 }
 
+#nametags {
+  text-align: center;
+  margin: auto;
+}
+
+@media screen and (max-width: 1900px) {
+  /* Don't display three boxes followed by one. */
+  #nametags {
+    max-width: 1000px;
+  }
+}
+
 .nametag {
   width: 450px;
   margin: 8px auto;
   background-color: #f4f4f4;
   border-radius: 8px;
-  text-align: center;
+  display: inline-block;
+  text-align: left;
 }
 
 .nametag img {
@@ -364,11 +377,11 @@ p.link-button-box {
   vertical-align: middle;
   width: 120px;
   height: 120px;
+  padding: 25px;
 }
 
 .nametag p {
   display: inline-block;
   vertical-align: middle;
   text-align: left;
-  padding-left: 32px;
 }

@@ -397,10 +397,11 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
       reject(e);
     });
 
-    req.setTimeout(5000, function () {
+    req.setTimeout(15000, function () {
       req.abort();
       err = new Error("Request timed out.");
-      err.nature = "precondition";
+      err.nature = "localBug";
+      err.durability = "overloaded";
       reject(err);
     });
 

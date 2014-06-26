@@ -345,11 +345,15 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
   var session = this;
 
   return new Promise(function (resolve, reject) {
-    var getMethod = Http.get;
+    var requestMethod = Http.request;
     if (url.indexOf('https://') === 0) {
-      getMethod = Https.get;
+      requestMethod = Https.request;
+    } else if (url.indexOf('http://') !== 0) {
+      err = new Error("Protocol not recognized.");
+      err.nature = "precondition";
+      reject(err);
     }
-    req = getMethod(url, function (resp) {
+    req = requestMethod(url, function (resp) {
       var buffers = [];
       var err;
 

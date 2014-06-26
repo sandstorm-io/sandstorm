@@ -19,6 +19,7 @@
 // <http://www.gnu.org/licenses/>.
 
 var Http = Npm.require("http");
+var Https = Npm.require("https");
 var Future = Npm.require("fibers/future");
 
 var EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
@@ -344,7 +345,15 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
   var session = this;
 
   return new Promise(function (resolve, reject) {
-    req = Http.get(url, function (resp) {
+    var requestMethod = Http.request;
+    if (url.indexOf('https://') === 0) {
+      requestMethod = Https.request;
+    } else if (url.indexOf('http://') !== 0) {
+      err = new Error("Protocol not recognized.");
+      err.nature = "precondition";
+      reject(err);
+    }
+    req = requestMethod(url, function (resp) {
       var buffers = [];
       var err;
 
@@ -369,19 +378,19 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
         case 4:
           // 4xx response -- client error.
           err = new Error("Status code " + resp.statusCode + " received in response.");
-          e.nature = "precondition";
+          err.nature = "precondition";
           reject(err);
           break;
         case 5:
           // 5xx response -- internal server error.
           err = new Error("Status code " + resp.statusCode + " received in response.");
-          e.nature = "localBug";
+          err.nature = "localBug";
           reject(err);
           break;
         default:
           // ???
           err = new Error("Invalid status code " + resp.statusCode + " received in response.");
-          e.nature = "localBug";
+          err.nature = "localBug";
           reject(err);
           break;
       }
@@ -390,6 +399,14 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
     req.on('error', function (e) {
       e.nature = "networkFailure";
       reject(e);
+    });
+
+    req.setTimeout(15000, function () {
+      req.abort();
+      err = new Error("Request timed out.");
+      err.nature = "localBug";
+      err.durability = "overloaded";
+      reject(err);
     });
 
     req.end();

@@ -1,5 +1,5 @@
 Npm.depends({
-    'es6-promise': '0.1.1'
+    'es6-promise': '1.0.0'
 });
 
 Package.on_use(function (api) {

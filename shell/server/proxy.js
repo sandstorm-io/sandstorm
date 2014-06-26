@@ -762,7 +762,7 @@ var errorCodes = {
 Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
   var self = this;
 
-  return Promise.cast(undefined).then(function () {
+  return Promise.resolve(undefined).then(function () {
     return self.makeContext(request);
   }).then(function (context) {
     // Send the RPC.
@@ -905,7 +905,7 @@ function pumpWebSocket(socket, rpcStream) {
 Proxy.prototype.handleWebSocket = function (request, socket, head, retryCount) {
   var self = this;
 
-  return Promise.cast(undefined).then(function () {
+  return Promise.resolve(undefined).then(function () {
     return self.makeContext(request);
   }).then(function (context) {
     var path = request.url.slice(1);  // remove leading '/'

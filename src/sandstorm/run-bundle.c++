@@ -46,6 +46,7 @@
 #include <sys/prctl.h>
 #include <sys/syscall.h>
 #include <sys/utsname.h>
+#include <sys/capability.h>
 #include <sched.h>
 #include <grp.h>
 #include <errno.h>
@@ -390,20 +391,23 @@ kj::Maybe<UserIds> getUserIds(kj::StringPtr name) {
   idParser::Input input(idOutput.begin(), idOutput.end());
   KJ_IF_MAYBE(assignments, idParser::parser(input)) {
     UserIds result;
+    bool sawUid = false, sawGid = false;
     for (auto& assignment: *assignments) {
       if (assignment.name == "uid") {
         KJ_ASSERT(assignment.values.size() == 1, "failed to parse output of id(1)", idOutput);
         result.uid = assignment.values[0];
+        sawUid = true;
       } else if (assignment.name == "gid") {
         KJ_ASSERT(assignment.values.size() == 1, "failed to parse output of id(1)", idOutput);
         result.gid = assignment.values[0];
+        sawGid = true;
       } else if (assignment.name == "groups") {
         result.groups = KJ_MAP(g, assignment.values) -> gid_t { return g; };
       }
     }
 
-    KJ_ASSERT(result.uid != -1, "id(1) didn't return uid?", idOutput);
-    KJ_ASSERT(result.gid != -1, "id(1) didn't return gid?", idOutput);
+    KJ_ASSERT(sawUid, "id(1) didn't return uid?", idOutput);
+    KJ_ASSERT(sawGid, "id(1) didn't return gid?", idOutput);
     if (result.groups.size() == 0) {
       result.groups = kj::heapArray<gid_t>(1);
       result.groups[0] = result.gid;
@@ -768,11 +772,6 @@ public:
   }
 
   kj::MainBuilder::Validity start() {
-    if (getuid() != 0) {
-      return "You must run this program as root, so that it can chroot.  The actual live server "
-             "will not run as root.";
-    }
-
     changeToInstallDir();
     const Config config = readConfig();
 
@@ -797,6 +796,8 @@ public:
       // It's ours.  Truncate for now so we can write in the new PID later.
       KJ_SYSCALL(ftruncate(pidfile, 0));
     }
+
+    if (!runningAsRoot) unshareUidNamespaceOnce();
 
     // Unshare PID namespace so that daemon process becomes the root process of its own PID
     // namespace and therefore if it dies the whole namespace is killed.
@@ -864,7 +865,7 @@ public:
     // Redirect stdio.
     {
       auto logFd = raiiOpen("../var/log/sandstorm.log", O_WRONLY | O_APPEND | O_CREAT, 0660);
-      KJ_SYSCALL(fchown(logFd, config.uids.uid, config.uids.gid));
+      if (runningAsRoot) { KJ_SYSCALL(fchown(logFd, config.uids.uid, config.uids.gid)); }
       KJ_SYSCALL(dup2(logFd, STDOUT_FILENO));
       KJ_SYSCALL(dup2(logFd, STDERR_FILENO));
     }
@@ -1011,11 +1012,6 @@ public:
   }
 
   kj::MainBuilder::Validity mongo() {
-    if (getuid() != 0) {
-      return "You must run this program as root, so that it can chroot.  The actual live server "
-             "will not run as root.";
-    }
-
     changeToInstallDir();
 
     // Verify that Sandstorm is running.
@@ -1037,10 +1033,6 @@ public:
   }
 
   kj::MainBuilder::Validity update() {
-    if (getuid() != 0) {
-      return "You must run this program as root.";
-    }
-
     changeToInstallDir();
     const Config config = readConfig();
 
@@ -1144,7 +1136,9 @@ private:
   kj::StringPtr devtoolsBindir = "/usr/local/bin";
 
   bool changedDir = false;
+  bool unsharedUidNamespace = false;
   bool kernelNewEnough = isKernelNewEnough();
+  bool runningAsRoot = getuid() == 0;
 
   kj::String getInstallDir() {
     char exeNameBuf[PATH_MAX + 1];
@@ -1165,10 +1159,12 @@ private:
       context.exitError(kj::str(title, " not found."));
     }
 
-    struct stat stats;
-    KJ_SYSCALL(stat(path.cStr(), &stats));
-    if (stats.st_uid != 0) {
-      context.exitError(kj::str(title, " not owned by root."));
+    if (runningAsRoot) {
+      struct stat stats;
+      KJ_SYSCALL(stat(path.cStr(), &stats));
+      if (stats.st_uid != 0) {
+        context.exitError(kj::str(title, " not owned by root, but you're running as root."));
+      }
     }
   }
 
@@ -1228,6 +1224,26 @@ private:
     return ts.tv_sec * 1000000000ll + ts.tv_nsec;
   }
 
+  void writeUserNSMap(const char *type, kj::StringPtr contents) {
+    kj::FdOutputStream(raiiOpen(kj::str("/proc/self/", type, "_map").cStr(), O_WRONLY | O_CLOEXEC))
+        .write(contents.begin(), contents.size());
+  }
+
+  void unshareUidNamespaceOnce() {
+    if (!unsharedUidNamespace) {
+      uid_t uid = getuid();
+      gid_t gid = getgid();
+
+      KJ_SYSCALL(unshare(CLONE_NEWUSER));
+
+      // Set up the UID namespace. We don't actually transform our UID/GID.
+      writeUserNSMap("uid", kj::str(uid, " ", uid, " 1\n"));
+      writeUserNSMap("gid", kj::str(uid, " ", gid, " 1\n"));
+
+      unsharedUidNamespace = true;
+    }
+  }
+
   void enterChroot() {
     KJ_REQUIRE(changedDir);
 
@@ -1236,6 +1252,13 @@ private:
     checkOwnedByRoot(".", "Version intsall directory");
     checkOwnedByRoot("sandstorm", "'sandstorm' executable");
     checkOwnedByRoot("../sandstorm.conf", "Config file");
+
+    kj::StringPtr tmpfsUidOpts = "";
+    if (runningAsRoot) {
+      tmpfsUidOpts = ",uid=0,gid=0";
+    } else {
+      unshareUidNamespaceOnce();
+    }
 
     // Unshare the mount namespace, so we can create some private bind mounts.
     KJ_SYSCALL(unshare(CLONE_NEWNS));
@@ -1261,18 +1284,23 @@ private:
     // Bind var -> ../var, so that all versions share the same var.
     KJ_SYSCALL(mount("../var", "var", nullptr, MS_BIND, nullptr));
 
-    // Bind /dev into our chroot environment.
-    KJ_SYSCALL(mount("/dev", "dev", nullptr, MS_BIND, nullptr));
+    // Bind devices from /dev into our chroot environment.
+    // We can't bind /dev itself because this is apparently not allowed when in a UID namespace
+    // (returns EINVAL; haven't figured out why yet).
+    KJ_SYSCALL(mount("/dev/null", "dev/null", nullptr, MS_BIND, nullptr));
+    KJ_SYSCALL(mount("/dev/zero", "dev/zero", nullptr, MS_BIND, nullptr));
+    KJ_SYSCALL(mount("/dev/random", "dev/random", nullptr, MS_BIND, nullptr));
+    KJ_SYSCALL(mount("/dev/urandom", "dev/urandom", nullptr, MS_BIND, nullptr));
 
     // Mount a tmpfs at /tmp
     KJ_SYSCALL(mount("tmpfs", "tmp", "tmpfs",
                      MS_NOATIME | MS_NOSUID | MS_NOEXEC,
-                     kj::str("size=8m,nr_inodes=1k,mode=777,uid=0,gid=0").cStr()));
+                     kj::str("size=8m,nr_inodes=1k,mode=777", tmpfsUidOpts).cStr()));
 
     // Mount a tmpfs at /etc and copy over necessary config files from the host.
     KJ_SYSCALL(mount("tmpfs", "etc", "tmpfs",
                      MS_NOATIME | MS_NOSUID | MS_NOEXEC,
-                     kj::str("size=2m,nr_inodes=128,mode=755,uid=0,gid=0").cStr()));
+                     kj::str("size=2m,nr_inodes=128,mode=755", tmpfsUidOpts).cStr()));
     copyEtc();
 
     // OK, change our root directory.
@@ -1286,9 +1314,23 @@ private:
   }
 
   void dropPrivs(const UserIds& uids) {
-    KJ_SYSCALL(setresgid(uids.gid, uids.gid, uids.gid));
-    KJ_SYSCALL(setgroups(uids.groups.size(), uids.groups.begin()));
-    KJ_SYSCALL(setresuid(uids.uid, uids.uid, uids.uid));
+    if (runningAsRoot) {
+      KJ_SYSCALL(setresgid(uids.gid, uids.gid, uids.gid));
+      KJ_SYSCALL(setgroups(uids.groups.size(), uids.groups.begin()));
+      KJ_SYSCALL(setresuid(uids.uid, uids.uid, uids.uid));
+    } else {
+      // We're using UID namespaces.
+
+      // Drop all Linux "capabilities".  (These are Linux/POSIX "capabilities", which are not true
+      // object-capabilities, hence the quotes.)
+      struct __user_cap_header_struct hdr;
+      struct __user_cap_data_struct data[2];
+      hdr.version = _LINUX_CAPABILITY_VERSION_3;
+      hdr.pid = 0;
+      memset(data, 0, sizeof(data));  // All capabilities disabled!
+      KJ_SYSCALL(capset(&hdr, data));
+    }
+
     umask(0007);
   }
 
@@ -1323,6 +1365,9 @@ private:
     KJ_REQUIRE(changedDir);
 
     Config config;
+
+    config.uids.uid = getuid();
+    config.uids.gid = getgid();
 
     auto lines = splitLines(readAll("../sandstorm.conf"));
     for (auto& line: lines) {
@@ -1366,7 +1411,7 @@ private:
       }
     }
 
-    KJ_REQUIRE(config.uids.uid != 0, "config missing SERVER_USER");
+    KJ_REQUIRE(config.uids.uid != 0, "config missing SERVER_USER; can't run as root");
 
     return config;
   }
@@ -1377,8 +1422,10 @@ private:
 
     // Fix permissions on pidfile. We do this here rather than back where we opened it because
     // a previous version failed to do this and we want it fixed immediately on upgrade.
-    KJ_SYSCALL(fchown(pidfile, 0, config.uids.gid));
-    KJ_SYSCALL(fchmod(pidfile, 0660));
+    if (runningAsRoot) {
+      KJ_SYSCALL(fchown(pidfile, 0, config.uids.gid));
+      KJ_SYSCALL(fchmod(pidfile, 0660));
+    }
 
     cleanupOldVersions();
 
@@ -1480,18 +1527,27 @@ private:
     // Create the mongo user if it hasn't been created already.
     maybeCreateMongoUser(config);
 
-    pid_t devDaemonPid = fork();
-    if (devDaemonPid == 0) {
-      // Ugh, undo the setup we *just* did. Note that we can't just fork the dev daemon earlier
-      // because it wants to connect to mongo first thing.
-      sigfd = nullptr;
-      clearSignalMask();
-      KJ_SYSCALL(signal(SIGALRM, SIG_DFL));
-      runDevDaemon(config);
-      KJ_UNREACHABLE;
+    context.warning("** Mongo started; now starting front-end...");
+
+    // If we're root, run the dev daemon. At present the dev daemon requires root (in order to
+    // use FUSE), so we don't run it if we aren't root.
+    pid_t devDaemonPid;
+    if (runningAsRoot) {
+      KJ_SYSCALL(devDaemonPid = fork());
+      if (devDaemonPid == 0) {
+        // Ugh, undo the setup we *just* did. Note that we can't just fork the dev daemon earlier
+        // because it wants to connect to mongo first thing.
+        sigfd = nullptr;
+        clearSignalMask();
+        KJ_SYSCALL(signal(SIGALRM, SIG_DFL));
+        runDevDaemon(config);
+        KJ_UNREACHABLE;
+      }
+    } else {
+      devDaemonPid = 0;
+      context.warning("Note: Not accepting \"spk dev\" connections because not running as root.");
     }
 
-    context.warning("** Mongo started; now starting front-end...");
     pid_t nodePid = startNode(config);
     int64_t nodeStartTime = getTime();
 
@@ -1655,7 +1711,7 @@ private:
 
       // Store the password.
       auto outFd = raiiOpen("/var/mongo/passwd", O_WRONLY | O_CREAT | O_EXCL, 0640);
-      KJ_SYSCALL(fchown(outFd, config.uids.uid, config.uids.gid));
+      if (runningAsRoot) { KJ_SYSCALL(fchown(outFd, config.uids.uid, config.uids.gid)); }
       kj::FdOutputStream((int)outFd).write(password.begin(), password.size());
     }
   }
@@ -1878,6 +1934,10 @@ private:
     if (config.updateChannel == nullptr) {
       context.warning("WARNING: Auto-updates are disabled by config.");
       return 0;
+    } else if (access("..", W_OK) != 0) {
+      context.warning("WARNING: Auto-updates are disabled because the server does not have write "
+                      "access to the installation location.");
+      return 0;
     } else {
       pid_t pid = fork();
       if (pid == 0) {
@@ -1974,7 +2034,7 @@ private:
     // Make sure socket directory exists (since the installer doesn't create it).
     if (mkdir("/var/sandstorm/socket", 0770) == 0) {
       // Allow group to use this directory.
-      KJ_SYSCALL(chown("/var/sandstorm/socket", 0, config.uids.gid));
+      if (runningAsRoot) { KJ_SYSCALL(chown("/var/sandstorm/socket", 0, config.uids.gid)); }
     } else {
       int error = errno;
       if (error != EEXIST) {
@@ -1996,7 +2056,7 @@ private:
     KJ_SYSCALL(listen(sock, 2));
 
     // Ensure that the group can connect to the socket.
-    KJ_SYSCALL(chown("/var/sandstorm/socket/devmode", 0, config.uids.gid));
+    if (runningAsRoot) { KJ_SYSCALL(chown("/var/sandstorm/socket/devmode", 0, config.uids.gid)); }
     KJ_SYSCALL(chmod("/var/sandstorm/socket/devmode", 0770));
 
     // We don't care to reap dev sessions.
@@ -2075,14 +2135,14 @@ private:
         KJ_FAIL_SYSCALL("mkdtemp(dir)", errno, dir);
       }
       KJ_DEFER(rmdir(dir));
-      KJ_SYSCALL(chown(dir, config.uids.uid, config.uids.gid));
+      if (runningAsRoot) { KJ_SYSCALL(chown(dir, config.uids.uid, config.uids.gid)); }
 
       char* pkgId = strrchr(dir, '/') + 1;
 
       // We dont use fusermount(1) because it doesn't live in our namespace. For now, this is not
       // a problem because we're root anyway. If in the future we use UID namespaces to avoid being
       // root, then this gets complicated. We could include fusermount(1) in our package, but
-      // it would have to be suid-root, defeating the goal of not suing root rights.
+      // it would have to be suid-root, defeating the goal of not using root rights.
       auto fuseFd = raiiOpen("/dev/fuse", O_RDWR);
 
       auto mountOptions = kj::str("fd=", fuseFd, ",rootmode=40000,"

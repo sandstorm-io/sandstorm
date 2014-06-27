@@ -843,12 +843,9 @@ private:
     KJ_SYSCALL(close(logfd));
   }
 
-  void writeUserNSMap(const char *type, kj::StringPtr contents)
-  {
-    int fd;
-    KJ_SYSCALL(fd = open(kj::str("/proc/self/", type, "_map").cStr(), O_WRONLY | O_CLOEXEC));
-    kj::AutoCloseFd file(fd);
-    KJ_SYSCALL(write(file, contents.cStr(), contents.size()));
+  void writeUserNSMap(const char *type, kj::StringPtr contents) {
+    kj::FdOutputStream(raiiOpen(kj::str("/proc/self/", type, "_map").cStr(), O_WRONLY | O_CLOEXEC))
+        .write(contents.begin(), contents.size());
   }
 
   void unshareOuter() {
@@ -874,18 +871,18 @@ private:
     KJ_SYSCALL(setdomainname("sandbox", 7));
   }
 
-  void makeCharDeviceNode(const char *name, int major, int minor)
-  {
+  void makeCharDeviceNode(const char *name, int major, int minor) {
     // Try with mknod first.
     auto dst = kj::str("dev/", name);
     if (mknod(dst.cStr(), S_IFCHR | 0666, makedev(major, minor)) != 0) {
-      if (errno != EPERM)
-	KJ_FAIL_SYSCALL("mknod", errno, name);  // Unexpected failure
+      if (errno != EPERM) {
+        KJ_FAIL_SYSCALL("mknod", errno, name);  // Unexpected failure
+      }
 
-      // Try a fallback: bind-mount the existing node.  The overmounted file's mode doesn't matter.
-      int fd;
-      KJ_SYSCALL(fd = open(dst.cStr(), O_RDONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600));
-      close(fd);
+      // Try a fallback: bind-mount the existing node. The overmounted file's mode doesn't matter.
+      // We use mknod() to create a regular file here just because it's more direct than open()ing
+      // and then close()ing.
+      KJ_SYSCALL(mknod(dst.cStr(), S_IFREG | 0666, 0));
       KJ_SYSCALL(mount(kj::str("/dev/", name).cStr(), dst.cStr(), nullptr, MS_BIND, nullptr));
     }
   }
@@ -949,12 +946,12 @@ private:
     // Keep /proc around if requested.
     if (mountProc) {
       if (access("proc", F_OK) == 0) {
-	// Mount it to retain permission to mount it.  This mount will be associated with the
-	// wrong pid namespce.  We'll fix it after forking.  We have to bind it: we can't mount
-	// a new copy because we don't have the appropriate permission on the active pid ns.
-	KJ_SYSCALL(mount("/proc", "proc", nullptr, MS_BIND | MS_REC, nullptr));
+        // Mount it to retain permission to mount it.  This mount will be associated with the
+        // wrong pid namespce.  We'll fix it after forking.  We have to bind it: we can't mount
+        // a new copy because we don't have the appropriate permission on the active pid ns.
+        KJ_SYSCALL(mount("/proc", "proc", nullptr, MS_BIND | MS_REC, nullptr));
       } else {
-	mountProc = false;
+        mountProc = false;
       }
     }
 

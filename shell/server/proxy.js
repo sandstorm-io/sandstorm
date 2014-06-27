@@ -127,6 +127,7 @@ Meteor.methods({
     check(grainId, String);
 
     var sessionId = Random.id();
+    var userId = Meteor.userId();
 
     // Start the grain if it is not running.
     var runningGrain = runningGrains[grainId];
@@ -136,9 +137,12 @@ Meteor.methods({
       continueGrain(grainId);
     }
 
-    updateLastActive(grainId, Meteor.userId());
+    updateLastActive(grainId, userId);
 
-    var proxy = new Proxy(grainId, sessionId);
+    var ownerGrain = Grains.findOne({_id: grainId, userId: userId});
+    var isOwner = ownerGrain ? true : false;
+
+    var proxy = new Proxy(grainId, sessionId, null, isOwner);
     proxies[sessionId] = proxy;
     var port = waitPromise(proxy.getPort());
 
@@ -146,7 +150,8 @@ Meteor.methods({
       _id: sessionId,
       grainId: grainId,
       port: port,
-      timestamp: new Date().getTime()
+      timestamp: new Date().getTime(),
+      userId: userId
     });
 
     return {sessionId: sessionId, port: port};
@@ -402,8 +407,10 @@ Meteor.startup(function () {
   var firstPort = nextPort;
   var usedPorts = {};
   Sessions.find({}).forEach(function (session) {
+    var grain = Grains.findOne({_id: session.grainId, userId: session.userId});
+    var isOwner = grain ? true : false;
     // Try to recreate the proxy on the same port as before.
-    var proxy = new Proxy(session.grainId, session._id, session.port);
+    var proxy = new Proxy(session.grainId, session._id, session.port, isOwner);
 
     try {
       waitPromise(proxy.getPort());
@@ -451,9 +458,10 @@ function choosePort() {
   }
 }
 
-function Proxy(grainId, sessionId, preferredPort) {
+function Proxy(grainId, sessionId, preferredPort, isOwner) {
   this.grainId = grainId;
   this.sessionId = sessionId;
+  this.isOwner = isOwner;
 
   var self = this;
 
@@ -535,22 +543,39 @@ Proxy.prototype.getConnection = function () {
 var Url = Npm.require("url");
 var PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
 
+Proxy.prototype._callNewSession = function (request, viewInfo) {
+  var params = Capnp.serialize(WebSession.Params, {
+    basePath: PROTOCOL + "//" + request.headers.host,
+    userAgent: "user-agent" in request.headers
+        ? request.headers["user-agent"]
+        : "UnknownAgent/0.0",
+    acceptableLanguages: "accept-language" in request.headers
+        ? request.headers["accept-language"].split(",").map(function (s) { return s.trim(); })
+        : [ "en-US", "en" ]
+  });
+
+  var userInfo = {displayName: {defaultText: "User"}};
+  if (viewInfo && viewInfo.permissions) {
+    var numBytes = Math.ceil(viewInfo.permissions.length / 8);
+
+    var buf = new Buffer(numBytes);
+    for(var i = 0; i < numBytes; i++) {
+      buf.writeUInt8(this.isOwner * 255, i);
+    }
+
+    userInfo.permissions = buf;
+  }
+
+  return this.uiView.newSession(userInfo, makeHackSessionContext(this.grainId),
+    "0xa50711a14d35a8ce", params).session;
+};
+
 Proxy.prototype.getSession = function (request) {
   if (!this.session) {
     this.getConnection();  // make sure we're connected
-    var params = Capnp.serialize(WebSession.Params, {
-      basePath: PROTOCOL + "//" + request.headers.host,
-      userAgent: "user-agent" in request.headers
-          ? request.headers["user-agent"]
-          : "UnknownAgent/0.0",
-      acceptableLanguages: "accept-language" in request.headers
-          ? request.headers["accept-language"].split(",").map(function (s) { return s.trim(); })
-          : [ "en-US", "en" ]
-    });
-
-    this.session = this.uiView.newSession(
-        {displayName: {defaultText: "User"}}, makeHackSessionContext(this.grainId),
-        "0xa50711a14d35a8ce", params).session.castAs(WebSession);
+    var boundCall = this._callNewSession.bind(this, request);
+    var promise = this.uiView.getViewInfo().then(boundCall, boundCall);
+    this.session = new Capnp.Capability(promise, WebSession);
   }
 
   return this.session;

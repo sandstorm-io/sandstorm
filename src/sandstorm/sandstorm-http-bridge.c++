@@ -40,6 +40,7 @@
 #include <capnp/rpc-twoparty.h>
 #include <capnp/rpc.capnp.h>
 #include <capnp/schema.h>
+#include <capnp/serialize.h>
 #include <unistd.h>
 #include <map>
 #include <unordered_map>
@@ -56,6 +57,7 @@
 #include <sandstorm/web-session.capnp.h>
 #include <sandstorm/email.capnp.h>
 #include <sandstorm/hack-session.capnp.h>
+#include <sandstorm/package.capnp.h>
 #include <joyent-http/http_parser.h>
 
 #include "version.h"
@@ -828,10 +830,11 @@ class WebSessionImpl final: public WebSession::Server {
 public:
   WebSessionImpl(kj::NetworkAddress& serverAddr,
                  UserInfo::Reader userInfo, SessionContext::Client context,
-                 WebSession::Params::Reader params)
+                 WebSession::Params::Reader params, kj::String&& permissions)
       : serverAddr(serverAddr),
         context(kj::mv(context)),
         userDisplayName(kj::heapString(userInfo.getDisplayName().getDefaultText())),
+        permissions(kj::mv(permissions)),
         basePath(kj::heapString(params.getBasePath())),
         userAgent(kj::heapString(params.getUserAgent())),
         acceptLanguages(kj::strArray(params.getAcceptableLanguages(), ",")) {}
@@ -922,9 +925,11 @@ private:
   kj::NetworkAddress& serverAddr;
   SessionContext::Client context;
   kj::String userDisplayName;
+  kj::String permissions;
   kj::String basePath;
   kj::String userAgent;
   kj::String acceptLanguages;
+  spk::BridgeConfig::Reader config;
 
   kj::String makeHeaders(kj::StringPtr method, kj::StringPtr path,
                          WebSession::Context::Reader context,
@@ -954,6 +959,7 @@ private:
     lines.add(kj::str("User-Agent: ", userAgent));
     lines.add(kj::str("X-Sandstorm-Username: ", userDisplayName));
     lines.add(kj::str("X-Sandstorm-Base-Path: ", basePath));
+    lines.add(kj::str("X-Sandstorm-Permissions: ", permissions));
 
     auto cookies = context.getCookies();
     if (cookies.size() > 0) {
@@ -1182,10 +1188,14 @@ private:
 class UiViewImpl final: public UiView::Server {
 public:
   explicit UiViewImpl(kj::NetworkAddress& serverAddress,
-                      RedirectableCapability& contextCap)
-      : serverAddress(serverAddress), contextCap(contextCap) {}
+                      RedirectableCapability& contextCap,
+                      spk::BridgeConfig::Reader config)
+      : serverAddress(serverAddress), contextCap(contextCap), config(config) {}
 
-//  kj::Promise<void> getViewInfo(GetViewInfoContext context) override;
+  kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
+    context.getResults().setPermissions(config.getPermissions());
+    return kj::READY_NOW;
+  }
 
   kj::Promise<void> newSession(NewSessionContext context) override {
     auto params = context.getParams();
@@ -1195,9 +1205,13 @@ public:
                "Unsupported session type.");
 
     if (params.getSessionType() == capnp::typeId<WebSession>()) {
+      auto permissions = kj::strArray(
+        KJ_MAP(p, config.getPermissions()) {
+          return p.getName();
+        }, ",");
       context.getResults(capnp::MessageSize {2, 1}).setSession(
           kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
-                                   params.getSessionParams().getAs<WebSession::Params>()));
+                                   params.getSessionParams().getAs<WebSession::Params>(), kj::mv(permissions)));
     } else if (params.getSessionType() == capnp::typeId<HackEmailSession>()) {
       context.getResults(capnp::MessageSize {2, 1}).setSession(kj::heap<EmailSessionImpl>());
     }
@@ -1210,6 +1224,7 @@ public:
 private:
   kj::NetworkAddress& serverAddress;
   RedirectableCapability& contextCap;
+  spk::BridgeConfig::Reader config;
 };
 
 class LegacyBridgeMain {
@@ -1385,6 +1400,10 @@ public:
         usleep(10000);
       }
 
+      capnp::StreamFdMessageReader reader(
+            raiiOpen("/sandstorm-http-bridge.conf", O_RDONLY));
+      auto config = reader.getRoot<spk::BridgeConfig>();
+
       // Make a redirecting capability that will point to the most-recent SessionContext, which
       // we dub the "hack context" since it may or may not actually be the right one to be calling.
       // See the TODO in ApiRestorer::rsetore().
@@ -1395,7 +1414,7 @@ public:
       // Set up the Supervisor API socket.
       auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
       capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
-      Restorer restorer(kj::heap<UiViewImpl>(*address, hackContext));
+      Restorer restorer(kj::heap<UiViewImpl>(*address, hackContext, config));
       auto rpcSystem = capnp::makeRpcServer(network, restorer);
 
       // Get the SandstormApi by restoring a null SturdyRef.

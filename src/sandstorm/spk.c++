@@ -1244,6 +1244,12 @@ private:
       capnp::MallocMessageBuilder manifestMessage(manifestReader.totalSize().wordCount + 4);
       manifestMessage.setRoot(manifestReader);
       node.setData(capnp::messageToFlatArray(manifestMessage));
+    } else if (path == "sandstorm-http-bridge.conf") {
+      // // Serialize the bridgeConfig.
+      auto bridgeConfigReader = packageDef.getBridgeConfig();
+      capnp::MallocMessageBuilder bridgeConfigMessage(bridgeConfigReader.totalSize().wordCount + 4);
+      bridgeConfigMessage.setRoot(bridgeConfigReader);
+      node.setData(capnp::messageToFlatArray(bridgeConfigMessage));
     } else if (path == "sandstorm-http-bridge") {
       node.setTarget(getHttpBridgeExe());
     } else {
@@ -1655,8 +1661,8 @@ private:
       kj::Function<void(kj::StringPtr)> callback = [&](kj::StringPtr path) {
         usedFiles.insert(kj::heapString(path));
       };
-      auto rootNode = makeUnionFs(sourceDir, packageDef.getSourceMap(),
-                                  packageDef.getManifest(), getHttpBridgeExe(), callback);
+      auto rootNode = makeUnionFs(sourceDir, packageDef.getSourceMap(), packageDef.getManifest(),
+                                  packageDef.getBridgeConfig(), getHttpBridgeExe(), callback);
 
       FuseOptions options;
 

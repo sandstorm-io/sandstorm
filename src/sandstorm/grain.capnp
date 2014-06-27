@@ -370,9 +370,14 @@ interface SessionContext {
 struct PermissionDef {
   # Metadata describing a permission bit.
 
+  name @3 :Text;
+  # Name of the permission, used as an identifier for the permission. It needs to be locally
+  # unique to a Session, and must be camelCased, only consist of alphanumerics, and not start
+  # with a number
+
   title @0 :Util.LocalizedText;
-  # Name of the permission, e.g. to display in a checklist of permissions that may be assigned when
-  # sharing.
+  # Display name of the permission, e.g. to display in a checklist of permissions that may be
+  # assigned when sharing.
 
   description @1 :Util.LocalizedText;
   # Prose describing what this permission means, suitable for a tool tip or similar help text.

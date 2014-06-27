@@ -122,12 +122,6 @@ cat tmp/etc.list | grep -v '/ld[.]so[.]' | sort | uniq > bundle/etc.list
 # Make mount points.
 mkdir -p bundle/{dev,proc,tmp,etc,var}
 
-# sandstorm-supervisor needs to be suid-root.  Actually, we just make it
-# suid-original-owner for now because tar will happily keep the suid bit while
-# changing the ownership to whomever unpacks it.  Which seems...  bad, but
-# convenient for us.
-chmod u+s bundle/bin/sandstorm-supervisor
-
 # Mongo wants these localization files.
 mkdir -p bundle/usr/lib
 cp -r /usr/lib/locale bundle/usr/lib

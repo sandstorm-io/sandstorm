@@ -871,7 +871,7 @@ private:
     KJ_SYSCALL(setdomainname("sandbox", 7));
   }
 
-  void makeCharDeviceNode(const char *name, int major, int minor) {
+  void makeCharDeviceNode(const char *name, const char* realName, int major, int minor) {
     // Try with mknod first.
     auto dst = kj::str("dev/", name);
     if (mknod(dst.cStr(), S_IFCHR | 0666, makedev(major, minor)) != 0) {
@@ -883,7 +883,7 @@ private:
       // We use mknod() to create a regular file here just because it's more direct than open()ing
       // and then close()ing.
       KJ_SYSCALL(mknod(dst.cStr(), S_IFREG | 0666, 0));
-      KJ_SYSCALL(mount(kj::str("/dev/", name).cStr(), dst.cStr(), nullptr, MS_BIND, nullptr));
+      KJ_SYSCALL(mount(kj::str("/dev/", realName).cStr(), dst.cStr(), nullptr, MS_BIND, nullptr));
     }
   }
 
@@ -925,10 +925,10 @@ private:
     if (access("dev", F_OK) == 0) {
       KJ_SYSCALL(mount("sandstorm-dev", "dev", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
                        "size=1m,nr_inodes=16,mode=755"));
-      makeCharDeviceNode("null", 1, 3);
-      makeCharDeviceNode("zero", 1, 5);
-      makeCharDeviceNode("random", 1, 8);
-      makeCharDeviceNode("urandom", 1, 9);
+      makeCharDeviceNode("null", "null", 1, 3);
+      makeCharDeviceNode("zero", "zero", 1, 5);
+      makeCharDeviceNode("random", "urandom", 1, 9);
+      makeCharDeviceNode("urandom", "urandom", 1, 9);
       KJ_SYSCALL(mount("dev", "dev", nullptr,
                        MS_REMOUNT | MS_BIND | MS_NOSUID | MS_NOEXEC | MS_NOATIME | MS_RDONLY, nullptr));
     }

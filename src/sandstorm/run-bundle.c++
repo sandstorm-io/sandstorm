@@ -1291,6 +1291,7 @@ private:
     KJ_SYSCALL(mount("/dev/zero", "dev/zero", nullptr, MS_BIND, nullptr));
     KJ_SYSCALL(mount("/dev/random", "dev/random", nullptr, MS_BIND, nullptr));
     KJ_SYSCALL(mount("/dev/urandom", "dev/urandom", nullptr, MS_BIND, nullptr));
+    KJ_SYSCALL(mount("/dev/fuse", "dev/fuse", nullptr, MS_BIND, nullptr));
 
     // Mount a tmpfs at /tmp
     KJ_SYSCALL(mount("tmpfs", "tmp", "tmpfs",

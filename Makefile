@@ -64,7 +64,7 @@ bin/sandstorm-http-bridge: tmp/genfiles src/sandstorm/sandstorm-http-bridge.c++
 bin/sandstorm-supervisor: tmp/genfiles src/sandstorm/supervisor-main.c++ src/sandstorm/send-fd.c++
 	@echo "building bin/sandstorm-supervisor..."
 	@mkdir -p bin
-	@$(CXX) src/sandstorm/supervisor-main.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/sandstorm-supervisor $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
+	@$(CXX) src/sandstorm/supervisor-main.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/sandstorm-supervisor $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs` `pkg-config libseccomp --cflags --libs`
 
 node_modules/sandstorm/grain.capnp: src/sandstorm/*.capnp
 	@echo "copying sandstorm protocols to node_modules/sandstorm..."

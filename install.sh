@@ -38,27 +38,29 @@ SCRIPT_NAME=$1
 shift
 
 usage() {
-  echo "usage: $SCRIPT_NAME [-d] [-e] [<bundle>]" >&2
+  echo "usage: $SCRIPT_NAME [-d] [-e] [-u] [<bundle>]" >&2
   echo "If <bundle> is provided, it must be the name of a Sandstorm bundle file," >&2
   echo "like 'sandstorm-123.tar.xz', which will be installed. Otherwise, the script" >&2
   echo "downloads a bundle from the internet via HTTP." >&2
   echo '' >&2
   echo 'If -d is specified, the script does not prompt for input; it accepts all defaults.' >&2
-  echo 'If -e is specified, sandstorm listens on an external interface, not merely loopback.' >&2
+  echo 'If -e is specified, default to listening on an external interface, not merely loopback.' >&2
+  echo 'If -u is specified, default to avoiding root priviliges. Note that the dev tools only work if the server as root privileges.' >&2
   exit 1
 }
 
-# Look for a -d option, in which case, we presume the user
-# wants us to accept all defaults.
 USE_DEFAULTS="no"
 USE_EXTERNAL_INTERFACE="no"
-while getopts ":de" opt; do
+while getopts ":deu" opt; do
   case $opt in
     d)
       USE_DEFAULTS="yes"
       ;;
     e)
       USE_EXTERNAL_INTERFACE="yes"
+      ;;
+    u)
+      PREFER_ROOT=no
       ;;
     *)
       usage
@@ -178,19 +180,36 @@ fi
 
 # ========================================================================================
 
+DIR=/opt/sandstorm
+
 if [ $(id -u) != 0 ]; then
-  if [ "$(basename $SCRIPT_NAME)" == bash ]; then
-    # Probably ran like "curl https://sandstorm.io/install.sh | bash"
-    echo "Re-running script as root..."
-    exec sudo bash -euo pipefail -c 'curl -fs https://install.sandstorm.io | bash'
-  elif [ "$(basename $SCRIPT_NAME)" == install.sh ] && [ -e "$0" ]; then
-    # Probably ran like "bash install.sh" or "./install.sh".
-    echo "Re-running script as root..."
-    exec sudo bash "$SCRIPT_NAME" "${ORIGINAL_ARGS[@]}"
+  echo "If you plan to use this Sandstorm instance for app development, you will need"
+  echo "to install Sandstorm as root, because Linux does not yet support mounting"
+  echo "FUSE filesystems in a UID namespace. Otherwise, you can install and run it as"
+  echo "a regular user. Even if installed as root, the main server processes will"
+  echo "never run as root. Either way, Sandstorm runs inside a directory you choose"
+  echo "and will not mess with the rest of your system."
+
+  if prompt-yesno "Install as root?" "${PREFER_ROOT:-yes}"; then
+    if [ "$(basename $SCRIPT_NAME)" == bash ]; then
+      # Probably ran like "curl https://sandstorm.io/install.sh | bash"
+      echo "Re-running script as root..."
+      exec sudo bash -euo pipefail -c 'curl -fs https://install.sandstorm.io | bash'
+    elif [ "$(basename $SCRIPT_NAME)" == install.sh ] && [ -e "$0" ]; then
+      # Probably ran like "bash install.sh" or "./install.sh".
+      echo "Re-running script as root..."
+      if [ ${#ORIGINAL_ARGS[@]} = 0 ]; then
+        exec sudo bash "$SCRIPT_NAME"
+      else
+        exec sudo bash "$SCRIPT_NAME" "${ORIGINAL_ARGS[@]}"
+      fi
+    fi
+
+    # Don't know how to run the script. Let the user figure it out.
+    fail "Oops, I couldn't figure out how to switch to root. Please re-run the installer as root."
   fi
 
-  # Don't know how to run the script.  Let the user figure it out.
-  fail "This installer needs root privileges."
+  DIR=$HOME/sandstorm
 fi
 
 if [ -e /proc/sys/kernel/unprivileged_userns_clone ] && \
@@ -213,7 +232,7 @@ __EOF__
   fi
 fi
 
-DIR=$(prompt "Where would you like to put Sandstorm?" /opt/sandstorm)
+DIR=$(prompt "Where would you like to put Sandstorm?" "$DIR")
 
 if [ -e $DIR ]; then
   echo "$DIR already exists. Sandstorm will assume ownership of all contents."
@@ -246,28 +265,32 @@ if [ -e sandstorm.conf ]; then
     CHANNEL=$UPDATE_CHANNEL
   fi
 else
-  SERVER_USER=$(prompt "Local user account to run server under:" sandstorm)
-
-  while [ "$SERVER_USER" = root ]; do
-    echo "Sandstorm cannot run as root!"
+  if [ $(id -u) = 0 ]; then
     SERVER_USER=$(prompt "Local user account to run server under:" sandstorm)
-  done
 
-  if ! id "$SERVER_USER" > /dev/null 2>&1; then
-    if prompt-yesno "User account '$SERVER_USER' doesn't exist. Create it?" yes; then
-      adduser --system --group "$SERVER_USER"
+    while [ "$SERVER_USER" = root ]; do
+      echo "Sandstorm cannot run as root!"
+      SERVER_USER=$(prompt "Local user account to run server under:" sandstorm)
+    done
 
-      echo "Note: Sandstorm's storage will only be accessible to the group '$SERVER_USER'."
+    if ! id "$SERVER_USER" > /dev/null 2>&1; then
+      if prompt-yesno "User account '$SERVER_USER' doesn't exist. Create it?" yes; then
+        adduser --system --group "$SERVER_USER"
 
-      if [ -n "${SUDO_USER:-}" ]; then
-        if prompt-yesno "Add user '$SUDO_USER' to group '$SERVER_USER'?" no; then
-          usermod -a -G "$SERVER_USER" "$SUDO_USER"
-          echo "Added. Don't forget that group changes only apply at next login."
+        echo "Note: Sandstorm's storage will only be accessible to the group '$SERVER_USER'."
+
+        if [ -n "${SUDO_USER:-}" ]; then
+          if prompt-yesno "Add user '$SUDO_USER' to group '$SERVER_USER'?" no; then
+            usermod -a -G "$SERVER_USER" "$SUDO_USER"
+            echo "Added. Don't forget that group changes only apply at next login."
+          fi
         fi
       fi
+    else
+      echo "Note: Sandstorm's storage will only be accessible to the group '$(id -gn $SERVER_USER)'."
     fi
   else
-    echo "Note: Sandstorm's storage will only be accessible to the group '$(id -gn $SERVER_USER)'."
+    SERVER_USER=$(id -un)
   fi
 
   PORT=$(prompt "Server main HTTP port:" 6080)
@@ -371,31 +394,44 @@ GROUP=$(id -g $SERVER_USER)
 # Make var directories.
 mkdir -p var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads}
 
-# Set ownership of files.  We want the dirs to be root:sandstorm but the contents to be
-# sandstorm:sandstorm.
-chown -R $SERVER_USER:$GROUP var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads}
-chown root:$GROUP var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads}
-chmod -R g=rwX,o= var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads}
-
-# Don't allow listing grain IDs directly.  (At the moment, this is faux security since
-# an attacker could just read the database, but maybe that will change someday...)
-chmod g-r var/sandstorm/grains
-
 # Create useful symlinks.
 ln -sfT $BUILD_DIR latest
 ln -sfT latest/sandstorm sandstorm
 
-# Install tools.
-ln -sfT $PWD/sandstorm /usr/local/bin/sandstorm
-./sandstorm devtools
+if [ $(id -u) != 0 ]; then
+  # Installed as non-root. Skip ownership stuff.
 
-if [ -e /etc/init.d ]; then
-  if prompt-yesno "Start sandstorm at system boot?" yes; then
-    if [ -e /etc/init.d/sandstorm ]; then
-      service sandstorm stop || true
-    fi
+  echo "Setup complete. To start your server now, run:"
+  echo "  $DIR/sandstorm start"
+  echo "It will then run at:"
+  echo "  ${BASE_URL:-(unknown; bad config)}"
+  echo "To learn how to control the server, run:"
+  echo "  $DIR/sandstorm help"
 
-    cat > /etc/init.d/sandstorm << __EOF__
+else
+  # Installed as root.
+
+  # Set ownership of files.  We want the dirs to be root:sandstorm but the contents to be
+  # sandstorm:sandstorm.
+  chown -R $SERVER_USER:$GROUP var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads}
+  chown root:$GROUP var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads}
+  chmod -R g=rwX,o= var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads}
+
+  # Don't allow listing grain IDs directly.  (At the moment, this is faux security since
+  # an attacker could just read the database, but maybe that will change someday...)
+  chmod g-r var/sandstorm/grains
+
+  # Install tools.
+  ln -sfT $PWD/sandstorm /usr/local/bin/sandstorm
+  ./sandstorm devtools
+
+  if [ -e /etc/init.d ]; then
+    if prompt-yesno "Start sandstorm at system boot?" yes; then
+      if [ -e /etc/init.d/sandstorm ]; then
+        service sandstorm stop || true
+      fi
+
+      cat > /etc/init.d/sandstorm << __EOF__
 #! /bin/bash
 ### BEGIN INIT INFO
 # Provides:          sandstorm
@@ -414,31 +450,32 @@ DAEMON=$PWD/sandstorm
 # This requires bash, though.
 exec -a "service sandstorm" \$DAEMON "\$@"
 __EOF__
-    chmod +x /etc/init.d/sandstorm
+      chmod +x /etc/init.d/sandstorm
 
-    update-rc.d sandstorm defaults
+      update-rc.d sandstorm defaults
 
-    service sandstorm start
+      service sandstorm start
 
-    echo "Setup complete. Your server should be running at:"
-    echo "  ${BASE_URL:-(unknown; bad config)}"
-    echo "To learn how to control the server, run:"
-    echo "  sandstorm help"
-    exit 0
+      echo "Setup complete. Your server should be running at:"
+      echo "  ${BASE_URL:-(unknown; bad config)}"
+      echo "To learn how to control the server, run:"
+      echo "  sandstorm help"
+      exit 0
+    fi
+  else
+    # TODO(someday): Support systemd init.
+    echo "Note: I don't know how to set up sandstorm to auto-run at startup on"
+    echo "  your system. :("
+    echo
   fi
-else
-  # TODO(someday): Support systemd init.
-  echo "Note: I don't know how to set up sandstorm to auto-run at startup on"
-  echo "  your system. :("
-  echo
-fi
 
-echo "Setup complete. To start your server now, run:"
-echo "  sudo sandstorm start"
-echo "It will then run at:"
-echo "  ${BASE_URL:-(unknown; bad config)}"
-echo "To learn how to control the server, run:"
-echo "  sandstorm help"
+  echo "Setup complete. To start your server now, run:"
+  echo "  sudo sandstorm start"
+  echo "It will then run at:"
+  echo "  ${BASE_URL:-(unknown; bad config)}"
+  echo "To learn how to control the server, run:"
+  echo "  sandstorm help"
+fi
 
 }
 

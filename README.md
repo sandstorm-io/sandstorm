@@ -79,6 +79,7 @@ Please install the following:
 
 * Linux, with reasonably new kernel version.
 * `libcap` with headers (e.g. `libcap-dev` on Debian/Ubuntu)
+* `libseccomp` with headers (e.g. `libseccomp-dev` on Debian/Ubuntu)
 * `pkg-config` (make sure this is installed _before_ building libsodium)
 * `XZ` for installing packages (`xz-utils` on Debian/Ubuntu)
 * [Clang compiler](http://clang.llvm.org/) version 3.4 or better. WARNING: Ubuntu Saucy's

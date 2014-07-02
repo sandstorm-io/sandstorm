@@ -53,6 +53,7 @@
 #include <pwd.h>
 #include <grp.h>
 #include <sys/inotify.h>
+#include <seccomp.h>
 #include <map>
 #include <unordered_map>
 
@@ -711,8 +712,7 @@ private:
     unshareOuter();
     setupFilesystem();
     setupStdio();
-
-    // TODO(someday):  Turn on seccomp-bpf.
+    setupSeccomp();
 
     // Note:  permanentlyDropSuperuser() is performed post-fork; see comment in function def.
   }
@@ -992,6 +992,34 @@ private:
 
     // We will later make stdout a copy of stderr specifically for the sandboxed process.  In the
     // supervisor, stdout is how we tell our parent that we're ready to receive connections.
+  }
+
+  void setupSeccomp() {
+    // Install a rudimentary seccomp blacklist.
+    // TODO(soon): Change this to a whitelist.
+
+    scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_ALLOW);
+    if (ctx == nullptr)
+      KJ_FAIL_SYSCALL("seccomp_init", 0);  // No real error code
+    KJ_DEFER(seccomp_release(ctx));
+
+#define CHECK_SECCOMP(call)			\
+    do {					\
+      if (auto result = (call))			\
+	KJ_FAIL_SYSCALL(#call, -result); }	\
+    while (0)
+
+    // Native code only for now, so there are no seccomp_arch_add calls.
+
+    // Redundant, but this is standard and harmless.
+    CHECK_SECCOMP(seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 1));
+
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 0));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(keyctl), 0));
+
+    CHECK_SECCOMP(seccomp_load(ctx));
+
+#undef CHECK_SECCOMP
   }
 
   void unshareNetwork() {

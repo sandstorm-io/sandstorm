@@ -121,7 +121,7 @@ cat tmp/etc.list | grep -v '/ld[.]so[.]' | sort | uniq > bundle/etc.list
 
 # Make mount points.
 mkdir -p bundle/{dev,proc,tmp,etc,var}
-touch bundle/dev/{null,zero,random,urandom}
+touch bundle/dev/{null,zero,random,urandom,fuse}
 
 # Mongo wants these localization files.
 mkdir -p bundle/usr/lib

@@ -282,6 +282,11 @@ kj::String base64_encode(const kj::ArrayPtr<const byte> input) {
 
 // =======================================================================================
 
+kj::String hexEncode(const kj::ArrayPtr<const byte> input) {
+  const char DIGITS[] = "0123456789abcdef";
+  return kj::strArray(KJ_MAP(b, input) { return kj::heapArray<char>({DIGITS[b/16], DIGITS[b%16]}); }, "");
+}
+
 struct HttpStatusInfo {
   WebSession::Response::Which type;
 
@@ -834,6 +839,7 @@ public:
       : serverAddr(serverAddr),
         context(kj::mv(context)),
         userDisplayName(kj::heapString(userInfo.getDisplayName().getDefaultText())),
+        userId(hexEncode(userInfo.getUserId().slice(0, userInfo.getUserId().size() / 2))),
         permissions(kj::mv(permissions)),
         basePath(kj::heapString(params.getBasePath())),
         userAgent(kj::heapString(params.getUserAgent())),
@@ -925,6 +931,7 @@ private:
   kj::NetworkAddress& serverAddr;
   SessionContext::Client context;
   kj::String userDisplayName;
+  kj::String userId;
   kj::String permissions;
   kj::String basePath;
   kj::String userAgent;
@@ -958,6 +965,7 @@ private:
     lines.add(kj::str("Host: ", extractHostFromUrl(basePath)));
     lines.add(kj::str("User-Agent: ", userAgent));
     lines.add(kj::str("X-Sandstorm-Username: ", userDisplayName));
+    lines.add(kj::str("X-Sandstorm-User-Id: ", userId));
     lines.add(kj::str("X-Sandstorm-Base-Path: ", basePath));
     lines.add(kj::str("X-Sandstorm-Permissions: ", permissions));
 

@@ -142,7 +142,7 @@ Meteor.methods({
     var ownerGrain = Grains.findOne({_id: grainId, userId: userId});
     var isOwner = ownerGrain ? true : false;
 
-    var proxy = new Proxy(grainId, sessionId, null, isOwner);
+    var proxy = new Proxy(grainId, sessionId, null, isOwner, Meteor.user());
     proxies[sessionId] = proxy;
     var port = waitPromise(proxy.getPort());
 
@@ -408,9 +408,10 @@ Meteor.startup(function () {
   var usedPorts = {};
   Sessions.find({}).forEach(function (session) {
     var grain = Grains.findOne({_id: session.grainId, userId: session.userId});
+    var user = Meteor.users.findOne({_id: session.userId});
     var isOwner = grain ? true : false;
     // Try to recreate the proxy on the same port as before.
-    var proxy = new Proxy(session.grainId, session._id, session.port, isOwner);
+    var proxy = new Proxy(session.grainId, session._id, session.port, isOwner, user);
 
     try {
       waitPromise(proxy.getPort());
@@ -458,10 +459,26 @@ function choosePort() {
   }
 }
 
-function Proxy(grainId, sessionId, preferredPort, isOwner) {
+function Proxy(grainId, sessionId, preferredPort, isOwner, user) {
   this.grainId = grainId;
   this.sessionId = sessionId;
   this.isOwner = isOwner;
+
+  var serviceId;
+  if (user.services) {
+    if (user.services.google) {
+      serviceId = 'google:' + user.services.google.id;
+    } else if (user.services.github) {
+      serviceId = 'github:' + user.services.github.id;
+    } else {
+      console.error(new Error('No known services detected for user: ' + user._id));
+      serviceId = '';
+    }
+  } else {
+    serviceId = 'demo:' + user._id;
+  }
+  this.generatedUserId = Crypto.createHash("sha256").update(serviceId).digest();
+  this.displayName = user.profile.name;
 
   var self = this;
 
@@ -554,7 +571,7 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
         : [ "en-US", "en" ]
   });
 
-  var userInfo = {displayName: {defaultText: "User"}};
+  var userInfo = {displayName: {defaultText: this.displayName}, userId: this.generatedUserId};
   if (viewInfo && viewInfo.permissions) {
     var numBytes = Math.ceil(viewInfo.permissions.length / 8);
 

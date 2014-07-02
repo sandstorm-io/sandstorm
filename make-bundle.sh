@@ -71,8 +71,8 @@ METEOR=$HOME/.meteor
 METEOR_RELEASE=$(<shell/.meteor/release)
 METEOR_TOOLS=$METEOR/tools/$(json tools < $METEOR/releases/$METEOR_RELEASE.release.json)
 
-# Unpack meteor bundle of shell.
-tar zxf shell-bundle.tar.gz
+# Start with the meteor bundle.
+cp -r shell-bundle bundle
 rm bundle/README
 
 # Copy over key binaries.

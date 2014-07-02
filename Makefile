@@ -23,6 +23,7 @@
 CXX=clang++
 CXXFLAGS=-O2 -Wall
 BUILD=0
+XZ_FLAGS=
 
 # You generally should not modify these.
 CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD)
@@ -37,7 +38,7 @@ NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 all: sandstorm-$(BUILD).tar.xz
 
 clean:
-	rm -rf bin tmp node_modules bundle shell-bundle.tar.gz sandstorm-*.tar.xz shell/public/edit.png shell/public/trash.png shell/public/wrench.png shell/public/download.png .shell-env
+	rm -rf bin tmp node_modules bundle shell-bundle sandstorm-*.tar.xz shell/public/edit.png shell/public/trash.png shell/public/wrench.png shell/public/download.png .shell-env
 
 install: sandstorm-$(BUILD).tar.xz install.sh
 	@./install.sh sandstorm-$(BUILD).tar.xz
@@ -48,7 +49,7 @@ shell-env: .shell-env
 	@touch .shell-env
 
 update: sandstorm-$(BUILD).tar.xz
-	sudo service sandstorm update $(PWD)/sandstorm-$(BUILD).tar.xz
+	sudo sandstorm update $(PWD)/sandstorm-$(BUILD).tar.xz
 
 bin/spk: tmp/genfiles src/sandstorm/spk.c++ src/sandstorm/fuse.c++ src/sandstorm/union-fs.c++ src/sandstorm/send-fd.c++
 	@echo "building bin/spk..."
@@ -84,12 +85,12 @@ bin/run-bundle: src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/genfi
 shell/public/%.png: icons/%.svg
 	convert -scale 24x24 -negate -alpha shape -evaluate multiply 0.87 $< $@
 
-shell-bundle.tar.gz: shell/smart.* shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release .shell-env
+shell-bundle: shell/smart.* shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release .shell-env
 	@echo "bundling meteor frontend..."
-	@cd shell && mrt bundle ../shell-bundle.tar.gz > /dev/null
+	@cd shell && mrt bundle --directory ../shell-bundle > /dev/null
 
-bundle: bin/spk bin/sandstorm-supervisor bin/sandstorm-http-bridge bin/run-bundle shell-bundle.tar.gz make-bundle.sh
+bundle: bin/spk bin/sandstorm-supervisor bin/sandstorm-http-bridge bin/run-bundle shell-bundle make-bundle.sh
 	./make-bundle.sh
 
 sandstorm-$(BUILD).tar.xz: bundle
-	tar Jcf sandstorm-$(BUILD).tar.xz --transform="s,^bundle,sandstorm-$(BUILD)," bundle
+	tar c --transform="s,^bundle,sandstorm-$(BUILD)," bundle | xz -c $(XZ_FLAGS) > sandstorm-$(BUILD).tar.xz

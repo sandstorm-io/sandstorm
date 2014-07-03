@@ -11,7 +11,7 @@
 #     wget https://install.sandstorm.io/install.sh
 #     bash install.sh
 #
-# This script only modifies your system only in the following ways:
+# This script only modifies your system in the following ways:
 # - Install Sandstorm into the directory you choose, typically /opt/sandstorm.
 # - Optionally add an initscript to /etc/init.d/sandstorm.
 # - Add commands "sandstorm" and "spk" to /usr/local/bin.

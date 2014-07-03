@@ -1282,7 +1282,9 @@ private:
     KJ_SYSCALL(mount("proc", "proc", "proc", MS_NOSUID | MS_NODEV | MS_NOEXEC, ""));
 
     // Bind var -> ../var, so that all versions share the same var.
+    // Same for tmp, though we clear it on every startup.
     KJ_SYSCALL(mount("../var", "var", nullptr, MS_BIND, nullptr));
+    KJ_SYSCALL(mount("../tmp", "tmp", nullptr, MS_BIND, nullptr));
 
     // Bind devices from /dev into our chroot environment.
     // We can't bind /dev itself because this is apparently not allowed when in a UID namespace
@@ -1292,11 +1294,6 @@ private:
     KJ_SYSCALL(mount("/dev/random", "dev/random", nullptr, MS_BIND, nullptr));
     KJ_SYSCALL(mount("/dev/urandom", "dev/urandom", nullptr, MS_BIND, nullptr));
     KJ_SYSCALL(mount("/dev/fuse", "dev/fuse", nullptr, MS_BIND, nullptr));
-
-    // Mount a tmpfs at /tmp
-    KJ_SYSCALL(mount("tmpfs", "tmp", "tmpfs",
-                     MS_NOATIME | MS_NOSUID | MS_NOEXEC,
-                     kj::str("size=8m,nr_inodes=1k,mode=777", tmpfsUidOpts).cStr()));
 
     // Mount a tmpfs at /etc and copy over necessary config files from the host.
     KJ_SYSCALL(mount("tmpfs", "etc", "tmpfs",
@@ -1429,6 +1426,17 @@ private:
     }
 
     cleanupOldVersions();
+
+    // Clean up the temp directory.
+    KJ_REQUIRE(changedDir);
+    if (access("../tmp", F_OK) == 0) {
+      recursivelyDelete("../tmp");
+    }
+    mkdir("../tmp", 0770);
+    KJ_SYSCALL(chmod("../tmp", 0770));
+    if (runningAsRoot) {
+      KJ_SYSCALL(chown("../tmp", 0, config.uids.gid));
+    }
 
     auto sigfd = prepareMonitoringLoop();
 

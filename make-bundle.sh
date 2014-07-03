@@ -78,12 +78,13 @@ rm bundle/README
 # Copy over key binaries.
 mkdir -p bundle/bin
 cp bin/spk bundle/bin/spk
+cp bin/minibox bundle/bin/minibox
 cp bin/sandstorm-supervisor bundle/bin/sandstorm-supervisor
 cp bin/sandstorm-http-bridge bundle/bin/sandstorm-http-bridge
 cp bin/run-bundle bundle/sandstorm
 cp $METEOR_TOOLS/bin/node bundle/bin
 cp $METEOR_TOOLS/mongodb/bin/{mongo,mongod} bundle/bin
-cp /usr/bin/xz bundle/bin
+cp $(which zip unzip xz) bundle/bin
 
 # Binaries copied from Meteor aren't writable by default.
 chmod u+w bundle/bin/*

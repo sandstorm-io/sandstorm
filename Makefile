@@ -94,7 +94,7 @@ shell-bundle: shell/smart.* shell/client/* shell/server/* shell/shared/* shell/p
 	@echo "bundling meteor frontend..."
 	@cd shell && mrt bundle --directory ../shell-bundle > /dev/null
 
-bundle: bin/spk bin/sandstorm-supervisor bin/sandstorm-http-bridge bin/run-bundle shell-bundle make-bundle.sh
+bundle: bin/spk bin/minibox bin/sandstorm-supervisor bin/sandstorm-http-bridge bin/run-bundle shell-bundle make-bundle.sh
 	./make-bundle.sh
 
 sandstorm-$(BUILD).tar.xz: bundle

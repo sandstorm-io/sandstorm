@@ -269,8 +269,8 @@ Router.map(function () {
 
         response.writeHead(200, headers = {
           "Content-Length": fileSize,
-          "Content-Type": "application/octet-stream",
-          "Content-Disposition": "attachment; filename=" + filename
+          "Content-Type": "application/zip",
+          "Content-Disposition": "attachment;filename=\"" + filename + "\""
         });
       });
 

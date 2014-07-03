@@ -11,13 +11,23 @@
 #     wget https://install.sandstorm.io/install.sh
 #     bash install.sh
 #
-# This script downloads an installs binaries, and some of those binaries must
-# run as root. This means that to use this script, you need to trust that the
-# authors are not evil, or you must use an isolated machine or VM. Of course,
-# since the Sandstorm authors' identities are widely known, if they did try to
-# do anything evil, you could easily get them arrested. That said, if you'd
-# rather install from 100% auditable source code, please check out the Github
-# repository instead.
+# This script only modifies your system only in the following ways:
+# - Install Sandstorm into the directory you choose, typically /opt/sandstorm.
+# - Optionally add an initscript to /etc/init.d/sandstorm.
+# - Add commands "sandstorm" and "spk" to /usr/local/bin.
+#
+# The script will ask you whether you're OK with giving it root privileges.
+# If you refuse, the script can still install Sandstorm (to a directory you
+# own), but will not be able to install the initscript or shortcut commands,
+# and the dev tools will not work (due to limitations with using FUSE in a
+# sandbox).
+#
+# This script downloads an installs binaries. This means that to use this
+# script, you need to trust that the authors are not evil, or you must use
+# an isolated machine or VM. Of course, since the Sandstorm authors'
+# identities are widely known, if they did try to do anything evil, you
+# could easily get them arrested. That said, if you'd rather install from
+# 100% auditable source code, please check out the Github repository instead.
 #
 # All downloads occur over HTTPS.
 

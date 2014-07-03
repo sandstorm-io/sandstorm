@@ -548,6 +548,8 @@ public:
                    "RECOMMENDED during normal use, but it may be useful for debugging.")
         .addOption({"stdio"}, [this]() { keepStdio = true; return true; },
                    "Don't redirect the sandbox's stdio.  Useful for debugging.")
+        .addOption({"dev"}, [this]() { devmode = true; return true; },
+                   "Allow some system calls useful for debugging which are blocked in production.")
         .addOption({'n', "new"}, [this]() { setIsNew(true); return true; },
                    "Initializes a new grain.  (Otherwise, runs an existing one.)")
         .expectArg("<app-name>", KJ_BIND_METHOD(*this, setAppName))
@@ -654,6 +656,7 @@ private:
   bool isNew = false;
   bool mountProc = false;
   bool keepStdio = false;
+  bool devmode = false;
 
   void bind(kj::StringPtr src, kj::StringPtr dst, unsigned long flags = 0) {
     // Contrary to the documentation of MS_BIND claiming this is no longer the case after 2.6.26,
@@ -712,7 +715,6 @@ private:
     unshareOuter();
     setupFilesystem();
     setupStdio();
-    setupSeccomp();
 
     // Note:  permanentlyDropSuperuser() is performed post-fork; see comment in function def.
   }
@@ -996,26 +998,38 @@ private:
 
   void setupSeccomp() {
     // Install a rudimentary seccomp blacklist.
-    // TODO(soon): Change this to a whitelist.
+    // TODO(security): Change this to a whitelist.
 
     scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_ALLOW);
     if (ctx == nullptr)
       KJ_FAIL_SYSCALL("seccomp_init", 0);  // No real error code
     KJ_DEFER(seccomp_release(ctx));
 
-#define CHECK_SECCOMP(call)			\
-    do {					\
-      if (auto result = (call))			\
-	KJ_FAIL_SYSCALL(#call, -result); }	\
-    while (0)
+#define CHECK_SECCOMP(call)                     \
+    do {                                        \
+      if (auto result = (call)) {               \
+        KJ_FAIL_SYSCALL(#call, -result);        \
+      }                                         \
+    } while (0)
 
     // Native code only for now, so there are no seccomp_arch_add calls.
 
     // Redundant, but this is standard and harmless.
     CHECK_SECCOMP(seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 1));
 
-    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 0));
+    // Disable some things that seem scary.
+    if (!devmode) {
+      // ptrace is scary but also very useful in dev mode.
+      CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 0));
+    }
     CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(keyctl), 0));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(syslog), 0));
+
+    // Disable namespaces. Nested sandboxing could be useful but the attack surface is large.
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(unshare), 0));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(mount), 0));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(clone), 1,
+        SCMP_A0(SCMP_CMP_MASKED_EQ, CLONE_NEWUSER, CLONE_NEWUSER)));
 
     CHECK_SECCOMP(seccomp_load(ctx));
 
@@ -1102,6 +1116,10 @@ private:
 
     // Now actually drop all credentials.
     permanentlyDropSuperuser();
+
+    // Use seccomp to disable dangerous syscalls. We do this last so that we can disable things
+    // that we just used above, like unshare() or setuid().
+    setupSeccomp();
   }
 
   // =====================================================================================
@@ -1327,6 +1345,7 @@ private:
     KJ_SYSCALL(chroot("."));
 
     permanentlyDropSuperuser();
+    setupSeccomp();
 
     // TODO(soon): Somehow make sure all grandchildren die if supervisor dies. Currently SIGKILL
     //   on the supervisor won't give it a chance to kill the sandbox pid tree. Perhaps the

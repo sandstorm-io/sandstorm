@@ -91,6 +91,7 @@ Meteor.methods({
     var package = Packages.findOne(packageId);
     var appId;
     var manifest;
+    var isDev = false;
     if (package) {
       appId = package.appId;
       manifest = package.manifest;
@@ -99,6 +100,7 @@ Meteor.methods({
       if (devApp) {
         appId = devApp._id;
         manifest = devApp.manifest;
+        isDev = true;
       } else {
         throw new Meteor.Error(404, "Not Found", "No such package is installed.");
       }
@@ -113,7 +115,7 @@ Meteor.methods({
       userId: this.userId,
       title: title
     });
-    startGrainInternal(packageId, grainId, command, true);
+    startGrainInternal(packageId, grainId, command, true, isDev);
     updateLastActive(grainId, Meteor.userId());
     return grainId;
   },
@@ -222,11 +224,13 @@ function continueGrain(grainId) {
   var manifest;
   var packageId;
   var devApp = DevApps.findOne({_id: grain.appId});
+  var isDev;
   if (devApp) {
     // If a DevApp with the same app ID is currently active, we let it override the installed
     // package, so that the grain runs using the dev app.
     manifest = devApp.manifest;
     packageId = devApp.packageId;
+    isDev = true;
   } else {
     var pkg = Packages.findOne(grain.packageId);
     if (pkg) {
@@ -243,10 +247,10 @@ function continueGrain(grainId) {
                            "Package ID: " + packageId);
   }
 
-  startGrainInternal(packageId, grainId, manifest.continueCommand, false);
+  startGrainInternal(packageId, grainId, manifest.continueCommand, false, isDev);
 }
 
-function startGrainInternal(packageId, grainId, command, isNew) {
+function startGrainInternal(packageId, grainId, command, isNew, isDev) {
   // Starts the grain supervisor.  Must be executed in a Meteor context.  Blocks until grain is
   // started.
 
@@ -260,6 +264,11 @@ function startGrainInternal(packageId, grainId, command, isNew) {
 
   if (SANDSTORM_ALTHOME) {
     args.push("--home=" + SANDSTORM_ALTHOME);
+  }
+
+  if (isDev) {
+    // This just allows some debug syscalls that we disable in prod, especially ptrace.
+    args.push("--dev");
   }
 
   args.push("--");

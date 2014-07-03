@@ -66,6 +66,11 @@ bin/sandstorm-supervisor: tmp/genfiles src/sandstorm/supervisor-main.c++ src/san
 	@mkdir -p bin
 	@$(CXX) src/sandstorm/supervisor-main.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/sandstorm-supervisor $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
 
+bin/minibox: src/sandstorm/minibox.c++
+	@echo "building bin/minibox..."
+	@mkdir -p bin
+	@$(CXX) src/sandstorm/minibox.c++ -o bin/minibox $(CXXFLAGS2) `pkg-config capnp --cflags --libs`
+
 node_modules/sandstorm/grain.capnp: src/sandstorm/*.capnp
 	@echo "copying sandstorm protocols to node_modules/sandstorm..."
 	@mkdir -p node_modules/sandstorm

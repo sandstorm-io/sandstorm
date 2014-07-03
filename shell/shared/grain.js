@@ -114,6 +114,7 @@ if (Meteor.isClient) {
     "click #deleteGrain": function (event) {
       if (window.confirm("Really delete this grain?")) {
         Meteor.call("deleteGrain", this.grainId);
+        Router.go("root");
       }
     },
     "click #openDebugLog": function (event) {

@@ -33,6 +33,16 @@ var mkdir = Meteor._wrapAsync(Fs.mkdir),
     readFile = Meteor._wrapAsync(Fs.readFile),
     writeFile = Meteor._wrapAsync(Fs.writeFile);
 
+function recursiveRmdirIfExists(dir) {
+  if (Fs.existsSync(dir)) {
+    if (Fs.lstatSync(dir).isDirectory()) {
+      recursiveRmdir(dir);
+    } else {
+      Fs.unlinkSync(dir);
+    }
+  }
+}
+
 Meteor.startup(function () {
   // Cleanup tokens every TOKEN_CLEANUP_MINUTES
   Meteor.setInterval(function () {
@@ -86,13 +96,13 @@ Meteor.methods({
       fut.return(code);
     });
     proc.on("error", function (err) {
-      recursiveRmdir(token.filePath);
+      recursiveRmdirIfExists(token.filePath);
       fut.throw(new Meteor.Error(500, "Error in zipping procces"));
     });
 
     var code = fut.wait();
     if (code !== 0) {
-      recursiveRmdir(token.filePath);
+      recursiveRmdirIfExists(token.filePath);
       throw new Meteor.Error(500, "Zip process failed.");
     }
 
@@ -174,7 +184,7 @@ Meteor.methods({
         title: grainInfo.title
       });
     } catch (err) {
-      recursiveRmdir(grainDir);
+      recursiveRmdirIfExists(grainDir);
       throw err;
     }
 
@@ -187,7 +197,7 @@ Meteor.methods({
     if (!token) {
       return;
     }
-    recursiveRmdir(token.filePath);
+    recursiveRmdirIfExists(token.filePath);
     FileTokens.remove({_id: tokenId});
   }
 });
@@ -210,7 +220,7 @@ doGrainUpload = function (stream) {
         file.end();
         resolve(token);
       } catch (err) {
-        recursiveRmdir(token.filePath);
+        recursiveRmdirIfExists(token.filePath);
         reject(err);
       }
     });
@@ -218,10 +228,10 @@ doGrainUpload = function (stream) {
       // TODO(soon):  This event does"t seem to fire if the user leaves the page mid-upload.
       try {
         file.end();
-        recursiveRmdir(token.filePath);
+        recursiveRmdirIfExists(token.filePath);
         reject(err);
       } catch (err2) {
-        recursiveRmdir(token.filePath);
+        recursiveRmdirIfExists(token.filePath);
         reject(err2);
       }
     });

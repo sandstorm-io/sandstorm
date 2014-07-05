@@ -1213,10 +1213,17 @@ public:
                "Unsupported session type.");
 
     if (params.getSessionType() == capnp::typeId<WebSession>()) {
-      auto permissions = kj::strArray(
-        KJ_MAP(p, config.getPermissions()) {
-          return p.getName();
-        }, ",");
+      auto userPermissions = params.getUserInfo().getPermissions();
+      auto configPermissions = config.getPermissions();
+      kj::Vector<kj::String> permissionVec(configPermissions.size());
+
+      for (auto i = 0; i < configPermissions.size() && i / 8 < userPermissions.size(); ++i) {
+        if (userPermissions[i / 8] & (2 << (i % 8))) {
+          permissionVec.add(kj::str(configPermissions[i].getName()));
+        }
+      }
+      auto permissions = kj::strArray(permissionVec.releaseAsArray(), ",");
+
       context.getResults(capnp::MessageSize {2, 1}).setSession(
           kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
                                    params.getSessionParams().getAs<WebSession::Params>(), kj::mv(permissions)));

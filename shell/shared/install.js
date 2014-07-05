@@ -396,8 +396,10 @@ Router.map(function () {
     data: function () {
       return {
         isSignedUp: isSignedUp(),
+        isDemoUser: isDemoUser(),
         progress: Session.get("uploadProgress"),
-        error: Session.get("uploadError")
+        error: Session.get("uploadError"),
+        origin: document.location.origin
       };
     }
   });

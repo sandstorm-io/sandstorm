@@ -215,6 +215,10 @@ img {
   font-size: 125%;
 }
 
+.centered-box h2 {
+  margin-top: 0;
+}
+
 .centered-box p:nth-child(1) {
   margin-top: 0;
 }

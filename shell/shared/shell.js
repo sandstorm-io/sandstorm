@@ -315,9 +315,12 @@ Router.map(function () {
         origin: document.location.origin,
         isSignedUp: isSignedUpOrDemo(),
         isAdmin: isAdmin(),
+        isDemoUser: isDemoUser(),
         isFirstRun: !HasUsers.findOne("hasUsers"),
         build: getBuildInfo().build,
-        kernelTooOld: isKernelTooOld()
+        kernelTooOld: isKernelTooOld(),
+        allowDemoAccounts: Meteor.settings && Meteor.settings.public &&
+            Meteor.settings.public.allowDemoAccounts
       };
     }
   });

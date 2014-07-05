@@ -91,7 +91,7 @@ License along with Sandstorm.  If not, see
       </td></tr></table>
       <p id="installAppsLink">Install apps...</p>
       <p id="uploadAppLink">Upload an app...</p>
-      <p id="restoreGrainLink">Restore a grain...</p>
+      <p id="restoreGrainLink">Restore a file from backup...</p>
       {{#if isAdmin}}
       <p id="emailInvitesLink">Invite users by e-mail...</p>
       <p id="urlInvitesLink">Invite users by URL...</p>
@@ -137,12 +137,21 @@ License along with Sandstorm.  If not, see
          <a href="/invite">Send e-mail invites.</a><br>
          <a href="/stats">See server usage stats.</a></p>
     {{else}}
+    {{#if isDemoUser}}
+      <p>Welcome to the Sandstorm demo.</p>
+      <p><a href="https://sandstorm.io/apps/?host={{origin}}">Try installing some apps.</a></p>
+    {{else}}
     {{#if isSignedUp}}
       <p>Welcome to the Sandstorm closed alpha.</p>
       <p><a href="https://sandstorm.io/apps/?host={{origin}}">Looking for apps?</a></p>
     {{else}}
-      <p>Currently in closed alpha.</p>
-      <p>Want an invite? <a href="https://sandstorm.io">Get on the mailing list.</a></p>
+      {{#if allowDemoAccounts}}
+        <p><a href="/demo">Try the demo!</a></p>
+      {{else}}
+        <p>Currently in closed alpha.</p>
+        <p>Want an invite? <a href="https://sandstorm.io">Get on the mailing list.</a></p>
+      {{/if}}
+    {{/if}}
     {{/if}}
     {{/if}}
     {{/if}}
@@ -344,7 +353,12 @@ $KEY</textarea></p>
            <button id="uploadButton">Upload</button></p>
       {{/if}}
     {{else}}
-      <p>Sorry, Sandstorm is in closed alpha.  To install apps, you must first be invited.</p>
+      {{#if isDemoUser}}
+        <p>Sorry, demo users are not allowed to upload new apps, but you can
+          <a href="https://sandstorm.io/apps/?host={{origin}}">install apps from sandstorm.io</a>.</p>
+      {{else}}
+        <p>Sorry, Sandstorm is in closed alpha.  To install apps, you must first be invited.</p>
+      {{/if}}
     {{/if}}
     </div>
   </div>
@@ -421,6 +435,7 @@ $KEY</textarea></p>
 
   <div id="demo" class="main-content">
     <div class="centered-box">
+      <h2>Sandstorm Demo</h2>
       {{#if allowDemo}}
         {{#if currentUser}}
           <p>You are already logged in. You don't need a demo account.</p>

@@ -113,7 +113,7 @@ section>p {
 
 @media screen and (max-width: 1700px) {
   /* Don't display four boxes followed by one. */
-  .row {
+  .row, .row-wide {
     max-width: 1100px;
   }
 }
@@ -130,20 +130,42 @@ section>p {
   width: 400px;
 }
 
+@media screen and (max-width: 864px) {
+  .row-wide>.column {
+    width: 300px;
+  }
+}
+
 .bigpill {
   width: 800px;
   margin: 32px auto;
 }
 
-.bigpill>h2:first-child {
+.bigpill:nth-child(2n) {
+  display: -ms-flexbox; /* Internet Explorer 10 */
+  display: -moz-box; /* Firefox */
+  display: -webkit-box; /* Safari */
+  display: -webkit-flex; /* Chrome */
+  display: flex;
+
+  flex-direction: row;
+}
+
+.bigpill:nth-child(2n+1)>h2 {
   border-right: 1px solid #a49f97;
 }
-.bigpill>h2:last-child {
+.bigpill:nth-child(2n)>h2 {
   border-left: 1px solid #a49f97;
+
+  -ms-flex-order: 3; /* Internet Explorer 10 */
+  -moz-box-ordinal-group: 3; /* Firefox */
+  -webkit-box-ordinal-group: 3; /* Safari */
+  -webkit-order: 3; /* Chrome */
+  order: 3;
 }
 
 .bigpill h2 {
-  margin: 0;
+  margin: auto;
   width: 320px;
   padding: 16px;
   display: inline-block;
@@ -151,7 +173,7 @@ section>p {
 }
 
 .bigpill p {
-  margin: 0;
+  margin: auto;
   width: 400px;
   padding: 16px;
   display: inline-block;
@@ -161,44 +183,27 @@ section>p {
 @media screen and (max-width: 800px) {
   .bigpill {
     width: auto;
-
-    display: -ms-flexbox; /* Internet Explorer 10 */
-    display: -moz-box; /* Firefox */
-    display: -webkit-box; /* Safari */
-    display: -webkit-flex; /* Chrome */
-    display: flex;
-
-    flex-direction: column;
+  }
+  .bigpill:nth-child(2n) {
+    display: block;
   }
 
   .bigpill h2 {
     text-align: center;
     width: 300px;
-    margin: auto;
     display: block;
     border-bottom: 1px solid #ba9;
     font-size: 2.5em;
   }
-  .bigpill p {
-    width: 300px;
-    margin: auto;
-    display: block;
-  }
-
-  .bigpill>h2:first-child {
+  .bigpill:nth-child(2n+1)>h2 {
     border-right: none;
   }
-
-  .bigpill>h2:last-child {
+  .bigpill:nth-child(2n)>h2 {
     border-left: none;
   }
-
-  .bigpill>p:first-child {
-    -ms-flex-order: 3; /* Internet Explorer 10 */
-    -moz-box-ordinal-group: 3; /* Firefox */
-    -webkit-box-ordinal-group: 3; /* Safari */
-    -webkit-order: 3; /* Chrome */
-    order: 3;
+  .bigpill p {
+    width: 300px;
+    display: block;
   }
 
   h2 {

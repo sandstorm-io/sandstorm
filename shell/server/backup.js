@@ -146,10 +146,6 @@ Meteor.methods({
           throw new Meteor.Error(500,
                                  "Metadata object for uploaded grain has no AppId");
       }
-      if (!grainInfo.appVersion) {
-          throw new Meteor.Error(500,
-                                 "Metadata object for uploaded grain has no AppVersion");
-      }
 
       var action = UserActions.findOne({appId: grainInfo.appId, userId: this.userId});
       if (!action) {

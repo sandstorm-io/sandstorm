@@ -465,20 +465,25 @@ function Proxy(grainId, sessionId, preferredPort, isOwner, user) {
   this.isOwner = isOwner;
 
   var serviceId;
-  if (user.services) {
-    if (user.services.google) {
-      serviceId = 'google:' + user.services.google.id;
-    } else if (user.services.github) {
-      serviceId = 'github:' + user.services.github.id;
+
+  if (user) {
+    if (user.services) {
+      if (user.services.google) {
+        serviceId = 'google:' + user.services.google.id;
+      } else if (user.services.github) {
+        serviceId = 'github:' + user.services.github.id;
+      } else {
+        serviceId = 'demo:' + user._id;
+      }
     } else {
-      console.error(new Error('No known services detected for user: ' + user._id));
-      serviceId = '';
+      serviceId = 'demo:' + user._id;
     }
+    this.displayName = user.profile.name;
   } else {
-    serviceId = 'demo:' + user._id;
+    serviceId = 'anonymous';
+    this.displayName = 'Anonymous User';
   }
   this.generatedUserId = Crypto.createHash("sha256").update(serviceId).digest();
-  this.displayName = user.profile.name;
 
   var self = this;
 

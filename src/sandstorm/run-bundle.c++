@@ -897,6 +897,11 @@ public:
       return "This command is only internal use only.";
     }
 
+    if (!runningAsRoot) {
+      // We must already be in a UID namespace. Don't enter a new one.
+      unsharedUidNamespace = true;
+    }
+
     int pidfile = KJ_ASSERT_NONNULL(parseUInt(pidfileFdStr, 10));
 
     // Make sure the pidfile is close-on-exec.

@@ -832,11 +832,18 @@ public:
       : serverAddr(serverAddr),
         context(kj::mv(context)),
         userDisplayName(kj::heapString(userInfo.getDisplayName().getDefaultText())),
-        userId(hexEncode(userInfo.getUserId().slice(0, userInfo.getUserId().size() / 2))),
         permissions(kj::mv(permissions)),
         basePath(kj::heapString(params.getBasePath())),
         userAgent(kj::heapString(params.getUserAgent())),
-        acceptLanguages(kj::strArray(params.getAcceptableLanguages(), ",")) {}
+        acceptLanguages(kj::strArray(params.getAcceptableLanguages(), ",")) {
+    if (userInfo.hasUserId()) {
+      auto id = userInfo.getUserId();
+      KJ_ASSERT(id.size() == 32, "User ID not a SHA-256?");
+
+      // We truncate to 128 bits to be a little more weildy. Still 32 chars, though.
+      userId = hexEncode(userInfo.getUserId().slice(0, 16));
+    }
+  }
 
   kj::Promise<void> get(GetContext context) override {
     GetParams::Reader params = context.getParams();
@@ -924,7 +931,7 @@ private:
   kj::NetworkAddress& serverAddr;
   SessionContext::Client context;
   kj::String userDisplayName;
-  kj::String userId;
+  kj::Maybe<kj::String> userId;
   kj::String permissions;
   kj::String basePath;
   kj::String userAgent;
@@ -958,7 +965,9 @@ private:
     lines.add(kj::str("Host: ", extractHostFromUrl(basePath)));
     lines.add(kj::str("User-Agent: ", userAgent));
     lines.add(kj::str("X-Sandstorm-Username: ", userDisplayName));
-    lines.add(kj::str("X-Sandstorm-User-Id: ", userId));
+    KJ_IF_MAYBE(u, userId) {
+      lines.add(kj::str("X-Sandstorm-User-Id: ", *u));
+    }
     lines.add(kj::str("X-Sandstorm-Base-Path: ", basePath));
     lines.add(kj::str("X-Sandstorm-Permissions: ", permissions));
 
@@ -1194,7 +1203,7 @@ public:
       : serverAddress(serverAddress), contextCap(contextCap), config(config) {}
 
   kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
-    context.getResults().setPermissions(config.getPermissions());
+    context.setResults(config.getViewInfo());
     return kj::READY_NOW;
   }
 
@@ -1207,15 +1216,15 @@ public:
 
     if (params.getSessionType() == capnp::typeId<WebSession>()) {
       auto userPermissions = params.getUserInfo().getPermissions();
-      auto configPermissions = config.getPermissions();
+      auto configPermissions = config.getViewInfo().getPermissions();
       kj::Vector<kj::String> permissionVec(configPermissions.size());
 
-      for (auto i = 0; i < configPermissions.size() && i / 8 < userPermissions.size(); ++i) {
-        if (userPermissions[i / 8] & (2 << (i % 8))) {
+      for (uint i = 0; i < configPermissions.size() && i / 8 < userPermissions.size(); ++i) {
+        if (userPermissions[i / 8] & (1 << (i % 8))) {
           permissionVec.add(kj::str(configPermissions[i].getName()));
         }
       }
-      auto permissions = kj::strArray(permissionVec.releaseAsArray(), ",");
+      auto permissions = kj::strArray(permissionVec, ",");
 
       context.getResults(capnp::MessageSize {2, 1}).setSession(
           kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
@@ -1408,8 +1417,12 @@ public:
         usleep(10000);
       }
 
+      // We potentially re-traverse the BridgeConfig on every request, so make sure to max out the
+      // traversal limit.
+      capnp::ReaderOptions options;
+      options.traversalLimitInWords = kj::maxValue;
       capnp::StreamFdMessageReader reader(
-            raiiOpen("/sandstorm-http-bridge.conf", O_RDONLY));
+          raiiOpen("/sandstorm-http-bridge-config", O_RDONLY), options);
       auto config = reader.getRoot<spk::BridgeConfig>();
 
       // Make a redirecting capability that will point to the most-recent SessionContext, which

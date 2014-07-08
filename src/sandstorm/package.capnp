@@ -62,7 +62,7 @@ struct PackageDefinition {
   # see if they unpack your package manually.
 
   bridgeConfig @5 :BridgeConfig;
-  # Configuration variables for apps that use sandstorm-http-bridge
+  # Configuration variables for apps that use sandstorm-http-bridge.
 }
 
 struct Manifest {
@@ -178,12 +178,13 @@ struct BridgeConfig {
   # things that need to be communicated to the bridge process before the app starts up, such as
   # permissions.
 
-  permissions @0 :List(Grain.PermissionDef);
-  # A list of permissions which need to be defined and accessible to the bridge in order to
-  # communicate to the proxy upon startup what are all the permissions this app allows.
-  # Normally this is communicated directly by the app by implementing `UiView.openSession`,
-  # but since http-bridge handles that implementation for us, we need to specify our permissions
-  # up-front.
+  viewInfo @0 :Grain.UiView.ViewInfo;
+  # What to return from the UiView's getViewInfo(). This structure defines, among other things, the
+  # list of sharable permissions and roles that apply to this app. See grain.capnp for more details.
+  #
+  # When a request comes in from the user, sandstorm-http-bridge will set the
+  # X-Sandstorm-Permissions header to a comma-delimited list of permission names corresponding to
+  # the user's permissions.
 }
 
 # ==============================================================================

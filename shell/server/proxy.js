@@ -111,7 +111,7 @@ Meteor.methods({
       userId: this.userId,
       title: title
     });
-    startGrainInternal(packageId, grainId, command, true, isDev);
+    startGrainInternal(packageId, grainId, this.userId, command, true, isDev);
     updateLastActive(grainId, Meteor.userId());
     return grainId;
   },
@@ -123,22 +123,23 @@ Meteor.methods({
     check(grainId, String);
 
     var sessionId = Random.id();
-    var userId = Meteor.userId();
+    var user = Meteor.user();
+    var userId = user ? user._id : undefined;
 
     // Start the grain if it is not running.
     var runningGrain = runningGrains[grainId];
+    var grainInfo;
     if (runningGrain) {
-      waitPromise(runningGrain);
+      grainInfo = waitPromise(runningGrain);
     } else {
-      continueGrain(grainId);
+      grainInfo = continueGrain(grainId);
     }
 
     updateLastActive(grainId, userId);
 
-    var ownerGrain = Grains.findOne({_id: grainId, userId: userId});
-    var isOwner = ownerGrain ? true : false;
+    var isOwner = grainInfo.ownerId === userId;
 
-    var proxy = new Proxy(grainId, sessionId, null, isOwner, Meteor.user());
+    var proxy = new Proxy(grainId, sessionId, null, isOwner, user);
     proxies[sessionId] = proxy;
     var port = waitPromise(proxy.getPort());
 
@@ -248,10 +249,11 @@ function continueGrain(grainId) {
                            "Package ID: " + packageId);
   }
 
-  startGrainInternal(packageId, grainId, manifest.continueCommand, false, isDev);
+  return startGrainInternal(
+      packageId, grainId, grain.userId, manifest.continueCommand, false, isDev);
 }
 
-function startGrainInternal(packageId, grainId, command, isNew, isDev) {
+function startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev) {
   // Starts the grain supervisor.  Must be executed in a Meteor context.  Blocks until grain is
   // started.
 
@@ -304,7 +306,7 @@ function startGrainInternal(packageId, grainId, command, isNew, isDev) {
   var whenReady = new Promise(function (resolve, reject) {
     proc.stdout.on("data", function (data) {
       // Data on stdout indicates that the grain is ready.
-      resolve();
+      resolve({owner: ownerId});
     });
     proc.on("error", function (err) {
       // Grain failed to start.
@@ -317,7 +319,7 @@ function startGrainInternal(packageId, grainId, command, isNew, isDev) {
   });
 
   runningGrains[grainId] = whenReady;
-  waitPromise(whenReady);
+  return waitPromise(whenReady);
 }
 
 shutdownGrain = function (grainId) {
@@ -403,9 +405,9 @@ Meteor.startup(function () {
   var firstPort = nextPort;
   var usedPorts = {};
   Sessions.find({}).forEach(function (session) {
-    var grain = Grains.findOne({_id: session.grainId, userId: session.userId});
+    var grain = Grains.findOne(session.grainId);
     var user = Meteor.users.findOne({_id: session.userId});
-    var isOwner = grain ? true : false;
+    var isOwner = grain.userId === session.userId;
     // Try to recreate the proxy on the same port as before.
     var proxy = new Proxy(session.grainId, session._id, session.port, isOwner, user);
 
@@ -460,26 +462,27 @@ function Proxy(grainId, sessionId, preferredPort, isOwner, user) {
   this.sessionId = sessionId;
   this.isOwner = isOwner;
 
-  var serviceId;
-
   if (user) {
-    if (user.services) {
-      if (user.services.google) {
-        serviceId = 'google:' + user.services.google.id;
-      } else if (user.services.github) {
-        serviceId = 'github:' + user.services.github.id;
-      } else {
-        serviceId = 'demo:' + user._id;
-      }
+    var serviceId;
+    if (user.expires) {
+      serviceId = "demo:" + user._id;
+    } else if (user.services && user.services.google) {
+      serviceId = "google:" + user.services.google.id;
+    } else if (user.services && user.services.github) {
+      serviceId = "github:" + user.services.github.id;
     } else {
-      serviceId = 'demo:' + user._id;
+      // Make sure that if we add a new user type we don't forget to update this.
+      throw new Meteor.Error(500, "Unknown user type.");
     }
-    this.displayName = user.profile.name;
+    this.userInfo = {
+      displayName: {defaultText: user.profile.name},
+      userId: Crypto.createHash("sha256").update(serviceId).digest()
+    }
   } else {
-    serviceId = 'anonymous';
-    this.displayName = 'Anonymous User';
+    this.userInfo = {
+      displayName: {defaultText: "Anonymous User"}
+    }
   }
-  this.generatedUserId = Crypto.createHash("sha256").update(serviceId).digest();
 
   var self = this;
 
@@ -572,8 +575,8 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
         : [ "en-US", "en" ]
   });
 
-  var userInfo = {displayName: {defaultText: this.displayName}, userId: this.generatedUserId};
-  if (viewInfo && viewInfo.permissions) {
+  var userInfo = _.clone(this.userInfo);
+  if (viewInfo.permissions) {
     var numBytes = Math.ceil(viewInfo.permissions.length / 8);
 
     var buf = new Buffer(numBytes);
@@ -591,8 +594,14 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
 Proxy.prototype.getSession = function (request) {
   if (!this.session) {
     this.getConnection();  // make sure we're connected
-    var boundCall = this._callNewSession.bind(this, request);
-    var promise = this.uiView.getViewInfo().then(boundCall, boundCall);
+    var self = this;
+    var promise = this.uiView.getViewInfo().then(function (viewInfo) {
+      return self._callNewSession(request, viewInfo);
+    }, function (error) {
+      // Assume method not implemented.
+      // TODO(someday): Maybe we need a better way to detect method-not-implemented?
+      return self._callNewSession(request, {});
+    });
     this.session = new Capnp.Capability(promise, WebSession);
   }
 

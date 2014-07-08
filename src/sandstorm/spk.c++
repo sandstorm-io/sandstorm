@@ -1240,8 +1240,8 @@ private:
       capnp::MallocMessageBuilder manifestMessage(manifestReader.totalSize().wordCount + 4);
       manifestMessage.setRoot(manifestReader);
       node.setData(capnp::messageToFlatArray(manifestMessage));
-    } else if (path == "sandstorm-http-bridge.conf") {
-      // // Serialize the bridgeConfig.
+    } else if (path == "sandstorm-http-bridge-config") {
+      // Serialize the bridgeConfig.
       auto bridgeConfigReader = packageDef.getBridgeConfig();
       capnp::MallocMessageBuilder bridgeConfigMessage(bridgeConfigReader.totalSize().wordCount + 4);
       bridgeConfigMessage.setRoot(bridgeConfigReader);

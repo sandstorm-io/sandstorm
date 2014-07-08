@@ -602,7 +602,7 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
     capnp::MallocMessageBuilder bridgeConfigCopy(bridgeConfig.totalSize().wordCount + 4);
     bridgeConfigCopy.setRoot(bridgeConfig);
     layers.add(kj::heap<SingletonNode>(kj::heap<SimpleDataNode>(
-        capnp::messageToFlatArray(bridgeConfigCopy)), "sandstorm-http-bridge.conf"));
+        capnp::messageToFlatArray(bridgeConfigCopy)), "sandstorm-http-bridge-config"));
   }
 
   layers.add(kj::heap<SingletonNode>(

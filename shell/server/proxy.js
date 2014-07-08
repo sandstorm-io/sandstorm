@@ -167,6 +167,16 @@ Meteor.methods({
     } else {
       return false;
     }
+  },
+
+  shutdownGrain: function (grainId) {
+    check(grainId, String);
+    var grain = Grains.findOne(grainId);
+    if (!grain || !this.userId || grain.userId !== this.userId) {
+      throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
+    }
+
+    waitPromise(shutdownGrain(grainId, true));
   }
 });
 
@@ -322,15 +332,17 @@ function startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev) 
   return waitPromise(whenReady);
 }
 
-shutdownGrain = function (grainId) {
-  Sessions.find({grainId: grainId}).forEach(function (session) {
-    var proxy = proxies[session._id];
-    if (proxy) {
-      proxy.close();
-      delete proxies[session._id];
-    }
-    Sessions.remove(session._id);
-  });
+shutdownGrain = function (grainId, keepSessions) {
+  if (!keepSessions) {
+    Sessions.find({grainId: grainId}).forEach(function (session) {
+      var proxy = proxies[session._id];
+      if (proxy) {
+        proxy.close();
+        delete proxies[session._id];
+      }
+      Sessions.remove(session._id);
+    });
+  }
 
   // Try to send a shutdown.  The grain may not be running, in which case this will fail, which
   // is fine.  In fact even if the grain is running, we expect the call to fail because the grain
@@ -338,7 +350,7 @@ shutdownGrain = function (grainId) {
   var connection = Capnp.connect("unix:" + Path.join(SANDSTORM_GRAINDIR, grainId, "socket"));
   var supervisor = connection.restore(null, Supervisor);
 
-  supervisor.shutdown().then(function (result) {
+  return supervisor.shutdown().then(function (result) {
     supervisor.close();
     connection.close();
   }, function (error) {

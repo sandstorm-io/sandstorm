@@ -34,6 +34,8 @@ var RECIPIENT_LIMIT = 20;
 var dailySendCounts = {};
 // Maps user IDs to counts of the number of e-mails they have sent today.
 
+var CLIENT_TIMEOUT = 15000; // 15s
+
 Meteor.setInterval(function () { dailySendCounts = {}; }, 86400);
 
 Meteor.startup(function() {
@@ -437,7 +439,9 @@ var makeSmtpPool = function (mailUrlString) {
     mailUrl.hostname,  // Defaults to "localhost"
     { secureConnection: (port === 465),
       // XXX allow maxConnections to be configured?
-      auth: auth });
+      auth: auth,
+      connectionTimeout: CLIENT_TIMEOUT,
+      socketTimeout: CLIENT_TIMEOUT });
 
   pool._future_wrapped_sendMail = _.bind(Future.wrap(pool.sendMail), pool);
   return pool;

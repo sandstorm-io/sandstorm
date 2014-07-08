@@ -764,6 +764,17 @@ public:
                   .build();
             },
             "For internal use only.")
+        .addSubCommand("supervise",
+            [this]() {
+              return kj::MainBuilder(context, VERSION,
+                      "Run a sandstorm-supervisor process inside the server's namespace. This is "
+                      "mainly used to make it easier to run the front-end in dev mode.")
+                  .expectZeroOrMoreArgs("<supervisor-args>",
+                      KJ_BIND_METHOD(*this, addSuperviseArg))
+                  .callAfterParsing(KJ_BIND_METHOD(*this, supervise))
+                  .build();
+            },
+            "For internal use only.")
         .build();
   }
 
@@ -1095,15 +1106,7 @@ public:
 
     // Connect to the devmode socket. The server daemon listens on this socket for commands.
     // See `runDevDaemon()`.
-    int sock_;
-    KJ_SYSCALL(sock_ = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0));
-    auto sock = kj::AutoCloseFd(sock_);
-
-    struct sockaddr_un addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sun_family = AF_UNIX;
-    strcpy(addr.sun_path, "../var/sandstorm/socket/devmode");
-    KJ_SYSCALL(connect(sock, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)));
+    auto sock = connectToDevDaemon();
 
     // Send the command code.
     kj::FdOutputStream((int)sock).write(&DEVMODE_COMMAND_CONNECT, 1);
@@ -1111,6 +1114,54 @@ public:
     // Send our "stdout" (which is actually a socket) to the devmode server.
     sendFd(sock, STDOUT_FILENO);
 
+    return true;
+  }
+
+  kj::MainBuilder::Validity supervise() {
+    changeToInstallDir();
+
+    // Verify that Sandstorm is running.
+    if (getRunningPid() == nullptr) {
+      context.exitError("Sandstorm is not running.");
+    }
+
+    // Connect to the devmode socket. The server daemon listens on this socket for commands.
+    // See `runDevDaemon()`.
+    auto sock = connectToDevDaemon();
+
+    // Send the command code.
+    kj::FdOutputStream((int)sock).write(&DEVMODE_COMMAND_SUPERVISE, 1);
+
+    // Forward our standard I/O FDs.
+    sendFd(sock, STDIN_FILENO);
+    sendFd(sock, STDOUT_FILENO);
+    sendFd(sock, STDERR_FILENO);
+
+    // Send supervisor args.
+    kj::FdOutputStream((int)sock).write(superviseArgs.begin(), superviseArgs.size());
+
+    // Send EOF.
+    KJ_SYSCALL(shutdown(sock, SHUT_WR));
+
+    // Wait for exit status.
+    int status;
+    kj::FdInputStream((int)sock).read(&status, sizeof(status));
+
+    if (WIFEXITED(status)) {
+      _exit(WEXITSTATUS(status));
+    } else if (WIFSIGNALED(status)) {
+      // Try to kill ourself with the same signal to emulate the same outcome.
+      KJ_SYSCALL(kill(getpid(), WTERMSIG(status)));
+      // Otherwise just report it.
+      context.exitError(kj::str("Supervisor terminated by signal: ", WTERMSIG(status)));
+    } else {
+      context.exitError("Supervisor terminated with status I didn't understand.");
+    }
+  }
+
+  kj::MainBuilder::Validity addSuperviseArg(kj::StringPtr arg) {
+    superviseArgs.addAll(arg);
+    superviseArgs.add('\0');
     return true;
   }
 
@@ -1130,6 +1181,8 @@ private:
 
   kj::String updateFile;
   kj::StringPtr devtoolsBindir = "/usr/local/bin";
+
+  kj::Vector<char> superviseArgs;
 
   bool changedDir = false;
   bool unsharedUidNamespace = false;
@@ -2033,6 +2086,20 @@ private:
     }
   }
 
+  kj::AutoCloseFd connectToDevDaemon() {
+    int sock_;
+    KJ_SYSCALL(sock_ = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0));
+    auto sock = kj::AutoCloseFd(sock_);
+
+    struct sockaddr_un addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sun_family = AF_UNIX;
+    strcpy(addr.sun_path, "../var/sandstorm/socket/devmode");
+    KJ_SYSCALL(connect(sock, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)));
+
+    return kj::mv(sock);
+  }
+
   void runDevDaemon(const Config& config) KJ_NORETURN {
     clearDevApps(config);
 
@@ -2091,6 +2158,14 @@ private:
   //
   // TODO(cleanup): This constant is also defined in supervisor-main.c++. Share them.
 
+  static constexpr kj::byte DEVMODE_COMMAND_SUPERVISE = 3;
+  // Command code sent by `sandstorm supervise` command, which is invoked by the front-end when
+  // running in meteor dev mode (outside of the sandbox) in order to start an app. The front-end
+  // can't just invoke sandstorm-supervisor directly in this case since it's not in the proper
+  // namespace. This command must be followed by three file descriptors (to represent stdin,
+  // stdout, stderr), a series of NUL-terminated strings representing the arguments, and then
+  // EOF.
+
   void runDevSession(const Config& config, kj::AutoCloseFd internalFd) KJ_NORETURN {
     auto exception = kj::runCatchingExceptions([&]() {
       // When someone connects, we expect them to pass us a one-byte command code.
@@ -2101,6 +2176,45 @@ private:
         auto nsfd = raiiOpen("/proc/self/ns/mnt", O_RDONLY);
         sendFd(internalFd, nsfd);
         return;
+      } else if (commandCode == DEVMODE_COMMAND_SUPERVISE) {
+        // Oh, they want us to run a sandstorm-supervisor.
+
+        // Receive the standard FDs and dup2() them into place.
+        KJ_SYSCALL(dup2(receiveFd(internalFd), STDIN_FILENO));
+        KJ_SYSCALL(dup2(receiveFd(internalFd), STDOUT_FILENO));
+        KJ_SYSCALL(dup2(receiveFd(internalFd), STDERR_FILENO));
+
+        // Re-enable child reaping.
+        KJ_SYSCALL(signal(SIGCHLD, SIG_DFL));
+
+        // Supervisor should run unprivileged.
+        dropPrivs(config.uids);
+
+        // Compute args.
+        auto args = readAll(internalFd);
+        kj::StringPtr argsPtr = args;
+
+        kj::Vector<const char*> argv;
+        argv.add("/bin/sandstorm-supervisor");
+        while (argsPtr.size() > 0) {
+          argv.add(argsPtr.begin());
+          argsPtr = argsPtr.slice(KJ_ASSERT_NONNULL(
+              argsPtr.findFirst('\0'), "Invalid args pack; each arg must end with '\0'!") + 1);
+        }
+        argv.add(nullptr);
+
+        // Execute.
+        pid_t child;
+        KJ_SYSCALL(child = fork());
+        if (child == 0) {
+          KJ_SYSCALL(execv(argv[0], const_cast<char**>(argv.begin())));
+          KJ_UNREACHABLE;
+        } else {
+          int status;
+          KJ_SYSCALL(waitpid(child, &status, 0));
+          kj::FdOutputStream((int)internalFd).write(&status, sizeof(status));
+          _exit(0);
+        }
       }
 
       KJ_REQUIRE(commandCode == DEVMODE_COMMAND_CONNECT);
@@ -2357,6 +2471,7 @@ private:
 
 constexpr kj::byte RunBundleMain::DEVMODE_COMMAND_CONNECT;
 constexpr kj::byte RunBundleMain::DEVMODE_COMMAND_GETNS;
+constexpr kj::byte RunBundleMain::DEVMODE_COMMAND_SUPERVISE;
 
 }  // namespace sandstorm
 

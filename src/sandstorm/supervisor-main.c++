@@ -523,13 +523,6 @@ public:
                            "Runs a Sandstorm grain supervisor for the grain <grain-id>, which is "
                            "an instance of app <app-id>.  Executes <command> inside the grain "
                            "sandbox.")
-        .addOptionWithArg({"home"}, KJ_BIND_METHOD(*this, setHome), "<path>",
-                          "Set directory where Sandstorm is installed, e.g. '/opt/sandstorm'. "
-                          "Default is to assume we're already running in the Sandstorm chroot, "
-                          "so home is the root directory. Note that this is subtly different "
-                          "from explicitly specifying '/' as home -- if an explicit home is "
-                          "set, sandstorm-supervisor attempts to contact the server and enter "
-                          "its mount namespace.")
         .addOptionWithArg({"pkg"}, KJ_BIND_METHOD(*this, setPkg), "<path>",
                           "Set directory containing the app package.  "
                           "Defaults to '$SANDSTORM_HOME/var/sandstorm/apps/<app-name>'.")
@@ -582,11 +575,6 @@ public:
       return "Invalid grain id.";
     }
     grainId = kj::heapString(id);
-    return true;
-  }
-
-  kj::MainBuilder::Validity setHome(kj::StringPtr path) {
-    homePath = realPath(kj::heapString(path));
     return true;
   }
 
@@ -646,7 +634,6 @@ private:
   kj::String grainId;
   kj::String pkgPath;
   kj::String varPath;
-  kj::String homePath;
   kj::Vector<kj::String> command;
   kj::Vector<kj::String> environment;
   bool isNew = false;
@@ -706,37 +693,12 @@ private:
     KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
 
     closeFds();
-    enterServerNs();
     checkPaths();
     unshareOuter();
     setupFilesystem();
     setupStdio();
 
     // Note:  permanentlyDropSuperuser() is performed post-fork; see comment in function def.
-  }
-
-  void enterServerNs() {
-    if (homePath != nullptr) {
-      // We need to connect to the server to enter its namespace.
-      static constexpr kj::byte DEVMODE_COMMAND_GETNS = 2;  // as defined in run-bundle.c++
-
-      int sock_;
-      KJ_SYSCALL(sock_ = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0));
-      auto sock = kj::AutoCloseFd(sock_);
-
-      struct sockaddr_un addr;
-      memset(&addr, 0, sizeof(addr));
-      addr.sun_family = AF_UNIX;
-      strcpy(addr.sun_path, kj::str(homePath, "/var/sandstorm/socket/devmode").cStr());
-      KJ_SYSCALL(connect(sock, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)));
-
-      kj::FdOutputStream((int)sock).write(&DEVMODE_COMMAND_GETNS, 1);
-
-      auto ns = receiveFd(sock);
-
-      KJ_SYSCALL(setns(ns, CLONE_NEWNS));
-      KJ_SYSCALL(chdir("/"));
-    }
   }
 
   void closeFds() {

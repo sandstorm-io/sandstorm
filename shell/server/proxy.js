@@ -257,16 +257,27 @@ function startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev) 
   // Starts the grain supervisor.  Must be executed in a Meteor context.  Blocks until grain is
   // started.
 
-  var args = [packageId, grainId];
+  var args = [];
+
+  // If we're running outside of the Sandstorm server namespace (e.g. because we're running in
+  // Meteor dev mode), we'll need to invoke "sandstorm supervise" rather than invoke the supervisor
+  // directly.
+  var exe;
+  if (SANDSTORM_ALTHOME) {
+    exe = SANDSTORM_ALTHOME + "/sandstorm";
+    args.push("supervise");
+    args.push("--");
+  } else {
+    exe = "/bin/sandstorm-supervisor";
+  }
+
+  args.push(packageId);
+  args.push(grainId);
   if (isNew) args.push("-n");
   if (command.environ) {
     for (var i in command.environ) {
       args.push(["-e", command.environ[i].key, "=", command.environ[i].value].join(""));
     }
-  }
-
-  if (SANDSTORM_ALTHOME) {
-    args.push("--home=" + SANDSTORM_ALTHOME);
   }
 
   if (isDev) {
@@ -284,7 +295,7 @@ function startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev) 
   }
   args = args.concat(command.argv || command.args);
 
-  var proc = ChildProcess.spawn(sandstormExe("sandstorm-supervisor"), args, {
+  var proc = ChildProcess.spawn(exe, args, {
     stdio: ["ignore", "pipe", process.stderr],
     detached: true
   });

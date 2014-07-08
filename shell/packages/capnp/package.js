@@ -1,5 +1,5 @@
 Npm.depends({
-    'capnp': '0.1.0'
+    'capnp': '0.1.3'
 });
 
 Package.on_use(function (api) {

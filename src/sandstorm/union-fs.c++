@@ -585,16 +585,24 @@ private:
 }  // namespace
 
 fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap,
-                               spk::Manifest::Reader manifest, kj::StringPtr bridgePath,
+                               spk::Manifest::Reader manifest,
+                               spk::BridgeConfig::Reader bridgeConfig, kj::StringPtr bridgePath,
                                kj::Function<void(kj::StringPtr)>& callback) {
   auto searchPath = sourceMap.getSearchPath();
-  auto layers = kj::heapArrayBuilder<fuse::Node::Client>(searchPath.size() + 3);
+  auto layers = kj::Vector<fuse::Node::Client>(searchPath.size() + 10);
 
   {
     capnp::MallocMessageBuilder manifestCopy(manifest.totalSize().wordCount + 4);
     manifestCopy.setRoot(manifest);
     layers.add(kj::heap<SingletonNode>(kj::heap<SimpleDataNode>(
         capnp::messageToFlatArray(manifestCopy)), "sandstorm-manifest"));
+  }
+
+  {
+    capnp::MallocMessageBuilder bridgeConfigCopy(bridgeConfig.totalSize().wordCount + 4);
+    bridgeConfigCopy.setRoot(bridgeConfig);
+    layers.add(kj::heap<SingletonNode>(kj::heap<SimpleDataNode>(
+        capnp::messageToFlatArray(bridgeConfigCopy)), "sandstorm-http-bridge.conf"));
   }
 
   layers.add(kj::heap<SingletonNode>(
@@ -638,7 +646,7 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
     layers.add(kj::mv(node));
   }
 
-  auto merged = kj::heap<UnionNode>(layers.finish());
+  auto merged = kj::heap<UnionNode>(layers.releaseAsArray());
   return kj::heap<TrackingNode>(kj::mv(merged), nullptr, callback);
 }
 

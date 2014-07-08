@@ -60,6 +60,9 @@ struct PackageDefinition {
   # open them when running in dev mode. This could include runtime dependencies that are too
   # difficult to test fully, or perhaps a readme file or copyright notice that you want people to
   # see if they unpack your package manually.
+
+  bridgeConfig @5 :BridgeConfig;
+  # Configuration variables for apps that use sandstorm-http-bridge
 }
 
 struct Manifest {
@@ -168,6 +171,19 @@ struct SourceMap {
     # this path into the spk.  Use only canonical paths here -- i.e. do not use ".", "..", or
     # multiple consecutive slashes.  Do not use a leading slash.
   }
+}
+
+struct BridgeConfig {
+  # Configuration variables specific to apps that are using sandstorm-http-bridge. This includes
+  # things that need to be communicated to the bridge process before the app starts up, such as
+  # permissions.
+
+  permissions @0 :List(Grain.PermissionDef);
+  # A list of permissions which need to be defined and accessible to the bridge in order to
+  # communicate to the proxy upon startup what are all the permissions this app allows.
+  # Normally this is communicated directly by the app by implementing `UiView.openSession`,
+  # but since http-bridge handles that implementation for us, we need to specify our permissions
+  # up-front.
 }
 
 # ==============================================================================

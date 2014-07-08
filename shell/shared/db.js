@@ -93,6 +93,7 @@ Sessions = new Meteor.Collection("sessions");
 //   port:  TCP port number on which this session is being exported.
 //   timestamp:  Time of last keep-alive message to this session.  Sessions time out after some
 //       period.
+//   userId:  User who owns this session.
 
 SignupKeys = new Meteor.Collection("signupKeys");
 // Invite keys which may be used by users to get access to Sandstorm.

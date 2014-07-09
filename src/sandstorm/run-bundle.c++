@@ -43,6 +43,7 @@
 #include <sys/syscall.h>
 #include <sys/utsname.h>
 #include <sys/capability.h>
+#include <linux/securebits.h>
 #include <sched.h>
 #include <grp.h>
 #include <errno.h>
@@ -1020,8 +1021,7 @@ public:
 
     KJ_IF_MAYBE(pid, getRunningPid()) {
       KJ_SYSCALL(kill(*pid, SIGHUP));
-      context.exitError("Restart request sent.");
-      context.exit();
+      context.exitInfo("Restart request sent.");
     } else {
       context.exitError("Sandstorm is not running.");
     }
@@ -1382,6 +1382,18 @@ private:
       KJ_SYSCALL(setresuid(uids.uid, uids.uid, uids.uid));
     } else {
       // We're using UID namespaces.
+
+      // Defense in depth: Don't give my children any new caps for any reason.
+      KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
+
+      // Defense in depth: Drop all capabilities from the set of caps which my children are allowed
+      //   to ever have.
+      for (uint cap: kj::range(0, CAP_LAST_CAP + 1)) {
+        KJ_SYSCALL(prctl(PR_CAPBSET_DROP, cap, 0, 0, 0));
+      }
+
+      // Defense in depth: Don't grant my children capabilities just because they have UID 0.
+      KJ_SYSCALL(prctl(PR_SET_SECUREBITS, SECBIT_NOROOT | SECBIT_NOROOT_LOCKED));
 
       // Drop all Linux "capabilities".  (These are Linux/POSIX "capabilities", which are not true
       // object-capabilities, hence the quotes.)

@@ -124,6 +124,19 @@ if (Meteor.isClient) {
         }
         window.location = "/downloadBackup/" + id;
       });
+    },
+    "click #restartGrain": function (event) {
+      var sessionId = this.sessionId;
+      var grainId = this.grainId;
+
+      Meteor.call("shutdownGrain", grainId, function (err) {
+        if (err) {
+          alert("Restart failed: " + err); // TODO(someday): make this better UI
+        } else {
+          var frame = document.getElementById("grain-frame");
+          frame.src = frame.src;
+        }
+      });
     }
   });
 

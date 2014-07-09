@@ -121,7 +121,7 @@ Meteor.startup(function() {
               } else {
                 // TODO(someday): We really ought to rig things up so that the "RCPT TO" SMTP command
                 //   fails in this case, but simplesmtp doesn't appear to support that.
-                throw new Error("No such grain: ", publicId);
+                throw new Error("No such grain: " + publicId);
               }
             }).then(function (connection) {
               var supervisor = connection.restore(null, Supervisor);

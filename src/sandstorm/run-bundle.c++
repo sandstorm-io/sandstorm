@@ -751,6 +751,9 @@ public:
                       "For internal use only: Continue running Sandstorm after an update. "
                       "This command is invoked by the Sandstorm server itself. Do not run it "
                       "directly.")
+                  .addOption({"userns"}, [this]() { unsharedUidNamespace = true; return true; },
+                      "Pass this flag if the parent has already set up and entered a UID "
+                      "namespace.")
                   .expectArg("<pidfile-fd>", KJ_BIND_METHOD(*this, continue_))
                   .build();
             },
@@ -897,9 +900,10 @@ public:
       return "This command is only internal use only.";
     }
 
-    if (!runningAsRoot) {
-      // We must already be in a UID namespace. Don't enter a new one.
-      unsharedUidNamespace = true;
+    if (unsharedUidNamespace) {
+      // Even if getuid() return zero, we aren't really root, it's just that we mapped our UID to
+      // zero in the UID namespace.
+      runningAsRoot = false;
     }
 
     int pidfile = KJ_ASSERT_NONNULL(parseUInt(pidfileFdStr, 10));
@@ -1290,9 +1294,15 @@ private:
 
       KJ_SYSCALL(unshare(CLONE_NEWUSER));
 
-      // Set up the UID namespace. We don't actually transform our UID/GID.
-      writeUserNSMap("uid", kj::str(uid, " ", uid, " 1\n"));
-      writeUserNSMap("gid", kj::str(uid, " ", gid, " 1\n"));
+      // Set up the UID namespace. We map ourselves as UID zero because this allows capabilities
+      // to be inherited through exec(), which we need to support update and restart. With any
+      // other UID, capabilities can only be inherited through exec() if the target exec'd file
+      // has its inheritable capabilities set filled. By default, the inheritable capability set
+      // for all files is empty, and only the filesystem's superuser (i.e. not us) can change them.
+      // But if our UID is zero, then the file's attributes are ignored and all capabilities are
+      // inherited.
+      writeUserNSMap("uid", kj::str("0 ", uid, " 1\n"));
+      writeUserNSMap("gid", kj::str("0 ", gid, " 1\n"));
 
       unsharedUidNamespace = true;
     }
@@ -1463,7 +1473,9 @@ private:
       }
     }
 
-    KJ_REQUIRE(config.uids.uid != 0, "config missing SERVER_USER; can't run as root");
+    if (runningAsRoot) {
+      KJ_REQUIRE(config.uids.uid != 0, "config missing SERVER_USER; can't run as root");
+    }
 
     return config;
   }
@@ -2056,9 +2068,19 @@ private:
     // Change pidfile to not close on exec, since we want it to live through the following exec!
     KJ_SYSCALL(fcntl(pidfileFd, F_SETFD, 0));
 
+    // Create arg list.
+    kj::Vector<const char*> argv;
+    argv.add("../latest/sandstorm");
+    argv.add("continue");
+    if (unsharedUidNamespace) {
+      argv.add("--userns");
+    }
+    auto pidfileFdStr = kj::str(pidfileFd);
+    argv.add(pidfileFdStr.cStr());
+    argv.add(EXEC_END_ARGS);
+
     // Exec the new version with our magic "continue".
-    KJ_SYSCALL(execl("../latest/sandstorm", "../latest/sandstorm",
-                     "continue", kj::str(pidfileFd).cStr(), EXEC_END_ARGS));
+    KJ_SYSCALL(execv(argv[0], const_cast<char**>(argv.begin())));
     KJ_UNREACHABLE;
   }
 

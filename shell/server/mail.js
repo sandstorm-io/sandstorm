@@ -235,7 +235,16 @@ HackSessionContextImpl.prototype._getUserAddress = function () {
   var user = Meteor.users.findOne(grain.userId);
 
   var email = (user.emails && user.emails.length && user.emails[0].address) || (user.services.google && user.services.google.email) || (user.services.github && user.services.github.email);
-  return {address: email, name: user.profile.name || ''};
+
+  var result = {};
+  if (email) {
+    result.address = email;
+  }
+  if (user.profile.name) {
+    result.name = user.profile.name;
+  }
+
+  return result;
 }
 
 HackSessionContextImpl.prototype.send = function (email) {

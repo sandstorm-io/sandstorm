@@ -137,7 +137,7 @@ Meteor.methods({
 
     updateLastActive(grainId, userId);
 
-    var isOwner = grainInfo.ownerId === userId;
+    var isOwner = grainInfo.owner === userId;
 
     var proxy = new Proxy(grainId, sessionId, null, isOwner, user);
     proxies[sessionId] = proxy;

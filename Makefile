@@ -88,7 +88,7 @@ shell/public/%.png: icons/%.svg
 
 shell-bundle: shell/smart.* shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release .shell-env
 	@echo "bundling meteor frontend..."
-	@cd shell && mrt bundle --directory ../shell-bundle > /dev/null
+	@cd shell && PYTHONPATH=$HOME/.meteor/tools/latest/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib mrt bundle --directory ../shell-bundle > /dev/null
 
 bundle: bin/spk bin/minibox bin/sandstorm-supervisor bin/sandstorm-http-bridge bin/run-bundle shell-bundle make-bundle.sh
 	./make-bundle.sh

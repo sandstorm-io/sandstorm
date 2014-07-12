@@ -16,13 +16,13 @@ b {
 }
 
 a {
-  color: #cf974a;
+  color: #428bca;
   font-weight: 600;
   text-decoration: none;
 }
 
 a:hover {
-  color: #ff9400;
+  color: #0094ff;
   font-weight: 600;
   text-decoration: none;
 }
@@ -254,21 +254,16 @@ section>p {
 }
 
 #signup-form input[type="submit"] {
-  /* Some styling borrowed from Bootstrap. */
   font-family: inherit;
   background-color: #428bca;
-  background-image: linear-gradient(to bottom,#428bca 0,#2d6ca2 100%);
-  background-repeat: repeat-x;
 
   padding: 10px 16px;
   font-size: 200%;
   line-height: 1.33;
   border-radius: 6px;
-  border: 1px solid #2b669a;
+  border: none;
   color: white;
   cursor: pointer;
-
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.15),0 1px 1px rgba(0,0,0,.075);
 }
 
 #apps {
@@ -289,22 +284,17 @@ section>p {
 }
 
 .app button {
-  /* Some styling borrowed from Bootstrap. */
   font-family: inherit;
   float: right;
   background-color: #428bca;
-  background-image: linear-gradient(to bottom,#428bca 0,#2d6ca2 100%);
-  background-repeat: repeat-x;
 
   padding: 10px 16px;
   font-size: 18px;
   line-height: 1.33;
   border-radius: 6px;
-  border: 1px solid #2b669a;
+  border: none;
   color: white;
   cursor: pointer;
-
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.15),0 1px 1px rgba(0,0,0,.075);
 }
 
 .app .app-details {
@@ -325,42 +315,32 @@ section>p {
 }
 
 header button {
-  /* Some styling borrowed from Bootstrap. */
   display: block;
   margin: 0 auto;
 
   font-family: inherit;
   background-color: #428bca;
-  background-image: linear-gradient(to bottom,#428bca 0,#2d6ca2 100%);
-  background-repeat: repeat-x;
 
   padding: 10px 16px;
   font-size: 18px;
   line-height: 1.33;
   border-radius: 6px;
-  border: 1px solid #2b669a;
+  border: none;
   color: white;
   cursor: pointer;
-
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.15),0 1px 1px rgba(0,0,0,.075);
 }
 
 a.link-button {
-  /* Some styling borrowed from Bootstrap. */
   font-family: inherit;
   background-color: #428bca;
-  background-image: linear-gradient(to bottom,#428bca 0,#2d6ca2 100%);
-  background-repeat: repeat-x;
 
   padding: 10px 16px;
   font-size: 18px;
   line-height: 1.33;
   border-radius: 6px;
-  border: 1px solid #2b669a;
+  border: none;
   color: white;
   cursor: pointer;
-
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.15),0 1px 1px rgba(0,0,0,.075);
 }
 
 p.link-button-box {
@@ -399,11 +379,13 @@ p.link-button-box {
   vertical-align: middle;
   width: 120px;
   height: 120px;
-  padding: 25px;
+  margin: 25px;
+  background-color: #ddd;
 }
 
 .nametag p {
   display: inline-block;
   vertical-align: middle;
   text-align: left;
+  width: 270px;
 }

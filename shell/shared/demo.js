@@ -147,8 +147,14 @@ if (Meteor.isClient && allowDemo) {
 Router.map(function () {
   this.route("demo", {
     path: "/demo",
+    waitOn: function () {
+      return Meteor.subscribe("credentials");
+    },
     data: function () {
-      return {allowDemo: allowDemo};
+      return {
+        allowDemo: allowDemo,
+        isSignedUp: isSignedUpOrDemo()
+      };
     }
   });
 });

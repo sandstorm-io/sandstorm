@@ -44,7 +44,7 @@ body {
   background-color: white;
 }
 
-#topbar, #topbar-left, #topbar-right, #topbar-update {
+#topbar, #topbar-right, #topbar-update {
   background-color: black;
   color: #ccc;
   font-weight: bold;
@@ -55,8 +55,7 @@ body {
   position: fixed;
   width: 100%;
   height: 32px;
-  text-align: center;
-  border-bottom: 2px solid #ccc;
+  text-align: left;
 }
 
 #topbar.light {
@@ -77,15 +76,6 @@ body {
   cursor: pointer;
 }
 
-#topbar-left {
-  position: fixed;
-  top: 0px;
-  left: 0px;
-  height: 32px;
-  padding-left: 8px;
-  z-index: 1;
-}
-
 #topbar-right {
   position: fixed;
   top: 0px;
@@ -101,6 +91,27 @@ body {
 }
 #topbar a:hover {
   color: white;
+}
+
+#topbar #homelink {
+  display: inline-block;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+#topbar #homelink:hover {
+  background-color: #666;
+}
+
+#topbar #homelink img {
+  -webkit-filter: brightness(0.75);
+  filter: brightness(0.75);
+}
+#topbar #homelink:hover img {
+  -webkit-filter: none;
+}
+
+#topbar #icon {
+  vertical-align: baseline;
 }
 
 #topbar #renameGrain, #topbar #deleteGrain, #topbar #openDebugLog, #topbar #backupGrain, #topbar #restartGrain {
@@ -155,7 +166,7 @@ img {
   position: fixed;
   left: 0;
   width: 100%;
-  top: 34px;
+  top: 32px;
   bottom: 0px;
   color: black;
   overflow: auto;
@@ -227,43 +238,99 @@ img {
   margin-bottom: 0;
 }
 
-#apps-ico {
-  cursor: pointer;
-  text-decoration: underline;
+#applist-apps {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 200px;
+  min-height: 100%;
+  background-color: #eee;
+  /* TODO(soon): Nice scrolling. Currently scroll bar ends up on the far right which is weird. */
 }
 
-#apps p {
-  padding: 4px 8px;
-  margin: 0;
-}
-#apps .openGrain, #apps .newGrain, #installAppsLink, #uploadAppLink, #restoreGrainLink, #emailInvitesLink, #urlInvitesLink, #aboutLink {
-  cursor: pointer;
-}
-#apps .openGrain:hover, #apps .newGrain:hover, #installAppsLink:hover,
-    #uploadAppLink:hover, #restoreGrainLink:hover, #emailInvitesLink:hover, #urlInvitesLink:hover, #aboutLink:hover {
-  background-color: #333;
-}
-
-#installAppsLink {
-  border-top: 1px solid #ccc;
-}
-
-#apps table {
-  border-collapse: collapse;
-}
-
-#apps table td {
+#applist-apps ul {
   padding: 0;
-  vertical-align: top;
+  margin-left: 32px;
 }
 
-#apps table td h1 {
-  width: 250px;
+#applist-apps li {
+  list-style-type: none;
+  border-bottom: 1px solid #eee;
+  border-right: 2px solid #eee;
+  padding: 0 4px 0 16px;
+  background-color: #eee;
+  cursor: pointer;
+  line-height: 32px;
 }
 
-#apps table td:nth-child(1) {
-  border-right: 1px solid #ccc;
+#applist-apps li:hover {
+  background-color: white;
 }
+
+#applist-apps li.blank {
+  cursor: inherit;
+}
+
+#applist-apps li.blank:hover {
+  background-color: #eee;
+}
+
+#applist-apps li.selected {
+  border-right: none;
+  background-color: white;
+}
+
+#applist-grains {
+  position: absolute;
+  left: 200px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  overflow: auto;
+  padding: 16px 32px;
+}
+
+#applist-grains table {
+  padding: 0;
+  margin: 8px 0 0 0;
+  border-collapse: collapse;
+  width: 600px;
+}
+
+#applist-grains table thead td {
+  font-weight: 600;
+  border-bottom: 1px solid #aaa;
+}
+
+#applist-grains table td:first-child {
+  width: 400px;
+  padding-left: 16px;
+}
+
+#applist-grains table tr {
+  height: 32px;
+  border-bottom: 1px solid #ddd;
+}
+
+#applist-grains table tbody tr:hover {
+  background-color: #f8f8f8;
+  cursor: pointer;
+}
+
+#applist-grains .button-box button {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  background-color: #428bca;
+
+  padding: 8px;
+  line-height: 1.33;
+  border-radius: 4px;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
 
 #intro h1 {
   text-align: center;
@@ -307,10 +374,6 @@ svg {
   width: 100%;
   height: 100%;
   margin: 0;
-}
-
-#apps {
-  left: 0px;
 }
 
 div.popup {
@@ -456,6 +519,23 @@ input.autoSelect {
   font: inherit;
   font-size: inherit;
   box-sizing: border-box;
+}
+
+#invite button {
+  font-family: inherit;
+  font-size: 90%;
+  background-color: #428bca;
+
+  padding: 6px;
+  line-height: 1.33;
+  border-radius: 4px;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
+#invite button:disabled {
+  background-color: #888;
 }
 
 #stats td {

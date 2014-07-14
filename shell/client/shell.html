@@ -39,66 +39,32 @@ limitations under the License.
     Sandstorm has been updated &mdash; Click here to reload
   </div>
   {{else}}
-  <div id="topbar-left">
-    {{> grainList}}
-  </div>
   <div id="topbar-right">
     {{> loginButtons align="right"}}
   </div>
   {{/if}}
 </template>
 
+<template name="homeLink">
+  <a id="homelink" href="javascript:browseHome()"><img id="icon" src="/icon.png"> Sandstorm</a>
+</template>
+
 <template name="loading">
-  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Loading...</div>
+  <div id="topbar">{{> homeLink}}- Loading...</div>
   <div class="main-content">
     <div class="centered-box">Loading...</div>
   </div>
 </template>
 
 <template name="notFound">
-  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Not Found</div>
+  <div id="topbar">{{> homeLink}}- Not Found</div>
   <div class="main-content">
     <div class="centered-box">404 Not Found :(</div>
   </div>
 </template>
 
-<template name="grainList">
-  {{#if currentUser}}<span id="apps-ico">My Files ▾</span>{{/if}}
-  {{#if menuOpen}}
-    <div id="close-apps" class="popup-closer"></div>
-    <div id="apps" class="popup">
-      <table><tr><td>
-      <h1>Open</h1>
-      {{#each grains}}
-      <p class="openGrain" id="openGrain-{{_id}}">{{title}}</p>
-      {{else}}
-      <p><i>You have no files...</i></p>
-      {{/each}}
-      </td><td>
-      <h1>New</h1>
-      {{#each devActions}}
-      <p class="newGrain" id="newGrain-dev-{{_id}}-{{index}}">[dev] {{title}}</p>
-      {{/each}}
-      {{#each actions}}
-      <p class="newGrain" id="newGrain-{{_id}}">{{title}}</p>
-      {{else}}
-      <p><i>You have no apps...</i></p>
-      {{/each}}
-      </td></tr></table>
-      <p id="installAppsLink">Install apps...</p>
-      <p id="uploadAppLink">Upload an app...</p>
-      <p id="restoreGrainLink">Restore a file from backup...</p>
-      {{#if isAdmin}}
-      <p id="emailInvitesLink">Invite users by e-mail...</p>
-      <p id="urlInvitesLink">Invite users by URL...</p>
-      {{/if}}
-      <p id="aboutLink">About Sandstorm...</p>
-    </div>
-  {{/if}}
-</template>
-
 <template name="root">
-  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Home</div>
+  <div id="topbar">{{> homeLink}}- Home</div>
 
   <div id="intro" class="main-content">
     {{#if kernelTooOld}}
@@ -114,49 +80,89 @@ limitations under the License.
       </div>
     {{/if}}
 
-    <div id="logo">
-      <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
-      </svg>
-    </div>
-    <h1>Sandstorm</h1>
-      <p class="build-tag">Build {{build}}</p>
-
-    {{#if isFirstRun}}
-      <p>Sign in to set up your server!</p>
-      <div id="sign-in-arrow"></div>
-    {{else}}
-    {{#if isAdmin}}
-      <p>Welcome to the Sandstorm closed alpha.<br>
-         <a href="https://sandstorm.io/apps/?host={{origin}}">Looking for apps?</a></p>
-      <p>You are an administrator of this server! Invite your friends:<br>
-         <a href="/signup-mint">Generate invite links.</a><br>
-         <a href="/invite">Send e-mail invites.</a><br>
-         <a href="/stats">See server usage stats.</a></p>
-    {{else}}
-    {{#if isDemoUser}}
-      <p>Welcome to the Sandstorm demo.</p>
-      <p><a href="https://sandstorm.io/apps/?host={{origin}}">Try installing some apps.</a></p>
-    {{else}}
     {{#if isSignedUp}}
-      <p>Welcome to the Sandstorm closed alpha.</p>
-      <p><a href="https://sandstorm.io/apps/?host={{origin}}">Looking for apps?</a></p>
+
+      <div id="applist-apps">
+        <ul>
+          <li class="applist-tab {{tabClass appId}}">All files</li>
+          {{#each devApps}}
+            <li class="applist-tab {{tabClass appId}}" data-appid="{{appId}}">[dev] {{name}}</li>
+          {{/each}}
+          {{#each apps}}
+            <li class="applist-tab {{tabClass appId}}" data-appid="{{appId}}">{{name}}</li>
+          {{/each}}
+          <li class="blank">&nbsp;</li>
+          {{#if isAdmin}}
+            <li class="applist-tab-invite">Invite Users</li>
+            <li class="applist-tab-stats">Usage Stats</li>
+          {{/if}}
+          <li class="applist-tab-about">About Sandstorm</li>
+        </ul>
+      </div>
+      <div id="applist-grains">
+        {{#if selectedApp}}
+          <div class="button-box">
+            {{#each actions}}
+              <button class="new-grain-button" data-actionid="{{_id}}">{{title}}</button>
+            {{/each}}
+            {{#each devActions}}
+              <button class="new-grain-button" data-actionid="dev"
+                  data-devid="{{_id}}" data-index="{{index}}">{{title}}</button>
+            {{/each}}
+          </div>
+        {{else}}
+          <div class="button-box">
+            <button id="install-apps-button">Install apps</button>
+            <button id="upload-app-button">Upload an app</button>
+            <button id="restore-backup-button">Restore a backup</button>
+          </div>
+        {{/if}}
+        <table>
+          <thead>
+            <tr>
+              <td>Title</td>
+              <td>Last Used</td>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each filteredGrains}}
+              <tr data-grainid="{{_id}}">
+                <td>{{title}}</td>
+                <td title="{{lastUsed}}">{{dateString lastUsed}}</td>
+              </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+
     {{else}}
-      {{#if allowDemoAccounts}}
-        <p><a href="/demo">Try the demo!</a></p>
+
+      <div id="logo">
+        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
+        </svg>
+        <script type="text/javascript">setTimeout(initLogoAnimation, 0);</script>
+      </div>
+      <h1>Sandstorm</h1>
+        <p class="build-tag">Build {{build}}</p>
+
+      {{#if isFirstRun}}
+        <p>Sign in to set up your server!</p>
+        <div id="sign-in-arrow"></div>
       {{else}}
-        <p>Currently in closed alpha.</p>
-        <p>Want an invite? <a href="https://sandstorm.io">Get on the mailing list.</a></p>
+        {{#if allowDemoAccounts}}
+          <p><a href="/demo">Try the demo!</a></p>
+        {{else}}
+          <p>Currently in closed alpha.</p>
+          <p>Want an invite? <a href="https://sandstorm.io">Get on the mailing list.</a></p>
+        {{/if}}
       {{/if}}
-    {{/if}}
-    {{/if}}
-    {{/if}}
     {{/if}}
   </div>
 </template>
 
 <template name="grain">
   <div id="topbar">
-    <a href="javascript:browseHome()">Sandstorm</a>: {{title}} {{grainSize}}
+    {{> homeLink}}- {{title}} {{grainSize}}
     {{#if isOwner}}
       <button id="renameGrain" title="Rename">Rename</button>
       <button id="deleteGrain" title="Delete">Delete</button>
@@ -181,7 +187,7 @@ limitations under the License.
 
 <template name="grainLog">
   <div id="topbar" class="light">
-    <a href="javascript:browseHome()">Sandstorm</a>: Debug log: {{title}}
+    {{> homeLink}}- Debug log: {{title}}
   </div>
 
   <div id="grainLog" class="main-content">
@@ -190,7 +196,7 @@ limitations under the License.
 </template>
 
 <template name="install">
-  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Install App</div>
+  <div id="topbar">{{> homeLink}}- Install App</div>
 
   {{#if error}}
     <div id="install" class="main-content error">
@@ -250,7 +256,7 @@ limitations under the License.
 </template>
 
 <template name="signup">
-  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Claim Invite</div>
+  <div id="topbar">{{> homeLink}}- Claim Invite</div>
 
   <div id="signup" class="main-content">
   <div class="centered-box">
@@ -278,44 +284,35 @@ limitations under the License.
   </div>
 </template>
 
-<template name="signupMint">
-  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Create Invite</div>
-
-  <div id="signup" class="main-content">
-  <div class="centered-box">
-    {{#if error}}
-      <p>{{error}}</p>
-      <p><button id="retry">Try Again</button></p>
-    {{else}}
-      {{#if url}}
-        <p>New key: <input type="text" class="autoSelect" value="{{url}}" readonly></p>
-        <p>Send this key to someone to allow them to create an account on your server.</p>
-        <p><button id="retry">Create Another</button></p>
-      {{else}}
-        <p>Use this to create a URL which you can give to someone to let them create an account
-          on your server.</p>
-        <p style="text-align: center">
-          <input id="key-note" type="text" placeholder="notes, e.g. name of the recipient">
-          <button id="create">Create</button></p>
-      {{/if}}
-    {{/if}}
-  </div>
-  </div>
-</template>
-
 <template name="invite">
-  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Send Invite</div>
+  <div id="topbar">{{> homeLink}}- Send Invite</div>
 
   <div id="invite" class="main-content">
   <div class="centered-box">
     {{#if error}}
       <p>{{error}}</p>
       <p><button id="retry">Try Again</button></p>
+    {{else}}{{#if url}}
+      <p>New key: <input type="text" class="autoSelect" value="{{url}}" readonly></p>
+      <p>Send this key to someone to allow them to create an account on your server.</p>
+      <p><button id="retry">Create Another</button></p>
     {{else}}{{#if sent}}
       <p>Sent!</p>
       <p><button id="retry">Send more</button></p>
     {{else}}
-      <div style="text-align: right">
+      <p>You can invite friends to create accounts on your server. People you invite will be
+        able to install apps and create files of their own. You do NOT need to invite someone
+        if you just want to share your files with them.</p>
+      <h3>Create a link:</h3>
+      <p>This will create a magic link which you can send to someone.</p>
+      <p style="text-align: center">
+        <input id="key-note" type="text" placeholder="notes, e.g. name of the recipient">
+        <button id="create">Create</button></p>
+
+      <h3>Send an e-mail:</h3>
+      <p>This will create a link and send it in an e-mail. <code>$KEY</code> will be replaced
+        with the newly-generated link.</p>
+      <div style="text-align: right; margin-top: 1em;">
       <p>From: <input type="text" id="invite-from" placeholder="me@example.com" value="{{email}}"></p>
       <p>To:
       <textarea id="invite-emails" placeholder="E-mail addresses, one per line."></textarea></p>
@@ -328,12 +325,13 @@ $KEY</textarea></p>
       </div>
     {{/if}}
     {{/if}}
+    {{/if}}
   </div>
   </div>
 </template>
 
 <template name="uploadForm">
-  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Upload App</div>
+  <div id="topbar">{{> homeLink}}- Upload App</div>
 
   <div id="upload" class="main-content">
     <div class="centered-box">
@@ -362,29 +360,25 @@ $KEY</textarea></p>
 </template>
 
 <template name="restoreGrainStatus">
-  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Restoring Grain</div>
+  <div id="topbar">{{> homeLink}}- Restoring Grain</div>
 
   <div id="restoreGrain" class="main-content">
     <div class="centered-box">
-    {{#if isSignedUp}}
-      {{#if status}}
-        <p>{{status}}... {{progress}}%</p>
-      {{else}}
-        {{#if error}}
-          <p>Restore failed: {{error.status}} {{error.statusText}}</p>
-        {{else}}
-          <p>Restore failed. Please try again.</p>
-        {{/if}}
-      {{/if}}
+    {{#if status}}
+      <p>{{status}}... {{progress}}%</p>
     {{else}}
-      <p>Sorry, Sandstorm is in closed alpha.  To install apps, you must first be invited.</p>
+      {{#if error}}
+        <p>Restore failed: {{error.status}} {{error.statusText}}</p>
+      {{else}}
+        <p>Restore failed. Please try again.</p>
+      {{/if}}
     {{/if}}
     </div>
   </div>
 </template>
 
 <template name="stats">
-  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Usage stats</div>
+  <div id="topbar">{{> homeLink}}- Usage stats</div>
 
   <div id="stats" class="main-content">
     <div class="centered-box">
@@ -428,13 +422,13 @@ $KEY</textarea></p>
 </template>
 
 <template name="demo">
-  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: Demo</div>
+  <div id="topbar">{{> homeLink}}- Demo</div>
 
   <div id="demo" class="main-content">
     <div class="centered-box">
       <h2>Sandstorm Demo</h2>
       {{#if allowDemo}}
-        {{#if currentUser}}
+        {{#if isSignedUp}}
           <p>You are already logged in. You don't need a demo account.</p>
         {{else}}
           {{#if loggingIn}}
@@ -455,7 +449,7 @@ $KEY</textarea></p>
 </template>
 
 <template name="about">
-  <div id="topbar"><a href="javascript:browseHome()">Sandstorm</a>: About</div>
+  <div id="topbar">{{> homeLink}}- About</div>
 
   <div id="about" class="main-content">
     <div class="centered-box">

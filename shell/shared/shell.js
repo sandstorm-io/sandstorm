@@ -64,6 +64,8 @@ if (Meteor.isServer) {
 if (Meteor.isClient) {
   HasUsers = new Meteor.Collection("hasUsers");  // dummy collection defined above
 
+  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
   Template.topBar.helpers({
     isUpdateBlocked: function () { return isUpdateBlocked(); }
   });
@@ -80,79 +82,109 @@ if (Meteor.isClient) {
   });
 
   Deps.autorun(function () {
-    Meteor.subscribe("grainsMenu");
-    Meteor.subscribe("devApps");
     Meteor.subscribe("credentials");
   });
 
-  Template.grainList.events({
-    "click #apps-ico": function (event) {
-      Session.set("grainMenuOpen", true);
-    },
-
-    "click #close-apps": function (event) {
-      Session.set("grainMenuOpen", false);
-    },
-
-    "click .newGrain": function (event) {
-      var packageId;
-      var command;
-
-      var parts = event.currentTarget.id.split("-");
-      if (parts[1] === "dev") {
-        var devId = parts[2];
-        var devApp = DevApps.findOne(devId);
-        if (!devApp) {
-          console.error("no such dev app: ", devId);
-          return;
-        }
-
-        var devAction = devApp.manifest.actions[parts[3]];
-
-        packageId = devApp.packageId;
-        command = devAction.command;
+  Template.root.helpers({
+    filteredGrains: function () {
+      var selectedApp = Session.get("selectedApp");
+      var userId = Meteor.userId();
+      if (selectedApp) {
+        return Grains.find({userId: userId, appId: selectedApp}, {sort: {lastUsed: -1}}).fetch();
       } else {
-        var id = parts[1];
-        var action = UserActions.findOne(id);
-        if (!action) {
-          console.error("no such action: ", id);
-          return;
-        }
+        return Grains.find({userId: userId}, {sort: {lastUsed: -1}}).fetch();
+      }
+    },
 
-        packageId = action.packageId;
-        command = action.command;
+    actions: function () {
+      return UserActions.find({userId: Meteor.userId(), appId: Session.get("selectedApp")});
+    },
+
+    devActions: function () {
+      var userId = Meteor.userId();
+      if (userId) {
+        var result = [];
+        DevApps.find().forEach(function (app) {
+          if (app.manifest.actions) {
+            app.manifest.actions.forEach(function (action, i) {
+              result.push({
+                _id: app._id,
+                index: i,
+                title: action.title.defaultText
+              });
+            });
+          }
+        });
+        return result;
+      } else {
+        return [];
+      }
+    },
+
+    selectedApp: function () {
+      return Session.get("selectedApp");
+    },
+
+    tabClass: function (appId) {
+      if (Session.get("selectedApp") == appId) {
+        return "selected";
+      } else {
+        return "";
+      }
+    },
+
+    dateString: function (date) {
+      if (!date) {
+        return "";
       }
 
-      Session.set("grainMenuOpen", false);
-      var title = window.prompt("Title?");
-      if (!title) return;
+      var result;
 
-      // We need to ask the server to start a new grain, then browse to it.
-      Meteor.call("newGrain", packageId, command, title, function (error, grainId) {
-        if (error) {
-          console.error(error);
-        } else {
-          Router.go("grain", {grainId: grainId});
+      var now = new Date();
+      var diff = now.valueOf() - date.valueOf();
+
+      if (diff < 86400000 && now.getDate() === date.getDate()) {
+        result = date.toLocaleTimeString();
+      } else {
+        result = MONTHS[date.getMonth()] + " " + date.getDate() + " ";
+
+        if (now.getFullYear() !== date.getFullYear()) {
+          result = date.getFullYear() + " " + result;
         }
-      });
+      }
+
+      return result;
+    }
+  });
+
+  Template.root.events({
+    "click .applist-tab": function (event) {
+      Session.set("selectedApp", event.currentTarget.getAttribute("data-appid"));
+    },
+    "click .applist-tab-invite": function (event) {
+      Router.go("invite", {});
+    },
+    "click .applist-tab-stats": function (event) {
+      Router.go("stats", {});
+    },
+    "click .applist-tab-about": function (event) {
+      Router.go("about", {});
     },
 
-    "click .openGrain": function (event) {
-      var grainId = event.currentTarget.id.split("-")[1];
-      Session.set("grainMenuOpen", false);
-      Router.go("grain", {grainId: grainId});
+    "click #applist-grains tbody tr": function (event) {
+      Router.go("grain", {grainId: event.currentTarget.getAttribute("data-grainid")});
     },
 
-    "click #installAppsLink": function (event) {
+    "click #install-apps-button": function (event) {
       document.location = "https://sandstorm.io/apps/?host=" + document.location.origin;
     },
 
-    "click #uploadAppLink": function (event) {
+    "click #upload-app-button": function (event) {
       Session.set("grainMenuOpen", false);
       Router.go("uploadForm", {});
     },
 
-    "click #restoreGrainLink":  function (event) {
+    "click #restore-backup-button":  function (event) {
       var grainId = this.grainId;
 
       var input = document.createElement("input");
@@ -210,63 +242,48 @@ if (Meteor.isClient) {
       input.click();
     },
 
-    "click #emailInvitesLink": function (event) {
-      Session.set("grainMenuOpen", false);
-      Router.go("invite", {});
-    },
+    "click .new-grain-button": function (event) {
+      var packageId;
+      var command;
 
-    "click #urlInvitesLink": function (event) {
-      Session.set("grainMenuOpen", false);
-      Router.go("signupMint", {});
-    },
+      var actionId = event.currentTarget.getAttribute("data-actionid");
+      if (actionId === "dev") {
+        var devId = event.currentTarget.getAttribute("data-devid");
+        var devIndex = event.currentTarget.getAttribute("data-index");
+        var devApp = DevApps.findOne(devId);
+        if (!devApp) {
+          console.error("no such dev app: ", devId);
+          return;
+        }
 
-    "click #aboutLink": function (event) {
-      Session.set("grainMenuOpen", false);
-      Router.go("about", {});
-    }
-  });
+        var devAction = devApp.manifest.actions[devIndex];
 
-  Template.grainList.helpers({
-    grains: function () {
-      var userId = Meteor.userId();
-      if (userId) {
-        return Grains.find({userId: userId}, {sort: {lastUsed: -1}}).fetch();
+        packageId = devApp.packageId;
+        command = devAction.command;
       } else {
-        return [];
+        var action = UserActions.findOne(actionId);
+        if (!action) {
+          console.error("no such action: ", actionId);
+          return;
+        }
+
+        packageId = action.packageId;
+        command = action.command;
       }
+
+      Session.set("grainMenuOpen", false);
+      var title = window.prompt("Title?");
+      if (!title) return;
+
+      // We need to ask the server to start a new grain, then browse to it.
+      Meteor.call("newGrain", packageId, command, title, function (error, grainId) {
+        if (error) {
+          console.error(error);
+        } else {
+          Router.go("grain", {grainId: grainId});
+        }
+      });
     },
-    actions: function () {
-      var userId = Meteor.userId();
-      if (userId) {
-        return UserActions.find({userId: userId}).fetch();
-      } else {
-        return [];
-      }
-    },
-    devActions: function () {
-      var userId = Meteor.userId();
-      if (userId) {
-        var result = [];
-        DevApps.find().forEach(function (app) {
-          if (app.manifest.actions) {
-            app.manifest.actions.forEach(function (action, i) {
-              result.push({
-                _id: app._id,
-                index: i,
-                title: action.title.defaultText
-              });
-            });
-          }
-        });
-        return result;
-      } else {
-        return [];
-      }
-    },
-    menuOpen: function () {
-      return Session.get("grainMenuOpen");
-    },
-    isAdmin: isAdmin
   });
 }
 
@@ -298,14 +315,75 @@ function isKernelTooOld() {
   return Meteor.settings && Meteor.settings.public && Meteor.settings.public.kernelTooOld;
 }
 
+function appNameFromActionName(name) {
+  // Hack: Historically we only had action titles, like "New Etherpad Document", not app
+  //   titles. But for this UI we want app titles. As a transitionary measure, try to
+  //   derive the app title from the action title.
+  // TODO(cleanup): Get rid of this once apps have real titles.
+  if (!name) {
+    return "(unnamed)";
+  }
+  if (name.lastIndexOf("New ", 0) === 0) {
+    name = name.slice(4);
+  }
+  if (name.lastIndexOf("Hacker CMS", 0) === 0) {
+    name = "Hacker CMS";
+  } else {
+    var space = name.indexOf(" ");
+    if (space > 0) {
+      name = name.slice(0, space);
+    }
+  }
+  return name;
+}
+
 Router.map(function () {
   this.route("root", {
     path: "/",
     waitOn: function () {
-      return [ Meteor.subscribe("credentials"), Meteor.subscribe("hasUsers") ];
+      return [
+        Meteor.subscribe("credentials"),
+        Meteor.subscribe("hasUsers"),
+        Meteor.subscribe("grainsMenu"),
+        Meteor.subscribe("devApps")
+      ];
     },
-    onAfterAction: function () { setTimeout(initLogoAnimation, 0); },
     data: function () {
+      var apps;
+      if (isSignedUpOrDemo()) {
+        var userId = Meteor.userId();
+
+        var appMap = {};
+        var appNames = [];
+
+        DevApps.find().forEach(function (app) {
+          var action = app.manifest && app.manifest.actions && app.manifest.actions[0];
+          var name = "[dev] " +
+              appNameFromActionName(action && action.title && action.title.defaultText);
+          appMap[app._id] = {
+            name: name,
+            appId: app._id
+          };
+          appNames.push({name: name, appId: app._id});
+        });
+
+        UserActions.find({userId: userId}).forEach(function (action) {
+          if (!(action.appId in appMap)) {
+            var name = appNameFromActionName(action.title);
+            appMap[action.appId] = {
+              name: name,
+              appId: action.appId
+            };
+            appNames.push({name: name, appId: action.appId});
+          }
+        });
+
+        appNames.sort(function (a, b) { return a.name.localeCompare(b.name); });
+        apps = appNames.map(function (appName) {
+          return appMap[appName.appId];
+        });
+      }
+
       return {
         host: document.location.host,
         origin: document.location.origin,
@@ -316,7 +394,8 @@ Router.map(function () {
         build: getBuildInfo().build,
         kernelTooOld: isKernelTooOld(),
         allowDemoAccounts: Meteor.settings && Meteor.settings.public &&
-            Meteor.settings.public.allowDemoAccounts
+            Meteor.settings.public.allowDemoAccounts,
+        apps: apps
       };
     }
   });
@@ -352,7 +431,6 @@ Router.map(function () {
 
     data: function () {
       return {
-        isSignedUp: isSignedUp(),
         progress: Session.get("uploadProgress"),
         status: Session.get("uploadStatus"),
         error: Session.get("uploadError")

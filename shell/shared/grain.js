@@ -33,7 +33,7 @@ if (Meteor.isServer) {
     //   same app, preventing private apps.
     // - Revealing the owner's user ID might be undesirable for plausible deniability reasons.
     return Grains.find(grainId, {
-      fields: { title: 1 }
+      fields: { title: 1, userId: 1 }
     });
   });
 
@@ -275,7 +275,8 @@ Router.map(function () {
       // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
       return [
         Meteor.subscribe("grainTitle", this.params.grainId),
-        Meteor.subscribe("devApps")
+        Meteor.subscribe("devApps"),
+        Meteor.subscribe("credentials")
       ];
     },
 

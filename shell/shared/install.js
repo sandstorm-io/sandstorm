@@ -361,6 +361,13 @@ Router.map(function () {
           }
         }
 
+        if (!result.hasOlderVersion && !result.hasNewerVersion) {
+          // OK, the app is installed and everything and there's no warnings to print, so let's
+          // just go to it!
+          Session.set("selectedApp", package.appId);
+          Router.go("root", {});
+        }
+
         return result;
       } else {
         // Check whether some other version is installed and whether it's an older or newer version.

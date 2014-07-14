@@ -115,30 +115,6 @@ if (Meteor.isServer) {
 }
 
 if (Meteor.isClient) {
-  Template.signupMint.events({
-    "click #create": function (event) {
-      var note = document.getElementById("key-note").value;
-
-      Meteor.call("createSignupKey", note, function (error, key) {
-        if (error) {
-          Session.set("signupMintMessage", { error: error.toString() });
-        } else {
-          Session.set("signupMintMessage", {
-            url: document.location.origin + Router.routes.signup.path({key: key})
-          });
-        }
-      });
-    },
-
-    "click #retry": function (event) {
-      Session.set("signupMintMessage", undefined);
-    },
-
-    "click .autoSelect": function (event) {
-      event.currentTarget.select();
-    }
-  });
-
   Template.invite.events({
     "click #send": function (event) {
       var from = document.getElementById("invite-from").value;
@@ -146,14 +122,39 @@ if (Meteor.isClient) {
       var subject = document.getElementById("invite-subject").value;
       var message = document.getElementById("invite-message").value;
 
+      var sendButton = event.currentTarget;
+      sendButton.disabled = true;
+      var oldContent = sendButton.textContent;
+      sendButton.textContent = "Sending...";
+
       Meteor.call("sendInvites", document.location.origin, from, list, subject, message,
                   function (error, results) {
+        sendButton.disabled = false;
+        sendButton.textContent = oldContent;
         if (error) {
           Session.set("inviteMessage", { error: error.toString() });
         } else {
           Session.set("inviteMessage", results);
         }
       });
+    },
+
+    "click #create": function (event) {
+      var note = document.getElementById("key-note").value;
+
+      Meteor.call("createSignupKey", note, function (error, key) {
+        if (error) {
+          Session.set("inviteMessage", { error: error.toString() });
+        } else {
+          Session.set("inviteMessage", {
+            url: document.location.origin + Router.routes.signup.path({key: key})
+          });
+        }
+      });
+    },
+
+    "click .autoSelect": function (event) {
+      event.currentTarget.select();
     },
 
     "click #retry": function (event) {
@@ -189,23 +190,6 @@ Router.map(function () {
       }
 
       return result;
-    }
-  });
-
-  this.route("signupMint", {
-    path: "/signup-mint",
-
-    waitOn: function () {
-      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
-      return Meteor.subscribe("credentials");
-    },
-
-    data: function () {
-      if (!isAdmin()) {
-        return {error: "Must be admin to mint invite keys."};
-      }
-
-      return Session.get("signupMintMessage") || {};
     }
   });
 

@@ -75,7 +75,7 @@ Meteor.methods({
     var grainInfo = _.pick(grain, "appId", "appVersion", "title");
     writeFile(Path.join(token.filePath, "metadata"), Capnp.serialize(GrainInfo, grainInfo));
 
-    var proc = ChildProcess.spawn("minibox", [
+    var proc = ChildProcess.spawn(sandstormExe("minibox"), [
         // Mount root directory read-only, but hide /proc, /var, and /etc.
         "-r/=/", "-h/proc", "-h/var", "-h/etc",
         // Map /tmp to the backup tempdir, so that any other temp stuff is hidden.
@@ -122,7 +122,7 @@ Meteor.methods({
     try {
       var fut = new Future();
 
-      var proc = ChildProcess.spawn("minibox", [
+      var proc = ChildProcess.spawn(sandstormExe("minibox"), [
           // Mount root directory read-only, but hide /proc, /var, and /etc.
           "-r/=/", "-h/proc", "-h/var", "-h/etc",
           // Map /tmp to the backup tempdir, so that any other temp stuff is hidden.

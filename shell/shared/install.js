@@ -273,7 +273,9 @@ Router.map(function () {
       // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
       return [
         Meteor.subscribe("packageInfo", this.params.packageId),
-        Meteor.subscribe("credentials")
+        Meteor.subscribe("credentials"),
+        // We need UserActions and Grains populated so we can check if we need to upgrade them.
+        Meteor.subscribe("grainsMenu")
       ];
     },
 

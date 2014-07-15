@@ -20,6 +20,8 @@
 # capabilities nor the Powerbox (which will take some time to implement). Once the Powerbox is
 # available, these hacks should go away. Consider them pre-deprecated.
 
+$import "/capnp/c++.capnp".namespace("sandstorm");
+
 using Grain = import "grain.capnp";
 using Email = import "email.capnp";
 

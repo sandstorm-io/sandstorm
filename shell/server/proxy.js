@@ -510,6 +510,14 @@ function Proxy(grainId, sessionId, preferredPort, isOwner, user) {
   var self = this;
 
   this.server = Http.createServer(function (request, response) {
+    if (!self.server) {
+      // We closed this port already, but the browser made another request on an existing
+      // connection.
+      response.writeHead(404, "Not found", { "Content-Type": "text/plain" });
+      response.end("Proxy closed.");
+      return;
+    }
+
     if (request.url === "/_sandstorm-init?sessionid=" + self.sessionId) {
       self.doSessionInit(request, response);
       return;
@@ -536,6 +544,13 @@ function Proxy(grainId, sessionId, preferredPort, isOwner, user) {
   });
 
   this.server.on("upgrade", function (request, socket, head) {
+    if (!self.server) {
+      // We closed this port already, but the browser made another request on an existing
+      // connection.
+      socket.detsroy();
+      return;
+    }
+
     self.handleWebSocket(request, socket, head, 0).catch(function (err) {
       console.error("WebSocket setup failed:", err.stack);
       // TODO(cleanup):  Manually send back a 500 response?
@@ -654,11 +669,17 @@ Proxy.prototype.resetConnection = function () {
 Proxy.prototype.close = function () {
   if (this.server) {
     this.resetConnection();
-    this.server.close();
+    var server = this.server;
     delete this.server;
 
     this.getPort().then(function (port) {
-      availablePorts.push(port);
+      // close() closes the port, but browsers may still have connections open, and it doesn't close
+      // those connections. We can't reuse the port until we're sure no client still has an old
+      // connection open talking to this proxy. Luckily there's a callback for that. (I wish I
+      // could just abort all connections, though...)
+      server.close(function () {
+        availablePorts.push(port);
+      });
     });
   }
 }

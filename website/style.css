@@ -297,6 +297,11 @@ section>p {
   cursor: pointer;
 }
 
+.app button:disabled {
+  background-color: #888;
+  cursor: inherit;
+}
+
 .app .app-details {
   float: right;
   width: 275px;

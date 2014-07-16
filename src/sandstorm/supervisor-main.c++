@@ -978,6 +978,10 @@ private:
     // Redundant, but this is standard and harmless.
     CHECK_SECCOMP(seccomp_attr_set(ctx, SCMP_FLTATR_CTL_NNP, 1));
 
+    // It's easy to inadvertently issue an x32 syscall (e.g. syscall(-1)).  Such syscalls
+    // should fail, but there's no need to kill the issuer.
+    CHECK_SECCOMP(seccomp_attr_set(ctx, SCMP_FLTATR_ACT_BADARCH, SCMP_ACT_ERRNO(ENOSYS)));
+
     // Disable some things that seem scary.
     if (!devmode) {
       // ptrace is scary but also very useful in dev mode.

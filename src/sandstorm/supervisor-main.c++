@@ -36,6 +36,7 @@
 #include <sys/mount.h>
 #include <sys/prctl.h>
 #include <sys/capability.h>
+#include <sys/ptrace.h>
 #include <sys/syscall.h>
 #include <netinet/in.h>
 #include <net/if.h>
@@ -984,8 +985,23 @@ private:
 
     // Disable some things that seem scary.
     if (!devmode) {
-      // ptrace is scary but also very useful in dev mode.
+      // ptrace is scary
       CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 0));
+    } else {
+      // Try to be somewhat safe with ptrace in dev mode.  Note that the ability to modify
+      // orig_ax using ptrace allows a complete seccomp bypass.
+      CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 1,
+        SCMP_A0(SCMP_CMP_EQ, PTRACE_POKEUSER)));
+      CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 1,
+        SCMP_A0(SCMP_CMP_EQ, PTRACE_POKEUSER)));
+      CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 1,
+        SCMP_A0(SCMP_CMP_EQ, PTRACE_POKEUSER)));
+      CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 1,
+        SCMP_A0(SCMP_CMP_EQ, PTRACE_SETREGS)));
+      CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 1,
+        SCMP_A0(SCMP_CMP_EQ, PTRACE_SETFPREGS)));
+      CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 1,
+        SCMP_A0(SCMP_CMP_EQ, PTRACE_SETREGSET)));
     }
 
     CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(add_key), 0));

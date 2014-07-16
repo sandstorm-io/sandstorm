@@ -40,6 +40,7 @@ limitations under the License.
   </div>
   {{else}}
   <div id="topbar-right">
+    <a id="crowdfunding" href="http://igg.me/at/sandstorm">Sandstorm is Crowdfunding!</a>
     {{> loginButtons align="right"}}
   </div>
   {{/if}}
@@ -50,21 +51,21 @@ limitations under the License.
 </template>
 
 <template name="loading">
-  <div id="topbar">{{> homeLink}}- Loading...</div>
+  <div id="topbar">{{> homeLink}} Loading...</div>
   <div class="main-content">
     <div class="centered-box">Loading...</div>
   </div>
 </template>
 
 <template name="notFound">
-  <div id="topbar">{{> homeLink}}- Not Found</div>
+  <div id="topbar">{{> homeLink}} Not Found</div>
   <div class="main-content">
     <div class="centered-box">404 Not Found :(</div>
   </div>
 </template>
 
 <template name="root">
-  <div id="topbar">{{> homeLink}}- Home</div>
+  <div id="topbar">{{> homeLink}} Home</div>
 
   <div id="intro" class="main-content">
     {{#if kernelTooOld}}
@@ -162,7 +163,7 @@ limitations under the License.
 
 <template name="grain">
   <div id="topbar">
-    {{> homeLink}}- {{title}} {{grainSize}}
+    {{> homeLink}} {{title}} {{grainSize}}
     {{#if isOwner}}
       <button id="renameGrain" title="Rename">Rename</button>
       <button id="deleteGrain" title="Delete">Delete</button>
@@ -187,7 +188,7 @@ limitations under the License.
 
 <template name="grainLog">
   <div id="topbar" class="light">
-    {{> homeLink}}- Debug log: {{title}}
+    {{> homeLink}} Debug log: {{title}}
   </div>
 
   <div id="grainLog" class="main-content">
@@ -196,7 +197,7 @@ limitations under the License.
 </template>
 
 <template name="install">
-  <div id="topbar">{{> homeLink}}- Install App</div>
+  <div id="topbar">{{> homeLink}} Install App</div>
 
   {{#if error}}
     <div id="install" class="main-content error">
@@ -256,7 +257,7 @@ limitations under the License.
 </template>
 
 <template name="signup">
-  <div id="topbar">{{> homeLink}}- Claim Invite</div>
+  <div id="topbar">{{> homeLink}} Claim Invite</div>
 
   <div id="signup" class="main-content">
   <div class="centered-box">
@@ -285,7 +286,7 @@ limitations under the License.
 </template>
 
 <template name="invite">
-  <div id="topbar">{{> homeLink}}- Send Invite</div>
+  <div id="topbar">{{> homeLink}} Send Invite</div>
 
   <div id="invite" class="main-content">
   <div class="centered-box">
@@ -331,7 +332,7 @@ $KEY</textarea></p>
 </template>
 
 <template name="uploadForm">
-  <div id="topbar">{{> homeLink}}- Upload App</div>
+  <div id="topbar">{{> homeLink}} Upload App</div>
 
   <div id="upload" class="main-content">
     <div class="centered-box">
@@ -360,7 +361,7 @@ $KEY</textarea></p>
 </template>
 
 <template name="restoreGrainStatus">
-  <div id="topbar">{{> homeLink}}- Restoring Grain</div>
+  <div id="topbar">{{> homeLink}} Restoring Grain</div>
 
   <div id="restoreGrain" class="main-content">
     <div class="centered-box">
@@ -378,7 +379,7 @@ $KEY</textarea></p>
 </template>
 
 <template name="stats">
-  <div id="topbar">{{> homeLink}}- Usage stats</div>
+  <div id="topbar">{{> homeLink}} Usage stats</div>
 
   <div id="stats" class="main-content">
     <div class="centered-box">
@@ -422,7 +423,7 @@ $KEY</textarea></p>
 </template>
 
 <template name="demo">
-  <div id="topbar">{{> homeLink}}- Demo</div>
+  <div id="topbar">{{> homeLink}} Demo</div>
 
   <div id="demo" class="main-content">
     <div class="centered-box">
@@ -449,7 +450,7 @@ $KEY</textarea></p>
 </template>
 
 <template name="about">
-  <div id="topbar">{{> homeLink}}- About</div>
+  <div id="topbar">{{> homeLink}} About</div>
 
   <div id="about" class="main-content">
     <div class="centered-box">

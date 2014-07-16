@@ -125,6 +125,11 @@ if (Meteor.isClient) {
       return Session.get("selectedApp");
     },
 
+    selectedAppIsDev: function () {
+      var app = Session.get("selectedApp");
+      return app && DevApps.findOne(app) ? true : false;
+    },
+
     tabClass: function (appId) {
       if (Session.get("selectedApp") == appId) {
         return "selected";
@@ -358,11 +363,11 @@ Router.map(function () {
 
         DevApps.find().forEach(function (app) {
           var action = app.manifest && app.manifest.actions && app.manifest.actions[0];
-          var name = "[dev] " +
-              appNameFromActionName(action && action.title && action.title.defaultText);
+          var name = appNameFromActionName(action && action.title && action.title.defaultText);
           appMap[app._id] = {
             name: name,
-            appId: app._id
+            appId: app._id,
+            isDev: true
           };
           appNames.push({name: name, appId: app._id});
         });

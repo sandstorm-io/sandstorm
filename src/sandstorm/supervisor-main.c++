@@ -539,6 +539,8 @@ public:
                    "Don't redirect the sandbox's stdio.  Useful for debugging.")
         .addOption({"dev"}, [this]() { devmode = true; return true; },
                    "Allow some system calls useful for debugging which are blocked in production.")
+        .addOption({"seccomp-dump-pfc"}, [this]() { seccomp_dump_pfc = true; return true; },
+                   "Dump libseccomp PFC output.")
         .addOption({'n', "new"}, [this]() { setIsNew(true); return true; },
                    "Initializes a new grain.  (Otherwise, runs an existing one.)")
         .expectArg("<app-name>", KJ_BIND_METHOD(*this, setAppName))
@@ -640,6 +642,7 @@ private:
   bool mountProc = false;
   bool keepStdio = false;
   bool devmode = false;
+  bool seccomp_dump_pfc = false;
 
   void bind(kj::StringPtr src, kj::StringPtr dst, unsigned long flags = 0) {
     // Contrary to the documentation of MS_BIND claiming this is no longer the case after 2.6.26,
@@ -1027,6 +1030,9 @@ private:
     // TOOD(someday): See if we can get away with turning off mincore, madvise, sysinfo etc.
 
     // TODO(someday): Turn off POSIX message queues and other such esoteric features.
+
+    if (seccomp_dump_pfc)
+      seccomp_export_pfc(ctx, 1);
 
     CHECK_SECCOMP(seccomp_load(ctx));
 

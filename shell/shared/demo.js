@@ -153,7 +153,8 @@ Router.map(function () {
     data: function () {
       return {
         allowDemo: allowDemo,
-        isSignedUp: isSignedUpOrDemo()
+        isSignedUp: isSignedUpOrDemo(),
+        isDemoUser: isDemoUser()
       };
     }
   });

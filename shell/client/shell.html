@@ -86,11 +86,8 @@ limitations under the License.
       <div id="applist-apps">
         <ul>
           <li class="applist-tab {{tabClass appId}}">All files</li>
-          {{#each devApps}}
-            <li class="applist-tab {{tabClass appId}}" data-appid="{{appId}}">[dev] {{name}}</li>
-          {{/each}}
           {{#each apps}}
-            <li class="applist-tab {{tabClass appId}}" data-appid="{{appId}}">{{name}}</li>
+            <li class="applist-tab {{tabClass appId}} {{#if isDev}}dev{{/if}}" data-appid="{{appId}}">{{name}}</li>
           {{/each}}
           <li class="blank">&nbsp;</li>
           {{#if isAdmin}}
@@ -100,15 +97,16 @@ limitations under the License.
           <li class="applist-tab-about">About Sandstorm</li>
         </ul>
       </div>
-      <div id="applist-grains">
+      <div id="applist-grains" class="{{#if selectedAppIsDev}}dev{{/if}}">
         {{#if selectedApp}}
           <div class="button-box">
-            {{#each actions}}
-              <button class="new-grain-button" data-actionid="{{_id}}">{{title}}</button>
-            {{/each}}
             {{#each devActions}}
               <button class="new-grain-button" data-actionid="dev"
                   data-devid="{{_id}}" data-index="{{index}}">{{title}}</button>
+            {{else}}
+            {{#each actions}}
+              <button class="new-grain-button" data-actionid="{{_id}}">{{title}}</button>
+            {{/each}}
             {{/each}}
           </div>
         {{else}}
@@ -430,7 +428,12 @@ $KEY</textarea></p>
       <h2>Sandstorm Demo</h2>
       {{#if allowDemo}}
         {{#if isSignedUp}}
-          <p>You are already logged in. You don't need a demo account.</p>
+          {{#if isDemoUser}}
+            <p>You are currently logged in as a demo user. To get an invite code for a
+              permanent account, <a href="https://sandstorm.io">get on the mailing list</a>.</p>
+          {{else}}
+            <p>You are already logged in. You don't need a demo account.</p>
+          {{/if}}
         {{else}}
           {{#if loggingIn}}
             <p>Logging in...</p>
@@ -439,7 +442,7 @@ $KEY</textarea></p>
             <p><input id="demo-display-name" type="text" placeholder="John Doe">
                <button id="createDemoUser">Create</button></p>
             <p>This account will expire and be deleted after one hour. To get an invite code for a
-              permanent account, <a href="https://sandstorm.io">get on the mailing list.</a></p>
+              permanent account, <a href="https://sandstorm.io">get on the mailing list</a>.</p>
           {{/if}}
         {{/if}}
       {{else}}

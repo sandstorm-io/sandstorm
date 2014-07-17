@@ -295,6 +295,14 @@ img {
   background-color: white;
 }
 
+#applist-apps li.dev {
+  background-color: #ddd;
+}
+
+#applist-apps li.dev.selected, #applist-apps li.dev:hover {
+  background-color: white;
+}
+
 #applist-grains {
   position: absolute;
   left: 200px;
@@ -303,6 +311,20 @@ img {
   bottom: 0;
   overflow: auto;
   padding: 16px 32px;
+}
+
+#applist-grains.dev {
+  background-image: url(/devmode.png);
+}
+
+#applist-grains #devmode-note {
+  position: fixed;
+  color: black;
+  margin-top: 600px;
+  font-size: 200px;
+  font-weight: 600;
+  z-index: -1;
+  -webkit-transform: rotate(-45deg);
 }
 
 #applist-grains table {

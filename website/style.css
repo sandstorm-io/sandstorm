@@ -40,10 +40,23 @@ svg {
 header {
   background-color: #f3ebe0;
   line-height: 1;
-  padding: 32px 0;
+  padding: 32px 0 0;
   margin: 0;
   margin-bottom: 64px;
-  border-bottom: 2px solid #a49f97;
+/*  border-bottom: 2px solid #a49f97; */
+}
+
+header #crowdfunding {
+  display: block;
+  background-color: #eb1478;
+  text-align: center;
+  margin-top: 32px;
+  padding: 16px;
+  font-size: 24pt;
+  color: white;
+}
+header #crowdfunding:hover {
+  text-decoration: underline;
 }
 
 header h1 {
@@ -221,20 +234,44 @@ section>p {
   padding: 8px;
   max-width: 430px;
   margin: 32px auto;
+  display: inline-block;
+  vertical-align: middle;
+  text-align: left;
+}
+
+#crowdfunding2 {
+  padding: 8px;
+  width: 430px;
+  margin: 32px auto;
+  display: inline-block;
+  height: 253px;
+  vertical-align: middle;
+}
+
+#crowdfunding2 a {
+  display: block;
+  width: 100%;
+  height: 210px;
+  margin: 16px 0 16px;
+  background-color: #eb1478;
+  border-radius: 6px;
+  color: white;
+  font-size: 65px;
+  padding: 15px;
 }
 
 #signup-form.glowing-border {
   box-shadow: 0 0 10px #cf974a;
 }
 
-#signup-form h3 {
+#signup-form h3, #crowdfunding2 h3 {
   margin: 8px 16px 8px;
   text-align: center;
   font-size: 2.5em;
   line-height: 1;
 }
 
-#signup-form p {
+#signup-form p, #crowdfunding2 p {
   margin-top: 8px;
   margin-bottom: 8px;
   font-size: 1em;

@@ -7,6 +7,7 @@
 // Changes by Kenton:
 // - Export appropriately under Meteor.
 // - Handle code 39, which resets the color.
+// - Automatically escape HTML in ansi_to_html, because duh.
 // Modifications may be used under MIT license.
 
 var ansi_up,
@@ -69,7 +70,7 @@ Ansi_Up.prototype.ansi_to_html = function (txt, options) {
     return self.process_chunk(chunk, options);
   });
 
-  data5.unshift(first);
+  data5.unshift(this.escape_for_html(first));
 
   var flattened_data = data5.reduce( function (a, b) {
     if (Array.isArray(b))
@@ -95,9 +96,9 @@ Ansi_Up.prototype.process_chunk = function (text, options) {
   //match,codes,txt = text.match(/([\d;]+)m(.*)/m);
   var matches = text.match(/([\d;]*)m([^]*)/m);
 
-  if (!matches) return text;
+  if (!matches) return this.escape_for_html(text);
 
-  var orig_txt = matches[2];
+  var orig_txt = this.escape_for_html(matches[2]);
   var nums = matches[1].split(';');
 
   var self = this;

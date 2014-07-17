@@ -1004,6 +1004,10 @@ private:
         SCMP_A0(SCMP_CMP_EQ, PTRACE_SETREGSET)));
     }
 
+    // Restrict the set of allowable network protocol families
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
+       SCMP_A0(SCMP_CMP_GE, AF_NETLINK + 1)));
+
     CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(add_key), 0));
     CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(request_key), 0));
     CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(keyctl), 0));

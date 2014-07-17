@@ -290,6 +290,16 @@ if (Meteor.isClient) {
       });
     },
   });
+
+  Template.homeLink.events({
+    "click #homelink": function (event) {
+      event.preventDefault();
+      Router.go("root", {});
+    }
+  });
+  Template.homeLink.helpers({
+    origin: function() { return document.location.origin; }
+  });
 }
 
 Router.configure({

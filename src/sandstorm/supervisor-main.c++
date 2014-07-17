@@ -1007,6 +1007,30 @@ private:
     // Restrict the set of allowable network protocol families
     CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
        SCMP_A0(SCMP_CMP_GE, AF_NETLINK + 1)));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
+       SCMP_A0(SCMP_CMP_EQ, AF_AX25)));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
+       SCMP_A0(SCMP_CMP_EQ, AF_IPX)));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
+       SCMP_A0(SCMP_CMP_EQ, AF_APPLETALK)));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
+       SCMP_A0(SCMP_CMP_EQ, AF_NETROM)));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
+       SCMP_A0(SCMP_CMP_EQ, AF_BRIDGE)));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
+       SCMP_A0(SCMP_CMP_EQ, AF_ATMPVC)));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
+       SCMP_A0(SCMP_CMP_EQ, AF_X25)));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
+       SCMP_A0(SCMP_CMP_EQ, AF_ROSE)));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
+       SCMP_A0(SCMP_CMP_EQ, AF_DECnet)));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
+       SCMP_A0(SCMP_CMP_EQ, AF_NETBEUI)));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
+       SCMP_A0(SCMP_CMP_EQ, AF_SECURITY)));
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
+       SCMP_A0(SCMP_CMP_EQ, AF_KEY)));
 
     CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(add_key), 0));
     CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(request_key), 0));

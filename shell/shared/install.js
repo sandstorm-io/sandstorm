@@ -404,7 +404,7 @@ Router.map(function () {
         isDemoUser: isDemoUser(),
         progress: Session.get("uploadProgress"),
         error: Session.get("uploadError"),
-        origin: document.location.origin
+        origin: getOrigin()
       };
     }
   });

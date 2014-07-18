@@ -21,6 +21,10 @@ browseHome = function() {
   Router.go("root");
 }
 
+getOrigin = function() {
+  return document.location.protocol + "//" + document.location.host;
+} 
+
 if (Meteor.isServer) {
   Meteor.publish("grainsMenu", function () {
     if (this.userId) {
@@ -181,7 +185,7 @@ if (Meteor.isClient) {
     },
 
     "click #install-apps-button": function (event) {
-      document.location = "https://sandstorm.io/apps/?host=" + document.location.origin;
+      document.location = "https://sandstorm.io/apps/?host=" + getOrigin();
     },
 
     "click #upload-app-button": function (event) {
@@ -298,7 +302,7 @@ if (Meteor.isClient) {
     }
   });
   Template.homeLink.helpers({
-    origin: function() { return document.location.origin; }
+    origin: getOrigin
   });
 }
 
@@ -401,7 +405,7 @@ Router.map(function () {
 
       return {
         host: document.location.host,
-        origin: document.location.origin,
+        origin: getOrigin(),
         isSignedUp: isSignedUpOrDemo(),
         isAdmin: isAdmin(),
         isDemoUser: isDemoUser(),

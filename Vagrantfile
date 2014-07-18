@@ -9,7 +9,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "trusty64"
 
   # The url from which to fetch that base box.
-  config.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/20140607.1/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+  config.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
 
   # We forward port 6080, the Sandstorm admin port, so that developers can
   # visit their sandstorm app from their browser as localhost.localdomain:6080.

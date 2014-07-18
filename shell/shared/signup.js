@@ -127,7 +127,7 @@ if (Meteor.isClient) {
       var oldContent = sendButton.textContent;
       sendButton.textContent = "Sending...";
 
-      Meteor.call("sendInvites", document.location.origin, from, list, subject, message,
+      Meteor.call("sendInvites", getOrigin(), from, list, subject, message,
                   function (error, results) {
         sendButton.disabled = false;
         sendButton.textContent = oldContent;
@@ -147,7 +147,7 @@ if (Meteor.isClient) {
           Session.set("inviteMessage", { error: error.toString() });
         } else {
           Session.set("inviteMessage", {
-            url: document.location.origin + Router.routes.signup.path({key: key})
+            url: getOrigin() + Router.routes.signup.path({key: key})
           });
         }
       });
@@ -162,6 +162,10 @@ if (Meteor.isClient) {
     },
   });
 }
+
+function getOrigin() {
+  return document.location.protocol + "//" + document.location.host;
+} 
 
 Router.map(function () {
   this.route("signup", {
@@ -181,7 +185,7 @@ Router.map(function () {
       var result = {
         keyIsValid: !!keyInfo,
         keyIsUsed: keyInfo && keyInfo.used,
-        origin: document.location.origin,
+        origin: getOrigin(),
         alreadySignedUp: isSignedUp()
       };
 

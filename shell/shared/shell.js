@@ -181,7 +181,7 @@ if (Meteor.isClient) {
     },
 
     "click #install-apps-button": function (event) {
-      document.location = "https://sandstorm.io/apps/?host=" + document.location.origin;
+      document.location = "https://sandstorm.io/apps/?host=" + getOrigin();
     },
 
     "click #upload-app-button": function (event) {
@@ -298,7 +298,7 @@ if (Meteor.isClient) {
     }
   });
   Template.homeLink.helpers({
-    origin: function() { return document.location.origin; }
+    origin: getOrigin
   });
 }
 
@@ -311,6 +311,10 @@ Router.configure({
 if (Meteor.isClient) {
   Router.onBeforeAction("loading");
 }
+
+function getOrigin() {
+  return document.location.protocol + "//" + document.location.host;
+} 
 
 function getBuildInfo() {
   var build = Meteor.settings && Meteor.settings.public && Meteor.settings.public.build;
@@ -401,7 +405,7 @@ Router.map(function () {
 
       return {
         host: document.location.host,
-        origin: document.location.origin,
+        origin: getOrigin(),
         isSignedUp: isSignedUpOrDemo(),
         isAdmin: isAdmin(),
         isDemoUser: isDemoUser(),

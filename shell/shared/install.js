@@ -265,6 +265,10 @@ if (Meteor.isClient) {
   });
 }
 
+function getOrigin() {
+  return document.location.protocol + "//" + document.location.host;
+} 
+
 Router.map(function () {
   this.route("install", {
     path: "/install/:packageId",
@@ -404,7 +408,7 @@ Router.map(function () {
         isDemoUser: isDemoUser(),
         progress: Session.get("uploadProgress"),
         error: Session.get("uploadError"),
-        origin: document.location.origin
+        origin: getOrigin()
       };
     }
   });

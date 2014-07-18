@@ -265,10 +265,6 @@ if (Meteor.isClient) {
   });
 }
 
-function getOrigin() {
-  return document.location.protocol + "//" + document.location.host;
-} 
-
 Router.map(function () {
   this.route("install", {
     path: "/install/:packageId",

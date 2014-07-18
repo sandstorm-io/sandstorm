@@ -21,6 +21,10 @@ browseHome = function() {
   Router.go("root");
 }
 
+getOrigin = function() {
+  return document.location.protocol + "//" + document.location.host;
+} 
+
 if (Meteor.isServer) {
   Meteor.publish("grainsMenu", function () {
     if (this.userId) {
@@ -311,10 +315,6 @@ Router.configure({
 if (Meteor.isClient) {
   Router.onBeforeAction("loading");
 }
-
-function getOrigin() {
-  return document.location.protocol + "//" + document.location.host;
-} 
 
 function getBuildInfo() {
   var build = Meteor.settings && Meteor.settings.public && Meteor.settings.public.build;

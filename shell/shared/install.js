@@ -365,9 +365,10 @@ Router.map(function () {
 
         if (!result.hasOlderVersion && !result.hasNewerVersion) {
           // OK, the app is installed and everything and there's no warnings to print, so let's
-          // just go to it!
+          // just go to it! We use `replaceState` so that if the user clicks "back" they don't just
+          // get redirected forward again, but end up back at the app list.
           Session.set("selectedApp", package.appId);
-          Router.go("root", {});
+          Router.go("root", {}, {replaceState: true});
         }
 
         return result;

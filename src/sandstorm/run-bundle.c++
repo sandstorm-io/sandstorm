@@ -1069,7 +1069,7 @@ public:
                "no argument.";
       }
 
-      if (updateFile.startsWith("/")) {
+      if (!updateFileIsChannel) {
         unpackUpdate(raiiOpen(updateFile, O_RDONLY));
       } else if (!checkForUpdates(updateFile, "manual")) {
         context.exit();
@@ -1198,6 +1198,7 @@ private:
   bool unsharedUidNamespace = false;
   bool kernelNewEnough = isKernelNewEnough();
   bool runningAsRoot = getuid() == 0;
+  bool updateFileIsChannel = false;
 
   kj::String getInstallDir() {
     char exeNameBuf[PATH_MAX + 1];
@@ -1229,6 +1230,15 @@ private:
 
   kj::Maybe<kj::AutoCloseFd> openPidfile() {
     KJ_REQUIRE(changedDir);
+    if (access("../var/pid", R_OK) < 0) {
+      if (access("../var/pid", F_OK) < 0) {
+        return nullptr;
+      } else {
+        KJ_FAIL_REQUIRE(
+            "You do not have permission to read the pidfile directory. Perhaps your "
+            "user account is not a member of the server's group?");
+      }
+    }
     kj::StringPtr pidfileName = "../var/pid/sandstorm.pid";
     if (access(pidfileName.cStr(), F_OK) < 0) {
       return nullptr;
@@ -2493,11 +2503,18 @@ private:
       }
     }
 
-    if (!isFile || access(arg.cStr(), F_OK) == 0) {
-      updateFile = kj::heapString(arg);
+    updateFileIsChannel = !isFile;
+
+    if (isFile && access(arg.cStr(), F_OK) < 0) {
+      return "file not found";
+    } else if (isFile && !arg.startsWith("/")) {
+      char absoluteNameBuf[PATH_MAX + 1];
+      KJ_SYSCALL(realpath(arg.cStr(), absoluteNameBuf));
+      updateFile = kj::heapString(absoluteNameBuf);
       return true;
     } else {
-      return "file not found";
+      updateFile = kj::heapString(arg);
+      return true;
     }
   }
 

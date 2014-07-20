@@ -22,13 +22,18 @@
         var target;
         if (document.getElementById("location-alpha").checked) {
           target = "https://alpha.sandstorm.io";
+        } else if (document.getElementById("location-demo").checked) {
+          target = "https://demo.sandstorm.io";
         } else if (document.getElementById("location-localhost").checked) {
-          target = "http://localhost:3000";
+          target = "http://localhost:6080";
         } else if (document.getElementById("location-other").checked) {
           target = document.getElementById("other-addr").value;
           if (!target) {
             window.alert("You must enter a URL when selecting \"other\".");
             return;
+          }
+          if (target.slice(-1) == "/") {
+            target = target.slice(0, -1);
           }
         } else {
           window.alert("Please indicate where your Sandstorm instance is located " +
@@ -50,7 +55,8 @@
       <form id="target-form"><b>Where is your Sandstorm instance?</b><br>
         Before installing you must tell us where to install:<br>
         <input type="radio" required name="location" id="location-alpha"> Sandstorm Alpha (https://alpha.sandstorm.io)<br>
-        <input type="radio" required name="location" id="location-localhost"> Local instance (http://localhost:3000)<br>
+        <input type="radio" required name="location" id="location-demo"> Sandstorm Demo (https://demo.sandstorm.io)<br>
+        <input type="radio" required name="location" id="location-localhost"> Local instance (http://localhost:6080)<br>
         <input type="radio" required name="location" id="location-other"> Other
             <input type="text" placeholder="http://example.com" id="other-addr">
         <input type="submit" id="fake-submit" style="display:none">
@@ -63,7 +69,9 @@
             var origin = query.slice(6);
             if (origin == "https://alpha.sandstorm.io") {
               document.getElementById("location-alpha").checked = true;
-            } else if (origin == "http://localhost:3000") {
+            } else if (origin == "https://demo.sandstorm.io") {
+              document.getElementById("location-demo").checked = true;
+            } else if (origin == "http://localhost:6080") {
               document.getElementById("location-localhost").checked = true;
             } else if (origin.lastIndexOf("https:", 0) === 0 ||
                        origin.lastIndexOf("http:", 0) === 0) {
@@ -105,7 +113,7 @@
       </div>
 
       <div class="app">
-        <button onclick="install('851f6e25c527b3c713c8424573b0214a?url=http://sandstorm.io/apps/ssjekyll6.spk')">Install »</button>
+        <button onclick="install('ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk')">Install »</button>
         <h3>Hacker CMS</h3>
         <div class="app-details">
           Developed by: <a href="https://github.com/kentonv/">Kenton Varda</a><br>

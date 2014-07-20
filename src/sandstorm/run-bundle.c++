@@ -2493,10 +2493,6 @@ private:
       }
     }
 
-    if (isFile && !arg.startsWith("/")) {
-      return "Please use an absolute path. (Sorry, service(8) changes directories on us.)";
-    }
-
     if (!isFile || access(arg.cStr(), F_OK) == 0) {
       updateFile = kj::heapString(arg);
       return true;

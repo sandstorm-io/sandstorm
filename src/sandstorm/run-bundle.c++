@@ -1183,6 +1183,7 @@ private:
     UserIds uids;
     kj::String bindIp = kj::str("127.0.0.1");
     kj::String rootUrl = nullptr;
+    kj::String wildcardParentUrl = nullptr;
     kj::String mailUrl = nullptr;
     kj::String updateChannel = nullptr;
     bool allowDemoAccounts = false;
@@ -1472,6 +1473,8 @@ private:
         config.bindIp = kj::mv(value);
       } else if (key == "BASE_URL") {
         config.rootUrl = kj::mv(value);
+      } else if (key == "WILDCARD_PARENT_URL") {
+        config.wildcardParentUrl = kj::mv(value);
       } else if (key == "MAIL_URL") {
         config.mailUrl = kj::mv(value);
       } else if (key == "UPDATE_CHANNEL") {
@@ -1843,6 +1846,9 @@ private:
         }
       } else {
         KJ_SYSCALL(setenv("ROOT_URL", config.rootUrl.cStr(), true));
+      }
+      if (config.wildcardParentUrl != nullptr) {
+        KJ_SYSCALL(setenv("WILDCARD_PARENT_URL", config.wildcardParentUrl.cStr(), true));
       }
 
       kj::String buildstamp;

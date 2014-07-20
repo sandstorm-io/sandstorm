@@ -35,7 +35,8 @@ var dnsCache = {};
 
 Meteor.startup(function () {
   WebApp.rawConnectHandlers.use(function (req, res, next) {
-    var host = req.headers.host;
+    var hostPort = req.headers.host;
+    var host = hostPort;
     var colonPos = host.indexOf(":");
     if (colonPos >= 0) {
       host = host.slice(0, colonPos);
@@ -46,8 +47,24 @@ Meteor.startup(function () {
       return next();
     }
 
-    // This is not Sandstorm's hostname! Perhaps it is a custom host.
-    lookupPublicIdFromDns(host).then(function (publicId) {
+    // This is not our main host. See if it's a subdomain of our wildcard host.
+    var publicIdPromise;
+    if (process.env.WILDCARD_PARENT_URL) {
+      var wildcardUrl = Url.parse(process.env.WILDCARD_PARENT_URL);
+      var suffix = "." + wildcardUrl.host;
+
+      if (hostPort.indexOf(suffix, -suffix.length) !== -1) {
+        // Match!
+        publicIdPromise = Promise.resolve(hostPort.slice(0, -suffix.length));
+      }
+    }
+
+    if (!publicIdPromise) {
+      // Not a subdomain of our baseHost. Perhaps it is a custom host.
+      publicIdPromise = lookupPublicIdFromDns(host);
+    }
+
+    publicIdPromise.then(function (publicId) {
       var handler = staticHandlers[publicId];
       if (handler) {
         return handler;

@@ -31,9 +31,17 @@ interface HackSessionContext @0xe14c1f5321159b8f
   # HackSessionContext. This is the case both when opening HackEmailSessions (below) and regular
   # WebSessions.
 
-  getPublicId @0 () -> (publicId :Text, hostname :Text);
+  getPublicId @0 () -> (publicId :Text, hostname :Text, autoUrl :Text, isDemoUser :Bool);
   # Get the grain's public ID, assigning one if it isn't already assigned. The public ID is used
   # as the e-mail address and for serving static content.
+  #
+  # If `autoUrl` is non-null, it is an automatically-assigned URL at which the grain's public
+  # web content is already visible.
+  #
+  # If `isDemoUser` is true, the user is a temporary demo account. In this case the app probably
+  # should *not* suggest setting up DNS because the grain will disappear soon anyway. (Also our
+  # main demo server doesn't support web publishing to arbitrary domains due to sharing an IP
+  # address with the alpha server.)
   #
   # Warning: Allocating a public ID means that the /var/www and /var/mail directories become
   #   special. Do not create these directories unless you intend for them to serve their respective

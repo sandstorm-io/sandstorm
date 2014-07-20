@@ -123,7 +123,10 @@ prompt() {
     return
   fi
 
-  read -u 3 -p "$1 [$2] " VALUE
+  echo -en '\e[0;34m' >&3
+  echo -n "$1 [$2]" >&3
+  echo -en '\e[0m ' >&3
+  read -u 3 VALUE
   if [ -z "$VALUE" ]; then
     VALUE=$2
   fi
@@ -333,6 +336,21 @@ else
   fi
   BASE_URL=$(prompt "URL users will enter in browser:" "http://$SS_HOSTNAME:$PORT")
 
+  if [[ "$BASE_URL" =~ ^http://localhost(|:[0-9]*)(/.*)?$ ]]; then
+    DEFAULT_WILDCARD=http://local.sandstorm.io${BASH_REMATCH[1]}
+  else
+    DEFAULT_WILDCARD=$BASE_URL
+  fi
+
+  echo "Sandstorm requires you to set up a wildcard DNS entry pointing at the server."
+  echo "This allows Sandstorm to allocate new hosts on-the-fly for sandboxing purposes."
+  echo "Please enter the URL of the parent host of your wildcard. For example, if you"
+  echo "have mapped *.foo.example.com to your server, enter \"http://foo.example.com\""
+  echo "(or use https if you have set up SSL). For localhost servers, we have mapped"
+  echo "*.local.sandstorm.io to 127.0.0.1 for your convenience, so you can use"
+  echo "\"http://local.sandstorm.io\" here."
+  WILDCARD_PARENT_URL=$(prompt "DNS wildcard parent URL:" "$DEFAULT_WILDCARD")
+
   echo "If you want to be able to send e-mail invites and password reset messages, "
   echo "enter a mail server URL of the form 'smtp://user:pass@host:port'.  Leave "
   echo "blank if you don't care about these features."
@@ -344,7 +362,7 @@ else
     UPDATE_CHANNEL=none
   fi
 
-  writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL MAIL_URL UPDATE_CHANNEL > sandstorm.conf
+  writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL WILDCARD_PARENT_URL MAIL_URL UPDATE_CHANNEL > sandstorm.conf
 
   echo
   echo "Config written to $PWD/sandstorm.conf."

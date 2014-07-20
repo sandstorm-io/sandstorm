@@ -187,6 +187,19 @@ makeHackSessionContext = function (grainId) {
   return new Capnp.Capability(new HackSessionContextImpl(grainId), HackSessionContext);
 }
 
+var HOSTNAME_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
+
+function generatePublicId() {
+  // Generate a random unique public ID containing only lower-case letters (so it can be used in
+  // a hostname).
+
+  var digits = [];
+  for (var i = 0; i < 20; i++) {
+    digits[i] = Random.choice(HOSTNAME_CHARS);
+  }
+  return digits.join("");
+}
+
 HackSessionContextImpl.prototype._getPublicId = function () {
   // Get the grain's public ID, assigning a new one if it doesn't yet have one.
   //
@@ -203,7 +216,14 @@ HackSessionContextImpl.prototype._getPublicId = function () {
       this.publicId = grain.publicId;
     } else {
       // The grain doesn't have a public ID yet. Generate one.
-      var candidate = Random.id();
+      var candidate = generatePublicId();
+
+      if (Grains.findOne({publicId: candidate})) {
+        // This should never ever happen.
+        console.error("CRITICAL PROBLEM: Public ID collision. " +
+                      "CSPRNG is bad or has insufficient entropy.");
+        continue;
+      }
 
       // Carefully perform an update that becomes a no-op if anyone else has assigned a public ID
       // simultaneously.
@@ -295,7 +315,6 @@ HackSessionContextImpl.prototype.send = function (email) {
       envelope: envelope
     });
 
-
     var headers = {};
     if (email.messageId) {
       mc.addHeader('message-id', email.messageId);
@@ -344,7 +363,20 @@ HackSessionContextImpl.prototype.send = function (email) {
 
 HackSessionContextImpl.prototype.getPublicId = function() {
   return inMeteor((function () {
-    return [ this._getPublicId(), HOSTNAME ];
+    var result = {};
+
+    result.publicId = this._getPublicId();
+    result.hostname = HOSTNAME;
+
+    if (process.env.WILDCARD_PARENT_URL) {
+      var wildcardUrl = Url.parse(process.env.WILDCARD_PARENT_URL);
+      result.autoUrl = wildcardUrl.protocol + "//" + result.publicId + "." + wildcardUrl.host;
+    }
+
+    var grain = Grains.findOne(this.grainId, {fields: {userId: 1}});
+    result.isDemoUser = Meteor.users.findOne(grain.userId).expires ? true : false;
+
+    return result;
   }).bind(this));
 };
 

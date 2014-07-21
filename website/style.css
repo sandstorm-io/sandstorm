@@ -348,6 +348,21 @@ section>p {
   font-size: 90%;
 }
 
+@media screen and (max-width: 600px) {
+  .app .app-details {
+    float: none;
+    border-left: none;
+    border-bottom: 1px solid #888;
+    padding: 0 0 8px;
+    margin: 0;
+    width: 100%;
+  }
+
+  .app img {
+    width: 100%;
+  }
+}
+
 .app:after {
   content: ".";
   display: block;

@@ -58,6 +58,8 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
     }
 
+    this.unblock();
+
     var fut = new Future();
 
     var id = Random.id();
@@ -87,7 +89,7 @@ Meteor.methods({
         "-r/tmp/data=" + Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox"),
         "-r/tmp/log=" + Path.join(SANDSTORM_GRAINDIR, grainId, "log"),
         // Run zip!
-        "--", "zip", "-r", "backup.zip", "."]);
+        "--", "zip", "-r", "backup.zip", "."], {stdio: "ignore"});
     proc.on("exit", function (code) {
       fut.return(code);
     });
@@ -113,6 +115,8 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized", "Token was not found");
     }
 
+    this.unblock();
+
     var grainId = Random.id(22);
     var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId);
     var grainSandboxDir = Path.join(grainDir, "sandbox");
@@ -131,7 +135,7 @@ Meteor.methods({
           // Map /tmp/data to the grain's sandbox directory so data is unpacked directly to the
           // place we want.
           "-w/tmp/data=" + grainSandboxDir,
-          "--", "unzip", "-o", "backup.zip"]);
+          "--", "unzip", "-o", "backup.zip"], {stdio: "ignore"});
       proc.on("exit", function (code) {
         fut.return(code);
       });

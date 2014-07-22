@@ -32,4 +32,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.provision "shell",
     inline: "cd /vagrant && echo localhost > /etc/hostname && hostname localhost && sudo ./install.sh -d -e"
 
+  # Make the vagrant user part of the sandstorm group so that commands like
+  # `spk dev` work
+  config.vm.provision "shell", inline: "usermod -a -G 'sandstorm' 'vagrant'"
+
 end

@@ -429,8 +429,9 @@ $KEY</textarea></p>
       {{#if allowDemo}}
         {{#if isSignedUp}}
           {{#if isDemoUser}}
-            <p>You are currently logged in as a demo user. To get an invite code for a
-              permanent account, <a href="https://sandstorm.io">get on the mailing list</a>.</p>
+            <p>You are currently logged in as a one-hour demo user. Want a permanent account?
+              <a href="http://igg.me/at/sandstorm">Fund our campaign</a>... or
+              <a href="https://github.com/sandstorm-io/sandstorm">run your own</a>!</p>
           {{else}}
             <p>You are already logged in. You don't need a demo account.</p>
           {{/if}}
@@ -438,11 +439,11 @@ $KEY</textarea></p>
           {{#if loggingIn}}
             <p>Logging in...</p>
           {{else}}
-            <p>Want to try Sandstorm on this server? Just enter a name to create a demo account:</p>
-            <p><input id="demo-display-name" type="text" placeholder="John Doe">
-               <button id="createDemoUser">Create</button></p>
-            <p>This account will expire and be deleted after one hour. To get an invite code for a
-              permanent account, <a href="https://sandstorm.io">get on the mailing list</a>.</p>
+            <p><input id="demo-display-name" type="text" placeholder="Harry Q. Bovik" value="Harry Q. Bovik">
+               <button id="createDemoUser">Start the demo »</button></p>
+            <p>Your demo account will be deleted after one hour. Want a permanent account?
+              <a href="http://igg.me/at/sandstorm">Fund our campaign</a>... or
+              <a href="https://github.com/sandstorm-io/sandstorm">run your own</a>!</p>
           {{/if}}
         {{/if}}
       {{else}}

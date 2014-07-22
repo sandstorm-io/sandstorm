@@ -616,3 +616,27 @@ input.autoSelect {
   max-width: 600px;
   margin: 1em auto;
 }
+
+#demo h2 {
+  text-align: center;
+}
+
+#demo input {
+  width: 100%;
+  font-size: 60px;
+  text-align: center;
+}
+#demo button {
+  font-family: inherit;
+  background-color: #428bca;
+
+  padding: 10px 16px;
+  font-size: 60px;
+  line-height: 1.33;
+  border-radius: 6px;
+  border: none;
+  color: white;
+  cursor: pointer;
+  width: 100%;
+  text-align: center;
+}

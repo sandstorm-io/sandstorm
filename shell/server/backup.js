@@ -89,7 +89,7 @@ Meteor.methods({
         "-r/tmp/data=" + Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox"),
         "-r/tmp/log=" + Path.join(SANDSTORM_GRAINDIR, grainId, "log"),
         // Run zip!
-        "--", "zip", "-r", "backup.zip", "."], {stdio: "ignore"});
+        "--", "zip", "-y", "-r", "backup.zip", "."], {stdio: "ignore"});
     proc.on("exit", function (code) {
       fut.return(code);
     });

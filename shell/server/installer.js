@@ -38,11 +38,6 @@ recursiveRmdir = function (dir) {
   Fs.rmdirSync(dir);
 };
 
-var inMeteor = Meteor.bindEnvironment(function (self, callback) { callback.call(self); });
-// Function which runs some callback in a Meteor environment unattached to any particular incoming
-// request.  The app installation process happens in the background, completing asynchornously, but
-// we need to be in a Meteor scope to update Mongo, so that's what this does.
-
 startInstall = function (packageId, url, appId) {
   // appId is optional and passed only if it is already known (e.g. verified during a previous
   // installation attempt).
@@ -134,14 +129,18 @@ AppInstaller.prototype.updateProgress = function (status, progress, error, manif
   this.error = error;
   this.manifest = manifest || null;
 
-  inMeteor(this, function () {
-    Packages.update(this.packageId, {$set: {
-      status: this.status,
-      progress: this.progress,
-      error: this.error ? this.error.message : null,
-      manifest: this.manifest,
-      appId: this.appId
+  var self = this;
+
+  inMeteor(function () {
+    Packages.update(self.packageId, {$set: {
+      status: self.status,
+      progress: self.progress,
+      error: self.error ? self.error.message : null,
+      manifest: self.manifest,
+      appId: self.appId
     }});
+  }).catch (function (err) {
+    console.error(err.stack);
   });
 }
 

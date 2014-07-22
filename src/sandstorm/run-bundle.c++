@@ -1232,7 +1232,7 @@ private:
     KJ_REQUIRE(changedDir);
     if (access("../var/pid", R_OK) < 0) {
       if (access("../var/pid", F_OK) < 0) {
-        return nullptr;
+        KJ_FAIL_REQUIRE("$SANDSTORM_HOME/var/pid doesn't exist?");
       } else {
         KJ_FAIL_REQUIRE(
             "You do not have permission to read the pidfile directory. Perhaps your "

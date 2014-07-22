@@ -107,22 +107,21 @@ if (Meteor.isClient) {
     devActions: function () {
       var userId = Meteor.userId();
       if (userId) {
-        var result = [];
-        DevApps.find().forEach(function (app) {
-          if (app.manifest.actions) {
-            app.manifest.actions.forEach(function (action, i) {
-              result.push({
+        var appId = Session.get("selectedApp");
+        if (appId) {
+          var app = DevApps.findOne(appId);
+          if (app && app.manifest.actions) {
+            return app.manifest.actions.map(function (action, i) {
+              return {
                 _id: app._id,
                 index: i,
                 title: action.title.defaultText
-              });
+              };
             });
-          }
-        });
-        return result;
-      } else {
-        return [];
+          };
+        }
       }
+      return [];
     },
 
     selectedApp: function () {

@@ -20,3 +20,4 @@ shell-bundle
 sandstorm-*.tar.xz
 bundle/
 .shell-env
+.vagrant/

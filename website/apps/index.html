@@ -49,11 +49,12 @@
     <div id="apps">
       <h1>Sandstorm Apps</h1>
 
-      <p>This page is for people who already have a Sandstorm instance set up.
-        Use the buttons below to install apps.
+      <form id="target-form">
+        <p>This page is for people who already have a Sandstorm instance set up.
+          Use the buttons below to install apps.
 
-      <form id="target-form"><b>Where is your Sandstorm instance?</b><br>
-        Before installing you must tell us where to install:<br>
+        <p><b>Where is your Sandstorm instance?</b><br>
+          Before installing you must tell us where to install:<br>
         <input type="radio" required name="location" id="location-alpha"> Sandstorm Alpha (https://alpha.sandstorm.io)<br>
         <input type="radio" required name="location" id="location-demo"> Sandstorm Demo (https://demo.sandstorm.io)<br>
         <input type="radio" required name="location" id="location-localhost"> Local instance (http://localhost:6080)<br>
@@ -67,6 +68,7 @@
           var query = document.location.search;
           if (query.lastIndexOf("?host=", 0) === 0) {
             var origin = query.slice(6);
+            var hideFrame = true;
             if (origin == "https://alpha.sandstorm.io") {
               document.getElementById("location-alpha").checked = true;
             } else if (origin == "https://demo.sandstorm.io") {
@@ -77,6 +79,12 @@
                        origin.lastIndexOf("http:", 0) === 0) {
               document.getElementById("location-other").checked = true;
               document.getElementById("other-addr").value = origin;
+            } else {
+              hideFrame = false;
+            }
+
+            if (hideFrame) {
+              document.getElementById("target-form").style.display = "none";
             }
           }
         })();

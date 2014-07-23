@@ -126,6 +126,14 @@ kj::ArrayPtr<const char> extractHostFromUrl(kj::StringPtr url) {
   }
 }
 
+kj::ArrayPtr<const char> extractProtocolFromUrl(kj::StringPtr url) {
+  KJ_IF_MAYBE(colonPos, url.findFirst(':')) {
+    return url.slice(0, *colonPos);
+  } else {
+    KJ_FAIL_REQUIRE("Base URL does not have a protocol scheme.", url);
+  }
+}
+
 kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
   int fd;
   KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
@@ -970,6 +978,7 @@ private:
     }
     lines.add(kj::str("X-Sandstorm-Base-Path: ", basePath));
     lines.add(kj::str("X-Sandstorm-Permissions: ", permissions));
+    lines.add(kj::str("X-Forwarded-Proto: ", extractProtocolFromUrl(basePath)));
 
     auto cookies = context.getCookies();
     if (cookies.size() > 0) {

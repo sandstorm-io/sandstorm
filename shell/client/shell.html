@@ -429,23 +429,33 @@ $KEY</textarea></p>
       {{#if allowDemo}}
         {{#if isSignedUp}}
           {{#if isDemoUser}}
-            <p>You are currently logged in as a one-hour demo user. Want a permanent account?
-              <a href="http://igg.me/at/sandstorm">Fund our campaign</a>... or
-              <a href="https://github.com/sandstorm-io/sandstorm">run your own</a>!</p>
+            <p>You are currently logged in as a one-hour demo user.</p>
+            <p><button onclick="browseHome()">Continue the demo</button></p>
           {{else}}
-            <p>You are already logged in. You don't need a demo account.</p>
+            <p>You are already logged in as a real user.</p>
           {{/if}}
         {{else}}
           {{#if loggingIn}}
             <p>Logging in...</p>
           {{else}}
-            <p><input id="demo-display-name" type="text" placeholder="Harry Q. Bovik" value="Harry Q. Bovik">
+            <p><input id="demo-display-name" type="hidden" value="">
                <button id="createDemoUser">Start the demo »</button></p>
-            <p>Your demo account will be deleted after one hour. Want a permanent account?
-              <a href="http://igg.me/at/sandstorm">Fund our campaign</a>... or
-              <a href="https://github.com/sandstorm-io/sandstorm">run your own</a>!</p>
           {{/if}}
         {{/if}}
+
+        <h3>What is this?</h3>
+        <p>Sandstorm is an open source hosting platform for personal instances of web apps. Users
+          can upload and install arbitrary software. In addition to better privacy,
+          <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html">
+          this is the only way to make Open Source web apps viable.</a></p>
+        <p>Notes:</p>
+        <ul>
+          <li>Demo accounts last one hour.</li>
+          <li>Demo accounts can only install apps from Sandstorm.io, but this
+            is an artificial limitation. Real users can upload whatever code they want.</li>
+          <li>We only have one machine. It may get slow or crashy under excessive load.</li>
+          <li><a href="http://igg.me/at/sandstorm">Read more and fund us on Indiegogo.</a></li>
+        </ul>
       {{else}}
         <p>Sorry, this server does not allow demo accounts.</p>
       {{/if}}
@@ -465,6 +475,10 @@ $KEY</textarea></p>
       <p><b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain
         modifications not reviewed by the developers.</p>
       {{/if}}
+      <p><a href="https://sandstorm.io">Sandstorm.io</a> is an open source hosting platform for personal instances of web apps. Users
+        can upload and install arbitrary software. In addition to better privacy,
+        <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html">
+        this is the only way to make Open Source web apps viable.</a></p>
       <h3>Core Contributors</h3>
       <ul>
         <li><a href="https://github.com/kentonv">Kenton Varda</a></li>

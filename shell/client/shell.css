@@ -234,15 +234,13 @@ img {
 
 .centered-box {
   margin: 16px auto;
-  padding: 16px;
-  border-radius: 8px;
   width: 600px;
-  background-color: #eee;
   font-size: 125%;
 }
 
 .centered-box h2 {
   margin-top: 0;
+  font-size: 60px;
 }
 
 .centered-box p:nth-child(1) {
@@ -386,6 +384,7 @@ svg {
   height: 300px;
   margin: 64px auto 16px;
   z-index: -1;
+  padding-left: 94px;
 }
 
 .static-logo {
@@ -465,12 +464,24 @@ div.popup h2 {
 
 #install {}
 
+#install button {
+  font-family: inherit;
+  background-color: #428bca;
+  font-size: 150%;
+  font-weight: 600;
+
+  padding: 10px 16px;
+  line-height: 1.33;
+  border-radius: 6px;
+  border: none;
+  color: white;
+  cursor: pointer;
+  text-align: center;
+}
+
 #install ol {
   margin: 16px auto;
-  padding: 16px;
-  border-radius: 8px;
-  width: 750px;
-  background-color: #eee;
+  width: 600px;
 
   text-align: center;
   list-style-type: none;

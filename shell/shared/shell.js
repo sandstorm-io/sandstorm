@@ -368,6 +368,8 @@ Router.map(function () {
     },
     data: function () {
       var apps;
+      var allowDemoAccounts = Meteor.settings && Meteor.settings.public &&
+            Meteor.settings.public.allowDemoAccounts;
       if (isSignedUpOrDemo()) {
         var userId = Meteor.userId();
 
@@ -400,6 +402,8 @@ Router.map(function () {
         apps = appNames.map(function (appName) {
           return appMap[appName.appId];
         });
+      } else if (allowDemoAccounts) {
+        Meteor.setTimeout(function () { Router.go("demo", {}, {replaceState: true}); }, 0);
       }
 
       return {
@@ -411,8 +415,7 @@ Router.map(function () {
         isFirstRun: !HasUsers.findOne("hasUsers"),
         build: getBuildInfo().build,
         kernelTooOld: isKernelTooOld(),
-        allowDemoAccounts: Meteor.settings && Meteor.settings.public &&
-            Meteor.settings.public.allowDemoAccounts,
+        allowDemoAccounts: allowDemoAccounts,
         apps: apps
       };
     }

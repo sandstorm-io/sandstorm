@@ -22,8 +22,8 @@ using Grain = import "grain.capnp";
 using Util = import "util.capnp";
 
 struct EmailAddress {
-  # Email addresses are (usually) of the form "example@example.org <Full Name>".
-  # This struct seperates the first and second part into distinct fields
+  # Email addresses are (usually) of the form "Full Name <example@example.org>".
+  # This struct separates the display name and address into distinct fields.
   address @0 :Text;
   name @1 :Text;
 }

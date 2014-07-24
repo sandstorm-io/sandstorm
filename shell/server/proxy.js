@@ -896,6 +896,9 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
         throw new Error("Unknown status code: ", content.statusCode);
       }
 
+      if (content.mimeType) {
+        response.setHeader("Content-Type", content.mimeType);
+      }
       if (content.encoding) {
         response.setHeader("Content-Encoding", content.encoding);
       }
@@ -913,7 +916,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
             content.disposition.download.replace(/([\\"\n])/g, "\\$1") + "\"");
       }
 
-      response.writeHead(code.id, code.title, { "Content-Type": content.mimeType });
+      response.writeHead(code.id, code.title);
 
       if ("bytes" in content.body) {
         response.end(content.body.bytes);

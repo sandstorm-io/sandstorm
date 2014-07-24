@@ -457,7 +457,7 @@ public:
                     // We need to unquote/unescape the file name.
                     auto filename = trim(part.slice(i + 1, part.size()));
 
-                    if (filename.size() >= 2 && filename[0] != '\"' &&
+                    if (filename.size() >= 2 && filename[0] == '\"' &&
                         filename[filename.size() - 1] == '\"') {
                       // OK, it is in fact surrounded in quotes.  Unescape the contents.  The
                       // escaping scheme defined in RFC 822 is very simple:  a backslash followed
@@ -477,6 +477,9 @@ public:
 
                       content.getDisposition().setDownload(
                           kj::StringPtr(unescaped.begin(), unescaped.size() - 1));
+                    } else {
+                      // Buggy app failed to quote filename, but we'll try to deal.
+                      content.getDisposition().setDownload(kj::str(filename));
                     }
                   }
                   break;  // Only split at first '='.

@@ -11,7 +11,11 @@
 
 ## Introduction
 
-See:  [sandstorm.io](https://sandstorm.io)
+See [sandstorm.io](https://sandstorm.io)
+
+[Try the demo](https://demo.sandstorm.io)
+
+[Fund us on Indiegogo](http://igg.me/at/sandstorm)
 
 ## Caveats
 

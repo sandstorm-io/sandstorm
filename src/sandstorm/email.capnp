@@ -51,7 +51,7 @@ struct EmailMessage {
 
   subject @9 :Text;
 
-  # Seperate body into text and html fields.
+  # Separate body into text and html fields.
   # Any other content-types will be in the attachments field.
   text @10 :Text;
   html @11 :Text;

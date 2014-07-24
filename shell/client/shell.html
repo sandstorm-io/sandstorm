@@ -161,9 +161,8 @@ limitations under the License.
 
 <template name="grain">
   <div id="topbar">
-    {{> homeLink}} {{title}} {{grainSize}}
+    {{> homeLink}}<span id="grainTitle" title="rename">{{title}}</span> {{grainSize}}
     {{#if isOwner}}
-      <button id="renameGrain" title="Rename">Rename</button>
       <button id="deleteGrain" title="Delete">Delete</button>
       <button id="openDebugLog" title="Show Debug Log">Log</button>
       <button id="backupGrain" title="Download Backup">Backup</button>
@@ -445,14 +444,15 @@ $KEY</textarea></p>
 
         <h3>What is this?</h3>
         <p>Sandstorm is an open source hosting platform for personal instances of web apps. Users
-          can upload and install arbitrary software. In addition to better privacy,
+          can upload and install arbitrary software. In addition to improving privacy and control,
           <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html">
           this is the only way to make Open Source web apps viable.</a></p>
         <p>Notes:</p>
         <ul>
           <li>Demo accounts last one hour.</li>
           <li>Demo accounts can only install apps from Sandstorm.io, but this
-            is an artificial limitation. Real users can upload whatever code they want.</li>
+            is an artificial limitation. Real users can upload whatever code they want, as
+            each app server runs in a secure sandbox.</li>
           <li>We only have one machine. It may get slow or crashy under excessive load.</li>
           <li>We know the UI design needs work. This is a tech demo. ;)</li>
           <li><a href="http://igg.me/at/sandstorm">Read more and fund us on Indiegogo.</a></li>

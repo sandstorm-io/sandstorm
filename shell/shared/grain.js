@@ -101,8 +101,8 @@ Meteor.methods({
 
 if (Meteor.isClient) {
   Template.grain.events({
-    "click #renameGrain": function (event) {
-      var title = window.prompt("Set new title:");
+    "click #grainTitle": function (event) {
+      var title = window.prompt("Set new title:", this.title);
       if (title) {
         Grains.update(this.grainId, {$set: {title: title}});
       }

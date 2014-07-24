@@ -188,7 +188,6 @@ if (Meteor.isClient) {
     },
 
     "click #upload-app-button": function (event) {
-      Session.set("grainMenuOpen", false);
       Router.go("uploadForm", {});
     },
 
@@ -201,8 +200,6 @@ if (Meteor.isClient) {
       Session.set("uploadStatus", "Uploading");
 
       input.addEventListener("change", function (e) {
-        Session.set("grainMenuOpen", false);
-
         // TODO: make sure only 1 file is uploaded
         var file = e.currentTarget.files[0];
 
@@ -253,6 +250,7 @@ if (Meteor.isClient) {
     "click .new-grain-button": function (event) {
       var packageId;
       var command;
+      var actionTitle;
 
       var actionId = event.currentTarget.getAttribute("data-actionid");
       if (actionId === "dev") {
@@ -268,6 +266,7 @@ if (Meteor.isClient) {
 
         packageId = devApp.packageId;
         command = devAction.command;
+        actionTitle = devAction.title;
       } else {
         var action = UserActions.findOne(actionId);
         if (!action) {
@@ -277,11 +276,14 @@ if (Meteor.isClient) {
 
         packageId = action.packageId;
         command = action.command;
+        actionTitle = action.title;
       }
 
-      Session.set("grainMenuOpen", false);
-      var title = window.prompt("Title?");
-      if (!title) return;
+      var title = actionTitle;
+      if (title.lastIndexOf("New ", 0) === 0) {
+        title = actionTitle.slice(4);
+      }
+      title = "Untitled " + title;
 
       // We need to ask the server to start a new grain, then browse to it.
       Meteor.call("newGrain", packageId, command, title, function (error, grainId) {

@@ -182,6 +182,35 @@ Meteor.methods({
 });
 
 if (Meteor.isClient) {
+  function addUserActions(packageId) {
+    var package = Packages.findOne(packageId);
+    if (package) {
+      // Remove old versions.
+      UserActions.find({userId: Meteor.userId(), appId: package.appId})
+          .forEach(function (action) {
+        UserActions.remove(action._id);
+      });
+
+      // Install new.
+      var actions = package.manifest.actions;
+      for (i in actions) {
+        var action = actions[i];
+        if ("none" in action.input) {
+          UserActions.insert({
+            userId: Meteor.userId(),
+            packageId: package._id,
+            appId: package.appId,
+            appVersion: package.manifest.appVersion,
+            title: action.title.defaultText,
+            command: action.command
+          });
+        } else {
+          // TODO(someday):  Implement actions with capability inputs.
+        }
+      }
+    }
+  }
+
   Template.install.events({
     "click #retry": function (event) {
       Meteor.call("retryInstall", this.packageId, this.packageUrl);
@@ -192,32 +221,7 @@ if (Meteor.isClient) {
     },
 
     "click #confirmInstall": function (event) {
-      var package = Packages.findOne(this.packageId);
-      if (package) {
-        // Remove old versions.
-        UserActions.find({userId: Meteor.userId(), appId: package.appId})
-            .forEach(function (action) {
-          UserActions.remove(action._id);
-        });
-
-        // Install new.
-        var actions = package.manifest.actions;
-        for (i in actions) {
-          var action = actions[i];
-          if ("none" in action.input) {
-            UserActions.insert({
-              userId: Meteor.userId(),
-              packageId: package._id,
-              appId: package.appId,
-              appVersion: package.manifest.appVersion,
-              title: action.title.defaultText,
-              command: action.command
-            });
-          } else {
-            // TODO(someday):  Implement actions with capability inputs.
-          }
-        }
-      }
+      addUserActions(this.packageId);
     },
 
     "click #upgradeGrains": function (event) {
@@ -384,6 +388,15 @@ Router.map(function () {
           } else {
             result.hasNewerVersion = true;
           }
+        }
+
+        if (!result.hasOlderVersion && !result.hasNewerVersion &&
+            document.referrer.lastIndexOf("https://sandstorm.io/apps/", 0) === 0) {
+          // Skip confirmation because we assume the Sandstorm app list is not evil.
+          // TODO(security): This is not excellent. Think harder.
+          addUserActions(result.packageId);
+          Session.set("selectedApp", package.appId);
+          Router.go("root", {}, {replaceState: true});
         }
 
         return result;

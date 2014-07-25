@@ -266,7 +266,7 @@ if (Meteor.isClient) {
 
         packageId = devApp.packageId;
         command = devAction.command;
-        actionTitle = devAction.title;
+        actionTitle = devAction.title.defaultText;
       } else {
         var action = UserActions.findOne(actionId);
         if (!action) {

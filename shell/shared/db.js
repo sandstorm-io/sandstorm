@@ -90,7 +90,7 @@ Sessions = new Meteor.Collection("sessions");
 // Each contains:
 //   _id:  random
 //   grainId:  _id of the grain to which this session is connected.
-//   port:  TCP port number on which this session is being exported.
+//   subdomain: Subdomain of WILDCARD_PARENT_URL from which this session is being served.
 //   timestamp:  Time of last keep-alive message to this session.  Sessions time out after some
 //       period.
 //   userId:  User who owns this session.

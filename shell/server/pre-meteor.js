@@ -14,7 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This file implements static web publishing.
+// This file implements logic that we place in front of our main Meteor application,
+// including routing of requests to proxies and handling of static web publishing.
 
 var Url = Npm.require("url");
 var Fs = Npm.require("fs");
@@ -35,38 +36,63 @@ var dnsCache = {};
 // DNS_CACHE_TTL (a relatively small value) and rely on the upstream DNS server to implement
 // better caching.
 
-Meteor.startup(function () {
-  WebApp.rawConnectHandlers.use(function (req, res, next) {
-    var hostPort = req.headers.host;
-    var host = hostPort;
-    var colonPos = host.indexOf(":");
-    if (colonPos >= 0) {
-      host = host.slice(0, colonPos);
-    }
+function isSandstormShell(hostname) {
+  // Is this hostname mapped to the Sandstorm shell?
 
-    // Is this hostname mapped to Sandstorm itself?
-    // Note: WebSockets don't actually hit this function, so it's unclear that the DDP_HOSTNAME
-    //   check even matters. (Maybe it matters for fallbacks used if WebSocket is unavailable?)
-    if (host === HOSTNAME || (DDP_HOSTNAME && host === DDP_HOSTNAME)) {
+  return (hostname === HOSTNAME || (DDP_HOSTNAME && hostname === DDP_HOSTNAME));
+}
+
+function getHostname(host) {
+  // Slice away the port number, if present.
+
+  var colonPos = host.indexOf(":");
+  if (colonPos >= 0) {
+    return host.slice(0, colonPos);
+  } else {
+    return host;
+  }
+}
+
+var wildcardUrl = Url.parse(Meteor.settings.public.wildcardParentUrl);
+
+Meteor.startup(function () {
+
+  var meteorUpgradeListener = WebApp.httpServer.listeners('upgrade')[0];
+  WebApp.httpServer.removeAllListeners('upgrade');
+
+  // We've removed Meteor's upgrade handler. Now let's install our own.
+
+  WebApp.httpServer.on('upgrade', function(req, socket, head) {
+    if (isSandstormShell(getHostname(req.headers.host))) {
+      // Go on to Meteor.
+      return meteorUpgradeListener(req, socket, head);
+    }
+    tryProxyUpgrade(req, socket, head);
+  });
+
+  WebApp.rawConnectHandlers.use(function (req, res, next) {
+    var hostname = getHostname(req.headers.host);
+    if (isSandstormShell(hostname)) {
       // Go on to Meteor.
       return next();
     }
 
     // This is not our main host. See if it's a subdomain of our wildcard host.
     var publicIdPromise;
-    if (process.env.WILDCARD_PARENT_URL) {
-      var wildcardUrl = Url.parse(process.env.WILDCARD_PARENT_URL);
-      var suffix = "." + wildcardUrl.host;
+    var suffix = "." + wildcardUrl.host;
 
-      if (hostPort.indexOf(suffix, -suffix.length) !== -1) {
-        // Match!
-        publicIdPromise = Promise.resolve(hostPort.slice(0, -suffix.length));
+    if (req.headers.host.indexOf(suffix, -suffix.length) !== -1) {
+      // Match!
+
+      // First, try to route the request to a session.
+      if (tryProxyRequest(req, res)) {
+        return;
       }
-    }
 
-    if (!publicIdPromise) {
+       publicIdPromise = Promise.resolve(req.headers.host.slice(0, -suffix.length));
+    } else {
       // Not a subdomain of our baseHost. Perhaps it is a custom host.
-      publicIdPromise = lookupPublicIdFromDns(host);
+      publicIdPromise = lookupPublicIdFromDns(hostname);
     }
 
     publicIdPromise.then(function (publicId) {
@@ -103,9 +129,13 @@ Meteor.startup(function () {
       res.end(err.message);
     });
   });
+
+
+
+
 });
 
-function lookupPublicIdFromDns(host) {
+function lookupPublicIdFromDns(hostname) {
   // Given a hostname, determine its public ID.
   // We look for a TXT record indicating the public ID. Unfortunately, according to spec, a single
   // hostname cannot have both a CNAME and a TXT record, because a TXT lookup on a CNAME'd host
@@ -119,21 +149,21 @@ function lookupPublicIdFromDns(host) {
   // first, but has a number of problems, the biggest being that it breaks the ability to place a
   // CDN like CloudFlare in front of the site.
 
-  var cache = dnsCache[host];
+  var cache = dnsCache[hostname];
   if (cache && Date.now() < cache.expiration) {
     return Promise.resolve(cache.value);
   }
 
   return new Promise(function (resolve, reject) {
-    Dns.resolveTxt("sandstorm-www." + host, function (err, records) {
+    Dns.resolveTxt("sandstorm-www." + hostname, function (err, records) {
       if (err) {
         reject(new Error("Error looking up DNS TXT records for host '" +
-                         host + "': " + err.message));
+                         hostname + "': " + err.message));
       } else if (records.length !== 1) {
-        reject(new Error("Host 'sandstorm-www." + host + "' must have exactly one TXT record."));
+        reject(new Error("Host 'sandstorm-www." + hostname + "' must have exactly one TXT record."));
       } else {
         var result = records[0];
-        dnsCache[host] = { value: result, expiration: Date.now() + DNS_CACHE_TTL };
+        dnsCache[hostname] = { value: result, expiration: Date.now() + DNS_CACHE_TTL };
         resolve(result);
       }
     });

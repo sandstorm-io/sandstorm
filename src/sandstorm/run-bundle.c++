@@ -1184,6 +1184,7 @@ private:
     kj::String bindIp = kj::str("127.0.0.1");
     kj::String rootUrl = nullptr;
     kj::String wildcardParentUrl = nullptr;
+    kj::String ddpUrl = nullptr;
     kj::String mailUrl = nullptr;
     kj::String updateChannel = nullptr;
     bool allowDemoAccounts = false;
@@ -1485,6 +1486,8 @@ private:
         config.rootUrl = kj::mv(value);
       } else if (key == "WILDCARD_PARENT_URL") {
         config.wildcardParentUrl = kj::mv(value);
+      } else if (key == "DDP_DEFAULT_CONNECTION_URL") {
+        config.ddpUrl = kj::mv(value);
       } else if (key == "MAIL_URL") {
         config.mailUrl = kj::mv(value);
       } else if (key == "UPDATE_CHANNEL") {
@@ -1859,6 +1862,9 @@ private:
       }
       if (config.wildcardParentUrl != nullptr) {
         KJ_SYSCALL(setenv("WILDCARD_PARENT_URL", config.wildcardParentUrl.cStr(), true));
+      }
+      if (config.ddpUrl != nullptr) {
+        KJ_SYSCALL(setenv("DDP_DEFAULT_CONNECTION_URL", config.ddpUrl.cStr(), true));
       }
 
       kj::String buildstamp;

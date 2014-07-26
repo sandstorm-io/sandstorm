@@ -20,6 +20,8 @@ var Url = Npm.require("url");
 var Fs = Npm.require("fs");
 var Dns = Npm.require("dns");
 var HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
+var DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
+    Url.parse(process.env.DDP_DEFAULT_CONNECTION_URL).hostname;
 var CACHE_TTL = 30 * 1000;  // 30 seconds
 var DNS_CACHE_TTL = CACHE_TTL;
 
@@ -42,7 +44,10 @@ Meteor.startup(function () {
       host = host.slice(0, colonPos);
     }
 
-    if (host === HOSTNAME) {
+    // Is this hostname mapped to Sandstorm itself?
+    // Note: WebSockets don't actually hit this function, so it's unclear that the DDP_HOSTNAME
+    //   check even matters. (Maybe it matters for fallbacks used if WebSocket is unavailable?)
+    if (host === HOSTNAME || (DDP_HOSTNAME && host === DDP_HOSTNAME)) {
       // Go on to Meteor.
       return next();
     }

@@ -489,11 +489,15 @@ void registerSignalHandlers() {
     KJ_SYSCALL(sigaction(signo, &action, nullptr));
   }
 
-  // Set up the SIGALRM timer.  Note that this is not inherited over fork.
+  // Set up the SIGALRM timer to check every 1.5 minutes whether we're idle. If we haven't received
+  // a keep-alive request in a 1.5-minute period, we kill ourselves. The client normally sends
+  // keep-alives every minute. Note that it's not the end of the world if we miss one; the server
+  // will transparently start back up on the next request from the client.
+  // Note that this is not inherited over fork.
   struct itimerval timer;
   memset(&timer, 0, sizeof(timer));
-  timer.it_interval.tv_sec = 300;
-  timer.it_value.tv_sec = 300;
+  timer.it_interval.tv_sec = 90;
+  timer.it_value.tv_sec = 90;
   KJ_SYSCALL(setitimer(ITIMER_REAL, &timer, nullptr));
 }
 

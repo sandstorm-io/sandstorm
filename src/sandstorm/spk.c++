@@ -1227,10 +1227,25 @@ private:
     // Raw data comprising this node. Mutually exclusive with all other members.
   };
 
+  bool isHttpBridgeCommand(spk::Manifest::Command::Reader command) {
+    // Hacky heuristic to decide if the package uses sandstorm-http-bridge.
+    auto argv = command.getArgv();
+    if (argv.size() == 0) return false;
+
+    auto exe = argv[0];
+
+    return exe == "/sandstorm-http-bridge" ||
+           exe == "./sandstorm-http-bridge" ||
+           exe == "sandstorm-http-bridge";
+  }
+
   void addNode(ArchiveNode& root, kj::StringPtr path, const spk::SourceMap::Reader& sourceMap,
                bool recursive) {
     if (path.startsWith("/")) {
       context.exitError(kj::str("Destination (in-package) path must not start with '/': ", path));
+    }
+    if (path == ".") {
+      path = "";
     }
 
     auto& node = root.followPath(path);
@@ -1249,50 +1264,60 @@ private:
     } else if (path == "sandstorm-http-bridge") {
       node.setTarget(getHttpBridgeExe());
     } else {
-      auto targets = mapFile(sourceDir, sourceMap, path);
-      if (targets.size() == 0) {
+      if (path.size() == 0 && recursive) {
+        addNode(root, "sandstorm-manifest", sourceMap, true);
+        if (packageDef.hasBridgeConfig() ||
+            isHttpBridgeCommand(packageDef.getManifest().getContinueCommand())) {
+          addNode(root, "sandstorm-http-bridge-config", sourceMap, true);
+          addNode(root, "sandstorm-http-bridge", sourceMap, true);
+        }
+      }
+
+      auto mapping = mapFile(sourceDir, sourceMap, path);
+      if (mapping.sourcePaths.size() == 0 && mapping.virtualChildren.size() == 0) {
         context.exitError(kj::str("No file found to satisfy requirement: ", path));
       } else {
-        initNode(node, path, kj::mv(targets), sourceMap, recursive);
+        initNode(node, path, kj::mv(mapping), sourceMap, recursive);
       }
     }
   }
 
-  void initNode(ArchiveNode& node, kj::StringPtr srcPath, kj::Array<kj::String>&& targets,
+  void initNode(ArchiveNode& node, kj::StringPtr srcPath, FileMapping&& mapping,
                 const spk::SourceMap::Reader& sourceMap, bool recursive) {
-    if (targets.size() == 0) {
+    if (mapping.sourcePaths.size() == 0 && mapping.virtualChildren.size() == 0) {
       // Nothing here.
       return;
     }
 
-    if (recursive && isDirectory(targets[0])) {
+    if (recursive && (mapping.sourcePaths.size() == 0 || isDirectory(mapping.sourcePaths[0]))) {
       // Primary match is a directory, so merge all of the matching directories.
       std::set<kj::String> seen;
-      for (auto& target: targets) {
+      for (auto& child: mapping.virtualChildren) {
+        seen.insert(kj::mv(child));
+      }
+      for (auto& target: mapping.sourcePaths) {
         if (isDirectory(target)) {
           // This is one of the directories to be merged. List it.
           for (auto& child: listDirectory(target)) {
             if (child != "." && child != "..") {
-              // Note that this child node could be hidden. We need to use mapFile() on it directly
-              // in order to make sure it maps to a real file. However, mapFile() will search all
-              // the matching target paths, not just the one we're on, so we make sure to ignore
-              // repeats as we scan through the targets.
-              kj::StringPtr childPtr = child;
-              if (seen.insert(kj::mv(child)).second) {
-                // This is the first time we've seen this child name. Use mapFile() to find out all
-                // the things it matches.
-                auto subPath = kj::str(srcPath, '/', childPtr);
-                auto subTargets = mapFile(sourceDir, sourceMap, subPath);
-                initNode(node.followPath(childPtr), subPath, kj::mv(subTargets), sourceMap,
-                         recursive);
-              }
+              seen.insert(kj::mv(child));
             }
           }
         }
       }
+
+      for (auto& child: seen) {
+        // Note that this child node could be hidden. We need to use mapFile() on it directly
+        // in order to make sure it maps to a real file.
+        auto subPath = srcPath.size() == 0 ?
+            kj::str(child) : kj::str(srcPath, '/', child);
+        auto subMapping = mapFile(sourceDir, sourceMap, subPath);
+        initNode(node.followPath(child), subPath, kj::mv(subMapping), sourceMap,
+                 recursive);
+      }
     }
 
-    node.setTarget(kj::mv(targets[0]));
+    node.setTarget(kj::mv(mapping.sourcePaths[0]));
   }
 
   kj::String getHttpBridgeExe() {

@@ -706,9 +706,9 @@ static kj::Maybe<kj::StringPtr> tryRemovePathPrefix(kj::StringPtr path, kj::Stri
   }
 }
 
-kj::Array<kj::String> mapFile(
-    kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap, kj::StringPtr name) {
+FileMapping mapFile(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap, kj::StringPtr name) {
   kj::Vector<kj::String> matches;
+  kj::Vector<kj::String> virtualChildren;
 
   for (auto dir: sourceMap.getSearchPath()) {
     auto virtualPath = dir.getPackagePath();
@@ -737,10 +737,23 @@ kj::Array<kj::String> mapFile(
         // Found!
         matches.add(kj::mv(candidate));
       }
+    } else {
+      // virtualPath is not a prefix of `name`, but is `name` a prefix of `virtualPath`?
+      KJ_IF_MAYBE(child, tryRemovePathPrefix(virtualPath, name)) {
+        // Yep.
+        KJ_IF_MAYBE(slashPos, child->findFirst('/')) {
+          virtualChildren.add(kj::heapString(child->slice(0, *slashPos)));
+        } else {
+          virtualChildren.add(kj::heapString(*child));
+        }
+      }
     }
   }
 
-  return matches.releaseAsArray();
+  return FileMapping {
+    matches.releaseAsArray(),
+    virtualChildren.releaseAsArray()
+  };
 }
 
 }  // namespace sandstorm

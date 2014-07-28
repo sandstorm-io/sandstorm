@@ -36,8 +36,19 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
 //
 // `sourceMap` must remain valid until the returned node is destroyed.
 
-kj::Array<kj::String> mapFile(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap,
-                              kj::StringPtr virtualPath);
+struct FileMapping {
+  kj::Array<kj::String> sourcePaths;
+  // All disk paths mapped to the virtual path. If the first turns out to be a file, then the
+  // rest should be ignored. But if the first is a directory, it should be merged with all
+  // directories belong it and also virtualChildren.
+
+  kj::Array<kj::String> virtualChildren;
+  // Names of child nodes which do not exist on-disk but are virtually mapped to things. If the
+  // mapping is a directory, these nodes need to be merged into the directory.
+};
+
+FileMapping mapFile(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap,
+                    kj::StringPtr virtualPath);
 // Maps one file from virtual path to real path. Returns a list of all matching real paths. In
 // the case of a file, the first should be used, but in the case of a directory, they should be
 // merged.

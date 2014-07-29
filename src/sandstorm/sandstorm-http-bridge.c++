@@ -851,7 +851,7 @@ public:
       auto id = userInfo.getUserId();
       KJ_ASSERT(id.size() == 32, "User ID not a SHA-256?");
 
-      // We truncate to 128 bits to be a little more weildy. Still 32 chars, though.
+      // We truncate to 128 bits to be a little more wieldy. Still 32 chars, though.
       userId = hexEncode(userInfo.getUserId().slice(0, 16));
     }
   }

@@ -32,9 +32,15 @@ if (Meteor.isServer) {
     // - Revealing the package ID would allow anyone with whom you share a grain to install the
     //   same app, preventing private apps.
     // - Revealing the owner's user ID might be undesirable for plausible deniability reasons.
-    return Grains.find(grainId, {
-      fields: { title: 1, userId: 1 }
-    });
+    //
+    // Except, we actually do need to know if the caller is the grain's owner since we display
+    // extra functionality in that case. So we'll do an owner check first and if that passes return
+    // additional info.
+    if (Grains.find({_id: grainId, userId: this.userId}).count() > 0) {
+      return Grains.find(grainId, { fields: { title: 1, userId: 1 } });
+    } else {
+      return Grains.find(grainId, { fields: { title: 1 } });
+    }
   });
 
   Meteor.publish("grainSize", function (sessionId) {

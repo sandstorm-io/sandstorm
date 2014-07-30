@@ -313,12 +313,9 @@ Router.map(function () {
         setCurrentSessionId(session.sessionId);
 
         var wildcardParentUrl = Meteor.settings.public.wildcardParentUrl;
-        if (wildcardParentUrl.indexOf(document.location.protocol) != 0) {
-            throw new Error("WILDCARD_PARENT_URL must use same protocol as BASE_URL");
-        }
 
         result.appOrigin = document.location.protocol + "//" + session.subdomain + "."
-              + wildcardParentUrl.slice(document.location.protocol.length + 2);
+              + wildcardParentUrl.slice(wildcardParentUrl.indexOf("://") + 3);
 
         result.sessionId = session.sessionId;
         return result;

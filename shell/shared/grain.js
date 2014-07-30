@@ -312,10 +312,8 @@ Router.map(function () {
       if (session) {
         setCurrentSessionId(session.sessionId);
 
-        var wildcardParentUrl = Meteor.settings.public.wildcardParentUrl;
-
-        result.appOrigin = document.location.protocol + "//" + session.subdomain + "."
-              + wildcardParentUrl.slice(wildcardParentUrl.indexOf("://") + 3);
+        var urlPieces = Meteor.settings.public.wildcardParentUrl.split("://");
+        result.appOrigin = urlPieces[0] + "://" + session.subdomain + "." + urlPieces[1];
 
         result.sessionId = session.sessionId;
         return result;

@@ -27,6 +27,9 @@
 #include <set>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdlib.h>
 #include "fuse.h"
 
 #if __QTCREATOR
@@ -513,6 +516,65 @@ private:
   kj::StringPtr path;
 };
 
+class EmptyDirectory final: public SimpleDirecotry {
+public:
+  EmptyDirectory() = default;
+
+  kj::Promise<kj::Array<SimpleEntry>> simpleRead() override {
+    auto result = kj::heapArray<SimpleEntry>(2);
+
+    result[0].name = kj::str(".");
+    result[0].type = fuse::Node::Type::DIRECTORY;
+    result[1].name = kj::str("..");
+    result[1].type = fuse::Node::Type::DIRECTORY;
+
+    return kj::mv(result);
+  }
+};
+
+class EmptyNode final: public fuse::Node::Server {
+  // A directory node which contains only one member mapped at some path.
+
+public:
+  EmptyNode() = default;
+
+protected:
+  kj::Promise<void> lookup(LookupContext context) override {
+    KJ_FAIL_REQUIRE("no such file or directory");
+  }
+
+  kj::Promise<void> getAttributes(GetAttributesContext context) override {
+    auto results = context.getResults(capnp::MessageSize {
+      capnp::sizeInWords<GetAttributesResults>() +
+          capnp::sizeInWords<fuse::Node::Attributes>(),
+      0
+    });
+    results.setTtl(kj::maxValue);
+
+    auto attr = results.initAttributes();
+    attr.setInodeNumber(0);
+    attr.setType(fuse::Node::Type::DIRECTORY);
+    attr.setPermissions(0555);
+    attr.setLinkCount(1);
+
+    return kj::READY_NOW;
+  }
+
+  kj::Promise<void> openAsFile(OpenAsFileContext context) override {
+    KJ_FAIL_REQUIRE("not a file");
+  }
+
+  kj::Promise<void> openAsDirectory(OpenAsDirectoryContext context) override {
+    auto results = context.getResults(capnp::MessageSize { 4, 1 });
+    results.setDirectory(kj::heap<EmptyDirectory>());
+    return kj::READY_NOW;
+  }
+
+  kj::Promise<void> readlink(ReadlinkContext context) override {
+    KJ_FAIL_REQUIRE("not a symlink");
+  }
+};
+
 class SimpleDataFile final: public fuse::File::Server {
 public:
   SimpleDataFile(kj::ArrayPtr<const capnp::word> data)
@@ -608,17 +670,36 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
   layers.add(kj::heap<SingletonNode>(
       newLoopbackFuseNode(bridgePath, kj::maxValue), "sandstorm-http-bridge"));
 
+  layers.add(kj::heap<SingletonNode>(kj::heap<EmptyNode>(), "dev"));
+  layers.add(kj::heap<SingletonNode>(kj::heap<EmptyNode>(), "tmp"));
+  layers.add(kj::heap<SingletonNode>(kj::heap<EmptyNode>(), "var"));
+
   // Empty /proc/cpuinfo will be overmounted by the supervisor.
   layers.add(kj::heap<SingletonNode>(kj::heap<SimpleDataNode>(nullptr), "proc/cpuinfo"));
 
   for (auto mapping: searchPath) {
     kj::StringPtr sourcePath = mapping.getSourcePath();
     kj::String ownSourcePath;
+    kj::StringPtr packagePath = mapping.getPackagePath();
 
     // Interpret relative paths against the source dir (if it's not the current directory).
     if (sourceDir.size() != 0 && !sourcePath.startsWith("/")) {
       ownSourcePath = kj::str(sourceDir, '/', sourcePath);
       sourcePath = ownSourcePath;
+    }
+
+    // If this is a symlink mapped to virtual root, follow it, because it makes no sense for
+    // root to be a symlink.
+    if (packagePath.size() == 0) {
+      struct stat stats;
+      KJ_SYSCALL(lstat(sourcePath.cStr(), &stats));
+      if (S_ISLNK(stats.st_mode)) {
+        char* real;
+        KJ_SYSCALL(real = realpath(sourcePath.cStr(), NULL));
+        KJ_DEFER(free(real));
+        ownSourcePath = kj::str(real);
+        sourcePath = ownSourcePath;
+      }
     }
 
     // Create the filesystem node.
@@ -636,7 +717,6 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
     }
 
     // If the contents are mapped to a non-root location, wrap in a singleton node.
-    kj::StringPtr packagePath = mapping.getPackagePath();
     KJ_ASSERT(!packagePath.startsWith("/"),
               "`packagePath` in source map should not start with '/'.");
     if (packagePath.size() > 0) {
@@ -735,6 +815,19 @@ FileMapping mapFile(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap, k
 
       if (faccessat(AT_FDCWD, candidate.cStr(), F_OK, AT_SYMLINK_NOFOLLOW) == 0) {
         // Found!
+
+        if (name.size() == 0) {
+          // This is a root mapping. In this case we follow symlinks eagerly.
+          struct stat stats;
+          KJ_SYSCALL(lstat(candidate.cStr(), &stats));
+          if (S_ISLNK(stats.st_mode)) {
+            char* real;
+            KJ_SYSCALL(real = realpath(candidate.cStr(), NULL));
+            KJ_DEFER(free(real));
+            candidate = kj::str(real);
+          }
+        }
+
         matches.add(kj::mv(candidate));
       }
     } else {

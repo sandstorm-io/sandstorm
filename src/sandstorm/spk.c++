@@ -805,6 +805,14 @@ private:
             "Set the HTTP port on which your server runs -- that is, the port which <command> "
             "will bind to. Your app will be set up to use Sandstorm's HTTP bridge instead of "
             "using the raw Sandstorm APIs.")
+        .addOptionWithArg({'I', "source-path"}, KJ_BIND_METHOD(*this, addSourcePathForInit), "<path>",
+            "Add <path> to the path from which files are pulled into the binary. You may "
+            "specify this multiple times to set up a search path. If no paths are given, the "
+            "default is to seach '.' (current directory) followed by '/' (root), with some "
+            "sensitive directories hidden from '/'.")
+        .addOption({'A', "include-all"}, KJ_BIND_METHOD(*this, setIncludeAllForInit),
+            "Arrange to include all contents of the directories specified with -I rather than "
+            "determine needed files dynamically while running in dev mode.")
         .addOption({'r', "raw"}, KJ_BIND_METHOD(*this, setUsesRawApi),
             "Specifies that your app directly implements the raw Sandstorm API and does "
             "not require the HTTP bridge.")
@@ -816,8 +824,10 @@ private:
   kj::StringPtr outputFile = nullptr;
   kj::StringPtr appIdForInit = nullptr;
   kj::Vector<kj::StringPtr> commandArgs;
+  kj::Vector<kj::StringPtr> sourcePathForInit;
   uint16_t httpPort = 0;
   bool usesRawApi = false;
+  bool includeAllForInit = false;
 
   kj::MainBuilder::Validity setOutputFile(kj::StringPtr arg) {
     outputFile = arg;
@@ -851,6 +861,16 @@ private:
     }
   }
 
+  kj::MainBuilder::Validity addSourcePathForInit(kj::StringPtr arg) {
+    sourcePathForInit.add(arg);
+    return true;
+  }
+
+  kj::MainBuilder::Validity setIncludeAllForInit() {
+    includeAllForInit = true;
+    return true;
+  }
+
   kj::MainBuilder::Validity setUsesRawApi() {
     if (httpPort != 0) {
       return "You can't specify both -p and -r.";
@@ -880,6 +900,28 @@ private:
   kj::MainBuilder::Validity doInit() {
     if (httpPort == 0 && !usesRawApi) {
       return "You must specify at least one of -p or -r.";
+    }
+
+    kj::String searchPath;
+    if (sourcePathForInit.size() == 0) {
+      if (includeAllForInit) {
+        return "When using -A you must specify at least one -I.";
+      }
+
+      searchPath = kj::str(
+          "      ( sourcePath = \".\" ),  # Search this directory first.\n"
+          "      ( sourcePath = \"/\",    # Then search the system root directory.\n"
+          "        hidePaths = [ \"home\", \"proc\", \"sys\" ]\n"
+          "        # You probably don't want the app pulling files from these places,\n"
+          "        # so we hide them. Note that /dev, /var, and /tmp are implicitly\n"
+          "        # hidden because Sandstorm itself provides them.\n"
+          "      )\n");
+    } else {
+      searchPath = kj::str(
+          "      ( sourcePath = \"",
+          kj::strArray(sourcePathForInit, "\" ),\n      ( sourcePath = \""),
+          "\" )\n"
+          );
     }
 
     if (outputFile == nullptr) {
@@ -950,32 +992,34 @@ private:
         "    # case.\n"
         "  ),\n"
         "\n"
-        "  sourceMap = (\n"
-        "    # Here we defined where to look for files to copy into your package. The\n"
-        "    # `spk dev` command actually figures out what files your app needs\n"
-        "    # automatically by running it on a FUSE filesystem. So, the mappings\n"
-        "    # here are only to tell it where to find files that the app wants.\n"
-        "    searchPath = [\n"
-        "      ( sourcePath = \".\" ),  # Search this directory first.\n"
-        "      ( sourcePath = \"/\",    # Then search the system root directory.\n"
-        "        hidePaths = [ \"home\", \"proc\", \"sys\" ]\n"
-        "        # You probably don't want the app pulling files from these places,\n"
-        "        # so we hide them. Note that /dev, /var, and /tmp are implicitly\n"
-        "        # hidden because Sandstorm itself provides them.\n"
-        "      )\n"
+        "  sourceMap = (\n",
+        includeAllForInit
+        ? "    # The following directories will be copied into your package.\n"
+        : "    # Here we defined where to look for files to copy into your package. The\n"
+          "    # `spk dev` command actually figures out what files your app needs\n"
+          "    # automatically by running it on a FUSE filesystem. So, the mappings\n"
+          "    # here are only to tell it where to find files that the app wants.\n",
+        "    searchPath = [\n",
+               searchPath,
         "    ]\n"
         "  ),\n"
-        "\n"
-        "  fileList = \"sandstorm-files.list\",\n"
-        "  # `spk dev` will write a list of all the files your app uses to this file.\n"
-        "  # You should review it later, before shipping your app.\n"
-        "\n"
-        "  alwaysInclude = []\n"
-        "  # Fill this list with more names of files or directories that should be\n"
-        "  # included in your package, even if not listed in sandstorm-files.list.\n"
-        "  # Use this to force-include stuff that you know you need but which may\n"
-        "  # not have been detected as a dependency during `spk dev`. If you list\n"
-        "  # a directory here, its entire contents will be included recursively.\n"
+        "\n",
+        includeAllForInit
+        ? "  alwaysInclude = [ \".\" ]\n"
+          "  # This says that we always want to include all files from the source map.\n"
+          "  # (An alternative is to automatically detect dependencies by watching what\n"
+          "  # the app opens while running in dev mode. To see what that looks like,\n"
+          "  # run `spk init` without the -A option.)\n"
+        : "  fileList = \"sandstorm-files.list\",\n"
+          "  # `spk dev` will write a list of all the files your app uses to this file.\n"
+          "  # You should review it later, before shipping your app.\n"
+          "\n"
+          "  alwaysInclude = []\n"
+          "  # Fill this list with more names of files or directories that should be\n"
+          "  # included in your package, even if not listed in sandstorm-files.list.\n"
+          "  # Use this to force-include stuff that you know you need but which may\n"
+          "  # not have been detected as a dependency during `spk dev`. If you list\n"
+          "  # a directory here, its entire contents will be included recursively.\n",
         ");\n"
         "\n"
         "const myCommand :Spk.Manifest.Command = (\n"
@@ -1765,12 +1809,24 @@ private:
       kj::FdOutputStream(newFileList.getFd()).write(content.begin(), content.size());
       newFileList.commit();
     } else {
-      context.warning(
-          "Your program used the following files. (If you would specify `fileList` in \n"
-          "the package definition, I could write the list there.)\n\n");
-      auto msg = kj::str(
-          kj::StringTree(KJ_MAP(file, usedFiles) { return kj::strTree(file); }, "\n"), "\n");
-      kj::FdOutputStream(STDOUT_FILENO).write(msg.begin(), msg.size());
+      // If alwaysInclude contains "." then the user doesn't care about the used files list, so
+      // don't print in that case.
+      bool includeAll = false;
+      for (auto alwaysInclude: packageDef.getAlwaysInclude()) {
+        if (alwaysInclude == ".") {
+          includeAll = true;
+          break;
+        }
+      }
+
+      if (!includeAll) {
+        context.warning(
+            "Your program used the following files. (If you would specify `fileList` in \n"
+            "the package definition, I could write the list there.)\n\n");
+        auto msg = kj::str(
+            kj::StringTree(KJ_MAP(file, usedFiles) { return kj::strTree(file); }, "\n"), "\n");
+        kj::FdOutputStream(STDOUT_FILENO).write(msg.begin(), msg.size());
+      }
     }
 
     return true;

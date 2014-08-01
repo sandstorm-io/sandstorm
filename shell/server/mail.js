@@ -292,7 +292,7 @@ HackSessionContextImpl.prototype.send = function (email) {
     if (email.from.address !== grainAddress && email.from.address !== userAddress.address) {
       throw new Error(
         "FROM header in outgoing emails need to equal either " + grainAddress + " or " +
-        userAddress + ". Yours was: " + email.from.address);
+        userAddress.address + ". Yours was: " + email.from.address);
     }
 
     var mc = new MailComposer();

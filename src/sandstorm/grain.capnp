@@ -261,7 +261,7 @@ interface UiView extends(PowerboxCapability) {
   #
   # `userInfo` specifies the user's display name and permissions, as authenticated by the system.
   #
-  # `context` contains callbacks that can be used to invoke system functionlity in the context of
+  # `context` contains callbacks that can be used to invoke system functionality in the context of
   # the session, such as displaying the powerbox.
   #
   # `sessionType` is the type ID specifying the interface which the returned `session` should

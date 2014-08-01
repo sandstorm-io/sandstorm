@@ -547,7 +547,7 @@ function Proxy(grainId, sessionId, preferredPort, isOwner, user) {
     if (!self.server) {
       // We closed this port already, but the browser made another request on an existing
       // connection.
-      socket.detsroy();
+      socket.destroy();
       return;
     }
 
@@ -880,7 +880,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     } else if (request.method === "DELETE") {
       return session.delete(path, context);
     } else {
-      throw new Error("Sandstorm only supports GET and POST requests.");
+      throw new Error("Sandstorm only supports GET, POST, PUT, and DELETE requests.");
     }
 
   }).then(function (rpcResponse) {

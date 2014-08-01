@@ -50,6 +50,7 @@ MONGO_PASSWD=$(<$SANDSTORM_HOME/var/mongo/passwd)
 
 export MAIL_URL
 export WILDCARD_PARENT_URL
+export DDP_DEFAULT_CONNECTION_URL
 export MONGO_URL="mongodb://sandstorm:$MONGO_PASSWD@127.0.0.1:$MONGO_PORT/meteor?authSource=admin"
 export MONGO_OPLOG_URL="mongodb://sandstorm:$MONGO_PASSWD@127.0.0.1:$MONGO_PORT/local?authSource=admin"
 

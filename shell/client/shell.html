@@ -69,7 +69,7 @@ limitations under the License.
 
   <div id="intro" class="main-content">
     {{#if kernelTooOld}}
-      <div id="action-required">
+      <div class="action-required">
         <h1>Action Required</h1>
         <p>This server is not currently receiving updates because the server's Linux kernel version
           is too old, or because it is not configured correctly. The next update of Sandstorm will
@@ -78,6 +78,25 @@ limitations under the License.
           (enabled). This will allow Sandstorm to run completely without root privileges using new
           Linux kernel features, thus making you safer. If you are the server admin and you are
           unsure what to do, re-run the Sandstorm installer.</p>
+        <p><button class=".dismiss-action-required">Dismiss</button></p>
+      </div>
+    {{/if}}
+    {{#if missingWildcardParent}}
+      <div class="action-required">
+        <h1>Action Required</h1>
+        <p>This server is not currently receiving updates because its config file is missing the
+          new <code>WILDCARD_PARENT_URL</code> setting, which will soon be required. Please edit
+          your config (usually <code>/opt/sandstorm/sandstorm.conf</code>) to add it. For a
+          localhost server, you can use
+          <code>WILDCARD_PARENT_URL=http://local.sandstorm.io:6080</code>. In any other
+          case, you will need to set up a wildcard DNS entry pointing at your server. For example,
+          if your server is at <code>sandstorm.example.com</code>, we recommend setting up DNS so
+          that <code>*.sandstorm.example.com</code> points to your server, then set
+          <code>WILDCARD_PARENT_URL=http://sandstorm.example.com</code>. To verify that your
+          new config works, try creating a Ghost blog and clicking the "view live site" button.
+          If the button doesn't appear in the top bar or doesn't work when you click on it, your
+          wildcard URL is not yet configured correctly.</p>
+        <p><button class=".dismiss-action-required">Dismiss</button></p>
       </div>
     {{/if}}
 

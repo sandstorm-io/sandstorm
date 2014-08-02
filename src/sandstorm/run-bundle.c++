@@ -1057,7 +1057,7 @@ public:
         return "You must specify a channel.";
       }
 
-      if (!checkForUpdates(config.updateChannel, "manual")) {
+      if (!checkForUpdates(config.updateChannel, "manual", config)) {
         context.exit();
       }
     } else {
@@ -1071,7 +1071,7 @@ public:
 
       if (!updateFileIsChannel) {
         unpackUpdate(raiiOpen(updateFile, O_RDONLY));
-      } else if (!checkForUpdates(updateFile, "manual")) {
+      } else if (!checkForUpdates(updateFile, "manual", config)) {
         context.exit();
       }
     }
@@ -1877,6 +1877,7 @@ private:
       KJ_SYSCALL(setenv("METEOR_SETTINGS", kj::str(
           "{\"public\":{\"build\":", buildstamp,
           ", \"kernelTooOld\":", kernelNewEnough ? "false" : "true",
+          ", \"missingWildcardParentUrl\":", config.wildcardParentUrl == nullptr ? "true" : "false",
           ", \"allowDemoAccounts\":", config.allowDemoAccounts ? "true" : "false",
           "}}").cStr(), true));
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "main.js", EXEC_END_ARGS));
@@ -1937,13 +1938,20 @@ private:
     }
   }
 
-  bool checkForUpdates(kj::StringPtr channel, kj::StringPtr type) {
+  bool checkForUpdates(kj::StringPtr channel, kj::StringPtr type, const Config& config) {
     if (!kernelNewEnough) {
       context.warning(
           "Refusing to update because kernel is too old or unprivileged user namespaces are "
           "disabled. You need at least kernel version 3.13 and must set the "
           "kernel.unprivileged_userns_clone sysctl (if your system has it) to 1. If in doubt, "
           "re-run the Sandstorm installer for help.");
+      return false;
+    }
+    if (config.wildcardParentUrl == nullptr) {
+      context.warning(
+          "Refusing to update because WILDCARD_BASE_URL is not set in sandstorm.conf. The next "
+          "version of Sandstorm requires this setting. Please open your Sandstorm server in "
+          "your browser for further instructions.");
       return false;
     }
 
@@ -2050,14 +2058,14 @@ private:
     } else {
       pid_t pid = fork();
       if (pid == 0) {
-        doUpdateLoop(config.updateChannel, isRetry);
+        doUpdateLoop(config.updateChannel, isRetry, config);
         KJ_UNREACHABLE;
       }
       return pid;
     }
   }
 
-  void doUpdateLoop(kj::StringPtr channel, bool isRetry) KJ_NORETURN {
+  void doUpdateLoop(kj::StringPtr channel, bool isRetry, const Config& config) KJ_NORETURN {
     // This is the updater process.  Run in a loop.
     auto log = raiiOpen("../var/log/updater.log", O_WRONLY | O_APPEND | O_CREAT);
     KJ_SYSCALL(dup2(log, STDOUT_FILENO));
@@ -2079,7 +2087,7 @@ private:
       context.warning(kj::str("** Time: ", ctime(&start)));
 
       // Check for updates.
-      if (checkForUpdates(channel, type)) {
+      if (checkForUpdates(channel, type, config)) {
         // Exit so that the update can be applied.
         context.exitInfo("** Successfully updated; restarting.");
       }

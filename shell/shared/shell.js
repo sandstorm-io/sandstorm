@@ -294,6 +294,10 @@ if (Meteor.isClient) {
         }
       });
     },
+
+    "click .action-required button": function (event) {
+      event.currentTarget.parentNode.parentNode.style.display = "none";
+    },
   });
 
   Template.homeLink.events({
@@ -333,6 +337,10 @@ function getBuildInfo() {
 
 function isKernelTooOld() {
   return Meteor.settings && Meteor.settings.public && Meteor.settings.public.kernelTooOld;
+}
+
+function isMissingWildcardParent() {
+  return Meteor.settings && Meteor.settings.public && Meteor.settings.public.missingWildcardParentUrl;
 }
 
 function appNameFromActionName(name) {
@@ -417,6 +425,7 @@ Router.map(function () {
         isFirstRun: !HasUsers.findOne("hasUsers"),
         build: getBuildInfo().build,
         kernelTooOld: isKernelTooOld(),
+        missingWildcardParent: isMissingWildcardParent(),
         allowDemoAccounts: allowDemoAccounts,
         apps: apps
       };

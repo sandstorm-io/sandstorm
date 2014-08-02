@@ -42,36 +42,25 @@ function isSandstormShell(hostname) {
   return (hostname === HOSTNAME || (DDP_HOSTNAME && hostname === DDP_HOSTNAME));
 }
 
-function getHostname(host) {
-  // Slice away the port number, if present.
-
-  var colonPos = host.indexOf(":");
-  if (colonPos >= 0) {
-    return host.slice(0, colonPos);
-  } else {
-    return host;
-  }
-}
-
 var wildcardUrl = Url.parse(Meteor.settings.public.wildcardParentUrl);
 
 Meteor.startup(function () {
 
-  var meteorUpgradeListener = WebApp.httpServer.listeners('upgrade')[0];
+  var meteorUpgradeListeners = WebApp.httpServer.listeners('upgrade');
   WebApp.httpServer.removeAllListeners('upgrade');
 
-  // We've removed Meteor's upgrade handler. Now let's install our own.
-
   WebApp.httpServer.on('upgrade', function(req, socket, head) {
-    if (isSandstormShell(getHostname(req.headers.host))) {
+    if (isSandstormShell(req.headers.host.split(":")[0])) {
       // Go on to Meteor.
-      return meteorUpgradeListener(req, socket, head);
+      for (var ii = 0; ii < meteorUpgradeListeners.length; ++ii) {
+        meteorUpgradeListeners[ii](req, socket, head);
+      }
     }
     tryProxyUpgrade(req, socket, head);
   });
 
   WebApp.rawConnectHandlers.use(function (req, res, next) {
-    var hostname = getHostname(req.headers.host);
+    var hostname = req.headers.host.split(":")[0];
     if (isSandstormShell(hostname)) {
       // Go on to Meteor.
       return next();
@@ -89,7 +78,7 @@ Meteor.startup(function () {
         return;
       }
 
-       publicIdPromise = Promise.resolve(req.headers.host.slice(0, -suffix.length));
+      publicIdPromise = Promise.resolve(req.headers.host.slice(0, -suffix.length));
     } else {
       // Not a subdomain of our baseHost. Perhaps it is a custom host.
       publicIdPromise = lookupPublicIdFromDns(hostname);
@@ -129,10 +118,6 @@ Meteor.startup(function () {
       res.end(err.message);
     });
   });
-
-
-
-
 });
 
 function lookupPublicIdFromDns(hostname) {

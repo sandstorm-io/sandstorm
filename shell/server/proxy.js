@@ -445,8 +445,9 @@ tryProxyUpgrade = function (req, socket, head) {
   if (subdomain in proxiesBySubdomain) {
     var proxy = proxiesBySubdomain[subdomain]
 
-    // Meteor sets the timeout to five seconds. We don't want a timeout.
-    socket.setTimeout(0);
+    // Meteor sets the timeout to five seconds. Change that back to two
+    // minutes, which is the default value.
+    socket.setTimeout(120000);
 
     proxy.upgradeHandler(req, socket, head);
     return true;
@@ -478,9 +479,9 @@ function Proxy(grainId, sessionId, preferredSubdomain, isOwner, user) {
   this.sessionId = sessionId;
   this.isOwner = isOwner;
   if (!preferredSubdomain) {
-      this.subdomain = generatePublicId(20);
+    this.subdomain = generateRandomHostname(20);
   } else {
-      this.subdomain = preferredSubdomain;
+    this.subdomain = preferredSubdomain;
   }
 
   if (user) {

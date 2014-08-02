@@ -189,7 +189,7 @@ makeHackSessionContext = function (grainId) {
 
 var HOSTNAME_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
-generatePublicId = function(length) {
+generateRandomHostname = function(length) {
   // Generate a random unique name suitable for use in a hostname.
 
   var digits = [];
@@ -215,7 +215,7 @@ HackSessionContextImpl.prototype._getPublicId = function () {
       this.publicId = grain.publicId;
     } else {
       // The grain doesn't have a public ID yet. Generate one.
-      var candidate = generatePublicId(20);
+      var candidate = generateRandomHostname(20);
 
       if (Grains.findOne({publicId: candidate})) {
         // This should never ever happen.

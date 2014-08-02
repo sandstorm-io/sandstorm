@@ -55,8 +55,9 @@ Meteor.startup(function () {
       for (var ii = 0; ii < meteorUpgradeListeners.length; ++ii) {
         meteorUpgradeListeners[ii](req, socket, head);
       }
+    } else {
+      tryProxyUpgrade(req, socket, head);
     }
-    tryProxyUpgrade(req, socket, head);
   });
 
   WebApp.rawConnectHandlers.use(function (req, res, next) {

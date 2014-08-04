@@ -678,3 +678,19 @@ input.autoSelect {
   width: 100%;
   text-align: center;
 }
+
+#indiegogo-iframe {
+  width: 222px;
+  height: 445px;
+  position: fixed;
+  top: 48px;
+  right: 16px;
+}
+
+@media screen and (max-width: 1120px) {
+  #indiegogo-iframe {
+    position: static;
+    margin-top: 32px;
+    float: right;
+  }
+}

@@ -61,7 +61,7 @@ cat > $SETTINGS << __EOF__
   "public": {
     "buildstamp": "[local dev front-end]",
     "allowDemoAccounts": true,
-    "missingWildcardParentUrl": true
+    "missingWildcardParentUrl": false
   },
   "home": "$SANDSTORM_HOME"
 }

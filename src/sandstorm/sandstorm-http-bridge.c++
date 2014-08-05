@@ -975,6 +975,9 @@ private:
   void addCommonHeaders(kj::Vector<kj::String>& lines, WebSession::Context::Reader context) {
     lines.add(kj::str("Host: ", extractHostFromUrl(basePath)));
     lines.add(kj::str("User-Agent: ", userAgent));
+    if (context.hasRefererPath()) {
+      lines.add(kj::str("Referer: ", basePath, "/", context.getRefererPath()));
+    }
     lines.add(kj::str("X-Sandstorm-Username: ", userDisplayName));
     KJ_IF_MAYBE(u, userId) {
       lines.add(kj::str("X-Sandstorm-User-Id: ", *u));

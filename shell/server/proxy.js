@@ -554,11 +554,11 @@ Proxy.prototype.getConnection = function () {
 }
 
 var Url = Npm.require("url");
-var PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
+var rootUrl = Url.parse(process.env.ROOT_URL);
 
 Proxy.prototype._callNewSession = function (request, viewInfo) {
   var params = Capnp.serialize(WebSession.Params, {
-    basePath: PROTOCOL + "//" + request.headers.host,
+    basePath: rootUrl.protocol + "//" + request.headers.host,
     userAgent: "user-agent" in request.headers
         ? request.headers["user-agent"]
         : "UnknownAgent/0.0",
@@ -717,6 +717,17 @@ Proxy.prototype.makeContext = function (request) {
   if (parseResult.cookies.length > 0) {
     context.cookies = parseResult.cookies;
   }
+
+  var referer = request.headers["referer"];
+  if (referer) {
+    var refererUrl = Url.parse(referer);
+    if (refererUrl.host == request.headers.host) {
+      context.refererPath = refererUrl.path.slice(1); // remove leading '/'
+    } else if (refererUrl.host != rootUrl.host) {
+      throw new Meteor.Error(403, "Unauthorized");
+    }
+  }
+
   return context;
 }
 

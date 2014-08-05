@@ -69,6 +69,11 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   struct Context {
     # Additional per-request context.
     cookies @0 :List(Util.KeyValue);
+
+    refererPath @1 : Text;
+    # To protect against cross-site request forgery, Sandstorm requires that the `Referer`
+    # header must always match the host of the current session or the Sandstorm shell.
+    # In the former case, the path part of the `Referer` header gets written to this field.
   }
 
   struct PostContent {

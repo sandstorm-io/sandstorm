@@ -90,10 +90,16 @@ elif [ $# != 0 ]; then
   usage
 fi
 
-fail() {
+error() {
   if [ $# != 0 ]; then
+    echo -en '\e[0;31m' >&2
     echo "$@" | fold -s >&2
+    echo -en '\e[0m' >&2
   fi
+}
+
+fail() {
+  error "$@"
   echo "*** INSTALLATION FAILED ***" >&2
   echo "Report bugs at: http://github.com/sandstorm-io/sandstorm" >&2
   exit 1
@@ -161,7 +167,7 @@ fi
 KVERSION=( $(uname -r | grep -o '^[0-9.]*' | tr . ' ') )
 
 if (( KVERSION[0] < 3 || (KVERSION[0] == 3 && KVERSION[1] < 13) )); then
-  echo "Detected Linux kernel version: $(uname -r)" >&2
+  error "Detected Linux kernel version: $(uname -r)"
   fail "Sorry, your kernel is too old to run Sandstorm. We require kernel" \
        "version 3.13 or newer."
 fi
@@ -181,8 +187,7 @@ if [ -n "${BUNDLE_FILE:-}" ]; then
   # We use "|| true" here because tar is going to SIGPIPE when `head` exits.
   BUNDLE_DIR=$( (tar Jtf "$BUNDLE_FILE" || true) | head -n 1)
   if [[ ! "$BUNDLE_DIR" =~ sandstorm-([0-9]+)/ ]]; then
-    echo "$BUNDLE_FILE: Not a valid Sandstorm bundle" >&2
-    exit 1
+    fail "$BUNDLE_FILE: Not a valid Sandstorm bundle"
   fi
 
   BUILD=${BASH_REMATCH[1]}
@@ -337,19 +342,28 @@ else
   BASE_URL=$(prompt "URL users will enter in browser:" "http://$SS_HOSTNAME:$PORT")
 
   if [[ "$BASE_URL" =~ ^http://localhost(|:[0-9]*)(/.*)?$ ]]; then
-    DEFAULT_WILDCARD=http://local.sandstorm.io${BASH_REMATCH[1]}
+    DEFAULT_WILDCARD=http://*.local.sandstorm.io${BASH_REMATCH[1]}
+  elif [[ "$BASE_URL" =~ ^([^:/]*)://(.*)$ ]]; then
+    DEFAULT_WILDCARD=${BASH_REMATCH[1]}://*.${BASH_REMATCH[2]}
   else
-    DEFAULT_WILDCARD=$BASE_URL
+    DEFAULT_WILDCARD=
   fi
 
   echo "Sandstorm requires you to set up a wildcard DNS entry pointing at the server."
   echo "This allows Sandstorm to allocate new hosts on-the-fly for sandboxing purposes."
   echo "Please enter the URL of the parent host of your wildcard. For example, if you"
-  echo "have mapped *.foo.example.com to your server, enter \"http://foo.example.com\""
-  echo "(or use https if you have set up SSL). For localhost servers, we have mapped"
-  echo "*.local.sandstorm.io to 127.0.0.1 for your convenience, so you can use"
-  echo "\"http://local.sandstorm.io\" here."
-  WILDCARD_PARENT_URL=$(prompt "DNS wildcard parent URL:" "$DEFAULT_WILDCARD")
+  echo "have mapped *.foo.example.com to your server, you could enter"
+  echo "\"http://*.foo.example.com\". You can also specify that hosts should have a"
+  echo "special prefix, like \"http://ss-*.foo.example.com\". If you have SSL set up"
+  echo "(and have a suitable wildcard certificate), use \"https://\". For"
+  echo "localhost servers, we have mapped *.local.sandstorm.io to 127.0.0.1 for your"
+  echo "convenience, so you can use \"http://*.local.sandstorm.io\" here."
+  WILDCARD_URL=$(prompt "DNS wildcard URL:" "$DEFAULT_WILDCARD")
+
+  while ! [[ $WILDCARD_URL =~ ^https?://[-a-zA-Z0-9.]*[*][-a-zA-Z0-9.:]*$ ]]; do
+    error "Invalid wildcard URL. It must start with 'http://' or 'https://' and contain exactly one asterisk."
+    WILDCARD_URL=$(prompt "DNS wildcard URL:" "$DEFAULT_WILDCARD")
+  done
 
   echo "If you want to be able to send e-mail invites and password reset messages, "
   echo "enter a mail server URL of the form 'smtp://user:pass@host:port'.  Leave "
@@ -362,7 +376,7 @@ else
     UPDATE_CHANNEL=none
   fi
 
-  writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL WILDCARD_PARENT_URL MAIL_URL UPDATE_CHANNEL > sandstorm.conf
+  writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL WILDCARD_URL MAIL_URL UPDATE_CHANNEL > sandstorm.conf
 
   echo
   echo "Config written to $PWD/sandstorm.conf."

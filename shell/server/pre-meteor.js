@@ -42,8 +42,6 @@ function isSandstormShell(hostname) {
   return (hostname === HOSTNAME || (DDP_HOSTNAME && hostname === DDP_HOSTNAME));
 }
 
-var wildcardUrl = Url.parse(Meteor.settings.public.wildcardParentUrl);
-
 Meteor.startup(function () {
 
   var meteorUpgradeListeners = WebApp.httpServer.listeners('upgrade');
@@ -56,7 +54,10 @@ Meteor.startup(function () {
         meteorUpgradeListeners[ii](req, socket, head);
       }
     } else {
-      tryProxyUpgrade(req, socket, head);
+      var id = matchWildcardHost(req.headers.host);
+      if (id) {
+        tryProxyUpgrade(id, req, socket, head);
+      }
     }
   });
 
@@ -67,21 +68,21 @@ Meteor.startup(function () {
       return next();
     }
 
-    // This is not our main host. See if it's a subdomain of our wildcard host.
+    // This is not our main host. See if it's a member of the wildcard.
     var publicIdPromise;
-    var suffix = "." + wildcardUrl.host;
 
-    if (req.headers.host.indexOf(suffix, -suffix.length) !== -1) {
+    var id = matchWildcardHost(req.headers.host);
+    if (id) {
       // Match!
 
       // First, try to route the request to a session.
-      if (tryProxyRequest(req, res)) {
+      if (tryProxyRequest(id, req, res)) {
         return;
       }
 
-      publicIdPromise = Promise.resolve(req.headers.host.slice(0, -suffix.length));
+      publicIdPromise = Promise.resolve(id);
     } else {
-      // Not a subdomain of our baseHost. Perhaps it is a custom host.
+      // Not a wildcard host. Perhaps it is a custom host.
       publicIdPromise = lookupPublicIdFromDns(hostname);
     }
 

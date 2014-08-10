@@ -1183,7 +1183,7 @@ private:
     UserIds uids;
     kj::String bindIp = kj::str("127.0.0.1");
     kj::String rootUrl = nullptr;
-    kj::String wildcardParentUrl = nullptr;
+    kj::String wildcardUrl = nullptr;
     kj::String ddpUrl = nullptr;
     kj::String mailUrl = nullptr;
     kj::String updateChannel = nullptr;
@@ -1484,8 +1484,18 @@ private:
         config.bindIp = kj::mv(value);
       } else if (key == "BASE_URL") {
         config.rootUrl = kj::mv(value);
+      } else if (key == "WILDCARD_URL") {
+        config.wildcardUrl = kj::mv(value);
       } else if (key == "WILDCARD_PARENT_URL") {
-        config.wildcardParentUrl = kj::mv(value);
+        bool found = false;
+        for (uint i: kj::range<uint>(0, value.size() - 3)) {
+          if (value.slice(i).startsWith("://")) {
+            config.wildcardUrl = kj::str(value.slice(0, i + 3), "*.", value.slice(i + 3));
+            found = true;
+            break;
+          }
+        }
+        KJ_REQUIRE(found, "Invalid WILDCARD_PARENT_URL.", value);
       } else if (key == "DDP_DEFAULT_CONNECTION_URL") {
         config.ddpUrl = kj::mv(value);
       } else if (key == "MAIL_URL") {
@@ -1860,8 +1870,8 @@ private:
       } else {
         KJ_SYSCALL(setenv("ROOT_URL", config.rootUrl.cStr(), true));
       }
-      if (config.wildcardParentUrl != nullptr) {
-        KJ_SYSCALL(setenv("WILDCARD_PARENT_URL", config.wildcardParentUrl.cStr(), true));
+      if (config.wildcardUrl != nullptr) {
+        KJ_SYSCALL(setenv("WILDCARD_URL", config.wildcardUrl.cStr(), true));
       }
       if (config.ddpUrl != nullptr) {
         KJ_SYSCALL(setenv("DDP_DEFAULT_CONNECTION_URL", config.ddpUrl.cStr(), true));
@@ -1877,9 +1887,8 @@ private:
       KJ_SYSCALL(setenv("METEOR_SETTINGS", kj::str(
           "{\"public\":{\"build\":", buildstamp,
           ", \"kernelTooOld\":", kernelNewEnough ? "false" : "true",
-          ", \"missingWildcardParentUrl\":", config.wildcardParentUrl == nullptr ? "true" : "false",
           ", \"allowDemoAccounts\":", config.allowDemoAccounts ? "true" : "false",
-          ", \"wildcardParentUrl\":\"", config.wildcardParentUrl, "\"",
+          ", \"wildcardUrl\":\"", config.wildcardUrl, "\"",
           "}}").cStr(), true));
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "main.js", EXEC_END_ARGS));
       KJ_UNREACHABLE;
@@ -1946,13 +1955,6 @@ private:
           "disabled. You need at least kernel version 3.13 and must set the "
           "kernel.unprivileged_userns_clone sysctl (if your system has it) to 1. If in doubt, "
           "re-run the Sandstorm installer for help.");
-      return false;
-    }
-    if (config.wildcardParentUrl == nullptr) {
-      context.warning(
-          "Refusing to update because WILDCARD_BASE_URL is not set in sandstorm.conf. The next "
-          "version of Sandstorm requires this setting. Please open your Sandstorm server in "
-          "your browser for further instructions.");
       return false;
     }
 

@@ -75,7 +75,7 @@ function waitPromise(promise) {
 
 var runningGrains = {};
 var proxies = {};
-var proxiesBySubdomain = {};
+var proxiesByHostId = {};
 
 Meteor.methods({
   newGrain: function (packageId, command, title) {
@@ -142,17 +142,17 @@ Meteor.methods({
 
     var proxy = new Proxy(grainId, sessionId, null, isOwner, user);
     proxies[sessionId] = proxy;
-    proxiesBySubdomain[proxy.subdomain] = proxy;
+    proxiesByHostId[proxy.hostId] = proxy;
 
     Sessions.insert({
       _id: sessionId,
       grainId: grainId,
-      subdomain: proxy.subdomain,
+      hostId: proxy.hostId,
       timestamp: new Date().getTime(),
       userId: userId
     });
 
-    return {sessionId: sessionId, subdomain: proxy.subdomain};
+    return {sessionId: sessionId, hostId: proxy.hostId};
   },
 
   keepSessionAlive: function (sessionId) {
@@ -350,7 +350,7 @@ shutdownGrain = function (grainId, keepSessions) {
       var proxy = proxies[session._id];
       if (proxy) {
         delete proxies[session._id];
-        delete proxiesBySubdomain[session._id];
+        delete proxiesByHostId[session._id];
       }
       Sessions.remove(session._id);
     });
@@ -413,7 +413,7 @@ function gcSessions() {
     var proxy = proxies[session._id];
     if (proxy) {
       delete proxies[session._id];
-      delete proxiesBySubdomain[session._id];
+      delete proxiesByHostId[session._id];
     }
     Sessions.remove(session._id);
   });
@@ -430,9 +430,9 @@ Meteor.startup(function () {
     var grain = Grains.findOne(session.grainId);
     var user = Meteor.users.findOne({_id: session.userId});
     var isOwner = grain.userId === session.userId;
-    var proxy = new Proxy(session.grainId, session._id, session.subdomain, isOwner, user);
+    var proxy = new Proxy(session.grainId, session._id, session.hostId, isOwner, user);
     proxies[session._id] = proxy;
-    proxiesBySubdomain[session.subdomain] = proxy;
+    proxiesByHostId[session.hostId] = proxy;
   });
 });
 
@@ -440,10 +440,9 @@ Meteor.startup(function () {
 // Routing to proxies.
 //
 
-tryProxyUpgrade = function (req, socket, head) {
-  var subdomain = req.headers.host.split(".")[0];
-  if (subdomain in proxiesBySubdomain) {
-    var proxy = proxiesBySubdomain[subdomain]
+tryProxyUpgrade = function (hostId, req, socket, head) {
+  if (hostId in proxiesByHostId) {
+    var proxy = proxiesByHostId[hostId]
 
     // Meteor sets the timeout to five seconds. Change that back to two
     // minutes, which is the default value.
@@ -456,10 +455,9 @@ tryProxyUpgrade = function (req, socket, head) {
   }
 }
 
-tryProxyRequest = function (req, res) {
-  var subdomain = req.headers.host.split(".")[0];
-  if (subdomain in proxiesBySubdomain) {
-    var proxy = proxiesBySubdomain[subdomain];
+tryProxyRequest = function (hostId, req, res) {
+  if (hostId in proxiesByHostId) {
+    var proxy = proxiesByHostId[hostId];
     proxy.requestHandler(req, res);
     return true;
   } else {
@@ -471,17 +469,17 @@ tryProxyRequest = function (req, res) {
 // =======================================================================================
 // Proxy class
 //
-// Connects to a grain and exports it on a subdomain.
+// Connects to a grain and exports it on a wildcard host.
 //
 
-function Proxy(grainId, sessionId, preferredSubdomain, isOwner, user) {
+function Proxy(grainId, sessionId, preferredHostId, isOwner, user) {
   this.grainId = grainId;
   this.sessionId = sessionId;
   this.isOwner = isOwner;
-  if (!preferredSubdomain) {
-    this.subdomain = generateRandomHostname(20);
+  if (!preferredHostId) {
+    this.hostId = generateRandomHostname(20);
   } else {
-    this.subdomain = preferredSubdomain;
+    this.hostId = preferredHostId;
   }
 
   if (user) {

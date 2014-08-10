@@ -366,11 +366,7 @@ HackSessionContextImpl.prototype.getPublicId = function() {
 
     result.publicId = this._getPublicId();
     result.hostname = HOSTNAME;
-
-    if (process.env.WILDCARD_PARENT_URL) {
-      var wildcardUrl = Url.parse(process.env.WILDCARD_PARENT_URL);
-      result.autoUrl = wildcardUrl.protocol + "//" + result.publicId + "." + wildcardUrl.host;
-    }
+    result.autoUrl = makeWildcardUrl(result.publicId);
 
     var grain = Grains.findOne(this.grainId, {fields: {userId: 1}});
     result.isDemoUser = Meteor.users.findOne(grain.userId).expires ? true : false;

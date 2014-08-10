@@ -90,7 +90,8 @@ Sessions = new Meteor.Collection("sessions");
 // Each contains:
 //   _id:  random
 //   grainId:  _id of the grain to which this session is connected.
-//   subdomain: Subdomain of WILDCARD_PARENT_URL from which this session is being served.
+//   hostId: ID part of the hostname from which this grain is being served. I.e. this replaces the
+//       '*' in WILDCARD_URL.
 //   timestamp:  Time of last keep-alive message to this session.  Sessions time out after some
 //       period.
 //   userId:  User who owns this session.
@@ -203,4 +204,41 @@ isAdmin = function() {
   } else {
     return false;
   }
+}
+
+function parseWildcardUrl(url) {
+  var match = url.match(/^([-a-zA-Z0-9+]*:)\/\/([^*]*)[*]([^*]*)$/);
+
+  if (!match) {
+    throw new Error("Invalid wildcard URL: " + url);
+  }
+
+  return {
+    protocol: match[1],
+    hostPrefix: match[2],
+    hostSuffix: match[3]
+  };
+}
+
+var wildcardUrl = parseWildcardUrl(Meteor.settings.public.wildcardUrl);
+
+matchWildcardHost = function(host) {
+  // See if the hostname is a member of our wildcard. If so, extract the ID.
+
+  var prefix = wildcardUrl.hostPrefix;
+  var suffix = wildcardUrl.hostSuffix;
+  if (host.lastIndexOf(prefix, 0) >= 0 &&
+      host.indexOf(suffix, -suffix.length) >= 0 &&
+      host.length >= prefix.length + suffix.length) {
+    var id = host.slice(prefix.length, -suffix.length);
+    if (id.match(/^[a-z0-9]*$/)) {
+      return id;
+    }
+  }
+
+  return null;
+}
+
+makeWildcardUrl = function (id) {
+  return wildcardUrl.protocol + "//" + wildcardUrl.hostPrefix + id + wildcardUrl.hostSuffix;
 }

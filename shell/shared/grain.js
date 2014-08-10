@@ -312,19 +312,8 @@ Router.map(function () {
       if (session) {
         setCurrentSessionId(session.sessionId);
 
-        if (document.location.protocol === "http:") {
-          // Probably localhost, or a private server behind a firewall.  Connect to port directly,
-          // because user may not have custom DNS.
-          result.appOrigin = "http://" + document.location.hostname + ":" + session.port;
-        } else if (document.location.protocol === "https:") {
-          // HTTPS.  Probably internet server.  Assume that https://$host-$port.$domain is set up
-          // to proxy to http://$host.$domain:$port.
-          var originParts = document.location.hostname.split(".");
-          originParts[0] += "-" + session.port;
-          result.appOrigin = "https://" + originParts.join(".");
-        } else {
-          result.error = "Not using HTTP nor HTTPS; don't know what to do.";
-        }
+        var urlPieces = Meteor.settings.public.wildcardParentUrl.split("://");
+        result.appOrigin = urlPieces[0] + "://" + session.subdomain + "." + urlPieces[1];
 
         result.sessionId = session.sessionId;
         return result;

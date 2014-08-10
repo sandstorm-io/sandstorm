@@ -75,6 +75,7 @@ function waitPromise(promise) {
 
 var runningGrains = {};
 var proxies = {};
+var proxiesBySubdomain = {};
 
 Meteor.methods({
   newGrain: function (packageId, command, title) {
@@ -141,17 +142,17 @@ Meteor.methods({
 
     var proxy = new Proxy(grainId, sessionId, null, isOwner, user);
     proxies[sessionId] = proxy;
-    var port = waitPromise(proxy.getPort());
+    proxiesBySubdomain[proxy.subdomain] = proxy;
 
     Sessions.insert({
       _id: sessionId,
       grainId: grainId,
-      port: port,
+      subdomain: proxy.subdomain,
       timestamp: new Date().getTime(),
       userId: userId
     });
 
-    return {sessionId: sessionId, port: port};
+    return {sessionId: sessionId, subdomain: proxy.subdomain};
   },
 
   keepSessionAlive: function (sessionId) {
@@ -348,8 +349,8 @@ shutdownGrain = function (grainId, keepSessions) {
     Sessions.find({grainId: grainId}).forEach(function (session) {
       var proxy = proxies[session._id];
       if (proxy) {
-        proxy.close();
         delete proxies[session._id];
+        delete proxiesBySubdomain[session._id];
       }
       Sessions.remove(session._id);
     });
@@ -411,8 +412,8 @@ function gcSessions() {
   Sessions.find({timestamp: {$lt: (now - TIMEOUT_MS)}}).forEach(function (session) {
     var proxy = proxies[session._id];
     if (proxy) {
-      proxy.close();
       delete proxies[session._id];
+      delete proxiesBySubdomain[session._id];
     }
     Sessions.remove(session._id);
   });
@@ -425,65 +426,63 @@ Meteor.startup(function () {
   gcSessions();
 
   // Remake proxies for all sessions that remain.
-  var firstPort = nextPort;
-  var usedPorts = {};
   Sessions.find({}).forEach(function (session) {
     var grain = Grains.findOne(session.grainId);
     var user = Meteor.users.findOne({_id: session.userId});
     var isOwner = grain.userId === session.userId;
-    // Try to recreate the proxy on the same port as before.
-    var proxy = new Proxy(session.grainId, session._id, session.port, isOwner, user);
-
-    try {
-      waitPromise(proxy.getPort());
-    } catch (err) {
-      // Dang, can't restore this session.
-      Sessions.remove(session._id);
-      return;
-    }
-
+    var proxy = new Proxy(session.grainId, session._id, session.subdomain, isOwner, user);
     proxies[session._id] = proxy;
-
-    // If the port looks like one we might accidentally reassign, move nextPort past it and arrange
-    // to omit it from availablePorts.
-    if (session.port >= firstPort && session.port < firstPort + 256) {
-      nextPort = Math.max(session.port + 1, nextPort);
-      usedPorts[session.port] = true;
-    }
+    proxiesBySubdomain[session.subdomain] = proxy;
   });
-
-  // Any ports in the range [firstPort, nextPort) that were not re-opened should be considered
-  // available.
-  for (var i = nextPort - 1; i >= firstPort; i--) {
-    if (!(i in usedPorts)) {
-      availablePorts.push(i);
-    }
-  }
 });
+
+// =======================================================================================
+// Routing to proxies.
+//
+
+tryProxyUpgrade = function (req, socket, head) {
+  var subdomain = req.headers.host.split(".")[0];
+  if (subdomain in proxiesBySubdomain) {
+    var proxy = proxiesBySubdomain[subdomain]
+
+    // Meteor sets the timeout to five seconds. Change that back to two
+    // minutes, which is the default value.
+    socket.setTimeout(120000);
+
+    proxy.upgradeHandler(req, socket, head);
+    return true;
+  } else {
+    return false;
+  }
+}
+
+tryProxyRequest = function (req, res) {
+  var subdomain = req.headers.host.split(".")[0];
+  if (subdomain in proxiesBySubdomain) {
+    var proxy = proxiesBySubdomain[subdomain];
+    proxy.requestHandler(req, res);
+    return true;
+  } else {
+    return false;
+  }
+}
+
 
 // =======================================================================================
 // Proxy class
 //
-// Connects to a grain and exports it on an HTTP port.
+// Connects to a grain and exports it on a subdomain.
 //
-// The method getPort() returns a promise for a port number which resolves as soon as it's ready
-// to receive connections.
 
-var availablePorts = [];
-var nextPort = 7000;  // If we run out of ports, open this one and increment counter.
-
-function choosePort() {
-  if (availablePorts.length == 0) {
-    return nextPort++;
-  } else {
-    return availablePorts.pop();
-  }
-}
-
-function Proxy(grainId, sessionId, preferredPort, isOwner, user) {
+function Proxy(grainId, sessionId, preferredSubdomain, isOwner, user) {
   this.grainId = grainId;
   this.sessionId = sessionId;
   this.isOwner = isOwner;
+  if (!preferredSubdomain) {
+    this.subdomain = generateRandomHostname(20);
+  } else {
+    this.subdomain = preferredSubdomain;
+  }
 
   if (user) {
     var serviceId;
@@ -509,15 +508,7 @@ function Proxy(grainId, sessionId, preferredPort, isOwner, user) {
 
   var self = this;
 
-  this.server = Http.createServer(function (request, response) {
-    if (!self.server) {
-      // We closed this port already, but the browser made another request on an existing
-      // connection.
-      response.writeHead(404, "Not found", { "Content-Type": "text/plain" });
-      response.end("Proxy closed.");
-      return;
-    }
-
+  this.requestHandler = function (request, response) {
     if (request.url === "/_sandstorm-init?sessionid=" + self.sessionId) {
       self.doSessionInit(request, response);
       return;
@@ -541,51 +532,16 @@ function Proxy(grainId, sessionId, preferredPort, isOwner, user) {
       }
       response.end(body);
     });
-  });
+  };
 
-  this.server.on("upgrade", function (request, socket, head) {
-    if (!self.server) {
-      // We closed this port already, but the browser made another request on an existing
-      // connection.
-      socket.destroy();
-      return;
-    }
-
+  this.upgradeHandler = function (request, socket, head) {
     self.handleWebSocket(request, socket, head, 0).catch(function (err) {
       console.error("WebSocket setup failed:", err.stack);
       // TODO(cleanup):  Manually send back a 500 response?
       socket.destroy();
     });
-  });
+  };
 
-  // Choose a port and make sure we actually manage to open it.
-  var portPromise = new Promise(function (resolve, reject) {
-    var port = preferredPort || choosePort();
-    var errorCount = 0;
-    self.server.listen(port);
-    self.server.on("listening", function () {
-      resolve(port);
-    });
-    self.server.on("error", function (err) {
-      if (preferredPort || err.code !== "EADDRINUSE") {
-        self.server.close();
-        delete self.server;
-        reject(err);
-      } else if (errorCount++ < 16) {
-        // Try the next port.
-        port = choosePort();
-        self.server.listen(port);
-      } else {
-        self.server.close();
-        delete self.server;
-        reject(new Error(
-            "Couldn't find a port to use.  Is something else using the same port " +
-            "range as Sandstorm?"));
-      }
-    });
-  });
-
-  this.getPort = function () { return portPromise; }
 }
 
 Proxy.prototype.getConnection = function () {
@@ -663,24 +619,6 @@ Proxy.prototype.resetConnection = function () {
     delete this.uiView;
     delete this.supervisor;
     delete this.connection;
-  }
-}
-
-Proxy.prototype.close = function () {
-  if (this.server) {
-    this.resetConnection();
-    var server = this.server;
-    delete this.server;
-
-    this.getPort().then(function (port) {
-      // close() closes the port, but browsers may still have connections open, and it doesn't close
-      // those connections. We can't reuse the port until we're sure no client still has an old
-      // connection open talking to this proxy. Luckily there's a callback for that. (I wish I
-      // could just abort all connections, though...)
-      server.close(function () {
-        availablePorts.push(port);
-      });
-    });
   }
 }
 

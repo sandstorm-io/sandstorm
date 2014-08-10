@@ -1879,6 +1879,7 @@ private:
           ", \"kernelTooOld\":", kernelNewEnough ? "false" : "true",
           ", \"missingWildcardParentUrl\":", config.wildcardParentUrl == nullptr ? "true" : "false",
           ", \"allowDemoAccounts\":", config.allowDemoAccounts ? "true" : "false",
+          ", \"wildcardParentUrl\":\"", config.wildcardParentUrl, "\"",
           "}}").cStr(), true));
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "main.js", EXEC_END_ARGS));
       KJ_UNREACHABLE;

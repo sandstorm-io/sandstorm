@@ -53,6 +53,7 @@ export WILDCARD_PARENT_URL
 export DDP_DEFAULT_CONNECTION_URL
 export MONGO_URL="mongodb://sandstorm:$MONGO_PASSWD@127.0.0.1:$MONGO_PORT/meteor?authSource=admin"
 export MONGO_OPLOG_URL="mongodb://sandstorm:$MONGO_PASSWD@127.0.0.1:$MONGO_PORT/local?authSource=admin"
+export ROOT_URL=$BASE_URL
 
 SETTINGS=$(mktemp)
 
@@ -61,7 +62,8 @@ cat > $SETTINGS << __EOF__
   "public": {
     "buildstamp": "[local dev front-end]",
     "allowDemoAccounts": true,
-    "missingWildcardParentUrl": false
+    "missingWildcardParentUrl": false,
+    "wildcardParentUrl": "$WILDCARD_PARENT_URL"
   },
   "home": "$SANDSTORM_HOME"
 }

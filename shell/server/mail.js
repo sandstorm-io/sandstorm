@@ -26,7 +26,8 @@ var EmailSendPort = EmailRpc.EmailSendPort;
 
 var Url = Npm.require("url");
 
-var HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
+var ROOT_URL = Url.parse(process.env.ROOT_URL);
+var HOSTNAME = ROOT_URL.hostname;
 
 var DAILY_LIMIT = 50;
 var RECIPIENT_LIMIT = 20;
@@ -366,7 +367,7 @@ HackSessionContextImpl.prototype.getPublicId = function() {
 
     result.publicId = this._getPublicId();
     result.hostname = HOSTNAME;
-    result.autoUrl = makeWildcardUrl(result.publicId);
+    result.autoUrl = ROOT_URL.protocol + "//" + makeWildcardHost(result.publicId);
 
     var grain = Grains.findOne(this.grainId, {fields: {userId: 1}});
     result.isDemoUser = Meteor.users.findOne(grain.userId).expires ? true : false;

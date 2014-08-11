@@ -91,7 +91,7 @@ Sessions = new Meteor.Collection("sessions");
 //   _id:  random
 //   grainId:  _id of the grain to which this session is connected.
 //   hostId: ID part of the hostname from which this grain is being served. I.e. this replaces the
-//       '*' in WILDCARD_URL.
+//       '*' in WILDCARD_HOST.
 //   timestamp:  Time of last keep-alive message to this session.  Sessions time out after some
 //       period.
 //   userId:  User who owns this session.
@@ -206,27 +206,13 @@ isAdmin = function() {
   }
 }
 
-function parseWildcardUrl(url) {
-  var match = url.match(/^([-a-zA-Z0-9+]*:)\/\/([^*]*)[*]([^*]*)$/);
-
-  if (!match) {
-    throw new Error("Invalid wildcard URL: " + url);
-  }
-
-  return {
-    protocol: match[1],
-    hostPrefix: match[2],
-    hostSuffix: match[3]
-  };
-}
-
-var wildcardUrl = parseWildcardUrl(Meteor.settings.public.wildcardUrl);
+var wildcardHost = Meteor.settings.public.wildcardHost.split("*");
 
 matchWildcardHost = function(host) {
   // See if the hostname is a member of our wildcard. If so, extract the ID.
 
-  var prefix = wildcardUrl.hostPrefix;
-  var suffix = wildcardUrl.hostSuffix;
+  var prefix = wildcardHost[0];
+  var suffix = wildcardHost[1];
   if (host.lastIndexOf(prefix, 0) >= 0 &&
       host.indexOf(suffix, -suffix.length) >= 0 &&
       host.length >= prefix.length + suffix.length) {
@@ -239,6 +225,6 @@ matchWildcardHost = function(host) {
   return null;
 }
 
-makeWildcardUrl = function (id) {
-  return wildcardUrl.protocol + "//" + wildcardUrl.hostPrefix + id + wildcardUrl.hostSuffix;
+makeWildcardHost = function (id) {
+  return wildcardHost[0] + id + wildcardHost[1];
 }

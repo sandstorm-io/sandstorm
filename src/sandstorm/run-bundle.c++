@@ -1183,7 +1183,7 @@ private:
     UserIds uids;
     kj::String bindIp = kj::str("127.0.0.1");
     kj::String rootUrl = nullptr;
-    kj::String wildcardUrl = nullptr;
+    kj::String wildcardHost = nullptr;
     kj::String ddpUrl = nullptr;
     kj::String mailUrl = nullptr;
     kj::String updateChannel = nullptr;
@@ -1484,13 +1484,13 @@ private:
         config.bindIp = kj::mv(value);
       } else if (key == "BASE_URL") {
         config.rootUrl = kj::mv(value);
-      } else if (key == "WILDCARD_URL") {
-        config.wildcardUrl = kj::mv(value);
+      } else if (key == "WILDCARD_HOST") {
+        config.wildcardHost = kj::mv(value);
       } else if (key == "WILDCARD_PARENT_URL") {
         bool found = false;
         for (uint i: kj::range<uint>(0, value.size() - 3)) {
           if (value.slice(i).startsWith("://")) {
-            config.wildcardUrl = kj::str(value.slice(0, i + 3), "*.", value.slice(i + 3));
+            config.wildcardHost = kj::str("*.", value.slice(i + 3));
             found = true;
             break;
           }
@@ -1870,8 +1870,8 @@ private:
       } else {
         KJ_SYSCALL(setenv("ROOT_URL", config.rootUrl.cStr(), true));
       }
-      if (config.wildcardUrl != nullptr) {
-        KJ_SYSCALL(setenv("WILDCARD_URL", config.wildcardUrl.cStr(), true));
+      if (config.wildcardHost != nullptr) {
+        KJ_SYSCALL(setenv("WILDCARD_HOST", config.wildcardHost.cStr(), true));
       }
       if (config.ddpUrl != nullptr) {
         KJ_SYSCALL(setenv("DDP_DEFAULT_CONNECTION_URL", config.ddpUrl.cStr(), true));
@@ -1888,7 +1888,7 @@ private:
           "{\"public\":{\"build\":", buildstamp,
           ", \"kernelTooOld\":", kernelNewEnough ? "false" : "true",
           ", \"allowDemoAccounts\":", config.allowDemoAccounts ? "true" : "false",
-          ", \"wildcardUrl\":\"", config.wildcardUrl, "\"",
+          ", \"wildcardHost\":\"", config.wildcardHost, "\"",
           "}}").cStr(), true));
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "main.js", EXEC_END_ARGS));
       KJ_UNREACHABLE;

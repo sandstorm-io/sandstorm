@@ -311,7 +311,7 @@ Router.map(function () {
       var session = Session.get("session-" + grainId);
       if (session) {
         setCurrentSessionId(session.sessionId);
-        result.appOrigin = makeWildcardUrl(session.hostId);
+        result.appOrigin = document.location.protocol + "//" + makeWildcardHost(session.hostId);
         result.sessionId = session.sessionId;
         return result;
       } else {

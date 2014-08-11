@@ -342,27 +342,29 @@ else
   BASE_URL=$(prompt "URL users will enter in browser:" "http://$SS_HOSTNAME:$PORT")
 
   if [[ "$BASE_URL" =~ ^http://localhost(|:[0-9]*)(/.*)?$ ]]; then
-    DEFAULT_WILDCARD=http://*.local.sandstorm.io${BASH_REMATCH[1]}
-  elif [[ "$BASE_URL" =~ ^([^:/]*)://(.*)$ ]]; then
-    DEFAULT_WILDCARD=${BASH_REMATCH[1]}://*.${BASH_REMATCH[2]}
+    DEFAULT_WILDCARD=*.local.sandstorm.io${BASH_REMATCH[1]}
+  elif [[ "$BASE_URL" =~ ^[^:/]*://(.*)$ ]]; then
+    DEFAULT_WILDCARD=*.${BASH_REMATCH[2]}
   else
     DEFAULT_WILDCARD=
   fi
 
   echo "Sandstorm requires you to set up a wildcard DNS entry pointing at the server."
   echo "This allows Sandstorm to allocate new hosts on-the-fly for sandboxing purposes."
-  echo "Please enter the URL of the parent host of your wildcard. For example, if you"
-  echo "have mapped *.foo.example.com to your server, you could enter"
-  echo "\"http://*.foo.example.com\". You can also specify that hosts should have a"
-  echo "special prefix, like \"http://ss-*.foo.example.com\". If you have SSL set up"
-  echo "(and have a suitable wildcard certificate), use \"https://\". For"
-  echo "localhost servers, we have mapped *.local.sandstorm.io to 127.0.0.1 for your"
-  echo "convenience, so you can use \"http://*.local.sandstorm.io\" here."
-  WILDCARD_URL=$(prompt "DNS wildcard URL:" "$DEFAULT_WILDCARD")
+  echo "Please enter a DNS hostname containing a '*' which maps to your server. For "
+  echo "example, if you have mapped *.foo.example.com to your server, you could enter"
+  echo "\"*.foo.example.com\". You can also specify that hosts should have a special"
+  echo "prefix, like \"ss-*.foo.example.com\". Note that if your server's main page"
+  echo "is served over SSL, the wildcard address must support SSL as well, which"
+  echo "implies that you must have a wildcard certificate. For localhost servers,"
+  echo "we have mapped *.local.sandstorm.io to 127.0.0.1 for your convenience, so you"
+  echo "can use \"*.local.sandstorm.io\" here. If you are serving off a non-standard"
+  echo "port, you must include it here as well."
+  WILDCARD_HOST=$(prompt "Wildcard host:" "$DEFAULT_WILDCARD")
 
-  while ! [[ $WILDCARD_URL =~ ^https?://[-a-zA-Z0-9.]*[*][-a-zA-Z0-9.:]*$ ]]; do
-    error "Invalid wildcard URL. It must start with 'http://' or 'https://' and contain exactly one asterisk."
-    WILDCARD_URL=$(prompt "DNS wildcard URL:" "$DEFAULT_WILDCARD")
+  while ! [[ $WILDCARD_HOST =~ ^[^*]*[*][^*]*$ ]]; do
+    error "Invalid wildcard host. It must contain exactly one asterisk."
+    WILDCARD_HOST=$(prompt "Wildcard host:" "$DEFAULT_WILDCARD")
   done
 
   echo "If you want to be able to send e-mail invites and password reset messages, "
@@ -376,7 +378,7 @@ else
     UPDATE_CHANNEL=none
   fi
 
-  writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL WILDCARD_URL MAIL_URL UPDATE_CHANNEL > sandstorm.conf
+  writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL WILDCARD_HOST MAIL_URL UPDATE_CHANNEL > sandstorm.conf
 
   echo
   echo "Config written to $PWD/sandstorm.conf."

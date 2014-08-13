@@ -655,7 +655,7 @@ private:
     // them.
     KJ_SYSCALL(mount(src.cStr(), dst.cStr(), nullptr, MS_BIND, nullptr), src, dst);
     KJ_SYSCALL(mount(src.cStr(), dst.cStr(), nullptr,
-                     MS_BIND | MS_REMOUNT | MS_NOSUID | MS_NOATIME | flags, nullptr),
+                     MS_BIND | MS_REMOUNT | MS_NOSUID | flags, nullptr),
         src, dst);
   }
 
@@ -887,25 +887,25 @@ private:
       // 2) When we exit, the mount namespace disappears and the tmpfs is thus automatically
       //    unmounted.  No need for careful cleanup, and no need to implement a risky recursive
       //    delete.
-      KJ_SYSCALL(mount("sandstorm-tmp", "tmp", "tmpfs", MS_NOATIME | MS_NOSUID,
+      KJ_SYSCALL(mount("sandstorm-tmp", "tmp", "tmpfs", MS_NOSUID,
                        "size=16m,nr_inodes=4k,mode=770"));
     }
     if (access("dev", F_OK) == 0) {
-      KJ_SYSCALL(mount("sandstorm-dev", "dev", "tmpfs", MS_NOATIME | MS_NOSUID | MS_NOEXEC,
+      KJ_SYSCALL(mount("sandstorm-dev", "dev", "tmpfs", MS_NOSUID | MS_NOEXEC,
                        "size=1m,nr_inodes=16,mode=755"));
       makeCharDeviceNode("null", "null", 1, 3);
       makeCharDeviceNode("zero", "zero", 1, 5);
       makeCharDeviceNode("random", "urandom", 1, 9);
       makeCharDeviceNode("urandom", "urandom", 1, 9);
       KJ_SYSCALL(mount("dev", "dev", nullptr,
-                       MS_REMOUNT | MS_BIND | MS_NOSUID | MS_NOEXEC | MS_NOATIME | MS_RDONLY, nullptr));
+                       MS_REMOUNT | MS_BIND | MS_NOSUID | MS_NOEXEC | MS_RDONLY, nullptr));
     }
     if (access("var", F_OK) == 0) {
       bind(kj::str(varPath, "/sandbox"), "var", MS_NODEV);
     }
     if (access("proc/cpuinfo", F_OK) == 0) {
       // Map in the real cpuinfo.
-      bind("/proc/cpuinfo", "proc/cpuinfo", MS_NOATIME | MS_NOSUID | MS_NOEXEC | MS_NODEV);
+      bind("/proc/cpuinfo", "proc/cpuinfo", MS_NOSUID | MS_NOEXEC | MS_NODEV);
     }
 
     // Grab a reference to the old root directory.

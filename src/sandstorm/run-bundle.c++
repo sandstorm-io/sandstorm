@@ -1372,8 +1372,7 @@ private:
     KJ_SYSCALL(mount("/dev/fuse", "dev/fuse", nullptr, MS_BIND, nullptr));
 
     // Mount a tmpfs at /etc and copy over necessary config files from the host.
-    KJ_SYSCALL(mount("tmpfs", "etc", "tmpfs",
-                     MS_NOATIME | MS_NOSUID | MS_NOEXEC,
+    KJ_SYSCALL(mount("tmpfs", "etc", "tmpfs", MS_NOSUID | MS_NOEXEC,
                      kj::str("size=2m,nr_inodes=128,mode=755", tmpfsUidOpts).cStr()));
     copyEtc();
 

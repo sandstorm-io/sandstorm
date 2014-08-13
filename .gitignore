@@ -17,3 +17,4 @@ bundle/
 .shell-env
 .vagrant/
 phantomjsdriver.log
+selenium-debug.log

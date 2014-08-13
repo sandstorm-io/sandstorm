@@ -1,0 +1,32 @@
+{
+  "src_folders" : ["nightwatch"],
+  "output_folder" : "reports",
+
+  "selenium" : {
+    "start_process" : false,
+    "server_path" : "node_modules/selenium-standalone/.selenium/2.42.0/server.jar",
+    "log_path" : "",
+    "host" : "127.0.0.1",
+    "port" : 4444
+  },
+
+  "test_settings" : {
+    "default" : {
+      "launch_url" : "http://localhost:6080",
+      "selenium_port"  : 4444,
+      "selenium_host"  : "localhost",
+      "silent": true,
+
+      "desiredCapabilities": {
+        "browserName": "phantomjs",
+        "phantomjs.binary.path" : "node_modules/phantomjs/bin/phantomjs"
+      }
+    },
+
+    "firefox" : {
+      "desiredCapabilities": {
+        "browserName": "firefox"
+      }
+    }
+  }
+}

@@ -1,10 +1,6 @@
 #!/bin/bash
 
-start-selenium &
-
-sleep 2 # TODO: make this more robust...
-
-mocha basic
+nightwatch
 rc=$?
 
 [[ -z "$(jobs -p)" ]] || kill $(jobs -p)

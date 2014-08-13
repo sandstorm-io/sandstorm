@@ -80,7 +80,7 @@ interface ByteStream {
   # a good idea.
   #
   # Similarly, the implementation of `ByteStream` can delay returning from `write()` as a way to
-  # control flow.
+  # hint to the caller that it should hold off on further writes.
 
   done @1 ();
   # Call after the last write to indicate that there is no more data. If the `ByteStream` is

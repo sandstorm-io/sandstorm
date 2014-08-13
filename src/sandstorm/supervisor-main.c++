@@ -840,19 +840,12 @@ private:
   }
 
   void makeCharDeviceNode(const char *name, const char* realName, int major, int minor) {
-    // Try with mknod first.
+    // Creating a real device node with mknod won't work on any current kernel, and we're
+    // currently stuck with the filesystem being nodev, so even if mknod were to work, the
+    // resulting device node wouldn't function.
     auto dst = kj::str("dev/", name);
-    if (mknod(dst.cStr(), S_IFCHR | 0666, makedev(major, minor)) != 0) {
-      if (errno != EPERM) {
-        KJ_FAIL_SYSCALL("mknod", errno, name);  // Unexpected failure
-      }
-
-      // Try a fallback: bind-mount the existing node. The overmounted file's mode doesn't matter.
-      // We use mknod() to create a regular file here just because it's more direct than open()ing
-      // and then close()ing.
-      KJ_SYSCALL(mknod(dst.cStr(), S_IFREG | 0666, 0));
-      KJ_SYSCALL(mount(kj::str("/dev/", realName).cStr(), dst.cStr(), nullptr, MS_BIND, nullptr));
-    }
+    KJ_SYSCALL(mknod(dst.cStr(), S_IFREG | 0666, 0));
+    KJ_SYSCALL(mount(kj::str("/dev/", realName).cStr(), dst.cStr(), nullptr, MS_BIND, nullptr));
   }
 
   void setupFilesystem() {
@@ -891,14 +884,16 @@ private:
                        "size=16m,nr_inodes=4k,mode=770"));
     }
     if (access("dev", F_OK) == 0) {
-      KJ_SYSCALL(mount("sandstorm-dev", "dev", "tmpfs", MS_NOSUID | MS_NOEXEC,
+      KJ_SYSCALL(mount("sandstorm-dev", "dev", "tmpfs",
+                       MS_NOATIME | MS_NOSUID | MS_NOEXEC | MS_NODEV,
                        "size=1m,nr_inodes=16,mode=755"));
       makeCharDeviceNode("null", "null", 1, 3);
       makeCharDeviceNode("zero", "zero", 1, 5);
       makeCharDeviceNode("random", "urandom", 1, 9);
       makeCharDeviceNode("urandom", "urandom", 1, 9);
       KJ_SYSCALL(mount("dev", "dev", nullptr,
-                       MS_REMOUNT | MS_BIND | MS_NOSUID | MS_NOEXEC | MS_RDONLY, nullptr));
+                       MS_REMOUNT | MS_BIND | MS_NOEXEC | MS_NOSUID | MS_NODEV | MS_RDONLY,
+                       nullptr));
     }
     if (access("var", F_OK) == 0) {
       bind(kj::str(varPath, "/sandbox"), "var", MS_NODEV);

@@ -59,6 +59,15 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   put @3 (path :Text, content :PutContent, context :Context) -> Response;
   delete @4 (path :Text, context :Context) -> Response;
 
+  postStreaming @5 (path :Text, context :Context) -> (stream :RequestStream);
+  putStreaming @6 (path :Text, context :Context) -> (stream :RequestStream);
+  # Streaming post/put requests, useful when the input is large. If these throw exceptions, the
+  # caller should fall back to regular post() / put() on the assumption that the app doesn't
+  # implement streaming.
+  #
+  # TODO(someday): It seems like Cap'n Proto needs a way to distinguish not-implemented from other
+  #   exception types.
+
   openWebSocket @2 (path :Text, context :Context,
                     protocol :List(Text), clientStream :WebSocketStream)
                 -> (protocol :List(Text), serverStream :WebSocketStream);
@@ -68,7 +77,20 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
 
   struct Context {
     # Additional per-request context.
+
     cookies @0 :List(Util.KeyValue);
+
+    responseStream @1 :Util.ByteStream;
+    # Stream to which the app can optionally write the response body. This is only actually
+    # used in the case of a `content` response where the `body` union is set to `stream`. In that
+    # case, after returning from the HTTP method, the app begins writing bytes to `responseStream`.
+    #
+    # Since it's not guaranteed that `responseStream` will be used, and because it would be
+    # confusing to start receiving `write()` calls on it before receiving the HTTP response,
+    # callers should typically initialize this field with a promise. When the response indicates
+    # streaming, the caller can then resolve that promise and start receiving the content.
+    #
+    # Callers are required to provide this capability; apps need not handle it being null.
   }
 
   struct PostContent {
@@ -169,7 +191,10 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
 
         body :union {
           bytes @5 :Data;
-          stream @6 :Stream;
+
+          stream @6 :Util.Handle;
+          # Indicates that the content will be streamed to the `responseStream` offered in the
+          # call's `Context`. The caller may cancel the stream by dropping the Handle.
         }
 
         disposition :union {
@@ -231,8 +256,14 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     }
   }
 
-  interface Stream {
-    # TODO(someday):  Allow streaming responses.
+  interface RequestStream extends(Util.ByteStream) {
+    # A streaming request. The request body is streamed in via the methods of ByteStream.
+
+    getResponse @0 () -> Response;
+    # Get the final HTTP response. The caller should call this immediately, before it has actually
+    # written the request data. The method is allowed to return early, if the app decides it doesn't
+    # actually care about the remaining request bytes, in which case the caller should stop writing
+    # them and simply drop the RequestStream capability.
   }
 
   interface WebSocketStream {

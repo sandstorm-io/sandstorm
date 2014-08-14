@@ -1,6 +1,7 @@
 {
-  "src_folders" : ["nightwatch"],
+  "src_folders" : ["tests"],
   "output_folder" : "reports",
+  "custom_commands_path" : "commands",
 
   "selenium" : {
     "start_process" : true,
@@ -16,6 +17,10 @@
       "selenium_port"  : 4444,
       "selenium_host"  : "localhost",
       "silent": true,
+      "screenshots" : {
+        "enabled" : true,
+        "path" : "screenshots"
+      },
 
       "desiredCapabilities": {
         "browserName": "phantomjs",

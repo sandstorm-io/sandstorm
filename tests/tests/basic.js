@@ -8,12 +8,18 @@ module.exports = {
       .end();
   },
 
-  "Test login" : function (browser) {
+  "Test demo login" : function (browser) {
     browser
       .url("http://localhost:6080/demo")
       .click("#createDemoUser")
       .assert.containsText("#login-name-link", "Demo User")
-      .saveScreenshot('test.png')
+      .end();
+  },
+
+  "Test demo login command" : function (browser) {
+    browser
+      .login()
+      .assert.containsText("#login-name-link", "Demo User")
       .end();
   }
 };

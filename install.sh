@@ -344,7 +344,7 @@ else
   if [[ "$BASE_URL" =~ ^http://localhost(|:[0-9]*)(/.*)?$ ]]; then
     DEFAULT_WILDCARD=*.local.sandstorm.io${BASH_REMATCH[1]}
   elif [[ "$BASE_URL" =~ ^[^:/]*://(.*)$ ]]; then
-    DEFAULT_WILDCARD=*.${BASH_REMATCH[2]}
+    DEFAULT_WILDCARD=*.${BASH_REMATCH[1]}
   else
     DEFAULT_WILDCARD=
   fi

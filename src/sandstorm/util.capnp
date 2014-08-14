@@ -100,30 +100,29 @@ interface ByteStream {
   # is not necessary for the callee to actually implement it.
 }
 
-interface Variable {
-  # A "variable" -- a value that changes over time.  Supports subscribing to updates.
+interface Assignable {
+  # An "assignable" -- a mutable memory cell. Supports subscribing to updates.
   #
   # TODO(someday):  This should be a parameterized type, when Cap'n Proto supports that.
 
   get @0 () -> (value :AnyPointer, setter :Setter);
-  # The returned setter's set() can only be called once, and throws an exception if the variable
-  # has changed since `getForUpdate()` was called.  This can be used to implement optimistic
-  # concurrency.
+  # The returned setter's set() can only be called once, and throws an exception if the assignable
+  # has changed since `get()` was called. This can be used to implement optimistic concurrency.
 
   asGetter @1 () -> (getter :Getter);
-  # Return a read-only capability for this variable, co-hosted with the variable itself for
-  # performance.  If the varibale is persistable, the getter is as well.
+  # Return a read-only capability for this assignable, co-hosted with the assignable itself for
+  # performance.  If the assignable is persistable, the getter is as well.
 
   asSetter @2 () -> (setter :Setter);
-  # Return a write-only capability for this variable, co-hosted with the variable itself for
-  # performance.  If the varibale is persistable, the setter is as well.
+  # Return a write-only capability for this assignable, co-hosted with the assignable itself for
+  # performance.  If the assignable is persistable, the setter is as well.
 
   interface Getter {
     get @0 () -> (value :AnyPointer);
 
     pushTo @1 (setter :Setter) -> (handle :Handle);
-    # Subscribe to updates.  Calls the given setter any time the variable's value changes.  Drop
-    # the returned handle to stop receiving updates.  If the variable is persistent, `setter` must
+    # Subscribe to updates.  Calls the given setter any time the assignable's value changes.  Drop
+    # the returned handle to stop receiving updates.  If the assignable is persistent, `setter` must
     # be as well.
   }
 

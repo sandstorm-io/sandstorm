@@ -335,9 +335,9 @@ interface SessionContext {
   # particular session.  This can be used e.g. to ask the platform to present certain system
   # dialogs to the user.
 
-  getSharedPermissions @0 () -> (var :Util.Variable);
-  # Returns a `Variable(PermissionSet)` indicating the permissions held by the user of this session.
-  # This variable can be persisted beyond the end of the session.  This is useful for detecting if
+  getSharedPermissions @0 () -> (var :Util.Assignable);
+  # Returns an `Assignable(PermissionSet)` indicating the permissions held by the user of this session.
+  # This assignable can be persisted beyond the end of the session.  This is useful for detecting if
   # the user later loses their access and auto-revoking things in that case.  See also `tieToUser()`
   # for an easier way to make a particular capability auto-revoke if the user's permissions change.
 
@@ -407,7 +407,7 @@ struct RoleDef {
 
   title @0 :Util.LocalizedText;
   # Name of the role, e.g. "editor" or "viewer".
-  
+
   verbPhrase @1 :Util.LocalizedText;
   # Verb phrase describing what users in this role can do with the grain.  Should be something
   # like "can edit" or "can view".  When the user shares the view with others, these verb phrases
@@ -429,13 +429,13 @@ struct RoleDef {
 interface SharingLink {
   # Represents one link in the sharing graph.
 
-  getPetname @0 () -> (name :Util.Variable);
-  # Name assigned by the sharer to the recipient.  Variable holds `LocalizedText`.
+  getPetname @0 () -> (name :Util.Assignable);
+  # Name assigned by the sharer to the recipient. Assignable holds `LocalizedText`.
 }
 
 interface ViewSharingLink extends(SharingLink) {
-  getRoleAssignment @0 () -> (var :Util.Variable);
-  # Returns a Variable containing a RoleAssignment.
+  getRoleAssignment @0 () -> (var :Util.Assignable);
+  # Returns an Assignable containing a RoleAssignment.
 
   struct RoleAssignment {
     union {

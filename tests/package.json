@@ -15,6 +15,6 @@
     "url" : "https://github.com/sandstorm-io/sandstorm.git"
   },
   "scripts": {
-    "test": "./run-tests.sh"
+    "test": "nightwatch"
   }
 }

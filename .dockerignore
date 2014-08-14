@@ -18,6 +18,7 @@ website/sandstorm.io.files
 website/sandstorm.io.includes
 shell-bundle
 bundle
+.docker
 .shell-env
 .vagrant
 shell/packages/*/.build

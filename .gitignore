@@ -14,6 +14,7 @@ shell/public/restart.png
 shell-bundle
 sandstorm-*.tar.xz
 bundle/
+.docker
 .shell-env
 .vagrant/
 phantomjsdriver.log

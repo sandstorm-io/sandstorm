@@ -95,3 +95,7 @@ bundle: bin/spk bin/minibox bin/sandstorm-supervisor bin/sandstorm-http-bridge b
 
 sandstorm-$(BUILD).tar.xz: bundle
 	tar c --transform="s,^bundle,sandstorm-$(BUILD)," bundle | xz -c $(XZ_FLAGS) > sandstorm-$(BUILD).tar.xz
+
+.docker: sandstorm-$(BUILD).tar.xz
+	docker build -t sandstorm .
+	@touch .docker

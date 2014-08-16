@@ -1,5 +1,6 @@
 Npm.depends({
-    'capnp': '0.1.3'
+    'es6-promise': '1.0.0',
+    'capnp': '0.1.4'
 });
 
 Package.on_use(function (api) {

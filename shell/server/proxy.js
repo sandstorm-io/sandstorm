@@ -930,7 +930,10 @@ function WebSocketReceiver(socket) {
 
 function pumpWebSocket(socket, rpcStream) {
   socket.on("data", function (chunk) {
-    rpcStream.sendBytes(chunk);
+    rpcStream.sendBytes(chunk).catch(function (err) {
+      console.error("WebSocket sendBytes failed: " + err.stack);
+      socket.destroy();
+    });
   });
   socket.on("end", function (chunk) {
     rpcStream.close();

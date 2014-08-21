@@ -3,22 +3,25 @@
 module.exports = {
   "Test title" : function (browser) {
     browser
-      .url("http://localhost:6080")
-      .assert.title('Sandstorm')
-      .end();
+      .init()
+      .assert.title('Sandstorm');
   },
 
-  "Test demo login" : function (browser) {
+  "Test github login command" : function (browser) {
     browser
-      .url("http://localhost:6080/demo")
-      .click("#createDemoUser")
-      .assert.containsText("#login-name-link", "Demo User")
-      .end();
+      .loginGithub()
+      .assert.containsText("#login-name-link", "Github User");
+  },
+
+  "Test google login command" : function (browser) {
+    browser
+      .loginGoogle()
+      .assert.containsText("#login-name-link", "Google User");
   },
 
   "Test demo login command" : function (browser) {
     browser
-      .login()
+      .loginDemo()
       .assert.containsText("#login-name-link", "Demo User")
       .end();
   }

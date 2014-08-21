@@ -27,7 +27,7 @@ NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 
 # TODO(cleanup): Originally each command here was defined in one file and there
 #   was really no shared code. That seems to have changed. Perhaps it's time
-#   to separate compilation and linking. 
+#   to separate compilation and linking.
 
 .PHONY: all install clean shell-env
 
@@ -96,6 +96,6 @@ bundle: bin/spk bin/minibox bin/sandstorm-supervisor bin/sandstorm-http-bridge b
 sandstorm-$(BUILD).tar.xz: bundle
 	tar c --transform="s,^bundle,sandstorm-$(BUILD)," bundle | xz -c $(XZ_FLAGS) > sandstorm-$(BUILD).tar.xz
 
-.docker: sandstorm-$(BUILD).tar.xz
+.docker: sandstorm-$(BUILD).tar.xz Dockerfile
 	docker build -t sandstorm .
 	@touch .docker

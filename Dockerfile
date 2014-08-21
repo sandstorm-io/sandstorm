@@ -19,9 +19,8 @@ RUN echo 'SERVER_USER=sandstorm\n\
 PORT=6080\n\
 MONGO_PORT=6081\n\
 BIND_IP=0.0.0.0\n\
-BASE_URL=http://localhost:6080\n\
+BASE_URL=http://local.sandstorm.io:6080\n\
 WILDCARD_HOST=*.local.sandstorm.io:6080\n\
-ALLOW_DEMO_ACCOUNTS=true\n\
 MAIL_URL=\n' > $HOME/sandstorm/sandstorm.conf
 
 RUN echo 'export PATH=$PATH:$HOME/sandstorm' >> $HOME/.bashrc

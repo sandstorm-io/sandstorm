@@ -5,14 +5,13 @@
   "devDependencies": {
     "chai": "~1.9.1",
     "mocha": "~1.20.1",
-    "selenium-webdriver": "~2.42.1",
+    "nightwatch": "~0.5.11",
     "phantomjs": "~1.9.7",
-    "selenium-standalone": "2.42.2-2.9.0",
-    "nightwatch": "~0.5.11"
+    "selenium-standalone": "2.42.2-2.9.0"
   },
   "repository": {
-    "type" : "git",
-    "url" : "https://github.com/sandstorm-io/sandstorm.git"
+    "type": "git",
+    "url": "https://github.com/sandstorm-io/sandstorm.git"
   },
   "scripts": {
     "test": "nightwatch"

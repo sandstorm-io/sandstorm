@@ -21,6 +21,7 @@ var Path = Npm.require("path");
 var Future = Npm.require("fibers/future");
 var Http = Npm.require("http");
 
+var ByteStream = Capnp.importSystem("sandstorm/util.capnp").ByteStream;
 var WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;
 var HackSession = Capnp.importSystem("sandstorm/hack-session.capnp");
 var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
@@ -717,6 +718,14 @@ Proxy.prototype.makeContext = function (request) {
   if (parseResult.cookies.length > 0) {
     context.cookies = parseResult.cookies;
   }
+
+  var promise = new Promise(function (resolve, reject) {
+    request.resolveResponseStream = resolve;
+    request.rejectResponseStream = reject;
+  });
+
+  context.responseStream = new Capnp.Capability(promise, ByteStream);
+
   return context;
 }
 
@@ -791,6 +800,19 @@ var errorCodes = {
   imATeapot:             { id: 418, title: "I'm a teapot" },
 };
 
+function ResponseStream(response, streamHandle) {
+  this.response = response;
+  this.streamHandle = streamHandle;
+}
+
+ResponseStream.prototype.write = function(data) {
+  this.response.write(data);
+}
+
+ResponseStream.prototype.done = function() {
+  this.response.end();
+}
+
 Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
   var self = this;
 
@@ -841,11 +863,21 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
       if (content.language) {
         response.setHeader("Content-Language", content.language);
       }
-      if ("bytes" in content.body) {
-        response.setHeader("Content-Length", content.body.bytes.length);
+      if ("stream" in content.body) {
+        response.writeHead(code.id, code.title);
+        request.resolveResponseStream(
+          new Capnp.Capability(new ResponseStream(response, content.body.stream),
+                               ByteStream));
+        return;
       } else {
-        // TODO(soon):  Implement streaming.
-        throw new Error("Streaming not implemented.");
+        request.rejectResponseStream(
+          new Error("Response content body was not a stream."));
+
+        if ("bytes" in content.body) {
+          response.setHeader("Content-Length", content.body.bytes.length);
+        } else {
+          throw new Error("Unknown content body type.");
+        }
       }
       if (("disposition" in content) && ("download" in content.disposition)) {
         response.setHeader("Content-Disposition", "attachment; filename=\"" +

@@ -46,6 +46,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 
+#include <sandstorm/util.capnp.h>
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/web-session.capnp.h>
 #include <sandstorm/email.capnp.h>
@@ -357,41 +358,60 @@ std::unordered_map<uint, HttpStatusInfo> makeStatusCodes() {
 const std::unordered_map<uint, HttpStatusInfo> HTTP_STATUS_CODES = makeStatusCodes();
 #pragma clang diagnostic pop
 
-class HttpParser: private http_parser {
+class HttpParser: public sandstorm::Handle::Server,
+                  private http_parser,
+                  private kj::TaskSet::ErrorHandler {
 public:
-  HttpParser() {
+  HttpParser(sandstorm::ByteStream::Client responseStream)
+    : responseStream(responseStream),
+      taskSet(*this) {
     memset(&settings, 0, sizeof(settings));
     settings.on_status = &on_status;
     settings.on_header_field = &on_header_field;
     settings.on_header_value = &on_header_value;
     settings.on_body = &on_body;
+    settings.on_headers_complete = &on_headers_complete;
     http_parser_init(this, HTTP_RESPONSE);
   }
 
-  void parse(kj::ArrayPtr<const char> data) {
-    size_t n = http_parser_execute(this, &settings, data.begin(), data.size());
-    if (n != data.size() || HTTP_PARSER_ERRNO(this) != HPE_OK) {
-      const char* error = http_errno_description(HTTP_PARSER_ERRNO(this));
-      KJ_FAIL_ASSERT("Failed to parse HTTP response from sandboxed app.", error);
-    }
+  kj::Promise<kj::ArrayPtr<byte>> readResponse(kj::AsyncIoStream& stream) {
+    // Read from the stream until we have enough data to forward the response. If the response
+    // is streaming or an upgrade, then just read the headers; otherwise read the entire stream.
+    // If the response is an upgrade, return any remainder bytes that should be forwarded to the
+    // new web socket; otherwise return an empty array.
 
-    KJ_ASSERT(status_code >= 100, (int)status_code);
+    return stream.tryRead(buffer, 1, sizeof(buffer)).then(
+        [this, &stream](size_t actual) mutable -> kj::Promise<kj::ArrayPtr<byte>> {
+      size_t nread = http_parser_execute(this, &settings, reinterpret_cast<char*>(buffer), actual);
+      if (nread != actual && !upgrade) {
+        const char* error = http_errno_description(HTTP_PARSER_ERRNO(this));
+        KJ_FAIL_ASSERT("Failed to parse HTTP response from sandboxed app.", error);
+      } else if (upgrade) {
+        KJ_ASSERT(nread <= actual && nread >= 0);
+        return kj::arrayPtr(buffer + nread, actual - nread);
+      } else if (actual == 0) {
+        // EOF
+        return kj::arrayPtr(buffer, 0);
+      } else if (headersComplete && isStreaming) {
+        return kj::arrayPtr(buffer, 0);
+      } else {
+        return readResponse(stream);
+      }
+    });
   }
 
-  void build(WebSession::Response::Builder builder) {
-    // Let the parser know about EOF.
-    if (http_parser_execute(this, &settings, nullptr, 0) != 0 ||
-        HTTP_PARSER_ERRNO(this) != HPE_OK) {
-      const char* error = http_errno_description(HTTP_PARSER_ERRNO(this));
-      KJ_FAIL_ASSERT("Failed to parse HTTP response from sandboxed app.", error);
+  void pumpStream(kj::Own<kj::AsyncIoStream>&& stream) {
+    if (isStreaming) {
+      taskSet.add(pumpStreamInternal(kj::mv(stream)));
     }
+  }
 
+  void build(WebSession::Response::Builder builder, sandstorm::Handle::Client handle) {
     KJ_ASSERT(!upgrade,
         "Sandboxed app attempted to upgrade protocol when client did not request this.");
 
     auto iter = HTTP_STATUS_CODES.find(status_code);
     HttpStatusInfo statusInfo;
-
     if (iter != HTTP_STATUS_CODES.end()) {
       statusInfo = iter->second;
     } else if (status_code / 100 == 4) {
@@ -489,8 +509,13 @@ public:
           }
         }
 
-        auto data = content.initBody().initBytes(body.size());
-        memcpy(data.begin(), body.begin(), body.size());
+        if (isStreaming) {
+          KJ_ASSERT(body.size() == 0);
+          content.initBody().setStream(handle);
+        } else {
+          auto data = content.initBody().initBytes(body.size());
+          memcpy(data.begin(), body.begin(), body.size());
+        }
         break;
       }
       case WebSession::Response::NO_CONTENT: {
@@ -542,6 +567,13 @@ public:
   }
 
 private:
+  enum HeaderElementType { NONE, FIELD, VALUE };
+
+  struct RawHeader {
+    kj::Vector<char> name;
+    kj::Vector<char> value;
+  };
+
   struct Header {
     kj::String name;
     kj::String value;
@@ -561,12 +593,41 @@ private:
     bool httpOnly = false;
   };
 
+  sandstorm::ByteStream::Client responseStream;
+  kj::TaskSet taskSet;
+  bool headersComplete = false;
+  byte buffer[4096];
   http_parser_settings settings;
-  kj::String statusString;
-  kj::String lastHeaderName;
+  kj::Vector<RawHeader> rawHeaders;
+  kj::Vector<char> rawStatusString;
+  HeaderElementType lastHeaderElement = NONE;
   std::map<kj::StringPtr, Header> headers;
   kj::Vector<char> body;
   kj::Vector<Cookie> cookies;
+  kj::String statusString;
+  bool isStreaming = false;
+
+  kj::Promise<void> pumpStreamInternal(kj::Own<kj::AsyncIoStream>&& stream) {
+    return stream->tryRead(buffer, 1, sizeof(buffer)).then(
+        [this, KJ_MVCAP(stream)](size_t actual) mutable -> kj::Promise<void> {
+      size_t nread = http_parser_execute(this, &settings, reinterpret_cast<char*>(buffer), actual);
+      if (nread != actual) {
+        const char* error = http_errno_description(HTTP_PARSER_ERRNO(this));
+        KJ_FAIL_ASSERT("Failed to parse HTTP response from sandboxed app.", error);
+      } else if (actual == 0) {
+        // EOF
+        taskSet.add(responseStream.doneRequest().send().then([](auto x){}));
+        return kj::READY_NOW;
+      } else {
+        taskSet.add(pumpStreamInternal(kj::mv(stream)));
+        return kj::READY_NOW;
+      }
+    });
+  }
+
+  void taskFailed(kj::Exception&& exception) override {
+    KJ_LOG(ERROR, exception);
+  }
 
   kj::Maybe<kj::StringPtr> findHeader(kj::StringPtr name) {
     auto iter = headers.find(name);
@@ -578,16 +639,28 @@ private:
   }
 
   void onStatus(kj::ArrayPtr<const char> status) {
-    statusString = kj::heapString(status);
+    rawStatusString.addAll(status);
   }
 
   void onHeaderField(kj::ArrayPtr<const char> name) {
-    lastHeaderName = kj::heapString(name);
-    toLower(lastHeaderName);
+    if (lastHeaderElement != FIELD) {
+      rawHeaders.resize(rawHeaders.size() + 1);
+    }
+    rawHeaders[rawHeaders.size() - 1].name.addAll(name);
+    lastHeaderElement = FIELD;
   }
 
   void onHeaderValue(kj::ArrayPtr<const char> value) {
-    if (lastHeaderName == "set-cookie") {
+    rawHeaders[rawHeaders.size() - 1].value.addAll(value);
+    lastHeaderElement = VALUE;
+  }
+
+  void addHeader(RawHeader &rawHeader) {
+    auto name = kj::heapString(rawHeader.name);
+    toLower(name);
+    kj::ArrayPtr<const char> value = rawHeader.value.asPtr();
+
+    if (name == "set-cookie") {
       // Really ugly cookie-parsing code.
       // TODO(cleanup):  Clean up.
       bool isFirst = true;
@@ -651,124 +724,69 @@ private:
       cookies.add(kj::mv(cookie));
 
     } else {
-      kj::StringPtr name = lastHeaderName;
       auto& slot = headers[name];
       if (slot.name != nullptr) {
         // Multiple instances of the same header are equivalent to comma-delimited.
         slot.value = kj::str(kj::mv(slot.value), ", ", value);
       } else {
-        slot = Header { kj::mv(lastHeaderName), kj::heapString(value) };
+        slot = Header { kj::mv(name), kj::heapString(value) };
       }
     }
   }
 
+
   void onBody(kj::ArrayPtr<const char> data) {
-    body.addAll(data);
+    if (isStreaming) {
+      auto request = responseStream.writeRequest();
+      auto dst = request.initData(data.size());
+      memcpy(dst.begin(), data.begin(), data.size());
+      taskSet.add(request.send().then([](auto x){}));
+    } else {
+      body.addAll(data);
+    }
   }
 
-#define ON_C(lower, title) \
+  void onHeadersComplete() {
+    for (auto &rawHeader : rawHeaders) {
+      addHeader(rawHeader);
+    }
+
+    KJ_IF_MAYBE(transferEncoding, findHeader("transfer-encoding")) {
+      if (kj::str(*transferEncoding) == "chunked") {
+        // TODO(soon): Investigate other ways to decide whether the response should be
+        // streaming. It may make sense to switch to streaming when the body goes over a
+        // certain size (maybe 1MB) or takes longer than a certain amount of time (maybe
+        // 10ms) to generate.
+        isStreaming = true;
+      }
+    }
+
+    statusString = kj::heapString(rawStatusString);
+
+    headersComplete = true;
+    KJ_ASSERT(status_code >= 100, (int)status_code);
+  }
+
+#define ON_DATA(lower, title) \
   static int on_##lower(http_parser* p, const char* d, size_t s) { \
     static_cast<HttpParser*>(p)->on##title(kj::arrayPtr(d, s)); \
     return 0; \
   }
-
-  ON_C(status, Status)
-  ON_C(header_field, HeaderField)
-  ON_C(header_value, HeaderValue)
-  ON_C(body, Body)
-#undef ON_C
-};
-
-kj::Promise<kj::Vector<char>> readAll(kj::AsyncIoStream& stream, kj::Vector<char>&& buffer) {
-  // TODO(perf):  Optimize Vector<char> to avoid per-element destructor calls.
-
-  size_t offset = buffer.size();
-  buffer.resize(kj::max(offset * 2, 4096));
-  size_t expected = buffer.size() - offset;
-  auto promise = stream.tryRead(buffer.begin() + offset, expected, expected);
-  return promise.then(
-      [&stream, offset, expected, KJ_MVCAP(buffer)](size_t actual) mutable
-      -> kj::Promise<kj::Vector<char>> {
-    if (actual < expected) {
-      // Got less than expected; must be EOF.
-      buffer.resize(offset + actual);
-      return kj::mv(buffer);
-    } else {
-      // Sill going; read more.
-      return readAll(stream, kj::mv(buffer));
-    }
-  });
-}
-
-kj::Promise<kj::Vector<char>> readAll(kj::Own<kj::AsyncIoStream>&& stream) {
-  auto& streamRef = *stream;
-  return readAll(streamRef, kj::Vector<char>()).attach(kj::mv(stream));
-}
-
-struct ResponseHeaders {
-  kj::Vector<char> headers;
-  kj::Array<byte> firstData;
-};
-
-kj::Maybe<ResponseHeaders> trySeparateHeaders(kj::Vector<char>& data) {
-  // Look for the end of the headers.  If found, consume `data` and return ResponseHeaders,
-  // otherwise leave `data` as-is and return nullptr.
-
-  char prev1 = '\0';
-  char prev2 = '\0';
-
-  for (size_t i: kj::indices(data)) {
-    char c = data[i];
-    if (c == '\n') {
-      if (prev1 == '\n' || (prev1 == '\r' && prev2 == '\n')) {
-        auto postHeaders = data.asPtr().slice(i + 1, data.size());
-        ResponseHeaders result;
-        result.firstData = kj::heapArray<byte>(reinterpret_cast<byte*>(postHeaders.begin()),
-                                               postHeaders.size());
-        data.resize(i);
-        result.headers = kj::mv(data);
-        return kj::mv(result);
-      }
-    }
-
-    prev2 = prev1;
-    prev1 = c;
+#define ON_EVENT(lower, title) \
+  static int on_##lower(http_parser* p) { \
+    static_cast<HttpParser*>(p)->on##title(); \
+    return 0; \
   }
 
-  return nullptr;
-}
+  ON_DATA(status, Status)
+  ON_DATA(header_field, HeaderField)
+  ON_DATA(header_value, HeaderValue)
+  ON_DATA(body, Body)
+  ON_EVENT(headers_complete, HeadersComplete);
+#undef ON_DATA
+#undef ON_EVENT
 
-kj::Promise<ResponseHeaders> readResponseHeaders(
-    kj::AsyncIoStream& stream, kj::Vector<char>&& buffer) {
-  size_t offset = buffer.size();
-  buffer.resize(kj::max(offset * 2, 4096));
-  size_t expected = buffer.size() - offset;
-  auto promise = stream.tryRead(buffer.begin() + offset, 1, expected);
-  return promise.then(
-      [&stream, offset, expected, KJ_MVCAP(buffer)](size_t actual) mutable
-      -> kj::Promise<ResponseHeaders> {
-    if (actual < expected) {
-      buffer.resize(offset + actual);
-    }
-
-    KJ_IF_MAYBE(result, trySeparateHeaders(buffer)) {
-      // Done with headers.
-      return kj::mv(*result);
-    }
-
-    if (actual < expected) {
-      // Got less than expected; must be EOF.
-      return ResponseHeaders { kj::mv(buffer), nullptr };
-    } else {
-      // Sill going; read more.
-      return readResponseHeaders(stream, kj::mv(buffer));
-    }
-  });
-}
-
-kj::Promise<ResponseHeaders> readResponseHeaders(kj::AsyncIoStream& stream) {
-  return readResponseHeaders(stream, kj::Vector<char>());
-}
+};
 
 class WebSocketPump final: public WebSession::WebSocketStream::Server,
                            private kj::TaskSet::ErrorHandler {
@@ -908,32 +926,33 @@ public:
 
     auto httpRequest = toBytes(kj::strArray(lines, "\r\n"));
     WebSession::WebSocketStream::Client clientStream = params.getClientStream();
-
+    sandstorm::ByteStream::Client responseStream =
+        context.getParams().getContext().getResponseStream();
     context.releaseParams();
+
     return serverAddr.connect().then(
-        [KJ_MVCAP(httpRequest), KJ_MVCAP(clientStream), context]
+        [this, KJ_MVCAP(httpRequest), KJ_MVCAP(clientStream), responseStream, context]
         (kj::Own<kj::AsyncIoStream>&& stream) mutable {
       kj::ArrayPtr<const byte> httpRequestRef = httpRequest;
       auto& streamRef = *stream;
       return streamRef.write(httpRequestRef.begin(), httpRequestRef.size())
           .attach(kj::mv(httpRequest))
-          .then([&streamRef]() { return readResponseHeaders(streamRef); })
-          .then([KJ_MVCAP(stream), KJ_MVCAP(clientStream), context]
-                (ResponseHeaders&& headers) mutable {
-            KJ_ASSERT(headers.headers.size() > 0, "Sandboxed server returned no data.");
-            HttpParser parser;
-            parser.parse(headers.headers);
+          .then([this, KJ_MVCAP(stream), KJ_MVCAP(clientStream), responseStream, context]
+                () mutable {
+            auto parser = kj::heap<HttpParser>(responseStream);
             auto results = context.getResults();
-            parser.buildForWebSocket(results);
 
-            auto pump = kj::heap<WebSocketPump>(kj::mv(stream), kj::mv(clientStream));
-
-            if (headers.firstData.size() > 0) {
-              pump->sendData(headers.firstData);
-            }
-
-            pump->pump();
-            results.setServerStream(kj::mv(pump));
+            return parser->readResponse(*stream).then(
+                [results, KJ_MVCAP(stream), KJ_MVCAP(clientStream), KJ_MVCAP(parser)]
+                (kj::ArrayPtr<byte> remainder) mutable {
+              auto pump = kj::heap<WebSocketPump>(kj::mv(stream), kj::mv(clientStream));
+              parser->buildForWebSocket(results);
+              if (remainder.size() > 0) {
+                pump->sendData(remainder);
+              }
+              pump->pump();
+              results.setServerStream(kj::mv(pump));
+            });
           });
     });
   }
@@ -1004,24 +1023,33 @@ private:
 
   template <typename Context>
   kj::Promise<void> sendRequest(kj::Array<byte> httpRequest, Context& context) {
+    sandstorm::ByteStream::Client responseStream =
+        context.getParams().getContext().getResponseStream();
     context.releaseParams();
     return serverAddr.connect().then(
-        [KJ_MVCAP(httpRequest)](kj::Own<kj::AsyncIoStream>&& stream) mutable {
+        [KJ_MVCAP(httpRequest), responseStream, context]
+        (kj::Own<kj::AsyncIoStream>&& stream) mutable {
       kj::ArrayPtr<const byte> httpRequestRef = httpRequest;
       auto& streamRef = *stream;
       return streamRef.write(httpRequestRef.begin(), httpRequestRef.size())
           .attach(kj::mv(httpRequest))
-          .then([KJ_MVCAP(stream)]() mutable {
+          .then([KJ_MVCAP(stream), responseStream, context]() mutable {
         // Note:  Do not do stream->shutdownWrite() as some HTTP servers will decide to close the
         // socket immediately on EOF, even if they have not actually responded to previous requests
         // yet.
-        return readAll(kj::mv(stream));
+        auto parser = kj::heap<HttpParser>(responseStream);
+        auto results = context.getResults();
+
+        return parser->readResponse(*stream).then(
+            [results, KJ_MVCAP(stream), KJ_MVCAP(parser)]
+            (kj::ArrayPtr<byte> remainder) mutable {
+          KJ_ASSERT(remainder.size() == 0);
+          parser->pumpStream(kj::mv(stream));
+          auto &parserRef = *parser;
+          sandstorm::Handle::Client handle = kj::mv(parser);
+          parserRef.build(results, handle);
+        });
       });
-    }).then([context](kj::Vector<char>&& buffer) mutable {
-      KJ_ASSERT(buffer.size() > 0, "Sandboxed server returned no data.");
-      HttpParser parser;
-      parser.parse(buffer);
-      parser.build(context.getResults());
     });
   }
 };

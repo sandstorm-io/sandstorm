@@ -313,6 +313,7 @@ Router.map(function () {
         setCurrentSessionId(session.sessionId);
         result.appOrigin = document.location.protocol + "//" + makeWildcardHost(session.hostId);
         result.sessionId = session.sessionId;
+        result.location = this.params.location || "/";
         return result;
       } else {
         Meteor.call("openSession", grainId, function (error, session) {

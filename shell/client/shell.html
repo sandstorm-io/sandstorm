@@ -179,7 +179,7 @@ limitations under the License.
       <pre>{{error}}</pre>
     {{else}}
     {{#if appOrigin}}
-      <iframe id="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}"></iframe>
+      <iframe id="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&location={{location}}"></iframe>
     {{else}}
       <p>Loading app...</p>
     {{/if}}

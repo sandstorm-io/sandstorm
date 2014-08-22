@@ -20,6 +20,7 @@ var Fs = Npm.require("fs");
 var Path = Npm.require("path");
 var Future = Npm.require("fibers/future");
 var Http = Npm.require("http");
+var Url = Npm.require("url");
 
 var WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;
 var HackSession = Capnp.importSystem("sandstorm/hack-session.capnp");
@@ -507,8 +508,9 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user) {
   var self = this;
 
   this.requestHandler = function (request, response) {
-    if (request.url === "/_sandstorm-init?sessionid=" + self.sessionId) {
-      self.doSessionInit(request, response);
+    var url = Url.parse(request.url, true);
+    if (url.pathname === "/_sandstorm-init" && url.query.sessionid === self.sessionId) {
+      self.doSessionInit(request, response, url.query.location);
       return;
     }
 
@@ -675,7 +677,12 @@ function makeClearCookieHeader(cookie) {
   return cookie.key + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 }
 
-Proxy.prototype.doSessionInit = function (request, response) {
+Proxy.prototype.doSessionInit = function (request, response, location) {
+  location = location || "/";
+  if (location.indexOf("/") !== 0 || location.indexOf("//") === 0) {
+    response.writeHead(403, "Invalid location supplied", { "Content-Type": "text/plain" });
+    return;
+  }
   var parseResult = parseCookies(request);
 
   if (parseResult.sessionId !== this.sessionId) {
@@ -699,7 +706,7 @@ Proxy.prototype.doSessionInit = function (request, response) {
   // Redirect to the app's root URL.
   // Note:  All browsers support relative locations and the next update to HTTP/1.1 will officially
   //   make them valid.  http://tools.ietf.org/html/draft-ietf-httpbis-p2-semantics-26#page-67
-  response.writeHead(303, "See Other", { "Location": "/" });
+  response.writeHead(303, "See Other", { "Location": location });
   response.end();
 }
 

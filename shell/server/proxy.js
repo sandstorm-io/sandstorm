@@ -721,6 +721,7 @@ Proxy.prototype.makeContext = function (request) {
 
   var promise = new Promise(function (resolve, reject) {
     request.resolveResponseStream = resolve;
+    request.rejectResponseStream = reject;
   });
 
   context.responseStream = new Capnp.Capability(promise, ByteStream);
@@ -863,6 +864,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
         response.setHeader("Content-Language", content.language);
       }
       if ("bytes" in content.body) {
+        request.rejectResponseStream();
         response.setHeader("Content-Length", content.body.bytes.length);
       } else if ("stream" in content.body) {
         response.writeHead(code.id, code.title);

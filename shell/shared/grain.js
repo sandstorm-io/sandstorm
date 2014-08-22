@@ -171,6 +171,33 @@ if (Meteor.isClient) {
     }
   });
 
+  var messageListener = function (event) {
+    var eventOrigin = event.origin;
+    eventOrigin = eventOrigin.slice(eventOrigin.indexOf('.') + 1);
+
+    var locationOrigin = window.location.origin;
+    locationOrigin = locationOrigin.slice(locationOrigin.indexOf('/') + 2);
+
+    if (eventOrigin !== eventOrigin) {
+      console.log("Error, unexpected origin from message: expected: " + window.location.origin +
+        ", got: " + event.origin);
+    }
+
+    if (event.data.location) {
+      window.history.pushState({pageTitle: "Sandstorm"}, "", "?location=" + event.data.location);
+    } else {
+      console.log("Unknown message received: " + event.data);
+    }
+  };
+
+  Template.grain.created = function () {
+    window.addEventListener("message", messageListener, false);
+  };
+
+  Template.grain.destroyed = function () {
+    window.removeEventListener("message", messageListener);
+  };
+
   var currentSessionId;
   var sessionGrainSizeSubscription;
 

@@ -863,17 +863,21 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
       if (content.language) {
         response.setHeader("Content-Language", content.language);
       }
-      if ("bytes" in content.body) {
-        request.rejectResponseStream();
-        response.setHeader("Content-Length", content.body.bytes.length);
-      } else if ("stream" in content.body) {
+      if ("stream" in content.body) {
         response.writeHead(code.id, code.title);
         request.resolveResponseStream(
           new Capnp.Capability(new ResponseStream(response, content.body.stream),
                                ByteStream));
         return;
       } else {
-        throw new Error("Unknown content body type.");
+        request.rejectResponseStream(
+          new Error("Response content body was not a stream."));
+
+        if ("bytes" in content.body) {
+          response.setHeader("Content-Length", content.body.bytes.length);
+        } else {
+          throw new Error("Unknown content body type.");
+        }
       }
       if (("disposition" in content) && ("download" in content.disposition)) {
         response.setHeader("Content-Disposition", "attachment; filename=\"" +

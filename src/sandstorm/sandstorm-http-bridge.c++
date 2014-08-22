@@ -402,7 +402,7 @@ public:
 
   void pumpStream(kj::Own<kj::AsyncIoStream>&& stream) {
     if (isStreaming) {
-      taskSet.add(pumpStreamOnce(kj::mv(stream)));
+      taskSet.add(pumpStreamInternal(kj::mv(stream)));
     }
   }
 
@@ -607,7 +607,7 @@ private:
   kj::String statusString;
   bool isStreaming = false;
 
-  kj::Promise<void> pumpStreamOnce(kj::Own<kj::AsyncIoStream>&& stream) {
+  kj::Promise<void> pumpStreamInternal(kj::Own<kj::AsyncIoStream>&& stream) {
     return stream->tryRead(buffer, 1, sizeof(buffer)).then(
         [this, KJ_MVCAP(stream)](size_t actual) mutable -> kj::Promise<void> {
       size_t nread = http_parser_execute(this, &settings, reinterpret_cast<char*>(buffer), actual);
@@ -619,7 +619,7 @@ private:
         taskSet.add(responseStream.doneRequest().send().then([](auto x){}));
         return kj::READY_NOW;
       } else {
-        taskSet.add(pumpStreamOnce(kj::mv(stream)));
+        taskSet.add(pumpStreamInternal(kj::mv(stream)));
         return kj::READY_NOW;
       }
     });

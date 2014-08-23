@@ -172,14 +172,18 @@ if (Meteor.isClient) {
   });
 
   var currentSessionId;
+  var currentAppOrigin;
+  var currentGrainId;
   var sessionGrainSizeSubscription;
 
-  function setCurrentSessionId(sessionId) {
+  function setCurrentSessionId(sessionId, appOrigin, grainId) {
     if (sessionGrainSizeSubscription) {
       sessionGrainSizeSubscription.stop();
       sessionGrainSizeSubscription = undefined;
     }
     currentSessionId = sessionId;
+    currentAppOrigin = appOrigin;
+    currentGrainId = grainId;
     if (sessionId) {
       sessionGrainSizeSubscription = Meteor.subscribe("grainSize", sessionId);
     }
@@ -202,6 +206,28 @@ if (Meteor.isClient) {
       });
     }
   }, 60000);
+
+  // Message handler for changing path in user's URL bar
+  Meteor.startup(function () {
+    var messageListener = function (event) {
+      if (event.origin !== currentAppOrigin) {
+        return;
+      }
+
+      if (event.data.method) {
+        if (event.data.method === "setPath") {
+          window.history.replaceState({}, "", "/grain/" +
+            currentGrainId + event.data.path);
+        } else {
+          console.log("Unknown method received: " + event.data);
+        }
+      } else {
+        console.log("Unknown message received: " + event.data);
+      }
+    };
+
+    window.addEventListener("message", messageListener, false);
+  });
 
   var blockedReload;
   var blockedReloadDep = new Deps.Dependency;
@@ -276,7 +302,7 @@ GrainLog = new Meteor.Collection("grainLog");
 
 Router.map(function () {
   this.route("grain", {
-    path: "/grain/:grainId",
+    path: "/grain/:grainId/:path(*)?",
 
     waitOn: function () {
       // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
@@ -289,7 +315,7 @@ Router.map(function () {
 
     data: function () {
       // Make sure that if any dev apps are published or removed, we refresh the grain view.
-      setCurrentSessionId(undefined);
+      setCurrentSessionId(undefined, undefined, undefined);
       var grainId = this.params.grainId;
       var grain = Grains.findOne(grainId);
       if (!grain) {
@@ -310,9 +336,10 @@ Router.map(function () {
 
       var session = Session.get("session-" + grainId);
       if (session) {
-        setCurrentSessionId(session.sessionId);
         result.appOrigin = document.location.protocol + "//" + makeWildcardHost(session.hostId);
+        setCurrentSessionId(session.sessionId, result.appOrigin, grainId);
         result.sessionId = session.sessionId;
+        result.path = encodeURIComponent("/" + (this.params.path || ""));
         return result;
       } else {
         Meteor.call("openSession", grainId, function (error, session) {
@@ -328,7 +355,7 @@ Router.map(function () {
     },
 
     onStop: function () {
-      setCurrentSessionId(undefined);
+      setCurrentSessionId(undefined, undefined, undefined);
       unblockUpdate();
     }
   });

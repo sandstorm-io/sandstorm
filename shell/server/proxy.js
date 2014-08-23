@@ -683,7 +683,7 @@ Proxy.prototype.doSessionInit = function (request, response, path) {
   // Check that the path is relative (ie. starts with a /).
   // Also ensure that it doesn't start with 2 /, because that is interpreted as non-relative
   if (path.lastIndexOf("/", 0) !== 0 || path.lastIndexOf("//", 0) === 0) {
-    response.writeHead(403, "Invalid path supplied");
+    response.writeHead(400, "Invalid path supplied");
     response.end();
     return;
   }

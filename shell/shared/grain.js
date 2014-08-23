@@ -211,18 +211,16 @@ if (Meteor.isClient) {
   Meteor.startup(function () {
     var messageListener = function (event) {
       if (event.origin !== currentAppOrigin) {
+        // Note: Meteor apparently likes to postMessage() to itself sometimes, so we really should
+        //   ignore any message not from our app.
         return;
       }
 
-      if (event.data.method) {
-        if (event.data.method === "setPath") {
-          window.history.replaceState({}, "", "/grain/" +
-            currentGrainId + event.data.path);
-        } else {
-          console.log("Unknown method received: " + event.data);
-        }
+      if (event.data.setPath) {
+        window.history.replaceState({}, "", "/grain/" +
+            currentGrainId + event.data.setPath);
       } else {
-        console.log("Unknown message received: " + event.data);
+        console.log("postMessage from app not understood: " + event.data);
       }
     };
 

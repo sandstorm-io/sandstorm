@@ -137,6 +137,21 @@ FileTokens = new Meteor.Collection("fileTokens");
 //   name:      Text name that should be presented to users for this token
 //   timestamp: File creation time. Used to figure out when the token and file should be wiped.
 
+ApiTokens = new Meteor.Collection("apiTokens");
+// Access tokens for APIs exported by apps.
+//
+// Longer-term, API tokens should actually be base64'd Cap'n Proto SturdyRefs. This is a temporary
+// hack.
+//
+// Each cotains:
+//   _id:       The token. At least 128 bits entropy (Random.id(22)).
+//   grainId:   The grain servicing this API.
+//   petname:   Human-readable label for this access token, useful for identifying tokens for
+//              revocation.
+//   appData:   Arbitrary string specified by the app when the token was created, which will be
+//              passed back to the app when servicing requests to this token.
+//   expires:   Optional expiration Date. If undefined, the token does not expire.
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.

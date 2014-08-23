@@ -510,7 +510,7 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user) {
   this.requestHandler = function (request, response) {
     var url = Url.parse(request.url, true);
     if (url.pathname === "/_sandstorm-init" && url.query.sessionid === self.sessionId) {
-      self.doSessionInit(request, response, url.query.location);
+      self.doSessionInit(request, response, url.query.path);
       return;
     }
 
@@ -677,10 +677,14 @@ function makeClearCookieHeader(cookie) {
   return cookie.key + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
 }
 
-Proxy.prototype.doSessionInit = function (request, response, location) {
-  location = location || "/";
-  if (location.indexOf("/") !== 0 || location.indexOf("//") === 0) {
-    response.writeHead(403, "Invalid location supplied", { "Content-Type": "text/plain" });
+Proxy.prototype.doSessionInit = function (request, response, path) {
+  path = path || "/";
+
+  // Check that the path is relative (ie. starts with a /).
+  // Also ensure that it doesn't start with 2 /, because that is interpreted as non-relative
+  if (path.lastIndexOf("/", 0) !== 0 || path.lastIndexOf("//", 0) === 0) {
+    response.writeHead(403, "Invalid path supplied");
+    response.end();
     return;
   }
   var parseResult = parseCookies(request);
@@ -706,7 +710,7 @@ Proxy.prototype.doSessionInit = function (request, response, location) {
   // Redirect to the app's root URL.
   // Note:  All browsers support relative locations and the next update to HTTP/1.1 will officially
   //   make them valid.  http://tools.ietf.org/html/draft-ietf-httpbis-p2-semantics-26#page-67
-  response.writeHead(303, "See Other", { "Location": location });
+  response.writeHead(303, "See Other", { "Location": path });
   response.end();
 }
 

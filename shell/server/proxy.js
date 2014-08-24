@@ -497,7 +497,12 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user) {
       throw new Meteor.Error(500, "Unknown user type.");
     }
     this.userInfo = {
-      displayName: {defaultText: user.profile.name},
+      // Fallback to service specific names if profile.name is missing
+      displayName: {defaultText: user.profile.name ||
+        (user.services && user.services.github && user.services.github.username) ||
+        (user.services && user.services.google && user.services.google.email &&
+          user.services.google.email.slice(0, user.services.google.email.indexOf('@'))) ||
+        'Unknown Name'},
       userId: Crypto.createHash("sha256").update(serviceId).digest()
     }
   } else {

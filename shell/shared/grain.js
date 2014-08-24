@@ -120,7 +120,7 @@ if (Meteor.isClient) {
       }
     },
     "click #openDebugLog": function (event) {
-      window.open("/grain/" + this.grainId + "/log", "_blank",
+      window.open("/grainlog/" + this.grainId, "_blank",
           "menubar=no,status=no,toolbar=no,width=700,height=700");
     },
     "click #backupGrain": function (event) {
@@ -359,7 +359,7 @@ Router.map(function () {
   });
 
   this.route("grainLog", {
-    path: "/grain/:grainId/log",
+    path: "/grainlog/:grainId",
     layoutTemplate: "lightLayout",
 
     waitOn: function () {

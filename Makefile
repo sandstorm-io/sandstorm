@@ -20,6 +20,7 @@ CXX=clang++
 CXXFLAGS=-O2 -Wall
 BUILD=0
 XZ_FLAGS=
+LIBTYPE=static
 
 # You generally should not modify these.
 CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD)
@@ -50,12 +51,12 @@ update: sandstorm-$(BUILD).tar.xz
 bin/spk: tmp/genfiles src/sandstorm/spk.c++ src/sandstorm/fuse.c++ src/sandstorm/union-fs.c++ src/sandstorm/send-fd.c++
 	@echo "building bin/spk..."
 	@mkdir -p bin
-	@$(CXX) src/sandstorm/spk.c++ src/sandstorm/fuse.c++ src/sandstorm/union-fs.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/spk -static $(CXXFLAGS2) -lcapnpc `pkg-config libsodium capnp-rpc --cflags --libs`
+	@$(CXX) src/sandstorm/spk.c++ src/sandstorm/fuse.c++ src/sandstorm/union-fs.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/spk -$(LIBTYPE) $(CXXFLAGS2) -lcapnpc `pkg-config libsodium capnp-rpc --cflags --libs`
 
 bin/sandstorm-http-bridge: tmp/genfiles src/sandstorm/sandstorm-http-bridge.c++
 	@echo "building bin/sandstorm-http-bridge..."
 	@mkdir -p bin
-	@$(CXX) src/sandstorm/sandstorm-http-bridge.c++ src/joyent-http/http_parser.c++ tmp/sandstorm/*.capnp.c++ -o bin/sandstorm-http-bridge -static $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
+	@$(CXX) src/sandstorm/sandstorm-http-bridge.c++ src/joyent-http/http_parser.c++ tmp/sandstorm/*.capnp.c++ -o bin/sandstorm-http-bridge -$(LIBTYPE) $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
 
 bin/sandstorm-supervisor: tmp/genfiles src/sandstorm/supervisor-main.c++ src/sandstorm/send-fd.c++
 	@echo "building bin/sandstorm-supervisor..."
@@ -81,7 +82,7 @@ tmp/genfiles: src/sandstorm/*.capnp
 bin/run-bundle: src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/genfiles
 	@echo "building bin/run-bundle..."
 	@mkdir -p bin
-	@$(CXX) src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/run-bundle -static $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
+	@$(CXX) src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/run-bundle -$(LIBTYPE) $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
 
 shell/public/%.png: icons/%.svg
 	convert -scale 24x24 -negate -alpha shape -evaluate multiply 0.87 $< $@

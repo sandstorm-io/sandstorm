@@ -752,7 +752,7 @@ private:
     }
 
     KJ_IF_MAYBE(transferEncoding, findHeader("transfer-encoding")) {
-      if (kj::str(*transferEncoding) == "chunked") {
+      if (kj::str(*transferEncoding) == "chunked" && status_code / 100 == 2) {
         // TODO(soon): Investigate other ways to decide whether the response should be
         // streaming. It may make sense to switch to streaming when the body goes over a
         // certain size (maybe 1MB) or takes longer than a certain amount of time (maybe

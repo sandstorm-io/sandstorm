@@ -529,7 +529,9 @@ After=local-fs.target remote-fs.target network.target
 Requires=local-fs.target remote-fs.target network.target
 
 [Service]
-ExecStart=$PWD/sandstorm
+Type=forking
+ExecStart=$PWD/sandstorm start
+ExecStop=$PWD/sandstorm stop
 
 [Install]
 WantedBy=multi-user.target

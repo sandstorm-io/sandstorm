@@ -4,7 +4,7 @@
   "custom_commands_path" : "commands",
 
   "selenium" : {
-    "start_process" : true,
+    "start_process" : false,
     "server_path" : "node_modules/selenium-standalone/.selenium/2.42.2/server.jar",
     "log_path" : "",
     "host" : "127.0.0.1",

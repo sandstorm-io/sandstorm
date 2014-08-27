@@ -10,17 +10,18 @@ module.exports = utils.testAllLogins({
       .click('#upload-app-button')
       .ifDemo(function () {
         browser
-          .waitForElementVisible('#upload p', 1000)
+          .waitForElementVisible('#upload p', 5000)
           .assert.containsText('#upload p', 'demo users are not allowed');
       })
       .ifNotDemo(function () {
         browser
+          .waitForElementVisible('#uploadButton', 5000)
           .assert.containsText('#uploadButton', 'Upload');
           // TODO(someday): change ironrouter to allow larger requests, fails with 413 error now
           // .waitForElementVisible('#uploadButton', 1000)
           // .setValue('#uploadFile', spkPath)
           // .click('#uploadButton')
-          // .waitForElementVisible('#step-confirm', 30000)
+          // .waitForElementVisible('#step-confirm', 60000)
           // .click('#confirmInstall')
           // .assert.containsText('.new-grain-button', 'New Ghost');
       });
@@ -29,7 +30,7 @@ module.exports = utils.testAllLogins({
   "Test remote install" : function (browser) {
     browser
       .url(browser.launch_url + "/install/9bb0068c51f20fea26688db0fc0647be?url=http://sandstorm.io/apps/ssjekyll7.spk")
-      .waitForElementVisible('#step-confirm', 30000)
+      .waitForElementVisible('#step-confirm', 120000)
       .click('#confirmInstall')
       .assert.containsText('.new-grain-button', 'New Hacker CMS Site');
   },
@@ -37,7 +38,7 @@ module.exports = utils.testAllLogins({
   "Test upgrade" : function (browser) {
     browser
       .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
-      .waitForElementVisible('#step-confirm', 30000)
+      .waitForElementVisible('#step-confirm', 120000)
       .assert.containsText('#confirmInstall', 'Upgrade')
       .click('#confirmInstall')
       .assert.containsText('.new-grain-button', 'New Hacker CMS Site');
@@ -46,7 +47,7 @@ module.exports = utils.testAllLogins({
   "Test downgrade" : function (browser) {
     browser
       .url(browser.launch_url + "/install/c551ac859564c996bf301627481b7273?url=http://sandstorm.io/apps/ssjekyll5.spk")
-      .waitForElementVisible('#step-confirm', 30000)
+      .waitForElementVisible('#step-confirm', 120000)
       .assert.containsText('#confirmInstall', 'Downgrade')
       .click('#confirmInstall')
       .assert.containsText('.new-grain-button', 'New Hacker CMS Site');

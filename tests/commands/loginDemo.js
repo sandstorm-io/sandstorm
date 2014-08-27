@@ -6,7 +6,7 @@ exports.command = function(callback) {
     .execute('window.Meteor.logout()')
     .pause(50)
     .click("#createDemoUser")
-    .waitForElementVisible('#applist-apps', 1000);
+    .waitForElementVisible('#applist-apps', 5000);
 
   this.sandstormAccount = 'demo';
   if (typeof callback === "function") {

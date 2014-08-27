@@ -293,7 +293,7 @@ else
 
     if ! id "$SERVER_USER" > /dev/null 2>&1; then
       if prompt-yesno "User account '$SERVER_USER' doesn't exist. Create it?" yes; then
-        adduser --system --group "$SERVER_USER"
+        useradd --system "$SERVER_USER"
 
         echo "Note: Sandstorm's storage will only be accessible to the group '$SERVER_USER'."
 

@@ -59,8 +59,8 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   put @3 (path :Text, content :PutContent, context :Context) -> Response;
   delete @4 (path :Text, context :Context) -> Response;
 
-  postStreaming @5 (path :Text, context :Context) -> (stream :RequestStream);
-  putStreaming @6 (path :Text, context :Context) -> (stream :RequestStream);
+  postStreaming @5 (path :Text, headers :StreamHeaders, context :Context) -> (stream :RequestStream);
+  putStreaming @6 (path :Text, headers :StreamHeaders, context :Context) -> (stream :RequestStream);
   # Streaming post/put requests, useful when the input is large. If these throw exceptions, the
   # caller should fall back to regular post() / put() on the assumption that the app doesn't
   # implement streaming.
@@ -101,6 +101,12 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   struct PutContent {
     mimeType @0 :Text;
     content @1 :Data;
+  }
+
+  struct StreamHeaders {
+    mimeType @0 :Text;
+    contentLength @1 :UInt64;
+    # TODO(someday): Also support unknown body size via chunked transfer encoding.
   }
 
   struct Cookie {

@@ -520,8 +520,14 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user) {
       return;
     }
 
-    readAll(request).then(function (data) {
-      return self.handleRequest(request, data, response, 0);
+    Promise.resolve(undefined).then(function () {
+      if (request.headers["content-length"] > 1024 * 1024) {
+        return self.handleRequestStreaming(request, response);
+      } else {
+        return readAll(request).then(function (data) {
+          return self.handleRequest(request, data, response, 0);
+        });
+      }
     }).catch(function (err) {
       console.error(err.stack);
       var body = err.stack;
@@ -720,7 +726,7 @@ Proxy.prototype.doSessionInit = function (request, response, path) {
   response.end();
 }
 
-Proxy.prototype.makeContext = function (request) {
+Proxy.prototype.makeContext = function (request, response) {
   // Parses the cookies from the request, checks that the session ID is present and valid, then
   // returns the request context which contains the other cookies.  Throws an exception if the
   // session ID is missing or invalid.
@@ -736,8 +742,8 @@ Proxy.prototype.makeContext = function (request) {
   }
 
   var promise = new Promise(function (resolve, reject) {
-    request.resolveResponseStream = resolve;
-    request.rejectResponseStream = reject;
+    response.resolveResponseStream = resolve;
+    response.rejectResponseStream = reject;
   });
 
   context.responseStream = new Capnp.Capability(promise, ByteStream);
@@ -751,13 +757,11 @@ Proxy.prototype.makeContext = function (request) {
 function readAll(stream) {
   return new Promise(function (resolve, reject) {
     var buffers = [];
-    var len = 0;
     stream.on("data", function (buf) {
       buffers.push(buf);
-      len += buf.length;
     });
     stream.on("end", function () {
-      resolve(Buffer.concat(buffers), len);
+      resolve(Buffer.concat(buffers));
     });
     stream.on("error", reject);
   });
@@ -829,11 +833,101 @@ ResponseStream.prototype.done = function() {
   this.response.end();
 }
 
+function translateResponse (rpcResponse, response) {
+  if (rpcResponse.setCookies && rpcResponse.setCookies.length > 0) {
+    response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
+  }
+
+  if ("content" in rpcResponse) {
+    var content = rpcResponse.content;
+    var code = successCodes[content.statusCode];
+    if (!code) {
+      throw new Error("Unknown status code: ", content.statusCode);
+    }
+
+    if (content.mimeType) {
+      response.setHeader("Content-Type", content.mimeType);
+    }
+    if (content.encoding) {
+      response.setHeader("Content-Encoding", content.encoding);
+    }
+    if (content.language) {
+      response.setHeader("Content-Language", content.language);
+    }
+    if ("stream" in content.body) {
+      response.writeHead(code.id, code.title);
+      response.resolveResponseStream(
+        new Capnp.Capability(new ResponseStream(response, content.body.stream),
+                             ByteStream));
+      return;
+    } else {
+      response.rejectResponseStream(
+        new Error("Response content body was not a stream."));
+
+      if ("bytes" in content.body) {
+        response.setHeader("Content-Length", content.body.bytes.length);
+      } else {
+        throw new Error("Unknown content body type.");
+      }
+    }
+    if (("disposition" in content) && ("download" in content.disposition)) {
+      response.setHeader("Content-Disposition", "attachment; filename=\"" +
+          content.disposition.download.replace(/([\\"\n])/g, "\\$1") + "\"");
+    }
+
+    response.writeHead(code.id, code.title);
+
+    if ("bytes" in content.body) {
+      response.end(content.body.bytes);
+    }
+  } else if ("noContent" in rpcResponse) {
+    var noContent = rpcResponse.noContent;
+    var noContentCode = noContentSuccessCodes[noContent.shouldResetForm * 1];
+    response.writeHead(noContentCode.id, noContentCode.title);
+    response.end();
+  } else if ("redirect" in rpcResponse) {
+    var redirect = rpcResponse.redirect;
+    var redirectCode = redirectCodes[redirect.switchToGet * 2 + redirect.isPermanent];
+    response.writeHead(redirectCode.id, redirectCode.title, {
+      "Location": redirect.location
+    });
+    response.end();
+  } else if ("clientError" in rpcResponse) {
+    var clientError = rpcResponse.clientError;
+    var errorCode = errorCodes[clientError.statusCode];
+    if (!errorCode) {
+      throw new Error("Unknown status code: ", clientError.statusCode);
+    }
+    response.writeHead(errorCode.id, errorCode.title, {
+      "Content-Type": "text/html"
+    });
+    if (clientError.descriptionHtml) {
+      response.end(clientError.descriptionHtml);
+    } else {
+      // TODO(someday):  Better default error page.
+      response.end("<html><body><h1>" + errorCode.id + ": " + errorCode.title +
+                   "</h1></body></html>");
+    }
+  } else if ("serverError" in rpcResponse) {
+    response.writeHead(500, "Internal Server Error", {
+      "Content-Type": "text/html"
+    });
+    if (rpcResponse.serverError.descriptionHtml) {
+      response.end(rpcResponse.serverError.descriptionHtml);
+    } else {
+      // TODO(someday):  Better default error page.
+      response.end("<html><body><h1>500: Internal Server Error</h1></body></html>");
+    }
+  } else {
+    throw new Error("Unknown HTTP response type:\n" + JSON.stringify(rpcResponse));
+  }
+}
+
 Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
   var self = this;
 
   return Promise.resolve(undefined).then(function () {
-    return self.makeContext(request);
+    return self.makeContext(request, response);
   }).then(function (context) {
     // Send the RPC.
     var path = request.url.slice(1);  // remove leading '/'
@@ -858,99 +952,43 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     }
 
   }).then(function (rpcResponse) {
-    // Translate the response.
-    if (rpcResponse.setCookies && rpcResponse.setCookies.length > 0) {
-      response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
-    }
-
-    if ("content" in rpcResponse) {
-      var content = rpcResponse.content;
-      var code = successCodes[content.statusCode];
-      if (!code) {
-        throw new Error("Unknown status code: ", content.statusCode);
-      }
-
-      if (content.mimeType) {
-        response.setHeader("Content-Type", content.mimeType);
-      }
-      if (content.encoding) {
-        response.setHeader("Content-Encoding", content.encoding);
-      }
-      if (content.language) {
-        response.setHeader("Content-Language", content.language);
-      }
-      if ("stream" in content.body) {
-        response.writeHead(code.id, code.title);
-        request.resolveResponseStream(
-          new Capnp.Capability(new ResponseStream(response, content.body.stream),
-                               ByteStream));
-        return;
-      } else {
-        request.rejectResponseStream(
-          new Error("Response content body was not a stream."));
-
-        if ("bytes" in content.body) {
-          response.setHeader("Content-Length", content.body.bytes.length);
-        } else {
-          throw new Error("Unknown content body type.");
-        }
-      }
-      if (("disposition" in content) && ("download" in content.disposition)) {
-        response.setHeader("Content-Disposition", "attachment; filename=\"" +
-            content.disposition.download.replace(/([\\"\n])/g, "\\$1") + "\"");
-      }
-
-      response.writeHead(code.id, code.title);
-
-      if ("bytes" in content.body) {
-        response.end(content.body.bytes);
-      }
-    } else if ("noContent" in rpcResponse) {
-      var noContent = rpcResponse.noContent;
-      var noContentCode = noContentSuccessCodes[noContent.shouldResetForm * 1];
-      response.writeHead(noContentCode.id, noContentCode.title);
-      response.end();
-    } else if ("redirect" in rpcResponse) {
-      var redirect = rpcResponse.redirect;
-      var redirectCode = redirectCodes[redirect.switchToGet * 2 + redirect.isPermanent];
-      response.writeHead(redirectCode.id, redirectCode.title, {
-        "Location": redirect.location
-      });
-      response.end();
-    } else if ("clientError" in rpcResponse) {
-      var clientError = rpcResponse.clientError;
-      var errorCode = errorCodes[clientError.statusCode];
-      if (!errorCode) {
-        throw new Error("Unknown status code: ", clientError.statusCode);
-      }
-      response.writeHead(errorCode.id, errorCode.title, {
-        "Content-Type": "text/html"
-      });
-      if (clientError.descriptionHtml) {
-        response.end(clientError.descriptionHtml);
-      } else {
-        // TODO(someday):  Better default error page.
-        response.end("<html><body><h1>" + errorCode.id + ": " + errorCode.title +
-                     "</h1></body></html>");
-      }
-    } else if ("serverError" in rpcResponse) {
-      response.writeHead(500, "Internal Server Error", {
-        "Content-Type": "text/html"
-      });
-      if (rpcResponse.serverError.descriptionHtml) {
-        response.end(rpcResponse.serverError.descriptionHtml);
-      } else {
-        // TODO(someday):  Better default error page.
-        response.end("<html><body><h1>500: Internal Server Error</h1></body></html>");
-      }
-    } else {
-      throw new Error("Unknown HTTP response type:\n" + JSON.stringify(rpcResponse));
-    }
-
+    return translateResponse(rpcResponse, response)
   }).catch(function (error) {
     return self.maybeRetryAfterError(error, retryCount).then(function () {
       return self.handleRequest(request, data, response, retryCount + 1);
     });
+  });
+}
+
+Proxy.prototype.handleRequestStreaming = function (request, response) {
+  var context = this.makeContext(request, response);
+  var path = request.url.slice(1);  // remove leading '/'
+  var session = this.getSession(request);
+
+  var requestStream;
+  if (request.method === "POST") {
+    requestStream = session.postStreaming(path,{
+      mimeType: request.headers["content-type"] || "application/octet-stream",
+      contentLength: parseInt(request.headers["content-length"])
+    }, context).stream;
+  } else if (request.method === "PUT") {
+    requestStream = session.putStreaming(path,{
+      mimeType: request.headers["content-type"] || "application/octet-stream",
+      contentLength: parseInt(request.headers["content-length"])
+    }, context).stream;
+  } else {
+    throw new Error("Sandstorm only supports streaming POST and PUT requests.");
+  }
+
+  request.on("data", function(buf) {
+    requestStream.write(buf);
+  });
+  request.on("end", function() {
+    requestStream.done();
+  });
+  return requestStream.getResponse().then(function (rpcResponse) {
+    requestStream.close();
+    return translateResponse(rpcResponse, response);
   });
 }
 

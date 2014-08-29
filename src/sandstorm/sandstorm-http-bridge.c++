@@ -853,6 +853,59 @@ private:
   }
 };
 
+class RequestStreamImpl final: public WebSession::RequestStream::Server {
+public:
+  RequestStreamImpl(kj::Own<kj::AsyncIoStream> stream,
+                    sandstorm::ByteStream::Client responseStream)
+      : stream(kj::mv(stream)),
+        responseStream(responseStream) {}
+
+  kj::Promise<void> getResponse(GetResponseContext context) override {
+    KJ_ASSERT(!getResponseCalled);
+    getResponseCalled = true;
+
+    auto parser = kj::heap<HttpParser>(responseStream);
+    auto results = context.getResults();
+
+    return parser->readResponse(*stream).then(
+        [this, results, KJ_MVCAP(parser)]
+        (kj::ArrayPtr<byte> remainder) mutable {
+      KJ_ASSERT(remainder.size() == 0);
+
+      // Cancel any impending writes and prevent any future writes.
+      previousWrite = kj::NEVER_DONE;
+
+      parser->pumpStream(kj::mv(stream));
+      auto &parserRef = *parser;
+      sandstorm::Handle::Client handle = kj::mv(parser);
+      parserRef.build(results, handle);
+    });
+  }
+
+  kj::Promise<void> write(WriteContext context) override {
+    // forward the data.
+    auto promise = previousWrite.then([this, context]() mutable {
+      auto data = context.getParams().getData();
+      return stream->write(data.begin(), data.size());
+    });
+    auto fork = promise.fork();
+    previousWrite = fork.addBranch();
+    return fork.addBranch();
+  }
+
+  kj::Promise<void> done(DoneContext context) override {
+    auto fork = previousWrite.fork();
+    previousWrite = fork.addBranch();
+    return fork.addBranch();
+  }
+
+private:
+  kj::Own<kj::AsyncIoStream> stream;
+  sandstorm::ByteStream::Client responseStream;
+  bool getResponseCalled = false;
+  kj::Promise<void> previousWrite = kj::READY_NOW;
+};
+
 class WebSessionImpl final: public WebSession::Server {
 public:
   WebSessionImpl(kj::NetworkAddress& serverAddr,
@@ -902,6 +955,24 @@ public:
     DeleteParams::Reader params = context.getParams();
     kj::String httpRequest = makeHeaders("DELETE", params.getPath(), params.getContext());
     return sendRequest(toBytes(httpRequest), context);
+  }
+
+  kj::Promise<void> postStreaming(PostStreamingContext context) override {
+    PostStreamingParams::Reader params = context.getParams();
+    auto headers = params.getHeaders();
+    kj::String httpRequest = makeHeaders("POST", params.getPath(), params.getContext(),
+        kj::str("Content-Type: ", headers.getMimeType()),
+        kj::str("Content-Length: ", headers.getContentLength()));
+    return sendRequestStreaming(toBytes(httpRequest), context);
+  }
+
+  kj::Promise<void> putStreaming(PutStreamingContext context) override {
+    PutStreamingParams::Reader params = context.getParams();
+    auto headers = params.getHeaders();
+    kj::String httpRequest = makeHeaders("PUT", params.getPath(), params.getContext(),
+        kj::str("Content-Type: ", headers.getMimeType()),
+        kj::str("Content-Length: ", headers.getContentLength()));
+    return sendRequestStreaming(toBytes(httpRequest), context);
   }
 
   kj::Promise<void> openWebSocket(OpenWebSocketContext context) override {
@@ -1049,6 +1120,25 @@ private:
           sandstorm::Handle::Client handle = kj::mv(parser);
           parserRef.build(results, handle);
         });
+      });
+    });
+  }
+
+  template <typename Context>
+  kj::Promise<void> sendRequestStreaming(kj::Array<byte> httpRequest, Context& context) {
+    sandstorm::ByteStream::Client responseStream =
+      context.getParams().getContext().getResponseStream();
+    context.releaseParams();
+    return serverAddr.connect().then(
+        [KJ_MVCAP(httpRequest), responseStream, context]
+        (kj::Own<kj::AsyncIoStream>&& stream) mutable {
+      kj::ArrayPtr<const byte> httpRequestRef = httpRequest;
+      auto& streamRef = *stream;
+      return streamRef.write(httpRequestRef.begin(), httpRequestRef.size())
+          .attach(kj::mv(httpRequest))
+          .then([KJ_MVCAP(stream), responseStream, context] () mutable {
+        auto requestStream = kj::heap<RequestStreamImpl>(kj::mv(stream), responseStream);
+        context.getResults().setStream(kj::mv(requestStream));
       });
     });
   }

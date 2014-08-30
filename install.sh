@@ -506,8 +506,46 @@ __EOF__
       echo "  sandstorm help"
       exit 0
     fi
+  elif [ -d /etc/systemd/system ]; then
+    which systemctl > /dev/null || fail "Cannot find systemctl binary. Please check your systemd installation."
+    SYSTEMD_UNIT="sandstorm.service"
+
+    if prompt-yesno "Start sandstorm at system boot?" yes; then
+      if systemctl list-unit-files $SYSTEMD_UNIT | grep -q $SYSTEMD_UNIT; then
+        systemctl stop sandstorm || true
+      fi
+
+      # the init.d logic simply overwrites the init script if it exists, adopt that here
+      for SYSTEMD_UNIT_PATH in /etc/systemd/system /run/systemd/system /usr/lib/systemd/system; do
+        if [ -e $SYSTEMD_UNIT_PATH/$SYSTEMD_UNIT ]; then
+          rm $SYSTEMD_UNIT_PATH/$SYSTEMD_UNIT
+        fi
+      done
+
+      cat > /etc/systemd/system/$SYSTEMD_UNIT << __EOF__
+[Unit]
+Description=Sandstorm server
+After=local-fs.target remote-fs.target network.target
+Requires=local-fs.target remote-fs.target network.target
+
+[Service]
+Type=forking
+ExecStart=$PWD/sandstorm start
+ExecStop=$PWD/sandstorm stop
+
+[Install]
+WantedBy=multi-user.target
+__EOF__
+      systemctl enable sandstorm
+      systemctl start sandstorm
+
+      echo "Setup complete. Your server should be running at:"
+      echo "  ${BASE_URL:-(unknown; bad config)}"
+      echo "To learn how to control the server, run:"
+      echo "  sandstorm help"
+      exit 0
+    fi
   else
-    # TODO(someday): Support systemd init.
     echo "Note: I don't know how to set up sandstorm to auto-run at startup on"
     echo "  your system. :("
     echo

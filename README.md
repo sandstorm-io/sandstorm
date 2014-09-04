@@ -48,12 +48,15 @@ Or, if you don't like piping directly to shell, download first:
     bash install.sh
 
 This will install a self-contained and (optionally) auto-updating Sandstorm bundle. It won't touch
-anything on your system other than your chosen installation directory and (optional) init script.
+anything on your system other than your chosen installation directory, optionally installing an
+init script, and placing two symlinks (`spk` and `sandstorm`) under `/usr/local/bin`.
 
-Please note that Sandstorm requires root access to set up the sandbox. If this bothers you,
-consider installing it in its own VM. Note: Sandstorm currently does not work under LXC /
-Docker, because it uses the same kernel features, and making them nest requires kernel features
-that only recently became available. We intend to fix this eventually.
+Note: If installing Sandstorm under LXC / Docker, you will need to choose the option to
+install as a non-root user. Unfortunately, this means the development tools will not
+work. This is due to the interaction between Sandstorm and Docker's use of Linux
+containerization features and missing features in the Linux kernel which we
+hope will be fixed eventually. For non-development purposes, Sandstorm should run just fine
+under Docker.
 
 ### Tips
 

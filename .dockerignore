@@ -23,3 +23,4 @@ bundle
 .vagrant
 shell/packages/*/.build
 tests/node_modules
+shell/.meteor/local

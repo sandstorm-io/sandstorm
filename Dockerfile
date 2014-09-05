@@ -13,6 +13,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
+# This Dockerfile is for general Sandstorm usage. Building this image requires
+# a bundle to be in the current directory named 'sandstorm-0.tar.xz'. The
+# easiest way to build this image is to just run `make .docker`. This will
+# compile the Sandstorm bundle first, and then build the docker image and
+# name it `sandstorm`.
+#
+# You can then run the docker container with:
+# docker run -p 6080:6080 -i -t sandstorm
+# Give it 5-10 seconds, and then Sandstorm should be available at
+# http://local.sandstorm.io:6080/
+#
+# Keep in mind that all data will be local to the container. If you want to
+# store Sandstorm's data outside the container, then run the following:
+# mkdir -p sandstorm_var/{log,mongo,pid,sandstorm} && chmod -R 777 sandstorm_var
+# docker run -v `pwd`/sandstorm_var:/home/sandstorm/sandstorm/var -p 6080:6080 -i -t sandstorm
 
 # Use Ubuntu Trusty as our base
 FROM ubuntu:14.04
@@ -43,4 +59,3 @@ RUN echo 'export PATH=$PATH:$HOME/sandstorm' >> $HOME/.bashrc
 
 EXPOSE 6080
 CMD /home/sandstorm/sandstorm/sandstorm start && sleep infinity
-# Now you can build the container with `docker build -t sandstorm .` and run the docker container with `docker run -p 6080:6080 -i -t sandstorm`

@@ -14,8 +14,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Docker doesn't allow multiple Dockerfiles yet. For now, you have to do the following
-# `mv Dockerfile{,.orig} && ln -s Dockerfile{.dev,}`
+# This Dockerfile will first fetch all of Sandstorm's dependencies, and then
+# procede to build Sandstorm within the image. This file isn't used for much
+# at the moment, but it will eventually be hooked up in a regression test.
+#
+# Docker doesn't allow multiple Dockerfiles yet. For now, you have to do the
+# following:
+# mv Dockerfile{,.orig} && ln -s Dockerfile{.dev,}
+# docker build -t sandstorm .
 
 # Use Ubuntu Trusty as our base
 FROM ubuntu:14.04
@@ -63,4 +69,3 @@ RUN echo 'export PATH=$PATH:$HOME/sandstorm' >> $HOME/.bashrc
 
 EXPOSE 6080
 CMD /home/sandstorm/sandstorm/sandstorm start && sleep infinity
-# Now you can build the container with `docker build -t sandstorm .` and run the docker container with `docker run -p 6080:6080 -i -t sandstorm /bin/bash -c`

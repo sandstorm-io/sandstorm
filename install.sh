@@ -474,7 +474,7 @@ else
     SYSTEMD_UNIT="sandstorm.service"
 
     if prompt-yesno "Start sandstorm at system boot?" yes; then
-      if systemctl list-unit-files $SYSTEMD_UNIT | grep -q $SYSTEMD_UNIT; then
+      if systemctl list-unit-files | grep -q $SYSTEMD_UNIT; then
         systemctl stop sandstorm || true
       fi
 

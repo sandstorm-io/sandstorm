@@ -469,44 +469,7 @@ else
   ln -sfT $PWD/sandstorm /usr/local/bin/sandstorm
   ./sandstorm devtools
 
-  if [ -e /etc/init.d ]; then
-    if prompt-yesno "Start sandstorm at system boot?" yes; then
-      if [ -e /etc/init.d/sandstorm ]; then
-        service sandstorm stop || true
-      fi
-
-      cat > /etc/init.d/sandstorm << __EOF__
-#! /bin/bash
-### BEGIN INIT INFO
-# Provides:          sandstorm
-# Required-Start:    \$local_fs \$remote_fs \$networking \$syslog
-# Required-Stop:     \$local_fs \$remote_fs \$networking \$syslog
-# Default-Start:     2 3 4 5
-# Default-Stop:      0 1 6
-# Short-Description: starts Sandstorm personal cloud server
-### END INIT INFO
-
-DESC="Sandstorm server"
-DAEMON=$PWD/sandstorm
-
-# The Sandstorm runner supports all the common init commands directly.
-# We use -a to set the program name to make help text look nicer.
-# This requires bash, though.
-exec -a "service sandstorm" \$DAEMON "\$@"
-__EOF__
-      chmod +x /etc/init.d/sandstorm
-
-      update-rc.d sandstorm defaults
-
-      service sandstorm start
-
-      echo "Setup complete. Your server should be running at:"
-      echo "  ${BASE_URL:-(unknown; bad config)}"
-      echo "To learn how to control the server, run:"
-      echo "  sandstorm help"
-      exit 0
-    fi
-  elif [ -d /etc/systemd/system ]; then
+  if [ -d /etc/systemd/system ]; then
     which systemctl > /dev/null || fail "Cannot find systemctl binary. Please check your systemd installation."
     SYSTEMD_UNIT="sandstorm.service"
 
@@ -538,6 +501,43 @@ WantedBy=multi-user.target
 __EOF__
       systemctl enable sandstorm
       systemctl start sandstorm
+
+      echo "Setup complete. Your server should be running at:"
+      echo "  ${BASE_URL:-(unknown; bad config)}"
+      echo "To learn how to control the server, run:"
+      echo "  sandstorm help"
+      exit 0
+    fi
+  elif [ -e /etc/init.d ]; then
+    if prompt-yesno "Start sandstorm at system boot?" yes; then
+      if [ -e /etc/init.d/sandstorm ]; then
+        service sandstorm stop || true
+      fi
+
+      cat > /etc/init.d/sandstorm << __EOF__
+#! /bin/bash
+### BEGIN INIT INFO
+# Provides:          sandstorm
+# Required-Start:    \$local_fs \$remote_fs \$networking \$syslog
+# Required-Stop:     \$local_fs \$remote_fs \$networking \$syslog
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: starts Sandstorm personal cloud server
+### END INIT INFO
+
+DESC="Sandstorm server"
+DAEMON=$PWD/sandstorm
+
+# The Sandstorm runner supports all the common init commands directly.
+# We use -a to set the program name to make help text look nicer.
+# This requires bash, though.
+exec -a "service sandstorm" \$DAEMON "\$@"
+__EOF__
+      chmod +x /etc/init.d/sandstorm
+
+      update-rc.d sandstorm defaults
+
+      service sandstorm start
 
       echo "Setup complete. Your server should be running at:"
       echo "  ${BASE_URL:-(unknown; bad config)}"

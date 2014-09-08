@@ -1,0 +1,37 @@
+{
+  "src_folders" : ["tests"],
+  "output_folder" : "reports",
+  "custom_commands_path" : "commands",
+
+  "selenium" : {
+    "start_process" : false,
+    "server_path" : "node_modules/selenium-standalone/.selenium/2.42.2/server.jar",
+    "log_path" : "",
+    "host" : "127.0.0.1",
+    "port" : 4444
+  },
+
+  "test_settings" : {
+    "default" : {
+      "launch_url" : "http://local.sandstorm.io:6080",
+      "selenium_port"  : 4444,
+      "selenium_host"  : "localhost",
+      "silent": true,
+      "screenshots" : {
+        "enabled" : true,
+        "path" : "screenshots"
+      },
+
+      "desiredCapabilities": {
+        "browserName": "phantomjs",
+        "phantomjs.binary.path" : "node_modules/phantomjs/bin/phantomjs"
+      }
+    },
+
+    "firefox" : {
+      "desiredCapabilities": {
+        "browserName": "firefox"
+      }
+    }
+  }
+}

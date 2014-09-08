@@ -1,0 +1,71 @@
+# Sandstorm - Personal Cloud Sandbox
+# Copyright (c) 2014 Sandstorm Development Group, Inc. and contributors
+# All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# This Dockerfile will first fetch all of Sandstorm's dependencies, and then
+# procede to build Sandstorm within the image. This file isn't used for much
+# at the moment, but it will eventually be hooked up in a regression test.
+#
+# Docker doesn't allow multiple Dockerfiles yet. For now, you have to do the
+# following:
+# mv Dockerfile{,.orig} && ln -s Dockerfile{.dev,}
+# docker build -t sandstorm .
+
+# Use Ubuntu Trusty as our base
+FROM ubuntu:14.04
+
+RUN echo "APT::Get::Assume-Yes true;" >>/etc/apt/apt.conf
+
+# Install sandstorm dependencies
+RUN apt-get update
+
+RUN apt-get install pkg-config git subversion build-essential autoconf libtool
+RUN apt-get install libcap-dev libseccomp-dev xz-utils clang-3.4
+RUN apt-get install nodejs-legacy npm
+RUN apt-get install curl strace zip imagemagick
+RUN apt-get install default-jre-headless
+RUN curl https://install.meteor.com | /bin/sh
+RUN npm install -g meteorite jsontool
+
+RUN cd /tmp && git clone https://github.com/kentonv/capnproto.git && cd capnproto/c++ && ./setup-autotools.sh && autoreconf -i && ./configure && make -j4 check && make install
+
+RUN cd /tmp && git clone https://github.com/jedisct1/libsodium.git && cd libsodium && ./autogen.sh && ./configure && make -j4 check && make install
+
+RUN adduser --disabled-password --gecos "" sandstorm
+USER sandstorm
+ENV HOME /home/sandstorm
+ENV USER sandstorm
+RUN meteor update
+
+ADD . /opt/src
+USER root
+RUN chown -R sandstorm /opt/src
+USER sandstorm
+
+RUN cd /opt/src && make -j4 XZ_FLAGS='-0' && ./install.sh -d -u sandstorm-0.tar.xz
+
+RUN echo 'SERVER_USER=sandstorm\n\
+PORT=6080\n\
+MONGO_PORT=6081\n\
+BIND_IP=0.0.0.0\n\
+BASE_URL=http://localhost:6080\n\
+WILDCARD_HOST=*.local.sandstorm.io:6080\n\
+ALLOW_DEMO_ACCOUNTS=true\n\
+MAIL_URL=\n' > $HOME/sandstorm/sandstorm.conf
+
+RUN echo 'export PATH=$PATH:$HOME/sandstorm' >> $HOME/.bashrc
+
+EXPOSE 6080
+CMD /home/sandstorm/sandstorm/sandstorm start && sleep infinity

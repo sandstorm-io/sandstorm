@@ -1188,6 +1188,7 @@ private:
     kj::String mailUrl = nullptr;
     kj::String updateChannel = nullptr;
     bool allowDemoAccounts = false;
+    bool isTesting = false;
   };
 
   kj::String updateFile;
@@ -1507,6 +1508,8 @@ private:
         }
       } else if (key == "ALLOW_DEMO_ACCOUNTS") {
         config.allowDemoAccounts = value == "true" || value == "yes";
+      } else if (key == "IS_TESTING") {
+        config.isTesting = value == "true" || value == "yes";
       }
     }
 
@@ -1887,6 +1890,7 @@ private:
           "{\"public\":{\"build\":", buildstamp,
           ", \"kernelTooOld\":", kernelNewEnough ? "false" : "true",
           ", \"allowDemoAccounts\":", config.allowDemoAccounts ? "true" : "false",
+          ", \"isTesting\":", config.isTesting ? "true" : "false",
           ", \"wildcardHost\":\"", config.wildcardHost, "\"",
           "}}").cStr(), true));
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "main.js", EXEC_END_ARGS));

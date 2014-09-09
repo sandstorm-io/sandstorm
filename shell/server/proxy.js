@@ -965,20 +965,21 @@ Proxy.prototype.handleRequestStreaming = function (request, response) {
   var path = request.url.slice(1);  // remove leading '/'
   var session = this.getSession(request);
 
+  var headers = {
+    mimeType: request.headers["content-type"] || "application/octet-stream",
+    contentLength: parseInt(request.headers["content-length"])
+  };
+
   var requestStream;
   if (request.method === "POST") {
-    requestStream = session.postStreaming(path,{
-      mimeType: request.headers["content-type"] || "application/octet-stream",
-      contentLength: parseInt(request.headers["content-length"])
-    }, context).stream;
+    requestStream = session.postStreaming(path, headers, context).stream;
   } else if (request.method === "PUT") {
-    requestStream = session.putStreaming(path,{
-      mimeType: request.headers["content-type"] || "application/octet-stream",
-      contentLength: parseInt(request.headers["content-length"])
-    }, context).stream;
+    requestStream = session.putStreaming(path, headers, context).stream;
   } else {
     throw new Error("Sandstorm only supports streaming POST and PUT requests.");
   }
+
+  requestStream.expectSize(headers.contentLength);
 
   request.on("data", function(buf) {
     requestStream.write(buf);

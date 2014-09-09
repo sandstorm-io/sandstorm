@@ -861,7 +861,7 @@ public:
         responseStream(responseStream) {}
 
   kj::Promise<void> getResponse(GetResponseContext context) override {
-    KJ_ASSERT(!getResponseCalled);
+    KJ_REQUIRE(!getResponseCalled, "getResponse() called more than once");
     getResponseCalled = true;
 
     auto parser = kj::heap<HttpParser>(responseStream);
@@ -883,9 +883,14 @@ public:
   }
 
   kj::Promise<void> write(WriteContext context) override {
-    // forward the data.
-    auto promise = previousWrite.then([this, context]() mutable {
-      auto data = context.getParams().getData();
+    KJ_REQUIRE(!doneCalled, "write() called after done()");
+
+    auto data = context.getParams().getData();
+    bytesReceived += data.size();
+    KJ_REQUIRE(bytesReceived <= expectedSize, "received more bytes than expected");
+
+    // Forward the data.
+    auto promise = previousWrite.then([this, data]() mutable {
       return stream->write(data.begin(), data.size());
     });
     auto fork = promise.fork();
@@ -894,15 +899,29 @@ public:
   }
 
   kj::Promise<void> done(DoneContext context) override {
+    doneCalled = true;
+    KJ_REQUIRE(!knownLength || bytesReceived == expectedSize,
+               "wrong number of bytes received before done() call");
+
     auto fork = previousWrite.fork();
     previousWrite = fork.addBranch();
     return fork.addBranch();
   }
 
+  kj::Promise<void> expectSize(ExpectSizeContext context) override {
+    knownLength = true;
+    expectedSize = context.getParams().getSize();
+    return kj::READY_NOW;
+  }
+
 private:
   kj::Own<kj::AsyncIoStream> stream;
   sandstorm::ByteStream::Client responseStream;
+  bool doneCalled = false;
   bool getResponseCalled = false;
+  bool knownLength = false;
+  uint64_t bytesReceived = 0;
+  uint64_t expectedSize = 0xffffffffffffffff;
   kj::Promise<void> previousWrite = kj::READY_NOW;
 };
 

@@ -469,8 +469,8 @@ else
   ln -sfT $PWD/sandstorm /usr/local/bin/sandstorm
   ./sandstorm devtools
 
-  if [ -d /etc/systemd/system ]; then
-    which systemctl > /dev/null || fail "Cannot find systemctl binary. Please check your systemd installation."
+  # Note: Ubuntu may have /etc/systemd even when not configured to use systemd.
+  if [ -d /etc/systemd/system ] && which systemctl > /dev/null; then
     SYSTEMD_UNIT="sandstorm.service"
 
     if prompt-yesno "Start sandstorm at system boot?" yes; then

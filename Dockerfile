@@ -27,7 +27,7 @@
 #
 # Keep in mind that all data will be local to the container. If you want to
 # store Sandstorm's data outside the container, then run the following:
-# mkdir -p sandstorm_var/{log,mongo,pid,sandstorm} && chmod -R 777 sandstorm_var
+# mkdir -p sandstorm_var/{log,mongo,pid,sandstorm/apps,sandstorm/grains,sandstorm/downloads} && chmod -R 777 sandstorm_var
 # docker run -v `pwd`/sandstorm_var:/home/sandstorm/sandstorm/var -p 6080:6080 -i -t sandstorm
 
 # Use Ubuntu Trusty as our base

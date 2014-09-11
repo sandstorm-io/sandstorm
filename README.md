@@ -60,20 +60,12 @@ under Docker.
 
 ### Tips
 
-* Sandstorm serves the front-end on the port you choose, but serves each app on a different port,
-  starting from 7000 and counting up (the more files you have open at once, the more ports are
-  used).  If there is a firewall or NAT between you and the server, you'll need to open these ports.
 * If you want to run on port 80, we recommend setting up an [nginx](http://nginx.org/) reverse
   proxy rather than trying to get Node to open port 80 directly.  Make sure to configure
   [WebSocket forwarding](http://nginx.org/en/docs/http/websocket.html), which requires nginx
   1.3.13 or better.
 * If you want SSL, then you will definitely need an nginx proxy (or something equivalent). You will
-  further need to use a wildcard certificate, and wildcard DNS. In SSL mode, Sandstorm switches
-  from using ports for each app to using different host names, formed by adding `-$PORT` to the
-  first component of the shell's host name. For example, for `alpha.sandstorm.io`, apps are hosted
-  from `alpha-7000.sandstorm.io`, `alpha-7001.sandstorm.io`, etc. You will need to configure nginx
-  to forward each of these host names to the corresponding local port number; this can be done
-  easily with a regex rule.
+  further need to use a wildcard certificate.
 
 For reference, [nginx-example.conf](nginx-example.conf) contains the http server part of nginx
 config used by Sandstorm Alpha.

@@ -861,6 +861,7 @@ public:
         responseStream(responseStream) {}
 
   kj::Promise<void> getResponse(GetResponseContext context) override {
+    KJ_REQUIRE(doneCalled, "getResponse() called before done()");
     KJ_REQUIRE(!getResponseCalled, "getResponse() called more than once");
     getResponseCalled = true;
 
@@ -899,9 +900,9 @@ public:
   }
 
   kj::Promise<void> done(DoneContext context) override {
-    doneCalled = true;
     KJ_REQUIRE(!knownLength || bytesReceived == expectedSize,
                "wrong number of bytes received before done() call");
+    doneCalled = true;
 
     auto fork = previousWrite.fork();
     previousWrite = fork.addBranch();

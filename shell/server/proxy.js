@@ -961,6 +961,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
 }
 
 Proxy.prototype.handleRequestStreaming = function (request, response) {
+  var self = this;
   var context = this.makeContext(request, response);
   var path = request.url.slice(1);  // remove leading '/'
   var session = this.getSession(request);
@@ -970,26 +971,45 @@ Proxy.prototype.handleRequestStreaming = function (request, response) {
     contentLength: parseInt(request.headers["content-length"])
   };
 
-  var requestStream;
+  var requestStreamPromise;
   if (request.method === "POST") {
-    requestStream = session.postStreaming(path, headers, context).stream;
+    requestStreamPromise = session.postStreaming(path, headers, context);
   } else if (request.method === "PUT") {
-    requestStream = session.putStreaming(path, headers, context).stream;
+    requestStreamPromise = session.putStreaming(path, headers, context);
   } else {
     throw new Error("Sandstorm only supports streaming POST and PUT requests.");
   }
 
-  requestStream.expectSize(headers.contentLength);
+  return requestStreamPromise.then(function(requestStreamResult) {
+    var requestStream = requestStreamResult.stream;
+    requestStream.expectSize(headers.contentLength);
 
-  request.on("data", function(buf) {
-    requestStream.write(buf);
-  });
-  request.on("end", function() {
-    requestStream.done();
-  });
-  return requestStream.getResponse().then(function (rpcResponse) {
-    requestStream.close();
-    return translateResponse(rpcResponse, response);
+    var donePromise = new Promise(function(resolve, reject) {
+      request.on("data", function(buf) {
+        requestStream.write(buf);
+      });
+      request.on("end", function() {
+        requestStream.done().then(resolve);
+      });
+      request.on("close", function() {
+        reject(new Error("client closed the connection"));
+      });
+      request.on("error", reject);
+    });
+    return donePromise.then(function() {
+      return requestStream.getResponse().then(function (rpcResponse) {
+        requestStream.close();
+        return translateResponse(rpcResponse, response);
+      });
+    }).catch(function (err) {
+      requestStream.close();
+      throw err;
+    });
+  }, function (err) {
+    // Assume that the call failed because streaming is not implemented.
+    return readAll(request).then(function (data) {
+      return self.handleRequest(request, data, response, 0);
+    });
   });
 }
 

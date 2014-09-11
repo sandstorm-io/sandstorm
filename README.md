@@ -65,7 +65,7 @@ under Docker.
   [WebSocket forwarding](http://nginx.org/en/docs/http/websocket.html), which requires nginx
   1.3.13 or better.
 * If you want SSL, then you will definitely need an nginx proxy (or something equivalent). You will
-  further need to use a wildcard certificate, and wildcard DNS.
+  further need to use a wildcard certificate.
 
 For reference, [nginx-example.conf](nginx-example.conf) contains the http server part of nginx
 config used by Sandstorm Alpha.

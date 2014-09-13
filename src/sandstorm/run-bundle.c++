@@ -331,8 +331,10 @@ auto delimited(SubParser& subParser) -> decltype(auto) {
   });
 }
 
+constexpr auto username = p::charsToString(p::oneOrMore(p::nameChar.orAny("-.$")));
+
 constexpr auto nameNum = p::sequence(p::integer, p::discard(p::optional(
-    p::sequence(p::exactChar<'('>(), p::identifier, p::exactChar<')'>()))));
+    p::sequence(p::exactChar<'('>(), username, p::exactChar<')'>()))));
 
 struct Assignment {
   kj::String name;

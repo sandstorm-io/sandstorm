@@ -4,7 +4,7 @@
 # but you can also edit it by hand.
 
 standard-app-packages
-iron-router
+iron:router
 underscore
 random
 accounts-github

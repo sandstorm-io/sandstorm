@@ -86,9 +86,9 @@ bin/run-bundle: src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/genfi
 shell/public/%.png: icons/%.svg
 	convert -scale 24x24 -negate -alpha shape -evaluate multiply 0.87 $< $@
 
-shell-bundle: shell/smart.* shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release .shell-env
+shell-bundle: shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions .shell-env
 	@echo "bundling meteor frontend..."
-	@cd shell && PYTHONPATH=$HOME/.meteor/tools/latest/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib mrt bundle --directory ../shell-bundle > /dev/null
+	@cd shell && PYTHONPATH=$HOME/.meteor/tools/latest/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib meteor bundle --directory ../shell-bundle
 
 bundle: bin/spk bin/minibox bin/sandstorm-supervisor bin/sandstorm-http-bridge bin/run-bundle shell-bundle make-bundle.sh
 	./make-bundle.sh

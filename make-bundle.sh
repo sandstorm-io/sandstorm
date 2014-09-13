@@ -63,13 +63,15 @@ copyDeps() {
   done
 }
 
-METEOR=$HOME/.meteor
-METEOR_RELEASE=$(<shell/.meteor/release)
-METEOR_TOOLS=$METEOR/tools/$(json tools < $METEOR/releases/$METEOR_RELEASE.release.json)
+METEOR_WAREHOUSE_DIR="${METEOR_WAREHOUSE_DIR:-$HOME/.meteor}"
+METEOR_DEV_BUNDLE=$(dirname $(readlink -f "$METEOR_WAREHOUSE_DIR/meteor"))/dev_bundle
 
 # Start with the meteor bundle.
 cp -r shell-bundle bundle
-rm bundle/README
+rm -f bundle/README
+
+# Meteor wants us to do "npm install" in the bundle to prepare it.
+(cd bundle/programs/server && "$METEOR_DEV_BUNDLE/bin/npm" install)
 
 # Copy over key binaries.
 mkdir -p bundle/bin
@@ -78,8 +80,8 @@ cp bin/minibox bundle/bin/minibox
 cp bin/sandstorm-supervisor bundle/bin/sandstorm-supervisor
 cp bin/sandstorm-http-bridge bundle/bin/sandstorm-http-bridge
 cp bin/run-bundle bundle/sandstorm
-cp $METEOR_TOOLS/bin/node bundle/bin
-cp $METEOR_TOOLS/mongodb/bin/{mongo,mongod} bundle/bin
+cp $METEOR_DEV_BUNDLE/bin/node bundle/bin
+cp $METEOR_DEV_BUNDLE/mongodb/bin/{mongo,mongod} bundle/bin
 cp $(which zip unzip xz) bundle/bin
 
 # Binaries copied from Meteor aren't writable by default.

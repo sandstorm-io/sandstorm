@@ -97,7 +97,6 @@ Please install the following:
   Proto are being developed together, so Sandstorm often uses brand-new Cap'n Proto features)
 * [libsodium](https://github.com/jedisct1/libsodium) latest release
 * [Meteor](http://meteor.com)
-* [Meteorite](https://github.com/oortcloud/meteorite)
 * [npm](http://npmjs.org) module `jsontool`
 * ImageMagick
 
@@ -123,7 +122,7 @@ If Sandstorm is already installed, you can update to your newly-built version li
 Note that this only works if you installed Sandstorm to run at startup. Otherwise, you will
 have to manually do:
 
-    /path/to/sandstorm update $PWD/sandstorm-0.tar.xz
+    /path/to/sandstorm update sandstorm-0.tar.xz
 
 ### Hacking on the shell
 

@@ -71,5 +71,4 @@ __EOF__
 # over its own bundled version, and the system gyp doesn't work.
 export PYTHONPATH=$HOME/.meteor/tools/latest/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib
 
-exec mrt run -p $PORT --settings $SETTINGS
-
+exec meteor run -p $PORT --settings $SETTINGS

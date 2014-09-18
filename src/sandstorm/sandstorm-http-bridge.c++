@@ -284,6 +284,13 @@ kj::String base64_encode(const kj::ArrayPtr<const byte> input) {
 
 // =======================================================================================
 
+kj::Array<byte> toBytes(kj::StringPtr text, kj::ArrayPtr<const byte> data = nullptr) {
+  auto result = kj::heapArray<byte>(text.size() + data.size());
+  memcpy(result.begin(), text.begin(), text.size());
+  memcpy(result.begin() + text.size(), data.begin(), data.size());
+  return result;
+}
+
 kj::String hexEncode(const kj::ArrayPtr<const byte> input) {
   const char DIGITS[] = "0123456789abcdef";
   return kj::strArray(KJ_MAP(b, input) { return kj::heapArray<char>({DIGITS[b/16], DIGITS[b%16]}); }, "");
@@ -737,6 +744,12 @@ private:
 
   void onBody(kj::ArrayPtr<const char> data) {
     if (isStreaming) {
+      // TODO(soon): Pause the input whenever too many write requests are in-flight at once.
+      //   Otherwise, a large file download may end up entirely buffered in RAM.
+      // TODO(security): Cap'n Proto itself should stop processing inbound messages when too many
+      //   requests are in-flight, measured by the size of the requests. Otherwise the queuing
+      //   described above will actually happen at the front-end and not even be charged to the
+      //   user. Watch out for deadlock, though.
       auto request = responseStream.writeRequest();
       auto dst = request.initData(data.size());
       memcpy(dst.begin(), data.begin(), data.size());
@@ -855,15 +868,20 @@ private:
 
 class RequestStreamImpl final: public WebSession::RequestStream::Server {
 public:
-  RequestStreamImpl(kj::Own<kj::AsyncIoStream> stream,
+  RequestStreamImpl(kj::String httpRequest,
+                    kj::Own<kj::AsyncIoStream> stream,
                     sandstorm::ByteStream::Client responseStream)
       : stream(kj::mv(stream)),
-        responseStream(responseStream) {}
+        responseStream(responseStream),
+        httpRequest(kj::mv(httpRequest)) {}
 
   kj::Promise<void> getResponse(GetResponseContext context) override {
-    KJ_REQUIRE(doneCalled, "getResponse() called before done()");
     KJ_REQUIRE(!getResponseCalled, "getResponse() called more than once");
     getResponseCalled = true;
+
+    // Remember that this is expected to be called *before* done() is called, so that the
+    // application can start sending back data before it has received the entire request if it so
+    // desires.
 
     auto parser = kj::heap<HttpParser>(responseStream);
     auto results = context.getResults();
@@ -872,9 +890,6 @@ public:
         [this, results, KJ_MVCAP(parser)]
         (kj::ArrayPtr<byte> remainder) mutable {
       KJ_ASSERT(remainder.size() == 0);
-
-      // Cancel any impending writes and prevent any future writes.
-      previousWrite = kj::NEVER_DONE;
 
       parser->pumpStream(kj::mv(stream));
       auto &parserRef = *parser;
@@ -885,10 +900,13 @@ public:
 
   kj::Promise<void> write(WriteContext context) override {
     KJ_REQUIRE(!doneCalled, "write() called after done()");
+    writeHeadersOnce(nullptr);
 
     auto data = context.getParams().getData();
     bytesReceived += data.size();
-    KJ_REQUIRE(bytesReceived <= expectedSize, "received more bytes than expected");
+    KJ_IF_MAYBE(s, expectedSize) {
+      KJ_REQUIRE(bytesReceived <= *s, "received more bytes than expected");
+    }
 
     // Forward the data.
     auto promise = previousWrite.then([this, data]() mutable {
@@ -900,9 +918,23 @@ public:
   }
 
   kj::Promise<void> done(DoneContext context) override {
-    KJ_REQUIRE(!knownLength || bytesReceived == expectedSize,
-               "wrong number of bytes received before done() call");
+    KJ_IF_MAYBE(s, expectedSize) {
+      KJ_REQUIRE(bytesReceived == *s,
+          "done() called before all bytes expected via expectedSize() were written");
+    }
+    KJ_REQUIRE(!doneCalled, "done() called twice");
     doneCalled = true;
+
+    // If we haven't written headers yet, then the content is empty, so we can pass zero for the
+    // expected size. (If we have written headers then the size we pass will be ignored.)
+    writeHeadersOnce(kj::implicitCast<uint64_t>(0));
+
+    previousWrite = previousWrite.then([this]() {
+      // Since we open a new connection for every request, we can indicate the end of the data by
+      // closing the stream, avoiding the need for chunked encoding when the content length is
+      // unknown.
+      stream->shutdownWrite();
+    });
 
     auto fork = previousWrite.fork();
     previousWrite = fork.addBranch();
@@ -910,8 +942,9 @@ public:
   }
 
   kj::Promise<void> expectSize(ExpectSizeContext context) override {
-    knownLength = true;
-    expectedSize = context.getParams().getSize();
+    uint64_t size = context.getParams().getSize();
+    expectedSize = bytesReceived + size;
+    writeHeadersOnce(size);
     return kj::READY_NOW;
   }
 
@@ -920,10 +953,33 @@ private:
   sandstorm::ByteStream::Client responseStream;
   bool doneCalled = false;
   bool getResponseCalled = false;
-  bool knownLength = false;
   uint64_t bytesReceived = 0;
-  uint64_t expectedSize = 0xffffffffffffffff;
-  kj::Promise<void> previousWrite = kj::READY_NOW;
+  kj::Maybe<uint64_t> expectedSize;
+  kj::Promise<void> previousWrite = nullptr;  // initialized in writeHeadersOnce()
+  kj::Maybe<kj::String> httpRequest;
+
+  void writeHeadersOnce(kj::Maybe<uint64_t> contentLength) {
+    KJ_IF_MAYBE(r, httpRequest) {
+      // We haven't sent the request yet.
+      kj::String reqString = kj::mv(*r);
+      httpRequest = nullptr;
+
+      // Did we get a size expectation?
+      KJ_IF_MAYBE(l, contentLength) {
+        KJ_ASSERT(reqString.endsWith("\r\n\r\n"));
+
+        // Hackily splice in the content-length header.
+        reqString = kj::str(
+            reqString.slice(0, reqString.size() - 2),
+            "Content-Length: ", *l, "\r\n"
+            "\r\n");
+      }
+
+      auto bytes = toBytes(reqString);
+      kj::ArrayPtr<const byte> bytesRef = bytes;
+      previousWrite = stream->write(bytesRef.begin(), bytesRef.size()).attach(kj::mv(bytes));
+    }
+  }
 };
 
 class WebSessionImpl final: public WebSession::Server {
@@ -979,20 +1035,16 @@ public:
 
   kj::Promise<void> postStreaming(PostStreamingContext context) override {
     PostStreamingParams::Reader params = context.getParams();
-    auto headers = params.getHeaders();
     kj::String httpRequest = makeHeaders("POST", params.getPath(), params.getContext(),
-        kj::str("Content-Type: ", headers.getMimeType()),
-        kj::str("Content-Length: ", headers.getContentLength()));
-    return sendRequestStreaming(toBytes(httpRequest), context);
+        kj::str("Content-Type: ", params.getMimeType()));
+    return sendRequestStreaming(kj::mv(httpRequest), context);
   }
 
   kj::Promise<void> putStreaming(PutStreamingContext context) override {
     PutStreamingParams::Reader params = context.getParams();
-    auto headers = params.getHeaders();
     kj::String httpRequest = makeHeaders("PUT", params.getPath(), params.getContext(),
-        kj::str("Content-Type: ", headers.getMimeType()),
-        kj::str("Content-Length: ", headers.getContentLength()));
-    return sendRequestStreaming(toBytes(httpRequest), context);
+        kj::str("Content-Type: ", params.getMimeType()));
+    return sendRequestStreaming(kj::mv(httpRequest), context);
   }
 
   kj::Promise<void> openWebSocket(OpenWebSocketContext context) override {
@@ -1105,13 +1157,6 @@ private:
     lines.add(kj::str(""));
   }
 
-  kj::Array<byte> toBytes(kj::StringPtr text, kj::ArrayPtr<const byte> data = nullptr) {
-    auto result = kj::heapArray<byte>(text.size() + data.size());
-    memcpy(result.begin(), text.begin(), text.size());
-    memcpy(result.begin() + text.size(), data.begin(), data.size());
-    return result;
-  }
-
   template <typename Context>
   kj::Promise<void> sendRequest(kj::Array<byte> httpRequest, Context& context) {
     sandstorm::ByteStream::Client responseStream =
@@ -1145,21 +1190,16 @@ private:
   }
 
   template <typename Context>
-  kj::Promise<void> sendRequestStreaming(kj::Array<byte> httpRequest, Context& context) {
+  kj::Promise<void> sendRequestStreaming(kj::String httpRequest, Context& context) {
     sandstorm::ByteStream::Client responseStream =
       context.getParams().getContext().getResponseStream();
     context.releaseParams();
     return serverAddr.connect().then(
         [KJ_MVCAP(httpRequest), responseStream, context]
         (kj::Own<kj::AsyncIoStream>&& stream) mutable {
-      kj::ArrayPtr<const byte> httpRequestRef = httpRequest;
-      auto& streamRef = *stream;
-      return streamRef.write(httpRequestRef.begin(), httpRequestRef.size())
-          .attach(kj::mv(httpRequest))
-          .then([KJ_MVCAP(stream), responseStream, context] () mutable {
-        auto requestStream = kj::heap<RequestStreamImpl>(kj::mv(stream), responseStream);
-        context.getResults().setStream(kj::mv(requestStream));
-      });
+      auto requestStream = kj::heap<RequestStreamImpl>(
+          kj::mv(httpRequest), kj::mv(stream), responseStream);
+      context.getResults().setStream(kj::mv(requestStream));
     });
   }
 };

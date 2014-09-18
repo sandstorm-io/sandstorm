@@ -521,8 +521,11 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user) {
     }
 
     Promise.resolve(undefined).then(function () {
-      if (request.headers["content-length"] > 1024 * 1024) {
-        return self.handleRequestStreaming(request, response);
+      var contentLength = request.headers["content-length"];
+      if ((request.method === "POST" || request.method === "PUT") &&
+          (contentLength === undefined || contentLength > 1024 * 1024)) {
+        // The input is either very long, or we don't know how long it is, so use streaming mode.
+        return self.handleRequestStreaming(request, response, contentLength);
       } else {
         return readAll(request).then(function (data) {
           return self.handleRequest(request, data, response, 0);
@@ -833,7 +836,7 @@ ResponseStream.prototype.done = function() {
   this.response.end();
 }
 
-function translateResponse (rpcResponse, response) {
+function translateResponse(rpcResponse, response) {
   if (rpcResponse.setCookies && rpcResponse.setCookies.length > 0) {
     response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
   }
@@ -859,6 +862,8 @@ function translateResponse (rpcResponse, response) {
       response.resolveResponseStream(
         new Capnp.Capability(new ResponseStream(response, content.body.stream),
                              ByteStream));
+      // TODO(now): We really should be returning a promise that resolves when the stream finishes,
+      //   and throws an exception if done() is never called!
       return;
     } else {
       response.rejectResponseStream(
@@ -960,53 +965,86 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
   });
 }
 
-Proxy.prototype.handleRequestStreaming = function (request, response) {
+Proxy.prototype.handleRequestStreaming = function (request, response, contentLength) {
   var self = this;
   var context = this.makeContext(request, response);
   var path = request.url.slice(1);  // remove leading '/'
   var session = this.getSession(request);
 
-  var headers = {
-    mimeType: request.headers["content-type"] || "application/octet-stream",
-    contentLength: parseInt(request.headers["content-length"])
-  };
+  var mimeType = request.headers["content-type"] || "application/octet-stream";
 
   var requestStreamPromise;
   if (request.method === "POST") {
-    requestStreamPromise = session.postStreaming(path, headers, context);
+    requestStreamPromise = session.postStreaming(path, mimeType, context);
   } else if (request.method === "PUT") {
-    requestStreamPromise = session.putStreaming(path, headers, context);
+    requestStreamPromise = session.putStreaming(path, mimeType, context);
   } else {
     throw new Error("Sandstorm only supports streaming POST and PUT requests.");
   }
 
   return requestStreamPromise.then(function(requestStreamResult) {
     var requestStream = requestStreamResult.stream;
-    requestStream.expectSize(headers.contentLength);
+    var responsePromise = requestStream.getResponse();
 
-    var donePromise = new Promise(function(resolve, reject) {
-      request.on("data", function(buf) {
-        requestStream.write(buf);
-      });
-      request.on("end", function() {
-        requestStream.done().then(resolve);
-      });
-      request.on("close", function() {
-        reject(new Error("client closed the connection"));
-      });
-      request.on("error", reject);
+    var streamError = undefined;
+
+    function reportUploadStreamError(err) {
+      if (!streamError) {
+        streamError = err;
+
+        // If streaming up failed, we may never get a response.
+        responsePromise.cancel();
+      }
+    }
+
+    if (contentLength !== undefined) {
+      requestStream.expectSize(contentLength).catch(reportUploadStreamError);
+    }
+
+    // Pipe the input stream to the app.
+    request.on("data", function (buf) {
+      // TODO(soon): Only allow a small number of write()s to be in-flight at once,
+      //   pausing the input stream if we hit that limit, so that we block the TCP socket all the
+      //   way back to the source. May want to also coalesce small writes for this purpose.
+      // TODO(security): The above problem may allow a DoS attack on the frost-end.
+      if (!streamError) requestStream.write(buf).catch(reportUploadStreamError);
     });
-    return donePromise.then(function() {
-      return requestStream.getResponse().then(function (rpcResponse) {
-        requestStream.close();
-        return translateResponse(rpcResponse, response);
-      });
-    }).catch(function (err) {
+    request.on("end", function () {
+      if (!streamError) requestStream.done().catch(reportUploadStreamError);
+    });
+    request.on("close", function () {
+      // Connection was unexpectedly closed.
       requestStream.close();
+      responsePromise.cancel();
+    });
+    request.on("error", function (err) {
+      reportUploadStreamError(err);
+    });
+
+    return responsePromise.then(function (rpcResponse) {
+      // TODO(now): It is incorrect to close the upload stream here. It's possible to have
+      //   streaming in both directions at the same time.
+      requestStream.close();
+
+      // If the upload stream failed, report that error.
+      if (streamError) {
+        // TODO(now): Make sure that any capabilities in the response are closed.
+        throw streamError;
+      }
+      return translateResponse(rpcResponse, response);
+    }, function (err) {
+      requestStream.close();
+      // If the upload stream failed, prefer that error over the thrown one, because the thrown
+      // one may simply be "request was canceled".
+      if (streamError) {
+        throw streamError;
+      }
       throw err;
     });
   }, function (err) {
     // Assume that the call failed because streaming is not implemented.
+    // TODO(cleanup): When Cap'n Proto supports actually detecting if the method was unimplemented,
+    //   do that instead.
     return readAll(request).then(function (data) {
       return self.handleRequest(request, data, response, 0);
     });

@@ -59,8 +59,8 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   put @3 (path :Text, content :PutContent, context :Context) -> Response;
   delete @4 (path :Text, context :Context) -> Response;
 
-  postStreaming @5 (path :Text, headers :StreamHeaders, context :Context) -> (stream :RequestStream);
-  putStreaming @6 (path :Text, headers :StreamHeaders, context :Context) -> (stream :RequestStream);
+  postStreaming @5 (path :Text, mimeType :Text, context :Context) -> (stream :RequestStream);
+  putStreaming @6 (path :Text, mimeType :Text, context :Context) -> (stream :RequestStream);
   # Streaming post/put requests, useful when the input is large. If these throw exceptions, the
   # caller should fall back to regular post() / put() on the assumption that the app doesn't
   # implement streaming.
@@ -101,12 +101,6 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   struct PutContent {
     mimeType @0 :Text;
     content @1 :Data;
-  }
-
-  struct StreamHeaders {
-    mimeType @0 :Text;
-    contentLength @1 :UInt64;
-    # TODO(someday): Also support unknown body size via chunked transfer encoding.
   }
 
   struct Cookie {
@@ -267,9 +261,19 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
 
     getResponse @0 () -> Response;
     # Get the final HTTP response. The caller should call this immediately, before it has actually
-    # written the request data. The method is allowed to return early, if the app decides it doesn't
-    # actually care about the remaining request bytes, in which case the caller should stop writing
-    # them and simply drop the RequestStream capability.
+    # written the request data.
+    #
+    # The method is allowed to return early, e.g. in order to start streaming the response while
+    # the request is still uploading. Thus, full-duplex streaming is supported. This is useful in
+    # some obscure cases. For example, an HTTP server that just encrypts the request could do so
+    # by streaming back the response as the request comes in so that it does not need to buffer the
+    # whole thing.
+    #
+    # If the response is completely transmitted before the request finishes uploading, the caller
+    # may cancel the upload stream by simply dropping the RequestStream object (without calling
+    # done()). Note that in the case of a streaming response, "completely transmitted" means that
+    # the response stream's done() method has been called, or the response stream itself has been
+    # dropped.
   }
 
   interface WebSocketStream {

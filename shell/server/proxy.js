@@ -532,7 +532,6 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user) {
         });
       }
     }).catch(function (err) {
-      console.error(err.stack);
       var body = err.stack;
       if (err.cppFile) {
         body += "\nC++ location:" + err.cppFile + ":" + (err.line || "??");
@@ -540,12 +539,19 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user) {
       if (err.nature || err.durability) {
         body += "\ntype: " + (err.durability || "") + " " + (err.nature || "(unknown)")
       }
-      if (err instanceof Meteor.Error) {
-        response.writeHead(err.error, err.reason, { "Content-Type": "text/plain" });
+
+      if (response.headersSent) {
+        // Unfortunately, it's too late to tell the client what happened.
+        console.error("HTTP request failed after response already sent:", err.stack);
+        response.end();
       } else {
-        response.writeHead(500, "Internal Server Error", { "Content-Type": "text/plain" });
+        if (err instanceof Meteor.Error) {
+          response.writeHead(err.error, err.reason, { "Content-Type": "text/plain" });
+        } else {
+          response.writeHead(500, "Internal Server Error", { "Content-Type": "text/plain" });
+        }
+        response.end(body);
       }
-      response.end(body);
     });
   };
 
@@ -823,17 +829,31 @@ var errorCodes = {
   imATeapot:             { id: 418, title: "I'm a teapot" },
 };
 
-function ResponseStream(response, streamHandle) {
+function ResponseStream(response, streamHandle, resolve, reject) {
   this.response = response;
   this.streamHandle = streamHandle;
+  this.resolve = resolve;
+  this.reject = reject;
+  this.ended = false;
 }
 
-ResponseStream.prototype.write = function(data) {
+ResponseStream.prototype.write = function (data) {
   this.response.write(data);
 }
 
-ResponseStream.prototype.done = function() {
+ResponseStream.prototype.done = function () {
   this.response.end();
+  this.streamHandle.close();
+  this.ended = true;
+}
+
+ResponseStream.prototype.close = function () {
+  if (this.ended) {
+    resolve();
+  } else {
+    this.streamHandle.close();
+    reject("done() was never called on outbound stream.");
+  }
 }
 
 function translateResponse(rpcResponse, response) {
@@ -858,13 +878,14 @@ function translateResponse(rpcResponse, response) {
       response.setHeader("Content-Language", content.language);
     }
     if ("stream" in content.body) {
+      var streamHandle = content.body.stream;
       response.writeHead(code.id, code.title);
-      response.resolveResponseStream(
-        new Capnp.Capability(new ResponseStream(response, content.body.stream),
-                             ByteStream));
-      // TODO(now): We really should be returning a promise that resolves when the stream finishes,
-      //   and throws an exception if done() is never called!
-      return;
+      var promise = new Promise(function (resolve, reject) {
+        response.resolveResponseStream(new Capnp.Capability(
+            new ResponseStream(response, streamHandle, resolve, reject), ByteStream));
+      });
+      promise.streamHandle = streamHandle;
+      return promise;
     } else {
       response.rejectResponseStream(
         new Error("Response content body was not a stream."));
@@ -926,6 +947,8 @@ function translateResponse(rpcResponse, response) {
   } else {
     throw new Error("Unknown HTTP response type:\n" + JSON.stringify(rpcResponse));
   }
+
+  return Promise.resolve(undefined);
 }
 
 Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
@@ -957,7 +980,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     }
 
   }).then(function (rpcResponse) {
-    return translateResponse(rpcResponse, response)
+    return translateResponse(rpcResponse, response);
   }).catch(function (error) {
     return self.maybeRetryAfterError(error, retryCount).then(function () {
       return self.handleRequest(request, data, response, retryCount + 1);
@@ -982,21 +1005,43 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
     throw new Error("Sandstorm only supports streaming POST and PUT requests.");
   }
 
+  // TODO(perf): We ought to be pipelining the body, but we can't currently, because we have to
+  //   handle the case where the app doesn't actually support streaming. We could pipeline while
+  //   also buffering the data on the side in case we need it again later, but that's kind of
+  //   complicated. We should fix the whole protocol to make streaming the standard.
   return requestStreamPromise.then(function(requestStreamResult) {
     var requestStream = requestStreamResult.stream;
+
+    // Initialized when getResponse() returns, if the response is streaming.
+    var downloadStreamHandle;
+
+    // Initialized if an upload-stream method throws.
+    var uploadStreamError;
+
+    // We call `getResponse()` immediately so that the app can start streaming data down even while
+    // data is still being streamed up. This theoretically allows apps to perform bidirectional
+    // streaming, though probably very few actually do that.
+    //
+    // Note that we need to be able to cancel `responsePromise` below, so it's important that it is
+    // the raw Cap'n Proto promise. Hence `translateResponsePromise` is a separate variable.
     var responsePromise = requestStream.getResponse();
 
-    var streamError = undefined;
-
     function reportUploadStreamError(err) {
-      if (!streamError) {
-        streamError = err;
+      // Called when an upload-stream method throws.
 
-        // If streaming up failed, we may never get a response.
+      if (!uploadStreamError) {
+        uploadStreamError = err;
+
+        // If we're still waiting on any response stuff, cancel it.
         responsePromise.cancel();
+        requestStream.close();
+        if (downloadStreamHandle) {
+          downloadStreamHandle.close();
+        }
       }
     }
 
+    // If we have a Content-Length, pass it along to the app by calling `expectSize()`.
     if (contentLength !== undefined) {
       requestStream.expectSize(contentLength).catch(reportUploadStreamError);
     }
@@ -1007,39 +1052,28 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
       //   pausing the input stream if we hit that limit, so that we block the TCP socket all the
       //   way back to the source. May want to also coalesce small writes for this purpose.
       // TODO(security): The above problem may allow a DoS attack on the frost-end.
-      if (!streamError) requestStream.write(buf).catch(reportUploadStreamError);
+      if (!uploadStreamError) requestStream.write(buf).catch(reportUploadStreamError);
     });
     request.on("end", function () {
-      if (!streamError) requestStream.done().catch(reportUploadStreamError);
+      if (!uploadStreamError) requestStream.done().catch(reportUploadStreamError);
+
+      // We're all done making calls to requestStream.
+      requestStream.close();
     });
     request.on("close", function () {
-      // Connection was unexpectedly closed.
-      requestStream.close();
-      responsePromise.cancel();
+      reportUploadStreamError(new Error("HTTP connection unexpectedly closed during request."));
     });
     request.on("error", function (err) {
       reportUploadStreamError(err);
     });
 
     return responsePromise.then(function (rpcResponse) {
-      // TODO(now): It is incorrect to close the upload stream here. It's possible to have
-      //   streaming in both directions at the same time.
-      requestStream.close();
+      // Stop here if the upload stream has already failed.
+      if (uploadStreamError) throw uploadStreamError;
 
-      // If the upload stream failed, report that error.
-      if (streamError) {
-        // TODO(now): Make sure that any capabilities in the response are closed.
-        throw streamError;
-      }
-      return translateResponse(rpcResponse, response);
-    }, function (err) {
-      requestStream.close();
-      // If the upload stream failed, prefer that error over the thrown one, because the thrown
-      // one may simply be "request was canceled".
-      if (streamError) {
-        throw streamError;
-      }
-      throw err;
+      var promise = translateResponse(rpcResponse, response);
+      downloadStreamHandle = promise.streamHandle;
+      return promise;
     });
   }, function (err) {
     // Assume that the call failed because streaming is not implemented.
@@ -1070,7 +1104,9 @@ function WebSocketReceiver(socket) {
       queue.push(message);
     }
   };
-  // TODO(soon):  Shutdown write when dropped.  Requires support for "reactToLostClient()".
+  this.close = function () {
+    socket.end();
+  };
 }
 
 function pumpWebSocket(socket, rpcStream) {

@@ -525,7 +525,7 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user) {
       if ((request.method === "POST" || request.method === "PUT") &&
           (contentLength === undefined || contentLength > 1024 * 1024)) {
         // The input is either very long, or we don't know how long it is, so use streaming mode.
-        return self.handleRequestStreaming(request, response, contentLength);
+        return self.handleRequestStreaming(request, response, contentLength, 0);
       } else {
         return readAll(request).then(function (data) {
           return self.handleRequest(request, data, response, 0);
@@ -542,7 +542,7 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user) {
 
       if (response.headersSent) {
         // Unfortunately, it's too late to tell the client what happened.
-        console.error("HTTP request failed after response already sent:", err.stack);
+        console.error("HTTP request failed after response already sent:", body);
         response.end();
       } else {
         if (err instanceof Meteor.Error) {
@@ -562,7 +562,6 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user) {
       socket.destroy();
     });
   };
-
 }
 
 Proxy.prototype.getConnection = function () {
@@ -988,7 +987,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
   });
 }
 
-Proxy.prototype.handleRequestStreaming = function (request, response, contentLength) {
+Proxy.prototype.handleRequestStreaming = function (request, response, contentLength, retryCount) {
   var self = this;
   var context = this.makeContext(request, response);
   var path = request.url.slice(1);  // remove leading '/'
@@ -1076,12 +1075,23 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
       return promise;
     });
   }, function (err) {
-    // Assume that the call failed because streaming is not implemented.
-    // TODO(cleanup): When Cap'n Proto supports actually detecting if the method was unimplemented,
-    //   do that instead.
-    return readAll(request).then(function (data) {
-      return self.handleRequest(request, data, response, 0);
-    });
+    if (shouldRestartGrain(err, 0)) {
+      // This is the kind of error that indicates we should retry. Note that we passed 0 for the
+      // retry count above because we were just checking if this is a retriable error (vs. possibly
+      // a method-not-implemented error); maybeRetryAfterError() will check again with the proper
+      // retry count.
+      return self.maybeRetryAfterError(err, retryCount).then(function () {
+        return self.handleRequestStreaming(request, response, contentLength, retryCount + 1);
+      });
+    } else {
+      // Assume that the call failed because streaming is not implemented.
+      // TODO(cleanup): When Cap'n Proto supports actually detecting if the method was unimplemented,
+      //   do that instead.
+      // TODO(soon): On a network error, we need to retry.
+      return readAll(request).then(function (data) {
+        return self.handleRequest(request, data, response, 0);
+      });
+    }
   });
 }
 

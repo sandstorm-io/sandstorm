@@ -371,13 +371,15 @@ Router.map(function () {
     },
 
     data: function () {
-      maybeScrollLog();
-      return {
-        title: Grains.findOne(this.params.grainId).title,
-        html: AnsiUp.ansi_to_html(GrainLog.find({}, {$sort: {_id: 1}})
-            .map(function (entry) { return entry.text; })
-            .join(""), {use_classes:true})
-      };
+      if (this.ready()) {
+        maybeScrollLog();
+        return {
+          title: Grains.findOne(this.params.grainId).title,
+          html: AnsiUp.ansi_to_html(GrainLog.find({}, {$sort: {_id: 1}})
+              .map(function (entry) { return entry.text; })
+              .join(""), {use_classes:true})
+        };
+      }
     }
   });
 });

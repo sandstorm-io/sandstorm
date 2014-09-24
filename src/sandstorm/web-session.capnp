@@ -75,6 +75,8 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   # `clientStream` is the capability which will receive server -> client messages, while
   # serverStream represents client -> server.
 
+  # TODO(someday): Add WebDAV and CalDAV methods?
+
   struct Context {
     # Additional per-request context.
 
@@ -284,4 +286,92 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     #
     # TODO(soon):  Send whole WebSocket datagrams.
   }
+
+  # Request headers that we will probably add later:
+  # * Caching:
+  #   * Cache-Control
+  #   * If-*
+  # * Range requests:
+  #   * Range
+  #
+  # Request headers that could be added later, but don't seem terribly important:
+  # * Accept
+  # * Accept-Charset
+  # * Accept-Encoding
+  # * Content-MD5 (MD5 is dead; perhaps we could introduce a modern alternative)
+  # * Date
+  # * From
+  # * Max-Forwards
+  # * Warning
+  # * Pragma
+  #
+  # Request headers which will NOT be added ever:
+  # * Sandstorm handles authorization:
+  #   * Authorization
+  # * Sandstorm defines cross-origin request permissions:
+  #   * Access-Control-Request-Headers
+  #   * Access-Control-Request-Method
+  #   * Origin
+  # * Redundant or irrelevant to Cap'n Proto RPC:
+  #   * Connection
+  #   * Content-Length
+  #   * Expect
+  #   * Host
+  #   * Keep-Alive
+  #   * TE
+  #   * Trailer
+  #   * Transfer-Encoding
+  #   * Upgrade
+  # * Apps should not have this information:
+  #   * Referer
+  #   * Via
+  #   * Proxy-*
+  #   * Sec-*
+  # * Sandstorm already prevents illicit tracking technically; no need for policy:
+  #   * DNT
+
+  # Response headers that we will probably add later:
+  # * Caching:
+  #   * Age
+  #   * Cange-Control
+  #   * ETag
+  #   * Expires
+  #   * Last-Modified
+  #   * Vary (but Sandstorm will always add "Authorization")
+  # * Range requests:
+  #   * Accept-Ranges
+  #   * Content-Range
+  #
+  # Response headers that could be added later, but don't seem terribly important:
+  # * Allow
+  # * Content-Location
+  # * Content-MD5 - MD5 is dead; perhaps we could introduce a modern alternative.
+  # * Content-Disposition (filename part only)
+  # * Link
+  # * Pragma
+  # * Refresh
+  # * Retry-After
+  # * Server
+  # * Via
+  # * Warning
+  #
+  # Response headers which will NEVER be implemented:
+  # * Sandstorm defines cross-origin request permissions:
+  #   * Access-Control-*
+  # * Sandstorm uses these for sandboxing:
+  #   * Content-Security-Policy
+  #   * X-Frame-Options
+  # * Redundant or irrelevant to Cap'n Proto RPC:
+  #   * Connection
+  #   * Content-Length - Redundant.
+  #   * Trailer
+  #   * Transfer-Encoding
+  #   * Upgrade
+  # * These belong to the domain owner, not the app:
+  #   * Public-Key-Pins
+  #   * Strict-Transport-Security
+  # * Sandstorm controls authentication:
+  #   * WWW-Authenticate
+  # * Irrelevant to servers:
+  #   * Proxy-Authenticate
 }

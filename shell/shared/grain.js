@@ -274,7 +274,7 @@ if (Meteor.isClient) {
   function maybeScrollLog() {
     var elem = document.getElementById("grainLog");
     if (elem) {
-      // The log already exsits. It's about to be updated. Check if it's scrolled to the bottom
+      // The log already exists. It's about to be updated. Check if it's scrolled to the bottom
       // before the update.
       if (elem.scrollHeight - elem.scrollTop === elem.clientHeight) {
         // Indeed, so we want to scroll it back to the bottom after the update.

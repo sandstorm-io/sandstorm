@@ -333,13 +333,17 @@ Router.map(function () {
       }
 
       var session = Session.get("session-" + grainId);
-      if (session) {
+      if (session === "pending") {
+        return result;
+      } else if (session) {
         result.appOrigin = document.location.protocol + "//" + makeWildcardHost(session.hostId);
         setCurrentSessionId(session.sessionId, result.appOrigin, grainId);
         result.sessionId = session.sessionId;
         result.path = encodeURIComponent("/" + (this.params.path || ""));
         return result;
       } else {
+        // Make sure that we call openSession() only once on this grain.
+        Session.set("session-" + grainId, "pending");
         Meteor.call("openSession", grainId, function (error, session) {
           if (error) {
             Session.set("session-" + grainId + "-error", error.message);

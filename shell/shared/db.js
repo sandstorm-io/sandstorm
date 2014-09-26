@@ -152,6 +152,15 @@ ApiTokens = new Meteor.Collection("apiTokens");
 //              passed back to the app when servicing requests to this token.
 //   expires:   Optional expiration Date. If undefined, the token does not expire.
 
+StatsTokens = new Meteor.Collection("statsTokens");
+// Access tokens for the Stats collection
+//
+// These tokens are used for accessing the ActivityStats collection remotely
+// (ie. from a dashboard webapp)
+//
+// Each cotains:
+//   _id:       The token. At least 128 bits entropy (Random.id(22)).
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.

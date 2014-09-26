@@ -86,7 +86,7 @@ if (Meteor.isServer) {
   Meteor.startup(function () {
     if (StatsTokens.find().count() === 0) {
       StatsTokens.remove({});
-      StatsTokens.insert({});
+      StatsTokens.insert({_id: Random.id(22)});
     }
   });
 
@@ -97,7 +97,7 @@ if (Meteor.isServer) {
       }
 
       StatsTokens.remove({});
-      var token = StatsTokens.insert({});
+      var token = StatsTokens.insert({_id: Random.id(22)});
       return token._id;
     }
   });

@@ -44,7 +44,7 @@ body {
   background-color: white;
 }
 
-#topbar, #topbar-right, #topbar-update {
+#topbar, #topbar-right, #topbar-update, div.popup {
   background-color: black;
   color: #ccc;
   font-weight: bold;
@@ -69,7 +69,6 @@ body {
   width: 100%;
   height: 32px;
   text-align: center;
-  border-bottom: 2px solid #fcc;
   background-color: #622;
   color: #fcc;
   z-index: 2;
@@ -140,7 +139,7 @@ body {
   background-color: #888;
 }
 
-#topbar #renameGrain, #topbar #deleteGrain, #topbar #openDebugLog, #topbar #backupGrain, #topbar #restartGrain {
+#topbar #renameGrain, #topbar #deleteGrain, #topbar #openDebugLog, #topbar #backupGrain, #topbar #restartGrain, #topbar #showApiToken {
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -170,6 +169,23 @@ body {
 
 #topbar #restartGrain {
   background-image: url("/restart.png");
+}
+
+#topbar #showApiToken {
+  background-image: url("/key.png");
+}
+
+button.revoke-token {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  width: 24px;
+  height: 24px;
+  border: none;
+  color: transparent;
+  background-color: transparent;
+  cursor: pointer;
+  background-image: url("/close.png");
 }
 
 img.icon {
@@ -423,24 +439,30 @@ svg {
   margin: 0;
 }
 
+#api-token-popup {
+  left: 250px;
+  width: 450px;
+}
+
 div.popup {
   position: fixed;
   top: 32px;
   max-height: calc(100vh - 64px);
 
-  border: 2px solid #ccc;
-  border-top: none;
-  border-left: none;
   z-index: 101;
   background-color: black;
   /*background-color: rgba(0, 0, 0, 0.9);*/
-  padding: 0;
+  padding: 16px;
   font-size: 85%;
   line-height: normal;
   min-width: 250px;
 
   overflow-y: auto;
   overflow-x: hidden;
+}
+
+div.popup p {
+  margin-top: 0;
 }
 
 div.popup-closer {

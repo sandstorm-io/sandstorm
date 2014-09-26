@@ -60,9 +60,10 @@ interface HackSessionContext @0xe14c1f5321159b8f
   # adding some more hacks, but, again, this will all go away once the Powerbox is implemented.
 
   getUserAddress @2 () -> Email.EmailAddress;
-  # Returns the address of the user logged into Sandstorm
+  # Returns the address of the owner of the grain.
 
-  generateApiToken @3 () -> (token :Text, endpointUrl :Text, userInfo :Grain.UserInfo);
+  generateApiToken @3 (petname :Text, userInfo :Grain.UserInfo, expires :UInt64 = 0)
+      -> (token :Text, endpointUrl :Text, tokenId :Text);
   # Generates a new API token which can be used to access an HTTP API exported by this application.
   # The method also returns the URL at which the API is exported.
   #
@@ -80,6 +81,25 @@ interface HackSessionContext @0xe14c1f5321159b8f
   # actual user's ID. This is a temporary hack. Eventually, when we have persistent Cap'n Proto
   # capabilities, we will not use `newSession()` with capability tokens; we will persist and
   # restore the WebSession capability instead.
+  #
+  # `expires` is a Unix timestamp (seconds since epoch) after which the token should no longer
+  # work. A value of zero (default) indicates no expiration.
+  #
+  # `tokenId` can be used to identify and delete the token in later requests. (We don't use
+  # `token` itself for this because the token is not actually stored by Sandstorm; only a hash
+  # of it is.)
+
+  listApiTokens @4 () -> (tokens :List(TokenInfo));
+  # List all tokens that were previously created by `generateApiToken()` and have not yet expired.
+
+  revokeApiToken @5 (tokenId :Text);
+  # Revoke (delete) a previously-generated token.
+
+  struct TokenInfo {
+    tokenId @0 :Text;
+    petname @1 :Text;
+    userInfo @2 :Grain.UserInfo;
+  }
 }
 
 interface HackEmailSession @0xc3b5ced7344b04a6 extends(Grain.UiSession, Email.EmailSendPort) {

@@ -89,6 +89,31 @@ if (Meteor.isClient) {
     Meteor.subscribe("credentials");
   });
 
+  makeDateString = function (date) {
+    // Note: this is also used by grain.js.
+
+    if (!date) {
+      return "";
+    }
+
+    var result;
+
+    var now = new Date();
+    var diff = now.valueOf() - date.valueOf();
+
+    if (diff < 86400000 && now.getDate() === date.getDate()) {
+      result = date.toLocaleTimeString();
+    } else {
+      result = MONTHS[date.getMonth()] + " " + date.getDate() + " ";
+
+      if (now.getFullYear() !== date.getFullYear()) {
+        result = date.getFullYear() + " " + result;
+      }
+    }
+
+    return result;
+  }
+
   Template.root.helpers({
     filteredGrains: function () {
       var selectedApp = Session.get("selectedApp");
@@ -141,28 +166,7 @@ if (Meteor.isClient) {
       }
     },
 
-    dateString: function (date) {
-      if (!date) {
-        return "";
-      }
-
-      var result;
-
-      var now = new Date();
-      var diff = now.valueOf() - date.valueOf();
-
-      if (diff < 86400000 && now.getDate() === date.getDate()) {
-        result = date.toLocaleTimeString();
-      } else {
-        result = MONTHS[date.getMonth()] + " " + date.getDate() + " ";
-
-        if (now.getFullYear() !== date.getFullYear()) {
-          result = date.getFullYear() + " " + result;
-        }
-      }
-
-      return result;
-    }
+    dateString: function (date) { return makeDateString(date); }
   });
 
   Template.root.events({

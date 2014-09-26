@@ -11,6 +11,8 @@ shell/public/trash.png
 shell/public/wrench.png
 shell/public/download.png
 shell/public/restart.png
+shell/public/close.png
+shell/public/key.png
 shell-bundle
 sandstorm-*.tar.xz
 bundle/

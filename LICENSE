@@ -23,7 +23,10 @@ shell/public/opensans-semibold.woff
     License: Apache 2.0
     License URL: http://www.apache.org/licenses/LICENSE-2.0.html
 
+icons/close.svg
+icons/download.svg
 icons/edit.svg
+icons/restart.svg
 icons/trash.svg
 icons/wrench.svg
     What: Icons by Naomi Atkinson from The Noun Project
@@ -31,6 +34,11 @@ icons/wrench.svg
     Copyright: Naomi Atkinson
     License: CC BY 3.0
     License URL: http://creativecommons.org/licenses/by/3.0/us/
+
+icons/key.svg
+    What: Key icon
+    Source URL: http://thenounproject.com/term/key/655/
+    Copyright: Public domain
 
 shell/client/ansi-up.js
     What: ansi_up library (converts ANSI escape codes to HTML)

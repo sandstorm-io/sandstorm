@@ -352,7 +352,7 @@ shutdownGrain = function (grainId, keepSessions) {
       var proxy = proxies[session._id];
       if (proxy) {
         delete proxies[session._id];
-        delete proxiesByHostId[session._id];
+        delete proxiesByHostId[session.hostId];
       }
       Sessions.remove(session._id);
     });
@@ -415,7 +415,7 @@ function gcSessions() {
     var proxy = proxies[session._id];
     if (proxy) {
       delete proxies[session._id];
-      delete proxiesByHostId[session._id];
+      delete proxiesByHostId[session.hostId];
     }
     Sessions.remove(session._id);
   });
@@ -439,26 +439,184 @@ Meteor.startup(function () {
 });
 
 // =======================================================================================
+// API tokens
+
+var proxiesByApiToken = {};
+
+function getProxyForApiToken(token) {
+  check(token, String);
+  var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
+  return Promise.resolve(undefined).then(function () {
+    if (hashedToken in proxiesByApiToken) {
+      var proxy = proxiesByApiToken[hashedToken];
+      if (proxy.expires && proxy.expires.getTime() <= Date.now()) {
+        throw new Meteor.Error(403, "Authorization token expired");
+      }
+      return proxy;
+    } else {
+      return inMeteor(function () {
+        var tokenInfo = ApiTokens.findOne(hashedToken);
+        if (!tokenInfo) {
+          throw new Meteor.Error(403, "Invalid authorization token");
+        }
+
+        if (tokenInfo.expires && tokenInfo.expires.getTime() <= Date.now()) {
+          throw new Meteor.Error(403, "Authorization token expired");
+        }
+
+        var grain = Grains.findOne(tokenInfo.grainId);
+        if (!grain) {
+          // Grain was deleted, I guess.
+          throw new Meteor.Error(410, "Resource has been deleted");
+        }
+
+        var proxy;
+        if (tokenInfo.userInfo) {
+          // Hack: When Mongo stores a Buffer, it comes back as some other type.
+          if ("userId" in tokenInfo.userInfo) {
+            tokenInfo.userInfo.userId = new Buffer(tokenInfo.userInfo.userId);
+          }
+          proxy = new Proxy(tokenInfo.grainId, null, null, false, null, tokenInfo.userInfo);
+        } else if (tokenInfo.userId) {
+          var user = Meteor.users.findOne({_id: tokenInfo.userId});
+          if (!user) {
+            throw new Meteor.Error(403, "User has been deleted");
+          }
+
+          var isOwner = grain.userId === tokenInfo.userId;
+          proxy = new Proxy(tokenInfo.grainId, null, null, isOwner, user);
+        } else {
+          proxy = new Proxy(tokenInfo.grainId, null, null, false, null);
+        }
+
+        if (tokenInfo.expires) {
+          proxy.expires = tokenInfo.expires;
+        }
+
+        proxiesByApiToken[hashedToken] = proxy;
+
+        return proxy;
+      });
+    }
+  });
+}
+
+function apiTokenForRequest(req) {
+  var auth = req.headers.authorization;
+  if (auth && auth.slice(0, 7).toLowerCase() === "bearer ") {
+    return auth.slice(7).trim();
+  } else {
+    return undefined;
+  }
+}
+
+// =======================================================================================
 // Routing to proxies.
 //
 
 tryProxyUpgrade = function (hostId, req, socket, head) {
-  if (hostId in proxiesByHostId) {
-    var proxy = proxiesByHostId[hostId]
-
-    // Meteor sets the timeout to five seconds. Change that back to two
-    // minutes, which is the default value.
-    socket.setTimeout(120000);
-
-    proxy.upgradeHandler(req, socket, head);
+  if (hostId === "api") {
+    var token = apiTokenForRequest(req);
+    if (token) {
+      getProxyForApiToken(token).then(function (porxy) {
+        proxy.upgradeHandler(req, socket, head);
+      }, function (err) {
+        socket.destroy();
+      });
+    } else {
+      socket.destroy();
+    }
     return true;
   } else {
-    return false;
+    var origin = req.headers.origin;
+    if (origin !== (PROTOCOL + "//" + req.headers.host)) {
+      console.error("Detected illegal cross-origin WebSocket from:", origin);
+      socket.close();
+      return true;
+    }
+
+    if (hostId in proxiesByHostId) {
+      var proxy = proxiesByHostId[hostId]
+  
+      // Meteor sets the timeout to five seconds. Change that back to two
+      // minutes, which is the default value.
+      socket.setTimeout(120000);
+  
+      proxy.upgradeHandler(req, socket, head);
+      return true;
+    } else {
+      return false;
+    }
   }
 }
 
 tryProxyRequest = function (hostId, req, res) {
-  if (hostId in proxiesByHostId) {
+  if (hostId === "api") {
+    // This is a request for the API host.
+
+    if (req.method === "OPTIONS") {
+      // Reply to CORS preflight request.
+
+      // All we want to do is permit APIs to be accessed from arbitrary origins. Since clients must
+      // send a valid Authorization header, and since cookies are not used for authorization, this
+      // is perfectly safe. In a sane world, we would only need to send back
+      // "Access-Control-Allow-Origin: *" and be done with it.
+      //
+      // However, CORS demands that we explicitly whitelist individual methods and headers for use
+      // cross-origin, as if this is somehow useful for implementing any practical security policy
+      // (it isn't). To make matters worse, we are REQUIRED to enumerate each one individually.
+      // We cannot just write "*" for these lists. WTF, CORS?
+      //
+      // Luckily, the request tells us exactly what method and headers are being requested, so we
+      // only need to copy those over, rather than create an exhaustive list. But this is still
+      // overly complicated.
+
+      var accessControlHeaders = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, HEAD, POST, PUT, DELETE",
+        "Access-Control-Max-Age": "3600"
+      };
+
+      // Copy all requested headers to the allowed headers list.
+      var requestedHeaders = req.headers["access-control-request-headers"];
+      if (requestedHeaders) {
+        accessControlHeaders["Access-Control-Allow-Headers"] = requestedHeaders;
+      }
+
+      // Add the requested method to the allowed methods list, if it's not there already.
+      var requestedMethod = req.headers["access-control-request-method"];
+      if (requestedMethod &&
+          !(_.contains(["GET", "HEAD", "POST", "PUT", "DELETE"], requestedMethod))) {
+        accessControlHeaders["Access-Control-Allow-Methods"] += ", " + requestedMethod;
+      }
+
+      res.writeHead(204, accessControlHeaders);
+      res.end();
+      return true;
+    }
+
+    var token = apiTokenForRequest(req);
+    if (token) {
+      getProxyForApiToken(token).then(function (proxy) {
+        proxy.requestHandler(req, res);
+      }, function (err) {
+        if (err instanceof Meteor.Error) {
+          res.writeHead(err.error, err.reason, { "Content-Type": "text/plain" });
+        } else {
+          res.writeHead(500, "Internal Server Error", { "Content-Type": "text/plain" });
+        }
+        res.end(err.stack);
+      });
+    } else {
+      // TODO(someday): Display some sort of nifty API browser.
+      res.writeHead(403, {"Content-Type": "text/plain"});
+      res.end("Missing or invalid authorization header.\n\n" +
+          "This address serves APIs, which allow external apps (such as a phone app) to\n" +
+          "access data on your Sandstorm server. This address is not meant to be opened\n" +
+          "in a regular browser.");
+    }
+    return true;
+  } else if (hostId in proxiesByHostId) {
     var proxy = proxiesByHostId[hostId];
     proxy.requestHandler(req, res);
     return true;
@@ -474,17 +632,21 @@ tryProxyRequest = function (hostId, req, res) {
 // Connects to a grain and exports it on a wildcard host.
 //
 
-function Proxy(grainId, sessionId, preferredHostId, isOwner, user) {
+function Proxy(grainId, sessionId, preferredHostId, isOwner, user, userInfo) {
   this.grainId = grainId;
   this.sessionId = sessionId;
   this.isOwner = isOwner;
-  if (!preferredHostId) {
-    this.hostId = generateRandomHostname(20);
-  } else {
-    this.hostId = preferredHostId;
+  if (sessionId) {
+    if (!preferredHostId) {
+      this.hostId = generateRandomHostname(20);
+    } else {
+      this.hostId = preferredHostId;
+    }
   }
 
-  if (user) {
+  if (userInfo) {
+    this.userInfo = userInfo;
+  } else if (user) {
     var serviceId;
     if (user.expires) {
       serviceId = "demo:" + user._id;
@@ -514,10 +676,13 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user) {
   var self = this;
 
   this.requestHandler = function (request, response) {
-    var url = Url.parse(request.url, true);
-    if (url.pathname === "/_sandstorm-init" && url.query.sessionid === self.sessionId) {
-      self.doSessionInit(request, response, url.query.path);
-      return;
+    if (this.sessionId) {
+      // Implement /_sandstorm-init for setting the session cookie.
+      var url = Url.parse(request.url, true);
+      if (url.pathname === "/_sandstorm-init" && url.query.sessionid === self.sessionId) {
+        self.doSessionInit(request, response, url.query.path);
+        return;
+      }
     }
 
     Promise.resolve(undefined).then(function () {
@@ -739,14 +904,19 @@ Proxy.prototype.makeContext = function (request, response) {
   // returns the request context which contains the other cookies.  Throws an exception if the
   // session ID is missing or invalid.
 
-  var parseResult = parseCookies(request);
-  if (!parseResult.sessionId || parseResult.sessionId !== this.sessionId) {
-    throw new Meteor.Error(403, "Unauthorized");
-  }
-
   var context = {};
-  if (parseResult.cookies.length > 0) {
-    context.cookies = parseResult.cookies;
+
+  if (this.hostId) {
+    var parseResult = parseCookies(request);
+    if (!parseResult.sessionId || parseResult.sessionId !== this.sessionId) {
+      throw new Meteor.Error(403, "Unauthorized");
+    }
+
+    if (parseResult.cookies.length > 0) {
+      context.cookies = parseResult.cookies;
+    }
+  } else {
+    // This is an API request. Cookies are not supported.
   }
 
   var promise = new Promise(function (resolve, reject) {
@@ -855,9 +1025,23 @@ ResponseStream.prototype.close = function () {
   }
 }
 
-function translateResponse(rpcResponse, response) {
-  if (rpcResponse.setCookies && rpcResponse.setCookies.length > 0) {
-    response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
+Proxy.prototype.translateResponse = function (rpcResponse, response) {
+  if (this.hostId) {
+    if (rpcResponse.setCookies && rpcResponse.setCookies.length > 0) {
+      response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
+    }
+  } else {
+    // This is an API request. Cookies are not supported.
+
+    // We need to make sure caches know that different bearer tokens get totally different results.
+    response.setHeader("Vary", "Authorization");
+
+    // APIs can be called from any origin. Because we ignore cookies, there is no security problem.
+    response.setHeader("Access-Control-Allow-Origin", "*");
+
+    // Add a Content-Security-Policy as a backup in case someone finds a way to load this resource
+    // in a browser context. This policy should thoroughly neuter it.
+    response.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
   }
 
   if ("content" in rpcResponse) {
@@ -979,7 +1163,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     }
 
   }).then(function (rpcResponse) {
-    return translateResponse(rpcResponse, response);
+    return self.translateResponse(rpcResponse, response);
   }).catch(function (error) {
     return self.maybeRetryAfterError(error, retryCount).then(function () {
       return self.handleRequest(request, data, response, retryCount + 1);
@@ -1070,7 +1254,7 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
       // Stop here if the upload stream has already failed.
       if (uploadStreamError) throw uploadStreamError;
 
-      var promise = translateResponse(rpcResponse, response);
+      var promise = self.translateResponse(rpcResponse, response);
       downloadStreamHandle = promise.streamHandle;
       return promise;
     });

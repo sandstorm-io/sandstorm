@@ -147,13 +147,14 @@ ApiTokens = new Meteor.Collection("apiTokens");
 //   _id:       A SHA-256 hash of the token.
 //   userId:    For UI tokens, the `_id` of the user (in the users table) who created this token.
 //   userInfo:  For true capability tokens, the UserInfo struct that should be passed to
-//              `newSession()` when exercising this token, encoded as a byte array. This is a
+//              `newSession()` when exercising this token, in decoded (JS object) format. This is a
 //              temporary hack. Eventually, when we have persistent Cap'n Proto capabilities, we
 //              will not use `newSession()` with capability tokens; we will persist and restore
 //              the WebSession capability instead.
 //   grainId:   The grain servicing this API.
 //   petname:   Human-readable label for this access token, useful for identifying tokens for
 //              revocation.
+//   created:   Date when this token was created.
 //   expires:   Optional expiration Date. If undefined, the token does not expire.
 
 if (Meteor.isServer) {

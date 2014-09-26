@@ -25,6 +25,12 @@ if (Meteor.isServer) {
     }
   });
 
+  ApiTokens.allow({
+    remove: function (userId, token) {
+      return userId && token.userId === userId;
+    }
+  });
+
   Meteor.publish("grainTitle", function (grainId) {
     check(grainId, String);
 
@@ -36,10 +42,18 @@ if (Meteor.isServer) {
     // Except, we actually do need to know if the caller is the grain's owner since we display
     // extra functionality in that case. So we'll do an owner check first and if that passes return
     // additional info.
+    var titleInfo;
     if (Grains.find({_id: grainId, userId: this.userId}).count() > 0) {
-      return Grains.find(grainId, { fields: { title: 1, userId: 1 } });
+      titleInfo = Grains.find(grainId, { fields: { title: 1, userId: 1 } });
     } else {
-      return Grains.find(grainId, { fields: { title: 1 } });
+      titleInfo = Grains.find(grainId, { fields: { title: 1 } });
+    }
+
+    if (this.userId) {
+      // Also publish API tokens belonging to the user, so that they may be revoked.
+      return [titleInfo, ApiTokens.find({grainId: grainId, userId: this.userId})];
+    } else {
+      return titleInfo;
     }
   });
 
@@ -81,6 +95,13 @@ if (Meteor.isServer) {
       promise.cancel();
     });
   });
+
+  function cleanupExpiredTokens() {
+    var now = new Date();
+    ApiTokens.remove({expires: {$lt: now}});
+  }
+
+  Meteor.setInterval(cleanupExpiredTokens, 3600000);
 }
 
 var GrainSizes = new Meteor.Collection("grainSizes");
@@ -144,6 +165,37 @@ if (Meteor.isClient) {
           frame.src = frame.src;
         }
       });
+    },
+    "click #showApiToken": function (event) {
+      if (Session.get("show-api-token")) {
+        Session.set("show-api-token", false);
+      } else {
+        Session.set("show-api-token", true);
+      }
+    },
+    "click #api-token-popup-closer": function (event) {
+      Session.set("show-api-token", false);
+    },
+    "click #newApiToken": function (event) {
+      var grainId = this.grainId;
+      Session.set("api-token-" + grainId, "pending");
+      Meteor.call("newApiToken", grainId, document.getElementById("api-token-petname").value,
+          function (error, result) {
+        if (error) {
+          console.error(error.stack);
+        } else {
+          Session.set("api-token-" + grainId, result.endpointUrl + "#" + result.token);
+        }
+      });
+    },
+    "click #resetApiToken": function (event) {
+      Session.set("api-token-" + this.grainId, undefined);
+    },
+    "click button.revoke-token": function (event) {
+      ApiTokens.remove(event.currentTarget.getAttribute("data-token-id"));
+    },
+    "click .autoSelect": function (event) {
+      event.currentTarget.select();
     }
   });
 
@@ -168,7 +220,9 @@ if (Meteor.isClient) {
         }
       }
       return "";
-    }
+    },
+
+    dateString: function (date) { return makeDateString(date); }
   });
 
   var currentSessionId;
@@ -320,10 +374,16 @@ Router.map(function () {
         return { grainId: grainId, title: "Invalid Grain", error: "No such grain." };
       }
 
+      var apiToken = Session.get("api-token-" + grainId);
+
       var result = {
         grainId: grainId,
         title: grain.title,
-        isOwner: grain.userId && grain.userId === Meteor.userId()
+        isOwner: grain.userId && grain.userId === Meteor.userId(),
+        apiToken: apiToken,
+        apiTokenPending: apiToken === "pending",
+        showApiToken: Session.get("show-api-token"),
+        existingTokens: ApiTokens.find({grainId: grainId, userId: Meteor.userId()}).fetch()
       };
 
       var err = Session.get("session-" + grainId + "-error");

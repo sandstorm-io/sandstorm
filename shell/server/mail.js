@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+var Crypto = Npm.require("crypto");
 var Http = Npm.require("http");
 var Https = Npm.require("https");
 var Future = Npm.require("fibers/future");
@@ -448,20 +449,101 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
   });
 };
 
-HackSessionContextImpl.prototype.getUserAddress = function() {
+HackSessionContextImpl.prototype.getUserAddress = function () {
   return inMeteor((function () {
     return this._getUserAddress();
   }).bind(this));
 };
+
+HackSessionContextImpl.prototype.generateApiToken = function (petname, userInfo, expires) {
+  return inMeteor((function () {
+    var token = Random.secret();
+    var endpointUrl = ROOT_URL.protocol + "//" + makeWildcardHost("api");
+
+    ApiTokens.insert({
+      _id: Crypto.createHash("sha256").update(token).digest("base64"),
+      userInfo: userInfo,
+      grainId: this.grainId,
+      petname: petname,
+      created: new Date(),
+      expires: expires > 0 ? new Date(expires * 1000) : null
+    });
+
+    return [token, endpointUrl];
+  }).bind(this));
+}
+
+Meteor.methods({
+  newApiToken: function (grainId, petname) {
+    // Create a new user-oriented API token.
+
+    check(grainId, String);
+    check(petname, String);
+
+    if (Grains.find(grainId).count() === 0) {
+      throw new Meteor.Error(404, "No such grain");
+    }
+
+    var token = Random.secret();
+    var endpointUrl = ROOT_URL.protocol + "//" + makeWildcardHost("api");
+
+    ApiTokens.insert({
+      _id: Crypto.createHash("sha256").update(token).digest("base64"),
+      userId: this.userId,
+      grainId: grainId,
+      petname: petname,
+      created: new Date(),
+      expires: null
+    });
+
+    return {token: token, endpointUrl: endpointUrl};
+  }
+});
+
+HackSessionContextImpl.prototype.listApiTokens = function () {
+  return inMeteor((function () {
+    results = [];
+    ApiTokens.find({grainId: this.grainId, userInfo: {$exists: true}})
+        .forEach(function (token) {
+      if (token.expires && token.expires.getTime() < Date.now()) {
+        // Skip.
+        return;
+      }
+
+      // Hack: When Mongo stores a Buffer, it comes back as some other type.
+      if ("userId" in token.userInfo) {
+        token.userInfo.userId = new Buffer(token.userInfo.userId);
+      }
+      results.push({
+        tokenId: token._id,
+        petname: token.petname,
+        userInfo: token.userInfo
+      });
+    });
+
+    return [results];
+  }).bind(this));
+}
+
+HackSessionContextImpl.prototype.revokeApiToken = function (tokenId) {
+  return inMeteor((function () {
+    if (ApiTokens.remove({_id: tokenId, grainId: this.grainId, userInfo: {$exists: true}}) === 0) {
+      var err = new Error("No such token.");
+      err.nature = "precondition";
+      throw err;
+    }
+  }).bind(this));
+}
 
 // =======================================================================================
 // makeSmtpPool and getSmtpPool are lifted from the Meteor email package (MIT license)
 
 var makeSmtpPool = function (mailUrlString) {
   var mailUrl = Url.parse(mailUrlString);
-  if (mailUrl.protocol !== 'smtp:')
+  if (mailUrl.protocol !== 'smtp:') {
     throw new Error("Email protocol in $MAIL_URL (" +
                     mailUrlString + ") must be 'smtp'");
+  }
 
   var port = +(mailUrl.port);
   var auth = false;

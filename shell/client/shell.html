@@ -172,7 +172,35 @@ limitations under the License.
       <button id="backupGrain" title="Download Backup">Backup</button>
       <button id="restartGrain" title="Restart App">Restart</button>
     {{/if}}
+    <button id="showApiToken" title="Get API Key">Get&nbsp;API&nbsp;Key</button>
   </div>
+
+  <div id="api-token-popup" class="popup" style="{{#if showApiToken}}{{else}}display: none{{/if}}">
+    {{#if apiToken}}
+      {{#if apiTokenPending}}
+        <p>Generating...</p>
+        <p><button id="resetApiToken">Cancel</button></p>
+      {{else}}
+        <p>Copy this URL and give it to the app:<br>
+          <input type="text" class="autoSelect" value="{{apiToken}}" readonly></p>
+        <p><button id="resetApiToken">Go back</button></p>
+      {{/if}}
+    {{else}}
+      <p>An API key allows you to connect an external app (e.g. a mobile app) to this app.</p>
+      <p>Key label: <input type="text" id="api-token-petname" placeholder="e.g. 'Android app'">
+        <button id="newApiToken">Create</button></p>
+      {{#if existingTokens}}
+        <p>Your existing keys:</p>
+        <ul>
+        {{#each existingTokens}}
+          <li>{{petname}} ({{dateString created}}) <button class="revoke-token" title="delete" data-token-id="{{_id}}">delete</button></li>
+        {{/each}}
+        </ul>
+      {{/if}}
+    {{/if}}
+  </div>
+  <div id="api-token-popup-closer" class="popup-closer"
+      style="{{#if showApiToken}}{{else}}display: none{{/if}}"></div>
 
   <div id="app" class="main-content">
     {{#if error}}

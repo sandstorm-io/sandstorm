@@ -56,7 +56,9 @@ Meteor.startup(function () {
     } else {
       var id = matchWildcardHost(req.headers.host);
       if (id) {
-        tryProxyUpgrade(id, req, socket, head);
+        if (!tryProxyUpgrade(id, req, socket, head)) {
+          socket.destroy();
+        }
       }
     }
   });

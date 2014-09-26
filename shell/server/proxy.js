@@ -1018,10 +1018,10 @@ ResponseStream.prototype.done = function () {
 
 ResponseStream.prototype.close = function () {
   if (this.ended) {
-    resolve();
+    this.resolve();
   } else {
     this.streamHandle.close();
-    reject("done() was never called on outbound stream.");
+    this.reject("done() was never called on outbound stream.");
   }
 }
 

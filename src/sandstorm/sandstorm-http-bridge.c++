@@ -929,12 +929,14 @@ public:
     // expected size. (If we have written headers then the size we pass will be ignored.)
     writeHeadersOnce(kj::implicitCast<uint64_t>(0));
 
-    previousWrite = previousWrite.then([this]() {
-      // Since we open a new connection for every request, we can indicate the end of the data by
-      // closing the stream, avoiding the need for chunked encoding when the content length is
-      // unknown.
-      stream->shutdownWrite();
-    });
+    if (expectedSize == nullptr) {
+      previousWrite = previousWrite.then([this]() {
+        // Since we open a new connection for every request, we can indicate the end of the data by
+        // closing the stream, avoiding the need for chunked encoding when the content length is
+        // unknown.
+        stream->shutdownWrite();
+      });
+    }
 
     auto fork = previousWrite.fork();
     previousWrite = fork.addBranch();
@@ -1617,7 +1619,7 @@ public:
 
       // Make a redirecting capability that will point to the most-recent SessionContext, which
       // we dub the "hack context" since it may or may not actually be the right one to be calling.
-      // See the TODO in ApiRestorer::rsetore().
+      // See the TODO in ApiRestorer::restore().
       auto ownHackContext = kj::heap<RedirectableCapability>();
       auto& hackContext = *ownHackContext;
       capnp::Capability::Client hackContextClient = kj::mv(ownHackContext);

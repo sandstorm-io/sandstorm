@@ -328,7 +328,7 @@ if (Meteor.isClient) {
   function maybeScrollLog() {
     var elem = document.getElementById("grainLog");
     if (elem) {
-      // The log already exsits. It's about to be updated. Check if it's scrolled to the bottom
+      // The log already exists. It's about to be updated. Check if it's scrolled to the bottom
       // before the update.
       if (elem.scrollHeight - elem.scrollTop === elem.clientHeight) {
         // Indeed, so we want to scroll it back to the bottom after the update.
@@ -393,13 +393,17 @@ Router.map(function () {
       }
 
       var session = Session.get("session-" + grainId);
-      if (session) {
+      if (session === "pending") {
+        return result;
+      } else if (session) {
         result.appOrigin = document.location.protocol + "//" + makeWildcardHost(session.hostId);
         setCurrentSessionId(session.sessionId, result.appOrigin, grainId);
         result.sessionId = session.sessionId;
         result.path = encodeURIComponent("/" + (this.params.path || ""));
         return result;
       } else {
+        // Make sure that we call openSession() only once on this grain.
+        Session.set("session-" + grainId, "pending");
         Meteor.call("openSession", grainId, function (error, session) {
           if (error) {
             Session.set("session-" + grainId + "-error", error.message);
@@ -431,13 +435,15 @@ Router.map(function () {
     },
 
     data: function () {
-      maybeScrollLog();
-      return {
-        title: Grains.findOne(this.params.grainId).title,
-        html: AnsiUp.ansi_to_html(GrainLog.find({}, {$sort: {_id: 1}})
-            .map(function (entry) { return entry.text; })
-            .join(""), {use_classes:true})
-      };
+      if (this.ready()) {
+        maybeScrollLog();
+        return {
+          title: Grains.findOne(this.params.grainId).title,
+          html: AnsiUp.ansi_to_html(GrainLog.find({}, {$sort: {_id: 1}})
+              .map(function (entry) { return entry.text; })
+              .join(""), {use_classes:true})
+        };
+      }
     }
   });
 });

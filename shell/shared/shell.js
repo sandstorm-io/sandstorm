@@ -23,7 +23,7 @@ browseHome = function() {
 
 getOrigin = function() {
   return document.location.protocol + "//" + document.location.host;
-} 
+}
 
 if (Meteor.isServer) {
   Meteor.publish("grainsMenu", function () {

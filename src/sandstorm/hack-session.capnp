@@ -72,7 +72,16 @@ interface HackSessionContext @0xe14c1f5321159b8f
   #
   #     Authorization: Bearer <token>
   #
-  # To handle such a request, Sandstorm will open a new session of type `HackHttpApiSession`.
+  # The request will be delivered to the app like a regular web request. However, the request will
+  # contain no cookies, and any cookies in the response will be ignored. Also note that the system
+  # will arrange for `endpointUrl` to accept cross-origin request from any origin, so that
+  # third-party web sites can use XMLHttpRequest to communicate with this API.
+  #
+  # By convention, if you wish to present `endpointUrl` and `token` to the user (e.g. to copy/paste
+  # into a client app), you should do so in the format: "<endpointUrl>#<token>" -- that is,
+  # separate the two by a '#' character, as if the token is a URL "hash" or "fragment". If this
+  # combined URL is loaded directly in the browser, Sandstorm may be able to display something
+  # useful to the user, although this is not the intended usage method.
   #
   # `userInfo` contains the `UserInfo` struct which should be passed back to the application
   # verbatim when this token is used. There is no need to fill this struct with accurate

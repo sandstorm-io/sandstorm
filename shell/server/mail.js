@@ -460,7 +460,7 @@ HackSessionContextImpl.prototype.generateApiToken = function (petname, userInfo,
     var token = Random.secret();
     var endpointUrl = ROOT_URL.protocol + "//" + makeWildcardHost("api");
 
-    ApiTokens.insert({
+    var tokenId = ApiTokens.insert({
       _id: Crypto.createHash("sha256").update(token).digest("base64"),
       userInfo: userInfo,
       grainId: this.grainId,
@@ -469,7 +469,7 @@ HackSessionContextImpl.prototype.generateApiToken = function (petname, userInfo,
       expires: expires > 0 ? new Date(expires * 1000) : null
     });
 
-    return [token, endpointUrl];
+    return [token, endpointUrl, tokenId];
   }).bind(this));
 }
 

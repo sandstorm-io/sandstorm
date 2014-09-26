@@ -518,7 +518,11 @@ tryProxyUpgrade = function (hostId, req, socket, head) {
   if (hostId === "api") {
     var token = apiTokenForRequest(req);
     if (token) {
-      getProxyForApiToken(token).then(function (porxy) {
+      getProxyForApiToken(token).then(function (proxy) {
+        // Meteor sets the timeout to five seconds. Change that back to two
+        // minutes, which is the default value.
+        socket.setTimeout(120000);
+
         proxy.upgradeHandler(req, socket, head);
       }, function (err) {
         socket.destroy();

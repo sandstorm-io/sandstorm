@@ -331,7 +331,12 @@ auto delimited(SubParser& subParser) -> decltype(auto) {
   });
 }
 
-constexpr auto username = p::charsToString(p::oneOrMore(p::nameChar.orAny("-.$")));
+constexpr auto username = p::charsToString(p::oneOrMore(
+    p::nameChar.orAny("-.$").orRange(0x80, 0xff)));
+// It's a bit ambiguous what characters are allowed in usernames. Usually usernames must match:
+//     ^[a-z_][a-z0-9_-]*[$]?$
+// However, it seems this may be configurable. We'll try to be lenient here by allowing letters,
+// digits, -, _, ., $, and any non-ASCII character.
 
 constexpr auto nameNum = p::sequence(p::integer, p::discard(p::optional(
     p::sequence(p::exactChar<'('>(), username, p::exactChar<')'>()))));
@@ -371,6 +376,12 @@ kj::Maybe<UserIds> getUserIds(kj::StringPtr name) {
   pid_t child;
   KJ_SYSCALL(child = fork());
   if (child == 0) {
+    // id(1) actually localizes the word "groups". Make sure the locale is set to C to prevent this.
+    KJ_SYSCALL(setenv("LANG", "C", true));
+    KJ_SYSCALL(unsetenv("LANGUAGE"));
+    KJ_SYSCALL(unsetenv("LC_ALL"));
+    KJ_SYSCALL(unsetenv("LC_MESSAGES"));
+
     KJ_SYSCALL(dup2(fds[1], STDOUT_FILENO));
     KJ_SYSCALL(execlp("id", "id", name.cStr(), EXEC_END_ARGS));
     KJ_UNREACHABLE;

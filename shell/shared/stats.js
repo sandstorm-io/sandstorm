@@ -55,6 +55,15 @@ if (Meteor.isServer) {
     return ActivityStats.find();
   });
 
+  Meteor.publish("statsTokens", function () {
+    var user = this.userId && Meteor.users.findOne({_id: this.userId}, {fields: {isAdmin: 1}});
+    if (!(user && user.isAdmin)) {
+      return [];
+    }
+
+    return StatsTokens.find();
+  });
+
   Meteor.publish("realTimeStats", function () {
     var user = this.userId && Meteor.users.findOne({_id: this.userId}, {fields: {isAdmin: 1}});
     if (!(user && user.isAdmin)) {
@@ -73,6 +82,60 @@ if (Meteor.isServer) {
 
     this.ready();
   });
+
+  Meteor.startup(function () {
+    if (StatsTokens.find().count() === 0) {
+      StatsTokens.remove({});
+      StatsTokens.insert({_id: Random.id(22)});
+    }
+  });
+
+  Meteor.methods({
+    regenerateStatsToken: function () {
+      if (!isAdmin()) {
+        throw new Meteor.Error(403, "Unauthorized", "User must be admin");
+      }
+
+      StatsTokens.remove({});
+      var token = StatsTokens.insert({_id: Random.id(22)});
+      return token._id;
+    }
+  });
+
+  Router.map(function () {
+    this.route("fetchStats", {
+      where: "server",
+      path: "/fetchStats/:tokenId",
+      action: function () {
+        var token = StatsTokens.findOne({_id: this.params.tokenId});
+
+        if (!token) {
+          this.response.writeHead(404, {
+            "Content-Type": "text/plain"
+          });
+          this.response.write("Token not found");
+          return this.response.end();
+        }
+
+        try {
+          var stats = ActivityStats.find().fetch();
+          var statsString = JSON.stringify(stats);
+
+          this.response.writeHead(200, {
+            "Content-Type": "application/json"
+          });
+          this.response.write(statsString);
+        } catch(error) {
+          console.error(error.stack);
+          this.response.writeHead(500, {
+            "Content-Type": "text/plain"
+          });
+          this.response.write(error.stack);
+        }
+        return this.response.end();
+      }
+    });
+  });
 }
 
 // Pseudo-collection defined via publish, above.
@@ -86,7 +149,8 @@ Router.map(function () {
       // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
       return [
         Meteor.subscribe("activityStats"),
-        Meteor.subscribe("realTimeStats")
+        Meteor.subscribe("realTimeStats"),
+        Meteor.subscribe("statsTokens")
       ];
     },
 
@@ -99,8 +163,17 @@ Router.map(function () {
           }, point);
         }),
         current: RealTimeStats.findOne("now"),
-        today: RealTimeStats.findOne("today")
+        today: RealTimeStats.findOne("today"),
+        token: StatsTokens.findOne()
       };
     }
   });
 });
+
+if (Meteor.isClient) {
+  Template.stats.events({
+    'click #regenerateStatsToken': function () {
+      Meteor.call('regenerateStatsToken');
+    }
+  });
+}

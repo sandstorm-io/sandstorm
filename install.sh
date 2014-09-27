@@ -337,7 +337,10 @@ else
     SS_HOSTNAME=$(hostname -f)
   else
     BIND_IP=127.0.0.1
-    SS_HOSTNAME=localhost
+    SS_HOSTNAME=local.sandstorm.io
+    echo "Note: local.sandstorm.io maps to 127.0.0.1, i.e. your local machine. For"
+    echo "reasons that will become clear in the next step, you should use this"
+    echo "instead of 'localhost'."
   fi
   BASE_URL=$(prompt "URL users will enter in browser:" "http://$SS_HOSTNAME:$PORT")
 
@@ -356,7 +359,7 @@ else
   echo "\"*.foo.example.com\". You can also specify that hosts should have a special"
   echo "prefix, like \"ss-*.foo.example.com\". Note that if your server's main page"
   echo "is served over SSL, the wildcard address must support SSL as well, which"
-  echo "implies that you must have a wildcard certificate. For localhost servers,"
+  echo "implies that you must have a wildcard certificate. For local-machine servers,"
   echo "we have mapped *.local.sandstorm.io to 127.0.0.1 for your convenience, so you"
   echo "can use \"*.local.sandstorm.io\" here. If you are serving off a non-standard"
   echo "port, you must include it here as well."

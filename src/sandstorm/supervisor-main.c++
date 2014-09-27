@@ -544,7 +544,7 @@ public:
                    "Don't redirect the sandbox's stdio.  Useful for debugging.")
         .addOption({"dev"}, [this]() { devmode = true; return true; },
                    "Allow some system calls useful for debugging which are blocked in production.")
-        .addOption({"seccomp-dump-pfc"}, [this]() { seccomp_dump_pfc = true; return true; },
+        .addOption({"seccomp-dump-pfc"}, [this]() { seccompDumpPfc = true; return true; },
                    "Dump libseccomp PFC output.")
         .addOption({'n', "new"}, [this]() { setIsNew(true); return true; },
                    "Initializes a new grain.  (Otherwise, runs an existing one.)")
@@ -647,7 +647,7 @@ private:
   bool mountProc = false;
   bool keepStdio = false;
   bool devmode = false;
-  bool seccomp_dump_pfc = false;
+  bool seccompDumpPfc = false;
 
   void bind(kj::StringPtr src, kj::StringPtr dst, unsigned long flags = 0) {
     // Contrary to the documentation of MS_BIND claiming this is no longer the case after 2.6.26,
@@ -992,10 +992,6 @@ private:
       CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 1,
         SCMP_A0(SCMP_CMP_EQ, PTRACE_POKEUSER)));
       CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 1,
-        SCMP_A0(SCMP_CMP_EQ, PTRACE_POKEUSER)));
-      CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 1,
-        SCMP_A0(SCMP_CMP_EQ, PTRACE_POKEUSER)));
-      CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 1,
         SCMP_A0(SCMP_CMP_EQ, PTRACE_SETREGS)));
       CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EPERM), SCMP_SYS(ptrace), 1,
         SCMP_A0(SCMP_CMP_EQ, PTRACE_SETFPREGS)));
@@ -1078,8 +1074,9 @@ private:
 
     // TODO(someday): Turn off POSIX message queues and other such esoteric features.
 
-    if (seccomp_dump_pfc)
+    if (seccompDumpPfc) {
       seccomp_export_pfc(ctx, 1);
+    }
 
     CHECK_SECCOMP(seccomp_load(ctx));
 

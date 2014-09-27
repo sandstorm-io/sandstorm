@@ -92,7 +92,7 @@ if (Meteor.isServer) {
 
   Meteor.methods({
     regenerateStatsToken: function () {
-      if (!Meteor.user().isAdmin) {
+      if (!isAdmin()) {
         throw new Meteor.Error(403, "Unauthorized", "User must be admin");
       }
 

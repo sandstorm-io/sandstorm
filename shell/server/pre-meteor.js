@@ -146,8 +146,21 @@ function lookupPublicIdFromDns(hostname) {
   return new Promise(function (resolve, reject) {
     Dns.resolveTxt("sandstorm-www." + hostname, function (err, records) {
       if (err) {
-        reject(new Error("Error looking up DNS TXT records for host '" +
-                         hostname + "': " + err.message));
+        reject(new Error(
+          "Error looking up DNS TXT records for host '" + hostname + "': " + err.message + "\n" +
+          "\n" +
+          "This Sandstorm server's main interface is at: " + process.env.ROOT_URL + "\n" +
+          "\n" +
+          "If you were trying to connect this address to a Sandstorm app hosted at this server,\n" +
+          "you either have not set your DNS TXT records correctly or the DNS cache has not\n" +
+          "updated yet (may take a while).\n" +
+          "\n" +
+          "If you are the server admin and want to use this address as the main interface,\n" +
+          "edit /opt/sandstorm/sandstorm.conf, modify the BASE_URL setting, and restart.\n" +
+          "\n" +
+          "If you got here after trying to log in via OAuth (e.g. through Github or Google),\n" +
+          "the problem is probably that the OAuth callback URL was set wrong. You need to\n" +
+          "update it through the respective login provider's management console."));
       } else if (records.length !== 1) {
         reject(new Error("Host 'sandstorm-www." + hostname + "' must have exactly one TXT record."));
       } else {

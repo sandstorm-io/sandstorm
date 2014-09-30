@@ -214,6 +214,12 @@ img {
   overflow: auto;
 }
 
+.main-content a {
+  font-weight: bold;
+  text-decoration: none;
+  color: #428bca;
+}
+
 #app.main-content {
   overflow: hidden;
 }
@@ -639,11 +645,6 @@ input.autoSelect {
   text-align: center;
   font-size: 2em;
   margin-bottom: 0;
-}
-#about a {
-  font-weight: bold;
-  text-decoration: none;
-  color: #428bca;
 }
 #about p.heading-subtext {
   text-align: center;

@@ -405,6 +405,10 @@ Router.map(function () {
       ];
     },
     data: function () {
+      if (!this.ready()) {
+        return;
+      }
+
       var apps;
       var allowDemoAccounts = Meteor.settings && Meteor.settings.public &&
             Meteor.settings.public.allowDemoAccounts;

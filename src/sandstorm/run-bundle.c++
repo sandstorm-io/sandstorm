@@ -1419,7 +1419,10 @@ private:
       // Defense in depth: Drop all capabilities from the set of caps which my children are allowed
       //   to ever have.
       for (uint cap: kj::range(0, CAP_LAST_CAP + 1)) {
-        KJ_SYSCALL(prctl(PR_CAPBSET_DROP, cap, 0, 0, 0));
+        // TODO(soon): I spontaneously started getting EINVAL here, but only in production, so I
+        //   had to remove the error check. Figure out what happened and re-enable it. Maybe it
+        //   makes sense to read the bset first and then only drop the caps in it?
+        prctl(PR_CAPBSET_DROP, cap, 0, 0, 0);
       }
 
       // Defense in depth: Don't grant my children capabilities just because they have UID 0.

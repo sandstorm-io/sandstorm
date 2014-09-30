@@ -505,23 +505,88 @@ $KEY</textarea></p>
   <div id="about" class="main-content">
     <div class="centered-box">
       <h2>Sandstorm Server</h2>
-      <p><a href="https://sandstorm.io">https://sandstorm.io</a></p>
+      <p class="heading-subtext"><a href="https://sandstorm.io">https://sandstorm.io</a></p>
       <p>Build {{build}}</p>
       {{#if isUnofficial}}
       <p><b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain
         modifications not reviewed by the developers.</p>
       {{/if}}
-      <p><a href="https://sandstorm.io">Sandstorm.io</a> is an open source hosting platform for personal instances of web apps. Users
-        can upload and install arbitrary software. In addition to better privacy,
+      <p><a href="https://sandstorm.io">Sandstorm.io</a> is an open source hosting platform for
+        personal/private instances of web apps. Users can upload and install arbitrary software
+        through a simple app-store-like web interface. In addition to better privacy,
         <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html">
         this is the only way to make Open Source web apps viable.</a></p>
-      <h3>Core Contributors</h3>
-      <ul>
-        <li><a href="https://github.com/kentonv">Kenton Varda</a></li>
-        <li><a href="https://github.com/jadeqwang">Jade Wang</a></li>
-        <li><a href="https://github.com/jparyani">Jason Paryani</a></li>
-        <li><a href="https://github.com/amluto">Andrew Lutomirski</a></li>
+      <h3>Core Developers</h3>
+      <ul class="dev-list">
+        <li><a href="https://github.com/kentonv">
+            <img src="/logos/kenton.jpg" alt="Kenton Varda"><br>
+            Kenton<br>Varda</a></li>
+        <li><a href="https://github.com/jadeqwang">
+            <img src="/logos/jade.jpg" alt="Jade Wang"><br>
+            Jade<br>Wang</a></li>
+        <li><a href="https://github.com/jparyani">
+            <img src="/logos/jparyani.jpg" alt="Jason Paryani"><br>
+            Jason<br>Paryani</a></li>
+        <li><a href="https://github.com/dwrensha">
+            <img src="/logos/drenshaw.jpg" alt="David Renshaw"><br>
+            David<br>Renshaw</a></li>
+        <li><a href="https://plus.google.com/u/0/114357619139436426265">
+            <img src="/logos/garply.jpg" alt="Garply"><br>
+            Garply<br>&nbsp;</a></li>
       </ul>
+      <h3>Advisors</h3>
+      <ul class="dev-list">
+        <li><a href="https://github.com/swetland">
+            <img src="/logos/swetland.jpg" alt="Brian Swetland"><br>
+            Brian<br>Swetland</a></li>
+        <li><a href="https://github.com/amluto">
+            <img src="/logos/luto.jpg" alt="Andrew Lutomirski"><br>
+            Andrew<br>Lutomirski</a></li>
+        <li><a href="https://github.com/jasvir">
+            <img src="/logos/jasvir.jpg" alt="Jasvir Nagra"><br>
+            Jasvir<br>Nagra</a></li>
+        <li><a href="https://github.com/mseaborn">
+            <img src="/logos/smiley.png" alt="Mark Seaborn"><br>
+            Mark<br>Seaborn</a></li>
+        <li><a href="http://en.wikipedia.org/wiki/Mark_S._Miller">
+            <img src="/logos/markm.jpg" alt="Mark Miller"><br>
+            Mark<br>Miller</a></li>
+      </ul>
+      <h3>Key Individual Sponsors</h3>
+      <p class="heading-subtext">from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign</a></p>
+      <ul class="backer-list">
+        <li><a href="http://rogerwagner.com/">
+            <img src="/logos/wagner.jpg"><br>
+            Roger Wagner</a></li>
+        <li><a href="https://github.com/audreyt">
+            <img src="/logos/audreyt.jpg"><br>
+            Audrey Tang</a></li>
+      </ul>
+      <h3>Corporate Sponsors</h3>
+      <p class="heading-subtext">from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign</a></p>
+      <div class="corptags">
+        <div class="corptag">
+          <a href="http://draw.io"><img src="/logos/draw.io-logo.svg"></a>
+        </div>
+        <div class="corptag">
+          <img src="/logos/humanweb.png" style="padding-top: 68px">
+        </div>
+        <div class="corptag">
+          <a href="https://uniregistry.com"><img src="/logos/uniregistry.svg"></a>
+        </div>
+      </div>
+      <h3>Backers</h3>
+      <p class="heading-subtext">from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign</a></p>
+      {{#if backers}}
+      <ul class="backer-list">
+        {{#each backers}}
+          <li>{{.}}</li>
+        {{/each}}
+        <li>{{anonCount}} anonymous contributors</li>
+      </ul>
+      {{else}}
+      <p>loading...</p>
+      {{/if}}
       <h3>Third-party works used</h3>
       <ul>
         <li><a href="http://nodejs.org/">Node.js</a> (MIT license)</li>
@@ -543,7 +608,7 @@ $KEY</textarea></p>
       </ul>
       <p>These works are copyright the respective authors and used under the terms of the respective
         licenses.</p>
-      <h3>Details</h3>
+      <h3>Copyright</h3>
       <p>The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and
          contributors. The implementation is licensed under the Apache License 2.0.</p>
       <p>"Sandstorm" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc.,

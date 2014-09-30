@@ -63,10 +63,34 @@ if (Meteor.isServer) {
     }
     self.ready();
   });
+
+  Meteor.publish("backers", function () {
+    var backers = Assets.getText("backers.txt");
+    var self = this;
+    var anonCount = 0;
+    var counter = 0;
+
+    backers.split("\n").forEach(function (name) {
+      name = name.trim();
+      if (name === "") {
+        ++anonCount;
+      } else {
+        self.added("backers", counter++, {name: name});
+      }
+    });
+
+    // Text file ends in \n but that shouldn't count.
+    --anonCount;
+
+    self.added("backers", "anonymous", {count: anonCount - 1});
+
+    self.ready();
+  });
 }
 
 if (Meteor.isClient) {
   HasUsers = new Meteor.Collection("hasUsers");  // dummy collection defined above
+  Backers = new Meteor.Collection("backers");  // pseudo-collection defined above
 
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -453,7 +477,34 @@ Router.map(function () {
   this.route("about", {
     path: "/about",
     data: function () {
-      return getBuildInfo();
+      var result = getBuildInfo();
+
+      var backers = Session.get("backers");
+      if (backers) {
+        result.backers = backers.names;
+        result.anonCount = backers.anonCount;
+      } else {
+        HTTP.get("/sandstorm-backers.txt", function (err, response) {
+          var names = response.content.split("\n").sort(function (a, b) {
+            return a.toLowerCase().localeCompare(b.toLowerCase());
+          });
+
+          var anonCount = 0;
+          while (anonCount < names.length && names[anonCount] === "") {
+            ++anonCount;
+          }
+          names = names.slice(anonCount);
+
+          // File ends in trailing newline, but that last blank line does not represent an
+          // anonymous contributor.
+          --anonCount;
+
+          Session.set("backers", {names: names, anonCount: anonCount});
+        });
+      }
+
+      console.log(result);
+      return result;
     }
   });
 

@@ -15,3 +15,5 @@ capnp
 reload
 simplesmtp
 connect
+http
+

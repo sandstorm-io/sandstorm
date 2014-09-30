@@ -84,7 +84,7 @@ bin/run-bundle: src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/genfi
 	@$(CXX) src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/run-bundle -static $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
 
 shell/public/%.png: icons/%.svg
-	convert -scale 24x24 -negate -alpha shape -evaluate multiply 0.87 $< $@
+	convert -scale 24x24 -negate -evaluate multiply 0.87 $< $@
 
 shell-bundle: shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions .shell-env
 	@echo "bundling meteor frontend..."

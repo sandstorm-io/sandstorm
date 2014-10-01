@@ -25,9 +25,9 @@ var TMPDIR = "/tmp";
 var TOKEN_CLEANUP_MINUTES = 15;
 var TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 
-var mkdir = Meteor._wrapAsync(Fs.mkdir),
-    readFile = Meteor._wrapAsync(Fs.readFile),
-    writeFile = Meteor._wrapAsync(Fs.writeFile);
+var mkdir = Meteor.wrapAsync(Fs.mkdir),
+    readFile = Meteor.wrapAsync(Fs.readFile),
+    writeFile = Meteor.wrapAsync(Fs.writeFile);
 
 function recursiveRmdirIfExists(dir) {
   if (Fs.existsSync(dir)) {

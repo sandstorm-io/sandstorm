@@ -26,6 +26,28 @@ getOrigin = function() {
 }
 
 if (Meteor.isServer) {
+  // Set up browser policy.
+  //
+  // Note that by default (when the browser-policy package is added), Content-Security-Policy will
+  // already be set to same-origin-only for everything except XHR and WebSocket. Eval is disabled,
+  // but inline script are enabled.
+  //
+  // TODO(security): Consider disallowing inline scripts. Currently this forces Meteor to do an
+  //   extra round trip on startup to fetch server settings. That seams like something that could
+  //   be fixed in Meteor (e.g. embed the settings as JSON text rather than script). Startup time
+  //   is incredibly important, and Meteor's templating system (which we use to render all our
+  //   HTML) already does a good job of protecting us from script injection, so right now I think
+  //   we should favor avoiding the round trip.
+  //
+  // TODO(someday): Detect when an app tries to navigate off-site using CSP's violation reporting
+  //   feature. Ask the user whether they want to open the link in a new tab. This is an annoying
+  //   prompt, but if we just open the tab directly then apps can trivially leak by opening tabs
+  //   with encoded URLs to an evil server. Although, this attack would be very detectable to the
+  //   user, so maybe it's not a big deal...
+
+  BrowserPolicy.framing.disallow();  // Disallow framing of the UI.
+  BrowserPolicy.content.allowFrameOrigin(getWildcardOrigin());
+
   Meteor.publish("grainsMenu", function () {
     if (this.userId) {
       return [

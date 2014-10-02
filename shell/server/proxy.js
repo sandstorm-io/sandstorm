@@ -1034,6 +1034,13 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
     if (rpcResponse.setCookies && rpcResponse.setCookies.length > 0) {
       response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
     }
+
+    // TODO(security): Add a Content-Security-Policy header which:
+    // (1) Prevents the app from initiating HTTP requests to third parties.
+    // (2) Prevents the app from navigating the parent frame.
+    // (3) Prevents the app from opening popups.
+    // (4) Prohibits anyone other than the Sandstorm shell from framing the app (as a backup
+    //   defense vs. clickjacking, though unguessable hostnames already mostly prevent this).
   } else {
     // This is an API request. Cookies are not supported.
 
@@ -1047,6 +1054,8 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
     // in a browser context. This policy should thoroughly neuter it.
     response.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
   }
+
+  // TODO(security): Set X-Content-Type-Options: nosniff?
 
   if ("content" in rpcResponse) {
     var content = rpcResponse.content;

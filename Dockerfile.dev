@@ -51,7 +51,7 @@ RUN meteor update
 
 ADD . /opt/src
 USER root
-RUN chown -R sandstorm /opt/src
+RUN chown -R sandstorm /opt/src && rm -rf /opt/src/shell/packages/*/.build* && rm -rf /opt/src/shell/packages/*/.npm
 USER sandstorm
 
 RUN cd /opt/src && make -j4 XZ_FLAGS='-0' && ./install.sh -d -u sandstorm-0.tar.xz

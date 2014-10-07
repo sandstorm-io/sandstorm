@@ -20,36 +20,11 @@ set -euo pipefail
 
 THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
-cd "$THIS_DIR"/..
-make -j4 XZ_FLAGS='-0' .docker
-
 cd "$THIS_DIR"
-rm -rf sandstorm_var
-mkdir -p sandstorm_var/{log,mongo,pid,sandstorm/apps,sandstorm/grains,sandstorm/downloads}
-chmod -R 777 sandstorm_var
 
-CONTAINER_ID=$(docker run -v `pwd`/sandstorm_var:/home/sandstorm/sandstorm/var --privileged -d -p 6080:6080 -t sandstorm bash -c 'echo "IS_TESTING=true
-ALLOW_DEMO_ACCOUNTS=true" >> $HOME/sandstorm/sandstorm.conf && $HOME/sandstorm/sandstorm start && sleep infinity')
-
-echo -n "Waiting for sandstorm to start."
-while ! curl -s localhost:6080 > /dev/null; do
-  echo -n .
-  sleep .1
-done;
-echo
-
-npm install
+test -e assets/ssjekyll5.spk || curl http://sandstorm.io/apps/ssjekyll5.spk > assets/ssjekyll5.spk
+test -e assets/ssjekyll6.spk || curl http://sandstorm.io/apps/ssjekyll6.spk > assets/ssjekyll6.spk
+test -e assets/ssjekyll7.spk || curl http://sandstorm.io/apps/ssjekyll7.spk > assets/ssjekyll7.spk
 
 set +e
-
-npm test
-rc=$?
-
-if [ $rc != 0 ]; then
-  cat sandstorm_var/log/sandstorm.log
-fi
-
-docker stop $CONTAINER_ID
-docker rm $CONTAINER_ID
-rm -rf sandstorm_var
-exit $rc
+nightwatch

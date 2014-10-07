@@ -34,8 +34,9 @@ if (isTesting) {
 
   mockLoginGithub = function () {
     Meteor.call('mockCreateGithub', function (err) {
-      // TODO(soon)
-      console.log(err);
+      if (err) {
+        console.log(err);
+      }
       window.localStorage.setItem('Meteor.loginToken', 'F0S6luPxIJV--y_GAkBKOMuWMYnnqgG3UMv9M-DIs2f');
       window.localStorage.setItem('Meteor.loginTokenExpires', 'Mon Nov 10 2099 21:16:02 GMT-0800 (PST)');
       window.localStorage.setItem('Meteor.userId', 'Py8fwsaryQNGBuiXb');
@@ -45,8 +46,9 @@ if (isTesting) {
 
   mockLoginGoogle = function () {
     Meteor.call('mockCreateGoogle', function (err) {
-      // TODO(soon)
-      console.log(err);
+      if (err) {
+        console.log(err);
+      }
       window.localStorage.setItem('Meteor.loginToken', 'P3ffUfVJtptyVX2IPUfNDZY0F3b-GIZ-WQf7w3GdL21');
       window.localStorage.setItem('Meteor.loginTokenExpires', 'Tue Nov 18 2099 23:52:55 GMT-0800 (PST)');
       window.localStorage.setItem('Meteor.userId', '6WJcRo2gg2Ysuxsok');

@@ -258,21 +258,23 @@ makeWildcardHost = function (id) {
   return wildcardHost[0] + id + wildcardHost[1];
 }
 
-var Url = Npm.require("url");
-getWildcardOrigin = function () {
-  // The wildcard URL can be something like "foo-*-bar.example.com", but sometimes when we're
-  // trying to specify a pattern matching hostnames (say, a Content-Security-Policy directive),
-  // an astrisk is only allowed as the first character and must be followed by a period. So we need
-  // "*.example.com" instead -- which matches more than we actually want, but is the best we can
-  // really do. We also add the protocol to the front (again, that's what CSP wants).
+if (Meteor.isServer) {
+  var Url = Npm.require("url");
+  getWildcardOrigin = function () {
+    // The wildcard URL can be something like "foo-*-bar.example.com", but sometimes when we're
+    // trying to specify a pattern matching hostnames (say, a Content-Security-Policy directive),
+    // an astrisk is only allowed as the first character and must be followed by a period. So we need
+    // "*.example.com" instead -- which matches more than we actually want, but is the best we can
+    // really do. We also add the protocol to the front (again, that's what CSP wants).
 
-  // TODO(cleanup): `protocol` is computed in other files, like proxy.js. Put it somewhere common.
-  var protocol = Url.parse(process.env.ROOT_URL).protocol;
+    // TODO(cleanup): `protocol` is computed in other files, like proxy.js. Put it somewhere common.
+    var protocol = Url.parse(process.env.ROOT_URL).protocol;
 
-  var dotPos = wildcardHost[1].indexOf(".");
-  if (dotPos < 0) {
-    return protocol + "//*";
-  } else {
-    return protocol + "//*" + wildcardHost[1].slice(dotPos);
+    var dotPos = wildcardHost[1].indexOf(".");
+    if (dotPos < 0) {
+      return protocol + "//*";
+    } else {
+      return protocol + "//*" + wildcardHost[1].slice(dotPos);
+    }
   }
 }

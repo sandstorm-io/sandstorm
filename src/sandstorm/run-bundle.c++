@@ -1051,7 +1051,7 @@ public:
     const Config config = readConfig();
 
     // We'll run under the chroot.
-    enterChroot();
+    enterChroot(false);
 
     // Don't run as root.
     dropPrivs(config.uids);
@@ -1334,7 +1334,7 @@ private:
     }
   }
 
-  void enterChroot() {
+  void enterChroot(bool inPidNamespace) {
     KJ_REQUIRE(changedDir);
 
     // Verify ownership is intact.
@@ -1368,8 +1368,13 @@ private:
     }
     KJ_SYSCALL(chdir(cwdBuf));
 
-    // Mount /proc in the chroot.
-    KJ_SYSCALL(mount("proc", "proc", "proc", MS_NOSUID | MS_NODEV | MS_NOEXEC, ""));
+    if (inPidNamespace) {
+      // Mount /proc for our PID namespace in the chroot.
+      KJ_SYSCALL(mount("proc", "proc", "proc", MS_NOSUID | MS_NODEV | MS_NOEXEC, ""));
+    } else {
+      // Bind /proc for the global pid namespace in the chroot.
+      KJ_SYSCALL(mount("/proc", "proc", nullptr, MS_BIND | MS_REC, nullptr));
+    }
 
     // Bind var -> ../var, so that all versions share the same var.
     // Same for tmp, though we clear it on every startup.
@@ -1646,7 +1651,7 @@ private:
   void runServerMonitor(const Config& config) KJ_NORETURN {
     // Run the server monitor, which runs node and mongo and deals with them dying.
 
-    enterChroot();
+    enterChroot(true);
 
     // For later use when killing children with timeout.
     registerAlarmHandler();

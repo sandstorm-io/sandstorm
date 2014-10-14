@@ -49,12 +49,16 @@ ENV HOME /home/sandstorm
 ENV USER sandstorm
 RUN meteor update
 
-ADD . /opt/src
 USER root
-RUN chown -R sandstorm /opt/src && rm -rf /opt/src/shell/packages/*/.build* && rm -rf /opt/src/shell/packages/*/.npm
-USER sandstorm
+ADD . /opt/src
+RUN rm -rf /opt/src/shell/packages/*/.build* && rm -rf /opt/src/shell/packages/*/.npm
 
-RUN cd /opt/src && make -j4 XZ_FLAGS='-0' && ./install.sh -d -u sandstorm-0.tar.xz
+RUN cd /opt/src && make -j4 XZ_FLAGS='-0' && chmod 555 ./install.sh sandstorm-0.tar.xz
+
+USER sandstorm
+RUN cd /opt/src && ./install.sh -d -u sandstorm-0.tar.xz
+ENV HOME /home/sandstorm
+ENV USER sandstorm
 
 RUN echo 'SERVER_USER=sandstorm\n\
 PORT=6080\n\

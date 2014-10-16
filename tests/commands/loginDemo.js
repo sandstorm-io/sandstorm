@@ -16,13 +16,17 @@
 
 'use strict';
 
+var utils = require('../utils'),
+    short_wait = utils.short_wait,
+    medium_wait = utils.medium_wait;
+
 exports.command = function(callback) {
   var ret = this
     .url(this.launchUrl + "/demo")
     .execute('window.Meteor.logout()')
-    .pause(50)
+    .pause(short_wait)
     .click("#createDemoUser")
-    .waitForElementVisible('#applist-apps', 5000);
+    .waitForElementVisible('#applist-apps', medium_wait);
 
   this.sandstormAccount = 'demo';
   if (typeof callback === "function") {

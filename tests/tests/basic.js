@@ -16,6 +16,9 @@
 
 'use strict';
 
+var utils = require('../utils'),
+    short_wait = utils.short_wait;
+
 module.exports = {
   "Test title" : function (browser) {
     browser
@@ -26,18 +29,21 @@ module.exports = {
   "Test github login command" : function (browser) {
     browser
       .loginGithub()
+      .waitForElementVisible('#login-name-link', short_wait)
       .assert.containsText("#login-name-link", "Github User");
   },
 
   "Test google login command" : function (browser) {
     browser
       .loginGoogle()
+      .waitForElementVisible('#login-name-link', short_wait)
       .assert.containsText("#login-name-link", "Google User");
   },
 
   "Test demo login command" : function (browser) {
     browser
       .loginDemo()
+      .waitForElementVisible('#login-name-link', short_wait)
       .assert.containsText("#login-name-link", "Demo User")
       .end();
   }

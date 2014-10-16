@@ -23,7 +23,7 @@ THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 cd "$THIS_DIR"
 
 CONTAINER_ID=$(docker run --privileged -d -p 6080:6080 -t sandstorm bash -c 'echo "IS_TESTING=true
-ALLOW_DEMO_ACCOUNTS=true" >> $HOME/sandstorm/sandstorm.conf && $HOME/sandstorm/sandstorm start && sleep infinity')
+ALLOW_DEMO_ACCOUNTS=true" >> $HOME/sandstorm/sandstorm.conf && $HOME/sandstorm/sandstorm start && sleep 5 && tail -f $HOME/sandstorm/var/log/sandstorm.log')
 
 echo -n "Waiting for sandstorm to start."
 while ! curl -s localhost:6080 > /dev/null; do
@@ -38,6 +38,10 @@ set +e
 
 npm test
 rc=$?
+
+if [ $rc != 0 ]; then
+  docker logs $CONTAINER_ID
+fi
 
 docker stop $CONTAINER_ID
 docker rm $CONTAINER_ID

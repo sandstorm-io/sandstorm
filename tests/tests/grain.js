@@ -40,6 +40,7 @@ module.exports = utils.testAllLogins({
           .click('#uploadButton')
           .waitForElementVisible('#step-confirm', 30000)
           .click('#confirmInstall')
+          .waitForElementVisible('.new-grain-button', 1000)
           .assert.containsText('.new-grain-button', 'New Hacker CMS Site');
       });
   },
@@ -66,6 +67,7 @@ module.exports = utils.testAllLogins({
           .waitForElementVisible('#step-confirm', 30000)
           .assert.containsText('#confirmInstall', 'Upgrade')
           .click('#confirmInstall')
+          .waitForElementVisible('.new-grain-button', 1000)
           .assert.containsText('.new-grain-button', 'New Hacker CMS Site');
       });
   },
@@ -92,6 +94,7 @@ module.exports = utils.testAllLogins({
           .waitForElementVisible('#step-confirm', 30000)
           .assert.containsText('#confirmInstall', 'Downgrade')
           .click('#confirmInstall')
+          .waitForElementVisible('.new-grain-button', 1000)
           .assert.containsText('.new-grain-button', 'New Hacker CMS Site');
       });
   },
@@ -101,6 +104,7 @@ module.exports = utils.testAllLogins({
       .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
       .waitForElementVisible('#step-confirm', 120000)
       .click('#confirmInstall')
+      .waitForElementVisible('.new-grain-button', 1000)
       .assert.containsText('.new-grain-button', 'New Hacker CMS Site');
   },
 

@@ -136,6 +136,7 @@ module.exports = utils.testAllLogins({
   "Test grain restart" : function (browser) {
     browser
       .click('#restartGrain')
+      .pause(short_wait)
       .frame('grain-frame')
       .waitForElementPresent('#publish', medium_wait)
       .pause(short_wait)

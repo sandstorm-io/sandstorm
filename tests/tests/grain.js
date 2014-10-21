@@ -16,7 +16,11 @@
 
 'use strict';
 
-var utils = require('../utils');
+var utils = require('../utils'),
+    short_wait = utils.short_wait,
+    medium_wait = utils.medium_wait,
+    long_wait = utils.long_wait,
+    very_long_wait = utils.very_long_wait;
 var path = require('path');
 var assetsPath = path.resolve(__dirname, '../assets');
 
@@ -26,20 +30,21 @@ module.exports = utils.testAllLogins({
       .click('#upload-app-button')
       .ifDemo(function () {
         browser
-          .waitForElementVisible('#upload p', 5000)
+          .waitForElementVisible('#upload p', medium_wait)
           .assert.containsText('#upload p', 'demo users are not allowed')
           .init()
-          .waitForElementVisible('#applist-apps', 5000);
+          .waitForElementVisible('#applist-apps', medium_wait);
       })
       .ifNotDemo(function () {
         browser
-          .waitForElementVisible('#uploadButton', 5000)
+          .waitForElementVisible('#uploadButton', medium_wait)
           .assert.containsText('#uploadButton', 'Upload')
-          .waitForElementVisible('#uploadButton', 1000)
+          .waitForElementVisible('#uploadButton', short_wait)
           .setValue('#uploadFile', path.join(assetsPath, 'ssjekyll6.spk'))
           .click('#uploadButton')
-          .waitForElementVisible('#step-confirm', 30000)
+          .waitForElementVisible('#step-confirm', long_wait)
           .click('#confirmInstall')
+          .waitForElementVisible('.new-grain-button', short_wait)
           .assert.containsText('.new-grain-button', 'New Hacker CMS Site');
       });
   },
@@ -47,25 +52,26 @@ module.exports = utils.testAllLogins({
   "Test upgrade" : function (browser) {
     browser
       .click("#applist-apps > ul > li:nth-child(1)")
-      .waitForElementVisible('#upload-app-button', 5000)
+      .waitForElementVisible('#upload-app-button', medium_wait)
       .click('#upload-app-button')
       .ifDemo(function () {
         browser
-          .waitForElementVisible('#upload p', 5000)
+          .waitForElementVisible('#upload p', medium_wait)
           .assert.containsText('#upload p', 'demo users are not allowed')
           .init()
-          .waitForElementVisible('#applist-apps', 5000);
+          .waitForElementVisible('#applist-apps', medium_wait);
       })
       .ifNotDemo(function () {
         browser
-          .waitForElementVisible('#uploadButton', 5000)
+          .waitForElementVisible('#uploadButton', medium_wait)
           .assert.containsText('#uploadButton', 'Upload')
-          .waitForElementVisible('#uploadButton', 1000)
+          .waitForElementVisible('#uploadButton', short_wait)
           .setValue('#uploadFile', path.join(assetsPath, 'ssjekyll7.spk'))
           .click('#uploadButton')
-          .waitForElementVisible('#step-confirm', 30000)
+          .waitForElementVisible('#step-confirm', long_wait)
           .assert.containsText('#confirmInstall', 'Upgrade')
           .click('#confirmInstall')
+          .waitForElementVisible('.new-grain-button', short_wait)
           .assert.containsText('.new-grain-button', 'New Hacker CMS Site');
       });
   },
@@ -73,25 +79,26 @@ module.exports = utils.testAllLogins({
   "Test downgrade" : function (browser) {
     browser
       .click("#applist-apps > ul > li:nth-child(1)")
-      .waitForElementVisible('#upload-app-button', 5000)
+      .waitForElementVisible('#upload-app-button', medium_wait)
       .click('#upload-app-button')
       .ifDemo(function () {
         browser
-          .waitForElementVisible('#upload p', 5000)
+          .waitForElementVisible('#upload p', medium_wait)
           .assert.containsText('#upload p', 'demo users are not allowed')
           .init()
-          .waitForElementVisible('#applist-apps', 5000);
+          .waitForElementVisible('#applist-apps', medium_wait);
       })
       .ifNotDemo(function () {
         browser
-          .waitForElementVisible('#uploadButton', 5000)
+          .waitForElementVisible('#uploadButton', medium_wait)
           .assert.containsText('#uploadButton', 'Upload')
-          .waitForElementVisible('#uploadButton', 1000)
+          .waitForElementVisible('#uploadButton', short_wait)
           .setValue('#uploadFile', path.join(assetsPath, 'ssjekyll5.spk'))
           .click('#uploadButton')
-          .waitForElementVisible('#step-confirm', 30000)
+          .waitForElementVisible('#step-confirm', long_wait)
           .assert.containsText('#confirmInstall', 'Downgrade')
           .click('#confirmInstall')
+          .waitForElementVisible('.new-grain-button', short_wait)
           .assert.containsText('.new-grain-button', 'New Hacker CMS Site');
       });
   },
@@ -99,22 +106,23 @@ module.exports = utils.testAllLogins({
   "Test remote install" : function (browser) {
     browser
       .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
-      .waitForElementVisible('#step-confirm', 120000)
+      .waitForElementVisible('#step-confirm', very_long_wait)
       .click('#confirmInstall')
+      .waitForElementVisible('.new-grain-button', short_wait)
       .assert.containsText('.new-grain-button', 'New Hacker CMS Site');
   },
 
   "Test new grain" : function (browser) {
     browser
       .click('.new-grain-button')
-      .waitForElementVisible('#grainTitle', 5000)
+      .waitForElementVisible('#grainTitle', medium_wait)
       .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site');
   },
 
   "Test grain frame" : function (browser) {
     browser
       .frame('grain-frame')
-      .waitForElementPresent('#publish', 10000)
+      .waitForElementPresent('#publish', medium_wait)
       .assert.containsText('#publish', 'Publish')
       .frame(null);
   },
@@ -128,9 +136,10 @@ module.exports = utils.testAllLogins({
   "Test grain restart" : function (browser) {
     browser
       .click('#restartGrain')
+      .pause(short_wait)
       .frame('grain-frame')
-      .waitForElementPresent('#publish', 10000)
-      .pause(1000)
+      .waitForElementPresent('#publish', medium_wait)
+      .pause(short_wait)
       .assert.containsText('#publish', 'Publish')
       .frame(null);
   },
@@ -138,11 +147,11 @@ module.exports = utils.testAllLogins({
   "Test grain debug" : function (browser) {
     browser
       .click('#openDebugLog')
-      .pause(1000)
+      .pause(short_wait)
       .windowHandles(function (windows) {
         browser.switchWindow(windows.value[1]);
       })
-      .pause(1000)
+      .pause(short_wait)
       .assert.containsText('#topbar', 'Debug')
       .closeWindow()
       .end();

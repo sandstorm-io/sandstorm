@@ -22,11 +22,17 @@ THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
 cd "$THIS_DIR"
 
-CONTAINER_ID=$(docker run --privileged -d -p 6080:6080 -t sandstorm bash -c 'echo "IS_TESTING=true
-ALLOW_DEMO_ACCOUNTS=true" >> $HOME/sandstorm/sandstorm.conf && $HOME/sandstorm/sandstorm start && sleep infinity')
+export PORT=$(shuf -i 10000-65000 -n 1)
+export LAUNCH_URL="http://local.sandstorm.io:$PORT"
+
+CONTAINER_ID=$(docker run -e PORT=$PORT --privileged -d -p $PORT:$PORT -t sandstorm bash -c 'echo "IS_TESTING=true
+ALLOW_DEMO_ACCOUNTS=true
+BASE_URL=http://local.sandstorm.io:$PORT
+WILDCARD_HOST=*.local.sandstorm.io:$PORT
+PORT=$PORT" >> $HOME/sandstorm/sandstorm.conf && $HOME/sandstorm/sandstorm start && sleep 5 && tail -f $HOME/sandstorm/var/log/sandstorm.log')
 
 echo -n "Waiting for sandstorm to start."
-while ! curl -s localhost:6080 > /dev/null; do
+while ! curl -s localhost:$PORT > /dev/null; do
   echo -n .
   sleep .1
 done;
@@ -38,6 +44,10 @@ set +e
 
 npm test
 rc=$?
+
+if [ $rc != 0 ]; then
+  docker logs $CONTAINER_ID
+fi
 
 docker stop $CONTAINER_ID
 docker rm $CONTAINER_ID

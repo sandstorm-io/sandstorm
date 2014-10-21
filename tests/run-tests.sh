@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -euo pipefail
+set -eo pipefail
 
 THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
@@ -27,4 +27,11 @@ test -e assets/ssjekyll6.spk || curl http://sandstorm.io/apps/ssjekyll6.spk > as
 test -e assets/ssjekyll7.spk || curl http://sandstorm.io/apps/ssjekyll7.spk > assets/ssjekyll7.spk
 
 set +e
-nightwatch
+
+if [[ -z "$LAUNCH_URL" ]]
+then
+  nightwatch
+else
+  sed "s|.*launch_url.*|\"launch_url\" : \"$LAUNCH_URL\",|g" nightwatch.json > nightwatch.tmp.json
+  nightwatch -c ./nightwatch.tmp.json
+fi

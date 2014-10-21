@@ -23,14 +23,18 @@
       },
 
       "desiredCapabilities": {
-        "browserName": "phantomjs",
-        "phantomjs.binary.path" : "node_modules/phantomjs/bin/phantomjs"
+        "browserName": "firefox",
+        "javascriptEnabled" : true,
+        "acceptSslCerts" : true
       }
     },
 
-    "firefox" : {
+    "phantomjs" : {
       "desiredCapabilities": {
-        "browserName": "firefox"
+        "browserName": "phantomjs",
+        "javascriptEnabled" : true,
+        "acceptSslCerts" : true,
+        "phantomjs.binary.path" : "node_modules/phantomjs/bin/phantomjs"
       }
     }
   }

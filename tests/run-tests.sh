@@ -22,23 +22,9 @@ THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
 cd "$THIS_DIR"
 
-CONTAINER_ID=$(docker run --privileged -d -p 6080:6080 -t sandstorm bash -c 'echo "IS_TESTING=true
-ALLOW_DEMO_ACCOUNTS=true" >> $HOME/sandstorm/sandstorm.conf && $HOME/sandstorm/sandstorm start && sleep infinity')
-
-echo -n "Waiting for sandstorm to start."
-while ! curl -s localhost:6080 > /dev/null; do
-  echo -n .
-  sleep .1
-done;
-echo
-
-npm install
+test -e assets/ssjekyll5.spk || curl http://sandstorm.io/apps/ssjekyll5.spk > assets/ssjekyll5.spk
+test -e assets/ssjekyll6.spk || curl http://sandstorm.io/apps/ssjekyll6.spk > assets/ssjekyll6.spk
+test -e assets/ssjekyll7.spk || curl http://sandstorm.io/apps/ssjekyll7.spk > assets/ssjekyll7.spk
 
 set +e
-
-npm test
-rc=$?
-
-docker stop $CONTAINER_ID
-docker rm $CONTAINER_ID
-exit $rc
+nightwatch

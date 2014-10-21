@@ -399,8 +399,9 @@ public:
       } else if (actual == 0) {
         // EOF
         return kj::arrayPtr(buffer, 0);
-      } else if (headersComplete && isStreaming) {
-        return kj::arrayPtr(buffer, 0);
+      } else if (headersComplete && status_code / 100 == 2) {
+        isStreaming = true;
+        return kj::arrayPtr(buffer,0);
       } else {
         return readResponse(stream);
       }
@@ -409,6 +410,14 @@ public:
 
   void pumpStream(kj::Own<kj::AsyncIoStream>&& stream) {
     if (isStreaming) {
+      if (body.size() > 0) {
+        auto request = responseStream.writeRequest();
+        auto dst = request.initData(body.size());
+        memcpy(dst.begin(), body.begin(), body.size());
+        taskSet.add(request.send().then([](auto x){}));
+        body.resize(0);
+      }
+
       taskSet.add(pumpStreamInternal(kj::mv(stream)));
     }
   }
@@ -764,16 +773,6 @@ private:
       addHeader(rawHeader);
     }
 
-    KJ_IF_MAYBE(transferEncoding, findHeader("transfer-encoding")) {
-      if (kj::str(*transferEncoding) == "chunked" && status_code / 100 == 2) {
-        // TODO(soon): Investigate other ways to decide whether the response should be
-        // streaming. It may make sense to switch to streaming when the body goes over a
-        // certain size (maybe 1MB) or takes longer than a certain amount of time (maybe
-        // 10ms) to generate.
-        isStreaming = true;
-      }
-    }
-
     statusString = kj::heapString(rawStatusString);
 
     headersComplete = true;
@@ -1082,7 +1081,7 @@ public:
       auto& streamRef = *stream;
       return streamRef.write(httpRequestRef.begin(), httpRequestRef.size())
           .attach(kj::mv(httpRequest))
-          .then([this, KJ_MVCAP(stream), KJ_MVCAP(clientStream), responseStream, context]
+          .then([KJ_MVCAP(stream), KJ_MVCAP(clientStream), responseStream, context]
                 () mutable {
             auto parser = kj::heap<HttpParser>(responseStream);
             auto results = context.getResults();

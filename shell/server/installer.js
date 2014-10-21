@@ -115,6 +115,9 @@ function AppInstaller(packageId, url, appId) {
   this.unpackingPath = this.unpackedPath + ".unpacking";
   this.failed = false;
   this.appId = appId;
+
+  // Serializes database writes.
+  this.writeChain = Promise.resolve();
 }
 
 AppInstaller.prototype.updateProgress = function (status, progress, error, manifest) {
@@ -131,16 +134,21 @@ AppInstaller.prototype.updateProgress = function (status, progress, error, manif
 
   var self = this;
 
-  inMeteor(function () {
-    Packages.update(self.packageId, {$set: {
-      status: self.status,
-      progress: self.progress,
-      error: self.error ? self.error.message : null,
-      manifest: self.manifest,
-      appId: self.appId
-    }});
-  }).catch (function (err) {
-    console.error(err.stack);
+  // The callback passed to inMeteor() runs in a new fiber. We need to make sure database writes
+  // occur in exactly the order in which we generate them, so we use a promise chain to serialize
+  // them.
+  this.writeChain = this.writeChain.then(function () {
+    return inMeteor(function () {
+      Packages.update(self.packageId, {$set: {
+        status: self.status,
+        progress: self.progress,
+        error: self.error ? self.error.message : null,
+        manifest: self.manifest,
+        appId: self.appId
+      }});
+    }).catch (function (err) {
+      console.error(err.stack);
+    });
   });
 }
 

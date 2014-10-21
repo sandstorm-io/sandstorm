@@ -174,18 +174,19 @@ private:
   template <typename T>
   struct Response: public ResponseBase {
     T body;
+    size_t bodySize;
 
-    inline Response() {
+    inline Response(): bodySize(sizeof(body)) {
       memset(&body, 0, sizeof(body));
     }
 
     virtual size_t size() override {
-      return sizeof(header) + sizeof(body);
+      return sizeof(header) + bodySize;
     }
 
     virtual ssize_t writeSelf(int fd) override {
       KJ_ASSERT(kj::implicitCast<void*>(&header + 1) == kj::implicitCast<void*>(&body));
-      return write(fd, &header, sizeof(header) + sizeof(body));
+      return write(fd, &header, sizeof(header) + bodySize);
     }
   };
 
@@ -398,6 +399,10 @@ private:
         reply->body.minor = 20;
         reply->body.max_readahead = 65536;
         reply->body.max_write = 65536;
+
+        // Compatibility with pre-2.15 kernels.
+        reply->bodySize = FUSE_COMPAT_22_INIT_OUT_SIZE;
+
         sendReply(header.unique, kj::mv(reply));
         break;
       }

@@ -400,8 +400,10 @@ private:
         reply->body.max_readahead = 65536;
         reply->body.max_write = 65536;
 
+#ifdef FUSE_COMPAT_22_INIT_OUT_SIZE
         // Compatibility with pre-2.15 kernels.
         reply->bodySize = FUSE_COMPAT_22_INIT_OUT_SIZE;
+#endif
 
         sendReply(header.unique, kj::mv(reply));
         break;

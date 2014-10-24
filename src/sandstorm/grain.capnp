@@ -270,7 +270,7 @@ interface UiView extends(PowerboxCapability) {
   #
   # `sessionParams` is a struct whose type is specified by the session type.  By convention, this
   # struct should be defined nested in the session interface type with name "Params", e.g.
-  # `WebSession.Params`.  This sturct contains some arbitrary startup information.
+  # `WebSession.Params`.  This struct contains some arbitrary startup information.
 }
 
 # ========================================================================================

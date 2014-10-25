@@ -17,7 +17,7 @@
 // This file defines the database schema.
 
 Packages = new Meteor.Collection("packages");
-// Packages which are installed or downloadloading.
+// Packages which are installed or downloading.
 //
 // Each contains:
 //   _id:  128-bit prefix of SHA-256 hash of spk file, hex-encoded.

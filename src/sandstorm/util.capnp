@@ -100,12 +100,10 @@ interface ByteStream {
   # is not necessary for the callee to actually implement it.
 }
 
-interface Assignable {
+interface Assignable(T) {
   # An "assignable" -- a mutable memory cell. Supports subscribing to updates.
-  #
-  # TODO(someday):  This should be a parameterized type, when Cap'n Proto supports that.
 
-  get @0 () -> (value :AnyPointer, setter :Setter);
+  get @0 () -> (value :T, setter :Setter);
   # The returned setter's set() can only be called once, and throws an exception if the assignable
   # has changed since `get()` was called. This can be used to implement optimistic concurrency.
 
@@ -118,7 +116,7 @@ interface Assignable {
   # performance.  If the assignable is persistable, the setter is as well.
 
   interface Getter {
-    get @0 () -> (value :AnyPointer);
+    get @0 () -> (value :T);
 
     pushTo @1 (setter :Setter) -> (handle :Handle);
     # Subscribe to updates.  Calls the given setter any time the assignable's value changes.  Drop
@@ -127,6 +125,6 @@ interface Assignable {
   }
 
   interface Setter {
-    set @0 (value :AnyPointer) -> ();
+    set @0 (value :T) -> ();
   }
 }

@@ -17,7 +17,7 @@
 // This file defines the database schema.
 
 Packages = new Meteor.Collection("packages");
-// Packages which are installed or downloadloading.
+// Packages which are installed or downloading.
 //
 // Each contains:
 //   _id:  128-bit prefix of SHA-256 hash of spk file, hex-encoded.
@@ -143,7 +143,7 @@ ApiTokens = new Meteor.Collection("apiTokens");
 // Longer-term, API tokens should actually be base64'd Cap'n Proto SturdyRefs. This is a temporary
 // hack.
 //
-// Each cotains:
+// Each contains:
 //   _id:       A SHA-256 hash of the token.
 //   userId:    For UI tokens, the `_id` of the user (in the users table) who created this token.
 //   userInfo:  For true capability tokens, the UserInfo struct that should be passed to
@@ -163,7 +163,7 @@ StatsTokens = new Meteor.Collection("statsTokens");
 // These tokens are used for accessing the ActivityStats collection remotely
 // (ie. from a dashboard webapp)
 //
-// Each cotains:
+// Each contains:
 //   _id:       The token. At least 128 bits entropy (Random.id(22)).
 
 if (Meteor.isServer) {

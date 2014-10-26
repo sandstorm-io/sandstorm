@@ -140,10 +140,10 @@ cat > bundle/README.md << '__EOF__'
 
 See: http://sandstorm.io
 
-This is a self-contained, batteries-included Sandstorm server.  This should
-work on any recent Linux kernel (tested on 3.10, but some earlier versions
-might work too).  The rest of your filesystem is not touched and may as well
-be empty; everything will run in a chroot.
+This is a self-contained, batteries-included Sandstorm server. It should
+work on any Linux kernel whose version is 3.13 or newer. The rest of your
+filesystem is not touched and may as well be empty; everything will run in
+a chroot.
 
 This bundle is intended to be installed using the Sandstorm installer or
 updater. To install Sandstorm, please run:

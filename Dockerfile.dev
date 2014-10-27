@@ -39,8 +39,6 @@ RUN apt-get install default-jre-headless
 RUN curl https://install.meteor.com | /bin/sh
 RUN npm install -g meteorite jsontool
 
-RUN cd /tmp && git clone https://github.com/kentonv/capnproto.git && cd capnproto/c++ && ./setup-autotools.sh && autoreconf -i && ./configure && make -j4 check && make install
-
 RUN cd /tmp && git clone https://github.com/jedisct1/libsodium.git && cd libsodium && ./autogen.sh && ./configure && make -j4 check && make install
 
 RUN adduser --disabled-password --gecos "" sandstorm
@@ -52,6 +50,9 @@ RUN meteor update
 USER root
 ADD . /opt/src
 RUN rm -rf /opt/src/shell/packages/*/.build* && rm -rf /opt/src/shell/packages/*/.npm
+
+# Run Cap'n Poroto build down here to ensure that it won't be cached by docker
+RUN cd /tmp && git clone https://github.com/kentonv/capnproto.git && cd capnproto/c++ && ./setup-autotools.sh && autoreconf -i && ./configure && make -j4 check && make install
 
 RUN cd /opt/src && make -j4 XZ_FLAGS='-0' && chmod 555 ./install.sh sandstorm-0.tar.xz
 

@@ -34,7 +34,7 @@ NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 all: sandstorm-$(BUILD).tar.xz
 
 clean:
-	rm -rf bin tmp node_modules bundle shell-bundle sandstorm-*.tar.xz shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png .shell-env
+	rm -rf bin tmp node_modules bundle shell-bundle sandstorm-*.tar.xz shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png .shell-env shell/packages/*/build*
 
 install: sandstorm-$(BUILD).tar.xz install.sh
 	@./install.sh sandstorm-$(BUILD).tar.xz

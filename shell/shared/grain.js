@@ -136,6 +136,7 @@ if (Meteor.isClient) {
     },
     "click #deleteGrain": function (event) {
       if (window.confirm("Really delete this grain?")) {
+        Session.set("showMenu", false);
         Meteor.call("deleteGrain", this.grainId);
         Router.go("root");
       }
@@ -197,8 +198,28 @@ if (Meteor.isClient) {
     "click button.revoke-token": function (event) {
       ApiTokens.remove(event.currentTarget.getAttribute("data-token-id"));
     },
-    "click .autoSelect": function (event) {
-      event.currentTarget.select();
+    "click #homelink-button": function (event) {
+      event.preventDefault();
+      Session.set("showMenu", false);
+      Router.go("root", {});
+    },
+    "click #menu-closer": function (event) {
+      event.preventDefault();
+      Session.set("showMenu", false);
+    },
+    "click #api-token-popup .copy-me": function(event) {
+      event.preventDefault();
+      if (document.body.createTextRange) {
+        var range = document.body.createTextRange();
+        range.moveToElementText(event.currentTarget);
+        range.select();
+      } else if (window.getSelection) {
+        var selection = window.getSelection();
+        var range = document.createRange();
+        range.selectNodeContents(event.currentTarget);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
     }
   });
 
@@ -386,7 +407,8 @@ Router.map(function () {
         apiToken: apiToken,
         apiTokenPending: apiToken === "pending",
         showApiToken: Session.get("show-api-token"),
-        existingTokens: ApiTokens.find({grainId: grainId, userId: Meteor.userId()}).fetch()
+        existingTokens: ApiTokens.find({grainId: grainId, userId: Meteor.userId()}).fetch(),
+        showMenu: Session.get("showMenu")
       };
 
       var err = Session.get("session-" + grainId + "-error");

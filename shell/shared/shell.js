@@ -218,15 +218,22 @@ if (Meteor.isClient) {
   Template.root.events({
     "click .applist-tab": function (event) {
       Session.set("selectedApp", event.currentTarget.getAttribute("data-appid"));
+      Session.set("showMenu", false);
     },
     "click .applist-tab-invite": function (event) {
       Router.go("invite", {});
+      Session.set("showMenu", false);
     },
     "click .applist-tab-stats": function (event) {
       Router.go("stats", {});
+      Session.set("showMenu", false);
     },
     "click .applist-tab-about": function (event) {
       Router.go("about", {});
+      Session.set("showMenu", false);
+    },
+    "click #applist-closer": function (event) {
+      Session.set("showMenu", false);
     },
 
     "click #applist-grains tbody tr": function (event) {
@@ -351,6 +358,10 @@ if (Meteor.isClient) {
   });
 
   Template.homeLink.events({
+    "click #menu-button": function (event) {
+      Session.set("showMenu", !Session.get("showMenu"));
+    },
+
     "click #homelink": function (event) {
       event.preventDefault();
       Router.go("root", {});
@@ -481,7 +492,8 @@ Router.map(function () {
         kernelTooOld: isKernelTooOld(),
         missingWildcardParent: isMissingWildcardParent(),
         allowDemoAccounts: allowDemoAccounts,
-        apps: apps
+        apps: apps,
+        showMenu: Session.get("showMenu")
       };
     }
   });

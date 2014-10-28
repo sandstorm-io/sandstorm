@@ -19,6 +19,7 @@ limitations under the License.
 <head>
   <title>Sandstorm</title>
   <script type="text/javascript" src="/logo.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
 <body>
@@ -46,7 +47,7 @@ limitations under the License.
 </template>
 
 <template name="homeLink">
-  <a id="homelink" href="{{origin}}"><img id="icon" src="/icon.png"> Sandstorm</a>
+  <div id="menu-button"></div><a id="homelink" href="{{origin}}"><img id="icon" src="/icon.png"> Sandstorm</a>
 </template>
 
 <template name="loading">
@@ -83,7 +84,8 @@ limitations under the License.
 
     {{#if isSignedUp}}
 
-      <div id="applist-apps">
+      <div id="applist-closer" data-show="{{showMenu}}"></div>
+      <div id="applist-apps" data-show="{{showMenu}}">
         <ul>
           <li class="applist-tab {{tabClass appId}}">All files</li>
           {{#each apps}}
@@ -162,13 +164,17 @@ limitations under the License.
 <template name="grain">
   <div id="topbar">
     {{> homeLink}}<span id="grainTitle" title="rename">{{title}}</span> {{grainSize}}
-    {{#if isOwner}}
-      <button id="deleteGrain" title="Delete">Delete</button>
-      <button id="openDebugLog" title="Show Debug Log">Log</button>
-      <button id="backupGrain" title="Download Backup">Backup</button>
-      <button id="restartGrain" title="Restart App">Restart</button>
-    {{/if}}
-    <button id="showApiToken" title="Get API Key">Get&nbsp;API&nbsp;Key</button>
+    <div id="menu-closer" data-show="{{showMenu}}"></div>
+    <div id="menu" data-show="{{showMenu}}">
+      <button id="homelink-button" title="Home"> Home</button>
+      {{#if isOwner}}
+        <button id="deleteGrain" title="Delete">Delete</button>
+        <button id="openDebugLog" title="Show Debug Log">Log</button>
+        <button id="backupGrain" title="Download Backup">Backup</button>
+        <button id="restartGrain" title="Restart App">Restart</button>
+      {{/if}}
+      <button id="showApiToken" title="Get Webkey">Get&nbsp;Webkey</button>
+    </div>
   </div>
 
   <div id="api-token-popup" class="popup" style="{{#if showApiToken}}{{else}}display: none{{/if}}">
@@ -177,16 +183,16 @@ limitations under the License.
         <p>Generating...</p>
         <p><button id="resetApiToken">Cancel</button></p>
       {{else}}
-        <p>Copy this URL and give it to the app:<br>
-          <input id="apiTokenText" type="text" class="autoSelect" value="{{apiToken}}" readonly></p>
+        <p>Copy this webkey and give it to the external app:</p>
+          <a id="apiTokenText" class="copy-me" href="{{apiToken}}">{{apiToken}}</a>
         <p><button id="resetApiToken">Go back</button></p>
       {{/if}}
     {{else}}
-      <p>An API key allows you to connect an external app (e.g. a mobile app) to this app.</p>
+      <p>A webkey allows you to connect an external app (e.g. a mobile app) to this app.</p>
       <p>Key label: <input type="text" id="api-token-petname" placeholder="e.g. 'Android app'">
         <button id="newApiToken">Create</button></p>
       {{#if existingTokens}}
-        <p>Your existing keys:</p>
+        <p>Your existing webkeys:</p>
         <ul>
         {{#each existingTokens}}
           <li>{{petname}} ({{dateString created}}) <button class="revoke-token" title="delete" data-token-id="{{_id}}">delete</button></li>

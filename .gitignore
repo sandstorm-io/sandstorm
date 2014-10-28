@@ -13,6 +13,8 @@ shell/public/download.png
 shell/public/restart.png
 shell/public/close.png
 shell/public/key.png
+shell/public/menu.png
+shell/public/*-m.png
 shell-bundle
 sandstorm-*.tar.xz
 bundle/

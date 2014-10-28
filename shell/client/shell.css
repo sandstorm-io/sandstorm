@@ -56,6 +56,7 @@ body {
   width: 100%;
   height: 32px;
   text-align: left;
+  z-index: 2;
 }
 
 #topbar.light {
@@ -71,7 +72,7 @@ body {
   text-align: center;
   background-color: #622;
   color: #fcc;
-  z-index: 2;
+  z-index: 4;
   cursor: pointer;
 }
 
@@ -81,7 +82,7 @@ body {
   right: 0px;
   height: 32px;
   padding-right: 8px;
-  z-index: 1;
+  z-index: 3;
 }
 
 #topbar-right #crowdfunding {
@@ -111,6 +112,7 @@ body {
   padding-left: 8px;
   padding-right: 8px;
   border-right: 1px solid #666;
+  cursor: pointer;
 }
 #topbar #homelink:hover {
   background-color: #666;
@@ -139,7 +141,7 @@ body {
   background-color: #888;
 }
 
-#topbar #renameGrain, #topbar #deleteGrain, #topbar #openDebugLog, #topbar #backupGrain, #topbar #restartGrain, #topbar #showApiToken {
+#menu button {
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -155,25 +157,24 @@ body {
   background-image: url("/edit.png");
 }
 
-#topbar #deleteGrain {
-  background-image: url("/trash.png");
+#menu {
+  display: inline;
 }
 
-#topbar #openDebugLog {
-  background-image: url("/wrench.png");
+#menu-closer {
+  display: none;
 }
 
-#topbar #backupGrain {
-  background-image: url("/download.png");
+#topbar #homelink-button {
+  display: none;
+  background-image: url("/icon32.png");
 }
 
-#topbar #restartGrain {
-  background-image: url("/restart.png");
-}
-
-#topbar #showApiToken {
-  background-image: url("/key.png");
-}
+#topbar #deleteGrain  { background-image: url("/trash.png"); }
+#topbar #openDebugLog { background-image: url("/wrench.png"); }
+#topbar #backupGrain  { background-image: url("/download.png"); }
+#topbar #restartGrain { background-image: url("/restart.png"); }
+#topbar #showApiToken { background-image: url("/key.png"); }
 
 button.revoke-token {
   background-position: center;
@@ -398,7 +399,6 @@ img {
   color: white;
   cursor: pointer;
 }
-
 
 #intro h1 {
   text-align: center;
@@ -713,22 +713,6 @@ input.autoSelect {
   text-align: center;
 }
 
-#indiegogo-iframe {
-  width: 222px;
-  height: 445px;
-  position: fixed;
-  top: 48px;
-  right: 16px;
-}
-
-@media screen and (max-width: 1120px) {
-  #indiegogo-iframe {
-    position: static;
-    margin-top: 32px;
-    float: right;
-  }
-}
-
 ul.backer-list, ul.dev-list {
   list-style: none;
   text-align: center;
@@ -774,4 +758,152 @@ ul.backer-list img, ul.dev-list img {
   max-width: 195px;
   max-height: 195px;
   vertical-align: middle;
+}
+
+@media screen and (max-width: 900px) {
+  #applist-grains {
+    left: 0px;
+    padding: 16px 16px;
+  }
+  #applist-apps, #menu {
+    display: block;
+    position: fixed;
+    left: -300px;
+    -webkit-transition: left 100ms;
+    transition: left 100ms;
+    z-index: 2;
+    width: 300px;
+    top: 48px;
+    bottom: 0;
+    min-height: 0;
+    background-color: #eee;
+    color: black;
+    overflow: auto;
+  }
+  #menu {
+    width: 225px;
+    left: -225px;
+  }
+  #applist-apps ul {
+    margin: 0;
+  }
+  #applist-apps li {
+    padding: 16px;
+    border-right: none;
+    border-bottom: 1px solid #ddd;
+  }
+  #applist-apps[data-show="true"], #menu[data-show="true"] {
+    left: 0px;
+  }
+  #applist-closer[data-show="true"], #menu-closer[data-show="true"] {
+    display: block;
+    position: fixed;
+    width: 2000px;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+    -webkit-transition: background-color 200ms;
+    transition: background-color 200ms;
+  }
+  #applist-grains table td {
+    padding: 16px;
+  }
+
+  #topbar, #topbar-right, #topbar-update {
+    line-height: 48px;
+    height: 48px;
+  }
+  #topbar-update {
+    line-height: 24px;
+  }
+  #topbar #menu-button {
+    display: inline-block;
+    vertical-align: top;
+    background-image:url(/menu.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    width: 40px;
+    height: 40px;
+    padding: 4px;
+    color: transparent;
+    cursor: pointer;
+    border-right: 1px solid #666;
+  }
+  #topbar #menu-button:hover {
+    background-color: #666;
+  }
+  #topbar #homelink {
+    display: none;
+  }
+
+  #topbar #homelink-button {
+    display: block;
+  }
+
+  #menu button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    height: 64px;
+    color: black;
+    padding-left: 48px;
+    background-size: auto;
+    background-position: 8px center;
+    border-bottom: 1px solid #ddd;
+  }
+  #menu button:hover {
+    background-color: white;
+  }
+
+  #topbar #deleteGrain  { background-image: url("/trash-m.png"); }
+  #topbar #openDebugLog { background-image: url("/wrench-m.png"); }
+  #topbar #backupGrain  { background-image: url("/download-m.png"); }
+  #topbar #restartGrain { background-image: url("/restart-m.png"); }
+  #topbar #showApiToken { background-image: url("/key-m.png"); }
+
+  #api-token-popup {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    top: 64px;
+    height: auto;
+    width: auto;
+  }
+
+  #api-token-popup .copy-me {
+    display: block;
+    background-color: white;
+    color: black;
+    font-family: monospace;
+    text-decoration: none;
+    font-size: 150%;
+    word-wrap: break-word;
+    margin: 1em 0;
+    padding: 4px;
+    cursor: text;
+  }
+
+  .main-content {
+    top: 48px;
+  }
+}
+@media screen and (max-width: 650px) {
+  #applist-grains table {
+    width: 400px;
+  }
+  #applist-grains table td:nth-child(2) {
+    display: none;
+  }
+}
+@media screen and (max-width: 450px) {
+  #applist-grains .button-box button {
+    font-size: 75%;
+  }
+  #applist-grains table {
+    width: 300px;
+  }
+  #applist-apps {
+    width: 225px;
+    left: -225px;
+  }
 }

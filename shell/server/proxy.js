@@ -541,11 +541,11 @@ tryProxyUpgrade = function (hostId, req, socket, head) {
 
     if (hostId in proxiesByHostId) {
       var proxy = proxiesByHostId[hostId]
-  
+
       // Meteor sets the timeout to five seconds. Change that back to two
       // minutes, which is the default value.
       socket.setTimeout(120000);
-  
+
       proxy.upgradeHandler(req, socket, head);
       return true;
     } else {
@@ -1073,6 +1073,10 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
     if (content.language) {
       response.setHeader("Content-Language", content.language);
     }
+    if (("disposition" in content) && ("download" in content.disposition)) {
+      response.setHeader("Content-Disposition", "attachment; filename=\"" +
+          content.disposition.download.replace(/([\\"\n])/g, "\\$1") + "\"");
+    }
     if ("stream" in content.body) {
       var streamHandle = content.body.stream;
       response.writeHead(code.id, code.title);
@@ -1091,10 +1095,6 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
       } else {
         throw new Error("Unknown content body type.");
       }
-    }
-    if (("disposition" in content) && ("download" in content.disposition)) {
-      response.setHeader("Content-Disposition", "attachment; filename=\"" +
-          content.disposition.download.replace(/([\\"\n])/g, "\\$1") + "\"");
     }
 
     response.writeHead(code.id, code.title);

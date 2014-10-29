@@ -52,7 +52,7 @@ ADD . /opt/src
 RUN rm -rf /opt/src/shell/packages/*/.build* && rm -rf /opt/src/shell/packages/*/.npm
 
 # Run Cap'n Poroto build down here to ensure that it won't be cached by docker
-RUN cd /tmp && git clone https://github.com/kentonv/capnproto.git && cd capnproto/c++ && ./setup-autotools.sh && autoreconf -i && ./configure && make -j4 check && make install
+RUN (cd /tmp && git clone https://github.com/kentonv/capnproto.git && cd capnproto/c++ && ./setup-autotools.sh && autoreconf -i && ./configure && make -j4 check && make install) || (cat test-suite.log && false)
 
 RUN cd /opt/src && make -j4 XZ_FLAGS='-0' && chmod 555 ./install.sh sandstorm-0.tar.xz
 

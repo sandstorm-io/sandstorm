@@ -2132,8 +2132,6 @@ private:
         if (time(nullptr) - start >= 86400) break;
       }
 
-      n = 86400;
-      while (n > 0) n = sleep(n);
       type = "daily";
     }
   }

@@ -289,9 +289,11 @@ Router.map(function () {
         return { error: "You must sign in to install packages.", packageId: this.params.packageId };
       }
 
+      var packageUrl = this.params.query && this.params.query.url;
+
       if (!isSignedUp()) {
         if (isDemoUser()) {
-          if (!isSafeDemoAppUrl(this.params.url)) {
+          if (!isSafeDemoAppUrl(packageUrl)) {
             return { error: "Sorry, demo users cannot upload new apps.",
                      packageId: this.params.packageId };
           }
@@ -302,7 +304,7 @@ Router.map(function () {
         }
       }
 
-      Meteor.call("ensureInstalled", this.params.packageId, this.params.url);
+      Meteor.call("ensureInstalled", this.params.packageId, packageUrl);
 
       var package = Packages.findOne(this.params.packageId);
       if (package === undefined) {
@@ -311,7 +313,7 @@ Router.map(function () {
         // TODO(soon):  Display upload page?
         return { error: "Unknown package ID: " + this.params.packageId +
                         "\nPerhaps it hasn't been uploaded?",
-                 packageId: this.params.packageId, packageUrl: this.params.url };
+                 packageId: this.params.packageId, packageUrl: packageUrl };
       }
 
       if (package.status !== "ready") {
@@ -331,13 +333,13 @@ Router.map(function () {
           progress: progress,
           error: package.status === "failed" ? package.error : null,
           packageId: this.params.packageId,
-          packageUrl: this.params.url
+          packageUrl: packageUrl
         };
       }
 
       var result = {
         packageId: this.params.packageId,
-        packageUrl: this.params.url,
+        packageUrl: packageUrl,
         appId: package.appId,
         version: package.manifest.appVersion
       };

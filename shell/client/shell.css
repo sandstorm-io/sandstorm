@@ -63,6 +63,7 @@ body {
   height: 24px;
   line-height: 24px;
   font-size: 90%;
+  padding: 0 10px;
 }
 
 #topbar-update {
@@ -124,6 +125,9 @@ body {
 }
 #topbar #homelink:hover img {
   -webkit-filter: none;
+}
+#topbar.light #homelink {
+  display: none;
 }
 
 #topbar #icon {
@@ -831,6 +835,9 @@ ul.backer-list img, ul.dev-list img {
   }
   #topbar #menu-button:hover {
     background-color: #666;
+  }
+  #topbar.light #menu-button {
+    display: none;
   }
   #topbar #homelink {
     display: none;

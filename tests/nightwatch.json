@@ -14,6 +14,7 @@
   "test_settings" : {
     "default" : {
       "launch_url" : "http://local.sandstorm.io:6080",
+      "disable_colors" : true,
       "selenium_port"  : 4444,
       "selenium_host"  : "localhost",
       "silent": true,

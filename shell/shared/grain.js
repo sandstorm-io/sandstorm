@@ -378,7 +378,7 @@ GrainLog = new Meteor.Collection("grainLog");
 
 Router.map(function () {
   this.route("grain", {
-    path: "/grain/:grainId/:path(*)?",
+    path: "/grain/:grainId/:path(.*)?",
 
     waitOn: function () {
       // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?

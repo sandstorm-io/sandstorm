@@ -794,7 +794,7 @@ private:
   ON_DATA(header_field, HeaderField)
   ON_DATA(header_value, HeaderValue)
   ON_DATA(body, Body)
-  ON_EVENT(headers_complete, HeadersComplete);
+  ON_EVENT(headers_complete, HeadersComplete)
 #undef ON_DATA
 #undef ON_EVENT
 
@@ -1473,28 +1473,6 @@ public:
     return true;
   }
 
-  class Restorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
-  public:
-    explicit Restorer(capnp::Capability::Client&& defaultCap)
-        : defaultCap(kj::mv(defaultCap)) {}
-
-    capnp::Capability::Client restore(capnp::AnyPointer::Reader ref) override {
-      // TODO(soon):  Make it possible to export a default capability on two-party connections.
-      //   For now we use a null ref as a hack, but this is questionable because if guessable
-      //   SturdyRefs exist then you can't let just any component of your system request arbitrary
-      //   SturdyRefs.
-      if (ref.isNull() || ref.getAs< ::capnp::Text>() == "SessionContext") {
-        return defaultCap;
-      }
-
-      // TODO(someday):  Implement level 2 RPC?
-      KJ_FAIL_ASSERT("SturdyRefs not implemented.");
-    }
-
-  private:
-    capnp::Capability::Client defaultCap;
-  };
-
   class ApiRestorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
   public:
     explicit ApiRestorer(SandstormApi::Client&& apiCap, capnp::Capability::Client&& sessionContext)
@@ -1526,7 +1504,7 @@ public:
   struct AcceptedConnection {
     kj::Own<kj::AsyncIoStream> connection;
     capnp::TwoPartyVatNetwork network;
-    capnp::RpcSystem<capnp::rpc::twoparty::SturdyRefHostId> rpcSystem;
+    capnp::RpcSystem<capnp::rpc::twoparty::VatId> rpcSystem;
 
     explicit AcceptedConnection(ApiRestorer& restorer, kj::Own<kj::AsyncIoStream>&& connectionParam)
         : connection(kj::mv(connectionParam)),
@@ -1626,16 +1604,14 @@ public:
       // Set up the Supervisor API socket.
       auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
       capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
-      Restorer restorer(kj::heap<UiViewImpl>(*address, hackContext, config));
-      auto rpcSystem = capnp::makeRpcServer(network, restorer);
+      auto rpcSystem = capnp::makeRpcServer(network,
+          kj::heap<UiViewImpl>(*address, hackContext, config));
 
       // Get the SandstormApi by restoring a null SturdyRef.
       capnp::MallocMessageBuilder message;
-      capnp::rpc::SturdyRef::Builder ref = message.getRoot<capnp::rpc::SturdyRef>();
-      auto hostId = ref.getHostId().initAs<capnp::rpc::twoparty::SturdyRefHostId>();
-      hostId.setSide(capnp::rpc::twoparty::Side::SERVER);
-      SandstormApi::Client api = rpcSystem.restore(
-          hostId, ref.getObjectId()).castAs<SandstormApi>();
+      auto vatId = message.initRoot<capnp::rpc::twoparty::VatId>();
+      vatId.setSide(capnp::rpc::twoparty::Side::SERVER);
+      SandstormApi::Client api = rpcSystem.bootstrap(vatId).castAs<SandstormApi>();
 
       // Export a Unix socket on which the application can connect and make calls directly to the
       // Sandstorm API.

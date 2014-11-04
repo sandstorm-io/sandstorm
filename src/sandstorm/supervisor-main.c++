@@ -53,6 +53,7 @@
 #include <seccomp.h>
 #include <map>
 #include <unordered_map>
+#include <execinfo.h>
 
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/supervisor.capnp.h>
@@ -66,6 +67,16 @@
 #endif
 
 namespace sandstorm {
+
+#if __QTCREATOR
+#define KJ_MVCAP(var) var
+// QtCreator dosen't understand C++14 syntax yet.
+#else
+#define KJ_MVCAP(var) var = ::kj::mv(var)
+// Capture the given variable by move.  Place this in a lambda capture list.  Requires C++14.
+//
+// TODO(cleanup):  Move to libkj.
+#endif
 
 typedef unsigned int uint;
 
@@ -462,6 +473,14 @@ void signalHandler(int signo) {
     default:
       // Some signal that should cause death.
       SANDSTORM_LOG("Grain supervisor crashed due to signal.");
+
+//      // uncomment if trace is needed, but note that this is not really signal-safe.
+//      {
+//        void* trace[16];
+//        uint n = backtrace(trace, 16);
+//        KJ_DBG(kj::strArray(kj::arrayPtr(trace, n), " "));
+//      }
+
       killChildAndExit(1);
   }
 }
@@ -1201,10 +1220,9 @@ private:
 
     // Restore the default capability (the Supervisor interface).
     capnp::MallocMessageBuilder message;
-    capnp::rpc::SturdyRef::Builder ref = message.getRoot<capnp::rpc::SturdyRef>();
-    auto hostId = ref.getHostId().initAs<capnp::rpc::twoparty::SturdyRefHostId>();
+    auto hostId = message.initRoot<capnp::rpc::twoparty::VatId>();
     hostId.setSide(capnp::rpc::twoparty::Side::SERVER);
-    Supervisor::Client cap = client.restore(hostId, ref.getObjectId()).castAs<Supervisor>();
+    Supervisor::Client cap = client.bootstrap(hostId).castAs<Supervisor>();
 
     // Call keepAlive().
     auto promise = cap.keepAliveRequest().send();
@@ -1332,46 +1350,27 @@ private:
     DiskUsageWatcher& diskWatcher;
   };
 
-  class Restorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
-  public:
-    explicit Restorer(capnp::Capability::Client&& defaultCap)
-        : defaultCap(kj::mv(defaultCap)) {}
-
-    capnp::Capability::Client restore(capnp::AnyPointer::Reader ref) override {
-      // TODO(soon):  Make it possible to export a default capability on two-party connections.
-      //   For now we use a null ref as a hack, but this is questionable because if guessable
-      //   SturdyRefs exist then you can't let just any component of your system request arbitrary
-      //   SturdyRefs.
-      if (ref.isNull()) {
-        return defaultCap;
-      }
-
-      // TODO(someday):  Implement level 2 RPC with distributed confinement.
-      KJ_FAIL_ASSERT("SturdyRefs not implemented.");
-    }
-
-  private:
-    capnp::Capability::Client defaultCap;
-  };
-
   struct AcceptedConnection {
     kj::Own<kj::AsyncIoStream> connection;
     capnp::TwoPartyVatNetwork network;
-    capnp::RpcSystem<capnp::rpc::twoparty::SturdyRefHostId> rpcSystem;
+    capnp::RpcSystem<capnp::rpc::twoparty::VatId> rpcSystem;
 
-    explicit AcceptedConnection(Restorer& restorer, kj::Own<kj::AsyncIoStream>&& connectionParam)
+    explicit AcceptedConnection(capnp::Capability::Client bootstrapInterface,
+                                kj::Own<kj::AsyncIoStream>&& connectionParam)
         : connection(kj::mv(connectionParam)),
           network(*connection, capnp::rpc::twoparty::Side::SERVER),
-          rpcSystem(capnp::makeRpcServer(network, restorer)) {}
+          rpcSystem(capnp::makeRpcServer(network, kj::mv(bootstrapInterface))) {}
   };
 
-  kj::Promise<void> acceptLoop(kj::ConnectionReceiver& serverPort, Restorer& restorer,
+  kj::Promise<void> acceptLoop(kj::ConnectionReceiver& serverPort,
+                               capnp::Capability::Client bootstrapInterface,
                                kj::TaskSet& taskSet) {
-    return serverPort.accept().then([&](kj::Own<kj::AsyncIoStream>&& connection) {
-      auto connectionState = kj::heap<AcceptedConnection>(restorer, kj::mv(connection));
+    return serverPort.accept()
+        .then([&, KJ_MVCAP(bootstrapInterface)](kj::Own<kj::AsyncIoStream>&& connection) mutable {
+      auto connectionState = kj::heap<AcceptedConnection>(bootstrapInterface, kj::mv(connection));
       auto promise = connectionState->network.onDisconnect();
       taskSet.add(promise.attach(kj::mv(connectionState)));
-      return acceptLoop(serverPort, restorer, taskSet);
+      return acceptLoop(serverPort, kj::mv(bootstrapInterface), taskSet);
     });
   }
 
@@ -1431,21 +1430,19 @@ private:
         kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC |
         kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP);
     capnp::TwoPartyVatNetwork appNetwork(*appConnection, capnp::rpc::twoparty::Side::SERVER);
-    Restorer appRestorer(kj::heap<SandstormApiImpl>());
-    auto server = capnp::makeRpcServer(appNetwork, appRestorer);
+    auto server = capnp::makeRpcServer(appNetwork, kj::heap<SandstormApiImpl>());
 
     // Get the app's UiView by restoring a null SturdyRef from it.
     capnp::MallocMessageBuilder message;
-    capnp::rpc::SturdyRef::Builder ref = message.getRoot<capnp::rpc::SturdyRef>();
-    auto hostId = ref.getHostId().initAs<capnp::rpc::twoparty::SturdyRefHostId>();
+    auto hostId = message.initRoot<capnp::rpc::twoparty::VatId>();
     hostId.setSide(capnp::rpc::twoparty::Side::CLIENT);
-    UiView::Client app = server.restore(hostId, ref.getObjectId()).castAs<UiView>();
+    UiView::Client app = server.bootstrap(hostId).castAs<UiView>();
 
     // Set up the external RPC interface, re-exporting the UiView.
     // TODO(someday):  If there are multiple front-ends, or the front-ends restart a lot, we'll
     //   want to wrap the UiView and cache session objects.  Perhaps we could do this by making
     //   them persistable, though it's unclear how that would work with SessionContext.
-    Restorer serverRestorer(kj::heap<SupervisorImpl>(kj::mv(app), diskWatcher));
+    Supervisor::Client mainCap = kj::heap<SupervisorImpl>(kj::mv(app), diskWatcher);
     ErrorHandlerImpl errorHandler;
     kj::TaskSet tasks(errorHandler);
     unlink("socket");  // Clear stale socket, if any.
@@ -1453,7 +1450,7 @@ private:
         [&](kj::Own<kj::NetworkAddress>&& addr) {
       auto serverPort = addr->listen();
       KJ_SYSCALL(write(STDOUT_FILENO, "Listening...\n", strlen("Listening...\n")));
-      auto promise = acceptLoop(*serverPort, serverRestorer, tasks);
+      auto promise = acceptLoop(*serverPort, mainCap, tasks);
       return promise.attach(kj::mv(serverPort));
     });
 

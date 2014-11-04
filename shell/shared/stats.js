@@ -101,41 +101,6 @@ if (Meteor.isServer) {
       return token._id;
     }
   });
-
-  Router.map(function () {
-    this.route("fetchStats", {
-      where: "server",
-      path: "/fetchStats/:tokenId",
-      action: function () {
-        var token = StatsTokens.findOne({_id: this.params.tokenId});
-
-        if (!token) {
-          this.response.writeHead(404, {
-            "Content-Type": "text/plain"
-          });
-          this.response.write("Token not found");
-          return this.response.end();
-        }
-
-        try {
-          var stats = ActivityStats.find().fetch();
-          var statsString = JSON.stringify(stats);
-
-          this.response.writeHead(200, {
-            "Content-Type": "application/json"
-          });
-          this.response.write(statsString);
-        } catch(error) {
-          console.error(error.stack);
-          this.response.writeHead(500, {
-            "Content-Type": "text/plain"
-          });
-          this.response.write(error.stack);
-        }
-        return this.response.end();
-      }
-    });
-  });
 }
 
 // Pseudo-collection defined via publish, above.
@@ -166,6 +131,39 @@ Router.map(function () {
         today: RealTimeStats.findOne("today"),
         token: StatsTokens.findOne()
       };
+    }
+  });
+
+  this.route("fetchStats", {
+    where: "server",
+    path: "/fetchStats/:tokenId",
+    action: function () {
+      var token = StatsTokens.findOne({_id: this.params.tokenId});
+
+      if (!token) {
+        this.response.writeHead(404, {
+          "Content-Type": "text/plain"
+        });
+        this.response.write("Token not found");
+        return this.response.end();
+      }
+
+      try {
+        var stats = ActivityStats.find().fetch();
+        var statsString = JSON.stringify(stats);
+
+        this.response.writeHead(200, {
+          "Content-Type": "application/json"
+        });
+        this.response.write(statsString);
+      } catch(error) {
+        console.error(error.stack);
+        this.response.writeHead(500, {
+          "Content-Type": "text/plain"
+        });
+        this.response.write(error.stack);
+      }
+      return this.response.end();
     }
   });
 });

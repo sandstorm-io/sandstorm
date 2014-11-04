@@ -108,6 +108,7 @@ limitations under the License.
             {{else}}
             {{#each actions}}
               <button class="new-grain-button" data-actionid="{{_id}}">{{title}}</button>
+              <button class="uninstall-action-button" data-actionid="{{_id}}" data-appid="{{appId}}">Uninstall</button>
             {{/each}}
             {{/each}}
           </div>
@@ -243,6 +244,7 @@ limitations under the License.
       {{! TODO(cleanup):  The use of a list here is vestigial.  We now display only the step
             that is currently running. }}
       <ol>
+        <li id="step-wait">Waiting for write access...</li>
         <li id="step-download">Downloading... <span class="progress">{{progress}}
             <button id="cancelDownload">Cancel</button></span></li>
         <li id="step-verify">Verifying... <span class="progress">{{progress}}</span></li>
@@ -282,6 +284,7 @@ limitations under the License.
             {{/if}}
             {{/if}}
           </div></li>
+        <li id="step-delete">Server is currently deleting this app...</li>
       </ol>
     </div>
   {{/if}}

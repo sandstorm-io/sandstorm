@@ -23,6 +23,11 @@ var Http = Npm.require("http");
 var Manifest = Capnp.importSystem("sandstorm/package.capnp").Manifest;
 
 var installers = {};
+// To protect against race conditions, we require that each row in the Packages
+// collection have at most one writer at a time, as tracked by this `installers`
+// map. Each key is a package ID and each value is either an AppInstaller object
+// or the string "uninstalling", indicating that some fiber is working on
+// uninstalling the package.
 
 recursiveRmdir = function (dir) {
   // TODO(cleanup):  Put somewhere resuable, since proxy.js uses it.
@@ -38,15 +43,68 @@ recursiveRmdir = function (dir) {
   Fs.rmdirSync(dir);
 };
 
-startInstall = function (packageId, url, appId) {
-  // appId is optional and passed only if it is already known (e.g. verified during a previous
-  // installation attempt).
+Meteor.methods({
+  deleteUnusedPackages: function (appId) {
+    Packages.find({appId:appId}).forEach(function (package) {deletePackage(package._id)});
+  },
+});
 
-  if (!(packageId in installers)) {
-    var installer = new AppInstaller(packageId, url, appId);
-    installers[packageId] = installer;
-    installer.start();
+deletePackage = function (packageId) {
+  if (packageId in installers) {
+    return;
   }
+
+  installers[packageId] = "uninstalling";
+
+  try {
+    var action = UserActions.findOne({packageId:packageId});
+    var grain = Grains.findOne({packageId:packageId});
+    if (!grain && !action) {
+      Packages.update({_id:packageId}, {$set: {status:"delete"}});
+      var oldPath = Path.join(SANDSTORM_APPDIR, packageId);
+      var newPath = Path.join(SANDSTORM_DOWNLOADDIR,
+        packageId + ".deleting-" + (new Date()).toISOString());
+
+      try {
+        Fs.renameSync(oldPath, newPath);
+        recursiveRmdir(newPath);
+      } catch (error) {
+        console.error(error);
+      }
+
+      try {
+        Fs.unlinkSync(Path.join(SANDSTORM_DOWNLOADDIR, packageId + ".verified"));
+      } catch (error) {
+        console.error(error);
+      }
+
+      Packages.remove(packageId);
+    }
+    delete installers[packageId];
+  } catch (error) {
+    delete installers[packageId];
+    throw error;
+  }
+}
+
+startInstall = function (packageId, url, fromBeginning, appId) {
+  if (packageId in installers) {
+    return;
+  }
+
+  var installer = new AppInstaller(packageId, url, appId);
+  installers[packageId] = installer;
+
+  if (fromBeginning) {
+    try {
+      Packages.upsert({ _id: packageId}, {$set: {status: "download", progress: 0 }});
+    } catch (error) {
+      delete installers[packageId];
+      throw error;
+    }
+  }
+
+  installer.start();
 }
 
 cancelDownload = function (packageId) {
@@ -162,7 +220,9 @@ AppInstaller.prototype.wrapCallback = function (method) {
       self.failed = true;
       self.cleanup();
       self.updateProgress("failed", 0, err);
-      delete installers[self.packageId];
+      self.writeChain = self.writeChain.then(function() {
+        delete installers[self.packageId];
+      });
       console.error("Failed to install app:", err.stack);
     }
   }
@@ -362,4 +422,5 @@ AppInstaller.prototype.doAnalyze = function() {
 AppInstaller.prototype.done = function(manifest) {
   console.log("App ready:", this.unpackedPath);
   this.updateProgress("ready", 1, undefined, manifest);
+  delete installers[this.packageId];
 }

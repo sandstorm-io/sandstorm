@@ -21,7 +21,7 @@ Packages = new Meteor.Collection("packages");
 //
 // Each contains:
 //   _id:  128-bit prefix of SHA-256 hash of spk file, hex-encoded.
-//   status:  String.  One of "download", "verify", "unpack", "analyze", "ready", "failed"
+//   status:  String.  One of "download", "verify", "unpack", "analyze", "ready", "failed", "delete"
 //   progress:  Float.  -1 = N/A, 0-1 = fractional progress (e.g. download percentage),
 //       >1 = download byte count.
 //   error:  If status is "failed", error message string.

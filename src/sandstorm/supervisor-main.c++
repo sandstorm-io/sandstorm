@@ -478,7 +478,7 @@ void signalHandler(int signo) {
 //      {
 //        void* trace[16];
 //        uint n = backtrace(trace, 16);
-//        KJ_DBG(kj::strArray(kj::arrayPtr(trace, n), " "));
+//        KJ_LOG(ERROR, kj::strArray(kj::arrayPtr(trace, n), " "));
 //      }
 
       killChildAndExit(1);

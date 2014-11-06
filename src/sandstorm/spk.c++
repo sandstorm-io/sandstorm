@@ -1583,6 +1583,7 @@ private:
 
   kj::String serverBinary;
   kj::StringPtr mountDir;
+  bool fuseCaching = false;
 
   kj::MainFunc getDevMain() {
     return addCommonOptions(OptionSet::ALL_READONLY,
@@ -1600,6 +1601,10 @@ private:
         .addOptionWithArg({'m', "mount"}, KJ_BIND_METHOD(*this, setMountDir), "<dir>",
             "Don't actually connect to the server. Mount the package at <dir>, so you can poke "
             "at it.")
+        .addOption({'c', "cache"}, KJ_BIND_METHOD(*this, enableFuseCaching),
+            "Enable aggressive caching over the FUSE filesystem used to detect dependencies. "
+            "This may improve performance but means that you will have to restart `spk dev` "
+            "any time you make a change to your code.")
         .callAfterParsing(KJ_BIND_METHOD(*this, doDev)))
         .build();
   }
@@ -1622,6 +1627,11 @@ private:
 
   kj::MainBuilder::Validity addImportPath(kj::StringPtr arg) {
     importPath.add(kj::heapString(arg));
+    return true;
+  }
+
+  kj::MainBuilder::Validity enableFuseCaching() {
+    fuseCaching = true;
     return true;
   }
 
@@ -1735,7 +1745,7 @@ private:
       // updates live without restarting seems more important for this use case.
       // TODO(perf): Implement active cache invalidation. FUSE has protocol support for it. Use
       //   inotify at the other end to detect changes.
-//      options.cacheForever = true;
+      options.cacheForever = fuseCaching;
 
       auto onSignal = eventPort.onSignal(SIGINT)
           .exclusiveJoin(eventPort.onSignal(SIGQUIT))

@@ -118,7 +118,36 @@ private:
     DirectoryMapEntry& operator=(DirectoryMapEntry&&) = default;
   };
 
+  struct ChildKey {
+    uint64_t parentId;
+    kj::StringPtr name;
+
+    struct Eq {
+      inline bool operator()(const ChildKey& a, const ChildKey& b) const {
+        return a.parentId == b.parentId && a.name == b.name;
+      }
+    };
+    struct Hash {
+      inline size_t operator()(const ChildKey& key) const {
+        // TODO(someday): Add hash functions to KJ and use them here.
+        uint64_t hash = key.parentId ^ 0xcbf29ce484222325ull;
+        for (char c: key.name) {
+          hash = hash * 0x100000001b3ull;
+          hash ^= c;
+        }
+        return hash;
+      }
+    };
+  };
+
+  struct ChildInfo {
+    uint64_t nodeId;
+    uint64_t inode;
+    kj::String name;
+  };
+
   std::unordered_map<uint64_t, NodeMapEntry> nodeMap;
+  std::unordered_map<ChildKey, ChildInfo, ChildKey::Hash, ChildKey::Eq> childMap;
   uint64_t nodeIdCounter = 1000;
 
   std::unordered_map<uint64_t, FileMapEntry> fileMap;
@@ -444,18 +473,44 @@ private:
         auto promise = request.send();
         auto attrPromise = promise.getNode().getAttributesRequest(capnp::MessageSize {4, 0}).send();
 
-        addReplyTask(requestId, ENOENT, promise.then(
-            [this, KJ_MVCAP(attrPromise), requestId](auto&& lookupResult) mutable {
-          return attrPromise.then([this, KJ_MVCAP(lookupResult), requestId]
-              (auto&& attrResult) -> kj::Own<ResponseBase> {
-            auto reply = allocResponse<struct fuse_entry_out>();
+        kj::String ownName = kj::heapString(name);
+        uint64_t parentId = header.nodeid;
 
-            reply->body.nodeid = nodeIdCounter++;
+        addReplyTask(requestId, ENOENT, promise.then(
+            [this, parentId, KJ_MVCAP(ownName), KJ_MVCAP(attrPromise), requestId]
+            (auto&& lookupResult) mutable {
+          return attrPromise.then(
+              [this, parentId, KJ_MVCAP(ownName), KJ_MVCAP(lookupResult), requestId]
+              (auto&& attrResult) mutable -> kj::Own<ResponseBase> {
+            auto reply = allocResponse<struct fuse_entry_out>();
+            auto attributes = attrResult.getAttributes();
+            uint64_t inode = attributes.getInodeNumber();
+
+            auto insertResult = childMap.insert(std::make_pair(
+                ChildKey { parentId, kj::heapString(ownName) }, ChildInfo()));
+            if (insertResult.second) {
+              insertResult.first->second.name = kj::mv(ownName);
+            }
+
+            if (insertResult.second || insertResult.first->second.inode != inode) {
+              // Either we've never looked up this child before, or the inode number has changed
+              // since we looked it up so we assume it has been replaced by a new node.
+              //
+              // TODO(someday): It would be better to detect when a node has been replaced by
+              //   comparing the capabilities, though this requires "join" support (level 4 RPC).
+              reply->body.nodeid = nodeIdCounter++;
+              insertResult.first->second = ChildInfo { reply->body.nodeid, inode };
+            } else {
+              // This appears to be exactly the same child we returned previously. Use the same
+              // node ID.
+              reply->body.nodeid = insertResult.first->second.nodeId;
+            }
+
             reply->body.generation = 0;
             reply->newObject = CapToInsert {
                 IdType::NODE, reply->body.nodeid, lookupResult.getNode() };
 
-            translateAttrs(attrResult.getAttributes(), &reply->body.attr);
+            translateAttrs(attributes, &reply->body.attr);
             if (options.cacheForever) {
               reply->body.entry_valid = 365 * kj::DAYS / kj::SECONDS;
               reply->body.attr_valid = 365 * kj::DAYS / kj::SECONDS;

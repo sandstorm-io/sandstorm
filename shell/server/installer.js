@@ -422,5 +422,8 @@ AppInstaller.prototype.doAnalyze = function() {
 AppInstaller.prototype.done = function(manifest) {
   console.log("App ready:", this.unpackedPath);
   this.updateProgress("ready", 1, undefined, manifest);
-  delete installers[this.packageId];
+  var self = this;
+  self.writeChain = self.writeChain.then(function() {
+    delete installers[self.packageId];
+  });
 }

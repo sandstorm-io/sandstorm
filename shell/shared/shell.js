@@ -304,11 +304,12 @@ if (Meteor.isClient) {
       input.click();
     },
 
-    "click .uninstall-action-button": function (event) {
-      var actionId = event.currentTarget.getAttribute("data-actionid");
+    "click .uninstall-app-button": function (event) {
       var appId = event.currentTarget.getAttribute("data-appid");
-      if (window.confirm("Really uninstall this action?")) {
-        UserActions.remove(actionId);
+      if (window.confirm("Really uninstall this app?")) {
+        UserActions.find({appId: appId}).forEach(function (action) {
+          UserActions.remove(action._id);
+        });
         Meteor.call("deleteUnusedPackages", appId);
         if (!Packages.findOne({appId: appId})) {
           Session.set("selectedApp", null);

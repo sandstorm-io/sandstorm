@@ -106,10 +106,10 @@ limitations under the License.
               <button class="new-grain-button" data-actionid="dev"
                   data-devid="{{_id}}" data-index="{{index}}">{{title}}</button>
             {{else}}
-            {{#each actions}}
-              <button class="new-grain-button" data-actionid="{{_id}}">{{title}}</button>
-              <button class="uninstall-action-button" data-actionid="{{_id}}" data-appid="{{appId}}">Uninstall</button>
-            {{/each}}
+              {{#each actions}}
+                <button class="new-grain-button" data-actionid="{{_id}}">{{title}}</button>
+              {{/each}}
+              <button class="uninstall-app-button" data-appid="{{selectedApp}}">Uninstall</button>
             {{/each}}
           </div>
         {{else}}

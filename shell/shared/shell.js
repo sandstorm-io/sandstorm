@@ -307,7 +307,7 @@ if (Meteor.isClient) {
     "click .uninstall-app-button": function (event) {
       var appId = event.currentTarget.getAttribute("data-appid");
       if (window.confirm("Really uninstall this app?")) {
-        UserActions.find({appId: appId}).forEach(function (action) {
+        UserActions.find({appId: appId, userId: Meteor.userId()}).forEach(function (action) {
           UserActions.remove(action._id);
         });
         Meteor.call("deleteUnusedPackages", appId);

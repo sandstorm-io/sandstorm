@@ -80,7 +80,7 @@ function isSafeDemoAppUrl(url) {
 }
 
 Meteor.methods({
-  ensureInstalled: function (packageId, url) {
+  ensureInstalled: function (packageId, url, isRetry) {
     check(packageId, String);
     check(url, Match.OneOf(String, undefined, null));
 
@@ -104,58 +104,29 @@ Meteor.methods({
       }
     }
 
-    var app = Packages.findOne(packageId);
-    if (app) {
-      if (app.status === "ready" || app.status === "failed") {
-        // Don't try to install.
-        return;
-      }
-    } else {
-      Packages.insert({ _id: packageId, status: "download", progress: 0 });
-    }
-
-    // Start installing on the server side if we aren't already.
     if (!this.isSimulation) {
-      startInstall(packageId, url);
-    }
-  },
-
-  retryInstall: function (packageId, url) {
-    check(packageId, String);
-    check(url, Match.OneOf(String, undefined, null));
-
-    if (!this.userId) {
-      throw new Meteor.Error(403, "You must be logged in to install packages.");
-    }
-
-    if (!isSignedUp()) {
-      if (isDemoUser()) {
-        if (!isSafeDemoAppUrl(url)) {
-          throw new Meteor.Error(403, "Sorry, demo users cannot upload new apps.");
+      var pkg = Packages.findOne(packageId);
+      if (pkg) {
+        if (isRetry) {
+          if (pkg.status !== "failed") {
+            throw new Meteor.Error(403, "Unauthorized",
+                                   "Can't retry an install that hasn't failed.");
+          }
+          startInstall(packageId, url, true, pkg.appId)
+        } else if (pkg.status === "failed" || pkg.status === "ready") {
+          return;
+        } else {
+          if (pkg.status === "delete") {
+            // Either someone is currently deleting the package, or
+            // the server previously crashed mid-delete. In either
+            // case, we try to resume the deletion before continuing.
+            deletePackage(packageId);
+          }
+          startInstall(packageId, url, false, pkg.appId);
         }
       } else {
-        throw new Meteor.Error(403,
-            "Sorry, Sandstorm is in closed alpha. You must receive an alpha key before you " +
-            "can install packages.");
+        startInstall(packageId, url, true);
       }
-    }
-
-    var pkg = Packages.findOne(packageId);
-    var appId = undefined;
-    if (pkg) {
-      if (pkg.status !== "failed") {
-        throw new Meteor.Error(403, "Unauthorized",
-            "Can't retry an install that hasn't failed.");
-      }
-      appId = pkg.appId;
-      Packages.update(packageId, {$set: {status: "download", progress: 0 }});
-    } else {
-      Packages.insert({ _id: packageId, status: "download", progress: 0 });
-    }
-
-    // Start installing on the server side if we aren't already.
-    if (!this.isSimulation) {
-      startInstall(packageId, url, appId);
     }
   },
 
@@ -208,12 +179,14 @@ if (Meteor.isClient) {
           // TODO(someday):  Implement actions with capability inputs.
         }
       }
+
+      Meteor.call("deleteUnusedPackages", package.appId);
     }
   }
 
   Template.install.events({
     "click #retry": function (event) {
-      Meteor.call("retryInstall", this.packageId, this.packageUrl);
+      Meteor.call("ensureInstalled", this.packageId, this.packageUrl, true);
     },
 
     "click #cancelDownload": function (event) {
@@ -304,16 +277,17 @@ Router.map(function () {
         }
       }
 
-      Meteor.call("ensureInstalled", this.params.packageId, packageUrl);
+      Meteor.call("ensureInstalled", this.params.packageId, packageUrl, false);
 
       var package = Packages.findOne(this.params.packageId);
       if (package === undefined) {
-        // Apparently, this app is not installed nor installing, which implies that no URL was
-        // provided, which means we cannot install it.
-        // TODO(soon):  Display upload page?
-        return { error: "Unknown package ID: " + this.params.packageId +
-                        "\nPerhaps it hasn't been uploaded?",
-                 packageId: this.params.packageId, packageUrl: packageUrl };
+        if (!packageUrl) {
+          return { error: "Unknown package ID: " + this.params.packageId +
+                   "\nPerhaps it hasn't been uploaded?",
+                   packageId: this.params.packageId, packageUrl: packageUrl };
+        } else {
+          return { step: "wait" };
+        }
       }
 
       if (package.status !== "ready") {

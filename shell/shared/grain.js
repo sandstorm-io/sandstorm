@@ -120,6 +120,7 @@ Meteor.methods({
         }
         if (!this.isSimulation) {
           deleteGrain(grainId);
+          Meteor.call("deleteUnusedPackages", grain.appId);
         }
       }
     }

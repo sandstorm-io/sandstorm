@@ -304,6 +304,19 @@ if (Meteor.isClient) {
       input.click();
     },
 
+    "click .uninstall-app-button": function (event) {
+      var appId = event.currentTarget.getAttribute("data-appid");
+      if (window.confirm("Really uninstall this app?")) {
+        UserActions.find({appId: appId, userId: Meteor.userId()}).forEach(function (action) {
+          UserActions.remove(action._id);
+        });
+        Meteor.call("deleteUnusedPackages", appId);
+        if (!Packages.findOne({appId: appId})) {
+          Session.set("selectedApp", null);
+        }
+      }
+    },
+
     "click .new-grain-button": function (event) {
       var packageId;
       var command;

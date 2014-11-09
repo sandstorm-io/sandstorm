@@ -551,12 +551,14 @@ div.popup h2 {
 #install #step-confirm .confirm-form { display: none; }
 #install #step-run     .done-notice  { display: none; }
 
+#install.instep-wait     #step-wait     { display: block; font-weight: bold; }
 #install.instep-download #step-download { display: block; font-weight: bold; }
 #install.instep-verify   #step-verify   { display: block; font-weight: bold; }
 #install.instep-unpack   #step-unpack   { display: block; font-weight: bold; }
 #install.instep-analyze  #step-analyze  { display: block; font-weight: bold; }
 #install.instep-confirm  #step-confirm  { display: block; font-weight: bold; }
 #install.instep-run      #step-run      { display: block; font-weight: bold; }
+#install.instep-delete   #step-delete   { display: block; font-weight: bold; }
 
 #install.instep-download #step-download .progress { display: inline; }
 #install.instep-verify   #step-verify   .progress { display: inline; }

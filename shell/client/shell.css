@@ -383,11 +383,11 @@ img {
 #applist-grains table tr {
   height: 32px;
   border-bottom: 1px solid #ddd;
+  cursor: pointer;
 }
 
 #applist-grains table tbody tr:hover {
   background-color: #f8f8f8;
-  cursor: pointer;
 }
 
 #applist-grains .button-box button {

@@ -104,7 +104,7 @@ if (Meteor.isServer) {
   Meteor.setInterval(cleanupExpiredTokens, 3600000);
 }
 
-var GrainSizes = new Meteor.Collection("grainSizes");
+var GrainSizes = new Mongo.Collection("grainSizes");
 // Pseudo-collection from above publish.
 
 Meteor.methods({
@@ -307,7 +307,7 @@ if (Meteor.isClient) {
   });
 
   var blockedReload;
-  var blockedReloadDep = new Deps.Dependency;
+  var blockedReloadDep = new Tracker.Dependency;
   var explicitlyUnblocked = false;
   Reload._onMigrate(undefined, function (retry) {
     if (currentSessionId && !explicitlyUnblocked) {
@@ -335,7 +335,7 @@ if (Meteor.isClient) {
 
 if (Meteor.isClient) {
   // Every time the set of dev apps changes, force a reload of any open session.
-  Deps.autorun(function () {
+  Tracker.autorun(function () {
     var timestampSum = 0;
     DevApps.find().forEach(function (app) { timestampSum += app.timestamp; });
 
@@ -357,12 +357,12 @@ if (Meteor.isClient) {
       // before the update.
       if (elem.scrollHeight - elem.scrollTop === elem.clientHeight) {
         // Indeed, so we want to scroll it back to the bottom after the update.
-        Deps.afterFlush(function () { scrollLogToBottom(elem); });
+        Tracker.afterFlush(function () { scrollLogToBottom(elem); });
       }
     } else {
       // No element exists yet, but it's probably about to be created, in which case we definitely
       // want to scroll it.
-      Deps.afterFlush(function () {
+      Tracker.afterFlush(function () {
         var elem2 = document.getElementById("grainLog");
         if (elem2) scrollLogToBottom(elem2);
       });
@@ -374,7 +374,7 @@ if (Meteor.isClient) {
   }
 }
 
-GrainLog = new Meteor.Collection("grainLog");
+GrainLog = new Mongo.Collection("grainLog");
 // Pseudo-collection created by subscribing to "grainLog", implemented in proxy.js.
 
 Router.map(function () {

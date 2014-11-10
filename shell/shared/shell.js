@@ -119,8 +119,8 @@ if (Meteor.isServer) {
 }
 
 if (Meteor.isClient) {
-  HasUsers = new Meteor.Collection("hasUsers");  // dummy collection defined above
-  Backers = new Meteor.Collection("backers");  // pseudo-collection defined above
+  HasUsers = new Mongo.Collection("hasUsers");  // dummy collection defined above
+  Backers = new Mongo.Collection("backers");  // pseudo-collection defined above
 
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -139,7 +139,7 @@ if (Meteor.isClient) {
     }
   });
 
-  Deps.autorun(function () {
+  Tracker.autorun(function () {
     Meteor.subscribe("credentials");
     Meteor.subscribe("sessions");
   });

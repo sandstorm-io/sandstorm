@@ -59,6 +59,14 @@ if (Meteor.isServer) {
     }
   });
 
+  Meteor.publish("sessions", function () {
+    if (this.userId) {
+      return Sessions.find({userId: this.userId});
+    } else {
+      return [];
+    }
+  });
+
   Meteor.publish("devApps", function () {
     return DevApps.find();
   });
@@ -133,6 +141,7 @@ if (Meteor.isClient) {
 
   Deps.autorun(function () {
     Meteor.subscribe("credentials");
+    Meteor.subscribe("sessions");
   });
 
   makeDateString = function (date) {

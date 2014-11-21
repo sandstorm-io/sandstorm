@@ -395,7 +395,7 @@ if [ -z "${BUNDLE_FILE:-}" ]; then
   BUILD=$(curl -fs "https://install.sandstorm.io/$CHANNEL?from=0&type=install")
   BUILD_DIR=sandstorm-$BUILD
 
-  if [[ ! 12345 =~ ^[0-9]+$ ]]; then
+  if [[ ! "$BUILD" =~ ^[0-9]+$ ]]; then
     fail "Server returned invalid build number: $BUILD"
   fi
 

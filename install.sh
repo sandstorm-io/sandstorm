@@ -252,7 +252,7 @@ fi
 
 DIR=$(prompt "Where would you like to put Sandstorm?" "$DIR")
 
-if [ -e $DIR ]; then
+if [ -e "$DIR" ]; then
   echo "$DIR already exists. Sandstorm will assume ownership of all contents."
   prompt-yesno "Is this OK?" yes || fail
 fi
@@ -365,7 +365,7 @@ else
   echo "port, you must include it here as well."
   WILDCARD_HOST=$(prompt "Wildcard host:" "$DEFAULT_WILDCARD")
 
-  while ! [[ $WILDCARD_HOST =~ ^[^*]*[*][^*]*$ ]]; do
+  while ! [[ "$WILDCARD_HOST" =~ ^[^*]*[*][^*]*$ ]]; do
     error "Invalid wildcard host. It must contain exactly one asterisk."
     WILDCARD_HOST=$(prompt "Wildcard host:" "$DEFAULT_WILDCARD")
   done

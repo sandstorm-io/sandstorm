@@ -445,8 +445,7 @@ void killChild() {
   // automatically reap it.
 }
 
-void killChildAndExit(int status) KJ_NORETURN;
-void killChildAndExit(int status) {
+[[noreturn]] void killChildAndExit(int status) {
   killChild();
 
   // TODO(cleanup):  Decide what exit status is supposed to mean.  Maybe it should just always be
@@ -1243,7 +1242,7 @@ private:
 
   // =====================================================================================
 
-  void runChild(int apiFd) KJ_NORETURN {
+  [[noreturn]] void runChild(int apiFd) {
     // We are the child.
 
     enterSandbox();
@@ -1381,7 +1380,7 @@ private:
     }
   };
 
-  void runSupervisor(int apiFd) KJ_NORETURN {
+  [[noreturn]] void runSupervisor(int apiFd) {
     // We're currently in a somewhat dangerous state: our root directory is controlled
     // by the app.  If glibc reads, say, /etc/nsswitch.conf, the grain could take control
     // of the supervisor.  Fix this by chrooting to the supervisor directory.

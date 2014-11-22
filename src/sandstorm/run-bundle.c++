@@ -1546,7 +1546,7 @@ private:
     return config;
   }
 
-  void runUpdateMonitor(const Config& config, int pidfile) KJ_NORETURN {
+  [[noreturn]] void runUpdateMonitor(const Config& config, int pidfile) {
     // Run the update monitor process.  This process runs two subprocesses:  the sandstorm server
     // and the auto-updater.
 
@@ -1648,7 +1648,7 @@ private:
     }
   }
 
-  void runServerMonitor(const Config& config) KJ_NORETURN {
+  [[noreturn]] void runServerMonitor(const Config& config) {
     // Run the server monitor, which runs node and mongo and deals with them dying.
 
     enterChroot(true);
@@ -2097,7 +2097,7 @@ private:
     }
   }
 
-  void doUpdateLoop(kj::StringPtr channel, bool isRetry, const Config& config) KJ_NORETURN {
+  [[noreturn]] void doUpdateLoop(kj::StringPtr channel, bool isRetry, const Config& config) {
     // This is the updater process.  Run in a loop.
     auto log = raiiOpen("../var/log/updater.log", O_WRONLY | O_APPEND | O_CREAT);
     KJ_SYSCALL(dup2(log, STDOUT_FILENO));
@@ -2136,7 +2136,7 @@ private:
     }
   }
 
-  void restartForUpdate(int pidfileFd) KJ_NORETURN {
+  [[noreturn]] void restartForUpdate(int pidfileFd) {
     // Change pidfile to not close on exec, since we want it to live through the following exec!
     KJ_SYSCALL(fcntl(pidfileFd, F_SETFD, 0));
 
@@ -2199,7 +2199,7 @@ private:
     return kj::mv(sock);
   }
 
-  void runDevDaemon(const Config& config) KJ_NORETURN {
+  [[noreturn]] void runDevDaemon(const Config& config) {
     clearDevApps(config);
 
     // Make sure socket directory exists (since the installer doesn't create it).
@@ -2265,7 +2265,7 @@ private:
   // stdout, stderr), a series of NUL-terminated strings representing the arguments, and then
   // EOF.
 
-  void runDevSession(const Config& config, kj::AutoCloseFd internalFd) KJ_NORETURN {
+  [[noreturn]] void runDevSession(const Config& config, kj::AutoCloseFd internalFd) {
     auto exception = kj::runCatchingExceptions([&]() {
       // When someone connects, we expect them to pass us a one-byte command code.
       kj::byte commandCode;
@@ -2499,9 +2499,9 @@ private:
               "mongo command failed", command) { return; }
   }
 
-  void execMongoClient(const Config& config,
+  [[noreturn]] void execMongoClient(const Config& config,
         std::initializer_list<kj::StringPtr> addlArgs,
-        kj::StringPtr dbName = "meteor") KJ_NORETURN {
+        kj::StringPtr dbName = "meteor") {
     auto db = kj::str("127.0.0.1:", config.mongoPort, "/", dbName);
 
     kj::Vector<const char*> args;

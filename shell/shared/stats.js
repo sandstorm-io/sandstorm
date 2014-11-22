@@ -104,7 +104,7 @@ if (Meteor.isServer) {
 }
 
 // Pseudo-collection defined via publish, above.
-RealTimeStats = new Meteor.Collection("realTimeStats");
+RealTimeStats = new Mongo.Collection("realTimeStats");
 
 Router.map(function () {
   this.route("stats", {

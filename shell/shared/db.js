@@ -16,12 +16,12 @@
 
 // This file defines the database schema.
 
-Packages = new Meteor.Collection("packages");
+Packages = new Mongo.Collection("packages");
 // Packages which are installed or downloading.
 //
 // Each contains:
 //   _id:  128-bit prefix of SHA-256 hash of spk file, hex-encoded.
-//   status:  String.  One of "download", "verify", "unpack", "analyze", "ready", "failed"
+//   status:  String.  One of "download", "verify", "unpack", "analyze", "ready", "failed", "delete"
 //   progress:  Float.  -1 = N/A, 0-1 = fractional progress (e.g. download percentage),
 //       >1 = download byte count.
 //   error:  If status is "failed", error message string.
@@ -30,7 +30,7 @@ Packages = new Meteor.Collection("packages");
 //       versions of the same app have the same appId.  The spk tool defines the app ID format
 //       and can cryptographically verify that a package belongs to a particular app ID.
 
-DevApps = new Meteor.Collection("devapps");
+DevApps = new Mongo.Collection("devapps");
 // List of applications currently made available via the dev tools running on the local machine.
 // This is normally empty; the only time it is non-empty is when a developer is using the spk tool
 // on the local machine to publish an under-development app to this server. That should only ever
@@ -51,7 +51,7 @@ DevApps = new Meteor.Collection("devapps");
 //     changes are made to the source code.
 //   manifest:  The app's manifest, as with Packages.manifest.
 
-UserActions = new Meteor.Collection("userActions");
+UserActions = new Mongo.Collection("userActions");
 // List of actions that each user has installed which create new grains.  Each app may install
 // some number of actions (usually, one).
 //
@@ -65,7 +65,7 @@ UserActions = new Meteor.Collection("userActions");
 //   title:  Human-readable title for this action, e.g. "New Spreadsheet".
 //   command:  Manifest.Command to run this action (see package.capnp).
 
-Grains = new Meteor.Collection("grains");
+Grains = new Mongo.Collection("grains");
 // Grains belonging to users.
 //
 // Each contains:
@@ -84,7 +84,7 @@ Grains = new Meteor.Collection("grains");
 //   publicId:  An id used to publicly identify this grain. Used e.g. to route incoming e-mail and
 //       web publishing. This field is initialized when first requested by the app.
 
-Sessions = new Meteor.Collection("sessions");
+Sessions = new Mongo.Collection("sessions");
 // UI sessions open to particular grains.  A new session is created each time a user opens a grain.
 //
 // Each contains:
@@ -96,7 +96,7 @@ Sessions = new Meteor.Collection("sessions");
 //       period.
 //   userId:  User who owns this session.
 
-SignupKeys = new Meteor.Collection("signupKeys");
+SignupKeys = new Mongo.Collection("signupKeys");
 // Invite keys which may be used by users to get access to Sandstorm.
 //
 // Each contains:
@@ -104,7 +104,7 @@ SignupKeys = new Meteor.Collection("signupKeys");
 //   used:  Boolean indicating whether this key has already been consumed.
 //   note:  Text note assigned when creating key, to keep track of e.g. whom the key was for.
 
-ActivityStats = new Meteor.Collection("activityStats");
+ActivityStats = new Mongo.Collection("activityStats");
 // Contains usage statistics taken on a regular interval. Each entry is a data point.
 //
 // Each contains:
@@ -118,14 +118,14 @@ ActivityStats = new Meteor.Collection("activityStats");
 //       interval. Only counts logged-in users.
 //   activeGrains: The number of unique grains that have been used in the time interval.
 
-DeleteStats = new Meteor.Collection("deleteStats");
+DeleteStats = new Mongo.Collection("deleteStats");
 // Contains records of objects that were deleted, for stat-keeping purposes.
 //
 // Each contains:
 //   type: "grain" or "user"
 //   lastActive: Date of the user's or grain's last activity.
 
-FileTokens = new Meteor.Collection("fileTokens");
+FileTokens = new Mongo.Collection("fileTokens");
 // Tokens corresponding to files that will be accessed and later cleaned up by the server. This
 // is specifically used in routes like backupGrain/restoreGrain where the route is server-side,
 // and thus needs its own form of authentication.
@@ -137,7 +137,7 @@ FileTokens = new Meteor.Collection("fileTokens");
 //   name:      Text name that should be presented to users for this token
 //   timestamp: File creation time. Used to figure out when the token and file should be wiped.
 
-ApiTokens = new Meteor.Collection("apiTokens");
+ApiTokens = new Mongo.Collection("apiTokens");
 // Access tokens for APIs exported by apps.
 //
 // Longer-term, API tokens should actually be base64'd Cap'n Proto SturdyRefs. This is a temporary
@@ -157,7 +157,7 @@ ApiTokens = new Meteor.Collection("apiTokens");
 //   created:   Date when this token was created.
 //   expires:   Optional expiration Date. If undefined, the token does not expire.
 
-StatsTokens = new Meteor.Collection("statsTokens");
+StatsTokens = new Mongo.Collection("statsTokens");
 // Access tokens for the Stats collection
 //
 // These tokens are used for accessing the ActivityStats collection remotely

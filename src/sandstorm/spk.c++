@@ -911,7 +911,9 @@ private:
       searchPath = kj::str(
           "      ( sourcePath = \".\" ),  # Search this directory first.\n"
           "      ( sourcePath = \"/\",    # Then search the system root directory.\n"
-          "        hidePaths = [ \"home\", \"proc\", \"sys\" ]\n"
+          "        hidePaths = [ \"home\", \"proc\", \"sys\",\n"
+          "                      \"etc/passwd\", \"etc/hosts\", \"etc/host.conf\",\n"
+          "                      \"etc/nsswitch.conf\", \"etc/resolv.conf\" ]\n"
           "        # You probably don't want the app pulling files from these places,\n"
           "        # so we hide them. Note that /dev, /var, and /tmp are implicitly\n"
           "        # hidden because Sandstorm itself provides them.\n"

@@ -59,6 +59,14 @@ if (Meteor.isServer) {
     }
   });
 
+  Meteor.publish("sessions", function () {
+    if (this.userId) {
+      return Sessions.find({userId: this.userId});
+    } else {
+      return [];
+    }
+  });
+
   Meteor.publish("devApps", function () {
     return DevApps.find();
   });
@@ -111,8 +119,8 @@ if (Meteor.isServer) {
 }
 
 if (Meteor.isClient) {
-  HasUsers = new Meteor.Collection("hasUsers");  // dummy collection defined above
-  Backers = new Meteor.Collection("backers");  // pseudo-collection defined above
+  HasUsers = new Mongo.Collection("hasUsers");  // dummy collection defined above
+  Backers = new Mongo.Collection("backers");  // pseudo-collection defined above
 
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -131,8 +139,9 @@ if (Meteor.isClient) {
     }
   });
 
-  Deps.autorun(function () {
+  Tracker.autorun(function () {
     Meteor.subscribe("credentials");
+    Meteor.subscribe("sessions");
   });
 
   makeDateString = function (date) {
@@ -302,6 +311,19 @@ if (Meteor.isClient) {
       });
 
       input.click();
+    },
+
+    "click .uninstall-app-button": function (event) {
+      var appId = event.currentTarget.getAttribute("data-appid");
+      if (window.confirm("Really uninstall this app?")) {
+        UserActions.find({appId: appId, userId: Meteor.userId()}).forEach(function (action) {
+          UserActions.remove(action._id);
+        });
+        Meteor.call("deleteUnusedPackages", appId);
+        if (!Packages.findOne({appId: appId})) {
+          Session.set("selectedApp", null);
+        }
+      }
     },
 
     "click .new-grain-button": function (event) {

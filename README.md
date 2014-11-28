@@ -149,35 +149,6 @@ Later, when you are done hacking, you may want to restart the installed front-en
 
 See [the porting guide](https://github.com/sandstorm-io/sandstorm/wiki/Porting-Guide).
 
-## The Future
-
-As of May 2014, sandboxed apps can receive and respond to HTTP and WebSocket requests from users
-of the Sandstorm shell interface. That's it. This is enough for document-editor-type apps, but
-not anything that needs to interact with the world.
-
-However, we want to allow apps to do many more things in the future:
-
-* Export [Cap'n Proto](http://capnproto.org) RPC APIs which can then be used from other apps, with permissions mediated through a [powerbox](http://plash.beasts.org/powerbox.html)-style user interface.
-* Export external RESTful APIs (to non-Sandstorm clients) with OAuth handled by the platform.
-* Publish static content under a domain name -- accessible to the whole world without going through the sandstorm shell -- as a way to maintain a web site / blog using a Sandstorm app.
-* Send and receive e-mail, XMPP, etc.
-* Make outbound HTTP requests (to servers approved by the user), with OAuth credentials managed by the platform.
-* Specify multiple "permission levels" which can be used with sharing, so that a user can e.g. share read-only access to a document.
-* Publish static assets to be served directly by the Sandstorm infrastructure so that these requests need not pass through the app's sandbox.
-* Integrate securely with desktop and mobile client apps -- imagine installing a Sandstorm app and having the mobile client installed automatically, with permission only to talk to its server.
-
-We hope that this will enable apps like:
-
-* E-mail / chat / communications.
-* Federated social networks.
-* Documents / spreedsheets / etc.
-* Blogging.
-* RSS readers.
-* Media storage and playback.
-* Most importantly:  Things that we don't expect!
-
-Have a great idea for an app? [Share it with us](https://groups.google.com/group/sandstorm-dev), and we'll help you figure out how to make it fit in Sandstorm.
-
 ## Contribute
 
 Want to help?  Get on the [discussion group](https://groups.google.com/group/sandstorm-dev) and let us know!

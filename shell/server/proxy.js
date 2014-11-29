@@ -223,11 +223,7 @@ shouldRestartGrain = function (error, retryCount) {
   // to restart the grain and retry. `retryCount` is the number of times that the request has
   // already gone through this cycle (should be zero for the first call).
 
-  // TODO(cleanup): We also have to try on osError to catch the case where connecting to the
-  //   socket failed. We really ought to find a more robust way to detect that, though.
-  return "nature" in error &&
-      (error.nature === "networkFailure" || error.nature === "osError") &&
-      retryCount < 1;
+  return error.type === "disconnected" && retryCount < 1;
 }
 
 function continueGrain(grainId) {
@@ -705,8 +701,8 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user, userInfo) {
       if (err.cppFile) {
         body += "\nC++ location:" + err.cppFile + ":" + (err.line || "??");
       }
-      if (err.nature || err.durability) {
-        body += "\ntype: " + (err.durability || "") + " " + (err.nature || "(unknown)")
+      if (err.type) {
+        body += "\ntype: " + err.type;
       }
 
       if (response.headersSent) {
@@ -1239,7 +1235,12 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
 
     // If we have a Content-Length, pass it along to the app by calling `expectSize()`.
     if (contentLength !== undefined) {
-      requestStream.expectSize(contentLength).catch(reportUploadStreamError);
+      requestStream.expectSize(contentLength).catch(function (err) {
+        // expectSize() is allowed to be unimplemented.
+        if (err.type !== "unimplemented") {
+          reportUploadStreamError(err);
+        }
+      });
     }
 
     // Pipe the input stream to the app.
@@ -1272,6 +1273,14 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
       return promise;
     });
   }, function (err) {
+    if (err.type === "failed" && err.message.indexOf("not implemented") !== -1) {
+      // Hack to work around old apps using an old version of Cap'n Proto, before the
+      // "unimplemented" exception type was introduced. :(
+      // TODO(cleanup): When we transition to API version 2, we can move this into the
+      //   compatibility layer.
+      err.type = "unimplemented";
+    }
+
     if (shouldRestartGrain(err, 0)) {
       // This is the kind of error that indicates we should retry. Note that we passed 0 for the
       // retry count above because we were just checking if this is a retriable error (vs. possibly
@@ -1280,14 +1289,13 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
       return self.maybeRetryAfterError(err, retryCount).then(function () {
         return self.handleRequestStreaming(request, response, contentLength, retryCount + 1);
       });
-    } else {
-      // Assume that the call failed because streaming is not implemented.
-      // TODO(cleanup): When Cap'n Proto supports actually detecting if the method was unimplemented,
-      //   do that instead.
-      // TODO(soon): On a network error, we need to retry.
+    } else if (err.type === "unimplemented") {
+      // Streaming is not implemented. Fall back to non-streaming version.
       return readAll(request).then(function (data) {
         return self.handleRequest(request, data, response, 0);
       });
+    } else {
+      throw err;
     }
   });
 }

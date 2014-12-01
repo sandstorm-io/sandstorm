@@ -705,6 +705,10 @@ private:
                 if (end == nullptr) {
                   // Not valid per HTTP spec, but MediaWiki seems to return this format sometimes.
                   end = strptime(value.cStr(), "%a, %d-%b-%Y %T GMT", &t);
+                  if (end == nullptr) {
+                    // Not valid per HTTP spec, but used by Rack.
+                    end = strptime(value.cStr(), "%a, %d %b %Y %T -0000", &t);
+                  }
                 }
               }
             }

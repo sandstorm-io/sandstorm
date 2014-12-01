@@ -21,20 +21,7 @@ See [sandstorm.io](https://sandstorm.io)
 
 ### *WARNING! WARNING!*
 
-Sandstorm is in the very early stages of development.  We want developers to start playing with it,
-but keep some things in mind:
-
-* At present, Sandstorm's sandboxing is incomplete.  Malicious code probably can escape.  Malicious
-  code _definitely can_ DoS your server by consuming all available resources.
-* The sharing model is very primitive right now.  Simply copy/paste an app instance link to share
-  it with others.
-* There are no resource quotas yet. It's probably a good idea not to invite anyone who might abuse
-  your server.
-* The UI needs work.
-* Apps can't do a whole lot yet, since we don't have many APIs to interact with the outside world.
-  See our [future plans](#the-future) and
-  [let us know](https://groups.google.com/group/sandstorm-dev) what we should build next!
-* The API (what there is of it) is not final.  It could change in a way that breaks existing apps.
+Sandstorm is in the very early stages of development. We want developers to start playing with it, but please don't rely on it for mission-critical data or security yet.
 
 ## Installing the Easy Way
 

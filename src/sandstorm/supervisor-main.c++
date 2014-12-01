@@ -105,6 +105,12 @@ public:
     int fd;
     KJ_SYSCALL(fd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC));
     inotifyFd = kj::AutoCloseFd(fd);
+
+    // Note that because we create the ReadObserver before creating any watches, we don't have
+    // to worry about the possibility that we missed an event between creation of the fd and
+    // creation of the ReadObserver.
+    readObserver = kj::heap<kj::UnixEventPort::ReadObserver>(eventPort, inotifyFd);
+
     totalSize = 0;
     watchMap.clear();
     pendingWatches.add(nullptr);  // root directory
@@ -135,6 +141,7 @@ public:
 private:
   kj::UnixEventPort& eventPort;
   kj::AutoCloseFd inotifyFd;
+  kj::Own<kj::UnixEventPort::ReadObserver> readObserver;
   uint64_t totalSize;
 
   uint64_t lastUpdateSize = kj::maxValue;  // value of totalSize last time listeners were fired.
@@ -248,7 +255,7 @@ private:
   kj::Promise<void> readLoop() {
     addPendingWatches();
     maybeFireEvents();
-    return eventPort.onFdEvent(inotifyFd, POLLIN).then([this](short) {
+    return readObserver->whenBecomesReadable().then([this]() {
       alignas(uint64_t) kj::byte buffer[4096];
 
       for (;;) {

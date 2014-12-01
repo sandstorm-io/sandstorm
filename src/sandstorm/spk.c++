@@ -1773,7 +1773,10 @@ private:
 
       kj::Maybe<kj::Promise<void>> logPipe;
       KJ_IF_MAYBE(c, connection) {
-        logPipe = pipeToStdout(eventPort, *c).eagerlyEvaluate(nullptr);
+        kj::Own<kj::UnixEventPort::ReadObserver> logObserver =
+            kj::heap<kj::UnixEventPort::ReadObserver>(eventPort, *c);
+        auto promise = pipeToStdout(*logObserver, *c);
+        logPipe = promise.attach(kj::mv(logObserver)).eagerlyEvaluate(nullptr);
       }
 
       if (connection == nullptr) {
@@ -1844,7 +1847,7 @@ private:
     return true;
   }
 
-  static kj::Promise<void> pipeToStdout(kj::UnixEventPort& eventPort, int fd) {
+  static kj::Promise<void> pipeToStdout(kj::UnixEventPort::ReadObserver& readObserver, int fd) {
     // Asynchronously read all data from fd and write it to STDOUT.
     // TODO(cleanup): Use KJ I/O facilities. Requires making it possible to construct
     //   kj::LowLevelAsyncIoProvider directly from UnixEventPort.
@@ -1856,8 +1859,8 @@ private:
 
       if (n < 0) {
         // Got EAGAIN.
-        return eventPort.onFdEvent(fd, POLLIN).then([&eventPort, fd](short) {
-          return pipeToStdout(eventPort, fd);
+        return readObserver.whenBecomesReadable().then([&readObserver, fd]() {
+          return pipeToStdout(readObserver, fd);
         });
       } else if (n == 0) {
         return kj::READY_NOW;

@@ -1064,6 +1064,10 @@ private:
     // of interesting information leaks.
     CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(modify_ldt), 0));
 
+    // Despite existing at a 64-bit syscall, set_thread_area is only useful
+    // for 32-bit programs.  64-bit programs use arch_prctl instead.
+    CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(set_thread_area), 0));
+
     // Disable namespaces. Nested sandboxing could be useful but the attack surface is large.
     CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(unshare), 0));
     CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(mount), 0));

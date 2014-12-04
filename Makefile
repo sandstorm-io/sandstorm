@@ -21,6 +21,11 @@ CXXFLAGS=-O2 -Wall
 BUILD=0
 XZ_FLAGS=
 
+# LANG specifies the locale used in run-bundle.
+ifneq ($(shell echo $(LANG) | grep "\.UTF-8$$" -), $(LANG))
+$(error LANG must end with ".UTF-8")
+endif
+
 # You generally should not modify these.
 CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD)
 NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
@@ -81,7 +86,7 @@ tmp/genfiles: src/sandstorm/*.capnp
 bin/run-bundle: src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/genfiles
 	@echo "building bin/run-bundle..."
 	@mkdir -p bin
-	@$(CXX) src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/run-bundle -static $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
+	@$(CXX) src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/run-bundle -static $(CXXFLAGS2) -DENV_LANG=$(LANG) `pkg-config capnp-rpc --cflags --libs`
 
 shell/public/%.png: icons/%.svg
 	convert -scale 24x24 -negate -evaluate multiply 0.87 $< $@

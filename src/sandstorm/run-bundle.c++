@@ -1404,8 +1404,12 @@ private:
     // locale setting can crash Mongo because we don't have the appropriate locale files available.
     KJ_SYSCALL(clearenv());
 
-    // Set up an environment appropriate for us.
-    KJ_SYSCALL(setenv("LANG", "C.UTF-8", true));
+    // Set up an environment appropriate for us. ENV_LANG is passed in as a flag at compile time.
+#define STR(s) #s
+#define XSTR(s) STR(s)
+    KJ_SYSCALL(setenv("LANG", XSTR(ENV_LANG), true));
+#undef XSTR
+#undef STR
     KJ_SYSCALL(setenv("PATH", "/usr/bin:/bin", true));
     KJ_SYSCALL(setenv("LD_LIBRARY_PATH", "/usr/local/lib:/usr/lib:/lib", true));
   }

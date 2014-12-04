@@ -19,6 +19,7 @@
 $import "/capnp/c++.capnp".namespace("sandstorm");
 
 using Util = import "util.capnp";
+using Persistent = import "/capnp/persistent.capnp".Persistent;
 
 # ========================================================================================
 # Powerbox
@@ -39,7 +40,7 @@ using Util = import "util.capnp";
 # presented with a list of actions that make sense for that capability and may select one.  (This
 # is much like Android intents.)
 
-interface PowerboxCapability {
+interface PowerboxCapability extends(Persistent) {
   # Capabilities to be offered to the powerbox must implement PowerboxCapability (in addition to
   # the interface for the application functionality they provide).  PowerboxCapability provides
   # metadata about the capability for display in the powerbox UI as well as the sharing graph
@@ -78,7 +79,7 @@ interface PowerboxCapability {
   }
 }
 
-interface PowerboxAction {
+interface PowerboxAction extends(Persistent) {
   apply @0 (cap: PowerboxCapability) -> (view :UiView);
   # Invoke the action on the given capability, producing a view which is displayed to the user.
 }
@@ -335,9 +336,9 @@ interface SessionContext {
   # particular session.  This can be used e.g. to ask the platform to present certain system
   # dialogs to the user.
 
-  getSharedPermissions @0 () -> (var :Util.Assignable);
-  # Returns an `Assignable(PermissionSet)` indicating the permissions held by the user of this session.
-  # This assignable can be persisted beyond the end of the session.  This is useful for detecting if
+  getSharedPermissions @0 () -> (var :Util.Assignable(PermissionSet).Getter);
+  # Returns an observer on the permissions held by the user of this session.
+  # This observer can be persisted beyond the end of the session.  This is useful for detecting if
   # the user later loses their access and auto-revoking things in that case.  See also `tieToUser()`
   # for an easier way to make a particular capability auto-revoke if the user's permissions change.
 
@@ -401,6 +402,8 @@ using PermissionSet = Data;
 # interpreted in little-endian order, e.g. the least-significant bit of the first byte represents
 # permission 0 while the most-significant bit of the third byte represents permission 23.  All
 # bits beyond the end of the byte string are assumed to be zero.
+#
+# TODO(soon): Why is this not List(Bool)?
 
 struct RoleDef {
   # Metadata describing a sharable role.
@@ -429,12 +432,14 @@ struct RoleDef {
 interface SharingLink {
   # Represents one link in the sharing graph.
 
-  getPetname @0 () -> (name :Util.Assignable);
-  # Name assigned by the sharer to the recipient. Assignable holds `LocalizedText`.
+  getPetname @0 () -> (name :Util.Assignable(Util.LocalizedText));
+  # Name assigned by the sharer to the recipient.
 }
 
 interface ViewSharingLink extends(SharingLink) {
-  getRoleAssignment @0 () -> (var :Util.Assignable);
+  # A SharingLink for a UiView. These links can be attenuated with permissions.
+
+  getRoleAssignment @0 () -> (var :Util.Assignable(RoleAssignment));
   # Returns an Assignable containing a RoleAssignment.
 
   struct RoleAssignment {

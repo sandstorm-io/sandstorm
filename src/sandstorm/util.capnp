@@ -48,6 +48,9 @@ interface Handle {
   # To "drop" a handle means to discard any live references and delete any sturdy references.
   # The purpose of a handle is to detect when it has been dropped and to free the underlying
   # resource and cancel any ongoing operation at that time.
+
+  # TODO(someday): How does one drop a handle after persisting it? Should we add a method here
+  #   that invalidates the SturdyRef, or should we put it in Persistent?
 }
 
 interface ByteStream {
@@ -104,24 +107,25 @@ interface Assignable(T) {
   # An "assignable" -- a mutable memory cell. Supports subscribing to updates.
 
   get @0 () -> (value :T, setter :Setter);
-  # The returned setter's set() can only be called once, and throws an exception if the assignable
-  # has changed since `get()` was called. This can be used to implement optimistic concurrency.
+  # The returned setter functions the same as you'd get from `asSetter()` except that it will
+  # become disconnected the next time the Assignable is set by someone else. Thus, you may use this
+  # to implement optimistic concurrency control.
 
   asGetter @1 () -> (getter :Getter);
   # Return a read-only capability for this assignable, co-hosted with the assignable itself for
-  # performance.  If the assignable is persistable, the getter is as well.
+  # performance.  If the assignable is persistent, the getter is as well.
 
   asSetter @2 () -> (setter :Setter);
   # Return a write-only capability for this assignable, co-hosted with the assignable itself for
-  # performance.  If the assignable is persistable, the setter is as well.
+  # performance.  If the assignable is persistent, the setter is as well.
 
   interface Getter {
     get @0 () -> (value :T);
 
-    pushTo @1 (setter :Setter) -> (handle :Handle);
-    # Subscribe to updates.  Calls the given setter any time the assignable's value changes.  Drop
-    # the returned handle to stop receiving updates.  If the assignable is persistent, `setter` must
-    # be as well.
+    subscribe @1 (setter :Setter) -> (handle :Handle);
+    # Subscribe to updates. Calls the given setter any time the assignable's value changes.  Drop
+    # the returned handle to stop receiving updates. If `setter` is persistent, `handle` will also
+    # be persistent.
   }
 
   interface Setter {

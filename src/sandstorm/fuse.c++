@@ -487,9 +487,16 @@ private:
             uint64_t inode = attributes.getInodeNumber();
 
             auto insertResult = childMap.insert(std::make_pair(
-                ChildKey { parentId, kj::heapString(ownName) }, ChildInfo()));
+                ChildKey { parentId, ownName }, ChildInfo()));
+
+            // Make sure the StringPtr in the key points at the String in the value.
             if (insertResult.second) {
+              // This is a newly-inserted entry.
               insertResult.first->second.name = kj::mv(ownName);
+            } else {
+              // Existing entry. Check consistency.
+              KJ_ASSERT(insertResult.first->second.name.begin() ==
+                        insertResult.first->first.name.begin());
             }
 
             if (insertResult.second || insertResult.first->second.inode != inode) {
@@ -499,7 +506,8 @@ private:
               // TODO(someday): It would be better to detect when a node has been replaced by
               //   comparing the capabilities, though this requires "join" support (level 4 RPC).
               reply->body.nodeid = nodeIdCounter++;
-              insertResult.first->second = ChildInfo { reply->body.nodeid, inode };
+              insertResult.first->second.nodeId = reply->body.nodeid;
+              insertResult.first->second.inode = inode;
             } else {
               // This appears to be exactly the same child we returned previously. Use the same
               // node ID.

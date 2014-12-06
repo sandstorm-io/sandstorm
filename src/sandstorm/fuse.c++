@@ -57,7 +57,8 @@ class FuseDriver final: private kj::TaskSet::ErrorHandler {
 public:
   FuseDriver(kj::UnixEventPort& eventPort, int fuseFd, fuse::Node::Client&& root,
              FuseOptions options)
-      : readObserver(eventPort, fuseFd), fuseFd(fuseFd), options(options) {
+      : observer(eventPort, fuseFd, kj::UnixEventPort::FdObserver::OBSERVE_READ),
+        fuseFd(fuseFd), options(options) {
     nodeMap.insert(std::make_pair(FUSE_ROOT_ID, NodeMapEntry { kj::mv(root), 1 }));
 
     int flags;
@@ -76,7 +77,7 @@ public:
   }
 
 private:
-  kj::UnixEventPort::ReadObserver readObserver;
+  kj::UnixEventPort::FdObserver observer;
   int fuseFd;
   FuseOptions options;
   std::unordered_map<uint64_t, kj::Promise<void>> tasks;
@@ -384,7 +385,7 @@ private:
             continue;
           case EAGAIN:
             // No data to read.  Try again later.
-            return readObserver.whenBecomesReadable().then([this]() { return readLoop(); });
+            return observer.whenBecomesReadable().then([this]() { return readLoop(); });
           case ENODEV:
             // Unmounted.
             return kj::READY_NOW;
@@ -468,6 +469,7 @@ private:
         auto request = node.lookupRequest(
             capnp::MessageSize { name.size() / sizeof(capnp::word) + 8, 0 });
         request.setName(name);
+        KJ_DBG(name);
 
         auto requestId = header.unique;
         auto promise = request.send();

@@ -469,7 +469,6 @@ private:
         auto request = node.lookupRequest(
             capnp::MessageSize { name.size() / sizeof(capnp::word) + 8, 0 });
         request.setName(name);
-        KJ_DBG(name);
 
         auto requestId = header.unique;
         auto promise = request.send();

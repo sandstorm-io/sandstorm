@@ -344,14 +344,7 @@ function startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev) 
 
 shutdownGrain = function (grainId, keepSessions) {
   if (!keepSessions) {
-    Sessions.find({grainId: grainId}).forEach(function (session) {
-      var proxy = proxies[session._id];
-      if (proxy) {
-        delete proxies[session._id];
-        delete proxiesByHostId[session.hostId];
-      }
-      Sessions.remove(session._id);
-    });
+    Sessions.remove({grainId: grainId});
   }
 
   // Try to send a shutdown.  The grain may not be running, in which case this will fail, which
@@ -403,18 +396,30 @@ getGrainSize = function (sessionId, oldSize) {
   return promise2;
 }
 
+Meteor.startup(function () {
+  // Every time the set of dev apps changes, clear all sessions.
+  DevApps.find().observeChanges({
+    removed : function (app) {
+      Sessions.remove({});
+    },
+    added : function (app) {
+      Sessions.remove({});
+    }
+  });
+
+  Sessions.find().observeChanges({
+    removed : function(session) {
+      delete proxies[session._id];
+      delete proxiesByHostId[session.hostId];
+    }
+  });
+});
+
 // Kill off proxies idle for >~5 minutes.
 var TIMEOUT_MS = 300000;
 function gcSessions() {
   var now = new Date().getTime();
-  Sessions.find({timestamp: {$lt: (now - TIMEOUT_MS)}}).forEach(function (session) {
-    var proxy = proxies[session._id];
-    if (proxy) {
-      delete proxies[session._id];
-      delete proxiesByHostId[session.hostId];
-    }
-    Sessions.remove(session._id);
-  });
+  Sessions.remove({timestamp: {$lt: (now - TIMEOUT_MS)}});
 }
 Meteor.setInterval(gcSessions, 60000);
 

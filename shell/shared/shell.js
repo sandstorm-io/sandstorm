@@ -59,12 +59,8 @@ if (Meteor.isServer) {
     }
   });
 
-  Meteor.publish("sessions", function () {
-    if (this.userId) {
-      return Sessions.find({userId: this.userId});
-    } else {
-      return [];
-    }
+  Meteor.publish("sessions", function (sessionId) {
+    return Sessions.find({_id: sessionId});
   });
 
   Meteor.publish("devApps", function () {

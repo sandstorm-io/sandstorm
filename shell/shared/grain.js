@@ -421,7 +421,7 @@ Router.map(function () {
       var session = Session.get("session-" + grainId);
       if (session === "pending") {
         return result;
-      } else if (session && Sessions.findOne(session.sessionId)) {
+      } else if (session && (Sessions.findOne(session.sessionId) || !Meteor.userId())) {
         result.appOrigin = document.location.protocol + "//" + makeWildcardHost(session.hostId);
         setCurrentSessionId(session.sessionId, result.appOrigin, grainId);
         result.sessionId = session.sessionId;

@@ -1336,7 +1336,7 @@ private:
 
     // Verify ownership is intact.
     checkOwnedByRoot("..", "Install directory");
-    checkOwnedByRoot(".", "Version intsall directory");
+    checkOwnedByRoot(".", "Version install directory");
     checkOwnedByRoot("sandstorm", "'sandstorm' executable");
     checkOwnedByRoot("../sandstorm.conf", "Config file");
 

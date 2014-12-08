@@ -365,9 +365,6 @@ struct UserIds {
 };
 
 kj::Maybe<UserIds> getUserIds(kj::StringPtr name) {
-  // Convert a user or group name to the equivalent ID number.  Set `flag` to "-u" for username,
-  // "-g" for group name.
-  //
   // We can't use getpwnam() in a statically-linked binary, so we shell out to id(1).  lol.
 
   int fds[2];

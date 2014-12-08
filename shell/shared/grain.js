@@ -334,22 +334,6 @@ if (Meteor.isClient) {
 }
 
 if (Meteor.isClient) {
-  // Every time the set of dev apps changes, force a reload of any open session.
-  Tracker.autorun(function () {
-    var timestampSum = 0;
-    DevApps.find().forEach(function (app) { timestampSum += app.timestamp; });
-
-    var toRemove = [];
-    for (var key in Session.keys) {
-      if (key.slice(0, 8) === "session-") {
-        toRemove.push(key);
-      }
-    }
-    toRemove.forEach(function (key) { Session.set(key, undefined); });
-  });
-}
-
-if (Meteor.isClient) {
   function maybeScrollLog() {
     var elem = document.getElementById("grainLog");
     if (elem) {
@@ -412,30 +396,46 @@ Router.map(function () {
         showMenu: Session.get("showMenu")
       };
 
-      var err = Session.get("session-" + grainId + "-error");
+      var self = this;
+      var clearError = function() { self.state.set("error", undefined); };
+      DevApps.find().observeChanges({
+        added : clearError,
+        removed: clearError
+      });
+
+      var err = self.state.get("error");
       if (err) {
         result.error = err;
         return result;
       }
 
-      var session = Session.get("session-" + grainId);
-      if (session === "pending") {
-        return result;
-      } else if (session && Sessions.findOne(session.sessionId)) {
+      var session = Sessions.findOne({grainId: grainId});
+      if (session) {
         result.appOrigin = document.location.protocol + "//" + makeWildcardHost(session.hostId);
-        setCurrentSessionId(session.sessionId, result.appOrigin, grainId);
-        result.sessionId = session.sessionId;
-        result.path = encodeURIComponent("/" + (this.params.path || ""));
+        setCurrentSessionId(session._id, result.appOrigin, grainId);
+        result.sessionId = session._id;
+        result.path = encodeURIComponent("/" + (self.params.path || ""));
         return result;
       } else {
-        // Make sure that we call openSession() only once on this grain.
-        Session.set("session-" + grainId, "pending");
+        if (self.state.get("openingSession")) {
+          return result;
+        }
+
+        self.state.set("openingSession", true);
         Meteor.call("openSession", grainId, function (error, session) {
           if (error) {
-            Session.set("session-" + grainId + "-error", error.message);
+            self.state.set("error", error.message);
+            self.state.set("openingSession", undefined);
           } else {
-            Session.set("session-" + grainId, session);
-            Session.set("session-" + grainId + "-error", undefined);
+            var subscription = Meteor.subscribe("sessions", session.sessionId);
+            Sessions.find({_id : session.sessionId}).observeChanges({
+              removed: function(session) {
+                subscription.stop();
+              },
+              added: function(session) {
+                self.state.set("openingSession", undefined);
+              }
+            });
           }
         });
         return result;

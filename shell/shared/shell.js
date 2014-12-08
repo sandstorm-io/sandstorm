@@ -137,7 +137,6 @@ if (Meteor.isClient) {
 
   Tracker.autorun(function () {
     Meteor.subscribe("credentials");
-    Meteor.subscribe("sessions");
   });
 
   makeDateString = function (date) {

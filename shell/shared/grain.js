@@ -421,7 +421,7 @@ Router.map(function () {
       var session = Session.get("session-" + grainId);
       if (session === "pending") {
         return result;
-      } else if (session && Sessions.findOne(session.sessionId)) {
+      } else if (session) {
         result.appOrigin = document.location.protocol + "//" + makeWildcardHost(session.hostId);
         setCurrentSessionId(session.sessionId, result.appOrigin, grainId);
         result.sessionId = session.sessionId;
@@ -435,7 +435,13 @@ Router.map(function () {
             Session.set("session-" + grainId + "-error", error.message);
           } else {
             Session.set("session-" + grainId, session);
-            Session.set("session-" + grainId + "-error", undefined);
+            var subscription = Meteor.subscribe("sessions", session.sessionId);
+            Sessions.find({_id : session.sessionId}).observeChanges({
+              removed: function(session) {
+                subscription.stop();
+                Session.set("session-" + grainId, undefined);
+              }
+            });
           }
         });
         return result;

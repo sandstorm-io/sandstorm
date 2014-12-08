@@ -396,7 +396,7 @@ Router.map(function () {
         showMenu: Session.get("showMenu")
       };
 
-      self = this;
+      var self = this;
       var clearError = function() { self.state.set("error", undefined); };
       DevApps.find().observeChanges({
         added : clearError,

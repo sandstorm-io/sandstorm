@@ -1130,7 +1130,6 @@ private:
     if (extraHeader2 != nullptr) {
       lines.add(kj::mv(extraHeader2));
     }
-    lines.add(kj::str("Accept: */*"));
     lines.add(kj::str("Accept-Encoding: gzip"));
     lines.add(kj::str("Accept-Language: ", acceptLanguages));
 
@@ -1156,6 +1155,19 @@ private:
             KJ_MAP(c, cookies) {
               return kj::str(c.getKey(), "=", c.getValue());
             }, "; ")));
+    }
+    auto acceptList = context.getAccept();
+    if (acceptList.size() > 0) {
+      lines.add(kj::str("Accept: ", kj::strArray(
+            KJ_MAP(c, acceptList) {
+              if (c.getPriority() == 1.0) {
+                return kj::str(c.getMimeType());
+              } else {
+                return kj::str(c.getMimeType(), "; q=", c.getPriority());
+              }
+            }, ", ")));
+    } else {
+      lines.add(kj::str("Accept: */*"));
     }
 
     lines.add(kj::str(""));

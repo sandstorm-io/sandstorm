@@ -284,6 +284,23 @@ kj::String base64_encode(const kj::ArrayPtr<const byte> input) {
 
 // =======================================================================================
 
+kj::String percentEncode(kj::StringPtr text) {
+  const char HEX_DIGITS[] = "0123456789abcdef";
+  kj::Vector<char> result;
+  for (char c: text) {
+    if (('A' <= c && c <= 'Z') || ('a' <= c && c <= 'z') || ('0' <= c && c <= '9') ||
+        c == '-' || c == '_' || c == '.' || c == '~') {
+      result.add(c);
+    } else {
+      byte b = c;
+      result.add('%');
+      result.add(HEX_DIGITS[b/16]);
+      result.add(HEX_DIGITS[b%16]);
+    }
+  }
+  return kj::heapString(result.begin(), result.size());
+}
+
 kj::Array<byte> toBytes(kj::StringPtr text, kj::ArrayPtr<const byte> data = nullptr) {
   auto result = kj::heapArray<byte>(text.size() + data.size());
   memcpy(result.begin(), text.begin(), text.size());
@@ -994,7 +1011,7 @@ public:
                  WebSession::Params::Reader params, kj::String&& permissions)
       : serverAddr(serverAddr),
         context(kj::mv(context)),
-        userDisplayName(kj::heapString(userInfo.getDisplayName().getDefaultText())),
+        userDisplayName(percentEncode(userInfo.getDisplayName().getDefaultText())),
         permissions(kj::mv(permissions)),
         basePath(kj::heapString(params.getBasePath())),
         userAgent(kj::heapString(params.getUserAgent())),

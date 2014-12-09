@@ -170,6 +170,10 @@ module.exports["Test grain anonymous user"] = function (browser) {
     .click('#uploadButton')
     .waitForElementVisible('#step-confirm', long_wait)
     .click('#confirmInstall')
+    // Navigate to app
+    .click('#homelink')
+    .waitForElementVisible('#applist-apps', medium_wait)
+    .click("#applist-apps > ul > li:nth-child(2)")
     .waitForElementVisible('.new-grain-button', short_wait)
     .assert.containsText('.new-grain-button', 'New Hacker CMS Site')
     // Create grain with that user

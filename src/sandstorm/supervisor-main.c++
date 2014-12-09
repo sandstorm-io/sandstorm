@@ -385,12 +385,17 @@ private:
         // Round the size up to the nearest block; we assume 4k blocks.
         result.bytes = (stats.st_size + 4095) & ~4095ull;
 
-        // Divide by link count so that files with many hardlinks aren't overcounted.
-        result.bytes /= stats.st_nlink;
+        if (stats.st_nlink != 0) {
+          // Note: sometimes the link count actually is zero; it often is, for example, during
+          // `git init`, which rapidly creates and deletes some temporary files.
 
-        // Add sizeof(stats) to approximate the directory entry overhead, and also add
-        // the size of the null-terminated filename rounded up to a word.
-        result.bytes += sizeof(stats) + ((name.size() + 8) & ~7ull);
+          // Divide by link count so that files with many hardlinks aren't overcounted.
+          result.bytes /= stats.st_nlink;
+
+          // Add sizeof(stats) to approximate the directory entry overhead, and also add
+          // the size of the null-terminated filename rounded up to a word.
+          result.bytes += sizeof(stats) + ((name.size() + 8) & ~7ull);
+        }
 
         return result;
       }

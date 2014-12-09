@@ -157,3 +157,40 @@ module.exports = utils.testAllLogins({
       .end();
   },
 });
+
+module.exports["Test grain anonymous user"] = function (browser) {
+  browser
+    // Upload app as github user
+    .loginGithub()
+    .click('#upload-app-button')
+    .waitForElementVisible('#uploadButton', medium_wait)
+    .assert.containsText('#uploadButton', 'Upload')
+    .waitForElementVisible('#uploadButton', short_wait)
+    .setValue('#uploadFile', path.join(assetsPath, 'ssjekyll6.spk'))
+    .click('#uploadButton')
+    .waitForElementVisible('#step-confirm', long_wait)
+    .click('#confirmInstall')
+    // Navigate to app
+    .click('#homelink')
+    .waitForElementVisible('#applist-apps', medium_wait)
+    .click("#applist-apps > ul > li:nth-child(2)")
+    .waitForElementVisible('.new-grain-button', short_wait)
+    .assert.containsText('.new-grain-button', 'New Hacker CMS Site')
+    // Create grain with that user
+    .click('.new-grain-button')
+    .waitForElementVisible('#grainTitle', medium_wait)
+    .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+    // Navigate to the url with an anonymous user
+    .url(function(response) {
+      browser
+        .execute('window.Meteor.logout()')
+        .pause(short_wait)
+        .url(response.value)
+        .waitForElementVisible('#grainTitle', medium_wait)
+        .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+        .frame('grain-frame')
+        .waitForElementPresent('#publish', medium_wait)
+        .assert.containsText('#publish', 'Publish')
+        .frame(null)
+    })
+}

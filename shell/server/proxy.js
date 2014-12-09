@@ -863,10 +863,6 @@ function parseCookies(request) {
   return result;
 }
 
-function makeClearCookieHeader(cookie) {
-  return cookie.key + "=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-}
-
 Proxy.prototype.doSessionInit = function (request, response, path) {
   path = path || "/";
 
@@ -877,23 +873,9 @@ Proxy.prototype.doSessionInit = function (request, response, path) {
     response.end("Invalid path supplied.");
     return;
   }
-  var parseResult = parseCookies(request);
 
-  if (parseResult.sessionId !== this.sessionId) {
-    // We need to set the session ID cookie and clear all other cookies.
-    //
-    // TODO(soon):  We ought to clear LocalStorage too, but that's complicated, and there may be
-    //   still be other things.  Longer-term we need to use random hostnames as origins, but that's
-    //   complicated for people running on localhost as they'd have to set up a DNS server just to
-    //   configure a wildcard DNS.
-    var setCookieHeaders = parseResult.cookies.map(makeClearCookieHeader);
-
-    // Also set the session ID.
-    setCookieHeaders.push(
-        ["sandstorm-sid=", this.sessionId, "; Max-Age=31536000; HttpOnly"].join(""));
-
-    response.setHeader("Set-Cookie", setCookieHeaders);
-  }
+  // Set the session ID.
+  response.setHeader("Set-Cookie", ["sandstorm-sid=", this.sessionId, "; Max-Age=31536000; HttpOnly"].join(""));
 
   response.setHeader("Cache-Control", "no-cache, private");
 

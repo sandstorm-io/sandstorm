@@ -1599,7 +1599,7 @@ private:
         .addOptionWithArg({'s', "server"}, KJ_BIND_METHOD(*this, setServerDir), "<dir>",
             "Connect to the Sandstorm server installed in <dir>. Default is to detect based on "
             "the location of the spk executable or, failing that, the location pointed to by "
-            "the intsalled init script.")
+            "the installed init script.")
         .addOptionWithArg({'m', "mount"}, KJ_BIND_METHOD(*this, setMountDir), "<dir>",
             "Don't actually connect to the server. Mount the package at <dir>, so you can poke "
             "at it.")

@@ -19,8 +19,8 @@ var wrapLoginGoogle = function(test) {
 };
 
 module.exports = {
-  short_wait: 1000,
-  medium_wait: 10000,
+  short_wait: 5000,
+  medium_wait: 30000,
   long_wait: 60000,
   very_long_wait: 180000,
   testAllLogins: function (tests) {

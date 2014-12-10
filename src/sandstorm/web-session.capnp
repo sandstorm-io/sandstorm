@@ -94,7 +94,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     #
     # Callers are required to provide this capability; apps need not handle it being null.
 
-    accept @2 :List(AcceptPair);
+    accept @2 :List(AcceptedType);
     # This corresponds to the Accept header
   }
 
@@ -122,14 +122,14 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     # We don't include "secure" because the platform automatically forces all cookies to be secure.
   }
 
-  struct AcceptPair {
-    # In the accept header, there is a list of these pairs.
-    # The priority is optional and defaults to 1.
+  struct AcceptedType {
+    # In the accept header, there is a list of these elements.
+    # The qValue is optional and defaults to 1.
     #
     # For example, the Accept header with value 'text/javascript; q=0.01' would have a mimeType of
-    # "text/javascript" and a priority of .01.
+    # "text/javascript" and a qValue of .01.
     mimeType @0 :Text;
-    priority @1 :Float32 = 1;
+    qValue @1 :Float32 = 1;
   }
 
   struct Response {

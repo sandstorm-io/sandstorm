@@ -1160,10 +1160,10 @@ private:
     if (acceptList.size() > 0) {
       lines.add(kj::str("Accept: ", kj::strArray(
             KJ_MAP(c, acceptList) {
-              if (c.getPriority() == 1.0) {
+              if (c.getQValue() == 1.0) {
                 return kj::str(c.getMimeType());
               } else {
-                return kj::str(c.getMimeType(), "; q=", c.getPriority());
+                return kj::str(c.getMimeType(), "; q=", c.getQValue());
               }
             }, ", ")));
     } else {

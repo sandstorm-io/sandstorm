@@ -871,17 +871,21 @@ function parseAcceptHeader(request) {
     var acceptList = header.split(",");
     for (var i in acceptList) {
       var acceptStr = acceptList[i];
-      var semicolPos = acceptStr.indexOf(";");
-      var temp;
-      if (semicolPos === -1) {
-        temp = {mimeType: acceptStr.trim()};
-      } else {
-        var priorityStr = acceptStr.slice(semicolPos + 1);
-        var equalPos = priorityStr.indexOf("q=");
-        var priority = +priorityStr.slice(equalPos + 2);
-        temp = {mimeType: acceptStr.slice(0, semicolPos).trim()};
-        if (priority) {
-          temp.priority = priority;
+      var tokensList = acceptStr.split(";");
+
+      var temp = {mimeType: tokensList[0].trim()};
+
+      var tokensListRest = tokensList.slice(1);
+      for (var j in tokensListRest) {
+        var token = tokensListRest[j];
+        var equalsPos = token.indexOf('=');
+        if (equalsPos) {
+          var key = token.slice(0, equalsPos).trim();
+          var value = token.slice(equalsPos + 1).trim();
+
+          if (key === 'q') {
+            temp.qValue = +value;
+          }
         }
       }
       result.push(temp);

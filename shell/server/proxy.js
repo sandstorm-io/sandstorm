@@ -863,6 +863,38 @@ function parseCookies(request) {
   return result;
 }
 
+function parseAcceptHeader(request) {
+  var header = request.headers["accept"];
+
+  var result = [];
+  if (header) {
+    var acceptList = header.split(",");
+    for (var i in acceptList) {
+      var acceptStr = acceptList[i];
+      var tokensList = acceptStr.split(";");
+
+      var temp = {mimeType: tokensList[0].trim()};
+
+      var tokensListRest = tokensList.slice(1);
+      for (var j in tokensListRest) {
+        var token = tokensListRest[j];
+        var equalsPos = token.indexOf('=');
+        if (equalsPos) {
+          var key = token.slice(0, equalsPos).trim();
+          var value = token.slice(equalsPos + 1).trim();
+
+          if (key === 'q') {
+            temp.qValue = +value;
+          }
+        }
+      }
+      result.push(temp);
+    }
+  }
+
+  return result;
+}
+
 Proxy.prototype.doSessionInit = function (request, response, path) {
   path = path || "/";
 
@@ -905,6 +937,8 @@ Proxy.prototype.makeContext = function (request, response) {
   } else {
     // This is an API request. Cookies are not supported.
   }
+
+  context.accept = parseAcceptHeader(request);
 
   var promise = new Promise(function (resolve, reject) {
     response.resolveResponseStream = resolve;

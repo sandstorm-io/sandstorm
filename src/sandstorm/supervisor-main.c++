@@ -86,13 +86,15 @@ static kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 066
   return kj::AutoCloseFd(fd);
 }
 
-static kj::AutoCloseFd raiiOpenIfExists(kj::StringPtr name, int flags, mode_t mode = 0666) {
+static kj::Maybe<kj::AutoCloseFd> raiiOpenIfExists(
+    kj::StringPtr name, int flags, mode_t mode = 0666) {
   int fd = open(name.cStr(), flags, mode);
   if (fd == -1) {
-    if (errno == ENOENT)
-      return kj::AutoCloseFd();
-    else
+    if (errno == ENOENT) {
+      return nullptr;
+    } else {
       KJ_FAIL_SYSCALL("open", errno, name);
+    }
   } else {
     return kj::AutoCloseFd(fd);
   }
@@ -855,9 +857,9 @@ private:
   }
 
   void writeSetgroupsIfPresent(const char *contents) {
-    auto fd = raiiOpenIfExists("/proc/self/setgroups", O_WRONLY | O_CLOEXEC);
-    if (fd != nullptr)
-      kj::FdOutputStream(kj::mv(fd)).write(contents, strlen(contents));
+    KJ_IF_MAYBE(fd, raiiOpenIfExists("/proc/self/setgroups", O_WRONLY | O_CLOEXEC)) {
+      kj::FdOutputStream(kj::mv(*fd)).write(contents, strlen(contents));
+    }
   }
 
   void writeUserNSMap(const char *type, kj::StringPtr contents) {

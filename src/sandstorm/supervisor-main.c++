@@ -86,6 +86,18 @@ static kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 066
   return kj::AutoCloseFd(fd);
 }
 
+static kj::AutoCloseFd raiiOpenIfExists(kj::StringPtr name, int flags, mode_t mode = 0666) {
+  int fd = open(name.cStr(), flags, mode);
+  if (fd == -1) {
+    if (errno == ENOENT)
+      return kj::AutoCloseFd();
+    else
+      KJ_FAIL_SYSCALL("open", errno, name);
+  } else {
+    return kj::AutoCloseFd(fd);
+  }
+}
+
 // =======================================================================================
 // Directory size watcher
 
@@ -842,6 +854,12 @@ private:
     KJ_SYSCALL(close(logfd));
   }
 
+  void writeSetgroupsIfPresent(const char *contents) {
+    auto fd = raiiOpenIfExists("/proc/self/setgroups", O_WRONLY | O_CLOEXEC);
+    if (fd != nullptr)
+      kj::FdOutputStream(kj::mv(fd)).write(contents, strlen(contents));
+  }
+
   void writeUserNSMap(const char *type, kj::StringPtr contents) {
     kj::FdOutputStream(raiiOpen(kj::str("/proc/self/", type, "_map").cStr(), O_WRONLY | O_CLOEXEC))
         .write(contents.begin(), contents.size());
@@ -856,6 +874,7 @@ private:
     KJ_SYSCALL(unshare(CLONE_NEWUSER | CLONE_NEWNS | CLONE_NEWIPC | CLONE_NEWUTS | CLONE_NEWPID));
 
     // Map ourselves as 1000:1000, since it costs nothing to mask the uid and gid.
+    writeSetgroupsIfPresent("deny\n");
     writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
     writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
 

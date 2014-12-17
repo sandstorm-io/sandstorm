@@ -51,6 +51,11 @@ interface IpNetwork extends(PowerboxCapability) {
   # trusted drivers. Only the Sandstorm server administrator is likely to possess this capability.
 
   getRemoteHost @0 (address :IpAddress) -> (host :IpRemoteHost);
+  # Get the remote host corresponding to the given address.
+
+  getRemoteHostByName @1 (address :Text) -> (host :IpRemoteHost);
+  # Like `getRemoteHost()` but parse the address from text and perform a DNS lookup if necessary.
+  # Textual representations of IP addresses will also be accepted.
 }
 
 struct IpAddress {
@@ -168,7 +173,8 @@ struct IpPortPowerboxMetadata {
 
   preferredHost @1 :Text;
   # If non-empty, contains the port's expected/preferred host name. Like preferredPortNum, this is
-  # used to prefill forms, but the user may override.
+  # used to prefill forms, but the user may override. A textual representation of an IP address
+  # (v4 or v6) is also allowed here.
   #
   # If possible, design your app so that the powerbox interaction is the point where the hostname
   # is specified in the first place. For example, if your app asks the user to specify a host to

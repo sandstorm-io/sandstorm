@@ -22,8 +22,10 @@
 
 $import "/capnp/c++.capnp".namespace("sandstorm::fuse");
 
-using DateInNs = Int64;
-using DurationInNs = UInt64;
+using Util = import "util.capnp";
+
+using DateInNs = Util.DateInNs;
+using DurationInNs = Util.DurationInNs;
 
 interface Node {
   # A node in the filesystem tree.

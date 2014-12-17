@@ -18,6 +18,9 @@
 
 $import "/capnp/c++.capnp".namespace("sandstorm");
 
+using DateInNs = Int64;
+using DurationInNs = UInt64;
+
 struct KeyValue {
   key @0 :Text;
   value @1 :Text;

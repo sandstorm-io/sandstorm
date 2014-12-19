@@ -14,6 +14,7 @@ email
 capnp
 reload
 simplesmtp
+bignum
 connect
 http
 browser-policy

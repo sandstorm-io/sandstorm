@@ -24,6 +24,7 @@ $import "/capnp/c++.capnp".namespace("sandstorm");
 
 using Grain = import "grain.capnp";
 using Email = import "email.capnp";
+using Ip = import "ip.capnp";
 
 interface HackSessionContext @0xe14c1f5321159b8f
     extends(Grain.SessionContext, Email.EmailSendPort) {
@@ -109,6 +110,14 @@ interface HackSessionContext @0xe14c1f5321159b8f
     petname @1 :Text;
     userInfo @2 :Grain.UserInfo;
   }
+
+  getIpNetwork @6 () -> (network: Ip.IpNetwork);
+  # Returns an IpNetwork for unrestricted outgoing network access. If the owner of the grain
+  # calling this is not an admin, then this will raise an exception
+
+  getIpInterface @7 () -> (interface: Ip.IpInterface);
+  # Returns an IpNetwork for unrestricted incoming network access. If the owner of the grain
+  # calling this is not an admin, then this will raise an exception
 }
 
 interface HackEmailSession @0xc3b5ced7344b04a6 extends(Grain.UiSession, Email.EmailSendPort) {

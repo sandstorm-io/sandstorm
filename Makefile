@@ -20,9 +20,8 @@ CXX=clang++
 CXXFLAGS=-O2 -Wall
 BUILD=0
 
-# You generally should not modify these.
+# You generally should not modify this.
 CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) `pkg-config capnp-rpc --cflags`
-NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 
 define color
   @printf '\033[0;34m==== $1 ====\033[0m\n'

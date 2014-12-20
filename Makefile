@@ -19,94 +19,151 @@
 CXX=clang++
 CXXFLAGS=-O2 -Wall
 BUILD=0
-XZ_FLAGS=
 
 # You generally should not modify these.
-CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD)
+CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) `pkg-config capnp-rpc --cflags`
 NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 
-# TODO(cleanup): Originally each command here was defined in one file and there
-#   was really no shared code. That seems to have changed. Perhaps it's time
-#   to separate compilation and linking.
+define color
+  @printf '\033[0;34m==== $1 ====\033[0m\n'
+endef
 
-.PHONY: all install clean shell-env
+# ====================================================================
+# Meta rules
+
+.SUFFIXES:
+.PHONY: all install clean shell-env fast
 
 all: sandstorm-$(BUILD).tar.xz
 
 clean:
 	rm -rf bin tmp node_modules bundle shell-bundle sandstorm-*.tar.xz shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png shell/public/menu.png shell/public/*-m.png .shell-env shell/packages/*/.build* shell/packages/*/.npm/package/node_modules tmp/sandstorm/ip_tables.h
 
-install: sandstorm-$(BUILD).tar.xz install.sh
-	@./install.sh sandstorm-$(BUILD).tar.xz
+install: sandstorm-$(BUILD)-fast.tar.xz install.sh
+	@./install.sh $<
+
+update: sandstorm-$(BUILD)-fast.tar.xz
+	$(call color,update local server)
+	@sudo sandstorm update $<
+
+fast: sandstorm-$(BUILD)-fast.tar.xz
+
+# ====================================================================
+# Protocols
+
+PROTOS := $(wildcard src/sandstorm/*.capnp)
+
+tmp/protos: $(PROTOS)
+	$(call color,generating capnp files)
+	@mkdir -p tmp
+	@capnp compile --src-prefix=src -oc++:tmp  src/sandstorm/*.capnp
+	@touch tmp/protos
+
+tmp/sandstorm/protos.a: $(PROTOS:src/%.capnp=tmp/%.capnp.o)
+	ar rcs $@ $^
+	ranlib $@
+
+# ====================================================================
+# C++ Support
+
+# This one Linux header has an inline function that depends on C's
+# non-type-safe pointers and GCC's void-pointer-arithmetic extension.
+# Nuke it. We don't use the function anyway.
+tmp/sandstorm/ip_tables.h: /usr/include/linux/netfilter_ipv4/ip_tables.h
+	$(call color,fix ip_tables.h)
+	@mkdir -p tmp/sandstorm
+	@echo "// From <linux/netfilter_ipv4/ip_tables.h>, fixed to compile as C++" > $@
+	@sed -e 's,(void [*])e [+] e->target_offset;,nullptr;  // non-C++-compliant code removed for Sandstorm,g' $< >> $@
+
+tmp/%.o: src/%.c++ tmp/protos tmp/sandstorm/ip_tables.h
+	$(call color,compile $*.c++)
+	@mkdir -p `dirname $@`
+	@$(CXX) $(CXXFLAGS2) -c src/$*.c++ -o $@ -MD
+
+tmp/%.capnp.o: tmp/protos
+	$(call color,compile $*.capnp.c++)
+	@mkdir -p `dirname $@`
+	@$(CXX) $(CXXFLAGS2) -c tmp/$*.capnp.c++ -o $@ -MD
+
+-include tmp/sandstorm/*.d
+
+# ====================================================================
+# C++ Binaries
+
+bin/spk: tmp/sandstorm/spk.o \
+         tmp/sandstorm/fuse.o \
+         tmp/sandstorm/union-fs.o \
+         tmp/sandstorm/send-fd.o \
+         tmp/sandstorm/protos.a
+	$(call color,link spk)
+	@mkdir -p bin
+	@$(CXX) $^ -o $@ -static $(CXXFLAGS2) -lcapnpc `pkg-config libsodium capnp-rpc --libs`
+
+bin/sandstorm-http-bridge: tmp/sandstorm/sandstorm-http-bridge.o \
+                           tmp/joyent-http/http_parser.o \
+                           tmp/sandstorm/protos.a
+	$(call color,link sandstorm-http-bridge)
+	@mkdir -p bin
+	@$(CXX) $^ -o $@ -static $(CXXFLAGS2) `pkg-config capnp-rpc --libs`
+
+bin/sandstorm-supervisor: tmp/sandstorm/supervisor-main.o \
+                          tmp/sandstorm/send-fd.o \
+                          tmp/sandstorm/protos.a
+	$(call color,link sandstorm-supervisor)
+	@mkdir -p bin
+	@$(CXX) $^ -o $@ $(CXXFLAGS2) `pkg-config libseccomp capnp-rpc --libs`
+
+bin/run-bundle: tmp/sandstorm/run-bundle.o \
+                tmp/sandstorm/send-fd.o \
+                tmp/sandstorm/protos.a
+	$(call color,link run-bundle)
+	@mkdir -p bin
+	@$(CXX) $^ -o $@ -static $(CXXFLAGS2) `pkg-config capnp-rpc --libs`
+
+bin/minibox: tmp/sandstorm/minibox.o
+	$(call color,link minibox)
+	@mkdir -p bin
+	@$(CXX) $^ -o $@ $(CXXFLAGS2) `pkg-config capnp --libs`
+
+# ====================================================================
+# Front-end shell
 
 shell-env: .shell-env
 
 .shell-env: node_modules/sandstorm/grain.capnp shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png shell/public/menu.png shell/public/edit-m.png shell/public/restart-m.png shell/public/trash-m.png shell/public/wrench-m.png shell/public/download-m.png shell/public/key-m.png shell/public/close-m.png
 	@touch .shell-env
 
-update: sandstorm-$(BUILD).tar.xz
-	sudo sandstorm update $(PWD)/sandstorm-$(BUILD).tar.xz
-
-bin/spk: tmp/genfiles src/sandstorm/spk.c++ src/sandstorm/fuse.c++ src/sandstorm/union-fs.c++ src/sandstorm/send-fd.c++
-	@echo "building bin/spk..."
-	@mkdir -p bin
-	@$(CXX) src/sandstorm/spk.c++ src/sandstorm/fuse.c++ src/sandstorm/union-fs.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/spk -static $(CXXFLAGS2) -lcapnpc `pkg-config libsodium capnp-rpc --cflags --libs`
-
-bin/sandstorm-http-bridge: tmp/genfiles src/sandstorm/sandstorm-http-bridge.c++
-	@echo "building bin/sandstorm-http-bridge..."
-	@mkdir -p bin
-	@$(CXX) src/sandstorm/sandstorm-http-bridge.c++ src/joyent-http/http_parser.c++ tmp/sandstorm/*.capnp.c++ -o bin/sandstorm-http-bridge -static $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
-
-bin/sandstorm-supervisor: tmp/genfiles src/sandstorm/supervisor-main.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/ip_tables.h
-	@echo "building bin/sandstorm-supervisor..."
-	@mkdir -p bin
-	@$(CXX) src/sandstorm/supervisor-main.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/sandstorm-supervisor $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs` `pkg-config libseccomp --cflags --libs`
-
-bin/minibox: src/sandstorm/minibox.c++
-	@echo "building bin/minibox..."
-	@mkdir -p bin
-	@$(CXX) src/sandstorm/minibox.c++ -o bin/minibox $(CXXFLAGS2) `pkg-config capnp --cflags --libs`
-
 node_modules/sandstorm/grain.capnp: src/sandstorm/*.capnp
-	@echo "copying sandstorm protocols to node_modules/sandstorm..."
+	$(call color,copy sandstorm protocols to node_modules/sandstorm)
 	@mkdir -p node_modules/sandstorm
 	@cp src/sandstorm/*.capnp node_modules/sandstorm
 
-tmp/genfiles: src/sandstorm/*.capnp
-	@echo "generating capnp files..."
-	@mkdir -p tmp
-	@capnp compile --src-prefix=src -oc++:tmp  src/sandstorm/*.capnp
-	@touch tmp/genfiles
-
-# This one Linux header has an inline function that depends on C's
-# non-type-safe pointers and GCC's void-pointer-arithmetic extension.
-# Nuke it. We don't use the function anyway.
-tmp/sandstorm/ip_tables.h: /usr/include/linux/netfilter_ipv4/ip_tables.h
-	@echo "fixing Linux ip_tables.h header..."
-	@mkdir -p tmp/sandstorm
-	@echo "// From <linux/netfilter_ipv4/ip_tables.h>, fixed to compile as C++" > $@
-	@sed -e 's,(void [*])e [+] e->target_offset;,nullptr;  // non-C++-compliant code removed for Sandstorm,g' $< >> $@
-
-bin/run-bundle: src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/genfiles
-	@echo "building bin/run-bundle..."
-	@mkdir -p bin
-	@$(CXX) src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/run-bundle -static $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
-
 shell/public/%.png: icons/%.svg
-	convert -scale 24x24 -negate -evaluate multiply 0.87 $< $@
+	$(call color,convert $<)
+	@convert -scale 24x24 -negate -evaluate multiply 0.87 $< $@
 shell/public/%-m.png: icons/%.svg
-	convert -scale 32x32 $< $@
+	@convert -scale 32x32 $< $@
 
 shell-bundle: shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions .shell-env
-	@echo "bundling meteor frontend..."
+	$(call color,meteor frontend)
 	@cd shell && PYTHONPATH=$HOME/.meteor/tools/latest/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib meteor bundle --directory ../shell-bundle
 
+# ====================================================================
+# Bundle
+
 bundle: bin/spk bin/minibox bin/sandstorm-supervisor bin/sandstorm-http-bridge bin/run-bundle shell-bundle make-bundle.sh
-	./make-bundle.sh
+	$(call color,bundle)
+	@./make-bundle.sh
 
 sandstorm-$(BUILD).tar.xz: bundle
-	tar c --transform="s,^bundle,sandstorm-$(BUILD)," bundle | xz -c $(XZ_FLAGS) > sandstorm-$(BUILD).tar.xz
+	$(call color,compress release bundle)
+	@tar c --transform="s,^bundle,sandstorm-$(BUILD)," bundle | xz -c -9e > sandstorm-$(BUILD).tar.xz
+
+sandstorm-$(BUILD)-fast.tar.xz: bundle
+	$(call color,compress fast bundle)
+	@tar c --transform="s,^bundle,sandstorm-$(BUILD)," bundle | xz -c -0 > sandstorm-$(BUILD)-fast.tar.xz
 
 .docker: sandstorm-$(BUILD).tar.xz Dockerfile
-	docker build -t sandstorm .
+	$(call color,docker build)
+	@docker build -t sandstorm .
 	@touch .docker

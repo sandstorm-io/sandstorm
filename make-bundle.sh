@@ -67,7 +67,7 @@ METEOR_WAREHOUSE_DIR="${METEOR_WAREHOUSE_DIR:-$HOME/.meteor}"
 METEOR_DEV_BUNDLE=$(dirname $(readlink -f "$METEOR_WAREHOUSE_DIR/meteor"))/dev_bundle
 
 # Start with the meteor bundle.
-cp -r shell-bundle bundle
+cp -r shell-build/bundle bundle
 rm -f bundle/README
 
 # Meteor wants us to do "npm install" in the bundle to prepare it.

@@ -37,9 +37,10 @@ endef
 all: sandstorm-$(BUILD).tar.xz
 
 clean:
-	rm -rf bin tmp node_modules bundle shell-bundle sandstorm-*.tar.xz shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png shell/public/menu.png shell/public/*-m.png .shell-env shell/packages/*/.build* shell/packages/*/.npm/package/node_modules tmp/sandstorm/ip_tables.h
+	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png shell/public/menu.png shell/public/*-m.png .shell-env shell/packages/*/.build* shell/packages/*/.npm/package/node_modules tmp/sandstorm/ip_tables.h
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh
+	$(call color,install)
 	@./install.sh $<
 
 update: sandstorm-$(BUILD)-fast.tar.xz
@@ -60,8 +61,9 @@ tmp/protos: $(PROTOS)
 	@touch tmp/protos
 
 tmp/sandstorm/protos.a: $(PROTOS:src/%.capnp=tmp/%.capnp.o)
-	ar rcs $@ $^
-	ranlib $@
+	$(call color,link sandstorm/protos.a)
+	@ar rcs $@ $^
+	@ranlib $@
 
 # ====================================================================
 # C++ Support
@@ -144,14 +146,14 @@ shell/public/%.png: icons/%.svg
 shell/public/%-m.png: icons/%.svg
 	@convert -scale 32x32 $< $@
 
-shell-bundle: shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions .shell-env
+shell-build: shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions .shell-env
 	$(call color,meteor frontend)
-	@cd shell && PYTHONPATH=$HOME/.meteor/tools/latest/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib meteor bundle --directory ../shell-bundle
+	@cd shell && PYTHONPATH=$HOME/.meteor/tools/latest/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib meteor build --directory ../shell-build
 
 # ====================================================================
 # Bundle
 
-bundle: bin/spk bin/minibox bin/sandstorm-supervisor bin/sandstorm-http-bridge bin/run-bundle shell-bundle make-bundle.sh
+bundle: bin/spk bin/minibox bin/sandstorm-supervisor bin/sandstorm-http-bridge bin/run-bundle shell-build make-bundle.sh
 	$(call color,bundle)
 	@./make-bundle.sh
 

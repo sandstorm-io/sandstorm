@@ -34,7 +34,7 @@ NODE_INCLUDE=$(HOME)/.meteor/tools/latest/include/node/
 all: sandstorm-$(BUILD).tar.xz
 
 clean:
-	rm -rf bin tmp node_modules bundle shell-bundle sandstorm-*.tar.xz shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png shell/public/menu.png shell/public/*-m.png .shell-env shell/packages/*/.build* shell/packages/*/.npm/package/node_modules
+	rm -rf bin tmp node_modules bundle shell-bundle sandstorm-*.tar.xz shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png shell/public/menu.png shell/public/*-m.png .shell-env shell/packages/*/.build* shell/packages/*/.npm/package/node_modules tmp/sandstorm/ip_tables.h
 
 install: sandstorm-$(BUILD).tar.xz install.sh
 	@./install.sh sandstorm-$(BUILD).tar.xz
@@ -57,7 +57,7 @@ bin/sandstorm-http-bridge: tmp/genfiles src/sandstorm/sandstorm-http-bridge.c++
 	@mkdir -p bin
 	@$(CXX) src/sandstorm/sandstorm-http-bridge.c++ src/joyent-http/http_parser.c++ tmp/sandstorm/*.capnp.c++ -o bin/sandstorm-http-bridge -static $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs`
 
-bin/sandstorm-supervisor: tmp/genfiles src/sandstorm/supervisor-main.c++ src/sandstorm/send-fd.c++
+bin/sandstorm-supervisor: tmp/genfiles src/sandstorm/supervisor-main.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/ip_tables.h
 	@echo "building bin/sandstorm-supervisor..."
 	@mkdir -p bin
 	@$(CXX) src/sandstorm/supervisor-main.c++ src/sandstorm/send-fd.c++ tmp/sandstorm/*.capnp.c++ -o bin/sandstorm-supervisor $(CXXFLAGS2) `pkg-config capnp-rpc --cflags --libs` `pkg-config libseccomp --cflags --libs`
@@ -77,6 +77,15 @@ tmp/genfiles: src/sandstorm/*.capnp
 	@mkdir -p tmp
 	@capnp compile --src-prefix=src -oc++:tmp  src/sandstorm/*.capnp
 	@touch tmp/genfiles
+
+# This one Linux header has an inline function that depends on C's
+# non-type-safe pointers and GCC's void-pointer-arithmetic extension.
+# Nuke it. We don't use the function anyway.
+tmp/sandstorm/ip_tables.h: /usr/include/linux/netfilter_ipv4/ip_tables.h
+	@echo "fixing Linux ip_tables.h header..."
+	@mkdir -p tmp/sandstorm
+	@echo "// From <linux/netfilter_ipv4/ip_tables.h>, fixed to compile as C++" > $@
+	@sed -e 's,(void [*])e [+] e->target_offset;,nullptr;  // non-C++-compliant code removed for Sandstorm,g' $< >> $@
 
 bin/run-bundle: src/sandstorm/run-bundle.c++ src/sandstorm/send-fd.c++ tmp/genfiles
 	@echo "building bin/run-bundle..."

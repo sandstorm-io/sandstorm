@@ -39,8 +39,10 @@
 #include <sys/ptrace.h>
 #include <sys/syscall.h>
 #include <netinet/in.h>
-#include <net/if.h>
 #include <linux/sockios.h>
+#include <linux/route.h>
+#include <sandstorm/ip_tables.h>  // created by Makefile from <linux/netfilter_ipv4/ip_tables.h>
+#include <linux/netfilter/nf_nat.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -98,6 +100,58 @@ static kj::Maybe<kj::AutoCloseFd> raiiOpenIfExists(
   } else {
     return kj::AutoCloseFd(fd);
   }
+}
+
+kj::Maybe<kj::String> readLine(kj::BufferedInputStream& input) {
+  kj::Vector<char> result(80);
+
+  for (;;) {
+    auto buffer = input.tryGetReadBuffer();
+    if (buffer.size() == 0) {
+      KJ_REQUIRE(result.size() == 0, "Got partial line.");
+      return nullptr;
+    }
+    for (size_t i: kj::indices(buffer)) {
+      if (buffer[i] == '\n') {
+        input.skip(i+1);
+        result.add('\0');
+        return kj::String(result.releaseAsArray());
+      } else {
+        result.add(buffer[i]);
+      }
+    }
+    input.skip(buffer.size());
+  }
+}
+
+class StructyMessage {
+  // Helper for constructing a message to be passed to the kernel composed of a bunch of structs
+  // back-to-back.
+
+public:
+  StructyMessage() {
+    memset(bytes, 0, sizeof(bytes));
+  }
+
+  template <typename T>
+  T* add() {
+    T* result = reinterpret_cast<T*>(pos);
+    pos += (sizeof(T) + 7) & ~7;
+    KJ_ASSERT(pos - bytes <= sizeof(bytes));
+    return result;
+  }
+
+  void* begin() { return bytes; }
+  void* end() { return pos; }
+  size_t size() { return pos - bytes; }
+
+private:
+  char bytes[4096];
+  char* pos = bytes;
+};
+
+size_t offsetBetween(void* start, void* end) {
+  return reinterpret_cast<char*>(end) - reinterpret_cast<char*>(start);
 }
 
 // =======================================================================================
@@ -653,6 +707,8 @@ public:
   // =====================================================================================
 
   kj::MainBuilder::Validity run() {
+    isIpTablesAvailable = checkIfIpTablesLoaded();
+
     setupSupervisor();
 
     checkIfAlreadyRunning();  // Exits if another supervisor is still running in this sandbox.
@@ -693,6 +749,8 @@ private:
   bool keepStdio = false;
   bool devmode = false;
   bool seccompDumpPfc = false;
+
+  bool isIpTablesAvailable = false;
 
   void bind(kj::StringPtr src, kj::StringPtr dst, unsigned long flags = 0) {
     // Contrary to the documentation of MS_BIND claiming this is no longer the case after 2.6.26,
@@ -1150,19 +1208,169 @@ private:
     KJ_SYSCALL(fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP));
     KJ_DEFER(close(fd));
 
-    // Set the address of "lo".
-    struct ifreq ifr;
-    memset(&ifr, 0, sizeof(ifr));
-    strcpy(ifr.ifr_ifrn.ifrn_name, "lo");
-    struct sockaddr_in* addr = reinterpret_cast<struct sockaddr_in*>(&ifr.ifr_ifru.ifru_addr);
-    addr->sin_family = AF_INET;
-    addr->sin_addr.s_addr = htonl(0x7F000001);  // 127.0.0.1
-    KJ_SYSCALL(ioctl(fd, SIOCSIFADDR, &ifr));
+    // Create loopback device.
+    {
+      // Set the address of "lo".
+      struct ifreq ifr;
+      memset(&ifr, 0, sizeof(ifr));
+      strcpy(ifr.ifr_ifrn.ifrn_name, "lo");
+      struct sockaddr_in* addr = reinterpret_cast<struct sockaddr_in*>(&ifr.ifr_ifru.ifru_addr);
+      addr->sin_family = AF_INET;
+      addr->sin_addr.s_addr = htonl(0x7F000001);  // 127.0.0.1
+      KJ_SYSCALL(ioctl(fd, SIOCSIFADDR, &ifr));
 
-    // Set flags to enable "lo".
-    memset(&ifr.ifr_ifru, 0, sizeof(ifr.ifr_ifru));
-    ifr.ifr_ifru.ifru_flags = IFF_LOOPBACK | IFF_UP | IFF_RUNNING;
-    KJ_SYSCALL(ioctl(fd, SIOCSIFFLAGS, &ifr));
+      // Set flags to enable "lo".
+      memset(&ifr.ifr_ifru, 0, sizeof(ifr.ifr_ifru));
+      ifr.ifr_ifru.ifru_flags = IFF_LOOPBACK | IFF_UP | IFF_RUNNING;
+      KJ_SYSCALL(ioctl(fd, SIOCSIFFLAGS, &ifr));
+    }
+
+    // Check if iptables module is available, skip the rest if not.
+    if (!isIpTablesAvailable) {
+      KJ_LOG(WARNING,
+          "ip_tables kernel module not loaded; cannot set up transparent network forwarding.");
+      return;
+    }
+
+    // Route external addresses to the "lo" interface, so that our iptables trick works.
+    {
+      struct rtentry route;
+      memset(&route, 0, sizeof(route));
+      route.rt_flags = RTF_UP;
+      route.rt_dev = const_cast<char*>("lo");
+      route.rt_dst.sa_family = AF_INET;
+
+      KJ_SYSCALL(ioctl(3, SIOCADDRT, &route));
+    }
+
+    // Set up iptables to redirect all non-local traffic to 127.0.0.1:23136.
+    //
+    // This should be equivalent-ish to:
+    //   iptables -t nat -A OUTPUT -p tcp -j DNAT --to 127.0.0.1:23136
+    //   iptables -t nat -A OUTPUT -p udp -j DNAT --to 127.0.0.1:23136
+    {
+      // Get the existing iptables info, needed in order to properly fill out the update request.
+      struct ipt_getinfo info;
+      memset(&info, 0, sizeof(info));
+      strcpy(info.name, "nat");
+      socklen_t optsize = sizeof(info);
+      KJ_SYSCALL(getsockopt(fd, IPPROTO_IP, IPT_SO_GET_INFO, &info, &optsize));
+
+      // Linux kernel interfaces like to be designed as a packed list of structs of varying types,
+      // kind of like SBE but uglier. Ugh.
+      StructyMessage message;
+
+      // Create a replace message.
+      auto replace = message.add<struct ipt_replace>();
+      strcpy(replace->name, "nat");
+      replace->valid_hooks = info.valid_hooks;
+
+      // The kernel insists that we give it a place to write out the counters on the existing
+      // table entries. Of course, they should all be zero, and we don't care either way. But we
+      // have to give it space.
+      struct xt_counters oldCounters[info.num_entries];
+      memset(oldCounters, 0, sizeof(oldCounters));
+      replace->num_counters = info.num_entries;
+      replace->counters = oldCounters;
+
+      // Create an entry which accepts all packets destined for 127.0.0.0/8.
+      ++replace->num_entries;
+      auto acceptLocal = message.add<struct ipt_entry>();
+      acceptLocal->ip.dst.s_addr = htonl(0x7F000000);   // ip   127.0.0.0
+      acceptLocal->ip.dmsk.s_addr = htonl(0xFF000000);  // mask 255.0.0.0
+      auto acceptLocalTarget = message.add<struct ipt_entry_target>();
+      *message.add<int>() = -1 - NF_ACCEPT;
+      acceptLocalTarget->u.target_size = offsetBetween(acceptLocalTarget, message.end());
+      acceptLocal->target_offset = offsetBetween(acceptLocal, acceptLocalTarget);
+      acceptLocal->next_offset = offsetBetween(acceptLocal, message.end());
+
+      // Create an entry which forwards all TCP packets to a local port.
+      ++replace->num_entries;
+      auto dnatTcp = message.add<struct ipt_entry>();
+      dnatTcp->ip.proto = IPPROTO_TCP;
+      auto dnatTcpTarget = message.add<struct ipt_entry_target>();
+      auto dnatTcpRange = message.add<struct nf_nat_ipv4_multi_range_compat>();
+      dnatTcpRange->rangesize = 1;
+      dnatTcpRange->range[0].flags = NF_NAT_RANGE_PROTO_SPECIFIED | NF_NAT_RANGE_MAP_IPS;
+      dnatTcpRange->range[0].min_ip = htonl(0x7F000001);  // 127.0.0.1
+      dnatTcpRange->range[0].max_ip = htonl(0x7F000001);  // 127.0.0.1
+      dnatTcpRange->range[0].min.tcp.port = htons(23136);
+      dnatTcpRange->range[0].max.tcp.port = htons(23136);
+      dnatTcpTarget->u.user.target_size = offsetBetween(dnatTcpTarget, message.end());
+      strcpy(dnatTcpTarget->u.user.name, "DNAT");
+      dnatTcp->target_offset = offsetBetween(dnatTcp, dnatTcpTarget);
+      dnatTcp->next_offset = offsetBetween(dnatTcp, message.end());
+
+      // Create an entry which forwards all UDP packets to a local port.
+      ++replace->num_entries;
+      auto dnatUdp = message.add<struct ipt_entry>();
+      dnatUdp->ip.proto = IPPROTO_UDP;
+      auto dnatUdpTarget = message.add<struct ipt_entry_target>();
+      auto dnatUdpRange = message.add<struct nf_nat_ipv4_multi_range_compat>();
+      dnatUdpRange->rangesize = 1;
+      dnatUdpRange->range[0].flags = NF_NAT_RANGE_PROTO_SPECIFIED | NF_NAT_RANGE_MAP_IPS;
+      dnatUdpRange->range[0].min_ip = htonl(0x7F000001);  // 127.0.0.1
+      dnatUdpRange->range[0].max_ip = htonl(0x7F000001);  // 127.0.0.1
+      dnatUdpRange->range[0].min.udp.port = htons(23136);
+      dnatUdpRange->range[0].max.udp.port = htons(23136);
+      dnatUdpTarget->u.user.target_size = offsetBetween(dnatUdpTarget, message.end());
+      strcpy(dnatUdpTarget->u.user.name, "DNAT");
+      dnatUdp->target_offset = offsetBetween(dnatUdp, dnatUdpTarget);
+      dnatUdp->next_offset = offsetBetween(dnatUdp, message.end());
+
+      // Create an entry which accepts everything.
+      ++replace->num_entries;
+      auto acceptAll = message.add<struct ipt_entry>();
+      auto acceptAllTarget = message.add<struct ipt_entry_target>();
+      *message.add<int>() = -1 - NF_ACCEPT;
+      acceptAllTarget->u.target_size = offsetBetween(acceptAllTarget, message.end());
+      acceptAll->target_offset = offsetBetween(acceptAll, acceptAllTarget);
+      acceptAll->next_offset = offsetBetween(acceptAll, message.end());
+
+      // Cap it off with an error entry.
+      ++replace->num_entries;
+      auto error = message.add<struct ipt_entry>();
+      auto errorTarget = message.add<struct xt_error_target>();
+      errorTarget->target.u.user.target_size = offsetBetween(errorTarget, message.end());
+      strcpy(errorTarget->target.u.user.name, "ERROR");
+      strcpy(errorTarget->errorname, "ERROR");
+      error->target_offset = offsetBetween(error, errorTarget);
+      error->next_offset = offsetBetween(error, message.end());
+
+      replace->hook_entry[NF_INET_PRE_ROUTING] = offsetBetween(replace->entries, acceptAll);
+      replace->hook_entry[NF_INET_LOCAL_IN] = offsetBetween(replace->entries, acceptAll);
+      replace->hook_entry[NF_INET_FORWARD] = offsetBetween(replace->entries, acceptAll);
+      replace->hook_entry[NF_INET_LOCAL_OUT] = offsetBetween(replace->entries, acceptLocal);
+      replace->hook_entry[NF_INET_POST_ROUTING] = offsetBetween(replace->entries, acceptAll);
+
+      replace->underflow[NF_INET_PRE_ROUTING] = offsetBetween(replace->entries, acceptAll);
+      replace->underflow[NF_INET_LOCAL_IN] = offsetBetween(replace->entries, acceptAll);
+      replace->underflow[NF_INET_FORWARD] = offsetBetween(replace->entries, acceptAll);
+      replace->underflow[NF_INET_LOCAL_OUT] = offsetBetween(replace->entries, acceptAll);
+      replace->underflow[NF_INET_POST_ROUTING] = offsetBetween(replace->entries, acceptAll);
+
+      replace->size = offsetBetween(replace->entries, message.end());
+
+      KJ_SYSCALL(setsockopt(fd, IPPROTO_IP, IPT_SO_SET_REPLACE, message.begin(), message.size()));
+    }
+  }
+
+  bool checkIfIpTablesLoaded() {
+    // Detect if the iptables kernel module is available. Must be called before entering the
+    // sandbox since this requires /proc.
+
+    kj::FdInputStream rawIn(raiiOpen("/proc/modules", O_RDONLY));
+    kj::BufferedInputStreamWrapper bufferedIn(rawIn);
+
+    for (;;) {
+      KJ_IF_MAYBE(line, readLine(bufferedIn)) {
+        if (line->startsWith("ip_tables ")) return true;
+      } else {
+        break;
+      }
+    }
+
+    return false;
   }
 
   void maybeFinishMountingProc() {

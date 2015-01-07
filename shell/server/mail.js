@@ -670,15 +670,14 @@ var addressToString = function (address) {
     // this ensures that we can place a colon every 4 characters
     out += hex[hex.length - 1 - i];
     if ((i + 1) % 4 === 0) {
-      out += ':';
+      out += ":";
       ++numColons;
     }
   }
 
-  // need to fill out colons on the upper end of the address til we have 7
-  while (numColons < 7) {
-    out += ':';
-    ++numColons;
+  // Double colon represents all bits being 0
+  if (numColons < 7) {
+    out += "::";
   }
 
   return out.split("").reverse().join("");

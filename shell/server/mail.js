@@ -589,6 +589,9 @@ function BoundUdpPortImpl(server, address, port) {
 }
 
 BoundUdpPortImpl.prototype.send = function(message, returnPort) {
+  // TODO(someday): this whole class is a hack to deal with the fact that we can't compare
+  // capabilities or build a map with them. What we should be doing is mapping all ports to
+  // their raw physical address/port, and using that here
   this.server.send(message, 0, message.length, this.port, this.address);
 };
 

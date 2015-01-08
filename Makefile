@@ -36,7 +36,7 @@ endef
 all: sandstorm-$(BUILD).tar.xz
 
 clean:
-	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png shell/public/menu.png shell/public/*-m.png .shell-env shell/packages/*/.build* shell/packages/*/.npm/package/node_modules tmp/sandstorm/ip_tables.h
+	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz shell/.meteor/local shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png shell/public/menu.png shell/public/*-m.png .shell-env shell/packages/*/.build* shell/packages/*/.npm/package/node_modules tmp/sandstorm/ip_tables.h
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh
 	$(call color,install)

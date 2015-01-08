@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This is used specifically with hack-session.capnp.
+# It is subject to change after the Powerbox functionality is implemented.
+
 @0xdd10df585a82c6d8;
 
 $import "/capnp/c++.capnp".namespace("sandstorm");
@@ -44,6 +47,7 @@ struct EmailMessage {
   cc @3 :List(EmailAddress);
   bcc @4 :List(EmailAddress);
   replyTo @5 :EmailAddress; # header is actually reply-to
+  # TODO(someday): replyTo should actually be a List(EmailAddress)
 
   messageId @6 :Text; # header is actually message-id
   references @7 :List(Text);

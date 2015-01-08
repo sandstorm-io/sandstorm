@@ -22,7 +22,6 @@ var Future = Npm.require("fibers/future");
 var EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 var HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
 var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
-var EmailMessage = EmailRpc.EmailMessage;
 var EmailSendPort = EmailRpc.EmailSendPort;
 
 var Url = Npm.require("url");
@@ -80,6 +79,10 @@ Meteor.startup(function() {
           });
         }
 
+        if (mail.replyTo && mail.replyTo.length > 1) {
+          console.error("More than one reply-to address address was received in an email.");
+        }
+
         var mailMessage = {
           // Note that converting the date to nanoseconds actually goes outside the range of
           // integers that Javascript can represent precisely. But this is OK because dates aren't
@@ -89,7 +92,7 @@ Meteor.startup(function() {
           to: mail.to,
           cc: mail.cc || [],
           bcc: mail.bcc || [],
-          replyTo: mail.headers['reply-to'] || {},
+          replyTo: (mail.replyTo && mail.replyTo[0]) || {},
           messageId: mail.headers['message-id'] || Meteor.uuid() + '@' + HOSTNAME,
           references: mail.references || [],
           inReplyTo: mail.inReplyTo || [],
@@ -285,10 +288,10 @@ HackSessionContextImpl.prototype.send = function (email) {
     if (!email.from) {
       email.from = {};
     }
-    
+
     var grainAddress = this._getAddress();
     var userAddress = this._getUserAddress();
-    
+
     // First check if we're changing the from address, and if so, move it to reply-to
     if (email.from.address !== grainAddress && email.from.address !== userAddress.address) {
       throw new Error(

@@ -886,12 +886,37 @@ private:
   }
 };
 
+class RefcountedAsyncIoStream: public kj::AsyncIoStream, public kj::Refcounted {
+public:
+  RefcountedAsyncIoStream(kj::Own<kj::AsyncIoStream>&& stream)
+      : stream(kj::mv(stream)) {}
+
+  kj::Promise<size_t> read(void* buffer, size_t minBytes, size_t maxBytes) override {
+    return stream->read(buffer, minBytes, maxBytes);
+  }
+  kj::Promise<size_t> tryRead(void* buffer, size_t minBytes, size_t maxBytes) override {
+    return stream->tryRead(buffer, minBytes, maxBytes);
+  }
+  kj::Promise<void> write(const void* buffer, size_t size) override {
+    return stream->write(buffer, size);
+  }
+  kj::Promise<void> write(kj::ArrayPtr<const kj::ArrayPtr<const byte>> pieces) override {
+    return stream->write(pieces);
+  }
+  void shutdownWrite() override {
+    return stream->shutdownWrite();
+  }
+
+private:
+  kj::Own<kj::AsyncIoStream> stream;
+};
+
 class RequestStreamImpl final: public WebSession::RequestStream::Server {
 public:
   RequestStreamImpl(kj::String httpRequest,
                     kj::Own<kj::AsyncIoStream> stream,
                     sandstorm::ByteStream::Client responseStream)
-      : stream(kj::mv(stream)),
+      : stream(kj::refcounted<RefcountedAsyncIoStream>(kj::mv(stream))),
         responseStream(responseStream),
         httpRequest(kj::mv(httpRequest)) {}
 
@@ -910,8 +935,7 @@ public:
         [this, results, KJ_MVCAP(parser)]
         (kj::ArrayPtr<byte> remainder) mutable {
       KJ_ASSERT(remainder.size() == 0);
-
-      parser->pumpStream(kj::mv(stream));
+      parser->pumpStream(kj::addRef(*stream));
       auto &parserRef = *parser;
       sandstorm::Handle::Client handle = kj::mv(parser);
       parserRef.build(results, handle);
@@ -929,8 +953,20 @@ public:
     }
 
     // Forward the data.
-    auto promise = previousWrite.then([this, data]() mutable {
-      return stream->write(data.begin(), data.size());
+    auto promise = previousWrite.then([this, data]() {
+      if (isChunked) {
+        kj::String chunkSize = kj::str(kj::hex(data.size()), "\r\n");
+        kj::ArrayPtr<char> buffer = chunkSize.asArray();
+        return stream->write(buffer.begin(), buffer.size())
+            .attach(kj::mv(chunkSize))
+            .then([this, data] () {
+          return stream->write(data.begin(), data.size()).then([this] () {
+            return stream->write("\r\n", 2);
+          });
+        });
+      } else {
+        return stream->write(data.begin(), data.size());
+      }
     });
     auto fork = promise.fork();
     previousWrite = fork.addBranch();
@@ -949,12 +985,9 @@ public:
     // expected size. (If we have written headers then the size we pass will be ignored.)
     writeHeadersOnce(kj::implicitCast<uint64_t>(0));
 
-    if (expectedSize == nullptr) {
+    if (isChunked) {
       previousWrite = previousWrite.then([this]() {
-        // Since we open a new connection for every request, we can indicate the end of the data by
-        // closing the stream, avoiding the need for chunked encoding when the content length is
-        // unknown.
-        stream->shutdownWrite();
+        return stream->write("0\r\n\r\n", 5);
       });
     }
 
@@ -971,10 +1004,11 @@ public:
   }
 
 private:
-  kj::Own<kj::AsyncIoStream> stream;
+  kj::Own<RefcountedAsyncIoStream> stream;
   sandstorm::ByteStream::Client responseStream;
   bool doneCalled = false;
   bool getResponseCalled = false;
+  bool isChunked = true; // chunked unless we get expectSize() before we write the headers
   uint64_t bytesReceived = 0;
   kj::Maybe<uint64_t> expectedSize;
   kj::Promise<void> previousWrite = nullptr;  // initialized in writeHeadersOnce()
@@ -986,14 +1020,18 @@ private:
       kj::String reqString = kj::mv(*r);
       httpRequest = nullptr;
 
-      // Did we get a size expectation?
+      // Hackily splice in content-length or transfer-encoding header.
+      KJ_ASSERT(reqString.endsWith("\r\n\r\n"));
       KJ_IF_MAYBE(l, contentLength) {
-        KJ_ASSERT(reqString.endsWith("\r\n\r\n"));
-
-        // Hackily splice in the content-length header.
+        isChunked = false;
         reqString = kj::str(
             reqString.slice(0, reqString.size() - 2),
             "Content-Length: ", *l, "\r\n"
+            "\r\n");
+      } else {
+        reqString = kj::str(
+            reqString.slice(0, reqString.size() - 2),
+            "Transfer-Encoding: chunked\r\n"
             "\r\n");
       }
 

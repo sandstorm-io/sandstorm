@@ -1219,6 +1219,15 @@ private:
       addr->sin_addr.s_addr = htonl(0x7F000001);  // 127.0.0.1
       KJ_SYSCALL(ioctl(fd, SIOCSIFADDR, &ifr));
 
+      // Set the netmask of "lo" to "0.0.0.0" -- we want to "own" all addresses because this allows
+      // us to set up an IP proxy in the sandbox that appears to reply from arbitrary addresses.
+      memset(&ifr, 0, sizeof(ifr));
+      strcpy(ifr.ifr_ifrn.ifrn_name, "lo");
+      addr = reinterpret_cast<struct sockaddr_in*>(&ifr.ifr_ifru.ifru_netmask);
+      addr->sin_family = AF_INET;
+      addr->sin_addr.s_addr = 0;
+      KJ_SYSCALL(ioctl(fd, SIOCSIFNETMASK, &ifr));
+
       // Set flags to enable "lo".
       memset(&ifr.ifr_ifru, 0, sizeof(ifr.ifr_ifru));
       ifr.ifr_ifru.ifru_flags = IFF_LOOPBACK | IFF_UP | IFF_RUNNING;

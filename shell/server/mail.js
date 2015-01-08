@@ -541,14 +541,29 @@ HackSessionContextImpl.prototype.revokeApiToken = function (tokenId) {
   }).bind(this));
 }
 
+function ByteStreamConnection (connection) {
+  this.connection = connection;
+}
+
+ByteStreamConnection.prototype.done = function () {
+  this.connection.end();
+};
+
+ByteStreamConnection.prototype.write = function (data) {
+  this.connection.write(data);
+};
+
+// expectSize not implemented
+// ByteStreamConnection.prototype.expectSize = function (size) { }
+
 function IpInterfaceImpl () { }
 
 IpInterfaceImpl.prototype.listenTcp = function (portNum, port) {
   return new Promise(function (resolve, reject) {
     var resolved = false;
     var server = Net.createServer(function (connection) {
-      connection.done = connection.end;
-      var upstream = port.connect(connection).upstream;
+      var wrappedConnection = new ByteStreamConnection(connection);
+      var upstream = port.connect(wrappedConnection).upstream;
 
       connection.on('data', function (data) {
         upstream.write(data);
@@ -728,9 +743,8 @@ TcpPortImpl.prototype.connect = function (downstream) {
   var resolved = false;
   return new Promise(function (resolve, reject) {
     var client = Net.connect({host: _this.address, port: _this.port}, function () {
-      client.done = client.end;
       resolved = true;
-      resolve({upstream: client});
+      resolve({upstream: new ByteStreamConnection(client)});
     });
 
     client.on('data', function (data) {

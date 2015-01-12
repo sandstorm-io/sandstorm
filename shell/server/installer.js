@@ -19,6 +19,8 @@ var Path = Npm.require("path");
 var Crypto = Npm.require("crypto");
 var ChildProcess = Npm.require("child_process");
 var Http = Npm.require("http");
+var Https = Npm.require("https");
+var Url = Npm.require("url");
 
 var Manifest = Capnp.importSystem("sandstorm/package.capnp").Manifest;
 
@@ -275,12 +277,46 @@ AppInstaller.prototype.doDownload = function () {
   console.log("Downloading app:", this.url);
   this.updateProgress("download");
 
-  var out = Fs.createWriteStream(this.downloadPath);
-  var broken = false;
+  return this.doDownloadTo(Fs.createWriteStream(this.downloadPath));
+}
+
+AppInstaller.prototype.doDownloadTo = function (out) {
+  var url = Url.parse(this.url);
+  var options = {
+    hostname: url.hostname,
+    port: url.port,
+    path: url.path
+  };
+
+  var protocol;
+  if (url.protocol === "http:") {
+    protocol = Http;
+  } else if (url.protocol === "https:") {
+    // Since we will verify the download against a hash anyway, we don't need to verify the server's
+    // certificate. In fact, the only reason we support HTTPS at all here is because some servers
+    // refuse to serve over HTTP (which is, in general, a good thing). Skipping the certificate check
+    // here is helpful in that it means we don't have to worry about having a reasonable list of trusted
+    // CAs available to Sandstorm.
+    options.rejectUnauthorized = false;
+    protocol = Https;
+  } else {
+    throw new Error("Protocol not supported: " + url.protocol);
+  }
 
   // TODO(security):  It could arguably be a security problem that it's possible to probe the
   //   server's local network (behind any firewalls) by presenting URLs here.
-  var request = Http.get(this.url, this.wrapCallback(function (response) {
+  var request = protocol.get(options, this.wrapCallback(function (response) {
+    if (response.statusCode === 301 ||
+        response.statusCode === 302 ||
+        response.statusCode === 303 ||
+        response.statusCode === 307 ||
+        response.statusCode === 308) {
+      // Got redirect. Follow it.
+      this.url = Url.resolve(this.url, response.headers["location"]);
+      this.doDownloadTo(out);
+      return;
+    }
+
     if (response.statusCode !== 200) {
       throw new Error("Download failed with HTTP status code: " + response.statusCode);
     }

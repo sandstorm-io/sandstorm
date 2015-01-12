@@ -18,10 +18,13 @@ var Crypto = Npm.require("crypto");
 var Http = Npm.require("http");
 var Https = Npm.require("https");
 var Future = Npm.require("fibers/future");
+var Net = Npm.require("net");
+var Dgram = Npm.require("dgram");
 
 var EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 var HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
 var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
+var IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
 var EmailSendPort = EmailRpc.EmailSendPort;
 
 var Url = Npm.require("url");
@@ -537,6 +540,32 @@ HackSessionContextImpl.prototype.revokeApiToken = function (tokenId) {
     }
   }).bind(this));
 }
+
+HackSessionContextImpl.prototype.getIpInterface = function () {
+  return inMeteor((function () {
+    var grain = Grains.findOne(this.grainId, {fields: {userId: 1}});
+    var user = Meteor.users.findOne(grain.userId);
+
+    if (!user.isAdmin) {
+      throw new Error("This grain's owner does not have adequate permissions to call getIpInterface");
+    }
+
+    return {interface: new IpInterfaceImpl()};
+  }).bind(this));
+};
+
+HackSessionContextImpl.prototype.getIpNetwork = function () {
+  return inMeteor((function () {
+    var grain = Grains.findOne(this.grainId, {fields: {userId: 1}});
+    var user = Meteor.users.findOne(grain.userId);
+
+    if (!user.isAdmin) {
+      throw new Error("This grain's owner does not have adequate permissions to call getIpInterface");
+    }
+
+    return {network: new IpNetworkImpl()};
+  }).bind(this));
+};
 
 // =======================================================================================
 // makeSmtpPool and getSmtpPool are lifted from the Meteor email package (MIT license)

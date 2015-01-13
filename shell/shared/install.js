@@ -92,16 +92,10 @@ Meteor.methods({
       throw new Meteor.Error(403, "You must be logged in to install packages.");
     }
 
-    if (!isSignedUp()) {
-      if (isDemoUser()) {
-        if (!isSafeDemoAppUrl(url)) {
-          throw new Meteor.Error(403, "Sorry, demo users cannot upload new apps.");
-        }
-      } else {
-        throw new Meteor.Error(403,
-            "Sorry, Sandstorm is in closed alpha. You must receive an alpha key before you " +
-            "can install packages.");
-      }
+    if (!isSignedUp() && !isDemoUser()) {
+      throw new Meteor.Error(403,
+          "Sorry, Sandstorm is in closed alpha. You must receive an alpha key before you " +
+          "can install packages.");
     }
 
     if (!this.isSimulation) {
@@ -125,6 +119,12 @@ Meteor.methods({
           startInstall(packageId, url, false, pkg.appId);
         }
       } else {
+        if (isDemoUser()) {
+          if (!isSafeDemoAppUrl(url)) {
+            throw new Meteor.Error(403, "Sorry, demo users cannot upload new apps.");
+          }
+        }
+
         startInstall(packageId, url, true);
       }
     }
@@ -257,34 +257,41 @@ Router.map(function () {
     },
 
     data: function () {
+      var packageId = this.params.packageId;
       var userId = Meteor.userId();
       if (!userId) {
-        return { error: "You must sign in to install packages.", packageId: this.params.packageId };
+        return { error: "You must sign in to install packages.", packageId: packageId };
       }
 
       var packageUrl = this.params.query && this.params.query.url;
 
-      if (!isSignedUp()) {
-        if (isDemoUser()) {
-          if (!isSafeDemoAppUrl(packageUrl)) {
-            return { error: "Sorry, demo users cannot upload new apps.",
-                     packageId: this.params.packageId };
-          }
-        } else {
-          return { error: "Sorry, Sandstorm is in closed alpha.  You must receive an alpha " +
-                          "key before you can install packages.",
-                   packageId: this.params.packageId };
-        }
+      if (!isSignedUp() && !isDemoUser()) {
+        return { error: "Sorry, Sandstorm is in closed alpha.  You must receive an alpha " +
+                        "key before you can install packages.",
+                 packageId: packageId };
       }
 
-      Meteor.call("ensureInstalled", this.params.packageId, packageUrl, false);
+      // If ensureInstalled throws an exception without even starting installation, we'll treat
+      // it as a permanent error.
+      var previousError = Session.get("install-error-" + packageId);
+      if (previousError) {
+        return { error: previousError, packageId: packageId };
+      }
 
-      var package = Packages.findOne(this.params.packageId);
+      Meteor.call("ensureInstalled", packageId, packageUrl, false,
+            function (err, result) {
+         console.log(err, result);
+         if (err) {
+           Session.set("install-error-" + packageId, err.message);
+         }
+      });
+
+      var package = Packages.findOne(packageId);
       if (package === undefined) {
         if (!packageUrl) {
-          return { error: "Unknown package ID: " + this.params.packageId +
+          return { error: "Unknown package ID: " + packageId +
                    "\nPerhaps it hasn't been uploaded?",
-                   packageId: this.params.packageId, packageUrl: packageUrl };
+                   packageId: packageId, packageUrl: packageUrl };
         } else {
           return { step: "wait" };
         }
@@ -306,19 +313,19 @@ Router.map(function () {
           step: package.status,
           progress: progress,
           error: package.status === "failed" ? package.error : null,
-          packageId: this.params.packageId,
+          packageId: packageId,
           packageUrl: packageUrl
         };
       }
 
       var result = {
-        packageId: this.params.packageId,
+        packageId: packageId,
         packageUrl: packageUrl,
         appId: package.appId,
         version: package.manifest.appVersion
       };
 
-      if (UserActions.findOne({ userId: Meteor.userId(), packageId: this.params.packageId })) {
+      if (UserActions.findOne({ userId: Meteor.userId(), packageId: packageId })) {
         // This app appears to be installed already.  Check if any grains need updating.
 
         result.step = "run";
@@ -329,7 +336,7 @@ Router.map(function () {
 
         for (var i in existingGrains) {
           var grain = existingGrains[i];
-          if (grain.packageId !== this.params.packageId) {
+          if (grain.packageId !== packageId) {
             // Some other package version.
             if (grain.appVersion <= result.version) {
               result.hasOlderVersion = true;

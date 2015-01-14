@@ -695,6 +695,45 @@ input.autoSelect {
   text-align: center;
 }
 
+/* Create a container for the demo's centered
+   box as well as its sidebar. */
+#demo {
+    width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+#demo.main-content {
+    position: static;
+    padding-top: 32px;
+}
+#demo .centered-box {
+    margin: 0;
+}
+
+/* Shrink demo centered text when screen starts
+   to get small. */
+@media screen and (max-width: 1000px) {
+    #demo {
+        width: 100%;
+    }
+    #demo .centered-box {
+        width: 60%;
+    }
+}
+/* Remove sidebar when the screen is too small. */
+@media screen and (max-width: 840px)  {
+    .sidebar {
+        display: none;
+    }
+    #demo {
+        width: 100%;
+    }
+    #demo .centered-box {
+        width: 600px;
+	margin: 0 auto;
+    }
+}
+
 #demo h2 {
   text-align: center;
 }

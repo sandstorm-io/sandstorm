@@ -240,7 +240,7 @@ if (Meteor.isClient) {
       Session.set("showMenu", false);
     },
 
-    "click #applist-grains tbody tr": function (event) {
+    "click #applist-grains tbody tr.grain": function (event) {
       Router.go("grain", {grainId: event.currentTarget.getAttribute("data-grainid")});
     },
 

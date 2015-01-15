@@ -88,6 +88,9 @@ if (Meteor.isServer) {
     });
 
     Meteor.setInterval(cleanupExpiredUsers, DEMO_EXPIRATION_MS);
+
+    // The demo displays some assets loaded from sandstorm.io.
+    BrowserPolicy.content.allowOriginForAll("https://sandstorm.io");
   } else {
     // Just run once, in case the config just changed from allowing demos to prohibiting them.
     Meteor.setTimeout(cleanupExpiredUsers, DEMO_EXPIRATION_MS);

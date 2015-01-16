@@ -187,9 +187,6 @@ if (Meteor.isClient) {
           console.error(error.stack);
         } else {
           Session.set("api-token-" + grainId, result.endpointUrl + "#" + result.token);
-          Meteor.setTimeout(function() {
-            document.getElementById("apiTokenText").select();
-          }, 0);
         }
       });
     },

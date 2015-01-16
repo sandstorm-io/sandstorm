@@ -56,6 +56,8 @@
 #include <map>
 #include <unordered_map>
 #include <execinfo.h>
+#include <linux/netlink.h>
+#include <linux/rtnetlink.h>
 
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/supervisor.capnp.h>
@@ -129,16 +131,24 @@ class StructyMessage {
   // back-to-back.
 
 public:
-  StructyMessage() {
+  explicit StructyMessage(uint alignment = 8): alignment(alignment) {
     memset(bytes, 0, sizeof(bytes));
   }
 
   template <typename T>
   T* add() {
     T* result = reinterpret_cast<T*>(pos);
-    pos += (sizeof(T) + 7) & ~7;
+    pos += (sizeof(T) + (alignment - 1)) & ~(alignment - 1);
     KJ_ASSERT(pos - bytes <= sizeof(bytes));
     return result;
+  }
+
+  void addString(const char* data) {
+    addBytes(data, strlen(data));
+  }
+  void addBytes(const void* data, size_t size) {
+    memcpy(pos, data, size);
+    pos += (size + (alignment - 1)) & ~(alignment - 1);
   }
 
   void* begin() { return bytes; }
@@ -148,6 +158,7 @@ public:
 private:
   char bytes[4096];
   char* pos = bytes;
+  uint alignment;
 };
 
 size_t offsetBetween(void* start, void* end) {
@@ -1208,7 +1219,7 @@ private:
     KJ_SYSCALL(fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP));
     KJ_DEFER(close(fd));
 
-    // Create loopback device.
+    // Bring up the loopback device.
     {
       // Set the address of "lo".
       struct ifreq ifr;
@@ -1218,15 +1229,6 @@ private:
       addr->sin_family = AF_INET;
       addr->sin_addr.s_addr = htonl(0x7F000001);  // 127.0.0.1
       KJ_SYSCALL(ioctl(fd, SIOCSIFADDR, &ifr));
-
-      // Set the netmask of "lo" to "0.0.0.0" -- we want to "own" all addresses because this allows
-      // us to set up an IP proxy in the sandbox that appears to reply from arbitrary addresses.
-      memset(&ifr, 0, sizeof(ifr));
-      strcpy(ifr.ifr_ifrn.ifrn_name, "lo");
-      addr = reinterpret_cast<struct sockaddr_in*>(&ifr.ifr_ifru.ifru_netmask);
-      addr->sin_family = AF_INET;
-      addr->sin_addr.s_addr = 0;
-      KJ_SYSCALL(ioctl(fd, SIOCSIFNETMASK, &ifr));
 
       // Set flags to enable "lo".
       memset(&ifr.ifr_ifru, 0, sizeof(ifr.ifr_ifru));
@@ -1241,13 +1243,106 @@ private:
       return;
     }
 
-    // Route external addresses to the "lo" interface, so that our iptables trick works.
+    // Create a fake network interface "dummy0" of type "dummy". We need this only so that we can
+    // route packets to it which we can in turn filter with iptables.
+    {
+      int netlink;
+      KJ_SYSCALL(netlink = socket(AF_NETLINK, SOCK_RAW, NETLINK_ROUTE));
+      KJ_DEFER(close(netlink));
+
+      socklen_t bufsize = 32768;
+      KJ_SYSCALL(setsockopt(netlink, SOL_SOCKET, SO_SNDBUF, &bufsize, sizeof(bufsize)));
+      bufsize = 1048576;
+      KJ_SYSCALL(setsockopt(netlink, SOL_SOCKET, SO_RCVBUF, &bufsize, sizeof(bufsize)));
+
+      StructyMessage message(4);
+
+      auto header = message.add<struct nlmsghdr>();
+
+      header->nlmsg_type = RTM_NEWLINK;
+      header->nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK | NLM_F_CREATE | NLM_F_EXCL;
+
+      message.add<struct ifinfomsg>();  // leave zero'd
+
+      auto ifnameAttr = message.add<struct rtattr>();
+      ifnameAttr->rta_len = sizeof(struct rtattr) + sizeof("dummy0");
+      ifnameAttr->rta_type = IFLA_IFNAME;
+      message.addString("dummy0");
+
+      auto portAttr = message.add<struct rtattr>();
+      portAttr->rta_type = IFLA_LINKINFO;
+
+      // We're cargo-culting a bit here. IFLA_LINKINFO is not documented but it looks kind of
+      // like an rtattr. For some reason the string value is not NUL-terminated, though.
+      auto typeAttr = message.add<struct rtattr>();
+      typeAttr->rta_type = IFLA_INFO_KIND;  // Looks like it might be the right constant?
+      typeAttr->rta_len = sizeof(struct rtattr) + strlen("dummy");
+      message.addBytes("dummy", strlen("dummy"));
+
+      portAttr->rta_len = offsetBetween(portAttr, message.end());
+
+      header->nlmsg_len = offsetBetween(header, message.end());
+
+      struct msghdr socketMsg;
+      memset(&socketMsg, 0, sizeof(socketMsg));
+
+      struct sockaddr_nl netlinkAddr;
+      memset(&netlinkAddr, 0, sizeof(netlinkAddr));
+      netlinkAddr.nl_family = AF_NETLINK;
+      socketMsg.msg_name = &netlinkAddr;
+      socketMsg.msg_namelen = sizeof(netlinkAddr);
+
+      struct iovec iov;
+      iov.iov_base = message.begin();
+      iov.iov_len = message.size();
+      socketMsg.msg_iov = &iov;
+      socketMsg.msg_iovlen = 1;
+
+      KJ_SYSCALL(sendmsg(netlink, &socketMsg, 0));
+
+      struct {
+        struct nlmsghdr header;
+        struct nlmsgerr error;
+        char buffer[512];
+      } result;
+      iov.iov_base = &result;
+      iov.iov_len = sizeof(result);
+
+      KJ_SYSCALL(recvmsg(netlink, &socketMsg, 0));
+
+      KJ_ASSERT(result.header.nlmsg_type == NLMSG_ERROR);
+      KJ_ASSERT(result.header.nlmsg_seq == 0);
+      if (result.error.error != 0) {
+        KJ_FAIL_SYSCALL("netlink(ip link add dummy0 type dummy)", -result.error.error);
+      }
+    }
+
+    // Bring up dummy0.
+    {
+      // Set the address of "dummy0".
+      struct ifreq ifr;
+      memset(&ifr, 0, sizeof(ifr));
+      strcpy(ifr.ifr_ifrn.ifrn_name, "dummy0");
+      struct sockaddr_in* addr = reinterpret_cast<struct sockaddr_in*>(&ifr.ifr_ifru.ifru_addr);
+      addr->sin_family = AF_INET;
+      addr->sin_addr.s_addr = htonl(0xc0a8fa02);  // 192.168.250.2
+      KJ_SYSCALL(ioctl(fd, SIOCSIFADDR, &ifr));
+
+      // Set flags to enable "dummy0".
+      memset(&ifr.ifr_ifru, 0, sizeof(ifr.ifr_ifru));
+      ifr.ifr_ifru.ifru_flags = IFF_UP | IFF_RUNNING;
+      KJ_SYSCALL(ioctl(fd, SIOCSIFFLAGS, &ifr));
+    }
+
+    // Route external addresses through the "dummy0" interface, so that our iptables trick works.
     {
       struct rtentry route;
       memset(&route, 0, sizeof(route));
-      route.rt_flags = RTF_UP;
-      route.rt_dev = const_cast<char*>("lo");
+      route.rt_flags = RTF_UP | RTF_GATEWAY;
       route.rt_dst.sa_family = AF_INET;
+      route.rt_gateway.sa_family = AF_INET;
+      reinterpret_cast<struct sockaddr_in*>(&route.rt_gateway)->sin_addr.s_addr =
+          htonl(0xc0a8fa01);  // 192.168.250.1; any address in 192.168.250.x would work here
 
       KJ_SYSCALL(ioctl(3, SIOCADDRT, &route));
     }

@@ -698,6 +698,45 @@ input.autoSelect {
   text-align: center;
 }
 
+/* Create a container for the demo's centered
+   box as well as its sidebar. */
+#demo {
+    width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+#demo.main-content {
+    position: static;
+    padding-top: 32px;
+}
+#demo .centered-box {
+    margin: 0;
+}
+
+/* Shrink demo centered text when screen starts
+   to get small. */
+@media screen and (max-width: 1000px) {
+    #demo {
+        width: 100%;
+    }
+    #demo .centered-box {
+        width: 60%;
+    }
+}
+/* Remove sidebar when the screen is too small. */
+@media screen and (max-width: 840px)  {
+    .sidebar {
+        display: none;
+    }
+    #demo {
+        width: 100%;
+    }
+    #demo .centered-box {
+        width: 600px;
+	margin: 0 auto;
+    }
+}
+
 #demo h2 {
   text-align: center;
 }
@@ -1053,4 +1092,230 @@ aside #social>p {
     width: 225px;
     left: -225px;
   }
+}
+
+/* All the following CSS supports the sidebar. */
+.sidebar input {
+    width: inherit;
+    font-size: inherit;
+    text-align: inherit;
+}
+.sidebar a {
+    color: inherit;
+    font-weight: inherit;
+}
+.sidebar {
+    width: 330px;
+    float: right;
+}
+
+.mailing-list input[type="submit"] {
+    background-color: #e1c7e2;
+    color: #7e4784;
+    text-align: right;
+    border: none;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+    width: 30px;
+}
+.text-align--center {
+    text-align: center;
+}
+.bg--pale-purple {
+    background-color: #ede4ed;
+    color: #783189;
+}
+.padding-vert--sidebar {
+    padding-top: 5px;
+    padding-bottom: 10px;
+}
+.padding-horiz--sidebar {
+/*    padding-left: 10px; */
+    padding-bottom: 10px;
+    padding-top: 5px;
+    padding-right: 25px;
+    padding-left: 25px;
+}
+.margin-top--sidebar {
+    margin-top: 17px;
+}
+.width--sidebar {
+    /* 330px in theory. 280px in practice due to
+       50px total padding. */
+    width: 280px;
+}
+.min-height--sidebar-square {
+    /* Some sidebar elements want to be nice and square. */
+    min-height: 315px;
+}
+a.button {
+    /* copy-pasta from main site style.css */
+    display: block;
+    background-color: #783189;
+    color: #fffbfb;
+    /* 100% is everything minus the padding, so this
+       is what we want. */
+    width: 100%;
+    padding: 4px 0;
+    border-radius: 10px;
+    font-size: 24pt;
+    text-decoration: none;
+    /* fighting our own styles */
+    font-weight: normal;
+}
+/* Color & font-weight mixins for the sidebar. */
+.color--deemphasized {
+    color: #ab75af;
+}
+.color--sunrise-pale {
+    color: #f5dff7;
+}
+.color--sunrise-white {
+    color: #ffffff;
+}
+.color--checkbox-purple {
+    background-color: #e1c7e2;
+}
+.font-weight--pale {
+    font-weight: lighter;
+}
+.font-weight--bold {
+    font-weight: bold;
+}
+.margin-bottom--none {
+    margin-bottom: 0;
+}
+.margin-top--none {
+    margin-top: 0;
+}
+.text-decoration--underline {
+    text-decoration: underline;
+}
+/* Background mixins for the sidebar. */
+.bg--sandstorm-grid {
+    background-image: url("/sidebar_servergraphic.svg");
+    background-size: 400px;
+    background-repeat: no-repeat;
+    background-position: bottom;
+    height: 372px;
+}
+.bg--sunrise {
+    background-image: url("/sidebar_earlybirdgraphic.svg");
+}
+.bg--personal-sandcat {
+    height: 160px;
+    background-image: url("/sidebar_sandcat.svg");
+    background-size: auto 160px;
+    background-position: 0 0;
+    background-repeat: no-repeat;
+}
+/* Standard sizes for the sidebar */
+.font-size--minimized {
+    font-size: 80%;
+}
+.font-size--large {
+    font-size: 160%;
+}
+.font-size--enormous {
+    font-size: 225%;
+}
+/* Social link classes from main site style.css */
+ul.social>li#facebook>a {
+    background-image: url("https://sandstorm.io/images/facebook.svg");
+}
+ul.social>li#twitter>a {
+    background-image: url("https://sandstorm.io/images/twitter.svg");
+}
+ul.social>li#google-plus>a {
+    background-image: url("https://sandstorm.io/images/google-plus.svg");
+}
+/* Extra social link classes for social categories
+   not currently on sandstorm.io */
+ul.social>li#github>a {
+    background-image: url("/gith_active50.svg");
+}
+ul.social>li#feed>a {
+    background-image: url("/rss_active50.svg");
+}
+
+ul.social>li>a {
+    display: block;
+    color: transparent;
+    width: 42px;
+    height: 42px;
+    background-color: #ffd4ec;
+    overflow: hidden;
+    border-radius: 50%;
+}
+/* Customizations to social link classes */
+ul.social {
+    width:200px;
+    left: 80px;
+    position: relative;
+    text-align: right;
+}
+#demo .sidebar ul.social>li {
+    display:inline-block;
+    margin-right: 14px;
+}
+#demo .sidebar ul.social>li>a {
+    display: inline-block;
+}
+#demo .sidebar div.connect-with-us {
+    background-color: #783189;
+    color: #fffbfb;
+    font-size: 24pt;
+    text-decoration: none;
+    /* fighting our own styles */
+    font-weight: normal;
+
+}
+/* Position these rows of social buttons so that they
+   are right on top of each other (by giving them the
+   same class) and that the one at the bottom is pinned
+   to the bottom of its container. */
+#demo .sidebar .social-row {
+    top: 60px;
+}
+/* Similar rows for the demo box, but
+   more space between them. */
+#demo .sidebar .demo-row {
+    position: relative;
+    top: 170px;
+}
+/* Allow some A tags to opt out of the normal
+   link styling for this page. */
+#demo .sidebar .styles--inherit {
+    color: inherit;
+    font-weight: inherit;
+    text-decoration: inherit;
+}
+#demo .sidebar .styles--inherit:hover {
+    color: inherit;
+    font-weight: inherit;
+    text-decoration: inherit;
+}
+/* Special styles, mostly copy-pasted from sandstorm.io,
+   for our sign-up inputs. */
+#demo .sidebar input.sign-up {
+    font-size: 14pt;
+    border: none;
+    padding: 0;
+    height: 32px;
+}
+#demo .sidebar input.sign-up[type="submit"] {
+    background-color: #e1c7e2;
+    color: #ae72b1;
+    border: none;
+}
+#demo .sidebar .width--very-skinny {
+    width: 30px;
+}
+#demo .sidebar .width--very-wide {
+    /* 330px minus 50 for padding = 280.
+       280 minus 30 for the checkbox is 250.
+       But now it's 240, and I really don't remember why. */
+    width: 240px;
 }

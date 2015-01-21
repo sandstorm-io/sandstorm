@@ -99,6 +99,20 @@ kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
   return kj::AutoCloseFd(fd);
 }
 
+static kj::Maybe<kj::AutoCloseFd> raiiOpenIfExists(
+    kj::StringPtr name, int flags, mode_t mode = 0666) {
+  int fd = open(name.cStr(), flags, mode);
+  if (fd == -1) {
+    if (errno == ENOENT) {
+      return nullptr;
+    } else {
+      KJ_FAIL_SYSCALL("open", errno, name);
+    }
+  } else {
+    return kj::AutoCloseFd(fd);
+  }
+}
+
 kj::AutoCloseFd openTemporary(kj::StringPtr near) {
   // Creates a temporary file in the same directory as the file specified by "near", immediately
   // unlinks it, and then returns the file descriptor,  which will be open for both read and write.
@@ -1310,6 +1324,12 @@ private:
         .write(contents.begin(), contents.size());
   }
 
+  void writeSetgroupsIfPresent(const char *contents) {
+    KJ_IF_MAYBE(fd, raiiOpenIfExists("/proc/self/setgroups", O_WRONLY | O_CLOEXEC)) {
+      kj::FdOutputStream(kj::mv(*fd)).write(contents, strlen(contents));
+    }
+  }
+
   void unshareUidNamespaceOnce() {
     if (!unsharedUidNamespace) {
       uid_t uid = getuid();
@@ -1324,6 +1344,7 @@ private:
       // for all files is empty, and only the filesystem's superuser (i.e. not us) can change them.
       // But if our UID is zero, then the file's attributes are ignored and all capabilities are
       // inherited.
+      writeSetgroupsIfPresent("deny\n");
       writeUserNSMap("uid", kj::str("0 ", uid, " 1\n"));
       writeUserNSMap("gid", kj::str("0 ", gid, " 1\n"));
 

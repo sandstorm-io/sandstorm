@@ -66,6 +66,7 @@
 
 #include "version.h"
 #include "send-fd.h"
+#include "util.h"
 
 // In case kernel headers are old.
 #ifndef PR_SET_NO_NEW_PRIVS
@@ -73,99 +74,6 @@
 #endif
 
 namespace sandstorm {
-
-#if __QTCREATOR
-#define KJ_MVCAP(var) var
-// QtCreator dosen't understand C++14 syntax yet.
-#else
-#define KJ_MVCAP(var) var = ::kj::mv(var)
-// Capture the given variable by move.  Place this in a lambda capture list.  Requires C++14.
-//
-// TODO(cleanup):  Move to libkj.
-#endif
-
-typedef unsigned int uint;
-
-static kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
-  int fd;
-  KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
-  return kj::AutoCloseFd(fd);
-}
-
-static kj::Maybe<kj::AutoCloseFd> raiiOpenIfExists(
-    kj::StringPtr name, int flags, mode_t mode = 0666) {
-  int fd = open(name.cStr(), flags, mode);
-  if (fd == -1) {
-    if (errno == ENOENT) {
-      return nullptr;
-    } else {
-      KJ_FAIL_SYSCALL("open", errno, name);
-    }
-  } else {
-    return kj::AutoCloseFd(fd);
-  }
-}
-
-kj::Maybe<kj::String> readLine(kj::BufferedInputStream& input) {
-  kj::Vector<char> result(80);
-
-  for (;;) {
-    auto buffer = input.tryGetReadBuffer();
-    if (buffer.size() == 0) {
-      KJ_REQUIRE(result.size() == 0, "Got partial line.");
-      return nullptr;
-    }
-    for (size_t i: kj::indices(buffer)) {
-      if (buffer[i] == '\n') {
-        input.skip(i+1);
-        result.add('\0');
-        return kj::String(result.releaseAsArray());
-      } else {
-        result.add(buffer[i]);
-      }
-    }
-    input.skip(buffer.size());
-  }
-}
-
-class StructyMessage {
-  // Helper for constructing a message to be passed to the kernel composed of a bunch of structs
-  // back-to-back.
-
-public:
-  explicit StructyMessage(uint alignment = 8): alignment(alignment) {
-    memset(bytes, 0, sizeof(bytes));
-  }
-
-  template <typename T>
-  T* add() {
-    T* result = reinterpret_cast<T*>(pos);
-    pos += (sizeof(T) + (alignment - 1)) & ~(alignment - 1);
-    KJ_ASSERT(pos - bytes <= sizeof(bytes));
-    return result;
-  }
-
-  void addString(const char* data) {
-    addBytes(data, strlen(data));
-  }
-  void addBytes(const void* data, size_t size) {
-    memcpy(pos, data, size);
-    pos += (size + (alignment - 1)) & ~(alignment - 1);
-  }
-
-  void* begin() { return bytes; }
-  void* end() { return pos; }
-  size_t size() { return pos - bytes; }
-
-private:
-  char bytes[4096];
-  char* pos = bytes;
-  uint alignment;
-};
-
-size_t offsetBetween(void* start, void* end) {
-  return reinterpret_cast<char*>(end) - reinterpret_cast<char*>(start);
-}
 
 // =======================================================================================
 // Directory size watcher

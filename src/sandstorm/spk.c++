@@ -51,6 +51,7 @@
 #include "fuse.h"
 #include "union-fs.h"
 #include "send-fd.h"
+#include "util.h"
 
 namespace sandstorm {
 
@@ -195,12 +196,6 @@ kj::Maybe<uint> parseUInt(kj::StringPtr s, int base) {
     return nullptr;
   }
   return result;
-}
-
-kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
-  int fd;
-  KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
-  return kj::AutoCloseFd(fd);
 }
 
 bool isDirectory(kj::StringPtr path) {

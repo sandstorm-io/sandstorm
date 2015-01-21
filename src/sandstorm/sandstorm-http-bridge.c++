@@ -55,6 +55,7 @@
 #include <joyent-http/http_parser.h>
 
 #include "version.h"
+#include "util.h"
 
 namespace sandstorm {
 
@@ -133,12 +134,6 @@ kj::ArrayPtr<const char> extractProtocolFromUrl(kj::StringPtr url) {
   } else {
     KJ_FAIL_REQUIRE("Base URL does not have a protocol scheme.", url);
   }
-}
-
-kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
-  int fd;
-  KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
-  return kj::AutoCloseFd(fd);
 }
 
 // =======================================================================================

@@ -95,6 +95,7 @@ bin/spk: tmp/sandstorm/spk.o \
          tmp/sandstorm/fuse.o \
          tmp/sandstorm/union-fs.o \
          tmp/sandstorm/send-fd.o \
+         tmp/sandstorm/util.o \
          tmp/sandstorm/protos.a
 	$(call color,link spk)
 	@mkdir -p bin
@@ -102,6 +103,7 @@ bin/spk: tmp/sandstorm/spk.o \
 
 bin/sandstorm-http-bridge: tmp/sandstorm/sandstorm-http-bridge.o \
                            tmp/joyent-http/http_parser.o \
+                           tmp/sandstorm/util.o \
                            tmp/sandstorm/protos.a
 	$(call color,link sandstorm-http-bridge)
 	@mkdir -p bin
@@ -110,6 +112,7 @@ bin/sandstorm-http-bridge: tmp/sandstorm/sandstorm-http-bridge.o \
 bin/sandstorm-supervisor: tmp/sandstorm/supervisor-main.o \
                           tmp/sandstorm/supervisor.o \
                           tmp/sandstorm/send-fd.o \
+                          tmp/sandstorm/util.o \
                           tmp/sandstorm/protos.a
 	$(call color,link sandstorm-supervisor)
 	@mkdir -p bin
@@ -117,12 +120,13 @@ bin/sandstorm-supervisor: tmp/sandstorm/supervisor-main.o \
 
 bin/run-bundle: tmp/sandstorm/run-bundle.o \
                 tmp/sandstorm/send-fd.o \
+                tmp/sandstorm/util.o \
                 tmp/sandstorm/protos.a
 	$(call color,link run-bundle)
 	@mkdir -p bin
 	@$(CXX) $^ -o $@ -static $(CXXFLAGS2) `pkg-config capnp-rpc --libs`
 
-bin/minibox: tmp/sandstorm/minibox.o
+bin/minibox: tmp/sandstorm/minibox.o tmp/sandstorm/util.o
 	$(call color,link minibox)
 	@mkdir -p bin
 	@$(CXX) $^ -o $@ $(CXXFLAGS2) `pkg-config capnp --libs`

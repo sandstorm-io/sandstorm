@@ -38,6 +38,7 @@
 #include <mntent.h>
 #include <errno.h>
 
+#include "util.h"
 #include "version.h"
 
 // In case kernel headers are old.
@@ -46,34 +47,6 @@
 #endif
 
 namespace sandstorm {
-
-kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
-  int fd;
-  KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
-  return kj::AutoCloseFd(fd);
-}
-
-kj::Maybe<kj::String> readLine(kj::BufferedInputStream& input) {
-  kj::Vector<char> result(80);
-
-  for (;;) {
-    auto buffer = input.tryGetReadBuffer();
-    if (buffer.size() == 0) {
-      KJ_REQUIRE(result.size() == 0, "Got partial line.");
-      return nullptr;
-    }
-    for (size_t i: kj::indices(buffer)) {
-      if (buffer[i] == '\n') {
-        input.skip(i+1);
-        result.add('\0');
-        return kj::String(result.releaseAsArray());
-      } else {
-        result.add(buffer[i]);
-      }
-    }
-    input.skip(buffer.size());
-  }
-}
 
 class MiniboxMain {
   // Main class for a mini sandbox we use to wrap command-line tools (especially zip/unzip) which

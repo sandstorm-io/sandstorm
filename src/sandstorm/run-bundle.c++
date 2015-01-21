@@ -58,6 +58,7 @@
 
 #include "version.h"
 #include "send-fd.h"
+#include "util.h"
 
 namespace sandstorm {
 
@@ -91,26 +92,6 @@ kj::Maybe<uint> parseUInt(kj::StringPtr s, int base) {
     return nullptr;
   }
   return result;
-}
-
-kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666) {
-  int fd;
-  KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
-  return kj::AutoCloseFd(fd);
-}
-
-static kj::Maybe<kj::AutoCloseFd> raiiOpenIfExists(
-    kj::StringPtr name, int flags, mode_t mode = 0666) {
-  int fd = open(name.cStr(), flags, mode);
-  if (fd == -1) {
-    if (errno == ENOENT) {
-      return nullptr;
-    } else {
-      KJ_FAIL_SYSCALL("open", errno, name);
-    }
-  } else {
-    return kj::AutoCloseFd(fd);
-  }
 }
 
 kj::AutoCloseFd openTemporary(kj::StringPtr near) {
@@ -193,28 +174,6 @@ kj::String readAll(int fd) {
 
 kj::String readAll(kj::StringPtr name) {
   return readAll(raiiOpen(name, O_RDONLY));
-}
-
-kj::Maybe<kj::String> readLine(kj::BufferedInputStream& input) {
-  kj::Vector<char> result(80);
-
-  for (;;) {
-    auto buffer = input.tryGetReadBuffer();
-    if (buffer.size() == 0) {
-      KJ_REQUIRE(result.size() == 0, "Got partial line.");
-      return nullptr;
-    }
-    for (size_t i: kj::indices(buffer)) {
-      if (buffer[i] == '\n') {
-        input.skip(i+1);
-        result.add('\0');
-        return kj::String(result.releaseAsArray());
-      } else {
-        result.add(buffer[i]);
-      }
-    }
-    input.skip(buffer.size());
-  }
 }
 
 kj::Array<kj::String> splitLines(kj::String input) {

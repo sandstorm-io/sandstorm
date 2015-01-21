@@ -25,9 +25,11 @@
 #include <kj/debug.h>
 #include <kj/io.h>
 #include <capnp/serialize.h>
-#include <sodium.h>
+#include <sodium/crypto_sign.h>
+#include <sodium/crypto_hash.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>

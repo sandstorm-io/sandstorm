@@ -28,7 +28,6 @@
 #include <capnp/dynamic.h>
 #include <capnp/serialize.h>
 #include <sandstorm/package.capnp.h>
-#include <sodium.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <limits.h>

@@ -108,6 +108,7 @@ bin/sandstorm-http-bridge: tmp/sandstorm/sandstorm-http-bridge.o \
 	@$(CXX) $^ -o $@ -static $(CXXFLAGS2) `pkg-config capnp-rpc --libs`
 
 bin/sandstorm-supervisor: tmp/sandstorm/supervisor-main.o \
+                          tmp/sandstorm/supervisor.o \
                           tmp/sandstorm/send-fd.o \
                           tmp/sandstorm/protos.a
 	$(call color,link sandstorm-supervisor)

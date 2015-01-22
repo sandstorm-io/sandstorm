@@ -39,11 +39,6 @@ RUN apt-get install default-jre-headless
 RUN curl https://install.meteor.com | /bin/sh
 RUN npm install -g jsontool
 
-# We need to install Cap'n Proto only so that the capnp npm module can build.
-# TODO(cleanup): Integrate node-capnp into the main Sandstorm build rather than
-#   rely on npm.
-RUN cd /tmp && git clone https://github.com/kentonv/capnproto.git && cd capnproto/c++ && autoreconf -i && ./configure && make -j4 check && make install
-
 RUN adduser --disabled-password --gecos "" sandstorm
 USER sandstorm
 ENV HOME /home/sandstorm

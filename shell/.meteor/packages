@@ -11,7 +11,6 @@ accounts-github
 accounts-ui
 accounts-google
 email
-capnp
 reload
 simplesmtp
 bignum

@@ -16,7 +16,7 @@ shell/public/close.png
 shell/public/key.png
 shell/public/menu.png
 shell/public/*-m.png
-shell-bundle
+shell-build
 sandstorm-*.tar.xz
 bundle/
 .docker

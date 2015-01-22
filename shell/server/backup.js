@@ -18,6 +18,7 @@ var ChildProcess = Npm.require("child_process");
 var Fs = Npm.require("fs");
 var Future = Npm.require("fibers/future");
 var Path = Npm.require("path");
+var Capnp = Npm.require("capnp");
 
 var GrainInfo = Capnp.importSystem("sandstorm/grain.capnp").GrainInfo;
 

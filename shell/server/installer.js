@@ -21,6 +21,7 @@ var ChildProcess = Npm.require("child_process");
 var Http = Npm.require("http");
 var Https = Npm.require("https");
 var Url = Npm.require("url");
+var Capnp = Npm.require("capnp");
 
 var Manifest = Capnp.importSystem("sandstorm/package.capnp").Manifest;
 

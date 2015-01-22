@@ -22,12 +22,35 @@ BUILD=0
 PARALLEL=$(shell nproc)
 
 # You generally should not modify this.
-CXXFLAGS2=-std=c++1y $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -pthread
+# TODO(cleanup): -fPIC is unfortunate since most of our code is static binaries
+#   but we also need to build a .node module which is a shared library, and it
+#   needs to include all the Cap'n Proto code. Do we double-compile or do we
+#   just accept it? Perhaps it's for the best since we probably should build
+#   position-independent executables for security reasons?
+NODE_HEADERS=$(shell ./find-meteor-dev-bundle.sh)/include/node
+CXXFLAGS2=-std=c++1y $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -pthread -fPIC -I$(NODE_HEADERS)
 LIBS=-pthread
 
 define color
   @printf '\033[0;34m==== $1 ====\033[0m\n'
 endef
+
+IMAGES= \
+    shell/public/edit.png \
+    shell/public/restart.png \
+    shell/public/trash.png \
+    shell/public/wrench.png \
+    shell/public/download.png \
+    shell/public/key.png \
+    shell/public/close.png \
+    shell/public/menu.png \
+    shell/public/edit-m.png \
+    shell/public/restart-m.png \
+    shell/public/trash-m.png \
+    shell/public/wrench-m.png \
+    shell/public/download-m.png \
+    shell/public/key-m.png \
+    shell/public/close-m.png
 
 # ====================================================================
 # Meta rules
@@ -38,7 +61,7 @@ endef
 all: sandstorm-$(BUILD).tar.xz
 
 clean:
-	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz shell/.meteor/local shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png shell/public/menu.png shell/public/*-m.png shell/packages/*/.build* shell/packages/*/.npm/package/node_modules
+	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz shell/.meteor/local $(IMAGES) shell/packages/*/.build* shell/packages/*/.npm/package/node_modules
 	@(if test -d deps && test ! -h deps; then printf "\033[0;33mTo update dependencies, use: make update-deps\033[0m\n"; fi)
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh
@@ -56,7 +79,7 @@ fast: sandstorm-$(BUILD)-fast.tar.xz
 
 deps: tmp/.deps
 
-tmp/.deps: deps/capnproto deps/ekam deps/libseccomp deps/libsodium
+tmp/.deps: deps/capnproto deps/ekam deps/libseccomp deps/libsodium deps/node-capnp
 	@mkdir -p tmp
 	@touch tmp/.deps
 
@@ -81,6 +104,11 @@ deps/libsodium:
 	@mkdir -p deps
 	git clone https://github.com/jedisct1/libsodium.git deps/libsodium
 
+deps/node-capnp:
+	$(call color,downloading node-capnp)
+	@mkdir -p deps
+	git clone https://github.com/kentonv/node-capnp.git deps/node-capnp
+
 update-deps:
 	$(call color,updating all dependencies)
 	@(for DEP in capnproto ekam libseccomp libsodium; do cd deps/$$DEP; \
@@ -104,23 +132,16 @@ tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps
 continuous:
 	@CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS2)" LIBS="$(LIBS)" ekam -j$(PARALLEL) -c -n :41315
 
-bin/sandstorm-http-bridge bin/sandstorm: tmp/.ekam-run
-	@test -e "$@"
-	@touch "$@"
-
 # ====================================================================
 # Front-end shell
 
 shell-env: tmp/.shell-env
 
-tmp/.shell-env: node_modules/sandstorm/grain.capnp shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png shell/public/menu.png shell/public/edit-m.png shell/public/restart-m.png shell/public/trash-m.png shell/public/wrench-m.png shell/public/download-m.png shell/public/key-m.png shell/public/close-m.png
+# Note that we need Ekam to build node_modules before we can run Meteor, hence
+# the dependency on tmp/.ekam-run.
+tmp/.shell-env: tmp/.ekam-run $(IMAGES)
 	@mkdir -p tmp
 	@touch tmp/.shell-env
-
-node_modules/sandstorm/grain.capnp: src/sandstorm/*.capnp
-	$(call color,copy sandstorm protocols to node_modules/sandstorm)
-	@mkdir -p node_modules/sandstorm
-	@cp src/sandstorm/*.capnp node_modules/sandstorm
 
 shell/public/%.png: icons/%.svg
 	$(call color,convert $<)
@@ -135,7 +156,7 @@ shell-build: shell/client/* shell/server/* shell/shared/* shell/public/* shell/.
 # ====================================================================
 # Bundle
 
-bundle: bin/sandstorm-http-bridge bin/sandstorm shell-build make-bundle.sh
+bundle: tmp/.ekam-run shell-build make-bundle.sh
 	$(call color,bundle)
 	@./make-bundle.sh
 

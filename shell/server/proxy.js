@@ -21,6 +21,7 @@ var Path = Npm.require("path");
 var Future = Npm.require("fibers/future");
 var Http = Npm.require("http");
 var Url = Npm.require("url");
+var Capnp = Npm.require("capnp");
 
 var ByteStream = Capnp.importSystem("sandstorm/util.capnp").ByteStream;
 var WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;

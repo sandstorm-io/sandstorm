@@ -17,7 +17,6 @@ browser-policy-common@1.0.2
 browser-policy-content@1.0.3
 browser-policy-framing@1.0.3
 callback-hook@1.0.2
-capnp@0.0.0
 check@1.0.3
 connect@0.0.0
 ddp@1.0.13

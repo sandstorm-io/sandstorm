@@ -17,6 +17,7 @@
 # limitations under the License.
 
 set -euo pipefail
+shopt -s extglob
 
 rm -rf bundle
 
@@ -63,8 +64,7 @@ copyDeps() {
   done
 }
 
-METEOR_WAREHOUSE_DIR="${METEOR_WAREHOUSE_DIR:-$HOME/.meteor}"
-METEOR_DEV_BUNDLE=$(dirname $(readlink -f "$METEOR_WAREHOUSE_DIR/meteor"))/dev_bundle
+METEOR_DEV_BUNDLE=$(./find-meteor-dev-bundle.sh)
 
 # Start with the meteor bundle.
 cp -r shell-build/bundle bundle
@@ -92,6 +92,10 @@ mkdir -p bundle/usr/include/{capnp,sandstorm}
 test -e /usr/include/capnp/c++.capnp && cp /usr/include/capnp/*.capnp bundle/usr/include/capnp
 test -e /usr/local/include/capnp/c++.capnp && cp /usr/local/include/capnp/*.capnp bundle/usr/include/capnp
 cp src/sandstorm/*.capnp bundle/usr/include/sandstorm
+
+# Copy over node_modules.
+mkdir -p bundle/node_modules
+cp -r node_modules/!(sandstorm) bundle/node_modules
 
 # Copy over all necessary shared libraries.
 (ldd bundle/bin/* $(find bundle -name '*.node') || true) | grep -o '[[:space:]]/[^ ]*' | copyDeps

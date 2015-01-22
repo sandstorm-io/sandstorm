@@ -16,7 +16,7 @@
 
 // This is a tool for manipulating Sandstorm .spk files.
 
-#include <kj/main.h>
+#include "spk.h"
 #include <kj/debug.h>
 #include <kj/io.h>
 #include <capnp/serialize.h>
@@ -186,119 +186,10 @@ static_assert(BASE64_DECODER.verifyTable(), "Base32 decode table is incomplete."
 
 // =======================================================================================
 
-kj::Maybe<uint> parseUInt(kj::StringPtr s, int base) {
-  char* end;
-  uint result = strtoul(s.cStr(), &end, base);
-  if (s.size() == 0 || *end != '\0') {
-    return nullptr;
-  }
-  return result;
-}
-
-bool isDirectory(kj::StringPtr path) {
-  struct stat stats;
-  KJ_SYSCALL(lstat(path.cStr(), &stats));
-  return S_ISDIR(stats.st_mode);
-}
-
-kj::Array<kj::String> listDirectory(kj::StringPtr dirname) {
-  DIR* dir = opendir(dirname.cStr());
-  if (dir == nullptr) {
-    KJ_FAIL_SYSCALL("opendir", errno, dirname);
-  }
-  KJ_DEFER(closedir(dir));
-
-  kj::Vector<kj::String> entries;
-
-  for (;;) {
-    errno = 0;
-    struct dirent* entry = readdir(dir);
-    if (entry == nullptr) {
-      int error = errno;
-      if (error == 0) {
-        break;
-      } else {
-        KJ_FAIL_SYSCALL("readdir", error, dirname);
-      }
-    }
-
-    kj::StringPtr name = entry->d_name;
-    if (name != "." && name != "..") {
-      entries.add(kj::heapString(entry->d_name));
-    }
-  }
-
-  return entries.releaseAsArray();
-}
-
-kj::String readAll(int fd) {
-  kj::FdInputStream input(fd);
-  kj::Vector<char> content;
-  for (;;) {
-    char buffer[4096];
-    size_t n = input.tryRead(buffer, sizeof(buffer), sizeof(buffer));
-    content.addAll(buffer, buffer + n);
-    if (n < sizeof(buffer)) {
-      // Done!
-      break;
-    }
-  }
-  content.add('\0');
-  return kj::String(content.releaseAsArray());
-}
-
-kj::String trim(kj::ArrayPtr<const char> slice) {
-  while (slice.size() > 0 && isspace(slice[0])) {
-    slice = slice.slice(1, slice.size());
-  }
-  while (slice.size() > 0 && isspace(slice[slice.size() - 1])) {
-    slice = slice.slice(0, slice.size() - 1);
-  }
-
-  return kj::heapString(slice);
-}
-
-kj::Array<kj::String> splitLines(kj::String input) {
-  // Split the input into lines, trimming whitespace, and ignoring blank lines or lines that start
-  // with #.
-
-  size_t lineStart = 0;
-  kj::Vector<kj::String> results;
-  for (size_t i = 0; i < input.size(); i++) {
-    if (input[i] == '\n' || input[i] == '#') {
-      bool hasComment = input[i] == '#';
-      input[i] = '\0';
-      auto line = trim(input.slice(lineStart, i));
-      if (line.size() > 0) {
-        results.add(kj::mv(line));
-      }
-      if (hasComment) {
-        // Ignore through newline.
-        ++i;
-        while (i < input.size() && input[i] != '\n') ++i;
-      }
-      lineStart = i + 1;
-    }
-  }
-
-  return results.releaseAsArray();
-}
-
-kj::AutoCloseFd openTemporary(kj::StringPtr near) {
-  // Creates a temporary file in the same directory as the file specified by "near", immediately
-  // unlinks it, and then returns the file descriptor,  which will be open for both read and write.
-
-  // TODO(someday):  Use O_TMPFILE?  New in Linux 3.11.
-
-  int fd;
-  auto name = kj::str(near, ".XXXXXX");
-  KJ_SYSCALL(fd = mkstemp(name.begin()));
-  kj::AutoCloseFd result(fd);
-  KJ_SYSCALL(unlink(name.cStr()));
-  return result;
-}
-
 class ReplacementFile {
+  // Encapsulates writing a file to a temporary location and then using it to atomically
+  // replace some existing file.
+
 public:
   explicit ReplacementFile(kj::StringPtr name): name(name) {
     int fd_;
@@ -467,7 +358,7 @@ private:
   kj::UnwindDetector unwindDetector;
 };
 
-class SpkTool {
+class SpkTool: public AbstractMain {
   // Main class for the Sandstorm spk tool.
 
 public:
@@ -482,7 +373,7 @@ public:
     }
   }
 
-  kj::MainFunc getMain() {
+  kj::MainFunc getMain() override {
     return addCommonOptions(OptionSet::ALL,
         kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
           "Tool for building and checking Sandstorm package files.",
@@ -1864,6 +1755,8 @@ private:
   }
 };
 
-}  // namespace sandstorm
+kj::Own<AbstractMain> getSpkMain(kj::ProcessContext& context) {
+  return kj::heap<SpkTool>(context);
+}
 
-KJ_MAIN(sandstorm::SpkTool)
+}  // namespace sandstorm

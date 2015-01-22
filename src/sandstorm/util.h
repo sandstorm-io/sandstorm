@@ -22,6 +22,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 #include <kj/debug.h>
+#include <kj/vector.h>
 
 namespace sandstorm {
 
@@ -36,6 +37,7 @@ namespace sandstorm {
 #endif
 
 typedef unsigned int uint;
+typedef unsigned char byte;
 
 kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666);
 
@@ -82,6 +84,55 @@ private:
 inline size_t offsetBetween(void* start, void* end) {
   return reinterpret_cast<char*>(end) - reinterpret_cast<char*>(start);
 }
+
+constexpr const char* EXEC_END_ARGS = nullptr;
+
+kj::String trim(kj::ArrayPtr<const char> slice);
+kj::ArrayPtr<const char> trimArray(kj::ArrayPtr<const char> slice);
+// Remove whitespace from both ends of the char array and return what's left as a String.
+
+void toLower(kj::ArrayPtr<char> text);
+// Force entire array of chars to lower-case.
+
+kj::Maybe<uint> parseUInt(kj::StringPtr s, int base);
+// Try to parse an integer with strtoul(), return null if parsing fails or doesn't consume all
+// input.
+
+kj::AutoCloseFd openTemporary(kj::StringPtr near);
+// Creates a temporary file in the same directory as the file specified by "near", immediately
+// unlinks it, and then returns the file descriptor,  which will be open for both read and write.
+
+bool isDirectory(kj::StringPtr path);
+
+kj::Array<kj::String> listDirectory(kj::StringPtr dirname);
+// Get names of all files in the given directory except for "." and "..".
+
+void recursivelyDelete(kj::StringPtr path);
+// Delete the given path, recursively if it is a directory.
+//
+// Since this may be used in KJ_DEFER to delete temporary directories, all exceptions are
+// recoverable (won't throw if already unwinding).
+
+kj::String readAll(int fd);
+// Read entire contents of the file descirptor to a String.
+
+kj::String readAll(kj::StringPtr name);
+// Read entire contents of a named file to a String.
+
+kj::Array<kj::String> splitLines(kj::String input);
+// Split the input into lines, trimming whitespace, and ignoring blank lines or lines that start
+// with #. Consumes the input string.
+
+kj::Vector<kj::ArrayPtr<const char>> split(kj::ArrayPtr<const char> input, char delim);
+// Split the char array on an arbitrary delimiter character.
+
+kj::Maybe<kj::ArrayPtr<const char>> splitFirst(kj::ArrayPtr<const char>& input, char delim);
+// Split the char array on the first instance of the delimiter. `input` is updated in-place to
+// point at the remainder of the array while the prefix that was split off is returned. If the
+// delimiter doesn't appear, returns null.
+
+kj::ArrayPtr<const char> extractHostFromUrl(kj::StringPtr url);
+kj::ArrayPtr<const char> extractProtocolFromUrl(kj::StringPtr url);
 
 }  // namespace sandstorm
 

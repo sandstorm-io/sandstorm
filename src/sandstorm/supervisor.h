@@ -17,14 +17,14 @@
 #ifndef SANDSTORM_SUPERVISOR_H_
 #define SANDSTORM_SUPERVISOR_H_
 
-#include <kj/main.h>
+#include "abstract-main.h"
 #include <kj/vector.h>
 #include <kj/async-io.h>
 #include <capnp/capability.h>
 
 namespace sandstorm {
 
-class SupervisorMain {
+class SupervisorMain: public AbstractMain {
   // Main class for the Sandstorm supervisor.  This program:
   // - Sets up a sandbox for a grain.
   // - Executes the grain in the sandbox.
@@ -38,7 +38,7 @@ class SupervisorMain {
 public:
   SupervisorMain(kj::ProcessContext& context);
 
-  kj::MainFunc getMain();
+  kj::MainFunc getMain() override;
 
   void setIsNew(bool isNew);
   void setMountProc(bool mountProc);

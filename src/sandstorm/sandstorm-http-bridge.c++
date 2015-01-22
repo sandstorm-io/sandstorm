@@ -54,83 +54,6 @@
 
 namespace sandstorm {
 
-#if __QTCREATOR
-#define KJ_MVCAP(var) var
-// QtCreator dosen't understand C++14 syntax yet.
-#else
-#define KJ_MVCAP(var) var = ::kj::mv(var)
-// Capture the given variable by move.  Place this in a lambda capture list.  Requires C++14.
-//
-// TODO(cleanup):  Move to libkj.
-#endif
-
-typedef unsigned int uint;
-typedef unsigned char byte;
-
-kj::Vector<kj::ArrayPtr<const char>> split(kj::ArrayPtr<const char> input, char delim) {
-  kj::Vector<kj::ArrayPtr<const char>> result;
-
-  size_t start = 0;
-  for (size_t i: kj::indices(input)) {
-    if (input[i] == delim) {
-      result.add(input.slice(start, i));
-      start = i + 1;
-    }
-  }
-  result.add(input.slice(start, input.size()));
-  return result;
-}
-
-kj::Maybe<kj::ArrayPtr<const char>> splitFirst(kj::ArrayPtr<const char>& input, char delim) {
-  for (size_t i: kj::indices(input)) {
-    if (input[i] == delim) {
-      auto result = input.slice(0, i);
-      input = input.slice(i + 1, input.size());
-      return result;
-    }
-  }
-  return nullptr;
-}
-
-kj::ArrayPtr<const char> trim(kj::ArrayPtr<const char> input) {
-  while (input.size() > 0 && input[0] == ' ') {
-    input = input.slice(1, input.size());
-  }
-  while (input.size() > 0 && input[input.size() - 1] == ' ') {
-    input = input.slice(0, input.size() - 1);
-  }
-  return input;
-}
-
-void toLower(kj::ArrayPtr<char> text) {
-  for (char& c: text) {
-    if ('A' <= c && c <= 'Z') {
-      c = c - 'A' + 'a';
-    }
-  }
-}
-
-kj::ArrayPtr<const char> extractHostFromUrl(kj::StringPtr url) {
-  while (url.size() > 0 && 'a' <= url[0] && url[0] <= 'z') {
-    url = url.slice(1);
-  }
-  KJ_REQUIRE(url.startsWith("://"), "Base URL does not have a protocol scheme?");
-  url = url.slice(3);
-  KJ_IF_MAYBE(slashPos, url.findFirst('/')) {
-    return url.slice(0, *slashPos);
-  } else {
-    return url;
-  }
-}
-
-kj::ArrayPtr<const char> extractProtocolFromUrl(kj::StringPtr url) {
-  KJ_IF_MAYBE(colonPos, url.findFirst(':')) {
-    return url.slice(0, *colonPos);
-  } else {
-    KJ_FAIL_REQUIRE("Base URL does not have a protocol scheme.", url);
-  }
-}
-
 // =======================================================================================
 // This code is derived from libb64 which has been placed in the public domain.
 // For details, see http://sourceforge.net/projects/libb64
@@ -488,17 +411,17 @@ public:
           // Parse `attachment; filename="foo"`
           // TODO(cleanup):  This is awful.  Use KJ parser library?
           auto parts = split(*disposition, ';');
-          if (parts.size() > 1 && kj::str(trim(parts[0])) == "attachment") {
+          if (parts.size() > 1 && trim(parts[0]) == "attachment") {
             // Starst with "attachment;".  Parse params.
             for (auto& part: parts.asPtr().slice(1, parts.size())) {
               // Parse a "name=value" parameter.
               for (size_t i: kj::indices(part)) {
                 if (part[i] == '=') {
                   // Found '='.  Split and interpret.
-                  if (kj::heapString(trim(part.slice(0, i))) == "filename") {
+                  if (trim(part.slice(0, i)) == "filename") {
                     // It's "filename=", the one we're looking for!
                     // We need to unquote/unescape the file name.
-                    auto filename = trim(part.slice(i + 1, part.size()));
+                    auto filename = trimArray(part.slice(i + 1, part.size()));
 
                     if (filename.size() >= 2 && filename[0] == '\"' &&
                         filename[filename.size() - 1] == '\"') {
@@ -691,14 +614,14 @@ private:
       for (auto part: split(value, ';')) {
         if (isFirst) {
           isFirst = false;
-          cookie.name = kj::heapString(trim(KJ_ASSERT_NONNULL(splitFirst(part, '='),
-              "Invalid cookie header from app.", value)));
-          cookie.value = kj::heapString(trim(part));
+          cookie.name = trim(KJ_ASSERT_NONNULL(splitFirst(part, '='),
+              "Invalid cookie header from app.", value));
+          cookie.value = trim(part);
         } else KJ_IF_MAYBE(name, splitFirst(part, '=')) {
-          auto prop = kj::heapString(trim(*name));
+          auto prop = trim(*name);
           toLower(prop);
           if (prop == "expires") {
-            auto value = kj::heapString(trim(part));
+            auto value = trim(part);
             // Wed, 15 Nov 1995 06:25:24 GMT
             struct tm t;
             memset(&t, 0, sizeof(t));
@@ -723,13 +646,13 @@ private:
             cookie.expires = timegm(&t);
             cookie.expirationType = Cookie::ExpirationType::ABSOLUTE;
           } else if (prop == "max-age") {
-            auto value = kj::heapString(trim(part));
+            auto value = trim(part);
             char* end;
             cookie.expires = strtoull(value.cStr(), &end, 10);
             KJ_ASSERT(end > value.begin() && *end == '\0', "Invalid cookie max-age app.", value);
             cookie.expirationType = Cookie::ExpirationType::RELATIVE;
           } else if (prop == "path") {
-            cookie.path = kj::heapString(trim(part));
+            cookie.path = trim(part);
           } else {
             // Ignore other properties:
             //   Path:  Not useful on the modern same-origin-policy web.
@@ -737,7 +660,7 @@ private:
             //     domain.
           }
         } else {
-          auto prop = kj::heapString(trim(part));
+          auto prop = trim(part);
           toLower(prop);
           if (prop == "httponly") {
             cookie.httpOnly = true;

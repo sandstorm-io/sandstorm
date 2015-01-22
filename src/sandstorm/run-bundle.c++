@@ -54,142 +54,9 @@
 #include "send-fd.h"
 #include "supervisor.h"
 #include "util.h"
+#include "spk.h"
 
 namespace sandstorm {
-
-typedef unsigned int uint;
-
-constexpr const char* EXEC_END_ARGS = nullptr;
-
-kj::String trim(kj::ArrayPtr<const char> slice) {
-  while (slice.size() > 0 && isspace(slice[0])) {
-    slice = slice.slice(1, slice.size());
-  }
-  while (slice.size() > 0 && isspace(slice[slice.size() - 1])) {
-    slice = slice.slice(0, slice.size() - 1);
-  }
-
-  return kj::heapString(slice);
-}
-
-void toLower(kj::ArrayPtr<char> text) {
-  for (char& c: text) {
-    if ('A' <= c && c <= 'Z') {
-      c = c - 'A' + 'a';
-    }
-  }
-}
-
-kj::Maybe<uint> parseUInt(kj::StringPtr s, int base) {
-  char* end;
-  uint result = strtoul(s.cStr(), &end, base);
-  if (s.size() == 0 || *end != '\0') {
-    return nullptr;
-  }
-  return result;
-}
-
-kj::AutoCloseFd openTemporary(kj::StringPtr near) {
-  // Creates a temporary file in the same directory as the file specified by "near", immediately
-  // unlinks it, and then returns the file descriptor,  which will be open for both read and write.
-
-  // TODO(someday):  Use O_TMPFILE?  New in Linux 3.11.
-
-  int fd;
-  auto name = kj::str(near, ".XXXXXX");
-  KJ_SYSCALL(fd = mkostemp(name.begin(), O_CLOEXEC));
-  kj::AutoCloseFd result(fd);
-  KJ_SYSCALL(unlink(name.cStr()));
-  return result;
-}
-
-kj::Array<kj::String> listDirectory(kj::StringPtr dirname) {
-  DIR* dir = opendir(dirname.cStr());
-  if (dir == nullptr) {
-    KJ_FAIL_SYSCALL("opendir", errno, dirname);
-  }
-  KJ_DEFER(closedir(dir));
-
-  kj::Vector<kj::String> entries;
-
-  for (;;) {
-    errno = 0;
-    struct dirent* entry = readdir(dir);
-    if (entry == nullptr) {
-      int error = errno;
-      if (error == 0) {
-        break;
-      } else {
-        KJ_FAIL_SYSCALL("readdir", error, dirname);
-      }
-    }
-
-    kj::StringPtr name = entry->d_name;
-    if (name != "." && name != "..") {
-      entries.add(kj::heapString(entry->d_name));
-    }
-  }
-
-  return entries.releaseAsArray();
-}
-
-void recursivelyDelete(kj::StringPtr path) {
-  // Delete the given path, recursively if it is a directory.
-  //
-  // Since this may be used in KJ_DEFER to delete temporary directories, all exceptions are
-  // recoverable (won't throw if already unwinding).
-
-  struct stat stats;
-  KJ_SYSCALL(lstat(path.cStr(), &stats), path) { return; }
-  if (S_ISDIR(stats.st_mode)) {
-    for (auto& file: listDirectory(path)) {
-      recursivelyDelete(kj::str(path, "/", file));
-    }
-    KJ_SYSCALL(rmdir(path.cStr()), path) { break; }
-  } else {
-    KJ_SYSCALL(unlink(path.cStr()), path) { break; }
-  }
-}
-
-kj::String readAll(int fd) {
-  kj::FdInputStream input(fd);
-  kj::Vector<char> content;
-  for (;;) {
-    char buffer[4096];
-    size_t n = input.tryRead(buffer, sizeof(buffer), sizeof(buffer));
-    content.addAll(buffer, buffer + n);
-    if (n < sizeof(buffer)) {
-      // Done!
-      break;
-    }
-  }
-  content.add('\0');
-  return kj::String(content.releaseAsArray());
-}
-
-kj::String readAll(kj::StringPtr name) {
-  return readAll(raiiOpen(name, O_RDONLY));
-}
-
-kj::Array<kj::String> splitLines(kj::String input) {
-  // Split the input into lines, trimming whitespace, and ignoring blank lines or lines that start
-  // with #.
-
-  size_t lineStart = 0;
-  kj::Vector<kj::String> results;
-  for (auto i: kj::indices(input)) {
-    if (input[i] == '\n') {
-      input[i] = '\0';
-      auto line = trim(input.slice(lineStart, i));
-      if (line.size() > 0 && !line.startsWith("#")) {
-        results.add(kj::mv(line));
-      }
-      lineStart = i + 1;
-    }
-  }
-
-  return results.releaseAsArray();
-}
 
 // We use SIGALRM to timeout waitpid()s.
 static bool alarmed = false;
@@ -642,9 +509,15 @@ public:
   kj::MainFunc getMain() {
     static const char* VERSION = "Sandstorm version " SANDSTORM_VERSION;
 
-    if (context.getProgramName().endsWith("supervisor")) {
-      supervisorMain = kj::heap<SupervisorMain>(context);
-      return supervisorMain->getMain();
+    {
+      auto programName = context.getProgramName();
+      if (programName.endsWith("supervisor")) {  // historically "sandstorm-supervisor"
+        alternateMain = kj::heap<SupervisorMain>(context);
+        return alternateMain->getMain();
+      } else if (programName == "spk" || programName.endsWith("/spk")) {
+        alternateMain = getSpkMain(context);
+        return alternateMain->getMain();
+      }
     }
 
     return kj::MainBuilder(context, VERSION,
@@ -720,6 +593,12 @@ public:
                   .build();
             },
             "Update the Sandstorm platform.")
+        .addSubCommand("spk",
+            [this]() {
+              alternateMain = getSpkMain(context);
+              return alternateMain->getMain();
+            },
+            "Manipulate spk files.")
         .addSubCommand("devtools",
             [this]() {
               return kj::MainBuilder(context, VERSION,
@@ -1075,10 +954,13 @@ public:
     KJ_SYSCALL(access(kj::str(parent, "/latest").cStr(), F_OK),
                "No \"latest\" symlink? Sandstorm doesn't seem to be installed the way I "
                "expected it.");
+    KJ_SYSCALL(access(kj::str(parent, "/sandstorm").cStr(), F_OK),
+               "No \"sandstorm\" symlink? Sandstorm doesn't seem to be installed the way I "
+               "expected it.");
 
     auto to = kj::str(devtoolsBindir, "/spk");
     unlink(to.cStr());
-    KJ_SYSCALL(symlink(kj::str(parent, "/latest/bin/spk").cStr(), to.cStr()));
+    KJ_SYSCALL(symlink(kj::str(parent, "/sandstorm").cStr(), to.cStr()));
     context.exitInfo(kj::str("created: ", devtoolsBindir, "/spk"));
   }
 
@@ -1161,8 +1043,8 @@ public:
 private:
   kj::ProcessContext& context;
 
-  kj::Own<SupervisorMain> supervisorMain;
-  // Alternate main functions we'll use depending on the program name.
+  kj::Own<AbstractMain> alternateMain;
+  // Alternate main function we'll use depending on the program name.
 
   struct Config {
     uint port = 3000;

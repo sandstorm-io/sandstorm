@@ -1077,7 +1077,7 @@ private:
     uint64_t time = toNanos(ts);
     if (time >= statsExpirationTime) {
       statsExpirationTime = time + ttl / kj::NANOSECONDS;
-      KJ_SYSCALL(lstat(path.cStr(), &stats));
+      KJ_SYSCALL(lstat(path.cStr(), &stats), path);
     }
   }
 };

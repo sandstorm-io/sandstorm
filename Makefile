@@ -87,7 +87,7 @@ update-deps:
 	    echo "pulling $$DEP..."; git pull; cd ../..; done)
 
 # ====================================================================
-# Ekam bootstrap
+# Ekam bootstrap and C++ binaries
 
 tmp/ekam-bin: tmp/.deps
 	@mkdir -p tmp
@@ -98,30 +98,15 @@ tmp/ekam-bin: tmp/.deps
 
 tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps
 	$(call color,building sandstorm with ekam)
-	@rm -rf bin
 	@CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS2)" LIBS="$(LIBS)" tmp/ekam-bin -j$(PARALLEL)
 	@touch tmp/.ekam-run
 
 continuous:
 	@CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS2)" LIBS="$(LIBS)" ekam -j$(PARALLEL) -c -n :41315
 
-# ====================================================================
-# C++ Binaries
-
-bin/spk: tmp/.ekam-run
-	@test -e $@
-
-bin/sandstorm-http-bridge: tmp/.ekam-run
-	@test -e $@
-
-bin/sandstorm-supervisor: tmp/.ekam-run
-	@test -e $@
-
-bin/sandstorm: tmp/.ekam-run
-	@test -e $@
-
-bin/minibox: tmp/.ekam-run
-	@test -e $@
+bin/spk bin/sandstorm-http-bridge bin/sandstorm-supervisor bin/sandstorm bin/minibox: tmp/.ekam-run
+	@test -e "$@"
+	@touch "$@"
 
 # ====================================================================
 # Front-end shell

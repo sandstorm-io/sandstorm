@@ -52,6 +52,7 @@
 
 #include "version.h"
 #include "send-fd.h"
+#include "supervisor.h"
 #include "util.h"
 
 namespace sandstorm {
@@ -640,6 +641,12 @@ public:
 
   kj::MainFunc getMain() {
     static const char* VERSION = "Sandstorm version " SANDSTORM_VERSION;
+
+    if (context.getProgramName().endsWith("supervisor")) {
+      supervisorMain = kj::heap<SupervisorMain>(context);
+      return supervisorMain->getMain();
+    }
+
     return kj::MainBuilder(context, VERSION,
             "Controls the Sandstorm server.\n\n"
             "Something not working? Check the logs in SANDSTORM_HOME/var/log.")
@@ -1153,6 +1160,9 @@ public:
 
 private:
   kj::ProcessContext& context;
+
+  kj::Own<SupervisorMain> supervisorMain;
+  // Alternate main functions we'll use depending on the program name.
 
   struct Config {
     uint port = 3000;

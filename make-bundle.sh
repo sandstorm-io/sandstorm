@@ -77,7 +77,7 @@ rm -f bundle/README
 mkdir -p bundle/bin
 cp bin/spk bundle/bin/spk
 cp bin/minibox bundle/bin/minibox
-cp bin/sandstorm-supervisor bundle/bin/sandstorm-supervisor
+ln -s ../sandstorm bundle/bin/sandstorm-supervisor
 cp bin/sandstorm-http-bridge bundle/bin/sandstorm-http-bridge
 cp bin/sandstorm bundle/sandstorm
 cp $METEOR_DEV_BUNDLE/bin/node bundle/bin

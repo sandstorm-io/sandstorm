@@ -1,3 +1,2 @@
 run-bundle bin/sandstorm
-minibox bin
 sandstorm-http-bridge bin

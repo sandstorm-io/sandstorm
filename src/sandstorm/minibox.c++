@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <kj/main.h>
+#include "minibox.h"
 #include <kj/io.h>
 #include <kj/debug.h>
 #include <sched.h>
@@ -43,7 +43,7 @@
 
 namespace sandstorm {
 
-class MiniboxMain {
+class MiniboxMain: public AbstractMain {
   // Main class for a mini sandbox we use to wrap command-line tools (especially zip/unzip) which
   // we don't totally trust. This box makes the entire filesystem read-only except for some
   // explicit paths specified on the command-line which will be bind-mounted read-write to specific
@@ -52,7 +52,7 @@ class MiniboxMain {
 public:
   MiniboxMain(kj::ProcessContext& context): context(context) {}
 
-  kj::MainFunc getMain() {
+  kj::MainFunc getMain() override {
     return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
                            "Runs a mini-sandbox meant to offer a layer of protection around "
                            "command-line tools that are generally trusted but are being fed "
@@ -383,6 +383,8 @@ private:
   }
 };
 
-}  // namespace sandstorm
+kj::Own<AbstractMain> getMiniboxMain(kj::ProcessContext& context) {
+  return kj::heap<MiniboxMain>(context);
+}
 
-KJ_MAIN(sandstorm::MiniboxMain)
+}  // namespace sandstorm

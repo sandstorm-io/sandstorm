@@ -104,7 +104,7 @@ tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps
 continuous:
 	@CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS2)" LIBS="$(LIBS)" ekam -j$(PARALLEL) -c -n :41315
 
-bin/sandstorm-http-bridge bin/sandstorm bin/minibox: tmp/.ekam-run
+bin/sandstorm-http-bridge bin/sandstorm: tmp/.ekam-run
 	@test -e "$@"
 	@touch "$@"
 
@@ -135,7 +135,7 @@ shell-build: shell/client/* shell/server/* shell/shared/* shell/public/* shell/.
 # ====================================================================
 # Bundle
 
-bundle: bin/minibox bin/sandstorm-http-bridge bin/sandstorm shell-build make-bundle.sh
+bundle: bin/sandstorm-http-bridge bin/sandstorm shell-build make-bundle.sh
 	$(call color,bundle)
 	@./make-bundle.sh
 

@@ -76,7 +76,7 @@ rm -f bundle/README
 # Copy over key binaries.
 mkdir -p bundle/bin
 ln -s ../sandstorm bundle/bin/spk
-cp bin/minibox bundle/bin/minibox
+ln -s ../sandstorm bundle/bin/minibox
 ln -s ../sandstorm bundle/bin/sandstorm-supervisor
 cp bin/sandstorm-http-bridge bundle/bin/sandstorm-http-bridge
 cp bin/sandstorm bundle/sandstorm

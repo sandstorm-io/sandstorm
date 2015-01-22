@@ -55,6 +55,7 @@
 #include "supervisor.h"
 #include "util.h"
 #include "spk.h"
+#include "minibox.h"
 
 namespace sandstorm {
 
@@ -517,6 +518,9 @@ public:
       } else if (programName == "spk" || programName.endsWith("/spk")) {
         alternateMain = getSpkMain(context);
         return alternateMain->getMain();
+      } else if (programName == "minibox" || programName.endsWith("/minibox")) {
+        alternateMain = getMiniboxMain(context);
+        return alternateMain->getMain();
       }
     }
 
@@ -599,6 +603,12 @@ public:
               return alternateMain->getMain();
             },
             "Manipulate spk files.")
+        .addSubCommand("minibox",
+            [this]() {
+              alternateMain = getMiniboxMain(context);
+              return alternateMain->getMain();
+            },
+            "Command-line sandboxing tool.")
         .addSubCommand("devtools",
             [this]() {
               return kj::MainBuilder(context, VERSION,

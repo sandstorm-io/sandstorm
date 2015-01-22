@@ -22,7 +22,7 @@ BUILD=0
 PARALLEL=$(shell nproc)
 
 # You generally should not modify this.
-CXXFLAGS2=-std=c++14 $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -pthread
+CXXFLAGS2=-std=c++1y $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -pthread
 LIBS=-pthread
 
 define color

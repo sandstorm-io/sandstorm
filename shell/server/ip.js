@@ -17,6 +17,7 @@
 var Future = Npm.require("fibers/future");
 var Net = Npm.require("net");
 var Dgram = Npm.require("dgram");
+var Promise = Npm.require("es6-promise").Promise;
 var Capnp = Npm.require("capnp");
 
 var IpRpc = Capnp.importSystem("sandstorm/ip.capnp");

@@ -20,6 +20,7 @@
 var Url = Npm.require("url");
 var Fs = Npm.require("fs");
 var Dns = Npm.require("dns");
+var Promise = Npm.require("es6-promise").Promise;
 var HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 var DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
     Url.parse(process.env.DDP_DEFAULT_CONNECTION_URL).hostname;

@@ -368,9 +368,8 @@ public:
     KJ_SYSCALL(n = readlink("/proc/self/exe", buf, sizeof(buf)));
     buf[n] = '\0';
     exePath = kj::heapString(buf, n);
-    if (exePath.endsWith("/bin/spk")) {
-      installHome = kj::heapString(buf, n - strlen("/bin/spk"));
-    }
+    KJ_ASSERT(exePath.endsWith("/sandstorm"));
+    installHome = kj::heapString(buf, n - strlen("/sandstorm"));
   }
 
   kj::MainFunc getMain() override {
@@ -1251,9 +1250,9 @@ private:
 
   kj::String getHttpBridgeExe() {
     KJ_IF_MAYBE(slashPos, exePath.findLast('/')) {
-      return kj::str(exePath.slice(0, *slashPos), "/sandstorm-http-bridge");
+      return kj::str(exePath.slice(0, *slashPos), "/bin/sandstorm-http-bridge");
     } else {
-      return kj::heapString("/sandstorm-http-bridge");
+      return kj::heapString("/bin/sandstorm-http-bridge");
     }
   }
 

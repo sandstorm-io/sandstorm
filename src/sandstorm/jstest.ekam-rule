@@ -18,6 +18,8 @@
 
 set -eu
 
+NODEJS=${NODEJS:-node}
+
 if test $# = 0; then
   echo trigger test:js
   exit 0
@@ -34,10 +36,8 @@ fi
 echo newOutput "${1}.log"
 read TEST_LOG
 
-echo "file: $1" >&2
-
 if LD_PRELOAD=$INTERCEPTOR DYLD_FORCE_FLAT_NAMESPACE= DYLD_INSERT_LIBRARIES=$INTERCEPTOR \
-    NODE_PATH=. nodejs $1 3>&1 4<&0 2>"$TEST_LOG" >&2; then
+    NODE_PATH=. $NODEJS $1 3>&1 4<&0 2>"$TEST_LOG" >&2; then
   echo passed
   exit 0
 else

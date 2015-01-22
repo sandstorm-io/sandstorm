@@ -16,8 +16,10 @@
 
 # You may override the following vars on the command line to suit
 # your config.
+CC=clang
 CXX=clang++
-CXXFLAGS=-O2 -Wall
+CFLAGS=-O2 -Wall
+CXXFLAGS=$(CFLAGS)
 BUILD=0
 PARALLEL=$(shell nproc)
 
@@ -27,7 +29,9 @@ PARALLEL=$(shell nproc)
 #   needs to include all the Cap'n Proto code. Do we double-compile or do we
 #   just accept it? Perhaps it's for the best since we probably should build
 #   position-independent executables for security reasons?
-NODE_HEADERS=$(shell ./find-meteor-dev-bundle.sh)/include/node
+METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
+NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
+NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
 CXXFLAGS2=-std=c++1y $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -pthread -fPIC -I$(NODE_HEADERS)
 LIBS=-pthread
 
@@ -126,11 +130,13 @@ tmp/ekam-bin: tmp/.deps
 
 tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps
 	$(call color,building sandstorm with ekam)
-	@CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS2)" LIBS="$(LIBS)" tmp/ekam-bin -j$(PARALLEL)
+	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS2)" \
+	    LIBS="$(LIBS)" NODEJS=$(NODEJS) tmp/ekam-bin -j$(PARALLEL)
 	@touch tmp/.ekam-run
 
 continuous:
-	@CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS2)" LIBS="$(LIBS)" ekam -j$(PARALLEL) -c -n :41315
+	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS2)" \
+	    LIBS="$(LIBS)" NODEJS=$(NODEJS) ekam -j$(PARALLEL) -c -n :41315
 
 # ====================================================================
 # Front-end shell

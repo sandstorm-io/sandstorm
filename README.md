@@ -71,7 +71,6 @@ Please install the following:
   3.4, and it's not new enough.  Try <a href="http://llvm.org/apt/">the official packages from
   LLVM</a> instead.
 * [Meteor](http://meteor.com)
-* [npm](http://npmjs.org) module `jsontool`
 * ImageMagick
 
 ### Building / installing the binaries

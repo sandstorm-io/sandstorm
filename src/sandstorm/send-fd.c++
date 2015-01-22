@@ -14,11 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Hack around stdlib bug with C++14.
-#include <initializer_list>  // force libstdc++ to include its config
-#undef _GLIBCXX_HAVE_GETS    // correct broken config
-// End hack.
-
 #include "send-fd.h"
 #include <kj/debug.h>
 #include <sys/socket.h>

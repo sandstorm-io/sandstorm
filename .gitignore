@@ -1,5 +1,6 @@
 bin
 tmp
+deps
 node_modules
 shell/sandstorm-shell.config
 shell/sandstorm-shell.creator

@@ -1,1 +1,1 @@
-../../../libseccomp/src/arch-mips.h
+../../deps/libseccomp/src/arch-mips.h

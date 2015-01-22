@@ -1,1 +1,1 @@
-../../../libsodium/src/libsodium/crypto_verify/32
+../../deps/libsodium/src/libsodium/crypto_verify/32

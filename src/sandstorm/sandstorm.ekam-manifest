@@ -1,2 +1,5 @@
+run-bundle bin/sandstorm
+supervisor-main bin/sandstorm-supervisor
+minibox bin
 spk bin
 sandstorm-http-bridge bin

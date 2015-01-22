@@ -1,1 +1,1 @@
-../../../libsodium/src/libsodium/include/sodium/randombytes.h
+../../deps/libsodium/src/libsodium/include/sodium/randombytes.h

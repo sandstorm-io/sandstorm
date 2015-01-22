@@ -1,1 +1,1 @@
-../../../libseccomp/src/db.h
+../../deps/libseccomp/src/db.h

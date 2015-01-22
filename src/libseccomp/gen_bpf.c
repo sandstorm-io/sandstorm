@@ -1,1 +1,1 @@
-../../../libseccomp/src/gen_bpf.c
+../../deps/libseccomp/src/gen_bpf.c

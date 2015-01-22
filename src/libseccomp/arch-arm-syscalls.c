@@ -1,1 +1,1 @@
-../../../libseccomp/src/arch-arm-syscalls.c
+../../deps/libseccomp/src/arch-arm-syscalls.c

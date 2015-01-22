@@ -1,1 +1,1 @@
-../../../libseccomp/src/arch-mips64n32-syscalls.c
+../../deps/libseccomp/src/arch-mips64n32-syscalls.c

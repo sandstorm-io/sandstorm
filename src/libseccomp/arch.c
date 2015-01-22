@@ -1,1 +1,1 @@
-../../../libseccomp/src/arch.c
+../../deps/libseccomp/src/arch.c

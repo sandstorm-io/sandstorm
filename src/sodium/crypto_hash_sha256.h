@@ -1,1 +1,1 @@
-../../../libsodium/src/libsodium/include/sodium/crypto_hash_sha256.h
+../../deps/libsodium/src/libsodium/include/sodium/crypto_hash_sha256.h

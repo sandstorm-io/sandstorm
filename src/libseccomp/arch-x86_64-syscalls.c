@@ -1,1 +1,1 @@
-../../../libseccomp/src/arch-x86_64-syscalls.c
+../../deps/libseccomp/src/arch-x86_64-syscalls.c

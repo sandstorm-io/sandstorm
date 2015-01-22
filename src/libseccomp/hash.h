@@ -1,1 +1,1 @@
-../../../libseccomp/src/hash.h
+../../deps/libseccomp/src/hash.h

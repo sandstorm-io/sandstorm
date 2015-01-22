@@ -79,7 +79,7 @@ cp bin/spk bundle/bin/spk
 cp bin/minibox bundle/bin/minibox
 cp bin/sandstorm-supervisor bundle/bin/sandstorm-supervisor
 cp bin/sandstorm-http-bridge bundle/bin/sandstorm-http-bridge
-cp bin/run-bundle bundle/sandstorm
+cp bin/sandstorm bundle/sandstorm
 cp $METEOR_DEV_BUNDLE/bin/node bundle/bin
 cp $METEOR_DEV_BUNDLE/mongodb/bin/{mongo,mongod} bundle/bin
 cp $(which zip unzip xz) bundle/bin

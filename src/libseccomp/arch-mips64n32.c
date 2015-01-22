@@ -1,1 +1,1 @@
-../../../libseccomp/src/arch-mips64n32.c
+../../deps/libseccomp/src/arch-mips64n32.c

@@ -1,1 +1,1 @@
-../../../libseccomp/src/arch-syscall-check.c
+../../deps/libseccomp/src/arch-syscall-check.c

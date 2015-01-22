@@ -1,1 +1,1 @@
-../../../libsodium/src/libsodium/include/sodium/utils.h
+../../deps/libsodium/src/libsodium/include/sodium/utils.h

@@ -1,1 +1,1 @@
-../../../libseccomp/src/arch-x86_64.h
+../../deps/libseccomp/src/arch-x86_64.h

@@ -1,1 +1,1 @@
-../../../libseccomp/src/system.c
+../../deps/libseccomp/src/system.c

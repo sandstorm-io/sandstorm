@@ -1,1 +1,1 @@
-../../../../libseccomp/include/seccomp.h.in
+../../../deps/libseccomp/include/seccomp.h.in

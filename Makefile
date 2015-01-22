@@ -19,9 +19,11 @@
 CXX=clang++
 CXXFLAGS=-O2 -Wall
 BUILD=0
+PARALLEL=$(shell nproc)
 
 # You generally should not modify this.
-CXXFLAGS2=-std=c++1y -Isrc -Itmp $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) `pkg-config capnp-rpc --cflags`
+CXXFLAGS2=-std=c++14 $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -pthread
+LIBS=-pthread
 
 define color
   @printf '\033[0;34m==== $1 ====\033[0m\n'
@@ -31,12 +33,13 @@ endef
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean shell-env fast
+.PHONY: all install clean continuous shell-env fast deps bootstrap-ekam deps update-deps
 
 all: sandstorm-$(BUILD).tar.xz
 
 clean:
-	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz shell/.meteor/local shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png shell/public/menu.png shell/public/*-m.png .shell-env shell/packages/*/.build* shell/packages/*/.npm/package/node_modules tmp/sandstorm/ip_tables.h
+	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz shell/.meteor/local shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png shell/public/menu.png shell/public/*-m.png shell/packages/*/.build* shell/packages/*/.npm/package/node_modules
+	@(if test -d deps && test ! -h deps; then printf "\033[0;33mTo update dependencies, use: make update-deps\033[0m\n"; fi)
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh
 	$(call color,install)
@@ -49,95 +52,85 @@ update: sandstorm-$(BUILD)-fast.tar.xz
 fast: sandstorm-$(BUILD)-fast.tar.xz
 
 # ====================================================================
-# Protocols
+# Dependencies
 
-PROTOS := $(wildcard src/sandstorm/*.capnp)
+deps: tmp/.deps
 
-tmp/protos: $(PROTOS)
-	$(call color,generating capnp files)
+tmp/.deps: deps/capnproto deps/ekam deps/libseccomp deps/libsodium
 	@mkdir -p tmp
-	@capnp compile --src-prefix=src -oc++:tmp  src/sandstorm/*.capnp
-	@touch tmp/protos
+	@touch tmp/.deps
 
-tmp/sandstorm/protos.a: $(PROTOS:src/%.capnp=tmp/%.capnp.o)
-	$(call color,link sandstorm/protos.a)
-	@ar rcs $@ $^
-	@ranlib $@
+deps/capnproto:
+	$(call color,downloading capnproto)
+	@mkdir -p deps
+	git clone https://github.com/sandstorm-io/capnproto.git deps/capnproto
+
+deps/ekam:
+	$(call color,downloading ekam)
+	@mkdir -p deps
+	git clone https://github.com/sandstorm-io/ekam.git deps/ekam
+	@ln -s .. deps/ekam/deps
+
+deps/libseccomp:
+	$(call color,downloading libseccomp)
+	@mkdir -p deps
+	git clone git://git.code.sf.net/p/libseccomp/libseccomp deps/libseccomp
+
+deps/libsodium:
+	$(call color,downloading libsodium)
+	@mkdir -p deps
+	git clone https://github.com/jedisct1/libsodium.git deps/libsodium
+
+update-deps:
+	$(call color,updating all dependencies)
+	@(for DEP in capnproto ekam libseccomp libsodium; do cd deps/$$DEP; \
+	    echo "pulling $$DEP..."; git pull; cd ../..; done)
 
 # ====================================================================
-# C++ Support
+# Ekam bootstrap
 
-# This one Linux header has an inline function that depends on C's
-# non-type-safe pointers and GCC's void-pointer-arithmetic extension.
-# Nuke it. We don't use the function anyway.
-tmp/sandstorm/ip_tables.h: /usr/include/linux/netfilter_ipv4/ip_tables.h
-	$(call color,fix ip_tables.h)
-	@mkdir -p tmp/sandstorm
-	@echo "// From <linux/netfilter_ipv4/ip_tables.h>, fixed to compile as C++" > $@
-	@sed -e 's,(void [*])e [+] e->target_offset;,nullptr;  // non-C++-compliant code removed for Sandstorm,g' $< >> $@
+tmp/ekam-bin: tmp/.deps
+	@mkdir -p tmp
+	@rm -f tmp/ekam-bin
+	@which ekam >/dev/null && ln -s "`which ekam`" tmp/ekam-bin || \
+	    (cd deps/ekam && make bin/ekam-bootstrap && \
+	     cd ../.. && ln -s ../deps/ekam/bin/ekam-bootstrap tmp/ekam-bin)
 
-tmp/%.o: src/%.c++ tmp/protos tmp/sandstorm/ip_tables.h
-	$(call color,compile $*.c++)
-	@mkdir -p `dirname $@`
-	@$(CXX) $(CXXFLAGS2) -c src/$*.c++ -o $@ -MD
+tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps
+	$(call color,building sandstorm with ekam)
+	@rm -rf bin
+	@CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS2)" LIBS="$(LIBS)" tmp/ekam-bin -j$(PARALLEL)
+	@touch tmp/.ekam-run
 
-tmp/%.capnp.o: tmp/protos
-	$(call color,compile $*.capnp.c++)
-	@mkdir -p `dirname $@`
-	@$(CXX) $(CXXFLAGS2) -c tmp/$*.capnp.c++ -o $@ -MD
-
--include tmp/sandstorm/*.d
+continuous:
+	@CXX="$(CXX)" CXXFLAGS="$(CXXFLAGS2)" LIBS="$(LIBS)" ekam -j$(PARALLEL) -c -n :41315
 
 # ====================================================================
 # C++ Binaries
 
-bin/spk: tmp/sandstorm/spk.o \
-         tmp/sandstorm/fuse.o \
-         tmp/sandstorm/union-fs.o \
-         tmp/sandstorm/send-fd.o \
-         tmp/sandstorm/util.o \
-         tmp/sandstorm/protos.a
-	$(call color,link spk)
-	@mkdir -p bin
-	@$(CXX) $^ -o $@ -static $(CXXFLAGS2) -lcapnpc `pkg-config libsodium capnp-rpc --libs`
+bin/spk: tmp/.ekam-run
+	@test -e $@
 
-bin/sandstorm-http-bridge: tmp/sandstorm/sandstorm-http-bridge.o \
-                           tmp/joyent-http/http_parser.o \
-                           tmp/sandstorm/util.o \
-                           tmp/sandstorm/protos.a
-	$(call color,link sandstorm-http-bridge)
-	@mkdir -p bin
-	@$(CXX) $^ -o $@ -static $(CXXFLAGS2) `pkg-config capnp-rpc --libs`
+bin/sandstorm-http-bridge: tmp/.ekam-run
+	@test -e $@
 
-bin/sandstorm-supervisor: tmp/sandstorm/supervisor-main.o \
-                          tmp/sandstorm/supervisor.o \
-                          tmp/sandstorm/send-fd.o \
-                          tmp/sandstorm/util.o \
-                          tmp/sandstorm/protos.a
-	$(call color,link sandstorm-supervisor)
-	@mkdir -p bin
-	@$(CXX) $^ -o $@ $(CXXFLAGS2) `pkg-config libseccomp capnp-rpc --libs`
+bin/sandstorm-supervisor: tmp/.ekam-run
+	@test -e $@
 
-bin/run-bundle: tmp/sandstorm/run-bundle.o \
-                tmp/sandstorm/send-fd.o \
-                tmp/sandstorm/util.o \
-                tmp/sandstorm/protos.a
-	$(call color,link run-bundle)
-	@mkdir -p bin
-	@$(CXX) $^ -o $@ -static $(CXXFLAGS2) `pkg-config capnp-rpc --libs`
+bin/sandstorm: tmp/.ekam-run
+	@test -e $@
 
-bin/minibox: tmp/sandstorm/minibox.o tmp/sandstorm/util.o
-	$(call color,link minibox)
-	@mkdir -p bin
-	@$(CXX) $^ -o $@ $(CXXFLAGS2) `pkg-config capnp --libs`
+bin/minibox: tmp/.ekam-run
+	@test -e $@
 
 # ====================================================================
 # Front-end shell
 
-shell-env: .shell-env
+shell-env: tmp/.shell-env
 
-.shell-env: node_modules/sandstorm/grain.capnp shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png shell/public/menu.png shell/public/edit-m.png shell/public/restart-m.png shell/public/trash-m.png shell/public/wrench-m.png shell/public/download-m.png shell/public/key-m.png shell/public/close-m.png
-	@touch .shell-env
+tmp/.shell-env: node_modules/sandstorm/grain.capnp shell/public/edit.png shell/public/restart.png shell/public/trash.png shell/public/wrench.png shell/public/download.png shell/public/key.png shell/public/close.png shell/public/menu.png shell/public/edit-m.png shell/public/restart-m.png shell/public/trash-m.png shell/public/wrench-m.png shell/public/download-m.png shell/public/key-m.png shell/public/close-m.png
+	@mkdir -p tmp
+	@touch tmp/.shell-env
 
 node_modules/sandstorm/grain.capnp: src/sandstorm/*.capnp
 	$(call color,copy sandstorm protocols to node_modules/sandstorm)
@@ -150,14 +143,14 @@ shell/public/%.png: icons/%.svg
 shell/public/%-m.png: icons/%.svg
 	@convert -scale 32x32 $< $@
 
-shell-build: shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions .shell-env
+shell-build: shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
 	$(call color,meteor frontend)
 	@cd shell && PYTHONPATH=$HOME/.meteor/tools/latest/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib meteor build --directory ../shell-build
 
 # ====================================================================
 # Bundle
 
-bundle: bin/spk bin/minibox bin/sandstorm-supervisor bin/sandstorm-http-bridge bin/run-bundle shell-build make-bundle.sh
+bundle: bin/spk bin/minibox bin/sandstorm-supervisor bin/sandstorm-http-bridge bin/sandstorm shell-build make-bundle.sh
 	$(call color,bundle)
 	@./make-bundle.sh
 

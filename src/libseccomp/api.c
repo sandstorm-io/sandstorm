@@ -1,1 +1,1 @@
-../../../libseccomp/src/api.c
+../../deps/libseccomp/src/api.c

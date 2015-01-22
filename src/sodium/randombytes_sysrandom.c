@@ -1,1 +1,1 @@
-../../../libsodium/src/libsodium/randombytes/sysrandom/randombytes_sysrandom.c
+../../deps/libsodium/src/libsodium/randombytes/sysrandom/randombytes_sysrandom.c

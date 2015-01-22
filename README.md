@@ -65,16 +65,11 @@ Please install the following:
 
 * Linux, with reasonably new kernel version.
 * `libcap` with headers (e.g. `libcap-dev` on Debian/Ubuntu)
-* `libseccomp` with headers (e.g. `libseccomp-dev` on Debian/Ubuntu)
-* `pkg-config` (make sure this is installed _before_ building libsodium)
 * `XZ` for installing packages (`xz-utils` on Debian/Ubuntu)
 * [Clang compiler](http://clang.llvm.org/) version 3.4 or better. WARNING: Ubuntu Saucy's
   `clang-3.4` package is NOT Clang 3.4! It's actually some random cut from trunk between 3.3 and
   3.4, and it's not new enough.  Try <a href="http://llvm.org/apt/">the official packages from
   LLVM</a> instead.
-* [Cap'n Proto](http://capnproto.org) from git (do not use a release version -- Sandstorm and Cap'n
-  Proto are being developed together, so Sandstorm often uses brand-new Cap'n Proto features)
-* [libsodium](https://github.com/jedisct1/libsodium) latest release
 * [Meteor](http://meteor.com)
 * [npm](http://npmjs.org) module `jsontool`
 * ImageMagick
@@ -83,7 +78,9 @@ Please install the following:
 
 Build the Sandstorm bundle:
 
-    make -j
+    make
+
+(Note: You should *not* use `-j`, as we only use make as a meta-build system. The major components will utilize all CPU cores.)
 
 Install it:
 
@@ -117,6 +114,18 @@ Now connect to your local server like you normally would.
 Later, when you are done hacking, you may want to restart the installed front-end:
 
     sudo service sandstorm start-fe
+
+### Hacking on the C++
+
+If you're going to edit C++, you will want to install [Ekam](https://github.com/sandstorm-io/ekam), the build system used by Sandstorm. Be sure to read Ekam's wiki to understand how it works.
+
+Once `ekam` is in your path, you can use `make continuous` in order to start an Ekam continuous build of Sandstorm. While this build is running, you can also run other `make` commands in a separate window. This will automatically synchronize with your continuous build rather than starting a second build.
+
+To do a debug build, run make like:
+
+    make continuous CXXFLAGS="-g"
+
+If you suspect you'll be hacking on Sandstorm's dependencies as well, you may want to follow the dependency symlink trick described in the Ekam readme.
 
 ## How It Works
 

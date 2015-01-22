@@ -1,1 +1,1 @@
-../../../libseccomp/src/gen_pfc.c
+../../deps/libseccomp/src/gen_pfc.c

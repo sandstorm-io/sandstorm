@@ -1,1 +1,1 @@
-../../../libsodium/src/libsodium/include/sodium/crypto_sign_edwards25519sha512batch.h
+../../deps/libsodium/src/libsodium/include/sodium/crypto_sign_edwards25519sha512batch.h

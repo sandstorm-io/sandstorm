@@ -84,7 +84,21 @@ if (Meteor.isServer) {
         // Log them in on this connection.
         return Accounts._loginMethod(this, "createDemoUser", arguments,
             "demo", function () { return { userId: userId }; });
+      },
+
+      getAppNameFromAppId: function(packageId) {
+	// This method allows the appdemo page to show an app name
+	// given a package ID. Note that we only define it when demo
+	// mode is enabled, as otherwise it's arguably an information
+	// leak about which apps are installed on the server.
+	var appName = null;
+	var action = UserActions.findOne({packageId: packageId});
+	if (!action) {
+	  return "No such app.";
+	}
+	return appNameFromActionName(action.title);
       }
+
     });
 
     Meteor.setInterval(cleanupExpiredUsers, DEMO_EXPIRATION_MS);
@@ -152,6 +166,37 @@ Router.map(function () {
     path: "/demo",
     waitOn: function () {
       return Meteor.subscribe("credentials");
+    },
+    data: function () {
+      return {
+        allowDemo: allowDemo,
+        isSignedUp: isSignedUpOrDemo(),
+        isDemoUser: isDemoUser()
+      };
+    }
+  });
+});
+
+Router.map(function () {
+  this.route("appdemo", {
+    path: "/appdemo/:packageId",
+    waitOn: function () {
+      return Meteor.subscribe("packageInfo", this.params.packageId);
+    },
+    onAfterAction: function() {
+      /* Stash the packageId into the Meteor session, so that, after
+	 creating a new demo user, we know which app to start a grain
+	 for.
+      */
+      Session.set("packageId", this.params.packageId);
+      /* Ask the server what app this is */
+      Meteor.call("getAppNameFromAppId", Session.get("packageId"), function (err, data) {
+	if (err) {
+	  console.log(err);
+	} else {
+	  Session.set('appName', data);
+	}
+      });
     },
     data: function () {
       return {

@@ -153,7 +153,7 @@ Meteor.methods({
 });
 
 if (Meteor.isClient) {
-  function addUserActions(packageId) {
+  addUserActions = function(packageId) {
     var package = Packages.findOne(packageId);
     if (package) {
       // Remove old versions.

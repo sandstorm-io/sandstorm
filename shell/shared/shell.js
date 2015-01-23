@@ -162,7 +162,56 @@ if (Meteor.isClient) {
     }
 
     return result;
-  }
+  };
+
+  launchAndEnterGrainByPackageId = function(packageId) {
+    var action = UserActions.findOne({packageId: packageId});
+    if (!action) {
+      var packageId = null;
+    }
+    launchAndEnterGrainByActionId(action._id, null, null);
+  };
+
+  launchAndEnterGrainByActionId = function(actionId, devId, devIndex) {
+    // Note that this takes a devId and a devIndex as well. If provided,
+    // they override the actionId.
+    if (devId) {
+      var devApp = DevApps.findOne(devId);
+      if (!devApp) {
+	console.error("no such dev app: ", devId);
+	return;
+      }
+      var devAction = devApp.manifest.actions[devIndex];
+      packageId = devApp.packageId;
+      command = devAction.command;
+      actionTitle = devAction.title.defaultText;
+    } else {
+      var action = UserActions.findOne(actionId);
+      if (!action) {
+        console.error("no such action: ", actionId);
+        return;
+      }
+
+      packageId = action.packageId;
+      command = action.command;
+      actionTitle = action.title;
+    }
+
+    var title = actionTitle;
+    if (title.lastIndexOf("New ", 0) === 0) {
+      title = actionTitle.slice(4);
+    }
+    title = "Untitled " + title;
+
+    // We need to ask the server to start a new grain, then browse to it.
+    Meteor.call("newGrain", packageId, command, title, function (error, grainId) {
+      if (error) {
+        console.error(error);
+      } else {
+        Router.go("grain", {grainId: grainId});
+      }
+    });
+  };
 
   Template.root.helpers({
     filteredGrains: function () {
@@ -330,48 +379,70 @@ if (Meteor.isClient) {
       if (actionId === "dev") {
         var devId = event.currentTarget.getAttribute("data-devid");
         var devIndex = event.currentTarget.getAttribute("data-index");
-        var devApp = DevApps.findOne(devId);
-        if (!devApp) {
-          console.error("no such dev app: ", devId);
-          return;
-        }
-
-        var devAction = devApp.manifest.actions[devIndex];
-
-        packageId = devApp.packageId;
-        command = devAction.command;
-        actionTitle = devAction.title.defaultText;
-      } else {
-        var action = UserActions.findOne(actionId);
-        if (!action) {
-          console.error("no such action: ", actionId);
-          return;
-        }
-
-        packageId = action.packageId;
-        command = action.command;
-        actionTitle = action.title;
       }
 
-      var title = actionTitle;
-      if (title.lastIndexOf("New ", 0) === 0) {
-        title = actionTitle.slice(4);
-      }
-      title = "Untitled " + title;
-
-      // We need to ask the server to start a new grain, then browse to it.
-      Meteor.call("newGrain", packageId, command, title, function (error, grainId) {
-        if (error) {
-          console.error(error);
-        } else {
-          Router.go("grain", {grainId: grainId});
-        }
-      });
+      launchAndEnterGrainByActionId(actionId, devId, devIndex);
     },
 
     "click .action-required button": function (event) {
       event.currentTarget.parentNode.parentNode.style.display = "none";
     },
+  });
+
+  Template.appdemo.helpers({
+    appName: function() {
+      // we ask the server for this in appdemo.js
+      return Session.get('appName');
+    }
+  });
+
+  Template.appdemo.events({
+    "click #createDemoUser": function (event) {
+      /*
+	When clicking on the createDemoUser button on the app demo,
+	we want to:
+
+	1. Create the Demo User.
+
+	2. Log the user in as this Demo User.
+
+	3. Install the chosen app.
+
+	4. Create a new grain with this app.
+
+	5. Take them into this grain.
+
+      */
+      // calculate the appId
+
+      // 1. Create the Demo User & 2. Log the user in as this Demo User.
+      var displayName = document.getElementById("demo-display-name").value.trim();
+      if (displayName === "") {
+        displayName = "Demo User";
+      } else {
+        displayName += " (demo)";
+      }
+
+      Accounts.callLoginMethod({
+        methodName: "createDemoUser",
+        methodArguments: [displayName],
+        userCallback: function (err) {
+          if (err) {
+            window.alert(err);
+          } else {
+	    var packageId = Session.get("packageId");
+
+	    // 3. Install this app for the user.
+	    addUserActions(Session.get(packageId));
+
+	    // 4. Create new grain and 5. browse to it.
+	    launchAndEnterGrainByPackageId(packageId);
+          }
+        }
+      });
+
+    },
+
   });
 
   Template.homeLink.events({
@@ -421,7 +492,7 @@ function isMissingWildcardParent() {
   return Meteor.settings && Meteor.settings.public && Meteor.settings.public.missingWildcardParentUrl;
 }
 
-function appNameFromActionName(name) {
+appNameFromActionName = function(name) {
   // Hack: Historically we only had action titles, like "New Etherpad Document", not app
   //   titles. But for this UI we want app titles. As a transitionary measure, try to
   //   derive the app title from the action title.

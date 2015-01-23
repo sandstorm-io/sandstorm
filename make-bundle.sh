@@ -89,8 +89,7 @@ chmod u+w bundle/bin/*
 
 # Copy over capnp schemas.
 mkdir -p bundle/usr/include/{capnp,sandstorm}
-test -e /usr/include/capnp/c++.capnp && cp /usr/include/capnp/*.capnp bundle/usr/include/capnp
-test -e /usr/local/include/capnp/c++.capnp && cp /usr/local/include/capnp/*.capnp bundle/usr/include/capnp
+cp src/capnp/!(*test*).capnp bundle/usr/include/capnp
 cp src/sandstorm/*.capnp bundle/usr/include/sandstorm
 
 # Copy over node_modules.

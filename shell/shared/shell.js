@@ -425,8 +425,8 @@ if (Meteor.isClient) {
         displayName += " (demo)";
       }
 
-      /* We define this here so we can stash a the current
-	 packageId inside the closure. */
+      // We define this here so we can stash a the current packageId
+      // inside the closure.
       var makeUserCallbackFunction = function(packageId) {
 	return function(err) {
           if (err) {

@@ -175,7 +175,9 @@ Router.map(function () {
     data: function () {
       var thisPackage = Packages.findOne({_id: this.params.packageId});
 
-      var appName = '';
+      // In the case that the app requested is not present, we show
+      // this string as the app name.
+      var appName = 'missing package';
 
       if (thisPackage) {
 	var actionTitle = thisPackage.manifest.actions[0].title.defaultText;

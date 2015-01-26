@@ -61,6 +61,21 @@ if (Meteor.isServer) {
     }
   });
 
+  Meteor.publish("appInfo", function (appId) {
+    // This publishes info about an app, including the latest version
+    // of it, and is safe for anonymous users. Use this when you are
+    // given an appId and must display information about it to
+    // non-logged-in users.
+    check(appId, String);
+
+    var packageCursor = Packages.find({appId: appId},
+                      {sort: {"manifest.appVersion": -1}});
+
+    var package = packageCursor.fetch()[0];
+
+    return packageCursor;
+  });
+
   Meteor.methods({
     cancelDownload: function (packageId) {
       check(packageId, String);

@@ -167,9 +167,11 @@ if (Meteor.isClient) {
   launchAndEnterGrainByPackageId = function(packageId) {
     var action = UserActions.findOne({packageId: packageId});
     if (!action) {
-      var packageId = null;
+      alert("Somehow, you seem to have attempted to launch a package you have not installed.");
+      return;
+    } else {
+      launchAndEnterGrainByActionId(action._id, null, null);
     }
-    launchAndEnterGrainByActionId(action._id, null, null);
   };
 
   launchAndEnterGrainByActionId = function(actionId, devId, devIndex) {
@@ -178,8 +180,8 @@ if (Meteor.isClient) {
     if (devId) {
       var devApp = DevApps.findOne(devId);
       if (!devApp) {
-	console.error("no such dev app: ", devId);
-	return;
+    console.error("no such dev app: ", devId);
+    return;
       }
       var devAction = devApp.manifest.actions[devIndex];
       packageId = devApp.packageId;
@@ -387,62 +389,6 @@ if (Meteor.isClient) {
     "click .action-required button": function (event) {
       event.currentTarget.parentNode.parentNode.style.display = "none";
     },
-  });
-
-  Template.appdemo.helpers({
-    appName: function() {
-      // we ask the server for this in appdemo.js
-      return Session.get('appName');
-    }
-  });
-
-  Template.appdemo.events({
-    "click #createDemoUser": function (event) {
-      /*
-	When clicking on the createDemoUser button on the app demo,
-	we want to:
-
-	1. Create the Demo User.
-
-	2. Log the user in as this Demo User.
-
-	3. Install the chosen app.
-
-	4. Create a new grain with this app.
-
-	5. Take them into this grain.
-
-      */
-      // calculate the appId
-
-      // 1. Create the Demo User & 2. Log the user in as this Demo User.
-      var displayName = document.getElementById("demo-display-name").value.trim();
-      if (displayName === "") {
-        displayName = "Demo User";
-      } else {
-        displayName += " (demo)";
-      }
-
-      Accounts.callLoginMethod({
-        methodName: "createDemoUser",
-        methodArguments: [displayName],
-        userCallback: function (err) {
-          if (err) {
-            window.alert(err);
-          } else {
-	    var packageId = Session.get("packageId");
-
-	    // 3. Install this app for the user.
-	    addUserActions(Session.get(packageId));
-
-	    // 4. Create new grain and 5. browse to it.
-	    launchAndEnterGrainByPackageId(packageId);
-          }
-        }
-      });
-
-    },
-
   });
 
   Template.homeLink.events({

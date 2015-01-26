@@ -167,9 +167,11 @@ if (Meteor.isClient) {
   launchAndEnterGrainByPackageId = function(packageId) {
     var action = UserActions.findOne({packageId: packageId});
     if (!action) {
-      var packageId = null;
+      alert("Somehow, you seem to have attempted to launch a package you have not installed.");
+      return;
+    } else {
+      launchAndEnterGrainByActionId(action._id, null, null);
     }
-    launchAndEnterGrainByActionId(action._id, null, null);
   };
 
   launchAndEnterGrainByActionId = function(actionId, devId, devIndex) {
@@ -423,27 +425,30 @@ if (Meteor.isClient) {
         displayName += " (demo)";
       }
 
-      Accounts.callLoginMethod({
-        methodName: "createDemoUser",
-        methodArguments: [displayName],
-        userCallback: function (err) {
+      /* We define this here so we can stash a the current
+	 packageId inside the closure. */
+      var makeUserCallbackFunction = function(packageId) {
+	return function(err) {
           if (err) {
             window.alert(err);
           } else {
-	    var packageId = Session.get("packageId");
-
 	    // 3. Install this app for the user.
-	    addUserActions(Session.get(packageId));
+	    addUserActions(packageId);
 
 	    // 4. Create new grain and 5. browse to it.
 	    launchAndEnterGrainByPackageId(packageId);
           }
-        }
+	}
+      };
+      userCallbackFunction = makeUserCallbackFunction(this.packageId);
+
+      Accounts.callLoginMethod({
+        methodName: "createDemoUser",
+        methodArguments: [displayName],
+        userCallback: userCallbackFunction
       });
 
-    },
-
-  });
+    }});
 
   Template.homeLink.events({
     "click #menu-button": function (event) {

@@ -411,7 +411,11 @@ Router.map(function () {
         result.appOrigin = document.location.protocol + "//" + makeWildcardHost(session.hostId);
         setCurrentSessionId(session._id, result.appOrigin, grainId);
         result.sessionId = session._id;
-        result.path = encodeURIComponent("/" + (self.params.path || ""));
+        var currentPath = Iron.Location.get().path;
+        var rootPath = "/grain/" + grainId;
+        var grainPath = currentPath.slice(rootPath.length);
+        result.path = encodeURIComponent(grainPath);
+        result.hash = window.location.hash || "";
         return result;
       } else {
         if (self.state.get("openingSession")) {

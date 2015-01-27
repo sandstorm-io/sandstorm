@@ -32,7 +32,8 @@ PARALLEL=$(shell nproc)
 METEOR_DEV_BUNDLE=$(shell ./find-meteor-dev-bundle.sh)
 NODEJS=$(METEOR_DEV_BUNDLE)/bin/node
 NODE_HEADERS=$(METEOR_DEV_BUNDLE)/include/node
-CXXFLAGS2=-std=c++1y $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -pthread -fPIC -I$(NODE_HEADERS)
+WARNINGS=-Wall -Wextra -Wglobal-constructors -Wno-sign-compare -Wno-unused-parameter
+CXXFLAGS2=-std=c++1y $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -pthread -fPIC -I$(NODE_HEADERS)
 LIBS=-pthread
 
 define color

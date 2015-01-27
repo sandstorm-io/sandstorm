@@ -184,14 +184,8 @@ if (Meteor.isClient && allowDemo) {
 
       // calculate the appId
 
-      // We define this here so we can stash a the current appId
-      // inside the closure.
+      // We copy the appId into the scope so the userCallbackFunction can access it.
       var appId = this.appId;
-
-      var makeUserCallbackFunction = function(appId) {
-        return null;
-      }
-
       var userCallbackFunction = function(err) {
         if (err) {
           window.alert(err);

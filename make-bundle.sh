@@ -21,6 +21,14 @@ shopt -s extglob
 
 rm -rf bundle
 
+fail() {
+  echo "make-bundle.sh: FAILED at line $1" >&2
+  rm -rf bundle
+  exit 1
+}
+
+trap 'fail ${LINENO}' ERR
+
 copyDep() {
   # Copies a file from the system into the chroot.
   
@@ -63,6 +71,14 @@ copyDeps() {
     copyDep "$FILE"
   done
 }
+
+# Check for requiremnets.
+for CMD in zip unzip xz; do
+  if ! which "$CMD" > /dev/null; then
+    echo "Please install $CMD" >&2
+    fail ${LINENO}
+  fi
+done
 
 METEOR_DEV_BUNDLE=$(./find-meteor-dev-bundle.sh)
 

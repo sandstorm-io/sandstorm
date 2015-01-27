@@ -85,6 +85,7 @@ if (Meteor.isServer) {
         return Accounts._loginMethod(this, "createDemoUser", arguments,
             "demo", function () { return { userId: userId }; });
       }
+
     });
 
     Meteor.setInterval(cleanupExpiredUsers, DEMO_EXPIRATION_MS);
@@ -145,6 +146,64 @@ if (Meteor.isClient && allowDemo) {
       });
     }
   });
+
+  Template.appdemo.events({
+    "click #createDemoUser": function (event) {
+      /*
+        When clicking on the createDemoUser button on the app demo,
+        we want to:
+
+        1. Create the Demo User.
+
+        2. Log the user in as this Demo User.
+
+        3. Install the chosen app.
+
+        4. Create a new grain with this app.
+
+        5. Take them into this grain.
+
+      */
+      // calculate the appId
+
+      // 1. Create the Demo User & 2. Log the user in as this Demo User.
+      var displayName = document.getElementById("demo-display-name").value.trim();
+      if (displayName === "") {
+        displayName = "Demo User";
+      } else {
+        displayName += " (demo)";
+      }
+
+      // We define this here so we can stash a the current appId
+      // inside the closure.
+      var makeUserCallbackFunction = function(appId) {
+        return function(err) {
+          if (err) {
+            window.alert(err);
+          } else {
+            // First, find the package ID, since that is what
+            // addUserActions takes. Choose the package ID with
+            // highest version number.
+            var packageId = Packages.findOne({appId: appId},
+                                             {sort: {"manifest.appVersion": -1}})._id;
+
+            // 3. Install this app for the user.
+            addUserActions(packageId);
+
+            // 4. Create new grain and 5. browse to it.
+            launchAndEnterGrainByAppId(packageId);
+          }
+        }
+      };
+      userCallbackFunction = makeUserCallbackFunction(this.appId);
+
+      Accounts.callLoginMethod({
+        methodName: "createDemoUser",
+        methodArguments: [displayName],
+        userCallback: userCallbackFunction
+      });
+
+    }});
 }
 
 Router.map(function () {
@@ -157,6 +216,41 @@ Router.map(function () {
       return {
         allowDemo: allowDemo,
         isSignedUp: isSignedUpOrDemo(),
+        createDemoUserLabel: "Start the demo",
+        pageTitle: "Demo",
+        isDemoUser: isDemoUser()
+      };
+    }
+  });
+});
+
+Router.map(function () {
+  this.route("appdemo", {
+    path: "/appdemo/:appId",
+    waitOn: function () {
+      return Meteor.subscribe("appInfo", this.params.appId);
+    },
+    data: function () {
+      // find the newest (highest version, so "first" when sorting by
+      // inverse order) matching package.
+      var thisPackage = Packages.findOne({appId: this.params.appId},
+                                        {sort: {"manifest.appVersion": -1}});
+
+      // In the case that the app requested is not present, we show
+      // this string as the app name.
+      var appName = 'missing package';
+
+      if (thisPackage) {
+        var actionTitle = thisPackage.manifest.actions[0].title.defaultText;
+        appName = appNameFromActionName(actionTitle);
+      }
+
+      return {
+        allowDemo: allowDemo,
+        isSignedUp: isSignedUpOrDemo(),
+        createDemoUserLabel: "Try " + appName,
+        pageTitle: appName + " Demo on Sandstorm",
+        appId: this.params.appId,
         isDemoUser: isDemoUser()
       };
     }

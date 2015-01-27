@@ -487,8 +487,12 @@ $KEY</textarea></p>
   </div>
 </template>
 
+<template name="appdemo">
+  {{> demo}}
+</template>
+
 <template name="demo">
-  <div id="topbar">{{> homeLink}} Demo</div>
+  <div id="topbar">{{> homeLink}} {{ pageTitle }} </div>
 
   <div id="demo" class="main-content">
     <div class="centered-box">
@@ -506,7 +510,7 @@ $KEY</textarea></p>
             <p>Logging in...</p>
           {{else}}
             <p><input id="demo-display-name" type="hidden" value="">
-               <button id="createDemoUser">Start the demo »</button></p>
+               <button id="createDemoUser">{{ createDemoUserLabel }} »</button></p>
           {{/if}}
         {{/if}}
 
@@ -518,9 +522,10 @@ $KEY</textarea></p>
         <p>Notes:</p>
         <ul>
           <li>Demo accounts last one hour.</li>
-          <li>Demo accounts can only install apps from Sandstorm.io, but this
-            is an artificial limitation. Real users can upload whatever code they want, as
-            each app server runs in a secure sandbox.</li>
+          <li>Demo accounts can only install approved apps, but this
+            is an artificial limitation. Real users can upload
+            whatever code they want, as each app server runs in a
+            secure sandbox.</li>
           <li>We only have one machine. It may get slow or crashy under excessive load.</li>
           <li>We know the UI design needs work. This is a tech demo. ;)</li>
           <li><a href="https://sandstorm.io">Read more at Sandstorm.io.</a></li>

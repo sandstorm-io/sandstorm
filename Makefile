@@ -116,7 +116,7 @@ deps/node-capnp:
 
 update-deps:
 	$(call color,updating all dependencies)
-	@(for DEP in capnproto ekam libseccomp libsodium; do cd deps/$$DEP; \
+	@(for DEP in capnproto ekam libseccomp libsodium node-capnp; do cd deps/$$DEP; \
 	    echo "pulling $$DEP..."; git pull; cd ../..; done)
 
 # ====================================================================

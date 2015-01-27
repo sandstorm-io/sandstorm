@@ -64,17 +64,23 @@ config used by Sandstorm Alpha.
 Please install the following:
 
 * Linux, with reasonably new kernel version.
-* Basic build tools: standard C and C++ libraries and headers, GNU Make (`build-essential` on Debian/Ubuntu)
-* `libcap` with headers (e.g. `libcap-dev` on Debian/Ubuntu)
-* `XZ` for installing packages (`xz-utils` on Debian/Ubuntu)
-* `zip` and `unzip` commands
+* C and C++ standard libraries and headers
+* GNU Make
+* `libcap` with headers
+* `xz`
+* `zip`
+* `unzip`
 * `strace`
-* [Clang compiler](http://clang.llvm.org/) version 3.4 or better. WARNING: Ubuntu Saucy's
-  `clang-3.4` package is NOT Clang 3.4! It's actually some random cut from trunk between 3.3 and
-  3.4, and it's not new enough.  Try <a href="http://llvm.org/apt/">the official packages from
-  LLVM</a> instead.
-* [Meteor](http://meteor.com)
+* `curl`
 * ImageMagick
+* [Clang compiler](http://clang.llvm.org/) version 3.4 or better
+* [Meteor](http://meteor.com)
+
+On Debian or Ubuntu, you should be able to get all these with:
+
+    sudo apt-get install build-essential libcap-dev xz-utils zip \
+        unzip imagemagick strace curl clang-3.4
+    curl https://install.meteor.com/ | sh
 
 ### Building / installing the binaries
 

@@ -140,22 +140,35 @@ FileTokens = new Mongo.Collection("fileTokens");
 ApiTokens = new Mongo.Collection("apiTokens");
 // Access tokens for APIs exported by apps.
 //
-// Longer-term, API tokens should actually be base64'd Cap'n Proto SturdyRefs. This is a temporary
-// hack.
+// Originally API tokens were only used by external users through the HTTP API endpoint. However,
+// now they are also used to implement SturdyRefs, not just held by external users, but also when
+// an app holds a SturdyRef to another app within the same server. See `internal.capnp` for the
+// definition of `InternalSturdyRef` which refers to this.
 //
 // Each contains:
 //   _id:       A SHA-256 hash of the token.
-//   userId:    For UI tokens, the `_id` of the user (in the users table) who created this token.
-//   userInfo:  For true capability tokens, the UserInfo struct that should be passed to
-//              `newSession()` when exercising this token, in decoded (JS object) format. This is a
-//              temporary hack. Eventually, when we have persistent Cap'n Proto capabilities, we
-//              will not use `newSession()` with capability tokens; we will persist and restore
-//              the WebSession capability instead.
+//   userId:    For API tokens created by the user through the topbar, which represent the grain's
+//              UiView attenuated to the user's own level of access, the `_id` of the user (in
+//              the users table).
+//   userInfo:  For API tokens created by the app through HackSessionContext, the UserInfo struct
+//              that should be passed to `newSession()` when exercising this token, in decoded (JS
+//              object) format. This is a temporary hack.
+//   appRef:    If present, this token represents an arbitrary Cap'n Proto capability exported by
+//              the app (whereas without this it strictly represents UiView). appRef is the encoded
+//              AppSturdyRef (encoded as a Cap'n Proto message with AppSturdyRef as the root; this
+//              is the format that node-capnp automatically uses for `AnyPointer` fields).
 //   grainId:   The grain servicing this API.
 //   petname:   Human-readable label for this access token, useful for identifying tokens for
 //              revocation.
 //   created:   Date when this token was created.
 //   expires:   Optional expiration Date. If undefined, the token does not expire.
+//   owner:     Optionally specifies to whom this token belongs, in the sense of a SturdyRef owner.
+//              If present, the token can ONLY be used by that owner; otherwise anyone on the
+//              internet can use it. The structure of this field is defined by
+//              InternalSturdyRef.Owner.
+
+CapTokens = new Mongo.Collection("capTokens");
+// Much like API tokens, but represent arbitrary capabilities.
 
 StatsTokens = new Mongo.Collection("statsTokens");
 // Access tokens for the Stats collection

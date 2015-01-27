@@ -103,7 +103,7 @@ struct PowerboxQuery {
 # ========================================================================================
 # Runtime interface
 
-interface SandstormApi {
+interface SandstormApi(AppSturdyRef) {
   # The Sandstorm platform API, exposed as the default capability over the two-way RPC connection
   # formed with the application instance.  This object specifically represents the supervisor
   # for this application instance -- two different application instances (grains) never share a
@@ -153,6 +153,27 @@ interface SandstormApi {
   shareView @3 (view :UiView) -> (sharedView :UiView, link :ViewSharingLink);
   # Like `shareCap` but with extra options for sharing a UiView, such as setting a role and
   # permissions.
+
+  restore @4 (ref :SturdyRef(AppSturdyRef))
+      -> (cap :Persistent(SturdyRef(AppSturdyRef), NullOwner));
+  # Restores the given SturdyRef.
+  #
+  # For convenience, if `ref` is an internal ref (hosted by the app itself), this just loops back
+  # to MainView.restore().
+
+  drop @5 (ref :SturdyRef(AppSturdyRef));
+  # Notifies the supervisor that the app is removing the given SturdyRef from its storage, and
+  # therefore the supervisor may free any resources associated with maintaining this ref.
+  #
+  # This will also cause the ref to disappear from the collaboration graph visualization that the
+  # owner can see (once such a thing exists).
+  #
+  # If `ref` is an internal ref, this has no effect.
+
+  deleted @6 (ref :AppSturdyRef);
+  # Notifies the supervisor that an object hosted by this application has been deleted, and
+  # therefore all references to it may as well be dropped. This affects *incoming* references,
+  # whereas drop() affects *outgoing*.
 }
 
 interface UiView extends(PowerboxCapability) {
@@ -463,4 +484,82 @@ struct GrainInfo {
   appId @0 :Text;
   appVersion @1 :UInt32;
   title @2 :Text;
+}
+
+# ========================================================================================
+# SturdyRefs
+
+struct SturdyRef(AppSturdyRef) {
+  # The SturdyRef definition for the realm of a Sandstorm app. Each app is free to define
+  # `AppSturdyRef` as it sees fit. There is no need for `AppSturdyRef` to be unguessable nor
+  # opaque, as the supervisor will replace outgoing SturdyRefs with suitably opaque and unguessable
+  # tokens.
+
+  union {
+    external @0 :SupervisorSturdyRef;
+    # A reference to an object external to the grain.
+
+    internal @1 :AppSturdyRef;
+    # A reference to an object implemented by the grain itself.
+  }
+}
+
+struct SupervisorSturdyRef {
+  # Inside a grain, this represents a capability held by the grain to an object that lives
+  # outside the grain. The app may exchange a SupervisorStudyRef for a live capability by
+  # calling SandstormApi.restore().
+
+  key0 @0 :UInt64;
+  key1 @1 :UInt64;
+  # Unguessably-random key.
+  #
+  # Note that this key is only valid for this grain; e.g. if you transmitted the key bits to
+  # another grain, it wouldn't be able to do anything useful with it. In theory we could make this
+  # key be a small (guessable) integer, but we use unguessable values for the convenience of apps
+  # that want to implement capability-based security between their own components.
+}
+
+struct NullOwner {
+  # Grains do not need to worry about sealing. The supervisor takes care of it for them.
+  # Therefore, the "owner" of a SturdyRef is left empty.
+}
+
+interface MainView(AppSturdyRef) extends(UiView) {
+  # The default (bootstrap) interface exported by a grain to the supervisor when it comes up is
+  # actually `MainView`. Only the Supervisor sees this interface. It proxies the `UiView` subset
+  # of the interface to the rest of the world, and automatically makes that capability persistent,
+  # so that a simple app can completely avoid implementing persistence.
+  #
+  # `AppSturdyRef` is the format that the app prefers for representing SturdyRefs to objects
+  # it hosts.
+
+  restore @0 (ref :AppSturdyRef, userInfo :UserInfo)
+      -> (cap :Persistent(SturdyRef(AppSturdyRef), NullOwner));
+  # Restore a SturdyRef hosted by the app.
+  #
+  # Apps only need to implement this if they publish persistent capabilities (not including the
+  # main UiView).
+  #
+  # `userInfo` identifies the user originally responsible for creating this capability. The app
+  # should inspect the user's permissions and attenuate the restored capability appropriately.
+  # E.g. if the capability required write permission to create in the first place, and the user
+  # no longer has write permission according to `userInfo`, then the app may wish to refuse the
+  # `restore()` request.
+
+  # TODO(someday): Should we notify the app when refs are deleted? I haven't yet thought of a way
+  #   to do this that seems reliable enough to be useful. Obviously, we can't guarantee
+  #   notifications of deletions (in particular when third parties are involved who could very
+  #   well wipe their storage and never notify us), so at best we could do "best effort"
+  #   notification. But there's a more subtle problem: the app would have to refcount save()s
+  #   and delete()s and only delete the underlying object when all references are gone. Apps could
+  #   easily get this wrong and just go ahead and delete the object the first time they receive a
+  #   delete(), and this will probably pass testing because they won't test the case where the
+  #   object has been saved twice. We can't have the supervisor do the refcounting for us because
+  #   the supervisor does not know about intra-app saves, which by the way is another thing that
+  #   apps may easily fail to test.
+  #
+  #   Ultimately I think the right thing here is for SturdyRefs always to be thought of as "weak"
+  #   pointers. They point to some object that belongs to the grain, which in turn belongs to some
+  #   user. The object should not expect to know whether it is currently in-use; it's up to the
+  #   user to delete it if they so choose.
 }

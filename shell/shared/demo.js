@@ -174,22 +174,28 @@ if (Meteor.isClient && allowDemo) {
         displayName += " (demo)";
       }
 
-      // We define this here so we can stash a the current packageId
+      // We define this here so we can stash a the current appId
       // inside the closure.
-      var makeUserCallbackFunction = function(packageId) {
+      var makeUserCallbackFunction = function(appId) {
 	return function(err) {
           if (err) {
             window.alert(err);
           } else {
+	    // First, find the package ID, since that is what
+	    // addUserActions takes. Choose the package ID with
+	    // highest version number.
+	    var packageId = Packages.findOne({appId: appId},
+					     {sort: {"manifest.appVersion": -1}})._id;
+
 	    // 3. Install this app for the user.
 	    addUserActions(packageId);
 
 	    // 4. Create new grain and 5. browse to it.
-	    launchAndEnterGrainByPackageId(packageId);
+	    launchAndEnterGrainByAppId(packageId);
           }
 	}
       };
-      userCallbackFunction = makeUserCallbackFunction(this.packageId);
+      userCallbackFunction = makeUserCallbackFunction(this.appId);
 
       Accounts.callLoginMethod({
         methodName: "createDemoUser",
@@ -220,12 +226,15 @@ Router.map(function () {
 
 Router.map(function () {
   this.route("appdemo", {
-    path: "/appdemo/:packageId",
+    path: "/appdemo/:appId",
     waitOn: function () {
-      return Meteor.subscribe("packageInfo", this.params.packageId);
+      return Meteor.subscribe("appInfo", this.params.appId);
     },
     data: function () {
-      var thisPackage = Packages.findOne({_id: this.params.packageId});
+      // find the newest (highest version, so "first" when sorting by
+      // inverse order) matching package.
+      var thisPackage = Packages.findOne({appId: this.params.appId},
+					 {sort: {"manifest.appVersion": -1}});
 
       // In the case that the app requested is not present, we show
       // this string as the app name.
@@ -241,7 +250,7 @@ Router.map(function () {
         isSignedUp: isSignedUpOrDemo(),
 	createDemoUserLabel: "Try " + appName,
 	pageTitle: appName + " Demo on Sandstorm",
-	packageId: this.params.packageId,
+	appId: this.params.appId,
         isDemoUser: isDemoUser()
       };
     }

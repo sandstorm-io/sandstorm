@@ -68,6 +68,7 @@ Please install the following:
 * `libcap` with headers (e.g. `libcap-dev` on Debian/Ubuntu)
 * `XZ` for installing packages (`xz-utils` on Debian/Ubuntu)
 * `zip` and `unzip` commands
+* `strace`
 * [Clang compiler](http://clang.llvm.org/) version 3.4 or better. WARNING: Ubuntu Saucy's
   `clang-3.4` package is NOT Clang 3.4! It's actually some random cut from trunk between 3.3 and
   3.4, and it's not new enough.  Try <a href="http://llvm.org/apt/">the official packages from

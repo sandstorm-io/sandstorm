@@ -85,6 +85,27 @@ if (Meteor.isServer) {
         return Accounts._loginMethod(this, "createDemoUser", arguments,
             "demo", function () { return { userId: userId }; });
       }
+
+    });
+
+    // If demo mode is enabled, we permit the client to subscribe to
+    // information about an app by appId. If this were available in
+    // non-demo mode, then anonymous users could effectively ask the
+    // server which apps are installed.
+    Meteor.publish("appInfo", function (appId) {
+      // This publishes info about an app, including the latest
+      // version of it, and contains no user-specific information. Use
+      // this when you are given an appId and must display information
+      // about it to non-logged-in users.
+      check(appId, String);
+
+      var packageCursor = Packages.find(
+        {appId: appId},
+        {sort: {"manifest.appVersion": -1}});
+
+      var package = packageCursor.fetch()[0];
+
+      return packageCursor;
     });
 
     Meteor.setInterval(cleanupExpiredUsers, DEMO_EXPIRATION_MS);
@@ -145,6 +166,62 @@ if (Meteor.isClient && allowDemo) {
       });
     }
   });
+
+  Template.appdemo.events({
+    "click #createDemoUser": function (event) {
+      // When clicking on the createDemoUser button on the app demo,
+      // we want to:
+      //
+      // 1. Create the Demo User if they are not logged in.
+      //
+      // 2. Log the user in as this Demo User if we created it.
+      //
+      // 3. Install the chosen app.
+      //
+      // 4. Create a new grain with this app.
+      //
+      // 5. Take them into this grain.
+
+      // calculate the appId
+
+      // We copy the appId into the scope so the userCallbackFunction can access it.
+      var appId = this.appId;
+      var userCallbackFunction = function(err) {
+        if (err) {
+          window.alert(err);
+        } else {
+          // First, find the package ID, since that is what
+          // addUserActions takes. Choose the package ID with
+          // highest version number.
+          var packageId = Packages.findOne({appId: appId},
+                                           {sort: {"manifest.appVersion": -1}})._id;
+
+          // 3. Install this app for the user.
+          addUserActions(packageId);
+
+          // 4. Create new grain and 5. browse to it.
+          launchAndEnterGrainByPackageId(packageId);
+        }
+      }
+
+      if (Meteor.userId()) {
+        userCallbackFunction();
+      } else {
+        // 1. Create the Demo User & 2. Log the user in as this Demo User.
+        var displayName = document.getElementById("demo-display-name").value.trim();
+        if (displayName === "") {
+          displayName = "Demo User";
+        } else {
+          displayName += " (demo)";
+        }
+
+        Accounts.callLoginMethod({
+          methodName: "createDemoUser",
+          methodArguments: [displayName],
+          userCallback: userCallbackFunction
+        });
+      }
+    }});
 }
 
 Router.map(function () {
@@ -156,7 +233,49 @@ Router.map(function () {
     data: function () {
       return {
         allowDemo: allowDemo,
-        isSignedUp: isSignedUpOrDemo(),
+        // We show the Start the Demo button if you are not logged in.
+        shouldShowStartDemo: ! isSignedUpOrDemo(),
+        createDemoUserLabel: "Start the demo",
+        pageTitle: "Demo",
+        isDemoUser: isDemoUser()
+      };
+    }
+  });
+});
+
+Router.map(function () {
+  this.route("appdemo", {
+    path: "/appdemo/:appId",
+    waitOn: function () {
+      return Meteor.subscribe("appInfo", this.params.appId);
+    },
+    data: function () {
+      // find the newest (highest version, so "first" when sorting by
+      // inverse order) matching package.
+      var thisPackage = Packages.findOne({appId: this.params.appId},
+                                        {sort: {"manifest.appVersion": -1}});
+
+      // In the case that the app requested is not present, we show
+      // this string as the app name.
+      var appName = 'missing package';
+
+      if (thisPackage) {
+        var actionTitle = thisPackage.manifest.actions[0].title.defaultText;
+        appName = appNameFromActionName(actionTitle);
+      }
+
+      return {
+        allowDemo: allowDemo,
+        // For appdemo, we always allow you to start the demo, because
+        // the this refers to the app demo, and if a visitor clicks
+        // visits /appdemo/:appId once and creates a Demo User
+        // account, and then clicks a different /appdemo/:appId URL to
+        // demo a different app, we want them to experience the joy of
+        // trying the second app.
+        shouldShowStartDemo: true,
+        createDemoUserLabel: "Try " + appName,
+        pageTitle: appName + " Demo on Sandstorm",
+        appId: this.params.appId,
         isDemoUser: isDemoUser()
       };
     }

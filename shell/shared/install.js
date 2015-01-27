@@ -69,7 +69,7 @@ if (Meteor.isServer) {
     check(appId, String);
 
     var packageCursor = Packages.find({appId: appId},
-				      {sort: {"manifest.appVersion": -1}});
+                      {sort: {"manifest.appVersion": -1}});
 
     var package = packageCursor.fetch()[0];
 

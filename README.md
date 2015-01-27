@@ -64,6 +64,7 @@ config used by Sandstorm Alpha.
 Please install the following:
 
 * Linux, with reasonably new kernel version.
+* Basic build tools: standard C and C++ libraries and headers, GNU Make (`build-essential` on Debian/Ubuntu)
 * `libcap` with headers (e.g. `libcap-dev` on Debian/Ubuntu)
 * `XZ` for installing packages (`xz-utils` on Debian/Ubuntu)
 * `zip` and `unzip` commands

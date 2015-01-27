@@ -391,13 +391,6 @@ if (Meteor.isClient) {
     },
   });
 
-  Template.appdemo.helpers({
-    appName: function() {
-      // we ask the server for this in appdemo.js
-      return Session.get('appName');
-    }
-  });
-
   Template.homeLink.events({
     "click #menu-button": function (event) {
       Session.set("showMenu", !Session.get("showMenu"));

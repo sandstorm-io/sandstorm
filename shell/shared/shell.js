@@ -180,8 +180,8 @@ if (Meteor.isClient) {
     if (devId) {
       var devApp = DevApps.findOne(devId);
       if (!devApp) {
-    console.error("no such dev app: ", devId);
-    return;
+        console.error("no such dev app: ", devId);
+        return;
       }
       var devAction = devApp.manifest.actions[devIndex];
       packageId = devApp.packageId;

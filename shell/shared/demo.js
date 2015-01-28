@@ -94,9 +94,8 @@ if (Meteor.isServer) {
     // server which apps are installed.
     Meteor.publish("appInfo", function (appId) {
       // This publishes info about an app, including the latest
-      // version of it, and contains no user-specific information. Use
-      // this when you are given an appId and must display information
-      // about it to non-logged-in users.
+      // version of it. Once you log in, it also publishes your
+      // list of UserActions.
       check(appId, String);
 
       var packageCursor = Packages.find(
@@ -104,6 +103,14 @@ if (Meteor.isServer) {
         {sort: {"manifest.appVersion": -1}});
 
       var package = packageCursor.fetch()[0];
+
+      // This allows us to avoid creating duplicate UserActions.
+      if (this.userId) {
+        return [
+          packageCursor,
+          UserActions.find({userId: this.userId, appId: appId})
+        ];
+      }
 
       return packageCursor;
     });
@@ -196,8 +203,10 @@ if (Meteor.isClient && allowDemo) {
           var packageId = Packages.findOne({appId: appId},
                                            {sort: {"manifest.appVersion": -1}})._id;
 
-          // 3. Install this app for the user.
-          addUserActions(packageId);
+          // 3. Install this app for the user, if needed.
+          if (UserActions.find({appId: appId, userId: Meteor.userId()}).count() == 0) {
+            addUserActions(packageId);
+          }
 
           // 4. Create new grain and 5. browse to it.
           launchAndEnterGrainByPackageId(packageId);

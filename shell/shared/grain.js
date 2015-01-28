@@ -408,10 +408,14 @@ Router.map(function () {
 
       var session = Sessions.findOne({grainId: grainId});
       if (session) {
-        result.appOrigin = document.location.protocol + "//" + makeWildcardHost(session.hostId);
+        result.appOrigin = window.location.protocol + "//" + makeWildcardHost(session.hostId);
         setCurrentSessionId(session._id, result.appOrigin, grainId);
         result.sessionId = session._id;
-        result.path = encodeURIComponent("/" + (self.params.path || ""));
+        var currentPath = window.location.pathname + window.location.search;
+        var rootPath = "/grain/" + grainId;
+        var grainPath = currentPath.slice(rootPath.length);
+        result.path = encodeURIComponent(grainPath);
+        result.hash = window.location.hash || "";
         return result;
       } else {
         if (self.state.get("openingSession")) {

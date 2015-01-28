@@ -72,6 +72,7 @@ Please install the following:
 * `unzip`
 * `strace`
 * `curl`
+* `sudo`
 * ImageMagick
 * [Clang compiler](http://clang.llvm.org/) version 3.4 or better
 * [Meteor](http://meteor.com)
@@ -84,8 +85,13 @@ On Debian or Ubuntu, you should be able to get all these with:
 
 ### Building / installing the binaries
 
-Build the Sandstorm bundle:
+To contribute to the Sandstorm project fork the repository and clone it to your local machine.
 
+    git clone https://github.com/<<yourname>>/sandstorm
+
+Build the Sandstorm bundle (not as root):
+
+    cd ~/sandstorm/
     make
 
 (Note: You should *not* use `-j`, as we only use make as a meta-build system. The major components will utilize all CPU cores.)
@@ -95,9 +101,13 @@ Install it:
     make install
 
 This installs your locally-built bundle just as would get if you had installed using
-`https://install.sandstorm.io`. You will be asked various configuration questions. If you intend
-to hack on Sandstorm itself, you should choose to run the server to run under your local user
-account (the default is to create a separate user called `sandstorm`).
+`https://install.sandstorm.io`. You will be asked various configuration questions, the two most important are:
+    
+    Install as root? [yes]: yes
+    SERVER_USER [sandstorm]: <<put your local user here>>
+
+If you intend to hack on Sandstorm itself, you should choose to run the server to run under your local user
+account (the default is to create a separate user called `sandstorm`, do not use `root` either).
 
 If Sandstorm is already installed, you can update to your newly-built version like so:
 
@@ -113,7 +123,7 @@ have to manually do:
 You can run the shell (front-end) in dev mode so that you can modify it without rebuilding the
 whole bundle for every change. Just do:
 
-    cd shell
+    cd ~/sandstorm/shell
     sudo service sandstorm stop-fe
     ./run-dev.sh
 

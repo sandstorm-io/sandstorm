@@ -134,6 +134,8 @@ kj::Maybe<kj::ArrayPtr<const char>> splitFirst(kj::ArrayPtr<const char>& input, 
 kj::ArrayPtr<const char> extractHostFromUrl(kj::StringPtr url);
 kj::ArrayPtr<const char> extractProtocolFromUrl(kj::StringPtr url);
 
+kj::String base64Encode(const kj::ArrayPtr<const byte> input);
+
 }  // namespace sandstorm
 
 #endif // SANDSTORM_UTIL_H_

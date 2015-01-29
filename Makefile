@@ -149,6 +149,8 @@ shell-env: tmp/.shell-env
 tmp/.shell-env: tmp/.ekam-run $(IMAGES)
 	@mkdir -p tmp
 	@touch tmp/.shell-env
+	@mkdir -p node_modules/capnp
+	@bash -O extglob -c 'cp src/capnp/!(*test*).capnp node_modules/capnp'
 
 shell/public/%.png: icons/%.svg
 	$(call color,convert $<)

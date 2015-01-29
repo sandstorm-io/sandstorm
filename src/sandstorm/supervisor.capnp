@@ -46,29 +46,39 @@ interface Supervisor {
   # size. May occasionally return prematurely, with `size` equal to `oldSize`.
 }
 
-interface SandstormCore(InternalSturdyRef, InternalOwner) {
+interface SandstormCore {
   # When the front-end connects to a Sandstorm supervisor, it exports a SandstormCore capability as
   # the default capability on the connection.
   #
   # If the front-end disconnects, it probably means that it is restarting. It will connect again
   # after restart. In the meantime, the supervisor should queue any RPCs to this interface and
   # retry them after the front-end has reconnected.
-  #
-  # `InternalSturdyRef` is defined in `internal.capnp`, but is declared as a type parameter here
-  # because the supervisor should treat this type as opaque.
 
-  using Persistent = .Persistent(InternalSturdyRef, InternalOwner);
+  restore @0 (token :Data) -> (cap :Capability);
+  # Restores a SturdyRef of type `external`. Fails if this grain is not the ref's owner (including
+  # if the ref has no owner).
 
-  restore @0 (ref :InternalSturdyRef) -> (cap :Persistent);
-  # Restores a SturdyRef. Fails if this grain is not the ref's owner (including if the ref has no
-  # owner).
-
-  wrapSaved @1 [AppSturdyRef] (ref :AppSturdyRef, owner :InternalOwner)
-      -> (internalRef :InternalSturdyRef);
+  wrapSaved @1 [AppSturdyRef] (ref :AppSturdyRef, owner :SystemSturdyRefOwner) -> (token :Data);
   # When the supervisor receives a save() request for a capability hosted by the app, it first
   # calls save() on the underlying capability to get an AppSturdyRef, then calls wrapSaved() to
-  # convert this to an InternalSturdyRef which it can then return.
+  # convert this to a token which it can then return.
   #
   # TODO(soon): How do we keep this capability associated with the user account that created it,
   #   in order to auto-revoke it if the user loses permissions?
+}
+
+struct SystemSturdyRefOwner {
+  union {
+    grain :group {
+      # Owned by a local grain.
+      grainId @0 :Text;
+      innerOwner @2 :Grain.SturdyRefOwner;
+    }
+
+    external @1 :AnyPointer;
+    # An external owner (on the public internet).
+    #
+    # TODO(someday): Change AnyPointer to the type for public internet owners, once the public
+    #   internet Cap'n Proto protocol is defined.
+  }
 }

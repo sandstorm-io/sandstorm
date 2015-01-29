@@ -19,7 +19,8 @@
 $import "/capnp/c++.capnp".namespace("sandstorm");
 
 using Util = import "util.capnp";
-using Persistent = import "/capnp/persistent.capnp".Persistent;
+using GenericPersistent = import "/capnp/persistent.capnp";
+using persistent = GenericPersistent.persistent;
 
 # ========================================================================================
 # Powerbox
@@ -40,7 +41,7 @@ using Persistent = import "/capnp/persistent.capnp".Persistent;
 # presented with a list of actions that make sense for that capability and may select one.  (This
 # is much like Android intents.)
 
-interface PowerboxCapability extends(Persistent) {
+interface PowerboxCapability $persistent {
   # Capabilities to be offered to the powerbox must implement PowerboxCapability (in addition to
   # the interface for the application functionality they provide).  PowerboxCapability provides
   # metadata about the capability for display in the powerbox UI as well as the sharing graph
@@ -79,7 +80,7 @@ interface PowerboxCapability extends(Persistent) {
   }
 }
 
-interface PowerboxAction extends(Persistent) {
+interface PowerboxAction $persistent {
   apply @0 (cap: PowerboxCapability) -> (view :UiView);
   # Invoke the action on the given capability, producing a view which is displayed to the user.
 }
@@ -108,6 +109,9 @@ interface SandstormApi(AppSturdyRef) {
   # formed with the application instance.  This object specifically represents the supervisor
   # for this application instance -- two different application instances (grains) never share a
   # supervisor.
+  #
+  # `AppSturdyRef` is the format in which the application represents SturdyRefs pointing to its
+  # own objects; see Persistent, below.
 
   # TODO(soon):  Read the grain title as set by the user.  Also have interface to offer a new
   #   title and icon?
@@ -154,8 +158,7 @@ interface SandstormApi(AppSturdyRef) {
   # Like `shareCap` but with extra options for sharing a UiView, such as setting a role and
   # permissions.
 
-  restore @4 (ref :SturdyRef(AppSturdyRef))
-      -> (cap :Persistent(SturdyRef(AppSturdyRef), NullOwner));
+  restore @4 (ref :SturdyRef(AppSturdyRef)) -> (cap :Capability);
   # Restores the given SturdyRef.
   #
   # For convenience, if `ref` is an internal ref (hosted by the app itself), this just loops back
@@ -489,39 +492,43 @@ struct GrainInfo {
 # ========================================================================================
 # SturdyRefs
 
+interface Persistent(AppSturdyRef)
+    extends(GenericPersistent.Persistent(SturdyRef(AppSturdyRef), SturdyRefOwner)) {
+  # Interface for persistent capabilities as seen within a Sandstorm app. Each app is free to
+  # define `AppSturdyRef` as it sees fit. Note that the contents of an AppSturdyRef will never be
+  # seen outside the app, as the supervisor will replace SturdyRefs with an unguessable, opaque
+  # token on their way out. Therefore, an app need not worry about making AppSturdyRef opaque nor
+  # unguessable, unless it wishes to do so for its own internal purposes.
+}
+
 struct SturdyRef(AppSturdyRef) {
-  # The SturdyRef definition for the realm of a Sandstorm app. Each app is free to define
-  # `AppSturdyRef` as it sees fit. There is no need for `AppSturdyRef` to be unguessable nor
-  # opaque, as the supervisor will replace outgoing SturdyRefs with suitably opaque and unguessable
-  # tokens.
+  # The SturdyRef definition for the realm of a Sandstorm app.
 
   union {
-    external @0 :SupervisorSturdyRef;
-    # A reference to an object external to the grain.
+    external @0 :Data;
+    # A reference to an object external to the grain. The data blob contains random unguessable
+    # bytes.
 
     internal @1 :AppSturdyRef;
     # A reference to an object implemented by the grain itself.
   }
 }
 
-struct SupervisorSturdyRef {
-  # Inside a grain, this represents a capability held by the grain to an object that lives
-  # outside the grain. The app may exchange a SupervisorStudyRef for a live capability by
-  # calling SandstormApi.restore().
-
-  key0 @0 :UInt64;
-  key1 @1 :UInt64;
-  # Unguessably-random key.
+struct SturdyRefOwner {
+  # The type of the `sealFor` parameter passed to `save()` when saving a SturdyRef within the realm
+  # of a Sandstorm app.
   #
-  # Note that this key is only valid for this grain; e.g. if you transmitted the key bits to
-  # another grain, it wouldn't be able to do anything useful with it. In theory we could make this
-  # key be a small (guessable) integer, but we use unguessable values for the convenience of apps
-  # that want to implement capability-based security between their own components.
-}
+  # Note that Sandstorm implements and enforces ownership transparently to the app, such that
+  # SturdyRefs saved by one grain cannot be restored by anyone else. However, apps need not
+  # concern themselves with this -- it is all transparent. At the app level, `SturdyRefOwner`
+  # contains no enforceable identity for sealing purposes; it only contains useful information for
+  # visualization purposes.
 
-struct NullOwner {
-  # Grains do not need to worry about sealing. The supervisor takes care of it for them.
-  # Therefore, the "owner" of a SturdyRef is left empty.
+  label @0 :Util.LocalizedText;
+  # Human-readable explanation of how this capability relates to the grain. This is displayed
+  # when visualizing outgoing capabilities from the calling grain in the Sandstorm UI. This string
+  # will NOT be communicated to the host of the saved capability; it is intercepted and used by the
+  # Sansdtorm system.
 }
 
 interface MainView(AppSturdyRef) extends(UiView) {
@@ -533,8 +540,7 @@ interface MainView(AppSturdyRef) extends(UiView) {
   # `AppSturdyRef` is the format that the app prefers for representing SturdyRefs to objects
   # it hosts.
 
-  restore @0 (ref :AppSturdyRef, userInfo :UserInfo)
-      -> (cap :Persistent(SturdyRef(AppSturdyRef), NullOwner));
+  restore @0 (ref :AppSturdyRef, userInfo :UserInfo) -> (cap :Capability);
   # Restore a SturdyRef hosted by the app.
   #
   # Apps only need to implement this if they publish persistent capabilities (not including the

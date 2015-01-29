@@ -199,6 +199,14 @@ struct BridgeConfig {
   # also has the effect of limiting your clients to only accessing endpoints under that path you
   # provide. It should always end in a trailing '/'.
   # "/" is a valid value, and will give clients access to all paths.
+
+  enableIpBridge @2 :Bool = false;
+  # This enables IP bridge functionality in sandstorm-http-bridge. This requires that the owner
+  # of the grain be an admin, and that iptables is enabled on the host.
+  #
+  # With this enabled, all TCP connections will be seamlessly redirected over the Sandstorm
+  # IP interface (see ip.capnp). For legacy apps, it will apppear that they have full access
+  # to the internet
 }
 
 # ==============================================================================

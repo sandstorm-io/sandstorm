@@ -51,6 +51,7 @@
 #include <sandstorm/package.capnp.h>
 #include <joyent-http/http_parser.h>
 
+#include "sandstorm/sandstorm-ip-bridge.h"
 #include "version.h"
 #include "util.h"
 
@@ -1497,6 +1498,22 @@ public:
         auto promise = acceptLoop(*serverPort, kj::mv(sandstormHttpBridge), tasks);
         return promise.attach(kj::mv(serverPort));
       });
+      tasks.add(kj::mv(acceptTask));
+
+      // Run a TCP bridge. The supervisor sets up an iptables rule that redirects all traffic to
+      // port 23136. This method listens and redirects that traffic over the IP interface defined
+      // in ip.capnp
+      auto hackContextRestored = appRestorer.getHackContext().castAs<HackSessionContext>();
+      if (config.getEnableIpBridge()) {
+        auto tcpBridgeTask = ioContext.provider->getNetwork()
+            .parseAddress("127.0.0.1", 23136)
+            .then([&](kj::Own<kj::NetworkAddress>&& addr) {
+          auto serverPort = addr->listen();
+
+          return ipbridge::runTcpBridge(*serverPort, tasks, hackContextRestored).attach(kj::mv(serverPort));
+        });
+        tasks.add(kj::mv(tcpBridgeTask));
+      }
 
       exitPromise.wait(ioContext.waitScope);
       KJ_UNREACHABLE;  // exitPromise always exits before completing

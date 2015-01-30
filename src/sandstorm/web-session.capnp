@@ -100,13 +100,13 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   struct PostContent {
     mimeType @0 :Text;
     content @1 :Data;
-    encoding @2 :Text;  # Content-Encoding header (optional)
+    encoding @2 :Text;  # Content-Encoding header (optional).
   }
 
   struct PutContent {
     mimeType @0 :Text;
     content @1 :Data;
-    encoding @2 :Text;  # Content-Encoding header (optional)
+    encoding @2 :Text;  # Content-Encoding header (optional).
   }
 
   struct Cookie {

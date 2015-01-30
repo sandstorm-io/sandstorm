@@ -619,6 +619,15 @@ public:
                   .build();
             },
             "Install Sandstorm devtools.")
+        .addSubCommand("reset-oauth",
+            [this]() {
+              return kj::MainBuilder(context, VERSION,
+                      "Resets the OAuth configuration of Meteor by deleting the configuration "
+                      "that is stored in Mongo.")
+                  .callAfterParsing(KJ_BIND_METHOD(*this, resetOauth))
+                  .build();
+            },
+            "Resets OAuth configuration.")
         .addSubCommand("continue",
             [this]() {
               return kj::MainBuilder(context, VERSION,
@@ -972,6 +981,24 @@ public:
     unlink(to.cStr());
     KJ_SYSCALL(symlink(kj::str(parent, "/sandstorm").cStr(), to.cStr()));
     context.exitInfo(kj::str("created: ", devtoolsBindir, "/spk"));
+  }
+
+  kj::MainBuilder::Validity resetOauth() {
+    changeToInstallDir();
+
+    // Verify that Sandstorm is running.
+    if (getRunningPid() == nullptr) {
+      context.exitError("Sandstorm is not running.");
+    }
+
+    const Config config = readConfig();
+
+    // We'll run under the chroot.
+    enterChroot(false);
+
+    mongoCommand(config, kj::str("db.meteor_accounts_loginServiceConfiguration.remove({})"));
+
+    context.exitInfo(kj::str("reset OAuth configuration"));
   }
 
   kj::MainBuilder::Validity dev() {

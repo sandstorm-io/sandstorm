@@ -1191,7 +1191,7 @@ private:
     addHeader(lines, "Content-Id", attachment.getContentId());
     lines.add(nullptr);
 
-    lines.add(base64Encode(attachment.getContent()));
+    lines.add(base64Encode(attachment.getContent(), true));
   }
 };
 

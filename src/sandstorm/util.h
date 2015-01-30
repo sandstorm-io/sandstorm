@@ -16,6 +16,9 @@
 
 #ifndef SANDSTORM_UTIL_H_
 #define SANDSTORM_UTIL_H_
+// This file contains various utility functions used in Sandstorm.
+//
+// TODO(cleanup): A lot of stuff in here should move into KJ, after proper cleanup.
 
 #include <kj/io.h>
 #include <sys/stat.h>
@@ -134,7 +137,12 @@ kj::Maybe<kj::ArrayPtr<const char>> splitFirst(kj::ArrayPtr<const char>& input, 
 kj::ArrayPtr<const char> extractHostFromUrl(kj::StringPtr url);
 kj::ArrayPtr<const char> extractProtocolFromUrl(kj::StringPtr url);
 
-kj::String base64Encode(const kj::ArrayPtr<const byte> input);
+kj::String base64Encode(kj::ArrayPtr<const byte> input, bool breakLines);
+// Encode the input as base64. If `breakLines` is true, insert line breaks every 72 characters and
+// at the end of the output. (Otherwise, return one long line.)
+
+kj::Array<byte> base64Decode(kj::StringPtr input);
+// Decode base64 input to bytes. Non-base64 characters in the input will be ignored.
 
 }  // namespace sandstorm
 

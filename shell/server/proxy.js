@@ -1199,12 +1199,14 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     } else if (request.method === "POST") {
       return session.post(path, {
         mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data
+        content: data,
+        encoding: request.headers["content-encoding"] || "identity"
       }, context);
     } else if (request.method === "PUT") {
       return session.put(path, {
         mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data
+        content: data,
+        encoding: request.headers["content-encoding"] || "identity"
       }, context);
     } else if (request.method === "DELETE") {
       return session.delete(path, context);
@@ -1228,12 +1230,13 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
   var session = this.getSession(request);
 
   var mimeType = request.headers["content-type"] || "application/octet-stream";
+  var encoding = request.headers["content-encoding"] || "identity"
 
   var requestStreamPromise;
   if (request.method === "POST") {
-    requestStreamPromise = session.postStreaming(path, mimeType, context);
+    requestStreamPromise = session.postStreaming(path, mimeType, context, encoding);
   } else if (request.method === "PUT") {
-    requestStreamPromise = session.putStreaming(path, mimeType, context);
+    requestStreamPromise = session.putStreaming(path, mimeType, context, encoding);
   } else {
     throw new Error("Sandstorm only supports streaming POST and PUT requests.");
   }

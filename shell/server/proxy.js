@@ -1200,13 +1200,13 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
       return session.post(path, {
         mimeType: request.headers["content-type"] || "application/octet-stream",
         content: data,
-        encoding: request.headers["content-encoding"] || "identity"
+        encoding: request.headers["content-encoding"]
       }, context);
     } else if (request.method === "PUT") {
       return session.put(path, {
         mimeType: request.headers["content-type"] || "application/octet-stream",
         content: data,
-        encoding: request.headers["content-encoding"] || "identity"
+        encoding: request.headers["content-encoding"]
       }, context);
     } else if (request.method === "DELETE") {
       return session.delete(path, context);
@@ -1230,7 +1230,7 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
   var session = this.getSession(request);
 
   var mimeType = request.headers["content-type"] || "application/octet-stream";
-  var encoding = request.headers["content-encoding"] || "identity"
+  var encoding = request.headers["content-encoding"]
 
   var requestStreamPromise;
   if (request.method === "POST") {

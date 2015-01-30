@@ -988,7 +988,7 @@ public:
     kj::String httpRequest = makeHeaders("POST", params.getPath(), params.getContext(),
       kj::str("Content-Type: ", content.getMimeType()),
       kj::str("Content-Length: ", content.getContent().size()),
-      kj::str("Content-Encoding: ", content.getEncoding()));
+      content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
     return sendRequest(toBytes(httpRequest, content.getContent()), context);
   }
 
@@ -998,7 +998,7 @@ public:
     kj::String httpRequest = makeHeaders("PUT", params.getPath(), params.getContext(),
       kj::str("Content-Type: ", content.getMimeType()),
       kj::str("Content-Length: ", content.getContent().size()),
-      kj::str("Content-Encoding: ", content.getEncoding()));
+      content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
     return sendRequest(toBytes(httpRequest, content.getContent()), context);
   }
 
@@ -1012,7 +1012,7 @@ public:
     PostStreamingParams::Reader params = context.getParams();
     kj::String httpRequest = makeHeaders("POST", params.getPath(), params.getContext(),
         kj::str("Content-Type: ", params.getMimeType()),
-        kj::str("Content-Encoding: ", params.getEncoding()));
+        params.hasEncoding() ? kj::str("Content-Encoding: ", params.getEncoding()) : nullptr);
     return sendRequestStreaming(kj::mv(httpRequest), context);
   }
 

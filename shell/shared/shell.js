@@ -60,7 +60,10 @@ if (Meteor.isServer) {
   });
 
   Meteor.publish("sessions", function (sessionId) {
-    return Sessions.find({_id: sessionId});
+    // sessionId itself should be secret enough, but they are also not meant to be shared, so as
+    // a backup we only publish the session to its owner. Note that `userId` can be null if the
+    // user is not logged in.
+    return Sessions.find({_id: sessionId, userId: this.userId});
   });
 
   Meteor.publish("devApps", function () {

@@ -48,15 +48,17 @@ interface Supervisor {
 
 interface SandstormCore {
   # When the front-end connects to a Sandstorm supervisor, it exports a SandstormCore capability as
-  # the default capability on the connection.
+  # the default capability on the connection. This SandstormCore instance is specific to the
+  # supervisor's grain; e.g. the grain ID is used to enforce ownership restrictions in `restore()`
+  # and to fill out the `grainId` field in the `ApiTokens` table in calls to `wrapSaved()`.
   #
   # If the front-end disconnects, it probably means that it is restarting. It will connect again
   # after restart. In the meantime, the supervisor should queue any RPCs to this interface and
   # retry them after the front-end has reconnected.
 
   restore @0 (token :Data) -> (cap :Capability);
-  # Restores a SturdyRef of type `external`. Fails if this grain is not the ref's owner (including
-  # if the ref has no owner).
+  # Restores a SturdyRef from the Sandstorm-internal realm (see InternalPersistent). Fails if this
+  # grain is not the ref's owner (including if the ref has no owner).
 
   wrapSaved @1 [AppSturdyRef] (ref :AppSturdyRef, owner :SystemSturdyRefOwner) -> (token :Data);
   # When the supervisor receives a save() request for a capability hosted by the app, it first
@@ -67,6 +69,18 @@ interface SandstormCore {
   #   in order to auto-revoke it if the user loses permissions?
 }
 
+interface InternalPersistent extends(Persistent(Data, SystemSturdyRefOwner)) {
+  # The specialization of `Persistent` used in the "Sandstorm internal" realm, which is the realm
+  # used by Sandstorm system components talking ot each other. This realm is NOT seen by Sandstorm
+  # applications; each grain is its own realm, and the Supervisor performs translations
+  # transparently.
+  #
+  # In the Sandstorm internal realm, the type of SturdyRefs themselves is simply `Data`, where the
+  # data is an API token. The SHA-256 hash of this token is an ID into the `ApiTokens` collection.
+  # The token itself is arbitrary random bytes, not ASCII text (this differs from API tokens
+  # created for the purpose of HTTP APIs).
+}
+
 struct SystemSturdyRefOwner {
   union {
     grain :group {
@@ -75,10 +89,11 @@ struct SystemSturdyRefOwner {
       innerOwner @2 :Grain.SturdyRefOwner;
     }
 
-    external @1 :AnyPointer;
-    # An external owner (on the public internet).
+    internet @1 :AnyPointer;
+    # An owner on the public internet.
     #
     # TODO(someday): Change AnyPointer to the type for public internet owners, once the public
-    #   internet Cap'n Proto protocol is defined.
+    #   internet Cap'n Proto protocol is defined. (Or, do we want Sandstorm nodes to be able to
+    #   nested within broader networks that aren't the internet? Hmm.)
   }
 }

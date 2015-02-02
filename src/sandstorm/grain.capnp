@@ -161,7 +161,7 @@ interface SandstormApi(AppSturdyRef) {
   restore @4 (ref :SturdyRef(AppSturdyRef)) -> (cap :Capability);
   # Restores the given SturdyRef.
   #
-  # For convenience, if `ref` is an internal ref (hosted by the app itself), this just loops back
+  # For convenience, if `ref` is a loopback ref (hosted by the app itself), this just loops back
   # to MainView.restore().
 
   drop @5 (ref :SturdyRef(AppSturdyRef));
@@ -171,7 +171,7 @@ interface SandstormApi(AppSturdyRef) {
   # This will also cause the ref to disappear from the collaboration graph visualization that the
   # owner can see (once such a thing exists).
   #
-  # If `ref` is an internal ref, this has no effect.
+  # If `ref` is a loopback ref, this has no effect.
 
   deleted @6 (ref :AppSturdyRef);
   # Notifies the supervisor that an object hosted by this application has been deleted, and
@@ -509,7 +509,7 @@ struct SturdyRef(AppSturdyRef) {
     # A reference to an object external to the grain. The data blob contains random unguessable
     # bytes.
 
-    internal @1 :AppSturdyRef;
+    loopback @1 :AppSturdyRef;
     # A reference to an object implemented by the grain itself.
   }
 }

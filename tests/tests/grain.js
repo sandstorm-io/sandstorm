@@ -121,6 +121,7 @@ module.exports = utils.testAllLogins({
 
   "Test grain frame" : function (browser) {
     browser
+      .pause(short_wait)
       .frame('grain-frame')
       .waitForElementPresent('#publish', medium_wait)
       .assert.containsText('#publish', 'Publish')

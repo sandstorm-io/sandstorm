@@ -844,7 +844,8 @@ public:
     auto content = params.getContent();
     kj::String httpRequest = makeHeaders("POST", params.getPath(), params.getContext(),
       kj::str("Content-Type: ", content.getMimeType()),
-      kj::str("Content-Length: ", content.getContent().size()));
+      kj::str("Content-Length: ", content.getContent().size()),
+      content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
     return sendRequest(toBytes(httpRequest, content.getContent()), context);
   }
 
@@ -853,7 +854,8 @@ public:
     auto content = params.getContent();
     kj::String httpRequest = makeHeaders("PUT", params.getPath(), params.getContext(),
       kj::str("Content-Type: ", content.getMimeType()),
-      kj::str("Content-Length: ", content.getContent().size()));
+      kj::str("Content-Length: ", content.getContent().size()),
+      content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
     return sendRequest(toBytes(httpRequest, content.getContent()), context);
   }
 
@@ -866,14 +868,16 @@ public:
   kj::Promise<void> postStreaming(PostStreamingContext context) override {
     PostStreamingParams::Reader params = context.getParams();
     kj::String httpRequest = makeHeaders("POST", params.getPath(), params.getContext(),
-        kj::str("Content-Type: ", params.getMimeType()));
+        kj::str("Content-Type: ", params.getMimeType()),
+        params.hasEncoding() ? kj::str("Content-Encoding: ", params.getEncoding()) : nullptr);
     return sendRequestStreaming(kj::mv(httpRequest), context);
   }
 
   kj::Promise<void> putStreaming(PutStreamingContext context) override {
     PutStreamingParams::Reader params = context.getParams();
     kj::String httpRequest = makeHeaders("PUT", params.getPath(), params.getContext(),
-        kj::str("Content-Type: ", params.getMimeType()));
+        kj::str("Content-Type: ", params.getMimeType()),
+        params.hasEncoding() ? kj::str("Content-Encoding: ", params.getEncoding()) : nullptr);
     return sendRequestStreaming(kj::mv(httpRequest), context);
   }
 
@@ -944,7 +948,8 @@ private:
   kj::String makeHeaders(kj::StringPtr method, kj::StringPtr path,
                          WebSession::Context::Reader context,
                          kj::String extraHeader1 = nullptr,
-                         kj::String extraHeader2 = nullptr) {
+                         kj::String extraHeader2 = nullptr,
+                         kj::String extraHeader3 = nullptr) {
     kj::Vector<kj::String> lines(16);
 
     lines.add(kj::str(method, " /", path, " HTTP/1.1"));
@@ -954,6 +959,9 @@ private:
     }
     if (extraHeader2 != nullptr) {
       lines.add(kj::mv(extraHeader2));
+    }
+    if (extraHeader3 != nullptr) {
+      lines.add(kj::mv(extraHeader3));
     }
     lines.add(kj::str("Accept-Encoding: gzip"));
     lines.add(kj::str("Accept-Language: ", acceptLanguages));

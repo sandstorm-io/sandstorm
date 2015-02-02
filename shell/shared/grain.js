@@ -406,7 +406,7 @@ Router.map(function () {
         return result;
       }
 
-      var session = Sessions.findOne({grainId: grainId});
+      var session = Sessions.findOne({grainId: grainId, userId: Meteor.userId()});
       if (session) {
         result.appOrigin = window.location.protocol + "//" + makeWildcardHost(session.hostId);
         setCurrentSessionId(session._id, result.appOrigin, grainId);

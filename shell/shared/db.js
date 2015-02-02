@@ -166,6 +166,16 @@ StatsTokens = new Mongo.Collection("statsTokens");
 // Each contains:
 //   _id:       The token. At least 128 bits entropy (Random.id(22)).
 
+Misc = new Mongo.Collection("misc");
+// Miscellaneous configuration and other settings
+//
+// This table is currently only used for persisting BASE_URL from one session to the next,
+// but in general any miscellaneous settings should go in here
+//
+// Each contains:
+//   _id:       The name of the setting. ie. "BASE_URL"
+//   value:     The value of the setting.
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.

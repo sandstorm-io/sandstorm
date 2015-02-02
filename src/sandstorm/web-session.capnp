@@ -59,14 +59,13 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   put @3 (path :Text, content :PutContent, context :Context) -> Response;
   delete @4 (path :Text, context :Context) -> Response;
 
-  postStreaming @5 (path :Text, mimeType :Text, context :Context) -> (stream :RequestStream);
-  putStreaming @6 (path :Text, mimeType :Text, context :Context) -> (stream :RequestStream);
-  # Streaming post/put requests, useful when the input is large. If these throw exceptions, the
-  # caller should fall back to regular post() / put() on the assumption that the app doesn't
+  postStreaming @5 (path :Text, mimeType :Text, context :Context, encoding :Text) -> (stream :RequestStream);
+  putStreaming @6 (path :Text, mimeType :Text, context :Context, encoding :Text) -> (stream :RequestStream);
+  # Streaming post/put requests, useful when the input is large. If these throw `unimplemented` exceptions,
+  # the caller should fall back to regular post() / put() on the assumption that the app doesn't
   # implement streaming.
   #
-  # TODO(someday): It seems like Cap'n Proto needs a way to distinguish not-implemented from other
-  #   exception types.
+  # The optional `encoding` field represents the Content-Encoding header.
 
   openWebSocket @2 (path :Text, context :Context,
                     protocol :List(Text), clientStream :WebSocketStream)
@@ -101,11 +100,13 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   struct PostContent {
     mimeType @0 :Text;
     content @1 :Data;
+    encoding @2 :Text;  # Content-Encoding header (optional).
   }
 
   struct PutContent {
     mimeType @0 :Text;
     content @1 :Data;
+    encoding @2 :Text;  # Content-Encoding header (optional).
   }
 
   struct Cookie {

@@ -71,7 +71,7 @@ interface SandstormCore {
 
 interface InternalPersistent extends(Persistent(Data, SystemSturdyRefOwner)) {
   # The specialization of `Persistent` used in the "Sandstorm internal" realm, which is the realm
-  # used by Sandstorm system components talking ot each other. This realm is NOT seen by Sandstorm
+  # used by Sandstorm system components talking to each other. This realm is NOT seen by Sandstorm
   # applications; each grain is its own realm, and the Supervisor performs translations
   # transparently.
   #

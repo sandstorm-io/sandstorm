@@ -49,18 +49,22 @@ Meteor.startup(function () {
   WebApp.httpServer.removeAllListeners('upgrade');
 
   WebApp.httpServer.on('upgrade', function(req, socket, head) {
-    if (isSandstormShell(req.headers.host.split(":")[0])) {
-      // Go on to Meteor.
-      for (var ii = 0; ii < meteorUpgradeListeners.length; ++ii) {
-        meteorUpgradeListeners[ii](req, socket, head);
-      }
-    } else {
-      var id = matchWildcardHost(req.headers.host);
-      if (id) {
-        if (!tryProxyUpgrade(id, req, socket, head)) {
-          socket.destroy();
+    try {
+      if (isSandstormShell(req.headers.host.split(":")[0])) {
+        // Go on to Meteor.
+        for (var ii = 0; ii < meteorUpgradeListeners.length; ++ii) {
+          meteorUpgradeListeners[ii](req, socket, head);
+        }
+      } else {
+        var id = matchWildcardHost(req.headers.host);
+        if (id) {
+          if (!tryProxyUpgrade(id, req, socket, head)) {
+            socket.destroy();
+          }
         }
       }
+    } catch (err) {
+      console.error("WebSocket event handler failed:", err.stack);
     }
   });
 

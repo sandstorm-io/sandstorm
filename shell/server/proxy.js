@@ -551,7 +551,7 @@ tryProxyUpgrade = function (hostId, req, socket, head) {
     var origin = req.headers.origin;
     if (origin !== (PROTOCOL + "//" + req.headers.host)) {
       console.error("Detected illegal cross-origin WebSocket from:", origin);
-      socket.close();
+      socket.destroy();
       return true;
     }
 

@@ -473,10 +473,10 @@ else
   ./sandstorm devtools
 
   # Note: Ubuntu may have /etc/systemd even when not configured to use systemd.
-  if [ -d /etc/systemd/system ] && which systemctl > /dev/null; then
+  if grep -q systemd /proc/1/comm; then
     SYSTEMD_UNIT="sandstorm.service"
 
-    if prompt-yesno "Start sandstorm at system boot?" yes; then
+    if prompt-yesno "Start sandstorm at system boot (using systemd)?" yes; then
       if systemctl list-unit-files | grep -q $SYSTEMD_UNIT; then
         systemctl stop sandstorm || true
       fi

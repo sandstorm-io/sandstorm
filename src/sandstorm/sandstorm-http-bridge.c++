@@ -165,6 +165,7 @@ public:
     settings.on_header_value = &on_header_value;
     settings.on_body = &on_body;
     settings.on_headers_complete = &on_headers_complete;
+    settings.on_message_complete = &on_message_complete;
     http_parser_init(this, HTTP_RESPONSE);
   }
 
@@ -183,8 +184,7 @@ public:
       } else if (upgrade) {
         KJ_ASSERT(nread <= actual && nread >= 0);
         return kj::arrayPtr(buffer + nread, actual - nread);
-      } else if (actual == 0) {
-        // EOF
+      } else if (messageComplete) {
         return kj::arrayPtr(buffer, 0);
       } else if (headersComplete && status_code / 100 == 2) {
         isStreaming = true;
@@ -399,6 +399,7 @@ private:
   sandstorm::ByteStream::Client responseStream;
   kj::TaskSet taskSet;
   bool headersComplete = false;
+  bool messageComplete = false;
   byte buffer[4096];
   http_parser_settings settings;
   kj::Vector<RawHeader> rawHeaders;
@@ -417,8 +418,7 @@ private:
       if (nread != actual) {
         const char* error = http_errno_description(HTTP_PARSER_ERRNO(this));
         KJ_FAIL_ASSERT("Failed to parse HTTP response from sandboxed app.", error);
-      } else if (actual == 0) {
-        // EOF
+      } else if (messageComplete) {
         taskSet.add(responseStream.doneRequest().send().then([](auto x){}));
         return kj::READY_NOW;
       } else {
@@ -570,6 +570,10 @@ private:
     KJ_ASSERT(status_code >= 100, (int)status_code);
   }
 
+  void onMessageComplete() {
+    messageComplete = true;
+  }
+
 #define ON_DATA(lower, title) \
   static int on_##lower(http_parser* p, const char* d, size_t s) { \
     static_cast<HttpParser*>(p)->on##title(kj::arrayPtr(d, s)); \
@@ -586,6 +590,7 @@ private:
   ON_DATA(header_value, HeaderValue)
   ON_DATA(body, Body)
   ON_EVENT(headers_complete, HeadersComplete)
+  ON_EVENT(message_complete, MessageComplete)
 #undef ON_DATA
 #undef ON_EVENT
 

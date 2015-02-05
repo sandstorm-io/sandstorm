@@ -184,7 +184,8 @@ public:
       } else if (upgrade) {
         KJ_ASSERT(nread <= actual && nread >= 0);
         return kj::arrayPtr(buffer + nread, actual - nread);
-      } else if (messageComplete) {
+      } else if (messageComplete || actual == 0) {
+        // The parser is done or the stream has closed.
         return kj::arrayPtr(buffer, 0);
       } else if (headersComplete && status_code / 100 == 2) {
         isStreaming = true;
@@ -418,7 +419,8 @@ private:
       if (nread != actual) {
         const char* error = http_errno_description(HTTP_PARSER_ERRNO(this));
         KJ_FAIL_ASSERT("Failed to parse HTTP response from sandboxed app.", error);
-      } else if (messageComplete) {
+      } else if (messageComplete || actual == 0) {
+        // The parser is done or the stream has closed.
         taskSet.add(responseStream.doneRequest().send().then([](auto x){}));
         return kj::READY_NOW;
       } else {

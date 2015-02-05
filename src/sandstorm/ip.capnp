@@ -18,7 +18,7 @@
 # This file defines Cap'n Proto interfaces for TCP/IP networking.
 #
 # The purpose of these interfaces is to implement "driver" applications -- that is, apps which
-# themselves implement raw legaly network protocols (e.g. HTTP, SMTP, XMPP, etc.) and then
+# themselves implement raw legacy network protocols (e.g. HTTP, SMTP, XMPP, etc.) and then
 # re-export those protocols as a Cap'n Proto interface with meaningful separation of capabilities.
 # Driver applications generally must be "approved by the Sandstorm adminsitrator" because raw
 # network access can be abused in ways that harm the server as a whole. For example, an app which

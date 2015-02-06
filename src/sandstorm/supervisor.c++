@@ -1521,7 +1521,7 @@ void SupervisorMain::checkIfAlreadyRunning() {
   KJ_UNREACHABLE;
 }
 
-class SupervisorMain::SandstormApiImpl final: public SandstormApi::Server {
+class SupervisorMain::SandstormApiImpl final: public SandstormApi<>::Server {
 public:
   // TODO(someday):  Implement API.
 //  kj::Promise<void> publish(PublishContext context) override {

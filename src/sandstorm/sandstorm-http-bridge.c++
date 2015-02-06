@@ -1324,7 +1324,8 @@ public:
 
   class ApiRestorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
   public:
-    explicit ApiRestorer(SandstormApi::Client&& apiCap, capnp::Capability::Client&& sessionContext)
+    explicit ApiRestorer(SandstormApi<>::Client&& apiCap,
+                         capnp::Capability::Client&& sessionContext)
         : apiCap(kj::mv(apiCap)), sessionContext(kj::mv(sessionContext)) {}
 
     capnp::Capability::Client restore(capnp::AnyPointer::Reader ref) override {
@@ -1346,7 +1347,7 @@ public:
     }
 
   private:
-    SandstormApi::Client apiCap;
+    SandstormApi<>::Client apiCap;
     capnp::Capability::Client sessionContext;
   };
 
@@ -1460,7 +1461,7 @@ public:
       capnp::MallocMessageBuilder message;
       auto vatId = message.initRoot<capnp::rpc::twoparty::VatId>();
       vatId.setSide(capnp::rpc::twoparty::Side::SERVER);
-      SandstormApi::Client api = rpcSystem.bootstrap(vatId).castAs<SandstormApi>();
+      SandstormApi<>::Client api = rpcSystem.bootstrap(vatId).castAs<SandstormApi<>>();
 
       // Export a Unix socket on which the application can connect and make calls directly to the
       // Sandstorm API.

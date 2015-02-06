@@ -186,6 +186,7 @@ public:
         return kj::arrayPtr(buffer + nread, actual - nread);
       } else if (messageComplete || actual == 0) {
         // The parser is done or the stream has closed.
+        KJ_ASSERT(headersComplete, "HTTP response from sandboxed app had incomplete headers.");
         return kj::arrayPtr(buffer, 0);
       } else if (headersComplete && status_code / 100 == 2) {
         isStreaming = true;

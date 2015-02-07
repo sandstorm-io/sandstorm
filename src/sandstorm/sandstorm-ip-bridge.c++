@@ -14,12 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// This program is useful for including in Sandstorm application packages where
-// the application itself is a legacy HTTP web server that does not understand
-// how to speak the Cap'n Proto interface directly.  This program will start up
-// that server and then redirect incoming requests to it over standard HTTP on
-// the loopback network interface.
-
 #include "sandstorm/sandstorm-ip-bridge.h"
 
 #include <kj/debug.h>

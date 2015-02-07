@@ -34,7 +34,10 @@ public:
 static const int BUFFER_SIZE = 8192;
 
 // TCP handling
-struct AcceptedConnection {
+class AcceptedConnection {
+  // This class is for handling a single TCP connection.
+  // It will proxy all writes from the incoming AsyncIoStream to the Cap'n Proto
+  // interface and provides a Downstream capability that handles the reverse
   class Downstream final: public ByteStream::Server {
   private:
     kj::Own<RefcountedAsyncIoStream> connection;
@@ -68,10 +71,6 @@ public:
     upstream = kj::heap<ByteStream::Client>(request.send().getUpstream());
   }
 
-  kj::Promise<void> start() {
-    return messageLoop();
-  }
-
   kj::Promise<void> messageLoop() {
     return connection->stream->tryRead(buffer, 1, BUFFER_SIZE)
           .then([this] (size_t size) -> kj::Promise<void> {
@@ -92,7 +91,7 @@ TcpPort::Client getTcpClient(kj::Own<kj::AsyncIoStream>& connection, HackSession
   auto request = session.getIpNetworkRequest().send().getNetwork().getRemoteHostRequest();
 
   struct sockaddr destaddr;
-  uint size = sizeof(destaddr);  // TODO(soon): make static?
+  uint size = sizeof(destaddr);
   connection->getsockopt(SOL_IP, SO_ORIGINAL_DST, &destaddr, &size);
 
   // TODO(someday): handle ipv6
@@ -110,14 +109,15 @@ kj::Promise<void> runTcpBridge(kj::ConnectionReceiver& serverPort,
   return serverPort.accept().then([&](kj::Own<kj::AsyncIoStream>&& connection) {
     auto connectionState = kj::heap<AcceptedConnection>(kj::mv(connection),
                                                         getTcpClient(connection, session));
-    auto promise = connectionState->start();
+    auto promise = connectionState->messageLoop();
     taskSet.add(promise.attach(kj::mv(connectionState)));
     return runTcpBridge(serverPort, taskSet, session);
   });
 }
 
 // UDP handling
-struct AcceptedUdpConnection {
+// This is mostly non-working at the moment. It requires some re-working using tproxy
+class AcceptedUdpConnection {
 private:
   class ReturnPort final: public UdpPort::Server {
   private:

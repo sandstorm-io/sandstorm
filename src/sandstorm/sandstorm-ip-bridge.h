@@ -26,14 +26,15 @@
 #include <sandstorm/ip.capnp.h>
 
 namespace sandstorm {
-  namespace ipbridge {
-  kj::Promise<void> runTcpBridge(kj::ConnectionReceiver& serverPort,
-                                 kj::TaskSet& taskSet, HackSessionContext::Client& session);
+namespace ipbridge {
 
-  kj::Promise<void> runUdpBridge(kj::DatagramPort& serverPort, kj::TaskSet& taskSet,
-                                 HackSessionContext::Client& session, kj::Network& network);
+kj::Promise<void> runTcpBridge(kj::ConnectionReceiver& serverPort,
+                               kj::TaskSet& taskSet, HackSessionContext::Client& session);
 
-  }  // namespace ipbridge
+kj::Promise<void> runUdpBridge(kj::DatagramPort& serverPort, kj::TaskSet& taskSet,
+                               HackSessionContext::Client& session, kj::Network& network);
+
+}  // namespace ipbridge
 }  // namespace sandstorm
 
 #endif  // SANDSTORM_IP_BRIDGE_H_

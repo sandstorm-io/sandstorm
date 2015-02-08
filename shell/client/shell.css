@@ -225,11 +225,8 @@ img {
   color: #428bca;
 }
 
-#app.main-content {
+#app.main-content { 
   overflow: hidden;
-  -webkit-overflow-scrolling:touch;
-  overflow-y: scroll;
-  overflow-x: scroll;
 }
 
 #grainLog {
@@ -901,6 +898,10 @@ aside #social>p {
     position: static;
     margin: 100px 150px;
   }
+  #app.main-content {
+  	-webkit-overflow-scrolling:touch;
+    overflow: auto;
+  }  
 }
 
 @media screen and (max-width: 900px) {

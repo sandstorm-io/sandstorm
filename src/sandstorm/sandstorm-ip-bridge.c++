@@ -15,6 +15,7 @@
 // limitations under the License.
 
 #include "sandstorm/sandstorm-ip-bridge.h"
+#include "sandstorm/util.h"
 
 #include <kj/debug.h>
 #include <netinet/ip.h>
@@ -32,28 +33,40 @@ public:
 };
 
 static const int BUFFER_SIZE = 8192;
+static const int MAX_PARALLEL_WRITES = 4;
 
 // TCP handling
 class AcceptedConnection {
   // This class is for handling a single TCP connection.
-  // It will proxy all writes from the incoming AsyncIoStream to the Cap'n Proto
-  // interface and provides a Downstream capability that handles the reverse
+  // It will proxy all writes from the incoming AsyncIoStream to the TcpPort
+  // Cap'n Proto interface and provides a Downstream capability that handles
+  // the returning data stream
   class Downstream final: public ByteStream::Server {
   private:
     kj::Own<RefcountedAsyncIoStream> connection;
+    kj::Promise<void> lastWrite;
 
   public:
     explicit Downstream(kj::Own<RefcountedAsyncIoStream> && connection) :
-      connection(kj::mv(connection)) {}
+      connection(kj::mv(connection)), lastWrite(kj::READY_NOW) {}
 
     kj::Promise<void> write(WriteContext context) {
-      auto params = context.getParams();
-      return connection->stream->write(params.getData().begin(), params.getData().size());
+      // AsyncIoStream can only have 1 write in flight at a time.
+      // We have to wait for the last to complete before calling write again.
+      auto writePromise = lastWrite.then([this, context] () mutable {
+        auto params = context.getParams();
+        return connection->stream->write(params.getData().begin(), params.getData().size());
+      });
+
+      auto fork = writePromise.fork();
+      lastWrite = fork.addBranch();
+      return fork.addBranch();
     }
 
     kj::Promise<void> done(DoneContext context) {
-      connection->stream->shutdownWrite();
-      return kj::READY_NOW;
+      return lastWrite.then([this] () {
+        connection->stream->shutdownWrite();
+      });
     }
   };
 
@@ -61,11 +74,32 @@ private:
   kj::Own<RefcountedAsyncIoStream> connection;
   capnp::byte buffer[BUFFER_SIZE];
   TcpPort::Client port;
+  kj::TaskSet& taskSet;
   kj::Own<ByteStream::Client> upstream;
+  int numOutstandingWrites;
+  kj::PromiseFulfillerPair<void> fulfillerPair;
+
+  inline kj::Promise<void> write(size_t size) {
+    ++numOutstandingWrites;
+    auto request = upstream->writeRequest();
+    request.setData(kj::ArrayPtr<capnp::byte>(buffer, size));
+    return request.send().then([this] (auto args) {
+      if (numOutstandingWrites >= MAX_PARALLEL_WRITES) {
+        fulfillerPair.fulfiller->fulfill();
+      }
+      --numOutstandingWrites;
+    });
+  }
+
+  inline kj::Promise<void> sendDone() {
+    return upstream->doneRequest().send().then([] (auto args) {});
+  }
 
 public:
-  explicit AcceptedConnection(kj::Own<kj::AsyncIoStream>&& connectionParam, TcpPort::Client port)
-      : connection(kj::refcounted<RefcountedAsyncIoStream>(kj::mv(connectionParam))), port(port) {
+  explicit AcceptedConnection(kj::Own<kj::AsyncIoStream>&& connectionParam, TcpPort::Client port, kj::TaskSet& taskSet)
+      : connection(kj::refcounted<RefcountedAsyncIoStream>(kj::mv(connectionParam))),
+        port(port), taskSet(taskSet), numOutstandingWrites(0),
+        fulfillerPair(kj::newPromiseAndFulfiller<void>()) {
     auto request = port.connectRequest();
     request.setDownstream(kj::heap<Downstream>(kj::addRef(*connection)));
     upstream = kj::heap<ByteStream::Client>(request.send().getUpstream());
@@ -74,15 +108,32 @@ public:
   kj::Promise<void> messageLoop() {
     return connection->stream->tryRead(buffer, 1, BUFFER_SIZE)
           .then([this] (size_t size) -> kj::Promise<void> {
-      if (size < 1) {
-        return upstream->doneRequest().send().then([] (auto args) {});  // EOF
+      if (size < 1) {  // EOF
+        if (numOutstandingWrites > 0) {
+          fulfillerPair = kj::newPromiseAndFulfiller<void>();
+          return fulfillerPair.promise.then([this] () {
+            return sendDone();
+          });
+        } else {
+          return sendDone();
+        }
       }
 
-      auto request = upstream->writeRequest();
-      request.setData(kj::ArrayPtr<capnp::byte>(buffer, size));
-      return request.send().then([this] (auto args) {
+      if (numOutstandingWrites < MAX_PARALLEL_WRITES) {
+        taskSet.add(write(size));
         return messageLoop();
-      });
+      } else {
+        // Make a new promiseFulfillerPair and wait for one of the previous writes to
+        // call fulfill(). Since we wait immediately after we reach
+        // numOutstandingWrites == MAX_PARALLEL_WRITES, we are guaranteed to have less
+        // than MAX_PARALLEL_WRITES after any of the writes finish, and we can start our
+        // next write immediately.
+        fulfillerPair = kj::newPromiseAndFulfiller<void>();
+        return fulfillerPair.promise.then([this, size] () {
+          taskSet.add(write(size));
+          return messageLoop();
+        });
+      }
     });
   }
 };
@@ -108,7 +159,7 @@ kj::Promise<void> runTcpBridge(kj::ConnectionReceiver& serverPort,
                              kj::TaskSet& taskSet, HackSessionContext::Client& session) {
   return serverPort.accept().then([&](kj::Own<kj::AsyncIoStream>&& connection) {
     auto connectionState = kj::heap<AcceptedConnection>(kj::mv(connection),
-                                                        getTcpClient(connection, session));
+                                                        getTcpClient(connection, session), taskSet);
     auto promise = connectionState->messageLoop();
     taskSet.add(promise.attach(kj::mv(connectionState)));
     return runTcpBridge(serverPort, taskSet, session);

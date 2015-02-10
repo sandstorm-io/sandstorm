@@ -195,6 +195,7 @@ private:
 
     KJ_SYSCALL(unshare(unshareFlags));
 
+    writeSetgroupsIfPresent("deny\n");
     writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
     writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
 
@@ -292,6 +293,12 @@ private:
     argv.add(nullptr);
     KJ_SYSCALL(execvp(command[0].cStr(), argv.begin()));
     KJ_UNREACHABLE;
+  }
+
+  void writeSetgroupsIfPresent(const char *contents) {
+    KJ_IF_MAYBE(fd, raiiOpenIfExists("/proc/self/setgroups", O_WRONLY | O_CLOEXEC)) {
+      kj::FdOutputStream(kj::mv(*fd)).write(contents, strlen(contents));
+    }
   }
 
   void writeUserNSMap(const char *type, kj::StringPtr contents) {

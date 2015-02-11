@@ -226,7 +226,9 @@ img {
 }
 
 #app.main-content {
-  overflow: hidden;
+  /* Mitigates scrolling issue on iOS; see #247 */
+  -webkit-overflow-scrolling: touch;
+  overflow: auto;
 }
 
 #grainLog {
@@ -450,6 +452,7 @@ svg {
   width: 100%;
   height: 100%;
   margin: 0;
+  display: block;
 }
 
 #api-token-popup {
@@ -897,11 +900,6 @@ aside #social>p {
   aside {
     position: static;
     margin: 100px 150px;
-  }
-  #app.main-content {
-    /* Mitigates scrolling issue on iOS; see #247 */
-    -webkit-overflow-scrolling: touch;
-    overflow: auto;
   }
 }
 

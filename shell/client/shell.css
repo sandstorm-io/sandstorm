@@ -901,6 +901,11 @@ aside #social>p {
     position: static;
     margin: 100px 150px;
   }
+  #app.main-content {
+    /* Mitigates scrolling issue on iOS; see #247 */
+    -webkit-overflow-scrolling: touch;
+    overflow: auto;
+  }
 }
 
 @media screen and (max-width: 900px) {

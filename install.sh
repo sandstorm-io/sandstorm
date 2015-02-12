@@ -288,9 +288,10 @@ __EOF__
         "support for unprivileged user namespaces (CONFIG_USER_NS=y), or something else is" \
         "preventing creation of user namespaces. This feature is critical for sandboxing." \
         "Arch Linux is known to ship with a kernel that disables this feature; if you are" \
-        "using Arch, you will unfortunately need to compile your own kernel. If you are" \
-        "not using Arch, and don't know why your system wouldn't have user namespaces," \
-        "please file a bug against Sandstorm so we can figure out what happened."
+        "using Arch, you will unfortunately need to compile your own kernel (see" \
+        "https://bugs.archlinux.org/task/36969). If you are not using Arch, and don't" \
+        "know why your system wouldn't have user namespaces, please file a bug against" \
+        "Sandstorm so we can figure out what happened."
     fi
   else
     echo "WARNING: Couldn't compile user namespace test. We'll assume user namespaces" >&2

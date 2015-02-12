@@ -40,7 +40,7 @@ function HackSessionContextImpl(grainId) {
 
 makeHackSessionContext = function (grainId) {
   return new Capnp.Capability(new HackSessionContextImpl(grainId), HackSessionContext);
-}
+};
 
 var HOSTNAME_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -52,7 +52,7 @@ generateRandomHostname = function(length) {
     digits[i] = Random.choice(HOSTNAME_CHARS);
   }
   return digits.join("");
-}
+};
 
 HackSessionContextImpl.prototype._getPublicId = function () {
   // Get the grain's public ID, assigning a new one if it doesn't yet have one.
@@ -90,15 +90,15 @@ HackSessionContextImpl.prototype._getPublicId = function () {
   }
 
   return this.publicId;
-}
+};
 
 HackSessionContextImpl.prototype._getAddress = function () {
   // Get the grain's outgoing e-mail address.
   //
   // Must be called in a Meteor context.
 
-  return this._getPublicId() + '@' + HOSTNAME;
-}
+  return this._getPublicId() + "@" + HOSTNAME;
+};
 
 HackSessionContextImpl.prototype._getUserAddress = function () {
   // Get the user's e-mail address.
@@ -119,7 +119,7 @@ HackSessionContextImpl.prototype._getUserAddress = function () {
   }
 
   return result;
-}
+};
 
 HackSessionContextImpl.prototype.send = function (email) {
   return hackSendEmail(this, email);
@@ -145,9 +145,9 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
 
   return new Promise(function (resolve, reject) {
     var requestMethod = Http.request;
-    if (url.indexOf('https://') === 0) {
+    if (url.indexOf("https://") === 0) {
       requestMethod = Https.request;
-    } else if (url.indexOf('http://') !== 0) {
+    } else if (url.indexOf("http://") !== 0) {
       err = new Error("Protocol not recognized.");
       err.nature = "precondition";
       reject(err);
@@ -159,14 +159,14 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
       switch (Math.floor(resp.statusCode / 100)) {
         case 2:
           // 2xx response -- OK.
-          resp.on('data', function (buf) {
+          resp.on("data", function (buf) {
             buffers.push(buf);
           });
 
-          resp.on('end', function() {
+          resp.on("end", function() {
             resolve({
               content: Buffer.concat(buffers),
-              mimeType: resp.headers['content-type'] || null
+              mimeType: resp.headers["content-type"] || null
             });
           });
           break;
@@ -195,7 +195,7 @@ HackSessionContextImpl.prototype.httpGet = function(url) {
       }
     });
 
-    req.on('error', function (e) {
+    req.on("error", function (e) {
       e.nature = "networkFailure";
       reject(e);
     });
@@ -234,7 +234,7 @@ HackSessionContextImpl.prototype.generateApiToken = function (petname, userInfo,
 
     return [token, endpointUrl, tokenId];
   }).bind(this));
-}
+};
 
 Meteor.methods({
   newApiToken: function (grainId, petname) {
@@ -286,7 +286,7 @@ HackSessionContextImpl.prototype.listApiTokens = function () {
 
     return [results];
   }).bind(this));
-}
+};
 
 HackSessionContextImpl.prototype.revokeApiToken = function (tokenId) {
   return inMeteor((function () {
@@ -296,7 +296,7 @@ HackSessionContextImpl.prototype.revokeApiToken = function (tokenId) {
       throw err;
     }
   }).bind(this));
-}
+};
 
 HackSessionContextImpl.prototype.getIpInterface = function () {
   return inMeteor((function () {
@@ -322,54 +322,4 @@ HackSessionContextImpl.prototype.getIpNetwork = function () {
 
     return {network: new IpNetworkImpl()};
   }).bind(this));
-};
-
-// =======================================================================================
-// makeSmtpPool and getSmtpPool are lifted from the Meteor email package (MIT license)
-
-var makeSmtpPool = function (mailUrlString) {
-  var mailUrl = Url.parse(mailUrlString);
-  if (mailUrl.protocol !== 'smtp:') {
-    throw new Error("Email protocol in $MAIL_URL (" +
-                    mailUrlString + ") must be 'smtp'");
-  }
-
-  var port = +(mailUrl.port);
-  var auth = false;
-  if (mailUrl.auth) {
-    var parts = mailUrl.auth.split(':', 2);
-    auth = {user: parts[0] && decodeURIComponent(parts[0]),
-            pass: parts[1] && decodeURIComponent(parts[1])};
-  }
-
-  var pool = simplesmtp.createClientPool(
-    port,  // Defaults to 25
-    mailUrl.hostname,  // Defaults to "localhost"
-    { secureConnection: (port === 465),
-      // XXX allow maxConnections to be configured?
-      auth: auth,
-      connectionTimeout: CLIENT_TIMEOUT,
-      socketTimeout: CLIENT_TIMEOUT });
-
-  pool._future_wrapped_sendMail = _.bind(Future.wrap(pool.sendMail), pool);
-  return pool;
-};
-
-// We construct smtpPool at the first call to Email.send, so that
-// Meteor.startup code can set $MAIL_URL.
-var smtpPoolFuture = new Future();
-var configured = false;
-
-var getSmtpPool = function () {
-  // We check MAIL_URL in case someone else set it in Meteor.startup code.
-  if (!configured) {
-    configured = true;
-    var url = process.env.MAIL_URL;
-    var pool = null;
-    if (url)
-      pool = makeSmtpPool(url);
-    smtpPoolFuture.return(pool);
-  }
-
-  return smtpPoolFuture.wait();
 };

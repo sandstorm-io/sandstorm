@@ -49,7 +49,7 @@ Meteor.startup(function() {
     var bufs = [];
 
     req.pipe(mailparser);
-    mailparser.on('end', function (mail) {
+    mailparser.on("end", function (mail) {
       // Wrap in outer promise for easier error handling.
       Promise.resolve().then(function () {
         // Extract the "from" address.
@@ -95,10 +95,10 @@ Meteor.startup(function() {
           cc: mail.cc || [],
           bcc: mail.bcc || [],
           replyTo: (mail.replyTo && mail.replyTo[0]) || {},
-          messageId: mail.headers['message-id'] || Meteor.uuid() + '@' + HOSTNAME,
+          messageId: mail.headers["message-id"] || Meteor.uuid() + "@" + HOSTNAME,
           references: mail.references || [],
           inReplyTo: mail.inReplyTo || [],
-          subject: mail.subject || '',
+          subject: mail.subject || "",
           text: mail.text || null,
           html: mail.html || null,
           attachments: attachments
@@ -112,7 +112,7 @@ Meteor.startup(function() {
           // there will be an nginx frontend verifying hostnames anyway. Grain public IDs are
           // globally unique anyway, so an e-mail meant for another server presumably won't match
           // any ID at this one anyway.
-          return deliverTo.slice(0, deliverTo.indexOf('@'));
+          return deliverTo.slice(0, deliverTo.indexOf("@"));
         }));
 
         // Deliver to each grain in parallel.
@@ -180,7 +180,7 @@ function formatAddress(field) {
   }
 
   if (field.name) {
-    return field.name + ' <' + field.address + '>';
+    return field.name + " <" + field.address + ">";
   }
 
   return field.address;
@@ -236,18 +236,18 @@ hackSendEmail = function (session, email) {
 
     var headers = {};
     if (email.messageId) {
-      mc.addHeader('message-id', email.messageId);
+      mc.addHeader("message-id", email.messageId);
     }
     if (email.references) {
-      mc.addHeader('references', email.references);
+      mc.addHeader("references", email.references);
     }
     if (email.messageId) {
-      mc.addHeader('in-reply-to', email.inReplyTo);
+      mc.addHeader("in-reply-to", email.inReplyTo);
     }
     if (email.date) {
       var date = new Date(email.date / 1000000);
       if (!isNaN(date.getTime())) { // Check to make sure date is valid
-        mc.addHeader('date', date.toUTCString());
+        mc.addHeader("date", date.toUTCString());
       }
     }
 
@@ -285,7 +285,7 @@ hackSendEmail = function (session, email) {
 
 var makeSmtpPool = function (mailUrlString) {
   var mailUrl = Url.parse(mailUrlString);
-  if (mailUrl.protocol !== 'smtp:') {
+  if (mailUrl.protocol !== "smtp:") {
     throw new Error("Email protocol in $MAIL_URL (" +
                     mailUrlString + ") must be 'smtp'");
   }
@@ -293,7 +293,7 @@ var makeSmtpPool = function (mailUrlString) {
   var port = +(mailUrl.port);
   var auth = false;
   if (mailUrl.auth) {
-    var parts = mailUrl.auth.split(':', 2);
+    var parts = mailUrl.auth.split(":", 2);
     auth = {user: parts[0] && decodeURIComponent(parts[0]),
             pass: parts[1] && decodeURIComponent(parts[1])};
   }

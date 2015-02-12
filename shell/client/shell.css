@@ -157,6 +157,10 @@ body {
   cursor: pointer;
 }
 
+#menu button:hover {
+  background-color: #888;
+}
+
 #topbar #renameGrain {
   background-image: url("/edit.png");
 }

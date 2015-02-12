@@ -93,7 +93,7 @@ fi
 error() {
   if [ $# != 0 ]; then
     echo -en '\e[0;31m' >&2
-    echo "$@" | fold -s >&2
+    echo "$@" | (fold -s || cat) >&2
     echo -en '\e[0m' >&2
   fi
 }
@@ -230,24 +230,74 @@ if [ $(id -u) != 0 ]; then
   DIR=$HOME/sandstorm
 fi
 
-if [ -e /proc/sys/kernel/unprivileged_userns_clone ] && \
-   [ "$(</proc/sys/kernel/unprivileged_userns_clone)" == "0" ]; then
-  echo "Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled."
-  echo "Currently, it is not enabled on your system."
-  if prompt-yesno "Shall I enable it for you?" yes; then
-    if [ ! -e /etc/sysctl.conf ]; then
-      fail "Can't find /etc/sysctl.conf. I don't know how to set sysctls" \
-           "permanently on your system. Please set it manually and try again."
-    fi
-    cat >> /etc/sysctl.conf << __EOF__
+if [ -e /proc/sys/kernel/unprivileged_userns_clone ]; then
+  if [ "$(</proc/sys/kernel/unprivileged_userns_clone)" == "0" ]; then
+    echo "Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled."
+    echo "Currently, it is not enabled on your system."
+    if prompt-yesno "Shall I enable it for you?" yes; then
+      if [ ! -e /etc/sysctl.conf ]; then
+        fail "Can't find /etc/sysctl.conf. I don't know how to set sysctls" \
+             "permanently on your system. Please set it manually and try again."
+      fi
+      cat >> /etc/sysctl.conf << __EOF__
 
 # Enable non-root users to create sandboxes (needed by Sandstorm).
 kernel.unprivileged_userns_clone = 1
 __EOF__
-    sysctl -w kernel.unprivileged_userns_clone=1
-  else
-    fail "OK, please enable this option yourself and try again."
+      sysctl -w kernel.unprivileged_userns_clone=1
+    else
+      fail "OK, please enable this option yourself and try again."
+    fi
   fi
+else
+  # Figure out if user namespaces work at all.
+  rm -f /tmp/sandstorm-userns-test /tmp/sandstorm-userns-test.c
+  cat > /tmp/sandstorm-userns-test.c << __EOF__
+#define _GNU_SOURCE
+#include <sched.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <stdio.h>
+
+int main() {
+  /* We're trying to verify that UID namespaces work when not root, so make sure we're
+   * not root. */
+  if (getuid() == 0) {
+    /* Number here doesn't really matter, but 65534 is usually "nobody". */
+    if (setuid(65534) < 0) {
+      perror("setuid");
+      return 1;
+    }
+  }
+
+  /* OK, let's see if we can create a UID namespace. */
+  if (unshare(CLONE_NEWUSER) < 0) {
+    /* Nope. */
+    perror("unshare");
+    return 1;
+  }
+
+  return 0;
+}
+__EOF__
+
+  if cc /tmp/sandstorm-userns-test.c -o /tmp/sandstorm-userns-test; then
+    if ! /tmp/sandstorm-userns-test; then
+      rm -f /tmp/sandstorm-userns-test /tmp/sandstorm-userns-test.c
+      fail "Your kernel does not appear to be compiled with" \
+        "support for unprivileged user namespaces (CONFIG_USER_NS=y), or something else is" \
+        "preventing creation of user namespaces. This feature is critical for sandboxing." \
+        "Arch Linux is known to ship with a kernel that disables this feature; if you are" \
+        "using Arch, you will unfortunately need to compile your own kernel. If you are" \
+        "not using Arch, and don't know why your system wouldn't have user namespaces," \
+        "please file a bug against Sandstorm so we can figure out what happened."
+    fi
+  else
+    echo "WARNING: Couldn't compile user namespace test. We'll assume user namespaces" >&2
+    echo "  are enabled." >&2
+  fi
+
+  rm -f /tmp/sandstorm-userns-test /tmp/sandstorm-userns-test.c
 fi
 
 DIR=$(prompt "Where would you like to put Sandstorm?" "$DIR")

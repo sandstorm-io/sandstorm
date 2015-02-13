@@ -541,6 +541,33 @@ $KEY</textarea></p>
   </div>
 </template>
 
+<template name="devAccounts">
+  <div id="topbar">{{> homeLink}} {{ pageTitle }} </div>
+
+  <div id="demo" class="main-content">
+    <div class="centered-box">
+      <h2>Developer Accounts</h2>
+        {{#if shouldShowStartDevAccounts}}
+          {{#if loggingIn}}
+            <p>Logging in...</p>
+          {{else}}
+            <button id="loginAliceDevAccount" class="devLogin">Log in as Alice (admin) »</button>
+            <button id="loginBobDevAccount" class="devLogin">Log in as Bob »</button>
+            <button id="loginCarolDevAccount" class="devLogin">Log in as Carol »</button>
+          {{/if}}
+        {{else}}
+            <p>You are already logged in.</p>
+            <p><button onclick="browseHome()">See your apps »</button></p>
+        {{/if}}
+
+        <h3>What is this?</h3>
+        <p>This page is only for developer Sandstorm instances (ie. the ALLOW_DEV_ACCOUNTS setting
+        is enabled in your sandstorm.conf). This page and its functionality will be inaccessible if
+        you ever disable this setting.</p>
+    </div>
+  </div>
+</template>
+
 <template name="about">
   <div id="topbar">{{> homeLink}} About</div>
 

@@ -46,15 +46,15 @@ IpInterfaceImpl.prototype.listenTcp = function (portNum, port) {
       var wrappedConnection = new ByteStreamConnection(connection);
       var upstream = port.connect(wrappedConnection).upstream;
 
-      connection.on('data', function (data) {
+      connection.on("data", function (data) {
         upstream.write(data);
       });
 
-      connection.on('close', function (had_error) {
+      connection.on("close", function (had_error) {
         upstream.done();
       });
 
-      connection.on('error', function (err) {
+      connection.on("error", function (err) {
         if (resolved) {
           connection.write = errorWrite;
         } else {
@@ -69,7 +69,7 @@ IpInterfaceImpl.prototype.listenTcp = function (portNum, port) {
       resolve({handle: server}); // server has a close method which is all we want from a handle
     });
 
-    server.on('error', function (err) {
+    server.on("error", function (err) {
       if (!resolved) {
         reject(err);
       }
@@ -95,28 +95,28 @@ IpInterfaceImpl.prototype.listenUdp = function (portNum, port) {
   return new Promise(function (resolve, reject) {
     var portMap = {};
     var resolved = false;
-    var server = Dgram.createSocket('udp4'); // TODO(someday): handle ipv6 sockets too
+    var server = Dgram.createSocket("udp4"); // TODO(someday): handle ipv6 sockets too
     server.bind(portNum);
 
-    server.on('listening', function () {
+    server.on("listening", function () {
       // Although UDP is connectionless, we don't resolve until here so that we can handle bind
       // errors such as invalid host
       resolved = true;
       resolve({handle: server}); // server has a close method which is all we want from a handle
     });
 
-    server.on('error', function (err) {
+    server.on("error", function (err) {
       // TODO(someday): do something about errors after the promise is resolved
       if (!resolved) {
         reject(err);
       } else {
-        console.error('error in listenUdp: ' + err);
+        console.error("error in listenUdp: " + err);
       }
     });
 
     var returnMap = {};
-    server.on('message', function (msg, rinfo) {
-      var address = rinfo.address + ']:' + rinfo.port;
+    server.on("message", function (msg, rinfo) {
+      var address = rinfo.address + "]:" + rinfo.port;
       var returnPort = returnMap[address];
 
       if (!returnPort) {
@@ -170,11 +170,11 @@ var addressToString = function (address) {
 };
 
 var addressType = function (address) {
-  var type = 'udp4';
+  var type = "udp4";
   // Check if it's an ipv6 address
   // TODO(someday): make this less hacky and change address to explicitly pass this information
-  if (address.indexOf(':') != -1) {
-    type = 'udp6';
+  if (address.indexOf(":") != -1) {
+    type = "udp6";
   }
   return type;
 };
@@ -215,15 +215,15 @@ TcpPortImpl.prototype.connect = function (downstream) {
       resolve({upstream: new ByteStreamConnection(client)});
     });
 
-    client.on('data', function (data) {
+    client.on("data", function (data) {
       downstream.write(data);
     });
 
-    client.on('close', function (had_error) {
+    client.on("close", function (had_error) {
       downstream.done();
     });
 
-    client.on('error', function (err) {
+    client.on("error", function (err) {
       if (resolved) {
         client.write = errorWrite;
       } else {

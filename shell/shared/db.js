@@ -260,7 +260,11 @@ isAdmin = function() {
   }
 }
 
-var wildcardHost = Meteor.settings.public.wildcardHost.split("*");
+var wildcardHost = Meteor.settings.public.wildcardHost.toLowerCase().split("*");
+
+if (wildcardHost.length != 2) {
+  throw new Error("Wildcard host must contain exactly one asterisk.");
+}
 
 matchWildcardHost = function(host) {
   // See if the hostname is a member of our wildcard. If so, extract the ID.

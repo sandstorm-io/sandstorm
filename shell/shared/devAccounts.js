@@ -81,17 +81,25 @@ if (allowDevAccounts) {
     };
     Template.devAccounts.events({
       "click #loginAliceDevAccount": function (event) {
-        var displayName = "Alice (admin)";
+        var displayName = "Alice Dev Admin";
         loginDevAccount(displayName, true);
       },
       "click #loginBobDevAccount": function (event) {
-        var displayName = "Bob";
+        var displayName = "Bob Dev User";
         loginDevAccount(displayName);
       },
       "click #loginCarolDevAccount": function (event) {
-        var displayName = "Carol";
+        var displayName = "Carol Dev User";
         loginDevAccount(displayName);
-      }
+      },
+      "click #loginDaveDevAccount": function (event) {
+        var displayName = "Dave Dev User";
+        loginDevAccount(displayName);
+      },
+      "click #loginEveDevAccount": function (event) {
+        var displayName = "Eve Dev User";
+        loginDevAccount(displayName);
+      },
     });
   }
 

@@ -16,13 +16,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # (aka 127.0.0.1:6080).
   config.vm.network :forwarded_port, guest: 6080, host: 6080
 
-  # Forward all of 7000-7100, since these are used for hosting apps.
-  $port = 7000
-  while $port <= 7100  do
-    config.vm.network :forwarded_port, guest: $port, host: $port
-    $port += 1
-  end
-
   # Create a public network, which generally matched to bridged network.
   # Bridged networks make the machine appear as another physical device on
   # your network.

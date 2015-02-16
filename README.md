@@ -70,6 +70,7 @@ Please install the following:
 * `unzip`
 * `strace`
 * `curl`
+* `git`
 * ImageMagick
 * [Clang compiler](http://clang.llvm.org/) version 3.4 or better
 * [Meteor](http://meteor.com)

@@ -24,7 +24,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Use a shell script to "provision" the box. This install Sandstorm using
   # the bundled installer.
   config.vm.provision "shell",
-    inline: "cd /vagrant && echo localhost > /etc/hostname && hostname localhost && sudo ./install.sh -d -e"
+    inline: "cd /vagrant && echo localhost > /etc/hostname && hostname localhost && sudo ./install-dev.sh"
 
   # Make the vagrant user part of the sandstorm group so that commands like
   # `spk dev` work

@@ -25,6 +25,7 @@ if (Meteor.isServer) {
         userId: String,
         packageId: String,
         appId: String,
+        appName: Match.Optional(String),
         appVersion: Match.Integer,
         title: String,
         command: {
@@ -171,6 +172,7 @@ if (Meteor.isClient) {
             userId: Meteor.userId(),
             packageId: package._id,
             appId: package.appId,
+            appName: package.manifest.appName && package.manifest.appName.defaultText,
             appVersion: package.manifest.appVersion,
             title: action.title.defaultText,
             command: action.command
@@ -280,7 +282,6 @@ Router.map(function () {
 
       Meteor.call("ensureInstalled", packageId, packageUrl, false,
             function (err, result) {
-         console.log(err, result);
          if (err) {
            Session.set("install-error-" + packageId, err.message);
          }

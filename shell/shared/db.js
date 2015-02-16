@@ -60,7 +60,7 @@ UserActions = new Mongo.Collection("userActions");
 //   userId:  User who has installed this action.
 //   packageId:  Package used to run this action.
 //   appId:  Same as Packages.findOne(packageId).appId; denormalized for searchability.
-//   appName:  Same as Packages.findOne(packageId).manifest.appName; denormalized for
+//   appName:  Same as Packages.findOne(packageId).manifest.appName.defaultText; denormalized for
 //       seachability.
 //   appVersion:  Same as Packages.findOne(packageId).manifest.appVersion; denormalized for
 //       searchability.

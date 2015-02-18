@@ -43,7 +43,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   host = RbConfig::CONFIG['host_os']
   if host =~ /darwin/
     cpus = `sysctl -n hw.ncpu`.to_i
-    total_kB_ram =  `sysctl -n hw.memsize`.to_i
+    total_kB_ram =  `sysctl -n hw.memsize`.to_i / 1024
   elsif host =~ /linux/
     cpus = `nproc`.to_i
     total_kB_ram = `grep MemTotal /proc/meminfo | awk '{print $2}'`.to_i

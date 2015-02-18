@@ -16,10 +16,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # (aka 127.0.0.1:6080).
   config.vm.network :forwarded_port, guest: 6080, host: 6080
 
-  # Create a public network, which generally matched to bridged network.
-  # Bridged networks make the machine appear as another physical device on
-  # your network.
-  config.vm.network :public_network
+  # Create a link-local private address, so that the host can
+  # use NFS with the Virtualbox guest. Virtualbox/Vagrant handles
+  # network address translation so outbound network requests still
+  # work.
+  config.vm.network :private_network, ip: "169.254.254.2"
 
   # Use a shell script to "provision" the box. This install Sandstorm using
   # the bundled installer.
@@ -27,7 +28,28 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     inline: "cd /vagrant && echo localhost > /etc/hostname && hostname localhost && sudo ./install.sh -d -e"
 
   # Make the vagrant user part of the sandstorm group so that commands like
-  # `spk dev` work
+  # `spk dev` work.
   config.vm.provision "shell", inline: "usermod -a -G 'sandstorm' 'vagrant'"
+
+  # Use NFS for the /vagrant shared directory, for performance and
+  # compatibility.
+  config.vm.synced_folder ".", "/vagrant", type: "nfs"
+
+  # Set the number of CPUs within Vagrant to be the number of CPUs
+  # outside it.
+  host = RbConfig::CONFIG['host_os']
+  if host =~ /darwin/
+    cpus = `sysctl -n hw.ncpu`.to_i
+  elsif host =~ /linux/
+    cpus = `nproc`.to_i
+  else
+    # Windows, presumably. Don't know how to easily get CPU count
+    # there.
+    cpus = 1
+  end
+
+  config.vm.provider :virtualbox do |vb|
+    vb.cpus = cpus
+  end
 
 end

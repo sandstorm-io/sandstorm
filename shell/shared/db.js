@@ -207,7 +207,9 @@ if (Meteor.isServer) {
 
   // The first user to sign in should be automatically upgraded to admin.
   Accounts.onCreateUser(function (options, user) {
-    if (Meteor.users.find().count() === 0) {
+    // Dev users are identified by having the devName field
+    // Don't count them in our find and don't give them admin
+    if (Meteor.users.find({devName: {$exists: 0}}).count() === 0 && !user.devName) {
       user.isAdmin = true;
       user.signupKey = "admin";
     }

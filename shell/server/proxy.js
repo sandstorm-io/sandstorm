@@ -675,6 +675,8 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user, userInfo) {
     var serviceId;
     if (user.expires) {
       serviceId = "demo:" + user._id;
+    } else if (user.devName) {
+      serviceId = "dev:" + user.devName;
     } else if (user.services && user.services.google) {
       serviceId = "google:" + user.services.google.id;
     } else if (user.services && user.services.github) {

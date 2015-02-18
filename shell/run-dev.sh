@@ -21,7 +21,7 @@ fi
 
 if [ "$SERVER_USER" != "$USER" ]; then
   echo "Please change your Sandstorm installation to be own by your own user" >&2
-  echo "account. E.g. run as root:" >&2 
+  echo "account. E.g. run as root:" >&2
   echo "  $SANDSTORM_HOME/sandstorm stop" >&2
   echo "  find $SANDSTORM_HOME/var -user $SERVER_USER -print0 | \\" >&2
   echo "      xargs -0 chown -h $USER" >&2
@@ -29,7 +29,7 @@ if [ "$SERVER_USER" != "$USER" ]; then
   echo "      xargs -0 chgrp -h $(id -gn)" >&2
   echo "  sed -i -e 's/^SERVER_USER=.*$/SERVER_USER=$USER/g' \\" >&2
   echo "      $SANDSTORM_HOME/sandstorm.conf" >&2
-  echo "  $SANDSTORM_HOME/sandstorm start" >&2  
+  echo "  $SANDSTORM_HOME/sandstorm start" >&2
   exit 1
 fi
 
@@ -61,6 +61,7 @@ cat > $SETTINGS << __EOF__
   "public": {
     "buildstamp": "[local dev front-end]",
     "allowDemoAccounts": true,
+    "allowDevAccounts": true,
     "wildcardHost": "$WILDCARD_HOST"
   },
   "home": "$SANDSTORM_HOME"

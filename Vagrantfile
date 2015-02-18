@@ -35,21 +35,40 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # compatibility.
   config.vm.synced_folder ".", "/vagrant", type: "nfs"
 
-  # Set the number of CPUs within Vagrant to be the number of CPUs
-  # outside it.
+  # Calculate the number of CPUs and the amount of RAM the system has,
+  # in a platform-dependent way; further logic below.
+  cpus = nil
+  total_kB_ram = nil
+
   host = RbConfig::CONFIG['host_os']
   if host =~ /darwin/
     cpus = `sysctl -n hw.ncpu`.to_i
+    total_kB_ram =  `sysctl -n hw.memsize`.to_i
   elsif host =~ /linux/
     cpus = `nproc`.to_i
-  else
-    # Windows, presumably. Don't know how to easily get CPU count
-    # there.
-    cpus = 1
+    total_kB_ram = `grep MemTotal /proc/meminfo | awk '{print $2}'`.to_i
   end
 
+  # Use the same number of CPUs within Vagrant as the system, with 1
+  # as a default.
+  #
+  # Use at least 512MB of RAM, and if the system has more than 2GB of
+  # RAM, use 1/4 of the system RAM. This seems a reasonable compromise
+  # between having the Vagrant guest operating system not run out of
+  # RAM entirely (which it basically would if we went much lower than
+  # 512MB) and also allowing it to use up a healthily large amount of
+  # RAM so it can run faster on systems that can afford it.
   config.vm.provider :virtualbox do |vb|
-    vb.cpus = cpus
-  end
+    if cpus.nil?
+      vb.cpus = 1
+    else
+      vb.cpus = cpus
+    end
 
+    if total_kB_ram.nil? or total_kB_ram < 2048000
+      vb.memory = 512
+    else
+      vb.memory = (total_kB_ram / 1024 / 4)
+    end
+  end
 end

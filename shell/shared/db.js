@@ -60,6 +60,8 @@ UserActions = new Mongo.Collection("userActions");
 //   userId:  User who has installed this action.
 //   packageId:  Package used to run this action.
 //   appId:  Same as Packages.findOne(packageId).appId; denormalized for searchability.
+//   appName:  Same as Packages.findOne(packageId).manifest.appName.defaultText; denormalized so
+//       that clients can access it without subscribing to the Packages collection.
 //   appVersion:  Same as Packages.findOne(packageId).manifest.appVersion; denormalized for
 //       searchability.
 //   title:  Human-readable title for this action, e.g. "New Spreadsheet".
@@ -205,7 +207,9 @@ if (Meteor.isServer) {
 
   // The first user to sign in should be automatically upgraded to admin.
   Accounts.onCreateUser(function (options, user) {
-    if (Meteor.users.find().count() === 0) {
+    // Dev users are identified by having the devName field
+    // Don't count them in our find and don't give them admin
+    if (Meteor.users.find({devName: {$exists: 0}}).count() === 0 && !user.devName) {
       user.isAdmin = true;
       user.signupKey = "admin";
     }
@@ -260,7 +264,11 @@ isAdmin = function() {
   }
 }
 
-var wildcardHost = Meteor.settings.public.wildcardHost.split("*");
+var wildcardHost = Meteor.settings.public.wildcardHost.toLowerCase().split("*");
+
+if (wildcardHost.length != 2) {
+  throw new Error("Wildcard host must contain exactly one asterisk.");
+}
 
 matchWildcardHost = function(host) {
   // See if the hostname is a member of our wildcard. If so, extract the ID.

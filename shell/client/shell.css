@@ -729,6 +729,10 @@ input.autoSelect {
   text-align: center;
 }
 
+.devLogin {
+  margin: 16px auto;
+}
+
 ul.backer-list, ul.dev-list {
   list-style: none;
   text-align: center;

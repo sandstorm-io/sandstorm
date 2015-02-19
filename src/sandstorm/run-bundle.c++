@@ -1095,6 +1095,7 @@ private:
     kj::String updateChannel = nullptr;
     bool allowDemoAccounts = false;
     bool isTesting = false;
+    bool allowDevAccounts = false;
   };
 
   kj::String updateFile;
@@ -1434,6 +1435,8 @@ private:
         }
       } else if (key == "ALLOW_DEMO_ACCOUNTS") {
         config.allowDemoAccounts = value == "true" || value == "yes";
+      } else if (key == "ALLOW_DEV_ACCOUNTS") {
+        config.allowDevAccounts = value == "true" || value == "yes";
       } else if (key == "IS_TESTING") {
         config.isTesting = value == "true" || value == "yes";
       }
@@ -1816,6 +1819,7 @@ private:
           "{\"public\":{\"build\":", buildstamp,
           ", \"kernelTooOld\":", kernelNewEnough ? "false" : "true",
           ", \"allowDemoAccounts\":", config.allowDemoAccounts ? "true" : "false",
+          ", \"allowDevAccounts\":", config.allowDevAccounts ? "true" : "false",
           ", \"isTesting\":", config.isTesting ? "true" : "false",
           ", \"wildcardHost\":\"", config.wildcardHost, "\"",
           "}}").cStr(), true));

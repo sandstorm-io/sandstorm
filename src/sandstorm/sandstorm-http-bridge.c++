@@ -46,6 +46,7 @@
 #include <sandstorm/api-session.capnp.h>
 #include <sandstorm/web-session.capnp.h>
 #include <sandstorm/email.capnp.h>
+#include <sandstorm/http-bridge.capnp.h>
 #include <sandstorm/hack-session.capnp.h>
 #include <sandstorm/package.capnp.h>
 #include <joyent-http/http_parser.h>
@@ -821,14 +822,22 @@ private:
   }
 };
 
+typedef std::map<kj::StringPtr, SessionContext::Client&> SessionContextMap;
+// A UiView gives each of its sessions an ID string that serves as a SessionContextMap key
+// and is sent to the app in the X-Sandstorm-Session-Id header. Each session is responsible for
+// maintaining its entry in the map. The map is used by an ApiForwarder, defined below.
+
 class WebSessionImpl final: public WebSession::Server {
 public:
   WebSessionImpl(kj::NetworkAddress& serverAddr,
-                 UserInfo::Reader userInfo, SessionContext::Client context,
+                 UserInfo::Reader userInfo, SessionContext::Client sessionContext,
+                 SessionContextMap& sessionContextMap, kj::String&& sessionId,
                  kj::String&& basePath, kj::String&& userAgent, kj::String&& acceptLanguages,
                  kj::String&& rootPath, kj::String&& permissions)
       : serverAddr(serverAddr),
-        context(kj::mv(context)),
+        sessionContext(kj::mv(sessionContext)),
+        sessionContextMap(sessionContextMap),
+        sessionId(kj::mv(sessionId)),
         userDisplayName(percentEncode(userInfo.getDisplayName().getDefaultText())),
         permissions(kj::mv(permissions)),
         basePath(kj::mv(basePath)),
@@ -842,6 +851,11 @@ public:
       // We truncate to 128 bits to be a little more wieldy. Still 32 chars, though.
       userId = hexEncode(userInfo.getUserId().slice(0, 16));
     }
+    sessionContextMap.insert({kj::StringPtr(this->sessionId), this->sessionContext});
+  }
+
+  ~WebSessionImpl() {
+    sessionContextMap.erase(kj::StringPtr(sessionId));
   }
 
   kj::Promise<void> get(GetContext context) override {
@@ -947,7 +961,9 @@ public:
 
 private:
   kj::NetworkAddress& serverAddr;
-  SessionContext::Client context;
+  SessionContext::Client sessionContext;
+  SessionContextMap& sessionContextMap;
+  kj::String sessionId;
   kj::String userDisplayName;
   kj::Maybe<kj::String> userId;
   kj::String permissions;
@@ -999,6 +1015,7 @@ private:
       lines.add(kj::str("Host: ", extractHostFromUrl(basePath)));
       lines.add(kj::str("X-Forwarded-Proto: ", extractProtocolFromUrl(basePath)));
     }
+    lines.add(kj::str("X-Sandstorm-Session-Id: ", sessionId));
 
     auto cookies = context.getCookies();
     if (cookies.size() > 0) {
@@ -1221,44 +1238,37 @@ private:
   }
 };
 
-class RedirectableCapability final: public capnp::Capability::Server {
-  // A capability that forwards all requests to some target. The target can be changed over time.
-  // When no target is set, requests are queued and eventually sent to the first target provided.
 
+class ApiForwarderImpl: public ApiForwarder::Server {
 public:
-  inline RedirectableCapability()
-      : RedirectableCapability(kj::newPromiseAndFulfiller<capnp::Capability::Client>()) {}
+  explicit ApiForwarderImpl(SandstormApi<>::Client&& apiCap, SessionContextMap& sessionContextMap)
+      : apiCap(kj::mv(apiCap)),
+        sessionContextMap(sessionContextMap) {}
 
-  void setTarget(capnp::Capability::Client target) {
-    this->target = target;
-    queueFulfiller->fulfill(kj::mv(target));
+  kj::Promise<void> getSandstormApi(GetSandstormApiContext context) override {
+    context.getResults().setApi(apiCap);
+    return kj::READY_NOW;
   }
 
-  kj::Promise<void> dispatchCall(uint64_t interfaceId, uint16_t methodId,
-      capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) override {
-    auto params = context.getParams();
-    auto subRequest = target.typelessRequest(interfaceId, methodId, params.targetSize());
-    subRequest.set(params);
-    context.releaseParams();
-    return context.tailCall(kj::mv(subRequest));
+  kj::Promise<void> getSessionContext(GetSessionContextContext context) override {
+    auto id = context.getParams().getId();
+    auto iter = sessionContextMap.find(id);
+    KJ_ASSERT(iter != sessionContextMap.end(), "Session ID not found", id);
+    context.getResults().setContext(iter->second);
+    return kj::READY_NOW;
   }
 
 private:
-  capnp::Capability::Client target;
-  kj::Own<kj::PromiseFulfiller<capnp::Capability::Client>> queueFulfiller;
-
-  inline RedirectableCapability(kj::PromiseFulfillerPair<capnp::Capability::Client>&& paf)
-      : target(kj::mv(paf.promise)), queueFulfiller(kj::mv(paf.fulfiller)) {}
-  // We take advantage of the fact that Capability::Client can be constructed from
-  // Promise<Capability::Client> for the exact purpose of queueing requests.
+  SandstormApi<>::Client apiCap;
+  SessionContextMap& sessionContextMap;
 };
 
 class UiViewImpl final: public UiView::Server {
 public:
   explicit UiViewImpl(kj::NetworkAddress& serverAddress,
-                      RedirectableCapability& contextCap,
+                      SessionContextMap& sessionContextMap,
                       spk::BridgeConfig::Reader config)
-      : serverAddress(serverAddress), contextCap(contextCap), config(config) {}
+      : serverAddress(serverAddress), sessionContextMap(sessionContextMap), config(config) {}
 
   kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
     context.setResults(config.getViewInfo());
@@ -1280,6 +1290,7 @@ public:
 
       context.getResults(capnp::MessageSize {2, 1}).setSession(
           kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
+                                   sessionContextMap, kj::str(sessionIdCounter++),
                                    kj::heapString(sessionParams.getBasePath()),
                                    kj::heapString(sessionParams.getUserAgent()),
                                    kj::strArray(sessionParams.getAcceptableLanguages(), ","),
@@ -1291,14 +1302,13 @@ public:
 
       context.getResults(capnp::MessageSize {2, 1}).setSession(
           kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
+                                   sessionContextMap, kj::str(sessionIdCounter++),
                                    kj::heapString(""), kj::heapString(""), kj::heapString(""),
                                    kj::heapString(config.getApiPath()),
                                    formatPermissions(userPermissions)));
     } else if (sessionType == capnp::typeId<HackEmailSession>()) {
       context.getResults(capnp::MessageSize {2, 1}).setSession(kj::heap<EmailSessionImpl>());
     }
-
-    contextCap.setTarget(params.getContext());
 
     return kj::READY_NOW;
   }
@@ -1316,8 +1326,12 @@ private:
       return kj::strArray(permissionVec, ",");
   }
   kj::NetworkAddress& serverAddress;
-  RedirectableCapability& contextCap;
+  SessionContextMap& sessionContextMap;
   spk::BridgeConfig::Reader config;
+  uint sessionIdCounter = 0;
+  // SessionIds are assigned sequentially.
+  // TODO(security): It might be useful to make these sessionIds more random, to reduce the chance
+  //   that an app will mix them up.
 };
 
 class LegacyBridgeMain {
@@ -1358,53 +1372,26 @@ public:
     return true;
   }
 
-  class ApiRestorer: public capnp::SturdyRefRestorer<capnp::AnyPointer> {
-  public:
-    explicit ApiRestorer(SandstormApi<>::Client&& apiCap,
-                         capnp::Capability::Client&& sessionContext)
-        : apiCap(kj::mv(apiCap)), sessionContext(kj::mv(sessionContext)) {}
-
-    capnp::Capability::Client restore(capnp::AnyPointer::Reader ref) override {
-      // TODO(soon): As in Restorer::restore() (above), SandstormApi should be the "default cap"
-      //   exported on this connection.
-      // TODO(soon): We are exporting the SessionContext for the most-recently established session
-      //   under the name "HackSessionContext", but this is a hack. We should really be sending an
-      //   HTTP header to the app along with each request that gives a session ID which can be used
-      //   as part of a "Restore" command on the Cap'n Proto socket to get the *particular*
-      //   SessionContext associated with that request.
-      if (ref.isNull() || ref.getAs< ::capnp::Text>() == "SandstormApi") {
-        return apiCap;
-      } else if (ref.getAs< ::capnp::Text>() == "HackSessionContext") {
-        return sessionContext;
-      }
-
-      // TODO(someday):  Implement level 2 RPC?
-      KJ_FAIL_ASSERT("SturdyRefs not implemented.");
-    }
-
-  private:
-    SandstormApi<>::Client apiCap;
-    capnp::Capability::Client sessionContext;
-  };
-
   struct AcceptedConnection {
     kj::Own<kj::AsyncIoStream> connection;
     capnp::TwoPartyVatNetwork network;
     capnp::RpcSystem<capnp::rpc::twoparty::VatId> rpcSystem;
 
-    explicit AcceptedConnection(ApiRestorer& restorer, kj::Own<kj::AsyncIoStream>&& connectionParam)
-        : connection(kj::mv(connectionParam)),
-          network(*connection, capnp::rpc::twoparty::Side::SERVER),
-          rpcSystem(capnp::makeRpcServer(network, restorer)) {}
+    explicit AcceptedConnection(ApiForwarder::Client& forwarder,
+                                kj::Own<kj::AsyncIoStream>&& connectionParam)
+      : connection(kj::mv(connectionParam)),
+        network(*connection, capnp::rpc::twoparty::Side::SERVER),
+        rpcSystem(capnp::makeRpcServer(network, forwarder)) {}
   };
 
-  kj::Promise<void> acceptLoop(kj::ConnectionReceiver& serverPort, ApiRestorer& restorer,
+  kj::Promise<void> acceptLoop(kj::ConnectionReceiver& serverPort,
+                               ApiForwarder::Client& forwarder,
                                kj::TaskSet& taskSet) {
     return serverPort.accept().then([&](kj::Own<kj::AsyncIoStream>&& connection) {
-      auto connectionState = kj::heap<AcceptedConnection>(restorer, kj::mv(connection));
+      auto connectionState = kj::heap<AcceptedConnection>(forwarder, kj::mv(connection));
       auto promise = connectionState->network.onDisconnect();
       taskSet.add(promise.attach(kj::mv(connectionState)));
-      return acceptLoop(serverPort, restorer, taskSet);
+      return acceptLoop(serverPort, forwarder, taskSet);
     });
   }
 
@@ -1480,18 +1467,13 @@ public:
           raiiOpen("/sandstorm-http-bridge-config", O_RDONLY), options);
       auto config = reader.getRoot<spk::BridgeConfig>();
 
-      // Make a redirecting capability that will point to the most-recent SessionContext, which
-      // we dub the "hack context" since it may or may not actually be the right one to be calling.
-      // See the TODO in ApiRestorer::restore().
-      auto ownHackContext = kj::heap<RedirectableCapability>();
-      auto& hackContext = *ownHackContext;
-      capnp::Capability::Client hackContextClient = kj::mv(ownHackContext);
+      SessionContextMap sessionContextMap;
 
       // Set up the Supervisor API socket.
       auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
       capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
       auto rpcSystem = capnp::makeRpcServer(network,
-          kj::heap<UiViewImpl>(*address, hackContext, config));
+          kj::heap<UiViewImpl>(*address, sessionContextMap, config));
 
       // Get the SandstormApi by restoring a null SturdyRef.
       capnp::MallocMessageBuilder message;
@@ -1501,7 +1483,8 @@ public:
 
       // Export a Unix socket on which the application can connect and make calls directly to the
       // Sandstorm API.
-      ApiRestorer appRestorer(kj::mv(api), kj::mv(hackContextClient));
+      ApiForwarder::Client apiForwarder =
+          kj::heap<ApiForwarderImpl>(kj::mv(api), sessionContextMap);
       ErrorHandlerImpl errorHandler;
       kj::TaskSet tasks(errorHandler);
       unlink("/tmp/sandstorm-api");  // Clear stale socket, if any.
@@ -1509,7 +1492,7 @@ public:
           .parseAddress("unix:/tmp/sandstorm-api", 0)
           .then([&](kj::Own<kj::NetworkAddress>&& addr) {
         auto serverPort = addr->listen();
-        auto promise = acceptLoop(*serverPort, appRestorer, tasks);
+        auto promise = acceptLoop(*serverPort, apiForwarder, tasks);
         return promise.attach(kj::mv(serverPort));
       });
 

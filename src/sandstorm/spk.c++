@@ -858,7 +858,7 @@ private:
         "    # This manifest is included in your app package to tell Sandstorm\n"
         "    # about your app.\n"
         "\n"
-        "    appName = (defaultText = \"Example App\"),\n"
+        "    appTitle = (defaultText = \"Example App\"),\n"
         "\n"
         "    appVersion = 0,  # Increment this for every release.\n"
         "\n"

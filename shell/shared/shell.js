@@ -490,7 +490,7 @@ Router.map(function () {
 
         DevApps.find().forEach(function (app) {
           var action = app.manifest && app.manifest.actions && app.manifest.actions[0];
-          var name = (app.manifest.appName && app.manifest.appName.defaultText) ||
+          var name = (app.manifest.appTitle && app.manifest.appTitle.defaultText) ||
               appNameFromActionName(action && action.title && action.title.defaultText);
           appMap[app._id] = {
             name: name,
@@ -502,7 +502,7 @@ Router.map(function () {
 
         UserActions.find({userId: userId}).forEach(function (action) {
           if (!(action.appId in appMap)) {
-            var name = action.appName || appNameFromActionName(action.title);
+            var name = action.appTitle || appNameFromActionName(action.title);
             appMap[action.appId] = {
               name: name,
               appId: action.appId

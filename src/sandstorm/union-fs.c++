@@ -387,6 +387,27 @@ protected:
     });
   }
 
+  kj::Promise<void> getAttributes(GetAttributesContext context) override {
+    // Normally, we don't want to mark a file as "used" just because it was stat()ed, because it
+    // is normal to stat() every file in a directory when listing that directory, and this doesn't
+    // necessarily mean the file is used by the app. However, we make a special exception for
+    // zero-sized regular files because:
+    // - Their mere presence _probably_ means something, since their content certainly doesn't.
+    // - Since they're zero-size, they won't significantly bloat the package.
+    //
+    // In particular, RubyGems has been observed to care about the presence or absence of zero-size
+    // ".build_complete" files.
+
+    return delegate.getAttributesRequest(context.getParams().totalSize()).send()
+        .then([this,context](capnp::Response<GetAttributesResults>&& results) mutable {
+      auto attributes = results.getAttributes();
+      if (attributes.getType() == fuse::Node::Type::REGULAR && attributes.getSize() == 0) {
+        markUsed();
+      }
+      context.setResults(results);
+    });
+  }
+
   kj::Promise<void> openAsFile(OpenAsFileContext context) override {
     markUsed();
     return DelegatingNode::openAsFile(kj::mv(context));

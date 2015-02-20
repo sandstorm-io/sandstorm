@@ -1193,6 +1193,9 @@ private:
       node.setData(capnp::messageToFlatArray(bridgeConfigMessage));
     } else if (path == "sandstorm-http-bridge") {
       node.setTarget(getHttpBridgeExe());
+    } else if (path == "proc/cpuinfo") {
+      // Empty /proc/cpuinfo will be overmounted by the supervisor.
+      node.setData(nullptr);
     } else {
       if (path.size() == 0 && recursive) {
         addNode(root, "sandstorm-manifest", sourceMap, true);

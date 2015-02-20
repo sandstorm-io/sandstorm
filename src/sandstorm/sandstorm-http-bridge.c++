@@ -1379,7 +1379,7 @@ public:
     capnp::TwoPartyVatNetwork network;
     capnp::RpcSystem<capnp::rpc::twoparty::VatId> rpcSystem;
 
-    explicit AcceptedConnection(SandstormHttpBridge::Client& bridge,
+    explicit AcceptedConnection(SandstormHttpBridge::Client bridge,
                                 kj::Own<kj::AsyncIoStream>&& connectionParam)
       : connection(kj::mv(connectionParam)),
         network(*connection, capnp::rpc::twoparty::Side::SERVER),
@@ -1387,13 +1387,14 @@ public:
   };
 
   kj::Promise<void> acceptLoop(kj::ConnectionReceiver& serverPort,
-                               SandstormHttpBridge::Client& bridge,
+                               SandstormHttpBridge::Client bridge,
                                kj::TaskSet& taskSet) {
-    return serverPort.accept().then([&](kj::Own<kj::AsyncIoStream>&& connection) {
+    return serverPort.accept().then(
+        [&, KJ_MVCAP(bridge)](kj::Own<kj::AsyncIoStream>&& connection) mutable {
       auto connectionState = kj::heap<AcceptedConnection>(bridge, kj::mv(connection));
       auto promise = connectionState->network.onDisconnect();
       taskSet.add(promise.attach(kj::mv(connectionState)));
-      return acceptLoop(serverPort, bridge, taskSet);
+      return acceptLoop(serverPort, kj::mv(bridge), taskSet);
     });
   }
 
@@ -1492,9 +1493,9 @@ public:
       unlink("/tmp/sandstorm-api");  // Clear stale socket, if any.
       auto acceptTask = ioContext.provider->getNetwork()
           .parseAddress("unix:/tmp/sandstorm-api", 0)
-          .then([&](kj::Own<kj::NetworkAddress>&& addr) {
+          .then([&, KJ_MVCAP(sandstormHttpBridge)](kj::Own<kj::NetworkAddress>&& addr) mutable {
         auto serverPort = addr->listen();
-        auto promise = acceptLoop(*serverPort, sandstormHttpBridge, tasks);
+        auto promise = acceptLoop(*serverPort, kj::mv(sandstormHttpBridge), tasks);
         return promise.attach(kj::mv(serverPort));
       });
 

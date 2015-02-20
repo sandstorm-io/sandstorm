@@ -72,7 +72,7 @@ struct Manifest {
   # TODO(soon):  Maybe this should be renamed.  A "manifest" is a list of contents, but this
   #   structure doesn't contain a list at all; it contains information on how to use the contents.
 
-  appName @7 :Util.LocalizedText;
+  appTitle @7 :Util.LocalizedText;
   # The name of this app as it should be displayed to the user.
 
   appVersion @4 :UInt32;

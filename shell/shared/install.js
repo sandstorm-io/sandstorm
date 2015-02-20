@@ -25,7 +25,7 @@ if (Meteor.isServer) {
         userId: String,
         packageId: String,
         appId: String,
-        appName: Match.Optional(String),
+        appTitle: Match.Optional(String),
         appVersion: Match.Integer,
         title: String,
         command: {
@@ -172,7 +172,7 @@ if (Meteor.isClient) {
             userId: Meteor.userId(),
             packageId: package._id,
             appId: package.appId,
-            appName: package.manifest.appName && package.manifest.appName.defaultText,
+            appTitle: package.manifest.appTitle && package.manifest.appTitle.defaultText,
             appVersion: package.manifest.appVersion,
             title: action.title.defaultText,
             command: action.command

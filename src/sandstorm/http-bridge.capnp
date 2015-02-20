@@ -21,7 +21,7 @@
 $import "/capnp/c++.capnp".namespace("sandstorm");
 using Grain = import "grain.capnp";
 
-interface ApiForwarder {
+interface PlatformProxy {
   # Bootstrap interface provided to the app on a Unix domain socket at /tmp/sandstorm-api.
 
   getSandstormApi @0 () -> (api :Grain.SandstormApi);

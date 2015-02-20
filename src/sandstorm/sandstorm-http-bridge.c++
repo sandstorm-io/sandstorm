@@ -825,7 +825,7 @@ private:
 typedef std::map<kj::StringPtr, SessionContext::Client&> SessionContextMap;
 // A UiView gives each of its sessions an ID string that serves as a SessionContextMap key
 // and is sent to the app in the X-Sandstorm-Session-Id header. Each session is responsible for
-// maintaining its entry in the map. The map is used by an ApiForwarder, defined below.
+// maintaining its entry in the map. The map is used by a PlatformProxy, defined below.
 
 class WebSessionImpl final: public WebSession::Server {
 public:
@@ -1239,9 +1239,9 @@ private:
 };
 
 
-class ApiForwarderImpl: public ApiForwarder::Server {
+class PlatformProxyImpl: public PlatformProxy::Server {
 public:
-  explicit ApiForwarderImpl(SandstormApi<>::Client&& apiCap, SessionContextMap& sessionContextMap)
+  explicit PlatformProxyImpl(SandstormApi<>::Client&& apiCap, SessionContextMap& sessionContextMap)
       : apiCap(kj::mv(apiCap)),
         sessionContextMap(sessionContextMap) {}
 
@@ -1377,21 +1377,21 @@ public:
     capnp::TwoPartyVatNetwork network;
     capnp::RpcSystem<capnp::rpc::twoparty::VatId> rpcSystem;
 
-    explicit AcceptedConnection(ApiForwarder::Client& forwarder,
+    explicit AcceptedConnection(PlatformProxy::Client& proxy,
                                 kj::Own<kj::AsyncIoStream>&& connectionParam)
       : connection(kj::mv(connectionParam)),
         network(*connection, capnp::rpc::twoparty::Side::SERVER),
-        rpcSystem(capnp::makeRpcServer(network, forwarder)) {}
+        rpcSystem(capnp::makeRpcServer(network, proxy)) {}
   };
 
   kj::Promise<void> acceptLoop(kj::ConnectionReceiver& serverPort,
-                               ApiForwarder::Client& forwarder,
+                               PlatformProxy::Client& proxy,
                                kj::TaskSet& taskSet) {
     return serverPort.accept().then([&](kj::Own<kj::AsyncIoStream>&& connection) {
-      auto connectionState = kj::heap<AcceptedConnection>(forwarder, kj::mv(connection));
+      auto connectionState = kj::heap<AcceptedConnection>(proxy, kj::mv(connection));
       auto promise = connectionState->network.onDisconnect();
       taskSet.add(promise.attach(kj::mv(connectionState)));
-      return acceptLoop(serverPort, forwarder, taskSet);
+      return acceptLoop(serverPort, proxy, taskSet);
     });
   }
 
@@ -1483,8 +1483,8 @@ public:
 
       // Export a Unix socket on which the application can connect and make calls directly to the
       // Sandstorm API.
-      ApiForwarder::Client apiForwarder =
-          kj::heap<ApiForwarderImpl>(kj::mv(api), sessionContextMap);
+      PlatformProxy::Client platformProxy =
+          kj::heap<PlatformProxyImpl>(kj::mv(api), sessionContextMap);
       ErrorHandlerImpl errorHandler;
       kj::TaskSet tasks(errorHandler);
       unlink("/tmp/sandstorm-api");  // Clear stale socket, if any.
@@ -1492,7 +1492,7 @@ public:
           .parseAddress("unix:/tmp/sandstorm-api", 0)
           .then([&](kj::Own<kj::NetworkAddress>&& addr) {
         auto serverPort = addr->listen();
-        auto promise = acceptLoop(*serverPort, apiForwarder, tasks);
+        auto promise = acceptLoop(*serverPort, platformProxy, tasks);
         return promise.attach(kj::mv(serverPort));
       });
 

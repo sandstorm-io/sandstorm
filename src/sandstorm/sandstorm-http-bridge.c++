@@ -43,6 +43,7 @@
 
 #include <sandstorm/util.capnp.h>
 #include <sandstorm/grain.capnp.h>
+#include <sandstorm/api-session.capnp.h>
 #include <sandstorm/web-session.capnp.h>
 #include <sandstorm/email.capnp.h>
 #include <sandstorm/hack-session.capnp.h>
@@ -824,14 +825,16 @@ class WebSessionImpl final: public WebSession::Server {
 public:
   WebSessionImpl(kj::NetworkAddress& serverAddr,
                  UserInfo::Reader userInfo, SessionContext::Client context,
-                 WebSession::Params::Reader params, kj::String&& permissions)
+                 kj::String&& basePath, kj::String&& userAgent, kj::String&& acceptLanguages,
+                 kj::String&& rootPath, kj::String&& permissions)
       : serverAddr(serverAddr),
         context(kj::mv(context)),
         userDisplayName(percentEncode(userInfo.getDisplayName().getDefaultText())),
         permissions(kj::mv(permissions)),
-        basePath(kj::heapString(params.getBasePath())),
-        userAgent(kj::heapString(params.getUserAgent())),
-        acceptLanguages(kj::strArray(params.getAcceptableLanguages(), ",")) {
+        basePath(kj::mv(basePath)),
+        userAgent(kj::mv(userAgent)),
+        acceptLanguages(kj::mv(acceptLanguages)),
+        rootPath(kj::mv(rootPath)) {
     if (userInfo.hasUserId()) {
       auto id = userInfo.getUserId();
       KJ_ASSERT(id.size() == 32, "User ID not a SHA-256?");
@@ -897,7 +900,7 @@ public:
 
     kj::Vector<kj::String> lines(16);
 
-    lines.add(kj::str("GET /", params.getPath(), " HTTP/1.1"));
+    lines.add(kj::str("GET ", rootPath, params.getPath(), " HTTP/1.1"));
     lines.add(kj::str("Upgrade: websocket"));
     lines.add(kj::str("Connection: Upgrade"));
     lines.add(kj::str("Sec-WebSocket-Key: mj9i153gxeYNlGDoKdoXOQ=="));
@@ -951,6 +954,7 @@ private:
   kj::String basePath;
   kj::String userAgent;
   kj::String acceptLanguages;
+  kj::String rootPath;
   spk::BridgeConfig::Reader config;
 
   kj::String makeHeaders(kj::StringPtr method, kj::StringPtr path,
@@ -960,7 +964,7 @@ private:
                          kj::String extraHeader3 = nullptr) {
     kj::Vector<kj::String> lines(16);
 
-    lines.add(kj::str(method, " /", path, " HTTP/1.1"));
+    lines.add(kj::str(method, " ", rootPath, path, " HTTP/1.1"));
     lines.add(kj::str("Connection: close"));
     if (extraHeader1 != nullptr) {
       lines.add(kj::mv(extraHeader1));
@@ -972,7 +976,9 @@ private:
       lines.add(kj::mv(extraHeader3));
     }
     lines.add(kj::str("Accept-Encoding: gzip"));
-    lines.add(kj::str("Accept-Language: ", acceptLanguages));
+    if (acceptLanguages.size() > 0) {
+      lines.add(kj::str("Accept-Language: ", acceptLanguages));
+    }
 
     addCommonHeaders(lines, context);
 
@@ -980,15 +986,19 @@ private:
   }
 
   void addCommonHeaders(kj::Vector<kj::String>& lines, WebSession::Context::Reader context) {
-    lines.add(kj::str("Host: ", extractHostFromUrl(basePath)));
-    lines.add(kj::str("User-Agent: ", userAgent));
+    if (userAgent.size() > 0) {
+      lines.add(kj::str("User-Agent: ", userAgent));
+    }
     lines.add(kj::str("X-Sandstorm-Username: ", userDisplayName));
     KJ_IF_MAYBE(u, userId) {
       lines.add(kj::str("X-Sandstorm-User-Id: ", *u));
     }
-    lines.add(kj::str("X-Sandstorm-Base-Path: ", basePath));
     lines.add(kj::str("X-Sandstorm-Permissions: ", permissions));
-    lines.add(kj::str("X-Forwarded-Proto: ", extractProtocolFromUrl(basePath)));
+    if (basePath.size() > 0) {
+      lines.add(kj::str("X-Sandstorm-Base-Path: ", basePath));
+      lines.add(kj::str("Host: ", extractHostFromUrl(basePath)));
+      lines.add(kj::str("X-Forwarded-Proto: ", extractProtocolFromUrl(basePath)));
+    }
 
     auto cookies = context.getCookies();
     if (cookies.size() > 0) {
@@ -1257,27 +1267,34 @@ public:
 
   kj::Promise<void> newSession(NewSessionContext context) override {
     auto params = context.getParams();
+    auto sessionType = params.getSessionType();
 
-    KJ_REQUIRE(params.getSessionType() == capnp::typeId<WebSession>() ||
-               params.getSessionType() == capnp::typeId<HackEmailSession>(),
+    KJ_REQUIRE(sessionType == capnp::typeId<WebSession>() ||
+               sessionType == capnp::typeId<HackEmailSession>() ||
+               (config.getApiPath().size() > 0 && sessionType == capnp::typeId<ApiSession>()),
                "Unsupported session type.");
 
-    if (params.getSessionType() == capnp::typeId<WebSession>()) {
+    if (sessionType == capnp::typeId<WebSession>()) {
       auto userPermissions = params.getUserInfo().getPermissions();
-      auto configPermissions = config.getViewInfo().getPermissions();
-      kj::Vector<kj::String> permissionVec(configPermissions.size());
-
-      for (uint i = 0; i < configPermissions.size() && i / 8 < userPermissions.size(); ++i) {
-        if (userPermissions[i / 8] & (1 << (i % 8))) {
-          permissionVec.add(kj::str(configPermissions[i].getName()));
-        }
-      }
-      auto permissions = kj::strArray(permissionVec, ",");
+      auto sessionParams = params.getSessionParams().getAs<WebSession::Params>();
 
       context.getResults(capnp::MessageSize {2, 1}).setSession(
           kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
-                                   params.getSessionParams().getAs<WebSession::Params>(), kj::mv(permissions)));
-    } else if (params.getSessionType() == capnp::typeId<HackEmailSession>()) {
+                                   kj::heapString(sessionParams.getBasePath()),
+                                   kj::heapString(sessionParams.getUserAgent()),
+                                   kj::strArray(sessionParams.getAcceptableLanguages(), ","),
+                                   kj::heapString("/"),
+                                   formatPermissions(userPermissions)));
+    } else if (sessionType == capnp::typeId<ApiSession>()) {
+      auto userPermissions = params.getUserInfo().getPermissions();
+      // auto sessionParams = params.getSessionParams().getAs<ApiSession::Params>();
+
+      context.getResults(capnp::MessageSize {2, 1}).setSession(
+          kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
+                                   kj::heapString(""), kj::heapString(""), kj::heapString(""),
+                                   kj::heapString(config.getApiPath()),
+                                   formatPermissions(userPermissions)));
+    } else if (sessionType == capnp::typeId<HackEmailSession>()) {
       context.getResults(capnp::MessageSize {2, 1}).setSession(kj::heap<EmailSessionImpl>());
     }
 
@@ -1287,6 +1304,17 @@ public:
   }
 
 private:
+  inline kj::String formatPermissions(capnp::Data::Reader& userPermissions) {
+      auto configPermissions = config.getViewInfo().getPermissions();
+      kj::Vector<kj::String> permissionVec(configPermissions.size());
+
+      for (uint i = 0; i < configPermissions.size() && i / 8 < userPermissions.size(); ++i) {
+        if (userPermissions[i / 8] & (1 << (i % 8))) {
+          permissionVec.add(kj::str(configPermissions[i].getName()));
+        }
+      }
+      return kj::strArray(permissionVec, ",");
+  }
   kj::NetworkAddress& serverAddress;
   RedirectableCapability& contextCap;
   spk::BridgeConfig::Reader config;

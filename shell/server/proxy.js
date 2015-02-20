@@ -25,6 +25,7 @@ var Promise = Npm.require("es6-promise").Promise;
 var Capnp = Npm.require("capnp");
 
 var ByteStream = Capnp.importSystem("sandstorm/util.capnp").ByteStream;
+var ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 var WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;
 var HackSession = Capnp.importSystem("sandstorm/hack-session.capnp");
 var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
@@ -144,7 +145,7 @@ Meteor.methods({
 
     var isOwner = grainInfo.owner === userId;
 
-    var proxy = new Proxy(grainId, sessionId, null, isOwner, user);
+    var proxy = new Proxy(grainId, sessionId, null, isOwner, user, null, false);
     proxies[sessionId] = proxy;
     proxiesByHostId[proxy.hostId] = proxy;
 
@@ -435,7 +436,7 @@ Meteor.startup(function () {
     var grain = Grains.findOne(session.grainId);
     var user = Meteor.users.findOne({_id: session.userId});
     var isOwner = grain.userId === session.userId;
-    var proxy = new Proxy(session.grainId, session._id, session.hostId, isOwner, user);
+    var proxy = new Proxy(session.grainId, session._id, session.hostId, isOwner, user, null, false);
     proxies[session._id] = proxy;
     proxiesByHostId[session.hostId] = proxy;
   });
@@ -479,7 +480,7 @@ function getProxyForApiToken(token) {
           if ("userId" in tokenInfo.userInfo) {
             tokenInfo.userInfo.userId = new Buffer(tokenInfo.userInfo.userId);
           }
-          proxy = new Proxy(tokenInfo.grainId, null, null, false, null, tokenInfo.userInfo);
+          proxy = new Proxy(tokenInfo.grainId, null, null, false, null, tokenInfo.userInfo, true);
         } else if (tokenInfo.userId) {
           var user = Meteor.users.findOne({_id: tokenInfo.userId});
           if (!user) {
@@ -487,9 +488,9 @@ function getProxyForApiToken(token) {
           }
 
           var isOwner = grain.userId === tokenInfo.userId;
-          proxy = new Proxy(tokenInfo.grainId, null, null, isOwner, user);
+          proxy = new Proxy(tokenInfo.grainId, null, null, isOwner, user, null, true);
         } else {
-          proxy = new Proxy(tokenInfo.grainId, null, null, false, null);
+          proxy = new Proxy(tokenInfo.grainId, null, null, false, null, null, true);
         }
 
         if (tokenInfo.expires) {
@@ -657,10 +658,11 @@ tryProxyRequest = function (hostId, req, res) {
 // Connects to a grain and exports it on a wildcard host.
 //
 
-function Proxy(grainId, sessionId, preferredHostId, isOwner, user, userInfo) {
+function Proxy(grainId, sessionId, preferredHostId, isOwner, user, userInfo, isApi) {
   this.grainId = grainId;
   this.sessionId = sessionId;
   this.isOwner = isOwner;
+  this.isApi = isApi;
   if (sessionId) {
     if (!preferredHostId) {
       this.hostId = generateRandomHostname(20);
@@ -770,7 +772,7 @@ Proxy.prototype.getConnection = function () {
 var Url = Npm.require("url");
 var PROTOCOL = Url.parse(process.env.ROOT_URL).protocol;
 
-Proxy.prototype._callNewSession = function (request, viewInfo) {
+Proxy.prototype._callNewWebSession = function (request, userInfo) {
   var params = Capnp.serialize(WebSession.Params, {
     basePath: PROTOCOL + "//" + request.headers.host,
     userAgent: "user-agent" in request.headers
@@ -781,6 +783,23 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
         : [ "en-US", "en" ]
   });
 
+  return this.uiView.newSession(userInfo, makeHackSessionContext(this.grainId),
+    WebSession.typeId, params).session;
+};
+
+Proxy.prototype._callNewApiSession = function (request, userInfo) {
+  var self = this;
+
+  // TODO(someday): We are currently falling back to WebSession if we get any kind of error upon
+  // calling newSession with an ApiSession._id.
+  // Eventually we'll remove this logic once we're sure apps have updated.
+  return this.uiView.newSession(userInfo, makeHackSessionContext(this.grainId),
+    ApiSession.typeId).then(function (session) {
+      return session.session;
+    });
+};
+
+Proxy.prototype._callNewSession = function (request, viewInfo) {
   var userInfo = _.clone(this.userInfo);
   if (viewInfo.permissions) {
     var numBytes = Math.ceil(viewInfo.permissions.length / 8);
@@ -793,8 +812,11 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
     userInfo.permissions = buf;
   }
 
-  return this.uiView.newSession(userInfo, makeHackSessionContext(this.grainId),
-    "0xa50711a14d35a8ce", params).session;
+  if (this.isApi) {
+    return this._callNewApiSession(request, userInfo);
+  } else {
+    return this._callNewWebSession(request, userInfo);
+  }
 };
 
 Proxy.prototype.getSession = function (request) {

@@ -2,6 +2,7 @@ run-bundle bin/sandstorm
 sandstorm-http-bridge bin
 email.capnp node_modules/sandstorm/email.capnp
 grain.capnp node_modules/sandstorm/grain.capnp
+api-session.capnp node_modules/sandstorm/api-session.capnp
 hack-session.capnp node_modules/sandstorm/hack-session.capnp
 ip.capnp node_modules/sandstorm/ip.capnp
 package.capnp node_modules/sandstorm/package.capnp

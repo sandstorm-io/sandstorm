@@ -796,6 +796,8 @@ Proxy.prototype._callNewApiSession = function (request, userInfo) {
   return this.uiView.newSession(userInfo, makeHackSessionContext(this.grainId),
     ApiSession.typeId).then(function (session) {
       return session.session;
+    }, function (err) {
+      return self._callNewWebSession(request, userInfo);
     });
 };
 

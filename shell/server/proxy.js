@@ -793,9 +793,8 @@ Proxy.prototype._callNewApiSession = function (request, userInfo) {
   // TODO(someday): We are currently falling back to WebSession if we get any kind of error upon
   // calling newSession with an ApiSession._id.
   // Eventually we'll remove this logic once we're sure apps have updated.
-  return this.uiView.newSession(
-    userInfo, makeHackSessionContext(this.grainId), ApiSession.typeId
-  ).then(function (session) {
+  return this.uiView.newSession(userInfo, makeHackSessionContext(this.grainId), ApiSession.typeId)
+      .then(function (session) {
     return session.session;
   }, function (err) {
     return self._callNewWebSession(request, userInfo);

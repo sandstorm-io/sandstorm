@@ -188,6 +188,17 @@ struct BridgeConfig {
   # When a request comes in from the user, sandstorm-http-bridge will set the
   # X-Sandstorm-Permissions header to a comma-delimited list of permission names corresponding to
   # the user's permissions.
+
+  apiPath @1 :Text;
+  # This variable's purpose is two-fold:
+  # First, if it's set to anything non-empty, it will enable ApiSessions in sandstorm-http-bridge.
+  # This means calling newSession with an ApiSession type id will return an ApiSession correctly.
+  # Second, as the name implies, this specifies the path to the API in an app. For example, if
+  # your API endpoints always begin with /v1/api/, then you would provide that path. This path will
+  # always be prepended for you, and clients accessing the API will not have to provide it. This
+  # also has the effect of limiting your clients to only accessing endpoints under that path you
+  # provide. It should always end in a trailing '/'.
+  # "/" is a valid value, and will give clients access to all paths.
 }
 
 # ==============================================================================

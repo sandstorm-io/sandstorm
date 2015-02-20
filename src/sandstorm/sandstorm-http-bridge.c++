@@ -46,7 +46,7 @@
 #include <sandstorm/api-session.capnp.h>
 #include <sandstorm/web-session.capnp.h>
 #include <sandstorm/email.capnp.h>
-#include <sandstorm/http-bridge.capnp.h>
+#include <sandstorm/sandstorm-http-bridge.capnp.h>
 #include <sandstorm/hack-session.capnp.h>
 #include <sandstorm/package.capnp.h>
 #include <joyent-http/http_parser.h>
@@ -825,7 +825,8 @@ private:
 typedef std::map<kj::StringPtr, SessionContext::Client&> SessionContextMap;
 // A UiView gives each of its sessions an ID string that serves as a SessionContextMap key
 // and is sent to the app in the X-Sandstorm-Session-Id header. Each session is responsible for
-// maintaining its entry in the map. The map is used by a PlatformProxy, defined below.
+// maintaining its entry in the map. The map is used to implement a SandstormHttpBridge
+// capability.
 
 class WebSessionImpl final: public WebSession::Server {
 public:
@@ -1239,9 +1240,10 @@ private:
 };
 
 
-class PlatformProxyImpl: public PlatformProxy::Server {
+class SandstormHttpBridgeImpl: public SandstormHttpBridge::Server {
 public:
-  explicit PlatformProxyImpl(SandstormApi<>::Client&& apiCap, SessionContextMap& sessionContextMap)
+  explicit SandstormHttpBridgeImpl(SandstormApi<>::Client&& apiCap,
+                                   SessionContextMap& sessionContextMap)
       : apiCap(kj::mv(apiCap)),
         sessionContextMap(sessionContextMap) {}
 
@@ -1377,21 +1379,21 @@ public:
     capnp::TwoPartyVatNetwork network;
     capnp::RpcSystem<capnp::rpc::twoparty::VatId> rpcSystem;
 
-    explicit AcceptedConnection(PlatformProxy::Client& proxy,
+    explicit AcceptedConnection(SandstormHttpBridge::Client& bridge,
                                 kj::Own<kj::AsyncIoStream>&& connectionParam)
       : connection(kj::mv(connectionParam)),
         network(*connection, capnp::rpc::twoparty::Side::SERVER),
-        rpcSystem(capnp::makeRpcServer(network, proxy)) {}
+        rpcSystem(capnp::makeRpcServer(network, bridge)) {}
   };
 
   kj::Promise<void> acceptLoop(kj::ConnectionReceiver& serverPort,
-                               PlatformProxy::Client& proxy,
+                               SandstormHttpBridge::Client& bridge,
                                kj::TaskSet& taskSet) {
     return serverPort.accept().then([&](kj::Own<kj::AsyncIoStream>&& connection) {
-      auto connectionState = kj::heap<AcceptedConnection>(proxy, kj::mv(connection));
+      auto connectionState = kj::heap<AcceptedConnection>(bridge, kj::mv(connection));
       auto promise = connectionState->network.onDisconnect();
       taskSet.add(promise.attach(kj::mv(connectionState)));
-      return acceptLoop(serverPort, proxy, taskSet);
+      return acceptLoop(serverPort, bridge, taskSet);
     });
   }
 
@@ -1483,8 +1485,8 @@ public:
 
       // Export a Unix socket on which the application can connect and make calls directly to the
       // Sandstorm API.
-      PlatformProxy::Client platformProxy =
-          kj::heap<PlatformProxyImpl>(kj::mv(api), sessionContextMap);
+      SandstormHttpBridge::Client sandstormHttpBridge =
+          kj::heap<SandstormHttpBridgeImpl>(kj::mv(api), sessionContextMap);
       ErrorHandlerImpl errorHandler;
       kj::TaskSet tasks(errorHandler);
       unlink("/tmp/sandstorm-api");  // Clear stale socket, if any.
@@ -1492,7 +1494,7 @@ public:
           .parseAddress("unix:/tmp/sandstorm-api", 0)
           .then([&](kj::Own<kj::NetworkAddress>&& addr) {
         auto serverPort = addr->listen();
-        auto promise = acceptLoop(*serverPort, platformProxy, tasks);
+        auto promise = acceptLoop(*serverPort, sandstormHttpBridge, tasks);
         return promise.attach(kj::mv(serverPort));
       });
 

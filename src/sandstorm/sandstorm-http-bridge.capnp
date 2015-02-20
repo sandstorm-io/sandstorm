@@ -15,13 +15,13 @@
 # limitations under the License.
 
 @0xac137d236832bb1e;
-# This file contains interfaces that allow sandstorm-http-bridge to provide apps with access to
+# This file defines interfaces that allow sandstorm-http-bridge to provide apps with access to
 # Sandstorm platform features.
 
 $import "/capnp/c++.capnp".namespace("sandstorm");
 using Grain = import "grain.capnp";
 
-interface PlatformProxy {
+interface SandstormHttpBridge {
   # Bootstrap interface provided to the app on a Unix domain socket at /tmp/sandstorm-api.
 
   getSandstormApi @0 () -> (api :Grain.SandstormApi);
@@ -30,5 +30,4 @@ interface PlatformProxy {
   getSessionContext @1 (id :Text) -> (context :Grain.SessionContext);
   # Get the SessionContext corresponding to a UiSession. The appropriate `id` value can be read
   # from the X-Sandstorm-Session-Id header inserted by sandstorm-http-bridge.
-
 }

@@ -1318,7 +1318,7 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
       // TODO(soon): Only allow a small number of write()s to be in-flight at once,
       //   pausing the input stream if we hit that limit, so that we block the TCP socket all the
       //   way back to the source. May want to also coalesce small writes for this purpose.
-      // TODO(security): The above problem may allow a DoS attack on the frost-end.
+      // TODO(security): The above problem may allow a DoS attack on the front-end.
       if (!uploadStreamError) requestStream.write(buf).catch(reportUploadStreamError);
     });
     request.on("end", function () {

@@ -152,7 +152,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 // Each contains:
 //   _id:       A SHA-256 hash of the token.
 //   grainId:   The grain servicing this API.
-//   userId:    The `_id` of the user (in the users table) to whom this token should be attirbuted.
+//   userId:    The `_id` of the user (in the users table) to whom this token should be attributed.
 //              The user's current permissions will be presented to the app whenever the token is
 //              restored, so that the app can limit the token to the user's permissions, especially
 //              if they have changed. `userId` is not present if `userInfo` is present.

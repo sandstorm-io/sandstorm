@@ -145,7 +145,7 @@ interface SandstormApi(AppSturdyRef) {
   # share is automatically revoked if `link` is discarded.  If `cap` is persistable, then both
   # `sharedCap` and `link` also are.
   #
-  # This method is intended to be used by programs that acutally implement a communications link
+  # This method is intended to be used by programs that actually implement a communications link
   # over which a capability could be sent from one user to another.  For example, a chat app would
   # use this to prepare a capability to be embedded into a message.  In these cases, capabilities
   # may be shared without going through the system sharing UI, and therefore the application must

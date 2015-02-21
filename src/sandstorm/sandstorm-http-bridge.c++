@@ -1300,7 +1300,6 @@ public:
                                    formatPermissions(userPermissions)));
     } else if (sessionType == capnp::typeId<ApiSession>()) {
       auto userPermissions = params.getUserInfo().getPermissions();
-      // auto sessionParams = params.getSessionParams().getAs<ApiSession::Params>();
 
       context.getResults(capnp::MessageSize {2, 1}).setSession(
           kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),

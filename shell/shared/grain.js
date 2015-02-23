@@ -16,6 +16,8 @@
 
 // This file implements /grain, i.e. the main view into an app.
 
+var DEFAULT_TITLE = "Sandstorm";
+
 if (Meteor.isServer) {
   Grains.allow({
     update: function (userId, grain, fieldNames) {
@@ -244,7 +246,16 @@ if (Meteor.isClient) {
       return "";
     },
 
-    dateString: function (date) { return makeDateString(date); }
+    dateString: function (date) { return makeDateString(date); },
+
+    setGrainWindowTitle:  function() {
+      var appTitle = Session.get("grainFrameTitle");
+      if (appTitle) {
+        document.title = appTitle + " · " + this.title + " · Sandstorm";
+      } else {
+        document.title = this.title + " · Sandstorm";
+      }
+    }
   });
 
   var currentSessionId;
@@ -295,6 +306,8 @@ if (Meteor.isClient) {
       if (event.data.setPath) {
         window.history.replaceState({}, "", "/grain/" +
             currentGrainId + event.data.setPath);
+      } else if (event.data.setTitle) {
+        Session.set("grainFrameTitle", event.data.setTitle);
       } else {
         console.log("postMessage from app not understood: " + event.data);
       }
@@ -445,6 +458,8 @@ Router.map(function () {
 
     onStop: function () {
       setCurrentSessionId(undefined, undefined, undefined);
+      Session.set("grainFrameTitle", undefined);
+      document.title = DEFAULT_TITLE;
       unblockUpdate();
     }
   });

@@ -129,6 +129,18 @@ Meteor.startup(function () {
   });
 });
 
+var errorTxtMapping = {};
+errorTxtMapping[Dns.NOTFOUND] = "\n" +
+    "If you were trying to connect this address to a Sandstorm app hosted at this server,\n" +
+    "you either have not set your DNS TXT records correctly or the DNS cache has not\n" +
+    "updated yet (may take a while).\n";
+errorTxtMapping[Dns.NODATA] = errorTxtMapping[Dns.NOTFOUND];
+errorTxtMapping[Dns.TIMEOUT] = "\n" +
+    "The DNS query has timed out, which may be a sign of poorly configured DNS on the server.\n";
+errorTxtMapping[Dns.CONNREFUSED] = "\n" +
+    "The DNS server refused the connection, which means either your DNS server is down/unreachable,\n" +
+    "or the server has misconfigured their DNS.\n";
+
 function lookupPublicIdFromDns(hostname) {
   // Given a hostname, determine its public ID.
   // We look for a TXT record indicating the public ID. Unfortunately, according to spec, a single
@@ -151,14 +163,12 @@ function lookupPublicIdFromDns(hostname) {
   return new Promise(function (resolve, reject) {
     Dns.resolveTxt("sandstorm-www." + hostname, function (err, records) {
       if (err) {
+        var errorMsg = errorTxtMapping[err.code] || "";
         reject(new Error(
           "Error looking up DNS TXT records for host '" + hostname + "': " + err.message + "\n" +
           "\n" +
           "This Sandstorm server's main interface is at: " + process.env.ROOT_URL + "\n" +
-          "\n" +
-          "If you were trying to connect this address to a Sandstorm app hosted at this server,\n" +
-          "you either have not set your DNS TXT records correctly or the DNS cache has not\n" +
-          "updated yet (may take a while).\n" +
+          errorMsg +
           "\n" +
           "If you are the server admin and want to use this address as the main interface,\n" +
           "edit /opt/sandstorm/sandstorm.conf, modify the BASE_URL setting, and restart.\n" +

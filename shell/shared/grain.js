@@ -16,6 +16,8 @@
 
 // This file implements /grain, i.e. the main view into an app.
 
+var DEFAULT_TITLE = "Sandstorm";
+
 if (Meteor.isServer) {
   Grains.allow({
     update: function (userId, grain, fieldNames) {
@@ -456,6 +458,8 @@ Router.map(function () {
 
     onStop: function () {
       setCurrentSessionId(undefined, undefined, undefined);
+      Session.set("grainFrameTitle", undefined);
+      document.title = DEFAULT_TITLE;
       unblockUpdate();
     }
   });

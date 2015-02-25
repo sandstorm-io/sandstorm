@@ -323,3 +323,20 @@ HackSessionContextImpl.prototype.getIpNetwork = function () {
     return {network: new IpNetworkImpl()};
   }).bind(this));
 };
+
+HackSessionContextImpl.prototype.getUiViewForEndpoint = function (url) {
+  var parsedUrl = Url.parse(url);
+
+  if (parsedUrl.hash) { // Assume that anything with a fragment is a webkey
+    var apiHost = ROOT_URL.protocol + "//" + makeWildcardHost("api");
+    var urlProtoAndHost = parsedUrl.protocol + "//" + parsedUrl.host;
+    var token = parsedUrl.hash.slice(1); // Get rid of # which is always the first character
+    if (urlProtoAndHost === apiHost) {
+      return getWrappedUiViewForToken(token, parsedUrl.path);
+    } else {
+      return {view: new ExternalUiView(url, this.grainId, token)};
+    }
+  } else {
+      return {view: new ExternalUiView(url, this.grainId)};
+  }
+};

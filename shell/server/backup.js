@@ -41,6 +41,27 @@ function recursiveRmdirIfExists(dir) {
   }
 }
 
+function walkAndWriteFiles(dir, writeStream, replaceRoot, originalRoot) {
+  originalRoot = originalRoot || dir;
+  var files = Fs.readdirSync(dir);
+  files.forEach(function (name) {
+    name = dir + "/" + name;
+    var fileStat = Fs.lstatSync(name);
+    if (fileStat.isDirectory()) {
+      walkAndWriteFiles(name, writeStream, replaceRoot, originalRoot);
+    } else if (fileStat.isFile()) {
+      name = replaceRoot + name.slice(originalRoot.length);
+      writeStream.write(name + "\n");
+    }
+  });
+
+  // Include empty directories
+  if (files.length === 0) {
+    dir = replaceRoot + dir.slice(originalRoot.length);
+    writeStream.write(dir + "\n");
+  }
+}
+
 Meteor.startup(function () {
   // Cleanup tokens every TOKEN_CLEANUP_MINUTES
   Meteor.setInterval(function () {
@@ -91,7 +112,7 @@ Meteor.methods({
         "-r/tmp/data=" + Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox"),
         "-r/tmp/log=" + Path.join(SANDSTORM_GRAINDIR, grainId, "log"),
         // Run zip!
-        "--", "zip", "-y", "-r", "backup.zip", "."], {stdio: "ignore"});
+        "--", "zip", "-y", "backup.zip", "-@"], {stdio: ["pipe", "ignore", "ignore"]});
     proc.on("exit", function (code) {
       fut.return(code);
     });
@@ -99,6 +120,10 @@ Meteor.methods({
       recursiveRmdirIfExists(token.filePath);
       fut.throw(new Meteor.Error(500, "Error in zipping procces"));
     });
+    proc.stdin.write("metadata\n");
+    proc.stdin.write("log\n");
+    walkAndWriteFiles(Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox"), proc.stdin, "data");
+    proc.stdin.end();
 
     var code = fut.wait();
     if (code !== 0) {

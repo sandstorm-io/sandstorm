@@ -33,7 +33,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Use NFS for the /vagrant shared directory, for performance and
   # compatibility.
-  config.vm.synced_folder ".", "/vagrant", type: "nfs"
+  file_sharing_type = "nfs"
+  # If we are running on Windows, use SMB instead.
+  # XXX Experimental! XXX
+  if Vagrant::Util::Platform.windows?
+    file_sharing_type = "smb"
+  end
+
+  config.vm.synced_folder ".", "/vagrant", type: file_sharing_type
 
   # Calculate the number of CPUs and the amount of RAM the system has,
   # in a platform-dependent way; further logic below.

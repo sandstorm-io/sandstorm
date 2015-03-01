@@ -2324,29 +2324,22 @@ private:
     }
   }
 
-  void killall(kj::StringPtr exePath) {
+  void killall(kj::StringPtr command) {
     for (auto& file: listDirectory("/proc")) {
       KJ_IF_MAYBE(pid, parseUInt(file, 10)) {
-        char buf[exePath.size()];
+        char buf[command.size() + 1];
         char* bufPtr = buf;  // Clang doesn't like capturing variable-width arrays.
 
-        ssize_t n;
-        for (;;) {
-          n = readlink(kj::str("/proc/", file, "/exe").cStr(), bufPtr, exePath.size());
-          if (n < 0) {
-            int error = errno;
-            if (error == ENOENT) {
-              // Probably the pid disappeared while we were listing the directory. No big deal.
-              break;
-            } else if (error != EINTR) {
-              KJ_FAIL_SYSCALL("readlink(/proc/pid/exe)", error, pid);
-            }
-          } else {
-            if (n >= 0 && n == exePath.size() && memcmp(exePath.begin(), buf, sizeof(buf)) == 0) {
-              // It's the exe we want to kill!
-              KJ_SYSCALL(kill(*pid, SIGTERM));
-            }
-            break;
+        auto maybeFd = raiiOpenIfExists(kj::str("/proc/", file, "/cmdline"), O_RDONLY);
+        // No big deal if it doesn't exist. Probably the pid disappeared while we were listing
+        // the directory.
+
+        KJ_IF_MAYBE(fd, maybeFd) {
+          kj::FdInputStream stream(kj::mv(*fd));
+          size_t n = stream.tryRead(bufPtr, sizeof(buf), sizeof(buf));
+          if (n == sizeof(buf) && memcmp(command.begin(), buf, n) == 0) {
+            // An exact match, including the terminating NUL byte. Kill the process!
+            KJ_SYSCALL(kill(*pid, SIGTERM));
           }
         }
       }

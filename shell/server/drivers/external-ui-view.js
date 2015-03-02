@@ -47,8 +47,11 @@ WrappedUiView.prototype.newSession = function (userInfo, context, sessionType, s
   var self = this;
 
   return this.proxy.keepAlive().then(function () {
-    // ignore the passed userInfo and instead use the one associated with this token
-    // TODO(someday): handle permissions from the viewInfo
+    // ignore the passed userInfo and instead use the one associated with this
+    // token TODO(someday): Merge / intersect the two userInfo objects
+    // (especially permissions) rather than only taking the token's user info.
+    // This will allow the caller to request only a subset of the permissions
+    // granted by the token, which is useful to protect against bugs.
     var session = self.proxy.uiView.newSession(
         self.proxy.userInfo, context, sessionType, sessionParams).session.castAs(ApiSession);
     return {session: new Capnp.Capability(new WrappedApiSession(session, self.path), ApiSession)};

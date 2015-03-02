@@ -22,20 +22,11 @@ var Http = Npm.require("http");
 var Https = Npm.require("https");
 var ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 
-var removeTrailingSlash = function (path) {
-  if (path.indexOf("/", path.length - 1) === -1) {
-    return path;
-  }
-
-  return path.slice(0, path.length - 1);
-};
-
-WrappedUiView = function (token, proxy, path) {
+WrappedUiView = function (token, proxy) {
   // TODO(someday): handle the fact that these proxies will be garbage collected every 2 minutes,
   // even if it's in use.
   this.token = token;
   this.proxy = proxy;
-  this.path = path;
 };
 
 WrappedUiView.prototype.newSession = function (userInfo, context, sessionType, sessionParams, retryCount) {
@@ -53,8 +44,8 @@ WrappedUiView.prototype.newSession = function (userInfo, context, sessionType, s
     // This will allow the caller to request only a subset of the permissions
     // granted by the token, which is useful to protect against bugs.
     var session = self.proxy.uiView.newSession(
-        self.proxy.userInfo, context, sessionType, sessionParams).session.castAs(ApiSession);
-    return {session: new Capnp.Capability(new WrappedApiSession(session, self.path), ApiSession)};
+        self.proxy.userInfo, context, sessionType, sessionParams).session;
+    return {session: session};
   }).catch(function (error) {
     return self.proxy.maybeRetryAfterError(error, retryCount).then(function () {
       return self.newSession(userInfo, context, sessionType, sessionParams, retryCount + 1);
@@ -62,36 +53,11 @@ WrappedUiView.prototype.newSession = function (userInfo, context, sessionType, s
   });
 };
 
-WrappedApiSession = function (session, path) {
-  this.session = session;
-  this.path = removeTrailingSlash(path);
-};
-
-WrappedApiSession.prototype._makePath = function (path) {
-  return this.path + path;
-};
-
-WrappedApiSession.prototype.get = function (path, context) {
-  return this.session.get(this._makePath(path), context);
-};
-
-WrappedApiSession.prototype.post = function (path, content, context) {
-  return this.session.post(this._makePath(path), content, context);
-};
-
-WrappedApiSession.prototype.put = function (path, content, context) {
-  return this.session.put(this._makePath(path), content, context);
-};
-
-WrappedApiSession.prototype.delete = function (path, context) {
-  return this.session.delete(this._makePath(path), context);
-};
-
-getWrappedUiViewForToken = function (token, path) {
+getWrappedUiViewForToken = function (token) {
   var proxyPromise = getProxyForApiToken(token);
 
   return proxyPromise.then(function (proxy) {
-    return {view: new WrappedUiView(token, proxy, path)};
+    return {view: new WrappedUiView(token, proxy)};
   });
 };
 
@@ -122,7 +88,6 @@ ExternalWebSession = function (url, grainId, options) {
   this.host = parsedUrl.hostname;
   this.port = parsedUrl.port;
   this.protocol = parsedUrl.protocol;
-  this.path = removeTrailingSlash(parsedUrl.path);
   this.grainId = grainId;
   this.options = options || {};
 };
@@ -161,16 +126,12 @@ var responseCodes = {
   505: {type: "serverError"}
 };
 
-ExternalWebSession.prototype._makePath = function (path) {
-  return this.path + path;
-};
-
 ExternalWebSession.prototype._requestHelper = function (method, path, context, content, contentType) {
   var session = this;
   return new Promise(function (resolve, reject) {
     var options = _.clone(session.options);
     options.headers = options.headers || {};
-    options.path = session._makePath(path);
+    options.path = path;
     options.method = method;
     if (contentType) {
       options.headers["content-type"] = contentType;

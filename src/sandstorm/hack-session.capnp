@@ -115,6 +115,7 @@ interface HackSessionContext @0xe14c1f5321159b8f
   # verbatim.
   # 3. If the URL is not a webkey at all, wrap it the same as #2, but don't send an Authorization
   # header.
+  # This method will ignore the pathname of the url.
 
   struct TokenInfo {
     tokenId @0 :Text;

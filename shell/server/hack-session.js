@@ -332,7 +332,7 @@ HackSessionContextImpl.prototype.getUiViewForEndpoint = function (url) {
     var urlProtoAndHost = parsedUrl.protocol + "//" + parsedUrl.host;
     var token = parsedUrl.hash.slice(1); // Get rid of # which is always the first character
     if (urlProtoAndHost === apiHost) {
-      return getWrappedUiViewForToken(token, parsedUrl.path);
+      return getWrappedUiViewForToken(token);
     } else {
       return {view: new ExternalUiView(url, this.grainId, token)};
     }

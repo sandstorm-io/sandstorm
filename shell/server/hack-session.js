@@ -337,6 +337,6 @@ HackSessionContextImpl.prototype.getUiViewForEndpoint = function (url) {
       return {view: new ExternalUiView(url, this.grainId, token)};
     }
   } else {
-      return {view: new ExternalUiView(url, this.grainId)};
+    return {view: new ExternalUiView(url, this.grainId)};
   }
 };

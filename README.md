@@ -23,6 +23,8 @@ Sandstorm is in the very early stages of development. We want developers to star
 
 ## Installing the Easy Way
 
+*Prerequisite:* Linux x86_64, with kernel version 3.13 or later.
+
 To install on your own Linux machine, just do:
 
     curl https://install.sandstorm.io | bash
@@ -61,7 +63,7 @@ config used by Sandstorm Alpha.
 
 Please install the following:
 
-* Linux, with reasonably new kernel version.
+* Linux x86_64, with kernel version 3.13 or later
 * C and C++ standard libraries and headers
 * GNU Make
 * `libcap` with headers

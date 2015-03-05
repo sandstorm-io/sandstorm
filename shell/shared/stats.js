@@ -20,7 +20,11 @@ if (Meteor.isServer) {
   function computeStats(since) {
     return {
       activeUsers: Meteor.users.find({lastActive: {$gt: since}}).count() +
-          DeleteStats.find({type: "user", lastActive: {$gt: since}}).count(),
+          DeleteStats.find({$or: [{type: "user"},
+                                  {type: "appDemoUser"}],
+                            lastActive: {$gt: since}}).count(),
+      appDemoUsers: Meteor.users.find({lastActive: {$gt: since}}).count() +
+          DeleteStats.find({type: "appDemoUser", lastActive: {$gt: since}}).count(),
       activeGrains: Grains.find({lastUsed: {$gt: since}}).count() +
           DeleteStats.find({type: "grain", lastActive: {$gt: since}}).count()
     }

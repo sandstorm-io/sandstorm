@@ -46,6 +46,12 @@ function walkAndWriteFiles(dir, writeStream, replaceRoot, originalRoot) {
   var files = Fs.readdirSync(dir);
   files.forEach(function (name) {
     name = dir + "/" + name;
+
+    // Filter out file paths with a newline in them
+    if (name.indexOf("\n") !== -1) {
+      return;
+    }
+
     var fileStat = Fs.lstatSync(name);
     if (fileStat.isDirectory()) {
       walkAndWriteFiles(name, writeStream, replaceRoot, originalRoot);
@@ -57,6 +63,10 @@ function walkAndWriteFiles(dir, writeStream, replaceRoot, originalRoot) {
 
   // Include empty directories
   if (files.length === 0) {
+    // Filter out file paths with a newline in them
+    if (dir.indexOf("\n") !== -1) {
+      return;
+    }
     dir = replaceRoot + dir.slice(originalRoot.length);
     writeStream.write(dir + "\n");
   }

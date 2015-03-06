@@ -328,6 +328,9 @@ HackSessionContextImpl.prototype.getUiViewForEndpoint = function (url) {
   var parsedUrl = Url.parse(url);
 
   if (parsedUrl.hash) { // Assume that anything with a fragment is a webkey
+    if (parsedUrl.pathname) {
+      throw new Error("Webkey urls cannot contain a path.");
+    }
     var apiHost = ROOT_URL.protocol + "//" + makeWildcardHost("api");
     var urlProtoAndHost = parsedUrl.protocol + "//" + parsedUrl.host;
     var token = parsedUrl.hash.slice(1); // Get rid of # which is always the first character

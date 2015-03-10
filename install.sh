@@ -693,11 +693,14 @@ function register_sandcats_name() {
   SANDCATS_API_BASE="${OVERRIDE_SANDCATS_API_BASE:-https://sandcats.io}"
   SANDCATS_CURL_PARAMS="${OVERRIDE_SANDCATS_CURL_PARAMS:-}"
 
-  echo "Press enter to accept a random name, or choose your own (alphanumeric, max len 20)."
+  echo "Choose your desired Sandcats subdomain (alphanumeric, max 20 characters)."
   echo "Type the word none to skip this step."
   DESIRED_SANDCATS_NAME=$(prompt "What *.${SANDCATS_BASE_DOMAIN} subdomain would you like?" '')
+
+  # If they just press enter, insist that they type either the word
+  # "none" or provide a name they want to register.
   if [ -z "$DESIRED_SANDCATS_NAME" ] ; then
-    DESIRED_SANDCATS_NAME=$(random_sandcats_name)
+      register_sandcats_name
   fi
 
   # If the user really wants none of our sandcats help, then bail out.
@@ -750,10 +753,6 @@ function register_sandcats_name() {
     error "$(cat sandcats/register-log)"
     register_sandcats_name
   fi
-}
-
-function random_sandcats_name() {
-  echo "random-sandcatter-FIXME-$$"
 }
 
 # Now that we know the whole script has downloaded, run it.

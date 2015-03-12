@@ -64,9 +64,6 @@ interface SandstormCore {
   # When the supervisor receives a save() request for a capability hosted by the app, it first
   # calls save() on the underlying capability to get an AppSturdyRef, then calls wrapSaved() to
   # convert this to a token which it can then return.
-  #
-  # TODO(soon): How do we keep this capability associated with the user account that created it,
-  #   in order to auto-revoke it if the user loses permissions?
 }
 
 interface InternalPersistent extends(Persistent(Data, SystemSturdyRefOwner)) {

@@ -32,8 +32,8 @@ public:
   kj::Own<kj::AsyncIoStream> stream;
 };
 
-static const int BUFFER_SIZE = 8192;
-static const int MAX_PARALLEL_WRITES = 4;
+static const uint BUFFER_SIZE = 8192;
+static const uint MAX_PARALLEL_WRITES = 4;
 
 // TCP handling
 class AcceptedConnection {
@@ -71,52 +71,65 @@ class AcceptedConnection {
   };
 
 private:
+  struct ErrorHandlerImpl: public kj::TaskSet::ErrorHandler {
+    kj::Own<RefcountedAsyncIoStream> connection;
+    bool aborted;
+
+    explicit ErrorHandlerImpl(kj::Own<RefcountedAsyncIoStream> && connection)
+      : connection(kj::mv(connection)), aborted(false) { }
+
+    void taskFailed(kj::Exception&& exception) override {
+      // Abort the read end of the stream since we have received an error
+      // upstream and no longer need to read anymore. This could be called
+      // multiple times, so only abort the first. This will have a side-effect
+      // of causing tryRead to fail, and erroring out messageLoop() below.
+      if (!aborted) {
+        connection->stream->abortRead();
+        aborted = true;
+      }
+    }
+  };
+
   kj::Own<RefcountedAsyncIoStream> connection;
   capnp::byte buffer[BUFFER_SIZE];
   TcpPort::Client port;
-  kj::TaskSet& taskSet;
+  ErrorHandlerImpl errorHandler;
+  kj::TaskSet taskSet;
   kj::Own<ByteStream::Client> upstream;
-  int numOutstandingWrites;
-  kj::PromiseFulfillerPair<void> fulfillerPair;
+  uint numOutstandingWrites;
+  kj::Own<kj::PromiseFulfiller<void>> continueReading;
 
   inline kj::Promise<void> write(size_t size) {
     ++numOutstandingWrites;
     auto request = upstream->writeRequest();
+    // TODO(someday): do this without copying
     request.setData(kj::ArrayPtr<capnp::byte>(buffer, size));
     return request.send().then([this] (auto args) {
       if (numOutstandingWrites >= MAX_PARALLEL_WRITES) {
-        fulfillerPair.fulfiller->fulfill();
+        continueReading->fulfill();
       }
       --numOutstandingWrites;
     });
   }
 
-  inline kj::Promise<void> sendDone() {
-    return upstream->doneRequest().send().then([] (auto args) {});
-  }
-
 public:
-  explicit AcceptedConnection(kj::Own<kj::AsyncIoStream>&& connectionParam, TcpPort::Client port, kj::TaskSet& taskSet)
+  AcceptedConnection(kj::Own<kj::AsyncIoStream>&& connectionParam, TcpPort::Client && _port)
       : connection(kj::refcounted<RefcountedAsyncIoStream>(kj::mv(connectionParam))),
-        port(port), taskSet(taskSet), numOutstandingWrites(0),
-        fulfillerPair(kj::newPromiseAndFulfiller<void>()) {
+        port(_port), errorHandler(kj::addRef(*connection)), taskSet(errorHandler),
+        numOutstandingWrites(0) {
     auto request = port.connectRequest();
     request.setDownstream(kj::heap<Downstream>(kj::addRef(*connection)));
     upstream = kj::heap<ByteStream::Client>(request.send().getUpstream());
+
+    auto fulfillerPair = kj::newPromiseAndFulfiller<void>();
+    continueReading = kj::mv(fulfillerPair.fulfiller);
   }
 
   kj::Promise<void> messageLoop() {
     return connection->stream->tryRead(buffer, 1, BUFFER_SIZE)
           .then([this] (size_t size) -> kj::Promise<void> {
       if (size < 1) {  // EOF
-        if (numOutstandingWrites > 0) {
-          fulfillerPair = kj::newPromiseAndFulfiller<void>();
-          return fulfillerPair.promise.then([this] () {
-            return sendDone();
-          });
-        } else {
-          return sendDone();
-        }
+        return upstream->doneRequest().send().then([] (auto args) {});
       }
 
       if (numOutstandingWrites < MAX_PARALLEL_WRITES) {
@@ -128,7 +141,8 @@ public:
         // numOutstandingWrites == MAX_PARALLEL_WRITES, we are guaranteed to have less
         // than MAX_PARALLEL_WRITES after any of the writes finish, and we can start our
         // next write immediately.
-        fulfillerPair = kj::newPromiseAndFulfiller<void>();
+        auto fulfillerPair = kj::newPromiseAndFulfiller<void>();
+        continueReading = kj::mv(fulfillerPair.fulfiller);
         return fulfillerPair.promise.then([this, size] () {
           taskSet.add(write(size));
           return messageLoop();
@@ -138,7 +152,8 @@ public:
   }
 };
 
-TcpPort::Client getTcpClient(kj::Own<kj::AsyncIoStream>& connection, HackSessionContext::Client& session) {
+TcpPort::Client getTcpClient(kj::Own<kj::AsyncIoStream>& connection,
+                             HackSessionContext::Client& session) {
   auto request = session.getIpNetworkRequest().send().getNetwork().getRemoteHostRequest();
 
   struct sockaddr destaddr;
@@ -159,7 +174,7 @@ kj::Promise<void> runTcpBridge(kj::ConnectionReceiver& serverPort,
                              kj::TaskSet& taskSet, HackSessionContext::Client& session) {
   return serverPort.accept().then([&](kj::Own<kj::AsyncIoStream>&& connection) {
     auto connectionState = kj::heap<AcceptedConnection>(kj::mv(connection),
-                                                        getTcpClient(connection, session), taskSet);
+                                                        getTcpClient(connection, session));
     auto promise = connectionState->messageLoop();
     taskSet.add(promise.attach(kj::mv(connectionState)));
     return runTcpBridge(serverPort, taskSet, session);

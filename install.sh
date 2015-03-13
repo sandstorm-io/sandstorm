@@ -749,7 +749,6 @@ function register_sandcats_name() {
     # Set these global variables to inform the installer down the
     # road.
     SS_HOSTNAME="${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN}"
-    DEFAULT_WILDCARD='http://*.'"${SS_HOSTNAME}"
   else
     # Show the server's output, and re-run this function.
     error "$(cat sandcats/register-log)"

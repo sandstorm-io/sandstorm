@@ -744,6 +744,8 @@ function register_sandcats_name() {
     # Show the server's output, which presumably is some happy
     # message.
     cat sandcats/register-log
+    # Make sure that is on a line of its own.
+    echo ''
     # Set these global variables to inform the installer down the
     # road.
     SS_HOSTNAME="${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN}"

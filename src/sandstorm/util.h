@@ -43,6 +43,7 @@ typedef unsigned int uint;
 typedef unsigned char byte;
 
 kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666);
+kj::AutoCloseFd raiiOpenAt(int dirfd, kj::StringPtr name, int flags, mode_t mode = 0666);
 
 kj::Maybe<kj::AutoCloseFd> raiiOpenIfExists(
     kj::StringPtr name, int flags, mode_t mode = 0666);

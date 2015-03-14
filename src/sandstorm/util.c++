@@ -31,6 +31,12 @@ kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode) {
   return kj::AutoCloseFd(fd);
 }
 
+kj::AutoCloseFd raiiOpenAt(int dirfd, kj::StringPtr name, int flags, mode_t mode) {
+  int fd;
+  KJ_SYSCALL(fd = openat(dirfd, name.cStr(), flags, mode), name);
+  return kj::AutoCloseFd(fd);
+}
+
 kj::Maybe<kj::AutoCloseFd> raiiOpenIfExists(kj::StringPtr name, int flags, mode_t mode) {
   int fd = open(name.cStr(), flags, mode);
   if (fd == -1) {

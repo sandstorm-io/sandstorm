@@ -36,7 +36,7 @@ static const uint BUFFER_SIZE = 8192;
 static const uint MAX_PARALLEL_WRITES = 4;
 
 // TCP handling
-class AcceptedConnection {
+class AcceptedConnection : private kj::TaskSet::ErrorHandler {
   // This class is for handling a single TCP connection.
   // It will proxy all writes from the incoming AsyncIoStream to the TcpPort
   // Cap'n Proto interface and provides a Downstream capability that handles
@@ -71,33 +71,14 @@ class AcceptedConnection {
   };
 
 private:
-  struct ErrorHandlerImpl: public kj::TaskSet::ErrorHandler {
-    kj::Own<RefcountedAsyncIoStream> connection;
-    bool aborted;
-
-    explicit ErrorHandlerImpl(kj::Own<RefcountedAsyncIoStream> && connection)
-      : connection(kj::mv(connection)), aborted(false) { }
-
-    void taskFailed(kj::Exception&& exception) override {
-      // Abort the read end of the stream since we have received an error
-      // upstream and no longer need to read anymore. This could be called
-      // multiple times, so only abort the first. This will have a side-effect
-      // of causing tryRead to fail, and erroring out messageLoop() below.
-      if (!aborted) {
-        connection->stream->abortRead();
-        aborted = true;
-      }
-    }
-  };
-
   kj::Own<RefcountedAsyncIoStream> connection;
   capnp::byte buffer[BUFFER_SIZE];
   TcpPort::Client port;
-  ErrorHandlerImpl errorHandler;
   kj::TaskSet taskSet;
   kj::Own<ByteStream::Client> upstream;
   uint numOutstandingWrites;
   kj::Own<kj::PromiseFulfiller<void>> continueReading;
+  bool aborted;
 
   inline kj::Promise<void> write(size_t size) {
     ++numOutstandingWrites;
@@ -112,11 +93,22 @@ private:
     });
   }
 
+  void taskFailed(kj::Exception&& exception) override {
+    // Abort the read end of the stream since we have received an error
+    // upstream and no longer need to read anymore. This could be called
+    // multiple times, so only abort the first. This will have a side-effect
+    // of causing tryRead to fail, and erroring out messageLoop() below.
+    if (!aborted) {
+      connection->stream->abortRead();
+      aborted = true;
+    }
+  }
+
 public:
   AcceptedConnection(kj::Own<kj::AsyncIoStream>&& connectionParam, TcpPort::Client && portParam)
       : connection(kj::refcounted<RefcountedAsyncIoStream>(kj::mv(connectionParam))),
-        port(kj::mv(portParam)), errorHandler(kj::addRef(*connection)), taskSet(errorHandler),
-        numOutstandingWrites(0) {
+        port(kj::mv(portParam)), taskSet(*this),
+        numOutstandingWrites(0), aborted(false) {
     auto request = port.connectRequest();
     request.setDownstream(kj::heap<Downstream>(kj::addRef(*connection)));
     upstream = kj::heap<ByteStream::Client>(request.send().getUpstream());

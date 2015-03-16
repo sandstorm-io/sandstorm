@@ -113,9 +113,9 @@ private:
   }
 
 public:
-  AcceptedConnection(kj::Own<kj::AsyncIoStream>&& connectionParam, TcpPort::Client && _port)
+  AcceptedConnection(kj::Own<kj::AsyncIoStream>&& connectionParam, TcpPort::Client && portParam)
       : connection(kj::refcounted<RefcountedAsyncIoStream>(kj::mv(connectionParam))),
-        port(_port), errorHandler(kj::addRef(*connection)), taskSet(errorHandler),
+        port(kj::mv(portParam)), errorHandler(kj::addRef(*connection)), taskSet(errorHandler),
         numOutstandingWrites(0) {
     auto request = port.connectRequest();
     request.setDownstream(kj::heap<Downstream>(kj::addRef(*connection)));

@@ -166,17 +166,37 @@ interface SandstormApi(AppSturdyRef) {
 
   drop @5 (ref :SturdyRef(AppSturdyRef));
   # Notifies the supervisor that the app is removing the given SturdyRef from its storage, and
-  # therefore the supervisor may free any resources associated with maintaining this ref.
+  # therefore the supervisor may free any resources associated with maintaining this ref. The
+  # supervisor will also make a best-effort attempt to inform the host of this ref that the ref
+  # has been deleted. See `MainView.drop()` for extended discussion.
   #
   # This will also cause the ref to disappear from the collaboration graph visualization that the
   # owner can see (once such a thing exists).
   #
-  # If `ref` is a loopback ref, this has no effect.
+  # For convenience, if `ref` is a loopback ref (hosted by the app itself), this just loops back
+  # to MainView.drop().
 
   deleted @6 (ref :AppSturdyRef);
   # Notifies the supervisor that an object hosted by this application has been deleted, and
   # therefore all references to it may as well be dropped. This affects *incoming* references,
   # whereas drop() affects *outgoing*.
+
+  stayAwake @7 (displayInfo :NotificationDisplayInfo, notification :OngoingNotification)
+            -> (handle :Util.Handle);
+  # Requests that the app be allowed to continue running in the background, even if no user has it
+  # open in their browser. An ongoing notification is delivered to the user who owns the grain to
+  # let them know of this. The user may cancel the notification, in which case the app will no
+  # longer be kept awake. If not canceled, the app remains awake at least until it drops `handle`.
+  #
+  # Unlike other ongoing notifications, `notification` in this case need not be persistent (since
+  # the whole point is to prevent the app from restarting), and `handle` is not persistent.
+  #
+  # WARNING: A machine failure or similar situation can still cause the app to shut down at any
+  #   time. Currently, the app will NOT be restarted after such a failure.
+  #
+  # TODO(someday): We could make `handle` be persistent. If the app persists it -- and if
+  #   `notification` is persistent -- we would automatically restart the app after an unexpected
+  #   failure.
 }
 
 interface UiView extends(PowerboxCapability) {
@@ -481,6 +501,47 @@ interface ViewSharingLink extends(SharingLink) {
 }
 
 # ========================================================================================
+# Notifications
+#
+# TODO(someday): Flesh out the notifications API. Currently this is only used for
+#   `SandstormApi.stayAwake()`.
+
+struct NotificationDisplayInfo {
+  caption @0 :Util.LocalizedText;
+  # Text to display inside the notification box.
+
+  # TODO(someday): Support interactive notifications.
+}
+
+interface NotificationTarget {
+  # Represents a destination for notifications; usually, a user.
+  #
+  # TODO(someday): Expand on this and move it into `grain.capnp` when notifications are
+  #   fully-implemented.
+
+  addOngoing @0 (displayInfo :NotificationDisplayInfo, notification :OngoingNotification)
+             -> (handle :Util.Handle);
+  # Sends an ongoing notification to the notification target. `notification` must be persistent.
+  # The notification is removed when the returned `handle` is dropped. The handle is persistent; if
+  # saved, the notification will remain until the SturdyRef is deleted, or until the front-end
+  # finds that it can no longer restore `notification`.
+}
+
+interface OngoingNotification {
+  # Callback interface passed to the platform when registering a persistent notification.
+
+  cancel @0 ();
+  # Informs the notification creator that the user has requested cancellation of the task
+  # underlying this notification.
+  #
+  # In the case of a `SandstormApi.stayAwake()` notification, after `cancel()` is called, the app
+  # will no longer be held awake, so should prepare for shutdown.
+  #
+  # TODO(someday): We could allow the app to return some text to display to the user asking if
+  #   they really want to shut down.
+}
+
+# ========================================================================================
 # Backup and Restore
 
 struct GrainInfo {
@@ -552,20 +613,25 @@ interface MainView(AppSturdyRef) extends(UiView) {
   # no longer has write permission according to `userInfo`, then the app may wish to refuse the
   # `restore()` request.
 
-  # TODO(someday): Should we notify the app when refs are deleted? I haven't yet thought of a way
-  #   to do this that seems reliable enough to be useful. Obviously, we can't guarantee
-  #   notifications of deletions (in particular when third parties are involved who could very
-  #   well wipe their storage and never notify us), so at best we could do "best effort"
-  #   notification. But there's a more subtle problem: the app would have to refcount save()s
-  #   and delete()s and only delete the underlying object when all references are gone. Apps could
-  #   easily get this wrong and just go ahead and delete the object the first time they receive a
-  #   delete(), and this will probably pass testing because they won't test the case where the
-  #   object has been saved twice. We can't have the supervisor do the refcounting for us because
-  #   the supervisor does not know about intra-app saves, which by the way is another thing that
-  #   apps may easily fail to test.
+  drop @1 (ref :AppSturdyRef);
+  # Hints to the app that someone holding this reference has called `drop()` on it, in the sense
+  # of `SandstormApi.drop()`.
   #
-  #   Ultimately I think the right thing here is for SturdyRefs always to be thought of as "weak"
-  #   pointers. They point to some object that belongs to the grain, which in turn belongs to some
-  #   user. The object should not expect to know whether it is currently in-use; it's up to the
-  #   user to delete it if they so choose.
+  # *If* the object in question returns a new unique SturdyRef every time `save()` is called, then
+  # `drop()` can safely be taken to mean that this particular SturdyRef will never be restore()ed,
+  # with the caveat that `drop()` is delivered on a best-effort basis and may never arrive.
+  #
+  # However, if the app may have handed out this ref to multiple callers, then all bets are off.
+  # In this case `drop()` could be called any number of times while references remain outstanding.
+  # In particular, you CANNOT use reference counting here.
+  #
+  # (Details: `drop()` needs to be idempotent, because a machine failure could always happen in
+  # the middle of calling the method, in which case it may need to be called again. So, you could
+  # easily receive more `drop()`s than there were `save()`s. You could also easily receive fewer,
+  # e.g. if the owner of the ref is physically destroyed before ever calling `drop()`. The
+  # Sandstorm supervisor itself keeps track of references held by other apps on an individual
+  # basis and so could in theory avoid calling `drop()` until all those references are individually
+  # dropped, except that if your own app calls `save()` on a capability that it hosts itself,
+  # Sandstorm will never know about that. As such, the supervisor does not even try to implement
+  # this.)
 }

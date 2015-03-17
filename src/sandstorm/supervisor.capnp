@@ -44,6 +44,12 @@ interface Supervisor {
   getGrainSizeWhenDifferent @4 (oldSize :UInt64) -> (size :UInt64);
   # Wait until the storage size of the grain is different from `oldSize` and then return the new
   # size. May occasionally return prematurely, with `size` equal to `oldSize`.
+
+  restore @5 (ref :SupervisorSturdyRef);
+  # Wraps `MainView.restore()`. Can also restore capabilities hosted by the supervisor.
+
+  drop @6 (ref :SupervisorSturdyRef);
+  # Wraps `MainView.drop()`. Can also restore capabilities hosted by the supervisor.
 }
 
 interface SandstormCore {
@@ -60,13 +66,26 @@ interface SandstormCore {
   # Restores a SturdyRef from the Sandstorm-internal realm (see InternalPersistent). Fails if this
   # grain is not the ref's owner (including if the ref has no owner).
 
-  wrapSaved @1 [AppSturdyRef] (ref :AppSturdyRef, owner :SystemSturdyRefOwner) -> (token :Data);
+  drop @3 (token :Data);
+  # Deletes the corresponding API token. See `MainView.drop()` for discussion of dropping.
+
+  wrapSaved @1 [AppSturdyRef] (ref :SupervisorSturdyRef(AppSturdyRef),
+                               owner :SystemSturdyRefOwner)
+                           -> (token :Data);
   # When the supervisor receives a save() request for a capability hosted by the app, it first
   # calls save() on the underlying capability to get an AppSturdyRef, then calls wrapSaved() to
   # convert this to a token which it can then return.
   #
+  # Similarly, when the supervisor receives a save() request for a capability it itself hosts
+  # (outside of the app), it constructs the appropriate `SupervisorSturdyRef` and passes it to
+  # `wrapSaved()`.
+  #
   # TODO(soon): How do we keep this capability associated with the user account that created it,
   #   in order to auto-revoke it if the user loses permissions?
+
+  getAdminNotificationTarget @2 () -> (owner :Grain.NotificationTarget);
+  # Get the notification target to use for notifications relating to the grain itself, e.g.
+  # presence of wake locks.
 }
 
 interface InternalPersistent extends(Persistent(Data, SystemSturdyRefOwner)) {
@@ -95,5 +114,20 @@ struct SystemSturdyRefOwner {
     # TODO(someday): Change AnyPointer to the type for public internet owners, once the public
     #   internet Cap'n Proto protocol is defined. (Or, do we want Sandstorm nodes to be able to
     #   nested within broader networks that aren't the internet? Hmm.)
+  }
+}
+
+struct SupervisorSturdyRef(AppSturdyRef) {
+  # Refers to some persistent object which the Supervisor for a particular grain knows how to
+  # restore.
+
+  union {
+    appRef @0 :AppSturdyRef;
+    # A reference restorable by the app.
+
+    wakeLockNotification @1 :Data;
+    # This refers to an OngoingNotification for a wake lock. Note that although the app itself
+    # implements an `OngoingNotification`, the supervisor wraps it in order to detect the `cancel`
+    # call.
   }
 }

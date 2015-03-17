@@ -48,12 +48,22 @@ interface Handle {
   # Arbitrary handle to some resource provided by the platform. May or may not be persistent,
   # depending on the use case.
   #
-  # To "drop" a handle means to discard any live references and delete any sturdy references.
-  # The purpose of a handle is to detect when it has been dropped and to free the underlying
-  # resource and cancel any ongoing operation at that time.
-
-  # TODO(someday): How does one drop a handle after persisting it? Should we add a method here
-  #   that invalidates the SturdyRef, or should we put it in Persistent?
+  # To "drop" a handle means to discard any references. The purpose of a handle is to detect when
+  # it has been dropped and to free the underlying resource and cancel any ongoing operation at
+  # that time.
+  #
+  # A handle can be persistent. Once you have called `save()` on it to obtain a SturdyRef, dropping
+  # the live reference will not cancel the operation. You must drop all live references *and*
+  # explicitly drop any SturdyRef. Every interface which supports restoring SturdyRefs also
+  # has a corresponding `drop()` method for this purpose.
+  #
+  # Unfortunately, there is no way to ensure that a SturdyRef will eventually be deleted. A grain
+  # could, for example, call `save()` and then simply fail to store the SturdyRef anywhere, causing
+  # it to be "leaked" until such a time as the grain itself is destroyed. Or worse, a whole server
+  # could be destroyed in a fire, leaking all SturdyRefs stored therein forever. Apps implementing
+  # persistent handles must be designed to account for this, probably by giving the owning user
+  # a way to inspect incoming references and remove them manually. Sandstorm automatically provides
+  # such an interface for all apps it hosts.
 }
 
 interface ByteStream {

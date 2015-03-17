@@ -1539,6 +1539,48 @@ public:
 //  kj::Promise<void> shareView(ShareViewContext context) override {
 
 //  }
+
+//  kj::Promise<void> restore(RestoreContext context) override {
+
+//  }
+
+//  kj::Promise<void> drop(DropContext context) override {
+
+//  }
+
+//  kj::Promise<void> deleted(DeletedContext context) override {
+
+//  }
+
+//  kj::Promise<void> stayAwake(StayAwakeContext context) override {
+    // TODO(someday): The supervisor will need to maintain a map of "wake locks". Since wake locks
+    //   by their nature do not outlast the process, this map can be held in-memory. When
+    //   `stayAwake()` is called, the supervisor:
+    //   - Fenerates a new wake lock ID (a random byte string; use libsodium's randombytes()).
+    //   - Adds it to the table, mapping it to the `OngoingNotification` provided by the app.
+    //   - Constructs a wrapper around `OngoingNotification` to be passed to the front-end. The
+    //     wrapper is persistent (using the wake lock ID).
+    //   - Calls SandstormCore.getAdminNotificationTarget().notifyOwnerOngoing(), passing along
+    //     this new wrapper object as well as the `displayInfo` provided from the app.
+    //   - On the handle returned by `notifyOwnerOngoing()`, immediately calls `save()`, storing
+    //     the resulting `SturdyRef` (actually, just an API token) into the wake lock table entry.
+    //   - Constructs a new handle object and returns it from `stayAwake()`.
+    //   - When that handle is destroyed, loads up the wake lock table entry and calls
+    //     SandstormCore.drop() on the handle SturdyRef stored there.
+    //   - When SandstormCore calls the wrapper OngoingNotification's `cancel()` method, forwards
+    //     that call to the app.
+    //   - When SandstormCore drops the wrapper OngoingNotification (via `Supervisor.drop()`),
+    //     drops the underlying OngoingNotification from the app.
+    //   - When everything is dropped, deletes the wake lock table entry.
+    //
+    //   Meanwhile, until the point that SandstormCore drops the OngoingNotification, the
+    //   supervisor does not kill itself during its regular keep-alive check.
+    //
+    //   The main reason this is so complicated is that the front-end is supposed to be able to
+    //   restart independently of the app, but the `OngoingNotification` provided by the app is
+    //   not required to be persistent. The supervisor thus takes care of the complication of
+    //   dealing with persistence through front-end restarts.
+//  }
 };
 
 class SupervisorMain::SupervisorImpl final: public Supervisor::Server {

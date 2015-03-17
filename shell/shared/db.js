@@ -199,11 +199,17 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   userInfo:  For API tokens created by the app through HackSessionContext, the UserInfo struct
 //              that should be passed to `newSession()` when exercising this token, in decoded (JS
 //              object) format. This is a temporary hack.
-//   appRef:    If present, this token represents an arbitrary Cap'n Proto capability exported by
-//              the app (whereas without this it strictly represents UiView). appRef is the encoded,
-//              canonicalized AppSturdyRef (encoded as a Cap'n Proto message with AppSturdyRef as
-//              the root; this is the format that node-capnp automatically uses for `AnyPointer`
-//              fields).
+//   sturdyRef: If present, this token represents an arbitrary Cap'n Proto capability exported by
+//              the app or its supervisor (whereas without this it strictly represents UiView).
+//              sturdyRef is the JSON-encoded SupervisorSturdyRef (defined in `supervisor.capnp`).
+//              Note that if the SupervisorSturdyRef contains an AppSturdyRef, that field is
+//              treated as type AnyPointer, and so encoded as a raw Cap'n Proto message.
+//   frontendRef: If present, this token actually refers to an object implemented by the front-end,
+//              not a particular grain. (`grainId` is not set.) This is an object containing
+//              exactly one of the following fields:
+//       notificationHandle: A `Handle` for an ongoing notification, as returned by
+//                           `NotificationTarget.addOngoing`. The value is an `_id` from the
+//                           `Notifications` collection.
 //   petname:   Human-readable label for this access token, useful for identifying tokens for
 //              revocation. This should be displayed when visualizing incoming capabilities to
 //              the grain identified by `grainId`.
@@ -213,6 +219,17 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              as passed to the `save()` call that created this token. Not present for tokens
 //              created by the user through the topbar, which are accessible from anywhere on the
 //              internet (but cannot be directly restored from inside an app).
+
+Notifications = new Mongo.Collection("notifications");
+// Notifications for a user.
+//
+// Each contains:
+//   _id:          random
+//   ongoing:      If present, this is an ongoing notification, and this field contains an
+//                 ApiToken referencing the `OngoingNotification` capability.
+//   grainId:      The grain originating this notification, if any.
+//   userId:       The user receiving the notification.
+//   text:         The JSON-ified LocalizedText to display in the notification.
 
 StatsTokens = new Mongo.Collection("statsTokens");
 // Access tokens for the Stats collection

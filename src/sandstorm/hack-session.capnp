@@ -105,6 +105,18 @@ interface HackSessionContext @0xe14c1f5321159b8f
   revokeApiToken @5 (tokenId :Text);
   # Revoke (delete) a previously-generated token.
 
+  getUiViewForEndpoint @8 (url :Text) -> (view :Grain.UiView);
+  # There are 3 cases here that are seamlessly handled by the platform
+  # 1. If the URL is a local webkey, return a wrapped version of the UiView that respects user
+  # permissions
+  # 2. If the URL is a remote webkey (i.e. a different Sandstorm server), set up an ApiSession
+  # that sends the Authorization header correctly. We wrap it in a UiVew so that this is seamless.
+  # Some day, we'll connect via Cap'n Proto instead, and actually return the remote UiView
+  # verbatim.
+  # 3. If the URL is not a webkey at all, wrap it the same as #2, but don't send an Authorization
+  # header.
+  # If the url is a webkey, then your url must not contain a path.
+
   struct TokenInfo {
     tokenId @0 :Text;
     petname @1 :Text;

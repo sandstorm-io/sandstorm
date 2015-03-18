@@ -186,8 +186,9 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //
 // Originally API tokens were only used by external users through the HTTP API endpoint. However,
 // now they are also used to implement SturdyRefs, not just held by external users, but also when
-// an app holds a SturdyRef to another app within the same server. See `SturdyRef` in
-// `grain.capnp` -- the type of `external` is an API token.
+// an app holds a SturdyRef to another app within the same server. See the various `save()`,
+// `restore()`, and `drop()` methods in `grain.capnp` (on `SansdtormApi`, `AppPersistent`, and
+// `MainView`) -- the fields of type `Data` are API tokens.
 //
 // Each contains:
 //   _id:       A SHA-256 hash of the token.
@@ -199,10 +200,10 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   userInfo:  For API tokens created by the app through HackSessionContext, the UserInfo struct
 //              that should be passed to `newSession()` when exercising this token, in decoded (JS
 //              object) format. This is a temporary hack.
-//   sturdyRef: If present, this token represents an arbitrary Cap'n Proto capability exported by
+//   objectId:  If present, this token represents an arbitrary Cap'n Proto capability exported by
 //              the app or its supervisor (whereas without this it strictly represents UiView).
-//              sturdyRef is the JSON-encoded SupervisorSturdyRef (defined in `supervisor.capnp`).
-//              Note that if the SupervisorSturdyRef contains an AppSturdyRef, that field is
+//              sturdyRef is the JSON-encoded SupervisorObjectId (defined in `supervisor.capnp`).
+//              Note that if the SupervisorObjectId contains an AppObjectId, that field is
 //              treated as type AnyPointer, and so encoded as a raw Cap'n Proto message.
 //   frontendRef: If present, this token actually refers to an object implemented by the front-end,
 //              not a particular grain. (`grainId` is not set.) This is an object containing
@@ -215,10 +216,9 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              the grain identified by `grainId`.
 //   created:   Date when this token was created.
 //   expires:   Optional expiration Date. If undefined, the token does not expire.
-//   owner:     A `SystemSturdyRefOwner` (defined in `supervisor.capnp`, stored as a JSON object)
-//              as passed to the `save()` call that created this token. Not present for tokens
-//              created by the user through the topbar, which are accessible from anywhere on the
-//              internet (but cannot be directly restored from inside an app).
+//   owner:     A `ApiTokenRefOwner` (defined in `supervisor.capnp`, stored as a JSON object)
+//              as passed to the `save()` call that created this token. If not present, treat
+//              as `webkey` (the default for `ApiTokenOwner`).
 
 Notifications = new Mongo.Collection("notifications");
 // Notifications for a user.

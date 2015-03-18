@@ -45,10 +45,10 @@ interface Supervisor {
   # Wait until the storage size of the grain is different from `oldSize` and then return the new
   # size. May occasionally return prematurely, with `size` equal to `oldSize`.
 
-  restore @5 (ref :SupervisorSturdyRef);
+  restore @5 (ref :SupervisorObjectId);
   # Wraps `MainView.restore()`. Can also restore capabilities hosted by the supervisor.
 
-  drop @6 (ref :SupervisorSturdyRef);
+  drop @6 (ref :SupervisorObjectId);
   # Wraps `MainView.drop()`. Can also restore capabilities hosted by the supervisor.
 }
 
@@ -63,32 +63,35 @@ interface SandstormCore {
   # retry them after the front-end has reconnected.
 
   restore @0 (token :Data) -> (cap :Capability);
-  # Restores a SturdyRef from the Sandstorm-internal realm (see InternalPersistent). Fails if this
-  # grain is not the ref's owner (including if the ref has no owner).
+  # Restores an API token to a live capability. Fails if this grain is not the token's owner
+  # (including if the ref has no owner).
 
   drop @3 (token :Data);
   # Deletes the corresponding API token. See `MainView.drop()` for discussion of dropping.
 
-  wrapSaved @1 [AppSturdyRef] (ref :SupervisorSturdyRef(AppSturdyRef),
-                               owner :SystemSturdyRefOwner)
-                           -> (token :Data);
+  makeToken @1 (ref :SupervisorObjectId, owner :ApiTokenOwner) -> (token :Data);
   # When the supervisor receives a save() request for a capability hosted by the app, it first
-  # calls save() on the underlying capability to get an AppSturdyRef, then calls wrapSaved() to
+  # calls save() on the underlying capability to get an AppObjectId, then calls makeToken() to
   # convert this to a token which it can then return.
   #
   # Similarly, when the supervisor receives a save() request for a capability it itself hosts
-  # (outside of the app), it constructs the appropriate `SupervisorSturdyRef` and passes it to
-  # `wrapSaved()`.
+  # (outside of the app), it constructs the appropriate `SupervisorObjectId` and passes it to
+  # `makeToken()`.
   #
-  # TODO(soon): How do we keep this capability associated with the user account that created it,
-  #   in order to auto-revoke it if the user loses permissions?
+  # TODO(soon): Someone needs to keep track of the Powerbox introduction that originally connected
+  #   the client to the server, so that we can properly revoke this capability if the user's
+  #   permissions change. For performance reasons (to avoid excess network hops), the supervisor
+  #   (of the server) should keep track of this information. On restore() the supervisor should
+  #   receive this information, it should maintain a membrane to track all capabilities introduced
+  #   through the restored cap, and then on later save() it should associate the newly-saved object
+  #   with the same Powerbox introduction. Similarly, expiration dates need to be propagated.
 
   getAdminNotificationTarget @2 () -> (owner :Grain.NotificationTarget);
   # Get the notification target to use for notifications relating to the grain itself, e.g.
   # presence of wake locks.
 }
 
-interface InternalPersistent extends(Persistent(Data, SystemSturdyRefOwner)) {
+interface SystemPersistent extends(Persistent(Data, ApiTokenOwner)) {
   # The specialization of `Persistent` used in the "Sandstorm internal" realm, which is the realm
   # used by Sandstorm system components talking to each other. This realm is NOT seen by Sandstorm
   # applications; each grain is its own realm, and the Supervisor performs translations
@@ -100,32 +103,54 @@ interface InternalPersistent extends(Persistent(Data, SystemSturdyRefOwner)) {
   # created for the purpose of HTTP APIs).
 }
 
-struct SystemSturdyRefOwner {
+struct ApiTokenOwner {
+  # Defines who is permitted to use a particular API token.
+
   union {
+    webkey @0 :Void;
+    # This API token is for use on "the web", with no specific owner. This is the kind of token
+    # that you get when you use the Sandstorm UI to create a webkey.
+    #
+    # Note that a webkey CANNOT be directly restored by an app, since this would break confinement
+    # (an app could be shipped with a webkey baked in). Instead, the app must make a powerbox
+    # request, and the user may paste in a webkey there. Apps can only restore tokens explicitly
+    # owned by them.
+    #
+    # (HackSessionContext actually allows webkeys to be exchanged for live capabilities, but this
+    # is temporary until the powerbox is built.)
+
     grain :group {
       # Owned by a local grain.
-      grainId @0 :Text;
-      innerOwner @2 :Grain.SturdyRefOwner;
+
+      grainId @1 :Text;
+      # Grain ID owning the ref.
+
+      saveLabel @2 :Util.LocalizedText;
+      # As passed to `save()` in Sandstorm's Persistent interface.
     }
 
-    internet @1 :AnyPointer;
-    # An owner on the public internet.
+    internet @3 :AnyPointer;
+    # An owner on the public internet, who used the Cap'n Proto public internet transport to call
+    # `save()` and expects it to authenticate them on later `restore()`.
     #
-    # TODO(someday): Change AnyPointer to the type for public internet owners, once the public
+    # TODO(someday): Change `AnyPointer` to the type for public internet owners, once the public
     #   internet Cap'n Proto protocol is defined. (Or, do we want Sandstorm nodes to be able to
     #   nested within broader networks that aren't the internet? Hmm.)
+
+    frontend @4 :Void;
+    # Owned by the front-end, i.e. stored in its Mongo database.
   }
 }
 
-struct SupervisorSturdyRef(AppSturdyRef) {
+struct SupervisorObjectId(AppObjectId) {
   # Refers to some persistent object which the Supervisor for a particular grain knows how to
   # restore.
 
   union {
-    appRef @0 :AppSturdyRef;
+    appRef @0 :AppObjectId;
     # A reference restorable by the app.
 
-    wakeLockNotification @1 :Data;
+    wakeLockNotification @1 :UInt32;
     # This refers to an OngoingNotification for a wake lock. Note that although the app itself
     # implements an `OngoingNotification`, the supervisor wraps it in order to detect the `cancel`
     # call.

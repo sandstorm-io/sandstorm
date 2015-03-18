@@ -19,8 +19,6 @@
 $import "/capnp/c++.capnp".namespace("sandstorm");
 
 using Util = import "util.capnp";
-using GenericPersistent = import "/capnp/persistent.capnp";
-using persistent = GenericPersistent.persistent;
 
 # ========================================================================================
 # Powerbox
@@ -41,7 +39,7 @@ using persistent = GenericPersistent.persistent;
 # presented with a list of actions that make sense for that capability and may select one.  (This
 # is much like Android intents.)
 
-interface PowerboxCapability $persistent {
+interface PowerboxCapability {
   # Capabilities to be offered to the powerbox must implement PowerboxCapability (in addition to
   # the interface for the application functionality they provide).  PowerboxCapability provides
   # metadata about the capability for display in the powerbox UI as well as the sharing graph
@@ -80,7 +78,7 @@ interface PowerboxCapability $persistent {
   }
 }
 
-interface PowerboxAction $persistent {
+interface PowerboxAction {
   apply @0 (cap: PowerboxCapability) -> (view :UiView);
   # Invoke the action on the given capability, producing a view which is displayed to the user.
 }
@@ -104,14 +102,14 @@ struct PowerboxQuery {
 # ========================================================================================
 # Runtime interface
 
-interface SandstormApi(AppSturdyRef) {
+interface SandstormApi(AppObjectId) {
   # The Sandstorm platform API, exposed as the default capability over the two-way RPC connection
   # formed with the application instance.  This object specifically represents the supervisor
   # for this application instance -- two different application instances (grains) never share a
   # supervisor.
   #
-  # `AppSturdyRef` is the format in which the application represents SturdyRefs pointing to its
-  # own objects; see Persistent, below.
+  # `AppObjectId` is the format in which the application identifies its persistent objects which
+  # can be saved from the outside; see `AppPersistent`, below.
 
   # TODO(soon):  Read the grain title as set by the user.  Also have interface to offer a new
   #   title and icon?
@@ -158,28 +156,40 @@ interface SandstormApi(AppSturdyRef) {
   # Like `shareCap` but with extra options for sharing a UiView, such as setting a role and
   # permissions.
 
-  restore @4 (ref :SturdyRef(AppSturdyRef)) -> (cap :Capability);
-  # Restores the given SturdyRef.
+  save @8 (cap :Capability, label :Util.LocalizedText) -> (token :Data);
+  # Saves a persistent capability and returns a token which can be used to restore it later
+  # (including in a future run of the app) via `restore()` (below). Not all capabilities can be
+  # saved -- check the documentation for the capability you are using to see if it is described as
+  # "persistent".
   #
-  # For convenience, if `ref` is a loopback ref (hosted by the app itself), this just loops back
-  # to MainView.restore().
+  # The grain owner will be able to inspect saved capabilities via the UI. `label` will be shown
+  # there and should briefly describe what this capability is used for.
+  #
+  # To see how to make your own app's objects persistent, see the `AppPersistent` interface defined
+  # later in this file. Note that it's perfectly valid to pass your app's own capabilities to
+  # `save()`, if they are persistent in this way.
+  #
+  # (Under the hood, `SandstormApi.save()` calls the capability's `AppPersistent.save()` method,
+  # then stores the result in a table indexed by the new randomly-generated token. The app CANNOT
+  # call `AppPersistent.save()` on external capabilities itself; such calls will be blocked by the
+  # supervisor (and the result would be useless to you anyway, because you have no way to restore
+  # it). You must use `SandstormApi.save()` so that saved capabilities can be inspected by the
+  # user.)
 
-  drop @5 (ref :SturdyRef(AppSturdyRef));
-  # Notifies the supervisor that the app is removing the given SturdyRef from its storage, and
-  # therefore the supervisor may free any resources associated with maintaining this ref. The
-  # supervisor will also make a best-effort attempt to inform the host of this ref that the ref
-  # has been deleted. See `MainView.drop()` for extended discussion.
-  #
-  # This will also cause the ref to disappear from the collaboration graph visualization that the
-  # owner can see (once such a thing exists).
-  #
-  # For convenience, if `ref` is a loopback ref (hosted by the app itself), this just loops back
-  # to MainView.drop().
+  restore @4 (token :Data) -> (cap :Capability);
+  # Given a token previously returned by `save()`, get the capability it pointed to. The returned
+  # capability should implement the same interfaces as the one you saved originally, so you can
+  # downcast it as appropriate.
 
-  deleted @6 (ref :AppSturdyRef);
+  drop @5 (token :Data);
+  # Deletes the token and frees any resources being held with it. Once drop()ed, you can no longer
+  # restore() the token. This call is idempotent: it is not an error to `drop()` a token that has
+  # already been dropped.
+
+  deleted @6 (ref :AppObjectId);
   # Notifies the supervisor that an object hosted by this application has been deleted, and
   # therefore all references to it may as well be dropped. This affects *incoming* references,
-  # whereas drop() affects *outgoing*.
+  # whereas `drop()` affects *outgoing*.
 
   stayAwake @7 (displayInfo :NotificationDisplayInfo, notification :OngoingNotification)
             -> (handle :Util.Handle);
@@ -522,9 +532,7 @@ interface NotificationTarget {
   addOngoing @0 (displayInfo :NotificationDisplayInfo, notification :OngoingNotification)
              -> (handle :Util.Handle);
   # Sends an ongoing notification to the notification target. `notification` must be persistent.
-  # The notification is removed when the returned `handle` is dropped. The handle is persistent; if
-  # saved, the notification will remain until the SturdyRef is deleted, or until the front-end
-  # finds that it can no longer restore `notification`.
+  # The notification is removed when the returned `handle` is dropped. The handle is persistent.
 }
 
 interface OngoingNotification {
@@ -551,87 +559,74 @@ struct GrainInfo {
 }
 
 # ========================================================================================
-# SturdyRefs
+# Persistent objects
 
-interface Persistent(AppSturdyRef)
-    extends(GenericPersistent.Persistent(SturdyRef(AppSturdyRef), SturdyRefOwner)) {
-  # Interface for persistent capabilities as seen within a Sandstorm app. Each app is free to
-  # define `AppSturdyRef` as it sees fit. Note that the contents of an AppSturdyRef will never be
-  # seen outside the app, as the supervisor will replace SturdyRefs with an unguessable, opaque
-  # token on their way out. Therefore, an app need not worry about making AppSturdyRef opaque nor
-  # unguessable, unless it wishes to do so for its own internal purposes.
-}
-
-struct SturdyRef(AppSturdyRef) {
-  # The SturdyRef definition for the realm of a Sandstorm app.
-
-  union {
-    external @0 :Data;
-    # A reference to an object external to the grain. The data blob contains random unguessable
-    # bytes.
-
-    loopback @1 :AppSturdyRef;
-    # A reference to an object implemented by the grain itself.
-  }
-}
-
-struct SturdyRefOwner {
-  # The type of the `sealFor` parameter passed to `save()` when saving a SturdyRef within the realm
-  # of a Sandstorm app.
+interface AppPersistent(AppObjectId) {
+  # To make an object implemented by your own app persistent, implement this interface.
   #
-  # Note that Sandstorm implements and enforces ownership transparently to the app, such that
-  # SturdyRefs saved by one grain cannot be restored by anyone else. However, apps need not
-  # concern themselves with this -- it is all transparent. At the app level, `SturdyRefOwner`
-  # contains no enforceable identity for sealing purposes; it only contains useful information for
-  # visualization purposes.
+  # `AppObjectId` is a structure like a URL which identifies a specific object within your app.
+  # You may define this structure any way you want. For example, it could literally be a string
+  # URL, or it could be a database ID, or it could actually be a serialized representation of an
+  # object that isn't actually stored anywhere (like a "data URL").
+  #
+  # Other apps and external clients will never actually see your `AppObjectId`; it is stored by
+  # Sandstorm itself, and clients only see an opaque token. Therefore, you need not encrypt, sign,
+  # authenticate, or obfuscate this structure. Moreover, Sandstorm will ensure that only clients
+  # who previously saved the object are able to restore it.
+  #
+  # Note: This interface is called `AppPersistent` rather than just `Persistent` to distinguish it
+  #   from Cap'n Proto's `Persistent` interface, which is a more general (and more confusing)
+  #   version of this concept. Many things that the general Cap'n Proto `Persistent` must deal
+  #   with are handled by Sandstorm, so Sandstorm apps need not think about them. Cap'n Proto
+  #   also uses the term `SturdyRef` rather than `ObjectId` -- the major difference is that
+  #   `SturdyRef` is cryptographically secure whereas `ObjectId` need not be because it is
+  #   protected by the platform.
+  #
+  # TODO(cleanup): Consider eliminating Cap'n Proto's `Persistent` interface in favor of having
+  #   every realm define their own interface. Might actually be less confusing.
 
-  label @0 :Util.LocalizedText;
-  # Human-readable explanation of how this capability relates to the grain. This is displayed
-  # when visualizing outgoing capabilities from the calling grain in the Sandstorm UI. This string
-  # will NOT be communicated to the host of the saved capability; it is intercepted and used by the
-  # Sandstorm system.
+  save @0 () -> (objectId :AppObjectId, label :Util.LocalizedText);
+  # Saves the capability to disk (if it isn't there already) and then returns the object ID which
+  # can be passed to `MainView.restore()` to restore it later.
+  #
+  # The grain owner will be able to inspect externally-held capabilities via the UI. `label` will
+  # be shown there and should briefly describe what this capability represents.
+  #
+  # Note that Sandstorm compares all object IDs your app produces for equality (using Cap'n Proto
+  # canonicalization rules) so that it can recognize when the same object is saved multiple times.
+  # `MainView.drop()` will be called when all such references have been dropped by their respective
+  # clients.
 }
 
-interface MainView(AppSturdyRef) extends(UiView) {
+interface MainView(AppObjectId) extends(UiView) {
   # The default (bootstrap) interface exported by a grain to the supervisor when it comes up is
   # actually `MainView`. Only the Supervisor sees this interface. It proxies the `UiView` subset
   # of the interface to the rest of the world, and automatically makes that capability persistent,
   # so that a simple app can completely avoid implementing persistence.
   #
-  # `AppSturdyRef` is the format that the app prefers for representing SturdyRefs to objects
-  # it hosts.
+  # `AppObjectId` is a structure type defined by the app which identifies persistent objects
+  # within the app, like a URL. See `AppPersistent`, above.
 
-  restore @0 (ref :AppSturdyRef, userInfo :UserInfo) -> (cap :Capability);
-  # Restore a SturdyRef hosted by the app.
+  restore @0 (objectId :AppObjectId) -> (cap :Capability);
+  # Restore a live object corresponding to an `AppObjectId`. See `AppPersistent`, above.
   #
   # Apps only need to implement this if they publish persistent capabilities (not including the
   # main UiView).
-  #
-  # `userInfo` identifies the user originally responsible for creating this capability. The app
-  # should inspect the user's permissions and attenuate the restored capability appropriately.
-  # E.g. if the capability required write permission to create in the first place, and the user
-  # no longer has write permission according to `userInfo`, then the app may wish to refuse the
-  # `restore()` request.
 
-  drop @1 (ref :AppSturdyRef);
-  # Hints to the app that someone holding this reference has called `drop()` on it, in the sense
-  # of `SandstormApi.drop()`.
+  drop @1 (objectId :AppObjectId);
+  # Indicates that all external persistent references to the given persistent object have been
+  # dropped. Depending on the nature of the underlying object, the app may wish to delete it at
+  # this point.
   #
-  # *If* the object in question returns a new unique SturdyRef every time `save()` is called, then
-  # `drop()` can safely be taken to mean that this particular SturdyRef will never be restore()ed,
-  # with the caveat that `drop()` is delivered on a best-effort basis and may never arrive.
+  # Note that this method is unreliable. Drop notifications rely on cooperation from the client,
+  # who has to explicitly call `drop()` on their end when they discard the reference. Buggy clients
+  # may forget to do this. Clients that are destroyed in a fire may have no opportunity to do this.
+  # (This differs from live capabilities, which are tied to an ephemeral connection and implicitly
+  # dropped when that connection is closed.)
   #
-  # However, if the app may have handed out this ref to multiple callers, then all bets are off.
-  # In this case `drop()` could be called any number of times while references remain outstanding.
-  # In particular, you CANNOT use reference counting here.
+  # That said, Sandstorm gives the grain owner the ability to inspect incoming refs and revoke them
+  # explicitly. If all refs to this object are revoked, then Sandstorm will call `drop()`.
   #
-  # (Details: `drop()` needs to be idempotent, because a machine failure could always happen in
-  # the middle of calling the method, in which case it may need to be called again. So, you could
-  # easily receive more `drop()`s than there were `save()`s. You could also easily receive fewer,
-  # e.g. if the owner of the ref is physically destroyed before ever calling `drop()`. The
-  # Sandstorm supervisor itself keeps track of references held by other apps on an individual
-  # basis and so could in theory avoid calling `drop()` until all those references are individually
-  # dropped, except that if your own app calls `save()` on a capability that it hosts itself,
-  # Sandstorm will never know about that. As such, the supervisor does not even try to implement
-  # this.)
+  # In some rare cases, `drop()` may be called more than once on the same object. The app should
+  # make sure `drop()` is idempotent.
 }

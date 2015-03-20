@@ -94,8 +94,8 @@ RoleAssignments = new Mongo.Collection("roleAssignments");
 // for a single grain is called a "role assignment". A grain's owner always has every permission,
 // but permissions for other users must be computed from this collection.
 //
-// Any grain for which a user has received a role assignment will show up in that user's grain list,
-// even if those role assignments do not actually grant any permissions.
+// Every role assignment implicitly shares the special "can view grain" permission, which dictates
+// whether the grain shows up in a user's grain list.
 //
 // Each contains:
 //   _id: random

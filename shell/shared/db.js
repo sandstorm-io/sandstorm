@@ -94,8 +94,10 @@ RoleAssignments = new Mongo.Collection("roleAssignments");
 // for a single grain is called a "role assignment". A grain's owner always has every permission,
 // but permissions for other users must be computed from this collection.
 //
-// Every role assignment implicitly shares the special "can view grain" permission, which dictates
-// whether the grain shows up in a user's grain list.
+// Any grain for which a user has received a role assignment should show up in that user's grain
+// list. However, the user may only access a grain if there is a path of *active* role assignments
+// leading from the grain owner to that user, precisely as if every role assignment carried a
+// special "can access grain" permission.
 //
 // Each contains:
 //   _id: random
@@ -103,18 +105,18 @@ RoleAssignments = new Mongo.Collection("roleAssignments");
 //   sharer: The `_id` of the user who is sharing these permissions.
 //   recipient: The `_id` of the user who receives these permissions.
 //   roleAssignment: A JSON-encoded Grain.ViewSharingLink.RoleAssignment representing the
-//                   received permissions.
+//                   received permissions. The sharer is allowed to modify this later.
+//   active: Flag indicating that this role assignment has not been revoked. The sharer is allowed
+//           to flip this bit, but only the recipient is allowed to delete the role assignment.
 //   petname: Human-readable label chosen by and only visible to the sharer.
 //   title: Human-readable title as chosen by the recipient. Used in the same places that
 //          `grain.title` is used for the grain's owner.
 //   created: Date when this role assignment was created.
-//   parentKey: If present, the `_id` of the role assignment key from which this was derived.
+//   parentKey: If present, the `_id` of the entry in RoleAssignmentKeys from which this was derived.
 
 RoleAssignmentKeys - new MongoCollection("sharingUrls");
 // Role assignments that are not yet bound to a single recipient. These can be used to implement
 // sharing-by-secret-URL.
-//
-// TODO(soon): Does it make sense to merge this collection with RoleAssignments?
 //
 // Each contains:
 //   _id: random

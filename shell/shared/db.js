@@ -87,26 +87,27 @@ Grains = new Mongo.Collection("grains");
 //       web publishing. This field is initialized when first requested by the app.
 
 RoleAssignments = new Mongo.Collection("roleAssignments");
-// A role assignment allows a user to access a grain with a specified set of permissions; it is an
-// edge in the permissions sharing graph. A user's permissions for a given grain are computed as
-// the union of the permissions received through role assignments.
+// Edges in the permissions sharing graph.
 //
-// Any grain for which a user has received a role assignment will show up in that user's grain list.
-// Role assignments are also used to restrict access during restoration of persisted capabilities.
+// To share a permission with another user is to declare "if I have this permission, then so should
+// the recipient". A bundle of such declarations by a single sharer directed at a single recipient
+// for a single grain is called a "role assignment". A grain's owner always has every permission,
+// but permissions for other users must be computed from this collection.
+//
+// Any grain for which a user has received a role assignment will show up in that user's grain list,
+// even if those role assignments do not actually grant any permissions.
 //
 // Each contains:
 //   _id: random
 //   grainId: The `_id` of the grain whose permissions are being shared.
 //   sharer: The `_id` of the user who is sharing these permissions.
 //   recipient: The `_id` of the user who receives these permissions.
-//   permissions: An array of bools representing the received permissions.
-//   roleAssignment: A Grain.ViewSharingLink.RoleAssignment that is equivalent to `permissions`, but
-//                   may contain more semantic information. In JSON format.
+//   roleAssignment: A JSON-encoded Grain.ViewSharingLink.RoleAssignment representing the
+//                   received permissions.
 //   petname: Human-readable label chosen by and only visible to the sharer.
 //   title: Human-readable title as chosen by the recipient. Used in the same places that
 //          `grain.title` is used for the grain's owner.
 //   created: Date when this role assignment was created.
-//   expires: Optional expiration date. If undefined, the role assignment does not expire.
 //   parentKey: If present, the `_id` of the role assignment key from which this was derived.
 
 RoleAssignmentKeys - new MongoCollection("sharingUrls");
@@ -119,12 +120,11 @@ RoleAssignmentKeys - new MongoCollection("sharingUrls");
 //   _id: random
 //   sharer: The `_id` of the user who created this key.
 //   grainId: The `_id` of the grain whose permissions are being shared.
-//   permissions: An array of bools representing the received permissions.
-//   roleAssignment: A Grain.ViewSharingLink.RoleAssignment that is equivalent to `permissions`, but
-//                   may contain more semantic information. In JSON format.
+//   roleAssignment: A JSON-encoded Grain.ViewSharingLink.RoleAssignment representing the
+//                   received permissions.
 //   petname: Human-readable label chosen by and only visible to the sharer.
 //   created: Date when this key was created.
-//   expires: Optional date when this key and all role assignments derived from it should expire.
+//   expires: Optional date when this key should expire.
 
 Sessions = new Mongo.Collection("sessions");
 // UI sessions open to particular grains.  A new session is created each time a user opens a grain.

@@ -529,11 +529,6 @@ struct SturdyRefOwner {
   # when visualizing outgoing capabilities from the calling grain in the Sandstorm UI. This string
   # will NOT be communicated to the host of the saved capability; it is intercepted and used by the
   # Sandstorm system.
-
-  userId @1 :Data;
-  # ID of the user whose permissions are tied to this capability. This data will NOT be communicated
-  # to the host of the saved capability; it is intercepted and used by the Sandstorm system to
-  # enforce permissions.
 }
 
 interface MainView(AppSturdyRef) extends(UiView) {

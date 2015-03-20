@@ -495,6 +495,7 @@ private:
         }
 
         packageDef = symbol->asConst().as<spk::PackageDefinition>();
+        sawPkgDef = true;
 
         return true;
       } else {

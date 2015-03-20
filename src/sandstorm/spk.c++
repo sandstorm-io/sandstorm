@@ -1696,8 +1696,19 @@ private:
       auto path = packageDef.getFileList();
       if (access(path.cStr(), F_OK) == 0) {
         auto fileList = raiiOpen(packageDef.getFileList(), O_RDONLY);
+        auto sourceMap = packageDef.getSourceMap();
         for (auto& line: splitLines(readAll(fileList))) {
-          usedFiles.insert(kj::mv(line));
+          auto mapping = mapFile(sourceDir, sourceMap, line);
+          if (mapping.sourcePaths.size() == 0 && mapping.virtualChildren.size() == 0 &&
+              line != "sandstorm-manifest" &&
+              line != "sandstorm-http-bridge" &&
+              line != "sandstorm-http-bridge-config" &&
+              line != "proc/cpuinfo") {
+            KJ_LOG(WARNING, kj::str("No file found to satisfy requirement: ", line,
+                                    ", removing from sandstorm-files.list"));
+          } else {
+            usedFiles.insert(kj::mv(line));
+          }
         }
       }
 

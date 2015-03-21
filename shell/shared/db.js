@@ -114,7 +114,7 @@ RoleAssignments = new Mongo.Collection("roleAssignments");
 //   created: Date when this role assignment was created.
 //   parentKey: If present, the `_id` of the entry in RoleAssignmentKeys from which this was derived.
 
-RoleAssignmentKeys - new MongoCollection("sharingUrls");
+RoleAssignmentKeys = new Mongo.Collection("sharingUrls");
 // Role assignments that are not yet bound to a single recipient. These can be used to implement
 // sharing-by-secret-URL.
 //

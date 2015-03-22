@@ -47,6 +47,8 @@ kj::AutoCloseFd raiiOpenAt(int dirfd, kj::StringPtr name, int flags, mode_t mode
 
 kj::Maybe<kj::AutoCloseFd> raiiOpenIfExists(
     kj::StringPtr name, int flags, mode_t mode = 0666);
+kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExists(
+    int dirfd, kj::StringPtr name, int flags, mode_t mode = 0666);
 
 kj::Maybe<kj::String> readLine(kj::BufferedInputStream& input);
 
@@ -110,6 +112,9 @@ bool isDirectory(kj::StringPtr path);
 
 kj::Array<kj::String> listDirectory(kj::StringPtr dirname);
 // Get names of all files in the given directory except for "." and "..".
+
+kj::Array<kj::String> listDirectoryFd(int dirfd);
+// Like `listDirectory()` but operates on a file descriptor.
 
 void recursivelyDelete(kj::StringPtr path);
 // Delete the given path, recursively if it is a directory.

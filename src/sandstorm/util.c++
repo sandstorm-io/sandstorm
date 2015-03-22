@@ -50,6 +50,20 @@ kj::Maybe<kj::AutoCloseFd> raiiOpenIfExists(kj::StringPtr name, int flags, mode_
   }
 }
 
+kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExists(
+    int dirfd, kj::StringPtr name, int flags, mode_t mode) {
+  int fd = openat(dirfd, name.cStr(), flags, mode);
+  if (fd == -1) {
+    if (errno == ENOENT) {
+      return nullptr;
+    } else {
+      KJ_FAIL_SYSCALL("open", errno, name);
+    }
+  } else {
+    return kj::AutoCloseFd(fd);
+  }
+}
+
 kj::Maybe<kj::String> readLine(kj::BufferedInputStream& input) {
   kj::Vector<char> result(80);
 
@@ -121,13 +135,8 @@ bool isDirectory(kj::StringPtr path) {
   return S_ISDIR(stats.st_mode);
 }
 
-kj::Array<kj::String> listDirectory(kj::StringPtr dirname) {
-  DIR* dir = opendir(dirname.cStr());
-  if (dir == nullptr) {
-    KJ_FAIL_SYSCALL("opendir", errno, dirname);
-  }
+static kj::Array<kj::String> listDirectoryAndClose(DIR* dir) {
   KJ_DEFER(closedir(dir));
-
   kj::Vector<kj::String> entries;
 
   for (;;) {
@@ -138,7 +147,7 @@ kj::Array<kj::String> listDirectory(kj::StringPtr dirname) {
       if (error == 0) {
         break;
       } else {
-        KJ_FAIL_SYSCALL("readdir", error, dirname);
+        KJ_FAIL_SYSCALL("readdir", error);
       }
     }
 
@@ -149,6 +158,26 @@ kj::Array<kj::String> listDirectory(kj::StringPtr dirname) {
   }
 
   return entries.releaseAsArray();
+}
+
+kj::Array<kj::String> listDirectory(kj::StringPtr dirname) {
+  DIR* dir = opendir(dirname.cStr());
+  if (dir == nullptr) {
+    KJ_FAIL_SYSCALL("opendir", errno, dirname);
+  }
+  return listDirectoryAndClose(dir);
+}
+
+kj::Array<kj::String> listDirectoryFd(int dirfd) {
+  // We need to reopen the directory FD to get a separately-seekable file, and because closedir()
+  // will close the fd even if opened with fdopendir().
+  int fd;
+  KJ_SYSCALL(fd = openat(dirfd, ".", O_RDONLY | O_DIRECTORY));
+  DIR* dir = fdopendir(fd);
+  if (dir == nullptr) {
+    KJ_FAIL_SYSCALL("fdopendir", errno);
+  }
+  return listDirectoryAndClose(dir);
 }
 
 void recursivelyDelete(kj::StringPtr path) {

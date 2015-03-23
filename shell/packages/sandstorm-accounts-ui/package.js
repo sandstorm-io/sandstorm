@@ -1,6 +1,6 @@
 Package.describe({
-  summary: "Unstyled version of login widgets",
-  version: "1.1.7"
+  summary: "Sandstorm fork of accounts-ui",
+  version: "0.1.0"
 });
 
 Package.onUse(function (api) {
@@ -15,6 +15,10 @@ Package.onUse(function (api) {
   // Allow us to directly test if accounts-password (which doesn't use
   // Accounts.oauth.registerService) exists.
   api.use('accounts-password', {weak: true});
+
+  api.use('less', 'client');
+
+  api.addFiles(['login_buttons.less'], 'client');
 
   api.addFiles([
     'accounts_ui.js',
@@ -33,7 +37,7 @@ Package.onUse(function (api) {
 });
 
 Package.onTest(function (api) {
-  api.use('accounts-ui-unstyled');
+  api.use('sandstorm-accounts-ui');
   api.use('tinytest');
   api.addFiles('accounts_ui_tests.js', 'client');
 });

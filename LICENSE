@@ -23,6 +23,13 @@ shell/public/opensans-semibold.woff
     License: Apache 2.0
     License URL: http://www.apache.org/licenses/LICENSE-2.0.html
 
+shell/packages/sandstorm-accounts-ui
+    What: forked from accounts-ui/accounts-ui-unstyled
+    Source URL: https://github.com/meteor/meteor
+    Copyright: Meteor Development Group
+    License: MIT
+    License URL: https://github.com/meteor/meteor/blob/devel/LICENSE.txt
+
 icons/close.svg
 icons/download.svg
 icons/edit.svg

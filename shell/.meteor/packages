@@ -8,7 +8,7 @@ iron:router
 underscore
 random
 accounts-github
-accounts-ui
+sandstorm-accounts-ui
 accounts-google
 email
 reload

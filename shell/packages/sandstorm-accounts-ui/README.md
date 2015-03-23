@@ -1,7 +1,5 @@
-# accounts-ui-unstyled
+# sandstorm-accounts-ui
 
-A version of `accounts-ui` without the CSS, so that you can add your
-own styling. See the [`accounts-ui`
-README](https://atmospherejs.com/meteor/accounts-ui) and the
-Meteor Accounts [project page](https://www.meteor.com/accounts) for
-details.
+A merging of meteor's accounts-ui/accounts-ui-unstyled.
+
+This is meant to be a stopgap until we come up with a better design for login.

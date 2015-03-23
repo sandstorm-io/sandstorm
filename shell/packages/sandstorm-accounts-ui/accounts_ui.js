@@ -89,6 +89,18 @@ Accounts.ui.config = function(options) {
   }
 };
 
+/**
+ * @summary Register a service with the UI. These services are not dependent on OAuth facilities.
+ * @locus Client
+ * @param {String} serviceName
+ * @param {String} userField Text to display for this service in the login dropdown box
+ */
+Accounts.ui.registerService = function (serviceName, userField) {
+  // Still register it as an oauth service
+  Accounts.oauth.registerService(serviceName);
+  Accounts.ui._options.services[serviceName] = userField;
+};
+
 passwordSignupFields = function () {
   return Accounts.ui._options.passwordSignupFields || "EMAIL_ONLY";
 };

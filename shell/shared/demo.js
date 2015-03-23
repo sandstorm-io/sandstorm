@@ -140,30 +140,11 @@ if (Meteor.isServer) {
 }
 
 if (Meteor.isClient && allowDemo) {
-  // Monkey-patch accounts-ui so that "demo" shows up nicely.
-  // Alas, this is dependent on private Meteor internals and so could break.
-  // TODO(cleanup): Check again if there are public APIs we could use and if not, ask for some.
   Meteor.loginWithDemo = function () {
     Router.go("demo");
     Accounts._loginButtonsSession.closeDropdown();
   }
-  Accounts.oauth.registerService("demo");
-  var oldConfiguredHelper = Template._loginButtonsLoggedOutSingleLoginButton.configured;
-  Template._loginButtonsLoggedOutSingleLoginButton.configured = function () {
-    if (this.name === "demo") {
-      return true;
-    } else {
-      return oldConfiguredHelper.apply(this, arguments);
-    }
-  }
-  var oldCapitalizedName = Template._loginButtonsLoggedOutSingleLoginButton.capitalizedName;
-  Template._loginButtonsLoggedOutSingleLoginButton.capitalizedName = function () {
-    if (this.name === "demo") {
-      return "Demo User";
-    } else {
-      return oldCapitalizedName.apply(this, arguments);
-    }
-  }
+  Accounts.ui.registerService("demo", "a Demo User");
 
   Template.demo.events({
     "click #createDemoUser": function (event) {

@@ -41,30 +41,11 @@ if (allowDevAccounts) {
   }
 
   if (Meteor.isClient) {
-    // Monkey-patch accounts-ui so that "demo" shows up nicely.
-    // Alas, this is dependent on private Meteor internals and so could break.
-    // TODO(cleanup): Check again if there are public APIs we could use and if not, ask for some.
     Meteor.loginWithDevAccounts = function () {
       Router.go("devAccounts");
       Accounts._loginButtonsSession.closeDropdown();
     };
-    Accounts.oauth.registerService("devAccounts");
-    var oldConfiguredHelper = Template._loginButtonsLoggedOutSingleLoginButton.configured;
-    Template._loginButtonsLoggedOutSingleLoginButton.configured = function () {
-      if (this.name === "devAccounts") {
-        return true;
-      } else {
-        return oldConfiguredHelper.apply(this, arguments);
-      }
-    };
-    var oldCapitalizedName = Template._loginButtonsLoggedOutSingleLoginButton.capitalizedName;
-    Template._loginButtonsLoggedOutSingleLoginButton.capitalizedName = function () {
-      if (this.name === "devAccounts") {
-        return "Dev Account";
-      } else {
-        return oldCapitalizedName.apply(this, arguments);
-      }
-    };
+    Accounts.ui.registerService("devAccounts", "a Dev Account");
 
     var loginDevAccount = function(displayName, isAdmin) {
       Accounts.callLoginMethod({

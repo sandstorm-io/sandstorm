@@ -32,5 +32,9 @@
 set -euo pipefail
 
 METEOR_WAREHOUSE_DIR="${METEOR_WAREHOUSE_DIR:-$HOME/.meteor}"
-echo $(dirname $(readlink -f "$METEOR_WAREHOUSE_DIR/meteor"))/dev_bundle
 
+# Use `meteor show` to find the tool version corresponding to this release.
+TOOL_VERSION=$(meteor show --ejson $(<shell/.meteor/release) | grep '^ *"tool":' |
+    sed -re 's/^.*"meteor-tool@([^"]*)".*$/\1/g')
+
+readlink -f $METEOR_WAREHOUSE_DIR/packages/meteor-tool/$TOOL_VERSION/meteor-tool-os.linux.x86_64/dev_bundle

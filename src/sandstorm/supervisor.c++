@@ -1556,14 +1556,15 @@ public:
     // TODO(someday): The supervisor will need to maintain a map of "wake locks". Since wake locks
     //   by their nature do not outlast the process, this map can be held in-memory. When
     //   `stayAwake()` is called, the supervisor:
-    //   - Fenerates a new wake lock ID (a random byte string; use libsodium's randombytes()).
+    //   - Generates a new wake lock ID (a random byte string; use libsodium's randombytes()).
     //   - Adds it to the table, mapping it to the `OngoingNotification` provided by the app.
     //   - Constructs a wrapper around `OngoingNotification` to be passed to the front-end. The
     //     wrapper is persistent (using the wake lock ID).
-    //   - Calls SandstormCore.getAdminNotificationTarget().notifyOwnerOngoing(), passing along
+    //   - Calls SandstormCore.getOwnerNotificationTarget().addOngoing(), passing along
     //     this new wrapper object as well as the `displayInfo` provided from the app.
-    //   - On the handle returned by `notifyOwnerOngoing()`, immediately calls `save()`, storing
-    //     the resulting `SturdyRef` (actually, just an API token) into the wake lock table entry.
+    //   - On the handle returned by `notifyOwnerOngoing()`, immediately calls `save()` (with
+    //     sealFor = this grain; see `SystemPersistent`), storing the resulting `SturdyRef`
+    //     (actually, just an API token) into the wake lock table entry.
     //   - Constructs a new handle object and returns it from `stayAwake()`.
     //   - When that handle is destroyed, loads up the wake lock table entry and calls
     //     SandstormCore.drop() on the handle SturdyRef stored there.

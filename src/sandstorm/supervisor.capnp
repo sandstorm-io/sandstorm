@@ -49,7 +49,7 @@ interface Supervisor {
   # Wraps `MainView.restore()`. Can also restore capabilities hosted by the supervisor.
 
   drop @6 (ref :SupervisorObjectId);
-  # Wraps `MainView.drop()`. Can also restore capabilities hosted by the supervisor.
+  # Wraps `MainView.drop()`. Can also drop capabilities hosted by the supervisor.
 }
 
 interface SandstormCore {
@@ -86,7 +86,7 @@ interface SandstormCore {
   #   through the restored cap, and then on later save() it should associate the newly-saved object
   #   with the same Powerbox introduction. Similarly, expiration dates need to be propagated.
 
-  getAdminNotificationTarget @2 () -> (owner :Grain.NotificationTarget);
+  getOwnerNotificationTarget @2 () -> (owner :Grain.NotificationTarget);
   # Get the notification target to use for notifications relating to the grain itself, e.g.
   # presence of wake locks.
 }

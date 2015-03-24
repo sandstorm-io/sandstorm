@@ -192,7 +192,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //
 // Each contains:
 //   _id:       A SHA-256 hash of the token.
-//   grainId:   The grain servicing this API.
+//   grainId:   The grain servicing this API. (Not present if the API isn't serviced by a grain.)
 //   userId:    The `_id` of the user (in the users table) to whom this token should be attributed.
 //              The user's current permissions will be presented to the app whenever the token is
 //              restored, so that the app can limit the token to the user's permissions, especially
@@ -206,8 +206,8 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              Note that if the SupervisorObjectId contains an AppObjectId, that field is
 //              treated as type AnyPointer, and so encoded as a raw Cap'n Proto message.
 //   frontendRef: If present, this token actually refers to an object implemented by the front-end,
-//              not a particular grain. (`grainId` is not set.) This is an object containing
-//              exactly one of the following fields:
+//              not a particular grain. (`grainId` and `userId` are not set.) This is an object
+//              containing exactly one of the following fields:
 //       notificationHandle: A `Handle` for an ongoing notification, as returned by
 //                           `NotificationTarget.addOngoing`. The value is an `_id` from the
 //                           `Notifications` collection.

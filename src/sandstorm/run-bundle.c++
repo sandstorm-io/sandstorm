@@ -2371,7 +2371,7 @@ private:
   }
 
   void clearDevApps(const Config& config) {
-    mongoCommand(config, kj::str("db.devapps.remove()"));
+    mongoCommand(config, kj::str("db.devapps.remove({})"));
   }
 
   void mongoCommand(const Config& config, kj::StringPtr command, kj::StringPtr db = "meteor") {

@@ -528,7 +528,7 @@ struct SturdyRefOwner {
   # Human-readable explanation of how this capability relates to the grain. This is displayed
   # when visualizing outgoing capabilities from the calling grain in the Sandstorm UI. This string
   # will NOT be communicated to the host of the saved capability; it is intercepted and used by the
-  # Sansdtorm system.
+  # Sandstorm system.
 }
 
 interface MainView(AppSturdyRef) extends(UiView) {

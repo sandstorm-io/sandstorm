@@ -86,6 +86,48 @@ Grains = new Mongo.Collection("grains");
 //   publicId:  An id used to publicly identify this grain. Used e.g. to route incoming e-mail and
 //       web publishing. This field is initialized when first requested by the app.
 
+RoleAssignments = new Mongo.Collection("roleAssignments");
+// Edges in the permissions sharing graph.
+//
+// To share a permission with another user is to declare "if I have this permission, then so should
+// the recipient". A bundle of such declarations by a single sharer directed at a single recipient
+// for a single grain is called a "role assignment". A grain's owner always has every permission,
+// but permissions for other users must be computed from this collection.
+//
+// Any grain for which a user has received a role assignment should show up in that user's grain
+// list. However, the user may only access a grain if there is a path of *active* role assignments
+// leading from the grain owner to that user, precisely as if every role assignment carried a
+// special "can access grain" permission.
+//
+// Each contains:
+//   _id: random
+//   grainId: The `_id` of the grain whose permissions are being shared.
+//   sharer: The `_id` of the user who is sharing these permissions.
+//   recipient: The `_id` of the user who receives these permissions.
+//   roleAssignment: A JSON-encoded Grain.ViewSharingLink.RoleAssignment representing the
+//                   received permissions. The sharer is allowed to modify this later.
+//   active: Flag indicating that this role assignment has not been revoked. The sharer is allowed
+//           to flip this bit, but only the recipient is allowed to delete the role assignment.
+//   petname: Human-readable label chosen by and only visible to the sharer.
+//   title: Human-readable title as chosen by the recipient. Used in the same places that
+//          `grain.title` is used for the grain's owner.
+//   created: Date when this role assignment was created.
+//   parentKey: If present, the `_id` of the entry in RoleAssignmentKeys from which this was derived.
+
+RoleAssignmentKeys = new Mongo.Collection("roleAssignmentKeys");
+// Role assignments that are not yet bound to a single recipient. These can be used to implement
+// sharing-by-secret-URL.
+//
+// Each contains:
+//   _id: random
+//   sharer: The `_id` of the user who created this key.
+//   grainId: The `_id` of the grain whose permissions are being shared.
+//   roleAssignment: A JSON-encoded Grain.ViewSharingLink.RoleAssignment representing the
+//                   received permissions.
+//   petname: Human-readable label chosen by and only visible to the sharer.
+//   created: Date when this key was created.
+//   expires: Optional date when this key should expire.
+
 Sessions = new Mongo.Collection("sessions");
 // UI sessions open to particular grains.  A new session is created each time a user opens a grain.
 //
@@ -146,8 +188,6 @@ ApiTokens = new Mongo.Collection("apiTokens");
 // now they are also used to implement SturdyRefs, not just held by external users, but also when
 // an app holds a SturdyRef to another app within the same server. See `SturdyRef` in
 // `grain.capnp` -- the type of `external` is an API token.
-//
-// This table can be thought of as storing "edges" in the sharing graph.
 //
 // Each contains:
 //   _id:       A SHA-256 hash of the token.

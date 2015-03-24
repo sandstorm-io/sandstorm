@@ -33,8 +33,23 @@ set -euo pipefail
 
 METEOR_WAREHOUSE_DIR="${METEOR_WAREHOUSE_DIR:-$HOME/.meteor}"
 
-# Use `meteor show` to find the tool version corresponding to this release.
-TOOL_VERSION=$(meteor show --ejson $(<shell/.meteor/release) | grep '^ *"tool":' |
-    sed -re 's/^.*"meteor-tool@([^"]*)".*$/\1/g')
+# If we run the meteor tool outside of `shell`, it might try to update itself. Inside `shell`, it
+# sees the meteor version we're using and sticks to that.
+cd shell
 
-readlink -f $METEOR_WAREHOUSE_DIR/packages/meteor-tool/$TOOL_VERSION/meteor-tool-os.linux.x86_64/dev_bundle
+METEOR_RELEASE=$(<.meteor/release)
+
+if [ "$METEOR_RELEASE" = "METEOR@1.0.2" ]; then
+  # Some time after 1.0.2, the output format of `meteor show` changed and the --ejson flag was
+  # added. But as of this writing we're still at 1.0.2, so parse the old output format.
+  TOOL_VERSION=$(meteor show "$METEOR_RELEASE" | grep -o 'meteor-tool@[0-9a-zA-Z_.-]*')
+else
+  # TODO(cleanup): It would be nice to use a real JSON parser here, but I don't particularly want
+  #   to depend on one, nor do I want to depend on Node being installed.
+  TOOL_VERSION=$(meteor show --ejson $METEOR_RELEASE | grep '^ *"tool":' |
+      sed -re 's/^.*"(meteor-tool@[^"]*)".*$/\1/g')
+fi
+
+TOOLDIR=$(echo $TOOL_VERSION | tr @ /)
+
+readlink -f $METEOR_WAREHOUSE_DIR/packages/$TOOLDIR/meteor-tool-os.linux.x86_64/dev_bundle

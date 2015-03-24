@@ -321,7 +321,8 @@ struct UserInfo {
   # Display names are NOT unique nor stable:  two users could potentially have the same display
   # name and a user's display name could change.
 
-  permissions @1 :PermissionSet;
+  deprecatedPermissionsBlob @1 :Data;
+  permissions @3 :PermissionSet;
   # Set of permissions which this user has.  The exact set might not correspond directly to any
   # particular role for a number of reasons:
   # - The sharer may have toggled individual permissions through the advanced settings.
@@ -421,13 +422,8 @@ struct PermissionDef {
   # longer be offered to the user in future sharing actions.
 }
 
-using PermissionSet = Data;
-# Set of permission IDs.  Currently represented as a bitfield.  The bits of the byte string are
-# interpreted in little-endian order, e.g. the least-significant bit of the first byte represents
-# permission 0 while the most-significant bit of the third byte represents permission 23.  All
-# bits beyond the end of the byte string are assumed to be zero.
-#
-# TODO(soon): Why is this not List(Bool)?
+using PermissionSet = List(Bool);
+# Set of permission IDs, represented as a bitfield.
 
 struct RoleDef {
   # Metadata describing a sharable role.

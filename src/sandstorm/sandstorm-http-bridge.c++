@@ -1315,16 +1315,16 @@ public:
   }
 
 private:
-  inline kj::String formatPermissions(capnp::Data::Reader& userPermissions) {
-      auto configPermissions = config.getViewInfo().getPermissions();
-      kj::Vector<kj::String> permissionVec(configPermissions.size());
+  inline kj::String formatPermissions(capnp::List<bool>::Reader& userPermissions) {
+    auto configPermissions = config.getViewInfo().getPermissions();
+    kj::Vector<kj::String> permissionVec(configPermissions.size());
 
-      for (uint i = 0; i < configPermissions.size() && i / 8 < userPermissions.size(); ++i) {
-        if (userPermissions[i / 8] & (1 << (i % 8))) {
-          permissionVec.add(kj::str(configPermissions[i].getName()));
-        }
+    for (uint i = 0; i < configPermissions.size() && i < userPermissions.size(); ++i) {
+      if (userPermissions[i]) {
+        permissionVec.add(kj::str(configPermissions[i].getName()));
       }
-      return kj::strArray(permissionVec, ",");
+    }
+    return kj::strArray(permissionVec, ",");
   }
   kj::NetworkAddress& serverAddress;
   SessionContextMap& sessionContextMap;

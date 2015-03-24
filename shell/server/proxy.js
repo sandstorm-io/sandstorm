@@ -804,14 +804,19 @@ Proxy.prototype._callNewApiSession = function (request, userInfo) {
 Proxy.prototype._callNewSession = function (request, viewInfo) {
   var userInfo = _.clone(this.userInfo);
   if (viewInfo.permissions) {
-    var numBytes = Math.ceil(viewInfo.permissions.length / 8);
+    var perms = new Array(viewInfo.permissions.length);
+    for (var i = 0; i < perms.length; i++) {
+      perms[i] = this.isOwner;
+    }
+    userInfo.permissions = perms;
 
+    // Fill in the old permissions field for any apps that still depend on it.
+    var numBytes = Math.ceil(viewInfo.permissions.length / 8);
     var buf = new Buffer(numBytes);
-    for(var i = 0; i < numBytes; i++) {
+    for (var i = 0; i < numBytes; i++) {
       buf.writeUInt8(this.isOwner * 255, i);
     }
-
-    userInfo.permissions = buf;
+    userInfo.deprecatedPermissionsBlob = buf;
   }
 
   if (this.isApi) {

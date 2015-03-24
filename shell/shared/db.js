@@ -186,12 +186,13 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //
 // Originally API tokens were only used by external users through the HTTP API endpoint. However,
 // now they are also used to implement SturdyRefs, not just held by external users, but also when
-// an app holds a SturdyRef to another app within the same server. See `SturdyRef` in
-// `grain.capnp` -- the type of `external` is an API token.
+// an app holds a SturdyRef to another app within the same server. See the various `save()`,
+// `restore()`, and `drop()` methods in `grain.capnp` (on `SansdtormApi`, `AppPersistent`, and
+// `MainView`) -- the fields of type `Data` are API tokens.
 //
 // Each contains:
 //   _id:       A SHA-256 hash of the token.
-//   grainId:   The grain servicing this API.
+//   grainId:   The grain servicing this API. (Not present if the API isn't serviced by a grain.)
 //   userId:    The `_id` of the user (in the users table) to whom this token should be attributed.
 //              The user's current permissions will be presented to the app whenever the token is
 //              restored, so that the app can limit the token to the user's permissions, especially
@@ -199,20 +200,36 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   userInfo:  For API tokens created by the app through HackSessionContext, the UserInfo struct
 //              that should be passed to `newSession()` when exercising this token, in decoded (JS
 //              object) format. This is a temporary hack.
-//   appRef:    If present, this token represents an arbitrary Cap'n Proto capability exported by
-//              the app (whereas without this it strictly represents UiView). appRef is the encoded,
-//              canonicalized AppSturdyRef (encoded as a Cap'n Proto message with AppSturdyRef as
-//              the root; this is the format that node-capnp automatically uses for `AnyPointer`
-//              fields).
+//   objectId:  If present, this token represents an arbitrary Cap'n Proto capability exported by
+//              the app or its supervisor (whereas without this it strictly represents UiView).
+//              sturdyRef is the JSON-encoded SupervisorObjectId (defined in `supervisor.capnp`).
+//              Note that if the SupervisorObjectId contains an AppObjectId, that field is
+//              treated as type AnyPointer, and so encoded as a raw Cap'n Proto message.
+//   frontendRef: If present, this token actually refers to an object implemented by the front-end,
+//              not a particular grain. (`grainId` and `userId` are not set.) This is an object
+//              containing exactly one of the following fields:
+//       notificationHandle: A `Handle` for an ongoing notification, as returned by
+//                           `NotificationTarget.addOngoing`. The value is an `_id` from the
+//                           `Notifications` collection.
 //   petname:   Human-readable label for this access token, useful for identifying tokens for
 //              revocation. This should be displayed when visualizing incoming capabilities to
 //              the grain identified by `grainId`.
 //   created:   Date when this token was created.
 //   expires:   Optional expiration Date. If undefined, the token does not expire.
-//   owner:     A `SystemSturdyRefOwner` (defined in `supervisor.capnp`, stored as a JSON object)
-//              as passed to the `save()` call that created this token. Not present for tokens
-//              created by the user through the topbar, which are accessible from anywhere on the
-//              internet (but cannot be directly restored from inside an app).
+//   owner:     A `ApiTokenRefOwner` (defined in `supervisor.capnp`, stored as a JSON object)
+//              as passed to the `save()` call that created this token. If not present, treat
+//              as `webkey` (the default for `ApiTokenOwner`).
+
+Notifications = new Mongo.Collection("notifications");
+// Notifications for a user.
+//
+// Each contains:
+//   _id:          random
+//   ongoing:      If present, this is an ongoing notification, and this field contains an
+//                 ApiToken referencing the `OngoingNotification` capability.
+//   grainId:      The grain originating this notification, if any.
+//   userId:       The user receiving the notification.
+//   text:         The JSON-ified LocalizedText to display in the notification.
 
 StatsTokens = new Mongo.Collection("statsTokens");
 // Access tokens for the Stats collection

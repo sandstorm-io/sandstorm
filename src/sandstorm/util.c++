@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <dirent.h>
+#include <syscall.h>
 
 namespace sandstorm {
 
@@ -33,7 +34,12 @@ kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode) {
 
 kj::AutoCloseFd raiiOpenAt(int dirfd, kj::StringPtr name, int flags, mode_t mode) {
   int fd;
-  KJ_SYSCALL(fd = openat(dirfd, name.cStr(), flags, mode), name);
+  if (flags & O_TMPFILE) {
+    // work around glibc bug: https://sourceware.org/bugzilla/show_bug.cgi?id=17523
+    KJ_SYSCALL(fd = syscall(SYS_openat, dirfd, name.cStr(), flags, mode), name);
+  } else {
+    KJ_SYSCALL(fd = openat(dirfd, name.cStr(), flags, mode), name);
+  }
   return kj::AutoCloseFd(fd);
 }
 

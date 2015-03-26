@@ -56,6 +56,11 @@ interface IpNetwork extends(PowerboxCapability) {
   getRemoteHostByName @1 (address :Text) -> (host :IpRemoteHost);
   # Like `getRemoteHost()` but parse the address from text and perform a DNS lookup if necessary.
   # Textual representations of IP addresses will also be accepted.
+
+  getIpAddressForHostname @2 (hostname :Text) -> (address :IpAddress);
+  # This method performs a DNS lookup and returns a raw IpAddresses corresponding to this hostname.
+  # This is meant solely for legacy apps that need to do DNS lookups. `getRemoteHostByName()` is
+  # much preferred if an app is able to use it.
 }
 
 struct IpAddress {

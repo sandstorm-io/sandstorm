@@ -1241,12 +1241,46 @@ private:
 };
 
 
+class RedirectableCapability final: public capnp::Capability::Server {
+  // A capability that forwards all requests to some target. The target can be changed over time.
+  // When no target is set, requests are queued and eventually sent to the first target provided.
+
+public:
+  inline RedirectableCapability()
+      : RedirectableCapability(kj::newPromiseAndFulfiller<capnp::Capability::Client>()) {}
+
+  void setTarget(capnp::Capability::Client target) {
+    this->target = target;
+    queueFulfiller->fulfill(kj::mv(target));
+  }
+
+  kj::Promise<void> dispatchCall(uint64_t interfaceId, uint16_t methodId,
+      capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) override {
+    auto params = context.getParams();
+    auto subRequest = target.typelessRequest(interfaceId, methodId, params.targetSize());
+    subRequest.set(params);
+    context.releaseParams();
+    return context.tailCall(kj::mv(subRequest));
+  }
+
+private:
+  capnp::Capability::Client target;
+  kj::Own<kj::PromiseFulfiller<capnp::Capability::Client>> queueFulfiller;
+
+  inline RedirectableCapability(kj::PromiseFulfillerPair<capnp::Capability::Client>&& paf)
+      : target(kj::mv(paf.promise)), queueFulfiller(kj::mv(paf.fulfiller)) {}
+  // We take advantage of the fact that Capability::Client can be constructed from
+  // Promise<Capability::Client> for the exact purpose of queueing requests.
+};
+
 class SandstormHttpBridgeImpl: public SandstormHttpBridge::Server {
 public:
   explicit SandstormHttpBridgeImpl(SandstormApi<>::Client&& apiCap,
-                                   SessionContextMap& sessionContextMap)
+                                   SessionContextMap& sessionContextMap,
+                                   HackSessionContext::Client& contextCap)
       : apiCap(kj::mv(apiCap)),
-        sessionContextMap(sessionContextMap) {}
+        sessionContextMap(sessionContextMap),
+        contextCap(contextCap) {}
 
   kj::Promise<void> getSandstormApi(GetSandstormApiContext context) override {
     context.getResults().setApi(apiCap);
@@ -1256,22 +1290,30 @@ public:
   kj::Promise<void> getSessionContext(GetSessionContextContext context) override {
     auto id = context.getParams().getId();
     auto iter = sessionContextMap.find(id);
-    KJ_ASSERT(iter != sessionContextMap.end(), "Session ID not found", id);
+    KJ_ASSERT(iter != sessionContextMap.end(), "Session ID not found", id, sessionContextMap.size());
     context.getResults().setContext(iter->second);
+    return kj::READY_NOW;
+  }
+
+  kj::Promise<void> getFirstSessionContext(GetFirstSessionContextContext context) override {
+    context.getResults().setContext(contextCap);
     return kj::READY_NOW;
   }
 
 private:
   SandstormApi<>::Client apiCap;
   SessionContextMap& sessionContextMap;
+  HackSessionContext::Client& contextCap;
 };
 
 class UiViewImpl final: public UiView::Server {
 public:
   explicit UiViewImpl(kj::NetworkAddress& serverAddress,
                       SessionContextMap& sessionContextMap,
+                      RedirectableCapability& contextCap,
                       spk::BridgeConfig::Reader config)
-      : serverAddress(serverAddress), sessionContextMap(sessionContextMap), config(config) {}
+      : serverAddress(serverAddress), sessionContextMap(sessionContextMap), contextCap(contextCap),
+        config(config) {}
 
   kj::Promise<void> getViewInfo(GetViewInfoContext context) override {
     context.setResults(config.getViewInfo());
@@ -1312,6 +1354,8 @@ public:
       context.getResults(capnp::MessageSize {2, 1}).setSession(kj::heap<EmailSessionImpl>());
     }
 
+    contextCap.setTarget(params.getContext());
+
     return kj::READY_NOW;
   }
 
@@ -1329,6 +1373,7 @@ private:
   }
   kj::NetworkAddress& serverAddress;
   SessionContextMap& sessionContextMap;
+  RedirectableCapability& contextCap;
   spk::BridgeConfig::Reader config;
   uint sessionIdCounter = 0;
   // SessionIds are assigned sequentially.
@@ -1471,12 +1516,16 @@ public:
       auto config = reader.getRoot<spk::BridgeConfig>();
 
       SessionContextMap sessionContextMap;
+      auto ownHackContext = kj::heap<RedirectableCapability>();
+      auto& hackContext = *ownHackContext;
+      capnp::Capability::Client hackContextCap = kj::mv(ownHackContext);
+      auto hackContextClient = hackContextCap.castAs<HackSessionContext>();
 
       // Set up the Supervisor API socket.
       auto stream = ioContext.lowLevelProvider->wrapSocketFd(3);
       capnp::TwoPartyVatNetwork network(*stream, capnp::rpc::twoparty::Side::CLIENT);
       auto rpcSystem = capnp::makeRpcServer(network,
-          kj::heap<UiViewImpl>(*address, sessionContextMap, config));
+          kj::heap<UiViewImpl>(*address, sessionContextMap, hackContext, config));
 
       // Get the SandstormApi by restoring a null SturdyRef.
       capnp::MallocMessageBuilder message;
@@ -1487,15 +1536,15 @@ public:
       // Export a Unix socket on which the application can connect and make calls directly to the
       // Sandstorm API.
       SandstormHttpBridge::Client sandstormHttpBridge =
-          kj::heap<SandstormHttpBridgeImpl>(kj::mv(api), sessionContextMap);
+          kj::heap<SandstormHttpBridgeImpl>(kj::mv(api), sessionContextMap, hackContextClient);
       ErrorHandlerImpl errorHandler;
       kj::TaskSet tasks(errorHandler);
       unlink("/tmp/sandstorm-api");  // Clear stale socket, if any.
       auto acceptTask = ioContext.provider->getNetwork()
           .parseAddress("unix:/tmp/sandstorm-api", 0)
-          .then([&, KJ_MVCAP(sandstormHttpBridge)](kj::Own<kj::NetworkAddress>&& addr) mutable {
+          .then([&](kj::Own<kj::NetworkAddress>&& addr) mutable {
         auto serverPort = addr->listen();
-        auto promise = acceptLoop(*serverPort, kj::mv(sandstormHttpBridge), tasks);
+        auto promise = acceptLoop(*serverPort, sandstormHttpBridge, tasks);
         return promise.attach(kj::mv(serverPort));
       });
       tasks.add(kj::mv(acceptTask));
@@ -1503,14 +1552,14 @@ public:
       // Run a TCP bridge. The supervisor sets up an iptables rule that redirects all traffic to
       // port 23136. This method listens and redirects that traffic over the IP interface defined
       // in ip.capnp
-      auto hackContextRestored = appRestorer.getHackContext().castAs<HackSessionContext>();
+      // TODO(soon): make this more robust
       if (config.getEnableIpBridge()) {
         auto tcpBridgeTask = ioContext.provider->getNetwork()
             .parseAddress("127.0.0.1", 23136)
             .then([&](kj::Own<kj::NetworkAddress>&& addr) {
           auto serverPort = addr->listen();
 
-          return ipbridge::runTcpBridge(*serverPort, tasks, hackContextRestored).attach(kj::mv(serverPort));
+          return ipbridge::runTcpBridge(*serverPort, tasks, hackContextClient).attach(kj::mv(serverPort));
         });
         tasks.add(kj::mv(tcpBridgeTask));
       }

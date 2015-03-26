@@ -30,4 +30,9 @@ interface SandstormHttpBridge {
   getSessionContext @1 (id :Text) -> (context :Grain.SessionContext);
   # Get the SessionContext corresponding to a UiSession. The appropriate `id` value can be read
   # from the X-Sandstorm-Session-Id header inserted by sandstorm-http-bridge.
+
+  getFirstSessionContext @2 () -> (context :Grain.SessionContext);
+  # DEPRECATED: do not use in new apps. This function will be removed at some point.
+  # This is a hack method for getting a SessionContext without a SessionId. It is only meant to be
+  # used for legacy apps such as IpNetworking that don't care what user's session the context is.
 }

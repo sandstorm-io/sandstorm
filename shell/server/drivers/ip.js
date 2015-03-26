@@ -19,6 +19,7 @@ var Net = Npm.require("net");
 var Dgram = Npm.require("dgram");
 var Promise = Npm.require("es6-promise").Promise;
 var Capnp = Npm.require("capnp");
+var Dns = Npm.require("dns");
 
 var IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
 
@@ -129,6 +130,7 @@ IpInterfaceImpl.prototype.listenUdp = function (portNum, port) {
 
 var bits16 = Bignum(1).shiftLeft(16).sub(1);
 var bits32 = Bignum(1).shiftLeft(32).sub(1);
+var ip4mask = bits16.shiftLeft(32);
 
 var intToIpv4 = function (num) {
   var part1 = num & 255;
@@ -137,6 +139,11 @@ var intToIpv4 = function (num) {
   var part4 = ((num >> 24) & 255);
 
   return part4 + "." + part3 + "." + part2 + "." + part1;
+};
+
+var ip4ToInt = function (address) {
+  var d = address.split(".");
+  return ((((((+d[0])*256)+(+d[1]))*256)+(+d[2]))*256)+(+d[3]);
 };
 
 var addressToString = function (address) {
@@ -183,6 +190,32 @@ IpNetworkImpl = function () { };
 
 IpNetworkImpl.prototype.getRemoteHost = function (address) {
   return {host: new IpRemoteHostImpl(address)};
+};
+
+IpNetworkImpl.prototype.getRemoteHostByName = function (address) {
+  return new Promise(function (resolve, reject) {
+    Dns.lookup(address, 4, function (err, res) {
+      if (err) {
+        reject(err);
+      }
+
+      var ip = Bignum(ip4ToInt(res));
+      resolve({host: new IpRemoteHostImpl({lower64: ip.or(ip4mask).toString()})});
+    });
+  });
+};
+
+IpNetworkImpl.prototype.getIpAddressForHostname = function (address) {
+  return new Promise(function (resolve, reject) {
+    Dns.lookup(address, 4, function (err, res) {
+      if (err) {
+        reject(err);
+      }
+
+      var ip = Bignum(ip4ToInt(res));
+      resolve({address: {lower64: ip.or(ip4mask).toString()}});
+    });
+  });
 };
 
 function IpRemoteHostImpl (address) {

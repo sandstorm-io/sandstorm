@@ -144,7 +144,7 @@ if (Meteor.isClient && allowDemo) {
     Router.go("demo");
     Accounts._loginButtonsSession.closeDropdown();
   }
-  Accounts.ui.registerService("demo", "a Demo User");
+  Accounts.registerService("demo");
 
   Template.demo.events({
     "click #createDemoUser": function (event) {

@@ -7,9 +7,8 @@ standard-app-packages
 iron:router
 underscore
 random
-accounts-github
 sandstorm-accounts-ui
-accounts-google
+sandstorm-accounts-packages
 email
 reload
 simplesmtp

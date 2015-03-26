@@ -93,6 +93,7 @@ limitations under the License.
           {{/each}}
           <li class="blank">&nbsp;</li>
           {{#if isAdmin}}
+            <li class="applist-tab-settings">Admin Settings</li>
             <li class="applist-tab-invite">Invite Users</li>
             <li class="applist-tab-stats">Usage Stats</li>
           {{/if}}
@@ -442,6 +443,33 @@ $KEY</textarea></p>
         <p>Restore failed. Please try again.</p>
       {{/if}}
     {{/if}}
+    </div>
+  </div>
+</template>
+
+<template name="adminSettings">
+  <div id="topbar">{{> homeLink}} Admin settings</div>
+
+  <div id="admin-settings" class="main-content">
+    <div class="centered-box">
+      <form id="admin-settings-form">
+        <label title="This setting enables Google OAuth accounts for this server">Enable Google Login <input type="checkbox" name="googleLogin" value="value" checked={{googleEnabled}} /></label>
+        <br />
+        <label title="This setting enables Github OAuth accounts for this server">Enable Github Login <input type="checkbox" name="githubLogin" value="value" checked={{githubEnabled}} /></label>
+        <br />
+        <label title="This setting enables Developer accounts for this server. WARNING: this setting should never be used on a production server.">Enable Developer Accounts Login <input type="checkbox" name="devAccountsLogin" value="value" checked={{devAccountsEnabled}} /></label>
+        <br />
+        <label title="Set the outgoing SMTP server to use for sending emails. This server will be used by all users on your Sandstorm server that have access to the platform's EmailSendPort capability (ie. everyone for now).">SMTP Url: <input type="text" name="smtpUrl" value="{{smtpUrl}}"></label>
+        <br />
+        <button id="admin-settings-save">Save</button>
+
+        {{#if success}}
+        <div class="alert alert-success"><strong>Success!</strong> You have successfully updated the settings database.</div>
+        {{/if}}
+        {{#if failure}}
+        <div class="alert alert-danger"><strong>Failure!</strong> Something went wrong trying to save settings. See your sandstorm.log for details.</div>
+        {{/if}}
+      </form>
     </div>
   </div>
 </template>

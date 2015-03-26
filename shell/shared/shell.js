@@ -284,6 +284,10 @@ if (Meteor.isClient) {
       Session.set("selectedApp", event.currentTarget.getAttribute("data-appid"));
       Session.set("showMenu", false);
     },
+    "click .applist-tab-settings": function (event) {
+      Router.go("adminSettings", {});
+      Session.set("showMenu", false);
+    },
     "click .applist-tab-invite": function (event) {
       Router.go("invite", {});
       Session.set("showMenu", false);

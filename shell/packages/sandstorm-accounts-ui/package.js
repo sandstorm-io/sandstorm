@@ -11,7 +11,7 @@ Package.onUse(function (api) {
 
   // Allow us to call Accounts.oauth.serviceNames, if there are any OAuth
   // services.
-  api.use('accounts-oauth', {weak: true});
+  api.use('sandstorm-accounts-oauth', {weak: true});
   // Allow us to directly test if accounts-password (which doesn't use
   // Accounts.oauth.registerService) exists.
   api.use('accounts-password', {weak: true});

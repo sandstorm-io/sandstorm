@@ -313,14 +313,15 @@ var makeSmtpPool = function (mailUrlString) {
 
 // We construct smtpPool at the first call to Email.send, so that
 // Meteor.startup code can set $MAIL_URL.
-var smtpPoolFuture = new Future();
+var smtpPoolFuture;
 var configured = false;
 
 var getSmtpPool = function () {
   // We check MAIL_URL in case someone else set it in Meteor.startup code.
   if (!configured) {
+    smtpPoolFuture = new Future();
     configured = true;
-    var url = process.env.MAIL_URL;
+    var url = getSmtpUrl();
     var pool = null;
     if (url)
       pool = makeSmtpPool(url);
@@ -329,3 +330,25 @@ var getSmtpPool = function () {
 
   return smtpPoolFuture.wait();
 };
+
+getSmtpUrl = function () {
+  var setting = Settings.findOne({_id: "smtpUrl"});
+  if (setting) {
+    return setting.value;
+  } else {
+    return process.env.MAIL_URL;
+  }
+};
+
+
+Settings.find({_id: "smtpUrl"}).observeChanges({
+  removed : function () {
+    configured = false;
+  },
+  changed : function () {
+    configured = false;
+  },
+  added : function () {
+    configured = false;
+  }
+});

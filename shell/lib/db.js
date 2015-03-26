@@ -251,6 +251,16 @@ Misc = new Mongo.Collection("misc");
 //   _id:       The name of the setting. ie. "BASE_URL"
 //   value:     The value of the setting.
 
+Settings = new Mongo.Collection("settings");
+// Settings for this Sandstorm instance go here. They are configured through the adminSettings
+// route. This collection differs from misc in that this collection is completely user controlled.
+//
+// Each contains:
+//   _id:       The name of the setting. ie. "MAIL_URL"
+//   value:     The value of the setting.
+//   potentially other fields that are unique to the setting
+
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.
@@ -322,6 +332,18 @@ isAdmin = function() {
   }
 }
 
+isAdminById = function(id) {
+  check(id, String);
+  // Returns true if the user's id is the administrator.
+
+  var user = Meteor.users.findOne({_id: id})
+  if (user && user.isAdmin) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 var wildcardHost = Meteor.settings.public.wildcardHost.toLowerCase().split("*");
 
 if (wildcardHost.length != 2) {
@@ -369,3 +391,13 @@ if (Meteor.isServer) {
     }
   }
 }
+
+allowDevAccounts = function () {
+  var setting = Settings.findOne({_id: "devAccounts"});
+  if (setting) {
+    return setting.value;
+  } else {
+    return Meteor.settings && Meteor.settings.public &&
+           Meteor.settings.public.allowDevAccounts;
+  }
+};

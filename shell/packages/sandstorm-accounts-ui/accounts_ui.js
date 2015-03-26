@@ -97,8 +97,17 @@ Accounts.ui.config = function(options) {
  */
 Accounts.ui.registerService = function (serviceName, userField) {
   // Still register it as an oauth service
+  // TODO(someday): don't do this?
   Accounts.oauth.registerService(serviceName);
+
   Accounts.ui._options.services[serviceName] = userField;
+};
+Accounts.ui.deregisterService = function (serviceName, userField) {
+  // Still register it as an oauth service
+  // TODO(someday): don't do this?
+  Accounts.oauth.deregisterService(serviceName);
+
+  delete Accounts.ui._options.services[serviceName];
 };
 
 passwordSignupFields = function () {

@@ -47,7 +47,7 @@ getLoginServices = function () {
   var self = this;
 
   // First look for OAuth services.
-  var services = Package['accounts-oauth'] ? Accounts.oauth.serviceNames() : [];
+  var services = (Accounts.oauth && Accounts.oauth.serviceNames) ? Accounts.oauth.serviceNames() : [];
 
   // Be equally kind to all login services. This also preserves
   // backwards-compatibility. (But maybe order should be

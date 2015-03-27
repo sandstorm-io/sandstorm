@@ -197,6 +197,7 @@ IpNetworkImpl.prototype.getRemoteHostByName = function (address) {
     Dns.lookup(address, 4, function (err, res) {
       if (err) {
         reject(err);
+        return;
       }
 
       var ip = Bignum(ip4ToInt(res));
@@ -210,6 +211,7 @@ IpNetworkImpl.prototype.getIpAddressForHostname = function (address) {
     Dns.lookup(address, 4, function (err, res) {
       if (err) {
         reject(err);
+        return;
       }
 
       var ip = Bignum(ip4ToInt(res));

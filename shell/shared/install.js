@@ -258,6 +258,16 @@ Router.map(function () {
       ];
     },
 
+    onBeforeAction: function () {
+      var packageId = this.params.packageId;
+      var package = Packages.findOne(packageId);
+      if (allowDemo && this.ready() && !Meteor.user() && package) {
+        Router.go("appdemo", {appId: package.appId});
+      } else {
+        this.next();
+      }
+    },
+
     data: function () {
       var packageId = this.params.packageId;
       var userId = Meteor.userId();

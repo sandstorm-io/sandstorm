@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var allowDemo = Meteor.settings && Meteor.settings.public &&
+allowDemo = Meteor.settings && Meteor.settings.public &&
                 Meteor.settings.public.allowDemoAccounts;
 
 var DEMO_EXPIRATION_MS = 60 * 60 * 1000;

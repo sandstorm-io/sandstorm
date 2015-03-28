@@ -732,7 +732,7 @@ function register_sandcats_name() {
 
   # Ask them for their email address, since we use that as part of Sandcats
   # registration.
-  echo "We need your email on file so we help you recover your domain if you lose access. No spam."
+  echo "We need your email on file so we can help you recover your domain if you lose access. No spam."
   SANDCATS_REGISTRATION_EMAIL=$(prompt "Enter your email address:" "")
 
   # If the user fails to enter an email address, bail out.

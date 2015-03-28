@@ -701,6 +701,7 @@ function register_sandcats_name() {
   # "none" or provide a name they want to register.
   if [ -z "$DESIRED_SANDCATS_NAME" ] ; then
       register_sandcats_name
+      return
   fi
 
   # If the user really wants none of our sandcats help, then bail out.
@@ -710,7 +711,10 @@ function register_sandcats_name() {
 
   # Validate the client-side, to avoid problems, against the same
   # regex that the server is using.
-  [[ $DESIRED_SANDCATS_NAME =~ ^[0-9a-zA-Z]{1,20}$ ]] || register_sandcats_name
+  if ! [[ $DESIRED_SANDCATS_NAME =~ ^[0-9a-zA-Z]{1,20}$ ]] ; then
+    register_sandcats_name
+    return
+  fi
 
   # Ask them for their email address, since we use that as part of Sandcats
   # registration.
@@ -753,6 +757,7 @@ function register_sandcats_name() {
     # Show the server's output, and re-run this function.
     error "$(cat sandcats/register-log)"
     register_sandcats_name
+    return
   fi
 }
 

@@ -370,9 +370,9 @@ if [ "yes" = "$USE_SANDCATS" ] ; then
     # wrong place later.
     chmod 0600 var/sandcats/id_rsa var/sandcats/id_rsa.pub var/sandcats/id_rsa.private_combined
 
-    # Delete the "..." that we left on the screen, to indicate that we
-    # are done generating cryptographic material.
-    echo -ne '\b\b\b'
+    # Go to the start of the line, before the "..." that we left on
+    # the screen, allowing future echo statements to overwrite it.
+    echo -ne '\r'
   fi
 
   # Having set up the keys, we run the function to register a name

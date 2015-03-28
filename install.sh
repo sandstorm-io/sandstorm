@@ -63,6 +63,7 @@ usage() {
 USE_DEFAULTS="no"
 USE_EXTERNAL_INTERFACE="no"
 USE_SANDCATS="no"
+SANDCATS_SUCCESSFUL="no"
 while getopts ":cdeu" opt; do
   case $opt in
     c)
@@ -463,7 +464,15 @@ else
     echo "reasons that will become clear in the next step, you should use this"
     echo "instead of 'localhost'."
   fi
-  BASE_URL=$(prompt "URL users will enter in browser:" "http://$SS_HOSTNAME:$PORT")
+
+  DEFAULT_BASE_URL="http://$SS_HOSTNAME:$PORT"
+  if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then
+    # Do not prompt for BASE_URL configuration if Sandcats bringup
+    # succeeded.
+    BASE_URL="$DEFAULT_BASE_URL"
+  else
+    BASE_URL=$(prompt "URL users will enter in browser:" "$DEFAULT_BASE_URL")
+  fi
 
   if [[ "$BASE_URL" =~ ^http://localhost(|:[0-9]*)(/.*)?$ ]]; then
     DEFAULT_WILDCARD=*.local.sandstorm.io${BASH_REMATCH[1]}
@@ -473,23 +482,28 @@ else
     DEFAULT_WILDCARD=
   fi
 
-  echo "Sandstorm requires you to set up a wildcard DNS entry pointing at the server."
-  echo "This allows Sandstorm to allocate new hosts on-the-fly for sandboxing purposes."
-  echo "Please enter a DNS hostname containing a '*' which maps to your server. For "
-  echo "example, if you have mapped *.foo.example.com to your server, you could enter"
-  echo "\"*.foo.example.com\". You can also specify that hosts should have a special"
-  echo "prefix, like \"ss-*.foo.example.com\". Note that if your server's main page"
-  echo "is served over SSL, the wildcard address must support SSL as well, which"
-  echo "implies that you must have a wildcard certificate. For local-machine servers,"
-  echo "we have mapped *.local.sandstorm.io to 127.0.0.1 for your convenience, so you"
-  echo "can use \"*.local.sandstorm.io\" here. If you are serving off a non-standard"
-  echo "port, you must include it here as well."
-  WILDCARD_HOST=$(prompt "Wildcard host:" "$DEFAULT_WILDCARD")
-
-  while ! [[ "$WILDCARD_HOST" =~ ^[^*]*[*][^*]*$ ]]; do
-    error "Invalid wildcard host. It must contain exactly one asterisk."
+  if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then
+    # Do not prompt for WILDCARD_URL; simply use default.
+    WILDCARD_URL="$DEFAULT_WILDCARD"
+  else
+    echo "Sandstorm requires you to set up a wildcard DNS entry pointing at the server."
+    echo "This allows Sandstorm to allocate new hosts on-the-fly for sandboxing purposes."
+    echo "Please enter a DNS hostname containing a '*' which maps to your server. For "
+    echo "example, if you have mapped *.foo.example.com to your server, you could enter"
+    echo "\"*.foo.example.com\". You can also specify that hosts should have a special"
+    echo "prefix, like \"ss-*.foo.example.com\". Note that if your server's main page"
+    echo "is served over SSL, the wildcard address must support SSL as well, which"
+    echo "implies that you must have a wildcard certificate. For local-machine servers,"
+    echo "we have mapped *.local.sandstorm.io to 127.0.0.1 for your convenience, so you"
+    echo "can use \"*.local.sandstorm.io\" here. If you are serving off a non-standard"
+    echo "port, you must include it here as well."
     WILDCARD_HOST=$(prompt "Wildcard host:" "$DEFAULT_WILDCARD")
-  done
+
+    while ! [[ "$WILDCARD_HOST" =~ ^[^*]*[*][^*]*$ ]]; do
+      error "Invalid wildcard host. It must contain exactly one asterisk."
+      WILDCARD_HOST=$(prompt "Wildcard host:" "$DEFAULT_WILDCARD")
+    done
+  fi
 
   echo "If you want to be able to send e-mail invites and password reset messages, "
   echo "enter a mail server URL of the form 'smtp://user:pass@host:port'.  Leave "
@@ -754,6 +768,7 @@ function register_sandcats_name() {
     # road.
     SS_HOSTNAME="${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN}"
     USE_EXTERNAL_INTERFACE="yes"
+    SANDCATS_SUCCESSFUL="yes"
     echo "Congratulations! We have registered your ${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN} name."
     echo "Your credentials to use it are in $(readlink -f var/sandcats); consider making a backup."
   else

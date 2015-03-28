@@ -714,8 +714,8 @@ function register_sandcats_name() {
   # If they just press enter, insist that they type either the word
   # "none" or provide a name they want to register.
   if [ -z "$DESIRED_SANDCATS_NAME" ] ; then
-      register_sandcats_name
-      return
+    register_sandcats_name
+    return
   fi
 
   # If the user really wants none of our sandcats help, then bail out.

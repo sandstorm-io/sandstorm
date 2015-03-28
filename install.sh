@@ -332,8 +332,8 @@ if [ "yes" = "$USE_SANDCATS" ] ; then
   # possible time-of-check-time-of-use race.
   echo "As a Sandstorm user, you are invited to use a free Internet hostname as a subdomain of sandcats.io."
 
-  # The sandcats service places its authentication files in $DIR/sandcats.
-  if [ ! -f sandcats/id_rsa.private_combined ] ; then
+  # The Sandcats service places its authentication files in $DIR/var/sandcats.
+  if [ ! -f var/sandcats/id_rsa.private_combined ] ; then
 
     # The openssl key generation process can take a few seconds, so we
     # print a ... while that happens.
@@ -341,8 +341,8 @@ if [ "yes" = "$USE_SANDCATS" ] ; then
 
     # We are already in $DIR. It's important to make it mode 0700
     # because we store TLS client authentication keys here.
-    mkdir -p -m 0700 sandcats
-    chmod 0700 sandcats
+    mkdir -p -m 0700 var/sandcats
+    chmod 0700 var/sandcats
 
     # Generate key for client certificate. OpenSSL will read from
     # /dev/urandom by default, so this won't block. We abuse the ``
@@ -357,17 +357,17 @@ if [ "yes" = "$USE_SANDCATS" ] ; then
       `# Sandcats ignores the subject in the certificate; use` \
       `# OpenSSL defaults.` \
       -subj "/C=AU/ST=Some-State/O=Internet Widgits Pty Ltd" \
-      -keyout sandcats/id_rsa `# Store the resulting RSA private key in id_rsa` \
-      -out sandcats/id_rsa.pub `# Store the resulting certificate in id_rsa.pub` \
+      -keyout var/sandcats/id_rsa `# Store the resulting RSA private key in id_rsa` \
+      -out var/sandcats/id_rsa.pub `# Store the resulting certificate in id_rsa.pub` \
       2>/dev/null `# Silence the progress output.`
 
     # We combine these two things into one glorious all-inclusive file
     # for the `curl` command. It is just as private as id_rsa.
-    cat sandcats/id_rsa sandcats/id_rsa.pub > sandcats/id_rsa.private_combined
+    cat var/sandcats/id_rsa var/sandcats/id_rsa.pub > var/sandcats/id_rsa.private_combined
 
     # Set filesystem permissions, in case the files get copied into the
     # wrong place later.
-    chmod 0600 sandcats/id_rsa sandcats/id_rsa.pub sandcats/id_rsa.private_combined
+    chmod 0600 var/sandcats/id_rsa var/sandcats/id_rsa.pub var/sandcats/id_rsa.private_combined
 
     # Delete the "..." that we left on the screen, to indicate that we
     # are done generating cryptographic material.
@@ -736,18 +736,18 @@ function register_sandcats_name() {
       -X POST \
       --data-urlencode "rawHostname=$DESIRED_SANDCATS_NAME" \
       --data-urlencode "email=$SANDCATS_REGISTRATION_EMAIL" \
-      --output sandcats/register-log \
+      --output var/sandcats/register-log \
       -w '%{http_code}' \
       -H 'X-Sand: cats' \
       -H "Accept: text/plain" \
-      --cert sandcats/id_rsa.private_combined \
+      --cert var/sandcats/id_rsa.private_combined \
       "${SANDCATS_API_BASE}/register")
 
   if [ "200" = "$HTTP_STATUS" ]
   then
     # Show the server's output, which presumably is some happy
     # message.
-    cat sandcats/register-log
+    cat var/sandcats/register-log
     # Make sure that is on a line of its own.
     echo ''
     # Set these global variables to inform the installer down the
@@ -755,7 +755,7 @@ function register_sandcats_name() {
     SS_HOSTNAME="${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN}"
   else
     # Show the server's output, and re-run this function.
-    error "$(cat sandcats/register-log)"
+    error "$(cat var/sandcats/register-log)"
     register_sandcats_name
     return
   fi

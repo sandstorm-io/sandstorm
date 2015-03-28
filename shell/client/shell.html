@@ -111,6 +111,11 @@ limitations under the License.
               {{/each}}
               <button class="uninstall-app-button" data-appid="{{selectedApp}}">Uninstall</button>
             {{/each}}
+            <span>
+              {{#if selectedAppMarketingVersion}}
+                v{{selectedAppMarketingVersion}}
+              {{/if}}
+            </span>
           </div>
         {{else}}
           <div class="button-box">

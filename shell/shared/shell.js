@@ -257,6 +257,12 @@ if (Meteor.isClient) {
       return Session.get("selectedApp");
     },
 
+    selectedAppMarketingVersion: function () {
+      var appMap = this.appMap;
+      var app = appMap && appMap[Session.get("selectedApp")];
+      return app && app.appMarketingVersion && app.appMarketingVersion.defaultText;
+    },
+
     selectedAppIsDev: function () {
       var app = Session.get("selectedApp");
       return app && DevApps.findOne(app) ? true : false;
@@ -480,12 +486,11 @@ Router.map(function () {
       }
 
       var apps;
+      var appMap = {};
       var allowDemoAccounts = Meteor.settings && Meteor.settings.public &&
             Meteor.settings.public.allowDemoAccounts;
       if (isSignedUpOrDemo()) {
         var userId = Meteor.userId();
-
-        var appMap = {};
         var appNames = [];
 
         DevApps.find().forEach(function (app) {
@@ -495,7 +500,8 @@ Router.map(function () {
           appMap[app._id] = {
             name: name,
             appId: app._id,
-            isDev: true
+            isDev: true,
+            appMarketingVersion: app.manifest.appMarketingVersion
           };
           appNames.push({name: name, appId: app._id});
         });
@@ -505,7 +511,8 @@ Router.map(function () {
             var name = action.appTitle || appNameFromActionName(action.title);
             appMap[action.appId] = {
               name: name,
-              appId: action.appId
+              appId: action.appId,
+              appMarketingVersion: action.appMarketingVersion
             };
             appNames.push({name: name, appId: action.appId});
           }
@@ -531,7 +538,8 @@ Router.map(function () {
         missingWildcardParent: isMissingWildcardParent(),
         allowDemoAccounts: allowDemoAccounts,
         apps: apps,
-        showMenu: Session.get("showMenu")
+        showMenu: Session.get("showMenu"),
+        appMap: appMap
       };
     }
   });

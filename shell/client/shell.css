@@ -1040,6 +1040,14 @@ aside #social>p {
   .main-content {
     top: 48px;
   }
+
+  #demo > .centered-box {
+    width: 80%;
+  }
+
+  button#createDemoUser, #demo h2 {
+    font-size: 30px;
+  }
 }
 @media screen and (max-width: 650px) {
   #applist-grains table {
@@ -1049,8 +1057,10 @@ aside #social>p {
     display: none;
   }
   aside {
-    position: static;
-    margin: 100px 50px;
+    position: relative;
+    margin: 20px 0 0 0;
+    left: 0px;
+    top: 0px;
   }
 }
 @media screen and (max-width: 450px) {

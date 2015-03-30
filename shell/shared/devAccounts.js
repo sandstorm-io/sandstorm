@@ -14,91 +14,93 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-if (Meteor.isServer) {
-  Meteor.methods({
-    createDevAccount: function (displayName, isAdmin) {
-      if (!allowDevAccounts()) {
-        new Meteor.Error(403, "Dev accounts disabled");
-      }
-      // This is a login method that creates or logs in a dev account with the given displayName
+var allowDevAccounts = Meteor.settings && Meteor.settings.public &&
+                 Meteor.settings.public.allowDevAccounts;
 
-      check(displayName, String);
-      isAdmin = isAdmin || false;
-      var userId;
-      var user = Meteor.users.findOne({devName: displayName});
-      if (user) {
-        userId = user._id;
-      } else {
-        userId = Accounts.insertUserDoc({ profile: { name: displayName } },
-                                        { signupKey: "devAccounts", devName: displayName, isAdmin: isAdmin });
-      }
-      // Log them in on this connection.
-      return Accounts._loginMethod(this, "createDevAccount", arguments,
-          "devAccounts", function () { return { userId: userId }; });
-    }
-  });
-}
+if (allowDevAccounts) {
+  if (Meteor.isServer) {
+    Meteor.methods({
+      createDevAccount: function (displayName, isAdmin) {
+        // This is a login method that creates or logs in a dev account with the given displayName
 
-if (Meteor.isClient) {
-  Meteor.loginWithDevAccounts = function () {
-    Router.go("devAccounts");
-    Accounts._loginButtonsSession.closeDropdown();
-  };
-
-  var loginDevAccount = function(displayName, isAdmin) {
-    Accounts.callLoginMethod({
-      methodName: "createDevAccount",
-      methodArguments: [displayName, isAdmin],
-      userCallback: function (err) {
-        if (err) {
-          window.alert(err);
+        check(displayName, String);
+        isAdmin = isAdmin || false;
+        var userId;
+        var user = Meteor.users.findOne({devName: displayName});
+        if (user) {
+          userId = user._id;
         } else {
-          Router.go("root");
+          userId = Accounts.insertUserDoc({ profile: { name: displayName } },
+                                          { signupKey: "devAccounts", devName: displayName, isAdmin: isAdmin });
         }
+        // Log them in on this connection.
+        return Accounts._loginMethod(this, "createDevAccount", arguments,
+            "devAccounts", function () { return { userId: userId }; });
       }
     });
-  };
-  Template.devAccounts.events({
-    "click #loginAliceDevAccount": function (event) {
-      var displayName = "Alice Dev Admin";
-      loginDevAccount(displayName, true);
-    },
-    "click #loginBobDevAccount": function (event) {
-      var displayName = "Bob Dev User";
-      loginDevAccount(displayName);
-    },
-    "click #loginCarolDevAccount": function (event) {
-      var displayName = "Carol Dev User";
-      loginDevAccount(displayName);
-    },
-    "click #loginDaveDevAccount": function (event) {
-      var displayName = "Dave Dev User";
-      loginDevAccount(displayName);
-    },
-    "click #loginEveDevAccount": function (event) {
-      var displayName = "Eve Dev User";
-      loginDevAccount(displayName);
-    },
+  }
+
+  if (Meteor.isClient) {
+    Meteor.loginWithDevAccounts = function () {
+      Router.go("devAccounts");
+      Accounts._loginButtonsSession.closeDropdown();
+    };
+    Accounts.ui.registerService("devAccounts", "a Dev Account");
+
+    var loginDevAccount = function(displayName, isAdmin) {
+      Accounts.callLoginMethod({
+        methodName: "createDevAccount",
+        methodArguments: [displayName, isAdmin],
+        userCallback: function (err) {
+          if (err) {
+            window.alert(err);
+          } else {
+            Router.go("root");
+          }
+        }
+      });
+    };
+    Template.devAccounts.events({
+      "click #loginAliceDevAccount": function (event) {
+        var displayName = "Alice Dev Admin";
+        loginDevAccount(displayName, true);
+      },
+      "click #loginBobDevAccount": function (event) {
+        var displayName = "Bob Dev User";
+        loginDevAccount(displayName);
+      },
+      "click #loginCarolDevAccount": function (event) {
+        var displayName = "Carol Dev User";
+        loginDevAccount(displayName);
+      },
+      "click #loginDaveDevAccount": function (event) {
+        var displayName = "Dave Dev User";
+        loginDevAccount(displayName);
+      },
+      "click #loginEveDevAccount": function (event) {
+        var displayName = "Eve Dev User";
+        loginDevAccount(displayName);
+      },
+    });
+  }
+
+  Router.map(function () {
+    this.route("devAccounts", {
+      path: "/devAccounts",
+      waitOn: function () {
+        return Meteor.subscribe("credentials");
+      },
+      data: function () {
+        return {
+          allowDevAccounts: allowDevAccounts,
+          // We show the Start the Demo button if you are not logged in.
+          shouldShowStartDevAccounts: ! isSignedUpOrDemo(),
+          createLocalUserLabel: "Start the devAccounts",
+          pageTitle: "Developer Accounts",
+          isDemoUser: isDemoUser()
+        };
+      }
+    });
   });
 }
-
-Router.map(function () {
-  this.route("devAccounts", {
-    path: "/devAccounts",
-    waitOn: function () {
-      return Meteor.subscribe("credentials");
-    },
-    data: function () {
-      return {
-        allowDevAccounts: allowDevAccounts(),
-        // We show the Start the Demo button if you are not logged in.
-        shouldShowStartDevAccounts: ! isSignedUpOrDemo(),
-        createLocalUserLabel: "Start the devAccounts",
-        pageTitle: "Developer Accounts",
-        isDemoUser: isDemoUser()
-      };
-    }
-  });
-});
-
 

@@ -457,8 +457,6 @@ $KEY</textarea></p>
         <br>
         <label title="This setting enables Github OAuth accounts for this server">Enable Github Login <input type="checkbox" name="githubLogin" value="value" checked={{githubEnabled}}></label>
         <br>
-        <label title="This setting enables Developer accounts for this server. WARNING: this setting should never be used on a production server.">Enable Developer Accounts Login <input type="checkbox" name="devAccountsLogin" value="value" checked={{devAccountsEnabled}}></label>
-        <br>
         <label title="Set the outgoing SMTP server to use for sending emails. This server will be used by all users on your Sandstorm server that have access to the platform's EmailSendPort capability (ie. everyone for now).">SMTP Url: <input type="text" name="smtpUrl" value="{{smtpUrl}}"></label>
         <br>
         <button id="admin-settings-save">Save</button>

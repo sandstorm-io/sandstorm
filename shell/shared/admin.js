@@ -15,7 +15,7 @@
 // limitations under the License.
 
 var NUM_SETTINGS = 4;
-var accountServiceNames = ["google", "github", "devAccounts"];
+var accountServiceNames = ["google", "github"];
 
 Router.map(function () {
   this.route("admin", {
@@ -66,14 +66,6 @@ if (Meteor.isClient) {
         Accounts.deregisterService("google");
       }
     });
-
-    Tracker.autorun(function () {
-      if (allowDevAccounts()) {
-        Accounts.registerService("devAccounts");
-      } else {
-        Accounts.deregisterService("devAccounts");
-      }
-    });
   });
 
   var handleError = function (err) {
@@ -93,7 +85,6 @@ if (Meteor.isClient) {
       var handleErrorBound = handleError.bind(state);
       Meteor.call("setAccountSetting", "google", event.target.googleLogin.checked, handleErrorBound);
       Meteor.call("setAccountSetting", "github", event.target.githubLogin.checked, handleErrorBound);
-      Meteor.call("setAccountSetting", "devAccounts", event.target.devAccountsLogin.checked, handleErrorBound);
       Meteor.call("setSetting", "smtpUrl", event.target.smtpUrl.value, handleErrorBound);
 
       return false;
@@ -117,9 +108,6 @@ if (Meteor.isClient) {
         return true;
       }
     },
-    devAccountsEnabled: function () {
-      return allowDevAccounts();
-    },
     smtpUrl: function () {
       return Iron.controller().state.get("smtpUrl");
     },
@@ -142,9 +130,6 @@ if (Meteor.isServer) {
   Meteor.startup(function () {
     registerServiceOnStartup("google");
     registerServiceOnStartup("github");
-    if (allowDevAccounts()) {
-      Accounts.registerService("devAccounts");
-    }
   });
 
   Meteor.methods({

@@ -55,7 +55,7 @@ function walkAndWriteFiles(dir, writeStream, replaceRoot, originalRoot) {
     var fileStat = Fs.lstatSync(name);
     if (fileStat.isDirectory()) {
       walkAndWriteFiles(name, writeStream, replaceRoot, originalRoot);
-    } else if (fileStat.isFile()) {
+    } else if (fileStat.isFile() || fileStat.isSymbolicLink()) {
       name = replaceRoot + name.slice(originalRoot.length);
       writeStream.write(name + "\n");
     }

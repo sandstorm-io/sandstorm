@@ -8,7 +8,8 @@ Accounts.ui = {};
 Accounts.ui._options = {
   requestPermissions: {},
   requestOfflineToken: {},
-  forceApprovalPrompt: {}
+  forceApprovalPrompt: {},
+  services: {}
 };
 
 // XXX refactor duplicated code in this function

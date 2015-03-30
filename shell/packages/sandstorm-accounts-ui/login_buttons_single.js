@@ -56,7 +56,8 @@ Template._loginButtonsLoggedOutSingleLoginButton.events({
 
 Template._loginButtonsLoggedOutSingleLoginButton.helpers({
   configured: function () {
-    return !!ServiceConfiguration.configurations.findOne({service: this.name});
+    return !!ServiceConfiguration.configurations.findOne({service: this.name}) ||
+           Accounts.ui._options.services[this.name];
   },
   capitalizedName: function () {
     var text = Accounts.ui._options.services[this.name];

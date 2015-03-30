@@ -33,6 +33,8 @@ set -euo pipefail
 
 METEOR_WAREHOUSE_DIR="${METEOR_WAREHOUSE_DIR:-$HOME/.meteor}"
 
+echo -n "Finding meteor-tool installation (can take a few seconds)..." >&2
+
 # If we run the meteor tool outside of `shell`, it might try to update itself. Inside `shell`, it
 # sees the meteor version we're using and sticks to that.
 cd shell
@@ -51,5 +53,7 @@ else
 fi
 
 TOOLDIR=$(echo $TOOL_VERSION | tr @ /)
+
+echo " $TOOL_VERSION" >&2
 
 readlink -f $METEOR_WAREHOUSE_DIR/packages/$TOOLDIR/meteor-tool-os.linux.x86_64/dev_bundle

@@ -248,7 +248,7 @@ Misc = new Mongo.Collection("misc");
 // but in general any miscellaneous settings should go in here
 //
 // Each contains:
-//   _id:       The name of the setting. ie. "BASE_URL"
+//   _id:       The name of the setting. eg. "BASE_URL"
 //   value:     The value of the setting.
 
 Settings = new Mongo.Collection("settings");
@@ -256,7 +256,7 @@ Settings = new Mongo.Collection("settings");
 // route. This collection differs from misc in that this collection is completely user controlled.
 //
 // Each contains:
-//   _id:       The name of the setting. ie. "MAIL_URL"
+//   _id:       The name of the setting. eg. "MAIL_URL"
 //   value:     The value of the setting.
 //   potentially other fields that are unique to the setting
 
@@ -333,10 +333,9 @@ isAdmin = function() {
 }
 
 isAdminById = function(id) {
-  check(id, String);
   // Returns true if the user's id is the administrator.
 
-  var user = Meteor.users.findOne({_id: id})
+  var user = Meteor.users.findOne({_id: id}, {fields: {isAdmin: 1}})
   if (user && user.isAdmin) {
     return true;
   } else {

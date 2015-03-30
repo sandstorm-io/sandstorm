@@ -134,7 +134,7 @@ tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps
 	@$(call color,building sandstorm with ekam)
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS2)" \
 	    LIBS="$(LIBS)" NODEJS=$(NODEJS) tmp/ekam-bin -j$(PARALLEL) || \
-	$(call color,ekam failed. You might need to: make update-deps) && false
+	    $(call color,build failed. You might need to: make update-deps) && false
 	@touch tmp/.ekam-run
 
 continuous:

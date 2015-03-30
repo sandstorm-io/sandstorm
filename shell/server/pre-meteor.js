@@ -123,23 +123,23 @@ Meteor.startup(function () {
         }
       });
     }).catch(function (err) {
-      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.writeHead(500, { "Content-Type": "text/html" });
       res.end(err.message);
     });
   });
 });
 
 var errorTxtMapping = {};
-errorTxtMapping[Dns.NOTFOUND] = "\n" +
-    "If you were trying to connect this address to a Sandstorm app hosted at this server,\n" +
-    "you either have not set your DNS TXT records correctly or the DNS cache has not\n" +
-    "updated yet (may take a while).\n";
+errorTxtMapping[Dns.NOTFOUND] = "<br>\n" +
+    "If you were trying to connect this address to a Sandstorm app hosted at this server,<br>\n" +
+    "you either have not set your DNS TXT records correctly or the DNS cache has not<br>\n" +
+    "updated yet (may take a while).<br>\n";
 errorTxtMapping[Dns.NODATA] = errorTxtMapping[Dns.NOTFOUND];
-errorTxtMapping[Dns.TIMEOUT] = "\n" +
-    "The DNS query has timed out, which may be a sign of poorly configured DNS on the server.\n";
-errorTxtMapping[Dns.CONNREFUSED] = "\n" +
-    "The DNS server refused the connection, which means either your DNS server is down/unreachable,\n" +
-    "or the server has misconfigured their DNS.\n";
+errorTxtMapping[Dns.TIMEOUT] = "<br>\n" +
+    "The DNS query has timed out, which may be a sign of poorly configured DNS on the server.<br>\n";
+errorTxtMapping[Dns.CONNREFUSED] = "<br>\n" +
+    "The DNS server refused the connection, which means either your DNS server is down/unreachable,<br>\n" +
+    "or the server has misconfigured their DNS.<br>\n";
 
 function lookupPublicIdFromDns(hostname) {
   // Given a hostname, determine its public ID.
@@ -165,17 +165,18 @@ function lookupPublicIdFromDns(hostname) {
       if (err) {
         var errorMsg = errorTxtMapping[err.code] || "";
         reject(new Error(
-          "Error looking up DNS TXT records for host '" + hostname + "': " + err.message + "\n" +
-          "\n" +
-          "This Sandstorm server's main interface is at: " + process.env.ROOT_URL + "\n" +
+          "<p>Error looking up DNS TXT records for host '" + hostname + "': " + err.message + "<br>\n" +
+          "<br>\n" +
+          "This Sandstorm server's main interface is at: <a href=\"" + process.env.ROOT_URL + "\">" +
+          process.env.ROOT_URL + "</a><br>\n" +
           errorMsg +
-          "\n" +
-          "If you are the server admin and want to use this address as the main interface,\n" +
-          "edit /opt/sandstorm/sandstorm.conf, modify the BASE_URL setting, and restart.\n" +
-          "\n" +
-          "If you got here after trying to log in via OAuth (e.g. through Github or Google),\n" +
-          "the problem is probably that the OAuth callback URL was set wrong. You need to\n" +
-          "update it through the respective login provider's management console."));
+          "<br>\n" +
+          "If you are the server admin and want to use this address as the main interface,<br>\n" +
+          "edit /opt/sandstorm/sandstorm.conf, modify the BASE_URL setting, and restart.<br>\n" +
+          "<br>\n" +
+          "If you got here after trying to log in via OAuth (e.g. through Github or Google),<br>\n" +
+          "the problem is probably that the OAuth callback URL was set wrong. You need to<br>\n" +
+          "update it through the respective login provider's management console.</p>"));
       } else if (records.length !== 1) {
         reject(new Error("Host 'sandstorm-www." + hostname + "' must have exactly one TXT record."));
       } else {

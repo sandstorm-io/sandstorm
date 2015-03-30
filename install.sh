@@ -48,11 +48,12 @@ SCRIPT_NAME=$1
 shift
 
 usage() {
-  echo "usage: $SCRIPT_NAME [-d] [-e] [-u] [<bundle>]" >&2
+  echo "usage: $SCRIPT_NAME [-c] [-d] [-e] [-u] [<bundle>]" >&2
   echo "If <bundle> is provided, it must be the name of a Sandstorm bundle file," >&2
   echo "like 'sandstorm-123.tar.xz', which will be installed. Otherwise, the script" >&2
   echo "downloads a bundle from the internet via HTTP." >&2
   echo '' >&2
+  echo 'If -c is specified, enable the Sandcats.io dynamic DNS service.' >&2
   echo 'If -d is specified, the script does not prompt for input; it accepts all defaults.' >&2
   echo 'If -e is specified, default to listening on an external interface, not merely loopback.' >&2
   echo 'If -u is specified, default to avoiding root priviliges. Note that the dev tools only work if the server as root privileges.' >&2
@@ -61,8 +62,13 @@ usage() {
 
 USE_DEFAULTS="no"
 USE_EXTERNAL_INTERFACE="no"
-while getopts ":deu" opt; do
+USE_SANDCATS="no"
+SANDCATS_SUCCESSFUL="no"
+while getopts ":cdeu" opt; do
   case $opt in
+    c)
+      USE_SANDCATS="yes"
+      ;;
     d)
       USE_DEFAULTS="yes"
       ;;
@@ -174,6 +180,13 @@ fi
 
 if [ -z "${BUNDLE_FILE:-}" ]; then
   which curl > /dev/null|| fail "Please install curl(1). Sandstorm uses it to download updates."
+fi
+
+if [ "yes" = "$USE_SANDCATS" ] ; then
+  # To set up sandcats, we need `openssl` on the path. Check for that,
+  # and if it is missing, bail out and tell the user they have to
+  # install it.
+  which openssl > /dev/null|| fail "Please install openssl(1). Sandstorm uses it for the Sandcats.io dynamic DNS service."
 fi
 
 which tar > /dev/null || fail "Please install tar(1)."
@@ -312,6 +325,64 @@ mkdir -p "$DIR"
 cd "$DIR"
 
 # ========================================================================================
+# Sandcats.io - Dynamic DNS service hosted by Sandstorm.io
+if [ "yes" = "$USE_SANDCATS" ] ; then
+  # We generate the public key before prompting for a desired hostname
+  # so that when the user presses enter, we can try to register the
+  # hostname, and if that succeeds, we are totally done. This avoids a
+  # possible time-of-check-time-of-use race.
+  echo "As a Sandstorm user, you are invited to use a free Internet hostname as a subdomain of sandcats.io."
+
+  # The Sandcats service places its authentication files in $DIR/var/sandcats.
+  if [ ! -f var/sandcats/id_rsa.private_combined ] ; then
+
+    # The openssl key generation process can take a few seconds, so we
+    # print a ... while that happens.
+    echo -n '...'
+
+    # We are already in $DIR. It's important to make it mode 0700
+    # because we store TLS client authentication keys here.
+    mkdir -p -m 0700 var/sandcats
+    chmod 0700 var/sandcats
+
+    # Generate key for client certificate. OpenSSL will read from
+    # /dev/urandom by default, so this won't block. We abuse the ``
+    # operator so we can have inline comments in a multi-line command.
+    openssl \
+      req `# Invoke OpenSSL's PKCS#10 X.509 bits.` \
+      -new `# Create a new certificate/request.` \
+      -newkey rsa:4096 `# Create a new RSA key of length 4096 bits.` \
+      -days 3650 `# Make the self-signed cert valid for 10 years.` \
+      -nodes `# no DES -- that is, do not encrypt the key at rest.` \
+      -x509 `# Output a certificate, rather than a signing request.` \
+      `# Sandcats ignores the subject in the certificate; use` \
+      `# OpenSSL defaults.` \
+      -subj "/C=AU/ST=Some-State/O=Internet Widgits Pty Ltd" \
+      -keyout var/sandcats/id_rsa `# Store the resulting RSA private key in id_rsa` \
+      -out var/sandcats/id_rsa.pub `# Store the resulting certificate in id_rsa.pub` \
+      2>/dev/null `# Silence the progress output.`
+
+    # We combine these two things into one glorious all-inclusive file
+    # for the `curl` command. It is just as private as id_rsa.
+    cat var/sandcats/id_rsa var/sandcats/id_rsa.pub > var/sandcats/id_rsa.private_combined
+
+    # Set filesystem permissions, in case the files get copied into the
+    # wrong place later.
+    chmod 0600 var/sandcats/id_rsa var/sandcats/id_rsa.pub var/sandcats/id_rsa.private_combined
+
+    # Go to the start of the line, before the "..." that we left on
+    # the screen, allowing future echo statements to overwrite it.
+    echo -ne '\r'
+  fi
+
+  # Having set up the keys, we run the function to register a name
+  # with Sandcats. This function handles tail-recursing itself until
+  # it succeeds and/or returning when the user expresses a desire to
+  # cancel the process.
+  register_sandcats_name
+fi
+
+# ========================================================================================
 # Write config
 
 writeConfig() {
@@ -385,7 +456,7 @@ else
 
   if [ "yes" = "$USE_EXTERNAL_INTERFACE" ]; then
     BIND_IP=0.0.0.0
-    SS_HOSTNAME=$(hostname -f)
+    SS_HOSTNAME="${SS_HOSTNAME:-$(hostname -f)}"
   else
     BIND_IP=127.0.0.1
     SS_HOSTNAME=local.sandstorm.io
@@ -393,33 +464,46 @@ else
     echo "reasons that will become clear in the next step, you should use this"
     echo "instead of 'localhost'."
   fi
-  BASE_URL=$(prompt "URL users will enter in browser:" "http://$SS_HOSTNAME:$PORT")
+
+  DEFAULT_BASE_URL="http://$SS_HOSTNAME:$PORT"
+  if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then
+    # Do not prompt for BASE_URL configuration if Sandcats bringup
+    # succeeded.
+    BASE_URL="$DEFAULT_BASE_URL"
+  else
+    BASE_URL=$(prompt "URL users will enter in browser:" "$DEFAULT_BASE_URL")
+  fi
 
   if [[ "$BASE_URL" =~ ^http://localhost(|:[0-9]*)(/.*)?$ ]]; then
     DEFAULT_WILDCARD=*.local.sandstorm.io${BASH_REMATCH[1]}
   elif [[ "$BASE_URL" =~ ^[^:/]*://(.*)$ ]]; then
-    DEFAULT_WILDCARD=*.${BASH_REMATCH[1]}
+    DEFAULT_WILDCARD="${DEFAULT_WILDCARD:-*.${BASH_REMATCH[1]}}"
   else
     DEFAULT_WILDCARD=
   fi
 
-  echo "Sandstorm requires you to set up a wildcard DNS entry pointing at the server."
-  echo "This allows Sandstorm to allocate new hosts on-the-fly for sandboxing purposes."
-  echo "Please enter a DNS hostname containing a '*' which maps to your server. For "
-  echo "example, if you have mapped *.foo.example.com to your server, you could enter"
-  echo "\"*.foo.example.com\". You can also specify that hosts should have a special"
-  echo "prefix, like \"ss-*.foo.example.com\". Note that if your server's main page"
-  echo "is served over SSL, the wildcard address must support SSL as well, which"
-  echo "implies that you must have a wildcard certificate. For local-machine servers,"
-  echo "we have mapped *.local.sandstorm.io to 127.0.0.1 for your convenience, so you"
-  echo "can use \"*.local.sandstorm.io\" here. If you are serving off a non-standard"
-  echo "port, you must include it here as well."
-  WILDCARD_HOST=$(prompt "Wildcard host:" "$DEFAULT_WILDCARD")
-
-  while ! [[ "$WILDCARD_HOST" =~ ^[^*]*[*][^*]*$ ]]; do
-    error "Invalid wildcard host. It must contain exactly one asterisk."
+  if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then
+    # Do not prompt for WILDCARD_URL; simply use default.
+    WILDCARD_URL="$DEFAULT_WILDCARD"
+  else
+    echo "Sandstorm requires you to set up a wildcard DNS entry pointing at the server."
+    echo "This allows Sandstorm to allocate new hosts on-the-fly for sandboxing purposes."
+    echo "Please enter a DNS hostname containing a '*' which maps to your server. For "
+    echo "example, if you have mapped *.foo.example.com to your server, you could enter"
+    echo "\"*.foo.example.com\". You can also specify that hosts should have a special"
+    echo "prefix, like \"ss-*.foo.example.com\". Note that if your server's main page"
+    echo "is served over SSL, the wildcard address must support SSL as well, which"
+    echo "implies that you must have a wildcard certificate. For local-machine servers,"
+    echo "we have mapped *.local.sandstorm.io to 127.0.0.1 for your convenience, so you"
+    echo "can use \"*.local.sandstorm.io\" here. If you are serving off a non-standard"
+    echo "port, you must include it here as well."
     WILDCARD_HOST=$(prompt "Wildcard host:" "$DEFAULT_WILDCARD")
-  done
+
+    while ! [[ "$WILDCARD_HOST" =~ ^[^*]*[*][^*]*$ ]]; do
+      error "Invalid wildcard host. It must contain exactly one asterisk."
+      WILDCARD_HOST=$(prompt "Wildcard host:" "$DEFAULT_WILDCARD")
+    done
+  fi
 
   echo "If you want to be able to send e-mail invites and password reset messages, "
   echo "enter a mail server URL of the form 'smtp://user:pass@host:port'.  Leave "
@@ -613,6 +697,86 @@ __EOF__
   echo "  sandstorm help"
 fi
 
+}
+
+function register_sandcats_name() {
+  # We allow environment variables to override some details of the
+  # Sandcats service, so that during development, we can test against
+  # a non-production Sandcats service.
+  SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-sandcats.io}"
+  SANDCATS_API_BASE="${OVERRIDE_SANDCATS_API_BASE:-https://sandcats.io}"
+  SANDCATS_CURL_PARAMS="${OVERRIDE_SANDCATS_CURL_PARAMS:-}"
+
+  echo "Choose your desired Sandcats subdomain (alphanumeric, max 20 characters)."
+  echo "Type the word none to skip this step."
+  DESIRED_SANDCATS_NAME=$(prompt "What *.${SANDCATS_BASE_DOMAIN} subdomain would you like?" '')
+
+  # If they just press enter, insist that they type either the word
+  # "none" or provide a name they want to register.
+  if [ -z "$DESIRED_SANDCATS_NAME" ] ; then
+    register_sandcats_name
+    return
+  fi
+
+  # If the user really wants none of our sandcats help, then bail out.
+  if [ "none" = "$DESIRED_SANDCATS_NAME" ] ; then
+    return
+  fi
+
+  # Validate the client-side, to avoid problems, against the same
+  # regex that the server is using.
+  if ! [[ $DESIRED_SANDCATS_NAME =~ ^[0-9a-zA-Z]{1,20}$ ]] ; then
+    register_sandcats_name
+    return
+  fi
+
+  # Ask them for their email address, since we use that as part of Sandcats
+  # registration.
+  echo "We need your email on file so we can help you recover your domain if you lose access. No spam."
+  SANDCATS_REGISTRATION_EMAIL=$(prompt "Enter your email address:" "")
+
+  # If the user fails to enter an email address, bail out.
+  if [ "" = "$SANDCATS_REGISTRATION_EMAIL" ] ; then
+    echo "OK. I assume you don't want the Sandcats service. Feel free to Ctrl-C and re-run the install."
+    return
+  fi
+
+  echo "Registering..."
+  HTTP_STATUS=$(
+    curl \
+      --silent \
+      --max-time 20 \
+      $SANDCATS_CURL_PARAMS \
+      -X POST \
+      --data-urlencode "rawHostname=$DESIRED_SANDCATS_NAME" \
+      --data-urlencode "email=$SANDCATS_REGISTRATION_EMAIL" \
+      --output var/sandcats/register-log \
+      -w '%{http_code}' \
+      -H 'X-Sand: cats' \
+      -H "Accept: text/plain" \
+      --cert var/sandcats/id_rsa.private_combined \
+      "${SANDCATS_API_BASE}/register")
+
+  if [ "200" = "$HTTP_STATUS" ]
+  then
+    # Show the server's output, which presumably is some happy
+    # message.
+    cat var/sandcats/register-log
+    # Make sure that is on a line of its own.
+    echo ''
+    # Set these global variables to inform the installer down the
+    # road.
+    SS_HOSTNAME="${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN}"
+    USE_EXTERNAL_INTERFACE="yes"
+    SANDCATS_SUCCESSFUL="yes"
+    echo "Congratulations! We have registered your ${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN} name."
+    echo "Your credentials to use it are in $(readlink -f var/sandcats); consider making a backup."
+  else
+    # Show the server's output, and re-run this function.
+    error "$(cat var/sandcats/register-log)"
+    register_sandcats_name
+    return
+  fi
 }
 
 # Now that we know the whole script has downloaded, run it.

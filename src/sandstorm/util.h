@@ -26,6 +26,8 @@
 #include <fcntl.h>
 #include <kj/debug.h>
 #include <kj/vector.h>
+#include <unistd.h>
+#include <kj/function.h>
 
 namespace sandstorm {
 
@@ -149,6 +151,95 @@ kj::String base64Encode(kj::ArrayPtr<const byte> input, bool breakLines);
 
 kj::Array<byte> base64Decode(kj::StringPtr input);
 // Decode base64 input to bytes. Non-base64 characters in the input will be ignored.
+
+class Subprocess {
+public:
+  struct Options {
+    kj::StringPtr executable;
+    // Executable file name.
+
+    bool searchPath = true;
+    // Whether to search for `executable` in the `PATH` (e.g. use `execvp()` rather than
+    // `execv()`). If `executable` contains a '/' character, this has no effect (`PATH` is never
+    // searched).
+
+    kj::ArrayPtr<const kj::StringPtr> argv;
+    // Arguments to the program. By convention, the first argument should be the same as
+    // `executable`.
+
+    int stdin = STDIN_FILENO;
+    int stdout = STDOUT_FILENO;
+    int stderr = STDERR_FILENO;
+    // What file descriptors to substitute for standard I/O.
+    //
+    // Note that if you override these, then the overridden FD is expected to be close-on-exec.
+    // `Subprocess` does NOT close the old FD after dup2()ing it over the standard I/O FD.
+
+    kj::ArrayPtr<int> moreFds;
+    // You may pass additional FDs (3, 4, 5, 6, ...) using this array. `Subprocess` will
+    // automatically deal with re-arranging file descriptors as needed, so if e.g. you pass in
+    // the array {4, 3}, it will correctly swap the two descriptors. Again, it is expected that
+    // all the file descriptors in this array (and indeed all file descriptors process-wide except
+    // for 0, 1, and 2) are marked close-on-exec.
+
+    kj::Maybe<kj::ArrayPtr<const kj::StringPtr>> environment;
+    // An array of 'NAME=VALUE' pairs specifying the child's environment. If null, inherits the
+    // parent's environment.
+
+    Options(kj::StringPtr executable): executable(executable), argv(&executable, 1) {}
+    Options(kj::ArrayPtr<const kj::StringPtr> argv): executable(argv[0]), argv(argv) {}
+    Options(kj::Array<const kj::StringPtr>&& argv)
+        : executable(argv[0]), argv(argv), ownArgv(kj::mv(argv)) {}
+    Options(std::initializer_list<const kj::StringPtr> argv)
+        : Options(kj::heapArray(argv)) {}
+
+  private:
+    kj::Array<const kj::StringPtr> ownArgv;
+  };
+
+  Subprocess(Options&& options);
+  // Start a subprocess based on the given options.
+
+  Subprocess(std::initializer_list<const kj::StringPtr> argv)
+      : Subprocess(Options(kj::mv(argv))) {}
+  // Start a subprocess given a simple command argument array. The first argument is the executable
+  // name.
+
+  Subprocess(kj::Function<int()> func);
+  // Start a fork()ed subprocess that runs the given function then exits. Unlike the other
+  // constructors, this constructor does not call exec()! Note that `func` is destroyed in the
+  // parent process before this returns, since it is only needed in the child process. Note also
+  // that under no circumstances will destructors of stack or global objects present before the
+  // fork be executed inside the child process -- the child cannot unwind the stack with an
+  // exception, and exits using _exit() to avoid global destructors.
+
+  KJ_DISALLOW_COPY(Subprocess);
+
+  ~Subprocess() noexcept(false);
+  // Kills the subprocess (with SIGKILL) and waitpid()s it if it hasn't already finished.
+
+  void signal(int signo);
+  // Sends the given signal to the child process.
+
+  void waitForSuccess();
+  // Wait for the child to exit. Throws an exception if it returns a non-zero exit status or is
+  // killed by a signal.
+
+  int waitForExit() KJ_WARN_UNUSED_RESULT;
+  // Waits for the child to exit and returns the exit status. Throws an exception if it is killed
+  // by a signal.
+
+  int waitForExitOrSignal() KJ_WARN_UNUSED_RESULT;
+  // Waits for the child to exit or be killed by a signal. Returns an exit status that can be
+  // interpreted by WIFEXITED(), WEXITSTATUS(), etc. as described in the wait(2) man page.
+
+private:
+  kj::String name;
+  kj::UnwindDetector unwindDetector;
+  pid_t pid = 0;  // 0 = not running
+
+  static void forceFdAbove(int& fd, int minValue);
+};
 
 }  // namespace sandstorm
 

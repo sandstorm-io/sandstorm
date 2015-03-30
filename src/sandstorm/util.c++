@@ -23,6 +23,8 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <syscall.h>
+#include <signal.h>
+#include <sys/wait.h>
 
 namespace sandstorm {
 
@@ -560,6 +562,145 @@ kj::Array<byte> base64Decode(kj::StringPtr input) {
   }
 
   return output;
+}
+
+// =======================================================================================
+
+Subprocess::Subprocess(Options&& options)
+    : name(kj::heapString(options.executable)) {
+  KJ_SYSCALL(pid = fork());
+  if (pid == 0) {
+    KJ_DEFER(_exit(1));  // Do not under any circumstances return from this stack frame!
+    KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
+      // Make sure all of the incoming FDs are outside of our map range (except for standard I/O if
+      // it is already exactly in the right slot).
+      int minFd = STDERR_FILENO + options.moreFds.size() + 1;
+
+      if (options.stdin != STDIN_FILENO) forceFdAbove(options.stdin, minFd);
+      if (options.stdout != STDOUT_FILENO) forceFdAbove(options.stdout, minFd);
+      if (options.stderr != STDERR_FILENO) forceFdAbove(options.stderr, minFd);
+
+      // Now remap.
+      for (auto& fd: options.moreFds) {
+        forceFdAbove(fd, minFd);
+      }
+
+      if (options.stdin != STDIN_FILENO) {
+        KJ_SYSCALL(dup2(options.stdin, STDIN_FILENO));
+      }
+      if (options.stdout != STDOUT_FILENO) {
+        KJ_SYSCALL(dup2(options.stdout, STDOUT_FILENO));
+      }
+      if (options.stderr != STDERR_FILENO) {
+        KJ_SYSCALL(dup2(options.stderr, STDERR_FILENO));
+      }
+
+      for (auto i: kj::indices(options.moreFds)) {
+        KJ_SYSCALL(dup2(options.moreFds[i], STDERR_FILENO + 1 + i));
+      }
+
+      // Make the args vector.
+      char* argv[options.argv.size() + 1];
+      for (auto i: kj::indices(options.argv)) {
+        // exec*() is not const-correct. :(
+        argv[i] = const_cast<char*>(options.argv[i].cStr());
+      }
+      argv[options.argv.size()] = nullptr;
+      char** argvp = argv;  // lambda can't capture variable-size array
+
+      KJ_IF_MAYBE(e, options.environment) {
+        // Make the environment vector.
+        char* environ[e->size() + 1];
+        for (auto i: kj::indices(*e)) {
+          // exec*() is not const-correct. :(
+          environ[i] = const_cast<char*>((*e)[i].cStr());
+        }
+        environ[e->size()] = nullptr;
+        char** environp = environ;  // lambda can't capture variable-size array
+
+        if (options.searchPath) {
+          KJ_SYSCALL(execvpe(options.executable.cStr(), argvp, environp), options.executable);
+        } else {
+          KJ_SYSCALL(execve(options.executable.cStr(), argvp, environp), options.executable);
+        }
+      } else {
+        if (options.searchPath) {
+          KJ_SYSCALL(execvp(options.executable.cStr(), argvp), options.executable);
+        } else {
+          KJ_SYSCALL(execv(options.executable.cStr(), argvp), options.executable);
+        }
+      }
+
+      KJ_UNREACHABLE;
+    })) {
+      KJ_LOG(FATAL, *exception);
+    }
+  }
+}
+
+Subprocess::Subprocess(kj::Function<int()> func) {
+  KJ_SYSCALL(pid = fork());
+  if (pid == 0) {
+    KJ_DEFER(_exit(1));  // Do not under any circumstances return from this stack frame!
+
+    KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
+      _exit(func());
+    })) {
+      KJ_LOG(FATAL, *exception);
+    }
+  }
+}
+
+Subprocess::~Subprocess() noexcept(false) {
+  if (pid != 0) {
+    unwindDetector.catchExceptionsIfUnwinding([this]() {
+      signal(SIGKILL);
+      waitForExitOrSignal();
+    });
+  }
+}
+
+void Subprocess::signal(int signo) {
+  if (pid != 0) {
+    KJ_SYSCALL(kill(pid, signo));
+  }
+}
+
+void Subprocess::waitForSuccess() {
+  int exitCode = waitForExit();
+  KJ_ASSERT(exitCode == 0, "child process failed", name, exitCode);
+}
+
+int Subprocess::waitForExit() {
+  int status = waitForExitOrSignal();
+  if (WIFEXITED(status)) {
+    return WEXITSTATUS(status);
+  } else if (WIFSIGNALED(status)) {
+    int signo = WTERMSIG(status);
+    KJ_FAIL_ASSERT("child process killed by signal", name, signo, strsignal(signo));
+  } else {
+    KJ_FAIL_ASSERT("unknown child wait status", name, status);
+  }
+}
+
+int Subprocess::waitForExitOrSignal() {
+  KJ_REQUIRE(pid != 0, "already waited for this child");
+  int status;
+  KJ_SYSCALL(waitpid(pid, &status, 0));
+  pid = 0;
+  return status;
+}
+
+void Subprocess::forceFdAbove(int& fd, int minValue) {
+  // Force `fd` to have a numeric value of at least `minValue`.
+
+  if (fd < minValue) {
+    // We'll need to move this FD to a different slot. fcntl()'s F_DUPFD searches for a slot
+    // greater than or equal to some value, which is exactly what we need! We want to set
+    // O_CLOEXEC on this new FD because it is NOT the FD that we plan to keep in the child process;
+    // we still plan to dup2() it back to the right slot.
+    KJ_SYSCALL(fd = fcntl(fd, F_DUPFD_CLOEXEC, minValue));
+  }
 }
 
 }  // namespace sandstorm

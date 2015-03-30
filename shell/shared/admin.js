@@ -18,12 +18,12 @@ var NUM_SETTINGS = 4;
 var accountServiceNames = ["google", "github", "devAccounts"];
 
 Router.map(function () {
-  this.route("adminSettings", {
-    path: "/adminSettings",
+  this.route("admin", {
+    path: "/admin",
 
     waitOn: function () {
       return [
-        Meteor.subscribe("adminSettings")
+        Meteor.subscribe("admin")
       ];
     },
 
@@ -85,7 +85,7 @@ if (Meteor.isClient) {
     }
   };
 
-  Template.adminSettings.events({
+  Template.admin.events({
     "submit #admin-settings-form": function (event) {
       var state = Iron.controller().state;
       state.set("successes", 0);
@@ -100,7 +100,7 @@ if (Meteor.isClient) {
     }
   });
 
-  Template.adminSettings.helpers({
+  Template.admin.helpers({
     googleEnabled: function () {
       var setting = Settings.findOne({_id: "google"});
       if (setting) {
@@ -190,7 +190,7 @@ if (Meteor.isServer) {
     }
   });
 
-  Meteor.publish("adminSettings", function () {
+  Meteor.publish("admin", function () {
     if (this.userId && isAdminById(this.userId)) {
       return Settings.find();
     } else {

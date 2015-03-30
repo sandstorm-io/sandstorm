@@ -64,6 +64,7 @@ UserActions = new Mongo.Collection("userActions");
 //       that clients can access it without subscribing to the Packages collection.
 //   appVersion:  Same as Packages.findOne(packageId).manifest.appVersion; denormalized for
 //       searchability.
+//   appMarketingVersion:  Human-readable presentation of the app version, e.g. "2.9.17"
 //   title:  Human-readable title for this action, e.g. "New Spreadsheet".
 //   command:  Manifest.Command to run this action (see package.capnp).
 

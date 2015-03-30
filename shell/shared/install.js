@@ -26,6 +26,7 @@ if (Meteor.isServer) {
         packageId: String,
         appId: String,
         appTitle: Match.Optional(String),
+        appMarketingVersion: Match.Optional(Object),
         appVersion: Match.Integer,
         title: String,
         command: {
@@ -173,6 +174,7 @@ if (Meteor.isClient) {
             packageId: package._id,
             appId: package.appId,
             appTitle: package.manifest.appTitle && package.manifest.appTitle.defaultText,
+            appMarketingVersion: package.manifest.appMarketingVersion,
             appVersion: package.manifest.appVersion,
             title: action.title.defaultText,
             command: action.command

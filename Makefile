@@ -139,7 +139,8 @@ tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps
 
 continuous:
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS2)" \
-	    LIBS="$(LIBS)" NODEJS=$(NODEJS) ekam -j$(PARALLEL) -c -n :41315
+	    LIBS="$(LIBS)" NODEJS=$(NODEJS) ekam -j$(PARALLEL) -c -n :41315 || \
+	    $(call color,You probably need to install ekam and put it on your path; see github.com/sandstorm-io/ekam) && false
 
 # ====================================================================
 # Front-end shell

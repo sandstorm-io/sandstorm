@@ -410,7 +410,7 @@ Meteor.startup(function () {
     }
   });
 
-  Sessions.find().observeChanges({
+  Sessions.find().observe({
     removed : function(session) {
       delete proxies[session._id];
       delete proxiesByHostId[session.hostId];

@@ -86,12 +86,13 @@ if (Meteor.isServer) {
         // isAppDemoUser is important for stats; see
         // cleanupExpiredUsers().
         check(displayName, String);
+        check(isAppDemoUser, Boolean);
 
         // Create the new user.
         var expires = new Date(Date.now() + DEMO_EXPIRATION_MS);
         var userId = Accounts.insertUserDoc({ profile: { name: displayName } },
                                             { expires: expires,
-                                              isAppDemoUser: !!isAppDemoUser
+                                              isAppDemoUser: isAppDemoUser
                                             });
 
         // Log them in on this connection.

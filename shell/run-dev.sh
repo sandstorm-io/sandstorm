@@ -23,8 +23,8 @@ if [ "$SERVER_USER" != "$USER" ]; then
   echo "Please change your Sandstorm installation to be owned by your own user" >&2
   echo "account. E.g. run as root:" >&2
   echo "  $SANDSTORM_HOME/sandstorm stop" >&2
-  echo "  find $SANDSTORM_HOME/var -user $SERVER_USER -exec chown -h $USER {} \;" >&2
-  echo "  find $SANDSTORM_HOME/var -group $(id -gn $SERVER_USER) -exec chgrp -h $USER {} \;" >&2
+  echo "  find $SANDSTORM_HOME/var -user $SERVER_USER -exec chown -h $USER {} +" >&2
+  echo "  find $SANDSTORM_HOME/var -group $(id -gn $SERVER_USER) -exec chgrp -h $USER {} +" >&2
   echo "  sed -i -e 's/^SERVER_USER=.*$/SERVER_USER=$USER/g' \\" >&2
   echo "      $SANDSTORM_HOME/sandstorm.conf" >&2
   echo "  $SANDSTORM_HOME/sandstorm start" >&2

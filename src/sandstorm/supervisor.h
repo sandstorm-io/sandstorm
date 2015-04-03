@@ -21,6 +21,7 @@
 #include <kj/vector.h>
 #include <kj/async-io.h>
 #include <capnp/capability.h>
+#include <sandstorm/supervisor.capnp.h>
 
 namespace sandstorm {
 
@@ -50,6 +51,29 @@ public:
   kj::MainBuilder::Validity addCommandArg(kj::StringPtr arg);
   // Flag handlers
 
+  class SystemConnector {
+  public:
+    struct RunResult {
+      kj::Promise<void> task;
+      SandstormCore::Client sandstormCore;
+    };
+
+    virtual RunResult run(kj::AsyncIoContext& ioContext,
+                          Supervisor::Client mainCapability) const = 0;
+    // Begin accepting RPCs from the system.
+
+    virtual void checkIfAlreadyRunning() const = 0;
+    // Check if this grain is already running and, if so, exit.
+    //
+    // This is a method of SystemConnector because the mechanism of this check depends on the way
+    // we connect to the system -- e.g. by default we try to form a connection to an existing
+    // supervisor to see if it's already running.
+  };
+
+  void setSystemConnector(SystemConnector& connector) { systemConnector = &connector; }
+  // Use this to override the way SupervisorMain connects to "the system", or rather how the
+  // system connects to it. "The system" means the rest of Sandstorm, e.g. the Sandstorm front-end.
+
   kj::MainBuilder::Validity run();
 
 private:
@@ -61,6 +85,7 @@ private:
   kj::String varPath;
   kj::Vector<kj::String> command;
   kj::Vector<kj::String> environment;
+  const SystemConnector* systemConnector;
   bool isNew = false;
   bool mountProc = false;
   bool keepStdio = false;
@@ -70,8 +95,6 @@ private:
 
   class SandstormApiImpl;
   class SupervisorImpl;
-  struct AcceptedConnection;
-  class ErrorHandlerImpl;
 
   void bind(kj::StringPtr src, kj::StringPtr dst, unsigned long flags = 0);
   kj::String realPath(kj::StringPtr path);
@@ -90,13 +113,26 @@ private:
   void maybeFinishMountingProc();
   void permanentlyDropSuperuser();
   void enterSandbox();
-  void checkIfAlreadyRunning();
   [[noreturn]] void runChild(int apiFd);
 
-  kj::Promise<void> acceptLoop(kj::ConnectionReceiver& serverPort,
-                               capnp::Capability::Client bootstrapInterface,
-                               kj::TaskSet& taskSet);
   [[noreturn]] void runSupervisor(int apiFd);
+
+  class DefaultSystemConnector: public SystemConnector {
+  public:
+    RunResult run(kj::AsyncIoContext& ioContext, Supervisor::Client mainCapability) const override;
+    void checkIfAlreadyRunning() const override;
+
+  private:
+    class Listener;
+    struct AcceptedConnection;
+    class ErrorHandlerImpl;
+    class CapRedirector;
+    kj::Promise<void> acceptLoop(kj::ConnectionReceiver& serverPort,
+                                 Supervisor::Client bootstrapInterface,
+                                 kj::TaskSet& taskSet);
+  };
+
+  static constexpr DefaultSystemConnector DEFAULT_CONNECTOR_INSTANCE = DefaultSystemConnector();
 };
 
 }  // namespace sandstorm

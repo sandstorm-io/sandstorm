@@ -518,7 +518,8 @@ void registerSignalHandlers() {
 
 // =======================================================================================
 
-SupervisorMain::SupervisorMain(kj::ProcessContext& context): context(context) {
+SupervisorMain::SupervisorMain(kj::ProcessContext& context)
+    : context(context), systemConnector(&DEFAULT_CONNECTOR_INSTANCE) {
   // Make sure we didn't inherit a weird signal mask from the parent process.  Gotta do this as
   // early as possible so as not to confuse KJ code that deals with signals.
   sigset_t sigset;
@@ -615,7 +616,8 @@ kj::MainBuilder::Validity SupervisorMain::run() {
 
   setupSupervisor();
 
-  checkIfAlreadyRunning();  // Exits if another supervisor is still running in this sandbox.
+  // Exits if another supervisor is still running in this sandbox.
+  systemConnector->checkIfAlreadyRunning();
 
   SANDSTORM_LOG("Starting up grain.");
 
@@ -982,6 +984,8 @@ void SupervisorMain::setupSeccomp() {
   // should fail, but there's no need to kill the issuer.
   CHECK_SECCOMP(seccomp_attr_set(ctx, SCMP_FLTATR_ACT_BADARCH, SCMP_ACT_ERRNO(ENOSYS)));
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wmissing-field-initializers"  // SCMP_* macros produce these
   // Disable some things that seem scary.
   if (!devmode) {
     // ptrace is scary
@@ -1026,6 +1030,7 @@ void SupervisorMain::setupSeccomp() {
      SCMP_A0(SCMP_CMP_EQ, AF_SECURITY)));
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
      SCMP_A0(SCMP_CMP_EQ, AF_KEY)));
+#pragma GCC diagnostic pop
 
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(add_key), 0));
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(request_key), 0));
@@ -1418,7 +1423,7 @@ void SupervisorMain::enterSandbox() {
 
 // =====================================================================================
 
-void SupervisorMain::checkIfAlreadyRunning() {
+void SupervisorMain::DefaultSystemConnector::checkIfAlreadyRunning() const {
   // Attempt to connect to any existing supervisor and call keepAlive().  If successful, we
   // don't want to start a new instance; we should use the existing instance.
 
@@ -1621,7 +1626,70 @@ private:
   DiskUsageWatcher& diskWatcher;
 };
 
-struct SupervisorMain::AcceptedConnection {
+// -----------------------------------------------------------------------------
+
+constexpr SupervisorMain::DefaultSystemConnector SupervisorMain::DEFAULT_CONNECTOR_INSTANCE;
+
+class SupervisorMain::DefaultSystemConnector::ErrorHandlerImpl: public kj::TaskSet::ErrorHandler {
+public:
+  void taskFailed(kj::Exception&& exception) override {
+    KJ_LOG(ERROR, "connection failed", exception);
+  }
+};
+
+class SupervisorMain::DefaultSystemConnector::CapRedirector
+    : public capnp::Capability::Server, public kj::Refcounted {
+  // A capability which forwards all calls to some target. If the target becomes disconnected,
+  // the capability queues new calls until a new target is provided.
+  //
+  // We use this to handle the fact that the front-end is allowed to restart without restarting
+  // all grains. The SandstormCore capability -- provided by the front-end -- will temporarily
+  // become disconnected in these cases. We know the front-end will come back up and reestablish
+  // the connection soon, but there's nothing we can do except wait, and in the meantime we don't
+  // want to spurriously fail calls.
+
+public:
+  CapRedirector(kj::PromiseFulfillerPair<capnp::Capability::Client> paf =
+                kj::newPromiseAndFulfiller<capnp::Capability::Client>())
+      : target(kj::mv(paf.promise)),
+        fulfiller(kj::mv(paf.fulfiller)) {}
+
+  uint setTarget(capnp::Capability::Client newTarget) {
+    ++iteration;
+    target = newTarget;
+
+    // If the previous target was a promise target, fulfill it.
+    fulfiller->fulfill(kj::mv(newTarget));
+
+    return iteration;
+  }
+
+  void setDisconnected(uint oldIteration) {
+    if (iteration == oldIteration) {
+      // Our current client was disconnected.
+      ++iteration;
+      auto paf = kj::newPromiseAndFulfiller<capnp::Capability::Client>();
+      target = kj::mv(paf.promise);
+      fulfiller = kj::mv(paf.fulfiller);
+    }
+  }
+
+  kj::Promise<void> dispatchCall(
+      uint64_t interfaceId, uint16_t methodId,
+      capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) override {
+    capnp::AnyPointer::Reader params = context.getParams();
+    auto req = target.typelessRequest(interfaceId, methodId, params.targetSize());
+    req.set(params);
+    return context.tailCall(kj::mv(req));
+  }
+
+private:
+  uint iteration = 0;
+  capnp::Capability::Client target;
+  kj::Own<kj::PromiseFulfiller<capnp::Capability::Client>> fulfiller;
+};
+
+struct SupervisorMain::DefaultSystemConnector::AcceptedConnection {
   kj::Own<kj::AsyncIoStream> connection;
   capnp::TwoPartyVatNetwork network;
   capnp::RpcSystem<capnp::rpc::twoparty::VatId> rpcSystem;
@@ -1633,24 +1701,68 @@ struct SupervisorMain::AcceptedConnection {
         rpcSystem(capnp::makeRpcServer(network, kj::mv(bootstrapInterface))) {}
 };
 
-kj::Promise<void> SupervisorMain::acceptLoop(kj::ConnectionReceiver& serverPort,
-                                             capnp::Capability::Client bootstrapInterface,
-                                             kj::TaskSet& taskSet) {
-  return serverPort.accept()
-      .then([&, KJ_MVCAP(bootstrapInterface)](kj::Own<kj::AsyncIoStream>&& connection) mutable {
-    auto connectionState = kj::heap<AcceptedConnection>(bootstrapInterface, kj::mv(connection));
-    auto promise = connectionState->network.onDisconnect();
-    taskSet.add(promise.attach(kj::mv(connectionState)));
-    return acceptLoop(serverPort, kj::mv(bootstrapInterface), taskSet);
+class SupervisorMain::DefaultSystemConnector::Listener {
+public:
+  Listener(Supervisor::Client bootstrapInterface)
+      : bootstrapInterface(kj::mv(bootstrapInterface)),
+        redirector(kj::refcounted<CapRedirector>()),
+        taskSet(errorHandler) {}
+
+  kj::Promise<void> acceptLoop(kj::Own<kj::ConnectionReceiver>&& serverPort) {
+    return serverPort->accept()
+        .then([this,KJ_MVCAP(serverPort)](kj::Own<kj::AsyncIoStream>&& connection) mutable {
+      auto connectionState = kj::heap<AcceptedConnection>(bootstrapInterface, kj::mv(connection));
+
+      // Update the bootstrap redirector to point at the new connection's bootstrap.
+      capnp::MallocMessageBuilder message(8);
+      auto vatId = message.getRoot<capnp::rpc::twoparty::VatId>();
+      vatId.setSide(capnp::rpc::twoparty::Side::CLIENT);
+      uint iteration = redirector->setTarget(connectionState->rpcSystem.bootstrap(vatId));
+
+      // Run the connection until disconnect.
+      auto promise = connectionState->network.onDisconnect();
+      taskSet.add(promise.attach(kj::mv(connectionState), kj::defer([this,iteration]() {
+        // Disconnect the redirector when the client disconnects.
+        redirector->setDisconnected(iteration);
+      })));
+
+      return acceptLoop(kj::mv(serverPort));
+    });
+  }
+
+  capnp::Capability::Client getBootstrap() {
+    return kj::addRef(*redirector);
+  }
+
+private:
+  Supervisor::Client bootstrapInterface;
+  kj::Own<CapRedirector> redirector;
+  ErrorHandlerImpl errorHandler;
+  kj::TaskSet taskSet;
+};
+
+auto SupervisorMain::DefaultSystemConnector::run(
+    kj::AsyncIoContext& ioContext, Supervisor::Client mainCap) const
+    -> SystemConnector::RunResult {
+  auto listener = kj::heap<Listener>(kj::mv(mainCap));
+  auto core = listener->getBootstrap().castAs<SandstormCore>();
+
+  unlink("socket");  // Clear stale socket, if any.
+  auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:socket", 0).then(
+      [KJ_MVCAP(listener)](kj::Own<kj::NetworkAddress>&& addr) mutable {
+    auto serverPort = addr->listen();
+
+    // The front-end knows we're ready to accept connections when we write something to stdout.
+    KJ_SYSCALL(write(STDOUT_FILENO, "Listening...\n", strlen("Listening...\n")));
+
+    auto promise = listener->acceptLoop(kj::mv(serverPort));
+    return promise.attach(kj::mv(listener));
   });
+
+  return { kj::mv(acceptTask), kj::mv(core) };
 }
 
-class SupervisorMain::ErrorHandlerImpl: public kj::TaskSet::ErrorHandler {
-public:
-  void taskFailed(kj::Exception&& exception) override {
-    KJ_LOG(ERROR, "connection failed", exception);
-  }
-};
+// -----------------------------------------------------------------------------
 
 [[noreturn]] void SupervisorMain::runSupervisor(int apiFd) {
   // We're currently in a somewhat dangerous state: our root directory is controlled
@@ -1714,16 +1826,9 @@ public:
   //   want to wrap the UiView and cache session objects.  Perhaps we could do this by making
   //   them persistable, though it's unclear how that would work with SessionContext.
   Supervisor::Client mainCap = kj::heap<SupervisorImpl>(kj::mv(app), diskWatcher);
-  ErrorHandlerImpl errorHandler;
-  kj::TaskSet tasks(errorHandler);
-  unlink("socket");  // Clear stale socket, if any.
-  auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:socket", 0).then(
-      [&](kj::Own<kj::NetworkAddress>&& addr) {
-    auto serverPort = addr->listen();
-    KJ_SYSCALL(write(STDOUT_FILENO, "Listening...\n", strlen("Listening...\n")));
-    auto promise = acceptLoop(*serverPort, mainCap, tasks);
-    return promise.attach(kj::mv(serverPort));
-  });
+
+  auto runner = systemConnector->run(ioContext, kj::mv(mainCap));
+  auto acceptTask = kj::mv(runner.task);
 
   // Wait for disconnect or accept loop failure or disk watch failure, then exit.
   acceptTask.exclusiveJoin(kj::mv(diskWatcherTask))

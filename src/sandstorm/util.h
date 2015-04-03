@@ -233,6 +233,26 @@ public:
   // Waits for the child to exit or be killed by a signal. Returns an exit status that can be
   // interpreted by WIFEXITED(), WEXITSTATUS(), etc. as described in the wait(2) man page.
 
+  pid_t getPid() {
+    KJ_IREQUIRE(pid != 0, "already exited");
+    return pid;
+  }
+
+  bool isRunning() {
+    return pid != 0;
+  }
+
+  void notifyExited(int status) {
+    // Call if you receive exit notification from elsewhere, e.g. calling wait() yourself. It is
+    // NECESSARY to call this immediately upon receiving an exit notification, otherwise the
+    // destructor will try to SIGKILL the pid which might have been re-assigned by then.
+    //
+    // TODO(cleanup): Build a safer API to allow waiting on a group of subprocesses, or using
+    //   async I/O.
+
+    pid = 0;
+  }
+
 private:
   kj::String name;
   kj::UnwindDetector unwindDetector;

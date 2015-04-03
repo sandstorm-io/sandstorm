@@ -37,8 +37,9 @@ CXXFLAGS2=-std=c++1y $(WARNINGS) $(CXXFLAGS) -DSANDSTORM_BUILD=$(BUILD) -pthread
 LIBS=-pthread
 
 define color
-  @printf '\033[0;34m==== $1 ====\033[0m\n'
+  printf '\033[0;34m==== $1 ====\033[0m\n'
 endef
+
 
 IMAGES= \
     shell/public/edit.png \
@@ -70,11 +71,11 @@ clean:
 	@(if test -d deps && test ! -h deps; then printf "\033[0;33mTo update dependencies, use: make update-deps\033[0m\n"; fi)
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh
-	$(call color,install)
+	@$(call color,install)
 	@./install.sh $<
 
 update: sandstorm-$(BUILD)-fast.tar.xz
-	$(call color,update local server)
+	@$(call color,update local server)
 	@sudo sandstorm update $<
 
 fast: sandstorm-$(BUILD)-fast.tar.xz
@@ -89,33 +90,33 @@ tmp/.deps: deps/capnproto deps/ekam deps/libseccomp deps/libsodium deps/node-cap
 	@touch tmp/.deps
 
 deps/capnproto:
-	$(call color,downloading capnproto)
+	@$(call color,downloading capnproto)
 	@mkdir -p deps
 	git clone https://github.com/sandstorm-io/capnproto.git deps/capnproto
 
 deps/ekam:
-	$(call color,downloading ekam)
+	@$(call color,downloading ekam)
 	@mkdir -p deps
 	git clone https://github.com/sandstorm-io/ekam.git deps/ekam
 	@ln -s .. deps/ekam/deps
 
 deps/libseccomp:
-	$(call color,downloading libseccomp)
+	@$(call color,downloading libseccomp)
 	@mkdir -p deps
 	git clone git://git.code.sf.net/p/libseccomp/libseccomp deps/libseccomp
 
 deps/libsodium:
-	$(call color,downloading libsodium)
+	@$(call color,downloading libsodium)
 	@mkdir -p deps
 	git clone https://github.com/jedisct1/libsodium.git deps/libsodium
 
 deps/node-capnp:
-	$(call color,downloading node-capnp)
+	@$(call color,downloading node-capnp)
 	@mkdir -p deps
 	git clone https://github.com/kentonv/node-capnp.git deps/node-capnp
 
 update-deps:
-	$(call color,updating all dependencies)
+	@$(call color,updating all dependencies)
 	@(for DEP in capnproto ekam libseccomp libsodium node-capnp; do cd deps/$$DEP; \
 	    echo "pulling $$DEP..."; git pull; cd ../..; done)
 
@@ -130,14 +131,16 @@ tmp/ekam-bin: tmp/.deps
 	     cd ../.. && ln -s ../deps/ekam/bin/ekam-bootstrap tmp/ekam-bin)
 
 tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps
-	$(call color,building sandstorm with ekam)
+	@$(call color,building sandstorm with ekam)
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS2)" \
-	    LIBS="$(LIBS)" NODEJS=$(NODEJS) tmp/ekam-bin -j$(PARALLEL)
+	    LIBS="$(LIBS)" NODEJS=$(NODEJS) tmp/ekam-bin -j$(PARALLEL) || \
+	    ($(call color,build failed. You might need to: make update-deps) && false)
 	@touch tmp/.ekam-run
 
 continuous:
 	@CC="$(CC)" CXX="$(CXX)" CFLAGS="$(CFLAGS)" CXXFLAGS="$(CXXFLAGS2)" \
-	    LIBS="$(LIBS)" NODEJS=$(NODEJS) ekam -j$(PARALLEL) -c -n :41315
+	    LIBS="$(LIBS)" NODEJS=$(NODEJS) ekam -j$(PARALLEL) -c -n :41315 || \
+	    ($(call color,You probably need to install ekam and put it on your path; see github.com/sandstorm-io/ekam) && false)
 
 # ====================================================================
 # Front-end shell
@@ -153,31 +156,31 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES)
 	@bash -O extglob -c 'cp src/capnp/!(*test*).capnp node_modules/capnp'
 
 shell/public/%.png: icons/%.svg
-	$(call color,convert $<)
+	@$(call color,convert $<)
 	@convert -scale 24x24 -negate -evaluate multiply 0.87 $< $@
 shell/public/%-m.png: icons/%.svg
 	@convert -scale 32x32 $< $@
 
 shell-build: shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
-	$(call color,meteor frontend)
+	@$(call color,meteor frontend)
 	@cd shell && PYTHONPATH=$HOME/.meteor/tools/latest/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib meteor build --directory ../shell-build
 
 # ====================================================================
 # Bundle
 
 bundle: tmp/.ekam-run shell-build make-bundle.sh
-	$(call color,bundle)
+	@$(call color,bundle)
 	@./make-bundle.sh
 
 sandstorm-$(BUILD).tar.xz: bundle
-	$(call color,compress release bundle)
+	@$(call color,compress release bundle)
 	@tar c --transform="s,^bundle,sandstorm-$(BUILD)," bundle | xz -c -9e > sandstorm-$(BUILD).tar.xz
 
 sandstorm-$(BUILD)-fast.tar.xz: bundle
-	$(call color,compress fast bundle)
+	@$(call color,compress fast bundle)
 	@tar c --transform="s,^bundle,sandstorm-$(BUILD)," bundle | xz -c -0 > sandstorm-$(BUILD)-fast.tar.xz
 
 .docker: sandstorm-$(BUILD).tar.xz Dockerfile
-	$(call color,docker build)
+	@$(call color,docker build)
 	@docker build -t sandstorm .
 	@touch .docker

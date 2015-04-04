@@ -438,6 +438,7 @@ Router.map(function () {
 
       var session = Sessions.findOne({grainId: grainId, userId: Meteor.userId()});
       if (session) {
+        self.state.set("openingSession", undefined);
         result.appOrigin = window.location.protocol + "//" + makeWildcardHost(session.hostId);
         setCurrentSessionId(session._id, result.appOrigin, grainId);
         result.sessionId = session._id;
@@ -447,26 +448,14 @@ Router.map(function () {
         result.path = encodeURIComponent(grainPath);
         result.hash = window.location.hash || "";
         return result;
-      } else {
-        if (self.state.get("openingSession")) {
+      } else if (self.state.get("openingSession")) {
           return result;
-        }
-
+      } else {
         self.state.set("openingSession", true);
-        Meteor.call("openSession", grainId, function (error, session) {
+        Meteor.call("openSession", grainId, function (error) {
           if (error) {
             self.state.set("error", error.message);
             self.state.set("openingSession", undefined);
-          } else {
-            var subscription = Meteor.subscribe("sessions", session.sessionId);
-            Sessions.find({_id : session.sessionId}).observeChanges({
-              removed: function(session) {
-                subscription.stop();
-              },
-              added: function(session) {
-                self.state.set("openingSession", undefined);
-              }
-            });
           }
         });
         return result;

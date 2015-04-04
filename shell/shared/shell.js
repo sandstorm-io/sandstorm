@@ -59,11 +59,10 @@ if (Meteor.isServer) {
     }
   });
 
-  Meteor.publish("sessions", function (sessionId) {
-    // sessionId itself should be secret enough, but they are also not meant to be shared, so as
-    // a backup we only publish the session to its owner. Note that `userId` can be null if the
-    // user is not logged in.
-    return Sessions.find({_id: sessionId, userId: this.userId});
+  Meteor.publish("sessions", function () {
+    // A session is only accessible to its owning user, and only on the connection on which it
+    // was created.
+    return Sessions.find({userId: this.userId, connectionId: this.connection.id});
   });
 
   Meteor.publish("devApps", function () {
@@ -140,6 +139,7 @@ if (Meteor.isClient) {
 
   Tracker.autorun(function () {
     Meteor.subscribe("credentials");
+    Meteor.subscribe("sessions");
   });
 
   makeDateString = function (date) {

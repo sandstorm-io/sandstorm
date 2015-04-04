@@ -154,10 +154,9 @@ Meteor.methods({
       grainId: grainId,
       hostId: proxy.hostId,
       timestamp: new Date().getTime(),
-      userId: userId
+      userId: userId,
+      connectionId: this.connection.id
     });
-
-    return {sessionId: sessionId, hostId: proxy.hostId};
   },
 
   keepSessionAlive: function (sessionId) {

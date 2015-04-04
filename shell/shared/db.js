@@ -140,6 +140,7 @@ Sessions = new Mongo.Collection("sessions");
 //   timestamp:  Time of last keep-alive message to this session.  Sessions time out after some
 //       period.
 //   userId:  User who owns this session.
+//   connectionId: ID of the DDP connection associated with this session.
 
 SignupKeys = new Mongo.Collection("signupKeys");
 // Invite keys which may be used by users to get access to Sandstorm.

@@ -18,11 +18,39 @@ var DAY_MS = 24*60*60*1000;
 
 if (Meteor.isServer) {
   function computeStats(since) {
+    // We'll need this for a variety of queries.
+    var timeConstraint = {$gt: since};
+
+    // This calculates the number of user accounts that have been used
+    // during the requested time period.
+    var currentlyActiveUsersCount = Meteor.users.find(
+      {lastActive: timeConstraint}).count();
+
+    // This calculates the number of grains that have been used during
+    // the requested time period.
+    var activeGrainsCount = Grains.find({lastUsed: timeConstraint}).count();
+
+    // If Meteor.settings.allowDemoAccounts is true, DeleteStats
+    // contains records of type `user` and `appDemoUser`, indicating
+    // the number of those types of accounts that were created and
+    // then auto-expired through the demo mode's auto-account-expiry.
+    var deletedNormalUsersCount =  DeleteStats.find(
+      {type: "user", lastActive: timeConstraint}).count();
+    var deletedAppDemoUsersCount = DeleteStats.find(
+      {type: "appDemoUser", lastActive: timeConstraint}).count();
+
+    // Similarly, if the demo is enabled, we auto-delete grains; we store that
+    // fact in DeleteStats with type: "grain".
+    var deletedGrainsCount = DeleteStats.find(
+      {type: "grain", lastActive: timeConstraint}).count();
+
+
     return {
-      activeUsers: Meteor.users.find({lastActive: {$gt: since}}).count() +
-          DeleteStats.find({type: "user", lastActive: {$gt: since}}).count(),
-      activeGrains: Grains.find({lastUsed: {$gt: since}}).count() +
-          DeleteStats.find({type: "grain", lastActive: {$gt: since}}).count()
+      activeUsers: (currentlyActiveUsersCount +
+                    deletedAppDemoUsersCount +
+                    deletedNormalUsersCount),
+      appDemoUsers: deletedAppDemoUsersCount,
+      activeGrains: (activeGrainsCount + deletedGrainsCount)
     }
   }
 

@@ -48,7 +48,7 @@ if (Meteor.isServer) {
     // Delete expired demo accounts and all their grains.
 
     var now = new Date();
-    Meteor.users.find({expires: {$lt: now}}, {fields: {_id: 1, lastActive: 1}})
+    Meteor.users.find({expires: {$lt: now}}, {fields: {_id: 1, lastActive: 1, isAppDemoUser: 1}})
                 .forEach(function (user) {
       Grains.find({userId: user._id}, {fields: {_id: 1, lastUsed: 1}})
             .forEach(function (grain) {
@@ -62,7 +62,15 @@ if (Meteor.isServer) {
       console.log("delete user: " + user._id);
       Meteor.users.remove(user._id);
       if (user.lastActive) {
-        DeleteStats.insert({type: "user", lastActive: user.lastActive});
+        // When deleting a user, we can specify it as a "normal" user
+        // (type: user) or as a user who started out by using the app
+        // demo feature (type: appDemoUser).
+        var deleteStatsType = "user";
+        var isAppDemoUser = !! user.isAppDemoUser;
+        if (isAppDemoUser) {
+          deleteStatsType = "appDemoUser";
+        }
+        DeleteStats.insert({type: deleteStatsType, lastActive: user.lastActive});
       }
     });
   }
@@ -71,15 +79,21 @@ if (Meteor.isServer) {
 
   if (allowDemo) {
     Meteor.methods({
-      createDemoUser: function (displayName) {
-        // This is a login method that creates a new temporary user every time it is used.
-
+      createDemoUser: function (displayName, isAppDemoUser) {
+        // This is a login method that creates a new temporary user
+        // every time it is used.
+        //
+        // isAppDemoUser is important for stats; see
+        // cleanupExpiredUsers().
         check(displayName, String);
+        check(isAppDemoUser, Boolean);
 
         // Create the new user.
         var expires = new Date(Date.now() + DEMO_EXPIRATION_MS);
         var userId = Accounts.insertUserDoc({ profile: { name: displayName } },
-                                            { expires: expires });
+                                            { expires: expires,
+                                              isAppDemoUser: isAppDemoUser
+                                            });
 
         // Log them in on this connection.
         return Accounts._loginMethod(this, "createDemoUser", arguments,
@@ -162,7 +176,7 @@ if (Meteor.isClient && allowDemo) {
 
       Accounts.callLoginMethod({
         methodName: "createDemoUser",
-        methodArguments: [displayName],
+        methodArguments: [displayName, false],
         userCallback: function (err) {
           if (err) {
             window.alert(err);
@@ -226,7 +240,7 @@ if (Meteor.isClient && allowDemo) {
 
         Accounts.callLoginMethod({
           methodName: "createDemoUser",
-          methodArguments: [displayName],
+          methodArguments: [displayName, true],
           userCallback: userCallbackFunction
         });
       }

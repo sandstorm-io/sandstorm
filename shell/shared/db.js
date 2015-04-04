@@ -167,7 +167,7 @@ DeleteStats = new Mongo.Collection("deleteStats");
 // Contains records of objects that were deleted, for stat-keeping purposes.
 //
 // Each contains:
-//   type: "grain" or "user"
+//   type: "grain" or "user" or "appDemoUser"
 //   lastActive: Date of the user's or grain's last activity.
 
 FileTokens = new Mongo.Collection("fileTokens");

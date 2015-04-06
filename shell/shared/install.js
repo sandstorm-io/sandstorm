@@ -264,7 +264,7 @@ Router.map(function () {
       var packageId = this.params.packageId;
       var package = Packages.findOne(packageId);
       if (allowDemo && this.ready() && !Meteor.user() && package) {
-        Router.go("appdemo", {appId: package.appId});
+        Router.go("appdemo", {appId: package.appId}, {replaceState: true});
       } else {
         this.next();
       }

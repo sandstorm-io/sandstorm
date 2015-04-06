@@ -453,19 +453,18 @@ $KEY</textarea></p>
   <div id="admin-settings" class="main-content">
     <div class="centered-box">
       <form id="admin-settings-form">
-        <label title="This setting enables Google OAuth accounts for this server">Enable Google Login <input type="checkbox" name="googleLogin" value="value" checked={{googleEnabled}}></label>
-        <br>
-        <label title="This setting enables Github OAuth accounts for this server">Enable Github Login <input type="checkbox" name="githubLogin" value="value" checked={{githubEnabled}}></label>
-        <br>
-        <label title="Set the outgoing SMTP server to use for sending emails. This server will be used by all users on your Sandstorm server that have access to the platform's EmailSendPort capability (ie. everyone for now).">SMTP Url: <input type="text" name="smtpUrl" value="{{smtpUrl}}"></label>
-        <br>
-        <button id="admin-settings-save">Save</button>
+        <p><input type="checkbox" name="googleLogin" value="value" checked={{googleEnabled}}> Enable Google Login<br>
+           <input type="checkbox" name="githubLogin" value="value" checked={{githubEnabled}}> Enable Github Login<br>
+          <span class="details">Choose which services users may use to identify themselves. Anyone can log in, but only users you <a href="/invite">invite</a> will be able to install apps or create files.</span></p>
+        <p>SMTP Url: <input type="text" name="smtpUrl" value="{{smtpUrl}}"><br>
+          <span class="details">Address of an SMTP (email) server, like <code>smtp://user:pass@host:port</code>. This will be used by email apps and to send <a href="/invite">email invites</a>.</span></p>
+        <p><button id="admin-settings-save">Save</button></p>
 
         {{#if success}}
-        <div class="alert alert-success"><strong>Success!</strong> You have successfully updated the settings database.</div>
+        <div class="alert alert-success"><strong>Success!</strong> Your settings have been saved.</div>
         {{/if}}
         {{#if failure}}
-        <div class="alert alert-danger"><strong>Failure!</strong> Something went wrong trying to save settings. See your sandstorm.log for details.</div>
+        <div class="alert alert-danger"><strong>Failure!</strong> Something went wrong trying to save settings. See <code>&lt;install-location&gt;/var/log/sandstorm.log</code> for details.</div>
         {{/if}}
       </form>
     </div>

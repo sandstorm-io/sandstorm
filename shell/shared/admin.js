@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var NUM_SETTINGS = 4;
+var NUM_SETTINGS = 3;
 var accountServiceNames = ["google", "github"];
 
 Router.map(function () {

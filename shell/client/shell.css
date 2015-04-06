@@ -924,6 +924,10 @@ aside #social>p {
   background-color: #396F9E;
 }
 
+#admin-settings .details {
+  font-size: 70%;
+}
+
 .alert {
   padding: 15px;
   margin-bottom: 20px;

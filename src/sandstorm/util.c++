@@ -17,6 +17,7 @@
 #include "util.h"
 #include <errno.h>
 #include <kj/vector.h>
+#include <kj/async-unix.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -25,6 +26,7 @@
 #include <syscall.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <map>
 
 namespace sandstorm {
 
@@ -701,6 +703,70 @@ void Subprocess::forceFdAbove(int& fd, int minValue) {
     // we still plan to dup2() it back to the right slot.
     KJ_SYSCALL(fd = fcntl(fd, F_DUPFD_CLOEXEC, minValue));
   }
+}
+
+// -----------------------------------------------------------------------------
+
+struct SubprocessSet::WaitMap {
+  std::map<pid_t, kj::Own<kj::PromiseFulfiller<int>>> pids;
+};
+
+SubprocessSet::SubprocessSet(kj::UnixEventPort& eventPort)
+    : eventPort(eventPort), waitMap(kj::heap<WaitMap>()), waitTask(waitLoop()) {
+  kj::UnixEventPort::captureSignal(SIGCHLD);
+}
+
+SubprocessSet::~SubprocessSet() noexcept(false) {}
+
+kj::Promise<void> SubprocessSet::waitForSuccess(Subprocess& subprocess) {
+  return waitForExit(subprocess).then([&subprocess](int exitCode) {
+    KJ_ASSERT(exitCode == 0, "child process failed", subprocess.name, exitCode);
+  });
+}
+
+kj::Promise<int> SubprocessSet::waitForExit(Subprocess& subprocess) {
+  return waitForExitOrSignal(subprocess).then([&subprocess](int status) {
+    if (WIFEXITED(status)) {
+      return WEXITSTATUS(status);
+    } else if (WIFSIGNALED(status)) {
+      int signo = WTERMSIG(status);
+      KJ_FAIL_ASSERT("child process killed by signal", subprocess.name, signo, strsignal(signo));
+    } else {
+      KJ_FAIL_ASSERT("unknown child wait status", subprocess.name, status);
+    }
+  });
+}
+
+kj::Promise<int> SubprocessSet::waitForExitOrSignal(Subprocess& subprocess) {
+  auto paf = kj::newPromiseAndFulfiller<int>();
+  waitMap->pids.insert(std::make_pair(subprocess.getPid(), kj::mv(paf.fulfiller)));
+  return paf.promise.then([&subprocess](int status) {
+    subprocess.notifyExited(status);
+    return status;
+  });
+}
+
+kj::Promise<void> SubprocessSet::waitLoop() {
+  return eventPort.onSignal(SIGCHLD).then([this](auto&&) {
+    while (!waitMap->pids.empty()) {
+      int status;
+      pid_t pid;
+      KJ_SYSCALL(pid = waitpid(-1, &status, WNOHANG));
+      if (pid == 0) break;
+
+      auto iter = waitMap->pids.find(pid);
+      if (iter == waitMap->pids.end()) {
+        KJ_LOG(ERROR, "waitpid() returned unexpected PID; is this process running subprocesses "
+                      "outside this set?");
+      } else {
+        iter->second->fulfill(kj::mv(status));
+        waitMap->pids.erase(iter);
+      }
+    }
+    return waitLoop();
+  }).eagerlyEvaluate([](kj::Exception&& exception) {
+    KJ_LOG(ERROR, "subprocess wait loop failed", exception);
+  });
 }
 
 }  // namespace sandstorm

@@ -17,6 +17,7 @@
 #include "util.h"
 #include <kj/test.h>
 #include <sys/wait.h>
+#include <kj/async-io.h>
 
 namespace sandstorm {
 namespace {
@@ -238,6 +239,34 @@ KJ_TEST("Subprocess") {
     KJ_EXPECT(readAll(pipe4.readEnd) == "bar\n");
     child.waitForSuccess();
   }
+}
+
+KJ_TEST("SubprocessSet") {
+  auto io = kj::setupAsyncIo();
+
+  SubprocessSet set(io.unixEventPort);
+
+  Subprocess::Options catOptions("cat");
+  Pipe catPipe = makePipe();
+  catOptions.stdin = catPipe.readEnd;
+  Subprocess childCat(kj::mv(catOptions));
+  catPipe.readEnd = nullptr;
+
+  Subprocess childTrue({"true"});
+  Subprocess childFalse({"false"});
+
+  bool catDone = false;
+
+  auto promiseCat = set.waitForSuccess(childCat).then([&]() { catDone = true; });
+  auto promiseTrue = set.waitForSuccess(childTrue);
+  auto promiseFalse = set.waitForExit(childFalse);
+
+  promiseTrue.wait(io.waitScope);
+  KJ_EXPECT(promiseFalse.wait(io.waitScope) != 0);
+  KJ_EXPECT(!catDone);
+
+  catPipe.writeEnd = nullptr;
+  promiseCat.wait(io.waitScope);
 }
 
 }  // namespace

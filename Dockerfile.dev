@@ -46,6 +46,7 @@ RUN meteor update
 USER root
 ADD . /opt/src
 RUN rm -rf /opt/src/shell/packages/*/.build* && rm -rf /opt/src/shell/packages/*/.npm
+RUN rm -rf /opt/src/shell-build
 
 RUN cd /opt/src && make fast && chmod 555 ./install.sh sandstorm-0-fast.tar.xz
 

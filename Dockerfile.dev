@@ -48,7 +48,7 @@ ADD . /opt/src
 RUN rm -rf /opt/src/shell/packages/*/.build* && rm -rf /opt/src/shell/packages/*/.npm
 RUN rm -rf /opt/src/shell-build
 
-RUN cd /opt/src && make fast && chmod 555 ./install.sh sandstorm-0-fast.tar.xz
+RUN cd /opt/src && make update-deps && make fast && chmod 555 ./install.sh sandstorm-0-fast.tar.xz
 
 USER sandstorm
 RUN cd /opt/src && ./install.sh -d -u sandstorm-0-fast.tar.xz

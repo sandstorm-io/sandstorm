@@ -253,13 +253,12 @@ KJ_TEST("SubprocessSet") {
   catPipe.readEnd = nullptr;
 
   Subprocess childTrue({"true"});
-  Subprocess childFalse({"false"});
 
   bool catDone = false;
 
   auto promiseCat = set.waitForSuccess(childCat).then([&]() { catDone = true; });
   auto promiseTrue = set.waitForSuccess(childTrue);
-  auto promiseFalse = set.waitForExit(childFalse);
+  auto promiseFalse = set.waitForExit({"false"});
 
   promiseTrue.wait(io.waitScope);
   KJ_EXPECT(promiseFalse.wait(io.waitScope) != 0);

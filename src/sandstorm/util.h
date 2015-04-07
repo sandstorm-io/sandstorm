@@ -220,6 +220,9 @@ public:
 
   KJ_DISALLOW_COPY(Subprocess);
 
+  inline Subprocess(Subprocess&& other)
+      : name(kj::mv(other.name)), pid(other.pid) { other.pid = 0; }
+
   ~Subprocess() noexcept(false);
   // Kills the subprocess (with SIGKILL) and waitpid()s it if it hasn't already finished.
 
@@ -283,6 +286,10 @@ public:
   kj::Promise<void> waitForSuccess(Subprocess& subprocess);
   kj::Promise<int> waitForExit(Subprocess& subprocess);
   kj::Promise<int> waitForExitOrSignal(Subprocess& subprocess);
+
+  kj::Promise<void> waitForSuccess(Subprocess&& subprocess);
+  kj::Promise<int> waitForExit(Subprocess&& subprocess);
+  kj::Promise<int> waitForExitOrSignal(Subprocess&& subprocess);
 
 private:
   struct WaitMap;

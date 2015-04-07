@@ -746,6 +746,22 @@ kj::Promise<int> SubprocessSet::waitForExitOrSignal(Subprocess& subprocess) {
   });
 }
 
+kj::Promise<void> SubprocessSet::waitForSuccess(Subprocess&& subprocess) {
+  auto heap = kj::heap<Subprocess>(kj::mv(subprocess));
+  auto promise = waitForSuccess(*heap);
+  return promise.attach(kj::mv(heap));
+}
+kj::Promise<int> SubprocessSet::waitForExit(Subprocess&& subprocess) {
+  auto heap = kj::heap<Subprocess>(kj::mv(subprocess));
+  auto promise = waitForExit(*heap);
+  return promise.attach(kj::mv(heap));
+}
+kj::Promise<int> SubprocessSet::waitForExitOrSignal(Subprocess&& subprocess) {
+  auto heap = kj::heap<Subprocess>(kj::mv(subprocess));
+  auto promise = waitForExitOrSignal(*heap);
+  return promise.attach(kj::mv(heap));
+}
+
 kj::Promise<void> SubprocessSet::waitLoop() {
   return eventPort.onSignal(SIGCHLD).then([this](auto&&) {
     while (!waitMap->pids.empty()) {

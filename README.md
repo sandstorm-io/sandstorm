@@ -6,7 +6,6 @@
 * [Hard Install](#installing-from-source)
 * [How it Works](#how-it-works)
 * [How to Port Apps](#how-to-port-apps)
-* [The Future](#the-future)
 * [Contribute](#contribute)
 
 ## Introduction

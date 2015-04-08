@@ -657,14 +657,14 @@ Subprocess::~Subprocess() noexcept(false) {
   if (pid != 0) {
     unwindDetector.catchExceptionsIfUnwinding([this]() {
       signal(SIGKILL);
-      waitForExitOrSignal();
+      (void)waitForExitOrSignal();
     });
   }
 }
 
 void Subprocess::signal(int signo) {
   if (pid != 0) {
-    KJ_SYSCALL(kill(pid, signo));
+    KJ_SYSCALL(kill(pid, signo), name);
   }
 }
 
@@ -708,7 +708,12 @@ void Subprocess::forceFdAbove(int& fd, int minValue) {
 // -----------------------------------------------------------------------------
 
 struct SubprocessSet::WaitMap {
-  std::map<pid_t, kj::Own<kj::PromiseFulfiller<int>>> pids;
+  struct ProcInfo {
+    kj::Own<kj::PromiseFulfiller<int>> fulfiller;
+    Subprocess* subprocess;
+  };
+
+  std::map<pid_t, ProcInfo> pids;
 };
 
 SubprocessSet::SubprocessSet(kj::UnixEventPort& eventPort)
@@ -739,9 +744,9 @@ kj::Promise<int> SubprocessSet::waitForExit(Subprocess& subprocess) {
 
 kj::Promise<int> SubprocessSet::waitForExitOrSignal(Subprocess& subprocess) {
   auto paf = kj::newPromiseAndFulfiller<int>();
-  waitMap->pids.insert(std::make_pair(subprocess.getPid(), kj::mv(paf.fulfiller)));
+  waitMap->pids.insert(std::make_pair(subprocess.getPid(),
+      WaitMap::ProcInfo { kj::mv(paf.fulfiller), &subprocess }));
   return paf.promise.then([&subprocess](int status) {
-    subprocess.notifyExited(status);
     return status;
   });
 }
@@ -775,7 +780,8 @@ kj::Promise<void> SubprocessSet::waitLoop() {
         KJ_LOG(ERROR, "waitpid() returned unexpected PID; is this process running subprocesses "
                       "outside this set?");
       } else {
-        iter->second->fulfill(kj::mv(status));
+        iter->second.subprocess->notifyExited(status);
+        iter->second.fulfiller->fulfill(kj::mv(status));
         waitMap->pids.erase(iter);
       }
     }

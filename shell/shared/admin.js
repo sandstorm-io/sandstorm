@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var NUM_SETTINGS = 3;
-var accountServiceNames = ["google", "github"];
+var NUM_SETTINGS = 4;
+var accountServiceNames = ["google", "github", "emailToken"];
 
 Router.map(function () {
   this.route("admin", {
@@ -66,6 +66,15 @@ if (Meteor.isClient) {
         Accounts.deregisterService("google");
       }
     });
+
+    Tracker.autorun(function () {
+      var setting = Settings.findOne({_id: "emailToken"});
+      if (setting && setting.value) {
+        Accounts.registerService("emailToken");
+      } else {
+        Accounts.deregisterService("emailToken");
+      }
+    });
   });
 
   var handleError = function (err) {
@@ -85,6 +94,7 @@ if (Meteor.isClient) {
       var handleErrorBound = handleError.bind(state);
       Meteor.call("setAccountSetting", "google", event.target.googleLogin.checked, handleErrorBound);
       Meteor.call("setAccountSetting", "github", event.target.githubLogin.checked, handleErrorBound);
+      Meteor.call("setAccountSetting", "emailToken", event.target.emailTokenLogin.checked, handleErrorBound);
       Meteor.call("setSetting", "smtpUrl", event.target.smtpUrl.value, handleErrorBound);
 
       return false;
@@ -108,6 +118,14 @@ if (Meteor.isClient) {
         return true;
       }
     },
+    emailTokenEnabled: function () {
+      var setting = Settings.findOne({_id: "emailToken"});
+      if (setting) {
+        return setting.value;
+      } else {
+        return false;
+      }
+    },
     smtpUrl: function () {
       return Iron.controller().state.get("smtpUrl");
     },
@@ -123,13 +141,15 @@ if (Meteor.isClient) {
 if (Meteor.isServer) {
   var registerServiceOnStartup = function (serviceName) {
     var setting = Settings.findOne({_id: serviceName});
-    if (!setting || setting.value) {
+    if ((!setting && (serviceName === "github" || serviceName === "google")) ||
+        (setting && setting.value)) {
       Accounts.registerService(serviceName);
     }
   };
   Meteor.startup(function () {
     registerServiceOnStartup("google");
     registerServiceOnStartup("github");
+    registerServiceOnStartup("emailToken");
   });
 
   Meteor.methods({

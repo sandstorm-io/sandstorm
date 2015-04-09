@@ -19,7 +19,8 @@ var VALID_KEYS = [
   'configureLoginServiceDialogVisible',
   'configureLoginServiceDialogServiceName',
   'configureLoginServiceDialogSaveDisabled',
-  'configureOnDesktopVisible'
+  'configureOnDesktopVisible',
+  'email'
 ];
 
 var validateKey = function (key) {

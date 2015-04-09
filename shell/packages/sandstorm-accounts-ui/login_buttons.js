@@ -49,6 +49,7 @@ getLoginServices = function () {
   // First look for OAuth services.
   var services = (Accounts.oauth && Accounts.oauth.serviceNames) ? Accounts.oauth.serviceNames() : [];
 
+  services = _.without(services, "emailToken");
   // Be equally kind to all login services. This also preserves
   // backwards-compatibility. (But maybe order should be
   // configurable?)
@@ -56,7 +57,7 @@ getLoginServices = function () {
 
   // Add password, if it's there; it must come last.
   if (hasPasswordService())
-    services.push('password');
+    services.push('emailToken');
 
   return _.map(services, function(name) {
     return {name: name};
@@ -64,7 +65,7 @@ getLoginServices = function () {
 };
 
 hasPasswordService = function () {
-  return !!Package['accounts-password'];
+  return Accounts.isEmailTokenLoginEnabled && Accounts.isEmailTokenLoginEnabled();
 };
 
 dropdown = function () {

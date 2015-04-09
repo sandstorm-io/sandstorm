@@ -21,11 +21,17 @@ if (Meteor.isClient) {
   };
 }
 
+var services = [];
+
 Accounts.registerService = function (serviceName) {
-  if (_.contains(Accounts.oauth.serviceNames(), serviceName)) {
+  if (_.contains(services, serviceName)) {
     return;
   }
-  if (Meteor.isClient && (serviceName === "demo" || serviceName === "devAccounts")) {
+  services.push(serviceName);
+  if (serviceName === "emailToken") {
+    Meteor.enableEmailTokenLogin();
+  }
+  else if (Meteor.isClient && (serviceName === "demo" || serviceName === "devAccounts")) {
     var serviceUserDisplay;
     if (serviceName === "demo") {
       serviceUserDisplay = "a Demo User";
@@ -39,10 +45,14 @@ Accounts.registerService = function (serviceName) {
 };
 
 Accounts.deregisterService = function (serviceName) {
-  if (!_.contains(Accounts.oauth.serviceNames(), serviceName)) {
+  if (!_.contains(services, serviceName)) {
     return;
   }
-  if (Meteor.isClient && (serviceName === "demo" || serviceName === "devAccounts")) {
+  services = _.without(services, serviceName);
+  if (serviceName === "emailToken") {
+    Meteor.disableEmailTokenLogin();
+  }
+  else if (Meteor.isClient && (serviceName === "demo" || serviceName === "devAccounts")) {
     Accounts.ui.deregisterService(serviceName);
   } else {
     Accounts.oauth.deregisterService(serviceName);

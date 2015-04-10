@@ -98,8 +98,8 @@ if (Meteor.isClient) {
       state.set("errors", []);
       var handleErrorBound = handleError.bind(state);
       if (event.target.emailTokenLogin.checked && !event.target.smtpUrl.value) {
-        handleErrorBound(new Meteor.Error(400, "Bad Request", "Trying to enable Passwordless " +
-          "email login while SMTP url is invalid."));
+        handleErrorBound(new Meteor.Error(400, "Bad Request",
+            "You must configure an SMTP server to use email login."));
         return false;
       }
       Meteor.call("setAccountSetting", "google", event.target.googleLogin.checked, handleErrorBound);

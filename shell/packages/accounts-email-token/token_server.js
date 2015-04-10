@@ -14,7 +14,7 @@ Meteor.startup(cleanupExpiredTokens);
 // Tokens can actually last up to 2 * TOKEN_EXPIRATION_MS
 Meteor.setInterval(cleanupExpiredTokens, TOKEN_EXPIRATION_MS);
 
-Accounts._checkToken = function (user, token) {
+var checkToken = function (user, token) {
   var found = false;
   user.services.emailToken.tokens.forEach(function (userToken) {
     if((userToken.algorithm === token.algorithm) &&
@@ -25,7 +25,6 @@ Accounts._checkToken = function (user, token) {
 
   return found;
 };
-var checkToken = Accounts._checkToken;
 
 // Handler to login with a token.
 Accounts.registerLoginHandler("emailToken", function (options) {
@@ -55,7 +54,7 @@ Accounts.registerLoginHandler("emailToken", function (options) {
     };
   }
 
-  var token = Accounts._hashToken(options.token);
+  var token = Accounts.emailToken._hashToken(options.token);
   var found = checkToken(
     user,
     token
@@ -113,7 +112,7 @@ var createAndEmailTokenForUser = function (email) {
 
   // TODO(someday): make this shorter, and handle requests that try to brute force it.
   var token = Random.id(12);
-  var tokenObj = Accounts._hashToken(token);
+  var tokenObj = Accounts.emailToken._hashToken(token);
   tokenObj.createdAt = new Date();
 
   if (user) {
@@ -149,7 +148,7 @@ var createAndEmailTokenForUser = function (email) {
 // This method will create a user if it doesn't exist, otherwise it will generate a token.
 // It will always send an email to the user
 Meteor.methods({createAndEmailTokenForUser: function (email) {
-  if (!Accounts.isEmailTokenLoginEnabled()) {
+  if (!Accounts.emailToken.isEnabled()) {
     throw new Meteor.Error(403, "Email Token service is disabled.");
   }
   // Create user. result contains id and token.

@@ -65,7 +65,7 @@ getLoginServices = function () {
 };
 
 hasPasswordService = function () {
-  return Accounts.isEmailTokenLoginEnabled && Accounts.isEmailTokenLoginEnabled();
+  return Accounts.emailToken && Accounts.emailToken.isEnabled();
 };
 
 dropdown = function () {

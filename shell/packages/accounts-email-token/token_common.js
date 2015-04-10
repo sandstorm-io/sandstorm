@@ -1,4 +1,6 @@
-Accounts._hashToken = function (token) {
+Accounts.emailToken = {};
+
+Accounts.emailToken._hashToken = function (token) {
   return {
     digest: SHA256(token),
     algorithm: "sha-256"
@@ -7,21 +9,21 @@ Accounts._hashToken = function (token) {
 
 var enabled = false;
 
-Meteor.enableEmailTokenLogin = function () {
+Accounts.emailToken.enable = function () {
   enabled = true;
   if (Meteor.isClient) {
     Accounts.ui.registerService("emailToken", "an Email + Token");
   }
 };
 
-Meteor.disableEmailTokenLogin = function () {
+Accounts.emailToken.disable = function () {
   enabled = false;
   if (Meteor.isClient) {
     Accounts.ui.deregisterService("emailToken");
   }
 };
 
-Accounts.isEmailTokenLoginEnabled = function () {
+Accounts.emailToken.isEnabled = function () {
   return enabled;
 };
 

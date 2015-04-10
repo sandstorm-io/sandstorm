@@ -80,7 +80,7 @@
     {{/if}}
   {{/each}}
 
-  {{#unless hasPasswordService}}
+  {{#unless hasEmailTokenService}}
     {{> _loginButtonsMessages}}
   {{/unless}}
 </template>
@@ -101,11 +101,11 @@
 
       {{#if inSignupFlow}}
       <div class="login-button login-button-form-submit" id="login-buttons-token">
-        Enter token from email
+        Log in
       </div>
       {{else}}
       <div class="login-button login-button-form-submit" id="login-buttons-email">
-        Send login token to email
+        Send Login Email
       </div>
       {{/if}}
 

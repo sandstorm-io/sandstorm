@@ -14,7 +14,7 @@ Meteor.startup(cleanupExpiredTokens);
 // Tokens can actually last up to 2 * TOKEN_EXPIRATION_MS
 Meteor.setInterval(cleanupExpiredTokens, TOKEN_EXPIRATION_MS);
 
-Accounts._checkToken = function (user, token) {
+var checkToken = function (user, token) {
   var found = false;
   user.services.emailToken.tokens.forEach(function (userToken) {
     if((userToken.algorithm === token.algorithm) &&
@@ -25,7 +25,6 @@ Accounts._checkToken = function (user, token) {
 
   return found;
 };
-var checkToken = Accounts._checkToken;
 
 // Handler to login with a token.
 Accounts.registerLoginHandler("emailToken", function (options) {
@@ -55,7 +54,7 @@ Accounts.registerLoginHandler("emailToken", function (options) {
     };
   }
 
-  var token = Accounts._hashToken(options.token);
+  var token = Accounts.emailToken._hashToken(options.token);
   var found = checkToken(
     user,
     token
@@ -64,7 +63,7 @@ Accounts.registerLoginHandler("emailToken", function (options) {
   if (!found) {
     console.error("Token not found:", user.services.emailToken);
     return {
-      error: new Meteor.Error(403, "Token not found")
+      error: new Meteor.Error(403, "Invalid authentication code")
     };
   }
 
@@ -89,11 +88,16 @@ var makeTokenUrl = function (email, token) {
 var sendTokenEmail = function (email, token) {
   var options = {
     to:  email,
-    from: "Sandstorm " + HOSTNAME + " <no-reply@" + HOSTNAME + ">",
-    subject: "Sandstorm token for " + HOSTNAME,
-    text: "A token has requested on your behalf to login to a Sandstorm instance at " + HOSTNAME +
-      ". You will need to either navigate to " + makeTokenUrl(email, token) + " or manually copy " +
-      token + " into the login dropdown."
+    from: HOSTNAME + " <no-reply@" + HOSTNAME + ">",
+    subject: "Log in to " + HOSTNAME,
+    text: "To log in to " + HOSTNAME + ", click on the following link:\n\n" +
+          makeTokenUrl(email, token) + "\n\n" +
+          "Alternatively, enter the following one-time authentication code into the log-in form:\n\n" +
+          token + "\n\n" +
+          "You are receiving this because someone (hopefully you) requested to log in to HOSTNAME " +
+          "with your email address. If you did not request to log into " + HOSTNAME + ", you may " +
+          "ignore this message.\n\n" +
+          "This information will expire in 15 minutes.\n"
   };
 
   Email.send(options);
@@ -104,22 +108,27 @@ var sendTokenEmail = function (email, token) {
 ///
 // returns the user id
 var createAndEmailTokenForUser = function (email) {
-  // Unknown keys allowed, because a onCreateUserHook can take arbitrary
-  // options.
   check(email, String);
+  var atIndex = email.indexOf("@");
+  if (atIndex === -1) {
+    throw new Meteor.Error(400, "No @ symbol was found in your email");
+  }
+
+  var username = email.slice(0, atIndex);
 
   var user = Meteor.users.findOne({"services.emailToken.email": email});
   var userId;
 
   // TODO(someday): make this shorter, and handle requests that try to brute force it.
   var token = Random.id(12);
-  var tokenObj = Accounts._hashToken(token);
+  var tokenObj = Accounts.emailToken._hashToken(token);
   tokenObj.createdAt = new Date();
 
   if (user) {
     if (user.services.emailToken.tokens && user.services.emailToken.tokens.length > 2) {
-      throw new Meteor.Error(403, "Too many tokens have been made for this user. Please find the " +
-        "token in your email, or wait a bit to try again.");
+      throw new Meteor.Error(409, "It looks like we sent a log in email to this address not long " +
+        "ago. Please use the one that was already sent (check your spam folder if you can't find " +
+        "it), or wait a while and try again");
     }
     userId = user._id;
 
@@ -128,7 +137,7 @@ var createAndEmailTokenForUser = function (email) {
     var options = {
       email: email,
       profile: {
-        name: email
+        name: username
       }
     };
 
@@ -149,7 +158,7 @@ var createAndEmailTokenForUser = function (email) {
 // This method will create a user if it doesn't exist, otherwise it will generate a token.
 // It will always send an email to the user
 Meteor.methods({createAndEmailTokenForUser: function (email) {
-  if (!Accounts.isEmailTokenLoginEnabled()) {
+  if (!Accounts.emailToken.isEnabled()) {
     throw new Meteor.Error(403, "Email Token service is disabled.");
   }
   // Create user. result contains id and token.

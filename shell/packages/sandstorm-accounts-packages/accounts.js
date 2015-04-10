@@ -29,7 +29,7 @@ Accounts.registerService = function (serviceName) {
   }
   services.push(serviceName);
   if (serviceName === "emailToken") {
-    Meteor.enableEmailTokenLogin();
+    Accounts.emailToken.enable();
   }
   else if (Meteor.isClient && (serviceName === "demo" || serviceName === "devAccounts")) {
     var serviceUserDisplay;
@@ -50,7 +50,7 @@ Accounts.deregisterService = function (serviceName) {
   }
   services = _.without(services, serviceName);
   if (serviceName === "emailToken") {
-    Meteor.disableEmailTokenLogin();
+    Accounts.emailToken.disable();
   }
   else if (Meteor.isClient && (serviceName === "demo" || serviceName === "devAccounts")) {
     Accounts.ui.deregisterService(serviceName);

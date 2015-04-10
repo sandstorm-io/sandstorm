@@ -183,6 +183,7 @@ body {
 #topbar #backupGrain  { background-image: url("/download.png"); }
 #topbar #restartGrain { background-image: url("/restart.png"); }
 #topbar #showApiToken { background-image: url("/key.png"); }
+#topbar #show-share-grain { background-image: url("/share.png"); }
 
 button.revoke-token {
   background-position: center;
@@ -460,6 +461,11 @@ svg {
 }
 
 #api-token-popup {
+  left: 250px;
+  width: 450px;
+}
+
+#share-grain-popup {
   left: 250px;
   width: 450px;
 }

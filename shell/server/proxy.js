@@ -124,15 +124,87 @@ Meteor.methods({
     return grainId;
   },
 
-  openSession: function (grainId) {
+  openSession: function (arg) {
     // Open a new UI session on an existing grain.  Starts the grain if it is not already
     // running.
 
-    check(grainId, String);
+    var grainId;
+    var recipient;
+    var petname = "shared by copy-paste";
+    var title;
+    var assignedRoleAssignment = {roleId : 0}; // need a better name for this
+    var hashedKey;
+    var anonUser;
 
-    var sessionId = Random.id();
+    if (arg.ggid) {
+      check(arg.ggid, String);
+      var grain = Grains.findOne(arg.ggid);
+      if (grain) {
+        grainId = grain._id;
+        recipient = grain.userId;
+        anonUser = {sharer: grain.userId};
+        title = grain.title;
+      } else {
+        var roleAssignment = RoleAssignments.findOne(arg.ggid);
+        if (roleAssignment) {
+          grainId = roleAssignment.grainId;
+          recipient = roleAssignment.recipient;
+          anonUser = {sharer : roleAssignment.recipient};
+          title = roleAssignment.title;
+        } else {
+          throw new Meteor.Error(403, "Unauthorized", "No grain found.");
+        }
+      }
+    } else if (arg.key) {
+      check(arg.key, String);
+      hashedKey = Crypto.createHash("sha256").update(arg.key).digest("base64");
+      anonUser = {hashedKey : hashedKey};
+      var roleAssignmentKey = RoleAssignmentKeys.findOne(hashedKey);
+      if (roleAssignmentKey) {
+        var grain = Grains.findOne({_id: roleAssignmentKey.grainId, userId: roleAssignmentKey.sharer});
+        if (grain) {
+          title = grain.title;
+        } else {
+          var roleAssignment = RoleAssignments.findOne({grainId: roleAssignmentKey.grainId,
+                                                        recipient: roleAssignmentKey.sharer},
+                                                       {sort : {created : 1}});
+          if (roleAssignment) {
+            title = roleAssignment.title;
+          } else {
+            throw new Meteor.error(403, "Not allowed.");
+          }
+        }
+        petname = roleAssignmentKey.petname;
+        recipient = roleAssignmentKey.sharer;
+        grainId = roleAssignmentKey.grainId;
+        assignedRoleAssignment = roleAssignmentKey.roleAssignment;
+      } else {
+        throw new Meteor.Error(403, "Unauthorized", "Grain does not exist.");
+      }
+    }
+    if (this.userId && this.userId != recipient) {
+      // TODO prove that we're actually allowed to open this.
+      var roleAssignmentId = Random.id(22);
+      RoleAssignments.insert({
+        _id: roleAssignmentId,
+        grainId: grainId,
+        sharer: recipient,
+        recipient: this.userId,
+        roleAssignment: assignedRoleAssignment,
+        active: true,
+        petname: petname,
+        title: title,
+        created: new Date(),
+      });
+      return {redirect: "/grainRedirect/" + roleAssignmentId};
+    }
+
     var user = Meteor.user();
     var userId = user ? user._id : undefined;
+
+    if (!mayOpenGrain(grainId, recipient)) {
+      throw new Meteor.Error(403, "Unauthorized", "User is not authorized to access this grain.");
+    }
 
     // Start the grain if it is not running.
     var runningGrain = runningGrains[grainId];
@@ -147,8 +219,12 @@ Meteor.methods({
 
     var isOwner = grainInfo.owner === userId;
 
+    var sessionId = Random.id();
     var proxy = new Proxy(grainId, grainInfo.owner, sessionId, null, isOwner, user, null, false,
                           grainInfo.supervisor);
+    if (!userId) {
+      proxy.anonUser = anonUser;
+    }
     proxies[sessionId] = proxy;
     proxiesByHostId[proxy.hostId] = proxy;
 
@@ -157,10 +233,10 @@ Meteor.methods({
       grainId: grainId,
       hostId: proxy.hostId,
       timestamp: new Date().getTime(),
-      userId: userId
+      userId: userId,
     });
 
-    return {sessionId: sessionId, hostId: proxy.hostId};
+    return {sessionId: sessionId, title: title, grainId: grainId};
   },
 
   keepSessionAlive: function (sessionId) {
@@ -392,6 +468,34 @@ Meteor.startup(function () {
 
 var proxiesByApiToken = {};
 
+Meteor.startup(function() {
+  RoleAssignments.find().observe({
+    changed : function (newRoleAssignment, oldRoleAssignment) {
+      if (newRoleAssignment.active != oldRoleAssignment.active) {
+        ApiTokens.find({grainId : oldRoleAssignment.grainId}).forEach(function(apiToken) {
+          delete proxiesByApiToken[apiToken._id];
+        });
+      }
+    },
+    removed : function (oldRoleAssignment) {
+      ApiTokens.find({grainId : oldRoleAssignment.grainId}).forEach(function(apiToken) {
+        delete proxiesByApiToken[apiToken._id];
+      });
+    },
+  });
+
+  RoleAssignmentKeys.find().observe({
+    removed : function (oldRoleAssignmentKey) {
+      ApiTokens.remove({anonUser : {hashedKey : oldRoleAssignmentKey._id}});
+    },
+  });
+  ApiTokens.find().observe({
+    removed : function (oldApiToken) {
+      delete proxiesByApiToken[oldApiToken._id];
+    }
+  });
+});
+
 getProxyForApiToken = function (token) {
   check(token, String);
   var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
@@ -435,9 +539,16 @@ getProxyForApiToken = function (token) {
 
           var isOwner = grain.userId === tokenInfo.userId;
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, isOwner, user, null, true);
+        } else if (tokenInfo.anonUser) {
+          console.log("anonuser: " + JSON.stringify(tokenInfo.anonUser));
+          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, null, true);
+          proxy.anonUser = tokenInfo.anonUser;
         } else {
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, null, true);
         }
+
+        // TODO(soon): Check whether the user is allowed to open the grain at all. This implies denying
+        //   access when we have neither a userId nor an anonUser.
 
         if (tokenInfo.expires) {
           proxy.expires = tokenInfo.expires;
@@ -624,6 +735,7 @@ function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, user
     this.userInfo = userInfo;
   } else if (user) {
     var serviceId;
+    this.userId = user._id;
     if (user.expires) {
       serviceId = "demo:" + user._id;
     } else if (user.devName) {
@@ -753,27 +865,47 @@ Proxy.prototype._callNewApiSession = function (request, userInfo) {
 
 Proxy.prototype._callNewSession = function (request, viewInfo) {
   var userInfo = _.clone(this.userInfo);
-  if (viewInfo.permissions) {
-    var perms = new Array(viewInfo.permissions.length);
-    for (var i = 0; i < perms.length; i++) {
-      perms[i] = this.isOwner;
+  var self = this;
+  var promise = inMeteor(function () {
+    var permissions = [];
+    if (self.userId) {
+      permissions = grainPermissions(self.grainId, self.userId, viewInfo);
+    } else if (self.anonUser && self.anonUser.hashedKey ) {
+      var key = RoleAssignmentKeys.findOne(self.anonUser.hashedKey);
+      if (!key) {
+        throw new Meteor.Error(403, "no key found");
+      }
+      permissions = roleAssignmentKeyPermissions(key, viewInfo);
+    } else if (self.anonUser && self.anonUser.sharer) {
+      permissions = defaultSharedGrainPermissions(self.grainId, self.anonUser.sharer, viewInfo);
     }
-    userInfo.permissions = perms;
+    Sessions.update({_id: self.sessionId}, {$set : {"viewInfo": viewInfo, "permissions": permissions}});
+    return permissions;
+  });
 
-    // Fill in the old permissions field for any apps that still depend on it.
-    var numBytes = Math.ceil(viewInfo.permissions.length / 8);
+  return promise.then(function(permissions) {
+    userInfo.permissions = permissions;
+
+    var numBytes = Math.ceil(permissions.length / 8);
     var buf = new Buffer(numBytes);
-    for (var i = 0; i < numBytes; i++) {
-      buf.writeUInt8(this.isOwner * 255, i);
+    for (var ii =0; ii < numBytes; ++ii) {
+      buf[ii] = 0;
+    }
+    for (var ii = 0; ii < permissions.length; ++ii) {
+      var byteNum = Math.floor(ii / 8);
+      var bitNum = ii % 8;
+      if (permissions[ii]) {
+        buf[byteNum] = (buf[byteNum] | (1 << bitNum));
+      }
     }
     userInfo.deprecatedPermissionsBlob = buf;
-  }
 
-  if (this.isApi) {
-    return this._callNewApiSession(request, userInfo);
-  } else {
-    return this._callNewWebSession(request, userInfo);
-  }
+    if (this.isApi) {
+      return self._callNewApiSession(request, userInfo);
+    } else {
+      return self._callNewWebSession(request, userInfo);
+    }
+  });
 };
 
 Proxy.prototype.getSession = function (request) {
@@ -899,7 +1031,6 @@ function parseAcceptHeader(request) {
 
 Proxy.prototype.doSessionInit = function (request, response, path) {
   path = path || "/";
-
   // Check that the path is relative (ie. starts with a /).
   // Also ensure that it doesn't start with 2 /, because that is interpreted as non-relative
   if (path.lastIndexOf("/", 0) !== 0 || path.lastIndexOf("//", 0) === 0) {

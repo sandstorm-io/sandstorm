@@ -52,7 +52,8 @@ if (Meteor.isServer) {
     if (this.userId) {
       return [
         UserActions.find({userId: this.userId}),
-        Grains.find({userId: this.userId})
+        Grains.find({userId: this.userId}),
+        RoleAssignments.find({recipient: this.userId}),
       ];
     } else {
       return [];
@@ -214,7 +215,7 @@ if (Meteor.isClient) {
         console.error(error);
         alert(error.message);
       } else {
-        Router.go("grain", {grainId: grainId});
+        Router.go("grain", {ggid: grainId});
       }
     });
   };
@@ -223,10 +224,19 @@ if (Meteor.isClient) {
     filteredGrains: function () {
       var selectedApp = Session.get("selectedApp");
       var userId = Meteor.userId();
+      var result = [];
       if (selectedApp) {
         return Grains.find({userId: userId, appId: selectedApp}, {sort: {lastUsed: -1}}).fetch();
       } else {
-        return Grains.find({userId: userId}, {sort: {lastUsed: -1}}).fetch();
+        var result = Grains.find({userId: userId}, {sort: {lastUsed: -1}}).fetch()
+        var uniqueGrains = {};
+        RoleAssignments.find({}, {sort:{created:1}}).forEach(function(roleAssignment) {
+          if (!(roleAssignment.grainId in uniqueGrains)) {
+            result.push({_id : roleAssignment._id, title: roleAssignment.title});
+            uniqueGrains[roleAssignment.grainId] = true;
+          }
+        });
+        return result;
       }
     },
 
@@ -306,7 +316,7 @@ if (Meteor.isClient) {
     },
 
     "click #applist-grains tbody tr.grain": function (event) {
-      Router.go("grain", {grainId: event.currentTarget.getAttribute("data-grainid")});
+      Router.go("grain", {ggid: event.currentTarget.getAttribute("data-grainid")});
     },
 
     "click #install-apps-button": function (event) {
@@ -344,7 +354,7 @@ if (Meteor.isClient) {
                     statusText: err.reason + ": " + err.details,
                   });
                 } else {
-                  Router.go("grain", {grainId: grainId});
+                  Router.go("grain", {ggid: grainId});
                 }
               });
             } else {

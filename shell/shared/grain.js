@@ -33,29 +33,34 @@ if (Meteor.isServer) {
     }
   });
 
+  RoleAssignments.allow({
+    update: function (userId, roleAssignment, fieldNames) {
+      // Allow recipient to rename their reference to a shared grain.
+      return (userId && roleAssignment.recipient === userId &&
+              fieldNames.length === 1 && fieldNames[0] === "title")
+        || (userId && roleAssignment.sharer === userId &&
+            fieldNames.length === 1 && fieldNames[0] === "active");
+    }
+  });
+
+  RoleAssignmentKeys.allow({
+    remove: function (userId, key) {
+      return userId && key.sharer === userId;
+    }
+  });
+
   Meteor.publish("grainTitle", function (grainId) {
     check(grainId, String);
-
-    // You can get the title of an arbitrary grain by ID, but we hide the other metadata, because:
-    // - Revealing the package ID would allow anyone with whom you share a grain to install the
-    //   same app, preventing private apps.
-    // - Revealing the owner's user ID might be undesirable for plausible deniability reasons.
-    //
-    // Except, we actually do need to know if the caller is the grain's owner since we display
-    // extra functionality in that case. So we'll do an owner check first and if that passes return
-    // additional info.
-    var titleInfo;
-    if (Grains.find({_id: grainId, userId: this.userId}).count() > 0) {
-      titleInfo = Grains.find(grainId, { fields: { title: 1, userId: 1 } });
-    } else {
-      titleInfo = Grains.find(grainId, { fields: { title: 1 } });
-    }
+    var titleInfo = Grains.find({_id : grainId, userId: this.userId}, { fields: { title: 1, userId: 1 } });
 
     if (this.userId) {
-      // Also publish API tokens belonging to the user, so that they may be revoked.
-      return [titleInfo, ApiTokens.find({grainId: grainId, userId: this.userId})];
+      return [titleInfo,
+              ApiTokens.find({grainId: grainId, userId: this.userId}),
+              RoleAssignments.find({$or : [{sharer: this.userId}, {recipient: this.userId}]}),
+              RoleAssignmentKeys.find({sharer: this.userId} )
+             ];
     } else {
-      return titleInfo;
+      return [];
     }
   });
 
@@ -125,6 +130,7 @@ Meteor.methods({
       var grain = Grains.findOne({_id: grainId, userId: this.userId});
       if (grain) {
         Grains.remove(grainId);
+        RoleAssignmentKeys.remove({grainId : grainId});
         if (grain.lastUsed) {
           DeleteStats.insert({type: "grain", lastActive: grain.lastUsed});
         }
@@ -134,6 +140,13 @@ Meteor.methods({
         }
       }
     }
+  },
+  deleteRoleAssignments: function (grainId) {
+    check(grainId, String);
+
+    if (this.userId) {
+      RoleAssignments.remove({grainId: grainId, recipient: this.userId});
+    }
   }
 });
 
@@ -142,14 +155,27 @@ if (Meteor.isClient) {
     "click #grainTitle": function (event) {
       var title = window.prompt("Set new title:", this.title);
       if (title) {
-        Grains.update(this.grainId, {$set: {title: title}});
+        if (this.roleAssignmentId) {
+          RoleAssignments.update(this.roleAssignmentId,
+                                 {$set: {title : title}});
+        } else {
+          Grains.update(this.grainId, {$set: {title: title}});
+        }
       }
     },
     "click #deleteGrain": function (event) {
-      if (window.confirm("Really delete this grain?")) {
-        Session.set("showMenu", false);
-        Meteor.call("deleteGrain", this.grainId);
-        Router.go("root");
+      if (this.roleAssignmentId) {
+        if (window.confirm("Really forget this grain?")) {
+          Session.set("showMenu", false);
+          Meteor.call("deleteRoleAssignments", this.grainId, this.userId);
+          Router.go("root");
+        }
+      } else {
+        if (window.confirm("Really delete this grain?")) {
+          Session.set("showMenu", false);
+          Meteor.call("deleteGrain", this.grainId);
+          Router.go("root");
+        }
       }
     },
     "click #openDebugLog": function (event) {
@@ -208,7 +234,7 @@ if (Meteor.isClient) {
     "click #newApiToken": function (event) {
       var grainId = this.grainId;
       Session.set("api-token-" + grainId, "pending");
-      Meteor.call("newApiToken", grainId, document.getElementById("api-token-petname").value,
+      Meteor.call("newApiToken", this.newApiTokenArg, document.getElementById("api-token-petname").value,
           function (error, result) {
         if (error) {
           console.error(error.stack);
@@ -223,6 +249,50 @@ if (Meteor.isClient) {
     "click button.revoke-token": function (event) {
       ApiTokens.remove(event.currentTarget.getAttribute("data-token-id"));
     },
+    "click #show-share-grain": function (event) {
+      if (Session.get("show-share-grain")) {
+        Session.set("show-share-grain", false);
+      } else {
+        Session.set("show-share-grain", true);
+      }
+    },
+    "click #share-grain-popup-closer": function (event) {
+      Session.set("show-share-grain", false);
+    },
+    "click #reset-role-assignment-key": function (event) {
+      Session.set("share-grain-" + this.grainId, undefined);
+    },
+    "click #newRoleAssignmentKey": function (event) {
+      var grainId = this.grainId;
+      Session.set("share-grain-" + grainId, "pending");
+      var roleList = document.getElementById("select-role-list");
+      Meteor.call("newRoleAssignmentKey", grainId,
+                  document.getElementById("share-grain-petname").value,
+                  this.title,
+                  roleList.selectedIndex,
+          function (error, result) {
+        if (error) {
+          console.error(error.stack);
+        } else {
+          Session.set("share-grain-" + grainId, getOrigin() + "/sharedGrain/" + result);
+        }
+      });
+    },
+
+    "click button.revoke-role-assignment-key": function (event) {
+      RoleAssignmentKeys.remove(event.currentTarget.getAttribute("data-key-id"));
+    },
+
+    "click button.revoke-role-assignment": function (event) {
+      RoleAssignments.update(event.currentTarget.getAttribute("data-id"),
+                            {$set : {active : false}});
+    },
+
+    "click button.restore-role-assignment": function (event) {
+      RoleAssignments.update(event.currentTarget.getAttribute("data-id"),
+                            {$set : {active : true}});
+    },
+
     "click #homelink-button": function (event) {
       event.preventDefault();
       Session.set("showMenu", false);
@@ -232,7 +302,7 @@ if (Meteor.isClient) {
       event.preventDefault();
       Session.set("showMenu", false);
     },
-    "click #api-token-popup .copy-me": function(event) {
+    "click .copy-me": function(event) {
       event.preventDefault();
       if (document.body.createTextRange) {
         var range = document.body.createTextRange();
@@ -247,6 +317,11 @@ if (Meteor.isClient) {
       }
     }
   });
+
+  var currentSessionId;
+  var currentAppOrigin;
+  var currentGrainId;
+  var sessionGrainSizeSubscription;
 
   Template.grain.helpers({
     grainSize: function () {
@@ -280,13 +355,29 @@ if (Meteor.isClient) {
       } else {
         document.title = this.title + " · Sandstorm";
       }
-    }
+    },
+
+    permissionsString: function() {
+      var session = Sessions.findOne(currentSessionId);
+      if (session) {
+        var result = "You have these permissions: [ ";
+        if (session.viewInfo && session.viewInfo.permissions && session.permissions) {
+          for (var ii = 0; ii < session.permissions.length; ++ii) {
+            if (session.permissions[ii]) {
+              result += session.viewInfo.permissions[ii].name + "  ";
+            }
+          }
+        }
+        result += "]";
+        return result;
+      } else {
+        return "";
+      }
+    },
+
+    userId: function () { return Meteor.userId(); }
   });
 
-  var currentSessionId;
-  var currentAppOrigin;
-  var currentGrainId;
-  var sessionGrainSizeSubscription;
 
   function setCurrentSessionId(sessionId, appOrigin, grainId) {
     if (sessionGrainSizeSubscription) {
@@ -393,92 +484,120 @@ if (Meteor.isClient) {
   }
 }
 
+function grainRouteHelper(route, grainId, title, openSessionArg, isOwner, roleAssignmentId, rootPath) {
+  var clearError = function() { route.state.set("error", undefined); };
+  DevApps.find().observeChanges({
+    added : clearError,
+    removed: clearError
+  });
+
+  var apiToken = Session.get("api-token-" + grainId);
+  var roleAssignmentKey = Session.get("share-grain-" + grainId);
+
+  var result = {
+    grainId: grainId,
+    title: title,
+    isOwner: isOwner,
+    newApiTokenArg: openSessionArg,
+    apiToken: apiToken,
+    apiTokenPending: apiToken === "pending",
+    showApiToken: Session.get("show-api-token"),
+    existingTokens: ApiTokens.find({grainId: grainId, userId: Meteor.userId()}).fetch(),
+    roleAssignmentId: roleAssignmentId,
+    roleAssignmentKey : roleAssignmentKey,
+    roleAssignmentKeyPending : roleAssignmentKey === "pending",
+    showShareGrain: Session.get("show-share-grain"),
+    existingKeys: RoleAssignmentKeys.find({grainId : grainId}).fetch(),
+    existingAssignments: RoleAssignments.find({grainId: grainId, sharer : Meteor.userId()}).fetch(),
+    showMenu: Session.get("showMenu")
+  };
+
+  var err = route.state.get("error");
+  if (err) {
+    result.error = err;
+    return result;
+  }
+
+  var session = Sessions.findOne({grainId: grainId});
+  if (session) {
+    route.state.set("openingSession", undefined);
+    result.appOrigin = window.location.protocol + "//" + makeWildcardHost(session.hostId);
+    setCurrentSessionId(session._id, result.appOrigin, grainId);
+    result.sessionId = session._id;
+    result.viewInfo = session.viewInfo;
+    var currentPath = window.location.pathname + window.location.search;
+    var grainPath = currentPath.slice(rootPath.length);
+    result.path = encodeURIComponent(grainPath);
+    result.hash = window.location.hash || "";
+    return result;
+  } else if (route.state.get("openingSession")) {
+    return result;
+  } else {
+    route.state.set("openingSession", true);
+    Meteor.call("openSession", openSessionArg, function (error, result) {
+      if (error) {
+        route.state.set("error", error.message);
+        route.state.set("openingSession", undefined);
+      } else if (result.redirect) {
+        // extra indirection just so we get a new Route object.
+        return Router.go(result.redirect);
+      } else {
+        route.state.set("title", result.title);
+        route.state.set("grainId", result.grainId);
+        var subscription = Meteor.subscribe("sessions", result.sessionId);
+        Sessions.find({_id : result.sessionId}).observeChanges({
+          removed: function(session) {
+            subscription.stop();
+          },
+          added: function(session) {
+            route.state.set("openingSession", undefined);
+          }
+        });
+      }
+    });
+    return result;
+  }
+}
+
 GrainLog = new Mongo.Collection("grainLog");
 // Pseudo-collection created by subscribing to "grainLog", implemented in proxy.js.
 
 Router.map(function () {
   this.route("grain", {
-    path: "/grain/:grainId/:path(.*)?",
+    path: "/grain/:ggid/:path(.*)?",
 
     waitOn: function () {
       // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
       return [
-        Meteor.subscribe("grainTitle", this.params.grainId),
+        Meteor.subscribe("grainTitle", this.params.ggid),
         Meteor.subscribe("devApps"),
-        Meteor.subscribe("credentials")
       ];
     },
 
     data: function () {
       // Make sure that if any dev apps are published or removed, we refresh the grain view.
       setCurrentSessionId(undefined, undefined, undefined);
-      var grainId = this.params.grainId;
-      var grain = Grains.findOne(grainId);
-      if (!grain) {
-        return { grainId: grainId, title: "Invalid Grain", error: "No such grain." };
-      }
-
-      var apiToken = Session.get("api-token-" + grainId);
-
-      var result = {
-        grainId: grainId,
-        title: grain.title,
-        isOwner: grain.userId && grain.userId === Meteor.userId(),
-        apiToken: apiToken,
-        apiTokenPending: apiToken === "pending",
-        showApiToken: Session.get("show-api-token"),
-        existingTokens: ApiTokens.find({grainId: grainId, userId: Meteor.userId()}).fetch(),
-        showMenu: Session.get("showMenu")
-      };
-
-      var self = this;
-      var clearError = function() { self.state.set("error", undefined); };
-      DevApps.find().observeChanges({
-        added : clearError,
-        removed: clearError
-      });
-
-      var err = self.state.get("error");
-      if (err) {
-        result.error = err;
-        return result;
-      }
-
-      var session = Sessions.findOne({grainId: grainId, userId: Meteor.userId()});
-      if (session) {
-        result.appOrigin = window.location.protocol + "//" + makeWildcardHost(session.hostId);
-        setCurrentSessionId(session._id, result.appOrigin, grainId);
-        result.sessionId = session._id;
-        var currentPath = window.location.pathname + window.location.search;
-        var rootPath = "/grain/" + grainId;
-        var grainPath = currentPath.slice(rootPath.length);
-        result.path = encodeURIComponent(grainPath);
-        result.hash = window.location.hash || "";
-        return result;
+      var grainId = this.state.get("grainId");
+      var ggid = this.params.ggid; // generalized grainId
+      var title;
+      var roleAssignmentId;
+      var grain = Grains.findOne(ggid);
+      if (grain) {
+        title = grain.title;
       } else {
-        if (self.state.get("openingSession")) {
-          return result;
+        var roleAssignment = RoleAssignments.findOne(ggid);
+        if (roleAssignment) {
+          grainId = roleAssignment.grainId;
+          title = roleAssignment.title;
+          roleAssignmentId = roleAssignment._id;
+        } else {
+          title = this.state.get("title");
         }
-
-        self.state.set("openingSession", true);
-        Meteor.call("openSession", grainId, function (error, session) {
-          if (error) {
-            self.state.set("error", error.message);
-            self.state.set("openingSession", undefined);
-          } else {
-            var subscription = Meteor.subscribe("sessions", session.sessionId);
-            Sessions.find({_id : session.sessionId}).observeChanges({
-              removed: function(session) {
-                subscription.stop();
-              },
-              added: function(session) {
-                self.state.set("openingSession", undefined);
-              }
-            });
-          }
-        });
-        return result;
       }
+      return grainRouteHelper(this, grainId, title, {ggid : ggid},
+                              grain && grain.userId && grain.userId === Meteor.userId(),
+                              roleAssignmentId, "/grain/" + ggid);
+
     },
 
     onStop: function () {
@@ -486,6 +605,14 @@ Router.map(function () {
       Session.set("grainFrameTitle", undefined);
       document.title = DEFAULT_TITLE;
       unblockUpdate();
+    }
+  });
+
+  // Urgh. this is silly.
+  this.route("/grainRedirect/:id", {
+    template: "grain",
+    data: function() {
+      Router.go("/grain/" + this.params.id);
     }
   });
 
@@ -513,5 +640,28 @@ Router.map(function () {
         };
       }
     }
+  });
+
+  this.route("/sharedGrain/:key", {
+    template: "grain",
+
+    waitOn: function () {
+      return [
+        Meteor.subscribe("devApps"),
+      ];
+    },
+
+    data: function() {
+      return grainRouteHelper(this, this.state.get("grainId"), this.state.get("title"),
+                              {key : this.params.key}, false, null,
+                              "/sharedGrain/" + this.params.key);
+    },
+
+    onStop: function () {
+      setCurrentSessionId(undefined, undefined, undefined);
+      Session.set("grainFrameTitle", undefined);
+      document.title = DEFAULT_TITLE;
+      unblockUpdate();
+    },
   });
 });

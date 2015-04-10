@@ -120,7 +120,7 @@ RoleAssignmentKeys = new Mongo.Collection("roleAssignmentKeys");
 // sharing-by-secret-URL.
 //
 // Each contains:
-//   _id: random
+//   _id: A SHA-256 hash of the key.
 //   sharer: The `_id` of the user who created this key.
 //   grainId: The `_id` of the grain whose permissions are being shared.
 //   roleAssignment: A JSON-encoded Grain.ViewSharingLink.RoleAssignment representing the
@@ -201,6 +201,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   userInfo:  For API tokens created by the app through HackSessionContext, the UserInfo struct
 //              that should be passed to `newSession()` when exercising this token, in decoded (JS
 //              object) format. This is a temporary hack.
+//   anonUser : hashedKey or sharer.
 //   objectId:  If present, this token represents an arbitrary Cap'n Proto capability exported by
 //              the app or its supervisor (whereas without this it strictly represents UiView).
 //              sturdyRef is the JSON-encoded SupervisorObjectId (defined in `supervisor.capnp`).

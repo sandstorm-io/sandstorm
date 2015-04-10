@@ -261,6 +261,14 @@ public:
     pid = 0;
   }
 
+  void detach() {
+    // Indicates that you don't intend to wait for this process to complete and do not want it to
+    // be killed when the Subprocess object is destroyed. The parent process needs a wait loop
+    // somewhere to clean up zombies.
+
+    pid = 0;
+  }
+
 private:
   kj::String name;
   kj::UnwindDetector unwindDetector;

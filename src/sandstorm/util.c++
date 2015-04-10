@@ -717,7 +717,10 @@ struct SubprocessSet::WaitMap {
 };
 
 SubprocessSet::SubprocessSet(kj::UnixEventPort& eventPort)
-    : eventPort(eventPort), waitMap(kj::heap<WaitMap>()), waitTask(waitLoop()) {
+    : eventPort(eventPort), waitMap(kj::heap<WaitMap>()),
+      waitTask(waitLoop().eagerlyEvaluate([](kj::Exception&& exception) {
+        KJ_LOG(ERROR, "subprocess wait loop failed", exception);
+      })) {
   kj::UnixEventPort::captureSignal(SIGCHLD);
 }
 
@@ -786,8 +789,6 @@ kj::Promise<void> SubprocessSet::waitLoop() {
       }
     }
     return waitLoop();
-  }).eagerlyEvaluate([](kj::Exception&& exception) {
-    KJ_LOG(ERROR, "subprocess wait loop failed", exception);
   });
 }
 

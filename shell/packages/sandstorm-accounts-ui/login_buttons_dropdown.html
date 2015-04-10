@@ -94,43 +94,23 @@
 </template>
 
 <template name="_loginButtonsLoggedOutPasswordService">
-  {{#if inForgotPasswordFlow}}
-    {{> _forgotPasswordForm}}
-  {{else}}
     <div class="login-form login-password-form">
       {{#each fields}}
         {{> _loginButtonsFormField}}
       {{/each}}
 
-      {{> _loginButtonsMessages}}
-
-      <div class="login-button login-button-form-submit" id="login-buttons-password">
-        {{#if inSignupFlow}}
-          Create account
-        {{else}}
-          Sign in
-        {{/if}}
-      </div>
-
-      {{#if inLoginFlow}}
-        {{#if showCreateAccountLink}}
-          <div class="additional-link-container">
-            <a id="signup-link" class="additional-link">Create account</a>
-          </div>
-        {{/if}}
-
-        {{#if showForgotPasswordLink}}
-          <div class="additional-link-container">
-            <a id="forgot-password-link" class="additional-link">Forgot password</a>
-          </div>
-        {{/if}}
-      {{/if}}
-
       {{#if inSignupFlow}}
-        {{> _loginButtonsBackToLoginLink}}
+      <div class="login-button login-button-form-submit" id="login-buttons-token">
+        Enter token from email
+      </div>
+      {{else}}
+      <div class="login-button login-button-form-submit" id="login-buttons-email">
+        Send login token to email
+      </div>
       {{/if}}
+
+      {{> _loginButtonsMessages}}
     </div>
-  {{/if}}
 </template>
 
 <template name="_forgotPasswordForm">

@@ -9,6 +9,7 @@ underscore
 random
 sandstorm-accounts-ui
 sandstorm-accounts-packages
+accounts-email-token
 email
 reload
 simplesmtp

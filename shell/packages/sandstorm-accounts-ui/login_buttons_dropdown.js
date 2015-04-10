@@ -42,12 +42,17 @@ Template._loginButtonsLoggedInDropdownActions.helpers({
 var sendEmail = function (ev) {
   loginButtonsSession.infoMessage("Sending email...");
   var email = document.getElementById("login-email").value;
-  loginButtonsSession.set("email", email);
   Accounts.createAndEmailTokenForUser(email, function(err) {
     if (err) {
       loginButtonsSession.errorMessage(err.reason || "Unknown error");
+      if (err.error === 409) {
+        // 409 is a special case where the user can resolve the problem on their own.
+        // Specifically, we're using 409 to mean that the email wasn't sent because a rate limit
+        // was hit.
+        loginButtonsSession.set("inSignupFlow", true);
+      }
     } else {
-      document.getElementById("login-email").value = "";
+      document.getElementById("login-email").value = email;
       loginButtonsSession.set("inSignupFlow", true);
       loginButtonsSession.infoMessage("Email sent");
     }
@@ -56,12 +61,13 @@ var sendEmail = function (ev) {
 
 var loginWithToken = function (ev) {
   loginButtonsSession.infoMessage("Logging in...");
-  Meteor.loginWithEmailToken(loginButtonsSession.get("email"),
+  Meteor.loginWithEmailToken(document.getElementById("login-email").value,
                              document.getElementById("login-token").value,
                              function (err) {
     if (err) {
       loginButtonsSession.errorMessage(err.reason || "Unknown error");
     } else {
+      loginButtonsSession.set("inSignupFlow", false);
       loginButtonsSession.closeDropdown();
       Router.go("/");
     }
@@ -133,6 +139,10 @@ Template._loginButtonsLoggedOutPasswordService.helpers({
     ];
 
     var signupFields = [
+      {fieldName: 'email', fieldLabel: 'Email', inputType: 'email',
+       visible: function () {
+         return true;
+       }},
       {fieldName: 'token', fieldLabel: 'Enter authentication code from email', inputType: 'email',
        visible: function () {
          return true;

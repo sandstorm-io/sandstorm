@@ -126,7 +126,7 @@ var createAndEmailTokenForUser = function (email) {
 
   if (user) {
     if (user.services.emailToken.tokens && user.services.emailToken.tokens.length > 2) {
-      throw new Meteor.Error(403, "It looks like we sent a log in email to this address not long " +
+      throw new Meteor.Error(409, "It looks like we sent a log in email to this address not long " +
         "ago. Please use the one that was already sent (check your spam folder if you can't find " +
         "it), or wait a while and try again");
     }

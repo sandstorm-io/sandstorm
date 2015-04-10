@@ -19,8 +19,7 @@ var VALID_KEYS = [
   'configureLoginServiceDialogVisible',
   'configureLoginServiceDialogServiceName',
   'configureLoginServiceDialogSaveDisabled',
-  'configureOnDesktopVisible',
-  'email'
+  'configureOnDesktopVisible'
 ];
 
 var validateKey = function (key) {
@@ -53,7 +52,6 @@ Accounts._loginButtonsSession = {
   },
 
   closeDropdown: function () {
-    this.set('inSignupFlow', false);
     this.set('inForgotPasswordFlow', false);
     this.set('inChangePasswordFlow', false);
     this.set('inMessageOnlyFlow', false);

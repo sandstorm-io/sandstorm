@@ -14,11 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# This Dockerfile is for general Sandstorm usage. Building this image requires
-# a bundle to be in the current directory named 'sandstorm-0.tar.xz'. The
-# easiest way to build this image is to just run `make .docker`. This will
-# compile the Sandstorm bundle first, and then build the docker image and
-# name it `sandstorm`.
+# This Dockerfile is for general Sandstorm usage. It will fetch the latest binary distrubition of
+# Sandstorm and install it inside the container. You can build this image with `make .docker` or
+# `docker build -t sandstorm .`.
 #
 # You can then run the docker container with:
 # docker run -p 6080:6080 -i -t sandstorm
@@ -35,7 +33,7 @@ FROM ubuntu:14.04
 
 # Install sandstorm dependencies
 RUN apt-get update
-RUN apt-get install -y xz-utils
+RUN apt-get install -y curl xz-utils
 
 RUN adduser --disabled-password --gecos "" sandstorm
 USER sandstorm
@@ -43,9 +41,8 @@ ENV HOME /home/sandstorm
 ENV USER sandstorm
 
 ADD ./install.sh /install.sh
-COPY ./sandstorm-0.tar.xz /sandstorm-0.tar.xz
 
-RUN /install.sh -d -u /sandstorm-0.tar.xz
+RUN /install.sh -d -u
 
 RUN echo 'SERVER_USER=sandstorm\n\
 PORT=6080\n\

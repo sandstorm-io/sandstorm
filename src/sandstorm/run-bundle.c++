@@ -1093,6 +1093,7 @@ private:
     kj::String ddpUrl = nullptr;
     kj::String mailUrl = nullptr;
     kj::String updateChannel = nullptr;
+    kj::String sandcatsHostname = nullptr;
     bool allowDemoAccounts = false;
     bool isTesting = false;
     bool allowDevAccounts = false;
@@ -1433,6 +1434,8 @@ private:
         } else {
           config.updateChannel = kj::mv(value);
         }
+      } else if (key == "SANDCATS_BASE_DOMAIN") {
+        config.sandcatsHostname = kj::mv(value);
       } else if (key == "ALLOW_DEMO_ACCOUNTS") {
         config.allowDemoAccounts = value == "true" || value == "yes";
       } else if (key == "ALLOW_DEV_ACCOUNTS") {
@@ -1822,6 +1825,7 @@ private:
           ", \"allowDevAccounts\":", config.allowDevAccounts ? "true" : "false",
           ", \"isTesting\":", config.isTesting ? "true" : "false",
           ", \"wildcardHost\":\"", config.wildcardHost, "\"",
+          ", \"sandcatsHostname\":\"", config.sandcatsHostname, "\"",
           "}}").cStr(), true));
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "main.js", EXEC_END_ARGS));
       KJ_UNREACHABLE;

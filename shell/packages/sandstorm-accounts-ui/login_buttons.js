@@ -56,7 +56,7 @@ getLoginServices = function () {
   services.sort();
 
   // Add password, if it's there; it must come last.
-  if (hasPasswordService())
+  if (hasEmailTokenService())
     services.push('emailToken');
 
   return _.map(services, function(name) {
@@ -64,12 +64,12 @@ getLoginServices = function () {
   });
 };
 
-hasPasswordService = function () {
+hasEmailTokenService = function () {
   return Accounts.emailToken && Accounts.emailToken.isEnabled();
 };
 
 dropdown = function () {
-  return hasPasswordService() || getLoginServices().length > 1;
+  return hasEmailTokenService() || getLoginServices().length > 1;
 };
 
 // XXX improve these. should this be in accounts-password instead?

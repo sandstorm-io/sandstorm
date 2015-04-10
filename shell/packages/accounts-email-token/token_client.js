@@ -24,8 +24,6 @@ Meteor.loginWithEmailToken = function (email, token, callback) {
   });
 };
 
-// Attempt to create a token for an email
-
 /**
  * @summary Create a new token for a given email.
  * @locus Anywhere

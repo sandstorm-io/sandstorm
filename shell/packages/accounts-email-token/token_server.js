@@ -63,7 +63,7 @@ Accounts.registerLoginHandler("emailToken", function (options) {
   if (!found) {
     console.error("Token not found:", user.services.emailToken);
     return {
-      error: new Meteor.Error(403, "Token not found")
+      error: new Meteor.Error(403, "Invalid authentication code")
     };
   }
 
@@ -88,11 +88,16 @@ var makeTokenUrl = function (email, token) {
 var sendTokenEmail = function (email, token) {
   var options = {
     to:  email,
-    from: "Sandstorm " + HOSTNAME + " <no-reply@" + HOSTNAME + ">",
-    subject: "Sandstorm token for " + HOSTNAME,
-    text: "A token has requested on your behalf to login to a Sandstorm instance at " + HOSTNAME +
-      ". You will need to either navigate to " + makeTokenUrl(email, token) + " or manually copy " +
-      token + " into the login dropdown."
+    from: HOSTNAME + " <no-reply@" + HOSTNAME + ">",
+    subject: "Log in to " + HOSTNAME,
+    text: "To log in to " + HOSTNAME + ", click on the following link:\n\n" +
+          makeTokenUrl(email, token) + "\n\n" +
+          "Alternatively, enter the following one-time authentication code into the log-in form:\n\n" +
+          token + "\n\n" +
+          "You are receiving this because someone (hopefully you) requested to log in to HOSTNAME " +
+          "with your email address. If you did not request to log into " + HOSTNAME + ", you may " +
+          "ignore this message.\n\n" +
+          "This information will expire in 15 minutes.\n"
   };
 
   Email.send(options);
@@ -121,8 +126,9 @@ var createAndEmailTokenForUser = function (email) {
 
   if (user) {
     if (user.services.emailToken.tokens && user.services.emailToken.tokens.length > 2) {
-      throw new Meteor.Error(403, "Too many tokens have been made for this user. Please find the " +
-        "token in your email, or wait a bit to try again.");
+      throw new Meteor.Error(403, "It looks like we sent a log in email to this address not long " +
+        "ago. Please use the one that was already sent (check your spam folder if you can't find " +
+        "it), or wait a while and try again");
     }
     userId = user._id;
 

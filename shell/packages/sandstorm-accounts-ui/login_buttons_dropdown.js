@@ -88,7 +88,7 @@ Template._loginButtonsLoggedOutDropdown.events({
 Template._loginButtonsLoggedOutDropdown.helpers({
   // additional classes that can be helpful in styling the dropdown
   additionalClasses: function () {
-    if (!hasPasswordService()) {
+    if (!hasEmailTokenService()) {
       return false;
     } else {
       if (loginButtonsSession.get('inSignupFlow')) {
@@ -105,7 +105,7 @@ Template._loginButtonsLoggedOutDropdown.helpers({
     return loginButtonsSession.get('dropdownVisible');
   },
 
-  hasPasswordService: hasPasswordService
+  hasEmailTokenService: hasEmailTokenService
 });
 
 // return all login services, with password last
@@ -120,7 +120,7 @@ Template._loginButtonsLoggedOutAllServices.helpers({
     return getLoginServices().length > 1;
   },
 
-  hasPasswordService: hasPasswordService
+  hasEmailTokenService: hasEmailTokenService
 });
 
 Template._loginButtonsLoggedOutPasswordService.helpers({
@@ -133,7 +133,7 @@ Template._loginButtonsLoggedOutPasswordService.helpers({
     ];
 
     var signupFields = [
-      {fieldName: 'token', fieldLabel: 'Token', inputType: 'email',
+      {fieldName: 'token', fieldLabel: 'Enter authentication code from email', inputType: 'email',
        visible: function () {
          return true;
        }}

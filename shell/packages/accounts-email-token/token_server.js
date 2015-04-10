@@ -103,9 +103,13 @@ var sendTokenEmail = function (email, token) {
 ///
 // returns the user id
 var createAndEmailTokenForUser = function (email) {
-  // Unknown keys allowed, because a onCreateUserHook can take arbitrary
-  // options.
   check(email, String);
+  var atIndex = email.indexOf("@");
+  if (atIndex === -1) {
+    throw new Meteor.Error(400, "No @ symbol was found in your email");
+  }
+
+  var username = email.slice(0, atIndex);
 
   var user = Meteor.users.findOne({"services.emailToken.email": email});
   var userId;
@@ -127,7 +131,7 @@ var createAndEmailTokenForUser = function (email) {
     var options = {
       email: email,
       profile: {
-        name: email
+        name: username
       }
     };
 

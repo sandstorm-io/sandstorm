@@ -465,7 +465,14 @@ $KEY</textarea></p>
         <div class="alert alert-success"><strong>Success!</strong> Your settings have been saved.</div>
         {{/if}}
         {{#if failure}}
-        <div class="alert alert-danger"><strong>Failure!</strong> Something went wrong trying to save settings. See <code>&lt;install-location&gt;/var/log/sandstorm.log</code> for details.</div>
+        <div class="alert alert-danger"><strong>Failure!</strong>
+          <ul>
+            {{#each errors}}
+            <li>{{details}}</li>
+            {{/each}}
+          </ul>
+          See <code>&lt;install-location&gt;/var/log/sandstorm.log</code> for details.
+        </div>
         {{/if}}
       </form>
     </div>

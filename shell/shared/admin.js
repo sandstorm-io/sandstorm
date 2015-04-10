@@ -40,6 +40,7 @@ Router.map(function () {
       });
       state.set("successes", 0);
       state.set("failures", 0);
+      state.set("errors", []);
       this.render();
     }
   });
@@ -81,6 +82,9 @@ if (Meteor.isClient) {
     if (err) {
       this.set("failures", this.get("failures") + 1);
       console.error(err);
+      var errors = this.get("errors");
+      errors.push(err);
+      this.set("errors", errors);
     } else {
       this.set("successes", this.get("successes") + 1);
     }
@@ -91,7 +95,13 @@ if (Meteor.isClient) {
       var state = Iron.controller().state;
       state.set("successes", 0);
       state.set("failures", 0);
+      state.set("errors", []);
       var handleErrorBound = handleError.bind(state);
+      if (event.target.emailTokenLogin.checked && !event.target.smtpUrl.value) {
+        handleErrorBound(new Meteor.Error(400, "Bad Request", "Trying to enable Passwordless " +
+          "email login while SMTP url is invalid."));
+        return false;
+      }
       Meteor.call("setAccountSetting", "google", event.target.googleLogin.checked, handleErrorBound);
       Meteor.call("setAccountSetting", "github", event.target.githubLogin.checked, handleErrorBound);
       Meteor.call("setAccountSetting", "emailToken", event.target.emailTokenLogin.checked, handleErrorBound);
@@ -134,6 +144,9 @@ if (Meteor.isClient) {
     },
     failure: function () {
       return Iron.controller().state.get("failures");
+    },
+    errors: function () {
+      return Iron.controller().state.get("errors");
     }
   });
 }

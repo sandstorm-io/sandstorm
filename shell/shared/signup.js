@@ -161,6 +161,13 @@ if (Meteor.isClient) {
       Session.set("inviteMessage", undefined);
     },
   });
+
+  Template.signup.helpers({
+    signupDialog: function () {
+      var setting = Settings.findOne("signupDialog");
+      return (setting && setting.value) || DEFAULT_SIGNUP_DIALOG;
+    }
+  });
 }
 
 Router.map(function () {

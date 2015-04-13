@@ -14,8 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var NUM_SETTINGS = 4;
-var accountServiceNames = ["google", "github", "emailToken"];
+var NUM_SETTINGS = 6;
+var publicAdminSettings = ["google", "github", "emailToken", "splashDialog", "signupDialog"];
+
+DEFAULT_SPLASH_DIALOG = "Contact the server admin for an invite.";
+DEFAULT_SIGNUP_DIALOG = "You've been invited to join this Sandstorm server!";
 
 Router.map(function () {
   this.route("admin", {
@@ -47,7 +50,7 @@ Router.map(function () {
 });
 
 if (Meteor.isClient) {
-  Meteor.subscribe("accountsEnabled");
+  Meteor.subscribe("publicAdminSettings");
 
   Meteor.startup(function () {
     Tracker.autorun(function () {
@@ -106,6 +109,8 @@ if (Meteor.isClient) {
       Meteor.call("setAccountSetting", "github", event.target.githubLogin.checked, handleErrorBound);
       Meteor.call("setAccountSetting", "emailToken", event.target.emailTokenLogin.checked, handleErrorBound);
       Meteor.call("setSetting", "smtpUrl", event.target.smtpUrl.value, handleErrorBound);
+      Meteor.call("setSetting", "splashDialog", event.target.splashDialog.value, handleErrorBound);
+      Meteor.call("setSetting", "signupDialog", event.target.signupDialog.value, handleErrorBound);
 
       return false;
     }
@@ -135,6 +140,14 @@ if (Meteor.isClient) {
       } else {
         return false;
       }
+    },
+    splashDialog: function() {
+      var setting = Settings.findOne({_id: "splashDialog"});
+      return (setting && setting.value) || DEFAULT_SPLASH_DIALOG;
+    },
+    signupDialog: function() {
+      var setting = Settings.findOne({_id: "signupDialog"});
+      return (setting && setting.value) || DEFAULT_SIGNUP_DIALOG;
     },
     smtpUrl: function () {
       return Iron.controller().state.get("smtpUrl");
@@ -169,10 +182,6 @@ if (Meteor.isServer) {
     setAccountSetting: function (serviceName, value) {
       if (!isAdmin()) {
         throw new Meteor.Error(403, "Unauthorized", "User must be admin");
-      }
-
-      if (!_.contains(accountServiceNames, serviceName)) {
-        throw new Meteor.Error(500, "Unknown service name: " + serviceName);
       }
 
       var setting = Settings.findOne({_id: serviceName});
@@ -216,7 +225,7 @@ if (Meteor.isServer) {
     }
   });
 
-  Meteor.publish("accountsEnabled", function () {
-    return Settings.find({_id: { $in: accountServiceNames}});
+  Meteor.publish("publicAdminSettings", function () {
+    return Settings.find({_id: { $in: publicAdminSettings}});
   });
 }

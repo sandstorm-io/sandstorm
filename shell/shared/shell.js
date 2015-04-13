@@ -276,7 +276,12 @@ if (Meteor.isClient) {
       }
     },
 
-    dateString: function (date) { return makeDateString(date); }
+    dateString: function (date) { return makeDateString(date); },
+
+    splashDialog: function() {
+      var setting = Settings.findOne("splashDialog");
+      return (setting && setting.value) || DEFAULT_SPLASH_DIALOG;
+    }
   });
 
   Template.root.events({

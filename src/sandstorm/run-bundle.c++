@@ -1818,15 +1818,19 @@ private:
         buildstamp = kj::str(SANDSTORM_BUILD);
       }
 
-      KJ_SYSCALL(setenv("METEOR_SETTINGS", kj::str(
+      kj::String settingsString = kj::str(
           "{\"public\":{\"build\":", buildstamp,
           ", \"kernelTooOld\":", kernelNewEnough ? "false" : "true",
           ", \"allowDemoAccounts\":", config.allowDemoAccounts ? "true" : "false",
           ", \"allowDevAccounts\":", config.allowDevAccounts ? "true" : "false",
           ", \"isTesting\":", config.isTesting ? "true" : "false",
-          ", \"wildcardHost\":\"", config.wildcardHost, "\"",
-          ", \"sandcatsHostname\":\"", config.sandcatsHostname, "\"",
-          "}}").cStr(), true));
+          ", \"wildcardHost\":\"", config.wildcardHost, "\"");
+      if (config.sandcatsHostname.size() > 0) {
+          settingsString = kj::str(settingsString,
+            ", \"sandcatsHostname\":\"", config.sandcatsHostname, "\"");
+      }
+      settingsString = kj::str(settingsString, "}}");
+      KJ_SYSCALL(setenv("METEOR_SETTINGS", settingsString.cStr(), true));
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "main.js", EXEC_END_ARGS));
       KJ_UNREACHABLE;
     }

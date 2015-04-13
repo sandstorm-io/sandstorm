@@ -23,13 +23,13 @@ var Url = Npm.require("url");
 var SANDCATS_HOSTNAME = Meteor.settings && Meteor.settings.public &&
                           Meteor.settings.public.sandcatsHostname;
 var SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
-SANDCATS_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandcats";
+var SANDCATS_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandcats";
 
 var ROOT_URL = Url.parse(process.env.ROOT_URL);
 var HOSTNAME = ROOT_URL.hostname;
 var SANDCATS_NAME; // Look at `startup` below to see where this is set
 
-updateSandcats = function () {
+var updateSandcats = function () {
   var options = {
     hostname: SANDCATS_HOSTNAME,
     path: "/update",
@@ -62,7 +62,7 @@ updateSandcats = function () {
   });
 };
 
-pingUdp = function () {
+var pingUdp = function () {
   var socket = dgram.createSocket("udp4");
   var secret = Random.secret(16);
 

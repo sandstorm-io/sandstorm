@@ -1299,7 +1299,7 @@ private:
     return true;
   }
 
-  kj::MainBuilder::Validity validationError(kj::StringPtr filename, kj::StringPtr problem) {
+  [[noreturn]] void validationError(kj::StringPtr filename, kj::StringPtr problem) {
     context.exitError(kj::str("*** ", filename, ": ", problem));
   }
 
@@ -1307,20 +1307,32 @@ private:
     if (access(dirname.cStr(), F_OK) == 0) {
       return "Output directory already exists.";
     }
+    KJ_SYSCALL(mkdir(dirname.cStr(), 0777), dirname);
 
+    auto spkfd = raiiOpen(spkfile, O_RDONLY);
+    printAppId(unpackImpl(spkfd, dirname, spkfile,
+        [&](kj::StringPtr problem) -> kj::String {
+      validationError(spkfile, problem);
+    }));
+
+    return true;
+  }
+
+  friend kj::String unpackSpk(int spkfd, kj::StringPtr outdir, kj::StringPtr tmpdir);
+
+  static kj::String unpackImpl(
+      int spkfd, kj::StringPtr dirname, kj::StringPtr tmpNear,
+      kj::Function<kj::String(kj::StringPtr problem)> validationError) {
     byte publicKey[crypto_sign_PUBLICKEYBYTES];
     byte sigBytes[crypto_hash_BYTES + crypto_sign_BYTES];
     byte expectedHash[sizeof(sigBytes)];
     unsigned long long hashLength = 0;  // will be overwritten later
 
-    auto tmpfile = openTemporary(spkfile);
+    auto tmpfile = openTemporary(tmpNear);
 
     // Read the spk, checking the magic number, reading the signature header, and decompressing the
     // archive to a temp file.
     {
-      // Open the spk.
-      auto spkfd = raiiOpen(spkfile, O_RDONLY);
-
       // TODO(security):  We could at this point chroot into the output directory and unshare
       //   various resources for extra security, if not for the fact that we need to invoke xz
       //   later on.  Maybe link against the xz library so that we don't have to exec it?
@@ -1328,16 +1340,26 @@ private:
       // Check the magic number.
       auto expectedMagic = spk::MAGIC_NUMBER.get();
       byte magic[expectedMagic.size()];
-      kj::FdInputStream(spkfd.get()).read(magic, expectedMagic.size());
+      kj::FdInputStream(spkfd).read(magic, expectedMagic.size());
       for (uint i: kj::indices(expectedMagic)) {
         if (magic[i] != expectedMagic[i]) {
-          return validationError(spkfile, "Does not appear to be an .spk (bad magic number).");
+          return validationError("Does not appear to be an .spk (bad magic number).");
         }
       }
 
       // Decompress the remaining bytes in the SPK using xz.
-      auto child = kj::heap<ChildProcess>("xz", "-dc", kj::mv(spkfd), ChildProcess::INPUT);
-      kj::FdInputStream in(child->getPipe());
+      int stdoutPipe[2];
+      KJ_SYSCALL(pipe2(stdoutPipe, O_CLOEXEC));
+      kj::AutoCloseFd stdoutReadEnd(stdoutPipe[0]);
+      kj::AutoCloseFd stdoutWriteEnd(stdoutPipe[1]);
+
+      Subprocess::Options childOptions({"xz", "-dc"});
+      childOptions.stdin = spkfd;
+      childOptions.stdout = stdoutWriteEnd;
+      Subprocess child(kj::mv(childOptions));
+
+      stdoutWriteEnd = nullptr;
+      kj::FdInputStream in(kj::mv(stdoutReadEnd));
 
       // Read in the signature.
       {
@@ -1346,12 +1368,12 @@ private:
         auto signature = signatureMessage.getRoot<spk::Signature>();
         auto pkReader = signature.getPublicKey();
         if (pkReader.size() != sizeof(publicKey)) {
-          return validationError(spkfile, "Invalid public key.");
+          return validationError("Invalid public key.");
         }
         memcpy(publicKey, pkReader.begin(), sizeof(publicKey));
         auto sigReader = signature.getSignature();
         if (sigReader.size() != sizeof(sigBytes)) {
-          return validationError(spkfile, "Invalid signature format.");
+          return validationError("Invalid signature format.");
         }
         memcpy(sigBytes, sigReader.begin(), sizeof(sigBytes));
       }
@@ -1360,10 +1382,10 @@ private:
       int result = crypto_sign_open(
           expectedHash, &hashLength, sigBytes, sizeof(sigBytes), publicKey);
       if (result != 0) {
-        return validationError(spkfile, "Invalid signature.");
+        return validationError("Invalid signature.");
       }
       if (hashLength != crypto_hash_BYTES) {
-        return validationError(spkfile, "Wrong signature size.");
+        return validationError("Wrong signature size.");
       }
 
       // Copy archive part to a temp file.
@@ -1377,6 +1399,8 @@ private:
         KJ_REQUIRE(totalRead <= APP_SIZE_LIMIT, "App too big after decompress.");
         tmpOut.write(buffer, n);
       }
+
+      child.waitForSuccess();
     }
 
     // mmap the temp file.
@@ -1390,7 +1414,7 @@ private:
 
     // Check that hashes match.
     if (memcmp(expectedHash, hash, crypto_hash_BYTES) != 0) {
-      return validationError(spkfile, "Signature didn't match package contents.");
+      return validationError("Signature didn't match package contents.");
     }
 
     // Set up archive reader.
@@ -1400,16 +1424,13 @@ private:
     capnp::FlatArrayMessageReader archiveMessage(tmpWords, options);
 
     // Unpack.
-    KJ_SYSCALL(mkdir(dirname.cStr(), 0777), dirname);
     unpackDir(archiveMessage.getRoot<spk::Archive>().getFiles(), dirname);
 
     // Note the appid.
-    printAppId(publicKey);
-
-    return true;
+    return base32Encode(publicKey);
   }
 
-  void unpackDir(capnp::List<spk::Archive::File>::Reader files, kj::StringPtr dirname) {
+  static void unpackDir(capnp::List<spk::Archive::File>::Reader files, kj::StringPtr dirname) {
     std::set<kj::StringPtr> seen;
 
     for (auto file: files) {
@@ -1773,6 +1794,13 @@ private:
 
 kj::Own<AbstractMain> getSpkMain(kj::ProcessContext& context) {
   return kj::heap<SpkTool>(context);
+}
+
+kj::String unpackSpk(int spkfd, kj::StringPtr outdir, kj::StringPtr tmpdir) {
+  return SpkTool::unpackImpl(spkfd, outdir, kj::str(tmpdir, "/spk-unpack-tmp"),
+      [](kj::StringPtr problem) -> kj::String {
+    KJ_FAIL_ASSERT("spk unpack failed", problem);
+  });
 }
 
 }  // namespace sandstorm

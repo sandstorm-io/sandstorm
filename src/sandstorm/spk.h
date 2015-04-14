@@ -23,6 +23,11 @@ namespace sandstorm {
 
 kj::Own<AbstractMain> getSpkMain(kj::ProcessContext& context);
 
+kj::String unpackSpk(int spkfd, kj::StringPtr outdir, kj::StringPtr tmpdir);
+// Read an SPK from `spkfd` placing all of the files in `outdir`. A (large) temporary file
+// will be written (and then deleted) in the directory `tmpdir`. The procedure returns the verified
+// app ID, or throws an exception before writing any output if the signature was not valid.
+
 }  // namespace sandstorm
 
 #endif  // SANDSTORM_SPK_H_

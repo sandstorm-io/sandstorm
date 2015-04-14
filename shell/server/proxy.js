@@ -684,7 +684,7 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user, userInfo, isA
     } else if (user.services && user.services.github) {
       serviceId = "github:" + user.services.github.id;
     } else if (user.services && user.services.emailToken) {
-      serviceId = "emailToken:" + user.services.emailToken.email;
+      serviceId = "email:" + user.services.emailToken.email;
     } else {
       // Make sure that if we add a new user type we don't forget to update this.
       throw new Meteor.Error(500, "Unknown user type.");

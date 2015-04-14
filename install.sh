@@ -485,8 +485,8 @@ else
   fi
 
   if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then
-    # Do not prompt for WILDCARD_URL; simply use default.
-    WILDCARD_URL="$DEFAULT_WILDCARD"
+    # Do not prompt for WILDCARD_HOST; simply use default.
+    WILDCARD_HOST="$DEFAULT_WILDCARD"
   else
     echo "Sandstorm requires you to set up a wildcard DNS entry pointing at the server."
     echo "This allows Sandstorm to allocate new hosts on-the-fly for sandboxing purposes."

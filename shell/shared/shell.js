@@ -215,7 +215,7 @@ if (Meteor.isClient) {
         console.error(error);
         alert(error.message);
       } else {
-        Router.go("grain", {ggid: grainId});
+        Router.go("grain", {grainId: grainId});
       }
     });
   };
@@ -232,7 +232,7 @@ if (Meteor.isClient) {
         var uniqueGrains = {};
         RoleAssignments.find({}, {sort:{created:1}}).forEach(function(roleAssignment) {
           if (!(roleAssignment.grainId in uniqueGrains)) {
-            result.push({_id : roleAssignment._id, title: roleAssignment.title});
+            result.push({_id : roleAssignment.grainId, title: roleAssignment.title});
             uniqueGrains[roleAssignment.grainId] = true;
           }
         });
@@ -316,7 +316,7 @@ if (Meteor.isClient) {
     },
 
     "click #applist-grains tbody tr.grain": function (event) {
-      Router.go("grain", {ggid: event.currentTarget.getAttribute("data-grainid")});
+      Router.go("grain", {grainId: event.currentTarget.getAttribute("data-grainid")});
     },
 
     "click #install-apps-button": function (event) {
@@ -354,7 +354,7 @@ if (Meteor.isClient) {
                     statusText: err.reason + ": " + err.details,
                   });
                 } else {
-                  Router.go("grain", {ggid: grainId});
+                  Router.go("grain", {grainId: grainId});
                 }
               });
             } else {

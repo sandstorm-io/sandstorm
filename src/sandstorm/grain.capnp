@@ -305,8 +305,6 @@ interface UiView extends(PowerboxCapability) {
     # Alice has read-only access to a document and wishes to share the document to Bob, the sharing
     # UI should not offer Alice the ability to share write access, because she doesn't have it in
     # the first place.  The sharing UI figures out what Alice has by examining `deniedPermissions`.
-
-    defaultRole @3 :UInt16;
   }
 
   newSession @1 (userInfo :UserInfo, context :SessionContext,
@@ -496,7 +494,7 @@ interface ViewSharingLink extends(SharingLink) {
 
   struct RoleAssignment {
     union {
-      default @0 :Void;
+      none      @0: Void;   # Grant no permissions.
       allAccess @1 :Void;  # Grant all permissions.
       roleId @2 :UInt16;   # Grant permissions for the given role.
     }

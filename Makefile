@@ -48,7 +48,7 @@ IMAGES= \
     shell/public/wrench.png \
     shell/public/download.png \
     shell/public/key.png \
-	shell/public/share.png \
+    shell/public/share.png \
     shell/public/close.png \
     shell/public/menu.png \
     shell/public/edit-m.png \
@@ -57,7 +57,7 @@ IMAGES= \
     shell/public/wrench-m.png \
     shell/public/download-m.png \
     shell/public/key-m.png \
-	shell/public/share-m.png \
+    shell/public/share-m.png \
     shell/public/close-m.png
 
 # ====================================================================

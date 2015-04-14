@@ -185,6 +185,11 @@ body {
 #topbar #showApiToken { background-image: url("/key.png"); }
 #topbar #show-share-grain { background-image: url("/share.png"); }
 
+.revoked-role-assignment {
+   text-decoration: line-through;
+   font-style: italic;
+}
+
 button.revoke-token {
   background-position: center;
   background-repeat: no-repeat;

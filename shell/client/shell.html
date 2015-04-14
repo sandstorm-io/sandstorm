@@ -226,12 +226,26 @@ limitations under the License.
       {{else}}
         <p>Copy this webkey and give it to the external app:</p>
           <a id="apiTokenText" class="copy-me" href="{{apiToken}}">{{apiToken}}</a>
-        <p><button id="resetApiToken">Go back</button></p>
+        {{#if userId}}
+          <p><button id="resetApiToken">Go back</button></p>
+        {{/if}}
       {{/if}}
     {{else}}
       <p>A webkey allows you to connect an external app (e.g. a mobile app) to this app.</p>
-      <p>Key label: <input type="text" id="api-token-petname" placeholder="e.g. 'Android app'">
-        <button id="newApiToken">Create</button></p>
+      <p>Label: <input type="text" id="api-token-petname" placeholder="e.g. 'Android app'">
+      {{#with viewInfo}}
+        {{#if roles}}
+          Role:
+          <select id="api-token-role">
+            {{#each roles}}
+              <option title={{verbPhrase.defaultText}}
+                      style="{{#if obsolete}}display:none{{else}}{{/if}}">
+                {{title.defaultText}}</option>
+            {{/each}}
+          </select>
+        {{/if}}
+      {{/with}}
+      <button id="newApiToken">Create</button></p>
       {{#if existingTokens}}
         <p>Your existing webkeys:</p>
         <ul>
@@ -245,64 +259,64 @@ limitations under the License.
   <div id="api-token-popup-closer" class="popup-closer"
       style="{{#if showApiToken}}{{else}}display: none{{/if}}"></div>
 
-  <div id="share-grain-popup" class="popup" style="{{#if showShareGrain}}{{else}}display: none{{/if}}">
-    {{#if roleAssignmentKey}}
-      {{#if roleAssignmentKeyPending}}
+  <div id="share-grain-popup" class="popup"
+       style="{{#if showShareGrain}}{{else}}display: none{{/if}}">
+    {{#if shareToken}}
+      {{#if shareTokenPending}}
         <p>Generating...</p>
-        <p><button id="reset-role-assignment-key">Cancel</button></p>
+        <p><button id="reset-share-token">Cancel</button></p>
       {{else}}
-        <p>This link will allow other users to access this grain:</p>
-          <a id="role-assignment-key-text" class="copy-me" href="{{roleAssignmentKey}}">{{roleAssignmentKey}}</a>
-        <p><button id="reset-role-assignment-key">Go back</button></p>
+        <p>Copy this link and share it with other users to grant access:</p>
+        <a id="share-token-key-text" class="copy-me" href="{{shareToken}}">{{shareToken}}</a>
+        <p><button id="reset-share-token">Go back</button></p>
       {{/if}}
     {{else}}
-      <p>{{permissionsString}}</p>
-      <p>Share this grain with another user.</p>
-      <p>Key label: <input type="text" id="share-grain-petname" placeholder="e.g. 'for Bob'">
-
+      <p>Create a secret link to share with other users.</p>
+      <p>Label: <input type="text" id="share-token-petname" placeholder="e.g. 'for Bob'">
       {{#with viewInfo}}
-        <select id="select-role-list">
-          {{#if roles}}
+        {{#if roles}}
+          Role:
+          <select id="share-token-role" title="select a role">
             {{#each roles}}
-            <option value={{title}} style="{{#if obsolete}}display:none{{else}}{{/if}}">
-              {{title.defaultText}}</option>
+              <option title={{verbPhrase.defaultText}}
+                      style="{{#if obsolete}}display:none{{else}}{{/if}}">
+                {{title.defaultText}}</option>
             {{/each}}
-          {{else}}
-            <option> default role</option>
-            {{/if}}
-        </select>
-        {{/with}}
-        <button id="newRoleAssignmentKey">Create</button></p>
-      {{#if existingKeys}}
-      <p> Your existing keys for sharing this grain: </p>
-      <ul>
-       {{#each existingKeys}}
-       <li>
-         {{petname}} ({{dateString created}})
-         <button class="revoke-role-assignment-key" title="delete" data-key-id="{{_id}}">delete</button>
-       </li>
-       {{/each}}
-      </ul>
-      {{/if}}
-
-    {{#if existingAssignments}}
-    <p> Your existing assignments for sharing this grain: </p>
-    <ul>
-      {{#each existingAssignments}}
-      <li>
-        {{_id}} {{recipient}} ({{dateString created}})
-
-          {{#if active}}
-        <button class="revoke-role-assignment" title="revoke" data-id="{{_id}}">revoke</button>
-          {{else}}
-        <button class="restore-role-assignment" title="restore" data-id="{{_id}}">restore</button>
+          </select>
         {{/if}}
-      </li>
-      {{/each}}
-    </ul>
+      {{/with}}
+      <button id="new-share-token">Create</button></p>
+      {{#if existingShareTokens}}
+        <p> Your existing links: </p>
+        <ul>
+        {{#each existingShareTokens}}
+          <li> {{petname}} ({{dateString created}})
+            <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
+          </li>
+        {{/each}}
+        </ul>
+      {{else}}
+        You have not created any links.
+      {{/if}}
+      {{#if existingAssignments}}
+        <p></p>
+        <p> You have shared access with these users: </p>
+        <ul>
+        {{#each existingAssignments}}
+          <li class="{{#if active}}{{else}}revoked-role-assignment{{/if}}">
+            {{displayName recipient}} ({{dateString created}})
+            {{#if active}}
+              <button class="revoke-role-assignment"
+                      title="revoke" data-id="{{_id}}">revoke</button>
+            {{else}}
+              <button class="restore-role-assignment"
+                      title="restore" data-id="{{_id}}">restore</button>
+            {{/if}}
+          </li>
+        {{/each}}
+        </ul>
+      {{/if}}
     {{/if}}
-   {{/if}}
-
   </div>
   <div id="share-grain-popup-closer" class="popup-closer"
       style="{{#if showShareGrain}}{{else}}display: none{{/if}}">

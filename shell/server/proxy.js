@@ -117,126 +117,81 @@ Meteor.methods({
       appId: appId,
       appVersion: manifest.appVersion,
       userId: this.userId,
-      title: title
+      title: title,
+      private: true
     });
     startGrainInternal(packageId, grainId, this.userId, command, true, isDev);
     updateLastActive(grainId, Meteor.userId());
     return grainId;
   },
 
-  openSession: function (arg) {
+  openSession: function (grainId) {
     // Open a new UI session on an existing grain.  Starts the grain if it is not already
     // running.
 
-    var grainId;
-    var recipient;
-    var petname = "shared by copy-paste";
-    var title;
-    var assignedRoleAssignment = {roleId : 0}; // need a better name for this
-    var hashedKey;
-    var anonUser;
-
-    if (arg.ggid) {
-      check(arg.ggid, String);
-      var grain = Grains.findOne(arg.ggid);
-      if (grain) {
-        grainId = grain._id;
-        recipient = grain.userId;
-        anonUser = {sharer: grain.userId};
-        title = grain.title;
-      } else {
-        var roleAssignment = RoleAssignments.findOne(arg.ggid);
-        if (roleAssignment) {
-          grainId = roleAssignment.grainId;
-          recipient = roleAssignment.recipient;
-          anonUser = {sharer : roleAssignment.recipient};
-          title = roleAssignment.title;
-        } else {
-          throw new Meteor.Error(403, "Unauthorized", "No grain found.");
-        }
-      }
-    } else if (arg.key) {
-      check(arg.key, String);
-      hashedKey = Crypto.createHash("sha256").update(arg.key).digest("base64");
-      anonUser = {hashedKey : hashedKey};
-      var roleAssignmentKey = RoleAssignmentKeys.findOne(hashedKey);
-      if (roleAssignmentKey) {
-        var grain = Grains.findOne({_id: roleAssignmentKey.grainId, userId: roleAssignmentKey.sharer});
-        if (grain) {
-          title = grain.title;
-        } else {
-          var roleAssignment = RoleAssignments.findOne({grainId: roleAssignmentKey.grainId,
-                                                        recipient: roleAssignmentKey.sharer},
-                                                       {sort : {created : 1}});
-          if (roleAssignment) {
-            title = roleAssignment.title;
-          } else {
-            throw new Meteor.error(403, "Not allowed.");
-          }
-        }
-        petname = roleAssignmentKey.petname;
-        recipient = roleAssignmentKey.sharer;
-        grainId = roleAssignmentKey.grainId;
-        assignedRoleAssignment = roleAssignmentKey.roleAssignment;
-      } else {
-        throw new Meteor.Error(403, "Unauthorized", "Grain does not exist.");
-      }
+    check(grainId, String);
+    var grain = Grains.findOne(grainId);
+    if (!grain) {
+      throw new Meteor.Error(403, "Unauthorized", "No grain found.");
     }
-    if (this.userId && this.userId != recipient) {
-      // TODO prove that we're actually allowed to open this.
-      var roleAssignmentId = Random.id(22);
-      RoleAssignments.insert({
-        _id: roleAssignmentId,
-        grainId: grainId,
-        sharer: recipient,
-        recipient: this.userId,
-        roleAssignment: assignedRoleAssignment,
-        active: true,
-        petname: petname,
-        title: title,
-        created: new Date(),
-      });
-      return {redirect: "/grainRedirect/" + roleAssignmentId};
-    }
+    var title = grain.title;
 
-    var user = Meteor.user();
-    var userId = user ? user._id : undefined;
-
-    if (!mayOpenGrain(grainId, recipient)) {
+    if (!mayOpenGrain(grainId, this.userId)) {
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to access this grain.");
     }
 
-    // Start the grain if it is not running.
-    var runningGrain = runningGrains[grainId];
-    var grainInfo;
-    if (runningGrain) {
-      grainInfo = waitPromise(runningGrain);
+    return openSessionInternal(grainId, Meteor.user(), title);
+  },
+
+  openSessionFromApiToken: function(token) {
+    // Given an API token, either opens a new WebSession to the underlying grain or returns a
+    // path to which the client should redirect in order to open such a session.
+
+    check(token, String);
+    var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
+    var apiToken = ApiTokens.findOne(hashedToken);
+    if (!apiToken) {
+      throw new Meteor.Error(403, "Unauthorized", "Invalid token.");
+    }
+    var grain = Grains.findOne({_id: apiToken.grainId});
+    if (!grain) {
+      throw new Meteor.error(403, "No such grain.");
+    }
+    var title;
+    if (grain.userId == apiToken.userId) {
+      title = grain.title;
     } else {
-      grainInfo = continueGrain(grainId);
+      var roleAssignment = RoleAssignments.findOne({grainId: apiToken.grainId,
+                                                    recipient: apiToken.userId},
+                                                   {sort : {created : 1}});
+      if (roleAssignment) {
+        title = roleAssignment.title;
+      }
     }
 
-    updateLastActive(grainId, userId);
-
-    var isOwner = grainInfo.owner === userId;
-
-    var sessionId = Random.id();
-    var proxy = new Proxy(grainId, grainInfo.owner, sessionId, null, isOwner, user, null, false,
-                          grainInfo.supervisor);
-    if (!userId) {
-      proxy.anonUser = anonUser;
+    if (this.userId) {
+      if (this.userId != apiToken.userId && this.userId != grain.userId) {
+        RoleAssignments.insert({
+          _id: Random.id(22),
+          grainId: apiToken.grainId,
+          sharer: apiToken.userId,
+          recipient: this.userId,
+          roleAssignment: apiToken.roleAssignment,
+          active: true,
+          petname: apiToken.petname,
+          title: title,
+          created: new Date(),
+          parent: hashedToken
+        });
+      }
+      return {redirect: "/grain/" + apiToken.grainId};
+    } else {
+      if (!mayOpenGrain(apiToken.grainId, apiToken.userId)) {
+        throw new Meteor.Error(403, "Unauthorized",
+                               "User is not authorized to access this grain.");
+      }
+      return openSessionInternal(apiToken.grainId, null, title, apiToken);
     }
-    proxies[sessionId] = proxy;
-    proxiesByHostId[proxy.hostId] = proxy;
-
-    Sessions.insert({
-      _id: sessionId,
-      grainId: grainId,
-      hostId: proxy.hostId,
-      timestamp: new Date().getTime(),
-      userId: userId,
-    });
-
-    return {sessionId: sessionId, title: title, grainId: grainId};
   },
 
   keepSessionAlive: function (sessionId) {
@@ -264,6 +219,39 @@ Meteor.methods({
     waitPromise(shutdownGrain(grainId, grain.userId, true));
   }
 });
+
+function openSessionInternal(grainId, user, title, apiToken) {
+  var userId = user ? user._id : undefined;
+
+  // Start the grain if it is not running.
+  var runningGrain = runningGrains[grainId];
+  var grainInfo;
+  if (runningGrain) {
+    grainInfo = waitPromise(runningGrain);
+  } else {
+    grainInfo = continueGrain(grainId);
+  }
+
+  updateLastActive(grainId, userId);
+
+  var isOwner = grainInfo.owner === userId;
+
+  var sessionId = Random.id();
+  var proxy = new Proxy(grainId, sessionId, null, isOwner, user, null, false);
+  proxy.apiToken = apiToken;
+  proxies[sessionId] = proxy;
+  proxiesByHostId[proxy.hostId] = proxy;
+
+  Sessions.insert({
+    _id: sessionId,
+    grainId: grainId,
+    hostId: proxy.hostId,
+    timestamp: new Date().getTime(),
+    userId: userId,
+  });
+
+  return {sessionId: sessionId, title: title, grainId: grainId};
+}
 
 function updateLastActive(grainId, userId) {
   var now = new Date();
@@ -470,27 +458,27 @@ var proxiesByApiToken = {};
 
 Meteor.startup(function() {
   RoleAssignments.find().observe({
-    changed : function (newRoleAssignment, oldRoleAssignment) {
+    added: function (newRoleAssignment) {
+      ApiTokens.find({grainId: newRoleAssignment.grainId}).forEach(function(apiToken) {
+          delete proxiesByApiToken[apiToken._id];
+      });
+    },
+    changed: function (newRoleAssignment, oldRoleAssignment) {
       if (newRoleAssignment.active != oldRoleAssignment.active) {
-        ApiTokens.find({grainId : oldRoleAssignment.grainId}).forEach(function(apiToken) {
+        ApiTokens.find({grainId: oldRoleAssignment.grainId}).forEach(function(apiToken) {
           delete proxiesByApiToken[apiToken._id];
         });
       }
     },
-    removed : function (oldRoleAssignment) {
+    removed: function (oldRoleAssignment) {
       ApiTokens.find({grainId : oldRoleAssignment.grainId}).forEach(function(apiToken) {
         delete proxiesByApiToken[apiToken._id];
       });
     },
   });
 
-  RoleAssignmentKeys.find().observe({
-    removed : function (oldRoleAssignmentKey) {
-      ApiTokens.remove({anonUser : {hashedKey : oldRoleAssignmentKey._id}});
-    },
-  });
   ApiTokens.find().observe({
-    removed : function (oldApiToken) {
+    removed: function (oldApiToken) {
       delete proxiesByApiToken[oldApiToken._id];
     }
   });
@@ -532,23 +520,23 @@ getProxyForApiToken = function (token) {
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null,
                             tokenInfo.userInfo, true);
         } else if (tokenInfo.userId) {
-          var user = Meteor.users.findOne({_id: tokenInfo.userId});
-          if (!user) {
-            throw new Meteor.Error(403, "User has been deleted");
+          var user = null;
+          if (!tokenInfo.forSharing) {
+            user = Meteor.users.findOne({_id: tokenInfo.userId});
+            if (!user) {
+              throw new Meteor.Error(403, "User has been deleted");
+            }
           }
 
           var isOwner = grain.userId === tokenInfo.userId;
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, isOwner, user, null, true);
-        } else if (tokenInfo.anonUser) {
-          console.log("anonuser: " + JSON.stringify(tokenInfo.anonUser));
-          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, null, true);
-          proxy.anonUser = tokenInfo.anonUser;
+          proxy.apiToken = tokenInfo;
         } else {
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, null, true);
         }
 
-        // TODO(soon): Check whether the user is allowed to open the grain at all. This implies denying
-        //   access when we have neither a userId nor an anonUser.
+        // TODO(soon): Check whether the user is allowed to open the grain at all. This implies
+        // denying access when there is no userId.
 
         if (tokenInfo.expires) {
           proxy.expires = tokenInfo.expires;
@@ -868,16 +856,10 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
   var self = this;
   var promise = inMeteor(function () {
     var permissions = [];
-    if (self.userId) {
+    if (self.apiToken) {
+      permissions = apiTokenPermissions(self.apiToken, viewInfo);
+    } else if (self.userId) {
       permissions = grainPermissions(self.grainId, self.userId, viewInfo);
-    } else if (self.anonUser && self.anonUser.hashedKey ) {
-      var key = RoleAssignmentKeys.findOne(self.anonUser.hashedKey);
-      if (!key) {
-        throw new Meteor.Error(403, "no key found");
-      }
-      permissions = roleAssignmentKeyPermissions(key, viewInfo);
-    } else if (self.anonUser && self.anonUser.sharer) {
-      permissions = defaultSharedGrainPermissions(self.grainId, self.anonUser.sharer, viewInfo);
     }
     Sessions.update({_id: self.sessionId}, {$set : {"viewInfo": viewInfo, "permissions": permissions}});
     return permissions;
@@ -1031,6 +1013,7 @@ function parseAcceptHeader(request) {
 
 Proxy.prototype.doSessionInit = function (request, response, path) {
   path = path || "/";
+
   // Check that the path is relative (ie. starts with a /).
   // Also ensure that it doesn't start with 2 /, because that is interpreted as non-relative
   if (path.lastIndexOf("/", 0) !== 0 || path.lastIndexOf("//", 0) === 0) {

@@ -237,64 +237,40 @@ HackSessionContextImpl.prototype.generateApiToken = function (petname, userInfo,
 };
 
 Meteor.methods({
-  newApiToken: function (arg, petname) {
+  newApiToken: function (grainId, petname, roleAssignment, forSharing) {
     // Create a new user-oriented API token.
 
-    var grainId;
-    var anonUser;
-
-    if (arg.ggid) {
-      check(arg.ggid, String);
-      var grain = Grains.findOne(arg.ggid);
-      if (grain) {
-        grainId = grain._id;
-        anonUser = {sharer: grain.userId};
-      } else {
-        var roleAssignment = RoleAssignments.findOne(arg.ggid);
-        if (roleAssignment) {
-          grainId = roleAssignment.grainId;
-          anonUser = {sharer: roleAssignment.recipient};
-        } else {
-          throw new Meteor.Error(403, "Unauthorized", "No grain found.");
-        }
-      }
-    } else if (arg.key) {
-      check(arg.key, String);
-      hashedKey = Crypto.createHash("sha256").update(arg.key).digest("base64");
-      var roleAssignmentKey = RoleAssignmentKeys.findOne(hashedKey);
-      if (roleAssignmentKey) {
-        grainId = roleAssignmentKey.grainId;
-        anonUser = {hashedKey : hashedKey};
-      } else {
-        throw new Meteor.Error(403, "Unauthorized", "Grain does not exist.");
-      }
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Must be logged in to create an API token.");
     }
 
     check(grainId, String);
     check(petname, String);
+    check(forSharing, Boolean);
+    check(roleAssignment, {
+      none : Match.Optional(null),
+      allAccess: Match.Optional(null),
+      roleId: Match.Optional(Match.Integer),
+    });
+
+    var grain = Grains.findOne(grainId);
+    if (!grain) {
+      throw new Meteor.Error(403, "Unauthorized", "No grain found.");
+    }
 
     var token = Random.secret();
     var endpointUrl = ROOT_URL.protocol + "//" + makeWildcardHost("api");
 
-    if (this.userId) {
-      ApiTokens.insert({
-        _id: Crypto.createHash("sha256").update(token).digest("base64"),
-        userId: this.userId,
-        grainId: grainId,
-        petname: petname,
-        created: new Date(),
-        expires: null
-      });
-    } else {
-      ApiTokens.insert({
-        _id: Crypto.createHash("sha256").update(token).digest("base64"),
-        anonUser: anonUser,
-        grainId: grainId,
-        petname: petname,
-        created: new Date(),
-        expires: null
-      });
-    }
+    ApiTokens.insert({
+      _id: Crypto.createHash("sha256").update(token).digest("base64"),
+      userId: this.userId,
+      grainId: grainId,
+      roleAssignment: roleAssignment,
+      petname: petname,
+      created: new Date(),
+      expires: null,
+      forSharing: forSharing,
+    });
 
     return {token: token, endpointUrl: endpointUrl};
   }

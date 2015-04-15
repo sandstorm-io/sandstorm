@@ -18,6 +18,19 @@
 
 set -euo pipefail
 
+cleanExit () {
+  rc=$1
+
+  if [ $rc != 0 ]; then
+    echo "Log output: "
+    docker logs $CONTAINER_ID
+  fi
+
+  docker stop $CONTAINER_ID
+  docker rm $CONTAINER_ID
+  exit $rc
+}
+
 THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
 cd "$THIS_DIR"
@@ -32,7 +45,13 @@ WILDCARD_HOST=*.local.sandstorm.io:$PORT
 PORT=$PORT" >> $HOME/sandstorm/sandstorm.conf && $HOME/sandstorm/sandstorm start && sleep 5 && tail -f $HOME/sandstorm/var/log/sandstorm.log')
 
 echo -n "Waiting for sandstorm to start."
+COUNT=0
 while ! curl -s localhost:$PORT > /dev/null; do
+  if [ "$COUNT" -gt 600 ]; then  # wait 60 seconds for server to start
+    echo "Sandstorm failed to start"
+    cleanExit 1
+  fi
+  COUNT=$(($COUNT+1))
   echo -n .
   sleep .1
 done;
@@ -43,12 +62,5 @@ npm install
 set +e
 
 npm test
-rc=$?
 
-if [ $rc != 0 ]; then
-  docker logs $CONTAINER_ID
-fi
-
-docker stop $CONTAINER_ID
-docker rm $CONTAINER_ID
-exit $rc
+cleanExit $?

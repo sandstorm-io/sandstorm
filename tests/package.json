@@ -5,7 +5,7 @@
   "devDependencies": {
     "nightwatch": "0.5.36",
     "phantomjs": "~1.9.10",
-    "selenium-standalone": "2.43.1-5"
+    "selenium-standalone": "^4.2.2"
   },
   "repository": {
     "type": "git",

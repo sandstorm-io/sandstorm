@@ -129,6 +129,9 @@ void recursivelyDelete(kj::StringPtr path);
 // Since this may be used in KJ_DEFER to delete temporary directories, all exceptions are
 // recoverable (won't throw if already unwinding).
 
+void recursivelyCreateParent(kj::StringPtr path);
+// Create the parent directory of `path` if it doesn't exist, and the parent's parent, and so on.
+
 kj::String readAll(int fd);
 // Read entire contents of the file descirptor to a String.
 

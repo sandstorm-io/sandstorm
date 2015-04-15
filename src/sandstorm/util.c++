@@ -203,6 +203,25 @@ void recursivelyDelete(kj::StringPtr path) {
   }
 }
 
+void recursivelyCreateParent(kj::StringPtr path) {
+  KJ_IF_MAYBE(pos, path.findLast('/')) {
+    if (*pos == 0) return;
+
+    kj::String parent = kj::heapString(path.slice(0, *pos));
+
+    bool firstTry = true;
+    while (mkdir(parent.cStr(), 0777) < 0) {
+      int error = errno;
+      if (firstTry && error == ENOENT) {
+        recursivelyCreateParent(parent);
+        firstTry = false;
+      } else if (error != EINTR) {
+        KJ_FAIL_SYSCALL("mkdir(parent)", error, parent);
+      }
+    }
+  }
+}
+
 kj::String readAll(int fd) {
   kj::FdInputStream input(fd);
   kj::Vector<char> content;

@@ -1727,6 +1727,7 @@ private:
       inPipe = nullptr;
 
       kj::StringPtr socketPath = Backend::SOCKET_PATH;
+      sandstorm::recursivelyCreateParent(socketPath);
       unlink(socketPath.cStr());
 
       auto io = kj::setupAsyncIo();

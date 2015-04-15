@@ -1591,8 +1591,9 @@ public:
 
 class SupervisorMain::SupervisorImpl final: public Supervisor::Server {
 public:
-  inline SupervisorImpl(UiView::Client&& mainView, DiskUsageWatcher& diskWatcher)
-      : mainView(kj::mv(mainView)), diskWatcher(diskWatcher) {}
+  inline SupervisorImpl(kj::UnixEventPort& eventPort, UiView::Client&& mainView,
+                        DiskUsageWatcher& diskWatcher)
+      : eventPort(eventPort), mainView(kj::mv(mainView)), diskWatcher(diskWatcher) {}
 
   kj::Promise<void> getMainView(GetMainViewContext context) {
     context.getResults(capnp::MessageSize {4, 1}).setView(mainView);
@@ -1621,9 +1622,99 @@ public:
     });
   }
 
+  kj::Promise<void> watchLog(WatchLogContext context) {
+    auto params = context.getParams();
+    auto logFile = sandstorm::raiiOpen("log", O_RDONLY | O_CLOEXEC);
+
+    // Seek to desired start point.
+    struct stat stats;
+    KJ_SYSCALL(fstat(logFile, &stats));
+    uint64_t backlog = kj::min(params.getBacklogAmount(), stats.st_size);
+    KJ_SYSCALL(lseek(logFile, stats.st_size - backlog, SEEK_SET));
+
+    // Create the watcher.
+    auto watcher = kj::heap<LogWatcher>(eventPort, "log", kj::mv(logFile), params.getStream());
+
+    context.releaseParams();
+    context.getResults(capnp::MessageSize { 4, 1 }).setHandle(kj::mv(watcher));
+    return kj::READY_NOW;
+  }
+
 private:
+  kj::UnixEventPort& eventPort;
   UiView::Client mainView;
   DiskUsageWatcher& diskWatcher;
+
+  class LogWatcher: public Handle::Server, private kj::TaskSet::ErrorHandler {
+  public:
+    explicit LogWatcher(kj::UnixEventPort& eventPort, kj::StringPtr logPath,
+                        kj::AutoCloseFd logFileParam, ByteStream::Client stream)
+        : logFile(kj::mv(logFileParam)),
+          inotify(makeInotifyFd()),
+          inotifyObserver(eventPort, inotify, kj::UnixEventPort::FdObserver::OBSERVE_READ),
+          stream(kj::mv(stream)),
+          tasks(*this) {
+      KJ_SYSCALL(inotify_add_watch(inotify, logPath.cStr(), IN_MODIFY));
+      tasks.add(watchLoop());
+    }
+
+  private:
+    kj::AutoCloseFd logFile;
+    kj::AutoCloseFd inotify;
+    kj::UnixEventPort::FdObserver inotifyObserver;
+    ByteStream::Client stream;
+    kj::TaskSet tasks;
+
+    void taskFailed(kj::Exception&& exception) override {
+      KJ_LOG(ERROR, exception);
+    }
+
+    kj::Promise<void> watchLoop() {
+      // Exhaust all events from the inotify queue, because edge triggering.
+      // Luckily we don't actually have to interpret the events because we're only waiting on
+      // one type of event.
+      for (;;) {
+        byte buffer[sizeof(struct inotify_event) + NAME_MAX + 1];
+        ssize_t n;
+        KJ_NONBLOCKING_SYSCALL(n = read(inotify, buffer, sizeof(buffer)));
+        if (n < 0) break;
+        KJ_ASSERT(n > 0);
+      }
+
+      // Read all unread data from logFile and send it to the stream.
+      // TODO(perf): Flow control? Currently we avoid asking for very much data at once.
+      for (;;) {
+        auto req = stream.writeRequest();
+        auto orphanage =
+            capnp::Orphanage::getForMessageContaining<ByteStream::WriteParams::Builder>(req);
+        auto orphan = orphanage.newOrphan<capnp::Data>(4096);
+        auto data = orphan.get();
+
+        size_t n = kj::FdInputStream(logFile.get())
+            .tryRead(data.begin(), data.size(), data.size());
+        bool done = n < data.size();
+        if (done) {
+          orphan.truncate(n);
+        }
+        req.adoptData(kj::mv(orphan));
+
+        tasks.add(req.send().then([](auto) {}));
+
+        if (done) break;
+      }
+
+      // OK, now wait for more.
+      return inotifyObserver.whenBecomesReadable().then([this]() {
+        return watchLoop();
+      });
+    }
+
+    static kj::AutoCloseFd makeInotifyFd() {
+      int ifd;
+      KJ_SYSCALL(ifd = inotify_init1(IN_NONBLOCK | IN_CLOEXEC));
+      return kj::AutoCloseFd(ifd);
+    }
+  };
 };
 
 // -----------------------------------------------------------------------------
@@ -1825,7 +1916,8 @@ auto SupervisorMain::DefaultSystemConnector::run(
   // TODO(someday):  If there are multiple front-ends, or the front-ends restart a lot, we'll
   //   want to wrap the UiView and cache session objects.  Perhaps we could do this by making
   //   them persistable, though it's unclear how that would work with SessionContext.
-  Supervisor::Client mainCap = kj::heap<SupervisorImpl>(kj::mv(app), diskWatcher);
+  Supervisor::Client mainCap = kj::heap<SupervisorImpl>(
+      ioContext.unixEventPort, kj::mv(app), diskWatcher);
 
   auto runner = systemConnector->run(ioContext, kj::mv(mainCap));
   auto acceptTask = kj::mv(runner.task);

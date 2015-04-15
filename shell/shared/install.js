@@ -146,7 +146,7 @@ Meteor.methods({
 
     if (!this.isSimulation) {
       Grains.find(selector).forEach(function (grain) {
-        shutdownGrain(grain._id);
+        shutdownGrain(grain._id, grain.userId);
       });
     }
 

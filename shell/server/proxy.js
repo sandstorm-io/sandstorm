@@ -29,6 +29,7 @@ var ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 var WebSession = Capnp.importSystem("sandstorm/web-session.capnp").WebSession;
 var HackSession = Capnp.importSystem("sandstorm/hack-session.capnp");
 var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
+var Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 
 var SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
@@ -145,7 +146,8 @@ Meteor.methods({
 
     var isOwner = grainInfo.owner === userId;
 
-    var proxy = new Proxy(grainId, sessionId, null, isOwner, user, null, false);
+    var proxy = new Proxy(grainId, grainInfo.owner, sessionId, null, isOwner, user, null, false,
+                          grainInfo.supervisor);
     proxies[sessionId] = proxy;
     proxiesByHostId[proxy.hostId] = proxy;
 
@@ -182,7 +184,7 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
     }
 
-    waitPromise(shutdownGrain(grainId, true));
+    waitPromise(shutdownGrain(grainId, grain.userId, true));
   }
 });
 
@@ -194,10 +196,14 @@ function updateLastActive(grainId, userId) {
   }
 }
 
-function connectToGrain(grainId) {
-  return Capnp.connect("unix:" +
-      Path.join(SANDSTORM_GRAINDIR, grainId, "socket"));
-}
+var backendConnection = Capnp.connect("unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath);
+var backend = backendConnection.restore(null, Backend);
+
+// Don't let the connection get GC'd.
+// TODO(cleanup): The capnp module should either track when connections are no longer needed or
+//   should just keep all connections open until they die (returning the same connection if you
+//   try to connect to the same address twice).
+proxy__dontGcBackendConnection = backendConnection;
 
 openGrain = function (grainId, isRetry) {
   // Create a Cap'n Proto connection to the given grain. Note that this function does not actually
@@ -207,18 +213,16 @@ openGrain = function (grainId, isRetry) {
 
   if (isRetry) {
     // Since this is a retry, try starting the grain even if we think it's already running.
-    continueGrain(grainId);
+    return continueGrain(grainId);
   } else {
     // Start the grain if it is not running.
     var runningGrain = runningGrains[grainId];
     if (runningGrain) {
-      waitPromise(runningGrain);
+      return waitPromise(runningGrain);
     } else {
-      continueGrain(grainId);
+      return continueGrain(grainId);
     }
   }
-
-  return connectToGrain(grainId);
 }
 
 shouldRestartGrain = function (error, retryCount) {
@@ -267,113 +271,54 @@ function continueGrain(grainId) {
 
 function startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev) {
   // Starts the grain supervisor.  Must be executed in a Meteor context.  Blocks until grain is
-  // started.
-
-  var args = [];
-
-  // If we're running outside of the Sandstorm server namespace (e.g. because we're running in
-  // Meteor dev mode), we'll need to invoke "sandstorm supervise" rather than invoke the supervisor
-  // directly.
-  var exe;
-  if (SANDSTORM_ALTHOME) {
-    exe = SANDSTORM_ALTHOME + "/sandstorm";
-    args.push("supervise");
-    args.push("--");
-  } else {
-    exe = "/bin/sandstorm-supervisor";
-  }
-
-  args.push(packageId);
-  args.push(grainId);
-  if (isNew) args.push("-n");
-  if (command.environ) {
-    for (var i in command.environ) {
-      args.push(["-e", command.environ[i].key, "=", command.environ[i].value].join(""));
-    }
-  }
-
-  if (isDev) {
-    // This just allows some debug syscalls that we disable in prod, especially ptrace.
-    args.push("--dev");
-  }
-
-  args.push("--");
+  // started. Returns the supervisor capability.
 
   // Ugly: Stay backwards-compatible with old manifests that had "executablePath" and "args" rather
   //   than just "argv".
-  var exePath = command.deprecatedExecutablePath || command.executablePath;
-  if (exePath) {
-    args.push(exePath);
-  }
-  args = args.concat(command.argv || command.args);
-
-  var proc = ChildProcess.spawn(exe, args, {
-    stdio: ["ignore", "pipe", process.stderr],
-    detached: true
-  });
-  proc.on("error", function (err) {
-    console.error(err.stack);
-    delete runningGrains[grainId];
-  });
-  proc.on("exit", function (code, sig) {
-    if (code) {
-      console.error("sandstorm-supervisor exited with code: " + code);
-    } else if (sig) {
-      console.error("sandstorm-supervisor killed by signal: " + sig);
+  if ("args" in command) {
+    if (!("argv" in command)) {
+      command.argv = command.args;
     }
+    delete command.args;
+  }
+  if ("executablePath" in command) {
+    if (!("deprecatedExecutablePath" in command)) {
+      command.deprecatedExecutablePath = command.executablePath;
+    }
+    delete command.executablePath;
+  }
 
-    delete runningGrains[grainId];
-  });
-  proc.unref();
-
-  var whenReady = new Promise(function (resolve, reject) {
-    proc.stdout.on("data", function (data) {
-      // Data on stdout indicates that the grain is ready.
-      resolve({owner: ownerId});
-    });
-    proc.on("error", function (err) {
-      // Grain failed to start.
-      reject(err);
-    });
-    proc.stdout.on("end", function () {
-      // Grain exited without being ready.
-      reject(new Error("Grain never came up."));
-    });
+  var whenReady = backend.startGrain(ownerId, grainId, packageId, command, isNew, isDev)
+      .then(function (results) {
+    return {
+      owner: ownerId,
+      supervisor: results.grain
+    };
   });
 
   runningGrains[grainId] = whenReady;
   return waitPromise(whenReady);
 }
 
-shutdownGrain = function (grainId, keepSessions) {
+shutdownGrain = function (grainId, ownerId, keepSessions) {
   if (!keepSessions) {
     Sessions.remove({grainId: grainId});
   }
 
-  // Try to send a shutdown.  The grain may not be running, in which case this will fail, which
-  // is fine.  In fact even if the grain is running, we expect the call to fail because the grain
-  // kills itself before returning.
-  var connection = Capnp.connect("unix:" + Path.join(SANDSTORM_GRAINDIR, grainId, "socket"));
-  var supervisor = connection.restore(null, Supervisor);
-
-  return supervisor.shutdown().then(function (result) {
-    supervisor.close();
-    connection.close();
-  }, function (error) {
-    supervisor.close();
-    connection.close();
-  });
+  var grain = backend.getGrain(ownerId, grainId).grain;
+  waitPromise(grain.shutdown().then(function () {
+    grain.close();
+    throw new Error("expected shutdown() to throw disconnected");
+  }, function (err) {
+    grain.close();
+    if (err.type !== "disconnected") {
+      throw err;
+    }
+  }));
 }
 
-deleteGrain = function (grainId) {
-  shutdownGrain(grainId);
-  // Give time to shut down before deleting.
-  setTimeout(function () {
-    var dir = Path.join(SANDSTORM_GRAINDIR, grainId);
-    if (Fs.existsSync(dir)) {
-      recursiveRmdir(dir);
-    }
-  }, 1000);
+deleteGrain = function (grainId, ownerId) {
+  waitPromise(backend.deleteGrain(ownerId, grainId));
 }
 
 getGrainSize = function (sessionId, oldSize) {
@@ -435,10 +380,13 @@ Meteor.startup(function () {
   Sessions.find({}).forEach(function (session) {
     var grain = Grains.findOne(session.grainId);
     var user = Meteor.users.findOne({_id: session.userId});
-    var isOwner = grain.userId === session.userId;
-    var proxy = new Proxy(session.grainId, session._id, session.hostId, isOwner, user, null, false);
-    proxies[session._id] = proxy;
-    proxiesByHostId[session.hostId] = proxy;
+    if (grain && user) {
+      var isOwner = grain.userId === session.userId;
+      var proxy = new Proxy(session.grainId, grain.userId, session._id, session.hostId, isOwner,
+                            user, null, false);
+      proxies[session._id] = proxy;
+      proxiesByHostId[session.hostId] = proxy;
+    }
   });
 });
 
@@ -480,7 +428,8 @@ getProxyForApiToken = function (token) {
           if ("userId" in tokenInfo.userInfo) {
             tokenInfo.userInfo.userId = new Buffer(tokenInfo.userInfo.userId);
           }
-          proxy = new Proxy(tokenInfo.grainId, null, null, false, null, tokenInfo.userInfo, true);
+          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null,
+                            tokenInfo.userInfo, true);
         } else if (tokenInfo.userId) {
           var user = Meteor.users.findOne({_id: tokenInfo.userId});
           if (!user) {
@@ -488,9 +437,9 @@ getProxyForApiToken = function (token) {
           }
 
           var isOwner = grain.userId === tokenInfo.userId;
-          proxy = new Proxy(tokenInfo.grainId, null, null, isOwner, user, null, true);
+          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, isOwner, user, null, true);
         } else {
-          proxy = new Proxy(tokenInfo.grainId, null, null, false, null, null, true);
+          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, null, true);
         }
 
         if (tokenInfo.expires) {
@@ -658,8 +607,11 @@ tryProxyRequest = function (hostId, req, res) {
 // Connects to a grain and exports it on a wildcard host.
 //
 
-function Proxy(grainId, sessionId, preferredHostId, isOwner, user, userInfo, isApi) {
+function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, userInfo, isApi,
+               supervisor) {
   this.grainId = grainId;
+  this.ownerId = ownerId;
+  this.supervisor = supervisor;  // note: optional parameter; we can reconnect
   this.sessionId = sessionId;
   this.isOwner = isOwner;
   this.isApi = isApi;
@@ -761,14 +713,13 @@ function Proxy(grainId, sessionId, preferredHostId, isOwner, user, userInfo, isA
 }
 
 Proxy.prototype.getConnection = function () {
-  // TODO(perf):  Several proxies could share a connection if opening the same grain in multiple
-  //   tabs.  Each should be a separate session.
-  if (!this.connection) {
-    this.connection = connectToGrain(this.grainId);
-    this.supervisor = this.connection.restore(null, Supervisor);
+  if (!this.supervisor) {
+    this.supervisor = backend.getGrain(this.ownerId, this.grainId).grain;
+    this.uiView = null;
+  }
+  if (!this.uiView) {
     this.uiView = this.supervisor.getMainView().view;
   }
-  return this.connection;
 }
 
 var Url = Npm.require("url");
@@ -836,7 +787,8 @@ Proxy.prototype.getSession = function (request) {
       return self._callNewSession(request, viewInfo);
     }, function (error) {
       // Assume method not implemented.
-      // TODO(someday): Maybe we need a better way to detect method-not-implemented?
+      // TODO(apibump): These days we have error.type === "unimplemented", but old apps may not
+      //   have that Cap'n Proto update.
       return self._callNewSession(request, {});
     });
     this.session = new Capnp.Capability(promise, WebSession);
@@ -855,13 +807,13 @@ Proxy.prototype.resetConnection = function () {
     this.session.close();
     delete this.session;
   }
-  if (this.connection) {
+  if (this.uiView) {
     this.uiView.close();
-    this.supervisor.close();
-    this.connection.close();
     delete this.uiView;
+  }
+  if (this.supervisor) {
+    this.supervisor.close();
     delete this.supervisor;
-    delete this.connection;
   }
 }
 
@@ -876,7 +828,7 @@ Proxy.prototype.maybeRetryAfterError = function (error, retryCount) {
   if (shouldRestartGrain(error, retryCount)) {
     this.resetConnection();
     return inMeteor(function () {
-      continueGrain(self.grainId);
+      self.supervisor = continueGrain(self.grainId).supervisor;
     });
   } else {
     throw error;
@@ -1473,43 +1425,50 @@ Proxy.prototype.handleWebSocket = function (request, socket, head, retryCount) {
 
 Meteor.publish("grainLog", function (grainId) {
   check(grainId, String);
+  var id = 0;
   var grain = Grains.findOne(grainId);
   if (!grain || !this.userId || grain.userId !== this.userId) {
-    this.added("grainLog", 0, {text: "Only the grain owner can view the debug log."});
+    this.added("grainLog", id++, {text: "Only the grain owner can view the debug log."});
     this.ready();
     return;
   }
 
-  var logfile = SANDSTORM_GRAINDIR + "/" + grainId + "/log";
-
-  var fd = Fs.openSync(logfile, "r");
-  var startSize = Fs.fstatSync(fd).size;
-
-  // Start tailing at EOF - 8k.
-  var offset = Math.max(0, startSize - 8192);
-
+  var connected = false;
   var self = this;
-  function doTail() {
-    for (;;) {
-      var buf = new Buffer(Math.max(1024, startSize - offset));
-      var n = Fs.readSync(fd, buf, 0, buf.length, offset);
-      if (n <= 0) break;
-      self.added("grainLog", offset, {text: buf.toString("utf8", 0, n)});
-      offset += n;
+
+  var receiver = {
+    write: function (data) {
+      connected = true;
+      self.added("grainLog", id++, {text: data.toString("utf8")});
+    },
+    close: function () {
+      if (connected) {
+        self.added("grainLog", id++, {
+          text: "*** lost connection to grain (probably because it shut down) ***"
+        });
+      }
+    }
+  };
+
+  try {
+    // Wait for watchLog() to return because it will always write the initial tail before
+    // returning.
+    var supervisor = backend.getGrain(grain.userId, grainId).grain;
+    var handle = waitPromise(supervisor.watchLog(8192, receiver)).handle;
+    connected = true;
+    this.onStop(function() {
+      handle.close();
+    });
+  } catch (err) {
+    if (err.type !== "disconnected") {
+      throw err;
+    }
+    if (!connected) {
+      this.added("grainLog", id++, {
+        text: "*** couldn't connect to grain (probably because it isn't running) ***"
+      });
     }
   }
-
-  // Watch the file for changes.
-  var watcher = Fs.watch(logfile, {persistent: false}, Meteor.bindEnvironment(doTail));
-
-  // When the subscription stops, stop watching the file.
-  this.onStop(function() {
-    watcher.close();
-    Fs.closeSync(fd);
-  });
-
-  // Read initial 8k tail data immediately.
-  doTail();
 
   // Notify ready.
   this.ready();

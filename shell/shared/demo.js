@@ -57,7 +57,7 @@ if (Meteor.isServer) {
         if (grain.lastUsed) {
           DeleteStats.insert({type: "grain", lastActive: grain.lastUsed});
         }
-        deleteGrain(grain._id);
+        deleteGrain(grain._id, grain.userId);
       });
       console.log("delete user: " + user._id);
       Meteor.users.remove(user._id);

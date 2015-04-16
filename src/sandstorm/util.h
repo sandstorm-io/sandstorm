@@ -49,6 +49,14 @@ namespace sandstorm {
 typedef unsigned int uint;
 typedef unsigned char byte;
 
+struct Pipe {
+  kj::AutoCloseFd readEnd;
+  kj::AutoCloseFd writeEnd;
+
+  static Pipe make();
+  static Pipe makeAsync();
+};
+
 kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666);
 kj::AutoCloseFd raiiOpenAt(int dirfd, kj::StringPtr name, int flags, mode_t mode = 0666);
 
@@ -129,6 +137,9 @@ void recursivelyDelete(kj::StringPtr path);
 // Since this may be used in KJ_DEFER to delete temporary directories, all exceptions are
 // recoverable (won't throw if already unwinding).
 
+void recursivelyCreateParent(kj::StringPtr path);
+// Create the parent directory of `path` if it doesn't exist, and the parent's parent, and so on.
+
 kj::String readAll(int fd);
 // Read entire contents of the file descirptor to a String.
 
@@ -191,7 +202,7 @@ public:
     // An array of 'NAME=VALUE' pairs specifying the child's environment. If null, inherits the
     // parent's environment.
 
-    Options(kj::StringPtr executable): executable(executable), argv(&executable, 1) {}
+    Options(kj::StringPtr executable): executable(executable), argv(&this->executable, 1) {}
     Options(kj::ArrayPtr<const kj::StringPtr> argv): executable(argv[0]), argv(argv) {}
     Options(kj::Array<const kj::StringPtr>&& argv)
         : executable(argv[0]), argv(argv), ownArgv(kj::mv(argv)) {}

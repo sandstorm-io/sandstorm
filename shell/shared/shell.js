@@ -212,6 +212,7 @@ if (Meteor.isClient) {
     Meteor.call("newGrain", packageId, command, title, function (error, grainId) {
       if (error) {
         console.error(error);
+        alert(error.message);
       } else {
         Router.go("grain", {grainId: grainId});
       }

@@ -37,6 +37,7 @@
 #include <sys/syscall.h>
 #include <sys/utsname.h>
 #include <sys/capability.h>
+#include <sys/eventfd.h>
 #include <linux/securebits.h>
 #include <sched.h>
 #include <grp.h>
@@ -56,6 +57,7 @@
 #include "util.h"
 #include "spk.h"
 #include "minibox.h"
+#include "backend.h"
 
 namespace sandstorm {
 
@@ -650,17 +652,6 @@ public:
                   .build();
             },
             "For internal use only.")
-        .addSubCommand("supervise",
-            [this]() {
-              return kj::MainBuilder(context, VERSION,
-                      "Run a sandstorm-supervisor process inside the server's namespace. This is "
-                      "mainly used to make it easier to run the front-end in dev mode.")
-                  .expectZeroOrMoreArgs("<supervisor-args>",
-                      KJ_BIND_METHOD(*this, addSuperviseArg))
-                  .callAfterParsing(KJ_BIND_METHOD(*this, supervise))
-                  .build();
-            },
-            "For internal use only.")
         .build();
   }
 
@@ -1029,54 +1020,6 @@ public:
     return true;
   }
 
-  kj::MainBuilder::Validity supervise() {
-    changeToInstallDir();
-
-    // Verify that Sandstorm is running.
-    if (getRunningPid() == nullptr) {
-      context.exitError("Sandstorm is not running.");
-    }
-
-    // Connect to the devmode socket. The server daemon listens on this socket for commands.
-    // See `runDevDaemon()`.
-    auto sock = connectToDevDaemon();
-
-    // Send the command code.
-    kj::FdOutputStream((int)sock).write(&DEVMODE_COMMAND_SUPERVISE, 1);
-
-    // Forward our standard I/O FDs.
-    sendFd(sock, STDIN_FILENO);
-    sendFd(sock, STDOUT_FILENO);
-    sendFd(sock, STDERR_FILENO);
-
-    // Send supervisor args.
-    kj::FdOutputStream((int)sock).write(superviseArgs.begin(), superviseArgs.size());
-
-    // Send EOF.
-    KJ_SYSCALL(shutdown(sock, SHUT_WR));
-
-    // Wait for exit status.
-    int status;
-    kj::FdInputStream((int)sock).read(&status, sizeof(status));
-
-    if (WIFEXITED(status)) {
-      _exit(WEXITSTATUS(status));
-    } else if (WIFSIGNALED(status)) {
-      // Try to kill ourself with the same signal to emulate the same outcome.
-      KJ_SYSCALL(kill(getpid(), WTERMSIG(status)));
-      // Otherwise just report it.
-      context.exitError(kj::str("Supervisor terminated by signal: ", WTERMSIG(status)));
-    } else {
-      context.exitError("Supervisor terminated with status I didn't understand.");
-    }
-  }
-
-  kj::MainBuilder::Validity addSuperviseArg(kj::StringPtr arg) {
-    superviseArgs.addAll(arg);
-    superviseArgs.add('\0');
-    return true;
-  }
-
 private:
   kj::ProcessContext& context;
 
@@ -1100,8 +1043,6 @@ private:
 
   kj::String updateFile;
   kj::StringPtr devtoolsBindir = "/usr/local/bin";
-
-  kj::Vector<char> superviseArgs;
 
   bool changedDir = false;
   bool unsharedUidNamespace = false;
@@ -1464,13 +1405,17 @@ private:
 
     // Clean up the temp directory.
     KJ_REQUIRE(changedDir);
-    if (access("../tmp", F_OK) == 0) {
-      recursivelyDelete("../tmp");
-    }
-    mkdir("../tmp", 0770);
-    KJ_SYSCALL(chmod("../tmp", 0770));
-    if (runningAsRoot) {
-      KJ_SYSCALL(chown("../tmp", 0, config.uids.gid));
+
+    static const char* const TMPDIRS[2] = { "../tmp", "../var/sandstorm/tmp" };
+    for (const char* tmpDir: TMPDIRS) {
+      if (access(tmpDir, F_OK) == 0) {
+        recursivelyDelete(tmpDir);
+      }
+      mkdir(tmpDir, 0770);
+      KJ_SYSCALL(chmod(tmpDir, 0770 | S_ISVTX));
+      if (runningAsRoot) {
+        KJ_SYSCALL(chown(tmpDir, 0, config.uids.gid));
+      }
     }
 
     auto sigfd = prepareMonitoringLoop();
@@ -1564,6 +1509,10 @@ private:
 
     auto sigfd = prepareMonitoringLoop();
 
+    context.warning("** Starting back-end...");
+    pid_t backendPid = startBackend(config);
+    uint64_t backendStartTime = getTime();
+
     context.warning("** Starting MongoDB...");
     pid_t mongoPid = startMongo(config);
     int64_t mongoStartTime = getTime();
@@ -1571,7 +1520,7 @@ private:
     // Create the mongo user if it hasn't been created already.
     maybeCreateMongoUser(config);
 
-    context.warning("** Mongo started; now starting front-end...");
+    context.warning("** Back-end and Mongo started; now starting front-end...");
 
     // If we're root, run the dev daemon. At present the dev daemon requires root (in order to
     // use FUSE), so we don't run it if we aren't root.
@@ -1606,6 +1555,7 @@ private:
         // which is us.
 
         // Reap zombies until there are no more.
+        bool backendDied = false;
         bool mongoDied = false;
         bool nodeDied = false;
         for (;;) {
@@ -1614,6 +1564,8 @@ private:
           if (deadPid <= 0) {
             // No more zombies.
             break;
+          } else if (deadPid == backendPid) {
+            backendDied = true;
           } else if (deadPid == mongoPid) {
             mongoDied = true;
           } else if (deadPid == nodePid) {
@@ -1626,12 +1578,26 @@ private:
         }
 
         // Deal with mongo or node dying.
+        if (backendDied) {
+          maybeWaitAfterChildDeath("Back-end", backendStartTime);
+          backendPid = startBackend(config);
+          backendStartTime = getTime();
+        }
         if (mongoDied) {
           maybeWaitAfterChildDeath("MongoDB", mongoStartTime);
           mongoPid = startMongo(config);
           mongoStartTime = getTime();
-        } else if (nodeDied) {
+        }
+        if (nodeDied) {
           maybeWaitAfterChildDeath("Front-end", nodeStartTime);
+          nodePid = startNode(config);
+          nodeStartTime = getTime();
+        }
+
+        if (mongoDied && !nodeDied) {
+          // If the back-end died then we unfortunately need to restart node as well.
+          context.warning("** Restarting front-end due to back-end failure");
+          killChild("Front-end", nodePid);
           nodePid = startNode(config);
           nodeStartTime = getTime();
         }
@@ -1656,6 +1622,7 @@ private:
         context.warning("** Shutting down due to signal");
         killChild("Front-end", nodePid);
         killChild("MongoDB", mongoPid);
+        killChild("Back-end", backendPid);
         killChild("Dev daemon", devDaemonPid);
         context.exit();
       }
@@ -1663,9 +1630,7 @@ private:
   }
 
   pid_t startMongo(const Config& config) {
-    pid_t outerPid;
-    KJ_SYSCALL(outerPid = fork());
-    if (outerPid == 0) {
+    Subprocess process([&]() -> int {
       dropPrivs(config.uids);
       clearSignalMask();
 
@@ -1677,15 +1642,11 @@ private:
           "--replSet", "ssrs", "--oplogSize", "16",
           EXEC_END_ARGS));
       KJ_UNREACHABLE;
-    }
+    });
 
     // Wait for mongod to return, meaning the database is up.  Then get its real pid via the
     // pidfile.
-    int status;
-    KJ_SYSCALL(waitpid(outerPid, &status, 0));
-
-    KJ_ASSERT(WIFEXITED(status) && WEXITSTATUS(status) == 0,
-        "MongoDB failed on startup. Check var/log/mongo.log.");
+    process.waitForSuccess();
 
     // Even after the startup command exits, MongoDB takes exactly two seconds to elect itself as
     // master of the repl set (of which it is the only damned member). Unforutnately, if Node
@@ -1760,10 +1721,53 @@ private:
     }
   }
 
+  pid_t startBackend(const Config& config) {
+    int pipeFds[2];
+    KJ_SYSCALL(pipe2(pipeFds, O_CLOEXEC));
+    kj::AutoCloseFd inPipe(pipeFds[0]);
+    kj::AutoCloseFd outPipe(pipeFds[1]);
+
+    Subprocess process([&]() -> int {
+      inPipe = nullptr;
+
+      kj::StringPtr socketPath = Backend::SOCKET_PATH;
+      sandstorm::recursivelyCreateParent(socketPath);
+      unlink(socketPath.cStr());
+
+      auto io = kj::setupAsyncIo();
+      auto& network = io.provider->getNetwork();
+      auto listener = network.parseAddress(kj::str("unix:", socketPath))
+          .wait(io.waitScope)->listen();
+
+      if (runningAsRoot) {
+        // Make socket available to server user.
+        KJ_SYSCALL(chmod(socketPath.cStr(), 0770));
+        KJ_SYSCALL(chown(socketPath.cStr(), 0, config.uids.gid));
+      }
+
+      dropPrivs(config.uids);
+      clearSignalMask();
+
+      capnp::TwoPartyServer server(kj::heap<BackendImpl>(*io.lowLevelProvider, network));
+
+      // Signal readiness.
+      write(outPipe, "ready", 5);
+      outPipe = nullptr;
+
+      server.listen(*listener).wait(io.waitScope);
+      KJ_UNREACHABLE;
+    });
+
+    outPipe = nullptr;
+    KJ_ASSERT(sandstorm::readAll(inPipe) == "ready", "starting back-end failed");
+
+    pid_t result = process.getPid();
+    process.detach();
+    return result;
+  }
+
   pid_t startNode(const Config& config) {
-    pid_t result;
-    KJ_SYSCALL(result = fork());
-    if (result == 0) {
+    Subprocess process([&]() -> int {
       dropPrivs(config.uids);
       clearSignalMask();
 
@@ -1825,8 +1829,10 @@ private:
           "}}").cStr(), true));
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "main.js", EXEC_END_ARGS));
       KJ_UNREACHABLE;
-    }
+    });
 
+    pid_t result = process.getPid();
+    process.detach();
     return result;
   }
 
@@ -2156,69 +2162,11 @@ private:
   static constexpr kj::byte DEVMODE_COMMAND_CONNECT = 1;
   // Command code sent by `sandstorm dev` command, which is invoked by `spk dev`.
 
-  static constexpr kj::byte DEVMODE_COMMAND_GETNS = 2;
-  // Command code sent by sandstorm-supervisor when it needs to enter our namespace.
-  //
-  // TODO(cleanup): This constant is also defined in supervisor-main.c++. Share them.
-
-  static constexpr kj::byte DEVMODE_COMMAND_SUPERVISE = 3;
-  // Command code sent by `sandstorm supervise` command, which is invoked by the front-end when
-  // running in meteor dev mode (outside of the sandbox) in order to start an app. The front-end
-  // can't just invoke sandstorm-supervisor directly in this case since it's not in the proper
-  // namespace. This command must be followed by three file descriptors (to represent stdin,
-  // stdout, stderr), a series of NUL-terminated strings representing the arguments, and then
-  // EOF.
-
   [[noreturn]] void runDevSession(const Config& config, kj::AutoCloseFd internalFd) {
     auto exception = kj::runCatchingExceptions([&]() {
       // When someone connects, we expect them to pass us a one-byte command code.
       kj::byte commandCode;
       kj::FdInputStream((int)internalFd).read(&commandCode, 1);
-      if (commandCode == DEVMODE_COMMAND_GETNS) {
-        // Oh, they just want to know our namespace.
-        auto nsfd = raiiOpen("/proc/self/ns/mnt", O_RDONLY);
-        sendFd(internalFd, nsfd);
-        return;
-      } else if (commandCode == DEVMODE_COMMAND_SUPERVISE) {
-        // Oh, they want us to run a sandstorm-supervisor.
-
-        // Receive the standard FDs and dup2() them into place.
-        KJ_SYSCALL(dup2(receiveFd(internalFd), STDIN_FILENO));
-        KJ_SYSCALL(dup2(receiveFd(internalFd), STDOUT_FILENO));
-        KJ_SYSCALL(dup2(receiveFd(internalFd), STDERR_FILENO));
-
-        // Re-enable child reaping.
-        KJ_SYSCALL(signal(SIGCHLD, SIG_DFL));
-
-        // Supervisor should run unprivileged.
-        dropPrivs(config.uids);
-
-        // Compute args.
-        auto args = readAll(internalFd);
-        kj::StringPtr argsPtr = args;
-
-        kj::Vector<const char*> argv;
-        argv.add("/bin/sandstorm-supervisor");
-        while (argsPtr.size() > 0) {
-          argv.add(argsPtr.begin());
-          argsPtr = argsPtr.slice(KJ_ASSERT_NONNULL(
-              argsPtr.findFirst('\0'), "Invalid args pack; each arg must end with '\0'!") + 1);
-        }
-        argv.add(nullptr);
-
-        // Execute.
-        pid_t child;
-        KJ_SYSCALL(child = fork());
-        if (child == 0) {
-          KJ_SYSCALL(execv(argv[0], const_cast<char**>(argv.begin())));
-          KJ_UNREACHABLE;
-        } else {
-          int status;
-          KJ_SYSCALL(waitpid(child, &status, 0));
-          kj::FdOutputStream((int)internalFd).write(&status, sizeof(status));
-          _exit(0);
-        }
-      }
 
       KJ_REQUIRE(commandCode == DEVMODE_COMMAND_CONNECT);
       context.warning("** Accepted new dev session connection...");
@@ -2469,8 +2417,6 @@ private:
 };
 
 constexpr kj::byte RunBundleMain::DEVMODE_COMMAND_CONNECT;
-constexpr kj::byte RunBundleMain::DEVMODE_COMMAND_GETNS;
-constexpr kj::byte RunBundleMain::DEVMODE_COMMAND_SUPERVISE;
 
 }  // namespace sandstorm
 

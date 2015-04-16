@@ -75,7 +75,11 @@ if (Meteor.isServer) {
         }
       }, function (err) {
         if (!stopped) {
-          self.error(err);
+          if (err.type === "disconnected") {
+            self.stop();
+          } else {
+            self.error(err);
+          }
         }
       });
     }
@@ -88,7 +92,11 @@ if (Meteor.isServer) {
       }
     }, function (err) {
       if (!stopped) {
-        self.error(err);
+        if (err.type === "disconnected") {
+          self.stop();
+        } else {
+          self.error(err);
+        }
       }
     });
 
@@ -121,7 +129,7 @@ Meteor.methods({
           DeleteStats.insert({type: "grain", lastActive: grain.lastUsed});
         }
         if (!this.isSimulation) {
-          deleteGrain(grainId);
+          waitPromise(deleteGrain(grainId, this.userId));
           Meteor.call("deleteUnusedPackages", grain.appId);
         }
       }
@@ -496,8 +504,9 @@ Router.map(function () {
     data: function () {
       if (this.ready()) {
         maybeScrollLog();
+        var grain = Grains.findOne(this.params.grainId);
         return {
-          title: Grains.findOne(this.params.grainId).title,
+          title: grain ? grain.title : "(deleted grain)",
           html: AnsiUp.ansi_to_html(GrainLog.find({}, {$sort: {_id: 1}})
               .map(function (entry) { return entry.text; })
               .join(""), {use_classes:true})

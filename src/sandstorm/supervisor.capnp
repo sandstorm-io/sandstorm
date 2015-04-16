@@ -50,6 +50,10 @@ interface Supervisor {
 
   drop @6 (ref :SupervisorObjectId);
   # Wraps `MainView.drop()`. Can also drop capabilities hosted by the supervisor.
+
+  watchLog @7 (backlogAmount :UInt64, stream :Util.ByteStream) -> (handle :Util.Handle);
+  # Write the last `backlogAmount` bytes of the grain's debug log to `stream`, and then watch the
+  # log for changes, writing them to `stream` as they happen, until `handle` is dropped.
 }
 
 interface SandstormCore {

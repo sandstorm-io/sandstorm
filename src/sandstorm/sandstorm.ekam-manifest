@@ -9,3 +9,4 @@ package.capnp node_modules/sandstorm/package.capnp
 supervisor.capnp node_modules/sandstorm/supervisor.capnp
 util.capnp node_modules/sandstorm/util.capnp
 web-session.capnp node_modules/sandstorm/web-session.capnp
+backend.capnp node_modules/sandstorm/backend.capnp

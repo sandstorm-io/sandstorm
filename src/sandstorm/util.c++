@@ -30,6 +30,18 @@
 
 namespace sandstorm {
 
+Pipe Pipe::make() {
+  int fds[2];
+  KJ_SYSCALL(pipe2(fds, O_CLOEXEC));
+  return { kj::AutoCloseFd(fds[0]), kj::AutoCloseFd(fds[1]) };
+}
+
+Pipe Pipe::makeAsync() {
+  int fds[2];
+  KJ_SYSCALL(pipe2(fds, O_CLOEXEC | O_ASYNC));
+  return { kj::AutoCloseFd(fds[0]), kj::AutoCloseFd(fds[1]) };
+}
+
 kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode) {
   int fd;
   KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);
@@ -133,7 +145,7 @@ kj::AutoCloseFd openTemporary(kj::StringPtr near) {
 
   int fd;
   auto name = kj::str(near, ".XXXXXX");
-  KJ_SYSCALL(fd = mkostemp(name.begin(), O_CLOEXEC));
+  KJ_SYSCALL(fd = mkostemp(name.begin(), O_CLOEXEC), name);
   kj::AutoCloseFd result(fd);
   KJ_SYSCALL(unlink(name.cStr()));
   return result;
@@ -200,6 +212,27 @@ void recursivelyDelete(kj::StringPtr path) {
     KJ_SYSCALL(rmdir(path.cStr()), path) { break; }
   } else {
     KJ_SYSCALL(unlink(path.cStr()), path) { break; }
+  }
+}
+
+void recursivelyCreateParent(kj::StringPtr path) {
+  KJ_IF_MAYBE(pos, path.findLast('/')) {
+    if (*pos == 0) return;
+
+    kj::String parent = kj::heapString(path.slice(0, *pos));
+
+    bool firstTry = true;
+    while (mkdir(parent.cStr(), 0777) < 0) {
+      int error = errno;
+      if (firstTry && error == ENOENT) {
+        recursivelyCreateParent(parent);
+        firstTry = false;
+      } else if (error == EEXIST) {
+        break;
+      } else if (error != EINTR) {
+        KJ_FAIL_SYSCALL("mkdir(parent)", error, parent);
+      }
+    }
   }
 }
 
@@ -569,7 +602,7 @@ kj::Array<byte> base64Decode(kj::StringPtr input) {
 // =======================================================================================
 
 Subprocess::Subprocess(Options&& options)
-    : name(kj::heapString(options.executable)) {
+    : name(kj::heapString(options.argv.size() > 0 ? options.argv[0] : options.executable)) {
   KJ_SYSCALL(pid = fork());
   if (pid == 0) {
     KJ_DEFER(_exit(1));  // Do not under any circumstances return from this stack frame!

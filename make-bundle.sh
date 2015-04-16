@@ -93,7 +93,6 @@ rm -f bundle/README
 mkdir -p bundle/bin
 ln -s ../sandstorm bundle/bin/spk
 ln -s ../sandstorm bundle/bin/minibox
-ln -s ../sandstorm bundle/bin/sandstorm-supervisor
 cp bin/sandstorm-http-bridge bundle/bin/sandstorm-http-bridge
 cp bin/sandstorm bundle/sandstorm
 cp $METEOR_DEV_BUNDLE/bin/node bundle/bin
@@ -151,7 +150,11 @@ cp /usr/share/locale/locale.alias bundle/usr/share/locale
 strip bundle/sandstorm bundle/bin/*
 find bundle -name '*.so' | xargs strip
 
-git rev-parse HEAD > bundle/git-revision
+if [ -e .git ]; then
+  git rev-parse HEAD > bundle/git-revision
+else
+  echo "unknown" > bundle/git-revision
+fi
 echo "$USER@$HOSTNAME $(date)" > bundle/buildstamp
 
 cat > bundle/README.md << '__EOF__'

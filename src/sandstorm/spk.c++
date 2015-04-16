@@ -1278,7 +1278,7 @@ private:
   }
 
   kj::MainBuilder::Validity setUnpackSpkfile(kj::StringPtr name) {
-    if (access(name.cStr(), F_OK) < 0) {
+    if (name != "-" && access(name.cStr(), F_OK) < 0) {
       return "Not found.";
     }
 
@@ -1304,14 +1304,30 @@ private:
   }
 
   kj::MainBuilder::Validity doUnpack() {
+    if (dirname == nullptr) {
+      return "must specify directory name when filename doesn't end with \".spk\"";
+    }
     if (access(dirname.cStr(), F_OK) == 0) {
-      return "Output directory already exists.";
+      return "output directory already exists";
     }
     KJ_SYSCALL(mkdir(dirname.cStr(), 0777), dirname);
 
-    auto spkfd = raiiOpen(spkfile, O_RDONLY);
-    printAppId(unpackImpl(spkfd, dirname, spkfile,
+    kj::AutoCloseFd ownFd;
+    int spkfd;
+
+    kj::StringPtr tmpNear;
+    if (spkfile == "-") {
+      spkfd = STDIN_FILENO;
+      tmpNear = "/tmp/spk-unpack";
+    } else {
+      ownFd = raiiOpen(spkfile, O_RDONLY);
+      spkfd = ownFd;
+      tmpNear = spkfile;
+    }
+
+    printAppId(unpackImpl(spkfd, dirname, tmpNear,
         [&](kj::StringPtr problem) -> kj::String {
+      rmdir(dirname.cStr());
       validationError(spkfile, problem);
     }));
 

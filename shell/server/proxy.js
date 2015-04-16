@@ -512,14 +512,7 @@ getProxyForApiToken = function (token) {
         }
 
         var proxy;
-        if (tokenInfo.userInfo) {
-          // Hack: When Mongo stores a Buffer, it comes back as some other type.
-          if ("userId" in tokenInfo.userInfo) {
-            tokenInfo.userInfo.userId = new Buffer(tokenInfo.userInfo.userId);
-          }
-          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null,
-                            tokenInfo.userInfo, true);
-        } else if (tokenInfo.userId) {
+        if (tokenInfo.userId) {
           var user = null;
           if (!tokenInfo.forSharing) {
             user = Meteor.users.findOne({_id: tokenInfo.userId});
@@ -531,12 +524,20 @@ getProxyForApiToken = function (token) {
           var isOwner = grain.userId === tokenInfo.userId;
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, isOwner, user, null, true);
           proxy.apiToken = tokenInfo;
+        } else if (tokenInfo.userInfo) {
+          // Hack: When Mongo stores a Buffer, it comes back as some other type.
+          if ("userId" in tokenInfo.userInfo) {
+            tokenInfo.userInfo.userId = new Buffer(tokenInfo.userInfo.userId);
+          }
+          proxy = new Proxy(tokenInfo.grainId, null, null, false, null, tokenInfo.userInfo, true);
         } else {
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, null, true);
         }
 
-        // TODO(soon): Check whether the user is allowed to open the grain at all. This implies
-        // denying access when there is no userId.
+        if (!mayOpenGrain(tokenInfo.grainId, tokenInfo.userId)) {
+          // Note that only public grains may be opened without a user ID.
+          throw new Meteor.Error(403, "Unauthorized.");
+        }
 
         if (tokenInfo.expires) {
           proxy.expires = tokenInfo.expires;

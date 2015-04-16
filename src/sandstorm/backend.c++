@@ -17,6 +17,8 @@
 #include "backend.h"
 #include <kj/debug.h>
 #include "util.h"
+#include <capnp/serialize.h>
+#include <stdio.h>  // rename()
 
 namespace sandstorm {
 
@@ -63,47 +65,45 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
 
   // Grain is not currently running, so let's start it.
   kj::Own<kj::AsyncInputStream> stdoutPipe;
-  {
-    kj::Vector<kj::String> argv;
+  kj::Vector<kj::String> argv;
 
-    argv.add(kj::heapString("supervisor"));
+  argv.add(kj::heapString("supervisor"));
 
-    if (isNew) {
-      argv.add(kj::heapString("-n"));
-    }
-
-    if (devMode) {
-      argv.add(kj::heapString("--dev"));
-    }
-
-    for (auto env: command.getEnviron()) {
-      argv.add(kj::str("-e", env.getKey(), "=", env.getValue()));
-    }
-
-    argv.add(kj::heapString(packageId));
-    argv.add(kj::heapString(grainId));
-
-    argv.add(kj::heapString("--"));
-
-    if (command.hasDeprecatedExecutablePath()) {
-      argv.add(kj::heapString(command.getDeprecatedExecutablePath()));
-    }
-    for (auto arg: command.getArgv()) {
-      argv.add(kj::heapString(arg));
-    }
-
-    Subprocess::Options options(KJ_MAP(a, argv) -> const kj::StringPtr { return a; });
-    options.executable = "/sandstorm";
-
-    int pipefds[2];
-    KJ_SYSCALL(pipe2(pipefds, O_CLOEXEC));
-    kj::AutoCloseFd stdoutOut(pipefds[1]);
-    stdoutPipe = ioProvider.wrapInputFd(pipefds[0],
-        kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP |
-        kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC);
-    options.stdout = stdoutOut;
-    Subprocess(kj::mv(options)).detach();
+  if (isNew) {
+    argv.add(kj::heapString("-n"));
   }
+
+  if (devMode) {
+    argv.add(kj::heapString("--dev"));
+  }
+
+  for (auto env: command.getEnviron()) {
+    argv.add(kj::str("-e", env.getKey(), "=", env.getValue()));
+  }
+
+  argv.add(kj::heapString(packageId));
+  argv.add(kj::heapString(grainId));
+
+  argv.add(kj::heapString("--"));
+
+  if (command.hasDeprecatedExecutablePath()) {
+    argv.add(kj::heapString(command.getDeprecatedExecutablePath()));
+  }
+  for (auto arg: command.getArgv()) {
+    argv.add(kj::heapString(arg));
+  }
+
+  Subprocess::Options options(KJ_MAP(a, argv) -> const kj::StringPtr { return a; });
+  options.executable = "/sandstorm";
+
+  int pipefds[2];
+  KJ_SYSCALL(pipe2(pipefds, O_CLOEXEC));
+  kj::AutoCloseFd stdoutOut(pipefds[1]);
+  stdoutPipe = ioProvider.wrapInputFd(pipefds[0],
+      kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP |
+      kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC);
+  options.stdout = stdoutOut;
+  Subprocess process(kj::mv(options));
 
   // Wait until supervisor prints something on stdout, indicating that it is ready.
   static byte dummy[256];
@@ -119,7 +119,7 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
     return kj::mv(addressPromise);
   }).then([](kj::Own<kj::NetworkAddress>&& address) {
     return address->connect();
-  }).then([this,KJ_MVCAP(stdoutPipe),grainId = kj::heapString(grainId)]
+  }).then([this,KJ_MVCAP(stdoutPipe),KJ_MVCAP(process),grainId = kj::heapString(grainId)]
           (kj::Own<kj::AsyncIoStream>&& connection) mutable {
     // Connected. Create the RunningGrain and fulfill promises.
     auto ignorePromise = ignoreAll(*stdoutPipe);
@@ -127,7 +127,7 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
 
     auto grain = kj::heap<RunningGrain>(*this, kj::mv(grainId), kj::mv(connection));
     auto client = grain->getSupervisor();
-    tasks.add(grain->onDisconnect().attach(kj::mv(grain)));
+    tasks.add(grain->onDisconnect().attach(kj::mv(grain), kj::mv(process)));
     return client;
   }).fork();
 
@@ -146,6 +146,21 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
 kj::Promise<void> BackendImpl::ignoreAll(kj::AsyncInputStream& input) {
   static byte dummy[256];
   return input.read(dummy, sizeof(dummy)).then([&input]() { ignoreAll(input); });
+}
+
+kj::Promise<kj::String> BackendImpl::readAll(kj::AsyncInputStream& input, kj::Vector<char> soFar) {
+  soFar.resize(soFar.size() + 4096);
+  return input.tryRead(soFar.end() - 4096, 4096, 4096)
+      .then([KJ_MVCAP(soFar),&input](size_t n) mutable -> kj::Promise<kj::String> {
+    if (n < 4096) {
+      // Must be EOF.
+      soFar.resize(soFar.size() - 4096 + n);
+      soFar.add('\0');
+      return kj::String(soFar.releaseAsArray());
+    } else {
+      return readAll(input, kj::mv(soFar));
+    }
+  });
 }
 
 BackendImpl::RunningGrain::RunningGrain(
@@ -210,8 +225,103 @@ kj::Promise<void> BackendImpl::deleteGrain(DeleteGrainContext context) {
 
 // =======================================================================================
 
+class BackendImpl::PackageUploadStreamImpl: public Backend::PackageUploadStream::Server {
+public:
+  PackageUploadStreamImpl(BackendImpl& backend, Pipe inPipe = Pipe::make(),
+                          Pipe outPipe = Pipe::make())
+      : inputWriteFd(kj::mv(inPipe.writeEnd)),
+        outputReadFd(kj::mv(outPipe.readEnd)),
+        inputWriteEnd(backend.ioProvider.wrapOutputFd(inputWriteFd,
+            kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC)),
+        outputReadEnd(backend.ioProvider.wrapInputFd(outputReadFd,
+            kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC)),
+        tmpdir(tempDirname()),
+        unpackProcess(startProcess(kj::mv(inPipe.readEnd), kj::mv(outPipe.writeEnd), tmpdir)) {}
+
+protected:
+  kj::Promise<void> write(WriteContext context) override {
+    auto forked = writeQueue.then([this,context]() mutable {
+      auto data = context.getParams().getData();
+      return KJ_REQUIRE_NONNULL(inputWriteEnd, "called write() after done()")
+          ->write(data.begin(), data.size());
+    }).fork();
+
+    writeQueue = forked.addBranch();
+    return forked.addBranch();
+  }
+
+  kj::Promise<void> done(DoneContext context) override {
+    auto forked = writeQueue.then([this,context]() mutable {
+      KJ_REQUIRE(inputWriteEnd != nullptr, "called done() multiple times");
+      inputWriteEnd = nullptr;
+    }).fork();
+
+    writeQueue = forked.addBranch();
+    return forked.addBranch();
+  }
+
+  kj::Promise<void> expectSize(ExpectSizeContext context) override {
+    // don't care
+    return kj::READY_NOW;
+  }
+
+  kj::Promise<void> saveAs(SaveAsContext context) override {
+    KJ_REQUIRE(!saveCalled, "saveAs() already called");
+    saveCalled = true;
+    return readAll(*outputReadEnd).then([this,context](kj::String text) mutable {
+      {
+        KJ_ON_SCOPE_FAILURE(recursivelyDelete(tmpdir));
+        unpackProcess.waitForSuccess();
+      }
+
+      auto packageId = context.getParams().getPackageId();
+      auto finalName = kj::str("/var/sandstorm/apps/", packageId);
+      KJ_SYSCALL(rename(tmpdir.cStr(), finalName.cStr()));
+      KJ_ON_SCOPE_FAILURE(recursivelyDelete(finalName));
+
+      capnp::StreamFdMessageReader reader(raiiOpen(
+          kj::str(finalName, "/sandstorm-manifest"), O_RDONLY));
+      auto manifest = reader.getRoot<spk::Manifest>();
+
+      capnp::MessageSize sizeHint = manifest.totalSize();
+      sizeHint.wordCount += 8 + text.size() / sizeof(capnp::word);
+      auto results = context.getResults(sizeHint);
+      results.setAppId(trim(text));
+      results.setManifest(manifest);
+    }, [this](kj::Exception&& e) {
+      kj::runCatchingExceptions([&]() { recursivelyDelete(tmpdir); });
+      kj::throwRecoverableException(kj::mv(e));
+    });
+  }
+
+private:
+  kj::AutoCloseFd inputWriteFd;
+  kj::AutoCloseFd outputReadFd;
+  kj::Maybe<kj::Own<kj::AsyncOutputStream>> inputWriteEnd;
+  kj::Own<kj::AsyncInputStream> outputReadEnd;
+  kj::Promise<void> writeQueue = kj::READY_NOW;
+  kj::String tmpdir;
+  Subprocess unpackProcess;
+  bool saveCalled = false;
+
+  static kj::String tempDirname() {
+    static uint counter = 0;
+    return kj::str("/tmp/", time(nullptr), ".", counter++, ".unpacking");
+  }
+
+  static Subprocess startProcess(
+      kj::AutoCloseFd input, kj::AutoCloseFd output, kj::StringPtr outdir) {
+    Subprocess::Options options({"spk", "unpack", "-", outdir});
+    options.executable = "/proc/self/exe";
+    options.stdin = input;
+    options.stdout = output;
+    return Subprocess(kj::mv(options));
+  }
+};
+
 kj::Promise<void> BackendImpl::installPackage(InstallPackageContext context)  {
-  return KJ_EXCEPTION(UNIMPLEMENTED);
+  context.getResults().setStream(kj::heap<PackageUploadStreamImpl>(*this));
+  return kj::READY_NOW;
 }
 
 } // namespace sandstorm

@@ -49,6 +49,14 @@ namespace sandstorm {
 typedef unsigned int uint;
 typedef unsigned char byte;
 
+struct Pipe {
+  kj::AutoCloseFd readEnd;
+  kj::AutoCloseFd writeEnd;
+
+  static Pipe make();
+  static Pipe makeAsync();
+};
+
 kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666);
 kj::AutoCloseFd raiiOpenAt(int dirfd, kj::StringPtr name, int flags, mode_t mode = 0666);
 

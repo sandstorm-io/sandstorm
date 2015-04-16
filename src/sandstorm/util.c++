@@ -30,6 +30,18 @@
 
 namespace sandstorm {
 
+Pipe Pipe::make() {
+  int fds[2];
+  KJ_SYSCALL(pipe2(fds, O_CLOEXEC));
+  return { kj::AutoCloseFd(fds[0]), kj::AutoCloseFd(fds[1]) };
+}
+
+Pipe Pipe::makeAsync() {
+  int fds[2];
+  KJ_SYSCALL(pipe2(fds, O_CLOEXEC | O_ASYNC));
+  return { kj::AutoCloseFd(fds[0]), kj::AutoCloseFd(fds[1]) };
+}
+
 kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode) {
   int fd;
   KJ_SYSCALL(fd = open(name.cStr(), flags, mode), name);

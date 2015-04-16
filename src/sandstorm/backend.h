@@ -22,6 +22,7 @@
 #include <kj/async-io.h>
 #include <capnp/rpc-twoparty.h>
 #include <kj/one-of.h>
+#include <kj/vector.h>
 
 namespace sandstorm {
 
@@ -67,10 +68,14 @@ private:
 
   std::map<kj::StringPtr, StartingGrain> supervisors;
 
+  class PackageUploadStreamImpl;
+
   kj::Promise<Supervisor::Client> bootGrain(kj::StringPtr grainId, kj::StringPtr packageId,
       spk::Manifest::Command::Reader command, bool isNew, bool devMode, bool isRetry);
 
   static kj::Promise<void> ignoreAll(kj::AsyncInputStream& input);
+  static kj::Promise<kj::String> readAll(kj::AsyncInputStream& input,
+      kj::Vector<char> soFar = kj::Vector<char>());
 
   void taskFailed(kj::Exception&& exception) override;
 };

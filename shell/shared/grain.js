@@ -121,7 +121,7 @@ Meteor.methods({
           DeleteStats.insert({type: "grain", lastActive: grain.lastUsed});
         }
         if (!this.isSimulation) {
-          deleteGrain(grainId, this.userId);
+          waitPromise(deleteGrain(grainId, this.userId));
           Meteor.call("deleteUnusedPackages", grain.appId);
         }
       }

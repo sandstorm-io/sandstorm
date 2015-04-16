@@ -166,17 +166,13 @@ kj::Promise<kj::String> BackendImpl::readAll(kj::AsyncInputStream& input, kj::Ve
 BackendImpl::RunningGrain::RunningGrain(
     BackendImpl& backend, kj::String grainId, kj::Own<kj::AsyncIoStream> stream)
     : backend(backend), grainId(kj::mv(grainId)),
-      stream(kj::mv(stream)), client(*this->stream) {
-  KJ_DBG("RunningGrain()");
-}
+      stream(kj::mv(stream)), client(*this->stream) {}
 
 BackendImpl::RunningGrain::~RunningGrain() noexcept(false) {
-  KJ_DBG("~RunningGrain()");
   backend.supervisors.erase(grainId);
 }
 
 kj::Promise<void> BackendImpl::startGrain(StartGrainContext context) {
-  KJ_DBG("startGrain");
   auto params = context.getParams();
   return bootGrain(params.getGrainId(), params.getPackageId(), params.getCommand(),
                    params.getIsNew(), params.getDevMode(), false)

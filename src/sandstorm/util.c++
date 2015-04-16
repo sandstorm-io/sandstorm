@@ -227,6 +227,8 @@ void recursivelyCreateParent(kj::StringPtr path) {
       if (firstTry && error == ENOENT) {
         recursivelyCreateParent(parent);
         firstTry = false;
+      } else if (error == EEXIST) {
+        break;
       } else if (error != EINTR) {
         KJ_FAIL_SYSCALL("mkdir(parent)", error, parent);
       }

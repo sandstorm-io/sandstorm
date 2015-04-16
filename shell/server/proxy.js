@@ -66,13 +66,13 @@ inMeteor = function (callback) {
   });
 }
 
-promiseToFuture = function(promise) {
+promiseToFuture = function (promise) {
   var result = new Future();
   promise.then(result.return.bind(result), result.throw.bind(result));
   return result;
 }
 
-function waitPromise(promise) {
+waitPromise = function (promise) {
   return promiseToFuture(promise).wait();
 }
 
@@ -306,7 +306,7 @@ shutdownGrain = function (grainId, ownerId, keepSessions) {
   }
 
   var grain = backend.getGrain(ownerId, grainId).grain;
-  waitPromise(grain.shutdown().then(function () {
+  return grain.shutdown().then(function () {
     grain.close();
     throw new Error("expected shutdown() to throw disconnected");
   }, function (err) {
@@ -314,11 +314,16 @@ shutdownGrain = function (grainId, ownerId, keepSessions) {
     if (err.type !== "disconnected") {
       throw err;
     }
-  }));
+  });
 }
 
 deleteGrain = function (grainId, ownerId) {
-  waitPromise(backend.deleteGrain(ownerId, grainId));
+  // We leave it up to the caller if they want to actually wait, but some don't so we report
+  // exceptions.
+  return backend.deleteGrain(ownerId, grainId).catch(function (err) {
+    console.error("problem deleting grain " + grainId + ":", err.message);
+    throw err;
+  });
 }
 
 getGrainSize = function (sessionId, oldSize) {

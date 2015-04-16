@@ -150,7 +150,11 @@ cp /usr/share/locale/locale.alias bundle/usr/share/locale
 strip bundle/sandstorm bundle/bin/*
 find bundle -name '*.so' | xargs strip
 
-git rev-parse HEAD > bundle/git-revision
+if [ -e .git ]; then
+  git rev-parse HEAD > bundle/git-revision
+else
+  echo "unknown" > bundle/git-revision
+fi
 echo "$USER@$HOSTNAME $(date)" > bundle/buildstamp
 
 cat > bundle/README.md << '__EOF__'

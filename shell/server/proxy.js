@@ -284,7 +284,7 @@ function startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev) 
       .then(function (results) {
     return {
       owner: ownerId,
-      supervisor: results.grain
+      supervisor: results.supervisor
     };
   });
 
@@ -297,7 +297,7 @@ shutdownGrain = function (grainId, ownerId, keepSessions) {
     Sessions.remove({grainId: grainId});
   }
 
-  var grain = sandstormBackend.getGrain(ownerId, grainId).grain;
+  var grain = sandstormBackend.getGrain(ownerId, grainId).supervisor;
   return grain.shutdown().then(function () {
     grain.close();
     throw new Error("expected shutdown() to throw disconnected");
@@ -711,7 +711,7 @@ function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, user
 
 Proxy.prototype.getConnection = function () {
   if (!this.supervisor) {
-    this.supervisor = sandstormBackend.getGrain(this.ownerId, this.grainId).grain;
+    this.supervisor = sandstormBackend.getGrain(this.ownerId, this.grainId).supervisor;
     this.uiView = null;
   }
   if (!this.uiView) {
@@ -1450,7 +1450,7 @@ Meteor.publish("grainLog", function (grainId) {
   try {
     // Wait for watchLog() to return because it will always write the initial tail before
     // returning.
-    var supervisor = sandstormBackend.getGrain(grain.userId, grainId).grain;
+    var supervisor = sandstormBackend.getGrain(grain.userId, grainId).supervisor;
     var handle = waitPromise(supervisor.watchLog(8192, receiver)).handle;
     connected = true;
     this.onStop(function() {

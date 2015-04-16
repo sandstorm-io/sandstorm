@@ -199,7 +199,7 @@ kj::Promise<void> BackendImpl::startGrain(StartGrainContext context) {
                    validateId(params.getPackageId()), params.getCommand(),
                    params.getIsNew(), params.getDevMode(), false)
       .then([context](Supervisor::Client client) mutable {
-    context.getResults().setGrain(kj::mv(client));
+    context.getResults().setSupervisor(kj::mv(client));
   });
 }
 
@@ -208,7 +208,7 @@ kj::Promise<void> BackendImpl::getGrain(GetGrainContext context) {
   if (iter != supervisors.end()) {
     return iter->second.promise.addBranch()
         .then([context](Supervisor::Client client) mutable {
-      context.getResults().setGrain(kj::mv(client));
+      context.getResults().setSupervisor(kj::mv(client));
     });
   }
 

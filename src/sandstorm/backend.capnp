@@ -32,10 +32,10 @@ interface Backend {
 
   startGrain @0 (ownerId :Text, grainId :Text, packageId :Text,
                  command :Package.Manifest.Command, isNew :Bool, devMode :Bool = false)
-             -> (grain :Supervisor);
+             -> (supervisor :Supervisor);
   # Start a grain.
 
-  getGrain @1 (ownerId :Text, grainId :Text) -> (grain :Supervisor);
+  getGrain @1 (ownerId :Text, grainId :Text) -> (supervisor :Supervisor);
   # Get the grain if it's running, or throw a DISCONNECTED exception otherwise.
 
   deleteGrain @2 (ownerId :Text, grainId :Text);

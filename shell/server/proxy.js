@@ -1353,7 +1353,9 @@ function WebSocketReceiver(socket) {
 function pumpWebSocket(socket, rpcStream) {
   socket.on("data", function (chunk) {
     rpcStream.sendBytes(chunk).catch(function (err) {
-      console.error("WebSocket sendBytes failed: " + err.stack);
+      if (err.type !== "disconnected") {
+        console.error("WebSocket sendBytes failed: " + err.stack);
+      }
       socket.destroy();
     });
   });

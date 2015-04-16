@@ -166,7 +166,14 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
 
 kj::Promise<void> BackendImpl::ignoreAll(kj::AsyncInputStream& input) {
   static byte dummy[256];
-  return input.read(dummy, sizeof(dummy)).then([&input]() { ignoreAll(input); });
+  return input.tryRead(dummy, sizeof(dummy), sizeof(dummy))
+      .then([&input](size_t n) -> kj::Promise<void> {
+    if (n < sizeof(dummy)) {
+      return kj::READY_NOW;
+    } else {
+      return ignoreAll(input);
+    }
+  });
 }
 
 kj::Promise<kj::String> BackendImpl::readAll(kj::AsyncInputStream& input, kj::Vector<char> soFar) {

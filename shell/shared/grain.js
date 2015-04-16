@@ -75,7 +75,11 @@ if (Meteor.isServer) {
         }
       }, function (err) {
         if (!stopped) {
-          self.error(err);
+          if (err.type === "disconnected") {
+            self.stop();
+          } else {
+            self.error(err);
+          }
         }
       });
     }
@@ -88,7 +92,11 @@ if (Meteor.isServer) {
       }
     }, function (err) {
       if (!stopped) {
-        self.error(err);
+        if (err.type === "disconnected") {
+          self.stop();
+        } else {
+          self.error(err);
+        }
       }
     });
 

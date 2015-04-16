@@ -145,7 +145,7 @@ kj::AutoCloseFd openTemporary(kj::StringPtr near) {
 
   int fd;
   auto name = kj::str(near, ".XXXXXX");
-  KJ_SYSCALL(fd = mkostemp(name.begin(), O_CLOEXEC));
+  KJ_SYSCALL(fd = mkostemp(name.begin(), O_CLOEXEC), name);
   kj::AutoCloseFd result(fd);
   KJ_SYSCALL(unlink(name.cStr()));
   return result;
@@ -602,7 +602,7 @@ kj::Array<byte> base64Decode(kj::StringPtr input) {
 // =======================================================================================
 
 Subprocess::Subprocess(Options&& options)
-    : name(kj::heapString(options.executable)) {
+    : name(kj::heapString(options.argv.size() > 0 ? options.argv[0] : options.executable)) {
   KJ_SYSCALL(pid = fork());
   if (pid == 0) {
     KJ_DEFER(_exit(1));  // Do not under any circumstances return from this stack frame!

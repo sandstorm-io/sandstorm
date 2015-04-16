@@ -33,9 +33,7 @@ var Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 
 var SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
-SANDSTORM_APPDIR = SANDSTORM_VARDIR + "/apps";
 SANDSTORM_GRAINDIR = SANDSTORM_VARDIR + "/grains";
-SANDSTORM_DOWNLOADDIR = SANDSTORM_VARDIR + "/downloads";
 
 sandstormExe = function (progname) {
   if (SANDSTORM_ALTHOME) {
@@ -44,6 +42,9 @@ sandstormExe = function (progname) {
     return progname;
   }
 }
+
+sandstormBackendConnection = Capnp.connect("unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath);
+sandstormBackend = sandstormBackendConnection.restore(null, Backend);
 
 // =======================================================================================
 // Meteor context <-> Async Node.js context adapters
@@ -196,15 +197,6 @@ function updateLastActive(grainId, userId) {
   }
 }
 
-var backendConnection = Capnp.connect("unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath);
-var backend = backendConnection.restore(null, Backend);
-
-// Don't let the connection get GC'd.
-// TODO(cleanup): The capnp module should either track when connections are no longer needed or
-//   should just keep all connections open until they die (returning the same connection if you
-//   try to connect to the same address twice).
-proxy__dontGcBackendConnection = backendConnection;
-
 openGrain = function (grainId, isRetry) {
   // Create a Cap'n Proto connection to the given grain. Note that this function does not actually
   // verify that the connection succeeded. Instead, if an RPC call to the connection fails, check
@@ -288,7 +280,7 @@ function startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev) 
     delete command.executablePath;
   }
 
-  var whenReady = backend.startGrain(ownerId, grainId, packageId, command, isNew, isDev)
+  var whenReady = sandstormBackend.startGrain(ownerId, grainId, packageId, command, isNew, isDev)
       .then(function (results) {
     return {
       owner: ownerId,
@@ -305,7 +297,7 @@ shutdownGrain = function (grainId, ownerId, keepSessions) {
     Sessions.remove({grainId: grainId});
   }
 
-  var grain = backend.getGrain(ownerId, grainId).grain;
+  var grain = sandstormBackend.getGrain(ownerId, grainId).grain;
   return grain.shutdown().then(function () {
     grain.close();
     throw new Error("expected shutdown() to throw disconnected");
@@ -320,7 +312,7 @@ shutdownGrain = function (grainId, ownerId, keepSessions) {
 deleteGrain = function (grainId, ownerId) {
   // We leave it up to the caller if they want to actually wait, but some don't so we report
   // exceptions.
-  return backend.deleteGrain(ownerId, grainId).catch(function (err) {
+  return sandstormBackend.deleteGrain(ownerId, grainId).catch(function (err) {
     console.error("problem deleting grain " + grainId + ":", err.message);
     throw err;
   });
@@ -719,7 +711,7 @@ function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, user
 
 Proxy.prototype.getConnection = function () {
   if (!this.supervisor) {
-    this.supervisor = backend.getGrain(this.ownerId, this.grainId).grain;
+    this.supervisor = sandstormBackend.getGrain(this.ownerId, this.grainId).grain;
     this.uiView = null;
   }
   if (!this.uiView) {
@@ -1458,7 +1450,7 @@ Meteor.publish("grainLog", function (grainId) {
   try {
     // Wait for watchLog() to return because it will always write the initial tail before
     // returning.
-    var supervisor = backend.getGrain(grain.userId, grainId).grain;
+    var supervisor = sandstormBackend.getGrain(grain.userId, grainId).grain;
     var handle = waitPromise(supervisor.watchLog(8192, receiver)).handle;
     connected = true;
     this.onStop(function() {

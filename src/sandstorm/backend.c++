@@ -22,6 +22,27 @@
 
 namespace sandstorm {
 
+static kj::StringPtr validateId(kj::StringPtr id) {
+  KJ_REQUIRE(!id.startsWith(".") && id.findFirst('/') == nullptr, id);
+  return id;
+}
+
+static void tryRecursivelyDelete(kj::StringPtr path) {
+  static uint counter = 0;
+  auto tmpPath = kj::str("/var/sandstorm/tmp/deleting.", time(nullptr), ".", counter++);
+
+  while (rename(path.cStr(), tmpPath.cStr()) < 0) {
+    int error = errno;
+    if (error == ENOENT) {
+      return;
+    } else if (error != EINTR) {
+      KJ_FAIL_SYSCALL("rename(path, tmpPath)", error, path, tmpPath);
+    }
+  }
+
+  recursivelyDelete(tmpPath);
+}
+
 BackendImpl::BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network)
     : ioProvider(ioProvider), network(network), tasks(*this) {}
 
@@ -174,7 +195,8 @@ BackendImpl::RunningGrain::~RunningGrain() noexcept(false) {
 
 kj::Promise<void> BackendImpl::startGrain(StartGrainContext context) {
   auto params = context.getParams();
-  return bootGrain(params.getGrainId(), params.getPackageId(), params.getCommand(),
+  return bootGrain(validateId(params.getGrainId()),
+                   validateId(params.getPackageId()), params.getCommand(),
                    params.getIsNew(), params.getDevMode(), false)
       .then([context](Supervisor::Client client) mutable {
     context.getResults().setGrain(kj::mv(client));
@@ -182,7 +204,7 @@ kj::Promise<void> BackendImpl::startGrain(StartGrainContext context) {
 }
 
 kj::Promise<void> BackendImpl::getGrain(GetGrainContext context) {
-  auto iter = supervisors.find(context.getParams().getGrainId());
+  auto iter = supervisors.find(validateId(context.getParams().getGrainId()));
   if (iter != supervisors.end()) {
     return iter->second.promise.addBranch()
         .then([context](Supervisor::Client client) mutable {
@@ -194,7 +216,7 @@ kj::Promise<void> BackendImpl::getGrain(GetGrainContext context) {
 }
 
 kj::Promise<void> BackendImpl::deleteGrain(DeleteGrainContext context) {
-  auto grainId = context.getParams().getGrainId();
+  auto grainId = validateId(context.getParams().getGrainId());
   auto iter = supervisors.find(grainId);
   kj::Promise<void> shutdownPromise = nullptr;
   if (iter != supervisors.end()) {
@@ -215,7 +237,7 @@ kj::Promise<void> BackendImpl::deleteGrain(DeleteGrainContext context) {
   }
 
   return shutdownPromise.then([grainId]() {
-    recursivelyDelete(kj::str("/var/sandstorm/grains/", grainId));
+    tryRecursivelyDelete(kj::str("/var/sandstorm/grains/", grainId));
   });
 }
 
@@ -233,6 +255,11 @@ public:
             kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC)),
         tmpdir(tempDirname()),
         unpackProcess(startProcess(kj::mv(inPipe.readEnd), kj::mv(outPipe.writeEnd), tmpdir)) {}
+  ~PackageUploadStreamImpl() noexcept(false) {
+    if (access(tmpdir.cStr(), F_OK) >= 0) {
+      recursivelyDelete(tmpdir);
+    }
+  }
 
 protected:
   kj::Promise<void> write(WriteContext context) override {
@@ -250,6 +277,7 @@ protected:
     auto forked = writeQueue.then([this,context]() mutable {
       KJ_REQUIRE(inputWriteEnd != nullptr, "called done() multiple times");
       inputWriteEnd = nullptr;
+      inputWriteFd = nullptr;
     }).fork();
 
     writeQueue = forked.addBranch();
@@ -265,15 +293,21 @@ protected:
     KJ_REQUIRE(!saveCalled, "saveAs() already called");
     saveCalled = true;
     return readAll(*outputReadEnd).then([this,context](kj::String text) mutable {
-      {
-        KJ_ON_SCOPE_FAILURE(recursivelyDelete(tmpdir));
-        unpackProcess.waitForSuccess();
-      }
+      unpackProcess.waitForSuccess();
 
-      auto packageId = context.getParams().getPackageId();
+      auto packageId = validateId(context.getParams().getPackageId());
       auto finalName = kj::str("/var/sandstorm/apps/", packageId);
-      KJ_SYSCALL(rename(tmpdir.cStr(), finalName.cStr()));
-      KJ_ON_SCOPE_FAILURE(recursivelyDelete(finalName));
+      bool exists = access(finalName.cStr(), F_OK) >= 0;
+      if (!exists) {
+        // Write app ID file.
+        kj::FdOutputStream(
+            raiiOpen(kj::str(finalName, ".appid"), O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC))
+            .write(text.begin(), text.size());
+
+        // Move directory into place.
+        KJ_SYSCALL(rename(tmpdir.cStr(), finalName.cStr()));
+      }
+      KJ_ON_SCOPE_FAILURE(if (!exists) { tryRecursivelyDelete(finalName); });
 
       capnp::StreamFdMessageReader reader(raiiOpen(
           kj::str(finalName, "/sandstorm-manifest"), O_RDONLY));
@@ -302,7 +336,7 @@ private:
 
   static kj::String tempDirname() {
     static uint counter = 0;
-    return kj::str("/tmp/", time(nullptr), ".", counter++, ".unpacking");
+    return kj::str("/var/sandstorm/tmp/unpacking.", time(nullptr), ".", counter++);
   }
 
   static Subprocess startProcess(
@@ -317,6 +351,32 @@ private:
 
 kj::Promise<void> BackendImpl::installPackage(InstallPackageContext context)  {
   context.getResults().setStream(kj::heap<PackageUploadStreamImpl>(*this));
+  return kj::READY_NOW;
+}
+
+kj::Promise<void> BackendImpl::getPackage(GetPackageContext context) {
+  auto path = kj::str("/var/sandstorm/apps/", validateId(context.getParams().getPackageId()));
+
+  capnp::StreamFdMessageReader reader(raiiOpen(
+      kj::str(path, "/sandstorm-manifest"), O_RDONLY));
+  auto manifest = reader.getRoot<spk::Manifest>();
+
+  kj::String appid = sandstorm::readAll(kj::str(path, ".appid"));
+
+  capnp::MessageSize sizeHint = manifest.totalSize();
+  sizeHint.wordCount += 8 + appid.size() / sizeof(capnp::word);
+  auto results = context.getResults(sizeHint);
+  results.setAppId(trim(appid));
+  results.setManifest(manifest);
+
+  return kj::READY_NOW;
+}
+
+kj::Promise<void> BackendImpl::deletePackage(DeletePackageContext context) {
+  auto path = kj::str("/var/sandstorm/apps/", validateId(context.getParams().getPackageId()));
+  if (access(path.cStr(), F_OK) >= 0) {
+    tryRecursivelyDelete(path);
+  }
   return kj::READY_NOW;
 }
 

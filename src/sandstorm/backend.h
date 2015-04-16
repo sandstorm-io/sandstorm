@@ -35,6 +35,8 @@ protected:
   kj::Promise<void> getGrain(GetGrainContext context) override;
   kj::Promise<void> deleteGrain(DeleteGrainContext context) override;
   kj::Promise<void> installPackage(InstallPackageContext context) override;
+  kj::Promise<void> getPackage(GetPackageContext context) override;
+  kj::Promise<void> deletePackage(DeletePackageContext context) override;
 
 private:
   kj::LowLevelAsyncIoProvider& ioProvider;

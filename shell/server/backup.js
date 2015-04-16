@@ -31,6 +31,18 @@ var mkdir = Meteor.wrapAsync(Fs.mkdir),
     readFile = Meteor.wrapAsync(Fs.readFile),
     writeFile = Meteor.wrapAsync(Fs.writeFile);
 
+function recursiveRmdir(dir) {
+  Fs.readdirSync(dir).forEach(function (filename) {
+    filename = Path.join(dir, filename);
+    if(Fs.lstatSync(filename).isDirectory()) {
+      recursiveRmdir(filename);
+    } else {
+      Fs.unlinkSync(filename);
+    }
+  });
+  Fs.rmdirSync(dir);
+};
+
 function recursiveRmdirIfExists(dir) {
   if (Fs.existsSync(dir)) {
     if (Fs.lstatSync(dir).isDirectory()) {

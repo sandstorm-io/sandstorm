@@ -202,7 +202,7 @@ public:
     // An array of 'NAME=VALUE' pairs specifying the child's environment. If null, inherits the
     // parent's environment.
 
-    Options(kj::StringPtr executable): executable(executable), argv(&executable, 1) {}
+    Options(kj::StringPtr executable): executable(executable), argv(&this->executable, 1) {}
     Options(kj::ArrayPtr<const kj::StringPtr> argv): executable(argv[0]), argv(argv) {}
     Options(kj::Array<const kj::StringPtr>&& argv)
         : executable(argv[0]), argv(argv), ownArgv(kj::mv(argv)) {}

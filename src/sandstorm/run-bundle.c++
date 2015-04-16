@@ -1405,13 +1405,17 @@ private:
 
     // Clean up the temp directory.
     KJ_REQUIRE(changedDir);
-    if (access("../tmp", F_OK) == 0) {
-      recursivelyDelete("../tmp");
-    }
-    mkdir("../tmp", 0770);
-    KJ_SYSCALL(chmod("../tmp", 0770));
-    if (runningAsRoot) {
-      KJ_SYSCALL(chown("../tmp", 0, config.uids.gid));
+
+    static const char* const TMPDIRS[2] = { "../tmp", "../var/sandstorm/tmp" };
+    for (const char* tmpDir: TMPDIRS) {
+      if (access(tmpDir, F_OK) == 0) {
+        recursivelyDelete(tmpDir);
+      }
+      mkdir(tmpDir, 0770);
+      KJ_SYSCALL(chmod(tmpDir, 0770 | S_ISVTX));
+      if (runningAsRoot) {
+        KJ_SYSCALL(chown(tmpDir, 0, config.uids.gid));
+      }
     }
 
     auto sigfd = prepareMonitoringLoop();

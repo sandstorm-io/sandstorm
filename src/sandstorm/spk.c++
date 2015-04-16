@@ -1315,14 +1315,17 @@ private:
     kj::AutoCloseFd ownFd;
     int spkfd;
 
+    kj::StringPtr tmpNear;
     if (spkfile == "-") {
       spkfd = STDIN_FILENO;
+      tmpNear = "/tmp/spk-unpack";
     } else {
       ownFd = raiiOpen(spkfile, O_RDONLY);
       spkfd = ownFd;
+      tmpNear = spkfile;
     }
 
-    printAppId(unpackImpl(spkfd, dirname, spkfile,
+    printAppId(unpackImpl(spkfd, dirname, tmpNear,
         [&](kj::StringPtr problem) -> kj::String {
       rmdir(dirname.cStr());
       validationError(spkfile, problem);

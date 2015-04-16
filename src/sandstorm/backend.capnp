@@ -46,10 +46,16 @@ interface Backend {
     saveAs @0 (packageId :Text) -> (appId :Text, manifest :Package.Manifest);
   }
 
-  backupGrain @4 (ownerId :Text, grainId :Text, info :GrainInfo, stream :Util.ByteStream);
+  getPackage @4 (packageId :Text) -> (appId :Text, manifest :Package.Manifest);
+  # Get info from an already-installed package.
+
+  deletePackage @5 (packageId :Text);
+  # Delete a package from disk. Succeeds silently if the package doesn't exist.
+
+  backupGrain @6 (ownerId :Text, grainId :Text, info :GrainInfo, stream :Util.ByteStream);
   # Makes a .zip of the contents of the given grain and writes the content to `stream`.
 
-  restoreGrain @5 (ownerId :Text, grainId :Text) -> (stream :GrainUploadStream);
+  restoreGrain @7 (ownerId :Text, grainId :Text) -> (stream :GrainUploadStream);
   # Upload a .zip created with backupGrain() and unpack it into a new grain.
 
   interface GrainUploadStream extends(Util.ByteStream) {

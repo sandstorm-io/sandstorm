@@ -237,7 +237,7 @@ function openSessionInternal(grainId, user, title, apiToken) {
   var isOwner = grainInfo.owner === userId;
 
   var sessionId = Random.id();
-  var proxy = new Proxy(grainId, sessionId, null, isOwner, user, null, false);
+  var proxy = new Proxy(grainId, grainInfo.owner, sessionId, null, isOwner, user, null, false);
   proxy.apiToken = apiToken;
   proxies[sessionId] = proxy;
   proxiesByHostId[proxy.hostId] = proxy;

@@ -60,6 +60,7 @@ cat > $SETTINGS << __EOF__
     "buildstamp": "[local dev front-end]",
     "allowDemoAccounts": true,
     "allowDevAccounts": true,
+    "isTesting": true,
     "wildcardHost": "$WILDCARD_HOST"
   },
   "home": "$SANDSTORM_HOME"

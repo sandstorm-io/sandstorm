@@ -19,21 +19,41 @@ var isTesting = Meteor.settings && Meteor.settings.public &&
 
 if (isTesting) {
   if (Meteor.isServer) {
+    function clearUser(id) {
+      UserActions.remove({userId: id});
+      ApiTokens.remove({userId: id});
+      Grains.find({userId: id}).forEach(function (grain) {
+        deleteGrain(grain._id);
+      });
+      Grains.remove({userId: id});
+      Meteor.users.remove({_id: id});
+    }
+
     Meteor.methods({
-      mockCreateGithub: function () {
-        Meteor.users.remove({ "_id" : "Py8fwsaryQNGBuiXb" });
-        Meteor.users.insert({ "_id" : "Py8fwsaryQNGBuiXb", "createdAt" : new Date("2014-08-11T21:44:04.147Z"), "isAdmin" : true, "lastActive" : new Date("2014-08-19T09:58:39.676Z"), "profile" : { "name" : "Github User" }, "services" : { "github" : { "accessToken" : "sometoken", "email" : "test@example.com", "id" : 1595880, "username" : "testuser" }, "resume" : { "loginTokens" : [        {       "when" : new Date("2099-08-13T05:16:02.356Z"),     "hashedToken" : "GriUSDp+uN/K4HptwSl1wsdWfHEpS8c9KjjdqwKNo0k=" } ] } }, "signupKey" : "admin" });
+      createMockGithubUser: function () {
+        Meteor.users.update({ "_id" : "Py8fwsaryQNGBuiXb"},
+                            {$set: {"createdAt" : new Date("2014-08-11T21:44:04.147Z"), "isAdmin" : true, "lastActive" : new Date("2014-08-19T09:58:39.676Z"), "profile" : { "name" : "Github User" }, "services" : { "github" : { "accessToken" : "sometoken", "email" : "test@example.com", "id" : 1595880, "username" : "testuser" }, "resume" : { "loginTokens" : [        {       "when" : new Date("2099-08-13T05:16:02.356Z"),     "hashedToken" : "GriUSDp+uN/K4HptwSl1wsdWfHEpS8c9KjjdqwKNo0k=" } ] } }, "signupKey" : "admin" }},
+                            {upsert: true});
       },
 
-      mockCreateGoogle: function () {
-        Meteor.users.remove({ "_id" : "6WJcRo2gg2Ysuxsok" });
-        Meteor.users.insert({ "_id" : "6WJcRo2gg2Ysuxsok", "createdAt" : new Date("2014-08-21T07:52:55.581Z"), "profile" : { "name" : "Google User" }, "services" : { "google" : { "accessToken" : "sometoken", "expiresAt" : 4562182723000, "id" : "116893057283177439912", "email" : "test@example.com", "verified_email" : true, "name" : "Google User", "given_name" : "Google", "family_name" : "User", "picture" : "https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/photo.jpg", "locale" : "en", "gender" : "male" }, "resume" : { "loginTokens" : [       {       "when" : new Date("2099-08-21T07:52:55.592Z"),   "hashedToken" : "cbJGxLGKW3f0j7Ehit77hdK58W7xuPjzZhGHgKhyddo=" } ] } }, "signupKey" : "admin" });
+      clearMockGithubUser: function() {
+        clearUser("Py8fwsaryQNGBuiXb");
+      },
+
+      createMockGoogleUser: function () {
+        Meteor.users.update({ "_id" : "6WJcRo2gg2Ysuxsok"},
+                            {$set: {"createdAt" : new Date("2014-08-21T07:52:55.581Z"), "profile" : { "name" : "Google User" }, "services" : { "google" : { "accessToken" : "sometoken", "expiresAt" : 4562182723000, "id" : "116893057283177439912", "email" : "test@example.com", "verified_email" : true, "name" : "Google User", "given_name" : "Google", "family_name" : "User", "picture" : "https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/photo.jpg", "locale" : "en", "gender" : "male" }, "resume" : { "loginTokens" : [       {       "when" : new Date("2099-08-21T07:52:55.592Z"),   "hashedToken" : "cbJGxLGKW3f0j7Ehit77hdK58W7xuPjzZhGHgKhyddo=" } ] } }, "signupKey" : "admin" }},
+                           {upsert: true});
+      },
+
+      clearMockGoogleUser: function() {
+        clearUser("6WJcRo2gg2Ysuxsok");
       }
     });
   }
 
   mockLoginGithub = function () {
-    Meteor.call('mockCreateGithub', function (err) {
+    Meteor.call('createMockGithubUser', function (err) {
       if (err) {
         console.log(err);
       }
@@ -44,8 +64,16 @@ if (isTesting) {
     });
   };
 
+  clearMockGithubUser = function() {
+    Meteor.call('clearMockGithubUser', function (err) {
+      if (err) {
+        console.log(err);
+      }
+    });
+  };
+
   mockLoginGoogle = function () {
-    Meteor.call('mockCreateGoogle', function (err) {
+    Meteor.call('createMockGoogleUser', function (err) {
       if (err) {
         console.log(err);
       }
@@ -53,6 +81,14 @@ if (isTesting) {
       window.localStorage.setItem('Meteor.loginTokenExpires', 'Tue Nov 18 2099 23:52:55 GMT-0800 (PST)');
       window.localStorage.setItem('Meteor.userId', '6WJcRo2gg2Ysuxsok');
       window.location.reload();
+    });
+  };
+
+  clearMockGoogleUser = function() {
+    Meteor.call('clearMockGoogleUser', function (err) {
+      if (err) {
+        console.log(err);
+      }
     });
   };
 }

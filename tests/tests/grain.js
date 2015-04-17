@@ -159,6 +159,14 @@ module.exports = utils.testAllLogins({
   },
 });
 
+module.exports.before = function(browser) {
+  // Clear any data associated with the mock users before running the test suite.
+  browser
+    .init()
+    .execute('window.clearMockGithubUser()')
+    .execute('window.clearMockGoogleUser()');
+};
+
 module.exports["Test grain anonymous user"] = function (browser) {
   browser
     // Upload app as github user

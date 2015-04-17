@@ -99,7 +99,9 @@ private:
     // multiple times, so only abort the first. This will have a side-effect
     // of causing tryRead to fail, and erroring out messageLoop() below.
     if (!aborted) {
-      connection->stream->abortRead();
+      try {
+        connection->stream->abortRead();
+      } catch (...) { }
       aborted = true;
     }
   }

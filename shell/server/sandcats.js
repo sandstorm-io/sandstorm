@@ -28,7 +28,7 @@ var ROOT_URL = Url.parse(process.env.ROOT_URL);
 var HOSTNAME = ROOT_URL.hostname;
 var SANDCATS_NAME; // Look at `startup` below to see where this is set
 
-var updateSandcats = function () {
+function updateSandcats() {
   var options = {
     hostname: SANDCATS_HOSTNAME,
     path: "/update",
@@ -61,7 +61,7 @@ var updateSandcats = function () {
   });
 };
 
-var pingUdp = function () {
+function pingUdp() {
   var socket = dgram.createSocket("udp4");
   var secret = Random.secret(16);
 

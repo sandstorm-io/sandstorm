@@ -22,7 +22,6 @@ var Url = Npm.require("url");
 
 var SANDCATS_HOSTNAME = Meteor.settings && Meteor.settings.public &&
                           Meteor.settings.public.sandcatsHostname;
-var SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 var SANDCATS_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandcats";
 
 var ROOT_URL = Url.parse(process.env.ROOT_URL);

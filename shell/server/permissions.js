@@ -93,51 +93,53 @@ function roleAssignmentPermissions(roleAssignment, viewInfo) {
   return result;
 }
 
-function grainPermissionsInternal(grainId, userId, viewInfo) {
-  // Computes the permissions of the user by propagating permissions out from the grain's
-  // owner along role assignments until the graph is saturated.
-  //
-  // TODO(perf): This actually computes the permissions for *all* users. We should investigate ways
-  // to share results between calls. It may also make sense to cache some graph-connectivity
-  // information from the`mayOpenGrain()` computation to use here.
+function grainPermissionsInternal(grainId, openerUserId, viewInfo) {
+  // Computes the permissions of a user who is opening a grain.
 
+  if (!openerUserId) { return new PermissionSet(); }
   var grain = Grains.findOne(grainId);
   var owner = grain.userId;
+  if (openerUserId == owner) {
+    // Optimization: return early in this easy and common case.
+    return roleAssignmentPermissions({allAccess: null}, viewInfo);
+  }
 
-  // userId -> PermissionSet
-  var permissionsMap = {}
-  permissionsMap[owner] = roleAssignmentPermissions({allAccess: null}, viewInfo);
+  var permissionsMap = {};
+  // Keeps track of the permissions that the opener receives from each user. The final result of
+  // our computation will be stored in permissionsMap[owner].
 
-  var userStack = [owner];
+  permissionsMap[openerUserId] = roleAssignmentPermissions({allAccess: null}, viewInfo);
+  permissionsMap[owner] = new PermissionSet();
+
+  var userStack = [openerUserId];
   var user;
+  var roleAssignments = RoleAssignments.find({active: true, grainId: grainId}).fetch();
 
   while (userStack.length > 0) {
     var user = userStack.pop();
-    RoleAssignments.find({active: true, sharer: user,
-                          grainId : grainId}).forEach(function (outEdge) {
-      var recipient = outEdge.recipient;
-      var sharer = outEdge.sharer;
-      var changed = false;
-      if (!permissionsMap[recipient]) {
-        changed = true;
-        permissionsMap[recipient] = new PermissionSet();
-      }
-      var newPermissions = roleAssignmentPermissions(outEdge.roleAssignment, viewInfo);
-      newPermissions.intersect(permissionsMap[sharer]);
-      if (permissionsMap[recipient].add(newPermissions)) {
-        changed = true;
-      }
-      if (changed) {
-        userStack.push(recipient);
-      }
+    var edges = roleAssignments.filter(function(roleAssignment) {
+      return roleAssignment.recipient == user;
     });
+    for (var ii = 0; ii < edges.length; ++ii) {
+      var inEdge = edges[ii];
+      var recipient = inEdge.recipient;
+      var sharer = inEdge.sharer;
+      if (!permissionsMap[sharer]) {
+        permissionsMap[sharer] = new PermissionSet();
+      }
+      var newPermissions = roleAssignmentPermissions(inEdge.roleAssignment, viewInfo);
+      newPermissions.intersect(permissionsMap[recipient]);
+
+      // Optimization: we don't care about permissions that we've already proven the opener has.
+      newPermissions.remove(permissionsMap[owner]);
+
+      if (permissionsMap[sharer].add(newPermissions)) {
+        userStack.push(sharer);
+      }
+    }
   }
 
-  if (permissionsMap[userId]) {
-    return permissionsMap[userId];
-  } else {
-    return new PermissionSet();
-  }
+  return permissionsMap[owner];
 }
 
 apiTokenPermissions = function (token, viewInfo) {
@@ -164,12 +166,15 @@ mayOpenGrain = function(grainId, userId) {
     return true;
   }
 
+  var roleAssignments = RoleAssignments.find({active: true, grainId: grainId}).fetch();
   var stackedUsers = {userId : true};
   var userStack = [userId];
 
   while (userStack.length > 0) {
     var user = userStack.pop();
-    var edges = RoleAssignments.find({active: true, recipient: user, grainId : grainId}).fetch();
+    var edges = roleAssignments.filter(function(roleAssignment) {
+      return roleAssignment.recipient == user;
+    });
     for (var ii = 0; ii < edges.length; ++ii) {
       var inEdge = edges[ii];
       var sharer = inEdge.sharer;

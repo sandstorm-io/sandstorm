@@ -20,7 +20,7 @@ function PermissionSet(array) {
   if (!array) {
     this.array = [];
   } else if (array instanceof Array) {
-    this.array = array;
+    this.array = array.slice(0);
   } else {
     throw new Error("don't know how to interpret as PermissionSet: " + array);
   }
@@ -190,15 +190,19 @@ mayOpenGrain = function(grainId, userId) {
   return false;
 }
 
+
 Meteor.startup(function () {
   RoleAssignments.find().observe({
     changed : function (newRoleAssignment, oldRoleAssignment) {
-      if (newRoleAssignment.active != oldRoleAssignment.active) {
+      if (newRoleAssignment.active != oldRoleAssignment.active ||
+          !_.isEqual(newRoleAssignment.roleAssignment, oldRoleAssignment.roleAssignment)) {
+        // TODO(soon): Only remove sessions for which the permissions have changed.
         Sessions.remove({grainId: oldRoleAssignment.grainId,
                          userId : {$ne : oldRoleAssignment.sharer}});
       }
     },
     removed : function (oldRoleAssignment) {
+      // TODO(soon): Only remove sessions for which the permissions have changed.
       Sessions.remove({grainId: oldRoleAssignment.grainId,
                        userId : {$ne : oldRoleAssignment.sharer}});
     },

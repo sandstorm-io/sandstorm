@@ -862,7 +862,8 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
     } else if (self.userId) {
       permissions = grainPermissions(self.grainId, self.userId, viewInfo);
     }
-    Sessions.update({_id: self.sessionId}, {$set : {"viewInfo": viewInfo, "permissions": permissions}});
+    Sessions.update({_id: self.sessionId},
+                    {$set : {"viewInfo": viewInfo, "permissions": permissions}});
     return permissions;
   });
 

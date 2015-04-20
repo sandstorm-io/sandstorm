@@ -189,7 +189,8 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              that should be passed to `newSession()` when exercising this token, in decoded (JS
 //              object) format. This is a temporary hack.
 //   roleAssignment: If this API token represents a UiView, this field contains a JSON-encoded
-//              Grain.ViewSharingLink.RoleAssignment representing the received permissions.
+//              Grain.ViewSharingLink.RoleAssignment representing the permissions it carries. These
+//              permissions will be intersected with those held by `userId` when the view is opened.
 //   forSharing: If true, requests sent to the HTTP API endpoint with this token will be treated as
 //              anonymous rather than as directly associated with `userId`. This has no effect on
 //              the permissions granted.

@@ -132,12 +132,12 @@ Meteor.methods({
     check(grainId, String);
     var grain = Grains.findOne(grainId);
     if (!grain) {
-      throw new Meteor.Error(403, "Unauthorized", "No grain found.");
+      throw new Meteor.Error(404, "Grain not found", "Grain ID: " + apiToken.grainId);
     }
     var title = grain.title;
 
     if (!mayOpenGrain(grainId, this.userId)) {
-      throw new Meteor.Error(403, "Unauthorized", "User is not authorized to access this grain.");
+      throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
     return openSessionInternal(grainId, Meteor.user(), title);
@@ -151,11 +151,11 @@ Meteor.methods({
     var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
     var apiToken = ApiTokens.findOne(hashedToken);
     if (!apiToken) {
-      throw new Meteor.Error(403, "Unauthorized", "Invalid token.");
+      throw new Meteor.Error(403, "Invalid authorization token");
     }
     var grain = Grains.findOne({_id: apiToken.grainId});
     if (!grain) {
-      throw new Meteor.error(403, "No such grain.");
+      throw new Meteor.Error(404, "Grain not found", "Grain ID: " + apiToken.grainId);
     }
     var title;
     if (grain.userId == apiToken.userId) {
@@ -188,7 +188,7 @@ Meteor.methods({
     } else {
       if (!mayOpenGrain(apiToken.grainId, apiToken.userId)) {
         throw new Meteor.Error(403, "Unauthorized",
-                               "User is not authorized to access this grain.");
+                               "User is not authorized to open this grain.");
       }
       return openSessionInternal(apiToken.grainId, null, title, apiToken);
     }

@@ -139,7 +139,6 @@ Router.map(function () {
     path: "/stats",
 
     waitOn: function () {
-      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
       return [
         Meteor.subscribe("activityStats"),
         Meteor.subscribe("realTimeStats"),

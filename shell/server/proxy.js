@@ -298,6 +298,7 @@ shutdownGrain = function (grainId, ownerId, keepSessions) {
   }
 
   var grain = sandstormBackend.getGrain(ownerId, grainId).supervisor;
+  delete runningGrains[grainId];
   return grain.shutdown().then(function () {
     grain.close();
     throw new Error("expected shutdown() to throw disconnected");
@@ -342,14 +343,16 @@ getGrainSize = function (sessionId, oldSize) {
 }
 
 Meteor.startup(function () {
-  // Every time the set of dev apps changes, clear all sessions.
+  function shutdownApp(appId) {
+    Grains.find({appId: appId}).forEach(function(grain) {
+      waitPromise(shutdownGrain(grain._id, grain.userId));
+    });
+  }
+
   DevApps.find().observeChanges({
-    removed : function (app) {
-      Sessions.remove({});
-    },
-    added : function (app) {
-      Sessions.remove({});
-    }
+    removed: shutdownApp,
+    updated: shutdownApp,
+    added:   shutdownApp,
   });
 
   Sessions.find().observe({

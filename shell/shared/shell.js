@@ -251,7 +251,7 @@ if (Meteor.isClient) {
     devActions: function () {
       var userId = Meteor.userId();
       if (userId) {
-        var appId = Session.get("selectedTab");
+        var appId = Session.get("selectedTab").appId;
         if (appId) {
           var app = DevApps.findOne(appId);
           if (app && app.manifest.actions) {

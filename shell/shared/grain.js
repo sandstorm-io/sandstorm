@@ -490,11 +490,6 @@ if (Meteor.isClient) {
 }
 
 function grainRouteHelper(route, result, openSessionMethod, openSessionArg, rootPath) {
-  var clearError = function() { route.state.set("error", undefined); };
-  DevApps.find().observeChanges({
-    added : clearError,
-    removed: clearError
-  });
   var grainId = result.grainId;
 
   var apiToken = Session.get("api-token-" + grainId);

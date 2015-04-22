@@ -266,7 +266,8 @@ Router.map(function () {
       if (thisPackage) {
         var manifest = thisPackage.manifest;
         var action = manifest.actions[0];
-        appName = (manifest.appTitle && manifest.appTitle.defaultText) || appNameFromActionName(action.title.defaultText);
+        appName = (manifest.appTitle && manifest.appTitle.defaultText) ||
+                  appNameFromActionName(action.title.defaultText);
       }
 
       return {

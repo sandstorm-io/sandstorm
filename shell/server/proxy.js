@@ -880,7 +880,7 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
     }
     userInfo.deprecatedPermissionsBlob = buf;
 
-    if (this.isApi) {
+    if (self.isApi) {
       return self._callNewApiSession(request, userInfo);
     } else {
       return self._callNewWebSession(request, userInfo);

@@ -200,6 +200,14 @@ mayOpenGrain = function(grainId, userId) {
 
 
 Meteor.startup(function () {
+  Grains.find().observe({
+    changed: function (oldGrain, newGrain) {
+      if (oldGrain.private != newGrain.private) {
+        Sessions.remove({grainId: oldGrain._id, userId: {$ne: oldGrain.userId}});
+      }
+    },
+  });
+
   RoleAssignments.find().observe({
     changed : function (newRoleAssignment, oldRoleAssignment) {
       if (newRoleAssignment.active != oldRoleAssignment.active ||

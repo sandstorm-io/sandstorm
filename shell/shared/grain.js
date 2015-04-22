@@ -21,9 +21,10 @@ var DEFAULT_TITLE = "Sandstorm";
 if (Meteor.isServer) {
   Grains.allow({
     update: function (userId, grain, fieldNames) {
-      // Allow owner to rename grain.
+      // Allow owner to rename or privatize grain.
       return userId && grain.userId === userId &&
-          fieldNames.length === 1 && fieldNames[0] === "title";
+          ((fieldNames.length === 1 && fieldNames[0] === "title")
+           || (fieldNames.length === 1 && fieldNames[0] === "private"));
     }
   });
 
@@ -55,7 +56,7 @@ if (Meteor.isServer) {
     });
     this.onStop(function() { handle.stop(); });
     return [Grains.find({_id : grainId, $or: [{userId: this.userId}, {private: {$ne: true}}]},
-                        {fields: {title: 1, userId: 1}}),
+                        {fields: {title: 1, userId: 1, private: 1}}),
             ApiTokens.find({grainId: grainId, userId: this.userId}),
             RoleAssignments.find({$or : [{sharer: this.userId}, {recipient: this.userId}]}),
            ];
@@ -145,7 +146,7 @@ Meteor.methods({
     if (this.userId) {
       RoleAssignments.remove({grainId: grainId, recipient: this.userId});
     }
-  }
+  },
 });
 
 if (Meteor.isClient) {
@@ -304,6 +305,10 @@ if (Meteor.isClient) {
     "click button.restore-role-assignment": function (event) {
       RoleAssignments.update(event.currentTarget.getAttribute("data-id"),
                             {$set : {active : true}});
+    },
+
+    "click #privatize-grain": function (event) {
+      Grains.update(this.grainId, {$set: {private: true}});
     },
 
     "click #homelink-button": function (event) {
@@ -484,34 +489,30 @@ if (Meteor.isClient) {
   }
 }
 
-function grainRouteHelper(route, grainId, title, openSessionMethod,
-                          openSessionArg, isOwner, rootPath) {
+function grainRouteHelper(route, result, openSessionMethod, openSessionArg, rootPath) {
   var clearError = function() { route.state.set("error", undefined); };
   DevApps.find().observeChanges({
     added : clearError,
     removed: clearError
   });
+  var grainId = result.grainId;
 
   var apiToken = Session.get("api-token-" + grainId);
   var shareToken = Session.get("share-token-" + grainId);
 
-  var result = {
-    grainId: grainId,
-    title: title,
-    isOwner: isOwner,
-    apiToken: apiToken,
-    apiTokenPending: apiToken === "pending",
-    showApiToken: Session.get("show-api-token"),
-    existingTokens: ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
-                                    forSharing: {$ne: true}}).fetch(),
-    shareToken : shareToken,
-    shareTokenPending : shareToken === "pending",
-    showShareGrain: Session.get("show-share-grain"),
-    existingShareTokens: ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
-                                         forSharing: true}).fetch(),
-    existingAssignments: RoleAssignments.find({grainId: grainId, sharer : Meteor.userId()}).fetch(),
-    showMenu: Session.get("showMenu")
-  };
+  result.apiToken = apiToken;
+  result.apiTokenPending = apiToken === "pending",
+  result.showApiToken = Session.get("show-api-token"),
+  result.existingTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
+                                          forSharing: {$ne: true}}).fetch(),
+  result.shareToken = shareToken,
+  result.shareTokenPending = shareToken === "pending",
+  result.showShareGrain = Session.get("show-share-grain"),
+  result.existingShareTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
+                                               forSharing: true}).fetch(),
+  result.existingAssignments = RoleAssignments.find({grainId: grainId,
+                                                     sharer : Meteor.userId()}).fetch(),
+  result.showMenu = Session.get("showMenu");
 
   var err = route.state.get("error");
   if (err) {
@@ -589,9 +590,12 @@ Router.map(function () {
           title = roleAssignment.title;
         }
       }
-      return grainRouteHelper(this, grainId, title, "openSession", grainId,
-                              grain && grain.userId && grain.userId === Meteor.userId(),
-                              "/grain/" + grainId);
+      return grainRouteHelper(this,
+                              {grainId: grainId, title: title,
+                               isOwner: grain && grain.userId && grain.userId === Meteor.userId(),
+                               oldSharingModel: grain && !grain.private},
+                               "openSession", grainId,
+                               "/grain/" + grainId);
 
     },
 
@@ -618,8 +622,9 @@ Router.map(function () {
                     window.location.protocol + "//" + makeWildcardHost("api") + "#"
                     + this.params.key);
       }
-      return grainRouteHelper(this, this.state.get("grainId"), this.state.get("title"),
-                              "openSessionFromApiToken", this.params.key, false,
+      return grainRouteHelper(this,
+                              {grainId: this.state.get("grainId"), title: this.state.get("title")},
+                              "openSessionFromApiToken", this.params.key,
                               "/shared/" + this.params.key);
     },
 

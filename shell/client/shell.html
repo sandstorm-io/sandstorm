@@ -265,60 +265,71 @@ limitations under the License.
 
   <div id="share-grain-popup" class="popup"
        style="{{#if showShareGrain}}{{else}}display: none{{/if}}">
-    {{#if shareToken}}
-      {{#if shareTokenPending}}
-        <p>Generating...</p>
-        <p><button id="reset-share-token">Cancel</button></p>
-      {{else}}
-        <p>Copy this link and share it with other users to grant access:</p>
-        <a id="share-token-text" class="copy-me" href="{{shareToken}}">{{shareToken}}</a>
-        <p><button id="reset-share-token">Go back</button></p>
+    {{#if oldSharingModel}}
+      <p>This grain uses the old sharing model. You may share it by copy/pasting the URL from the
+          location bar.</p>
+      {{#if isOwner}}
+      <p>You can upgrade this grain to the new model, but anyone with whom you shared this grain
+         previously will lose access; you will have to share it with them again. This cannot be
+         undone.</p>
+      <p><button id="privatize-grain">upgrade</button></p>
       {{/if}}
     {{else}}
-      <p>Create a secret link to share with other users.</p>
-      <p>Label: <input type="text" id="share-token-petname" placeholder="e.g. 'for Bob'">
-      {{#with viewInfo}}
-        {{#if roles}}
-          Role:
-          <select id="share-token-role" title="select a role">
-            {{#each roles}}
-              <option title={{verbPhrase.defaultText}}
-                      style="{{#if obsolete}}display:none{{else}}{{/if}}">
-                {{title.defaultText}}</option>
-            {{/each}}
-          </select>
+      {{#if shareToken}}
+        {{#if shareTokenPending}}
+          <p>Generating...</p>
+          <p><button id="reset-share-token">Cancel</button></p>
+        {{else}}
+          <p>Copy this link and share it with other users to grant access:</p>
+          <a id="share-token-text" class="copy-me" href="{{shareToken}}">{{shareToken}}</a>
+          <p><button id="reset-share-token">Go back</button></p>
         {{/if}}
-      {{/with}}
-      <button id="new-share-token">Create</button></p>
-      {{#if existingShareTokens}}
-        <p> Your existing links: </p>
-        <ul>
-        {{#each existingShareTokens}}
-          <li> {{petname}} ({{dateString created}})
-            <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
-          </li>
-        {{/each}}
-        </ul>
       {{else}}
-        You have not created any links.
-      {{/if}}
-      {{#if existingAssignments}}
-        <p></p>
-        <p> You have shared access with these users: </p>
-        <ul>
-        {{#each existingAssignments}}
-          <li class="{{#if active}}{{else}}revoked-role-assignment{{/if}}">
-            {{displayName recipient}} ({{dateString created}})
-            {{#if active}}
-              <button class="revoke-role-assignment"
-                      title="revoke" data-id="{{_id}}">revoke</button>
-            {{else}}
-              <button class="restore-role-assignment"
-                      title="restore" data-id="{{_id}}">restore</button>
-            {{/if}}
-          </li>
-        {{/each}}
-        </ul>
+        <p>Create a secret link to share with other users.</p>
+        <p>Label: <input type="text" id="share-token-petname" placeholder="e.g. 'for Bob'">
+        {{#with viewInfo}}
+          {{#if roles}}
+            Role:
+            <select id="share-token-role" title="select a role">
+              {{#each roles}}
+                <option title={{verbPhrase.defaultText}}
+                        style="{{#if obsolete}}display:none{{else}}{{/if}}">
+                  {{title.defaultText}}</option>
+              {{/each}}
+            </select>
+          {{/if}}
+        {{/with}}
+        <button id="new-share-token">Create</button></p>
+        {{#if existingShareTokens}}
+          <p> Your existing links: </p>
+          <ul>
+          {{#each existingShareTokens}}
+            <li> {{petname}} ({{dateString created}})
+              <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
+            </li>
+          {{/each}}
+          </ul>
+        {{else}}
+          You have not created any links.
+        {{/if}}
+        {{#if existingAssignments}}
+          <p></p>
+          <p> You have shared access with these users: </p>
+          <ul>
+          {{#each existingAssignments}}
+            <li class="{{#if active}}{{else}}revoked-role-assignment{{/if}}">
+              {{displayName recipient}} ({{dateString created}})
+              {{#if active}}
+                <button class="revoke-role-assignment"
+                        title="revoke" data-id="{{_id}}">revoke</button>
+              {{else}}
+                <button class="restore-role-assignment"
+                        title="restore" data-id="{{_id}}">restore</button>
+              {{/if}}
+            </li>
+          {{/each}}
+          </ul>
+        {{/if}}
       {{/if}}
     {{/if}}
   </div>

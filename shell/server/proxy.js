@@ -130,17 +130,11 @@ Meteor.methods({
     // running.
 
     check(grainId, String);
-    var grain = Grains.findOne(grainId);
-    if (!grain) {
-      throw new Meteor.Error(404, "Grain not found", "Grain ID: " + apiToken.grainId);
-    }
-    var title = grain.title;
-
     if (!mayOpenGrain(grainId, this.userId)) {
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
-    return openSessionInternal(grainId, Meteor.user(), title);
+    return openSessionInternal(grainId, Meteor.user(), null);
   },
 
   openSessionFromApiToken: function(token) {

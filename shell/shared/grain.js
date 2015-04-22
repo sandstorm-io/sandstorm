@@ -45,24 +45,20 @@ if (Meteor.isServer) {
 
   Meteor.publish("grainTopBar", function (grainId) {
     check(grainId, String);
-    if (this.userId) {
-      var self = this;
-      var handle = RoleAssignments.find().observe({
-        added: function(roleAssignment) {
-          var user = Meteor.users.findOne(roleAssignment.recipient);
-          self.added("displayNames", user._id,
-                     {displayName: user.profile.name});
-        },
-      });
-      this.onStop(function() { handle.stop(); });
-      return [Grains.find({_id : grainId, userId: this.userId},
-                          {fields: {title: 1, userId: 1}}),
-              ApiTokens.find({grainId: grainId, userId: this.userId}),
-              RoleAssignments.find({$or : [{sharer: this.userId}, {recipient: this.userId}]}),
-             ];
-    } else {
-      return [];
-    }
+    var self = this;
+    var handle = RoleAssignments.find({sharer: this.userId}).observe({
+      added: function(roleAssignment) {
+        var user = Meteor.users.findOne(roleAssignment.recipient);
+        self.added("displayNames", user._id,
+                   {displayName: user.profile.name});
+      },
+    });
+    this.onStop(function() { handle.stop(); });
+    return [Grains.find({_id : grainId, $or: [{userId: this.userId}, {private: {$ne: true}}]},
+                        {fields: {title: 1, userId: 1}}),
+            ApiTokens.find({grainId: grainId, userId: this.userId}),
+            RoleAssignments.find({$or : [{sharer: this.userId}, {recipient: this.userId}]}),
+           ];
   });
 
   Meteor.publish("grainSize", function (sessionId) {
@@ -591,8 +587,6 @@ Router.map(function () {
                                                      {sort:{created:1}});
         if (roleAssignment) {
           title = roleAssignment.title;
-        } else {
-          title = this.state.get("title");
         }
       }
       return grainRouteHelper(this, grainId, title, "openSession", grainId,

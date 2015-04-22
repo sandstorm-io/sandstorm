@@ -251,7 +251,6 @@ Router.map(function () {
     path: "/install/:packageId",
 
     waitOn: function () {
-      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
       return [
         Meteor.subscribe("packageInfo", this.params.packageId),
         Meteor.subscribe("credentials"),
@@ -404,7 +403,6 @@ Router.map(function () {
     path: "/install",
 
     waitOn: function () {
-      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
       return Meteor.subscribe("credentials");
     },
 

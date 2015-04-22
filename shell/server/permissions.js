@@ -112,30 +112,32 @@ function grainPermissionsInternal(grainId, openerUserId, viewInfo) {
   permissionsMap[owner] = new PermissionSet();
 
   var userStack = [openerUserId];
-  var user;
-  var roleAssignments = RoleAssignments.find({active: true, grainId: grainId}).fetch();
+  var edgesByRecipient = {};
+  RoleAssignments.find({active: true, grainId: grainId}).forEach(function (edge) {
+    if (!edgesByRecipient[edge.recipient]) {
+      edgesByRecipient[edge.recipient] = []
+    }
+    edgesByRecipient[edge.recipient].push(edge);
+  });
 
   while (userStack.length > 0) {
-    var user = userStack.pop();
-    var edges = roleAssignments.filter(function(roleAssignment) {
-      return roleAssignment.recipient == user;
-    });
-    for (var ii = 0; ii < edges.length; ++ii) {
-      var inEdge = edges[ii];
-      var recipient = inEdge.recipient;
-      var sharer = inEdge.sharer;
-      if (!permissionsMap[sharer]) {
-        permissionsMap[sharer] = new PermissionSet();
-      }
-      var newPermissions = roleAssignmentPermissions(inEdge.roleAssignment, viewInfo);
-      newPermissions.intersect(permissionsMap[recipient]);
+    var recipient = userStack.pop();
+    if (edgesByRecipient[recipient]) {
+      edgesByRecipient[recipient].forEach(function (inEdge) {
+        var sharer = inEdge.sharer;
+        if (!permissionsMap[sharer]) {
+          permissionsMap[sharer] = new PermissionSet();
+        }
+        var newPermissions = roleAssignmentPermissions(inEdge.roleAssignment, viewInfo);
+        newPermissions.intersect(permissionsMap[recipient]);
 
-      // Optimization: we don't care about permissions that we've already proven the opener has.
-      newPermissions.remove(permissionsMap[owner]);
+        // Optimization: we don't care about permissions that we've already proven the opener has.
+        newPermissions.remove(permissionsMap[owner]);
 
-      if (permissionsMap[sharer].add(newPermissions)) {
-        userStack.push(sharer);
-      }
+        if (permissionsMap[sharer].add(newPermissions)) {
+          userStack.push(sharer);
+        }
+      });
     }
   }
 
@@ -166,24 +168,30 @@ mayOpenGrain = function(grainId, userId) {
     return true;
   }
 
-  var roleAssignments = RoleAssignments.find({active: true, grainId: grainId}).fetch();
   var stackedUsers = {userId : true};
   var userStack = [userId];
+  var edgesByRecipient = {};
+  RoleAssignments.find({active: true, grainId: grainId}).forEach(function (edge) {
+    if (!edgesByRecipient[edge.recipient]) {
+      edgesByRecipient[edge.recipient] = []
+    }
+    edgesByRecipient[edge.recipient].push(edge);
+  });
 
   while (userStack.length > 0) {
-    var user = userStack.pop();
-    var edges = roleAssignments.filter(function(roleAssignment) {
-      return roleAssignment.recipient == user;
-    });
-    for (var ii = 0; ii < edges.length; ++ii) {
-      var inEdge = edges[ii];
-      var sharer = inEdge.sharer;
-      if (sharer == owner) {
-        return true;
-      }
-      if (!stackedUsers[sharer]) {
-        userStack.push(sharer);
-        stackedUsers[sharer] = true;
+    var recipient = userStack.pop();
+    var edges = edgesByRecipient[recipient];
+    if (edges) {
+      for (var ii = 0; ii < edges.length; ++ii) {
+        var inEdge = edges[ii];
+        var sharer = inEdge.sharer;
+        if (sharer == owner) {
+          return true;
+        }
+        if (!stackedUsers[sharer]) {
+          userStack.push(sharer);
+          stackedUsers[sharer] = true;
+        }
       }
     }
   }

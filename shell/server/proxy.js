@@ -298,7 +298,6 @@ shutdownGrain = function (grainId, ownerId, keepSessions) {
   }
 
   var grain = sandstormBackend.getGrain(ownerId, grainId).supervisor;
-  delete runningGrains[grainId];
   return grain.shutdown().then(function () {
     grain.close();
     throw new Error("expected shutdown() to throw disconnected");
@@ -813,6 +812,7 @@ Proxy.prototype.resetConnection = function () {
   }
   if (this.supervisor) {
     this.supervisor.close();
+    delete runningGrains[this.grainId];
     delete this.supervisor;
   }
 }

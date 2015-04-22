@@ -2225,11 +2225,6 @@ private:
       sendFd(fd, fuseFd);
       fuseFd = nullptr;
 
-      // Kill all sandstorm-supervisor processes to force a reload of the app. (In theory we could
-      // try to only kill supervisors of the specific app we're overriding, but that would take
-      // some extra work to figure out. Killing them all shouldn't hurt much.)
-      killall("/bin/sandstorm-supervisor");
-
       {
         // Read the manifest.
         capnp::StreamFdMessageReader reader(
@@ -2249,9 +2244,6 @@ private:
               capnp::StreamFdMessageReader reader(
                   raiiOpen(kj::str(dir, "/sandstorm-manifest"), O_RDONLY));
 
-              // Kill all the supervisors again to force a reload of the app.
-              killall("/bin/sandstorm-supervisor");
-
               // Notify front-end that the app changed.
               updateDevApp(config, appId, reader.getRoot<spk::Manifest>());
             }
@@ -2260,37 +2252,12 @@ private:
           }
         }
       }
-
-      // Kill all the supervisors again to shut down the app before we unmount it.
-      killall("/bin/sandstorm-supervisor");
     });
 
     KJ_IF_MAYBE(e, exception) {
       context.exitError(kj::str(*e));
     } else {
       context.exit();
-    }
-  }
-
-  void killall(kj::StringPtr command) {
-    for (auto& file: listDirectory("/proc")) {
-      KJ_IF_MAYBE(pid, parseUInt(file, 10)) {
-        char buf[command.size() + 1];
-        char* bufPtr = buf;  // Clang doesn't like capturing variable-width arrays.
-
-        auto maybeFd = raiiOpenIfExists(kj::str("/proc/", file, "/cmdline"), O_RDONLY);
-        // No big deal if it doesn't exist. Probably the pid disappeared while we were listing
-        // the directory.
-
-        KJ_IF_MAYBE(fd, maybeFd) {
-          kj::FdInputStream stream(kj::mv(*fd));
-          size_t n = stream.tryRead(bufPtr, sizeof(buf), sizeof(buf));
-          if (n == sizeof(buf) && memcmp(command.begin(), buf, n) == 0) {
-            // An exact match, including the terminating NUL byte. Kill the process!
-            KJ_SYSCALL(kill(*pid, SIGTERM));
-          }
-        }
-      }
     }
   }
 

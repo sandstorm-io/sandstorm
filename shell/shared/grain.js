@@ -401,7 +401,6 @@ Router.map(function () {
     path: "/grain/:grainId/:path(.*)?",
 
     waitOn: function () {
-      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
       return [
         Meteor.subscribe("grainTitle", this.params.grainId),
         Meteor.subscribe("devApps"),
@@ -494,7 +493,6 @@ Router.map(function () {
     layoutTemplate: "lightLayout",
 
     waitOn: function () {
-      // TODO(perf):  Do these subscriptions get stop()ed when the user browses away?
       return [
         Meteor.subscribe("grainTitle", this.params.grainId),
         Meteor.subscribe("grainLog", this.params.grainId)

@@ -342,14 +342,16 @@ getGrainSize = function (sessionId, oldSize) {
 }
 
 Meteor.startup(function () {
-  // Every time the set of dev apps changes, clear all sessions.
+  function shutdownApp(appId) {
+    Grains.find({appId: appId}).forEach(function(grain) {
+      waitPromise(shutdownGrain(grain._id, grain.userId));
+    });
+  }
+
   DevApps.find().observeChanges({
-    removed : function (app) {
-      Sessions.remove({});
-    },
-    added : function (app) {
-      Sessions.remove({});
-    }
+    removed: shutdownApp,
+    updated: shutdownApp,
+    added:   shutdownApp,
   });
 
   Sessions.find().observe({
@@ -810,6 +812,7 @@ Proxy.prototype.resetConnection = function () {
   }
   if (this.supervisor) {
     this.supervisor.close();
+    delete runningGrains[this.grainId];
     delete this.supervisor;
   }
 }

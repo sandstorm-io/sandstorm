@@ -190,7 +190,7 @@ limitations under the License.
       {{#if isFirstRun}}
         <p>
           This Sandstorm instance has no users. You should generate a token from the command line
-          in order to access the admin settings page.
+          with `sandstorm admin-token` in order to access the admin settings page.
         </p>
       {{else}}
         {{#if allowDemoAccounts}}
@@ -584,8 +584,8 @@ $KEY</textarea></p>
       {{else}}
         <p>
           You are not logged in as admin and there isn't a valid token specified. You should
-          either log in as an admin user or generate a token from the command line in order to access
-          the admin settings page.
+          either log in as an admin user or generate a token from the command line by doing
+          `sandstorm admin-token` in order to access the admin settings page.
         </p>
       {{/if}}
     </div>

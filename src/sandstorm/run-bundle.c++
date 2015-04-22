@@ -652,6 +652,17 @@ public:
                   .build();
             },
             "For internal use only.")
+        .addSubCommand("admin-token",
+            [this]() {
+              return kj::MainBuilder(context, VERSION,
+                      "Generates a new admin token that you can use to access the admin settings "
+                      "page. This is meant for initial setup, or if an admin account is locked out.")
+                  .addOption({"short"}, [this]() { shortOutput = true; return true; },
+                      "Pass this flag if you wish to output only the token.")
+                  .callAfterParsing(KJ_BIND_METHOD(*this, adminToken))
+                  .build();
+            },
+            "Resets OAuth configuration.")
         .build();
   }
 
@@ -992,6 +1003,30 @@ public:
     context.exitInfo(kj::str("reset OAuth configuration"));
   }
 
+  kj::MainBuilder::Validity adminToken() {
+    changeToInstallDir();
+
+    // Get 20 random bytes for token.
+    kj::byte bytes[20];
+    kj::FdInputStream random(raiiOpen("/dev/urandom", O_RDONLY));
+    random.read(bytes, sizeof(bytes));
+    auto hexString = bytesToHex(bytes);
+
+    auto config = readConfig();
+
+    kj::FdOutputStream tokenFile(raiiOpen("../var/sandstorm/adminToken", O_WRONLY | O_CREAT));
+    tokenFile.write(hexString.begin(), hexString.size());
+
+    if (shortOutput) {
+      context.exitInfo(hexString);
+    } else {
+      context.exitInfo(kj::str("Generated new admin token.\n\nPlease proceed to ", config.rootUrl,
+        "/admin/", hexString, " in order to access the admin settings page and configure your login ",
+        "system. This token will expire in 15 min, and if you take too long, you will have to ",
+        "regenerate a new token with `sandstorm admin-token`."));
+    }
+  }
+
   kj::MainBuilder::Validity dev() {
     // When called by the spk tool, stdout is a socket where we will send the fuse FD.
     struct stat stats;
@@ -1050,6 +1085,7 @@ private:
   bool kernelNewEnough = isKernelNewEnough();
   bool runningAsRoot = getuid() == 0;
   bool updateFileIsChannel = false;
+  bool shortOutput = false;
 
   kj::String getInstallDir() {
     char exeNameBuf[PATH_MAX + 1];

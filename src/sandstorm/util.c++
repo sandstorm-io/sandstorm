@@ -601,6 +601,18 @@ kj::Array<byte> base64Decode(kj::StringPtr input) {
 
 // =======================================================================================
 
+kj::String bytesToHex(kj::ArrayPtr<const byte> input) {
+  kj::String out = kj::heapString(input.size() * 2);
+  const char * hex = "0123456789abcdef";
+  char * outPtr = out.begin();
+  const kj::byte * inPtr = input.begin();
+  for(; inPtr < input.end(); outPtr+=2, inPtr++){
+      outPtr[0] = hex[((*inPtr)>>4) & 0xf];
+      outPtr[1] = hex[(*inPtr) & 0xf];
+  }
+  return out;
+}
+
 Subprocess::Subprocess(Options&& options)
     : name(kj::heapString(options.argv.size() > 0 ? options.argv[0] : options.executable)) {
   KJ_SYSCALL(pid = fork());

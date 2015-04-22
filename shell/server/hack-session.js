@@ -237,14 +237,25 @@ HackSessionContextImpl.prototype.generateApiToken = function (petname, userInfo,
 };
 
 Meteor.methods({
-  newApiToken: function (grainId, petname) {
+  newApiToken: function (grainId, petname, roleAssignment, forSharing) {
     // Create a new user-oriented API token.
+
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Must be logged in to create an API token.");
+    }
 
     check(grainId, String);
     check(petname, String);
+    check(forSharing, Boolean);
+    check(roleAssignment, {
+      none : Match.Optional(null),
+      allAccess: Match.Optional(null),
+      roleId: Match.Optional(Match.Integer),
+    });
 
-    if (Grains.find(grainId).count() === 0) {
-      throw new Meteor.Error(404, "No such grain");
+    var grain = Grains.findOne(grainId);
+    if (!grain) {
+      throw new Meteor.Error(403, "Unauthorized", "No grain found.");
     }
 
     var token = Random.secret();
@@ -254,9 +265,11 @@ Meteor.methods({
       _id: Crypto.createHash("sha256").update(token).digest("base64"),
       userId: this.userId,
       grainId: grainId,
+      roleAssignment: roleAssignment,
       petname: petname,
       created: new Date(),
-      expires: null
+      expires: null,
+      forSharing: forSharing,
     });
 
     return {token: token, endpointUrl: endpointUrl};

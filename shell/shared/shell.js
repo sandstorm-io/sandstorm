@@ -52,7 +52,8 @@ if (Meteor.isServer) {
     if (this.userId) {
       return [
         UserActions.find({userId: this.userId}),
-        Grains.find({userId: this.userId})
+        Grains.find({userId: this.userId}),
+        RoleAssignments.find({recipient: this.userId}),
       ];
     } else {
       return [];
@@ -219,25 +220,38 @@ if (Meteor.isClient) {
     });
   };
 
+  Session.set("selectedTab", {myFiles: true});
+
   Template.root.helpers({
     filteredGrains: function () {
-      var selectedApp = Session.get("selectedApp");
+      var selectedTab = Session.get("selectedTab");
       var userId = Meteor.userId();
-      if (selectedApp) {
-        return Grains.find({userId: userId, appId: selectedApp}, {sort: {lastUsed: -1}}).fetch();
-      } else {
+      if (selectedTab.sharedWithMe) {
+        var result = [];
+        var uniqueGrains = {};
+        RoleAssignments.find({}, {sort:{created:1}}).forEach(function(roleAssignment) {
+          if (!(roleAssignment.grainId in uniqueGrains)) {
+            result.push({_id : roleAssignment.grainId, title: roleAssignment.title});
+            uniqueGrains[roleAssignment.grainId] = true;
+          }
+        });
+        return result;
+      } else if (selectedTab.myFiles) {
         return Grains.find({userId: userId}, {sort: {lastUsed: -1}}).fetch();
+      } else {
+        return Grains.find({userId: userId, appId: selectedTab.appId},
+                           {sort: {lastUsed: -1}}).fetch();
       }
     },
 
     actions: function () {
-      return UserActions.find({userId: Meteor.userId(), appId: Session.get("selectedApp")});
+      return UserActions.find({userId: Meteor.userId(), appId: Session.get("selectedTab").appId});
     },
 
     devActions: function () {
       var userId = Meteor.userId();
       if (userId) {
-        var appId = Session.get("selectedApp");
+        var appId = Session.get("selectedTab").appId;
         if (appId) {
           var app = DevApps.findOne(appId);
           if (app && app.manifest.actions) {
@@ -254,23 +268,23 @@ if (Meteor.isClient) {
       return [];
     },
 
-    selectedApp: function () {
-      return Session.get("selectedApp");
+    selectedTab: function () {
+      return Session.get("selectedTab");
     },
 
     selectedAppMarketingVersion: function () {
       var appMap = this.appMap;
-      var app = appMap && appMap[Session.get("selectedApp")];
+      var app = appMap && appMap[Session.get("selectedTab").appId];
       return app && app.appMarketingVersion && app.appMarketingVersion.defaultText;
     },
 
     selectedAppIsDev: function () {
-      var app = Session.get("selectedApp");
-      return app && DevApps.findOne(app) ? true : false;
+      var tab = Session.get("selectedTab");
+      return tab && tab.appId && DevApps.findOne(tab.appId) ? true : false;
     },
 
-    tabClass: function (appId) {
-      if (Session.get("selectedApp") == appId) {
+    appTabClass: function (appId) {
+      if (Session.get("selectedTab").appId == appId) {
         return "selected";
       } else {
         return "";
@@ -287,7 +301,15 @@ if (Meteor.isClient) {
 
   Template.root.events({
     "click .applist-tab": function (event) {
-      Session.set("selectedApp", event.currentTarget.getAttribute("data-appid"));
+      Session.set("selectedTab", {appId: event.currentTarget.getAttribute("data-appid")});
+      Session.set("showMenu", false);
+    },
+    "click .applist-tab-my-files": function (event) {
+      Session.set("selectedTab", {myFiles: true});
+      Session.set("showMenu", false);
+    },
+    "click .applist-tab-shared-with-me": function (event) {
+      Session.set("selectedTab", {sharedWithMe: true});
       Session.set("showMenu", false);
     },
     "click .applist-tab-settings": function (event) {
@@ -386,7 +408,7 @@ if (Meteor.isClient) {
         });
         Meteor.call("deleteUnusedPackages", appId);
         if (!Packages.findOne({appId: appId})) {
-          Session.set("selectedApp", null);
+          Session.set("selectedTab", {myFiles:true});
         }
       }
     },

@@ -117,7 +117,8 @@ Meteor.methods({
       appId: appId,
       appVersion: manifest.appVersion,
       userId: this.userId,
-      title: title
+      title: title,
+      private: true
     });
     startGrainInternal(packageId, grainId, this.userId, command, true, isDev);
     updateLastActive(grainId, Meteor.userId());
@@ -129,38 +130,62 @@ Meteor.methods({
     // running.
 
     check(grainId, String);
-
-    var sessionId = Random.id();
-    var user = Meteor.user();
-    var userId = user ? user._id : undefined;
-
-    // Start the grain if it is not running.
-    var runningGrain = runningGrains[grainId];
-    var grainInfo;
-    if (runningGrain) {
-      grainInfo = waitPromise(runningGrain);
-    } else {
-      grainInfo = continueGrain(grainId);
+    if (!mayOpenGrain(grainId, this.userId)) {
+      throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
-    updateLastActive(grainId, userId);
+    return openSessionInternal(grainId, Meteor.user(), null);
+  },
 
-    var isOwner = grainInfo.owner === userId;
+  openSessionFromApiToken: function(token) {
+    // Given an API token, either opens a new WebSession to the underlying grain or returns a
+    // path to which the client should redirect in order to open such a session.
 
-    var proxy = new Proxy(grainId, grainInfo.owner, sessionId, null, isOwner, user, null, false,
-                          grainInfo.supervisor);
-    proxies[sessionId] = proxy;
-    proxiesByHostId[proxy.hostId] = proxy;
+    check(token, String);
+    var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
+    var apiToken = ApiTokens.findOne(hashedToken);
+    if (!apiToken) {
+      throw new Meteor.Error(403, "Invalid authorization token");
+    }
+    var grain = Grains.findOne({_id: apiToken.grainId});
+    if (!grain) {
+      throw new Meteor.Error(404, "Grain not found", "Grain ID: " + apiToken.grainId);
+    }
+    var title;
+    if (grain.userId == apiToken.userId) {
+      title = grain.title;
+    } else {
+      var roleAssignment = RoleAssignments.findOne({grainId: apiToken.grainId,
+                                                    recipient: apiToken.userId},
+                                                   {sort : {created : 1}});
+      if (roleAssignment) {
+        title = roleAssignment.title;
+      }
+    }
 
-    Sessions.insert({
-      _id: sessionId,
-      grainId: grainId,
-      hostId: proxy.hostId,
-      timestamp: new Date().getTime(),
-      userId: userId
-    });
-
-    return {sessionId: sessionId, hostId: proxy.hostId};
+    if (this.userId) {
+      if (this.userId != apiToken.userId && this.userId != grain.userId) {
+        RoleAssignments.insert({
+          _id: Random.id(22),
+          grainId: apiToken.grainId,
+          sharer: apiToken.userId,
+          recipient: this.userId,
+          roleAssignment: apiToken.roleAssignment,
+          active: true,
+          petname: apiToken.petname,
+          title: title,
+          created: new Date(),
+          parent: hashedToken
+        });
+      }
+      return {redirect: "/grain/" + apiToken.grainId};
+    } else {
+      if (!mayOpenGrain(apiToken.grainId, apiToken.userId)) {
+        throw new Meteor.Error(403, "Unauthorized",
+                               "User is not authorized to open this grain.");
+      }
+      return openSessionInternal(apiToken.grainId, null, title, apiToken);
+    }
   },
 
   keepSessionAlive: function (sessionId) {
@@ -188,6 +213,39 @@ Meteor.methods({
     waitPromise(shutdownGrain(grainId, grain.userId, true));
   }
 });
+
+function openSessionInternal(grainId, user, title, apiToken) {
+  var userId = user ? user._id : undefined;
+
+  // Start the grain if it is not running.
+  var runningGrain = runningGrains[grainId];
+  var grainInfo;
+  if (runningGrain) {
+    grainInfo = waitPromise(runningGrain);
+  } else {
+    grainInfo = continueGrain(grainId);
+  }
+
+  updateLastActive(grainId, userId);
+
+  var isOwner = grainInfo.owner === userId;
+
+  var sessionId = Random.id();
+  var proxy = new Proxy(grainId, grainInfo.owner, sessionId, null, isOwner, user, null, false);
+  proxy.apiToken = apiToken;
+  proxies[sessionId] = proxy;
+  proxiesByHostId[proxy.hostId] = proxy;
+
+  Sessions.insert({
+    _id: sessionId,
+    grainId: grainId,
+    hostId: proxy.hostId,
+    timestamp: new Date().getTime(),
+    userId: userId,
+  });
+
+  return {sessionId: sessionId, title: title, grainId: grainId};
+}
 
 function updateLastActive(grainId, userId) {
   var now = new Date();
@@ -394,6 +452,34 @@ Meteor.startup(function () {
 
 var proxiesByApiToken = {};
 
+Meteor.startup(function() {
+  RoleAssignments.find().observe({
+    added: function (newRoleAssignment) {
+      ApiTokens.find({grainId: newRoleAssignment.grainId}).forEach(function(apiToken) {
+          delete proxiesByApiToken[apiToken._id];
+      });
+    },
+    changed: function (newRoleAssignment, oldRoleAssignment) {
+      if (newRoleAssignment.active != oldRoleAssignment.active) {
+        ApiTokens.find({grainId: oldRoleAssignment.grainId}).forEach(function(apiToken) {
+          delete proxiesByApiToken[apiToken._id];
+        });
+      }
+    },
+    removed: function (oldRoleAssignment) {
+      ApiTokens.find({grainId : oldRoleAssignment.grainId}).forEach(function(apiToken) {
+        delete proxiesByApiToken[apiToken._id];
+      });
+    },
+  });
+
+  ApiTokens.find().observe({
+    removed: function (oldApiToken) {
+      delete proxiesByApiToken[oldApiToken._id];
+    }
+  });
+});
+
 getProxyForApiToken = function (token) {
   check(token, String);
   var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
@@ -422,23 +508,31 @@ getProxyForApiToken = function (token) {
         }
 
         var proxy;
-        if (tokenInfo.userInfo) {
-          // Hack: When Mongo stores a Buffer, it comes back as some other type.
-          if ("userId" in tokenInfo.userInfo) {
-            tokenInfo.userInfo.userId = new Buffer(tokenInfo.userInfo.userId);
-          }
-          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null,
-                            tokenInfo.userInfo, true);
-        } else if (tokenInfo.userId) {
-          var user = Meteor.users.findOne({_id: tokenInfo.userId});
-          if (!user) {
-            throw new Meteor.Error(403, "User has been deleted");
+        if (tokenInfo.userId) {
+          var user = null;
+          if (!tokenInfo.forSharing) {
+            user = Meteor.users.findOne({_id: tokenInfo.userId});
+            if (!user) {
+              throw new Meteor.Error(403, "User has been deleted");
+            }
           }
 
           var isOwner = grain.userId === tokenInfo.userId;
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, isOwner, user, null, true);
+          proxy.apiToken = tokenInfo;
+        } else if (tokenInfo.userInfo) {
+          // Hack: When Mongo stores a Buffer, it comes back as some other type.
+          if ("userId" in tokenInfo.userInfo) {
+            tokenInfo.userInfo.userId = new Buffer(tokenInfo.userInfo.userId);
+          }
+          proxy = new Proxy(tokenInfo.grainId, null, null, false, null, tokenInfo.userInfo, true);
         } else {
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, null, true);
+        }
+
+        if (!mayOpenGrain(tokenInfo.grainId, tokenInfo.userId)) {
+          // Note that only public grains may be opened without a user ID.
+          throw new Meteor.Error(403, "Unauthorized.");
         }
 
         if (tokenInfo.expires) {
@@ -626,6 +720,7 @@ function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, user
     this.userInfo = userInfo;
   } else if (user) {
     var serviceId;
+    this.userId = user._id;
     if (user.expires) {
       serviceId = "demo:" + user._id;
     } else if (user.devName) {
@@ -755,27 +850,42 @@ Proxy.prototype._callNewApiSession = function (request, userInfo) {
 
 Proxy.prototype._callNewSession = function (request, viewInfo) {
   var userInfo = _.clone(this.userInfo);
-  if (viewInfo.permissions) {
-    var perms = new Array(viewInfo.permissions.length);
-    for (var i = 0; i < perms.length; i++) {
-      perms[i] = this.isOwner;
+  var self = this;
+  var promise = inMeteor(function () {
+    var permissions = [];
+    if (self.apiToken) {
+      permissions = apiTokenPermissions(self.apiToken, viewInfo);
+    } else if (self.userId) {
+      permissions = grainPermissions(self.grainId, self.userId, viewInfo);
     }
-    userInfo.permissions = perms;
+    Sessions.update({_id: self.sessionId},
+                    {$set : {"viewInfo": viewInfo, "permissions": permissions}});
+    return permissions;
+  });
 
-    // Fill in the old permissions field for any apps that still depend on it.
-    var numBytes = Math.ceil(viewInfo.permissions.length / 8);
+  return promise.then(function(permissions) {
+    userInfo.permissions = permissions;
+
+    var numBytes = Math.ceil(permissions.length / 8);
     var buf = new Buffer(numBytes);
-    for (var i = 0; i < numBytes; i++) {
-      buf.writeUInt8(this.isOwner * 255, i);
+    for (var ii =0; ii < numBytes; ++ii) {
+      buf[ii] = 0;
+    }
+    for (var ii = 0; ii < permissions.length; ++ii) {
+      var byteNum = Math.floor(ii / 8);
+      var bitNum = ii % 8;
+      if (permissions[ii]) {
+        buf[byteNum] = (buf[byteNum] | (1 << bitNum));
+      }
     }
     userInfo.deprecatedPermissionsBlob = buf;
-  }
 
-  if (this.isApi) {
-    return this._callNewApiSession(request, userInfo);
-  } else {
-    return this._callNewWebSession(request, userInfo);
-  }
+    if (this.isApi) {
+      return self._callNewApiSession(request, userInfo);
+    } else {
+      return self._callNewWebSession(request, userInfo);
+    }
+  });
 };
 
 Proxy.prototype.getSession = function (request) {

@@ -80,6 +80,7 @@ Grains = new Mongo.Collection("grains");
 //   userId:  User who owns this grain.
 //   title:  Human-readable string title, as chosen by the user.
 //   lastUsed:  Date when the grain was last used by a user.
+//   private: If true, then knowledge of `_id` does not suffice to open this grain.
 //
 // The following fields *might* also exist. These are temporary hacks used to implement e-mail and
 // web publishing functionality without powerbox support; they will be replaced once the powerbox
@@ -98,7 +99,7 @@ RoleAssignments = new Mongo.Collection("roleAssignments");
 // Any grain for which a user has received a role assignment should show up in that user's grain
 // list. However, the user may only access a grain if there is a path of *active* role assignments
 // leading from the grain owner to that user, precisely as if every role assignment carried a
-// special "can access grain" permission.
+// special "can open grain" permission.
 //
 // Each contains:
 //   _id: random
@@ -113,21 +114,7 @@ RoleAssignments = new Mongo.Collection("roleAssignments");
 //   title: Human-readable title as chosen by the recipient. Used in the same places that
 //          `grain.title` is used for the grain's owner.
 //   created: Date when this role assignment was created.
-//   parentKey: If present, the `_id` of the entry in RoleAssignmentKeys from which this was derived.
-
-RoleAssignmentKeys = new Mongo.Collection("roleAssignmentKeys");
-// Role assignments that are not yet bound to a single recipient. These can be used to implement
-// sharing-by-secret-URL.
-//
-// Each contains:
-//   _id: random
-//   sharer: The `_id` of the user who created this key.
-//   grainId: The `_id` of the grain whose permissions are being shared.
-//   roleAssignment: A JSON-encoded Grain.ViewSharingLink.RoleAssignment representing the
-//                   received permissions.
-//   petname: Human-readable label chosen by and only visible to the sharer.
-//   created: Date when this key was created.
-//   expires: Optional date when this key should expire.
+//   parent: If present, the `_id` of the entry in ApiTokens from which this was derived.
 
 Sessions = new Mongo.Collection("sessions");
 // UI sessions open to particular grains.  A new session is created each time a user opens a grain.
@@ -201,6 +188,12 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   userInfo:  For API tokens created by the app through HackSessionContext, the UserInfo struct
 //              that should be passed to `newSession()` when exercising this token, in decoded (JS
 //              object) format. This is a temporary hack.
+//   roleAssignment: If this API token represents a UiView, this field contains a JSON-encoded
+//              Grain.ViewSharingLink.RoleAssignment representing the permissions it carries. These
+//              permissions will be intersected with those held by `userId` when the view is opened.
+//   forSharing: If true, requests sent to the HTTP API endpoint with this token will be treated as
+//              anonymous rather than as directly associated with `userId`. This has no effect on
+//              the permissions granted.
 //   objectId:  If present, this token represents an arbitrary Cap'n Proto capability exported by
 //              the app or its supervisor (whereas without this it strictly represents UiView).
 //              sturdyRef is the JSON-encoded SupervisorObjectId (defined in `supervisor.capnp`).

@@ -226,7 +226,8 @@ Meteor.methods({
         appId: action.appId,
         appVersion: action.appVersion,
         userId: this.userId,
-        title: grainInfo.title
+        title: grainInfo.title,
+        private: true
       });
     } catch (err) {
       recursiveRmdirIfExists(grainDir);

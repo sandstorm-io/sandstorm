@@ -87,9 +87,12 @@ limitations under the License.
       <div id="applist-closer" data-show="{{showMenu}}"></div>
       <div id="applist-apps" data-show="{{showMenu}}">
         <ul>
-          <li class="applist-tab {{tabClass appId}}">All files</li>
+          <li class="applist-tab-my-files {{#if selectedTab.myFiles}}selected{{/if}}">My Files</li>
+          <li class="applist-tab-shared-with-me {{#if selectedTab.sharedWithMe}}selected{{/if}}">
+            Shared With Me</li>
           {{#each apps}}
-            <li class="applist-tab {{tabClass appId}} {{#if isDev}}dev{{/if}}" data-appid="{{appId}}">{{name}}</li>
+            <li class="applist-tab {{appTabClass appId}} {{#if isDev}}dev{{/if}}"
+                data-appid="{{appId}}">{{name}}</li>
           {{/each}}
           <li class="blank">&nbsp;</li>
           {{#if isAdmin}}
@@ -101,7 +104,7 @@ limitations under the License.
         </ul>
       </div>
       <div id="applist-grains" class="{{#if selectedAppIsDev}}dev{{/if}}">
-        {{#if selectedApp}}
+        {{#if selectedTab.appId}}
           <div class="button-box">
             {{#each devActions}}
               <button class="new-grain-button" data-actionid="dev"
@@ -110,7 +113,8 @@ limitations under the License.
               {{#each actions}}
                 <button class="new-grain-button" data-actionid="{{_id}}">{{title}}</button>
               {{/each}}
-              <button class="uninstall-app-button" data-appid="{{selectedApp}}">Uninstall</button>
+              <button class="uninstall-app-button" data-appid="{{selectedTab.appId}}">
+                Uninstall</button>
             {{/each}}
             <span>
               {{#if selectedAppMarketingVersion}}
@@ -204,13 +208,18 @@ limitations under the License.
     <div id="menu-closer" data-show="{{showMenu}}"></div>
     <div id="menu" data-show="{{showMenu}}">
       <button id="homelink-button" title="Home"> Home</button>
-      {{#if isOwner}}
+      {{#if userId}}
         <button id="deleteGrain" title="Delete">Delete</button>
+      {{/if}}
+      {{#if isOwner}}
         <button id="openDebugLog" title="Show Debug Log">Log</button>
         <button id="backupGrain" title="Download Backup">Backup</button>
         <button id="restartGrain" title="Restart App">Restart</button>
       {{/if}}
       <button id="showApiToken" title="Get Webkey">Get&nbsp;Webkey</button>
+      {{#if userId}}
+        <button id="show-share-grain" title="Share">Share</button>
+      {{/if}}
     </div>
   </div>
 
@@ -222,12 +231,26 @@ limitations under the License.
       {{else}}
         <p>Copy this webkey and give it to the external app:</p>
           <a id="apiTokenText" class="copy-me" href="{{apiToken}}">{{apiToken}}</a>
-        <p><button id="resetApiToken">Go back</button></p>
+        {{#if userId}}
+          <p><button id="resetApiToken">Go back</button></p>
+        {{/if}}
       {{/if}}
     {{else}}
       <p>A webkey allows you to connect an external app (e.g. a mobile app) to this app.</p>
-      <p>Key label: <input type="text" id="api-token-petname" placeholder="e.g. 'Android app'">
-        <button id="newApiToken">Create</button></p>
+      <p>Label: <input type="text" id="api-token-petname" placeholder="e.g. 'Android app'">
+      {{#with viewInfo}}
+        {{#if roles}}
+          Role:
+          <select id="api-token-role">
+            {{#each roles}}
+              <option title={{verbPhrase.defaultText}}
+                      style="{{#if obsolete}}display:none{{else}}{{/if}}">
+                {{title.defaultText}}</option>
+            {{/each}}
+          </select>
+        {{/if}}
+      {{/with}}
+      <button id="newApiToken">Create</button></p>
       {{#if existingTokens}}
         <p>Your existing webkeys:</p>
         <ul>
@@ -240,6 +263,80 @@ limitations under the License.
   </div>
   <div id="api-token-popup-closer" class="popup-closer"
       style="{{#if showApiToken}}{{else}}display: none{{/if}}"></div>
+
+  <div id="share-grain-popup" class="popup"
+       style="{{#if showShareGrain}}{{else}}display: none{{/if}}">
+    {{#if oldSharingModel}}
+      <p>This grain uses the old sharing model. You may share it by copy/pasting the URL from the
+          location bar.</p>
+      {{#if isOwner}}
+      <p>You can upgrade this grain to the new model, but anyone with whom you shared this grain
+         previously will lose access; you will have to share it with them again. This cannot be
+         undone.</p>
+      <p><button id="privatize-grain">upgrade</button></p>
+      {{/if}}
+    {{else}}
+      {{#if shareToken}}
+        {{#if shareTokenPending}}
+          <p>Generating...</p>
+          <p><button id="reset-share-token">Cancel</button></p>
+        {{else}}
+          <p>Copy this link and share it with other users to grant access:</p>
+          <a id="share-token-text" class="copy-me" href="{{shareToken}}">{{shareToken}}</a>
+          <p><button id="reset-share-token">Go back</button></p>
+        {{/if}}
+      {{else}}
+        <p>Create a secret link to share with other users.</p>
+        <p>Label: <input type="text" id="share-token-petname" placeholder="e.g. 'for Bob'">
+        {{#with viewInfo}}
+          {{#if roles}}
+            Role:
+            <select id="share-token-role" title="select a role">
+              {{#each roles}}
+                <option title={{verbPhrase.defaultText}}
+                        style="{{#if obsolete}}display:none{{else}}{{/if}}">
+                  {{title.defaultText}}</option>
+              {{/each}}
+            </select>
+          {{/if}}
+        {{/with}}
+        <button id="new-share-token">Create</button></p>
+        {{#if existingShareTokens}}
+          <p> Your existing links: </p>
+          <ul>
+          {{#each existingShareTokens}}
+            <li> {{petname}} ({{dateString created}})
+              <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
+            </li>
+          {{/each}}
+          </ul>
+        {{else}}
+          You have not created any links.
+        {{/if}}
+        {{#if existingAssignments}}
+          <p></p>
+          <p> You have shared access with these users: </p>
+          <ul>
+          {{#each existingAssignments}}
+            <li class="{{#if active}}{{else}}revoked-role-assignment{{/if}}">
+              {{displayName recipient}} ({{dateString created}})
+              {{#if active}}
+                <button class="revoke-role-assignment"
+                        title="revoke" data-id="{{_id}}">revoke</button>
+              {{else}}
+                <button class="restore-role-assignment"
+                        title="restore" data-id="{{_id}}">restore</button>
+              {{/if}}
+            </li>
+          {{/each}}
+          </ul>
+        {{/if}}
+      {{/if}}
+    {{/if}}
+  </div>
+  <div id="share-grain-popup-closer" class="popup-closer"
+      style="{{#if showShareGrain}}{{else}}display: none{{/if}}">
+  </div>
 
   <div id="app" class="main-content">
     {{#if error}}

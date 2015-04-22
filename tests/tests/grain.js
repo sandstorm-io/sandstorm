@@ -182,15 +182,19 @@ module.exports["Test grain anonymous user"] = function (browser) {
     // Navigate to app
     .click('#homelink')
     .waitForElementVisible('#applist-apps', medium_wait)
-    .click("#applist-apps > ul > li:nth-child(2)")
+    .click("#applist-apps > ul > li:nth-child(3)")
     .waitForElementVisible('.new-grain-button', short_wait)
     .assert.containsText('.new-grain-button', 'New Hacker CMS Site')
     // Create grain with that user
     .click('.new-grain-button')
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+    .click('#show-share-grain')
+    .waitForElementVisible("#new-share-token", short_wait)
+    .click('#new-share-token')
+    .waitForElementVisible('#share-token-text', medium_wait)
     // Navigate to the url with an anonymous user
-    .url(function(response) {
+    .getText('#share-token-text', function(response) {
       browser
         .execute('window.Meteor.logout()')
         .pause(short_wait)
@@ -201,5 +205,5 @@ module.exports["Test grain anonymous user"] = function (browser) {
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
-    })
+    });
 }

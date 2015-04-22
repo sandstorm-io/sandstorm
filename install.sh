@@ -63,6 +63,7 @@ usage() {
 USE_DEFAULTS="no"
 USE_EXTERNAL_INTERFACE="no"
 USE_SANDCATS="no"
+SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-sandcats.io}"
 SANDCATS_SUCCESSFUL="no"
 while getopts ":cdeu" opt; do
   case $opt in
@@ -518,7 +519,11 @@ else
     UPDATE_CHANNEL=none
   fi
 
+
   writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL WILDCARD_HOST MAIL_URL UPDATE_CHANNEL > sandstorm.conf
+  if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then
+    writeConfig SANDCATS_BASE_DOMAIN >> sandstorm.conf
+  fi
 
   echo
   echo "Config written to $PWD/sandstorm.conf."
@@ -705,7 +710,6 @@ function register_sandcats_name() {
   # We allow environment variables to override some details of the
   # Sandcats service, so that during development, we can test against
   # a non-production Sandcats service.
-  SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-sandcats.io}"
   SANDCATS_API_BASE="${OVERRIDE_SANDCATS_API_BASE:-https://sandcats.io}"
   SANDCATS_CURL_PARAMS="${OVERRIDE_SANDCATS_CURL_PARAMS:-}"
 

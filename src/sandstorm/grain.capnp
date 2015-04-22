@@ -494,14 +494,15 @@ interface ViewSharingLink extends(SharingLink) {
 
   struct RoleAssignment {
     union {
-      allAccess @0 :Void;  # Grant all permissions.
-      roleId @1 :UInt16;   # Grant permissions for the given role.
+      none      @0: Void;   # Grant no permissions.
+      allAccess @1 :Void;  # Grant all permissions.
+      roleId @2 :UInt16;   # Grant permissions for the given role.
     }
 
-    addPermissions @2 :PermissionSet;
+    addPermissions @3 :PermissionSet;
     # Permissions to add on top of those granted above.
 
-    removePermissions @3 :PermissionSet;
+    removePermissions @4 :PermissionSet;
     # Permissions to remove from those granted above.
   }
 }

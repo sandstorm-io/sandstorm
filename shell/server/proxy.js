@@ -31,7 +31,7 @@ var HackSession = Capnp.importSystem("sandstorm/hack-session.capnp");
 var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
 var Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 
-var SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
+SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
 SANDSTORM_GRAINDIR = SANDSTORM_VARDIR + "/grains";
 

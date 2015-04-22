@@ -1036,6 +1036,7 @@ private:
     kj::String ddpUrl = nullptr;
     kj::String mailUrl = nullptr;
     kj::String updateChannel = nullptr;
+    kj::String sandcatsHostname = nullptr;
     bool allowDemoAccounts = false;
     bool isTesting = false;
     bool allowDevAccounts = false;
@@ -1374,6 +1375,8 @@ private:
         } else {
           config.updateChannel = kj::mv(value);
         }
+      } else if (key == "SANDCATS_BASE_DOMAIN") {
+        config.sandcatsHostname = kj::mv(value);
       } else if (key == "ALLOW_DEMO_ACCOUNTS") {
         config.allowDemoAccounts = value == "true" || value == "yes";
       } else if (key == "ALLOW_DEV_ACCOUNTS") {
@@ -1819,14 +1822,19 @@ private:
         buildstamp = kj::str(SANDSTORM_BUILD);
       }
 
-      KJ_SYSCALL(setenv("METEOR_SETTINGS", kj::str(
+      kj::String settingsString = kj::str(
           "{\"public\":{\"build\":", buildstamp,
           ", \"kernelTooOld\":", kernelNewEnough ? "false" : "true",
           ", \"allowDemoAccounts\":", config.allowDemoAccounts ? "true" : "false",
           ", \"allowDevAccounts\":", config.allowDevAccounts ? "true" : "false",
           ", \"isTesting\":", config.isTesting ? "true" : "false",
-          ", \"wildcardHost\":\"", config.wildcardHost, "\"",
-          "}}").cStr(), true));
+          ", \"wildcardHost\":\"", config.wildcardHost, "\"");
+      if (config.sandcatsHostname.size() > 0) {
+          settingsString = kj::str(settingsString,
+            ", \"sandcatsHostname\":\"", config.sandcatsHostname, "\"");
+      }
+      settingsString = kj::str(settingsString, "}}");
+      KJ_SYSCALL(setenv("METEOR_SETTINGS", settingsString.cStr(), true));
       KJ_SYSCALL(execl("/bin/node", "/bin/node", "main.js", EXEC_END_ARGS));
       KJ_UNREACHABLE;
     });

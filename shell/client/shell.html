@@ -123,11 +123,13 @@ limitations under the License.
             </span>
           </div>
         {{else}}
-          <div class="button-box">
-            <button id="install-apps-button">Install apps</button>
-            <button id="upload-app-button">Upload an app</button>
-            <button id="restore-backup-button">Restore a backup</button>
-          </div>
+          {{#if selectedTab.myFiles}}
+            <div class="button-box">
+              <button id="install-apps-button">Install apps</button>
+              <button id="upload-app-button">Upload an app</button>
+              <button id="restore-backup-button">Restore a backup</button>
+            </div>
+          {{/if}}
         {{/if}}
         <table>
           <thead>

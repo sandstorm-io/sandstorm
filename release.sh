@@ -58,15 +58,6 @@ echo "**** Building build $BUILD ****"
 
 make BUILD=$BUILD
 
-echo "**** Pushing build $BUILD ****"
-
-echo $BUILD > tmp/$CHANNEL
-gcutil push fe $TARBALL /var/www/dl.sandstorm.io
-gcutil push fe tmp/$CHANNEL /var/www/install.sandstorm.io
-
-gcutil ssh smalldemo sudo service sandstorm update
-gcutil ssh alpha sudo service sandstorm update dev
-
 echo "**** Tagging this commit ****"
 
 # The git tag stores the version number as a normal-looking version
@@ -79,3 +70,12 @@ TAG_NAME="v${DISPLAY_VERSION}"
 GIT_REVISION="$(<bundle/git-revision)"
 git tag "$TAG_NAME" "$GIT_REVISION" -m "Release Sandstorm ${DISPLAY_VERSION}"
 git push origin "$TAG_NAME"
+
+echo "**** Pushing build $BUILD ****"
+
+echo $BUILD > tmp/$CHANNEL
+gcutil push fe $TARBALL /var/www/dl.sandstorm.io
+gcutil push fe tmp/$CHANNEL /var/www/install.sandstorm.io
+
+gcutil ssh smalldemo sudo service sandstorm update
+gcutil ssh alpha sudo service sandstorm update dev

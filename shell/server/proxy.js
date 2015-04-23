@@ -454,28 +454,53 @@ Meteor.startup(function () {
 var proxiesByApiToken = {};
 
 Meteor.startup(function() {
+  function clearApiProxies (grainId) {
+    ApiTokens.find({grainId: grainId}).forEach(function(apiToken) {
+      delete proxiesByApiToken[apiToken._id];
+    });
+  }
+
+  Grains.find().observe({
+    changed: function (newGrain, oldGrain) {
+      if (oldGrain.private != newGrain.private) {
+        Sessions.remove({grainId: oldGrain._id, userId: {$ne: oldGrain.userId}});
+        clearApiProxies(oldGrain._id);
+      }
+    },
+  });
+
   RoleAssignments.find().observe({
-    added: function (newRoleAssignment) {
-      ApiTokens.find({grainId: newRoleAssignment.grainId}).forEach(function(apiToken) {
-          delete proxiesByApiToken[apiToken._id];
-      });
+    added: function (roleAssignment) {
+      // TODO(soon): Remove any sessions for which the permissions have changed.
+      clearApiProxies(roleAssignment.grainId);
     },
     changed: function (newRoleAssignment, oldRoleAssignment) {
-      if (newRoleAssignment.active != oldRoleAssignment.active) {
-        ApiTokens.find({grainId: oldRoleAssignment.grainId}).forEach(function(apiToken) {
-          delete proxiesByApiToken[apiToken._id];
-        });
+      if (newRoleAssignment.active != oldRoleAssignment.active ||
+          !_.isEqual(newRoleAssignment.roleAssignment, oldRoleAssignment.roleAssignment)) {
+        // TODO(soon): Only remove sessions for which the permissions have changed.
+        Sessions.remove({grainId: oldRoleAssignment.grainId,
+                         userId : {$ne : oldRoleAssignment.sharer}});
+        clearApiProxies(oldRoleAssignment.grainId);
       }
     },
     removed: function (oldRoleAssignment) {
-      ApiTokens.find({grainId : oldRoleAssignment.grainId}).forEach(function(apiToken) {
-        delete proxiesByApiToken[apiToken._id];
-      });
+      // TODO(soon): Only remove sessions for which the permissions have changed.
+      Sessions.remove({grainId: oldRoleAssignment.grainId,
+                       userId : {$ne : oldRoleAssignment.sharer}});
+      clearApiProxies(oldRoleAssignment.grainId);
     },
   });
 
   ApiTokens.find().observe({
+    changed : function (newApiToken, oldApiToken) {
+      // Anonymous users are the only ones allowed to open a web session directly from a token.
+      Sessions.remove({grainId: oldApiToken.grainId, userId: null});
+      delete proxiesByApiToken[oldApiToken._id];
+    },
+
     removed: function (oldApiToken) {
+      // Anonymous users are the only ones allowed to open a web session directly from a token.
+      Sessions.remove({grainId: oldApiToken.grainId, userId: null});
       delete proxiesByApiToken[oldApiToken._id];
     }
   });
@@ -520,7 +545,11 @@ getProxyForApiToken = function (token) {
 
           var isOwner = grain.userId === tokenInfo.userId;
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, isOwner, user, null, true);
-          proxy.apiToken = tokenInfo;
+          if (grain.private) {
+            // If we're using the new sharing model, then we need to attenuate permissions
+            // according to tokenInfo.roleAssignment.
+            proxy.apiToken = tokenInfo;
+          }
         } else if (tokenInfo.userInfo) {
           // Hack: When Mongo stores a Buffer, it comes back as some other type.
           if ("userId" in tokenInfo.userInfo) {

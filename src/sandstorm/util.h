@@ -229,6 +229,14 @@ public:
   // fork be executed inside the child process -- the child cannot unwind the stack with an
   // exception, and exits using _exit() to avoid global destructors.
 
+  explicit Subprocess(pid_t pid): pid(pid) {}
+  // Adopt a child process created by some other means.
+  //
+  // Be careful not to adopt a pid that has potentially already died and been reaped. Keep in mind
+  // that if a SubprocessSet exists in the parent process then it is actively reaping childern at
+  // all times. Remember than you can do kill(pid, 0) to check if the pid exists (although this is
+  // problematic if it's been long enough that the kernel pid counter may have looped).
+
   KJ_DISALLOW_COPY(Subprocess);
 
   inline Subprocess(Subprocess&& other)

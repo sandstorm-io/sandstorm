@@ -130,8 +130,8 @@ Meteor.startup(function() {
                 //   fails in this case, but simplesmtp doesn't appear to support that.
                 throw new Error("No such grain: " + publicId);
               }
-            }).then(function (connection) {
-              var supervisor = connection.restore(null, Supervisor);
+            }).then(function (grainInfo) {
+              var supervisor = grainInfo.supervisor;
               var uiView = supervisor.getMainView().view;
 
               // Create an arbitrary struct to use as the session params. E-mail sessions actually

@@ -321,7 +321,8 @@ function continueGrain(grainId) {
 
 function startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev) {
   // Starts the grain supervisor.  Must be executed in a Meteor context.  Blocks until grain is
-  // started. Returns the supervisor capability.
+  // started. Returns a promise for an object containing two fields: `owner` (the ID of the owning
+  // user) and `supervisor` (the supervisor capability).
 
   // Ugly: Stay backwards-compatible with old manifests that had "executablePath" and "args" rather
   //   than just "argv".

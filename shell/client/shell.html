@@ -269,12 +269,13 @@ limitations under the License.
   <div id="share-grain-popup" class="popup"
        style="{{#if showShareGrain}}{{else}}display: none{{/if}}">
     {{#if oldSharingModel}}
-      <p>This grain uses the old sharing model. You may share it by copy/pasting the URL from the
+      <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
           location bar.</p>
       {{#if isOwner}}
       <p>You can upgrade this grain to the new model, but anyone with whom you shared this grain
-         previously will lose access; you will have to share it with them again. This cannot be
-         undone.</p>
+        previously will lose access; you will have to share it with them again. If you have
+        generated webkeys for external apps, you might also need to regenerate those.</p>
+      <p>Upgrading cannot be undone.</p>
       <p><button id="privatize-grain">upgrade</button></p>
       {{/if}}
     {{else}}

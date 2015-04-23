@@ -75,7 +75,7 @@ echo "**** Tagging this commit ****"
 
 BUILD_MINOR="$(( $BUILD % 1000 ))"
 DISPLAY_VERSION="${BRANCH_NUMBER}.${BUILD_MINOR}"
-TAG_NAME="sandstorm-${DISPLAY_VERSION}"
+TAG_NAME="v${DISPLAY_VERSION}"
 GIT_REVISION="$(<bundle/git-revision)"
 git tag "$TAG_NAME" "$GIT_REVISION" -m "Release Sandstorm ${DISPLAY_VERSION}"
 git push origin "$TAG_NAME"

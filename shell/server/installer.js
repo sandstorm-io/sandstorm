@@ -321,10 +321,7 @@ AppInstaller.prototype.doDownloadTo = function (out) {
 
   this.downloadRequest = request;
 
-  request.on("error", this.wrapCallback(function (err) {
-    Fs.unlinkSync(this.downloadPath);
-    throw err;
-  }));
+  request.on("error", this.wrapCallback(function (err) { throw err; }));
 }
 
 AppInstaller.prototype.done = function(manifest) {

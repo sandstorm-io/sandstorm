@@ -1015,6 +1015,9 @@ private:
       lines.add(kj::str("X-Sandstorm-Base-Path: ", basePath));
       lines.add(kj::str("Host: ", extractHostFromUrl(basePath)));
       lines.add(kj::str("X-Forwarded-Proto: ", extractProtocolFromUrl(basePath)));
+    } else {
+      // Dummy value. Some API servers (e.g. git-http-backend) fail if Host is not present.
+      lines.add(kj::str("Host: sandbox"));
     }
     lines.add(kj::str("X-Sandstorm-Session-Id: ", sessionId));
 

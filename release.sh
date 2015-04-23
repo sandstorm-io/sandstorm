@@ -48,11 +48,28 @@ fi
 BASE_BUILD=$(( BRANCH_NUMBER * 1000 ))
 BUILD=$(( BASE_BUILD > LAST_BUILD ? BASE_BUILD : LAST_BUILD + 1 ))
 
+# The tarball stores the version number as an integer, e.g. 75 for
+# build 75 within branch 0, or 2121 for build 121 within branch 2, so
+# that the Sandstorm auto-updater can avoid having complicated
+# version-comparison logic.
 TARBALL=sandstorm-$BUILD.tar.xz
 
 echo "**** Building build $BUILD ****"
 
 make BUILD=$BUILD
+
+echo "**** Tagging this commit ****"
+
+# The git tag stores the version number as a normal-looking version
+# number, like 0.75 for build 75 within branch 0, or 2.121 for build
+# 121 within branch 2.
+
+BUILD_MINOR="$(( $BUILD % 1000 ))"
+DISPLAY_VERSION="${BRANCH_NUMBER}.${BUILD_MINOR}"
+TAG_NAME="v${DISPLAY_VERSION}"
+GIT_REVISION="$(<bundle/git-revision)"
+git tag "$TAG_NAME" "$GIT_REVISION" -m "Release Sandstorm ${DISPLAY_VERSION}"
+git push origin "$TAG_NAME"
 
 echo "**** Pushing build $BUILD ****"
 

@@ -424,7 +424,6 @@ dev_server_install() {
     fi
 
     if [ "yes" = "$ACCEPTED_SUDO_FOR_DEV_SERVER" ] ; then
-      echo "Re-running script as root..."
       rerun_script_as_root CHOSEN_INSTALL_MODE=2
     else
       # Print a message that allows people to make an informed decision.

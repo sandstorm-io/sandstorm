@@ -23,6 +23,8 @@ module.exports = {
   medium_wait: 30000,
   long_wait: 60000,
   very_long_wait: 180000,
+  default_width: 1280,
+  default_height: 1024,
   testAllLogins: function (tests) {
     var newTests = {};
 

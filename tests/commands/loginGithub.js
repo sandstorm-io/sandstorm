@@ -29,7 +29,8 @@ exports.command = function(callback) {
     .execute('window.mockLoginGithub()')
     .pause(short_wait)
     .init()
-    .waitForElementVisible('#applist-apps', medium_wait);
+    .waitForElementVisible('#applist-apps', medium_wait)
+    .resizeWindow(utils.default_width, utils.default_height);
 
   this.sandstormAccount = 'github';
   if (typeof callback === "function") {

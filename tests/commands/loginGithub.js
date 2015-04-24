@@ -24,6 +24,7 @@ exports.command = function(callback) {
   var ret = this
     .init()
     .execute('window.Meteor.logout()')
+    .execute("window.clearMockGithubUser()")
     .pause(short_wait)
     .execute('window.mockLoginGithub()')
     .pause(short_wait)

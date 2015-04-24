@@ -193,7 +193,6 @@ if (Meteor.isServer) {
   var SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + "/adminToken";
 
   var tokenIsValid = function(token) {
-    console.log(SANDSTORM_ADMIN_TOKEN);
     if (Fs.existsSync(SANDSTORM_ADMIN_TOKEN)) {
       var stats = Fs.statSync(SANDSTORM_ADMIN_TOKEN);
       var expireTime = new Date(Date.now() - ADMIN_TOKEN_EXPIRATION_TIME);

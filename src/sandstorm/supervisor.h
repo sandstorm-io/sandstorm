@@ -51,6 +51,8 @@ public:
   kj::MainBuilder::Validity addCommandArg(kj::StringPtr arg);
   // Flag handlers
 
+  bool getIsNew() { return isNew; }
+
   class SystemConnector {
   public:
     struct RunResult {

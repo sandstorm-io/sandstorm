@@ -75,6 +75,9 @@ while getopts ":cdeu" opt; do
       ;;
     e)
       USE_EXTERNAL_INTERFACE="yes"
+      # For now, choosing an external interfaces opts you in to to
+      # being asked about dynamic DNS via sandcats.io.
+      USE_SANDCATS="yes"
       ;;
     u)
       PREFER_ROOT=no
@@ -741,11 +744,11 @@ function register_sandcats_name() {
   echo "We need your email on file so we can help you recover your domain if you lose access. No spam."
   SANDCATS_REGISTRATION_EMAIL=$(prompt "Enter your email address:" "")
 
-  # If the user fails to enter an email address, bail out.
-  if [ "" = "$SANDCATS_REGISTRATION_EMAIL" ] ; then
-    echo "OK. I assume you don't want the Sandcats service. Feel free to Ctrl-C and re-run the install."
-    return
-  fi
+  # If the user fails to enter an email address, let them try again.
+  while [ "" = "$SANDCATS_REGISTRATION_EMAIL" ] ; do
+    echo "For the DNS service, we really do need an email address. To cancel, type: Ctrl-C."
+    SANDCATS_REGISTRATION_EMAIL=$(prompt "Enter your email address:" "")
+  done
 
   echo "Registering..."
   HTTP_STATUS=$(

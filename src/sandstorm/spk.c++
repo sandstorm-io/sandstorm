@@ -1741,7 +1741,7 @@ private:
               line != "sandstorm-http-bridge" &&
               line != "sandstorm-http-bridge-config" &&
               line != "proc/cpuinfo") {
-            KJ_LOG(WARNING, kj::str("No file found to satisfy requirement: ", line,
+            context.warning(kj::str("No file found to satisfy requirement: ", line,
                                     ", removing from sandstorm-files.list"));
           } else {
             usedFiles.insert(kj::mv(line));

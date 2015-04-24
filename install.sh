@@ -75,6 +75,9 @@ while getopts ":cdeu" opt; do
       ;;
     e)
       USE_EXTERNAL_INTERFACE="yes"
+      # For now, choosing an external interfaces opts you in to to
+      # being asked about dynamic DNS via sandcats.io.
+      USE_SANDCATS="yes"
       ;;
     u)
       PREFER_ROOT=no

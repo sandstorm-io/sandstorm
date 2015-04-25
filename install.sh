@@ -44,6 +44,9 @@ _() {
 
 set -euo pipefail
 
+# Declare an array so that we can capture the original arguments.
+declare -a ORIGINAL_ARGS
+
 # Define I/O helper functions.
 error() {
   if [ $# != 0 ]; then
@@ -118,7 +121,6 @@ USE_SANDCATS="no"
 SANDCATS_SUCCESSFUL="no"
 CURRENTLY_UID_ZERO="no"
 PREFER_ROOT="yes"
-USE_LOCAL_INSTALL_SH_FILE="no"
 
 # Defaults for some config options, so that if the user requests no
 # prompting, they get these values.
@@ -140,7 +142,6 @@ usage() {
   echo '' >&2
   echo 'If -d is specified, the auto-installs with defaults suitable for app development.' >&2
   echo 'If -e is specified, default to listening on an external interface, not merely loopback.' >&2
-  echo 'If -l is specified, use local install.sh file when re-exec-ing self via sudo.' >&2
   echo 'If -u is specified, default to avoiding root priviliges. Note that the dev tools only work if the server as root privileges.' >&2
   exit 1
 }
@@ -155,16 +156,13 @@ handle_args() {
   SCRIPT_NAME=$1
   shift
 
-  while getopts ":delu" opt; do
+  while getopts ":deu" opt; do
     case $opt in
       d)
         USE_DEFAULTS="yes"
         ;;
       e)
         USE_EXTERNAL_INTERFACE="yes"
-        ;;
-      l)
-        USE_LOCAL_INSTALL_SH_FILE="yes"
         ;;
       u)
         PREFER_ROOT=no
@@ -175,7 +173,8 @@ handle_args() {
     esac
   done
 
-  declare -a ORIGINAL_ARGS
+  # Keep a copy of the ORIGINAL_ARGS so that, when re-execing ourself,
+  # we can pass them in.
   ORIGINAL_ARGS=("$@")
 
   # Pass positional parameters through
@@ -192,18 +191,27 @@ rerun_script_as_root() {
   # Note: This function assumes that the caller has requested
   # permission to use sudo!
 
-  echo "Re-running script as root..."
-
   # Pass $@ here to enable the caller to provide environment
   # variables to bash, which will affect the execution plan of
   # the resulting install script run.
-  local BASH_COMMAND="$@ bash"
-  local CURL_COMMAND="curl -fs https://install.sandstorm.io | "
-  if [ "yes" = "$USE_LOCAL_INSTALL_SH_FILE" ] ; then
-    # This is a useless use of cat, but it provides simplicity.
-    CURL_COMMAND="cat install.sh | "
+
+  if [ "$(basename $SCRIPT_NAME)" == bash ]; then
+    # Probably ran like "curl https://sandstorm.io/install.sh | bash"
+    echo "Re-running script as root..."
+    exec sudo bash -euo pipefail -c "curl -fs https://install.sandstorm.io | $@ bash"
+  elif [ "$(basename $SCRIPT_NAME)" == install.sh ] && [ -e "$0" ]; then
+    # Probably ran like "bash install.sh" or "./install.sh".
+    echo "Re-running script as root..."
+    if [ ${#ORIGINAL_ARGS[@]} = 0 ]; then
+      exec sudo "$@" bash "$SCRIPT_NAME"
+    else
+      exec sudo "$@" bash "$SCRIPT_NAME" "${ORIGINAL_ARGS[@]}"
+    fi
   fi
-  exec sudo bash -euo pipefail -c "$CURL_COMMAND $BASH_COMMAND"
+
+  # Don't know how to run the script. Let the user figure it out.
+  fail "Oops, I couldn't figure out how to switch to root. Please re-run the installer as root."
+
 }
 
 assert_on_terminal() {

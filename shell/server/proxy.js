@@ -545,11 +545,7 @@ getProxyForApiToken = function (token) {
 
           var isOwner = grain.userId === tokenInfo.userId;
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, isOwner, user, null, true);
-          if (grain.private) {
-            // If we're using the new sharing model, then we need to attenuate permissions
-            // according to tokenInfo.roleAssignment.
-            proxy.apiToken = tokenInfo;
-          }
+          proxy.apiToken = tokenInfo;
         } else if (tokenInfo.userInfo) {
           // Hack: When Mongo stores a Buffer, it comes back as some other type.
           if ("userId" in tokenInfo.userInfo) {

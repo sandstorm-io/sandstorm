@@ -67,11 +67,18 @@ PermissionSet.prototype.intersect = function(other) {
 
 function roleAssignmentPermissions(roleAssignment, viewInfo) {
   var result = new PermissionSet([]);
-  if (!roleAssignment) {
-    return result;
-  }
 
-  if ("allAccess" in roleAssignment) {
+  if (!roleAssignment || "none" in roleAssignment) {
+    if (viewInfo.roles) {
+      for (var ii = 0; ii < viewInfo.roles.length; ++ii) {
+        var roleDef = viewInfo.roles[ii];
+        if (roleDef.default) {
+          result = new PermissionSet(roleDef.permissions);
+          break;
+        }
+      }
+    }
+  } else if ("allAccess" in roleAssignment) {
     var length = 0;
     if (viewInfo.permissions) {
       length = viewInfo.permissions.length;
@@ -86,18 +93,12 @@ function roleAssignmentPermissions(roleAssignment, viewInfo) {
     if (roleDef) {
       result = new PermissionSet(roleDef.permissions);
     }
-  } else if ("none" in roleAssignment && viewInfo.roles) {
-    for (var ii = 0; ii < viewInfo.roles.length; ++ii) {
-      var roleDef = viewInfo.roles[ii];
-      if (roleDef.default) {
-        result = new PermissionSet(roleDef.permissions);
-        break;
-      }
-    }
   }
 
-  result.add(new PermissionSet(roleAssignment.addPermissionSet));
-  result.remove(new PermissionSet(roleAssignment.removePermissionSet));
+  if (roleAssignment) {
+    result.add(new PermissionSet(roleAssignment.addPermissionSet));
+    result.remove(new PermissionSet(roleAssignment.removePermissionSet));
+  }
   return result;
 }
 
@@ -106,6 +107,12 @@ function grainPermissionsInternal(grainId, openerUserId, viewInfo) {
 
   var grain = Grains.findOne(grainId);
 
+  var owner = grain.userId;
+  if (openerUserId === owner) {
+    // Optimization: return early in this easy and common case.
+    return roleAssignmentPermissions({allAccess: null}, viewInfo);
+  }
+
   if (!grain.private) {
     // Grains using the old sharing model always share the default role to anyone who has the
     // grain URL.
@@ -113,12 +120,6 @@ function grainPermissionsInternal(grainId, openerUserId, viewInfo) {
   }
 
   if (!openerUserId) { return new PermissionSet(); }
-  var owner = grain.userId;
-  if (openerUserId == owner) {
-    // Optimization: return early in this easy and common case.
-    return roleAssignmentPermissions({allAccess: null}, viewInfo);
-  }
-
   var permissionsMap = {};
   // Keeps track of the permissions that the opener receives from each user. The final result of
   // our computation will be stored in permissionsMap[owner].

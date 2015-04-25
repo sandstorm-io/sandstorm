@@ -503,7 +503,7 @@ dev_server_install() {
 }
 
 full_server_install() {
-  if [ "0" != "${ACCEPTED_FULL_SERVER_INSTALL:-}" ]; then
+  if [ "yes" != "${ACCEPTED_FULL_SERVER_INSTALL:-}" ]; then
     echo "We're going to:"
     echo ""
     echo "* Install Sandstorm in $DEFAULT_DIR_FOR_ROOT"
@@ -523,8 +523,11 @@ full_server_install() {
       echo "Rest assured that Sandstorm itself won't run as root."
     fi
 
-    prompt-yesno "OK to continue?" "yes"
-    ACCEPTED_FULL_SERVER_INSTALL="$?"
+    if prompt-yesno "OK to continue?" "yes"; then
+      ACCEPTED_FULL_SERVER_INSTALL=yes
+    else
+      ACCEPTED_FULL_SERVER_INSTALL=no
+    fi
 
     # If they are OK continuing, and the script is not running as root
     # at the moment, then re-run ourselves as root.
@@ -533,20 +536,21 @@ full_server_install() {
     # executing smoothly, so the user doesn't have to re-answer
     # questions.
     if [ "yes" != "$CURRENTLY_UID_ZERO" ] ; then
-      if [ "$ACCEPTED_FULL_SERVER_INSTALL" ] ; then
+      if [ "yes" = "$ACCEPTED_FULL_SERVER_INSTALL" ] ; then
         rerun_script_as_root CHOSEN_INSTALL_MODE=1 \
-                             ACCEPTED_FULL_SERVER_INSTALL=0 \
+                             ACCEPTED_FULL_SERVER_INSTALL=yes \
                              OVERRIDE_SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-}" \
                              OVERRIDE_SANDCATS_API_BASE="${OVERRIDE_SANDCATS_API_BASE:-}" \
                              OVERRIDE_SANDCATS_CURL_PARAMS="${OVERRIDE_SANDCATS_CURL_PARAMS:-}"
-      else
-        fail "Automatic server setup requires root. Try installing in development mode instead."
       fi
+
+      # If we're still around, it means they declined to run us as root.
+      fail "Automatic server setup requires root. Try installing in development mode instead."
     fi
   fi
 
   # Accepting this indicates a few things.
-  if [ "${ACCEPTED_FULL_SERVER_INSTALL}" ]; then
+  if [ "yes" = "${ACCEPTED_FULL_SERVER_INSTALL}" ]; then
     UPDATE_CHANNEL="$DEFAULT_UPDATE_CHANNEL"
     DIR="$DEFAULT_DIR_FOR_ROOT"
     USE_EXTERNAL_INTERFACE="yes"
@@ -713,7 +717,7 @@ choose_server_user_if_needed() {
   # specific SERVER_USER, then let's go with that.
   if [ ! -z "${DESIRED_SERVER_USER:-}" ] ; then
     SERVER_USER="$DESIRED_SERVER_USER"
-    CREATE_SERVER_USER="0"  # sh for True
+    CREATE_SERVER_USER="yes"
     ADD_SUDO_USER_TO_SERVER_GROUP="1"  # sh for False
     return
   fi
@@ -735,13 +739,14 @@ create_server_user_if_needed() {
 
   # Since the server user does not exist, we create it (asking for
   # permission if necessary).
-  if [ "0" != "${CREATE_SERVER_USER:-}" ] ; then
-    prompt-yesno "User account '$SERVER_USER' doesn't exist. Create it?" yes
-    CREATE_SERVER_USER="$?"
+  if [ "yes" != "${CREATE_SERVER_USER:-}" ] ; then
+    if prompt-yesno "User account '$SERVER_USER' doesn't exist. Create it?" yes ; then
+      CREATE_SERVER_USER=yes
+    fi
   fi
 
   # If people don't want us to create it, then let's bail now.
-  if [ "0" != "$CREATE_SERVER_USER" ] ; then
+  if [ "yes" != "$CREATE_SERVER_USER" ] ; then
     return
   fi
 

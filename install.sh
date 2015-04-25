@@ -812,7 +812,6 @@ configure_auto_updates() {
 }
 
 configure_dev_accounts() {
-  bash
   # If ALLOW_DEV_ACCOUNTS is set to yes already, then skip this.
   if [ "yes" = "${ALLOW_DEV_ACCOUNTS}" ]; then
     return

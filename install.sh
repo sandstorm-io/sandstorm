@@ -122,6 +122,7 @@ USE_LOCAL_INSTALL_SH_FILE="no"
 
 # Defaults for some config options, so that if the user requests no
 # prompting, they get these values.
+DEFAULT_PORT=6080
 DEFAULT_DIR_FOR_ROOT="/opt/sandstorm"
 DEFAULT_DIR_FOR_NON_ROOT="$HOME/sandstorm"
 DEFAULT_UPDATE_CHANNEL="dev"
@@ -433,34 +434,64 @@ dev_server_install() {
     fi
   fi
 
-  # Use the default UPDATE_CHANNEL for auto-updates.
-  UPDATE_CHANNEL="$DEFAULT_UPDATE_CHANNEL"
+  # If they did not pass -d, then let them opt into that.
+  if [ "yes" != "$USE_DEFAULTS" ] ; then
+    echo "We're going to:"
+    echo ""
+    echo "* Install Sandstorm in ${DEFAULT_DIR_FOR_ROOT}."
+    echo "* Automatically keep Sandstorm up-to-date."
+    echo "* Create a service user ($DEFAULT_SERVER_USER) that owns Sandstorm's files."
+    echo "* Add you ($USER) to the $DEFAULT_SERVER_USER group so you can read/write app data."
+    echo "* Expose the service only on localhost aka local.sandstorm.io, not the public Internet."
+    echo "* Enable 'dev accounts', for easy developer login."
+    if [ "unknown" == "$INIT_SYSTEM" ]; then
+      echo "*** WARNING: Could not detect how to run Sandstorm at startup on your system. ***"
+    else
+        echo "* Configure Sandstorm to start on System boot (with $INIT_SYSTEM)."
+    fi
+    echo ""
 
-  # Bind to localhost.
-  USE_EXTERNAL_INTERFACE="no"
+    if prompt-yesno "Press enter to accept defaults. Type 'no' to customize." "yes" ; then
+      USE_DEFAULTS="yes"
+    else
+      echo ""
+      echo "OK. We will prompt you with every question."
+      echo ""
+    fi
 
-  # Start the service at boot, if we can.
-  START_AT_BOOT="yes"
+  fi
 
-  # Do not ask questions about our dynamic DNS service.
-  USE_SANDCATS="no"
+  if [ "yes" = "$USE_DEFAULTS" ] ; then
+    # Use the default UPDATE_CHANNEL for auto-updates.
+    UPDATE_CHANNEL="$DEFAULT_UPDATE_CHANNEL"
 
-  # Reasonable default ports.
-  PORT="6080"
-  MONGO_PORT="6081"
+    # Bind to localhost.
+    USE_EXTERNAL_INTERFACE="no"
 
-  # Use the ALLOW_DEV_ACCOUNTS feature, which allows people to log
-  # into a Sandstorm instance without setting up any accounts.
-  ALLOW_DEV_ACCOUNTS="true"
+    # Start the service at boot, if we can.
+    START_AT_BOOT="yes"
 
-  # Do not bother setting a DESIRED_SERVER_USER. This way, the
-  # existing prompting will pick if this should be "sandstorm" (which
-  # it should be if we're running the install script as root) or the
-  # currently-logged-in user (which it should be if we're not root).
+    # Do not ask questions about our dynamic DNS service.
+    USE_SANDCATS="no"
 
-  # Do not bother setting a DIR. This way, the existing prompting will
-  # pick between /opt/sandstorm and $HOME/sandstorm, depending on if
-  # the install is being done as root or not.
+    # Reasonable default ports.
+    PORT="${DEFAULT_PORT}"
+    # Allow the mongo prompting part to determine a reasonable
+    # MONGO_PORT.
+
+    # Use the ALLOW_DEV_ACCOUNTS feature, which allows people to log
+    # into a Sandstorm instance without setting up any accounts.
+    ALLOW_DEV_ACCOUNTS="yes"
+
+    # Do not bother setting a DESIRED_SERVER_USER. This way, the
+    # existing prompting will pick if this should be "sandstorm" (which
+    # it should be if we're running the install script as root) or the
+    # currently-logged-in user (which it should be if we're not root).
+
+    # Do not bother setting a DIR. This way, the existing prompting will
+    # pick between /opt/sandstorm and $HOME/sandstorm, depending on if
+    # the install is being done as root or not.
+  fi
 }
 
 full_server_install() {
@@ -560,9 +591,11 @@ configure_hostnames() {
   else
     BIND_IP=127.0.0.1
     SS_HOSTNAME=local.sandstorm.io
-    echo "Note: local.sandstorm.io maps to 127.0.0.1, i.e. your local machine. For"
-    echo "reasons that will become clear in the next step, you should use this"
-    echo "instead of 'localhost'."
+    if [ "yes" != "$USE_DEFAULTS" ] ; then
+      echo "Note: local.sandstorm.io maps to 127.0.0.1, i.e. your local machine."
+      echo "For reasons that will become clear in the next step, you should use this"
+      echo "instead of 'localhost'."
+    fi
   fi
 
   DEFAULT_BASE_URL="http://$SS_HOSTNAME:$PORT"
@@ -589,17 +622,19 @@ configure_hostnames() {
   if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then
     WILDCARD_HOST="$DEFAULT_WILDCARD"
   else
-    echo "Sandstorm requires you to set up a wildcard DNS entry pointing at the server."
-    echo "This allows Sandstorm to allocate new hosts on-the-fly for sandboxing purposes."
-    echo "Please enter a DNS hostname containing a '*' which maps to your server. For "
-    echo "example, if you have mapped *.foo.example.com to your server, you could enter"
-    echo "\"*.foo.example.com\". You can also specify that hosts should have a special"
-    echo "prefix, like \"ss-*.foo.example.com\". Note that if your server's main page"
-    echo "is served over SSL, the wildcard address must support SSL as well, which"
-    echo "implies that you must have a wildcard certificate. For local-machine servers,"
-    echo "we have mapped *.local.sandstorm.io to 127.0.0.1 for your convenience, so you"
-    echo "can use \"*.local.sandstorm.io\" here. If you are serving off a non-standard"
-    echo "port, you must include it here as well."
+    if [ "yes" != "$USE_DEFAULTS" ] ; then
+      echo "Sandstorm requires you to set up a wildcard DNS entry pointing at the server."
+      echo "This allows Sandstorm to allocate new hosts on-the-fly for sandboxing purposes."
+      echo "Please enter a DNS hostname containing a '*' which maps to your server. For "
+      echo "example, if you have mapped *.foo.example.com to your server, you could enter"
+      echo "\"*.foo.example.com\". You can also specify that hosts should have a special"
+      echo "prefix, like \"ss-*.foo.example.com\". Note that if your server's main page"
+      echo "is served over SSL, the wildcard address must support SSL as well, which"
+      echo "implies that you must have a wildcard certificate. For local-machine servers,"
+      echo "we have mapped *.local.sandstorm.io to 127.0.0.1 for your convenience, so you"
+      echo "can use \"*.local.sandstorm.io\" here. If you are serving off a non-standard"
+      echo "port, you must include it here as well."
+    fi
     WILDCARD_HOST=$(prompt "Wildcard host:" "$DEFAULT_WILDCARD")
 
     while ! [[ "$WILDCARD_HOST" =~ ^[^*]*[*][^*]*$ ]]; do
@@ -773,6 +808,29 @@ configure_auto_updates() {
     UPDATE_CHANNEL=$DEFAULT_UPDATE_CHANNEL
   else
     UPDATE_CHANNEL=none
+  fi
+}
+
+configure_dev_accounts() {
+  bash
+  # If ALLOW_DEV_ACCOUNTS is set to yes already, then skip this.
+  if [ "yes" = "${ALLOW_DEV_ACCOUNTS}" ]; then
+    return
+  fi
+
+  # If USE_EXTERNAL_INTERFACE is set to yes, then skip this, because
+  # dev accounts on the Internet would be crazy.
+  if [ "yes" = "${USE_EXTERNAL_INTERFACE}" ] ; then
+    return
+  fi
+
+  echo "Sandstorm supports 'dev accounts', a feature that lets anyone log in"
+  echo "as admin and other sample users to a Sandstorm server. We recommend"
+  echo "it for app development, and absolutely do not recommend it for"
+  echo "a server on the public Internet."
+
+  if prompt-yesno "Enable dev accounts?" "yes" ; then
+    ALLOW_DEV_ACCOUNTS=yes
   fi
 }
 
@@ -1161,6 +1219,7 @@ load_existing_settings
 choose_server_user_if_needed
 create_server_user_if_needed
 configure_auto_updates
+configure_dev_accounts
 configure_hostnames
 save_config
 download_latest_bundle_and_extract_if_needed

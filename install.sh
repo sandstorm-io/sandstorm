@@ -507,6 +507,13 @@ dev_server_install() {
 }
 
 full_server_install() {
+  # The full server install assumes you are OK with using root. If
+  # you're not, you should choose the development server and customize
+  # it to your heart's content.
+  if [ "yes" != "${PREFER_ROOT}" ] ; then
+    fail "The automatic setup process requires sudo. Try again with option 2, development server, to customize."
+  fi
+
   if [ "yes" != "${ACCEPTED_FULL_SERVER_INSTALL:-}" ]; then
     echo "We're going to:"
     echo ""

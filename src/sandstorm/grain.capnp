@@ -477,6 +477,15 @@ struct RoleDef {
   # If true, this role was relevant in a previous version of the application but should no longer
   # be offered to the user in future sharing actions.  The role may still be displayed if it was
   # used to share the view while still running the old version.
+
+  default @5 :Bool = false;
+  # If true, this role should be used for any sharing actions that took place using a previous
+  # version of the app that did not define any roles. This allows you to seamlessly add roles to
+  # an already-deployed app without breaking existing shares. If you do not mark any roles as
+  # "default", then such sharing actions will be treated as having an empty permissions set (the
+  # user can open the grain, but the grain is told that the user has no permissions).
+  #
+  # See also `ViewSharingLink.RoleAssignment.none`, below.
 }
 
 interface SharingLink {
@@ -494,7 +503,11 @@ interface ViewSharingLink extends(SharingLink) {
 
   struct RoleAssignment {
     union {
-      none      @0: Void;   # Grant no permissions.
+      none      @0: Void;
+      # No role was explicitly chosen. The main case where this happens is when an app defining
+      # no roles is shared. Note that "none" means "no role", but does NOT necessarily mean
+      # "no permissions". If a default role is defined (see `RoleDef.default`), that will be used.
+
       allAccess @1 :Void;  # Grant all permissions.
       roleId @2 :UInt16;   # Grant permissions for the given role.
     }

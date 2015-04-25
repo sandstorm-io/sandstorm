@@ -882,10 +882,11 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
   var userInfo = _.clone(this.userInfo);
   var self = this;
   var promise = inMeteor(function () {
-    var permissions = [];
+    var permissions;
     if (self.apiToken) {
       permissions = apiTokenPermissions(self.apiToken, viewInfo);
-    } else if (self.userId) {
+    } else {
+      // (self.userId may be null; this is fine)
       permissions = grainPermissions(self.grainId, self.userId, viewInfo);
     }
     Sessions.update({_id: self.sessionId},

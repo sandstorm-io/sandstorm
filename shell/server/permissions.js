@@ -86,6 +86,14 @@ function roleAssignmentPermissions(roleAssignment, viewInfo) {
     if (roleDef) {
       result = new PermissionSet(roleDef.permissions);
     }
+  } else if ("none" in roleAssignment && viewInfo.roles) {
+    for (var ii = 0; ii < viewInfo.roles.length; ++ii) {
+      var roleDef = viewInfo.roles[ii];
+      if (roleDef.default) {
+        result = new PermissionSet(roleDef.permissions);
+        break;
+      }
+    }
   }
 
   result.add(new PermissionSet(roleAssignment.addPermissionSet));
@@ -96,8 +104,15 @@ function roleAssignmentPermissions(roleAssignment, viewInfo) {
 function grainPermissionsInternal(grainId, openerUserId, viewInfo) {
   // Computes the permissions of a user who is opening a grain.
 
-  if (!openerUserId) { return new PermissionSet(); }
   var grain = Grains.findOne(grainId);
+
+  if (!grain.private) {
+    // Grains using the old sharing model always share the default role to anyone who has the
+    // grain URL.
+    return roleAssignmentPermissions({none: null}, viewInfo);
+  }
+
+  if (!openerUserId) { return new PermissionSet(); }
   var owner = grain.userId;
   if (openerUserId == owner) {
     // Optimization: return early in this easy and common case.

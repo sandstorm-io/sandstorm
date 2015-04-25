@@ -771,7 +771,7 @@ create_server_user_if_needed() {
 
   # The easy-install opts out of this flow by setting
   # ADD_SUDO_USER_TO_SERVER_GROUP=no.
-  if [ "no" = "$ADD_SUDO_USER_TO_SERVER_GROUP" ] ; then
+  if [ "no" = "${ADD_SUDO_USER_TO_SERVER_GROUP:-}" ] ; then
     return
   fi
 

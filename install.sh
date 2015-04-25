@@ -757,7 +757,7 @@ create_server_user_if_needed() {
   fi
 
   # If people don't want us to create it, then let's bail now.
-  if [ "yes" != "$CREATE_SERVER_USER" ] ; then
+  if [ "yes" != "${CREATE_SERVER_USER:-}" ] ; then
     return
   fi
 

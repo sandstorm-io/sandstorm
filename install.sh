@@ -211,7 +211,6 @@ rerun_script_as_root() {
 
   # Don't know how to run the script. Let the user figure it out.
   fail "Oops, I couldn't figure out how to switch to root. Please re-run the installer as root."
-
 }
 
 assert_on_terminal() {
@@ -788,7 +787,6 @@ choose_port() {
   if [ ! -z "${PORT:-}" ] ; then
     return
   fi
-
 
   PORT=$(prompt "Server main HTTP port:" $DEFAULT_PORT)
 

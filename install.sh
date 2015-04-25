@@ -198,7 +198,13 @@ rerun_script_as_root() {
   if [ "$(basename $SCRIPT_NAME)" == bash ]; then
     # Probably ran like "curl https://sandstorm.io/install.sh | bash"
     echo "Re-running script as root..."
-    exec sudo bash -euo pipefail -c "curl -fs https://install.sandstorm.io | $@ bash"
+
+    # Remove newlines in $@, otherwise when we try to use $@ in a string passed
+    # to 'bash -c' the command gets cut off at the newline. ($@ contains newlines
+    # because at the call site we used escaped newlines for readability.)
+    local ENVVARS=$(echo $@)
+
+    exec sudo bash -euo pipefail -c "curl -fs https://install.sandstorm.io | $ENVVARS bash"
   elif [ "$(basename $SCRIPT_NAME)" == install.sh ] && [ -e "$0" ]; then
     # Probably ran like "bash install.sh" or "./install.sh".
     echo "Re-running script as root..."

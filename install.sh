@@ -555,7 +555,11 @@ full_server_install() {
       fi
 
       # If we're still around, it means they declined to run us as root.
-      fail "Automatic server setup requires root. Try installing in development mode instead."
+      echo ""
+      echo "The automatic setup script needs root in order to:"
+      echo "* Create a separate user to run Sandstorm as, and"
+      echo "* Set up Sandstorm to start on system boot."
+      fail "Automatic setup requires root for now. Try installing in development mode instead."
     fi
   fi
 

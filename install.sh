@@ -418,7 +418,7 @@ dev_server_install() {
     echo ""
 
     echo "To set up Sandstorm, we will need to use sudo."
-    echo "Rest assured that Sandstorm itself won't run as root."
+    echo "Sandstorm's database and web interface won't run as root."
 
     # If we are running in USE_DEFAULTS mode, then it is not OK to ask
     # for permission to use sudo.

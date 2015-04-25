@@ -442,8 +442,12 @@ dev_server_install() {
     fi
   fi
 
-  # If they did not pass -d, then let them opt into that.
-  if [ "yes" != "$USE_DEFAULTS" ] ; then
+  # If they did not pass -d, then let them opt into that, but only if
+  # PREFER_ROOT is still enabled.
+  #
+  # If they pass -u without -d, then they can answer the questions one
+  # by one.
+  if [ "yes" != "$USE_DEFAULTS" ] && [ "yes" = "$PREFER_ROOT" ] ; then
     echo "We're going to:"
     echo ""
     echo "* Install Sandstorm in ${DEFAULT_DIR_FOR_ROOT}."

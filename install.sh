@@ -718,7 +718,7 @@ choose_server_user_if_needed() {
   if [ ! -z "${DESIRED_SERVER_USER:-}" ] ; then
     SERVER_USER="$DESIRED_SERVER_USER"
     CREATE_SERVER_USER="yes"
-    ADD_SUDO_USER_TO_SERVER_GROUP="1"  # sh for False
+    ADD_SUDO_USER_TO_SERVER_GROUP="no"
     return
   fi
 
@@ -759,8 +759,8 @@ create_server_user_if_needed() {
   # themselves to the storage group.
 
   # The easy-install opts out of this flow by setting
-  # ADD_SUDO_USER_TO_SERVER_GROUP=1.
-  if [ "1" = "$ADD_SUDO_USER_TO_SERVER_GROUP" ] ; then
+  # ADD_SUDO_USER_TO_SERVER_GROUP=no.
+  if [ "no" = "$ADD_SUDO_USER_TO_SERVER_GROUP" ] ; then
     return
   fi
 

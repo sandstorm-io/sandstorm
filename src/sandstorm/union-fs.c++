@@ -708,7 +708,7 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
     // root to be a symlink.
     if (packagePath.size() == 0) {
       struct stat stats;
-      KJ_SYSCALL(lstat(sourcePath.cStr(), &stats));
+      KJ_SYSCALL(lstat(sourcePath.cStr(), &stats), sourcePath);
       if (S_ISLNK(stats.st_mode)) {
         char* real;
         KJ_SYSCALL(real = realpath(sourcePath.cStr(), NULL));

@@ -25,7 +25,32 @@ var utils = require("../utils"),
 module.exports = {};
 
 module.exports["Install"] = function (browser) {
-    browser
-      .installApp("http://sandstorm.io/apps/jparyani/roundcube-6.spk", "373a821a7a9cde5b13258922046fe217")
-      .assert.containsText("#grainTitle", "Untitled Roundcube Mailbox");
+  browser
+    .installApp("http://sandstorm.io/apps/jparyani/roundcube-6.spk", "373a821a7a9cde5b13258922046fe217")
+    .assert.containsText("#grainTitle", "Untitled Roundcube Mailbox");
+};
+
+module.exports["Test Incoming Mail"] = function (browser, done) {
+  browser
+    .pause(short_wait)
+    .frame("grain-frame")
+    .getText(".topright > .username", function (result) {
+      browser.sendEmail({
+        from: "test@example.com",
+        to: result.value,
+        subject: "Hello world email",
+        body: "Hello world!",
+        html: "<b>Hello world!</b>"
+      }, function (err) {
+        if (err) {
+          browser.assert.equal(err, "");
+        }
+        browser
+          .click(".mailbox.inbox > a") // Make sure we have the inbox selected
+          .pause(short_wait) // It's sad, but there's no good way to wait for the mail to be delivered other than pausing
+          .click(".mailbox.inbox > a") // This is equivalent to refreshing the inbox
+          .waitForElementVisible("#messagelist tbody tr:nth-child(1)", short_wait)
+          .assert.containsText("#messagelist tbody tr:nth-child(1) .subject", "Hello world email");
+      });
+    });
 };

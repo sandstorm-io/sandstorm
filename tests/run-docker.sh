@@ -35,14 +35,17 @@ THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
 cd "$THIS_DIR"
 
-export PORT=$(shuf -i 10000-65000 -n 1)
+export PORT=$(shuf -i 10000-35000 -n 1)
+export SANDSTORM_SMTP_PORT=$(shuf -i 35001-65000 -n 1)
 export LAUNCH_URL="http://local.sandstorm.io:$PORT"
 
-CONTAINER_ID=$(docker run -e PORT=$PORT --privileged -d -p $PORT:$PORT -t sandstorm bash -c 'echo "IS_TESTING=true
+CONTAINER_ID=$(docker run -e PORT=$PORT -e SANDSTORM_SMTP_PORT=$SANDSTORM_SMTP_PORT --privileged -d -p $PORT:$PORT -p $SANDSTORM_SMTP_PORT:$SANDSTORM_SMTP_PORT -t sandstorm bash -c 'echo "IS_TESTING=true
 ALLOW_DEMO_ACCOUNTS=true
 BASE_URL=http://local.sandstorm.io:$PORT
 WILDCARD_HOST=*.local.sandstorm.io:$PORT
-PORT=$PORT" >> $HOME/sandstorm/sandstorm.conf && $HOME/sandstorm/sandstorm start && sleep 5 && tail -f $HOME/sandstorm/var/log/sandstorm.log')
+PORT=$PORT
+SMTP_LISTEN_PORT=${SANDSTORM_SMTP_PORT}
+" >> $HOME/sandstorm/sandstorm.conf && $HOME/sandstorm/sandstorm start && sleep 5 && tail -f $HOME/sandstorm/var/log/sandstorm.log')
 
 echo -n "Waiting for sandstorm to start."
 COUNT=0

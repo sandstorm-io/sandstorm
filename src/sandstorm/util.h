@@ -168,7 +168,7 @@ kj::String base64Encode(kj::ArrayPtr<const byte> input, bool breakLines);
 kj::Array<byte> base64Decode(kj::StringPtr input);
 // Decode base64 input to bytes. Non-base64 characters in the input will be ignored.
 
-kj::String bytesToHex(kj::ArrayPtr<const byte> input);
+kj::String hexEncode(const kj::ArrayPtr<const byte> input);
 // Return the hex string corresponding to this array of bytes.
 
 class Subprocess {

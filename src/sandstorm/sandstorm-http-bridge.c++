@@ -80,11 +80,6 @@ kj::Array<byte> toBytes(kj::StringPtr text, kj::ArrayPtr<const byte> data = null
   return result;
 }
 
-kj::String hexEncode(const kj::ArrayPtr<const byte> input) {
-  const char DIGITS[] = "0123456789abcdef";
-  return kj::strArray(KJ_MAP(b, input) { return kj::heapArray<char>({DIGITS[b/16], DIGITS[b%16]}); }, "");
-}
-
 struct HttpStatusInfo {
   WebSession::Response::Which type;
 

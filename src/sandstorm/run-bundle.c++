@@ -1010,7 +1010,7 @@ public:
     kj::byte bytes[20];
     kj::FdInputStream random(raiiOpen("/dev/urandom", O_RDONLY));
     random.read(bytes, sizeof(bytes));
-    auto hexString = bytesToHex(bytes);
+    auto hexString = hexEncode(bytes);
 
     auto config = readConfig();
 

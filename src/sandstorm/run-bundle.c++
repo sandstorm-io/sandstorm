@@ -1040,6 +1040,7 @@ private:
     bool allowDemoAccounts = false;
     bool isTesting = false;
     bool allowDevAccounts = false;
+    uint smtpListenPort = 30025;
   };
 
   kj::String updateFile;
@@ -1383,6 +1384,12 @@ private:
         config.allowDevAccounts = value == "true" || value == "yes";
       } else if (key == "IS_TESTING") {
         config.isTesting = value == "true" || value == "yes";
+      } else if (key == "SMTP_LISTEN_PORT") {
+        KJ_IF_MAYBE(p, parseUInt(value, 10)) {
+          config.smtpListenPort = *p;
+        } else {
+          KJ_FAIL_REQUIRE("invalid config value SMTP_LISTEN_PORT", value);
+        }
       }
     }
 
@@ -1790,6 +1797,7 @@ private:
       }
 
       KJ_SYSCALL(setenv("PORT", kj::str(config.port).cStr(), true));
+      KJ_SYSCALL(setenv("SANDSTORM_SMTP_PORT", kj::str(config.smtpListenPort).cStr(), true));
       KJ_SYSCALL(setenv("MONGO_URL",
           kj::str("mongodb://", authPrefix, "127.0.0.1:", config.mongoPort,
                   "/meteor", authSuffix).cStr(),

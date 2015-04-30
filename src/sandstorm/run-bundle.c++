@@ -658,8 +658,8 @@ public:
               return kj::MainBuilder(context, VERSION,
                       "Generates a new admin token that you can use to access the admin settings "
                       "page. This is meant for initial setup, or if an admin account is locked out.")
-                  .addOption({"short"}, [this]() { shortOutput = true; return true; },
-                      "Pass this flag if you wish to output only the token.")
+                  .addOption({'q', "quiet"}, [this]() { shortOutput = true; return true; },
+                      "Output only the token.")
                   .callAfterParsing(KJ_BIND_METHOD(*this, adminToken))
                   .build();
             },

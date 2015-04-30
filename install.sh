@@ -1164,6 +1164,15 @@ sandcats_register_name() {
       --cert var/sandcats/id_rsa.private_combined \
       "${SANDCATS_API_BASE}/register")
 
+  # Make register-log be mode 0640; it is private log information that
+  # other users on the system don't particularly need to be able to
+  # see.
+  #
+  # There is a slight race between when curl creates the file and we
+  # chown it, but we mkdir'd the directory with a good mode, so this
+  # is merely belt-and-suspenders.
+  chmod 0640 var/sandcats/register-log
+
   if [ "200" = "$HTTP_STATUS" ]
   then
     # Show the server's output, which presumably is some happy
@@ -1201,6 +1210,12 @@ sandcats_generate_keys() {
     mkdir -p -m 0700 var/sandcats
     chmod 0700 var/sandcats
 
+    # If we are root, we must chown the Sandcats configuration
+    # directory to the user that will be running Sandstorm.
+    if [ "yes" = "$CURRENTLY_UID_ZERO" ] ; then
+        chown "$SERVER_USER":"$SERVER_USER" var/sandcats
+    fi
+
     # Generate key for client certificate. OpenSSL will read from
     # /dev/urandom by default, so this won't block. We abuse the ``
     # operator so we can have inline comments in a multi-line command.
@@ -1224,7 +1239,13 @@ sandcats_generate_keys() {
 
     # Set filesystem permissions, in case the files get copied
     # into the wrong place later.
-    chmod 0600 var/sandcats/id_rsa var/sandcats/id_rsa.pub var/sandcats/id_rsa.private_combined
+    chmod 0640 var/sandcats/id_rsa var/sandcats/id_rsa.pub var/sandcats/id_rsa.private_combined
+
+    # If we are root, make sure the files are owned by the
+    # $SERVER_USER. This way, Sandstorm can actually read them.
+    if [ "yes" = "$CURRENTLY_UID_ZERO" ] ; then
+        chown "$SERVER_USER":"$SERVER_USER" var/sandcats/id_rsa{,.pub,.private_combined}
+    fi
 
     # Go to the start of the line, before the "..." that we
     # left on the screen, allowing future echo statements to

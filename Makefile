@@ -159,9 +159,9 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES)
 
 shell/public/%.png: icons/%.svg
 	@$(call color,convert $<)
-	@convert -scale 24x24 -negate -evaluate multiply 0.87 $< $@
+	@convert -background none -scale 24x24 -negate -evaluate multiply 0.87 $< $@
 shell/public/%-m.png: icons/%.svg
-	@convert -scale 32x32 $< $@
+	@convert -background none -scale 32x32 $< $@
 
 shell-build: shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
 	@$(call color,meteor frontend)

@@ -183,7 +183,15 @@ body {
 #topbar #backupGrain  { background-image: url("/download.png"); }
 #topbar #restartGrain { background-image: url("/restart.png"); }
 #topbar #showApiToken { background-image: url("/key.png"); }
-#topbar #show-share-grain { background-image: url("/share.png"); }
+#topbar #show-share-grain {
+  background-image: url("/share.png");
+  background-position: left;
+  border-radius: 4px;
+  background-color: #428bca;
+  color: white;
+  width: 64px;
+  padding-left: 20px;
+}
 
 .revoked-role-assignment {
    text-decoration: line-through;
@@ -1072,6 +1080,12 @@ aside #social>p {
   #topbar #backupGrain  { background-image: url("/download-m.png"); }
   #topbar #restartGrain { background-image: url("/restart-m.png"); }
   #topbar #showApiToken { background-image: url("/key-m.png"); }
+  #topbar #show-share-grain {
+    background-image: url("/share-m.png");
+    width: 100%;
+    padding-left: 48px;
+    background-position: 8px center;
+  }
 
   #api-token-popup {
     position: fixed;

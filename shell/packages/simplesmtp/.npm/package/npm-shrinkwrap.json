@@ -82,10 +82,10 @@
       }
     },
     "simplesmtp": {
-      "version": "0.3.24",
+      "version": "0.3.35",
       "dependencies": {
         "rai": {
-          "version": "0.1.9"
+          "version": "0.1.12"
         },
         "xoauth2": {
           "version": "0.1.8"

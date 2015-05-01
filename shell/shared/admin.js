@@ -249,6 +249,11 @@ if (Meteor.isClient) {
     },
     'click #configure-login-service-dialog-save-configuration': function () {
       var state = Iron.controller().state;
+      state.set("numSettings", 1);
+      state.set("successes", 0);
+      state.set("failures", 0);
+      state.set("errors", []);
+      var handleErrorBound = handleError.bind(state);
       var serviceName = state.get("configurationServiceName");
       var token = this.token;
       var configuration = {
@@ -264,10 +269,7 @@ if (Meteor.isClient) {
       configuration.loginStyle = "redirect";
 
       Meteor.call("adminConfigureLoginService", token, configuration, function (err) {
-        if (err) {
-          alert("Error configuring login service: " + serviceName + ", error: " + err);
-          return;
-        }
+        handleErrorBound(err);
         state.set("configurationServiceName", null);
       });
     }

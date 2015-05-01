@@ -50,6 +50,7 @@ Router.map(function () {
       state.set("successes", 0);
       state.set("failures", 0);
       state.set("errors", []);
+      state.set("fadeAlert", false);
       state.set("configurationServiceName", null);
       this.render();
     }
@@ -90,6 +91,10 @@ if (Meteor.isClient) {
   });
 
   var handleError = function (err) {
+    var state = this;
+    Meteor.setTimeout(function () {
+      state.set("fadeAlert", true);
+    }, 3000);
     if (err) {
       this.set("failures", this.get("failures") + 1);
       console.error(err);
@@ -113,6 +118,7 @@ if (Meteor.isClient) {
       state.set("successes", 0);
       state.set("failures", 0);
       state.set("errors", []);
+      state.set("fadeAlert", false);
       var handleErrorBound = handleError.bind(state);
       Meteor.call("clearResumeTokensForService", this.token,
         event.target.getAttribute("data-servicename"), handleErrorBound);
@@ -124,6 +130,7 @@ if (Meteor.isClient) {
       state.set("successes", 0);
       state.set("failures", 0);
       state.set("errors", []);
+      state.set("fadeAlert", false);
 
       if (successTracker) {
         successTracker.stop();
@@ -202,6 +209,9 @@ if (Meteor.isClient) {
     },
     errors: function () {
       return Iron.controller().state.get("errors");
+    },
+    fadeAlert: function () {
+      return Iron.controller().state.get("fadeAlert");
     }
   });
 
@@ -253,6 +263,7 @@ if (Meteor.isClient) {
       state.set("successes", 0);
       state.set("failures", 0);
       state.set("errors", []);
+      state.set("fadeAlert", false);
       var handleErrorBound = handleError.bind(state);
       var serviceName = state.get("configurationServiceName");
       var token = this.token;

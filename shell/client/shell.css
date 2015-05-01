@@ -956,6 +956,11 @@ aside #social>p {
   margin-bottom: 20px;
   border: 1px solid transparent;
   border-radius: 4px;
+  -webkit-transition: all 2s ease-in-out;
+  -moz-transition: all 2s ease-in-out;
+  -ms-transition: all 2s ease-in-out;
+  -o-transition: all 2s ease-in-out;
+  transition: all 2s ease-in-out;
 }
 
 .alert-danger {
@@ -968,6 +973,10 @@ aside #social>p {
   color: #3c763d;
   background-color: #dff0d8;
   border-color: #d6e9c6;
+}
+
+.fade-out {
+  opacity: .5;
 }
 
 @media screen and (max-width: 1250px) {

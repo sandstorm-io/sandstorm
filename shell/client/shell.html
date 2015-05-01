@@ -612,10 +612,10 @@ $KEY</textarea></p>
           <p><button id="admin-settings-save">Save</button></p>
 
           {{#if success}}
-          <div class="alert alert-success"><strong>Success!</strong> Your settings have been saved.</div>
+          <div class="alert alert-success {{#if fadeAlert}}fade-out{{/if}}"><strong>Success!</strong> Your settings have been saved.</div>
           {{/if}}
           {{#if failure}}
-          <div class="alert alert-danger"><strong>Failure!</strong>
+          <div class="alert alert-danger {{#if fadeAlert}}fade-out{{/if}}"><strong>Failure!</strong>
             <ul>
               {{#each errors}}
               <li>{{details}}</li>

@@ -597,9 +597,11 @@ $KEY</textarea></p>
       {{#if isUserPermitted}}
         <form id="admin-settings-form">
           <p><input type="checkbox" name="googleLogin" value="value" checked={{googleEnabled}}> Enable Google Login
-             (<a class="configure-oauth" data-servicename="google" href="">configure</a>)<br>
+             (<a class="configure-oauth" data-servicename="google" href="">configure</a>)
+             (<a class="reset-login-tokens" data-servicename="google" href="">log out all users</a>)<br>
              <input type="checkbox" name="githubLogin" value="value" checked={{githubEnabled}}> Enable Github Login
-             (<a class="configure-oauth" data-servicename="github" href="">configure</a>)<br>
+             (<a class="configure-oauth" data-servicename="github" href="">configure</a>)
+             (<a class="reset-login-tokens" data-servicename="github" href="">log out all users</a>)<br>
              <input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login<br>
             <span class="details">Choose which services users may use to identify themselves. Anyone can log in, but only users you <a href="/invite">invite</a> will be able to install apps or create files.</span></p>
           <p>SMTP Url: <input type="text" name="smtpUrl" value="{{smtpUrl}}"><br>

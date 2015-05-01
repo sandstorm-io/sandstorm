@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var NUM_SETTINGS = 6;
 var ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
 var publicAdminSettings = ["google", "github", "emailToken", "splashDialog", "signupDialog"];
 
@@ -47,6 +46,7 @@ Router.map(function () {
       Meteor.call("getSmtpUrl", this.params._token, function(error, result){
         state.set("smtpUrl", result);
       });
+      state.set("numSettings", 1);
       state.set("successes", 0);
       state.set("failures", 0);
       state.set("errors", []);
@@ -107,9 +107,20 @@ if (Meteor.isClient) {
       var state = Iron.controller().state;
       state.set("configurationServiceName", event.target.getAttribute("data-servicename"));
     },
+    "click .reset-login-tokens": function (event) {
+      var state = Iron.controller().state;
+      state.set("numSettings", 1);
+      state.set("successes", 0);
+      state.set("failures", 0);
+      state.set("errors", []);
+      var handleErrorBound = handleError.bind(state);
+      Meteor.call("clearResumeTokensForService", this.token,
+        event.target.getAttribute("data-servicename"), handleErrorBound);
+    },
     "submit #admin-settings-form": function (event) {
       var state = Iron.controller().state;
       var token = this.token;
+      state.set("numSettings", 6);
       state.set("successes", 0);
       state.set("failures", 0);
       state.set("errors", []);
@@ -120,7 +131,7 @@ if (Meteor.isClient) {
       }
       if (token) {
         successTracker = Tracker.autorun(function () {
-          if (state.get("successes") == NUM_SETTINGS) {
+          if (state.get("successes") == state.get("numSettings")) {
             Meteor.call("clearAdminToken", token, function (err) {
               if (err) {
                 console.error("Failed to clear admin token: ", err);
@@ -183,7 +194,8 @@ if (Meteor.isClient) {
       return Iron.controller().state.get("smtpUrl");
     },
     success: function () {
-      return Iron.controller().state.get("successes") == NUM_SETTINGS;
+      var state = Iron.controller().state;
+      return state.get("successes") == state.get("numSettings");
     },
     failure: function () {
       return Iron.controller().state.get("failures");
@@ -348,6 +360,16 @@ if (Meteor.isServer) {
         Fs.unlinkSync(SANDSTORM_ADMIN_TOKEN);
         console.log("Admin token deleted.");
       }
+    },
+    clearResumeTokensForService: function (token, serviceName) {
+      if (!isAdmin() && !tokenIsValid(token)) {
+        throw new Meteor.Error(403, "Unauthorized", "User must be admin");
+      }
+
+      var query = {};
+      query["services." + serviceName] = {$exists: true};
+      query["services.resume.loginTokens"] = {$exists: true};
+      Meteor.users.update(query, {$set: {"services.resume.loginTokens": []}});
     }
   });
 

@@ -601,6 +601,11 @@ kj::Array<byte> base64Decode(kj::StringPtr input) {
 
 // =======================================================================================
 
+kj::String hexEncode(const kj::ArrayPtr<const byte> input) {
+  const char DIGITS[] = "0123456789abcdef";
+  return kj::strArray(KJ_MAP(b, input) { return kj::heapArray<char>({DIGITS[b/16], DIGITS[b%16]}); }, "");
+}
+
 Subprocess::Subprocess(Options&& options)
     : name(kj::heapString(options.argv.size() > 0 ? options.argv[0] : options.executable)) {
   KJ_SYSCALL(pid = fork());

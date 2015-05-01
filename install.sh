@@ -951,9 +951,9 @@ set_permissions() {
 
   # Set ownership of files.  We want the dirs to be root:sandstorm but the contents to be
   # sandstorm:sandstorm.
-  chown -R $SERVER_USER:$GROUP var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads}
-  chown root:$GROUP var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads}
-  chmod -R g=rwX,o= var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads}
+  chown -R $SERVER_USER:$GROUP var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads,adminToken}
+  chown root:$GROUP var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads,adminToken}
+  chmod -R g=rwX,o= var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads,adminToken}
 
   # Don't allow listing grain IDs directly.  (At the moment, this is faux security since
   # an attacker could just read the database, but maybe that will change someday...)
@@ -1090,15 +1090,22 @@ __EOF__
   service sandstorm start
 }
 
+generate_admin_token() {
+  ADMIN_TOKEN=$(./sandstorm admin-token --quiet)
+}
+
 print_success() {
   if [ "yes" = "$SANDSTORM_NEEDS_TO_BE_STARTED" ] ; then
     echo "Setup complete. To start your server now, run:"
     echo "  $DIR/sandstorm start"
-    echo "It will then run at:"
+    echo "You should then configure the site at:"
   else
-    echo "Setup complete. Your server should be running at:"
+    echo "Setup complete. You should configure the site at:"
   fi
-  echo "  ${BASE_URL:-(unknown; bad config)}"
+  echo "  ${BASE_URL:-(unknown; bad config)}/admin/$ADMIN_TOKEN"
+  echo "WARNING: This token expires in 15 minutes."
+  echo "You can generate a new token by running 'sandstorm admin-token' from the command line"
+  echo
   echo "To learn how to control the server, run:"
   if [ "yes" = "$CURRENTLY_UID_ZERO" ] ; then
     echo "  sandstorm help"
@@ -1277,6 +1284,7 @@ save_config
 download_latest_bundle_and_extract_if_needed
 extract_bundle_if_provided
 make_runtime_directories
+generate_admin_token
 set_permissions
 install_sandstorm_symlinks
 ask_about_starting_at_boot

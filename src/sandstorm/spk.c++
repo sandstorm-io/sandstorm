@@ -863,6 +863,10 @@ private:
         "\n"
         "    appVersion = 0,  # Increment this for every release.\n"
         "\n"
+        "    appMarketingVersion = (defaultText = \"0.0.0\"),\n"
+        "    # Human-readable representation of appVersion. Should match the way you\n"
+        "    # identify versions of your app in documentation and marketing.\n"
+        "\n"
         "    actions = [\n"
         "      # Define your \"new document\" handlers here.\n"
         "      ( title = (defaultText = \"New Instance\"),\n"
@@ -943,6 +947,15 @@ private:
 
   kj::MainBuilder::Validity doPack() {
     ensurePackageDefParsed();
+
+    if (!packageDef.getManifest().getAppTitle().hasDefaultText()) {
+      context.exitError(kj::str("Expected manifest.appTitle.defaultText to be nonempty."));
+    }
+
+    if (!packageDef.getManifest().getAppMarketingVersion().hasDefaultText()) {
+      context.exitError(kj::str(
+          "Expected manifest.appMarketingVersion.defaultText to be nonempty."));
+    }
 
     spk::KeyFile::Reader key = lookupKey(packageDef.getId());
 

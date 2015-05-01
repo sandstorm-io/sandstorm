@@ -226,6 +226,11 @@ if (Meteor.isServer) {
         throw new Meteor.Error(403, "Unauthorized", "User must be admin or provide a valid token");
       }
 
+      if (!value && !tokenIsValid(token) && (serviceName in Meteor.user().services)) {
+        throw new Meteor.Error(403, "Unauthorized",
+          "You can not disable the login service that your account uses.");
+      }
+
       var setting = Settings.findOne({_id: serviceName});
       Settings.upsert({_id: serviceName}, {$set: {value: value}});
       if (value) {

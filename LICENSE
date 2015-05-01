@@ -34,12 +34,18 @@ icons/close.svg
 icons/download.svg
 icons/edit.svg
 icons/restart.svg
-icons/share.svg
 icons/trash.svg
 icons/wrench.svg
     What: Icons by Naomi Atkinson from The Noun Project
     Source URL: http://www.thenounproject.com/naomiatkinson/uploads/
     Copyright: Naomi Atkinson
+    License: CC BY 3.0
+    License URL: http://creativecommons.org/licenses/by/3.0/us/
+
+icons/share.svg
+    What: Share icon
+    Source URL: https://thenounproject.com/term/share/32409/
+    Copyright: Castor & Pollux
     License: CC BY 3.0
     License URL: http://creativecommons.org/licenses/by/3.0/us/
 

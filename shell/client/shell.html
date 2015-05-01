@@ -211,6 +211,7 @@ limitations under the License.
     <div id="menu" data-show="{{showMenu}}">
       <button id="homelink-button" title="Home"> Home</button>
       {{#if userId}}
+        <button id="show-share-grain" title="Share">Share</button>
         <button id="deleteGrain" title="Delete">Delete</button>
       {{/if}}
       {{#if isOwner}}
@@ -219,9 +220,6 @@ limitations under the License.
         <button id="restartGrain" title="Restart App">Restart</button>
       {{/if}}
       <button id="showApiToken" title="Get Webkey">Get&nbsp;Webkey</button>
-      {{#if userId}}
-        <button id="show-share-grain" title="Share">Share</button>
-      {{/if}}
     </div>
   </div>
 

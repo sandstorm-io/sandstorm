@@ -238,6 +238,7 @@ if (Meteor.isClient) {
     'click #configure-login-service-dialog-save-configuration': function () {
       var state = Iron.controller().state;
       var serviceName = state.get("configurationServiceName");
+      var token = this.token;
       var configuration = {
         service: serviceName
       };
@@ -250,7 +251,7 @@ if (Meteor.isClient) {
 
       configuration.loginStyle = "redirect";
 
-      Meteor.call("adminConfigureLoginService", configuration, function (err) {
+      Meteor.call("adminConfigureLoginService", token, configuration, function (err) {
         if (err) {
           alert("Error configuring login service: " + serviceName + ", error: " + err);
           return;
@@ -333,8 +334,8 @@ if (Meteor.isServer) {
 
       return getSmtpUrl();
     },
-    "adminConfigureLoginService": function (options) {
-      if (!isAdmin()) {
+    "adminConfigureLoginService": function (token, options) {
+      if (!isAdmin() && !tokenIsValid(token)) {
         throw new Meteor.Error(403, "Unauthorized", "User must be admin");
       }
 

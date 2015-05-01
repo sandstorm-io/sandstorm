@@ -23,12 +23,12 @@ cleanExit () {
 
   if [ $rc != 0 ]; then
     echo "Log output: "
-    cat $SANDSTORM_DIR/var/log/sandstorm.log
+    cat "$SANDSTORM_DIR/var/log/sandstorm.log"
   fi
 
-  $SANDSTORM_DIR/sandstorm stop
+  "$SANDSTORM_DIR/sandstorm" stop
   sleep 1
-  rm -rf $SANDSTORM_DIR
+  rm -rf "$SANDSTORM_DIR"
   exit $rc
 }
 
@@ -45,8 +45,8 @@ export SMTP_LISTEN_PORT=$(shuf -i 30027-40000 -n 1)
 export SMTP_OUTGOING_PORT=$(shuf -i 40001-50000 -n 1)
 export LAUNCH_URL="http://local.sandstorm.io:$PORT"
 
-rm -rf $SANDSTORM_DIR
-../install.sh -d -u $BUNDLE_PATH
+rm -rf "$SANDSTORM_DIR"
+../install.sh -d -u "$BUNDLE_PATH"
 
 echo "IS_TESTING=true
 ALLOW_DEMO_ACCOUNTS=true
@@ -56,8 +56,8 @@ PORT=$PORT
 MONGO_PORT=$MONGO_PORT
 SMTP_LISTEN_PORT=${SMTP_LISTEN_PORT}
 MAIL_URL=smtp://127.0.0.1:${SMTP_OUTGOING_PORT}
-" >> $SANDSTORM_DIR/sandstorm.conf
-$SANDSTORM_DIR/sandstorm start
+" >> "$SANDSTORM_DIR/sandstorm.conf"
+"$SANDSTORM_DIR/sandstorm" start
 
 echo -n "Waiting for sandstorm to start."
 COUNT=0

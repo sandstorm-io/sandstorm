@@ -26,7 +26,8 @@ cleanExit () {
     cat $SANDSTORM_DIR/var/log/sandstorm.log
   fi
 
-  $SANDSTORM_DIR/sandstorm start
+  $SANDSTORM_DIR/sandstorm stop
+  sleep 1
   rm -rf $SANDSTORM_DIR
   exit $rc
 }
@@ -54,7 +55,7 @@ WILDCARD_HOST=*.local.sandstorm.io:$PORT
 PORT=$PORT
 MONGO_PORT=$MONGO_PORT
 SMTP_LISTEN_PORT=${SMTP_LISTEN_PORT}
-SMTP_URL=127.0.0.1:${SMTP_OUTGOING_PORT}
+MAIL_URL=smtp://127.0.0.1:${SMTP_OUTGOING_PORT}
 " >> $SANDSTORM_DIR/sandstorm.conf
 $SANDSTORM_DIR/sandstorm start
 

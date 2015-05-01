@@ -30,7 +30,7 @@ module.exports["Install"] = function (browser) {
     .assert.containsText("#grainTitle", "Untitled Roundcube Mailbox");
 };
 
-module.exports["Test Incoming Mail"] = function (browser, done) {
+module.exports["Incoming Mail"] = function (browser, done) {
   browser
     .pause(short_wait)
     .frame("grain-frame")
@@ -44,13 +44,31 @@ module.exports["Test Incoming Mail"] = function (browser, done) {
       }, function (err) {
         if (err) {
           browser.assert.equal(err, "");
+        } else {
+          browser
+            .click(".mailbox.inbox > a") // Make sure we have the inbox selected
+            .pause(short_wait) // It's sad, but there's no good way to wait for the mail to be delivered other than pausing
+            .click(".mailbox.inbox > a") // This is equivalent to refreshing the inbox
+            .waitForElementVisible("#messagelist tbody tr:nth-child(1)", short_wait)
+            .assert.containsText("#messagelist tbody tr:nth-child(1) .subject", "Hello world email");
         }
-        browser
-          .click(".mailbox.inbox > a") // Make sure we have the inbox selected
-          .pause(short_wait) // It's sad, but there's no good way to wait for the mail to be delivered other than pausing
-          .click(".mailbox.inbox > a") // This is equivalent to refreshing the inbox
-          .waitForElementVisible("#messagelist tbody tr:nth-child(1)", short_wait)
-          .assert.containsText("#messagelist tbody tr:nth-child(1) .subject", "Hello world email");
       });
+    });
+};
+
+module.exports["Sending Mail"] = function (browser, done) {
+  var to = "test@example.com";
+  var subject = "Hello world response";
+  var text = "Hello world!";
+  browser
+    .click(".compose")
+    .waitForElementVisible("#composebody", short_wait)
+    .setValue("table.compose-headers tr:nth-child(2) textarea", to)
+    .setValue("table.compose-headers tr:nth-child(8) input", subject)
+    .setValue("#composebody", text)
+    .assertReceiveEmail(".send", {
+      to: to,
+      subject: subject,
+      text: text
     });
 };

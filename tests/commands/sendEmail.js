@@ -3,8 +3,8 @@ var events = require("events");
 var MailComposer = require("mailcomposer").MailComposer;
 var simplesmtp = require("simplesmtp");
 
-var SANDSTORM_SMTP_PORT = parseInt(process.env.SANDSTORM_SMTP_PORT, 10) || 30025;
-var pool = simplesmtp.createClientPool(SANDSTORM_SMTP_PORT);
+var SMTP_LISTEN_PORT = parseInt(process.env.SMTP_LISTEN_PORT, 10) || 30025;
+var pool = simplesmtp.createClientPool(SMTP_LISTEN_PORT);
 
 function SendEmail() {
   events.EventEmitter.call(this);
@@ -30,7 +30,6 @@ SendEmail.prototype.command = function(message, timeout, cb) {
     self.emit("complete");
   }, timeout);
 
-  var sent = false;
   var mailcomposer = new MailComposer();
   mailcomposer.setMessageOption(message);
   pool.sendMail(mailcomposer, function (err) {

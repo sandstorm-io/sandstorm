@@ -16,6 +16,8 @@
   },
   "dependencies": {
     "mailcomposer": "^0.2.12",
-    "simplesmtp": "0.3.35"
+    "mailparser": "0.5.1",
+    "simplesmtp": "0.3.35",
+    "underscore": "^1.8.3"
   }
 }

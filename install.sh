@@ -269,7 +269,7 @@ assert_userns_clone() {
 kernel.unprivileged_userns_clone = 1
 __EOF__
         sysctl -w kernel.unprivileged_userns_clone=1 || fail "'sysctl -w" \
-          "kernel.unprivileged_userns_clone=1' failed. If you are inside docker, please run the"
+          "kernel.unprivileged_userns_clone=1' failed. If you are inside docker, please run the" \
           "command manually inside your host and update /etc/sysctl.conf."
       else
         fail "OK, please enable this option yourself and try again."

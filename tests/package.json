@@ -3,7 +3,7 @@
   "description": "Tests for the sandstorm platform",
   "version": "0.0.1",
   "devDependencies": {
-    "nightwatch": "0.5.36",
+    "nightwatch": "0.6.7",
     "phantomjs": "~1.9.10",
     "selenium-standalone": "^4.2.2"
   },
@@ -13,5 +13,11 @@
   },
   "scripts": {
     "test": "./run-tests.sh"
+  },
+  "dependencies": {
+    "mailcomposer": "^0.2.12",
+    "mailparser": "0.5.1",
+    "simplesmtp": "0.3.35",
+    "underscore": "^1.8.3"
   }
 }

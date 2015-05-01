@@ -23,26 +23,41 @@ cleanExit () {
 
   if [ $rc != 0 ]; then
     echo "Log output: "
-    docker logs $CONTAINER_ID
+    cat "$SANDSTORM_DIR/var/log/sandstorm.log"
   fi
 
-  docker stop $CONTAINER_ID
-  docker rm $CONTAINER_ID
+  "$SANDSTORM_DIR/sandstorm" stop
+  sleep 1
+  rm -rf "$SANDSTORM_DIR"
   exit $rc
 }
 
 THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+BUNDLE_PATH=$(readlink -f "$1")
 
 cd "$THIS_DIR"
 
-export PORT=$(shuf -i 10000-65000 -n 1)
+SANDSTORM_DIR=$THIS_DIR/tmp-sandstorm
+export OVERRIDE_SANDSTORM_DEFAULT_DIR=$SANDSTORM_DIR
+export PORT=$(shuf -i 10000-20000 -n 1)
+export MONGO_PORT=$(shuf -i 20001-30000 -n 1)
+export SMTP_LISTEN_PORT=$(shuf -i 30027-40000 -n 1)
+export SMTP_OUTGOING_PORT=$(shuf -i 40001-50000 -n 1)
 export LAUNCH_URL="http://local.sandstorm.io:$PORT"
 
-CONTAINER_ID=$(docker run -e PORT=$PORT --privileged -d -p $PORT:$PORT -t sandstorm bash -c 'echo "IS_TESTING=true
+rm -rf "$SANDSTORM_DIR"
+../install.sh -d -u "$BUNDLE_PATH"
+
+echo "IS_TESTING=true
 ALLOW_DEMO_ACCOUNTS=true
 BASE_URL=http://local.sandstorm.io:$PORT
 WILDCARD_HOST=*.local.sandstorm.io:$PORT
-PORT=$PORT" >> $HOME/sandstorm/sandstorm.conf && $HOME/sandstorm/sandstorm start && sleep 5 && tail -f $HOME/sandstorm/var/log/sandstorm.log')
+PORT=$PORT
+MONGO_PORT=$MONGO_PORT
+SMTP_LISTEN_PORT=${SMTP_LISTEN_PORT}
+MAIL_URL=smtp://127.0.0.1:${SMTP_OUTGOING_PORT}
+" >> "$SANDSTORM_DIR/sandstorm.conf"
+"$SANDSTORM_DIR/sandstorm" start
 
 echo -n "Waiting for sandstorm to start."
 COUNT=0

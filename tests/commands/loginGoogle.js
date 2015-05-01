@@ -24,11 +24,13 @@ exports.command = function(callback) {
   var ret = this
     .init()
     .execute('window.Meteor.logout()')
+    .execute("window.clearMockGoogleUser()")
     .pause(short_wait)
     .execute('window.mockLoginGoogle()')
     .pause(short_wait)
     .init()
-    .waitForElementVisible('#applist-apps', medium_wait);
+    .waitForElementVisible('#applist-apps', medium_wait)
+    .resizeWindow(utils.default_width, utils.default_height);
 
   this.sandstormAccount = 'google';
   if (typeof callback === "function") {

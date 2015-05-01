@@ -125,8 +125,8 @@ PREFER_ROOT="yes"
 # Defaults for some config options, so that if the user requests no
 # prompting, they get these values.
 DEFAULT_PORT=6080
-DEFAULT_DIR_FOR_ROOT="/opt/sandstorm"
-DEFAULT_DIR_FOR_NON_ROOT="$HOME/sandstorm"
+DEFAULT_DIR_FOR_ROOT="${OVERRIDE_SANDSTORM_DEFAULT_DIR:-/opt/sandstorm}"
+DEFAULT_DIR_FOR_NON_ROOT="${OVERRIDE_SANDSTORM_DEFAULT_DIR:-$HOME/sandstorm}"
 DEFAULT_UPDATE_CHANNEL="dev"
 DEFAULT_SERVER_USER="sandstorm"
 SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-sandcats.io}"

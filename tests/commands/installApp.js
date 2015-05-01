@@ -14,25 +14,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-'use strict';
+"use strict";
 
-var utils = require('../utils'),
+var utils = require("../utils"),
     short_wait = utils.short_wait,
-    medium_wait = utils.medium_wait;
+    medium_wait = utils.medium_wait,
+    long_wait = utils.long_wait,
+    very_long_wait = utils.very_long_wait;
 
-exports.command = function(callback) {
-  var ret = this
-    .url(this.launchUrl + "/demo")
-    .execute('window.Meteor.logout()')
-    .pause(short_wait)
-    .click("#createDemoUser")
-    .waitForElementVisible('#applist-apps', medium_wait)
+exports.command = function(url, packageId, dontStartGrain, callback) {
+  var ret = this;
+  if (!this.sandstormAccount) {
+    ret = ret.loginGithub();
+  }
+
+  ret = ret
+    .url(this.launch_url + "/install/" + packageId + "?url=" + url)
+    .waitForElementVisible("#step-confirm", very_long_wait)
+    .click("#confirmInstall")
+    .waitForElementVisible(".new-grain-button", short_wait)
     .resizeWindow(utils.default_width, utils.default_height);
 
-  this.sandstormAccount = 'demo';
+  if (!dontStartGrain) {
+    ret = ret
+      .click(".new-grain-button")
+      .waitForElementVisible("#grainTitle", medium_wait);
+  }
+
   if (typeof callback === "function") {
-    return ret.click("#applist-apps > ul > li:nth-child(1)", callback);
+    return ret.status(callback);
   } else {
-    return ret.click("#applist-apps > ul > li:nth-child(1)");
+    return ret;
   }
 };

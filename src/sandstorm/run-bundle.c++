@@ -1445,6 +1445,8 @@ private:
     if (runningAsRoot) {
       KJ_SYSCALL(fchown(pidfile, 0, config.uids.gid));
       KJ_SYSCALL(fchmod(pidfile, 0660));
+      // Additionally, fix permissions on sandcats-related data, which was originally owned by root
+      fixSandcatsPermissions(config);
     }
 
     cleanupOldVersions();
@@ -2145,6 +2147,29 @@ private:
         KJ_LOG(ERROR, "Error while trying to delete old versions.", *exception);
       }
     }
+  }
+
+  void fixSandcatsPermissions(const Config& config) {
+    // An older version of the sandcats installer left various sandcats-related files around owned
+    // by root, rather than the sandstorm server user.
+    // var/sandcats should be 0700, with corrected owner/group
+    if (access("../var/sandcats", F_OK) == 0) {
+        setOwnerGroupAndMode(kj::str("../var/sandcats"), 0700, config.uids.uid, config.uids.gid);
+    }
+    // var/sandcats/{register-log,id_rsa{,.pub,private_combined}} should each be 0640, with corrected
+    // owner/group
+    static const char* const files[] = {"register-log", "id_rsa", "id_rsa.pub", "id_rsa.private_combined"};
+    for (auto f : files) {
+      auto path = kj::str("../var/sandcats/", f);
+      if (access(path.cStr(), F_OK) == 0) {
+        setOwnerGroupAndMode(path, 0640, config.uids.uid, config.uids.gid);
+      }
+    }
+  }
+
+  void setOwnerGroupAndMode(const kj::String& path, mode_t mode, uid_t owner, uid_t group) {
+    KJ_SYSCALL(chmod(path.cStr(), mode));
+    KJ_SYSCALL(chown(path.cStr(), owner, group));
   }
 
   kj::AutoCloseFd connectToDevDaemon() {

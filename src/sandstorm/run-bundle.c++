@@ -23,6 +23,7 @@
 #include <capnp/dynamic.h>
 #include <capnp/serialize.h>
 #include <sandstorm/package.capnp.h>
+#include <sodium/randombytes.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <limits.h>
@@ -652,6 +653,17 @@ public:
                   .build();
             },
             "For internal use only.")
+        .addSubCommand("admin-token",
+            [this]() {
+              return kj::MainBuilder(context, VERSION,
+                      "Generates a new admin token that you can use to access the admin settings "
+                      "page. This is meant for initial setup, or if an admin account is locked out.")
+                  .addOption({'q', "quiet"}, [this]() { shortOutput = true; return true; },
+                      "Output only the token.")
+                  .callAfterParsing(KJ_BIND_METHOD(*this, adminToken))
+                  .build();
+            },
+            "Resets OAuth configuration.")
         .build();
   }
 
@@ -992,6 +1004,29 @@ public:
     context.exitInfo(kj::str("reset OAuth configuration"));
   }
 
+  kj::MainBuilder::Validity adminToken() {
+    changeToInstallDir();
+
+    // Get 20 random bytes for token.
+    kj::byte bytes[20];
+    randombytes_buf(bytes, sizeof(bytes));
+    auto hexString = hexEncode(bytes);
+
+    auto config = readConfig();
+
+    kj::FdOutputStream tokenFile(raiiOpen("../var/sandstorm/adminToken", O_WRONLY | O_CREAT));
+    tokenFile.write(hexString.begin(), hexString.size());
+
+    if (shortOutput) {
+      context.exitInfo(hexString);
+    } else {
+      context.exitInfo(kj::str("Generated new admin token.\n\nPlease proceed to ", config.rootUrl,
+        "/admin/", hexString, " in order to access the admin settings page and configure your login ",
+        "system. This token will expire in 15 min, and if you take too long, you will have to ",
+        "regenerate a new token with `sandstorm admin-token`."));
+    }
+  }
+
   kj::MainBuilder::Validity dev() {
     // When called by the spk tool, stdout is a socket where we will send the fuse FD.
     struct stat stats;
@@ -1051,6 +1086,7 @@ private:
   bool kernelNewEnough = isKernelNewEnough();
   bool runningAsRoot = getuid() == 0;
   bool updateFileIsChannel = false;
+  bool shortOutput = false;
 
   kj::String getInstallDir() {
     char exeNameBuf[PATH_MAX + 1];
@@ -1409,6 +1445,8 @@ private:
     if (runningAsRoot) {
       KJ_SYSCALL(fchown(pidfile, 0, config.uids.gid));
       KJ_SYSCALL(fchmod(pidfile, 0660));
+      // Additionally, fix permissions on sandcats-related data, which was originally owned by root
+      fixSandcatsPermissions(config);
     }
 
     cleanupOldVersions();
@@ -2109,6 +2147,29 @@ private:
         KJ_LOG(ERROR, "Error while trying to delete old versions.", *exception);
       }
     }
+  }
+
+  void fixSandcatsPermissions(const Config& config) {
+    // An older version of the sandcats installer left various sandcats-related files around owned
+    // by root, rather than the sandstorm server user.
+    // var/sandcats should be 0700, with corrected owner/group
+    if (access("../var/sandcats", F_OK) == 0) {
+        setOwnerGroupAndMode(kj::str("../var/sandcats"), 0700, config.uids.uid, config.uids.gid);
+    }
+    // var/sandcats/{register-log,id_rsa{,.pub,private_combined}} should each be 0640, with corrected
+    // owner/group
+    static const char* const files[] = {"register-log", "id_rsa", "id_rsa.pub", "id_rsa.private_combined"};
+    for (auto f : files) {
+      auto path = kj::str("../var/sandcats/", f);
+      if (access(path.cStr(), F_OK) == 0) {
+        setOwnerGroupAndMode(path, 0640, config.uids.uid, config.uids.gid);
+      }
+    }
+  }
+
+  void setOwnerGroupAndMode(const kj::String& path, mode_t mode, uid_t owner, uid_t group) {
+    KJ_SYSCALL(chmod(path.cStr(), mode));
+    KJ_SYSCALL(chown(path.cStr(), owner, group));
   }
 
   kj::AutoCloseFd connectToDevDaemon() {

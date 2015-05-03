@@ -153,6 +153,10 @@ kj::Array<kj::String> splitLines(kj::String input);
 kj::Vector<kj::ArrayPtr<const char>> split(kj::ArrayPtr<const char> input, char delim);
 // Split the char array on an arbitrary delimiter character.
 
+kj::Vector<kj::ArrayPtr<const char>> splitSpace(kj::ArrayPtr<const char> input);
+// Split the char array on whitespace. Multiple consecutive spaces make a single split -- i.e.
+// none of the elements in the returned vector will be empty.
+
 kj::Maybe<kj::ArrayPtr<const char>> splitFirst(kj::ArrayPtr<const char>& input, char delim);
 // Split the char array on the first instance of the delimiter. `input` is updated in-place to
 // point at the remainder of the array while the prefix that was split off is returned. If the

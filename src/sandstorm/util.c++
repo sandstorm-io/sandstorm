@@ -300,6 +300,24 @@ kj::Vector<kj::ArrayPtr<const char>> split(kj::ArrayPtr<const char> input, char 
   return result;
 }
 
+kj::Vector<kj::ArrayPtr<const char>> splitSpace(kj::ArrayPtr<const char> input) {
+  kj::Vector<kj::ArrayPtr<const char>> result;
+
+  size_t start = 0;
+  for (size_t i: kj::indices(input)) {
+    if (isspace(input[i])) {
+      if (i > start) {
+        result.add(input.slice(start, i));
+      }
+      start = i + 1;
+    }
+  }
+  if (input.size() > start) {
+    result.add(input.slice(start, input.size()));
+  }
+  return result;
+}
+
 kj::Maybe<kj::ArrayPtr<const char>> splitFirst(kj::ArrayPtr<const char>& input, char delim) {
   for (size_t i: kj::indices(input)) {
     if (input[i] == delim) {

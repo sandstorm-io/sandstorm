@@ -497,6 +497,18 @@ private:
         packageDef = symbol->asConst().as<spk::PackageDefinition>();
         sawPkgDef = true;
 
+        if (!packageDef.getManifest().getAppTitle().hasDefaultText()) {
+          return kj::str("missing `appTitle`\n"
+                         "Under ", constantName, ".manifest, add something like ",
+                         "`appTitle = (defaultText = \"My App\")`.");
+        }
+
+        if (!packageDef.getManifest().getAppMarketingVersion().hasDefaultText()) {
+          return kj::str("missing `appMarketingVersion`\n"
+                         "Under ", constantName, ".manifest, add something like ",
+                         "`appMarketingVersion = (defaultText = \"0.0.0\")`.");
+        }
+
         return true;
       } else {
         return kj::str("\"", constantName, "\" not defined in schema file");
@@ -947,15 +959,6 @@ private:
 
   kj::MainBuilder::Validity doPack() {
     ensurePackageDefParsed();
-
-    if (!packageDef.getManifest().getAppTitle().hasDefaultText()) {
-      context.exitError(kj::str("Expected manifest.appTitle.defaultText to be nonempty."));
-    }
-
-    if (!packageDef.getManifest().getAppMarketingVersion().hasDefaultText()) {
-      context.exitError(kj::str(
-          "Expected manifest.appMarketingVersion.defaultText to be nonempty."));
-    }
 
     spk::KeyFile::Reader key = lookupKey(packageDef.getId());
 

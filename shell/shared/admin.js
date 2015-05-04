@@ -317,7 +317,7 @@ if (Meteor.isServer) {
     var configurations = Package["service-configuration"].ServiceConfiguration.configurations;
     var config = configurations.findOne({service: serviceName});
 
-    if (config) {
+    if (config && config.loginStyle !== "redirect") {
       configurations.update({service: serviceName}, {$set: {loginStyle: "redirect"}});
     }
   };

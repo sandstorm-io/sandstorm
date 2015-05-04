@@ -337,7 +337,16 @@ if (Meteor.isServer) {
         throw new Meteor.Error(403, "Unauthorized", "User must be admin or provide a valid token");
       }
 
-      var setting = Settings.findOne({_id: serviceName});
+      // Only check configurations for OAuth services.
+      // TODO(someday): check a list instead of just filtering out "emailToken"
+      if (value && serviceName !== "emailToken") {
+        var ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
+        var config = ServiceConfiguration.configurations.findOne({service: serviceName});
+        if (!config) {
+          throw new Meteor.Error(403, "Unauthorized", "The " + serviceName +
+            " service is not configured, and so cannot be enabled.");
+        }
+      }
       Settings.upsert({_id: serviceName}, {$set: {value: value}});
       if (value) {
         Accounts.registerService(serviceName);

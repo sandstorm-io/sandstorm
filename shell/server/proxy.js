@@ -165,18 +165,28 @@ Meteor.methods({
 
     if (this.userId) {
       if (this.userId != apiToken.userId && this.userId != grain.userId) {
-        RoleAssignments.insert({
-          _id: Random.id(22),
-          grainId: apiToken.grainId,
-          sharer: apiToken.userId,
-          recipient: this.userId,
-          roleAssignment: apiToken.roleAssignment,
-          active: true,
-          petname: apiToken.petname,
-          title: title,
-          created: new Date(),
-          parent: hashedToken
-        });
+        // The current user is neither the sharer nor the grain owner.
+
+        if (!RoleAssignments.findOne({recipient: this.userId,
+                                      parent: hashedToken,
+                                      active: true,
+                                      roleAssignment: apiToken.roleAssignment})) {
+          // The current user does not already have a role assignment derived from this token *or*
+          // the sharer has adjusted some permissions since a previous redemption of the token.
+
+          RoleAssignments.insert({
+            _id: Random.id(22),
+            grainId: apiToken.grainId,
+            sharer: apiToken.userId,
+            recipient: this.userId,
+            roleAssignment: apiToken.roleAssignment,
+            active: true,
+            petname: apiToken.petname,
+            title: title,
+            created: new Date(),
+            parent: hashedToken
+          });
+        }
       }
       return {redirect: "/grain/" + apiToken.grainId};
     } else {

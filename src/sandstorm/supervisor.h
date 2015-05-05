@@ -134,7 +134,6 @@ private:
     class Listener;
     struct AcceptedConnection;
     class ErrorHandlerImpl;
-    class CapRedirector;
     kj::Promise<void> acceptLoop(kj::ConnectionReceiver& serverPort,
                                  Supervisor::Client bootstrapInterface,
                                  kj::TaskSet& taskSet);

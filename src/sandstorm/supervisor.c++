@@ -1739,58 +1739,6 @@ public:
   }
 };
 
-class SupervisorMain::DefaultSystemConnector::CapRedirector
-    : public capnp::Capability::Server, public kj::Refcounted {
-  // A capability which forwards all calls to some target. If the target becomes disconnected,
-  // the capability queues new calls until a new target is provided.
-  //
-  // We use this to handle the fact that the front-end is allowed to restart without restarting
-  // all grains. The SandstormCore capability -- provided by the front-end -- will temporarily
-  // become disconnected in these cases. We know the front-end will come back up and reestablish
-  // the connection soon, but there's nothing we can do except wait, and in the meantime we don't
-  // want to spurriously fail calls.
-
-public:
-  CapRedirector(kj::PromiseFulfillerPair<capnp::Capability::Client> paf =
-                kj::newPromiseAndFulfiller<capnp::Capability::Client>())
-      : target(kj::mv(paf.promise)),
-        fulfiller(kj::mv(paf.fulfiller)) {}
-
-  uint setTarget(capnp::Capability::Client newTarget) {
-    ++iteration;
-    target = newTarget;
-
-    // If the previous target was a promise target, fulfill it.
-    fulfiller->fulfill(kj::mv(newTarget));
-
-    return iteration;
-  }
-
-  void setDisconnected(uint oldIteration) {
-    if (iteration == oldIteration) {
-      // Our current client was disconnected.
-      ++iteration;
-      auto paf = kj::newPromiseAndFulfiller<capnp::Capability::Client>();
-      target = kj::mv(paf.promise);
-      fulfiller = kj::mv(paf.fulfiller);
-    }
-  }
-
-  kj::Promise<void> dispatchCall(
-      uint64_t interfaceId, uint16_t methodId,
-      capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) override {
-    capnp::AnyPointer::Reader params = context.getParams();
-    auto req = target.typelessRequest(interfaceId, methodId, params.targetSize());
-    req.set(params);
-    return context.tailCall(kj::mv(req));
-  }
-
-private:
-  uint iteration = 0;
-  capnp::Capability::Client target;
-  kj::Own<kj::PromiseFulfiller<capnp::Capability::Client>> fulfiller;
-};
-
 struct SupervisorMain::DefaultSystemConnector::AcceptedConnection {
   kj::Own<kj::AsyncIoStream> connection;
   capnp::TwoPartyVatNetwork network;
@@ -1803,50 +1751,10 @@ struct SupervisorMain::DefaultSystemConnector::AcceptedConnection {
         rpcSystem(capnp::makeRpcServer(network, kj::mv(bootstrapInterface))) {}
 };
 
-class SupervisorMain::DefaultSystemConnector::Listener {
-public:
-  Listener(Supervisor::Client bootstrapInterface)
-      : bootstrapInterface(kj::mv(bootstrapInterface)),
-        redirector(kj::refcounted<CapRedirector>()),
-        taskSet(errorHandler) {}
-
-  kj::Promise<void> acceptLoop(kj::Own<kj::ConnectionReceiver>&& serverPort) {
-    return serverPort->accept()
-        .then([this,KJ_MVCAP(serverPort)](kj::Own<kj::AsyncIoStream>&& connection) mutable {
-      auto connectionState = kj::heap<AcceptedConnection>(bootstrapInterface, kj::mv(connection));
-
-      // Update the bootstrap redirector to point at the new connection's bootstrap.
-      capnp::MallocMessageBuilder message(8);
-      auto vatId = message.getRoot<capnp::rpc::twoparty::VatId>();
-      vatId.setSide(capnp::rpc::twoparty::Side::CLIENT);
-      uint iteration = redirector->setTarget(connectionState->rpcSystem.bootstrap(vatId));
-
-      // Run the connection until disconnect.
-      auto promise = connectionState->network.onDisconnect();
-      taskSet.add(promise.attach(kj::mv(connectionState), kj::defer([this,iteration]() {
-        // Disconnect the redirector when the client disconnects.
-        redirector->setDisconnected(iteration);
-      })));
-
-      return acceptLoop(kj::mv(serverPort));
-    });
-  }
-
-  capnp::Capability::Client getBootstrap() {
-    return kj::addRef(*redirector);
-  }
-
-private:
-  Supervisor::Client bootstrapInterface;
-  kj::Own<CapRedirector> redirector;
-  ErrorHandlerImpl errorHandler;
-  kj::TaskSet taskSet;
-};
-
 auto SupervisorMain::DefaultSystemConnector::run(
     kj::AsyncIoContext& ioContext, Supervisor::Client mainCap) const
     -> SystemConnector::RunResult {
-  auto listener = kj::heap<Listener>(kj::mv(mainCap));
+  auto listener = kj::heap<TwoPartyServerWithBootstrap>(kj::mv(mainCap));
   auto core = listener->getBootstrap().castAs<SandstormCore>();
 
   unlink("socket");  // Clear stale socket, if any.
@@ -1857,7 +1765,7 @@ auto SupervisorMain::DefaultSystemConnector::run(
     // The front-end knows we're ready to accept connections when we write something to stdout.
     KJ_SYSCALL(write(STDOUT_FILENO, "Listening...\n", strlen("Listening...\n")));
 
-    auto promise = listener->acceptLoop(kj::mv(serverPort));
+    auto promise = listener->listen(kj::mv(serverPort));
     return promise.attach(kj::mv(listener));
   });
 

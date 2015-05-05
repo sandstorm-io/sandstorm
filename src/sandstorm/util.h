@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <kj/function.h>
 #include <kj/async.h>
+#include <capnp/rpc-twoparty.h>
 
 namespace kj {
   class UnixEventPort;
@@ -332,6 +333,86 @@ private:
   kj::Promise<void> waitTask;
 
   kj::Promise<void> waitLoop();
+};
+
+class CapRedirector
+    : public capnp::Capability::Server, public kj::Refcounted {
+  // A capability which forwards all calls to some target. If the target becomes disconnected,
+  // the capability queues new calls until a new target is provided.
+  //
+  // We use this to handle the fact that the front-end is allowed to restart without restarting
+  // all grains. The SandstormCore capability -- provided by the front-end -- will temporarily
+  // become disconnected in these cases. We know the front-end will come back up and reestablish
+  // the connection soon, but there's nothing we can do except wait, and in the meantime we don't
+  // want to spurriously fail calls.
+
+public:
+  CapRedirector(kj::PromiseFulfillerPair<capnp::Capability::Client> paf =
+                kj::newPromiseAndFulfiller<capnp::Capability::Client>())
+      : target(kj::mv(paf.promise)),
+        fulfiller(kj::mv(paf.fulfiller)) {}
+
+  uint setTarget(capnp::Capability::Client newTarget) {
+    ++iteration;
+    target = newTarget;
+
+    // If the previous target was a promise target, fulfill it.
+    fulfiller->fulfill(kj::mv(newTarget));
+
+    return iteration;
+  }
+
+  void setDisconnected(uint oldIteration) {
+    if (iteration == oldIteration) {
+      // Our current client was disconnected.
+      ++iteration;
+      auto paf = kj::newPromiseAndFulfiller<capnp::Capability::Client>();
+      target = kj::mv(paf.promise);
+      fulfiller = kj::mv(paf.fulfiller);
+    }
+  }
+
+  kj::Promise<void> dispatchCall(
+      uint64_t interfaceId, uint16_t methodId,
+      capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) override {
+    capnp::AnyPointer::Reader params = context.getParams();
+    auto req = target.typelessRequest(interfaceId, methodId, params.targetSize());
+    req.set(params);
+    return context.tailCall(kj::mv(req));
+  }
+
+private:
+  uint iteration = 0;
+  capnp::Capability::Client target;
+  kj::Own<kj::PromiseFulfiller<capnp::Capability::Client>> fulfiller;
+};
+
+class TwoPartyServerWithBootstrap: private kj::TaskSet::ErrorHandler {
+  // Convenience class which implements a simple server which accepts connections on a listener
+  // socket and serices them as two-party connections.
+
+public:
+  explicit TwoPartyServerWithBootstrap(capnp::Capability::Client bootstrapInterface);
+  TwoPartyServerWithBootstrap(capnp::Capability::Client bootstrapInterface,
+                                       kj::Own<CapRedirector>&& redirector);
+  // If you're passing in a redirector, make sure it was constructed to be refcounted like so:
+  // kj::refcounted<CapRedirector>()
+
+  kj::Promise<void> listen(kj::Own<kj::ConnectionReceiver>&& listener);
+  // Listens for connections on the given listener. The returned promise never resolves unless an
+  // exception is thrown while trying to accept. You may discard the returned promise to cancel
+  // listening.
+
+  capnp::Capability::Client getBootstrap();
+
+private:
+  capnp::Capability::Client bootstrapInterface;
+  kj::Own<CapRedirector> redirector;
+  kj::TaskSet tasks;
+
+  struct AcceptedConnection;
+
+  void taskFailed(kj::Exception&& exception) override;
 };
 
 }  // namespace sandstorm

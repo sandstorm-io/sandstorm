@@ -21,6 +21,7 @@ $import "/capnp/c++.capnp".namespace("sandstorm");
 using Util = import "util.capnp";
 using Package = import "package.capnp";
 using Supervisor = import "supervisor.capnp".Supervisor;
+using SandstormCore = import "supervisor.capnp".SandstormCore;
 using GrainInfo = import "grain.capnp".GrainInfo;
 
 interface Backend {
@@ -61,4 +62,11 @@ interface Backend {
   interface GrainUploadStream extends(Util.ByteStream) {
     getInfo @0 () -> (info :GrainInfo);
   }
+}
+
+interface SandstormCoreFactory {
+  # Interface that the Sandstorm front-end exports to the backend for creating a SandstormCore
+  # for a grain. Eventually, we'll move away from implementing SandstormCore in the front-end and
+  # have it be implemented in the backend. This interface will go away then.
+  getSandstormCore @0 (grainId :Text) -> (core :SandstormCore);
 }

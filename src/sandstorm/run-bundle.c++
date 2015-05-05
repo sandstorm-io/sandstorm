@@ -1809,13 +1809,17 @@ private:
       dropPrivs(config.uids);
       clearSignalMask();
 
-      capnp::TwoPartyServer server(kj::heap<BackendImpl>(*io.lowLevelProvider, network));
+      auto redirector = kj::refcounted<CapRedirector>();
+      capnp::Capability::Client coreFactoryCap = kj::addRef(*redirector);
+      TwoPartyServerWithBootstrap server(
+        kj::heap<BackendImpl>(*io.lowLevelProvider, network, coreFactoryCap.castAs<SandstormCoreFactory>()),
+        kj::addRef(*redirector));
 
       // Signal readiness.
       write(outPipe, "ready", 5);
       outPipe = nullptr;
 
-      server.listen(*listener).wait(io.waitScope);
+      server.listen(kj::mv(listener)).wait(io.waitScope);
       KJ_UNREACHABLE;
     });
 

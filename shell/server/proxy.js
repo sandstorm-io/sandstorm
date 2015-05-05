@@ -43,7 +43,8 @@ sandstormExe = function (progname) {
   }
 }
 
-sandstormBackendConnection = Capnp.connect("unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath);
+sandstormBackendConnection = Capnp.connect("unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath,
+  makeSandstormCoreFactory());
 sandstormBackend = sandstormBackendConnection.restore(null, Backend);
 
 // =======================================================================================

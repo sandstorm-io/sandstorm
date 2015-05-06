@@ -747,10 +747,14 @@ void SupervisorMain::closeFds() {
     }
   }
 
+  int saveFd = systemConnector->getSaveFd().orDefault(0);
+
   for (int fd: fds) {
-    // Ignore close errors -- we don't care, as long as the file is closed.  (Also, one close()
-    // will always return EBADF because it's the directory FD closed in closedir().)
-    close(fd);
+    if (fd != saveFd) {
+      // Ignore close errors -- we don't care, as long as the file is closed.  (Also, one close()
+      // will always return EBADF because it's the directory FD closed in closedir().)
+      close(fd);
+    }
   }
 }
 

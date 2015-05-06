@@ -51,7 +51,8 @@ public:
   kj::MainBuilder::Validity addCommandArg(kj::StringPtr arg);
   // Flag handlers
 
-  bool getIsNew() { return isNew; }
+  inline bool getIsNew() { return isNew; }
+  inline void setKeepStdio(bool keep) { keepStdio = keep; }
 
   class SystemConnector {
   public:
@@ -70,6 +71,10 @@ public:
     // This is a method of SystemConnector because the mechanism of this check depends on the way
     // we connect to the system -- e.g. by default we try to form a connection to an existing
     // supervisor to see if it's already running.
+
+    virtual kj::Maybe<int> getSaveFd() const = 0;
+    // If this returns non-null, the indicated file descriptor should NOT be closed along with
+    // everything else because it belongs to the SystemConnector. This FD MUST be O_CLOEXEC.
   };
 
   void setSystemConnector(SystemConnector& connector) { systemConnector = &connector; }
@@ -123,6 +128,7 @@ private:
   public:
     RunResult run(kj::AsyncIoContext& ioContext, Supervisor::Client mainCapability) const override;
     void checkIfAlreadyRunning() const override;
+    kj::Maybe<int> getSaveFd() const override { return nullptr; }
 
   private:
     class Listener;

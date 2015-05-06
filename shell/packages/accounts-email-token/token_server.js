@@ -94,9 +94,9 @@ var sendTokenEmail = function (email, token) {
           makeTokenUrl(email, token) + "\n\n" +
           "Alternatively, enter the following one-time authentication code into the log-in form:\n\n" +
           token + "\n\n" +
-          "You are receiving this because someone (hopefully you) requested to log in to HOSTNAME " +
-          "with your email address. If you did not request to log into " + HOSTNAME + ", you may " +
-          "ignore this message.\n\n" +
+          "You are receiving this because someone (hopefully you) requested to log in to " +
+          HOSTNAME + " with your email address. If you did not request to log into " + HOSTNAME +
+          ", you may ignore this message.\n\n" +
           "This information will expire in 15 minutes.\n"
   };
 

@@ -239,7 +239,8 @@ limitations under the License.
       {{/if}}
     {{else}}
       <p>A webkey allows you to connect an external app (e.g. a mobile app) to this app.</p>
-      <p>Label: <input type="text" id="api-token-petname" placeholder="e.g. 'Android app'">
+      <p><form id="newApiToken">
+      Label: <input type="text" id="api-token-petname" placeholder="e.g. 'Android app'">
       {{#with viewInfo}}
         {{#if roles}}
           Role:
@@ -252,12 +253,17 @@ limitations under the License.
           </select>
         {{/if}}
       {{/with}}
-      <button id="newApiToken">Create</button></p>
+      <button>Create</button></form></p>
       {{#if existingTokens}}
         <p>Your existing webkeys:</p>
         <ul>
         {{#each existingTokens}}
-          <li>{{petname}} ({{dateString created}}) <button class="revoke-token" title="delete" data-token-id="{{_id}}">delete</button></li>
+          <li>
+            <span class="token-petname" data-token-id="{{_id}}">
+              {{petname}} ({{dateString created}})
+            </span>
+            <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
+          </li>
         {{/each}}
         </ul>
       {{/if}}
@@ -290,7 +296,9 @@ limitations under the License.
         {{/if}}
       {{else}}
         <p>Create a secret link to share with other users.</p>
-        <p>Label: <input type="text" id="share-token-petname" placeholder="e.g. 'for Bob'">
+        <p><form id="new-share-token">
+        Label: <input onclick="select()" type="text"
+                id="share-token-petname" value="unlabeled sharing link">
         {{#with viewInfo}}
           {{#if roles}}
             Role:
@@ -303,12 +311,16 @@ limitations under the License.
             </select>
           {{/if}}
         {{/with}}
-        <button id="new-share-token">Create</button></p>
+        <button>Create</button>
+        </form></p>
         {{#if existingShareTokens}}
           <p> Your existing links: </p>
           <ul>
           {{#each existingShareTokens}}
-            <li> {{petname}} ({{dateString created}})
+            <li>
+              <span class="token-petname" data-token-id="{{_id}}">
+                {{petname}} ({{dateString created}})
+              </span>
               <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
             </li>
           {{/each}}

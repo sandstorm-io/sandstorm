@@ -1137,9 +1137,9 @@ sandcats_register_name() {
     return
   fi
 
-  # Validate the client-side, to avoid problems, against the same
-  # regex that the server is using.
-  if ! [[ $DESIRED_SANDCATS_NAME =~ ^[0-9a-zA-Z]{1,20}$ ]] ; then
+  # Validate the client-side, to avoid problems, against a slightly
+  # less rigorous regex than the server is using.
+  if ! [[ $DESIRED_SANDCATS_NAME =~ ^[0-9a-zA-Z-]{1,20}$ ]] ; then
     sandcats_register_name
     return
   fi

@@ -213,3 +213,63 @@ mayOpenGrain = function(grainId, userId) {
   }
   return false;
 }
+
+transitiveShares = function(grainId, userId) {
+  // Computes the set of users and tokens that can currently open the grain and are downstream
+  // from `userId` in the sharing graph.
+  //
+  // Returns `result`, where `result.users` is a dictionary that maps the ID of each downstream
+  // user to an array of incoming edges, each of type `{sharer: <userId>, created: <timestamp>}`,
+  // and `result.token` is a list of strings, each the `_id` of an entry in ApiTokens.
+
+  var result = {users: {}, tokens: []};
+
+  var grain = Grains.findOne(grainId);
+  if (!grain || !grain.private || !userId) { return result; }
+
+  var stackedUsers = {userId : true};
+  var userStack = [userId];
+  var edgesBySharer = {};
+  var tokensBySharer = {};
+
+  RoleAssignments.find({active: true, grainId: grainId}).forEach(function (edge) {
+    if (!edgesBySharer[edge.sharer]) {
+      edgesBySharer[edge.sharer] = []
+    }
+    edgesBySharer[edge.sharer].push(edge);
+  });
+
+  while (userStack.length > 0) {
+    var sharer = userStack.pop();
+    var edges = edgesBySharer[sharer];
+    if (edges) {
+      edges.forEach(function (inEdge) {
+        var recipient = inEdge.recipient;
+        if (!result.users[recipient]) {
+          result.users[recipient] = [];
+        }
+        result.users[recipient].push({sharer: sharer, created: inEdge.created});
+        if (!stackedUsers[recipient]) {
+          userStack.push(recipient);
+          stackedUsers[recipient] = true;
+        }
+      });
+    }
+  }
+
+  var downstreamUserIds = [userId];
+  for (userId in result.users) {
+    downstreamUserIds.push(userId);
+  }
+
+  var tokens = ApiTokens.find({grainId: grainId, userId: {$in: downstreamUserIds}}).fetch();
+  result.tokens = tokens.map(function (token) { return token._id; });
+
+  return result;
+}
+
+Meteor.methods({
+  transitiveShares: function(grainId, userId) {
+    return transitiveShares(grainId, userId);
+  },
+});

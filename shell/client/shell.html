@@ -333,6 +333,27 @@ limitations under the License.
             </li>
           {{/each}}
           </ul>
+          {{#if transitiveShares}}
+            <button class="hide-transitive-shares">hide transitive shares</button>
+            {{#if transitiveShares.empty}}
+              <p> You currently grant access to nobody. </p>
+            {{else}}
+              <ul>
+                {{#each transitiveShares}}
+                  <li>
+                    <div>{{displayName recipient}} was granted access by:</div>
+                    <ul>
+                      {{#each sharers}}
+                        <li>{{displayName sharer}} ({{dateString created}})</li>
+                      {{/each}}
+                    </ul>
+                  </li>
+                {{/each}}
+              </ul>
+            {{/if}}
+          {{else}}
+            <button class="show-transitive-shares">show transitive shares</button>
+          {{/if}}
         {{/if}}
       {{/if}}
     {{/if}}

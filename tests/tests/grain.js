@@ -183,7 +183,7 @@ module.exports["Test grain anonymous user"] = function (browser) {
     .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
     .click('#show-share-grain')
     .waitForElementVisible("#new-share-token", short_wait)
-    .click('#new-share-token')
+    .submitForm('#new-share-token')
     .waitForElementVisible('#share-token-text', medium_wait)
     // Navigate to the url with an anonymous user
     .getText('#share-token-text', function(response) {

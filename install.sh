@@ -1128,7 +1128,7 @@ sandcats_register_name() {
   # If they just press enter, insist that they type either the word
   # "none" or provide a name they want to register.
   if [ -z "$DESIRED_SANDCATS_NAME" ] ; then
-    sancats_register_name
+    sandcats_register_name
     return
   fi
 

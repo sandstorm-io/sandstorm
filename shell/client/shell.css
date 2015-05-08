@@ -145,6 +145,12 @@ body {
   background-color: #888;
 }
 
+.popup .token-petname:hover {
+  cursor: pointer;
+  color: white;
+  background-color: #888;
+}
+
 #menu button {
   background-position: center;
   background-repeat: no-repeat;

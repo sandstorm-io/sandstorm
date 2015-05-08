@@ -29,6 +29,11 @@ if (Meteor.isServer) {
   });
 
   ApiTokens.allow({
+    update: function (userId, apiToken, fieldNames) {
+      // Allow owner to change the petname.
+      return userId && apiToken.userId === userId &&
+        (fieldNames.length === 1 && fieldNames[0] === "petname");
+    },
     remove: function (userId, token) {
       return userId && token.userId === userId;
     }
@@ -235,7 +240,8 @@ if (Meteor.isClient) {
     "click #api-token-popup-closer": function (event) {
       Session.set("show-api-token", false);
     },
-    "click #newApiToken": function (event) {
+    "submit #newApiToken": function (event) {
+      event.preventDefault();
       var grainId = this.grainId;
       Session.set("api-token-" + grainId, "pending");
       var roleList = document.getElementById("api-token-role");
@@ -276,7 +282,8 @@ if (Meteor.isClient) {
     "click #reset-share-token": function (event) {
       Session.set("share-token-" + this.grainId, undefined);
     },
-    "click #new-share-token": function (event) {
+    "submit #new-share-token": function (event) {
+      event.preventDefault();
       var grainId = this.grainId;
       Session.set("share-token-" + grainId, "pending");
       var roleList = document.getElementById("share-token-role");
@@ -295,6 +302,16 @@ if (Meteor.isClient) {
           Session.set("share-token-" + grainId, getOrigin() + "/shared/" + result.token);
         }
       });
+    },
+
+    "click .token-petname": function (event) {
+      // TODO(soon): Find a less-annoying way to get this input, perhaps by allowing the user
+      //   to edit the petname in place.
+      var petname = window.prompt("Set new label:", this.petname);
+      if (petname) {
+        ApiTokens.update(event.currentTarget.getAttribute("data-token-id"),
+                         {$set: {petname: petname}});
+      }
     },
 
     "click button.revoke-role-assignment": function (event) {

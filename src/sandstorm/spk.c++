@@ -497,6 +497,18 @@ private:
         packageDef = symbol->asConst().as<spk::PackageDefinition>();
         sawPkgDef = true;
 
+        if (!packageDef.getManifest().getAppTitle().hasDefaultText()) {
+          return kj::str("missing `appTitle`\n"
+                         "Under ", constantName, ".manifest, add something like ",
+                         "`appTitle = (defaultText = \"My App\")`.");
+        }
+
+        if (!packageDef.getManifest().getAppMarketingVersion().hasDefaultText()) {
+          return kj::str("missing `appMarketingVersion`\n"
+                         "Under ", constantName, ".manifest, add something like ",
+                         "`appMarketingVersion = (defaultText = \"0.0.0\")`.");
+        }
+
         return true;
       } else {
         return kj::str("\"", constantName, "\" not defined in schema file");
@@ -862,6 +874,10 @@ private:
         "    appTitle = (defaultText = \"Example App\"),\n"
         "\n"
         "    appVersion = 0,  # Increment this for every release.\n"
+        "\n"
+        "    appMarketingVersion = (defaultText = \"0.0.0\"),\n"
+        "    # Human-readable representation of appVersion. Should match the way you\n"
+        "    # identify versions of your app in documentation and marketing.\n"
         "\n"
         "    actions = [\n"
         "      # Define your \"new document\" handlers here.\n"

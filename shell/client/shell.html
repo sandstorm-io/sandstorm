@@ -334,9 +334,10 @@ limitations under the License.
           {{/each}}
           </ul>
           {{#if transitiveShares}}
-            <button class="hide-transitive-shares">hide transitive shares</button>
+            <button class="hide-transitive-shares">hide reshares</button>
             {{#if transitiveShares.empty}}
-              <p> You currently grant access to nobody. </p>
+              <p></p>
+              <p> There are no reshares. </p>
             {{else}}
               <ul>
                 {{#each transitiveShares}}
@@ -352,7 +353,7 @@ limitations under the License.
               </ul>
             {{/if}}
           {{else}}
-            <button class="show-transitive-shares">show transitive shares</button>
+            <button class="show-transitive-shares">show reshares</button>
           {{/if}}
         {{/if}}
       {{/if}}

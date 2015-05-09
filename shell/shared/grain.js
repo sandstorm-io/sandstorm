@@ -319,7 +319,11 @@ if (Meteor.isClient) {
         } else {
           var shares = [];
           for (var recipient in downstream.users) {
-            shares.push({recipient: recipient, sharers: downstream.users[recipient]});
+            if (!RoleAssignments.findOne({grainId: grainId, recipient: recipient,
+                                          sharer: Meteor.userId()})) {
+              // There is not a direct share from the current user to this recipient.
+              shares.push({recipient: recipient, sharers: downstream.users[recipient]});
+            }
           }
           if (shares.length == 0) {
             shares = {empty: true};

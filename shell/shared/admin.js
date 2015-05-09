@@ -14,7 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var NUM_SETTINGS = 6;
 var ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
 var publicAdminSettings = ["google", "github", "emailToken", "splashDialog", "signupDialog"];
 
@@ -28,7 +27,8 @@ Router.map(function () {
     waitOn: function () {
       return [
         Meteor.subscribe("admin", this.params._token),
-        Meteor.subscribe("adminToken", this.params._token)
+        Meteor.subscribe("adminToken", this.params._token),
+        Meteor.subscribe("adminServiceConfiguration", this.params._token)
       ];
     },
 
@@ -46,9 +46,12 @@ Router.map(function () {
       Meteor.call("getSmtpUrl", this.params._token, function(error, result){
         state.set("smtpUrl", result);
       });
+      state.set("numSettings", 1);
       state.set("successes", 0);
       state.set("failures", 0);
       state.set("errors", []);
+      state.set("fadeAlert", false);
+      state.set("configurationServiceName", null);
       this.render();
     }
   });
@@ -88,6 +91,10 @@ if (Meteor.isClient) {
   });
 
   var handleError = function (err) {
+    var state = this;
+    Meteor.setTimeout(function () {
+      state.set("fadeAlert", true);
+    }, 3000);
     if (err) {
       this.set("failures", this.get("failures") + 1);
       console.error(err);
@@ -101,12 +108,29 @@ if (Meteor.isClient) {
 
   var successTracker;
   Template.admin.events({
-    "submit #admin-settings-form": function (event) {
+    "click .configure-oauth": function (event) {
       var state = Iron.controller().state;
-      var token = this.token;
+      state.set("configurationServiceName", event.target.getAttribute("data-servicename"));
+    },
+    "click .reset-login-tokens": function (event) {
+      var state = Iron.controller().state;
+      state.set("numSettings", 1);
       state.set("successes", 0);
       state.set("failures", 0);
       state.set("errors", []);
+      state.set("fadeAlert", false);
+      var handleErrorBound = handleError.bind(state);
+      Meteor.call("clearResumeTokensForService", this.token,
+        event.target.getAttribute("data-servicename"), handleErrorBound);
+    },
+    "submit #admin-settings-form": function (event) {
+      var state = Iron.controller().state;
+      var token = this.token;
+      state.set("numSettings", 6);
+      state.set("successes", 0);
+      state.set("failures", 0);
+      state.set("errors", []);
+      state.set("fadeAlert", false);
 
       if (successTracker) {
         successTracker.stop();
@@ -114,7 +138,7 @@ if (Meteor.isClient) {
       }
       if (token) {
         successTracker = Tracker.autorun(function () {
-          if (state.get("successes") == NUM_SETTINGS) {
+          if (state.get("successes") == state.get("numSettings")) {
             Meteor.call("clearAdminToken", token, function (err) {
               if (err) {
                 console.error("Failed to clear admin token: ", err);
@@ -177,13 +201,88 @@ if (Meteor.isClient) {
       return Iron.controller().state.get("smtpUrl");
     },
     success: function () {
-      return Iron.controller().state.get("successes") == NUM_SETTINGS;
+      var state = Iron.controller().state;
+      return state.get("successes") == state.get("numSettings");
     },
     failure: function () {
       return Iron.controller().state.get("failures");
     },
     errors: function () {
       return Iron.controller().state.get("errors");
+    },
+    fadeAlert: function () {
+      return Iron.controller().state.get("fadeAlert");
+    }
+  });
+
+  var configureLoginServiceDialogTemplateForService = function (serviceName) {
+    return Template['configureLoginServiceDialogFor' + capitalize(serviceName)];
+  };
+
+  var configurationFields = function (serviceName) {
+    var template = configureLoginServiceDialogTemplateForService(serviceName);
+    return template ? template.fields() : [];
+  };
+
+  Template._adminConfigureLoginServiceDialog.helpers({
+    configurationFields: function () {
+      var serviceName = Iron.controller().state.get("configurationServiceName");
+      var configurations = Package['service-configuration'].ServiceConfiguration.configurations;
+      var configuration = configurations.findOne({service: serviceName});
+      var fields = configurationFields(serviceName);
+      if (configuration) {
+        return _.map(fields, function (field) {
+          field.value = configuration[field.property];
+          return field;
+        });
+      } else {
+        return fields;
+      }
+    },
+    visible: function () {
+      return Iron.controller().state.get("configurationServiceName") !== null;
+    },
+    configurationSteps: function () {
+      // renders the appropriate template
+      return configureLoginServiceDialogTemplateForService(
+        Iron.controller().state.get("configurationServiceName"));
+    }
+  });
+
+  var capitalize = function(str){
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
+
+  Template._adminConfigureLoginServiceDialog.events({
+    'click .configure-login-service-dismiss-button': function () {
+      Iron.controller().state.set("configurationServiceName", null);
+    },
+    'click #configure-login-service-dialog-save-configuration': function () {
+      var state = Iron.controller().state;
+      state.set("numSettings", 1);
+      state.set("successes", 0);
+      state.set("failures", 0);
+      state.set("errors", []);
+      state.set("fadeAlert", false);
+      var handleErrorBound = handleError.bind(state);
+      var serviceName = state.get("configurationServiceName");
+      var token = this.token;
+      var configuration = {
+        service: serviceName
+      };
+
+      // Fetch the value of each input field
+      _.each(configurationFields(serviceName), function(field) {
+        configuration[field.property] = document.getElementById(
+          'configure-login-service-dialog-' + field.property).value.trim()
+      });
+
+      configuration.loginStyle = "redirect";
+
+      Meteor.call("adminConfigureLoginService", token, configuration, function (err) {
+        handleErrorBound(err);
+        state.set("configurationServiceName", null);
+      });
     }
   });
 }
@@ -214,10 +313,22 @@ if (Meteor.isServer) {
     }
   };
 
+  var updateLoginStyleToRedirect = function (serviceName) {
+    var configurations = Package["service-configuration"].ServiceConfiguration.configurations;
+    var config = configurations.findOne({service: serviceName});
+
+    if (config && config.loginStyle !== "redirect") {
+      configurations.update({service: serviceName}, {$set: {loginStyle: "redirect"}});
+    }
+  };
+
   Meteor.startup(function () {
     registerServiceOnStartup("google");
     registerServiceOnStartup("github");
     registerServiceOnStartup("emailToken");
+
+    updateLoginStyleToRedirect("google");
+    updateLoginStyleToRedirect("github");
   });
 
   Meteor.methods({
@@ -234,7 +345,16 @@ if (Meteor.isServer) {
           "You can not disable the login service that your account uses.");
       }
 
-      var setting = Settings.findOne({_id: serviceName});
+      // Only check configurations for OAuth services.
+      // TODO(someday): check a list instead of just filtering out "emailToken"
+      if (value && serviceName !== "emailToken") {
+        var ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
+        var config = ServiceConfiguration.configurations.findOne({service: serviceName});
+        if (!config) {
+          throw new Meteor.Error(403, "Unauthorized", "The " + serviceName +
+            " service is not configured, and so cannot be enabled.");
+        }
+      }
       Settings.upsert({_id: serviceName}, {$set: {value: value}});
       if (value) {
         Accounts.registerService(serviceName);
@@ -256,17 +376,44 @@ if (Meteor.isServer) {
 
       return getSmtpUrl();
     },
+    "adminConfigureLoginService": function (token, options) {
+      if (!isAdmin() && !tokenIsValid(token)) {
+        throw new Meteor.Error(403, "Unauthorized", "User must be admin");
+      }
+
+      var ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
+
+      ServiceConfiguration.configurations.upsert({service: options.service}, options);
+    },
     clearAdminToken: function(token) {
       if (tokenIsValid(token)) {
         Fs.unlinkSync(SANDSTORM_ADMIN_TOKEN);
         console.log("Admin token deleted.");
       }
+    },
+    clearResumeTokensForService: function (token, serviceName) {
+      if (!isAdmin() && !tokenIsValid(token)) {
+        throw new Meteor.Error(403, "Unauthorized", "User must be admin");
+      }
+
+      var query = {};
+      query["services." + serviceName] = {$exists: true};
+      query["services.resume.loginTokens"] = {$exists: true};
+      Meteor.users.update(query, {$set: {"services.resume.loginTokens": []}});
     }
   });
 
   Meteor.publish("admin", function (token) {
     if ((this.userId && isAdminById(this.userId)) || tokenIsValid(token)) {
       return Settings.find();
+    } else {
+      return [];
+    }
+  });
+
+  Meteor.publish("adminServiceConfiguration", function (token) {
+    if ((this.userId && isAdminById(this.userId)) || tokenIsValid(token)) {
+      return Package['service-configuration'].ServiceConfiguration.configurations.find();
     } else {
       return [];
     }

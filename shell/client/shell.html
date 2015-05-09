@@ -559,15 +559,61 @@ $KEY</textarea></p>
   </div>
 </template>
 
+<template name="_adminConfigureLoginServiceDialog">
+  {{#if visible}}
+    <div id="configure-login-service-dialog" class="accounts-dialog accounts-centered-dialog">
+      {{> configurationSteps}}
+
+      <p>
+        Now, copy over some details.
+      </p>
+      <p>
+        <table>
+          <colgroup>
+            <col span="1" class="configuration_labels">
+            <col span="1" class="configuration_inputs">
+          </colgroup>
+          {{#each configurationFields}}
+            <tr>
+              <td>
+                <label for="configure-login-service-dialog-{{property}}">{{label}}</label>
+              </td>
+              <td>
+                <input id="configure-login-service-dialog-{{property}}" type="text" value="{{value}}">
+              </td>
+            </tr>
+          {{/each}}
+        </table>
+      </p>
+      <div class="new-section">
+        <div class="login-button configure-login-service-dismiss-button">
+          Cancel
+        </div>
+        <a class="accounts-close configure-login-service-dismiss-button">&times;</a>
+
+        <div class="login-button login-button-configure"
+             id="configure-login-service-dialog-save-configuration">
+          Save Configuration
+        </div>
+      </div>
+    </div>
+  {{/if}}
+</template>
+
 <template name="admin">
   <div id="topbar">{{> homeLink}} Admin settings</div>
 
+  {{> _adminConfigureLoginServiceDialog}}
   <div id="admin-settings" class="main-content">
     <div class="centered-box">
       {{#if isUserPermitted}}
         <form id="admin-settings-form">
-          <p><input type="checkbox" name="googleLogin" value="value" checked={{googleEnabled}}> Enable Google Login<br>
-             <input type="checkbox" name="githubLogin" value="value" checked={{githubEnabled}}> Enable Github Login<br>
+          <p><input type="checkbox" name="googleLogin" value="value" checked={{googleEnabled}}> Enable Google Login
+             (<a class="configure-oauth" data-servicename="google" href="">configure</a>)
+             (<a class="reset-login-tokens" data-servicename="google" href="">log out all users</a>)<br>
+             <input type="checkbox" name="githubLogin" value="value" checked={{githubEnabled}}> Enable Github Login
+             (<a class="configure-oauth" data-servicename="github" href="">configure</a>)
+             (<a class="reset-login-tokens" data-servicename="github" href="">log out all users</a>)<br>
              <input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login<br>
             <span class="details">Choose which services users may use to identify themselves. Anyone can log in, but only users you <a href="/invite">invite</a> will be able to install apps or create files.</span></p>
           <p>SMTP Url: <input type="text" name="smtpUrl" value="{{smtpUrl}}"><br>
@@ -578,10 +624,10 @@ $KEY</textarea></p>
           <p><button id="admin-settings-save">Save</button></p>
 
           {{#if success}}
-          <div class="alert alert-success"><strong>Success!</strong> Your settings have been saved.</div>
+          <div class="alert alert-success {{#if fadeAlert}}fade-out{{/if}}"><strong>Success!</strong> Your settings have been saved.</div>
           {{/if}}
           {{#if failure}}
-          <div class="alert alert-danger"><strong>Failure!</strong>
+          <div class="alert alert-danger {{#if fadeAlert}}fade-out{{/if}}"><strong>Failure!</strong>
             <ul>
               {{#each errors}}
               <li>{{details}}</li>

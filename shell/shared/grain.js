@@ -320,7 +320,7 @@ if (Meteor.isClient) {
           var shares = [];
           for (var recipient in downstream.users) {
             if (!RoleAssignments.findOne({grainId: grainId, recipient: recipient,
-                                          sharer: Meteor.userId()})) {
+                                          sharer: Meteor.userId(), active: true})) {
               // There is not a direct share from the current user to this recipient.
               shares.push({recipient: recipient, sharers: downstream.users[recipient]});
             }

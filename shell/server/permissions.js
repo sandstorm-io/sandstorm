@@ -220,7 +220,7 @@ transitiveShares = function(grainId, userId) {
   //
   // Returns `result`, where `result.users` is a dictionary that maps the ID of each downstream
   // user to an array of incoming edges, each of type `{sharer: <userId>, created: <timestamp>}`,
-  // and `result.token` is a list of strings, each the `_id` of an entry in ApiTokens.
+  // and `result.tokens` is a list of strings, each the `_id` of an entry in ApiTokens.
 
   var result = {users: {}, tokens: []};
 

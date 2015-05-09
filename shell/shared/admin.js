@@ -226,6 +226,14 @@ if (Meteor.isServer) {
         throw new Meteor.Error(403, "Unauthorized", "User must be admin or provide a valid token");
       }
 
+      // TODO(someday): currently this relies on the fact that an account is tied to a single
+      // identity, and thus has only that entry in "services". This will need to be looked at when
+      // multiple login methods/identities are allowed for a single account.
+      if (!value && !tokenIsValid(token) && (serviceName in Meteor.user().services)) {
+        throw new Meteor.Error(403, "Unauthorized",
+          "You can not disable the login service that your account uses.");
+      }
+
       var setting = Settings.findOne({_id: serviceName});
       Settings.upsert({_id: serviceName}, {$set: {value: value}});
       if (value) {

@@ -127,6 +127,8 @@ Sessions = new Mongo.Collection("sessions");
 //   timestamp:  Time of last keep-alive message to this session.  Sessions time out after some
 //       period.
 //   userId:  User who owns this session.
+//   hashedToken: If the session is owned by an anonymous user, the _id of the entry in ApiTokens
+//       that was used to open it.
 
 SignupKeys = new Mongo.Collection("signupKeys");
 // Invite keys which may be used by users to get access to Sandstorm.

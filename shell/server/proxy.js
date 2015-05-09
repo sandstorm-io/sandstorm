@@ -246,13 +246,19 @@ function openSessionInternal(grainId, user, title, apiToken) {
   proxies[sessionId] = proxy;
   proxiesByHostId[proxy.hostId] = proxy;
 
-  Sessions.insert({
+  var session = {
     _id: sessionId,
     grainId: grainId,
     hostId: proxy.hostId,
     timestamp: new Date().getTime(),
-    userId: userId,
-  });
+  }
+
+  if (userId) {
+    session.userId = userId;
+  } else {
+    session.hashedToken = apiToken._id;
+  }
+  Sessions.insert(session);
 
   return {sessionId: sessionId, title: title, grainId: grainId};
 }
@@ -470,6 +476,18 @@ Meteor.startup(function() {
     });
   }
 
+  function clearSessions (grainId, userId) {
+    // Clear all sessions owned by `userId` or anyone downstream in the sharing graph.
+    // TODO(soon): Only clear sessions for which the permissions have changed.
+    var downstream = transitiveShares(grainId, userId);
+    var users = [userId];
+    for (var user in downstream.users) {
+      users.push(user);
+    }
+    Sessions.remove({grainId: grainId, $or: [{userId: {$in: users}},
+                                             {hashedToken: {$in: downstream.tokens}}]});
+  }
+
   Grains.find().observe({
     changed: function (newGrain, oldGrain) {
       if (oldGrain.private != newGrain.private) {
@@ -481,36 +499,30 @@ Meteor.startup(function() {
 
   RoleAssignments.find().observe({
     added: function (roleAssignment) {
-      // TODO(soon): Remove any sessions for which the permissions have changed.
+      clearSessions(roleAssignment.grainId, roleAssignment.recipient);
       clearApiProxies(roleAssignment.grainId);
     },
     changed: function (newRoleAssignment, oldRoleAssignment) {
       if (newRoleAssignment.active != oldRoleAssignment.active ||
           !_.isEqual(newRoleAssignment.roleAssignment, oldRoleAssignment.roleAssignment)) {
-        // TODO(soon): Only remove sessions for which the permissions have changed.
-        Sessions.remove({grainId: oldRoleAssignment.grainId,
-                         userId : {$ne : oldRoleAssignment.sharer}});
+        clearSessions(oldRoleAssignment.grainId, oldRoleAssignment.recipient);
         clearApiProxies(oldRoleAssignment.grainId);
       }
     },
     removed: function (oldRoleAssignment) {
-      // TODO(soon): Only remove sessions for which the permissions have changed.
-      Sessions.remove({grainId: oldRoleAssignment.grainId,
-                       userId : {$ne : oldRoleAssignment.sharer}});
+      clearSessions(oldRoleAssignment.grainId, oldRoleAssignment.recipient);
       clearApiProxies(oldRoleAssignment.grainId);
     },
   });
 
   ApiTokens.find().observe({
     changed : function (newApiToken, oldApiToken) {
-      // Anonymous users are the only ones allowed to open a web session directly from a token.
-      Sessions.remove({grainId: oldApiToken.grainId, userId: null});
+      Sessions.remove({grainId: oldApiToken.grainId, hashedToken: oldApiToken._id});
       delete proxiesByApiToken[oldApiToken._id];
     },
 
     removed: function (oldApiToken) {
-      // Anonymous users are the only ones allowed to open a web session directly from a token.
-      Sessions.remove({grainId: oldApiToken.grainId, userId: null});
+      Sessions.remove({grainId: oldApiToken.grainId, hashedToken: oldApiToken._id});
       delete proxiesByApiToken[oldApiToken._id];
     }
   });

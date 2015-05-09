@@ -52,11 +52,15 @@ if (Meteor.isServer) {
   Meteor.publish("grainTopBar", function (grainId) {
     check(grainId, String);
     var self = this;
+
+    // Alice is allowed to know Bob's display name if Bob has received a role assignment from Alice
+    // for *any* grain.
     var handle = RoleAssignments.find({sharer: this.userId}).observe({
       added: function(roleAssignment) {
         var user = Meteor.users.findOne(roleAssignment.recipient);
-        self.added("displayNames", user._id,
-                   {displayName: user.profile.name});
+        if (user) {
+          self.added("displayNames", user._id, {displayName: user.profile.name});
+        }
       },
     });
     this.onStop(function() { handle.stop(); });
@@ -182,7 +186,7 @@ if (Meteor.isClient) {
       } else {
         if (window.confirm("Really forget this grain?")) {
           Session.set("showMenu", false);
-          Meteor.call("deleteRoleAssignments", this.grainId, this.userId);
+          Meteor.call("deleteRoleAssignments", this.grainId);
           Router.go("root");
         }
       }
@@ -324,6 +328,32 @@ if (Meteor.isClient) {
                             {$set : {active : true}});
     },
 
+    "click button.show-transitive-shares": function (event) {
+      var grainId = this.grainId;
+      Meteor.call("transitiveShares", this.grainId, Meteor.userId(), function(error, downstream) {
+        if (error) {
+          console.error(error.stack);
+        } else {
+          var shares = [];
+          for (var recipient in downstream.users) {
+            if (!RoleAssignments.findOne({grainId: grainId, recipient: recipient,
+                                          sharer: Meteor.userId(), active: true})) {
+              // There is not a direct share from the current user to this recipient.
+              shares.push({recipient: recipient, sharers: downstream.users[recipient]});
+            }
+          }
+          if (shares.length == 0) {
+            shares = {empty: true};
+          }
+          Session.set("transitive-shares-" + grainId, shares);
+        }
+      });
+    },
+
+    "click button.hide-transitive-shares": function (event) {
+      Session.set("transitive-shares-" + this.grainId, undefined);
+    },
+
     "click #privatize-grain": function (event) {
       Grains.update(this.grainId, {$set: {private: true}});
     },
@@ -392,7 +422,14 @@ if (Meteor.isClient) {
     },
 
     displayName: function (userId) {
-      return DisplayNames.findOne(userId).displayName;
+      var name = DisplayNames.findOne(userId);
+      if (name) {
+        return name.displayName;
+      } else if (userId === Meteor.userId()) {
+        return Meteor.user().profile.name + " (you)";
+      } else {
+        return "Unknown User (" + userId + ")";
+      }
     },
   });
 
@@ -524,6 +561,7 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
                                                forSharing: true}).fetch(),
   result.existingAssignments = RoleAssignments.find({grainId: grainId,
                                                      sharer : Meteor.userId()}).fetch(),
+  result.transitiveShares = Session.get("transitive-shares-" + grainId);
   result.showMenu = Session.get("showMenu");
 
   var err = route.state.get("error");

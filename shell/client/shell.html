@@ -345,6 +345,28 @@ limitations under the License.
             </li>
           {{/each}}
           </ul>
+          {{#if transitiveShares}}
+            <button class="hide-transitive-shares">hide reshares</button>
+            {{#if transitiveShares.empty}}
+              <p></p>
+              <p> There are no reshares. </p>
+            {{else}}
+              <ul>
+                {{#each transitiveShares}}
+                  <li>
+                    <div>{{displayName recipient}} was granted access by:</div>
+                    <ul>
+                      {{#each sharers}}
+                        <li>{{displayName sharer}} ({{dateString created}})</li>
+                      {{/each}}
+                    </ul>
+                  </li>
+                {{/each}}
+              </ul>
+            {{/if}}
+          {{else}}
+            <button class="show-transitive-shares">show reshares</button>
+          {{/if}}
         {{/if}}
       {{/if}}
     {{/if}}

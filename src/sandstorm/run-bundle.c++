@@ -625,12 +625,12 @@ public:
         .addSubCommand("reset-oauth",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                      "Resets the OAuth configuration of Meteor by deleting the configuration "
+                      "Reset the OAuth configuration of Meteor by deleting the configuration "
                       "that is stored in Mongo.")
                   .callAfterParsing(KJ_BIND_METHOD(*this, resetOauth))
                   .build();
             },
-            "Resets OAuth configuration.")
+            "Reset OAuth configuration.")
         .addSubCommand("continue",
             [this]() {
               return kj::MainBuilder(context, VERSION,
@@ -656,14 +656,14 @@ public:
         .addSubCommand("admin-token",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                      "Generates a new admin token that you can use to access the admin settings "
+                      "Generate a new admin token that you can use to access the admin settings "
                       "page. This is meant for initial setup, or if an admin account is locked out.")
                   .addOption({'q', "quiet"}, [this]() { shortOutput = true; return true; },
                       "Output only the token.")
                   .callAfterParsing(KJ_BIND_METHOD(*this, adminToken))
                   .build();
             },
-            "Resets OAuth configuration.")
+            "Generate admin token.")
         .build();
   }
 

@@ -183,6 +183,7 @@ handle_args() {
   if [ $# = 1 ] && [[ ! $1 =~ ^- ]]; then
     BUNDLE_FILE="$1"
   elif [ $# != 0 ]; then
+    echo "$@"
     usage
   fi
 }

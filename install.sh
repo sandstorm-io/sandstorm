@@ -47,6 +47,12 @@ set -euo pipefail
 # Declare an array so that we can capture the original arguments.
 declare -a ORIGINAL_ARGS
 
+# Allow the environment to override curl's User-Agent parameter. We
+# use this to distinguish probably-actual-users installing Sandstorm
+# from the automated test suite, which invokes the install script with
+# this environment variable set.
+CURL_USER_AGENT="${CURL_USER_AGENT:-sandstorm-install-script}"
+
 # Define I/O helper functions.
 error() {
   if [ $# != 0 ]; then
@@ -144,6 +150,9 @@ USE_SANDCATS="no"
 SANDCATS_SUCCESSFUL="no"
 CURRENTLY_UID_ZERO="no"
 PREFER_ROOT="yes"
+USERNS_CLONE_AT_ALL=""
+USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET=""
+SYSCTL_PROBABLY_WORKS="yes"
 
 # Defaults for some config options, so that if the user requests no
 # prompting, they get these values.
@@ -218,16 +227,20 @@ rerun_script_as_root() {
   # variables to bash, which will affect the execution plan of
   # the resulting install script run.
 
+  # Remove newlines in $@, otherwise when we try to use $@ in a string passed
+  # to 'bash -c' the command gets cut off at the newline. ($@ contains newlines
+  # because at the call site we used escaped newlines for readability.)
+  local ENVVARS=$(echo $@)
+
+  # Add CURL_USER_AGENT to ENVVARS, since we always need to pass this
+  # through.
+  ENVVARS="$ENVVARS CURL_USER_AGENT=$CURL_USER_AGENT"
+
   if [ "$(basename $SCRIPT_NAME)" == bash ]; then
     # Probably ran like "curl https://sandstorm.io/install.sh | bash"
     echo "Re-running script as root..."
 
-    # Remove newlines in $@, otherwise when we try to use $@ in a string passed
-    # to 'bash -c' the command gets cut off at the newline. ($@ contains newlines
-    # because at the call site we used escaped newlines for readability.)
-    local ENVVARS=$(echo $@)
-
-    exec sudo bash -euo pipefail -c "curl -fs https://install.sandstorm.io | $ENVVARS bash"
+    exec sudo bash -euo pipefail -c "curl -fs -A $CURL_USER_AGENT https://install.sandstorm.io | $ENVVARS bash"
   elif [ "$(basename $SCRIPT_NAME)" == install.sh ] && [ -e "$0" ]; then
     # Probably ran like "bash install.sh" or "./install.sh".
     echo "Re-running script as root..."
@@ -276,77 +289,171 @@ assert_usable_kernel() {
   fi
 }
 
-assert_userns_clone() {
+detect_userns_clone() {
+  # You might think it's a little bit silly to embed an x86_64 binary
+  # in this shell script, just find out if user namespaces work for
+  # unprivileged users.
+  #
+  # However, here's the story:
+  #
+  # - Many people use the Debian backports kernel (where user
+  #   namespaces work great) with older userspace, so we can't
+  #   run unshare(1) with the --user option to test it, since
+  #   their version of unshare(1) doesn't have a --user option.
+  #
+  # - Many people run Arch Linux, where user namespaces are disabled
+  #   as a kernel option.
+  #
+  # - Many people run Debian and/or Ubuntu, where user namespaces are
+  #   enabled but require a sysctl to enable.
+  #
+  # - We used to compile a test binary, but sometimes people would
+  #   install Sandstorm on cloud VMs where there is no compiler.
+  #
+  # Source of this program: https://github.com/paulproteus/tiny-rust-demo
+
+  # If the kernel has this sysctl, then it has user namespaces. We
+  # also check the value, since we want unprivileged users to be able
+  # to create user namespaces.
+
   if [ -e /proc/sys/kernel/unprivileged_userns_clone ]; then
+    USERNS_CLONE_AT_ALL="yes"
     if [ "$(</proc/sys/kernel/unprivileged_userns_clone)" == "0" ]; then
-      echo "Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled."
-      echo "Currently, it is not enabled on your system."
-      if prompt-yesno "Shall I enable it for you?" yes; then
-        if [ ! -e /etc/sysctl.conf ]; then
-          fail "Can't find /etc/sysctl.conf. I don't know how to set sysctls" \
-               "permanently on your system. Please set it manually and try again."
-        fi
-        cat >> /etc/sysctl.conf << __EOF__
+      USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET="yes"
+    fi
+    return
+  fi
+
+  # In the absence of that, we attempt to create a user namespace with
+  # this test program.
+  local USERNS_TEST_PROGRAM="$(mktemp)"
+  printf '\x7fELF\x02\x01\x01\x00kmc!!!\n\x00\x02\x00>\x00\x01\x00\x00\x00\x7f\x00@\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00@\x008\x00\x01\x00\x00\x00\x00\x00\x00\x00\x01\x00\x00\x00\x07\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\x00\x00@\x00\x00\x00\x00\x00\xbb\x00\x00\x00\x00\x00\x00\x00\xbb\x00\x00\x00\x00\x00\x00\x00\x00\x10\x00\x00\x00\x00\x00\x00\xb8<\x00\x00\x00\x0f\x05P\xb8f\x00\x00\x00\x0f\x05H\x85\xc0u\x11\xb8i\x00\x00\x00\xbf\xfe\xff\x00\x00\x0f\x05H\x85\xc0u\x14\xb8\x10\x01\x00\x00\xbf\x00\x00\x00\x10\x0f\x05H\x89\xc7\xe8\xc7\xff\xff\xff\xbf\x02\x00\x00\x00\xe8\xbd\xff\xff\xff' > "$USERNS_TEST_PROGRAM"
+  chmod a+x "$USERNS_TEST_PROGRAM"
+  if "$USERNS_TEST_PROGRAM" ; then
+    USERNS_CLONE_AT_ALL="yes"
+    USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET="no"
+  else
+    USERNS_CLONE_AT_ALL="no"
+  fi
+
+  # Clean up after ourselves.
+  rm -f "$USERNS_TEST_PROGRAM"
+}
+
+assert_userns_clone_works_or_can_be_made_to_work() {
+  # The purpose of this function is to bail out early if people have no way
+  # to run Sandstorm and we can't help them via e.g. sysctl.
+
+  # If they don't have working unprivileged user namespaces, then we bail.
+  if [ "$USERNS_CLONE_AT_ALL" = "no" ] ; then
+    fail "Your kernel does not appear to be compiled with" \
+         "support for unprivileged user namespaces (CONFIG_USER_NS=y), or something else is" \
+         "preventing creation of user namespaces. This feature is critical for sandboxing." \
+         "Arch Linux is known to ship with a kernel that disables this feature; if you are" \
+         "using Arch, you will unfortunately need to compile your own kernel (see" \
+         "https://bugs.archlinux.org/task/36969). If you are not using Arch, and don't" \
+         "know why your system wouldn't have user namespaces, please file a bug against" \
+         "Sandstorm so we can figure out what happened."
+  fi
+
+  # We know that unprivileged user namespaces basically work. If they
+  # work, and the user doesn't need a sysctl set, then we are happy.
+  if [ "$USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET" = "no" ] ; then
+    return
+  fi
+
+  # At this point, we're going to need this sysctl set.
+  #
+  # But that won't work under one of a few circumstances. Let's identify
+  # those so we know to bail out.
+  local SYSCTL_PROBABLY_WORKS="yes"
+
+  # If /proc/sys is mounted read-only, then they won't be able to run
+  # sysctl with our help.
+  #
+  # This applies to Docker containers and probably other sorts of
+  # containers, too.
+  if egrep -q '/proc/sys\s+proc\s+ro' /proc/mounts ; then
+    SYSCTL_PROBABLY_WORKS="no"
+  fi
+
+  # If this system doesn't have a sysctl.conf, then we don't know how
+  # to set the default value for the next reboot.
+  if [ ! -e /etc/sysctl.conf ] ; then
+    SYSCTL_PROBABLY_WORKS="no"
+  fi
+
+  # OK, so they need the sysctl set.
+  #
+  # If, however, they _can't_ set the sysctl, make the install fail
+  # now.
+  if [ "$SYSCTL_PROBABLY_WORKS" = "no" ] ; then
+    echo "# sysctl -w kernel.unprivileged_userns_clone=1"
+    echo "# cat >> /etc/sysctl.conf << __EOF__"
+    echo ""
+    echo "# Enable non-root users to create sandboxes (needed by Sandstorm)."
+    echo "kernel.unprivileged_userns_clone = 1"
+    echo "__EOF__"
+    echo ""
+    fail "You are using a Debian-derived Linux kernel, which needs a configuration option" \
+         "set in order to run Sandstorm. To set that option, please run the shell commands" \
+         "above as root. (If you are running this in a container through e.g. Docker, you will" \
+         "have to run the above commands _outside_ the container.)"
+  fi
+
+  # OK, so either it already works, or we know it's a reasonable idea to ask
+  # the user to let us enable the sysctl.
+}
+
+enable_userns_sysctl_if_needed() {
+  # This function enables the Debian/Ubuntu-specific unprivileged
+  # userns sysctl.
+  #
+  # We only run it if we need to.
+  if [ "$USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET" != "yes" ] ; then
+    return
+  fi
+
+  # It only makes sense when running as root, so if we are not
+  # currently running as root, just skip this code.
+  if [ "no" = "$CURRENTLY_UID_ZERO" ] ; then
+    return
+  fi
+
+  local PRINT_USERNS_INFO="yes"
+  local ACCEPTED_SYSCTL_SWITCH="no"
+
+  if [ "yes" = "${ACCEPTED_FULL_SERVER_INSTALL:-}" ] ; then
+    PRINT_USERNS_PROMPT="no"
+    ACCEPTED_SYSCTL_SWITCH="yes"
+  fi
+
+  if [ "${PRINT_USERNS_PROMPT}" = "yes" ] ; then
+    echo "Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled."
+    echo "Currently, it is not enabled on your system."
+    if prompt-yesno "Shall I enable it for you?" yes; then
+      ACCEPTED_SYSCTL_SWITCH="yes"
+    fi
+  fi
+
+  if [ "$ACCEPTED_SYSCTL_SWITCH" = "yes" ] ; then
+    if [ ! -e /etc/sysctl.conf ]; then
+      fail "Can't find /etc/sysctl.conf. I don't know how to set sysctls" \
+           "permanently on your system. Please set it manually and try again."
+    fi
+
+    cat >> /etc/sysctl.conf << __EOF__
 
 # Enable non-root users to create sandboxes (needed by Sandstorm).
 kernel.unprivileged_userns_clone = 1
 __EOF__
-        sysctl -w kernel.unprivileged_userns_clone=1 || fail "'sysctl -w" \
-          "kernel.unprivileged_userns_clone=1' failed. If you are inside docker, please run the" \
-          "command manually inside your host and update /etc/sysctl.conf."
-      else
-        fail "OK, please enable this option yourself and try again."
-      fi
-    fi
+
+    sysctl -w kernel.unprivileged_userns_clone=1 >/dev/null \
+      || fail "'sysctl -w" \
+              "kernel.unprivileged_userns_clone=1' failed. If you are inside docker, please run the" \
+              "command manually inside your host and update /etc/sysctl.conf."
   else
-    # Figure out if user namespaces work at all.
-    rm -f /tmp/sandstorm-userns-test /tmp/sandstorm-userns-test.c
-    cat > /tmp/sandstorm-userns-test.c << __EOF__
-#define _GNU_SOURCE
-#include <sched.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <stdio.h>
-
-int main() {
-  /* We're trying to verify that UID namespaces work when not root, so make sure we're
-   * not root. */
-  if (getuid() == 0) {
-    /* Number here doesn't really matter, but 65534 is usually "nobody". */
-    if (setuid(65534) < 0) {
-      perror("setuid");
-      return 1;
-    }
-  }
-
-  /* OK, let's see if we can create a UID namespace. */
-  if (unshare(CLONE_NEWUSER) < 0) {
-    /* Nope. */
-    perror("unshare");
-    return 1;
-  }
-
-  return 0;
-}
-__EOF__
-    if cc /tmp/sandstorm-userns-test.c -o /tmp/sandstorm-userns-test; then
-      if ! /tmp/sandstorm-userns-test; then
-        rm -f /tmp/sandstorm-userns-test /tmp/sandstorm-userns-test.c
-        fail "Your kernel does not appear to be compiled with" \
-             "support for unprivileged user namespaces (CONFIG_USER_NS=y), or something else is" \
-             "preventing creation of user namespaces. This feature is critical for sandboxing." \
-             "Arch Linux is known to ship with a kernel that disables this feature; if you are" \
-             "using Arch, you will unfortunately need to compile your own kernel (see" \
-             "https://bugs.archlinux.org/task/36969). If you are not using Arch, and don't" \
-             "know why your system wouldn't have user namespaces, please file a bug against" \
-             "Sandstorm so we can figure out what happened."
-      fi
-    else
-      echo "WARNING: Couldn't compile user namespace test. We'll assume user namespaces" >&2
-      echo "  are enabled." >&2
-    fi
-
-    rm -f /tmp/sandstorm-userns-test /tmp/sandstorm-userns-test.c
+    fail "OK, please enable this option yourself and try again."
   fi
 }
 
@@ -484,6 +591,9 @@ dev_server_install() {
     echo "* Add you ($USER) to the $DEFAULT_SERVER_USER group so you can read/write app data."
     echo "* Expose the service only on localhost aka local.sandstorm.io, not the public Internet."
     echo "* Enable 'dev accounts', for easy developer login."
+    if [ "yes" == "$USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET" ] ; then
+      echo "* Configure your system to enable unprivileged user namespaces, via sysctl"
+    fi
     if [ "unknown" == "$INIT_SYSTEM" ]; then
       echo "*** WARNING: Could not detect how to run Sandstorm at startup on your system. ***"
     else
@@ -552,6 +662,9 @@ full_server_install() {
       echo "*** WARNING: Could not detect how to run Sandstorm at startup on your system. ***"
     else
       echo "* Configure Sandstorm to start on System boot (with $INIT_SYSTEM)"
+    fi
+    if [ "yes" == "$USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET" ] ; then
+      echo "* Configure your system to enable unprivileged user namespaces, via sysctl."
     fi
     echo ""
 
@@ -906,7 +1019,7 @@ download_latest_bundle_and_extract_if_needed() {
   fi
 
   echo "Finding latest build for $DEFAULT_UPDATE_CHANNEL channel..."
-  BUILD=$(curl -fs "https://install.sandstorm.io/$DEFAULT_UPDATE_CHANNEL?from=0&type=install")
+  BUILD=$(curl -A "$CURL_USER_AGENT" -fs "https://install.sandstorm.io/$DEFAULT_UPDATE_CHANNEL?from=0&type=install")
   BUILD_DIR=sandstorm-$BUILD
 
   if [[ ! "$BUILD" =~ ^[0-9]+$ ]]; then
@@ -917,7 +1030,7 @@ download_latest_bundle_and_extract_if_needed() {
     rm -rf $BUILD_DIR
     local URL="https://dl.sandstorm.io/sandstorm-$BUILD.tar.xz"
     echo "Downloading: $URL"
-    curl -f "$URL" | tar Jxo
+    curl -A "$CURL_USER_AGENT" -f "$URL" | tar Jxo
 
     if [ ! -e "$BUILD_DIR" ]; then
       fail "Bad package -- did not contain $BUILD_DIR directory."
@@ -1170,6 +1283,7 @@ sandcats_provide_help() {
       --silent \
       --max-time 20 \
       $SANDCATS_CURL_PARAMS \
+      -A "$CURL_USER_AGENT" \
       -X POST \
       --data-urlencode "rawHostname=$DESIRED_SANDCATS_NAME" \
       --output "$LOG_PATH" \
@@ -1212,6 +1326,7 @@ sandcats_provide_help() {
       --silent \
       --max-time 20 \
       $SANDCATS_CURL_PARAMS \
+      -A "$CURL_USER_AGENT" \
       -X POST \
       --data-urlencode "rawHostname=$DESIRED_SANDCATS_NAME" \
       --data-urlencode "recoveryToken=$TOKEN" \
@@ -1248,6 +1363,7 @@ sandcats_provide_help() {
       --silent \
       --max-time 20 \
       $SANDCATS_CURL_PARAMS \
+      -A "$CURL_USER_AGENT" \
       -X POST \
       --data-urlencode "rawHostname=$DESIRED_SANDCATS_NAME" \
       --output "$LOG_PATH" \
@@ -1334,6 +1450,7 @@ sandcats_register_name() {
       --silent \
       --max-time 20 \
       $SANDCATS_CURL_PARAMS \
+      -A "$CURL_USER_AGENT" \
       -X POST \
       --data-urlencode "rawHostname=$DESIRED_SANDCATS_NAME" \
       --data-urlencode "email=$SANDCATS_REGISTRATION_EMAIL" \
@@ -1436,15 +1553,17 @@ sandcats_generate_keys() {
 # Now that the steps exist as functions, run them in an order that
 # would result in a working install.
 detect_current_uid
+detect_userns_clone
+assert_userns_clone_works_or_can_be_made_to_work
 handle_args "$@"
 assert_on_terminal
 assert_linux_x86_64
 assert_usable_kernel
-assert_userns_clone
 assert_dependencies
 assert_valid_bundle_file
 detect_init_system
 choose_install_mode
+enable_userns_sysctl_if_needed
 choose_external_or_internal
 choose_install_dir
 load_existing_settings

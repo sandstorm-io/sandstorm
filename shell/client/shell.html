@@ -82,13 +82,15 @@ limitations under the License.
       </div>
     {{/if}}
 
-    {{#if isSignedUp}}
+    {{#if userId}}
 
       <div id="applist-closer" data-show="{{showMenu}}"></div>
       <div id="applist-apps" data-show="{{showMenu}}">
         <ul>
-          <li class="applist-tab-my-files {{#if selectedTab.myFiles}}selected{{/if}}">My Files</li>
-          <li class="applist-tab-shared-with-me {{#if selectedTab.sharedWithMe}}selected{{/if}}">
+         {{#if isSignedUpOrDemo}}
+           <li class="applist-tab-my-files {{#if selectedTab.myFiles}}selected{{/if}}">My Files</li>
+         {{/if}}
+         <li class="applist-tab-shared-with-me {{#if selectedTab.sharedWithMe}}selected{{/if}}">
             Shared With Me</li>
           {{#each apps}}
             <li class="applist-tab {{appTabClass appId}} {{#if isDev}}dev{{/if}}"

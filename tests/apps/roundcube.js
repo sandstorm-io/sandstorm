@@ -30,7 +30,7 @@ module.exports["Install"] = function (browser) {
     .assert.containsText("#grainTitle", "Untitled Roundcube Mailbox");
 };
 
-module.exports["Incoming Mail"] = function (browser, done) {
+module.exports["Incoming Mail"] = function (browser) {
   browser
     .pause(short_wait)
     .frame("grain-frame")
@@ -56,7 +56,7 @@ module.exports["Incoming Mail"] = function (browser, done) {
     });
 };
 
-module.exports["Sending Mail"] = function (browser, done) {
+module.exports["Sending Mail"] = function (browser) {
   var to = "test@example.com";
   var subject = "Hello world response";
   var text = "Hello world!";

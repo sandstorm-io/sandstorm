@@ -532,14 +532,14 @@ public:
             "Something not working? Check the logs in SANDSTORM_HOME/var/log.")
         .addSubCommand("start",
             [this]() {
-              return kj::MainBuilder(context, VERSION, "Start the Sandstorm server (default).")
+              return kj::MainBuilder(context, VERSION, "Starts the Sandstorm server (default).")
                   .callAfterParsing(KJ_BIND_METHOD(*this, start))
                   .build();
             },
             "Start the sandstorm server.")
         .addSubCommand("stop",
             [this]() {
-              return kj::MainBuilder(context, VERSION, "Stop the Sandstorm server.")
+              return kj::MainBuilder(context, VERSION, "Stops the Sandstorm server.")
                   .callAfterParsing(KJ_BIND_METHOD(*this, stop))
                   .build();
             },
@@ -547,7 +547,7 @@ public:
         .addSubCommand("start-fe",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                    "Start the Sandstorm front-end after it has previously been stopped using "
+                    "Starts the Sandstorm front-end after it has previously been stopped using "
                     "the `stop-fe` command.")
                   .callAfterParsing(KJ_BIND_METHOD(*this, startFe))
                   .build();
@@ -556,7 +556,7 @@ public:
         .addSubCommand("stop-fe",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                    "Stop the Sandstorm front-end, but leave Mongo running. Useful when you "
+                    "Stops the Sandstorm front-end, but leaves Mongo running. Useful when you "
                     "want to run the front-end in dev mode in front of the existing database "
                     "and grains.")
                   .callAfterParsing(KJ_BIND_METHOD(*this, stopFe))
@@ -566,15 +566,15 @@ public:
         .addSubCommand("status",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                      "Check if Sandstorm is running. Prints the pid and exits successfully if so; "
-                      "exits with an error otherwise.")
+                      "Checks whether Sandstorm is running. Prints the pid and exits successfully "
+                      "if so; exits with an error otherwise.")
                   .callAfterParsing(KJ_BIND_METHOD(*this, status))
                   .build();
             },
             "Check if Sandstorm is running.")
         .addSubCommand("restart",
             [this]() {
-              return kj::MainBuilder(context, VERSION, "Restart Sandstorm server.")
+              return kj::MainBuilder(context, VERSION, "Restarts Sandstorm server.")
                   .callAfterParsing(KJ_BIND_METHOD(*this, restart))
                   .build();
             },
@@ -582,7 +582,7 @@ public:
         .addSubCommand("mongo",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                  "Run MongoDB shell, connecting to the an already-running Sandstorm server.")
+                  "Runs MongoDB shell, connecting to the an already-running Sandstorm server.")
                   .callAfterParsing(KJ_BIND_METHOD(*this, mongo))
                   .build();
             },
@@ -590,7 +590,7 @@ public:
         .addSubCommand("update",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                      "Update the Sandstorm platform to a new version. If <release> is provided "
+                      "Updates the Sandstorm platform to a new version. If <release> is provided "
                       "and specifies a bundle file (something like sandstorm-1234.tar.xz) it is "
                       "used as the update. If <release> is a channel name, e.g. \"dev\", we "
                       "securely check the web for an update. If <release> is not provided, we "
@@ -615,7 +615,7 @@ public:
         .addSubCommand("devtools",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                      "Place symlinks in <bindir> (default: /usr/local/bin) to the dev tools "
+                      "Places symlinks in <bindir> (default: /usr/local/bin) to the dev tools "
                       "in this package.")
                   .expectOptionalArg("<bindir>", KJ_BIND_METHOD(*this, setDevtoolsBindir))
                   .callAfterParsing(KJ_BIND_METHOD(*this, devtools))
@@ -625,7 +625,7 @@ public:
         .addSubCommand("reset-oauth",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                      "Reset the OAuth configuration of Meteor by deleting the configuration "
+                      "Resets the OAuth configuration of Meteor by deleting the configuration "
                       "that is stored in Mongo.")
                   .callAfterParsing(KJ_BIND_METHOD(*this, resetOauth))
                   .build();
@@ -634,7 +634,7 @@ public:
         .addSubCommand("continue",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                      "For internal use only: Continue running Sandstorm after an update. "
+                      "For internal use only: Continues running Sandstorm after an update. "
                       "This command is invoked by the Sandstorm server itself. Do not run it "
                       "directly.")
                   .addOption({"userns"}, [this]() { unsharedUidNamespace = true; return true; },
@@ -647,7 +647,7 @@ public:
         .addSubCommand("dev",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                      "For internal use only: Run an app in dev mode. This command is "
+                      "For internal use only: Runs an app in dev mode. This command is "
                       "invoked by the `spk` tool. Do not run it directly.")
                   .callAfterParsing(KJ_BIND_METHOD(*this, dev))
                   .build();
@@ -656,7 +656,7 @@ public:
         .addSubCommand("admin-token",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                      "Generate a new admin token that you can use to access the admin settings "
+                      "Generates a new admin token that you can use to access the admin settings "
                       "page. This is meant for initial setup, or if an admin account is locked out.")
                   .addOption({'q', "quiet"}, [this]() { shortOutput = true; return true; },
                       "Output only the token.")

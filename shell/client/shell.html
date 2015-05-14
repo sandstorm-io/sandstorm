@@ -44,8 +44,38 @@ limitations under the License.
     {{#if isDemoUser}}
     <a id="alert" href="https://sandstorm.io/install/#{{ installPageParams }}">Run your own »</a>
     {{/if}}
+    {{#if currentUser}}
+      {{> notifications}}
+    {{/if}}
     {{> loginButtons align="right"}}
   </div>
+  {{/if}}
+</template>
+
+<template name="notifications">
+  <span class="notification-topbar {{#if notificationsIsEnabled}}notification-selected{{/if}}">
+    <button class="notification-button {{#if notificationCount}}inner{{else}}notification-icon{{/if}}">{{notificationCount}}</button>
+  </span>
+  {{#if notificationsIsEnabled}}
+    <div id="notification-dropdown">
+      <h4>Notifications</h4>
+      <ul id="notification-list">
+        {{#each notifications}}
+          <li>
+            <div class="notification-item">
+              <div class="notification-header">
+                  <span>{{grainTitle}}</span>
+                  <span title="Dismiss" class="cancel-notification" data-notificationid="{{_id}}">x</span>
+                  <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
+              </div>
+              <span>{{text.defaultText}}</span>
+            </div>
+          </li>
+        {{else}}
+        <li>No Notifications...</li>
+        {{/each}}
+      </ul>
+    </div>
   {{/if}}
 </template>
 
@@ -156,7 +186,6 @@ limitations under the License.
             {{/each}}
           </tbody>
         </table>
-
         {{#if isDemoUser}}
           <aside>
             <form id="signup" action="https://sandstorm.us7.list-manage.com/subscribe/post?u=1a036c5ea0fc3c215793748ed&amp;id=5d9399a0af" method="post">

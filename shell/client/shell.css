@@ -433,6 +433,92 @@ img {
   cursor: pointer;
 }
 
+#notification-dropdown {
+  position: fixed;
+  top: 32px;
+  right: 32px;
+  background-color: white;
+  color: black;
+  width: 400px;
+  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+  border-left: 1px solid #E0E0E0;
+  border-right: 1px solid #E0E0E0;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+#notification-dropdown > h4 {
+  background-color: #666;
+  color: #ccc;
+  margin: 0px;
+  font-size: 14px;
+  text-transform: uppercase;
+  padding-left: 10px;
+}
+
+#notification-list {
+  list-style: outside none none;
+  padding: 0px;
+  margin: 5px;
+}
+.notification-selected button {
+  background-color: #666;
+}
+
+.notification-button {
+  cursor: pointer;
+}
+.notification-icon {
+  background-position: center 4px;
+  background-repeat: no-repeat;
+  background-size: contain;
+  width: 32px;
+  height: 32px;
+  border: none;
+  color: transparent;
+  background-color: black;
+  background-image: url("/inbox.png");
+  vertical-align: top;
+}
+
+.notification-topbar {
+  width: 32px;
+  height: 32px;
+}
+
+.notification-topbar .inner {
+  font-size: 16px;
+  color: white;
+  background-color: red;
+  font-weight: bold;
+  margin: 5px;
+  padding: 0px 7px;
+  text-align: center;
+  border-radius: 50%;
+  height: 22px;
+  width: 22px;
+  line-height: 22px;
+  border: 0px;
+}
+
+.notification-timestamp {
+  float: right
+}
+
+.cancel-notification {
+  cursor: pointer;
+  color: red;
+  float: right;
+  margin-left: 5px;
+  vertical-align: center;
+}
+
+.notification-item {
+  font-size: 14px;
+}
+
+.notification-header {
+  color: #ccc;
+}
 #intro h1 {
   text-align: center;
   font-size: 100px;
@@ -1196,6 +1282,18 @@ table#users-table tr {
   }
 
   .main-content {
+    top: 48px;
+  }
+
+  .notification-icon {
+    width: 40px;
+    height: 40px;
+    margin-top: 4px;
+    background-image: url("/inbox-m.png");
+  }
+
+  #notification-dropdown {
+    width: 300px;
     top: 48px;
   }
 

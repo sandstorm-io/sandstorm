@@ -45,7 +45,7 @@ interface Supervisor {
   # Wait until the storage size of the grain is different from `oldSize` and then return the new
   # size. May occasionally return prematurely, with `size` equal to `oldSize`.
 
-  restore @5 (ref :SupervisorObjectId);
+  restore @5 (ref :SupervisorObjectId) -> (cap :Capability);
   # Wraps `MainView.restore()`. Can also restore capabilities hosted by the supervisor.
 
   drop @6 (ref :SupervisorObjectId);
@@ -107,6 +107,10 @@ interface SystemPersistent extends(Persistent(Data, ApiTokenOwner)) {
   # created for the purpose of HTTP APIs).
 }
 
+interface HandlePersistent extends(SystemPersistent, Util.Handle) {}
+
+interface OngoingNotificationPersistent extends(SystemPersistent, Grain.OngoingNotification) {}
+
 struct ApiTokenOwner {
   # Defines who is permitted to use a particular API token.
 
@@ -154,7 +158,7 @@ struct SupervisorObjectId(AppObjectId) {
     appRef @0 :AppObjectId;
     # A reference restorable by the app.
 
-    wakeLockNotification @1 :UInt32;
+    wakeLockNotification @1 :Data;
     # This refers to an OngoingNotification for a wake lock. Note that although the app itself
     # implements an `OngoingNotification`, the supervisor wraps it in order to detect the `cancel`
     # call.

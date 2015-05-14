@@ -71,6 +71,11 @@ if (Meteor.isServer) {
     return DevApps.find();
   });
 
+  Meteor.publish("notifications", function () {
+    return Notifications.find({userId: this.userId},
+      {fields: {timestamp: 1, text: 1, grainId: 1, userId: 1, isUnread: 1}});
+  });
+
   Meteor.publish("hasUsers", function () {
     // Publish pseudo-collection which tells the client if there are any users at all.
     //
@@ -167,6 +172,8 @@ if (Meteor.isClient) {
 
     return result;
   };
+  Template.registerHelper("dateString", makeDateString);
+
   Template.registerHelper("dateString", makeDateString);
 
   launchAndEnterGrainByPackageId = function(packageId) {
@@ -450,8 +457,78 @@ if (Meteor.isClient) {
   Template.homeLink.helpers({
     origin: getOrigin
   });
-}
 
+  Template.notifications.helpers({
+    notifications: function () {
+      return Notifications.find({userId: Meteor.userId()}, {sort: {timestamp: -1}}).map(function (row) {
+        // TODO(someday): make this work with grains that are not owned by the current user.
+        // Currently we only subscribe to grains owned by this user, and the following query will
+        // fail for shared grains.
+        var grain = Grains.findOne({_id: row.grainId});
+        if (grain) {
+          row.grainTitle = grain.title;
+        }
+        return row;
+      });
+    },
+
+    notificationCount: function () {
+      if (Session.get("notificationsIsEnabled")) {
+        return 0;
+      }
+      return Notifications.find({userId: Meteor.userId(), isUnread: true}).count();
+    },
+
+    notificationsIsEnabled: function () {
+      return Session.get("notificationsIsEnabled");
+    }
+  });
+
+  Template.notifications.events({
+    "click .notification-button": function () {
+      var newValue = !Session.get("notificationsIsEnabled");
+      Session.set("notificationsIsEnabled", newValue);
+
+      // This is a little weird, but we want to mark all notifications as read whenever the menu
+      // opens or closes. The logic behind this is that notifications could arrive while the menu
+      // is left open, and we want to mark those as read too.
+      // TODO(someday): This leaves us open to a slight timing issue. We should probably change
+      // it to pass in a list of all notification ids to mark read.
+      Meteor.call("readAllNotifications");
+    },
+
+    "click .cancel-notification": function (event) {
+      Meteor.call("dismissNotification", event.currentTarget.getAttribute("data-notificationid"));
+      return false;
+    },
+
+    "click #notification-dropdown": function (event) {
+      return false;
+    }
+  });
+
+  var globalClickHandler = function () {
+    Session.set("notificationsIsEnabled", false);
+    Meteor.call("readAllNotifications");
+  };
+
+  Meteor.startup(function () {
+    Tracker.autorun(function () {
+      if (Session.get("notificationsIsEnabled")) {
+        document.querySelector("body").addEventListener("click", globalClickHandler);
+      } else {
+        document.querySelector("body").removeEventListener("click", globalClickHandler);
+      }
+    });
+  });
+
+  Meteor.subscribe("notifications");
+  // TODO(someday): don't leave naked subscribes at the top level.
+  // The following works in Meteor 1.1+. Remove the above line and use the following when we update.
+  // Template.notifications.onCreated(function () {
+  //   this.subscribe("notifications");
+  // });
+}
 Router.configure({
   layoutTemplate: 'layout',
   notFoundTemplate: "notFound",

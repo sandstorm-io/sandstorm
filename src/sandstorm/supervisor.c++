@@ -55,6 +55,7 @@
 #include <execinfo.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
+#include <sodium/randombytes.h>
 
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/supervisor.capnp.h>
@@ -418,6 +419,7 @@ private:
 
 pid_t childPid = 0;
 bool keepAlive = true;
+bool isBackgrounded = false;
 
 void logSafely(const char* text) {
   // Log a message in an async-signal-safe way.
@@ -456,6 +458,9 @@ void signalHandler(int signo) {
       if (keepAlive) {
         SANDSTORM_LOG("Grain still in use; staying up for now.");
         keepAlive = false;
+        return;
+      } else if (isBackgrounded) {
+        SANDSTORM_LOG("Grain has been backgrounded; staying up for now.");
         return;
       }
       SANDSTORM_LOG("Grain no longer in use; shutting down.");
@@ -1537,8 +1542,11 @@ void SupervisorMain::DefaultSystemConnector::checkIfAlreadyRunning() const {
   KJ_UNREACHABLE;
 }
 
-class SupervisorMain::SandstormApiImpl final: public SandstormApi<>::Server {
+class SupervisorMain::SandstormApiImpl final:
+  public SandstormApi<>::Server, public kj::Refcounted, private kj::TaskSet::ErrorHandler  {
 public:
+  SandstormApiImpl(kj::StringPtr grainId, SandstormCore::Client&& sandstormCore) :
+    grainId(grainId), sandstormCore(kj::mv(sandstormCore)), tasks(*this) {}
   // TODO(someday):  Implement API.
 //  kj::Promise<void> publish(PublishContext context) override {
 
@@ -1568,8 +1576,8 @@ public:
 
 //  }
 
-//  kj::Promise<void> stayAwake(StayAwakeContext context) override {
-    // TODO(someday): The supervisor will need to maintain a map of "wake locks". Since wake locks
+  kj::Promise<void> stayAwake(StayAwakeContext context) override {
+    //   The supervisor maintains a map of "wake locks". Since wake locks
     //   by their nature do not outlast the process, this map can be held in-memory. When
     //   `stayAwake()` is called, the supervisor:
     //   - Generates a new wake lock ID (a random byte string; use libsodium's randombytes()).
@@ -1578,7 +1586,7 @@ public:
     //     wrapper is persistent (using the wake lock ID).
     //   - Calls SandstormCore.getOwnerNotificationTarget().addOngoing(), passing along
     //     this new wrapper object as well as the `displayInfo` provided from the app.
-    //   - On the handle returned by `notifyOwnerOngoing()`, immediately calls `save()` (with
+    //   - On the handle returned by `addOngoing()`, immediately calls `save()` (with
     //     sealFor = this grain; see `SystemPersistent`), storing the resulting `SturdyRef`
     //     (actually, just an API token) into the wake lock table entry.
     //   - Constructs a new handle object and returns it from `stayAwake()`.
@@ -1597,14 +1605,195 @@ public:
     //   restart independently of the app, but the `OngoingNotification` provided by the app is
     //   not required to be persistent. The supervisor thus takes care of the complication of
     //   dealing with persistence through front-end restarts.
-//  }
+    sandstorm::isBackgrounded = true;
+    auto params = context.getParams();
+
+    kj::String lockId(kj::heapString(16));
+    randombytes_buf(lockId.begin(), lockId.size());
+    LockInfo lock(kj::mv(lockId));
+    auto insertResult = wakelockMap.insert(std::make_pair(static_cast<kj::StringPtr>(lock.id), kj::mv(lock)));
+    auto lockRef = insertResult.first;
+
+    auto req = sandstormCore.getOwnerNotificationTargetRequest().send().getOwner().addOngoingRequest();
+    req.setDisplayInfo(params.getDisplayInfo());
+    req.setNotification(kj::heap<WrappedOngoingNotification>(params.getNotification(), lockRef->first,  *this));
+    context.releaseParams();
+    return req.send().then([this, lockRef, params, context](auto args) mutable {
+      auto req = args.getHandle().template castAs<SystemPersistent>().saveRequest();
+      auto grainOwner = req.getSealFor().initGrain();
+      grainOwner.setGrainId(grainId);
+      grainOwner.getSaveLabel().setDefaultText("ongoing notification handle");
+      return req.send().then([this, context, lockRef](auto args) mutable {
+        lockRef->second.sturdyRef = kj::heapArray(args.getSturdyRef());
+        context.getResults().setHandle(kj::heap<WakelockHandle>(lockRef->first, *this));
+      });
+    });
+  }
+
+  OngoingNotificationPersistent::Client restoreWakeLockNotification(kj::StringPtr wakelockId) {
+    auto iter = wakelockMap.find(wakelockId);
+    KJ_REQUIRE(iter != wakelockMap.end(), "Wakelock id not found");
+    return kj::heap<WrappedOngoingNotification>(iter->second.ongoingNotification, iter->first, *this);
+  }
+
+  void incrementNotificationRefCount(kj::StringPtr wakelockId) {
+    auto iter = wakelockMap.find(wakelockId);
+    KJ_REQUIRE(iter != wakelockMap.end(), "Tried to increment ref count for a wakelock that doesn't exist");
+    iter->second.notificationRefCount++;
+  }
+
+  void decrementNotificationRefCount(kj::StringPtr wakelockId) {
+    auto iter = wakelockMap.find(wakelockId);
+    if (iter == wakelockMap.end()) {
+      KJ_LOG(WARNING, "Tried to decrement ref count for a wakelock that doesn't exist");
+      return;
+    }
+    iter->second.notificationRefCount--;
+    if (iter->second.notificationRefCount == 0) {
+      tasks.add(iter->second.ongoingNotification.cancelRequest().send().then([](auto args) {}));
+      stopWakelock(iter);
+    }
+  }
+private:
+  class LockInfo {
+  public:
+    kj::String id;
+    kj::Array<byte> sturdyRef;
+    OngoingNotification::Client ongoingNotification;
+    bool isHandleActive;
+    uint32_t notificationRefCount;
+
+    LockInfo(kj::String&& id) :
+      id(kj::mv(id)), ongoingNotification(nullptr), isHandleActive(true), notificationRefCount(0) {
+      SANDSTORM_LOG("Grain has enabled backgrounding; it will remain up without keep-alives.");
+      sandstorm::isBackgrounded = true;
+    }
+    LockInfo(LockInfo&&) = default;
+    KJ_DISALLOW_COPY(LockInfo);
+  };
+
+  void dropHandle(kj::StringPtr wakelockId) {
+    auto iter = wakelockMap.find(wakelockId);
+    if (iter == wakelockMap.end()) {
+      KJ_LOG(WARNING, "Tried to drop a wakelock for a handle that has already been deleted");
+      return;
+    }
+    auto req = sandstormCore.dropRequest();
+    req.setToken(iter->second.sturdyRef);
+    tasks.add(req.send().then([](auto args) {}));
+    iter->second.isHandleActive = false;
+    stopWakelock(iter);
+  }
+
+  kj::Promise<void> cancelOngoingCapPromise(kj::StringPtr wakelockId, OngoingNotification::Client ongoingNotification) {
+    auto iter = wakelockMap.find(wakelockId);
+    if (iter == wakelockMap.end()) {
+      KJ_LOG(WARNING, "Tried to drop a wakelock for an ongoing capability that has already been deleted");
+      return kj::READY_NOW;
+    }
+    iter->second.notificationRefCount--;
+    stopWakelock(iter);
+    return ongoingNotification.cancelRequest().send().then([](auto args) {});
+  }
+
+  capnp::RemotePromise<sandstorm::SandstormCore::MakeTokenResults> persistOngoingNotification(kj::StringPtr wakelockId, OngoingNotification::Client& ongoingNotification) {
+    auto iter = wakelockMap.find(wakelockId);
+    KJ_REQUIRE(iter != wakelockMap.end(), "Tried to persist a notification for an ongoing capability that has already been deleted");
+    iter->second.notificationRefCount++;
+    iter->second.ongoingNotification = ongoingNotification;
+
+    auto req = sandstormCore.makeTokenRequest();
+    req.getRef().setWakeLockNotification(wakelockId.asBytes());
+    auto grainOwner = req.getOwner().initGrain();
+    grainOwner.setGrainId(grainId);
+    grainOwner.getSaveLabel().setDefaultText("ongoing notification wakelock");
+    return req.send();
+  }
+
+  void stopWakelock(const std::map<kj::StringPtr, LockInfo>::iterator& iter) {
+    SANDSTORM_LOG("Grain's backgrounding has been disabled; staying up for now.");
+    if (sandstorm::isBackgrounded) {
+      // Stay alive for one more keepAlive tick after disabling backgrounding.
+      sandstorm::keepAlive = true;
+    }
+    LockInfo& lock = iter->second;
+    if (lock.isHandleActive) {
+      auto req = sandstormCore.dropRequest();
+      req.setToken(iter->second.sturdyRef);
+      tasks.add(req.send().then([](auto args) {}));
+    }
+    if (lock.notificationRefCount != 0) {
+      tasks.add(lock.ongoingNotification.cancelRequest().send().then([](auto args) {}));
+    }
+    if (wakelockMap.size() <= 1) {
+      sandstorm::isBackgrounded = false;
+    }
+    wakelockMap.erase(iter);
+  }
+
+  void stopWakelock(kj::StringPtr wakelockId) {
+    auto iter = wakelockMap.find(wakelockId);
+    if (iter == wakelockMap.end()) {
+      KJ_LOG(WARNING, "Tried to kill a wakelock that has already been deleted");
+      return;
+    }
+    stopWakelock(iter);
+  }
+
+  void taskFailed(kj::Exception&& exception) override {
+    KJ_LOG(ERROR, exception);
+  }
+
+  class WakelockHandle final: public Handle::Server {
+  public:
+    WakelockHandle(kj::StringPtr wakelockId, SandstormApiImpl& api)
+      : wakelockId(kj::heapString(wakelockId)), api(api) {
+    }
+    ~WakelockHandle() {
+      api.dropHandle(wakelockId);
+    }
+
+  private:
+    kj::String wakelockId;
+    SandstormApiImpl& api;
+  };
+
+  class WrappedOngoingNotification final: public OngoingNotificationPersistent::Server {
+  public:
+    WrappedOngoingNotification(OngoingNotification::Client ongoingNotification, kj::StringPtr wakelockId, SandstormApiImpl& api)
+      : ongoingNotification(ongoingNotification), wakelockId(kj::heapString(wakelockId)), api(api) {
+      api.incrementNotificationRefCount(wakelockId);
+    }
+    ~WrappedOngoingNotification() {
+      api.decrementNotificationRefCount(wakelockId);
+    }
+    kj::Promise<void> cancel(CancelContext context) override {
+      return api.cancelOngoingCapPromise(wakelockId, ongoingNotification);
+    }
+    kj::Promise<void> save(SaveContext context) override {
+      return api.persistOngoingNotification(wakelockId, ongoingNotification).then([context] (auto args) mutable {
+        context.getResults().setSturdyRef(args.getToken());
+      });
+    }
+
+  private:
+    OngoingNotification::Client ongoingNotification;
+    kj::String wakelockId;
+    SandstormApiImpl& api;
+  };
+
+  kj::StringPtr grainId;
+  SandstormCore::Client sandstormCore;
+  std::map<kj::StringPtr, LockInfo> wakelockMap;
+  kj::TaskSet tasks;
 };
 
 class SupervisorMain::SupervisorImpl final: public Supervisor::Server {
 public:
   inline SupervisorImpl(kj::UnixEventPort& eventPort, UiView::Client&& mainView,
-                        DiskUsageWatcher& diskWatcher)
-      : eventPort(eventPort), mainView(kj::mv(mainView)), diskWatcher(diskWatcher) {}
+                        DiskUsageWatcher& diskWatcher, kj::Own<SandstormApiImpl>&& sandstormApi)
+      : eventPort(eventPort), mainView(kj::mv(mainView)), diskWatcher(diskWatcher),
+        sandstormApi(kj::mv(sandstormApi)) {}
 
   kj::Promise<void> getMainView(GetMainViewContext context) {
     context.getResults(capnp::MessageSize {4, 1}).setView(mainView);
@@ -1650,11 +1839,42 @@ public:
     context.getResults(capnp::MessageSize { 4, 1 }).setHandle(kj::mv(watcher));
     return kj::READY_NOW;
   }
+  // restore @5 (ref :SupervisorObjectId);
+  // # Wraps `MainView.restore()`. Can also restore capabilities hosted by the supervisor.
+  kj::Promise<void> restore(RestoreContext context) override {
+    auto objectId = context.getParams().getRef();
+
+    if (objectId.which() == SupervisorObjectId<>::WAKE_LOCK_NOTIFICATION) {
+      auto wakelockId = objectId.getWakeLockNotification();
+      context.getResults().setCap(
+        sandstormApi->restoreWakeLockNotification(
+          kj::StringPtr(reinterpret_cast<const char *>(wakelockId.begin()),
+          wakelockId.size())
+        )
+      );
+      return kj::READY_NOW;
+    } else {
+      KJ_FAIL_REQUIRE("Supervisor can only restore wakelocks for now.");
+    }
+  }
+
+  kj::Promise<void> drop(DropContext context) override {
+    auto objectId = context.getParams().getRef();
+
+    if (objectId.which() == SupervisorObjectId<>::WAKE_LOCK_NOTIFICATION) {
+      auto wakelockId = objectId.getWakeLockNotification();
+      sandstormApi->decrementNotificationRefCount(kj::StringPtr(reinterpret_cast<const char *>(wakelockId.begin()), wakelockId.size()));
+      return kj::READY_NOW;
+    } else {
+      KJ_FAIL_REQUIRE("Supervisor can only drop wakelocks for now.");
+    }
+  }
 
 private:
   kj::UnixEventPort& eventPort;
   UiView::Client mainView;
   DiskUsageWatcher& diskWatcher;
+  kj::Own<SandstormApiImpl> sandstormApi;
 
   class LogWatcher: public Handle::Server, private kj::TaskSet::ErrorHandler {
   public:
@@ -1775,6 +1995,9 @@ auto SupervisorMain::DefaultSystemConnector::run(
 // -----------------------------------------------------------------------------
 
 [[noreturn]] void SupervisorMain::runSupervisor(int apiFd) {
+  // Make libsodium open the fd to /dev/urandom before we chroot.
+  randombytes_stir();
+
   // We're currently in a somewhat dangerous state: our root directory is controlled
   // by the app.  If glibc reads, say, /etc/nsswitch.conf, the grain could take control
   // of the supervisor.  Fix this by chrooting to the supervisor directory.
@@ -1822,6 +2045,8 @@ auto SupervisorMain::DefaultSystemConnector::run(
     return ioContext.provider->getTimer().afterDelay(60 * kj::SECONDS);
   });
 
+  auto coreRedirector = kj::refcounted<CapRedirector>();
+  capnp::Capability::Client coreCap = kj::addRef(*coreRedirector);
   // Compute grain size and watch for changes.
   DiskUsageWatcher diskWatcher(ioContext.unixEventPort);
   auto diskWatcherTask = diskWatcher.init();
@@ -1831,7 +2056,8 @@ auto SupervisorMain::DefaultSystemConnector::run(
       kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC |
       kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP);
   capnp::TwoPartyVatNetwork appNetwork(*appConnection, capnp::rpc::twoparty::Side::SERVER);
-  auto server = capnp::makeRpcServer(appNetwork, kj::heap<SandstormApiImpl>());
+  auto sandstormApi = kj::refcounted<SandstormApiImpl>(grainId, coreCap.castAs<SandstormCore>());
+  auto server = capnp::makeRpcServer(appNetwork, kj::addRef(*sandstormApi));
 
   // Get the app's UiView by restoring a null SturdyRef from it.
   capnp::MallocMessageBuilder message;
@@ -1844,10 +2070,11 @@ auto SupervisorMain::DefaultSystemConnector::run(
   //   want to wrap the UiView and cache session objects.  Perhaps we could do this by making
   //   them persistable, though it's unclear how that would work with SessionContext.
   Supervisor::Client mainCap = kj::heap<SupervisorImpl>(
-      ioContext.unixEventPort, kj::mv(app), diskWatcher);
+      ioContext.unixEventPort, kj::mv(app), diskWatcher, kj::addRef(*sandstormApi));
 
   auto runner = systemConnector->run(ioContext, kj::mv(mainCap));
   auto acceptTask = kj::mv(runner.task);
+  coreRedirector->setTarget(runner.sandstormCore);
 
   // Wait for disconnect or accept loop failure or disk watch failure, then exit.
   acceptTask.exclusiveJoin(kj::mv(diskWatcherTask))

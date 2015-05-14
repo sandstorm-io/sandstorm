@@ -228,6 +228,8 @@ Notifications = new Mongo.Collection("notifications");
 //   grainId:      The grain originating this notification, if any.
 //   userId:       The user receiving the notification.
 //   text:         The JSON-ified LocalizedText to display in the notification.
+//   isUnread:     Boolean indicating if this notification is unread.
+//   timestamp:    Date when this notification was last updated
 
 StatsTokens = new Mongo.Collection("statsTokens");
 // Access tokens for the Stats collection

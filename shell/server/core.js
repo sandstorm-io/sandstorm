@@ -62,7 +62,10 @@ function dismissNotification(notificationId) {
 }
 
 function tryDropNotification(notificationId) {
-  // TODO(soon): This has serious timing issues with Mongo.
+  // TODO(soon): This has serious timing issues with Mongo, since we're relying on it for refcounting
+  // Typically a notification handle will be saved and then immediately closed by the caller.
+  // This means that if Mongo doesn't actually find the ApiToken that was just stored, this method
+  // will dismiss the notification even though it was meant to be persisted.
   var token = ApiTokens.findOne({"frontendRef.notificationHandle": notificationId});
   if (!token) {
     dismissNotification(notificationId);

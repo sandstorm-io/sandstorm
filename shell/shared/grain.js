@@ -642,6 +642,7 @@ Router.map(function () {
       return grainRouteHelper(this,
                               {grainId: grainId, title: title,
                                isOwner: grain && grain.userId && grain.userId === Meteor.userId(),
+                               isDemoUser: isDemoUser(),
                                oldSharingModel: grain && !grain.private},
                                "openSession", grainId,
                                "/grain/" + grainId);

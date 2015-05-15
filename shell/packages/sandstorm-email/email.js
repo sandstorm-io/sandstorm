@@ -41,7 +41,7 @@ var makePool = function (mailUrlString) {
 
 // We construct smtpPool at the first call to Email.send, so that
 // Meteor.startup code can set $MAIL_URL.
-var smtpPoolFuture = new Future();
+var pool;
 var configured = false;
 
 Meteor.startup(function() {
@@ -65,17 +65,12 @@ var getPool = function () {
   // We check MAIL_URL in case someone else set it in Meteor.startup code.
   if (!configured) {
     configured = true;
-    // XXX allow reconfiguration when the app config changes
-    if (smtpPoolFuture.isResolved())
-      return;
     var url = getSmtpUrl();
-    var pool = null;
     if (url)
       pool = makePool(url);
-    smtpPoolFuture.return(pool);
   }
 
-  return smtpPoolFuture.wait();
+  return pool;
 };
 
 var next_devmode_mail_id = 0;
@@ -176,6 +171,6 @@ SandstormEmail.rawSend = function (mc) {
   if (pool) {
     smtpSend(pool, mc);
   } else {
-    devModeSend(mc);
+    throw new Exception("SMTP pool is misconfigured.");
   }
 };

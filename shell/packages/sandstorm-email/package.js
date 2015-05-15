@@ -1,5 +1,5 @@
 Package.describe({
-  summary: "Send email messages. Forked from meteor/email.",
+  summary: "Send email messages. Forked from meteor/email (https://github.com/meteor/meteor/tree/092b97d2da2794dcd30167e0008ab0b0a1e444fc/packages/email).",
   version: "0.1.0"
 });
 

@@ -291,6 +291,15 @@ if (Meteor.isServer) {
   var Fs = Npm.require("fs");
   var SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + "/adminToken";
 
+  var getSmtpUrl = function () {
+    var setting = Settings.findOne({_id: "smtpUrl"});
+    if (setting) {
+      return setting.value;
+    } else {
+      return process.env.MAIL_URL;
+    }
+  };
+
   var tokenIsValid = function(token) {
     if (Fs.existsSync(SANDSTORM_ADMIN_TOKEN)) {
       var stats = Fs.statSync(SANDSTORM_ADMIN_TOKEN);

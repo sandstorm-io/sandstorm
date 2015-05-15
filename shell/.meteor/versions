@@ -62,6 +62,7 @@ routepolicy@1.0.3
 sandstorm-accounts-oauth@1.1.4
 sandstorm-accounts-packages@0.1.0
 sandstorm-accounts-ui@0.1.0
+sandstorm-email@0.1.0
 service-configuration@1.0.3
 session@1.0.5
 sha@1.0.2

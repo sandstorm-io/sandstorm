@@ -2,8 +2,16 @@ var Future = Npm.require('fibers/future');
 var urlModule = Npm.require('url');
 var MailComposer = Npm.require('mailcomposer').MailComposer;
 
-Email = {};
-EmailTest = {};
+SandstormEmail = {};
+
+var getSmtpUrl = function () {
+  var setting = Settings.findOne({_id: "smtpUrl"});
+  if (setting) {
+    return setting.value;
+  } else {
+    return process.env.MAIL_URL;
+  }
+};
 
 var makePool = function (mailUrlString) {
   var mailUrl = urlModule.parse(mailUrlString);
@@ -33,23 +41,35 @@ var makePool = function (mailUrlString) {
 
 // We construct smtpPool at the first call to Email.send, so that
 // Meteor.startup code can set $MAIL_URL.
-var smtpPoolFuture = new Future;;
+var smtpPoolFuture = new Future();
 var configured = false;
+
+Meteor.startup(function() {
+  Settings.find({_id: "smtpUrl"}).observeChanges({
+    removed : function () {
+      configured = false;
+    },
+    changed : function () {
+      configured = false;
+    },
+    added : function () {
+      configured = false;
+    }
+  });
+});
 
 var getPool = function () {
   // We check MAIL_URL in case someone else set it in Meteor.startup code.
   if (!configured) {
     configured = true;
-    AppConfig.configurePackage('email', function (config) {
-      // XXX allow reconfiguration when the app config changes
-      if (smtpPoolFuture.isResolved())
-        return;
-      var url = config.url || process.env.MAIL_URL;
-      var pool = null;
-      if (url)
-        pool = makePool(url);
-      smtpPoolFuture.return(pool);
-    });
+    // XXX allow reconfiguration when the app config changes
+    if (smtpPoolFuture.isResolved())
+      return;
+    var url = getSmtpUrl();
+    var pool = null;
+    if (url)
+      pool = makePool(url);
+    smtpPoolFuture.return(pool);
   }
 
   return smtpPoolFuture.wait();
@@ -57,16 +77,6 @@ var getPool = function () {
 
 var next_devmode_mail_id = 0;
 var output_stream = process.stdout;
-
-// Testing hooks
-EmailTest.overrideOutputStream = function (stream) {
-  next_devmode_mail_id = 0;
-  output_stream = stream;
-};
-
-EmailTest.restoreOutputStream = function () {
-  output_stream = process.stdout;
-};
 
 var devModeSend = function (mc) {
   var devmode_mail_id = next_devmode_mail_id++;
@@ -89,18 +99,6 @@ var devModeSend = function (mc) {
 
 var smtpSend = function (pool, mc) {
   pool._future_wrapped_sendMail(mc).wait();
-};
-
-/**
- * Mock out email sending (eg, during a test.) This is private for now.
- *
- * f receives the arguments to Email.send and should return true to go
- * ahead and send the email (or at least, try subsequent hooks), or
- * false to skip sending.
- */
-var sendHooks = [];
-EmailTest.hookSend = function (f) {
-  sendHooks.push(f);
 };
 
 // Old comment below
@@ -138,11 +136,7 @@ EmailTest.hookSend = function (f) {
  * @param {String} [options.text|html] Mail body (in plain text or HTML)
  * @param {Object} [options.headers] Dictionary of custom headers
  */
-Email.send = function (options) {
-  for (var i = 0; i < sendHooks.length; i++)
-    if (! sendHooks[i](options))
-      return;
-
+SandstormEmail.send = function (options) {
   var mc = new MailComposer();
 
   // setup message data
@@ -163,6 +157,23 @@ Email.send = function (options) {
     mc.addHeader(name, value);
   });
 
+  var pool = getPool();
+  if (pool) {
+    smtpSend(pool, mc);
+  } else {
+    devModeSend(mc);
+  }
+};
+
+/**
+ * @summary Sends a raw email with a MailComposer object.
+ * Throws an `Error` on failure to contact mail server
+ * or if mail server returns an error. All fields should match
+ * [RFC5322](http://tools.ietf.org/html/rfc5322) specification.
+ * @locus Server
+ * @param {Object} mc A MailCompser object that you wish to send
+*/
+SandstormEmail.rawSend = function (mc) {
   var pool = getPool();
   if (pool) {
     smtpSend(pool, mc);

@@ -25,3 +25,7 @@ bundle/
 .vagrant/
 phantomjsdriver.log
 selenium-debug.log
+
+*~
+*#
+.#*

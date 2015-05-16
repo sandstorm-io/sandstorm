@@ -388,12 +388,8 @@ assert_userns_clone_works_or_can_be_made_to_work() {
   # If, however, they _can't_ set the sysctl, make the install fail
   # now.
   if [ "$SYSCTL_PROBABLY_WORKS" = "no" ] ; then
-    echo "# sysctl -w kernel.unprivileged_userns_clone=1"
-    echo "# cat >> /etc/sysctl.conf << __EOF__"
-    echo ""
-    echo "# Enable non-root users to create sandboxes (needed by Sandstorm)."
-    echo "kernel.unprivileged_userns_clone = 1"
-    echo "__EOF__"
+    echo "  sysctl -w kernel.unprivileged_userns_clone=1"
+    echo "  echo 'kernel.unprivileged_userns_clone = 1' >> /etc/sysctl.conf"
     echo ""
     fail "You are using a Debian-derived Linux kernel, which needs a configuration option" \
          "set in order to run Sandstorm. To set that option, please run the shell commands" \

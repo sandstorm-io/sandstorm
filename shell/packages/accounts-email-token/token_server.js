@@ -26,6 +26,13 @@ var checkToken = function (user, token) {
   return found;
 };
 
+// The name of the email package to use. It refers to a variable named in the global scope.
+var EMAIL_PACKAGE= "Email";
+
+Accounts.emailToken.setEmailPackage = function (packageName) {
+  EMAIL_PACKAGE = packageName;
+};
+
 // Handler to login with a token.
 Accounts.registerLoginHandler("emailToken", function (options) {
   if (!options.emailToken)
@@ -100,7 +107,7 @@ var sendTokenEmail = function (email, token) {
           "This information will expire in 15 minutes.\n"
   };
 
-  Email.send(options);
+  global[EMAIL_PACKAGE].send(options);
 };
 
 ///

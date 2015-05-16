@@ -273,82 +273,9 @@ hackSendEmail = function (session, email) {
           "Please feel free to contact us if this is a problem.");
     }
 
-    getSmtpPool()._future_wrapped_sendMail(mc).wait();
+    SandstormEmail.rawSend(mc);
   }).bind(this)).catch(function (err) {
     console.error("Error sending e-mail:", err.stack);
     throw err;
   });
 };
-
-// =======================================================================================
-// makeSmtpPool and getSmtpPool are lifted from the Meteor email package (MIT license)
-
-var makeSmtpPool = function (mailUrlString) {
-  var mailUrl = Url.parse(mailUrlString);
-  if (mailUrl.protocol !== "smtp:") {
-    throw new Error("Email protocol in $MAIL_URL (" +
-                    mailUrlString + ") must be 'smtp'");
-  }
-
-  var port = +(mailUrl.port);
-  var auth = false;
-  if (mailUrl.auth) {
-    var parts = mailUrl.auth.split(":", 2);
-    auth = {user: parts[0] && decodeURIComponent(parts[0]),
-            pass: parts[1] && decodeURIComponent(parts[1])};
-  }
-
-  var pool = simplesmtp.createClientPool(
-    port,  // Defaults to 25
-    mailUrl.hostname,  // Defaults to "localhost"
-    { secureConnection: (port === 465),
-      // XXX allow maxConnections to be configured?
-      auth: auth,
-      connectionTimeout: CLIENT_TIMEOUT,
-      socketTimeout: CLIENT_TIMEOUT });
-
-  pool._future_wrapped_sendMail = _.bind(Future.wrap(pool.sendMail), pool);
-  return pool;
-};
-
-// We construct smtpPool at the first call to Email.send, so that
-// Meteor.startup code can set $MAIL_URL.
-var smtpPoolFuture;
-var configured = false;
-
-var getSmtpPool = function () {
-  // We check MAIL_URL in case someone else set it in Meteor.startup code.
-  if (!configured) {
-    smtpPoolFuture = new Future();
-    configured = true;
-    var url = getSmtpUrl();
-    var pool = null;
-    if (url)
-      pool = makeSmtpPool(url);
-    smtpPoolFuture.return(pool);
-  }
-
-  return smtpPoolFuture.wait();
-};
-
-getSmtpUrl = function () {
-  var setting = Settings.findOne({_id: "smtpUrl"});
-  if (setting) {
-    return setting.value;
-  } else {
-    return process.env.MAIL_URL;
-  }
-};
-
-
-Settings.find({_id: "smtpUrl"}).observeChanges({
-  removed : function () {
-    configured = false;
-  },
-  changed : function () {
-    configured = false;
-  },
-  added : function () {
-    configured = false;
-  }
-});

@@ -63,12 +63,27 @@ if (Meteor.isServer) {
     }
   });
 
+  var uploadTokens = {};
+  // Not all users are allowed to upload apps. We need to manually implement authorization
+  // because Meteor.userId() is not available in server-side routes.
+
   Meteor.methods({
     cancelDownload: function (packageId) {
       check(packageId, String);
 
       // TODO(security):  Only let user cancel download if they initiated it.
       cancelDownload(packageId);
+    },
+
+    newUploadToken: function () {
+      if (!isSignedUp()) {
+        throw new Meteor.Error(403, "Unauthorized", "Only invited users can upload apps.");
+      }
+      var token = Random.id();
+      uploadTokens[token] = setTimeout(function () {
+        delete uploadTokens[token];
+      }, 20 * 60 * 1000);
+      return token;
     }
   });
 }
@@ -240,8 +255,14 @@ if (Meteor.isClient) {
         });
       }
 
-      xhr.open("POST", "/upload", true);
-      xhr.send(file);
+      Meteor.call("newUploadToken", function (err, result) {
+        if (err) {
+          console.error(err);
+        } else {
+          xhr.open("POST", "/upload/" + result, true);
+          xhr.send(file);
+        }
+      });
     }
   });
 }
@@ -419,10 +440,16 @@ Router.map(function () {
 
   this.route("upload", {
     where: "server",
-    path: "/upload",
+    path: "/upload/:token",
 
     action: function () {
-      if (this.request.method === "POST") {
+      if (!this.params.token || !uploadTokens[this.params.token]) {
+        this.response.writeHead(403, {
+          "Content-Type": "text/plain"
+        });
+        this.response.write("Invalid upload token.");
+        this.response.end();
+      } else if (this.request.method === "POST") {
         try {
           var self = this;
           var packageId = promiseToFuture(doClientUpload(this.request)).wait();
@@ -432,6 +459,8 @@ Router.map(function () {
           });
           self.response.write(packageId);
           self.response.end();
+          clearTimeout(uploadTokens[this.params.token]);
+          delete uploadTokens[this.params.token];
         } catch(error) {
           console.error(error.stack);
           self.response.writeHead(500, {

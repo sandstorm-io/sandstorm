@@ -427,7 +427,7 @@ enable_userns_sysctl_if_needed() {
   if [ "${PRINT_USERNS_PROMPT}" = "yes" ] ; then
     echo "Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled."
     echo "Currently, it is not enabled on your system."
-    if prompt-yesno "Shall I enable it for you?" yes; then
+    if prompt-yesno "Shall I enable it for you (including in sysctl.conf)?" yes; then
       ACCEPTED_SYSCTL_SWITCH="yes"
     fi
   fi

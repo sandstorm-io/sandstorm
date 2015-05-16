@@ -433,21 +433,19 @@ enable_userns_sysctl_if_needed() {
   fi
 
   if [ "$ACCEPTED_SYSCTL_SWITCH" = "yes" ] ; then
-    if [ ! -e /etc/sysctl.conf ]; then
-      fail "Can't find /etc/sysctl.conf. I don't know how to set sysctls" \
-           "permanently on your system. Please set it manually and try again."
-    fi
+    # Make the change first.
+    sysctl -w kernel.unprivileged_userns_clone=1 >/dev/null \
+      || fail "'sysctl -w" \
+              "kernel.unprivileged_userns_clone=1' failed. If you are inside docker, please run the" \
+              "command manually inside your host and update /etc/sysctl.conf."
 
+    # If that worked, then make the change stick.
     cat >> /etc/sysctl.conf << __EOF__
 
 # Enable non-root users to create sandboxes (needed by Sandstorm).
 kernel.unprivileged_userns_clone = 1
 __EOF__
 
-    sysctl -w kernel.unprivileged_userns_clone=1 >/dev/null \
-      || fail "'sysctl -w" \
-              "kernel.unprivileged_userns_clone=1' failed. If you are inside docker, please run the" \
-              "command manually inside your host and update /etc/sysctl.conf."
   else
     fail "OK, please enable this option yourself and try again."
   fi

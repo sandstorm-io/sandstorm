@@ -41,6 +41,9 @@ limitations under the License.
   </div>
   {{else}}
   <div id="topbar-right">
+    {{#if isDemoUser}}
+    <a id="alert" href="https://sandstorm.io/install/">Run your own »</a>
+    {{/if}}
     {{> loginButtons align="right"}}
   </div>
   {{/if}}

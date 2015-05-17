@@ -86,9 +86,9 @@ body {
   z-index: 3;
 }
 
-#topbar-right #crowdfunding {
+#topbar-right #alert {
   display: inline-block;
-  background-color: #eb1478;
+  background-color: #762f87;
   color: white;
   text-decoration: none;
   padding-left: 8px;
@@ -96,8 +96,8 @@ body {
   margin-right: 8px;
 }
 
-#topbar-right #crowdfunding:hover {
-  background-color: #F086B7;
+#topbar-right #alert:hover {
+  background-color: #9d3aa5;
 }
 
 #topbar a {
@@ -241,12 +241,6 @@ img {
   bottom: 0px;
   color: black;
   overflow: auto;
-}
-
-.main-content a {
-  font-weight: bold;
-  text-decoration: none;
-  color: #428bca;
 }
 
 #app.main-content {
@@ -686,6 +680,11 @@ input.autoSelect {
   text-align: center;
   font-size: 2em;
   margin-bottom: 0;
+}
+#about a {
+  font-weight: bold;
+  text-decoration: none;
+  color: #428bca;
 }
 #about p.heading-subtext {
   text-align: center;

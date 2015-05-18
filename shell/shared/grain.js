@@ -410,10 +410,8 @@ if (Meteor.isClient) {
 
       var thisPackage = Packages.findOne({_id: thisPackageId});
 
-      if (thisPackage && thisPackage.manifest) {
-        var manifest = thisPackage.manifest;
-        var action = manifest.actions[0];
-        params = (manifest.appTitle && manifest.appTitle.defaultText) || appNameFromActionName(action.title.defaultText);
+      if (thisPackage) {
+        params = appNameFromPackage(thisPackage);
       }
 
       return params;

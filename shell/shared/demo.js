@@ -287,10 +287,7 @@ Router.map(function () {
       var appName = 'missing package';
 
       if (thisPackage) {
-        var manifest = thisPackage.manifest;
-        var action = manifest.actions[0];
-        appName = (manifest.appTitle && manifest.appTitle.defaultText) ||
-                  appNameFromActionName(action.title.defaultText);
+        appName = appNameFromPackage(thisPackage);
       }
 
       return {

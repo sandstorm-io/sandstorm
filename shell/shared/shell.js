@@ -479,6 +479,16 @@ function isMissingWildcardParent() {
   return Meteor.settings && Meteor.settings.public && Meteor.settings.public.missingWildcardParentUrl;
 }
 
+appNameFromPackage = function(package) {
+  // This function takes a Package object from Mongo and returns an
+  // app title.
+  var manifest = package.manifest;
+  var action = manifest.actions[0];
+  appName = (manifest.appTitle && manifest.appTitle.defaultText) ||
+    appNameFromActionName(action.title.defaultText);
+  return appName;
+}
+
 appNameFromActionName = function(name) {
   // Hack: Historically we only had action titles, like "New Etherpad Document", not app
   //   titles. But for this UI we want app titles. As a transitionary measure, try to

@@ -383,6 +383,36 @@ if (Meteor.isClient) {
     }
   });
 
+  Template.topBar.helpers({
+    installPageParams: function() {
+      // The https://sandstorm.io/install/ page takes a
+      // window.location.hash parameter. This code assumes that the
+      // install link only shows up if this is a demo user. Therefore,
+      // for our purposes, it should contain:
+      //
+      // - The current app title, if we can determine it, or
+      //
+      // - The string "demo", if we can't determine the current app
+      //   title.
+      var params = "demo";
+
+      // Try our hardest to find the package's name, falling back on
+      // the default if needed.
+      if (this.grainId) {
+        var thisPackageId = Grains.findOne(
+          {_id: this.grainId}).packageId;
+        if (thisPackageId) {
+          var thisPackage = Packages.findOne({_id: thisPackageId});
+          if (thisPackage) {
+            params = appNameFromPackage(thisPackage);
+          }
+        }
+      }
+
+      return params;
+    }
+  });
+
   Template.grain.helpers({
     grainSize: function () {
       if (this.sessionId) {
@@ -618,10 +648,21 @@ Router.map(function () {
     path: "/grain/:grainId/:path(.*)?",
 
     waitOn: function () {
-      return [
+      // All grains need this information.
+      var subscriptions = [
         Meteor.subscribe("grainTopBar", this.params.grainId),
         Meteor.subscribe("devApps"),
       ];
+
+      // Grains on the demo server need the app title in order to
+      // customize the link to https://sandstorm.io/install/#appTitle.
+      if (Meteor.settings && Meteor.settings.public &&
+          Meteor.settings.public.allowDemoAccounts) {
+        subscriptions.push(
+          Meteor.subscribe("packageByGrainId", this.params.grainId));
+      }
+
+      return subscriptions;
     },
 
     data: function () {
@@ -642,6 +683,7 @@ Router.map(function () {
       return grainRouteHelper(this,
                               {grainId: grainId, title: title,
                                isOwner: grain && grain.userId && grain.userId === Meteor.userId(),
+                               isDemoUser: isDemoUser(),
                                oldSharingModel: grain && !grain.private},
                                "openSession", grainId,
                                "/grain/" + grainId);

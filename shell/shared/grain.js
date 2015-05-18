@@ -383,6 +383,43 @@ if (Meteor.isClient) {
     }
   });
 
+  Template.topBar.helpers({
+    installPageParams: function() {
+      // The https://sandstorm.io/install/ page takes a
+      // window.location.hash parameter. This code assumes that the
+      // install link only shows up if this is a demo user. Therefore,
+      // for our purposes, it should contain:
+      //
+      // - The current app title, if we can determine it, or
+      //
+      // - The string "demo", if we can't determine the current app
+      //   title.
+      var params = "demo";
+
+      if (! this.grainId) {
+        return params;
+      }
+
+      var thisPackageId = Grains.findOne(
+        {_id: this.grainId}).packageId;
+
+      // If we don't seem to find the package, then bail out now.
+      if (! thisPackageId) {
+        return params;
+      }
+
+      var thisPackage = Packages.findOne({_id: thisPackageId});
+
+      if (thisPackage && thisPackage.manifest) {
+        var manifest = thisPackage.manifest;
+        var action = manifest.actions[0];
+        params = (manifest.appTitle && manifest.appTitle.defaultText) || appNameFromActionName(action.title.defaultText);
+      }
+
+      return params;
+    }
+  });
+
   Template.grain.helpers({
     grainSize: function () {
       if (this.sessionId) {
@@ -618,10 +655,21 @@ Router.map(function () {
     path: "/grain/:grainId/:path(.*)?",
 
     waitOn: function () {
-      return [
+      // All grains need this information.
+      var subscriptions = [
         Meteor.subscribe("grainTopBar", this.params.grainId),
         Meteor.subscribe("devApps"),
       ];
+
+      // Grains on the demo server need the app title in order to
+      // customize the link to https://sandstorm.io/install/#appTitle.
+      if (Meteor.settings && Meteor.settings.public &&
+          Meteor.settings.public.allowDemoAccounts) {
+        subscriptions.push(
+          Meteor.subscribe("packageByGrainId", this.params.grainId));
+      }
+
+      return subscriptions;
     },
 
     data: function () {

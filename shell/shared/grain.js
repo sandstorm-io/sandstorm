@@ -396,22 +396,17 @@ if (Meteor.isClient) {
       //   title.
       var params = "demo";
 
-      if (! this.grainId) {
-        return params;
-      }
-
-      var thisPackageId = Grains.findOne(
-        {_id: this.grainId}).packageId;
-
-      // If we don't seem to find the package, then bail out now.
-      if (! thisPackageId) {
-        return params;
-      }
-
-      var thisPackage = Packages.findOne({_id: thisPackageId});
-
-      if (thisPackage) {
-        params = appNameFromPackage(thisPackage);
+      // Try our hardest to find the package's name, falling back on
+      // the default if needed.
+      if (this.grainId) {
+        var thisPackageId = Grains.findOne(
+          {_id: this.grainId}).packageId;
+        if (thisPackageId) {
+          var thisPackage = Packages.findOne({_id: thisPackageId});
+          if (thisPackage) {
+            params = appNameFromPackage(thisPackage);
+          }
+        }
       }
 
       return params;

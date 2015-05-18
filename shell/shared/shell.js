@@ -72,8 +72,12 @@ if (Meteor.isServer) {
   });
 
   Meteor.publish("notifications", function () {
-    return Notifications.find({userId: this.userId},
+    var notifications =  Notifications.find({userId: this.userId},
       {fields: {timestamp: 1, text: 1, grainId: 1, userId: 1, isUnread: 1}});
+    var grainIds = notifications.map(function (row) {
+      return row.grainId;
+    });
+    return [notifications, Grains.find({_id: {$in: grainIds}})];
   });
 
   Meteor.publish("hasUsers", function () {
@@ -461,9 +465,6 @@ if (Meteor.isClient) {
   Template.notifications.helpers({
     notifications: function () {
       return Notifications.find({userId: Meteor.userId()}, {sort: {timestamp: -1}}).map(function (row) {
-        // TODO(someday): make this work with grains that are not owned by the current user.
-        // Currently we only subscribe to grains owned by this user, and the following query will
-        // fail for shared grains.
         var grain = Grains.findOne({_id: row.grainId});
         if (grain) {
           row.grainTitle = grain.title;

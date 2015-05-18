@@ -30,12 +30,13 @@ var makeSandstormCore = function (grainId) {
   return new Capnp.Capability(new SandstormCoreImpl(grainId), SandstormCore);
 };
 
-function NotificationHandle(notificationId) {
+function NotificationHandle(notificationId, saved) {
   this.notificationId = notificationId;
+  this.saved = saved;
 }
 
-function makeNotificationHandle(notificationId) {
-  return new Capnp.Capability(new NotificationHandle(notificationId), HandlePersistent);
+function makeNotificationHandle(notificationId, saved) {
+  return new Capnp.Capability(new NotificationHandle(notificationId, saved), HandlePersistent);
 }
 
 function dropWakelock(grainId, wakeLockNotificationId) {
@@ -61,19 +62,11 @@ function dismissNotification(notificationId) {
   }
 }
 
-function tryDropNotification(notificationId) {
-  // TODO(soon): This has serious timing issues with Mongo, since we're relying on it for refcounting
-  // Typically a notification handle will be saved and then immediately closed by the caller.
-  // This means that if Mongo doesn't actually find the ApiToken that was just stored, this method
-  // will dismiss the notification even though it was meant to be persisted.
-  var token = ApiTokens.findOne({"frontendRef.notificationHandle": notificationId});
-  if (!token) {
-    dismissNotification(notificationId);
-  }
-}
-
 Meteor.methods({
   dismissNotification: function (notificationId) {
+    // This will remove notifications from the database and from view of the user.
+    // For ongoing notifications, it will begin the process of cancelling and dropping them from
+    // the app.
     var notification = Notifications.findOne({_id: notificationId});
     if (!notification) {
       throw new Meteor.Error(404, "Notification id not found.");
@@ -84,6 +77,7 @@ Meteor.methods({
     }
   },
   readAllNotifications: function () {
+    // Marks all notifications as read for the current user.
     if (!Meteor.userId()) {
       throw new Meteor.Error(403, "User not logged in.");
     }
@@ -94,7 +88,9 @@ Meteor.methods({
 NotificationHandle.prototype.close = function () {
   var self = this;
   return inMeteor(function () {
-    tryDropNotification(self.notificationId);
+    if (!self.saved) {
+      dismissNotification(self.notificationId);
+    }
   });
 };
 
@@ -109,6 +105,7 @@ NotificationHandle.prototype.save = function () {
         notificationHandle: self.notificationId
       }
     });
+    self.saved = true;
     return {sturdyRef: sturdyRef};
   });
 };
@@ -123,7 +120,7 @@ SandstormCoreImpl.prototype.restore = function (sturdyRef) {
     }
     if (token.frontendRef) {
       var notificationId = token.frontendRef.notificationHandle;
-      return {cap: makeNotificationHandle(notificationId)};
+      return {cap: makeNotificationHandle(notificationId, true)};
     } else if (token.objectId) {
       return waitPromise(openGrain(self.grainId).supervisor.restore(token.objectId).catch(function (err) {
         if (shouldRestartGrain(err, 0)) {
@@ -145,7 +142,11 @@ var dropToken = function (grainId, sturdyRef) {
   if (token.frontendRef) {
     var notificationId = token.frontendRef.notificationHandle;
     ApiTokens.remove({_id: hashedSturdyRef});
-    tryDropNotification(notificationId);
+    var anyToken = ApiTokens.findOne({"frontendRef.notificationHandle": notificationId});
+    if (!anyToken) {
+      // No other tokens referencing this notification exist, so dismiss the notification
+      dismissNotification(notificationId);
+    }
   } else if (token.objectId) {
     dropWakelock(grainId, token.objectId.wakeLockNotification);
   } else {
@@ -203,7 +204,7 @@ SandstormCoreImpl.prototype.getOwnerNotificationTarget = function() {
         isUnread: true
       });
 
-      return {handle: makeNotificationHandle(notificationId)};
+      return {handle: makeNotificationHandle(notificationId, false)};
     });
   }}};
 };

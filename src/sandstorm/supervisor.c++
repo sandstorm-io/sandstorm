@@ -1350,15 +1350,22 @@ void SupervisorMain::unshareNetwork() {
 bool SupervisorMain::checkIfIpTablesLoaded() {
   // Detect if the iptables kernel module is available. Must be called before entering the
   // sandbox since this requires /proc.
+  //
+  // TODO(soon): This check is wrong because iptables could be compiled directly into the kernel
+  //   rather than as a module. Indeed, /proc/modules is reported to be sometimes absent in the
+  //   wild, perhaps when the kernel is compiled without module support. For now we'll assume
+  //   iptables is unavailable in that case.
 
-  kj::FdInputStream rawIn(raiiOpen("/proc/modules", O_RDONLY));
-  kj::BufferedInputStreamWrapper bufferedIn(rawIn);
+  KJ_IF_MAYBE(procModules, raiiOpenIfExists("/proc/modules", O_RDONLY)) {
+    kj::FdInputStream rawIn(kj::mv(*procModules));
+    kj::BufferedInputStreamWrapper bufferedIn(rawIn);
 
-  for (;;) {
-    KJ_IF_MAYBE(line, readLine(bufferedIn)) {
-      if (line->startsWith("ip_tables ")) return true;
-    } else {
-      break;
+    for (;;) {
+      KJ_IF_MAYBE(line, readLine(bufferedIn)) {
+        if (line->startsWith("ip_tables ")) return true;
+      } else {
+        break;
+      }
     }
   }
 

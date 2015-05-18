@@ -2398,11 +2398,9 @@ private:
 
     // If /var/mongo/passwd exists, we interpret it as containing the password for a Mongo user
     // "sandstorm", and assume we are expected to log in as this user.
-    kj::String password;
     kj::String passwordArg;
     if (access("/var/mongo/passwd", F_OK) == 0) {
-      password = trim(readAll(raiiOpen("/var/mongo/passwd", O_RDONLY)));
-      passwordArg = kj::str("--password=", password);
+      passwordArg = kj::str("--password=", trim(readAll(raiiOpen("/var/mongo/passwd", O_RDONLY))));
 
       args.add("-u");
       args.add("sandstorm");

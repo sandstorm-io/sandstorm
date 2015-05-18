@@ -86,9 +86,9 @@ body {
   z-index: 3;
 }
 
-#topbar-right #crowdfunding {
+#topbar-right #alert {
   display: inline-block;
-  background-color: #eb1478;
+  background-color: #762f87;
   color: white;
   text-decoration: none;
   padding-left: 8px;
@@ -96,8 +96,8 @@ body {
   margin-right: 8px;
 }
 
-#topbar-right #crowdfunding:hover {
-  background-color: #F086B7;
+#topbar-right #alert:hover {
+  background-color: #9d3aa5;
 }
 
 #topbar a {

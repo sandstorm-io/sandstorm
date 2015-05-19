@@ -1609,11 +1609,14 @@ private:
           // TODO(someday): Support localization properly?
 
           auto text = kj::str(
-            "appId: ", appId, "\n"
-            "packageId: ", packageId, "\n"
-            "title: ", manifest.getAppTitle().getDefaultText(), "\n"
-            "version: ", manifest.getAppVersion(), "\n"
-            "marketingVersion: ", manifest.getAppMarketingVersion().getDefaultText(), "\n");
+            "{\n"
+            "  \"appId\": \"", appId, "\",\n"
+            "  \"packageId\": \"", packageId, "\",\n"
+            "  \"title\": \"", escapeText(manifest.getAppTitle().getDefaultText()), "\",\n"
+            "  \"version\": ", manifest.getAppVersion(), ",\n"
+            "  \"marketingVersion\": \"",
+                escapeText(manifest.getAppMarketingVersion().getDefaultText()), "\"\n"
+            "}\n");
 
           kj::FdOutputStream(STDOUT_FILENO).write(text.begin(), text.size());
           context.exit();
@@ -1626,6 +1629,40 @@ private:
     }
 
     return true;
+  }
+
+  static kj::String escapeText(kj::StringPtr text) {
+    static const char HEXDIGITS[] = "0123456789abcdef";
+    kj::Vector<char> escaped(text.size());
+
+    for (char c: text) {
+      switch (c) {
+        case '\a': escaped.addAll(kj::StringPtr("\\a")); break;
+        case '\b': escaped.addAll(kj::StringPtr("\\b")); break;
+        case '\f': escaped.addAll(kj::StringPtr("\\f")); break;
+        case '\n': escaped.addAll(kj::StringPtr("\\n")); break;
+        case '\r': escaped.addAll(kj::StringPtr("\\r")); break;
+        case '\t': escaped.addAll(kj::StringPtr("\\t")); break;
+        case '\v': escaped.addAll(kj::StringPtr("\\v")); break;
+        case '\'': escaped.addAll(kj::StringPtr("\\\'")); break;
+        case '\"': escaped.addAll(kj::StringPtr("\\\"")); break;
+        case '\\': escaped.addAll(kj::StringPtr("\\\\")); break;
+        default:
+          if (c < 0x20) {
+            escaped.add('\\');
+            escaped.add('x');
+            uint8_t c2 = c;
+            escaped.add(HEXDIGITS[c2 / 16]);
+            escaped.add(HEXDIGITS[c2 % 16]);
+          } else {
+            escaped.add(c);
+          }
+          break;
+      }
+    }
+
+    escaped.add('\0');
+    return kj::String(escaped.releaseAsArray());
   }
 
   // =====================================================================================

@@ -302,11 +302,7 @@ if (Meteor.isClient) {
     splashDialog: function() {
       var setting = Settings.findOne("splashDialog");
       return (setting && setting.value) || DEFAULT_SPLASH_DIALOG;
-    },
-
-    userId: function () {
-      return Meteor.userId();
-    },
+    }
   });
 
   Template.root.events({
@@ -581,7 +577,8 @@ Router.map(function () {
         allowDemoAccounts: allowDemoAccounts,
         apps: apps,
         showMenu: Session.get("showMenu"),
-        appMap: appMap
+        appMap: appMap,
+        hideSplashScreen: isSignedUpOrDemo() || RoleAssignments.findOne({recipient: Meteor.userId()})
       };
     }
   });

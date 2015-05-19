@@ -21,7 +21,7 @@
 #include <kj/io.h>
 #include <capnp/serialize.h>
 #include <sodium/crypto_sign.h>
-#include <sodium/crypto_hash.h>
+#include <sodium/crypto_hash_sha512.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -411,6 +411,8 @@ public:
                        "Create an spk from a directory tree and a signing key.")
         .addSubCommand("unpack", KJ_BIND_METHOD(*this, getUnpackMain),
                        "Unpack an spk to a directory, verifying its signature.")
+        .addSubCommand("verify", KJ_BIND_METHOD(*this, getVerifyMain),
+                       "Verify signature on an spk and output the app ID (without unpacking).")
         .addSubCommand("dev", KJ_BIND_METHOD(*this, getDevMain),
                        "Run an app in dev mode."))
         .build();
@@ -976,14 +978,14 @@ private:
     }
 
     // Hash it.
-    byte hash[crypto_hash_BYTES];
-    crypto_hash(hash, tmpData.begin(), tmpData.size());
+    byte hash[crypto_hash_sha512_BYTES];
+    crypto_hash_sha512(hash, tmpData.begin(), tmpData.size());
 
     // Generate the signature.
     capnp::MallocMessageBuilder signatureMessage;
     spk::Signature::Builder signature = signatureMessage.getRoot<spk::Signature>();
     signature.setPublicKey(key.getPublicKey());
-    unsigned long long siglen = crypto_hash_BYTES + crypto_sign_BYTES;
+    unsigned long long siglen = crypto_hash_sha512_BYTES + crypto_sign_BYTES;
     crypto_sign(signature.initSignature(siglen).begin(), &siglen,
                 hash, sizeof(hash), key.getPrivateKey().begin());
 
@@ -1285,7 +1287,7 @@ private:
   kj::MainFunc getUnpackMain() {
     return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
             "Check that <spkfile>'s signature is valid.  If so, unpack it to <outdir> and "
-            "print the app ID and filename.  If <outdir> is not specified, it will be "
+            "print the app ID.  If <outdir> is not specified, it will be "
             "chosen by removing the suffix \".spk\" from the input file name.")
         .expectArg("<spkfile>", KJ_BIND_METHOD(*this, setUnpackSpkfile))
         .expectOptionalArg("<outdir>", KJ_BIND_METHOD(*this, setUnpackDirname))
@@ -1352,102 +1354,106 @@ private:
 
   friend kj::String unpackSpk(int spkfd, kj::StringPtr outdir, kj::StringPtr tmpdir);
 
+  static kj::String verifyImpl(
+      int spkfd, int tmpfile, kj::Function<kj::String(kj::StringPtr problem)> validationError) {
+    // Read package form spkfd, check the validity and signature, and return the appId. Also write
+    // the uncompressed archive to `tmpfile`.
+
+    // Check the magic number.
+    auto expectedMagic = spk::MAGIC_NUMBER.get();
+    byte magic[expectedMagic.size()];
+    kj::FdInputStream(spkfd).read(magic, expectedMagic.size());
+    for (uint i: kj::indices(expectedMagic)) {
+      if (magic[i] != expectedMagic[i]) {
+        return validationError("Does not appear to be an .spk (bad magic number).");
+      }
+    }
+
+    // Decompress the remaining bytes in the SPK using xz.
+    int stdoutPipe[2];
+    KJ_SYSCALL(pipe2(stdoutPipe, O_CLOEXEC));
+    kj::AutoCloseFd stdoutReadEnd(stdoutPipe[0]);
+    kj::AutoCloseFd stdoutWriteEnd(stdoutPipe[1]);
+
+    Subprocess::Options childOptions({"xz", "-dc"});
+    childOptions.stdin = spkfd;
+    childOptions.stdout = stdoutWriteEnd;
+    Subprocess child(kj::mv(childOptions));
+
+    stdoutWriteEnd = nullptr;
+    kj::FdInputStream in(kj::mv(stdoutReadEnd));
+
+    // Read in the signature.
+    byte publicKey[crypto_sign_PUBLICKEYBYTES];
+    byte sigBytes[crypto_hash_sha512_BYTES + crypto_sign_BYTES];
+    {
+      // TODO(security): Set a small limit on signature size?
+      capnp::InputStreamMessageReader signatureMessage(in);
+      auto signature = signatureMessage.getRoot<spk::Signature>();
+      auto pkReader = signature.getPublicKey();
+      if (pkReader.size() != sizeof(publicKey)) {
+        return validationError("Invalid public key.");
+      }
+      memcpy(publicKey, pkReader.begin(), sizeof(publicKey));
+      auto sigReader = signature.getSignature();
+      if (sigReader.size() != sizeof(sigBytes)) {
+        return validationError("Invalid signature format.");
+      }
+      memcpy(sigBytes, sigReader.begin(), sizeof(sigBytes));
+    }
+
+    // Verify the signature.
+    byte expectedHash[sizeof(sigBytes)];
+    unsigned long long hashLength = 0;  // will be overwritten later
+    int result = crypto_sign_open(
+        expectedHash, &hashLength, sigBytes, sizeof(sigBytes), publicKey);
+    if (result != 0) {
+      return validationError("Invalid signature.");
+    }
+    if (hashLength != crypto_hash_sha512_BYTES) {
+      return validationError("Wrong signature size.");
+    }
+
+    // Copy archive part to a temp file, computing hash in the meantime.
+    crypto_hash_sha512_state hashState;
+    crypto_hash_sha512_init(&hashState);
+    kj::FdOutputStream tmpOut(tmpfile);
+    uint64_t totalRead = 0;
+    for (;;) {
+      byte buffer[8192];
+      size_t n = in.tryRead(buffer, 1, sizeof(buffer));
+      if (n == 0) break;
+      crypto_hash_sha512_update(&hashState, buffer, n);
+      totalRead += n;
+      KJ_REQUIRE(totalRead <= APP_SIZE_LIMIT, "App too big after decompress.");
+      tmpOut.write(buffer, n);
+    }
+
+    child.waitForSuccess();
+
+    // Check that hashes match.
+    byte hash[crypto_hash_sha512_BYTES];
+    crypto_hash_sha512_final(&hashState, hash);
+    if (memcmp(expectedHash, hash, crypto_hash_sha512_BYTES) != 0) {
+      return validationError("Signature didn't match package contents.");
+    }
+
+    return base32Encode(publicKey);
+  }
+
   static kj::String unpackImpl(
       int spkfd, kj::StringPtr dirname, kj::StringPtr tmpNear,
       kj::Function<kj::String(kj::StringPtr problem)> validationError) {
-    byte publicKey[crypto_sign_PUBLICKEYBYTES];
-    byte sigBytes[crypto_hash_BYTES + crypto_sign_BYTES];
-    byte expectedHash[sizeof(sigBytes)];
-    unsigned long long hashLength = 0;  // will be overwritten later
+    // TODO(security):  We could at this point chroot into the output directory and unshare
+    //   various resources for extra security, if not for the fact that we need to invoke xz
+    //   later on.  Maybe link against the xz library so that we don't have to exec it?
 
     auto tmpfile = openTemporary(tmpNear);
-
-    // Read the spk, checking the magic number, reading the signature header, and decompressing the
-    // archive to a temp file.
-    {
-      // TODO(security):  We could at this point chroot into the output directory and unshare
-      //   various resources for extra security, if not for the fact that we need to invoke xz
-      //   later on.  Maybe link against the xz library so that we don't have to exec it?
-
-      // Check the magic number.
-      auto expectedMagic = spk::MAGIC_NUMBER.get();
-      byte magic[expectedMagic.size()];
-      kj::FdInputStream(spkfd).read(magic, expectedMagic.size());
-      for (uint i: kj::indices(expectedMagic)) {
-        if (magic[i] != expectedMagic[i]) {
-          return validationError("Does not appear to be an .spk (bad magic number).");
-        }
-      }
-
-      // Decompress the remaining bytes in the SPK using xz.
-      int stdoutPipe[2];
-      KJ_SYSCALL(pipe2(stdoutPipe, O_CLOEXEC));
-      kj::AutoCloseFd stdoutReadEnd(stdoutPipe[0]);
-      kj::AutoCloseFd stdoutWriteEnd(stdoutPipe[1]);
-
-      Subprocess::Options childOptions({"xz", "-dc"});
-      childOptions.stdin = spkfd;
-      childOptions.stdout = stdoutWriteEnd;
-      Subprocess child(kj::mv(childOptions));
-
-      stdoutWriteEnd = nullptr;
-      kj::FdInputStream in(kj::mv(stdoutReadEnd));
-
-      // Read in the signature.
-      {
-        // TODO(security): Set a small limit on signature size?
-        capnp::InputStreamMessageReader signatureMessage(in);
-        auto signature = signatureMessage.getRoot<spk::Signature>();
-        auto pkReader = signature.getPublicKey();
-        if (pkReader.size() != sizeof(publicKey)) {
-          return validationError("Invalid public key.");
-        }
-        memcpy(publicKey, pkReader.begin(), sizeof(publicKey));
-        auto sigReader = signature.getSignature();
-        if (sigReader.size() != sizeof(sigBytes)) {
-          return validationError("Invalid signature format.");
-        }
-        memcpy(sigBytes, sigReader.begin(), sizeof(sigBytes));
-      }
-
-      // Verify the signature.
-      int result = crypto_sign_open(
-          expectedHash, &hashLength, sigBytes, sizeof(sigBytes), publicKey);
-      if (result != 0) {
-        return validationError("Invalid signature.");
-      }
-      if (hashLength != crypto_hash_BYTES) {
-        return validationError("Wrong signature size.");
-      }
-
-      // Copy archive part to a temp file.
-      kj::FdOutputStream tmpOut(tmpfile.get());
-      uint64_t totalRead = 0;
-      for (;;) {
-        byte buffer[8192];
-        size_t n = in.tryRead(buffer, 1, sizeof(buffer));
-        if (n == 0) break;
-        totalRead += n;
-        KJ_REQUIRE(totalRead <= APP_SIZE_LIMIT, "App too big after decompress.");
-        tmpOut.write(buffer, n);
-      }
-
-      child.waitForSuccess();
-    }
+    auto appId = verifyImpl(spkfd, tmpfile, kj::mv(validationError));
 
     // mmap the temp file.
     MemoryMapping tmpMapping(tmpfile, "(temp file)");
     tmpfile = nullptr;  // We have the mapping now; don't need the fd.
-
-    // Hash the archive.
-    kj::ArrayPtr<const byte> tmpBytes = tmpMapping;
-    byte hash[crypto_hash_BYTES];
-    crypto_hash(hash, tmpBytes.begin(), tmpBytes.size());
-
-    // Check that hashes match.
-    if (memcmp(expectedHash, hash, crypto_hash_BYTES) != 0) {
-      return validationError("Signature didn't match package contents.");
-    }
 
     // Set up archive reader.
     kj::ArrayPtr<const capnp::word> tmpWords = tmpMapping;
@@ -1459,7 +1465,7 @@ private:
     unpackDir(archiveMessage.getRoot<spk::Archive>().getFiles(), dirname);
 
     // Note the appid.
-    return base32Encode(publicKey);
+    return appId;
   }
 
   static void unpackDir(capnp::List<spk::Archive::File>::Reader files, kj::StringPtr dirname) {
@@ -1519,6 +1525,36 @@ private:
       times[1] = times[0];  // Also use mtime as atime.
       KJ_SYSCALL(utimensat(AT_FDCWD, path.cStr(), times, AT_SYMLINK_NOFOLLOW));
     }
+  }
+
+  // =====================================================================================
+  // "verify" command
+
+  kj::MainFunc getVerifyMain() {
+    return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
+            "Check that <spkfile>'s signature is valid. If so, print the app ID to stdout.")
+        .expectArg("<spkfile>", KJ_BIND_METHOD(*this, setUnpackSpkfile))
+        .callAfterParsing(KJ_BIND_METHOD(*this, doVerify))
+        .build();
+  }
+
+  kj::MainBuilder::Validity doVerify() {
+    kj::AutoCloseFd ownFd;
+    int spkfd;
+
+    if (spkfile == "-") {
+      spkfd = STDIN_FILENO;
+    } else {
+      ownFd = raiiOpen(spkfile, O_RDONLY);
+      spkfd = ownFd;
+    }
+
+    auto devnull = raiiOpen("/dev/null", O_WRONLY | O_CLOEXEC);
+    printAppId(verifyImpl(spkfd, devnull, [&](kj::StringPtr problem) -> kj::String {
+      validationError(spkfile, problem);
+    }));
+
+    return true;
   }
 
   // =====================================================================================

@@ -21,6 +21,7 @@
 #include <kj/io.h>
 #include <capnp/serialize.h>
 #include <sodium/crypto_sign.h>
+#include <sodium/crypto_hash_sha256.h>
 #include <sodium/crypto_hash_sha512.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -1533,9 +1534,19 @@ private:
   kj::MainFunc getVerifyMain() {
     return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
             "Check that <spkfile>'s signature is valid. If so, print the app ID to stdout.")
+        .addOption({'d', "details"}, KJ_BIND_METHOD(*this, setDetailed),
+            "Print detailed metadata extracted from the app manifest. The output is intended to "
+            "be machine-parseable.")
         .expectArg("<spkfile>", KJ_BIND_METHOD(*this, setUnpackSpkfile))
         .callAfterParsing(KJ_BIND_METHOD(*this, doVerify))
         .build();
+  }
+
+  bool detailed = false;
+
+  bool setDetailed() {
+    detailed = true;
+    return true;
   }
 
   kj::MainBuilder::Validity doVerify() {
@@ -1549,10 +1560,70 @@ private:
       spkfd = ownFd;
     }
 
-    auto devnull = raiiOpen("/dev/null", O_WRONLY | O_CLOEXEC);
-    printAppId(verifyImpl(spkfd, devnull, [&](kj::StringPtr problem) -> kj::String {
+    kj::AutoCloseFd tmpfile;
+    if (detailed) {
+      tmpfile = openTemporary("/tmp/spk-verify-tmp");
+    } else {
+      tmpfile = raiiOpen("/dev/null", O_WRONLY | O_CLOEXEC);;
+    }
+
+    auto appId = verifyImpl(spkfd, tmpfile, [&](kj::StringPtr problem) -> kj::String {
       validationError(spkfile, problem);
-    }));
+    });
+
+    if (detailed) {
+      // Compute hash of input package (for package ID).
+      kj::String packageId;
+      {
+        byte hash[crypto_hash_sha256_BYTES];
+        MemoryMapping spkMapping(spkfd, spkfile);
+        kj::ArrayPtr<const byte> bytes = spkMapping;
+        crypto_hash_sha256(hash, bytes.begin(), bytes.size());
+
+        packageId = hexEncode(kj::ArrayPtr<byte>(hash).slice(0, 16));
+      }
+
+      // mmap the temp file.
+      MemoryMapping tmpMapping(tmpfile, "(temp file)");
+      tmpfile = nullptr;  // We have the mapping now; don't need the fd.
+
+      // Set up archive reader.
+      kj::ArrayPtr<const capnp::word> tmpWords = tmpMapping;
+      capnp::ReaderOptions options;
+      options.traversalLimitInWords = tmpWords.size();
+      capnp::FlatArrayMessageReader archiveMessage(tmpWords, options);
+
+      for (auto file: archiveMessage.getRoot<spk::Archive>().getFiles()) {
+        if (file.getName() == "sandstorm-manifest") {
+          KJ_REQUIRE(file.isRegular(), "sandstorm-manifest is not a regular file");
+
+          auto data = file.getRegular();
+
+          // Data fields are always word-aligned.
+          capnp::FlatArrayMessageReader manifestMessage(
+              kj::arrayPtr(reinterpret_cast<const capnp::word*>(data.begin()),
+                           data.size() / sizeof(capnp::word)));
+
+          auto manifest = manifestMessage.getRoot<spk::Manifest>();
+
+          // TODO(someday): Support localization properly?
+
+          auto text = kj::str(
+            "appId: ", appId, "\n"
+            "packageId: ", packageId, "\n"
+            "title: ", manifest.getAppTitle().getDefaultText(), "\n"
+            "version: ", manifest.getAppVersion(), "\n"
+            "marketingVersion: ", manifest.getAppMarketingVersion().getDefaultText(), "\n");
+
+          kj::FdOutputStream(STDOUT_FILENO).write(text.begin(), text.size());
+          context.exit();
+        }
+      }
+
+      context.exitError("package has no manifest");
+    } else {
+      printAppId(appId);
+    }
 
     return true;
   }

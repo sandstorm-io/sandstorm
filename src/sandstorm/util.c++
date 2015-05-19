@@ -619,7 +619,7 @@ kj::Array<byte> base64Decode(kj::StringPtr input) {
 
 // =======================================================================================
 
-kj::String hexEncode(const kj::ArrayPtr<const byte> input) {
+kj::String hexEncode(kj::ArrayPtr<const byte> input) {
   const char DIGITS[] = "0123456789abcdef";
   return kj::strArray(KJ_MAP(b, input) { return kj::heapArray<char>({DIGITS[b/16], DIGITS[b%16]}); }, "");
 }

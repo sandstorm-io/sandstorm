@@ -18,7 +18,7 @@ var ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
 var publicAdminSettings = ["google", "github", "emailToken", "splashDialog", "signupDialog"];
 
 DEFAULT_SPLASH_DIALOG = "Contact the server admin for an invite " +
-  "(or <a href=\"https://sandstorm.io/install/\">install your own).";
+  "(or <a href=\"https://sandstorm.io/install/\">install your own</a>).";
 DEFAULT_SIGNUP_DIALOG = "You've been invited to join this Sandstorm server!";
 
 Router.map(function () {

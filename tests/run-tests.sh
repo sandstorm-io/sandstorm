@@ -22,6 +22,8 @@ THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
 cd "$THIS_DIR"
 
+export SANDSTORM_BIN="${SANDSTORM_DIR:-/opt/sandstorm}/sandstorm"
+
 test -e assets/ssjekyll5.spk || curl http://sandstorm.io/apps/ssjekyll5.spk > assets/ssjekyll5.spk
 test -e assets/ssjekyll6.spk || curl http://sandstorm.io/apps/ssjekyll6.spk > assets/ssjekyll6.spk
 test -e assets/ssjekyll7.spk || curl http://sandstorm.io/apps/ssjekyll7.spk > assets/ssjekyll7.spk
@@ -30,8 +32,8 @@ set +e
 
 if [[ -z "$LAUNCH_URL" ]]
 then
-  nightwatch
+  nightwatch -e unittests && nightwatch -e default
 else
   sed "s|.*launch_url.*|\"launch_url\" : \"$LAUNCH_URL\",|g" nightwatch.json > nightwatch.tmp.json
-  nightwatch -c ./nightwatch.tmp.json
+  nightwatch -e unittests -c ./nightwatch.tmp.json && nightwatch -e default -c ./nightwatch.tmp.json
 fi

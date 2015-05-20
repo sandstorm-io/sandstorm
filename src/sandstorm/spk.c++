@@ -1637,20 +1637,16 @@ private:
 
     for (char c: text) {
       switch (c) {
-        case '\a': escaped.addAll(kj::StringPtr("\\a")); break;
         case '\b': escaped.addAll(kj::StringPtr("\\b")); break;
         case '\f': escaped.addAll(kj::StringPtr("\\f")); break;
         case '\n': escaped.addAll(kj::StringPtr("\\n")); break;
         case '\r': escaped.addAll(kj::StringPtr("\\r")); break;
         case '\t': escaped.addAll(kj::StringPtr("\\t")); break;
-        case '\v': escaped.addAll(kj::StringPtr("\\v")); break;
-        case '\'': escaped.addAll(kj::StringPtr("\\\'")); break;
         case '\"': escaped.addAll(kj::StringPtr("\\\"")); break;
         case '\\': escaped.addAll(kj::StringPtr("\\\\")); break;
         default:
           if (c < 0x20) {
-            escaped.add('\\');
-            escaped.add('x');
+            escaped.addAll(kj::StringPtr("\\u00"));
             uint8_t c2 = c;
             escaped.add(HEXDIGITS[c2 / 16]);
             escaped.add(HEXDIGITS[c2 % 16]);

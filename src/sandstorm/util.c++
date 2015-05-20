@@ -630,6 +630,18 @@ Subprocess::Subprocess(Options&& options)
   if (pid == 0) {
     KJ_DEFER(_exit(1));  // Do not under any circumstances return from this stack frame!
     KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
+      // Reset all signal handlers to default.  (exec() will leave ignored signals ignored, and KJ
+      // code likes to ignore e.g. SIGPIPE.)
+      // TODO(cleanup):  Is there a better way to do this?
+      for (uint i = 0; i < NSIG; i++) {
+        ::signal(i, SIG_DFL);  // Only possible error is EINVAL (invalid signum); we don't care.
+      }
+
+      // Unblock all signals.  (Yes, the signal mask is inherited over exec...)
+      sigset_t sigmask;
+      sigemptyset(&sigmask);
+      KJ_SYSCALL(sigprocmask(SIG_SETMASK, &sigmask, nullptr));
+
       // Make sure all of the incoming FDs are outside of our map range (except for standard I/O if
       // it is already exactly in the right slot).
       int minFd = STDERR_FILENO + options.moreFds.size() + 1;
@@ -837,7 +849,7 @@ kj::Promise<void> SubprocessSet::waitLoop() {
       auto iter = waitMap->pids.find(pid);
       if (iter == waitMap->pids.end()) {
         KJ_LOG(ERROR, "waitpid() returned unexpected PID; is this process running subprocesses "
-                      "outside this set?");
+                      "outside this set?", pid);
       } else {
         iter->second.subprocess->notifyExited(status);
         iter->second.fulfiller->fulfill(kj::mv(status));

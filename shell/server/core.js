@@ -178,7 +178,6 @@ SandstormCoreImpl.prototype.makeToken = function (ref, owner) {
   return inMeteor(function () {
     var sturdyRef = new Buffer(Random.id(20));
     var hashedSturdyRef = hashSturdyRef(sturdyRef);
-    // TODO(soon): should userId be filled?
     ApiTokens.insert({
       _id: hashedSturdyRef,
       grainId: self.grainId,

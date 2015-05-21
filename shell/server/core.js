@@ -60,6 +60,10 @@ function dismissNotification(notificationId) {
   }
 }
 
+function hashSturdyRef(sturdyRef) {
+  return Crypto.createHash("sha256").update(sturdyRef).digest("base64");
+}
+
 Meteor.methods({
   dismissNotification: function (notificationId) {
     // This will remove notifications from the database and from view of the user.
@@ -96,7 +100,7 @@ NotificationHandle.prototype.save = function () {
   var self = this;
   return inMeteor(function () {
     var sturdyRef = new Buffer(Random.id(20));
-    var hashedSturdyRef = Crypto.createHash("sha256").update(sturdyRef).digest("base64");
+    var hashedSturdyRef = hashSturdyRef(sturdyRef);
     ApiTokens.insert({
       _id: hashedSturdyRef,
       frontendRef: {
@@ -111,7 +115,7 @@ NotificationHandle.prototype.save = function () {
 SandstormCoreImpl.prototype.restore = function (sturdyRef) {
   var self = this;
   return inMeteor(function () {
-    var hashedSturdyRef = Crypto.createHash("sha256").update(sturdyRef).digest("base64");
+    var hashedSturdyRef = hashSturdyRef(sturdyRef);
     var token = ApiTokens.findOne(hashedSturdyRef);
     if (!token) {
       throw new Error("No token found to restore");
@@ -130,7 +134,7 @@ SandstormCoreImpl.prototype.restore = function (sturdyRef) {
 };
 
 var dropToken = function (grainId, sturdyRef) {
-  var hashedSturdyRef = Crypto.createHash("sha256").update(sturdyRef).digest("base64");
+  var hashedSturdyRef = hashSturdyRef(sturdyRef);
   var token = ApiTokens.findOne({_id: hashedSturdyRef});
   if (!token) {
     return;
@@ -161,7 +165,7 @@ SandstormCoreImpl.prototype.makeToken = function (ref, owner) {
   var self = this;
   return inMeteor(function () {
     var sturdyRef = new Buffer(Random.id(20));
-    var hashedSturdyRef = Crypto.createHash("sha256").update(sturdyRef).digest("base64");
+    var hashedSturdyRef = hashSturdyRef(sturdyRef);
     // TODO(soon): should userId be filled?
     ApiTokens.insert({
       _id: hashedSturdyRef,

@@ -956,7 +956,9 @@ aside #social>p {
   background-color: #396F9E;
 }
 
-#admin-settings-save {
+#admin-settings-save,
+#admin-settings-send-test,
+#admin-settings-send-toggle {
   font-family: inherit;
   font-size: inherit;
   font-weight: 600;
@@ -968,11 +970,20 @@ aside #social>p {
   border: none;
   color: white;
   cursor: pointer;
+}
+
+#admin-settings-save {
   margin-top: 20px;
   margin-bottom: 20px;
 }
 
-#admin-settings-save:hover {
+#admin-settings-send-toggle {
+  margin-left: 10px;
+}
+
+#admin-settings-save:hover,
+#admin-settings-send-test:hover,
+#admin-settings-send-toggle:hover {
   background-color: #396F9E;
 }
 

@@ -171,10 +171,19 @@ if (Meteor.isClient) {
       Meteor.call("clearResumeTokensForService", this.token,
         event.target.getAttribute("data-servicename"), handleErrorBound);
     },
-    "click #show-users": function (event) {
+    "click #admin-settings-send-toggle": function (event) {
       var state = Iron.controller().state;
-      state.set("showUsers", !state.get("showUsers"));
-      return false;
+      state.set("isEmailTestActive", !state.get("isEmailTestActive"));
+      return false; // prevent form from submitting
+    },
+    "click #admin-settings-send-test": function (event) {
+      var state = Iron.controller().state;
+      resetResult(state);
+      var handleErrorBound = handleError.bind(state);
+      state.set("successMessage", "Email has been sent.");
+      Meteor.call("testSend", this.token, document.getElementById("email-test-to").value,
+        handleErrorBound);
+      return false; // prevent form from submitting
     },
     "submit #admin-settings-form": function (event) {
       var state = Iron.controller().state;
@@ -248,6 +257,9 @@ if (Meteor.isClient) {
     },
     smtpUrl: function () {
       return Iron.controller().state.get("smtpUrl");
+    },
+    isEmailTestActive: function () {
+      return Iron.controller().state.get("isEmailTestActive");
     }
   });
 
@@ -515,6 +527,18 @@ if (Meteor.isServer) {
       }
 
       Meteor.users.update({_id: userId}, {$set: _.omit(userInfo, ["_id"])});
+    },
+    testSend: function (token, to) {
+      if (!isAdmin() && !tokenIsValid(token)) {
+        throw new Meteor.Error(403, "Unauthorized", "User must be admin");
+      }
+
+      SandstormEmail.send({
+        to: to,
+        from: "Sandstorm Test <no-reply@" + HOSTNAME + ">",
+        subject: "Testing your Sandstorm's SMTP setting",
+        text: "Success! Your outgoing SMTP is working."
+      });
     }
   });
 

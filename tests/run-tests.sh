@@ -22,7 +22,7 @@ THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
 cd "$THIS_DIR"
 
-export SANDSTORM_BIN="${SANDSTORM_DIR:-/opt/sandstorm}/sandstorm"
+export SANDSTORM_DIR="${SANDSTORM_DIR:-/opt/sandstorm}"
 
 test -e assets/ssjekyll5.spk || curl http://sandstorm.io/apps/ssjekyll5.spk > assets/ssjekyll5.spk
 test -e assets/ssjekyll6.spk || curl http://sandstorm.io/apps/ssjekyll6.spk > assets/ssjekyll6.spk

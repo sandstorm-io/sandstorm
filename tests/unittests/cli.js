@@ -19,8 +19,10 @@
 var _ = require("underscore");
 var execFile = require("child_process").execFile;
 var assert = require("chai").assert;
+var fs = require("fs");
 
-var SANDSTORM_BIN = process.env["SANDSTORM_BIN"] || "/opt/sandstorm/sandstorm";
+var SANDSTORM_DIR = process.env["SANDSTORM_DIR"] || "/opt/sandstorm";
+var SANDSTORM_BIN = SANDSTORM_DIR + "/sandstorm";
 
 function execSandstorm(args, cb) {
   execFile(SANDSTORM_BIN, args, {timeout: 60000}, cb);
@@ -47,8 +49,9 @@ module.exports = {
     execSandstorm(["admin-token", "-q"], function (err, stdout, stderr) {
       if (err) throw err;
 
-      // Expect output of 40 character token + newline
-      assert.lengthOf(stdout, 41, "`admin-token -q` contains the expected output");
+      // remove trailing newline from stdout
+      client.assert.equal(stdout.slice(0, -1), fs.readFileSync(SANDSTORM_DIR + "/var/sandstorm/adminToken").toString(),
+        "`admin-token -q` contains the expected output");
       done();
     });
   },

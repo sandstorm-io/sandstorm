@@ -43,10 +43,8 @@ function dropWakelock(grainId, wakeLockNotificationId) {
   // For some reason, Mongo returns an object that looks buffer-like, but isn't a buffer.
   // We have to explicitly copy it before we can pass it on to node-capnp.
   var copiedId = new Buffer(wakeLockNotificationId);
-  waitPromise(openGrain(grainId).supervisor.drop({wakeLockNotification: copiedId}).catch(function (err) {
-    if (shouldRestartGrain(err, 0)) {
-      return openGrain(grainId, true).supervisor.drop({wakeLockNotification: copiedId});
-    }
+  waitPromise(useGrain(grainId, function (supervisor) {
+    return supervisor.drop({wakeLockNotification: copiedId});
   }));
 }
 
@@ -122,10 +120,8 @@ SandstormCoreImpl.prototype.restore = function (sturdyRef) {
       var notificationId = token.frontendRef.notificationHandle;
       return {cap: makeNotificationHandle(notificationId, true)};
     } else if (token.objectId) {
-      return waitPromise(openGrain(self.grainId).supervisor.restore(token.objectId).catch(function (err) {
-        if (shouldRestartGrain(err, 0)) {
-          return openGrain(grainId, true).supervisor.restore(token.objectId);
-        }
+      return waitPromise(useGrain(self.grainId, function (supervisor) {
+        return supervisor.restore(token.objectId);
       }));
     } else {
       throw new Error("Unknown token type.");

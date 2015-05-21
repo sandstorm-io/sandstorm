@@ -308,6 +308,21 @@ shouldRestartGrain = function (error, retryCount) {
   return error.type === "disconnected" && retryCount < 1;
 }
 
+useGrain = function (grainId, cb) {
+  // This will open a grain for you, handlind restarts if needed, and call the passed function with
+  // the supervisor capability as the only parameter. The callback must return a promise that used
+  // the supervisor, so that we can check if a disconnect error occurred, and retry if possible.
+  // This method returns the same promise that your callback returns.
+
+  return cb(openGrain(grainId).supervisor).catch(function (err) {
+    if (shouldRestartGrain(err, 0)) {
+      return cb(openGrain(grainId, true).supervisor);
+    } else {
+      throw err;
+    }
+  });
+}
+
 function continueGrain(grainId) {
   var grain = Grains.findOne(grainId);
   if (!grain) {

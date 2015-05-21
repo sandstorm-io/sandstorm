@@ -90,7 +90,7 @@ if [ "$RUN_SELENIUM" != "false" ] ; then
   XVFB_PID=$!
 fi
 
-SANDSTORM_DIR=$THIS_DIR/tmp-sandstorm
+export SANDSTORM_DIR=$THIS_DIR/tmp-sandstorm
 export OVERRIDE_SANDSTORM_DEFAULT_DIR=$SANDSTORM_DIR
 export PORT=$(shuf -i 10000-20000 -n 1)
 export MONGO_PORT=$(shuf -i 20001-30000 -n 1)

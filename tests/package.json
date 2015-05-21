@@ -3,9 +3,9 @@
   "description": "Tests for the sandstorm platform",
   "version": "0.0.1",
   "devDependencies": {
-    "nightwatch": "0.6.7",
+    "nightwatch": "0.6.11",
     "phantomjs": "~1.9.10",
-    "selenium-standalone": "^4.2.2"
+    "selenium-standalone": "4.2.2"
   },
   "repository": {
     "type": "git",
@@ -15,6 +15,7 @@
     "test": "./run-tests.sh"
   },
   "dependencies": {
+    "chai": "^2.3.0",
     "mailcomposer": "^0.2.12",
     "mailparser": "0.5.1",
     "simplesmtp": "0.3.35",

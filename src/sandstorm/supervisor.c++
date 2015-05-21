@@ -1974,7 +1974,7 @@ struct SupervisorMain::DefaultSystemConnector::AcceptedConnection {
 auto SupervisorMain::DefaultSystemConnector::run(
     kj::AsyncIoContext& ioContext, Supervisor::Client mainCap) const
     -> SystemConnector::RunResult {
-  auto listener = kj::heap<TwoPartyServerWithBootstrap>(kj::mv(mainCap));
+  auto listener = kj::heap<TwoPartyServerWithClientBootstrap>(kj::mv(mainCap));
   auto core = listener->getBootstrap().castAs<SandstormCore>();
 
   unlink("socket");  // Clear stale socket, if any.

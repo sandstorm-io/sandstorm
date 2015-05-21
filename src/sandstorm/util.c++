@@ -860,15 +860,17 @@ kj::Promise<void> SubprocessSet::waitLoop() {
   });
 }
 
-TwoPartyServerWithBootstrap::TwoPartyServerWithBootstrap(capnp::Capability::Client bootstrapInterface, kj::Own<CapRedirector>&& redirector)
+TwoPartyServerWithClientBootstrap::TwoPartyServerWithClientBootstrap(
+  capnp::Capability::Client bootstrapInterface, kj::Own<CapRedirector>&& redirector)
     : bootstrapInterface(kj::mv(bootstrapInterface)), redirector(kj::mv(redirector)),
       tasks(*this) {}
 
-TwoPartyServerWithBootstrap::TwoPartyServerWithBootstrap(capnp::Capability::Client bootstrapInterface)
+TwoPartyServerWithClientBootstrap::TwoPartyServerWithClientBootstrap(
+  capnp::Capability::Client bootstrapInterface)
     : bootstrapInterface(kj::mv(bootstrapInterface)), redirector(kj::refcounted<CapRedirector>()),
       tasks(*this) {}
 
-struct TwoPartyServerWithBootstrap::AcceptedConnection {
+struct TwoPartyServerWithClientBootstrap::AcceptedConnection {
   kj::Own<kj::AsyncIoStream> connection;
   capnp::TwoPartyVatNetwork network;
   capnp::RpcSystem<capnp::rpc::twoparty::VatId> rpcSystem;
@@ -880,7 +882,8 @@ struct TwoPartyServerWithBootstrap::AcceptedConnection {
         rpcSystem(capnp::makeRpcServer(network, kj::mv(bootstrapInterface))) {}
 };
 
-kj::Promise<void> TwoPartyServerWithBootstrap::listen(kj::Own<kj::ConnectionReceiver>&& listener) {
+kj::Promise<void> TwoPartyServerWithClientBootstrap::listen(
+  kj::Own<kj::ConnectionReceiver>&& listener) {
   return listener->accept()
       .then([this,KJ_MVCAP(listener)](kj::Own<kj::AsyncIoStream>&& connection) mutable {
     auto connectionState = kj::heap<AcceptedConnection>(bootstrapInterface, kj::mv(connection));
@@ -902,11 +905,11 @@ kj::Promise<void> TwoPartyServerWithBootstrap::listen(kj::Own<kj::ConnectionRece
   });
 }
 
-capnp::Capability::Client TwoPartyServerWithBootstrap::getBootstrap() {
+capnp::Capability::Client TwoPartyServerWithClientBootstrap::getBootstrap() {
   return kj::addRef(*redirector);
 }
 
-void TwoPartyServerWithBootstrap::taskFailed(kj::Exception&& exception) {
+void TwoPartyServerWithClientBootstrap::taskFailed(kj::Exception&& exception) {
   KJ_LOG(ERROR, exception);
 }
 

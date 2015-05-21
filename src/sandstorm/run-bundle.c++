@@ -1811,7 +1811,7 @@ private:
 
       auto redirector = kj::refcounted<CapRedirector>();
       capnp::Capability::Client coreFactoryCap = kj::addRef(*redirector);
-      TwoPartyServerWithBootstrap server(
+      TwoPartyServerWithClientBootstrap server(
         kj::heap<BackendImpl>(*io.lowLevelProvider, network,
           coreFactoryCap.castAs<SandstormCoreFactory>()),
         kj::mv(redirector));

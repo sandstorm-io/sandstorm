@@ -387,13 +387,13 @@ private:
   kj::Own<kj::PromiseFulfiller<capnp::Capability::Client>> fulfiller;
 };
 
-class TwoPartyServerWithBootstrap: private kj::TaskSet::ErrorHandler {
-  // Convenience class which implements a simple server which accepts connections on a listener
-  // socket and serices them as two-party connections.
+class TwoPartyServerWithClientBootstrap: private kj::TaskSet::ErrorHandler {
+  // Similar to TwoPartyServer, but it can take a redirector for a client bootstrap as an argument
+  // and/or allows you to call getBootstrap to get the client bootstrap.
 
 public:
-  explicit TwoPartyServerWithBootstrap(capnp::Capability::Client bootstrapInterface);
-  TwoPartyServerWithBootstrap(capnp::Capability::Client bootstrapInterface,
+  explicit TwoPartyServerWithClientBootstrap(capnp::Capability::Client bootstrapInterface);
+  TwoPartyServerWithClientBootstrap(capnp::Capability::Client bootstrapInterface,
                                        kj::Own<CapRedirector>&& redirector);
   // If you're passing in a redirector, make sure it was constructed to be refcounted like so:
   // kj::refcounted<CapRedirector>()
@@ -404,6 +404,7 @@ public:
   // listening.
 
   capnp::Capability::Client getBootstrap();
+  // Returns the client bootstrap capability.
 
 private:
   capnp::Capability::Client bootstrapInterface;

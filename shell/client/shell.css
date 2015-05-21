@@ -929,6 +929,33 @@ aside #social>p {
   height: 22px;
 }
 
+#admin-settings .nav {
+  display: inline-block;
+  padding-left: 5px;
+  padding-bottom: 5px;
+}
+
+#admin-settings .nav > li {
+  float: left;
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+}
+
+#admin-settings .nav > li > a {
+  padding: 15px;
+}
+
+#admin-settings .nav > li.active > a {
+  color: white;
+  background-color: #428bca;
+  border-radius: 4px;
+}
+
+#admin-settings .nav > li.active > a:hover {
+  background-color: #396F9E;
+}
+
 #admin-settings-save {
   font-family: inherit;
   font-size: inherit;
@@ -954,7 +981,7 @@ aside #social>p {
 }
 
 #admin-settings-form input[type="textarea"] {
-  width: 100%;
+  min-width: 600px;
 }
 
 .alert {
@@ -983,6 +1010,38 @@ aside #social>p {
 
 .fade-out {
   opacity: .5;
+}
+
+#admin-settings > .centered-box {
+  width: 80%;
+}
+
+table#users-table select {
+  font-size: 18px;
+  font-weight: 300;
+  margin-right: 5px;
+}
+
+table#users-table {
+  border-collapse: collapse;
+}
+
+table#users-table thead td {
+  font-weight: 600;
+  border-bottom: 1px solid #aaa;
+}
+
+table#users-table td {
+  padding: 0px 5px 5px;
+}
+
+table#users-table td:first-child {
+  padding-left: 16px;
+}
+
+table#users-table tr {
+  height: 32px;
+  border-bottom: 1px solid #ddd;
 }
 
 @media screen and (max-width: 1250px) {

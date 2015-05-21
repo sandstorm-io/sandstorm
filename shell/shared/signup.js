@@ -88,7 +88,7 @@ if (Meteor.isServer) {
 
           SignupKeys.insert({_id: key, used: false, note: "E-mail invite to " + email,
                              definitelySent: false});
-          Email.send({
+          SandstormEmail.send({
             to: email,
             from: from,
             subject: subject,

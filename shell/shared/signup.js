@@ -23,17 +23,6 @@ if (Meteor.isServer) {
     return SignupKeys.find(key);
   });
 
-  Meteor.publish("selfEmail", function () {
-    if (this.userId) {
-      return Meteor.users.find({_id: this.userId}, {fields: {
-        "services.github.email": 1,
-        "services.google.email": 1
-      }});
-    } else {
-      return [];
-    }
-  });
-
   Meteor.methods({
     useSignupKey: function (key) {
       check(key, String);
@@ -115,8 +104,9 @@ if (Meteor.isServer) {
 }
 
 if (Meteor.isClient) {
-  Template.invite.events({
+  Template.adminInvites.events({
     "click #send": function (event) {
+      var state = Iron.controller().state;
       var from = document.getElementById("invite-from").value;
       var list = document.getElementById("invite-emails").value;
       var subject = document.getElementById("invite-subject").value;
@@ -132,21 +122,22 @@ if (Meteor.isClient) {
         sendButton.disabled = false;
         sendButton.textContent = oldContent;
         if (error) {
-          Session.set("inviteMessage", { error: error.toString() });
+          state.set("inviteMessage", { error: error.toString() });
         } else {
-          Session.set("inviteMessage", results);
+          state.set("inviteMessage", results);
         }
       });
     },
 
     "click #create": function (event) {
+      var state = Iron.controller().state;
       var note = document.getElementById("key-note").value;
 
       Meteor.call("createSignupKey", note, function (error, key) {
         if (error) {
-          Session.set("inviteMessage", { error: error.toString() });
+          state.set("inviteMessage", { error: error.toString() });
         } else {
-          Session.set("inviteMessage", {
+          state.set("inviteMessage", {
             url: getOrigin() + Router.routes.signup.path({key: key})
           });
         }
@@ -158,8 +149,29 @@ if (Meteor.isClient) {
     },
 
     "click #retry": function (event) {
-      Session.set("inviteMessage", undefined);
+      Iron.controller().state.set("inviteMessage", undefined);
     },
+  });
+
+  Template.adminInvites.helpers({
+    error: function () {
+      var res = Iron.controller().state.get("inviteMessage");
+      return res && res.error;
+    },
+    email: function () {
+      var me = Meteor.user();
+      var email = (me.services && me.services.google && me.services.google.email) ||
+                  (me.services && me.services.github && me.services.github.email);
+      if (email && me.profile.name) {
+        email = me.profile.name + " <" + email + ">";
+      }
+      email = email || "";
+      return email;
+    },
+    url: function () {
+      var res = Iron.controller().state.get("inviteMessage");
+      return res && res.url;
+    }
   });
 
   Template.signup.helpers({
@@ -196,33 +208,6 @@ Router.map(function () {
       }
 
       return result;
-    }
-  });
-
-  this.route("invite", {
-    path: "/invite",
-
-    waitOn: function () {
-      return [
-        Meteor.subscribe("credentials"),
-        Meteor.subscribe("selfEmail")
-      ];
-    },
-
-    data: function () {
-      if (!isAdmin()) {
-        return {error: "Must be admin to send invites."};
-      }
-
-      var me = Meteor.user();
-      var email = (me.services && me.services.google && me.services.google.email) ||
-                  (me.services && me.services.github && me.services.github.email);
-      if (email && me.profile.name) {
-        email = me.profile.name + " <" + email + ">";
-      }
-      email = email || "";
-
-      return Session.get("inviteMessage") || {email: email};
     }
   });
 });

@@ -110,6 +110,11 @@ if (Meteor.isClient) {
       var state = Iron.controller().state;
       resetResult(state);
       state.set("settingsTab", "adminUsers");
+    },
+    "click #invites-tab": function (event) {
+      var state = Iron.controller().state;
+      resetResult(state);
+      state.set("settingsTab", "adminInvites");
     }
   });
 
@@ -139,6 +144,9 @@ if (Meteor.isClient) {
     },
     usersActive: function () {
       return Iron.controller().state.get("settingsTab") == "adminUsers";
+    },
+    invitesActive: function () {
+      return Iron.controller().state.get("settingsTab") == "adminInvites";
     }
   });
 

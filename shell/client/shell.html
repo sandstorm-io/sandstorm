@@ -100,7 +100,6 @@ limitations under the License.
           <li class="blank">&nbsp;</li>
           {{#if isAdmin}}
             <li class="applist-tab-settings">Admin Settings</li>
-            <li class="applist-tab-invite">Invite Users</li>
             <li class="applist-tab-stats">Usage Stats</li>
           {{/if}}
           <li class="applist-tab-about">About Sandstorm</li>
@@ -491,11 +490,8 @@ limitations under the License.
   </div>
 </template>
 
-<template name="invite">
-  <div id="topbar">{{> homeLink}} Send Invite</div>
-
-  <div id="invite" class="main-content">
-  <div class="centered-box">
+<template name="adminInvites">
+  <div id="invite">
     {{#if error}}
       <p>{{error}}</p>
       <p><button id="retry">Try Again</button></p>
@@ -527,13 +523,12 @@ limitations under the License.
       <p>Body:
       <textarea id="invite-message">Click on the following link to get access to my Sandstorm.io server.
 
-$KEY</textarea></p>
+  $KEY</textarea></p>
       <p><button id="send">Send</button></p>
       </div>
     {{/if}}
     {{/if}}
     {{/if}}
-  </div>
   </div>
 </template>
 
@@ -632,13 +627,12 @@ $KEY</textarea></p>
   <div id="admin-settings" class="main-content">
     <div class="centered-box">
       {{#if isUserPermitted}}
-        <ul class="nav">
+        <ul id="settings-tabs" class="nav centered-box">
           <li id="settings-tab" class="{{#if settingsActive}}active{{/if}}"><a href="#">Settings</a></li>
           <li id="users-tab" class="{{#if usersActive}}active{{/if}}"><a href="#">Users</a></li>
+          <li id="invites-tab" class="{{#if invitesActive}}active{{/if}}"><a href="#">Send Invite</a></li>
         </ul>
-        <div id="settings-content">
-          {{> Template.dynamic template=adminTab}}
-        </div>
+        {{> Template.dynamic template=adminTab}}
         {{#if success}}
         <div class="alert alert-success {{#if fadeAlert}}fade-out{{/if}}"><strong>Success!</strong> {{successMessage}}</div>
         {{/if}}

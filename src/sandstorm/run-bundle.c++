@@ -1014,7 +1014,7 @@ public:
 
     auto config = readConfig();
 
-    kj::FdOutputStream tokenFile(raiiOpen("../var/sandstorm/adminToken", O_WRONLY | O_CREAT));
+    kj::FdOutputStream tokenFile(raiiOpen("../var/sandstorm/adminToken", O_WRONLY | O_CREAT, 0640));
     tokenFile.write(hexString.begin(), hexString.size());
 
     if (shortOutput) {

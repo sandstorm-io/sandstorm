@@ -64,7 +64,7 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean continuous shell-env fast deps bootstrap-ekam deps update-deps
+.PHONY: all install clean continuous shell-env fast deps bootstrap-ekam deps update-deps test
 
 all: sandstorm-$(BUILD).tar.xz
 
@@ -81,6 +81,9 @@ update: sandstorm-$(BUILD)-fast.tar.xz
 	@sudo sandstorm update $<
 
 fast: sandstorm-$(BUILD)-fast.tar.xz
+
+test: sandstorm-$(BUILD)-fast.tar.xz
+	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz
 
 # ====================================================================
 # Dependencies

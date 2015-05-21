@@ -18,6 +18,10 @@
 
 set -euo pipefail
 
+XVFB_PID=""
+RUN_SELENIUM="true"
+BUNDLE_PATH=""
+
 cleanExit () {
   rc=$1
 
@@ -29,13 +33,62 @@ cleanExit () {
   "$SANDSTORM_DIR/sandstorm" stop
   sleep 1
   rm -rf "$SANDSTORM_DIR"
+  if [ -n "$XVFB_PID" ] ; then
+    # Send SIGINT to the selenium-server child of the backgrounded xvfb-run, so
+    # it will exit cleanly and the Xvfb process will also be cleaned up.
+    # We don't actually know that PID, so we find it with pgrep.
+    kill -SIGINT $(pgrep --parent $XVFB_PID node)
+    wait $XVFB_PID
+  fi
   exit $rc
 }
 
+checkInstalled() {
+  if ! $(which $1 >/dev/null 2>/dev/null) ; then
+    echo "Couldn't find executable '$1' - try installing the $2 package?"
+    exit 1
+  fi
+}
+
+
 THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
-BUNDLE_PATH=$(readlink -f "$1")
+
+# Parse arguments.
+while [ $# -gt 0 ] ; do
+  case $1 in
+    --no-selenium)
+      RUN_SELENIUM="false"
+      ;;
+    *)
+      if [ -n "$BUNDLE_PATH" ]; then
+        echo "Multiple bundle paths specified, please name only one."
+        exit 1
+      fi
+      BUNDLE_PATH=$(readlink -f "$1")
+      ;;
+  esac
+  shift
+done
+
+if [ -z "$BUNDLE_PATH" ] ; then
+  echo "No bundle path specified; perhaps you meant to write '$0 sandstorm-0-fast.tar.xz'?"
+  exit 1
+fi
 
 cd "$THIS_DIR"
+
+checkInstalled npm npm
+checkInstalled firefox firefox
+
+npm install
+
+if [ "$RUN_SELENIUM" != "false" ] ; then
+  checkInstalled java default-jre-headless
+  checkInstalled xvfb-run Xvfb
+  checkInstalled pgrep procps
+  xvfb-run ./node_modules/selenium-standalone/bin/selenium-standalone start &
+  XVFB_PID=$!
+fi
 
 SANDSTORM_DIR=$THIS_DIR/tmp-sandstorm
 export OVERRIDE_SANDSTORM_DEFAULT_DIR=$SANDSTORM_DIR
@@ -71,8 +124,6 @@ while ! curl -s localhost:$PORT > /dev/null; do
   sleep .1
 done;
 echo
-
-npm install
 
 set +e
 

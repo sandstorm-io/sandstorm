@@ -1814,7 +1814,7 @@ private:
       TwoPartyServerWithBootstrap server(
         kj::heap<BackendImpl>(*io.lowLevelProvider, network,
           coreFactoryCap.castAs<SandstormCoreFactory>()),
-        kj::addRef(*redirector));
+        kj::mv(redirector));
 
       // Signal readiness.
       write(outPipe, "ready", 5);

@@ -121,8 +121,12 @@ SandstormCoreImpl.prototype.restore = function (sturdyRef) {
       throw new Error("No token found to restore");
     }
     if (token.frontendRef) {
-      var notificationId = token.frontendRef.notificationHandle;
-      return {cap: makeNotificationHandle(notificationId, true)};
+      if (token.frontendRef.notificationHandle) {
+        var notificationId = token.frontendRef.notificationHandle;
+        return {cap: makeNotificationHandle(notificationId, true)};
+      } else {
+        throw new Error("Unknown frontend token type.");
+      }
     } else if (token.objectId) {
       return waitPromise(useGrain(self.grainId, function (supervisor) {
         return supervisor.restore(token.objectId);
@@ -140,15 +144,23 @@ var dropToken = function (grainId, sturdyRef) {
     return;
   }
   if (token.frontendRef) {
-    var notificationId = token.frontendRef.notificationHandle;
-    ApiTokens.remove({_id: hashedSturdyRef});
-    var anyToken = ApiTokens.findOne({"frontendRef.notificationHandle": notificationId});
-    if (!anyToken) {
-      // No other tokens referencing this notification exist, so dismiss the notification
-      dismissNotification(notificationId);
+    if (token.frontendRef.notificationHandle) {
+      var notificationId = token.frontendRef.notificationHandle;
+      ApiTokens.remove({_id: hashedSturdyRef});
+      var anyToken = ApiTokens.findOne({"frontendRef.notificationHandle": notificationId});
+      if (!anyToken) {
+        // No other tokens referencing this notification exist, so dismiss the notification
+        dismissNotification(notificationId);
+      }
+    } else {
+      throw new Error("Unknown frontend token type.");
     }
   } else if (token.objectId) {
-    dropWakelock(grainId, token.objectId.wakeLockNotification);
+    if (token.objectId.wakeLockNotification) {
+      dropWakelock(grainId, token.objectId.wakeLockNotification);
+    } else {
+      throw new Error("Unknown objectId token type.");
+    }
   } else {
     throw new Error("Unknown token type.");
   }

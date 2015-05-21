@@ -107,9 +107,9 @@ interface SystemPersistent extends(Persistent(Data, ApiTokenOwner)) {
   # created for the purpose of HTTP APIs).
 }
 
-interface HandlePersistent extends(SystemPersistent, Util.Handle) {}
+interface PersistentHandle extends(SystemPersistent, Util.Handle) {}
 
-interface OngoingNotificationPersistent extends(SystemPersistent, Grain.OngoingNotification) {}
+interface PersistentOngoingNotification extends(SystemPersistent, Grain.OngoingNotification) {}
 
 struct ApiTokenOwner {
   # Defines who is permitted to use a particular API token.

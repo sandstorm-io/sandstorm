@@ -1630,7 +1630,7 @@ public:
     });
   }
 
-  OngoingNotificationPersistent::Client restoreWakeLockNotification(kj::StringPtr wakelockId) {
+  PersistentOngoingNotification::Client restoreWakeLockNotification(kj::StringPtr wakelockId) {
     auto iter = wakelockMap.find(wakelockId);
     KJ_REQUIRE(iter != wakelockMap.end(), "Wakelock id not found");
     return kj::heap<WrappedOngoingNotification>(iter->second.ongoingNotification, iter->first, *this);
@@ -1758,7 +1758,7 @@ private:
     SandstormApiImpl& api;
   };
 
-  class WrappedOngoingNotification final: public OngoingNotificationPersistent::Server {
+  class WrappedOngoingNotification final: public PersistentOngoingNotification::Server {
   public:
     WrappedOngoingNotification(OngoingNotification::Client ongoingNotification, kj::StringPtr wakelockId, SandstormApiImpl& api)
       : ongoingNotification(ongoingNotification), wakelockId(kj::heapString(wakelockId)), api(api) {

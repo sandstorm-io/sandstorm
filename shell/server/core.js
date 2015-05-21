@@ -17,10 +17,10 @@
 var Crypto = Npm.require("crypto");
 var Capnp = Npm.require("capnp");
 
-var HandlePersistent = Capnp.importSystem("sandstorm/supervisor.capnp").HandlePersistent;
+var PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
 var SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;
 var SandstormCoreFactory = Capnp.importSystem("sandstorm/backend.capnp").SandstormCoreFactory;
-var OngoingNotificationPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").OngoingNotificationPersistent;
+var PersistentOngoingNotification = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentOngoingNotification;
 
 function SandstormCoreImpl(grainId) {
   this.grainId = grainId;
@@ -36,7 +36,7 @@ function NotificationHandle(notificationId, saved) {
 }
 
 function makeNotificationHandle(notificationId, saved) {
-  return new Capnp.Capability(new NotificationHandle(notificationId, saved), HandlePersistent);
+  return new Capnp.Capability(new NotificationHandle(notificationId, saved), PersistentHandle);
 }
 
 function dropWakelock(grainId, wakeLockNotificationId) {
@@ -199,7 +199,7 @@ SandstormCoreImpl.prototype.getOwnerNotificationTarget = function() {
       if (!grain) {
         throw new Error("Grain not found.");
       }
-      var castedNotification = notification.castAs(OngoingNotificationPersistent);
+      var castedNotification = notification.castAs(PersistentOngoingNotification);
       var wakelockToken = waitPromise(castedNotification.save()).sturdyRef;
 
       // We have to close both the casted cap and the original. Perhaps this should be fixed in

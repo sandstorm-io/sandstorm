@@ -642,7 +642,7 @@ $KEY</textarea></p>
         <div class="alert alert-danger {{#if fadeAlert}}fade-out{{/if}}"><strong>Failure!</strong>
           <ul>
             {{#each errors}}
-            <li>{{details}}</li>
+            <li>{{reason}}</li>
             {{/each}}
           </ul>
           See <code>&lt;install-location&gt;/var/log/sandstorm.log</code> for details.

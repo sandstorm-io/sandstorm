@@ -216,8 +216,8 @@ if (Meteor.isClient) {
       }
       var handleErrorBound = handleError.bind(state);
       if (event.target.emailTokenLogin.checked && !event.target.smtpUrl.value) {
-        handleErrorBound(new Meteor.Error(400, "Bad Request",
-            "You must configure an SMTP server to use email login."));
+        handleErrorBound(new Meteor.Error(400,
+          "You must configure an SMTP server to use email login."));
         return false;
       }
       Meteor.call("setAccountSetting", token, "google", event.target.googleLogin.checked, handleErrorBound);
@@ -454,17 +454,19 @@ if (Meteor.isServer) {
     updateLoginStyleToRedirect("github");
   });
 
+  var checkAuth = function (token) {
+    if (!isAdmin() && !tokenIsValid(token)) {
+      throw new Meteor.Error(403, "User must be admin or provide a valid token");
+    }
+  };
   Meteor.methods({
     setAccountSetting: function (token, serviceName, value) {
-      if (!isAdmin() && !tokenIsValid(token)) {
-        throw new Meteor.Error(403, "Unauthorized", "User must be admin or provide a valid token");
-      }
-
+      checkAuth(token);
       // TODO(someday): currently this relies on the fact that an account is tied to a single
       // identity, and thus has only that entry in "services". This will need to be looked at when
       // multiple login methods/identities are allowed for a single account.
       if (!value && !tokenIsValid(token) && (serviceName in Meteor.user().services)) {
-        throw new Meteor.Error(403, "Unauthorized",
+        throw new Meteor.Error(403,
           "You can not disable the login service that your account uses.");
       }
 
@@ -474,7 +476,7 @@ if (Meteor.isServer) {
         var ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
         var config = ServiceConfiguration.configurations.findOne({service: serviceName});
         if (!config) {
-          throw new Meteor.Error(403, "Unauthorized", "The " + serviceName +
+          throw new Meteor.Error(403, "The " + serviceName +
             " service is not configured, and so cannot be enabled.");
         }
       }
@@ -486,23 +488,17 @@ if (Meteor.isServer) {
       }
     },
     setSetting: function (token, name, value) {
-      if (!isAdmin() && !tokenIsValid(token)) {
-        throw new Meteor.Error(403, "Unauthorized", "User must be admin or provide a valid token");
-      }
+      checkAuth(token);
 
       Settings.upsert({_id: name}, {$set: {value: value}});
     },
     getSmtpUrl: function (token) {
-      if (!isAdmin() && !tokenIsValid(token)) {
-        throw new Meteor.Error(403, "Unauthorized", "User must be admin or provide a valid token");
-      }
+      checkAuth(token);
 
       return getSmtpUrl();
     },
     "adminConfigureLoginService": function (token, options) {
-      if (!isAdmin() && !tokenIsValid(token)) {
-        throw new Meteor.Error(403, "Unauthorized", "User must be admin");
-      }
+      checkAuth(token);
 
       var ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
 
@@ -515,9 +511,7 @@ if (Meteor.isServer) {
       }
     },
     clearResumeTokensForService: function (token, serviceName) {
-      if (!isAdmin() && !tokenIsValid(token)) {
-        throw new Meteor.Error(403, "Unauthorized", "User must be admin");
-      }
+      checkAuth(token);
 
       var query = {};
       query["services." + serviceName] = {$exists: true};
@@ -525,21 +519,17 @@ if (Meteor.isServer) {
       Meteor.users.update(query, {$set: {"services.resume.loginTokens": []}});
     },
     adminUpdateUser: function (token, userInfo) {
-      if (!isAdmin() && !tokenIsValid(token)) {
-        throw new Meteor.Error(403, "Unauthorized", "User must be admin");
-      }
+      checkAuth(token);
 
       var userId = userInfo.userId;
       if (userId === Meteor.userId() && !userInfo.isAdmin) {
-        throw new Meteor.Error(403, "Unauthorized", "User cannot remove admin permissions from itself.");
+        throw new Meteor.Error(403, "User cannot remove admin permissions from itself.");
       }
 
       Meteor.users.update({_id: userId}, {$set: _.omit(userInfo, ["_id", "userId"])});
     },
     testSend: function (token, to) {
-      if (!isAdmin() && !tokenIsValid(token)) {
-        throw new Meteor.Error(403, "Unauthorized", "User must be admin");
-      }
+      checkAuth(token);
 
       SandstormEmail.send({
         to: to,

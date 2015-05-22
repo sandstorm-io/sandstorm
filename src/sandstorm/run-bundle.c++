@@ -1075,6 +1075,7 @@ private:
     bool allowDemoAccounts = false;
     bool isTesting = false;
     bool allowDevAccounts = false;
+    bool hideTroubleshooting = false;
     uint smtpListenPort = 30025;
   };
 
@@ -1420,6 +1421,8 @@ private:
         config.allowDevAccounts = value == "true" || value == "yes";
       } else if (key == "IS_TESTING") {
         config.isTesting = value == "true" || value == "yes";
+      } else if (key == "HIDE_TROUBLESHOOTING") {
+        config.hideTroubleshooting = value == "true" || value == "yes";
       } else if (key == "SMTP_LISTEN_PORT") {
         KJ_IF_MAYBE(p, parseUInt(value, 10)) {
           config.smtpListenPort = *p;
@@ -1874,6 +1877,7 @@ private:
           ", \"allowDemoAccounts\":", config.allowDemoAccounts ? "true" : "false",
           ", \"allowDevAccounts\":", config.allowDevAccounts ? "true" : "false",
           ", \"isTesting\":", config.isTesting ? "true" : "false",
+          ", \"hideTroubleshooting\":", config.hideTroubleshooting ? "true" : "false",
           ", \"wildcardHost\":\"", config.wildcardHost, "\"");
       if (config.sandcatsHostname.size() > 0) {
           settingsString = kj::str(settingsString,

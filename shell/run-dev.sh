@@ -4,7 +4,10 @@
 
 set -euo pipefail
 
-(cd .. && make shell-env)
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+
+(cd "$SCRIPT_DIR/.." && make shell-env)
+cd "$SCRIPT_DIR"
 
 if [ $# -gt 0 ]; then
   SANDSTORM_HOME=$1
@@ -69,6 +72,6 @@ __EOF__
 
 # Work-around for problem where Meteor's bundled npm prefers the system gyp
 # over its own bundled version, and the system gyp doesn't work.
-export PYTHONPATH=$HOME/.meteor/tools/latest/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib
+export PYTHONPATH=$("$SCRIPT_DIR/../find-meteor-dev-bundle.sh")/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib
 
 exec meteor run -p $PORT --settings $SETTINGS

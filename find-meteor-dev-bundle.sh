@@ -31,13 +31,15 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 METEOR_WAREHOUSE_DIR="${METEOR_WAREHOUSE_DIR:-$HOME/.meteor}"
 
 echo -n "Finding meteor-tool installation (can take a few seconds)..." >&2
 
 # If we run the meteor tool outside of `shell`, it might try to update itself. Inside `shell`, it
 # sees the meteor version we're using and sticks to that.
-cd shell
+cd "$SCRIPT_DIR/shell"
 
 METEOR_RELEASE=$(<.meteor/release)
 

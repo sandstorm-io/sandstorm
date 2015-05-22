@@ -167,6 +167,7 @@ if (Meteor.isClient) {
 
     return result;
   };
+  Template.registerHelper("dateString", makeDateString);
 
   launchAndEnterGrainByPackageId = function(packageId) {
     var action = UserActions.findOne({packageId: packageId});
@@ -296,8 +297,6 @@ if (Meteor.isClient) {
         return "";
       }
     },
-
-    dateString: function (date) { return makeDateString(date); },
 
     splashDialog: function() {
       var setting = Settings.findOne("splashDialog");

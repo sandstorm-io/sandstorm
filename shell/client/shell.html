@@ -102,7 +102,6 @@ limitations under the License.
           <li class="blank">&nbsp;</li>
           {{#if isAdmin}}
             <li class="applist-tab-settings">Admin Settings</li>
-            <li class="applist-tab-invite">Invite Users</li>
             <li class="applist-tab-stats">Usage Stats</li>
           {{/if}}
           <li class="applist-tab-about">About Sandstorm</li>
@@ -493,11 +492,8 @@ limitations under the License.
   </div>
 </template>
 
-<template name="invite">
-  <div id="topbar">{{> homeLink}} Send Invite</div>
-
-  <div id="invite" class="main-content">
-  <div class="centered-box">
+<template name="adminInvites">
+  <div id="invite">
     {{#if error}}
       <p>{{error}}</p>
       <p><button id="retry">Try Again</button></p>
@@ -535,7 +531,6 @@ $KEY</textarea></p>
     {{/if}}
     {{/if}}
     {{/if}}
-  </div>
   </div>
 </template>
 
@@ -628,42 +623,31 @@ $KEY</textarea></p>
 </template>
 
 <template name="admin">
-  <div id="topbar">{{> homeLink}} Admin settings</div>
+  <div id="topbar">{{> homeLink}} Admin configuration menu</div>
 
   {{> _adminConfigureLoginServiceDialog}}
   <div id="admin-settings" class="main-content">
     <div class="centered-box">
       {{#if isUserPermitted}}
-        <form id="admin-settings-form">
-          <p><input type="checkbox" name="googleLogin" value="value" checked={{googleEnabled}}> Enable Google Login
-             (<a class="configure-oauth" data-servicename="google" href="">configure</a>)
-             (<a class="reset-login-tokens" data-servicename="google" href="">log out all users</a>)<br>
-             <input type="checkbox" name="githubLogin" value="value" checked={{githubEnabled}}> Enable Github Login
-             (<a class="configure-oauth" data-servicename="github" href="">configure</a>)
-             (<a class="reset-login-tokens" data-servicename="github" href="">log out all users</a>)<br>
-             <input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login<br>
-            <span class="details">Choose which services users may use to identify themselves. Anyone can log in, but only users you <a href="/invite">invite</a> will be able to install apps or create files.</span></p>
-          <p>SMTP Url: <input type="text" name="smtpUrl" value="{{smtpUrl}}"><br>
-            <span class="details">Address of an SMTP (email) server, like <code>smtp://user:pass@host:port</code>. This will be used by email apps and to send <a href="/invite">email invites</a>.</span></p>
-          <p>Splash Dialog: <input type="textarea" name="splashDialog" value="{{splashDialog}}"><br>
-             Signup Dialog: <input type="textarea" name="signupDialog" value="{{signupDialog}}"><br>
-            <span class="details">This will be used as text in the splash page and signup page respectively.</span></p>
-          <p><button id="admin-settings-save">Save</button></p>
-
-          {{#if success}}
-          <div class="alert alert-success {{#if fadeAlert}}fade-out{{/if}}"><strong>Success!</strong> Your settings have been saved.</div>
-          {{/if}}
-          {{#if failure}}
-          <div class="alert alert-danger {{#if fadeAlert}}fade-out{{/if}}"><strong>Failure!</strong>
-            <ul>
-              {{#each errors}}
-              <li>{{details}}</li>
-              {{/each}}
-            </ul>
-            See <code>&lt;install-location&gt;/var/log/sandstorm.log</code> for details.
-          </div>
-          {{/if}}
-        </form>
+        <ul id="settings-tabs" class="nav centered-box">
+          <li id="settings-tab" class="{{#if settingsActive}}active{{/if}}"><a href="#">Settings</a></li>
+          <li id="users-tab" class="{{#if usersActive}}active{{/if}}"><a href="#">Users</a></li>
+          <li id="invites-tab" class="{{#if invitesActive}}active{{/if}}"><a href="#">Send Invite</a></li>
+        </ul>
+        {{> Template.dynamic template=adminTab}}
+        {{#if success}}
+        <div class="alert alert-success {{#if fadeAlert}}fade-out{{/if}}"><strong>Success!</strong> {{successMessage}}</div>
+        {{/if}}
+        {{#if failure}}
+        <div class="alert alert-danger {{#if fadeAlert}}fade-out{{/if}}"><strong>Failure!</strong>
+          <ul>
+            {{#each errors}}
+            <li>{{details}}</li>
+            {{/each}}
+          </ul>
+          See <code>&lt;install-location&gt;/var/log/sandstorm.log</code> for details.
+        </div>
+        {{/if}}
       {{else}}
         <p>
           You are not logged in as admin and there isn't a valid token specified. You should
@@ -673,6 +657,65 @@ $KEY</textarea></p>
       {{/if}}
     </div>
   </div>
+</template>
+
+<template name="adminSettings">
+  <form id="admin-settings-form">
+    <p><input type="checkbox" name="googleLogin" value="value" checked={{googleEnabled}}> Enable Google Login
+       (<a class="configure-oauth" data-servicename="google" href="">configure</a>)
+       (<a class="reset-login-tokens" data-servicename="google" href="">log out all users</a>)<br>
+       <input type="checkbox" name="githubLogin" value="value" checked={{githubEnabled}}> Enable Github Login
+       (<a class="configure-oauth" data-servicename="github" href="">configure</a>)
+       (<a class="reset-login-tokens" data-servicename="github" href="">log out all users</a>)<br>
+       <input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login<br>
+      <span class="details">Choose which services users may use to identify themselves. Anyone can log in, but only users you <a href="/invite">invite</a> will be able to install apps or create files.</span></p>
+    <p>SMTP Url: <input type="text" name="smtpUrl" value="{{smtpUrl}}"><button id="admin-settings-send-toggle">Test</button><br>
+      <span class="details">Address of an SMTP (email) server, like <code>smtp://user:pass@host:port</code>. This will be used by email apps and to send <a href="/invite">email invites</a>.</span>
+    </p>
+    {{#if isEmailTestActive}}
+      <p>
+        Send test email to: <input id="email-test-to" type="text">
+        <p><button id="admin-settings-send-test">Send</button></p>
+      </p>
+    {{/if}}
+    <p>Splash Dialog: <input type="textarea" name="splashDialog" value="{{splashDialog}}"><br>
+       Signup Dialog: <input type="textarea" name="signupDialog" value="{{signupDialog}}"><br>
+      <span class="details">This will be used as text in the splash page and signup page respectively.</span></p>
+    <p><button id="admin-settings-save">Save</button></p>
+  </form>
+</template>
+
+<template name="adminUsers">
+  <table id="users-table">
+    <thead>
+      <tr>
+        <td>Service</td>
+        <td>Username</td>
+        <td>Name</td>
+        <td>User Class</td>
+        <td>Created</td>
+        <td>Last Active</td>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each users}}
+        <tr>
+          <td>{{userService}}</td>
+          <td>{{userName}}</td>
+          <td>{{profile.name}}</td>
+          <td>
+            <select class="user-class" name="select">
+              <option value="admin" selected={{#if userIsAdmin}}selected{{/if}}>Admin</option>
+              <option value="invited" selected={{#if userIsInvited}}selected{{/if}}>Invited User</option>
+              <option value="guest" selected={{#if userIsGuest}}selected{{/if}}>Guest</option>
+            </select>
+          </td>
+          <td title="{{createdAt}}">{{dateString createdAt}}</td>
+          <td title="{{lastActive}}">{{dateString lastActive}}</td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
 </template>
 
 <template name="stats">

@@ -220,7 +220,13 @@ if (Meteor.isClient) {
     });
   };
 
-  Session.set("selectedTab", {myFiles: true});
+  Tracker.autorun(function() {
+    if (isSignedUpOrDemo()) {
+      Session.set("selectedTab", {myFiles: true});
+    } else {
+      Session.set("selectedTab", {sharedWithMe: true});
+    }
+  });
 
   Template.root.helpers({
     filteredGrains: function () {
@@ -531,8 +537,8 @@ Router.map(function () {
       var appMap = {};
       var allowDemoAccounts = Meteor.settings && Meteor.settings.public &&
             Meteor.settings.public.allowDemoAccounts;
-      if (isSignedUpOrDemo()) {
-        var userId = Meteor.userId();
+      var userId = Meteor.userId();
+      if (userId) {
         var appNames = [];
 
         DevApps.find().forEach(function (app) {
@@ -571,7 +577,7 @@ Router.map(function () {
       return {
         host: document.location.host,
         origin: getOrigin(),
-        isSignedUp: isSignedUpOrDemo(),
+        isSignedUpOrDemo: isSignedUpOrDemo(),
         isAdmin: isAdmin(),
         isDemoUser: isDemoUser(),
         isFirstRun: !HasUsers.findOne("hasUsers"),
@@ -581,7 +587,8 @@ Router.map(function () {
         allowDemoAccounts: allowDemoAccounts,
         apps: apps,
         showMenu: Session.get("showMenu"),
-        appMap: appMap
+        appMap: appMap,
+        hideSplashScreen: isSignedUpOrDemo() || RoleAssignments.findOne({recipient: Meteor.userId()})
       };
     }
   });

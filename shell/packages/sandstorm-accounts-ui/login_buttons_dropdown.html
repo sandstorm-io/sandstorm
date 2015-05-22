@@ -80,6 +80,13 @@
     {{/if}}
   {{/each}}
 
+  {{#if showTroubleshooting}}
+    {{> _loginButtonsLoggedOutPasswordServiceSeparator}}
+    <p id="troubleshooting-link">
+      <a href="https://github.com/sandstorm-io/sandstorm/wiki/Self-hosting-FAQ">troubleshooting</a>
+    </p>
+  {{/if}}
+
   {{#unless hasEmailTokenService}}
     {{> _loginButtonsMessages}}
   {{/unless}}

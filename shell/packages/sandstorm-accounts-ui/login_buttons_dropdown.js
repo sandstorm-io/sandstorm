@@ -126,7 +126,12 @@ Template._loginButtonsLoggedOutAllServices.helpers({
     return getLoginServices().length > 1;
   },
 
-  hasEmailTokenService: hasEmailTokenService
+  hasEmailTokenService: hasEmailTokenService,
+
+  showTroubleshooting: function () {
+    return !(Meteor.settings && Meteor.settings.public &&
+      Meteor.settings.public.hideTroubleshooting);
+  }
 });
 
 Template._loginButtonsLoggedOutPasswordService.helpers({

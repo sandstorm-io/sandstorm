@@ -284,11 +284,11 @@ if (Meteor.isClient) {
       var value = event.target.selectedOptions[0].value;
 
       if (value == "admin") {
-        updateUser({userId: this.userId, signupKey: true, isAdmin: true});
+        updateUser({userId: this._id, signupKey: true, isAdmin: true});
       } else if (value == "invited") {
-        updateUser({userId: this.userId, signupKey: true, isAdmin: false});
+        updateUser({userId: this._id, signupKey: true, isAdmin: false});
       } else if (value == "guest") {
-        updateUser({userId: this.userId, signupKey: false, isAdmin: false});
+        updateUser({userId: this._id, signupKey: false, isAdmin: false});
       } else {
         console.error("unrecognized user class");
       }
@@ -534,7 +534,7 @@ if (Meteor.isServer) {
         throw new Meteor.Error(403, "Unauthorized", "User cannot remove admin permissions from itself.");
       }
 
-      Meteor.users.update({_id: userId}, {$set: _.omit(userInfo, ["_id"])});
+      Meteor.users.update({_id: userId}, {$set: _.omit(userInfo, ["_id", "userId"])});
     },
     testSend: function (token, to) {
       if (!isAdmin() && !tokenIsValid(token)) {

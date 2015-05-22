@@ -413,7 +413,7 @@ if (Meteor.isClient) {
       var oldContent = sendButton.textContent;
       sendButton.textContent = "Sending...";
 
-      Meteor.call("sendInvites", getOrigin(), from, list, subject, message,
+      Meteor.call("sendInvites", state.get("token"), getOrigin(), from, list, subject, message,
                   function (error, results) {
         sendButton.disabled = false;
         sendButton.textContent = oldContent;
@@ -429,7 +429,7 @@ if (Meteor.isClient) {
       var state = Iron.controller().state;
       var note = document.getElementById("key-note").value;
 
-      Meteor.call("createSignupKey", note, function (error, key) {
+      Meteor.call("createSignupKey", state.get("token"), note, function (error, key) {
         if (error) {
           state.set("inviteMessage", { error: error.toString() });
         } else {
@@ -608,23 +608,19 @@ if (Meteor.isServer) {
         text: "Success! Your outgoing SMTP is working."
       });
     },
-    createSignupKey: function (note) {
+    createSignupKey: function (token, note) {
       check(note, String);
 
-      if (!isAdmin()) {
-        throw new Meteor.Error(403, "Must be admin to create keys.");
-      }
+      checkAuth(token);
 
       var key = Random.id();
       SignupKeys.insert({_id: key, used: false, note: note});
       return key;
     },
-    sendInvites: function (origin, from, list, subject, message) {
+    sendInvites: function (token, origin, from, list, subject, message) {
       check([origin, from, list, subject, message], [String]);
 
-      if (!isAdmin()) {
-        throw new Meteor.Error(403, "Must be admin to send invites.");
-      }
+      checkAuth(token);
 
       if (!from.trim()) {
         throw new Meteor.Error(403, "Must enter 'from' address.");

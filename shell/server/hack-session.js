@@ -32,7 +32,7 @@ var EmailSendPort = EmailRpc.EmailSendPort;
 var Url = Npm.require("url");
 
 var ROOT_URL = Url.parse(process.env.ROOT_URL);
-var HOSTNAME = ROOT_URL.hostname;
+HOSTNAME = ROOT_URL.hostname;
 
 function HackSessionContextImpl(grainId) {
   this.grainId = grainId;

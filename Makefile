@@ -132,7 +132,7 @@ tmp/ekam-bin: tmp/.deps
 	@mkdir -p tmp
 	@rm -f tmp/ekam-bin
 	@which ekam >/dev/null && ln -s "`which ekam`" tmp/ekam-bin || \
-	    (cd deps/ekam && make bin/ekam-bootstrap && \
+	    (cd deps/ekam && $(MAKE) bin/ekam-bootstrap && \
 	     cd ../.. && ln -s ../deps/ekam/bin/ekam-bootstrap tmp/ekam-bin)
 
 tmp/.ekam-run: tmp/ekam-bin src/sandstorm/* tmp/.deps

@@ -1,4 +1,5 @@
 run-bundle bin/sandstorm
+spk-standalone bin/spk
 sandstorm-http-bridge bin
 email.capnp node_modules/sandstorm/email.capnp
 grain.capnp node_modules/sandstorm/grain.capnp

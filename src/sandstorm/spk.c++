@@ -369,8 +369,9 @@ public:
     KJ_SYSCALL(n = readlink("/proc/self/exe", buf, sizeof(buf)));
     buf[n] = '\0';
     exePath = kj::heapString(buf, n);
-    KJ_ASSERT(exePath.endsWith("/sandstorm"));
-    installHome = kj::heapString(buf, n - strlen("/sandstorm"));
+    if (exePath.endsWith("/sandstorm")) {
+      installHome = kj::heapString(buf, n - strlen("/sandstorm"));
+    }
   }
 
   kj::MainFunc getMain() override {

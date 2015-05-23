@@ -128,7 +128,9 @@ Sessions = new Mongo.Collection("sessions");
 //       period.
 //   userId:  User who owns this session.
 //   hashedToken: If the session is owned by an anonymous user, the _id of the entry in ApiTokens
-//       that was used to open it.
+//       that was used to open it. Note that for old-style sharing (i.e. when !grain.private),
+//       anonymous users can get access without an API token and so neither userId nor hashedToken
+//       are present.
 
 SignupKeys = new Mongo.Collection("signupKeys");
 // Invite keys which may be used by users to get access to Sandstorm.

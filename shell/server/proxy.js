@@ -260,9 +260,12 @@ function openSessionInternal(grainId, user, title, apiToken) {
 
   if (userId) {
     session.userId = userId;
-  } else {
+  } else if (apiToken) {
     session.hashedToken = apiToken._id;
+  } else {
+    // Must be old-style sharing, i.e. !grain.private.
   }
+
   Sessions.insert(session);
 
   return {sessionId: sessionId, title: title, grainId: grainId};

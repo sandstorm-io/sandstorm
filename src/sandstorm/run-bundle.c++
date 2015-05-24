@@ -1017,9 +1017,15 @@ public:
     // Remove old token if present.
     unlink("../var/sandstorm/adminToken");
 
-    kj::FdOutputStream tokenFile(raiiOpen("../var/sandstorm/adminToken",
-        O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0640));
-    tokenFile.write(hexString.begin(), hexString.size());
+    {
+      auto tokenFd = raiiOpen("../var/sandstorm/adminToken",
+          O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
+      kj::FdOutputStream tokenFile(tokenFd.get());
+      if (runningAsRoot) {
+        KJ_SYSCALL(fchown(tokenFd, config.uids.uid, config.uids.gid));
+      }
+      tokenFile.write(hexString.begin(), hexString.size());
+    }
 
     if (shortOutput) {
       context.exitInfo(hexString);

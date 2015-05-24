@@ -108,7 +108,7 @@ deps/ekam:
 deps/libseccomp:
 	@$(call color,downloading libseccomp)
 	@mkdir -p deps
-	git clone git://git.code.sf.net/p/libseccomp/libseccomp deps/libseccomp
+	git clone https://github.com/seccomp/libseccomp deps/libseccomp
 
 deps/libsodium:
 	@$(call color,downloading libsodium)

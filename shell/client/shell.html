@@ -309,7 +309,8 @@ limitations under the License.
             <select id="share-token-role" title="select a role">
               {{#each roles}}
                 <option title={{verbPhrase.defaultText}}
-                        style="{{#if obsolete}}display:none{{else}}{{/if}}">
+                        style="{{#if obsolete}}display:none{{/if}}"
+                        selected={{default}}>
                   {{title.defaultText}}</option>
               {{/each}}
             </select>

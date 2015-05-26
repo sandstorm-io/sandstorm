@@ -861,11 +861,6 @@ kj::Promise<void> SubprocessSet::waitLoop() {
 }
 
 TwoPartyServerWithClientBootstrap::TwoPartyServerWithClientBootstrap(
-  capnp::Capability::Client bootstrapInterface, kj::Own<CapRedirector>&& redirector)
-    : bootstrapInterface(kj::mv(bootstrapInterface)), redirector(kj::mv(redirector)),
-      tasks(*this) {}
-
-TwoPartyServerWithClientBootstrap::TwoPartyServerWithClientBootstrap(
   capnp::Capability::Client bootstrapInterface)
     : bootstrapInterface(kj::mv(bootstrapInterface)), redirector(kj::refcounted<CapRedirector>()),
       tasks(*this) {}

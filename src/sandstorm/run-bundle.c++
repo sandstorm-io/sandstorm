@@ -1809,12 +1809,10 @@ private:
       dropPrivs(config.uids);
       clearSignalMask();
 
-      auto redirector = kj::refcounted<CapRedirector>();
-      capnp::Capability::Client coreFactoryCap = kj::addRef(*redirector);
-      TwoPartyServerWithClientBootstrap server(
-        kj::heap<BackendImpl>(*io.lowLevelProvider, network,
-          coreFactoryCap.castAs<SandstormCoreFactory>()),
-        kj::mv(redirector));
+      auto paf = kj::newPromiseAndFulfiller<Backend::Client>();
+      TwoPartyServerWithClientBootstrap server(kj::mv(paf.promise));
+      paf.fulfiller->fulfill(kj::heap<BackendImpl>(*io.lowLevelProvider, network,
+        server.getBootstrap().castAs<SandstormCoreFactory>()));
 
       // Signal readiness.
       write(outPipe, "ready", 5);

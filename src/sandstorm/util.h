@@ -393,10 +393,6 @@ class TwoPartyServerWithClientBootstrap: private kj::TaskSet::ErrorHandler {
 
 public:
   explicit TwoPartyServerWithClientBootstrap(capnp::Capability::Client bootstrapInterface);
-  TwoPartyServerWithClientBootstrap(capnp::Capability::Client bootstrapInterface,
-                                       kj::Own<CapRedirector>&& redirector);
-  // If you're passing in a redirector, make sure it was constructed to be refcounted like so:
-  // kj::refcounted<CapRedirector>()
 
   kj::Promise<void> listen(kj::Own<kj::ConnectionReceiver>&& listener);
   // Listens for connections on the given listener. The returned promise never resolves unless an

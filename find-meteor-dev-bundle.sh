@@ -58,4 +58,4 @@ TOOLDIR=$(echo $TOOL_VERSION | tr @ /)
 
 echo " $TOOL_VERSION" >&2
 
-readlink -f $METEOR_WAREHOUSE_DIR/packages/$TOOLDIR/meteor-tool-os.linux.x86_64/dev_bundle
+readlink -f $METEOR_WAREHOUSE_DIR/packages/$TOOLDIR/mt-os.linux.x86_64/dev_bundle

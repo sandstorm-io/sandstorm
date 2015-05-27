@@ -1,0 +1,48 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Sandstorm template</title>
+    <style>
+body {
+  margin: 0;
+  padding: 0;
+  border-collapse: collapse;
+  border-spacing: 0;
+  border: 0;
+}
+pre {
+  margin: 0;
+  padding: 0;
+}
+    </style>
+  </head>
+  <body>
+    <pre id="text"></pre>
+<script>
+// Templates are namespaced in localStorage by the prefix "template"
+var templateToken = "template" + window.location.hash.substring(1);
+var record = JSON.parse(localStorage.getItem(templateToken));
+console.log(record);
+document.getElementById("text").textContent = record.renderedTemplate;
+
+// Clean up localStorage templates that have expired.
+// First, collect expired template keys
+var i;
+var toDelete = [];
+for (i = 0; i < localStorage.length ; i++) {
+  var key = localStorage.key(i);
+  // we only care about templates
+  if (key.startsWith("template")) {
+    var data = localStorage.getItem(key);
+    if (data.expires < Date.now()) {
+        toDelete.push(key);
+    }
+  }
+}
+// Then, wipe expired keys.
+for (i = 0; i < toDelete.length; i++) {
+  localStorage.deleteItem(toDelete[i]);
+}
+</script>
+  </body>
+</html>

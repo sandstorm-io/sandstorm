@@ -574,6 +574,15 @@ getProxyForApiToken = function (token) {
           throw new Meteor.Error(403, "Authorization token expired");
         }
 
+        if (tokenInfo.expiresIfUnused) {
+          if (tokenInfo.expiresIfUnused.getTime() <= Date.now()) {
+            throw new Meteor.Error(403, "Authorization token expired");
+          } else {
+            // It's getting used now, so clear the expiresIfUnused field.
+            ApiTokens.update(tokenInfo._id, {$set: {expiresIfUnused: null}});
+          }
+        }
+
         var grain = Grains.findOne(tokenInfo.grainId);
         if (!grain) {
           // Grain was deleted, I guess.

@@ -88,6 +88,14 @@ test: sandstorm-$(BUILD)-fast.tar.xz
 # ====================================================================
 # Dependencies
 
+# We list remotes so that if projects move hosts, we can pull from their new
+# canonical location.
+REMOTE_capnproto=https://github.com/sandstorm-io/capnproto.git
+REMOTE_ekam=https://github.com/sandstorm-io/ekam.git
+REMOTE_libseccomp=https://github.com/seccomp/libseccomp
+REMOTE_libsodium=https://github.com/jedisct1/libsodium.git
+REMOTE_node-capnp=https://github.com/kentonv/node-capnp.git
+
 deps: tmp/.deps
 
 tmp/.deps: deps/capnproto deps/ekam deps/libseccomp deps/libsodium deps/node-capnp
@@ -97,33 +105,33 @@ tmp/.deps: deps/capnproto deps/ekam deps/libseccomp deps/libsodium deps/node-cap
 deps/capnproto:
 	@$(call color,downloading capnproto)
 	@mkdir -p deps
-	git clone https://github.com/sandstorm-io/capnproto.git deps/capnproto
+	git clone $(REMOTE_capnproto) deps/capnproto
 
 deps/ekam:
 	@$(call color,downloading ekam)
 	@mkdir -p deps
-	git clone https://github.com/sandstorm-io/ekam.git deps/ekam
+	git clone $(REMOTE_ekam) deps/ekam
 	@ln -s .. deps/ekam/deps
 
 deps/libseccomp:
 	@$(call color,downloading libseccomp)
 	@mkdir -p deps
-	git clone git://git.code.sf.net/p/libseccomp/libseccomp deps/libseccomp
+	git clone $(REMOTE_libseccomp) deps/libseccomp
 
 deps/libsodium:
 	@$(call color,downloading libsodium)
 	@mkdir -p deps
-	git clone https://github.com/jedisct1/libsodium.git deps/libsodium
+	git clone $(REMOTE_libsodium) deps/libsodium
 
 deps/node-capnp:
 	@$(call color,downloading node-capnp)
 	@mkdir -p deps
-	git clone https://github.com/kentonv/node-capnp.git deps/node-capnp
+	git clone $(REMOTE_node-capnp) deps/node-capnp
 
 update-deps:
 	@$(call color,updating all dependencies)
 	@(for DEP in capnproto ekam libseccomp libsodium node-capnp; do cd deps/$$DEP; \
-	    echo "pulling $$DEP..."; git pull; cd ../..; done)
+	    echo "pulling $$DEP..."; git pull $(REMOTE_$(DEP)) ; cd ../..; done)
 
 # ====================================================================
 # Ekam bootstrap and C++ binaries

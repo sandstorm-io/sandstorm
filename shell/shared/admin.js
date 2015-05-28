@@ -399,6 +399,76 @@ if (Meteor.isClient) {
       });
     }
   });
+
+  Template.adminInvites.events({
+    "click #send": function (event) {
+      var state = Iron.controller().state;
+      var from = document.getElementById("invite-from").value;
+      var list = document.getElementById("invite-emails").value;
+      var subject = document.getElementById("invite-subject").value;
+      var message = document.getElementById("invite-message").value;
+
+      var sendButton = event.currentTarget;
+      sendButton.disabled = true;
+      var oldContent = sendButton.textContent;
+      sendButton.textContent = "Sending...";
+
+      Meteor.call("sendInvites", state.get("token"), getOrigin(), from, list, subject, message,
+                  function (error, results) {
+        sendButton.disabled = false;
+        sendButton.textContent = oldContent;
+        if (error) {
+          state.set("inviteMessage", { error: error.toString() });
+        } else {
+          state.set("inviteMessage", results);
+        }
+      });
+    },
+
+    "click #create": function (event) {
+      var state = Iron.controller().state;
+      var note = document.getElementById("key-note").value;
+
+      Meteor.call("createSignupKey", state.get("token"), note, function (error, key) {
+        if (error) {
+          state.set("inviteMessage", { error: error.toString() });
+        } else {
+          state.set("inviteMessage", {
+            url: getOrigin() + Router.routes.signup.path({key: key})
+          });
+        }
+      });
+    },
+
+    "click .autoSelect": function (event) {
+      event.currentTarget.select();
+    },
+
+    "click #retry": function (event) {
+      Iron.controller().state.set("inviteMessage", undefined);
+    },
+  });
+
+  Template.adminInvites.helpers({
+    error: function () {
+      var res = Iron.controller().state.get("inviteMessage");
+      return res && res.error;
+    },
+    email: function () {
+      var me = Meteor.user();
+      var email = (me.services && me.services.google && me.services.google.email) ||
+                  (me.services && me.services.github && me.services.github.email);
+      if (email && me.profile.name) {
+        email = me.profile.name + " <" + email + ">";
+      }
+      email = email || "";
+      return email;
+    },
+    url: function () {
+      var res = Iron.controller().state.get("inviteMessage");
+      return res && res.url;
+    }
+  });
 }
 
 if (Meteor.isServer) {
@@ -537,6 +607,51 @@ if (Meteor.isServer) {
         subject: "Testing your Sandstorm's SMTP setting",
         text: "Success! Your outgoing SMTP is working."
       });
+    },
+    createSignupKey: function (token, note) {
+      check(note, String);
+
+      checkAuth(token);
+
+      var key = Random.id();
+      SignupKeys.insert({_id: key, used: false, note: note});
+      return key;
+    },
+    sendInvites: function (token, origin, from, list, subject, message) {
+      check([origin, from, list, subject, message], [String]);
+
+      checkAuth(token);
+
+      if (!from.trim()) {
+        throw new Meteor.Error(403, "Must enter 'from' address.");
+      }
+
+      if (!list.trim()) {
+        throw new Meteor.Error(403, "Must enter 'to' addresses.");
+      }
+
+      this.unblock();
+
+      list = list.split("\n");
+      for (var i in list) {
+        var email = list[i].trim();
+
+        if (email) {
+          var key = Random.id();
+
+          SignupKeys.insert({_id: key, used: false, note: "E-mail invite to " + email,
+                             definitelySent: false});
+          SandstormEmail.send({
+            to: email,
+            from: from,
+            subject: subject,
+            text: message.replace(/\$KEY/g, origin + Router.routes.signup.path({key: key}))
+          });
+          SignupKeys.update(key, {$set: {definitelySent: true}});
+        }
+      }
+
+      return { sent: true };
     }
   });
 

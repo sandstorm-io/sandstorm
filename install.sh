@@ -167,7 +167,7 @@ ALLOW_DEV_ACCOUNTS="false"
 # Define functions for each stage of the install process.
 
 usage() {
-  echo "usage: $SCRIPT_NAME [-c] [-d] [-e] [-u] [<bundle>]" >&2
+  echo "usage: $SCRIPT_NAME [-d] [-e] [-u] [<bundle>]" >&2
   echo "If <bundle> is provided, it must be the name of a Sandstorm bundle file," >&2
   echo "like 'sandstorm-123.tar.xz', which will be installed. Otherwise, the script" >&2
   echo "downloads a bundle from the internet via HTTP." >&2

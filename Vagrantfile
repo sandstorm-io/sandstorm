@@ -58,17 +58,26 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # RAM entirely (which it basically would if we went much lower than
   # 512MB) and also allowing it to use up a healthily large amount of
   # RAM so it can run faster on systems that can afford it.
-  config.vm.provider :virtualbox do |vb|
-    if cpus.nil?
-      vb.cpus = 1
-    else
-      vb.cpus = cpus
-    end
+  assign_cpus = nil
+  assign_ram_mb = nil
+  if cpus.nil?
+    assign_cpus = 1
+  else
+    assign_cpus = cpus
+  end
+  if total_kB_ram.nil? or total_kB_ram < 2048000
+    assign_ram_mb = 512
+  else
+    assign_ram_mb = (total_kB_ram / 1024 / 4)
+  end
 
-    if total_kB_ram.nil? or total_kB_ram < 2048000
-      vb.memory = 512
-    else
-      vb.memory = (total_kB_ram / 1024 / 4)
-    end
+  # Actually provide the computed CPUs/memory to the backing provider.
+  config.vm.provider :virtualbox do |vb|
+    vb.cpus = assign_cpus
+    vb.memory = assign_ram_mb
+  end
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.cpus = assign_cpus
+    libvirt.memory = assign_ram_mb
   end
 end

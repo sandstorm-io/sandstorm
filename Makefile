@@ -191,7 +191,7 @@ sandstorm-$(BUILD).tar.xz: bundle
 
 sandstorm-$(BUILD)-fast.tar.xz: bundle
 	@$(call color,compress fast bundle)
-	@tar c --transform="s,^bundle,sandstorm-$(BUILD)," bundle | xz -c -0 > sandstorm-$(BUILD)-fast.tar.xz
+	@tar c --transform="s,^bundle,sandstorm-$(BUILD)," bundle | xz -c -0 --threads=0 > sandstorm-$(BUILD)-fast.tar.xz
 
 .docker: Dockerfile
 	@$(call color,docker build)

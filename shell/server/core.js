@@ -40,11 +40,8 @@ function makeNotificationHandle(notificationId, saved) {
 }
 
 function dropWakelock(grainId, wakeLockNotificationId) {
-  // For some reason, Mongo returns an object that looks buffer-like, but isn't a buffer.
-  // We have to explicitly copy it before we can pass it on to node-capnp.
-  var copiedId = new Buffer(wakeLockNotificationId);
   waitPromise(useGrain(grainId, function (supervisor) {
-    return supervisor.drop({wakeLockNotification: copiedId});
+    return supervisor.drop({wakeLockNotification: wakeLockNotificationId});
   }));
 }
 
@@ -53,9 +50,25 @@ function dismissNotification(notificationId) {
   if (notification) {
     Notifications.remove({_id: notificationId});
     if (notification.ongoing) {
+      var sandstormCore = new SandstormCoreImpl(notification.grainId);
       // For some reason, Mongo returns an object that looks buffer-like, but isn't a buffer.
       // Only way to fix seems to be to copy it.
-      dropToken(notification.grainId, new Buffer(notification.ongoing));
+      var id = new Buffer(notification.ongoing);
+
+      var notificationCap = waitPromise(sandstormCore.restore(id)).cap;
+      var castedNotification = notificationCap.castAs(PersistentOngoingNotification);
+      waitPromise(sandstormCore.drop(id));
+      try {
+        waitPromise(castedNotification.cancel());
+        castedNotification.close();
+        notificationCap.close();
+      } catch (err) {
+        if (err.type !== "disconnected") {
+          // ignore disconnected errors, since cancel may shutdown the grain before the supervisor
+          // responds.
+          throw err;
+        }
+      }
     }
   }
 }
@@ -128,48 +141,44 @@ SandstormCoreImpl.prototype.restore = function (sturdyRef) {
         throw new Error("Unknown frontend token type.");
       }
     } else if (token.objectId) {
-      return waitPromise(useGrain(self.grainId, function (supervisor) {
+      return useGrain(self.grainId, function (supervisor) {
         return supervisor.restore(token.objectId);
-      }));
+      });
     } else {
       throw new Error("Unknown token type.");
     }
   });
 };
 
-var dropToken = function (grainId, sturdyRef) {
-  var hashedSturdyRef = hashSturdyRef(sturdyRef);
-  var token = ApiTokens.findOne({_id: hashedSturdyRef});
-  if (!token) {
-    return;
-  }
-  if (token.frontendRef) {
-    if (token.frontendRef.notificationHandle) {
-      var notificationId = token.frontendRef.notificationHandle;
-      ApiTokens.remove({_id: hashedSturdyRef});
-      var anyToken = ApiTokens.findOne({"frontendRef.notificationHandle": notificationId});
-      if (!anyToken) {
-        // No other tokens referencing this notification exist, so dismiss the notification
-        dismissNotification(notificationId);
+SandstormCoreImpl.prototype.drop = function (sturdyRef) {
+  var grainId = this.grainId;
+  return inMeteor(function () {
+    var hashedSturdyRef = hashSturdyRef(sturdyRef);
+    var token = ApiTokens.findOne({_id: hashedSturdyRef});
+    if (!token) {
+      return;
+    }
+    if (token.frontendRef) {
+      if (token.frontendRef.notificationHandle) {
+        var notificationId = token.frontendRef.notificationHandle;
+        ApiTokens.remove({_id: hashedSturdyRef});
+        var anyToken = ApiTokens.findOne({"frontendRef.notificationHandle": notificationId});
+        if (!anyToken) {
+          // No other tokens referencing this notification exist, so dismiss the notification
+          dismissNotification(notificationId);
+        }
+      } else {
+        throw new Error("Unknown frontend token type.");
+      }
+    } else if (token.objectId) {
+      if (token.objectId.wakeLockNotification) {
+        dropWakelock(grainId, token.objectId.wakeLockNotification);
+      } else {
+        throw new Error("Unknown objectId token type.");
       }
     } else {
-      throw new Error("Unknown frontend token type.");
+      throw new Error("Unknown token type.");
     }
-  } else if (token.objectId) {
-    if (token.objectId.wakeLockNotification) {
-      dropWakelock(grainId, token.objectId.wakeLockNotification);
-    } else {
-      throw new Error("Unknown objectId token type.");
-    }
-  } else {
-    throw new Error("Unknown token type.");
-  }
-};
-
-SandstormCoreImpl.prototype.drop = function (sturdyRef) {
-  var self = this;
-  return inMeteor(function () {
-    dropToken(self.grainId, sturdyRef);
   });
 };
 

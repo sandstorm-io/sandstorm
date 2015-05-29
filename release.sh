@@ -2,12 +2,12 @@
 
 set -euo pipefail
 
-if (grep -r KJ_DBG src | egrep -v '/debug(-test)?[.]'); then
+if (grep -r KJ_DBG src/* | egrep -v '/(debug(-test)?|exception)[.]'); then
   echo '*** Error:  There are instances of KJ_DBG in the code.' >&2
   exit 1
 fi
 
-if (egrep -r 'TODO\(now\)'); then
+if egrep -r 'TODO\(now\)' src/*; then
   echo '*** Error:  There are release-blocking TODOs in the code.' >&2
   exit 1
 fi

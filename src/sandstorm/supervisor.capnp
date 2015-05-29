@@ -158,7 +158,7 @@ struct SupervisorObjectId(AppObjectId) {
     appRef @0 :AppObjectId;
     # A reference restorable by the app.
 
-    wakeLockNotification @1 :Data;
+    wakeLockNotification @1 :UInt32;
     # This refers to an OngoingNotification for a wake lock. Note that although the app itself
     # implements an `OngoingNotification`, the supervisor wraps it in order to detect the `cancel`
     # call.

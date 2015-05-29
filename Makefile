@@ -176,7 +176,7 @@ shell/public/%-m.png: icons/%.svg
 
 shell-build: shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
 	@$(call color,meteor frontend)
-	@OLD=`pwd` && cd shell && PYTHONPATH=$$HOME/.meteor/tools/latest/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib meteor build --directory $$OLD/shell-build
+	@OLD=`pwd` && cd shell && PYTHONPATH=$$HOME/.meteor/tools/latest/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib meteor build --directory "$$OLD/shell-build"
 
 # ====================================================================
 # Bundle

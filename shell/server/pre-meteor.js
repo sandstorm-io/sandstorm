@@ -43,6 +43,12 @@ function isSandstormShell(hostname) {
   return (hostname === HOSTNAME || (DDP_HOSTNAME && hostname === DDP_HOSTNAME));
 }
 
+function hasPseudoTLD(hostname) {
+  // Returns true if this hostname ends in one of the major pseudo-TLDs.
+  let tld = hostname.split(".").pop();
+  return (tld === ("onion" || "i2p" || "gnu"));
+}
+
 Meteor.startup(function () {
 
   var meteorUpgradeListeners = WebApp.httpServer.listeners('upgrade');
@@ -90,7 +96,15 @@ Meteor.startup(function () {
       publicIdPromise = Promise.resolve(id);
     } else {
       // Not a wildcard host. Perhaps it is a custom host.
-      publicIdPromise = lookupPublicIdFromDns(hostname);
+
+      // Skip DNS TXT record resolutions for the major pseudo-TLDs, and avoid
+      // returning any result which might indicate that there's actually a
+      // server listening here.
+      if (hasPseudoTLD(hostname)) {
+        return;
+      } else {
+        publicIdPromise = lookupPublicIdFromDns(hostname);
+      }
     }
 
     publicIdPromise.then(function (publicId) {

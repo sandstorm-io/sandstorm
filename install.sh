@@ -1084,10 +1084,6 @@ set_permissions() {
   chown -R $SERVER_USER:$GROUP var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads,adminToken}
   chown root:$GROUP var/{log,pid,mongo,sandstorm} var/sandstorm/{apps,grains,downloads,adminToken}
   chmod -R g=rwX,o= var/{log,pid,mongo,sandstorm} var/sandstorm/{apps,grains,downloads,adminToken}
-
-  # Don't allow listing grain IDs directly.  (At the moment, this is faux security since
-  # an attacker could just read the database, but maybe that will change someday...)
-  chmod g-r var/sandstorm/grains
 }
 
 install_sandstorm_symlinks() {

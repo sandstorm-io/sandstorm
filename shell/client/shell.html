@@ -860,6 +860,10 @@ $KEY</textarea></p>
       <p><b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain
         modifications not reviewed by the developers.</p>
       {{/if}}
+      <button id="show-changelog">Show Changelog</button>
+      {{#if showChangelog}}
+        {{> changelog}}
+      {{/if}}
       <p><a href="https://sandstorm.io">Sandstorm.io</a> is an open source hosting platform for
         personal/private instances of web apps. Users can upload and install arbitrary software
         through a simple app-store-like web interface. In addition to better privacy,

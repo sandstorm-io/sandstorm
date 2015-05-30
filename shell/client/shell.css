@@ -1056,6 +1056,20 @@ table#users-table tr {
   border-bottom: 1px solid #ddd;
 }
 
+#show-changelog {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  background-color: #428bca;
+
+  margin-top: 20px;
+  padding: 8px;
+  line-height: 1.33;
+  border-radius: 4px;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
 @media screen and (max-width: 1250px) {
   aside {
     position: static;

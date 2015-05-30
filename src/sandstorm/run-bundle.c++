@@ -1771,7 +1771,7 @@ private:
 
       // Create the mongo user.
       auto command = kj::str(
-        "db.addUser({user: \"sandstorm\", pwd: \"", password, "\", "
+        "db.createUser({user: \"sandstorm\", pwd: \"", password, "\", "
         "roles: [\"readWriteAnyDatabase\",\"userAdminAnyDatabase\",\"dbAdminAnyDatabase\"]})");
       mongoCommand(config, command, "admin");
 

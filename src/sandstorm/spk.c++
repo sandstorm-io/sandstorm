@@ -283,82 +283,6 @@ private:
   kj::ArrayPtr<byte> content;
 };
 
-class ChildProcess {
-public:
-  enum Direction {
-    OUTPUT,
-    INPUT
-  };
-
-  ChildProcess(kj::StringPtr command, kj::StringPtr flags,
-               kj::AutoCloseFd wrappedFd, Direction direction) {
-    int pipeFds[2];
-    KJ_SYSCALL(pipe(pipeFds));
-    kj::AutoCloseFd pipeInput(pipeFds[0]), pipeOutput(pipeFds[1]);
-
-    KJ_SYSCALL(pid = fork());
-    if (pid == 0) {
-      if (direction == OUTPUT) {
-        KJ_SYSCALL(dup2(pipeInput, STDIN_FILENO));
-        KJ_SYSCALL(dup2(wrappedFd, STDOUT_FILENO));
-      } else {
-        KJ_SYSCALL(dup2(wrappedFd, STDIN_FILENO));
-        KJ_SYSCALL(dup2(pipeOutput, STDOUT_FILENO));
-      }
-      pipeInput = nullptr;
-      pipeOutput = nullptr;
-      wrappedFd = nullptr;
-
-      KJ_SYSCALL(execlp(command.cStr(), command.cStr(), flags.cStr(), (const char*)nullptr),
-                 command);
-      KJ_UNREACHABLE;
-    } else {
-      if (direction == OUTPUT) {
-        pipeFd = kj::mv(pipeOutput);
-      } else {
-        pipeFd = kj::mv(pipeInput);
-      }
-    }
-  }
-
-  ~ChildProcess() {
-    if (pid == 0) return;
-
-    if (unwindDetector.isUnwinding()) {
-      // An exception was thrown, so force-kill the child.
-      int status;
-      while (kill(pid, SIGKILL) < 0 && errno == EINTR) {}
-      while (waitpid(pid, &status, 0) < 0 && errno == EINTR) {}
-    } else {
-      // Close the pipe first, in case the child is waiting for that.
-      pipeFd = nullptr;
-
-      int status;
-      KJ_SYSCALL(waitpid(pid, &status, 0)) { return; }
-      if (status != 0) {
-        if (WIFEXITED(status)) {
-          int exitCode = WEXITSTATUS(status);
-          KJ_FAIL_ASSERT("child process failed", exitCode) { return; }
-        } else if (WIFSIGNALED(status)) {
-          int signalNumber = WTERMSIG(status);
-          KJ_FAIL_ASSERT("child process crashed", signalNumber) { return; }
-        } else {
-          KJ_FAIL_ASSERT("child process failed") { return; }
-        }
-      }
-    }
-  }
-
-  int getPipe() { return pipeFd; }
-
-  KJ_DISALLOW_COPY(ChildProcess);
-
-private:
-  kj::AutoCloseFd pipeFd;
-  pid_t pid;
-  kj::UnwindDetector unwindDetector;
-};
-
 class SpkTool: public AbstractMain {
   // Main class for the Sandstorm spk tool.
 
@@ -1000,12 +924,22 @@ private:
       kj::FdOutputStream(finalFile.get()).write(magic.begin(), magic.size());
 
       // Pipe content through xz compressor.
-      ChildProcess child("xz", "-zc", kj::mv(finalFile), ChildProcess::OUTPUT);
+      auto pipe = Pipe::make();
+      Subprocess::Options childOptions({"xz", "--threads=0", "--compress", "--stdout"});
+      childOptions.stdin = pipe.readEnd.get();
+      childOptions.stdout = finalFile.get();
+      Subprocess child(kj::mv(childOptions));
+      pipe.readEnd = nullptr;
 
-      // Write signature and archive out to the pipe.
-      kj::FdOutputStream out(child.getPipe());
-      capnp::writeMessage(out, signatureMessage);
-      out.write(tmpData.begin(), tmpData.size());
+      // Write signature and archive out to the pipe, then close the pipe.
+      {
+        kj::FdOutputStream out(kj::mv(pipe.writeEnd));
+        capnp::writeMessage(out, signatureMessage);
+        out.write(tmpData.begin(), tmpData.size());
+      }
+
+      // Wait until xz is done compressing.
+      child.waitForSuccess();
     }
 
     printAppId(key.getPublicKey());
@@ -1372,18 +1306,15 @@ private:
     }
 
     // Decompress the remaining bytes in the SPK using xz.
-    int stdoutPipe[2];
-    KJ_SYSCALL(pipe2(stdoutPipe, O_CLOEXEC));
-    kj::AutoCloseFd stdoutReadEnd(stdoutPipe[0]);
-    kj::AutoCloseFd stdoutWriteEnd(stdoutPipe[1]);
+    Pipe pipe = Pipe::make();
 
     Subprocess::Options childOptions({"xz", "-dc"});
     childOptions.stdin = spkfd;
-    childOptions.stdout = stdoutWriteEnd;
+    childOptions.stdout = pipe.writeEnd;
     Subprocess child(kj::mv(childOptions));
 
-    stdoutWriteEnd = nullptr;
-    kj::FdInputStream in(kj::mv(stdoutReadEnd));
+    pipe.writeEnd = nullptr;
+    kj::FdInputStream in(kj::mv(pipe.readEnd));
 
     // Read in the signature.
     byte publicKey[crypto_sign_PUBLICKEYBYTES];

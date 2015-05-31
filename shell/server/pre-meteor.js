@@ -45,8 +45,10 @@ function isSandstormShell(hostname) {
 
 function hasPseudoTLD(hostname) {
   // Returns true if this hostname ends in one of the major pseudo-TLDs.
-  let tld = hostname.split(".").pop();
-  return (tld === ("onion" || "i2p" || "gnu"));
+  var tld = hostname.split(".").pop();
+  var pseudoTLDs = ["onion", "i2p", "gnu"];
+
+  return (_.contains(pseudoTLDs, tld));
 }
 
 Meteor.startup(function () {

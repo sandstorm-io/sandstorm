@@ -116,6 +116,23 @@ RoleAssignments = new Mongo.Collection("roleAssignments");
 //   created: Date when this role assignment was created.
 //   parent: If present, the `_id` of the entry in ApiTokens from which this was derived.
 
+Contacts = new Mongo.Collection("contacts");
+// Edges in the social graph.
+//
+// If Alice has Bob as a contact, then she is allowed to see Bob's profile information and Bob
+// will show up in her user-picker UI for actions like share-by-identity.
+//
+// Contacts are not symmetric. Bob might be one of Alice's contacts even if Alice is not one of
+// Bob's.
+//
+// Each contains:
+//   _id: random
+//   ownerId: The `_id` of the user who owns this contact.
+//   userId:  The `_id` of the contacted user.
+//   petname: Human-readable label chosen by and only visible to the owner. Uniquely identifies
+//            the contact to the owner.
+//   created: Date when this contact was created.
+
 Sessions = new Mongo.Collection("sessions");
 // UI sessions open to particular grains.  A new session is created each time a user opens a grain.
 //

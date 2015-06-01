@@ -461,6 +461,10 @@ if (Meteor.isClient) {
         return "Unknown User (" + userId + ")";
       }
     },
+
+    displayWebkeyButton: function () {
+      return Meteor.userId() || !this.oldSharingModel;
+    },
   });
 
   var currentSessionId;

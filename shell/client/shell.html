@@ -225,7 +225,9 @@ limitations under the License.
         <button id="backupGrain" title="Download Backup">Backup</button>
         <button id="restartGrain" title="Restart App">Restart</button>
       {{/if}}
-      <button id="showApiToken" title="Get Webkey">Get&nbsp;Webkey</button>
+      {{#if displayWebkeyButton}}
+        <button id="showApiToken" title="Get Webkey">Get&nbsp;Webkey</button>
+      {{/if}}
     </div>
   </div>
 

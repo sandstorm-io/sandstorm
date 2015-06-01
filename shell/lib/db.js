@@ -128,7 +128,9 @@ Contacts = new Mongo.Collection("contacts");
 // Each contains:
 //   _id: random
 //   ownerId: The `_id` of the user who owns this contact.
-//   userId: The `_id` of the contacted user.
+//   userId:  The `_id` of the contacted user.
+//   petname: Human-readable label chosen by and only visible to the owner. Uniquely identifies
+//            the contact to the owner.
 //   created: Date when this contact was created.
 
 Sessions = new Mongo.Collection("sessions");

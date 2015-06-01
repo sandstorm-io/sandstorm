@@ -189,8 +189,8 @@ if (Meteor.isClient) {
       resetResult(state);
       var handleErrorBound = handleError.bind(state);
       state.set("successMessage", "Email has been sent.");
-      Meteor.call("testSend", this.token, document.getElementById("email-test-to").value,
-        handleErrorBound);
+      Meteor.call("testSend", this.token, document.getElementById("smptUrl").value,
+                  document.getElementById("email-test-to").value, handleErrorBound);
       return false; // prevent form from submitting
     },
     "submit #admin-settings-form": function (event) {
@@ -598,14 +598,15 @@ if (Meteor.isServer) {
 
       Meteor.users.update({_id: userId}, {$set: _.omit(userInfo, ["_id", "userId"])});
     },
-    testSend: function (token, to) {
+    testSend: function (token, smtpUrl, to) {
       checkAuth(token);
 
       SandstormEmail.send({
         to: to,
         from: "Sandstorm Test <no-reply@" + HOSTNAME + ">",
         subject: "Testing your Sandstorm's SMTP setting",
-        text: "Success! Your outgoing SMTP is working."
+        text: "Success! Your outgoing SMTP is working.",
+        smtpUrl: smtpUrl
       });
     },
     createSignupKey: function (token, note) {

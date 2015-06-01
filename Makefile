@@ -162,11 +162,13 @@ shell-env: tmp/.shell-env
 
 # Note that we need Ekam to build node_modules before we can run Meteor, hence
 # the dependency on tmp/.ekam-run.
-tmp/.shell-env: tmp/.ekam-run $(IMAGES) CHANGELOG.md
+tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html
 	@mkdir -p tmp
 	@touch tmp/.shell-env
 	@mkdir -p node_modules/capnp
 	@bash -O extglob -c 'cp src/capnp/!(*test*).capnp node_modules/capnp'
+
+shell/client/changelog.html: CHANGELOG.md
 	@echo '<template name="changelog">' > shell/client/changelog.html
 	@markdown CHANGELOG.md >> shell/client/changelog.html
 	@echo '</template>' >> shell/client/changelog.html

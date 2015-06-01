@@ -1562,22 +1562,14 @@ public:
 
 class WakelockSet: private kj::TaskSet::ErrorHandler {
 public:
-  struct WrappedOngoingNotificationWeakRef;
 
   class WrappedOngoingNotification final: public PersistentOngoingNotification::Server {
   public:
     WrappedOngoingNotification(OngoingNotification::Client ongoingNotification,
-                               WakelockSet& wakelockSet,
-                               kj::Own<WrappedOngoingNotificationWeakRef>&& weakRef)
-      : ongoingNotification(ongoingNotification), wakelockSet(wakelockSet), isCancelled(false),
-        weakRef(kj::mv(weakRef)) {
-      ++sandstorm::wakelockCount;
-      this->weakRef->ref = this;
-    }
-    WrappedOngoingNotification(OngoingNotification::Client ongoingNotification,
                                WakelockSet& wakelockSet)
-      : WrappedOngoingNotification(ongoingNotification, wakelockSet,
-                                   kj::heap<WrappedOngoingNotificationWeakRef>()) {}
+      : ongoingNotification(ongoingNotification), wakelockSet(wakelockSet), isCancelled(false) {
+      ++sandstorm::wakelockCount;
+    }
     WrappedOngoingNotification(WrappedOngoingNotification&&) = delete;
     KJ_DISALLOW_COPY(WrappedOngoingNotification);
 
@@ -1586,7 +1578,6 @@ public:
         isCancelled = true;
         decrementWakelock();
       }
-      weakRef->ref = nullptr;
     }
 
     void cancel() {
@@ -1610,11 +1601,6 @@ public:
     OngoingNotification::Client ongoingNotification;
     WakelockSet& wakelockSet;
     bool isCancelled;
-    kj::Own<WrappedOngoingNotificationWeakRef> weakRef;
-  };
-
-  struct WrappedOngoingNotificationWeakRef : public kj::Refcounted {
-    WrappedOngoingNotification* ref;
   };
 
   WakelockSet(kj::StringPtr grainId, SandstormCore::Client&& sandstormCore)
@@ -1727,10 +1713,8 @@ public:
     //   dealing with persistence through front-end restarts.
     auto params = context.getParams();
 
-    auto weakRef = kj::refcounted<WakelockSet::WrappedOngoingNotificationWeakRef>();
     OngoingNotification::Client notification =
-      kj::heap<WakelockSet::WrappedOngoingNotification>(params.getNotification(), wakelockSet,
-                                                        kj::addRef(*weakRef));
+      kj::heap<WakelockSet::WrappedOngoingNotification>(params.getNotification(), wakelockSet);
 
     auto req = sandstormCore.getOwnerNotificationTargetRequest().send().getOwner()
       .addOngoingRequest();
@@ -1740,29 +1724,24 @@ public:
     context.releaseParams();
     // We actually don't need to catch errors here, since if an error occurs, the notification will
     // be dropped and cleanup will happen automatically.
-    return req.send().then([this, KJ_MVCAP(weakRef), context](auto args) mutable {
+    return req.send().then([this, context](auto args) mutable {
       auto req = args.getHandle().template castAs<SystemPersistent>().saveRequest();
       auto grainOwner = req.getSealFor().initGrain();
       grainOwner.setGrainId(grainId);
       grainOwner.getSaveLabel().setDefaultText("ongoing notification handle");
-      return req.send().then([this, KJ_MVCAP(weakRef), context](auto args) mutable {
-        context.getResults().setHandle(kj::heap<WakelockHandle>(args.getSturdyRef(),
-          kj::mv(weakRef), *this));
+      return req.send().then([this, context](auto args) mutable {
+        context.getResults().setHandle(kj::heap<WakelockHandle>(args.getSturdyRef(), *this));
       });
     });
   }
 
 private:
-  void dropHandle(kj::ArrayPtr<byte> sturdyRef,
-                  kj::Own<WakelockSet::WrappedOngoingNotificationWeakRef>& notification) {
+  void dropHandle(kj::ArrayPtr<byte> sturdyRef) {
     auto req = sandstormCore.dropRequest();
     req.setToken(sturdyRef);
-    // TODO(someday): Handle failures for drop? Might not be super important since we're calling
-    // cancel anyways (through a disappointingly complicated weakRef).
+    // TODO(someday): Handle failures for drop? Currently, if the the frontend never drops the
+    // notification or calls cancel on it, then this handle will essentially leak.
     tasks.add(req.send().then([](auto args) {}));
-    if (notification->ref != nullptr) {
-      notification->ref->cancel();
-    }
   }
 
   void taskFailed(kj::Exception&& exception) override {
@@ -1772,17 +1751,15 @@ private:
   class WakelockHandle final: public Handle::Server {
   public:
     WakelockHandle(capnp::Data::Reader sturdyRef,
-                   kj::Own<WakelockSet::WrappedOngoingNotificationWeakRef>&& notification,
                    SandstormApiImpl& api)
-      : sturdyRef(kj::heapArray(sturdyRef)), notification(kj::mv(notification)), api(api) {
+      : sturdyRef(kj::heapArray(sturdyRef)), api(api) {
     }
     ~WakelockHandle() {
-      api.dropHandle(sturdyRef, notification);
+      api.dropHandle(sturdyRef);
     }
 
   private:
     kj::Array<byte> sturdyRef;
-    kj::Own<WakelockSet::WrappedOngoingNotificationWeakRef> notification;
     SandstormApiImpl& api;
   };
 

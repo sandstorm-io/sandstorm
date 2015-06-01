@@ -69,7 +69,7 @@ IMAGES= \
 all: sandstorm-$(BUILD).tar.xz
 
 clean:
-	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz shell/.meteor/local $(IMAGES) shell/packages/*/.build* shell/packages/*/.npm/package/node_modules
+	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules
 	@(if test -d deps && test ! -h deps; then printf "\033[0;33mTo update dependencies, use: make update-deps\033[0m\n"; fi)
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh

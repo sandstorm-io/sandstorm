@@ -450,6 +450,23 @@ if (Meteor.isClient) {
   Template.homeLink.helpers({
     origin: getOrigin
   });
+
+  Template.about.onCreated(function () {
+    this.showChangelog = new ReactiveVar(false);
+  });
+
+  Template.about.helpers({
+    showChangelog: function () {
+      return Template.instance().showChangelog.get();
+    }
+  });
+
+  Template.about.events({
+    "click #show-changelog": function (ev) {
+      var showChangelog = Template.instance().showChangelog;
+      showChangelog.set(!showChangelog.get());
+    }
+  });
 }
 
 Router.configure({
@@ -635,7 +652,6 @@ Router.map(function () {
         });
       }
 
-      console.log(result);
       return result;
     }
   });

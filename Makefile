@@ -69,7 +69,7 @@ IMAGES= \
 all: sandstorm-$(BUILD).tar.xz
 
 clean:
-	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz shell/.meteor/local $(IMAGES) shell/packages/*/.build* shell/packages/*/.npm/package/node_modules
+	rm -rf bin tmp node_modules bundle shell-build sandstorm-*.tar.xz shell/.meteor/local $(IMAGES) shell/client/changelog.html shell/packages/*/.build* shell/packages/*/.npm/package/node_modules
 	@(if test -d deps && test ! -h deps; then printf "\033[0;33mTo update dependencies, use: make update-deps\033[0m\n"; fi)
 
 install: sandstorm-$(BUILD)-fast.tar.xz install.sh
@@ -162,11 +162,16 @@ shell-env: tmp/.shell-env
 
 # Note that we need Ekam to build node_modules before we can run Meteor, hence
 # the dependency on tmp/.ekam-run.
-tmp/.shell-env: tmp/.ekam-run $(IMAGES)
+tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html
 	@mkdir -p tmp
 	@touch tmp/.shell-env
 	@mkdir -p node_modules/capnp
 	@bash -O extglob -c 'cp src/capnp/!(*test*).capnp node_modules/capnp'
+
+shell/client/changelog.html: CHANGELOG.md
+	@echo '<template name="changelog">' > shell/client/changelog.html
+	@markdown CHANGELOG.md >> shell/client/changelog.html
+	@echo '</template>' >> shell/client/changelog.html
 
 shell/public/%.png: icons/%.svg
 	@$(call color,convert $<)

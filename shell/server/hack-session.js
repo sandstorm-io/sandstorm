@@ -34,9 +34,16 @@ var Url = Npm.require("url");
 var ROOT_URL = Url.parse(process.env.ROOT_URL);
 HOSTNAME = ROOT_URL.hostname;
 
-function HackSessionContextImpl(grainId) {
+function SessionContextImpl(grainId) {
   this.grainId = grainId;
 }
+
+function HackSessionContextImpl(grainId) {
+  SessionContextImpl.call(this, grainId);
+}
+
+HackSessionContextImpl.prototype = Object.create(SessionContextImpl.prototype);
+HackSessionContextImpl.prototype.constructor = HackSessionContextImpl;
 
 makeHackSessionContext = function (grainId) {
   return new Capnp.Capability(new HackSessionContextImpl(grainId), HackSessionContext);

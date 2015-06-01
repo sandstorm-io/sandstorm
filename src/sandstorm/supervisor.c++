@@ -1730,6 +1730,7 @@ public:
       grainOwner.setGrainId(grainId);
       grainOwner.getSaveLabel().setDefaultText("ongoing notification handle");
       return req.send().then([this, context](auto args) mutable {
+        SANDSTORM_LOG("Grain has enabled backgrounding.");
         context.getResults().setHandle(kj::heap<WakelockHandle>(args.getSturdyRef(), *this));
       });
     });

@@ -416,7 +416,7 @@ enable_userns_sysctl_if_needed() {
     return
   fi
 
-  local PRINT_USERNS_INFO="yes"
+  local PRINT_USERNS_PROMPT="yes"
   local ACCEPTED_SYSCTL_SWITCH="no"
 
   if [ "yes" = "${ACCEPTED_FULL_SERVER_INSTALL:-}" ] ; then

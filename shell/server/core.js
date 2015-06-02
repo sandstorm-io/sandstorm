@@ -45,7 +45,7 @@ function dropWakelock(grainId, wakeLockNotificationId) {
   }));
 }
 
-function dismissNotification(notificationId) {
+function dismissNotification(notificationId, callCancel) {
   var notification = Notifications.findOne({_id: notificationId});
   if (notification) {
     Notifications.remove({_id: notificationId});
@@ -55,18 +55,22 @@ function dismissNotification(notificationId) {
       // Only way to fix seems to be to copy it.
       var id = new Buffer(notification.ongoing);
 
-      var notificationCap = waitPromise(sandstormCore.restore(id)).cap;
-      var castedNotification = notificationCap.castAs(PersistentOngoingNotification);
-      waitPromise(sandstormCore.drop(id));
-      try {
-        waitPromise(castedNotification.cancel());
-        castedNotification.close();
-        notificationCap.close();
-      } catch (err) {
-        if (err.type !== "disconnected") {
-          // ignore disconnected errors, since cancel may shutdown the grain before the supervisor
-          // responds.
-          throw err;
+      if (!callCancel) {
+        waitPromise(sandstormCore.drop(id));
+      } else {
+        var notificationCap = waitPromise(sandstormCore.restore(id)).cap;
+        var castedNotification = notificationCap.castAs(PersistentOngoingNotification);
+        waitPromise(sandstormCore.drop(id));
+        try {
+          waitPromise(castedNotification.cancel());
+          castedNotification.close();
+          notificationCap.close();
+        } catch (err) {
+          if (err.type !== "disconnected") {
+            // ignore disconnected errors, since cancel may shutdown the grain before the supervisor
+            // responds.
+            throw err;
+          }
         }
       }
     }
@@ -88,7 +92,7 @@ Meteor.methods({
     } else if (notification.userId !== Meteor.userId()) {
       throw new Meteor.Error(403, "Notification does not belong to current user.");
     } else {
-      dismissNotification(notificationId);
+      dismissNotification(notificationId, true);
     }
   },
   readAllNotifications: function () {

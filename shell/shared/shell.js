@@ -188,8 +188,6 @@ if (Meteor.isClient) {
   };
   Template.registerHelper("dateString", makeDateString);
 
-  Template.registerHelper("dateString", makeDateString);
-
   launchAndEnterGrainByPackageId = function(packageId) {
     var action = UserActions.findOne({packageId: packageId});
     if (!action) {

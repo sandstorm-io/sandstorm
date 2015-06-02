@@ -1453,13 +1453,22 @@ private:
     // Run the update monitor process.  This process runs two subprocesses:  the sandstorm server
     // and the auto-updater.
 
-    // Fix permissions on pidfile. We do this here rather than back where we opened it because
-    // a previous version failed to do this and we want it fixed immediately on upgrade.
     if (runningAsRoot) {
+      // Fix permissions on pidfile. We do this here rather than back where we opened it because
+      // a previous version failed to do this and we want it fixed immediately on upgrade.
       KJ_SYSCALL(fchown(pidfile, 0, config.uids.gid));
       KJ_SYSCALL(fchmod(pidfile, 0660));
+
       // Additionally, fix permissions on sandcats-related data, which was originally owned by root
       fixSandcatsPermissions(config);
+
+      // Fix permissions on /var/sandstorm, which was originally owned by root:root.
+      KJ_SYSCALL(chown("../var/sandstorm", 0, config.uids.gid));
+      KJ_SYSCALL(chmod("../var/sandstorm", 0770));
+
+      // Fix permissions on /var/sandstorm/grains, which originally had mode 0730 because grain
+      // IDs were secret.
+      KJ_SYSCALL(chmod("../var/sandstorm/grains", 0770));
     }
 
     cleanupOldVersions();
@@ -1771,7 +1780,7 @@ private:
 
       // Create the mongo user.
       auto command = kj::str(
-        "db.addUser({user: \"sandstorm\", pwd: \"", password, "\", "
+        "db.createUser({user: \"sandstorm\", pwd: \"", password, "\", "
         "roles: [\"readWriteAnyDatabase\",\"userAdminAnyDatabase\",\"dbAdminAnyDatabase\"]})");
       mongoCommand(config, command, "admin");
 

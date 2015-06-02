@@ -72,13 +72,14 @@ Please install the following:
 * `strace`
 * `curl`
 * ImageMagick
+* discount (markdown parser)
 * [Clang compiler](http://clang.llvm.org/) version 3.4 or better
 * [Meteor](http://meteor.com)
 
 On Debian or Ubuntu, you should be able to get all these with:
 
     sudo apt-get install build-essential libcap-dev xz-utils zip \
-        unzip imagemagick strace curl clang-3.4
+        unzip imagemagick strace curl clang-3.4 discount
     curl https://install.meteor.com/ | sh
 
 ### Building / installing the binaries

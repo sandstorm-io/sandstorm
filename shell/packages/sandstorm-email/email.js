@@ -61,13 +61,15 @@ Meteor.startup(function() {
   Accounts.emailToken.setEmailPackage("SandstormEmail");
 });
 
-var getPool = function () {
-  // We check MAIL_URL in case someone else set it in Meteor.startup code.
-  if (!configured) {
+var getPool = function (smtpUrl) {
+  if (smtpUrl) {
+    return makePool(smtpUrl);
+  } else if (!configured) {
     configured = true;
     var url = getSmtpUrl();
-    if (url)
+    if (url) {
       pool = makePool(url);
+    }
   }
 
   return pool;
@@ -133,6 +135,7 @@ var smtpSend = function (pool, mc) {
  * @param {String} [options.subject]  "Subject:" line
  * @param {String} [options.text|html] Mail body (in plain text or HTML)
  * @param {Object} [options.headers] Dictionary of custom headers
+ * @param {String} [options.smtpUrl] SMTP server to use. Otherwise defaults to configured one.
  */
 SandstormEmail.send = function (options) {
   var mc = new MailComposer();
@@ -155,7 +158,7 @@ SandstormEmail.send = function (options) {
     mc.addHeader(name, value);
   });
 
-  SandstormEmail.rawSend(mc);
+  SandstormEmail.rawSend(mc, options.smtpUrl);
 };
 
 /**
@@ -165,9 +168,10 @@ SandstormEmail.send = function (options) {
  * [RFC5322](http://tools.ietf.org/html/rfc5322) specification.
  * @locus Server
  * @param {Object} mc A MailCompser object that you wish to send
+ * @param {String} smtpUrl SMTP server to use. If falsey, defaults to configured one.
 */
-SandstormEmail.rawSend = function (mc) {
-  var pool = getPool();
+SandstormEmail.rawSend = function (mc, smtpUrl) {
+  var pool = getPool(smtpUrl);
   if (pool) {
     smtpSend(pool, mc);
   } else {

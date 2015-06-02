@@ -245,7 +245,7 @@ limitations under the License.
     <div id="menu-closer" data-show="{{showMenu}}"></div>
     <div id="menu" data-show="{{showMenu}}">
       <button id="homelink-button" title="Home"> Home</button>
-      {{#if userId}}
+      {{#if currentUser}}
         <button id="show-share-grain" title="Share">Share</button>
         <button id="deleteGrain" title="Delete">Delete</button>
       {{/if}}
@@ -254,7 +254,9 @@ limitations under the License.
         <button id="backupGrain" title="Download Backup">Backup</button>
         <button id="restartGrain" title="Restart App">Restart</button>
       {{/if}}
-      <button id="showApiToken" title="Get Webkey">Get&nbsp;Webkey</button>
+      {{#if displayWebkeyButton}}
+        <button id="showApiToken" title="Get Webkey">Get&nbsp;Webkey</button>
+      {{/if}}
     </div>
   </div>
 
@@ -266,7 +268,7 @@ limitations under the License.
       {{else}}
         <p>Copy this webkey and give it to the external app:</p>
           <a id="apiTokenText" class="copy-me" href="{{apiToken}}">{{apiToken}}</a>
-        {{#if userId}}
+        {{#if currentUser}}
           <p><button id="resetApiToken">Go back</button></p>
         {{/if}}
       {{/if}}
@@ -699,7 +701,7 @@ $KEY</textarea></p>
        (<a class="reset-login-tokens" data-servicename="github" href="">log out all users</a>)<br>
        <input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login<br>
       <span class="details">Choose which services users may use to identify themselves. Anyone can log in, but only users you <a href="/invite">invite</a> will be able to install apps or create files.</span></p>
-    <p>SMTP Url: <input type="text" name="smtpUrl" value="{{smtpUrl}}"><button id="admin-settings-send-toggle">Test</button><br>
+    <p>SMTP Url: <input id="smptUrl" type="text" name="smtpUrl" value="{{smtpUrl}}"><button id="admin-settings-send-toggle">Test</button><br>
       <span class="details">Address of an SMTP (email) server, like <code>smtp://user:pass@host:port</code>. This will be used by email apps and to send <a href="/invite">email invites</a>.</span>
     </p>
     {{#if isEmailTestActive}}
@@ -888,6 +890,10 @@ $KEY</textarea></p>
       {{#if isUnofficial}}
       <p><b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain
         modifications not reviewed by the developers.</p>
+      {{/if}}
+      <button id="show-changelog">Show Changelog</button>
+      {{#if showChangelog}}
+        {{> changelog}}
       {{/if}}
       <p><a href="https://sandstorm.io">Sandstorm.io</a> is an open source hosting platform for
         personal/private instances of web apps. Users can upload and install arbitrary software

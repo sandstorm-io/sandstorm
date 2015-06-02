@@ -416,7 +416,7 @@ enable_userns_sysctl_if_needed() {
     return
   fi
 
-  local PRINT_USERNS_INFO="yes"
+  local PRINT_USERNS_PROMPT="yes"
   local ACCEPTED_SYSCTL_SWITCH="no"
 
   if [ "yes" = "${ACCEPTED_FULL_SERVER_INSTALL:-}" ] ; then
@@ -1082,12 +1082,8 @@ set_permissions() {
   # Set ownership of files.  We want the dirs to be root:sandstorm but the contents to be
   # sandstorm:sandstorm.
   chown -R $SERVER_USER:$GROUP var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads,adminToken}
-  chown root:$GROUP var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads,adminToken}
-  chmod -R g=rwX,o= var/{log,pid,mongo} var/sandstorm/{apps,grains,downloads,adminToken}
-
-  # Don't allow listing grain IDs directly.  (At the moment, this is faux security since
-  # an attacker could just read the database, but maybe that will change someday...)
-  chmod g-r var/sandstorm/grains
+  chown root:$GROUP var/{log,pid,mongo,sandstorm} var/sandstorm/{apps,grains,downloads,adminToken}
+  chmod -R g=rwX,o= var/{log,pid,mongo,sandstorm} var/sandstorm/{apps,grains,downloads,adminToken}
 }
 
 install_sandstorm_symlinks() {

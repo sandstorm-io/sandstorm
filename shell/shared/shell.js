@@ -470,6 +470,23 @@ if (Meteor.isClient) {
     origin: getOrigin
   });
 
+  Template.about.onCreated(function () {
+    this.showChangelog = new ReactiveVar(false);
+  });
+
+  Template.about.helpers({
+    showChangelog: function () {
+      return Template.instance().showChangelog.get();
+    }
+  });
+
+  Template.about.events({
+    "click #show-changelog": function (ev) {
+      var showChangelog = Template.instance().showChangelog;
+      showChangelog.set(!showChangelog.get());
+    }
+  });
+
   Template.notifications.helpers({
     notifications: function () {
       return Notifications.find({userId: Meteor.userId()}, {sort: {timestamp: -1}}).map(function (row) {
@@ -730,7 +747,6 @@ Router.map(function () {
         });
       }
 
-      console.log(result);
       return result;
     }
   });

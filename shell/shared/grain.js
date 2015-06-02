@@ -436,8 +436,6 @@ if (Meteor.isClient) {
       return "";
     },
 
-    dateString: function (date) { return makeDateString(date); },
-
     setGrainWindowTitle:  function() {
       var appTitle = Session.get("grainFrameTitle");
       if (appTitle) {
@@ -445,10 +443,6 @@ if (Meteor.isClient) {
       } else {
         document.title = this.title + " · Sandstorm";
       }
-    },
-
-    userId: function () {
-      return Meteor.userId();
     },
 
     displayName: function (userId) {
@@ -460,6 +454,10 @@ if (Meteor.isClient) {
       } else {
         return "Unknown User (" + userId + ")";
       }
+    },
+
+    displayWebkeyButton: function () {
+      return Meteor.userId() || !this.oldSharingModel;
     },
   });
 

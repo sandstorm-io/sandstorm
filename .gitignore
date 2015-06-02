@@ -2,6 +2,7 @@ bin
 tmp
 deps
 node_modules
+shell/client/changelog.html
 shell/sandstorm-shell.config
 shell/sandstorm-shell.creator
 shell/sandstorm-shell.creator.user

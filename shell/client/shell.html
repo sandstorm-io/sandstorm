@@ -216,7 +216,7 @@ limitations under the License.
     <div id="menu-closer" data-show="{{showMenu}}"></div>
     <div id="menu" data-show="{{showMenu}}">
       <button id="homelink-button" title="Home"> Home</button>
-      {{#if userId}}
+      {{#if currentUser}}
         <button id="show-share-grain" title="Share">Share</button>
         <button id="deleteGrain" title="Delete">Delete</button>
       {{/if}}
@@ -239,7 +239,7 @@ limitations under the License.
       {{else}}
         <p>Copy this webkey and give it to the external app:</p>
           <a id="apiTokenText" class="copy-me" href="{{apiToken}}">{{apiToken}}</a>
-        {{#if userId}}
+        {{#if currentUser}}
           <p><button id="resetApiToken">Go back</button></p>
         {{/if}}
       {{/if}}

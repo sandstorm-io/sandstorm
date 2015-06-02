@@ -447,10 +447,6 @@ if (Meteor.isClient) {
       }
     },
 
-    userId: function () {
-      return Meteor.userId();
-    },
-
     displayName: function (userId) {
       var name = DisplayNames.findOne(userId);
       if (name) {

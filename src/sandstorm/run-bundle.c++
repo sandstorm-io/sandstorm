@@ -1818,13 +1818,16 @@ private:
       dropPrivs(config.uids);
       clearSignalMask();
 
-      capnp::TwoPartyServer server(kj::heap<BackendImpl>(*io.lowLevelProvider, network));
+      auto paf = kj::newPromiseAndFulfiller<Backend::Client>();
+      TwoPartyServerWithClientBootstrap server(kj::mv(paf.promise));
+      paf.fulfiller->fulfill(kj::heap<BackendImpl>(*io.lowLevelProvider, network,
+        server.getBootstrap().castAs<SandstormCoreFactory>()));
 
       // Signal readiness.
       write(outPipe, "ready", 5);
       outPipe = nullptr;
 
-      server.listen(*listener).wait(io.waitScope);
+      server.listen(kj::mv(listener)).wait(io.waitScope);
       KJ_UNREACHABLE;
     });
 

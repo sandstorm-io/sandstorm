@@ -28,7 +28,7 @@ namespace sandstorm {
 
 class BackendImpl: public Backend::Server, private kj::TaskSet::ErrorHandler {
 public:
-  BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network);
+  BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network, SandstormCoreFactory::Client&& sandstormCoreFactory);
 
 protected:
   kj::Promise<void> startGrain(StartGrainContext context) override;
@@ -41,11 +41,12 @@ protected:
 private:
   kj::LowLevelAsyncIoProvider& ioProvider;
   kj::Network& network;
+  SandstormCoreFactory::Client coreFactory;
   kj::TaskSet tasks;
 
   class RunningGrain {
   public:
-    RunningGrain(BackendImpl& backend, kj::String grainId, kj::Own<kj::AsyncIoStream> stream);
+    RunningGrain(BackendImpl& backend, kj::String grainId, kj::Own<kj::AsyncIoStream> stream, SandstormCore::Client&& sandstormCoreFactory);
     ~RunningGrain() noexcept(false);
 
     inline kj::StringPtr getGrainId() { return grainId; }

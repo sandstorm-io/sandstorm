@@ -22,9 +22,9 @@ var utils = require("../utils"),
     long_wait = utils.long_wait,
     very_long_wait = utils.very_long_wait;
 
-exports.command = function(url, packageId, dontStartGrain, callback) {
+exports.command = function(url, packageId, newUser, dontStartGrain, callback) {
   var ret = this;
-  if (!this.sandstormAccount) {
+  if (!this.sandstormAccount || newUser) {
     ret = ret.loginGithub();
   }
 

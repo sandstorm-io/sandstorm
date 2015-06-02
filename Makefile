@@ -51,6 +51,7 @@ IMAGES= \
     shell/public/share.png \
     shell/public/close.png \
     shell/public/menu.png \
+    shell/public/inbox.png \
     shell/public/edit-m.png \
     shell/public/restart-m.png \
     shell/public/trash-m.png \
@@ -58,7 +59,8 @@ IMAGES= \
     shell/public/download-m.png \
     shell/public/key-m.png \
     shell/public/share-m.png \
-    shell/public/close-m.png
+    shell/public/close-m.png \
+    shell/public/inbox-m.png
 
 # ====================================================================
 # Meta rules
@@ -168,6 +170,14 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html
 	@mkdir -p node_modules/capnp
 	@bash -O extglob -c 'cp src/capnp/!(*test*).capnp node_modules/capnp'
 
+shell/public/inbox.png: icons/inbox.svg
+	@$(call color,convert $<)
+	@convert -background none -scale 32x32 -negate -evaluate multiply 0.87 $< $@
+
+shell/public/inbox-m.png: icons/inbox.svg
+	@$(call color,convert $<)
+	@convert -background none -scale 40x40 -negate -evaluate multiply 0.87 $< $@
+
 shell/client/changelog.html: CHANGELOG.md
 	@echo '<template name="changelog">' > tmp/changelog.html
 	@markdown CHANGELOG.md >> tmp/changelog.html
@@ -177,6 +187,7 @@ shell/client/changelog.html: CHANGELOG.md
 shell/public/%.png: icons/%.svg
 	@$(call color,convert $<)
 	@convert -background none -scale 24x24 -negate -evaluate multiply 0.87 $< $@
+
 shell/public/%-m.png: icons/%.svg
 	@convert -background none -scale 32x32 $< $@
 

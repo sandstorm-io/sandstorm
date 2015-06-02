@@ -71,6 +71,25 @@ if (Meteor.isServer) {
     return DevApps.find();
   });
 
+  Meteor.publish("notifications", function () {
+    return Notifications.find({userId: this.userId},
+      {fields: {timestamp: 1, text: 1, grainId: 1, userId: 1, isUnread: 1}});
+  });
+
+
+  Meteor.publish("notificationGrains", function (notificationIds) {
+    // Since publishes can't be reactive, we leave it to the client to subscribe to both
+    // "notifications" and "notificationGrains" reactively.
+    check(notificationIds, [String]);
+    var notifications =  Notifications.find({_id: {$in: notificationIds}, userId: this.userId},
+      {fields: {grainId: 1}});
+
+    var grainIds = notifications.map(function (row) {
+      return row.grainId;
+    });
+    return Grains.find({_id: {$in: grainIds}}, {fields: {title: 1}});
+  });
+
   Meteor.publish("hasUsers", function () {
     // Publish pseudo-collection which tells the client if there are any users at all.
     //
@@ -467,8 +486,84 @@ if (Meteor.isClient) {
       showChangelog.set(!showChangelog.get());
     }
   });
-}
 
+  Template.notifications.helpers({
+    notifications: function () {
+      return Notifications.find({userId: Meteor.userId()}, {sort: {timestamp: -1}}).map(function (row) {
+        var grain = Grains.findOne({_id: row.grainId});
+        if (grain) {
+          row.grainTitle = grain.title;
+        }
+        return row;
+      });
+    },
+
+    notificationCount: function () {
+      if (Session.get("notificationsIsEnabled")) {
+        return 0;
+      }
+      return Notifications.find({userId: Meteor.userId(), isUnread: true}).count();
+    },
+
+    notificationsIsEnabled: function () {
+      return Session.get("notificationsIsEnabled");
+    }
+  });
+
+  Template.notifications.events({
+    "click .notification-button": function () {
+      var newValue = !Session.get("notificationsIsEnabled");
+      Session.set("notificationsIsEnabled", newValue);
+
+      // This is a little weird, but we want to mark all notifications as read whenever the menu
+      // opens or closes. The logic behind this is that notifications could arrive while the menu
+      // is left open, and we want to mark those as read too.
+      // TODO(someday): This leaves us open to a slight timing issue. We should probably change
+      // it to pass in a list of all notification ids to mark read.
+      Meteor.call("readAllNotifications");
+    },
+
+    "click .cancel-notification": function (event) {
+      Meteor.call("dismissNotification", event.currentTarget.getAttribute("data-notificationid"));
+      return false;
+    },
+
+    "click #notification-dropdown": function (event) {
+      return false;
+    }
+  });
+
+  var globalClickHandler = function () {
+    Session.set("notificationsIsEnabled", false);
+    Meteor.call("readAllNotifications");
+  };
+
+  Meteor.startup(function () {
+    Tracker.autorun(function () {
+      if (Session.get("notificationsIsEnabled")) {
+        document.querySelector("body").addEventListener("click", globalClickHandler);
+      } else {
+        document.querySelector("body").removeEventListener("click", globalClickHandler);
+      }
+    });
+  });
+
+  Template.notifications.onCreated(function () {
+    var self = this;
+    this.subscribe("notifications");
+
+    Tracker.autorun(function () {
+      if (self.grainSubscription) {
+        self.grainSubscription.stop();
+      }
+      self.grainSubscription = self.subscribe("notificationGrains",
+        Notifications.find().map(function (row) {
+          return row._id;
+        })
+      );
+    });
+  });
+}
 Router.configure({
   layoutTemplate: 'layout',
   notFoundTemplate: "notFound",

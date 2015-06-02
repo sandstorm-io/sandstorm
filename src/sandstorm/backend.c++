@@ -43,8 +43,9 @@ static void tryRecursivelyDelete(kj::StringPtr path) {
   recursivelyDelete(tmpPath);
 }
 
-BackendImpl::BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network)
-    : ioProvider(ioProvider), network(network), tasks(*this) {}
+BackendImpl::BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network,
+  SandstormCoreFactory::Client&& sandstormCoreFactory)
+    : ioProvider(ioProvider), network(network), coreFactory(kj::mv(sandstormCoreFactory)), tasks(*this) {}
 
 void BackendImpl::taskFailed(kj::Exception&& exception) {
   KJ_LOG(ERROR, exception);
@@ -146,7 +147,10 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
     auto ignorePromise = ignoreAll(*stdoutPipe);
     tasks.add(ignorePromise.attach(kj::mv(stdoutPipe)));
 
-    auto grain = kj::heap<RunningGrain>(*this, kj::mv(grainId), kj::mv(connection));
+    auto coreRequest = coreFactory.getSandstormCoreRequest();
+    coreRequest.setGrainId(grainId);
+    auto core = coreRequest.send().getCore();
+    auto grain = kj::heap<RunningGrain>(*this, kj::mv(grainId), kj::mv(connection), kj::mv(core));
     auto client = grain->getSupervisor();
     tasks.add(grain->onDisconnect().attach(kj::mv(grain), kj::mv(process)));
     return client;
@@ -192,9 +196,9 @@ kj::Promise<kj::String> BackendImpl::readAll(kj::AsyncInputStream& input, kj::Ve
 }
 
 BackendImpl::RunningGrain::RunningGrain(
-    BackendImpl& backend, kj::String grainId, kj::Own<kj::AsyncIoStream> stream)
+    BackendImpl& backend, kj::String grainId, kj::Own<kj::AsyncIoStream> stream, SandstormCore::Client&& core)
     : backend(backend), grainId(kj::mv(grainId)),
-      stream(kj::mv(stream)), client(*this->stream) {}
+      stream(kj::mv(stream)), client(*this->stream, kj::mv(core)) {}
 
 BackendImpl::RunningGrain::~RunningGrain() noexcept(false) {
   backend.supervisors.erase(grainId);

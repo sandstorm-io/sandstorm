@@ -1573,7 +1573,7 @@ public:
     WrappedOngoingNotification(WrappedOngoingNotification&&) = delete;
     KJ_DISALLOW_COPY(WrappedOngoingNotification);
 
-    ~WrappedOngoingNotification() {
+    ~WrappedOngoingNotification() noexcept(false) {
       if (!isCancelled) {
         isCancelled = true;
         decrementWakelock();
@@ -1755,7 +1755,7 @@ private:
                    SandstormApiImpl& api)
       : sturdyRef(kj::heapArray(sturdyRef)), api(api) {
     }
-    ~WakelockHandle() {
+    ~WakelockHandle() noexcept(false) {
       api.dropHandle(sturdyRef);
     }
 

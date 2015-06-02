@@ -436,8 +436,6 @@ if (Meteor.isClient) {
       return "";
     },
 
-    dateString: function (date) { return makeDateString(date); },
-
     setGrainWindowTitle:  function() {
       var appTitle = Session.get("grainFrameTitle");
       if (appTitle) {

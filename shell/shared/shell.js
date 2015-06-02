@@ -72,12 +72,22 @@ if (Meteor.isServer) {
   });
 
   Meteor.publish("notifications", function () {
-    var notifications =  Notifications.find({userId: this.userId},
+    return Notifications.find({userId: this.userId},
       {fields: {timestamp: 1, text: 1, grainId: 1, userId: 1, isUnread: 1}});
+  });
+
+
+  Meteor.publish("notificationGrains", function (notificationIds) {
+    // Since publishes can't be reactive, we leave it to the client to subscribe to both
+    // "notifications" and "notificationGrains" reactively.
+    check(notificationIds, [String]);
+    var notifications =  Notifications.find({_id: {$in: notificationIds}, userId: this.userId},
+      {fields: {grainId: 1}});
+
     var grainIds = notifications.map(function (row) {
       return row.grainId;
     });
-    return [notifications, Grains.find({_id: {$in: grainIds}})];
+    return Grains.find({_id: {$in: grainIds}}, {fields: {title: 1}});
   });
 
   Meteor.publish("hasUsers", function () {
@@ -523,12 +533,21 @@ if (Meteor.isClient) {
     });
   });
 
-  Meteor.subscribe("notifications");
-  // TODO(someday): don't leave naked subscribes at the top level.
-  // The following works in Meteor 1.1+. Remove the above line and use the following when we update.
-  // Template.notifications.onCreated(function () {
-  //   this.subscribe("notifications");
-  // });
+  Template.notifications.onCreated(function () {
+    var self = this;
+    this.subscribe("notifications");
+
+    Tracker.autorun(function () {
+      if (self.grainSubscription) {
+        self.grainSubscription.stop();
+      }
+      self.grainSubscription = self.subscribe("notificationGrains",
+        Notifications.find().map(function (row) {
+          return row._id;
+        })
+      );
+    });
+  });
 }
 Router.configure({
   layoutTemplate: 'layout',

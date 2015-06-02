@@ -169,9 +169,10 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html
 	@bash -O extglob -c 'cp src/capnp/!(*test*).capnp node_modules/capnp'
 
 shell/client/changelog.html: CHANGELOG.md
-	@echo '<template name="changelog">' > shell/client/changelog.html
-	@markdown CHANGELOG.md >> shell/client/changelog.html
-	@echo '</template>' >> shell/client/changelog.html
+	@echo '<template name="changelog">' > tmp/changelog.html
+	@markdown CHANGELOG.md >> tmp/changelog.html
+	@echo '</template>' >> tmp/changelog.html
+	@cp tmp/changelog.html shell/client/changelog.html
 
 shell/public/%.png: icons/%.svg
 	@$(call color,convert $<)

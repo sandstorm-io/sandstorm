@@ -757,6 +757,9 @@ int Subprocess::waitForExitOrSignal() {
   KJ_REQUIRE(pid != 0, "already waited for this child");
   int status;
   KJ_SYSCALL(waitpid(pid, &status, 0));
+  KJ_IF_MAYBE(s, subprocessSet) {
+    s->alreadyReaped(pid);
+  }
   pid = 0;
   return status;
 }
@@ -787,7 +790,9 @@ struct SubprocessSet::WaitMap {
 SubprocessSet::SubprocessSet(kj::UnixEventPort& eventPort)
     : eventPort(eventPort), waitMap(kj::heap<WaitMap>()),
       waitTask(waitLoop().eagerlyEvaluate([](kj::Exception&& exception) {
-        KJ_LOG(ERROR, "subprocess wait loop failed", exception);
+        KJ_LOG(FATAL, "subprocess wait loop failed", exception);
+        // The server is probably hosed by this. Best to abort.
+        abort();
       })) {
   kj::UnixEventPort::captureSignal(SIGCHLD);
 }
@@ -817,6 +822,7 @@ kj::Promise<int> SubprocessSet::waitForExitOrSignal(Subprocess& subprocess) {
   auto paf = kj::newPromiseAndFulfiller<int>();
   waitMap->pids.insert(std::make_pair(subprocess.getPid(),
       WaitMap::ProcInfo { kj::mv(paf.fulfiller), &subprocess }));
+  subprocess.subprocessSet = *this;
   return paf.promise.then([&subprocess](int status) {
     return status;
   });
@@ -858,6 +864,10 @@ kj::Promise<void> SubprocessSet::waitLoop() {
     }
     return waitLoop();
   });
+}
+
+void SubprocessSet::alreadyReaped(pid_t pid) {
+  waitMap->pids.erase(pid);
 }
 
 }  // namespace sandstorm

@@ -175,6 +175,8 @@ kj::Array<byte> base64Decode(kj::StringPtr input);
 kj::String hexEncode(kj::ArrayPtr<const byte> input);
 // Return the hex string corresponding to this array of bytes.
 
+class SubprocessSet;
+
 class Subprocess {
 public:
   struct Options {
@@ -299,6 +301,7 @@ private:
   kj::String name;
   kj::UnwindDetector unwindDetector;
   pid_t pid = 0;  // 0 = not running
+  kj::Maybe<SubprocessSet&> subprocessSet;
 
   static void forceFdAbove(int& fd, int minValue);
 
@@ -332,6 +335,11 @@ private:
   kj::Promise<void> waitTask;
 
   kj::Promise<void> waitLoop();
+
+  void alreadyReaped(pid_t pid);
+  // Called if the subprocess is destroyed and thus canceled. See ~Subprocess().
+
+  friend class Subprocess;
 };
 
 }  // namespace sandstorm

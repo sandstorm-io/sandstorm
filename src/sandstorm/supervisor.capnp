@@ -45,7 +45,7 @@ interface Supervisor {
   # Wait until the storage size of the grain is different from `oldSize` and then return the new
   # size. May occasionally return prematurely, with `size` equal to `oldSize`.
 
-  restore @5 (ref :SupervisorObjectId);
+  restore @5 (ref :SupervisorObjectId) -> (cap :Capability);
   # Wraps `MainView.restore()`. Can also restore capabilities hosted by the supervisor.
 
   drop @6 (ref :SupervisorObjectId);
@@ -106,6 +106,10 @@ interface SystemPersistent extends(Persistent(Data, ApiTokenOwner)) {
   # The token itself is arbitrary random bytes, not ASCII text (this differs from API tokens
   # created for the purpose of HTTP APIs).
 }
+
+interface PersistentHandle extends(SystemPersistent, Util.Handle) {}
+
+interface PersistentOngoingNotification extends(SystemPersistent, Grain.OngoingNotification) {}
 
 struct ApiTokenOwner {
   # Defines who is permitted to use a particular API token.

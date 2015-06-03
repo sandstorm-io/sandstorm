@@ -870,4 +870,54 @@ void SubprocessSet::alreadyReaped(pid_t pid) {
   waitMap->pids.erase(pid);
 }
 
+// =======================================================================================
+
+TwoPartyServerWithClientBootstrap::TwoPartyServerWithClientBootstrap(
+  capnp::Capability::Client bootstrapInterface)
+    : bootstrapInterface(kj::mv(bootstrapInterface)), redirector(kj::refcounted<CapRedirector>()),
+      tasks(*this) {}
+
+struct TwoPartyServerWithClientBootstrap::AcceptedConnection {
+  kj::Own<kj::AsyncIoStream> connection;
+  capnp::TwoPartyVatNetwork network;
+  capnp::RpcSystem<capnp::rpc::twoparty::VatId> rpcSystem;
+
+  explicit AcceptedConnection(capnp::Capability::Client bootstrapInterface,
+                              kj::Own<kj::AsyncIoStream>&& connectionParam)
+      : connection(kj::mv(connectionParam)),
+        network(*connection, capnp::rpc::twoparty::Side::SERVER),
+        rpcSystem(capnp::makeRpcServer(network, kj::mv(bootstrapInterface))) {}
+};
+
+kj::Promise<void> TwoPartyServerWithClientBootstrap::listen(
+  kj::Own<kj::ConnectionReceiver>&& listener) {
+  return listener->accept()
+      .then([this,KJ_MVCAP(listener)](kj::Own<kj::AsyncIoStream>&& connection) mutable {
+    auto connectionState = kj::heap<AcceptedConnection>(bootstrapInterface, kj::mv(connection));
+
+    // Update the bootstrap redirector to point at the new connection's bootstrap.
+    capnp::MallocMessageBuilder message(8);
+    auto vatId = message.getRoot<capnp::rpc::twoparty::VatId>();
+    vatId.setSide(capnp::rpc::twoparty::Side::CLIENT);
+    uint iteration = redirector->setTarget(connectionState->rpcSystem.bootstrap(vatId));
+
+    // Run the connection until disconnect.
+    auto promise = connectionState->network.onDisconnect();
+    tasks.add(promise.attach(kj::mv(connectionState), kj::defer([this,iteration]() {
+      // Disconnect the redirector when the client disconnects.
+      redirector->setDisconnected(iteration);
+    })));
+
+    return listen(kj::mv(listener));
+  });
+}
+
+capnp::Capability::Client TwoPartyServerWithClientBootstrap::getBootstrap() {
+  return kj::addRef(*redirector);
+}
+
+void TwoPartyServerWithClientBootstrap::taskFailed(kj::Exception&& exception) {
+  KJ_LOG(ERROR, exception);
+}
+
 }  // namespace sandstorm

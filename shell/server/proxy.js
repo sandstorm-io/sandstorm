@@ -43,7 +43,8 @@ sandstormExe = function (progname) {
   }
 }
 
-sandstormBackendConnection = Capnp.connect("unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath);
+sandstormBackendConnection = Capnp.connect("unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath,
+  makeSandstormCoreFactory());
 sandstormBackend = sandstormBackendConnection.restore(null, Backend);
 
 // =======================================================================================
@@ -305,6 +306,22 @@ shouldRestartGrain = function (error, retryCount) {
   // already gone through this cycle (should be zero for the first call).
 
   return error.type === "disconnected" && retryCount < 1;
+}
+
+useGrain = function (grainId, cb, retryCount) {
+  // This will open a grain for you, handling restarts if needed, and call the passed function with
+  // the supervisor capability as the only parameter. The callback must return a promise that used
+  // the supervisor, so that we can check if a disconnect error occurred, and retry if possible.
+  // This method returns the same promise that your callback returns.
+
+  retryCount = retryCount || 0;
+  return cb(openGrain(grainId).supervisor).catch(function (err) {
+    if (shouldRestartGrain(err, retryCount)) {
+      return useGrain(grainId, cb, retryCount + 1);
+    } else {
+      throw err;
+    }
+  });
 }
 
 function continueGrain(grainId) {

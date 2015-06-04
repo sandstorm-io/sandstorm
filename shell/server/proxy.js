@@ -305,7 +305,7 @@ shouldRestartGrain = function (error, retryCount) {
   // to restart the grain and retry. `retryCount` is the number of times that the request has
   // already gone through this cycle (should be zero for the first call).
 
-  return error.type === "disconnected" && retryCount < 1;
+  return error.kjType === "disconnected" && retryCount < 1;
 }
 
 useGrain = function (grainId, cb, retryCount) {
@@ -403,7 +403,7 @@ shutdownGrain = function (grainId, ownerId, keepSessions) {
     throw new Error("expected shutdown() to throw disconnected");
   }, function (err) {
     grain.close();
-    if (err.type !== "disconnected") {
+    if (err.kjType !== "disconnected") {
       throw err;
     }
   });
@@ -851,8 +851,8 @@ function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, user
       if (err.cppFile) {
         body += "\nC++ location:" + err.cppFile + ":" + (err.line || "??");
       }
-      if (err.type) {
-        body += "\ntype: " + err.type;
+      if (err.kjType) {
+        body += "\ntype: " + err.kjType;
       }
 
       if (response.headersSent) {
@@ -970,7 +970,7 @@ Proxy.prototype.getSession = function (request) {
       return self._callNewSession(request, viewInfo);
     }, function (error) {
       // Assume method not implemented.
-      // TODO(apibump): These days we have error.type === "unimplemented", but old apps may not
+      // TODO(apibump): These days we have error.kjType === "unimplemented", but old apps may not
       //   have that Cap'n Proto update.
       return self._callNewSession(request, {});
     });
@@ -1450,7 +1450,7 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
     if (contentLength !== undefined) {
       requestStream.expectSize(contentLength).catch(function (err) {
         // expectSize() is allowed to be unimplemented.
-        if (err.type !== "unimplemented") {
+        if (err.kjType !== "unimplemented") {
           reportUploadStreamError(err);
         }
       });
@@ -1486,12 +1486,12 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
       return promise;
     });
   }, function (err) {
-    if (err.type === "failed" && err.message.indexOf("not implemented") !== -1) {
+    if (err.kjType === "failed" && err.message.indexOf("not implemented") !== -1) {
       // Hack to work around old apps using an old version of Cap'n Proto, before the
       // "unimplemented" exception type was introduced. :(
       // TODO(cleanup): When we transition to API version 2, we can move this into the
       //   compatibility layer.
-      err.type = "unimplemented";
+      err.kjType = "unimplemented";
     }
 
     if (shouldRestartGrain(err, 0)) {
@@ -1502,7 +1502,7 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
       return self.maybeRetryAfterError(err, retryCount).then(function () {
         return self.handleRequestStreaming(request, response, contentLength, retryCount + 1);
       });
-    } else if (err.type === "unimplemented") {
+    } else if (err.kjType === "unimplemented") {
       // Streaming is not implemented. Fall back to non-streaming version.
       return readAll(request).then(function (data) {
         return self.handleRequest(request, data, response, 0);
@@ -1540,7 +1540,7 @@ function WebSocketReceiver(socket) {
 function pumpWebSocket(socket, rpcStream) {
   socket.on("data", function (chunk) {
     rpcStream.sendBytes(chunk).catch(function (err) {
-      if (err.type !== "disconnected") {
+      if (err.kjType !== "disconnected") {
         console.error("WebSocket sendBytes failed: " + err.stack);
       }
       socket.destroy();
@@ -1646,7 +1646,7 @@ Meteor.publish("grainLog", function (grainId) {
       handle.close();
     });
   } catch (err) {
-    if (err.type !== "disconnected") {
+    if (err.kjType !== "disconnected") {
       throw err;
     }
     if (!connected) {

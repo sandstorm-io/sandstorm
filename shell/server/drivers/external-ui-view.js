@@ -244,7 +244,7 @@ ExternalWebSession.prototype._requestHelper = function (method, path, context, c
     req.setTimeout(15000, function () {
       req.abort();
       err = new Error("Request timed out.");
-      err.type = "overloaded";
+      err.kjType = "overloaded";
       reject(err);
     });
 

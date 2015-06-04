@@ -87,7 +87,7 @@ if (Meteor.isServer) {
         }
       }, function (err) {
         if (!stopped) {
-          if (err.type === "disconnected") {
+          if (err.kjType === "disconnected") {
             self.stop();
           } else {
             self.error(err);
@@ -104,7 +104,7 @@ if (Meteor.isServer) {
       }
     }, function (err) {
       if (!stopped) {
-        if (err.type === "disconnected") {
+        if (err.kjType === "disconnected") {
           self.stop();
         } else {
           self.error(err);

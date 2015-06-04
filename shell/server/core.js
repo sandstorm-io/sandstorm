@@ -66,7 +66,7 @@ function dismissNotification(notificationId, callCancel) {
           castedNotification.close();
           notificationCap.close();
         } catch (err) {
-          if (err.type !== "disconnected") {
+          if (err.kjType !== "disconnected") {
             // ignore disconnected errors, since cancel may shutdown the grain before the supervisor
             // responds.
             throw err;

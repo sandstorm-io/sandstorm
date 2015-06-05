@@ -17,7 +17,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # Make sure to share the dir one *above* the current working directory. That way, we get
   # the Sandstorm source tree, which includes the all-important install.sh.
-  config.vm.synced_folder "..", "/vagrant"
+  config.vm.synced_folder "..", "/vagrant",
+                          type: "rsync",
+                          rsync__exclude: ".git/",
+                          rsync__args: [
+                            "--archive",
+                            "--delete"]
 
   # In this Vagrantbox purely to test the install script, we do not
   # forward any ports. If we need to test if ports are available, we

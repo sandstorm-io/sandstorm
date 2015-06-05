@@ -12,7 +12,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # "vagrant" to be a weird hostname.
   config.ssh.shell = "bash"
   config.vm.provision "shell",
-                       inline: "cd /vagrant && echo localhost > /etc/hostname && hostname localhost"
+                       inline: "echo localhost > /etc/hostname && hostname localhost"
 
 
   # Make sure to share the dir one *above* the current working directory. That way, we get

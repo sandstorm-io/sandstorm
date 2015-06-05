@@ -10,7 +10,7 @@ $[run]sudo CURL_USER_AGENT=testing bash /vagrant/install.sh -d
 $[slow]Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled.
 Config written to /opt/sandstorm/sandstorm.conf.
 Finding latest build for dev channel...
-$[slow]Downloading: https://dl.sandstorm.io/
+$[veryslow]Downloading: https://dl.sandstorm.io/
 $[slow]Sandstorm started.
 Setup complete. You should configure the site at:
   http://local.sandstorm.io:6080/admin/

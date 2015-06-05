@@ -40,7 +40,7 @@ Wildcard host: [*.local.sandstorm.io:6080]$[type]
 
 Config written to
 Finding latest build for dev channel...
-$[slow]Downloading: https://dl.sandstorm.io/sandstorm-
+$[veryslow]Downloading: https://dl.sandstorm.io/sandstorm-
 $[slow]Start sandstorm at system boot (using sysvinit)? [yes] $[type]
 Setup complete. To start your server now, run:
 sandstorm start

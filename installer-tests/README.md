@@ -114,6 +114,9 @@ The following are valid body directives:
 * `$[slow]`: Wait longer than usual (by default, 30 sec) for this text
   to appear.
 
+* `$[veryslow]`: Wait _even_ longer than usual (twice as long as
+  `$[slow]`) for this text to appear.
+
 * `$[run]`: Run a command, with future text assertions covering this
   particular program.
 

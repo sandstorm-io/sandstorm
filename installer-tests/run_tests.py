@@ -10,11 +10,22 @@ import re
 def _expect(line, current_cmd, do_re_escape=True, do_detect_slow=True,
             strip_comments=True, verbose=True):
     timeout = 1
+
+    slow_text_timeout = int(os.environ.get('SLOW_TEXT_TIMEOUT', 30))
+    veryslow_text_timeout = 2 * slow_text_timeout
+
     if do_detect_slow:
-        if line.startswith('$[slow]'):
+        slow_token = '$[slow]'
+        if line.startswith(slow_token):
             print 'Slow line...'
-            timeout = int(os.environ.get('SLOW_TEXT_TIMEOUT', 30))
-            line = line.replace('$[slow]', '', 1)
+            timeout = slow_text_timeout
+            line = line.replace(slow_token, '', 1)
+
+        veryslow_token = '$[veryslow]'
+        if line.startswith(veryslow_token):
+            print 'Very slow line...'
+            timeout = veryslow_text_timeout
+            line = line.replace(veryslow_token, '', 1)
 
     if verbose:
         print 'expecting', line

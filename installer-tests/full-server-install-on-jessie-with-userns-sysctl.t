@@ -40,5 +40,3 @@ Setup complete. You should configure the site at:
 To learn how to control the server, run:
   sandstorm help
 $[exitcode]0
-$[run]sudo bash -c 'echo 0 > /proc/sys/kernel/unprivileged_userns_clone'
-$[slow]0

@@ -59,6 +59,7 @@ Router.map(function () {
 
 if (Meteor.isClient) {
   AdminToken = new Mongo.Collection("adminToken");  // see Meteor.publish("adminToken")
+  AdminLog = new Meteor.Collection("adminLog");
   Meteor.subscribe("publicAdminSettings");
 
   var resetResult = function (state) {
@@ -120,6 +121,11 @@ if (Meteor.isClient) {
       var state = Iron.controller().state;
       resetResult(state);
       state.set("settingsTab", "adminStats");
+    },
+    "click #log-tab": function (event) {
+      var state = Iron.controller().state;
+      resetResult(state);
+      state.set("settingsTab", "adminLog");
     }
   });
 
@@ -155,6 +161,9 @@ if (Meteor.isClient) {
     },
     statsActive: function () {
       return Iron.controller().state.get("settingsTab") == "adminStats";
+    },
+    logActive: function () {
+      return Iron.controller().state.get("settingsTab") == "adminLog";
     }
   });
 
@@ -477,6 +486,41 @@ if (Meteor.isClient) {
       return res && res.url;
     }
   });
+  var maybeScrollLog = function() {
+    var elem = document.getElementById("adminLog");
+    if (elem) {
+      // The log already exists. It's about to be updated. Check if it's scrolled to the bottom
+      // before the update.
+      if (elem.scrollHeight - elem.scrollTop === elem.clientHeight) {
+        // Indeed, so we want to scroll it back to the bottom after the update.
+        Deps.afterFlush(function () { scrollLogToBottom(elem); });
+      }
+    } else {
+      // No element exists yet, but it's probably about to be created, in which case we definitely
+      // want to scroll it.
+      Deps.afterFlush(function () {
+        var elem2 = document.getElementById("adminLog");
+        if (elem2) scrollLogToBottom(elem2);
+      });
+    }
+  };
+
+  var scrollLogToBottom = function (elem) {
+    elem.scrollTop = elem.scrollHeight;
+  };
+
+  Template.adminLog.onCreated(function () {
+    var state = Iron.controller().state;
+    var token = state.get("token");
+    this.subscribe("adminLog", token);
+  });
+  Template.adminLog.helpers({
+    html: function () {
+      return AnsiUp.ansi_to_html(AdminLog.find({}, {$sort: {_id: 1}})
+              .map(function (entry) { return entry.text; })
+              .join(""), {use_classes:true});
+    }
+  });
 }
 
 if (Meteor.isServer) {
@@ -727,6 +771,45 @@ if (Meteor.isServer) {
 
     // TODO(someday): Update every few minutes?
 
+    this.ready();
+  });
+  Meteor.publish("adminLog", function (token) {
+    if (!(this.userId && isAdminById(this.userId)) && !tokenIsValid(token)) {
+      return [];
+    }
+
+    var logfile = SANDSTORM_LOGDIR + "/sandstorm.log";
+
+    var fd = Fs.openSync(logfile, "r");
+    var startSize = Fs.fstatSync(fd).size;
+
+    // Start tailing at EOF - 8k.
+    var offset = Math.max(0, startSize - 8192);
+
+    var self = this;
+    function doTail() {
+      for (;;) {
+        var buf = new Buffer(Math.max(1024, startSize - offset));
+        var n = Fs.readSync(fd, buf, 0, buf.length, offset);
+        if (n <= 0) break;
+        self.added("adminLog", offset, {text: buf.toString("utf8", 0, n)});
+        offset += n;
+      }
+    }
+
+    // Watch the file for changes.
+    var watcher = Fs.watch(logfile, {persistent: false}, Meteor.bindEnvironment(doTail));
+
+    // When the subscription stops, stop watching the file.
+    this.onStop(function() {
+      watcher.close();
+      Fs.closeSync(fd);
+    });
+
+    // Read initial 8k tail data immediately.
+    doTail();
+
+    // Notify ready.
     this.ready();
   });
 }

@@ -565,6 +565,12 @@ $KEY</textarea></p>
   </div>
 </template>
 
+<template name="adminLog">
+  <div id="adminLog">
+    <pre>...{{{html}}}</pre>
+  </div>
+</template>
+
 <template name="uploadForm">
   <div id="topbar">{{> homeLink}} Upload App</div>
 
@@ -664,6 +670,7 @@ $KEY</textarea></p>
           <li id="settings-tab" class="{{#if settingsActive}}active{{/if}}"><a href="#">Settings</a></li>
           <li id="users-tab" class="{{#if usersActive}}active{{/if}}"><a href="#">Users</a></li>
           <li id="stats-tab" class="{{#if statsActive}}active{{/if}}"><a href="#">Stats</a></li>
+          <li id="log-tab" class="{{#if logActive}}active{{/if}}"><a href="#">Log</a></li>
           <li id="invites-tab" class="{{#if invitesActive}}active{{/if}}"><a href="#">Send Invite</a></li>
         </ul>
         {{> Template.dynamic template=adminTab}}

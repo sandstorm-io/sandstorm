@@ -2,9 +2,9 @@ import glob
 import os
 import pexpect
 import random
+import re
 import subprocess
 import sys
-import re
 
 
 def _expect(line, current_cmd, do_re_escape=True, do_detect_slow=True,

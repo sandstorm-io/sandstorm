@@ -282,7 +282,8 @@ limitations under the License.
           <select id="api-token-role">
             {{#each roles}}
               <option title={{verbPhrase.defaultText}}
-                      style="{{#if obsolete}}display:none{{else}}{{/if}}">
+                      style="{{#if obsolete}}display:none{{/if}}"
+                      selected={{default}}>
                 {{title.defaultText}}</option>
             {{/each}}
           </select>

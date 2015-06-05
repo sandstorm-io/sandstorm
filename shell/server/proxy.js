@@ -969,10 +969,15 @@ Proxy.prototype.getSession = function (request) {
     var promise = this.uiView.getViewInfo().then(function (viewInfo) {
       return self._callNewSession(request, viewInfo);
     }, function (error) {
-      // Assume method not implemented.
-      // TODO(apibump): These days we have error.kjType === "unimplemented", but old apps may not
-      //   have that Cap'n Proto update.
-      return self._callNewSession(request, {});
+      if (error.kjType === "failed" || error.kjType === "unimplemented") {
+        // Method not implemented.
+        // TODO(apibump): Don't treat "failed" as "unimplemented". Unfortunately, old apps built
+        //   with old versions of Cap'n Proto don't throw "unimplemented" exceptions, so we have
+        //   to accept "failed" here at least until the next API bump.
+        return self._callNewSession(request, {});
+      } else {
+        return Promise.reject(error);
+      }
     });
     this.session = new Capnp.Capability(promise, WebSession);
   }

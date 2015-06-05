@@ -506,22 +506,10 @@ if (Meteor.isServer) {
     }
   };
 
-  var updateLoginStyleToRedirect = function (serviceName) {
-    var configurations = Package["service-configuration"].ServiceConfiguration.configurations;
-    var config = configurations.findOne({service: serviceName});
-
-    if (config && config.loginStyle !== "redirect") {
-      configurations.update({service: serviceName}, {$set: {loginStyle: "redirect"}});
-    }
-  };
-
   Meteor.startup(function () {
     registerServiceOnStartup("google");
     registerServiceOnStartup("github");
     registerServiceOnStartup("emailToken");
-
-    updateLoginStyleToRedirect("google");
-    updateLoginStyleToRedirect("github");
   });
 
   var checkAuth = function (token) {

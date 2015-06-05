@@ -4,11 +4,21 @@
 // side-effects, we should be careful to make sure all migrations are
 // idempotent and safe to accidentally run multiple times.
 
+var updateLoginStyleToRedirect = function() {
+  var configurations = Package["service-configuration"].ServiceConfiguration.configurations;
+  ["google", "github"].forEach(function(serviceName) {
+    var config = configurations.findOne({service: serviceName});
+    if (config && config.loginStyle !== "redirect") {
+      configurations.update({service: serviceName}, {$set: {loginStyle: "redirect"}});
+    }
+  });
+};
 
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
 var MIGRATIONS = [
+  updateLoginStyleToRedirect
 ];
 
 migrateToLatest = function () {

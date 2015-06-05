@@ -65,6 +65,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
+  # Use qemu driver for libvirt. See README.md for rationale.
   config.vm.provider :libvirt do |libvirt|
     libvirt.driver = 'qemu'
   end

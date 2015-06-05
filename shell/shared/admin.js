@@ -115,6 +115,11 @@ if (Meteor.isClient) {
       var state = Iron.controller().state;
       resetResult(state);
       state.set("settingsTab", "adminInvites");
+    },
+    "click #stats-tab": function (event) {
+      var state = Iron.controller().state;
+      resetResult(state);
+      state.set("settingsTab", "adminStats");
     }
   });
 
@@ -147,6 +152,9 @@ if (Meteor.isClient) {
     },
     invitesActive: function () {
       return Iron.controller().state.get("settingsTab") == "adminInvites";
+    },
+    statsActive: function () {
+      return Iron.controller().state.get("settingsTab") == "adminStats";
     }
   });
 
@@ -687,5 +695,38 @@ if (Meteor.isServer) {
     } else {
       return [];
     }
+  });
+  Meteor.publish("activityStats", function (token) {
+    if (!(this.userId && isAdminById(this.userId)) && !tokenIsValid(token)) {
+      return [];
+    }
+
+    return ActivityStats.find();
+  });
+
+  Meteor.publish("statsTokens", function (token) {
+    if (!(this.userId && isAdminById(this.userId)) && !tokenIsValid(token)) {
+      return [];
+    }
+
+    return StatsTokens.find();
+  });
+
+  Meteor.publish("realTimeStats", function (token) {
+    if (!(this.userId && isAdminById(this.userId)) && !tokenIsValid(token)) {
+      return [];
+    }
+
+    // Last five minutes.
+    this.added("realTimeStats", "now", computeStats(new Date(Date.now() - 5*60*1000)));
+
+    // Since last sample.
+    var lastSample = ActivityStats.findOne({}, {sort: {timestamp: -1}});
+    var lastSampleTime = lastSample ? lastSample.timestamp : new Date(0);
+    this.added("realTimeStats", "today", computeStats(lastSampleTime));
+
+    // TODO(someday): Update every few minutes?
+
+    this.ready();
   });
 }

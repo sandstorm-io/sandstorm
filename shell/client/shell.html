@@ -132,7 +132,6 @@ limitations under the License.
           <li class="blank">&nbsp;</li>
           {{#if isAdmin}}
             <li class="applist-tab-settings">Admin Settings</li>
-            <li class="applist-tab-stats">Usage Stats</li>
           {{/if}}
           <li class="applist-tab-about">About Sandstorm</li>
         </ul>
@@ -664,6 +663,7 @@ $KEY</textarea></p>
         <ul id="settings-tabs" class="nav centered-box">
           <li id="settings-tab" class="{{#if settingsActive}}active{{/if}}"><a href="#">Settings</a></li>
           <li id="users-tab" class="{{#if usersActive}}active{{/if}}"><a href="#">Users</a></li>
+          <li id="stats-tab" class="{{#if statsActive}}active{{/if}}"><a href="#">Stats</a></li>
           <li id="invites-tab" class="{{#if invitesActive}}active{{/if}}"><a href="#">Send Invite</a></li>
         </ul>
         {{> Template.dynamic template=adminTab}}
@@ -750,50 +750,46 @@ $KEY</textarea></p>
   </table>
 </template>
 
-<template name="stats">
-  <div id="topbar">{{> homeLink}} Usage stats</div>
+<template name="adminStats">
+  <div id="stats">
+    <p>Right now: {{current.activeUsers}} users, {{current.activeGrains}} grains</p>
+    <p>Today: {{today.activeUsers}} users, {{today.activeGrains}} grains</p>
 
-  <div id="stats" class="main-content">
-    <div class="centered-box">
-      <p>Right now: {{current.activeUsers}} users, {{current.activeGrains}} grains</p>
-      <p>Today: {{today.activeUsers}} users, {{today.activeGrains}} grains</p>
+    <p>Previous days:</p>
 
-      <p>Previous days:</p>
-
-      <table>
+    <table>
+      <tr>
+        <td rowspan="2">date</td>
+        <td colspan="3">users</td>
+        <td colspan="3">grains</td>
+      </tr>
+      <tr>
+        <td>daily</td>
+        <td>weekly</td>
+        <td>monthly</td>
+        <td>daily</td>
+        <td>weekly</td>
+        <td>monthly</td>
+      </tr>
+      {{#each points}}
         <tr>
-          <td rowspan="2">date</td>
-          <td colspan="3">users</td>
-          <td colspan="3">grains</td>
+          <td>{{day}}</td>
+          <td>{{daily.activeUsers}}</td>
+          <td>{{weekly.activeUsers}}</td>
+          <td>{{monthly.activeUsers}}</td>
+          <td>{{daily.activeGrains}}</td>
+          <td>{{weekly.activeGrains}}</td>
+          <td>{{monthly.activeGrains}}</td>
         </tr>
+      {{else}}
         <tr>
-          <td>daily</td>
-          <td>weekly</td>
-          <td>monthly</td>
-          <td>daily</td>
-          <td>weekly</td>
-          <td>monthly</td>
+          <td colspan="7">There are no stats yet, or you are not admin.</td>
         </tr>
-        {{#each points}}
-          <tr>
-            <td>{{day}}</td>
-            <td>{{daily.activeUsers}}</td>
-            <td>{{weekly.activeUsers}}</td>
-            <td>{{monthly.activeUsers}}</td>
-            <td>{{daily.activeGrains}}</td>
-            <td>{{weekly.activeGrains}}</td>
-            <td>{{monthly.activeGrains}}</td>
-          </tr>
-        {{else}}
-          <tr>
-            <td colspan="7">There are no stats yet, or you are not admin.</td>
-          </tr>
-        {{/each}}
-      </table>
-      <h3>API token</h3>
-      <button id="regenerateStatsToken">Regenerate Token</button>
-      <span><a href="/fetchStats/{{token._id}}">{{token._id}}</a></span>
-    </div>
+      {{/each}}
+    </table>
+    <h3>API token</h3>
+    <button id="regenerateStatsToken">Regenerate Token</button>
+    <span><a href="/fetchStats/{{token._id}}">{{token._id}}</a></span>
   </div>
 </template>
 

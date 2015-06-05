@@ -72,31 +72,15 @@ if (Meteor.isClient) {
   };
 
   Meteor.startup(function () {
-    Tracker.autorun(function () {
-      var setting = Settings.findOne({_id: "github"});
-      if (!setting || setting.value) {
-        Accounts.registerService("github");
-      } else if (!setting.value) {
-        Accounts.deregisterService("github");
-      }
-    });
-
-    Tracker.autorun(function () {
-      var setting = Settings.findOne({_id: "google"});
-      if (!setting || setting.value) {
-        Accounts.registerService("google");
-      } else if (!setting.value) {
-        Accounts.deregisterService("google");
-      }
-    });
-
-    Tracker.autorun(function () {
-      var setting = Settings.findOne({_id: "emailToken"});
-      if (setting && setting.value) {
-        Accounts.registerService("emailToken");
-      } else {
-        Accounts.deregisterService("emailToken");
-      }
+    ["github", "google", "emailToken"].forEach(function(loginProvider) {
+      Tracker.autorun(function () {
+        var setting = Settings.findOne({_id: loginProvider});
+        if (setting && setting.value) {
+          Accounts.registerService(loginProvider);
+        } else {
+          Accounts.deregisterService(loginProvider);
+        }
+      });
     });
   });
 
@@ -236,7 +220,7 @@ if (Meteor.isClient) {
       if (setting) {
         return setting.value;
       } else {
-        return true;
+        return false;
       }
     },
     githubEnabled: function () {
@@ -244,7 +228,7 @@ if (Meteor.isClient) {
       if (setting) {
         return setting.value;
       } else {
-        return true;
+        return false;
       }
     },
     emailTokenEnabled: function () {
@@ -500,8 +484,7 @@ if (Meteor.isServer) {
 
   var registerServiceOnStartup = function (serviceName) {
     var setting = Settings.findOne({_id: serviceName});
-    if ((!setting && (serviceName === "github" || serviceName === "google")) ||
-        (setting && setting.value)) {
+    if (setting && setting.value) {
       Accounts.registerService(serviceName);
     }
   };
@@ -529,8 +512,8 @@ if (Meteor.isServer) {
       }
 
       // Only check configurations for OAuth services.
-      // TODO(someday): check a list instead of just filtering out "emailToken"
-      if (value && serviceName !== "emailToken") {
+      var oauthServices = ["google", "github"];
+      if (value && (oauthServices.indexOf(serviceName) != -1)) {
         var ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
         var config = ServiceConfiguration.configurations.findOne({service: serviceName});
         if (!config) {

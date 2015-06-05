@@ -179,15 +179,14 @@ DeleteStats = new Mongo.Collection("deleteStats");
 //   lastActive: Date of the user's or grain's last activity.
 
 FileTokens = new Mongo.Collection("fileTokens");
-// Tokens corresponding to files that will be accessed and later cleaned up by the server. This
-// is specifically used in routes like backupGrain/restoreGrain where the route is server-side,
-// and thus needs its own form of authentication.
-// (see https://github.com/EventedMind/iron-router/issues/649)
+// Tokens corresponding to backup files that are currently stored on the server. A user receives
+// a token when they create a backup file (either by uploading it, or by backing up one of their
+// grains) and may use the token to read the file (either to download it, or to restore a new
+// grain from it).
 //
 // Each contains:
-//   _id:       random. Since they're unguessable, they're also used as the token
-//   filePath:  Text path on the local filesystem. Probably will be in /tmp
-//   name:      Text name that should be presented to users for this token
+//   _id:       The unguessable token string.
+//   name:      Suggested filename.
 //   timestamp: File creation time. Used to figure out when the token and file should be wiped.
 
 ApiTokens = new Mongo.Collection("apiTokens");

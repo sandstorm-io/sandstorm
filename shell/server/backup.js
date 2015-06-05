@@ -15,73 +15,19 @@
 // limitations under the License.
 
 var ChildProcess = Npm.require("child_process");
-var Fs = Npm.require("fs");
 var Future = Npm.require("fibers/future");
-var Path = Npm.require("path");
 var Promise = Npm.require("es6-promise").Promise;
 var Capnp = Npm.require("capnp");
 
 var GrainInfo = Capnp.importSystem("sandstorm/grain.capnp").GrainInfo;
 
-var TMPDIR = "/tmp";
 var TOKEN_CLEANUP_MINUTES = 15;
 var TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 
-var mkdir = Meteor.wrapAsync(Fs.mkdir),
-    readFile = Meteor.wrapAsync(Fs.readFile),
-    writeFile = Meteor.wrapAsync(Fs.writeFile);
-
-function recursiveRmdir(dir) {
-  Fs.readdirSync(dir).forEach(function (filename) {
-    filename = Path.join(dir, filename);
-    if(Fs.lstatSync(filename).isDirectory()) {
-      recursiveRmdir(filename);
-    } else {
-      Fs.unlinkSync(filename);
-    }
-  });
-  Fs.rmdirSync(dir);
-};
-
-function recursiveRmdirIfExists(dir) {
-  if (Fs.existsSync(dir)) {
-    if (Fs.lstatSync(dir).isDirectory()) {
-      recursiveRmdir(dir);
-    } else {
-      Fs.unlinkSync(dir);
-    }
-  }
-}
-
-function walkAndWriteFiles(dir, writeStream, replaceRoot, originalRoot) {
-  originalRoot = originalRoot || dir;
-  var files = Fs.readdirSync(dir);
-  files.forEach(function (name) {
-    name = dir + "/" + name;
-
-    // Filter out file paths with a newline in them
-    if (name.indexOf("\n") !== -1) {
-      return;
-    }
-
-    var fileStat = Fs.lstatSync(name);
-    if (fileStat.isDirectory()) {
-      walkAndWriteFiles(name, writeStream, replaceRoot, originalRoot);
-    } else if (fileStat.isFile() || fileStat.isSymbolicLink()) {
-      name = replaceRoot + name.slice(originalRoot.length);
-      writeStream.write(name + "\n");
-    }
-  });
-
-  // Include empty directories
-  if (files.length === 0) {
-    // Filter out file paths with a newline in them
-    if (dir.indexOf("\n") !== -1) {
-      return;
-    }
-    dir = replaceRoot + dir.slice(originalRoot.length);
-    writeStream.write(dir + "\n");
-  }
+function cleanupToken(tokenId) {
+  check(tokenId, String);
+  waitPromise(sandstormBackend.deleteBackup(tokenId));
+  FileTokens.remove({_id: tokenId});
 }
 
 Meteor.startup(function () {
@@ -90,7 +36,7 @@ Meteor.startup(function () {
     var queryDate = new Date(Date.now() - TOKEN_CLEANUP_TIMER);
 
     FileTokens.find({timestamp: {$lt: queryDate}}).forEach(function (token) {
-      Meteor.call("cleanupToken", token._id);
+      cleanupToken(token._id);
     });
   }, TOKEN_CLEANUP_TIMER);
 });
@@ -105,105 +51,38 @@ Meteor.methods({
 
     this.unblock();
 
-    var fut = new Future();
-
-    var id = Random.id();
     var token = {
-      _id: id,
-      filePath: Path.join(TMPDIR, "/", id),
+      _id: Random.id(),
       timestamp: new Date(),
       name: grain.title
     };
 
-    mkdir(token.filePath);
-
     // TODO(soon): does the grain need to be offline?
 
     var grainInfo = _.pick(grain, "appId", "appVersion", "title");
-    writeFile(Path.join(token.filePath, "metadata"), Capnp.serialize(GrainInfo, grainInfo));
-
-    var proc = ChildProcess.spawn(sandstormExe("minibox"), [
-        // Mount root directory read-only, but hide /proc, /var, and /etc.
-        "-r/=/", "-h/proc", "-h/var", "-h/etc",
-        // Map /tmp to the backup tempdir, so that any other temp stuff is hidden.
-        // Make this the current directory.
-        "-w/tmp=" + token.filePath, "-d/tmp",
-        // Map in things which we want to pack into the zip. We only need to do this because the
-        // zip tool has no way to transform names when zipping, so we have to fool it into thinking
-        // that these nodes are actually located where we want them.
-        "-r/tmp/data=" + Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox"),
-        "-r/tmp/log=" + Path.join(SANDSTORM_GRAINDIR, grainId, "log"),
-        // Run zip!
-        "--", "zip", "-y", "backup.zip", "-@"], {stdio: ["pipe", "ignore", "ignore"]});
-    proc.on("exit", function (code) {
-      fut.return(code);
-    });
-    proc.on("error", function (err) {
-      recursiveRmdirIfExists(token.filePath);
-      fut.throw(new Meteor.Error(500, "Error in zipping procces"));
-    });
-    proc.stdin.write("metadata\n");
-    proc.stdin.write("log\n");
-    walkAndWriteFiles(Path.join(SANDSTORM_GRAINDIR, grainId, "sandbox"), proc.stdin, "data");
-    proc.stdin.end();
-
-    var code = fut.wait();
-    if (code !== 0) {
-      recursiveRmdirIfExists(token.filePath);
-      throw new Meteor.Error(500, "Zip process failed.");
-    }
 
     FileTokens.insert(token);
+    waitPromise(sandstormBackend.backupGrain(token._id, this.userId, grainId, grainInfo));
 
-    return id;
+    return token._id;
   },
 
   restoreGrain: function (tokenId) {
+    check(tokenId, String);
     var token = FileTokens.findOne(tokenId);
-    if (!token) {
-      throw new Meteor.Error(403, "Unauthorized", "Token was not found");
+    if (!token || !isSignedUpOrDemo()) {
+      throw new Meteor.Error(403, "Unauthorized",
+          "Token was not found, or user cannot create grains");
     }
 
     this.unblock();
 
     var grainId = Random.id(22);
-    var grainDir = Path.join(SANDSTORM_GRAINDIR, grainId);
-    var grainSandboxDir = Path.join(grainDir, "sandbox");
-    Fs.mkdirSync(grainDir);
-    Fs.mkdirSync(grainSandboxDir);
 
     try {
-      var fut = new Future();
-
-      var proc = ChildProcess.spawn(sandstormExe("minibox"), [
-          // Mount root directory read-only, but hide /proc, /var, and /etc.
-          "-r/=/", "-h/proc", "-h/var", "-h/etc",
-          // Map /tmp to the backup tempdir, so that any other temp stuff is hidden.
-          // Make this the current directory.
-          "-w/tmp=" + token.filePath, "-d/tmp",
-          // Map /tmp/data to the grain's sandbox directory so data is unpacked directly to the
-          // place we want.
-          "-w/tmp/data=" + grainSandboxDir,
-          "--", "unzip", "-o", "backup.zip"], {stdio: "ignore"});
-      proc.on("exit", function (code) {
-        fut.return(code);
-      });
-      proc.on("error", function (err) {
-        fut.throw(new Meteor.Error(500, "Error in unzipping procces"));
-      });
-
-      var code = fut.wait();
-      if (code !== 0) {
-        Meteor.call("cleanupToken", tokenId);
-        throw new Meteor.Error(500, "Unzip process failed.");
-      }
-
-      var metadata = Path.join(token.filePath, "metadata");
-      var grainInfoBuf = readFile(metadata);
-      var grainInfo = Capnp.parse(GrainInfo, grainInfoBuf);
+      var grainInfo = waitPromise(sandstormBackend.restoreGrain(tokenId, this.userId, grainId)).info;
       if (!grainInfo.appId) {
-          throw new Meteor.Error(500,
-                                 "Metadata object for uploaded grain has no AppId");
+          throw new Meteor.Error(500, "Metadata object for uploaded grain has no AppId");
       }
 
       var action = UserActions.findOne({appId: grainInfo.appId, userId: this.userId});
@@ -229,113 +108,76 @@ Meteor.methods({
         title: grainInfo.title,
         private: true
       });
-    } catch (err) {
-      recursiveRmdirIfExists(grainDir);
-      throw err;
+    } finally {
+      cleanupToken(tokenId);
     }
 
-    Meteor.call("cleanupToken", tokenId);
     return grainId;
   },
-
-  cleanupToken: function (tokenId) {
-    var token = FileTokens.findOne(tokenId);
-    if (!token) {
-      return;
-    }
-    recursiveRmdirIfExists(token.filePath);
-    FileTokens.remove({_id: tokenId});
-  }
 });
-
-doGrainUpload = function (stream) {
-  return new Promise(function (resolve, reject) {
-    var id = Random.id();
-    var token = {
-      _id: id,
-      filePath: Path.join(TMPDIR, "/", id),
-      timestamp: new Date()
-    };
-    mkdir(token.filePath);
-    var backupFile = Path.join(token.filePath, "backup.zip");
-
-    var file = Fs.createWriteStream(backupFile);
-
-    stream.on("end", function () {
-      try {
-        file.end();
-        resolve(token);
-      } catch (err) {
-        recursiveRmdirIfExists(token.filePath);
-        reject(err);
-      }
-    });
-    stream.on("error", function (err) {
-      // TODO(soon):  This event does"t seem to fire if the user leaves the page mid-upload.
-      try {
-        file.end();
-        recursiveRmdirIfExists(token.filePath);
-        reject(err);
-      } catch (err2) {
-        recursiveRmdirIfExists(token.filePath);
-        reject(err2);
-      }
-    });
-
-    stream.pipe(file);
-  });
-};
 
 Router.map(function () {
   this.route("downloadBackup", {
     where: "server",
     path: "/downloadBackup/:tokenId",
     action: function () {
-      var fut = new Future();
-      var response = this.response;
       var token = FileTokens.findOne(this.params.tokenId);
-      var backupFile = Path.join(token.filePath, "backup.zip");
-
-      var fileSize, file;
-      try {
-        fileSize = Fs.statSync(backupFile).size;
-        file = Fs.createReadStream(backupFile);
-      } catch (error) {
+      var response = this.response;
+      if (!token) {
         response.writeHead(404, {"Content-Type": "text/plain"});
         return response.end("File does not exist");
       }
 
-      file.on("error", function (error) {
-        // TODO(someday): this might not work if error occurs after open?
-        response.writeHead(404, {"Content-Type": "text/plain"});
-        response.write("Failed to archive");
-        fut.return();
-      });
+      var started = false;
+      var filename = (token.name.replace(/["\n]/g, "") || "backup") + ".zip";
+      var sawEnd = false;
 
-      file.on("end", function () {
-        fut.return();
-      });
+      var stream = {
+        expectSize: function (size) {
+          if (!started) {
+            started = true;
+            response.writeHead(200, {
+              "Content-Length": size,
+              "Content-Type": "application/zip",
+              "Content-Disposition": "attachment;filename=\"" + filename + "\""
+            });
+          }
+        },
+        write: function (data) {
+          if (!started) {
+            started = true;
+            response.writeHead(200, {
+              "Content-Type": "application/zip",
+              "Content-Disposition": "attachment;filename=\"" + filename + "\""
+            });
+          }
+          response.write(data);
+        },
+        done: function (data) {
+          if (!started) {
+            started = true;
+            response.writeHead(200, {
+              "Content-Length": 0,
+              "Content-Type": "application/zip",
+              "Content-Disposition": "attachment;filename=\"" + filename + "\""
+            });
+          }
+          sawEnd = true;
+          response.end();
+        }
+      };
 
-      file.on("open", function () {
-        var filename = token.name + ".zip";
-        // Make first character be alpha-numeric
-        filename = filename.replace(/^[^A-Za-z0-9_]/, "_");
-        // Remove non filesystem characters
-        filename = filename.replace(new RegExp("[\\\\/:*?\"<>|]","g"), "");
+      waitPromise(sandstormBackend.downloadBackup(this.params.tokenId, stream));
 
-        response.writeHead(200, headers = {
-          "Content-Length": fileSize,
-          "Content-Type": "application/zip",
-          "Content-Disposition": "attachment;filename=\"" + filename + "\""
-        });
-      });
+      if (!sawEnd) {
+        console.error("backend failed to call done() when downloading backup");
+        if (!started) {
+          throw new Meteor.Error(500, "backend failed to produce data");
+        }
+        response.end();
+      }
 
-      file.pipe(this.response);
-
-      fut.wait();
-
-      Meteor.call("cleanupToken", this.params.tokenId);
-      return this.response.end();
+      cleanupToken(this.params.tokenId);
     }
   });
 
@@ -346,22 +188,39 @@ Router.map(function () {
       if (this.request.method === "POST") {
         var request = this.request;
         try {
-          var self = this;
-          var token = promiseToFuture(doGrainUpload(request)).wait();
+          var token = {
+            _id: Random.id(),
+            timestamp: new Date()
+          };
+          var stream = sandstormBackend.uploadBackup(token._id).stream;
+
           FileTokens.insert(token);
-          self.response.writeHead(200, {
+
+          waitPromise(new Promise(function (resolve, reject) {
+            request.on("data", function (data) {
+              stream.write(data);
+            });
+            request.on("end", function () {
+              resolve(stream.done());
+            });
+            request.on("error", function (err) {
+              stream.close();
+            });
+          }));
+
+          this.response.writeHead(200, {
             "Content-Length": token._id.length,
             "Content-Type": "text/plain"
           });
-          self.response.write(token._id);
-          self.response.end();
+          this.response.write(token._id);
+          this.response.end();
         } catch(error) {
           console.error(error.stack);
-          self.response.writeHead(500, {
+          this.response.writeHead(500, {
             "Content-Type": "text/plain"
           });
-          self.response.write(error.stack);
-          self.response.end();
+          this.response.write(error.stack);
+          this.response.end();
         }
       } else {
         this.response.writeHead(405, {

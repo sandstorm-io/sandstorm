@@ -18,6 +18,7 @@
 #include <kj/debug.h>
 #include "util.h"
 #include <capnp/serialize.h>
+#include <capnp/serialize-async.h>
 #include <stdio.h>  // rename()
 
 namespace sandstorm {
@@ -196,7 +197,8 @@ kj::Promise<kj::String> BackendImpl::readAll(kj::AsyncInputStream& input, kj::Ve
 }
 
 BackendImpl::RunningGrain::RunningGrain(
-    BackendImpl& backend, kj::String grainId, kj::Own<kj::AsyncIoStream> stream, SandstormCore::Client&& core)
+    BackendImpl& backend, kj::String grainId, kj::Own<kj::AsyncIoStream> stream,
+    SandstormCore::Client&& core)
     : backend(backend), grainId(kj::mv(grainId)),
       stream(kj::mv(stream)), client(*this->stream, kj::mv(core)) {}
 
@@ -387,6 +389,193 @@ kj::Promise<void> BackendImpl::deletePackage(DeletePackageContext context) {
   auto path = kj::str("/var/sandstorm/apps/", validateId(context.getParams().getPackageId()));
   if (access(path.cStr(), F_OK) >= 0) {
     tryRecursivelyDelete(path);
+  }
+  return kj::READY_NOW;
+}
+
+// =======================================================================================
+
+kj::Promise<void> BackendImpl::backupGrain(BackupGrainContext context) {
+  auto params = context.getParams();
+
+  auto path = kj::str("/var/sandstorm/backups/", params.getBackupId());
+  recursivelyCreateParent(path);
+  auto grainDir = kj::str("/var/sandstorm/grains/", params.getGrainId());
+  Subprocess::Options processOptions({"backup", path, grainDir});
+  processOptions.executable = "/proc/self/exe";
+  auto inPipe = Pipe::make();
+  processOptions.stdin = inPipe.readEnd;
+  Subprocess process(kj::mv(processOptions));
+  inPipe.readEnd = nullptr;
+
+  auto metadata = params.getInfo();
+  auto metadataMsg = kj::heap<capnp::MallocMessageBuilder>(metadata.totalSize().wordCount + 4);
+  metadataMsg->setRoot(metadata);
+  context.releaseParams();
+  auto metadataStreamFd = kj::mv(inPipe.writeEnd);
+  auto output = ioProvider.wrapOutputFd(
+      metadataStreamFd, kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC);
+  auto promise = capnp::writeMessage(*output, *metadataMsg);
+
+  return promise.attach(kj::mv(metadataMsg), kj::mv(metadataStreamFd), kj::mv(output))
+      .then([KJ_MVCAP(process)]() mutable {
+    // TODO(cleanup): We should probably use a SubprocessSet to wait asynchronously, but that
+    //   means we need to use SubprocessSet everywhere...
+    process.waitForSuccess();
+  });
+}
+
+kj::Promise<void> BackendImpl::restoreGrain(RestoreGrainContext context) {
+  auto params = context.getParams();
+
+  auto path = kj::str("/var/sandstorm/backups/", params.getBackupId());
+  auto grainDir = kj::str("/var/sandstorm/grains/", params.getGrainId());
+  KJ_SYSCALL(mkdir(grainDir.cStr(), 0777));
+  Subprocess::Options processOptions({"backup", "-r", path, grainDir});
+  processOptions.executable = "/proc/self/exe";
+  auto outPipe = Pipe::make();
+  processOptions.stdout = outPipe.writeEnd;
+  Subprocess process(kj::mv(processOptions));
+  outPipe.writeEnd = nullptr;
+
+  context.releaseParams();
+
+  auto input = kj::mv(outPipe.readEnd);
+  auto asyncInput = ioProvider.wrapInputFd(input, kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC);
+
+  auto promise = capnp::readMessage(*asyncInput);
+  return promise.attach(kj::mv(input), kj::mv(asyncInput), kj::mv(process))
+      .then([context](kj::Own<capnp::MessageReader>&& message) mutable {
+    auto metadata = message->getRoot<GrainInfo>();
+    context.getResults(capnp::MessageSize { metadata.totalSize().wordCount + 4, 0 })
+        .setInfo(metadata);
+  });
+}
+
+class BackendImpl::FileUploadStream: public ByteStream::Server {
+public:
+  FileUploadStream(kj::String finalPath)
+      : fd(raiiOpen(dirname(finalPath), O_WRONLY | O_TMPFILE)),
+        finalPath(kj::mv(finalPath)) {}
+
+protected:
+  kj::Promise<void> write(WriteContext context) override {
+    auto data = context.getParams().getData();
+    kj::FdOutputStream(fd.get()).write(data.begin(), data.size());
+    return kj::READY_NOW;
+  }
+
+  kj::Promise<void> done(DoneContext context) override {
+    KJ_SYSCALL(fdatasync(fd));
+
+    // Link temporary file into filesystem.
+    KJ_SYSCALL(linkat(AT_FDCWD, kj::str("/proc/self/fd/", fd.get()).cStr(),
+                      AT_FDCWD, finalPath.cStr(), AT_SYMLINK_FOLLOW));
+    return kj::READY_NOW;
+  }
+
+  kj::Promise<void> expectSize(ExpectSizeContext context) override {
+    // don't care
+    return kj::READY_NOW;
+  }
+
+private:
+  kj::AutoCloseFd fd;
+  kj::String finalPath;
+
+  static kj::String dirname(kj::StringPtr path) {
+    KJ_IF_MAYBE(pos, path.findLast('/')) {
+      return kj::heapString(path.slice(0, *pos));
+    } else {
+      return kj::heapString(".");
+    }
+  }
+};
+
+kj::Promise<void> BackendImpl::pump(kj::AsyncInputStream& input, ByteStream::Client stream) {
+  auto req = stream.writeRequest(capnp::MessageSize { 2100, 0 });
+  auto orphanage = capnp::Orphanage::getForMessageContaining(
+      kj::implicitCast<ByteStream::WriteParams::Builder>(req));
+  auto orphan = orphanage.newOrphan<capnp::Data>(8192);
+  auto buffer = orphan.get();
+
+  return input.tryRead(buffer.begin(), 1, buffer.size())
+      .then([&input,KJ_MVCAP(stream),KJ_MVCAP(req),KJ_MVCAP(orphan)](size_t n) mutable
+            -> kj::Promise<void> {
+    if (n == 0) {
+      return kj::READY_NOW;
+    }
+
+    orphan.truncate(n);
+    req.adoptData(kj::mv(orphan));
+
+    // TODO(now): Parallelize writes.
+    return req.send().then([&input,KJ_MVCAP(stream)](auto&&) mutable {
+      return pump(input, kj::mv(stream));
+    });
+  });
+}
+
+kj::Promise<void> BackendImpl::pump(kj::InputStream& input, ByteStream::Client stream) {
+  auto req = stream.writeRequest(capnp::MessageSize { 2100, 0 });
+  auto orphanage = capnp::Orphanage::getForMessageContaining(
+      kj::implicitCast<ByteStream::WriteParams::Builder>(req));
+  auto orphan = orphanage.newOrphan<capnp::Data>(8192);
+  auto buffer = orphan.get();
+
+  size_t n = input.tryRead(buffer.begin(), 1, buffer.size());
+  if (n == 0) {
+    return kj::READY_NOW;
+  }
+
+  orphan.truncate(n);
+  req.adoptData(kj::mv(orphan));
+
+  // TODO(now): Parallelize writes.
+  return req.send().then([&input,KJ_MVCAP(stream)](auto&&) mutable {
+    return pump(input, kj::mv(stream));
+  });
+}
+
+kj::Promise<void> BackendImpl::uploadBackup(UploadBackupContext context) {
+  auto path = kj::str("/var/sandstorm/backups/", context.getParams().getBackupId());
+  context.releaseParams();
+
+  recursivelyCreateParent(path);
+
+  context.getResults(capnp::MessageSize { 4, 1 }).setStream(
+      kj::heap<FileUploadStream>(kj::mv(path)));
+  return kj::READY_NOW;
+}
+
+kj::Promise<void> BackendImpl::downloadBackup(DownloadBackupContext context) {
+  auto params = context.getParams();
+  auto path = kj::str("/var/sandstorm/backups/", params.getBackupId());
+  auto stream = params.getStream();
+  context.releaseParams();
+
+  auto fd = raiiOpen(path, O_RDONLY | O_CLOEXEC);
+  struct stat stats;
+  KJ_SYSCALL(fstat(fd, &stats));
+  auto expectReq = stream.expectSizeRequest();
+  expectReq.setSize(stats.st_size);
+  auto expectPromise = expectReq.send();
+
+  auto file = kj::heap<kj::FdInputStream>(kj::mv(fd));
+
+  auto promise = pump(*file, kj::mv(stream));
+  return promise.attach(kj::mv(file), kj::mv(expectPromise));
+}
+
+kj::Promise<void> BackendImpl::deleteBackup(DeleteBackupContext context) {
+  auto path = kj::str("/var/sandstorm/backups/", context.getParams().getBackupId());
+  while (unlink(path.cStr()) < 0) {
+    int error = errno;
+    if (error == ENOENT) {
+      break;
+    } else if (error != EINTR) {
+      KJ_FAIL_SYSCALL("unlink", error, path);
+    }
   }
   return kj::READY_NOW;
 }

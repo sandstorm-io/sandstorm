@@ -24,11 +24,16 @@
 #include <kj/one-of.h>
 #include <kj/vector.h>
 
+namespace kj {
+  class InputStream;
+}
+
 namespace sandstorm {
 
 class BackendImpl: public Backend::Server, private kj::TaskSet::ErrorHandler {
 public:
-  BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network, SandstormCoreFactory::Client&& sandstormCoreFactory);
+  BackendImpl(kj::LowLevelAsyncIoProvider& ioProvider, kj::Network& network,
+              SandstormCoreFactory::Client&& sandstormCoreFactory);
 
 protected:
   kj::Promise<void> startGrain(StartGrainContext context) override;
@@ -37,6 +42,11 @@ protected:
   kj::Promise<void> installPackage(InstallPackageContext context) override;
   kj::Promise<void> getPackage(GetPackageContext context) override;
   kj::Promise<void> deletePackage(DeletePackageContext context) override;
+  kj::Promise<void> backupGrain(BackupGrainContext context) override;
+  kj::Promise<void> restoreGrain(RestoreGrainContext context) override;
+  kj::Promise<void> uploadBackup(UploadBackupContext context) override;
+  kj::Promise<void> downloadBackup(DownloadBackupContext context) override;
+  kj::Promise<void> deleteBackup(DeleteBackupContext context) override;
 
 private:
   kj::LowLevelAsyncIoProvider& ioProvider;
@@ -46,7 +56,8 @@ private:
 
   class RunningGrain {
   public:
-    RunningGrain(BackendImpl& backend, kj::String grainId, kj::Own<kj::AsyncIoStream> stream, SandstormCore::Client&& sandstormCoreFactory);
+    RunningGrain(BackendImpl& backend, kj::String grainId, kj::Own<kj::AsyncIoStream> stream,
+                 SandstormCore::Client&& sandstormCoreFactory);
     ~RunningGrain() noexcept(false);
 
     inline kj::StringPtr getGrainId() { return grainId; }
@@ -72,6 +83,7 @@ private:
   std::map<kj::StringPtr, StartingGrain> supervisors;
 
   class PackageUploadStreamImpl;
+  class FileUploadStream;
 
   kj::Promise<Supervisor::Client> bootGrain(kj::StringPtr grainId, kj::StringPtr packageId,
       spk::Manifest::Command::Reader command, bool isNew, bool devMode, bool isRetry);
@@ -79,6 +91,9 @@ private:
   static kj::Promise<void> ignoreAll(kj::AsyncInputStream& input);
   static kj::Promise<kj::String> readAll(kj::AsyncInputStream& input,
       kj::Vector<char> soFar = kj::Vector<char>());
+
+  static kj::Promise<void> pump(kj::AsyncInputStream& input, ByteStream::Client stream);
+  static kj::Promise<void> pump(kj::InputStream& input, ByteStream::Client stream);
 
   void taskFailed(kj::Exception&& exception) override;
 };

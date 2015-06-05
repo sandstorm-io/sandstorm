@@ -59,6 +59,7 @@
 #include "spk.h"
 #include "minibox.h"
 #include "backend.h"
+#include "backup.h"
 
 namespace sandstorm {
 
@@ -520,6 +521,9 @@ public:
         return alternateMain->getMain();
       } else if (programName == "spk" || programName.endsWith("/spk")) {
         alternateMain = getSpkMain(context);
+        return alternateMain->getMain();
+      } else if (programName == "backup" || programName.endsWith("/backup")) {
+        alternateMain = getBackupMain(context);
         return alternateMain->getMain();
       } else if (programName == "minibox" || programName.endsWith("/minibox")) {
         alternateMain = getMiniboxMain(context);
@@ -1799,6 +1803,10 @@ private:
 
     Subprocess process([&]() -> int {
       inPipe = nullptr;
+
+      // Mainly to cause Cap'n Proto to log exceptions being returned over RPC so we can see the
+      // stack traces.
+      kj::_::Debug::setLogLevel(kj::LogSeverity::INFO);
 
       kj::StringPtr socketPath = Backend::SOCKET_PATH;
       sandstorm::recursivelyCreateParent(socketPath);

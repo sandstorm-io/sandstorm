@@ -42,6 +42,8 @@ interface Backend {
   deleteGrain @2 (ownerId :Text, grainId :Text);
   # Delete a grain from disk. Succeeds silently if the grain doesn't exist.
 
+  # ----------------------------------------------------------------------------
+
   installPackage @3 () -> (stream :PackageUploadStream);
   interface PackageUploadStream extends(Util.ByteStream) {
     saveAs @0 (packageId :Text) -> (appId :Text, manifest :Package.Manifest);
@@ -53,15 +55,24 @@ interface Backend {
   deletePackage @5 (packageId :Text);
   # Delete a package from disk. Succeeds silently if the package doesn't exist.
 
-  backupGrain @6 (ownerId :Text, grainId :Text, info :GrainInfo, stream :Util.ByteStream);
-  # Makes a .zip of the contents of the given grain and writes the content to `stream`.
+  # ----------------------------------------------------------------------------
+  # backups
 
-  restoreGrain @7 (ownerId :Text, grainId :Text) -> (stream :GrainUploadStream);
-  # Upload a .zip created with backupGrain() and unpack it into a new grain.
+  backupGrain @6 (backupId :Text, ownerId :Text, grainId :Text, info :GrainInfo);
+  # Makes a .zip of the contents of the given grain and stores it as a backup file.
 
-  interface GrainUploadStream extends(Util.ByteStream) {
-    getInfo @0 () -> (info :GrainInfo);
-  }
+  restoreGrain @7 (backupId :Text, ownerId :Text, grainId :Text) -> (info :GrainInfo);
+  # Unpack a stored backup into a new grain.
+
+  uploadBackup @8 (backupId :Text) -> (stream :Util.ByteStream);
+  # Upload a zip to create a new backup. If `stream.done()` does not get called and return
+  # successfully, the backup wasn't saved.
+
+  downloadBackup @9 (backupId :Text, stream :Util.ByteStream);
+  # Download a stored backup, writing it to `stream`.
+
+  deleteBackup @10 (backupId :Text);
+  # Delete a stored backup form disk. Succeeds silently if the backup doesn't exist.
 }
 
 interface SandstormCoreFactory {

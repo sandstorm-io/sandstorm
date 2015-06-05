@@ -1,3 +1,4 @@
+import argparse
 import glob
 import os
 import pexpect
@@ -218,10 +219,37 @@ def handle_cleanups(parsed_headers, cleanups):
 
 
 def main():
-    filenames = sys.argv[1:]
-    if not filenames:
-        filenames = glob.glob('*.t')
-    for filename in filenames:
+    parser = argparse.ArgumentParser(description='Run Sandstorm install script tests.')
+    parser.add_argument('--rsync',
+                        help='Perform `vagrant rsync` to ensure the install.sh in the VM is current.',
+                        action='store_true',
+    )
+    parser.add_argument('--uninstall-first',
+                        help='Before running tests, uninstall Sandstorm within the VMs.',
+                        action='store_true',
+    )
+    parser.add_argument('testfiles', metavar='testfile', nargs='*',
+                        help='A *.t file to run (multiple is OK; empty testfile sequence means run all)',
+                        default=[],
+    )
+
+    args = parser.parse_args()
+
+    if args.uninstall_first:
+        # TODO: Pull these out of the output of `vagrant status`.
+        for vm in 'jessie', 'default':
+            uninstall_sandstorm(vm)
+
+    if args.rsync:
+        subprocess.check_output(
+            ['vagrant', 'rsync'],
+            cwd=TEST_ROOT,
+        )
+
+    testfiles = args.testfiles
+    if not testfiles:
+        testfiles = glob.glob('*.t')
+    for filename in testfiles:
         run_one_test(filename)
 
 if __name__ == '__main__':

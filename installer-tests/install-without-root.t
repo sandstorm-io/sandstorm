@@ -2,7 +2,7 @@ Title: Can install without root, with -u
 Vagrant-Box: default
 Vagrant-Destroy-If-bash: -d $HOME/sandstorm
 Vagrant-Precondition-bash: ! -d $HOME/sandstorm
-Cleanup: vagrant_destroy()
+Cleanup: uninstall_sandstorm(parsed_headers['vagrant-box'])
 
 $[run]CURL_USER_AGENT=testing /vagrant/install.sh -u
 $[slow]Sandstorm makes it easy to run web apps on your own server. You can have:

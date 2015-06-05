@@ -185,6 +185,15 @@ if (Meteor.isClient) {
 
   var successTracker;
   Template.adminSettings.events({
+    "click .oauth-checkbox": function (event) {
+      var state = Iron.controller().state;
+      var serviceName = event.target.getAttribute("data-servicename");
+      var config = Package["service-configuration"].ServiceConfiguration.configurations.findOne({service: serviceName});
+
+      if (!config && event.target.checked) {
+        state.set("configurationServiceName", serviceName);
+      }
+    },
     "click .configure-oauth": function (event) {
       var state = Iron.controller().state;
       state.set("configurationServiceName", event.target.getAttribute("data-servicename"));
@@ -598,8 +607,8 @@ if (Meteor.isServer) {
         var ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
         var config = ServiceConfiguration.configurations.findOne({service: serviceName});
         if (!config) {
-          throw new Meteor.Error(403, "The " + serviceName +
-            " service is not configured, and so cannot be enabled.");
+          throw new Meteor.Error(403, "You must configure the " + serviceName +
+            " service before you can enable it. Click the \"configure\" link.");
         }
       }
       Settings.upsert({_id: serviceName}, {$set: {value: value}});

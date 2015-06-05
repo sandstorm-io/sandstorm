@@ -684,7 +684,7 @@ $KEY</textarea></p>
             <li>{{reason}}</li>
             {{/each}}
           </ul>
-          See <code>&lt;install-location&gt;/var/log/sandstorm.log</code> for details.
+          For internal server errors, see <code>&lt;install-location&gt;/var/log/sandstorm.log</code> for details.
         </div>
         {{/if}}
       {{else}}
@@ -700,10 +700,12 @@ $KEY</textarea></p>
 
 <template name="adminSettings">
   <form id="admin-settings-form">
-    <p><input type="checkbox" name="googleLogin" value="value" checked={{googleEnabled}}> Enable Google Login
+    <p><input type="checkbox" class="oauth-checkbox" name="googleLogin"
+              value="value" checked={{googleEnabled}} data-servicename="google"> Enable Google Login
        (<a class="configure-oauth" data-servicename="google" href="">configure</a>)
        (<a class="reset-login-tokens" data-servicename="google" href="">log out all users</a>)<br>
-       <input type="checkbox" name="githubLogin" value="value" checked={{githubEnabled}}> Enable Github Login
+       <input type="checkbox" class="oauth-checkbox" name="githubLogin"
+              value="value" checked={{githubEnabled}} data-servicename="github"> Enable Github Login
        (<a class="configure-oauth" data-servicename="github" href="">configure</a>)
        (<a class="reset-login-tokens" data-servicename="github" href="">log out all users</a>)<br>
        <input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login<br>

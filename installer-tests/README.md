@@ -99,7 +99,7 @@ The following are valid test headers.
   zero or more per test.)
 
 The `run_tests.py` program interprets test headers
-case-inensitively. I like to write them in the capitalization style
+case-insensitively. I like to write them in the capitalization style
 above, since I'm so very used to email headers being capitalized like
 that.
 

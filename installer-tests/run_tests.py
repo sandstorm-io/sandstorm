@@ -163,7 +163,7 @@ def vagrant_up(vagrant_box_name):
     )
 
 
-def run_one_test(filename, state):
+def run_one_test(filename):
     lines = open(filename).read().split('\n')
     position_of_blank_line = lines.index('')
 
@@ -217,21 +217,12 @@ def handle_cleanups(parsed_headers, cleanups):
             print 'Dazed and confused, but trying to continue.'
 
 
-def save_state():
-    return {'cwd': os.getcwd()}
-
-
-def restore_state(state):
-    os.chdir(state['cwd'])
-
-
 def main():
     filenames = sys.argv[1:]
     if not filenames:
         filenames = glob.glob('*.t')
     for filename in filenames:
-        state = save_state()
-        run_one_test(filename, state)
+        run_one_test(filename)
 
 if __name__ == '__main__':
     main()

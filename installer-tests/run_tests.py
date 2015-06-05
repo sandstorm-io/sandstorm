@@ -159,11 +159,12 @@ def run_one_test(filename, state):
     headers, test_script = (lines[:position_of_blank_line],
                             lines[position_of_blank_line+1:])
 
-    print repr(headers)
     parsed_headers, postconditions, cleanups = parse_test_file(headers)
 
     # Make the VM etc., if necessary.
     handle_headers(parsed_headers)
+    print "*** Running test:", parsed_headers['title']
+    print " -> Extra info:", repr(headers)
 
     # Run the test script, using pexpect to track its output.
     try:

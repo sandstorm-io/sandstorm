@@ -143,7 +143,13 @@ def handle_postconditions(postconditions_list):
 
 
 def vagrant_up(vagrant_box_name):
-    subprocess.check_output(['vagrant', 'up', vagrant_box_name], cwd=TEST_ROOT)
+    env_for_subprocess = os.environ.copy()
+    env_for_subprocess['VAGRANT_DEFAULT_PROVIDER'] = 'libvirt'
+    subprocess.check_output(
+        ['vagrant', 'up', vagrant_box_name],
+        cwd=TEST_ROOT,
+        env=env_for_subprocess,
+    )
 
 
 def run_one_test(filename, state):

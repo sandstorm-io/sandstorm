@@ -53,7 +53,8 @@ We Vagrant's `libvirt` backend, configured to use `qemu`, so that we
 can run this on Sandstorm's Jenkins service (which is already
 virtualized, so tools like VirtualBox can't easily run there). The
 `libvirt` backend is not installed by default, so we make sure it is
-available in `prepare-for-tests.sh`.
+available in `prepare-for-tests.sh`. To use this provider as the
+default, we set an environment variable when invoking Vagrant.
 
 Because we use the `libvirt` backend (with `qemu`), and because most
 Vagrant boxes are distributed as VirtualBox images, we use

@@ -78,8 +78,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   config.vm.define "jessie" do |jessie|
-    # The default is the Ubuntu 14.04 ("trusty tahr") cloud image.
-    jessie.vm.box = "thoughtbot/debian-jessie-64"
+    # This is the thoughtbot jessie image, converted to libvirt; see
+    # prepare-for-tests.sh.
+    jessie.vm.box = "thoughtbot_jessie"
 
     jessie.vm.provision "shell",
                        inline: "sudo sed -i s,ftp.us.debian.org,http.debian.net, /etc/apt/sources.list"

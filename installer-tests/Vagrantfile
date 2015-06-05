@@ -65,6 +65,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     end
   end
 
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.driver = 'qemu'
+  end
 
   config.vm.define "default", primary: true do |default|
     # The default is the Ubuntu 14.04 ("trusty tahr") cloud image.

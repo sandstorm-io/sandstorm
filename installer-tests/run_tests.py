@@ -92,11 +92,6 @@ def parse_test_file(headers_list):
                 parsed_headers[key] = []
             parsed_headers[key].append(value)
 
-        if key == 'precondition':
-            if key not in parsed_headers:
-                parsed_headers[key] = []
-            parsed_headers[key].append(value)
-
         if key == 'postcondition':
             postconditions.append([key, value])
 

@@ -141,3 +141,9 @@ It's a smart idea to remove lines that you don't care about. This is
 safe since the default "Expect some text" directive is willing to skip
 over things you didn't specify. (This does mean there currently is no
 support for asserting some text does _not_ show up.)
+
+To avoid filling the Sandstorm install logs with requests that come
+from these tests, pass a `CURL_USER_AGENT=testing` environment
+variable to `install.sh`. The install script will pass that through to
+`curl`, and the Sandstorm stats code knows to ignore requests from
+that come in with that `User-Agent` header.

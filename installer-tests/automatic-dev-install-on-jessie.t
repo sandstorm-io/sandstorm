@@ -11,7 +11,7 @@ $[slow]Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled.
 Config written to /opt/sandstorm/sandstorm.conf.
 Finding latest build for dev channel...
 $[veryslow]Downloading: https://dl.sandstorm.io/
-$[slow]Sandstorm started.
+$[veryslow]Sandstorm started.
 Setup complete. You should configure the site at:
   http://local.sandstorm.io:6080/admin/
 To learn how to control the server, run:

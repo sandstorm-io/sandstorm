@@ -251,8 +251,13 @@ Meteor.methods({
       allAccess: Match.Optional(null),
       roleId: Match.Optional(Match.Integer),
     });
-    check(destroyIfNotUsedByTime, Match.Optional(Number));
-    var selfDestructAt = destroyIfNotUsedByTime > 0 ? new Date(destroyIfNotUsedByTime) : null;
+    // Meteor bug #3877: we get null here instead of undefined when we
+    // explicitly pass in undefined.
+    if (destroyIfNotUsedByTime) {
+      check(destroyIfNotUsedByTime, Number);
+    }
+    var selfDestructAt = (destroyIfNotUsedByTime && (destroyIfNotUsedByTime > 0)) ?
+        new Date(destroyIfNotUsedByTime) : null;
 
     var grain = Grains.findOne(grainId);
     if (!grain) {

@@ -1,5 +1,6 @@
 import argparse
 import glob
+import logging
 import os
 import pexpect
 import random
@@ -228,6 +229,10 @@ def main():
                         help='Before running tests, uninstall Sandstorm within the VMs.',
                         action='store_true',
     )
+    parser.add_argument('--halt-afterward',
+                        help='After running the tests, stop the VMs.',
+                        action='store_true',
+    )
     parser.add_argument('testfiles', metavar='testfile', nargs='*',
                         help='A *.t file to run (multiple is OK; empty testfile sequence means run all)',
                         default=[],
@@ -250,8 +255,30 @@ def main():
     testfiles = args.testfiles
     if not testfiles:
         testfiles = glob.glob('*.t')
+
+    keep_going = True
+
     for filename in testfiles:
-        run_one_test(filename)
+        try:
+            if keep_going:
+                run_one_test(filename)
+        except:
+            keep_going = False
+            logging.exception("Alas! A test failed!")
+
+    # If we need to stop the VMs, now's a good time to stop
+    # them.
+    if args.halt_afterward:
+        subprocess.check_output(
+            ['vagrant', 'halt'],
+            cwd=TEST_ROOT,
+    )
+
+    if not keep_going:
+        sys.exit(1)
+
+    sys.exit(0)
+
 
 if __name__ == '__main__':
     main()

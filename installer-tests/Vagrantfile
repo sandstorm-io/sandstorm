@@ -41,6 +41,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     default.vm.box = "trusty64"
   end
 
+  config.vm.define "precise64", primary: true do |default|
+    default.vm.box = "precise64"
+  end
+
   config.vm.define "jessie" do |jessie|
     jessie.vm.box = "thoughtbot_jessie"
 

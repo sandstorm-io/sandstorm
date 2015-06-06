@@ -91,13 +91,17 @@ rm -f bundle/README
 
 # Copy over key binaries.
 mkdir -p bundle/bin
-ln -s ../sandstorm bundle/bin/spk
-ln -s ../sandstorm bundle/bin/minibox
 cp bin/sandstorm-http-bridge bundle/bin/sandstorm-http-bridge
 cp bin/sandstorm bundle/sandstorm
 cp $METEOR_DEV_BUNDLE/bin/node bundle/bin
 cp $METEOR_DEV_BUNDLE/mongodb/bin/{mongo,mongod} bundle/bin
 cp $(which zip unzip xz) bundle/bin
+
+# Older installs might be symlinking /usr/local/bin/spk to
+# /opt/sandstorm/latest/bin/spk, while newer installs link it to
+# /opt/sandstorm/sandstorm. We should keep creating the old symlink to avoid
+# breakages.
+ln -s ../sandstorm bundle/bin/spk
 
 # Binaries copied from Meteor aren't writable by default.
 chmod u+w bundle/bin/*

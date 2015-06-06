@@ -38,3 +38,7 @@ done
 # Do the same for the main Trusty (Ubuntu 14.04) VM.
 (vagrant box list | grep -q 'trusty64') || vagrant box add trusty64 https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box
 (vagrant box list | grep -q 'trusty64.*libvirt') || vagrant mutate trusty64 libvirt
+
+# Do the same for the main Precise (Ubuntu 12.04) VM.
+(vagrant box list | grep -q 'precise64') || vagrant box add precise64 https://vagrantcloud.com/hashicorp/boxes/precise64/versions/1.1.0/providers/virtualbox.box
+(vagrant box list | grep -q 'precise64.*libvirt') || vagrant mutate precise64 libvirt

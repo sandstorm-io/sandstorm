@@ -1,20 +1,32 @@
+import argparse
 import glob
 import os
 import pexpect
 import random
+import re
 import subprocess
 import sys
-import re
 
 
 def _expect(line, current_cmd, do_re_escape=True, do_detect_slow=True,
             strip_comments=True, verbose=True):
     timeout = 1
+
+    slow_text_timeout = int(os.environ.get('SLOW_TEXT_TIMEOUT', 30))
+    veryslow_text_timeout = 2 * slow_text_timeout
+
     if do_detect_slow:
-        if line.startswith('$[slow]'):
+        slow_token = '$[slow]'
+        if line.startswith(slow_token):
             print 'Slow line...'
-            timeout = int(os.environ.get('SLOW_TEXT_TIMEOUT', 30))
-            line = line.replace('$[slow]', '', 1)
+            timeout = slow_text_timeout
+            line = line.replace(slow_token, '', 1)
+
+        veryslow_token = '$[veryslow]'
+        if line.startswith(veryslow_token):
+            print 'Very slow line...'
+            timeout = veryslow_text_timeout
+            line = line.replace(veryslow_token, '', 1)
 
     if verbose:
         print 'expecting', line
@@ -92,11 +104,6 @@ def parse_test_file(headers_list):
                 parsed_headers[key] = []
             parsed_headers[key].append(value)
 
-        if key == 'precondition':
-            if key not in parsed_headers:
-                parsed_headers[key] = []
-            parsed_headers[key].append(value)
-
         if key == 'postcondition':
             postconditions.append([key, value])
 
@@ -148,21 +155,28 @@ def handle_postconditions(postconditions_list):
 
 
 def vagrant_up(vagrant_box_name):
-    subprocess.check_output(['vagrant', 'up', vagrant_box_name], cwd=TEST_ROOT)
+    env_for_subprocess = os.environ.copy()
+    env_for_subprocess['VAGRANT_DEFAULT_PROVIDER'] = 'libvirt'
+    subprocess.check_output(
+        ['vagrant', 'up', vagrant_box_name],
+        cwd=TEST_ROOT,
+        env=env_for_subprocess,
+    )
 
 
-def run_one_test(filename, state):
+def run_one_test(filename):
     lines = open(filename).read().split('\n')
     position_of_blank_line = lines.index('')
 
     headers, test_script = (lines[:position_of_blank_line],
                             lines[position_of_blank_line+1:])
 
-    print repr(headers)
     parsed_headers, postconditions, cleanups = parse_test_file(headers)
 
     # Make the VM etc., if necessary.
     handle_headers(parsed_headers)
+    print "*** Running test:", parsed_headers['title']
+    print " -> Extra info:", repr(headers)
 
     # Run the test script, using pexpect to track its output.
     try:
@@ -204,21 +218,39 @@ def handle_cleanups(parsed_headers, cleanups):
             print 'Dazed and confused, but trying to continue.'
 
 
-def save_state():
-    return {'cwd': os.getcwd()}
-
-
-def restore_state(state):
-    os.chdir(state['cwd'])
-
-
 def main():
-    filenames = sys.argv[1:]
-    if not filenames:
-        filenames = glob.glob('*.t')
-    for filename in filenames:
-        state = save_state()
-        run_one_test(filename, state)
+    parser = argparse.ArgumentParser(description='Run Sandstorm install script tests.')
+    parser.add_argument('--rsync',
+                        help='Perform `vagrant rsync` to ensure the install.sh in the VM is current.',
+                        action='store_true',
+    )
+    parser.add_argument('--uninstall-first',
+                        help='Before running tests, uninstall Sandstorm within the VMs.',
+                        action='store_true',
+    )
+    parser.add_argument('testfiles', metavar='testfile', nargs='*',
+                        help='A *.t file to run (multiple is OK; empty testfile sequence means run all)',
+                        default=[],
+    )
+
+    args = parser.parse_args()
+
+    if args.uninstall_first:
+        # TODO: Pull these out of the output of `vagrant status`.
+        for vm in 'jessie', 'default':
+            uninstall_sandstorm(vm)
+
+    if args.rsync:
+        subprocess.check_output(
+            ['vagrant', 'rsync'],
+            cwd=TEST_ROOT,
+        )
+
+    testfiles = args.testfiles
+    if not testfiles:
+        testfiles = glob.glob('*.t')
+    for filename in testfiles:
+        run_one_test(filename)
 
 if __name__ == '__main__':
     main()

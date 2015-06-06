@@ -66,7 +66,7 @@ IMAGES= \
 # Meta rules
 
 .SUFFIXES:
-.PHONY: all install clean continuous shell-env fast deps bootstrap-ekam deps update-deps test
+.PHONY: all install clean continuous shell-env fast deps bootstrap-ekam deps update-deps test installer-test
 
 all: sandstorm-$(BUILD).tar.xz
 
@@ -86,6 +86,9 @@ fast: sandstorm-$(BUILD)-fast.tar.xz
 
 test: sandstorm-$(BUILD)-fast.tar.xz
 	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz
+
+installer-test:
+	(cd installer-tests && bash prepare-for-tests.sh && python run_tests.py --rsync --uninstall-first)
 
 # ====================================================================
 # Dependencies

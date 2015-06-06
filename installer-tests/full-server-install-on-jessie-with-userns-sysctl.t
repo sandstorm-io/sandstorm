@@ -24,7 +24,7 @@ We're going to:
 To set up Sandstorm, we will need to use sudo.
 OK to continue? [yes] $[type]
 $[slow]Re-running script as root...
-As a Sandstorm user, you are invited to use a free Internet hostname as a subdomain of sandcats.io.
+$[slow]As a Sandstorm user, you are invited to use a free Internet hostname as a subdomain of sandcats.io.
 $[slow]Choose your desired Sandcats subdomain (alphanumeric, max 20 characters).
 Type the word none to skip this step, or help for help.
 What *.sandcats-dev.sandstorm.io subdomain would you like? []$[type]gensym
@@ -33,12 +33,10 @@ Enter your email address: [] $[type]install-script@asheesh.org
 Registering your domain.
 $[slow]Congratulations! We have registered your
 Your credentials to use it are in /opt/sandstorm/var/sandcats; consider making a backup.
-$[slow]Downloading: https://dl.sandstorm.io
+$[veryslow]Downloading: https://dl.sandstorm.io
 $[slow]Sandstorm started. PID =
 Setup complete. You should configure the site at:
   http://
 To learn how to control the server, run:
   sandstorm help
 $[exitcode]0
-$[run]sudo bash -c 'echo 0 > /proc/sys/kernel/unprivileged_userns_clone'
-$[slow]0

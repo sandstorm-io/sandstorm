@@ -180,7 +180,7 @@ private:
     }
   }
 
-  void findFilesToZip(kj::StringPtr path, kj::OutputStream& out) {
+  bool findFilesToZip(kj::StringPtr path, kj::OutputStream& out) {
     struct stat stats;
     KJ_SYSCALL(lstat(path.cStr(), &stats));
     if (S_ISREG(stats.st_mode) || S_ISLNK(stats.st_mode)) {
@@ -193,14 +193,30 @@ private:
         pieces[0] = path.asBytes();
         pieces[1] = kj::StringPtr("\n").asBytes();
         out.write(pieces);
+        return true;
       } else {
         KJ_LOG(ERROR, "tried to backup file containing newlines", path);
+        return false;
       }
     } else if (S_ISDIR(stats.st_mode)) {
       // Subdirectory; enumerate contents.
+      bool packedAny = false;
       for (auto& entry: listDirectory(path)) {
-        findFilesToZip(kj::str(path, '/', entry), out);
+        if (findFilesToZip(kj::str(path, '/', entry), out)) {
+          packedAny = true;
+        }
       }
+
+      if (!packedAny) {
+        // Empty directory. Need to make sure it gets into the zip.
+        kj::ArrayPtr<const byte> pieces[2];
+        pieces[0] = path.asBytes();
+        pieces[1] = kj::StringPtr("\n").asBytes();
+        out.write(pieces);
+      }
+      return true;
+    } else {
+      return false;
     }
   }
 };

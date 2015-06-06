@@ -34,7 +34,7 @@ Registering your domain.
 $[slow]Congratulations! We have registered your
 Your credentials to use it are in /opt/sandstorm/var/sandcats; consider making a backup.
 $[veryslow]Downloading: https://dl.sandstorm.io
-$[slow]Sandstorm started. PID =
+$[veryslow]Sandstorm started. PID =
 Setup complete. You should configure the site at:
   http://
 To learn how to control the server, run:

@@ -10,7 +10,7 @@ import sys
 
 def _expect(line, current_cmd, do_re_escape=True, do_detect_slow=True,
             strip_comments=True, verbose=True):
-    timeout = 1
+    timeout = 2
 
     slow_text_timeout = int(os.environ.get('SLOW_TEXT_TIMEOUT', 30))
     veryslow_text_timeout = 2 * slow_text_timeout
@@ -238,6 +238,7 @@ def main():
     if args.uninstall_first:
         # TODO: Pull these out of the output of `vagrant status`.
         for vm in 'jessie', 'default':
+            vagrant_up(vm)
             uninstall_sandstorm(vm)
 
     if args.rsync:

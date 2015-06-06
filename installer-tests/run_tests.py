@@ -242,7 +242,7 @@ def main():
 
     if args.uninstall_first:
         # TODO: Pull these out of the output of `vagrant status`.
-        for vm in 'jessie', 'default':
+        for vm in 'jessie', 'default', 'precise64':
             vagrant_up(vm)
             uninstall_sandstorm(vm)
 

@@ -129,10 +129,10 @@ NotificationHandle.prototype.save = function () {
   });
 };
 
-SandstormCoreImpl.prototype.restore = function (sturdyRef) {
+SandstormCoreImpl.prototype.restore = function (params) {
   var self = this;
   return inMeteor(function () {
-    var hashedSturdyRef = hashSturdyRef(sturdyRef);
+    var hashedSturdyRef = hashSturdyRef(params.sturdyRef);
     var token = ApiTokens.findOne(hashedSturdyRef);
     if (!token) {
       throw new Error("No token found to restore");
@@ -154,10 +154,10 @@ SandstormCoreImpl.prototype.restore = function (sturdyRef) {
   });
 };
 
-SandstormCoreImpl.prototype.drop = function (sturdyRef) {
+SandstormCoreImpl.prototype.drop = function (params) {
   var grainId = this.grainId;
   return inMeteor(function () {
-    var hashedSturdyRef = hashSturdyRef(sturdyRef);
+    var hashedSturdyRef = hashSturdyRef(params.sturdyRef);
     var token = ApiTokens.findOne({_id: hashedSturdyRef});
     if (!token) {
       return;
@@ -186,7 +186,7 @@ SandstormCoreImpl.prototype.drop = function (sturdyRef) {
   });
 };
 
-SandstormCoreImpl.prototype.makeToken = function (ref, owner) {
+SandstormCoreImpl.prototype.makeToken = function (params) {
   var self = this;
   return inMeteor(function () {
     var sturdyRef = new Buffer(Random.id(20));
@@ -194,8 +194,8 @@ SandstormCoreImpl.prototype.makeToken = function (ref, owner) {
     ApiTokens.insert({
       _id: hashedSturdyRef,
       grainId: self.grainId,
-      objectId: ref,
-      owner: owner
+      objectId: params.ref,
+      owner: params.owner
     });
 
     return {
@@ -206,24 +206,24 @@ SandstormCoreImpl.prototype.makeToken = function (ref, owner) {
 
 SandstormCoreImpl.prototype.getOwnerNotificationTarget = function() {
   var grainId = this.grainId;
-  return {owner: {addOngoing: function(displayInfo, notification) {
+  return {owner: {addOngoing: function(params) {
     return inMeteor(function () {
       var grain = Grains.findOne({_id: grainId});
       if (!grain) {
         throw new Error("Grain not found.");
       }
-      var castedNotification = notification.castAs(PersistentOngoingNotification);
+      var castedNotification = params.notification.castAs(PersistentOngoingNotification);
       var wakelockToken = waitPromise(castedNotification.save()).sturdyRef;
 
       // We have to close both the casted cap and the original. Perhaps this should be fixed in
       // node-capnp?
       castedNotification.close();
-      notification.close();
+      params.notification.close();
       var notificationId = Notifications.insert({
         ongoing: wakelockToken,
         grainId: grainId,
         userId: grain.userId,
-        text: displayInfo.caption,
+        text: params.displayInfo.caption,
         timestamp: new Date(),
         isUnread: true
       });
@@ -236,8 +236,8 @@ SandstormCoreImpl.prototype.getOwnerNotificationTarget = function() {
 function SandstormCoreFactoryImpl() {
 }
 
-SandstormCoreFactoryImpl.prototype.getSandstormCore = function (grainId){
-  return {core: makeSandstormCore(grainId)};
+SandstormCoreFactoryImpl.prototype.getSandstormCore = function (params) {
+  return {core: makeSandstormCore(params.grainId)};
 };
 
 makeSandstormCoreFactory = function () {

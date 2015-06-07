@@ -121,8 +121,8 @@ HackSessionContextImpl.prototype._getUserAddress = function () {
   return result;
 };
 
-HackSessionContextImpl.prototype.send = function (email) {
-  return hackSendEmail(this, email);
+HackSessionContextImpl.prototype.send = function (params) {
+  return hackSendEmail(this, params.email);
 };
 
 HackSessionContextImpl.prototype.getPublicId = function() {
@@ -140,7 +140,8 @@ HackSessionContextImpl.prototype.getPublicId = function() {
   }).bind(this));
 };
 
-HackSessionContextImpl.prototype.httpGet = function(url) {
+HackSessionContextImpl.prototype.httpGet = function(params) {
+  var url = params.url;
   var session = this;
 
   return new Promise(function (resolve, reject) {
@@ -218,18 +219,18 @@ HackSessionContextImpl.prototype.getUserAddress = function () {
   }).bind(this));
 };
 
-HackSessionContextImpl.prototype.generateApiToken = function (petname, userInfo, expires) {
+HackSessionContextImpl.prototype.generateApiToken = function (params) {
   return inMeteor((function () {
     var token = Random.secret();
     var endpointUrl = ROOT_URL.protocol + "//" + makeWildcardHost("api");
 
     var tokenId = ApiTokens.insert({
       _id: Crypto.createHash("sha256").update(token).digest("base64"),
-      userInfo: userInfo,
+      userInfo: params.userInfo,
       grainId: this.grainId,
-      petname: petname,
+      petname: params.petname,
       created: new Date(),
-      expires: expires > 0 ? new Date(expires * 1000) : null
+      expires: params.expires > 0 ? new Date(params.expires * 1000) : null
     });
 
     return [token, endpointUrl, tokenId];
@@ -301,9 +302,10 @@ HackSessionContextImpl.prototype.listApiTokens = function () {
   }).bind(this));
 };
 
-HackSessionContextImpl.prototype.revokeApiToken = function (tokenId) {
+HackSessionContextImpl.prototype.revokeApiToken = function (params) {
   return inMeteor((function () {
-    if (ApiTokens.remove({_id: tokenId, grainId: this.grainId, userInfo: {$exists: true}}) === 0) {
+    if (ApiTokens.remove({_id: params.tokenId, grainId: this.grainId,
+                          userInfo: {$exists: true}}) === 0) {
       var err = new Error("No such token.");
       err.nature = "precondition";
       throw err;
@@ -337,7 +339,8 @@ HackSessionContextImpl.prototype.getIpNetwork = function () {
   }).bind(this));
 };
 
-HackSessionContextImpl.prototype.getUiViewForEndpoint = function (url) {
+HackSessionContextImpl.prototype.getUiViewForEndpoint = function (params) {
+  var url = params.url;
   var parsedUrl = Url.parse(url);
 
   if (parsedUrl.hash) { // Assume that anything with a fragment is a webkey

@@ -29,7 +29,7 @@ WrappedUiView = function (token, proxy) {
   this.proxy = proxy;
 };
 
-WrappedUiView.prototype.newSession = function (userInfo, context, sessionType, sessionParams, retryCount) {
+WrappedUiView.prototype.newSession = function (params, retryCount) {
   if (sessionType !== ApiSession.typeId) {
     throw new Error("SessionType must be ApiSession.");
   }
@@ -44,11 +44,11 @@ WrappedUiView.prototype.newSession = function (userInfo, context, sessionType, s
     // This will allow the caller to request only a subset of the permissions
     // granted by the token, which is useful to protect against bugs.
     var session = self.proxy.uiView.newSession(
-        self.proxy.userInfo, context, sessionType, sessionParams).session;
+        self.proxy.userInfo, params.context, params.sessionType, params.sessionParams).session;
     return {session: session};
   }).catch(function (error) {
     return self.proxy.maybeRetryAfterError(error, retryCount).then(function () {
-      return self.newSession(userInfo, context, sessionType, sessionParams, retryCount + 1);
+      return self.newSession(paramss, retryCount + 1);
     });
   });
 };
@@ -67,8 +67,8 @@ ExternalUiView = function (url, grainId, token) {
   this.token = token;
 };
 
-ExternalUiView.prototype.newSession = function (userInfo, context, sessionType, sessionParams) {
-  if (sessionType !== ApiSession.typeId) {
+ExternalUiView.prototype.newSession = function (params) {
+  if (params.sessionType !== ApiSession.typeId) {
     throw new Error("SessionType must be ApiSession.");
   }
 
@@ -256,20 +256,22 @@ ExternalWebSession.prototype._requestHelper = function (method, path, context, c
   });
 };
 
-ExternalWebSession.prototype.get = function (path, context) {
-  return this._requestHelper("GET", path, context);
+ExternalWebSession.prototype.get = function (params) {
+  return this._requestHelper("GET", params.path, params.context);
 };
 
-ExternalWebSession.prototype.post = function (path, content, context) {
-  return this._requestHelper("POST", path, context, content.content, content.mimeType);
+ExternalWebSession.prototype.post = function (params) {
+  return this._requestHelper("POST", params.path, params.context,
+                             params.content.content, params.content.mimeType);
 };
 
-ExternalWebSession.prototype.put = function (path, content, context) {
-  return this._requestHelper("PUT", path, context, content.content, content.mimeType);
+ExternalWebSession.prototype.put = function (params) {
+  return this._requestHelper("PUT", params.path, params.context,
+                             params.content.content, params.content.mimeType);
 };
 
-ExternalWebSession.prototype.delete = function (path, context) {
-  return this._requestHelper("DELETE", path, context);
+ExternalWebSession.prototype.delete = function (params) {
+  return this._requestHelper("DELETE", params.path, params.context);
 };
 
 // TODO(someday): implement streaming and websockets for ExternalWebSession

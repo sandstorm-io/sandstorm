@@ -1221,8 +1221,8 @@ function ResponseStream(response, streamHandle, resolve, reject) {
   this.ended = false;
 }
 
-ResponseStream.prototype.write = function (data) {
-  this.response.write(data);
+ResponseStream.prototype.write = function (params) {
+  this.response.write(params.data);
 }
 
 ResponseStream.prototype.done = function () {
@@ -1529,12 +1529,12 @@ function WebSocketReceiver(socket) {
     }
     queue = null;
   };
-  this.sendBytes = function (message) {
+  this.sendBytes = function (params) {
     // TODO(someday):  Flow control of some sort?
     if (queue === null) {
-      socket.write(message);
+      socket.write(params.message);
     } else {
-      queue.push(message);
+      queue.push(params.message);
     }
   };
   this.close = function () {
@@ -1628,9 +1628,9 @@ Meteor.publish("grainLog", function (grainId) {
   var self = this;
 
   var receiver = {
-    write: function (data) {
+    write: function (params) {
       connected = true;
-      self.added("grainLog", id++, {text: data.toString("utf8")});
+      self.added("grainLog", id++, {text: params.data.toString("utf8")});
     },
     close: function () {
       if (connected) {

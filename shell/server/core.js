@@ -41,7 +41,7 @@ function makeNotificationHandle(notificationId, saved) {
 
 function dropWakelock(grainId, wakeLockNotificationId) {
   waitPromise(useGrain(grainId, function (supervisor) {
-    return supervisor.drop({wakeLockNotification: wakeLockNotificationId});
+    return supervisor.drop({ref: {wakeLockNotification: wakeLockNotificationId}});
   }));
 }
 
@@ -56,11 +56,11 @@ function dismissNotification(notificationId, callCancel) {
       var id = new Buffer(notification.ongoing);
 
       if (!callCancel) {
-        waitPromise(sandstormCore.drop(id));
+        waitPromise(sandstormCore.drop({token: id}));
       } else {
-        var notificationCap = waitPromise(sandstormCore.restore(id)).cap;
+        var notificationCap = waitPromise(sandstormCore.restore({token: id})).cap;
         var castedNotification = notificationCap.castAs(PersistentOngoingNotification);
-        waitPromise(sandstormCore.drop(id));
+        waitPromise(sandstormCore.drop({token: id}));
         try {
           waitPromise(castedNotification.cancel());
           castedNotification.close();
@@ -132,7 +132,7 @@ NotificationHandle.prototype.save = function () {
 SandstormCoreImpl.prototype.restore = function (params) {
   var self = this;
   return inMeteor(function () {
-    var hashedSturdyRef = hashSturdyRef(params.sturdyRef);
+    var hashedSturdyRef = hashSturdyRef(params.token);
     var token = ApiTokens.findOne(hashedSturdyRef);
     if (!token) {
       throw new Error("No token found to restore");
@@ -146,7 +146,7 @@ SandstormCoreImpl.prototype.restore = function (params) {
       }
     } else if (token.objectId) {
       return useGrain(self.grainId, function (supervisor) {
-        return supervisor.restore(token.objectId);
+        return supervisor.restore({ref: token.objectId});
       });
     } else {
       throw new Error("Unknown token type.");
@@ -157,7 +157,7 @@ SandstormCoreImpl.prototype.restore = function (params) {
 SandstormCoreImpl.prototype.drop = function (params) {
   var grainId = this.grainId;
   return inMeteor(function () {
-    var hashedSturdyRef = hashSturdyRef(params.sturdyRef);
+    var hashedSturdyRef = hashSturdyRef(params.token);
     var token = ApiTokens.findOne({_id: hashedSturdyRef});
     if (!token) {
       return;

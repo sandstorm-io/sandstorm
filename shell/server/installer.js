@@ -51,7 +51,7 @@ deletePackage = function (packageId) {
     var grain = Grains.findOne({packageId:packageId});
     if (!grain && !action) {
       Packages.update({_id:packageId}, {$set: {status:"delete"}});
-      waitPromise(sandstormBackend.deletePackage(packageId));
+      waitPromise(sandstormBackend.deletePackage({packageId: packageId}));
       Packages.remove(packageId);
     }
     delete installers[packageId];
@@ -103,7 +103,7 @@ doClientUpload = function (stream) {
     stream.on("data", function (chunk) {
       try {
         hasher.update(chunk);
-        backendStream.write(chunk);
+        backendStream.write({data: chunk});
       } catch (err) {
         reject(err);
       }
@@ -112,7 +112,7 @@ doClientUpload = function (stream) {
       try {
         backendStream.done();
         var packageId = hasher.digest("hex").slice(0, 32);
-        resolve(backendStream.saveAs(packageId).then(function () {
+        resolve(backendStream.saveAs({packageId: packageId}).then(function () {
           return packageId;
         }));
         backendStream.close();
@@ -208,7 +208,7 @@ AppInstaller.prototype.start = function () {
   return this.wrapCallback(function () {
     this.cleanup();
 
-    sandstormBackend.getPackage(this.packageId)
+    sandstormBackend.getPackage({packageId: this.packageId})
         .then(this.wrapCallback(function(info) {
       this.appId = info.appId;
       this.done(info.manifest);
@@ -293,7 +293,7 @@ AppInstaller.prototype.doDownloadTo = function (out) {
 
     response.on("data", this.wrapCallback(function (chunk) {
       hasher.update(chunk);
-      out.write(chunk);
+      out.write({data: chunk});
       bytesReceived += chunk.length;
       updateDownloadProgress();
     }));
@@ -308,7 +308,7 @@ AppInstaller.prototype.doDownloadTo = function (out) {
       delete this.downloadRequest;
 
       this.updateProgress("unpack");
-      out.saveAs(this.packageId).then(this.wrapCallback(function (info) {
+      out.saveAs({packageId: this.packageId}).then(this.wrapCallback(function (info) {
         this.appId = info.appId;
         this.done(info.manifest);
       }), this.wrapCallback(function (err) {

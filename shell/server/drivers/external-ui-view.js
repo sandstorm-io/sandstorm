@@ -48,7 +48,7 @@ WrappedUiView.prototype.newSession = function (params, retryCount) {
     return {session: session};
   }).catch(function (error) {
     return self.proxy.maybeRetryAfterError(error, retryCount).then(function () {
-      return self.newSession(paramss, retryCount + 1);
+      return self.newSession(params, retryCount + 1);
     });
   });
 };

@@ -380,7 +380,9 @@ function startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev) 
     delete command.executablePath;
   }
 
-  var whenReady = sandstormBackend.startGrain(ownerId, grainId, packageId, command, isNew, isDev)
+  var whenReady = sandstormBackend.startGrain(
+      {ownerId: ownerId, grainId: grainId, packageId: packageId,
+       command: command, isNew: isNew, devMode: isDev})
       .then(function (results) {
     return {
       owner: ownerId,
@@ -397,7 +399,7 @@ shutdownGrain = function (grainId, ownerId, keepSessions) {
     Sessions.remove({grainId: grainId});
   }
 
-  var grain = sandstormBackend.getGrain(ownerId, grainId).supervisor;
+  var grain = sandstormBackend.getGrain({ownerId: ownerId, grainId: grainId}).supervisor;
   return grain.shutdown().then(function () {
     grain.close();
     throw new Error("expected shutdown() to throw disconnected");
@@ -412,7 +414,7 @@ shutdownGrain = function (grainId, ownerId, keepSessions) {
 deleteGrain = function (grainId, ownerId) {
   // We leave it up to the caller if they want to actually wait, but some don't so we report
   // exceptions.
-  return sandstormBackend.deleteGrain(ownerId, grainId).catch(function (err) {
+  return sandstormBackend.deleteGrain({ownerId: ownerId, grainId: grainId}).catch(function (err) {
     console.error("problem deleting grain " + grainId + ":", err.message);
     throw err;
   });
@@ -432,7 +434,7 @@ getGrainSize = function (sessionId, oldSize) {
   if (oldSize === undefined) {
     promise = proxy.supervisor.getGrainSize();
   } else {
-    promise = proxy.supervisor.getGrainSizeWhenDifferent(oldSize);
+    promise = proxy.supervisor.getGrainSizeWhenDifferent({oldSize: oldSize});
   }
 
   var promise2 = promise.then(function (result) { return parseInt(result.size); });
@@ -881,7 +883,8 @@ function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, user
 
 Proxy.prototype.getConnection = function () {
   if (!this.supervisor) {
-    this.supervisor = sandstormBackend.getGrain(this.ownerId, this.grainId).supervisor;
+    this.supervisor = sandstormBackend.getGrain({ownerId: this.ownerId,
+                                                 grainId: this.grainId}).supervisor;
     this.uiView = null;
   }
   if (!this.uiView) {
@@ -903,8 +906,10 @@ Proxy.prototype._callNewWebSession = function (request, userInfo) {
         : [ "en-US", "en" ]
   });
 
-  return this.uiView.newSession(userInfo, makeHackSessionContext(this.grainId),
-                                WebSession.typeId, params).session;
+  return this.uiView.newSession({userInfo: userInfo,
+                                 context: makeHackSessionContext(this.grainId),
+                                 sessionType: WebSession.typeId,
+                                 sessionParams: params}).session;
 };
 
 Proxy.prototype._callNewApiSession = function (request, userInfo) {
@@ -1369,21 +1374,21 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     var session = self.getSession(request);
 
     if (request.method === "GET") {
-      return session.get(path, context);
+      return session.get({path: path, context: context});
     } else if (request.method === "POST") {
-      return session.post(path, {
+      return session.post({path: path, content: {
         mimeType: request.headers["content-type"] || "application/octet-stream",
         content: data,
         encoding: request.headers["content-encoding"]
-      }, context);
+      }, context: context});
     } else if (request.method === "PUT") {
-      return session.put(path, {
+      return session.put({path: path, content: {
         mimeType: request.headers["content-type"] || "application/octet-stream",
         content: data,
         encoding: request.headers["content-encoding"]
-      }, context);
+      }, context: context});
     } else if (request.method === "DELETE") {
-      return session.delete(path, context);
+      return session.delete({path: path, context: context});
     } else {
       throw new Error("Sandstorm only supports GET, POST, PUT, and DELETE requests.");
     }
@@ -1408,9 +1413,11 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
 
   var requestStreamPromise;
   if (request.method === "POST") {
-    requestStreamPromise = session.postStreaming(path, mimeType, context, encoding);
+    requestStreamPromise = session.postStreaming({path: path, mimeType: mimeType,
+                                                  context: context, encoding: encoding});
   } else if (request.method === "PUT") {
-    requestStreamPromise = session.putStreaming(path, mimeType, context, encoding);
+    requestStreamPromise = session.putStreaming({path: path, mimeType: mimeType,
+                                                 context: context, encoding: encoding});
   } else {
     throw new Error("Sandstorm only supports streaming POST and PUT requests.");
   }
@@ -1544,7 +1551,7 @@ function WebSocketReceiver(socket) {
 
 function pumpWebSocket(socket, rpcStream) {
   socket.on("data", function (chunk) {
-    rpcStream.sendBytes(chunk).catch(function (err) {
+    rpcStream.sendBytes({message: chunk}).catch(function (err) {
       if (err.kjType !== "disconnected") {
         console.error("WebSocket sendBytes failed: " + err.stack);
       }
@@ -1580,10 +1587,11 @@ Proxy.prototype.handleWebSocket = function (request, socket, head, retryCount) {
 
     var receiver = new WebSocketReceiver(socket);
 
-    var promise = session.openWebSocket(path, context, protocols, receiver);
+    var promise = session.openWebSocket({path: path, context: context,
+                                         protocol: protocols, clientStream: receiver});
 
     if (head.length > 0) {
-      promise.serverStream.sendBytes(head);
+      promise.serverStream.sendBytes({message: head});
     }
     pumpWebSocket(socket, promise.serverStream);
 
@@ -1644,8 +1652,10 @@ Meteor.publish("grainLog", function (grainId) {
   try {
     // Wait for watchLog() to return because it will always write the initial tail before
     // returning.
-    var supervisor = sandstormBackend.getGrain(grain.userId, grainId).supervisor;
-    var handle = waitPromise(supervisor.watchLog(8192, receiver)).handle;
+    var supervisor = sandstormBackend.getGrain({ownerId: grain.userId,
+                                                grainId: grainId}).supervisor;
+    var handle = waitPromise(supervisor.watchLog({backlogAmount: 8192,
+                                                  stream: receiver})).handle;
     connected = true;
     this.onStop(function() {
       handle.close();

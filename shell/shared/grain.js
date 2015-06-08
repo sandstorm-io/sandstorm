@@ -256,7 +256,7 @@ if (Meteor.isClient) {
         assignment = {none: null};
       }
       Meteor.call("newApiToken", this.grainId, document.getElementById("api-token-petname").value,
-                  assignment, false,
+                  assignment, false, undefined,
                   function (error, result) {
         if (error) {
           Session.set("api-token-" + grainId, undefined);
@@ -298,7 +298,7 @@ if (Meteor.isClient) {
         assignment = {none: null};
       }
       Meteor.call("newApiToken", grainId, document.getElementById("share-token-petname").value,
-                  assignment, true,
+                  assignment, true, undefined,
                   function (error, result) {
         if (error) {
           console.error(error.stack);
@@ -511,6 +511,62 @@ if (Meteor.isClient) {
             currentGrainId + event.data.setPath);
       } else if (event.data.setTitle) {
         Session.set("grainFrameTitle", event.data.setTitle);
+      } else if (event.data.renderTemplate) {
+        // Request creation of a single-use template with a privileged API token.
+        // Why?  Apps should not be able to obtain capabilities-as-keys to
+        // themselves directly, because those can be leaked through an
+        // arbitrary bit stream or covert channel.  However, apps often need a
+        // way to provide instructions to users to copy/paste with some
+        // privileged token contained within.  By providing this templating in
+        // the platform, we can ensure that the token is only visible to the
+        // shell's origin.
+        var call = event.data.renderTemplate;
+        check(call, Object);
+        var rpcId = call.rpcId;
+        check(rpcId, String);
+        var template = call.template;
+        check(template, String);
+        var assignment = undefined;
+        if (call.roleId) {
+          check(call.roleId, Match.Integer);
+          assignment = {roleId: call.roleId};
+        } else {
+          assignment = {none: null};
+        }
+        var petname = undefined;
+        if (call.petname) {
+          check(call.petname, String);
+          petname = call.petname;
+        } else {
+          petname = "connected external app";
+        }
+        // Tokens expire by default in 5 minutes from generation date
+        var selfDestructTime = Date.now() + (5 * 60 * 1000);
+        Meteor.call("newApiToken", currentGrainId, petname, assignment, false,
+                    selfDestructTime, function (error, result) {
+          if (error) {
+            //Session.set("api-token-" + currentGrainId, undefined);
+            window.alert("Failed to create token for offer template.\n" + error);
+            console.error(error.stack);
+          } else {
+            var tokenId = result.token;
+            // Generate random key id2.
+            var id2 = Random.secret();
+            // Store apitoken id1 and template in local storage in the offer
+            // template namespace under key id2.
+            var key = "offerTemplate" + id2;
+            var renderedTemplate = template.replace("$API_TOKEN", tokenId)
+                                           .replace("$API_HOST", makeWildcardHost("api"));
+            sessionStorage.setItem(key, JSON.stringify({
+                "renderedTemplate": renderedTemplate,
+                "expiry": selfDestructTime
+              })
+            );
+            // Send message to event.source with URL containing id2
+            templateLink = window.location.origin + "/offer-template.html#" + id2;
+            event.source.postMessage({rpcId: rpcId, uri: templateLink}, event.origin);
+          }
+        });
       } else {
         console.log("postMessage from app not understood: " + event.data);
       }
@@ -581,7 +637,8 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
   result.apiTokenPending = apiToken === "pending",
   result.showApiToken = Session.get("show-api-token"),
   result.existingTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
-                                          forSharing: {$ne: true}}).fetch(),
+                                          forSharing: {$ne: true},
+                                          expiresIfUnused: null}).fetch(),
   result.shareToken = shareToken,
   result.shareTokenPending = shareToken === "pending",
   result.showShareGrain = Session.get("show-share-grain"),

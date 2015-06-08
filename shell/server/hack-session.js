@@ -237,9 +237,8 @@ HackSessionContextImpl.prototype.generateApiToken = function (petname, userInfo,
 };
 
 Meteor.methods({
-  newApiToken: function (grainId, petname, roleAssignment, forSharing) {
+  newApiToken: function (grainId, petname, roleAssignment, forSharing, destroyIfNotUsedByTime) {
     // Create a new user-oriented API token.
-
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to create an API token.");
     }
@@ -252,6 +251,13 @@ Meteor.methods({
       allAccess: Match.Optional(null),
       roleId: Match.Optional(Match.Integer),
     });
+    // Meteor bug #3877: we get null here instead of undefined when we
+    // explicitly pass in undefined.
+    if (destroyIfNotUsedByTime) {
+      check(destroyIfNotUsedByTime, Number);
+    }
+    var selfDestructAt = (destroyIfNotUsedByTime && (destroyIfNotUsedByTime > 0)) ?
+        new Date(destroyIfNotUsedByTime) : null;
 
     var grain = Grains.findOne(grainId);
     if (!grain) {
@@ -270,11 +276,21 @@ Meteor.methods({
       created: new Date(),
       expires: null,
       forSharing: forSharing,
+      expiresIfUnused: selfDestructAt
     });
 
     return {token: token, endpointUrl: endpointUrl};
   }
 });
+
+var cleanupSelfDestructing = function() {
+  var now = new Date();
+  ApiTokens.remove({expiresIfUnused: {$lt: now}});
+};
+
+// Make self-destructing tokens actually self-destruct, so they don't
+// clutter the token list view.
+Meteor.setInterval(cleanupSelfDestructing, 60 * 1000);
 
 HackSessionContextImpl.prototype.listApiTokens = function () {
   return inMeteor((function () {

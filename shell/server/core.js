@@ -138,6 +138,9 @@ SandstormCoreImpl.prototype.restore = function (sturdyRef) {
     if (!token) {
       throw new Error("No token found to restore");
     }
+    if (!(token.owner && token.owner.grain && token.owner.grain.grainId === self.grainId)) {
+      throw new Error("Token is not owned by this grain.");
+    }
     if (token.frontendRef) {
       if (token.frontendRef.notificationHandle) {
         var notificationId = token.frontendRef.notificationHandle;

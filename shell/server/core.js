@@ -55,11 +55,11 @@ function dismissNotification(notificationId, callCancel) {
       var id = new Buffer(notification.ongoing);
 
       if (!callCancel) {
-        dropInternal(id);
+        dropInternal(id, {frontend: null});
       } else {
-        var notificationCap = waitPromise(restoreInternal(id)).cap;
+        var notificationCap = waitPromise(restoreInternal(id, {frontend: null})).cap;
         var castedNotification = notificationCap.castAs(PersistentOngoingNotification);
-        dropInternal(id);
+        dropInternal(id, {frontend: null});
         try {
           waitPromise(castedNotification.cancel());
           castedNotification.close();
@@ -129,12 +129,16 @@ NotificationHandle.prototype.save = function (params) {
   });
 };
 
-function restoreInternal(sturdyRef) {
+function restoreInternal(sturdyRef, ownerPattern) {
+  // Restores `sturdyRef`, checking first that its owner matches `ownerPattern`.
+
   var hashedSturdyRef = hashSturdyRef(sturdyRef);
   var token = ApiTokens.findOne(hashedSturdyRef);
   if (!token) {
     throw new Error("No token found to restore");
   }
+  check(token.owner, ownerPattern);
+
   if (token.frontendRef) {
     if (token.frontendRef.notificationHandle) {
       var notificationId = token.frontendRef.notificationHandle;
@@ -154,24 +158,20 @@ function restoreInternal(sturdyRef) {
 SandstormCoreImpl.prototype.restore = function (sturdyRef) {
   var self = this;
   return inMeteor(function () {
-    var hashedSturdyRef = hashSturdyRef(sturdyRef);
-    var token = ApiTokens.findOne(hashedSturdyRef);
-    if (!token) {
-      throw new Error("No token found to restore");
-    }
-    if (!(token.owner && token.owner.grain && token.owner.grain.grainId === self.grainId)) {
-      throw new Error("Token is not owned by this grain. ");
-    }
-    return restoreInternal(sturdyRef);
+    return restoreInternal(sturdyRef, Match.ObjectIncluding({grain: self.grainId}));
   });
 };
 
-function dropInternal (sturdyRef) {
+function dropInternal (sturdyRef, ownerPattern) {
+  // Drops `sturdyRef`, checking first that its owner matches `ownerPattern`.
+
   var hashedSturdyRef = hashSturdyRef(sturdyRef);
   var token = ApiTokens.findOne({_id: hashedSturdyRef});
   if (!token) {
     return;
   }
+  check(token.owner, ownerPattern);
+
   if (token.frontendRef) {
     if (token.frontendRef.notificationHandle) {
       var notificationId = token.frontendRef.notificationHandle;
@@ -196,8 +196,9 @@ function dropInternal (sturdyRef) {
 }
 
 SandstormCoreImpl.prototype.drop = function (sturdyRef) {
+  var self = this;
   return inMeteor(function () {
-    return dropInternal(sturdyRef);
+    return dropInternal(sturdyRef, Match.ObjectIncluding({grain: self.grainId}));
   });
 };
 

@@ -30,8 +30,8 @@ ByteStreamConnection.prototype.done = function () {
   this.connection.end();
 };
 
-ByteStreamConnection.prototype.write = function (data) {
-  this.connection.write(data);
+ByteStreamConnection.prototype.write = function (params) {
+  this.connection.write(params.data);
 };
 
 // expectSize not implemented
@@ -39,12 +39,12 @@ ByteStreamConnection.prototype.write = function (data) {
 
 IpInterfaceImpl = function () { };
 
-IpInterfaceImpl.prototype.listenTcp = function (portNum, port) {
+IpInterfaceImpl.prototype.listenTcp = function (params) {
   return new Promise(function (resolve, reject) {
     var resolved = false;
     var server = Net.createServer(function (connection) {
       var wrappedConnection = new ByteStreamConnection(connection);
-      var upstream = port.connect(wrappedConnection).upstream;
+      var upstream = params.port.connect(wrappedConnection).upstream;
 
       connection.on("data", function (data) {
         upstream.write(data);
@@ -64,7 +64,7 @@ IpInterfaceImpl.prototype.listenTcp = function (portNum, port) {
       });
     });
 
-    server.listen(portNum, function () {
+    server.listen(params.portNum, function () {
       resolved = true;
       resolve({handle: server}); // server has a close method which is all we want from a handle
     });
@@ -84,14 +84,16 @@ function BoundUdpPortImpl(server, address, port) {
   this.port = port;
 }
 
-BoundUdpPortImpl.prototype.send = function(message, returnPort) {
+BoundUdpPortImpl.prototype.send = function(params) {
   // TODO(someday): this whole class is a hack to deal with the fact that we can't compare
   // capabilities or build a map with them. What we should be doing is mapping all ports to
   // their raw physical address/port, and using that here
-  this.server.send(message, 0, message.length, this.port, this.address);
+  this.server.send(params.message, 0, params.message.length, this.port, this.address);
 };
 
-IpInterfaceImpl.prototype.listenUdp = function (portNum, port) {
+IpInterfaceImpl.prototype.listenUdp = function (params) {
+  var portNum = params.portNum;
+  var port = params.port;
   return new Promise(function (resolve, reject) {
     var portMap = {};
     var resolved = false;
@@ -181,20 +183,20 @@ var addressType = function (address) {
 
 IpNetworkImpl = function () { };
 
-IpNetworkImpl.prototype.getRemoteHost = function (address) {
-  return {host: new IpRemoteHostImpl(address)};
+IpNetworkImpl.prototype.getRemoteHost = function (params) {
+  return {host: new IpRemoteHostImpl(params.address)};
 };
 
 function IpRemoteHostImpl (address) {
   this.address = addressToString(address);
 }
 
-IpRemoteHostImpl.prototype.getTcpPort = function (portNum) {
-  return {port: new TcpPortImpl(this.address, portNum)};
+IpRemoteHostImpl.prototype.getTcpPort = function (params) {
+  return {port: new TcpPortImpl(this.address, params.portNum)};
 };
 
-IpRemoteHostImpl.prototype.getUdpPort = function (portNum) {
-  return {port: new UdpPortImpl(this.address, portNum)};
+IpRemoteHostImpl.prototype.getUdpPort = function (params) {
+  return {port: new UdpPortImpl(this.address, params.portNum)};
 };
 
 function TcpPortImpl (address, portNum) {
@@ -206,7 +208,7 @@ var errorWrite = function (data) {
   throw new Error("error occurred in connection");
 };
 
-TcpPortImpl.prototype.connect = function (downstream) {
+TcpPortImpl.prototype.connect = function (params) {
   var _this = this;
   var resolved = false;
   return new Promise(function (resolve, reject) {
@@ -216,11 +218,11 @@ TcpPortImpl.prototype.connect = function (downstream) {
     });
 
     client.on("data", function (data) {
-      downstream.write(data);
+      params.downstream.write({data: data});
     });
 
     client.on("close", function (had_error) {
-      downstream.done();
+      params.downstream.done();
     });
 
     client.on("error", function (err) {
@@ -256,8 +258,8 @@ function UdpPortImpl (address, portNum) {
   });
 }
 
-UdpPortImpl.prototype.send = function (message, returnPort) {
-  this.returnPort = returnPort;
-  this.socket.send(message, 0, message.length, this.port, this.address);
+UdpPortImpl.prototype.send = function (params) {
+  this.returnPort = params.returnPort;
+  this.socket.send(params.message, 0, params.message.length, this.port, this.address);
   // TODO(someday): use callback to catch errors and do something with them
 };

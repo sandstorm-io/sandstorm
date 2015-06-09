@@ -113,7 +113,7 @@ NotificationHandle.prototype.close = function () {
   });
 };
 
-NotificationHandle.prototype.save = function () {
+NotificationHandle.prototype.save = function (params) {
   var self = this;
   return inMeteor(function () {
     var sturdyRef = new Buffer(Random.id(20));
@@ -122,7 +122,8 @@ NotificationHandle.prototype.save = function () {
       _id: hashedSturdyRef,
       frontendRef: {
         notificationHandle: self.notificationId
-      }
+      },
+      owner: params.sealFor,
     });
     self.saved = true;
     return {sturdyRef: sturdyRef};

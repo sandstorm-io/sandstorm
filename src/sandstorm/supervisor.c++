@@ -1615,9 +1615,7 @@ public:
     wakelockMap.insert(std::make_pair(id, WakeLockInfo(client)));
     auto req = sandstormCore.makeTokenRequest();
     req.getRef().setWakeLockNotification(id);
-    auto grainOwner = req.getOwner().initGrain();
-    grainOwner.setGrainId(grainId);
-    grainOwner.getSaveLabel().setDefaultText("ongoing notification wakelock");
+    req.getOwner().setFrontend();
     return req.send();
   }
 

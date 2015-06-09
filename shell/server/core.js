@@ -50,17 +50,16 @@ function dismissNotification(notificationId, callCancel) {
   if (notification) {
     Notifications.remove({_id: notificationId});
     if (notification.ongoing) {
-      var sandstormCore = new SandstormCoreImpl(notification.grainId);
       // For some reason, Mongo returns an object that looks buffer-like, but isn't a buffer.
       // Only way to fix seems to be to copy it.
       var id = new Buffer(notification.ongoing);
 
       if (!callCancel) {
-        waitPromise(sandstormCore.drop(id));
+        dropInternal(id, {frontend: null});
       } else {
-        var notificationCap = waitPromise(sandstormCore.restore(id)).cap;
+        var notificationCap = waitPromise(restoreInternal(id, {frontend: null})).cap;
         var castedNotification = notificationCap.castAs(PersistentOngoingNotification);
-        waitPromise(sandstormCore.drop(id));
+        dropInternal(id, {frontend: null});
         try {
           waitPromise(castedNotification.cancel());
           castedNotification.close();
@@ -113,7 +112,7 @@ NotificationHandle.prototype.close = function () {
   });
 };
 
-NotificationHandle.prototype.save = function () {
+NotificationHandle.prototype.save = function (params) {
   var self = this;
   return inMeteor(function () {
     var sturdyRef = new Buffer(Random.id(20));
@@ -122,67 +121,84 @@ NotificationHandle.prototype.save = function () {
       _id: hashedSturdyRef,
       frontendRef: {
         notificationHandle: self.notificationId
-      }
+      },
+      owner: params.sealFor,
     });
     self.saved = true;
     return {sturdyRef: sturdyRef};
   });
 };
 
+function restoreInternal(sturdyRef, ownerPattern) {
+  // Restores `sturdyRef`, checking first that its owner matches `ownerPattern`.
+
+  var hashedSturdyRef = hashSturdyRef(sturdyRef);
+  var token = ApiTokens.findOne(hashedSturdyRef);
+  if (!token) {
+    throw new Error("No token found to restore");
+  }
+  check(token.owner, ownerPattern);
+
+  if (token.frontendRef) {
+    if (token.frontendRef.notificationHandle) {
+      var notificationId = token.frontendRef.notificationHandle;
+      return {cap: makeNotificationHandle(notificationId, true)};
+    } else {
+      throw new Error("Unknown frontend token type.");
+    }
+  } else if (token.objectId) {
+    return useGrain(token.grainId, function (supervisor) {
+      return supervisor.restore(token.objectId);
+    });
+  } else {
+    throw new Error("Unknown token type.");
+  }
+}
+
 SandstormCoreImpl.prototype.restore = function (sturdyRef) {
   var self = this;
   return inMeteor(function () {
-    var hashedSturdyRef = hashSturdyRef(sturdyRef);
-    var token = ApiTokens.findOne(hashedSturdyRef);
-    if (!token) {
-      throw new Error("No token found to restore");
-    }
-    if (token.frontendRef) {
-      if (token.frontendRef.notificationHandle) {
-        var notificationId = token.frontendRef.notificationHandle;
-        return {cap: makeNotificationHandle(notificationId, true)};
-      } else {
-        throw new Error("Unknown frontend token type.");
-      }
-    } else if (token.objectId) {
-      return useGrain(self.grainId, function (supervisor) {
-        return supervisor.restore(token.objectId);
-      });
-    } else {
-      throw new Error("Unknown token type.");
-    }
+    return restoreInternal(sturdyRef, {grain: Match.ObjectIncluding({grainId: self.grainId})});
   });
 };
 
-SandstormCoreImpl.prototype.drop = function (sturdyRef) {
-  var grainId = this.grainId;
-  return inMeteor(function () {
-    var hashedSturdyRef = hashSturdyRef(sturdyRef);
-    var token = ApiTokens.findOne({_id: hashedSturdyRef});
-    if (!token) {
-      return;
-    }
-    if (token.frontendRef) {
-      if (token.frontendRef.notificationHandle) {
-        var notificationId = token.frontendRef.notificationHandle;
-        ApiTokens.remove({_id: hashedSturdyRef});
-        var anyToken = ApiTokens.findOne({"frontendRef.notificationHandle": notificationId});
-        if (!anyToken) {
-          // No other tokens referencing this notification exist, so dismiss the notification
-          dismissNotification(notificationId);
-        }
-      } else {
-        throw new Error("Unknown frontend token type.");
-      }
-    } else if (token.objectId) {
-      if (token.objectId.wakeLockNotification) {
-        dropWakelock(grainId, token.objectId.wakeLockNotification);
-      } else {
-        throw new Error("Unknown objectId token type.");
+function dropInternal (sturdyRef, ownerPattern) {
+  // Drops `sturdyRef`, checking first that its owner matches `ownerPattern`.
+
+  var hashedSturdyRef = hashSturdyRef(sturdyRef);
+  var token = ApiTokens.findOne({_id: hashedSturdyRef});
+  if (!token) {
+    return;
+  }
+  check(token.owner, ownerPattern);
+
+  if (token.frontendRef) {
+    if (token.frontendRef.notificationHandle) {
+      var notificationId = token.frontendRef.notificationHandle;
+      ApiTokens.remove({_id: hashedSturdyRef});
+      var anyToken = ApiTokens.findOne({"frontendRef.notificationHandle": notificationId});
+      if (!anyToken) {
+        // No other tokens referencing this notification exist, so dismiss the notification
+        dismissNotification(notificationId);
       }
     } else {
-      throw new Error("Unknown token type.");
+      throw new Error("Unknown frontend token type.");
     }
+  } else if (token.objectId) {
+    if (token.objectId.wakeLockNotification) {
+      dropWakelock(token.grainId, token.objectId.wakeLockNotification);
+    } else {
+      throw new Error("Unknown objectId token type.");
+    }
+  } else {
+    throw new Error("Unknown token type.");
+  }
+}
+
+SandstormCoreImpl.prototype.drop = function (sturdyRef) {
+  var self = this;
+  return inMeteor(function () {
+    return dropInternal(sturdyRef, {grain: Match.ObjectIncluding({grainId: self.grainId})});
   });
 };
 

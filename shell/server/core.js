@@ -158,7 +158,7 @@ function restoreInternal(sturdyRef, ownerPattern) {
 SandstormCoreImpl.prototype.restore = function (sturdyRef) {
   var self = this;
   return inMeteor(function () {
-    return restoreInternal(sturdyRef, Match.ObjectIncluding({grain: self.grainId}));
+    return restoreInternal(sturdyRef, {grain: Match.ObjectIncluding({grainId: self.grainId})});
   });
 };
 
@@ -198,7 +198,7 @@ function dropInternal (sturdyRef, ownerPattern) {
 SandstormCoreImpl.prototype.drop = function (sturdyRef) {
   var self = this;
   return inMeteor(function () {
-    return dropInternal(sturdyRef, Match.ObjectIncluding({grain: self.grainId}));
+    return dropInternal(sturdyRef, {grain: Match.ObjectIncluding({grainId: self.grainId})});
   });
 };
 

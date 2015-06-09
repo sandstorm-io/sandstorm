@@ -552,14 +552,14 @@ if (Meteor.isClient) {
             var tokenId = result.token;
             // Generate random key id2.
             var id2 = Random.secret();
-            // Store apitoken id1 and template in local storage in the offer
+            // Store apitoken id1 and template in session storage in the offer
             // template namespace under key id2.
             var key = "offerTemplate" + id2;
             var renderedTemplate = template.replace("$API_TOKEN", tokenId)
                                            .replace("$API_HOST", makeWildcardHost("api"));
             sessionStorage.setItem(key, JSON.stringify({
                 "renderedTemplate": renderedTemplate,
-                "expiry": selfDestructTime
+                "expires": selfDestructTime
               })
             );
             // Send message to event.source with URL containing id2

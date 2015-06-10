@@ -5,73 +5,48 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  # We have a few box types.
+  # We have a few box types. The boxes, such as trust64 or
+  # thoughtbot_jessie, are created by prepare-for-tests.sh.
 
   # In general, we use a shell script to "provision" the box. just
   # sets up a different hostname than vagrant, because I find
   # "vagrant" to be a weird hostname.
   config.ssh.shell = "bash"
   config.vm.provision "shell",
-                       inline: "cd /vagrant && echo localhost > /etc/hostname && hostname localhost"
+                       inline: "echo localhost > /etc/hostname && hostname localhost && echo 107.178.223.140 dl.sandstorm.io >> /etc/hosts"
 
 
   # Make sure to share the dir one *above* the current working directory. That way, we get
   # the Sandstorm source tree, which includes the all-important install.sh.
-  config.vm.synced_folder "..", "/vagrant"
+  config.vm.synced_folder "..", "/vagrant",
+                          type: "rsync",
+                          rsync__exclude: ".git/",
+                          rsync__args: [
+                            "--archive",
+                            "--delete"]
 
   # In this Vagrantbox purely to test the install script, we do not
   # forward any ports. If we need to test if ports are available, we
   # can do that by SSH-ing in.
 
-  # Calculate the number of CPUs and the amount of RAM the system has,
-  # in a platform-dependent way; further logic below.
-  cpus = nil
-  total_kB_ram = nil
+  # Similarly, when testing the install script, we don't need a lot of
+  # CPU or RAM, so we use whatever is Vagrant's default.
 
-  host = RbConfig::CONFIG['host_os']
-  if host =~ /darwin/
-    cpus = `sysctl -n hw.ncpu`.to_i
-    total_kB_ram =  `sysctl -n hw.memsize`.to_i / 1024
-  elsif host =~ /linux/
-    cpus = `nproc`.to_i
-    total_kB_ram = `grep MemTotal /proc/meminfo | awk '{print $2}'`.to_i
+  # Use qemu driver for libvirt. See README.md for rationale.
+  config.vm.provider :libvirt do |libvirt|
+    libvirt.driver = 'qemu'
   end
-
-  # Use the same number of CPUs within Vagrant as the system, with 1
-  # as a default.
-  #
-  # Use at least 512MB of RAM, and if the system has more than 2GB of
-  # RAM, use 1/4 of the system RAM. This seems a reasonable compromise
-  # between having the Vagrant guest operating system not run out of
-  # RAM entirely (which it basically would if we went much lower than
-  # 512MB) and also allowing it to use up a healthily large amount of
-  # RAM so it can run faster on systems that can afford it.
-  config.vm.provider :virtualbox do |vb|
-    if cpus.nil?
-      vb.cpus = 1
-    else
-      vb.cpus = cpus
-    end
-
-    if total_kB_ram.nil? or total_kB_ram < 2048000
-      vb.memory = 512
-    else
-      vb.memory = (total_kB_ram / 1024 / 4)
-    end
-  end
-
 
   config.vm.define "default", primary: true do |default|
-    # The default is the Ubuntu 14.04 ("trusty tahr") cloud image.
     default.vm.box = "trusty64"
+  end
 
-    # The url from which to fetch that base box.
-    default.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+  config.vm.define "precise64", primary: true do |default|
+    default.vm.box = "precise64"
   end
 
   config.vm.define "jessie" do |jessie|
-    # The default is the Ubuntu 14.04 ("trusty tahr") cloud image.
-    jessie.vm.box = "thoughtbot/debian-jessie-64"
+    jessie.vm.box = "thoughtbot_jessie"
 
     jessie.vm.provision "shell",
                        inline: "sudo sed -i s,ftp.us.debian.org,http.debian.net, /etc/apt/sources.list"

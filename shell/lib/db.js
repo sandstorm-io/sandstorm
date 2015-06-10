@@ -233,6 +233,9 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   owner:     A `ApiTokenRefOwner` (defined in `supervisor.capnp`, stored as a JSON object)
 //              as passed to the `save()` call that created this token. If not present, treat
 //              as `webkey` (the default for `ApiTokenOwner`).
+//   expiresIfUnused:
+//              Optional Date after which the token, if it has not been used yet, expires.
+//              This field should be cleared on a token's first use.
 
 Notifications = new Mongo.Collection("notifications");
 // Notifications for a user.

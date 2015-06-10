@@ -23,6 +23,13 @@
 #include <sys/syscall.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/prctl.h>
+#include <sys/capability.h>
+
+// In case kernel headers are old.
+#ifndef PR_SET_NO_NEW_PRIVS
+#define PR_SET_NO_NEW_PRIVS 38
+#endif
 
 namespace sandstorm {
 
@@ -70,10 +77,18 @@ void BackupMain::writeUserNSMap(const char *type, kj::StringPtr contents) {
 }
 
 bool BackupMain::run(kj::StringPtr grainDir) {
+  // Enable no_new_privs so that once we drop privileges we can never regain them through e.g.
+  // execing a suid-root binary, as a backup measure. This is a backup measure in case someone
+  // finds an arbitrary code execution exploit in zip/unzip; it's not needed otherwise.
+  KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
+
   uid_t uid = getuid();
   gid_t gid = getgid();
 
-  KJ_SYSCALL(unshare(CLONE_NEWUSER | CLONE_NEWNS));
+  KJ_SYSCALL(unshare(CLONE_NEWUSER | CLONE_NEWNS |
+      // Unshare other stuff; like no_new_privs, this is only to defend against hypothetical
+      // arbitrary code execution bugs in zip/unzip.
+      CLONE_NEWNET | CLONE_NEWIPC | CLONE_NEWPID | CLONE_NEWUTS));
   writeSetgroupsIfPresent("deny\n");
   writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
   writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
@@ -101,7 +116,7 @@ bool BackupMain::run(kj::StringPtr grainDir) {
   }
   KJ_SYSCALL(mkdir("/tmp/tmp/data", 0700));
   KJ_SYSCALL(mount(kj::str(grainDir, "/sandbox").cStr(), "/tmp/tmp/data", nullptr,
-                   MS_BIND | (restore ? 0 : MS_RDONLY), nullptr));
+                   MS_BIND | MS_NODEV | MS_NOSUID | (restore ? 0 : MS_RDONLY), nullptr));
 
   // Bind in the grain's `log`. When restoring, we discard the log.
   if (!restore) {
@@ -129,6 +144,29 @@ bool BackupMain::run(kj::StringPtr grainDir) {
     KJ_SYSCALL(chdir("/tmp"));
   }
 
+  // TODO(security): We could seccomp this pretty tightly, but that would only be necessary to
+  //   defend against *both* zip/unzip *and* the Linux kernel having bugs at the same time. It's
+  //   fairly involved to set up, so maybe not worthwhile, unless we could factor the code out of
+  //   supervisor.c++...
+
+  if (!restore) {
+    // Read stdin to metadata file.
+    kj::FdInputStream in(STDIN_FILENO);
+    kj::FdOutputStream out(raiiOpen("metadata", O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC));
+    pump(in, out);
+  }
+
+  {
+    // Drop crapabilities.
+    struct __user_cap_header_struct hdr;
+    struct __user_cap_data_struct data[2];
+    hdr.version = _LINUX_CAPABILITY_VERSION_3;
+    hdr.pid = 0;
+    memset(data, 0, sizeof(data));  // All capabilities disabled!
+    KJ_SYSCALL(capset(&hdr, data));
+    umask(0007);
+  }
+
   // TODO(someday): Find a zip library that doesn't suck and use it instead of shelling out
   //   to zip/unzip.
   if (restore) {
@@ -139,13 +177,6 @@ bool BackupMain::run(kj::StringPtr grainDir) {
     kj::FdOutputStream out(STDOUT_FILENO);
     pump(in, out);
   } else {
-    // Read stdin to metadata file.
-    {
-      kj::FdInputStream in(STDIN_FILENO);
-      kj::FdOutputStream out(raiiOpen("metadata", O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC));
-      pump(in, out);
-    }
-
     Subprocess::Options zipOptions({"zip", "-qy@", "-"});
     auto inPipe = Pipe::make();
     zipOptions.stdin = inPipe.readEnd;

@@ -522,7 +522,7 @@ public:
         alternateMain = getSpkMain(context);
         return alternateMain->getMain();
       } else if (programName == "backup" || programName.endsWith("/backup")) {
-        alternateMain = getBackupMain(context);
+        alternateMain = kj::heap<BackupMain>(context);
         return alternateMain->getMain();
       }
     }

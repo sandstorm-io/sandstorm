@@ -18,11 +18,33 @@
 #define SANDSTORM_BACKUP_H_
 
 #include "abstract-main.h"
+#include <kj/io.h>
 
 namespace sandstorm {
 
-kj::Own<AbstractMain> getBackupMain(kj::ProcessContext& context);
-// Get the main class for the "backup" command, which creates or restores a grain backup.
+class BackupMain: public AbstractMain {
+  // The main class for the "backup" command, which creates or restores a grain backup.
+public:
+  BackupMain(kj::ProcessContext& context);
+
+  kj::MainFunc getMain() override;
+
+  bool setRestore();
+  bool setFile(kj::StringPtr arg);
+  bool setRoot(kj::StringPtr arg);
+  bool run(kj::StringPtr grainDir);
+
+private:
+  kj::ProcessContext& context;
+  bool restore = false;
+  kj::StringPtr filename;
+  kj::StringPtr root = "";
+
+  void writeSetgroupsIfPresent(const char *contents);
+  void writeUserNSMap(const char *type, kj::StringPtr contents);
+  static void pump(kj::InputStream& in, kj::OutputStream& out);
+  bool findFilesToZip(kj::StringPtr path, kj::OutputStream& out);
+};
 
 } // namespace sandstorm
 

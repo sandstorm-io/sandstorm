@@ -236,6 +236,30 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   expiresIfUnused:
 //              Optional Date after which the token, if it has not been used yet, expires.
 //              This field should be cleared on a token's first use.
+//
+// It is important to note that a token's owner and provider are independent from each other. To
+// illustrate, here is an approximate definition of ApiToken in pseudo Cap'n Proto schema language:
+//
+// struct ApiToken {
+//  owner :ApiTokenOwner;
+//  provider :union {
+//    grain :group {
+//      grainId :Text;
+//      union {
+//        uiView: group {
+//          userId: Text;
+//          roleAssignment: RoleAssignment;
+//          forSharing: Bool;
+//        }
+//        objectId: SupervisorObjectId;
+//      }
+//    }
+//    frontendRef: union {
+//       notificationHandle :Text;
+//     }
+//  }
+//  ...
+//}
 
 Notifications = new Mongo.Collection("notifications");
 // Notifications for a user.

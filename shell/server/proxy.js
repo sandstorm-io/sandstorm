@@ -150,9 +150,7 @@ Meteor.methods({
     check(token, String);
     var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
     var apiToken = ApiTokens.findOne(hashedToken);
-    if (!apiToken) {
-      throw new Meteor.Error(403, "Invalid authorization token");
-    }
+    validateApiToken(apiToken);
     var grain = Grains.findOne({_id: apiToken.grainId});
     if (!grain) {
       throw new Meteor.Error(404, "Grain not found", "Grain ID: " + apiToken.grainId);
@@ -229,6 +227,28 @@ Meteor.methods({
     waitPromise(shutdownGrain(grainId, grain.userId, true));
   }
 });
+
+function validateApiToken (apiToken) {
+  if (!apiToken) {
+    throw new Meteor.Error(403, "Invalid authorization token");
+  }
+  if (apiToken.owner && !("webkey" in apiToken.owner)) {
+    throw new Meteor.Error(403, "Unauthorized to open non-webkey token.");
+  }
+
+  if (apiToken.expires && apiToken.expires.getTime() <= Date.now()) {
+    throw new Meteor.Error(403, "Authorization token expired");
+  }
+
+  if (apiToken.expiresIfUnused) {
+    if (apiToken.expiresIfUnused.getTime() <= Date.now()) {
+      throw new Meteor.Error(403, "Authorization token expired");
+    } else {
+      // It's getting used now, so clear the expiresIfUnused field.
+      ApiTokens.update(apiToken._id, {$set: {expiresIfUnused: null}});
+    }
+  }
+}
 
 function openSessionInternal(grainId, user, title, apiToken) {
   var userId = user ? user._id : undefined;
@@ -566,22 +586,7 @@ getProxyForApiToken = function (token) {
     } else {
       return inMeteor(function () {
         var tokenInfo = ApiTokens.findOne(hashedToken);
-        if (!tokenInfo) {
-          throw new Meteor.Error(403, "Invalid authorization token");
-        }
-
-        if (tokenInfo.expires && tokenInfo.expires.getTime() <= Date.now()) {
-          throw new Meteor.Error(403, "Authorization token expired");
-        }
-
-        if (tokenInfo.expiresIfUnused) {
-          if (tokenInfo.expiresIfUnused.getTime() <= Date.now()) {
-            throw new Meteor.Error(403, "Authorization token expired");
-          } else {
-            // It's getting used now, so clear the expiresIfUnused field.
-            ApiTokens.update(tokenInfo._id, {$set: {expiresIfUnused: null}});
-          }
-        }
+        validateApiToken(tokenInfo);
 
         var grain = Grains.findOne(tokenInfo.grainId);
         if (!grain) {

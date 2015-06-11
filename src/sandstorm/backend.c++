@@ -367,20 +367,21 @@ kj::Promise<void> BackendImpl::installPackage(InstallPackageContext context)  {
   return kj::READY_NOW;
 }
 
-kj::Promise<void> BackendImpl::getPackage(GetPackageContext context) {
+kj::Promise<void> BackendImpl::tryGetPackage(TryGetPackageContext context) {
   auto path = kj::str("/var/sandstorm/apps/", validateId(context.getParams().getPackageId()));
 
-  capnp::StreamFdMessageReader reader(raiiOpen(
-      kj::str(path, "/sandstorm-manifest"), O_RDONLY));
-  auto manifest = reader.getRoot<spk::Manifest>();
+  KJ_IF_MAYBE(file, raiiOpenIfExists(kj::str(path, "/sandstorm-manifest"), O_RDONLY)) {
+    capnp::StreamFdMessageReader reader(kj::mv(*file));
+    auto manifest = reader.getRoot<spk::Manifest>();
 
-  kj::String appid = sandstorm::readAll(kj::str(path, ".appid"));
+    kj::String appid = sandstorm::readAll(kj::str(path, ".appid"));
 
-  capnp::MessageSize sizeHint = manifest.totalSize();
-  sizeHint.wordCount += 8 + appid.size() / sizeof(capnp::word);
-  auto results = context.getResults(sizeHint);
-  results.setAppId(trim(appid));
-  results.setManifest(manifest);
+    capnp::MessageSize sizeHint = manifest.totalSize();
+    sizeHint.wordCount += 8 + appid.size() / sizeof(capnp::word);
+    auto results = context.getResults(sizeHint);
+    results.setAppId(trim(appid));
+    results.setManifest(manifest);
+  }
 
   return kj::READY_NOW;
 }

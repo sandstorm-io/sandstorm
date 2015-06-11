@@ -49,8 +49,9 @@ interface Backend {
     saveAs @0 (packageId :Text) -> (appId :Text, manifest :Package.Manifest);
   }
 
-  getPackage @4 (packageId :Text) -> (appId :Text, manifest :Package.Manifest);
-  # Get info from an already-installed package.
+  tryGetPackage @4 (packageId :Text) -> (appId :Text, manifest :Package.Manifest);
+  # Get info from an already-installed package. Return values are null if the package doesn't
+  # exist.
 
   deletePackage @5 (packageId :Text);
   # Delete a package from disk. Succeeds silently if the package doesn't exist.

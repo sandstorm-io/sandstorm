@@ -208,12 +208,14 @@ AppInstaller.prototype.start = function () {
   return this.wrapCallback(function () {
     this.cleanup();
 
-    sandstormBackend.getPackage(this.packageId)
+    sandstormBackend.tryGetPackage(this.packageId)
         .then(this.wrapCallback(function(info) {
-      this.appId = info.appId;
-      this.done(info.manifest);
-    }), this.wrapCallback(function(err) {
-      this.doDownload();
+      if (info.appId) {
+        this.appId = info.appId;
+        this.done(info.manifest);
+      } else {
+        this.doDownload();
+      }
     }));
   })();
 }

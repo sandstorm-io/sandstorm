@@ -102,7 +102,7 @@ Meteor.startup(function () {
         return inMeteor(function () {
           var grain = Grains.findOne({publicId: publicId}, {fields: {_id: 1}});
           if (!grain) {
-            throw new Error("No such grain for public ID: " + publicId);
+            throw new Meteor.Error(404, "No such grain for public ID: " + publicId);
           }
           var grainId = grain._id;
 
@@ -123,7 +123,7 @@ Meteor.startup(function () {
         }
       });
     }).catch(function (err) {
-      res.writeHead(500, { "Content-Type": "text/html" });
+      res.writeHead(err.error || 500, { "Content-Type": "text/html" });
       res.end(err.message);
     });
   });

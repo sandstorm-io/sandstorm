@@ -74,43 +74,6 @@ if (Meteor.isServer) {
     recordStats();
   }, DAY_MS - (Date.now() - 10*60*60*1000) % DAY_MS);
 
-  Meteor.publish("activityStats", function () {
-    var user = this.userId && Meteor.users.findOne({_id: this.userId}, {fields: {isAdmin: 1}});
-    if (!(user && user.isAdmin)) {
-      return [];
-    }
-
-    return ActivityStats.find();
-  });
-
-  Meteor.publish("statsTokens", function () {
-    var user = this.userId && Meteor.users.findOne({_id: this.userId}, {fields: {isAdmin: 1}});
-    if (!(user && user.isAdmin)) {
-      return [];
-    }
-
-    return StatsTokens.find();
-  });
-
-  Meteor.publish("realTimeStats", function () {
-    var user = this.userId && Meteor.users.findOne({_id: this.userId}, {fields: {isAdmin: 1}});
-    if (!(user && user.isAdmin)) {
-      return [];
-    }
-
-    // Last five minutes.
-    this.added("realTimeStats", "now", computeStats(new Date(Date.now() - 5*60*1000)));
-
-    // Since last sample.
-    var lastSample = ActivityStats.findOne({}, {sort: {timestamp: -1}});
-    var lastSampleTime = lastSample ? lastSample.timestamp : new Date(0);
-    this.added("realTimeStats", "today", computeStats(lastSampleTime));
-
-    // TODO(someday): Update every few minutes?
-
-    this.ready();
-  });
-
   Meteor.startup(function () {
     if (StatsTokens.find().count() === 0) {
       StatsTokens.remove({});
@@ -135,32 +98,6 @@ if (Meteor.isServer) {
 RealTimeStats = new Mongo.Collection("realTimeStats");
 
 Router.map(function () {
-  this.route("stats", {
-    path: "/stats",
-
-    waitOn: function () {
-      return [
-        Meteor.subscribe("activityStats"),
-        Meteor.subscribe("realTimeStats"),
-        Meteor.subscribe("statsTokens")
-      ];
-    },
-
-    data: function () {
-      return {
-        points: ActivityStats.find({}, {sort: {timestamp: -1}}).map(function (point) {
-          return _.extend({
-            // Report date of midpoint of sample period.
-            day: new Date(point.timestamp.getTime() - 12*60*60*1000).toLocaleDateString()
-          }, point);
-        }),
-        current: RealTimeStats.findOne("now"),
-        today: RealTimeStats.findOne("today"),
-        token: StatsTokens.findOne()
-      };
-    }
-  });
-
   this.route("fetchStats", {
     where: "server",
     path: "/fetchStats/:tokenId",
@@ -196,9 +133,35 @@ Router.map(function () {
 });
 
 if (Meteor.isClient) {
-  Template.stats.events({
+  Template.adminStats.events({
     'click #regenerateStatsToken': function () {
       Meteor.call('regenerateStatsToken');
+    }
+  });
+  Template.adminStats.onCreated(function () {
+    var state = Iron.controller().state;
+    var token = state.get("token");
+    this.subscribe("activityStats", token);
+    this.subscribe("realTimeStats", token);
+    this.subscribe("statsTokens", token);
+  });
+  Template.adminStats.helpers({
+    points: function () {
+      return ActivityStats.find({}, {sort: {timestamp: -1}}).map(function (point) {
+        return _.extend({
+          // Report date of midpoint of sample period.
+          day: new Date(point.timestamp.getTime() - 12*60*60*1000).toLocaleDateString()
+        }, point);
+      });
+    },
+    current: function () {
+      return RealTimeStats.findOne("now");
+    },
+    today: function () {
+      return RealTimeStats.findOne("today");
+    },
+    token: function () {
+      return StatsTokens.findOne();
     }
   });
 }

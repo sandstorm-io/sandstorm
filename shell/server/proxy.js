@@ -32,6 +32,7 @@ var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
 var Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 
 SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
+SANDSTORM_LOGDIR = (SANDSTORM_ALTHOME || "") + "/var/log";
 SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
 SANDSTORM_GRAINDIR = SANDSTORM_VARDIR + "/grains";
 

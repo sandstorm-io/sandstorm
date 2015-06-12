@@ -19,6 +19,8 @@
 var DEFAULT_TITLE = "Sandstorm";
 
 if (Meteor.isServer) {
+  var Crypto = Npm.require("crypto");
+
   Grains.allow({
     update: function (userId, grain, fieldNames) {
       // Allow owner to rename or privatize grain.
@@ -69,6 +71,20 @@ if (Meteor.isServer) {
             ApiTokens.find({grainId: grainId, userId: this.userId}),
             RoleAssignments.find({$or : [{sharer: this.userId}, {recipient: this.userId}]}),
            ];
+  });
+
+  Meteor.publish("tokenInfo", function (token) {
+    // Allows the client side to map a raw token to its entry in ApiTokens.
+
+    var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
+    var apiToken = ApiTokens.findOne({_id: hashedToken});
+    if (!apiToken || (apiToken.owner && !("webkey" in apiToken.owner))) {
+      this.added("tokenInfo", token, {invalidToken: true});
+    } else {
+      this.added("tokenInfo", token, {apiToken: apiToken});
+    }
+    this.ready();
+    return;
   });
 
   Meteor.publish("grainSize", function (sessionId) {
@@ -128,6 +144,7 @@ if (Meteor.isServer) {
 
 var GrainSizes = new Mongo.Collection("grainSizes");
 var DisplayNames = new Mongo.Collection("displayNames");
+var TokenInfo = new Mongo.Collection("tokenInfo");
 // Pseudo-collections published above.
 
 Meteor.methods({
@@ -160,6 +177,14 @@ Meteor.methods({
 
 if (Meteor.isClient) {
   Template.grain.events({
+    "click #incognito-button": function (event) {
+      Session.set("visit-token-" + event.currentTarget.getAttribute("data-token"), "incognito");
+    },
+
+    "click #redeem-token-button": function (event) {
+      Session.set("visit-token-" + event.currentTarget.getAttribute("data-token"), "redeem");
+    },
+
     "click #grainTitle": function (event) {
       var title = window.prompt("Set new title:", this.title);
       if (title) {
@@ -753,25 +778,55 @@ Router.map(function () {
     }
   });
 
-  this.route("/shared/:key", {
+  this.route("/shared/:token", {
     template: "grain",
 
     waitOn: function () {
       return [
         Meteor.subscribe("devApps"),
+        Meteor.subscribe("tokenInfo", this.params.token),
+
+        Meteor.subscribe("grainsMenu"),
+        // This subscription gives us the data we need for deciding whether to automatically reveal
+        // our identity.
+        // TODO(soon): Subscribe to contacts instead.
       ];
     },
 
     data: function() {
+      if (!this.ready) {
+        return;
+      }
+      if (Meteor.userId() && !Session.get("visit-token-" + this.params.token)) {
+        var tokenInfo = TokenInfo.findOne(this.params.token);
+        if (!tokenInfo || !tokenInfo.apiToken) {
+          this.state.set("error", "invalid authorization token");
+        } else {
+          this.state.set("error", undefined);
+          var apiToken = tokenInfo.apiToken;
+          if (!Grains.findOne({_id: apiToken.grainId, userId: Meteor.userId()}) &&
+              !RoleAssignments.findOne({sharer: apiToken.userId, recipient: Meteor.userId()})) {
+            // The user neither owns the grain nor holds any role assignments from this sharer.
+            // Therefore, we ask whether they would like to go incognito.
+            // TODO(soon): Base this decision on the contents of the Contacts collection.
+            return {interstitial: true, token: this.params.token};
+          } else {
+            Session.set("visit-token-" + this.params.token, "redeem");
+          }
+        }
+      }
       if (this.state.get("grainId")) {
         Session.set("api-token-" + this.state.get("grainId"),
                     window.location.protocol + "//" + makeWildcardHost("api") + "#"
-                    + this.params.key);
+                    + this.params.token);
       }
       return grainRouteHelper(this,
                               {grainId: this.state.get("grainId"), title: this.state.get("title")},
-                              "openSessionFromApiToken", this.params.key,
-                              "/shared/" + this.params.key);
+                              "openSessionFromApiToken",
+                              {token: this.params.token,
+                               incognito:
+                                  "redeem" !== Session.get("visit-token-" + this.params.token)},
+                              "/shared/" + this.params.token);
     },
 
     onStop: function () {

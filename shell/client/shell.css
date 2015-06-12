@@ -433,6 +433,24 @@ img {
   cursor: pointer;
 }
 
+#app .interstitial-button-box {
+  text-align: center;
+}
+
+#app .interstitial-button-box button {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 600;
+  background-color: #428bca;
+
+  padding: 8px;
+  line-height: 1.33;
+  border-radius: 4px;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+
 #notification-dropdown {
   position: fixed;
   top: 32px;

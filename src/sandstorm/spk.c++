@@ -1037,37 +1037,53 @@ private:
       if (S_ISREG(stats.st_mode)) {
         KJ_ASSERT(children.empty(), "got file, expected directory", target);
 
-        mapping = MemoryMapping(raiiOpen(target, O_RDONLY), target);
+        kj::AutoCloseFd fd = raiiOpen(target, O_RDONLY);
+        size_t size = getFileSize(fd, target);
 
-        if (mapping.size() >= (1ull << 29)) {
+        if (size >= (1ull << 29)) {
           context.exitError(kj::str(target, ": file too large. The spk format currently only "
             "supports files up to 512MB in size. Please let the Sandstorm developers know "
             "if you have a strong reason for needing larger files."));
         }
 
-        auto content = orphanage.referenceExternalData(mapping);
-
-        if (stats.st_mode & S_IXUSR) {
-          builder.adoptExecutable(kj::mv(content));
-
-          if (target.endsWith("/mongod") || target == "mongod") {
-            context.warning(
-              "** WARNING: It looks like your app uses MongoDB. PLEASE verify that the size\n"
-              "**   of a typical instance of your app is reasonable before you distribute\n"
-              "**   it. App instance storage is found in:\n"
-              "**     $SANDSORM_HOME/var/sandstorm/grains/$GRAIN_ID\n"
-              "**   Mongo likes to pre-allocate lots of space, while Sandstorm grains\n"
-              "**   should be small, which can lead to waste. Please consider using\n"
-              "**   Kenton's fork of Mongo that preallocates less data, found here:\n"
-              "**     https://github.com/kentonv/mongo/tree/niscu\n"
-              "**   This warning will disappear if the name of the binary on your disk is\n"
-              "**   something other than \"mongod\" -- you can still map it to the name\n"
-              "**   \"mongod\" inside your package, e.g. with a mapping like:\n"
-              "**     (packagePath=\"usr/bin/mongod\", sourcePath=\"niscud\")");
+        // Reading the entirety of a file into memory can take up a sizable
+        // chunk of RAM, so we'd prefer to not pay that cost if we don't need
+        // it.
+        //
+        // MemoryMapping doesn't keep a copy in RAM, but it does keep an mmap()
+        // to the file open until we clean up the whole arena, which can wind
+        // up taking a lot of file table entries.  In particular, VirtualBox
+        // shared folders cannot handle >4096 concurrent mmap()s of files from
+        // the host.  So we have to be cautious using MemoryMapping for all files.
+        //
+        // It is generally the case that most files are small, but most of your
+        // data is in large files.  This suggests the following heuristic as a
+        // compromise: use MemoryMapping for files larger than 128k (specific
+        // number adjustable) and read the whole file into memory for anything
+        // smaller.  So we do that.
+        if (size > 1ull << 17) {
+          // File larger than 128k, mmap preferred
+          mapping = MemoryMapping(kj::mv(fd), target);
+          auto content = orphanage.referenceExternalData(mapping);
+          if (stats.st_mode & S_IXUSR) {
+            warnIfMongod(context);
+            builder.adoptExecutable(kj::mv(content));
+          } else {
+            builder.adoptRegular(kj::mv(content));
           }
         } else {
-          builder.adoptRegular(kj::mv(content));
+          // Small file; direct read preferable.
+          ::capnp::Data::Builder buf = nullptr;
+          if (stats.st_mode & S_IXUSR) {
+            warnIfMongod(context);
+            buf = builder.initExecutable(size);
+          } else {
+            buf = builder.initRegular(size);
+          }
+          kj::FdInputStream stream(kj::mv(fd));
+          stream.read(buf.begin(), size);
         }
+
       } else if (S_ISLNK(stats.st_mode)) {
         KJ_ASSERT(children.empty(), "got symlink, expected directory", target);
 
@@ -1099,6 +1115,24 @@ private:
     }
 
   private:
+    void warnIfMongod(kj::ProcessContext& context) {
+      if (target.endsWith("/mongod") || target == "mongod") {
+        context.warning(
+          "** WARNING: It looks like your app uses MongoDB. PLEASE verify that the size\n"
+          "**   of a typical instance of your app is reasonable before you distribute\n"
+          "**   it. App instance storage is found in:\n"
+          "**     $SANDSORM_HOME/var/sandstorm/grains/$GRAIN_ID\n"
+          "**   Mongo likes to pre-allocate lots of space, while Sandstorm grains\n"
+          "**   should be small, which can lead to waste. Please consider using\n"
+          "**   Kenton's fork of Mongo that preallocates less data, found here:\n"
+          "**     https://github.com/kentonv/mongo/tree/niscu\n"
+          "**   This warning will disappear if the name of the binary on your disk is\n"
+          "**   something other than \"mongod\" -- you can still map it to the name\n"
+          "**   \"mongod\" inside your package, e.g. with a mapping like:\n"
+          "**     (packagePath=\"usr/bin/mongod\", sourcePath=\"niscud\")");
+      }
+    }
+
     kj::String target;
     // The disk path which should be used to initialize this node.
 

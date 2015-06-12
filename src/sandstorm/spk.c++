@@ -1081,8 +1081,7 @@ private:
             buf = builder.initRegular(size);
           }
           kj::FdInputStream stream(kj::mv(fd));
-          size_t readSize = stream.tryRead(buf.begin(), size, size);
-          KJ_REQUIRE(readSize == size);
+          stream.read(buf.begin(), size);
         }
 
       } else if (S_ISLNK(stats.st_mode)) {

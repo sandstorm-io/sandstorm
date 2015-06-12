@@ -241,21 +241,21 @@ ApiTokens = new Mongo.Collection("apiTokens");
 // illustrate, here is an approximate definition of ApiToken in pseudo Cap'n Proto schema language:
 //
 // struct ApiToken {
-//  owner :ApiTokenOwner;
-//  provider :union {
-//    grain :group {
-//      grainId :Text;
-//      union {
-//        uiView: group {
-//          userId: Text;
-//          roleAssignment: RoleAssignment;
-//          forSharing: Bool;
-//        }
-//        objectId: SupervisorObjectId;
-//      }
-//    }
-//    frontendRef: union {
-//       notificationHandle :Text;
+//   owner :ApiTokenOwner;
+//   provider :union {
+//     grain :group {
+//       grainId :Text;
+//       union {
+//         uiView :group {
+//           userId :Text;
+//           roleAssignment :RoleAssignment;
+//           forSharing :Bool;
+//         }
+//         objectId :SupervisorObjectId;
+//       }
+//     }
+//     frontendRef :union {
+//        notificationHandle :Text;
 //     }
 //  }
 //  ...

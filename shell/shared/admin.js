@@ -102,17 +102,17 @@ if (Meteor.isClient) {
   });
 
   Template.admin.events({
-    "click #settings-tab": function (event) {
+    "click .settings-tab": function (event) {
       var state = Iron.controller().state;
       resetResult(state);
       state.set("settingsTab", "adminSettings");
     },
-    "click #users-tab": function (event) {
+    "click .users-tab": function (event) {
       var state = Iron.controller().state;
       resetResult(state);
       state.set("settingsTab", "adminUsers");
     },
-    "click #invites-tab": function (event) {
+    "click .invites-tab": function (event) {
       var state = Iron.controller().state;
       resetResult(state);
       state.set("settingsTab", "adminInvites");

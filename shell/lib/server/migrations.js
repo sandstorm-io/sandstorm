@@ -53,7 +53,7 @@ var MIGRATIONS = [
   enableLegacyOAuthProvidersIfNotInSettings
 ];
 
-migrateToLatest = function () {
+function migrateToLatest() {
   var applied = Migrations.findOne({_id: "migrations_applied"});
   var start;
   if (!applied) {

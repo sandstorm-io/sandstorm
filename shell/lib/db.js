@@ -302,6 +302,11 @@ Settings = new Mongo.Collection("settings");
 //   value:     The value of the setting.
 //   potentially other fields that are unique to the setting
 
+Migrations = new Mongo.Collection("migrations");
+// This table tracks which migrations we have applied to this instance.
+// It contains a single entry:
+//   _id:       "migrations_applied"
+//   value:     The number of migrations this instance has successfully completed.
 
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {

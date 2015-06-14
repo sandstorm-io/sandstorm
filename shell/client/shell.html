@@ -736,6 +736,7 @@ $KEY</textarea></p>
         <td>User Class</td>
         <td>Created</td>
         <td>Last Active</td>
+        <td>Invited as</td>
       </tr>
     </thead>
     <tbody>
@@ -753,6 +754,7 @@ $KEY</textarea></p>
           </td>
           <td title="{{createdAt}}">{{dateString createdAt}}</td>
           <td title="{{lastActive}}">{{dateString lastActive}}</td>
+          <td>{{userSignupNote}}</td>
         </tr>
       {{/each}}
     </tbody>

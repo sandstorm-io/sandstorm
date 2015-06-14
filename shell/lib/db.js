@@ -156,6 +156,7 @@ SignupKeys = new Mongo.Collection("signupKeys");
 //   _id:  random
 //   used:  Boolean indicating whether this key has already been consumed.
 //   note:  Text note assigned when creating key, to keep track of e.g. whom the key was for.
+//   email: If this key was sent as an email invite, the email address to which it was sent.
 
 ActivityStats = new Mongo.Collection("activityStats");
 // Contains usage statistics taken on a regular interval. Each entry is a data point.

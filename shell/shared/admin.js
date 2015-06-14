@@ -332,6 +332,15 @@ if (Meteor.isClient) {
         return this.profile.name;
       }
     },
+    userSignupNote: function () {
+      if (this.signupEmail) {
+        return this.signupEmail;
+      } else if (this.signupNote) {
+        return this.signupNote;
+      } else {
+        return "";
+      }
+    },
     userIsAdmin: function () {
       return !!this.isAdmin;
     },
@@ -673,7 +682,7 @@ if (Meteor.isServer) {
           var key = Random.id();
 
           SignupKeys.insert({_id: key, used: false, note: "E-mail invite to " + email,
-                             definitelySent: false});
+                             email: email, definitelySent: false});
           SandstormEmail.send({
             to: email,
             from: from,

@@ -45,12 +45,45 @@ var enableLegacyOAuthProvidersIfNotInSettings = function() {
   });
 };
 
+var denormalizeInviteInfo = function() {
+  // When a user is invited via a signup token, the `signupKey` field of their user table entry
+  // has always been populated to indicate the key they used. This points into the SignupKeys table
+  // which has more information about the key, namely a freeform note entered by the admin when
+  // they created the key. In the case that the email invite form was used, the note has the form
+  // "E-mail invite to <address>".
+  //
+  // Later, we decided it was useful to indicate in the users table visible to the admin
+  // information about the invite terms. Namely, for email invites we want to show the address
+  // and for others we want to show the note. To make this efficient, fields `signupNote` and
+  // `signupEmail` were added to the users table. We can backfill these values by denormalizing
+  // from the SignupKeys table.
+
+  Meteor.users.find().forEach(function (user) {
+    if (user.signupKey && (typeof user.signupKey) === "string" && user.signupKey !== "admin") {
+      var signupInfo = SignupKeys.findOne(user.signupKey);
+      if (signupInfo && signupInfo.note) {
+        var newFields = { signupNote: signupInfo.note };
+
+        var prefix = "E-mail invite to ";
+        if (signupInfo.note.lastIndexOf(prefix) === 0) {
+          newFields.signupEmail = signupInfo.note.slice(prefix.length);
+        }
+
+        Meteor.users.update(user._id, {$set: newFields});
+      }
+    }
+  });
+}
+
+Meteor.startup(denormalizeInviteInfo);
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
 var MIGRATIONS = [
   updateLoginStyleToRedirect,
-  enableLegacyOAuthProvidersIfNotInSettings
+  enableLegacyOAuthProvidersIfNotInSettings,
+  denormalizeInviteInfo
 ];
 
 function migrateToLatest() {

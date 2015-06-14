@@ -510,7 +510,7 @@ kj::Promise<void> BackendImpl::pump(kj::AsyncInputStream& input, ByteStream::Cli
     orphan.truncate(n);
     req.adoptData(kj::mv(orphan));
 
-    // TODO(now): Parallelize writes.
+    // TODO(perf): Parallelize writes.
     return req.send().then([&input,KJ_MVCAP(stream)](auto&&) mutable {
       return pump(input, kj::mv(stream));
     });
@@ -532,7 +532,7 @@ kj::Promise<void> BackendImpl::pump(kj::InputStream& input, ByteStream::Client s
   orphan.truncate(n);
   req.adoptData(kj::mv(orphan));
 
-  // TODO(now): Parallelize writes.
+  // TODO(perf): Parallelize writes.
   return req.send().then([&input,KJ_MVCAP(stream)](auto&&) mutable {
     return pump(input, kj::mv(stream));
   });

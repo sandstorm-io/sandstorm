@@ -17,7 +17,7 @@
 var DAY_MS = 24*60*60*1000;
 
 if (Meteor.isServer) {
-  function computeStats(since) {
+  computeStats = function (since) {
     // We'll need this for a variety of queries.
     var timeConstraint = {$gt: since};
 

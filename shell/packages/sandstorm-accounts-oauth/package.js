@@ -7,6 +7,7 @@ Package.onUse(function (api) {
   api.use('underscore', ['client', 'server']);
   api.use('random', ['client', 'server']);
   api.use('check', ['client', 'server']);
+  api.use('deps', ['client', 'server']);
   api.use('webapp', 'server');
   api.use('accounts-base', ['client', 'server']);
   // Export Accounts (etc) to packages using this one.

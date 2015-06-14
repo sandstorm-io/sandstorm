@@ -78,6 +78,10 @@
     {{else}}
       {{> _loginButtonsLoggedOutSingleLoginButton}}
     {{/if}}
+  {{else}}
+    <p id="troubleshooting-link">
+      <a href="/admin">configure login</a>
+    </p>
   {{/each}}
 
   {{#if showTroubleshooting}}

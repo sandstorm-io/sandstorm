@@ -251,6 +251,10 @@ function validateApiToken (apiToken) {
       ApiTokens.update(apiToken._id, {$set: {expiresIfUnused: null}});
     }
   }
+
+  if (apiToken.objectId) {
+    throw new Meteor.Error(403, "ApiToken refers to a non-webview Capability.");
+  }
 }
 
 function openSessionInternal(grainId, user, title, apiToken) {

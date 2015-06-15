@@ -39,6 +39,10 @@ ByteStreamConnection.prototype.write = function (data) {
 
 IpInterfaceImpl = function () { };
 
+IpInterfaceImpl.prototype.save = function (params) {
+  return saveFrontendRef({ipInterface: true}, params.sealFor);
+};
+
 IpInterfaceImpl.prototype.listenTcp = function (portNum, port) {
   return new Promise(function (resolve, reject) {
     var resolved = false;
@@ -180,6 +184,10 @@ var addressType = function (address) {
 };
 
 IpNetworkImpl = function () { };
+
+IpNetworkImpl.prototype.save = function (params) {
+  return saveFrontendRef({ipNetwork: true}, params.sealFor);
+};
 
 IpNetworkImpl.prototype.getRemoteHost = function (address) {
   return {host: new IpRemoteHostImpl(address)};

@@ -1102,9 +1102,7 @@ aside #social>p {
   background-color: #396F9E;
 }
 
-#admin-settings-save,
-#admin-settings-send-test,
-#admin-settings-send-toggle {
+#admin-settings button {
   font-family: inherit;
   font-size: inherit;
   font-weight: 600;

@@ -1,7 +1,7 @@
 Accounts.oauth = {};
 
 var services = {};
-var servicesDep = new Deps.Dependency;
+var servicesDep = new Tracker.Dependency;
 
 // Helper for registering OAuth based accounts packages.
 // On the server, adds an index to the user collection.

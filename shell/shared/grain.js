@@ -77,7 +77,7 @@ if (Meteor.isServer) {
     // Allows the client side to map a raw token to its entry in ApiTokens.
 
     var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
-    var apiToken = ApiTokens.findOne({_id: hashedToken});
+    var apiToken = ApiTokens.findOne({_id: hashedToken}, {fields: {grainId: 1, userId: 1}});
     if (!apiToken || (apiToken.owner && !("webkey" in apiToken.owner))) {
       this.added("tokenInfo", token, {invalidToken: true});
     } else {

@@ -18,14 +18,6 @@
 
 var DEFAULT_TITLE = "Sandstorm";
 
-Meteor.methods({
-  finishPowerboxOffer: function (sessionId) {
-    check(sessionId, String);
-
-    Sessions.update({_id: sessionId, userId: Meteor.userId()}, {$unset: {powerboxView: null}});
-  }
-});
-
 if (Meteor.isServer) {
   var Crypto = Npm.require("crypto");
 

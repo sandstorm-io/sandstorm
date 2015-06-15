@@ -85,6 +85,11 @@ Meteor.methods({
     }});
     var sturdyRef = waitPromise(save).sturdyRef;
     return sturdyRef.toString();
+  },
+  finishPowerboxOffer: function (sessionId) {
+    check(sessionId, String);
+
+    Sessions.update({_id: sessionId, userId: Meteor.userId()}, {$unset: {powerboxView: null}});
   }
 });
 

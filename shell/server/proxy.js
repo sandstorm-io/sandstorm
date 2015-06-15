@@ -252,7 +252,7 @@ function validateApiToken (apiToken) {
     }
   }
 
-  if (apiToken.objectId) {
+  if (apiToken.objectId || apiToken.frontendRef) {
     throw new Meteor.Error(403, "ApiToken refers to a non-webview Capability.");
   }
 }

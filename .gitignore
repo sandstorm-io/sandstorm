@@ -27,3 +27,8 @@ bundle/
 .vagrant/
 phantomjsdriver.log
 selenium-debug.log
+src/sandstorm/*.capnp.c++
+src/sandstorm/*.capnp.h
+tests/assets/*
+tests/nightwatch.tmp.json
+tests/screenshots/

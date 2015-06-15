@@ -80,6 +80,10 @@ function hashSturdyRef(sturdyRef) {
   return Crypto.createHash("sha256").update(sturdyRef).digest("base64");
 }
 
+function generateSturdyRef() {
+  return Random.secret();
+}
+
 Meteor.methods({
   dismissNotification: function (notificationId) {
     // This will remove notifications from the database and from view of the user.
@@ -115,7 +119,7 @@ NotificationHandle.prototype.close = function () {
 NotificationHandle.prototype.save = function (params) {
   var self = this;
   return inMeteor(function () {
-    var sturdyRef = new Buffer(Random.id(20));
+    var sturdyRef = new Buffer(generateSturdyRef());
     var hashedSturdyRef = hashSturdyRef(sturdyRef);
     ApiTokens.insert({
       _id: hashedSturdyRef,
@@ -129,16 +133,14 @@ NotificationHandle.prototype.save = function (params) {
   });
 };
 
-function restoreInternal(sturdyRef, ownerPattern) {
+restoreInternal = function (sturdyRef, ownerPattern) {
   // Restores `sturdyRef`, checking first that its owner matches `ownerPattern`.
-
   var hashedSturdyRef = hashSturdyRef(sturdyRef);
   var token = ApiTokens.findOne(hashedSturdyRef);
   if (!token) {
     throw new Error("No token found to restore");
   }
   check(token.owner, ownerPattern);
-
   if (token.frontendRef) {
     if (token.frontendRef.notificationHandle) {
       var notificationId = token.frontendRef.notificationHandle;
@@ -147,13 +149,16 @@ function restoreInternal(sturdyRef, ownerPattern) {
       throw new Error("Unknown frontend token type.");
     }
   } else if (token.objectId) {
+    if (token.objectId.appRef) {
+      token.objectId.appRef = new Buffer(token.objectId.appRef);
+    }
     return useGrain(token.grainId, function (supervisor) {
       return supervisor.restore(token.objectId);
     });
   } else {
     throw new Error("Unknown token type.");
   }
-}
+};
 
 SandstormCoreImpl.prototype.restore = function (sturdyRef) {
   var self = this;
@@ -205,7 +210,7 @@ SandstormCoreImpl.prototype.drop = function (sturdyRef) {
 SandstormCoreImpl.prototype.makeToken = function (ref, owner) {
   var self = this;
   return inMeteor(function () {
-    var sturdyRef = new Buffer(Random.id(20));
+    var sturdyRef = new Buffer(generateSturdyRef());
     var hashedSturdyRef = hashSturdyRef(sturdyRef);
     ApiTokens.insert({
       _id: hashedSturdyRef,

@@ -267,6 +267,12 @@ limitations under the License.
       {{#if displayWebkeyButton}}
         <button id="showApiToken" title="Get Webkey">Get&nbsp;Webkey</button>
       {{/if}}
+      {{#if showPowerboxRequest}}
+        <div class="powerboxIcon">P</div>
+      {{/if}}
+      {{#if showPowerboxOffer}}
+        <div class="powerboxIcon">P</div>
+      {{/if}}
     </div>
   </div>
 
@@ -420,6 +426,29 @@ limitations under the License.
   <div id="share-grain-popup-closer" class="popup-closer"
       style="{{#if showShareGrain}}{{else}}display: none{{/if}}">
   </div>
+
+  {{#if showPowerboxRequest}}
+  <div id="powerbox-request-popup" class="popup">
+    <h3>Powerbox Request</h3>
+    <div>
+      <form id="powerbox-request-form">
+        <label>Please input an api token: </label><input name="token" type="text" id="powerbox-request-input">
+        <button>Import token</button>
+      </form>
+    </div>
+  </div>
+  <div id="powerbox-request-popup-closer" class="popup-closer"></div>
+  {{/if}}
+
+  {{#if showPowerboxOffer}}
+  <div id="powerbox-offer-popup" class="popup">
+    <h3>Powerbox Offer</h3>
+    <div>
+      <input type="text" class="autoSelect" value="{{powerboxOfferUrl}}" readonly>
+    </div>
+  </div>
+  <div id="powerbox-offer-popup-closer" class="popup-closer"></div>
+  {{/if}}
 
   <div id="app" class="main-content">
     {{#if error}}

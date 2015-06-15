@@ -602,6 +602,24 @@ svg {
   width: 450px;
 }
 
+#powerbox-offer-popup,
+#powerbox-request-popup {
+  left: 250px;
+  width: 450px;
+}
+
+#powerbox-offer-popup h3,
+#powerbox-request-popup > h3 {
+  margin-top: 0px;
+}
+
+.powerboxIcon {
+  font-size: 32px;
+  display: inline;
+  position: fixed;
+  margin-left: 2px;
+}
+
 div.popup {
   position: fixed;
   top: 32px;

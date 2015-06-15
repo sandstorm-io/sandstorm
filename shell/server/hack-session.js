@@ -25,7 +25,9 @@ var Capnp = Npm.require("capnp");
 
 var EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 var HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
+var PowerboxCapability = Capnp.importSystem("sandstorm/grain.capnp").PowerboxCapability;
 var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
+var SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
 var IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
 var EmailSendPort = EmailRpc.EmailSendPort;
 
@@ -34,19 +36,67 @@ var Url = Npm.require("url");
 var ROOT_URL = Url.parse(process.env.ROOT_URL);
 HOSTNAME = ROOT_URL.hostname;
 
-function SessionContextImpl(grainId) {
+function SessionContextImpl(grainId, sessionId) {
   this.grainId = grainId;
+  this.sessionId = sessionId;
 }
 
-function HackSessionContextImpl(grainId) {
-  SessionContextImpl.call(this, grainId);
+SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
+  // TODO(someday): do something with requiredPermissions
+  var self = this;
+  return inMeteor((function () {
+    var castedCap = cap.castAs(SystemPersistent);
+    var save = castedCap.save();
+    var sturdyRef = waitPromise(save).sturdyRef;
+    Sessions.update({_id: self.sessionId}, {$set: {
+      powerboxView: {
+        offer: ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef
+      }
+    }});
+  }));
+};
+
+Meteor.methods({
+  finishPowerboxRequest: function (webkeyUrl, grainId) {
+    check(webkeyUrl, String);
+    check(grainId, String);
+
+    var parsedWebkey = Url.parse(webkeyUrl.trim());
+    if (parsedWebkey.host !== makeWildcardHost("api")) {
+      console.log(parsedWebkey.hostname, makeWildcardHost("api"));
+      throw new Meteor.Error(500, "Hostname does not match this server. External webkeys are not " +
+        "supported (yet)");
+    }
+
+    var token = parsedWebkey.hash;
+    if (!token) {
+      throw new Meteor.Error(500, "Invalid webkey. You must pass in the full webkey, " +
+        "including domain name and hash fragment");
+    }
+    token = token.slice(1);
+
+    var cap = waitPromise(restoreInternal(token, {webkey: Match.Any})).cap;
+    var castedCap = cap.castAs(SystemPersistent);
+    var save = castedCap.save({grain: {
+      grainId: grainId,
+      saveLabel: {
+        defaultText: "Requested Powerbox Capability"
+      }
+    }});
+    var sturdyRef = waitPromise(save).sturdyRef;
+    return sturdyRef.toString();
+  }
+});
+
+function HackSessionContextImpl(grainId, sessionId) {
+  SessionContextImpl.call(this, grainId, sessionId);
 }
 
 HackSessionContextImpl.prototype = Object.create(SessionContextImpl.prototype);
 HackSessionContextImpl.prototype.constructor = HackSessionContextImpl;
 
-makeHackSessionContext = function (grainId) {
-  return new Capnp.Capability(new HackSessionContextImpl(grainId), HackSessionContext);
+makeHackSessionContext = function (grainId, sessionId) {
+  return new Capnp.Capability(new HackSessionContextImpl(grainId, sessionId), HackSessionContext);
 };
 
 var HOSTNAME_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";

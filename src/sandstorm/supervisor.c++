@@ -1555,6 +1555,35 @@ void SupervisorMain::DefaultSystemConnector::checkIfAlreadyRunning() const {
   KJ_UNREACHABLE;
 };
 
+typedef capnp::RealmGateway<capnp::Data, capnp::AnyPointer, ApiTokenOwner,
+                            capnp::AnyPointer> SupervisorRealmGateway;
+
+class SupervisorRealmGatewayImpl final: public SupervisorRealmGateway::Server {
+public:
+  explicit SupervisorRealmGatewayImpl(SandstormCore::Client&& sandstormCore)
+    : sandstormCore(kj::mv(sandstormCore)) {}
+
+  kj::Promise<void> import(ImportContext context) override {
+    auto cap = context.getParams().getCap().castAs<AppPersistent<> >();
+    auto owner = context.getParams().getParams().getSealFor();
+    return cap.saveRequest().send()
+        .then([this, owner, context](auto response) mutable {
+      auto req = sandstormCore.makeTokenRequest();
+      req.getRef().setAppRef(response.getObjectId());
+      req.setOwner(owner);
+      return req.send().then([context](auto response) mutable {
+        context.getResults().setSturdyRef(response.getToken());
+      });
+     });
+  }
+
+  kj::Promise<void> export_(ExportContext context) override {
+    KJ_FAIL_REQUIRE("Cannot call save() on capabilities across realms. Use SandstormApi.save().");
+  }
+private:
+  SandstormCore::Client sandstormCore;
+};
+
 static void decrementWakelock() {
   --sandstorm::wakelockCount;
   if (sandstorm::wakelockCount == 0) {
@@ -1685,13 +1714,19 @@ public:
 
 //  }
 
-//  kj::Promise<void> restore(RestoreContext context) override {
+  kj::Promise<void> restore(RestoreContext context) override {
+    auto req = sandstormCore.restoreRequest();
+    req.setToken(context.getParams().getToken());
+    return req.send().then([context](auto args) mutable {
+      context.getResults().setCap(args.getCap());
+    });
+  }
 
-//  }
-
-//  kj::Promise<void> drop(DropContext context) override {
-
-//  }
+  kj::Promise<void> drop(DropContext context) override {
+    auto req = sandstormCore.dropRequest();
+    req.setToken(context.getParams().getToken());
+    return req.send().then([](auto args) {});
+  }
 
 //  kj::Promise<void> deleted(DeletedContext context) override {
 
@@ -1848,11 +1883,20 @@ public:
     ensureStarted();
     auto objectId = context.getParams().getRef();
 
-    if (objectId.which() == SupervisorObjectId<>::WAKE_LOCK_NOTIFICATION) {
-      context.getResults().setCap(wakelockSet.restore(objectId.getWakeLockNotification()));
-      return kj::READY_NOW;
-    } else {
-      KJ_FAIL_REQUIRE("Supervisor can only restore wakelocks for now.");
+    switch (objectId.which()) {
+      case SupervisorObjectId<>::WAKE_LOCK_NOTIFICATION: {
+        context.getResults().setCap(wakelockSet.restore(objectId.getWakeLockNotification()));
+        return kj::READY_NOW;
+      }
+      case SupervisorObjectId<>::APP_REF: {
+        auto req = mainView.castAs<MainView<>>().restoreRequest();
+        req.setObjectId(objectId.getAppRef());
+        return req.send().then([context](auto args) mutable {
+          context.getResults().setCap(args.getCap());
+        });
+      }
+      default:
+        KJ_FAIL_REQUIRE("Unknown objectId type");
     }
   }
 
@@ -2100,6 +2144,8 @@ auto SupervisorMain::DefaultSystemConnector::run(
 
   auto coreRedirector = kj::refcounted<CapRedirector>();
   capnp::Capability::Client coreCap = kj::addRef(*coreRedirector);
+  SupervisorRealmGateway::Client gateway = kj::heap<SupervisorRealmGatewayImpl>(
+    coreCap.castAs<SandstormCore>());
   // Compute grain size and watch for changes.
   DiskUsageWatcher diskWatcher(ioContext.unixEventPort);
   auto diskWatcherTask = diskWatcher.init();
@@ -2111,7 +2157,7 @@ auto SupervisorMain::DefaultSystemConnector::run(
   capnp::TwoPartyVatNetwork appNetwork(*appConnection, capnp::rpc::twoparty::Side::SERVER);
   WakelockSet wakelockSet(grainId, coreCap.castAs<SandstormCore>());
   auto server = capnp::makeRpcServer(appNetwork, kj::heap<SandstormApiImpl>(wakelockSet, grainId,
-      coreCap.castAs<SandstormCore>()));
+      coreCap.castAs<SandstormCore>()), kj::mv(gateway));
 
   // Get the app's UiView by restoring a null SturdyRef from it.
   capnp::MallocMessageBuilder message;

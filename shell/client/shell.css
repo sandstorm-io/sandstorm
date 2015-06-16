@@ -613,6 +613,10 @@ svg {
   margin-top: 0px;
 }
 
+#powerbox-request-popup .error {
+  color: red;
+}
+
 .powerboxIcon {
   font-size: 32px;
   display: inline;

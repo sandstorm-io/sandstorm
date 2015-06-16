@@ -435,6 +435,9 @@ limitations under the License.
         <label>Please input an api token: </label><input name="token" type="text" id="powerbox-request-input">
         <button>Import token</button>
       </form>
+      {{#if powerboxRequestError}}
+      <div class="error">{{powerboxRequestError}}</div>
+      {{/if}}
     </div>
   </div>
   <div id="powerbox-request-popup-closer" class="popup-closer"></div>

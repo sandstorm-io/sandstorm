@@ -75,7 +75,13 @@ Meteor.methods({
     }
     token = token.slice(1);
 
-    var cap = waitPromise(restoreInternal(token, {webkey: Match.Any})).cap;
+    var cap;
+    try {
+      cap = waitPromise(restoreInternal(token,
+                                        Match.Optional({webkey: Match.Optional(Match.Any)}))).cap;
+    } catch (err) {
+      throw new Meteor.Error(500, err.toString());
+    }
     var castedCap = cap.castAs(SystemPersistent);
     var save = castedCap.save({grain: {
       grainId: grainId,

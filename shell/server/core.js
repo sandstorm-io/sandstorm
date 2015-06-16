@@ -116,21 +116,21 @@ NotificationHandle.prototype.close = function () {
   });
 };
 
-NotificationHandle.prototype.save = function (params) {
-  var self = this;
+saveFrontendRef = function (frontendRef, owner) {
   return inMeteor(function () {
     var sturdyRef = new Buffer(generateSturdyRef());
     var hashedSturdyRef = hashSturdyRef(sturdyRef);
     ApiTokens.insert({
       _id: hashedSturdyRef,
-      frontendRef: {
-        notificationHandle: self.notificationId
-      },
-      owner: params.sealFor,
+      frontendRef: frontendRef,
+      owner: owner,
     });
-    self.saved = true;
     return {sturdyRef: sturdyRef};
   });
+};
+
+NotificationHandle.prototype.save = function (params) {
+  return saveFrontendRef({notificationHandle: this.notificationId}, params.sealFor);
 };
 
 restoreInternal = function (sturdyRef, ownerPattern) {

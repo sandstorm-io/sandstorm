@@ -406,21 +406,16 @@ if (Meteor.isClient) {
       Meteor.call("finishPowerboxRequest", event.target.token.value, this.grainId,
         function (err, token) {
           if (err) {
-            powerboxRequestInfo.source.postMessage(
-              {
-                rpcId: powerboxRequestInfo.rpcId,
-                error: err
-              }, powerboxRequestInfo.origin);
-
+            Session.set("powerbox-request-error", err.toString());
           } else {
             powerboxRequestInfo.source.postMessage(
               {
                 rpcId: powerboxRequestInfo.rpcId,
                 token: token
               }, powerboxRequestInfo.origin);
+            powerboxRequestInfo = null;
+            Session.set("show-powerbox-request", false);
           }
-          powerboxRequestInfo = null;
-          Session.set("show-powerbox-request", false);
         }
       );
     },
@@ -648,6 +643,7 @@ if (Meteor.isClient) {
           return;
         }
         Session.set("show-powerbox-request", true);
+        Session.set("powerbox-request-error", null);
         powerboxRequestInfo = {
           source: event.source,
           rpcId: rpcId,
@@ -723,6 +719,7 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
   result.apiTokenPending = apiToken === "pending";
   result.showApiToken = Session.get("show-api-token");
   result.showPowerboxRequest = Session.get("show-powerbox-request");
+  result.powerboxRequestError = Session.get("powerbox-request-error");
   result.existingTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
                                           forSharing: {$ne: true},
                                           expiresIfUnused: null}).fetch();

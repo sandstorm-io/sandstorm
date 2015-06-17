@@ -72,6 +72,10 @@ var adminInvitesRoute = adminRoute.extend({
   settingsTab: "adminInvites"
 });
 
+var adminCapsRoute = adminRoute.extend({
+  settingsTab: "adminCaps"
+});
+
 Router.map(function () {
   this.route("admin", {
     path: "/admin/settings/:_token?",
@@ -93,6 +97,10 @@ Router.map(function () {
     path: "/admin/invites/:_token?",
     controller: adminInvitesRoute
   });
+  this.route("adminCaps", {
+    path: "/admin/capabilities/:_token?",
+    controller: adminCapsRoute
+  });
   this.route("adminOld", {
     path: "/admin/:_token?",
     controller: adminRoute
@@ -112,6 +120,7 @@ if (Meteor.isClient) {
     state.set("errors", []);
     state.set("fadeAlert", false);
     state.set("successMessage", "Your settings have been saved.");
+    state.set("powerboxOfferUrl", null);
   };
 
   Meteor.startup(function () {
@@ -173,6 +182,9 @@ if (Meteor.isClient) {
     logActive: function () {
       return Iron.controller().state.get("settingsTab") == "adminLog";
     },
+    capsActive: function () {
+      return Iron.controller().state.get("settingsTab") == "adminCaps";
+    },
     getToken: getToken
   });
 
@@ -226,24 +238,6 @@ if (Meteor.isClient) {
       state.set("successMessage", "Email has been sent.");
       Meteor.call("testSend", this.token, document.getElementById("smptUrl").value,
                   document.getElementById("email-test-to").value, handleErrorBound);
-      return false; // prevent form from submitting
-    },
-    "click #offer-ipnetwork": function (event) {
-      var state = Iron.controller().state;
-      resetResult(state);
-      Meteor.call("offerIpNetwork", this.token, function (err, webkey) {
-        state.set("successMessage", "IpNetwork webkey created: " + webkey);
-        handleError.call(state, err);
-      });
-      return false; // prevent form from submitting
-    },
-    "click #offer-ipinterface": function (event) {
-      var state = Iron.controller().state;
-      resetResult(state);
-      Meteor.call("offerIpInterface", this.token, function (err, webkey) {
-        state.set("successMessage", "IpInterface webkey created: " + webkey);
-        handleError.call(state, err);
-      });
       return false; // prevent form from submitting
     },
     "submit #admin-settings-form": function (event) {
@@ -606,6 +600,87 @@ if (Meteor.isClient) {
               .join(""), {use_classes:true});
     }
   });
+
+  Template.adminCaps.onCreated(function () {
+    var state = Iron.controller().state;
+    var token = state.get("token");
+    this.subscribe("adminApiTokens", token);
+  });
+
+  Template.adminCaps.helpers({
+    powerboxOfferUrl: function () {
+      var state = Iron.controller().state;
+      return state.get("powerboxOfferUrl");
+    },
+    caps: function () {
+      return ApiTokens.find({"frontendRef": {$in: [{ipNetwork: true}, {ipInterface: true}]}});
+    },
+    userName: function () {
+      var user = Meteor.users.findOne({_id: this.userId});
+      user = user || Meteor.user();
+      var services = user.services;
+      if (services.github) {
+        return services.github.username;
+      } else if (services.google) {
+        return services.google.email;
+      } else if (services.emailToken) {
+        return services.emailToken.email;
+      } else {
+        return user.profile.name;
+      }
+    },
+    isDisabled: function () {
+      return !this.userId;
+    },
+    userIdOrCurrent: function () {
+      return this.userId || Meteor.userId();
+    }
+  })
+
+  var updateCap = function (capId, userId) {
+    var state = Iron.controller().state;
+    resetResult(state);
+    state.set("successMessage", "Cap's user has been updated.");
+    var handleErrorBound = handleError.bind(state);
+    Meteor.call("adminUpdateCap", state.get("token"), capId, userId, handleErrorBound)
+  }
+
+  Template.adminCaps.events({
+    "click #offer-ipnetwork": function (event) {
+      var state = Iron.controller().state;
+      resetResult(state);
+      state.set("successMessage", "IpNetwork webkey created. See powerbox UI for your webkey.");
+      Meteor.call("offerIpNetwork", this.token, function (err, webkey) {
+        state.set("powerboxOfferUrl", webkey);
+        handleError.call(state, err);
+      });
+      return false; // prevent form from submitting
+    },
+    "click #offer-ipinterface": function (event) {
+      var state = Iron.controller().state;
+      resetResult(state);
+      state.set("successMessage", "IpInterface webkey created. See powerbox UI for your webkey.");
+      Meteor.call("offerIpInterface", this.token, function (err, webkey) {
+        state.set("powerboxOfferUrl", webkey);
+        handleError.call(state, err);
+      });
+      return false; // prevent form from submitting
+    },
+    "click #powerbox-offer-popup-closer": function (event) {
+      var state = Iron.controller().state;
+      return state.set("powerboxOfferUrl", null);
+    },
+    "change select.cap-user": function (event) {
+      var value = event.target.selectedOptions[0].value;
+      var capId = event.target.getAttribute("data-id");
+
+      if (value == "disabled") {
+        updateCap(capId, null);
+      } else {
+        updateCap(capId, value);
+      }
+    },
+  });
 }
 
 if (Meteor.isServer) {
@@ -813,6 +888,11 @@ if (Meteor.isServer) {
         }
       })).sturdyRef;
       return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
+    },
+    adminUpdateCap: function (token, capId, userId) {
+      checkAuth(token);
+
+      ApiTokens.update({_id: capId}, {$set: {userId: userId}});
     }
   });
 
@@ -919,5 +999,12 @@ if (Meteor.isServer) {
 
     // Notify ready.
     this.ready();
+  });
+  Meteor.publish("adminApiTokens", function (token) {
+    if (!(this.userId && isAdminById(this.userId)) && !tokenIsValid(token)) {
+      return [];
+    }
+    return ApiTokens.find({"frontendRef": {$in: [{ipNetwork: true}, {ipInterface: true}]}},
+                          {fields: {frontendRef: 1, created: 1, userId: 1}});
   });
 }

@@ -76,6 +76,11 @@ interface SandstormCore {
   restore @0 (token :Data, requiredPermissions :Grain.PermissionSet) -> (cap :Capability);
   # Restores an API token to a live capability. Fails if this grain is not the token's owner
   # (including if the ref has no owner).
+  #
+  # `requiredPermissions` has the same meaning as in SandstormApi.restore(). Note that the callee
+  # will not only check these requirements, but will automatically ensure that the returned
+  # capability has an appropriate `MembraneRequirement` applied; the caller need not concern
+  # itself with this.
 
   drop @3 (token :Data);
   # Deletes the corresponding API token. See `MainView.drop()` for discussion of dropping.
@@ -96,6 +101,29 @@ interface SandstormCore {
   getOwnerNotificationTarget @2 () -> (owner :Grain.NotificationTarget);
   # Get the notification target to use for notifications relating to the grain itself, e.g.
   # presence of wake locks.
+
+  checkRequirements @4 (requirements :List(MembraneRequirement))
+                    -> (observer :RequirementObserver);
+  # Verifies that all the requirements in the list are met, throwing an exception if one or more
+  # are not met.
+
+  interface RequirementObserver {
+    observe @0 ();
+    # Does not return as long as the requirements remains met. If at some point a requirement is
+    # broken, throws an exception. When implementing a membrane based on this, after an exception
+    # is thrown, the membrane should begin throwing the same exception from all methods called
+    # through it.
+    #
+    # The caller may cancel this call via normal Cap'n Proto cancellation. (The callee must
+    # implement cancellation correctly.)
+    #
+    # Note that the callee may choose to pessimistically throw a DISCONNECTED exception if the
+    # requirements *might* have changed (but might not have). This will naturally force the
+    # application to re-restore() all capabilities which will lead to a full requirement check
+    # being performed. Thus, the implementation of RequirementObserver need not actually remember
+    # the exact requirement list, but only enough information to detect when they _might_ have
+    # been broken.
+  }
 }
 
 struct MembraneRequirement {

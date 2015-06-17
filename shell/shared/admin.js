@@ -495,12 +495,12 @@ if (Meteor.isClient) {
       // before the update.
       if (elem.scrollHeight - elem.scrollTop === elem.clientHeight) {
         // Indeed, so we want to scroll it back to the bottom after the update.
-        Deps.afterFlush(function () { scrollLogToBottom(elem); });
+        Tracker.afterFlush(function () { scrollLogToBottom(elem); });
       }
     } else {
       // No element exists yet, but it's probably about to be created, in which case we definitely
       // want to scroll it.
-      Deps.afterFlush(function () {
+      Tracker.afterFlush(function () {
         var elem2 = document.getElementById("adminLog");
         if (elem2) scrollLogToBottom(elem2);
       });

@@ -176,10 +176,31 @@ interface SandstormApi(AppObjectId) {
   # it). You must use `SandstormApi.save()` so that saved capabilities can be inspected by the
   # user.)
 
-  restore @4 (token :Data) -> (cap :Capability);
+  restore @4 (token :Data, requiredPermissions :PermissionSet) -> (cap :Capability);
   # Given a token previously returned by `save()`, get the capability it pointed to. The returned
   # capability should implement the same interfaces as the one you saved originally, so you can
   # downcast it as appropriate.
+  #
+  # `requiredPermissions` specifies permissions which must be held on *this* grain by the user
+  # who originally introduced this token. This way, if a user of a grain connects the grain to
+  # other resources, but later has their access to the grain revoked, these connections are revoked
+  # as well.
+  #
+  # Consider this example: Alice owns a grain which implements a discussion forum. At some point,
+  # Alice invites Dave to participate in the forum, and she gives him moderator permissions. As
+  # part of being a moderator, Dave arranges to have a notification emailed to him whenever a post
+  # is flagged for moderation. To set this up, the forum app makes a powerbox request for an email
+  # send capability directed to his email address. Later on, Alice decides to demote Dave from
+  # "moderator" status to "participant". At this point, Dave should stop receiving email
+  # notifications; the capability he introduced in the powerbox request should be revoked. Alice
+  # actually has no idea that Dave set up to receive these notifications, so she does not know
+  # to revoke it manually; we want it to happen automatically, or at least we want to be able to
+  # call Alice's attention to it.
+  #
+  # To this end, when the Powerbox request is made through Dave and he chooses a capability, the
+  # returned capability token is tagged as having come from Dave. When the app restore()s the token,
+  # it indicates that whoever intorduced the token must have the "moderator" permission. If Dave
+  # has lost this permission, then the restore() will fail.
 
   drop @5 (token :Data);
   # Deletes the token and frees any resources being held with it. Once drop()ed, you can no longer

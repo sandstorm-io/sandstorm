@@ -202,13 +202,30 @@ ApiTokens = new Mongo.Collection("apiTokens");
 // Each contains:
 //   _id:       A SHA-256 hash of the token.
 //   grainId:   The grain servicing this API. (Not present if the API isn't serviced by a grain.)
-//   userId:    The `_id` of the user (in the users table) to whom this token should be attributed.
-//              The user's current permissions will be presented to the app whenever the token is
-//              restored, so that the app can limit the token to the user's permissions, especially
-//              if they have changed. `userId` is not present if `userInfo` is present.
-//   userInfo:  For API tokens created by the app through HackSessionContext, the UserInfo struct
-//              that should be passed to `newSession()` when exercising this token, in decoded (JS
-//              object) format. This is a temporary hack.
+//   userId:    The `_id` of the user (in the users table) to whom this token should be attributed,
+//              or in other words the ID of the user who *created* the edge in the object graph
+//              which this token represents.
+//
+//              If this token represents a raw UiView, then when the token is restored and used to
+//              create a new session, the requested session permissions will be intersected with
+//              the permissions held by this user, so that you can never use an API token to obtain
+//              permissions that the creating user doesn't have. Additionally, if the field
+//              `roleAssignment` is present (see below), it is also intersected with the set.
+//
+//              The specified `userId` is also the user against which the `requiredPermissions`
+//              parameter of `SandstormApi.restore()` is checked.
+//
+//              If no `userId` field is present, then this token was created not in response to
+//              any user interaction. For exmaple, a grain may have sent a capability to another
+//              grain through a pre-existing Cap'n Proto connection, and the latter grain may have
+//              saved it, creating a new token with no user involved. In this case, no permissions
+//              attenuation is applied, and any permissions requirements passed to `restore()` are
+//              considered met. However, such a token almost certainly has other requirements
+//              listed in the `requirements` field (see below).
+//   userInfo:  *DEPRECATED* For API tokens created by the app through HackSessionContext, the
+//              UserInfo struct that should be passed to `newSession()` when exercising this token,
+//              in decoded (JS object) format. This is a temporary hack. `userId` is never present
+//              when `userInfo` is present.
 //   roleAssignment: If this API token represents a UiView, this field contains a JSON-encoded
 //              Grain.ViewSharingLink.RoleAssignment representing the permissions it carries. These
 //              permissions will be intersected with those held by `userId` when the view is opened.
@@ -237,6 +254,12 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   expiresIfUnused:
 //              Optional Date after which the token, if it has not been used yet, expires.
 //              This field should be cleared on a token's first use.
+//   requirements: List of conditions which must hold for this token to be considered valid.
+//              Semantically, this list specifies the powers which were *used* to originally
+//              create the token. If any condition in the list becomes untrue, then the token must
+//              be considered revoked, and all live refs and sturdy refs obtained transitively
+//              through it must also become revoked. Each item is the JSON serialization of the
+//              `MembraneRequirement` structure defined in `supervisor.capnp`.
 //
 // It is important to note that a token's owner and provider are independent from each other. To
 // illustrate, here is an approximate definition of ApiToken in pseudo Cap'n Proto schema language:
@@ -258,9 +281,10 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //     frontendRef :union {
 //        notificationHandle :Text;
 //     }
-//  }
-//  ...
-//}
+//   }
+//   requirements: List(Supervisor.MembraneRequirement);
+//   ...
+// }
 
 Notifications = new Mongo.Collection("notifications");
 // Notifications for a user.

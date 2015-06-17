@@ -45,8 +45,15 @@ interface Supervisor {
   # Wait until the storage size of the grain is different from `oldSize` and then return the new
   # size. May occasionally return prematurely, with `size` equal to `oldSize`.
 
-  restore @5 (ref :SupervisorObjectId) -> (cap :Capability);
+  restore @5 (ref :SupervisorObjectId, requirements :List(MembraneRequirement))
+          -> (cap :Capability);
   # Wraps `MainView.restore()`. Can also restore capabilities hosted by the supervisor.
+  #
+  # `requirements` lists any conditions which, if they become untrue, should cause the capability --
+  # and any future capabilities which pass through it -- to be revoked. The supervisor creates a
+  # membrane around the returned capability which will be revoked if any of these requirements
+  # fail. Additionally, the membrane will ensure that any capabilities save()d after passing
+  # through this membrane have these requirements applied as well.
 
   drop @6 (ref :SupervisorObjectId);
   # Wraps `MainView.drop()`. Can also drop capabilities hosted by the supervisor.
@@ -66,14 +73,15 @@ interface SandstormCore {
   # after restart. In the meantime, the supervisor should queue any RPCs to this interface and
   # retry them after the front-end has reconnected.
 
-  restore @0 (token :Data) -> (cap :Capability);
+  restore @0 (token :Data, requiredPermissions :Grain.PermissionSet) -> (cap :Capability);
   # Restores an API token to a live capability. Fails if this grain is not the token's owner
   # (including if the ref has no owner).
 
   drop @3 (token :Data);
   # Deletes the corresponding API token. See `MainView.drop()` for discussion of dropping.
 
-  makeToken @1 (ref :SupervisorObjectId, owner :ApiTokenOwner) -> (token :Data);
+  makeToken @1 (ref :SupervisorObjectId, owner :ApiTokenOwner,
+                requirements :List(MembraneRequirement)) -> (token :Data);
   # When the supervisor receives a save() request for a capability hosted by the app, it first
   # calls save() on the underlying capability to get an AppObjectId, then calls makeToken() to
   # convert this to a token which it can then return.
@@ -82,17 +90,36 @@ interface SandstormCore {
   # (outside of the app), it constructs the appropriate `SupervisorObjectId` and passes it to
   # `makeToken()`.
   #
-  # TODO(soon): Someone needs to keep track of the Powerbox introduction that originally connected
-  #   the client to the server, so that we can properly revoke this capability if the user's
-  #   permissions change. For performance reasons (to avoid excess network hops), the supervisor
-  #   (of the server) should keep track of this information. On restore() the supervisor should
-  #   receive this information, it should maintain a membrane to track all capabilities introduced
-  #   through the restored cap, and then on later save() it should associate the newly-saved object
-  #   with the same Powerbox introduction. Similarly, expiration dates need to be propagated.
+  # If any of the conditions listed in `requirements` become untrue, the returned token will be
+  # disabled (cannot be restored).
 
   getOwnerNotificationTarget @2 () -> (owner :Grain.NotificationTarget);
   # Get the notification target to use for notifications relating to the grain itself, e.g.
   # presence of wake locks.
+}
+
+struct MembraneRequirement {
+  # Indicates some condition which, if it becomes untrue, will cause a membrane to be revoked.
+
+  union {
+    tokenValid @0 :Text;
+    # This token is valid only as long as some *other* token is also still valid. `tokenValid`
+    # specifies the `_id` of the other ApiToken.
+
+    permissionsHeld :group {
+      # This token is valid only as long as some specified user holds some specified set of
+      # permissions on some specified grain.
+
+      userId @1 :Text;
+      # The user who must hold the permissions.
+
+      grainId @2 :Text;
+      # The grain on which the permissions must be held.
+
+      permissions @3 :Grain.PermissionSet;
+      # The permissions the user mult hold on the grain.
+    }
+  }
 }
 
 interface SystemPersistent extends(Persistent(Data, ApiTokenOwner)) {
@@ -105,6 +132,11 @@ interface SystemPersistent extends(Persistent(Data, ApiTokenOwner)) {
   # data is an API token. The SHA-256 hash of this token is an ID into the `ApiTokens` collection.
   # The token itself is arbitrary random bytes, not ASCII text (this differs from API tokens
   # created for the purpose of HTTP APIs).
+
+  addRequirements @0 (requirements :MembraneRequirement) -> (cap :SystemPersistent);
+  # Returns a new version of this same capability with the given requirements added to the
+  # conditions under which the capability may be revoked. Usually, the caller then calls `save()`
+  # on the new capability.
 }
 
 interface PersistentHandle extends(SystemPersistent, Util.Handle) {}

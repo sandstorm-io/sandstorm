@@ -779,7 +779,14 @@ if (Meteor.isServer) {
       return { sent: true };
     },
     offerIpNetwork: function (token) {
-      checkAuth(token);
+      if (!isAdmin()) {
+        if (tokenIsValid(token)) {
+          throw new Meteor.Error(403, "Offering IpNetwork is only allowed for logged in users " +
+            "(a token is not sufficient). Please sign in with an admin account")
+        } else {
+          throw new Meteor.Error(403, "User must be admin.");
+        }
+      }
 
       var ipNetwork = new IpNetworkImpl(Meteor.userId());
       var sturdyRef = waitPromise(ipNetwork.save({
@@ -790,7 +797,14 @@ if (Meteor.isServer) {
       return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
     },
     offerIpInterface: function (token) {
-      checkAuth(token);
+      if (!isAdmin()) {
+        if (tokenIsValid(token)) {
+          throw new Meteor.Error(403, "Offering IpInterface is only allowed for logged in users " +
+            "(a token is not sufficient). Please sign in with an admin account")
+        } else {
+          throw new Meteor.Error(403, "User must be admin.");
+        }
+      }
 
       var ipInterface = new IpInterfaceImpl(Meteor.userId());
       var sturdyRef = waitPromise(ipInterface.save({

@@ -37,10 +37,12 @@ ByteStreamConnection.prototype.write = function (data) {
 // expectSize not implemented
 // ByteStreamConnection.prototype.expectSize = function (size) { }
 
-IpInterfaceImpl = function () { };
+IpInterfaceImpl = function (userId) {
+  this.userId = userId;
+};
 
 IpInterfaceImpl.prototype.save = function (params) {
-  return saveFrontendRef({ipInterface: true}, params.sealFor);
+  return saveFrontendRef({ipInterface: true}, params.sealFor, this.userId);
 };
 
 IpInterfaceImpl.prototype.listenTcp = function (portNum, port) {
@@ -183,10 +185,12 @@ var addressType = function (address) {
   return type;
 };
 
-IpNetworkImpl = function () { };
+IpNetworkImpl = function (userId) {
+  this.userId = userId;
+};
 
 IpNetworkImpl.prototype.save = function (params) {
-  return saveFrontendRef({ipNetwork: true}, params.sealFor);
+  return saveFrontendRef({ipNetwork: true}, params.sealFor, this.userId);
 };
 
 IpNetworkImpl.prototype.getRemoteHost = function (address) {

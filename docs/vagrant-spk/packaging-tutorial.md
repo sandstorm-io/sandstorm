@@ -6,13 +6,18 @@ This tutorial will show you how to package an app for
 [Sandstorm](https://sandstorm.io) in five minutes. Going through
 this tutorial, you'll learn:
 
-* How to take an existing web application and turn into a Sandstorm package
-  (SPK). We'll use a PHP example; Sandstorm supports any app that runs on Linux,
-  such as Meteor, Python, Node, PHP, C++, and more.
+* How to take an existing web application and turn into a Sandstorm
+  package (SPK).
 
 * How our packaging helper (`vagrant-spk`) lets you edit the app's files on your
   main operating system (Mac or Linux; working on Windows support), even though Sandstorm apps always
   run on Linux.
+
+The tutorial uses a PHP app as an example. **Sandstorm supports any
+programming language that runs on Linux**, not just PHP, such as
+Meteor, Python, Rails, Node, PHP, C++, Go, Rust, and more. Read about
+[vagrant-spk's platform stacks](platform-stacks.md) to see how to optimize
+your package for your app's programming language.
 
 Once you've worked through this tutorial, look in the **Next steps** section
 at the bottom of this document to learn more about how to improve the speed

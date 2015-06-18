@@ -202,26 +202,13 @@ ApiTokens = new Mongo.Collection("apiTokens");
 // Each contains:
 //   _id:       A SHA-256 hash of the token.
 //   grainId:   The grain servicing this API. (Not present if the API isn't serviced by a grain.)
-//   userId:    The `_id` of the user (in the users table) to whom this token should be attributed,
-//              or in other words the ID of the user who *created* the edge in the object graph
-//              which this token represents.
-//
-//              If this token represents a raw UiView, then when the token is restored and used to
-//              create a new session, the requested session permissions will be intersected with
-//              the permissions held by this user, so that you can never use an API token to obtain
-//              permissions that the creating user doesn't have. Additionally, if the field
-//              `roleAssignment` is present (see below), it is also intersected with the set.
-//
-//              The specified `userId` is also the user against which the `requiredPermissions`
-//              parameter of `SandstormApi.restore()` is checked.
-//
-//              If no `userId` field is present, then this token was created not in response to
-//              any user interaction. For exmaple, a grain may have sent a capability to another
-//              grain through a pre-existing Cap'n Proto connection, and the latter grain may have
-//              saved it, creating a new token with no user involved. In this case, no permissions
-//              attenuation is applied, and any permissions requirements passed to `restore()` are
-//              considered met. However, such a token almost certainly has other requirements
-//              listed in the `requirements` field (see below).
+//   userId:    For UiView capabilities, this is the user for whom the view is attenuated. That
+//              is, the UiView's newSession() method will intersect the requested permissions with
+//              this user's permissions before forwarding on to the underlying app. If `userId` is
+//              not present, then no user attenuation is applied, i.e. this is a raw UiView as
+//              implemented by the app. (The `roleAssignment` field, below, may still apply.)
+//              Note that this is NOT the user against whom the `requiredPermissions` parameter of
+//              `SandstormApi.restore()` is checked; that would be `owner.grain.introducerUser`.
 //   userInfo:  *DEPRECATED* For API tokens created by the app through HackSessionContext, the
 //              UserInfo struct that should be passed to `newSession()` when exercising this token,
 //              in decoded (JS object) format. This is a temporary hack. `userId` is never present

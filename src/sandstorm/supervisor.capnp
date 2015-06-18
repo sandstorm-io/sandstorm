@@ -145,7 +145,7 @@ struct MembraneRequirement {
       # The grain on which the permissions must be held.
 
       permissions @3 :Grain.PermissionSet;
-      # The permissions the user mult hold on the grain.
+      # The permissions the user must hold on the grain.
     }
   }
 }
@@ -161,7 +161,7 @@ interface SystemPersistent extends(Persistent(Data, ApiTokenOwner)) {
   # The token itself is arbitrary random bytes, not ASCII text (this differs from API tokens
   # created for the purpose of HTTP APIs).
 
-  addRequirements @0 (requirements :MembraneRequirement) -> (cap :SystemPersistent);
+  addRequirements @0 (requirements :List(MembraneRequirement)) -> (cap :SystemPersistent);
   # Returns a new version of this same capability with the given requirements added to the
   # conditions under which the capability may be revoked. Usually, the caller then calls `save()`
   # on the new capability.
@@ -195,6 +195,13 @@ struct ApiTokenOwner {
 
       saveLabel @2 :Util.LocalizedText;
       # As passed to `save()` in Sandstorm's Persistent interface.
+
+      introducerUser @5 :Text;
+      # The user ID (`_id` in the users table) of the user whose powerbox action caused the grain
+      # to receive this token. This is the user against which the `requiredPermissions` parameter
+      # to `restore()` will be checked. This field is only intended to be filled in by the
+      # front-end during a powerbox request; a regular `save()` call produces a capability that
+      # has no "introducer".
     }
 
     internet @3 :AnyPointer;

@@ -199,7 +199,7 @@ interface SandstormApi(AppObjectId) {
   #
   # To this end, when the Powerbox request is made through Dave and he chooses a capability, the
   # returned capability token is tagged as having come from Dave. When the app restore()s the token,
-  # it indicates that whoever intorduced the token must have the "moderator" permission. If Dave
+  # it indicates that whoever introduced the token must have the "moderator" permission. If Dave
   # has lost this permission, then the restore() will fail.
 
   drop @5 (token :Data);

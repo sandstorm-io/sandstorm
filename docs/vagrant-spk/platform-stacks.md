@@ -35,8 +35,6 @@ details.
 
 ## Meteor platform stack
 
-### Meteor
-
 For a Meteor app, keep the following in mind:
 
 * Get a copy of the app code wherever you like. Alternatively, run `meteor create --example todos`

@@ -23,7 +23,7 @@ own server? This is the place to start.
 
 ## App packaging
 
-If you learn the concepts and skills to take you beyond the
+If you want to learn the concepts and skills that can take you beyond the
 introductory packaging tutorial, check out the following:
 
 * Sandstorm platform overview: See the [Sandstorm App Developer Handbook](https://github.com/sandstorm-io/sandstorm/wiki/Sandstorm-App-Developer-Handbook) for information on app isolation, granularity, writable `/var`, and more.

@@ -864,9 +864,9 @@ void SupervisorMain::setupFilesystem() {
   // a few safe device nodes.  var is the 'var/sandbox' directory inside the grain.
   //
   // Now for the tricky part: the supervisor needs to be able to see a little bit more.
-  // In particular, it needs to be able to see the entire var directory inside the grain.
-  // We arrange for the the supervisor's special directory to be ".", even though it's
-  // not mounted anywhere.
+  // In particular, it needs to be able to see the entire directory designated for the grain,
+  // whereas the app only sees the "sandbox" subdirectory. We arrange for the the supervisor's
+  // special directory to be ".", even though it's not mounted anywhere.
 
   // Set up the supervisor's directory. We immediately detach it from the mount tree, only
   // keeping a file descriptor, which we can later access via fchdir(). This prevents the
@@ -940,7 +940,9 @@ void SupervisorMain::setupFilesystem() {
   KJ_SYSCALL(umount2(".", MNT_DETACH));
   KJ_SYSCALL(fchdir(supervisorDir));
 
-  // Now '.' is the grain's var and '/' is the sandbox directory.
+  // Now "." is the grain's storage directory and "/" is the sandbox directory, i.e.
+  // "/" == "./sandbox". Yes, this means the root directory is _below_ the current directory.
+  // Crazy.
 }
 
 void SupervisorMain::setupStdio() {
@@ -1775,26 +1777,32 @@ public:
       : eventPort(eventPort), mainView(kj::mv(mainView)), diskWatcher(diskWatcher),
         wakelockSet(wakelockSet) {}
 
-  kj::Promise<void> getMainView(GetMainViewContext context) {
+  kj::Promise<void> getMainView(GetMainViewContext context) override {
     context.getResults(capnp::MessageSize {4, 1}).setView(mainView);
     return kj::READY_NOW;
   }
 
-  kj::Promise<void> keepAlive(KeepAliveContext context) {
+  kj::Promise<void> keepAlive(KeepAliveContext context) override {
     sandstorm::keepAlive = true;
     return kj::READY_NOW;
   }
 
-  kj::Promise<void> shutdown(ShutdownContext context) {
+  kj::Promise<void> syncStorage(SyncStorageContext context) override {
+    auto fd = raiiOpen(".", O_RDONLY | O_DIRECTORY);
+    KJ_SYSCALL(syncfs(fd));
+    return kj::READY_NOW;
+  }
+
+  kj::Promise<void> shutdown(ShutdownContext context) override {
     killChildAndExit(0);
   }
 
-  kj::Promise<void> getGrainSize(GetGrainSizeContext context) {
+  kj::Promise<void> getGrainSize(GetGrainSizeContext context) override {
     context.getResults(capnp::MessageSize { 2, 0 }).setSize(diskWatcher.getSize());
     return kj::READY_NOW;
   }
 
-  kj::Promise<void> getGrainSizeWhenDifferent(GetGrainSizeWhenDifferentContext context) {
+  kj::Promise<void> getGrainSizeWhenDifferent(GetGrainSizeWhenDifferentContext context) override {
     auto oldSize = context.getParams().getOldSize();
     context.releaseParams();
     return diskWatcher.getSizeWhenChanged(oldSize).then([context](uint64_t size) mutable {
@@ -1802,7 +1810,7 @@ public:
     });
   }
 
-  kj::Promise<void> watchLog(WatchLogContext context) {
+  kj::Promise<void> watchLog(WatchLogContext context) override {
     auto params = context.getParams();
     auto logFile = sandstorm::raiiOpen("log", O_RDONLY | O_CLOEXEC);
 

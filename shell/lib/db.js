@@ -231,6 +231,10 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //       notificationHandle: A `Handle` for an ongoing notification, as returned by
 //                           `NotificationTarget.addOngoing`. The value is an `_id` from the
 //                           `Notifications` collection.
+//   parentToken: If present, then this token represents exactly the capability represented by
+//              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
+//              by `roleAssignment` (if present). None of `grainId`, `userId`, `userInfo`,
+//              `objectId`, or `frontendRef` are present when `parentToken` is present.
 //   petname:   Human-readable label for this access token, useful for identifying tokens for
 //              revocation. This should be displayed when visualizing incoming capabilities to
 //              the grain identified by `grainId`.
@@ -268,6 +272,10 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //     }
 //     frontendRef :union {
 //        notificationHandle :Text;
+//     }
+//     child :group {
+//       parentToken :Text;
+//       roleAssignment :Maybe(RoleAssignment);
 //     }
 //   }
 //   requirements: List(Supervisor.MembraneRequirement);

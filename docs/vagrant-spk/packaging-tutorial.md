@@ -296,8 +296,7 @@ for other web frameworks, check out the **What's next** section below.
 
 With `vagrant-spk`, before you can develop a second app, you must stop
 the virtual machine created as part of developing the first one.  This
-is because the `vagrant-spk` virtual machine uses always uses port
-6080.
+is because the `vagrant-spk` virtual machine always uses port 6080.
 
 In our case, we're done using the virtual machine running this app, so
 it's safe to stop it. Run this command:

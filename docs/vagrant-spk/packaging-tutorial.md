@@ -162,8 +162,7 @@ the experience of using your app as other users.
 Over the next few steps, we will prepare the app so that it is visible in that
 Sandstorm instance.
 
-(**Editor's note**: We should make localhost:6080 work, so that people don't
-have to learn about `local.sandstorm.io`.)
+<!--(**Editor's note**: We should make localhost:6080 work, so that people don't have to learn about `local.sandstorm.io`.)-->
 
 
 ## Use vagrant-spk to create a package definition file for your app
@@ -289,8 +288,7 @@ Now, you can upload this to your development Sandstorm instance by clicking
 To learn how to go further and share this SPK file, or what you should know
 for other web frameworks, check out the **What's next** section below.
 
-(**Editor's note**: IMHO vagrant-spk pack should auto-guess a reasonable package
-filename.)
+<!--(**Editor's note**: IMHO vagrant-spk pack should auto-guess a reasonable package filename.)-->
 
 # What's next
 

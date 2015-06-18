@@ -1,0 +1,12 @@
+site_name: Sandstorm
+pages:
+- "Home": "index.md"
+- Intro:
+    - "Overview": "overview.md"
+    - "Installation": "install.md"
+- vagrant-spk:
+    - "Overview": "vagrant-spk/index.md"
+    - "Installation": "vagrant-spk/installation.md"
+    - "Packaging tutorial": "vagrant-spk/packaging-tutorial.md"
+    - "Understanding & customizing": "vagrant-spk/customizing.md"
+    - "Platform stacks": "vagrant-spk/platform-stacks.md"

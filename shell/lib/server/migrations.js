@@ -99,10 +99,10 @@ function migrateToLatest() {
 
   for (var i = start ; i < MIGRATIONS.length ; i++) {
     // Apply migration i, then record that migration i was successfully run.
-    console.log("Applying migration " + i);
+    console.log("Applying migration " + (i+1));
     MIGRATIONS[i]();
     Migrations.update({_id: "migrations_applied"}, {$set: {value: i+1}});
-    console.log("Applied migration " + i);
+    console.log("Applied migration " + (i+1));
   }
 }
 

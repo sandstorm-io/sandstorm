@@ -290,6 +290,36 @@ for other web frameworks, check out the **What's next** section below.
 
 <!--(**Editor's note**: IMHO vagrant-spk pack should auto-guess a reasonable package filename.)-->
 
+# Stop the virtual machine running your app and Sandstorm
+
+With `vagrant-spk`, you can only be developing one app at a time. This
+is because the virtual machine uses always uses port 6080.
+
+In our case, we're done using the virtual machine running this app, so
+it's safe to stop it. Run this command:
+
+```
+vagrant-spk halt
+```
+
+(You should be running it from the `~/projects/php-app-to-package-for-sandstorm` directory.)
+
+Now port 6080 is available for other app packaging projects. If you ever want to work on
+this app's packaging again, you can bring it up by running:
+
+```
+vagrant-spk up
+```
+
+If you ever are confused about which Vagrant virtual machines are
+running, you can try this command:
+
+```
+vagrant global-status
+```
+
+(**Note**: It's `vagrant` here, not `vagrant-spk`.)
+
 # What's next
 
 Now that you've seen the basics of how a Sandstorm app works, you

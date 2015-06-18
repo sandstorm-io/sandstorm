@@ -113,6 +113,8 @@ command:
 vagrant-spk up
 ```
 
+(You should be running it from the `~/projects/php-app-to-package-for-sandstorm` directory.)
+
 You will see a _lot_ of messages printed out. Some of them are not necessary;
 we're working on tidying up the scripts to minimize the noise.
 
@@ -177,6 +179,8 @@ Let's use `vagrant-spk` to create a package definition file by running:
 vagrant-spk init
 ```
 
+(You should be running it from the `~/projects/php-app-to-package-for-sandstorm` directory.)
+
 This will create a new file called `.sandstorm/sandstorm-pkdef.capnp`.
 
 We'll make two changes. First, we'll give our app a **title** of
@@ -216,6 +220,8 @@ Make this app available in dev mode by doing:
 ```
 vagrant-spk dev
 ```
+
+(You should be running it from the `~/projects/php-app-to-package-for-sandstorm` directory.)
 
 On the terminal, you will see a message like:
 
@@ -257,6 +263,8 @@ vanishing from the list of apps on the left.
 To create the SPK file, run:
 
 ```vagrant-spk pack ~/projects/package.spk```
+
+(You should be running it from the `~/projects/php-app-to-package-for-sandstorm` directory.)
 
 This will take a few moments, and once it is done, there will be a file in
 `~/projects/package.spk` that contains the full app.

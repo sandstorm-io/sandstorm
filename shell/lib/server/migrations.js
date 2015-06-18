@@ -75,8 +75,6 @@ var denormalizeInviteInfo = function() {
   });
 }
 
-Meteor.startup(denormalizeInviteInfo);
-
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.

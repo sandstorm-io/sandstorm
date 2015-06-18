@@ -639,7 +639,7 @@ function apiUseBasicAuth(req) {
   // For clients with no convenient way to add an "Authorization: Bearer" header, we allow the token
   // to be transmitted as a basic auth password.
   var agent = req.headers["user-agent"];
-  if (agent && agent.slice(0, 4) === "git/") {
+  if (agent && ((agent.slice(0, 4) === "git/") || (agent.slice(0, 16) === "GitHub-Hookshot/"))) {
     return true;
   } else {
     return false;

@@ -54,7 +54,7 @@ Sandstorm package containing the app and all its dependencies.
 
 This tutorial uses a sample PHP web app. To download it, run the following commands:
 
-```
+```bash
 cd ~/projects
 git clone git://github.com/paulproteus/php-app-to-package-for-sandstorm
 ```
@@ -83,21 +83,21 @@ and PHP.
 
 To do that, run the following commands:
 
-```
+```bash
 cd ~/projects/php-app-to-package-for-sandstorm
 vagrant-spk setupvm lemp
 ```
 
 You should see a message like the following:
 
-```
+```bash
 Initializing .sandstorm directory in /Users/myself/projects/php-app-to-package-for-sandstorm/.sandstorm
 ```
 
 You should also find that the `.sandstorm/` directory now exists in your project.
 Here's how you can take a look:
 
-```
+```bash
 ls ~/projects/php-app-to-package-for-sandstorm/.sandstorm
 ```
 
@@ -109,7 +109,7 @@ The next step is to start the virtual Linux machine, containing
 Sandstorm, that you will develop the package with. To do that, run the following
 command:
 
-```
+```bash
 vagrant-spk up
 ```
 
@@ -120,7 +120,7 @@ we're working on tidying up the scripts to minimize the noise.
 
 Eventually, you will see this mesage:
 
-```
+```bash
 ==> default: Processing triggers for php5-fpm (5.6.9+dfsg-0+deb8u1) ...
 ```
 
@@ -129,7 +129,7 @@ and get your shell back. At this point, you can continue to the next step.
 **Troubleshooting note**: If you already have Sandstorm installed on your laptop,
 you might see the following red text:
 
-```
+```bash
 Vagrant cannot forward the specified ports on this VM, since they
 would collide with some other application that is already listening
 on these ports. The forwarded port to 6080 is already in use
@@ -138,7 +138,7 @@ on the host machine.
 
 If you see that, run:
 
-```
+```bash
 sudo service sandstorm stop
 ```
 
@@ -174,7 +174,7 @@ easy for Sandstorm to parse.)
 
 Let's use `vagrant-spk` to create a package definition file by running:
 
-```
+```bash
 vagrant-spk init
 ```
 
@@ -186,26 +186,26 @@ We'll make two changes. First, we'll give our app a **title** of
 _Sandstorm Showcase_. To do that, open `.sandstorm/sandstorm-pkgdef.capnp` in
 a text editor and find the line with this text:
 
-```
+```bash
     appTitle = (defaultText = "Example App"),
 ```
 
 Change it to the following.
 
-```
+```bash
     appTitle = (defaultText = "Sandstorm Showcase"),
 ```
 
 Second, we will customize the text that Sandstorm users see when they want
 to create a new _instance_ of the app. To do this, find the line containing:
 
-```
+```bash
       ( title = (defaultText = "New Instance"),
 ```
 
 and change it to read:
 
-```
+```bash
       ( title = (defaultText = "New Showcase"),
 ```
 
@@ -216,7 +216,7 @@ code of an app available.
 
 Make this app available in dev mode by doing:
 
-```
+```bash
 vagrant-spk dev
 ```
 
@@ -224,7 +224,7 @@ vagrant-spk dev
 
 On the terminal, you will see a message like:
 
-```
+```bash
 App is now available from Sandstorm server. Ctrl+C to disconnect.
 ```
 
@@ -251,7 +251,7 @@ Sandstorm app list so people can install it easily from their own servers.
 To do that, we first stop the `vagrant-spk dev` server. To do that, type
 `Ctrl-C` on your keyboard. You will see some messages like:
 
-```
+```bash
 Unmounted cleanly.
 Updating file list.
 ```
@@ -261,7 +261,9 @@ vanishing from the list of apps on the left.
 
 To create the SPK file, run:
 
-```vagrant-spk pack ~/projects/package.spk```
+```bash
+vagrant-spk pack ~/projects/package.spk
+```
 
 (You should be running it from the `~/projects/php-app-to-package-for-sandstorm` directory.)
 
@@ -270,13 +272,13 @@ This will take a few moments, and once it is done, there will be a file in
 
 You can see how large it is by running the following command:
 
-```
+```bash
 du -h ~/projects/package.spk
 ```
 
 On my system, I see:
 
-```
+```bash
 16M
 ```
 
@@ -300,7 +302,7 @@ is because the `vagrant-spk` virtual machine uses always uses port
 In our case, we're done using the virtual machine running this app, so
 it's safe to stop it. Run this command:
 
-```
+```bash
 vagrant-spk halt
 ```
 
@@ -309,14 +311,14 @@ vagrant-spk halt
 Now port 6080 is available for other app packaging projects. If you ever want to work on
 this app's packaging again, you can bring it up by running:
 
-```
+```bash
 vagrant-spk up
 ```
 
 If you ever are confused about which Vagrant virtual machines are
 running, you can try this command:
 
-```
+```bash
 vagrant global-status
 ```
 

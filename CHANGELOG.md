@@ -1,3 +1,7 @@
+### v0.88 (2015-06-18)
+- Fix real-time activity stats not being displayed (in admin settings).
+- Fix issue on Oasis where worker could get into a bad state and refuse to start grains.
+
 ### v0.87 (2015-06-13)
 - Emergency fix to race condition which caused the login control to claim no login services were configured when communicating with a server far-away on the network. This wasn't caught in testing because we usually test against localhost servers. The fix is to make the list of enabled services reactive, where it wasn't before. This update should entirely resolve the problem.
 

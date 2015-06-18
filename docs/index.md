@@ -37,4 +37,4 @@ If you learn the concepts and skills to take you beyond the
 introductory packaging tutorial, check out the following:
 
 * Sandstorm platform overview: See the [Sandstorm App Developer Handbook](https://github.com/sandstorm-io/sandstorm/wiki/Sandstorm-App-Developer-Handbook) for information on app isolation, granularity, writable `/var`, and more.
-* vagrant-spk: [Overview](vagrant-spk/index.md) | [Installation](vagrant-spk/installation.md) | [Customizing & understanding vagrant-spk](vagrant-spk/customizing.md) | [Platform stacks for Meteor, Python, PHP, and DIY](vagrant-spk/platform-stacks.md)
+* App packaging with vagrant-spk: [Overview](vagrant-spk/index.md) | [Installation](vagrant-spk/installation.md) | [Customizing & understanding vagrant-spk](vagrant-spk/customizing.md) | [Platform stacks for Meteor, Python, PHP, and DIY](vagrant-spk/platform-stacks.md)

@@ -4,8 +4,8 @@ pages:
 - Intro:
     - "Overview": "overview.md"
     - "Installation": "install.md"
-- vagrant-spk:
-    - "Overview": "vagrant-spk/index.md"
+- App packaging:
+    - "Overview of vagrant-spk": "vagrant-spk/index.md"
     - "Installation": "vagrant-spk/installation.md"
     - "Packaging tutorial": "vagrant-spk/packaging-tutorial.md"
     - "Understanding & customizing": "vagrant-spk/customizing.md"

@@ -207,6 +207,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              this user's permissions before forwarding on to the underlying app. If `userId` is
 //              not present, then no user attenuation is applied, i.e. this is a raw UiView as
 //              implemented by the app. (The `roleAssignment` field, below, may still apply.)
+//              For non-UiView capabilities, `userId` is never present.
 //              Note that this is NOT the user against whom the `requiredPermissions` parameter of
 //              `SandstormApi.restore()` is checked; that would be `owner.grain.introducerUser`.
 //   userInfo:  *DEPRECATED* For API tokens created by the app through HackSessionContext, the

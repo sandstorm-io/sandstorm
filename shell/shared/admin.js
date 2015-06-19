@@ -143,6 +143,16 @@ if (Meteor.isClient) {
     });
   });
 
+  var getToken = function () {
+    var state = Iron.controller().state;
+    var token = state.get("token");
+    if (!token) {
+      return;
+    } else {
+      return {_token: token};
+    }
+  };
+
   Template.admin.helpers({
     adminTab: function () {
       var state = Iron.controller().state;
@@ -179,15 +189,7 @@ if (Meteor.isClient) {
     logActive: function () {
       return Iron.controller().state.get("settingsTab") == "adminLog";
     },
-    getToken: function () {
-      var state = Iron.controller().state;
-      var token = state.get("token");
-      if (!token) {
-        return;
-      } else {
-        return {_token: token};
-      }
-    }
+    getToken: getToken
   });
 
   var handleError = function (err) {
@@ -278,7 +280,7 @@ if (Meteor.isClient) {
       Meteor.call("setSetting", token, "adminAlert", event.target.adminAlert.value, handleErrorBound);
       Meteor.call("setSetting", token, "adminAlertTime", new Date(event.target.alertTime.value), handleErrorBound);
       return false;
-    }
+    },
   });
 
   Template.adminSettings.helpers({
@@ -327,7 +329,8 @@ if (Meteor.isClient) {
     },
     isEmailTestActive: function () {
       return Iron.controller().state.get("isEmailTestActive");
-    }
+    },
+    getToken: getToken
   });
 
   var updateUser = function (options) {

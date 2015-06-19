@@ -17,7 +17,7 @@ mission-critical data or security yet.
 Are you new to Sandstorm, packaging Sandstorm apps, or running your
 own server? This is the place to start.
 
-* **Totally new:** [Overview](overview.md) | [Try the demo](https://demo.sandstorm.io/) | [Installing Sandstorm on a server](install.md)
+* **Totally new:** [Try the demo](https://demo.sandstorm.io/) | [Installing Sandstorm on a server](install.md) | [Guided tour](guided-tour.md) | [Tech overview](overview.md)
 * **Packaging tutorial:** [Learn how to package a web app for Sandstorm from Mac OS or Linux](vagrant-spk/packaging-tutorial.md)
 * **Get involved:** [Learn how to make a positive difference in the Sandstorm community](https://github.com/sandstorm-io/sandstorm/wiki/Get-Involved)
 

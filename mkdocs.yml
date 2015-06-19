@@ -4,6 +4,7 @@ pages:
 - Intro:
     - "Overview": "overview.md"
     - "Installation": "install.md"
+    - "Guided tour": "guided-tour.md"
 - App packaging:
     - "Overview of vagrant-spk": "vagrant-spk/index.md"
     - "Installation": "vagrant-spk/installation.md"

@@ -15,7 +15,8 @@
 // limitations under the License.
 
 var ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
-var publicAdminSettings = ["google", "github", "emailToken", "splashDialog", "signupDialog"];
+var publicAdminSettings = ["google", "github", "emailToken", "splashDialog", "signupDialog",
+                           "adminAlert", "adminAlertTime"];
 
 DEFAULT_SPLASH_DIALOG = "Contact the server admin for an invite " +
   "(or <a href=\"https://sandstorm.io/install/\">install your own</a>).";
@@ -223,7 +224,7 @@ if (Meteor.isClient) {
       var state = Iron.controller().state;
       var token = this.token;
       resetResult(state);
-      state.set("numSettings", 6);
+      state.set("numSettings", 8);
 
       if (successTracker) {
         successTracker.stop();
@@ -252,6 +253,8 @@ if (Meteor.isClient) {
       Meteor.call("setSetting", token, "smtpUrl", event.target.smtpUrl.value, handleErrorBound);
       Meteor.call("setSetting", token, "splashDialog", event.target.splashDialog.value, handleErrorBound);
       Meteor.call("setSetting", token, "signupDialog", event.target.signupDialog.value, handleErrorBound);
+      Meteor.call("setSetting", token, "adminAlert", event.target.adminAlert.value, handleErrorBound);
+      Meteor.call("setSetting", token, "adminAlertTime", new Date(event.target.alertTime.value), handleErrorBound);
       return false;
     }
   });
@@ -288,6 +291,14 @@ if (Meteor.isClient) {
     signupDialog: function() {
       var setting = Settings.findOne({_id: "signupDialog"});
       return (setting && setting.value) || DEFAULT_SIGNUP_DIALOG;
+    },
+    adminAlert: function() {
+      var setting = Settings.findOne({_id: "adminAlert"});
+      return (setting && setting.value);
+    },
+    alertTime: function() {
+      var setting = Settings.findOne({_id: "adminAlertTime"});
+      return (setting && setting.value);
     },
     smtpUrl: function () {
       return Iron.controller().state.get("smtpUrl");

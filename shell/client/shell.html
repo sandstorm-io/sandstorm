@@ -41,8 +41,8 @@ limitations under the License.
   </div>
   {{else}}
   <div id="topbar-right">
-    {{#if isDemoUser}}
-    <a id="alert" href="https://sandstorm.io/install/#{{ installPageParams }}">Run your own »</a>
+    {{#if adminAlert}}
+    <div class="alert">{{{adminAlert}}}</div>
     {{/if}}
     {{#if currentUser}}
       {{> notifications}}
@@ -722,6 +722,21 @@ $KEY</textarea></p>
     <p>Splash Dialog: <input type="textarea" name="splashDialog" value="{{splashDialog}}"><br>
        Signup Dialog: <input type="textarea" name="signupDialog" value="{{signupDialog}}"><br>
       <span class="details">This will be used as text in the splash page and signup page respectively.</span></p>
+    <p>Admin Alert: <input type="textarea" name="adminAlert" value="{{adminAlert}}"><br>
+       Alert Time: <input id="alertTime" type="text" name="alertTime" value="{{alertTime}}"><br>
+      <span class="details">
+        This will be shown to all users in the topbar, on the right in bright red. If this field is
+        empty, no alert will be displayed. You can use the following variables that will be replaced
+        automatically:
+        <ul>
+          <li>$TIME : The time component of Alert Time, converted to the user's locatime (eg. "1:15:45 PM")</li>
+          <li>$DATE : The date component of Alert Time, converted to the user's localtime (eg. "6/19/2015")</li>
+          <li>$IN_COUNTDOWN : A reactive variable that will show the time until Alert Time (eg. "3 days" or "1 minute 24 seconds")</li>
+          <li>$ACCOUNT_EXPIRES : The date and time of when a demo account expires (this is only useful for demo servers)</li>
+          <li>$ACCOUNT_EXPIRES_IN : The countdown until a demo account is deleted (this is only useful for demo servers)</li>
+        </ul>
+      </span>
+    </p>
     <p><button id="admin-settings-save">Save</button></p>
   </form>
 </template>

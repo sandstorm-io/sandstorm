@@ -753,7 +753,7 @@ Router.map(function () {
     }
   });
 
-  this.route("/shared/:key", {
+  this.route("/shared/:key/:path(.*)?", {
     template: "grain",
 
     waitOn: function () {

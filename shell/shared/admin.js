@@ -437,6 +437,10 @@ if (Meteor.isClient) {
     'click #configure-login-service-dialog-save-configuration': function () {
       var state = Iron.controller().state;
       resetResult(state);
+
+      // This is a bit of a hack, but we set the number high so that a success message is never displayed
+      state.set("numSettings", 100);
+
       var handleErrorBound = handleError.bind(state);
       var serviceName = state.get("configurationServiceName");
       var token = this.token;
@@ -456,6 +460,7 @@ if (Meteor.isClient) {
         handleErrorBound(err);
         state.set("configurationServiceName", null);
       });
+      Meteor.call("setAccountSetting", token, serviceName, true, handleErrorBound);
     }
   });
 

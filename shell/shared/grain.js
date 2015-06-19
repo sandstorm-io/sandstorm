@@ -634,18 +634,18 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
   var shareToken = Session.get("share-token-" + grainId);
 
   result.apiToken = apiToken;
-  result.apiTokenPending = apiToken === "pending",
-  result.showApiToken = Session.get("show-api-token"),
+  result.apiTokenPending = apiToken === "pending";
+  result.showApiToken = Session.get("show-api-token");
   result.existingTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
                                           forSharing: {$ne: true},
-                                          expiresIfUnused: null}).fetch(),
-  result.shareToken = shareToken,
-  result.shareTokenPending = shareToken === "pending",
-  result.showShareGrain = Session.get("show-share-grain"),
+                                          expiresIfUnused: null}).fetch();
+  result.shareToken = shareToken;
+  result.shareTokenPending = shareToken === "pending";
+  result.showShareGrain = Session.get("show-share-grain");
   result.existingShareTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
-                                               forSharing: true}).fetch(),
+                                               forSharing: true}).fetch();
   result.existingAssignments = RoleAssignments.find({grainId: grainId,
-                                                     sharer : Meteor.userId()}).fetch(),
+                                                     sharer : Meteor.userId()}).fetch();
   result.transitiveShares = Session.get("transitive-shares-" + grainId);
   result.showMenu = Session.get("showMenu");
 

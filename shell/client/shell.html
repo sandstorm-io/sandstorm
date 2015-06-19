@@ -667,11 +667,21 @@ $KEY</textarea></p>
     <div class="centered-box">
       {{#if isUserPermitted}}
         <ul id="settings-tabs" class="nav centered-box">
-          <li id="settings-tab" class="{{#if settingsActive}}active{{/if}}"><a href="#">Settings</a></li>
-          <li id="users-tab" class="{{#if usersActive}}active{{/if}}"><a href="#">Users</a></li>
-          <li id="stats-tab" class="{{#if statsActive}}active{{/if}}"><a href="#">Stats</a></li>
-          <li id="log-tab" class="{{#if logActive}}active{{/if}}"><a href="#">Log</a></li>
-          <li id="invites-tab" class="{{#if invitesActive}}active{{/if}}"><a href="#">Send Invite</a></li>
+          <li id="settings-tab" class="{{#if settingsActive}}active{{/if}}">
+            {{#linkTo route="admin" data=getToken}}Settings{{/linkTo}}
+          </li>
+          <li id="users-tab" class="{{#if usersActive}}active{{/if}}">
+            {{#linkTo route="adminUsers" data=getToken}}Users{{/linkTo}}
+          </li>
+          <li id="stats-tab" class="{{#if statsActive}}active{{/if}}">
+            {{#linkTo route="adminStats" data=getToken}}Stats{{/linkTo}}
+          </li>
+          <li id="log-tab" class="{{#if logActive}}active{{/if}}">
+            {{#linkTo route="adminLog" data=getToken}}Log{{/linkTo}}
+          </li>
+          <li id="invites-tab" class="{{#if invitesActive}}active{{/if}}">
+            {{#linkTo route="adminInvites" data=getToken}}Send Invite{{/linkTo}}
+          </li>
         </ul>
         {{> Template.dynamic template=adminTab}}
         {{#if success}}

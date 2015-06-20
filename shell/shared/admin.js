@@ -16,7 +16,7 @@
 
 var ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
 var publicAdminSettings = ["google", "github", "emailToken", "splashDialog", "signupDialog",
-                           "adminAlert", "adminAlertTime"];
+                           "adminAlert", "adminAlertTime", "adminAlertUrl"];
 
 DEFAULT_SPLASH_DIALOG = "Contact the server admin for an invite " +
   "(or <a href=\"https://sandstorm.io/install/\">install your own</a>).";
@@ -232,7 +232,7 @@ if (Meteor.isClient) {
       var state = Iron.controller().state;
       var token = this.token;
       resetResult(state);
-      state.set("numSettings", 8);
+      state.set("numSettings", 9);
 
       if (successTracker) {
         successTracker.stop();
@@ -262,7 +262,23 @@ if (Meteor.isClient) {
       Meteor.call("setSetting", token, "splashDialog", event.target.splashDialog.value, handleErrorBound);
       Meteor.call("setSetting", token, "signupDialog", event.target.signupDialog.value, handleErrorBound);
       Meteor.call("setSetting", token, "adminAlert", event.target.adminAlert.value, handleErrorBound);
-      Meteor.call("setSetting", token, "adminAlertTime", new Date(event.target.alertTime.value), handleErrorBound);
+      var alertTimeString = event.target.alertTime.value.trim();
+      if (alertTimeString) {
+        var alertTime = new Date(alertTimeString);
+        if (isNaN(alertTime.getTime())) {
+          // Assume only time and not date was set.
+          alertTime = new Date(new Date().toLocaleDateString() + " " + alertTimeString);
+        }
+        if (isNaN(alertTime.getTime())) {
+          handleErrorBound(new Meteor.Error(
+              400, "Couldn't parse alert time, please be more precise."));
+        } else {
+          Meteor.call("setSetting", token, "adminAlertTime", alertTime, handleErrorBound);
+        }
+      } else {
+        Meteor.call("setSetting", token, "adminAlertTime", null, handleErrorBound);
+      }
+      Meteor.call("setSetting", token, "adminAlertUrl", event.target.alertUrl.value, handleErrorBound);
       return false;
     },
   });
@@ -306,6 +322,14 @@ if (Meteor.isClient) {
     },
     alertTime: function() {
       var setting = Settings.findOne({_id: "adminAlertTime"});
+      if (setting && setting.value) {
+        return setting.value.toLocaleDateString() + " " + setting.value.toLocaleTimeString();
+      } else {
+        return "";
+      }
+    },
+    alertUrl: function() {
+      var setting = Settings.findOne({_id: "adminAlertUrl"});
       return (setting && setting.value);
     },
     smtpUrl: function () {

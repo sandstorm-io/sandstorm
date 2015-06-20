@@ -86,8 +86,7 @@ body {
   z-index: 3;
 }
 
-#topbar-right .alert,
-#topbar-right .alert * {
+#topbar-right .alert {
   background-color: #762f87;
   color: white;
   text-decoration: none;
@@ -100,7 +99,12 @@ body {
   margin-right: 8px;
 }
 
-#topbar-right .alert a:hover {
+#topbar-right .alert.countdown-second,
+#topbar-right .alert.countdown-now {
+  background-color: #e82538;
+}
+
+#topbar-right a.alert:hover {
   background-color: #9d3aa5;
 }
 

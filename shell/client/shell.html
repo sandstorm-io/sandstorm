@@ -41,9 +41,13 @@ limitations under the License.
   </div>
   {{else}}
   <div id="topbar-right">
-    {{#if adminAlert}}
-    <div class="alert">{{{adminAlert}}}</div>
-    {{/if}}
+    {{#with adminAlert}}
+      {{#if alertUrl}}
+        <a href="{{alertUrl}}" class="alert {{className}}">{{text}}</a>
+      {{else}}
+        <div class="alert {{className}}">{{text}}</div>
+      {{/if}}
+    {{/with}}
     {{#if currentUser}}
       {{> notifications}}
     {{/if}}
@@ -733,17 +737,18 @@ $KEY</textarea></p>
        Signup Dialog: <input type="textarea" name="signupDialog" value="{{signupDialog}}"><br>
       <span class="details">This will be used as text in the splash page and signup page respectively.</span></p>
     <p>Admin Alert: <input type="textarea" name="adminAlert" value="{{adminAlert}}"><br>
-       Alert Time: <input id="alertTime" type="text" name="alertTime" value="{{alertTime}}"><br>
+       Alert Time (e.g. "5/9/2022 6:00 PM"): <input id="alertTime" type="text" name="alertTime" value="{{alertTime}}"><br>
+       Alert URL (optional): <input id="alertUrl" type="text" name="alertUrl" value="{{alertUrl}}"><br>
       <span class="details">
-        This will be shown to all users in the topbar, on the right in bright red. If this field is
+        This will be shown to all users in the topbar, on the right. If the alert text is
         empty, no alert will be displayed. You can use the following variables that will be replaced
         automatically:
         <ul>
-          <li>$TIME : The time component of Alert Time, converted to the user's locatime (eg. "1:15:45 PM")</li>
-          <li>$DATE : The date component of Alert Time, converted to the user's localtime (eg. "6/19/2015")</li>
-          <li>$IN_COUNTDOWN : A reactive variable that will show the time until Alert Time (eg. "3 days" or "1 minute 24 seconds")</li>
-          <li>$ACCOUNT_EXPIRES : The date and time of when a demo account expires (this is only useful for demo servers)</li>
-          <li>$ACCOUNT_EXPIRES_IN : The countdown until a demo account is deleted (this is only useful for demo servers)</li>
+          <li>$TIME : The time component of Alert Time, converted to the user's local time (eg. "1:15:45 PM")</li>
+          <li>$DATE : The date component of Alert Time, converted to the user's local time (eg. "6/19/2015")</li>
+          <li>$IN_COUNTDOWN : An active countdown until Alert Time (eg. "in 3 days" or "in 1 minute"). Displays "any moment" at the alert time and then disappears after an hour. Useful for announcing scheduled maintenance.</li>
+          <li>$ACCOUNT_EXPIRES : The time when the viewer's demo account expires (this is only useful for demo servers)</li>
+          <li>$ACCOUNT_EXPIRES_IN : An active countdown until the viewer's demo account is deleted (this is only useful for demo servers)</li>
         </ul>
       </span>
     </p>

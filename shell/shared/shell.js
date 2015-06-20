@@ -143,64 +143,48 @@ if (Meteor.isClient) {
 
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  var formatInCountdown = function (template, countdownDatetime, currentDatetime) {
-    var printTime = function (time, string) {
-      if (time) {
-        if (time > 1) {
-          string = string + "s";
-        }
-        return time + " " + string + " ";
-      } else {
-        return "";
-      }
-    };
+  var formatInCountdown = function (template, countdownDatetime) {
     var days = 0;
     var hours = 0;
     var minutes = 0;
     var seconds = 0;
-    var diff = countdownDatetime.getTime() - currentDatetime.getTime();
+    var diff = countdownDatetime.getTime() - Date.now();
 
-    if (diff < 0) {
-      return "moments";
-    }
+    var units = {
+      day: 86400000,
+      hour: 3600000,
+      minute: 60000,
+      second: 1000
+    };
 
-    days = Math.floor(diff / 86400000);
-    diff -= days * 86400000;
-    if (days < 2) {
-      hours = Math.floor(diff / 3600000);
-      diff -= hours * 3600000;
-      if (hours < 2) {
-        minutes = Math.floor(diff / 60000);
-        diff -= minutes * 60000;
-        if (minutes < 2) {
-          seconds = Math.ceil(diff / 1000);
-          // We do a ceil here instead of floor so that when we get to < 1s, we'll still triger the
-          // timeout below and roll over into diff < 0
-        }
+    for (var unit in units) {
+      // If it's more than one full unit away, then we'll print in terms of this unit. This does
+      // mean that we write e.g. "1 minute" for the whole range between 2 minutes and 1 minute, but
+      // whatever, this is typical of these sorts of displays.
+      if (diff >= units[unit]) {
+        var count = Math.floor(diff / units[unit]);
+        // Update next 1ms after the point where `count` would change.
+        setTopBarTimeout(template, diff - count * units[unit] + 1);
+        return {
+          text: "in " + count + " " + unit + (count > 1 ? "s" : ""),
+          className: "countdown-" + unit
+        };
       }
     }
 
-    if (days) {
-      setTopBarTimeout(template, 43200000);
+    // We're within a second of the countdown, or past it.
+    if (diff < -3600000) {
+      // Notification appears stale.
+      return null;
+    } else {
+      setTopBarTimeout(template, diff + 3600001);
+      return { text: "any moment", className: "countdown-now" };
     }
-    if (hours) {
-      setTopBarTimeout(template, 1800000);
-    }
-    if (minutes) {
-      setTopBarTimeout(template, 30000);
-    }
-    if (seconds) {
-      setTopBarTimeout(template, 1000);
-    }
-    return printTime(days, "day") +
-           printTime(hours, "hour") +
-           printTime(minutes, "minute") +
-           printTime(seconds, "second");
   };
 
   var formatAccountExpires = function () {
     var expires = Meteor.user().expires;
-    return (expires && expires.toLocaleTimeString()) || "(not a demo user)";
+    return (expires && expires.toLocaleTimeString()) || null;
   };
 
   var formatAccountExpiresIn = function (template, currentDatetime) {
@@ -208,21 +192,24 @@ if (Meteor.isClient) {
     // completely overwrite the previous interval for $IN_COUNTDOWN
     var expires = Meteor.user().expires;
     if (!expires) {
-      return "(not a demo user)";
+      return null;
     } else {
       return formatInCountdown(template, expires, currentDatetime);
     }
   };
 
   Template.topBar.onCreated(function () {
-    this.currentTime = new ReactiveVar(new Date());
+    this.timer = new Tracker.Dependency;
   });
 
   var setTopBarTimeout = function (template, delay) {
     Meteor.clearTimeout(template.timeout);
     template.timeout = Meteor.setTimeout(function () {
-      template.currentTime.set(new Date());
+      template.timer.changed();
     }, delay);
+
+    // Make sure we re-run when the timeout triggers.
+    template.timer.depend();
   };
 
   Template.topBar.onDestroyed(function () {
@@ -237,25 +224,44 @@ if (Meteor.isClient) {
         return null;
       }
       var text = setting.value;
-      var alertTime = Settings.findOne({_id: "adminAlertTime"}).value;
+
+      var alertTimeSetting = Settings.findOne({_id: "adminAlertTime"});
+      var alertTime = alertTimeSetting && alertTimeSetting.value;
+
+      var alertUrlSetting = Settings.findOne({_id: "adminAlertUrl"});
+      var alertUrl = alertUrlSetting ? alertUrlSetting.value.trim() : null;
+      if (!alertUrl) alertUrl = null;
+
       var template = Template.instance();
-      var currentTime = template.currentTime;
+      var param;
+      var className;
       if (text.indexOf("$TIME") !== -1) {
+        if (!alertTime) return null;
         text = text.replace("$TIME", alertTime.toLocaleTimeString());
       }
       if (text.indexOf("$DATE") !== -1) {
+        if (!alertTime) return null;
         text = text.replace("$DATE", alertTime.toLocaleDateString());
       }
       if (text.indexOf("$IN_COUNTDOWN") !== -1) {
-        text = text.replace("$IN_COUNTDOWN", formatInCountdown(template, alertTime, currentTime.get()));
+        if (!alertTime) return null;
+        param = formatInCountdown(template, alertTime);
+        if (!param) return null;
+        text = text.replace("$IN_COUNTDOWN", param.text);
+        className = param.className;
       }
       if (text.indexOf("$ACCOUNT_EXPIRES_IN") !== -1) {
-        text = text.replace("$ACCOUNT_EXPIRES_IN", formatAccountExpiresIn(template, currentTime.get()));
+        param = formatAccountExpiresIn(template);
+        if (!param) return null;
+        text = text.replace("$ACCOUNT_EXPIRES_IN", param.text);
+        className = param.className;
       }
       if (text.indexOf("$ACCOUNT_EXPIRES") !== -1) {
-        text = text.replace("$ACCOUNT_EXPIRES", formatAccountExpires());
+        param = formatAccountExpires();
+        if (!param) return null;
+        text = text.replace("$ACCOUNT_EXPIRES", param);
       }
-      return text;
+      return {text: text, className: className, alertUrl: alertUrl};
     }
   });
 

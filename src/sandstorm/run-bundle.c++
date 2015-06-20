@@ -1025,9 +1025,9 @@ public:
       context.exitInfo(hexString);
     } else {
       context.exitInfo(kj::str("Generated new admin token.\n\nPlease proceed to ", config.rootUrl,
-        "/admin/", hexString, " in order to access the admin settings page and configure your login ",
-        "system. This token will expire in 15 min, and if you take too long, you will have to ",
-        "regenerate a new token with `sandstorm admin-token`."));
+        "/admin/settings/", hexString, " in order to access the admin settings page and configure ",
+        "your login system. This token will expire in 15 min, and if you take too long, you will ",
+        "have to regenerate a new token with `sandstorm admin-token`."));
     }
   }
 

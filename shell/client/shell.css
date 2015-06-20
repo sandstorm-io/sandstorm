@@ -86,17 +86,21 @@ body {
   z-index: 3;
 }
 
-#topbar-right #alert {
-  display: inline-block;
+#topbar-right .alert,
+#topbar-right .alert * {
   background-color: #762f87;
   color: white;
   text-decoration: none;
+}
+
+#topbar-right .alert {
+  display: inline-block;
   padding-left: 8px;
   padding-right: 8px;
   margin-right: 8px;
 }
 
-#topbar-right #alert:hover {
+#topbar-right .alert a:hover {
   background-color: #9d3aa5;
 }
 
@@ -1081,7 +1085,7 @@ aside #social>p {
   min-width: 600px;
 }
 
-.alert {
+#admin-settings .alert {
   padding: 15px;
   margin-bottom: 20px;
   border: 1px solid transparent;
@@ -1093,19 +1097,19 @@ aside #social>p {
   transition: all 2s ease-in-out;
 }
 
-.alert-danger {
+#admin-settings .alert-danger {
   color: #a94442;
   background-color: #f2dede;
   border-color: #ebccd1;
 }
 
-.alert-success {
+#admin-settings .alert-success {
   color: #3c763d;
   background-color: #dff0d8;
   border-color: #d6e9c6;
 }
 
-.fade-out {
+#admin-settings .fade-out {
   opacity: .5;
 }
 

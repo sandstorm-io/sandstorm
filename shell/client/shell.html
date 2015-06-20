@@ -41,8 +41,8 @@ limitations under the License.
   </div>
   {{else}}
   <div id="topbar-right">
-    {{#if isDemoUser}}
-    <a id="alert" href="https://sandstorm.io/install/#{{ installPageParams }}">Run your own »</a>
+    {{#if adminAlert}}
+    <div class="alert">{{{adminAlert}}}</div>
     {{/if}}
     {{#if currentUser}}
       {{> notifications}}
@@ -667,11 +667,21 @@ $KEY</textarea></p>
     <div class="centered-box">
       {{#if isUserPermitted}}
         <ul id="settings-tabs" class="nav centered-box">
-          <li id="settings-tab" class="{{#if settingsActive}}active{{/if}}"><a href="#">Settings</a></li>
-          <li id="users-tab" class="{{#if usersActive}}active{{/if}}"><a href="#">Users</a></li>
-          <li id="stats-tab" class="{{#if statsActive}}active{{/if}}"><a href="#">Stats</a></li>
-          <li id="log-tab" class="{{#if logActive}}active{{/if}}"><a href="#">Log</a></li>
-          <li id="invites-tab" class="{{#if invitesActive}}active{{/if}}"><a href="#">Send Invite</a></li>
+          <li id="settings-tab" class="{{#if settingsActive}}active{{/if}}">
+            {{#linkTo route="admin" data=getToken}}Settings{{/linkTo}}
+          </li>
+          <li id="users-tab" class="{{#if usersActive}}active{{/if}}">
+            {{#linkTo route="adminUsers" data=getToken}}Users{{/linkTo}}
+          </li>
+          <li id="stats-tab" class="{{#if statsActive}}active{{/if}}">
+            {{#linkTo route="adminStats" data=getToken}}Stats{{/linkTo}}
+          </li>
+          <li id="log-tab" class="{{#if logActive}}active{{/if}}">
+            {{#linkTo route="adminLog" data=getToken}}Log{{/linkTo}}
+          </li>
+          <li id="invites-tab" class="{{#if invitesActive}}active{{/if}}">
+            {{#linkTo route="adminInvites" data=getToken}}Send Invite{{/linkTo}}
+          </li>
         </ul>
         {{> Template.dynamic template=adminTab}}
         {{#if success}}
@@ -709,9 +719,9 @@ $KEY</textarea></p>
        (<a class="configure-oauth" data-servicename="github" href="">configure</a>)
        (<a class="reset-login-tokens" data-servicename="github" href="">log out all users</a>)<br>
        <input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login<br>
-      <span class="details">Choose which services users may use to identify themselves. Anyone can log in, but only users you <a href="/invite">invite</a> will be able to install apps or create files.</span></p>
+      <span class="details">Choose which services users may use to identify themselves. Anyone can log in, but only users you {{#linkTo route="adminInvites" data=getToken}}invite{{/linkTo}} will be able to install apps or create files.</span></p>
     <p>SMTP Url: <input id="smptUrl" type="text" name="smtpUrl" value="{{smtpUrl}}"><button id="admin-settings-send-toggle">Test</button><br>
-      <span class="details">Address of an SMTP (email) server, like <code>smtp://user:pass@host:port</code>. This will be used by email apps and to send <a href="/invite">email invites</a>.</span>
+      <span class="details">Address of an SMTP (email) server, like <code>smtp://user:pass@host:port</code>. This will be used by email apps and to send {{#linkTo route="adminInvites" data=getToken}}email invites{{/linkTo}}.</span>
     </p>
     {{#if isEmailTestActive}}
       <p>
@@ -722,6 +732,21 @@ $KEY</textarea></p>
     <p>Splash Dialog: <input type="textarea" name="splashDialog" value="{{splashDialog}}"><br>
        Signup Dialog: <input type="textarea" name="signupDialog" value="{{signupDialog}}"><br>
       <span class="details">This will be used as text in the splash page and signup page respectively.</span></p>
+    <p>Admin Alert: <input type="textarea" name="adminAlert" value="{{adminAlert}}"><br>
+       Alert Time: <input id="alertTime" type="text" name="alertTime" value="{{alertTime}}"><br>
+      <span class="details">
+        This will be shown to all users in the topbar, on the right in bright red. If this field is
+        empty, no alert will be displayed. You can use the following variables that will be replaced
+        automatically:
+        <ul>
+          <li>$TIME : The time component of Alert Time, converted to the user's locatime (eg. "1:15:45 PM")</li>
+          <li>$DATE : The date component of Alert Time, converted to the user's localtime (eg. "6/19/2015")</li>
+          <li>$IN_COUNTDOWN : A reactive variable that will show the time until Alert Time (eg. "3 days" or "1 minute 24 seconds")</li>
+          <li>$ACCOUNT_EXPIRES : The date and time of when a demo account expires (this is only useful for demo servers)</li>
+          <li>$ACCOUNT_EXPIRES_IN : The countdown until a demo account is deleted (this is only useful for demo servers)</li>
+        </ul>
+      </span>
+    </p>
     <p><button id="admin-settings-save">Save</button></p>
   </form>
 </template>

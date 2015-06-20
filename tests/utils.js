@@ -1,5 +1,7 @@
 'use strict';
 
+var disable_demo = !!process.env.DISABLE_DEMO;
+
 var wrapLoginDemo = function(test) {
   return function (browser) {
     return browser.loginDemo(test.bind(browser, browser));
@@ -25,18 +27,21 @@ module.exports = {
   very_long_wait: 180000,
   default_width: 1280,
   default_height: 1024,
+  disable_demo: disable_demo,
   testAllLogins: function (tests) {
     var newTests = {};
 
     var count = 0;
     var name, test;
-    for(name in tests) {
-      test = tests[name];
-      if (count === 0) {
-        test = wrapLoginDemo(test);
+    if (!disable_demo) {
+      for(name in tests) {
+        test = tests[name];
+        if (count === 0) {
+          test = wrapLoginDemo(test);
+        }
+        newTests['Demo: ' + name] = test;
+        ++count;
       }
-      newTests['Demo: ' + name] = test;
-      ++count;
     }
 
     count = 0;

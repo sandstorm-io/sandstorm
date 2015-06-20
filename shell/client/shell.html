@@ -424,7 +424,15 @@ limitations under the License.
     {{#if appOrigin}}
       <iframe id="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{path}}{{hash}}"></iframe>
     {{else}}
+    {{#if interstitial}}
+      <div class="interstitial-button-box">
+        <p>This grain was shared by someone who is not in your contacts.</p>
+        <button id="redeem-token-button" data-token="{{token}}">Reveal your Identity</button>
+        <button id="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
+      </div>
+    {{else}}
       <p>Loading app...</p>
+    {{/if}}
     {{/if}}
     {{/if}}
   </div>

@@ -144,10 +144,12 @@ Meteor.methods({
     return openSessionInternal(grainId, Meteor.user(), null);
   },
 
-  openSessionFromApiToken: function(token) {
+  openSessionFromApiToken: function(params) {
     // Given an API token, either opens a new WebSession to the underlying grain or returns a
     // path to which the client should redirect in order to open such a session.
 
+    var token = params.token;
+    var incognito = params.incognito;
     check(token, String);
     var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
     var apiToken = ApiTokens.findOne(hashedToken);
@@ -168,7 +170,7 @@ Meteor.methods({
       }
     }
 
-    if (this.userId) {
+    if (this.userId && !incognito) {
       if (this.userId != apiToken.userId && this.userId != grain.userId) {
         // The current user is neither the sharer nor the grain owner.
 

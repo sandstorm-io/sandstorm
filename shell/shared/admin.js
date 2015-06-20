@@ -22,7 +22,7 @@ DEFAULT_SPLASH_DIALOG = "Contact the server admin for an invite " +
   "(or <a href=\"https://sandstorm.io/install/\">install your own</a>).";
 DEFAULT_SIGNUP_DIALOG = "You've been invited to join this Sandstorm server!";
 
-AdminRoute = RouteController.extend({
+var adminRoute = RouteController.extend({
   settingsTab: "adminSettings",
   template: "admin",
   waitOn: function () {
@@ -56,46 +56,46 @@ AdminRoute = RouteController.extend({
   }
 });
 
-AdminUsersRoute = AdminRoute.extend({
+var adminUsersRoute = adminRoute.extend({
   settingsTab: "adminUsers"
 });
 
-AdminStatsRoute = AdminRoute.extend({
+var adminStatsRoute = adminRoute.extend({
   settingsTab: "adminStats"
 });
 
-AdminLogRoute = AdminRoute.extend({
+var adminLogRoute = adminRoute.extend({
   settingsTab: "adminLog"
 });
 
-AdminInvitesRoute = AdminRoute.extend({
+var adminInvitesRoute = adminRoute.extend({
   settingsTab: "adminInvites"
 });
 
 Router.map(function () {
   this.route("admin", {
     path: "/admin/settings/:_token?",
-    controller: AdminRoute
+    controller: adminRoute
   });
   this.route("adminUsers", {
     path: "/admin/users/:_token?",
-    controller: AdminUsersRoute
+    controller: adminUsersRoute
   });
   this.route("adminStats", {
     path: "/admin/stats/:_token?",
-    controller: AdminStatsRoute
+    controller: adminStatsRoute
   });
   this.route("adminLog", {
     path: "/admin/log/:_token?",
-    controller: AdminLogRoute
+    controller: adminLogRoute
   });
   this.route("adminInvites", {
     path: "/admin/invites/:_token?",
-    controller: AdminInvitesRoute
+    controller: adminInvitesRoute
   });
   this.route("adminOld", {
     path: "/admin/:_token?",
-    controller: AdminRoute
+    controller: adminRoute
   });
 });
 

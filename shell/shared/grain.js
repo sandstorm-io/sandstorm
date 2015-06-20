@@ -413,6 +413,11 @@ if (Meteor.isClient) {
     }
   });
 
+  Template.grain.onCreated(function () {
+    this.originalPath = window.location.pathname + window.location.search;
+    this.originalHash = window.location.hash;
+  });
+
   Template.grain.helpers({
     grainSize: function () {
       if (this.sessionId) {
@@ -459,6 +464,16 @@ if (Meteor.isClient) {
     displayWebkeyButton: function () {
       return Meteor.userId() || !this.oldSharingModel;
     },
+
+    path: function () {
+      var originalPath = Template.instance().originalPath;
+      var grainPath = originalPath.slice(this.rootPath.length);
+      return encodeURIComponent(grainPath);
+    },
+
+    hash: function () {
+      return Template.instance().originalHash;
+    }
   });
 
   var currentSessionId;
@@ -648,6 +663,7 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
                                                      sharer : Meteor.userId()}).fetch(),
   result.transitiveShares = Session.get("transitive-shares-" + grainId);
   result.showMenu = Session.get("showMenu");
+  result.rootPath = rootPath;
 
   var err = route.state.get("error");
   if (err) {
@@ -662,10 +678,6 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
     setCurrentSessionId(session._id, result.appOrigin, grainId);
     result.sessionId = session._id;
     result.viewInfo = session.viewInfo;
-    var currentPath = window.location.pathname + window.location.search;
-    var grainPath = currentPath.slice(rootPath.length);
-    result.path = encodeURIComponent(grainPath);
-    result.hash = window.location.hash || "";
     return result;
   } else if (route.state.get("openingSession")) {
     return result;
@@ -753,7 +765,7 @@ Router.map(function () {
     }
   });
 
-  this.route("/shared/:key", {
+  this.route("/shared/:key/:path(.*)?", {
     template: "grain",
 
     waitOn: function () {

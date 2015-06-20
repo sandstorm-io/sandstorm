@@ -171,27 +171,27 @@ limitations under the License.
         {{/if}}
 
         {{#unless emptyDemoUser}}
-        <table>
-          <thead>
-            <tr>
-              <td>Title</td>
-              <td>Last Used</td>
-            </tr>
-          </thead>
-          <tbody>
-            {{#each filteredGrains}}
-              <tr class="grain" data-grainid="{{_id}}">
-                <td>{{title}}</td>
-                <td title="{{lastUsed}}">{{dateString lastUsed}}</td>
-              </tr>
-            {{else}}
+          <table>
+            <thead>
               <tr>
-                <td><i>no files to display...</i></td>
-                <td></td>
+                <td>Title</td>
+                <td>Last Used</td>
               </tr>
-            {{/each}}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {{#each filteredGrains}}
+                <tr class="grain" data-grainid="{{_id}}">
+                  <td>{{title}}</td>
+                  <td title="{{lastUsed}}">{{dateString lastUsed}}</td>
+                </tr>
+              {{else}}
+                <tr>
+                  <td><i>no files to display...</i></td>
+                  <td></td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
         {{/unless}}
 
         {{#if isDemoUser}}

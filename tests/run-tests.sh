@@ -35,5 +35,9 @@ then
   nightwatch -e unittests && nightwatch -e default
 else
   sed "s|.*launch_url.*|\"launch_url\" : \"$LAUNCH_URL\",|g" nightwatch.json > nightwatch.tmp.json
-  nightwatch -e unittests -c ./nightwatch.tmp.json && nightwatch -e default -c ./nightwatch.tmp.json
+  if [[ -z "$SKIP_UNITTESTS" ]]
+  then
+    nightwatch -e unittests -c ./nightwatch.tmp.json
+  fi
+  nightwatch -e default -c ./nightwatch.tmp.json
 fi

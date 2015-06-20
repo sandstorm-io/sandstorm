@@ -1228,7 +1228,7 @@ print_success() {
   else
     echo "Setup complete. You should configure the site at:"
   fi
-  echo "  ${BASE_URL:-(unknown; bad config)}/admin/$ADMIN_TOKEN"
+  echo "  ${BASE_URL:-(unknown; bad config)}/admin/settings/$ADMIN_TOKEN"
   echo "WARNING: This token expires in 15 minutes."
   echo "You can generate a new token by running 'sandstorm admin-token' from the command line"
   echo

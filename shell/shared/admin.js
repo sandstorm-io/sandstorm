@@ -15,45 +15,87 @@
 // limitations under the License.
 
 var ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
-var publicAdminSettings = ["google", "github", "emailToken", "splashDialog", "signupDialog"];
+var publicAdminSettings = ["google", "github", "emailToken", "splashDialog", "signupDialog",
+                           "adminAlert", "adminAlertTime"];
 
 DEFAULT_SPLASH_DIALOG = "Contact the server admin for an invite " +
   "(or <a href=\"https://sandstorm.io/install/\">install your own</a>).";
 DEFAULT_SIGNUP_DIALOG = "You've been invited to join this Sandstorm server!";
 
+AdminRoute = RouteController.extend({
+  settingsTab: "adminSettings",
+  template: "admin",
+  waitOn: function () {
+    return [
+      Meteor.subscribe("admin", this.params._token),
+      Meteor.subscribe("adminToken", this.params._token),
+      Meteor.subscribe("adminServiceConfiguration", this.params._token),
+      Meteor.subscribe("allUsers", this.params._token)
+    ];
+  },
+
+  data: function () {
+    var adminToken = AdminToken.findOne();
+    return {
+      settings: Settings.find(),
+      token: this.params._token,
+      isUserPermitted: isAdmin() || (adminToken && adminToken.tokenIsValid)
+    };
+  },
+
+  action: function () {
+    var state = this.state;
+    Meteor.call("getSmtpUrl", this.params._token, function(error, result){
+      state.set("smtpUrl", result);
+    });
+    resetResult(state);
+    state.set("configurationServiceName", null);
+    state.set("settingsTab", this.settingsTab);
+    state.set("token", this.params._token);
+    this.render();
+  }
+});
+
+AdminUsersRoute = AdminRoute.extend({
+  settingsTab: "adminUsers"
+});
+
+AdminStatsRoute = AdminRoute.extend({
+  settingsTab: "adminStats"
+});
+
+AdminLogRoute = AdminRoute.extend({
+  settingsTab: "adminLog"
+});
+
+AdminInvitesRoute = AdminRoute.extend({
+  settingsTab: "adminInvites"
+});
+
 Router.map(function () {
   this.route("admin", {
+    path: "/admin/settings/:_token?",
+    controller: AdminRoute
+  });
+  this.route("adminUsers", {
+    path: "/admin/users/:_token?",
+    controller: AdminUsersRoute
+  });
+  this.route("adminStats", {
+    path: "/admin/stats/:_token?",
+    controller: AdminStatsRoute
+  });
+  this.route("adminLog", {
+    path: "/admin/log/:_token?",
+    controller: AdminLogRoute
+  });
+  this.route("adminInvites", {
+    path: "/admin/invites/:_token?",
+    controller: AdminInvitesRoute
+  });
+  this.route("adminOld", {
     path: "/admin/:_token?",
-
-    waitOn: function () {
-      return [
-        Meteor.subscribe("admin", this.params._token),
-        Meteor.subscribe("adminToken", this.params._token),
-        Meteor.subscribe("adminServiceConfiguration", this.params._token),
-        Meteor.subscribe("allUsers", this.params._token)
-      ];
-    },
-
-    data: function () {
-      var adminToken = AdminToken.findOne();
-      return {
-        settings: Settings.find(),
-        token: this.params._token,
-        isUserPermitted: isAdmin() || (adminToken && adminToken.tokenIsValid)
-      };
-    },
-
-    action: function () {
-      var state = this.state;
-      Meteor.call("getSmtpUrl", this.params._token, function(error, result){
-        state.set("smtpUrl", result);
-      });
-      resetResult(state);
-      state.set("configurationServiceName", null);
-      state.set("settingsTab", "adminSettings");
-      state.set("token", this.params._token);
-      this.render();
-    }
+    controller: AdminRoute
   });
 });
 
@@ -85,33 +127,15 @@ if (Meteor.isClient) {
     });
   });
 
-  Template.admin.events({
-    "click #settings-tab": function (event) {
-      var state = Iron.controller().state;
-      resetResult(state);
-      state.set("settingsTab", "adminSettings");
-    },
-    "click #users-tab": function (event) {
-      var state = Iron.controller().state;
-      resetResult(state);
-      state.set("settingsTab", "adminUsers");
-    },
-    "click #invites-tab": function (event) {
-      var state = Iron.controller().state;
-      resetResult(state);
-      state.set("settingsTab", "adminInvites");
-    },
-    "click #stats-tab": function (event) {
-      var state = Iron.controller().state;
-      resetResult(state);
-      state.set("settingsTab", "adminStats");
-    },
-    "click #log-tab": function (event) {
-      var state = Iron.controller().state;
-      resetResult(state);
-      state.set("settingsTab", "adminLog");
+  var getToken = function () {
+    var state = Iron.controller().state;
+    var token = state.get("token");
+    if (!token) {
+      return;
+    } else {
+      return {_token: token};
     }
-  });
+  };
 
   Template.admin.helpers({
     adminTab: function () {
@@ -148,7 +172,8 @@ if (Meteor.isClient) {
     },
     logActive: function () {
       return Iron.controller().state.get("settingsTab") == "adminLog";
-    }
+    },
+    getToken: getToken
   });
 
   var handleError = function (err) {
@@ -207,7 +232,7 @@ if (Meteor.isClient) {
       var state = Iron.controller().state;
       var token = this.token;
       resetResult(state);
-      state.set("numSettings", 6);
+      state.set("numSettings", 8);
 
       if (successTracker) {
         successTracker.stop();
@@ -236,8 +261,10 @@ if (Meteor.isClient) {
       Meteor.call("setSetting", token, "smtpUrl", event.target.smtpUrl.value, handleErrorBound);
       Meteor.call("setSetting", token, "splashDialog", event.target.splashDialog.value, handleErrorBound);
       Meteor.call("setSetting", token, "signupDialog", event.target.signupDialog.value, handleErrorBound);
+      Meteor.call("setSetting", token, "adminAlert", event.target.adminAlert.value, handleErrorBound);
+      Meteor.call("setSetting", token, "adminAlertTime", new Date(event.target.alertTime.value), handleErrorBound);
       return false;
-    }
+    },
   });
 
   Template.adminSettings.helpers({
@@ -273,12 +300,21 @@ if (Meteor.isClient) {
       var setting = Settings.findOne({_id: "signupDialog"});
       return (setting && setting.value) || DEFAULT_SIGNUP_DIALOG;
     },
+    adminAlert: function() {
+      var setting = Settings.findOne({_id: "adminAlert"});
+      return (setting && setting.value);
+    },
+    alertTime: function() {
+      var setting = Settings.findOne({_id: "adminAlertTime"});
+      return (setting && setting.value);
+    },
     smtpUrl: function () {
       return Iron.controller().state.get("smtpUrl");
     },
     isEmailTestActive: function () {
       return Iron.controller().state.get("isEmailTestActive");
-    }
+    },
+    getToken: getToken
   });
 
   var updateUser = function (options) {
@@ -397,6 +433,10 @@ if (Meteor.isClient) {
     'click #configure-login-service-dialog-save-configuration': function () {
       var state = Iron.controller().state;
       resetResult(state);
+
+      // This is a bit of a hack, but we set the number high so that a success message is never displayed
+      state.set("numSettings", 100);
+
       var handleErrorBound = handleError.bind(state);
       var serviceName = state.get("configurationServiceName");
       var token = this.token;
@@ -416,6 +456,7 @@ if (Meteor.isClient) {
         handleErrorBound(err);
         state.set("configurationServiceName", null);
       });
+      Meteor.call("setAccountSetting", token, serviceName, true, handleErrorBound);
     }
   });
 

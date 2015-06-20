@@ -143,9 +143,122 @@ if (Meteor.isClient) {
 
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  Template.topBar.helpers({
-    isUpdateBlocked: function () { return isUpdateBlocked(); }
+  var formatInCountdown = function (template, countdownDatetime, currentDatetime) {
+    var printTime = function (time, string) {
+      if (time) {
+        if (time > 1) {
+          string = string + "s";
+        }
+        return time + " " + string + " ";
+      } else {
+        return "";
+      }
+    };
+    var days = 0;
+    var hours = 0;
+    var minutes = 0;
+    var seconds = 0;
+    var diff = countdownDatetime.getTime() - currentDatetime.getTime();
+
+    if (diff < 0) {
+      return "moments";
+    }
+
+    days = Math.floor(diff / 86400000);
+    diff -= days * 86400000;
+    if (days < 2) {
+      hours = Math.floor(diff / 3600000);
+      diff -= hours * 3600000;
+      if (hours < 2) {
+        minutes = Math.floor(diff / 60000);
+        diff -= minutes * 60000;
+        if (minutes < 2) {
+          seconds = Math.ceil(diff / 1000);
+          // We do a ceil here instead of floor so that when we get to < 1s, we'll still triger the
+          // timeout below and roll over into diff < 0
+        }
+      }
+    }
+
+    if (days) {
+      setTopBarTimeout(template, 43200000);
+    }
+    if (hours) {
+      setTopBarTimeout(template, 1800000);
+    }
+    if (minutes) {
+      setTopBarTimeout(template, 30000);
+    }
+    if (seconds) {
+      setTopBarTimeout(template, 1000);
+    }
+    return printTime(days, "day") +
+           printTime(hours, "hour") +
+           printTime(minutes, "minute") +
+           printTime(seconds, "second");
+  };
+
+  var formatAccountExpires = function () {
+    var expires = Meteor.user().expires;
+    return (expires && expires.toLocaleTimeString()) || "(not a demo user)";
+  };
+
+  var formatAccountExpiresIn = function (template, currentDatetime) {
+    // TODO(someday): formatInCountdown will set the interval to match account expiration time, and
+    // completely overwrite the previous interval for $IN_COUNTDOWN
+    var expires = Meteor.user().expires;
+    if (!expires) {
+      return "(not a demo user)";
+    } else {
+      return formatInCountdown(template, expires, currentDatetime);
+    }
+  };
+
+  Template.topBar.onCreated(function () {
+    this.currentTime = new ReactiveVar(new Date());
   });
+
+  var setTopBarTimeout = function (template, delay) {
+    Meteor.clearTimeout(template.timeout);
+    template.timeout = Meteor.setTimeout(function () {
+      template.currentTime.set(new Date());
+    }, delay);
+  };
+
+  Template.topBar.onDestroyed(function () {
+    Meteor.clearTimeout(this.timeout);
+  });
+
+  Template.topBar.helpers({
+    isUpdateBlocked: function () { return isUpdateBlocked(); },
+    adminAlert: function () {
+      var setting = Settings.findOne({_id: "adminAlert"});
+      if (!setting || !setting.value) {
+        return null;
+      }
+      var text = setting.value;
+      var alertTime = Settings.findOne({_id: "adminAlertTime"}).value;
+      var template = Template.instance();
+      var currentTime = template.currentTime;
+      if (text.indexOf("$TIME") !== -1) {
+        text = text.replace("$TIME", alertTime.toLocaleTimeString());
+      }
+      if (text.indexOf("$DATE") !== -1) {
+        text = text.replace("$DATE", alertTime.toLocaleDateString());
+      }
+      if (text.indexOf("$IN_COUNTDOWN") !== -1) {
+        text = text.replace("$IN_COUNTDOWN", formatInCountdown(template, alertTime, currentTime.get()));
+      }
+      if (text.indexOf("$ACCOUNT_EXPIRES_IN") !== -1) {
+        text = text.replace("$ACCOUNT_EXPIRES_IN", formatAccountExpiresIn(template, currentTime.get()));
+      }
+      if (text.indexOf("$ACCOUNT_EXPIRES") !== -1) {
+        text = text.replace("$ACCOUNT_EXPIRES", formatAccountExpires());
+      }
+      return text;
+    }
+  });
+
   Template.topBar.events({
     "click #topbar-update": function (event) {
       unblockUpdate();

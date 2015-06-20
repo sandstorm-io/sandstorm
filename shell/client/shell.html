@@ -168,48 +168,59 @@ limitations under the License.
             </div>
           {{/if}}
         {{/if}}
-        <table>
-          <thead>
-            <tr>
-              <td>Title</td>
-              <td>Last Used</td>
-            </tr>
-          </thead>
-          <tbody>
-            {{#each filteredGrains}}
-              <tr class="grain" data-grainid="{{_id}}">
-                <td>{{title}}</td>
-                <td title="{{lastUsed}}">{{dateString lastUsed}}</td>
-              </tr>
-            {{else}}
+        {{#if emptyDemoUser}}
+          {{#unless selectedTab.sharedWithMe}}
+            <div id="demo-install-arrow"></div>
+          {{/unless}}
+        {{/if}}
+
+        {{#unless emptyDemoUser}}
+          <table>
+            <thead>
               <tr>
-                <td><i>no files to display...</i></td>
-                <td></td>
+                <td>Title</td>
+                <td>Last Used</td>
               </tr>
-            {{/each}}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {{#each filteredGrains}}
+                <tr class="grain" data-grainid="{{_id}}">
+                  <td>{{title}}</td>
+                  <td title="{{lastUsed}}">{{dateString lastUsed}}</td>
+                </tr>
+              {{else}}
+                <tr>
+                  <td><i>no files to display...</i></td>
+                  <td></td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        {{/unless}}
+
         {{#if isDemoUser}}
-          <aside>
-            <form id="signup" action="https://sandstorm.us7.list-manage.com/subscribe/post?u=1a036c5ea0fc3c215793748ed&amp;id=5d9399a0af" method="post">
-              <p>Join our mailing list for updates<br>
-              <input type="email" name="EMAIL" placeholder="e-mail" required><input type="submit" value="&#10003;"></p>
-            </form>
-            <a id="preorder" href="https://sandstorm.io/preorder.html">
-              <span>Early Bird</span>
-              <span>Pre-order Now</span>
-            </a>
-            <div id="social">
-              <ul>
-                <li id="github"><a href="https://github.com/sandstorm-io/sandstorm">Github</a></li>
-                <li id="feed"><a href="https://blog.sandstorm.io/feed.xml">Atom/RSS feed</a></li>
-                <li id="twitter"><a href="https://twitter.com/SandstormIO">Twitter</a></li>
-                <li id="google-plus"><a href="https://google.com/+SandstormIo">Google+</a></li>
-                <li id="facebook"><a href="https://facebook.com/sandstorm.io">Facebook</a></li>
-              </ul>
-              <p>Connect with us</p>
-            </div>
-          </aside>
+          {{#unless emptyDemoUser}}
+            <aside>
+              <form id="signup" action="https://sandstorm.us7.list-manage.com/subscribe/post?u=1a036c5ea0fc3c215793748ed&amp;id=5d9399a0af" method="post">
+                <p>Join our mailing list for updates<br>
+                <input type="email" name="EMAIL" placeholder="e-mail" required><input type="submit" value="&#10003;"></p>
+              </form>
+              <a id="preorder" href="https://sandstorm.io/preorder.html">
+                <span>Early Bird</span>
+                <span>Pre-order Now</span>
+              </a>
+              <div id="social">
+                <ul>
+                  <li id="github"><a href="https://github.com/sandstorm-io/sandstorm">Github</a></li>
+                  <li id="feed"><a href="https://blog.sandstorm.io/feed.xml">Atom/RSS feed</a></li>
+                  <li id="twitter"><a href="https://twitter.com/SandstormIO">Twitter</a></li>
+                  <li id="google-plus"><a href="https://google.com/+SandstormIo">Google+</a></li>
+                  <li id="facebook"><a href="https://facebook.com/sandstorm.io">Facebook</a></li>
+                </ul>
+                <p>Connect with us</p>
+              </div>
+            </aside>
+          {{/unless}}
         {{/if}}
       </div>
 

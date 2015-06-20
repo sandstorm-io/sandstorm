@@ -5,7 +5,7 @@
 * [Easy Install](#installing-the-easy-way)
 * [Hard Install](#installing-from-source)
 * [How it Works](#how-it-works)
-* [How to Port Apps](#how-to-port-apps)
+* [How to Package Apps](#how-to-package-apps)
 * [Contribute](#contribute)
 
 ## Introduction
@@ -149,9 +149,9 @@ If you suspect you'll be hacking on Sandstorm's dependencies as well, you may wa
 * App servers are aggressively killed off as soon as the user closes the browser tab, then restarted when the user returns later.
 * Packages are cryptographically signed.  Packages signed with the same key represent versions of the same app, and are thus allowed to replace older versions -- although the user must still confirm these upgrades.
 
-## How to Port Apps
+## How to Package Apps
 
-See [the porting guide](https://github.com/sandstorm-io/sandstorm/wiki/Porting-Guide).
+See [the packaging guide](https://github.com/sandstorm-io/sandstorm/wiki/Packaging-Guide).
 
 ## Contribute
 

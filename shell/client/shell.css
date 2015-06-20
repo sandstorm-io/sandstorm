@@ -402,6 +402,7 @@ img {
   margin: 8px 0 0 0;
   border-collapse: collapse;
   width: 600px;
+  background-color: rgba(255, 255, 255, 0.5);
 }
 
 #applist-grains table thead td {
@@ -696,7 +697,7 @@ div.popup h2 {
 #install.instep-confirm  #step-confirm  .confirm-form { display: block; }
 #install.instep-run      #step-run      .done-notice { display: block; }
 
-#demo-install-arrow, #my-files-arrow, #sign-in-arrow {
+#install-arrow, #my-files-arrow, #sign-in-arrow {
   position: absolute;
   left: 0;
   top: 0;
@@ -707,10 +708,11 @@ div.popup h2 {
   background-image: url(/files-arrow.svg);
 }
 
-#demo-install-arrow {
+#install-arrow {
   /* Point at the first button in the shell, rather */
   /* than pointing at the top bar. */
-  top: 3.35em;
+  top: 64px;
+  left: 32px;
 }
 
 #sign-in-arrow {

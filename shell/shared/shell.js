@@ -368,12 +368,6 @@ if (Meteor.isClient) {
   });
 
   Template.root.helpers({
-    // The shell checks for an emptyDemoUser so it can show a visual
-    // nudge that the user should install an app, create a grain, etc.
-    emptyDemoUser: function() {
-      var hasNoGrains = (Grains.find({userId: Meteor.userId()}).count() == 0);
-      return isDemoUser() && hasNoGrains;
-    },
     filteredGrains: function () {
       var selectedTab = Session.get("selectedTab");
       var userId = Meteor.userId();

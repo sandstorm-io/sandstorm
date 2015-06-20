@@ -168,13 +168,8 @@ limitations under the License.
             </div>
           {{/if}}
         {{/if}}
-        {{#if emptyDemoUser}}
-          {{#unless selectedTab.sharedWithMe}}
-            <div id="demo-install-arrow"></div>
-          {{/unless}}
-        {{/if}}
 
-        {{#unless emptyDemoUser}}
+        {{#if filteredGrains}}
           <table>
             <thead>
               <tr>
@@ -188,18 +183,11 @@ limitations under the License.
                   <td>{{title}}</td>
                   <td title="{{lastUsed}}">{{dateString lastUsed}}</td>
                 </tr>
-              {{else}}
-                <tr>
-                  <td><i>no files to display...</i></td>
-                  <td></td>
-                </tr>
               {{/each}}
             </tbody>
           </table>
-        {{/unless}}
 
-        {{#if isDemoUser}}
-          {{#unless emptyDemoUser}}
+          {{#if isDemoUser}}
             <aside>
               <form id="signup" action="https://sandstorm.us7.list-manage.com/subscribe/post?u=1a036c5ea0fc3c215793748ed&amp;id=5d9399a0af" method="post">
                 <p>Join our mailing list for updates<br>
@@ -220,6 +208,10 @@ limitations under the License.
                 <p>Connect with us</p>
               </div>
             </aside>
+          {{/if}}
+        {{else}}
+          {{#unless selectedTab.sharedWithMe}}
+            <div id="install-arrow"></div>
           {{/unless}}
         {{/if}}
       </div>

@@ -182,6 +182,7 @@ shell/public/inbox-m.png: icons/inbox.svg
 	@convert -background none -scale 40x40 -negate -evaluate multiply 0.87 $< $@
 
 shell/client/changelog.html: CHANGELOG.md
+	@mkdir -p tmp
 	@echo '<template name="changelog">' > tmp/changelog.html
 	@markdown CHANGELOG.md >> tmp/changelog.html
 	@echo '</template>' >> tmp/changelog.html

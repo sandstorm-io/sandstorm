@@ -1,42 +1,17 @@
-# Sandstorm
+# Installation
 
-Sandstorm makes it easy to run your own server.
-
-Use Sandstorm to install apps to create [documents](http://etherpad.org/),
-[spreadsheets](https://ethercalc.net/), [blogs](https://wordpress.org),
-[git repos](https://about.gitlab.com/), [task lists](http://libreboard.com/),
-and [more](https://sandstorm.io/apps/) as easily as you'd install apps on your
-phone.
-
-Sandstorm is open source and can be installed on any x64-64 Linux
-system.
-
-* Read more at: https://sandstorm.io/
-* Try the demo: https://demo.sandstorm.io/
-* Documentation available at: https://docs.sandstorm.io/
-
-## Caveats
-
-Sandstorm is in the very early stages of development. We want
-developers to start playing with it, but please don't rely on it for
-mission-critical data or security yet.
+We recommend **the easy way** if you are running your own server.
 
 ## Installing the Easy Way
 
 *Prerequisite:* Linux x86_64, with kernel version 3.13 or later.
 
-To install on your own Linux machine, do:
+To install on your own Linux machine, see
+[https://install.sandstorm.io/](https://install.sandstorm.io) or run:
 
+```bash
     curl https://install.sandstorm.io | bash
-
-Or, if you don't like piping directly to shell, download first:
-
-    curl https://install.sandstorm.io > install.sh
-    bash install.sh
-
-This will install a self-contained and (optionally) auto-updating Sandstorm bundle. It won't touch
-anything on your system other than your chosen installation directory, optionally installing an
-init script, and placing two symlinks (`spk` and `sandstorm`) under `/usr/local/bin`.
+```
 
 Note: If installing Sandstorm under LXC / Docker, you will need to choose the option to
 install as a non-root user. Unfortunately, this means the development tools will not
@@ -44,8 +19,6 @@ work. This is due to the interaction between Sandstorm and Docker's use of Linux
 containerization features and missing features in the Linux kernel which we
 hope will be fixed eventually. For non-development purposes, Sandstorm should run just fine
 under Docker.
-
-* Read more about installing Sandstorm: https://sandstorm.io/install/
 
 ### Tips
 
@@ -56,10 +29,10 @@ under Docker.
 * If you want SSL, then you will definitely need an nginx proxy (or something equivalent). You will
   further need to use a wildcard certificate.
 
-For reference, [nginx-example.conf](nginx-example.conf) contains the http server part of nginx
-config used by Sandstorm Alpha.
-
-## Installing from Source (the hard way)
+For reference,
+[nginx-example.conf](https://github.com/sandstorm-io/sandstorm/tree/nginx-example.conf)
+contains the http server part of nginx config used by Sandstorm Alpha.
+## Installing from Source
 
 ### Prerequisites
 
@@ -114,7 +87,7 @@ have to manually do:
 ### Hacking on the shell
 
 You can run the shell (front-end) in dev mode so that you can modify it without rebuilding the
-whole bundle for every change. Do:
+whole bundle for every change. Just do:
 
     cd shell
     sudo service sandstorm stop-fe
@@ -137,15 +110,3 @@ To do a debug build, run make like:
     make continuous CXXFLAGS="-g"
 
 If you suspect you'll be hacking on Sandstorm's dependencies as well, you may want to follow the dependency symlink trick described in the Ekam readme.
-
-## How It Works
-
-Read more in the [Sandstorm documentation](https://docs.sandstorm.io/en/latest/overview/).
-
-## How to Package Apps
-
-See [the packaging tutorial in the Sandstorm documentation](https://docs.sandstorm.io/latest/vagrant-spk/packaging-tutorial).
-
-## Contribute
-
-Want to help?  Get on the [discussion group](https://groups.google.com/group/sandstorm-dev) and let us know!

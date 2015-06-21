@@ -547,8 +547,14 @@ if (Meteor.isClient) {
       }
 
       if (event.data.setPath) {
-        window.history.replaceState({}, "", "/grain/" +
-            currentGrainId + event.data.setPath);
+        var prefix = window.location.pathname.match("/[^/]*/[^/]*")[0];
+        if (prefix.lastIndexOf("/grain/", 0) !== 0 &&
+            prefix.lastIndexOf("/shared/", 0) !== 0) {
+          throw new Error("Don't know how to add in-grain path to current URL. " +
+                          "This is a bug in Sandstorm; please file a report.");
+        }
+
+        window.history.replaceState({}, "", prefix + event.data.setPath);
       } else if (event.data.setTitle) {
         Session.set("grainFrameTitle", event.data.setTitle);
       } else if (event.data.renderTemplate) {
@@ -712,8 +718,16 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
       if (error) {
         route.state.set("error", error.message);
         route.state.set("openingSession", undefined);
-      } else if (result.redirect) {
-        return Router.go(result.redirect);
+      } else if (result.redirectToGrain) {
+        // Make sure to carry over any within-grain path.
+        var routeParams = { grainId: result.redirectToGrain };
+        var path = route.params.path;
+        if (path) {
+          routeParams.path = path;
+        }
+
+        // OK, go to the grain.
+        return Router.go("grain", routeParams);
       } else {
         route.state.set("title", result.title);
         route.state.set("grainId", result.grainId);

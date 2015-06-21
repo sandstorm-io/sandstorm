@@ -195,7 +195,7 @@ Meteor.methods({
           });
         }
       }
-      return {redirect: "/grain/" + apiToken.grainId};
+      return {redirectToGrain: apiToken.grainId};
     } else {
       if (!mayOpenGrain(apiToken.grainId, apiToken.userId)) {
         throw new Meteor.Error(403, "Unauthorized",

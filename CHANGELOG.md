@@ -1,3 +1,12 @@
+### v0.89 (2015-06-20)
+- "Incognito" sharing: Sandstorm will now ask you whether you want to reveal your identity when visiting a share link from someone you haven't interacted with before.
+- When you have no grains, a big green arrow will now suggest that you install an app or create a grain. (Helps users get through the demo.)
+- Apps can now receive callbacks from Github webhooks via the API endpoint.
+- Share links can now include paths (e.g. to make them go to a specific page on MediaWiki).
+- Fixed unexpected page refreshes when using apps that support paths (like MediaWiki).
+- "Admin alert" feature lets you define a banner to show to all users, possibly including a time and countdown, e.g. to announce scheduled downtime.
+- Various Admin panel usability improvements.
+
 ### v0.88 (2015-06-18)
 - Fix real-time activity stats not being displayed (in admin settings).
 - Fix issue on Oasis where worker could get into a bad state and refuse to start grains.

@@ -142,7 +142,7 @@ If you suspect you'll be hacking on Sandstorm's dependencies as well, you may wa
 
 Read more in the [Sandstorm documentation](https://docs.sandstorm.io/en/latest/overview/).
 
-## How to Port Apps
+## How to Package Apps
 
 See [the packaging tutorial in the Sandstorm documentation](https://docs.sandstorm.io/latest/vagrant-spk/packaging-tutorial).
 

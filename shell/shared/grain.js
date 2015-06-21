@@ -721,13 +721,19 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
       } else if (result.redirectToGrain) {
         // Make sure to carry over any within-grain path.
         var routeParams = { grainId: result.redirectToGrain };
-        var path = route.params.path;
-        if (path) {
-          routeParams.path = path;
+        if (route.params.path) {
+          routeParams.path = route.params.path;
+        }
+        var urlParams = {};
+        if (route.params.query) {
+          urlParams.query = route.params.query;
+        }
+        if (route.params.hash) {
+          urlParams.hash = route.params.hash;
         }
 
         // OK, go to the grain.
-        return Router.go("grain", routeParams);
+        return Router.go("grain", routeParams, urlParams);
       } else {
         route.state.set("title", result.title);
         route.state.set("grainId", result.grainId);

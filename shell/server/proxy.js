@@ -501,14 +501,19 @@ Meteor.startup(function () {
   // Remake proxies for all sessions that remain.
   Sessions.find({}).forEach(function (session) {
     var grain = Grains.findOne(session.grainId);
-    var user = Meteor.users.findOne({_id: session.userId});
-    if (grain && user) {
-      var isOwner = grain.userId === session.userId;
-      var proxy = new Proxy(session.grainId, grain.userId, session._id, session.hostId, isOwner,
-                            user, null, false);
-      proxies[session._id] = proxy;
-      proxiesByHostId[session.hostId] = proxy;
+    if (!grain) return;
+
+    var user = null;
+    if (session.userId) {
+      user = Meteor.users.findOne({_id: session.userId});
+      if (!user) return;  // Session owner no longer exists.
     }
+
+    var isOwner = grain.userId === session.userId;
+    var proxy = new Proxy(session.grainId, grain.userId, session._id, session.hostId, isOwner,
+                          user, null, false);
+    proxies[session._id] = proxy;
+    proxiesByHostId[session.hostId] = proxy;
   });
 });
 

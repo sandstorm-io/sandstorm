@@ -547,8 +547,15 @@ Meteor.startup(function() {
 
   RoleAssignments.find().observe({
     added: function (roleAssignment) {
-      clearSessions(roleAssignment.grainId, roleAssignment.recipient);
-      clearApiProxies(roleAssignment.grainId);
+      // TODO(soon): Unfortunately, added() gets called for all existing role assignments when the
+      //   front-end restarts, meaning clearing sessions here will cause people's views to refresh
+      //   on server upgrade, which is not a nice user experience. It's also sad to force-refresh
+      //   people when they gained new permissions since they might be in the middle of something,
+      //   and it's not strictly necessary for security. OTOH, it's sad to be non-reactive. Maybe
+      //   we should notify people that they have new permissions and let them click a thing to
+      //   refresh?
+//      clearSessions(roleAssignment.grainId, roleAssignment.recipient);
+//      clearApiProxies(roleAssignment.grainId);
     },
     changed: function (newRoleAssignment, oldRoleAssignment) {
       if (newRoleAssignment.active != oldRoleAssignment.active ||

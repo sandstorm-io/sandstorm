@@ -25,7 +25,7 @@ mission-critical data or security yet.
 
 *Prerequisite:* Linux x86_64, with kernel version 3.13 or later.
 
-To install on your own Linux machine, just do:
+To install on your own Linux machine, do:
 
     curl https://install.sandstorm.io | bash
 
@@ -114,7 +114,7 @@ have to manually do:
 ### Hacking on the shell
 
 You can run the shell (front-end) in dev mode so that you can modify it without rebuilding the
-whole bundle for every change. Just do:
+whole bundle for every change. Do:
 
     cd shell
     sudo service sandstorm stop-fe

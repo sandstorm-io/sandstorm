@@ -9,7 +9,7 @@ and [more](https://sandstorm.io/apps/) as easily as you'd install apps on your
 phone.
 
 Sandstorm is open source and can be installed on any x64-64 Linux
-server.
+system.
 
 * Read more at: https://sandstorm.io/
 * Try the demo: https://demo.sandstorm.io/

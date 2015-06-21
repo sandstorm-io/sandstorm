@@ -137,6 +137,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
 
   struct Response {
     setCookies @0 :List(Cookie);
+    cachePolicy @16 :CachePolicy;
 
     enum SuccessCode {
       # 2xx-level status codes that we allow an app to return.
@@ -301,6 +302,58 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     # datagram at a time.
     #
     # TODO(soon):  Send whole WebSocket datagrams.
+  }
+
+  struct CachePolicy {
+    enum Scope {
+      # Defines the scope in which caching is allowed. For security reasons, the resource MUST NOT
+      # be stored in a cache with a broader scope, even if it is never actually served from that
+      # cache.
+
+      none @0;
+      # This resource must not be stored in any cache.
+
+      perSession @1;
+      # Caching is allowed on a per-session basis.
+
+      perUser @2;
+      # Caching is allowed on a per-user basis (across multiple sessions).
+
+      perAppVersion @3;
+      # Caching is allowed on a per-app-version basis (across all users). This is a
+      # Sandstorm-specific notion.
+
+      universal @4;
+      # Caching is allowed universally, across all users and versions of the app.
+    }
+
+    withCheck @0 :Scope;
+    # Within a cache serving this scope or a narrower scope, the resource may be stored in cache,
+    # but if a non-negligible amount of time has gone by since the resource was last validated then
+    # the client must check with the server that the resource hasn't changed (revalidate).
+    #
+    # "A non-negligible amount of time" means something on the order of the network latency between
+    # the client and the server. For example, there is obviously no point in re-validating a cached
+    # resource if it was last validated less than one network round trip ago. For optimization
+    # reasons, we allow this to be expanded a bit -- something like a 15s timeout is OK. Ultimately
+    # it is up to the infrastructure to decide, though; if an app is not OK with this, it should
+    # specify `withCheck` = `none`.
+
+    permanent @1 :Scope;
+    # Within a cache serving this scope or a narrower scope, the resource may be assumed never to
+    # change, and may be served directly from cache without checking with the server.
+    #
+    # Note that we do not allow specification of a cache duration other than "forever" because in
+    # practice if the resource is mutable at all, you almost certainly don't know when it will next
+    # change, and so setting a non-zero cache duration will lead to stale data bugs.
+
+    variesOnCookie @2 :Bool;
+    variesOnAccept @3 :Bool;
+    # Indicates what inputs in `Context` would have caused a different response to be served.
+    # If these are false and caching is enabled, it is assumed the resource is identical regardless
+    # of these inputs.
+
+    # TODO(someday): Support etags.
   }
 
   # Request headers that we will probably add later:

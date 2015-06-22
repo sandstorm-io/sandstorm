@@ -41,6 +41,10 @@ IpInterfaceImpl = function (userId) {
   this.userId = userId;
 };
 
+makeIpInterface = function (userId) {
+  return new Capnp.Capability(new IpInterfaceImpl(userId), IpRpc.PersistentIpInterface);
+}
+
 IpInterfaceImpl.prototype.save = function (params) {
   return saveFrontendRef({ipInterface: true}, params.sealFor, this.userId);
 };
@@ -188,6 +192,10 @@ var addressType = function (address) {
 IpNetworkImpl = function (userId) {
   this.userId = userId;
 };
+
+makeIpNetwork = function (userId) {
+  return new Capnp.Capability(new IpNetworkImpl(userId), IpRpc.PersistentIpNetwork);
+}
 
 IpNetworkImpl.prototype.save = function (params) {
   return saveFrontendRef({ipNetwork: true}, params.sealFor, this.userId);

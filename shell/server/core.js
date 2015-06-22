@@ -191,9 +191,9 @@ restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
       var notificationId = token.frontendRef.notificationHandle;
       return {cap: makeNotificationHandle(notificationId, true)};
     } else if (token.frontendRef.ipNetwork) {
-      return {cap: new IpNetworkImpl()};
+      return {cap: makeIpNetwork()};
     } else if (token.frontendRef.ipInterface) {
-      return {cap: new IpInterfaceImpl()};
+      return {cap: makeIpInterface()};
     } else {
       throw new Meteor.Error(500, "Unknown frontend token type.");
     }

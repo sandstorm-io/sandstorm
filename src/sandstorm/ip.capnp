@@ -41,6 +41,7 @@
 $import "/capnp/c++.capnp".namespace("sandstorm");
 
 using Util = import "util.capnp";
+using SystemPersistent = import "supervisor.capnp".SystemPersistent;
 using PowerboxCapability = import "grain.capnp".PowerboxCapability;
 
 interface IpNetwork extends(PowerboxCapability) {
@@ -182,3 +183,6 @@ struct IpPortPowerboxMetadata {
   # asking the user for a hostname at all and instead making the Powerbox request right off and
   # letting the user specify the hostname there.
 }
+
+interface PersistentIpNetwork extends (IpNetwork, SystemPersistent) {}
+interface PersistentIpInterface extends (IpInterface, SystemPersistent) {}

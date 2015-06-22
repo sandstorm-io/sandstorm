@@ -216,6 +216,28 @@ if (Meteor.isClient) {
     Meteor.clearTimeout(this.timeout);
   });
 
+  var determineAppName = function (grainId) {
+    // Returns:
+    //
+    // - The current app title, if we can determine it, or
+    //
+    // - The empty string "", if we can't determine the current app     //   title.
+    var params = "";
+
+    // Try our hardest to find the package's name, falling back on the default if needed.
+    if (grainId) {
+      var grain = Grains.findOne({_id: grainId});
+      if (grain && grain.packageId) {
+        var thisPackage = Packages.findOne({_id: grain.packageId});
+        if (thisPackage) {
+          params = appNameFromPackage(thisPackage);
+        }
+      }
+    }
+
+    return params;
+  };
+
   Template.topBar.helpers({
     isUpdateBlocked: function () { return isUpdateBlocked(); },
     adminAlert: function () {
@@ -260,6 +282,12 @@ if (Meteor.isClient) {
         param = formatAccountExpires();
         if (!param) return null;
         text = text.replace("$ACCOUNT_EXPIRES", param);
+      }
+      if (text.indexOf("$APPNAME") !== -1) {
+        text = text.replace("$APPNAME", determineAppName(this.grainId));
+      }
+      if (alertUrl && alertUrl.indexOf("$APPNAME") !== -1) {
+        alertUrl = alertUrl.replace("$APPNAME", determineAppName(this.grainId));
       }
       return {text: text, className: className, alertUrl: alertUrl};
     }

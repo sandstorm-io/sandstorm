@@ -200,6 +200,7 @@ if (Meteor.isClient) {
 
   Template.topBar.onCreated(function () {
     this.timer = new Tracker.Dependency;
+    this.showTopbar = new ReactiveVar(false);
   });
 
   var setTopBarTimeout = function (template, delay) {
@@ -240,6 +241,7 @@ if (Meteor.isClient) {
 
   Template.topBar.helpers({
     isUpdateBlocked: function () { return isUpdateBlocked(); },
+    showTopbar: function () {return Template.instance().showTopbar.get(); },
     adminAlert: function () {
       var setting = Settings.findOne({_id: "adminAlert"});
       if (!setting || !setting.value) {
@@ -296,6 +298,14 @@ if (Meteor.isClient) {
   Template.topBar.events({
     "click #topbar-update": function (event) {
       unblockUpdate();
+    },
+    "click #admin-alert-icon": function (event) {
+      var template = Template.instance();
+      template.showTopbar.set(!template.showTopbar.get());
+    },
+    "click #admin-alert-closer": function (event) {
+      var template = Template.instance();
+      template.showTopbar.set(false);
     }
   });
 

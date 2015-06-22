@@ -42,11 +42,15 @@ limitations under the License.
   {{else}}
   <div id="topbar-right">
     {{#with adminAlert}}
-      {{#if alertUrl}}
-        <a href="{{alertUrl}}" class="alert {{className}}">{{text}}</a>
-      {{else}}
-        <div class="alert {{className}}">{{text}}</div>
-      {{/if}}
+      <div id="admin-alert-closer" data-show="{{showTopbar}}"></div>
+      <span id="admin-alert" data-show="{{showTopbar}}">
+        {{#if alertUrl}}
+          <a href="{{alertUrl}}" class="alert {{className}}">{{text}}</a>
+        {{else}}
+          <div class="alert {{className}}">{{text}}</div>
+        {{/if}}
+      </span>
+      <span id="admin-alert-icon">!</span>
     {{/with}}
     {{#if currentUser}}
       {{> notifications}}

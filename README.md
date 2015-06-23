@@ -144,7 +144,7 @@ Read more in the [Sandstorm documentation](https://docs.sandstorm.io/en/latest/o
 
 ## How to Package Apps
 
-See [the packaging tutorial in the Sandstorm documentation](https://docs.sandstorm.io/latest/vagrant-spk/packaging-tutorial).
+See [the packaging tutorial in the Sandstorm documentation](https://docs.sandstorm.io/en/latest/vagrant-spk/packaging-tutorial/).
 
 ## Contribute
 

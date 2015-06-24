@@ -275,7 +275,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   ...
 // }
 
-MembraneRequirements = new Mongo.collection("membraneRequirements");
+MembraneRequirements = new Mongo.Collection("membraneRequirements");
 // For each sturdy ref, this collection lists conditions that must hold for it to be considered
 // valid. Semantically, a sturdy ref's requirements specify the powers which were used to originally
 // create the capability. If any condition in the requirements becomes untrue, then the capability

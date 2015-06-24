@@ -19,12 +19,18 @@
 $import "/capnp/c++.capnp".namespace("sandstorm");
 
 using WebSession = import "web-session.capnp";
+using IpAddress = import "ip.capnp".IpAddress;
 
 interface ApiSession @0xc879e379c625cdc7 extends(WebSession.WebSession) {
   # A special case of WebSession but for APIs. It doesn't provide much other
   # than a unique type id that we can identify ApiSessions with
 
   struct Params {
-    # Currently there are no params for api sessions
+    # Normally, we strip the remote address from requests, since most applications shouldn't need
+    # it.  However, for those that benefit from it (like analytics), clients can opt into passing
+    # their IP on to the backend by adding an "X-Sandstorm-Pass-IP: yes" header to their request.
+    # This would be a privacy leak for WebSession, since the grain can give the client scripts which
+    # would send the header, but ApiSession requires a user action, so it's safe here.
+    remoteAddress @0 :IpAddress;
   }
 }

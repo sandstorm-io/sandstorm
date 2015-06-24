@@ -57,6 +57,11 @@ interface Supervisor {
   # membrane around the returned capability which will be revoked if any of these requirements
   # fail. Additionally, the membrane will ensure that any capabilities save()d after passing
   # through this membrane have these requirements applied as well.
+  #
+  # (Normally, `requirements` contains one or two entries: a `tokenValid` requirement for the token
+  # from which this capability was restored, and (sometimes) a `permissionsHeld` requirement
+  # against the grain that is restoring the capability (in order to implement the
+  # `requiredPermissions` argument of SandstormCore.restore())).
 
   drop @6 (ref :SupervisorObjectId);
   # Wraps `MainView.drop()`. Can also drop capabilities hosted by the supervisor.

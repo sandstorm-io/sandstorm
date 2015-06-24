@@ -48,7 +48,7 @@ interface Supervisor {
   # Wait until the storage size of the grain is different from `oldSize` and then return the new
   # size. May occasionally return prematurely, with `size` equal to `oldSize`.
 
-  restore @5 (ref :SupervisorObjectId, requirements :List(MembraneRequirement))
+  restore @5 (ref :SupervisorObjectId, requirements :List(MembraneRequirement), parentToken :Data)
           -> (cap :Capability);
   # Wraps `MainView.restore()`. Can also restore capabilities hosted by the supervisor.
   #
@@ -62,6 +62,10 @@ interface Supervisor {
   # from which this capability was restored, and (sometimes) a `permissionsHeld` requirement
   # against the grain that is restoring the capability (in order to implement the
   # `requiredPermissions` argument of SandstormCore.restore())).
+  #
+  # `parentToken` is the API token restored to get this capability. The receiver will want to keep
+  # this in memory in order to pass to `SandstormCore.makeChildToken()` later, if the live
+  # capability is saved again.
 
   drop @6 (ref :SupervisorObjectId);
   # Wraps `MainView.drop()`. Can also drop capabilities hosted by the supervisor.
@@ -105,6 +109,12 @@ interface SandstormCore {
   #
   # If any of the conditions listed in `requirements` become untrue, the returned token will be
   # disabled (cannot be restored).
+
+  makeChildToken @5 (parent :Data, owner :ApiTokenOwner,
+                     requirements :List(MembraneRequirement)) -> (token :Data);
+  # Given a token (probably originally passed to `Supervisor.restore()`), create a new token
+  # pointing to the same capability, where if the original token is revoked, the new token is
+  # also transitively revoked.
 
   getOwnerNotificationTarget @2 () -> (owner :Grain.NotificationTarget);
   # Get the notification target to use for notifications relating to the grain itself, e.g.

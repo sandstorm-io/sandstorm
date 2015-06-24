@@ -246,12 +246,6 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   expiresIfUnused:
 //              Optional Date after which the token, if it has not been used yet, expires.
 //              This field should be cleared on a token's first use.
-//   requirements: List of conditions which must hold for this token to be considered valid.
-//              Semantically, this list specifies the powers which were *used* to originally
-//              create the token. If any condition in the list becomes untrue, then the token must
-//              be considered revoked, and all live refs and sturdy refs obtained transitively
-//              through it must also become revoked. Each item is the JSON serialization of the
-//              `MembraneRequirement` structure defined in `supervisor.capnp`.
 //
 // It is important to note that a token's owner and provider are independent from each other. To
 // illustrate, here is an approximate definition of ApiToken in pseudo Cap'n Proto schema language:
@@ -278,9 +272,24 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //       roleAssignment :Maybe(RoleAssignment);
 //     }
 //   }
-//   requirements: List(Supervisor.MembraneRequirement);
 //   ...
 // }
+
+MembraneRequirements = new Mongo.Collection("membraneRequirements");
+// For each sturdy ref, this collection lists conditions that must hold for it to be considered
+// valid. Semantically, a sturdy ref's requirements specify the powers which were used to originally
+// create the capability. If any condition in the requirements becomes untrue, then the capability
+// must be considered revoked and all live refs and sturdy refs obtained transitively through it
+// must also become revoked.
+//
+// The requirements are normalized into their own collection here, rather than rolled into the
+// ApiTokens collection, to make it easy to look up which sturdy refs are impacted by a given
+// external change.
+//
+// Each contains:
+//   _id:         random
+//   sturdyRef:   The `_id` of the entry in ApiTokens that this requirement constrains.
+//   requirement: A JSON-encoded `MembraneRequirement`.
 
 Notifications = new Mongo.Collection("notifications");
 // Notifications for a user.

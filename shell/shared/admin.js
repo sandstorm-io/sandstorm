@@ -634,15 +634,22 @@ if (Meteor.isClient) {
     },
     userIdOrCurrent: function () {
       return this.userId || Meteor.userId();
+    },
+    disabled: function () {
+      return this.expires && (this.expires.getTime() <= Date.now());
     }
   })
 
-  var updateCap = function (capId, userId) {
+  var updateCap = function (capId, value) {
     var state = Iron.controller().state;
     resetResult(state);
-    state.set("successMessage", "Cap's user has been updated.");
+    if (!value) {
+      state.set("successMessage", "Capability has been re-enabled.");
+    } else {
+      state.set("successMessage", "Capability has been disabled.");
+    }
     var handleErrorBound = handleError.bind(state);
-    Meteor.call("adminUpdateCap", state.get("token"), capId, userId, handleErrorBound)
+    Meteor.call("adminToggleDisableCap", state.get("token"), capId, value, handleErrorBound)
   }
 
   Template.adminCaps.events({
@@ -670,15 +677,11 @@ if (Meteor.isClient) {
       var state = Iron.controller().state;
       return state.set("powerboxOfferUrl", null);
     },
-    "change select.cap-user": function (event) {
-      var value = event.target.selectedOptions[0].value;
+    "click .disable-cap": function (event) {
       var capId = event.target.getAttribute("data-id");
+      var token = ApiTokens.findOne({_id: capId});
 
-      if (value == "disabled") {
-        updateCap(capId, null);
-      } else {
-        updateCap(capId, value);
-      }
+      updateCap(capId, !token.expires);
     },
   });
 }
@@ -889,10 +892,14 @@ if (Meteor.isServer) {
       })).sturdyRef;
       return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
     },
-    adminUpdateCap: function (token, capId, userId) {
+    adminToggleDisableCap: function (token, capId, value) {
       checkAuth(token);
 
-      ApiTokens.update({_id: capId}, {$set: {userId: userId}});
+      if (value) {
+        ApiTokens.update({_id: capId}, {$set: {expires: new Date(0)}});
+      } else {
+        ApiTokens.update({_id: capId}, {$set: {expires: null}});
+      }
     }
   });
 
@@ -1005,6 +1012,6 @@ if (Meteor.isServer) {
       return [];
     }
     return ApiTokens.find({"frontendRef": {$in: [{ipNetwork: true}, {ipInterface: true}]}},
-                          {fields: {frontendRef: 1, created: 1, userId: 1}});
+                          {fields: {frontendRef: 1, created: 1, userId: 1, expires: 1}});
   });
 }

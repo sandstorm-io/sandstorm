@@ -909,15 +909,11 @@ $KEY</textarea></p>
     </thead>
     <tbody>
       {{#each caps}}
-        <tr>
+        <tr class="{{#if disabled}}revoked-cap{{/if}}">
           <td>{{#if frontendRef.ipNetwork}}IpNetwork{{/if}}{{#if frontendRef.ipInterface}}IpInterface{{/if}}</td>
-          <td>
-            <select class="cap-user" name="select" data-id="{{_id}}">
-              <option value="disabled" selected={{#if isDisabled}}selected{{/if}}>disabled</option>
-              <option value="{{userId}}" selected={{#if userId}}selected{{/if}}>{{userName}}</option>
-            </select>
-          </td>
+          <td>{{userName}}</td>
           <td title="{{created}}">{{dateString created}}</td>
+          <td><a class="disable-cap" data-id="{{_id}}">x</a></td>
         </tr>
       {{/each}}
     </tbody>

@@ -1201,8 +1201,13 @@ table.admin-table tr {
   border-bottom: 1px solid #ddd;
 }
 
-.cap-user {
-  width: 100%;
+a.disable-cap {
+  color: red;
+  cursor: pointer;
+}
+
+.revoked-cap {
+  text-decoration: line-through;
 }
 
 #show-changelog {

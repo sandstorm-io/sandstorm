@@ -996,7 +996,11 @@ Proxy.prototype.getSession = function (request) {
     this.getConnection();  // make sure we're connected
     var self = this;
     var promise = this.uiView.getViewInfo().then(function (viewInfo) {
-      return self._callNewSession(request, viewInfo);
+      return inMeteor(function() {
+        Grains.update(self.grainId, {$set: {cachedViewInfo: viewInfo}});
+      }).then(function () {
+        return self._callNewSession(request, viewInfo);
+      });
     }, function (error) {
       if (error.kjType === "failed" || error.kjType === "unimplemented") {
         // Method not implemented.

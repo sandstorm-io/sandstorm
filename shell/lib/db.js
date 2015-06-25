@@ -81,6 +81,8 @@ Grains = new Mongo.Collection("grains");
 //   title:  Human-readable string title, as chosen by the user.
 //   lastUsed:  Date when the grain was last used by a user.
 //   private: If true, then knowledge of `_id` does not suffice to open this grain.
+//   cachedViewInfo: The JSON-encoded result of `UiView.getViewInfo()`, cached from the most recent
+//                   time a session to this grain was opened.
 //
 // The following fields *might* also exist. These are temporary hacks used to implement e-mail and
 // web publishing functionality without powerbox support; they will be replaced once the powerbox

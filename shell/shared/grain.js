@@ -398,12 +398,17 @@ if (Meteor.isClient) {
       powerboxRequestInfo = null;
     },
     "click #powerbox-offer-popup-closer": function (event) {
-      // TODO(soon): handle errors and what not
-      Meteor.call("finishPowerboxOffer", currentSessionId);
+      Meteor.call("finishPowerboxOffer", currentSessionId, function (err) {
+        // TODO(someday): display the error nicely to the user
+        if (err) {
+          console.error(err);
+        }
+      });
     },
     "submit #powerbox-request-form": function (event) {
       event.preventDefault();
-      Meteor.call("finishPowerboxRequest", event.target.token.value, this.grainId,
+      Meteor.call("finishPowerboxRequest", event.target.token.value, event.target.petname.value,
+        this.grainId,
         function (err, token) {
           if (err) {
             Session.set("powerbox-request-error", err.toString());
@@ -507,8 +512,7 @@ if (Meteor.isClient) {
 
     hash: function () {
       return Template.instance().originalHash;
-    }
-  });
+    },
 
     showPowerboxOffer: function () {
       var session = Sessions.findOne({_id: this.sessionId}, {fields: {powerboxView: 1}});

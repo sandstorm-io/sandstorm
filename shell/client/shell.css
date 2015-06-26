@@ -617,6 +617,10 @@ svg {
   color: red;
 }
 
+#powerbox-request-popup input {
+  width: 250px;
+}
+
 .powerboxIcon {
   font-size: 32px;
   display: inline;

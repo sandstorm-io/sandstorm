@@ -36,18 +36,33 @@ var Url = Npm.require("url");
 var ROOT_URL = Url.parse(process.env.ROOT_URL);
 HOSTNAME = ROOT_URL.hostname;
 
-function SessionContextImpl(grainId, sessionId) {
+function SessionContextImpl(grainId, sessionId, userId) {
   this.grainId = grainId;
   this.sessionId = sessionId;
+  this.userId = userId;
 }
 
 SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
-  // TODO(someday): do something with requiredPermissions
   var self = this;
   return inMeteor((function () {
+    if (!self.userId) {
+      // TODO(someday): allow non logged in users?
+      throw new Meteor.Error(400, "Only logged in users can offer capabilities.")
+    }
     var castedCap = cap.castAs(SystemPersistent);
-    var save = castedCap.save();
+    var save = castedCap.save({webkey: null});
     var sturdyRef = waitPromise(save).sturdyRef;
+
+    // TODO(someday): This will eventually use SystemPersistent.addRequirements when membranes
+    // are fully implemented for supervisors.
+    var permission = {
+      permissionsHeld: {
+        grainId: self.grainId,
+        userId: self.userId,
+        permissions: requiredPermissions
+      }
+    };
+    ApiTokens.update({_id: hashSturdyRef(sturdyRef)}, {$push: {permissions: permission}});
     Sessions.update({_id: self.sessionId}, {$set: {
       powerboxView: {
         offer: ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef
@@ -57,39 +72,40 @@ SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
 };
 
 Meteor.methods({
-  finishPowerboxRequest: function (webkeyUrl, grainId) {
+  finishPowerboxRequest: function (webkeyUrl, saveLabel, grainId) {
     check(webkeyUrl, String);
     check(grainId, String);
 
+    var userId = Meteor.userId();
+    if (!userId) {
+      throw new Meteor.Error(403, "User must be logged in to user powerbox.");
+    }
     var parsedWebkey = Url.parse(webkeyUrl.trim());
     if (parsedWebkey.host !== makeWildcardHost("api")) {
       console.log(parsedWebkey.hostname, makeWildcardHost("api"));
-      throw new Meteor.Error(500, "Hostname does not match this server. External webkeys are not " +
+      throw new Meteor.Error(400, "Hostname does not match this server. External webkeys are not " +
         "supported (yet)");
     }
 
     var token = parsedWebkey.hash;
     if (!token) {
-      throw new Meteor.Error(500, "Invalid webkey. You must pass in the full webkey, " +
+      throw new Meteor.Error(400, "Invalid webkey. You must pass in the full webkey, " +
         "including domain name and hash fragment");
     }
     token = token.slice(1);
 
-    var cap;
-    try {
-      cap = waitPromise(restoreInternal(token,
-                                        Match.Optional({webkey: Match.Optional(Match.Any)}))).cap;
-    } catch (err) {
-      throw new Meteor.Error(500, err.toString());
-    }
+    var cap = restoreInternal(hashSturdyRef(token), Match.Optional({webkey: Match.Optional(Match.Any)}), [],
+                              new Buffer(token)).cap;
     var castedCap = cap.castAs(SystemPersistent);
     var save = castedCap.save({grain: {
       grainId: grainId,
       saveLabel: {
-        defaultText: "Requested Powerbox Capability"
-      }
+        defaultText: saveLabel
+      },
+      introducerUser: userId
     }});
     var sturdyRef = waitPromise(save).sturdyRef;
+
     return sturdyRef.toString();
   },
   finishPowerboxOffer: function (sessionId) {
@@ -99,15 +115,16 @@ Meteor.methods({
   }
 });
 
-function HackSessionContextImpl(grainId, sessionId) {
-  SessionContextImpl.call(this, grainId, sessionId);
+function HackSessionContextImpl(grainId, sessionId, userId) {
+  SessionContextImpl.call(this, grainId, sessionId, userId);
 }
 
 HackSessionContextImpl.prototype = Object.create(SessionContextImpl.prototype);
 HackSessionContextImpl.prototype.constructor = HackSessionContextImpl;
 
-makeHackSessionContext = function (grainId, sessionId) {
-  return new Capnp.Capability(new HackSessionContextImpl(grainId, sessionId), HackSessionContext);
+makeHackSessionContext = function (grainId, sessionId, userId) {
+  return new Capnp.Capability(new HackSessionContextImpl(grainId, sessionId, userId),
+                              HackSessionContext);
 };
 
 var HOSTNAME_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";

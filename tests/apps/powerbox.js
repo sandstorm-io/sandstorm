@@ -31,8 +31,8 @@ module.exports = {};
 module.exports["Install Powerbox"] = function (browser) {
   browser
     .init()
-    .installApp("http://sandstorm.io/apps/jparyani/powerbox-1.spk", "b0704d58e11f67494b6b203dff5cc8b6")
-    .assert.containsText("#grainTitle", "Untitled SandstormTest");
+    .installApp("http://sandstorm.io/apps/jparyani/powerbox-4.spk", "baaceb4cda0d9451968670a3d4ffe5e7")
+    .assert.containsText("#grainTitle", "Untitled PowerboxTest");
 };
 
 module.exports["Test Powerbox"] = function (browser) {
@@ -56,5 +56,47 @@ module.exports["Test Powerbox"] = function (browser) {
           .frame("grain-frame")
           .waitForElementVisible("#request-result", short_wait)
           .assert.containsText("#request-result", "request: footest");
+    });
+};
+
+// This powerbox app adds `requiredPermissions` to the `restore` call that aren't satisfied.
+// We test to make sure an error is thrown.
+// Source at https://github.com/jparyani/sandstorm-test-app/tree/powerbox-permissions
+module.exports["Install Powerbox with failing requirements"] = function (browser) {
+  browser
+    .init()
+    .installApp("http://sandstorm.io/apps/jparyani/powerbox-2.spk", "9d6493e63bc9919de3959fe0c5a131ad", true)
+    .assert.containsText("#grainTitle", "Untitled SandstormTest");
+};
+
+module.exports["Test Powerbox with failing requirements"] = function (browser) {
+  browser
+    // We'll use the debugLog at the bottom of the test, but it's nice to open it early and give it time to load.
+    .click("#openDebugLog")
+    .pause(short_wait)
+    .frame("grain-frame")
+    .waitForElementVisible("#offer", short_wait)
+    .click("#offer")
+    .waitForElementVisible("#offer-result", short_wait)
+    .assert.containsText("#offer-result", "offer: success")
+    .frame()
+    .waitForElementVisible("#powerbox-offer-popup input", short_wait)
+    .getValue("#powerbox-offer-popup input", function (result) {
+        browser
+          .frame("grain-frame")
+          .click("#request")
+          .frame()
+          .waitForElementVisible("#powerbox-request-input", short_wait)
+          .setValue("#powerbox-request-input", result.value)
+          .click("#powerbox-request-form button")
+          .frame("grain-frame")
+          .waitForElementVisible("#request-result", short_wait)
+          .assert.containsText("#request-result", "request:")
+          .windowHandles(function (windows) {
+            browser
+              .switchWindow(windows.value[1])
+              .waitForElementVisible("#grainLog > pre", short_wait)
+              .assert.containsText("#grainLog > pre", "Error: Requirements not satisfied")
+          });
     });
 };

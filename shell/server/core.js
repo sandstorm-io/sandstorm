@@ -57,7 +57,7 @@ function dismissNotification(notificationId, callCancel) {
       if (!callCancel) {
         dropInternal(id, {frontend: null});
       } else {
-        var notificationCap = waitPromise(restoreInternal(id, {frontend: null})).cap;
+        var notificationCap = restoreInternal(hashSturdyRef(id), {frontend: null}).cap;
         var castedNotification = notificationCap.castAs(PersistentOngoingNotification);
         dropInternal(id, {frontend: null});
         try {
@@ -76,12 +76,12 @@ function dismissNotification(notificationId, callCancel) {
   }
 }
 
-function hashSturdyRef(sturdyRef) {
+hashSturdyRef = function (sturdyRef) {
   return Crypto.createHash("sha256").update(sturdyRef).digest("base64");
 }
 
 function generateSturdyRef() {
-  return Random.secret();
+  return Random.id(22);
 }
 
 Meteor.methods({
@@ -116,7 +116,7 @@ NotificationHandle.prototype.close = function () {
   });
 };
 
-saveFrontendRef = function (frontendRef, owner) {
+saveFrontendRef = function (frontendRef, owner, userId) {
   return inMeteor(function () {
     var sturdyRef = new Buffer(generateSturdyRef());
     var hashedSturdyRef = hashSturdyRef(sturdyRef);
@@ -124,6 +124,8 @@ saveFrontendRef = function (frontendRef, owner) {
       _id: hashedSturdyRef,
       frontendRef: frontendRef,
       owner: owner,
+      created: new Date(),
+      userId: userId
     });
     return {sturdyRef: sturdyRef};
   });
@@ -133,37 +135,102 @@ NotificationHandle.prototype.save = function (params) {
   return saveFrontendRef({notificationHandle: this.notificationId}, params.sealFor);
 };
 
-restoreInternal = function (sturdyRef, ownerPattern) {
+function checkRequirements (requirements) {
+  if (!requirements) {
+    return true;
+  }
+  for (var i in requirements) {
+    var requirement = requirements[i];
+    if (requirement.tokenValid) {
+      var token = ApiTokens.findOne({_id: requirement.tokenValid}, {fields: {permissions: 1}});
+      if (!checkRequirements(token.permissions)) {
+        return false;
+      }
+    } else if (requirement.permissionsHeld) {
+      var p = requirement.permissionsHeld;
+      var viewInfo = Grains.findOne(p.grainId, {fields: {cachedViewInfo: 1}}).cachedViewInfo;
+      var set = new PermissionSet(grainPermissions(p.grainId, p.userId, viewInfo || {}));
+      if (new PermissionSet(p.permissions).intersect(set)) {
+        return false;
+      }
+    } else {
+      throw new Meteor.Error(403, "Unknown requirement");
+    }
+  }
+  return true;
+};
+
+restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
   // Restores `sturdyRef`, checking first that its owner matches `ownerPattern`.
-  var hashedSturdyRef = hashSturdyRef(sturdyRef);
-  var token = ApiTokens.findOne(hashedSturdyRef);
+  // parentToken and requirements are optional params that are only used in the case of an objectId
+  // token
+  var token = ApiTokens.findOne(tokenId);
   if (!token) {
-    throw new Error("No token found to restore");
+    throw new Meteor.Error(403, "No token found to restore");
   }
   check(token.owner, ownerPattern);
+  if (!checkRequirements(token.requirements)) {
+    throw new Meteor.Error(403, "Requirements not satisfied.");
+  }
+
+  if (token.expires && token.expires.getTime() <= Date.now()) {
+    throw new Meteor.Error(403, "Authorization token expired");
+  }
+
+  if (token.expiresIfUnused) {
+    if (token.expiresIfUnused.getTime() <= Date.now()) {
+      throw new Meteor.Error(403, "Authorization token expired");
+    } else {
+      // It's getting used now, so clear the expiresIfUnused field.
+      ApiTokens.update(token._id, {$set: {expiresIfUnused: null}});
+    }
+  }
+
   if (token.frontendRef) {
     if (token.frontendRef.notificationHandle) {
       var notificationId = token.frontendRef.notificationHandle;
       return {cap: makeNotificationHandle(notificationId, true)};
     } else {
-      throw new Error("Unknown frontend token type.");
+      throw new Meteor.Error(400, "Unknown frontend token type.");
     }
   } else if (token.objectId) {
+    if (!checkRequirements(requirements)) {
+      throw new Meteor.Error(403, "Requirements not satisfied.");
+    }
     if (token.objectId.appRef) {
       token.objectId.appRef = new Buffer(token.objectId.appRef);
     }
-    return useGrain(token.grainId, function (supervisor) {
-      return supervisor.restore(token.objectId);
-    });
+    return waitPromise(useGrain(token.grainId, function (supervisor) {
+      return supervisor.restore(token.objectId, requirements, parentToken);
+    }));
+  } else if (token.parentToken) {
+    return restoreInternal(token.parentToken, Match.Any, requirements, parentToken);
   } else {
-    throw new Error("Unknown token type.");
+    throw new Meteor.Error(400, "Unknown token type.");
   }
 };
 
-SandstormCoreImpl.prototype.restore = function (sturdyRef) {
+SandstormCoreImpl.prototype.restore = function (sturdyRef, requiredPermissions) {
   var self = this;
   return inMeteor(function () {
-    return restoreInternal(sturdyRef, {grain: Match.ObjectIncluding({grainId: self.grainId})});
+    var hashedSturdyRef = hashSturdyRef(sturdyRef);
+    var token = ApiTokens.findOne(hashedSturdyRef);
+    var requirements = [{
+      tokenValid: hashedSturdyRef
+    }];
+
+    if (requiredPermissions && token.owner.grain.introducerUser) {
+      requirements.push({
+        permissionsHeld: {
+          permissions: requiredPermissions,
+          userId: token.owner.grain.introducerUser,
+          grainId: self.grainId
+        }
+      });
+    }
+    return restoreInternal(hashedSturdyRef,
+                           {grain: Match.ObjectIncluding({grainId: self.grainId})},
+                           requirements, sturdyRef);
   });
 };
 
@@ -207,7 +274,7 @@ SandstormCoreImpl.prototype.drop = function (sturdyRef) {
   });
 };
 
-SandstormCoreImpl.prototype.makeToken = function (ref, owner) {
+SandstormCoreImpl.prototype.makeToken = function (ref, owner, requirements) {
   var self = this;
   return inMeteor(function () {
     var sturdyRef = new Buffer(generateSturdyRef());
@@ -216,7 +283,29 @@ SandstormCoreImpl.prototype.makeToken = function (ref, owner) {
       _id: hashedSturdyRef,
       grainId: self.grainId,
       objectId: ref,
-      owner: owner
+      owner: owner,
+      created: new Date(),
+      requirements: requirements
+    });
+
+    return {
+      token: sturdyRef
+    };
+  });
+};
+
+SandstormCoreImpl.prototype.makeChildToken = function (parent, owner, requirements) {
+  var self = this;
+  return inMeteor(function () {
+    var sturdyRef = new Buffer(generateSturdyRef());
+    var hashedSturdyRef = hashSturdyRef(sturdyRef);
+    ApiTokens.insert({
+      _id: hashedSturdyRef,
+      grainId: self.grainId,
+      parentToken: hashSturdyRef(parent),
+      owner: owner,
+      created: new Date(),
+      requirements: requirements // TODO(someday): remove redundant tokenValid requirement
     });
 
     return {

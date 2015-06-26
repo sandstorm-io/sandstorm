@@ -92,9 +92,6 @@ private:
   static kj::Promise<kj::String> readAll(kj::AsyncInputStream& input,
       kj::Vector<char> soFar = kj::Vector<char>());
 
-  static kj::Promise<void> pump(kj::AsyncInputStream& input, ByteStream::Client stream);
-  static kj::Promise<void> pump(kj::InputStream& input, ByteStream::Client stream);
-
   void taskFailed(kj::Exception&& exception) override;
 };
 

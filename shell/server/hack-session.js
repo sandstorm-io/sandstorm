@@ -62,6 +62,7 @@ SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
         permissions: requiredPermissions
       }
     };
+    checkRequirements([permission]);
     ApiTokens.update({_id: hashSturdyRef(sturdyRef)}, {$push: {permissions: permission}});
     Sessions.update({_id: self.sessionId}, {$set: {
       powerboxView: {

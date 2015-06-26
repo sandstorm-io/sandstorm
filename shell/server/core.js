@@ -135,7 +135,7 @@ NotificationHandle.prototype.save = function (params) {
   return saveFrontendRef({notificationHandle: this.notificationId}, params.sealFor);
 };
 
-function checkRequirements (requirements) {
+checkRequirements = function (requirements) {
   if (!requirements) {
     return true;
   }

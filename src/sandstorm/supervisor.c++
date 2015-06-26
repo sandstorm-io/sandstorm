@@ -1563,9 +1563,9 @@ public:
               capnp::Data::Reader parentToken, SandstormCore::Client sandstormCore)
       : cap(kj::mv(cap)), parentToken(kj::heapArray<const byte>(parentToken)),
         sandstormCore(sandstormCore) {
-      builder.setRoot(kj::mv(_requirements));
-      requirements = builder.getRoot<capnp::List<MembraneRequirement>>().asReader();
-    }
+    builder.setRoot(kj::mv(_requirements));
+    requirements = builder.getRoot<capnp::List<MembraneRequirement>>().asReader();
+  }
 
   kj::Promise<void> dispatchCall(
       uint64_t interfaceId, uint16_t methodId,

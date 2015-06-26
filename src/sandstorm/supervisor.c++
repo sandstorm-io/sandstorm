@@ -1560,9 +1560,9 @@ class SaveWrapper : public SystemPersistent::Server {
 
 public:
   SaveWrapper(AppPersistent<>::Client&& cap, capnp::List<MembraneRequirement>::Reader _requirements,
-              capnp::Data::Reader parentToken, SandstormCore::Client sandstormCore) :
-    cap(kj::mv(cap)), parentToken(kj::heapArray<const byte>(parentToken)),
-    sandstormCore(sandstormCore) {
+              capnp::Data::Reader parentToken, SandstormCore::Client sandstormCore)
+      : cap(kj::mv(cap)), parentToken(kj::heapArray<const byte>(parentToken)),
+        sandstormCore(sandstormCore) {
       builder.setRoot(kj::mv(_requirements));
       requirements = builder.getRoot<capnp::List<MembraneRequirement>>().asReader();
     }
@@ -1574,7 +1574,7 @@ public:
       return capnp::Persistent< capnp::Data,
         sandstorm::ApiTokenOwner>::Server::dispatchCallInternal(methodId, context);
     } else if (interfaceId == capnp::typeId<SystemPersistent>()) {
-      return dispatchCallInternal(methodId, context);
+      return SystemPersistent::Server::dispatchCallInternal(methodId, context);
     }
 
     capnp::AnyPointer::Reader params = context.getParams();

@@ -299,13 +299,19 @@ SandstormCoreImpl.prototype.makeChildToken = function (parent, owner, requiremen
   return inMeteor(function () {
     var sturdyRef = new Buffer(generateSturdyRef());
     var hashedSturdyRef = hashSturdyRef(sturdyRef);
+    var hashedParent = hashSturdyRef(parent);
+
+    requirements = requirements.filter(function (requirement) {
+      return requirement.tokenValid !== hashedParent;
+    });
+
     ApiTokens.insert({
       _id: hashedSturdyRef,
       grainId: self.grainId,
-      parentToken: hashSturdyRef(parent),
+      parentToken: hashedParent,
       owner: owner,
       created: new Date(),
-      requirements: requirements // TODO(someday): remove redundant tokenValid requirement
+      requirements: requirements
     });
 
     return {

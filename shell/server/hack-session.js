@@ -46,14 +46,14 @@ SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
   var self = this;
   return inMeteor((function () {
     if (!self.userId) {
-      // TODO(someday): allow non logged in users?
+      // TODO(soon): allow non logged in users?
       throw new Meteor.Error(400, "Only logged in users can offer capabilities.")
     }
     var castedCap = cap.castAs(SystemPersistent);
     var save = castedCap.save({webkey: null});
     var sturdyRef = waitPromise(save).sturdyRef;
 
-    // TODO(someday): This will eventually use SystemPersistent.addRequirements when membranes
+    // TODO(soon): This will eventually use SystemPersistent.addRequirements when membranes
     // are fully implemented for supervisors.
     var permission = {
       permissionsHeld: {

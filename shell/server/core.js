@@ -160,16 +160,16 @@ function checkRequirements (requirements) {
   return true;
 };
 
-restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
+restoreInternal = function (tokenId, ownerPattern, permissions, parentToken) {
   // Restores `sturdyRef`, checking first that its owner matches `ownerPattern`.
-  // parentToken and requirements are optional params that are only used in the case of an objectId
+  // parentToken and permissions are optional params that are only used in the case of an objectId
   // token
   var token = ApiTokens.findOne(tokenId);
   if (!token) {
     throw new Meteor.Error(403, "No token found to restore");
   }
   check(token.owner, ownerPattern);
-  if (!checkRequirements(token.requirements)) {
+  if (!checkRequirements(token.permissions)) {
     throw new Meteor.Error(403, "Requirements not satisfied.");
   }
 
@@ -194,17 +194,17 @@ restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
       throw new Meteor.Error(400, "Unknown frontend token type.");
     }
   } else if (token.objectId) {
-    if (!checkRequirements(requirements)) {
+    if (!checkRequirements(permissions)) {
       throw new Meteor.Error(403, "Requirements not satisfied.");
     }
     if (token.objectId.appRef) {
       token.objectId.appRef = new Buffer(token.objectId.appRef);
     }
     return waitPromise(useGrain(token.grainId, function (supervisor) {
-      return supervisor.restore(token.objectId, requirements, parentToken);
+      return supervisor.restore(token.objectId, permissions, parentToken);
     }));
   } else if (token.parentToken) {
-    return restoreInternal(token.parentToken, Match.Any, requirements, parentToken);
+    return restoreInternal(token.parentToken, Match.Any, permissions, parentToken);
   } else {
     throw new Meteor.Error(400, "Unknown token type.");
   }

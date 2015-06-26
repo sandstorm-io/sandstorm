@@ -84,7 +84,7 @@ Meteor.methods({
     var parsedWebkey = Url.parse(webkeyUrl.trim());
     if (parsedWebkey.host !== makeWildcardHost("api")) {
       console.log(parsedWebkey.hostname, makeWildcardHost("api"));
-      throw new Meteor.Error(400, "Hostname does not match this server. External webkeys are not " +
+      throw new Meteor.Error(500, "Hostname does not match this server. External webkeys are not " +
         "supported (yet)");
     }
 

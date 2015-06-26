@@ -453,6 +453,8 @@ interface SessionContext {
   #   rpcId: A unique string that should identify this rpc message to the app. You will receive this
   #          id in the callback to verify which message it is referring to.
   #   powerboxQuery: A powerboxQuery object, serialized as a Javascript object.
+  #   saveLabel: A string petname to give this label. This will be displayed to the user as the name
+  #          for this capability.
   #
   # (eg. window.parent.postMessage({powerboxRequest: {rpcId: myRpcId, powerboxQuery: {}}}, "*")
   #

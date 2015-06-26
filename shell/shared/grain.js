@@ -407,7 +407,7 @@ if (Meteor.isClient) {
     },
     "submit #powerbox-request-form": function (event) {
       event.preventDefault();
-      Meteor.call("finishPowerboxRequest", event.target.token.value, event.target.petname.value,
+      Meteor.call("finishPowerboxRequest", event.target.token.value, powerboxRequestInfo.saveLabel,
         this.grainId,
         function (err, token) {
           if (err) {
@@ -651,7 +651,8 @@ if (Meteor.isClient) {
         powerboxRequestInfo = {
           source: event.source,
           rpcId: rpcId,
-          origin: event.origin
+          origin: event.origin,
+          saveLabel: powerboxRequest.saveLabel
         };
       } else {
         console.log("postMessage from app not understood: " + event.data);

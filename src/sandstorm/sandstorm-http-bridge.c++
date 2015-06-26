@@ -1337,6 +1337,7 @@ private:
     }
     return kj::strArray(permissionVec, ",");
   }
+
   inline kj::String addressToString(::sandstorm::IpAddress::Reader&& address) {
     uint64_t lower64 = address.getLower64();
     uint64_t upper64 = address.getUpper64();
@@ -1378,6 +1379,7 @@ private:
       return kj::mv(s);
     }
   }
+
   kj::NetworkAddress& serverAddress;
   SessionContextMap& sessionContextMap;
   spk::BridgeConfig::Reader config;

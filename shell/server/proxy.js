@@ -945,7 +945,7 @@ var isRfc1918OrLocal = function(address) {
             (quad[0] === 172 && quad[1] >= 16 && quad[1] < 32));
   } else if (Net.isIPv6(address)) {
     // IPv6 specifies ::1 as localhost and fd:: as reserved for private networks
-    return (address === "::1" || address.indexOf("fd") === 0);
+    return (address === "::1" || address.lastIndexOf("fd", 0) === 0);
   } else {
     // Ignore things that are neither IPv4 nor IPv6
     return false;
@@ -973,7 +973,10 @@ Proxy.prototype._callNewApiSession = function (request, userInfo) {
         addressToPass = request.headers["x-real-ip"];
       }
       if (Net.isIPv4(addressToPass)) {
-        // Map IPv4 addresses in IPv6
+        // Map IPv4 addresses in IPv6.
+        // This conveniently comes out to a 48-bit number, which is precisely representable in a
+        // double (which has 53 mantissa bits). Thus we can avoid using Bignum/strings, which we
+        // might otherwise need to precisely represent 64-bit fields.
         var v4Int = 0xFFFF00000000 + addressToPass.split(".")
             .map(function(x) { return parseInt(x, 10); })
             .reduce(function(a, b) { return 256*a + b; });
@@ -984,11 +987,7 @@ Proxy.prototype._callNewApiSession = function (request, userInfo) {
       } else if (Net.isIPv6(addressToPass)) {
         // Because I don't want to parse a v6 address in JS so I can convert it to a bignum so I can
         // convert it back to a string to stuff it in a uint64_t, we do not support IPv6 for this
-        // feature at present, and instead always send ::1.  Someone can fix this later.
-        params.remoteAddress = {
-            lower64: 1,
-            upper64: 0
-        };
+        // feature at present.  Someone can fix this later.
       }
     }
   }

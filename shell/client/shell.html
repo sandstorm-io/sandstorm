@@ -42,11 +42,15 @@ limitations under the License.
   {{else}}
   <div id="topbar-right">
     {{#with adminAlert}}
-      {{#if alertUrl}}
-        <a href="{{alertUrl}}" class="alert {{className}}">{{text}}</a>
-      {{else}}
-        <div class="alert {{className}}">{{text}}</div>
-      {{/if}}
+      <div id="admin-alert-closer" data-show="{{showTopbar}}"></div>
+      <span id="admin-alert" data-show="{{showTopbar}}">
+        {{#if alertUrl}}
+          <a href="{{alertUrl}}" class="alert {{className}}">{{text}}</a>
+        {{else}}
+          <div class="alert {{className}}">{{text}}</div>
+        {{/if}}
+      </span>
+      <span id="admin-alert-icon">!</span>
     {{/with}}
     {{#if currentUser}}
       {{> notifications}}
@@ -760,6 +764,7 @@ $KEY</textarea></p>
           <li>$IN_COUNTDOWN : An active countdown until Alert Time (eg. "in 3 days" or "in 1 minute"). Displays "any moment" at the alert time and then disappears after an hour. Useful for announcing scheduled maintenance.</li>
           <li>$ACCOUNT_EXPIRES : The time when the viewer's demo account expires (this is only useful for demo servers)</li>
           <li>$ACCOUNT_EXPIRES_IN : An active countdown until the viewer's demo account is deleted (this is only useful for demo servers)</li>
+          <li>$APPNAME : The name of the current app (this variable also works for "Alert URL").</li>
         </ul>
       </span>
     </p>

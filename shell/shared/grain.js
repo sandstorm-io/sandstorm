@@ -408,36 +408,6 @@ if (Meteor.isClient) {
     }
   });
 
-  Template.topBar.helpers({
-    installPageParams: function() {
-      // The https://sandstorm.io/install/ page takes a
-      // window.location.hash parameter. This code assumes that the
-      // install link only shows up if this is a demo user. Therefore,
-      // for our purposes, it should contain:
-      //
-      // - The current app title, if we can determine it, or
-      //
-      // - The string "demo", if we can't determine the current app
-      //   title.
-      var params = "demo";
-
-      // Try our hardest to find the package's name, falling back on
-      // the default if needed.
-      if (this.grainId) {
-        var thisPackageId = Grains.findOne(
-          {_id: this.grainId}).packageId;
-        if (thisPackageId) {
-          var thisPackage = Packages.findOne({_id: thisPackageId});
-          if (thisPackage) {
-            params = appNameFromPackage(thisPackage);
-          }
-        }
-      }
-
-      return params;
-    }
-  });
-
   Template.grain.onCreated(function () {
     this.originalPath = window.location.pathname + window.location.search;
     this.originalHash = window.location.hash;

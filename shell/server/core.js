@@ -142,8 +142,8 @@ checkRequirements = function (requirements) {
   for (var i in requirements) {
     var requirement = requirements[i];
     if (requirement.tokenValid) {
-      var token = ApiTokens.findOne({_id: requirement.tokenValid}, {fields: {permissions: 1}});
-      if (!checkRequirements(token.permissions)) {
+      var token = ApiTokens.findOne({_id: requirement.tokenValid}, {fields: {requirements: 1}});
+      if (!checkRequirements(token.requirements)) {
         return false;
       }
     } else if (requirement.permissionsHeld) {
@@ -160,16 +160,16 @@ checkRequirements = function (requirements) {
   return true;
 };
 
-restoreInternal = function (tokenId, ownerPattern, permissions, parentToken) {
+restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
   // Restores `sturdyRef`, checking first that its owner matches `ownerPattern`.
-  // parentToken and permissions are optional params that are only used in the case of an objectId
+  // parentToken and requirements are optional params that are only used in the case of an objectId
   // token
   var token = ApiTokens.findOne(tokenId);
   if (!token) {
     throw new Meteor.Error(403, "No token found to restore");
   }
   check(token.owner, ownerPattern);
-  if (!checkRequirements(token.permissions)) {
+  if (!checkRequirements(token.requirements)) {
     throw new Meteor.Error(403, "Requirements not satisfied.");
   }
 
@@ -194,17 +194,17 @@ restoreInternal = function (tokenId, ownerPattern, permissions, parentToken) {
       throw new Meteor.Error(500, "Unknown frontend token type.");
     }
   } else if (token.objectId) {
-    if (!checkRequirements(permissions)) {
+    if (!checkRequirements(requirements)) {
       throw new Meteor.Error(403, "Requirements not satisfied.");
     }
     if (token.objectId.appRef) {
       token.objectId.appRef = new Buffer(token.objectId.appRef);
     }
     return waitPromise(useGrain(token.grainId, function (supervisor) {
-      return supervisor.restore(token.objectId, permissions, parentToken);
+      return supervisor.restore(token.objectId, requirements, parentToken);
     }));
   } else if (token.parentToken) {
-    return restoreInternal(token.parentToken, Match.Any, permissions, parentToken);
+    return restoreInternal(token.parentToken, Match.Any, requirements, parentToken);
   } else {
     throw new Meteor.Error(500, "Unknown token type.");
   }

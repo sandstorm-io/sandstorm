@@ -55,15 +55,15 @@ SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
 
     // TODO(soon): This will eventually use SystemPersistent.addRequirements when membranes
     // are fully implemented for supervisors.
-    var permission = {
+    var requirement = {
       permissionsHeld: {
         grainId: self.grainId,
         userId: self.userId,
         permissions: requiredPermissions
       }
     };
-    checkRequirements([permission]);
-    ApiTokens.update({_id: hashSturdyRef(sturdyRef)}, {$push: {permissions: permission}});
+    checkRequirements([requirement]);
+    ApiTokens.update({_id: hashSturdyRef(sturdyRef)}, {$push: {requirements: requirement}});
     Sessions.update({_id: self.sessionId}, {$set: {
       powerboxView: {
         offer: ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef

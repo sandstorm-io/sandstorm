@@ -191,7 +191,7 @@ restoreInternal = function (tokenId, ownerPattern, permissions, parentToken) {
       var notificationId = token.frontendRef.notificationHandle;
       return {cap: makeNotificationHandle(notificationId, true)};
     } else {
-      throw new Meteor.Error(400, "Unknown frontend token type.");
+      throw new Meteor.Error(500, "Unknown frontend token type.");
     }
   } else if (token.objectId) {
     if (!checkRequirements(permissions)) {
@@ -206,7 +206,7 @@ restoreInternal = function (tokenId, ownerPattern, permissions, parentToken) {
   } else if (token.parentToken) {
     return restoreInternal(token.parentToken, Match.Any, permissions, parentToken);
   } else {
-    throw new Meteor.Error(400, "Unknown token type.");
+    throw new Meteor.Error(500, "Unknown token type.");
   }
 };
 

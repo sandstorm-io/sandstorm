@@ -108,6 +108,51 @@ kj::Maybe<kj::String> readLine(kj::BufferedInputStream& input) {
   }
 }
 
+kj::Promise<void> pump(kj::AsyncInputStream& input, ByteStream::Client stream) {
+  auto req = stream.writeRequest(capnp::MessageSize { 2100, 0 });
+  auto orphanage = capnp::Orphanage::getForMessageContaining(
+      kj::implicitCast<ByteStream::WriteParams::Builder>(req));
+  auto orphan = orphanage.newOrphan<capnp::Data>(8192);
+  auto buffer = orphan.get();
+
+  return input.tryRead(buffer.begin(), 1, buffer.size())
+      .then([&input,KJ_MVCAP(stream),KJ_MVCAP(req),KJ_MVCAP(orphan)](size_t n) mutable
+            -> kj::Promise<void> {
+    if (n == 0) {
+      return stream.doneRequest(capnp::MessageSize {4, 0}).send().then([](auto&&) {});
+    }
+
+    orphan.truncate(n);
+    req.adoptData(kj::mv(orphan));
+
+    // TODO(perf): Parallelize writes.
+    return req.send().then([&input,KJ_MVCAP(stream)](auto&&) mutable {
+      return pump(input, kj::mv(stream));
+    });
+  });
+}
+
+kj::Promise<void> pump(kj::InputStream& input, ByteStream::Client stream) {
+  auto req = stream.writeRequest(capnp::MessageSize { 2100, 0 });
+  auto orphanage = capnp::Orphanage::getForMessageContaining(
+      kj::implicitCast<ByteStream::WriteParams::Builder>(req));
+  auto orphan = orphanage.newOrphan<capnp::Data>(8192);
+  auto buffer = orphan.get();
+
+  size_t n = input.tryRead(buffer.begin(), 1, buffer.size());
+  if (n == 0) {
+    return stream.doneRequest(capnp::MessageSize {4, 0}).send().then([](auto&&) {});
+  }
+
+  orphan.truncate(n);
+  req.adoptData(kj::mv(orphan));
+
+  // TODO(perf): Parallelize writes.
+  return req.send().then([&input,KJ_MVCAP(stream)](auto&&) mutable {
+    return pump(input, kj::mv(stream));
+  });
+}
+
 kj::ArrayPtr<const char> trimArray(kj::ArrayPtr<const char> slice) {
   while (slice.size() > 0 && isspace(slice[0])) {
     slice = slice.slice(1, slice.size());

@@ -22,6 +22,7 @@
 #include <kj/async-io.h>
 #include <capnp/capability.h>
 #include <sandstorm/supervisor.capnp.h>
+#include <kj/io.h>
 
 namespace sandstorm {
 
@@ -120,9 +121,9 @@ private:
   void maybeFinishMountingProc();
   void permanentlyDropSuperuser();
   void enterSandbox();
-  [[noreturn]] void runChild(int apiFd);
+  [[noreturn]] void runChild(int apiFd, kj::AutoCloseFd startEventFd);
 
-  [[noreturn]] void runSupervisor(int apiFd);
+  [[noreturn]] void runSupervisor(int apiFd, kj::AutoCloseFd startEventFd);
 
   class DefaultSystemConnector: public SystemConnector {
   public:

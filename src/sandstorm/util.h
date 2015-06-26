@@ -30,6 +30,7 @@
 #include <kj/function.h>
 #include <kj/async.h>
 #include <capnp/rpc-twoparty.h>
+#include <sandstorm/util.capnp.h>
 
 namespace kj {
   class UnixEventPort;
@@ -67,6 +68,10 @@ kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExists(
     int dirfd, kj::StringPtr name, int flags, mode_t mode = 0666);
 
 kj::Maybe<kj::String> readLine(kj::BufferedInputStream& input);
+
+kj::Promise<void> pump(kj::AsyncInputStream& input, ByteStream::Client stream);
+kj::Promise<void> pump(kj::InputStream& input, ByteStream::Client stream);
+// Read from `input`, write to `output`, until EOF.
 
 class StructyMessage {
   // Helper for constructing a message to be passed to the kernel composed of a bunch of structs

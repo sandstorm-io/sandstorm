@@ -73,6 +73,27 @@ interface Supervisor {
   watchLog @7 (backlogAmount :UInt64, stream :Util.ByteStream) -> (handle :Util.Handle);
   # Write the last `backlogAmount` bytes of the grain's debug log to `stream`, and then watch the
   # log for changes, writing them to `stream` as they happen, until `handle` is dropped.
+
+  enum WwwFileStatus {
+    file @0;
+    directory @1;
+    notFound @2;
+  }
+
+  getWwwFileHack @9 (path :Text, stream :Util.ByteStream) -> (status :WwwFileStatus);
+  # Reads a file from under the grain's "/var/www" directory. If the path refers to a regular
+  # file, the contents are written to `stream`, and `status` is returned as `file`. If the path
+  # refers to a directory or is not found, then `stream` is NOT called at all and the method
+  # returns the corresponding status.
+  #
+  # Note that if a Supervisor capability is obtained and used only for `getWwwFileHack()` -- i.e.
+  # `getMainView()` and `restore()` are not called -- then the supervisor will not actually start
+  # the application.
+  #
+  # This method is a temporary hack designed so that Sandstorm's front-end can implement web
+  # publishing -- as defined by HackSessionContext -- without digging directly into the grain's
+  # storage on-disk. Eventually, this mechanism for web publishing will be eliminated entirely
+  # and replaced with a driver and powerbox interactions.
 }
 
 interface SandstormCore {

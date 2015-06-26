@@ -34,7 +34,6 @@ var Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 SANDSTORM_LOGDIR = (SANDSTORM_ALTHOME || "") + "/var/log";
 SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
-SANDSTORM_GRAINDIR = SANDSTORM_VARDIR + "/grains";
 
 sandstormExe = function (progname) {
   if (SANDSTORM_ALTHOME) {
@@ -308,6 +307,8 @@ openGrain = function (grainId, isRetry) {
   // verify that the connection succeeded. Instead, if an RPC call to the connection fails, check
   // shouldRestartGrain(). If it returns true, call continueGrain() and then openGrain()
   // again with isRetry = true, and then retry.
+  //
+  // Must be called in a Meteor context.
 
   if (isRetry) {
     // Since this is a retry, try starting the grain even if we think it's already running.
@@ -331,20 +332,36 @@ shouldRestartGrain = function (error, retryCount) {
   return error.kjType === "disconnected" && retryCount < 1;
 }
 
-useGrain = function (grainId, cb, retryCount) {
+function maybeRetryUseGrain(grainId, cb, retryCount, err) {
+  if (shouldRestartGrain(err, retryCount)) {
+    return inMeteor(function () {
+      return cb(openGrain(grainId, true).supervisor)
+          .catch(maybeRetryUseGrain.bind(undefined, grainId, cb, retryCount + 1));
+    });
+  } else {
+    throw err;
+  }
+}
+
+useGrain = function (grainId, cb) {
   // This will open a grain for you, handling restarts if needed, and call the passed function with
   // the supervisor capability as the only parameter. The callback must return a promise that used
   // the supervisor, so that we can check if a disconnect error occurred, and retry if possible.
-  // This method returns the same promise that your callback returns.
+  // This function returns the same promise that your callback returns.
+  //
+  // This function is NOT expected to be run in a meteor context.
 
-  retryCount = retryCount || 0;
-  return cb(openGrain(grainId).supervisor).catch(function (err) {
-    if (shouldRestartGrain(err, retryCount)) {
-      return useGrain(grainId, cb, retryCount + 1);
-    } else {
-      throw err;
-    }
-  });
+  var runningGrain = runningGrains[grainId];
+  if (runningGrain) {
+    return runningGrain.then(function (grainInfo) {
+      return cb(grainInfo.supervisor);
+    }).catch(maybeRetryUseGrain.bind(undefined, grainId, cb, 0));
+  } else {
+    return inMeteor(function () {
+      return cb(openGrain(grainId, false).supervisor)
+          .catch(maybeRetryUseGrain.bind(undefined, grainId, cb, 0));
+    });
+  }
 }
 
 function continueGrain(grainId) {

@@ -55,6 +55,7 @@
 #include <execinfo.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
+#include <sys/eventfd.h>
 
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/supervisor.capnp.h>
@@ -627,6 +628,13 @@ kj::MainBuilder::Validity SupervisorMain::run() {
 
   registerSignalHandlers();
 
+  // Create eventfd that we'll use to block app startup until we've received an RPC requiring
+  // it. This is a hack to allow serving files out of the app's www directory without starting
+  // the app.
+  int _startEventFd;
+  KJ_SYSCALL(_startEventFd = eventfd(0, EFD_CLOEXEC));
+  kj::AutoCloseFd startEventFd(_startEventFd);
+
   // Allocate the API socket.
   int fds[2];
   KJ_SYSCALL(socketpair(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0, fds));
@@ -636,12 +644,12 @@ kj::MainBuilder::Validity SupervisorMain::run() {
   if (childPid == 0) {
     // We're in the child.
     KJ_SYSCALL(close(fds[0]));  // just to be safe, even though it's CLOEXEC.
-    runChild(fds[1]);
+    runChild(fds[1], kj::mv(startEventFd));
   } else {
     // We're in the supervisor.
     KJ_DEFER(killChild());
     KJ_SYSCALL(close(fds[1]));
-    runSupervisor(fds[0]);
+    runSupervisor(fds[0], kj::mv(startEventFd));
   }
 }
 
@@ -1493,8 +1501,12 @@ void SupervisorMain::DefaultSystemConnector::checkIfAlreadyRunning() const {
 
 // =====================================================================================
 
-[[noreturn]] void SupervisorMain::runChild(int apiFd) {
+[[noreturn]] void SupervisorMain::runChild(int apiFd, kj::AutoCloseFd startEventFd) {
   // We are the child.
+
+  // Wait until we get the signal to start.
+  uint64_t dummy;
+  KJ_SYSCALL(read(startEventFd, &dummy, sizeof(dummy)));
 
   enterSandbox();
 
@@ -1773,11 +1785,13 @@ private:
 class SupervisorMain::SupervisorImpl final: public Supervisor::Server {
 public:
   inline SupervisorImpl(kj::UnixEventPort& eventPort, UiView::Client&& mainView,
-                        DiskUsageWatcher& diskWatcher, WakelockSet& wakelockSet)
+                        DiskUsageWatcher& diskWatcher, WakelockSet& wakelockSet,
+                        kj::AutoCloseFd startAppEvent)
       : eventPort(eventPort), mainView(kj::mv(mainView)), diskWatcher(diskWatcher),
-        wakelockSet(wakelockSet) {}
+        wakelockSet(wakelockSet), startAppEvent(kj::mv(startAppEvent)) {}
 
   kj::Promise<void> getMainView(GetMainViewContext context) override {
+    ensureStarted();
     context.getResults(capnp::MessageSize {4, 1}).setView(mainView);
     return kj::READY_NOW;
   }
@@ -1830,6 +1844,8 @@ public:
 
   kj::Promise<void> restore(RestoreContext context) override {
     // # Wraps `MainView.restore()`. Can also restore capabilities hosted by the supervisor.
+
+    ensureStarted();
     auto objectId = context.getParams().getRef();
 
     if (objectId.which() == SupervisorObjectId<>::WAKE_LOCK_NOTIFICATION) {
@@ -1841,6 +1857,7 @@ public:
   }
 
   kj::Promise<void> drop(DropContext context) override {
+    ensureStarted();
     auto objectId = context.getParams().getRef();
 
     if (objectId.which() == SupervisorObjectId<>::WAKE_LOCK_NOTIFICATION) {
@@ -1851,11 +1868,69 @@ public:
     }
   }
 
+  kj::Promise<void> getWwwFileHack(GetWwwFileHackContext context) override {
+    auto params = context.getParams();
+    auto path = params.getPath();
+
+    {
+      // Prohibit non-canonical requests.
+      auto parts = split(path, '/');
+      if (parts.back().size() == 0) parts.removeLast();  // allow trailing '/'
+      for (auto part: parts) {
+        if (part.size() == 0 ||
+            (part.size() == 1 && part[0] == '.') ||
+            (part.size() == 2 && part[0] == '.' && part[1] == '.')) {
+          context.getResults(capnp::MessageSize {4, 0})
+              .setStatus(Supervisor::WwwFileStatus::NOT_FOUND);
+          return kj::READY_NOW;
+        }
+      }
+    }
+
+    auto fullPath = kj::str("sandbox/www/", path);
+    KJ_IF_MAYBE(fd, raiiOpenIfExists(fullPath, O_RDONLY)) {
+      struct stat stats;
+      KJ_SYSCALL(fstat(*fd, &stats));
+
+      if (S_ISREG(stats.st_mode)) {
+        auto stream = params.getStream();
+        context.releaseParams();
+        auto req = stream.expectSizeRequest();
+        req.setSize(stats.st_size);
+        auto expectSizeTask = req.send();
+        auto inStream = kj::heap<kj::FdInputStream>(kj::mv(*fd));
+        return pump(*inStream, kj::mv(stream)).attach(kj::mv(inStream));
+      } else if (S_ISDIR(stats.st_mode)) {
+        context.getResults(capnp::MessageSize {4, 0})
+            .setStatus(Supervisor::WwwFileStatus::DIRECTORY);
+        return kj::READY_NOW;
+      } else {
+        KJ_FAIL_ASSERT("not a regular file");
+      }
+    } else {
+      context.getResults(capnp::MessageSize {4, 0})
+          .setStatus(Supervisor::WwwFileStatus::NOT_FOUND);
+      return kj::READY_NOW;
+    }
+  }
+
 private:
   kj::UnixEventPort& eventPort;
   UiView::Client mainView;
   DiskUsageWatcher& diskWatcher;
   WakelockSet& wakelockSet;
+  kj::AutoCloseFd startAppEvent;
+
+  void ensureStarted() {
+    // Ensure that the app has been started.
+    if (startAppEvent != nullptr) {
+      uint64_t one = 1;
+      ssize_t n;
+      KJ_SYSCALL(n = write(startAppEvent, &one, sizeof(one)));
+      KJ_ASSERT(n == sizeof(one));
+      startAppEvent = nullptr;
+    }
+  }
 
   class LogWatcher: public Handle::Server, private kj::TaskSet::ErrorHandler {
   public:
@@ -1975,7 +2050,7 @@ auto SupervisorMain::DefaultSystemConnector::run(
 
 // -----------------------------------------------------------------------------
 
-[[noreturn]] void SupervisorMain::runSupervisor(int apiFd) {
+[[noreturn]] void SupervisorMain::runSupervisor(int apiFd, kj::AutoCloseFd startEventFd) {
   // We're currently in a somewhat dangerous state: our root directory is controlled
   // by the app.  If glibc reads, say, /etc/nsswitch.conf, the grain could take control
   // of the supervisor.  Fix this by chrooting to the supervisor directory.
@@ -2049,7 +2124,7 @@ auto SupervisorMain::DefaultSystemConnector::run(
   //   want to wrap the UiView and cache session objects.  Perhaps we could do this by making
   //   them persistable, though it's unclear how that would work with SessionContext.
   Supervisor::Client mainCap = kj::heap<SupervisorImpl>(
-      ioContext.unixEventPort, kj::mv(app), diskWatcher, wakelockSet);
+      ioContext.unixEventPort, kj::mv(app), diskWatcher, wakelockSet, kj::mv(startEventFd));
 
   auto runner = systemConnector->run(ioContext, kj::mv(mainCap));
   auto acceptTask = kj::mv(runner.task);

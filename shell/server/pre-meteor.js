@@ -43,6 +43,124 @@ function isSandstormShell(hostname) {
   return (hostname === HOSTNAME || (DDP_HOSTNAME && hostname === DDP_HOSTNAME));
 }
 
+var mime = Connect.static.mime;
+
+function wwwHandlerForGrain(grainId) {
+  return function (request, response, cb) {
+    var path = request.url;
+
+    // If a directory, open "index.html".
+    if (path.slice(-1) === "/") {
+      path = path + "index.html";
+    }
+
+    // Strip leading '/'.
+    if (path[0] === '/') path = path.slice(1);
+
+    // Strip query.
+    path = path.split("?")[0];
+
+    var ext = path.split(".").pop();
+    var type = mime.default_type;
+    if (ext && ext in mime.types) {
+      type = mime.types[ext];
+    }
+
+    var started = false;
+    var sawEnd = false;
+
+    var stream = {
+      expectSize: function (size) {
+        if (!started) {
+          started = true;
+          response.writeHead(200, {
+            "Content-Length": size,
+            "Content-Type": type,
+            "Cache-Control": "public, max-age=" + CACHE_TTL
+          });
+        }
+      },
+      write: function (data) {
+        if (!started) {
+          started = true;
+          response.writeHead(200, {
+            "Content-Type": type,
+            "Cache-Control": "public, max-age=" + CACHE_TTL
+          });
+        }
+        response.write(data);
+      },
+      done: function (data) {
+        if (!started) {
+          started = true;
+          response.writeHead(200, {
+            "Content-Length": 0,
+            "Content-Type": type,
+            "Cache-Control": "public, max-age=" + CACHE_TTL
+          });
+        }
+        sawEnd = true;
+        response.end();
+      }
+    };
+
+    useGrain(grainId, function (supervisor) {
+      return supervisor.getWwwFileHack(path, stream)
+          .then(function (result) {
+        var status = result.status;
+        if (status === "file") {
+          if (!sawEnd) {
+            console.error("getWwwFileHack didn't write file to stream");
+            if (!started) {
+              response.writeHead(500, {
+                "Content-Type": "text/plain",
+              });
+              response.end("Internal server error");
+            }
+            response.end();
+          }
+        } else if (status === "directory") {
+          if (started) {
+            console.error("getWwwFileHack wrote to stream for directory");
+            if (!sawEnd) {
+              response.end();
+            }
+          } else {
+            response.writeHead(303, {
+              "Content-Type": "text/plain",
+              "Location": "/" + path + "/",
+              "Cache-Control": "public, max-age=" + CACHE_TTL
+            });
+            response.end("redirect: /" + path + "/");
+          }
+        } else if (status === "notFound") {
+          if (started) {
+            console.error("getWwwFileHack wrote to stream for notFound");
+            if (!sawEnd) {
+              response.end();
+            }
+          } else {
+            response.writeHead(404, {
+              "Content-Type": "text/plain"
+            });
+            response.end("404 not found: /" + path);
+          }
+        } else {
+          console.error("didn't understand result of getWwwFileHack:", status);
+          if (!started) {
+            response.writeHead(500, {
+              "Content-Type": "text/plain",
+            });
+            response.end("Internal server error");
+          }
+        }
+      });
+    }).catch(function (err) {
+      console.error(err.stack);
+    });
+  };
+}
+
 Meteor.startup(function () {
 
   var meteorUpgradeListeners = WebApp.httpServer.listeners('upgrade');
@@ -106,11 +224,7 @@ Meteor.startup(function () {
           }
           var grainId = grain._id;
 
-          var dir = SANDSTORM_GRAINDIR + "/" + grainId + "/sandbox/www";
-          if (!Fs.existsSync(dir)) {
-            throw new Error("Grain does not have a /var/www directory.");
-          }
-          return staticHandlers[publicId] = Connect.static(dir, {maxAge: CACHE_TTL});
+          return staticHandlers[publicId] = wwwHandlerForGrain(grainId);
         });
       }
     }).then(function (handler) {
@@ -123,8 +237,9 @@ Meteor.startup(function () {
         }
       });
     }).catch(function (err) {
+      if (!err.error || err.error >= 500) console.error(err.stack);
       res.writeHead(err.error || 500, { "Content-Type": "text/html" });
-      res.end(err.message);
+      res.end("internal server error:", err.message);
     });
   });
 });

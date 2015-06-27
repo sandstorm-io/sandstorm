@@ -443,8 +443,30 @@ interface SessionContext {
   # The capability is implicitly tied to the user as if via `tieToUser()`.
 
   request @3 (query :PowerboxQuery) -> (cap :PowerboxCapability);
-  # Searches for capabilities in the user's powerbox matching the given query and displays a
-  # selection UI to the user.  Returns the selected capability.
+  # Although this method exists, it is unimplemented and currently you are meant to use the
+  # postMessage api to get a token, and then restore that token with SandstormApi.restore().
+  #
+  # The postMessage api is an rpc interface so you will have to listen for a `message` callback
+  # after sending a postMessage. The postMessage object should have the folliwng form:
+  #
+  # powerboxRequest:
+  #   rpcId: A unique string that should identify this rpc message to the app. You will receive this
+  #          id in the callback to verify which message it is referring to.
+  #   powerboxQuery: A powerboxQuery object, serialized as a Javascript object.
+  #   saveLabel: A string petname to give this label. This will be displayed to the user as the name
+  #          for this capability.
+  #
+  # (eg. window.parent.postMessage({powerboxRequest: {rpcId: myRpcId, powerboxQuery: {}}}, "*")
+  #
+  # The postMessage searches for capabilities in the user's powerbox matching the given query and
+  # displays a selection UI to the user.
+  # This will then initiate a powerbox interaction with the user, and when it is done, a postMessage
+  # callback to the grain will occur. You can listen for such a message like so:
+  # window.addEventListener("message", function (event) {
+  #   if (event.data.rpcId === myRpcId && !event.data.error) {
+  #     // pass event.data.token to your app's server and call SandstormApi.restore() with it
+  #   }
+  # }, false)
 }
 
 # ========================================================================================

@@ -25,7 +25,9 @@ var Capnp = Npm.require("capnp");
 
 var EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
 var HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
+var PowerboxCapability = Capnp.importSystem("sandstorm/grain.capnp").PowerboxCapability;
 var Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
+var SystemPersistent = Capnp.importSystem("sandstorm/supervisor.capnp").SystemPersistent;
 var IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
 var EmailSendPort = EmailRpc.EmailSendPort;
 
@@ -34,12 +36,96 @@ var Url = Npm.require("url");
 var ROOT_URL = Url.parse(process.env.ROOT_URL);
 HOSTNAME = ROOT_URL.hostname;
 
-function HackSessionContextImpl(grainId) {
+function SessionContextImpl(grainId, sessionId, userId) {
   this.grainId = grainId;
+  this.sessionId = sessionId;
+  this.userId = userId;
 }
 
-makeHackSessionContext = function (grainId) {
-  return new Capnp.Capability(new HackSessionContextImpl(grainId), HackSessionContext);
+SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
+  var self = this;
+  return inMeteor((function () {
+    if (!self.userId) {
+      // TODO(soon): allow non logged in users?
+      throw new Meteor.Error(400, "Only logged in users can offer capabilities.")
+    }
+    var castedCap = cap.castAs(SystemPersistent);
+    var save = castedCap.save({webkey: null});
+    var sturdyRef = waitPromise(save).sturdyRef;
+
+    // TODO(soon): This will eventually use SystemPersistent.addRequirements when membranes
+    // are fully implemented for supervisors.
+    var requirement = {
+      permissionsHeld: {
+        grainId: self.grainId,
+        userId: self.userId,
+        permissions: requiredPermissions
+      }
+    };
+    checkRequirements([requirement]);
+    ApiTokens.update({_id: hashSturdyRef(sturdyRef)}, {$push: {requirements: requirement}});
+    Sessions.update({_id: self.sessionId}, {$set: {
+      powerboxView: {
+        offer: ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef
+      }
+    }});
+  }));
+};
+
+Meteor.methods({
+  finishPowerboxRequest: function (webkeyUrl, saveLabel, grainId) {
+    check(webkeyUrl, String);
+    check(grainId, String);
+
+    var userId = Meteor.userId();
+    if (!userId) {
+      throw new Meteor.Error(403, "User must be logged in to user powerbox.");
+    }
+    var parsedWebkey = Url.parse(webkeyUrl.trim());
+    if (parsedWebkey.host !== makeWildcardHost("api")) {
+      console.log(parsedWebkey.hostname, makeWildcardHost("api"));
+      throw new Meteor.Error(500, "Hostname does not match this server. External webkeys are not " +
+        "supported (yet)");
+    }
+
+    var token = parsedWebkey.hash;
+    if (!token) {
+      throw new Meteor.Error(400, "Invalid webkey. You must pass in the full webkey, " +
+        "including domain name and hash fragment");
+    }
+    token = token.slice(1);
+
+    var cap = restoreInternal(hashSturdyRef(token), Match.Optional({webkey: Match.Optional(Match.Any)}), [],
+                              new Buffer(token)).cap;
+    var castedCap = cap.castAs(SystemPersistent);
+    var save = castedCap.save({grain: {
+      grainId: grainId,
+      saveLabel: {
+        defaultText: saveLabel
+      },
+      introducerUser: userId
+    }});
+    var sturdyRef = waitPromise(save).sturdyRef;
+
+    return sturdyRef.toString();
+  },
+  finishPowerboxOffer: function (sessionId) {
+    check(sessionId, String);
+
+    Sessions.update({_id: sessionId, userId: Meteor.userId()}, {$unset: {powerboxView: null}});
+  }
+});
+
+function HackSessionContextImpl(grainId, sessionId, userId) {
+  SessionContextImpl.call(this, grainId, sessionId, userId);
+}
+
+HackSessionContextImpl.prototype = Object.create(SessionContextImpl.prototype);
+HackSessionContextImpl.prototype.constructor = HackSessionContextImpl;
+
+makeHackSessionContext = function (grainId, sessionId, userId) {
+  return new Capnp.Capability(new HackSessionContextImpl(grainId, sessionId, userId),
+                              HackSessionContext);
 };
 
 var HOSTNAME_CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";

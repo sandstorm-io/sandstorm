@@ -176,6 +176,12 @@ Meteor.methods({
 });
 
 if (Meteor.isClient) {
+  var currentSessionId;
+  var currentAppOrigin;
+  var currentGrainId;
+  var sessionGrainSizeSubscription;
+  var powerboxRequestInfo;
+
   Template.grain.events({
     "click #incognito-button": function (event) {
       Session.set("visit-token-" + event.currentTarget.getAttribute("data-token"), "incognito");
@@ -382,7 +388,42 @@ if (Meteor.isClient) {
     "click #privatize-grain": function (event) {
       Grains.update(this.grainId, {$set: {private: true}});
     },
-
+    "click #powerbox-request-popup-closer": function (event) {
+      Session.set("show-powerbox-request", false);
+      powerboxRequestInfo.source.postMessage(
+        {
+          rpcId: powerboxRequestInfo.rpcId,
+          error: "User cancelled request"
+        }, powerboxRequestInfo.origin);
+      powerboxRequestInfo = null;
+    },
+    "click #powerbox-offer-popup-closer": function (event) {
+      Meteor.call("finishPowerboxOffer", currentSessionId, function (err) {
+        // TODO(someday): display the error nicely to the user
+        if (err) {
+          console.error(err);
+        }
+      });
+    },
+    "submit #powerbox-request-form": function (event) {
+      event.preventDefault();
+      Meteor.call("finishPowerboxRequest", event.target.token.value, powerboxRequestInfo.saveLabel,
+        this.grainId,
+        function (err, token) {
+          if (err) {
+            Session.set("powerbox-request-error", err.toString());
+          } else {
+            powerboxRequestInfo.source.postMessage(
+              {
+                rpcId: powerboxRequestInfo.rpcId,
+                token: token
+              }, powerboxRequestInfo.origin);
+            powerboxRequestInfo = null;
+            Session.set("show-powerbox-request", false);
+          }
+        }
+      );
+    },
     "click #homelink-button": function (event) {
       event.preventDefault();
       Session.set("showMenu", false);
@@ -405,6 +446,9 @@ if (Meteor.isClient) {
         selection.removeAllRanges();
         selection.addRange(range);
       }
+    },
+    "click .autoSelect": function (event) {
+      event.currentTarget.select();
     }
   });
 
@@ -468,13 +512,18 @@ if (Meteor.isClient) {
 
     hash: function () {
       return Template.instance().originalHash;
+    },
+
+    showPowerboxOffer: function () {
+      var session = Sessions.findOne({_id: this.sessionId}, {fields: {powerboxView: 1}});
+      return session && session.powerboxView && !!session.powerboxView.offer;
+    },
+
+    powerboxOfferUrl: function () {
+      var session = Sessions.findOne({_id: this.sessionId}, {fields: {powerboxView: 1}});
+      return session && session.powerboxView && session.powerboxView.offer;
     }
   });
-
-  var currentSessionId;
-  var currentAppOrigin;
-  var currentGrainId;
-  var sessionGrainSizeSubscription;
 
   function setCurrentSessionId(sessionId, appOrigin, grainId) {
     if (sessionGrainSizeSubscription) {
@@ -583,6 +632,28 @@ if (Meteor.isClient) {
             event.source.postMessage({rpcId: rpcId, uri: templateLink}, event.origin);
           }
         });
+      } else if (event.data.powerboxRequest) {
+        var powerboxRequest = event.data.powerboxRequest;
+        check(powerboxRequest, Object);
+        var rpcId = powerboxRequest.rpcId;
+        if (powerboxRequestInfo) {
+          // There is already an ongoing powerbox interaction. Fail it for now.
+          // TODO(someday): queue the powerbox requests?
+          event.source.postMessage(
+            {
+              rpcId: rpcId,
+              error: "There is already an ongoing powerbox interaction. Please wait and try again."
+            }, event.origin);
+          return;
+        }
+        Session.set("show-powerbox-request", true);
+        Session.set("powerbox-request-error", null);
+        powerboxRequestInfo = {
+          source: event.source,
+          rpcId: rpcId,
+          origin: event.origin,
+          saveLabel: powerboxRequest.saveLabel
+        };
       } else {
         console.log("postMessage from app not understood: " + event.data);
       }
@@ -652,6 +723,8 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
   result.apiToken = apiToken;
   result.apiTokenPending = apiToken === "pending";
   result.showApiToken = Session.get("show-api-token");
+  result.showPowerboxRequest = Session.get("show-powerbox-request");
+  result.powerboxRequestError = Session.get("powerbox-request-error");
   result.existingTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
                                           forSharing: {$ne: true},
                                           expiresIfUnused: null}).fetch();

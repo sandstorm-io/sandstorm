@@ -1246,7 +1246,7 @@ void SupervisorMain::unshareNetwork() {
     reinterpret_cast<struct sockaddr_in*>(&route.rt_gateway)->sin_addr.s_addr =
         htonl(0xc0a8fa01);  // 192.168.250.1; any address in 192.168.250.x would work here
 
-    KJ_SYSCALL(ioctl(3, SIOCADDRT, &route));
+    KJ_SYSCALL(ioctl(fd, SIOCADDRT, &route));
   }
 
   // Set up iptables to redirect all non-local traffic to 127.0.0.1:23136.
@@ -1555,6 +1555,87 @@ void SupervisorMain::DefaultSystemConnector::checkIfAlreadyRunning() const {
   KJ_UNREACHABLE;
 };
 
+class SaveWrapper : public SystemPersistent::Server {
+  // A capability which forwards all calls to some target, except for `save`.
+
+public:
+  SaveWrapper(AppPersistent<>::Client&& cap, capnp::List<MembraneRequirement>::Reader _requirements,
+              capnp::Data::Reader parentToken, SandstormCore::Client sandstormCore)
+      : cap(kj::mv(cap)), parentToken(kj::heapArray<const byte>(parentToken)),
+        sandstormCore(sandstormCore) {
+    builder.setRoot(kj::mv(_requirements));
+    requirements = builder.getRoot<capnp::List<MembraneRequirement>>().asReader();
+  }
+
+  kj::Promise<void> dispatchCall(
+      uint64_t interfaceId, uint16_t methodId,
+      capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) override {
+    if (interfaceId == capnp::typeId<capnp::Persistent<>>()) {
+      return capnp::Persistent< capnp::Data,
+        sandstorm::ApiTokenOwner>::Server::dispatchCallInternal(methodId, context);
+    } else if (interfaceId == capnp::typeId<SystemPersistent>()) {
+      return SystemPersistent::Server::dispatchCallInternal(methodId, context);
+    }
+
+    capnp::AnyPointer::Reader params = context.getParams();
+    auto req = cap.typelessRequest(interfaceId, methodId, params.targetSize());
+    req.set(params);
+    return context.tailCall(kj::mv(req));
+  }
+
+  kj::Promise<void> save(SaveContext context) override {
+    auto owner = context.getParams().getSealFor();
+    auto req = sandstormCore.makeChildTokenRequest();
+    req.setParent(parentToken);
+    req.setOwner(owner);
+    req.setRequirements(requirements);
+    return req.send().then([context](auto args) mutable {
+      context.getResults().setSturdyRef(args.getToken());
+    });
+  }
+
+  kj::Promise<void> addRequirements(AddRequirementsContext context) override {
+    return kj::READY_NOW;
+  }
+
+private:
+  AppPersistent<>::Client cap;
+  kj::Array<const kj::byte> parentToken;
+  capnp::MallocMessageBuilder builder;
+  capnp::List<MembraneRequirement>::Reader requirements;
+  SandstormCore::Client sandstormCore;
+};
+
+typedef capnp::RealmGateway<capnp::Data, capnp::AnyPointer, ApiTokenOwner,
+                            capnp::AnyPointer> SupervisorRealmGateway;
+
+class SupervisorRealmGatewayImpl final: public SupervisorRealmGateway::Server {
+public:
+  explicit SupervisorRealmGatewayImpl(SandstormCore::Client& sandstormCore)
+    : sandstormCore(sandstormCore) {}
+
+  kj::Promise<void> import(ImportContext context) override {
+    auto cap = context.getParams().getCap().castAs<AppPersistent<>>();
+    auto owner = context.getParams().getParams().getSealFor();
+    return cap.saveRequest().send().then([this, owner, context](auto response) mutable {
+      auto req = sandstormCore.makeTokenRequest();
+      req.getRef().setAppRef(response.getObjectId());
+      req.setOwner(owner);
+      // TODO(someday): Set requirements. This will require membranes to work properly.
+      return req.send().then([context](auto response) mutable {
+        context.getResults().setSturdyRef(response.getToken());
+      });
+     });
+  }
+
+  kj::Promise<void> export_(ExportContext context) override {
+    KJ_FAIL_REQUIRE("Cannot directly call save() on capabilities outside the grain. "
+      "Use SandstormApi.save() instead.");
+  }
+private:
+  SandstormCore::Client sandstormCore;
+};
+
 static void decrementWakelock() {
   --sandstorm::wakelockCount;
   if (sandstorm::wakelockCount == 0) {
@@ -1617,8 +1698,8 @@ public:
     bool isCancelled;
   };
 
-  WakelockSet(kj::StringPtr grainId, SandstormCore::Client&& sandstormCore)
-    : grainId(grainId), sandstormCore(kj::mv(sandstormCore)), tasks(*this), counter(1) {}
+  WakelockSet(kj::StringPtr grainId, SandstormCore::Client& sandstormCore)
+    : grainId(grainId), sandstormCore(sandstormCore), tasks(*this), counter(1) {}
     // Fun fact. This counter starts at 1 because javascript considers 0 to be a falsey value
     // and this makes it harder to check in the frontend. It's easier to just fix it here.
 
@@ -1666,7 +1747,7 @@ class SupervisorMain::SandstormApiImpl final:
   public SandstormApi<>::Server, public kj::Refcounted, private kj::TaskSet::ErrorHandler  {
 public:
   SandstormApiImpl(WakelockSet& wakelockSet, kj::StringPtr grainId,
-                   SandstormCore::Client sandstormCore)
+                   SandstormCore::Client& sandstormCore)
     : wakelockSet(wakelockSet), grainId(grainId), sandstormCore(sandstormCore), tasks(*this) {}
   // TODO(someday):  Implement API.
 //  kj::Promise<void> publish(PublishContext context) override {
@@ -1685,13 +1766,20 @@ public:
 
 //  }
 
-//  kj::Promise<void> restore(RestoreContext context) override {
+  kj::Promise<void> restore(RestoreContext context) override {
+    auto req = sandstormCore.restoreRequest();
+    req.setToken(context.getParams().getToken());
+    req.setRequiredPermissions(context.getParams().getRequiredPermissions());
+    return req.send().then([context](auto args) mutable {
+      context.getResults().setCap(args.getCap());
+    });
+  }
 
-//  }
-
-//  kj::Promise<void> drop(DropContext context) override {
-
-//  }
+  kj::Promise<void> drop(DropContext context) override {
+    auto req = sandstormCore.dropRequest();
+    req.setToken(context.getParams().getToken());
+    return req.send().then([](auto args) {});
+  }
 
 //  kj::Promise<void> deleted(DeletedContext context) override {
 
@@ -1784,11 +1872,12 @@ private:
 
 class SupervisorMain::SupervisorImpl final: public Supervisor::Server {
 public:
-  inline SupervisorImpl(kj::UnixEventPort& eventPort, UiView::Client&& mainView,
+  inline SupervisorImpl(kj::UnixEventPort& eventPort, MainView<>::Client&& mainView,
                         DiskUsageWatcher& diskWatcher, WakelockSet& wakelockSet,
-                        kj::AutoCloseFd startAppEvent)
+                        kj::AutoCloseFd startAppEvent, SandstormCore::Client& sandstormCore)
       : eventPort(eventPort), mainView(kj::mv(mainView)), diskWatcher(diskWatcher),
-        wakelockSet(wakelockSet), startAppEvent(kj::mv(startAppEvent)) {}
+        wakelockSet(wakelockSet), sandstormCore(sandstormCore),
+        startAppEvent(kj::mv(startAppEvent)) {}
 
   kj::Promise<void> getMainView(GetMainViewContext context) override {
     ensureStarted();
@@ -1844,15 +1933,25 @@ public:
 
   kj::Promise<void> restore(RestoreContext context) override {
     // # Wraps `MainView.restore()`. Can also restore capabilities hosted by the supervisor.
-
     ensureStarted();
-    auto objectId = context.getParams().getRef();
+    auto params = context.getParams();
+    auto objectId = params.getRef();
 
-    if (objectId.which() == SupervisorObjectId<>::WAKE_LOCK_NOTIFICATION) {
-      context.getResults().setCap(wakelockSet.restore(objectId.getWakeLockNotification()));
-      return kj::READY_NOW;
-    } else {
-      KJ_FAIL_REQUIRE("Supervisor can only restore wakelocks for now.");
+    switch (objectId.which()) {
+      case SupervisorObjectId<>::WAKE_LOCK_NOTIFICATION: {
+        context.getResults().setCap(wakelockSet.restore(objectId.getWakeLockNotification()));
+        return kj::READY_NOW;
+      }
+      case SupervisorObjectId<>::APP_REF: {
+        auto req = mainView.restoreRequest();
+        req.setObjectId(objectId.getAppRef());
+        return req.send().then([this, params, context](auto args) mutable {
+          context.getResults().setCap(kj::heap<SaveWrapper>(
+            args.getCap().template castAs<AppPersistent<>>(), params.getRequirements(), params.getParentToken(), sandstormCore));
+        });
+      }
+      default:
+        KJ_FAIL_REQUIRE("Unknown objectId type");
     }
   }
 
@@ -1916,9 +2015,10 @@ public:
 
 private:
   kj::UnixEventPort& eventPort;
-  UiView::Client mainView;
+  MainView<>::Client mainView;
   DiskUsageWatcher& diskWatcher;
   WakelockSet& wakelockSet;
+  SandstormCore::Client sandstormCore;
   kj::AutoCloseFd startAppEvent;
 
   void ensureStarted() {
@@ -2099,7 +2199,9 @@ auto SupervisorMain::DefaultSystemConnector::run(
   });
 
   auto coreRedirector = kj::refcounted<CapRedirector>();
-  capnp::Capability::Client coreCap = kj::addRef(*coreRedirector);
+  SandstormCore::Client coreCap = static_cast<capnp::Capability::Client>(
+    kj::addRef(*coreRedirector)).castAs<SandstormCore>();
+  SupervisorRealmGateway::Client gateway = kj::heap<SupervisorRealmGatewayImpl>(coreCap);
   // Compute grain size and watch for changes.
   DiskUsageWatcher diskWatcher(ioContext.unixEventPort);
   auto diskWatcherTask = diskWatcher.init();
@@ -2109,22 +2211,22 @@ auto SupervisorMain::DefaultSystemConnector::run(
       kj::LowLevelAsyncIoProvider::ALREADY_CLOEXEC |
       kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP);
   capnp::TwoPartyVatNetwork appNetwork(*appConnection, capnp::rpc::twoparty::Side::SERVER);
-  WakelockSet wakelockSet(grainId, coreCap.castAs<SandstormCore>());
+  WakelockSet wakelockSet(grainId, coreCap);
   auto server = capnp::makeRpcServer(appNetwork, kj::heap<SandstormApiImpl>(wakelockSet, grainId,
-      coreCap.castAs<SandstormCore>()));
+      coreCap), kj::mv(gateway));
 
   // Get the app's UiView by restoring a null SturdyRef from it.
   capnp::MallocMessageBuilder message;
   auto hostId = message.initRoot<capnp::rpc::twoparty::VatId>();
   hostId.setSide(capnp::rpc::twoparty::Side::CLIENT);
-  UiView::Client app = server.bootstrap(hostId).castAs<UiView>();
+  MainView<>::Client app = server.bootstrap(hostId).castAs<MainView<>>();
 
   // Set up the external RPC interface, re-exporting the UiView.
   // TODO(someday):  If there are multiple front-ends, or the front-ends restart a lot, we'll
   //   want to wrap the UiView and cache session objects.  Perhaps we could do this by making
   //   them persistable, though it's unclear how that would work with SessionContext.
   Supervisor::Client mainCap = kj::heap<SupervisorImpl>(
-      ioContext.unixEventPort, kj::mv(app), diskWatcher, wakelockSet, kj::mv(startEventFd));
+      ioContext.unixEventPort, kj::mv(app), diskWatcher, wakelockSet, kj::mv(startEventFd), coreCap);
 
   auto runner = systemConnector->run(ioContext, kj::mv(mainCap));
   auto acceptTask = kj::mv(runner.task);

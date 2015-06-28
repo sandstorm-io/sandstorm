@@ -23,6 +23,7 @@ var Http = Npm.require("http");
 var Url = Npm.require("url");
 var Promise = Npm.require("es6-promise").Promise;
 var Capnp = Npm.require("capnp");
+var Net = Npm.require("net");
 
 var ByteStream = Capnp.importSystem("sandstorm/util.capnp").ByteStream;
 var ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
@@ -249,6 +250,10 @@ function validateApiToken (apiToken) {
       // It's getting used now, so clear the expiresIfUnused field.
       ApiTokens.update(apiToken._id, {$set: {expiresIfUnused: null}});
     }
+  }
+
+  if (apiToken.objectId || apiToken.frontendRef) {
+    throw new Meteor.Error(403, "ApiToken refers to a non-webview Capability.");
   }
 }
 
@@ -949,17 +954,74 @@ Proxy.prototype._callNewWebSession = function (request, userInfo) {
         : [ "en-US", "en" ]
   });
 
-  return this.uiView.newSession(userInfo, makeHackSessionContext(this.grainId),
+  return this.uiView.newSession(userInfo,
+                                makeHackSessionContext(this.grainId, this.sessionId, this.userId),
                                 WebSession.typeId, params).session;
+};
+
+var isRfc1918OrLocal = function(address) {
+  if (Net.isIPv4(address)) {
+    quad = address.split(".").map(function(x) { return parseInt(x, 10); });
+    return (quad[0] === 127 || quad[0] === 10 ||
+            (quad[0] === 192 && quad[1] === 168) ||
+            (quad[0] === 172 && quad[1] >= 16 && quad[1] < 32));
+  } else if (Net.isIPv6(address)) {
+    // IPv6 specifies ::1 as localhost and fd:: as reserved for private networks
+    return (address === "::1" || address.lastIndexOf("fd", 0) === 0);
+  } else {
+    // Ignore things that are neither IPv4 nor IPv6
+    return false;
+  }
 };
 
 Proxy.prototype._callNewApiSession = function (request, userInfo) {
   var self = this;
+  var params = {};
+
+  if ("x-sandstorm-passthrough" in request.headers) {
+    var optIns = request.headers["x-sandstorm-passthrough"]
+        .split(',')
+        .map(function(s) { return s.trim(); });
+    // The only currently supported passthrough value is "address", but others could be useful in
+    // the future
+    if (optIns.indexOf("address") !== -1) {
+      // Sadly, we can't use request.socket.remoteFamily because it's not available in the (rather-old)
+      // version of node that comes in the Meteor bundle we're using.  Hence this hackery.
+      var addressToPass = request.socket.remoteAddress;
+      if (isRfc1918OrLocal(addressToPass) && "x-real-ip" in request.headers) {
+        // Allow overriding the socket's remote address with X-Real-IP header if the request comes
+        // from either localhost or an RFC1918 address.  These are not useful for geolocation
+        // anyway.
+        addressToPass = request.headers["x-real-ip"];
+      }
+      if (Net.isIPv4(addressToPass)) {
+        // Map IPv4 addresses in IPv6.
+        // This conveniently comes out to a 48-bit number, which is precisely representable in a
+        // double (which has 53 mantissa bits). Thus we can avoid using Bignum/strings, which we
+        // might otherwise need to precisely represent 64-bit fields.
+        var v4Int = 0xFFFF00000000 + addressToPass.split(".")
+            .map(function(x) { return parseInt(x, 10); })
+            .reduce(function(a, b) { return 256*a + b; });
+        params.remoteAddress = {
+            lower64: v4Int,
+            upper64: 0
+        };
+      } else if (Net.isIPv6(addressToPass)) {
+        // Because I don't want to parse a v6 address in JS so I can convert it to a bignum so I can
+        // convert it back to a string to stuff it in a uint64_t, we do not support IPv6 for this
+        // feature at present.  Someone can fix this later.
+      }
+    }
+  }
+
+  var serializedParams = Capnp.serialize(ApiSession.Params, params);
 
   // TODO(someday): We are currently falling back to WebSession if we get any kind of error upon
   // calling newSession with an ApiSession._id.
   // Eventually we'll remove this logic once we're sure apps have updated.
-  return this.uiView.newSession(userInfo, makeHackSessionContext(this.grainId), ApiSession.typeId)
+  return this.uiView.newSession(userInfo,
+                                makeHackSessionContext(this.grainId, this.sessionId, this.userId),
+                                ApiSession.typeId, serializedParams)
       .then(function (session) {
     return session.session;
   }, function (err) {

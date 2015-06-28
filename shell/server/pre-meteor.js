@@ -239,7 +239,7 @@ Meteor.startup(function () {
     }).catch(function (err) {
       if (!err.error || err.error >= 500) console.error(err.stack);
       res.writeHead(err.error || 500, { "Content-Type": "text/html" });
-      res.end("internal server error:", err.message);
+      res.end(err.message);
     });
   });
 });

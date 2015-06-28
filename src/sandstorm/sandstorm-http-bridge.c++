@@ -29,6 +29,7 @@
 #include <capnp/rpc.capnp.h>
 #include <capnp/schema.h>
 #include <capnp/serialize.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 #include <map>
 #include <unordered_map>
@@ -829,7 +830,7 @@ public:
                  UserInfo::Reader userInfo, SessionContext::Client sessionContext,
                  SessionContextMap& sessionContextMap, kj::String&& sessionId,
                  kj::String&& basePath, kj::String&& userAgent, kj::String&& acceptLanguages,
-                 kj::String&& rootPath, kj::String&& permissions)
+                 kj::String&& rootPath, kj::String&& permissions, kj::Maybe<kj::String> remoteAddress)
       : serverAddr(serverAddr),
         sessionContext(kj::mv(sessionContext)),
         sessionContextMap(sessionContextMap),
@@ -839,7 +840,8 @@ public:
         basePath(kj::mv(basePath)),
         userAgent(kj::mv(userAgent)),
         acceptLanguages(kj::mv(acceptLanguages)),
-        rootPath(kj::mv(rootPath)) {
+        rootPath(kj::mv(rootPath)),
+        remoteAddress(kj::mv(remoteAddress)) {
     if (userInfo.hasUserId()) {
       auto id = userInfo.getUserId();
       KJ_ASSERT(id.size() == 32, "User ID not a SHA-256?");
@@ -968,6 +970,7 @@ private:
   kj::String acceptLanguages;
   kj::String rootPath;
   spk::BridgeConfig::Reader config;
+  kj::Maybe<kj::String> remoteAddress;
 
   kj::String makeHeaders(kj::StringPtr method, kj::StringPtr path,
                          WebSession::Context::Reader context,
@@ -1015,6 +1018,9 @@ private:
       lines.add(kj::str("Host: sandbox"));
     }
     lines.add(kj::str("X-Sandstorm-Session-Id: ", sessionId));
+    KJ_IF_MAYBE(addr, remoteAddress) {
+      lines.add(kj::str("X-Real-IP: ", *addr));
+    }
 
     auto cookies = context.getCookies();
     if (cookies.size() > 0) {
@@ -1295,16 +1301,23 @@ public:
                                    kj::heapString(sessionParams.getUserAgent()),
                                    kj::strArray(sessionParams.getAcceptableLanguages(), ","),
                                    kj::heapString("/"),
-                                   formatPermissions(userPermissions)));
+                                   formatPermissions(userPermissions),
+                                   nullptr));
     } else if (sessionType == capnp::typeId<ApiSession>()) {
       auto userPermissions = params.getUserInfo().getPermissions();
+      auto sessionParams = params.getSessionParams().getAs<ApiSession::Params>();
+      kj::Maybe<kj::String> addr = nullptr;
+      if (sessionParams.hasRemoteAddress()) {
+        addr = addressToString(sessionParams.getRemoteAddress());
+      }
 
       context.getResults(capnp::MessageSize {2, 1}).setSession(
           kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
                                    sessionContextMap, kj::str(sessionIdCounter++),
                                    kj::heapString(""), kj::heapString(""), kj::heapString(""),
                                    kj::heapString(config.getApiPath()),
-                                   formatPermissions(userPermissions)));
+                                   formatPermissions(userPermissions),
+                                   kj::mv(addr)));
     } else if (sessionType == capnp::typeId<HackEmailSession>()) {
       context.getResults(capnp::MessageSize {2, 1}).setSession(kj::heap<EmailSessionImpl>());
     }
@@ -1324,6 +1337,49 @@ private:
     }
     return kj::strArray(permissionVec, ",");
   }
+
+  inline kj::String addressToString(::sandstorm::IpAddress::Reader&& address) {
+    uint64_t lower64 = address.getLower64();
+    uint64_t upper64 = address.getUpper64();
+    if (upper64 == 0 && ((lower64 >> 32) == 0xffff)) {
+      // This is an IPv4 address.
+      char buf[INET_ADDRSTRLEN];
+      memset(buf, 0, INET_ADDRSTRLEN);
+      lower64 &= 0xffffffff;
+      struct in_addr ipv4;
+      ipv4.s_addr = ntohl(uint32_t(lower64));
+      const char* ok = inet_ntop(AF_INET, &ipv4, buf, INET_ADDRSTRLEN);
+      KJ_REQUIRE(ok != NULL, "inet_ntop() failed");
+      kj::String s = kj::heapString(buf);
+      return kj::mv(s);
+    } else {
+      // This is an IPv6 address.
+      char buf[INET6_ADDRSTRLEN];
+      memset(buf, 0, INET6_ADDRSTRLEN);
+      struct in6_addr ipv6;
+      ipv6.s6_addr[0]  = ((upper64 >> 56) & 0xff);
+      ipv6.s6_addr[1]  = ((upper64 >> 48) & 0xff);
+      ipv6.s6_addr[2]  = ((upper64 >> 40) & 0xff);
+      ipv6.s6_addr[3]  = ((upper64 >> 32) & 0xff);
+      ipv6.s6_addr[4]  = ((upper64 >> 24) & 0xff);
+      ipv6.s6_addr[5]  = ((upper64 >> 16) & 0xff);
+      ipv6.s6_addr[6]  = ((upper64 >>  8) & 0xff);
+      ipv6.s6_addr[7]  = ((upper64      ) & 0xff);
+      ipv6.s6_addr[8]  = ((lower64 >> 56) & 0xff);
+      ipv6.s6_addr[9]  = ((lower64 >> 48) & 0xff);
+      ipv6.s6_addr[10] = ((lower64 >> 40) & 0xff);
+      ipv6.s6_addr[11] = ((lower64 >> 32) & 0xff);
+      ipv6.s6_addr[12] = ((lower64 >> 24) & 0xff);
+      ipv6.s6_addr[13] = ((lower64 >> 16) & 0xff);
+      ipv6.s6_addr[14] = ((lower64 >>  8) & 0xff);
+      ipv6.s6_addr[15] = ((lower64      ) & 0xff);
+      const char* ok = inet_ntop(AF_INET6, &ipv6, buf, INET6_ADDRSTRLEN);
+      KJ_REQUIRE(ok != NULL, "inet_ntop() failed");
+      kj::String s = kj::heapString(buf);
+      return kj::mv(s);
+    }
+  }
+
   kj::NetworkAddress& serverAddress;
   SessionContextMap& sessionContextMap;
   spk::BridgeConfig::Reader config;

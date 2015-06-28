@@ -27,3 +27,6 @@ bundle/
 .vagrant/
 phantomjsdriver.log
 selenium-debug.log
+tests/assets/*
+tests/nightwatch.tmp.json
+tests/screenshots/

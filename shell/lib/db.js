@@ -150,6 +150,9 @@ Sessions = new Mongo.Collection("sessions");
 //       that was used to open it. Note that for old-style sharing (i.e. when !grain.private),
 //       anonymous users can get access without an API token and so neither userId nor hashedToken
 //       are present.
+//   powerboxView: If present, this is a view that should be presented as part of a powerbox
+//       interaction.
+//     offer: The webkey that corresponds to cap that was passed to the `offer` RPC.
 
 SignupKeys = new Mongo.Collection("signupKeys");
 // Invite keys which may be used by users to get access to Sandstorm.

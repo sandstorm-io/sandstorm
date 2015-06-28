@@ -1,3 +1,10 @@
+### v0.92 (2015-06-28)
+- First pass of powerbox UI: Apps can now offer and request capabilities, resulting in direct Cap'n Proto RPC connections between apps, including the ability to save and restore these capabilities for later use. Currently, the user must copy/paste a token from the offering app to the requesting app, but this will eventually be replaced with a picker UI.
+- Web publishing (as in, the feature used by Wordpress, Ghost, and HackerCMS apps) should now work on Sandstorm Oasis (managed hosting).
+- Added support for APIs to opt-in (from the client side) to revealing their public IP to the server app. Needed for Piwik.
+- Improved display of admin alerts on mobile.
+- Admin alerts can now include the current app name in their text and link; useful for clickthrough metrics.
+
 ### v0.91 (2015-06-20)
 - Bug: The first bug in v0.90 was not fully fixed: query parameters and fragments were still being dropped. This is blocking a thing, so we're pushing another fix. Sorry.
 

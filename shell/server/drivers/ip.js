@@ -205,8 +205,17 @@ IpNetworkImpl.prototype.getRemoteHost = function (address) {
   return {host: new IpRemoteHostImpl(address)};
 };
 
+IpNetworkImpl.prototype.getRemoteHostByName = function (address) {
+  return {host: new IpRemoteHostImpl(address)};
+};
+
 function IpRemoteHostImpl (address) {
-  this.address = addressToString(address);
+  if (address.upper64) {
+    // address is an ip.capnp:IpAddress, we need to convert it
+    this.address = addressToString(address);
+  } else {
+    this.address = address;
+  }
 }
 
 IpRemoteHostImpl.prototype.getTcpPort = function (portNum) {

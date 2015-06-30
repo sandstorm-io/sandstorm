@@ -1754,21 +1754,17 @@ Meteor.publish("grainLog", function (grainId) {
   };
 
   try {
-    // Wait for watchLog() to return because it will always write the initial tail before
-    // returning.
-    var supervisor = sandstormBackend.getGrain(grain.userId, grainId).supervisor;
-    var handle = waitPromise(supervisor.watchLog(8192, receiver)).handle;
+    var handle = waitPromise(useGrain(grainId, function (supervisor) {
+      return supervisor.watchLog(8192, receiver);
+    })).handle;
     connected = true;
     this.onStop(function() {
       handle.close();
     });
   } catch (err) {
-    if (err.kjType !== "disconnected") {
-      throw err;
-    }
     if (!connected) {
       this.added("grainLog", id++, {
-        text: "*** couldn't connect to grain (probably because it isn't running) ***"
+        text: "*** couldn't connect to grain (" + err + ") ***"
       });
     }
   }

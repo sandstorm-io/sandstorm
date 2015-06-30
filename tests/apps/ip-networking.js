@@ -25,11 +25,12 @@ var utils = require("../utils"),
     long_wait = utils.long_wait,
     very_long_wait = utils.very_long_wait;
 
+var IP_INTERFACE_TEST_PORT = parseInt(process.env.IP_INTERFACE_TEST_PORT, 10) || "30027";
+
 module.exports = {};
 
 module.exports["Test Ip Networking"] = function (browser) {
   browser
-    .init()
     .loginGithub()
     .url(browser.launch_url + "/admin/capabilities")
     .waitForElementVisible("#offer-ipnetwork", short_wait)
@@ -46,13 +47,36 @@ module.exports["Test Ip Networking"] = function (browser) {
         .frame()
         .waitForElementVisible("#powerbox-request-input", short_wait)
         .setValue("#powerbox-request-input", result.value)
-        .saveScreenshot("test1.png")
         .click("#powerbox-request-form button")
         .frame("grain-frame")
-        .pause(1000)
-        .saveScreenshot("test2.png")
         .waitForElementVisible("#request-result", short_wait)
         .assert.containsText("#request-result", "301 Moved Permanently");
+    });
+};
+
+module.exports["Test Ip Interface"] = function (browser) {
+  browser
+    .url(browser.launch_url + "/admin/capabilities")
+    .waitForElementVisible("#offer-ipinterface", short_wait)
+    .click("#offer-ipinterface")
+    .waitForElementVisible("#powerbox-offer-popup input", short_wait)
+    .getValue("#powerbox-offer-popup input", function(result) {
+      browser
+        .installApp("http://sandstorm.io/apps/jparyani/ip-interface-1.spk", "0b2d293e7701341a4db74f365aef6832")
+        .assert.containsText("#grainTitle", "Untitled IpInterfaceTest")
+        .pause(short_wait)
+        .frame("grain-frame")
+        .waitForElementVisible("#request-port", short_wait)
+        .setValue("#request-port", IP_INTERFACE_TEST_PORT)
+        .click("#request")
+        .frame()
+        .waitForElementVisible("#powerbox-request-input", short_wait)
+        .setValue("#powerbox-request-input", result.value)
+        .click("#powerbox-request-form button")
+        .frame("grain-frame")
+        .waitForElementVisible("#request-result", short_wait)
+        .assert.containsText("#request-result", "request:")
+        .assertTcpConnection(IP_INTERFACE_TEST_PORT, "tcptest");
     });
 };
 

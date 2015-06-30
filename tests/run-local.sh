@@ -102,6 +102,7 @@ export PORT=$(getNewPort)
 export MONGO_PORT=$(getNewPort)
 export SMTP_LISTEN_PORT=$(getNewPort)
 export SMTP_OUTGOING_PORT=$(getNewPort)
+export IP_INTERFACE_TEST_PORT=$(getNewPort)
 export LAUNCH_URL="http://local.sandstorm.io:$PORT"
 
 rm -rf "$SANDSTORM_DIR"

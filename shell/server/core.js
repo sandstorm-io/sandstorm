@@ -116,7 +116,7 @@ NotificationHandle.prototype.close = function () {
   });
 };
 
-saveFrontendRef = function (frontendRef, owner, userId) {
+saveFrontendRef = function (frontendRef, owner) {
   return inMeteor(function () {
     var sturdyRef = new Buffer(generateSturdyRef());
     var hashedSturdyRef = hashSturdyRef(sturdyRef);
@@ -124,8 +124,7 @@ saveFrontendRef = function (frontendRef, owner, userId) {
       _id: hashedSturdyRef,
       frontendRef: frontendRef,
       owner: owner,
-      created: new Date(),
-      userId: userId
+      created: new Date()
     });
     return {sturdyRef: sturdyRef};
   });
@@ -191,9 +190,9 @@ restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
       var notificationId = token.frontendRef.notificationHandle;
       return {cap: makeNotificationHandle(notificationId, true)};
     } else if (token.frontendRef.ipNetwork) {
-      return {cap: makeIpNetwork()};
+      return {cap: makeIpNetwork(token.frontendRef.ipNetwork)};
     } else if (token.frontendRef.ipInterface) {
-      return {cap: makeIpInterface()};
+      return {cap: makeIpInterface(token.frontendRef.ipInterface)};
     } else {
       throw new Meteor.Error(500, "Unknown frontend token type.");
     }

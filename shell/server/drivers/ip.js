@@ -38,15 +38,18 @@ ByteStreamConnection.prototype.write = function (data) {
 // ByteStreamConnection.prototype.expectSize = function (size) { }
 
 IpInterfaceImpl = function (userId) {
+  // TODO(someday): maybe check if userId is admin? This could break things if we don't allow
+  // handing off capabilties from a deleted/deactivated user, so for now we're just allowing all
+  // admins to revoke any ipInterface/ipNetwork caps from the admin settings page.
   this.userId = userId;
 };
 
 makeIpInterface = function (userId) {
   return new Capnp.Capability(new IpInterfaceImpl(userId), IpRpc.PersistentIpInterface);
-}
+};
 
 IpInterfaceImpl.prototype.save = function (params) {
-  return saveFrontendRef({ipInterface: true}, params.sealFor, this.userId);
+  return saveFrontendRef({ipInterface: this.userId}, params.sealFor);
 };
 
 IpInterfaceImpl.prototype.listenTcp = function (portNum, port) {
@@ -198,7 +201,7 @@ makeIpNetwork = function (userId) {
 }
 
 IpNetworkImpl.prototype.save = function (params) {
-  return saveFrontendRef({ipNetwork: true}, params.sealFor, this.userId);
+  return saveFrontendRef({ipNetwork: this.userId}, params.sealFor);
 };
 
 IpNetworkImpl.prototype.getRemoteHost = function (address) {

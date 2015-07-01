@@ -162,38 +162,30 @@ Meteor.methods({
     if (grain.userId == apiToken.userId) {
       title = grain.title;
     } else {
-      var roleAssignment = RoleAssignments.findOne({grainId: apiToken.grainId,
-                                                    recipient: apiToken.userId},
-                                                   {sort : {created : 1}});
-      if (roleAssignment) {
-        title = roleAssignment.title;
+      if (apiToken.userId) {
+        var sharerToken = ApiTokens.findOne({grainId: apiToken.grainId,
+                                             "owner.user.userId": apiToken.userId},
+                                            {sort : {created : 1}});
+        if (sharerToken) {
+          title = sharerToken.owner.user.title;
+        }
       }
     }
 
     if (this.userId && !incognito) {
-      if (this.userId != apiToken.userId && this.userId != grain.userId) {
-        // The current user is neither the sharer nor the grain owner.
-
-        if (!RoleAssignments.findOne({recipient: this.userId,
-                                      parent: hashedToken,
-                                      active: true,
-                                      roleAssignment: apiToken.roleAssignment})) {
-          // The current user does not already have a role assignment derived from this token *or*
-          // the sharer has adjusted some permissions since a previous redemption of the token.
-
-          RoleAssignments.insert({
-            _id: Random.id(22),
-            grainId: apiToken.grainId,
-            sharer: apiToken.userId,
-            recipient: this.userId,
-            roleAssignment: apiToken.roleAssignment,
-            active: true,
-            petname: apiToken.petname,
-            title: title,
-            created: new Date(),
-            parent: hashedToken
-          });
-        }
+      if (this.userId != apiToken.userId && this.userId != grain.userId &&
+          !ApiTokens.findOne({'owner.user.userId': this.userId, parentToken: hashedToken })) {
+        // The current user is neither the sharer nor the grain owner,
+        // and the current user has not already redeemed this token.
+        ApiTokens.insert({
+          grainId: apiToken.grainId,
+          userId: apiToken.userId,
+          parentToken: hashedToken,
+          roleAssignment: {allAccess: null},
+          petname: apiToken.petname,
+          created: new Date(),
+          owner: {user: {userId: this.userId, title: title}}
+        });
       }
       return {redirectToGrain: apiToken.grainId};
     } else {
@@ -551,16 +543,20 @@ Meteor.startup(function() {
     });
   }
 
-  function clearSessions (grainId, userId) {
+  function clearDownstreamSessions (token) {
     // Clear all sessions owned by `userId` or anyone downstream in the sharing graph.
     // TODO(soon): Only clear sessions for which the permissions have changed.
-    var downstream = transitiveShares(grainId, userId);
-    var users = [userId];
-    for (var user in downstream.users) {
-      users.push(user);
-    }
-    Sessions.remove({grainId: grainId, $or: [{userId: {$in: users}},
-                                             {hashedToken: {$in: downstream.tokens}}]});
+    var downstream = downstreamTokens({token: token});
+    var users = [];
+    var tokenIds = [];
+    downstream.forEach(function (token) {
+      tokenIds.push(token._id);
+      if (token.owner && token.owner.user){
+        users.push(token.owner.user.userId);
+      }
+    });
+    Sessions.remove({grainId: token.grainId, $or: [{userId: {$in: users}},
+                                                   {hashedToken: {$in: tokenIds}}]});
   }
 
   Grains.find().observe({
@@ -572,8 +568,8 @@ Meteor.startup(function() {
     },
   });
 
-  RoleAssignments.find().observe({
-    added: function (roleAssignment) {
+  ApiTokens.find({grainId: {$exists: true}, objectId: {$exists: false}}).observe({
+    added: function (newApiToken) {
       // TODO(soon): Unfortunately, added() gets called for all existing role assignments when the
       //   front-end restarts, meaning clearing sessions here will cause people's views to refresh
       //   on server upgrade, which is not a nice user experience. It's also sad to force-refresh
@@ -584,28 +580,17 @@ Meteor.startup(function() {
 //      clearSessions(roleAssignment.grainId, roleAssignment.recipient);
 //      clearApiProxies(roleAssignment.grainId);
     },
-    changed: function (newRoleAssignment, oldRoleAssignment) {
-      if (newRoleAssignment.active != oldRoleAssignment.active ||
-          !_.isEqual(newRoleAssignment.roleAssignment, oldRoleAssignment.roleAssignment)) {
-        clearSessions(oldRoleAssignment.grainId, oldRoleAssignment.recipient);
-        clearApiProxies(oldRoleAssignment.grainId);
-      }
-    },
-    removed: function (oldRoleAssignment) {
-      clearSessions(oldRoleAssignment.grainId, oldRoleAssignment.recipient);
-      clearApiProxies(oldRoleAssignment.grainId);
-    },
-  });
 
-  ApiTokens.find().observe({
     changed : function (newApiToken, oldApiToken) {
-      Sessions.remove({grainId: oldApiToken.grainId, hashedToken: oldApiToken._id});
-      delete proxiesByApiToken[oldApiToken._id];
+      if (!_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment)) {
+        clearDownstreamSessions(newApiToken);
+        clearApiProxies(newApiToken.grainId);
+      }
     },
 
     removed: function (oldApiToken) {
-      Sessions.remove({grainId: oldApiToken.grainId, hashedToken: oldApiToken._id});
-      delete proxiesByApiToken[oldApiToken._id];
+      clearDownstreamSessions(oldApiToken);
+      clearApiProxies(newApiToken.grainId);
     }
   });
 });

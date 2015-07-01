@@ -31,23 +31,15 @@ if (Meteor.isServer) {
   });
 
   ApiTokens.allow({
-    update: function (userId, apiToken, fieldNames) {
+    update: function (userId, apiToken, fieldNames, modifier) {
       // Allow owner to change the petname.
-      return userId && apiToken.userId === userId &&
-        (fieldNames.length === 1 && fieldNames[0] === "petname");
+      return userId &&
+        ((apiToken.userId === userId &&
+          (fieldNames.length === 1 && fieldNames[0] === "petname")) ||
+         Match.test(apiToken.owner, {user: Match.ObjectIncluding({userId: userId})}))
     },
     remove: function (userId, token) {
       return userId && token.userId === userId;
-    }
-  });
-
-  RoleAssignments.allow({
-    update: function (userId, roleAssignment, fieldNames) {
-      // Allow recipient to rename their reference to a shared grain.
-      return (userId && roleAssignment.recipient === userId &&
-              fieldNames.length === 1 && fieldNames[0] === "title")
-        || (userId && roleAssignment.sharer === userId &&
-            fieldNames.length === 1 && fieldNames[0] === "active");
     }
   });
 
@@ -55,11 +47,12 @@ if (Meteor.isServer) {
     check(grainId, String);
     var self = this;
 
-    // Alice is allowed to know Bob's display name if Bob has received a role assignment from Alice
+    // Alice is allowed to know Bob's display name if Bob has received a UiView from Alice
     // for *any* grain.
-    var handle = RoleAssignments.find({sharer: this.userId}).observe({
-      added: function(roleAssignment) {
-        var user = Meteor.users.findOne(roleAssignment.recipient);
+    var handle = ApiTokens.find({userId: this.userId,
+                                 "owner.user.userId": {$exists: true}}).observe({
+      added: function(token) {
+        var user = Meteor.users.findOne(token.owner.user.userId);
         if (user) {
           self.added("displayNames", user._id, {displayName: user.profile.name});
         }
@@ -68,8 +61,8 @@ if (Meteor.isServer) {
     this.onStop(function() { handle.stop(); });
     return [Grains.find({_id : grainId, $or: [{userId: this.userId}, {private: {$ne: true}}]},
                         {fields: {title: 1, userId: 1, private: 1}}),
-            ApiTokens.find({grainId: grainId, userId: this.userId}),
-            RoleAssignments.find({$or : [{sharer: this.userId}, {recipient: this.userId}]}),
+            ApiTokens.find({grainId: grainId,
+                            $or : [{"owner.user.userId": this.userId}, {userId: this.userId}]}),
            ];
   });
 
@@ -166,11 +159,11 @@ Meteor.methods({
       }
     }
   },
-  deleteRoleAssignments: function (grainId) {
+  forgetGrain: function (grainId) {
     check(grainId, String);
 
     if (this.userId) {
-      RoleAssignments.remove({grainId: grainId, recipient: this.userId});
+      ApiTokens.remove({grainId: grainId, "owner.user.userId": this.userId});
     }
   },
 });
@@ -197,12 +190,12 @@ if (Meteor.isClient) {
         if (this.isOwner) {
           Grains.update(this.grainId, {$set: {title: title}});
         } else {
-          var roleAssignment = RoleAssignments.findOne({grainId: this.grainId,
-                                                        recipient: Meteor.userId()},
-                                                       {sort:{created:1}});
-          if (roleAssignment) {
-            RoleAssignments.update(roleAssignment._id,
-                                   {$set: {title : title}});
+          var token = ApiTokens.findOne({grainId: this.grainId, objectId: {$exists: false},
+                                         "owner.user.userId": Meteor.userId()},
+                                        {sort:{created:1}});
+          if (token) {
+            ApiTokens.update(token._id,
+                             {$set: {"owner.user.title" : title}});
           }
         }
       }
@@ -217,7 +210,7 @@ if (Meteor.isClient) {
       } else {
         if (window.confirm("Really forget this grain?")) {
           Session.set("showMenu", false);
-          Meteor.call("deleteRoleAssignments", this.grainId);
+          Meteor.call("forgetGrain", this.grainId);
           Router.go("root");
         }
       }
@@ -349,34 +342,27 @@ if (Meteor.isClient) {
       }
     },
 
-    "click button.revoke-role-assignment": function (event) {
-      RoleAssignments.update(event.currentTarget.getAttribute("data-id"),
-                            {$set : {active : false}});
-    },
-
-    "click button.restore-role-assignment": function (event) {
-      RoleAssignments.update(event.currentTarget.getAttribute("data-id"),
-                            {$set : {active : true}});
-    },
-
     "click button.show-transitive-shares": function (event) {
       var grainId = this.grainId;
-      Meteor.call("transitiveShares", this.grainId, Meteor.userId(), function(error, downstream) {
+      Meteor.call("transitiveShares", this.grainId, function(error, downstream) {
         if (error) {
           console.error(error.stack);
         } else {
-          var shares = [];
-          for (var recipient in downstream.users) {
-            if (!RoleAssignments.findOne({grainId: grainId, recipient: recipient,
-                                          sharer: Meteor.userId(), active: true})) {
-              // There is not a direct share from the current user to this recipient.
-              shares.push({recipient: recipient, sharers: downstream.users[recipient]});
+          var sharesByRecipient = {};
+          downstream.forEach(function (token) {
+            if (Match.test(token.owner, {user: Match.ObjectIncluding({userId: String})})) {
+              var recipient = token.owner.user.userId;
+              if (!sharesByRecipient[recipient]) {
+                sharesByRecipient[recipient] = {recipient: recipient, shares: []};
+              }
+              sharesByRecipient[recipient].shares.push(token);
             }
+          });
+          var result = _.values(sharesByRecipient);
+          if (result.length == 0) {
+            result = {empty: true};
           }
-          if (shares.length == 0) {
-            shares = {empty: true};
-          }
-          Session.set("transitive-shares-" + grainId, shares);
+          Session.set("transitive-shares-" + grainId, result);
         }
       });
     },
@@ -733,8 +719,6 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
   result.showShareGrain = Session.get("show-share-grain");
   result.existingShareTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
                                                forSharing: true}).fetch();
-  result.existingAssignments = RoleAssignments.find({grainId: grainId,
-                                                     sharer : Meteor.userId()}).fetch();
   result.transitiveShares = Session.get("transitive-shares-" + grainId);
   result.showMenu = Session.get("showMenu");
   result.rootPath = rootPath;
@@ -829,10 +813,11 @@ Router.map(function () {
       if (grain) {
         title = grain.title;
       } else {
-        var roleAssignment = RoleAssignments.findOne({grainId: grainId, recipient: Meteor.userId()},
-                                                     {sort:{created:1}});
-        if (roleAssignment) {
-          title = roleAssignment.title;
+        var token = ApiTokens.findOne({grainId: grainId,
+                                       "owner.user.userId": Meteor.userId()},
+                                      {sort:{created:1}});
+        if (token) {
+          title = token.owner.user.title;
         }
       }
       return grainRouteHelper(this,
@@ -880,8 +865,8 @@ Router.map(function () {
           this.state.set("error", undefined);
           var apiToken = tokenInfo.apiToken;
           if (!Grains.findOne({_id: apiToken.grainId, userId: Meteor.userId()}) &&
-              !RoleAssignments.findOne({sharer: apiToken.userId, recipient: Meteor.userId()})) {
-            // The user neither owns the grain nor holds any role assignments from this sharer.
+              !ApiTokens.findOne({userId: apiToken.userId, "owner.user.userId": Meteor.userId()})) {
+            // The user neither owns the grain nor holds any sturdyrefs from this sharer.
             // Therefore, we ask whether they would like to go incognito.
             // TODO(soon): Base this decision on the contents of the Contacts collection.
             return {interstitial: true, token: this.params.token};

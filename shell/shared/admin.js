@@ -613,7 +613,8 @@ if (Meteor.isClient) {
       return state.get("powerboxOfferUrl");
     },
     caps: function () {
-      return ApiTokens.find({"frontendRef": {$in: [{ipNetwork: true}, {ipInterface: true}]}});
+      return ApiTokens.find({$or: [{"frontendRef.ipNetwork": {$exists: true}},
+                                   {"frontendRef.ipInterface": {$exists: true}}]});
     },
     userName: function () {
       var user = Meteor.users.findOne({_id: this.userId});
@@ -1011,7 +1012,8 @@ if (Meteor.isServer) {
     if (!(this.userId && isAdminById(this.userId)) && !tokenIsValid(token)) {
       return [];
     }
-    return ApiTokens.find({"frontendRef": {$in: [{ipNetwork: true}, {ipInterface: true}]}},
+    return ApiTokens.find({$or: [{"frontendRef.ipNetwork": {$exists: true}},
+                                 {"frontendRef.ipInterface": {$exists: true}}]},
                           {fields: {frontendRef: 1, created: 1, userId: 1, expires: 1}});
   });
 }

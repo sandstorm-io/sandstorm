@@ -296,6 +296,7 @@ limitations under the License.
         {{#if roles}}
           Role:
           <select id="api-token-role">
+            <option title="has every app permission" selected=true>all access</option>
             {{#each roles}}
               <option title={{verbPhrase.defaultText}}
                       style="{{#if obsolete}}display:none{{else}}{{/if}}">

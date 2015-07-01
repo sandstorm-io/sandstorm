@@ -280,11 +280,9 @@ if (Meteor.isClient) {
       var grainId = this.grainId;
       Session.set("api-token-" + grainId, "pending");
       var roleList = document.getElementById("api-token-role");
-      var assignment;
-      if (roleList) {
-        assignment = {roleId: roleList.selectedIndex};
-      } else {
-        assignment = {none: null};
+      var assignment = {allAccess: null};
+      if (roleList && roleList.selectedIndex > 0) {
+        assignment = {roleId: roleList.selectedIndex - 1};
       }
       Meteor.call("newApiToken", this.grainId, document.getElementById("api-token-petname").value,
                   assignment, false, undefined,

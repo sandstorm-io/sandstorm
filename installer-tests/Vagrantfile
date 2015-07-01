@@ -41,6 +41,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     default.vm.box = "trusty64"
   end
 
+  config.vm.define "debian-7.8-32-nocm", primary: true do |default|
+    default.vm.box = "debian-7.8-32-nocm"
+  end
+
   config.vm.define "precise64", primary: true do |default|
     default.vm.box = "precise64"
   end

@@ -332,11 +332,7 @@ Meteor.methods({
     check(grainId, String);
     check(petname, String);
     check(forSharing, Boolean);
-    check(roleAssignment, {
-      none : Match.Optional(null),
-      allAccess: Match.Optional(null),
-      roleId: Match.Optional(Match.Integer),
-    });
+    check(roleAssignment, roleAssignmentPattern);
     // Meteor bug #3877: we get null here instead of undefined when we
     // explicitly pass in undefined.
     if (destroyIfNotUsedByTime) {

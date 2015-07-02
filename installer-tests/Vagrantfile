@@ -37,15 +37,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     libvirt.driver = 'qemu'
   end
 
-  config.vm.define "default", primary: true do |default|
+  config.vm.define "default" do |default|
     default.vm.box = "trusty64"
   end
 
-  config.vm.define "debian-7.8-32-nocm", primary: true do |default|
+  config.vm.define "debian-7.8-32-nocm" do |default|
     default.vm.box = "debian-7.8-32-nocm"
   end
 
-  config.vm.define "precise64", primary: true do |default|
+  config.vm.define "precise64" do |default|
     default.vm.box = "precise64"
   end
 

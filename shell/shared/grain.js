@@ -39,7 +39,7 @@ if (Meteor.isServer) {
          Match.test(apiToken.owner, {user: Match.ObjectIncluding({userId: userId})}))
     },
     remove: function (userId, token) {
-      return userId && token.userId === userId;
+      return userId && token.userId === userId && (!token.owner || "webkey" in token.owner);
     }
   });
 
@@ -148,7 +148,8 @@ Meteor.methods({
       var grain = Grains.findOne({_id: grainId, userId: this.userId});
       if (grain) {
         Grains.remove(grainId);
-        ApiTokens.remove({grainId : grainId});
+        ApiTokens.remove({grainId : grainId, $or: [{owner: {$exists: false}},
+                                                   {owner: {webkey: null}}]});
         if (grain.lastUsed) {
           DeleteStats.insert({type: "grain", lastActive: grain.lastUsed});
         }
@@ -713,12 +714,17 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
   result.powerboxRequestError = Session.get("powerbox-request-error");
   result.existingTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
                                           forSharing: {$ne: true},
+                                          $or: [{owner: {webkey: null}},
+                                                {owner: {$exists: false}}],
                                           expiresIfUnused: null}).fetch();
   result.shareToken = shareToken;
   result.shareTokenPending = shareToken === "pending";
   result.showShareGrain = Session.get("show-share-grain");
   result.existingShareTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
-                                               forSharing: true}).fetch();
+                                               forSharing: true,
+                                               $or: [{owner: {webkey:null}},
+                                                     {owner: {$exists: false}}],
+                                              }).fetch();
   result.transitiveShares = Session.get("transitive-shares-" + grainId);
   result.showMenu = Session.get("showMenu");
   result.rootPath = rootPath;

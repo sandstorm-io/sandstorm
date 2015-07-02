@@ -60,10 +60,10 @@ function wwwHandlerForGrain(grainId) {
     // Strip query.
     path = path.split("?")[0];
 
-    var ext = path.split(".").pop();
-    var type = mime.default_type;
-    if (ext && ext in mime.types) {
-      type = mime.types[ext];
+    var type = mime.lookup(path);
+    var charset = mime.charsets.lookup(type);
+    if (charset) {
+      type = type + "; charset=" + charset;
     }
 
     var started = false;

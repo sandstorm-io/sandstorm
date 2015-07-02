@@ -812,7 +812,7 @@ Router.map(function () {
       var grain = Grains.findOne(grainId);
       if (grain) {
         title = grain.title;
-      } else {
+      } else if (Meteor.userId()) {
         var token = ApiTokens.findOne({grainId: grainId,
                                        "owner.user.userId": Meteor.userId()},
                                       {sort:{created:1}});

@@ -586,9 +586,15 @@ if (Meteor.isClient) {
         // the platform, we can ensure that the token is only visible to the
         // shell's origin.
         var call = event.data.renderTemplate;
-        check(call, {rpcId: String, template: String, petname: Match.Optional(String),
-                     roleAssignment: Match.Optional(roleAssignmentPattern)});
+        check(call, Object);
         var rpcId = call.rpcId;
+        try {
+          check(call, {rpcId: String, template: String, petname: Match.Optional(String),
+                       roleAssignment: Match.Optional(roleAssignmentPattern)});
+        } catch (error) {
+          event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
+          return;
+        }
         var template = call.template;
         var petname = "connected external app";
         if (call.petname) {
@@ -603,8 +609,7 @@ if (Meteor.isClient) {
         Meteor.call("newApiToken", currentGrainId, petname, assignment, false,
                     selfDestructTime, function (error, result) {
           if (error) {
-            window.alert("Failed to create token for offer template.\n" + error);
-            console.error(error.stack);
+            event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
           } else {
             var tokenId = result.token;
             // Generate random key id2.

@@ -275,7 +275,7 @@ assert_linux_x86_64() {
   fi
 
   if [ "$(uname -m)" != x86_64 ]; then
-    fail "Sorry, tha Sandstorm server currently only runs on x86_64 machines."
+    fail "Sorry, the Sandstorm server currently only runs on x86_64 machines."
   fi
 }
 
@@ -1542,13 +1542,13 @@ sandcats_generate_keys() {
 
 # Now that the steps exist as functions, run them in an order that
 # would result in a working install.
+assert_linux_x86_64
 assert_usable_kernel
 detect_current_uid
 detect_userns_clone
 assert_userns_clone_works_or_can_be_made_to_work
 handle_args "$@"
 assert_on_terminal
-assert_linux_x86_64
 assert_dependencies
 assert_valid_bundle_file
 detect_init_system

@@ -53,7 +53,7 @@ if (Meteor.isServer) {
       return [
         UserActions.find({userId: this.userId}),
         Grains.find({userId: this.userId}),
-        RoleAssignments.find({recipient: this.userId}),
+        ApiTokens.find({'owner.user.userId': this.userId}),
       ];
     } else {
       return [];
@@ -412,10 +412,11 @@ if (Meteor.isClient) {
       if (selectedTab.sharedWithMe) {
         var result = [];
         var uniqueGrains = {};
-        RoleAssignments.find({}, {sort:{created:1}}).forEach(function(roleAssignment) {
-          if (!(roleAssignment.grainId in uniqueGrains)) {
-            result.push({_id : roleAssignment.grainId, title: roleAssignment.title});
-            uniqueGrains[roleAssignment.grainId] = true;
+        ApiTokens.find({'owner.user.userId': userId},
+                       {sort:{created:1}}).forEach(function(apiToken) {
+          if (!(apiToken.grainId in uniqueGrains)) {
+            result.push({_id : apiToken.grainId, title: apiToken.owner.user.title});
+            uniqueGrains[apiToken.grainId] = true;
           }
         });
         return result;
@@ -856,7 +857,8 @@ Router.map(function () {
         apps: apps,
         showMenu: Session.get("showMenu"),
         appMap: appMap,
-        hideSplashScreen: isSignedUpOrDemo() || RoleAssignments.findOne({recipient: Meteor.userId()})
+        hideSplashScreen: isSignedUpOrDemo() ||
+          ApiTokens.findOne({"owner.user.userId": Meteor.userId()})
       };
     }
   });

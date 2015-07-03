@@ -266,6 +266,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //           roleAssignment :RoleAssignment = (allAccess = ());
 //         }
 //         other :Void;
+//       }
 //     }
 //   }
 //   requirements: List(Supervisor.MembraneRequirement);

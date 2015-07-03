@@ -473,3 +473,11 @@ allowDevAccounts = function () {
            Meteor.settings.public.allowDevAccounts;
   }
 };
+
+roleAssignmentPattern = {
+  none : Match.Optional(null),
+  allAccess: Match.Optional(null),
+  roleId: Match.Optional(Match.Integer),
+  addPermissions: Match.Optional([Boolean]),
+  removePermissions: Match.Optional([Boolean]),
+};

@@ -588,31 +588,28 @@ if (Meteor.isClient) {
         var call = event.data.renderTemplate;
         check(call, Object);
         var rpcId = call.rpcId;
-        check(rpcId, String);
-        var template = call.template;
-        check(template, String);
-        var assignment = undefined;
-        if (call.roleId) {
-          check(call.roleId, Match.Integer);
-          assignment = {roleId: call.roleId};
-        } else {
-          assignment = {none: null};
+        try {
+          check(call, {rpcId: String, template: String, petname: Match.Optional(String),
+                       roleAssignment: Match.Optional(roleAssignmentPattern)});
+        } catch (error) {
+          event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
+          return;
         }
-        var petname = undefined;
+        var template = call.template;
+        var petname = "connected external app";
         if (call.petname) {
-          check(call.petname, String);
           petname = call.petname;
-        } else {
-          petname = "connected external app";
+        }
+        var assignment = {allAccess: null};
+        if (call.roleAssignment) {
+          assignment = call.roleAssignment;
         }
         // Tokens expire by default in 5 minutes from generation date
         var selfDestructTime = Date.now() + (5 * 60 * 1000);
         Meteor.call("newApiToken", currentGrainId, petname, assignment, false,
                     selfDestructTime, function (error, result) {
           if (error) {
-            //Session.set("api-token-" + currentGrainId, undefined);
-            window.alert("Failed to create token for offer template.\n" + error);
-            console.error(error.stack);
+            event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
           } else {
             var tokenId = result.token;
             // Generate random key id2.

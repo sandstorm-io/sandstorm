@@ -102,6 +102,48 @@ function roleAssignmentPermissions(roleAssignment, viewInfo) {
   return result;
 }
 
+function collectEdgesByRecipient(grainId) {
+  // Collects chains of `parentToken` UiView tokens into direct user-to-user edges that are
+  // more convenient for permissions computations. Returns a map where the keys are IDs of
+  // recipient users and the values are lists of objects of the form
+  // `{sharer: <userId>, roleAssignments: <list of role assignments>}`.
+  // The role assignments should be applied in sequence to compute the set of permissions that
+  // flow to a recipient from a sharer.
+  //
+  // TODO(someday): Once UiView tokens can have membrane requirements, we'll need to account for
+  // them in this computation.
+
+  var edgesByRecipient = {};
+  var tokensById = {};
+  ApiTokens.find({grainId: grainId}).forEach(function(token) {
+    tokensById[token._id] = token;
+  });
+  for (var id in tokensById) {
+    var token = tokensById[id];
+    var roleAssignments = [];
+    if (Match.test(token.owner, {user: Match.Any})) {
+      var curToken = token;
+      while (curToken && curToken.parentToken) {
+        // For a `parentToken` provider, no role assignment means don't attenuate.
+        if (curToken.roleAssignment) {
+          roleAssignments.push(curToken.roleAssignment);
+        }
+        curToken = tokensById[curToken.parentToken];
+      }
+      if (curToken && curToken.grainId && curToken.userId) {
+        roleAssignments.push(curToken.roleAssignment);
+        var recipient = token.owner.user.userId;
+        var edge = {sharer: curToken.userId, roleAssignments: roleAssignments}
+        if (!edgesByRecipient[recipient]) {
+          edgesByRecipient[recipient] = [];
+        }
+        edgesByRecipient[recipient].push(edge);
+      }
+    }
+  }
+  return edgesByRecipient;
+}
+
 function grainPermissionsInternal(grainId, openerUserId, viewInfo) {
   // Computes the permissions of a user who is opening a grain.
 
@@ -128,13 +170,7 @@ function grainPermissionsInternal(grainId, openerUserId, viewInfo) {
   permissionsMap[owner] = new PermissionSet();
 
   var userStack = [openerUserId];
-  var edgesByRecipient = {};
-  RoleAssignments.find({active: true, grainId: grainId}).forEach(function (edge) {
-    if (!edgesByRecipient[edge.recipient]) {
-      edgesByRecipient[edge.recipient] = []
-    }
-    edgesByRecipient[edge.recipient].push(edge);
-  });
+  var edgesByRecipient = collectEdgesByRecipient(grainId);
 
   while (userStack.length > 0) {
     var recipient = userStack.pop();
@@ -144,7 +180,11 @@ function grainPermissionsInternal(grainId, openerUserId, viewInfo) {
         if (!permissionsMap[sharer]) {
           permissionsMap[sharer] = new PermissionSet();
         }
-        var newPermissions = roleAssignmentPermissions(inEdge.roleAssignment, viewInfo);
+
+        var newPermissions = roleAssignmentPermissions({allAccess: null}, viewInfo);
+        inEdge.roleAssignments.forEach(function(roleAssignment) {
+          newPermissions.intersect(roleAssignmentPermissions(roleAssignment, viewInfo));
+        });
         newPermissions.intersect(permissionsMap[recipient]);
 
         // Optimization: we don't care about permissions that we've already proven the opener has.
@@ -184,15 +224,10 @@ mayOpenGrain = function(grainId, userId) {
     return true;
   }
 
-  var stackedUsers = {userId : true};
+  var stackedUsers = {};
+  stackedUsers[userId] = true;
   var userStack = [userId];
-  var edgesByRecipient = {};
-  RoleAssignments.find({active: true, grainId: grainId}).forEach(function (edge) {
-    if (!edgesByRecipient[edge.recipient]) {
-      edgesByRecipient[edge.recipient] = []
-    }
-    edgesByRecipient[edge.recipient].push(edge);
-  });
+  var edgesByRecipient = collectEdgesByRecipient(grainId);
 
   while (userStack.length > 0) {
     var recipient = userStack.pop();
@@ -214,62 +249,97 @@ mayOpenGrain = function(grainId, userId) {
   return false;
 }
 
-transitiveShares = function(grainId, userId) {
-  // Computes the set of users and tokens that can currently open the grain and are downstream
-  // from `userId` in the sharing graph.
+downstreamTokens = function(root) {
+  // Computes a list of the UiView tokens that are downstream in the sharing graph from a given
+  // source. The source, `root`, can either be a token or a (grain, user) pair. The exact format
+  // of `root` is specified in the `check()` invocation below.
   //
-  // Returns `result`, where `result.users` is a dictionary that maps the ID of each downstream
-  // user to an array of incoming edges, each of type `{sharer: <userId>, created: <timestamp>}`,
-  // and `result.tokens` is a list of strings, each the `_id` of an entry in ApiTokens.
+  // TODO(someday): Once UiView tokens can have membrane requirements, we'll need to account for
+  // them in this computation.
 
-  var result = {users: {}, tokens: []};
+  check(root, Match.OneOf({token: Match.ObjectIncluding({_id: String, grainId: String})},
+                          {grain: Match.ObjectIncluding({_id: String, userId: String})}));
 
-  var grain = Grains.findOne(grainId);
-  if (!grain || !grain.private || !userId) { return result; }
-
-  var stackedUsers = {userId : true};
-  var userStack = [userId];
-  var edgesBySharer = {};
+  var result = [];
+  var tokenStack = [];
+  var stackedTokens = {};
   var tokensBySharer = {};
+  var tokensByParent = {};
+  var tokensById = {};
 
-  RoleAssignments.find({active: true, grainId: grainId}).forEach(function (edge) {
-    if (!edgesBySharer[edge.sharer]) {
-      edgesBySharer[edge.sharer] = []
-    }
-    edgesBySharer[edge.sharer].push(edge);
-  });
-
-  while (userStack.length > 0) {
-    var sharer = userStack.pop();
-    var edges = edgesBySharer[sharer];
-    if (edges) {
-      edges.forEach(function (inEdge) {
-        var recipient = inEdge.recipient;
-        if (!result.users[recipient]) {
-          result.users[recipient] = [];
-        }
-        result.users[recipient].push({sharer: sharer, created: inEdge.created});
-        if (!stackedUsers[recipient]) {
-          userStack.push(recipient);
-          stackedUsers[recipient] = true;
+  function addChildren(tokenId) {
+    var children = tokensByParent[tokenId];
+    if (children) {
+      children.forEach(function (child) {
+        if (!stackedTokens[child._id]) {
+          tokenStack.push(child);
+          stackedTokens[child._id] = true;
         }
       });
     }
   }
 
-  var downstreamUserIds = [userId];
-  for (userId in result.users) {
-    downstreamUserIds.push(userId);
+  function addSharedTokens(sharer) {
+    var sharedTokens = tokensBySharer[sharer];
+    if (sharedTokens) {
+      sharedTokens.forEach(function (sharedToken) {
+        if (!stackedTokens[sharedToken._id]) {
+          tokenStack.push(sharedToken);
+          stackedTokens[sharedToken._id] = true;
+        }
+      });
+    }
   }
 
-  var tokens = ApiTokens.find({grainId: grainId, userId: {$in: downstreamUserIds}}).fetch();
-  result.tokens = tokens.map(function (token) { return token._id; });
+  var grainId;
+  if (root.token) {
+    grainId = root.token.grainId;
+  } else if (root.grain) {
+    grainId = root.grain._id;
+  }
+
+  var grain = Grains.findOne(grainId);
+  if (!grain || !grain.private ) { return result; }
+
+  ApiTokens.find({grainId: grainId}).forEach(function (token) {
+    tokensById[token._id] = token;
+    if (token.userId) {
+      if (!tokensBySharer[token.userId]) {
+        tokensBySharer[token.userId] = [];
+      }
+      tokensBySharer[token.userId].push(token);
+    }
+    if (token.parentToken) {
+      if (!tokensByParent[token.parentToken]) {
+        tokensByParent[token.parentToken] = [];
+      }
+      tokensByParent[token.parentToken].push(token);
+    }
+  });
+
+  if (root.token) {
+    addChildren(root.token._id);
+  } else if (root.grain) {
+    addSharedTokens(root.grain.userId);
+  }
+
+  while (tokenStack.length > 0) {
+    var token = tokenStack.pop();
+    result.push(token);
+    addChildren(token._id);
+    if (token.owner && token.owner.user) {
+      addSharedTokens(token.owner.user.userId);
+    }
+  }
 
   return result;
 }
 
 Meteor.methods({
-  transitiveShares: function(grainId, userId) {
-    return transitiveShares(grainId, userId);
+  transitiveShares: function(grainId) {
+    check(grainId, String);
+    if (this.userId) {
+      return downstreamTokens({grain: {_id: grainId, userId: this.userId}});
+    }
   },
 });

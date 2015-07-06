@@ -590,7 +590,7 @@ Meteor.startup(function() {
 
     removed: function (oldApiToken) {
       clearDownstreamSessions(oldApiToken);
-      clearApiProxies(newApiToken.grainId);
+      clearApiProxies(oldApiToken.grainId);
     }
   });
 });

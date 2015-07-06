@@ -240,8 +240,8 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //                           `Notifications` collection.
 //       ipNetwork: An IpNetwork capability that is implemented by the frontend. Eventually, this
 //                  will be moved out of the frontend and into the backend, but we'll migrate the
-//                  database when that happens. This field contains the userId who originally
-//                  minted this capability.
+//                  database when that happens. This field contains the boolean true to signify that
+//                  it has been set.
 //       ipInterface: Ditto IpNetwork, except it's an IpInterface.
 //   parentToken: If present, then this token represents exactly the capability represented by
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
@@ -284,6 +284,8 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //     }
 //     frontendRef :union {
 //        notificationHandle :Text;
+//        ipNetwork :Bool;
+//        ipInterface :Bool;
 //     }
 //     child :group {
 //       parentToken :Text;

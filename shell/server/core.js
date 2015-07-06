@@ -116,15 +116,20 @@ NotificationHandle.prototype.close = function () {
   });
 };
 
-saveFrontendRef = function (frontendRef, owner) {
+saveFrontendRef = function (frontendRef, owner, creatorUserId, parentToken, grainId) {
   return inMeteor(function () {
+    if (parentToken) {
+      var ret = makeChildTokenInternal(parentToken, owner, [], grainId);
+      return {sturdyRef: ret.token};
+    }
     var sturdyRef = new Buffer(generateSturdyRef());
     var hashedSturdyRef = hashSturdyRef(sturdyRef);
     ApiTokens.insert({
       _id: hashedSturdyRef,
       frontendRef: frontendRef,
       owner: owner,
-      created: new Date()
+      created: new Date(),
+      creatorUserId: creatorUserId
     });
     return {sturdyRef: sturdyRef};
   });
@@ -159,7 +164,7 @@ checkRequirements = function (requirements) {
   return true;
 };
 
-restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
+restoreInternal = function (tokenId, ownerPattern, requirements, parentToken, grainId) {
   // Restores `sturdyRef`, checking first that its owner matches `ownerPattern`.
   // parentToken and requirements are optional params that are only used in the case of an objectId
   // token
@@ -190,9 +195,9 @@ restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
       var notificationId = token.frontendRef.notificationHandle;
       return {cap: makeNotificationHandle(notificationId, true)};
     } else if (token.frontendRef.ipNetwork) {
-      return {cap: makeIpNetwork(token.frontendRef.ipNetwork)};
+      return {cap: makeIpNetwork(token.creatorUserId, tokenId, grainId)};
     } else if (token.frontendRef.ipInterface) {
-      return {cap: makeIpInterface(token.frontendRef.ipInterface)};
+      return {cap: makeIpInterface(token.creatorUserId, tokenId, grainId)};
     } else {
       throw new Meteor.Error(500, "Unknown frontend token type.");
     }
@@ -207,7 +212,7 @@ restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
       return supervisor.restore(token.objectId, requirements, parentToken);
     }));
   } else if (token.parentToken) {
-    return restoreInternal(token.parentToken, Match.Any, requirements, parentToken);
+    return restoreInternal(token.parentToken, Match.Any, requirements, parentToken, grainId);
   } else {
     throw new Meteor.Error(500, "Unknown token type.");
   }
@@ -233,7 +238,7 @@ SandstormCoreImpl.prototype.restore = function (sturdyRef, requiredPermissions) 
     }
     return restoreInternal(hashedSturdyRef,
                            {grain: Match.ObjectIncluding({grainId: self.grainId})},
-                           requirements, sturdyRef);
+                           requirements, sturdyRef, self.grainId);
   });
 };
 
@@ -297,29 +302,32 @@ SandstormCoreImpl.prototype.makeToken = function (ref, owner, requirements) {
   });
 };
 
+function makeChildTokenInternal (hashedParent, owner, requirements, grainId) {
+  var sturdyRef = new Buffer(generateSturdyRef());
+  var hashedSturdyRef = hashSturdyRef(sturdyRef);
+
+  requirements = requirements.filter(function (requirement) {
+    return requirement.tokenValid !== hashedParent;
+  });
+
+  ApiTokens.insert({
+    _id: hashedSturdyRef,
+    grainId: grainId,
+    parentToken: hashedParent,
+    owner: owner,
+    created: new Date(),
+    requirements: requirements
+  });
+
+  return {
+    token: sturdyRef
+  };
+}
+
 SandstormCoreImpl.prototype.makeChildToken = function (parent, owner, requirements) {
   var self = this;
   return inMeteor(function () {
-    var sturdyRef = new Buffer(generateSturdyRef());
-    var hashedSturdyRef = hashSturdyRef(sturdyRef);
-    var hashedParent = hashSturdyRef(parent);
-
-    requirements = requirements.filter(function (requirement) {
-      return requirement.tokenValid !== hashedParent;
-    });
-
-    ApiTokens.insert({
-      _id: hashedSturdyRef,
-      grainId: self.grainId,
-      parentToken: hashedParent,
-      owner: owner,
-      created: new Date(),
-      requirements: requirements
-    });
-
-    return {
-      token: sturdyRef
-    };
+    return makeChildTokenInternal(hashSturdyRef(parent), owner, requirements, self.grainId);
   });
 };
 

@@ -617,8 +617,10 @@ if (Meteor.isClient) {
                                    {"frontendRef.ipInterface": {$exists: true}}]});
     },
     userName: function () {
-      var user = Meteor.users.findOne({_id: this.userId});
-      user = user || Meteor.user();
+      var user = Meteor.users.findOne({_id: this.creatorUserId || ""});
+      if (!user) {
+        return "no user";
+      }
       var services = user.services;
       if (services.github) {
         return services.github.username;
@@ -632,9 +634,6 @@ if (Meteor.isClient) {
     },
     isDisabled: function () {
       return !this.userId;
-    },
-    userIdOrCurrent: function () {
-      return this.userId || Meteor.userId();
     },
     disabled: function () {
       return this.expires && (this.expires.getTime() <= Date.now());
@@ -1014,6 +1013,6 @@ if (Meteor.isServer) {
     }
     return ApiTokens.find({$or: [{"frontendRef.ipNetwork": {$exists: true}},
                                  {"frontendRef.ipInterface": {$exists: true}}]},
-                          {fields: {frontendRef: 1, created: 1, userId: 1, expires: 1}});
+                          {fields: {frontendRef: 1, created: 1, creatorUserId: 1, expires: 1}});
   });
 }

@@ -37,19 +37,23 @@ ByteStreamConnection.prototype.write = function (data) {
 // expectSize not implemented
 // ByteStreamConnection.prototype.expectSize = function (size) { }
 
-IpInterfaceImpl = function (userId) {
+IpInterfaceImpl = function (userId, parentToken, grainId) {
   // TODO(someday): maybe check if userId is admin? This could break things if we don't allow
   // handing off capabilties from a deleted/deactivated user, so for now we're just allowing all
   // admins to revoke any ipInterface/ipNetwork caps from the admin settings page.
   this.userId = userId;
+  this.parentToken = parentToken;
+  this.grainId = grainId;
 };
 
-makeIpInterface = function (userId) {
-  return new Capnp.Capability(new IpInterfaceImpl(userId), IpRpc.PersistentIpInterface);
+makeIpInterface = function (userId, parentToken, grainId) {
+  return new Capnp.Capability(new IpInterfaceImpl(userId, parentToken, grainId),
+    IpRpc.PersistentIpInterface);
 };
 
 IpInterfaceImpl.prototype.save = function (params) {
-  return saveFrontendRef({ipInterface: this.userId}, params.sealFor);
+  return saveFrontendRef({ipInterface: true}, params.sealFor, this.userId, this.parentToken,
+    this.grainId);
 };
 
 IpInterfaceImpl.prototype.listenTcp = function (portNum, port) {
@@ -192,16 +196,20 @@ var addressType = function (address) {
   return type;
 };
 
-IpNetworkImpl = function (userId) {
+IpNetworkImpl = function (userId, parentToken, grainId) {
   this.userId = userId;
+  this.parentToken = parentToken;
+  this.grainId = grainId;
 };
 
-makeIpNetwork = function (userId) {
-  return new Capnp.Capability(new IpNetworkImpl(userId), IpRpc.PersistentIpNetwork);
-}
+makeIpNetwork = function (userId, parentToken, grainId) {
+  return new Capnp.Capability(new IpNetworkImpl(userId, parentToken, grainId),
+    IpRpc.PersistentIpNetwork);
+};
 
 IpNetworkImpl.prototype.save = function (params) {
-  return saveFrontendRef({ipNetwork: this.userId}, params.sealFor);
+  return saveFrontendRef({ipNetwork: true}, params.sealFor, this.userId, this.parentToken,
+    this.grainId);
 };
 
 IpNetworkImpl.prototype.getRemoteHost = function (address) {

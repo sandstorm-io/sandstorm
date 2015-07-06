@@ -215,6 +215,8 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              For non-UiView capabilities, `userId` is never present.
 //              Note that this is NOT the user against whom the `requiredPermissions` parameter of
 //              `SandstormApi.restore()` is checked; that would be `owner.grain.introducerUser`.
+//   creatorUserId: This refers to the original user who created this capability. It is for
+//              informational/display purposes only, and is distinct from userId for that reason.
 //   userInfo:  *DEPRECATED* For API tokens created by the app through HackSessionContext, the
 //              UserInfo struct that should be passed to `newSession()` when exercising this token,
 //              in decoded (JS object) format. This is a temporary hack. `userId` is never present

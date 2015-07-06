@@ -96,7 +96,7 @@ Meteor.methods({
     token = token.slice(1);
 
     var cap = restoreInternal(hashSturdyRef(token), Match.Optional({webkey: Match.Optional(Match.Any)}), [],
-                              new Buffer(token)).cap;
+                              new Buffer(token), grainId).cap;
     var castedCap = cap.castAs(SystemPersistent);
     var save = castedCap.save({grain: {
       grainId: grainId,

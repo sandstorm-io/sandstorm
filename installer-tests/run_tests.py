@@ -9,6 +9,9 @@ import subprocess
 import sys
 
 
+VM_LIST = ['jessie', 'default', 'precise64', 'debian-7.8-32-nocm']
+
+
 def _expect(line, current_cmd, do_re_escape=True, do_detect_slow=True,
             strip_comments=True, verbose=True):
     timeout = 2
@@ -242,7 +245,7 @@ def main():
 
     if args.uninstall_first:
         # TODO: Pull these out of the output of `vagrant status`.
-        for vm in 'jessie', 'default', 'precise64':
+        for vm in VM_LIST:
             vagrant_up(vm)
             uninstall_sandstorm(vm)
 

@@ -186,6 +186,9 @@ struct MembraneRequirement {
       permissions @3 :Grain.PermissionSet;
       # The permissions the user must hold on the grain.
     }
+
+    userIsAdmin @4 :Text;
+    # The capability is valid only as long as the given user is an administrator.
   }
 }
 
@@ -253,6 +256,17 @@ struct ApiTokenOwner {
 
     frontend @4 :Void;
     # Owned by the front-end, i.e. stored in its Mongo database.
+
+    user :group {
+      # Owned by a user. If the token represents a UiView, then it will show up in this user's
+      # grain list.
+
+      userId @6 :Text;
+      # The ID (`_id` in the users table) of the user who is allowed to restore this token.
+
+      title @7 :Text;
+      # Title as chosen by the user.
+    }
   }
 }
 

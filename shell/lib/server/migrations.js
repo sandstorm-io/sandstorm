@@ -75,13 +75,28 @@ var denormalizeInviteInfo = function() {
   });
 }
 
+function mergeRoleAssignmentsIntoApiTokens() {
+  RoleAssignments.find().forEach(function(roleAssignment) {
+    ApiTokens.insert({
+      grainId: roleAssignment.grainId,
+      userId: roleAssignment.sharer,
+      roleAssignment: roleAssignment.roleAssignment,
+      petname: roleAssignment.petname,
+      created: roleAssignment.created,
+      owner: {user: {userId: roleAssignment.recipient,
+                     title: roleAssignment.title}},
+    });
+  });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
 var MIGRATIONS = [
   updateLoginStyleToRedirect,
   enableLegacyOAuthProvidersIfNotInSettings,
-  denormalizeInviteInfo
+  denormalizeInviteInfo,
+  mergeRoleAssignmentsIntoApiTokens,
 ];
 
 function migrateToLatest() {

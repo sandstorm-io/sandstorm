@@ -1,3 +1,16 @@
+### v0.93 (2015-07-06)
+- Grain logs can now be viewed even when the grain has died.
+- The RoleAssignments table was merged into the ApiTokens table. This should have no visible effect but is a major implementation change in sharing.
+- Webkeys (for connecting external client apps to a grain) now default to granting all of your access (to that grain), rather than a specific role (e.g. read/write). You can still select a specific role if you wish.
+- Bug: In 0.92, web publishing regressed by no longer specifying a charset in the `Content-Type` header, causing browsers to default to LATIN-1 (eww). It now specifies UTF-8 as it did originally. Web sites that set the charset in a &lt;meta> tag (as most do) were not affected.
+
+### v0.92 (2015-06-28)
+- First pass of powerbox UI: Apps can now offer and request capabilities, resulting in direct Cap'n Proto RPC connections between apps, including the ability to save and restore these capabilities for later use. Currently, the user must copy/paste a token from the offering app to the requesting app, but this will eventually be replaced with a picker UI.
+- Web publishing (as in, the feature used by Wordpress, Ghost, and HackerCMS apps) should now work on Sandstorm Oasis (managed hosting).
+- Added support for APIs to opt-in (from the client side) to revealing their public IP to the server app. Needed for Piwik.
+- Improved display of admin alerts on mobile.
+- Admin alerts can now include the current app name in their text and link; useful for clickthrough metrics.
+
 ### v0.91 (2015-06-20)
 - Bug: The first bug in v0.90 was not fully fixed: query parameters and fragments were still being dropped. This is blocking a thing, so we're pushing another fix. Sorry.
 

@@ -91,32 +91,9 @@ Grains = new Mongo.Collection("grains");
 //       web publishing. This field is initialized when first requested by the app.
 
 RoleAssignments = new Mongo.Collection("roleAssignments");
-// Edges in the permissions sharing graph.
-//
-// To share a permission with another user is to declare "if I have this permission, then so should
-// the recipient". A bundle of such declarations by a single sharer directed at a single recipient
-// for a single grain is called a "role assignment". A grain's owner always has every permission,
-// but permissions for other users must be computed from this collection.
-//
-// Any grain for which a user has received a role assignment should show up in that user's grain
-// list. However, the user may only access a grain if there is a path of *active* role assignments
-// leading from the grain owner to that user, precisely as if every role assignment carried a
-// special "can open grain" permission.
-//
-// Each contains:
-//   _id: random
-//   grainId: The `_id` of the grain whose permissions are being shared.
-//   sharer: The `_id` of the user who is sharing these permissions.
-//   recipient: The `_id` of the user who receives these permissions.
-//   roleAssignment: A JSON-encoded Grain.ViewSharingLink.RoleAssignment representing the
-//                   received permissions. The sharer is allowed to modify this later.
-//   active: Flag indicating that this role assignment has not been revoked. The sharer is allowed
-//           to flip this bit, but only the recipient is allowed to delete the role assignment.
-//   petname: Human-readable label chosen by and only visible to the sharer.
-//   title: Human-readable title as chosen by the recipient. Used in the same places that
-//          `grain.title` is used for the grain's owner.
-//   created: Date when this role assignment was created.
-//   parent: If present, the `_id` of the entry in ApiTokens from which this was derived.
+// *OBSOLETE* Before `user` was a variant of ApiTokenOwner, this collection was used to store edges
+// in the permissions sharing graph. This functionality has been subsumed by the ApiTokens
+// collection.
 
 Contacts = new Mongo.Collection("contacts");
 // Edges in the social graph.
@@ -245,8 +222,10 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //       ipInterface: Ditto IpNetwork, except it's an IpInterface.
 //   parentToken: If present, then this token represents exactly the capability represented by
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
-//              by `roleAssignment` (if present). None of `grainId`, `userId`, `userInfo`,
-//              `objectId`, or `frontendRef` are present when `parentToken` is present.
+//              by `roleAssignment` (if present). To facilitate permissions computations, if the
+//              capability is a UiView, then `grainId` is set to the backing grain and `userId` is
+//              set to the user who shared the view. None of `userInfo`, `objectId`, or
+//              `frontendRef` are present when `parentToken` is present.
 //   petname:   Human-readable label for this access token, useful for identifying tokens for
 //              revocation. This should be displayed when visualizing incoming capabilities to
 //              the grain identified by `grainId`.
@@ -289,7 +268,14 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //     }
 //     child :group {
 //       parentToken :Text;
-//       roleAssignment :Maybe(RoleAssignment);
+//       union {
+//         uiView :group {
+//           grainId :Text;
+//           userId :Text;
+//           roleAssignment :RoleAssignment = (allAccess = ());
+//         }
+//         other :Void;
+//       }
 //     }
 //   }
 //   requirements: List(Supervisor.MembraneRequirement);
@@ -481,4 +467,12 @@ allowDevAccounts = function () {
     return Meteor.settings && Meteor.settings.public &&
            Meteor.settings.public.allowDevAccounts;
   }
+};
+
+roleAssignmentPattern = {
+  none : Match.Optional(null),
+  allAccess: Match.Optional(null),
+  roleId: Match.Optional(Match.Integer),
+  addPermissions: Match.Optional([Boolean]),
+  removePermissions: Match.Optional([Boolean]),
 };

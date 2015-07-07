@@ -2178,24 +2178,16 @@ auto SupervisorMain::DefaultSystemConnector::run(
     childPid = 0;
     KJ_ASSERT(WIFEXITED(status) || WIFSIGNALED(status));
     if (WIFSIGNALED(status)) {
-      context.error(kj::str(
+      context.exitError(kj::str(
           "** SANDSTORM SUPERVISOR: App exited due to signal ", WTERMSIG(status),
           " (", strsignal(WTERMSIG(status)), ")."));
     } else {
-      context.error(kj::str(
+      context.exitError(kj::str(
           "** SANDSTORM SUPERVISOR: App exited with status code: ", WEXITSTATUS(status)));
     }
   }).eagerlyEvaluate([this](kj::Exception&& e) {
-    context.error(kj::str(
+    context.exitError(kj::str(
         "** SANDSTORM SUPERVISOR: Uncaught exception waiting for child process:\n", e));
-  }).then([&ioContext,this]() -> kj::Promise<void> {
-    // In order to give the user a chance to look at the debug log, we don't just terminate
-    // the supervisor here. We'll wait a minute, and suggest that they press the restart button
-    // if they want to restart. We don't wait forever because if the user isn't present or doesn't
-    // know what to do we don't want extended downtime.
-    context.error("** YOU MUST RESTART THE APP (e.g. via the 'restart' "
-                  "button in the Sandstorm top bar)");
-    return ioContext.provider->getTimer().afterDelay(60 * kj::SECONDS);
   });
 
   auto coreRedirector = kj::refcounted<CapRedirector>();
@@ -2240,20 +2232,15 @@ auto SupervisorMain::DefaultSystemConnector::run(
   // Only onDisconnect() would return normally (rather than throw), so the app must have
   // disconnected (i.e. from the Cap'n Proto API socket).
 
-  if (childPid != 0) {
-    // Hmm, app disconnected API socket. This suggests that it has exited, but we haven't received
-    // the exit signal yet. We'll wait a couple seconds and then send it a kill signal just in case.
-    ioContext.provider->getTimer().afterDelay(1 * kj::SECONDS).wait(ioContext.waitScope);
-    if (childPid != 0) {
-      SANDSTORM_LOG("App disconnected API socket but didn't actually exit; killing it.");
-      KJ_SYSCALL(kill(childPid, SIGKILL));
-    }
-  }
+  // Hmm, app disconnected API socket. The app probably exited and we just haven't gotten the
+  // signal yet, so sleep for a moment to let it arrive, so that we can report the exit status.
+  // Otherwise kill.
+  ioContext.provider->getTimer().afterDelay(1 * kj::SECONDS)
+      .exclusiveJoin(kj::mv(exitPromise))
+      .wait(ioContext.waitScope);
 
-  // Now wait for child exit.
-  exitPromise.wait(ioContext.waitScope);
-
-  context.exit();
+  SANDSTORM_LOG("App disconnected API socket but didn't actually exit; killing it.");
+  killChildAndExit(1);
 }
 
 }  // namespace sandstorm

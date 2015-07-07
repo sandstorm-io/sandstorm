@@ -617,7 +617,7 @@ if (Meteor.isClient) {
                                    {"frontendRef.ipInterface": {$exists: true}}]});
     },
     userName: function () {
-      var user = Meteor.users.findOne({_id: this.creatorUserId || ""});
+      var user = Meteor.users.findOne({_id: findAdminUserForToken(this)});
       if (!user) {
         return "no user";
       }
@@ -1005,6 +1005,6 @@ if (Meteor.isServer) {
     }
     return ApiTokens.find({$or: [{"frontendRef.ipNetwork": {$exists: true}},
                                  {"frontendRef.ipInterface": {$exists: true}}]},
-                          {fields: {frontendRef: 1, created: 1, creatorUserId: 1, expires: 1}});
+                          {fields: {frontendRef: 1, created: 1, requirements: 1, expires: 1}});
   });
 }

@@ -122,6 +122,10 @@ saveFrontendRef = function (frontendRef, owner, creatorUserId, parentToken, grai
       var ret = makeChildTokenInternal(parentToken, owner, [], grainId);
       return {sturdyRef: ret.token};
     }
+    var requirement = {
+      userIsAdmin: creatorUserId
+    };
+
     var sturdyRef = new Buffer(generateSturdyRef());
     var hashedSturdyRef = hashSturdyRef(sturdyRef);
     ApiTokens.insert({
@@ -129,7 +133,7 @@ saveFrontendRef = function (frontendRef, owner, creatorUserId, parentToken, grai
       frontendRef: frontendRef,
       owner: owner,
       created: new Date(),
-      creatorUserId: creatorUserId
+      requirements: [requirement]
     });
     return {sturdyRef: sturdyRef};
   });
@@ -156,6 +160,11 @@ checkRequirements = function (requirements) {
       var set = new PermissionSet(grainPermissions(p.grainId, p.userId, viewInfo || {}));
       if (new PermissionSet(p.permissions).intersect(set)) {
         return false;
+      }
+    } else if (requirement.userIsAdmin) {
+      if (!isAdminById(requirement.userIsAdmin)) {
+        // return false;
+        // TODO(someday): enable this check. Waiting on the ability to transfer ownership.
       }
     } else {
       throw new Meteor.Error(403, "Unknown requirement");
@@ -195,9 +204,9 @@ restoreInternal = function (tokenId, ownerPattern, requirements, parentToken, gr
       var notificationId = token.frontendRef.notificationHandle;
       return {cap: makeNotificationHandle(notificationId, true)};
     } else if (token.frontendRef.ipNetwork) {
-      return {cap: makeIpNetwork(token.creatorUserId, tokenId, grainId)};
+      return {cap: makeIpNetwork(findAdminUserForToken(token), tokenId, grainId)};
     } else if (token.frontendRef.ipInterface) {
-      return {cap: makeIpInterface(token.creatorUserId, tokenId, grainId)};
+      return {cap: makeIpInterface(findAdminUserForToken(token), tokenId, grainId)};
     } else {
       throw new Meteor.Error(500, "Unknown frontend token type.");
     }

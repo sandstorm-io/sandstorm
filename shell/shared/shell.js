@@ -190,7 +190,8 @@ if (Meteor.isClient) {
   var formatAccountExpiresIn = function (template, currentDatetime) {
     // TODO(someday): formatInCountdown will set the interval to match account expiration time, and
     // completely overwrite the previous interval for $IN_COUNTDOWN
-    var expires = Meteor.user().expires;
+    var user = Meteor.user() || {};
+    var expires = user.expires || null;
     if (!expires) {
       return null;
     } else {

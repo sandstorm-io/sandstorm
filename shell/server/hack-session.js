@@ -323,10 +323,26 @@ HackSessionContextImpl.prototype.generateApiToken = function (petname, userInfo,
 };
 
 Meteor.methods({
-  newApiToken: function (grainId, petname, roleAssignment, forSharing, destroyIfNotUsedByTime) {
-    // Create a new user-oriented API token.
-    if (!this.userId) {
-      throw new Meteor.Error(403, "Must be logged in to create an API token.");
+  newApiToken: function (grainId, petname, roleAssignment, forSharing, destroyIfNotUsedByTime,
+                         rawParentToken) {
+    // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
+    var userId = this.userId;
+    var parentToken;
+    if (!userId) {
+      if (!rawParentToken) {
+        throw new Meteor.Error(403, "If you are not logged in, you must specify a parent token to " +
+                                    "create a new API token.");
+      } else {
+        check(rawParentToken, String);
+        parentToken = Crypto.createHash("sha256").update(rawParentToken).digest("base64");
+        var parentApiToken = ApiTokens.findOne({_id: parentToken, grainId: grainId,
+                                                objectId: {$exists: false}});
+        if (!parentApiToken) {
+          throw new Meteor.Error(403, "No such parent token found.");
+        }
+        userId = parentApiToken.userId;
+        forSharing = parentApiToken.forSharing;
+      }
     }
 
     check(grainId, String);
@@ -349,9 +365,9 @@ Meteor.methods({
     var token = Random.secret();
     var endpointUrl = ROOT_URL.protocol + "//" + makeWildcardHost("api");
 
-    ApiTokens.insert({
+    var apiToken = {
       _id: Crypto.createHash("sha256").update(token).digest("base64"),
-      userId: this.userId,
+      userId: userId,
       grainId: grainId,
       roleAssignment: roleAssignment,
       petname: petname,
@@ -359,7 +375,13 @@ Meteor.methods({
       expires: null,
       forSharing: forSharing,
       expiresIfUnused: selfDestructAt
-    });
+    };
+
+    if (parentToken) {
+      apiToken.parentToken = parentToken;
+    }
+
+    ApiTokens.insert(apiToken);
 
     return {token: token, endpointUrl: endpointUrl};
   }

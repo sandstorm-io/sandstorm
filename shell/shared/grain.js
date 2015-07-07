@@ -591,8 +591,13 @@ if (Meteor.isClient) {
         }
         // Tokens expire by default in 5 minutes from generation date
         var selfDestructTime = Date.now() + (5 * 60 * 1000);
+
+        var rawParentToken;
+        if (Router.current().route.getName() === "shared") {
+          rawParentToken = Router.current().params.token;
+        }
         Meteor.call("newApiToken", currentGrainId, petname, assignment, false,
-                    selfDestructTime, function (error, result) {
+                    selfDestructTime, rawParentToken, function (error, result) {
           if (error) {
             event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
           } else {
@@ -840,6 +845,7 @@ Router.map(function () {
   });
 
   this.route("/shared/:token/:path(.*)?", {
+    name: "shared",
     template: "grain",
 
     waitOn: function () {

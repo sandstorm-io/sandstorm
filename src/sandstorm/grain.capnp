@@ -53,16 +53,27 @@ struct PowerboxDescriptor {
   # Describes properties of capabilities exported by the powerbox, or capabilities requested
   # through the powerbox.
   #
-  # Usually, descriptors come in a list, where the list indicates one of two things:
+  # A PowerboxDescriptor specified individually describes the properties of a single object or
+  # capability. It is a conjunction of "tags" describing different aspects of the object, such as
+  # which interfaces it implements.
+  #
+  # Often, descriptors come in a list, i.e. List(PowerboxDescriptor). Such a list is usually a
+  # disjunction describing one of two things:
   # - A powerbox "query" is a list of descriptors used in a request to indicate what kinds of
   #   objects the requesting app is looking for. (In a powerbox "offer" interaction, the "query"
   #   is the list of descriptors that the accepting app indicated it accepts in its `ViewInfo`.)
-  # - A powerbox "provision" is a list of descriptors used to describe what kinds of objecst an
+  # - A powerbox "provision" is a list of descriptors used to describe what kinds of objects an
   #   app provides, which can be requested by other apps. (In a powerbox "offer" interaction, the
-  #   "provision" is the list of descriptors that the offering app passed to `offer()`.)
+  #   "provision" consists of the single descriptor that the offering app passed to `offer()`.)
   #
   # For a query to match a provision, at least one descriptor in the query must match at least one
   # descriptor in the provision (with an acceptable `matchQuality`; see below).
+  #
+  # Note that, in some use cases, where the "object" being granted is in fact just static data,
+  # that data may be entirely encoded in tags, and the object itself may be a null capability.
+  # For exmaple, a powerbox request for a "contact" may result in a null capability with a tag
+  # containing the contact details. Apps are free to define such conventions as they see fit; it
+  # makes no difference to the system.
 
   tags @0 :List(Tag);
   # List of tags. For a query descriptor to match a provision descriptor, every tag in the query
@@ -74,17 +85,27 @@ struct PowerboxDescriptor {
     id @0 :UInt64;
     # A unique ID naming the tag. All such IDs should be created using `capnp id`.
     #
-    # If `id` is the Cap'n Proto type ID of an interface, it indicates that the described powerbox
-    # capability will implement this interface. The interface's documentation may define what
-    # `value` should be in this case; otherwise, it should be null.
+    # It is up to the developer who creates a new ID to decide what type the tag's `value` should
+    # have (if any). This should be documented where the ID is defined, e.g.:
     #
-    # If `id` is the type ID of a struct type, then `value` is an instance of that struct type.
-    # The struct type's documentation describes how the tag is to be interpreted.
+    #     const preferredFrobberTag :UInt64 = 0xa170f46ec4b17829;
+    #     # The value should be of type `Text` naming the object's preferred frobber.
     #
-    # Apps may also define `typeId` values which do not correspond to any Cap'n Proto type. In
-    # this case, the ID should be declared as a constant with documentation defining what the
-    # `value` should be in this case. For example, you might declare a tag type ID which is for
-    # strings.
+    # By convention, however, a tag ID is *usually* a Cap'n Proto type ID, with the following
+    # meanings:
+    #
+    # * If `id` is the Cap'n Proto type ID of an interface, it indicates that the described
+    #   powerbox capability will implement this interface. The interface's documentation may define
+    #   what `value` should be in this case; otherwise, it should be null. (For example, a "file"
+    #   interface might define that the `value` should be some sort of type descriptor, such as a
+    #   MIME type. Most interfaces, however, will not define any `value`; the mere fact that the
+    #   object implements the interface is the important part.)
+    #
+    # * If `id` is the type ID of a struct type, then `value` is an instance of that struct type.
+    #   The struct type's documentation describes how the tag is to be interpreted.
+    #
+    # Note that these are merely conventions; nothing in the system actually expects tag IDs to
+    # match Cap'n Proto type IDs, except possibly debugging tools.
 
     value @1 :AnyPointer;
     # An arbitrary value expressing additional metadata related to the tag.
@@ -94,7 +115,7 @@ struct PowerboxDescriptor {
     # this field null.
     #
     # When "matching" two descriptors (one of which is a "query", and the other of which describes
-    # a "provider"), the following algorithm is used to decide if they match:
+    # a "provision"), the following algorithm is used to decide if they match:
     #
     # * A null pointer matches any value (essentially, null = wildcard).
     # * Pointers pointing to different object types (e.g. struct vs. list) do not match.
@@ -108,12 +129,29 @@ struct PowerboxDescriptor {
     # The above algorithm may appear quirky, but is designed to cover common use cases while being
     # relatively simple to implement. Consider, for example, a powerbox query seeking to match
     # "video files". All "files" are just byte blobs; file managers probably don't implement
-    # different interfaces for different file types. So, you will want to use tags here. A
-    # "mime type"
+    # different interfaces for different file types. So, you will want to use tags here. For
+    # example, a MIME type tag might be defined as:
+    #
+    #     struct MimeType {
+    #       category @0 :Text;
+    #       subtype @1 :Text;
+    #       tree @2 :Text;    // e.g. "vnd"
+    #       suffix @3 :Text;  // e.g. "xml"
+    #       params @4 :List(Param);
+    #       struct Param {
+    #         name @0 :Text;
+    #         value @1 :Text;
+    #       }
+    #     }
+    #
+    # You might then express your query with a tag with `id` = MimeType's type ID and value =
+    # `(category = "video")`, which effectively translates to a query for "video/*". (Your query
+    # descriptor would have a second tag to indicate what Cap'n Proto interface the resulting
+    # capability should implement.)
   }
 
   quality @1 :MatchQuality = acceptable;
-  # Use to indicate a preferenc or anti-preference for this descriptor compared to others in the
+  # Use to indicate a preference or anti-preference for this descriptor compared to others in the
   # same list.
   #
   # When a descriptor in the query matches multiple descriptors in the provision, or vice versa,
@@ -453,7 +491,7 @@ interface UiView {
   # done. The app may call `SessionContext.close()` to indicate that it's time to close. However,
   # in some cases it makes a lot of sense for the app to become "full-frame", for example a
   # document editor app accepting a document offer may want to then open the editor for long-term
-  # use. Such apps should call `SessionContext.goToView()` to move on to a full-fledged session.
+  # use. Such apps should call `SessionContext.openView()` to move on to a full-fledged session.
   # Finally, some apps will take an offer, wrap it in some filter, and then make a new offer of the
   # wrapped capability. To that end, calling `SessionContext.offer()` will end the offer session
   # but immediately start a new offer interaction in its place using the new capability.
@@ -462,7 +500,7 @@ interface UiView {
   # disconnected randomly and the front-end will then reconnect by calling `newOfferSession()`
   # again with the same parameters. Generally, apps should avoid storing any session-related state
   # on the server side; it's easy to use client-side sessionStorage instead. (Of course, if the
-  # session calls `SessionContext.goToView()`, the new view will be opened as a regular session,
+  # session calls `SessionContext.openView()`, the new view will be opened as a regular session,
   # not an offer session.)
 }
 
@@ -610,7 +648,7 @@ interface SessionContext {
   # Note that in some cases it is possible for the user to return by clicking "back", so the app
   # should not assume that no further requests will happen.
 
-  goToView @6 (view :UiView, path :Text = "", newTab :Bool = false);
+  openView @6 (view :UiView, path :Text = "", newTab :Bool = false);
   # Navigates the user to some other UiView (from the same grain or another), closing the current
   # session. If `view` is null, navigates back to the the current view, in a new session.
   #
@@ -620,7 +658,7 @@ interface SessionContext {
   #
   # If `newTab` is true, the new session is opened in a new tab.
   #
-  # If the current session is a powerbox session, `goToView()` affects the top-level tab, thereby
+  # If the current session is a powerbox session, `openView()` affects the top-level tab, thereby
   # closing the powerbox and the app that initiated the powerbox (unless `newTab` is true).
 }
 

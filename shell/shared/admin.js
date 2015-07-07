@@ -867,11 +867,7 @@ if (Meteor.isServer) {
       }
 
       var ipNetwork = new IpNetworkImpl(Meteor.userId());
-      var sturdyRef = waitPromise(ipNetwork.save({
-        sealFor: {
-          webkey: null
-        }
-      })).sturdyRef;
+      var sturdyRef = waitPromise(ipNetwork.save({webkey: null})).sturdyRef;
       return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
     },
     offerIpInterface: function (token) {
@@ -885,11 +881,7 @@ if (Meteor.isServer) {
       }
 
       var ipInterface = new IpInterfaceImpl(Meteor.userId());
-      var sturdyRef = waitPromise(ipInterface.save({
-        sealFor: {
-          webkey: null
-        }
-      })).sturdyRef;
+      var sturdyRef = waitPromise(ipInterface.save({webkey: null})).sturdyRef;
       return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
     },
     adminToggleDisableCap: function (token, capId, value) {

@@ -37,14 +37,14 @@ ByteStreamConnection.prototype.write = function (data) {
 // expectSize not implemented
 // ByteStreamConnection.prototype.expectSize = function (size) { }
 
-IpInterfaceImpl = function (userId, parentToken, grainId) {
+function IpInterfaceImpl (userId, parentToken, grainId) {
   // TODO(someday): maybe check if userId is admin? This could break things if we don't allow
   // handing off capabilties from a deleted/deactivated user, so for now we're just allowing all
   // admins to revoke any ipInterface/ipNetwork caps from the admin settings page.
   this.userId = userId;
   this.parentToken = parentToken;
   this.grainId = grainId;
-};
+}
 
 makeIpInterface = function (userId, parentToken, grainId) {
   return new Capnp.Capability(new IpInterfaceImpl(userId, parentToken, grainId),
@@ -196,11 +196,11 @@ var addressType = function (address) {
   return type;
 };
 
-IpNetworkImpl = function (userId, parentToken, grainId) {
+function IpNetworkImpl (userId, parentToken, grainId) {
   this.userId = userId;
   this.parentToken = parentToken;
   this.grainId = grainId;
-};
+}
 
 makeIpNetwork = function (userId, parentToken, grainId) {
   return new Capnp.Capability(new IpNetworkImpl(userId, parentToken, grainId),

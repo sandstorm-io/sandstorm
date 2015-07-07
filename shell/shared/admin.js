@@ -866,7 +866,7 @@ if (Meteor.isServer) {
         }
       }
 
-      var ipNetwork = new IpNetworkImpl(Meteor.userId());
+      var ipNetwork = makeIpNetwork(Meteor.userId());
       var sturdyRef = waitPromise(ipNetwork.save({webkey: null})).sturdyRef;
       return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
     },
@@ -880,7 +880,7 @@ if (Meteor.isServer) {
         }
       }
 
-      var ipInterface = new IpInterfaceImpl(Meteor.userId());
+      var ipInterface = makeIpInterface(Meteor.userId());
       var sturdyRef = waitPromise(ipInterface.save({webkey: null})).sturdyRef;
       return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
     },

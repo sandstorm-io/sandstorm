@@ -59,6 +59,38 @@ module.exports["Test Powerbox"] = function (browser) {
     });
 };
 
+// Source at https://github.com/jparyani/sandstorm-test-app/tree/powerbox-save
+module.exports["Install PowerboxSave"] = function (browser) {
+  browser
+    .init()
+    .installApp("http://sandstorm.io/apps/jparyani/powerbox-save-0.spk", "5af2a3ca2a4e99ff082c458321c85105")
+    .assert.containsText("#grainTitle", "Untitled PowerboxSaveTest");
+};
+
+module.exports["Test PowerboxSave"] = function (browser) {
+  browser
+    .pause(short_wait)
+    .frame("grain-frame")
+    .waitForElementVisible("#offer", short_wait)
+    .click("#offer")
+    .waitForElementVisible("#offer-result", short_wait)
+    .assert.containsText("#offer-result", "offer: success")
+    .frame()
+    .waitForElementVisible("#powerbox-offer-popup input", short_wait)
+    .getValue("#powerbox-offer-popup input", function (result) {
+        browser
+          .frame("grain-frame")
+          .click("#request")
+          .frame()
+          .waitForElementVisible("#powerbox-request-input", short_wait)
+          .setValue("#powerbox-request-input", result.value)
+          .click("#powerbox-request-form button")
+          .frame("grain-frame")
+          .waitForElementVisible("#request-result", short_wait)
+          .assert.containsText("#request-result", "request: footest");
+    });
+};
+
 // This powerbox app adds `requiredPermissions` to the `restore` call that aren't satisfied.
 // We test to make sure an error is thrown.
 // Source at https://github.com/jparyani/sandstorm-test-app/tree/powerbox-permissions

@@ -62,7 +62,9 @@ SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
         permissions: requiredPermissions
       }
     };
-    checkRequirements([requirement]);
+    if (!checkRequirements([requirement])) {
+      throw new Meteor.Error(403, "Permissions not satisfied.");
+    }
     ApiTokens.update({_id: hashSturdyRef(sturdyRef)}, {$push: {requirements: requirement}});
     Sessions.update({_id: self.sessionId}, {$set: {
       powerboxView: {

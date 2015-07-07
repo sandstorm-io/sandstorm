@@ -186,6 +186,9 @@ struct MembraneRequirement {
       permissions @3 :Grain.PermissionSet;
       # The permissions the user must hold on the grain.
     }
+
+    userIsAdmin @4 :Text;
+    # The capability is valid only as long as the given user is an administrator.
   }
 }
 

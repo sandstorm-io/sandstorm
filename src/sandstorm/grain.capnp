@@ -71,7 +71,7 @@ struct PowerboxDescriptor {
   #
   # Note that, in some use cases, where the "object" being granted is in fact just static data,
   # that data may be entirely encoded in tags, and the object itself may be a null capability.
-  # For exmaple, a powerbox request for a "contact" may result in a null capability with a tag
+  # For example, a powerbox request for a "contact" may result in a null capability with a tag
   # containing the contact details. Apps are free to define such conventions as they see fit; it
   # makes no difference to the system.
 
@@ -600,7 +600,7 @@ interface SessionContext {
   #
   # The capability is implicitly tied to the user as if via `tieToUser()`.
 
-  request @3 (query :List(PowerboxDescriptor)) -> (cap :Capability);
+  request @3 (query :List(PowerboxDescriptor)) -> (cap :Capability, descriptor :PowerboxDescriptor);
   # Although this method exists, it is unimplemented and currently you are meant to use the
   # postMessage api to get a token, and then restore that token with SandstormApi.restore().
   #

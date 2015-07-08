@@ -323,7 +323,7 @@ HackSessionContextImpl.prototype.generateApiToken = function (petname, userInfo,
 };
 
 Meteor.methods({
-  newApiToken: function (grainId, petname, roleAssignment, forSharing, destroyIfNotUsedByTime,
+  newApiToken: function (grainId, petname, roleAssignment, forSharing, expiresIfUnusedDuration,
                          rawParentToken) {
     // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
     var userId = this.userId;
@@ -351,11 +351,9 @@ Meteor.methods({
     check(roleAssignment, roleAssignmentPattern);
     // Meteor bug #3877: we get null here instead of undefined when we
     // explicitly pass in undefined.
-    if (destroyIfNotUsedByTime) {
-      check(destroyIfNotUsedByTime, Number);
+    if (expiresIfUnusedDuration) {
+      check(expiresIfUnusedDuration, Number);
     }
-    var selfDestructAt = (destroyIfNotUsedByTime && (destroyIfNotUsedByTime > 0)) ?
-        new Date(destroyIfNotUsedByTime) : null;
 
     var grain = Grains.findOne(grainId);
     if (!grain) {
@@ -363,7 +361,6 @@ Meteor.methods({
     }
 
     var token = Random.secret();
-    var endpointUrl = ROOT_URL.protocol + "//" + makeWildcardHost("api");
 
     var apiToken = {
       _id: Crypto.createHash("sha256").update(token).digest("base64"),
@@ -374,15 +371,18 @@ Meteor.methods({
       created: new Date(),
       expires: null,
       forSharing: forSharing,
-      expiresIfUnused: selfDestructAt
     };
 
     if (parentToken) {
       apiToken.parentToken = parentToken;
     }
+    if (expiresIfUnusedDuration) {
+      apiToken.expiresIfUnused = new Date(Date.now() + expiresIfUnusedDuration);
+    }
 
     ApiTokens.insert(apiToken);
 
+    var endpointUrl = ROOT_URL.protocol + "//" + makeWildcardHost("api");
     return {token: token, endpointUrl: endpointUrl};
   }
 });

@@ -153,7 +153,7 @@ Meteor.methods({
     check(token, String);
     var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
     var apiToken = ApiTokens.findOne(hashedToken);
-    validateApiToken(apiToken);
+    validateWebkey(apiToken);
     var grain = Grains.findOne({_id: apiToken.grainId});
     if (!grain) {
       throw new Meteor.Error(404, "Grain not found", "Grain ID: " + apiToken.grainId);
@@ -223,7 +223,7 @@ Meteor.methods({
   }
 });
 
-function validateApiToken (apiToken) {
+function validateWebkey (apiToken, refresh) {
   if (!apiToken) {
     throw new Meteor.Error(403, "Invalid authorization token");
   }
@@ -238,6 +238,8 @@ function validateApiToken (apiToken) {
   if (apiToken.expiresIfUnused) {
     if (apiToken.expiresIfUnused.getTime() <= Date.now()) {
       throw new Meteor.Error(403, "Authorization token expired");
+    } else if (refresh) {
+      ApiTokens.update(apiToken._id, {$set: {expiresIfUnused: new Date(Date.now() + (5 * 60 * 1000))}});
     } else {
       // It's getting used now, so clear the expiresIfUnused field.
       ApiTokens.update(apiToken._id, {$set: {expiresIfUnused: null}});
@@ -608,7 +610,7 @@ getProxyForApiToken = function (token) {
     } else {
       return inMeteor(function () {
         var tokenInfo = ApiTokens.findOne(hashedToken);
-        validateApiToken(tokenInfo);
+        validateWebkey(tokenInfo);
 
         var grain = Grains.findOne(tokenInfo.grainId);
         if (!grain) {
@@ -767,25 +769,41 @@ tryProxyRequest = function (hostId, req, res) {
       return true;
     }
 
+    var responseHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Content-Type": "text/plain",
+    };
+
+    function errorHandler(err) {
+      if (err instanceof Meteor.Error) {
+        console.log("error: " + err);
+        res.writeHead(err.error, err.reason, responseHeaders);
+      } else {
+        res.writeHead(500, "Internal Server Error", responseHeaders);
+      }
+      res.end(err.stack);
+    }
+
     var token = apiTokenForRequest(req);
-    if (token) {
+    if (token && req.headers["x-sandstorm-refresh-token"]) {
+      inMeteor(function() {
+        var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
+        validateWebkey(ApiTokens.findOne(hashedToken), true);
+      }).then(function() {
+        res.writeHead(200, responseHeaders);
+        res.end();
+      }, errorHandler);
+    } else if (token) {
       getProxyForApiToken(token).then(function (proxy) {
         proxy.requestHandler(req, res);
-      }, function (err) {
-        if (err instanceof Meteor.Error) {
-          res.writeHead(err.error, err.reason, { "Content-Type": "text/plain" });
-        } else {
-          res.writeHead(500, "Internal Server Error", { "Content-Type": "text/plain" });
-        }
-        res.end(err.stack);
-      });
+      }, errorHandler);
     } else {
       if (apiUseBasicAuth(req)) {
         res.writeHead(401, {"Content-Type": "text/plain",
                             "WWW-Authenticate": "Basic realm=\"Sandstorm API\""});
       } else {
         // TODO(someday): Display some sort of nifty API browser.
-        res.writeHead(403, {"Content-Type": "text/plain"});
+        res.writeHead(403, responseHeaders);
       }
       res.end("Missing or invalid authorization header.\n\n" +
           "This address serves APIs, which allow external apps (such as a phone app) to\n" +

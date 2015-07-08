@@ -42,6 +42,26 @@ for (i = 0; i < sessionStorage.length ; i++) {
 for (i = 0; i < toDelete.length; i++) {
   sessionStorage.deleteItem(toDelete[i]);
 }
+
+var apiHost = sessionStorage.getItem("apiHost");
+var apiUrl = window.location.protocol + "//" + apiHost;
+setInterval(function() {
+  var xhr = new XMLHttpRequest();
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState == 4) {
+       if (xhr.status != 200) {
+          var errorText = "Error refreshing token. Reloading the page might help.";
+          console.error(xhr.responseText);
+          document.getElementById("text").textContent = errorText;
+       }
+    }
+  };
+
+  xhr.open("POST", apiUrl, true);
+  xhr.setRequestHeader("Authorization", "Bearer " + record.token);
+  xhr.setRequestHeader("X-Sandstorm-Refresh-Token", "true");
+  xhr.send();
+}, 60000);
 </script>
   </body>
 </html>

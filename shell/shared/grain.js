@@ -610,10 +610,13 @@ if (Meteor.isClient) {
             var renderedTemplate = template.replace("$API_TOKEN", tokenId)
                                            .replace("$API_HOST", makeWildcardHost("api"));
             sessionStorage.setItem(key, JSON.stringify({
+                "token": tokenId,
                 "renderedTemplate": renderedTemplate,
                 "expires": selfDestructTime
               })
             );
+            sessionStorage.setItem("apiHost", makeWildcardHost("api"));
+
             // Send message to event.source with URL containing id2
             templateLink = window.location.origin + "/offer-template.html#" + id2;
             event.source.postMessage({rpcId: rpcId, uri: templateLink}, event.origin);

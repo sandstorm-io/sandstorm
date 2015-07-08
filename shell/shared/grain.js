@@ -590,14 +590,14 @@ if (Meteor.isClient) {
           assignment = call.roleAssignment;
         }
         // Tokens expire by default in 5 minutes from generation date
-        var selfDestructTime = Date.now() + (5 * 60 * 1000);
+        var selfDestructDuration = 5 * 60 * 1000;
 
         var rawParentToken;
         if (Router.current().route.getName() === "shared") {
           rawParentToken = Router.current().params.token;
         }
         Meteor.call("newApiToken", currentGrainId, petname, assignment, false,
-                    selfDestructTime, rawParentToken, function (error, result) {
+                    selfDestructDuration, rawParentToken, function (error, result) {
           if (error) {
             event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
           } else {
@@ -612,7 +612,7 @@ if (Meteor.isClient) {
             sessionStorage.setItem(key, JSON.stringify({
                 "token": tokenId,
                 "renderedTemplate": renderedTemplate,
-                "expires": selfDestructTime
+                "expires": Date.now() + selfDestructDuration
               })
             );
             sessionStorage.setItem("apiHost", makeWildcardHost("api"));

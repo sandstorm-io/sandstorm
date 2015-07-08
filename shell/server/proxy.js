@@ -223,7 +223,11 @@ Meteor.methods({
   }
 });
 
-function validateWebkey (apiToken, refresh) {
+function validateWebkey (apiToken, refreshedExpiration) {
+  // Validates that `apiToken` is a valid UiView webkey, throwing an exception if it is not. If
+  // `refreshedExpiration` is set and if the token has an `expiresIfUnused` field, then the
+  // `expiresIfUnused` field is reset to `refreshedExpiration`.
+
   if (!apiToken) {
     throw new Meteor.Error(403, "Invalid authorization token");
   }
@@ -238,8 +242,8 @@ function validateWebkey (apiToken, refresh) {
   if (apiToken.expiresIfUnused) {
     if (apiToken.expiresIfUnused.getTime() <= Date.now()) {
       throw new Meteor.Error(403, "Authorization token expired");
-    } else if (refresh) {
-      ApiTokens.update(apiToken._id, {$set: {expiresIfUnused: new Date(Date.now() + (5 * 60 * 1000))}});
+    } else if (refreshedExpiration) {
+      ApiTokens.update(apiToken._id, {$set: {expiresIfUnused: refreshedExpiration}});
     } else {
       // It's getting used now, so clear the expiresIfUnused field.
       ApiTokens.update(apiToken._id, {$set: {expiresIfUnused: null}});
@@ -785,10 +789,12 @@ tryProxyRequest = function (hostId, req, res) {
     }
 
     var token = apiTokenForRequest(req);
-    if (token && req.headers["x-sandstorm-refresh-token"]) {
+    if (token && req.headers["x-sandstorm-token-keepalive"]) {
       inMeteor(function() {
+        var keepaliveDuration = parseInt(req.headers["x-sandstorm-token-keepalive"]);
+        check(keepaliveDuration, Match.Integer);
         var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
-        validateWebkey(ApiTokens.findOne(hashedToken), true);
+        validateWebkey(ApiTokens.findOne(hashedToken), new Date(Date.now() + keepaliveDuration));
       }).then(function() {
         res.writeHead(200, responseHeaders);
         res.end();

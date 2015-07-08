@@ -40,8 +40,10 @@ for (i = 0; i < sessionStorage.length ; i++) {
 }
 // Then, wipe expired keys.
 for (i = 0; i < toDelete.length; i++) {
-  sessionStorage.deleteItem(toDelete[i]);
+  sessionStorage.removeItem(toDelete[i]);
 }
+
+var selfDestructDuration = 5 * 60 * 1000;
 
 var apiHost = sessionStorage.getItem("apiHost");
 var apiUrl = window.location.protocol + "//" + apiHost;
@@ -49,7 +51,10 @@ setInterval(function() {
   var xhr = new XMLHttpRequest();
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4) {
-       if (xhr.status != 200) {
+       if (xhr.status == 200) {
+          record.exires = Date.now() + selfDestructDuration;
+          sessionStorage.setItem(templateToken, JSON.stringify(record));
+       } else {
           var errorText = "Error refreshing token. Reloading the page might help.";
           console.error(xhr.responseText);
           document.getElementById("text").textContent = errorText;
@@ -59,7 +64,7 @@ setInterval(function() {
 
   xhr.open("POST", apiUrl, true);
   xhr.setRequestHeader("Authorization", "Bearer " + record.token);
-  xhr.setRequestHeader("X-Sandstorm-Refresh-Token", "true");
+  xhr.setRequestHeader("X-Sandstorm-Token-Keepalive", selfDestructDuration.toString());
   xhr.send();
 }, 60000);
 </script>

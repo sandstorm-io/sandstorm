@@ -411,7 +411,7 @@ isAdminById = function(id) {
 
 findAdminUserForToken = function (token) {
   var requirements = token.requirements.filter(function (requirement) {
-    return !!requirement.userIsAdmin;
+    return "userIsAdmin" in requirement;
   });
 
   if (requirements.length > 1) {

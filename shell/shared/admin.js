@@ -617,7 +617,8 @@ if (Meteor.isClient) {
                                    {"frontendRef.ipInterface": {$exists: true}}]});
     },
     userName: function () {
-      var user = Meteor.users.findOne({_id: findAdminUserForToken(this)});
+      var userId = findAdminUserForToken(this);
+      var user = Meteor.users.findOne({_id: userId});
       if (!user) {
         return "no user";
       }
@@ -866,8 +867,11 @@ if (Meteor.isServer) {
         }
       }
 
-      var ipNetwork = makeIpNetwork(Meteor.userId());
-      var sturdyRef = waitPromise(ipNetwork.save({webkey: null})).sturdyRef;
+      var requirements = [{
+        userIsAdmin: Meteor.userId()
+      }];
+      var sturdyRef = waitPromise(saveFrontendRef({ipNetwork: true}, {webkey: null},
+                                  requirements)).sturdyRef;
       return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
     },
     offerIpInterface: function (token) {
@@ -880,8 +884,11 @@ if (Meteor.isServer) {
         }
       }
 
-      var ipInterface = makeIpInterface(Meteor.userId());
-      var sturdyRef = waitPromise(ipInterface.save({webkey: null})).sturdyRef;
+      var requirements = [{
+        userIsAdmin: Meteor.userId()
+      }];
+      var sturdyRef = waitPromise(saveFrontendRef({ipInterface: true}, {webkey: null},
+                                  requirements)).sturdyRef;
       return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
     },
     adminToggleDisableCap: function (token, capId, value) {

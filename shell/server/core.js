@@ -116,16 +116,8 @@ NotificationHandle.prototype.close = function () {
   });
 };
 
-saveFrontendRef = function (frontendRef, owner, creatorUserId, parentToken, grainId) {
+saveFrontendRef = function (frontendRef, owner, requirements) {
   return inMeteor(function () {
-    if (parentToken) {
-      var ret = makeChildTokenInternal(parentToken, owner, [], grainId);
-      return {sturdyRef: ret.token};
-    }
-    var requirement = {
-      userIsAdmin: creatorUserId
-    };
-
     var sturdyRef = new Buffer(generateSturdyRef());
     var hashedSturdyRef = hashSturdyRef(sturdyRef);
     ApiTokens.insert({
@@ -133,7 +125,7 @@ saveFrontendRef = function (frontendRef, owner, creatorUserId, parentToken, grai
       frontendRef: frontendRef,
       owner: owner,
       created: new Date(),
-      requirements: [requirement]
+      requirements: requirements
     });
     return {sturdyRef: sturdyRef};
   });
@@ -172,7 +164,7 @@ checkRequirements = function (requirements) {
   return true;
 };
 
-restoreInternal = function (tokenId, ownerPattern, requirements, parentToken, grainId) {
+restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
   // Restores `sturdyRef`, checking first that its owner matches `ownerPattern`.
   // parentToken and requirements are optional params that are only used in the case of an objectId
   // token
@@ -203,9 +195,9 @@ restoreInternal = function (tokenId, ownerPattern, requirements, parentToken, gr
       var notificationId = token.frontendRef.notificationHandle;
       return {cap: makeNotificationHandle(notificationId, true)};
     } else if (token.frontendRef.ipNetwork) {
-      return {cap: makeIpNetwork(findAdminUserForToken(token), tokenId, grainId)};
+      return {cap: makeIpNetwork(tokenId)};
     } else if (token.frontendRef.ipInterface) {
-      return {cap: makeIpInterface(findAdminUserForToken(token), tokenId, grainId)};
+      return {cap: makeIpInterface(tokenId)};
     } else {
       throw new Meteor.Error(500, "Unknown frontend token type.");
     }
@@ -220,7 +212,7 @@ restoreInternal = function (tokenId, ownerPattern, requirements, parentToken, gr
       return supervisor.restore(token.objectId, requirements, parentToken);
     }));
   } else if (token.parentToken) {
-    return restoreInternal(token.parentToken, Match.Any, requirements, parentToken, grainId);
+    return restoreInternal(token.parentToken, Match.Any, requirements, parentToken);
   } else {
     throw new Meteor.Error(500, "Unknown token type.");
   }
@@ -246,7 +238,7 @@ SandstormCoreImpl.prototype.restore = function (sturdyRef, requiredPermissions) 
     }
     return restoreInternal(hashedSturdyRef,
                            {grain: Match.ObjectIncluding({grainId: self.grainId})},
-                           requirements, sturdyRef, self.grainId);
+                           requirements, sturdyRef);
   });
 };
 
@@ -310,7 +302,7 @@ SandstormCoreImpl.prototype.makeToken = function (ref, owner, requirements) {
   });
 };
 
-function makeChildTokenInternal (hashedParent, owner, requirements, grainId) {
+makeChildTokenInternal = function (hashedParent, owner, requirements, grainId) {
   var sturdyRef = new Buffer(generateSturdyRef());
   var hashedSturdyRef = hashSturdyRef(sturdyRef);
 
@@ -330,7 +322,7 @@ function makeChildTokenInternal (hashedParent, owner, requirements, grainId) {
   return {
     token: sturdyRef
   };
-}
+};
 
 SandstormCoreImpl.prototype.makeChildToken = function (parent, owner, requirements) {
   var self = this;

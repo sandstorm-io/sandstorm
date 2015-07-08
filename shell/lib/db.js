@@ -410,15 +410,18 @@ isAdminById = function(id) {
 }
 
 findAdminUserForToken = function (token) {
+  if (!token.requirements) {
+    return;
+  }
   var requirements = token.requirements.filter(function (requirement) {
     return "userIsAdmin" in requirement;
   });
 
   if (requirements.length > 1) {
-    throw new Meteor.Error(500, "Too many admin requirements found.");
+    return;
   }
   if (requirements.length === 0) {
-    throw new Meteor.Error(500, "No admin requirements found.");
+    return;
   }
   return requirements[0].userIsAdmin;
 };

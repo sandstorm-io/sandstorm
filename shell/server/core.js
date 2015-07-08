@@ -163,8 +163,7 @@ checkRequirements = function (requirements) {
       }
     } else if (requirement.userIsAdmin) {
       if (!isAdminById(requirement.userIsAdmin)) {
-        // return false;
-        // TODO(someday): enable this check. Waiting on the ability to transfer ownership.
+        return false;
       }
     } else {
       throw new Meteor.Error(403, "Unknown requirement");

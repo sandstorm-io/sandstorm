@@ -200,8 +200,13 @@ if (Meteor.isClient) {
   };
 
   Template.topBar.onCreated(function () {
-    this.timer = new Tracker.Dependency;
+    this.timer = new Tracker.Dependency();
     this.showTopbar = new ReactiveVar(false);
+    var resizeTracker = this.resizeTracker = new Tracker.Dependency();
+    this.resizeFunc = function() {
+      resizeTracker.changed();
+    };
+    window.addEventListener("resize", this.resizeFunc, false);
   });
 
   var setTopBarTimeout = function (template, delay) {
@@ -216,6 +221,7 @@ if (Meteor.isClient) {
 
   Template.topBar.onDestroyed(function () {
     Meteor.clearTimeout(this.timeout);
+    window.removeEventListener("resize", this.resizeFunc, false);
   });
 
   var determineAppName = function (grainId) {
@@ -243,6 +249,17 @@ if (Meteor.isClient) {
   Template.topBar.helpers({
     isUpdateBlocked: function () { return isUpdateBlocked(); },
     showTopbar: function () {return Template.instance().showTopbar.get(); },
+    adminAlertIsTooLarge: function () {
+      Template.instance().resizeTracker.depend();
+      var setting = Settings.findOne({_id: "adminAlert"});
+      if (!setting || !setting.value) {
+        return false;
+      }
+      // TODO(someday): 10 and 850 are just magic values that estimate the size of the font and the
+      // number of pixels everything else in the topbar respectively. This should really be
+      // calculated based on actual sizes of things in the topbar.
+      return (window.innerWidth - setting.value.length * 10) < 850;
+    },
     adminAlert: function () {
       var setting = Settings.findOne({_id: "adminAlert"});
       if (!setting || !setting.value) {

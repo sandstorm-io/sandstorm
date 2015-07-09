@@ -57,6 +57,7 @@ body {
   height: 32px;
   text-align: left;
   z-index: 2;
+  white-space: nowrap;
 }
 
 #topbar.light {
@@ -1222,6 +1223,48 @@ table#users-table tr {
   display: none;
 }
 
+#admin-alert-box.small .alert {
+  display: none;
+}
+
+#admin-alert-box.small #admin-alert[data-show="true"] .alert {
+  display: inline-block;
+  position: fixed;
+  left: 0px;
+  top: 32px;
+  width: 100%;
+  z-index: 2;
+}
+
+#admin-alert-box.small #admin-alert-icon {
+  display: inline;
+  background-color: #762f87;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  margin: 0px 2px;
+  padding: 0px 10px;
+  text-align: center;
+  border-radius: 50%;
+  height: 22px;
+  width: 22px;
+  line-height: 22px;
+  cursor: pointer;
+}
+
+#admin-alert-box.small #admin-alert-closer[data-show="true"] {
+  display: block;
+  position: fixed;
+  left: 0px;
+  top: 64px;
+  width: 2000px;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1;
+  -webkit-transition: background-color 200ms;
+  transition: background-color 200ms;
+}
+
 @media screen and (max-width: 1250px) {
   aside {
     position: static;
@@ -1385,45 +1428,11 @@ table#users-table tr {
     font-size: 30px;
   }
 
-  #admin-alert .alert {
-    display: none;
-  }
-
   #admin-alert[data-show="true"] .alert {
-    display: inline-block;
-    position: fixed;
-    left: 0px;
     top: 48px;
-    width: 100%;
   }
-
-  #admin-alert-icon {
-    display: inline;
-    background-color: #762f87;
-    color: white;
-    font-size: 20px;
-    font-weight: bold;
-    margin: 0px 2px;
-    padding: 0px 10px;
-    text-align: center;
-    border-radius: 50%;
-    height: 22px;
-    width: 22px;
-    line-height: 22px;
-    cursor: pointer;
-  }
-
   #admin-alert-closer[data-show="true"] {
-    display: block;
-    position: fixed;
-    left: 0px;
     top: 96px;
-    width: 2000px;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1;
-    -webkit-transition: background-color 200ms;
-    transition: background-color 200ms;
   }
 }
 @media screen and (max-width: 650px) {

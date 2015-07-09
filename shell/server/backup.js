@@ -74,6 +74,10 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized",
           "Token was not found, or user cannot create grains");
     }
+    if (isUserOverQuota(Meteor.user())) {
+      throw new Meteor.Error(402,
+          "You are out of storage space. Please delete some things and try again.");
+    }
 
     this.unblock();
 

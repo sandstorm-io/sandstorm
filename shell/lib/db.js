@@ -326,7 +326,7 @@ if (Meteor.isServer) {
 
     if (this.userId) {
       return Meteor.users.find({_id: this.userId},
-          {fields: {signupKey: 1, isAdmin: 1, expires: 1}});
+          {fields: {signupKey: 1, isAdmin: 1, expires: 1, quota: 1, storageUsage: 1}});
     } else {
       return [];
     }
@@ -378,6 +378,18 @@ isSignedUpOrDemo = function () {
   } else {
     return false;
   }
+}
+
+isUserOverQuota = function (user) {
+  return Meteor.settings.public.quotaEnabled &&
+         typeof user.quota === "number" &&
+         user.storageUsage && user.storageUsage >= user.quota;
+}
+
+isUserExcessivelyOverQuota = function (user) {
+  return Meteor.settings.public.quotaEnabled &&
+         typeof user.quota === "number" &&
+         user.storageUsage && user.storageUsage >= user.quota * 1.2;
 }
 
 isAdmin = function() {

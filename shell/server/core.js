@@ -172,6 +172,9 @@ restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
   if (!token) {
     throw new Meteor.Error(403, "No token found to restore");
   }
+  if (token.revoked) {
+    throw new Meteor.Error(403, "Token has been revoked");
+  }
   check(token.owner, ownerPattern);
   if (!checkRequirements(token.requirements)) {
     throw new Meteor.Error(403, "Requirements not satisfied.");

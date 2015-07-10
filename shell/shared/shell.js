@@ -50,6 +50,23 @@ if (Meteor.isServer) {
 
   Meteor.publish("grainsMenu", function () {
     if (this.userId) {
+      if (Meteor.settings.public.quotaEnabled) {
+        // Hack: Fire off an asynchronous update to the user's storage usage whenever they open the
+        //   front page.
+        // TODO(someday): Implement the ability to reactively subscribe to storage usage from the
+        //   back-end?
+        var userId = this.userId;
+        sandstormBackend.getUserStorageUsage(userId).then(function (results) {
+          inMeteor(function () {
+            Meteor.users.update(userId, {$set: {storageUsage: parseInt(results.size)}});
+          });
+        }).catch(function (err) {
+          if (err.kjType !== "unimplemented") {
+            console.error(err.stack);
+          }
+        });
+      }
+
       return [
         UserActions.find({userId: this.userId}),
         Grains.find({userId: this.userId}),
@@ -190,7 +207,8 @@ if (Meteor.isClient) {
   var formatAccountExpiresIn = function (template, currentDatetime) {
     // TODO(someday): formatInCountdown will set the interval to match account expiration time, and
     // completely overwrite the previous interval for $IN_COUNTDOWN
-    var expires = Meteor.user().expires;
+    var user = Meteor.user() || {};
+    var expires = user.expires || null;
     if (!expires) {
       return null;
     } else {
@@ -315,9 +333,7 @@ if (Meteor.isClient) {
     }
   });
 
-  Tracker.autorun(function () {
-    Meteor.subscribe("credentials");
-  });
+  Meteor.subscribe("credentials");
 
   makeDateString = function (date) {
     // Note: this is also used by grain.js.
@@ -344,6 +360,25 @@ if (Meteor.isClient) {
     return result;
   };
   Template.registerHelper("dateString", makeDateString);
+
+  Template.registerHelper("quotaEnabled", function() {
+    return Meteor.settings.public.quotaEnabled;
+  });
+
+  prettySize = function (size) {
+    var suffix = "B";
+    if (size >= 1000000000) {
+      size = size / 1000000000;
+      suffix = "GB";
+    } else if (size >= 1000000) {
+      size = size / 1000000;
+      suffix = "MB";
+    } else if (size >= 1000) {
+      size = size / 1000;
+      suffix = "kB";
+    }
+    return size.toPrecision(3) + suffix;
+  }
 
   launchAndEnterGrainByPackageId = function(packageId) {
     var action = UserActions.findOne({packageId: packageId});
@@ -478,6 +513,19 @@ if (Meteor.isClient) {
     splashDialog: function() {
       var setting = Settings.findOne("splashDialog");
       return (setting && setting.value) || DEFAULT_SPLASH_DIALOG;
+    },
+
+    storageUsage: function() {
+      return prettySize(Meteor.user().storageUsage || 0);
+    },
+
+    storageQuota: function() {
+      var quota = Meteor.user().quota;
+      return (typeof quota === "number") ? prettySize(quota) : undefined;
+    },
+
+    overQuota: function() {
+      return isUserOverQuota(Meteor.user());
     }
   });
 
@@ -519,11 +567,23 @@ if (Meteor.isClient) {
     },
 
     "click #install-apps-button": function (event) {
-      document.location = "https://sandstorm.io/apps/?host=" + getOrigin();
+      if (isUserOverQuota(Meteor.user())) {
+        // The install process would eventually fail. Alert the user now rather than let them go
+        // pick an app.
+        alert("You are out of storage space. Please delete some things and try again.");
+      } else {
+        document.location = "https://sandstorm.io/apps/?host=" + getOrigin();
+      }
     },
 
     "click #upload-app-button": function (event) {
-      Router.go("uploadForm", {});
+      if (isUserOverQuota(Meteor.user())) {
+        // The install process would eventually fail. Alert the user now rather than let them go
+        // pick an app.
+        alert("You are out of storage space. Please delete some things and try again.");
+      } else {
+        Router.go("uploadForm", {});
+      }
     },
 
     "click #restore-backup-button":  function (event) {

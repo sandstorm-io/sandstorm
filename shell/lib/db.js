@@ -228,6 +228,8 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              revocation. This should be displayed when visualizing incoming capabilities to
 //              the grain identified by `grainId`.
 //   created:   Date when this token was created.
+//   revoked:   If true, then this sturdyref has been revoked and can no longer be restored. It may
+//              become un-revoked in the future.
 //   expires:   Optional expiration Date. If undefined, the token does not expire.
 //   owner:     A `ApiTokenRefOwner` (defined in `supervisor.capnp`, stored as a JSON object)
 //              as passed to the `save()` call that created this token. If not present, treat
@@ -333,7 +335,7 @@ if (Meteor.isServer) {
 
     if (this.userId) {
       return Meteor.users.find({_id: this.userId},
-          {fields: {signupKey: 1, isAdmin: 1, expires: 1}});
+          {fields: {signupKey: 1, isAdmin: 1, expires: 1, quota: 1, storageUsage: 1}});
     } else {
       return [];
     }
@@ -385,6 +387,18 @@ isSignedUpOrDemo = function () {
   } else {
     return false;
   }
+}
+
+isUserOverQuota = function (user) {
+  return Meteor.settings.public.quotaEnabled &&
+         typeof user.quota === "number" &&
+         user.storageUsage && user.storageUsage >= user.quota;
+}
+
+isUserExcessivelyOverQuota = function (user) {
+  return Meteor.settings.public.quotaEnabled &&
+         typeof user.quota === "number" &&
+         user.storageUsage && user.storageUsage >= user.quota * 1.2;
 }
 
 isAdmin = function() {

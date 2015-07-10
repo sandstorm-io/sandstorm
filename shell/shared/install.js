@@ -102,7 +102,7 @@ Meteor.methods({
     check(url, Match.OneOf(String, undefined, null));
 
     if (!packageId.match(/^[a-zA-Z0-9]*$/)) {
-      throw new Meteor.Error(400, "The package name contains illegal characters.");
+      throw new Meteor.Error(400, "The package ID contains illegal characters.");
     }
 
     if (!this.userId) {
@@ -113,6 +113,11 @@ Meteor.methods({
       throw new Meteor.Error(403,
           "Sorry, Sandstorm is in closed alpha. You must receive an alpha key before you " +
           "can install packages.");
+    }
+
+    if (isUserOverQuota(Meteor.user())) {
+      throw new Meteor.Error(402,
+          "You are out of storage space. Please delete some things and try again.");
     }
 
     if (!this.isSimulation) {

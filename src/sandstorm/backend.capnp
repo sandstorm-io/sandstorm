@@ -74,6 +74,14 @@ interface Backend {
 
   deleteBackup @10 (backupId :Text);
   # Delete a stored backup form disk. Succeeds silently if the backup doesn't exist.
+
+  # ----------------------------------------------------------------------------
+
+  getUserStorageUsage @11 (userId :Text) -> (size :UInt64);
+  # Returns the number of bytes of data in storage attributed to the given user.
+  #
+  # This method is not implemented by the single-machine version of Sandstorm, which does not track
+  # per-user storage quotas.
 }
 
 interface SandstormCoreFactory {

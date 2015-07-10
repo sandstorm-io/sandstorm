@@ -99,6 +99,11 @@ Meteor.methods({
                              "Only invited users or demo users can create grains.");
     }
 
+    if (isUserOverQuota(Meteor.user())) {
+      throw new Meteor.Error(402,
+          "You are out of storage space. Please delete some things and try again.");
+    }
+
     var package = Packages.findOne(packageId);
     var appId;
     var manifest;
@@ -128,7 +133,7 @@ Meteor.methods({
       private: true
     });
     startGrainInternal(packageId, grainId, this.userId, command, true, isDev);
-    updateLastActive(grainId, Meteor.userId());
+    updateLastActive(grainId, this.userId);
     return grainId;
   },
 
@@ -227,6 +232,9 @@ function validateApiToken (apiToken) {
   if (!apiToken) {
     throw new Meteor.Error(403, "Invalid authorization token");
   }
+  if (apiToken.revoked) {
+    throw new Meteor.Error(403, "Authorization token has been revoked");
+  }
   if (apiToken.owner && !("webkey" in apiToken.owner)) {
     throw new Meteor.Error(403, "Unauthorized to open non-webkey token.");
   }
@@ -292,10 +300,32 @@ function openSessionInternal(grainId, user, title, apiToken) {
 }
 
 function updateLastActive(grainId, userId) {
+  // Update the lastActive date on the grain and its owner, and also update the user's storage
+  // usage.
+
+  var storagePromise = undefined;
+  if (Meteor.settings.public.quotaEnabled) {
+    storagePromise = sandstormBackend.getUserStorageUsage(userId);
+  }
+
   var now = new Date();
   Grains.update(grainId, {$set: {lastUsed: now}});
   if (userId) {
     Meteor.users.update(userId, {$set: {lastActive: now}});
+  }
+
+  if (Meteor.settings.public.quotaEnabled) {
+    try {
+      var ownerId = Grains.findOne(grainId).userId;
+      var size = parseInt(waitPromise(storagePromise).size);
+      Meteor.users.update(ownerId, {$set: {storageUsage: size}});
+      // TODO(security): Consider actively killing grains if the user is excessively over quota?
+      //   Otherwise a constantly-active grain could consume arbitrary space without being stopped.
+    } catch (err) {
+      if (err.kjType !== "unimplemented") {
+        console.error("error getting user storage usage:", err.stack);
+      }
+    }
   }
 }
 
@@ -401,6 +431,10 @@ function startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev) 
   // Starts the grain supervisor.  Must be executed in a Meteor context.  Blocks until grain is
   // started. Returns a promise for an object containing two fields: `owner` (the ID of the owning
   // user) and `supervisor` (the supervisor capability).
+
+  if (isUserExcessivelyOverQuota(Meteor.users.findOne(ownerId))) {
+    throw new Meteor.Error(402, "Cannot start grain because owner's storage is exhausted.");
+  }
 
   // Ugly: Stay backwards-compatible with old manifests that had "executablePath" and "args" rather
   //   than just "argv".
@@ -582,7 +616,8 @@ Meteor.startup(function() {
     },
 
     changed : function (newApiToken, oldApiToken) {
-      if (!_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment)) {
+      if (!_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
+          !_.isEqual(newApiToken.revoked, oldApiToken.revoked)) {
         clearDownstreamSessions(newApiToken);
         clearApiProxies(newApiToken.grainId);
       }
@@ -590,7 +625,7 @@ Meteor.startup(function() {
 
     removed: function (oldApiToken) {
       clearDownstreamSessions(oldApiToken);
-      clearApiProxies(newApiToken.grainId);
+      clearApiProxies(oldApiToken.grainId);
     }
   });
 });

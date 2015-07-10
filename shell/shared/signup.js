@@ -53,6 +53,9 @@ if (Meteor.isServer) {
       if (keyInfo.email) {
         userFields.signupEmail = keyInfo.email;
       }
+      if ("quota" in keyInfo) {
+        userFields.quota = keyInfo.quota;
+      }
 
       Meteor.users.update(this.userId, {$set: userFields});
       SignupKeys.update(key, {$set: {used: true}});

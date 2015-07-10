@@ -82,16 +82,19 @@ Meteor.methods({
     try {
       var grainInfo = waitPromise(sandstormBackend.restoreGrain(tokenId, this.userId, grainId)).info;
       if (!grainInfo.appId) {
-          throw new Meteor.Error(500, "Metadata object for uploaded grain has no AppId");
+        deleteGrain(grainId, this.userId);
+        throw new Meteor.Error(500, "Metadata object for uploaded grain has no AppId");
       }
 
       var action = UserActions.findOne({appId: grainInfo.appId, userId: this.userId});
       if (!action) {
+        deleteGrain(grainId, this.userId);
         throw new Meteor.Error(500,
                                "App id for uploaded grain not installed",
                                "App Id: " + grainInfo.appId);
       }
       if (action.appVersion < grainInfo.appVersion) {
+        deleteGrain(grainId, this.userId);
         throw new Meteor.Error(500,
                                "App version for uploaded grain is newer than any " +
                                "installed version. You need to upgrade your app first",

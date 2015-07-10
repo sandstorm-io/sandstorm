@@ -89,6 +89,42 @@ function mergeRoleAssignmentsIntoApiTokens() {
   });
 }
 
+function fixOasisStorageUsageStats() {
+  // Before storage quota enforcement was first implemented, there were some bugs with the way the
+  // Oasis backend tracked storage usage, which were not initially noticed since the resulting
+  // number wasn't acutally used for anything.
+  //
+  // With the underlying bugs fixed, simply starting up each grain (supervisor only, not the app)
+  // and then immediately shutting it down should cause the sizes to be recalculated correctly.
+  //
+  // This problem only applies to Oasis.
+
+  if (Meteor.settings.public.quotaEnabled) {
+    var dummyCommand = {
+      argv: ["foo", "bar"],
+      environ: []
+    };
+
+    Grains.find().forEach(function (grain) {
+      try {
+        console.log("refreshing grain:", grain._id);
+
+        // We take a highly synchronous approach here so that the logging is understandable.
+        var supervisor = waitPromise(sandstormBackend.startGrain(
+            grain.userId, grain._id, grain.packageId, dummyCommand, false, false)).supervisor;
+        try {
+          waitPromise(supervisor.shutdown());
+          throw new Error("shutdown() didn't disconnect!");
+        } catch (err) {
+          if (err.kjType !== "disconnected") throw err;
+        }
+      } catch (err) {
+        console.log(err.stack);
+      }
+    });
+  }
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -97,6 +133,7 @@ var MIGRATIONS = [
   enableLegacyOAuthProvidersIfNotInSettings,
   denormalizeInviteInfo,
   mergeRoleAssignmentsIntoApiTokens,
+  fixOasisStorageUsageStats,
 ];
 
 function migrateToLatest() {

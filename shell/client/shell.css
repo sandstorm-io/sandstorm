@@ -442,6 +442,21 @@ img {
   cursor: pointer;
 }
 
+#applist-grains .button-box button.over-quota {
+  background-color: #ddd;
+}
+
+#storage-usage {
+  margin: 16px 4px;
+  font-size: 75%;
+  font-weight: bold;
+  color: #777;
+}
+
+#storage-usage.over-quota {
+  color: red;
+}
+
 #app .interstitial-button-box {
   text-align: center;
 }
@@ -784,6 +799,11 @@ input.autoSelect {
   font-size: inherit;
   width: 80%;
   box-sizing: border-box;
+}
+
+#invite input#key-quota {
+  width: 40%;
+  margin-bottom: 8px;
 }
 
 #invite textarea {

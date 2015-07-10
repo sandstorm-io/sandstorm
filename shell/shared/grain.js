@@ -447,19 +447,7 @@ if (Meteor.isClient) {
       if (this.sessionId) {
         sizeEntry = GrainSizes.findOne(this.sessionId);
         if (sizeEntry) {
-          var size = sizeEntry.size;
-          var suffix = "B";
-          if (size > 1000000000) {
-            size = size / 1000000000;
-            suffix = "GB";
-          } else if (size > 1000000) {
-            size = size / 1000000;
-            suffix = "MB";
-          } else if (size > 1000) {
-            size = size / 1000;
-            suffix = "kB";
-          }
-          return "(" + size.toPrecision(3) + suffix + ")";
+          return "(" + prettySize(sizeEntry.size) + ")";
         }
       }
       return "";

@@ -409,7 +409,13 @@ if (Meteor.isClient) {
     },
     userIsGuest: function () {
       return !this.isAdmin && !this.signupKey;
-    }
+    },
+    userQuota: function () {
+      return (typeof this.quota === "number") ? prettySize(this.quota) : "";
+    },
+    userStorageUsage: function () {
+      return (typeof this.storageUsage === "number") ? prettySize(this.storageUsage) : "";
+    },
   });
 
   var configureLoginServiceDialogTemplateForService = function (serviceName) {
@@ -491,6 +497,11 @@ if (Meteor.isClient) {
       var list = document.getElementById("invite-emails").value;
       var subject = document.getElementById("invite-subject").value;
       var message = document.getElementById("invite-message").value;
+      var quotaInput = document.getElementById("invite-quota");
+      var quota;
+      if (quotaInput && quotaInput.value.trim() !== "") {
+        quota = parseInt(quotaInput.value);
+      }
 
       var sendButton = event.currentTarget;
       sendButton.disabled = true;
@@ -498,7 +509,7 @@ if (Meteor.isClient) {
       sendButton.textContent = "Sending...";
 
       Meteor.call("sendInvites", state.get("token"), getOrigin(), from, list, subject, message,
-                  function (error, results) {
+                  quota, function (error, results) {
         sendButton.disabled = false;
         sendButton.textContent = oldContent;
         if (error) {
@@ -512,8 +523,13 @@ if (Meteor.isClient) {
     "click #create": function (event) {
       var state = Iron.controller().state;
       var note = document.getElementById("key-note").value;
+      var quotaInput = document.getElementById("key-quota");
+      var quota;
+      if (quotaInput && quotaInput.value.trim() !== "") {
+        quota = parseInt(quotaInput.value);
+      }
 
-      Meteor.call("createSignupKey", state.get("token"), note, function (error, key) {
+      Meteor.call("createSignupKey", state.get("token"), note, quota, function (error, key) {
         if (error) {
           state.set("inviteMessage", { error: error.toString() });
         } else {
@@ -551,7 +567,7 @@ if (Meteor.isClient) {
     url: function () {
       var res = Iron.controller().state.get("inviteMessage");
       return res && res.url;
-    }
+    },
   });
   var maybeScrollLog = function() {
     var elem = document.getElementById("adminLog");
@@ -715,17 +731,21 @@ if (Meteor.isServer) {
         smtpUrl: smtpUrl
       });
     },
-    createSignupKey: function (token, note) {
+    createSignupKey: function (token, note, quota) {
       check(note, String);
+      check(quota, Match.OneOf(undefined, null, Number));
 
       checkAuth(token);
 
       var key = Random.id();
-      SignupKeys.insert({_id: key, used: false, note: note});
+      var content = {_id: key, used: false, note: note};
+      if (typeof quota === "number") content.quota = quota;
+      SignupKeys.insert(content);
       return key;
     },
-    sendInvites: function (token, origin, from, list, subject, message) {
+    sendInvites: function (token, origin, from, list, subject, message, quota) {
       check([origin, from, list, subject, message], [String]);
+      check(quota, Match.OneOf(undefined, null, Number));
 
       checkAuth(token);
 
@@ -746,8 +766,10 @@ if (Meteor.isServer) {
         if (email) {
           var key = Random.id();
 
-          SignupKeys.insert({_id: key, used: false, note: "E-mail invite to " + email,
-                             email: email, definitelySent: false});
+          var content = {_id: key, used: false, note: "E-mail invite to " + email,
+                         email: email, definitelySent: false};
+          if (typeof quota === "number") content.quota = quota;
+          SignupKeys.insert(content);
           SandstormEmail.send({
             to: email,
             from: from,

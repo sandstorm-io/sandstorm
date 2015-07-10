@@ -122,15 +122,15 @@ struct Manifest {
   struct Action {
     input :union {
       none @0 :Void;
-      # This action creates a new grain with no input.  On startup, the grain will export a `UiView`
-      # as its default capability.
+      # This action creates a new grain with no input.
 
-      capability @1 :Grain.PowerboxQuery;
-      # This action creates a new grain from a capability.  When a capability matching the query
+      capability @1 :List(Grain.PowerboxDescriptor);
+      # This action creates a new grain from a powerbox offer. When a capability matching the query
       # is offered to the user (e.g. by another application calling SessionContext.offer()), this
       # action will be listed as one of the things the user can do with it.
       #
-      # On startup, the grain will export a `PowerboxAction` as its default capability.
+      # On startup, the platform will call create the first session with
+      # `UiView.newOfferSession()`.
     }
 
     command @2 :Command;

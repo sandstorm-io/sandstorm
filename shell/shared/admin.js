@@ -733,7 +733,7 @@ if (Meteor.isServer) {
     },
     createSignupKey: function (token, note, quota) {
       check(note, String);
-      check(quota, Match.Optional(Number));
+      check(quota, Match.OneOf(undefined, null, Number));
 
       checkAuth(token);
 
@@ -745,7 +745,7 @@ if (Meteor.isServer) {
     },
     sendInvites: function (token, origin, from, list, subject, message, quota) {
       check([origin, from, list, subject, message], [String]);
-      check(quota, Match.Optional(Number));
+      check(quota, Match.OneOf(undefined, null, Number));
 
       checkAuth(token);
 

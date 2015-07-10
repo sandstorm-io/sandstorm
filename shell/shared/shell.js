@@ -360,6 +360,10 @@ if (Meteor.isClient) {
   };
   Template.registerHelper("dateString", makeDateString);
 
+  Template.registerHelper("quotaEnabled", function() {
+    return Meteor.settings.public.quotaEnabled;
+  });
+
   prettySize = function (size) {
     var suffix = "B";
     if (size >= 1000000000) {
@@ -508,10 +512,6 @@ if (Meteor.isClient) {
     splashDialog: function() {
       var setting = Settings.findOne("splashDialog");
       return (setting && setting.value) || DEFAULT_SPLASH_DIALOG;
-    },
-
-    quotaEnabled: function() {
-      return Meteor.settings.public.quotaEnabled;
     },
 
     storageUsage: function() {

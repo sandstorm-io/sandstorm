@@ -416,9 +416,6 @@ if (Meteor.isClient) {
     userStorageUsage: function () {
       return (typeof this.storageUsage === "number") ? prettySize(this.storageUsage) : "";
     },
-    quotaEnabled: function () {
-      return Meteor.settings.public.quotaEnabled;
-    },
   });
 
   var configureLoginServiceDialogTemplateForService = function (serviceName) {
@@ -570,9 +567,6 @@ if (Meteor.isClient) {
     url: function () {
       var res = Iron.controller().state.get("inviteMessage");
       return res && res.url;
-    },
-    quotaEnabled: function () {
-      return Meteor.settings.public.quotaEnabled;
     },
   });
   var maybeScrollLog = function() {

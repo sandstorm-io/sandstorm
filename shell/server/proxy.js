@@ -232,6 +232,9 @@ function validateApiToken (apiToken) {
   if (!apiToken) {
     throw new Meteor.Error(403, "Invalid authorization token");
   }
+  if (apiToken.revoked) {
+    throw new Meteor.Error(403, "Authorization token has been revoked");
+  }
   if (apiToken.owner && !("webkey" in apiToken.owner)) {
     throw new Meteor.Error(403, "Unauthorized to open non-webkey token.");
   }
@@ -613,7 +616,8 @@ Meteor.startup(function() {
     },
 
     changed : function (newApiToken, oldApiToken) {
-      if (!_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment)) {
+      if (!_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
+          !_.isEqual(newApiToken.revoked, oldApiToken.revoked)) {
         clearDownstreamSessions(newApiToken);
         clearApiProxies(newApiToken.grainId);
       }

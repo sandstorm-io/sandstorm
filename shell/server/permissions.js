@@ -115,7 +115,7 @@ function collectEdgesByRecipient(grainId) {
 
   var edgesByRecipient = {};
   var tokensById = {};
-  ApiTokens.find({grainId: grainId}).forEach(function(token) {
+  ApiTokens.find({grainId: grainId, revoked: {$ne: true}}).forEach(function(token) {
     tokensById[token._id] = token;
   });
   for (var id in tokensById) {
@@ -301,7 +301,7 @@ downstreamTokens = function(root) {
   var grain = Grains.findOne(grainId);
   if (!grain || !grain.private ) { return result; }
 
-  ApiTokens.find({grainId: grainId}).forEach(function (token) {
+  ApiTokens.find({grainId: grainId, revoked: {$ne: true}}).forEach(function (token) {
     tokensById[token._id] = token;
     if (token.userId) {
       if (!tokensBySharer[token.userId]) {

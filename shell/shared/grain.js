@@ -35,12 +35,10 @@ if (Meteor.isServer) {
       // Allow owner to change the petname.
       return userId &&
         ((apiToken.userId === userId &&
-          (fieldNames.length === 1 && fieldNames[0] === "petname")) ||
+          (fieldNames.length === 1 &&
+           (fieldNames[0] === "petname" || fieldNames[0] === "revoked"))) ||
          Match.test(apiToken.owner, {user: Match.ObjectIncluding({userId: userId})}))
     },
-    remove: function (userId, token) {
-      return userId && token.userId === userId && (!token.owner || "webkey" in token.owner);
-    }
   });
 
   Meteor.publish("grainTopBar", function (grainId) {
@@ -126,13 +124,6 @@ if (Meteor.isServer) {
       promise.cancel();
     });
   });
-
-  function cleanupExpiredTokens() {
-    var now = new Date();
-    ApiTokens.remove({expires: {$lt: now}});
-  }
-
-  Meteor.setInterval(cleanupExpiredTokens, 3600000);
 }
 
 var GrainSizes = new Mongo.Collection("grainSizes");
@@ -148,8 +139,6 @@ Meteor.methods({
       var grain = Grains.findOne({_id: grainId, userId: this.userId});
       if (grain) {
         Grains.remove(grainId);
-        ApiTokens.remove({grainId : grainId, $or: [{owner: {$exists: false}},
-                                                   {owner: {webkey: null}}]});
         if (grain.lastUsed) {
           DeleteStats.insert({type: "grain", lastActive: grain.lastUsed});
         }
@@ -294,7 +283,7 @@ if (Meteor.isClient) {
       Session.set("api-token-" + this.grainId, undefined);
     },
     "click button.revoke-token": function (event) {
-      ApiTokens.remove(event.currentTarget.getAttribute("data-token-id"));
+      ApiTokens.update(event.currentTarget.getAttribute("data-token-id"), {$set: {revoked: true}});
     },
     "click #show-share-grain": function (event) {
       if (Session.get("show-share-grain")) {

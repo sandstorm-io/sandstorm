@@ -325,12 +325,14 @@ limitations under the License.
         <p>Your existing webkeys:</p>
         <ul>
         {{#each existingTokens}}
-          <li>
-            <span class="token-petname" data-token-id="{{_id}}">
-              {{petname}} ({{dateString created}})
-            </span>
-            <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
-          </li>
+          {{#if revoked}}{{else}}
+            <li>
+              <span class="token-petname" data-token-id="{{_id}}">
+                {{petname}} ({{dateString created}})
+              </span>
+              <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
+            </li>
+          {{/if}}
         {{/each}}
         </ul>
       {{/if}}
@@ -406,12 +408,14 @@ limitations under the License.
             <p> Your existing links: </p>
             <ul>
             {{#each existingShareTokens}}
-              <li>
-                <span class="token-petname" data-token-id="{{_id}}">
-                  {{petname}} ({{dateString created}})
-                </span>
-                <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
-              </li>
+              {{#if revoked}}{{else}}
+                <li>
+                  <span class="token-petname" data-token-id="{{_id}}">
+                    {{petname}} ({{dateString created}})
+                  </span>
+                  <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
+                </li>
+              {{/if}}
             {{/each}}
             </ul>
           {{else}}

@@ -61,7 +61,7 @@ Accounts.registerLoginHandler("emailToken", function (options) {
     };
   }
 
-  var token = Accounts.emailToken._hashToken(options.token);
+  var token = Accounts.emailToken._hashToken(options.token.trim());
   var found = checkToken(
     user,
     token

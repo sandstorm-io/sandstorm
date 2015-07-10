@@ -653,7 +653,7 @@ if (Meteor.isClient) {
       return !this.userId;
     },
     disabled: function () {
-      return this.expires && (this.expires.getTime() <= Date.now());
+      return this.revoked;
     }
   })
 
@@ -698,7 +698,7 @@ if (Meteor.isClient) {
       var capId = event.target.getAttribute("data-id");
       var token = ApiTokens.findOne({_id: capId});
 
-      updateCap(capId, !token.expires);
+      updateCap(capId, !token.revoked);
     },
   });
 }
@@ -917,9 +917,9 @@ if (Meteor.isServer) {
       checkAuth(token);
 
       if (value) {
-        ApiTokens.update({_id: capId}, {$set: {expires: new Date(0)}});
+        ApiTokens.update({_id: capId}, {$set: {revoked: true}});
       } else {
-        ApiTokens.update({_id: capId}, {$set: {expires: null}});
+        ApiTokens.update({_id: capId}, {$set: {revoked: false}});
       }
     }
   });
@@ -1034,6 +1034,6 @@ if (Meteor.isServer) {
     }
     return ApiTokens.find({$or: [{"frontendRef.ipNetwork": {$exists: true}},
                                  {"frontendRef.ipInterface": {$exists: true}}]},
-                          {fields: {frontendRef: 1, created: 1, requirements: 1, expires: 1}});
+                          {fields: {frontendRef: 1, created: 1, requirements: 1, revoked: 1}});
   });
 }

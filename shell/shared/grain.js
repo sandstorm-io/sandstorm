@@ -554,7 +554,8 @@ if (Meteor.isClient) {
         var rpcId = call.rpcId;
         try {
           check(call, {rpcId: String, template: String, petname: Match.Optional(String),
-                       roleAssignment: Match.Optional(roleAssignmentPattern)});
+                       roleAssignment: Match.Optional(roleAssignmentPattern),
+                       forSharing: Match.Optional(Boolean)});
         } catch (error) {
           event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
           return;
@@ -568,6 +569,7 @@ if (Meteor.isClient) {
         if (call.roleAssignment) {
           assignment = call.roleAssignment;
         }
+        var forSharing = call.forSharing ? call.forSharing : false;
         // Tokens expire by default in 5 minutes from generation date
         var selfDestructDuration = 5 * 60 * 1000;
 
@@ -575,7 +577,7 @@ if (Meteor.isClient) {
         if (Router.current().route.getName() === "shared") {
           rawParentToken = Router.current().params.token;
         }
-        Meteor.call("newApiToken", currentGrainId, petname, assignment, false,
+        Meteor.call("newApiToken", currentGrainId, petname, assignment, forSharing,
                     selfDestructDuration, rawParentToken, function (error, result) {
           if (error) {
             event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);

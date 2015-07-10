@@ -139,6 +139,8 @@ Meteor.methods({
       var grain = Grains.findOne({_id: grainId, userId: this.userId});
       if (grain) {
         Grains.remove(grainId);
+        ApiTokens.remove({grainId : grainId, $or: [{owner: {$exists: false}},
+                                                   {owner: {webkey: null}}]});
         if (grain.lastUsed) {
           DeleteStats.insert({type: "grain", lastActive: grain.lastUsed});
         }

@@ -915,6 +915,7 @@ if (Meteor.isServer) {
     },
     adminToggleDisableCap: function (token, capId, value) {
       checkAuth(token);
+      check(capId, String);
 
       if (value) {
         ApiTokens.update({_id: capId}, {$set: {revoked: true}});

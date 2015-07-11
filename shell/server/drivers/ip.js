@@ -218,7 +218,7 @@ IpNetworkImpl.prototype.getRemoteHostByName = function (address) {
 };
 
 function IpRemoteHostImpl (address) {
-  if (address.upper64) {
+  if ("upper64" in address) {
     // address is an ip.capnp:IpAddress, we need to convert it
     this.address = addressToString(address);
   } else {

@@ -326,6 +326,16 @@ Meteor.methods({
   newApiToken: function (grainId, petname, roleAssignment, forSharing, expiresIfUnusedDuration,
                          rawParentToken) {
     // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
+    check(grainId, String);
+    check(petname, String);
+    check(forSharing, Boolean);
+    check(roleAssignment, roleAssignmentPattern);
+    // Meteor bug #3877: we get null here instead of undefined when we
+    // explicitly pass in undefined.
+    if (expiresIfUnusedDuration) {
+      check(expiresIfUnusedDuration, Number);
+    }
+
     var userId = this.userId;
     var parentToken;
     if (!userId) {
@@ -341,18 +351,10 @@ Meteor.methods({
           throw new Meteor.Error(403, "No such parent token found.");
         }
         userId = parentApiToken.userId;
-        forSharing = parentApiToken.forSharing;
+        if (parentApiToken.forSharing) {
+          forSharing = true;
+        }
       }
-    }
-
-    check(grainId, String);
-    check(petname, String);
-    check(forSharing, Boolean);
-    check(roleAssignment, roleAssignmentPattern);
-    // Meteor bug #3877: we get null here instead of undefined when we
-    // explicitly pass in undefined.
-    if (expiresIfUnusedDuration) {
-      check(expiresIfUnusedDuration, Number);
     }
 
     var grain = Grains.findOne(grainId);

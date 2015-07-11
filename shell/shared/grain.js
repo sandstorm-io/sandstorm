@@ -569,9 +569,14 @@ if (Meteor.isClient) {
           assignment = call.roleAssignment;
         }
         // Tokens expire by default in 5 minutes from generation date
-        var selfDestructTime = Date.now() + (5 * 60 * 1000);
+        var selfDestructDuration = 5 * 60 * 1000;
+
+        var rawParentToken;
+        if (Router.current().route.getName() === "shared") {
+          rawParentToken = Router.current().params.token;
+        }
         Meteor.call("newApiToken", currentGrainId, petname, assignment, false,
-                    selfDestructTime, function (error, result) {
+                    selfDestructDuration, rawParentToken, function (error, result) {
           if (error) {
             event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
           } else {
@@ -584,10 +589,13 @@ if (Meteor.isClient) {
             var renderedTemplate = template.replace("$API_TOKEN", tokenId)
                                            .replace("$API_HOST", makeWildcardHost("api"));
             sessionStorage.setItem(key, JSON.stringify({
+                "token": tokenId,
                 "renderedTemplate": renderedTemplate,
-                "expires": selfDestructTime
+                "expires": Date.now() + selfDestructDuration
               })
             );
+            sessionStorage.setItem("apiHost", makeWildcardHost("api"));
+
             // Send message to event.source with URL containing id2
             templateLink = window.location.origin + "/offer-template.html#" + id2;
             event.source.postMessage({rpcId: rpcId, uri: templateLink}, event.origin);
@@ -819,6 +827,7 @@ Router.map(function () {
   });
 
   this.route("/shared/:token/:path(.*)?", {
+    name: "shared",
     template: "grain",
 
     waitOn: function () {

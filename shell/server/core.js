@@ -313,14 +313,17 @@ makeChildTokenInternal = function (hashedParent, owner, requirements, grainId) {
     return requirement.tokenValid !== hashedParent;
   });
 
-  ApiTokens.insert({
+  var tokenInfo = {
     _id: hashedSturdyRef,
-    grainId: grainId,
     parentToken: hashedParent,
     owner: owner,
     created: new Date(),
     requirements: requirements
-  });
+  };
+  if (grainId) {
+    tokenInfo.grainId = grainId;
+  }
+  ApiTokens.insert(tokenInfo);
 
   return {
     token: sturdyRef

@@ -459,16 +459,6 @@ limitations under the License.
   {{/if}}
 
   <div id="app" class="main-content">
-    <!-- This is a terrible hack to center this thing. The styles shold go in css, but it's
-      arguably more confusing to put them there when all they're doing is this archaic pattern to
-      get a horizontally+vertically centered div -->
-    <div id="grain-loading-spinner" class="{{#if hasLoaded}}hide{{/if}}">
-      <div style="display:table-cell;vertical-align:middle;">
-        <div style="margin-left:auto;margin-right:auto;text-align:center;">
-          <img src="/spinner_96.gif" alt="loading">
-        </div>
-      </div>
-    </div>
     {{#if error}}
       <pre>{{error}}</pre>
     {{else}}

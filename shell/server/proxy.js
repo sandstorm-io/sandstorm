@@ -290,8 +290,7 @@ function openSessionInternal(grainId, user, title, apiToken) {
     grainId: grainId,
     hostId: proxy.hostId,
     timestamp: new Date().getTime(),
-    hasLoaded: false,
-  };
+  }
 
   if (userId) {
     session.userId = userId;
@@ -877,7 +876,6 @@ function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, user
   this.sessionId = sessionId;
   this.isOwner = isOwner;
   this.isApi = isApi;
-  this.hasLoaded = false;
   if (sessionId) {
     if (!preferredHostId) {
       this.hostId = generateRandomHostname(20);
@@ -1422,15 +1420,6 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
     // Add a Content-Security-Policy as a backup in case someone finds a way to load this resource
     // in a browser context. This policy should thoroughly neuter it.
     response.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
-  }
-
-  // On first response, update the session to have hasLoaded=true
-  if (!this.hasLoaded) {
-    this.hasLoaded = true;
-    var sessionId = this.sessionId;
-    inMeteor(function () {
-      Sessions.update({_id: sessionId}, {$set: {hasLoaded: true}});
-    });
   }
 
   // TODO(security): Set X-Content-Type-Options: nosniff?

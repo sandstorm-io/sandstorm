@@ -19,3 +19,4 @@ pages:
 - Admistering:
     - "Overview": "administering.md"
     - "Installation": "install.md"
+    - "Email": "administering/email.md"

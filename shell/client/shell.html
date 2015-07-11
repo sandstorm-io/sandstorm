@@ -914,7 +914,7 @@ $KEY</textarea></p>
   {{/if}}
   <p><button id="offer-ipnetwork">Offer IpNetwork Capability</button>
      <button id="offer-ipinterface">Offer IpInterface Capability</button><br>
-    <span class="details">These buttons create IpNetwork and IpInterface capabilities respectively, and will return webkeys that you can restore in other apps. Typically these apps will be "drivers" that offer more granular protocols such as IRC or SMTP.</span></p>
+    <span class="details">These buttons create webkeys (special secret addresses) representing permission to directly access the network. IpNetwork represents the capability to make outbound requests to the network. IpInterface represents the capability to receive inbound connections on the machine's main network interface. Some apps -- especially drivers -- will ask for these permissions. To grant them, you'll need to copy/paste the webkey from here into the app's request box. (Eventually, this UI will be superseded by the Powerbox picker.)</span></p>
   <hr>
   <table class="admin-table">
     <thead>

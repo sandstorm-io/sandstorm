@@ -568,6 +568,10 @@ if (Meteor.isClient) {
       var res = Iron.controller().state.get("inviteMessage");
       return res && res.url;
     },
+    sent: function () {
+      var res = Iron.controller().state.get("inviteMessage");
+      return res && res.sent;
+    },
   });
   var maybeScrollLog = function() {
     var elem = document.getElementById("adminLog");

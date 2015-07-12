@@ -1,3 +1,6 @@
+### v0.95 (2015-07-11)
+- Reverted "loading" spinner because it interacted badly with the "reveal your identity?" interstitial.
+
 ### v0.94 (2015-07-11)
 - Oasis: Storage usage and quota is now tracked and enforced.
 - We now display a spinner when apps are slow to start up. (But we are working on making apps start faster!)

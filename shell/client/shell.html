@@ -618,19 +618,30 @@ limitations under the License.
       <p>This will create a link and send it in an e-mail. <code>$KEY</code> will be replaced
         with the newly-generated link.</p>
       <div style="text-align: right; margin-top: 1em;">
-      <p>From: <input type="text" id="invite-from" placeholder="me@example.com" value="{{email}}"></p>
-      <p>To:
-      <textarea id="invite-emails" placeholder="E-mail addresses, one per line."></textarea></p>
-      <p>Subject: <input type="text" id="invite-subject" value="Join my Sandstorm server!"></p>
-      <p>Body:
-      <textarea id="invite-message">Click on the following link to get access to my Sandstorm.io server.
+        <p>From: <input type="text" id="invite-from" placeholder="me@example.com" value="{{email}}"></p>
+        <p>To:
+        <textarea id="invite-emails" placeholder="E-mail addresses, one per line."></textarea></p>
+        <p>Subject: <input type="text" id="invite-subject" value="Join my Sandstorm server!"></p>
+        <p>Body:
+        <textarea id="invite-message">Click on the following link to get access to my Sandstorm.io server.
 
-$KEY</textarea></p>
-      {{#if quotaEnabled}}
-        <p>Quota: <input id="invite-quota" type="text" placeholder="(bytes; blank for none)"></p>
-      {{/if}}
-      <p><button id="send">Send</button></p>
+  $KEY</textarea></p>
+        {{#if quotaEnabled}}
+          <p>Quota: <input id="invite-quota" type="text" placeholder="(bytes; blank for none)"></p>
+        {{/if}}
+        <p><button id="send">Send</button></p>
       </div>
+
+      {{#if quotaEnabled}}
+        <h3>Update quotas:</h3>
+        <p>You can batch modify existing users' quotas by specifying the e-mail address under which they were invited. This only works for user who were invited using the "Send an e-mail" form, above.</p>
+        <div style="text-align: right; margin-top: 1em;">
+          <p>Emails:
+          <textarea id="set-quota-emails" placeholder="E-mail addresses, one per line."></textarea></p>
+          <p>Quota: <input id="set-quota-quota" type="text" placeholder="(bytes; blank for none)"></p>
+          <p><button id="set-quota-submit">Update</button></p>
+        </div>
+      {{/if}}
     {{/if}}
     {{/if}}
     {{/if}}

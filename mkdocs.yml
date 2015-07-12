@@ -1,13 +1,24 @@
 site_name: Sandstorm
+theme: 'readthedocs'
 pages:
 - "Home": "index.md"
-- Intro:
-    - "Overview": "overview.md"
-    - "Installation": "install.md"
+- Using:
+    - "Overview": "using.md"
     - "Guided tour": "guided-tour.md"
-- App packaging:
+- Developing:
+    - "Overview": "developing.md"
+    - "Technical overview": "overview.md"
     - "Overview of vagrant-spk": "vagrant-spk/index.md"
     - "Installation": "vagrant-spk/installation.md"
     - "Packaging tutorial": "vagrant-spk/packaging-tutorial.md"
     - "Understanding & customizing": "vagrant-spk/customizing.md"
     - "Platform stacks": "vagrant-spk/platform-stacks.md"
+    - "Code dependencies": "vagrant-spk/code-dependencies.md"
+    - "Services": "vagrant-spk/services.md"
+    - "Raw packaging guide": "developing/raw-packaging-guide.md"
+    - "Email from apps": "developing/email-from-apps.md"
+- Admistering:
+    - "Overview": "administering.md"
+    - "Installation": "install.md"
+    - "Email": "administering/email.md"
+    - "Demo mode": "administering/demo.md"

@@ -23,80 +23,203 @@ using Util = import "util.capnp";
 # ========================================================================================
 # Powerbox
 #
-# TODO(cleanup):  Put in separate file?  Note that PowerboxCapability must be declared before
-#   UiView due to a bug in Cap'n Proto requiring superclasses to be declared before subclasses.
+# TODO(cleanup):  Put in separate file?
 #
 # The powerbox is part of the Sandstorm UI which allows users to connect applications to each
-# other.  First, one application must publish a PowerboxCapability to the powerbox via
-# `SandstormApi.publish()`.  Then, a second application may request a capability from the powerbox
-# via `SessionContext.request()`.  The user is presented with a list of capabilities from the
-# powerbox which match the requesting application's query.  The user may select one, which will
-# then be returned to the requesting app.
+# other. There are two main modes in which a powerbox interaction can be driven: "request" and
+# "offer".
 #
-# Another way to connect apps is via actions.  One application may declare that it can implement
-# some action on any capability matching a particular query.  Another application may later use
-# SessionContext.offer() to offer a specific capability to the current user.  The user will be
-# presented with a list of actions that make sense for that capability and may select one.  (This
-# is much like Android intents.)
+# In "request" mode, an app initiates the powerbox by requesting to receive a capability matching
+# some particluar criteria using `SessionContext.request()` (or though the client-side
+# postMessage() API, described in the documentation for `SessionContext.request()`). The user is
+# presented with a list of other grains of theirs which might be able to fulfill this request and
+# asked to choose one. Other grains initially register their ability to answer certain requests
+# by filling in the powerbox fields of `UiView.ViewInfo`. When the user chooses a grain,
+# `UiView.newRequestSession()` is called on the providing grain and the resulting UI session is
+# displayed embedded in the powerbox. The providing grain can render a UI which prompts the user
+# for additional details if needed, or implements some sort of additional picker. Once the grain
+# knows which capability to provide, it calls `SessionContext.provide()` to fulfill the original
+# request.
+#
+# In "offer" mode, an app initiates the powerbox by calling `SessionContext.offer()` in a normal,
+# non-powerbox session, to indicate that it wishes to offer some capability to the current user
+# for use in other apps. The user is presented with a list of apps and grains that are able to
+# accept this offer. Grains can register interest in receiving offers by filling in the powerbox
+# metadata in `UiView.ViewInfo`. Apps can also indicate in their manifest that it makes sense for a
+# user to create a whole new grain to accept a powerbox offer. In either case, a session is created
+# using `UiView.newOfferSession()`.
 
-interface PowerboxCapability {
-  # Capabilities to be offered to the powerbox must implement PowerboxCapability (in addition to
-  # the interface for the application functionality they provide).  PowerboxCapability provides
-  # metadata about the capability for display in the powerbox UI as well as the sharing graph
-  # (which shows inter-app capabilities).
+struct PowerboxDescriptor {
+  # Describes properties of capabilities exported by the powerbox, or capabilities requested
+  # through the powerbox.
   #
-  # Capabilities sent directly between two grains (e.g. as an RPC parameter) rather than through
-  # the powerbox UI may also wish to implement PowerboxCapability in order to improve the sharing
-  # graph visualization.  Only persisted capabilities will ever show up in the visualization.
+  # A PowerboxDescriptor specified individually describes the properties of a single object or
+  # capability. It is a conjunction of "tags" describing different aspects of the object, such as
+  # which interfaces it implements.
+  #
+  # Often, descriptors come in a list, i.e. List(PowerboxDescriptor). Such a list is usually a
+  # disjunction describing one of two things:
+  # - A powerbox "query" is a list of descriptors used in a request to indicate what kinds of
+  #   objects the requesting app is looking for. (In a powerbox "offer" interaction, the "query"
+  #   is the list of descriptors that the accepting app indicated it accepts in its `ViewInfo`.)
+  # - A powerbox "provision" is a list of descriptors used to describe what kinds of objects an
+  #   app provides, which can be requested by other apps. (In a powerbox "offer" interaction, the
+  #   "provision" consists of the single descriptor that the offering app passed to `offer()`.)
+  #
+  # For a query to match a provision, at least one descriptor in the query must match at least one
+  # descriptor in the provision (with an acceptable `matchQuality`; see below).
+  #
+  # Note that, in some use cases, where the "object" being granted is in fact just static data,
+  # that data may be entirely encoded in tags, and the object itself may be a null capability.
+  # For example, a powerbox request for a "contact" may result in a null capability with a tag
+  # containing the contact details. Apps are free to define such conventions as they see fit; it
+  # makes no difference to the system.
 
-  getPowerboxInfo @0 () -> PowerboxInfo;
-  struct PowerboxInfo {
-    title @0 :Util.LocalizedText;
-    # Title for this capability if displayed as an option in the powerbox.  Useful for
-    # distinguishing from other capabilities exported by the same grain.  Leave blank if the
-    # capability effectively represents the entire grain and so should just take the grain's title.
+  tags @0 :List(Tag);
+  # List of tags. For a query descriptor to match a provision descriptor, every tag in the query
+  # must be matched by at least one tag in the provision. If the query tags list is empty, then
+  # the query is asking for any capability at all; this occasionally makes sense in "meta" apps
+  # that organize or communicate general capabilities.
+
+  struct Tag {
+    id @0 :UInt64;
+    # A unique ID naming the tag. All such IDs should be created using `capnp id`.
     #
-    # Titles are suggestions only.  The user may override the title with their own.
+    # It is up to the developer who creates a new ID to decide what type the tag's `value` should
+    # have (if any). This should be documented where the ID is defined, e.g.:
+    #
+    #     const preferredFrobberTag :UInt64 = 0xa170f46ec4b17829;
+    #     # The value should be of type `Text` naming the object's preferred frobber.
+    #
+    # By convention, however, a tag ID is *usually* a Cap'n Proto type ID, with the following
+    # meanings:
+    #
+    # * If `id` is the Cap'n Proto type ID of an interface, it indicates that the described
+    #   powerbox capability will implement this interface. The interface's documentation may define
+    #   what `value` should be in this case; otherwise, it should be null. (For example, a "file"
+    #   interface might define that the `value` should be some sort of type descriptor, such as a
+    #   MIME type. Most interfaces, however, will not define any `value`; the mere fact that the
+    #   object implements the interface is the important part.)
+    #
+    # * If `id` is the type ID of a struct type, then `value` is an instance of that struct type.
+    #   The struct type's documentation describes how the tag is to be interpreted.
+    #
+    # Note that these are merely conventions; nothing in the system actually expects tag IDs to
+    # match Cap'n Proto type IDs, except possibly debugging tools.
 
-    verbPhrase @1 :Util.LocalizedText;
-    # Verb phrase describing what the holder of this capability can do to the grain, e.g.
-    # "can edit".  This may be displayed in the sharing UI to describe a connection between two
-    # grains.
+    value @1 :AnyPointer;
+    # An arbitrary value expressing additional metadata related to the tag.
+    #
+    # This is optional. "Boolean" tags (where all that matters is that they are present or
+    # absent) -- including tags that merely indicate that an interface is implemented -- may leave
+    # this field null.
+    #
+    # When "matching" two descriptors (one of which is a "query", and the other of which describes
+    # a "provision"), the following algorithm is used to decide if they match:
+    #
+    # * A null pointer matches any value (essentially, null = wildcard).
+    # * Pointers pointing to different object types (e.g. struct vs. list) do not match.
+    # * Two struct pointers match if the primitive fields in both structs have identical values
+    #   (bit for bit) and the corresponding pointer fields match by applying this algorithm
+    #   recursively.
+    # * Two lists of non-struct elements match if their contents match exactly.
+    # * Lists of structs are treated as *sets*. They match if every element in the query list
+    #   matches at least one element in the provider list. Order of elements is irrelevant.
+    #
+    # The above algorithm may appear quirky, but is designed to cover common use cases while being
+    # relatively simple to implement. Consider, for example, a powerbox query seeking to match
+    # "video files". All "files" are just byte blobs; file managers probably don't implement
+    # different interfaces for different file types. So, you will want to use tags here. For
+    # example, a MIME type tag might be defined as:
+    #
+    #     struct MimeType {
+    #       category @0 :Text;
+    #       subtype @1 :Text;
+    #       tree @2 :Text;    // e.g. "vnd"
+    #       suffix @3 :Text;  // e.g. "xml"
+    #       params @4 :List(Param);
+    #       struct Param {
+    #         name @0 :Text;
+    #         value @1 :Text;
+    #       }
+    #     }
+    #
+    # You might then express your query with a tag with `id` = MimeType's type ID and value =
+    # `(category = "video")`, which effectively translates to a query for "video/*". (Your query
+    # descriptor would have a second tag to indicate what Cap'n Proto interface the resulting
+    # capability should implement.)
+  }
 
-    description @2 :Util.LocalizedText;
-    # Long-form description of what the capability represents.  Should be roughly a paragraph that
-    # could be displayed e.g. in a tooltip.
+  quality @1 :MatchQuality = acceptable;
+  # Use to indicate a preference or anti-preference for this descriptor compared to others in the
+  # same list.
+  #
+  # When a descriptor in the query matches multiple descriptors in the provision, or vice versa,
+  # exactly one of the matches is chosen to decide the overall `matchQuality`, as follows:
+  # - If one matching descriptor is strictly less-specific than some other in the match set, it is
+  #   discarded. (A descriptor A is strictly less-specific than a descriptor B if every possible
+  #   match for B would also match A.)
+  # - Once all less-specific descriptors are eliminated, of those that remains, the descriptor with
+  #   the best `matchQuality` is chosen.
 
-    interfaces @3 :List(UInt64);
-    # Type IDs of Cap'n Proto interfaces implemented by this capability.  Only interfaces which
-    # should be used for powerbox searching/matching purposes need to be listed.  Superclasses
-    # must be listed explicitly if they should be considered for matching.  The powerbox does not
-    # know anything about the actual interface schemas; it just matches the IDs.
+  enum MatchQuality {
+    # The values below are listed in order from "best" to "worst". Note that this ordering does NOT
+    # correspond to the numeric order. Also note that new values could be introduced in the future.
 
-    # TODO(someday):  Icon.
-    # TODO(someday):  Other match criteria.
+    preferred @1;
+    # Indicates that this match should be preferred over other options. The powerbox UI may
+    # encourage the user to choose preferred options. For example, a document editor that uses
+    # the powerbox to import document files might indicate that it accepts docx format but prefers
+    # odf, perhaps because its importer for the latter is higher-quality. Similarly, it might
+    # publish powerbox capabilities to export as either format, but again mark odf as preferred.
+    #
+    # Note `preferred` is only meaningful if the descriptor list contains other descriptors that
+    # are marked `acceptable`. An app cannot promote itself over other apps by marking its
+    # provisions as `preferred`. (A requesting app could indicate a preference for a particular
+    # providing app, though, if the providing app provides a unique tag that the requestor can
+    # mark as preferred.)
+
+    acceptable @0;
+    # Indicates that this is a fine match which should be offered to the user as a regular option.
+    # This is the default.
+
+    # TODO(someday): mightWork @3;
+    # Indicates that the match might have useful results but there is a non-negligible priority
+    # that it won't work, and this option should be offered to the user only as an advanced option.
+
+    unacceptable @2;
+    # "Unacceptable" matches are expected *not* to work and therefore will not be offered to the
+    # user.
+    #
+    # Note that `unacceptable` can be used to filter out a subset of matches of a broader
+    # descriptor by taking advantage of the fact that the powerbox prefers more-specific matches
+    # over less-specific ones. For instance, you could query for "files except video files" by
+    # specifying a query with two descriptors: a descriptor for "implements File" with quality
+    # "acceptable" and a second descriptor for "implements File with type = video" with quality
+    # "unacceptable".
   }
 }
 
-interface PowerboxAction {
-  apply @0 (cap: PowerboxCapability) -> (view :UiView);
-  # Invoke the action on the given capability, producing a view which is displayed to the user.
-}
+struct PowerboxDisplayInfo {
+  # Information about a powerbox link (i.e., the result of a powerbox interaction) which could be
+  # displayed to the user when auditing powerbox-granted capabilities.
 
-struct PowerboxQuery {
-  # When the app requests a capability from the powerbox, it provides a PowerboxQuery specifying
-  # what kind of capability it wants, in order to narrow down the options.
+  title @0 :Util.LocalizedText;
+  # A short, human-readable noun phrase describing the object this capability represents. If null,
+  # the grain's title will be used -- this is appropriate if the capability effectively represents
+  # the whole grain.
+  #
+  # The title is used, for example, when the user is selecting multiple capabilities, building a
+  # list.
 
-  union {
-    conjunction @0 :List(PowerboxQuery);
-    disjunction @1 :List(PowerboxQuery);
-    # Specifies a conjunction (AND) or disjunction (OR) of other queries.
+  verbPhrase @1 :Util.LocalizedText;
+  # Verb phrase describing what the holder of this capability can do to the grain, e.g.
+  # "can edit".  This may be displayed in the sharing UI to describe a connection between two
+  # grains.
 
-    implements @2 :UInt64;
-    # The capability must list the given interface in `PowerboxInfo.interfaces`.
-
-    # TODO(someday):  Other match criteria.
-  }
+  description @2 :Util.LocalizedText;
+  # Long-form description of what the capability represents.  Should be roughly a paragraph that
+  # could be displayed e.g. in a tooltip.
 }
 
 # ========================================================================================
@@ -114,30 +237,13 @@ interface SandstormApi(AppObjectId) {
   # TODO(soon):  Read the grain title as set by the user.  Also have interface to offer a new
   #   title and icon?
 
-  publish @0 (cap :PowerboxCapability, requiredPermissions :PermissionSet)
-          -> (registration :Util.Handle);
-  # Publish the given capability, such that any user who has access to the Grain with at least the
-  # given permissions will see the capability show up in their powerbox for matching searches.
-  #
-  # Returns a handle which, when dropped, un-publishes the capability.  You must save this handle
-  # to storage to keep the capability published.  Dropping the handle does not revoke the
-  # capability, only prevents it from appearing in the powerbox going forward.
+  deprecatedPublish @0 ();
+  deprecatedRegisterAction @1 ();
+  # These powerbox-related methods were never implemented. Eventually it was decided that they
+  # specified the wrong model.
 
-  # TODO(someday):  Let the app publish a picker UI which can be embedded in the powerbox.  For
-  #   example, a music library may want to make each track in the library available via the
-  #   powerbox, but publishing every one may be clunky.  Instead, it might offer a little embedded
-  #   UI which lets the user type a search query or browse by artist.
-
-  registerAction @1 (query :PowerboxQuery, action :PowerboxAction,
-                     requiredPermissions :PermissionSet) -> (registration :Util.Handle);
-  # Register an action implemented by this grain.  It will be offered to the user as an option
-  # whenever another app uses `SessionContext.offer()` to offer a capability that matches the query.
-  #
-  # This method should only be used for actions that are somehow specific to this grain.  This is
-  # unusual.  Usually, you want to define actions in the application's manifest; such actions will
-  # be executed in a newly-created grain.
-
-  shareCap @2 (cap :PowerboxCapability) -> (sharedCap :PowerboxCapability, link :SharingLink);
+  shareCap @2 (cap :Capability, displayInfo :PowerboxDisplayInfo)
+           -> (sharedCap :Capability, link :SharingLink);
   # Share a capability, so that it may safely be sent to another user.  `sharedCap` is a wrapper
   # (membrane) around `cap` which can have a petname assigned and can be revoked via `link`.  The
   # share is automatically revoked if `link` is discarded.  If `cap` is persistable, then both
@@ -230,7 +336,7 @@ interface SandstormApi(AppObjectId) {
   #   failure.
 }
 
-interface UiView extends(PowerboxCapability) {
+interface UiView {
   # Implements a user interface with which a user can interact with the grain.  We call this a
   # "view" because a single grain may actually have multiple "views" that provide different
   # functionality or represent multiple logical objects in the same physical grain.
@@ -326,6 +432,16 @@ interface UiView extends(PowerboxCapability) {
     # Alice has read-only access to a document and wishes to share the document to Bob, the sharing
     # UI should not offer Alice the ability to share write access, because she doesn't have it in
     # the first place.  The sharing UI figures out what Alice has by examining `deniedPermissions`.
+
+    matchRequests @3 :List(PowerboxDescriptor);
+    # Indicates what kinds of powerbox requests this grain may be able to fulfill. If the grain
+    # is chosen by the user during a powerbox request, then `newRequestSession()` will be called
+    # to set up the embedded UI session.
+
+    matchOffers @4 :List(PowerboxDescriptor);
+    # Indicates what kinds of powerbox offers this grain is interested in accepting. If the grain
+    # is chones by the user during a powerbox offer, then `newOfferSession()` will be called
+    # to start a session around this.
   }
 
   newSession @1 (userInfo :UserInfo, context :SessionContext,
@@ -347,6 +463,45 @@ interface UiView extends(PowerboxCapability) {
   # `sessionParams` is a struct whose type is specified by the session type.  By convention, this
   # struct should be defined nested in the session interface type with name "Params", e.g.
   # `WebSession.Params`.  This struct contains some arbitrary startup information.
+
+  newRequestSession @2 (userInfo :UserInfo, context :SessionContext,
+                        sessionType :UInt64, sessionParams :AnyPointer,
+                        requestInfo :List(PowerboxDescriptor))
+                    -> (session :UiSession);
+  # Creates a new session based on a powerbox request. `requestInfo` is the subset of the original
+  # request description which matched descriptors that this grain indicated it provides via
+  # `ViewInfo.matchRequests`. The list is also sorted with the "best match" first, such that
+  # it is reasonable for a grain to ignore all descriptors other than the first.
+  #
+  # Keep in mind that, as with any other session, the UiSession capability could become
+  # disconnected randomly and the front-end will then reconnect by calling `newRequestSession()`
+  # again with the same parameters. Generally, apps should avoid storing any session-related state
+  # on the server side; it's easy to use client-side sessionStorage instead.
+
+  newOfferSession @3 (userInfo :UserInfo, context :SessionContext,
+                      sessionType :UInt64, sessionParams :AnyPointer,
+                      offer :Capability, descriptor :PowerboxDescriptor)
+                  -> (session :UiSession);
+  # Creates a new session based on a powerbox offer. `offer` is the capability being offered and
+  # `descriptor` describes it.
+  #
+  # By default, an "offer" session is displayed embedded in the powerbox much like a "request"
+  # session is. If the the session implements a quick action -- say "share to friend by email" --
+  # then it may make sense for it to remain embedded, returning the user to the offering app when
+  # done. The app may call `SessionContext.close()` to indicate that it's time to close. However,
+  # in some cases it makes a lot of sense for the app to become "full-frame", for example a
+  # document editor app accepting a document offer may want to then open the editor for long-term
+  # use. Such apps should call `SessionContext.openView()` to move on to a full-fledged session.
+  # Finally, some apps will take an offer, wrap it in some filter, and then make a new offer of the
+  # wrapped capability. To that end, calling `SessionContext.offer()` will end the offer session
+  # but immediately start a new offer interaction in its place using the new capability.
+  #
+  # Keep in mind that, as with any other session, the UiSession capability could become
+  # disconnected randomly and the front-end will then reconnect by calling `newOfferSession()`
+  # again with the same parameters. Generally, apps should avoid storing any session-related state
+  # on the server side; it's easy to use client-side sessionStorage instead. (Of course, if the
+  # session calls `SessionContext.openView()`, the new view will be opened as a regular session,
+  # not an offer session.)
 }
 
 # ========================================================================================
@@ -418,8 +573,9 @@ interface SessionContext {
   # the user later loses their access and auto-revoking things in that case.  See also `tieToUser()`
   # for an easier way to make a particular capability auto-revoke if the user's permissions change.
 
-  tieToUser @1 (cap :PowerboxCapability, requiredPermissions :PermissionSet)
-            -> (tiedCap :PowerboxCapability);
+  tieToUser @1 (cap :Capability, requiredPermissions :PermissionSet,
+                displayInfo :PowerboxDisplayInfo)
+            -> (tiedCap :Capability);
   # Create a version of `cap` which will automatically stop working if the user no longer holds the
   # permissions indicated by `requiredPermissions` (and starts working again if the user regains
   # those permissions).  The capability also appears connected to the user in the sharing
@@ -431,18 +587,20 @@ interface SessionContext {
   # _without_ actually passing that capability to the user, use `getSharedPermissions()` to detect
   # when the user's permissions change and implement it yourself.
 
-  offer @2 (cap :PowerboxCapability, requiredPermissions :PermissionSet) -> ();
+  offer @2 (cap :Capability, requiredPermissions :PermissionSet,
+            descriptor :PowerboxDescriptor, displayInfo :PowerboxDisplayInfo);
   # Offer a capability to the user.  A dialog box will ask the user what they want to do with it.
-  # Depending on the type of capability, different options may be provided.  All capabilities will
-  # offer the user the option to save the capability to their capability/grain store.  Other
-  # type-specific actions may be offered by the platform or by other applications.
+  # Depending on the type of capability (as indicated by `descriptor`), different options may be
+  # provided.  All capabilities will offer the user the option to save the capability to their
+  # capability/grain store.  Other type-specific actions may be offered by the platform or by other
+  # applications.
   #
   # For example, offering a UiView will give the user options like "open in new tab", "save to
   # grain list", and "share with another user".
   #
   # The capability is implicitly tied to the user as if via `tieToUser()`.
 
-  request @3 (query :PowerboxQuery) -> (cap :PowerboxCapability);
+  request @3 (query :List(PowerboxDescriptor)) -> (cap :Capability, descriptor :PowerboxDescriptor);
   # Although this method exists, it is unimplemented and currently you are meant to use the
   # postMessage api to get a token, and then restore that token with SandstormApi.restore().
   #
@@ -452,11 +610,12 @@ interface SessionContext {
   # powerboxRequest:
   #   rpcId: A unique string that should identify this rpc message to the app. You will receive this
   #          id in the callback to verify which message it is referring to.
-  #   powerboxQuery: A powerboxQuery object, serialized as a Javascript object.
+  #   query: A list of PowerboxDescriptor objects, serialized as a Javascript array OR a
+  #          base64-encoded powerbox query created using the `spk query` tool.
   #   saveLabel: A string petname to give this label. This will be displayed to the user as the name
   #          for this capability.
   #
-  # (eg. window.parent.postMessage({powerboxRequest: {rpcId: myRpcId, powerboxQuery: {}}}, "*")
+  # (eg. window.parent.postMessage({powerboxRequest: {rpcId: myRpcId, query: [{}]}}, "*")
   #
   # The postMessage searches for capabilities in the user's powerbox matching the given query and
   # displays a selection UI to the user.
@@ -467,6 +626,40 @@ interface SessionContext {
   #     // pass event.data.token to your app's server and call SandstormApi.restore() with it
   #   }
   # }, false)
+
+  provide @4 (cap :Capability, requiredPermissions :PermissionSet,
+              descriptor :PowerboxDescriptor, displayInfo :PowerboxDisplayInfo);
+  # For sessions started with `newRequestSession()`, fulfills the original request. If only one
+  # capability was requested, the powerbox will close upon `provide()` being called. If multiple
+  # capabilities were requested, then the powerbox remains open and `provide()` may be called
+  # repeatedly.
+  #
+  # If the session was not started with `newRequestSession()`, this method is equivalent to
+  # `offer()`. This can be helpful when building a UI that can be used both embedded in the
+  # powerbox and stand-alone.
+
+  close @5 ();
+  # Closes the session.
+  # - For regular sessions, the user will be returned to the home screen.
+  # - For powerbox "request" sessions, the user will be returned to the main grain selection list.
+  # - For powerbox "offer" sessions, the powerbox will be closed and the user will return to the
+  #   offering app.
+  #
+  # Note that in some cases it is possible for the user to return by clicking "back", so the app
+  # should not assume that no further requests will happen.
+
+  openView @6 (view :UiView, path :Text = "", newTab :Bool = false);
+  # Navigates the user to some other UiView (from the same grain or another), closing the current
+  # session. If `view` is null, navigates back to the the current view, in a new session.
+  #
+  # `path` is an optional path to jump directly to within the new session. For WebSessions, this
+  # is appended to the URL, and may include query (search) and fragment (hash) components, but
+  # should never start with '/'. Example: "foo/bar?baz=qux#corge"
+  #
+  # If `newTab` is true, the new session is opened in a new tab.
+  #
+  # If the current session is a powerbox session, `openView()` affects the top-level tab, thereby
+  # closing the powerbox and the app that initiated the powerbox (unless `newTab` is true).
 }
 
 # ========================================================================================

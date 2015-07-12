@@ -158,7 +158,7 @@ Meteor.methods({
     check(token, String);
     var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
     var apiToken = ApiTokens.findOne(hashedToken);
-    validateApiToken(apiToken);
+    validateWebkey(apiToken);
     var grain = Grains.findOne({_id: apiToken.grainId});
     if (!grain) {
       throw new Meteor.Error(404, "Grain not found", "Grain ID: " + apiToken.grainId);
@@ -228,9 +228,16 @@ Meteor.methods({
   }
 });
 
-function validateApiToken (apiToken) {
+function validateWebkey (apiToken, refreshedExpiration) {
+  // Validates that `apiToken` is a valid UiView webkey, throwing an exception if it is not. If
+  // `refreshedExpiration` is set and if the token has an `expiresIfUnused` field, then the
+  // `expiresIfUnused` field is reset to `refreshedExpiration`.
+
   if (!apiToken) {
     throw new Meteor.Error(403, "Invalid authorization token");
+  }
+  if (apiToken.revoked) {
+    throw new Meteor.Error(403, "Authorization token has been revoked");
   }
   if (apiToken.owner && !("webkey" in apiToken.owner)) {
     throw new Meteor.Error(403, "Unauthorized to open non-webkey token.");
@@ -243,6 +250,8 @@ function validateApiToken (apiToken) {
   if (apiToken.expiresIfUnused) {
     if (apiToken.expiresIfUnused.getTime() <= Date.now()) {
       throw new Meteor.Error(403, "Authorization token expired");
+    } else if (refreshedExpiration) {
+      ApiTokens.update(apiToken._id, {$set: {expiresIfUnused: refreshedExpiration}});
     } else {
       // It's getting used now, so clear the expiresIfUnused field.
       ApiTokens.update(apiToken._id, {$set: {expiresIfUnused: null}});
@@ -281,7 +290,8 @@ function openSessionInternal(grainId, user, title, apiToken) {
     grainId: grainId,
     hostId: proxy.hostId,
     timestamp: new Date().getTime(),
-  }
+    hasLoaded: false,
+  };
 
   if (userId) {
     session.userId = userId;
@@ -613,7 +623,8 @@ Meteor.startup(function() {
     },
 
     changed : function (newApiToken, oldApiToken) {
-      if (!_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment)) {
+      if (!_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
+          !_.isEqual(newApiToken.revoked, oldApiToken.revoked)) {
         clearDownstreamSessions(newApiToken);
         clearApiProxies(newApiToken.grainId);
       }
@@ -639,7 +650,7 @@ getProxyForApiToken = function (token) {
     } else {
       return inMeteor(function () {
         var tokenInfo = ApiTokens.findOne(hashedToken);
-        validateApiToken(tokenInfo);
+        validateWebkey(tokenInfo);
 
         var grain = Grains.findOne(tokenInfo.grainId);
         if (!grain) {
@@ -798,25 +809,43 @@ tryProxyRequest = function (hostId, req, res) {
       return true;
     }
 
+    var responseHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Content-Type": "text/plain",
+    };
+
+    function errorHandler(err) {
+      if (err instanceof Meteor.Error) {
+        console.log("error: " + err);
+        res.writeHead(err.error, err.reason, responseHeaders);
+      } else {
+        res.writeHead(500, "Internal Server Error", responseHeaders);
+      }
+      res.end(err.stack);
+    }
+
     var token = apiTokenForRequest(req);
-    if (token) {
+    if (token && req.headers["x-sandstorm-token-keepalive"]) {
+      inMeteor(function() {
+        var keepaliveDuration = parseInt(req.headers["x-sandstorm-token-keepalive"]);
+        check(keepaliveDuration, Match.Integer);
+        var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
+        validateWebkey(ApiTokens.findOne(hashedToken), new Date(Date.now() + keepaliveDuration));
+      }).then(function() {
+        res.writeHead(200, responseHeaders);
+        res.end();
+      }, errorHandler);
+    } else if (token) {
       getProxyForApiToken(token).then(function (proxy) {
         proxy.requestHandler(req, res);
-      }, function (err) {
-        if (err instanceof Meteor.Error) {
-          res.writeHead(err.error, err.reason, { "Content-Type": "text/plain" });
-        } else {
-          res.writeHead(500, "Internal Server Error", { "Content-Type": "text/plain" });
-        }
-        res.end(err.stack);
-      });
+      }, errorHandler);
     } else {
       if (apiUseBasicAuth(req)) {
         res.writeHead(401, {"Content-Type": "text/plain",
                             "WWW-Authenticate": "Basic realm=\"Sandstorm API\""});
       } else {
         // TODO(someday): Display some sort of nifty API browser.
-        res.writeHead(403, {"Content-Type": "text/plain"});
+        res.writeHead(403, responseHeaders);
       }
       res.end("Missing or invalid authorization header.\n\n" +
           "This address serves APIs, which allow external apps (such as a phone app) to\n" +
@@ -848,6 +877,7 @@ function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, user
   this.sessionId = sessionId;
   this.isOwner = isOwner;
   this.isApi = isApi;
+  this.hasLoaded = false;
   if (sessionId) {
     if (!preferredHostId) {
       this.hostId = generateRandomHostname(20);
@@ -1392,6 +1422,15 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
     // Add a Content-Security-Policy as a backup in case someone finds a way to load this resource
     // in a browser context. This policy should thoroughly neuter it.
     response.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
+  }
+
+  // On first response, update the session to have hasLoaded=true
+  if (!this.hasLoaded) {
+    this.hasLoaded = true;
+    var sessionId = this.sessionId;
+    inMeteor(function () {
+      Sessions.update({_id: sessionId}, {$set: {hasLoaded: true}});
+    });
   }
 
   // TODO(security): Set X-Content-Type-Options: nosniff?

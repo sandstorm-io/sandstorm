@@ -35,12 +35,10 @@ if (Meteor.isServer) {
       // Allow owner to change the petname.
       return userId &&
         ((apiToken.userId === userId &&
-          (fieldNames.length === 1 && fieldNames[0] === "petname")) ||
+          (fieldNames.length === 1 &&
+           (fieldNames[0] === "petname" || fieldNames[0] === "revoked"))) ||
          Match.test(apiToken.owner, {user: Match.ObjectIncluding({userId: userId})}))
     },
-    remove: function (userId, token) {
-      return userId && token.userId === userId && (!token.owner || "webkey" in token.owner);
-    }
   });
 
   Meteor.publish("grainTopBar", function (grainId) {
@@ -126,13 +124,6 @@ if (Meteor.isServer) {
       promise.cancel();
     });
   });
-
-  function cleanupExpiredTokens() {
-    var now = new Date();
-    ApiTokens.remove({expires: {$lt: now}});
-  }
-
-  Meteor.setInterval(cleanupExpiredTokens, 3600000);
 }
 
 var GrainSizes = new Mongo.Collection("grainSizes");
@@ -294,7 +285,7 @@ if (Meteor.isClient) {
       Session.set("api-token-" + this.grainId, undefined);
     },
     "click button.revoke-token": function (event) {
-      ApiTokens.remove(event.currentTarget.getAttribute("data-token-id"));
+      ApiTokens.update(event.currentTarget.getAttribute("data-token-id"), {$set: {revoked: true}});
     },
     "click #show-share-grain": function (event) {
       if (Session.get("show-share-grain")) {
@@ -495,6 +486,11 @@ if (Meteor.isClient) {
     powerboxOfferUrl: function () {
       var session = Sessions.findOne({_id: this.sessionId}, {fields: {powerboxView: 1}});
       return session && session.powerboxView && session.powerboxView.offer;
+    },
+
+    hasLoaded: function () {
+      var session = Sessions.findOne({_id: this.sessionId}, {fields: {hasLoaded: 1}});
+      return session.hasLoaded;
     }
   });
 
@@ -578,9 +574,14 @@ if (Meteor.isClient) {
           assignment = call.roleAssignment;
         }
         // Tokens expire by default in 5 minutes from generation date
-        var selfDestructTime = Date.now() + (5 * 60 * 1000);
+        var selfDestructDuration = 5 * 60 * 1000;
+
+        var rawParentToken;
+        if (Router.current().route.getName() === "shared") {
+          rawParentToken = Router.current().params.token;
+        }
         Meteor.call("newApiToken", currentGrainId, petname, assignment, false,
-                    selfDestructTime, function (error, result) {
+                    selfDestructDuration, rawParentToken, function (error, result) {
           if (error) {
             event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
           } else {
@@ -593,10 +594,13 @@ if (Meteor.isClient) {
             var renderedTemplate = template.replace("$API_TOKEN", tokenId)
                                            .replace("$API_HOST", makeWildcardHost("api"));
             sessionStorage.setItem(key, JSON.stringify({
+                "token": tokenId,
                 "renderedTemplate": renderedTemplate,
-                "expires": selfDestructTime
+                "expires": Date.now() + selfDestructDuration
               })
             );
+            sessionStorage.setItem("apiHost", makeWildcardHost("api"));
+
             // Send message to event.source with URL containing id2
             templateLink = window.location.origin + "/offer-template.html#" + id2;
             event.source.postMessage({rpcId: rpcId, uri: templateLink}, event.origin);
@@ -828,6 +832,7 @@ Router.map(function () {
   });
 
   this.route("/shared/:token/:path(.*)?", {
+    name: "shared",
     template: "grain",
 
     waitOn: function () {

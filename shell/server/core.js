@@ -116,7 +116,7 @@ NotificationHandle.prototype.close = function () {
   });
 };
 
-saveFrontendRef = function (frontendRef, owner, userId) {
+saveFrontendRef = function (frontendRef, owner, requirements) {
   return inMeteor(function () {
     var sturdyRef = new Buffer(generateSturdyRef());
     var hashedSturdyRef = hashSturdyRef(sturdyRef);
@@ -125,7 +125,7 @@ saveFrontendRef = function (frontendRef, owner, userId) {
       frontendRef: frontendRef,
       owner: owner,
       created: new Date(),
-      userId: userId
+      requirements: requirements
     });
     return {sturdyRef: sturdyRef};
   });
@@ -151,6 +151,10 @@ checkRequirements = function (requirements) {
       var viewInfo = Grains.findOne(p.grainId, {fields: {cachedViewInfo: 1}}).cachedViewInfo;
       var set = new PermissionSet(grainPermissions(p.grainId, p.userId, viewInfo || {}));
       if (new PermissionSet(p.permissions).intersect(set)) {
+        return false;
+      }
+    } else if (requirement.userIsAdmin) {
+      if (!isAdminById(requirement.userIsAdmin)) {
         return false;
       }
     } else {
@@ -193,6 +197,10 @@ restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
     if (token.frontendRef.notificationHandle) {
       var notificationId = token.frontendRef.notificationHandle;
       return {cap: makeNotificationHandle(notificationId, true)};
+    } else if (token.frontendRef.ipNetwork) {
+      return {cap: makeIpNetwork(tokenId)};
+    } else if (token.frontendRef.ipInterface) {
+      return {cap: makeIpInterface(tokenId)};
     } else {
       throw new Meteor.Error(500, "Unknown frontend token type.");
     }
@@ -297,29 +305,35 @@ SandstormCoreImpl.prototype.makeToken = function (ref, owner, requirements) {
   });
 };
 
+makeChildTokenInternal = function (hashedParent, owner, requirements, grainId) {
+  var sturdyRef = new Buffer(generateSturdyRef());
+  var hashedSturdyRef = hashSturdyRef(sturdyRef);
+
+  requirements = requirements.filter(function (requirement) {
+    return requirement.tokenValid !== hashedParent;
+  });
+
+  var tokenInfo = {
+    _id: hashedSturdyRef,
+    parentToken: hashedParent,
+    owner: owner,
+    created: new Date(),
+    requirements: requirements
+  };
+  if (grainId) {
+    tokenInfo.grainId = grainId;
+  }
+  ApiTokens.insert(tokenInfo);
+
+  return {
+    token: sturdyRef
+  };
+};
+
 SandstormCoreImpl.prototype.makeChildToken = function (parent, owner, requirements) {
   var self = this;
   return inMeteor(function () {
-    var sturdyRef = new Buffer(generateSturdyRef());
-    var hashedSturdyRef = hashSturdyRef(sturdyRef);
-    var hashedParent = hashSturdyRef(parent);
-
-    requirements = requirements.filter(function (requirement) {
-      return requirement.tokenValid !== hashedParent;
-    });
-
-    ApiTokens.insert({
-      _id: hashedSturdyRef,
-      grainId: self.grainId,
-      parentToken: hashedParent,
-      owner: owner,
-      created: new Date(),
-      requirements: requirements
-    });
-
-    return {
-      token: sturdyRef
-    };
+    return makeChildTokenInternal(hashSturdyRef(parent), owner, requirements, self.grainId);
   });
 };
 

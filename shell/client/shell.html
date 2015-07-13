@@ -755,6 +755,9 @@ limitations under the License.
           <li id="invites-tab" class="{{#if invitesActive}}active{{/if}}">
             {{#linkTo route="adminInvites" data=getToken}}Send Invite{{/linkTo}}
           </li>
+          <li id="caps-tab" class="{{#if capsActive}}active{{/if}}">
+            {{#linkTo route="adminCaps" data=getToken}}Capabilities{{/linkTo}}
+          </li>
         </ul>
         {{> Template.dynamic template=adminTab}}
         {{#if success}}
@@ -827,7 +830,7 @@ limitations under the License.
 </template>
 
 <template name="adminUsers">
-  <table id="users-table">
+  <table class="admin-table">
     <thead>
       <tr>
         <td>Service</td>
@@ -910,6 +913,41 @@ limitations under the License.
     <button id="regenerateStatsToken">Regenerate Token</button>
     <span><a href="/fetchStats/{{token._id}}">{{token._id}}</a></span>
   </div>
+</template>
+
+<template name="adminCaps">
+  {{#if powerboxOfferUrl}}
+  <div id="powerbox-offer-popup" class="popup">
+    <h3>Powerbox Offer</h3>
+    <div>
+      <input type="text" class="autoSelect" value="{{powerboxOfferUrl}}" readonly>
+    </div>
+  </div>
+  <div id="powerbox-offer-popup-closer" class="popup-closer"></div>
+  {{/if}}
+  <p><button id="offer-ipnetwork">Offer IpNetwork Capability</button>
+     <button id="offer-ipinterface">Offer IpInterface Capability</button><br>
+    <span class="details">These buttons create webkeys (special secret addresses) representing permission to directly access the network. IpNetwork represents the capability to make outbound requests to the network. IpInterface represents the capability to receive inbound connections on the machine's main network interface. Some apps -- especially drivers -- will ask for these permissions. To grant them, you'll need to copy/paste the webkey from here into the app's request box. (Eventually, this UI will be superseded by the Powerbox picker.)</span></p>
+  <hr>
+  <table class="admin-table">
+    <thead>
+      <tr>
+        <td>Type</td>
+        <td>User</td>
+        <td>Created</td>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each caps}}
+        <tr class="{{#if disabled}}revoked-cap{{/if}}">
+          <td>{{#if frontendRef.ipNetwork}}IpNetwork{{/if}}{{#if frontendRef.ipInterface}}IpInterface{{/if}}</td>
+          <td>{{userName}}</td>
+          <td title="{{created}}">{{dateString created}}</td>
+          <td><a class="disable-cap" data-id="{{_id}}">x</a></td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
 </template>
 
 <template name="appdemo">

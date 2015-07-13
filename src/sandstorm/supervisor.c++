@@ -1766,6 +1766,17 @@ public:
 
 //  }
 
+  kj::Promise<void> save(SaveContext context) override {
+    auto args = context.getParams();
+    auto req = args.getCap().template castAs<SystemPersistent>().saveRequest();
+    auto grainOwner = req.getSealFor().initGrain();
+    grainOwner.setGrainId(grainId);
+    grainOwner.setSaveLabel(args.getLabel());
+    return req.send().then([this, context](auto args) mutable {
+      context.getResults().setToken(args.getSturdyRef());
+    });
+  }
+
   kj::Promise<void> restore(RestoreContext context) override {
     auto req = sandstormCore.restoreRequest();
     req.setToken(context.getParams().getToken());

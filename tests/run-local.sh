@@ -50,6 +50,12 @@ checkInstalled() {
   fi
 }
 
+getNewPort() {
+  node -e 'var net = require("net");
+  var sock = net.connect({port: 0});
+  console.log(sock.address().port);
+  sock.destroy()';
+}
 
 THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
@@ -92,10 +98,11 @@ fi
 
 export SANDSTORM_DIR=$THIS_DIR/tmp-sandstorm
 export OVERRIDE_SANDSTORM_DEFAULT_DIR=$SANDSTORM_DIR
-export PORT=$(shuf -i 10000-20000 -n 1)
-export MONGO_PORT=$(shuf -i 20001-30000 -n 1)
-export SMTP_LISTEN_PORT=$(shuf -i 30027-40000 -n 1)
-export SMTP_OUTGOING_PORT=$(shuf -i 40001-50000 -n 1)
+export PORT=$(getNewPort)
+export MONGO_PORT=$(getNewPort)
+export SMTP_LISTEN_PORT=$(getNewPort)
+export SMTP_OUTGOING_PORT=$(getNewPort)
+export IP_INTERFACE_TEST_PORT=$(getNewPort)
 export LAUNCH_URL="http://local.sandstorm.io:$PORT"
 
 rm -rf "$SANDSTORM_DIR"

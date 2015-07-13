@@ -1096,6 +1096,10 @@ aside #social>p {
   height: 22px;
 }
 
+#settings-tabs {
+  font-size: 16px;
+}
+
 #admin-settings .nav {
   display: inline-block;
   padding-left: 5px;
@@ -1123,9 +1127,7 @@ aside #social>p {
   background-color: #396F9E;
 }
 
-#admin-settings-save,
-#admin-settings-send-test,
-#admin-settings-send-toggle {
+#admin-settings button {
   font-family: inherit;
   font-size: inherit;
   font-weight: 600;
@@ -1194,30 +1196,39 @@ aside #social>p {
   width: 600px;
 }
 
-table#users-table {
+table.admin-table {
   font-size: 14px;
 }
 
-table#users-table {
+table.admin-table {
   border-collapse: collapse;
 }
 
-table#users-table thead td {
+table.admin-table thead td {
   font-weight: 600;
   border-bottom: 1px solid #aaa;
 }
 
-table#users-table td {
+table.admin-table td {
   padding: 0px 5px 5px;
 }
 
-table#users-table td:first-child {
+table.admin-table td:first-child {
   padding-left: 16px;
 }
 
-table#users-table tr {
+table.admin-table tr {
   height: 32px;
   border-bottom: 1px solid #ddd;
+}
+
+a.disable-cap {
+  color: red;
+  cursor: pointer;
+}
+
+.revoked-cap {
+  text-decoration: line-through;
 }
 
 #show-changelog {

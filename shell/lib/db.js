@@ -214,6 +214,11 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //       notificationHandle: A `Handle` for an ongoing notification, as returned by
 //                           `NotificationTarget.addOngoing`. The value is an `_id` from the
 //                           `Notifications` collection.
+//       ipNetwork: An IpNetwork capability that is implemented by the frontend. Eventually, this
+//                  will be moved out of the frontend and into the backend, but we'll migrate the
+//                  database when that happens. This field contains the boolean true to signify that
+//                  it has been set.
+//       ipInterface: Ditto IpNetwork, except it's an IpInterface.
 //   parentToken: If present, then this token represents exactly the capability represented by
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
 //              by `roleAssignment` (if present). To facilitate permissions computations, if the
@@ -259,6 +264,8 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //     }
 //     frontendRef :union {
 //        notificationHandle :Text;
+//        ipNetwork :Bool;
+//        ipInterface :Bool;
 //     }
 //     child :group {
 //       parentToken :Text;
@@ -416,6 +423,23 @@ isAdminById = function(id) {
     return false;
   }
 }
+
+findAdminUserForToken = function (token) {
+  if (!token.requirements) {
+    return;
+  }
+  var requirements = token.requirements.filter(function (requirement) {
+    return "userIsAdmin" in requirement;
+  });
+
+  if (requirements.length > 1) {
+    return;
+  }
+  if (requirements.length === 0) {
+    return;
+  }
+  return requirements[0].userIsAdmin;
+};
 
 var wildcardHost = Meteor.settings.public.wildcardHost.toLowerCase().split("*");
 

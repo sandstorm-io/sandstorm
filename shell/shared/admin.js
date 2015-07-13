@@ -72,6 +72,10 @@ var adminInvitesRoute = adminRoute.extend({
   settingsTab: "adminInvites"
 });
 
+var adminCapsRoute = adminRoute.extend({
+  settingsTab: "adminCaps"
+});
+
 Router.map(function () {
   this.route("admin", {
     path: "/admin/settings/:_token?",
@@ -93,6 +97,10 @@ Router.map(function () {
     path: "/admin/invites/:_token?",
     controller: adminInvitesRoute
   });
+  this.route("adminCaps", {
+    path: "/admin/capabilities/:_token?",
+    controller: adminCapsRoute
+  });
   this.route("adminOld", {
     path: "/admin/:_token?",
     controller: adminRoute
@@ -112,6 +120,7 @@ if (Meteor.isClient) {
     state.set("errors", []);
     state.set("fadeAlert", false);
     state.set("successMessage", "Your settings have been saved.");
+    state.set("powerboxOfferUrl", null);
   };
 
   Meteor.startup(function () {
@@ -172,6 +181,9 @@ if (Meteor.isClient) {
     },
     logActive: function () {
       return Iron.controller().state.get("settingsTab") == "adminLog";
+    },
+    capsActive: function () {
+      return Iron.controller().state.get("settingsTab") == "adminCaps";
     },
     getToken: getToken
   });
@@ -633,6 +645,91 @@ if (Meteor.isClient) {
               .join(""), {use_classes:true});
     }
   });
+
+  Template.adminCaps.onCreated(function () {
+    var state = Iron.controller().state;
+    var token = state.get("token");
+    this.subscribe("adminApiTokens", token);
+  });
+
+  Template.adminCaps.helpers({
+    powerboxOfferUrl: function () {
+      var state = Iron.controller().state;
+      return state.get("powerboxOfferUrl");
+    },
+    caps: function () {
+      return ApiTokens.find({$or: [{"frontendRef.ipNetwork": {$exists: true}},
+                                   {"frontendRef.ipInterface": {$exists: true}}]});
+    },
+    userName: function () {
+      var userId = findAdminUserForToken(this);
+      var user = Meteor.users.findOne({_id: userId});
+      if (!user) {
+        return "no user";
+      }
+      var services = user.services;
+      if (services.github) {
+        return services.github.username;
+      } else if (services.google) {
+        return services.google.email;
+      } else if (services.emailToken) {
+        return services.emailToken.email;
+      } else {
+        return user.profile.name;
+      }
+    },
+    isDisabled: function () {
+      return !this.userId;
+    },
+    disabled: function () {
+      return this.revoked;
+    }
+  })
+
+  var updateCap = function (capId, value) {
+    var state = Iron.controller().state;
+    resetResult(state);
+    if (!value) {
+      state.set("successMessage", "Capability has been re-enabled.");
+    } else {
+      state.set("successMessage", "Capability has been disabled.");
+    }
+    var handleErrorBound = handleError.bind(state);
+    Meteor.call("adminToggleDisableCap", state.get("token"), capId, value, handleErrorBound)
+  }
+
+  Template.adminCaps.events({
+    "click #offer-ipnetwork": function (event) {
+      var state = Iron.controller().state;
+      resetResult(state);
+      state.set("successMessage", "IpNetwork webkey created. See powerbox UI for your webkey.");
+      Meteor.call("offerIpNetwork", this.token, function (err, webkey) {
+        state.set("powerboxOfferUrl", webkey);
+        handleError.call(state, err);
+      });
+      return false; // prevent form from submitting
+    },
+    "click #offer-ipinterface": function (event) {
+      var state = Iron.controller().state;
+      resetResult(state);
+      state.set("successMessage", "IpInterface webkey created. See powerbox UI for your webkey.");
+      Meteor.call("offerIpInterface", this.token, function (err, webkey) {
+        state.set("powerboxOfferUrl", webkey);
+        handleError.call(state, err);
+      });
+      return false; // prevent form from submitting
+    },
+    "click #powerbox-offer-popup-closer": function (event) {
+      var state = Iron.controller().state;
+      return state.set("powerboxOfferUrl", null);
+    },
+    "click .disable-cap": function (event) {
+      var capId = event.target.getAttribute("data-id");
+      var token = ApiTokens.findOne({_id: capId});
+
+      updateCap(capId, !token.revoked);
+    },
+  });
 }
 
 if (Meteor.isServer) {
@@ -811,6 +908,50 @@ if (Meteor.isServer) {
 
       return { sent: true };
     },
+    offerIpNetwork: function (token) {
+      if (!isAdmin()) {
+        if (tokenIsValid(token)) {
+          throw new Meteor.Error(403, "Offering IpNetwork is only allowed for logged in users " +
+            "(a token is not sufficient). Please sign in with an admin account");
+        } else {
+          throw new Meteor.Error(403, "User must be admin.");
+        }
+      }
+
+      var requirements = [{
+        userIsAdmin: Meteor.userId()
+      }];
+      var sturdyRef = waitPromise(saveFrontendRef({ipNetwork: true}, {webkey: null},
+                                  requirements)).sturdyRef;
+      return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
+    },
+    offerIpInterface: function (token) {
+      if (!isAdmin()) {
+        if (tokenIsValid(token)) {
+          throw new Meteor.Error(403, "Offering IpInterface is only allowed for logged in users " +
+            "(a token is not sufficient). Please sign in with an admin account");
+        } else {
+          throw new Meteor.Error(403, "User must be admin.");
+        }
+      }
+
+      var requirements = [{
+        userIsAdmin: Meteor.userId()
+      }];
+      var sturdyRef = waitPromise(saveFrontendRef({ipInterface: true}, {webkey: null},
+                                  requirements)).sturdyRef;
+      return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
+    },
+    adminToggleDisableCap: function (token, capId, value) {
+      checkAuth(token);
+      check(capId, String);
+
+      if (value) {
+        ApiTokens.update({_id: capId}, {$set: {revoked: true}});
+      } else {
+        ApiTokens.update({_id: capId}, {$set: {revoked: false}});
+      }
+    },
     updateQuotas: function (token, list, quota) {
       check(list, String);
       check(quota, Match.OneOf(undefined, null, Number));
@@ -941,5 +1082,13 @@ if (Meteor.isServer) {
 
     // Notify ready.
     this.ready();
+  });
+  Meteor.publish("adminApiTokens", function (token) {
+    if (!(this.userId && isAdminById(this.userId)) && !tokenIsValid(token)) {
+      return [];
+    }
+    return ApiTokens.find({$or: [{"frontendRef.ipNetwork": {$exists: true}},
+                                 {"frontendRef.ipInterface": {$exists: true}}]},
+                          {fields: {frontendRef: 1, created: 1, requirements: 1, revoked: 1}});
   });
 }

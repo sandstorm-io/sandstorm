@@ -37,7 +37,21 @@ ByteStreamConnection.prototype.write = function (data) {
 // expectSize not implemented
 // ByteStreamConnection.prototype.expectSize = function (size) { }
 
-IpInterfaceImpl = function () { };
+function IpInterfaceImpl (parentToken) {
+  this.parentToken = parentToken;
+}
+
+makeIpInterface = function (parentToken, grainId) {
+  return new Capnp.Capability(new IpInterfaceImpl(parentToken), IpRpc.PersistentIpInterface);
+};
+
+IpInterfaceImpl.prototype.save = function (params) {
+  var self = this;
+  return inMeteor(function () {
+    var ret = makeChildTokenInternal(self.parentToken, params.sealFor, []);
+    return {sturdyRef: ret.token};
+  });
+};
 
 IpInterfaceImpl.prototype.listenTcp = function (portNum, port) {
   return new Promise(function (resolve, reject) {
@@ -179,14 +193,37 @@ var addressType = function (address) {
   return type;
 };
 
-IpNetworkImpl = function () { };
+function IpNetworkImpl (parentToken) {
+  this.parentToken = parentToken;
+}
+
+makeIpNetwork = function (parentToken, grainId) {
+  return new Capnp.Capability(new IpNetworkImpl(parentToken), IpRpc.PersistentIpNetwork);
+};
+
+IpNetworkImpl.prototype.save = function (params) {
+  var self = this;
+  return inMeteor(function () {
+    var ret = makeChildTokenInternal(self.parentToken, params.sealFor, []);
+    return {sturdyRef: ret.token};
+  });
+};
 
 IpNetworkImpl.prototype.getRemoteHost = function (address) {
   return {host: new IpRemoteHostImpl(address)};
 };
 
+IpNetworkImpl.prototype.getRemoteHostByName = function (address) {
+  return {host: new IpRemoteHostImpl(address)};
+};
+
 function IpRemoteHostImpl (address) {
-  this.address = addressToString(address);
+  if (address.upper64 || address.upper64 === 0) {
+    // address is an ip.capnp:IpAddress, we need to convert it
+    this.address = addressToString(address);
+  } else {
+    this.address = address;
+  }
 }
 
 IpRemoteHostImpl.prototype.getTcpPort = function (portNum) {

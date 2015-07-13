@@ -33,7 +33,7 @@ var EmailSendPort = EmailRpc.EmailSendPort;
 
 var Url = Npm.require("url");
 
-var ROOT_URL = Url.parse(process.env.ROOT_URL);
+ROOT_URL = Url.parse(process.env.ROOT_URL);
 HOSTNAME = ROOT_URL.hostname;
 
 function SessionContextImpl(grainId, sessionId, userId) {
@@ -62,7 +62,9 @@ SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
         permissions: requiredPermissions
       }
     };
-    checkRequirements([requirement]);
+    if (!checkRequirements([requirement])) {
+      throw new Meteor.Error(403, "Permissions not satisfied.");
+    }
     ApiTokens.update({_id: hashSturdyRef(sturdyRef)}, {$push: {requirements: requirement}});
     Sessions.update({_id: self.sessionId}, {$set: {
       powerboxView: {
@@ -430,32 +432,6 @@ HackSessionContextImpl.prototype.revokeApiToken = function (tokenId) {
       err.nature = "precondition";
       throw err;
     }
-  }).bind(this));
-};
-
-HackSessionContextImpl.prototype.getIpInterface = function () {
-  return inMeteor((function () {
-    var grain = Grains.findOne(this.grainId, {fields: {userId: 1}});
-    var user = Meteor.users.findOne(grain.userId);
-
-    if (!user.isAdmin) {
-      throw new Error("This grain's owner does not have adequate permissions to call getIpInterface");
-    }
-
-    return {interface: new IpInterfaceImpl()};
-  }).bind(this));
-};
-
-HackSessionContextImpl.prototype.getIpNetwork = function () {
-  return inMeteor((function () {
-    var grain = Grains.findOne(this.grainId, {fields: {userId: 1}});
-    var user = Meteor.users.findOne(grain.userId);
-
-    if (!user.isAdmin) {
-      throw new Error("This grain's owner does not have adequate permissions to call getIpInterface");
-    }
-
-    return {network: new IpNetworkImpl()};
   }).bind(this));
 };
 

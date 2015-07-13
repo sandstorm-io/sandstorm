@@ -24,8 +24,8 @@ var Promise = Npm.require("es6-promise").Promise;
 var HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 var DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
     Url.parse(process.env.DDP_DEFAULT_CONNECTION_URL).hostname;
-var CACHE_TTL = 30 * 1000;  // 30 seconds
-var DNS_CACHE_TTL = CACHE_TTL;
+var CACHE_TTL_SECONDS = 30;  // 30 seconds.  Cache-Control expects units of seconds, not millis.
+var DNS_CACHE_TTL = CACHE_TTL_SECONDS * 1000; // DNS cache is in millis.
 
 var staticHandlers = {};
 // Maps grain public IDs to Connect handlers.
@@ -76,7 +76,7 @@ function wwwHandlerForGrain(grainId) {
           response.writeHead(200, {
             "Content-Length": size,
             "Content-Type": type,
-            "Cache-Control": "public, max-age=" + CACHE_TTL
+            "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS
           });
         }
       },
@@ -85,7 +85,7 @@ function wwwHandlerForGrain(grainId) {
           started = true;
           response.writeHead(200, {
             "Content-Type": type,
-            "Cache-Control": "public, max-age=" + CACHE_TTL
+            "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS
           });
         }
         response.write(data);
@@ -96,7 +96,7 @@ function wwwHandlerForGrain(grainId) {
           response.writeHead(200, {
             "Content-Length": 0,
             "Content-Type": type,
-            "Cache-Control": "public, max-age=" + CACHE_TTL
+            "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS
           });
         }
         sawEnd = true;
@@ -129,7 +129,7 @@ function wwwHandlerForGrain(grainId) {
             response.writeHead(303, {
               "Content-Type": "text/plain",
               "Location": "/" + path + "/",
-              "Cache-Control": "public, max-age=" + CACHE_TTL
+              "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS
             });
             response.end("redirect: /" + path + "/");
           }

@@ -1,3 +1,15 @@
+### v0.95 (2015-07-11)
+- Reverted "loading" spinner because it interacted badly with the "reveal your identity?" interstitial.
+
+### v0.94 (2015-07-11)
+- Oasis: Storage usage and quota is now tracked and enforced.
+- We now display a spinner when apps are slow to start up. (But we are working on making apps start faster!)
+- Offer templates now work for anonymous users, and the tokens do not expire as long as the template is still displayed.
+- Long admin alerts should now avoid covering the top bar controls.
+- When copy/pasting a token for email login, whitespace is now ignored.
+- When restoring a backup fails, we now delete the just-unpacked data rather than leak the story.
+- Fixes and improvements to sharing implementation details.
+
 ### v0.93 (2015-07-06)
 - Grain logs can now be viewed even when the grain has died.
 - The RoleAssignments table was merged into the ApiTokens table. This should have no visible effect but is a major implementation change in sharing.

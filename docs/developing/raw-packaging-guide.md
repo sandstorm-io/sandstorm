@@ -1,13 +1,11 @@
 # Raw packaging guide
 
-This tutorial will show you how to package an app for
-[Sandstorm](https://sandstorm.io) in five minutes, using the raw `spk`
-tooling.
+This tutorial will show you how to package an app for Sandstorm using
+the raw `spk` tooling, helping you understand Sandstorm at a deeper
+level.
 
-**Note:** This tutorial skips the `vagrant-spk` conveniences, which
-means that others will have difficulty rebuilding your package. We
-recommend using `vagrant-spk`; this tutorial exists to illuminate the
-inner workings.
+**Note:** If you're new to Sandstorm packaging, please read the [Five
+minute packaging tutorial](../vagrant-spk/packaging-tutorial.md) first!
 
 A Sandstorm application package includes the entire userspace needed
 to run your app, including all binaries, libraries, modules,

@@ -47,7 +47,7 @@ By default, Sandstorm runs each app instance with no network
 access. Read these documents to configure an app to get access to
 services on the Internet or to each other.
 
-* **Supported protocol**: [SMTP (email)](https://github.com/sandstorm-io/sandstorm/wiki/Using-Email-From-Your-Sandstorm-App)
+* **Supported protocol**: [SMTP (email)](developing/email-from-apps.md)
 * **Other protocols**: Work in progress.
 * **Inter-app communication**: Work in progress.
 

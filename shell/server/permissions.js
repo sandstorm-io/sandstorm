@@ -303,17 +303,16 @@ downstreamTokens = function(root) {
 
   ApiTokens.find({grainId: grainId, revoked: {$ne: true}}).forEach(function (token) {
     tokensById[token._id] = token;
-    if (token.userId) {
-      if (!tokensBySharer[token.userId]) {
-        tokensBySharer[token.userId] = [];
-      }
-      tokensBySharer[token.userId].push(token);
-    }
     if (token.parentToken) {
       if (!tokensByParent[token.parentToken]) {
         tokensByParent[token.parentToken] = [];
       }
       tokensByParent[token.parentToken].push(token);
+    } else if (token.userId) {
+      if (!tokensBySharer[token.userId]) {
+        tokensBySharer[token.userId] = [];
+      }
+      tokensBySharer[token.userId].push(token);
     }
   });
 

@@ -42,15 +42,17 @@ limitations under the License.
   {{else}}
   <div id="topbar-right">
     {{#with adminAlert}}
-      <div id="admin-alert-closer" data-show="{{showTopbar}}"></div>
-      <span id="admin-alert" data-show="{{showTopbar}}">
-        {{#if alertUrl}}
-          <a href="{{alertUrl}}" class="alert {{className}}">{{text}}</a>
-        {{else}}
-          <div class="alert {{className}}">{{text}}</div>
-        {{/if}}
+      <span id="admin-alert-box" class="{{#if adminAlertIsTooLarge}}small{{/if}}">
+        <div id="admin-alert-closer" data-show="{{showTopbar}}"></div>
+        <span id="admin-alert" data-show="{{showTopbar}}">
+          {{#if alertUrl}}
+            <a href="{{alertUrl}}" class="alert {{className}}">{{text}}</a>
+          {{else}}
+            <div class="alert {{className}}">{{text}}</div>
+          {{/if}}
+        </span>
+        <span id="admin-alert-icon">!</span>
       </span>
-      <span id="admin-alert-icon">!</span>
     {{/with}}
     {{#if currentUser}}
       {{> notifications}}
@@ -606,19 +608,30 @@ limitations under the License.
       <p>This will create a link and send it in an e-mail. <code>$KEY</code> will be replaced
         with the newly-generated link.</p>
       <div style="text-align: right; margin-top: 1em;">
-      <p>From: <input type="text" id="invite-from" placeholder="me@example.com" value="{{email}}"></p>
-      <p>To:
-      <textarea id="invite-emails" placeholder="E-mail addresses, one per line."></textarea></p>
-      <p>Subject: <input type="text" id="invite-subject" value="Join my Sandstorm server!"></p>
-      <p>Body:
-      <textarea id="invite-message">Click on the following link to get access to my Sandstorm.io server.
+        <p>From: <input type="text" id="invite-from" placeholder="me@example.com" value="{{email}}"></p>
+        <p>To:
+        <textarea id="invite-emails" placeholder="E-mail addresses, one per line."></textarea></p>
+        <p>Subject: <input type="text" id="invite-subject" value="Join my Sandstorm server!"></p>
+        <p>Body:
+        <textarea id="invite-message">Click on the following link to get access to my Sandstorm.io server.
 
-$KEY</textarea></p>
-      {{#if quotaEnabled}}
-        <p>Quota: <input id="invite-quota" type="text" placeholder="(bytes; blank for none)"></p>
-      {{/if}}
-      <p><button id="send">Send</button></p>
+  $KEY</textarea></p>
+        {{#if quotaEnabled}}
+          <p>Quota: <input id="invite-quota" type="text" placeholder="(bytes; blank for none)"></p>
+        {{/if}}
+        <p><button id="send">Send</button></p>
       </div>
+
+      {{#if quotaEnabled}}
+        <h3>Update quotas:</h3>
+        <p>You can batch modify existing users' quotas by specifying the e-mail address under which they were invited. This only works for user who were invited using the "Send an e-mail" form, above.</p>
+        <div style="text-align: right; margin-top: 1em;">
+          <p>Emails:
+          <textarea id="set-quota-emails" placeholder="E-mail addresses, one per line."></textarea></p>
+          <p>Quota: <input id="set-quota-quota" type="text" placeholder="(bytes; blank for none)"></p>
+          <p><button id="set-quota-submit">Update</button></p>
+        </div>
+      {{/if}}
     {{/if}}
     {{/if}}
     {{/if}}
@@ -784,7 +797,7 @@ $KEY</textarea></p>
        <input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login<br>
       <span class="details">Choose which services users may use to identify themselves. Anyone can log in, but only users you {{#linkTo route="adminInvites" data=getToken}}invite{{/linkTo}} will be able to install apps or create files.</span></p>
     <p>SMTP Url: <input id="smptUrl" type="text" name="smtpUrl" value="{{smtpUrl}}"><button id="admin-settings-send-toggle">Test</button><br>
-      <span class="details">Address of an SMTP (email) server, like <code>smtp://user:pass@host:port</code>. This will be used by email apps and to send {{#linkTo route="adminInvites" data=getToken}}email invites{{/linkTo}}.</span>
+      <span class="details">Address of an SMTP relay server, like <code>smtp://user:pass@host:port</code>, which will be used by email apps and to send {{#linkTo route="adminInvites" data=getToken}}email invites{{/linkTo}}. The SMTP server should be configured to allow sending email from your Sandstorm domain and from email addresses that will be used to send invites.</span>
     </p>
     {{#if isEmailTestActive}}
       <p>

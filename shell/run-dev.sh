@@ -64,7 +64,8 @@ cat > $SETTINGS << __EOF__
     "allowDemoAccounts": true,
     "allowDevAccounts": true,
     "isTesting": true,
-    "wildcardHost": "$WILDCARD_HOST"
+    "wildcardHost": "$WILDCARD_HOST",
+    "quotaEnabled": ${QUOTA_ENABLED:-false}
   },
   "home": "$SANDSTORM_HOME"
 }

@@ -44,7 +44,7 @@ using Util = import "util.capnp";
 using SystemPersistent = import "supervisor.capnp".SystemPersistent;
 using PowerboxCapability = import "grain.capnp".PowerboxCapability;
 
-interface IpNetwork extends(PowerboxCapability) {
+interface IpNetwork {
   # Capability to connect or send messages to arbitrary destinations on an IP network.
   #
   # A driver app can request this from the Powerbox in order to request "full outbound network
@@ -77,7 +77,7 @@ struct IpAddress {
   #     dest.setUpper64(0);
 }
 
-interface IpInterface extends(PowerboxCapability) {
+interface IpInterface {
   # Capability to accept connections / messages on a particular network interface.
   #
   # In practice this could represent a single physical network interface, a single local IP
@@ -97,7 +97,7 @@ interface IpInterface extends(PowerboxCapability) {
   # sent to the port.
 }
 
-interface IpRemoteHost extends(PowerboxCapability) {
+interface IpRemoteHost {
   # Capability to connect / send messages to a particular remote host accessed over an IP network.
   #
   # A driver app can request this form the Powerbox in order to request "permission to connect to
@@ -114,7 +114,7 @@ interface IpRemoteHost extends(PowerboxCapability) {
   getUdpPort @1 (portNum :UInt16) -> (port :UdpPort);
 }
 
-interface TcpPort extends(PowerboxCapability) {
+interface TcpPort {
   # Capability to connect to a remote network port.
   #
   # An application may request a TcpPort from the Powerbox in order to request permission to
@@ -133,7 +133,7 @@ interface TcpPort extends(PowerboxCapability) {
   # bytes via pipelining immediately.
 }
 
-interface UdpPort extends(PowerboxCapability) {
+interface UdpPort {
   # Like `TcpPort` but for datagrams.
 
   send @0 (message :Data, returnPort :UdpPort);

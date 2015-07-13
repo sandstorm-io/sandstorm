@@ -552,6 +552,31 @@ if (Meteor.isClient) {
       });
     },
 
+    "click #set-quota-submit": function (event) {
+      var state = Iron.controller().state;
+      var list = document.getElementById("set-quota-emails").value;
+      var quotaInput = document.getElementById("set-quota-quota");
+      var quota;
+      if (quotaInput && quotaInput.value.trim() !== "") {
+        quota = parseInt(quotaInput.value);
+      }
+
+      var updateButton = event.currentTarget;
+      updateButton.disabled = true;
+      var oldContent = updateButton.textContent;
+      updateButton.textContent = "Updating...";
+
+      Meteor.call("updateQuotas", state.get("token"), list, quota, function (error, results) {
+        updateButton.disabled = false;
+        updateButton.textContent = oldContent;
+        if (error) {
+          state.set("inviteMessage", { error: error.toString() });
+        } else {
+          document.getElementById("set-quota-emails").value = "";
+        }
+      });
+    },
+
     "click .autoSelect": function (event) {
       event.currentTarget.select();
     },
@@ -579,6 +604,10 @@ if (Meteor.isClient) {
     url: function () {
       var res = Iron.controller().state.get("inviteMessage");
       return res && res.url;
+    },
+    sent: function () {
+      var res = Iron.controller().state.get("inviteMessage");
+      return res && res.sent;
     },
   });
   var maybeScrollLog = function() {
@@ -883,7 +912,7 @@ if (Meteor.isServer) {
       if (!isAdmin()) {
         if (tokenIsValid(token)) {
           throw new Meteor.Error(403, "Offering IpNetwork is only allowed for logged in users " +
-            "(a token is not sufficient). Please sign in with an admin account")
+            "(a token is not sufficient). Please sign in with an admin account");
         } else {
           throw new Meteor.Error(403, "User must be admin.");
         }
@@ -900,7 +929,7 @@ if (Meteor.isServer) {
       if (!isAdmin()) {
         if (tokenIsValid(token)) {
           throw new Meteor.Error(403, "Offering IpInterface is only allowed for logged in users " +
-            "(a token is not sufficient). Please sign in with an admin account")
+            "(a token is not sufficient). Please sign in with an admin account");
         } else {
           throw new Meteor.Error(403, "User must be admin.");
         }
@@ -921,6 +950,31 @@ if (Meteor.isServer) {
         ApiTokens.update({_id: capId}, {$set: {revoked: true}});
       } else {
         ApiTokens.update({_id: capId}, {$set: {revoked: false}});
+      }
+    },
+    updateQuotas: function (token, list, quota) {
+      check(list, String);
+      check(quota, Match.OneOf(undefined, null, Number));
+      checkAuth(token);
+
+      if (!list.trim()) {
+        throw new Meteor.Error(400, "Must enter addresses.");
+      }
+
+      list = list.split("\n");
+      var invalid = [];
+      for (var i in list) {
+        var modifier = (typeof quota === "number") ? {$set: {quota: quota}}
+                                                   : {$unset: {quota: ""}};
+        var n = SignupKeys.update({email: list[i]}, modifier, {multi: true});
+        n += Meteor.users.update({signupEmail: list[i]}, modifier, {multi: true});
+
+        if (n < 1) invalid.push(list[i]);
+      }
+
+      if (invalid.length > 0) {
+        throw new Meteor.Error(404, "These addresses did not map to any user nor invite: " +
+            invalid.join(", "));
       }
     }
   });

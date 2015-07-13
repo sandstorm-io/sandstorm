@@ -486,6 +486,11 @@ if (Meteor.isClient) {
     powerboxOfferUrl: function () {
       var session = Sessions.findOne({_id: this.sessionId}, {fields: {powerboxView: 1}});
       return session && session.powerboxView && session.powerboxView.offer;
+    },
+
+    hasLoaded: function () {
+      var session = Sessions.findOne({_id: this.sessionId}, {fields: {hasLoaded: 1}});
+      return session.hasLoaded;
     }
   });
 

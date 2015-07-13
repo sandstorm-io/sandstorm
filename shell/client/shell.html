@@ -459,21 +459,14 @@ limitations under the License.
   {{/if}}
 
   <div id="app" class="main-content">
-    <!-- This is a terrible hack to center this thing. The styles shold go in css, but it's
-      arguably more confusing to put them there when all they're doing is this archaic pattern to
-      get a horizontally+vertically centered div -->
-    <div id="grain-loading-spinner" class="{{#if hasLoaded}}hide{{/if}}">
-      <div style="display:table-cell;vertical-align:middle;">
-        <div style="margin-left:auto;margin-right:auto;text-align:center;">
-          <img src="/spinner_96.gif" alt="loading">
-        </div>
-      </div>
-    </div>
     {{#if error}}
       <pre>{{error}}</pre>
     {{else}}
     {{#if appOrigin}}
       <iframe id="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{path}}{{hash}}"></iframe>
+      {{#if hasNotLoaded}}
+        {{> _grainSpinner}}
+      {{/if}}
     {{else}}
     {{#if interstitial}}
       <div class="interstitial-button-box">
@@ -482,10 +475,23 @@ limitations under the License.
         <button id="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
       </div>
     {{else}}
-      <p>Loading app...</p>
+      {{> _grainSpinner}}
     {{/if}}
     {{/if}}
     {{/if}}
+  </div>
+</template>
+
+<template name="_grainSpinner">
+  <!-- This is a terrible hack to center this thing. The styles shold go in css, but it's
+    arguably more confusing to put them there when all they're doing is this archaic pattern to
+    get a horizontally+vertically centered div -->
+  <div id="grain-loading-spinner">
+    <div style="display:table-cell;vertical-align:middle;">
+      <div style="margin-left:auto;margin-right:auto;text-align:center;">
+        <img src="/spinner_96.gif" alt="loading">
+      </div>
+    </div>
   </div>
 </template>
 

@@ -614,11 +614,6 @@ svg {
   position: absolute;
   width: 100%;
   height: 100%;
-  z-index: 1000;
-}
-
-#grain-loading-spinner.hide {
-  display: none;
 }
 
 #api-token-popup {

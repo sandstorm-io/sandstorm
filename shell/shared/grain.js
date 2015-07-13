@@ -488,9 +488,9 @@ if (Meteor.isClient) {
       return session && session.powerboxView && session.powerboxView.offer;
     },
 
-    hasLoaded: function () {
+    hasNotLoaded: function () {
       var session = Sessions.findOne({_id: this.sessionId}, {fields: {hasLoaded: 1}});
-      return session.hasLoaded;
+      return !session.hasLoaded;
     }
   });
 

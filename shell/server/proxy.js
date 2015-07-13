@@ -577,19 +577,16 @@ Meteor.startup(function () {
 var proxiesByApiToken = {};
 
 Meteor.startup(function() {
-  function clearApiProxies (grainId) {
-    ApiTokens.find({grainId: grainId}).forEach(function(apiToken) {
-      delete proxiesByApiToken[apiToken._id];
-    });
-  }
-
-  function clearDownstreamSessions (token) {
-    // Clear all sessions owned by `userId` or anyone downstream in the sharing graph.
-    // TODO(soon): Only clear sessions for which the permissions have changed.
+  function clearSessionsAndProxies (token) {
+    // Clears all sessions and API proxies associated with `token` or any token that is downstream
+    // in the sharing graph.
+    // TODO(soon): Only clear sessions and proxies for which the permissions have changed.
     var downstream = downstreamTokens({token: token});
+    downstream.push(token);
     var users = [];
     var tokenIds = [];
     downstream.forEach(function (token) {
+      delete proxiesByApiToken[token._id];
       tokenIds.push(token._id);
       if (token.owner && token.owner.user){
         users.push(token.owner.user.userId);
@@ -603,7 +600,9 @@ Meteor.startup(function() {
     changed: function (newGrain, oldGrain) {
       if (oldGrain.private != newGrain.private) {
         Sessions.remove({grainId: oldGrain._id, userId: {$ne: oldGrain.userId}});
-        clearApiProxies(oldGrain._id);
+        ApiTokens.find({grainId: oldGrain._id}).forEach(function(apiToken) {
+          delete proxiesByApiToken[apiToken._id];
+        });
       }
     },
   });
@@ -624,14 +623,12 @@ Meteor.startup(function() {
     changed : function (newApiToken, oldApiToken) {
       if (!_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
           !_.isEqual(newApiToken.revoked, oldApiToken.revoked)) {
-        clearDownstreamSessions(newApiToken);
-        clearApiProxies(newApiToken.grainId);
+        clearSessionsAndProxies(newApiToken);
       }
     },
 
     removed: function (oldApiToken) {
-      clearDownstreamSessions(oldApiToken);
-      clearApiProxies(oldApiToken.grainId);
+      clearSessionsAndProxies(oldApiToken);
     }
   });
 });

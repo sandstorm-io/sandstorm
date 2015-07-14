@@ -1082,6 +1082,9 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
       vertex = {grain: {_id: self.grainId, userId: self.userId}};
     }
     var permissions = grainPermissions(vertex, viewInfo);
+    if (!permissions) {
+      throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
+    }
     Sessions.update({_id: self.sessionId},
                     {$set : {"viewInfo": viewInfo, "permissions": permissions}});
     return permissions;

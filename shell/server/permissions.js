@@ -194,7 +194,8 @@ function collectEdges(vertex) {
 }
 
 grainPermissions = function(vertex, viewInfo) {
-  // Computes the permissions of a vertex.
+  // Computes the permissions of a vertex. If the vertex is not allowed to open the grain,
+  // returns null. Otherwise, returns an array of bools representing the permissions held.
   var edges = collectEdges(vertex);
   if (edges.openerIsOwner) {
     return roleAssignmentPermissions({allAccess: null}, viewInfo).array;
@@ -205,7 +206,7 @@ grainPermissions = function(vertex, viewInfo) {
     return roleAssignmentPermissions({none: null}, viewInfo).array;
   }
   if (edges.grainDoesNotExist || !edges.terminalEdge || edges.disallowedAnonymousAccess) {
-    return [];
+    return null;
   }
 
   var openerUserId = edges.terminalEdge.sharer;
@@ -216,7 +217,6 @@ grainPermissions = function(vertex, viewInfo) {
   // Keeps track of the permissions that the opener receives from each user. The final result of
   // our computation will be stored in permissionsMap[owner].
 
-  permissionsMap[owner] = new PermissionSet();
   var userStack = [openerUserId];
 
   var openerAttenuation = roleAssignmentPermissions({allAccess: null}, viewInfo);
@@ -249,7 +249,11 @@ grainPermissions = function(vertex, viewInfo) {
       });
     }
   }
-  return permissionsMap[owner].array;
+  if (permissionsMap[owner]) {
+    return permissionsMap[owner].array;
+  } else {
+    return null;
+  }
 }
 
 mayOpenGrain = function(vertex) {

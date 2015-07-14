@@ -25,3 +25,4 @@ pages:
     - "Email": "administering/email.md"
     - "Demo mode": "administering/demo.md"
     - "Backups": "administering/backups.md"
+    - "Wildcard hosts": "administering/wildcard.md"

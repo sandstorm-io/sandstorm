@@ -16,6 +16,7 @@ pages:
     - "Code dependencies": "vagrant-spk/code-dependencies.md"
     - "Services": "vagrant-spk/services.md"
     - "Raw packaging guide": "developing/raw-packaging-guide.md"
+    - "Web publishing": "developing/web-publishing.md"
     - "Email from apps": "developing/email-from-apps.md"
     - "vagrant-spk design document": "vagrant-spk/design.md"
 - Admistering:

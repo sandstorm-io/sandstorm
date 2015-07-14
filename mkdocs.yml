@@ -24,3 +24,4 @@ pages:
     - "Installation": "install.md"
     - "Email": "administering/email.md"
     - "Demo mode": "administering/demo.md"
+    - "Backups": "administering/backups.md"

@@ -148,9 +148,12 @@ checkRequirements = function (requirements) {
       }
     } else if (requirement.permissionsHeld) {
       var p = requirement.permissionsHeld;
+      var vertex = {grain: {_id: p.grainId, userId: p.userId}};
+      if (!mayOpenGrain(vertex)) {
+        return false;
+      }
       var viewInfo = Grains.findOne(p.grainId, {fields: {cachedViewInfo: 1}}).cachedViewInfo;
-      var currentPermissions = grainPermissions({grain: {_id: p.grainId, userId: p.userId}},
-                                                viewInfo || {});
+      var currentPermissions = grainPermissions(vertex, viewInfo || {});
       for (var ii = 0; ii < p.permissions.length; ++ii) {
         if (p.permissions[ii] && !currentPermissions[ii]) {
           return false;

@@ -1,3 +1,10 @@
+### v0.96 (2015-07-14)
+- Loading spinner is back, hopefully non-buggy this time.
+- Fixed regression in web publishing that caused sites to be cached for 30000 seconds instead of the intended 30 seconds.
+- Refactored sharing permissions computation.
+- Introduced admin UI for creating raw IP networking capabilities, which can be passed into apps.
+- Offer templates can now specify that the offered token is meant to be used by users other than the creating user, like sharing tokens.
+
 ### v0.95 (2015-07-11)
 - Reverted "loading" spinner because it interacted badly with the "reveal your identity?" interstitial.
 

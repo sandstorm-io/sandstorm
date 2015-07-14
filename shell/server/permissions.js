@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-PermissionSet = function (array) {
+function PermissionSet(array) {
   // A wrapper around an array of booleans.
 
   if (!array) {
@@ -102,75 +102,128 @@ function roleAssignmentPermissions(roleAssignment, viewInfo) {
   return result;
 }
 
-function collectEdgesByRecipient(grainId) {
-  // Collects chains of `parentToken` UiView tokens into direct user-to-user edges that are
-  // more convenient for permissions computations. Returns a map where the keys are IDs of
-  // recipient users and the values are lists of objects of the form
-  // `{sharer: <userId>, roleAssignments: <list of role assignments>}`.
-  // The role assignments should be applied in sequence to compute the set of permissions that
-  // flow to a recipient from a sharer.
+function collectEdges(vertex) {
+  // Given a vertex in the sharing graph in the format specified by the `check()` invocation below,
+  // collects the data needed for permissions computations pertaining to that vertex. There are four
+  // self-explanatory special cases for the return value. In order of decreasing precedence, they
+  // are: `{grainDoesNotExist: true}`, `{openerIsOwner: true}`, `{grainIsPublic: true}`, and
+  // `{disallowedAnonymousAccess: true}`. In all other cases, this function returns an object
+  // of the form: `{owner: <userId>, edgesByRecipient: <object>, terminalEdge: Maybe(<object>)}`.
+  // The `owner` field indicates the user who owns the grain. The `edgesByRecipient` field is a map
+  // that coalesces chains of `parentToken` UiView tokens into direct user-to-user edges; its keys
+  // are IDs of recipient users and ites values are lists of "edge" objects of the form
+  // `{sharer: <userId>, roleAssignments: <list of role assignments>}`.  The role assignments
+  // should be applied in sequence to compute the set of permissions that flow to a recipient from
+  // a sharer. The `terminalEdge` field is an edge object representing the link to `vertex` from
+  // the nearest user in the sharing graph. If `vertex` is already a user, then this edge is
+  // trivial and its `roleAssignments` field is an empty list. If `terminalEdge` is not present,
+  // then there is no such link.
   //
   // TODO(someday): Once UiView tokens can have membrane requirements, we'll need to account for
   // them in this computation.
+  check(vertex,
+        Match.OneOf({token: Match.ObjectIncluding({_id: String, grainId: String})},
+                    {grain: Match.ObjectIncluding({_id: String,
+                                                   userId: Match.OneOf(String, null, undefined)})}));
 
-  var edgesByRecipient = {};
+  var grainId;
+  if (vertex.token) {
+    grainId = vertex.token.grainId;
+  } else if (vertex.grain) {
+    grainId = vertex.grain._id;
+  }
+  var grain = Grains.findOne(grainId);
+  if (!grain) {
+    return {grainDoesNotExist: true};
+  }
+
+  if (vertex.grain && grain.userId === vertex.grain.userId) {
+    return {openerIsOwner: true};
+  }
+
+  if (!grain.private) {
+    return {grainIsPublic: true};
+  } else if (vertex.grain && !vertex.grain.userId) {
+    return {disallowedAnonymousAccess: true};
+  }
+
+  var result = {edgesByRecipient: {}, owner: grain.userId};
   var tokensById = {};
   ApiTokens.find({grainId: grainId, revoked: {$ne: true}}).forEach(function(token) {
     tokensById[token._id] = token;
   });
+
+  function computeEdge(token) {
+    var roleAssignments = [];
+    var curToken = token;
+    while (curToken && curToken.parentToken) {
+      // For a `parentToken` provider, no role assignment means don't attenuate.
+      if (curToken.roleAssignment) {
+        roleAssignments.push(curToken.roleAssignment);
+      }
+      curToken = tokensById[curToken.parentToken];
+    }
+    if (curToken && curToken.grainId && curToken.userId) {
+      roleAssignments.push(curToken.roleAssignment);
+      return {sharer: curToken.userId, roleAssignments: roleAssignments};
+    } else {
+      return;
+    }
+  }
+
+  if (vertex.token) {
+    result.terminalEdge = computeEdge(vertex.token);
+  } else if (vertex.grain) {
+    result.terminalEdge = {sharer: vertex.grain.userId, roleAssignments: []};
+  }
+
   for (var id in tokensById) {
     var token = tokensById[id];
-    var roleAssignments = [];
     if (Match.test(token.owner, {user: Match.Any})) {
-      var curToken = token;
-      while (curToken && curToken.parentToken) {
-        // For a `parentToken` provider, no role assignment means don't attenuate.
-        if (curToken.roleAssignment) {
-          roleAssignments.push(curToken.roleAssignment);
+      var edge = computeEdge(token);
+      if (edge) {
+        var recipient = token.owner.user.userId ;
+        if (!result.edgesByRecipient[recipient]) {
+          result.edgesByRecipient[recipient] = [];
         }
-        curToken = tokensById[curToken.parentToken];
-      }
-      if (curToken && curToken.grainId && curToken.userId) {
-        roleAssignments.push(curToken.roleAssignment);
-        var recipient = token.owner.user.userId;
-        var edge = {sharer: curToken.userId, roleAssignments: roleAssignments}
-        if (!edgesByRecipient[recipient]) {
-          edgesByRecipient[recipient] = [];
-        }
-        edgesByRecipient[recipient].push(edge);
+        result.edgesByRecipient[recipient].push(edge);
       }
     }
   }
-  return edgesByRecipient;
+  return result;
 }
 
-function grainPermissionsInternal(grainId, openerUserId, viewInfo) {
-  // Computes the permissions of a user who is opening a grain.
-
-  var grain = Grains.findOne(grainId);
-
-  var owner = grain.userId;
-  if (openerUserId === owner) {
-    // Optimization: return early in this easy and common case.
-    return roleAssignmentPermissions({allAccess: null}, viewInfo);
+grainPermissions = function(vertex, viewInfo) {
+  // Computes the permissions of a vertex. If the vertex is not allowed to open the grain,
+  // returns null. Otherwise, returns an array of bools representing the permissions held.
+  var edges = collectEdges(vertex);
+  if (edges.openerIsOwner) {
+    return roleAssignmentPermissions({allAccess: null}, viewInfo).array;
   }
-
-  if (!grain.private) {
+  if (edges.grainIsPublic) {
     // Grains using the old sharing model always share the default role to anyone who has the
     // grain URL.
-    return roleAssignmentPermissions({none: null}, viewInfo);
+    return roleAssignmentPermissions({none: null}, viewInfo).array;
+  }
+  if (edges.grainDoesNotExist || !edges.terminalEdge || edges.disallowedAnonymousAccess) {
+    return null;
   }
 
-  if (!openerUserId) { return new PermissionSet(); }
+  var openerUserId = edges.terminalEdge.sharer;
+  var edgesByRecipient = edges.edgesByRecipient;
+  var owner = edges.owner;
+
   var permissionsMap = {};
   // Keeps track of the permissions that the opener receives from each user. The final result of
   // our computation will be stored in permissionsMap[owner].
 
-  permissionsMap[openerUserId] = roleAssignmentPermissions({allAccess: null}, viewInfo);
-  permissionsMap[owner] = new PermissionSet();
-
   var userStack = [openerUserId];
-  var edgesByRecipient = collectEdgesByRecipient(grainId);
+
+  var openerAttenuation = roleAssignmentPermissions({allAccess: null}, viewInfo);
+  edges.terminalEdge.roleAssignments.forEach(function(roleAssignment) {
+    openerAttenuation.intersect(roleAssignmentPermissions(roleAssignment, viewInfo));
+  });
+  permissionsMap[openerUserId] = openerAttenuation;
 
   while (userStack.length > 0) {
     var recipient = userStack.pop();
@@ -196,38 +249,35 @@ function grainPermissionsInternal(grainId, openerUserId, viewInfo) {
       });
     }
   }
-
-  return permissionsMap[owner];
+  if (permissionsMap[owner]) {
+    return permissionsMap[owner].array;
+  } else {
+    return null;
+  }
 }
 
-apiTokenPermissions = function (token, viewInfo) {
-  var result = grainPermissionsInternal(token.grainId, token.userId, viewInfo);
-  var edge = roleAssignmentPermissions(token.roleAssignment, viewInfo);
-  result.intersect(edge);
-  return result.array;
-}
+mayOpenGrain = function(vertex) {
+  // Determines whether the vertex is allowed to open the grain by searching depth first
+  // for a path of active role assignments leading from the grain owner to the vertex.
 
-grainPermissions = function (grainId, userId, viewInfo) {
-  return grainPermissionsInternal(grainId, userId, viewInfo).array;
-}
-
-mayOpenGrain = function(grainId, userId) {
-  // Determines whether the user is allowed to open the grain by searching depth first
-  // for a path of active role assignments leading from the grain owner to the user.
-
-  var grain = Grains.findOne(grainId);
-  if (!grain) { return false; }
-  if (!grain.private) { return true; }
-  if (!userId) { return false; }
-  var owner = grain.userId;
-  if (userId == owner) {
+  var edges = collectEdges(vertex);
+  if (edges.grainDoesNotExist || edges.disallowedAnonymousAccess) {
+    return false;
+  }
+  if (edges.openerIsOwner || edges.grainIsPublic) {
+    return true;
+  }
+  var edgesByRecipient = edges.edgesByRecipient;
+  var owner = edges.owner;
+  if (!edges.terminalEdge) { return false; }
+  if (owner == edges.terminalEdge.sharer) {
     return true;
   }
 
+  var openerUserId = edges.terminalEdge.sharer;
   var stackedUsers = {};
-  stackedUsers[userId] = true;
-  var userStack = [userId];
-  var edgesByRecipient = collectEdgesByRecipient(grainId);
+  stackedUsers[openerUserId] = true;
+  var userStack = [openerUserId];
 
   while (userStack.length > 0) {
     var recipient = userStack.pop();

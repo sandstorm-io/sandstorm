@@ -468,6 +468,10 @@ if (Meteor.isClient) {
       return Meteor.userId() || !this.oldSharingModel;
     },
 
+    displayToken: function() {
+      return !this.revoked && !this.expiresIfUnused && !this.parentToken;
+    },
+
     path: function () {
       var originalPath = Template.instance().originalPath;
       var grainPath = originalPath.slice(this.rootPath.length);
@@ -486,6 +490,11 @@ if (Meteor.isClient) {
     powerboxOfferUrl: function () {
       var session = Sessions.findOne({_id: this.sessionId}, {fields: {powerboxView: 1}});
       return session && session.powerboxView && session.powerboxView.offer;
+    },
+
+    hasNotLoaded: function () {
+      var session = Sessions.findOne({_id: this.sessionId}, {fields: {hasLoaded: 1}});
+      return !session.hasLoaded;
     }
   });
 

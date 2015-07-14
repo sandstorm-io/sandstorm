@@ -142,7 +142,7 @@ Meteor.methods({
     // running.
 
     check(grainId, String);
-    if (!mayOpenGrain(grainId, this.userId)) {
+    if (!mayOpenGrain({grain: {_id: grainId, userId: this.userId}})) {
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
@@ -194,7 +194,7 @@ Meteor.methods({
       }
       return {redirectToGrain: apiToken.grainId};
     } else {
-      if (!mayOpenGrain(apiToken.grainId, apiToken.userId)) {
+      if (!mayOpenGrain({token: apiToken})) {
         throw new Meteor.Error(403, "Unauthorized",
                                "User is not authorized to open this grain.");
       }
@@ -290,7 +290,8 @@ function openSessionInternal(grainId, user, title, apiToken) {
     grainId: grainId,
     hostId: proxy.hostId,
     timestamp: new Date().getTime(),
-  }
+    hasLoaded: false,
+  };
 
   if (userId) {
     session.userId = userId;
@@ -577,19 +578,16 @@ Meteor.startup(function () {
 var proxiesByApiToken = {};
 
 Meteor.startup(function() {
-  function clearApiProxies (grainId) {
-    ApiTokens.find({grainId: grainId}).forEach(function(apiToken) {
-      delete proxiesByApiToken[apiToken._id];
-    });
-  }
-
-  function clearDownstreamSessions (token) {
-    // Clear all sessions owned by `userId` or anyone downstream in the sharing graph.
-    // TODO(soon): Only clear sessions for which the permissions have changed.
+  function clearSessionsAndProxies (token) {
+    // Clears all sessions and API proxies associated with `token` or any token that is downstream
+    // in the sharing graph.
+    // TODO(soon): Only clear sessions and proxies for which the permissions have changed.
     var downstream = downstreamTokens({token: token});
+    downstream.push(token);
     var users = [];
     var tokenIds = [];
     downstream.forEach(function (token) {
+      delete proxiesByApiToken[token._id];
       tokenIds.push(token._id);
       if (token.owner && token.owner.user){
         users.push(token.owner.user.userId);
@@ -603,7 +601,9 @@ Meteor.startup(function() {
     changed: function (newGrain, oldGrain) {
       if (oldGrain.private != newGrain.private) {
         Sessions.remove({grainId: oldGrain._id, userId: {$ne: oldGrain.userId}});
-        clearApiProxies(oldGrain._id);
+        ApiTokens.find({grainId: oldGrain._id}).forEach(function(apiToken) {
+          delete proxiesByApiToken[apiToken._id];
+        });
       }
     },
   });
@@ -624,14 +624,12 @@ Meteor.startup(function() {
     changed : function (newApiToken, oldApiToken) {
       if (!_.isEqual(newApiToken.roleAssignment, oldApiToken.roleAssignment) ||
           !_.isEqual(newApiToken.revoked, oldApiToken.revoked)) {
-        clearDownstreamSessions(newApiToken);
-        clearApiProxies(newApiToken.grainId);
+        clearSessionsAndProxies(newApiToken);
       }
     },
 
     removed: function (oldApiToken) {
-      clearDownstreamSessions(oldApiToken);
-      clearApiProxies(oldApiToken.grainId);
+      clearSessionsAndProxies(oldApiToken);
     }
   });
 });
@@ -680,7 +678,7 @@ getProxyForApiToken = function (token) {
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, null, true);
         }
 
-        if (!mayOpenGrain(tokenInfo.grainId, tokenInfo.userId)) {
+        if (!mayOpenGrain({token: tokenInfo})) {
           // Note that only public grains may be opened without a user ID.
           throw new Meteor.Error(403, "Unauthorized.");
         }
@@ -876,6 +874,7 @@ function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, user
   this.sessionId = sessionId;
   this.isOwner = isOwner;
   this.isApi = isApi;
+  this.hasLoaded = false;
   if (sessionId) {
     if (!preferredHostId) {
       this.hostId = generateRandomHostname(20);
@@ -1077,12 +1076,16 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
   var userInfo = _.clone(this.userInfo);
   var self = this;
   var promise = inMeteor(function () {
-    var permissions;
+    var vertex;
     if (self.apiToken) {
-      permissions = apiTokenPermissions(self.apiToken, viewInfo);
+      vertex = {token: self.apiToken};
     } else {
-      // (self.userId may be null; this is fine)
-      permissions = grainPermissions(self.grainId, self.userId, viewInfo);
+      // (self.userId might be null; this is fine)
+      vertex = {grain: {_id: self.grainId, userId: self.userId}};
+    }
+    var permissions = grainPermissions(vertex, viewInfo);
+    if (!permissions) {
+      throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
     Sessions.update({_id: self.sessionId},
                     {$set : {"viewInfo": viewInfo, "permissions": permissions}});
@@ -1420,6 +1423,15 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
     // Add a Content-Security-Policy as a backup in case someone finds a way to load this resource
     // in a browser context. This policy should thoroughly neuter it.
     response.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
+  }
+
+  // On first response, update the session to have hasLoaded=true
+  if (!this.hasLoaded) {
+    this.hasLoaded = true;
+    var sessionId = this.sessionId;
+    inMeteor(function () {
+      Sessions.update({_id: sessionId}, {$set: {hasLoaded: true}});
+    });
   }
 
   // TODO(security): Set X-Content-Type-Options: nosniff?

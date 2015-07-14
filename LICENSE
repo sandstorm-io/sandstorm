@@ -15,6 +15,12 @@ All files not explicitly mentioned below
     License: Apache 2.0
     License text: See below
 
+shell/public/spinner_96.gif
+    What: GIF spinner
+    Source URL: https://github.com/sjhcockrell/spinners
+    License: MIT
+    License URL: https://github.com/sjhcockrell/spinners/blob/master/README.md
+
 shell/public/opensans-light.woff
 shell/public/opensans-semibold.woff
     What: Open Sans font

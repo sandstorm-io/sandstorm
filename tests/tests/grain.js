@@ -199,3 +199,53 @@ module.exports["Test grain anonymous user"] = function (browser) {
         .frame(null)
     });
 }
+
+module.exports["Test grain incognito interstitial"] = function (browser) {
+  browser
+    // Upload app as github user
+    .loginGithub()
+    .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
+    .waitForElementVisible('#step-confirm', very_long_wait)
+    .click('#confirmInstall')
+    // Navigate to app
+    .click('#homelink')
+    .waitForElementVisible('#applist-apps', medium_wait)
+    .click("#applist-apps > ul > li:nth-child(3)")
+    .waitForElementVisible('.new-grain-button', short_wait)
+    .assert.containsText('.new-grain-button', 'New Hacker CMS Site')
+    // Create grain with that user
+    .click('.new-grain-button')
+    .waitForElementVisible('#grainTitle', medium_wait)
+    .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+    .click('#show-share-grain')
+    .waitForElementVisible("#new-share-token", short_wait)
+    .submitForm('#new-share-token')
+    .waitForElementVisible('#share-token-text', medium_wait)
+    // Navigate to the url with an anonymous user
+    .getText('#share-token-text', function(response) {
+      browser
+        .execute('window.Meteor.logout()')
+        .loginGoogle()
+        .pause(short_wait)
+        // Try incognito
+        .url(response.value)
+        .waitForElementVisible("#incognito-button", short_wait)
+        .click("#incognito-button")
+        .waitForElementVisible('#grainTitle', medium_wait)
+        .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+        .frame('grain-frame')
+        .waitForElementPresent('#publish', medium_wait)
+        .assert.containsText('#publish', 'Publish')
+        // Try redeeming as current user
+        // TODO(someday): pick a better app that shows off the different userid/username
+        .url(response.value)
+        .waitForElementVisible("#redeem-token-button", short_wait)
+        .click("#redeem-token-button")
+        .waitForElementVisible('#grainTitle', medium_wait)
+        .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+        .frame('grain-frame')
+        .waitForElementPresent('#publish', medium_wait)
+        .assert.containsText('#publish', 'Publish')
+        .frame(null)
+    });
+}

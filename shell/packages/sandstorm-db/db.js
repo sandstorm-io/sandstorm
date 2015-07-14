@@ -506,3 +506,49 @@ roleAssignmentPattern = {
   addPermissions: Match.Optional([Boolean]),
   removePermissions: Match.Optional([Boolean]),
 };
+
+SandstormDb = {
+  isDemoUser: isDemoUser,
+  isSignedUp: isSignedUp,
+  isSignedUpOrDemo: isSignedUpOrDemo,
+  isUserOverQuota: isUserOverQuota,
+  isUserExcessivelyOverQuota: isUserExcessivelyOverQuota,
+  isAdmin: isAdmin,
+  isAdminById: isAdminById,
+  findAdminUserForToken: findAdminUserForToken,
+  matchWildcardHost: matchWildcardHost,
+  makeWildcardHost: makeWildcardHost,
+  allowDevAccounts: allowDevAccounts,
+  roleAssignmentPattern: roleAssignmentPattern,
+
+  collections: {
+    // Direct access to underlying collections. DEPRECATED.
+    //
+    // TODO(cleanup): Over time, we will provide methods covering each supported query and remove
+    //   direct access to the collections.
+
+    packages: Packages,
+    devApps: DevApps,
+    userActions: UserActions,
+    grains: Grains,
+    contacts: Contacts,
+    sessions: Sessions,
+    signupKeys: SignupKeys,
+    activityStats: ActivityStats,
+    deleteStats: DeleteStats,
+    fileTokens: FileTokens,
+    apiTokens: ApiTokens,
+    notifications: Notifications,
+    statsTokens: StatsTokens,
+    misc: Misc,
+    settings: Settings,
+
+    // Intentionally omitted:
+    // - Migrations, since it's used only within this package.
+    // - RoleAssignments, since it is deprecated and only used by the migration that eliminated it.
+  },
+};
+
+if (Meteor.isServer) {
+  SandstormDb.getWildcardOrigin = getWildcardOrigin;
+}

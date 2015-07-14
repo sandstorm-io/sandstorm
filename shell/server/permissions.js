@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-PermissionSet = function (array) {
+function PermissionSet(array) {
   // A wrapper around an array of booleans.
 
   if (!array) {

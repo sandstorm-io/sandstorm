@@ -30,6 +30,7 @@ For the `sandcats.io` DNS service, each domain is also a wildcard
 domain. This allows a self-hosted Sandstorm domain to operate
 correctly.
 
+
 ## Frequently-asked questions about wildcards
 
 Here are some common questions about Sandstorm's use of wildcards.

@@ -5,6 +5,7 @@ pages:
 - Using:
     - "Overview": "using.md"
     - "Guided tour": "guided-tour.md"
+    - "Top bar": "using/top-bar.md"
 - Developing:
     - "Overview": "developing.md"
     - "Technical overview": "overview.md"

@@ -142,7 +142,7 @@ Meteor.methods({
     // running.
 
     check(grainId, String);
-    if (!mayOpenGrain(grainId, this.userId)) {
+    if (!mayOpenGrain({grain: {_id: grainId, userId: this.userId}})) {
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
@@ -194,7 +194,7 @@ Meteor.methods({
       }
       return {redirectToGrain: apiToken.grainId};
     } else {
-      if (!mayOpenGrain(apiToken.grainId, apiToken.userId)) {
+      if (!mayOpenGrain({token: apiToken})) {
         throw new Meteor.Error(403, "Unauthorized",
                                "User is not authorized to open this grain.");
       }
@@ -677,7 +677,7 @@ getProxyForApiToken = function (token) {
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, null, true);
         }
 
-        if (!mayOpenGrain(tokenInfo.grainId, tokenInfo.userId)) {
+        if (!mayOpenGrain({token: tokenInfo})) {
           // Note that only public grains may be opened without a user ID.
           throw new Meteor.Error(403, "Unauthorized.");
         }
@@ -1074,13 +1074,14 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
   var userInfo = _.clone(this.userInfo);
   var self = this;
   var promise = inMeteor(function () {
-    var permissions;
+    var vertex;
     if (self.apiToken) {
-      permissions = apiTokenPermissions(self.apiToken, viewInfo);
+      vertex = {token: self.apiToken};
     } else {
-      // (self.userId may be null; this is fine)
-      permissions = grainPermissions(self.grainId, self.userId, viewInfo);
+      // (self.userId might be null; this is fine)
+      vertex = {grain: {_id: self.grainId, userId: self.userId}};
     }
+    var permissions = grainPermissions(vertex, viewInfo);
     Sessions.update({_id: self.sessionId},
                     {$set : {"viewInfo": viewInfo, "permissions": permissions}});
     return permissions;

@@ -468,6 +468,10 @@ if (Meteor.isClient) {
       return Meteor.userId() || !this.oldSharingModel;
     },
 
+    displayToken: function() {
+      return !this.revoked && !this.expiresIfUnused && !this.parentToken;
+    },
+
     path: function () {
       var originalPath = Template.instance().originalPath;
       var grainPath = originalPath.slice(this.rootPath.length);

@@ -149,9 +149,15 @@ checkRequirements = function (requirements) {
     } else if (requirement.permissionsHeld) {
       var p = requirement.permissionsHeld;
       var viewInfo = Grains.findOne(p.grainId, {fields: {cachedViewInfo: 1}}).cachedViewInfo;
-      var set = new PermissionSet(grainPermissions(p.grainId, p.userId, viewInfo || {}));
-      if (new PermissionSet(p.permissions).intersect(set)) {
+      var currentPermissions = grainPermissions({grain: {_id: p.grainId, userId: p.userId}},
+                                                viewInfo || {});
+      if (!currentPermissions) {
         return false;
+      }
+      for (var ii = 0; ii < p.permissions.length; ++ii) {
+        if (p.permissions[ii] && !currentPermissions[ii]) {
+          return false;
+        }
       }
     } else if (requirement.userIsAdmin) {
       if (!isAdminById(requirement.userIsAdmin)) {

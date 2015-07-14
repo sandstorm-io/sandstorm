@@ -15,7 +15,7 @@
 // limitations under the License.
 
 Package.describe({
-  summary: "Sandstorm database layer.",
+  summary: "Sandstorm database layer",
   version: "0.1.0"
 });
 

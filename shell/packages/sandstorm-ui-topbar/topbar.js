@@ -139,28 +139,9 @@ Template.sandstormTopbarItem.onDestroyed(function () {
   Template.instance().topbarCloser.close();
 });
 
-Template.sandstormTopbarPopup.onCreated(function () {
-  Template.instance().positionVar = new ReactiveVar(undefined);
-});
-
-Template.sandstormTopbarPopup.onRendered(function () {
-  // This positions the popup under the topbar item that spawned it. As a hacky heuristic, we
-  // position the popup from the left if the item is closer to the left of the window, or from
-  // the right otherwise.
-  //
-  // TODO(someday): Make this better. We could wait until the popup template has opened and
-  //   rendered, then choose a better position based on its full size.
-  var rect = Template.instance().firstNode.parentNode.getBoundingClientRect();
-  var windowMid = window.innerWidth / 2;
-  var itemMid = (rect.left + rect.right) / 2;
-  var pos;
-  if (itemMid < windowMid) {
-    pos = "left: " + Math.max(rect.left - 50, 0) + "px";
-  } else {
-    pos = "right: " + Math.max(window.innerWidth - rect.right - 50, 0) + "px";
-  }
-
-  Template.instance().positionVar.set(pos);
+var windowWidth = new ReactiveVar(window.innerWidth);
+window.addEventListener("resize", function () {
+  windowWidth.update(window.innerWidth);
 });
 
 Template.sandstormTopbarPopup.helpers({
@@ -169,7 +150,28 @@ Template.sandstormTopbarPopup.helpers({
   },
 
   position: function () {
-    return Template.instance().positionVar.get();
+    // This positions the popup under the topbar item that spawned it. As a hacky heuristic, we
+    // position the popup from the left if the item is closer to the left of the window, or from
+    // the right otherwise.
+    //
+    // TODO(someday): Make this better. We could wait until the popup template has opened and
+    //   rendered, then choose a better position based on its full size.
+    var rect = Template.instance().firstNode.parentNode.getBoundingClientRect();
+    var currentWindowWidth = windowWidth.get();
+    var windowMid = currentWindowWidth / 2;
+    var itemMid = (rect.left + rect.right) / 2;
+    var pos;
+    if (itemMid < windowMid) {
+      return {
+        align: "left",
+        px: Math.max(itemMid - 50, 0)
+      };
+    } else {
+      return {
+        align: "right",
+        px: Math.max(currentWindowWidth - itemMid - 50, 0)
+      };
+    }
   },
 });
 

@@ -87,9 +87,11 @@ limitations under the License.
   --}}
   {{#if isExpanded}}
     <div class="closer">
-      <div class="popup" style="{{position}}">
-        {{> Template.contentBlock}}
-      </div>
+      {{#with position}}
+        <div class="popup align-{{align}}" style="{{align}}: {{px}}px">
+          {{> Template.contentBlock}}
+        </div>
+      {{/with}}
     </div>
   {{/if}}
 </template>

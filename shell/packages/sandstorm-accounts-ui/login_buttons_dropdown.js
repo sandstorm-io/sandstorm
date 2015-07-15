@@ -7,7 +7,7 @@ Template.loginButtons.events({
   'click #login-name-link, click #login-sign-in-link': function () {
     loginButtonsSession.set('dropdownVisible', true);
     Tracker.flush();
-    correctDropdownZIndexes();
+    // correctDropdownZIndexes();
   },
   'click .login-close-text': function () {
     loginButtonsSession.closeDropdown();

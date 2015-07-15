@@ -97,22 +97,26 @@ limitations under the License.
   <div id="menu-button"></div><a id="homelink" href="{{origin}}"><img id="icon" src="/icon.png"> Sandstorm</a>
 </template>
 
+<template name="title">
+  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}{{.}}{{/sandstormTopbarItem}}
+</template>
+
 <template name="loading">
-  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Loading...{{/sandstormTopbarItem}}
+  {{>title "Loading..."}}
   <div class="main-content">
     <div class="centered-box">Loading...</div>
   </div>
 </template>
 
 <template name="notFound">
-  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Not Found{{/sandstormTopbarItem}}
+  {{>title "Not Found"}}
   <div class="main-content">
     <div class="centered-box">404 Not Found :(</div>
   </div>
 </template>
 
 <template name="root">
-  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Home{{/sandstormTopbarItem}}
+  {{>title "Home"}}
 
   <div id="intro" class="main-content">
     {{#if kernelTooOld}}
@@ -289,6 +293,7 @@ limitations under the License.
   <button class="grain-button" title="Get Webkey">Get&nbsp;Webkey</button>
 
   {{#sandstormTopbarPopup}}
+    <h4>Webkeys</h4>
     {{#if apiToken}}
       {{#if apiTokenPending}}
         <p>Generating...</p>
@@ -341,6 +346,7 @@ limitations under the License.
   <button class="grain-button" title="Share">Share</button>
 
   {{#sandstormTopbarPopup}}
+    <h4>Share with others...</h4>
     {{#if oldSharingModel}}
       <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
           location bar.</p>
@@ -430,7 +436,7 @@ limitations under the License.
   P
 
   {{#sandstormTopbarPopup}}
-    <h3>Powerbox Request</h3>
+    <h4>Powerbox Request</h4>
     <div>
       <form id="powerbox-request-form">
         <label>Please input an api token: </label><input name="token" type="text" id="powerbox-request-input"><br>
@@ -447,7 +453,7 @@ limitations under the License.
   P
 
   {{#sandstormTopbarPopup}}
-    <h3>Powerbox Offer</h3>
+    <h4>Powerbox Offer</h4>
     <div>
       <input type="text" class="autoSelect" value="{{powerboxOfferUrl}}" readonly>
       <button class="dismiss">Dismiss</button>
@@ -456,7 +462,7 @@ limitations under the License.
 </template>
 
 <template name="grain">
-  {{>sandstormTopbarItem name="title" topbar=globalTopbar template="grainTitle"}}
+  {{>sandstormTopbarItem name="title" priority=5 topbar=globalTopbar template="grainTitle"}}
   {{#sandstormTopbarItem name="grainSize" topbar=globalTopbar}}
     {{grainSize}}
   {{/sandstormTopbarItem}}
@@ -524,7 +530,9 @@ limitations under the License.
 </template>
 
 <template name="grainLog">
-  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Debug log: {{title}}{{/sandstormTopbarItem}}
+  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}
+    Debug log: {{title}}
+  {{/sandstormTopbarItem}}
 
   <div id="grainLog" class="main-content">
     <pre>...{{{html}}}</pre>
@@ -532,7 +540,7 @@ limitations under the License.
 </template>
 
 <template name="install">
-  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Install App{{/sandstormTopbarItem}}
+  {{>title "Intsall app"}}
 
   {{#if error}}
     <div id="install" class="main-content error">
@@ -594,7 +602,7 @@ limitations under the License.
 </template>
 
 <template name="signup">
-  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Claim Invite{{/sandstormTopbarItem}}
+  {{>title "Claim Invite"}}
 
   <div id="signup" class="main-content">
   <div class="centered-box">
@@ -687,7 +695,7 @@ limitations under the License.
 </template>
 
 <template name="uploadForm">
-  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Upload App{{/sandstormTopbarItem}}
+  {{>title "Upload App"}}
 
   <div id="upload" class="main-content">
     <div class="centered-box">
@@ -716,7 +724,7 @@ limitations under the License.
 </template>
 
 <template name="restoreGrainStatus">
-  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Restoring Grain{{/sandstormTopbarItem}}
+  {{>title "Restoring Grain..."}}
 
   <div id="restoreGrain" class="main-content">
     <div class="centered-box">
@@ -775,7 +783,7 @@ limitations under the License.
 </template>
 
 <template name="admin">
-  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Admin Settings{{/sandstormTopbarItem}}
+  {{>title "Admin Settings"}}
 
   {{> _adminConfigureLoginServiceDialog}}
   <div id="admin-settings" class="main-content">
@@ -1001,7 +1009,7 @@ limitations under the License.
 </template>
 
 <template name="drydemo">
-  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}{{ pageTitle }}{{/sandstormTopbarItem}}
+  {{>title pageTitle}}
 
   <div id="demo" class="main-content">
     <div class="centered-box">
@@ -1047,7 +1055,7 @@ limitations under the License.
 </template>
 
 <template name="devAccounts">
-  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}{{ pageTitle }}{{/sandstormTopbarItem}}
+  {{>title pageTitle}}
 
   <div id="demo" class="main-content">
     <div class="centered-box">
@@ -1075,7 +1083,7 @@ limitations under the License.
 </template>
 
 <template name="about">
-  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}About{{/sandstormTopbarItem}}
+  {{>title "About Sandstorm"}}
 
   <div id="about" class="main-content">
     <div class="centered-box">

@@ -2,28 +2,23 @@
 <!-- LOGGED IN -->
 <!--           -->
 <template name="_loginButtonsLoggedInDropdown">
-  <div class="login-link-and-dropdown-list">
-    <a class="login-link-text" id="login-name-link">
-      {{displayName}} ▾
-    </a>
+  <a class="login-link-text" id="login-name-link">
+    {{displayName}} ▾
+  </a>
 
-    {{#if dropdownVisible}}
-      <div id="login-dropdown-list" class="accounts-dialog">
-        <a class="login-close-text">Close</a>
-        <div class="login-close-text-clear"></div>
+  {{#sandstormTopbarPopup}}
+    <h4>Account</h4>
 
-        {{#if inMessageOnlyFlow}}
-          {{> _loginButtonsMessages}}
-        {{else}}
-          {{#if inChangePasswordFlow}}
-            {{> _loginButtonsChangePassword}}
-          {{else}}
-            {{> _loginButtonsLoggedInDropdownActions}}
-          {{/if}}
-        {{/if}}
-      </div>
+    {{#if inMessageOnlyFlow}}
+      {{> _loginButtonsMessages}}
+    {{else}}
+      {{#if inChangePasswordFlow}}
+        {{> _loginButtonsChangePassword}}
+      {{else}}
+        {{> _loginButtonsLoggedInDropdownActions}}
+      {{/if}}
     {{/if}}
-  </div>
+  {{/sandstormTopbarPopup}}
 </template>
 
 <template name="_loginButtonsLoggedInDropdownActions">
@@ -44,28 +39,13 @@
 <!-- LOGGED OUT -->
 <!--            -->
 <template name="_loginButtonsLoggedOutDropdown">
-  <div class="login-link-and-dropdown-list {{additionalClasses}}">
-    {{#if dropdownVisible}}
-      {{! This text is covered by the dropdown, but duplicating it here
-          makes the position of "Close" match the position of this text. }}
-      <a class="login-link-text" id="login-sign-in-link">Sign in ▾</a>
-      <div id="login-dropdown-list" class="accounts-dialog">
-        <a class="login-close-text">Close</a>
-        {{#if loggingIn}}
-          {{> _loginButtonsLoggingIn}}
-        {{/if}}
-        <div class="login-close-text-clear"></div>
-        {{> _loginButtonsLoggedOutAllServices}}
-      </div>
-    {{else}}
-      {{#if loggingIn}}
-        {{! Not normally visible, but if the user closes the dropdown during login.}}
-        {{> _loginButtonsLoggingIn}}
-      {{else}}
-        <a class="login-link-text" id="login-sign-in-link">Sign in ▾</a>
-      {{/if}}
-    {{/if}}
-  </div>
+  <a class="login-link-text" id="login-sign-in-link">Sign in ▾</a>
+
+  {{#sandstormTopbarPopup}}
+    <h4>Sign in</h4>
+
+    {{> _loginButtonsLoggedOutAllServices}}
+  {{/sandstormTopbarPopup}}
 </template>
 
 <template name="_loginButtonsLoggedOutAllServices">

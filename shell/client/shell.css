@@ -60,7 +60,7 @@ body>ul.topbar {
   height: 32px;
   text-align: left;
   z-index: 100;
-  white-space: nowrap;
+  overflow: hidden;
 }
 
 body>.topbar-update {
@@ -90,7 +90,57 @@ body>ul.topbar>li>div.closer {
 body>ul.topbar>li>div>div.popup {
   position: fixed;
   top: 32px;
-  width: auto;
+  max-height: calc(100vh - 64px);
+  max-width: 50%;
+  min-width: 250px;
+  line-height: normal;
+  white-space: normal;
+  background-color: white;
+  font-weight: normal;
+  color: black;
+  width: 400px;
+  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+  border-left: 1px solid #E0E0E0;
+  border-right: 1px solid #E0E0E0;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+body>ul.topbar>li>div>div.popup::before {
+  content: " ";
+  position: absolute;
+  top: -8px;
+
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid white;
+}
+
+body>ul.topbar>li>div>div.popup.align-left::before {
+  left: 42px;
+}
+
+body>ul.topbar>li>div>div.popup.align-right::before {
+  right: 42px;
+}
+
+body>ul.topbar>li>div>div.popup>* {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+body>ul.topbar>li>div>div.popup>h4 {
+  margin: 0px;
+  font-size: 14px;
+  padding-left: 10px;
+  line-height: 32px;
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 16px;
+}
+
+body>ul.topbar>li>div>div.popup>*:last-child {
+  margin-bottom: 16px;
 }
 
 body>ul.topbar>li.homelink {
@@ -128,31 +178,6 @@ body>ul.topbar>li.account {
 
 body>ul.topbar>li.notifications {
   float: right;
-}
-
-body>ul.topbar>li.notifications>div>div.popup {
-  /* TODO(soon): Apply this nicer style to all the popups? */
-  background-color: white;
-  color: black;
-  width: 400px;
-  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
-  border-left: 1px solid #E0E0E0;
-  border-right: 1px solid #E0E0E0;
-  border-bottom: 1px solid #E0E0E0;
-
-  /* undo .popup style */
-  padding: 0;
-  font-size: inherit;
-  line-height: inherit;
-}
-
-body>ul.topbar>li.notifications>div>div.popup>h4 {
-  background-color: #666;
-  color: #ccc;
-  margin: 0px;
-  font-size: 14px;
-  text-transform: uppercase;
-  padding-left: 10px;
 }
 
 body>ul.topbar>li.admin-alert {
@@ -231,18 +256,16 @@ body>ul.topbar>li.share>button.grain-button:hover {
   background-color: #428bca;
 }
 
+a.copy-me {
+  display: block;
+  margin: 8px;
+  border: 1px solid #ccc;
+  overflow: hidden;
+}
+
 /***********************************************************************************************
  * pre-refactor styles                                                                         *
  ***********************************************************************************************/
-
-div.popup {
-  background-color: black;
-  color: #ccc;
-  font-weight: bold;
-  line-height: 32px;
-  max-width: 50%;
-  white-space: normal;
-}
 
 .popup .token-petname:hover {
   cursor: pointer;
@@ -720,23 +743,6 @@ svg {
   display: inline;
   position: fixed;
   margin-left: 2px;
-}
-
-div.popup {
-  position: fixed;
-  top: 32px;
-  max-height: calc(100vh - 64px);
-
-  z-index: 101;
-  background-color: black;
-  /*background-color: rgba(0, 0, 0, 0.9);*/
-  padding: 16px;
-  font-size: 85%;
-  line-height: normal;
-  min-width: 250px;
-
-  overflow-y: auto;
-  overflow-x: hidden;
 }
 
 div.popup p {

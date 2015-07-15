@@ -37,10 +37,10 @@ Not written yet:
 
 You might enjoy learning how Sandstorm is put together.
 
-* **Technical summary**: [How Sandstorm works](overview.md)
+* **Technical summary**: [How Sandstorm works](using/how-it-works.md)
 * **Minimalist packaging**: [Raw SPK packaging guide](developing/raw-packaging-guide.md)
 * **Raw packaging & integration guides**: [Python](developing/raw-python.md) | [Ruby on Rails](developing/raw-ruby-on-rails.md)
-* **Security**: [Security Practices Overview](developing/security-practices.md)
+* **Security**: [Security Practices Overview](using/security-practices.md)
 
 ---
 

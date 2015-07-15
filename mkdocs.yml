@@ -6,9 +6,10 @@ pages:
     - "Overview": "using.md"
     - "Guided tour": "guided-tour.md"
     - "Top bar": "using/top-bar.md"
+    - "How it works": "using/how-it-works.md"
+    - "Security practices": "using/security-practices.md"
 - Developing apps:
     - "Overview": "developing.md"
-    - "Technical overview": "overview.md"
     - "Overview of vagrant-spk": "vagrant-spk/index.md"
     - "Installation": "vagrant-spk/installation.md"
     - "Packaging tutorial": "vagrant-spk/packaging-tutorial.md"
@@ -25,7 +26,6 @@ pages:
     - "Raw integration of Python": "developing/raw-python.md"
     - "Raw integration of Ruby on Rails": "developing/raw-ruby-on-rails.md"
     - "Troubleshooting": "developing/troubleshooting.md"
-    - "Security practices overview": "developing/security-practices.md"
 - Admistering:
     - "Overview": "administering.md"
     - "Installation": "install.md"

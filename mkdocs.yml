@@ -17,7 +17,7 @@ pages:
     - "Understanding & customizing": "vagrant-spk/customizing.md"
     - "Platform stacks": "vagrant-spk/platform-stacks.md"
     - "Code dependencies": "vagrant-spk/code-dependencies.md"
-    - "Services": "vagrant-spk/services.md"
+    - "Service dependencies": "vagrant-spk/services.md"
     - "Web publishing": "developing/web-publishing.md"
     - "Email from apps": "developing/email-from-apps.md"
     - "vagrant-spk design document": "vagrant-spk/design.md"

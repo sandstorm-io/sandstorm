@@ -23,6 +23,7 @@ pages:
     - "Raw packaging guide": "developing/raw-packaging-guide.md"
     - "Raw integration of Python": "developing/raw-python.md"
     - "Raw integration of Ruby on Rails": "developing/raw-ruby-on-rails.md"
+    - "Troubleshooting": "developing/troubleshooting.md"
 - Admistering:
     - "Overview": "administering.md"
     - "Installation": "install.md"

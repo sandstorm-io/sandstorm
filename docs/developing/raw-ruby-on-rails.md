@@ -2,9 +2,9 @@
 
 **Note**: This highly-technical documentation explains the inner
 workings of Ruby on Rails on Sandstorm. If you want to package a Rails
-app for Sandstorm, and would like a well-tested and well-documented
-way to do that, read the [five minute vagrant-spk packaging
-tutorial](../vagrant-spk/packaging-tutorial.md) instead!
+app for Sandstorm, consider reading the [five minute vagrant-spk
+packaging tutorial](../vagrant-spk/packaging-tutorial.md) instead, and
+using the [DIY stack](../vagrant-spk/platform-stacks.md).
 
 ## Introduction
 

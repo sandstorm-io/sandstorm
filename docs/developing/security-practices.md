@@ -1,4 +1,4 @@
-**Sandstorm is a Security product.**
+**Sandstorm is a security product.**
 
 We like to say that Sandstorm's priorities are Usability, Security,
 and Freedom. In public, we tend to talk more about usability and

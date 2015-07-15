@@ -26,7 +26,7 @@ pages:
     - "Raw integration of Python": "developing/raw-python.md"
     - "Raw integration of Ruby on Rails": "developing/raw-ruby-on-rails.md"
     - "Troubleshooting": "developing/troubleshooting.md"
-- Admistering:
+- Administering:
     - "Overview": "administering.md"
     - "Installation": "install.md"
     - "Email": "administering/email.md"

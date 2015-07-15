@@ -32,12 +32,13 @@ Not written yet:
 
 ---
 
-## Sandstorm for systems hackers
+## Sandstorm for systems engineers
 
 You might enjoy learning how Sandstorm is put together.
 
 * **Technical summary**: [How Sandstorm works](overview.md)
 * **Minimalist packaging**: [Raw SPK packaging guide](developing/raw-packaging-guide.md)
+* **Raw packaging & integration guides**: [Python](developing/raw-python.md)
 
 ---
 
@@ -61,6 +62,15 @@ created it. Read these documents to learn how access control works.
 * **Overview**: [Delegation is the Cornerstone of Civilization](https://blog.sandstorm.io/news/2015-05-05-delegation-is-the-cornerstone-of-civilization.html)
 * **Login & permissions**: [User authentication & permissions](developing/auth.md)
 * **Making it world-accessible**: [Publishing to the user's domain](developing/web-publishing.md) <!-- | [API keys]() -->
+
+---
+
+## Integrating various languages & libraries into raw Sandstorm
+
+If you are curious how to integrate various languages & libraries with
+Sandstorm's raw APIs and raw SPK packaging, read these documents.
+
+**Note** that most app developers will have an easier time using `vagrant-spk`. This is intended
 
 ---
 

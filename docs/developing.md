@@ -38,7 +38,7 @@ You might enjoy learning how Sandstorm is put together.
 
 * **Technical summary**: [How Sandstorm works](overview.md)
 * **Minimalist packaging**: [Raw SPK packaging guide](developing/raw-packaging-guide.md)
-* **Raw packaging & integration guides**: [Python](developing/raw-python.md)
+* **Raw packaging & integration guides**: [Python](developing/raw-python.md) | [Ruby on Rails](developing/raw-ruby-on-rails.md)
 
 ---
 

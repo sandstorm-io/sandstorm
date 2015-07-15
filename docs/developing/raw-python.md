@@ -8,7 +8,7 @@ you will need to know.
 workings of Python on Sandstorm. If you want to package a Python web
 app for Sandstorm, and would like a well-tested and well-documented
 way to do that, read the [five minute vagrant-spk packaging
-tutorial](vagrant-spk/packaging-tutorial.md) instead!
+tutorial](../vagrant-spk/packaging-tutorial.md) instead!
 
 ## Integrating with raw Sandstorm APIs
 

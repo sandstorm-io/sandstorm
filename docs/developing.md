@@ -13,7 +13,7 @@ Work through the [guided tour](guided-tour.md).
 ## Creating an app package
 
 * **Tutorial**: [Five minute packaging tutorial](vagrant-spk/packaging-tutorial.md)
-* **Conceptual overview**: [App Developer Handbook](https://github.com/sandstorm-io/sandstorm/wiki/Sandstorm-App-Developer-Handbook)
+* **Conceptual overview**: [App Developer Handbook](developing/handbook.md)
 * **Language support**: [Platform stacks for Meteor, Python, PHP](vagrant-spk/platform-stacks.md) | [Other](vagrant-spk/platform-stacks.md#diy-platform-stack)
 * **Code & service dependencies**: [Code dependencies](vagrant-spk/code-dependencies.md) | [MySQL](vagrant-spk/services.md#mysql) | [Other databases & services](vagrant-spk/services.md#other-services)
 * **Troubleshooting**: [Package troubleshooting](developing/troubleshooting.md)

@@ -44,114 +44,204 @@ body {
   background-color: white;
 }
 
-#topbar, #topbar-right, #topbar-update, div.popup {
+body>ul.topbar, body>.topbar-update {
   background-color: black;
   color: #ccc;
   font-weight: bold;
   line-height: 32px;
 }
 
-#topbar {
+body>ul.topbar {
   position: fixed;
+  top: 0;
+  margin: 0;
+  padding: 0;
   width: 100%;
   height: 32px;
   text-align: left;
-  z-index: 2;
+  z-index: 100;
   white-space: nowrap;
 }
 
-#topbar.light {
-  height: 24px;
-  line-height: 24px;
-  font-size: 90%;
-  padding: 0 10px;
-}
-
-#topbar-update {
+body>.topbar-update {
   position: fixed;
   width: 100%;
   height: 32px;
   text-align: center;
   background-color: #622;
   color: #fcc;
-  z-index: 4;
+  z-index: 1000;
   cursor: pointer;
 }
 
-#topbar-right {
-  position: fixed;
-  top: 0px;
-  right: 0px;
-  height: 32px;
-  padding-right: 8px;
-  z-index: 3;
+body>ul.topbar>li {
+  display: inline-block;
+  list-style-type: none;
 }
 
-#topbar-right .alert {
-  background-color: #762f87;
+body>ul.topbar>li>div.closer {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+body>ul.topbar>li>div>div.popup {
+  position: fixed;
+  top: 32px;
+  width: auto;
+}
+
+body>ul.topbar>li.homelink {
+  padding-left: 32px;
+  padding-right: 8px;
+  background-image: url("/icon.png");
+  background-repeat: no-repeat;
+  background-position: 8px center;
+  border-right: 1px solid #666;
+
+  /* Without this, Firefox renders the right-floats pushed down a line. */
+  float:left;
+
+  /* TODO(cleanup): Use of filter for brightness on hover is hacky and not very widely supported. */
+  -webkit-filter: brightness(0.75);
+  filter: brightness(0.75);
+}
+
+body>ul.topbar>li.homelink a {
   color: white;
   text-decoration: none;
 }
 
-#topbar-right .alert {
+body>ul.topbar>li.homelink:hover {
+  -webkit-filter: none;
+  filter: none;
+  background-color: #666;
+}
+
+body>ul.topbar>li.account {
+  float: right;
+  display: block;
+  padding: 0 8px;
+}
+
+body>ul.topbar>li.notifications {
+  float: right;
+}
+
+body>ul.topbar>li.notifications>div>div.popup {
+  /* TODO(soon): Apply this nicer style to all the popups? */
+  background-color: white;
+  color: black;
+  width: 400px;
+  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+  border-left: 1px solid #E0E0E0;
+  border-right: 1px solid #E0E0E0;
+  border-bottom: 1px solid #E0E0E0;
+
+  /* undo .popup style */
+  padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+body>ul.topbar>li.notifications>div>div.popup>h4 {
+  background-color: #666;
+  color: #ccc;
+  margin: 0px;
+  font-size: 14px;
+  text-transform: uppercase;
+  padding-left: 10px;
+}
+
+body>ul.topbar>li.admin-alert {
+  float: right;
+}
+
+body>ul.topbar>li.admin-alert .alert {
+  background-color: #762f87;
+  color: white;
+  text-decoration: none;
+
   display: inline-block;
   padding-left: 8px;
   padding-right: 8px;
   margin-right: 8px;
 }
 
-#topbar-right .alert.countdown-second,
-#topbar-right .alert.countdown-now {
+body>ul.topbar>li.admin-alert .alert.countdown-second,
+body>ul.topbar>li.admin-alert .alert.countdown-now {
   background-color: #e82538;
 }
 
-#topbar-right a.alert:hover {
+body>ul.topbar>li.admin-alert a:hover {
   background-color: #9d3aa5;
 }
 
-#topbar a {
-  color: #ccc;
-  text-decoration: none;
-}
-#topbar a:hover {
-  color: white;
-}
-
-#topbar #homelink {
-  display: inline-block;
+body>ul.topbar>li.title {
   padding-left: 8px;
-  padding-right: 8px;
-  border-right: 1px solid #666;
-  cursor: pointer;
-}
-#topbar #homelink:hover {
-  background-color: #666;
 }
 
-#topbar #homelink img {
-  -webkit-filter: brightness(0.75);
-  filter: brightness(0.75);
-}
-#topbar #homelink:hover img {
-  -webkit-filter: none;
-}
-#topbar.light #homelink {
-  display: none;
-}
-
-#topbar #icon {
-  vertical-align: baseline;
-}
-
-#topbar #grainTitle {
+body>ul.topbar>li.title>span.editable {
   display: inline-block;
-  padding: 0 4px;
+  padding: 0 8px;
+  margin-left: -8px;
 }
 
-#topbar #grainTitle:hover {
+body>ul.topbar>li.title>span.editable:hover {
   cursor: pointer;
   color: white;
   background-color: #888;
+}
+
+body>ul.topbar>li>button.grain-button {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  width: 24px;
+  height: 24px;
+  border: none;
+  color: transparent;
+  background-color: transparent;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+body>ul.topbar>li>button.grain-button:hover {
+  background-color: #888;
+}
+
+body>ul.topbar>li.delete>button    { background-image: url("/trash.png"); }
+body>ul.topbar>li.debug-log>button { background-image: url("/wrench.png"); }
+body>ul.topbar>li.backup>button    { background-image: url("/download.png"); }
+body>ul.topbar>li.restart>button   { background-image: url("/restart.png"); }
+body>ul.topbar>li.webkey>button    { background-image: url("/key.png"); }
+
+body>ul.topbar>li.share>button {
+  background-image: url("/share.png");
+  background-position: left;
+  border-radius: 4px;
+  background-color: #428bca;
+  color: white;
+  width: 64px;
+  padding-left: 20px;
+}
+body>ul.topbar>li.share>button.grain-button:hover {
+  background-color: #428bca;
+}
+
+/***********************************************************************************************
+ * pre-refactor styles                                                                         *
+ ***********************************************************************************************/
+
+div.popup {
+  background-color: black;
+  color: #ccc;
+  font-weight: bold;
+  line-height: 32px;
+  max-width: 50%;
+  white-space: normal;
 }
 
 .popup .token-petname:hover {
@@ -186,26 +276,6 @@ body {
 
 #menu-closer {
   display: none;
-}
-
-#topbar #homelink-button {
-  display: none;
-  background-image: url("/icon32.png");
-}
-
-#topbar #deleteGrain  { background-image: url("/trash.png"); }
-#topbar #openDebugLog { background-image: url("/wrench.png"); }
-#topbar #backupGrain  { background-image: url("/download.png"); }
-#topbar #restartGrain { background-image: url("/restart.png"); }
-#topbar #showApiToken { background-image: url("/key.png"); }
-#topbar #show-share-grain {
-  background-image: url("/share.png");
-  background-position: left;
-  border-radius: 4px;
-  background-color: #428bca;
-  color: white;
-  width: 64px;
-  padding-left: 20px;
 }
 
 .revoked-role-assignment {
@@ -1289,6 +1359,11 @@ a.disable-cap {
   width: 22px;
   line-height: 22px;
   cursor: pointer;
+}
+
+#admin-alert-box.small #admin-alert-icon.countdown-second,
+#admin-alert-box.small #admin-alert-icon.countdown-now {
+  background-color: #e82538;
 }
 
 #admin-alert-box.small #admin-alert-closer[data-show="true"] {

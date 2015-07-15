@@ -26,67 +26,71 @@ limitations under the License.
 </body>
 
 <template name="layout">
-  {{> topBar}}
-  {{> yield}}
-</template>
+  {{>sandstormTopbar globalTopbar}}
 
-<template name="lightLayout">
-  {{> yield}}
-</template>
-
-<template name="topBar">
-  {{#if isUpdateBlocked}}
-  <div id="topbar-update">
-    Sandstorm has been updated &mdash; Click here to reload
-  </div>
-  {{else}}
-  <div id="topbar-right">
-    {{#with adminAlert}}
+  {{!-- standard topbar items --}}
+  {{#sandstormTopbarItem name="homelink" topbar=globalTopbar}}
+    <a href="/">Sandstorm</a>
+  {{/sandstormTopbarItem}}
+  {{#with align="right"}}
+    {{>sandstormTopbarItem name="account" topbar=globalTopbar template="loginButtons"}}
+  {{/with}}
+  {{#if currentUser}}
+    {{>sandstormTopbarItem name="notifications" topbar=globalTopbar template="notifications"}}
+  {{/if}}
+  {{#with adminAlert}}
+    {{#sandstormTopbarItem name="admin-alert" topbar=globalTopbar}}
+      {{!-- TODO(cleaup): Awkwardly, the event handlers on Template.layout actually work
+          on this topbar item solely because the whole topbar itself is embedded inside the
+          "layout" template. But, we shouldn't be relying on that! Move this to its own
+          template... --}}
       <span id="admin-alert-box" class="{{#if adminAlertIsTooLarge}}small{{/if}}">
         <div id="admin-alert-closer" data-show="{{showTopbar}}"></div>
         <span id="admin-alert" data-show="{{showTopbar}}">
           {{#if alertUrl}}
             <a href="{{alertUrl}}" class="alert {{className}}">{{text}}</a>
           {{else}}
-            <div class="alert {{className}}">{{text}}</div>
+            <span class="alert {{className}}">{{text}}</span>
           {{/if}}
         </span>
-        <span id="admin-alert-icon">!</span>
+        <span id="admin-alert-icon" class="{{className}}">!</span>
       </span>
-    {{/with}}
-    {{#if currentUser}}
-      {{> notifications}}
-    {{/if}}
-    {{> loginButtons align="right"}}
-  </div>
-  {{/if}}
+    {{/sandstormTopbarItem}}
+  {{/with}}
+
+  {{> yield}}
+</template>
+
+<template name="lightLayout">
+  {{>sandstormTopbar globalTopbar}}
+
+  {{> yield}}
 </template>
 
 <template name="notifications">
   <span class="notification-topbar {{#if notificationsIsEnabled}}notification-selected{{/if}}">
     <button class="notification-button {{#if notificationCount}}inner{{else}}notification-icon{{/if}}">{{notificationCount}}</button>
   </span>
-  {{#if notificationsIsEnabled}}
-    <div id="notification-dropdown">
-      <h4>Notifications</h4>
-      <ul id="notification-list">
-        {{#each notifications}}
-          <li>
-            <div class="notification-item">
-              <div class="notification-header">
-                  <span>{{grainTitle}}</span>
-                  <span title="Stops the background app" class="cancel-notification" data-notificationid="{{_id}}">Cancel</span>
-                  <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
-              </div>
-              <span>{{text.defaultText}}</span>
+
+  {{#sandstormTopbarPopup}}
+    <h4>Notifications</h4>
+    <ul id="notification-list">
+      {{#each notifications}}
+        <li>
+          <div class="notification-item">
+            <div class="notification-header">
+                <span>{{grainTitle}}</span>
+                <span title="Stops the background app" class="cancel-notification" data-notificationid="{{_id}}">Cancel</span>
+                <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
             </div>
-          </li>
-        {{else}}
-        <li>No Notifications...</li>
-        {{/each}}
-      </ul>
-    </div>
-  {{/if}}
+            <span>{{text.defaultText}}</span>
+          </div>
+        </li>
+      {{else}}
+      <li>No Notifications...</li>
+      {{/each}}
+    </ul>
+  {{/sandstormTopbarPopup}}
 </template>
 
 <template name="homeLink">
@@ -94,21 +98,21 @@ limitations under the License.
 </template>
 
 <template name="loading">
-  <div id="topbar">{{> homeLink}} Loading...</div>
+  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Loading...{{/sandstormTopbarItem}}
   <div class="main-content">
     <div class="centered-box">Loading...</div>
   </div>
 </template>
 
 <template name="notFound">
-  <div id="topbar">{{> homeLink}} Not Found</div>
+  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Not Found{{/sandstormTopbarItem}}
   <div class="main-content">
     <div class="centered-box">404 Not Found :(</div>
   </div>
 </template>
 
 <template name="root">
-  <div id="topbar">{{> homeLink}} Home</div>
+  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Home{{/sandstormTopbarItem}}
 
   <div id="intro" class="main-content">
     {{#if kernelTooOld}}
@@ -265,35 +269,26 @@ limitations under the License.
   </div>
 </template>
 
-<template name="grain">
-  {{setGrainWindowTitle}}
-  <div id="topbar">
-    {{> homeLink}}<span id="grainTitle" title="rename">{{title}}</span> {{grainSize}}
-    <div id="menu-closer" data-show="{{showMenu}}"></div>
-    <div id="menu" data-show="{{showMenu}}">
-      <button id="homelink-button" title="Home"> Home</button>
-      {{#if currentUser}}
-        <button id="show-share-grain" title="Share">Share</button>
-        <button id="deleteGrain" title="Delete">Delete</button>
-      {{/if}}
-      {{#if isOwner}}
-        <button id="openDebugLog" title="Show Debug Log">Log</button>
-        <button id="backupGrain" title="Download Backup">Backup</button>
-        <button id="restartGrain" title="Restart App">Restart</button>
-      {{/if}}
-      {{#if displayWebkeyButton}}
-        <button id="showApiToken" title="Get Webkey">Get&nbsp;Webkey</button>
-      {{/if}}
-      {{#if showPowerboxRequest}}
-        <div class="powerboxIcon">P</div>
-      {{/if}}
-      {{#if showPowerboxOffer}}
-        <div class="powerboxIcon">P</div>
-      {{/if}}
-    </div>
-  </div>
+<template name="grainTitle">
+  <span class="editable" title="Rename">{{title}}</span>
+</template>
+<template name="grainDeleteButton">
+  <button class="grain-button" title="Delete">Delete</button>
+</template>
+<template name="grainDebugLogButton">
+  <button class="grain-button" title="Show Debug Log">Log</button>
+</template>
+<template name="grainBackupButton">
+  <button class="grain-button" title="Download Backup">Backup</button>
+</template>
+<template name="grainRestartButton">
+  <button class="grain-button" title="Restart App">Restart</button>
+</template>
 
-  <div id="api-token-popup" class="popup" style="{{#if showApiToken}}{{else}}display: none{{/if}}">
+<template name="grainApiTokenButton">
+  <button class="grain-button" title="Get Webkey">Get&nbsp;Webkey</button>
+
+  {{#sandstormTopbarPopup}}
     {{#if apiToken}}
       {{#if apiTokenPending}}
         <p>Generating...</p>
@@ -339,12 +334,13 @@ limitations under the License.
         </ul>
       {{/if}}
     {{/if}}
-  </div>
-  <div id="api-token-popup-closer" class="popup-closer"
-      style="{{#if showApiToken}}{{else}}display: none{{/if}}"></div>
+  {{/sandstormTopbarPopup}}
+</template>
 
-  <div id="share-grain-popup" class="popup"
-       style="{{#if showShareGrain}}{{else}}display: none{{/if}}">
+<template name="grainShareButton">
+  <button class="grain-button" title="Share">Share</button>
+
+  {{#sandstormTopbarPopup}}
     {{#if oldSharingModel}}
       <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
           location bar.</p>
@@ -427,35 +423,67 @@ limitations under the License.
         {{/if}}
       {{/if}}
     {{/if}}
-  </div>
-  <div id="share-grain-popup-closer" class="popup-closer"
-      style="{{#if showShareGrain}}{{else}}display: none{{/if}}">
-  </div>
+  {{/sandstormTopbarPopup}}
+</template>
 
-  {{#if showPowerboxRequest}}
-  <div id="powerbox-request-popup" class="popup">
+<template name="grainPowerboxRequest">
+  P
+
+  {{#sandstormTopbarPopup}}
     <h3>Powerbox Request</h3>
     <div>
       <form id="powerbox-request-form">
         <label>Please input an api token: </label><input name="token" type="text" id="powerbox-request-input"><br>
-        <button>Import token</button>
+        <button class="submit">Import token</button>
+        <button class="cancel">Cancel</button>
       </form>
       {{#if powerboxRequestError}}
       <div class="error">{{powerboxRequestError}}</div>
       {{/if}}
     </div>
-  </div>
-  <div id="powerbox-request-popup-closer" class="popup-closer"></div>
-  {{/if}}
+  {{/sandstormTopbarPopup}}
+</template>
+<template name="grainPowerboxOffer">
+  P
 
-  {{#if showPowerboxOffer}}
-  <div id="powerbox-offer-popup" class="popup">
+  {{#sandstormTopbarPopup}}
     <h3>Powerbox Offer</h3>
     <div>
       <input type="text" class="autoSelect" value="{{powerboxOfferUrl}}" readonly>
+      <button class="dismiss">Dismiss</button>
     </div>
-  </div>
-  <div id="powerbox-offer-popup-closer" class="popup-closer"></div>
+  {{/sandstormTopbarPopup}}
+</template>
+
+<template name="grain">
+  {{>sandstormTopbarItem name="title" topbar=globalTopbar template="grainTitle"}}
+  {{#sandstormTopbarItem name="grainSize" topbar=globalTopbar}}
+    {{grainSize}}
+  {{/sandstormTopbarItem}}
+
+  {{>sandstormTopbarBlockReload}}
+
+  {{setGrainWindowTitle}}
+
+  {{#if currentUser}}
+    {{>sandstormTopbarItem name="share" topbar=globalTopbar template="grainShareButton"}}
+    {{>sandstormTopbarItem name="delete" topbar=globalTopbar template="grainDeleteButton"}}
+  {{/if}}
+  {{#if isOwner}}
+    {{>sandstormTopbarItem name="debug-log" topbar=globalTopbar template="grainDebugLogButton"}}
+    {{>sandstormTopbarItem name="backup" topbar=globalTopbar template="grainBackupButton"}}
+    {{>sandstormTopbarItem name="restart" topbar=globalTopbar template="grainRestartButton"}}
+  {{/if}}
+  {{#if displayWebkeyButton}}
+    {{>sandstormTopbarItem name="webkey" topbar=globalTopbar template="grainApiTokenButton"}}
+  {{/if}}
+  {{#if showPowerboxRequest}}
+    {{>sandstormTopbarItem name="request" topbar=globalTopbar template="grainPowerboxRequest"
+        startOpen=true}}
+  {{/if}}
+  {{#if showPowerboxOffer}}
+    {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"
+        startOpen=true}}
   {{/if}}
 
   <div id="app" class="main-content">
@@ -496,9 +524,7 @@ limitations under the License.
 </template>
 
 <template name="grainLog">
-  <div id="topbar" class="light">
-    {{> homeLink}} Debug log: {{title}}
-  </div>
+  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Debug log: {{title}}{{/sandstormTopbarItem}}
 
   <div id="grainLog" class="main-content">
     <pre>...{{{html}}}</pre>
@@ -506,7 +532,7 @@ limitations under the License.
 </template>
 
 <template name="install">
-  <div id="topbar">{{> homeLink}} Install App</div>
+  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Install App{{/sandstormTopbarItem}}
 
   {{#if error}}
     <div id="install" class="main-content error">
@@ -568,7 +594,7 @@ limitations under the License.
 </template>
 
 <template name="signup">
-  <div id="topbar">{{> homeLink}} Claim Invite</div>
+  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Claim Invite{{/sandstormTopbarItem}}
 
   <div id="signup" class="main-content">
   <div class="centered-box">
@@ -661,7 +687,7 @@ limitations under the License.
 </template>
 
 <template name="uploadForm">
-  <div id="topbar">{{> homeLink}} Upload App</div>
+  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Upload App{{/sandstormTopbarItem}}
 
   <div id="upload" class="main-content">
     <div class="centered-box">
@@ -690,7 +716,7 @@ limitations under the License.
 </template>
 
 <template name="restoreGrainStatus">
-  <div id="topbar">{{> homeLink}} Restoring Grain</div>
+  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Restoring Grain{{/sandstormTopbarItem}}
 
   <div id="restoreGrain" class="main-content">
     <div class="centered-box">
@@ -749,7 +775,7 @@ limitations under the License.
 </template>
 
 <template name="admin">
-  <div id="topbar">{{> homeLink}} Admin configuration menu</div>
+  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}Admin Settings{{/sandstormTopbarItem}}
 
   {{> _adminConfigureLoginServiceDialog}}
   <div id="admin-settings" class="main-content">
@@ -975,7 +1001,7 @@ limitations under the License.
 </template>
 
 <template name="drydemo">
-  <div id="topbar">{{> homeLink}} {{ pageTitle }} </div>
+  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}{{ pageTitle }}{{/sandstormTopbarItem}}
 
   <div id="demo" class="main-content">
     <div class="centered-box">
@@ -1021,7 +1047,7 @@ limitations under the License.
 </template>
 
 <template name="devAccounts">
-  <div id="topbar">{{> homeLink}} {{ pageTitle }} </div>
+  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}{{ pageTitle }}{{/sandstormTopbarItem}}
 
   <div id="demo" class="main-content">
     <div class="centered-box">
@@ -1049,7 +1075,7 @@ limitations under the License.
 </template>
 
 <template name="about">
-  <div id="topbar">{{> homeLink}} About</div>
+  {{#sandstormTopbarItem name="title" topbar=globalTopbar}}About{{/sandstormTopbarItem}}
 
   <div id="about" class="main-content">
     <div class="centered-box">

@@ -17,6 +17,11 @@
 // This file implements the common shell components such as the top bar.
 // It also covers the root page.
 
+if (Meteor.isClient) {
+  globalTopbar = new SandstormTopbar();
+  Template.registerHelper("globalTopbar", function() { return globalTopbar; });
+}
+
 browseHome = function() {
   Router.go("root");
 }
@@ -216,7 +221,7 @@ if (Meteor.isClient) {
     }
   };
 
-  Template.topBar.onCreated(function () {
+  Template.layout.onCreated(function () {
     this.timer = new Tracker.Dependency();
     this.showTopbar = new ReactiveVar(false);
     var resizeTracker = this.resizeTracker = new Tracker.Dependency();
@@ -236,7 +241,7 @@ if (Meteor.isClient) {
     template.timer.depend();
   };
 
-  Template.topBar.onDestroyed(function () {
+  Template.layout.onDestroyed(function () {
     Meteor.clearTimeout(this.timeout);
     window.removeEventListener("resize", this.resizeFunc, false);
   });
@@ -263,8 +268,7 @@ if (Meteor.isClient) {
     return params;
   };
 
-  Template.topBar.helpers({
-    isUpdateBlocked: function () { return isUpdateBlocked(); },
+  Template.layout.helpers({
     showTopbar: function () {return Template.instance().showTopbar.get(); },
     adminAlertIsTooLarge: function () {
       Template.instance().resizeTracker.depend();
@@ -330,10 +334,7 @@ if (Meteor.isClient) {
     }
   });
 
-  Template.topBar.events({
-    "click #topbar-update": function (event) {
-      unblockUpdate();
-    },
+  Template.layout.events({
     "click #admin-alert-icon": function (event) {
       var template = Template.instance();
       template.showTopbar.set(!template.showTopbar.get());
@@ -787,7 +788,7 @@ if (Meteor.isClient) {
     var self = this;
     this.subscribe("notifications");
 
-    Tracker.autorun(function () {
+    Template.instance().autorun(function () {
       if (self.grainSubscription) {
         self.grainSubscription.stop();
       }

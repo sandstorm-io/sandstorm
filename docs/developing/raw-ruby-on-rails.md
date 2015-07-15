@@ -4,7 +4,7 @@
 workings of Ruby on Rails on Sandstorm. If you want to package a Rails
 app for Sandstorm, consider reading the [five minute vagrant-spk
 packaging tutorial](../vagrant-spk/packaging-tutorial.md) instead, and
-using the [DIY stack](../vagrant-spk/platform-stacks.md).
+using the [DIY stack](../vagrant-spk/platform-stacks.md#diy-platform-stack).
 
 ## Introduction
 

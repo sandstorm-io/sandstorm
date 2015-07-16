@@ -406,6 +406,7 @@ if (Meteor.isClient) {
   Template.grainPowerboxRequest.events({
     "submit #powerbox-request-form": function (event) {
       event.preventDefault();
+      console.log(event.target.token.value);
       Meteor.call("finishPowerboxRequest", event.target.token.value, powerboxRequestInfo.saveLabel,
         this.grainId,
         function (err, token) {
@@ -441,12 +442,18 @@ if (Meteor.isClient) {
 
   Template.grainPowerboxOffer.events({
     "click button.dismiss": function (event) {
-      Meteor.call("finishPowerboxOffer", currentSessionId, function (err) {
-        // TODO(someday): display the error nicely to the user
-        if (err) {
-          console.error(err);
-        }
-      });
+      var sessionId = Template.instance().data.sessionId;
+      if (sessionId) {
+        Meteor.call("finishPowerboxOffer", sessionId, function (err) {
+          // TODO(someday): display the error nicely to the user
+          if (err) {
+            console.error(err);
+          }
+        });
+      } else {
+        // TODO(cleanup): This path is used by the admin UI. This is really hacky, though.
+        Iron.controller().state.set("powerboxOfferUrl", null);
+      }
     },
     "click .copy-me": copyMe
   });
@@ -526,6 +533,11 @@ if (Meteor.isClient) {
 
   Template.grainPowerboxOffer.helpers({
     powerboxOfferUrl: function () {
+      if (this.powerboxOfferUrl) {
+        // TODO(cleanup): This path is used by the admin UI. This is really hacky, though.
+        return this.powerboxOfferUrl;
+      }
+
       var session = Sessions.findOne({_id: this.sessionId}, {fields: {powerboxView: 1}});
       return session && session.powerboxView && session.powerboxView.offer;
     },

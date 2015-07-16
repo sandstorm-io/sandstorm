@@ -35,8 +35,8 @@ module.exports["Test Ip Networking"] = function (browser) {
     .url(browser.launch_url + "/admin/capabilities")
     .waitForElementVisible("#offer-ipnetwork", short_wait)
     .click("#offer-ipnetwork")
-    .waitForElementVisible("#powerbox-offer-popup input", short_wait)
-    .getValue("#powerbox-offer-popup input", function(result) {
+    .waitForElementVisible("#powerbox-offer-url", short_wait)
+    .getValue("#powerbox-offer-url", function(result) {
       browser
         .installApp("http://sandstorm.io/apps/jparyani/ip-networking-0.spk", "4829503496b793dffb29040208e35921")
         .assert.containsText("#grainTitle", "Untitled IpNetworkTest")
@@ -47,7 +47,7 @@ module.exports["Test Ip Networking"] = function (browser) {
         .frame()
         .waitForElementVisible("#powerbox-request-input", short_wait)
         .setValue("#powerbox-request-input", result.value)
-        .click("#powerbox-request-form button")
+        .click("#powerbox-request-form button.submit")
         .frame("grain-frame")
         .waitForElementVisible("#request-result", short_wait)
         .assert.containsText("#request-result", "301 Moved Permanently");
@@ -59,8 +59,8 @@ module.exports["Test Ip Interface"] = function (browser) {
     .url(browser.launch_url + "/admin/capabilities")
     .waitForElementVisible("#offer-ipinterface", short_wait)
     .click("#offer-ipinterface")
-    .waitForElementVisible("#powerbox-offer-popup input", short_wait)
-    .getValue("#powerbox-offer-popup input", function(result) {
+    .waitForElementVisible("#powerbox-offer-url", short_wait)
+    .getValue("#powerbox-offer-url", function(result) {
       browser
         .installApp("http://sandstorm.io/apps/jparyani/ip-interface-1.spk", "0b2d293e7701341a4db74f365aef6832")
         .assert.containsText("#grainTitle", "Untitled IpInterfaceTest")
@@ -72,7 +72,7 @@ module.exports["Test Ip Interface"] = function (browser) {
         .frame()
         .waitForElementVisible("#powerbox-request-input", short_wait)
         .setValue("#powerbox-request-input", result.value)
-        .click("#powerbox-request-form button")
+        .click("#powerbox-request-form button.submit")
         .frame("grain-frame")
         .waitForElementVisible("#request-result", short_wait)
         .assert.containsText("#request-result", "request:")

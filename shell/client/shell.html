@@ -30,7 +30,7 @@ limitations under the License.
 
   {{!-- standard topbar items --}}
   {{#sandstormTopbarItem name="homelink" topbar=globalTopbar}}
-    <a href="/">Sandstorm</a>
+    <a href="/" id="homelink">Sandstorm</a>
   {{/sandstormTopbarItem}}
   {{#with align="right"}}
     {{>sandstormTopbarItem name="account" topbar=globalTopbar template="loginButtons"}}
@@ -274,23 +274,23 @@ limitations under the License.
 </template>
 
 <template name="grainTitle">
-  <span class="editable" title="Rename">{{title}}</span>
+  <span class="editable" title="Rename" id="grainTitle">{{title}}</span>
 </template>
 <template name="grainDeleteButton">
-  <button class="grain-button" title="Delete">Delete</button>
+  <button class="grain-button" title="Delete" id="deleteGrain">Delete</button>
 </template>
 <template name="grainDebugLogButton">
-  <button class="grain-button" title="Show Debug Log">Log</button>
+  <button class="grain-button" title="Show Debug Log" id="openDebugLog">Log</button>
 </template>
 <template name="grainBackupButton">
-  <button class="grain-button" title="Download Backup">Backup</button>
+  <button class="grain-button" title="Download Backup" id="backupGrain">Backup</button>
 </template>
 <template name="grainRestartButton">
-  <button class="grain-button" title="Restart App">Restart</button>
+  <button class="grain-button" title="Restart App" id="restartGrain">Restart</button>
 </template>
 
 <template name="grainApiTokenButton">
-  <button class="grain-button" title="Get Webkey">Get&nbsp;Webkey</button>
+  <button class="grain-button" title="Get Webkey" id="showApiToken">Get&nbsp;Webkey</button>
 
   {{#sandstormTopbarPopup}}
     <h4>Webkeys</h4>
@@ -343,7 +343,7 @@ limitations under the License.
 </template>
 
 <template name="grainShareButton">
-  <button class="grain-button" title="Share">Share</button>
+  <button class="grain-button" title="Share" id="show-share-grain">Share</button>
 
   {{#sandstormTopbarPopup}}
     <h4>Share with others...</h4>
@@ -455,7 +455,7 @@ limitations under the License.
   {{#sandstormTopbarPopup}}
     <h4>Powerbox Offer</h4>
     <div>
-      <a class="copy-me" href="{{powerboxOfferUrl}}">{{powerboxOfferUrl}}</a>
+      <a class="copy-me" href="{{powerboxOfferUrl}}" id="powerbox-offer-url">{{powerboxOfferUrl}}</a>
       <button class="dismiss">Dismiss</button>
     </div>
   {{/sandstormTopbarPopup}}
@@ -967,13 +967,10 @@ limitations under the License.
 
 <template name="adminCaps">
   {{#if powerboxOfferUrl}}
-  <div id="powerbox-offer-popup" class="popup">
-    <h3>Powerbox Offer</h3>
-    <div>
-      <input type="text" class="autoSelect" value="{{powerboxOfferUrl}}" readonly>
-    </div>
-  </div>
-  <div id="powerbox-offer-popup-closer" class="popup-closer"></div>
+    {{#with powerboxOfferUrl=powerboxOfferUrl}}
+      {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"
+          startOpen=true}}
+    {{/with}}
   {{/if}}
   <p><button id="offer-ipnetwork">Offer IpNetwork Capability</button>
      <button id="offer-ipinterface">Offer IpInterface Capability</button><br>

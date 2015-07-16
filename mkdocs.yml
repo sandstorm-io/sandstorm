@@ -24,7 +24,7 @@ pages:
     - "Email from apps": "developing/email-from-apps.md"
     - "vagrant-spk design document": "vagrant-spk/design.md"
     - "Troubleshooting": "developing/troubleshooting.md"
-- Working with raw Sandstorm:
+- Developing on raw Sandstorm:
     - "Raw packaging guide": "developing/raw-packaging-guide.md"
     - "Raw integration of Python": "developing/raw-python.md"
     - "Raw integration of Ruby on Rails": "developing/raw-ruby-on-rails.md"

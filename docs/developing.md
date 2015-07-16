@@ -63,7 +63,7 @@ created it. Read these documents to learn how access control works.
 
 * **Overview**: [Delegation is the Cornerstone of Civilization](https://blog.sandstorm.io/news/2015-05-05-delegation-is-the-cornerstone-of-civilization.html)
 * **Login & permissions**: [User authentication & permissions](developing/auth.md)
-* **Making it world-accessible**: [Publishing to the user's domain](developing/web-publishing.md) <!-- | [API keys]() -->
+* **Making it world-accessible**: [Publishing to the user's domain](developing/web-publishing.md) | [Exporting HTTP APIs](developing/http-apis.md)
 
 ---
 

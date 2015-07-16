@@ -230,8 +230,10 @@ grainPermissions = function(vertex, viewInfo) {
     if (edgesByRecipient[recipient]) {
       edgesByRecipient[recipient].forEach(function (inEdge) {
         var sharer = inEdge.sharer;
+        var needToPush = false;
         if (!permissionsMap[sharer]) {
           permissionsMap[sharer] = new PermissionSet();
+          needToPush = true;
         }
 
         var newPermissions = roleAssignmentPermissions({allAccess: null}, viewInfo);
@@ -246,6 +248,9 @@ grainPermissions = function(vertex, viewInfo) {
         }
 
         if (permissionsMap[sharer].add(newPermissions)) {
+          needToPush = true;
+        }
+        if (needToPush) {
           userStack.push(sharer);
         }
       });

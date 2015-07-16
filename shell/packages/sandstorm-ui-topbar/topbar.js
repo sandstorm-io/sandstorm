@@ -89,20 +89,25 @@ Template.sandstormTopbar.events({
     unblockUpdate();
   },
 
-  "click ul.topbar>li": function (event) {
+  "click .topbar>li": function (event) {
     event.stopPropagation();
     var data = Template.instance().data;
     data._expanded.set(event.currentTarget.className);
   },
 
-  "click ul.topbar>li>div.closer": function (event) {
+  "click .topbar>li>div.closer": function (event) {
     event.stopPropagation();
     var data = Template.instance().data;
     data._expanded.set(null);
   },
 
-  "click ul.topbar>li>div>div.popup": function (event) {
+  "click .topbar>li>div>div.popup": function (event) {
     event.stopPropagation();
+  },
+
+  "click .menu-button": function (event) {
+    var element = Template.instance().find(".topbar");
+    element.classList.toggle("expanded");
   }
 });
 
@@ -141,7 +146,14 @@ Template.sandstormTopbarItem.onDestroyed(function () {
 
 var windowWidth = new ReactiveVar(window.innerWidth);
 window.addEventListener("resize", function () {
-  windowWidth.update(window.innerWidth);
+  windowWidth.set(window.innerWidth);
+});
+
+Template.sandstormTopbarPopup.onCreated(function () {
+  Template.instance().renderDoneVar = new ReactiveVar(false);
+});
+Template.sandstormTopbarPopup.onRendered(function () {
+  Template.instance().renderDoneVar.set(true);
 });
 
 Template.sandstormTopbarPopup.helpers({
@@ -156,6 +168,14 @@ Template.sandstormTopbarPopup.helpers({
     //
     // TODO(someday): Make this better. We could wait until the popup template has opened and
     //   rendered, then choose a better position based on its full size.
+
+    if (!Template.instance().renderDoneVar.get()) {
+      return {
+        align: "left",
+        px: 0
+      };
+    }
+
     var rect = Template.instance().firstNode.parentNode.getBoundingClientRect();
     var currentWindowWidth = windowWidth.get();
     var windowMid = currentWindowWidth / 2;

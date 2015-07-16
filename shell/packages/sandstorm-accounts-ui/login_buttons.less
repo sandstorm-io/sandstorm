@@ -59,7 +59,7 @@
 @login-buttons-config-color-active: lighten(@login-buttons-config-color, 10%);
 @login-buttons-config-color-active-border: darken(@login-buttons-config-color-active, 10%);
 
-body>ul.topbar>li.account {
+body>.topbar>.account {
 
   display: inline-block;
   margin-right: 0.2px; // Fixes display on IE8: http://www.compsoft.co.uk/Blog/2009/11/inline-block-not-quite-inline-blocking.html
@@ -98,7 +98,7 @@ body>ul.topbar>li.account {
   }
 }
 
-body>ul.topbar>li.account .login-button, .accounts-dialog .login-button {
+body>.topbar>.account .login-button, .accounts-dialog .login-button {
   cursor: pointer;
   .unselectable();
   padding: 4px 8px;
@@ -157,7 +157,7 @@ body>ul.topbar>li.account .login-button, .accounts-dialog .login-button {
   margin-bottom: 4px;
 }
 
-body>ul.topbar>li.account {
+body>.topbar>.account {
   .login-buttons-padding {
     display: inline-block;
     width: 30px;
@@ -221,7 +221,7 @@ body>ul.topbar>li.account {
   #back-to-login-link { float: right; }
 }
 
-body>ul.topbar>li.account a, .accounts-dialog a {
+body>.topbar>.account a, .accounts-dialog a {
     cursor: pointer;
     text-decoration: underline;
 }
@@ -229,7 +229,7 @@ body>ul.topbar>li.account a, .accounts-dialog a {
 @meteor-accounts-base-padding: 8px;
 @meteor-accounts-dialog-border-width: 1px;
 
-body>ul.topbar>li.account>div>div.popup {
+body>.topbar>.account>div>div.popup {
   label, .title {
     font-size: 80%;
     margin-top: 7px;
@@ -440,7 +440,7 @@ body>ul.topbar>li.account>div>div.popup {
   background-color: rgba(0, 0, 0, 0.7);
 }
 
-body>ul.topbar>li.account, .accounts-dialog {
+body>.topbar>.account, .accounts-dialog {
   input[type=text], input[type=email], input[type=password] {
     padding: 4px;
     border: 1px solid #aaa;

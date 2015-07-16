@@ -455,7 +455,7 @@ limitations under the License.
   {{#sandstormTopbarPopup}}
     <h4>Powerbox Offer</h4>
     <div>
-      <input type="text" class="autoSelect" value="{{powerboxOfferUrl}}" readonly>
+      <a class="copy-me" href="{{powerboxOfferUrl}}">{{powerboxOfferUrl}}</a>
       <button class="dismiss">Dismiss</button>
     </div>
   {{/sandstormTopbarPopup}}
@@ -463,7 +463,7 @@ limitations under the License.
 
 <template name="grain">
   {{>sandstormTopbarItem name="title" priority=5 topbar=globalTopbar template="grainTitle"}}
-  {{#sandstormTopbarItem name="grainSize" topbar=globalTopbar}}
+  {{#sandstormTopbarItem name="grain-size" topbar=globalTopbar}}
     {{grainSize}}
   {{/sandstormTopbarItem}}
 

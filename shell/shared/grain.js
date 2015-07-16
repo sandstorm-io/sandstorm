@@ -448,9 +448,7 @@ if (Meteor.isClient) {
         }
       });
     },
-    "click .autoSelect": function (event) {
-      event.currentTarget.select();
-    }
+    "click .copy-me": copyMe
   });
 
   Template.grain.onCreated(function () {

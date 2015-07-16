@@ -17,14 +17,14 @@ limitations under the License.
 -->
 
 <template name="sandstormTopbar">
-  <!-- Becomes hamburger menu button in mobile view. -->
-  <div class="menu-button"></div>
-
   {{#if isUpdateBlocked}}
     <div class="topbar-update">
       Sandstorm has been updated &mdash; Click here to reload
     </div>
   {{else}}
+    <!-- Becomes hamburger menu button in mobile view. -->
+    <div class="menu-button"></div>
+
     <ul class="topbar">
       {{#each items}}
         <li class="{{name}}">

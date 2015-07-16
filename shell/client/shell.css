@@ -44,14 +44,14 @@ body {
   background-color: white;
 }
 
-body>ul.topbar, body>.topbar-update {
+body>.topbar, body>.topbar-update {
   background-color: black;
   color: #ccc;
   font-weight: bold;
   line-height: 32px;
 }
 
-body>ul.topbar {
+body>.topbar {
   position: fixed;
   top: 0;
   margin: 0;
@@ -74,20 +74,21 @@ body>.topbar-update {
   cursor: pointer;
 }
 
-body>ul.topbar>li {
+body>.topbar>li {
   display: inline-block;
   list-style-type: none;
 }
 
-body>ul.topbar>li>div.closer {
+body>.topbar>li>.closer {
   position: fixed;
   top: 0;
   bottom: 0;
   left: 0;
   right: 0;
+  z-index: 100000;
 }
 
-body>ul.topbar>li>div>div.popup {
+body>.topbar>li>div>.popup {
   position: fixed;
   top: 32px;
   max-height: calc(100vh - 64px);
@@ -105,7 +106,7 @@ body>ul.topbar>li>div>div.popup {
   border-bottom: 1px solid #E0E0E0;
 }
 
-body>ul.topbar>li>div>div.popup::before {
+body>.topbar>li>div>.popup::before {
   content: " ";
   position: absolute;
   top: -8px;
@@ -117,20 +118,20 @@ body>ul.topbar>li>div>div.popup::before {
   border-bottom: 8px solid white;
 }
 
-body>ul.topbar>li>div>div.popup.align-left::before {
+body>.topbar>li>div>.popup.align-left::before {
   left: 42px;
 }
 
-body>ul.topbar>li>div>div.popup.align-right::before {
+body>.topbar>li>div>.popup.align-right::before {
   right: 42px;
 }
 
-body>ul.topbar>li>div>div.popup>* {
+body>.topbar>li>div>.popup>* {
   margin-left: 16px;
   margin-right: 16px;
 }
 
-body>ul.topbar>li>div>div.popup>h4 {
+body>.topbar>li>div>.popup>h4 {
   margin: 0px;
   font-size: 14px;
   padding-left: 10px;
@@ -139,11 +140,11 @@ body>ul.topbar>li>div>div.popup>h4 {
   margin-bottom: 16px;
 }
 
-body>ul.topbar>li>div>div.popup>*:last-child {
+body>.topbar>li>div>.popup>*:last-child {
   margin-bottom: 16px;
 }
 
-body>ul.topbar>li.homelink {
+body>.topbar>.homelink {
   padding-left: 32px;
   padding-right: 8px;
   background-image: url("/icon.png");
@@ -159,32 +160,32 @@ body>ul.topbar>li.homelink {
   filter: brightness(0.75);
 }
 
-body>ul.topbar>li.homelink a {
+body>.topbar>.homelink a {
   color: white;
   text-decoration: none;
 }
 
-body>ul.topbar>li.homelink:hover {
+body>.topbar>.homelink:hover {
   -webkit-filter: none;
   filter: none;
   background-color: #666;
 }
 
-body>ul.topbar>li.account {
+body>.topbar>.account {
   float: right;
   display: block;
   padding: 0 8px;
 }
 
-body>ul.topbar>li.notifications {
+body>.topbar>.notifications {
   float: right;
 }
 
-body>ul.topbar>li.admin-alert {
+body>.topbar>.admin-alert {
   float: right;
 }
 
-body>ul.topbar>li.admin-alert .alert {
+body>.topbar>.admin-alert .alert {
   background-color: #762f87;
   color: white;
   text-decoration: none;
@@ -195,32 +196,32 @@ body>ul.topbar>li.admin-alert .alert {
   margin-right: 8px;
 }
 
-body>ul.topbar>li.admin-alert .alert.countdown-second,
-body>ul.topbar>li.admin-alert .alert.countdown-now {
+body>.topbar>.admin-alert .alert.countdown-second,
+body>.topbar>.admin-alert .alert.countdown-now {
   background-color: #e82538;
 }
 
-body>ul.topbar>li.admin-alert a:hover {
+body>.topbar>.admin-alert a:hover {
   background-color: #9d3aa5;
 }
 
-body>ul.topbar>li.title {
+body>.topbar>.title {
   padding-left: 8px;
 }
 
-body>ul.topbar>li.title>span.editable {
+body>.topbar>.title>span.editable {
   display: inline-block;
   padding: 0 8px;
   margin-left: -8px;
 }
 
-body>ul.topbar>li.title>span.editable:hover {
+body>.topbar>.title>span.editable:hover {
   cursor: pointer;
   color: white;
   background-color: #888;
 }
 
-body>ul.topbar>li>button.grain-button {
+body>.topbar>li>button.grain-button {
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -233,17 +234,17 @@ body>ul.topbar>li>button.grain-button {
   overflow: hidden;
 }
 
-body>ul.topbar>li>button.grain-button:hover {
+body>.topbar>li>button.grain-button:hover {
   background-color: #888;
 }
 
-body>ul.topbar>li.delete>button    { background-image: url("/trash.png"); }
-body>ul.topbar>li.debug-log>button { background-image: url("/wrench.png"); }
-body>ul.topbar>li.backup>button    { background-image: url("/download.png"); }
-body>ul.topbar>li.restart>button   { background-image: url("/restart.png"); }
-body>ul.topbar>li.webkey>button    { background-image: url("/key.png"); }
+body>.topbar>.delete>button    { background-image: url("/trash.png"); }
+body>.topbar>.debug-log>button { background-image: url("/wrench.png"); }
+body>.topbar>.backup>button    { background-image: url("/download.png"); }
+body>.topbar>.restart>button   { background-image: url("/restart.png"); }
+body>.topbar>.webkey>button    { background-image: url("/key.png"); }
 
-body>ul.topbar>li.share>button {
+body>.topbar>.share>button {
   background-image: url("/share.png");
   background-position: left;
   border-radius: 4px;
@@ -252,7 +253,7 @@ body>ul.topbar>li.share>button {
   width: 64px;
   padding-left: 20px;
 }
-body>ul.topbar>li.share>button.grain-button:hover {
+body>.topbar>.share>button.grain-button:hover {
   background-color: #428bca;
 }
 
@@ -261,6 +262,9 @@ a.copy-me {
   margin: 8px;
   border: 1px solid #ccc;
   overflow: hidden;
+  font-family: monospace;
+  text-decoration: none;
+  color: inherit;
 }
 
 /***********************************************************************************************
@@ -567,28 +571,6 @@ img {
   border: none;
   color: white;
   cursor: pointer;
-}
-
-#notification-dropdown {
-  position: fixed;
-  top: 32px;
-  right: 32px;
-  background-color: white;
-  color: black;
-  width: 400px;
-  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
-  border-left: 1px solid #E0E0E0;
-  border-right: 1px solid #E0E0E0;
-  border-bottom: 1px solid #E0E0E0;
-}
-
-#notification-dropdown > h4 {
-  background-color: #666;
-  color: #ccc;
-  margin: 0px;
-  font-size: 14px;
-  text-transform: uppercase;
-  padding-left: 10px;
 }
 
 #notification-list {
@@ -1099,7 +1081,7 @@ aside a#preorder {
   display: block;
   width: 300px;
   height: 300px;
-  background-image: url(https://sandstorm.io/images/sunrise.svg);
+  background-image: url("https://sandstorm.io/images/sunrise.svg");
   text-align: center;
   text-decoration: none;
   font-weight: normal;
@@ -1120,7 +1102,7 @@ aside #preorder span:last-of-type {
 
 aside #social {
   margin-top: 8px;
-  background-image: url(https://sandstorm.io/images/sandcat.svg);
+  background-image: url("https://sandstorm.io/images/sandcat.svg");
   width: 300px;
   height: 200px;
   background-repeat: no-repeat;
@@ -1162,11 +1144,11 @@ aside #social ul>li>a:hover {
   background-color: #ffe8f5;
 }
 
-aside #social ul>li#github>a { background-image: url(https://sandstorm.io/images/github.svg); }
-aside #social ul>li#feed>a { background-image: url(https://sandstorm.io/images/rss.svg); }
-aside #social ul>li#twitter>a { background-image: url(https://sandstorm.io/images/twitter.svg); }
-aside #social ul>li#google-plus>a { background-image: url(https://sandstorm.io/images/google-plus.svg); }
-aside #social ul>li#facebook>a { background-image: url(https://sandstorm.io/images/facebook.svg); }
+aside #social ul>li#github>a { background-image: url("https://sandstorm.io/images/github.svg"); }
+aside #social ul>li#feed>a { background-image: url("https://sandstorm.io/images/rss.svg"); }
+aside #social ul>li#twitter>a { background-image: url("https://sandstorm.io/images/twitter.svg"); }
+aside #social ul>li#google-plus>a { background-image: url("https://sandstorm.io/images/google-plus.svg"); }
+aside #social ul>li#facebook>a { background-image: url("https://sandstorm.io/images/facebook.svg"); }
 
 aside #social>p {
   position: absolute;
@@ -1385,6 +1367,10 @@ a.disable-cap {
   transition: background-color 200ms;
 }
 
+/***********************************************************************************************
+ * mobile tweaks                                                                               *
+ ***********************************************************************************************/
+
 @media screen and (max-width: 1250px) {
   aside {
     position: static;
@@ -1441,14 +1427,30 @@ a.disable-cap {
     padding: 16px;
   }
 
-  #topbar, #topbar-right, #topbar-update {
+  body>.topbar, body>.topbar-update {
     line-height: 48px;
     height: 48px;
+    left: 0;
+    width: auto;
+    right: 0;
   }
-  #topbar-update {
+  body>.topbar {
+    background-color: #eee;
+    color: black;
+  }
+  body>.topbar-update {
     line-height: 24px;
   }
-  #topbar #menu-button {
+  body>.topbar {
+    transition: height 0.2s;
+  }
+  body>.topbar.expanded {
+    height: 100%;
+    box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+  }
+
+  body>.menu-button {
+    background-color: black;
     display: inline-block;
     vertical-align: top;
     background-image:url(/menu.png);
@@ -1460,68 +1462,125 @@ a.disable-cap {
     color: transparent;
     cursor: pointer;
     border-right: 1px solid #666;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
   }
-  #topbar #menu-button:hover {
+  body>.menu-button:hover {
     background-color: #666;
   }
-  #topbar.light #menu-button {
-    display: none;
-  }
-  #topbar #homelink {
-    display: none;
-  }
-
-  #topbar #homelink-button {
+  body>.topbar>li,
+  body>.topbar>.account,
+  body>.topbar>.homelink {
     display: block;
-  }
-
-  #menu button {
-    display: block;
+    float: none;
     width: 100%;
-    text-align: left;
-    height: 64px;
-    color: black;
-    padding-left: 48px;
-    background-size: auto;
-    background-position: 8px center;
+    height: 48px;
     border-bottom: 1px solid #ddd;
+    padding: 0;
   }
-  #menu button:hover {
-    background-color: white;
+  body>.topbar>.title {
+    background-color: black;
+    color: #ccc;
+    padding-left: 60px;
+    font-size: 120%;
   }
-
-  #topbar #deleteGrain  { background-image: url("/trash-m.png"); }
-  #topbar #openDebugLog { background-image: url("/wrench-m.png"); }
-  #topbar #backupGrain  { background-image: url("/download-m.png"); }
-  #topbar #restartGrain { background-image: url("/restart-m.png"); }
-  #topbar #showApiToken { background-image: url("/key-m.png"); }
-  #topbar #show-share-grain {
-    background-image: url("/share-m.png");
-    width: 100%;
-    padding-left: 48px;
-    background-position: 8px center;
-  }
-
-  #api-token-popup {
+  body>.topbar>.notifications {
     position: fixed;
-    left: 16px;
-    right: 16px;
-    top: 64px;
-    height: auto;
-    width: auto;
+    top: 0;
+    right: 0;
+    width: 48px;
+    height: 48px;
+  }
+  body>.topbar>.admin-alert {
+    position: fixed;
+    top: 0;
+    right: 48px;
+    width: 48px;
+    height: 48px;
+  }
+  body>.topbar>.grain-size {
+    display: none;
+  }
+  body>.topbar>.account {
+    float: none;
   }
 
-  #api-token-popup .copy-me {
+  body>.topbar>li>button.grain-button,
+  body>.topbar>.account>.login-link-text,
+  body>.topbar>.homelink>a {
     display: block;
-    background-color: white;
+    width: 100%;
+    background-position: 8px center;
+    background-size: 32px 32px;
+    background-repeat: no-repeat;
     color: black;
-    font-family: monospace;
+    text-align: left;
+    padding-left: 48px;
+    font-size: 14pt;
+    height: 100%;
+    font-weight: normal;
+    font-family: sans-serif;
+  }
+  body>.topbar>.homelink {
+    background-image: none;
+    -webkit-filter: none;
+    filter: none;
+  }
+  body>.topbar>.homelink:hover {
+    background-color: #eee;
+  }
+  body>.topbar>.share>button {
+    border-radius: 0;
+  }
+  body>.topbar>li>button.grain-button:hover,
+  body>.topbar>.share>button.grain-button:hover,
+  body>.topbar>.account>.login-link-text:hover,
+  body>.topbar>.homelink>a:hover {
+    background-color: white;
+  }
+  body>.topbar>.account>.login-link-text {
     text-decoration: none;
-    font-size: 150%;
-    word-wrap: break-word;
-    margin: 1em 0;
-    padding: 4px;
-    cursor: text;
+    font-weight: normal;
+    font-family: sans-serif;
+  }
+
+  body>.topbar>.homelink>a       { background-image: url("/icon32.png"); }
+  body>.topbar>.share>button     { background-image: url("/share-m.png"); }
+  body>.topbar>.delete>button    { background-image: url("/trash-m.png"); }
+  body>.topbar>.debug-log>button { background-image: url("/wrench-m.png"); }
+  body>.topbar>.backup>button    { background-image: url("/download-m.png"); }
+  body>.topbar>.restart>button   { background-image: url("/restart-m.png"); }
+  body>.topbar>.webkey>button    { background-image: url("/key-m.png"); }
+
+  body>.topbar>li>div>.popup {
+    position: static;
+    margin: 64px auto 32px;
+    font-size: 20px;
+    max-width: 90%;
+    border: 1px solid #ccc;
+    overflow-y: auto;
+  }
+  body>.topbar>li>.closer {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  body>.topbar>.share>div>.popup,
+  body>.topbar>.webkey>div>.popup,
+  body>.topbar>.account>div>.popup,
+  body>.topbar>.notifications>div>.popup {
+    width: 90%;
+  }
+  body>.topbar>li>div>.popup>h4 {
+    font-size: 20px;
+  }
+  body>.topbar>li>div>.popup::before {
+    display: none;
+  }
+  body>.topbar>li>div>.popup input,
+  body>.topbar>li>div>.popup button,
+  body>.topbar>li>div>.popup .login-button {
+    font-size: 20px;
   }
 
   .main-content {
@@ -1533,11 +1592,6 @@ a.disable-cap {
     height: 40px;
     margin-top: 4px;
     background-image: url("/inbox-m.png");
-  }
-
-  #notification-dropdown {
-    width: 300px;
-    top: 48px;
   }
 
   #demo > .centered-box {

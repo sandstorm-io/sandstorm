@@ -31,6 +31,7 @@ pages:
 - Administering:
     - "Overview": "administering.md"
     - "Installation": "install.md"
+    - "Sandcats dynamic DNS": "administering/sandcats.md"
     - "Email": "administering/email.md"
     - "Demo mode": "administering/demo.md"
     - "Backups": "administering/backups.md"

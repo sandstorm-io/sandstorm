@@ -16,7 +16,6 @@
 
 #include "backend.h"
 #include <kj/debug.h>
-#include "util.h"
 #include <capnp/serialize.h>
 #include <capnp/serialize-async.h>
 #include <stdio.h>  // rename()
@@ -66,8 +65,14 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
         .then([=](Supervisor::Client&& client) mutable {
       // We should send a keepAlive() to make sure the supervisor is still up.
       auto promise = client.keepAliveRequest().send();
-      return promise.then([KJ_MVCAP(client)](auto) mutable -> kj::Promise<Supervisor::Client> {
+      return promise.then([=,KJ_MVCAP(client)](auto) mutable -> kj::Promise<Supervisor::Client> {
         // Success.
+        // Make new SandstormCore, since the last one points to a frontend that disconnected
+        auto coreRequest = coreFactory.getSandstormCoreRequest();
+        coreRequest.setGrainId(grainId);
+        auto core = coreRequest.send().getCore();
+        iter->second.coreRedirector->setTarget(core);
+
         return kj::mv(client);
       }, [=](kj::Exception&& exception) mutable -> kj::Promise<Supervisor::Client> {
         // Exception?
@@ -136,13 +141,15 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
   auto addressPromise =
       network.parseAddress(kj::str("unix:/var/sandstorm/grains/", grainId, "/socket"));
 
+  auto coreRedirector = kj::refcounted<CapRedirector>();
   // When both of those are done, connect to the address.
   auto finalPromise = promise
       .then([this,KJ_MVCAP(addressPromise)](size_t n) mutable {
     return kj::mv(addressPromise);
   }).then([](kj::Own<kj::NetworkAddress>&& address) {
     return address->connect();
-  }).then([this,KJ_MVCAP(stdoutPipe),KJ_MVCAP(process),grainId = kj::heapString(grainId)]
+  }).then([this,KJ_MVCAP(stdoutPipe),KJ_MVCAP(process),grainId = kj::heapString(grainId),
+           coreRedirector = kj::addRef(*coreRedirector)]
           (kj::Own<kj::AsyncIoStream>&& connection) mutable {
     // Connected. Create the RunningGrain and fulfill promises.
     auto ignorePromise = ignoreAll(*stdoutPipe);
@@ -151,7 +158,9 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
     auto coreRequest = coreFactory.getSandstormCoreRequest();
     coreRequest.setGrainId(grainId);
     auto core = coreRequest.send().getCore();
-    auto grain = kj::heap<RunningGrain>(*this, kj::mv(grainId), kj::mv(connection), kj::mv(core));
+    coreRedirector->setTarget(core);
+    auto grain = kj::heap<RunningGrain>(*this, kj::mv(grainId), kj::mv(connection),
+      static_cast<capnp::Capability::Client>(kj::addRef(*coreRedirector)).castAs<SandstormCore>());
     auto client = grain->getSupervisor();
     tasks.add(grain->onDisconnect().attach(kj::mv(grain), kj::mv(process)));
     return client;
@@ -160,7 +169,8 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
   // Add the promise to our map.
   StartingGrain startingGrain = {
     kj::heapString(grainId),
-    kj::mv(finalPromise)
+    kj::mv(finalPromise),
+    kj::mv(coreRedirector)
   };
   kj::StringPtr grainIdPtr = startingGrain.grainId;
   auto result = startingGrain.promise.addBranch();

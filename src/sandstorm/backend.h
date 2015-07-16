@@ -23,6 +23,7 @@
 #include <capnp/rpc-twoparty.h>
 #include <kj/one-of.h>
 #include <kj/vector.h>
+#include "util.h"
 
 namespace kj {
   class InputStream;
@@ -78,6 +79,7 @@ private:
   struct StartingGrain {
     kj::String grainId;
     kj::ForkedPromise<Supervisor::Client> promise;
+    kj::Own<CapRedirector> coreRedirector;
   };
 
   std::map<kj::StringPtr, StartingGrain> supervisors;

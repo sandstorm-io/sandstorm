@@ -47,7 +47,7 @@ if (allowDevAccounts) {
     };
     Accounts.ui.registerService("devAccounts", "a Dev Account");
 
-    var loginDevAccount = function(displayName, isAdmin) {
+    loginDevAccount = function(displayName, isAdmin) {
       Accounts.callLoginMethod({
         methodName: "createDevAccount",
         methodArguments: [displayName, isAdmin],

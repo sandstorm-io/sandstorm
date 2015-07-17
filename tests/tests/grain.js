@@ -200,6 +200,119 @@ module.exports["Test grain anonymous user"] = function (browser) {
     });
 }
 
+// Test roleless sharing between multiple users
+module.exports["Test roleless sharing"] = function (browser) {
+  browser
+    // Upload app as Alice
+    .loginDevAccount("Alice")
+    .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
+    .waitForElementVisible('#step-confirm', very_long_wait)
+    .click('#confirmInstall')
+    .waitForElementVisible('.new-grain-button', short_wait)
+    .assert.containsText('.new-grain-button', 'New Hacker CMS Site')
+    // Create grain with that user
+    .click('.new-grain-button')
+    .waitForElementVisible('#grainTitle', medium_wait)
+    .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+    .click('#show-share-grain')
+    .waitForElementVisible("#new-share-token", short_wait)
+    .submitForm('#new-share-token')
+    .waitForElementVisible('#share-token-text', medium_wait)
+    // Navigate to the url with Bob
+    .getText('#share-token-text', function(response) {
+      browser
+        .loginDevAccount("Bob")
+        .url(response.value)
+        .waitForElementVisible("#redeem-token-button", short_wait)
+        .click("#redeem-token-button")
+        .waitForElementVisible('#grainTitle', medium_wait)
+        .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+        .frame('grain-frame')
+        .waitForElementPresent('#publish', medium_wait)
+        .assert.containsText('#publish', 'Publish')
+        .frame(null)
+        .click('#show-share-grain')
+        .waitForElementVisible("#new-share-token", short_wait)
+        .submitForm('#new-share-token')
+        .waitForElementVisible('#share-token-text', medium_wait)
+        // Navigate to the re-shared url with Carol
+        .getText('#share-token-text', function(response) {
+          browser
+            .loginDevAccount("Carol")
+            .url(response.value)
+            .waitForElementVisible("#redeem-token-button", short_wait)
+            .click("#redeem-token-button")
+            .waitForElementVisible('#grainTitle', medium_wait)
+            .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+            .frame('grain-frame')
+            .waitForElementPresent('#publish', medium_wait)
+            .assert.containsText('#publish', 'Publish')
+            .frame(null)
+            .click('#show-share-grain')
+            .waitForElementVisible("#new-share-token", short_wait)
+            .submitForm('#new-share-token')
+            .waitForElementVisible('#share-token-text', medium_wait)
+        });
+    });
+}
+
+// Test sharing between multiple users
+module.exports["Test role sharing"] = function (browser) {
+  browser
+    // Upload app as Alice
+    .loginDevAccount("Alice")
+    .url(browser.launch_url + "/install/21f8dba75cf1bd9f51b97311ae64aaca?url=http://sandstorm.io/apps/etherpad9.spk")
+    .waitForElementVisible('#step-confirm', very_long_wait)
+    .click('#confirmInstall')
+    .waitForElementVisible('.new-grain-button', short_wait)
+    .assert.containsText('.new-grain-button', 'New Etherpad Document')
+    // Create grain with that user
+    .click('.new-grain-button')
+    .waitForElementVisible('#grainTitle', medium_wait)
+    .assert.containsText('#grainTitle', 'Untitled Etherpad Document')
+    .click('#show-share-grain')
+    .waitForElementVisible("#share-token-role", medium_wait)
+    .assert.valueContains("#share-token-role", "editor")
+    .submitForm('#new-share-token')
+    .waitForElementVisible('#share-token-text', medium_wait)
+    // Navigate to the url with Bob
+    .getText('#share-token-text', function(response) {
+      browser
+        .loginDevAccount("Bob")
+        .url(response.value)
+        .waitForElementVisible("#redeem-token-button", short_wait)
+        .click("#redeem-token-button")
+        .waitForElementVisible('#grainTitle', medium_wait)
+        .assert.containsText('#grainTitle', 'Untitled Etherpad Document')
+        .frame('grain-frame')
+        .waitForElementPresent('#editorcontainerbox', medium_wait)
+        .frame(null)
+        .click('#show-share-grain')
+        .waitForElementVisible("#share-token-role", medium_wait)
+        .assert.valueContains("#share-token-role", "editor")
+        .submitForm('#new-share-token')
+        .waitForElementVisible('#share-token-text', medium_wait)
+        // Navigate to the re-shared url with Carol
+        .getText('#share-token-text', function(response) {
+          browser
+            .loginDevAccount("Carol")
+            .url(response.value)
+            .waitForElementVisible("#redeem-token-button", short_wait)
+            .click("#redeem-token-button")
+            .waitForElementVisible('#grainTitle', medium_wait)
+            .assert.containsText('#grainTitle', 'Untitled Etherpad Document')
+            .frame('grain-frame')
+            .waitForElementPresent('#editorcontainerbox', medium_wait)
+            .frame(null)
+            .click('#show-share-grain')
+            .waitForElementVisible("#share-token-role", medium_wait)
+            .assert.valueContains("#share-token-role", "editor")
+            .submitForm('#new-share-token')
+            .waitForElementVisible('#share-token-text', medium_wait)
+        });
+    });
+}
+
 module.exports["Test grain incognito interstitial"] = function (browser) {
   browser
     // Upload app as github user
@@ -224,7 +337,6 @@ module.exports["Test grain incognito interstitial"] = function (browser) {
     // Navigate to the url with an anonymous user
     .getText('#share-token-text', function(response) {
       browser
-        .execute('window.Meteor.logout()')
         .loginGoogle()
         .pause(short_wait)
         // Try incognito

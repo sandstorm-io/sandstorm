@@ -98,6 +98,10 @@ struct Manifest {
   # `maxApiVersion`, it may engage backwards-compatibility hacks and hide features introduced in
   # newer versions.
 
+  metadata @8 :Metadata;
+  # Stuff that's not important to actually executing the app, but important to how the app is
+  # presented to the user in the Sandstorm UI and app marketplace.
+
   struct Command {
     # Description of a command to execute.
     #
@@ -199,6 +203,163 @@ struct BridgeConfig {
   # also has the effect of limiting your clients to only accessing endpoints under that path you
   # provide. It should always end in a trailing '/'.
   # "/" is a valid value, and will give clients access to all paths.
+}
+
+struct Metadata {
+  # Data which is not needed specifically to execute the app, but is useful for purposes like
+  # marketing and display.
+  #
+  # Technically, appMarketingVersion and appTitle belong in this category, but they were defined
+  # before MarketData became a thing.
+
+  icon :group {
+    # Various icons to represent the app in various contexts.
+    #
+    # Each context is associated with a List(Icon). This list contains versions of the same image
+    # in varying sizes and formats. When the icon is used, the optimal icon image will be chosen
+    # from the list based on the context where it is to be displayed, possibly taking into account
+    # parameters like size, display pixel density, and browser image format support.
+
+    main @0 :List(Icon);
+    # The icon which represents the app itself, such as in an "app grid" view showing the user
+    # all of their apps.
+
+    grain @1 :List(Icon);
+    # An icon which represents one grain created with this app. If omitted, `main` will be used.
+
+    banner @2 :List(Icon);
+    # A big icon used when displaying this app in e.g. an app market. Generally this icon should be
+    # bigger and "flashier", though still square. If omitted, `main` will be used.
+  }
+
+  struct Icon {
+    # Represents one icon image.
+
+    width @0 :UInt32;
+    # The width (and height) of this icon image in pixels. This is only relevant for raster icons
+    # (e.g. PNG).
+
+    union {
+      unknown @1 :Void;
+      # Unknown file format.
+
+      png @2 :Data;
+      # PNG-encoded image data.
+
+      gzipSvg @3 :Data;
+      # Gzipped SVG image data. Note that SVG is usually preferred over PNG if it is available and
+      # the use case can handle it.
+    }
+  }
+
+  website @3 :Text;
+  # URL of the app's main web site.
+
+  codeUrl @4 :Text;
+  # URL of the app's source code repository, e.g. a Github URL.
+
+  license :group {
+    text @5 :Util.LocalizedText;
+    # Text of the app's license.
+
+    notices @6 :Util.LocalizedText;
+    # Contains any third-party copyright notices that the app is required to display, for exmaple
+    # due to use of third-party open source libraries.
+
+    isOpenSource @7 :Bool;
+    # True if the license is an Open Source license approved by the Open Source Initiative.
+
+    requiresAgreement @8 :Bool;
+    # True if this license requires the user to indicate they agree before the app may be used.
+    #
+    # If this is false, then the user is allowed to use the app without agreeing by following
+    # "default" copyright rules, which are roughly "you can do anything except distribute copies".
+    #
+    # Open source licenses never require agreement, because open source licenses only *remove*
+    # the default restrictions (allowing the user to distribute copies), while not adding any new
+    # restrictions.
+    #
+    # Proprietary licenses usually require agreement because they wish to add restrictions beyond
+    # the default, such as prohibiting reverse-engineering.
+  }
+
+  categories @9 :List(UInt64);
+  # List of category IDs under which this app should be classified. Categories are things
+  # like "productivity" or "dev tools". Each category ID is generated using `capnp id`. Note that
+  # although you can generate your own category IDs, an app market will only recognize a specific
+  # set of IDs.
+  #
+  # TODO(soon): Figure out where we will define the available category IDs. Should we put a basic
+  #   list directly in this file?
+
+  author :group {
+    # Fields relating to the author of this app.
+    #
+    # The "author" might be a human, but could also be a company, or a pseudo-identity created to
+    # represent the app itself.
+    #
+    # It is extremely important to users that they be able to verify the author's identity in a way
+    # that is not susceptible to spoofing or forgery. Therefore, we *only* identify the author by
+    # PGP key. Various PGP infrastructure exists which can be used to determine the author's
+    # identity based on their PGP key. For exmaple, Keybase.io has done a really good job of
+    # connecting PGP keys to other Internet identities in a verifiable way.
+
+    contactEmail @10 :Text;
+    # Email address to contact for any issues with this app. This includes end-user support
+    # requests as well as app store administrator requests, so it is very important that this be a
+    # valid address with someone paying attention to it.
+
+    pgpSignature @11 :Data;
+    # PGP signature attesting responsibility for the app ID. This is a binary-format non-detached
+    # signature of the following ASCII message (not including the quotes, and replacing <app-id>
+    # with the standard base-32 text format of the app's ID):
+    #
+    # "I am the author of the Sandstorm.io app with the following ID: <app-id>"
+    #
+    # Keep in mind that Sandstorm app IDs are also ed25519 public keys, and that every app package
+    # is signed by the private key corresponding to its app ID. Therefore this PGP signature forms
+    # a chain of trust that can be used to verify each app package.
+    #
+    # Notice that the signature asserts authorship of all versions of the app, including possible
+    # future version, even if maintainership is transferred to a new author (and the new author
+    # receives the app private key). This is intentional: When users use the "auto-update" feature,
+    # the are making the decision to automatically trust all future versions of the app without
+    # re-verifying the author's identity. If you wish to transfer maintainership of your app but
+    # you do not trust the new maintainer with the power to publish new packages under your
+    # identity, then you should not give the new maintainer the app's private key; you should force
+    # them to create a new key. Sandstorm will not auto-update users to the new version without,
+    # at the very least, confirming their approval of the change in authorship.
+  }
+
+  description @12 :Text;
+  # The app's description description in Github-flavored Markdown format, to be displayed e.g.
+  # in an app store.
+
+  screenshots @13 :List(Screenshot);
+  # Screenshots to use for marketing purposes.
+
+  struct Screenshot {
+    width @0 :UInt32;
+    height @1 :UInt32;
+    # Width and height of the screenshot in "device-independent pixels". The actual width and
+    # height of the image is in the image data, but this width and height is used to decide how
+    # much to scale the image for it to "look right". Typically, a screenshot taken on a high-DPI
+    # display should specify this width and height as half of the actual image width and height.
+    #
+    # The market is under no obligation to display images with any particular size; these are just
+    # hints.
+
+    union {
+      unknown @2 :Void;
+      # Unknown file format.
+
+      png @3 :Data;
+      # PNG-encoded image data. Usually preferred for screenshots.
+
+      jpeg @4 :Data;
+      # JPEG-encoded image data. Preferred for screenshots that contain photographs or the like.
+    }
+  }
 }
 
 # ==============================================================================

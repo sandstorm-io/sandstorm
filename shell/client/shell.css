@@ -244,7 +244,7 @@ body>.topbar>.backup>button    { background-image: url("/download.png"); }
 body>.topbar>.restart>button   { background-image: url("/restart.png"); }
 body>.topbar>.webkey>button    { background-image: url("/key.png"); }
 
-body>.topbar>.share>button {
+body>.topbar>.share>button.grain-button {
   background-image: url("/share.png");
   background-position: left;
   border-radius: 4px;
@@ -1516,6 +1516,7 @@ a.disable-cap {
   }
 
   body>.topbar>li>button.grain-button,
+  body>.topbar>.share>button.grain-button,
   body>.topbar>.account>.login-link-text,
   body>.topbar>.homelink>a,
   body>.topbar>.admin>a,
@@ -1525,6 +1526,7 @@ a.disable-cap {
     background-position: 8px center;
     background-size: 32px 32px;
     background-repeat: no-repeat;
+    background-color: transparent;
     color: black;
     text-align: left;
     padding-left: 48px;
@@ -1542,7 +1544,7 @@ a.disable-cap {
   body>.topbar>.homelink:hover {
     background-color: #eee;
   }
-  body>.topbar>.share>button {
+  body>.topbar>.share>button.grain-button {
     border-radius: 0;
   }
   body>.topbar>li>button.grain-button:hover,
@@ -1558,7 +1560,7 @@ a.disable-cap {
   }
 
   body>.topbar>.homelink>a       { background-image: url("/icon32.png"); }
-  body>.topbar>.share>button     { background-image: url("/share-m.png"); }
+  body>.topbar>.share>button.grain-button { background-image: url("/share-m.png"); }
   body>.topbar>.delete>button    { background-image: url("/trash-m.png"); }
   body>.topbar>.debug-log>button { background-image: url("/wrench-m.png"); }
   body>.topbar>.backup>button    { background-image: url("/download-m.png"); }

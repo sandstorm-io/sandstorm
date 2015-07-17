@@ -256,11 +256,12 @@ module.exports["Test roleless sharing"] = function (browser) {
     });
 }
 
-// Test sharing between multiple users
+// Test sharing between multiple users. The users here are different from those in the
+// "Test roleless sharing" case to ensure that the incognito interstitial always appears.
 module.exports["Test role sharing"] = function (browser) {
   browser
-    // Upload app as Alice
-    .loginDevAccount("Alice")
+    // Upload app as Carol
+    .loginDevAccount("Carol")
     .url(browser.launch_url + "/install/21f8dba75cf1bd9f51b97311ae64aaca?url=http://sandstorm.io/apps/etherpad9.spk")
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
@@ -275,10 +276,10 @@ module.exports["Test role sharing"] = function (browser) {
     .assert.valueContains("#share-token-role", "editor")
     .submitForm('#new-share-token')
     .waitForElementVisible('#share-token-text', medium_wait)
-    // Navigate to the url with Bob
+    // Navigate to the url with Dave
     .getText('#share-token-text', function(response) {
       browser
-        .loginDevAccount("Bob")
+        .loginDevAccount("Dave")
         .url(response.value)
         .waitForElementVisible("#redeem-token-button", short_wait)
         .click("#redeem-token-button")
@@ -292,10 +293,10 @@ module.exports["Test role sharing"] = function (browser) {
         .assert.valueContains("#share-token-role", "editor")
         .submitForm('#new-share-token')
         .waitForElementVisible('#share-token-text', medium_wait)
-        // Navigate to the re-shared url with Carol
+        // Navigate to the re-shared url with Eve
         .getText('#share-token-text', function(response) {
           browser
-            .loginDevAccount("Carol")
+            .loginDevAccount("Eve")
             .url(response.value)
             .waitForElementVisible("#redeem-token-button", short_wait)
             .click("#redeem-token-button")

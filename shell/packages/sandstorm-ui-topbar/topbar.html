@@ -22,17 +22,27 @@ limitations under the License.
       Sandstorm has been updated &mdash; Click here to reload
     </div>
   {{else}}
-    <!-- Becomes hamburger menu button in mobile view. -->
+    {{!-- Becomes hamburger menu button in mobile view. --}}
     <div class="menu-button"></div>
 
-    <ul class="topbar">
+    <ul class="topbar {{#if _menuExpanded.get}}expanded{{/if}}">
       {{#each items}}
         <li class="{{name}}">
-          {{> template data}}
+          {{> template data.get}}
         </li>
       {{/each}}
     </ul>
   {{/if}}
+
+  {{#with currentPopup}}
+    <div class="popup {{name}}">
+      {{#with position}}
+        <div class="frame align-{{align}}" style="{{align}}: {{px}}px">
+          {{>popupTemplate ../data.get}}
+        </div>
+      {{/with}}
+    </div>
+  {{/with}}
 </template>
 
 <template name="sandstormTopbarItem">
@@ -66,34 +76,18 @@ limitations under the License.
     * If you don't specify `data`, the current context will be inherited. However, its parents
       will NOT be inherited, so you can't use Template.parentData() to get them.
     * Helper functions on the parent template CAN be used in the topbar items, though.
+
+    As an extra-special hack, you can also do:
+
+        {{#sandstormTopbarItem name="foo" topbar=myTopbar}}
+          inline template!!!
+        {{else}}
+          inline popup template!!!
+        {{/sandstormTopbarItem}}
+
+    This further specifies a template for the popup window that should appear when the item is
+    clicked. The use of {{else}} for this is a huge hack; it's really not an "else" at all.
   --}}
-</template>
-
-<template name="sandstormTopbarPopup">
-  {{!--
-    Use this inside of a topbar item template to define a popup that will appear when clicked,
-    like (replacing [] with <>):
-
-        [template name="whatever"]
-          My Item
-
-          {{#sandstormTopbarPopup}}
-            <p>My popup</p>
-          {{/sandstormTopbarPopup}}
-        [/template]
-
-    This should always be the last thing in the parent template, not nested in any tags or
-    template blocks.
-  --}}
-  {{#if isExpanded}}
-    <div class="closer">
-      {{#with position}}
-        <div class="popup align-{{align}}" style="{{align}}: {{px}}px">
-          {{> Template.contentBlock}}
-        </div>
-      {{/with}}
-    </div>
-  {{/if}}
 </template>
 
 <template name="sandstormTopbarBlockReload">

@@ -165,7 +165,6 @@ if (Meteor.isClient) {
   var currentAppOrigin;
   var currentGrainId;
   var sessionGrainSizeSubscription;
-  var powerboxRequestInfo;
 
   Template.grain.events({
     "click #incognito-button": function (event) {
@@ -281,7 +280,7 @@ if (Meteor.isClient) {
     }
   }
 
-  Template.grainApiTokenButton.events({
+  Template.grainApiTokenPopup.events({
     "click .copy-me": copyMe,
     "click #api-token-popup-closer": function (event) {
       Session.set("show-api-token", false);
@@ -325,7 +324,7 @@ if (Meteor.isClient) {
     },
   });
 
-  Template.grainShareButton.events({
+  Template.grainSharePopup.events({
     "click .copy-me": copyMe,
     "click #share-grain-popup-closer": function (event) {
       Session.set("show-share-grain", false);
@@ -403,44 +402,29 @@ if (Meteor.isClient) {
     },
   });
 
-  Template.grainPowerboxRequest.events({
+  Template.grainPowerboxRequestPopup.events({
     "submit #powerbox-request-form": function (event) {
       event.preventDefault();
-      console.log(event.target.token.value);
+      var powerboxRequestInfo = this;
       Meteor.call("finishPowerboxRequest", event.target.token.value, powerboxRequestInfo.saveLabel,
-        this.grainId,
+        powerboxRequestInfo.grainId,
         function (err, token) {
           if (err) {
-            Session.set("powerbox-request-error", err.toString());
+            powerboxRequestInfo.error.set(err.toString());
           } else {
             powerboxRequestInfo.source.postMessage(
               {
                 rpcId: powerboxRequestInfo.rpcId,
                 token: token
               }, powerboxRequestInfo.origin);
-            powerboxRequestInfo = null;
-            Session.set("show-powerbox-request", false);
+            powerboxRequestInfo.closer.close();
           }
         }
       );
-    },
-
-    "click button.cancel": function (event) {
-      event.stopPropagation();
-      event.preventDefault();
-      if (powerboxRequestInfo) {
-        powerboxRequestInfo.source.postMessage(
-          {
-            rpcId: powerboxRequestInfo.rpcId,
-            error: "User canceled request"
-          }, powerboxRequestInfo.origin);
-        powerboxRequestInfo = null;
-      }
-      Session.set("show-powerbox-request", false);
     }
   });
 
-  Template.grainPowerboxOffer.events({
+  Template.grainPowerboxOfferPopup.events({
     "click button.dismiss": function (event) {
       var sessionId = Template.instance().data.sessionId;
       if (sessionId) {
@@ -508,13 +492,13 @@ if (Meteor.isClient) {
     }
   });
 
-  Template.grainApiTokenButton.helpers({
+  Template.grainApiTokenPopup.helpers({
     displayToken: function() {
       return !this.revoked && !this.expiresIfUnused && !this.parentToken;
     },
   });
 
-  Template.grainShareButton.helpers({
+  Template.grainSharePopup.helpers({
     displayName: function (userId) {
       var name = DisplayNames.findOne(userId);
       if (name) {
@@ -531,7 +515,7 @@ if (Meteor.isClient) {
     },
   });
 
-  Template.grainPowerboxOffer.helpers({
+  Template.grainPowerboxOfferPopup.helpers({
     powerboxOfferUrl: function () {
       if (this.powerboxOfferUrl) {
         // TODO(cleanup): This path is used by the admin UI. This is really hacky, though.
@@ -661,24 +645,31 @@ if (Meteor.isClient) {
         var powerboxRequest = event.data.powerboxRequest;
         check(powerboxRequest, Object);
         var rpcId = powerboxRequest.rpcId;
-        if (powerboxRequestInfo) {
-          // There is already an ongoing powerbox interaction. Fail it for now.
-          // TODO(someday): queue the powerbox requests?
-          event.source.postMessage(
-            {
-              rpcId: rpcId,
-              error: "There is already an ongoing powerbox interaction. Please wait and try again."
-            }, event.origin);
-          return;
-        }
-        Session.set("show-powerbox-request", true);
-        Session.set("powerbox-request-error", null);
-        powerboxRequestInfo = {
+
+        var powerboxRequestInfo = {
           source: event.source,
           rpcId: rpcId,
+          grainId: currentGrainId,
           origin: event.origin,
-          saveLabel: powerboxRequest.saveLabel
+          saveLabel: powerboxRequest.saveLabel,
+          error: new ReactiveVar(null)
         };
+
+        powerboxRequestInfo.closer = globalTopbar.addItem({
+          name: "request",
+          template: Template.grainPowerboxRequest,
+          popupTemplate: Template.grainPowerboxRequestPopup,
+          data: new ReactiveVar(powerboxRequestInfo),
+          startOpen: true,
+          onDismiss: function () {
+            powerboxRequestInfo.source.postMessage(
+              {
+                rpcId: powerboxRequestInfo.rpcId,
+                error: "User canceled request"
+              }, powerboxRequestInfo.origin);
+            return "remove";
+          }
+        });
       } else {
         console.log("postMessage from app not understood: " + event.data);
       }
@@ -722,8 +713,6 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
   result.apiToken = apiToken;
   result.apiTokenPending = apiToken === "pending";
   result.showApiToken = Session.get("show-api-token");
-  result.showPowerboxRequest = Session.get("show-powerbox-request");
-  result.powerboxRequestError = Session.get("powerbox-request-error");
   result.existingTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
                                           forSharing: {$ne: true},
                                           $or: [{owner: {webkey: null}},

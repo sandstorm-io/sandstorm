@@ -692,18 +692,12 @@ if (Meteor.isClient) {
     },
   });
 
-  Template.homeLink.events({
-    "click #menu-button": function (event) {
-      Session.set("showMenu", !Session.get("showMenu"));
-    },
-
+  Template.layout.events({
     "click #homelink": function (event) {
       event.preventDefault();
+      globalTopbar.reset();
       Router.go("root", {});
     }
-  });
-  Template.homeLink.helpers({
-    origin: getOrigin
   });
 
   Template.about.onCreated(function () {
@@ -723,7 +717,7 @@ if (Meteor.isClient) {
     }
   });
 
-  Template.notifications.helpers({
+  Template.notificationsPopup.helpers({
     notifications: function () {
       return Notifications.find({userId: Meteor.userId()}, {sort: {timestamp: -1}}).map(function (row) {
         var grain = Grains.findOne({_id: row.grainId});
@@ -733,32 +727,21 @@ if (Meteor.isClient) {
         return row;
       });
     },
+  });
 
+  Template.notifications.helpers({
     notificationCount: function () {
-      if (Session.get("notificationsIsEnabled")) {
-        return 0;
-      }
       return Notifications.find({userId: Meteor.userId(), isUnread: true}).count();
     },
-
-    notificationsIsEnabled: function () {
-      return Session.get("notificationsIsEnabled");
-    }
   });
 
   Template.notifications.events({
     "click .notification-button": function () {
-      var newValue = !Session.get("notificationsIsEnabled");
-      Session.set("notificationsIsEnabled", newValue);
-
-      // This is a little weird, but we want to mark all notifications as read whenever the menu
-      // opens or closes. The logic behind this is that notifications could arrive while the menu
-      // is left open, and we want to mark those as read too.
-      // TODO(someday): This leaves us open to a slight timing issue. We should probably change
-      // it to pass in a list of all notification ids to mark read.
       Meteor.call("readAllNotifications");
     },
+  });
 
+  Template.notificationsPopup.events({
     "click .cancel-notification": function (event) {
       Meteor.call("dismissNotification", event.currentTarget.getAttribute("data-notificationid"));
       return false;
@@ -767,21 +750,6 @@ if (Meteor.isClient) {
     "click #notification-dropdown": function (event) {
       return false;
     }
-  });
-
-  var globalClickHandler = function () {
-    Session.set("notificationsIsEnabled", false);
-    Meteor.call("readAllNotifications");
-  };
-
-  Meteor.startup(function () {
-    Tracker.autorun(function () {
-      if (Session.get("notificationsIsEnabled")) {
-        document.querySelector("body").addEventListener("click", globalClickHandler);
-      } else {
-        document.querySelector("body").removeEventListener("click", globalClickHandler);
-      }
-    });
   });
 
   Template.notifications.onCreated(function () {

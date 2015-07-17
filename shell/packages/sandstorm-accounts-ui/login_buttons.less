@@ -59,15 +59,11 @@
 @login-buttons-config-color-active: lighten(@login-buttons-config-color, 10%);
 @login-buttons-config-color-active-border: darken(@login-buttons-config-color-active, 10%);
 
-body>.topbar>.account {
+body>.popup.account>.frame {
 
-  display: inline-block;
-  margin-right: 0.2px; // Fixes display on IE8: http://www.compsoft.co.uk/Blog/2009/11/inline-block-not-quite-inline-blocking.html
-
-  .popup {
-    font-size: inherit;
-    width: 260px;
-  }
+  font-size: inherit;
+  width: 260px;
+  padding-bottom: 16px;
 
   .login-button {
     position: relative; // so that we can position the image absolutely within the button
@@ -98,7 +94,7 @@ body>.topbar>.account {
   }
 }
 
-body>.topbar>.account .login-button, .accounts-dialog .login-button {
+body>.popup.account>.frame .login-button, .accounts-dialog .login-button {
   cursor: pointer;
   .unselectable();
   padding: 4px 8px;
@@ -157,7 +153,7 @@ body>.topbar>.account .login-button, .accounts-dialog .login-button {
   margin-bottom: 4px;
 }
 
-body>.topbar>.account {
+body>.popup.account>.frame {
   .login-buttons-padding {
     display: inline-block;
     width: 30px;
@@ -221,7 +217,7 @@ body>.topbar>.account {
   #back-to-login-link { float: right; }
 }
 
-body>.topbar>.account a, .accounts-dialog a {
+body>.topbar>.account a, body>.popup.account>.frame a, .accounts-dialog a {
     cursor: pointer;
     text-decoration: underline;
 }
@@ -229,7 +225,7 @@ body>.topbar>.account a, .accounts-dialog a {
 @meteor-accounts-base-padding: 8px;
 @meteor-accounts-dialog-border-width: 1px;
 
-body>.topbar>.account>div>div.popup {
+body>.popup.account>.frame {
   label, .title {
     font-size: 80%;
     margin-top: 7px;
@@ -440,7 +436,7 @@ body>.topbar>.account>div>div.popup {
   background-color: rgba(0, 0, 0, 0.7);
 }
 
-body>.topbar>.account, .accounts-dialog {
+body>.popup.account>.frame, .accounts-dialog {
   input[type=text], input[type=email], input[type=password] {
     padding: 4px;
     border: 1px solid #aaa;

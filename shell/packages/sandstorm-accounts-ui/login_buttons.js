@@ -2,7 +2,7 @@
 var loginButtonsSession = Accounts._loginButtonsSession;
 
 // shared between dropdown and single mode
-Template.loginButtons.events({
+Template.loginButtonsPopup.events({
   'click #login-buttons-logout': function() {
     Meteor.logout(function () {
       loginButtonsSession.closeDropdown();
@@ -32,6 +32,10 @@ displayName = function () {
 
   return '';
 };
+
+Template.loginButtons.helpers({
+  displayName: displayName
+});
 
 // returns an array of the login services used by this app. each
 // element of the array is an object (eg {name: 'facebook'}), since

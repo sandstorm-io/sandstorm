@@ -79,7 +79,7 @@ body>.topbar>li {
   list-style-type: none;
 }
 
-body>.topbar>li>.closer {
+body>.popup {
   position: fixed;
   top: 0;
   bottom: 0;
@@ -88,7 +88,7 @@ body>.topbar>li>.closer {
   z-index: 100000;
 }
 
-body>.topbar>li>div>.popup {
+body>.popup>.frame {
   position: fixed;
   top: 32px;
   max-height: calc(100vh - 64px);
@@ -106,7 +106,7 @@ body>.topbar>li>div>.popup {
   border-bottom: 1px solid #E0E0E0;
 }
 
-body>.topbar>li>div>.popup::before {
+body>.popup>.frame::before {
   content: " ";
   position: absolute;
   top: -8px;
@@ -118,20 +118,20 @@ body>.topbar>li>div>.popup::before {
   border-bottom: 8px solid white;
 }
 
-body>.topbar>li>div>.popup.align-left::before {
+body>.popup>.frame.align-left::before {
   left: 42px;
 }
 
-body>.topbar>li>div>.popup.align-right::before {
+body>.popup>.frame.align-right::before {
   right: 42px;
 }
 
-body>.topbar>li>div>.popup>* {
+body>.popup>.frame>* {
   margin-left: 16px;
   margin-right: 16px;
 }
 
-body>.topbar>li>div>.popup>h4 {
+body>.popup>.frame>h4 {
   margin: 0px;
   font-size: 14px;
   padding-left: 10px;
@@ -140,7 +140,7 @@ body>.topbar>li>div>.popup>h4 {
   margin-bottom: 16px;
 }
 
-body>.topbar>li>div>.popup>*:last-child {
+body>.popup>.frame>*:last-child {
   margin-bottom: 16px;
 }
 
@@ -1554,7 +1554,7 @@ a.disable-cap {
   body>.topbar>.restart>button   { background-image: url("/restart-m.png"); }
   body>.topbar>.webkey>button    { background-image: url("/key-m.png"); }
 
-  body>.topbar>li>div>.popup {
+  body>.popup>.frame {
     position: static;
     margin: 64px auto 32px;
     font-size: 20px;
@@ -1562,24 +1562,21 @@ a.disable-cap {
     border: 1px solid #ccc;
     overflow-y: auto;
   }
-  body>.topbar>li>.closer {
+  body>.popup {
     background-color: rgba(0, 0, 0, 0.5);
   }
-  body>.topbar>.share>div>.popup,
-  body>.topbar>.webkey>div>.popup,
-  body>.topbar>.account>div>.popup,
-  body>.topbar>.notifications>div>.popup {
+  body>.popup>.frame {
     width: 90%;
   }
-  body>.topbar>li>div>.popup>h4 {
+  body>.popup>.frame>h4 {
     font-size: 20px;
   }
-  body>.topbar>li>div>.popup::before {
+  body>.popup>.frame::before {
     display: none;
   }
-  body>.topbar>li>div>.popup input,
-  body>.topbar>li>div>.popup button,
-  body>.topbar>li>div>.popup .login-button {
+  body>.popup>.frame input,
+  body>.popup>.frame button,
+  body>.popup>.frame .login-button {
     font-size: 20px;
   }
 

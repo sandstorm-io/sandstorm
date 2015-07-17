@@ -43,6 +43,10 @@ Template.sandstormTopbarBlockReload.onDestroyed(function () {
   }
 });
 
+Template.sandstormTopbar.onCreated(function () {
+  Template.instance().popupPosition = new ReactiveVar(undefined, _.isEqual);
+});
+
 Template.sandstormTopbar.helpers({
   isUpdateBlocked: function () {
     return !!blockedReload.get();
@@ -56,32 +60,61 @@ Template.sandstormTopbar.helpers({
     return _.sortBy(_.values(this._items), function (item) { return -(item.priority || 0); });
   },
 
-  isExpanded: function () {
-    var data = Template.instance().data;
-    return data._expanded.get() === this.name;
+  currentPopup: function () {
+    var name = this._expanded.get();
+    if (name) {
+      return this._items[name];
+    } else {
+      return null;
+    }
   },
 
   template: function () {
     // Spacebars' {{>foo bar}} passes `bar` by pushing it onto the data context stack rather than
     // passing it as a parameter. The original data context must be accessed via `parentData()`.
-    var data = Template.parentData(1);
-    return data.template;
+    var item = Template.parentData(1);
+    return item.template;
   },
 
   popupTemplate: function () {
-    // Spacebars' {{>foo bar}} passes `bar` by pushing it onto the data context stack rather than
-    // passing it as a parameter. The original data context must be accessed via `parentData()`.
-    var data = Template.parentData(1);
-    return data.popupTemplate;
+    // Here we need parentData(2) because we've also pushed `position` onto the stack.
+    var item = Template.parentData(2);
+    return item.popupTemplate;
   },
 
-  data: function () {
-    return Template.currentData().data.get();
-  },
+  position: function () {
+    var instance = Template.instance();
+    var item = instance.data._items[instance.data._expanded.get()];
+    if (item) {
+      Meteor.defer(function () {
+        var element = instance.find(".topbar>." + item.name);
+        if (element) {
+          // This positions the popup under the topbar item that spawned it. As a hacky heuristic,
+          // we position the popup from the left if the item is closer to the left of the window,
+          // or from the right otherwise.
+          //
+          // TODO(someday): Make this better. We could wait until the popup template has opened and
+          //   rendered, then choose a better position based on its full size.
 
-  hasPopup: function () {
-    return !!this.popupTemplate;
-  }
+          var rect = element.getBoundingClientRect();
+          var currentWindowWidth = windowWidth.get();
+          var windowMid = currentWindowWidth / 2;
+          var itemMid = (rect.left + rect.right) / 2;
+          instance.popupPosition.set(itemMid < windowMid
+              ? { align: "left", px: Math.max(itemMid - 50, 0) }
+              : { align: "right", px: Math.max(currentWindowWidth - itemMid - 50, 0) });
+        }
+      });
+    }
+
+    return instance.popupPosition.get()
+        || { align: "left", px: 0 };
+  },
+});
+
+var windowWidth = new ReactiveVar(window.innerWidth);
+window.addEventListener("resize", function () {
+  windowWidth.set(window.innerWidth);
 });
 
 Template.sandstormTopbar.events({
@@ -90,24 +123,45 @@ Template.sandstormTopbar.events({
   },
 
   "click .topbar>li": function (event) {
-    event.stopPropagation();
-    var data = Template.instance().data;
-    data._expanded.set(event.currentTarget.className);
+    var data = Blaze.getData(event.currentTarget);
+    if (data.popupTemplate) {
+      event.stopPropagation();
+      event.preventDefault();
+
+      Template.instance().data._expanded.set(event.currentTarget.className);
+    }
   },
 
-  "click .topbar>li>div.closer": function (event) {
+  "click .popup": function (event) {
+    // Clicked outside the popup; close it.
     event.stopPropagation();
-    var data = Template.instance().data;
-    data._expanded.set(null);
+    var item = Blaze.getData(event.currentTarget);
+    var topbar = Template.instance().data;
+    if (item.onDismiss) {
+      var result = item.onDismiss();
+      if (typeof result === "string") {
+        if (result === "block") {
+          return;
+        } else if (result === "remove") {
+          if (topbar._items[item.name] === item) {
+            delete topbar._items[item.name];
+            topbar._itemsTracker.changed();
+          }
+        } else {
+          throw new Error("Topbar item onDismiss handler returned bogus result:", result);
+        }
+      }
+    }
+
+    topbar._expanded.set(null);
   },
 
-  "click .topbar>li>div>div.popup": function (event) {
-    event.stopPropagation();
+  "click .popup>.frame": function (event) {
+    event.stopPropagation();  // don't propagate to closer
   },
 
   "click .menu-button": function (event) {
-    var element = Template.instance().find(".topbar");
-    element.classList.toggle("expanded");
+    this._menuExpanded.set(!this._menuExpanded.get());
   }
 });
 
@@ -119,13 +173,19 @@ Template.sandstormTopbarItem.onCreated(function () {
   if (typeof item.template === "string") {
     item.template = Template[item.template];
   }
+  if (typeof item.popupTemplate === "string") {
+    item.popupTemplate = Template[item.popupTemplate];
+  }
 
   var instance = Template.instance();
 
-  // Supprot inline definitions using {{#sandstormTopbarItem}}.
+  // Support inline definitions using {{#sandstormTopbarItem}}.
   var view = instance.view;
   if (!item.template && view.templateContentBlock) {
     item.template = view.templateContentBlock;
+  }
+  if (!item.popupTemplate && view.templateElseBlock) {
+    item.popupTemplate = view.templateElseBlock;
   }
 
   if (!("data" in item)) {
@@ -144,62 +204,20 @@ Template.sandstormTopbarItem.onDestroyed(function () {
   Template.instance().topbarCloser.close();
 });
 
-var windowWidth = new ReactiveVar(window.innerWidth);
-window.addEventListener("resize", function () {
-  windowWidth.set(window.innerWidth);
-});
-
-Template.sandstormTopbarPopup.onCreated(function () {
-  Template.instance().renderDoneVar = new ReactiveVar(false);
-});
-Template.sandstormTopbarPopup.onRendered(function () {
-  Template.instance().renderDoneVar.set(true);
-});
-
-Template.sandstormTopbarPopup.helpers({
-  isExpanded: function () {
-    return Template.parentData(2)._expanded.get() === Template.parentData(1).name;
-  },
-
-  position: function () {
-    // This positions the popup under the topbar item that spawned it. As a hacky heuristic, we
-    // position the popup from the left if the item is closer to the left of the window, or from
-    // the right otherwise.
-    //
-    // TODO(someday): Make this better. We could wait until the popup template has opened and
-    //   rendered, then choose a better position based on its full size.
-
-    if (!Template.instance().renderDoneVar.get()) {
-      return {
-        align: "left",
-        px: 0
-      };
-    }
-
-    var rect = Template.instance().firstNode.parentNode.getBoundingClientRect();
-    var currentWindowWidth = windowWidth.get();
-    var windowMid = currentWindowWidth / 2;
-    var itemMid = (rect.left + rect.right) / 2;
-    var pos;
-    if (itemMid < windowMid) {
-      return {
-        align: "left",
-        px: Math.max(itemMid - 50, 0)
-      };
-    } else {
-      return {
-        align: "right",
-        px: Math.max(currentWindowWidth - itemMid - 50, 0)
-      };
-    }
-  },
-});
+// =======================================================================================
+// Public interface
 
 SandstormTopbar = function () {
   this._items = {};
   this._itemsTracker = new Tracker.Dependency();
 
   this._expanded = new ReactiveVar(null);
+  this._menuExpanded = new ReactiveVar(false);
+}
+
+SandstormTopbar.prototype.reset = function () {
+  this._menuExpanded.set(false);
+  this._expanded.set(null);
 }
 
 SandstormTopbar.prototype.addItem = function (item) {
@@ -214,8 +232,12 @@ SandstormTopbar.prototype.addItem = function (item) {
     template: Template,
     // Template for the item content as rendered in the topbar.
 
+    popupTemplate: Match.Optional(Template),
+    // If a popup box should appear when the item is clicked, this is the template for the content
+    // of that box.
+
     data: Match.Optional(ReactiveVar),
-    // Data context for `template`.
+    // Data context for `template` and `popupTempelate`.
 
     startOpen: Match.Optional(Boolean),
     // If true, this item's popup should start out open.
@@ -227,8 +249,18 @@ SandstormTopbar.prototype.addItem = function (item) {
     //
     // Note that Sandstorm's stylesheet makes some items float: right. Of the items floating
     // right, the highest-priority will be *rightmost*. Essentially, higher-priority items tend
-    // towards the outsides of the top bar while lower-priority items going inside of them.
+    // towards the outsides of the top bar while lower-priority items going inside of them.,
+
+    onDismiss: Match.Optional(Function),
+    // Specifies a function to call when the popup is dismissed by clicking outside of the popup
+    // space. This function may return some special string values with specific meanings:
+    // * "remove": Removes the topbar item, like if close() were called on the result of addItem().
+    // * "block": Block the attempt to dismiss the popup.
   });
+
+  if (!item.popupTemplate && (item.startOpen || item.onDismiss)) {
+    throw new Error("can't set startOpen or onDismiss without setting popupTemplate");
+  }
 
   if (item.name in this._items) {
     throw new Error("duplicate top bar item name:", item.name);
@@ -244,8 +276,14 @@ SandstormTopbar.prototype.addItem = function (item) {
   var self = this;
   return {
     close: function() {
-      delete self._items[item.name];
-      self._itemsTracker.changed();
+      if (self._items[item.name] === item) {
+        if (self._expanded.get() === item.name) {
+          self._expanded.set(null);
+        }
+
+        delete self._items[item.name];
+        self._itemsTracker.changed();
+      }
     }
   };
 };

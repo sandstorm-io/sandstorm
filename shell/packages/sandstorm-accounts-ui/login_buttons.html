@@ -1,16 +1,34 @@
 <template name="loginButtons">
+  <a class="login-link-text" id="login-name-link">
+    {{#if currentUser}}
+      {{#if loggingIn}}
+        {{! We aren't actually logged in yet; we're just setting Meteor.userId
+            optimistically during an at-startup login-with-token. We expose this
+            state so other UIs can treat it specially, but we'll just treat it
+            as logged out. }}
+        Sign in ▾
+      {{else}}
+        {{displayName}} ▾
+      {{/if}}
+    {{else}}
+      Sign in ▾
+    {{/if}}
+  </a>
+</template>
+
+<template name="loginButtonsPopup">
   {{#if currentUser}}
     {{#if loggingIn}}
       {{! We aren't actually logged in yet; we're just setting Meteor.userId
           optimistically during an at-startup login-with-token. We expose this
           state so other UIs can treat it specially, but we'll just treat it
           as logged out. }}
-      {{> _loginButtonsLoggingIn }}
+      {{> _loginButtonsLoggedOutDropdown}}
     {{else}}
-      {{> _loginButtonsLoggedIn}}
+      {{> _loginButtonsLoggedInDropdown}}
     {{/if}}
   {{else}}
-    {{> _loginButtonsLoggedOut}}
+    {{> _loginButtonsLoggedOutDropdown}}
   {{/if}}
 </template>
 

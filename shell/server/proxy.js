@@ -941,6 +941,8 @@ function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, user
         });
       }
     }).catch(function (err) {
+      self.setHasLoaded();
+
       var body = err.stack;
       if (err.cppFile) {
         body += "\nC++ location:" + err.cppFile + ":" + (err.line || "??");
@@ -1426,13 +1428,7 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
   }
 
   // On first response, update the session to have hasLoaded=true
-  if (!this.hasLoaded) {
-    this.hasLoaded = true;
-    var sessionId = this.sessionId;
-    inMeteor(function () {
-      Sessions.update({_id: sessionId}, {$set: {hasLoaded: true}});
-    });
-  }
+  this.setHasLoaded();
 
   // TODO(security): Set X-Content-Type-Options: nosniff?
 
@@ -1777,6 +1773,16 @@ Proxy.prototype.handleWebSocket = function (request, socket, head, retryCount) {
       return self.handleWebSocket(request, socket, head, retryCount + 1);
     });
   });
+}
+
+Proxy.prototype.setHasLoaded = function () {
+  if (!this.hasLoaded) {
+    this.hasLoaded = true;
+    var sessionId = this.sessionId;
+    inMeteor(function () {
+      Sessions.update({_id: sessionId}, {$set: {hasLoaded: true}});
+    });
+  }
 }
 
 // =======================================================================================

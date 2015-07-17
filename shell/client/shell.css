@@ -257,6 +257,14 @@ body>.topbar>.share>button.grain-button:hover {
   background-color: #428bca;
 }
 
+body>.topbar>.admin {
+  display: none;
+}
+
+body>.topbar>.about {
+  display: none;
+}
+
 a.copy-me {
   display: block;
   margin: 8px;
@@ -1509,7 +1517,9 @@ a.disable-cap {
 
   body>.topbar>li>button.grain-button,
   body>.topbar>.account>.login-link-text,
-  body>.topbar>.homelink>a {
+  body>.topbar>.homelink>a,
+  body>.topbar>.admin>a,
+  body>.topbar>.about>a {
     display: block;
     width: 100%;
     background-position: 8px center;
@@ -1522,6 +1532,7 @@ a.disable-cap {
     height: 100%;
     font-weight: normal;
     font-family: sans-serif;
+    text-decoration: none;
   }
   body>.topbar>.homelink {
     background-image: none;
@@ -1553,6 +1564,14 @@ a.disable-cap {
   body>.topbar>.backup>button    { background-image: url("/download-m.png"); }
   body>.topbar>.restart>button   { background-image: url("/restart-m.png"); }
   body>.topbar>.webkey>button    { background-image: url("/key-m.png"); }
+
+  body>.topbar>.admin {
+    display: block;
+  }
+
+  body>.topbar>.about {
+    display: block;
+  }
 
   body>.popup>.frame {
     position: static;

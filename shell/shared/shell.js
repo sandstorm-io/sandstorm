@@ -693,10 +693,8 @@ if (Meteor.isClient) {
   });
 
   Template.layout.events({
-    "click #homelink": function (event) {
-      event.preventDefault();
+    "click .topbar>li>.navlink": function (event) {
       globalTopbar.reset();
-      Router.go("root", {});
     }
   });
 

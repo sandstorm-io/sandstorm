@@ -30,7 +30,7 @@ limitations under the License.
 
   {{!-- standard topbar items --}}
   {{#sandstormTopbarItem name="homelink" topbar=globalTopbar}}
-    <a href="/" id="homelink">Sandstorm</a>
+    <a href="/" id="homelink" class="navlink">Sandstorm</a>
   {{/sandstormTopbarItem}}
   {{>sandstormTopbarItem name="account" topbar=globalTopbar
                          template="loginButtons" popupTemplate="loginButtonsPopup"}}
@@ -93,10 +93,6 @@ limitations under the License.
   </ul>
 </template>
 
-<template name="homeLink">
-  <div id="menu-button"></div><a id="homelink" href="{{origin}}"><img id="icon" src="/icon.png"> Sandstorm</a>
-</template>
-
 <template name="title">
   {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}{{.}}{{/sandstormTopbarItem}}
 </template>
@@ -117,6 +113,15 @@ limitations under the License.
 
 <template name="root">
   {{>title "Home"}}
+
+  {{#if isAdmin}}
+    {{#sandstormTopbarItem name="admin" topbar=globalTopbar}}
+      <a href="/admin" class="navlink">Admin Settings</a>
+    {{/sandstormTopbarItem}}
+  {{/if}}
+  {{#sandstormTopbarItem name="about" topbar=globalTopbar}}
+    <a href="/about" class="navlink">About</a>
+  {{/sandstormTopbarItem}}
 
   <div id="intro" class="main-content">
     {{#if kernelTooOld}}

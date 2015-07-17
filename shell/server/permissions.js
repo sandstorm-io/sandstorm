@@ -230,8 +230,10 @@ grainPermissions = function(vertex, viewInfo) {
     if (edgesByRecipient[recipient]) {
       edgesByRecipient[recipient].forEach(function (inEdge) {
         var sharer = inEdge.sharer;
+        var needToPush = false;
         if (!permissionsMap[sharer]) {
           permissionsMap[sharer] = new PermissionSet();
+          needToPush = true;
         }
 
         var newPermissions = roleAssignmentPermissions({allAccess: null}, viewInfo);
@@ -241,9 +243,14 @@ grainPermissions = function(vertex, viewInfo) {
         newPermissions.intersect(permissionsMap[recipient]);
 
         // Optimization: we don't care about permissions that we've already proven the opener has.
-        newPermissions.remove(permissionsMap[owner]);
+        if (permissionsMap[owner]) {
+          newPermissions.remove(permissionsMap[owner]);
+        }
 
         if (permissionsMap[sharer].add(newPermissions)) {
+          needToPush = true;
+        }
+        if (needToPush) {
           userStack.push(sharer);
         }
       });

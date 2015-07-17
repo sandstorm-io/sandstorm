@@ -17,39 +17,43 @@
 // This file imports symbols from the sandstorm-db package. New code should use SandstormDb
 // directly.
 
-// TODO(cleanup): Over time, eliminate the use of each of these assignments by using SandstormDb
-//   directly. For collections, prefer to update SandstormDb to provide methods for querying the
-//   collection rather than use `SandstormDb.collections` directly.
+// TODO(cleanup): Over time, eliminate the use of each of these assignments by using `db` directly.
+//   For collections, prefer to update SandstormDb to provide methods for querying the collection
+//   rather than use `db.collections` directly. When code is moved into packages, the `db` global
+//   should NOT go with it; the package should expect a SandstormDb to be passed in, thus allowing
+//   mocking the database for unit tests.
 
-Packages = SandstormDb.collections.packages;
-DevApps = SandstormDb.collections.devApps;
-UserActions = SandstormDb.collections.userActions;
-Grains = SandstormDb.collections.grains;
-Contacts = SandstormDb.collections.contacts;
-Sessions = SandstormDb.collections.sessions;
-SignupKeys = SandstormDb.collections.signupKeys;
-ActivityStats = SandstormDb.collections.activityStats;
-DeleteStats = SandstormDb.collections.deleteStats;
-FileTokens = SandstormDb.collections.fileTokens;
-ApiTokens = SandstormDb.collections.apiTokens;
-Notifications = SandstormDb.collections.notifications;
-StatsTokens = SandstormDb.collections.statsTokens;
-Misc = SandstormDb.collections.misc;
-Settings = SandstormDb.collections.settings;
+db = new SandstormDb();
 
-isDemoUser = SandstormDb.isDemoUser;
-isSignedUp = SandstormDb.isSignedUp;
-isSignedUpOrDemo = SandstormDb.isSignedUpOrDemo;
-isUserOverQuota = SandstormDb.isUserOverQuota;
-isUserExcessivelyOverQuota = SandstormDb.isUserExcessivelyOverQuota;
-isAdmin = SandstormDb.isAdmin;
-isAdminById = SandstormDb.isAdminById;
-findAdminUserForToken = SandstormDb.findAdminUserForToken;
-matchWildcardHost = SandstormDb.matchWildcardHost;
-makeWildcardHost = SandstormDb.makeWildcardHost;
-allowDevAccounts = SandstormDb.allowDevAccounts;
-roleAssignmentPattern = SandstormDb.roleAssignmentPattern;
+Packages = db.collections.packages;
+DevApps = db.collections.devApps;
+UserActions = db.collections.userActions;
+Grains = db.collections.grains;
+Contacts = db.collections.contacts;
+Sessions = db.collections.sessions;
+SignupKeys = db.collections.signupKeys;
+ActivityStats = db.collections.activityStats;
+DeleteStats = db.collections.deleteStats;
+FileTokens = db.collections.fileTokens;
+ApiTokens = db.collections.apiTokens;
+Notifications = db.collections.notifications;
+StatsTokens = db.collections.statsTokens;
+Misc = db.collections.misc;
+Settings = db.collections.settings;
+
+isDemoUser = db.isDemoUser.bind(db);
+isSignedUp = db.isSignedUp.bind(db);
+isSignedUpOrDemo = db.isSignedUpOrDemo.bind(db);
+isUserOverQuota = db.isUserOverQuota.bind(db);
+isUserExcessivelyOverQuota = db.isUserExcessivelyOverQuota.bind(db);
+isAdmin = db.isAdmin.bind(db);
+isAdminById = db.isAdminById.bind(db);
+findAdminUserForToken = db.findAdminUserForToken.bind(db);
+matchWildcardHost = db.matchWildcardHost.bind(db);
+makeWildcardHost = db.makeWildcardHost.bind(db);
+allowDevAccounts = db.allowDevAccounts.bind(db);
+roleAssignmentPattern = db.roleAssignmentPattern;
 
 if (Meteor.isServer) {
-  getWildcardOrigin = SandstormDb.getWildcardOrigin;
+  getWildcardOrigin = db.getWildcardOrigin.bind(db);
 }

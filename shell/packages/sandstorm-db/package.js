@@ -20,9 +20,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
-  api.use("mongo", ["client", "server"]);
-  api.use("random", ["client", "server"]);
-  api.use("check", ["client", "server"]);
+  api.use(["mongo", "random", "check", "underscore"], ["client", "server"]);
   api.use("accounts-base", ["server"]);
 
   api.addFiles("db.js");

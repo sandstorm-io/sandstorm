@@ -507,21 +507,8 @@ roleAssignmentPattern = {
   removePermissions: Match.Optional([Boolean]),
 };
 
-SandstormDb = {
-  isDemoUser: isDemoUser,
-  isSignedUp: isSignedUp,
-  isSignedUpOrDemo: isSignedUpOrDemo,
-  isUserOverQuota: isUserOverQuota,
-  isUserExcessivelyOverQuota: isUserExcessivelyOverQuota,
-  isAdmin: isAdmin,
-  isAdminById: isAdminById,
-  findAdminUserForToken: findAdminUserForToken,
-  matchWildcardHost: matchWildcardHost,
-  makeWildcardHost: makeWildcardHost,
-  allowDevAccounts: allowDevAccounts,
-  roleAssignmentPattern: roleAssignmentPattern,
-
-  collections: {
+SandstormDb = function () {
+  this.collections = {
     // Direct access to underlying collections. DEPRECATED.
     //
     // TODO(cleanup): Over time, we will provide methods covering each supported query and remove
@@ -546,9 +533,27 @@ SandstormDb = {
     // Intentionally omitted:
     // - Migrations, since it's used only within this package.
     // - RoleAssignments, since it is deprecated and only used by the migration that eliminated it.
-  },
+  };
 };
 
+// TODO(cleanup): These methods should not be defined freestanding and should use collection
+//   objects created in SandstormDb's constructor rather than globals.
+
+_.extend(SandstormDb.prototype, {
+  isDemoUser: isDemoUser,
+  isSignedUp: isSignedUp,
+  isSignedUpOrDemo: isSignedUpOrDemo,
+  isUserOverQuota: isUserOverQuota,
+  isUserExcessivelyOverQuota: isUserExcessivelyOverQuota,
+  isAdmin: isAdmin,
+  isAdminById: isAdminById,
+  findAdminUserForToken: findAdminUserForToken,
+  matchWildcardHost: matchWildcardHost,
+  makeWildcardHost: makeWildcardHost,
+  allowDevAccounts: allowDevAccounts,
+  roleAssignmentPattern: roleAssignmentPattern,
+});
+
 if (Meteor.isServer) {
-  SandstormDb.getWildcardOrigin = getWildcardOrigin;
+  SandstormDb.prototype.getWildcardOrigin = getWildcardOrigin;
 }

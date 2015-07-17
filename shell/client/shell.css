@@ -44,115 +44,240 @@ body {
   background-color: white;
 }
 
-#topbar, #topbar-right, #topbar-update, div.popup {
+body>.topbar, body>.topbar-update {
   background-color: black;
   color: #ccc;
   font-weight: bold;
   line-height: 32px;
 }
 
-#topbar {
+body>.topbar {
   position: fixed;
+  top: 0;
+  margin: 0;
+  padding: 0;
   width: 100%;
   height: 32px;
   text-align: left;
-  z-index: 2;
-  white-space: nowrap;
+  z-index: 100;
+  overflow: hidden;
 }
 
-#topbar.light {
-  height: 24px;
-  line-height: 24px;
-  font-size: 90%;
-  padding: 0 10px;
-}
-
-#topbar-update {
+body>.topbar-update {
   position: fixed;
   width: 100%;
   height: 32px;
   text-align: center;
   background-color: #622;
   color: #fcc;
-  z-index: 4;
+  z-index: 1000;
   cursor: pointer;
 }
 
-#topbar-right {
-  position: fixed;
-  top: 0px;
-  right: 0px;
-  height: 32px;
-  padding-right: 8px;
-  z-index: 3;
+body>.topbar>li {
+  display: inline-block;
+  list-style-type: none;
 }
 
-#topbar-right .alert {
-  background-color: #762f87;
+body>.popup {
+  position: fixed;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100000;
+}
+
+body>.popup>.frame {
+  position: fixed;
+  top: 32px;
+  max-height: calc(100vh - 64px);
+  max-width: 50%;
+  min-width: 250px;
+  line-height: normal;
+  white-space: normal;
+  background-color: white;
+  font-weight: normal;
+  color: black;
+  width: 400px;
+  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+  border-left: 1px solid #E0E0E0;
+  border-right: 1px solid #E0E0E0;
+  border-bottom: 1px solid #E0E0E0;
+}
+
+body>.popup>.frame::before {
+  content: " ";
+  position: absolute;
+  top: -8px;
+
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-bottom: 8px solid white;
+}
+
+body>.popup>.frame.align-left::before {
+  left: 42px;
+}
+
+body>.popup>.frame.align-right::before {
+  right: 42px;
+}
+
+body>.popup>.frame>* {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+body>.popup>.frame>h4 {
+  margin: 0px;
+  font-size: 14px;
+  padding-left: 10px;
+  line-height: 32px;
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 16px;
+}
+
+body>.popup>.frame>*:last-child {
+  margin-bottom: 16px;
+}
+
+body>.topbar>.homelink {
+  padding-left: 32px;
+  padding-right: 8px;
+  background-image: url("/icon.png");
+  background-repeat: no-repeat;
+  background-position: 8px center;
+  border-right: 1px solid #666;
+
+  /* Without this, Firefox renders the right-floats pushed down a line. */
+  float:left;
+
+  /* TODO(cleanup): Use of filter for brightness on hover is hacky and not very widely supported. */
+  -webkit-filter: brightness(0.75);
+  filter: brightness(0.75);
+}
+
+body>.topbar>.homelink a {
   color: white;
   text-decoration: none;
 }
 
-#topbar-right .alert {
+body>.topbar>.homelink:hover {
+  -webkit-filter: none;
+  filter: none;
+  background-color: #666;
+}
+
+body>.topbar>.account {
+  float: right;
+  display: block;
+  padding: 0 8px;
+}
+
+body>.topbar>.notifications {
+  float: right;
+}
+
+body>.topbar>.admin-alert {
+  float: right;
+}
+
+body>.topbar>.admin-alert .alert {
+  background-color: #762f87;
+  color: white;
+  text-decoration: none;
+
   display: inline-block;
   padding-left: 8px;
   padding-right: 8px;
   margin-right: 8px;
 }
 
-#topbar-right .alert.countdown-second,
-#topbar-right .alert.countdown-now {
+body>.topbar>.admin-alert .alert.countdown-second,
+body>.topbar>.admin-alert .alert.countdown-now {
   background-color: #e82538;
 }
 
-#topbar-right a.alert:hover {
+body>.topbar>.admin-alert a:hover {
   background-color: #9d3aa5;
 }
 
-#topbar a {
-  color: #ccc;
-  text-decoration: none;
-}
-#topbar a:hover {
-  color: white;
-}
-
-#topbar #homelink {
-  display: inline-block;
+body>.topbar>.title {
   padding-left: 8px;
-  padding-right: 8px;
-  border-right: 1px solid #666;
-  cursor: pointer;
-}
-#topbar #homelink:hover {
-  background-color: #666;
 }
 
-#topbar #homelink img {
-  -webkit-filter: brightness(0.75);
-  filter: brightness(0.75);
-}
-#topbar #homelink:hover img {
-  -webkit-filter: none;
-}
-#topbar.light #homelink {
-  display: none;
-}
-
-#topbar #icon {
-  vertical-align: baseline;
-}
-
-#topbar #grainTitle {
+body>.topbar>.title>span.editable {
   display: inline-block;
-  padding: 0 4px;
+  padding: 0 8px;
+  margin-left: -8px;
 }
 
-#topbar #grainTitle:hover {
+body>.topbar>.title>span.editable:hover {
   cursor: pointer;
   color: white;
   background-color: #888;
 }
+
+body>.topbar>li>button.grain-button {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  width: 24px;
+  height: 24px;
+  border: none;
+  color: transparent;
+  background-color: transparent;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+body>.topbar>li>button.grain-button:hover {
+  background-color: #888;
+}
+
+body>.topbar>.delete>button    { background-image: url("/trash.png"); }
+body>.topbar>.debug-log>button { background-image: url("/wrench.png"); }
+body>.topbar>.backup>button    { background-image: url("/download.png"); }
+body>.topbar>.restart>button   { background-image: url("/restart.png"); }
+body>.topbar>.webkey>button    { background-image: url("/key.png"); }
+
+body>.topbar>.share>button {
+  background-image: url("/share.png");
+  background-position: left;
+  border-radius: 4px;
+  background-color: #428bca;
+  color: white;
+  width: 64px;
+  padding-left: 20px;
+}
+body>.topbar>.share>button.grain-button:hover {
+  background-color: #428bca;
+}
+
+body>.topbar>.admin {
+  display: none;
+}
+
+body>.topbar>.about {
+  display: none;
+}
+
+a.copy-me {
+  display: block;
+  margin: 8px;
+  border: 1px solid #ccc;
+  overflow: hidden;
+  font-family: monospace;
+  text-decoration: none;
+  color: inherit;
+}
+
+/***********************************************************************************************
+ * pre-refactor styles                                                                         *
+ ***********************************************************************************************/
 
 .popup .token-petname:hover {
   cursor: pointer;
@@ -186,26 +311,6 @@ body {
 
 #menu-closer {
   display: none;
-}
-
-#topbar #homelink-button {
-  display: none;
-  background-image: url("/icon32.png");
-}
-
-#topbar #deleteGrain  { background-image: url("/trash.png"); }
-#topbar #openDebugLog { background-image: url("/wrench.png"); }
-#topbar #backupGrain  { background-image: url("/download.png"); }
-#topbar #restartGrain { background-image: url("/restart.png"); }
-#topbar #showApiToken { background-image: url("/key.png"); }
-#topbar #show-share-grain {
-  background-image: url("/share.png");
-  background-position: left;
-  border-radius: 4px;
-  background-color: #428bca;
-  color: white;
-  width: 64px;
-  padding-left: 20px;
 }
 
 .revoked-role-assignment {
@@ -476,28 +581,6 @@ img {
   cursor: pointer;
 }
 
-#notification-dropdown {
-  position: fixed;
-  top: 32px;
-  right: 32px;
-  background-color: white;
-  color: black;
-  width: 400px;
-  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
-  border-left: 1px solid #E0E0E0;
-  border-right: 1px solid #E0E0E0;
-  border-bottom: 1px solid #E0E0E0;
-}
-
-#notification-dropdown > h4 {
-  background-color: #666;
-  color: #ccc;
-  margin: 0px;
-  font-size: 14px;
-  text-transform: uppercase;
-  padding-left: 10px;
-}
-
 #notification-list {
   list-style: outside none none;
   padding: 0px;
@@ -650,23 +733,6 @@ svg {
   display: inline;
   position: fixed;
   margin-left: 2px;
-}
-
-div.popup {
-  position: fixed;
-  top: 32px;
-  max-height: calc(100vh - 64px);
-
-  z-index: 101;
-  background-color: black;
-  /*background-color: rgba(0, 0, 0, 0.9);*/
-  padding: 16px;
-  font-size: 85%;
-  line-height: normal;
-  min-width: 250px;
-
-  overflow-y: auto;
-  overflow-x: hidden;
 }
 
 div.popup p {
@@ -1023,7 +1089,7 @@ aside a#preorder {
   display: block;
   width: 300px;
   height: 300px;
-  background-image: url(https://sandstorm.io/images/sunrise.svg);
+  background-image: url("https://sandstorm.io/images/sunrise.svg");
   text-align: center;
   text-decoration: none;
   font-weight: normal;
@@ -1044,7 +1110,7 @@ aside #preorder span:last-of-type {
 
 aside #social {
   margin-top: 8px;
-  background-image: url(https://sandstorm.io/images/sandcat.svg);
+  background-image: url("https://sandstorm.io/images/sandcat.svg");
   width: 300px;
   height: 200px;
   background-repeat: no-repeat;
@@ -1086,11 +1152,11 @@ aside #social ul>li>a:hover {
   background-color: #ffe8f5;
 }
 
-aside #social ul>li#github>a { background-image: url(https://sandstorm.io/images/github.svg); }
-aside #social ul>li#feed>a { background-image: url(https://sandstorm.io/images/rss.svg); }
-aside #social ul>li#twitter>a { background-image: url(https://sandstorm.io/images/twitter.svg); }
-aside #social ul>li#google-plus>a { background-image: url(https://sandstorm.io/images/google-plus.svg); }
-aside #social ul>li#facebook>a { background-image: url(https://sandstorm.io/images/facebook.svg); }
+aside #social ul>li#github>a { background-image: url("https://sandstorm.io/images/github.svg"); }
+aside #social ul>li#feed>a { background-image: url("https://sandstorm.io/images/rss.svg"); }
+aside #social ul>li#twitter>a { background-image: url("https://sandstorm.io/images/twitter.svg"); }
+aside #social ul>li#google-plus>a { background-image: url("https://sandstorm.io/images/google-plus.svg"); }
+aside #social ul>li#facebook>a { background-image: url("https://sandstorm.io/images/facebook.svg"); }
 
 aside #social>p {
   position: absolute;
@@ -1291,6 +1357,11 @@ a.disable-cap {
   cursor: pointer;
 }
 
+#admin-alert-box.small #admin-alert-icon.countdown-second,
+#admin-alert-box.small #admin-alert-icon.countdown-now {
+  background-color: #e82538;
+}
+
 #admin-alert-box.small #admin-alert-closer[data-show="true"] {
   display: block;
   position: fixed;
@@ -1303,6 +1374,10 @@ a.disable-cap {
   -webkit-transition: background-color 200ms;
   transition: background-color 200ms;
 }
+
+/***********************************************************************************************
+ * mobile tweaks                                                                               *
+ ***********************************************************************************************/
 
 @media screen and (max-width: 1250px) {
   aside {
@@ -1360,14 +1435,30 @@ a.disable-cap {
     padding: 16px;
   }
 
-  #topbar, #topbar-right, #topbar-update {
+  body>.topbar, body>.topbar-update {
     line-height: 48px;
     height: 48px;
+    left: 0;
+    width: auto;
+    right: 0;
   }
-  #topbar-update {
+  body>.topbar {
+    background-color: #eee;
+    color: black;
+  }
+  body>.topbar-update {
     line-height: 24px;
   }
-  #topbar #menu-button {
+  body>.topbar {
+    transition: height 0.2s;
+  }
+  body>.topbar.expanded {
+    height: 100%;
+    box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+  }
+
+  body>.menu-button {
+    background-color: black;
     display: inline-block;
     vertical-align: top;
     background-image:url(/menu.png);
@@ -1379,68 +1470,133 @@ a.disable-cap {
     color: transparent;
     cursor: pointer;
     border-right: 1px solid #666;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
   }
-  #topbar #menu-button:hover {
+  body>.menu-button:hover {
     background-color: #666;
   }
-  #topbar.light #menu-button {
-    display: none;
-  }
-  #topbar #homelink {
-    display: none;
-  }
-
-  #topbar #homelink-button {
+  body>.topbar>li,
+  body>.topbar>.account,
+  body>.topbar>.homelink {
     display: block;
-  }
-
-  #menu button {
-    display: block;
+    float: none;
     width: 100%;
-    text-align: left;
-    height: 64px;
-    color: black;
-    padding-left: 48px;
-    background-size: auto;
-    background-position: 8px center;
+    height: 48px;
     border-bottom: 1px solid #ddd;
+    padding: 0;
   }
-  #menu button:hover {
-    background-color: white;
+  body>.topbar>.title {
+    background-color: black;
+    color: #ccc;
+    padding-left: 60px;
+    font-size: 120%;
   }
-
-  #topbar #deleteGrain  { background-image: url("/trash-m.png"); }
-  #topbar #openDebugLog { background-image: url("/wrench-m.png"); }
-  #topbar #backupGrain  { background-image: url("/download-m.png"); }
-  #topbar #restartGrain { background-image: url("/restart-m.png"); }
-  #topbar #showApiToken { background-image: url("/key-m.png"); }
-  #topbar #show-share-grain {
-    background-image: url("/share-m.png");
-    width: 100%;
-    padding-left: 48px;
-    background-position: 8px center;
-  }
-
-  #api-token-popup {
+  body>.topbar>.notifications {
     position: fixed;
-    left: 16px;
-    right: 16px;
-    top: 64px;
-    height: auto;
-    width: auto;
+    top: 0;
+    right: 0;
+    width: 48px;
+    height: 48px;
+  }
+  body>.topbar>.admin-alert {
+    position: fixed;
+    top: 0;
+    right: 48px;
+    width: 48px;
+    height: 48px;
+  }
+  body>.topbar>.grain-size {
+    display: none;
+  }
+  body>.topbar>.account {
+    float: none;
   }
 
-  #api-token-popup .copy-me {
+  body>.topbar>li>button.grain-button,
+  body>.topbar>.account>.login-link-text,
+  body>.topbar>.homelink>a,
+  body>.topbar>.admin>a,
+  body>.topbar>.about>a {
     display: block;
-    background-color: white;
+    width: 100%;
+    background-position: 8px center;
+    background-size: 32px 32px;
+    background-repeat: no-repeat;
     color: black;
-    font-family: monospace;
+    text-align: left;
+    padding-left: 48px;
+    font-size: 14pt;
+    height: 100%;
+    font-weight: normal;
+    font-family: sans-serif;
     text-decoration: none;
-    font-size: 150%;
-    word-wrap: break-word;
-    margin: 1em 0;
-    padding: 4px;
-    cursor: text;
+  }
+  body>.topbar>.homelink {
+    background-image: none;
+    -webkit-filter: none;
+    filter: none;
+  }
+  body>.topbar>.homelink:hover {
+    background-color: #eee;
+  }
+  body>.topbar>.share>button {
+    border-radius: 0;
+  }
+  body>.topbar>li>button.grain-button:hover,
+  body>.topbar>.share>button.grain-button:hover,
+  body>.topbar>.account>.login-link-text:hover,
+  body>.topbar>.homelink>a:hover {
+    background-color: white;
+  }
+  body>.topbar>.account>.login-link-text {
+    text-decoration: none;
+    font-weight: normal;
+    font-family: sans-serif;
+  }
+
+  body>.topbar>.homelink>a       { background-image: url("/icon32.png"); }
+  body>.topbar>.share>button     { background-image: url("/share-m.png"); }
+  body>.topbar>.delete>button    { background-image: url("/trash-m.png"); }
+  body>.topbar>.debug-log>button { background-image: url("/wrench-m.png"); }
+  body>.topbar>.backup>button    { background-image: url("/download-m.png"); }
+  body>.topbar>.restart>button   { background-image: url("/restart-m.png"); }
+  body>.topbar>.webkey>button    { background-image: url("/key-m.png"); }
+
+  body>.topbar>.admin {
+    display: block;
+  }
+
+  body>.topbar>.about {
+    display: block;
+  }
+
+  body>.popup>.frame {
+    position: static;
+    margin: 64px auto 32px;
+    font-size: 20px;
+    max-width: 90%;
+    border: 1px solid #ccc;
+    overflow-y: auto;
+  }
+  body>.popup {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  body>.popup>.frame {
+    width: 90%;
+  }
+  body>.popup>.frame>h4 {
+    font-size: 20px;
+  }
+  body>.popup>.frame::before {
+    display: none;
+  }
+  body>.popup>.frame input,
+  body>.popup>.frame button,
+  body>.popup>.frame .login-button {
+    font-size: 20px;
   }
 
   .main-content {
@@ -1452,11 +1608,6 @@ a.disable-cap {
     height: 40px;
     margin-top: 4px;
     background-image: url("/inbox-m.png");
-  }
-
-  #notification-dropdown {
-    width: 300px;
-    top: 48px;
   }
 
   #demo > .centered-box {

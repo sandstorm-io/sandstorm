@@ -153,7 +153,7 @@ module.exports = utils.testAllLogins({
         browser.switchWindow(windows.value[1]);
       })
       .pause(short_wait)
-      .assert.containsText('#topbar', 'Debug')
+      .assert.containsText('.topbar', 'Debug')
       .closeWindow()
       .end();
   },

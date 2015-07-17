@@ -44,8 +44,8 @@ module.exports["Test Powerbox"] = function (browser) {
     .waitForElementVisible("#offer-result", short_wait)
     .assert.containsText("#offer-result", "offer: success")
     .frame()
-    .waitForElementVisible("#powerbox-offer-popup input", short_wait)
-    .getValue("#powerbox-offer-popup input", function (result) {
+    .waitForElementVisible("#powerbox-offer-url", short_wait)
+    .getText("#powerbox-offer-url", function (result) {
         browser
           .frame("grain-frame")
           .click("#request")
@@ -76,8 +76,8 @@ module.exports["Test PowerboxSave"] = function (browser) {
     .waitForElementVisible("#offer-result", short_wait)
     .assert.containsText("#offer-result", "offer: success")
     .frame()
-    .waitForElementVisible("#powerbox-offer-popup input", short_wait)
-    .getValue("#powerbox-offer-popup input", function (result) {
+    .waitForElementVisible("#powerbox-offer-url", short_wait)
+    .getText("#powerbox-offer-url", function (result) {
         browser
           .frame("grain-frame")
           .click("#request")
@@ -112,8 +112,8 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
     .waitForElementVisible("#offer-result", short_wait)
     .assert.containsText("#offer-result", "offer: success")
     .frame()
-    .waitForElementVisible("#powerbox-offer-popup input", short_wait)
-    .getValue("#powerbox-offer-popup input", function (result) {
+    .waitForElementVisible("#powerbox-offer-url", short_wait)
+    .getText("#powerbox-offer-url", function (result) {
         browser
           .frame("grain-frame")
           .click("#request")

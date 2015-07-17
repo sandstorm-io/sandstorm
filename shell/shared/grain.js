@@ -165,7 +165,6 @@ if (Meteor.isClient) {
   var currentAppOrigin;
   var currentGrainId;
   var sessionGrainSizeSubscription;
-  var powerboxRequestInfo;
 
   Template.grain.events({
     "click #incognito-button": function (event) {
@@ -175,8 +174,10 @@ if (Meteor.isClient) {
     "click #redeem-token-button": function (event) {
       Session.set("visit-token-" + event.currentTarget.getAttribute("data-token"), "redeem");
     },
+  });
 
-    "click #grainTitle": function (event) {
+  Template.grainTitle.events({
+    "click": function (event) {
       var title = window.prompt("Set new title:", this.title);
       if (title) {
         if (this.isOwner) {
@@ -192,7 +193,10 @@ if (Meteor.isClient) {
         }
       }
     },
-    "click #deleteGrain": function (event) {
+  });
+
+  Template.grainDeleteButton.events({
+    "click button": function (event) {
       if (this.isOwner) {
         if (window.confirm("Really delete this grain?")) {
           Session.set("showMenu", false);
@@ -207,11 +211,17 @@ if (Meteor.isClient) {
         }
       }
     },
-    "click #openDebugLog": function (event) {
+  });
+
+  Template.grainDebugLogButton.events({
+    "click button": function (event) {
       window.open("/grainlog/" + this.grainId, "_blank",
           "menubar=no,status=no,toolbar=no,width=700,height=700");
     },
-    "click #backupGrain": function (event) {
+  });
+
+  Template.grainBackupButton.events({
+    "click button": function (event) {
       Meteor.call("backupGrain", this.grainId, function (err, id) {
         if (err) {
           alert("Backup failed: " + err); // TODO(someday): make this better UI
@@ -237,7 +247,10 @@ if (Meteor.isClient) {
         }
       });
     },
-    "click #restartGrain": function (event) {
+  });
+
+  Template.grainRestartButton.events({
+    "click button": function (event) {
       var sessionId = this.sessionId;
       var grainId = this.grainId;
 
@@ -250,13 +263,25 @@ if (Meteor.isClient) {
         }
       });
     },
-    "click #showApiToken": function (event) {
-      if (Session.get("show-api-token")) {
-        Session.set("show-api-token", false);
-      } else {
-        Session.set("show-api-token", true);
-      }
-    },
+  });
+
+  function copyMe(event) {
+    event.preventDefault();
+    if (document.body.createTextRange) {
+      var range = document.body.createTextRange();
+      range.moveToElementText(event.currentTarget);
+      range.select();
+    } else if (window.getSelection) {
+      var selection = window.getSelection();
+      var range = document.createRange();
+      range.selectNodeContents(event.currentTarget);
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+  }
+
+  Template.grainApiTokenPopup.events({
+    "click .copy-me": copyMe,
     "click #api-token-popup-closer": function (event) {
       Session.set("show-api-token", false);
     },
@@ -287,13 +312,20 @@ if (Meteor.isClient) {
     "click button.revoke-token": function (event) {
       ApiTokens.update(event.currentTarget.getAttribute("data-token-id"), {$set: {revoked: true}});
     },
-    "click #show-share-grain": function (event) {
-      if (Session.get("show-share-grain")) {
-        Session.set("show-share-grain", false);
-      } else {
-        Session.set("show-share-grain", true);
+
+    "click .token-petname": function (event) {
+      // TODO(soon): Find a less-annoying way to get this input, perhaps by allowing the user
+      //   to edit the petname in place.
+      var petname = window.prompt("Set new label:", this.petname);
+      if (petname) {
+        ApiTokens.update(event.currentTarget.getAttribute("data-token-id"),
+                         {$set: {petname: petname}});
       }
     },
+  });
+
+  Template.grainSharePopup.events({
+    "click .copy-me": copyMe,
     "click #share-grain-popup-closer": function (event) {
       Session.set("show-share-grain", false);
     },
@@ -320,16 +352,6 @@ if (Meteor.isClient) {
           Session.set("share-token-" + grainId, getOrigin() + "/shared/" + result.token);
         }
       });
-    },
-
-    "click .token-petname": function (event) {
-      // TODO(soon): Find a less-annoying way to get this input, perhaps by allowing the user
-      //   to edit the petname in place.
-      var petname = window.prompt("Set new label:", this.petname);
-      if (petname) {
-        ApiTokens.update(event.currentTarget.getAttribute("data-token-id"),
-                         {$set: {petname: petname}});
-      }
     },
 
     "click button.show-transitive-shares": function (event) {
@@ -364,68 +386,60 @@ if (Meteor.isClient) {
     "click #privatize-grain": function (event) {
       Grains.update(this.grainId, {$set: {private: true}});
     },
-    "click #powerbox-request-popup-closer": function (event) {
-      Session.set("show-powerbox-request", false);
-      powerboxRequestInfo.source.postMessage(
-        {
-          rpcId: powerboxRequestInfo.rpcId,
-          error: "User cancelled request"
-        }, powerboxRequestInfo.origin);
-      powerboxRequestInfo = null;
+
+    "click button.revoke-token": function (event) {
+      ApiTokens.update(event.currentTarget.getAttribute("data-token-id"), {$set: {revoked: true}});
     },
-    "click #powerbox-offer-popup-closer": function (event) {
-      Meteor.call("finishPowerboxOffer", currentSessionId, function (err) {
-        // TODO(someday): display the error nicely to the user
-        if (err) {
-          console.error(err);
-        }
-      });
+
+    "click .token-petname": function (event) {
+      // TODO(soon): Find a less-annoying way to get this input, perhaps by allowing the user
+      //   to edit the petname in place.
+      var petname = window.prompt("Set new label:", this.petname);
+      if (petname) {
+        ApiTokens.update(event.currentTarget.getAttribute("data-token-id"),
+                         {$set: {petname: petname}});
+      }
     },
+  });
+
+  Template.grainPowerboxRequestPopup.events({
     "submit #powerbox-request-form": function (event) {
       event.preventDefault();
+      var powerboxRequestInfo = this;
       Meteor.call("finishPowerboxRequest", event.target.token.value, powerboxRequestInfo.saveLabel,
-        this.grainId,
+        powerboxRequestInfo.grainId,
         function (err, token) {
           if (err) {
-            Session.set("powerbox-request-error", err.toString());
+            powerboxRequestInfo.error.set(err.toString());
           } else {
             powerboxRequestInfo.source.postMessage(
               {
                 rpcId: powerboxRequestInfo.rpcId,
                 token: token
               }, powerboxRequestInfo.origin);
-            powerboxRequestInfo = null;
-            Session.set("show-powerbox-request", false);
+            powerboxRequestInfo.closer.close();
           }
         }
       );
-    },
-    "click #homelink-button": function (event) {
-      event.preventDefault();
-      Session.set("showMenu", false);
-      Router.go("root", {});
-    },
-    "click #menu-closer": function (event) {
-      event.preventDefault();
-      Session.set("showMenu", false);
-    },
-    "click .copy-me": function(event) {
-      event.preventDefault();
-      if (document.body.createTextRange) {
-        var range = document.body.createTextRange();
-        range.moveToElementText(event.currentTarget);
-        range.select();
-      } else if (window.getSelection) {
-        var selection = window.getSelection();
-        var range = document.createRange();
-        range.selectNodeContents(event.currentTarget);
-        selection.removeAllRanges();
-        selection.addRange(range);
+    }
+  });
+
+  Template.grainPowerboxOfferPopup.events({
+    "click button.dismiss": function (event) {
+      var sessionId = Template.instance().data.sessionId;
+      if (sessionId) {
+        Meteor.call("finishPowerboxOffer", sessionId, function (err) {
+          // TODO(someday): display the error nicely to the user
+          if (err) {
+            console.error(err);
+          }
+        });
+      } else {
+        // TODO(cleanup): This path is used by the admin UI. This is really hacky, though.
+        Iron.controller().state.set("powerboxOfferUrl", null);
       }
     },
-    "click .autoSelect": function (event) {
-      event.currentTarget.select();
-    }
+    "click .copy-me": copyMe
   });
 
   Template.grain.onCreated(function () {
@@ -453,23 +467,8 @@ if (Meteor.isClient) {
       }
     },
 
-    displayName: function (userId) {
-      var name = DisplayNames.findOne(userId);
-      if (name) {
-        return name.displayName;
-      } else if (userId === Meteor.userId()) {
-        return Meteor.user().profile.name + " (you)";
-      } else {
-        return "Unknown User (" + userId + ")";
-      }
-    },
-
     displayWebkeyButton: function () {
       return Meteor.userId() || !this.oldSharingModel;
-    },
-
-    displayToken: function() {
-      return !this.revoked && !this.expiresIfUnused && !this.parentToken;
     },
 
     path: function () {
@@ -487,15 +486,45 @@ if (Meteor.isClient) {
       return session && session.powerboxView && !!session.powerboxView.offer;
     },
 
-    powerboxOfferUrl: function () {
-      var session = Sessions.findOne({_id: this.sessionId}, {fields: {powerboxView: 1}});
-      return session && session.powerboxView && session.powerboxView.offer;
-    },
-
     hasNotLoaded: function () {
       var session = Sessions.findOne({_id: this.sessionId}, {fields: {hasLoaded: 1}});
       return !session.hasLoaded;
     }
+  });
+
+  Template.grainApiTokenPopup.helpers({
+    displayToken: function() {
+      return !this.revoked && !this.expiresIfUnused && !this.parentToken;
+    },
+  });
+
+  Template.grainSharePopup.helpers({
+    displayName: function (userId) {
+      var name = DisplayNames.findOne(userId);
+      if (name) {
+        return name.displayName;
+      } else if (userId === Meteor.userId()) {
+        return Meteor.user().profile.name + " (you)";
+      } else {
+        return "Unknown User (" + userId + ")";
+      }
+    },
+
+    displayToken: function() {
+      return !this.revoked && !this.expiresIfUnused && !this.parentToken;
+    },
+  });
+
+  Template.grainPowerboxOfferPopup.helpers({
+    powerboxOfferUrl: function () {
+      if (this.powerboxOfferUrl) {
+        // TODO(cleanup): This path is used by the admin UI. This is really hacky, though.
+        return this.powerboxOfferUrl;
+      }
+
+      var session = Sessions.findOne({_id: this.sessionId}, {fields: {powerboxView: 1}});
+      return session && session.powerboxView && session.powerboxView.offer;
+    },
   });
 
   function setCurrentSessionId(sessionId, appOrigin, grainId) {
@@ -616,24 +645,31 @@ if (Meteor.isClient) {
         var powerboxRequest = event.data.powerboxRequest;
         check(powerboxRequest, Object);
         var rpcId = powerboxRequest.rpcId;
-        if (powerboxRequestInfo) {
-          // There is already an ongoing powerbox interaction. Fail it for now.
-          // TODO(someday): queue the powerbox requests?
-          event.source.postMessage(
-            {
-              rpcId: rpcId,
-              error: "There is already an ongoing powerbox interaction. Please wait and try again."
-            }, event.origin);
-          return;
-        }
-        Session.set("show-powerbox-request", true);
-        Session.set("powerbox-request-error", null);
-        powerboxRequestInfo = {
+
+        var powerboxRequestInfo = {
           source: event.source,
           rpcId: rpcId,
+          grainId: currentGrainId,
           origin: event.origin,
-          saveLabel: powerboxRequest.saveLabel
+          saveLabel: powerboxRequest.saveLabel,
+          error: new ReactiveVar(null)
         };
+
+        powerboxRequestInfo.closer = globalTopbar.addItem({
+          name: "request",
+          template: Template.grainPowerboxRequest,
+          popupTemplate: Template.grainPowerboxRequestPopup,
+          data: new ReactiveVar(powerboxRequestInfo),
+          startOpen: true,
+          onDismiss: function () {
+            powerboxRequestInfo.source.postMessage(
+              {
+                rpcId: powerboxRequestInfo.rpcId,
+                error: "User canceled request"
+              }, powerboxRequestInfo.origin);
+            return "remove";
+          }
+        });
       } else {
         console.log("postMessage from app not understood: " + event.data);
       }
@@ -641,32 +677,6 @@ if (Meteor.isClient) {
 
     window.addEventListener("message", messageListener, false);
   });
-
-  var blockedReload;
-  var blockedReloadDep = new Tracker.Dependency;
-  var explicitlyUnblocked = false;
-  Reload._onMigrate(undefined, function (retry) {
-    if (currentSessionId && !explicitlyUnblocked) {
-      console.log("New version ready, but blocking reload because an app is open.");
-      blockedReload = retry;
-      blockedReloadDep.changed();
-      return false;
-    } else {
-      return [true];
-    }
-  });
-
-  isUpdateBlocked = function () {
-    blockedReloadDep.depend();
-    return !!blockedReload;
-  }
-  unblockUpdate = function () {
-    if (blockedReload) {
-      blockedReload();
-      explicitlyUnblocked = true;
-      blockedReloadDep.changed();
-    }
-  }
 }
 
 if (Meteor.isClient) {
@@ -703,8 +713,6 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
   result.apiToken = apiToken;
   result.apiTokenPending = apiToken === "pending";
   result.showApiToken = Session.get("show-api-token");
-  result.showPowerboxRequest = Session.get("show-powerbox-request");
-  result.powerboxRequestError = Session.get("powerbox-request-error");
   result.existingTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
                                           forSharing: {$ne: true},
                                           $or: [{owner: {webkey: null}},
@@ -833,7 +841,6 @@ Router.map(function () {
       setCurrentSessionId(undefined, undefined, undefined);
       Session.set("grainFrameTitle", undefined);
       document.title = DEFAULT_TITLE;
-      unblockUpdate();
     }
   });
 
@@ -893,7 +900,6 @@ Router.map(function () {
       setCurrentSessionId(undefined, undefined, undefined);
       Session.set("grainFrameTitle", undefined);
       document.title = DEFAULT_TITLE;
-      unblockUpdate();
     }
   });
 

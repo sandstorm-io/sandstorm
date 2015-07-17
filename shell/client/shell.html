@@ -26,89 +26,102 @@ limitations under the License.
 </body>
 
 <template name="layout">
-  {{> topBar}}
-  {{> yield}}
-</template>
+  {{>sandstormTopbar globalTopbar}}
 
-<template name="lightLayout">
-  {{> yield}}
-</template>
-
-<template name="topBar">
-  {{#if isUpdateBlocked}}
-  <div id="topbar-update">
-    Sandstorm has been updated &mdash; Click here to reload
-  </div>
-  {{else}}
-  <div id="topbar-right">
-    {{#with adminAlert}}
+  {{!-- standard topbar items --}}
+  {{#sandstormTopbarItem name="homelink" topbar=globalTopbar}}
+    <a href="/" id="homelink" class="navlink">Sandstorm</a>
+  {{/sandstormTopbarItem}}
+  {{>sandstormTopbarItem name="account" topbar=globalTopbar
+                         template="loginButtons" popupTemplate="loginButtonsPopup"}}
+  {{#if currentUser}}
+    {{>sandstormTopbarItem name="notifications" topbar=globalTopbar
+                           template="notifications" popupTemplate="notificationsPopup"}}
+  {{/if}}
+  {{#with adminAlert}}
+    {{#sandstormTopbarItem name="admin-alert" topbar=globalTopbar}}
+      {{!-- TODO(cleaup): Awkwardly, the event handlers on Template.layout actually work
+          on this topbar item solely because the whole topbar itself is embedded inside the
+          "layout" template. But, we shouldn't be relying on that! Move this to its own
+          template... --}}
       <span id="admin-alert-box" class="{{#if adminAlertIsTooLarge}}small{{/if}}">
         <div id="admin-alert-closer" data-show="{{showTopbar}}"></div>
         <span id="admin-alert" data-show="{{showTopbar}}">
           {{#if alertUrl}}
             <a href="{{alertUrl}}" class="alert {{className}}">{{text}}</a>
           {{else}}
-            <div class="alert {{className}}">{{text}}</div>
+            <span class="alert {{className}}">{{text}}</span>
           {{/if}}
         </span>
-        <span id="admin-alert-icon">!</span>
+        <span id="admin-alert-icon" class="{{className}}">!</span>
       </span>
-    {{/with}}
-    {{#if currentUser}}
-      {{> notifications}}
-    {{/if}}
-    {{> loginButtons align="right"}}
-  </div>
-  {{/if}}
+    {{/sandstormTopbarItem}}
+  {{/with}}
+
+  {{> yield}}
+</template>
+
+<template name="lightLayout">
+  {{>sandstormTopbar globalTopbar}}
+
+  {{> yield}}
 </template>
 
 <template name="notifications">
-  <span class="notification-topbar {{#if notificationsIsEnabled}}notification-selected{{/if}}">
+  <span class="notification-topbar">
     <button class="notification-button {{#if notificationCount}}inner{{else}}notification-icon{{/if}}">{{notificationCount}}</button>
   </span>
-  {{#if notificationsIsEnabled}}
-    <div id="notification-dropdown">
-      <h4>Notifications</h4>
-      <ul id="notification-list">
-        {{#each notifications}}
-          <li>
-            <div class="notification-item">
-              <div class="notification-header">
-                  <span>{{grainTitle}}</span>
-                  <span title="Stops the background app" class="cancel-notification" data-notificationid="{{_id}}">Cancel</span>
-                  <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
-              </div>
-              <span>{{text.defaultText}}</span>
-            </div>
-          </li>
-        {{else}}
-        <li>No Notifications...</li>
-        {{/each}}
-      </ul>
-    </div>
-  {{/if}}
 </template>
 
-<template name="homeLink">
-  <div id="menu-button"></div><a id="homelink" href="{{origin}}"><img id="icon" src="/icon.png"> Sandstorm</a>
+<template name="notificationsPopup">
+  <h4>Notifications</h4>
+  <ul id="notification-list">
+    {{#each notifications}}
+      <li>
+        <div class="notification-item">
+          <div class="notification-header">
+              <span>{{grainTitle}}</span>
+              <span title="Stops the background app" class="cancel-notification" data-notificationid="{{_id}}">Cancel</span>
+              <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
+          </div>
+          <span>{{text.defaultText}}</span>
+        </div>
+      </li>
+    {{else}}
+    <li>No Notifications...</li>
+    {{/each}}
+  </ul>
+</template>
+
+<template name="title">
+  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}{{.}}{{/sandstormTopbarItem}}
 </template>
 
 <template name="loading">
-  <div id="topbar">{{> homeLink}} Loading...</div>
+  {{>title "Loading..."}}
   <div class="main-content">
     <div class="centered-box">Loading...</div>
   </div>
 </template>
 
 <template name="notFound">
-  <div id="topbar">{{> homeLink}} Not Found</div>
+  {{>title "Not Found"}}
   <div class="main-content">
     <div class="centered-box">404 Not Found :(</div>
   </div>
 </template>
 
 <template name="root">
-  <div id="topbar">{{> homeLink}} Home</div>
+  {{>title "Home"}}
+
+  {{#if isAdmin}}
+    {{#sandstormTopbarItem name="admin" topbar=globalTopbar}}
+      <a href="/admin" class="navlink">Admin Settings</a>
+    {{/sandstormTopbarItem}}
+  {{/if}}
+  {{#sandstormTopbarItem name="about" topbar=globalTopbar}}
+    <a href="/about" class="navlink">About</a>
+  {{/sandstormTopbarItem}}
 
   <div id="intro" class="main-content">
     {{#if kernelTooOld}}
@@ -265,197 +278,223 @@ limitations under the License.
   </div>
 </template>
 
-<template name="grain">
-  {{setGrainWindowTitle}}
-  <div id="topbar">
-    {{> homeLink}}<span id="grainTitle" title="rename">{{title}}</span> {{grainSize}}
-    <div id="menu-closer" data-show="{{showMenu}}"></div>
-    <div id="menu" data-show="{{showMenu}}">
-      <button id="homelink-button" title="Home"> Home</button>
+<template name="grainTitle">
+  <span class="editable" title="Rename" id="grainTitle">{{title}}</span>
+</template>
+<template name="grainDeleteButton">
+  <button class="grain-button" title="Delete" id="deleteGrain">Delete</button>
+</template>
+<template name="grainDebugLogButton">
+  <button class="grain-button" title="Show Debug Log" id="openDebugLog">Log</button>
+</template>
+<template name="grainBackupButton">
+  <button class="grain-button" title="Download Backup" id="backupGrain">Backup</button>
+</template>
+<template name="grainRestartButton">
+  <button class="grain-button" title="Restart App" id="restartGrain">Restart</button>
+</template>
+
+<template name="grainApiTokenButton">
+  <button class="grain-button" title="Get Webkey" id="showApiToken">Get&nbsp;Webkey</button>
+</template>
+
+<template name="grainApiTokenPopup">
+  <h4>Webkeys</h4>
+  {{#if apiToken}}
+    {{#if apiTokenPending}}
+      <p>Generating...</p>
+      <p><button id="resetApiToken">Cancel</button></p>
+    {{else}}
+      <p>Copy this webkey and give it to the external app:</p>
+        <a id="apiTokenText" class="copy-me" href="{{apiToken}}">{{apiToken}}</a>
       {{#if currentUser}}
-        <button id="show-share-grain" title="Share">Share</button>
-        <button id="deleteGrain" title="Delete">Delete</button>
-      {{/if}}
-      {{#if isOwner}}
-        <button id="openDebugLog" title="Show Debug Log">Log</button>
-        <button id="backupGrain" title="Download Backup">Backup</button>
-        <button id="restartGrain" title="Restart App">Restart</button>
-      {{/if}}
-      {{#if displayWebkeyButton}}
-        <button id="showApiToken" title="Get Webkey">Get&nbsp;Webkey</button>
-      {{/if}}
-      {{#if showPowerboxRequest}}
-        <div class="powerboxIcon">P</div>
-      {{/if}}
-      {{#if showPowerboxOffer}}
-        <div class="powerboxIcon">P</div>
-      {{/if}}
-    </div>
-  </div>
-
-  <div id="api-token-popup" class="popup" style="{{#if showApiToken}}{{else}}display: none{{/if}}">
-    {{#if apiToken}}
-      {{#if apiTokenPending}}
-        <p>Generating...</p>
-        <p><button id="resetApiToken">Cancel</button></p>
-      {{else}}
-        <p>Copy this webkey and give it to the external app:</p>
-          <a id="apiTokenText" class="copy-me" href="{{apiToken}}">{{apiToken}}</a>
-        {{#if currentUser}}
-          <p><button id="resetApiToken">Go back</button></p>
-        {{/if}}
-      {{/if}}
-    {{else}}
-      <p>A webkey allows you to connect an external app (e.g. a mobile app) to this app.</p>
-      <p><form id="newApiToken">
-      Label: <input type="text" id="api-token-petname" placeholder="e.g. 'Android app'">
-      {{#with viewInfo}}
-        {{#if roles}}
-          Role:
-          <select id="api-token-role">
-            <option title="has every app permission" selected=true>all access</option>
-            {{#each roles}}
-              <option title={{verbPhrase.defaultText}}
-                      style="{{#if obsolete}}display:none{{else}}{{/if}}">
-                {{title.defaultText}}</option>
-            {{/each}}
-          </select>
-        {{/if}}
-      {{/with}}
-      <button>Create</button></form></p>
-      {{#if existingTokens}}
-        <p>Your existing webkeys:</p>
-        <ul>
-        {{#each existingTokens}}
-          {{#if displayToken}}
-            <li>
-              <span class="token-petname" data-token-id="{{_id}}">
-                {{petname}} ({{dateString created}})
-              </span>
-              <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
-            </li>
-          {{/if}}
-        {{/each}}
-        </ul>
+        <p><button id="resetApiToken">Go back</button></p>
       {{/if}}
     {{/if}}
-  </div>
-  <div id="api-token-popup-closer" class="popup-closer"
-      style="{{#if showApiToken}}{{else}}display: none{{/if}}"></div>
-
-  <div id="share-grain-popup" class="popup"
-       style="{{#if showShareGrain}}{{else}}display: none{{/if}}">
-    {{#if oldSharingModel}}
-      <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
-          location bar.</p>
-      {{#if isOwner}}
-      <p>You can upgrade this grain to the new model, but anyone with whom you shared this grain
-        previously will lose access; you will have to share it with them again. If you have
-        generated webkeys for external apps, you might also need to regenerate those.</p>
-      <p>Upgrading cannot be undone.</p>
-      <p><button id="privatize-grain">upgrade</button></p>
+  {{else}}
+    <p>A webkey allows you to connect an external app (e.g. a mobile app) to this app.</p>
+    <p><form id="newApiToken">
+    Label: <input type="text" id="api-token-petname" placeholder="e.g. 'Android app'">
+    {{#with viewInfo}}
+      {{#if roles}}
+        Role:
+        <select id="api-token-role">
+          <option title="has every app permission" selected=true>all access</option>
+          {{#each roles}}
+            <option title={{verbPhrase.defaultText}}
+                    style="{{#if obsolete}}display:none{{else}}{{/if}}">
+              {{title.defaultText}}</option>
+          {{/each}}
+        </select>
       {{/if}}
-    {{else}}
-      {{#if shareToken}}
-        {{#if shareTokenPending}}
-          <p>Generating...</p>
-          <p><button id="reset-share-token">Cancel</button></p>
-        {{else}}
-          <p>Copy this link and share it with other users to grant access:</p>
-          <a id="share-token-text" class="copy-me" href="{{shareToken}}">{{shareToken}}</a>
-          <p><button id="reset-share-token">Go back</button></p>
+    {{/with}}
+    <button>Create</button></form></p>
+    {{#if existingTokens}}
+      <p>Your existing webkeys:</p>
+      <ul>
+      {{#each existingTokens}}
+        {{#if displayToken}}
+          <li>
+            <span class="token-petname" data-token-id="{{_id}}">
+              {{petname}} ({{dateString created}})
+            </span>
+            <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
+          </li>
         {{/if}}
-      {{else}}
-        {{#if transitiveShares}}
-          {{#if transitiveShares.empty}}
-            <p></p>
-            <p> You have granted access to nobody. </p>
-          {{else}}
-            <p>Users who have received access through you:</p>
-            <ul>
-              {{#each transitiveShares}}
-                <li>
-                  <div>{{displayName recipient}} was granted access by:</div>
-                  <ul>
-                    {{#each shares}}
-                      <li>{{displayName userId}} ({{dateString created}})</li>
-                    {{/each}}
-                  </ul>
-                </li>
-              {{/each}}
-            </ul>
-          {{/if}}
-          <button class="hide-transitive-shares">back</button>
-        {{else}}
-          <p>Create a secret link to share with other users.</p>
-          <p><form id="new-share-token">
-          Label: <input onclick="select()" type="text"
-                  id="share-token-petname" value="unlabeled sharing link">
-          {{#with viewInfo}}
-            {{#if roles}}
-              Role:
-              <select id="share-token-role" title="select a role">
-                {{#each roles}}
-                  <option title={{verbPhrase.defaultText}}
-                          style="{{#if obsolete}}display:none{{/if}}"
-                          selected={{default}}>
-                    {{title.defaultText}}</option>
-                {{/each}}
-              </select>
-            {{/if}}
-          {{/with}}
-          <button>Create</button>
-          </form></p>
-          {{#if existingShareTokens}}
-            <p> Your existing links: </p>
-            <ul>
-            {{#each existingShareTokens}}
-              {{#if displayToken}}
-                <li>
-                  <span class="token-petname" data-token-id="{{_id}}">
-                    {{petname}} ({{dateString created}})
-                  </span>
-                  <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
-                </li>
-              {{/if}}
-            {{/each}}
-            </ul>
-          {{else}}
-            You have not created any links.
-          {{/if}}
-           <button class="show-transitive-shares">see who has access</button>
-        {{/if}}
-      {{/if}}
+      {{/each}}
+      </ul>
     {{/if}}
-  </div>
-  <div id="share-grain-popup-closer" class="popup-closer"
-      style="{{#if showShareGrain}}{{else}}display: none{{/if}}">
-  </div>
-
-  {{#if showPowerboxRequest}}
-  <div id="powerbox-request-popup" class="popup">
-    <h3>Powerbox Request</h3>
-    <div>
-      <form id="powerbox-request-form">
-        <label>Please input an api token: </label><input name="token" type="text" id="powerbox-request-input"><br>
-        <button>Import token</button>
-      </form>
-      {{#if powerboxRequestError}}
-      <div class="error">{{powerboxRequestError}}</div>
-      {{/if}}
-    </div>
-  </div>
-  <div id="powerbox-request-popup-closer" class="popup-closer"></div>
   {{/if}}
+</template>
 
-  {{#if showPowerboxOffer}}
-  <div id="powerbox-offer-popup" class="popup">
-    <h3>Powerbox Offer</h3>
-    <div>
-      <input type="text" class="autoSelect" value="{{powerboxOfferUrl}}" readonly>
-    </div>
+<template name="grainShareButton">
+  <button class="grain-button" title="Share" id="show-share-grain">Share</button>
+</template>
+
+<template name="grainSharePopup">
+  <h4>Share with others...</h4>
+  {{#if oldSharingModel}}
+    <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
+        location bar.</p>
+    {{#if isOwner}}
+    <p>You can upgrade this grain to the new model, but anyone with whom you shared this grain
+      previously will lose access; you will have to share it with them again. If you have
+      generated webkeys for external apps, you might also need to regenerate those.</p>
+    <p>Upgrading cannot be undone.</p>
+    <p><button id="privatize-grain">upgrade</button></p>
+    {{/if}}
+  {{else}}
+    {{#if shareToken}}
+      {{#if shareTokenPending}}
+        <p>Generating...</p>
+        <p><button id="reset-share-token">Cancel</button></p>
+      {{else}}
+        <p>Copy this link and share it with other users to grant access:</p>
+        <a id="share-token-text" class="copy-me" href="{{shareToken}}">{{shareToken}}</a>
+        <p><button id="reset-share-token">Go back</button></p>
+      {{/if}}
+    {{else}}
+      {{#if transitiveShares}}
+        {{#if transitiveShares.empty}}
+          <p></p>
+          <p> You have granted access to nobody. </p>
+        {{else}}
+          <p>Users who have received access through you:</p>
+          <ul>
+            {{#each transitiveShares}}
+              <li>
+                <div>{{displayName recipient}} was granted access by:</div>
+                <ul>
+                  {{#each shares}}
+                    <li>{{displayName userId}} ({{dateString created}})</li>
+                  {{/each}}
+                </ul>
+              </li>
+            {{/each}}
+          </ul>
+        {{/if}}
+        <button class="hide-transitive-shares">back</button>
+      {{else}}
+        <p>Create a secret link to share with other users.</p>
+        <p><form id="new-share-token">
+        Label: <input onclick="select()" type="text"
+                id="share-token-petname" value="unlabeled sharing link">
+        {{#with viewInfo}}
+          {{#if roles}}
+            Role:
+            <select id="share-token-role" title="select a role">
+              {{#each roles}}
+                <option title={{verbPhrase.defaultText}}
+                        style="{{#if obsolete}}display:none{{/if}}"
+                        selected={{default}}>
+                  {{title.defaultText}}</option>
+              {{/each}}
+            </select>
+          {{/if}}
+        {{/with}}
+        <button>Create</button>
+        </form></p>
+        {{#if existingShareTokens}}
+          <p> Your existing links: </p>
+          <ul>
+          {{#each existingShareTokens}}
+            {{#if displayToken}}
+              <li>
+                <span class="token-petname" data-token-id="{{_id}}">
+                  {{petname}} ({{dateString created}})
+                </span>
+                <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
+              </li>
+            {{/if}}
+          {{/each}}
+          </ul>
+        {{else}}
+          You have not created any links.
+        {{/if}}
+         <button class="show-transitive-shares">see who has access</button>
+      {{/if}}
+    {{/if}}
+  {{/if}}
+</template>
+
+<template name="grainPowerboxRequest">
+  P
+</template>
+<template name="grainPowerboxRequestPopup">
+  <h4>Powerbox Request</h4>
+  <div>
+    <form id="powerbox-request-form">
+      <label>Please input an api token: </label><input name="token" type="text" id="powerbox-request-input"><br>
+      <button class="submit">Import token</button>
+    </form>
+    {{#if error.get}}
+    <div class="error">{{error.get}}</div>
+    {{/if}}
   </div>
-  <div id="powerbox-offer-popup-closer" class="popup-closer"></div>
+</template>
+
+<template name="grainPowerboxOffer">
+  P
+</template>
+<template name="grainPowerboxOfferPopup">
+  <h4>Powerbox Offer</h4>
+  <div>
+    <a class="copy-me" href="{{powerboxOfferUrl}}" id="powerbox-offer-url">{{powerboxOfferUrl}}</a>
+    <button class="dismiss">Dismiss</button>
+  </div>
+</template>
+
+<template name="grain">
+  {{>sandstormTopbarItem name="title" priority=5 topbar=globalTopbar template="grainTitle"}}
+  {{#sandstormTopbarItem name="grain-size" topbar=globalTopbar}}
+    {{grainSize}}
+  {{/sandstormTopbarItem}}
+
+  {{>sandstormTopbarBlockReload}}
+
+  {{setGrainWindowTitle}}
+
+  {{#if currentUser}}
+    {{>sandstormTopbarItem name="share" topbar=globalTopbar
+          template="grainShareButton" popupTemplate="grainSharePopup"}}
+    {{>sandstormTopbarItem name="delete" topbar=globalTopbar template="grainDeleteButton"}}
+  {{/if}}
+  {{#if isOwner}}
+    {{>sandstormTopbarItem name="debug-log" topbar=globalTopbar template="grainDebugLogButton"}}
+    {{>sandstormTopbarItem name="backup" topbar=globalTopbar template="grainBackupButton"}}
+    {{>sandstormTopbarItem name="restart" topbar=globalTopbar template="grainRestartButton"}}
+  {{/if}}
+  {{#if displayWebkeyButton}}
+    {{>sandstormTopbarItem name="webkey" topbar=globalTopbar
+        template="grainApiTokenButton" popupTemplate="grainApiTokenPopup"}}
+  {{/if}}
+  {{#if showPowerboxRequest}}
+    {{>sandstormTopbarItem name="request" topbar=globalTopbar template="grainPowerboxRequest"
+        startOpen=true popupTemplate="grainPowerboxRequestPopup"}}
+  {{/if}}
+  {{#if showPowerboxOffer}}
+    {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"
+        startOpen=true popupTemplate="grainPowerboxOfferPopup"}}
   {{/if}}
 
   <div id="app" class="main-content">
@@ -496,9 +535,9 @@ limitations under the License.
 </template>
 
 <template name="grainLog">
-  <div id="topbar" class="light">
-    {{> homeLink}} Debug log: {{title}}
-  </div>
+  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}
+    Debug log: {{title}}
+  {{/sandstormTopbarItem}}
 
   <div id="grainLog" class="main-content">
     <pre>...{{{html}}}</pre>
@@ -506,7 +545,7 @@ limitations under the License.
 </template>
 
 <template name="install">
-  <div id="topbar">{{> homeLink}} Install App</div>
+  {{>title "Intsall app"}}
 
   {{#if error}}
     <div id="install" class="main-content error">
@@ -568,7 +607,7 @@ limitations under the License.
 </template>
 
 <template name="signup">
-  <div id="topbar">{{> homeLink}} Claim Invite</div>
+  {{>title "Claim Invite"}}
 
   <div id="signup" class="main-content">
   <div class="centered-box">
@@ -661,7 +700,7 @@ limitations under the License.
 </template>
 
 <template name="uploadForm">
-  <div id="topbar">{{> homeLink}} Upload App</div>
+  {{>title "Upload App"}}
 
   <div id="upload" class="main-content">
     <div class="centered-box">
@@ -690,7 +729,7 @@ limitations under the License.
 </template>
 
 <template name="restoreGrainStatus">
-  <div id="topbar">{{> homeLink}} Restoring Grain</div>
+  {{>title "Restoring Grain..."}}
 
   <div id="restoreGrain" class="main-content">
     <div class="centered-box">
@@ -749,7 +788,7 @@ limitations under the License.
 </template>
 
 <template name="admin">
-  <div id="topbar">{{> homeLink}} Admin configuration menu</div>
+  {{>title "Admin Settings"}}
 
   {{> _adminConfigureLoginServiceDialog}}
   <div id="admin-settings" class="main-content">
@@ -933,13 +972,10 @@ limitations under the License.
 
 <template name="adminCaps">
   {{#if powerboxOfferUrl}}
-  <div id="powerbox-offer-popup" class="popup">
-    <h3>Powerbox Offer</h3>
-    <div>
-      <input type="text" class="autoSelect" value="{{powerboxOfferUrl}}" readonly>
-    </div>
-  </div>
-  <div id="powerbox-offer-popup-closer" class="popup-closer"></div>
+    {{#with powerboxOfferUrl=powerboxOfferUrl}}
+      {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"
+          startOpen=true popupTemplate="grainPowerboxOfferPopup"}}
+    {{/with}}
   {{/if}}
   <p><button id="offer-ipnetwork">Offer IpNetwork Capability</button>
      <button id="offer-ipinterface">Offer IpInterface Capability</button><br>
@@ -975,7 +1011,7 @@ limitations under the License.
 </template>
 
 <template name="drydemo">
-  <div id="topbar">{{> homeLink}} {{ pageTitle }} </div>
+  {{>title pageTitle}}
 
   <div id="demo" class="main-content">
     <div class="centered-box">
@@ -1021,7 +1057,7 @@ limitations under the License.
 </template>
 
 <template name="devAccounts">
-  <div id="topbar">{{> homeLink}} {{ pageTitle }} </div>
+  {{>title pageTitle}}
 
   <div id="demo" class="main-content">
     <div class="centered-box">
@@ -1049,7 +1085,7 @@ limitations under the License.
 </template>
 
 <template name="about">
-  <div id="topbar">{{> homeLink}} About</div>
+  {{>title "About Sandstorm"}}
 
   <div id="about" class="main-content">
     <div class="centered-box">

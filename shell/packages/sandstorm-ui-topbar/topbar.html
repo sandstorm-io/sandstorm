@@ -1,0 +1,98 @@
+<!--
+Sandstorm - Personal Cloud Sandbox
+Copyright (c) 2015 Sandstorm Development Group, Inc. and contributors
+All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<template name="sandstormTopbar">
+  {{#if isUpdateBlocked}}
+    <div class="topbar-update">
+      Sandstorm has been updated &mdash; Click here to reload
+    </div>
+  {{else}}
+    {{!-- Becomes hamburger menu button in mobile view. --}}
+    <div class="menu-button"></div>
+
+    <ul class="topbar {{#if _menuExpanded.get}}expanded{{/if}}">
+      {{#each items}}
+        <li class="{{name}}">
+          {{> template data.get}}
+        </li>
+      {{/each}}
+    </ul>
+  {{/if}}
+
+  {{#with currentPopup}}
+    <div class="popup {{name}}">
+      {{#with position}}
+        <div class="frame align-{{align}}" style="{{align}}: {{px}}px">
+          {{>popupTemplate ../data.get}}
+        </div>
+      {{/with}}
+    </div>
+  {{/with}}
+</template>
+
+<template name="sandstormTopbarItem">
+  {{!--
+    Convenience helper for registering topbar items.
+
+    You can insert something like this into a template to indicate that while the template is
+    displayed, an item should be added to the top bar:
+
+        {{>sandstormTopbarItem name="foo" topbar=myTopbar data="whatever" template="fooTemplate"}}
+
+    The topbar item will use the given template. The template will receive `data` as its data
+    context.
+
+    The effect is that as long as the parent template is instantiated, the inner part will be
+    registered as a topbar item. When the parent template is disposed, the template item will
+    be unregistered. MAGIC!
+
+    The parameter `topbar` refers to the SandstormTopbar object with which to register the item.
+
+    As a special hack, you can also use this template like so:
+
+        {{#sandstormTopbarItem name="foo" topbar=myTopbar}}
+          inline template!!!
+        {{/sandstormTopbarItem}}
+
+    This syntax essentially defines `template` inline. Note, however, that because these template
+    will not be inserted directly into the parent template, there are some limitations:
+
+    * Event handlers on the parent template will NOT catch events on the topbar items.
+    * If you don't specify `data`, the current context will be inherited. However, its parents
+      will NOT be inherited, so you can't use Template.parentData() to get them.
+    * Helper functions on the parent template CAN be used in the topbar items, though.
+
+    As an extra-special hack, you can also do:
+
+        {{#sandstormTopbarItem name="foo" topbar=myTopbar}}
+          inline template!!!
+        {{else}}
+          inline popup template!!!
+        {{/sandstormTopbarItem}}
+
+    This further specifies a template for the popup window that should appear when the item is
+    clicked. The use of {{else}} for this is a huge hack; it's really not an "else" at all.
+  --}}
+</template>
+
+<template name="sandstormTopbarBlockReload">
+  {{!--
+    Convenience template that blocks reload while it exists. Embed this in any UI which would
+    be bad to unexpectedly reload on hot code update.
+  --}}
+</template>

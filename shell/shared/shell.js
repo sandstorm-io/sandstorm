@@ -17,6 +17,11 @@
 // This file implements the common shell components such as the top bar.
 // It also covers the root page.
 
+if (Meteor.isClient) {
+  globalTopbar = new SandstormTopbar();
+  Template.registerHelper("globalTopbar", function() { return globalTopbar; });
+}
+
 browseHome = function() {
   Router.go("root");
 }
@@ -216,7 +221,7 @@ if (Meteor.isClient) {
     }
   };
 
-  Template.topBar.onCreated(function () {
+  Template.layout.onCreated(function () {
     this.timer = new Tracker.Dependency();
     this.showTopbar = new ReactiveVar(false);
     var resizeTracker = this.resizeTracker = new Tracker.Dependency();
@@ -236,7 +241,7 @@ if (Meteor.isClient) {
     template.timer.depend();
   };
 
-  Template.topBar.onDestroyed(function () {
+  Template.layout.onDestroyed(function () {
     Meteor.clearTimeout(this.timeout);
     window.removeEventListener("resize", this.resizeFunc, false);
   });
@@ -263,8 +268,7 @@ if (Meteor.isClient) {
     return params;
   };
 
-  Template.topBar.helpers({
-    isUpdateBlocked: function () { return isUpdateBlocked(); },
+  Template.layout.helpers({
     showTopbar: function () {return Template.instance().showTopbar.get(); },
     adminAlertIsTooLarge: function () {
       Template.instance().resizeTracker.depend();
@@ -330,10 +334,7 @@ if (Meteor.isClient) {
     }
   });
 
-  Template.topBar.events({
-    "click #topbar-update": function (event) {
-      unblockUpdate();
-    },
+  Template.layout.events({
     "click #admin-alert-icon": function (event) {
       var template = Template.instance();
       template.showTopbar.set(!template.showTopbar.get());
@@ -691,18 +692,10 @@ if (Meteor.isClient) {
     },
   });
 
-  Template.homeLink.events({
-    "click #menu-button": function (event) {
-      Session.set("showMenu", !Session.get("showMenu"));
-    },
-
-    "click #homelink": function (event) {
-      event.preventDefault();
-      Router.go("root", {});
+  Template.layout.events({
+    "click .topbar>li>.navlink": function (event) {
+      globalTopbar.reset();
     }
-  });
-  Template.homeLink.helpers({
-    origin: getOrigin
   });
 
   Template.about.onCreated(function () {
@@ -722,7 +715,7 @@ if (Meteor.isClient) {
     }
   });
 
-  Template.notifications.helpers({
+  Template.notificationsPopup.helpers({
     notifications: function () {
       return Notifications.find({userId: Meteor.userId()}, {sort: {timestamp: -1}}).map(function (row) {
         var grain = Grains.findOne({_id: row.grainId});
@@ -732,32 +725,21 @@ if (Meteor.isClient) {
         return row;
       });
     },
+  });
 
+  Template.notifications.helpers({
     notificationCount: function () {
-      if (Session.get("notificationsIsEnabled")) {
-        return 0;
-      }
       return Notifications.find({userId: Meteor.userId(), isUnread: true}).count();
     },
-
-    notificationsIsEnabled: function () {
-      return Session.get("notificationsIsEnabled");
-    }
   });
 
   Template.notifications.events({
     "click .notification-button": function () {
-      var newValue = !Session.get("notificationsIsEnabled");
-      Session.set("notificationsIsEnabled", newValue);
-
-      // This is a little weird, but we want to mark all notifications as read whenever the menu
-      // opens or closes. The logic behind this is that notifications could arrive while the menu
-      // is left open, and we want to mark those as read too.
-      // TODO(someday): This leaves us open to a slight timing issue. We should probably change
-      // it to pass in a list of all notification ids to mark read.
       Meteor.call("readAllNotifications");
     },
+  });
 
+  Template.notificationsPopup.events({
     "click .cancel-notification": function (event) {
       Meteor.call("dismissNotification", event.currentTarget.getAttribute("data-notificationid"));
       return false;
@@ -768,26 +750,11 @@ if (Meteor.isClient) {
     }
   });
 
-  var globalClickHandler = function () {
-    Session.set("notificationsIsEnabled", false);
-    Meteor.call("readAllNotifications");
-  };
-
-  Meteor.startup(function () {
-    Tracker.autorun(function () {
-      if (Session.get("notificationsIsEnabled")) {
-        document.querySelector("body").addEventListener("click", globalClickHandler);
-      } else {
-        document.querySelector("body").removeEventListener("click", globalClickHandler);
-      }
-    });
-  });
-
   Template.notifications.onCreated(function () {
     var self = this;
     this.subscribe("notifications");
 
-    Tracker.autorun(function () {
+    Template.instance().autorun(function () {
       if (self.grainSubscription) {
         self.grainSubscription.stop();
       }

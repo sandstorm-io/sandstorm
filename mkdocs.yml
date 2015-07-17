@@ -1,6 +1,6 @@
 site_name: Sandstorm
 theme: 'readthedocs'
-repo_url: https://github.com/sandstorm-io/sandstorm
+repo_url: https://github.com/sandstorm-io/sandstorm/tree/master/docs
 pages:
 - "Home": "index.md"
 - Using:

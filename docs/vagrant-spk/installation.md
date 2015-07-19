@@ -7,6 +7,10 @@ installation process.
 * Open a "terminal" on your Mac or Linux system.
 * Don't use sudo unless we tell you to!
 
+**System requirements**: `vagrant-spk` requires a 64-bit computer with
+at least 1GB of RAM. Your computer probably is fine. We've tested this
+tutorial on Mac OS and GNU/Linux, and partly-tested on Windows.
+
 ## Ensure git is installed
 
 In this tutorial, we use git to download some code, so you need it on your computer.

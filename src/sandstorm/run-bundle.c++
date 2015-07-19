@@ -582,7 +582,7 @@ public:
         .addSubCommand("mongo",
             [this]() {
               return kj::MainBuilder(context, VERSION,
-                  "Runs MongoDB shell, connecting to the an already-running Sandstorm server.")
+                  "Runs MongoDB shell, connecting to the already-running Sandstorm server.")
                   .callAfterParsing(KJ_BIND_METHOD(*this, mongo))
                   .build();
             },

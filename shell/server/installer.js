@@ -35,6 +35,7 @@ var installers = {};
 
 Meteor.methods({
   deleteUnusedPackages: function (appId) {
+    check(appId, String);
     Packages.find({appId:appId}).forEach(function (package) {deletePackage(package._id)});
   },
 });

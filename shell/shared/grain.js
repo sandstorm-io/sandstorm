@@ -66,6 +66,7 @@ if (Meteor.isServer) {
 
   Meteor.publish("tokenInfo", function (token) {
     // Allows the client side to map a raw token to its entry in ApiTokens.
+    check(token, String);
 
     var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
     var apiToken = ApiTokens.findOne({_id: hashedToken}, {fields: {grainId: 1, userId: 1}});
@@ -80,6 +81,7 @@ if (Meteor.isServer) {
 
   Meteor.publish("grainSize", function (sessionId) {
     // Publish pseudo-collection containing the size of the grain opened in the given session.
+    check(sessionId, String);
 
     var self = this;
     var stopped = false;

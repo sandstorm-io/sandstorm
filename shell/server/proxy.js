@@ -90,6 +90,10 @@ Meteor.methods({
   newGrain: function (packageId, command, title) {
     // Create and start a new grain.
 
+    check(packageId, String);
+    check(command, Object);  // Manifest.Command from package.capnp.
+    check(title, String);
+
     if (!this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "Must be logged in to create grains.");
     }
@@ -153,9 +157,13 @@ Meteor.methods({
     // Given an API token, either opens a new WebSession to the underlying grain or returns a
     // path to which the client should redirect in order to open such a session.
 
+    check(params, {
+      token: String,
+      incognito: Boolean,
+    });
+
     var token = params.token;
     var incognito = params.incognito;
-    check(token, String);
     var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
     var apiToken = ApiTokens.findOne(hashedToken);
     validateWebkey(apiToken);
@@ -205,6 +213,7 @@ Meteor.methods({
   keepSessionAlive: function (sessionId) {
     // TODO(security):  Prevent draining someone else's quota by holding open several grains shared
     //   by them.
+    check(sessionId, String);
     if (sessionId in proxies) {
       Sessions.update(sessionId, {$set: {timestamp: new Date().getTime()}});
       var proxy = proxies[sessionId];

@@ -24,6 +24,8 @@ if (allowDevAccounts) {
         // This is a login method that creates or logs in a dev account with the given displayName
 
         check(displayName, String);
+        check(isAdmin, Match.OneOf(undefined, null, Boolean));
+
         isAdmin = isAdmin || false;
         var userId;
         var user = Meteor.users.findOne({devName: displayName});

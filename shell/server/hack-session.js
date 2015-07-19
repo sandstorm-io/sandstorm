@@ -77,6 +77,7 @@ SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
 Meteor.methods({
   finishPowerboxRequest: function (webkeyUrl, saveLabel, grainId) {
     check(webkeyUrl, String);
+    check(saveLabel, Match.OneOf(undefined, null, String));
     check(grainId, String);
 
     var userId = Meteor.userId();
@@ -97,16 +98,20 @@ Meteor.methods({
     }
     token = token.slice(1);
 
-    var cap = restoreInternal(hashSturdyRef(token), Match.Optional({webkey: Match.Optional(Match.Any)}), [],
+    var cap = restoreInternal(hashSturdyRef(token),
+                              Match.Optional({webkey: Match.Optional(Match.Any)}), [],
                               new Buffer(token)).cap;
     var castedCap = cap.castAs(SystemPersistent);
-    var save = castedCap.save({grain: {
+    var grainOwner = {
       grainId: grainId,
-      saveLabel: {
-        defaultText: saveLabel
-      },
       introducerUser: userId
-    }});
+    };
+    if (saveLabel) {
+      grainOwner.saveLabel = {
+        defaultText: saveLabel
+      };
+    }
+    var save = castedCap.save({grain: grainOwner});
     var sturdyRef = waitPromise(save).sturdyRef;
 
     return sturdyRef.toString();
@@ -330,13 +335,11 @@ Meteor.methods({
     // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
     check(grainId, String);
     check(petname, String);
-    check(forSharing, Boolean);
     check(roleAssignment, roleAssignmentPattern);
+    check(forSharing, Boolean);
     // Meteor bug #3877: we get null here instead of undefined when we
     // explicitly pass in undefined.
-    if (expiresIfUnusedDuration) {
-      check(expiresIfUnusedDuration, Number);
-    }
+    check(expiresIfUnusedDuration, Match.OneOf(undefined, null, Number));
 
     var userId = this.userId;
     var parentToken;

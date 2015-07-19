@@ -100,6 +100,7 @@ Meteor.methods({
   ensureInstalled: function (packageId, url, isRetry) {
     check(packageId, String);
     check(url, Match.OneOf(String, undefined, null));
+    check(isRetry, Boolean);
 
     if (!packageId.match(/^[a-zA-Z0-9]*$/)) {
       throw new Meteor.Error(400, "The package ID contains illegal characters.");

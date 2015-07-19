@@ -89,6 +89,9 @@ Meteor.methods({
     // This will remove notifications from the database and from view of the user.
     // For ongoing notifications, it will begin the process of cancelling and dropping them from
     // the app.
+
+    check(notificationId, String);
+
     var notification = Notifications.findOne({_id: notificationId});
     if (!notification) {
       throw new Meteor.Error(404, "Notification id not found.");

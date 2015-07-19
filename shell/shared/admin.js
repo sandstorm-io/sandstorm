@@ -26,12 +26,15 @@ var adminRoute = RouteController.extend({
   settingsTab: "adminSettings",
   template: "admin",
   waitOn: function () {
-    return [
+    var subs = [
       Meteor.subscribe("admin", this.params._token),
-      Meteor.subscribe("adminToken", this.params._token),
       Meteor.subscribe("adminServiceConfiguration", this.params._token),
       Meteor.subscribe("allUsers", this.params._token)
     ];
+    if (this.params._token) {
+      subs.push(Meteor.subscribe("adminToken", this.params._token));
+    }
+    return subs;
   },
 
   data: function () {
@@ -746,7 +749,7 @@ if (Meteor.isServer) {
   };
 
   var tokenIsValid = function(token) {
-    if (Fs.existsSync(SANDSTORM_ADMIN_TOKEN)) {
+    if (token && Fs.existsSync(SANDSTORM_ADMIN_TOKEN)) {
       var stats = Fs.statSync(SANDSTORM_ADMIN_TOKEN);
       var expireTime = new Date(Date.now() - ADMIN_TOKEN_EXPIRATION_TIME);
       if (stats.mtime < expireTime) {
@@ -773,6 +776,7 @@ if (Meteor.isServer) {
   });
 
   var checkAuth = function (token) {
+    check(token, Match.OneOf(undefined, null, String));
     if (!isAdmin() && !tokenIsValid(token)) {
       throw new Meteor.Error(403, "User must be admin or provide a valid token");
     }
@@ -780,6 +784,9 @@ if (Meteor.isServer) {
   Meteor.methods({
     setAccountSetting: function (token, serviceName, value) {
       checkAuth(token);
+      check(serviceName, String);
+      check(value, Boolean);
+
       // TODO(someday): currently this relies on the fact that an account is tied to a single
       // identity, and thus has only that entry in "services". This will need to be looked at when
       // multiple login methods/identities are allowed for a single account.
@@ -807,6 +814,8 @@ if (Meteor.isServer) {
     },
     setSetting: function (token, name, value) {
       checkAuth(token);
+      check(name, String);
+      check(value, Match.OneOf(null, String));
 
       Settings.upsert({_id: name}, {$set: {value: value}});
     },
@@ -817,12 +826,14 @@ if (Meteor.isServer) {
     },
     "adminConfigureLoginService": function (token, options) {
       checkAuth(token);
+      check(options, ObjectIncluding({service: String}));
 
       var ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
 
       ServiceConfiguration.configurations.upsert({service: options.service}, options);
     },
     clearAdminToken: function(token) {
+      check(token, String);
       if (tokenIsValid(token)) {
         Fs.unlinkSync(SANDSTORM_ADMIN_TOKEN);
         console.log("Admin token deleted.");
@@ -830,6 +841,7 @@ if (Meteor.isServer) {
     },
     clearResumeTokensForService: function (token, serviceName) {
       checkAuth(token);
+      check(serviceName, String);
 
       var query = {};
       query["services." + serviceName] = {$exists: true};
@@ -838,6 +850,11 @@ if (Meteor.isServer) {
     },
     adminUpdateUser: function (token, userInfo) {
       checkAuth(token);
+      check(userInfo, {
+        userId: String,
+        signupKey: Boolean,
+        isAdmin: Boolean
+      });
 
       var userId = userInfo.userId;
       if (userId === Meteor.userId() && !userInfo.isAdmin) {
@@ -848,6 +865,8 @@ if (Meteor.isServer) {
     },
     testSend: function (token, smtpUrl, to) {
       checkAuth(token);
+      check(smtpUrl, String);
+      check(to, String);
 
       SandstormEmail.send({
         to: to,
@@ -858,10 +877,9 @@ if (Meteor.isServer) {
       });
     },
     createSignupKey: function (token, note, quota) {
+      checkAuth(token);
       check(note, String);
       check(quota, Match.OneOf(undefined, null, Number));
-
-      checkAuth(token);
 
       var key = Random.id();
       var content = {_id: key, used: false, note: note};
@@ -870,10 +888,9 @@ if (Meteor.isServer) {
       return key;
     },
     sendInvites: function (token, origin, from, list, subject, message, quota) {
+      checkAuth(token);
       check([origin, from, list, subject, message], [String]);
       check(quota, Match.OneOf(undefined, null, Number));
-
-      checkAuth(token);
 
       if (!from.trim()) {
         throw new Meteor.Error(403, "Must enter 'from' address.");
@@ -909,13 +926,10 @@ if (Meteor.isServer) {
       return { sent: true };
     },
     offerIpNetwork: function (token) {
+      checkAuth(token);
       if (!isAdmin()) {
-        if (tokenIsValid(token)) {
-          throw new Meteor.Error(403, "Offering IpNetwork is only allowed for logged in users " +
-            "(a token is not sufficient). Please sign in with an admin account");
-        } else {
-          throw new Meteor.Error(403, "User must be admin.");
-        }
+        throw new Meteor.Error(403, "Offering IpNetwork is only allowed for logged in users " +
+          "(a token is not sufficient). Please sign in with an admin account");
       }
 
       var requirements = [{
@@ -926,13 +940,10 @@ if (Meteor.isServer) {
       return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
     },
     offerIpInterface: function (token) {
+      checkAuth(token);
       if (!isAdmin()) {
-        if (tokenIsValid(token)) {
-          throw new Meteor.Error(403, "Offering IpInterface is only allowed for logged in users " +
-            "(a token is not sufficient). Please sign in with an admin account");
-        } else {
-          throw new Meteor.Error(403, "User must be admin.");
-        }
+        throw new Meteor.Error(403, "Offering IpInterface is only allowed for logged in users " +
+          "(a token is not sufficient). Please sign in with an admin account");
       }
 
       var requirements = [{
@@ -945,6 +956,7 @@ if (Meteor.isServer) {
     adminToggleDisableCap: function (token, capId, value) {
       checkAuth(token);
       check(capId, String);
+      check(value, Boolean);
 
       if (value) {
         ApiTokens.update({_id: capId}, {$set: {revoked: true}});
@@ -953,9 +965,9 @@ if (Meteor.isServer) {
       }
     },
     updateQuotas: function (token, list, quota) {
+      checkAuth(token);
       check(list, String);
       check(quota, Match.OneOf(undefined, null, Number));
-      checkAuth(token);
 
       if (!list.trim()) {
         throw new Meteor.Error(400, "Must enter addresses.");
@@ -979,20 +991,20 @@ if (Meteor.isServer) {
     }
   });
 
-  Meteor.publish("admin", function (token) {
-    if ((this.userId && isAdminById(this.userId)) || tokenIsValid(token)) {
-      return Settings.find();
-    } else {
-      return [];
+  var checkAuthForPublish = function (token, userId) {
+    check(token, Match.OneOf(undefined, null, String));
+    if (!(userId && isAdminById(userId)) && !tokenIsValid(token)) {
+      throw new Meteor.Error(403, "User must be admin or provide a valid token");
     }
+  };
+  Meteor.publish("admin", function (token) {
+    checkAuthForPublish(token, this.userId);
+    return Settings.find();
   });
 
   Meteor.publish("adminServiceConfiguration", function (token) {
-    if ((this.userId && isAdminById(this.userId)) || tokenIsValid(token)) {
-      return Package['service-configuration'].ServiceConfiguration.configurations.find();
-    } else {
-      return [];
-    }
+    checkAuthForPublish(token, this.userId);
+    return Package['service-configuration'].ServiceConfiguration.configurations.find();
   });
 
   Meteor.publish("publicAdminSettings", function () {
@@ -1000,37 +1012,27 @@ if (Meteor.isServer) {
   });
 
   Meteor.publish("adminToken", function (token) {
+    check(token, String);
     this.added("adminToken", "adminToken", {tokenIsValid: tokenIsValid(token)});
     this.ready();
   });
 
   Meteor.publish("allUsers", function (token) {
-    if ((this.userId && isAdminById(this.userId)) || tokenIsValid(token)) {
-      return Meteor.users.find();
-    } else {
-      return [];
-    }
+    checkAuthForPublish(token, this.userId);
+    return Meteor.users.find();
   });
   Meteor.publish("activityStats", function (token) {
-    if (!(this.userId && isAdminById(this.userId)) && !tokenIsValid(token)) {
-      return [];
-    }
-
+    checkAuthForPublish(token, this.userId);
     return ActivityStats.find();
   });
 
   Meteor.publish("statsTokens", function (token) {
-    if (!(this.userId && isAdminById(this.userId)) && !tokenIsValid(token)) {
-      return [];
-    }
-
+    checkAuthForPublish(token, this.userId);
     return StatsTokens.find();
   });
 
   Meteor.publish("realTimeStats", function (token) {
-    if (!(this.userId && isAdminById(this.userId)) && !tokenIsValid(token)) {
-      return [];
-    }
+    checkAuthForPublish(token, this.userId);
 
     // Last five minutes.
     this.added("realTimeStats", "now", computeStats(new Date(Date.now() - 5*60*1000)));
@@ -1045,9 +1047,7 @@ if (Meteor.isServer) {
     this.ready();
   });
   Meteor.publish("adminLog", function (token) {
-    if (!(this.userId && isAdminById(this.userId)) && !tokenIsValid(token)) {
-      return [];
-    }
+    checkAuthForPublish(token, this.userId);
 
     var logfile = SANDSTORM_LOGDIR + "/sandstorm.log";
 
@@ -1084,9 +1084,7 @@ if (Meteor.isServer) {
     this.ready();
   });
   Meteor.publish("adminApiTokens", function (token) {
-    if (!(this.userId && isAdminById(this.userId)) && !tokenIsValid(token)) {
-      return [];
-    }
+    checkAuthForPublish(token, this.userId);
     return ApiTokens.find({$or: [{"frontendRef.ipNetwork": {$exists: true}},
                                  {"frontendRef.ipInterface": {$exists: true}}]},
                           {fields: {frontendRef: 1, created: 1, requirements: 1, revoked: 1}});

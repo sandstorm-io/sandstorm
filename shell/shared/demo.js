@@ -136,6 +136,7 @@ if (Meteor.isServer) {
     // data to the client. It is not a security/privacy risk since it
     // only exposes this information for grains the user owns.
     Meteor.publish("packageByGrainId", function (grainId) {
+      check(grainId, String);
       var publishThis = [];
       // We need to publish the packageId so that client-side code can
       // find the right package.

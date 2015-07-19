@@ -165,6 +165,8 @@ var createAndEmailTokenForUser = function (email) {
 // This method will create a user if it doesn't exist, otherwise it will generate a token.
 // It will always send an email to the user
 Meteor.methods({createAndEmailTokenForUser: function (email) {
+  check(email, String);
+
   if (!Accounts.emailToken.isEnabled()) {
     throw new Meteor.Error(403, "Email Token service is disabled.");
   }

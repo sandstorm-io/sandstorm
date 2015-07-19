@@ -1,4 +1,4 @@
-# Services
+# Service dependencies
 
 ## MySQL
 

@@ -101,7 +101,7 @@ Here's how you can take a look:
 ls ~/projects/php-app-to-package-for-sandstorm/.sandstorm
 ```
 
-You should see a collection of files there.
+You should see a collection of files there, including `index.php`.
 
 ## Start a virtual Linux machine containing Sandstorm
 

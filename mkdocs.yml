@@ -1,24 +1,41 @@
 site_name: Sandstorm
 theme: 'readthedocs'
+repo_url: https://github.com/sandstorm-io/sandstorm/tree/master/docs
 pages:
 - "Home": "index.md"
 - Using:
     - "Overview": "using.md"
     - "Guided tour": "guided-tour.md"
-- Developing:
+    - "Top bar": "using/top-bar.md"
+    - "How it works": "using/how-it-works.md"
+    - "Security practices": "using/security-practices.md"
+- Developing apps:
     - "Overview": "developing.md"
-    - "Technical overview": "overview.md"
     - "Overview of vagrant-spk": "vagrant-spk/index.md"
     - "Installation": "vagrant-spk/installation.md"
     - "Packaging tutorial": "vagrant-spk/packaging-tutorial.md"
+    - "App Developer Handbook": "developing/handbook.md"
+    - "User authentication & permissions": "developing/auth.md"
     - "Understanding & customizing": "vagrant-spk/customizing.md"
     - "Platform stacks": "vagrant-spk/platform-stacks.md"
     - "Code dependencies": "vagrant-spk/code-dependencies.md"
-    - "Services": "vagrant-spk/services.md"
-    - "Raw packaging guide": "developing/raw-packaging-guide.md"
+    - "Service dependencies": "vagrant-spk/services.md"
+    - "Web publishing": "developing/web-publishing.md"
+    - "Exporting HTTP APIs": "developing/http-apis.md"
     - "Email from apps": "developing/email-from-apps.md"
-- Admistering:
+    - "vagrant-spk design document": "vagrant-spk/design.md"
+    - "Troubleshooting": "developing/troubleshooting.md"
+- Developing on raw Sandstorm:
+    - "Raw packaging guide": "developing/raw-packaging-guide.md"
+    - "Raw integration of Python": "developing/raw-python.md"
+    - "Raw integration of Ruby on Rails": "developing/raw-ruby-on-rails.md"
+    - "Raw integration of pure client apps": "developing/raw-pure-client-apps.md"
+- Administering:
     - "Overview": "administering.md"
     - "Installation": "install.md"
+    - "Sandcats dynamic DNS": "administering/sandcats.md"
     - "Email": "administering/email.md"
     - "Demo mode": "administering/demo.md"
+    - "Backups": "administering/backups.md"
+    - "Wildcard hosts": "administering/wildcard.md"
+    - "Frequently asked questions": "administering/faq.md"

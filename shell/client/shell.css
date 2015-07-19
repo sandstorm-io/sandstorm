@@ -999,13 +999,13 @@ input.autoSelect {
   margin: 16px auto;
 }
 
-ul.backer-list, ul.dev-list {
+ul.backer-list, ul.dev-list, ul.advisor-list {
   list-style: none;
   text-align: center;
   padding: 0;
 }
 
-ul.dev-list {
+ul.advisor-list {
   width: 650px;
   margin-left: -25px;
 }
@@ -1016,12 +1016,12 @@ ul.backer-list li {
   min-width: 45%;
 }
 
-ul.dev-list li {
+ul.dev-list li, ul.advisor-list li {
   display: inline-block;
   text-align: center;
 }
 
-ul.backer-list img, ul.dev-list img {
+ul.backer-list img, ul.dev-list img, ul.advisor-list img {
   width: 120px;
   height: 120px;
   border-radius: 50%;

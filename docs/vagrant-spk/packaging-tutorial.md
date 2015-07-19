@@ -59,11 +59,12 @@ cd ~/projects
 git clone git://github.com/paulproteus/php-app-to-package-for-sandstorm
 ```
 
-The app's code will be stored at `~/projects/php-app-to-package-for-sandstorm`.
-We will spend the rest of the tutorial in that directory.
+The app's code will be stored at
+`~/projects/php-app-to-package-for-sandstorm`.  We will spend the rest
+of the tutorial in that directory and its sub-directories.
 
 **Note**: Feel free to spend a moment looking around this folder you
-just downloaded. You'll find an `index.php`, and some CSS and
+just downloaded. You'll find an `index.php` and some CSS and
 Javascript.
 
 ## Create .sandstorm, to store packaging information for the app
@@ -100,8 +101,6 @@ Here's how you can take a look:
 ```bash
 ls ~/projects/php-app-to-package-for-sandstorm/.sandstorm
 ```
-
-You should see a collection of files there, including `index.php`.
 
 ## Start a virtual Linux machine containing Sandstorm
 

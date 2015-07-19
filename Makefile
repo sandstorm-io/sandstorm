@@ -135,8 +135,11 @@ deps/node-capnp:
 
 update-deps:
 	@$(call color,updating all dependencies)
-	@(for DEP in capnproto ekam libseccomp libsodium node-capnp; do cd deps/$$DEP; \
-	    echo "pulling $$DEP..."; git pull $(REMOTE_$(DEP)) ; cd ../..; done)
+	@$(foreach DEP,capnproto ekam libseccomp libsodium node-capnp, \
+	    cd deps/$(DEP) && \
+	    echo "pulling $(DEP)..." && \
+	    git pull $(REMOTE_$(DEP)) && \
+	    cd ../..;)
 
 # ====================================================================
 # Ekam bootstrap and C++ binaries

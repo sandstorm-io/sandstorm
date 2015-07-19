@@ -1,3 +1,11 @@
+### v0.97 (2015-07-19)
+- Revamped design of menus hanging off top bar. Now much less ugly! Plus the login menu is consistent with everything else!
+- Major internal refactoring of topbar UI. Please be on the lookout for bugs.
+- Mobile UI hamburger menu contents are now more complete and contextually correct (due to topbar UI refactoring).
+- Fixed loading spinner in case where grain fails to start.
+- Fixed bugs where transitive shares wouldn't grant access.
+- Finally added "new" code devs to "about" page.
+
 ### v0.96 (2015-07-14)
 - Loading spinner is back, hopefully non-buggy this time.
 - Fixed regression in web publishing that caused sites to be cached for 30000 seconds instead of the intended 30 seconds.

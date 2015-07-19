@@ -310,7 +310,7 @@ struct Metadata {
     # valid address with someone paying attention to it.
 
     pgpSignature @11 :Data;
-    # PGP signature attesting responsibility for the app ID. This is a binary-format non-detached
+    # PGP signature attesting responsibility for the app ID. This is a binary-format detached
     # signature of the following ASCII message (not including the quotes, and replacing <app-id>
     # with the standard base-32 text format of the app's ID):
     #
@@ -329,6 +329,11 @@ struct Metadata {
     # identity, then you should not give the new maintainer the app's private key; you should force
     # them to create a new key. Sandstorm will not auto-update users to the new version without,
     # at the very least, confirming their approval of the change in authorship.
+
+    pgpPublicKey @14 :Data;
+    # The public key used to create `pgpSignature`, in binary format, e.g. as output by
+    # `gpg --export <email>`. This is included here, rather than looked up from a keyserver, so
+    # that a package signature can be verified down to a key fingerprint in isolation.
   }
 
   description @12 :Text;

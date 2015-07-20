@@ -718,6 +718,7 @@ if (Meteor.isClient) {
 
   Template.notificationsPopup.helpers({
     notifications: function () {
+      Meteor.call("readAllNotifications");
       return Notifications.find({userId: Meteor.userId()}, {sort: {timestamp: -1}}).map(function (row) {
         var grain = Grains.findOne({_id: row.grainId});
         if (grain) {
@@ -731,12 +732,6 @@ if (Meteor.isClient) {
   Template.notifications.helpers({
     notificationCount: function () {
       return Notifications.find({userId: Meteor.userId(), isUnread: true}).count();
-    },
-  });
-
-  Template.notifications.events({
-    "click .notification-button": function () {
-      Meteor.call("readAllNotifications");
     },
   });
 

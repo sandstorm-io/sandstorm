@@ -815,7 +815,7 @@ if (Meteor.isServer) {
     setSetting: function (token, name, value) {
       checkAuth(token);
       check(name, String);
-      check(value, Match.OneOf(null, String));
+      check(value, Match.OneOf(null, String, Date));
 
       Settings.upsert({_id: name}, {$set: {value: value}});
     },

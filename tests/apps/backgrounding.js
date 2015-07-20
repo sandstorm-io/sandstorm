@@ -40,11 +40,10 @@ module.exports["Test Notification"] = function (browser) {
   browser
     // We'll use the debugLog at the bottom of the test, but it's nice to open it early and give it time to load.
     .click("#openDebugLog")
-    .waitForElementVisible(".notification-button.inner", short_wait)
-    .assert.containsText(".notification-button", "1")
-    .click(".notification-button")
-    .waitForElementVisible(".notification-icon", short_wait)
-    .assert.containsText(".notification-button", "0")
+    .waitForElementVisible(".topbar>.notifications .count", short_wait)
+    .assert.containsText(".topbar>.notifications .count", "1")
+    .click(".topbar>.notifications>.show-popup")
+    .waitForElementNotPresent(".topbar>.notifications .count", short_wait)
     .click(".cancel-notification")
     .pause(short_wait)
     .windowHandles(function (windows) {
@@ -69,8 +68,8 @@ module.exports["Test Notification Wakelock Dropper"] = function (browser) {
   browser
     // We'll use the debugLog at the bottom of the test, but it's nice to open it early and give it time to load.
     .click("#openDebugLog")
-    .waitForElementVisible(".notification-button.inner", short_wait)
-    .assert.containsText(".notification-button", "1")
+    .waitForElementVisible(".topbar>.notifications .count", short_wait)
+    .assert.containsText(".topbar>.notifications .count", "1")
     .pause(short_wait)
     .windowHandles(function (windows) {
       browser

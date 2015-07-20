@@ -128,7 +128,7 @@ Template.sandstormTopbar.events({
       event.stopPropagation();
       event.preventDefault();
 
-      Template.instance().data._expanded.set(event.currentTarget.className);
+      Template.instance().data._expanded.set(data.name);
     }
   },
 

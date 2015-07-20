@@ -39,23 +39,32 @@ limitations under the License.
                            template="notifications" popupTemplate="notificationsPopup"}}
   {{/if}}
   {{#with adminAlert}}
-    {{#sandstormTopbarItem name="admin-alert" topbar=globalTopbar}}
-      {{!-- TODO(cleaup): Awkwardly, the event handlers on Template.layout actually work
-          on this topbar item solely because the whole topbar itself is embedded inside the
-          "layout" template. But, we shouldn't be relying on that! Move this to its own
-          template... --}}
-      <span id="admin-alert-box" class="{{#if adminAlertIsTooLarge}}small{{/if}}">
-        <div id="admin-alert-closer" data-show="{{showTopbar}}"></div>
-        <span id="admin-alert" data-show="{{showTopbar}}">
+    {{#if adminAlertIsTooLarge}}
+      {{#sandstormTopbarItem name="admin-alert" topbar=globalTopbar}}
+        {{!-- TODO(cleaup): Awkwardly, the event handlers on Template.layout actually work
+            on this topbar item solely because the whole topbar itself is embedded inside the
+            "layout" template. But, we shouldn't be relying on that! Move this to its own
+            template... --}}
+        <span id="admin-alert-icon" class="{{className}}">!</span>
+      {{else}}
+        <h4>Notice from Admin</h4>
+        <p>
           {{#if alertUrl}}
             <a href="{{alertUrl}}" class="alert {{className}}">{{text}}</a>
           {{else}}
             <span class="alert {{className}}">{{text}}</span>
           {{/if}}
-        </span>
-        <span id="admin-alert-icon" class="{{className}}">!</span>
-      </span>
-    {{/sandstormTopbarItem}}
+        </p>
+      {{/sandstormTopbarItem}}
+    {{else}}
+      {{#sandstormTopbarItem name="admin-alert" topbar=globalTopbar}}
+        {{#if alertUrl}}
+          <a href="{{alertUrl}}" class="alert {{className}}">{{text}}</a>
+        {{else}}
+          <span class="alert {{className}}">{{text}}</span>
+        {{/if}}
+      {{/sandstormTopbarItem}}
+    {{/if}}
   {{/with}}
 
   {{> yield}}
@@ -68,9 +77,10 @@ limitations under the License.
 </template>
 
 <template name="notifications">
-  <span class="notification-topbar">
-    <button class="notification-button {{#if notificationCount}}inner{{else}}notification-icon{{/if}}">{{notificationCount}}</button>
-  </span>
+  {{#if notificationCount}}
+    <span class="count">{{notificationCount}}</span>
+  {{/if}}
+  Notifications
 </template>
 
 <template name="notificationsPopup">
@@ -295,7 +305,7 @@ limitations under the License.
 </template>
 
 <template name="grainApiTokenButton">
-  <button class="grain-button" title="Get Webkey" id="showApiToken">Get&nbsp;Webkey</button>
+  Get&nbsp;Webkey
 </template>
 
 <template name="grainApiTokenPopup">
@@ -348,7 +358,7 @@ limitations under the License.
 </template>
 
 <template name="grainShareButton">
-  <button class="grain-button" title="Share" id="show-share-grain">Share</button>
+  Share
 </template>
 
 <template name="grainSharePopup">
@@ -429,9 +439,9 @@ limitations under the License.
           {{/each}}
           </ul>
         {{else}}
-          You have not created any links.
+          <p>You have not created any links.</p>
         {{/if}}
-         <button class="show-transitive-shares">see who has access</button>
+        <button class="show-transitive-shares">see who has access</button>
       {{/if}}
     {{/if}}
   {{/if}}

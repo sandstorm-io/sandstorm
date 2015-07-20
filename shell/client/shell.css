@@ -79,6 +79,35 @@ body>.topbar>li {
   list-style-type: none;
 }
 
+body>.topbar>li>button.show-popup,
+body>.topbar>li>button.grain-button {
+  display: block;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: inherit;
+  font-family: inherit;
+  font-weight: inherit;
+  text-decoration: inherit;
+  color: inherit;
+  line-height: inherit;
+  background-color: transparent;
+  text-align: inherit;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+body>.topbar>li>button.show-popup:hover,
+body>.topbar>li>button.grain-button:hover {
+  background-color: #888;
+}
+
+body>.topbar>li>button.show-popup:focus,
+body>.topbar>li>button.grain-button:focus {
+  outline: none;
+}
+
 body>.popup {
   position: fixed;
   top: 0;
@@ -174,11 +203,38 @@ body>.topbar>.homelink:hover {
 body>.topbar>.account {
   float: right;
   display: block;
+}
+
+body>.topbar>.account>.show-popup {
   padding: 0 8px;
 }
 
 body>.topbar>.notifications {
   float: right;
+}
+
+body>.topbar>.notifications>button.show-popup {
+  width: 32px;
+  height: 32px;
+  background-image: url("/inbox.png");
+  color: transparent;  /* hide text */
+  overflow: hidden;
+  position: relative;
+}
+
+body>.topbar>.notifications>button>.count {
+  display: block;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  background-color: red;
+  border-radius: 8px;
+  color: white;
+  line-height: 16px;
+  text-align: center;
+  font-size: 8pt;
 }
 
 body>.topbar>.admin-alert {
@@ -197,7 +253,9 @@ body>.topbar>.admin-alert .alert {
 }
 
 body>.topbar>.admin-alert .alert.countdown-second,
-body>.topbar>.admin-alert .alert.countdown-now {
+body>.topbar>.admin-alert .alert.countdown-now,
+#admin-alert-icon.countdown-second,
+#admin-alert-icon.countdown-now {
   background-color: #e82538;
 }
 
@@ -221,21 +279,13 @@ body>.topbar>.title>span.editable:hover {
   background-color: #888;
 }
 
-body>.topbar>li>button.grain-button {
+body>.topbar>li>button.grain-button,
+body>.topbar>.webkey>button.show-popup {
   background-position: center;
   background-repeat: no-repeat;
-  background-size: contain;
-  width: 24px;
-  height: 24px;
-  border: none;
+  background-size: 24px 24px;
   color: transparent;
-  background-color: transparent;
-  cursor: pointer;
-  overflow: hidden;
-}
-
-body>.topbar>li>button.grain-button:hover {
-  background-color: #888;
+  width: 32px;
 }
 
 body>.topbar>.delete>button    { background-image: url("/trash.png"); }
@@ -244,16 +294,20 @@ body>.topbar>.backup>button    { background-image: url("/download.png"); }
 body>.topbar>.restart>button   { background-image: url("/restart.png"); }
 body>.topbar>.webkey>button    { background-image: url("/key.png"); }
 
-body>.topbar>.share>button.grain-button {
+body>.topbar>.share>button.show-popup {
   background-image: url("/share.png");
   background-position: left;
+  background-repeat: no-repeat;
   border-radius: 4px;
   background-color: #428bca;
   color: white;
-  width: 64px;
-  padding-left: 20px;
+  padding-left: 26px;
+  padding-right: 4px;
+  height: 28px;
+  line-height: 28px;
+  font-size: 12pt;
 }
-body>.topbar>.share>button.grain-button:hover {
+body>.topbar>.share>button.show-popup:hover {
   background-color: #428bca;
 }
 
@@ -609,6 +663,8 @@ img {
 .notification-topbar {
   width: 32px;
   height: 32px;
+  overflow: hidden;
+  color: transparent;
 }
 
 .notification-topbar .inner {
@@ -1320,59 +1376,24 @@ a.disable-cap {
   cursor: pointer;
 }
 
+body>.popup.admin-alert>.frame>p {
+  display: block;
+  margin: 16px;
+}
+
 #admin-alert-icon {
-  display: none;
-}
-
-#admin-alert-closer {
-  display: none;
-}
-
-#admin-alert-box.small .alert {
-  display: none;
-}
-
-#admin-alert-box.small #admin-alert[data-show="true"] .alert {
   display: inline-block;
-  position: fixed;
-  left: 0px;
-  top: 32px;
-  width: 100%;
-  z-index: 2;
-}
-
-#admin-alert-box.small #admin-alert-icon {
-  display: inline;
   background-color: #762f87;
   color: white;
   font-size: 20px;
   font-weight: bold;
-  margin: 0px 2px;
-  padding: 0px 10px;
   text-align: center;
   border-radius: 50%;
-  height: 22px;
-  width: 22px;
-  line-height: 22px;
+  height: 28px;
+  width: 28px;
+  margin: 2px 2px;
+  line-height: 28px;
   cursor: pointer;
-}
-
-#admin-alert-box.small #admin-alert-icon.countdown-second,
-#admin-alert-box.small #admin-alert-icon.countdown-now {
-  background-color: #e82538;
-}
-
-#admin-alert-box.small #admin-alert-closer[data-show="true"] {
-  display: block;
-  position: fixed;
-  left: 0px;
-  top: 64px;
-  width: 2000px;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  z-index: 1;
-  -webkit-transition: background-color 200ms;
-  transition: background-color 200ms;
 }
 
 /***********************************************************************************************
@@ -1516,8 +1537,9 @@ a.disable-cap {
   }
 
   body>.topbar>li>button.grain-button,
-  body>.topbar>.share>button.grain-button,
-  body>.topbar>.account>.login-link-text,
+  body>.topbar>.share>button.show-popup,
+  body>.topbar>.webkey>button.show-popup,
+  body>.topbar>.account>button.show-popup,
   body>.topbar>.homelink>a,
   body>.topbar>.admin>a,
   body>.topbar>.about>a {
@@ -1544,13 +1566,17 @@ a.disable-cap {
   body>.topbar>.homelink:hover {
     background-color: #eee;
   }
-  body>.topbar>.share>button.grain-button {
+  body>.topbar>.share>button.show-popup {
     border-radius: 0;
   }
   body>.topbar>li>button.grain-button:hover,
-  body>.topbar>.share>button.grain-button:hover,
+  body>.topbar>.account>button.show-popup:hover,
+  body>.topbar>.share>button.show-popup:hover,
+  body>.topbar>.webkey>button.show-popup:hover,
   body>.topbar>.account>.login-link-text:hover,
-  body>.topbar>.homelink>a:hover {
+  body>.topbar>.homelink>a:hover,
+  body>.topbar>.admin>a:hover,
+  body>.topbar>.about>a:hover {
     background-color: white;
   }
   body>.topbar>.account>.login-link-text {
@@ -1560,7 +1586,7 @@ a.disable-cap {
   }
 
   body>.topbar>.homelink>a       { background-image: url("/icon32.png"); }
-  body>.topbar>.share>button.grain-button { background-image: url("/share-m.png"); }
+  body>.topbar>.share>button.show-popup { background-image: url("/share-m.png"); }
   body>.topbar>.delete>button    { background-image: url("/trash-m.png"); }
   body>.topbar>.debug-log>button { background-image: url("/wrench-m.png"); }
   body>.topbar>.backup>button    { background-image: url("/download-m.png"); }
@@ -1605,11 +1631,18 @@ a.disable-cap {
     top: 48px;
   }
 
-  .notification-icon {
-    width: 40px;
-    height: 40px;
-    margin-top: 4px;
+  body>.topbar>.notifications>button.show-popup {
+    background-size: 40px 40px;
     background-image: url("/inbox-m.png");
+    background-repeat: no-repeat;
+    background-position: center;
+  }
+
+  body>.topbar>.notifications>button.show-popup,
+  body>.topbar>.admin-alert>button.show-popup {
+    width: 100%;
+    height: 100%;
+    text-align: center;
   }
 
   #demo > .centered-box {
@@ -1618,13 +1651,6 @@ a.disable-cap {
 
   button#createDemoUser, #demo h2 {
     font-size: 30px;
-  }
-
-  #admin-alert[data-show="true"] .alert {
-    top: 48px;
-  }
-  #admin-alert-closer[data-show="true"] {
-    top: 96px;
   }
 }
 @media screen and (max-width: 650px) {

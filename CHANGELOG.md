@@ -1,3 +1,6 @@
+### v0.98 (2015-07-19)
+- Fix grain title misalignment on Firefox.
+
 ### v0.97 (2015-07-19)
 - Revamped design of menus hanging off top bar. Now much less ugly! Plus the login menu is consistent with everything else!
 - Major internal refactoring of topbar UI. Please be on the lookout for bugs.

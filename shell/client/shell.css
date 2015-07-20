@@ -77,6 +77,7 @@ body>.topbar-update {
 body>.topbar>li {
   display: inline-block;
   list-style-type: none;
+  vertical-align: top;
 }
 
 body>.topbar>li>button.show-popup,
@@ -306,6 +307,7 @@ body>.topbar>.share>button.show-popup {
   height: 28px;
   line-height: 28px;
   font-size: 12pt;
+  margin-top: 2px;
 }
 body>.topbar>.share>button.show-popup:hover {
   background-color: #428bca;

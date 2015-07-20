@@ -1678,4 +1678,7 @@ body>.popup.admin-alert>.frame>p {
     width: 225px;
     left: -225px;
   }
+  #install-arrow {
+    background-size: 372px 526px;
+  }
 }

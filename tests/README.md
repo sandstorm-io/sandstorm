@@ -9,7 +9,13 @@ Second, from the tests directory, run `npm install` to install all the node depe
 
 Third, firefox must be installed on the system.
 
-## Run Tests
+## Run Tests -- The easy way
+
+In the parent directory, run:
+
+    make test
+
+## Run Tests -- Manual
 
 First, you have to be running selenium server. You can start one with
 `./node_modules/selenium-standalone/bin/selenium-standalone start`. Wait for a line that looks like
@@ -22,3 +28,28 @@ Run the tests with `npm test`. This requires a running instance of sandstorm, an
 potentially change the database. If you aren't comfortable with that, use the `run-local.sh` script.
 It takes a bundle as an argument, for example if you've run `make fast`, you can run
 `tests/run-local.sh ./sandstorm-0-fast.tar.xz`.
+
+## Running just one test case
+
+Say you want to run the test defined in `tests/grain.js` whose name is
+"Test grain anonymous user". You can do so like so:
+
+    TESTCASE="tests/grain.js Test grain anonymous user" make test
+
+The name must match exactly.
+
+You can also run all test cases in a file:
+
+    TESTCASE="tests/grain.js" make test
+
+## How to dump the DOM for debugging
+
+Stick this in the test:
+
+    browser.execute(function () {
+      return document.body.innerHTML;
+    }, [], function (result) {
+      console.log(result);
+    });
+
+(There's probably an easier way...)

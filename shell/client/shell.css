@@ -622,6 +622,11 @@ img {
   border: none;
   color: white;
   cursor: pointer;
+  margin-bottom: 4px;
+}
+
+#applist-grains .button-box button.show-apps {
+  display: none;
 }
 
 #applist-grains .button-box button.over-quota {
@@ -1455,7 +1460,7 @@ body>.popup.admin-alert>.frame>p {
     left: 0px;
     padding: 16px 16px;
   }
-  #applist-apps, #menu {
+  #applist-apps {
     display: block;
     position: fixed;
     left: -300px;
@@ -1469,10 +1474,6 @@ body>.popup.admin-alert>.frame>p {
     background-color: #eee;
     color: black;
     overflow: auto;
-  }
-  #menu {
-    width: 225px;
-    left: -225px;
   }
   #applist-apps ul {
     margin: 0;
@@ -1497,6 +1498,9 @@ body>.popup.admin-alert>.frame>p {
   }
   #applist-grains table td {
     padding: 16px;
+  }
+  #applist-grains .button-box button.show-apps {
+    display: inline-block;
   }
 
   body>.topbar, body>.topbar-update {
@@ -1695,6 +1699,19 @@ body>.popup.admin-alert>.frame>p {
   button#createDemoUser, #demo h2 {
     font-size: 30px;
   }
+
+  #install-arrow {
+    top: 80px;
+    left: 96px;
+  }
+  #applist-grains .button-box button {
+    width: 100px;
+    min-height: 60px;
+    vertical-align: top;
+  }
+  #applist-grains .button-box button.new-grain-button {
+    width: 150px;
+  }
 }
 @media screen and (max-width: 650px) {
   #applist-grains table {
@@ -1713,6 +1730,8 @@ body>.popup.admin-alert>.frame>p {
 @media screen and (max-width: 450px) {
   #applist-grains .button-box button {
     font-size: 75%;
+    width: 75px;
+    min-height: 45px;
   }
   #applist-grains table {
     width: 300px;
@@ -1722,6 +1741,11 @@ body>.popup.admin-alert>.frame>p {
     left: -225px;
   }
   #install-arrow {
+    top: 68px;
+    left: 96px;
     background-size: 372px 526px;
+  }
+  #applist-grains .button-box button.new-grain-button {
+    width: 115px;
   }
 }

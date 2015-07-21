@@ -597,6 +597,10 @@ if (Meteor.isClient) {
       Router.go("grain", {grainId: event.currentTarget.getAttribute("data-grainid")});
     },
 
+    "click button.show-apps": function (event) {
+      Session.set("showMenu", true);
+    },
+
     "click #install-apps-button": function (event) {
       if (isUserOverQuota(Meteor.user())) {
         // The install process would eventually fail. Alert the user now rather than let them go

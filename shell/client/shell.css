@@ -445,12 +445,6 @@ img {
   color: #428bca;
 }
 
-#app.main-content {
-  /* Mitigates scrolling issue on iOS; see #247 */
-  -webkit-overflow-scrolling: touch;
-  overflow: auto;
-}
-
 #grainLog {
   overflow: auto;
 }
@@ -774,6 +768,27 @@ svg {
   margin: 0;
   display: block;
   position: absolute;
+}
+
+body.ios #app iframe {
+  /* iOS Safari refuses to scroll iframes. But if you set display: inline and position: static
+   * (the defaults for iframes, but we overrode them above) then it will expand the iframe's
+   * content to be big enough to contain the entire embedded page, which then allows you to make
+   * the *parent* element scrollable. Unfortunately display: inline also has the effect of causing
+   * a sliver of empty space to appear below the iframe, I suppose so that surrounding text
+   * containing letters like "p" or "g" has space to render the below-line tail of those letters.
+   * This sliver causes an ugly scroll bar to appear on desktop even when the content of the iframe
+   * does not exceed the page height because the sliver is just below the 100%-tall iframe. In
+   * order to avoid harming everyone else's experience in order to work around Safari, we
+   * explicitly detect iOS in Javascript and apply a body class to match against it.
+   */
+  display: inline;
+  position: static;
+}
+
+body.ios #app.main-content {
+  /* Hint to iOS that this div is scrollable. */
+  -webkit-overflow-scrolling: touch;
 }
 
 #grain-loading-spinner {

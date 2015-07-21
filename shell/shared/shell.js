@@ -164,6 +164,18 @@ if (Meteor.isClient) {
   HasUsers = new Mongo.Collection("hasUsers");  // dummy collection defined above
   Backers = new Mongo.Collection("backers");  // pseudo-collection defined above
 
+  Template.body.onRendered(function () {
+    // If we're on iOS, set a class name on <body> so we can use CSS styles to work around mobile
+    // Safari's ridiculous iframe rendering behavior.
+    //
+    // Note that this can't be done as a template helper because the <body> tag cannot have
+    // attributes determined by helpers. This appears to be a Meteor bug related to the fact that
+    // the <body> tag is not inside a <template>, but rather is itself equivalent to a <template>.
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+      document.body.className = "ios";
+    }
+  });
+
   var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   var formatInCountdown = function (template, countdownDatetime) {

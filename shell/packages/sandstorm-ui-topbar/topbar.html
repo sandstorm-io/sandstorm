@@ -44,6 +44,7 @@ limitations under the License.
     <div class="popup {{name}}">
       {{#with position}}
         <div class="frame align-{{align}}" style="{{align}}: {{px}}px">
+          <button class="close-popup">Close</button>
           {{>popupTemplate ../data.get}}
         </div>
       {{/with}}

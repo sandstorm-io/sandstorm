@@ -135,25 +135,12 @@ Template.sandstormTopbar.events({
   "click .popup": function (event) {
     // Clicked outside the popup; close it.
     event.stopPropagation();
-    var item = Blaze.getData(event.currentTarget);
-    var topbar = Template.instance().data;
-    if (item.onDismiss) {
-      var result = item.onDismiss();
-      if (typeof result === "string") {
-        if (result === "block") {
-          return;
-        } else if (result === "remove") {
-          if (topbar._items[item.name] === item) {
-            delete topbar._items[item.name];
-            topbar._itemsTracker.changed();
-          }
-        } else {
-          throw new Error("Topbar item onDismiss handler returned bogus result:", result);
-        }
-      }
-    }
+    Template.instance().data.closePopup();
+  },
 
-    topbar._expanded.set(null);
+  "click .popup>.frame>.close-popup": function (event) {
+    event.stopPropagation();
+    Template.instance().data.closePopup();
   },
 
   "click .popup>.frame": function (event) {
@@ -217,6 +204,28 @@ SandstormTopbar = function () {
 
 SandstormTopbar.prototype.reset = function () {
   this._menuExpanded.set(false);
+  this._expanded.set(null);
+}
+
+SandstormTopbar.prototype.closePopup = function () {
+  var name = this._expanded.get();
+  if (!name) return;
+
+  var item = this._items[name];
+  if (item.onDismiss) {
+    var result = item.onDismiss();
+    if (typeof result === "string") {
+      if (result === "block") {
+        return;
+      } else if (result === "remove") {
+        delete this._items[item.name];
+        this._itemsTracker.changed();
+      } else {
+        throw new Error("Topbar item onDismiss handler returned bogus result:", result);
+      }
+    }
+  }
+
   this._expanded.set(null);
 }
 

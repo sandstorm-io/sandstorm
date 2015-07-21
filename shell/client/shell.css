@@ -161,6 +161,32 @@ body>.popup>.frame>* {
   margin-right: 16px;
 }
 
+body>.popup>.frame>.close-popup {
+  display: block;
+  float: right;
+  width: 32px;
+  height: 32px;
+  color: transparent;
+  overflow: hidden;
+  background-image: url("/close-m.png");
+  background-size: 20px 20px;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: none;
+  border-radius: 16px;
+  background-color: transparent;
+  margin: 0;
+}
+
+body>.popup>.frame>.close-popup:hover {
+  background-color: #eee;
+  cursor: pointer;
+}
+
+body>.popup>.frame>.close-popup:focus {
+  outline: none;
+}
+
 body>.popup>.frame>h4 {
   margin: 0px;
   font-size: 14px;

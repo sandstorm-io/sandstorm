@@ -1,3 +1,7 @@
+### v0.100 (2015-07-22)
+- Fix inability to configure Google/Github login accidentally introduced in v0.97 during security tightening.
+- Add missing changelog for 0.99.
+
 ### v0.99 (2015-07-21)
 - Fix app scrolling on iOS.
 - Fix popups being onclosable on iOS.

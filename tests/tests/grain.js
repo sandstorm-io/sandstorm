@@ -203,6 +203,10 @@ module.exports["Test grain anonymous user"] = function (browser) {
 // Test roleless sharing between multiple users
 module.exports["Test roleless sharing"] = function (browser) {
   browser
+    .execute('window.clearDevAccount("Alice")')
+    .execute('window.clearDevAccount("Bob")')
+    .execute('window.clearDevAccount("Carol")')
+    .pause(short_wait)
     // Upload app as Alice
     .loginDevAccount("Alice")
     .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
@@ -256,12 +260,15 @@ module.exports["Test roleless sharing"] = function (browser) {
     });
 }
 
-// Test sharing between multiple users. The users here are different from those in the
-// "Test roleless sharing" case to ensure that the incognito interstitial always appears.
+// Test sharing between multiple users.
 module.exports["Test role sharing"] = function (browser) {
   browser
-    // Upload app as Carol
-    .loginDevAccount("Carol")
+    .execute('window.clearDevAccount("Alice")')
+    .execute('window.clearDevAccount("Bob")')
+    .execute('window.clearDevAccount("Carol")')
+    .pause(short_wait)
+    // Upload app as Alice
+    .loginDevAccount("Alice")
     .url(browser.launch_url + "/install/21f8dba75cf1bd9f51b97311ae64aaca?url=http://sandstorm.io/apps/etherpad9.spk")
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
@@ -276,10 +283,10 @@ module.exports["Test role sharing"] = function (browser) {
     .assert.valueContains("#share-token-role", "editor")
     .submitForm('#new-share-token')
     .waitForElementVisible('#share-token-text', medium_wait)
-    // Navigate to the url with Dave
+    // Navigate to the url with Bob
     .getText('#share-token-text', function(response) {
       browser
-        .loginDevAccount("Dave")
+        .loginDevAccount("Bob")
         .url(response.value)
         .waitForElementVisible("#redeem-token-button", short_wait)
         .click("#redeem-token-button")
@@ -293,10 +300,10 @@ module.exports["Test role sharing"] = function (browser) {
         .assert.valueContains("#share-token-role", "editor")
         .submitForm('#new-share-token')
         .waitForElementVisible('#share-token-text', medium_wait)
-        // Navigate to the re-shared url with Eve
+        // Navigate to the re-shared url with Carol
         .getText('#share-token-text', function(response) {
           browser
-            .loginDevAccount("Eve")
+            .loginDevAccount("Carol")
             .url(response.value)
             .waitForElementVisible("#redeem-token-button", short_wait)
             .click("#redeem-token-button")

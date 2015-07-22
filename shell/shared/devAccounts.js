@@ -19,7 +19,25 @@ var allowDevAccounts = Meteor.settings && Meteor.settings.public &&
 
 if (allowDevAccounts) {
   if (Meteor.isServer) {
+    function clearUser(id) {
+      UserActions.remove({userId: id});
+      ApiTokens.remove({userId: id});
+      Grains.find({userId: id}).forEach(function (grain) {
+        deleteGrain(grain._id);
+      });
+      Grains.remove({userId: id});
+      Meteor.users.remove({_id: id});
+    }
+
     Meteor.methods({
+      clearDevAccount: function(displayName) {
+        check(displayName, String);
+        var user = Meteor.users.findOne({devName: displayName});
+        if (user) {
+          clearUser(user._id);
+        }
+      },
+
       createDevAccount: function (displayName, isAdmin) {
         // This is a login method that creates or logs in a dev account with the given displayName
 
@@ -59,6 +77,13 @@ if (allowDevAccounts) {
           } else {
             Router.go("root");
           }
+        }
+      });
+    };
+    clearDevAccount = function(displayName) {
+      Meteor.call("clearDevAccount", displayName, function (err) {
+        if (err) {
+          console.log(err);
         }
       });
     };

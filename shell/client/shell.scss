@@ -1,19 +1,18 @@
-/* Sandstorm - Personal Cloud Sandbox
- * Copyright (c) 2014 Sandstorm Development Group, Inc. and contributors
- * All rights reserved.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+// Sandstorm - Personal Cloud Sandbox
+// Copyright (c) 2014 Sandstorm Development Group, Inc. and contributors
+// All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 
 @font-face {
   font-family: 'Open Sans';
@@ -28,6 +27,17 @@
   font-weight: bold;
   src: local('Open Sans Semibold'), local('OpenSans-Semibold'), url(/opensans-semibold.woff) format('woff');
 }
+
+// You can create blocks matching specifically desktop or mobile views like:
+//
+//     @media #{$desktop} {
+//     @media #{$mobile} {
+//
+// TODO(cleanup): We don't include "screen" in the query because we assume this whole stylesheet
+//   is intended for screens. For non-screens, an entirely different stylesheet would be desired,
+//   or possibly no stylesheet at all: the HTML is designed to be understandable with no style.
+$mobile: (max-width: 900px);
+$desktop: (min-width: 901px);
 
 html {
   width: 100%;
@@ -44,25 +54,6 @@ body {
   background-color: white;
 }
 
-body>.topbar, body>.topbar-update {
-  background-color: black;
-  color: #ccc;
-  font-weight: bold;
-  line-height: 32px;
-}
-
-body>.topbar {
-  position: fixed;
-  top: 0;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 32px;
-  text-align: left;
-  z-index: 100;
-  overflow: hidden;
-}
-
 body>.topbar-update {
   position: fixed;
   width: 100%;
@@ -72,20 +63,45 @@ body>.topbar-update {
   color: #fcc;
   z-index: 1000;
   cursor: pointer;
+  font-weight: bold;
+  line-height: 32px;
+
+  @media #{$mobile} {
+    line-height: 24px;
+    height: 48px;
+    left: 0;
+    width: auto;
+    right: 0;
+  }
 }
 
-body>.topbar>li {
-  display: inline-block;
-  list-style-type: none;
-  vertical-align: top;
+@media #{$mobile} {
+  body>.menu-button {
+    background-color: black;
+    display: inline-block;
+    vertical-align: top;
+    background-image:url(/menu.png);
+    background-position: center;
+    background-repeat: no-repeat;
+    width: 40px;
+    height: 40px;
+    padding: 4px;
+    color: transparent;
+    cursor: pointer;
+    border-right: 1px solid #666;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+  }
+  body>.menu-button:hover {
+    background-color: #666;
+  }
 }
 
-body>.topbar>li>button.show-popup,
-body>.topbar>li>button.grain-button {
-  display: block;
-  height: 100%;
-  margin: 0;
-  padding: 0;
+%unstyled-button {
+  // Styles for <button>s should extend this to remove the browser's default styling.
+
   border: none;
   font-size: inherit;
   font-family: inherit;
@@ -95,259 +111,512 @@ body>.topbar>li>button.grain-button {
   line-height: inherit;
   background-color: transparent;
   text-align: inherit;
-  cursor: pointer;
+}
+
+// =======================================================================================
+
+body>.topbar {
+  font-weight: bold;
+  position: fixed;
+  top: 0;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  text-align: left;
+  z-index: 100;
   overflow: hidden;
+
+  line-height: 32px;
+  height: 32px;
+  background-color: black;
+  color: #ccc;
+
+  @media #{$mobile} {
+    line-height: 48px;
+    height: 48px;
+    background-color: #eee;
+    color: black;
+    transition: height 0.2s;
+
+    &.expanded {
+      height: 100%;
+      box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+    }
+  }
+
+  %topbar-button {
+    // Common styling for buttons in the topbar (on desktop).
+
+    @extend %unstyled-button;
+
+    @media #{$desktop} {
+      display: block;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      cursor: pointer;
+      overflow: hidden;
+
+      &:hover {
+        background-color: #888;
+      }
+
+      &:focus {
+        outline: none;
+      }
+    }
+  }
+
+  %icon-button {
+    // Common styling for topbar buttons that are displayed as a bare icon with no text label
+    // (on desktop).
+
+    @extend %topbar-button;
+
+    @media #{$desktop} {
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: 24px 24px;
+      color: transparent;  // hide text
+      width: 32px;
+      position: relative;
+    }
+  }
+
+  %mobile-icon-button {
+    // Common styling for topbar buttons that are displayed as a bare icon with no text label
+    // (on mobile).
+
+    @extend %unstyled-button;
+
+    @media #{$mobile} {
+      display: block;
+      margin: 0;
+      padding: 0;
+      cursor: pointer;
+      overflow: hidden;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: 40px 40px;
+      color: transparent;  // hide text
+      width: 48px;
+      height: 48px;
+
+      &:hover {
+        background-color: #888;
+      }
+
+      &:focus {
+        outline: none;
+      }
+    }
+  }
+
+  %hamburger-menu-item {
+    // Common styling for topbar items that are displayed as a hamburger menu item on mobile.
+
+    @media #{$mobile} {
+      display: block;
+      width: 100%;
+      background-position: 8px center;
+      background-size: 32px 32px;
+      background-repeat: no-repeat;
+      background-color: transparent;
+      color: black;
+      text-align: left;
+      padding-left: 48px;
+      font-size: 14pt;
+      height: 48px;
+      font-weight: normal;
+      font-family: sans-serif;
+      text-decoration: none;
+
+      &:hover {
+        background-color: white;
+      }
+    }
+  }
+
+  >li {
+    // Each "item" in the topbar is an <li>, so this style applies to all of them.
+
+    display: inline-block;
+    list-style-type: none;
+    vertical-align: top;
+
+    >button.show-popup {
+      @extend %topbar-button;
+    }
+
+    @media #{$mobile} {
+      display: block;
+      float: none;
+      width: 100%;
+      height: 48px;
+      border-bottom: 1px solid #ddd;
+      padding: 0;
+    }
+  }
+
+  >.homelink {
+    >a { @extend %hamburger-menu-item; }
+
+    @media #{$desktop} {
+      padding-left: 32px;
+      padding-right: 8px;
+      background-image: url("/icon.png");
+      background-repeat: no-repeat;
+      background-position: 8px center;
+      border-right: 1px solid #666;
+
+      // Without this, Firefox renders the right-floats pushed down a line.
+      float:left;
+
+      // TODO(cleanup): Use of filter for brightness on hover is hacky and not very widely
+      //   supported.
+      -webkit-filter: brightness(0.75);
+      filter: brightness(0.75);
+
+      a {
+        color: white;
+        text-decoration: none;
+      }
+
+      &:hover {
+        -webkit-filter: none;
+        filter: none;
+        background-color: #666;
+      }
+    }
+
+    @media #{$mobile} {
+      >a {
+        background-image: url("/icon32.png");
+      }
+    }
+  }
+
+  >.title {
+    padding-left: 8px;
+
+    >span.editable {
+      display: inline-block;
+      padding: 0 8px;
+      margin-left: -8px;
+
+      &:hover {
+        cursor: pointer;
+        color: white;
+        background-color: #888;
+      }
+    }
+
+    @media #{$mobile} {
+      background-color: black;
+      color: #ccc;
+      padding-left: 60px;
+      font-size: 120%;
+    }
+  }
+
+  >.grain-size {
+    @media #{$mobile} {
+      display: none;
+    }
+  }
+
+  >.share>button.show-popup {
+    @extend %topbar-button;
+    @extend %hamburger-menu-item;
+
+    @media #{$desktop} {
+      background-image: url("/share.png");
+      background-position: left;
+      background-repeat: no-repeat;
+      border-radius: 4px;
+      background-color: #428bca;
+      color: white;
+      padding-left: 26px;
+      padding-right: 4px;
+      height: 28px;
+      line-height: 28px;
+      font-size: 12pt;
+      margin-top: 2px;
+
+      &:hover {
+        background-color: #428bca;
+      }
+    }
+
+    @media #{$mobile} {
+      background-image: url("/share-m.png");
+    }
+  }
+
+  // Buttons for misc grain actions.
+  >li>button.grain-button, >.webkey>button.show-popup {
+    @extend %icon-button;
+    @extend %hamburger-menu-item;
+  }
+  @media #{$desktop} {
+    >.delete>button    { background-image: url("/trash.png"); }
+    >.debug-log>button { background-image: url("/wrench.png"); }
+    >.backup>button    { background-image: url("/download.png"); }
+    >.restart>button   { background-image: url("/restart.png"); }
+    >.webkey>button    { background-image: url("/key.png"); }
+  }
+  @media #{$mobile} {
+    >.delete>button    { background-image: url("/trash-m.png"); }
+    >.debug-log>button { background-image: url("/wrench-m.png"); }
+    >.backup>button    { background-image: url("/download-m.png"); }
+    >.restart>button   { background-image: url("/restart-m.png"); }
+    >.webkey>button    { background-image: url("/key-m.png"); }
+  }
+
+  >.admin-alert {
+    @media #{$desktop} {
+      float: right;
+    }
+
+    @media #{$mobile} {
+      position: fixed;
+      top: 0;
+      right: 48px;
+      width: 48px;
+      height: 48px;
+      text-align: center;
+    }
+
+    >button.show-popup {
+      @extend %icon-button;
+      @extend %mobile-icon-button;
+    }
+
+    .alert {
+      background-color: #762f87;
+      color: white;
+      text-decoration: none;
+
+      display: inline-block;
+      padding-left: 8px;
+      padding-right: 8px;
+      margin-right: 8px;
+    }
+
+    .alert.countdown-second,
+    .alert.countdown-now {
+      // Turn red when there's less than a minute left.
+      background-color: #e82538;
+    }
+
+    a:hover {
+      background-color: #9d3aa5;
+    }
+  }
+
+  >.notifications {
+    @media #{$desktop} {
+      float: right;
+    }
+
+    @media #{$mobile} {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 48px;
+      height: 48px;
+    }
+
+    >button.show-popup {
+      @extend %icon-button;
+      @extend %mobile-icon-button;
+
+      @media #{$desktop} {
+        background-image: url("/inbox.png");
+      }
+      @media #{$mobile} {
+        background-image: url("/inbox-m.png");
+      }
+
+      >.count {
+        display: block;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 16px;
+        height: 16px;
+        background-color: red;
+        border-radius: 8px;
+        color: white;
+        line-height: 16px;
+        text-align: center;
+        font-size: 8pt;
+
+        @media #{$mobile} {
+          left: 4px;
+          bottom: 8px;
+        }
+      }
+    }
+  }
+
+  >.account {
+    >button.show-popup { @extend %hamburger-menu-item; }
+
+    @media #{$desktop} {
+      float: right;
+      display: block;
+
+      >button.show-popup {
+        padding: 0 8px;
+      }
+    }
+    @media #{$mobile} {
+      >.login-link-text {
+        text-decoration: none;
+        font-weight: normal;
+        font-family: sans-serif;
+      }
+    }
+  }
+
+  >.admin {
+    >a { @extend %hamburger-menu-item; }
+    @media #{$desktop} { display: none; }
+  }
+
+  >.about {
+    >a { @extend %hamburger-menu-item; }
+    @media #{$desktop} { display: none; }
+  }
 }
 
-body>.topbar>li>button.show-popup:hover,
-body>.topbar>li>button.grain-button:hover {
-  background-color: #888;
-}
-
-body>.topbar>li>button.show-popup:focus,
-body>.topbar>li>button.grain-button:focus {
-  outline: none;
-}
+// =======================================================================================
 
 body>.popup {
+  // Popup windows hang off the topbar, usually appearing when a topbar item is clicked.
+
   position: fixed;
   top: 0;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 100000;
+
+  @media #{$mobile} {
+    // Gray the background on mobile.
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+
+  >.frame {
+    max-height: calc(100vh - 64px);
+    min-width: 250px;
+    line-height: normal;
+    white-space: normal;
+    background-color: white;
+    font-weight: normal;
+    color: black;
+    width: 400px;
+    box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+    border-left: 1px solid #E0E0E0;
+    border-right: 1px solid #E0E0E0;
+    border-bottom: 1px solid #E0E0E0;
+
+    @media #{$desktop} {
+      position: fixed;
+      top: 32px;
+      max-width: 50%;
+
+      &::before {
+        content: " ";
+        position: absolute;
+        top: -8px;
+
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-bottom: 8px solid white;
+      }
+
+      &.align-left::before {
+        left: 42px;
+      }
+
+      &.align-right::before {
+        right: 42px;
+      }
+    }
+
+    @media #{$mobile} {
+      position: static;
+      margin: 64px auto 32px;
+      font-size: 20px;
+      width: 90%;
+      border: 1px solid #ccc;
+      overflow-y: auto;
+    }
+
+    >.close-popup {
+      display: block;
+      float: right;
+      width: 32px;
+      height: 32px;
+      color: transparent;
+      overflow: hidden;
+      background-image: url("/close-m.png");
+      background-size: 20px 20px;
+      background-repeat: no-repeat;
+      background-position: center;
+      border: none;
+      border-radius: 16px;
+      background-color: transparent;
+      margin: 0;
+    }
+
+    >.close-popup:hover {
+      background-color: #eee;
+      cursor: pointer;
+    }
+
+    >.close-popup:focus {
+      outline: none;
+    }
+
+    >h4 {
+      margin: 0px;
+      font-size: 14px;
+      padding-left: 10px;
+      line-height: 32px;
+      border-bottom: 1px solid #ccc;
+      margin-bottom: 16px;
+
+      @media #{$mobile} {
+        font-size: 14pt;
+      }
+    }
+
+    input, button, .login-button {
+      @media #{$mobile} { font-size: 15pt; }
+    }
+
+    >* {
+      margin-left: 16px;
+      margin-right: 16px;
+    }
+
+    >*:last-child {
+      margin-bottom: 16px;
+    }
+  }
 }
 
-body>.popup>.frame {
-  position: fixed;
-  top: 32px;
-  max-height: calc(100vh - 64px);
-  max-width: 50%;
-  min-width: 250px;
-  line-height: normal;
-  white-space: normal;
-  background-color: white;
-  font-weight: normal;
-  color: black;
-  width: 400px;
-  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
-  border-left: 1px solid #E0E0E0;
-  border-right: 1px solid #E0E0E0;
-  border-bottom: 1px solid #E0E0E0;
-}
-
-body>.popup>.frame::before {
-  content: " ";
-  position: absolute;
-  top: -8px;
-
-  width: 0;
-  height: 0;
-  border-left: 8px solid transparent;
-  border-right: 8px solid transparent;
-  border-bottom: 8px solid white;
-}
-
-body>.popup>.frame.align-left::before {
-  left: 42px;
-}
-
-body>.popup>.frame.align-right::before {
-  right: 42px;
-}
-
-body>.popup>.frame>* {
-  margin-left: 16px;
-  margin-right: 16px;
-}
-
-body>.popup>.frame>.close-popup {
-  display: block;
-  float: right;
-  width: 32px;
-  height: 32px;
-  color: transparent;
-  overflow: hidden;
-  background-image: url("/close-m.png");
-  background-size: 20px 20px;
-  background-repeat: no-repeat;
-  background-position: center;
-  border: none;
-  border-radius: 16px;
-  background-color: transparent;
-  margin: 0;
-}
-
-body>.popup>.frame>.close-popup:hover {
-  background-color: #eee;
-  cursor: pointer;
-}
-
-body>.popup>.frame>.close-popup:focus {
-  outline: none;
-}
-
-body>.popup>.frame>h4 {
-  margin: 0px;
-  font-size: 14px;
-  padding-left: 10px;
-  line-height: 32px;
-  border-bottom: 1px solid #ccc;
-  margin-bottom: 16px;
-}
-
-body>.popup>.frame>*:last-child {
-  margin-bottom: 16px;
-}
-
-body>.topbar>.homelink {
-  padding-left: 32px;
-  padding-right: 8px;
-  background-image: url("/icon.png");
-  background-repeat: no-repeat;
-  background-position: 8px center;
-  border-right: 1px solid #666;
-
-  /* Without this, Firefox renders the right-floats pushed down a line. */
-  float:left;
-
-  /* TODO(cleanup): Use of filter for brightness on hover is hacky and not very widely supported. */
-  -webkit-filter: brightness(0.75);
-  filter: brightness(0.75);
-}
-
-body>.topbar>.homelink a {
-  color: white;
-  text-decoration: none;
-}
-
-body>.topbar>.homelink:hover {
-  -webkit-filter: none;
-  filter: none;
-  background-color: #666;
-}
-
-body>.topbar>.account {
-  float: right;
-  display: block;
-}
-
-body>.topbar>.account>.show-popup {
-  padding: 0 8px;
-}
-
-body>.topbar>.notifications {
-  float: right;
-}
-
-body>.topbar>.notifications>button.show-popup {
-  width: 32px;
-  height: 32px;
-  background-image: url("/inbox.png");
-  color: transparent;  /* hide text */
-  overflow: hidden;
-  position: relative;
-}
-
-body>.topbar>.notifications>button>.count {
-  display: block;
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 16px;
-  height: 16px;
-  background-color: red;
-  border-radius: 8px;
-  color: white;
-  line-height: 16px;
-  text-align: center;
-  font-size: 8pt;
-}
-
-body>.topbar>.admin-alert {
-  float: right;
-}
-
-body>.topbar>.admin-alert .alert {
-  background-color: #762f87;
-  color: white;
-  text-decoration: none;
-
-  display: inline-block;
-  padding-left: 8px;
-  padding-right: 8px;
-  margin-right: 8px;
-}
-
-body>.topbar>.admin-alert .alert.countdown-second,
-body>.topbar>.admin-alert .alert.countdown-now,
-#admin-alert-icon.countdown-second,
-#admin-alert-icon.countdown-now {
-  background-color: #e82538;
-}
-
-body>.topbar>.admin-alert a:hover {
-  background-color: #9d3aa5;
-}
-
-body>.topbar>.title {
-  padding-left: 8px;
-}
-
-body>.topbar>.title>span.editable {
-  display: inline-block;
-  padding: 0 8px;
-  margin-left: -8px;
-}
-
-body>.topbar>.title>span.editable:hover {
-  cursor: pointer;
-  color: white;
-  background-color: #888;
-}
-
-body>.topbar>li>button.grain-button,
-body>.topbar>.webkey>button.show-popup {
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: 24px 24px;
-  color: transparent;
-  width: 32px;
-}
-
-body>.topbar>.delete>button    { background-image: url("/trash.png"); }
-body>.topbar>.debug-log>button { background-image: url("/wrench.png"); }
-body>.topbar>.backup>button    { background-image: url("/download.png"); }
-body>.topbar>.restart>button   { background-image: url("/restart.png"); }
-body>.topbar>.webkey>button    { background-image: url("/key.png"); }
-
-body>.topbar>.share>button.show-popup {
-  background-image: url("/share.png");
-  background-position: left;
-  background-repeat: no-repeat;
-  border-radius: 4px;
-  background-color: #428bca;
-  color: white;
-  padding-left: 26px;
-  padding-right: 4px;
-  height: 28px;
-  line-height: 28px;
-  font-size: 12pt;
-  margin-top: 2px;
-}
-body>.topbar>.share>button.show-popup:hover {
-  background-color: #428bca;
-}
-
-body>.topbar>.admin {
-  display: none;
-}
-
-body>.topbar>.about {
-  display: none;
-}
+// =======================================================================================
 
 a.copy-me {
+  // A link which is intended to be copy/pasted, not followed. Clicking on the link will select
+  // it for copying.
+
   display: block;
   margin: 8px;
   border: 1px solid #ccc;
@@ -357,29 +626,27 @@ a.copy-me {
   color: inherit;
 }
 
-/***********************************************************************************************
- * pre-refactor styles                                                                         *
- ***********************************************************************************************/
+// =======================================================================================
+// pre-refactor styles
+// =======================================================================================
+//
+// Below this point are styles that predate the start of The Great Frontend Refactor, and/or styles
+// which apply to HTML which itself has not been refactored. See:
+//
+//     https://oasis.sandstorm.io/shared/lnQfpUDofcbGN9Z-f7BIU8L6vudbcpLJZ7hScQ64zLD
+//
+// TODO(cleanup): Refactor these styles and merge them into the clean part of the stylesheet,
+//   above.
+
+#admin-alert-icon.countdown-second,
+#admin-alert-icon.countdown-now {
+  // Turn red when there's less than a minute left.
+  background-color: #e82538;
+}
 
 .popup .token-petname:hover {
   cursor: pointer;
   color: white;
-  background-color: #888;
-}
-
-#menu button {
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  width: 24px;
-  height: 24px;
-  border: none;
-  color: transparent;
-  background-color: transparent;
-  cursor: pointer;
-}
-
-#menu button:hover {
   background-color: #888;
 }
 
@@ -1444,10 +1711,6 @@ body>.popup.admin-alert>.frame>p {
   cursor: pointer;
 }
 
-/***********************************************************************************************
- * mobile tweaks                                                                               *
- ***********************************************************************************************/
-
 @media screen and (max-width: 1250px) {
   aside {
     position: static;
@@ -1503,193 +1766,8 @@ body>.popup.admin-alert>.frame>p {
     display: inline-block;
   }
 
-  body>.topbar, body>.topbar-update {
-    line-height: 48px;
-    height: 48px;
-    left: 0;
-    width: auto;
-    right: 0;
-  }
-  body>.topbar {
-    background-color: #eee;
-    color: black;
-  }
-  body>.topbar-update {
-    line-height: 24px;
-  }
-  body>.topbar {
-    transition: height 0.2s;
-  }
-  body>.topbar.expanded {
-    height: 100%;
-    box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
-  }
-
-  body>.menu-button {
-    background-color: black;
-    display: inline-block;
-    vertical-align: top;
-    background-image:url(/menu.png);
-    background-position: center;
-    background-repeat: no-repeat;
-    width: 40px;
-    height: 40px;
-    padding: 4px;
-    color: transparent;
-    cursor: pointer;
-    border-right: 1px solid #666;
-    position: fixed;
-    left: 0;
-    top: 0;
-    z-index: 1000;
-  }
-  body>.menu-button:hover {
-    background-color: #666;
-  }
-  body>.topbar>li,
-  body>.topbar>.account,
-  body>.topbar>.homelink {
-    display: block;
-    float: none;
-    width: 100%;
-    height: 48px;
-    border-bottom: 1px solid #ddd;
-    padding: 0;
-  }
-  body>.topbar>.title {
-    background-color: black;
-    color: #ccc;
-    padding-left: 60px;
-    font-size: 120%;
-  }
-  body>.topbar>.notifications {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 48px;
-    height: 48px;
-  }
-  body>.topbar>.admin-alert {
-    position: fixed;
-    top: 0;
-    right: 48px;
-    width: 48px;
-    height: 48px;
-  }
-  body>.topbar>.grain-size {
-    display: none;
-  }
-  body>.topbar>.account {
-    float: none;
-  }
-
-  body>.topbar>li>button.grain-button,
-  body>.topbar>.share>button.show-popup,
-  body>.topbar>.webkey>button.show-popup,
-  body>.topbar>.account>button.show-popup,
-  body>.topbar>.homelink>a,
-  body>.topbar>.admin>a,
-  body>.topbar>.about>a {
-    display: block;
-    width: 100%;
-    background-position: 8px center;
-    background-size: 32px 32px;
-    background-repeat: no-repeat;
-    background-color: transparent;
-    color: black;
-    text-align: left;
-    padding-left: 48px;
-    font-size: 14pt;
-    height: 100%;
-    font-weight: normal;
-    font-family: sans-serif;
-    text-decoration: none;
-  }
-  body>.topbar>.homelink {
-    background-image: none;
-    -webkit-filter: none;
-    filter: none;
-  }
-  body>.topbar>.homelink:hover {
-    background-color: #eee;
-  }
-  body>.topbar>.share>button.show-popup {
-    border-radius: 0;
-  }
-  body>.topbar>li>button.grain-button:hover,
-  body>.topbar>.account>button.show-popup:hover,
-  body>.topbar>.share>button.show-popup:hover,
-  body>.topbar>.webkey>button.show-popup:hover,
-  body>.topbar>.account>.login-link-text:hover,
-  body>.topbar>.homelink>a:hover,
-  body>.topbar>.admin>a:hover,
-  body>.topbar>.about>a:hover {
-    background-color: white;
-  }
-  body>.topbar>.account>.login-link-text {
-    text-decoration: none;
-    font-weight: normal;
-    font-family: sans-serif;
-  }
-
-  body>.topbar>.homelink>a       { background-image: url("/icon32.png"); }
-  body>.topbar>.share>button.show-popup { background-image: url("/share-m.png"); }
-  body>.topbar>.delete>button    { background-image: url("/trash-m.png"); }
-  body>.topbar>.debug-log>button { background-image: url("/wrench-m.png"); }
-  body>.topbar>.backup>button    { background-image: url("/download-m.png"); }
-  body>.topbar>.restart>button   { background-image: url("/restart-m.png"); }
-  body>.topbar>.webkey>button    { background-image: url("/key-m.png"); }
-
-  body>.topbar>.admin {
-    display: block;
-  }
-
-  body>.topbar>.about {
-    display: block;
-  }
-
-  body>.popup>.frame {
-    position: static;
-    margin: 64px auto 32px;
-    font-size: 20px;
-    max-width: 90%;
-    border: 1px solid #ccc;
-    overflow-y: auto;
-  }
-  body>.popup {
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-  body>.popup>.frame {
-    width: 90%;
-  }
-  body>.popup>.frame>h4 {
-    font-size: 20px;
-  }
-  body>.popup>.frame::before {
-    display: none;
-  }
-  body>.popup>.frame input,
-  body>.popup>.frame button,
-  body>.popup>.frame .login-button {
-    font-size: 20px;
-  }
-
   .main-content {
     top: 48px;
-  }
-
-  body>.topbar>.notifications>button.show-popup {
-    background-size: 40px 40px;
-    background-image: url("/inbox-m.png");
-    background-repeat: no-repeat;
-    background-position: center;
-  }
-
-  body>.topbar>.notifications>button.show-popup,
-  body>.topbar>.admin-alert>button.show-popup {
-    width: 100%;
-    height: 100%;
-    text-align: center;
   }
 
   #demo > .centered-box {

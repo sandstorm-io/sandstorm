@@ -38,7 +38,7 @@ if (Meteor.isServer) {
   // but inline script are enabled.
   //
   // TODO(security): Consider disallowing inline scripts. Currently this forces Meteor to do an
-  //   extra round trip on startup to fetch server settings. That seams like something that could
+  //   extra round trip on startup to fetch server settings. That seems like something that could
   //   be fixed in Meteor (e.g. embed the settings as JSON text rather than script). Startup time
   //   is incredibly important, and Meteor's templating system (which we use to render all our
   //   HTML) already does a good job of protecting us from script injection, so right now I think

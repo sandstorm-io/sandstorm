@@ -826,7 +826,7 @@ if (Meteor.isServer) {
     },
     "adminConfigureLoginService": function (token, options) {
       checkAuth(token);
-      check(options, ObjectIncluding({service: String}));
+      check(options, Match.ObjectIncluding({service: String}));
 
       var ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
 

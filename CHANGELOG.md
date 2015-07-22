@@ -1,3 +1,8 @@
+### v0.99 (2015-07-21)
+- Fix app scrolling on iOS.
+- Fix popups being onclosable on iOS.
+- Fix app selection on mobile.
+
 ### v0.98 (2015-07-19)
 - Fix grain title misalignment on Firefox.
 

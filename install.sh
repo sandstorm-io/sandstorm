@@ -749,7 +749,7 @@ configure_hostnames() {
   # configure the hostname and IP address accordingly.
   if [ "yes" = "$USE_EXTERNAL_INTERFACE" ]; then
     BIND_IP=0.0.0.0
-    SS_HOSTNAME="${SS_HOSTNAME:-$(hostname -f || echo '')}"
+    SS_HOSTNAME="${SS_HOSTNAME:-$(hostname -f 2>/dev/null || hostname)}"
   else
     BIND_IP=127.0.0.1
     SS_HOSTNAME=local.sandstorm.io

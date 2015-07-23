@@ -30,23 +30,23 @@ module.exports = {
   "Test github login command" : function (browser) {
     browser
       .loginGithub()
-      .waitForElementVisible('#login-name-link', short_wait)
-      .assert.containsText("#login-name-link", "Github User");
+      .waitForElementVisible('.topbar>.account>.show-popup>a', short_wait)
+      .assert.containsText(".topbar>.account>.show-popup>a", "Github User");
   },
 
   "Test google login command" : function (browser) {
     browser
       .loginGoogle()
-      .waitForElementVisible('#login-name-link', short_wait)
-      .assert.containsText("#login-name-link", "Google User");
+      .waitForElementVisible('.topbar>.account>.show-popup>a', short_wait)
+      .assert.containsText(".topbar>.account>.show-popup>a", "Google User");
   },
 };
 if (!disable_demo) {
   module.exports["Test demo login command"] = function (browser) {
     browser
       .loginDemo()
-      .waitForElementVisible('#login-name-link', short_wait)
-      .assert.containsText("#login-name-link", "Demo User")
+      .waitForElementVisible('.topbar>.account>.show-popup>a', short_wait)
+      .assert.containsText(".topbar>.account>.show-popup>a", "Demo User")
       .end();
   };
 }

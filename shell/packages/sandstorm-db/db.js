@@ -16,6 +16,34 @@
 
 // This file defines the database schema.
 
+// Users = new Mongo.Collection("users");
+// The users collection is special and can be accessed through `Meteor.users`.
+// See https://docs.meteor.com/#/full/meteor_users. Entries in the users collection correspond to
+// accounts. Each represents a capability store belonging to a human.
+//
+// Note that accounts are not the same thing as identities. An account may have multiple identities
+// attached to it. Identities provide a way to authenticate the user and are also used to present
+// globally unique and stable user indentifiers to grains via `Grain.UserInfo.userId`.
+//
+// Each entry in this collection contains:
+//   _id: Random.
+//   createdAt: Date when this entry was added to the collection.
+//   lastActive: Date of the user's most recent interaction with this Sandstorm server.
+//   profile: Object containing profile data editable by the user and visible to other users. May
+//            include the following fields:
+//       name: String containing the display name of the user.
+//   services: Object containing login and identity data used by Meteor authentication services.
+//   isAdmin: Boolean indicating whether this user is allowed to access the Sandstorm admin panel.
+//   signupKey: If this is an invited user, then this field contains their signup key.
+//   signupNote: If the user was invited through a link, then this field contains the note that the
+//               inviter admin attached to the key.
+//   signupEmail: If the user was invited by email, then this field contains the email address that
+//                the invite was sent to.
+//   quota: Number of bytes this user is allowed to store.
+//   storageUsage: Number of bytes this user is currently storing.
+//   expires: Date when this user's account should be deleted. Only present for demo users.
+//   isAppDemoUser: True if this is a demo user who arrived via an /appdemo/ link.
+
 Packages = new Mongo.Collection("packages");
 // Packages which are installed or downloading.
 //

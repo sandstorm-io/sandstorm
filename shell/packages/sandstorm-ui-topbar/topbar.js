@@ -196,11 +196,15 @@ Template.sandstormTopbarItem.onDestroyed(function () {
 // =======================================================================================
 // Public interface
 
-SandstormTopbar = function () {
+SandstormTopbar = function (expandedVar) {
+  // `expandedVar` is an optional object that behaves like a `ReactiveVar` and will be used to
+  // track which popup is currently open. (The caller may wish to back this with a Session
+  // variable.)
+
   this._items = {};
   this._itemsTracker = new Tracker.Dependency();
 
-  this._expanded = new ReactiveVar(null);
+  this._expanded = expandedVar || new ReactiveVar(null);
   this._menuExpanded = new ReactiveVar(false);
 }
 

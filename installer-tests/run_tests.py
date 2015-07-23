@@ -205,6 +205,7 @@ def uninstall_sandstorm(vagrant_box_name):
             'sudo rm -rf $HOME/sandstorm',
             'if [ -e /proc/sys/kernel/unprivileged_userns_clone  ] ; then echo 0 | sudo dd of=/proc/sys/kernel/unprivileged_userns_clone ; fi',
             'sudo pkill -9 sudo || true',
+            'sudo hostname localhost',
     ]:
         exitcode = subprocess.call(['vagrant', 'ssh', vagrant_box_name,
                                     '-c', cmd], cwd=TEST_ROOT)

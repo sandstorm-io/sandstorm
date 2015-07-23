@@ -128,7 +128,9 @@ Template.sandstormTopbar.events({
       event.stopPropagation();
       event.preventDefault();
 
-      Template.instance().data._expanded.set(data.name);
+      var topbar = Template.instance().data;
+      topbar._expanded.set(data.name);
+      topbar._menuExpanded.set(false);
     }
   },
 

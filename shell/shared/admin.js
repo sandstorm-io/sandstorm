@@ -992,18 +992,16 @@ if (Meteor.isServer) {
   });
 
   var checkAuthForPublish = function (token, userId) {
-    check(token, Match.OneOf(undefined, null, String));
-    if (!(userId && isAdminById(userId)) && !tokenIsValid(token)) {
-      throw new Meteor.Error(403, "User must be admin or provide a valid token");
-    }
+    return Match.test(token, Match.OneOf(undefined, null, String)) &&
+           ((userId && isAdminById(userId)) || tokenIsValid(token));
   };
   Meteor.publish("admin", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
     return Settings.find();
   });
 
   Meteor.publish("adminServiceConfiguration", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
     return Package['service-configuration'].ServiceConfiguration.configurations.find();
   });
 
@@ -1018,21 +1016,21 @@ if (Meteor.isServer) {
   });
 
   Meteor.publish("allUsers", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
     return Meteor.users.find();
   });
   Meteor.publish("activityStats", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
     return ActivityStats.find();
   });
 
   Meteor.publish("statsTokens", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
     return StatsTokens.find();
   });
 
   Meteor.publish("realTimeStats", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
 
     // Last five minutes.
     this.added("realTimeStats", "now", computeStats(new Date(Date.now() - 5*60*1000)));
@@ -1047,7 +1045,7 @@ if (Meteor.isServer) {
     this.ready();
   });
   Meteor.publish("adminLog", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
 
     var logfile = SANDSTORM_LOGDIR + "/sandstorm.log";
 
@@ -1084,7 +1082,7 @@ if (Meteor.isServer) {
     this.ready();
   });
   Meteor.publish("adminApiTokens", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
     return ApiTokens.find({$or: [{"frontendRef.ipNetwork": {$exists: true}},
                                  {"frontendRef.ipInterface": {$exists: true}}]},
                           {fields: {frontendRef: 1, created: 1, requirements: 1, revoked: 1}});

@@ -175,6 +175,6 @@ SandstormEmail.rawSend = function (mc, smtpUrl) {
   if (pool) {
     smtpSend(pool, mc);
   } else {
-    throw new Exception("SMTP pool is misconfigured.");
+    throw new Error("SMTP pool is misconfigured.");
   }
 };

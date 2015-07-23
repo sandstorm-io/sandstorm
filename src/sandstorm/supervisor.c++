@@ -56,6 +56,7 @@
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
 #include <sys/eventfd.h>
+#include <capnp/membrane.h>
 
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/supervisor.capnp.h>
@@ -1559,82 +1560,147 @@ class SaveWrapper : public SystemPersistent::Server {
   // A capability which forwards all calls to some target, except for `save`.
 
 public:
-  SaveWrapper(AppPersistent<>::Client&& cap, capnp::List<MembraneRequirement>::Reader _requirements,
-              capnp::Data::Reader parentToken, SandstormCore::Client sandstormCore)
-      : cap(kj::mv(cap)), parentToken(kj::heapArray<const byte>(parentToken)),
-        sandstormCore(sandstormCore) {
+  SaveWrapper(capnp::Capability::Client &&cap, SandstormCore::Client sandstormCore)
+      : cap(kj::mv(cap)), sandstormCore(sandstormCore),
+        requirements(builder.getRoot<capnp::List<MembraneRequirement>>().asReader()) {}
+  SaveWrapper(capnp::Capability::Client &&cap, SandstormCore::Client sandstormCore,
+              capnp::List<MembraneRequirement>::Reader _requirements)
+      : SaveWrapper(kj::mv(cap), sandstormCore) {
     builder.setRoot(kj::mv(_requirements));
-    requirements = builder.getRoot<capnp::List<MembraneRequirement>>().asReader();
   }
-
-  kj::Promise<void> dispatchCall(
-      uint64_t interfaceId, uint16_t methodId,
-      capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) override {
-    if (interfaceId == capnp::typeId<capnp::Persistent<>>()) {
-      return capnp::Persistent< capnp::Data,
-        sandstorm::ApiTokenOwner>::Server::dispatchCallInternal(methodId, context);
-    } else if (interfaceId == capnp::typeId<SystemPersistent>()) {
-      return SystemPersistent::Server::dispatchCallInternal(methodId, context);
-    }
-
-    capnp::AnyPointer::Reader params = context.getParams();
-    auto req = cap.typelessRequest(interfaceId, methodId, params.targetSize());
-    req.set(params);
-    return context.tailCall(kj::mv(req));
+  SaveWrapper(capnp::Capability::Client &&cap, SandstormCore::Client sandstormCore,
+              capnp::List<MembraneRequirement>::Reader _requirements,
+              kj::ArrayPtr<const kj::byte> _parentToken)
+      : SaveWrapper(kj::mv(cap), sandstormCore, _requirements) {
+    parentToken = kj::heapArray<const byte>(_parentToken);
   }
 
   kj::Promise<void> save(SaveContext context) override {
-    auto owner = context.getParams().getSealFor();
-    auto req = sandstormCore.makeChildTokenRequest();
-    req.setParent(parentToken);
-    req.setOwner(owner);
-    req.setRequirements(requirements);
-    return req.send().then([context](auto args) mutable {
-      context.getResults().setSturdyRef(args.getToken());
-    });
+    KJ_IF_MAYBE(token, parentToken) {
+      auto owner = context.getParams().getSealFor();
+      auto req = sandstormCore.makeChildTokenRequest();
+      req.setParent(*token);
+      req.setOwner(owner);
+      req.setRequirements(requirements);
+      return req.send().then(
+          [context](auto args) mutable { context.getResults().setSturdyRef(args.getToken()); });
+    }
+    else {
+      return cap.castAs<AppPersistent<>>().saveRequest().send().then(
+          [this, context](auto response) mutable {
+            auto req = sandstormCore.makeTokenRequest();
+            req.getRef().setAppRef(response.getObjectId());
+            req.setOwner(context.getParams().getSealFor());
+            req.setRequirements(requirements);
+            return req.send().then([context](auto response) mutable {
+              context.getResults().setSturdyRef(response.getToken());
+            });
+          });
+    }
   }
 
-  kj::Promise<void> addRequirements(AddRequirementsContext context) override {
-    return kj::READY_NOW;
-  }
+  kj::Promise<void> addRequirements(AddRequirementsContext context) override;
 
 private:
-  AppPersistent<>::Client cap;
-  kj::Array<const kj::byte> parentToken;
+  capnp::Capability::Client cap;
+  SandstormCore::Client sandstormCore;
+  kj::Maybe<kj::Array<const kj::byte>> parentToken;
   capnp::MallocMessageBuilder builder;
   capnp::List<MembraneRequirement>::Reader requirements;
-  SandstormCore::Client sandstormCore;
 };
 
-typedef capnp::RealmGateway<capnp::Data, capnp::AnyPointer, ApiTokenOwner,
-                            capnp::AnyPointer> SupervisorRealmGateway;
-
-class SupervisorRealmGatewayImpl final: public SupervisorRealmGateway::Server {
+class GrainSavePolicy : public capnp::MembranePolicy, public kj::Refcounted {
 public:
-  explicit SupervisorRealmGatewayImpl(SandstormCore::Client& sandstormCore)
-    : sandstormCore(sandstormCore) {}
+  explicit GrainSavePolicy(SandstormCore::Client &sandstormCore)
+      : sandstormCore(sandstormCore),
+        requirements(builder.getRoot<capnp::List<MembraneRequirement>>().asReader()) {}
 
-  kj::Promise<void> import(ImportContext context) override {
-    auto cap = context.getParams().getCap().castAs<AppPersistent<>>();
-    auto owner = context.getParams().getParams().getSealFor();
-    return cap.saveRequest().send().then([this, owner, context](auto response) mutable {
-      auto req = sandstormCore.makeTokenRequest();
-      req.getRef().setAppRef(response.getObjectId());
-      req.setOwner(owner);
-      // TODO(someday): Set requirements. This will require membranes to work properly.
-      return req.send().then([context](auto response) mutable {
-        context.getResults().setSturdyRef(response.getToken());
-      });
-     });
+  GrainSavePolicy(SandstormCore::Client &sandstormCore,
+                  capnp::List<MembraneRequirement>::Reader _requirements)
+      : GrainSavePolicy(sandstormCore) {
+    builder.setRoot(kj::mv(_requirements));
   }
 
-  kj::Promise<void> export_(ExportContext context) override {
-    KJ_FAIL_REQUIRE("Cannot directly call save() on capabilities outside the grain. "
-      "Use SandstormApi.save() instead.");
+  GrainSavePolicy(SandstormCore::Client &sandstormCore,
+                  capnp::List<MembraneRequirement>::Reader _requirements,
+                  kj::ArrayPtr<const kj::byte> _parentToken)
+      : GrainSavePolicy(sandstormCore, _requirements) {
+    parentToken = kj::heapArray<const byte>(_parentToken);
   }
+
+  GrainSavePolicy(SandstormCore::Client &sandstormCore,
+                  capnp::List<MembraneRequirement>::Reader _requirements,
+                  capnp::List<MembraneRequirement>::Reader extraRequirements)
+      : GrainSavePolicy(sandstormCore) {
+    auto reqs = builder.initRoot<capnp::List<MembraneRequirement>>(_requirements.size() +
+                                                                   extraRequirements.size());
+    for (uint i = 0; i < _requirements.size(); ++i) {
+      reqs.setWithCaveats(i, _requirements[i]);
+    }
+    auto start = _requirements.size();
+    for (uint i = 0; i < extraRequirements.size(); ++i) {
+      reqs.setWithCaveats(start + i, extraRequirements[i]);
+    }
+  }
+
+  GrainSavePolicy(SandstormCore::Client &sandstormCore,
+                  capnp::List<MembraneRequirement>::Reader _requirements,
+                  capnp::List<MembraneRequirement>::Reader extraRequirements,
+                  kj::ArrayPtr<const kj::byte> _parentToken)
+      : GrainSavePolicy(sandstormCore, _requirements, extraRequirements) {
+    parentToken = kj::heapArray<const byte>(_parentToken);
+  }
+
+  kj::Maybe<capnp::Capability::Client> inboundCall(uint64_t interfaceId, uint16_t methodId,
+                                                   capnp::Capability::Client target) override {
+    if (interfaceId == capnp::typeId<AppPersistent<>>()) {
+      KJ_FAIL_REQUIRE(
+          "Calling AppPersistent methods is not allowed. Use SystemPersistent instead.");
+    } else if (interfaceId == capnp::typeId<SystemPersistent>() ||
+               interfaceId == capnp::typeId<capnp::Persistent<>>()) {
+      KJ_IF_MAYBE(token, parentToken) {
+        return static_cast<capnp::Capability::Client>(
+            kj::heap<SaveWrapper>(kj::mv(target), sandstormCore, requirements, *token));
+      }
+      else {
+        return static_cast<capnp::Capability::Client>(
+            kj::heap<SaveWrapper>(kj::mv(target), sandstormCore, requirements));
+      }
+    }
+    return nullptr;
+  }
+
+  kj::Maybe<capnp::Capability::Client> outboundCall(uint64_t interfaceId, uint16_t methodId,
+                                                    capnp::Capability::Client target) override {
+    if (interfaceId == capnp::typeId<AppPersistent<>>() ||
+        interfaceId == capnp::typeId<SystemPersistent>() ||
+        interfaceId == capnp::typeId<capnp::Persistent<>>()) {
+      KJ_FAIL_REQUIRE("Calling save() methods is not allowed. Use SandstormApi.save() instead.");
+    }
+    return nullptr;
+  }
+
+  kj::Own<MembranePolicy> addRef() override { return kj::addRef(*this); }
+
 private:
   SandstormCore::Client sandstormCore;
+  kj::Maybe<kj::Array<const kj::byte>> parentToken;
+  capnp::MallocMessageBuilder builder;
+  capnp::List<MembraneRequirement>::Reader requirements;
 };
+
+kj::Promise<void> SaveWrapper::addRequirements(AddRequirementsContext context)
+{
+    auto extraRequirements = context.getParams().getRequirements();
+    KJ_IF_MAYBE(token, parentToken) {
+      context.getResults().setCap(capnp::membrane(cap, kj::refcounted<GrainSavePolicy>(
+        sandstormCore, requirements, extraRequirements, *token)).castAs<SystemPersistent>());
+    } else {
+      context.getResults().setCap(capnp::membrane(cap, kj::refcounted<GrainSavePolicy>(
+        sandstormCore, requirements, extraRequirements)).castAs<SystemPersistent>());
+    }
+    return kj::READY_NOW;
+}
 
 static void decrementWakelock() {
   --sandstorm::wakelockCount;
@@ -1957,8 +2023,8 @@ public:
         auto req = mainView.restoreRequest();
         req.setObjectId(objectId.getAppRef());
         return req.send().then([this, params, context](auto args) mutable {
-          context.getResults().setCap(kj::heap<SaveWrapper>(
-            args.getCap().template castAs<AppPersistent<>>(), params.getRequirements(), params.getParentToken(), sandstormCore));
+          context.getResults().setCap(capnp::membrane(
+            args.getCap(), kj::refcounted<GrainSavePolicy>(sandstormCore, params.getRequirements(), params.getParentToken())));
         });
       }
       default:
@@ -2204,7 +2270,6 @@ auto SupervisorMain::DefaultSystemConnector::run(
   auto coreRedirector = kj::refcounted<CapRedirector>();
   SandstormCore::Client coreCap = static_cast<capnp::Capability::Client>(
     kj::addRef(*coreRedirector)).castAs<SandstormCore>();
-  SupervisorRealmGateway::Client gateway = kj::heap<SupervisorRealmGatewayImpl>(coreCap);
   // Compute grain size and watch for changes.
   DiskUsageWatcher diskWatcher(ioContext.unixEventPort);
   auto diskWatcherTask = diskWatcher.init();
@@ -2215,14 +2280,14 @@ auto SupervisorMain::DefaultSystemConnector::run(
       kj::LowLevelAsyncIoProvider::TAKE_OWNERSHIP);
   capnp::TwoPartyVatNetwork appNetwork(*appConnection, capnp::rpc::twoparty::Side::SERVER);
   WakelockSet wakelockSet(grainId, coreCap);
-  auto server = capnp::makeRpcServer(appNetwork, kj::heap<SandstormApiImpl>(wakelockSet, grainId,
-      coreCap), kj::mv(gateway));
+  auto server = capnp::makeRpcServer(appNetwork,
+    kj::heap<SandstormApiImpl>(wakelockSet, grainId, coreCap));
 
   // Get the app's UiView by restoring a null SturdyRef from it.
   capnp::MallocMessageBuilder message;
   auto hostId = message.initRoot<capnp::rpc::twoparty::VatId>();
   hostId.setSide(capnp::rpc::twoparty::Side::CLIENT);
-  MainView<>::Client app = server.bootstrap(hostId).castAs<MainView<>>();
+  MainView<>::Client app = capnp::membrane(server.bootstrap(hostId).castAs<MainView<>>(), kj::refcounted<GrainSavePolicy>(coreCap));
 
   // Set up the external RPC interface, re-exporting the UiView.
   // TODO(someday):  If there are multiple front-ends, or the front-ends restart a lot, we'll

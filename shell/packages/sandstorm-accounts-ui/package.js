@@ -12,9 +12,6 @@ Package.onUse(function (api) {
   // Allow us to call Accounts.oauth.serviceNames, if there are any OAuth
   // services.
   api.use('sandstorm-accounts-oauth', {weak: true});
-  // Allow us to directly test if accounts-password (which doesn't use
-  // Accounts.oauth.registerService) exists.
-  api.use('accounts-password', {weak: true});
 
   api.use('less', 'client');
 
@@ -24,20 +21,10 @@ Package.onUse(function (api) {
     'accounts_ui.js',
 
     'login_buttons.html',
-    'login_buttons_single.html',
-    'login_buttons_dropdown.html',
     'login_buttons_dialogs.html',
 
     'login_buttons_session.js',
 
     'login_buttons.js',
-    'login_buttons_single.js',
-    'login_buttons_dropdown.js',
     'login_buttons_dialogs.js'], 'client');
-});
-
-Package.onTest(function (api) {
-  api.use('sandstorm-accounts-ui');
-  api.use('tinytest');
-  api.addFiles('accounts_ui_tests.js', 'client');
 });

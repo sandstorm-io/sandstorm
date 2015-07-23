@@ -1,20 +1,9 @@
 var VALID_KEYS = [
   'dropdownVisible',
-
-  // XXX consider replacing these with one key that has an enum for values.
   'inSignupFlow',
-  'inForgotPasswordFlow',
-  'inChangePasswordFlow',
-  'inMessageOnlyFlow',
 
   'errorMessage',
   'infoMessage',
-
-  // dialogs with messages (info and error)
-  'resetPasswordToken',
-  'enrollAccountToken',
-  'justVerifiedEmail',
-  'justResetPassword',
 
   'configureLoginServiceDialogVisible',
   'configureLoginServiceDialogServiceName',
@@ -29,10 +18,7 @@ var validateKey = function (key) {
 
 var KEY_PREFIX = "Meteor.loginButtons.";
 
-// XXX This should probably be package scope rather than exported
-// (there was even a comment to that effect here from before we had
-// namespacing) but accounts-ui-viewer uses it, so leave it as is for
-// now
+// TODO(now): Don't put this under `Accounts`.
 Accounts._loginButtonsSession = {
   set: function(key, value) {
     validateKey(key);
@@ -52,11 +38,8 @@ Accounts._loginButtonsSession = {
   },
 
   closeDropdown: function () {
-    this.set('inForgotPasswordFlow', false);
-    this.set('inChangePasswordFlow', false);
-    this.set('inMessageOnlyFlow', false);
-    this.set('dropdownVisible', false);
     this.resetMessages();
+    // TODO(now): Close the popup
   },
 
   infoMessage: function(message) {
@@ -71,24 +54,8 @@ Accounts._loginButtonsSession = {
     this.ensureMessageVisible();
   },
 
-  // is there a visible dialog that shows messages (info and error)
-  isMessageDialogVisible: function () {
-    return this.get('resetPasswordToken') ||
-      this.get('enrollAccountToken') ||
-      this.get('justVerifiedEmail');
-  },
-
-  // ensure that somethings displaying a message (info or error) is
-  // visible.  if a dialog with messages is open, do nothing;
-  // otherwise open the dropdown.
-  //
-  // notably this doesn't matter when only displaying a single login
-  // button since then we have an explicit message dialog
-  // (_loginButtonsMessageDialog), and dropdownVisible is ignored in
-  // this case.
   ensureMessageVisible: function () {
-    if (!this.isMessageDialogVisible())
-      this.set("dropdownVisible", true);
+    // TODO(now): Force open popup.
   },
 
   resetMessages: function () {
@@ -97,12 +64,8 @@ Accounts._loginButtonsSession = {
   },
 
   configureService: function (name) {
-    if (Meteor.isCordova) {
-      this.set('configureOnDesktopVisible', true);
-    } else {
-      this.set('configureLoginServiceDialogVisible', true);
-      this.set('configureLoginServiceDialogServiceName', name);
-      this.set('configureLoginServiceDialogSaveDisabled', true);
-    }
+    this.set('configureLoginServiceDialogVisible', true);
+    this.set('configureLoginServiceDialogServiceName', name);
+    this.set('configureLoginServiceDialogSaveDisabled', true);
   }
 };

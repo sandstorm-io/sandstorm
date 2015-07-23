@@ -1,24 +1,17 @@
 // for convenience
 var loginButtonsSession = Accounts._loginButtonsSession;
 
-// shared between dropdown and single mode
 Template.loginButtonsPopup.events({
-  'click #login-buttons-logout': function() {
+  'click button.login.logout': function() {
+    var topbar = Template.parentData(3);
     Meteor.logout(function () {
       loginButtonsSession.closeDropdown();
+      topbar.closePopup();
     });
   }
 });
 
-Template.registerHelper('loginButtons', function () {
-  throw new Error("Use {{> loginButtons}} instead of {{loginButtons}}");
-});
-
-//
-// helpers
-//
-
-displayName = function () {
+var displayName = function () {
   var user = Meteor.user();
   if (!user)
     return '';
@@ -44,7 +37,7 @@ Template.loginButtons.helpers({
 // don't cache the output of this function: if called during startup (before
 // oauth packages load) it might not include them all.
 //
-// NOTE: It is very important to have this return password last
+// NOTE: It is very important to have this return email token last
 // because of the way we render the different providers in
 // login_buttons_dropdown.html
 getLoginServices = function () {
@@ -59,7 +52,7 @@ getLoginServices = function () {
   // configurable?)
   services.sort();
 
-  // Add password, if it's there; it must come last.
+  // Add email token, if it's there; it must come last.
   if (hasEmailTokenService())
     services.push('emailToken');
 
@@ -71,88 +64,6 @@ getLoginServices = function () {
 hasEmailTokenService = function () {
   return Accounts.emailToken && Accounts.emailToken.isEnabled();
 };
-
-dropdown = function () {
-  return hasEmailTokenService() || getLoginServices().length > 1;
-};
-
-// XXX improve these. should this be in accounts-password instead?
-//
-// XXX these will become configurable, and will be validated on
-// the server as well.
-validateUsername = function (username) {
-  if (username.length >= 3) {
-    return true;
-  } else {
-    loginButtonsSession.errorMessage("Username must be at least 3 characters long");
-    return false;
-  }
-};
-validateEmail = function (email) {
-  if (passwordSignupFields() === "USERNAME_AND_OPTIONAL_EMAIL" && email === '')
-    return true;
-
-  if (email.indexOf('@') !== -1) {
-    return true;
-  } else {
-    loginButtonsSession.errorMessage("Invalid email");
-    return false;
-  }
-};
-validatePassword = function (password) {
-  if (password.length >= 6) {
-    return true;
-  } else {
-    loginButtonsSession.errorMessage("Password must be at least 6 characters long");
-    return false;
-  }
-};
-
-//
-// loginButtonLoggedOut template
-//
-
-Template._loginButtonsLoggedOut.helpers({
-  dropdown: dropdown,
-  services: getLoginServices,
-  singleService: function () {
-    var services = getLoginServices();
-    if (services.length !== 1)
-      throw new Error(
-        "Shouldn't be rendering this template with more than one configured service");
-    return services[0];
-  },
-  configurationLoaded: function () {
-    return Accounts.loginServicesConfigured();
-  }
-});
-
-
-//
-// loginButtonsLoggedIn template
-//
-
-  // decide whether we should show a dropdown rather than a row of
-  // buttons
-Template._loginButtonsLoggedIn.helpers({
-  dropdown: dropdown
-});
-
-
-
-//
-// loginButtonsLoggedInSingleLogoutButton template
-//
-
-Template._loginButtonsLoggedInSingleLogoutButton.helpers({
-  displayName: displayName
-});
-
-
-
-//
-// loginButtonsMessage template
-//
 
 Template._loginButtonsMessages.helpers({
   errorMessage: function () {
@@ -166,11 +77,138 @@ Template._loginButtonsMessages.helpers({
   }
 });
 
+var loginResultCallback = function (serviceName, err, topbar) {
+  if (!err) {
+    loginButtonsSession.closeDropdown();
+    if (topbar) topbar.closePopup();
+  } else if (err instanceof Accounts.LoginCancelledError) {
+    // do nothing
+  } else if (err instanceof ServiceConfiguration.ConfigError) {
+    Router.go("admin");
+  } else {
+    loginButtonsSession.errorMessage(err.reason || "Unknown error");
+  }
+};
 
+// In the login redirect flow, we'll have the result of the login
+// attempt at page load time when we're redirected back to the
+// application.  Register a callback to update the UI (i.e. to close
+// the dialog on a successful login or display the error on a failed
+// login).
 //
-// loginButtonsLoggingInPadding template
-//
+Accounts.onPageLoadLogin(function (attemptInfo) {
+  // Ignore if we have a left over login attempt for a service that is no longer registered.
+  if (_.contains(_.pluck(getLoginServices(), "name"), attemptInfo.type))
+    loginResultCallback(attemptInfo.type, attemptInfo.error);
+});
 
-Template._loginButtonsLoggingInPadding.helpers({
-  dropdown: dropdown
+// XXX from http://epeli.github.com/underscore.string/lib/underscore.string.js
+var capitalize = function(str){
+  str = str == null ? '' : String(str);
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+Template._loginButtonsLoggedInDropdown.helpers({
+  displayName: displayName,
+});
+
+var sendEmail = function (email) {
+  loginButtonsSession.infoMessage("Sending email...");
+  Accounts.createAndEmailTokenForUser(email, function(err) {
+    if (err) {
+      loginButtonsSession.errorMessage(err.reason || "Unknown error");
+      if (err.error === 409) {
+        // 409 is a special case where the user can resolve the problem on their own.
+        // Specifically, we're using 409 to mean that the email wasn't sent because a rate limit
+        // was hit.
+        loginButtonsSession.set("inSignupFlow", true);
+      }
+    } else {
+      document.getElementById("login-email").value = email;
+      loginButtonsSession.set("inSignupFlow", true);
+      loginButtonsSession.infoMessage("Email sent");
+    }
+  });
+};
+
+var loginWithToken = function (email, token, topbar) {
+  loginButtonsSession.infoMessage("Logging in...");
+  Meteor.loginWithEmailToken(email, token, function (err) {
+    if (err) {
+      loginButtonsSession.errorMessage(err.reason || "Unknown error");
+    } else {
+      loginButtonsSession.set("inSignupFlow", false);
+      loginButtonsSession.closeDropdown();
+      topbar.closePopup();
+    }
+  });
+};
+
+Template._loginButtonsLoggedOutDropdown.events({
+  "click button.login.oneclick": function () {
+    var topbar = Template.parentData(3);
+
+    var serviceName = this.name;
+    loginButtonsSession.resetMessages();
+
+    // XXX Service providers should be able to specify their
+    // `Meteor.loginWithX` method name.
+    var loginWithService = Meteor["loginWith" +
+                                  (serviceName === 'meteor-developer' ?
+                                   'MeteorDeveloperAccount' :
+                                   capitalize(serviceName))];
+
+    loginWithService({}, function (err) {
+      loginResultCallback(serviceName, err, topbar);
+    });
+  },
+
+  "submit form": function (event) {
+    event.preventDefault();
+    var form = event.currentTarget;
+    if (loginButtonsSession.get("inSignupFlow")) {
+      loginWithToken(form.email.value, form.token.value, Template.parentData(3));
+    } else {
+      sendEmail(form.email.value);
+    }
+  }
+});
+
+Template._loginButtonsLoggedOutDropdown.helpers({
+  configured: function () {
+    return !!ServiceConfiguration.configurations.findOne({service: this.name}) ||
+           Accounts.ui._options.services[this.name];
+  },
+
+  capitalizedName: function () {
+    var text = Accounts.ui._options.services[this.name];
+    if (text) return text;
+
+    if (this.name === 'github')
+      // XXX we should allow service packages to set their capitalized name
+      return 'GitHub';
+    else if (this.name === 'meteor-developer')
+      return 'Meteor';
+    else
+      return capitalize(this.name);
+  },
+
+  services: getLoginServices,
+
+  isEmailTokenService: function () {
+    return this.name === 'emailToken';
+  },
+
+  hasOtherServices: function () {
+    return getLoginServices().length > 1;
+  },
+
+  showTroubleshooting: function () {
+    return !(Meteor.settings && Meteor.settings.public &&
+      Meteor.settings.public.hideTroubleshooting);
+  },
+
+  awaitingToken: function () {
+    return loginButtonsSession.get('inSignupFlow');
+  },
 });

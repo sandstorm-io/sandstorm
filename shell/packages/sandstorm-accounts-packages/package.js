@@ -13,9 +13,6 @@ Package.onUse(function (api) {
   api.use("google", ["client", "server"]);
   api.use("github", ["client", "server"]);
 
-  api.addFiles("google_login_button.css", "client");
-  api.addFiles("github_login_button.css", "client");
-
   api.addFiles("accounts.js", ["client", "server"]);
 });
 

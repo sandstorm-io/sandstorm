@@ -1,5 +1,5 @@
 <template name="loginButtons">
-  <a class="login-link-text" id="login-name-link">
+  <a>
     {{#if currentUser}}
       {{#if loggingIn}}
         {{! We aren't actually logged in yet; we're just setting Meteor.userId
@@ -32,17 +32,6 @@
   {{/if}}
 </template>
 
-<template name="_loginButtonsLoggedIn">
-  {{> _loginButtonsLoggedInDropdown}}
-</template>
-
-<template name="_loginButtonsLoggedOut">
-  {{#if configurationLoaded}}
-    {{> _loginButtonsLoggedOutDropdown}}
-  {{/if}}
-</template>
-
-<!-- used in various places to display messages to user -->
 <template name="_loginButtonsMessages">
   {{#if errorMessage}}
     <div class="message error-message">{{errorMessage}}</div>
@@ -52,13 +41,59 @@
   {{/if}}
 </template>
 
-<template name="_loginButtonsLoggingIn">
-  {{> _loginButtonsLoggingInPadding}}
-  <div class="loading">&nbsp;</div>
-  {{> _loginButtonsLoggingInPadding}}
+<template name="_loginButtonsLoggedInDropdown">
+  <h4>Account</h4>
+
+  <button class="login logout">
+    Sign out
+  </button>
+
+  {{> _loginButtonsMessages}}
 </template>
 
-<template name="_loginButtonsLoggingInPadding">
-  {{! just add some padding }}
-  <div class="login-buttons-padding"></div>
+<template name="_loginButtonsLoggedOutDropdown">
+  <h4>Sign in</h4>
+
+  {{#each services}}
+    {{#if isEmailTokenService}}
+      {{#if hasOtherServices}} {{! the email token service will always come last }}
+        {{> _loginButtonsSeparator}}
+      {{/if}}
+      <form class="email">
+        <label>Email <input name="email" type="email"> </label>
+
+        {{#if awaitingToken}}
+          <label>Enter authentication code from email <input name="token" type="text"></label>
+          <button class="login token">Log in</button>
+        {{else}}
+          <button class="login email">Send Login Email</button>
+        {{/if}}
+      </form>
+    {{else}}
+      <button class="login oneclick {{name}}">
+        Sign in with {{capitalizedName}}
+      </button>
+    {{/if}}
+  {{else}}
+    <p class="troubleshooting-link">
+      <a href="/admin">configure login</a>
+    </p>
+  {{/each}}
+
+  {{> _loginButtonsMessages}}
+
+  {{#if showTroubleshooting}}
+    {{> _loginButtonsSeparator}}
+    <p class="troubleshooting-link">
+      <a href="https://github.com/sandstorm-io/sandstorm/wiki/Self-hosting-FAQ">troubleshooting</a>
+    </p>
+  {{/if}}
+</template>
+
+<template name="_loginButtonsSeparator">
+  <div class="or">
+    <span class="hline">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+    <span class="or-text">or</span>
+    <span class="hline">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+  </div>
 </template>

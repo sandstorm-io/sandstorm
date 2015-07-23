@@ -43,9 +43,9 @@ if (allowDevAccounts) {
   }
 
   if (Meteor.isClient) {
-    Meteor.loginWithDevAccounts = function () {
+    Meteor.loginWithDevAccounts = function (options, callback) {
       Router.go("devAccounts");
-      Accounts._loginButtonsSession.closeDropdown();
+      callback();
     };
     Accounts.ui.registerService("devAccounts", "a Dev Account");
 

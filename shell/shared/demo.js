@@ -164,9 +164,9 @@ if (Meteor.isServer) {
 }
 
 if (Meteor.isClient && allowDemo) {
-  Meteor.loginWithDemo = function () {
+  Meteor.loginWithDemo = function (options, callback) {
     Router.go("demo");
-    Accounts._loginButtonsSession.closeDropdown();
+    callback();
   }
   Accounts.registerService("demo");
 

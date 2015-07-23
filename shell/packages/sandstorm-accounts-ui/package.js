@@ -14,17 +14,20 @@ Package.onUse(function (api) {
   api.use('sandstorm-accounts-oauth', {weak: true});
 
   api.use('less', 'client');
+  api.use('reactive-dict', 'client');
 
   api.addFiles(['login_buttons.less'], 'client');
 
   api.addFiles([
-    'accounts_ui.js',
-
     'login_buttons.html',
     'login_buttons_dialogs.html',
 
     'login_buttons_session.js',
 
     'login_buttons.js',
-    'login_buttons_dialogs.js'], 'client');
+    'login_buttons_dialogs.js',
+
+    'accounts_ui.js'], 'client');
+
+  api.export("AccountsUi");
 });

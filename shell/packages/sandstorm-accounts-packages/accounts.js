@@ -23,13 +23,13 @@ if (Meteor.isClient) {
 
 var services = [];
 
-Accounts.registerService = function (serviceName) {
+Accounts.registerService = function (serviceName, accountsUi) {
   if (_.contains(services, serviceName)) {
     return;
   }
   services.push(serviceName);
   if (serviceName === "emailToken") {
-    Accounts.emailToken.enable();
+    Accounts.emailToken.enable(accountsUi);
   }
   else if (Meteor.isClient && (serviceName === "demo" || serviceName === "devAccounts")) {
     var serviceUserDisplay;
@@ -38,22 +38,22 @@ Accounts.registerService = function (serviceName) {
     } else {
       serviceUserDisplay = "a Dev Account";
     }
-    Accounts.ui.registerService(serviceName, serviceUserDisplay);
+    accountsUi.registerService(serviceName, serviceUserDisplay);
   } else {
     Accounts.oauth.registerService(serviceName);
   }
 };
 
-Accounts.deregisterService = function (serviceName) {
+Accounts.deregisterService = function (serviceName, accountsUi) {
   if (!_.contains(services, serviceName)) {
     return;
   }
   services = _.without(services, serviceName);
   if (serviceName === "emailToken") {
-    Accounts.emailToken.disable();
+    Accounts.emailToken.disable(accountsUi);
   }
   else if (Meteor.isClient && (serviceName === "demo" || serviceName === "devAccounts")) {
-    Accounts.ui.deregisterService(serviceName);
+    accountsUi.deregisterService(serviceName);
   } else {
     Accounts.oauth.deregisterService(serviceName);
   }

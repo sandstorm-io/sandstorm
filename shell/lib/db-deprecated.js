@@ -57,3 +57,24 @@ roleAssignmentPattern = db.roleAssignmentPattern;
 if (Meteor.isServer) {
   getWildcardOrigin = db.getWildcardOrigin.bind(db);
 }
+
+if (Meteor.isClient) {
+  globalTopbar = new SandstormTopbar({
+    get: function () {
+      return Session.get("topbar-expanded");
+    },
+
+    set: function (value) {
+      Session.set("topbar-expanded", value);
+    }
+  });
+
+  globalAccountsUi = new AccountsUi();
+
+  Template.registerHelper("globalTopbar", function() { return globalTopbar; });
+  Template.registerHelper("globalAccountsUi", function() { return globalAccountsUi; });
+} else {
+  // TODO(cleanup): Refactor accounts registration stuff so that this doesn't need to be defined
+  //   at all on the server.
+  globalAccountsUi = null;
+}

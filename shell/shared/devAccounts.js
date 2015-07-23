@@ -47,7 +47,7 @@ if (allowDevAccounts) {
       Router.go("devAccounts");
       callback();
     };
-    Accounts.ui.registerService("devAccounts", "a Dev Account");
+    globalAccountsUi.registerService("devAccounts", "a Dev Account");
 
     loginDevAccount = function(displayName, isAdmin) {
       Accounts.callLoginMethod({

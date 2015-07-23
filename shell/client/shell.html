@@ -32,7 +32,7 @@ limitations under the License.
   {{#sandstormTopbarItem name="homelink" topbar=globalTopbar}}
     <a href="/" id="homelink" class="navlink">Sandstorm</a>
   {{/sandstormTopbarItem}}
-  {{>sandstormTopbarItem name="account" topbar=globalTopbar
+  {{>sandstormTopbarItem name="account" topbar=globalTopbar data=globalAccountsUi
                          template="loginButtons" popupTemplate="loginButtonsPopup"}}
   {{#if currentUser}}
     {{>sandstormTopbarItem name="notifications" topbar=globalTopbar

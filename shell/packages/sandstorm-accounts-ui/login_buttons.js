@@ -177,11 +177,11 @@ Template._loginButtonsLoggedOutDropdown.events({
 Template._loginButtonsLoggedOutDropdown.helpers({
   configured: function () {
     return !!ServiceConfiguration.configurations.findOne({service: this.name}) ||
-           Accounts.ui._options.services[this.name];
+           Template.instance().data._services.get(this.name);
   },
 
   capitalizedName: function () {
-    var text = Accounts.ui._options.services[this.name];
+    var text = Template.instance().data._services.get(this.name);
     if (text) return text;
 
     if (this.name === 'github')

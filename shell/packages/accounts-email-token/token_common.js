@@ -9,17 +9,17 @@ Accounts.emailToken._hashToken = function (token) {
 
 var enabled = false;
 
-Accounts.emailToken.enable = function () {
+Accounts.emailToken.enable = function (accountsUi) {
   enabled = true;
   if (Meteor.isClient) {
-    Accounts.ui.registerService("emailToken", "an Email + Token");
+    accountsUi.registerService("emailToken", "an Email + Token");
   }
 };
 
-Accounts.emailToken.disable = function () {
+Accounts.emailToken.disable = function (accountsUi) {
   enabled = false;
   if (Meteor.isClient) {
-    Accounts.ui.deregisterService("emailToken");
+    accountsUi.deregisterService("emailToken");
   }
 };
 

@@ -1,4 +1,6 @@
 <template name="loginButtons">
+  {{!-- Data context is an instance of AccountsUi. --}}
+
   <a>
     {{#if currentUser}}
       {{#if loggingIn}}
@@ -17,6 +19,8 @@
 </template>
 
 <template name="loginButtonsPopup">
+  {{!-- Data context is an instance of AccountsUi. --}}
+
   {{#if currentUser}}
     {{#if loggingIn}}
       {{! We aren't actually logged in yet; we're just setting Meteor.userId
@@ -85,7 +89,7 @@
   {{#if showTroubleshooting}}
     {{> _loginButtonsSeparator}}
     <p class="troubleshooting-link">
-      <a href="https://github.com/sandstorm-io/sandstorm/wiki/Self-hosting-FAQ">troubleshooting</a>
+      <a href="https://docs.sandstorm.io/en/latest/administering/faq/" target="_blank">troubleshooting</a>
     </p>
   {{/if}}
 </template>

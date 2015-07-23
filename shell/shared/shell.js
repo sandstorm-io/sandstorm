@@ -17,20 +17,6 @@
 // This file implements the common shell components such as the top bar.
 // It also covers the root page.
 
-if (Meteor.isClient) {
-  globalTopbar = new SandstormTopbar({
-    get: function () {
-      return Session.get("topbar-expanded");
-    },
-
-    set: function (value) {
-      Session.set("topbar-expanded", value);
-    }
-  });
-
-  Template.registerHelper("globalTopbar", function() { return globalTopbar; });
-}
-
 browseHome = function() {
   Router.go("root");
 }

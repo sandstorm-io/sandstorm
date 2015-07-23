@@ -131,9 +131,9 @@ if (Meteor.isClient) {
       Tracker.autorun(function () {
         var setting = Settings.findOne({_id: loginProvider});
         if (setting && setting.value) {
-          Accounts.registerService(loginProvider);
+          Accounts.registerService(loginProvider, globalAccountsUi);
         } else {
-          Accounts.deregisterService(loginProvider);
+          Accounts.deregisterService(loginProvider, globalAccountsUi);
         }
       });
     });
@@ -765,7 +765,7 @@ if (Meteor.isServer) {
   var registerServiceOnStartup = function (serviceName) {
     var setting = Settings.findOne({_id: serviceName});
     if (setting && setting.value) {
-      Accounts.registerService(serviceName);
+      Accounts.registerService(serviceName, globalAccountsUi);
     }
   };
 
@@ -807,9 +807,9 @@ if (Meteor.isServer) {
       }
       Settings.upsert({_id: serviceName}, {$set: {value: value}});
       if (value) {
-        Accounts.registerService(serviceName);
+        Accounts.registerService(serviceName, globalAccountsUi);
       } else {
-        Accounts.deregisterService(serviceName);
+        Accounts.deregisterService(serviceName, globalAccountsUi);
       }
     },
     setSetting: function (token, name, value) {

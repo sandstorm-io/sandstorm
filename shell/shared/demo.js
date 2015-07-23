@@ -168,7 +168,7 @@ if (Meteor.isClient && allowDemo) {
     Router.go("demo");
     callback();
   }
-  Accounts.registerService("demo");
+  Accounts.registerService("demo", globalAccountsUi);
 
   Template.demo.events({
     "click #createDemoUser": function (event) {

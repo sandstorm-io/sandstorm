@@ -569,6 +569,7 @@ if (Meteor.isClient) {
       Session.set("showMenu", false);
     },
     "click .applist-tab-settings": function (event) {
+      event.preventDefault();
       Router.go("adminSettings", {});
       Session.set("showMenu", false);
     },
@@ -581,6 +582,7 @@ if (Meteor.isClient) {
       Session.set("showMenu", false);
     },
     "click .applist-tab-about": function (event) {
+      event.preventDefault();
       Router.go("about", {});
       Session.set("showMenu", false);
     },

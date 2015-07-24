@@ -154,19 +154,19 @@ limitations under the License.
       <div id="applist-apps" data-show="{{showMenu}}">
         <ul>
          {{#if isSignedUpOrDemo}}
-           <li class="applist-tab-my-files {{#if selectedTab.myFiles}}selected{{/if}}">My Files</li>
+           <li class="applist-tab-my-files {{#if selectedTab.myFiles}}selected{{/if}}"><a href="#">My Files</a></li>
          {{/if}}
          <li class="applist-tab-shared-with-me {{#if selectedTab.sharedWithMe}}selected{{/if}}">
-            Shared With Me</li>
+            <a href="#">Shared With Me</a></li>
           {{#each apps}}
             <li class="applist-tab {{appTabClass appId}} {{#if isDev}}dev{{/if}}"
-                data-appid="{{appId}}">{{name}}</li>
+                data-appid="{{appId}}"><a href="#">{{name}}</a></li>
           {{/each}}
           <li class="blank">&nbsp;</li>
           {{#if isAdmin}}
-            <li class="applist-tab-settings">Admin Settings</li>
+            <li class="applist-tab-settings"><a href="#">Admin Settings</a></li>
           {{/if}}
-          <li class="applist-tab-about">About Sandstorm</li>
+          <li class="applist-tab-about"><a href="#">About Sandstorm</a></li>
         </ul>
       </div>
       <div id="applist-grains" class="{{#if selectedAppIsDev}}dev{{/if}}">

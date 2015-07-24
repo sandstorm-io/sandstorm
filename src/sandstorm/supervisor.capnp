@@ -16,7 +16,7 @@
 
 @0xc7205d6d32c7b040;
 # This file contains interfaces defining communication between a Sandstorm grain supervisor and
-# other components of the sysetm. These interfaces are NOT used by Sandstorm applications.
+# other components of the system. These interfaces are NOT used by Sandstorm applications.
 
 $import "/capnp/c++.capnp".namespace("sandstorm");
 

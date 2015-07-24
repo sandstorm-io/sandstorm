@@ -268,7 +268,7 @@ SandstormTopbar.prototype.addItem = function (item) {
     //
     // Note that Sandstorm's stylesheet makes some items float: right. Of the items floating
     // right, the highest-priority will be *rightmost*. Essentially, higher-priority items tend
-    // towards the outsides of the top bar while lower-priority items going inside of them.,
+    // towards the outsides of the top bar with lower-priority items going inside of them.
 
     onDismiss: Match.Optional(Function),
     // Specifies a function to call when the popup is dismissed by clicking outside of the popup

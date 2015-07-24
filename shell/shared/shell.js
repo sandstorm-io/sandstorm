@@ -591,6 +591,7 @@ if (Meteor.isClient) {
     },
 
     "click #applist-grains tbody tr.grain": function (event) {
+      event.preventDefault();
       Router.go("grain", {grainId: event.currentTarget.getAttribute("data-grainid")});
     },
 

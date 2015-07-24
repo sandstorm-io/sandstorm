@@ -263,7 +263,7 @@ struct Metadata {
     # Text of the app's license.
 
     notices @6 :Util.LocalizedText;
-    # Contains any third-party copyright notices that the app is required to display, for exmaple
+    # Contains any third-party copyright notices that the app is required to display, for example
     # due to use of third-party open source libraries.
 
     isOpenSource @7 :Bool;

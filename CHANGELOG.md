@@ -1,3 +1,7 @@
+### v0.101 (2015-07-25)
+- Refactored CSS styling and accounts drop-down code. Please be on the lookout for bugs.
+- Fixed bug where the admin settings page would simply say "Loading..." forever if the user was not authorized.
+
 ### v0.100 (2015-07-22)
 - Fix inability to configure Google/Github login accidentally introduced in v0.97 during security tightening.
 - Add missing changelog for 0.99.

@@ -74,9 +74,9 @@ git push origin "$TAG_NAME"
 echo "**** Pushing build $BUILD ****"
 
 echo $BUILD > tmp/$CHANNEL
-gcutil push fe $TARBALL /var/www/dl.sandstorm.io
-gcutil push fe tmp/$CHANNEL /var/www/install.sandstorm.io
-gcutil push fe install.sh /var/www/install.sandstorm.io
+gce-ss copy-files $TARBALL fe:/var/www/dl.sandstorm.io
+gce-ss copy-files tmp/$CHANNEL fe:/var/www/install.sandstorm.io
+gce-ss copy-files install.sh fe:/var/www/install.sandstorm.io
 
-gcutil ssh smalldemo sudo service sandstorm update
-gcutil ssh alpha sudo service sandstorm update dev
+gce-ss ssh smalldemo --command 'sudo service sandstorm update'
+gce-ss ssh alpha --command 'sudo service sandstorm update dev'

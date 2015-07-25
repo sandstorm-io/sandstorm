@@ -126,7 +126,7 @@ limitations under the License.
 
   {{#if isAdmin}}
     {{#sandstormTopbarItem name="admin" topbar=globalTopbar}}
-      <a href="/admin" class="navlink">Admin Settings</a>
+      <a href="{{pathFor route="adminSettings"}}" class="navlink">Admin Settings</a>
     {{/sandstormTopbarItem}}
   {{/if}}
   {{#sandstormTopbarItem name="about" topbar=globalTopbar}}
@@ -812,7 +812,7 @@ limitations under the License.
       {{#if isUserPermitted}}
         <ul id="settings-tabs" class="nav centered-box">
           <li id="settings-tab" class="{{#if settingsActive}}active{{/if}}">
-            {{#linkTo route="admin" data=getToken}}Settings{{/linkTo}}
+            {{#linkTo route="adminSettings" data=getToken}}Settings{{/linkTo}}
           </li>
           <li id="users-tab" class="{{#if usersActive}}active{{/if}}">
             {{#linkTo route="adminUsers" data=getToken}}Users{{/linkTo}}

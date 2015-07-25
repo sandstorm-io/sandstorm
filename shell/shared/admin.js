@@ -23,7 +23,6 @@ DEFAULT_SPLASH_DIALOG = "Contact the server admin for an invite " +
 DEFAULT_SIGNUP_DIALOG = "You've been invited to join this Sandstorm server!";
 
 var adminRoute = RouteController.extend({
-  settingsTab: "adminSettings",
   template: "admin",
   waitOn: function () {
     var subs = [
@@ -53,60 +52,41 @@ var adminRoute = RouteController.extend({
     });
     resetResult(state);
     state.set("configurationServiceName", null);
-    state.set("settingsTab", this.settingsTab);
     state.set("token", this.params._token);
     this.render();
   }
 });
 
-var adminUsersRoute = adminRoute.extend({
-  settingsTab: "adminUsers"
-});
-
-var adminStatsRoute = adminRoute.extend({
-  settingsTab: "adminStats"
-});
-
-var adminLogRoute = adminRoute.extend({
-  settingsTab: "adminLog"
-});
-
-var adminInvitesRoute = adminRoute.extend({
-  settingsTab: "adminInvites"
-});
-
-var adminCapsRoute = adminRoute.extend({
-  settingsTab: "adminCaps"
-});
-
 Router.map(function () {
-  this.route("admin", {
+  this.route("adminSettings", {
     path: "/admin/settings/:_token?",
     controller: adminRoute
   });
   this.route("adminUsers", {
     path: "/admin/users/:_token?",
-    controller: adminUsersRoute
+    controller: adminRoute
   });
   this.route("adminStats", {
     path: "/admin/stats/:_token?",
-    controller: adminStatsRoute
+    controller: adminRoute
   });
   this.route("adminLog", {
     path: "/admin/log/:_token?",
-    controller: adminLogRoute
+    controller: adminRoute
   });
   this.route("adminInvites", {
     path: "/admin/invites/:_token?",
-    controller: adminInvitesRoute
+    controller: adminRoute
   });
   this.route("adminCaps", {
     path: "/admin/capabilities/:_token?",
-    controller: adminCapsRoute
+    controller: adminRoute
   });
   this.route("adminOld", {
     path: "/admin/:_token?",
-    controller: adminRoute
+    action: function () {
+      this.redirect("adminSettings", this.params)
+    }
   });
 });
 
@@ -151,8 +131,7 @@ if (Meteor.isClient) {
 
   Template.admin.helpers({
     adminTab: function () {
-      var state = Iron.controller().state;
-      return state.get("settingsTab");
+      return Router.current().route.getName();
     },
     success: function () {
       var state = Iron.controller().state;
@@ -171,22 +150,22 @@ if (Meteor.isClient) {
       return Iron.controller().state.get("successMessage");
     },
     settingsActive: function () {
-      return Iron.controller().state.get("settingsTab") == "adminSettings";
+      return Router.current().route.getName() == "adminSettings";
     },
     usersActive: function () {
-      return Iron.controller().state.get("settingsTab") == "adminUsers";
+      return Router.current().route.getName() == "adminUsers";
     },
     invitesActive: function () {
-      return Iron.controller().state.get("settingsTab") == "adminInvites";
+      return Router.current().route.getName() == "adminInvites";
     },
     statsActive: function () {
-      return Iron.controller().state.get("settingsTab") == "adminStats";
+      return Router.current().route.getName() == "adminStats";
     },
     logActive: function () {
-      return Iron.controller().state.get("settingsTab") == "adminLog";
+      return Router.current().route.getName() == "adminLog";
     },
     capsActive: function () {
-      return Iron.controller().state.get("settingsTab") == "adminCaps";
+      return Router.current().route.getName() == "adminCaps";
     },
     getToken: getToken
   });
@@ -992,18 +971,16 @@ if (Meteor.isServer) {
   });
 
   var checkAuthForPublish = function (token, userId) {
-    check(token, Match.OneOf(undefined, null, String));
-    if (!(userId && isAdminById(userId)) && !tokenIsValid(token)) {
-      throw new Meteor.Error(403, "User must be admin or provide a valid token");
-    }
+    return Match.test(token, Match.OneOf(undefined, null, String)) &&
+           ((userId && isAdminById(userId)) || tokenIsValid(token));
   };
   Meteor.publish("admin", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
     return Settings.find();
   });
 
   Meteor.publish("adminServiceConfiguration", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
     return Package['service-configuration'].ServiceConfiguration.configurations.find();
   });
 
@@ -1018,21 +995,21 @@ if (Meteor.isServer) {
   });
 
   Meteor.publish("allUsers", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
     return Meteor.users.find();
   });
   Meteor.publish("activityStats", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
     return ActivityStats.find();
   });
 
   Meteor.publish("statsTokens", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
     return StatsTokens.find();
   });
 
   Meteor.publish("realTimeStats", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
 
     // Last five minutes.
     this.added("realTimeStats", "now", computeStats(new Date(Date.now() - 5*60*1000)));
@@ -1047,7 +1024,7 @@ if (Meteor.isServer) {
     this.ready();
   });
   Meteor.publish("adminLog", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
 
     var logfile = SANDSTORM_LOGDIR + "/sandstorm.log";
 
@@ -1084,7 +1061,7 @@ if (Meteor.isServer) {
     this.ready();
   });
   Meteor.publish("adminApiTokens", function (token) {
-    checkAuthForPublish(token, this.userId);
+    if (!checkAuthForPublish(token, this.userId)) return [];
     return ApiTokens.find({$or: [{"frontendRef.ipNetwork": {$exists: true}},
                                  {"frontendRef.ipInterface": {$exists: true}}]},
                           {fields: {frontendRef: 1, created: 1, requirements: 1, revoked: 1}});

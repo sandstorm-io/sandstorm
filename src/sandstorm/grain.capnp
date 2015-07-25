@@ -30,7 +30,7 @@ using Util = import "util.capnp";
 # "offer".
 #
 # In "request" mode, an app initiates the powerbox by requesting to receive a capability matching
-# some particluar criteria using `SessionContext.request()` (or though the client-side
+# some particular criteria using `SessionContext.request()` (or through the client-side
 # postMessage() API, described in the documentation for `SessionContext.request()`). The user is
 # presented with a list of other grains of theirs which might be able to fulfill this request and
 # asked to choose one. Other grains initially register their ability to answer certain requests
@@ -348,10 +348,9 @@ interface UiView {
   # It is possible for a grain to export additional views via the usual powerbox mechanisms.  For
   # instance, a spreadsheet app might let the user create a "view" of a few cells of the
   # spreadsheet, allowing them to share those cells to another user without sharing the entire
-  # sheet.  To accomplish this, the app would create an alternate UserInterface object that
-  # implements an interface just to those cells, and then would use `UiSession.offer()` to offer
-  # this object to the user.  The user could then choose to open it, share it, save it for later,
-  # etc.
+  # sheet.  To accomplish this, the app would create an alternate UiView object that implements
+  # an interface just to those cells, and then would use `UiSession.offer()` to offer this object
+  # to the user.  The user could then choose to open it, share it, save it for later, etc.
 
   getViewInfo @0 () -> ViewInfo;
   # Get metadata about the view, especially relating to sharing.
@@ -605,7 +604,7 @@ interface SessionContext {
   # postMessage api to get a token, and then restore that token with SandstormApi.restore().
   #
   # The postMessage api is an rpc interface so you will have to listen for a `message` callback
-  # after sending a postMessage. The postMessage object should have the folliwng form:
+  # after sending a postMessage. The postMessage object should have the following form:
   #
   # powerboxRequest:
   #   rpcId: A unique string that should identify this rpc message to the app. You will receive this

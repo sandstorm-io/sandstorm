@@ -47,6 +47,17 @@ fi
 
 BASE_BUILD=$(( BRANCH_NUMBER * 1000 ))
 BUILD=$(( BASE_BUILD > LAST_BUILD ? BASE_BUILD : LAST_BUILD + 1 ))
+BUILD_MINOR="$(( $BUILD % 1000 ))"
+DISPLAY_VERSION="${BRANCH_NUMBER}.${BUILD_MINOR}"
+TAG_NAME="v${DISPLAY_VERSION}"
+
+# Verify that the changelog has been updated.
+EXPECTED_CHANGELOG="### $TAG_NAME ($(date '+%Y-%m-%d'))"
+if [ "$(head -n 1 CHANGELOG.md)" != "$EXPECTED_CHANGELOG" ]; then
+  echo "Changelog not updated. First line should be:" >&2
+  echo "$EXPECTED_CHANGELOG" >&2
+  exit 1
+fi
 
 # The tarball stores the version number as an integer, e.g. 75 for
 # build 75 within branch 0, or 2121 for build 121 within branch 2, so
@@ -64,9 +75,6 @@ echo "**** Tagging this commit ****"
 # number, like 0.75 for build 75 within branch 0, or 2.121 for build
 # 121 within branch 2.
 
-BUILD_MINOR="$(( $BUILD % 1000 ))"
-DISPLAY_VERSION="${BRANCH_NUMBER}.${BUILD_MINOR}"
-TAG_NAME="v${DISPLAY_VERSION}"
 GIT_REVISION="$(<bundle/git-revision)"
 git tag "$TAG_NAME" "$GIT_REVISION" -m "Release Sandstorm ${DISPLAY_VERSION}"
 git push origin "$TAG_NAME"

@@ -51,6 +51,7 @@
 #include <sys/un.h>
 #include <netdb.h>
 #include <dirent.h>
+#include <arpa/inet.h>
 
 #include "version.h"
 #include "send-fd.h"
@@ -1839,6 +1840,23 @@ private:
 
   pid_t startNode(const Config& config) {
     Subprocess process([&]() -> int {
+      int sockFd;
+      KJ_SYSCALL(sockFd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP));
+      sockaddr_in sa;
+      memset(&sa, 0, sizeof sa);
+      sa.sin_family = AF_INET;
+      sa.sin_port = htons(config.port);
+      inet_pton(AF_INET, config.bindIp.cStr(), &(sa.sin_addr));
+
+      KJ_SYSCALL(bind(sockFd, (struct sockaddr *)&sa, sizeof sa));
+      KJ_SYSCALL(listen(sockFd, 511)); // 511 is what node uses as its default backlog
+      KJ_SYSCALL(fcntl(sockFd, F_SETFL, fcntl(sockFd, F_GETFL, 0) | O_NONBLOCK));
+
+      if (sockFd != 3) {
+        // dup socket to correct fd.
+        KJ_SYSCALL(dup2(sockFd, 3));
+        KJ_SYSCALL(close(sockFd));
+      }
       dropPrivs(config.uids);
       clearSignalMask();
 

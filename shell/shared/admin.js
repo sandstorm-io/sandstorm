@@ -383,7 +383,7 @@ if (Meteor.isClient) {
       } else if (services.emailToken) {
         return services.emailToken.email;
       } else {
-        return this.profile.name;
+        return this.profile && this.profile.name;
       }
     },
     userSignupNote: function () {

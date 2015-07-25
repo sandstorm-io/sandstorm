@@ -353,6 +353,11 @@ if (Meteor.isClient) {
     }
   });
 
+  var tabIndexOnlyFirst = function(selector) {
+    $(selector).attr("tabindex", "-1");
+    $(selector)[0].tabIndex = 0
+  };
+
   Template.root.events({
     "click #logo": function (event) {
       doLogoAnimation(event.shiftKey, 0);
@@ -555,6 +560,11 @@ if (Meteor.isClient) {
     }
   });
 
+  Template.root.onRendered(function() {
+    this.$("[role = menuitem]").attr("tabindex", "-1");
+    this.$("[role = menuitem]:first").attr("tabindex", "0");
+  });
+
   Template.root.events({
     "click .applist-tab": function (event) {
       Session.set("selectedTab", {appId: event.currentTarget.getAttribute("data-appid")});
@@ -705,6 +715,19 @@ if (Meteor.isClient) {
     "click .action-required button": function (event) {
       event.currentTarget.parentNode.parentNode.style.display = "none";
     },
+
+    "blur [role=menu]": function(event, template) {
+      event.preventDefault();
+      tabIndexOnlyFirst($("[role=menuitem]"));
+    },
+
+    "keydown [role=menuitem]": function(event, template) {
+      template.$("[role = menuitem]").attr("tabindex", "-1");
+      $(e.currentTarget).attr("tabindex", "0");
+      if(event.keyCode == 37 || event.keyCode == 39)
+        event.preventDefault();
+    }
+
   });
 
   Template.layout.events({

@@ -569,7 +569,7 @@ if (Meteor.isClient) {
       Session.set("showMenu", false);
     },
     "click .applist-tab-settings": function (event) {
-      Router.go("admin", {});
+      Router.go("adminSettings", {});
       Session.set("showMenu", false);
     },
     "click .applist-tab-invite": function (event) {

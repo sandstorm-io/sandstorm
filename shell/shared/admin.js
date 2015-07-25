@@ -23,7 +23,6 @@ DEFAULT_SPLASH_DIALOG = "Contact the server admin for an invite " +
 DEFAULT_SIGNUP_DIALOG = "You've been invited to join this Sandstorm server!";
 
 var adminRoute = RouteController.extend({
-  settingsTab: "adminSettings",
   template: "admin",
   waitOn: function () {
     var subs = [
@@ -53,60 +52,41 @@ var adminRoute = RouteController.extend({
     });
     resetResult(state);
     state.set("configurationServiceName", null);
-    state.set("settingsTab", this.settingsTab);
     state.set("token", this.params._token);
     this.render();
   }
 });
 
-var adminUsersRoute = adminRoute.extend({
-  settingsTab: "adminUsers"
-});
-
-var adminStatsRoute = adminRoute.extend({
-  settingsTab: "adminStats"
-});
-
-var adminLogRoute = adminRoute.extend({
-  settingsTab: "adminLog"
-});
-
-var adminInvitesRoute = adminRoute.extend({
-  settingsTab: "adminInvites"
-});
-
-var adminCapsRoute = adminRoute.extend({
-  settingsTab: "adminCaps"
-});
-
 Router.map(function () {
-  this.route("admin", {
+  this.route("adminSettings", {
     path: "/admin/settings/:_token?",
     controller: adminRoute
   });
   this.route("adminUsers", {
     path: "/admin/users/:_token?",
-    controller: adminUsersRoute
+    controller: adminRoute
   });
   this.route("adminStats", {
     path: "/admin/stats/:_token?",
-    controller: adminStatsRoute
+    controller: adminRoute
   });
   this.route("adminLog", {
     path: "/admin/log/:_token?",
-    controller: adminLogRoute
+    controller: adminRoute
   });
   this.route("adminInvites", {
     path: "/admin/invites/:_token?",
-    controller: adminInvitesRoute
+    controller: adminRoute
   });
   this.route("adminCaps", {
     path: "/admin/capabilities/:_token?",
-    controller: adminCapsRoute
+    controller: adminRoute
   });
   this.route("adminOld", {
     path: "/admin/:_token?",
-    controller: adminRoute
+    action: function () {
+      this.redirect("adminSettings", this.params)
+    }
   });
 });
 
@@ -151,8 +131,7 @@ if (Meteor.isClient) {
 
   Template.admin.helpers({
     adminTab: function () {
-      var state = Iron.controller().state;
-      return state.get("settingsTab");
+      return Router.current().route.getName();
     },
     success: function () {
       var state = Iron.controller().state;
@@ -171,22 +150,22 @@ if (Meteor.isClient) {
       return Iron.controller().state.get("successMessage");
     },
     settingsActive: function () {
-      return Iron.controller().state.get("settingsTab") == "adminSettings";
+      return Router.current().route.getName() == "adminSettings";
     },
     usersActive: function () {
-      return Iron.controller().state.get("settingsTab") == "adminUsers";
+      return Router.current().route.getName() == "adminUsers";
     },
     invitesActive: function () {
-      return Iron.controller().state.get("settingsTab") == "adminInvites";
+      return Router.current().route.getName() == "adminInvites";
     },
     statsActive: function () {
-      return Iron.controller().state.get("settingsTab") == "adminStats";
+      return Router.current().route.getName() == "adminStats";
     },
     logActive: function () {
-      return Iron.controller().state.get("settingsTab") == "adminLog";
+      return Router.current().route.getName() == "adminLog";
     },
     capsActive: function () {
-      return Iron.controller().state.get("settingsTab") == "adminCaps";
+      return Router.current().route.getName() == "adminCaps";
     },
     getToken: getToken
   });

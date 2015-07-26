@@ -561,8 +561,8 @@ if (Meteor.isClient) {
   });
 
   Template.root.onRendered(function() {
-    this.$("[role = menuitem]").attr("tabindex", "-1");
-    this.$("[role = menuitem]:first").attr("tabindex", "0");
+    tabIndexOnlyFirst("[role = menuitem]");
+    tabIndexOnlyFirst("[role = toolbar] button:visible");
   });
 
   Template.root.events({
@@ -721,13 +721,43 @@ if (Meteor.isClient) {
       tabIndexOnlyFirst($("[role=menuitem]"));
     },
 
+    "blur [role=toolbar]": function(event, template) {
+      event.preventDefault();
+      tabIndexOnlyFirst($("[role=toolbar] button:visible"));
+    },
+
     "keydown [role=menuitem]": function(event, template) {
       template.$("[role = menuitem]").attr("tabindex", "-1");
-      $(e.currentTarget).attr("tabindex", "0");
+      $(event.currentTarget).attr("tabindex", "0");
       if(event.keyCode == 37 || event.keyCode == 39)
         event.preventDefault();
-    }
+    },
 
+    "keydown [role=toolbar]": function(event, template) {
+      if(event.keyCode == 38 || event.keyCode == 40)
+        event.preventDefault();
+      var focus = $(template.find(":focus"));
+      var items = template.$("button:visible");
+      var focusIndex = items.index(focus);
+      var newFocusIndex;
+      if(event.keyCode == 37) {
+        event.preventDefault();
+        newFocusIndex = focusIndex-1;
+        if(newFocusIndex == -1)
+          newFocusIndex = items.length-1;
+      } else if(event.keyCode == 39) {
+        event.preventDefault();
+        newFocusIndex = focusIndex+1;
+        if(newFocusIndex >= items.length)
+          newFocusIndex = 0;
+      }
+      if(newFocusIndex != null) {
+        items.attr("tabindex", "-1");
+        newFocus = $(items[newFocusIndex]);
+        newFocus.attr("tabindex", "0");
+        newFocus.focus();
+      }
+    }
   });
 
   Template.layout.events({

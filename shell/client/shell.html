@@ -171,7 +171,7 @@ limitations under the License.
       </div>
       <div id="applist-grains" class="{{#if selectedAppIsDev}}dev{{/if}}">
         {{#if selectedTab.appId}}
-          <div class="button-box">
+          <div class="button-box" role="toolbar">
             <button class="show-apps">« My Apps</button>
             {{#each devActions}}
               <button class="new-grain-button" data-actionid="dev"
@@ -192,7 +192,7 @@ limitations under the License.
           </div>
         {{else}}
           {{#if selectedTab.myFiles}}
-            <div class="button-box">
+            <div class="button-box" role="toolbar">
               <button class="show-apps">« My Apps</button>
               <button id="install-apps-button" class="{{#if overQuota}}over-quota{{/if}}">
                   Install apps</button>
@@ -202,7 +202,7 @@ limitations under the License.
                   Restore a backup</button>
             </div>
           {{else}}
-            <div class="button-box">
+            <div class="button-box" role="toolbar">
               <button class="show-apps">« My Apps</button>
             </div>
           {{/if}}

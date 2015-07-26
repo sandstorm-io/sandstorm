@@ -628,8 +628,8 @@ if (Meteor.isClient) {
             // Store apitoken id1 and template in session storage in the offer
             // template namespace under key id2.
             var key = "offerTemplate" + id2;
-            var renderedTemplate = template.replace("$API_TOKEN", tokenId)
-                                           .replace("$API_HOST", makeWildcardHost("api"));
+            var renderedTemplate = template.replace(/\$API_TOKEN/g, tokenId)
+                                           .replace(/\$API_HOST/g, makeWildcardHost("api"));
             sessionStorage.setItem(key, JSON.stringify({
                 "token": tokenId,
                 "renderedTemplate": renderedTemplate,

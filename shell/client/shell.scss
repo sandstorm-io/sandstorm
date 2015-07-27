@@ -600,6 +600,38 @@ body>.popup {
       }
     }
 
+    >h4.tabbed {
+      margin: 0px;
+      font-size: 14px;
+      padding-left: 10px;
+      line-height: 32px;
+      border-bottom: none;
+      margin-bottom: 0px;
+
+      @media #{$mobile} {
+        font-size: 14pt;
+      }
+    }
+
+    .tabs-list {
+      margin-top: 0px;
+      border-bottom: none;
+    }
+
+    >.footer {
+      border-top: 1px solid #ccc;
+      margin: 0px;
+      padding-top: 5px;
+      text-align: right;
+      >.who-has-access {
+        margin-right: 15px;
+     }
+    }
+
+    >div>textarea {
+      width: 100%;
+    }
+
     input, button, .login-button {
       @media #{$mobile} { font-size: 15pt; }
     }

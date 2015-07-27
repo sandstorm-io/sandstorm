@@ -356,7 +356,8 @@ if (Meteor.isClient) {
       });
     },
 
-    "click button.show-transitive-shares": function (event) {
+    "click button.who-has-access": function (event) {
+      event.preventDefault();
       var grainId = this.grainId;
       Meteor.call("transitiveShares", this.grainId, function(error, downstream) {
         if (error) {
@@ -500,7 +501,7 @@ if (Meteor.isClient) {
     },
   });
 
-  Template.grainSharePopup.helpers({
+  Template.whoHasAccess.helpers({
     displayName: function (userId) {
       var name = DisplayNames.findOne(userId);
       if (name) {
@@ -511,10 +512,19 @@ if (Meteor.isClient) {
         return "Unknown User (" + userId + ")";
       }
     },
+  });
 
+  Template.shareWithOthers.helpers({
+    tabs: function() {
+      return [{name: "Send an invite", slug: "invite"},
+              {name: "Get sharable link", slug: "link"}];
+    },
     displayToken: function() {
       return !this.revoked && !this.expiresIfUnused && !this.parentToken;
     },
+  });
+  ReactiveTabs.createInterface({
+    template: 'basicTabs',
   });
 
   Template.grainPowerboxOfferPopup.helpers({

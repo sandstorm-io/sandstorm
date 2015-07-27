@@ -1,0 +1,80 @@
+<!--
+Sandstorm - Personal Cloud Sandbox
+Copyright (c) 2015 Sandstorm Development Group, Inc. and contributors
+All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<template name="sandstormAccountSettings">
+  {{!-- TODO(now): better reuse here --}}
+  {{#sandstormTopbarItem name="title" priority=5 topbar=_topbar}}
+    Account Settings
+  {{/sandstormTopbarItem}}
+
+  <h2>Your identities</h2>
+
+  <ul class="identities">
+    {{#each identities}}
+      {{#if editing}}
+        <li class="edit">
+          <form><ul>
+            <li class="name">
+              <label>Full name:
+                <input type="text" name="nameInput" value="{{name}}" placeholder="full name">
+              </label>
+              <span class="details">Your regular first and last name, as you would like it displayed to others. This does not have to be your real name.</span>
+            </li>
+            <li class="handle">
+              <label>Handle:
+                <input type="text" name="handle" value="{{handle}}" placeholder="handle">
+              </label>
+              <span class="details">Your preferred handle or "username", for use in apps that use handles (often, chat apps). This is only your first choice; an app may make you rename if someone has already taken this name within the specific grain.</span>
+            </li>
+            <li class="picture">
+              <label>Picture: <button><img src="{{picture}}" alt="Upload picture"></button></label>
+              <input type="hidden" name="picture" value="{{picture}}">
+              <span class="details">This picture will be shown to other users to help identify you.</span>
+            </li>
+            <li class="pronoun">
+              <label>Preferred pronoun:
+                <select name="pronoun">
+                  <option value="neutral" selected="{{isNeutral}}">they (ambiguous)</option>
+                  <option value="male" selected="{{isMale}}">he/him (male)</option>
+                  <option value="female" selected="{{isFemale}}">she/her (female)</option>
+                  <option value="robot" selected="{{isRobot}}">it (robot)</option>
+                </select>
+              </label>
+            </li>
+            <li class="save"><button>Save</button><button class="cancel">Cancel</button></li>
+          </ul></form>
+        </li>
+      {{else}}
+        <li class="display {{id}}"><ul>
+          <li class="name"><span class="label">Name:</span> {{name}}</li>
+          {{#if handle}}<li class="handle"><span class="label">Handle:</span> @{{handle}}</li>{{/if}}
+          <li class="picture"><span class="label">Picture:</span> <img src="{{picture}}"></li>
+          <li class="pronoun">
+            <span class="label">Pronoun:</span>
+            {{#if isMale}}he/him (male){{/if}}
+            {{#if isFemale}}she/her (female){{/if}}
+            {{#if isNeutral}}they (ambiguous){{/if}}
+            {{#if isRobot}}it (robot){{/if}}
+          </li>
+          <li class="edit"><button>Edit</button></li>
+        </ul></li>
+      {{/if}}
+    {{/each}}
+      <li class="add"><button>add another</button></li>
+  </ul>
+</template>

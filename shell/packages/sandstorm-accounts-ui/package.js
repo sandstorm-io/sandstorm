@@ -4,8 +4,10 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
-  api.use(['tracker', 'service-configuration', 'accounts-base',
-           'underscore', 'templating', 'session'], 'client');
+  api.use(['check', 'tracker', 'service-configuration', 'accounts-base',
+           'underscore', 'templating', 'session', 'jparker:crypto-md5'], 'client');
+  api.use(['check', 'accounts-base'], 'server');
+
   // Export Accounts (etc) to packages using this one.
   api.imply('accounts-base', ['client', 'server']);
 
@@ -16,10 +18,9 @@ Package.onUse(function (api) {
   api.use('less', 'client');
   api.use('reactive-dict', 'client');
 
-  api.addFiles(['login_buttons.less'], 'client');
-
   api.addFiles([
     'login_buttons.html',
+    'login_buttons.less',
     'login_buttons_dialogs.html',
 
     'login_buttons_session.js',
@@ -27,7 +28,16 @@ Package.onUse(function (api) {
     'login_buttons.js',
     'login_buttons_dialogs.js',
 
+    'pnglib.js',
+    'identicon.js',
+    'account-settings.html',
+    'account-settings.js',
+    'accounts-ui-methods.js',
+
     'accounts_ui.js'], 'client');
 
+  api.addFiles(["accounts-ui-server.js", "accounts-ui-methods.js"], "server");
+
   api.export("AccountsUi");
+  api.export("SandstormAccountSettingsUi");
 });

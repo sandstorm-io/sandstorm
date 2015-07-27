@@ -111,6 +111,15 @@ body>.topbar-update {
   line-height: inherit;
   background-color: transparent;
   text-align: inherit;
+  padding: 0;
+}
+
+%google-icon {
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAADCklEQVQ4jSXSy2ucVRjA4d97zvdNJpPJbTJJE9rYaCINShZtRCFIA1bbLryBUlyoLQjqVl12W7UbN4qb1gtuYhFRRBCDBITaesFbbI3RFBLSptEY05l0ZjLfnMvrov/Bs3gAcF71x6VVHTk+o8nDH+hrH89rUK9Z9Yaen57S3wVtGaMBNGC0IegWKIDxTtVaOHVugZVmH3HX3Zz+4l+W1xvkOjuZfPsspY4CNkZELEgEIJKwYlBjEwjec/mfCMVuorVs76R8+P0KYMmP30U2dT8eIZqAR2ipRcWjEYxGSCRhV08e04oYMoxYLi97EI9YCJ0FHBYbIVGDlUBLwRlLIuYW6chEmQt/rJO09RJjhjEJEYvJYGNhkbUhw43OXtIWDFRq9G87nAaSK6sVRm8r8fzRMWbOX2Xx7ypd7ZET03sQhDOz73DqSJOrd+7HSo4QIu0Nx/4rOzx+cRXZ9+z7+uqJ+3hiepxK3fHZT2tMjXYzOtzL6dmznPzhLexgN0QlxAAYxAlqUqRmkf5j59RlNQ6MFHhgcpCTTx8EUb5e+plD7x4jjg1ANCAgrRQAdR7xKXjBlGyLYi7PxaUmb8z8xcpGHVXLHaXdjI0egKyJiQYTEhSPREVIEUBNC+Mqm+xpz3j0njLPHB2nsh1QgeG+IS48dYbD5YNoo0ZUAbVEuTUoKuBSZOarX/WhyQn6eg2+usDWf0s0tq8zNPYk+WI/Lnge++hlvlyfQ3NdECzGRWKwEEA0qNY251n69kV6+Y0kbaCZoebG2X3oU7pKoyxuXOPe945zs9DCeosGIXoBDyaLdf6ce4Hbk+/Y299ksKtAuaeNsiyw8c1LKIZ95b0MdgxA5giixACpTxEPSau6QdFfI5/2cLPmEW+JAQrtJUJzDXF1dkwHzVodJMX4HFEcQQMaFdPeM0Jb/4PUtzzaLKAhRyJFwo6lbegRNFfk819muV5dR4JBQoQdQ2xFiDmSNDHiaptamR9Gq5cQ18AledrGDpOfeI5Lq8u88smbhMRisoSAgAYghdfn5H/JkHuRZ1owLAAAAABJRU5ErkJggg==");
+}
+
+%github-icon {
+  background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wJGBYxHYxl31wAAAHpSURBVDjLpZI/aFNRFMZ/973bJqGRPopV4qNq/+SpTYnWRhCKilShg9BGcHOM+GfQoZuLk4iLgw4qZNBaHLuIdBNHl7Ta1qdNFI3SihnaNG1MpH3vuiQYQnwZvHCG893zffc751z4z6PX5T5gA1DAKnAaOAQEgAfAVeCpl+CeCrlRuEC6maO4h0A1wl4tPAHMqNUthvrDdHYY7A3t4rDVjeO6rBU2FaABM1WCrBNoi48Mi+nH9yj+KtPibAKwJXfQ5vcRG7soUnYmWEuQgAEIYBv4cGpoILI0Z4tyYYPegS6UguyijZQ6J45GSNmZHzUcJYD2ii2Ajv7efZ8WZ6ZwXFj79hXpayW4O0SL1Nl/8jzZlZ9dQLFS70pgvZKIyGD0yvu5eRmMnrk1PjI81ir1qBACTdPevXj95mVuNX8XKDQc/+T334bZZ104cvzYw2s3J3qAL5WXSsDbf61NNMBu+wOBs+VSyQ84Nfhg028ZGx3/qyy0lC7lgi7lghBitoon03lvB8l0/k7Wnk+8mny0cyXzEcfZxgwfZPTyRMHsOzAFXE9YhtNQIJnOx4FpJXT1eSkn2g0frqMoFrfoCXcqlCOAGwnLuO/l4JymcWl5uRxzXUKghBAiZ5r+WaV4lrCM555zqO+x2d0ftGmpiA/0k70AAAAASUVORK5CYII=");
 }
 
 // =======================================================================================
@@ -614,6 +623,19 @@ body>.popup {
     width: 260px;
     padding-bottom: 16px;
 
+    >a {
+      display: block;
+      margin: 0;
+      padding: 8px 16px;
+      color: black;
+      text-decoration: underline;
+      text-align: center;
+
+      &:hover {
+        background-color: #eee;
+      }
+    }
+
     // TODO(cleanup): Much of the below was brought it from Meteor's accounts-ui and needs cleanup.
 
     button.login {
@@ -659,8 +681,8 @@ body>.popup {
         box-shadow: none;
       }
 
-      &.google { background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAACXBIWXMAAAsTAAALEwEAmpwYAAADCklEQVQ4jSXSy2ucVRjA4d97zvdNJpPJbTJJE9rYaCINShZtRCFIA1bbLryBUlyoLQjqVl12W7UbN4qb1gtuYhFRRBCDBITaesFbbI3RFBLSptEY05l0ZjLfnMvrov/Bs3gAcF71x6VVHTk+o8nDH+hrH89rUK9Z9Yaen57S3wVtGaMBNGC0IegWKIDxTtVaOHVugZVmH3HX3Zz+4l+W1xvkOjuZfPsspY4CNkZELEgEIJKwYlBjEwjec/mfCMVuorVs76R8+P0KYMmP30U2dT8eIZqAR2ipRcWjEYxGSCRhV08e04oYMoxYLi97EI9YCJ0FHBYbIVGDlUBLwRlLIuYW6chEmQt/rJO09RJjhjEJEYvJYGNhkbUhw43OXtIWDFRq9G87nAaSK6sVRm8r8fzRMWbOX2Xx7ypd7ZET03sQhDOz73DqSJOrd+7HSo4QIu0Nx/4rOzx+cRXZ9+z7+uqJ+3hiepxK3fHZT2tMjXYzOtzL6dmznPzhLexgN0QlxAAYxAlqUqRmkf5j59RlNQ6MFHhgcpCTTx8EUb5e+plD7x4jjg1ANCAgrRQAdR7xKXjBlGyLYi7PxaUmb8z8xcpGHVXLHaXdjI0egKyJiQYTEhSPREVIEUBNC+Mqm+xpz3j0njLPHB2nsh1QgeG+IS48dYbD5YNoo0ZUAbVEuTUoKuBSZOarX/WhyQn6eg2+usDWf0s0tq8zNPYk+WI/Lnge++hlvlyfQ3NdECzGRWKwEEA0qNY251n69kV6+Y0kbaCZoebG2X3oU7pKoyxuXOPe945zs9DCeosGIXoBDyaLdf6ce4Hbk+/Y299ksKtAuaeNsiyw8c1LKIZ95b0MdgxA5giixACpTxEPSau6QdFfI5/2cLPmEW+JAQrtJUJzDXF1dkwHzVodJMX4HFEcQQMaFdPeM0Jb/4PUtzzaLKAhRyJFwo6lbegRNFfk819muV5dR4JBQoQdQ2xFiDmSNDHiaptamR9Gq5cQ18AledrGDpOfeI5Lq8u88smbhMRisoSAgAYghdfn5H/JkHuRZ1owLAAAAABJRU5ErkJggg=="); }
-      &.github { background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAAZiS0dEAP8A/wD/oL2nkwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAAd0SU1FB9wJGBYxHYxl31wAAAHpSURBVDjLpZI/aFNRFMZ/973bJqGRPopV4qNq/+SpTYnWRhCKilShg9BGcHOM+GfQoZuLk4iLgw4qZNBaHLuIdBNHl7Ta1qdNFI3SihnaNG1MpH3vuiQYQnwZvHCG893zffc751z4z6PX5T5gA1DAKnAaOAQEgAfAVeCpl+CeCrlRuEC6maO4h0A1wl4tPAHMqNUthvrDdHYY7A3t4rDVjeO6rBU2FaABM1WCrBNoi48Mi+nH9yj+KtPibAKwJXfQ5vcRG7soUnYmWEuQgAEIYBv4cGpoILI0Z4tyYYPegS6UguyijZQ6J45GSNmZHzUcJYD2ii2Ajv7efZ8WZ6ZwXFj79hXpayW4O0SL1Nl/8jzZlZ9dQLFS70pgvZKIyGD0yvu5eRmMnrk1PjI81ir1qBACTdPevXj95mVuNX8XKDQc/+T334bZZ104cvzYw2s3J3qAL5WXSsDbf61NNMBu+wOBs+VSyQ84Nfhg028ZGx3/qyy0lC7lgi7lghBitoon03lvB8l0/k7Wnk+8mny0cyXzEcfZxgwfZPTyRMHsOzAFXE9YhtNQIJnOx4FpJXT1eSkn2g0frqMoFrfoCXcqlCOAGwnLuO/l4JymcWl5uRxzXUKghBAiZ5r+WaV4lrCM555zqO+x2d0ftGmpiA/0k70AAAAASUVORK5CYII=") }
+      &.google { @extend %google-icon; }
+      &.github { @extend %github-icon; }
 
       background-position: 6px center;
       background-repeat: no-repeat;
@@ -750,6 +772,232 @@ body>.popup {
       text-align: center;
       a {
         color: black;
+      }
+    }
+  }
+}
+
+// =======================================================================================
+
+body>.main-content.account {
+  text-align: center;
+
+  >* {
+    width: 600px;
+    margin: 16px auto;
+  }
+
+  >.identities {
+    padding: 0;
+
+    >li {
+      display: inline-block;
+      box-sizing: border-box;
+      width: 344px;
+      height: 80px;
+      padding: 8px 8px 8px 80px;
+      list-style-type: none;
+      text-align: left;
+
+      border: 1px solid #aaa;
+      box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+
+      &:hover {
+        background-color: #eee;
+      }
+    }
+
+    >.display {
+      position: relative;
+
+      background-position: right 8px top 8px;
+      background-repeat: no-repeat;
+
+      &.google { @extend %google-icon; }
+      &.github { @extend %github-icon; }
+
+      >ul {
+        padding: 0;
+
+        >li {
+          list-style-type: none;
+
+          >.label {
+            display: none;
+          }
+        }
+
+        >.handle {
+          font-family: monospace;
+        }
+
+        >.picture {
+          position: absolute;
+          left: 8px;
+          top: 8px;
+          width: 64px;
+          height: 64px;
+        }
+
+        >.pronoun {
+          font-size: 70%;
+          line-height: 20px;
+
+          >.label {
+            display: inline;
+          }
+        }
+
+        >.edit {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+
+          >button {
+            @extend %unstyled-button;
+            display: block;
+            width: 100%;
+            height: 100%;
+            color: transparent;
+            cursor: pointer;
+          }
+        }
+      }
+    }
+
+    >.edit {
+      >form {
+        position: absolute;
+        z-index: 4;
+        left: calc(50% - 300px);
+        right: calc(50% - 300px);
+        top: 64px;
+        height: auto;
+        background-color: white;
+        border: 1px solid #ccc;
+        box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+
+        >ul {
+          padding: 8px;
+
+          >li {
+            list-style-type: none;
+            overflow: hidden;
+            margin-bottom: 8px;
+
+            label {
+              display: block;
+              font-weight: bold;
+              text-align: right;
+            }
+
+            input[type="text"], select {
+              display: block;
+              width: 400px;
+              float: right;
+              box-sizing: border-box;
+              font-size: inherit;
+              line-height: inherit;
+              background-color: white;
+              border: 1px solid #ccc;
+              padding: 2px;
+              margin-left: 8px;
+            }
+
+            &.handle {
+              label::after {
+                content: "@";
+                float: right;
+                margin-right: -20px;
+                font-family: monospace;
+                padding-top: 2px;
+                color: #888;
+              }
+
+              input[type="text"] {
+                padding-left: 1em;
+                font-family: monospace;
+              }
+            }
+
+            &.picture {
+              button {
+                float: right;
+                border: none;
+                padding: 0;
+                width: 64px;
+                height: 64px;
+                margin-right: 336px;
+                margin-left: 8px;
+                position: relative;
+
+                &:hover {
+                  cursor: pointer;
+
+                  &::before {
+                    position: absolute;
+                    content: " ";
+                    display: block;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.2);
+                  }
+                }
+              }
+            }
+
+            &.save {
+              text-align: right;
+            }
+
+            >.details {
+              display: block;
+              clear: right;
+              font-size: 80%;
+            }
+          }
+        }
+      }
+    }
+
+    >.add {
+      background-color: transparent;
+      box-shadow: none;
+      border-width: 2px;
+      border-style: dashed;
+      border-top: none;
+      line-height: 64px;
+      text-align: center;
+      padding: 0;
+      position: relative;
+
+      >button {
+        @extend %unstyled-button;
+        display: block;
+        width: 100%;
+        height: 100%;
+        color: #888;
+        cursor: pointer;
+        position: relative;
+        z-index: 1;
+      }
+
+      &::before {
+        content: "+";
+        display: block;
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: 64px;
+        height: 64px;
+        font-size: 72px;
+        line-height: 64px;
+        color: #888;
+        font-weight: bold;
       }
     }
   }

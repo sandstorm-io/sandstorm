@@ -75,6 +75,20 @@ shell/client/ansi-up.js
     License URL: https://github.com/drudru/ansi_up/blob/master/Readme.md
                  (at bottom)
 
+shell/packages/sandstorm-accounts-ui/identicon.js
+    What: identicon.js
+    Source URL: https://github.com/stewartlord/identicon.js
+    Copyright: Stewart Lord
+    License: BSD 2-clause
+    License URL: http://opensource.org/licenses/bsd-license.php
+
+shell/packages/sandstorm-accounts-ui/pnglib.js
+    What: PNGlib
+    Source URL: https://github.com/stewartlord/pnglib.js
+    Copyright: Robert Eisele
+    License: BSD 2-clause
+    License URL: http://opensource.org/licenses/bsd-license.php
+
 src/joyent-http/*
     What: Node.js HTTP parsing library
     Source URL: https://github.com/joyent/http-parser

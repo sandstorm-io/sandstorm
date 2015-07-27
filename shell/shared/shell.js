@@ -987,4 +987,16 @@ Router.map(function () {
       };
     }
   });
+
+  this.route("account", {
+    path: "/account",
+
+    data: function () {
+      if (!Meteor.userId()) {
+        // Not logged in.
+        Router.go("root");
+      }
+      return new SandstormAccountSettingsUi(globalTopbar);
+    }
+  });
 });

@@ -136,18 +136,16 @@ Template.sandstormTopbar.events({
   },
 
   "click .popup": function (event) {
-    // Clicked outside the popup; close it.
-    event.stopPropagation();
-    Template.instance().data.closePopup();
+    if (event.target === event.currentTarget) {
+      // Clicked outside the popup; close it.
+      event.stopPropagation();
+      Template.instance().data.closePopup();
+    }
   },
 
   "click .popup>.frame>.close-popup": function (event) {
     event.stopPropagation();
     Template.instance().data.closePopup();
-  },
-
-  "click .popup>.frame": function (event) {
-    event.stopPropagation();  // don't propagate to closer
   },
 
   "click .menu-button": function (event) {
@@ -215,7 +213,7 @@ SandstormTopbar = function (expandedVar) {
 
 SandstormTopbar.prototype.reset = function () {
   this._menuExpanded.set(false);
-  this._expanded.set(null);
+  this.closePopup();
 }
 
 SandstormTopbar.prototype.closePopup = function () {

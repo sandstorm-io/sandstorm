@@ -159,6 +159,23 @@ if (Meteor.isClient) {
   HasUsers = new Mongo.Collection("hasUsers");  // dummy collection defined above
   Backers = new Mongo.Collection("backers");  // pseudo-collection defined above
 
+  Router.onRun(function () {
+    // Close menus any time we navigate.
+    globalTopbar.reset();
+    this.next();
+  });
+
+  Template.layout.events({
+    "click a": function (event) {
+      // Close menus if a navigation link is clicked. Usually the Router.onRun(), above, will also
+      // execute, but it will not in the case where the link points to the current page, yet we'd
+      // really still like for the menus to close in such cases.
+      if (!event.isDefaultPrevented()) {
+        globalTopbar.reset();
+      }
+    }
+  });
+
   Template.body.onRendered(function () {
     // If we're on iOS, set a class name on <body> so we can use CSS styles to work around mobile
     // Safari's ridiculous iframe rendering behavior.
@@ -702,12 +719,6 @@ if (Meteor.isClient) {
     "click .action-required button": function (event) {
       event.currentTarget.parentNode.parentNode.style.display = "none";
     },
-  });
-
-  Template.layout.events({
-    "click .topbar>li>.navlink": function (event) {
-      globalTopbar.reset();
-    }
   });
 
   Template.about.onCreated(function () {

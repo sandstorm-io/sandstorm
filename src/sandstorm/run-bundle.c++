@@ -1840,23 +1840,29 @@ private:
 
   pid_t startNode(const Config& config) {
     Subprocess process([&]() -> int {
+      // Create a listening socket for the meteor app on fd=3
       int sockFd;
-      KJ_SYSCALL(sockFd = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP));
+      KJ_SYSCALL(sockFd = socket(PF_INET, SOCK_STREAM | O_NONBLOCK, IPPROTO_TCP));
       sockaddr_in sa;
       memset(&sa, 0, sizeof sa);
       sa.sin_family = AF_INET;
       sa.sin_port = htons(config.port);
-      inet_pton(AF_INET, config.bindIp.cStr(), &(sa.sin_addr));
+      int rc = inet_pton(AF_INET, config.bindIp.cStr(), &(sa.sin_addr));
+      // If ipv4 address parsing fails, try ipv6
+      if (rc == 0) {
+        rc = inet_pton(AF_INET6, config.bindIp.cStr(), &(sa.sin_addr));
+        KJ_REQUIRE(rc == 1, "Bind IP is an invalid IP address:", config.bindIp);
+      }
 
-      KJ_SYSCALL(bind(sockFd, (struct sockaddr *)&sa, sizeof sa));
+      KJ_SYSCALL(bind(sockFd, reinterpret_cast<sockaddr *>(&sa), sizeof sa));
       KJ_SYSCALL(listen(sockFd, 511)); // 511 is what node uses as its default backlog
-      KJ_SYSCALL(fcntl(sockFd, F_SETFL, fcntl(sockFd, F_GETFL, 0) | O_NONBLOCK));
 
       if (sockFd != 3) {
         // dup socket to correct fd.
         KJ_SYSCALL(dup2(sockFd, 3));
         KJ_SYSCALL(close(sockFd));
       }
+
       dropPrivs(config.uids);
       clearSignalMask();
 
@@ -1923,7 +1929,7 @@ private:
       }
       settingsString = kj::str(settingsString, "}}");
       KJ_SYSCALL(setenv("METEOR_SETTINGS", settingsString.cStr(), true));
-      KJ_SYSCALL(execl("/bin/node", "/bin/node", "main.js", EXEC_END_ARGS));
+      KJ_SYSCALL(execl("/bin/node", "/bin/node", "sandstorm-main.js", EXEC_END_ARGS));
       KJ_UNREACHABLE;
     });
 

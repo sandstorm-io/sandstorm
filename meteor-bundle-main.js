@@ -1,9 +1,6 @@
-
-// The debugger pauses here when you run `meteor debug`, because this is
-// the very first code to be executed by the server process. If you have
-// not already added any `debugger` statements to your code, feel free to
-// do so now, wait for the server to restart, then reload this page and
-// click the |▶ button to continue.
+// This file is used by Sandstorm to monkey-patch certain classes/functions in Nodejs
+// Specifically, we're changing http.Server.listen to listen on fd=3 instead of the normal
+// parameters. This is fine to do globally, since there's only ever one http server in meteor.
 var http = require('http');
 var net = require('net');
 
@@ -12,6 +9,4 @@ http.Server.prototype.listen = function (port, host, cb) {
   oldListen.call(this, {fd: 3}, cb);
 }
 
-process.argv.splice(2, 0, 'program.json');
-process.chdir(require('path').join(__dirname, 'programs', 'server'));
-require('./programs/server/boot.js');
+require("./main.js");

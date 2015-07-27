@@ -31,10 +31,10 @@ trap 'fail ${LINENO}' ERR
 
 copyDep() {
   # Copies a file from the system into the chroot.
-  
+
   local FILE=$1
   local DST=bundle"${FILE/#\/usr\/local/\/usr}"
-  
+
   if [ -e "$DST" ]; then
     # already copied
     :
@@ -85,6 +85,7 @@ METEOR_DEV_BUNDLE=$(./find-meteor-dev-bundle.sh)
 # Start with the meteor bundle.
 cp -r shell-build/bundle bundle
 rm -f bundle/README
+cp meteor-bundle-main.js bundle/sandstorm-main.js
 
 # Meteor wants us to do "npm install" in the bundle to prepare it.
 (cd bundle/programs/server && "$METEOR_DEV_BUNDLE/bin/npm" install)

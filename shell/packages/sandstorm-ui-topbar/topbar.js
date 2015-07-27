@@ -63,6 +63,7 @@ Template.sandstormTopbar.helpers({
   currentPopup: function () {
     var name = this._expanded.get();
     if (name) {
+      this._itemsTracker.depend();
       return this._items[name];
     } else {
       return null;

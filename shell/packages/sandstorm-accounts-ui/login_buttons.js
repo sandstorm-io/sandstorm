@@ -124,7 +124,6 @@ var sendEmail = function (email) {
         loginButtonsSession.set("inSignupFlow", true);
       }
     } else {
-      document.getElementById("login-email").value = email;
       loginButtonsSession.set("inSignupFlow", true);
       loginButtonsSession.infoMessage("Email sent");
     }

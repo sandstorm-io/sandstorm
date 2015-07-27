@@ -27,11 +27,20 @@ GENDERS = {male: "male", female: "female", neutral: "neutral", robot: "robot"};
 
 var identiconCache = {};
 
-function makeIdenticon(id) {
+function makeIdenticon(service, id) {
+  // In Github's case, we hash the id bare because our identicon algorithm then produces exactly
+  // the same icon as Github itself would produce. For other services, we add a prefix to prevent
+  // accidental collisions. (Github's IDs are strictly numeric, so any non-numeric prefix cannot
+  // collide.)
+  if (service !== "github") {
+    id = service + ":" + id;
+  }
+
   if (id in identiconCache) {
     return identiconCache[id];
   }
 
+  // Unfortunately, Github's algorithm uses MD5. Whatever, we don't expect these to be secure.
   var hash = CryptoJS.MD5(id.toString()).toString();
   var data = new Identicon(hash, 64).toString();
   var result = "data:image/png;base64," + data;
@@ -47,7 +56,7 @@ function googleIdentity(user) {
     id: "google",
     name: profile.name || google.name || "",
     handle: profile.handle || (google.email || "").split("@")[0],
-    picture: profile.picture || makeIdenticon(google.id),
+    picture: profile.picture || makeIdenticon("google", google.id),
     // TODO(now): Download real google avatar.
 //    picture: profile.picture || google.picture || "",
     pronoun: profile.pronoun || GENDERS[google.gender] || "neutral",
@@ -62,7 +71,7 @@ function githubIdentity(user) {
     id: "github",
     name: profile.name || "",
     handle: profile.handle || github.username,
-    picture: profile.picture || makeIdenticon(github.id),
+    picture: profile.picture || makeIdenticon("github", github.id),
     // TODO(now): Download real github avatar.
 //    picture: "https://avatars.githubusercontent.com/u/" + github.id + "?v=3"
     pronoun: profile.pronoun,
@@ -77,7 +86,7 @@ function emailIdentity(user) {
     id: "email",
     name: profile.name || "",
     handle: profile.handle || email.email.split("@")[0],
-    picture: profile.picture || makeIdenticon(email.email),
+    picture: profile.picture || makeIdenticon("email", email.email),
     pronoun: profile.pronoun,
   }
 }

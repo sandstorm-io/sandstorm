@@ -84,7 +84,7 @@ var loginResultCallback = function (serviceName, err, topbar) {
   } else if (err instanceof Accounts.LoginCancelledError) {
     // do nothing
   } else if (err instanceof ServiceConfiguration.ConfigError) {
-    Router.go("admin");
+    Router.go("adminSettings");
   } else {
     loginButtonsSession.errorMessage(err.reason || "Unknown error");
   }

@@ -83,7 +83,7 @@ Please install the following:
 On Debian or Ubuntu, you should be able to get all these with:
 
     sudo apt-get install build-essential libcap-dev xz-utils zip \
-        unzip imagemagick strace curl clang-3.4 discount git
+        unzip imagemagick strace curl clang discount git
     curl https://install.meteor.com/ | sh
 
 ### Building / installing the binaries

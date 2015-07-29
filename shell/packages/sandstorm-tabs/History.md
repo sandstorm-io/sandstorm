@@ -1,3 +1,11 @@
+(Sandstorm fork) 0.1.0
+===============
+
+* Remove non-intuitive data context munging (see https://github.com/meteortemplates/tabs/issues/10).
+  The functionality this was adding doesn't seem to be important for our use case (though I'm not
+  actually sure exactly what that functionality is). If it does become important, there's probably
+  a nicer way to implement it.
+
 2.2.0
 =====
 

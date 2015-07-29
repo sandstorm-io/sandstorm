@@ -69,6 +69,7 @@ sandstorm-accounts-packages@0.1.0
 sandstorm-accounts-ui@0.1.0
 sandstorm-db@0.1.0
 sandstorm-email@0.1.0
+sandstorm-tabs@0.1.0
 sandstorm-ui-topbar@0.1.0
 service-configuration@1.0.4
 session@1.1.0
@@ -77,7 +78,6 @@ simplesmtp@0.0.0
 spacebars@1.0.6
 spacebars-compiler@1.0.6
 standard-app-packages@1.0.5
-templates:tabs@2.2.0
 templating@1.1.1
 tracker@1.0.7
 ui@1.0.6

@@ -1,8 +1,7 @@
 Package.describe({
-  name: 'templates:tabs',
-  summary: 'Reactive tabbed interfaces compatible with routing.',
-  version: '2.2.0',
-  git: 'https://github.com/meteortemplates/tabs.git'
+  name: 'sandstorm-tabs',
+  summary: 'Sandstorm fork of templates:tabs.',
+  version: '0.1.0',
 });
 
 Package.onUse(function(api) {

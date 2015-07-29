@@ -23,4 +23,4 @@ reactive-var
 sandstorm-db
 sandstorm-ui-topbar
 fourseven:scss
-templates:tabs
+sandstorm-tabs

@@ -12,16 +12,9 @@
       {{/each}}
     </ul>
     <div class="tabs-content-container">
-
-      <!-- Pass interface context to tab instances -->
-      {{> UI.contentBlock
-          context=__context__
-      }}
-
+      {{> UI.contentBlock }}
     </div>
-
   </div>
-
 </template>
 
 
@@ -43,19 +36,14 @@
     <div class="tabs-content-container">
 
       <!-- Pass interface context to tab instances -->
-      {{> UI.contentBlock
-          context=__context__
-      }}
-
+      {{> UI.contentBlock }}
     </div>
-
   </div>
-
 </template>
 
 
 <template name="tabContent">
-  <section class="tabs-content {{isActiveTab slug}}" data-tab={{slug}}>
+  <section class="tabs-content" data-tab={{slug}}>
     {{> UI.contentBlock}}
   </section>
 </template>

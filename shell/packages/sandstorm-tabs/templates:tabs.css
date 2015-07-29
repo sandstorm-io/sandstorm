@@ -23,11 +23,6 @@
   background-color: #fff;
   color: #333;
 }
-.basicTabs-container .tabs-content-container,
-.dynamicTabs-container .tabs-content-container {
-  padding: 15px;
-  border-top: 1px solid #ddd;
-}
 .basicTabs-container .tabs-content,
 .dynamicTabs-container .tabs-content {
   display: none;

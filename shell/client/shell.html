@@ -405,7 +405,6 @@ limitations under the License.
    {{else}}
       {{#basicTabs name="" tabs=tabs}}
       {{#tabContent slug="invite"}}
-      {{#with ..}}
      {{#if shareToken}}
       {{#if shareTokenPending}}
         <p>Generating...</p>
@@ -435,15 +434,12 @@ limitations under the License.
         <button>Send</button>
         </form>
           {{/if}}
-          {{/with}}
           {{/tabContent}}
           {{#tabContent slug="link"}}
-          {{#with ..}}
             <p> Anyone with this link: </p>
             <input type="text" placeholder="Label (optional)">
             <p>Use a label to remind yourself to whom you sent this unique link.</p>
             <button>Create</button>
-          {{/with}}
         {{/tabContent}}
       {{/basicTabs}}
 

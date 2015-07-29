@@ -92,16 +92,6 @@
 
       helpers = {
 
-        # These are passed into the interface to be in the tabs' parent scope
-        # -------------------------------------------------------------------
-
-        __context__: ->
-          inst = Template.instance()
-          context = {
-            isActiveSlug: inst.isActiveSlug
-          }
-          return context
-
         # These are used as real helpers
         # ------------------------------
 
@@ -125,12 +115,3 @@
   return {
     createInterface: createInterface
   }
-
-# Tab block
-# ---------
-
-Template['tabContent'].helpers
-  isActiveTab: (slug) ->
-    ctx = Template.parentData(1).context
-    if ctx?.isActiveSlug? && ctx.isActiveSlug(slug)
-      return 'active'

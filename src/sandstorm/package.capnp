@@ -212,7 +212,7 @@ struct Metadata {
   # Technically, appMarketingVersion and appTitle belong in this category, but they were defined
   # before MarketData became a thing.
 
-  icon :group {
+  icons :group {
     # Various icons to represent the app in various contexts.
     #
     # Each context is associated with a List(Icon). This list contains versions of the same image

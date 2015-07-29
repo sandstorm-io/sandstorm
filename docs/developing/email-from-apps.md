@@ -4,7 +4,7 @@ Using e-mail in your Sandstorm app is accomplished through the Cap'n
 Proto interfaces defined in
 [hack-session.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/hack-session.capnp)
 and
-[email.capnp](https://github.com/sandstorm-io/sanstorm/blob/master/src/sandstorm/email.capnp). This
+[email.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/email.capnp). This
 becomes a little more complicated if you're using
 sandstorm-http-bridge in your app (as most apps do), since you don't
 have direct access to the HackSession/HackSessionContext. Below, we

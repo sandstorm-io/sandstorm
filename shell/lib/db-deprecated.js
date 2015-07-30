@@ -17,45 +17,45 @@
 // This file imports symbols from the sandstorm-db package. New code should use SandstormDb
 // directly.
 
-// TODO(cleanup): Over time, eliminate the use of each of these assignments by using `db` directly.
-//   For collections, prefer to update SandstormDb to provide methods for querying the collection
-//   rather than use `db.collections` directly. When code is moved into packages, the `db` global
-//   should NOT go with it; the package should expect a SandstormDb to be passed in, thus allowing
-//   mocking the database for unit tests.
+// TODO(cleanup): Over time, eliminate the use of each of these assignments by using `globalDb`
+//   directly. For collections, prefer to update SandstormDb to provide methods for querying the
+//   collection rather than use `globalDb.collections` directly. When code is moved into packages,
+//   the `globalDb` global should NOT go with it; the package should expect a SandstormDb to be
+//   passed in, thus allowing mocking the database for unit tests.
 
-db = new SandstormDb();
+globalDb = new SandstormDb();
 
-Packages = db.collections.packages;
-DevApps = db.collections.devApps;
-UserActions = db.collections.userActions;
-Grains = db.collections.grains;
-Contacts = db.collections.contacts;
-Sessions = db.collections.sessions;
-SignupKeys = db.collections.signupKeys;
-ActivityStats = db.collections.activityStats;
-DeleteStats = db.collections.deleteStats;
-FileTokens = db.collections.fileTokens;
-ApiTokens = db.collections.apiTokens;
-Notifications = db.collections.notifications;
-StatsTokens = db.collections.statsTokens;
-Misc = db.collections.misc;
-Settings = db.collections.settings;
+Packages = globalDb.collections.packages;
+DevApps = globalDb.collections.devApps;
+UserActions = globalDb.collections.userActions;
+Grains = globalDb.collections.grains;
+Contacts = globalDb.collections.contacts;
+Sessions = globalDb.collections.sessions;
+SignupKeys = globalDb.collections.signupKeys;
+ActivityStats = globalDb.collections.activityStats;
+DeleteStats = globalDb.collections.deleteStats;
+FileTokens = globalDb.collections.fileTokens;
+ApiTokens = globalDb.collections.apiTokens;
+Notifications = globalDb.collections.notifications;
+StatsTokens = globalDb.collections.statsTokens;
+Misc = globalDb.collections.misc;
+Settings = globalDb.collections.settings;
 
-isDemoUser = db.isDemoUser.bind(db);
-isSignedUp = db.isSignedUp.bind(db);
-isSignedUpOrDemo = db.isSignedUpOrDemo.bind(db);
-isUserOverQuota = db.isUserOverQuota.bind(db);
-isUserExcessivelyOverQuota = db.isUserExcessivelyOverQuota.bind(db);
-isAdmin = db.isAdmin.bind(db);
-isAdminById = db.isAdminById.bind(db);
-findAdminUserForToken = db.findAdminUserForToken.bind(db);
-matchWildcardHost = db.matchWildcardHost.bind(db);
-makeWildcardHost = db.makeWildcardHost.bind(db);
-allowDevAccounts = db.allowDevAccounts.bind(db);
-roleAssignmentPattern = db.roleAssignmentPattern;
+isDemoUser = globalDb.isDemoUser.bind(globalDb);
+isSignedUp = globalDb.isSignedUp.bind(globalDb);
+isSignedUpOrDemo = globalDb.isSignedUpOrDemo.bind(globalDb);
+isUserOverQuota = globalDb.isUserOverQuota.bind(globalDb);
+isUserExcessivelyOverQuota = globalDb.isUserExcessivelyOverQuota.bind(globalDb);
+isAdmin = globalDb.isAdmin.bind(globalDb);
+isAdminById = globalDb.isAdminById.bind(globalDb);
+findAdminUserForToken = globalDb.findAdminUserForToken.bind(globalDb);
+matchWildcardHost = globalDb.matchWildcardHost.bind(globalDb);
+makeWildcardHost = globalDb.makeWildcardHost.bind(globalDb);
+allowDevAccounts = globalDb.allowDevAccounts.bind(globalDb);
+roleAssignmentPattern = globalDb.roleAssignmentPattern;
 
 if (Meteor.isServer) {
-  getWildcardOrigin = db.getWildcardOrigin.bind(db);
+  getWildcardOrigin = globalDb.getWildcardOrigin.bind(globalDb);
 }
 
 if (Meteor.isClient) {

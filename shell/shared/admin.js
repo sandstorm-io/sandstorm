@@ -684,7 +684,7 @@ if (Meteor.isClient) {
     "click #offer-ipnetwork": function (event) {
       var state = Iron.controller().state;
       resetResult(state);
-      state.set("successMessage", "IpNetwork webkey created. See powerbox UI for your webkey.");
+      state.set("successMessage", "IpNetwork webkey created. Look for it in the top bar.");
       Meteor.call("offerIpNetwork", this.token, function (err, webkey) {
         state.set("powerboxOfferUrl", webkey);
         handleError.call(state, err);
@@ -694,7 +694,7 @@ if (Meteor.isClient) {
     "click #offer-ipinterface": function (event) {
       var state = Iron.controller().state;
       resetResult(state);
-      state.set("successMessage", "IpInterface webkey created. See powerbox UI for your webkey.");
+      state.set("successMessage", "IpInterface webkey created. Look for it in the top bar.");
       Meteor.call("offerIpInterface", this.token, function (err, webkey) {
         state.set("powerboxOfferUrl", webkey);
         handleError.call(state, err);

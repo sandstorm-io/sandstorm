@@ -10,6 +10,7 @@ random
 sandstorm-accounts-ui
 sandstorm-accounts-packages
 sandstorm-email
+sandstorm-pre-meteor
 accounts-email-token
 email
 reload

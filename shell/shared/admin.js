@@ -82,6 +82,10 @@ Router.map(function () {
     path: "/admin/capabilities/:_token?",
     controller: adminRoute
   });
+  this.route("adminAdvanced", {
+    path: "/admin/advanced/:_token?",
+    controller: adminRoute
+  });
   this.route("adminOld", {
     path: "/admin/:_token?",
     action: function () {
@@ -167,6 +171,9 @@ if (Meteor.isClient) {
     capsActive: function () {
       return Router.current().route.getName() == "adminCaps";
     },
+    advancedActive: function () {
+      return Router.current().route.getName() == "adminAdvanced";
+    },
     getToken: getToken
   });
 
@@ -226,7 +233,7 @@ if (Meteor.isClient) {
       var state = Iron.controller().state;
       var token = this.token;
       resetResult(state);
-      state.set("numSettings", 9);
+      state.set("numSettings", 4);
 
       if (successTracker) {
         successTracker.stop();
@@ -253,26 +260,6 @@ if (Meteor.isClient) {
       Meteor.call("setAccountSetting", token, "github", event.target.githubLogin.checked, handleErrorBound);
       Meteor.call("setAccountSetting", token, "emailToken", event.target.emailTokenLogin.checked, handleErrorBound);
       Meteor.call("setSetting", token, "smtpUrl", event.target.smtpUrl.value, handleErrorBound);
-      Meteor.call("setSetting", token, "splashDialog", event.target.splashDialog.value, handleErrorBound);
-      Meteor.call("setSetting", token, "signupDialog", event.target.signupDialog.value, handleErrorBound);
-      Meteor.call("setSetting", token, "adminAlert", event.target.adminAlert.value, handleErrorBound);
-      var alertTimeString = event.target.alertTime.value.trim();
-      if (alertTimeString) {
-        var alertTime = new Date(alertTimeString);
-        if (isNaN(alertTime.getTime())) {
-          // Assume only time and not date was set.
-          alertTime = new Date(new Date().toLocaleDateString() + " " + alertTimeString);
-        }
-        if (isNaN(alertTime.getTime())) {
-          handleErrorBound(new Meteor.Error(
-              400, "Couldn't parse alert time, please be more precise."));
-        } else {
-          Meteor.call("setSetting", token, "adminAlertTime", alertTime, handleErrorBound);
-        }
-      } else {
-        Meteor.call("setSetting", token, "adminAlertTime", null, handleErrorBound);
-      }
-      Meteor.call("setSetting", token, "adminAlertUrl", event.target.alertUrl.value, handleErrorBound);
       return false;
     },
   });
@@ -301,30 +288,6 @@ if (Meteor.isClient) {
       } else {
         return false;
       }
-    },
-    splashDialog: function() {
-      var setting = Settings.findOne({_id: "splashDialog"});
-      return (setting && setting.value) || DEFAULT_SPLASH_DIALOG;
-    },
-    signupDialog: function() {
-      var setting = Settings.findOne({_id: "signupDialog"});
-      return (setting && setting.value) || DEFAULT_SIGNUP_DIALOG;
-    },
-    adminAlert: function() {
-      var setting = Settings.findOne({_id: "adminAlert"});
-      return (setting && setting.value);
-    },
-    alertTime: function() {
-      var setting = Settings.findOne({_id: "adminAlertTime"});
-      if (setting && setting.value) {
-        return setting.value.toLocaleDateString() + " " + setting.value.toLocaleTimeString();
-      } else {
-        return "";
-      }
-    },
-    alertUrl: function() {
-      var setting = Settings.findOne({_id: "adminAlertUrl"});
-      return (setting && setting.value);
     },
     smtpUrl: function () {
       return Iron.controller().state.get("smtpUrl");
@@ -710,6 +673,80 @@ if (Meteor.isClient) {
       var token = ApiTokens.findOne({_id: capId});
 
       updateCap(capId, !token.revoked);
+    },
+  });
+
+  Template.adminAdvanced.events({
+    "submit #admin-settings-form": function (event) {
+      var state = Iron.controller().state;
+      var token = this.token;
+      resetResult(state);
+      state.set("numSettings", 5);
+
+      if (successTracker) {
+        successTracker.stop();
+        successTracker = null;
+      }
+      if (token) {
+        successTracker = Tracker.autorun(function () {
+          if (state.get("successes") == state.get("numSettings")) {
+            Meteor.call("clearAdminToken", token, function (err) {
+              if (err) {
+                console.error("Failed to clear admin token: ", err);
+              }
+            });
+          }
+        });
+      }
+      var handleErrorBound = handleError.bind(state);
+      Meteor.call("setSetting", token, "splashDialog", event.target.splashDialog.value, handleErrorBound);
+      Meteor.call("setSetting", token, "signupDialog", event.target.signupDialog.value, handleErrorBound);
+      Meteor.call("setSetting", token, "adminAlert", event.target.adminAlert.value, handleErrorBound);
+      var alertTimeString = event.target.alertTime.value.trim();
+      if (alertTimeString) {
+        var alertTime = new Date(alertTimeString);
+        if (isNaN(alertTime.getTime())) {
+          // Assume only time and not date was set.
+          alertTime = new Date(new Date().toLocaleDateString() + " " + alertTimeString);
+        }
+        if (isNaN(alertTime.getTime())) {
+          handleErrorBound(new Meteor.Error(
+              400, "Couldn't parse alert time, please be more precise."));
+        } else {
+          Meteor.call("setSetting", token, "adminAlertTime", alertTime, handleErrorBound);
+        }
+      } else {
+        Meteor.call("setSetting", token, "adminAlertTime", null, handleErrorBound);
+      }
+      Meteor.call("setSetting", token, "adminAlertUrl", event.target.alertUrl.value, handleErrorBound);
+      return false;
+    }
+  });
+
+  Template.adminAdvanced.helpers({
+    splashDialog: function() {
+      var setting = Settings.findOne({_id: "splashDialog"});
+      return (setting && setting.value) || DEFAULT_SPLASH_DIALOG;
+    },
+    signupDialog: function() {
+      var setting = Settings.findOne({_id: "signupDialog"});
+      return (setting && setting.value) || DEFAULT_SIGNUP_DIALOG;
+    },
+    adminAlert: function() {
+      var setting = Settings.findOne({_id: "adminAlert"});
+      return (setting && setting.value);
+    },
+    alertTime: function() {
+      var setting = Settings.findOne({_id: "adminAlertTime"});
+      if (setting && setting.value) {
+        return setting.value.toLocaleDateString() + " " + setting.value.toLocaleTimeString();
+      } else {
+        return "";
+      }
+    },
+    alertUrl: function() {
+      var setting = Settings.findOne({_id: "adminAlertUrl"});
+      return (setting && setting.value);
     },
   });
 }

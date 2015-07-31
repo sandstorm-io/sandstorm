@@ -247,7 +247,7 @@ function serveStaticAsset(req, res) {
       var done = new Future();
       req.on("data", function (buf) {
         totalSize += buf.length;
-        if (totalSize <= (32 * 1024)) {
+        if (totalSize <= (40 * 1024)) {
           buffers.push(buf);
         }
       });
@@ -255,10 +255,10 @@ function serveStaticAsset(req, res) {
       req.on("error", done.throw.bind(done));
       done.wait();
 
-      if (totalSize > (32 * 1024)) {
+      if (totalSize > (40 * 1024)) {
         // TODO(soon): Resize the image ourselves.
         res.writeHead(400, { "Content-Type": "text/plain" });
-        res.end("Picture too large; please use an image under 32kB.");
+        res.end("Picture too large; please use an image under 40 KiB.");
         return;
       }
 

@@ -205,7 +205,7 @@ shell-build: shell/lib/* shell/client/* shell/server/* shell/shared/* shell/publ
 # ====================================================================
 # Bundle
 
-bundle: tmp/.ekam-run shell-build make-bundle.sh
+bundle: tmp/.ekam-run shell-build make-bundle.sh meteor-bundle-main.js
 	@$(call color,bundle)
 	@./make-bundle.sh
 

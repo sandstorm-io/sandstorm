@@ -1842,7 +1842,7 @@ private:
     Subprocess process([&]() -> int {
       // Create a listening socket for the meteor app on fd=3
       int sockFd;
-      KJ_SYSCALL(sockFd = socket(PF_INET, SOCK_STREAM | O_NONBLOCK, IPPROTO_TCP));
+      KJ_SYSCALL(sockFd = socket(PF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
       sockaddr_in sa;
       memset(&sa, 0, sizeof sa);
       sa.sin_family = AF_INET;

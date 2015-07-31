@@ -1069,6 +1069,7 @@ Proxy.prototype._callNewApiSession = function (request, userInfo) {
             upper64: 0
         };
       } else if (Net.isIPv6(addressToPass)) {
+        // TODO(test): Unit test this
         // Parse a valid v6 address.
         // Split into groups, then insert an appropriate number of 0's if :: was used.
         var groups = addressToPass.split(":");

@@ -719,10 +719,19 @@ body>.popup {
       background-repeat: no-repeat;
     }
 
-    label {
+    label, .email .info {
       font-size: 80%;
       margin-top: 7px;
       margin-bottom: -2px;
+    }
+
+    .email .info {
+      border-radius: 50%;
+      padding: 0px 6px;
+      float: right;
+      cursor: pointer;
+      background-color: #762f87;
+      color: white;
     }
 
     label {

@@ -1028,6 +1028,14 @@ var isRfc1918OrLocal = function(address) {
   }
 };
 
+var quadToIntString = function(quad) {
+    var num = Bignum(quad[0]).shiftLeft(16)
+                .add(quad[1]).shiftLeft(16)
+                .add(quad[2]).shiftLeft(16)
+                .add(quad[3]);
+    return num.toString();
+}
+
 Proxy.prototype._callNewApiSession = function (request, userInfo) {
   var self = this;
   var params = {};
@@ -1061,9 +1069,47 @@ Proxy.prototype._callNewApiSession = function (request, userInfo) {
             upper64: 0
         };
       } else if (Net.isIPv6(addressToPass)) {
-        // Because I don't want to parse a v6 address in JS so I can convert it to a bignum so I can
-        // convert it back to a string to stuff it in a uint64_t, we do not support IPv6 for this
-        // feature at present.  Someone can fix this later.
+        // TODO(test): Unit test this
+        // Parse a valid v6 address.
+        // Split into groups, then insert an appropriate number of 0's if :: was used.
+        var groups = addressToPass.split(":");
+        // Strip extra empty group in the case of a leading or trailing "::".
+        if (groups[0] === '') {
+            groups.shift();
+        }
+        if (groups[groups.length - 1] === '') {
+            groups.pop();
+        }
+        var lastGroup = groups[groups.length - 1];
+        // Handle IPv4-mapped IPv6 addresses.  These end in a dotted-quad IPv4 address, which we
+        // should expand into two groups of 4-character hex strings, like the rest of the address.
+        if (Net.isIPv4(lastGroup)) {
+            groups.pop();
+            var quad = lastGroup.split(".").map(function(x) { return parseInt(x, 10); });
+            groups.push((quad[0]*256 + quad[1]).toString(16));
+            groups.push((quad[2]*256 + quad[3]).toString(16));
+        }
+        var groupsToAdd = 8 - groups.length;
+        var emptyGroupIndex = groups.indexOf('');
+        if (emptyGroupIndex !== -1) {
+          var head = groups.slice(0, emptyGroupIndex);
+          // groupsToAdd + 1 because we sliced out the empty element
+          var mid = Array(groupsToAdd + 1);
+          for (var i = 0; i < groupsToAdd + 1 ; i++) {
+              mid[i] = '0';
+          }
+          var tail = groups.slice(emptyGroupIndex + 1, groups.length);
+          var cleanGroups = [].concat(head, mid, tail);
+        } else {
+          var cleanGroups = groups;
+        }
+        var ints = cleanGroups.map(function(x) { return parseInt(x, 16); });
+        // We use strings because we'd lose data from loss of precision casting the 64-bit uints
+        // into 53-bit-mantissa doubles.
+        params.remoteAddress = {
+            upper64: quadToIntString(ints.slice(0,4)),
+            lower64: quadToIntString(ints.slice(4,8))
+        };
       }
     }
   }

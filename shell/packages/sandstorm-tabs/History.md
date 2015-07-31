@@ -5,6 +5,7 @@
   The functionality this was adding doesn't seem to be important for our use case (though I'm not
   actually sure exactly what that functionality is). If it does become important, there's probably
   a nicer way to implement it.
+* Tweak some CSS and data attributes.
 
 2.2.0
 =====

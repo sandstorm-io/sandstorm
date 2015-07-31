@@ -601,21 +601,8 @@ body>.popup {
     }
 
     >h4.tabbed {
-      margin: 0px;
-      font-size: 14px;
-      padding-left: 10px;
-      line-height: 32px;
       border-bottom: none;
       margin-bottom: 0px;
-
-      @media #{$mobile} {
-        font-size: 14pt;
-      }
-    }
-
-    .tabs-list {
-      margin-top: 0px;
-      border-bottom: none;
     }
 
     >.footer {
@@ -628,8 +615,19 @@ body>.popup {
      }
     }
 
-    >div>textarea {
+    .share-token-role {
+      max-width: 45%;
+    }
+
+    .emails {
+       width: 50%;
+    }
+    .label, .personal-message {
       width: 100%;
+    }
+    .label-explanation {
+      font-size: 8pt;
+      font-style: italic;
     }
 
     input, button, .login-button {

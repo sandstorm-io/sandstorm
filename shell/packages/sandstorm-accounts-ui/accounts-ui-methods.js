@@ -24,6 +24,7 @@ var ValidHandle = Match.Where(function (handle) {
 
 Meteor.methods({
   updateProfile: function (profile) {
+    // TODO(cleanup): This check also appears in sandstorm-db/users.js.
     check(profile, {
       name: Match.Optional(String),
       handle: Match.Optional(ValidHandle),
@@ -34,6 +35,31 @@ Meteor.methods({
       throw new Meteor.Error(403, "not logged in");
     }
 
-    Meteor.users.update(this.userId, {$set: {profile: profile}});
-  }
+    Meteor.users.update(this.userId, {$set: {
+      "profile.name": profile.name,
+      "profile.handle": profile.handle,
+      "profile.pronoun": profile.pronoun
+    }});
+  },
 });
+
+if (Meteor.isServer) {
+  // Methods that can't be simulated.
+
+  Meteor.methods({
+    uploadProfilePicture: function () {
+      if (!this.userId) {
+        throw new Meteor.Error(403, "Must log in to upload profile picture.");
+      }
+
+      return this.connection.sandstormDb.newAssetUpload({
+        profilePicture: { userId: this.userId }
+      });
+    },
+
+    cancelUploadProfilePicture: function (id) {
+      check(id, String);
+      this.connection.sandstormDb.fulfillAssetUpload(id);
+    },
+  });
+}

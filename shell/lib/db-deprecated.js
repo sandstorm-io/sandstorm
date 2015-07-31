@@ -56,6 +56,12 @@ roleAssignmentPattern = globalDb.roleAssignmentPattern;
 
 if (Meteor.isServer) {
   getWildcardOrigin = globalDb.getWildcardOrigin.bind(globalDb);
+
+  Meteor.onConnection(function (connection) {
+    // TODO(cleanup): This is the best way I've thought of so far to allow methods declared in
+    //   packages to actually use the DB, but it's pretty sad.
+    connection.sandstormDb = globalDb;
+  });
 }
 
 if (Meteor.isClient) {

@@ -21,8 +21,10 @@ browseHome = function() {
   Router.go("root");
 }
 
-getOrigin = function() {
-  return document.location.protocol + "//" + document.location.host;
+if (Meteor.isClient) {
+  getOrigin = function() {
+    return document.location.protocol + "//" + document.location.host;
+  }
 }
 
 if (Meteor.isServer) {
@@ -47,6 +49,15 @@ if (Meteor.isServer) {
 
   BrowserPolicy.framing.disallow();  // Disallow framing of the UI.
   BrowserPolicy.content.allowFrameOrigin(getWildcardOrigin());
+
+  // Allow anything to be loaded from the static asset host.
+  var Url = Npm.require("url");
+  var staticAssetHost = Url.parse(process.env.ROOT_URL).protocol + "//" +
+                        globalDb.makeWildcardHost("static");
+  BrowserPolicy.content.allowImageOrigin(staticAssetHost);
+  BrowserPolicy.content.allowScriptOrigin(staticAssetHost);
+  BrowserPolicy.content.allowFontOrigin(staticAssetHost);
+  BrowserPolicy.content.allowConnectOrigin(staticAssetHost);
 
   Meteor.publish("grainsMenu", function () {
     if (this.userId) {
@@ -636,13 +647,15 @@ if (Meteor.isClient) {
     "click #restore-backup-button":  function (event) {
       var grainId = this.grainId;
 
+      // TODO(cleanup): Share code with "upload picture" and other upload buttons.
       var input = document.createElement("input");
       input.type = "file";
       input.style = "display: none";
       Session.set("uploadStatus", "Uploading");
 
       input.addEventListener("change", function (e) {
-        // TODO: make sure only 1 file is uploaded
+        // TODO(cleanup): Use Meteor's HTTP, although this may require sending them a PR to support
+        //   progress callbacks (and officially document that binary input is accepted).
         var file = e.currentTarget.files[0];
 
         var xhr = new XMLHttpRequest();
@@ -996,7 +1009,8 @@ Router.map(function () {
         // Not logged in.
         Router.go("root");
       }
-      return new SandstormAccountSettingsUi(globalTopbar);
+      return new SandstormAccountSettingsUi(globalTopbar,
+          window.location.protocol + "//" + makeWildcardHost("static"));
     }
   });
 });

@@ -19,12 +19,14 @@ Package.describe({
   version: "0.1.0"
 });
 
+Npm.depends({ "content-type": "1.0.1" });
+
 Package.onUse(function (api) {
   api.use(["mongo", "random", "check", "underscore"], ["client", "server"]);
-  api.use("accounts-base", ["server"]);
+  api.use(["accounts-base", "fongandrew:find-and-modify", "http"], ["server"]);
 
   api.addFiles("db.js");
-  api.addFiles("migrations.js", "server");
+  api.addFiles(["user.js", "migrations.js"], "server");
   api.export("SandstormDb");
 });
 

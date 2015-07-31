@@ -21,6 +21,8 @@ Meteor.publish("accountIdentities", function () {
     Meteor.users.find(Meteor.userId,
       {fields: {
         "profile":1,
+        "devName":1,
+        "expires":1,
 
         "services.google.id":1,
         "services.google.email":1,

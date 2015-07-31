@@ -125,6 +125,19 @@ function fixOasisStorageUsageStats() {
   }
 }
 
+function fetchProfilePictures() {
+  Meteor.users.find({}).forEach(function (user) {
+    var url = userPictureUrl(user);
+    if (url) {
+      console.log("Fetching user picture:", url);
+      var assetId = fetchPicture(url);
+      if (assetId) {
+        Meteor.users.update(user._id, {$set: {"profile.picture": assetId}});
+      }
+    }
+  });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -134,6 +147,7 @@ var MIGRATIONS = [
   denormalizeInviteInfo,
   mergeRoleAssignmentsIntoApiTokens,
   fixOasisStorageUsageStats,
+  fetchProfilePictures,
 ];
 
 function migrateToLatest() {

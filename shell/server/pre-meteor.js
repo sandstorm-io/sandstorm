@@ -21,6 +21,8 @@ var Url = Npm.require("url");
 var Fs = Npm.require("fs");
 var Dns = Npm.require("dns");
 var Promise = Npm.require("es6-promise").Promise;
+var Future = Npm.require("fibers/future");
+
 var HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 var DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
     Url.parse(process.env.DDP_DEFAULT_CONNECTION_URL).hostname;
@@ -161,6 +163,152 @@ function wwwHandlerForGrain(grainId) {
   };
 }
 
+function writeErrorResponse(res, err) {
+  var status = 500;
+  if (err instanceof Meteor.Error && typeof err.error === "number" &&
+      err.error >= 400 && err.error < 600) {
+    status = err.error;
+  }
+
+  // Log errors that are our fault, but not errors that are the client's fault.
+  if (status >= 500) console.error(err.stack);
+
+  res.writeHead(status, { "Content-Type": err.isSafeHtmlMessage ? "text/html" : "text/plain" });
+  res.end(err.message);
+}
+
+var PNG_MAGIC = new Buffer([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+var JPEG_MAGIC = new Buffer([0xFF, 0xD8, 0xFF, 0xE0]);
+
+function checkMagic(buf, magic) {
+  if (buf.length < magic.length) return false;
+  for (var i = 0; i < magic.length; i++) {
+    if (buf[i] != magic[i]) return false;
+  }
+  return true;
+}
+
+function serveStaticAsset(req, res) {
+  inMeteor(function () {
+    if (req.method === "GET") {
+      var url = Url.parse(req.url);
+      var asset = globalDb.getStaticAsset(url.pathname.slice(1));
+
+      if (asset) {
+        var headers = {
+          "Content-Type": asset.mimeType,
+          "Content-Length": asset.content.length,
+
+          // Assets can be cached forever because each one has a unique ID.
+          "Cache-Control": "public, max-age:31536000",
+
+          // Set strict Content-Security-Policy to prevent static assets from executing any script
+          // or doing basically anything when browsed to directly. The static assets host is not
+          // intended to serve HTML. Mostly, it serves images and javascript -- note that setting
+          // the CSP header on Javascript files does not prevent other hosts from voluntarily
+          // specifying these scripts in <script> tags.
+          "Content-Security-Policy": "default-src 'none'; sandbox",
+
+          // Allow any host to fetch these assets. This is safe since requests to this host are
+          // totally side-effect-free and the asset ID acts as a capability to prevent loading
+          // assets you're not supposed to know about.
+          "Access-Control-Allow-Origin": "*",
+
+          // Extra protection against content type trickery.
+          "X-Content-Type-Options": "nosniff",
+        };
+        if (asset.encoding) {
+          headers["Content-Encoding"] = asset.encoding;
+        }
+
+        res.writeHead(200, headers);
+        res.end(asset.content);
+      } else {
+        res.writeHead(404, {"Content-Type": "text/plain"});
+        res.end("not found");
+      }
+    } else if (req.method === "POST") {
+      res.setHeader("Access-Control-Allow-Origin", "*");
+
+      var url = Url.parse(req.url);
+      var purpose = globalDb.fulfillAssetUpload(url.pathname.slice(1));
+      if (!purpose) {
+        res.writeHead(404, { "Content-Type": "text/plain" });
+        res.end("Upload token not found or expired.");
+        return;
+      }
+
+      var userId = purpose.profilePicture.userId;
+      // TODO(someday): Implement identities, pay attention to identityId.
+      check(userId, String);
+
+      var buffers = [];
+      var totalSize = 0;
+      var done = new Future();
+      req.on("data", function (buf) {
+        totalSize += buf.length;
+        if (totalSize <= (32 * 1024)) {
+          buffers.push(buf);
+        }
+      });
+      req.on("end", done.return.bind(done));
+      req.on("error", done.throw.bind(done));
+      done.wait();
+
+      if (totalSize > (32 * 1024)) {
+        // TODO(soon): Resize the image ourselves.
+        res.writeHead(400, { "Content-Type": "text/plain" });
+        res.end("Picture too large; please use an image under 32kB.");
+        return;
+      }
+
+      var content = Buffer.concat(buffers);
+      var type;
+      if (checkMagic(content, PNG_MAGIC)) {
+        type = "image/png";
+      } else if (checkMagic(content, JPEG_MAGIC)) {
+        type = "image/jpeg";
+      } else {
+        res.writeHead(400, { "Content-Type": "text/plain" });
+        res.end("Image must be PNG or JPEG.");
+        return;
+      }
+
+      var assetId = globalDb.addStaticAsset({mimeType: type}, content);
+
+      var old = Meteor.users.findAndModify({
+        query: {_id: userId},
+        update: {$set: {"profile.picture": assetId}},
+        fields: {"profile.picture": 1}
+      });
+      if (old && old.profile && old.profile.picture) {
+        globalDb.unrefStaticAsset(old.profile.picture);
+      }
+
+      res.writeHead(204, {});
+      res.end();
+    } else if (req.method === "OPTIONS") {
+      var requestedHeaders = req.headers["access-control-request-headers"];
+      if (requestedHeaders) {
+        res.setHeader("Access-Control-Allow-Headers", requestedHeaders);
+      }
+      res.writeHead(204, {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
+          "Access-Control-Max-Age": "3600"});
+      res.end();
+    } else {
+      res.writeHead(405, "Method Not Allowed", {
+        "Allow": "GET, POST, OPTIONS",
+        "Content-Type": "text/plain"
+      });
+      res.end("405 Method Not Allowed: " + req.method);
+    }
+  }).catch (function (err) {
+    writeErrorResponse(res, err);
+  });
+}
+
 Meteor.startup(function () {
 
   var meteorUpgradeListeners = WebApp.httpServer.listeners('upgrade');
@@ -200,7 +348,13 @@ Meteor.startup(function () {
     if (id) {
       // Match!
 
-      // First, try to route the request to a session.
+      if (id === "static") {
+        // Static assets domain.
+        serveStaticAsset(req, res);
+        return;
+      }
+
+      // Try to route the request to a session.
       if (tryProxyRequest(id, req, res)) {
         return;
       }
@@ -237,9 +391,7 @@ Meteor.startup(function () {
         }
       });
     }).catch(function (err) {
-      if (!err.error || err.error >= 500) console.error(err.stack);
-      res.writeHead(err.error || 500, { "Content-Type": "text/html" });
-      res.end(err.message);
+      writeErrorResponse(res, err);
     });
   });
 });
@@ -279,7 +431,7 @@ function lookupPublicIdFromDns(hostname) {
     Dns.resolveTxt("sandstorm-www." + hostname, function (err, records) {
       if (err) {
         var errorMsg = errorTxtMapping[err.code] || "";
-        reject(new Error(
+        var error = new Error(
           "<p>Error looking up DNS TXT records for host '" + hostname + "': " + err.message + "<br>\n" +
           "<br>\n" +
           "This Sandstorm server's main interface is at: <a href=\"" + process.env.ROOT_URL + "\">" +
@@ -291,7 +443,9 @@ function lookupPublicIdFromDns(hostname) {
           "<br>\n" +
           "If you got here after trying to log in via OAuth (e.g. through Github or Google),<br>\n" +
           "the problem is probably that the OAuth callback URL was set wrong. You need to<br>\n" +
-          "update it through the respective login provider's management console.</p>"));
+          "update it through the respective login provider's management console.</p>");
+        error.isSafeHtmlMessage = true;  // TODO(cleanup): ick
+        reject(error);
       } else if (records.length !== 1) {
         reject(new Error("Host 'sandstorm-www." + hostname + "' must have exactly one TXT record."));
       } else {

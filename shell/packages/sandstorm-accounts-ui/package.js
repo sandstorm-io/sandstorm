@@ -5,7 +5,7 @@ Package.describe({
 
 Package.onUse(function (api) {
   api.use(['check', 'tracker', 'service-configuration', 'accounts-base',
-           'underscore', 'templating', 'session', 'jparker:crypto-md5'], 'client');
+           'underscore', 'templating', 'session', 'jparker:crypto-md5', 'http'], 'client');
   api.use(['check', 'accounts-base'], 'server');
 
   // Export Accounts (etc) to packages using this one.

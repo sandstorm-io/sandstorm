@@ -30,8 +30,14 @@
 //   createdAt: Date when this entry was added to the collection.
 //   lastActive: Date of the user's most recent interaction with this Sandstorm server.
 //   profile: Object containing profile data editable by the user and visible to other users. May
-//            include the following fields:
-//       name: String containing the display name of the user.
+//            include the following fields. Note that if any field is missing, the first fallback
+//            is to check `services` for details provided by the identity provider (the details
+//            of which differ per-provider). Only if that is also missing do we fall back to
+//            defaults.
+//       name: String containing the display name of the user. Default: first part of email.
+//       handle: String containing the user's preferred handle. Default: first part of email.
+//       picture: _id into the StaticAssets table for the user's picture. Default: identicon.
+//       pronoun: One of "male", "female", "neutral", or "robot". Default: neutral.
 //   services: Object containing login and identity data used by Meteor authentication services.
 //   isAdmin: Boolean indicating whether this user is allowed to access the Sandstorm admin panel.
 //   signupKey: If this is an invited user, then this field contains their signup key.
@@ -358,6 +364,32 @@ Migrations = new Mongo.Collection("migrations");
 //   _id:       "migrations_applied"
 //   value:     The number of migrations this instance has successfully completed.
 
+StaticAssets = new Mongo.Collection("staticAssets");
+// Collection of static assets served up from the Sandstorm server's "static" host. We only
+// support relatively small assets: under 1MB each.
+//
+// Each contains:
+//   _id:       Random ID; will be used in the URL.
+//   hash:      A SHA-256 hash of the data, used to de-dupe.
+//   mimeType:  MIME type of the asset, suitable for Content-Type header.
+//   encoding:  Either "gzip" or not present, suitable for Content-Encoding header.
+//   content:   The asset content (byte buffer).
+//   refcount:  Number of places where this asset's ID appears in the database. Since Mongo doesn't
+//       have transactions, this needs to bias towards over-counting; a backup GC could be used
+//       to catch leaked assets, although it's probably not a big deal in practice.
+
+AssetUploadTokens = new Mongo.Collection("assetUploadTokens");
+// Collection of tokens representing a single-use permission to upload an asset, such as a new
+// profile picture.
+//
+// Each contains:
+//   _id:       Random ID.
+//   purpose:   Contains one of the following, indicating how the asset is to be used:
+//       profilePicture: Indicates that the upload is a new profile picture. Contains fields:
+//           userId: User whose picture shall be replaced.
+//           identityId: Which of the user's identities shall be updated.
+//   expires:   Time when this token will go away if unused.
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.
@@ -368,22 +400,6 @@ if (Meteor.isServer) {
     } else {
       return [];
     }
-  });
-
-  // The first user to sign in should be automatically upgraded to admin.
-  Accounts.onCreateUser(function (options, user) {
-    // Dev users are identified by having the devName field
-    // Don't count them in our find and don't give them admin
-    if (Meteor.users.find({devName: {$exists: 0}}).count() === 0 && !user.devName) {
-      user.isAdmin = true;
-      user.signupKey = "admin";
-    }
-
-    if (options.profile) {
-      user.profile = options.profile;
-    }
-
-    return user;
   });
 }
 
@@ -584,4 +600,153 @@ _.extend(SandstormDb.prototype, {
 
 if (Meteor.isServer) {
   SandstormDb.prototype.getWildcardOrigin = getWildcardOrigin;
+}
+
+// =======================================================================================
+// Below this point are newly-written or refactored functions.
+
+if (Meteor.isServer) {
+  var Crypto = Npm.require("crypto");
+  var ContentType = Npm.require("content-type");
+
+  var BufferSmallerThan = function (limit) {
+    return Match.Where(function (buf) {
+      check(buf, Buffer);
+      return buf.length < limit;
+    });
+  }
+
+  var DatabaseId = Match.Where(function (s) {
+    check(s, String);
+    return !!s.match(/^[a-zA-Z0-9_]+$/);
+  });
+
+  addStaticAsset = function (metadata, content) {
+    // Add a new static asset to the database.
+
+    check(metadata, {
+      mimeType: String,
+      encoding: Match.Optional("gzip")
+    });
+    check(content, BufferSmallerThan(1 << 20));
+
+    // Validate content type.
+    metadata.mimeType = ContentType.format(ContentType.parse(metadata.mimeType));
+
+    var hasher = Crypto.createHash("sha256");
+    hasher.update(metadata.mimeType + "\n" + metadata.encoding + "\n", "utf8");
+    hasher.update(content);
+    var hash = hasher.digest("base64");
+
+    var existing = StaticAssets.findAndModify({
+      query: {hash: hash, refcount: {$gte: 1}},
+      update: {$inc: {refcount: 1}},
+      fields: {_id: 1, refcount: 1},
+    });
+    if (existing) {
+      return existing._id;
+    }
+
+    return StaticAssets.insert(_.extend({
+      hash: hash,
+      content: content,
+      refcount: 1
+    }, metadata));
+  }
+
+  SandstormDb.prototype.addStaticAsset = addStaticAsset;
+
+  SandstormDb.prototype.refStaticAsset = function (id) {
+    // Increment the refcount on an existing static asset.
+    //
+    // You must call this BEFORE adding the new reference to the DB, in case of failure between
+    // the two calls. (This way, the failure case is a storage leak, which is probably not a big
+    // deal and can be fixed by GC, rather than a mysteriously missing asset.)
+
+    check(id, String);
+
+    var existing = StaticAssets.findAndModify({
+      query: {hash: hash},
+      update: {$inc: {refcount: 1}},
+      fields: {_id: 1, refcount: 1},
+    });
+    if (!existing) {
+      throw new Error("refStaticAsset() called on asset that doesn't exist");
+    }
+  }
+
+  SandstormDb.prototype.unrefStaticAsset = function (id) {
+    // Decrement refcount on a static asset and delete if it has reached zero.
+    //
+    // You must call this AFTER removing the reference from the DB, in case of failure between
+    // the two calls. (This way, the failure case is a storage leak, which is probably not a big
+    // deal and can be fixed by GC, rather than a mysteriously missing asset.)
+
+    check(id, String);
+
+    var existing = StaticAssets.findAndModify({
+      query: {_id: id},
+      update: {$inc: {refcount: -1}},
+      fields: {_id: 1, refcount: 1},
+      new: true,
+    });
+    if (!existing) {
+      console.error(new Error("unrefStaticAsset() called on asset that doesn't exist").stack);
+    } else if (existing.refcount <= 0) {
+      StaticAssets.remove({_id: existing._id});
+    }
+  }
+
+  SandstormDb.prototype.getStaticAsset = function (id) {
+    // Get a static asset's mimeType, encoding, and raw content.
+
+    check(id, String);
+
+    var asset = StaticAssets.findOne(id, {fields: {_id: 0, mimeType: 1, encoding: 1, content: 1}});
+    if (asset) {
+      // TODO(perf): Mongo converts buffers to something else. Figure out a way to avoid a copy
+      //   here.
+      asset.content = new Buffer(asset.content);
+    }
+    return asset;
+  }
+
+  SandstormDb.prototype.newAssetUpload = function (purpose) {
+    check(purpose, {profilePicture: {userId: DatabaseId, identityId: Match.Optional(DatabaseId)}});
+
+    return AssetUploadTokens.insert({
+      purpose: purpose,
+      expires: new Date(Date.now() + 300000),  // in 5 minutes
+    });
+  }
+
+  SandstormDb.prototype.fulfillAssetUpload = function (id) {
+    // Indicates that the given asset upload has completed. It will be removed and its purpose
+    // returned. If no matching upload exists, returns undefined.
+
+    check(id, String);
+
+    var upload = AssetUploadTokens.findAndModify({
+      query: {_id: id},
+      remove: true
+    });
+
+    if (upload.expires.valueOf() < Date.now()) {
+      return undefined;  // already expired
+    } else {
+      return upload.purpose;
+    }
+  }
+
+  function cleanupExpiredAssetUploads() {
+    AssetUploadTokens.remove({expires: {$lt: Date.now()}});
+  }
+
+  // Cleanup tokens every hour, with a random phase.
+  Meteor.setTimeout(function () {
+    cleanupExpiredAssetUploads();
+    Meteor.setInterval(function () {
+      cleanupExpiredAssetUploads();
+    }, 3600000);
+  }, Math.floor(Math.random() * 3600000));
 }

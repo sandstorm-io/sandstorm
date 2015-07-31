@@ -684,7 +684,7 @@ if (Meteor.isClient) {
     "click #offer-ipnetwork": function (event) {
       var state = Iron.controller().state;
       resetResult(state);
-      state.set("successMessage", "IpNetwork webkey created. See powerbox UI for your webkey.");
+      state.set("successMessage", "IpNetwork webkey created. Look for it in the top bar.");
       Meteor.call("offerIpNetwork", this.token, function (err, webkey) {
         state.set("powerboxOfferUrl", webkey);
         handleError.call(state, err);
@@ -694,7 +694,7 @@ if (Meteor.isClient) {
     "click #offer-ipinterface": function (event) {
       var state = Iron.controller().state;
       resetResult(state);
-      state.set("successMessage", "IpInterface webkey created. See powerbox UI for your webkey.");
+      state.set("successMessage", "IpInterface webkey created. Look for it in the top bar.");
       Meteor.call("offerIpInterface", this.token, function (err, webkey) {
         state.set("powerboxOfferUrl", webkey);
         handleError.call(state, err);
@@ -970,17 +970,17 @@ if (Meteor.isServer) {
     }
   });
 
-  var checkAuthForPublish = function (token, userId) {
+  var authorizedAsAdmin = function (token, userId) {
     return Match.test(token, Match.OneOf(undefined, null, String)) &&
            ((userId && isAdminById(userId)) || tokenIsValid(token));
   };
   Meteor.publish("admin", function (token) {
-    if (!checkAuthForPublish(token, this.userId)) return [];
+    if (!authorizedAsAdmin(token, this.userId)) return [];
     return Settings.find();
   });
 
   Meteor.publish("adminServiceConfiguration", function (token) {
-    if (!checkAuthForPublish(token, this.userId)) return [];
+    if (!authorizedAsAdmin(token, this.userId)) return [];
     return Package['service-configuration'].ServiceConfiguration.configurations.find();
   });
 
@@ -995,21 +995,21 @@ if (Meteor.isServer) {
   });
 
   Meteor.publish("allUsers", function (token) {
-    if (!checkAuthForPublish(token, this.userId)) return [];
+    if (!authorizedAsAdmin(token, this.userId)) return [];
     return Meteor.users.find();
   });
   Meteor.publish("activityStats", function (token) {
-    if (!checkAuthForPublish(token, this.userId)) return [];
+    if (!authorizedAsAdmin(token, this.userId)) return [];
     return ActivityStats.find();
   });
 
   Meteor.publish("statsTokens", function (token) {
-    if (!checkAuthForPublish(token, this.userId)) return [];
+    if (!authorizedAsAdmin(token, this.userId)) return [];
     return StatsTokens.find();
   });
 
   Meteor.publish("realTimeStats", function (token) {
-    if (!checkAuthForPublish(token, this.userId)) return [];
+    if (!authorizedAsAdmin(token, this.userId)) return [];
 
     // Last five minutes.
     this.added("realTimeStats", "now", computeStats(new Date(Date.now() - 5*60*1000)));
@@ -1024,7 +1024,7 @@ if (Meteor.isServer) {
     this.ready();
   });
   Meteor.publish("adminLog", function (token) {
-    if (!checkAuthForPublish(token, this.userId)) return [];
+    if (!authorizedAsAdmin(token, this.userId)) return [];
 
     var logfile = SANDSTORM_LOGDIR + "/sandstorm.log";
 
@@ -1061,7 +1061,7 @@ if (Meteor.isServer) {
     this.ready();
   });
   Meteor.publish("adminApiTokens", function (token) {
-    if (!checkAuthForPublish(token, this.userId)) return [];
+    if (!authorizedAsAdmin(token, this.userId)) return [];
     return ApiTokens.find({$or: [{"frontendRef.ipNetwork": {$exists: true}},
                                  {"frontendRef.ipInterface": {$exists: true}}]},
                           {fields: {frontendRef: 1, created: 1, requirements: 1, revoked: 1}});

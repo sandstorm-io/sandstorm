@@ -91,26 +91,43 @@ Meteor.methods({
       }
 
       var action = UserActions.findOne({appId: grainInfo.appId, userId: this.userId});
-      if (!action) {
+      // Create variables we'll use for later Mongo query.
+      var packageId;
+      var appVersion;
+      // DevApps are system-wide, so we do not check the user ID.
+      var devApp = DevApps.findOne({_id: grainInfo.appId});
+
+      if (action) {
+        // The app is installed, so we can continue restoring this
+        // grain.
+        packageId = action.packageId;
+        appVersion = action.appVersion;
+      } else if (devApp) {
+        // If the dev app exists, permit this.
+        packageId = devApp.packageId;
+        appVersion = devApp.manifest.appVersion;
+      } else {
+        // If the package isn't installed at all, bail out.
         deleteGrain(grainId, this.userId);
         throw new Meteor.Error(500,
                                "App id for uploaded grain not installed",
                                "App Id: " + grainInfo.appId);
       }
-      if (action.appVersion < grainInfo.appVersion) {
+
+      if (appVersion < grainInfo.appVersion) {
         deleteGrain(grainId, this.userId);
         throw new Meteor.Error(500,
                                "App version for uploaded grain is newer than any " +
                                "installed version. You need to upgrade your app first",
                                "New version: " + grainInfo.appVersion +
-                               ", Old version: " + action.appVersion);
+                               ", Old version: " + appVersion);
       }
 
       Grains.insert({
         _id: grainId,
-        packageId: action.packageId,
-        appId: action.appId,
-        appVersion: action.appVersion,
+        packageId: packageId,
+        appId: grainInfo.appId,
+        appVersion: appVersion,
         userId: this.userId,
         title: grainInfo.title,
         private: true

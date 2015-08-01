@@ -644,7 +644,7 @@ if (Meteor.isClient) {
     },
     hasCustomRole: function(token) {
       var role = token.roleAssignment;
-      if (role.roleId &&
+      if ("roleId" in role &&
           isEmptyPermissionSet(role.addPermissions) &&
           isEmptyPermissionSet(role.removePermissions)) {
         return false;
@@ -653,7 +653,7 @@ if (Meteor.isClient) {
     },
     hasCurrentRole: function(token) {
       var role = token.roleAssignment;
-      if (role.roleId && role.roleId == this.idx &&
+      if ("roleId" in role && role.roleId == this.idx &&
           isEmptyPermissionSet(role.addPermissions) &&
           isEmptyPermissionSet(role.removePermissions)) {
         return true;

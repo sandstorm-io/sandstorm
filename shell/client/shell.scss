@@ -369,14 +369,14 @@ body>.topbar {
   }
   @media #{$desktop} {
     >.delete>button    { background-image: url("/trash.png"); }
-    >.debug-log>button { background-image: url("/wrench.png"); }
+    >.debug-log>button { background-image: url("/debug.png"); }
     >.backup>button    { background-image: url("/download.png"); }
     >.restart>button   { background-image: url("/restart.png"); }
     >.webkey>button    { background-image: url("/key.png"); }
   }
   @media #{$mobile} {
     >.delete>button    { background-image: url("/trash-m.png"); }
-    >.debug-log>button { background-image: url("/wrench-m.png"); }
+    >.debug-log>button { background-image: url("/debug-m.png"); }
     >.backup>button    { background-image: url("/download-m.png"); }
     >.restart>button   { background-image: url("/restart-m.png"); }
     >.webkey>button    { background-image: url("/key-m.png"); }

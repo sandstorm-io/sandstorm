@@ -8,9 +8,8 @@ shell/sandstorm-shell.creator
 shell/sandstorm-shell.creator.user
 shell/sandstorm-shell.files
 shell/sandstorm-shell.includes
-shell/public/edit.png
 shell/public/trash.png
-shell/public/wrench.png
+shell/public/debug.png
 shell/public/download.png
 shell/public/restart.png
 shell/public/close.png

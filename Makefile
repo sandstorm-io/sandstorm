@@ -45,7 +45,7 @@ IMAGES= \
     shell/public/edit.png \
     shell/public/restart.png \
     shell/public/trash.png \
-    shell/public/wrench.png \
+    shell/public/debug.png \
     shell/public/download.png \
     shell/public/key.png \
     shell/public/share.png \
@@ -55,7 +55,7 @@ IMAGES= \
     shell/public/edit-m.png \
     shell/public/restart-m.png \
     shell/public/trash-m.png \
-    shell/public/wrench-m.png \
+    shell/public/debug-m.png \
     shell/public/download-m.png \
     shell/public/key-m.png \
     shell/public/share-m.png \

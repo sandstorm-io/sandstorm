@@ -42,7 +42,6 @@ endef
 
 
 IMAGES= \
-    shell/public/edit.png \
     shell/public/restart.png \
     shell/public/trash.png \
     shell/public/debug.png \
@@ -52,7 +51,6 @@ IMAGES= \
     shell/public/close.png \
     shell/public/menu.png \
     shell/public/inbox.png \
-    shell/public/edit-m.png \
     shell/public/restart-m.png \
     shell/public/trash-m.png \
     shell/public/debug-m.png \

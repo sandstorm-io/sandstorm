@@ -36,36 +36,12 @@ shell/packages/sandstorm-accounts-ui
     License: MIT
     License URL: https://github.com/meteor/meteor/blob/devel/LICENSE.txt
 
-icons/close.svg
-icons/download.svg
-icons/edit.svg
-icons/restart.svg
-icons/trash.svg
-icons/wrench.svg
-    What: Icons by Naomi Atkinson from The Noun Project
-    Source URL: http://www.thenounproject.com/naomiatkinson/uploads/
-    Copyright: Naomi Atkinson
-    License: CC BY 3.0
-    License URL: http://creativecommons.org/licenses/by/3.0/us/
-
-icons/share.svg
-    What: Share icon
-    Source URL: https://thenounproject.com/term/share/32409/
-    Copyright: Castor & Pollux
-    License: CC BY 3.0
-    License URL: http://creativecommons.org/licenses/by/3.0/us/
-
 icons/inbox.svg
     What: Inbox icon
     Source URL: https://thenounproject.com/term/inbox/55704/
     Copyright: Rohith M S
     License: CC BY 3.0
     License URL: http://creativecommons.org/licenses/by/3.0/us/
-
-icons/key.svg
-    What: Key icon
-    Source URL: http://thenounproject.com/term/key/655/
-    Copyright: Public domain
 
 shell/client/ansi-up.js
     What: ansi_up library (converts ANSI escape codes to HTML)

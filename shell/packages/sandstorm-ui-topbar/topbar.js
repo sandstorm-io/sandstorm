@@ -110,7 +110,7 @@ Template.sandstormTopbar.helpers({
     }
 
     var result = instance.popupPosition.get();
-    if (result.name === item.name) {
+    if (item && result && result.name === item.name) {
       return result;
     } else {
       // We haven't calculated the popup position yet. Place it off-screen for now.

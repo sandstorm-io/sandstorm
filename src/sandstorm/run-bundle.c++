@@ -1839,6 +1839,11 @@ private:
       // Create a listening socket for the meteor app on fd=3
       int sockFd;
       KJ_SYSCALL(sockFd = socket(PF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
+
+      // Enable SO_REUSEADDR so that `sandstorm restart` doesn't take minutes to succeed.
+      int optval = 1;
+      KJ_SYSCALL(setsockopt(sockFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
+
       sockaddr_in sa;
       memset(&sa, 0, sizeof sa);
       sa.sin_family = AF_INET;

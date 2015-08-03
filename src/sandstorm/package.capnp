@@ -263,33 +263,59 @@ struct Metadata {
 
   codeUrl @4 :Text;
   # URL of the app's source code repository, e.g. a Github URL.
+  #
+  # This field is required if the app's license requires redistributing code (such as the GPL),
+  # but is optional otherwise.
 
   license :group {
-    text @5 :Util.LocalizedText;
-    # Text of the app's license.
+    # How is this app licensed?
+    #
+    # Example usage for open source licenses:
+    #
+    #     license = (openSource = apache2, notices = embed "notices.txt"),
+    #
+    # Example usage for proprietary licenses:
+    #
+    #     license = (proprietary = embed "license.txt", notices = embed "notices.txt"),
 
-    notices @6 :Util.LocalizedText;
+    union {
+      none @5 :Void;
+      # No license. Default copyright rules apply; e.g. redistribution is prohibited. See:
+      #     http://choosealicense.com/no-license/
+      #
+      # "None" does NOT mean "public domain". Since public domain is not recognized in all
+      # jurisdictions, we recommend that Sandstorm apps choose an open source license like MIT
+      # or Apache 2 rather than use public domain.
+
+      openSource @6 :OpenSourceLicense;
+      # Indicates an OSI-approved open source license.
+      #
+      # If you choose such a license, the license title will be displayed with your app on the app
+      # market, and users who specify they want to see only open source apps will see your app.
+
+      proprietary @7 :Util.LocalizedText;
+      # Full text of a non-OSI-approved license.
+      #
+      # Sandstorm will display the license to the user and ask them to agree before the app is
+      # installed. If your license does not require such approval -- because it does not add any
+      # restrictions beyond default copyright protections -- consider whether it would make sense
+      # to use `none` instead; this will avoid prompting the user.
+
+      publicDomain @8 :Util.LocalizedText;
+      # Indicates that the app is placed in the public domain; you place absolutely no restrictions
+      # on its use or distribution. The text is your public domain dedication statement. Please
+      # note that public domain is not recognized in all jurisdictions, therefore using public
+      # domain is widely considered risky. The Open Source Initiative recommends using a permissive
+      # license like MIT's rather than public domain. unlicense.org provides resources to help you
+      # use public domain; it is highly recommended that you read it before using this.
+    }
+
+    notices @9 :Util.LocalizedText;
     # Contains any third-party copyright notices that the app is required to display, for example
     # due to use of third-party open source libraries.
-
-    isOpenSource @7 :Bool;
-    # True if the license is an Open Source license approved by the Open Source Initiative.
-
-    requiresAgreement @8 :Bool;
-    # True if this license requires the user to indicate they agree before the app may be used.
-    #
-    # If this is false, then the user is allowed to use the app without agreeing by following
-    # "default" copyright rules, which are roughly "you can do anything except distribute copies".
-    #
-    # Open source licenses never require agreement, because open source licenses only *remove*
-    # the default restrictions (allowing the user to distribute copies), while not adding any new
-    # restrictions.
-    #
-    # Proprietary licenses usually require agreement because they wish to add restrictions beyond
-    # the default, such as prohibiting reverse-engineering.
   }
 
-  categories @9 :List(UInt64);
+  categories @10 :List(UInt64);
   # List of category IDs under which this app should be classified. Categories are things
   # like "productivity" or "dev tools". Each category ID is generated using `capnp id`. Note that
   # although you can generate your own category IDs, an app market will only recognize a specific
@@ -310,15 +336,15 @@ struct Metadata {
     # identity based on their PGP key. For exmaple, Keybase.io has done a really good job of
     # connecting PGP keys to other Internet identities in a verifiable way.
 
-    contactEmail @10 :Text;
+    contactEmail @11 :Text;
     # Email address to contact for any issues with this app. This includes end-user support
     # requests as well as app store administrator requests, so it is very important that this be a
     # valid address with someone paying attention to it.
 
-    pgpSignature @11 :Data;
+    pgpSignature @12 :Data;
     # PGP signature attesting responsibility for the app ID. This is a binary-format detached
-    # signature of the following ASCII message (not including the quotes, and replacing <app-id>
-    # with the standard base-32 text format of the app's ID):
+    # signature of the following ASCII message (not including the quotes, no newlines, and
+    # replacing <app-id> with the standard base-32 text format of the app's ID):
     #
     # "I am the author of the Sandstorm.io app with the following ID: <app-id>"
     #
@@ -336,17 +362,23 @@ struct Metadata {
     # them to create a new key. Sandstorm will not auto-update users to the new version without,
     # at the very least, confirming their approval of the change in authorship.
 
-    pgpPublicKey @14 :Data;
+    pgpPublicKey @13 :Data;
     # The public key used to create `pgpSignature`, in binary format, e.g. as output by
     # `gpg --export <email>`. This is included here, rather than looked up from a keyserver, so
     # that a package signature can be verified down to a key fingerprint in isolation.
   }
 
-  description @12 :Text;
+  description @14 :Util.LocalizedText;
   # The app's description description in Github-flavored Markdown format, to be displayed e.g.
-  # in an app store.
+  # in an app store. Note that the Markdown is not permitted to cotnain HTML nor image tags (but
+  # you can include a list of screenshots separately).
 
-  screenshots @13 :List(Screenshot);
+  shortDescription @15 :Util.LocalizedText;
+  # A one-line description, possibly displayed in a directory of apps. If not provided, this will
+  # be generated algorithmically from `description` by taking all text up to the first period.
+  # Use only plain text here, not Markdown.
+
+  screenshots @16 :List(Screenshot);
   # Screenshots to use for marketing purposes.
 
   struct Screenshot {
@@ -371,6 +403,64 @@ struct Metadata {
       # JPEG-encoded image data. Preferred for screenshots that contain photographs or the like.
     }
   }
+
+  changeLog @17 :Util.LocalizedText;
+  # Documents the history of changes in Github-flavored markdown format (with the same restrictions
+  # as govern `description`). We recommend formatting this with an H1 heading for each version
+  # followed by a bullet list of changes.
+}
+
+struct OsiLicenseInfo {
+  id @0 :Text;
+  # The file name of the license at opensource.org, i.e. such that the URL can be constructed as:
+  #     http://opensource.org/licenses/<id>
+
+  title @1 :Text;
+  # Display title for app market. E.g. "Apache License 2.0".
+
+  requireSource @2 :Bool = false;
+  # Whether or not you are required to provide a `codeUrl` when specifying this license.
+}
+
+annotation osiInfo(enumerant) :OsiLicenseInfo;
+# Annotation applied to each item in the OpenSourceLicense enum.
+
+enum OpenSourceLicense {
+  # Identities an OSI-approved Open Source license. Apps which claim to be "open source" must use
+  # one of these licenses.
+
+  invalid @0;  # Sentinel value; do not choose this.
+
+  # Recommended licenses, especially for new code. These four licenses cover the spectrum of open
+  # source license mechanics and are widely recognized and understood.
+  mit        @1 $osiInfo(id = "MIT"       , title = "MIT License");
+  apache2    @2 $osiInfo(id = "Apache-2.0", title = "Apache License v2");
+  gpl3       @3 $osiInfo(id = "GPL-3.0"   , title = "GNU GPL v3", requireSource = true);
+  agpl3      @4 $osiInfo(id = "AGPL-3.0"  , title = "GNU AGPL v3", requireSource = true);
+
+  # Other popular general-purpose licenses.
+  bsd3Clause @5 $osiInfo(id = "BSD-3-Clause", title = "BSD 3-Clause");
+  bsd2Clause @6 $osiInfo(id = "BSD-2-Clause", title = "BSD 2-Clause");
+  gpl2       @7 $osiInfo(id = "GPL-2.0"     , title = "GNU GPL v2", requireSource = true);
+  lgpl2      @8 $osiInfo(id = "LGPL-2.1"    , title = "GNU LGPL v2.1", requireSource = true);
+  lgpl3      @9 $osiInfo(id = "LGPL-3.0"    , title = "GNU LGPL v3", requireSource = true);
+  isc       @10 $osiInfo(id = "ISC"         , title = "ISC License");
+
+  # Popular licenses associated with specific languages.
+  artistic2 @11 $osiInfo(id = "Artistic-2.0", title = "Artistic License v2");
+  python2   @12 $osiInfo(id = "Python-2.0"  , title = "Python License v2");
+  php3      @13 $osiInfo(id = "PHP-3.0"     , title = "PHP License v3");
+
+  # Popular licenses associated with specific projects or companies.
+  mpl2      @14 $osiInfo(id = "MPL-2.0" , title = "Mozilla Public License v2", requireSource = true);
+  cddl      @15 $osiInfo(id = "CDDL-1.0", title = "CDDL", requireSource = true);
+  epl       @16 $osiInfo(id = "EPL-1.0" , title = "Eclipse Public License", requireSource = true);
+
+  # Is your preferred license not on the list? We are happy to add any OSI-approved license; that
+  # is, anything on this page:
+  #     http://opensource.org/licenses/alphabetical
+  #
+  # Feel free to send a pull request adding yours.
 }
 
 # ==============================================================================

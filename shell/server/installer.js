@@ -196,7 +196,8 @@ function extractManifestAssets(manifest) {
 
   var license = metadata.license;
   if (license) {
-    if (license.text) license.text = handleLocalizedText(license.text);
+    if (license.proprietary) license.proprietary = handleLocalizedText(license.proprietary);
+    if (license.publicDomain) license.publicDomain = handleLocalizedText(license.proprietary);
     if (license.notices) license.notices = handleLocalizedText(license.notices);
   }
 
@@ -207,9 +208,14 @@ function extractManifestAssets(manifest) {
     if (author.pgpPublicKey) delete author.pgpPublicKey;
   }
 
-  // Delete description and screenshots, which we don't need.
-  if (metadata.description) delete metadata.description;
+  // Perhaps used by the "about" page?
+  if (metadata.description) metadata.description = handleLocalizedText(metadata.description);
+
+  // Screenshots are for app marketing; we don't use them post-install.
   if (metadata.screenshots) delete metadata.screenshots;
+
+  // We might allow the user to view the changelog.
+  if (metadata.changeLog) metadata.changeLog = handleLocalizedText(metadata.changeLog);
 }
 
 function getAllManifestAssets(manifest) {
@@ -249,9 +255,13 @@ function getAllManifestAssets(manifest) {
 
   var license = metadata.license;
   if (license) {
-    if (license.text) handleLocalizedText(license.text);
+    if (license.proprietary) handleLocalizedText(license.proprietary);
+    if (license.publicDomain) handleLocalizedText(license.publicDomain);
     if (license.notices) handleLocalizedText(license.notices);
   }
+
+  if (metadata.description) handleLocalizedText(metadata.description);
+  if (metadata.changeLog) handleLocalizedText(metadata.changeLog);
 
   return result;
 }

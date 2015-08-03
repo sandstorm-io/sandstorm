@@ -283,9 +283,7 @@ struct Metadata {
       # No license. Default copyright rules apply; e.g. redistribution is prohibited. See:
       #     http://choosealicense.com/no-license/
       #
-      # "None" does NOT mean "public domain". Since public domain is not recognized in all
-      # jurisdictions, we recommend that Sandstorm apps choose an open source license like MIT
-      # or Apache 2 rather than use public domain.
+      # "None" does NOT mean "public domain". See `publicDomain` below.
 
       openSource @6 :OpenSourceLicense;
       # Indicates an OSI-approved open source license.
@@ -296,10 +294,16 @@ struct Metadata {
       proprietary @7 :Util.LocalizedText;
       # Full text of a non-OSI-approved license.
       #
-      # Sandstorm will display the license to the user and ask them to agree before the app is
-      # installed. If your license does not require such approval -- because it does not add any
-      # restrictions beyond default copyright protections -- consider whether it would make sense
-      # to use `none` instead; this will avoid prompting the user.
+      # Proprietary licenses usually not only restrict copying but also place limitations on *use*
+      # of the app. In other words, while open source licenses grant users additional freedoms
+      # compared to default copyright rules, proprietary licenses impose additional restrictions.
+      #
+      # Because of this, the user must explicitly agree to the license. Sandstorm will display the
+      # license to the user and ask them to agree before they can start using the app.
+      #
+      # If your license does not require such approval -- because it does not add any restrictions
+      # beyond default copyright protections -- consider whether it would make sense to use `none`
+      # instead; this will avoid prompting the user.
 
       publicDomain @8 :Util.LocalizedText;
       # Indicates that the app is placed in the public domain; you place absolutely no restrictions

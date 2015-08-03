@@ -94,7 +94,7 @@ Accounts.onCreateUser(function (options, user) {
   // Try downloading avatar.
   var url = userPictureUrl(user);
   if (url) {
-    var assetId = fetchPicture(google.picture);
+    var assetId = fetchPicture(url);
     if (assetId) {
       user.profile.picture = assetId;
     }

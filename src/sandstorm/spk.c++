@@ -425,16 +425,25 @@ private:
         packageDef = symbol->asConst().as<spk::PackageDefinition>();
         sawPkgDef = true;
 
-        if (!packageDef.getManifest().getAppTitle().hasDefaultText()) {
+        auto manifest = packageDef.getManifest();
+        if (!manifest.hasAppTitle()) {
           return kj::str("missing `appTitle`\n"
                          "Under ", constantName, ".manifest, add something like ",
                          "`appTitle = (defaultText = \"My App\")`.");
         }
 
-        if (!packageDef.getManifest().getAppMarketingVersion().hasDefaultText()) {
+        if (!manifest.hasAppMarketingVersion()) {
           return kj::str("missing `appMarketingVersion`\n"
                          "Under ", constantName, ".manifest, add something like ",
                          "`appMarketingVersion = (defaultText = \"0.0.0\")`.");
+        }
+
+        if (manifest.totalSize().wordCount > spk::Manifest::SIZE_LIMIT_IN_WORDS) {
+          return kj::str(
+              "Your app metadata is too large. Metadata must be less than 8MB in total -- "
+              "including icons, screenshots, licenses, etc. -- and should be much smaller than "
+              "that in order to ensure an acceptable experience for users browsing the app store "
+              "on slow connections.");
         }
 
         return true;
@@ -1565,10 +1574,13 @@ private:
 
           auto data = file.getRegular();
 
+          capnp::ReaderOptions manifestLimits;
+          manifestLimits.traversalLimitInWords = spk::Manifest::SIZE_LIMIT_IN_WORDS;
+
           // Data fields are always word-aligned.
           capnp::FlatArrayMessageReader manifestMessage(
               kj::arrayPtr(reinterpret_cast<const capnp::word*>(data.begin()),
-                           data.size() / sizeof(capnp::word)));
+                           data.size() / sizeof(capnp::word)), manifestLimits);
 
           auto manifest = manifestMessage.getRoot<spk::Manifest>();
 

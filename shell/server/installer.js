@@ -53,7 +53,15 @@ deletePackage = function (packageId) {
     if (!grain && !action) {
       Packages.update({_id:packageId}, {$set: {status:"delete"}});
       waitPromise(sandstormBackend.deletePackage(packageId));
-      Packages.remove(packageId);
+      var package = Packages.findAndModify({
+        query: {_id: packageId},
+        remove: true
+      });
+
+      // Clean up assets (icon, etc).
+      getAllManifestAssets(package.manifest).forEach(function (assetId) {
+        globalDb.unrefStaticAsset(assetId);
+      });
     }
     delete installers[packageId];
   } catch (error) {
@@ -143,6 +151,112 @@ function AppInstaller(packageId, url, appId) {
   this.writeChain = Promise.resolve();
 }
 
+function extractManifestAssets(manifest) {
+  var metadata = manifest.metadata;
+  if (!metadata) return;
+
+  var icons = metadata.icons;
+  if (icons) {
+    var handleIcon = function (icon) {
+      if (icon.png) {
+        icon.assetId = globalDb.addStaticAsset({mimeType: "image/png"}, icon.png);
+        delete icon.png;
+        return true;
+      } else if (icon.svg) {
+        icon.assetId = globalDb.addStaticAsset({mimeType: "image/svg+xml"}, icon.svg);
+        delete icon.svg;
+        return true;
+      } else {
+        // Unknown icon. Filter it.
+        return false;
+      }
+    }
+
+    if (icons.main) icons.main = icons.main.filter(handleIcon);
+    if (icons.grain) icons.grain = icons.grain.filter(handleIcon);
+    if (icons.banner) icons.banner = icons.banner.filter(handleIcon);
+  }
+
+  var handleLocalizedText = function (text) {
+    if (text.defaultText) {
+      text.defaultTextAssetId = globalDb.addStaticAsset({mimeType: "text/plain"}, text.defaultText);
+      delete text.defaultText;
+    }
+
+    if (text.localizations) {
+      text.localizations.forEach(function (localization) {
+        if (localization.text) {
+          localization.assetId = globalDb.addStaticAsset(
+              {mimeType: "text/plain"}, localization.text);
+          delete localization.text;
+        }
+      });
+    }
+  }
+
+  var license = metadata.license;
+  if (license) {
+    if (license.text) license.text = handleLocalizedText(license.text);
+    if (license.notices) license.notices = handleLocalizedText(license.notices);
+  }
+
+  var author = metadata.author;
+  if (author) {
+    // We remove the PGP signature since it was already verified down to a key ID in the back-end.
+    if (author.pgpSignature) delete author.pgpSignature;
+    if (author.pgpPublicKey) delete author.pgpPublicKey;
+  }
+
+  // Delete description and screenshots, which we don't need.
+  if (metadata.description) delete metadata.description;
+  if (metadata.screenshots) delete metadata.screenshots;
+}
+
+function getAllManifestAssets(manifest) {
+  // Returns a list of all asset IDs in the given manifest.
+
+  var metadata = manifest.metadata;
+  if (!metadata) return;
+
+  var result = [];
+
+  var icons = metadata.icons;
+  if (icons) {
+    var handleIcon = function (icon) {
+      if (icon.assetId) {
+        result.push(icon.assetId);
+      }
+    }
+
+    if (icons.main) icons.main.forEach(handleIcon);
+    if (icons.grain) icons.grain.forEach(handleIcon);
+    if (icons.banner) icons.banner.forEach(handleIcon);
+  }
+
+  var handleLocalizedText = function (text) {
+    if (text.defaultTextAssetId) {
+      result.push(defaultTextAssetId);
+    }
+
+    if (text.localizations) {
+      text.localizations.forEach(function (localization) {
+        if (localization.assetId) {
+          result.push(localization.assetId);
+        }
+      });
+    }
+  }
+
+  var license = metadata.license;
+  if (license) {
+    if (license.text) handleLocalizedText(license.text);
+    if (license.notices) handleLocalizedText(license.notices);
+  }
+
+  return result;
+}
+
+
 AppInstaller.prototype.updateProgress = function (status, progress, error, manifest) {
   // TODO(security):  On error, we should actually delete the package from the database and only
   //   display the error to whomever was watching at the time.  Otherwise it's easy to confuse
@@ -162,6 +276,8 @@ AppInstaller.prototype.updateProgress = function (status, progress, error, manif
   // them.
   this.writeChain = this.writeChain.then(function () {
     return inMeteor(function () {
+      if (manifest) extractManifestAssets(manifest);
+
       Packages.update(self.packageId, {$set: {
         status: self.status,
         progress: self.progress,

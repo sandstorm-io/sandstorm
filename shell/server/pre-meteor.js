@@ -202,6 +202,8 @@ function serveStaticAsset(req, res) {
           // Assets can be cached forever because each one has a unique ID.
           "Cache-Control": "public, max-age:31536000",
 
+          // TODO(perf): Implement etags, too.
+
           // Set strict Content-Security-Policy to prevent static assets from executing any script
           // or doing basically anything when browsed to directly. The static assets host is not
           // intended to serve HTML. Mostly, it serves images and javascript -- note that setting

@@ -608,6 +608,10 @@ if (Meteor.isServer) {
 if (Meteor.isServer) {
   var Crypto = Npm.require("crypto");
   var ContentType = Npm.require("content-type");
+  var Zlib = Npm.require("zlib");
+
+  // TODO(cleanup): Node 0.12 has a `gzipSync` but 0.10 (which Meteor still uses) does not.
+  var gzipSync = Meteor.wrapAsync(Zlib.gzip, Zlib);
 
   var BufferSmallerThan = function (limit) {
     return Match.Where(function (buf) {
@@ -622,7 +626,13 @@ if (Meteor.isServer) {
   });
 
   addStaticAsset = function (metadata, content) {
-    // Add a new static asset to the database.
+    // Add a new static asset to the database. If `content` is a string rather than a buffer, it
+    // will be automatically gzipped before storage; do not specify metadata.encoding in this case.
+
+    if (typeof content === "string" && !metadata.encoding) {
+      content = gzipSync(new Buffer(content, "utf8"));
+      metadata.encoding = "gzip";
+    }
 
     check(metadata, {
       mimeType: String,

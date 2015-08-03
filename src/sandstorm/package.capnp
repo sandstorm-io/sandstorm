@@ -72,6 +72,9 @@ struct Manifest {
   # TODO(soon):  Maybe this should be renamed.  A "manifest" is a list of contents, but this
   #   structure doesn't contain a list at all; it contains information on how to use the contents.
 
+  const sizeLimitInWords :UInt64 = 1048576;
+  # The maximum size of the Manifest is 8MB (1M words). This limit is enforced in many places.
+
   appTitle @7 :Util.LocalizedText;
   # The name of this app as it should be displayed to the user.
 
@@ -211,6 +214,9 @@ struct Metadata {
   #
   # Technically, appMarketingVersion and appTitle belong in this category, but they were defined
   # before MarketData became a thing.
+  #
+  # NOTE: Any changes here which add new blobs may require updating the front-end so that it
+  #   correctly extracts those blobs into separate assets on install.
 
   icons :group {
     # Various icons to represent the app in various contexts.
@@ -246,9 +252,9 @@ struct Metadata {
       png @2 :Data;
       # PNG-encoded image data.
 
-      gzipSvg @3 :Data;
-      # Gzipped SVG image data. Note that SVG is usually preferred over PNG if it is available and
-      # the use case can handle it.
+      svg @3 :Text;
+      # SVG image data. Note that SVG is usually preferred over PNG if it is available and the use
+      # case can handle it.
     }
   }
 

@@ -403,11 +403,7 @@ static kj::StringTree toJson(const capnp::DynamicValue::Reader& value,
       return kj::strTree('"', escaped, '"');
     }
     case capnp::DynamicValue::DATA:
-      // TODO(someday): This is a crappy encoding for bytes. It produces the semantic value we want,
-      //   but we really want to supply it as base64 and have it deserialize into a Buffer.
-      return kj::strTree('[',
-        kj::StringTree(KJ_MAP(b, value.as<capnp::Data>()) { return kj::strTree((uint)b); }, ","),
-        ']');
+      return kj::strTree("BinData(0, \"", base64Encode(value.as<capnp::Data>(), false), "\")");
 
     case capnp::DynamicValue::LIST: {
       auto listValue = value.as<capnp::DynamicList>();
@@ -2350,10 +2346,13 @@ private:
       sendFd(fd, fuseFd);
       fuseFd = nullptr;
 
+      capnp::ReaderOptions manifestLimits;
+      manifestLimits.traversalLimitInWords = spk::Manifest::SIZE_LIMIT_IN_WORDS;
+
       {
         // Read the manifest.
         capnp::StreamFdMessageReader reader(
-            raiiOpen(kj::str(dir, "/sandstorm-manifest"), O_RDONLY));
+            raiiOpen(kj::str(dir, "/sandstorm-manifest"), O_RDONLY), manifestLimits);
 
         // Notify the front-end that the app exists.
         insertDevApp(config, appId, pkgId, reader.getRoot<spk::Manifest>());
@@ -2367,7 +2366,7 @@ private:
             if (*line == "restart") {
               // Re-read the manifest.
               capnp::StreamFdMessageReader reader(
-                  raiiOpen(kj::str(dir, "/sandstorm-manifest"), O_RDONLY));
+                  raiiOpen(kj::str(dir, "/sandstorm-manifest"), O_RDONLY), manifestLimits);
 
               // Notify front-end that the app changed.
               updateDevApp(config, appId, reader.getRoot<spk::Manifest>());

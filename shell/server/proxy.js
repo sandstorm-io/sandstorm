@@ -895,34 +895,30 @@ function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, user
   if (userInfo) {
     this.userInfo = userInfo;
   } else if (user) {
-    var serviceId;
+    var identities = SandstormDb.getUserIdentities(user);
+    if (identities.length !== 1) {
+      if (identities.length === 0) {
+        // Make sure that if we add a new user type we don't forget to update this.
+        throw new Meteor.Error(500, "Unknown user type.");
+      } else {
+        // Make sure that if we implement multiple identities we don't forget to update this.
+        throw new Meteor.Error(500, "User has multiple or zero identities?");
+      }
+    }
+    var identity = identities[0];
     this.userId = user._id;
-    if (user.expires) {
-      serviceId = "demo:" + user._id;
-    } else if (user.devName) {
-      serviceId = "dev:" + user.devName;
-    } else if (user.services && user.services.google) {
-      serviceId = "google:" + user.services.google.id;
-    } else if (user.services && user.services.github) {
-      serviceId = "github:" + user.services.github.id;
-    } else if (user.services && user.services.emailToken) {
-      serviceId = "email:" + user.services.emailToken.email;
-    } else {
-      // Make sure that if we add a new user type we don't forget to update this.
-      throw new Meteor.Error(500, "Unknown user type.");
-    }
+
     this.userInfo = {
-      // Fallback to service specific names if profile.name is missing
-      displayName: {defaultText: user.profile.name ||
-        (user.services && user.services.github && user.services.github.username) ||
-        (user.services && user.services.google && user.services.google.email &&
-          user.services.google.email.slice(0, user.services.google.email.indexOf('@'))) ||
-        'Unknown Name'},
-      userId: Crypto.createHash("sha256").update(serviceId).digest()
-    }
+      displayName: {defaultText: identity.name},
+      preferredHandle: identity.handle,
+      userId: new Buffer(identity.id, "hex")
+    };
+    if (identity.picture) this.userInfo.pictureUrl = identity.picture;
+    if (identity.pronoun) this.userInfo.pronouns = identity.pronoun;
   } else {
     this.userInfo = {
-      displayName: {defaultText: "Anonymous User"}
+      displayName: {defaultText: "Anonymous User"},
+      preferredHandle: "anonymous"
     }
   }
 

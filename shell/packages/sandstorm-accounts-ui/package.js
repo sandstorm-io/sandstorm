@@ -5,7 +5,7 @@ Package.describe({
 
 Package.onUse(function (api) {
   api.use(['check', 'tracker', 'service-configuration', 'accounts-base',
-           'underscore', 'templating', 'session', 'jparker:crypto-md5', 'http'], 'client');
+           'underscore', 'templating', 'session', 'http', 'sandstorm-db'], 'client');
   api.use(['check', 'accounts-base'], 'server');
 
   // Export Accounts (etc) to packages using this one.
@@ -28,8 +28,6 @@ Package.onUse(function (api) {
     'login_buttons.js',
     'login_buttons_dialogs.js',
 
-    'pnglib.js',
-    'identicon.js',
     'account-settings.html',
     'account-settings.js',
     'accounts-ui-methods.js',

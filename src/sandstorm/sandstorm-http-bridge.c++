@@ -836,6 +836,9 @@ public:
         sessionContextMap(sessionContextMap),
         sessionId(kj::mv(sessionId)),
         userDisplayName(percentEncode(userInfo.getDisplayName().getDefaultText())),
+        userHandle(kj::heapString(userInfo.getPreferredHandle())),
+        userPicture(kj::heapString(userInfo.getPictureUrl())),
+        userPronouns(userInfo.getPronouns()),
         permissions(kj::mv(permissions)),
         basePath(kj::mv(basePath)),
         userAgent(kj::mv(userAgent)),
@@ -963,6 +966,9 @@ private:
   SessionContextMap& sessionContextMap;
   kj::String sessionId;
   kj::String userDisplayName;
+  kj::String userHandle;
+  kj::String userPicture;
+  UserInfo::Pronouns userPronouns = UserInfo::Pronouns::NEUTRAL;
   kj::Maybe<kj::String> userId;
   kj::String permissions;
   kj::String basePath;
@@ -1007,6 +1013,21 @@ private:
     lines.add(kj::str("X-Sandstorm-Username: ", userDisplayName));
     KJ_IF_MAYBE(u, userId) {
       lines.add(kj::str("X-Sandstorm-User-Id: ", *u));
+
+      // Since the user is logged in, also include their other info.
+      if (userHandle.size() > 0) {
+        lines.add(kj::str("X-Sandstorm-Preferred-Handle: ", userHandle));
+      }
+      if (userPicture.size() > 0) {
+        lines.add(kj::str("X-Sandstorm-User-Picture: ", userPicture));
+      }
+      capnp::EnumSchema schema = capnp::Schema::from<UserInfo::Pronouns>();
+      uint pronounValue = static_cast<uint>(userPronouns);
+      auto enumerants = schema.getEnumerants();
+      if (pronounValue > 0 && pronounValue < enumerants.size()) {
+        lines.add(kj::str("X-Sandstorm-User-Pronouns: ",
+            enumerants[pronounValue].getProto().getName()));
+      }
     }
     lines.add(kj::str("X-Sandstorm-Permissions: ", permissions));
     if (basePath.size() > 0) {

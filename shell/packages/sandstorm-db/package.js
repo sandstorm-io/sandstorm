@@ -24,8 +24,10 @@ Npm.depends({ "content-type": "1.0.1" });
 Package.onUse(function (api) {
   api.use(["mongo", "random", "check", "underscore"], ["client", "server"]);
   api.use(["accounts-base", "fongandrew:find-and-modify", "http"], ["server"]);
+  api.use(["jparker:crypto-sha256"], ["client"]);
 
-  api.addFiles("db.js");
+  api.addFiles(["pnglib.js", "identicon.js"], "client");
+  api.addFiles(["db.js", "profile.js"]);
   api.addFiles(["user.js", "migrations.js"], "server");
   api.export("SandstormDb");
 });

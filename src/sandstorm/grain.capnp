@@ -514,7 +514,7 @@ struct UserInfo {
   # Information about the user opening a new session.
   #
   # TODO(soon):  More details:
-  # - Profile:  Name, avatar, profile link
+  # - Profile:  Profile link?
   # - Sharing/authority chain:  "Carol (via Bob, via Alice)"
   # - Identity:  Public key, certificates, verification of proxy chain.
 
@@ -525,6 +525,25 @@ struct UserInfo {
   # document's history may be annotated with the display name of the user who made each change.
   # Display names are NOT unique nor stable:  two users could potentially have the same display
   # name and a user's display name could change.
+
+  preferredHandle @4 :Text;
+  # The user's preferred "handle", as set in their account settings. This is guaranteed to be
+  # composed only of lowercase English letters, digits, and underscores, and will not start with
+  # a digit. It is NOT guaranteed to be unique; if your app dislikes duplicate handles, it must
+  # check for them and do something about them.
+
+  pictureUrl @6 :Text;
+  # URL of the user's profile picture, appropriate for displaying in a 64x64 context.
+
+  pronouns @5 :Pronouns;
+  # Indicates which pronouns the user prefers you use to refer to them.
+
+  enum Pronouns {
+    neutral @0;  # "they"
+    male @1;     # "he" / "him"
+    female @2;   # "she" / "her"
+    robot @3;    # "it"
+  }
 
   deprecatedPermissionsBlob @1 :Data;
   permissions @3 :PermissionSet;

@@ -42,6 +42,43 @@ related to user identity and permissions:
   `sandstorm-pkgdef.capnp`. The grain's owner holds every permission
   and can use the "Share" button to authorize other users.
 
+* `X-Sandstorm-Preferred-Handle`: The user's preferred "handle". A
+  handle is like a Unix username. It contains only lower-case ASCII
+  letters, digits, and underscores, and it never starts with a digit.
+  The user can set their preferred handle in their account settings.
+  This handle is NOT UNIQUE; it is only a hint from the user. Apps
+  that use handles must decide for themselves whether they need
+  unique handles and, if so, implement some mechanism to deal with
+  duplicates (such as prompting the user to choose a different one,
+  or just appending some digits). Apps should storngly consider
+  using display names (`X-Sandstorm-Username`) instead of handles.
+  **WARNING: A user can change their preferred handle at any time.
+  Two users can have the same preferred handle. The preferred handle
+  is just another form of display name. Do not use preferred handles
+  as primary keys or for security; use `X-Sandstorm-User-Id`
+  instead.**
+
+* `X-Sandstorm-User-Picture`: The URL of the user's profile picture.
+  The exact resolution of the picture is not specified, but assume
+  it is optimized for a 64x64 viewport. Although profile pictures
+  are normally square, it is recommended to use CSS `max-width` and
+  `max-height` instead of `width` and `height` in order to avoid
+  distorting a non-square picture. If this header is missing, the
+  user has no profile picture. In this case, it is recommended that
+  apps use [identicon.js](https://github.com/stewartlord/identicon.js),
+  with the user's ID (from `X-Sandstorm-User-Id`) as the input, to
+  produce identicons consistent with those that Sandstorm's own UI
+  would produce. Note that you should NOT hash the ID; just pass the
+  hex ID directly to the `Identicon` constructor as the `hash`
+  argument.
+
+* `X-Sandstorm-User-Pronouns`: Indicates by which pronouns the user
+  prefers to be referred. Possible values are `neutral` (English:
+  "they"), `male` (English: "he/him"), `female` (English: "she/her"),
+  and `robot` (English: "it"). If the header is not present, assume
+  `neutral`. The purpose of this header is to allow cleaner text in
+  user interfaces.
+
 ## Apps operating without sandstorm-http-bridge
 
 It is possible to write a Sandstorm app that does not use

@@ -68,8 +68,6 @@ var ValidHandle = Match.Where(function (handle) {
 });
 
 Accounts.onCreateUser(function (options, user) {
-  console.log(options, user);
-
   // The first non-dev user to sign in should be automatically upgraded to admin.
   // Dev users are identified by having the devName field.
   if (Meteor.users.find({devName: {$exists: 0}}).count() === 0 && !user.devName) {

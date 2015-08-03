@@ -33,7 +33,7 @@ RUN apt-get update
 
 RUN apt-get install pkg-config git subversion build-essential autoconf libtool
 RUN apt-get install libcap-dev xz-utils clang-3.4
-RUN apt-get install curl strace zip imagemagick
+RUN apt-get install curl strace zip
 RUN apt-get install default-jre-headless
 RUN apt-get install discount
 RUN curl https://install.meteor.com | /bin/sh

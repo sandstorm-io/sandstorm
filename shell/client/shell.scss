@@ -80,9 +80,10 @@ body>.topbar-update {
     background-color: black;
     display: inline-block;
     vertical-align: top;
-    background-image:url(/menu.png);
+    background-image:url(/menu.svg);
     background-position: center;
     background-repeat: no-repeat;
+    background-size: 32px 32px;
     width: 40px;
     height: 40px;
     padding: 4px;
@@ -339,7 +340,7 @@ body>.topbar {
     @extend %hamburger-menu-item;
 
     @media #{$desktop} {
-      background-image: url("/share.png");
+      background-image: url("/share.svg");
       background-position: left;
       background-repeat: no-repeat;
       border-radius: 4px;
@@ -358,7 +359,7 @@ body>.topbar {
     }
 
     @media #{$mobile} {
-      background-image: url("/share-m.png");
+      background-image: url("/share-m.svg");
     }
   }
 
@@ -368,18 +369,18 @@ body>.topbar {
     @extend %hamburger-menu-item;
   }
   @media #{$desktop} {
-    >.delete>button    { background-image: url("/trash.png"); }
-    >.debug-log>button { background-image: url("/debug.png"); }
-    >.backup>button    { background-image: url("/download.png"); }
-    >.restart>button   { background-image: url("/restart.png"); }
-    >.webkey>button    { background-image: url("/key.png"); }
+    >.delete>button    { background-image: url("/trash.svg"); }
+    >.debug-log>button { background-image: url("/debug.svg"); }
+    >.backup>button    { background-image: url("/download.svg"); }
+    >.restart>button   { background-image: url("/restart.svg"); }
+    >.webkey>button    { background-image: url("/key.svg"); }
   }
   @media #{$mobile} {
-    >.delete>button    { background-image: url("/trash-m.png"); }
-    >.debug-log>button { background-image: url("/debug-m.png"); }
-    >.backup>button    { background-image: url("/download-m.png"); }
-    >.restart>button   { background-image: url("/restart-m.png"); }
-    >.webkey>button    { background-image: url("/key-m.png"); }
+    >.delete>button    { background-image: url("/trash-m.svg"); }
+    >.debug-log>button { background-image: url("/debug-m.svg"); }
+    >.backup>button    { background-image: url("/download-m.svg"); }
+    >.restart>button   { background-image: url("/restart-m.svg"); }
+    >.webkey>button    { background-image: url("/key-m.svg"); }
   }
 
   >.admin-alert {
@@ -440,12 +441,7 @@ body>.topbar {
       @extend %icon-button;
       @extend %mobile-icon-button;
 
-      @media #{$desktop} {
-        background-image: url("/inbox.png");
-      }
-      @media #{$mobile} {
-        background-image: url("/inbox-m.png");
-      }
+      background-image: url("/inbox.svg");
 
       >.count {
         display: block;
@@ -572,7 +568,7 @@ body>.popup {
       height: 32px;
       color: transparent;
       overflow: hidden;
-      background-image: url("/close-m.png");
+      background-image: url("/close-m.svg");
       background-size: 20px 20px;
       background-repeat: no-repeat;
       background-position: center;
@@ -1067,10 +1063,6 @@ a.copy-me {
   background-color: #888;
 }
 
-#topbar #renameGrain {
-  background-image: url("/edit.png");
-}
-
 #menu {
   display: inline;
 }
@@ -1094,7 +1086,7 @@ button.revoke-token {
   color: transparent;
   background-color: transparent;
   cursor: pointer;
-  background-image: url("/close.png");
+  background-image: url("/close.svg");
 }
 
 img.icon {
@@ -1367,7 +1359,7 @@ img {
   border: none;
   color: transparent;
   background-color: black;
-  background-image: url("/inbox.png");
+  background-image: url("/inbox.svg");
   vertical-align: top;
 }
 

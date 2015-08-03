@@ -42,23 +42,23 @@ endef
 
 
 IMAGES= \
-    shell/public/restart.png \
-    shell/public/trash.png \
-    shell/public/debug.png \
-    shell/public/download.png \
-    shell/public/key.png \
-    shell/public/share.png \
-    shell/public/close.png \
-    shell/public/menu.png \
-    shell/public/inbox.png \
-    shell/public/restart-m.png \
-    shell/public/trash-m.png \
-    shell/public/debug-m.png \
-    shell/public/download-m.png \
-    shell/public/key-m.png \
-    shell/public/share-m.png \
-    shell/public/close-m.png \
-    shell/public/inbox-m.png
+    shell/public/restart.svg \
+    shell/public/trash.svg \
+    shell/public/debug.svg \
+    shell/public/download.svg \
+    shell/public/key.svg \
+    shell/public/share.svg \
+    shell/public/close.svg \
+    shell/public/menu.svg \
+    shell/public/inbox.svg \
+    shell/public/restart-m.svg \
+    shell/public/trash-m.svg \
+    shell/public/debug-m.svg \
+    shell/public/download-m.svg \
+    shell/public/key-m.svg \
+    shell/public/share-m.svg \
+    shell/public/close-m.svg \
+    shell/public/inbox-m.svg
 
 # ====================================================================
 # Meta rules
@@ -174,14 +174,6 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html
 	@mkdir -p node_modules/capnp
 	@bash -O extglob -c 'cp src/capnp/!(*test*).capnp node_modules/capnp'
 
-shell/public/inbox.png: icons/inbox.svg
-	@$(call color,convert $<)
-	@convert -background none -scale 32x32 -negate -evaluate multiply 0.87 $< $@
-
-shell/public/inbox-m.png: icons/inbox.svg
-	@$(call color,convert $<)
-	@convert -background none -scale 40x40 -negate -evaluate multiply 0.87 $< $@
-
 shell/client/changelog.html: CHANGELOG.md
 	@mkdir -p tmp
 	@echo '<template name="changelog">' > tmp/changelog.html
@@ -189,12 +181,14 @@ shell/client/changelog.html: CHANGELOG.md
 	@echo '</template>' >> tmp/changelog.html
 	@cp tmp/changelog.html shell/client/changelog.html
 
-shell/public/%.png: icons/%.svg
-	@$(call color,convert $<)
-	@convert -background none -scale 24x24 -negate -evaluate multiply 0.87 $< $@
+shell/public/%.svg: icons/%.svg
+	@$(call color,color for dark background $<)
+	@sed -e 's/#000000/#CCCCCC/g' < $< > $@
 
-shell/public/%-m.png: icons/%.svg
-	@convert -background none -scale 32x32 $< $@
+shell/public/%-m.svg: icons/%.svg
+	@$(call color,color for light background $<)
+	@# Leave as black.
+	@cp $< $@
 
 shell-build: shell/lib/* shell/client/* shell/server/* shell/shared/* shell/public/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
 	@$(call color,meteor frontend)

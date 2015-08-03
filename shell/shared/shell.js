@@ -821,10 +821,6 @@ function getBuildInfo() {
   };
 }
 
-function isKernelTooOld() {
-  return Meteor.settings && Meteor.settings.public && Meteor.settings.public.kernelTooOld;
-}
-
 function isMissingWildcardParent() {
   return Meteor.settings && Meteor.settings.public && Meteor.settings.public.missingWildcardParentUrl;
 }
@@ -926,7 +922,6 @@ Router.map(function () {
         isDemoUser: isDemoUser(),
         isFirstRun: !HasUsers.findOne("hasUsers"),
         build: getBuildInfo().build,
-        kernelTooOld: isKernelTooOld(),
         missingWildcardParent: isMissingWildcardParent(),
         allowDemoAccounts: allowDemoAccounts,
         apps: apps,

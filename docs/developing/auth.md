@@ -50,7 +50,7 @@ related to user identity and permissions:
   that use handles must decide for themselves whether they need
   unique handles and, if so, implement some mechanism to deal with
   duplicates (such as prompting the user to choose a different one,
-  or just appending some digits). Apps should storngly consider
+  or just appending some digits). Apps should strongly consider
   using display names (`X-Sandstorm-Username`) instead of handles.
   **WARNING: A user can change their preferred handle at any time.
   Two users can have the same preferred handle. The preferred handle

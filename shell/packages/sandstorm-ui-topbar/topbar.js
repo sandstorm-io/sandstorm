@@ -102,14 +102,20 @@ Template.sandstormTopbar.helpers({
           var windowMid = currentWindowWidth / 2;
           var itemMid = (rect.left + rect.right) / 2;
           instance.popupPosition.set(itemMid < windowMid
-              ? { align: "left", px: Math.max(itemMid - 50, 0) }
-              : { align: "right", px: Math.max(currentWindowWidth - itemMid - 50, 0) });
+              ? { name: item.name, align: "left", px: Math.max(itemMid - 50, 0) }
+              : { name: item.name, align: "right",
+                  px: Math.max(currentWindowWidth - itemMid - 50, 0) });
         }
       });
     }
 
-    return instance.popupPosition.get()
-        || { align: "left", px: 0 };
+    var result = instance.popupPosition.get();
+    if (result.name === item.name) {
+      return result;
+    } else {
+      // We haven't calculated the popup position yet. Place it off-screen for now.
+      return { align: "left", px: -10000 };
+    }
   },
 });
 

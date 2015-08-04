@@ -168,13 +168,15 @@ function writeErrorResponse(res, err) {
   if (err instanceof Meteor.Error && typeof err.error === "number" &&
       err.error >= 400 && err.error < 600) {
     status = err.error;
+  } else if (err.httpErrorCode) {
+    status = err.httpErrorCode;
   }
 
   // Log errors that are our fault, but not errors that are the client's fault.
   if (status >= 500) console.error(err.stack);
 
-  res.writeHead(status, { "Content-Type": err.isSafeHtmlMessage ? "text/html" : "text/plain" });
-  res.end(err.message);
+  res.writeHead(status, { "Content-Type": err.htmlMessage ? "text/html" : "text/plain" });
+  res.end(err.htmlMessage || err.message);
 }
 
 var PNG_MAGIC = new Buffer([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
@@ -450,6 +452,8 @@ function lookupPublicIdFromDns(hostname) {
       if (err) {
         var errorMsg = errorTxtMapping[err.code] || "";
         var error = new Error(
+            "Error looking up DNS TXT records for host '" + hostname + "': " + err.message);
+        error.htmlMessage =
           "<p>Error looking up DNS TXT records for host '" + hostname + "': " + err.message + "<br>\n" +
           "<br>\n" +
           "This Sandstorm server's main interface is at: <a href=\"" + process.env.ROOT_URL + "\">" +
@@ -461,8 +465,8 @@ function lookupPublicIdFromDns(hostname) {
           "<br>\n" +
           "If you got here after trying to log in via OAuth (e.g. through Github or Google),<br>\n" +
           "the problem is probably that the OAuth callback URL was set wrong. You need to<br>\n" +
-          "update it through the respective login provider's management console.</p>");
-        error.isSafeHtmlMessage = true;  // TODO(cleanup): ick
+          "update it through the respective login provider's management console.</p>";
+        error.httpErrorCode = err.code === "ENOTFOUND" ? 404 : 500;
         reject(error);
       } else if (records.length !== 1) {
         reject(new Error("Host 'sandstorm-www." + hostname + "' must have exactly one TXT record."));

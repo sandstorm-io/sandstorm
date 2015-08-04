@@ -711,17 +711,26 @@ if (Meteor.isClient) {
     }
   });
   Template.emailInviteTab.helpers({
-    inviteCompletionState: function() {
+    completionState: function() {
       var instance = Template.instance();
       return instance.completionState.get();
     },
   });
 
   Template.emailInviteTab.events({
-    "submit form.email-invite": function (event) {
+    "submit form.email-invite": function (event, instance) {
       event.preventDefault();
+      if (!instance.completionState.get().clear) {
+        return;
+      }
       var grainId = this.grainId;
       var title = this.title;
+
+      // MailComposer accepts a comma-delimited list, but we want to split the list before
+      // sending the mail because we want a separate token for each user. Moreover, users
+      // will probably expect space-delimited lists to work, and when we eventually implement
+      // autocompletion and inline validation, we expect that we will display a space-delimited
+      // list. So we split on spaces here and allow MailComposer to clean up any stray commas.
       var emails = event.target.getElementsByClassName("emails")[0].value.split(" ");
       emails = emails.filter(function (email) { return email.length > 0;});
       if (emails.length == 0) {
@@ -735,8 +744,7 @@ if (Meteor.isClient) {
         assignment = {none: null};
       }
       var message = event.target.getElementsByClassName("personal-message")[0].value;
-      var template = Template.instance();
-      template.completionState.set({class: "in-progress", message: "sending..."});
+      instance.completionState.set({pending: true});
 
       // HTML-escape the message.
       var div = document.createElement('div');
@@ -746,7 +754,7 @@ if (Meteor.isClient) {
       Meteor.call("inviteUsersToGrain", getOrigin(), grainId, title, assignment, emails,
                   {text: message, html: htmlMessage}, function (error, result) {
         if (error) {
-          template.completionState.set({class: "error", message: error.toString()});
+          instance.completionState.set({error: error.toString()});
         } else {
           if (result.failures.length > 0) {
             var message = "Failed to send to: ";
@@ -756,12 +764,17 @@ if (Meteor.isClient) {
               }
               message += result.failures[ii].email;
             }
-            template.completionState.set({ class: "error", message: message});
+            instance.completionState.set({error: message});
           } else {
-            template.completionState.set({class: "success", message: "success"});
+            instance.completionState.set({success: "success"});
           }
         }
       });
+    },
+    "click .reset-invite": function (event, instance) {
+      instance.completionState.set({clear: true});
+      instance.find("form").reset();
+      instance.find("form option[data-default-selected=true]").selected = true;
     },
   });
 

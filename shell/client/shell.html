@@ -456,12 +456,21 @@ limitations under the License.
       <textarea class="personal-message"
                 placeholder="Type a personal message (optional)..."></textarea>
     </div>
-    <button>Send</button>
+    {{#if completionState.clear}}
+      <button>Send</button>
+    {{/if}}
   </form>
-  {{#with inviteCompletionState}}
-  <div class="{{class}}">
-    {{message}}
-  </div>
+  {{#with completionState}}
+    {{#if success}}
+     <p>Successfully sent.</p>
+     <p><button class="reset-invite">&lt;&lt; Send more invites</button></p>
+    {{/if}}
+    {{#if pending}}
+      <p>Sending...</p>
+    {{/if}}
+    {{#if error}}
+      <p> {{error}} </p>
+    {{/if}}
   {{/with}}
 </template>
 
@@ -473,9 +482,9 @@ limitations under the License.
     <input type="text" class="label" placeholder="Label (optional)">
     <p class="label-explanation">
       Use a label to remind yourself to whom you sent this unique link.</p>
-    {{#unless completionState.success}}
+    {{#if completionState.clear}}
       <button>Create</button>
-    {{/unless}}
+    {{/if}}
   </form>
   {{#with completionState}}
     {{#if success}}

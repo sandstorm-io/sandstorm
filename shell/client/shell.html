@@ -378,7 +378,7 @@ limitations under the License.
         <ul>
           {{#each transitiveShares}}
             <li>
-              <div>{{displayName recipient}} was granted access by:</div>
+              {{displayName recipient}} was granted access by:
               <ul>
                 {{#each shares}}
                   <li>{{displayName userId}} ({{dateString created}})</li>
@@ -510,19 +510,19 @@ limitations under the License.
       <p>Upgrading cannot be undone.</p>
       <p><button id="privatize-grain">upgrade</button></p>
     {{/if}}
-   {{else}}
-     {{#basicTabs name="" tabs=tabs}}
+  {{else}}
+    {{#basicTabs name="" tabs=tabs}}
       {{#tabContent slug="invite"}}
         {{> emailInviteTab}}
-     {{/tabContent}}
-     {{#tabContent slug="link"}}
-       {{> sharableLinkTab}}
-     {{/tabContent}}
+      {{/tabContent}}
+      {{#tabContent slug="link"}}
+        {{> sharableLinkTab}}
+      {{/tabContent}}
     {{/basicTabs}}
-   <div class="footer">
-  <button class="who-has-access">See who has access &gt;&gt;</button>
- </div>
-{{/if}}
+    <div class="footer">
+      <button class="who-has-access">See who has access &gt;&gt;</button>
+    </div>
+  {{/if}}
 </template>
 
 <template name="grainSharePopup">

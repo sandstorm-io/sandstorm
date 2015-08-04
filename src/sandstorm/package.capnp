@@ -272,11 +272,12 @@ struct Metadata {
     #
     # Example usage for open source licenses:
     #
-    #     license = (openSource = apache2, notices = embed "notices.txt"),
+    #     license = (openSource = apache2, notices = (defaultText = embed "notices.txt")),
     #
     # Example usage for proprietary licenses:
     #
-    #     license = (proprietary = embed "license.txt", notices = embed "notices.txt"),
+    #     license = (proprietary = (defaultText = embed "license.txt"),
+    #                notices = (defaultText = embed "notices.txt")),
 
     union {
       none @5 :Void;

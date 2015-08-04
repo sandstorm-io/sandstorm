@@ -149,13 +149,14 @@ Meteor.methods({
       ApiTokens.remove({grainId: grainId, "owner.user.userId": this.userId});
     }
   },
-  inviteUsersToGrain: function (origin, grainId, roleAssignment, emailAddresses, message) {
+  inviteUsersToGrain: function (origin, grainId, title, roleAssignment, emailAddresses, message) {
     if (!this.isSimulation) {
       check(origin, String);
       check(grainId, String);
+      check(title, String);
       check(roleAssignment, roleAssignmentPattern);
       check(emailAddresses, [String]);
-      check(message, String);
+      check(message, {text: String, html: String});
       var userId = this.userId;
       if (!userId) {
         throw new Meteor.Error(403, "Must be logged in to share by email.");
@@ -168,14 +169,22 @@ Meteor.methods({
                                        roleAssignment,
                                        true, undefined);
         var url = origin + "/shared/" + result.token;
+        var html = message.html + "<br><br>" +
+            "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
+            "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
+            "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
+            "Open Shared Grain</a><div style='font-size:8pt;font-style:italic;color:gray'>" +
+            "Note: If you forward this email to other people, they will be able to access " +
+            "the share as well. To prevent this, remove the button before forwarding.</div>";
         try {
           SandstormEmail.send({
             to: emailAddress,
             from: "Sandstorm server <no-reply@" + HOSTNAME + ">",
-            subject: sharerDisplayName + " has invited you to join a grain",
-            text: "Follow this link to access the shared grain:\n" + url + "\n" +
-              "Be careful with this link! Anyone -- not just you -- can use it.\n\n" +
-              message,
+            subject: sharerDisplayName + " has invited you to join a grain: " + title,
+            text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
+              "\n\nNote: If you forward this email to other people, they will be able to access " +
+              "the share as well. To prevent this, remove the link before forwarding.",
+            html: html,
           });
           outerResult.successes.push(emailAddress);
         } catch (e) {
@@ -711,6 +720,12 @@ if (Meteor.isClient) {
     "submit form.email-invite": function (event) {
       event.preventDefault();
       var grainId = this.grainId;
+      var title = this.title;
+      var emails = event.target.getElementsByClassName("emails")[0].value.split(" ");
+      emails = emails.filter(function (email) { return email.length > 0;});
+      if (emails.length == 0) {
+        return;
+      }
       var roleList = event.target.getElementsByClassName("share-token-role")[0];
       var assignment;
       if (roleList) {
@@ -721,9 +736,14 @@ if (Meteor.isClient) {
       var message = event.target.getElementsByClassName("personal-message")[0].value;
       var template = Template.instance();
       template.completionState.set({class: "in-progress", message: "sending..."});
-      Meteor.call("inviteUsersToGrain", getOrigin(), grainId, assignment,
-                  event.target.getElementsByClassName("emails")[0].value.split(" "),
-                  message, function (error, result) {
+
+      // HTML-escape the message.
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(message));
+      var htmlMessage = div.innerHTML.replace(/\n/g, "<br>");
+
+      Meteor.call("inviteUsersToGrain", getOrigin(), grainId, title, assignment, emails,
+                  {text: message, html: htmlMessage}, function (error, result) {
         if (error) {
           template.completionState.set({class: "error", message: error.toString()});
         } else {

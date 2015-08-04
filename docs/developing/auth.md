@@ -60,8 +60,9 @@ related to user identity and permissions:
 
 * `X-Sandstorm-User-Picture`: The URL of the user's profile picture.
   The exact resolution of the picture is not specified, but assume
-  it is optimized for a 64x64 viewport. Although profile pictures
-  are normally square, it is recommended to use CSS `max-width` and
+  it is optimized for a 256x256 or smaller viewport (i.e. the actual
+  size is around 512x512 for high-DPI displays). Although profile
+  pictures are normally square, it is recommended to use CSS `max-width` and
   `max-height` instead of `width` and `height` in order to avoid
   distorting a non-square picture. If this header is missing, the
   user has no profile picture. In this case, it is recommended that

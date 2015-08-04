@@ -27,7 +27,7 @@ userPictureUrl = function (user) {
 
     var github = user.services.github;
     if (!user.profile.picture && github && github.id) {
-      return "https://avatars.githubusercontent.com/u/" + github.id + "?s=128";
+      return "https://avatars.githubusercontent.com/u/" + github.id;
     }
 
     // Note that we do NOT support Gravatar for email addresses because pinging Gravatar would be

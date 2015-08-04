@@ -178,7 +178,7 @@ function writeErrorResponse(res, err) {
 }
 
 var PNG_MAGIC = new Buffer([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
-var JPEG_MAGIC = new Buffer([0xFF, 0xD8, 0xFF, 0xE0]);
+var JPEG_MAGIC = new Buffer([0xFF, 0xD8, 0xFF]);
 
 function checkMagic(buf, magic) {
   if (buf.length < magic.length) return false;
@@ -249,7 +249,7 @@ function serveStaticAsset(req, res) {
       var done = new Future();
       req.on("data", function (buf) {
         totalSize += buf.length;
-        if (totalSize <= (40 * 1024)) {
+        if (totalSize <= (64 * 1024)) {
           buffers.push(buf);
         }
       });
@@ -257,10 +257,10 @@ function serveStaticAsset(req, res) {
       req.on("error", done.throw.bind(done));
       done.wait();
 
-      if (totalSize > (40 * 1024)) {
+      if (totalSize > (64 * 1024)) {
         // TODO(soon): Resize the image ourselves.
         res.writeHead(400, { "Content-Type": "text/plain" });
-        res.end("Picture too large; please use an image under 40 KiB.");
+        res.end("Picture too large; please use an image under 64 KiB.");
         return;
       }
 

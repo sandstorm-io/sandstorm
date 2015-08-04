@@ -75,7 +75,7 @@ if (Meteor.isServer) {
     }
 
     // Unfortunately, Github's algorithm uses MD5. Whatever, we don't expect these to be secure.
-    var data = new Identicon(id, 128).toString();
+    var data = new Identicon(id, 512).toString();
     var result = "data:image/png;base64," + data;
     identiconCache[id] = result;
     return result;

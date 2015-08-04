@@ -434,6 +434,9 @@ limitations under the License.
     {{#each roles}}
     <option title={{title.defaultText}}
             style="{{#if obsolete}}display:none{{/if}}"
+            {{!-- We need this special attributed because apparently Meteor does not play nice
+                  with HTMLOptionElement.defaultSelected. --}}
+            data-default-selected={{default}}
             selected={{default}}>
       {{roleText}}</option>
     {{/each}}
@@ -470,7 +473,7 @@ limitations under the License.
     <input type="text" class="label" placeholder="Label (optional)">
     <p class="label-explanation">
       Use a label to remind yourself to whom you sent this unique link.</p>
-    {{#unless shareToken}}
+    {{#unless completionState.success}}
       <button>Create</button>
     {{/unless}}
   </form>

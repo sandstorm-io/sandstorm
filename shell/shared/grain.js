@@ -416,7 +416,6 @@ if (Meteor.isClient) {
         return;
       }
       var grainId = this.grainId;
-      Session.set("share-token-" + grainId, "pending");
       var roleList = event.target.getElementsByClassName("share-token-role")[0];
       var assignment;
       if (roleList) {
@@ -438,6 +437,8 @@ if (Meteor.isClient) {
     },
     "click .reset-share-token": function (event, instance) {
       instance.completionState.set({clear: true});
+      instance.find("form").reset();
+      instance.find("form option[data-default-selected=true]").selected = true;
     },
   });
 

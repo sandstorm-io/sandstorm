@@ -1,3 +1,6 @@
+### v0.104 (2015-08-03)
+- Fix sudden increase in log spam in 0.102 -- unnecessarily large full-HTML DNS TXT lookup error messages were being logged to the console; no more. In fact, now these are properly 404 errors as they should be.
+
 ### v0.103 (2015-08-03)
 - Emergency fix for bug that can cause startup failure in the presence of users that apparently have a `services` entry but no `profile`. The alpha server seems to have these but none of the test servers did.
 

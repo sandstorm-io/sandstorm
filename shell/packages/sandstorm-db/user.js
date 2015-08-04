@@ -17,16 +17,16 @@
 var Future = Npm.require("fibers/future");
 
 userPictureUrl = function (user) {
-  if (user.services) {
+  if (user.services && !(user.profile && user.profile.picture)) {
     // Try to determine user's avatar URL from login service.
 
     var google = user.services.google;
-    if (!user.profile.picture && google && google.picture) {
+    if (google && google.picture) {
       return google.picture;
     }
 
     var github = user.services.github;
-    if (!user.profile.picture && github && github.id) {
+    if (github && github.id) {
       return "https://avatars.githubusercontent.com/u/" + github.id;
     }
 

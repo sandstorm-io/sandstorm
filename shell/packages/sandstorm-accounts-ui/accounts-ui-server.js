@@ -14,32 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-Meteor.publish("accountIdentities", function () {
-  if (!Meteor.userId) return [];
-
-  return [
-    Meteor.users.find(Meteor.userId,
-      {fields: {
-        "profile":1,
-        "devName":1,
-        "expires":1,
-
-        "services.google.id":1,
-        "services.google.email":1,
-        "services.google.verified_email":1,
-        "services.google.name":1,
-        "services.google.picture":1,
-        "services.google.gender":1,
-
-        "services.github.id":1,
-        "services.github.email":1,
-        "services.github.username":1,
-
-        "services.emailToken.email":1
-      }})
-  ];
-});
-
 // Meteor permits users to modify their own profile by default, for some reason.
 Meteor.users.deny({
   insert: function () { return true; },

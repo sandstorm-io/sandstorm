@@ -1,3 +1,6 @@
+### v0.103 (2015-08-03)
+- Emergency fix for bug that can cause startup failure in the presence of users that apparently have a `services` entry but no `profile`. The alpha server seems to have these but none of the test servers did.
+
 ### v0.102 (2015-08-03)
 - New icons designed by Nena!
 - New account settings page allows setting display name, profile picture, preferred handle, and preferred pronouns, all of which are passed on to apps. These are auto-populated from the login provider as much as possible.

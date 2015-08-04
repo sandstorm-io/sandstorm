@@ -1,3 +1,9 @@
+### v0.102 (2015-08-03)
+- New icons designed by Nena!
+- New account settings page allows setting display name, profile picture, preferred handle, and preferred pronouns, all of which are passed on to apps. These are auto-populated from the login provider as much as possible.
+- App packages may now include metadata like icons, license information, description, screenshots, and more, for use in the Sandstorm UI and upcoming app market. Large blobs embedded this way (e.g. images) will be extracted and served via a new static asset serving subsystem with high cacheability (also used for profile pictures).
+- You may now configure Sandstorm to run on port 80. The socket is bound before dropping privileges and passed into the front-end via parent->child file descriptor inheritance.
+
 ### v0.101 (2015-07-25)
 - Refactored CSS styling and accounts drop-down code. Please be on the lookout for bugs.
 - Fixed bug where the admin settings page would simply say "Loading..." forever if the user was not authorized.

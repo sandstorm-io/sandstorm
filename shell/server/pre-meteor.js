@@ -191,6 +191,21 @@ function checkMagic(buf, magic) {
 function serveStaticAsset(req, res) {
   inMeteor(function () {
     if (req.method === "GET") {
+      if (req.headers["if-none-match"] === "permanent") {
+        // Cache never invalidates since we use a new URL for every resource.
+        res.writeHead(304, {
+          "Cache-Control": "public, max-age=31536000",
+          "ETag": "permanent",
+
+          // To be safe, send these again, although it shouldn't be necessary.
+          "Content-Security-Policy": "default-src 'none'; sandbox",
+          "Access-Control-Allow-Origin": "*",
+          "X-Content-Type-Options": "nosniff",
+        });
+        res.end();
+        return;
+      }
+
       var url = Url.parse(req.url);
       var asset = globalDb.getStaticAsset(url.pathname.slice(1));
 
@@ -200,9 +215,10 @@ function serveStaticAsset(req, res) {
           "Content-Length": asset.content.length,
 
           // Assets can be cached forever because each one has a unique ID.
-          "Cache-Control": "public, max-age:31536000",
+          "Cache-Control": "public, max-age=31536000",
 
-          // TODO(perf): Implement etags, too.
+          // Since different resources get different URLs, we can use a static etag.
+          "ETag": "permanent",
 
           // Set strict Content-Security-Policy to prevent static assets from executing any script
           // or doing basically anything when browsed to directly. The static assets host is not

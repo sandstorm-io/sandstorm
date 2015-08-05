@@ -1010,11 +1010,9 @@ public:
 
     {
       auto tokenFd = raiiOpen("../var/sandstorm/adminToken",
-          O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0600);
+          O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC, 0640);
       kj::FdOutputStream tokenFile(tokenFd.get());
-      if (runningAsRoot) {
-        KJ_SYSCALL(fchown(tokenFd, config.uids.uid, config.uids.gid));
-      }
+      KJ_SYSCALL(fchown(tokenFd, -1, config.uids.gid));
       tokenFile.write(hexString.begin(), hexString.size());
     }
 

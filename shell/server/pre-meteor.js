@@ -354,6 +354,10 @@ Meteor.startup(function () {
     }
   });
 
+  if (globalBlackrockPayments) {
+    WebApp.rawConnectHandlers.use(globalBlackrockPayments.connectHandler.bind(globalBlackrockPayments));
+  }
+
   WebApp.rawConnectHandlers.use(function (req, res, next) {
     var hostname = req.headers.host.split(":")[0];
     if (isSandstormShell(hostname)) {

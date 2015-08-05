@@ -77,4 +77,8 @@ limitations under the License.
     {{/each}}
       <li class="add"><button>add another</button></li>
   </ul>
+
+  {{#if isPaymentsEnabled}}
+    {{> billingSettings}}
+  {{/if}}
 </template>

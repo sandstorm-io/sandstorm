@@ -433,7 +433,7 @@ limitations under the License.
   <select class="share-token-role" title="select a role">
     {{#each roles}}
     <option title={{title.defaultText}}
-            style="{{#if obsolete}}display:none{{/if}}"
+            style={{optionStyle}}
             {{!-- We need this special attributed because apparently Meteor does not play nice
                   with HTMLOptionElement.defaultSelected. --}}
             data-default-selected={{default}}

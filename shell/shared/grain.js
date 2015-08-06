@@ -687,7 +687,14 @@ if (Meteor.isClient) {
   });
 
   Template.selectRole.helpers({
-    roleText: function() {
+    optionStyle: function() {
+      // Writing this as a helper rather than inline with an {{#if}} seems to work around
+      // https://github.com/meteor/meteor/issues/4793
+      if (this.obsolete) {
+        return "display:none;";
+      }
+    },
+    roleText: function () {
       if (this.verbPhrase) {
         return this.verbPhrase.defaultText;
       } else {

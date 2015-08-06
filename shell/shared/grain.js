@@ -564,7 +564,10 @@ if (Meteor.isClient) {
               if (!sharesByRecipient[recipient]) {
                 sharesByRecipient[recipient] = {recipient: recipient, shares: []};
               }
-              sharesByRecipient[recipient].shares.push(token);
+              var shares = sharesByRecipient[recipient].shares;
+              if (!shares.some(function(share) { return share.userId === token.userId; })) {
+                sharesByRecipient[recipient].shares.push(token);
+              }
             }
           });
           var result = _.values(sharesByRecipient);

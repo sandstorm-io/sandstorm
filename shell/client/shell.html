@@ -338,7 +338,7 @@ limitations under the License.
           <option title="has every app permission" selected=true>all access</option>
           {{#each roles}}
             <option title={{verbPhrase.defaultText}}
-                    style="{{#if obsolete}}display:none{{else}}{{/if}}">
+                    data-obsolete={{obsolete}}>
               {{title.defaultText}}</option>
           {{/each}}
         </select>
@@ -369,67 +369,68 @@ limitations under the License.
 
 <template name="whoHasAccess">
   <h4 class="tabbed">Who has access</h4>
-    {{#basicTabs name="" tabs=tabs}}
-    {{#tabContent slug="table"}}
+  {{#basicTabs name="" tabs=tabs}}
+  {{#tabContent slug="table"}}
     <h5>People</h5>
-      {{#if transitiveShares.empty}}
-        <p> You have granted access to nobody. </p>
-      {{else}}
-        <table class="people">
-          {{#each transitiveShares}}
+    {{#if transitiveShares.empty}}
+      <p> You have granted access to nobody. </p>
+    {{else}}
+      <table class="people">
+        {{#each transitiveShares}}
           <tr>
             <td> {{displayName recipient}} </td>
-            <td>added by:
+            <td> added by
+              <ul>
                 {{#each shares}}
-                  <li>{{displayName userId}} ({{dateString created}})</li>
-                  {{/each}}
+                  <li>{{displayName userId}}</li>
+                {{/each}}
+              </ul>
             </td>
-            </tr>
-          {{/each}}
-        </table>
-      {{/if}}
-      {{#if existingShareTokens}}
-        <h5>Sharing Links</h5>
-        <table class="sharing-links">
-        {{#each existingShareTokens}}
-        {{#if displayToken}}
-        <tr>
-          <td>
-            <span class="token-petname" data-token-id="{{_id}}">
-              {{petname}} ({{dateString created}})
-            </span>
-          </td>
-          <td>
-            {{#if ../viewInfo.roles}}
-            <select class="share-token-role" data-token-id="{{_id}}">
-              {{#each indexedRoles}}
-                  <option title={{title.defaultText}}
-                          style="{{#if obsolete}}display:none{{/if}}"
-                          selected={{hasCurrentRole ..}}>
-                    {{roleText}}</option>
-              {{/each}}
-              {{#if hasCustomRole .}}
-              <option title="custom role" selected=true>
-                [has custom permissions]
-              </option>
-              {{/if}}
-            </select>
-            {{/if}}
-          </td>
-          <td>
-            <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
-          </td>
           </tr>
-        {{/if}}
-          {{/each}}
+        {{/each}}
       </table>
     {{/if}}
-
-    {{/tabContent}}
-    {{#tabContent slug="graph"}}
-          <p>Graph view is unimplemented. :(</p>
-    {{/tabContent}}
-    {{/basicTabs}}
+    {{#if existingShareTokens}}
+      <h5>Sharing Links</h5>
+      <table class="sharing-links">
+        {{#each existingShareTokens}}
+          {{#if displayToken}}
+            <tr>
+              <td>
+                <span class="token-petname" data-token-id="{{_id}}">
+                  {{petname}} ({{dateString created}})
+                </span>
+              </td>
+              <td>
+                {{#if ../viewInfo.roles}}
+                  <select class="share-token-role" data-token-id="{{_id}}">
+                    {{#each indexedRoles}}
+                      <option title={{title.defaultText}}
+                              data-obsolete={{obsolete}}
+                              selected={{hasCurrentRole ..}}>
+                        {{roleText}}</option>
+                    {{/each}}
+                    {{#if hasCustomRole .}}
+                      <option title="custom role" selected=true>
+                        [has custom permissions]
+                      </option>
+                    {{/if}}
+                  </select>
+                {{/if}}
+              </td>
+              <td>
+                <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
+              </td>
+            </tr>
+          {{/if}}
+        {{/each}}
+      </table>
+    {{/if}}
+  {{/tabContent}}
+  {{#tabContent slug="graph"}}
+    <p>Graph view is unimplemented. :(</p>
+  {{/tabContent}}
+  {{/basicTabs}}
   <button class="share-with-others">&lt;&lt; Done</button>
 </template>
 
@@ -439,7 +440,7 @@ limitations under the License.
   <select class="share-token-role" title="select a role">
     {{#each roles}}
     <option title={{title.defaultText}}
-            style={{optionStyle}}
+            data-obsolete={{obsolete}}
             {{!-- We need this special attributed because apparently Meteor does not play nice
                   with HTMLOptionElement.defaultSelected. --}}
             data-default-selected={{default}}

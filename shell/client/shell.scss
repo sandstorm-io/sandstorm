@@ -622,11 +622,19 @@ body>.popup {
       max-width: 160px;
     }
     table.people, table.sharing-links {
+      border: 1px solid #ddd;
+      font-size: 10pt;
       width: 100%;
       border-collapse: collapse;
       tr {
         border-bottom: 1px solid #ddd;
       }
+      ul {
+         margin: 0;
+      }
+    }
+    [data-obsolete=true] {
+      display: none;
     }
 
     .emails {

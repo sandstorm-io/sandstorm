@@ -618,6 +618,16 @@ body>.popup {
     .share-token-role {
       max-width: 45%;
     }
+    table .share-token-role {
+      max-width: 160px;
+    }
+    table.people, table.sharing-links {
+      width: 100%;
+      border-collapse: collapse;
+      tr {
+        border-bottom: 1px solid #ddd;
+      }
+    }
 
     .emails {
        width: 50%;

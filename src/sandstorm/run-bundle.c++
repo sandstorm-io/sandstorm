@@ -22,6 +22,7 @@
 #include <capnp/schema.h>
 #include <capnp/dynamic.h>
 #include <capnp/serialize.h>
+#include <capnp/compat/json.h>
 #include <sandstorm/package.capnp.h>
 #include <sodium/randombytes.h>
 #include <stdlib.h>
@@ -319,168 +320,6 @@ private:
   pid_t pid;
   kj::String url;
 };
-
-// =======================================================================================
-// JSON-ify Cap'n Proto message
-//
-// Used specifically to insert a dev app's manifest into the database.
-//
-// TODO(cleanup): This REALLY belongs somewhere else!
-
-static const char HEXDIGITS[] = "0123456789abcdef";
-
-static capnp::schema::Type::Which whichFieldType(const capnp::StructSchema::Field& field) {
-  auto proto = field.getProto();
-  switch (proto.which()) {
-    case capnp::schema::Field::SLOT:
-      return proto.getSlot().getType().which();
-    case capnp::schema::Field::GROUP:
-      return capnp::schema::Type::STRUCT;
-  }
-  KJ_UNREACHABLE;
-}
-
-static kj::StringTree toJson(const capnp::DynamicValue::Reader& value,
-                             capnp::schema::Type::Which which) {
-  switch (value.getType()) {
-    case capnp::DynamicValue::UNKNOWN:
-      return kj::strTree("null");
-    case capnp::DynamicValue::VOID:
-      return kj::strTree("null");
-    case capnp::DynamicValue::BOOL:
-      return kj::strTree(value.as<bool>() ? "true" : "false");
-    case capnp::DynamicValue::INT:
-      if (which == capnp::schema::Type::INT64 ||
-          which == capnp::schema::Type::UINT64) {
-        // 64-bit values must be stringified to avoid losing precision.
-        return kj::strTree('\"', value.as<int64_t>(), '\"');
-      } else {
-        return kj::strTree(value.as<int32_t>());
-      }
-    case capnp::DynamicValue::UINT:
-      if (which == capnp::schema::Type::INT64 ||
-          which == capnp::schema::Type::UINT64) {
-        // 64-bit values must be stringified to avoid losing precision.
-        return kj::strTree('\"', value.as<uint64_t>(), '\"');
-      } else {
-        return kj::strTree(value.as<uint64_t>());
-      }
-    case capnp::DynamicValue::FLOAT:
-      if (which == capnp::schema::Type::FLOAT32) {
-        return kj::strTree(value.as<float>());
-      } else {
-        return kj::strTree(value.as<double>());
-      }
-    case capnp::DynamicValue::TEXT: {
-      auto chars = value.as<capnp::Text>();
-      kj::Vector<char> escaped(chars.size());
-
-      for (char c: chars) {
-        switch (c) {
-          case '\a': escaped.addAll(kj::StringPtr("\\a")); break;
-          case '\b': escaped.addAll(kj::StringPtr("\\b")); break;
-          case '\f': escaped.addAll(kj::StringPtr("\\f")); break;
-          case '\n': escaped.addAll(kj::StringPtr("\\n")); break;
-          case '\r': escaped.addAll(kj::StringPtr("\\r")); break;
-          case '\t': escaped.addAll(kj::StringPtr("\\t")); break;
-          case '\v': escaped.addAll(kj::StringPtr("\\v")); break;
-          case '\'': escaped.addAll(kj::StringPtr("\\\'")); break;
-          case '\"': escaped.addAll(kj::StringPtr("\\\"")); break;
-          case '\\': escaped.addAll(kj::StringPtr("\\\\")); break;
-          default:
-            if (c < 0x20) {
-              escaped.add('\\');
-              escaped.add('x');
-              uint8_t c2 = c;
-              escaped.add(HEXDIGITS[c2 / 16]);
-              escaped.add(HEXDIGITS[c2 % 16]);
-            } else {
-              escaped.add(c);
-            }
-            break;
-        }
-      }
-      return kj::strTree('"', escaped, '"');
-    }
-    case capnp::DynamicValue::DATA:
-      return kj::strTree("BinData(0, \"", base64Encode(value.as<capnp::Data>(), false), "\")");
-
-    case capnp::DynamicValue::LIST: {
-      auto listValue = value.as<capnp::DynamicList>();
-      auto which = listValue.getSchema().whichElementType();
-      kj::Array<kj::StringTree> elements = KJ_MAP(element, listValue) {
-        return toJson(element, which);
-      };
-      return kj::strTree('[', kj::StringTree(kj::mv(elements), ","), ']');
-    }
-    case capnp::DynamicValue::ENUM: {
-      auto enumValue = value.as<capnp::DynamicEnum>();
-      KJ_IF_MAYBE(enumerant, enumValue.getEnumerant()) {
-        return kj::strTree('\"', enumerant->getProto().getName(), '\"');
-      } else {
-        // Unknown enum value; output raw number.
-        return kj::strTree(enumValue.getRaw());
-      }
-      break;
-    }
-    case capnp::DynamicValue::STRUCT: {
-      auto structValue = value.as<capnp::DynamicStruct>();
-      auto unionFields = structValue.getSchema().getUnionFields();
-      auto nonUnionFields = structValue.getSchema().getNonUnionFields();
-
-      kj::Vector<kj::StringTree> printedFields(nonUnionFields.size() + (unionFields.size() != 0));
-
-      // We try to write the union field, if any, in proper order with the rest.
-      auto which = structValue.which();
-
-      kj::StringTree unionValue;
-      KJ_IF_MAYBE(field, which) {
-        // Even if the union field has its default value, if it is not the default field of the
-        // union then we have to print it anyway.
-        auto fieldProto = field->getProto();
-        if (fieldProto.getDiscriminantValue() != 0 || structValue.has(*field)) {
-          unionValue = kj::strTree(
-              '\"', fieldProto.getName(), "\":",
-              toJson(structValue.get(*field), whichFieldType(*field)));
-        } else {
-          which = nullptr;
-        }
-      }
-
-      for (auto field: nonUnionFields) {
-        KJ_IF_MAYBE(unionField, which) {
-          if (unionField->getIndex() < field.getIndex()) {
-            printedFields.add(kj::mv(unionValue));
-            which = nullptr;
-          }
-        }
-        if (structValue.has(field)) {
-          printedFields.add(kj::strTree(
-              '\"', field.getProto().getName(), "\":",
-              toJson(structValue.get(field), whichFieldType(field))));
-        }
-      }
-      if (which != nullptr) {
-        // Union value is last.
-        printedFields.add(kj::mv(unionValue));
-      }
-
-      return kj::strTree('{', kj::StringTree(printedFields.releaseAsArray(), ","), '}');
-    }
-    case capnp::DynamicValue::CAPABILITY:
-      // TODO(someday): Implement capabilities?
-      return kj::strTree("null");
-    case capnp::DynamicValue::ANY_POINTER:
-      // TODO(someday): Convert to bytes?
-      return kj::strTree("null");
-  }
-
-  KJ_UNREACHABLE;
-}
-
-kj::StringTree toJson(capnp::DynamicStruct::Reader value) {
-  return toJson(value, capnp::schema::Type::STRUCT);
-}
 
 // =======================================================================================
 
@@ -2390,6 +2229,32 @@ private:
     }
   }
 
+  class MongoJsonBinaryHandler: public capnp::JsonCodec::Handler<capnp::Data> {
+  public:
+    void encode(const capnp::JsonCodec& codec, capnp::Data::Reader input,
+                capnp::JsonValue::Builder output) const override {
+      auto call = output.initCall();
+      call.setFunction("BinData");
+      auto params = call.initParams(2);
+      params[0].setNumber(0);
+      params[1].setString(base64Encode(input, false));
+    }
+
+    capnp::Orphan<capnp::Data> decode(
+        const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
+        capnp::Orphanage orphanage) const override {
+      KJ_UNIMPLEMENTED("MongoJsonBinaryHandler::decode");
+    }
+  };
+
+  template <typename T>
+  kj::StringTree toMongoJson(T&& value) {
+    capnp::JsonCodec json;
+    MongoJsonBinaryHandler binHandler;
+    json.addTypeHandler(binHandler);
+    return json.encode(kj::fwd<T>(value));
+  }
+
   void insertDevApp(const Config& config, kj::StringPtr appId, kj::StringPtr pkgId,
                     spk::Manifest::Reader manifest) {
     mongoCommand(config, kj::str(
@@ -2397,7 +2262,7 @@ private:
           "_id:\"", appId, "\","
           "packageId:\"", pkgId, "\","
           "timestamp:", time(nullptr), ","
-          "manifest:", toJson(manifest),
+          "manifest:", toMongoJson(manifest),
         "})"));
   }
 
@@ -2405,7 +2270,7 @@ private:
     mongoCommand(config, kj::str(
         "db.devapps.update({_id:\"", appId, "\"}, {$set: {"
           "timestamp:", time(nullptr), ","
-          "manifest:", toJson(manifest),
+          "manifest:", toMongoJson(manifest),
         "}})"));
   }
 

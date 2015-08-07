@@ -468,6 +468,46 @@ enum OpenSourceLicense {
   # Feel free to send a pull request adding yours.
 }
 
+struct AppId {
+  id0 @0 :UInt64;
+  id1 @1 :UInt64;
+  id2 @2 :UInt64;
+  id3 @3 :UInt64;
+}
+
+struct PackageId {
+  id0 @0 :UInt64;
+  id1 @1 :UInt64;
+}
+
+struct VerifiedInfo {
+  # `spk verify --capnp` writes this to stdout. Also, `spk verify --details` writes a JSON version
+  # of this, with large `Data` and `Text` fields removed and `LocalizedText` simplified to their
+  # `defaultText`.
+
+  appId @0 :AppId;
+  packageId @1 :PackageId;
+  # App and package ID computed from package file signature and hash.
+
+  title @2 :Util.LocalizedText;
+  version @3 :UInt32;
+  marketingVersion @4 :Util.LocalizedText;
+
+  authorIdentity @5 :Identity;
+  struct Identity {
+    pgpKeyId @0 :Text;
+    # Verified by checking the signature in-package.
+
+    websites @1 :List(Text);
+    githubHandle @2 :Text;
+    twitterHandle @3 :Text;
+    # Verified via Keybase. (Unfortunately, Keybase verifies handles and not user IDs...)
+  }
+
+  metadata @6 :Metadata;
+  # Stuff extracted directly from manifest.
+}
+
 # ==============================================================================
 # Below this point is not interesting to app developers.
 #

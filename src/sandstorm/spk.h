@@ -18,6 +18,8 @@
 #define SANDSTORM_SPK_H_
 
 #include "abstract-main.h"
+#include <fcntl.h>
+#include <sandstorm/package.capnp.h>
 
 namespace sandstorm {
 
@@ -27,6 +29,9 @@ kj::String unpackSpk(int spkfd, kj::StringPtr outdir, kj::StringPtr tmpdir);
 // Read an SPK from `spkfd` placing all of the files in `outdir`. A (large) temporary file
 // will be written (and then deleted) in the directory `tmpdir`. The procedure returns the verified
 // app ID, or throws an exception before writing any output if the signature was not valid.
+
+void verifySpk(int spkfd, int tmpfile, spk::VerifiedInfo::Builder output);
+// Temporarily uncompress the spk, check its signature, and fill in `output` with relevant info.
 
 }  // namespace sandstorm
 

@@ -20,6 +20,7 @@
 #include <kj/debug.h>
 #include <kj/io.h>
 #include <capnp/serialize.h>
+#include <capnp/compat/json.h>
 #include <sodium/crypto_sign.h>
 #include <sodium/crypto_hash_sha256.h>
 #include <sodium/crypto_hash_sha512.h>
@@ -184,6 +185,39 @@ private:
 
 constexpr Base32Decoder BASE64_DECODER;
 static_assert(BASE64_DECODER.verifyTable(), "Base32 decode table is incomplete.");
+
+// =======================================================================================
+// JSON handlers for AppId and PackageId, converting them to their standard textual form.
+
+class AppIdJsonHandler: public capnp::JsonCodec::Handler<spk::AppId> {
+public:
+  void encode(const capnp::JsonCodec& codec, spk::AppId::Reader input,
+              capnp::JsonValue::Builder output) const override {
+    auto bytes = capnp::AnyStruct::Reader(input).getDataSection();
+    KJ_ASSERT(bytes.size() == 32);
+    output.setString(base32Encode(bytes));
+  }
+
+  void decode(const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
+              spk::AppId::Builder output) const override {
+    KJ_UNIMPLEMENTED("AppIdJsonHandler::decode");
+  }
+};
+
+class PackageIdJsonHandler: public capnp::JsonCodec::Handler<spk::PackageId> {
+public:
+  void encode(const capnp::JsonCodec& codec, spk::PackageId::Reader input,
+              capnp::JsonValue::Builder output) const override {
+    auto bytes = capnp::AnyStruct::Reader(input).getDataSection();
+    KJ_ASSERT(bytes.size() == 16);
+    output.setString(hexEncode(bytes));
+  }
+
+  void decode(const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
+              spk::PackageId::Builder output) const override {
+    KJ_UNIMPLEMENTED("AppIdJsonHandler::decode");
+  }
+};
 
 // =======================================================================================
 
@@ -1332,9 +1366,11 @@ private:
   }
 
   friend kj::String unpackSpk(int spkfd, kj::StringPtr outdir, kj::StringPtr tmpdir);
+  friend void verifySpk(int spkfd, int tmpfile, spk::VerifiedInfo::Builder output);
 
   static kj::String verifyImpl(
-      int spkfd, int tmpfile, kj::Function<kj::String(kj::StringPtr problem)> validationError) {
+      int spkfd, int tmpfile, kj::Maybe<spk::VerifiedInfo::Builder> maybeInfo,
+      kj::Function<kj::String(kj::StringPtr problem)> validationError) {
     // Read package form spkfd, check the validity and signature, and return the appId. Also write
     // the uncompressed archive to `tmpfile`.
 
@@ -1414,6 +1450,72 @@ private:
       return validationError("Signature didn't match package contents.");
     }
 
+    KJ_IF_MAYBE(info, maybeInfo) {
+      // Compute hash of input package (for package ID).
+      byte hash[crypto_hash_sha256_BYTES];
+      {
+        MemoryMapping spkMapping(spkfd, "(spk file)");
+        kj::ArrayPtr<const byte> bytes = spkMapping;
+        crypto_hash_sha256(hash, bytes.begin(), bytes.size());
+      }
+
+      // mmap the temp file.
+      MemoryMapping tmpMapping(tmpfile, "(temp file)");
+
+      // Set up archive reader.
+      kj::ArrayPtr<const capnp::word> tmpWords = tmpMapping;
+      capnp::ReaderOptions options;
+      options.traversalLimitInWords = tmpWords.size();
+      capnp::FlatArrayMessageReader archiveMessage(tmpWords, options);
+
+      bool foundManifest = false;
+      for (auto file: archiveMessage.getRoot<spk::Archive>().getFiles()) {
+        if (file.getName() == "sandstorm-manifest") {
+          if (!file.isRegular()) {
+            return validationError("sandstorm-manifest is not a regular file");
+          }
+
+          auto data = file.getRegular();
+
+          capnp::ReaderOptions manifestLimits;
+          manifestLimits.traversalLimitInWords = spk::Manifest::SIZE_LIMIT_IN_WORDS;
+
+          // Data fields are always word-aligned.
+          capnp::FlatArrayMessageReader manifestMessage(
+              kj::arrayPtr(reinterpret_cast<const capnp::word*>(data.begin()),
+                           data.size() / sizeof(capnp::word)), manifestLimits);
+
+          auto manifest = manifestMessage.getRoot<spk::Manifest>();
+
+          // TODO(someday): Support localization properly?
+
+          {
+            auto appId = capnp::AnyStruct::Builder(info->initAppId()).getDataSection();
+            KJ_ASSERT(appId.size() == sizeof(publicKey))
+            memcpy(appId.begin(), publicKey, sizeof(publicKey));
+          }
+          {
+            auto packageId = capnp::AnyStruct::Builder(info->initPackageId()).getDataSection();
+            KJ_ASSERT(packageId.size() == sizeof(hash) / 2)
+            memcpy(packageId.begin(), publicKey, sizeof(hash) / 2);
+          }
+
+          info->setTitle(manifest.getAppTitle());
+          info->setVersion(manifest.getAppVersion());
+          info->setMarketingVersion(manifest.getAppMarketingVersion());
+          info->setMetadata(manifest.getMetadata());
+          // TODO(now): Verify author signature.
+
+          foundManifest = true;
+          break;
+        }
+      }
+
+      if (!foundManifest) {
+        return validationError("SPK contains no manifest file.");
+      }
+    }
+
     return base32Encode(publicKey);
   }
 
@@ -1425,7 +1527,7 @@ private:
     //   later on.  Maybe link against the xz library so that we don't have to exec it?
 
     auto tmpfile = openTemporary(tmpNear);
-    auto appId = verifyImpl(spkfd, tmpfile, kj::mv(validationError));
+    auto appId = verifyImpl(spkfd, tmpfile, nullptr, kj::mv(validationError));
 
     // mmap the temp file.
     MemoryMapping tmpMapping(tmpfile, "(temp file)");
@@ -1535,108 +1637,35 @@ private:
       spkfd = ownFd;
     }
 
-    kj::AutoCloseFd tmpfile;
     if (detailed) {
-      tmpfile = openTemporary("/tmp/spk-verify-tmp");
+      kj::AutoCloseFd tmpfile = openTemporary("/tmp/spk-verify-tmp");
+      capnp::MallocMessageBuilder message;
+      auto info = message.getRoot<spk::VerifiedInfo>();
+      verifyImpl(spkfd, tmpfile, info, [&](kj::StringPtr problem) -> kj::String {
+        validationError(spkfile, problem);
+      });
+      tmpfile = nullptr;
+
+      AppIdJsonHandler appIdHandler;
+      PackageIdJsonHandler packageIdHandler;
+      capnp::JsonCodec json;
+      json.addTypeHandler(appIdHandler);
+      json.addTypeHandler(packageIdHandler);
+      json.setPrettyPrint(true);
+
+      auto text = json.encode(info);
+      kj::FdOutputStream(STDOUT_FILENO).write(text.begin(), text.size());
+      kj::FdOutputStream(STDOUT_FILENO).write("\n", 1);
+      context.exit();
     } else {
-      tmpfile = raiiOpen("/dev/null", O_WRONLY | O_CLOEXEC);;
-    }
-
-    auto appId = verifyImpl(spkfd, tmpfile, [&](kj::StringPtr problem) -> kj::String {
-      validationError(spkfile, problem);
-    });
-
-    if (detailed) {
-      // Compute hash of input package (for package ID).
-      kj::String packageId;
-      {
-        byte hash[crypto_hash_sha256_BYTES];
-        MemoryMapping spkMapping(spkfd, spkfile);
-        kj::ArrayPtr<const byte> bytes = spkMapping;
-        crypto_hash_sha256(hash, bytes.begin(), bytes.size());
-
-        packageId = hexEncode(kj::ArrayPtr<byte>(hash).slice(0, 16));
-      }
-
-      // mmap the temp file.
-      MemoryMapping tmpMapping(tmpfile, "(temp file)");
-      tmpfile = nullptr;  // We have the mapping now; don't need the fd.
-
-      // Set up archive reader.
-      kj::ArrayPtr<const capnp::word> tmpWords = tmpMapping;
-      capnp::ReaderOptions options;
-      options.traversalLimitInWords = tmpWords.size();
-      capnp::FlatArrayMessageReader archiveMessage(tmpWords, options);
-
-      for (auto file: archiveMessage.getRoot<spk::Archive>().getFiles()) {
-        if (file.getName() == "sandstorm-manifest") {
-          KJ_REQUIRE(file.isRegular(), "sandstorm-manifest is not a regular file");
-
-          auto data = file.getRegular();
-
-          capnp::ReaderOptions manifestLimits;
-          manifestLimits.traversalLimitInWords = spk::Manifest::SIZE_LIMIT_IN_WORDS;
-
-          // Data fields are always word-aligned.
-          capnp::FlatArrayMessageReader manifestMessage(
-              kj::arrayPtr(reinterpret_cast<const capnp::word*>(data.begin()),
-                           data.size() / sizeof(capnp::word)), manifestLimits);
-
-          auto manifest = manifestMessage.getRoot<spk::Manifest>();
-
-          // TODO(someday): Support localization properly?
-
-          auto text = kj::str(
-            "{\n"
-            "  \"appId\": \"", appId, "\",\n"
-            "  \"packageId\": \"", packageId, "\",\n"
-            "  \"title\": \"", escapeText(manifest.getAppTitle().getDefaultText()), "\",\n"
-            "  \"version\": ", manifest.getAppVersion(), ",\n"
-            "  \"marketingVersion\": \"",
-                escapeText(manifest.getAppMarketingVersion().getDefaultText()), "\"\n"
-            "}\n");
-
-          kj::FdOutputStream(STDOUT_FILENO).write(text.begin(), text.size());
-          context.exit();
-        }
-      }
-
-      context.exitError("package has no manifest");
-    } else {
+      kj::AutoCloseFd tmpfile = raiiOpen("/dev/null", O_WRONLY | O_CLOEXEC);;
+      auto appId = verifyImpl(spkfd, tmpfile, nullptr, [&](kj::StringPtr problem) -> kj::String {
+        validationError(spkfile, problem);
+      });
       printAppId(appId);
     }
 
     return true;
-  }
-
-  static kj::String escapeText(kj::StringPtr text) {
-    static const char HEXDIGITS[] = "0123456789abcdef";
-    kj::Vector<char> escaped(text.size());
-
-    for (char c: text) {
-      switch (c) {
-        case '\b': escaped.addAll(kj::StringPtr("\\b")); break;
-        case '\f': escaped.addAll(kj::StringPtr("\\f")); break;
-        case '\n': escaped.addAll(kj::StringPtr("\\n")); break;
-        case '\r': escaped.addAll(kj::StringPtr("\\r")); break;
-        case '\t': escaped.addAll(kj::StringPtr("\\t")); break;
-        case '\"': escaped.addAll(kj::StringPtr("\\\"")); break;
-        case '\\': escaped.addAll(kj::StringPtr("\\\\")); break;
-        default:
-          if (c < 0x20) {
-            escaped.addAll(kj::StringPtr("\\u00"));
-            uint8_t c2 = c;
-            escaped.add(HEXDIGITS[c2 / 16]);
-            escaped.add(HEXDIGITS[c2 % 16]);
-          } else {
-            escaped.add(c);
-          }
-          break;
-      }
-    }
-
-    escaped.add('\0');
-    return kj::String(escaped.releaseAsArray());
   }
 
   // =====================================================================================
@@ -1950,6 +1979,12 @@ kj::String unpackSpk(int spkfd, kj::StringPtr outdir, kj::StringPtr tmpdir) {
   return SpkTool::unpackImpl(spkfd, outdir, kj::str(tmpdir, "/spk-unpack-tmp"),
       [](kj::StringPtr problem) -> kj::String {
     KJ_FAIL_ASSERT("spk unpack failed", problem);
+  });
+}
+
+void verifySpk(int spkfd, int tmpfile, spk::VerifiedInfo::Builder output) {
+  SpkTool::verifyImpl(spkfd, tmpfile, output, [](kj::StringPtr problem) -> kj::String {
+    KJ_FAIL_ASSERT("spk verification failed", problem);
   });
 }
 

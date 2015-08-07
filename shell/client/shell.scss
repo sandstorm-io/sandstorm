@@ -730,34 +730,7 @@ body>.popup.admin-alert>.frame>p {
 }
 
 @media screen and (max-width: 900px) {
-  #applist-grains {
-    left: 0px;
-    padding: 16px 16px;
-  }
-  #applist-apps {
-    display: block;
-    position: fixed;
-    left: -300px;
-    -webkit-transition: left 100ms;
-    transition: left 100ms;
-    z-index: 2;
-    width: 300px;
-    top: 48px;
-    bottom: 0;
-    min-height: 0;
-    background-color: #eee;
-    color: black;
-    overflow: auto;
-  }
-  #applist-apps ul {
-    margin: 0;
-  }
-  #applist-apps li {
-    padding: 16px;
-    border-right: none;
-    border-bottom: 1px solid #ddd;
-  }
-  #applist-apps[data-show="true"], #menu[data-show="true"] {
+  #menu[data-show="true"] {
     left: 0px;
   }
   #applist-closer[data-show="true"], #menu-closer[data-show="true"] {
@@ -770,13 +743,6 @@ body>.popup.admin-alert>.frame>p {
     -webkit-transition: background-color 200ms;
     transition: background-color 200ms;
   }
-  #applist-grains table td {
-    padding: 16px;
-  }
-  #applist-grains .button-box button.show-apps {
-    display: inline-block;
-  }
-
   .main-content {
     top: 48px;
   }
@@ -793,22 +759,8 @@ body>.popup.admin-alert>.frame>p {
     top: 80px;
     left: 96px;
   }
-  #applist-grains .button-box button {
-    width: 100px;
-    min-height: 60px;
-    vertical-align: top;
-  }
-  #applist-grains .button-box button.new-grain-button {
-    width: 150px;
-  }
 }
 @media screen and (max-width: 650px) {
-  #applist-grains table {
-    width: 400px;
-  }
-  #applist-grains table td:nth-child(2) {
-    display: none;
-  }
   aside {
     position: relative;
     margin: 20px 0 0 0;
@@ -817,24 +769,9 @@ body>.popup.admin-alert>.frame>p {
   }
 }
 @media screen and (max-width: 450px) {
-  #applist-grains .button-box button {
-    font-size: 75%;
-    width: 75px;
-    min-height: 45px;
-  }
-  #applist-grains table {
-    width: 300px;
-  }
-  #applist-apps {
-    width: 225px;
-    left: -225px;
-  }
   #install-arrow {
     top: 68px;
     left: 96px;
     background-size: 372px 526px;
-  }
-  #applist-grains .button-box button.new-grain-button {
-    width: 115px;
   }
 }

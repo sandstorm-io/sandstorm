@@ -64,3 +64,47 @@
     }
   }
 }
+
+@media screen and (max-width: 900px) {
+  #applist-grains {
+    left: 0px;
+    padding: 16px 16px;
+    table td {
+      padding: 16px;
+    }
+    .button-box button {
+      width: 100px;
+      min-height: 60px;
+      vertical-align: top;
+      &.new-grain-button {
+        width: 150px;
+      }
+      &.show-apps {
+        display: inline-block;
+      }
+    }
+  }
+}
+@media screen and (max-width: 650px) {
+  #applist-grains table {
+    width: 400px;
+    td:nth-child(2) {
+      display: none;
+    }
+  }
+}
+@media screen and (max-width: 450px) {
+  #applist-grains {
+    table {
+      width: 300px;
+    }
+    .button-box button {
+      font-size: 75%;
+      width: 75px;
+      min-height: 45px;
+      &.new-grain-button {
+        width: 115px;
+      }
+    }
+  }
+}

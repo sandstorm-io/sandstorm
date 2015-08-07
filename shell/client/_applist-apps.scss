@@ -36,3 +36,38 @@
     }
   }
 }
+
+@media screen and (max-width: 900px) {
+  #applist-apps {
+    display: block;
+    position: fixed;
+    left: -300px;
+    -webkit-transition: left 100ms;
+    transition: left 100ms;
+    z-index: 2;
+    width: 300px;
+    top: 48px;
+    bottom: 0;
+    min-height: 0;
+    background-color: #eee;
+    color: black;
+    overflow: auto;
+    ul {
+      margin: 0;
+    }
+    li {
+      padding: 16px;
+      border-right: none;
+      border-bottom: 1px solid #ddd;
+    }
+  }
+  #applist-apps[data-show="true"] {
+    left: 0px;
+  }
+}
+@media screen and (max-width: 450px) {
+  #applist-apps {
+    width: 225px;
+    left: -225px;
+  }
+}

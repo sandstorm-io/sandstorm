@@ -45,52 +45,6 @@ body {
   background-color: white;
 }
 
-body>.topbar-update {
-  position: fixed;
-  width: 100%;
-  height: 32px;
-  text-align: center;
-  background-color: #622;
-  color: #fcc;
-  z-index: 1000;
-  cursor: pointer;
-  font-weight: bold;
-  line-height: 32px;
-
-  @media #{$mobile} {
-    line-height: 24px;
-    height: 48px;
-    left: 0;
-    width: auto;
-    right: 0;
-  }
-}
-
-@media #{$mobile} {
-  body>.menu-button {
-    background-color: black;
-    display: inline-block;
-    vertical-align: top;
-    background-image:url(/menu.svg);
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: 32px 32px;
-    width: 40px;
-    height: 40px;
-    padding: 4px;
-    color: transparent;
-    cursor: pointer;
-    border-right: 1px solid #666;
-    position: fixed;
-    left: 0;
-    top: 0;
-    z-index: 1000;
-  }
-  body>.menu-button:hover {
-    background-color: #666;
-  }
-}
-
 %unstyled-button {
   // Styles for <button>s should extend this to remove the browser's default styling.
 

@@ -1,0 +1,79 @@
+#install {}
+
+#install button {
+  font-family: inherit;
+  background-color: #428bca;
+  font-size: 150%;
+  font-weight: 600;
+
+  padding: 10px 16px;
+  line-height: 1.33;
+  border-radius: 6px;
+  border: none;
+  color: white;
+  cursor: pointer;
+  text-align: center;
+}
+
+#install ol {
+  margin: 16px auto;
+  width: 600px;
+
+  text-align: center;
+  list-style-type: none;
+  font-size: 200%;
+}
+#install ol p {
+  font-size: 50%;  /* revert above */
+  font-weight: normal;
+}
+
+#install pre {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+#install li {
+  display: none;
+}
+
+#install li .progress {
+  display: none;
+}
+
+#install #step-confirm .confirm-form { display: none; }
+#install #step-run     .done-notice  { display: none; }
+
+#install.instep-wait     #step-wait     { display: block; font-weight: bold; }
+#install.instep-download #step-download { display: block; font-weight: bold; }
+#install.instep-verify   #step-verify   { display: block; font-weight: bold; }
+#install.instep-unpack   #step-unpack   { display: block; font-weight: bold; }
+#install.instep-analyze  #step-analyze  { display: block; font-weight: bold; }
+#install.instep-confirm  #step-confirm  { display: block; font-weight: bold; }
+#install.instep-run      #step-run      { display: block; font-weight: bold; }
+#install.instep-delete   #step-delete   { display: block; font-weight: bold; }
+
+#install.instep-download #step-download .progress { display: inline; }
+#install.instep-verify   #step-verify   .progress { display: inline; }
+#install.instep-unpack   #step-unpack   .progress { display: inline; }
+#install.instep-analyze  #step-analyze  .progress { display: inline; }
+#install.instep-confirm  #step-confirm  .confirm-form { display: block; }
+#install.instep-run      #step-run      .done-notice { display: block; }
+
+#install-arrow, #my-files-arrow, #sign-in-arrow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 300px;
+  height: 400px;
+  z-index: -1;
+
+  background-image: url(/files-arrow.svg);
+}
+
+#install-arrow {
+  /* Point at the first button in the shell, rather */
+  /* than pointing at the top bar. */
+  top: 64px;
+  left: 32px;
+}

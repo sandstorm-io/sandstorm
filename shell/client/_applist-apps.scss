@@ -1,0 +1,38 @@
+#applist-apps {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 200px;
+  min-height: 100%;
+  background-color: #eee;
+  /* TODO(soon): Nice scrolling. Currently scroll bar ends up on the far right which is weird. */
+  ul {
+    padding: 0;
+    margin-left: 32px;
+  }
+  li {
+    list-style-type: none;
+    border-bottom: 1px solid #eee;
+    border-right: 2px solid #eee;
+    padding: 0 4px 0 16px;
+    background-color: #eee;
+    cursor: pointer;
+    line-height: 32px;
+    &:hover, &.dev.selected, &.dev:hover {
+      background-color: white;
+    }
+    &.dev {
+      background-color: #ddd;
+    }
+    &.blank {
+      cursor: inherit;
+      &:hover {
+        background-color: #eee;
+      }
+    }
+    &.selected {
+      border-right: none;
+      background-color: white;
+    }
+  }
+}

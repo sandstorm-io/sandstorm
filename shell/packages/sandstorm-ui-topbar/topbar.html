@@ -27,8 +27,7 @@ limitations under the License.
 
     <ul class="topbar {{#if _menuExpanded.get}}expanded{{/if}}">
       {{#each items}}
-        {{#if onlyPopup}}
-        {{else}}
+        {{#unless onlyPopup}}
           <li class="{{name}}">
             {{#if ./popupTemplate}}
               <button class="show-popup">

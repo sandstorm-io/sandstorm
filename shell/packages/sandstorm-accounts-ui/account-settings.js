@@ -41,6 +41,14 @@ Template.sandstormAccountSettings.helpers({
   isMale: function () { return this.pronoun === "male"; },
   isFemale: function () { return this.pronoun === "female"; },
   isRobot: function () { return this.pronoun === "robot"; },
+  isPaymentsEnabled: function () {
+    try {
+      BlackrockPayments; // This checks that BlackrockPayments is defined.
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
 });
 
 Template.sandstormAccountSettings.events({

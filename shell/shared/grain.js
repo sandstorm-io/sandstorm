@@ -1127,7 +1127,7 @@ Router.map(function () {
     },
 
     data: function() {
-      if (!this.ready) {
+      if (!this.ready || Meteor.loggingIn()) {
         return;
       }
       if (Meteor.userId() && !Session.get("visit-token-" + this.params.token)) {

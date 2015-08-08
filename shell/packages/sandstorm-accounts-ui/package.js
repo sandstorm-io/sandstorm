@@ -15,6 +15,9 @@ Package.onUse(function (api) {
   // services.
   api.use('sandstorm-accounts-oauth', {weak: true});
 
+  // Allow us to check if payments are enabled
+  api.use('blackrock-payments', {weak: true});
+
   api.use('less', 'client');
   api.use('reactive-dict', 'client');
 

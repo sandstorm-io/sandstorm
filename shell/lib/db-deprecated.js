@@ -62,6 +62,14 @@ if (Meteor.isServer) {
     //   packages to actually use the DB, but it's pretty sad.
     connection.sandstormDb = globalDb;
   });
+
+  // BlackrockPayments is only defined in the Blackrock build of Sandstorm.
+  if (global.BlackrockPayments) { // Have to check with global, because it could be undefined.
+    globalBlackrockPayments = new BlackrockPayments(globalDb);
+    Meteor.methods(globalBlackrockPayments.methods);
+  } else {
+    globalBlackrockPayments = null;
+  }
 }
 
 if (Meteor.isClient) {

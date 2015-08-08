@@ -600,6 +600,54 @@ body>.popup {
       }
     }
 
+    >h4.tabbed {
+      border-bottom: none;
+      margin-bottom: 0px;
+    }
+
+    >.footer {
+      border-top: 1px solid #ccc;
+      margin: 0px;
+      padding-top: 5px;
+      text-align: right;
+      >.who-has-access {
+        margin-right: 15px;
+     }
+    }
+
+    .share-token-role {
+      max-width: 45%;
+    }
+    table .share-token-role {
+      max-width: 160px;
+    }
+    table.people, table.sharing-links {
+      border: 1px solid #ddd;
+      font-size: 10pt;
+      width: 100%;
+      border-collapse: collapse;
+      tr {
+        border-bottom: 1px solid #ddd;
+      }
+      ul {
+         margin: 0;
+      }
+    }
+    [data-obsolete=true] {
+      display: none;
+    }
+
+    .emails {
+       width: 50%;
+    }
+    .label, .personal-message {
+      width: 100%;
+    }
+    .label-explanation {
+      font-size: 8pt;
+      font-style: italic;
+    }
+
     input, button, .login-button {
       @media #{$mobile} { font-size: 15pt; }
     }

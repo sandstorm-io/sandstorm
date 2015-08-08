@@ -30,17 +30,6 @@ if (Meteor.isServer) {
     }
   });
 
-  ApiTokens.allow({
-    update: function (userId, apiToken, fieldNames, modifier) {
-      // Allow owner to change the petname.
-      return userId &&
-        ((apiToken.userId === userId &&
-          (fieldNames.length === 1 &&
-           (fieldNames[0] === "petname" || fieldNames[0] === "revoked"))) ||
-         Match.test(apiToken.owner, {user: Match.ObjectIncluding({userId: userId})}))
-    },
-  });
-
   Meteor.publish("grainTopBar", function (grainId) {
     check(grainId, String);
     var self = this;
@@ -158,6 +147,51 @@ Meteor.methods({
 
     if (this.userId) {
       ApiTokens.remove({grainId: grainId, "owner.user.userId": this.userId});
+    }
+  },
+  inviteUsersToGrain: function (origin, grainId, title, roleAssignment, emailAddresses, message) {
+    if (!this.isSimulation) {
+      check(origin, String);
+      check(grainId, String);
+      check(title, String);
+      check(roleAssignment, roleAssignmentPattern);
+      check(emailAddresses, [String]);
+      check(message, {text: String, html: String});
+      var userId = this.userId;
+      if (!userId) {
+        throw new Meteor.Error(403, "Must be logged in to share by email.");
+      }
+      var sharerDisplayName = Meteor.user().profile.name;
+      var outerResult = {successes: [], failures: []};
+      emailAddresses.forEach(function(emailAddress) {
+        var result = createNewApiToken(userId, grainId,
+                                       "email invitation for " + emailAddress,
+                                       roleAssignment,
+                                       true, undefined);
+        var url = origin + "/shared/" + result.token;
+        var html = message.html + "<br><br>" +
+            "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
+            "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
+            "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
+            "Open Shared Grain</a><div style='font-size:8pt;font-style:italic;color:gray'>" +
+            "Note: If you forward this email to other people, they will be able to access " +
+            "the share as well. To prevent this, remove the button before forwarding.</div>";
+        try {
+          SandstormEmail.send({
+            to: emailAddress,
+            from: "Sandstorm server <no-reply@" + HOSTNAME + ">",
+            subject: sharerDisplayName + " has invited you to join a grain: " + title,
+            text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
+              "\n\nNote: If you forward this email to other people, they will be able to access " +
+              "the share as well. To prevent this, remove the link before forwarding.",
+            html: html,
+          });
+          outerResult.successes.push(emailAddress);
+        } catch (e) {
+          outerResult.failures.push({email: emailAddress, error: e.toString()});
+        }
+      });
+      return outerResult;
     }
   },
 });
@@ -312,7 +346,8 @@ if (Meteor.isClient) {
       Session.set("api-token-" + this.grainId, undefined);
     },
     "click button.revoke-token": function (event) {
-      ApiTokens.update(event.currentTarget.getAttribute("data-token-id"), {$set: {revoked: true}});
+      Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
+                  {revoked: true});
     },
 
     "click .token-petname": function (event) {
@@ -320,8 +355,8 @@ if (Meteor.isClient) {
       //   to edit the petname in place.
       var petname = window.prompt("Set new label:", this.petname);
       if (petname) {
-        ApiTokens.update(event.currentTarget.getAttribute("data-token-id"),
-                         {$set: {petname: petname}});
+        Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
+                    {petname: petname});
       }
     },
   });
@@ -331,76 +366,79 @@ if (Meteor.isClient) {
     "click #share-grain-popup-closer": function (event) {
       Session.set("show-share-grain", false);
     },
-    "click #reset-share-token": function (event) {
-      Session.set("share-token-" + this.grainId, undefined);
-    },
-    "submit #new-share-token": function (event) {
+    "click button.who-has-access": function (event) {
       event.preventDefault();
+      var instance = Template.instance();
+      instance.currentMode.set({"whoHasAccess": true});
+    },
+
+    "click button.share-with-others": function (event) {
+      Template.instance().currentMode.set({"shareWithOthers": true});
+    },
+
+    "click #privatize-grain": function (event) {
+      Grains.update(this.grainId, {$set: {private: true}});
+    },
+  });
+
+  Template.sharableLinkTab.events({
+    "change .share-token-role": function (event, instance) {
+      var success = instance.completionState.get().success;
+      if (success) {
+        var roleList = event.target;
+        var assignment;
+        if (roleList) {
+          assignment = {roleId: roleList.selectedIndex};
+        } else {
+          assignment = {none: null};
+        }
+        Meteor.call("updateApiToken", success.id, {roleAssignment: assignment}, function (error) {
+          if (error) {
+            console.error(error.stack);
+          }
+        });
+      }
+    },
+    "change .label": function (event, instance) {
+      var success = instance.completionState.get().success;
+      if (success) {
+        var label = event.target.value;
+        Meteor.call("updateApiToken", success.id, {petname: label}, function (error) {
+          if (error) {
+            console.error(error.stack);
+          }
+        });
+      }
+    },
+    "submit form.new-share-token": function (event, instance) {
+      event.preventDefault();
+      if (!instance.completionState.get().clear) {
+        return;
+      }
       var grainId = this.grainId;
-      Session.set("share-token-" + grainId, "pending");
-      var roleList = document.getElementById("share-token-role");
+      var roleList = event.target.getElementsByClassName("share-token-role")[0];
       var assignment;
       if (roleList) {
         assignment = {roleId: roleList.selectedIndex};
       } else {
         assignment = {none: null};
       }
-      Meteor.call("newApiToken", grainId, document.getElementById("share-token-petname").value,
+      instance.completionState.set({"pending": true});
+      Meteor.call("newApiToken", grainId, event.target.getElementsByClassName("label")[0].value,
                   assignment, true, undefined,
                   function (error, result) {
         if (error) {
           console.error(error.stack);
         } else {
-          Session.set("share-token-" + grainId, getOrigin() + "/shared/" + result.token);
+          result.url = getOrigin() + "/shared/" + result.token;
+          instance.completionState.set({"success": result});
         }
       });
     },
-
-    "click button.show-transitive-shares": function (event) {
-      var grainId = this.grainId;
-      Meteor.call("transitiveShares", this.grainId, function(error, downstream) {
-        if (error) {
-          console.error(error.stack);
-        } else {
-          var sharesByRecipient = {};
-          downstream.forEach(function (token) {
-            if (Match.test(token.owner, {user: Match.ObjectIncluding({userId: String})})) {
-              var recipient = token.owner.user.userId;
-              if (!sharesByRecipient[recipient]) {
-                sharesByRecipient[recipient] = {recipient: recipient, shares: []};
-              }
-              sharesByRecipient[recipient].shares.push(token);
-            }
-          });
-          var result = _.values(sharesByRecipient);
-          if (result.length == 0) {
-            result = {empty: true};
-          }
-          Session.set("transitive-shares-" + grainId, result);
-        }
-      });
-    },
-
-    "click button.hide-transitive-shares": function (event) {
-      Session.set("transitive-shares-" + this.grainId, undefined);
-    },
-
-    "click #privatize-grain": function (event) {
-      Grains.update(this.grainId, {$set: {private: true}});
-    },
-
-    "click button.revoke-token": function (event) {
-      ApiTokens.update(event.currentTarget.getAttribute("data-token-id"), {$set: {revoked: true}});
-    },
-
-    "click .token-petname": function (event) {
-      // TODO(soon): Find a less-annoying way to get this input, perhaps by allowing the user
-      //   to edit the petname in place.
-      var petname = window.prompt("Set new label:", this.petname);
-      if (petname) {
-        ApiTokens.update(event.currentTarget.getAttribute("data-token-id"),
-                         {$set: {petname: petname}});
-      }
+    "click .reset-share-token": function (event, instance) {
+      instance.completionState.set({clear: true});
+      instance.find("form").reset();
+      instance.find("form option[data-default-selected=true]").selected = true;
     },
   });
 
@@ -442,6 +480,16 @@ if (Meteor.isClient) {
       }
     },
     "click .copy-me": copyMe
+  });
+
+  Template.grainSharePopup.onCreated(function () {
+    this.currentMode = new ReactiveVar({"shareWithOthers": true});
+  });
+
+  Template.grainSharePopup.helpers({
+    "currentMode": function() {
+      return Template.instance().currentMode.get();
+    },
   });
 
   Template.grain.onCreated(function () {
@@ -500,7 +548,84 @@ if (Meteor.isClient) {
     },
   });
 
-  Template.grainSharePopup.helpers({
+  Template.whoHasAccess.onCreated(function () {
+    var grainId = this.data.grainId;
+    var instance = this;
+    instance.transitiveShares = new ReactiveVar(null);
+    this.resetTransitiveShares = function() {
+      Meteor.call("transitiveShares", grainId, function(error, downstream) {
+        if (error) {
+          console.error(error.stack);
+        } else {
+          var sharesByRecipient = {};
+          downstream.forEach(function (token) {
+            if (Match.test(token.owner, {user: Match.ObjectIncluding({userId: String})})) {
+              var recipient = token.owner.user.userId;
+              if (!sharesByRecipient[recipient]) {
+                sharesByRecipient[recipient] = {recipient: recipient, shares: []};
+              }
+              var shares = sharesByRecipient[recipient].shares;
+              if (!shares.some(function(share) { return share.userId === token.userId; })) {
+                sharesByRecipient[recipient].shares.push(token);
+              }
+            }
+          });
+          var result = _.values(sharesByRecipient);
+          if (result.length == 0) {
+            result = {empty: true};
+          }
+          instance.transitiveShares.set(result);
+        }
+      });
+    }
+    this.resetTransitiveShares();
+  });
+
+  Template.whoHasAccess.events({
+    "change .share-token-role": function (event, instance) {
+      var roleList = event.target;
+      var assignment;
+      if (roleList) {
+        assignment = {roleId: roleList.selectedIndex};
+      } else {
+        assignment = {none: null};
+      }
+      Meteor.call("updateApiToken", roleList.getAttribute("data-token-id"),
+                  {roleAssignment: assignment}, function (error) {
+        if (error) {
+          console.error(error.stack);
+        }
+      });
+    },
+    "click button.revoke-token": function (event, instance) {
+      Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
+                  {revoked: true});
+      instance.resetTransitiveShares();
+    },
+    "click .token-petname": function (event) {
+      // TODO(soon): Find a less-annoying way to get this input, perhaps by allowing the user
+      //   to edit the petname in place.
+      var petname = window.prompt("Set new label:", this.petname);
+      if (petname) {
+        Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
+                    {petname: petname});
+      }
+    },
+  });
+
+  function isEmptyPermissionSet(permissionSet) {
+    if (!permissionSet) {
+      return true;
+    }
+    for (var ii = 0; ii < permissionSet.length; ++ii) {
+      if (permissionSet[ii]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  Template.whoHasAccess.helpers({
     displayName: function (userId) {
       var name = DisplayNames.findOne(userId);
       if (name) {
@@ -511,10 +636,153 @@ if (Meteor.isClient) {
         return "Unknown User (" + userId + ")";
       }
     },
-
+    transitiveShares: function () {
+      return Template.instance().transitiveShares.get();
+    },
+    indexedRoles: function () {
+      var result = [];
+      var instance = Template.instance();
+      var roles = instance.data.viewInfo.roles;
+      for (var ii = 0; ii < roles.length; ++ii) {
+        result.push({idx: ii, title: roles[ii].title, verbPhrase: roles[ii].verbPhrase});
+      }
+      return result;
+    },
+    roleText: function () {
+      if (this.verbPhrase) {
+        return this.verbPhrase.defaultText;
+      } else {
+        return "is " + this.title.defaultText;
+      }
+    },
+    hasCustomRole: function(token) {
+      var role = token.roleAssignment;
+      if ("roleId" in role &&
+          isEmptyPermissionSet(role.addPermissions) &&
+          isEmptyPermissionSet(role.removePermissions)) {
+        return false;
+      }
+      return true;
+    },
+    hasCurrentRole: function(token) {
+      var role = token.roleAssignment;
+      if ("roleId" in role && role.roleId == this.idx &&
+          isEmptyPermissionSet(role.addPermissions) &&
+          isEmptyPermissionSet(role.removePermissions)) {
+        return true;
+      }
+      return false;
+    },
+    tabs: function() {
+      return [{name: "Table view", slug: "table"},
+              {name: "Graph view", slug: "graph"}];
+    },
     displayToken: function() {
       return !this.revoked && !this.expiresIfUnused && !this.parentToken;
     },
+  });
+
+  Template.shareWithOthers.helpers({
+    tabs: function() {
+      return [{name: "Send an invite", slug: "invite"},
+              {name: "Get sharable link", slug: "link"}];
+    },
+  });
+
+  Template.selectRole.helpers({
+    roleText: function () {
+      if (this.verbPhrase) {
+        return this.verbPhrase.defaultText;
+      } else {
+        return "is " + this.title.defaultText;
+      }
+    },
+  });
+
+  Template.sharableLinkTab.onCreated(function () {
+    this.completionState = new ReactiveVar({clear: true});
+  });
+
+  Template.emailInviteTab.onCreated(function () {
+    this.completionState = new ReactiveVar({clear: true});
+  });
+
+  Template.sharableLinkTab.helpers({
+    completionState: function() {
+      var instance = Template.instance();
+      return instance.completionState.get();
+    }
+  });
+  Template.emailInviteTab.helpers({
+    completionState: function() {
+      var instance = Template.instance();
+      return instance.completionState.get();
+    },
+  });
+
+  Template.emailInviteTab.events({
+    "submit form.email-invite": function (event, instance) {
+      event.preventDefault();
+      if (!instance.completionState.get().clear) {
+        return;
+      }
+      var grainId = this.grainId;
+      var title = this.title;
+
+      // MailComposer accepts a comma-delimited list, but we want to split the list before
+      // sending the mail because we want a separate token for each user. Moreover, users
+      // will probably expect space-delimited lists to work, and when we eventually implement
+      // autocompletion and inline validation, we expect that we will display a space-delimited
+      // list. So we split on spaces here and allow MailComposer to clean up any stray commas.
+      var emails = event.target.getElementsByClassName("emails")[0].value.split(" ");
+      emails = emails.filter(function (email) { return email.length > 0;});
+      if (emails.length == 0) {
+        return;
+      }
+      var roleList = event.target.getElementsByClassName("share-token-role")[0];
+      var assignment;
+      if (roleList) {
+        assignment = {roleId: roleList.selectedIndex};
+      } else {
+        assignment = {none: null};
+      }
+      var message = event.target.getElementsByClassName("personal-message")[0].value;
+      instance.completionState.set({pending: true});
+
+      // HTML-escape the message.
+      var div = document.createElement('div');
+      div.appendChild(document.createTextNode(message));
+      var htmlMessage = div.innerHTML.replace(/\n/g, "<br>");
+
+      Meteor.call("inviteUsersToGrain", getOrigin(), grainId, title, assignment, emails,
+                  {text: message, html: htmlMessage}, function (error, result) {
+        if (error) {
+          instance.completionState.set({error: error.toString()});
+        } else {
+          if (result.failures.length > 0) {
+            var message = "Failed to send to: ";
+            for (var ii = 0; ii < result.failures.length; ++ii) {
+              if (ii != 0) {
+                message += ", ";
+              }
+              message += result.failures[ii].email;
+            }
+            instance.completionState.set({error: message});
+          } else {
+            instance.completionState.set({success: "success"});
+          }
+        }
+      });
+    },
+    "click .reset-invite": function (event, instance) {
+      instance.completionState.set({clear: true});
+      instance.find("form").reset();
+      instance.find("form option[data-default-selected=true]").selected = true;
+    },
+  });
+
+  ReactiveTabs.createInterface({
+    template: 'basicTabs',
   });
 
   Template.grainPowerboxOfferPopup.helpers({
@@ -710,7 +978,6 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
   var grainId = result.grainId;
 
   var apiToken = Session.get("api-token-" + grainId);
-  var shareToken = Session.get("share-token-" + grainId);
 
   result.apiToken = apiToken;
   result.apiTokenPending = apiToken === "pending";
@@ -720,15 +987,12 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
                                           $or: [{owner: {webkey: null}},
                                                 {owner: {$exists: false}}],
                                           expiresIfUnused: null}).fetch();
-  result.shareToken = shareToken;
-  result.shareTokenPending = shareToken === "pending";
   result.showShareGrain = Session.get("show-share-grain");
   result.existingShareTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
                                                forSharing: true,
                                                $or: [{owner: {webkey:null}},
                                                      {owner: {$exists: false}}],
                                               }).fetch();
-  result.transitiveShares = Session.get("transitive-shares-" + grainId);
   result.showMenu = Session.get("showMenu");
   result.rootPath = rootPath;
 

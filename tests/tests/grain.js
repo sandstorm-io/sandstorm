@@ -182,8 +182,10 @@ module.exports["Test grain anonymous user"] = function (browser) {
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
     .click('.topbar > .share > .show-popup')
-    .waitForElementVisible("#new-share-token", short_wait)
-    .submitForm('#new-share-token')
+    .waitForElementVisible('li[data-tab-top=link]', short_wait)
+    .click("li[data-tab-top=link]")
+    .waitForElementVisible(".new-share-token", short_wait)
+    .submitForm('.new-share-token')
     .waitForElementVisible('#share-token-text', medium_wait)
     // Navigate to the url with an anonymous user
     .getText('#share-token-text', function(response) {
@@ -215,8 +217,10 @@ module.exports["Test roleless sharing"] = function (browser) {
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
     .click('.topbar > .share > .show-popup')
-    .waitForElementVisible("#new-share-token", short_wait)
-    .submitForm('#new-share-token')
+    .waitForElementVisible("li[data-tab-top=link]", short_wait)
+    .click("li[data-tab-top=link]")
+    .waitForElementVisible(".new-share-token", short_wait)
+    .submitForm('.new-share-token')
     .waitForElementVisible('#share-token-text', medium_wait)
     // Navigate to the url with Bob
     .getText('#share-token-text', function(response) {
@@ -232,8 +236,10 @@ module.exports["Test roleless sharing"] = function (browser) {
         .assert.containsText('#publish', 'Publish')
         .frame(null)
         .click('.topbar > .share > .show-popup')
-        .waitForElementVisible("#new-share-token", short_wait)
-        .submitForm('#new-share-token')
+        .waitForElementVisible("li[data-tab-top=link]", short_wait)
+        .click("li[data-tab-top=link]")
+        .waitForElementVisible(".new-share-token", short_wait)
+        .submitForm('.new-share-token')
         .waitForElementVisible('#share-token-text', medium_wait)
         // Navigate to the re-shared url with Carol
         .getText('#share-token-text', function(response) {
@@ -249,8 +255,10 @@ module.exports["Test roleless sharing"] = function (browser) {
             .assert.containsText('#publish', 'Publish')
             .frame(null)
             .click('.topbar > .share > .show-popup')
-            .waitForElementVisible("#new-share-token", short_wait)
-            .submitForm('#new-share-token')
+            .waitForElementVisible("li[data-tab-top=link]", short_wait)
+            .click("li[data-tab-top=link]")
+            .waitForElementVisible(".new-share-token", short_wait)
+            .submitForm('.new-share-token')
             .waitForElementVisible('#share-token-text', medium_wait)
         });
     });
@@ -272,9 +280,11 @@ module.exports["Test role sharing"] = function (browser) {
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.containsText('#grainTitle', 'Untitled Etherpad Document')
     .click('.topbar > .share > .show-popup')
-    .waitForElementVisible("#share-token-role", medium_wait)
-    .assert.valueContains("#share-token-role", "editor")
-    .submitForm('#new-share-token')
+    .waitForElementVisible("li[data-tab-top=link]", short_wait)
+    .click("li[data-tab-top=link]")
+    .waitForElementVisible("section[data-tab=link] .share-token-role", medium_wait)
+    .assert.valueContains("section[data-tab=link] .share-token-role", "can edit")
+    .submitForm('.new-share-token')
     .waitForElementVisible('#share-token-text', medium_wait)
     // Navigate to the url with Dave
     .getText('#share-token-text', function(response) {
@@ -289,9 +299,11 @@ module.exports["Test role sharing"] = function (browser) {
         .waitForElementPresent('#editorcontainerbox', medium_wait)
         .frame(null)
         .click('.topbar > .share > .show-popup')
-        .waitForElementVisible("#share-token-role", medium_wait)
-        .assert.valueContains("#share-token-role", "editor")
-        .submitForm('#new-share-token')
+        .waitForElementVisible("li[data-tab-top=link]", short_wait)
+        .click("li[data-tab-top=link]")
+        .waitForElementVisible("section[data-tab=link] .share-token-role", medium_wait)
+        .assert.valueContains("section[data-tab=link] .share-token-role", "can edit")
+        .submitForm('.new-share-token')
         .waitForElementVisible('#share-token-text', medium_wait)
         // Navigate to the re-shared url with Eve
         .getText('#share-token-text', function(response) {
@@ -306,9 +318,11 @@ module.exports["Test role sharing"] = function (browser) {
             .waitForElementPresent('#editorcontainerbox', medium_wait)
             .frame(null)
             .click('.topbar > .share > .show-popup')
-            .waitForElementVisible("#share-token-role", medium_wait)
-            .assert.valueContains("#share-token-role", "editor")
-            .submitForm('#new-share-token')
+            .waitForElementVisible("li[data-tab-top=link]", short_wait)
+            .click("li[data-tab-top=link]")
+            .waitForElementVisible("section[data-tab=link] .share-token-role", medium_wait)
+            .assert.valueContains("section[data-tab=link] .share-token-role", "can edit")
+            .submitForm('.new-share-token')
             .waitForElementVisible('#share-token-text', medium_wait)
         });
     });
@@ -332,8 +346,10 @@ module.exports["Test grain incognito interstitial"] = function (browser) {
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
     .click('.topbar > .share > .show-popup')
-    .waitForElementVisible("#new-share-token", short_wait)
-    .submitForm('#new-share-token')
+    .waitForElementVisible("li[data-tab-top=link]", short_wait)
+    .click("li[data-tab-top=link]")
+    .waitForElementVisible(".new-share-token", short_wait)
+    .submitForm('.new-share-token')
     .waitForElementVisible('#share-token-text', medium_wait)
     // Navigate to the url with an anonymous user
     .getText('#share-token-text', function(response) {

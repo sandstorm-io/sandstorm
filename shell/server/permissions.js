@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+var Crypto = Npm.require("crypto");
+
 function PermissionSet(array) {
   // A wrapper around an array of booleans.
 
@@ -391,6 +393,77 @@ downstreamTokens = function(root) {
   return result;
 }
 
+createNewApiToken = function (userId, grainId, petname, roleAssignment, forSharing,
+                              expiresIfUnusedDuration, rawParentToken) {
+  // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
+  check(grainId, String);
+  check(petname, String);
+  check(roleAssignment, roleAssignmentPattern);
+  check(forSharing, Boolean);
+  // Meteor bug #3877: we get null here instead of undefined when we
+  // explicitly pass in undefined.
+  check(expiresIfUnusedDuration, Match.OneOf(undefined, null, Number));
+
+  var parentToken;
+  if (!userId) {
+    if (!rawParentToken) {
+      throw new Meteor.Error(403, "If you are not logged in, you must specify a parent token to " +
+                             "create a new API token.");
+    } else {
+      check(rawParentToken, String);
+      parentToken = Crypto.createHash("sha256").update(rawParentToken).digest("base64");
+      var parentApiToken = ApiTokens.findOne({_id: parentToken, grainId: grainId,
+                                              objectId: {$exists: false}});
+      if (!parentApiToken) {
+        throw new Meteor.Error(403, "No such parent token found.");
+      }
+      userId = parentApiToken.userId;
+      if (parentApiToken.forSharing) {
+        forSharing = true;
+      }
+    }
+  }
+
+  var grain = Grains.findOne(grainId);
+  if (!grain) {
+    throw new Meteor.Error(403, "Unauthorized", "No grain found.");
+  }
+
+  var token = Random.secret();
+
+  var apiToken = {
+    _id: Crypto.createHash("sha256").update(token).digest("base64"),
+    userId: userId,
+    grainId: grainId,
+    roleAssignment: roleAssignment,
+    petname: petname,
+    created: new Date(),
+    expires: null,
+    forSharing: forSharing,
+  };
+
+  if (parentToken) {
+    apiToken.parentToken = parentToken;
+  }
+  if (expiresIfUnusedDuration) {
+    apiToken.expiresIfUnused = new Date(Date.now() + expiresIfUnusedDuration);
+  }
+
+  ApiTokens.insert(apiToken);
+
+  var endpointUrl = ROOT_URL.protocol + "//" + makeWildcardHost("api");
+  return {id: apiToken._id, token: token, endpointUrl: endpointUrl};
+}
+
+var cleanupSelfDestructing = function() {
+  var now = new Date();
+  ApiTokens.remove({expiresIfUnused: {$lt: now}});
+};
+
+// Make self-destructing tokens actually self-destruct, so they don't
+// clutter the token list view.
+Meteor.setInterval(cleanupSelfDestructing, 60 * 1000);
+
 Meteor.methods({
   transitiveShares: function(grainId) {
     check(grainId, String);
@@ -398,4 +471,28 @@ Meteor.methods({
       return downstreamTokens({grain: {_id: grainId, userId: this.userId}});
     }
   },
+
+  newApiToken: function (grainId, petname, roleAssignment, forSharing,
+                         expiresIfUnusedDuration, rawParentToken) {
+    return createNewApiToken(this.userId, grainId, petname, roleAssignment, forSharing,
+                             expiresIfUnusedDuration, rawParentToken);
+  },
+
+  updateApiToken: function (token, newFields) {
+    check(token, String);
+    check(newFields, {petname: Match.Optional(String),
+                      roleAssignment: Match.Optional(roleAssignmentPattern),
+                      revoked: Match.Optional(Boolean)});
+
+    var apiToken = ApiTokens.findOne(token);
+    if (!apiToken) {
+      throw new Meteor.Error(404, "No such token found.");
+    }
+    if (this.userId && (apiToken.userId === this.userId)) {
+      var modifier = {$set: newFields};
+      ApiTokens.update(token, modifier);
+    } else {
+      throw new Meteor.Error(403, "User not authorized to modify this token.");
+    }
+  }
 });

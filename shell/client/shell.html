@@ -338,7 +338,7 @@ limitations under the License.
           <option title="has every app permission" selected=true>all access</option>
           {{#each roles}}
             <option title={{verbPhrase.defaultText}}
-                    style="{{#if obsolete}}display:none{{else}}{{/if}}">
+                    data-obsolete={{obsolete}}>
               {{title.defaultText}}</option>
           {{/each}}
         </select>
@@ -367,89 +367,177 @@ limitations under the License.
   Share
 </template>
 
-<template name="grainSharePopup">
-  <h4>Share with others...</h4>
-  {{#if oldSharingModel}}
-    <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
-        location bar.</p>
-    {{#if isOwner}}
-    <p>You can upgrade this grain to the new model, but anyone with whom you shared this grain
-      previously will lose access; you will have to share it with them again. If you have
-      generated webkeys for external apps, you might also need to regenerate those.</p>
-    <p>Upgrading cannot be undone.</p>
-    <p><button id="privatize-grain">upgrade</button></p>
-    {{/if}}
-  {{else}}
-    {{#if shareToken}}
-      {{#if shareTokenPending}}
-        <p>Generating...</p>
-        <p><button id="reset-share-token">Cancel</button></p>
-      {{else}}
-        <p>Copy this link and share it with other users to grant access:</p>
-        <a id="share-token-text" class="copy-me" href="{{shareToken}}">{{shareToken}}</a>
-        <p><button id="reset-share-token">Go back</button></p>
-      {{/if}}
+<template name="whoHasAccess">
+  <h4 class="tabbed">Who has access</h4>
+  {{#basicTabs name="" tabs=tabs}}
+  {{#tabContent slug="table"}}
+    <h5>People</h5>
+    {{#if transitiveShares.empty}}
+      <p> You have granted access to nobody. </p>
     {{else}}
-      {{#if transitiveShares}}
-        {{#if transitiveShares.empty}}
-          <p></p>
-          <p> You have granted access to nobody. </p>
-        {{else}}
-          <p>Users who have received access through you:</p>
-          <ul>
-            {{#each transitiveShares}}
-              <li>
-                <div>{{displayName recipient}} was granted access by:</div>
-                <ul>
-                  {{#each shares}}
-                    <li>{{displayName userId}} ({{dateString created}})</li>
-                  {{/each}}
-                </ul>
-              </li>
-            {{/each}}
-          </ul>
-        {{/if}}
-        <button class="hide-transitive-shares">back</button>
-      {{else}}
-        <p>Create a secret link to share with other users.</p>
-        <p><form id="new-share-token">
-        Label: <input onclick="select()" type="text"
-                id="share-token-petname" value="unlabeled sharing link">
-        {{#with viewInfo}}
-          {{#if roles}}
-            Role:
-            <select id="share-token-role" title="select a role">
-              {{#each roles}}
-                <option title={{verbPhrase.defaultText}}
-                        style="{{#if obsolete}}display:none{{/if}}"
-                        selected={{default}}>
-                  {{title.defaultText}}</option>
-              {{/each}}
-            </select>
-          {{/if}}
-        {{/with}}
-        <button>Create</button>
-        </form></p>
-        {{#if existingShareTokens}}
-          <p> Your existing links: </p>
-          <ul>
-          {{#each existingShareTokens}}
-            {{#if displayToken}}
-              <li>
+      <table class="people">
+        {{#each transitiveShares}}
+          <tr>
+            <td> {{displayName recipient}} </td>
+            <td> added by
+              <ul>
+                {{#each shares}}
+                  <li>{{displayName userId}}</li>
+                {{/each}}
+              </ul>
+            </td>
+          </tr>
+        {{/each}}
+      </table>
+    {{/if}}
+    {{#if existingShareTokens}}
+      <h5>Sharing Links</h5>
+      <table class="sharing-links">
+        {{#each existingShareTokens}}
+          {{#if displayToken}}
+            <tr>
+              <td>
                 <span class="token-petname" data-token-id="{{_id}}">
                   {{petname}} ({{dateString created}})
                 </span>
+              </td>
+              <td>
+                {{#if ../viewInfo.roles}}
+                  <select class="share-token-role" data-token-id="{{_id}}">
+                    {{#each indexedRoles}}
+                      <option title={{title.defaultText}}
+                              data-obsolete={{obsolete}}
+                              selected={{hasCurrentRole ..}}>
+                        {{roleText}}</option>
+                    {{/each}}
+                    {{#if hasCustomRole .}}
+                      <option title="custom role" selected=true>
+                        [has custom permissions]
+                      </option>
+                    {{/if}}
+                  </select>
+                {{/if}}
+              </td>
+              <td>
                 <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
-              </li>
-            {{/if}}
-          {{/each}}
-          </ul>
-        {{else}}
-          <p>You have not created any links.</p>
-        {{/if}}
-        <button class="show-transitive-shares">see who has access</button>
-      {{/if}}
+              </td>
+            </tr>
+          {{/if}}
+        {{/each}}
+      </table>
     {{/if}}
+  {{/tabContent}}
+  {{#tabContent slug="graph"}}
+    <p>Graph view is unimplemented. :(</p>
+  {{/tabContent}}
+  {{/basicTabs}}
+  <button class="share-with-others">&lt;&lt; Done</button>
+</template>
+
+<template name="selectRole">
+  {{#with viewInfo}}
+  {{#if roles}}
+  <select class="share-token-role" title="select a role">
+    {{#each roles}}
+    <option title={{title.defaultText}}
+            data-obsolete={{obsolete}}
+            {{!-- We need this special attributed because apparently Meteor does not play nice
+                  with HTMLOptionElement.defaultSelected. --}}
+            data-default-selected={{default}}
+            selected={{default}}>
+      {{roleText}}</option>
+    {{/each}}
+  </select>
+  {{/if}}
+  {{/with}}
+</template>
+
+<template name="emailInviteTab">
+  <form class="email-invite">
+    <p>
+    <input onclick="select()" type="text"
+           class="emails" placeholder="Enter email addresses">
+    {{> selectRole}}
+    </p>
+    <div>
+      <textarea class="personal-message"
+                placeholder="Type a personal message (optional)..."></textarea>
+    </div>
+    {{#if completionState.clear}}
+      <button>Send</button>
+    {{/if}}
+  </form>
+  {{#with completionState}}
+    {{#if success}}
+     <p>Successfully sent.</p>
+     <p><button class="reset-invite">&lt;&lt; Send more invites</button></p>
+    {{/if}}
+    {{#if pending}}
+      <p>Sending...</p>
+    {{/if}}
+    {{#if error}}
+      <p> {{error}} </p>
+      <p><button class="reset-invite">&lt;&lt; Start over</button></p>
+    {{/if}}
+  {{/with}}
+</template>
+
+<template name="sharableLinkTab">
+  <form class="new-share-token">
+    <p> Anyone with this link{{#if viewInfo.roles}}:{{else}} can access the grain.{{/if}}
+      {{> selectRole}}
+    </p>
+    <input type="text" class="label" placeholder="Label (optional)">
+    <p class="label-explanation">
+      Use a label to remind yourself to whom you sent this unique link.</p>
+    {{#if completionState.clear}}
+      <button>Create</button>
+    {{/if}}
+  </form>
+  {{#with completionState}}
+    {{#if success}}
+      <p>Copy this link:</p>
+      <a id="share-token-text" class="copy-me" href="{{shareToken}}">{{success.url}}</a>
+      <p><button class="reset-share-token">&lt;&lt; create another link</button></p>
+    {{/if}}
+    {{#if pending}}
+      <p>Generating...</p>
+      <p><button class="reset-share-token">Cancel</button></p>
+    {{/if}}
+  {{/with}}
+</template>
+
+<template name="shareWithOthers">
+  <h4 class="tabbed">Share with others...</h4>
+  {{#if oldSharingModel}}
+    <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
+       location bar.</p>
+    {{#if isOwner}}
+      <p>You can upgrade this grain to the new model, but anyone with whom you shared this grain
+         previously will lose access; you will have to share it with them again.</p>
+      <p>Upgrading cannot be undone.</p>
+      <p><button id="privatize-grain">upgrade</button></p>
+    {{/if}}
+  {{else}}
+    {{#basicTabs name="" tabs=tabs}}
+      {{#tabContent slug="invite"}}
+        {{> emailInviteTab}}
+      {{/tabContent}}
+      {{#tabContent slug="link"}}
+        {{> sharableLinkTab}}
+      {{/tabContent}}
+    {{/basicTabs}}
+    <div class="footer">
+      <button class="who-has-access">See who has access &gt;&gt;</button>
+    </div>
+  {{/if}}
+</template>
+
+<template name="grainSharePopup">
+  {{#if currentMode.whoHasAccess}}
+    {{> whoHasAccess}}
+  {{else}}
+    {{> shareWithOthers }}
   {{/if}}
 </template>
 

@@ -238,7 +238,6 @@ SandstormTopbar.prototype.closePopup = function () {
       if (result === "block") {
         return;
       } else if (result === "remove") {
-        console.log("removing popup");
         delete this._items[item.name];
         this._itemsTracker.changed();
       } else {

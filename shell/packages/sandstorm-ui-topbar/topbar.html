@@ -27,7 +27,7 @@ limitations under the License.
 
     <ul class="topbar {{#if _menuExpanded.get}}expanded{{/if}}">
       {{#each items}}
-        {{#if ./onlyPopup}}
+        {{#if onlyPopup}}
         {{else}}
           <li class="{{name}}">
             {{#if ./popupTemplate}}
@@ -45,7 +45,7 @@ limitations under the License.
 
   {{#with currentPopup}}
     <div class="popup {{name}}">
-      {{#if ./onlyPopup}}
+      {{#if onlyPopup}}
         <div class="frame centered">
           <button class="close-popup">Close</button>
           {{>popupTemplate ../data.get}}

@@ -45,6 +45,7 @@
 #include <kj/async-unix.h>
 #include <ctype.h>
 #include <time.h>
+#include <poll.h>
 
 #include "version.h"
 #include "fuse.h"
@@ -215,7 +216,49 @@ public:
 
   void decode(const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
               spk::PackageId::Builder output) const override {
-    KJ_UNIMPLEMENTED("AppIdJsonHandler::decode");
+    KJ_UNIMPLEMENTED("PackageIdJsonHandler::decode");
+  }
+};
+
+class OversizeDataHandler: public capnp::JsonCodec::Handler<capnp::Data> {
+public:
+  void encode(const capnp::JsonCodec& codec, capnp::Data::Reader input,
+              capnp::JsonValue::Builder output) const override {
+    if (input.size() > 256) {
+      auto call = output.initCall();
+      call.setFunction("LargeDataBlob");
+      call.initParams(1)[0].setNumber(input.size());
+    } else {
+      auto call = output.initCall();
+      call.setFunction("Base64");
+      call.initParams(1)[0].setString(base64Encode(input, false));
+    }
+  }
+
+  capnp::Orphan<capnp::Data> decode(
+      const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
+      capnp::Orphanage orphanage) const override {
+    KJ_UNIMPLEMENTED("OversizeDataHandler::decode");
+  }
+};
+
+class OversizeTextHandler: public capnp::JsonCodec::Handler<capnp::Text> {
+public:
+  void encode(const capnp::JsonCodec& codec, capnp::Text::Reader input,
+              capnp::JsonValue::Builder output) const override {
+    if (input.size() > 256) {
+      auto call = output.initCall();
+      call.setFunction("LargeTextBlob");
+      call.initParams(1)[0].setNumber(input.size());
+    } else {
+      output.setString(input);
+    }
+  }
+
+  capnp::Orphan<capnp::Text> decode(
+      const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
+      capnp::Orphanage orphanage) const override {
+    KJ_UNIMPLEMENTED("OversizeTextHandler::decode");
   }
 };
 
@@ -1450,6 +1493,8 @@ private:
       return validationError("Signature didn't match package contents.");
     }
 
+    auto appIdString = base32Encode(publicKey);
+
     KJ_IF_MAYBE(info, maybeInfo) {
       // Compute hash of input package (for package ID).
       byte hash[crypto_hash_sha256_BYTES];
@@ -1491,20 +1536,36 @@ private:
 
           {
             auto appId = capnp::AnyStruct::Builder(info->initAppId()).getDataSection();
-            KJ_ASSERT(appId.size() == sizeof(publicKey))
+            KJ_ASSERT(appId.size() == sizeof(publicKey));
             memcpy(appId.begin(), publicKey, sizeof(publicKey));
           }
           {
             auto packageId = capnp::AnyStruct::Builder(info->initPackageId()).getDataSection();
-            KJ_ASSERT(packageId.size() == sizeof(hash) / 2)
-            memcpy(packageId.begin(), publicKey, sizeof(hash) / 2);
+            KJ_ASSERT(packageId.size() == sizeof(hash) / 2);
+            memcpy(packageId.begin(), hash, sizeof(hash) / 2);
           }
 
           info->setTitle(manifest.getAppTitle());
           info->setVersion(manifest.getAppVersion());
           info->setMarketingVersion(manifest.getAppMarketingVersion());
-          info->setMetadata(manifest.getMetadata());
-          // TODO(now): Verify author signature.
+          auto metadata = manifest.getMetadata();
+          info->setMetadata(metadata);
+
+          // Check author PGP key.
+          auto author = metadata.getAuthor();
+          if (author.hasPgpSignature()) {
+            if (!metadata.hasPgpKeyring()) {
+              return validationError(
+                  "author's PGP signature is present but no PGP keyring is provided");
+            }
+
+            auto expectedContent = kj::str(
+                "I am the author of the Sandstorm.io app with the following ID: ",
+                appIdString);
+
+            info->setAuthorPgpKeyFingerprint(checkPgpSignature(expectedContent,
+                author.getPgpSignature(), metadata.getPgpKeyring(), validationError));
+          }
 
           foundManifest = true;
           break;
@@ -1516,7 +1577,110 @@ private:
       }
     }
 
-    return base32Encode(publicKey);
+    return appIdString;
+  }
+
+  static kj::String checkPgpSignature(
+      kj::StringPtr expectedContent, kj::ArrayPtr<const byte> sig, kj::ArrayPtr<const byte> key,
+      kj::Function<kj::String(kj::StringPtr problem)>& validationError) {
+    char keyfile[] = "/tmp/spk-pgp-key.XXXXXX";
+    int keyfd;
+    KJ_SYSCALL(keyfd = mkstemp(keyfile));
+    KJ_DEFER(unlink(keyfile));
+    kj::FdOutputStream(kj::AutoCloseFd(keyfd)).write(key.begin(), key.size());
+
+    char sigfile[] = "/tmp/spk-pgp-sig.XXXXXX";
+    int sigfd;
+    KJ_SYSCALL(sigfd = mkstemp(sigfile));
+    KJ_DEFER(unlink(sigfile));
+    kj::FdOutputStream(kj::AutoCloseFd(sigfd)).write(sig.begin(), sig.size());
+
+    auto outPipe = Pipe::make();       // stdout -> signed text
+    auto messagePipe = Pipe::make();   // stderr -> human-readable messages
+    auto statusPipe = Pipe::make();    // fd 3 -> machine-readable messages
+
+    Subprocess::Options gpgOptions({
+        "gpg", "--status-fd", "3", "--no-default-keyring", "--keyring", keyfile,
+        "--decrypt", sigfile});
+    gpgOptions.stdout = outPipe.writeEnd;
+    gpgOptions.stderr = messagePipe.writeEnd;
+    int moreFds[1] = { statusPipe.writeEnd };
+    gpgOptions.moreFds = moreFds;
+    Subprocess gpg(kj::mv(gpgOptions));
+
+    outPipe.writeEnd = nullptr;
+    messagePipe.writeEnd = nullptr;
+    statusPipe.writeEnd = nullptr;
+
+    // Gather output from GPG.
+    // TODO(cleanup): This really belongs in a library, perhaps in `Subprocess`.
+    kj::Vector<char> out, message, status;
+    bool outDone = false, messageDone = false, statusDone = false;
+    for (;;) {
+      kj::Vector<struct pollfd> pollfds;
+      typedef struct pollfd PollFd;
+      if (!outDone) pollfds.add(PollFd {outPipe.readEnd, POLLIN, 0});
+      if (!messageDone) pollfds.add(PollFd {messagePipe.readEnd, POLLIN, 0});
+      if (!statusDone) pollfds.add(PollFd {statusPipe.readEnd, POLLIN, 0});
+      if (pollfds.size() == 0) break;
+      KJ_SYSCALL(poll(pollfds.begin(), pollfds.size(), -1));
+      for (auto& item: pollfds) {
+        if (item.revents & POLLIN) {
+          // Data to read!
+          char buffer[1024];
+          size_t n = kj::FdInputStream(item.fd).read(buffer, 1, sizeof(buffer));
+          if (item.fd == outPipe.readEnd.get()) {
+            out.addAll(kj::arrayPtr(buffer, n));
+          } else if (item.fd == messagePipe.readEnd.get()) {
+            message.addAll(kj::arrayPtr(buffer, n));
+          } else if (item.fd == statusPipe.readEnd.get()) {
+            status.addAll(kj::arrayPtr(buffer, n));
+          } else {
+            KJ_FAIL_ASSERT("unexpected FD returned by poll()?");
+          }
+        } else if (item.revents != 0) {
+          // Woke up with no data available; must be EOF.
+          if (item.fd == outPipe.readEnd.get()) {
+            outDone = true;
+          } else if (item.fd == messagePipe.readEnd.get()) {
+            messageDone = true;
+          } else if (item.fd == statusPipe.readEnd.get()) {
+            statusDone = true;
+          } else {
+            KJ_FAIL_ASSERT("unexpected FD returned by poll()?");
+          }
+        }
+      }
+    }
+
+    if (gpg.waitForExit() != 0) {
+      return validationError(kj::str(
+          "SPK PGP signature check validation failed. GPG output follows.\n",
+          message.asPtr()));
+    }
+
+    auto content = trim(out);
+    if (content != expectedContent) {
+      return validationError(kj::str(
+          "SPK PGP signature signed incorrect text."
+          "\nExpected: ", expectedContent,
+          "\nActual:   ", content));
+    }
+
+    // Look for the VALIDSIG line which provides the PGP key fingerprint.
+    kj::String fingerprint;
+    for (auto& statusLine: split(status, '\n')) {
+      auto words = splitSpace(statusLine);
+      if (words.size() >= 3 &&
+          kj::heapString(words[0]) == "[GNUPG:]" &&
+          kj::heapString(words[1]) == "VALIDSIG") {
+        // This is the line we're looking for!
+        return kj::heapString(words[2]);
+      }
+    }
+
+    KJ_FAIL_ASSERT("couldn't find expected '[GNUPG:] VALIDSIG' line in GPG status output",
+                   kj::str(status.asPtr()));
   }
 
   static kj::String unpackImpl(
@@ -1648,9 +1812,13 @@ private:
 
       AppIdJsonHandler appIdHandler;
       PackageIdJsonHandler packageIdHandler;
+      OversizeDataHandler oversizeDataHandler;
+      OversizeTextHandler oversizeTextHandler;
       capnp::JsonCodec json;
       json.addTypeHandler(appIdHandler);
       json.addTypeHandler(packageIdHandler);
+      json.addTypeHandler(oversizeDataHandler);
+      json.addTypeHandler(oversizeTextHandler);
       json.setPrettyPrint(true);
 
       auto text = json.encode(info);

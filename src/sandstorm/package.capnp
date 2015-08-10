@@ -366,12 +366,17 @@ struct Metadata {
     # identity, then you should not give the new maintainer the app's private key; you should force
     # them to create a new key. Sandstorm will not auto-update users to the new version without,
     # at the very least, confirming their approval of the change in authorship.
-
-    pgpPublicKey @13 :Data;
-    # The public key used to create `pgpSignature`, in binary format, e.g. as output by
-    # `gpg --export <email>`. This is included here, rather than looked up from a keyserver, so
-    # that a package signature can be verified down to a key fingerprint in isolation.
   }
+
+  pgpKeyring @13 :Data;
+  # A keyring in GPG keyring format containing all public keys needed to verify PGP signatures in
+  # this manifest (as of this writing, there is only one: `author.pgpSignature`).
+  #
+  # To generate a keyring containing just your public key, do:
+  #
+  #     gpg --export <key-id> > keyring
+  #
+  # Where `<key-id>` is a PGP key ID or email address associated with the key.
 
   description @14 :Util.LocalizedText;
   # The app's description description in Github-flavored Markdown format, to be displayed e.g.
@@ -493,16 +498,7 @@ struct VerifiedInfo {
   version @3 :UInt32;
   marketingVersion @4 :Util.LocalizedText;
 
-  authorIdentity @5 :Identity;
-  struct Identity {
-    pgpKeyId @0 :Text;
-    # Verified by checking the signature in-package.
-
-    websites @1 :List(Text);
-    githubHandle @2 :Text;
-    twitterHandle @3 :Text;
-    # Verified via Keybase. (Unfortunately, Keybase verifies handles and not user IDs...)
-  }
+  authorPgpKeyFingerprint @5 :Text;
 
   metadata @6 :Metadata;
   # Stuff extracted directly from manifest.

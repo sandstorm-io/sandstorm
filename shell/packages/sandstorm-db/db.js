@@ -59,7 +59,7 @@ Packages = new Mongo.Collection("packages");
 //   progress:  Float.  -1 = N/A, 0-1 = fractional progress (e.g. download percentage),
 //       >1 = download byte count.
 //   error:  If status is "failed", error message string.
-//   manifest:  If status is "ready", the package manifest.  See "Manifest" in grain.capnp.
+//   manifest:  If status is "ready", the package manifest.  See "Manifest" in package.capnp.
 //   appId:  If status is "ready", the application ID string.  Packages representing different
 //       versions of the same app have the same appId.  The spk tool defines the app ID format
 //       and can cryptographically verify that a package belongs to a particular app ID.
@@ -577,6 +577,20 @@ SandstormDb = function () {
     // Intentionally omitted:
     // - Migrations, since it's used only within this package.
     // - RoleAssignments, since it is deprecated and only used by the migration that eliminated it.
+  };
+  this.userGrains = function userGrains (user, query, aggregations) {
+    var filteredQuery = { $and: [ { userId: user}, query ] };
+    return this.collections.grains.find(filteredQuery, aggregations);
+  };
+  this.currentUserGrains = function currentUserGrains (query, aggregations) {
+    return this.userGrains(Meteor.userId(), query, aggregations);
+  };
+  this.userActions = function userActions (user, query, aggregations) {
+    var filteredQuery = { $and: [ {userId: user}, query ] };
+    return this.collections.userActions.find(filteredQuery, aggregations);
+  };
+  this.currentUserActions = function currentUserActions (query, aggregations) {
+    return this.userActions(Meteor.userId(), query, aggregations);
   };
 };
 

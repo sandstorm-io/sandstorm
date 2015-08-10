@@ -1,0 +1,42 @@
+<template name="sandstormAppList">
+  <div class="app-list">
+    <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
+    <div class="popular-container {{#if searching }}hide{{/if}}">
+      <h2 class="">Most used</h2>
+      {{#each popularActions }}
+      <button class="app-button app-action {{#if searching}}hide{{/if}}" data-actionid="{{_id}}">
+        <img class="app-icon" src="{{ iconSrc }}">
+        <span class="app-title">{{appTitle}}</span>
+        <span class="action-text">New {{noun}}</span>
+      </button>
+      {{/each}}
+    </div>
+    <h2 class="all-apps">All apps</h2>
+    <a class="app-button install-button {{#if searching}}hide{{/if}}" href="https://sandstorm.io/apps/?host={{ origin }}">
+      <img class="app-icon" src="/install.svg">
+      <span class="action-title">Install...</span>
+    </a>
+    <a class="app-button upload-button {{#if searching}}hide{{/if}}" href="{{ pathFor route='uploadForm' }}">
+      <img class="app-icon" src="/upload.svg">
+      <span class="action-title">Upload...</span>
+    </a>
+    <button class="app-button restore-button {{#if searching}}hide{{/if}}"> {{!-- TODO: fix restore flow, needs forms and AJAX --}}
+      <img class="app-icon" src="/restore.svg">
+      <span class="action-title">Restore backup...</span>
+    </button>
+    {{#each devActions }}
+    <button class="app-button dev-action {{#if searching}}hide{{/if}}" data-devid="{{_id}}" data-actionindex="{{actionIndex}}">
+      <img class="app-icon" src="{{ iconSrc }}">
+      <span class="app-title">{{appTitle}}</span>
+      <span class="action-text">New {{noun}}</span>
+    </button>
+    {{/each}}
+    {{#each actions }}
+    <button class="app-button app-action" data-actionid="{{_id}}">
+      <img class="app-icon" src="{{ iconSrc }}">
+      <span class="app-title">{{appTitle}}</span>
+      <span class="action-text">New {{noun}}</span>
+    </button>
+    {{/each}}
+  </div>
+</template>

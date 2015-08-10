@@ -71,6 +71,7 @@ sandstorm-db@0.1.0
 sandstorm-email@0.1.0
 sandstorm-identicons@0.1.0
 sandstorm-tabs@0.1.0
+sandstorm-ui-applist@0.1.0
 sandstorm-ui-topbar@0.1.0
 service-configuration@1.0.4
 session@1.1.0

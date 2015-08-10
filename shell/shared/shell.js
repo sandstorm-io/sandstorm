@@ -645,61 +645,7 @@ if (Meteor.isClient) {
     },
 
     "click #restore-backup-button":  function (event) {
-      var grainId = this.grainId;
-
-      // TODO(cleanup): Share code with "upload picture" and other upload buttons.
-      var input = document.createElement("input");
-      input.type = "file";
-      input.style = "display: none";
-      Session.set("uploadStatus", "Uploading");
-
-      input.addEventListener("change", function (e) {
-        // TODO(cleanup): Use Meteor's HTTP, although this may require sending them a PR to support
-        //   progress callbacks (and officially document that binary input is accepted).
-        var file = e.currentTarget.files[0];
-
-        var xhr = new XMLHttpRequest();
-
-        xhr.onreadystatechange = function () {
-          if (xhr.readyState == 4) {
-            if (xhr.status == 200) {
-              Session.set("uploadProgress", 0);
-              Session.set("uploadStatus", "Unpacking");
-              Meteor.call("restoreGrain", xhr.responseText, function (err, grainId) {
-                if (err) {
-                  Session.set("uploadStatus", undefined);
-                  Session.set("uploadError", {
-                    status: 200,
-                    statusText: err.reason + ": " + err.details,
-                  });
-                } else {
-                  Router.go("grain", {grainId: grainId});
-                }
-              });
-            } else {
-              Session.set("uploadError", {
-                status: xhr.status,
-                statusText: xhr.statusText,
-                response: xhr.responseText
-              });
-            }
-          }
-        };
-
-        if (xhr.upload) {
-          xhr.upload.addEventListener("progress", function (progressEvent) {
-            Session.set("uploadProgress",
-                Math.floor(progressEvent.loaded / progressEvent.total * 100));
-          });
-        }
-
-        xhr.open("POST", "/uploadBackup", true);
-        xhr.send(file);
-
-        Router.go("restoreGrainStatus");
-      });
-
-      input.click();
+      promptRestoreBackup();
     },
 
     "click .uninstall-app-button": function (event) {
@@ -855,6 +801,62 @@ appNameFromActionName = function(name) {
     }
   }
   return name;
+}
+
+promptRestoreBackup = function() {
+  // TODO(cleanup): Share code with "upload picture" and other upload buttons.
+  var input = document.createElement("input");
+  input.type = "file";
+  input.style = "display: none";
+  Session.set("uploadStatus", "Uploading");
+
+  input.addEventListener("change", function (e) {
+    // TODO(cleanup): Use Meteor's HTTP, although this may require sending them a PR to support
+    //   progress callbacks (and officially document that binary input is accepted).
+    var file = e.currentTarget.files[0];
+
+    var xhr = new XMLHttpRequest();
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState == 4) {
+        if (xhr.status == 200) {
+          Session.set("uploadProgress", 0);
+          Session.set("uploadStatus", "Unpacking");
+          Meteor.call("restoreGrain", xhr.responseText, function (err, grainId) {
+            if (err) {
+              Session.set("uploadStatus", undefined);
+              Session.set("uploadError", {
+                status: 200,
+                statusText: err.reason + ": " + err.details,
+              });
+            } else {
+              Router.go("grain", {grainId: grainId});
+            }
+          });
+        } else {
+          Session.set("uploadError", {
+            status: xhr.status,
+            statusText: xhr.statusText,
+            response: xhr.responseText
+          });
+        }
+      }
+    };
+
+    if (xhr.upload) {
+      xhr.upload.addEventListener("progress", function (progressEvent) {
+        Session.set("uploadProgress",
+            Math.floor(progressEvent.loaded / progressEvent.total * 100));
+      });
+    }
+
+    xhr.open("POST", "/uploadBackup", true);
+    xhr.send(file);
+
+    Router.go("restoreGrainStatus");
+  });
+
+  input.click();
 }
 
 Router.map(function () {

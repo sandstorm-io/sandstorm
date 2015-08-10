@@ -173,6 +173,8 @@ img {
 
 @import "_applist-apps.scss";
 @import "_applist-grains.scss";
+// new app list (unified)
+@import "_applist.scss";
 
 #storage-usage {
   margin: 16px 4px;

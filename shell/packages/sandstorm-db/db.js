@@ -585,6 +585,12 @@ SandstormDb = function () {
   this.currentUserGrains = function currentUserGrains (query, aggregations) {
     return this.userGrains(Meteor.userId(), query, aggregations);
   };
+  this.userApiTokens = function userApiTokens (user) {
+    return this.collections.apiTokens.find({'owner.user.userId': user});
+  };
+  this.currentUserApiTokens = function currentUserApiTokens () {
+    return this.userApiTokens(Meteor.userId());
+  };
   this.userActions = function userActions (user, query, aggregations) {
     var filteredQuery = { $and: [ {userId: user}, query ] };
     return this.collections.userActions.find(filteredQuery, aggregations);

@@ -1,0 +1,32 @@
+<template name="sandstormGrainList">
+  <div class="grain-list">
+    <h2>Grains</h2>
+    <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
+    <table class="grain-list-table">
+      <thead>
+        <tr>
+            <td class="td-app-icon">App</td>
+            <td class="grain-name">Name</td>
+            <td>Last Activity</td>
+            {{!-- Collaborators, size TODO
+            <td>Collaborators</td>
+            <td>Size</td>
+            --}}
+        </tr>
+      </thead>
+      <tbody>
+        {{#each filteredSortedGrains}}
+        <tr class="grain" data-grainid="{{ _id }}">
+          <td class="td-app-icon"><img class="app-icon" src="{{ iconSrc }}" title="{{appTitle}}"></td>
+          <td class="grain-name"><a href="{{ pathFor route='grain' grainId=_id }}">{{title}}</a></td>
+          <td>{{dateString lastUsed}}</td>
+          {{!-- Collaborators, size TODO
+          <td>TODO: collaborators</td>
+          <td>{{ size }}</td>
+          --}}
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  </div>
+</template>

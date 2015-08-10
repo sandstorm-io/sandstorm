@@ -1,0 +1,47 @@
+.grain-list {
+  overflow: auto;
+  padding: 0px 32px;
+  >input.search-bar {
+    font-size: 16pt;
+    width: 100%;
+  }
+  >table {
+    width: 100%;
+    padding: 0;
+    margin: 8px 0 0 0;
+    border-collapse: collapse;
+    background-color: rgba(255, 255, 255, 0.5);
+    >thead>tr {
+      font-weight: 600;
+      border-bottom: 1px solid #aaa;
+      >td.td-app-icon {
+        padding-left: 16px;
+      }
+    }
+    >tbody>tr {
+      width: 100%;
+      height: 32px;
+      border-bottom: 1px solid #ddd;
+      >td {
+        cursor: pointer;
+        &.td-app-icon {
+          >img.app-icon {
+            width: 24px;
+            height: 24px;
+          }
+          width: 48px;
+          padding-left: 16px;
+        }
+        &.grain-name {
+          width: 400px;
+        }
+      }
+      &.grain {
+        cursor: pointer;
+        &:hover {
+          background-color: #f0f0f0;
+        }
+      }
+    }
+  }
+}

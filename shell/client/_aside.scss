@@ -1,0 +1,105 @@
+aside {
+  position: absolute;
+  left: 700px;
+  top: 75px;
+  width: 300px;
+  font-size: 110%;
+  #signup {
+    color: #783189;
+    background-color: #ede4ed;
+    padding: 16px;
+    input {
+      border: none;
+      font-size: inherit;
+      &[type="email"] {
+        width: 225px;
+        padding: 4px;
+        &::-webkit-input-placeholder, &::-moz-placeholder, &::-ms-input-placeholder { color: #e1c7e2; }
+      }
+      &[type="submit"] {
+        background-color: #E1C7E2;
+        color: #7E4784;
+        padding: 4px 6px;
+      }
+    }
+  }
+  p {
+    margin: 0;
+  }
+  a#preorder {
+    margin-top: 8px;
+    display: block;
+    width: 300px;
+    height: 300px;
+    background-image: url("https://sandstorm.io/images/sunrise.svg");
+    text-align: center;
+    text-decoration: none;
+    font-weight: normal;
+    color: white;
+    span:first-of-type {
+      display: block;
+      font-size: 200%;
+      padding: 24px;
+    }
+    span:last-of-type {
+      display: block;
+      font-size: 170%;
+      font-weight: bold;
+    }
+  }
+  #social {
+    margin-top: 8px;
+    background-image: url("https://sandstorm.io/images/sandcat.svg");
+    width: 300px;
+    height: 200px;
+    background-repeat: no-repeat;
+    background-position: left center;
+    background-size: auto 150px;
+    position: relative;
+    ul {
+      position: absolute;
+      top: 40px;
+      right: 0px;
+      margin: 0;
+      vertical-align: top;
+      text-align: right;
+      width: 200px;
+      text-indent: 50px;
+      >li {
+        display: inline-block;
+        list-style-type: none;
+        padding: 0 4px;
+        margin: 4px 0;
+        vertical-align: bottom;
+        >a {
+          display: block;
+          color: transparent;
+          width: 50px;
+          height: 50px;
+          background-color: #ffd4ec;
+          overflow: hidden;
+          border-radius: 50%;
+          &:hover {
+            background-color: #ffe8f5;
+          }
+        }
+        &#github>a { background-image: url("https://sandstorm.io/images/github.svg"); }
+        &#feed>a { background-image: url("https://sandstorm.io/images/rss.svg"); }
+        &#twitter>a { background-image: url("https://sandstorm.io/images/twitter.svg"); }
+        &#google-plus>a { background-image: url("https://sandstorm.io/images/google-plus.svg"); }
+        &#facebook>a { background-image: url("https://sandstorm.io/images/facebook.svg"); }
+      }
+    }
+    >p {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      background-color: #783189;
+      color: white;
+      text-align: center;
+      padding: 4px 0;
+      font-size: 80%;
+      height: 22px;
+    }
+  }
+}

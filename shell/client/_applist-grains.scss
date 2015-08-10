@@ -1,0 +1,110 @@
+#applist-grains {
+  position: absolute;
+  left: 200px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  overflow: auto;
+  padding: 16px 32px;
+  .dev {
+    background-image: url(/devmode.png);
+  }
+  #devmode-note {
+    position: fixed;
+    color: black;
+    margin-top: 600px;
+    font-size: 200px;
+    font-weight: 600;
+    z-index: -1;
+    -webkit-transform: rotate(-45deg);
+  }
+  table {
+    padding: 0;
+    margin: 8px 0 0 0;
+    border-collapse: collapse;
+    width: 600px;
+    background-color: rgba(255, 255, 255, 0.5);
+    thead td {
+      font-weight: 600;
+      border-bottom: 1px solid #aaa;
+    }
+    td:first-child {
+      width: 400px;
+      padding-left: 16px;
+    }
+    tr {
+      height: 32px;
+      border-bottom: 1px solid #ddd;
+    }
+    tr.grain {
+      cursor: pointer;
+    }
+    tbody tr.grain:hover {
+      background-color: #f8f8f8;
+    }
+  }
+  .button-box button {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 600;
+    background-color: #428bca;
+
+    padding: 8px;
+    line-height: 1.33;
+    border-radius: 4px;
+    border: none;
+    color: white;
+    cursor: pointer;
+    margin-bottom: 4px;
+    &.show-apps {
+      display: none;
+    }
+    &.over-quota {
+      background-color: #ddd;
+    }
+  }
+}
+
+@media screen and (max-width: 900px) {
+  #applist-grains {
+    left: 0px;
+    padding: 16px 16px;
+    table td {
+      padding: 16px;
+    }
+    .button-box button {
+      width: 100px;
+      min-height: 60px;
+      vertical-align: top;
+      &.new-grain-button {
+        width: 150px;
+      }
+      &.show-apps {
+        display: inline-block;
+      }
+    }
+  }
+}
+@media screen and (max-width: 650px) {
+  #applist-grains table {
+    width: 400px;
+    td:nth-child(2) {
+      display: none;
+    }
+  }
+}
+@media screen and (max-width: 450px) {
+  #applist-grains {
+    table {
+      width: 300px;
+    }
+    .button-box button {
+      font-size: 75%;
+      width: 75px;
+      min-height: 45px;
+      &.new-grain-button {
+        width: 115px;
+      }
+    }
+  }
+}

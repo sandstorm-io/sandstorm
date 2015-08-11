@@ -323,11 +323,8 @@ struct Metadata {
   categories @10 :List(UInt64);
   # List of category IDs under which this app should be classified. Categories are things
   # like "productivity" or "dev tools". Each category ID is generated using `capnp id`. Note that
-  # although you can generate your own category IDs, an app market will only recognize a specific
-  # set of IDs.
-  #
-  # TODO(soon): Figure out where we will define the available category IDs. Should we put a basic
-  #   list directly in this file?
+  # although you can generate your own category IDs, an app market will only recognize the specific
+  # set of IDs defined in the `Category` struct, below.
 
   author :group {
     # Fields relating to the author of this app.
@@ -502,6 +499,44 @@ struct VerifiedInfo {
 
   metadata @6 :Metadata;
   # Stuff extracted directly from manifest.
+}
+
+struct Category {
+  id @0 :UInt64;
+  name @1 :Text;
+  metadata @2 :Metadata;
+  struct Metadata {
+    title @0 :Text;
+  }
+
+  annotation meta @0x8d51dd236606d205 (const) :Metadata;
+
+  const productivity :UInt64 = 0x8c746594f41ecc87 $meta(title = "Productivity");
+  # Note-taking, todos, etc.
+
+  const collaboration :UInt64 = 0xd8656b7b475e14dd $meta(title = "Collaboration");
+  # Project management, people-coordinating.
+
+  const office :UInt64 = 0xc57def88849bab0e $meta(title = "Office");
+  # Document editors.
+
+  const developerTools :UInt64 = 0xa4ef0b6022efaa49 $meta(title = "DevTools");
+  # Programming tools.
+
+  const communications :UInt64 = 0xf0ee0ca041ab5f8a $meta(title = "Communications");
+  # Email, chat, etc.
+
+  const social :UInt64 = 0xddc03391ae0411c4 $meta(title = "Social");
+  # Social networking.
+
+  const publishing :UInt64 = 0xb336c679a3246568 $meta(title = "Publishing");
+  # E.g. publishing blogs, web sites, etc.
+
+  const media :UInt64 = 0x9bfa483b9d982cf1 $meta(title = "Media");
+  # Music, photos, video, etc.
+
+  const games :UInt64 = 0xdd56bb5b119407de $meta(title = "Games");
+  # Games.
 }
 
 # ==============================================================================

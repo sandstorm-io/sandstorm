@@ -184,8 +184,20 @@ private:
   byte decodeTable[256];
 };
 
-constexpr Base32Decoder BASE64_DECODER;
-static_assert(BASE64_DECODER.verifyTable(), "Base32 decode table is incomplete.");
+constexpr Base32Decoder BASE32_DECODER;
+static_assert(BASE32_DECODER.verifyTable(), "Base32 decode table is incomplete.");
+
+kj::String appIdString(spk::AppId::Reader appId) {
+  auto bytes = capnp::AnyStruct::Reader(appId).getDataSection();
+  KJ_ASSERT(bytes.size() == 32);
+  return base32Encode(bytes);
+}
+
+kj::String packageIdString(spk::PackageId::Reader packageId) {
+  auto bytes = capnp::AnyStruct::Reader(packageId).getDataSection();
+  KJ_ASSERT(bytes.size() == 16);
+  return hexEncode(bytes);
+}
 
 // =======================================================================================
 // JSON handlers for AppId and PackageId, converting them to their standard textual form.
@@ -194,9 +206,7 @@ class AppIdJsonHandler: public capnp::JsonCodec::Handler<spk::AppId> {
 public:
   void encode(const capnp::JsonCodec& codec, spk::AppId::Reader input,
               capnp::JsonValue::Builder output) const override {
-    auto bytes = capnp::AnyStruct::Reader(input).getDataSection();
-    KJ_ASSERT(bytes.size() == 32);
-    output.setString(base32Encode(bytes));
+    output.setString(appIdString(input));
   }
 
   void decode(const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
@@ -209,9 +219,7 @@ class PackageIdJsonHandler: public capnp::JsonCodec::Handler<spk::PackageId> {
 public:
   void encode(const capnp::JsonCodec& codec, spk::PackageId::Reader input,
               capnp::JsonValue::Builder output) const override {
-    auto bytes = capnp::AnyStruct::Reader(input).getDataSection();
-    KJ_ASSERT(bytes.size() == 16);
-    output.setString(hexEncode(bytes));
+    output.setString(packageIdString(input));
   }
 
   void decode(const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
@@ -1551,6 +1559,10 @@ private:
           auto metadata = manifest.getMetadata();
           info->setMetadata(metadata);
 
+          // Validate some things.
+          if (metadata.hasWebsite()) requireHttpUrl(metadata.getWebsite());
+          if (metadata.hasCodeUrl()) requireHttpUrl(metadata.getCodeUrl());
+
           // Check author PGP key.
           auto author = metadata.getAuthor();
           if (author.hasPgpSignature()) {
@@ -1578,6 +1590,11 @@ private:
     }
 
     return appIdString;
+  }
+
+  static void requireHttpUrl(kj::StringPtr url) {
+    KJ_REQUIRE(url.startsWith("http://") || url.startsWith("https://"),
+               "web URLs must be HTTP", url);
   }
 
   static kj::String checkPgpSignature(

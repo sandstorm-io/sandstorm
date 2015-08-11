@@ -821,18 +821,14 @@ function getBuildInfo() {
   };
 }
 
-function isKernelTooOld() {
-  return Meteor.settings && Meteor.settings.public && Meteor.settings.public.kernelTooOld;
-}
-
 function isMissingWildcardParent() {
   return Meteor.settings && Meteor.settings.public && Meteor.settings.public.missingWildcardParentUrl;
 }
 
-appNameFromPackage = function(package) {
+appNameFromPackage = function(packageObj) {
   // This function takes a Package object from Mongo and returns an
   // app title.
-  var manifest = package.manifest;
+  var manifest = packageObj.manifest;
   var action = manifest.actions[0];
   appName = (manifest.appTitle && manifest.appTitle.defaultText) ||
     appNameFromActionName(action.title.defaultText);
@@ -926,7 +922,6 @@ Router.map(function () {
         isDemoUser: isDemoUser(),
         isFirstRun: !HasUsers.findOne("hasUsers"),
         build: getBuildInfo().build,
-        kernelTooOld: isKernelTooOld(),
         missingWildcardParent: isMissingWildcardParent(),
         allowDemoAccounts: allowDemoAccounts,
         apps: apps,

@@ -1,0 +1,239 @@
+body>.main-content.account {
+  text-align: center;
+
+  >* {
+    width: 600px;
+    margin: 16px auto;
+  }
+
+  >.identities {
+    padding: 0;
+
+    >li {
+      display: inline-block;
+      box-sizing: border-box;
+      width: 344px;
+      height: 80px;
+      padding: 8px 8px 8px 80px;
+      list-style-type: none;
+      text-align: left;
+
+      border: 1px solid #aaa;
+      box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+
+      &:hover {
+        background-color: #eee;
+      }
+    }
+
+    >.display {
+      position: relative;
+
+      background-position: right 8px top 8px;
+      background-repeat: no-repeat;
+
+      &.google { @extend %google-icon; }
+      &.github { @extend %github-icon; }
+
+      >ul {
+        padding: 0;
+
+        >li {
+          list-style-type: none;
+
+          >.label {
+            display: none;
+          }
+        }
+
+        >.handle {
+          font-family: monospace;
+        }
+
+        >.picture {
+          position: absolute;
+          left: 8px;
+          top: 8px;
+          width: 64px;
+          height: 64px;
+
+          >img {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            margin: auto;
+          }
+        }
+
+        >.pronoun {
+          font-size: 70%;
+          line-height: 20px;
+
+          >.label {
+            display: inline;
+          }
+        }
+
+        >.edit {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+
+          >button {
+            @extend %unstyled-button;
+            display: block;
+            width: 100%;
+            height: 100%;
+            color: transparent;
+            cursor: pointer;
+          }
+        }
+      }
+    }
+
+    >.edit {
+      >form {
+        position: absolute;
+        z-index: 4;
+        left: calc(50% - 300px);
+        right: calc(50% - 300px);
+        top: 64px;
+        height: auto;
+        background-color: white;
+        border: 1px solid #ccc;
+        box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+
+        >ul {
+          padding: 8px;
+
+          >li {
+            list-style-type: none;
+            overflow: hidden;
+            margin-bottom: 8px;
+
+            label {
+              display: block;
+              font-weight: bold;
+              text-align: right;
+            }
+
+            input[type="text"], select {
+              display: block;
+              width: 400px;
+              float: right;
+              box-sizing: border-box;
+              font-size: inherit;
+              line-height: inherit;
+              background-color: white;
+              border: 1px solid #ccc;
+              padding: 2px;
+              margin-left: 8px;
+            }
+
+            &.handle {
+              label::after {
+                content: "@";
+                float: right;
+                margin-right: -20px;
+                font-family: monospace;
+                padding-top: 2px;
+                color: #888;
+              }
+
+              input[type="text"] {
+                padding-left: 1em;
+                font-family: monospace;
+              }
+            }
+
+            &.picture {
+              button {
+                float: right;
+                border: none;
+                padding: 0;
+                width: 256px;
+                height: 256px;
+                margin-right: 144px;
+                margin-left: 8px;
+                position: relative;
+                background-color: transparent;
+
+                &:hover {
+                  cursor: pointer;
+
+                  &::before {
+                    position: absolute;
+                    content: " ";
+                    display: block;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background-color: rgba(0, 0, 0, 0.2);
+                    z-index: 1;
+                  }
+                }
+
+                >img {
+                  display: block;
+                  max-width: 100%;
+                  max-height: 100%;
+                  margin: auto;
+                }
+              }
+            }
+
+            &.save {
+              text-align: right;
+            }
+
+            >.details {
+              display: block;
+              clear: right;
+              font-size: 80%;
+            }
+          }
+        }
+      }
+    }
+
+    >.add {
+      background-color: transparent;
+      box-shadow: none;
+      border-width: 2px;
+      border-style: dashed;
+      border-top: none;
+      line-height: 64px;
+      text-align: center;
+      padding: 0;
+      position: relative;
+
+      >button {
+        @extend %unstyled-button;
+        display: block;
+        width: 100%;
+        height: 100%;
+        color: #888;
+        cursor: pointer;
+        position: relative;
+        z-index: 1;
+      }
+
+      &::before {
+        content: "+";
+        display: block;
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        width: 64px;
+        height: 64px;
+        font-size: 72px;
+        line-height: 64px;
+        color: #888;
+        font-weight: bold;
+      }
+    }
+  }
+}

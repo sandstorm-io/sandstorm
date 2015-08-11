@@ -1,0 +1,73 @@
+#applist-apps {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 200px;
+  min-height: 100%;
+  background-color: #eee;
+  /* TODO(soon): Nice scrolling. Currently scroll bar ends up on the far right which is weird. */
+  ul {
+    padding: 0;
+    margin-left: 32px;
+  }
+  li {
+    list-style-type: none;
+    border-bottom: 1px solid #eee;
+    border-right: 2px solid #eee;
+    padding: 0 4px 0 16px;
+    background-color: #eee;
+    cursor: pointer;
+    line-height: 32px;
+    &:hover, &.dev.selected, &.dev:hover {
+      background-color: white;
+    }
+    &.dev {
+      background-color: #ddd;
+    }
+    &.blank {
+      cursor: inherit;
+      &:hover {
+        background-color: #eee;
+      }
+    }
+    &.selected {
+      border-right: none;
+      background-color: white;
+    }
+  }
+}
+
+@media screen and (max-width: 900px) {
+  #applist-apps {
+    display: block;
+    position: fixed;
+    left: -300px;
+    -webkit-transition: left 100ms;
+    transition: left 100ms;
+    z-index: 2;
+    width: 300px;
+    top: 48px;
+    bottom: 0;
+    min-height: 0;
+    background-color: #eee;
+    color: black;
+    overflow: auto;
+    ul {
+      margin: 0;
+    }
+    li {
+      padding: 16px;
+      border-right: none;
+      border-bottom: 1px solid #ddd;
+    }
+  }
+  #applist-apps[data-show="true"] {
+    left: 0px;
+  }
+}
+@media screen and (max-width: 450px) {
+  #applist-apps {
+    width: 225px;
+    left: -225px;
+  }
+}

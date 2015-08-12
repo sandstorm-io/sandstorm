@@ -14,7 +14,6 @@ browser-policy-content@1.0.4
 browser-policy-framing@1.0.4
 callback-hook@1.0.3
 check@1.0.5
-coffeescript@1.0.6
 connect@0.0.0
 ddp@1.1.0
 deps@1.0.7
@@ -70,7 +69,6 @@ sandstorm-accounts-ui@0.1.0
 sandstorm-db@0.1.0
 sandstorm-email@0.1.0
 sandstorm-identicons@0.1.0
-sandstorm-tabs@0.1.0
 sandstorm-ui-topbar@0.1.0
 service-configuration@1.0.4
 session@1.1.0

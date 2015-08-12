@@ -487,7 +487,7 @@ limitations under the License.
 </template>
 
 <template name="shareWithOthers">
-  <h4 class="tabbed">Share with others...</h4>
+  <h4>Share with others...</h4>
   {{#if oldSharingModel}}
     <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
        location bar.</p>
@@ -498,14 +498,16 @@ limitations under the License.
       <p><button id="privatize-grain">upgrade</button></p>
     {{/if}}
   {{else}}
-    {{#basicTabs name="" tabs=tabs}}
-      {{#tabContent slug="invite"}}
-        {{> emailInviteTab}}
-      {{/tabContent}}
-      {{#tabContent slug="link"}}
-        {{> sharableLinkTab}}
-      {{/tabContent}}
-    {{/basicTabs}}
+  <div class="share-tabs" data-which-tab="send-invite">
+    <section class="send-invite">
+       <h5 class="tab-top"> Send an invite </h5>
+       {{> emailInviteTab}}
+    </section>
+    <section class="sharable-link">
+      <h5 class="tab-top"> Get sharable link </h5>
+      {{> sharableLinkTab}}
+    </section>
+  </div>
     <div class="footer">
       <button class="who-has-access">See who has access &gt;&gt;</button>
     </div>

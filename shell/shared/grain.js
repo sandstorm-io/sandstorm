@@ -381,6 +381,15 @@ if (Meteor.isClient) {
     },
   });
 
+  Template.shareWithOthers.events({
+    "click .sharable-link": function (event, instance) {
+      instance.find(".share-tabs").setAttribute("data-which-tab", "sharable-link");
+    },
+    "click .send-invite": function (event, instance) {
+      instance.find(".share-tabs").setAttribute("data-which-tab", "send-invite");
+    },
+  });
+
   Template.sharableLinkTab.events({
     "change .share-token-role": function (event, instance) {
       var success = instance.completionState.get().success;
@@ -679,10 +688,6 @@ if (Meteor.isClient) {
   });
 
   Template.shareWithOthers.helpers({
-    tabs: function() {
-      return [{name: "Send an invite", slug: "invite"},
-              {name: "Get sharable link", slug: "link"}];
-    },
   });
 
   Template.selectRole.helpers({
@@ -775,10 +780,6 @@ if (Meteor.isClient) {
       instance.find("form").reset();
       instance.find("form option[data-default-selected=true]").selected = true;
     },
-  });
-
-  ReactiveTabs.createInterface({
-    template: 'basicTabs',
   });
 
   Template.grainPowerboxOfferPopup.helpers({

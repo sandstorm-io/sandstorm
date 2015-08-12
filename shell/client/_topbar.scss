@@ -520,9 +520,25 @@ body>.popup {
       }
     }
 
-    >h4.tabbed {
-      border-bottom: none;
-      margin-bottom: 0px;
+    [data-which-tab=send-invite]>.send-invite, [data-which-tab=sharable-link]>.sharable-link {
+      z-index: 10000;
+    }
+    [data-which-tab=send-invite]>.sharable-link>form,
+    [data-which-tab=sharable-link]>.send-invite>form {
+      display: none;
+    }
+    section>h5.tab-top {
+      border: 1px solid #ddd;
+      position: absolute;
+      margin: 0;
+      top: 10px;
+      display: block;
+    }
+    section.send-invite>h5.tab-top {
+      left: 50px;
+    }
+    section.sharable-link>h5.tab-top {
+      left: 250px;
     }
 
     >.footer {

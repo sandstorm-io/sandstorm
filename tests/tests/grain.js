@@ -207,7 +207,7 @@ module.exports["Test roleless sharing"] = function (browser) {
   browser
     // Upload app as Alice
     .loginDevAccount("Alice")
-    .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
+    .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=https://sandstorm.io/apps/ssjekyll8.spk")
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
     .waitForElementVisible('.new-grain-button', short_wait)
@@ -270,7 +270,7 @@ module.exports["Test role sharing"] = function (browser) {
   browser
     // Upload app as Carol
     .loginDevAccount("Carol")
-    .url(browser.launch_url + "/install/21f8dba75cf1bd9f51b97311ae64aaca?url=http://sandstorm.io/apps/etherpad9.spk")
+    .url(browser.launch_url + "/install/21f8dba75cf1bd9f51b97311ae64aaca?url=https://sandstorm.io/apps/etherpad9.spk")
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
     .waitForElementVisible('.new-grain-button', short_wait)
@@ -332,7 +332,7 @@ module.exports["Test grain incognito interstitial"] = function (browser) {
   browser
     // Upload app as github user
     .loginGithub()
-    .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
+    .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=https://sandstorm.io/apps/ssjekyll8.spk")
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
     // Navigate to app

@@ -55,7 +55,9 @@ if (allowDevAccounts) {
         methodArguments: [displayName, isAdmin],
         userCallback: function (err) {
           if (err) {
-            window.alert(err);
+            console.log("OMG YOW");
+            // window.alert(err);
+            Router.go("root");
           } else {
             Router.go("root");
           }
@@ -105,4 +107,3 @@ if (allowDevAccounts) {
     });
   });
 }
-

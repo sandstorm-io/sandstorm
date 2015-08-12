@@ -222,7 +222,7 @@ function getAllManifestAssets(manifest) {
   // Returns a list of all asset IDs in the given manifest.
 
   var metadata = manifest.metadata;
-  if (!metadata) return;
+  if (!metadata) return [];
 
   var result = [];
 

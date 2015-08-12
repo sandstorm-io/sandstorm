@@ -354,9 +354,7 @@ limitations under the License.
 </template>
 
 <template name="whoHasAccess">
-  <h4 class="tabbed">Who has access</h4>
-  {{#basicTabs name="" tabs=tabs}}
-  {{#tabContent slug="table"}}
+  <h4>Who has access</h4>
     <h5>People</h5>
     {{#if transitiveShares.empty}}
       <p> You have granted access to nobody. </p>
@@ -412,11 +410,6 @@ limitations under the License.
         {{/each}}
       </table>
     {{/if}}
-  {{/tabContent}}
-  {{#tabContent slug="graph"}}
-    <p>Graph view is unimplemented. :(</p>
-  {{/tabContent}}
-  {{/basicTabs}}
   <button class="share-with-others">&lt;&lt; Done</button>
 </template>
 

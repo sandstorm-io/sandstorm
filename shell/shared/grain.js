@@ -673,10 +673,6 @@ if (Meteor.isClient) {
       }
       return false;
     },
-    tabs: function() {
-      return [{name: "Table view", slug: "table"},
-              {name: "Graph view", slug: "graph"}];
-    },
     displayToken: function() {
       return !this.revoked && !this.expiresIfUnused && !this.parentToken;
     },

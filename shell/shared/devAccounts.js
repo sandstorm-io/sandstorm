@@ -35,6 +35,7 @@ if (allowDevAccounts) {
         } else {
           userId = Accounts.insertUserDoc({ profile: { name: displayName } },
                                           { signupKey: "devAccounts", devName: displayName, isAdmin: isAdmin });
+          console.log("NOTE: Had to create it.");
         }
         console.log("Success. Using user ID " + userId);
         // Log them in on this connection.

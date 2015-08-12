@@ -580,6 +580,12 @@ body>.popup {
     >*:last-child {
       margin-bottom: 16px;
     }
+
+    &.centered {
+      margin: 0px auto;
+      width: 600px;
+      margin-left: calc(50% - 300px);
+    }
   }
 
   &.account>.frame {

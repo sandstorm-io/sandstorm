@@ -78,6 +78,11 @@ Template.sandstormTopbar.helpers({
   },
 
   popupTemplate: function () {
+    var item = Template.parentData(1);
+    return item.popupTemplate;
+  },
+
+  popupTemplateNested: function () {
     // Here we need parentData(2) because we've also pushed `position` onto the stack.
     var item = Template.parentData(2);
     return item.popupTemplate;
@@ -253,7 +258,7 @@ SandstormTopbar.prototype.addItem = function (item) {
     name: String,
     // CSS class name of this item. Must be unique.
 
-    template: Template,
+    template: Match.Optional(Template),
     // Template for the item content as rendered in the topbar.
 
     popupTemplate: Match.Optional(Template),
@@ -280,7 +285,18 @@ SandstormTopbar.prototype.addItem = function (item) {
     // space. This function may return some special string values with specific meanings:
     // * "remove": Removes the topbar item, like if close() were called on the result of addItem().
     // * "block": Block the attempt to dismiss the popup.
+
+    onlyPopup: Match.Optional(Boolean),
+    // If this is true, then no icon is shown in the topbar (`template` param is ignored). startOpen
+    // is defaulted to true and onDismiss defaults to closing the popup.
   });
+
+  if (item.onlyPopup) {
+    item.startOpen = item.startOpen || true;
+    item.onDismiss = item.onDismiss || function () { return "remove"; };
+  } else if (!item.template) {
+    throw new Error("template parameter must be supplied unless onlyPopup is true");
+  }
 
   if (!item.popupTemplate && (item.startOpen || item.onDismiss)) {
     throw new Error("can't set startOpen or onDismiss without setting popupTemplate");

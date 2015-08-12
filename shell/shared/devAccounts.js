@@ -59,8 +59,8 @@ if (allowDevAccounts) {
         userCallback: function (err) {
           if (err) {
             console.log("OMG YOW");
-            // window.alert(err);
-            Router.g
+            console.log("SOME KIND OF ERROR + " err);
+            Router.go("root");
           } else {
             Router.go("root");
           }

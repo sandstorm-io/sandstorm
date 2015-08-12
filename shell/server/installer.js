@@ -160,10 +160,12 @@ function extractManifestAssets(manifest) {
     var handleIcon = function (icon) {
       if (icon.png) {
         icon.assetId = globalDb.addStaticAsset({mimeType: "image/png"}, icon.png);
+        icon.format = "png";
         delete icon.png;
         return true;
       } else if (icon.svg) {
         icon.assetId = globalDb.addStaticAsset({mimeType: "image/svg+xml"}, icon.svg);
+        icon.format = "svg";
         delete icon.svg;
         return true;
       } else {

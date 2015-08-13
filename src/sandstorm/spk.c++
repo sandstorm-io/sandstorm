@@ -20,6 +20,7 @@
 #include <kj/debug.h>
 #include <kj/io.h>
 #include <capnp/serialize.h>
+#include <capnp/serialize-packed.h>
 #include <capnp/compat/json.h>
 #include <sodium/crypto_sign.h>
 #include <sodium/crypto_hash_sha256.h>
@@ -46,6 +47,8 @@
 #include <ctype.h>
 #include <time.h>
 #include <poll.h>
+#include <sandstorm/app-index/submit.capnp.h>
+#include <sodium/crypto_generichash_blake2b.h>
 
 #include "version.h"
 #include "fuse.h"
@@ -197,6 +200,40 @@ kj::String packageIdString(spk::PackageId::Reader packageId) {
   auto bytes = capnp::AnyStruct::Reader(packageId).getDataSection();
   KJ_ASSERT(bytes.size() == 16);
   return hexEncode(bytes);
+}
+
+static kj::Maybe<uint> parseHexDigit(char c) {
+  if ('0' <= c && c <= '9') {
+    return static_cast<uint>(c - '0');
+  } else if ('a' <= c && c <= 'f') {
+    return static_cast<uint>(c - 'a');
+  } else {
+    return nullptr;
+  }
+}
+
+static bool tryParsePackageId(kj::StringPtr in, spk::PackageId::Builder out) {
+  if (in.size() != 32) return false;
+
+  auto bytes = capnp::AnyStruct::Builder(kj::mv(out)).getDataSection();
+  KJ_ASSERT(bytes.size() == 16);
+
+  for (auto i: kj::indices(bytes)) {
+    byte b = 0;
+    KJ_IF_MAYBE(d, parseHexDigit(in[i*2])) {
+      b = *d;
+    } else {
+      return false;
+    }
+    KJ_IF_MAYBE(d, parseHexDigit(in[i*2+1])) {
+      b |= *d << 4;
+    } else {
+      return false;
+    }
+    bytes[i] = b;
+  }
+
+  return true;
 }
 
 // =======================================================================================
@@ -425,7 +462,9 @@ public:
         .addSubCommand("verify", KJ_BIND_METHOD(*this, getVerifyMain),
                        "Verify signature on an spk and output the app ID (without unpacking).")
         .addSubCommand("dev", KJ_BIND_METHOD(*this, getDevMain),
-                       "Run an app in dev mode."))
+                       "Run an app in dev mode.")
+        .addSubCommand("publish", KJ_BIND_METHOD(*this, getPublishMain),
+                       "Publish a package to the app market."))
         .build();
   }
 
@@ -1612,13 +1651,22 @@ private:
     KJ_DEFER(unlink(sigfile));
     kj::FdOutputStream(kj::AutoCloseFd(sigfd)).write(sig.begin(), sig.size());
 
+    // GPG unfortunately DEMANDS to read from its "home directory", which is expected to contain
+    // user configuration. We actively don't want this: we want it to run in a reproducible manner.
+    // So we create a fake home.
+    char gpghome[] = "/tmp/spk-fake-gpg-home.XXXXXX";
+    if (mkdtemp(gpghome) == nullptr) {
+      KJ_FAIL_SYSCALL("mkdtemp(gpghome)", errno, gpghome);
+    }
+    KJ_DEFER(recursivelyDelete(gpghome));
+
     auto outPipe = Pipe::make();       // stdout -> signed text
     auto messagePipe = Pipe::make();   // stderr -> human-readable messages
     auto statusPipe = Pipe::make();    // fd 3 -> machine-readable messages
 
     Subprocess::Options gpgOptions({
-        "gpg", "--status-fd", "3", "--no-default-keyring", "--keyring", keyfile,
-        "--decrypt", sigfile});
+        "gpg", "--homedir", gpghome, "--status-fd", "3", "--no-default-keyring",
+        "--keyring", keyfile, "--decrypt", sigfile});
     gpgOptions.stdout = outPipe.writeEnd;
     gpgOptions.stderr = messagePipe.writeEnd;
     int moreFds[1] = { statusPipe.writeEnd };
@@ -1673,7 +1721,7 @@ private:
     if (gpg.waitForExit() != 0) {
       return validationError(kj::str(
           "SPK PGP signature check validation failed. GPG output follows.\n",
-          message.asPtr()));
+          kj::implicitCast<kj::ArrayPtr<const char>>(message)));
     }
 
     auto content = trim(out);
@@ -2152,6 +2200,234 @@ private:
       }
 
       kj::FdOutputStream(STDOUT_FILENO).write(buffer, n);
+    }
+  }
+
+  // =====================================================================================
+  // "publish" command
+
+  kj::Maybe<appindex::SubmissionState> publishState = appindex::SubmissionState::PUBLISH;
+  // By default `spk publish` publishes the package.
+
+  kj::String appIndexEndpoint = nullptr;
+  kj::String appIndexToken = nullptr;
+  // TODO(now): Fill in defaults.
+
+  kj::MainFunc getPublishMain() {
+    return addCommonOptions(OptionSet::KEYS_READONLY,
+        kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
+            "Publish an SPK to the Sandstorm app index, or check the status of a "
+            "previous submission.")
+        .addOption({'s', "status"}, [this]() {publishState = nullptr; return true;},
+            "Just check the review status of a previously-submitted SPK.")
+        .addOption({'e', "embargo"},
+            [this]() {publishState = appindex::SubmissionState::REVIEW; return true;},
+            "Embargoes the package, preventing it from being published publicly. However, "
+            "it will still be actively reviewed. You may run the command again later without "
+            "this flag to mark the app for publishing. This allows you to submit an app for "
+            "review in advance of a launch date but still control the exact time of launch.")
+        .addOption({'r', "remove"},
+            [this]() {publishState = appindex::SubmissionState::IGNORE; return true;},
+            "Removes a package listing. If the package was published, it is un-published. If the "
+            "package was still pending review, the review is canceled.")
+        .addOptionWithArg({"webkey"}, KJ_BIND_METHOD(*this, setPublishWebkey), "<webkey>",
+            "Submit to the index at the given webkey. If not specified, the main Sandstorm "
+            "app index is assumed.")
+        .expectArg("<spkfile>", KJ_BIND_METHOD(*this, doPublish)))
+        .build();
+  }
+
+  kj::MainBuilder::Validity setPublishWebkey(kj::StringPtr webkey) {
+    auto parts = split(webkey, '#');
+    if (parts.size() != 2) return "invalid webkey format";
+
+    appIndexEndpoint = kj::str(parts[0]);
+    appIndexToken = kj::str(parts[1]);
+
+    if (!appIndexEndpoint.startsWith("http://") && !appIndexEndpoint.startsWith("https://")) {
+      return "invalid webkey format";
+    }
+
+    return true;
+  }
+
+  kj::MainBuilder::Validity doPublish(kj::StringPtr spkfile) {
+    if (appIndexEndpoint == nullptr) {
+      context.exitError(
+          "Hello! The publishing tool isn't quite ready yet, but if you have an app "
+          "you'd like to publish please email kenton@sandstorm.io with a link to the spk!");
+    }
+
+    if (access(spkfile.cStr(), F_OK) < 0) {
+      return "no such file";
+    }
+
+    capnp::MallocMessageBuilder scratch;
+    auto arena = scratch.getOrphanage();
+
+    auto infoOrphan = arena.newOrphan<spk::VerifiedInfo>();
+    auto info = infoOrphan.get();
+    auto spkfd = raiiOpen(spkfile, O_RDONLY);
+    verifyImpl(spkfd, openTemporary("/tmp/spk-verify"), info,
+        [&](kj::StringPtr problem) -> kj::String {
+      validationError(spkfile, problem);
+    });
+
+    auto key = lookupKey(appIdString(info.getAppId()));
+
+    capnp::MallocMessageBuilder requestMessage;
+    auto request = requestMessage.getRoot<appindex::SubmissionRequest>();
+    request.setPackageId(info.getPackageId());
+    KJ_IF_MAYBE(s, publishState) {
+      auto mutation = request.initSetState();
+      mutation.setNewState(*s);
+      mutation.setSequenceNumber(time(nullptr));
+    } else {
+      request.setCheckStatus();
+    }
+    auto webkey = kj::str(appIndexEndpoint, '#', appIndexToken);
+    auto webkeyHash = request.initAppIndexWebkeyHash(16);
+    crypto_generichash_blake2b(webkeyHash.begin(), webkeyHash.size(),
+                               webkey.asBytes().begin(), webkey.size(), nullptr, 0);
+
+    // TODO(cleanup): Need a kj::VectorOutputStream or something which can dynamically grow.
+    byte buffer[1024];
+    byte* messageEnd;
+    {
+      kj::ArrayOutputStream stream(buffer);
+      capnp::writePackedMessage(stream, requestMessage);
+      messageEnd = stream.getArray().end();
+    }
+
+    KJ_ASSERT(buffer + sizeof(buffer) - messageEnd >= crypto_sign_BYTES);
+    crypto_sign_detached(messageEnd, nullptr, buffer, messageEnd - buffer,
+                         key.getPrivateKey().begin());
+    auto encodedRequest = kj::arrayPtr(buffer, messageEnd + crypto_sign_BYTES);
+
+    for (;;) {
+      {
+        context.warning("talking to index server...");
+
+        auto inPipe = Pipe::make();
+        auto outPipe = Pipe::make();
+
+        auto authHeader = kj::str("Authorization: Bearer ", appIndexToken);
+        auto url = kj::str(appIndexEndpoint, "/status");
+        Subprocess::Options curlOptions({
+            "curl", "-sS", "-X", "POST", "--data-binary", "@-", "-H", authHeader, url});
+        curlOptions.stdin = inPipe.readEnd;
+        curlOptions.stdout = outPipe.writeEnd;
+        Subprocess curl(kj::mv(curlOptions));
+        inPipe.readEnd = nullptr;
+        outPipe.writeEnd = nullptr;
+
+        kj::FdOutputStream(inPipe.writeEnd.get())
+            .write(encodedRequest.begin(), encodedRequest.size());
+        inPipe.writeEnd = nullptr;
+        auto data = readAllBytes(outPipe.readEnd);
+        if (curl.waitForExit() != 0) {
+          context.exitError("curl failed");
+        }
+
+        if (data.size() > 0 && data[0] == '\0') {
+          // Binary!
+          kj::ArrayInputStream dataStream(data.slice(1, data.size()));
+          capnp::PackedMessageReader messageReader(dataStream);
+          auto status = messageReader.getRoot<appindex::SubmissionStatus>();
+          switch (status.which()) {
+            case appindex::SubmissionStatus::PENDING:
+              switch (status.getRequestState()) {
+                case appindex::SubmissionState::IGNORE:
+                  context.exitInfo(
+                      "Your submission has been removed. It was never reviewed nor published.");
+                case appindex::SubmissionState::REVIEW:
+                  context.exitInfo(
+                      "Your submission is being reviewed. Since you've asked that it be embargoed, "
+                      "it won't be published when approved; you will need to run `spk publish` "
+                      "again without -e.");
+                case appindex::SubmissionState::PUBLISH:
+                  context.exitInfo(
+                      "Thanks for your submission! A human will look at your submission to make "
+                      "sure that everything is order before it goes live. If we spot any mistakes "
+                      "we'll let you know, otherwise your app will go live as soon as it has been "
+                      "checked. Either way, we'll send you an email at the contact address you "
+                      "provided in the metadata. (If you'd like to prevent this submission "
+                      "from going live immediately, run `spk publish` again with -e.)");
+              }
+              KJ_UNREACHABLE;
+
+            case appindex::SubmissionStatus::NEEDS_UPDATE:
+              switch (status.getRequestState()) {
+                case appindex::SubmissionState::IGNORE:
+                  context.exitInfo(kj::str(
+                      "Your submission has been removed. For reference, before removal, a human "
+                      "had checked your submission and found a problem. If you decide to submit "
+                      "again, please correct this problem first: ", status.getNeedsUpdate()));
+                case appindex::SubmissionState::REVIEW:
+                case appindex::SubmissionState::PUBLISH:
+                  context.exitInfo(kj::str(
+                      "A human checked your submission and found a problem. Please correct the "
+                      "following problem and submit again: ", status.getNeedsUpdate()));
+              }
+              KJ_UNREACHABLE;
+
+            case appindex::SubmissionStatus::APPROVED:
+              switch (status.getRequestState()) {
+                case appindex::SubmissionState::IGNORE:
+                  context.exitInfo(
+                      "Your submission has been removed. It had already been reviewed and "
+                      "approved, so if you change your mind you can publish it at any time "
+                      "by running `spk publish` again without flags.");
+                case appindex::SubmissionState::REVIEW:
+                  context.exitInfo(
+                      "Your submission is approved and can be published whenever you are ready. "
+                      "Run `spk publish` again without flags to make your app live.");
+                case appindex::SubmissionState::PUBLISH:
+                  // TODO(soon): Add link? Only for default app market.
+                  context.exitInfo(
+                      "Your submission is approved and is currently live!");
+              }
+              KJ_UNREACHABLE;
+
+            case appindex::SubmissionStatus::NOT_UPLOADED:
+              // Need to upload first...
+              if (publishState == nullptr) {
+                context.exitInfo("This package has not been uploaded to the index.");
+              }
+              break;
+          }
+        } else {
+          // Error message. :(
+          kj::FdOutputStream(STDERR_FILENO).write(data.begin(), data.size());
+          context.exitError("failed to connect to app index");
+        }
+      }
+
+      {
+        // If we get here, the server indicated that the app had not been uploaded.
+        context.warning("uploading package to index...");
+
+        KJ_SYSCALL(lseek(spkfd, 0, SEEK_SET));
+        auto outPipe = Pipe::make();
+
+        auto authHeader = kj::str("Authorization: Bearer ", appIndexToken);
+        auto url = kj::str(appIndexEndpoint, "/upload");
+        Subprocess::Options curlOptions({
+            "curl", "-sS", "-X", "POST", "--data-binary", "@-", "-H", authHeader, url});
+        curlOptions.stdin = spkfd;
+        curlOptions.stdout = outPipe.writeEnd;
+        Subprocess curl(kj::mv(curlOptions));
+        outPipe.writeEnd = nullptr;
+
+        auto response = readAll(outPipe.readEnd);
+        if (curl.waitForExit() != 0) {
+          context.exitError("curl failed");
+        }
+        if (response.size() > 0) {
+          context.exitError(kj::str(
+              "server returned error on upload: ", response));
+        }
+      }
     }
   }
 };

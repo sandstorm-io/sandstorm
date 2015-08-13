@@ -33,7 +33,7 @@ kj::String unpackSpk(int spkfd, kj::StringPtr outdir, kj::StringPtr tmpdir);
 void verifySpk(int spkfd, int tmpfile, spk::VerifiedInfo::Builder output);
 // Temporarily uncompress the spk, check its signature, and fill in `output` with relevant info.
 
-kj::String appIdString(spk::PackageId::Reader appId);
+kj::String appIdString(spk::AppId::Reader appId);
 kj::String packageIdString(spk::PackageId::Reader packageId);
 
 }  // namespace sandstorm

@@ -152,9 +152,12 @@ kj::String readAll(int fd);
 kj::String readAll(kj::StringPtr name);
 // Read entire contents of a named file to a String.
 
-kj::Array<kj::String> splitLines(kj::String input);
+kj::Array<byte> readAllBytes(int fd);
+// Read entire contents of the file descirptor to a byte array.
+
+kj::Array<kj::String> splitLines(kj::StringPtr input);
 // Split the input into lines, trimming whitespace, and ignoring blank lines or lines that start
-// with #. Consumes the input string.
+// with #.
 
 kj::Vector<kj::ArrayPtr<const char>> split(kj::ArrayPtr<const char> input, char delim);
 // Split the char array on an arbitrary delimiter character.

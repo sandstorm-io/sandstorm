@@ -1,0 +1,322 @@
+<html>
+  <head>
+    <style type="text/css">
+      body {
+        font-family: "Trebuchet MS", sans-serif;
+      }
+      table {
+        border-collapse: collapse;
+        border-top: 2px solid black;
+        border-bottom: 2px solid black;
+      }
+      td {
+        padding: 8px;
+        border-bottom: 1px solid #888;
+        white-space: pre-wrap;
+        overflow-x: auto;
+        max-width: 1000px;
+        word-wrap: break-word;
+      }
+      td:first-child {
+        font-weight: bold;
+      }
+    </style>
+    <script type="text/javascript">
+      // XMLHttpRequest's API is annoying. $.ajax() is easier except that its error handling makes
+      // no sense.
+      //
+      // I based this somewhat on:
+      //   https://plus.google.com/u/0/+JeffreyYasskin/posts/XjWc5oGs3dP
+      //
+      // (He just happened to post this on the same day I needed it.)
+      function fetch(url, options) {
+        options = options || {};
+        return new Promise(function(resolve, reject) {
+          var xhr = new XMLHttpRequest();
+          xhr.onload = function () {
+            if (xhr.status >= 400) {
+              reject(new Error("XHR returned status " + xhr.status + ":\n" + xhr.responseText));
+            } else {
+              resolve(xhr);
+            }
+          };
+          xhr.onerror = function(e) {
+            reject(new Error("XHR failed: " + (options.method || "get") + " " + url));
+          };
+          if (options.hasOwnProperty('responseType'))
+            xhr.responseType = options.responseType;
+          var method = 'get';
+          if (options.hasOwnProperty('method'))
+            method = options.method;
+          xhr.open(method, url)
+          var data = undefined;
+          if (options.hasOwnProperty('data'))
+            data = options.data;
+          xhr.send(data);
+        });
+      }
+
+      function doGet(url) {
+        return fetch(url);
+      }
+      function doPost(url, data) {
+        return fetch(url, { method: "post", data: data });
+      }
+      function doPut(url, data) {
+        return fetch(url, { method: "put", data: data });
+      }
+      function doDelete(url) {
+        return fetch(url, { method: "delete" });
+      }
+
+      function textElement(tag, content) {
+        var elem = document.createElement(tag);
+        elem.appendChild(document.createTextNode(content));
+        return elem;
+      }
+      function parentElement(tag) {
+        var elem = document.createElement(tag);
+        Array.prototype.slice.call(arguments, 1).forEach(elem.appendChild.bind(elem));
+        return elem;
+      }
+
+      function mergeObject(output, input, prefix) {
+        for (var field in input) {
+          var name = field === "" ? prefix : prefix + "." + field;
+          output[name] = input[field];
+        }
+      }
+
+      var fieldHandlers = {
+        svg: function (data) {
+          var img = document.createElement("img");
+          img.src = "data:image/svg+xml;utf8," + data;
+          return img;
+        },
+
+        packageId: function (id) {
+          var span = textElement("span", id + " ");
+
+          var button = textElement("button", "approve");
+          button.addEventListener("click", function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            doPost("/approve/" + id).then(function () {
+              console.log("approved:", id);
+              document.location.reload();
+            }, function (err) {
+              alert(err.stack);
+            });
+          });
+          span.appendChild(button);
+
+          var reject = textElement("button", "reject");
+          reject.addEventListener("click", function (event) {
+            var reason = window.prompt("reason:");
+            if (reason) {
+              event.preventDefault();
+              event.stopPropagation();
+              doPost("/reject/" + id, reason).then(function () {
+                console.log("rejected:", id);
+                document.location.reload();
+              }, function (err) {
+                alert(err.stack);
+              });
+            }
+          });
+          span.appendChild(reject);
+
+          return span;
+        },
+
+        authorPgpKeyFingerprint: function (fp) {
+          var div = document.createElement("div");
+          div.appendChild(textElement("p", fp));
+
+          if (fp.match(/^[0-9A-F]{40}$/)) {
+            doGet("https://keybase.io/_/api/1.0/user/lookup.json?key_fingerprint=" + fp +
+                  "&fields=pictures,profile,proofs_summary").then(function (xhr) {
+              var data = JSON.parse(xhr.responseText);
+              if (data.them.length == 0) {
+                div.appendChild(textElement("p", "(no Keybase match)"));
+                return;
+              }
+
+              var upload = [];
+              var them = data.them[0];
+
+              upload.push("username:" + them.basics.username);
+              var url = "https://keybase.io/" + them.basics.username;
+              var link = textElement("a", url);
+              link.href = url;
+              link.target = "_blank";
+              div.appendChild(parentElement("p", link));
+
+              if (them.profile && them.profile.full_name) {
+                upload.push("name:" + them.profile.full_name.replace("\n", ""));
+                div.appendChild(textElement("p", them.profile.full_name));
+              }
+
+              if (them.pictures && them.pictures.primary) {
+                upload.push("picture:" + them.pictures.primary.url);
+                var img = document.createElement("img");
+                img.src = them.pictures.primary.url;
+                div.appendChild(parentElement("p", img));
+              }
+
+              function addProof(name, obj) {
+                var value = obj.nametag;
+                var url = obj.service_url;
+                upload.push("proof." + name + ":" + value);
+                var link = textElement("a", value);
+                if (url.slice(0, 4) == "http") link.href = url;
+                link.target = "_blank";
+                div.appendChild(parentElement("p", document.createTextNode(name + ": "), link));
+              }
+
+              if (them.proofs_summary && them.proofs_summary.by_proof_type) {
+                var proofs = them.proofs_summary.by_proof_type;
+
+                for (var type in proofs) {
+                  var proofSet = proofs[type];
+                  for (var i in proofSet) {
+                    var proof = proofSet[i];
+                    if (proof.nametag && proof.service_url) {
+                      addProof(type, proof);
+                    }
+                  }
+                }
+              }
+
+              doPost("/keybase/" + fp, upload.join("\n"));
+            }).catch(function (err) {
+              div.appendChild(textElement("pre", err.stack));
+            });
+          }
+
+          return div;
+        }
+      };
+
+      function renderJson(value) {
+        var type = typeof value;
+        if (value === null) {
+          return {"": textElement("code", "null")};
+        } else if (type === "boolean" || type === "number") {
+          return {"": textElement("code", value.toString())};
+        } else if (type === "string") {
+          return {"": textElement("span", value)};
+        } else if (value instanceof Array) {
+          var complex = false;
+          var rendered = value.map(function (element) {
+            var rendered = renderJson(element);
+            var keys = Object.keys(rendered);
+            if (keys.length !== 1 || keys[0] !== "" || rendered[""].tagName === "DIV") {
+              complex = true;
+            }
+            return rendered;
+          });
+
+          if (complex) {
+            var div = document.createElement("div");
+            for (var i = 0; i < rendered.length; i++) {
+              div.appendChild(renderTable(rendered[i]));
+            }
+            return {"": div};
+          } else {
+            var element = document.createElement("span");
+            element.appendChild(document.createTextNode("["));
+            for (var i = 0; i < rendered.length; i++) {
+              if (i > 0) {
+                element.appendChild(document.createTextNode(", "));
+              }
+              element.appendChild(rendered[i][""]);
+            }
+            element.appendChild(document.createTextNode("]"));
+            return {"": element};
+          }
+        } else if (typeof value === "object") {
+          var result = {};
+          for (var field in value) {
+            if (field in fieldHandlers) {
+              result[field] = fieldHandlers[field](value[field]);
+            } else {
+              mergeObject(result, renderJson(value[field]), field);
+            }
+          }
+          return result;
+        } else {
+          return {"": textElement("code", "????")};
+        }
+      }
+
+      function renderTable(fields) {
+        var tblBody = document.createElement("tbody");
+        for (fieldName in fields) {
+          var row = document.createElement("tr");
+          row.appendChild(textElement("td", fieldName));
+          row.appendChild(parentElement("td", fields[fieldName]));
+          tblBody.appendChild(row);
+        }
+
+        var tbl = document.createElement("table");
+        tbl.appendChild(tblBody);
+        return tbl;
+      }
+
+      function renderQueue(queue) {
+        queue.forEach(function (app) {
+          var section = document.createElement("section");
+          section.appendChild(renderTable(renderJson(app)));
+          document.body.appendChild(section);
+        });
+      }
+
+      function fetchQueue() {
+        return doGet("/queue").then(function (xhr) {
+          renderQueue(JSON.parse(xhr.responseText));
+        }).catch(function (err) {
+          alert(err.message);
+          throw err;
+        });
+      }
+
+      function fetchPublicId() {
+        return doGet("/public-id").then(function (xhr) {
+          var info = JSON.parse(xhr.responseText);
+          var link = document.getElementById("public-url");
+          link.textContent = info.autoUrl;
+          link.href = info.autoUrl;
+          link.target = "_blank";
+        }).catch(function (err) {
+          alert(err.message);
+          throw err;
+        });
+      }
+
+      function unapprove(form, event) {
+        event.preventDefault();
+        var packageId = form.packageId.value;
+        form.reset();
+        doPost("/unapprove/" + packageId).then(function (xhr) {
+          document.location.reload();
+        }, function (err) {
+          alert(err.stack);
+        })
+      }
+    </script>
+  </head>
+  <body>
+    <h1>Review apps</h1>
+
+    <p>Index at: <a id="public-url"></a></p>
+
+    <form onsubmit="unapprove(this, event);">
+      Unapprove: <input placeholder="package ID" name="packageId">
+    </form>
+
+    <h2>Queue:</h2>
+
+    <script type="text/javascript">fetchQueue(); fetchPublicId();</script>
+  </body>
+</html>

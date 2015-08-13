@@ -281,6 +281,21 @@ void recursivelyCreateParent(kj::StringPtr path) {
   }
 }
 
+kj::Array<byte> readAllBytes(int fd) {
+  kj::FdInputStream input(fd);
+  kj::Vector<byte> content;
+  for (;;) {
+    byte buffer[4096];
+    size_t n = input.tryRead(buffer, sizeof(buffer), sizeof(buffer));
+    content.addAll(buffer, buffer + n);
+    if (n < sizeof(buffer)) {
+      // Done!
+      break;
+    }
+  }
+  return content.releaseAsArray();
+}
+
 kj::String readAll(int fd) {
   kj::FdInputStream input(fd);
   kj::Vector<char> content;
@@ -301,13 +316,12 @@ kj::String readAll(kj::StringPtr name) {
   return readAll(raiiOpen(name, O_RDONLY));
 }
 
-kj::Array<kj::String> splitLines(kj::String input) {
+kj::Array<kj::String> splitLines(kj::StringPtr input) {
   size_t lineStart = 0;
   kj::Vector<kj::String> results;
   for (size_t i = 0; i < input.size(); i++) {
     if (input[i] == '\n' || input[i] == '#') {
       bool hasComment = input[i] == '#';
-      input[i] = '\0';
       auto line = trim(input.slice(lineStart, i));
       if (line.size() > 0) {
         results.add(kj::mv(line));

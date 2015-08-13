@@ -158,13 +158,21 @@ function extractManifestAssets(manifest) {
   var icons = metadata.icons;
   if (icons) {
     var handleIcon = function (icon) {
-      if (icon.png) {
-        icon.assetId = globalDb.addStaticAsset({mimeType: "image/png"}, icon.png);
-        delete icon.png;
-        return true;
-      } else if (icon.svg) {
+      if (icon.svg) {
         icon.assetId = globalDb.addStaticAsset({mimeType: "image/svg+xml"}, icon.svg);
         delete icon.svg;
+        return true;
+      } else if (icon.png) {
+        // Use the 1x version for "normal" DPI, unless 1x isn't provided, in which case use 2x.
+        var normalDpi = icon.png.dpi1x || icon.png.dpi2x;
+        if (!normalDpi) return false;
+        icon.assetId = globalDb.addStaticAsset({mimeType: "image/png"}, normalDpi);
+
+        if (icon.png.dpi1x && icon.png.dpi2x) {
+          // Icon specifies both resolutions, so also record a 2x DPI option.
+          icon.assetId2xDpi = globalDb.addStaticAsset({mimeType: "image/png"}, icon.png.dpi2x);
+        }
+        delete icon.png;
         return true;
       } else {
         // Unknown icon. Filter it.
@@ -172,9 +180,12 @@ function extractManifestAssets(manifest) {
       }
     }
 
-    if (icons.main) icons.main = icons.main.filter(handleIcon);
-    if (icons.grain) icons.grain = icons.grain.filter(handleIcon);
-    if (icons.banner) icons.banner = icons.banner.filter(handleIcon);
+    if (icons.appGrid && !handleIcon(icons.appGrid)) delete icons.appGrid;
+    if (icons.grain && !handleIcon(icons.grain)) delete icons.grain;
+
+    // We don't need the market icons.
+    if (icons.market) delete icons.market;
+    if (icons.marketBig) delete icons.marketBig;
   }
 
   var handleLocalizedText = function (text) {
@@ -343,6 +354,8 @@ AppInstaller.prototype.start = function () {
       } else {
         this.doDownload();
       }
+    }), this.wrapCallback(function (err) {
+      throw err;
     }));
   })();
 }

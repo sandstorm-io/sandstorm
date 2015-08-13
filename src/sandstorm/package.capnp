@@ -226,35 +226,59 @@ struct Metadata {
     # from the list based on the context where it is to be displayed, possibly taking into account
     # parameters like size, display pixel density, and browser image format support.
 
-    main @0 :List(Icon);
-    # The icon which represents the app itself, such as in an "app grid" view showing the user
-    # all of their apps.
+    appGrid @0 :Icon;
+    # The icon shown on the app grid, in the "new grain" flow.
+    #
+    # Size: 128x128
+    # Data size limit: 64kB
 
-    grain @1 :List(Icon);
-    # An icon which represents one grain created with this app. If omitted, `main` will be used.
+    grain @1 :Icon;
+    # The icon shown to represent an individual grain, both in the grain table and on the sidebar.
+    # If omitted, the appGrid icon will be used.
+    #
+    # Size: 24x24
+    # Data size limit: 4kB
 
-    banner @2 :List(Icon);
-    # A big icon used when displaying this app in e.g. an app market. Generally this icon should be
-    # bigger and "flashier", though still square. If omitted, `main` will be used.
+    market @2 :Icon;
+    # The icon shown in the app market grid. If omitted, the appGrid icon will be used.
+    #
+    # Size: 150x150
+    # Data size limit: 64kB
+
+    marketBig @18 :Icon;
+    # The image shown in the app market when visiting the app's page directly, or when featuring
+    # a particular app with a bigger display. If omitted, the regular market icon will be used
+    # (raster images may look bad).
+    #
+    # Size: 300x300
+    # Data size limit: 256kB
   }
 
   struct Icon {
     # Represents one icon image.
 
-    width @0 :UInt32;
-    # The width (and height) of this icon image in pixels. This is only relevant for raster icons
-    # (e.g. PNG).
-
     union {
-      unknown @1 :Void;
+      unknown @0 :Void;
       # Unknown file format.
 
-      png @2 :Data;
-      # PNG-encoded image data.
+      svg @1 :Text;
+      # Scalable Vector Graphics image. This format is *highly* preferred whenever possible.
+      #
+      # The uncompressed SVG can be up to 4x the documented size limit, to account for the fact
+      # that it will be compressed when served.
 
-      svg @3 :Text;
-      # SVG image data. Note that SVG is usually preferred over PNG if it is available and the use
-      # case can handle it.
+      png :group {
+        # PNG image. You may specify one or both DPI levels.
+
+        dpi1x @2 :Data;
+        # Normal-resolution PNG. The image's resolution should exactly match the documented
+        # viewport size.
+
+        dpi2x @3 :Data;
+        # Double-resolution PNG for high-dpi displays. Any documented data size limit is also
+        # doubled for this PNG. (The size limit is only doubled, not quadrupled, because the size
+        # of a compressed image should be a function of total interior edge length, not area.)
+      }
     }
   }
 

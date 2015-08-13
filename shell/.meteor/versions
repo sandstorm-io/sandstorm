@@ -69,6 +69,7 @@ sandstorm-accounts-packages@0.1.0
 sandstorm-accounts-ui@0.1.0
 sandstorm-db@0.1.0
 sandstorm-email@0.1.0
+sandstorm-identicons@0.1.0
 sandstorm-tabs@0.1.0
 sandstorm-ui-topbar@0.1.0
 service-configuration@1.0.4

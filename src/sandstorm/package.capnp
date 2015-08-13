@@ -144,7 +144,12 @@ struct Manifest {
     # Command to execute (in a newly-allocated grain) to run this action.
 
     title @3 :Util.LocalizedText;
-    # Title of this action, to display in the action selector.
+    # (Obsolete) Title of this action, to display in the action selector.  This should no longer
+    # be used for new apps.
+
+    nounPhrase @5 : Util.LocalizedText;
+    # When this action is run, what kind of thing is created? E.g. Etherpad creates a "document".
+    # Displayed as "New <nounPhrase>" in the "create new grain" UI.
 
     description @4 :Util.LocalizedText;
     # Description of this action, suitable for help text.

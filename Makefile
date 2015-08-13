@@ -51,6 +51,10 @@ IMAGES= \
     shell/public/close.svg \
     shell/public/menu.svg \
     shell/public/inbox.svg \
+    shell/public/install.svg \
+    shell/public/notification.svg \
+    shell/public/restore.svg \
+    shell/public/upload.svg \
     shell/public/restart-m.svg \
     shell/public/trash-m.svg \
     shell/public/debug-m.svg \
@@ -58,7 +62,8 @@ IMAGES= \
     shell/public/key-m.svg \
     shell/public/share-m.svg \
     shell/public/close-m.svg \
-    shell/public/inbox-m.svg
+    shell/public/inbox-m.svg \
+    shell/public/notification-m.svg
 
 # ====================================================================
 # Meta rules

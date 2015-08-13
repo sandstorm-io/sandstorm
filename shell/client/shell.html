@@ -354,7 +354,10 @@ limitations under the License.
 </template>
 
 <template name="whoHasAccess">
-  <h4>Who has access</h4>
+  W
+</template>
+<template name="whoHasAccessPopup">
+  <h4 class="who-has-access">WHO HAS ACCESS</h4>
     <h5>People</h5>
     {{#if transitiveShares.empty}}
       <p> You have granted access to nobody. </p>
@@ -443,13 +446,15 @@ limitations under the License.
                 placeholder="Type a personal message (optional)..."></textarea>
     </div>
     {{#if completionState.clear}}
-      <button>Send</button>
+    <div class="button-holder">
+      <button>SEND</button>
+    </div>
     {{/if}}
   </form>
   {{#with completionState}}
     {{#if success}}
      <p>Successfully sent.</p>
-     <p><button class="reset-invite">&lt;&lt; Send more invites</button></p>
+     <p><button class="reset-invite">+ Send more invites</button></p>
     {{/if}}
     {{#if pending}}
       <p>Sending...</p>
@@ -470,7 +475,9 @@ limitations under the License.
     <p class="label-explanation">
       Use a label to remind yourself to whom you sent this unique link.</p>
     {{#if completionState.clear}}
-      <button>Create</button>
+      <div class="button-holder">
+        <button>CREATE</button>
+      </div>
     {{/if}}
   </form>
   {{#with completionState}}
@@ -487,7 +494,7 @@ limitations under the License.
 </template>
 
 <template name="shareWithOthers">
-  <h4>Share with others...</h4>
+  <h4 class="share-with-others">SHARE WITH OTHERS</h4>
   {{#if oldSharingModel}}
     <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
        location bar.</p>
@@ -500,26 +507,26 @@ limitations under the License.
   {{else}}
   <div class="share-tabs" data-which-tab="send-invite">
     <section class="send-invite">
-       <h5 class="tab-top"> Send an invite </h5>
-       {{> emailInviteTab}}
+      <h5 class="tab-top"> Send an invite </h5>
+      <div class="tab-content">
+        {{> emailInviteTab}}
+      </div>
     </section>
     <section class="sharable-link">
       <h5 class="tab-top"> Get sharable link </h5>
-      {{> sharableLinkTab}}
+      <div class="tab-content">
+        {{> sharableLinkTab}}
+      </div>
     </section>
   </div>
     <div class="footer">
-      <button class="who-has-access">See who has access &gt;&gt;</button>
+      <button class="who-has-access">See who has access</button>
     </div>
   {{/if}}
 </template>
 
 <template name="grainSharePopup">
-  {{#if currentMode.whoHasAccess}}
-    {{> whoHasAccess}}
-  {{else}}
-    {{> shareWithOthers }}
-  {{/if}}
+  {{> shareWithOthers }}
 </template>
 
 <template name="grainPowerboxRequest">
@@ -551,7 +558,7 @@ limitations under the License.
 
 <template name="grain">
   {{>sandstormTopbarItem name="title" priority=5 topbar=globalTopbar template="grainTitle"}}
-  {{#sandstormTopbarItem name="grain-size" topbar=globalTopbar}}
+  {{#sandstormTopbarItem name="grain-size" priority=5 topbar=globalTopbar}}
     {{grainSize}}
   {{/sandstormTopbarItem}}
 

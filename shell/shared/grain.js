@@ -366,14 +366,20 @@ if (Meteor.isClient) {
     "click #share-grain-popup-closer": function (event) {
       Session.set("show-share-grain", false);
     },
-    "click button.who-has-access": function (event) {
+    "click button.who-has-access": function (event, instance) {
       event.preventDefault();
       var instance = Template.instance();
-      instance.currentMode.set({"whoHasAccess": true});
-    },
-
-    "click button.share-with-others": function (event) {
-      Template.instance().currentMode.set({"shareWithOthers": true});
+      var closer = globalTopbar.addItem({
+        name: "whoHasAccess",
+        priority: 6,
+        template: Template.whoHasAccess,
+        popupTemplate: Template.whoHasAccessPopup,
+        data: new ReactiveVar(instance.data),
+        startOpen: true,
+        onDismiss: function () {
+          return "remove";
+        }
+      });
     },
 
     "click #privatize-grain": function (event) {
@@ -557,7 +563,7 @@ if (Meteor.isClient) {
     },
   });
 
-  Template.whoHasAccess.onCreated(function () {
+  Template.whoHasAccessPopup.onCreated(function () {
     var grainId = this.data.grainId;
     var instance = this;
     instance.transitiveShares = new ReactiveVar(null);
@@ -590,7 +596,11 @@ if (Meteor.isClient) {
     this.resetTransitiveShares();
   });
 
-  Template.whoHasAccess.events({
+  Template.whoHasAccessPopup.events({
+    "click button.done": function (event) {
+      Template.instance().currentMode.set({"shareWithOthers": true});
+    },
+
     "change .share-token-role": function (event, instance) {
       var roleList = event.target;
       var assignment;

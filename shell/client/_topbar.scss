@@ -417,6 +417,10 @@ body>.topbar {
 
 // =======================================================================================
 
+body>.popup.whoHasAccess>.frame {
+  width: 600px;
+}
+
 body>.popup {
   // Popup windows hang off the topbar, usually appearing when a topbar item is clicked.
 
@@ -520,37 +524,86 @@ body>.popup {
       }
     }
 
-    [data-which-tab=send-invite]>.send-invite, [data-which-tab=sharable-link]>.sharable-link {
-      z-index: 10000;
+    $popup-background-color: #ededed;
+
+    >h4.share-with-others {
+       border-bottom: none;
+       background-color: $popup-background-color;
+       margin-bottom: 0;
+       padding-left: 20px;
+       padding-top: 10px;
+       padding-bottom: 30px;
     }
-    [data-which-tab=send-invite]>.sharable-link>form,
-    [data-which-tab=sharable-link]>.send-invite>form {
+
+    >h4.who-has-access {
+       border-bottom: none;
+       background-color: $popup-background-color;
+       margin-bottom: 0;
+       padding-bottom: 20px;
+    }
+
+    button.who-has-access {
+      @extend %unstyled-button;
+    }
+
+    [data-which-tab=send-invite]>.send-invite>h5,[data-which-tab=sharable-link]>.sharable-link>h5 {
+      background-color: white;
+      border-bottom: 1px solid white;
+      // TODO(cleanup) It would be better to use z-index for this.
+    }
+
+    .share-tabs {
+      padding: 10px;
+      border-top: 1px solid #ccc;
+      position: relative;
+      margin: 0;
+      section {
+        margin-left: 16px;
+        margin-right: 16px;
+      }
+    }
+    [data-which-tab=send-invite]>.sharable-link>.tab-content,
+    [data-which-tab=sharable-link]>.send-invite>.tab-content {
       display: none;
     }
     section>h5.tab-top {
-      border: 1px solid #ddd;
+      border-top-left-radius: 4px;
+      border-top-right-radius: 4px;
+      background-color: #f7f7f7;
+      border: 1px solid #ccc;
+      border-bottom: none;
       position: absolute;
       margin: 0;
-      top: 10px;
-      display: block;
+      padding: 3px;
+      width: 45%;
+      text-align: center;
+      top: -26px;
     }
     section.send-invite>h5.tab-top {
-      left: 50px;
+      left: 2%;
     }
     section.sharable-link>h5.tab-top {
-      left: 250px;
+      right: 2%;
     }
 
-    >.footer {
-      border-top: 1px solid #ccc;
-      margin: 0px;
-      padding-top: 5px;
-      text-align: right;
-      >.who-has-access {
-        margin-right: 15px;
-     }
+    button.reset-invite, button.reset-share-token {
+      @extend %unstyled-button;
     }
 
+    .button-holder {
+      position: relative;
+      margin-top: 5px;
+      margin-bottom: 45px;
+    }
+    .share-tabs form button {
+       @extend %unstyled-button;
+       border: 1px solid #ccc;
+       border-radius: 4px;
+       padding: 5px;
+       font-size: 12pt;
+       position: absolute;
+       right: 0;
+    }
     .share-token-role {
       max-width: 45%;
     }
@@ -574,10 +627,14 @@ body>.popup {
       display: none;
     }
 
+    $input-background-color: #f4f4f4;
+
     .emails {
+       background-color: $input-background-color;
        width: 50%;
     }
     .label, .personal-message {
+      background-color: $input-background-color;
       width: 100%;
     }
     .label-explanation {
@@ -596,6 +653,19 @@ body>.popup {
 
     >*:last-child {
       margin-bottom: 16px;
+    }
+
+    >.footer {
+      background-color: $popup-background-color;
+      border-top: 1px solid #ccc;
+      margin: 0px;
+      padding-top: 5px;
+      padding-bottom: 10px;
+      text-align: right;
+      font-size: 10pt;
+      >.who-has-access {
+        margin-right: 15px;
+     }
     }
 
     &.centered {

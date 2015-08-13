@@ -227,7 +227,7 @@ function serveStaticAsset(req, res) {
           // intended to serve HTML. Mostly, it serves images and javascript -- note that setting
           // the CSP header on Javascript files does not prevent other hosts from voluntarily
           // specifying these scripts in <script> tags.
-          "Content-Security-Policy": "default-src 'none'; sandbox",
+          "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
 
           // Allow any host to fetch these assets. This is safe since requests to this host are
           // totally side-effect-free and the asset ID acts as a capability to prevent loading

@@ -15,20 +15,12 @@
 // limitations under the License.
 
 Package.describe({
-  summary: "Sandstorm database layer",
+  summary: "Sandstorm identicons package",
   version: "0.1.0"
 });
 
-Npm.depends({ "content-type": "1.0.1" });
-
 Package.onUse(function (api) {
-  api.use(["mongo", "random", "check", "underscore"], ["client", "server"]);
-  api.use(["accounts-base", "fongandrew:find-and-modify", "http"], ["server"]);
-  api.use(["jparker:crypto-sha256", "sandstorm-identicons"], ["client"]);
-
-  api.addFiles(["db.js", "profile.js"]);
-  api.addFiles(["user.js", "migrations.js"], "server");
-  api.export("SandstormDb");
+  api.use(["jparker:crypto-sha256"], ["client"]);
+  api.addFiles(["pnglib.js", "identicon.js"], "client");
+  api.export("Identicon");
 });
-
-// TODO(test): tests

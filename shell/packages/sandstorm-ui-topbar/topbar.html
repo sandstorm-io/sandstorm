@@ -27,27 +27,36 @@ limitations under the License.
 
     <ul class="topbar {{#if _menuExpanded.get}}expanded{{/if}}">
       {{#each items}}
-        <li class="{{name}}">
-          {{#if ./popupTemplate}}
-            <button class="show-popup">
+        {{#unless onlyPopup}}
+          <li class="{{name}}">
+            {{#if ./popupTemplate}}
+              <button class="show-popup">
+                {{> template data.get}}
+              </button>
+            {{else}}
               {{> template data.get}}
-            </button>
-          {{else}}
-            {{> template data.get}}
-          {{/if}}
-        </li>
+            {{/if}}
+          </li>
+        {{/unless}}
       {{/each}}
     </ul>
   {{/if}}
 
   {{#with currentPopup}}
     <div class="popup {{name}}">
-      {{#with position}}
-        <div class="frame align-{{align}}" style="{{align}}: {{px}}px">
+      {{#if onlyPopup}}
+        <div class="frame centered">
           <button class="close-popup">Close</button>
-          {{>popupTemplate ../data.get}}
+          {{>popupTemplate data.get}}
         </div>
-      {{/with}}
+      {{else}}
+        {{#with position}}
+          <div class="frame align-{{align}}" style="{{align}}: {{px}}px">
+            <button class="close-popup">Close</button>
+            {{>popupTemplateNested ../data.get}}
+          </div>
+        {{/with}}
+      {{/if}}
     </div>
   {{/with}}
 </template>

@@ -160,12 +160,14 @@ function extractManifestAssets(manifest) {
     var handleIcon = function (icon) {
       if (icon.svg) {
         icon.assetId = globalDb.addStaticAsset({mimeType: "image/svg+xml"}, icon.svg);
+        icon.format = "svg";
         delete icon.svg;
         return true;
       } else if (icon.png) {
         // Use the 1x version for "normal" DPI, unless 1x isn't provided, in which case use 2x.
         var normalDpi = icon.png.dpi1x || icon.png.dpi2x;
         if (!normalDpi) return false;
+        icon.format = "png";
         icon.assetId = globalDb.addStaticAsset({mimeType: "image/png"}, normalDpi);
 
         if (icon.png.dpi1x && icon.png.dpi2x) {
@@ -233,7 +235,7 @@ function getAllManifestAssets(manifest) {
   // Returns a list of all asset IDs in the given manifest.
 
   var metadata = manifest.metadata;
-  if (!metadata) return;
+  if (!metadata) return [];
 
   var result = [];
 

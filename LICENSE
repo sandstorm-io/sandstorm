@@ -51,14 +51,14 @@ shell/client/ansi-up.js
     License URL: https://github.com/drudru/ansi_up/blob/master/Readme.md
                  (at bottom)
 
-shell/packages/sandstorm-db/identicon.js
+shell/packages/sandstorm-identicons/identicon.js
     What: identicon.js
     Source URL: https://github.com/stewartlord/identicon.js
     Copyright: Stewart Lord
     License: BSD 2-clause
     License URL: http://opensource.org/licenses/bsd-license.php
 
-shell/packages/sandstorm-db/pnglib.js
+shell/packages/sandstorm-identicons/pnglib.js
     What: PNGlib
     Source URL: https://github.com/stewartlord/pnglib.js
     Copyright: Robert Eisele

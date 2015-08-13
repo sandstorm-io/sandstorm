@@ -21,6 +21,7 @@ browser-policy
 
 reactive-var
 sandstorm-db
+sandstorm-identicons
 sandstorm-ui-topbar
 fourseven:scss
 sandstorm-tabs

@@ -354,7 +354,7 @@ limitations under the License.
 </template>
 
 <template name="whoHasAccess">
-  W
+   <img src="/people.svg">
 </template>
 <template name="whoHasAccessPopup">
   <h4 class="who-has-access">WHO HAS ACCESS</h4>
@@ -438,6 +438,7 @@ limitations under the License.
 <template name="emailInviteTab">
   <form class="email-invite">
     <p>
+    <img class="inline-icon" src="/people-m.svg">
     <input onclick="select()" type="text"
            class="emails" placeholder="Enter email addresses">
     {{> selectRole}}
@@ -469,7 +470,9 @@ limitations under the License.
 
 <template name="sharableLinkTab">
   <form class="new-share-token">
-    <p> Anyone with this link{{#if viewInfo.roles}}:{{else}} can access the grain.{{/if}}
+    <p>
+      <img class="inline-icon" src="/people-m.svg">
+      Anyone with this link{{#if viewInfo.roles}}:{{else}} can access the grain.{{/if}}
       {{> selectRole}}
     </p>
     <input type="text" class="label" placeholder="Label (optional)">
@@ -483,7 +486,7 @@ limitations under the License.
   </form>
   {{#with completionState}}
     {{#if success}}
-      <p>Copy this link:</p>
+      <p><img class="inline-icon" src="/copy-m.svg"> Copy this link:</p>
       <a id="share-token-text" class="copy-me" href="{{shareToken}}">{{success.url}}</a>
       <p><button class="reset-share-token">&lt;&lt; create another link</button></p>
     {{/if}}
@@ -520,9 +523,10 @@ limitations under the License.
       </div>
     </section>
   </div>
-    <div class="footer">
-      <button class="who-has-access">See who has access</button>
-    </div>
+  <div class="footer">
+    <img class="inline-icon" src="/people-m.svg">
+    <button class="who-has-access">See who has access</button>
+  </div>
   {{/if}}
 </template>
 

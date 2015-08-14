@@ -294,6 +294,7 @@ body>.topbar {
     >.backup>button    { background-image: url("/download.svg"); }
     >.restart>button   { background-image: url("/restart.svg"); }
     >.webkey>button    { background-image: url("/key.svg"); }
+    >.who-has-access img { width: 20px; }
   }
   @media #{$mobile} {
     >.delete>button    { background-image: url("/trash-m.svg"); }
@@ -417,7 +418,7 @@ body>.topbar {
 
 // =======================================================================================
 
-body>.popup.whoHasAccess>.frame {
+body>.popup.who-has-access>.frame {
   width: 500px;
 }
 
@@ -546,6 +547,7 @@ body>.popup {
 
     button.who-has-access {
       @extend %unstyled-button;
+      cursor: pointer;
     }
 
     [data-which-tab=send-invite]>.send-invite>h5,[data-which-tab=sharable-link]>.sharable-link>h5 {
@@ -580,16 +582,23 @@ body>.popup {
       width: 45%;
       text-align: center;
       top: -26px;
+      background-position: 15px 2px, left;
+      background-size: 20px, 20px;
+      background-repeat: no-repeat;
+      cursor: pointer;
     }
     section.send-invite>h5.tab-top {
       left: 2%;
+      background-image: url(/email-m.svg);
     }
     section.sharable-link>h5.tab-top {
       right: 2%;
+      background-image: url(/link-m.svg);
     }
 
     button.reset-invite, button.reset-share-token {
       @extend %unstyled-button;
+      cursor: pointer;
     }
 
     .button-container {
@@ -605,6 +614,7 @@ body>.popup {
        font-size: 12pt;
        position: absolute;
        right: 0;
+       cursor: pointer;
     }
     .share-token-role {
       max-width: 45%;
@@ -617,7 +627,8 @@ body>.popup {
       overflow-y: auto;
       overflow-x: hidden; // A vertical scrollbar can cause horizontal overflow.
       max-height: calc(100vh - 130px);
-      // HACK. This should be computed from the max-height of the containing div.
+      // HACK. This should be computed from the max-height of the containing div. Is that even
+      // possible?
     }
     table.people, table.sharing-links {
       border: 1px solid #ddd;
@@ -641,7 +652,7 @@ body>.popup {
 
     .emails {
        background-color: $input-background-color;
-       width: 50%;
+       width: 45%;
     }
     .label, .personal-message {
       background-color: $input-background-color;
@@ -664,6 +675,8 @@ body>.popup {
     >*:last-child {
       margin-bottom: 16px;
     }
+
+    .inline-icon { width: 20px; }
 
     >.footer {
       background-color: $popup-background-color;

@@ -369,7 +369,7 @@ if (Meteor.isClient) {
     "click button.who-has-access": function (event, instance) {
       event.preventDefault();
       var closer = globalTopbar.addItem({
-        name: "whoHasAccess",
+        name: "who-has-access",
         priority: 6,
         template: Template.whoHasAccess,
         popupTemplate: Template.whoHasAccessPopup,

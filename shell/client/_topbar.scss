@@ -418,7 +418,7 @@ body>.topbar {
 // =======================================================================================
 
 body>.popup.whoHasAccess>.frame {
-  width: 600px;
+  width: 500px;
 }
 
 body>.popup {
@@ -539,7 +539,9 @@ body>.popup {
        border-bottom: none;
        background-color: $popup-background-color;
        margin-bottom: 0;
-       padding-bottom: 20px;
+       padding-left: 20px;
+       padding-top: 10px;
+       padding-bottom: 10px;
     }
 
     button.who-has-access {
@@ -590,7 +592,7 @@ body>.popup {
       @extend %unstyled-button;
     }
 
-    .button-holder {
+    .button-container {
       position: relative;
       margin-top: 5px;
       margin-bottom: 45px;
@@ -610,9 +612,17 @@ body>.popup {
     table .share-token-role {
       max-width: 160px;
     }
+    div.tables-container {
+      position: relative;
+      overflow-y: auto;
+      overflow-x: hidden; // A vertical scrollbar can cause horizontal overflow.
+      max-height: calc(100vh - 130px);
+      // HACK. This should be computed from the max-height of the containing div.
+    }
     table.people, table.sharing-links {
-      margin: 0;
       border: 1px solid #ddd;
+      border-right: none;
+      border-left: none;
       font-size: 10pt;
       width: 100%;
       border-collapse: collapse;

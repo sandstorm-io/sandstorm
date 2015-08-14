@@ -358,6 +358,7 @@ limitations under the License.
 </template>
 <template name="whoHasAccessPopup">
   <h4 class="who-has-access">WHO HAS ACCESS</h4>
+  <div class="tables-container">
     <h5>People</h5>
     {{#if transitiveShares.empty}}
       <p> You have granted access to nobody. </p>
@@ -385,7 +386,7 @@ limitations under the License.
             <tr>
               <td>
                 <span class="token-petname" data-token-id="{{_id}}">
-                  {{petname}} ({{dateString created}})
+                  {{getPetname}} ({{dateString created}})
                 </span>
               </td>
               <td>
@@ -412,8 +413,8 @@ limitations under the License.
           {{/if}}
         {{/each}}
       </table>
-    {{/if}}
-  <button class="share-with-others">&lt;&lt; Done</button>
+      {{/if}}
+   </div>
 </template>
 
 <template name="selectRole">
@@ -446,7 +447,7 @@ limitations under the License.
                 placeholder="Type a personal message (optional)..."></textarea>
     </div>
     {{#if completionState.clear}}
-    <div class="button-holder">
+    <div class="button-container">
       <button>SEND</button>
     </div>
     {{/if}}
@@ -475,7 +476,7 @@ limitations under the License.
     <p class="label-explanation">
       Use a label to remind yourself to whom you sent this unique link.</p>
     {{#if completionState.clear}}
-      <div class="button-holder">
+      <div class="button-container">
         <button>CREATE</button>
       </div>
     {{/if}}

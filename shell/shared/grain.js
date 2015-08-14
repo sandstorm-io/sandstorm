@@ -368,7 +368,6 @@ if (Meteor.isClient) {
     },
     "click button.who-has-access": function (event, instance) {
       event.preventDefault();
-      var instance = Template.instance();
       var closer = globalTopbar.addItem({
         name: "whoHasAccess",
         priority: 6,
@@ -564,11 +563,11 @@ if (Meteor.isClient) {
   });
 
   Template.whoHasAccessPopup.onCreated(function () {
-    var grainId = this.data.grainId;
     var instance = this;
+    instance.grainId = this.data.grainId;
     instance.transitiveShares = new ReactiveVar(null);
     this.resetTransitiveShares = function() {
-      Meteor.call("transitiveShares", grainId, function(error, downstream) {
+      Meteor.call("transitiveShares", instance.grainId, function(error, downstream) {
         if (error) {
           console.error(error.stack);
         } else {
@@ -644,7 +643,21 @@ if (Meteor.isClient) {
     return true;
   }
 
-  Template.whoHasAccess.helpers({
+  Template.whoHasAccessPopup.helpers({
+    existingShareTokens: function () {
+      return ApiTokens.find({grainId: Template.instance().grainId, userId: Meteor.userId(),
+                             forSharing: true,
+                             $or: [{owner: {webkey:null}},
+                                   {owner: {$exists: false}}],
+                            }).fetch();
+    },
+    getPetname: function () {
+      if (this.petname) {
+        return this.petname;
+      } else {
+        return "Unlabeled Link";
+      }
+    },
     displayName: function (userId) {
       var name = DisplayNames.findOne(userId);
       if (name) {
@@ -995,11 +1008,6 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
                                                 {owner: {$exists: false}}],
                                           expiresIfUnused: null}).fetch();
   result.showShareGrain = Session.get("show-share-grain");
-  result.existingShareTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
-                                               forSharing: true,
-                                               $or: [{owner: {webkey:null}},
-                                                     {owner: {$exists: false}}],
-                                              }).fetch();
   result.showMenu = Session.get("showMenu");
   result.rootPath = rootPath;
 

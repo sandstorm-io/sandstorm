@@ -236,4 +236,222 @@ body>.main-content.account {
       }
     }
   }
+
+  .billing-settings {
+    margin: 16px auto;
+    >h3 {
+      text-align: left;
+      border-bottom: 1px solid #aaa;
+      text-transform: uppercase;
+      font-weight: bold;
+      margin-left: 32px;
+      margin-right: 48px;
+    }
+
+    >table {
+      text-align: left;
+      margin: 0px auto;
+      min-width: 600px;
+      border-collapse: collapse;
+      border-spacing: 0;
+      width: 90%;
+
+      >thead {
+        td:not(:first-child) {
+          background-color: #ccc;
+          padding-left: 10px;
+        }
+        td:nth-child(2) {
+          border-right: 1px solid white;
+        }
+      }
+
+      td:nth-child(1) {
+        width: 80px;
+      }
+
+      td:nth-child(2) {
+        width: 300px;
+      }
+
+      // td:nth-child(3) {
+      //   width: 200px;
+      // }
+
+      td:nth-child(4) {
+        width: 80px;
+      }
+
+      >tbody {
+        >tr>td {
+          padding: 16px;
+
+          >button {
+            background-color: transparent;
+            border: 1px solid #ccc;
+            color: #999;
+            cursor: pointer;
+            text-transform: uppercase;
+
+            &:hover {
+              background-color: white;
+            }
+          }
+
+          &.add-new-card {
+            >button {
+              font-size: 16px;
+              font-weight: bold;
+            }
+
+            >span {
+              margin-left: 16px;
+            }
+          }
+          &.checkbox {
+            width: 100px;
+            padding-right: 32px;
+
+            >.hidden {
+              visibility: hidden;
+            }
+            >.checkbox-wrapper {
+              position: relative;
+              width: 20px;
+              height: 20px;
+              >label {
+                width: 16px;
+                height: 16px;
+                position: absolute;
+                top: 4px;
+                left: 4px;
+                cursor: pointer;
+                background: white;
+                border: 1px solid #888;
+
+                &:hover {
+                  background: #aaa;
+                }
+              }
+              input[type=checkbox] {
+                visibility: hidden;
+                &:checked + label {
+                  background: #666;
+                  cursor: initial;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+body>.main-content.account,
+body>.popup {
+  .mobile-iframe-hack {
+    display: none;
+
+    // TODO(soon): mobile
+    // position: absolute;
+    // width: 60px;
+    // height: 20px;
+    // z-index: 1;
+    // border: 0px;
+  }
+
+  .mobile-iframe-hack.fullscreen {
+    display: initial;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 32px;
+    left: 0px;
+    z-index: 10000000;
+    border: 0px;
+  }
+}
+
+body>.popup.billing-prompt {
+  text-align: center;
+
+  >.frame.centered  {
+    &:before {
+      border-bottom: 8px solid #eee;
+    }
+
+    width: 820px;
+    max-width: none;
+    margin-left: calc(50% - 450px);
+    background-color: #eee;
+
+    >.subscriptions {
+      font-size: 11px;
+      margin: 32px auto 16px auto;
+      padding-left: 16px;
+
+      >.subscription {
+        display: inline-block;
+        float: left;
+        border: 2px solid #aaa;
+        color: #aaa;
+        border-radius: 4px;
+        height: 180px;
+        width: 180px;
+        margin: 16px 16px 16px 0px;
+        background-color: #eee;
+        cursor: pointer;
+
+        &.selected {
+          cursor: auto;
+          background-color: white;
+          border: 2px solid #999;
+          color: black;
+        }
+
+        &.selecting {
+          background-size: 96px 96px;
+          // TODO(soon): need spinner with transparent or #eee background
+          background-image: url("/spinner_96.gif");
+          background-repeat: no-repeat;
+          background-position: center;
+        }
+
+        h3 {
+          font-size: 16px;
+          text-transform: uppercase;
+        }
+
+        >table {
+          border-collapse: collapse;
+          border-spacing: 0;
+          margin: 0px auto 16px auto;
+
+          td {
+            padding-bottom: 8px;
+
+            &:nth-child(1) {
+              padding-right: 4px;
+              border-right: 1px solid #ccc;
+              text-align: right;
+            }
+
+            &:nth-child(2) {
+              padding-left: 4px;
+              text-align: left;
+            }
+          }
+
+          tr:last-child>td {
+            padding-bottom: 0px;
+          }
+        }
+
+        >hr {
+          margin-bottom: 8px;
+        }
+      }
+    }
+  }
 }

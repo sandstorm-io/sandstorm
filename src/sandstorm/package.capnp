@@ -453,7 +453,7 @@ struct OsiLicenseInfo {
   # Whether or not you are required to provide a `codeUrl` when specifying this license.
 }
 
-annotation osiInfo(enumerant) :OsiLicenseInfo;
+annotation osiInfo @0x9476412d0315d869 (enumerant) :OsiLicenseInfo;
 # Annotation applied to each item in the OpenSourceLicense enum.
 
 enum OpenSourceLicense {

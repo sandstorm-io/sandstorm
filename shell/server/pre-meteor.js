@@ -71,35 +71,43 @@ function wwwHandlerForGrain(grainId) {
     var started = false;
     var sawEnd = false;
 
+    // TODO(perf): Automatically gzip text content? Use Express's "compress" middleware for this?
+    //   Note that nginx will also auto-compress things...
+
+    var headers = {
+      "Content-Type": type,
+      "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS
+    };
+
+    if (path === "apps/index.json" ||
+        path.match(/apps\/[a-z0-9]{52}[.]json/)) {
+      // TODO(cleanup): Extra special terrible hack: The app index needs to serve these JSON files
+      //   cross-origin. We could almost just make all web sites allow cross-origin since generally
+      //   web publishing is meant to publish public content. There is one case where this is
+      //   problematic, though: sites behind a firewall. Those sites could potentially be read
+      //   by outside sites if CORS is enabled on them. Some day we should make it so apps can
+      //   explicitly opt-in to allowing cross-origin queries but that day is not today.
+      headers["Access-Control-Allow-Origin"] = "*";
+    }
+
     var stream = {
       expectSize: function (size) {
         if (!started) {
           started = true;
-          response.writeHead(200, {
-            "Content-Length": size,
-            "Content-Type": type,
-            "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS
-          });
+          response.writeHead(200, _.extend(headers, { "Content-Length": size }));
         }
       },
       write: function (data) {
         if (!started) {
           started = true;
-          response.writeHead(200, {
-            "Content-Type": type,
-            "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS
-          });
+          response.writeHead(200, headers);
         }
         response.write(data);
       },
       done: function (data) {
         if (!started) {
           started = true;
-          response.writeHead(200, {
-            "Content-Length": 0,
-            "Content-Type": type,
-            "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS
-          });
+          response.writeHead(200, _.extend(headers, { "Content-Length": 0, }));
         }
         sawEnd = true;
         response.end();

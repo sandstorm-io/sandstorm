@@ -94,10 +94,6 @@ Template.sandstormAccountSettings.events({
 
     input.click();
   },
-  "click .identities>.add button": function (event) {
-    event.preventDefault();
-    alert("Multiple identities not implemented yet. :(");
-  },
   "click .identities>.edit>form>ul>.save>.cancel": function (event) {
     event.preventDefault();
     Template.instance().data._editing.set(null);

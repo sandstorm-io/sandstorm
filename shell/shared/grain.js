@@ -596,10 +596,6 @@ if (Meteor.isClient) {
   });
 
   Template.whoHasAccessPopup.events({
-    "click button.done": function (event) {
-      Template.instance().currentMode.set({"shareWithOthers": true});
-    },
-
     "change .share-token-role": function (event, instance) {
       var roleList = event.target;
       var assignment;

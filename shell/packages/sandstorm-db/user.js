@@ -79,7 +79,7 @@ Accounts.onCreateUser(function (options, user) {
   if (options.profile) {
     // TODO(cleanup): This check also appears in accounts-ui-methods.js.
     check(options.profile, Match.ObjectIncluding({
-      name: Match.Optional(String),
+      name: Match.OneOf(null, Match.Optional(String)),
       handle: Match.Optional(ValidHandle),
       pronoun: Match.Optional(Match.OneOf("male", "female", "neutral", "robot")),
     }));

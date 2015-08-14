@@ -26,7 +26,7 @@ Meteor.methods({
   updateProfile: function (profile) {
     // TODO(cleanup): This check also appears in sandstorm-db/users.js.
     check(profile, {
-      name: Match.Optional(String),
+      name: Match.OneOf(null, Match.Optional(String)),
       handle: Match.Optional(ValidHandle),
       pronoun: Match.Optional(Match.OneOf("male", "female", "neutral", "robot")),
     });

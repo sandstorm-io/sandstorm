@@ -16,7 +16,6 @@
 
 #include "indexer.h"
 #include <sandstorm/app-index/app-index.capnp.h>
-#include <sandstorm/app-index/category-table.capnp.h>
 #include <sandstorm/spk.h>
 #include <capnp/serialize.h>
 #include <stdlib.h>
@@ -292,7 +291,7 @@ void Indexer::updateIndex() {
           if (metadata.hasCodeUrl()) summary.setCodeLink(metadata.getCodeUrl());
 
           summary.setIsOpenSource(metadata.getLicense().isOpenSource());
-          summary.setCategories(categoryNames(metadata.getCategories()));
+          summary.setCategories(KJ_MAP(c, metadata.getCategories()) { return categoryName(c); });
 
           if (info.hasAuthorPgpKeyFingerprint()) {
             KJ_IF_MAYBE(fd, raiiOpenIfExists(
@@ -452,17 +451,17 @@ kj::String Indexer::writeImage(kj::ArrayPtr<const byte> data, kj::StringPtr exte
   return basename;
 }
 
-kj::Array<capnp::Text::Reader> Indexer::categoryNames(capnp::List<uint64_t>::Reader categoryIds) {
-  kj::Vector<capnp::Text::Reader> result(categoryIds.size());
-  for (auto id: categoryIds) {
-    for (auto category: CATEGORY_TABLE->getCategories()) {
-      if (id == category.getId()) {
-        result.add(category.getMetadata().getTitle());
+capnp::Text::Reader Indexer::categoryName(spk::Category category) {
+  auto categories = capnp::Schema::from<spk::Category>().getEnumerants();
+  auto categoryId = static_cast<uint>(category);
+  if (categoryId < categories.size()) {
+    for (auto annotation: categories[categoryId].getProto().getAnnotations()) {
+      if (annotation.getId() == 0x8d51dd236606d205) {
+        return annotation.getValue().getStruct().getAs<spk::CategoryInfo>().getTitle();
       }
     }
   }
-
-  return result.releaseAsArray();
+  return "Other";
 }
 
 // =======================================================================================

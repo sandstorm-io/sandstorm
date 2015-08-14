@@ -61,7 +61,7 @@ private:
   kj::String writeIcon(spk::Metadata::Icon::Reader icon);
   kj::String writeScreenshot(spk::Metadata::Screenshot::Reader screenshot);
   kj::String writeImage(kj::ArrayPtr<const byte> data, kj::StringPtr extension);
-  kj::Array<capnp::Text::Reader> categoryNames(capnp::List<uint64_t>::Reader categoryIds);
+  capnp::Text::Reader categoryName(spk::Category category);
 };
 
 } // namespace appindex

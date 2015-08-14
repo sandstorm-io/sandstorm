@@ -349,11 +349,12 @@ struct Metadata {
     # due to use of third-party open source libraries.
   }
 
-  categories @10 :List(UInt64);
-  # List of category IDs under which this app should be classified. Categories are things
-  # like "productivity" or "dev tools". Each category ID is generated using `capnp id`. Note that
-  # although you can generate your own category IDs, an app market will only recognize the specific
-  # set of IDs defined in the `Category` struct, below.
+  categories @10 :List(Category);
+  # List of categories/genres to which this app belongs, sorted with best fit first. See the
+  # `Category` enum below.
+  #
+  # You can list multiple categories, but note that as with all things the app market moderators
+  # may ask you to make changes, e.g. if you list categories that don't fit or seem spammy.
 
   author :group {
     # Fields relating to the author of this app.
@@ -367,6 +368,11 @@ struct Metadata {
     # identity based on their PGP key. For exmaple, Keybase.io has done a really good job of
     # connecting PGP keys to other Internet identities in a verifiable way.
 
+    upstreamAuthor @19 :Text;
+    # Name of the original primary author of this app, if it is different from the person who
+    # produced the Sandstorm package. Setting this implies that the author connected to the PGP
+    # signature only "ported" the app to Sandstorm.
+
     contactEmail @11 :Text;
     # Email address to contact for any issues with this app. This includes end-user support
     # requests as well as app store administrator requests, so it is very important that this be a
@@ -379,19 +385,16 @@ struct Metadata {
     #
     # "I am the author of the Sandstorm.io app with the following ID: <app-id>"
     #
-    # Keep in mind that Sandstorm app IDs are also ed25519 public keys, and that every app package
-    # is signed by the private key corresponding to its app ID. Therefore this PGP signature forms
-    # a chain of trust that can be used to verify each app package.
+    # You can create a signature file using `gpg` like so:
     #
-    # Notice that the signature asserts authorship of all versions of the app, including possible
-    # future version, even if maintainership is transferred to a new author (and the new author
-    # receives the app private key). This is intentional: When users use the "auto-update" feature,
-    # the are making the decision to automatically trust all future versions of the app without
-    # re-verifying the author's identity. If you wish to transfer maintainership of your app but
-    # you do not trust the new maintainer with the power to publish new packages under your
-    # identity, then you should not give the new maintainer the app's private key; you should force
-    # them to create a new key. Sandstorm will not auto-update users to the new version without,
-    # at the very least, confirming their approval of the change in authorship.
+    #     echo -n "I am the author of the Sandstorm.io app with the following ID: <app-id>" |
+    #         gpg --sign > pgp-signature
+    #
+    # To learn how to set up gpg, visit Keybase (https://keybase.io) -- they have excellent
+    # documentation and tools. Moreover, if you create a Keybase account for your key and follow
+    # Keybase's instructions to link it to other social accounts (like your Github account), then
+    # the Sandstorm app install flow and app market will present this information to the user as
+    # "verified".
   }
 
   pgpKeyring @13 :Data;
@@ -530,42 +533,62 @@ struct VerifiedInfo {
   # Stuff extracted directly from manifest.
 }
 
-struct Category {
-  id @0 :UInt64;
-  name @1 :Text;
-  metadata @2 :Metadata;
-  struct Metadata {
-    title @0 :Text;
-  }
+struct CategoryInfo {
+  title @0 :Text;
+}
 
-  annotation meta @0x8d51dd236606d205 (const) :Metadata;
+annotation categoryInfo @0x8d51dd236606d205 (enumerant) :CategoryInfo;
 
-  const productivity :UInt64 = 0x8c746594f41ecc87 $meta(title = "Productivity");
-  # Note-taking, todos, etc.
+enum Category {
+  # ------------------------------------
+  # "Meta": communication & coordination
 
-  const collaboration :UInt64 = 0xd8656b7b475e14dd $meta(title = "Collaboration");
-  # Project management, people-coordinating.
+  productivity @1 $categoryInfo(title = "Productivity");
+  # Apps which manage productivity -- i.e. the "meta" apps you use to "get organized", NOT the apps
+  # you use to actually produce content.
+  #
+  # Examples: Note-taking, to-dos, calendars, kanban boards, project management, team management.
+  #
+  # NON-examples: Document editors (-> office), e-mail (-> communications).
 
-  const office :UInt64 = 0xc57def88849bab0e $meta(title = "Office");
-  # Document editors.
+  communications @2 $categoryInfo(title = "Communications");
+  # Email, chat, conferencing, etc. Things that you use primarily to communicate, not to organize.
 
-  const developerTools :UInt64 = 0xa4ef0b6022efaa49 $meta(title = "DevTools");
-  # Programming tools.
+  social @3 $categoryInfo(title = "Social");
+  # Social networking. Overlaps with communication, but focuses on organizing a network of people
+  # and surfacing content and interactions from your network that aren't explicitly addressed
+  # to you.
 
-  const communications :UInt64 = 0xf0ee0ca041ab5f8a $meta(title = "Communications");
-  # Email, chat, etc.
+  # ------------------------------------
+  # Content creation
 
-  const social :UInt64 = 0xddc03391ae0411c4 $meta(title = "Social");
-  # Social networking.
+  webPublishing @4 $categoryInfo(title = "Web Publishing");
+  # Tools for publishing web sites and blogs.
 
-  const publishing :UInt64 = 0xb336c679a3246568 $meta(title = "Publishing");
-  # E.g. publishing blogs, web sites, etc.
+  office @5 $categoryInfo(title = "Office");
+  # Tools for the office: editors for documents, spreadsheets, presentations, etc.
 
-  const media :UInt64 = 0x9bfa483b9d982cf1 $meta(title = "Media");
-  # Music, photos, video, etc.
+  developerTools @6 $categoryInfo(title = "DevTools");
+  # Tools for software engineering: source control, test automation, compilers, IDEs, etc.
 
-  const games :UInt64 = 0xdd56bb5b119407de $meta(title = "Games");
+  science @7 $categoryInfo(title = "Science");
+  # Tools for scientific / academic pursuits: data gathering, data processing, paper publishing,
+  # etc.
+
+  # ------------------------------------
+  # Content consumption
+
+  media @8 $categoryInfo(title = "Media");
+  # Content *consuption*: Apps that aren't used to create content, but are used to display and
+  # consume it. Music players, photo galleries, video, feed readers, etc.
+
+  games @9 $categoryInfo(title = "Games");
   # Games.
+
+  # ------------------------------------
+
+  other @0 $categoryInfo(title = "Other");
+  # Use if nothing else fits -- but consider sending us a pull request to add a better category!
 }
 
 # ==============================================================================

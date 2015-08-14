@@ -15,8 +15,6 @@
 // limitations under the License.
 
 var Crypto = Npm.require("crypto");
-var Http = Npm.require("http");
-var Https = Npm.require("https");
 var Future = Npm.require("fibers/future");
 var Promise = Npm.require("es6-promise").Promise;
 var Capnp = Npm.require("capnp");

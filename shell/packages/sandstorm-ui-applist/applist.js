@@ -138,7 +138,7 @@ SandstormAppList = function(db) {
             refGrain(newToken.grainId);
           }
         }
-      })
+      });
 
       this.onStop(function () {
         actionsHandle.stop();

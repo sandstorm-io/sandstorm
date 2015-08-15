@@ -130,7 +130,7 @@ SandstormAppList = function(db) {
           refGrain(newToken.grainId);
         },
         removed: function(oldToken) {
-          unrefGrain(oldToken.packageId);
+          unrefGrain(oldToken.grainId);
         },
         updated: function(oldToken, newToken) {
           if (oldToken.grainId !== newToken.grainId) {

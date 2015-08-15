@@ -29,3 +29,5 @@ selenium-debug.log
 tests/assets/*
 tests/nightwatch.tmp.json
 tests/screenshots/
+app-index.spk
+app-index-sandstorm-files.list

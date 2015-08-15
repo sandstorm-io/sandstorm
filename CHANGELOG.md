@@ -1,3 +1,12 @@
+### v0.105 (2015-08-14)
+- The sharing UI can now directly send email with a sharing link, and has been reorganized. (More updates are coming in the next release.)
+- The new app metadata format has been improved (in backwards-incompatible ways, but it wasn't being used yet).
+- New `spk publish` command can publish apps to the upcoming app market.
+- `spk verify --details` will now check the package's PGP signature if present and display the key ID.
+- Fixed bug preventing first-time login through Github using a Github account that had no display name set.
+- Fixed bug where logging in while viewing a sharing link did not correctly update the app to notify it that the user was now logged in.
+- Lots of code refactoring in preparation for big changes coming soon.
+
 ### v0.104 (2015-08-03)
 - Fix sudden increase in log spam in 0.102 -- unnecessarily large full-HTML DNS TXT lookup error messages were being logged to the console; no more. In fact, now these are properly 404 errors as they should be.
 

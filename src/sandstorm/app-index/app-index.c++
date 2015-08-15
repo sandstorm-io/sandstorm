@@ -281,7 +281,7 @@ public:
       auto path = params.getPath();
       KJ_LOG(INFO, path);
       if (path.startsWith("approve/")) {
-        // TODO(now): Set URL.
+        // TODO(nowish): Set URL.
         indexer.approve(path.slice(strlen("approve/")), "");
         indexer.updateIndex();
         context.getResults().initNoContent();

@@ -2211,7 +2211,7 @@ private:
 
   kj::String appIndexEndpoint = nullptr;
   kj::String appIndexToken = nullptr;
-  // TODO(nowish): Fill in defaults.
+  // TODO(now): Fill in defaults.
 
   kj::MainFunc getPublishMain() {
     return addCommonOptions(OptionSet::KEYS_READONLY,

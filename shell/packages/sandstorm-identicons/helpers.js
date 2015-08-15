@@ -17,9 +17,23 @@ var iconFromManifest = function(manifest, usage) {
   return undefined;
 };
 
+var hashAppIdForIdenticon = function (id) {
+  // "Hash" an app ID to a 32-digit hex string for the purpose of
+  // producing an identicon. Since app IDs are already high-
+  // entropy base32 strings, we simply turn each of the first
+  // 32 digits to base16 by chopping off a bit.
+  result = [];
+  var digits16 = "0123456789abcdef";
+  var digits32 = "0123456789acdefghjkmnpqrstuvwxyz";
+  for (var i = 0; i < 32; i++) {
+    result.push(digits16[digits32.indexOf(id[i]) % 16]);
+  }
+  return result.join("");
+}
+
 var identiconForApp = function (appId, usage) {
   var size = (usage === "appGrid" ? 128 : 24);
-  var data = new Identicon(CryptoJS.SHA256(appId).toString(), size).toString();
+  var data = new Identicon(hashAppIdForIdenticon(appId), size).toString();
   return "data:image/png;base64," + data;
 };
 

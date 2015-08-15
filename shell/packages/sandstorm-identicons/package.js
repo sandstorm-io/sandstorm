@@ -20,7 +20,6 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
-  api.use(["jparker:crypto-sha256"], ["client"]);
   api.addFiles(["pnglib.js", "identicon.js", "helpers.js"], "client");
   api.export(["Identicon", "iconSrcForPackage", "iconSrcForDevPackage"]);
 });

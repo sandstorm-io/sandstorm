@@ -147,7 +147,7 @@ SandstormAppList = function(db) {
         // Clean up intermediate subscriptions too
         var cleanupSubs = function(subs) {
           var ids = Object.keys(subs);
-          for (var i = 0 ; i < grainIds.length ; i++) {
+          for (var i = 0 ; i < ids.length ; i++) {
             var id = ids[i];
             subs[id].stop();
             delete subs[id];

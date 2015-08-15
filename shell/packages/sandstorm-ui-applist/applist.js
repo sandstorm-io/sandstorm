@@ -5,12 +5,158 @@ SandstormAppList = function(db) {
   var ref = this;
   if (Meteor.isServer) {
     Meteor.publish("userPackages", function() {
+      // Users should be able to see packages that are any of:
+      // 1. referenced by one of their userActions
+      // 2. referenced by one of their grains
+      // 3. referenced by the grain of an ApiToken they possess
+      // Sadly, this is rather a pain to make reactive.  This could probably benefit from some
+      // refactoring or being turned into a library that handles reactive server-side joins.
+      var self = this;
+
+      // Refcounting and subscription-tracking for packages
+      var cachedPackageRefcounts = {};
+      var cachedPackageSubscriptions = {};
+      var refPackage = function (packageId) {
+        if (cachedPackageRefcounts[packageId] === undefined) {
+          cachedPackageRefcounts[packageId] = 0;
+          var thisPackageQuery = db.collections.packages.find({ _id: packageId });
+          var thisPackageSub = thisPackageQuery.observe({
+            added: function(pkg) {
+              self.added("packages", packageId, pkg);
+            },
+            removed: function(pkg) {
+              self.removed("packages", packageId, pkg);
+            },
+            updated: function(oldPkg, newPkg) {
+              var changedFields = {};
+              var newPkgKeys = Object.keys(newPkg);
+              for (var i = 0; i < newPkgKeys.length; i++) {
+                var key = newPkgKeys[i];
+                if (newPkg[key] !== oldPkg[key]) {
+                  changedFields[key] = newPkg[key];
+                }
+              }
+              self.updated("packages", packageId, changedFields);
+            }
+          });
+          cachedPackageSubscriptions[packageId] = thisPackageSub;
+        }
+        cachedPackageRefcounts[packageId] = cachedPackageRefcounts[packageId] + 1;
+      };
+      var unrefPackage = function (packageId) {
+        cachedPackageRefcounts[packageId] = cachedPackageRefcounts[packageId] - 1;
+        if (cachedPackageRefcounts[packageId] === 0) {
+          delete cachedPackageRefcounts[packageId];
+          var sub = cachedPackageSubscriptions[packageId];
+          delete cachedPackageSubscriptions[packageId];
+          sub.stop();
+        }
+      };
+
+      // Refcounting and subscription-tracking for grains
+      var cachedGrainRefcounts = {};
+      var cachedGrainSubscriptions = {};
+      var refGrain = function (grainId) {
+        if (cachedGrainRefcounts[grainId] === undefined) {
+          cachedGrainRefcounts[grainId] = 0;
+          var thisGrainQuery = db.collections.grains.find({_id: grainId});
+          var thisGrainSub = thisGrainQuery.observe({
+            added: function(grain) {
+              refPackage(grain.packageId);
+            },
+            removed: function(grain) {
+              unrefPackage(grain.packageId);
+            },
+            updated: function(oldGrain, newGrain) {
+              // The only field we care about reacting to is packageId
+              if (oldGrain.packageId !== newGrain.packageId) {
+                unrefPackage(oldGrain.packageId);
+                refPackage(newGrain.packageId);
+              }
+            }
+          });
+          cachedGrainSubscriptions[grainId] = thisGrainSub;
+        }
+        cachedGrainRefcounts[grainId] = cachedGrainRefcounts[grainId] + 1;
+      };
+      var unrefGrain = function (grainId) {
+        cachedGrainRefcounts[grainId] = cachedGrainRefcounts[grainId] - 1;
+        if (cachedGrainRefcounts[grainId] === 0) {
+          delete cachedGrainRefcounts[grainId];
+          var sub = cachedGrainSubscriptions[grainId];
+          delete cachedGrainSubscriptions[grainId];
+          sub.stop();
+        }
+      };
+
+      // package source 1: packages referred to by actions
       var actions = db.userActions(this.userId, {}, {});
-      var packageSet = {};
-      actions.forEach(function (action) {
-        packageSet[action.packageId] = 1;
+      var actionsHandle = actions.observe({
+        added: function(newAction) {
+          refPackage(newAction.packageId);
+        },
+        removed: function(oldAction) {
+          unrefPackage(oldAction.packageId);
+        },
+        updated: function(oldAction, newAction) {
+          if (oldAction.packageId !== newAction.packageId) {
+            unrefPackage(oldAction.packageId);
+            refPackage(newAction.packageId);
+          }
+        }
       });
-      return [db.collections.packages.find({_id: {$in: Object.keys(packageSet)}})];
+
+      // package source 2: packages referred to by grains directly
+      var grains = db.userGrains(this.userId, {}, {});
+      var grainsHandle = grains.observe({
+        added: function(newGrain) {
+          refPackage(newGrain.packageId);
+        },
+        removed: function(oldGrain) {
+          unrefPackage(oldGrain.packageId);
+        },
+        updated: function(oldGrain, newGrain) {
+          if (oldGrain.packageId !== newGrain.packageId) {
+            unrefPackage(oldGrain.packageId);
+            refPackage(newGrain.packageId);
+          }
+        }
+      });
+
+      // package source 3: packages referred to by grains referred to by apiTokens.
+      var apiTokens = db.collections.apiTokens.find({'owner.user.userId': this.userId});
+      var apiTokensHandle = apiTokens.observe({
+        added: function(newToken) {
+          refGrain(newToken.grainId);
+        },
+        removed: function(oldToken) {
+          unrefGrain(oldToken.packageId);
+        },
+        updated: function(oldToken, newToken) {
+          if (oldToken.grainId !== newToken.grainId) {
+            unrefGrain(oldToken.grainId);
+            refGrain(newToken.grainId);
+          }
+        }
+      })
+
+      this.onStop(function () {
+        actionsHandle.stop();
+        grainsHandle.stop();
+        apiTokensHandle.stop();
+        // Clean up intermediate subscriptions too
+        var cleanupSubs = function(subs) {
+          var ids = Object.keys(subs);
+          for (var i = 0 ; i < grainIds.length ; i++) {
+            var id = ids[i];
+            subs[id].stop();
+            delete subs[id];
+          }
+        };
+        cleanupSubs(cachedGrainSubscriptions);
+        cleanupSubs(cachedPackageSubscriptions);
+      });
+      this.ready();
     });
   }
   if (Meteor.isClient) {

@@ -413,7 +413,8 @@ Router.map(function () {
         }
 
         if (!result.hasOlderVersion && !result.hasNewerVersion &&
-            document.referrer.lastIndexOf("https://sandstorm.io/apps/", 0) === 0) {
+            (document.referrer.lastIndexOf("https://sandstorm.io/apps/", 0) === 0 ||
+             document.referrer.lastIndexOf("https://apps.sandstorm.io/", 0) === 0)) {
           // Skip confirmation because we assume the Sandstorm app list is not evil.
           // TODO(security): This is not excellent. Think harder.
           addUserActions(result.packageId);

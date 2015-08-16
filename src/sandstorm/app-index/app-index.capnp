@@ -74,6 +74,7 @@ struct AppIndexForMarket {
       hackernewsUsername @5 :Text;
       redditUsername @6 :Text;
     }
+    upstreamAuthor @11 :Text;
     shortDescription @10 :Text;
   }
 }

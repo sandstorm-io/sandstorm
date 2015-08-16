@@ -72,6 +72,8 @@ if (Meteor.isServer) {
   }
 }
 
+globalAppList = new SandstormAppList(globalDb);
+
 if (Meteor.isClient) {
   globalTopbar = new SandstormTopbar({
     get: function () {

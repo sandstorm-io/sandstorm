@@ -1,0 +1,77 @@
+.app-list {
+  .hide {
+    // !important used to override other classes that might assign e.g. display: block
+    display: none !important;
+  }
+  >input.search-bar {
+    width: 80%;
+    margin-left: 24px;
+    line-height: 24pt;
+    height: 36pt;
+    font-size: 18pt;
+  }
+  >.popular-container {
+    // Restricts the visible portion of the "most used" section to a single row.
+    display: block;
+    height: 280px;
+    overflow: hidden;
+  }
+  >h2, >.popular-container>h2 {
+    margin-left: 24px;
+    border-bottom: 1px solid #a9a9a9;
+    clear: both;
+  }
+  >.app-button, >.popular-container>.app-button {
+    @extend %unstyled-button;
+    cursor: pointer;
+    float: left;
+    display: block;
+    // Browsers render button contents vertically-centered by default.
+    // I can't figure out how to suggest that the browser align contents to the top instead, so I
+    // specify position: relative here and position: absolute for the image and text label.
+    // Strictly speaking, you're not supposed to have a <button> with a child <img>.  Oh well.
+    position: relative;
+    width: 148px;
+    height: 200px;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 40px;
+    box-shadow: 0 0 1px black;
+    overflow: hidden;
+    &.app-action {
+    }
+    &.dev-action {
+      background-image: url("/devmode.png");
+      background-size: 100% auto;
+      background-color: #ccc;
+    }
+    >.app-icon {
+      display: block;
+      position: absolute;
+      top: 0px;
+      left: 0px;
+      width: 128px;
+      height: 128px;
+      margin: 10px;
+      border-radius: 6px;
+      vertical-align: top;
+    }
+    %apptext {
+      @extend %overflow-ellipsis;
+      position: absolute;
+      left: 0px;
+      width: 100%;
+      font-size: 12pt;
+      vertical-align: top;
+      text-align: center;
+    }
+    >.app-title, >.action-title {
+      @extend %apptext;
+      top: 148px;
+    }
+    >.action-text {
+      @extend %apptext;
+      top: 168px;
+    }
+  }
+}

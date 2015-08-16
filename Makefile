@@ -42,28 +42,34 @@ endef
 
 
 IMAGES= \
-    shell/public/restart.svg \
-    shell/public/trash.svg \
+    shell/public/battery.svg \
+    shell/public/close.svg \
     shell/public/debug.svg \
     shell/public/download.svg \
-    shell/public/key.svg \
-    shell/public/share.svg \
-    shell/public/close.svg \
-    shell/public/menu.svg \
+    shell/public/down.svg \
     shell/public/inbox.svg \
     shell/public/install.svg \
+    shell/public/key.svg \
+    shell/public/menu.svg \
     shell/public/notification.svg \
+    shell/public/restart.svg \
     shell/public/restore.svg \
+    shell/public/settings.svg \
+    shell/public/share.svg \
+    shell/public/trash.svg \
     shell/public/upload.svg \
-    shell/public/restart-m.svg \
-    shell/public/trash-m.svg \
+    shell/public/up.svg \
+                             \
+    shell/public/close-m.svg \
     shell/public/debug-m.svg \
     shell/public/download-m.svg \
-    shell/public/key-m.svg \
-    shell/public/share-m.svg \
-    shell/public/close-m.svg \
     shell/public/inbox-m.svg \
-    shell/public/notification-m.svg
+    shell/public/key-m.svg \
+    shell/public/notification-m.svg \
+    shell/public/restart-m.svg \
+    shell/public/settings-m.svg \
+    shell/public/share-m.svg \
+    shell/public/trash-m.svg
 
 # ====================================================================
 # Meta rules

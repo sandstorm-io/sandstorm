@@ -15,11 +15,12 @@
 // limitations under the License.
 
 Package.describe({
-  summary: "Sandstorm identicons package",
+  summary: "Sandstorm UI app list",
   version: "0.1.0"
 });
 
 Package.onUse(function (api) {
-  api.addFiles(["pnglib.js", "identicon.js", "helpers.js"], "client");
-  api.export(["Identicon"]);
+  api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "jparker:crypto-sha256", "sandstorm-identicons"], "client");
+  api.addFiles(["applist.html", "applist.js"], ["client","server"]);
+  api.export("SandstormAppList");
 });

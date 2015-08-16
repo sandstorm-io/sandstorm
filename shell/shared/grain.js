@@ -1056,6 +1056,9 @@ GrainLog = new Mongo.Collection("grainLog");
 // Pseudo-collection created by subscribing to "grainLog", implemented in proxy.js.
 
 Router.map(function () {
+  this.route("newGrain", {
+    path: "/grain/new",
+  });
   this.route("grain", {
     path: "/grain/:grainId/:path(.*)?",
 

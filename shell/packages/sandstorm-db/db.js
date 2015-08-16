@@ -59,7 +59,7 @@ Packages = new Mongo.Collection("packages");
 //   progress:  Float.  -1 = N/A, 0-1 = fractional progress (e.g. download percentage),
 //       >1 = download byte count.
 //   error:  If status is "failed", error message string.
-//   manifest:  If status is "ready", the package manifest.  See "Manifest" in grain.capnp.
+//   manifest:  If status is "ready", the package manifest.  See "Manifest" in package.capnp.
 //   appId:  If status is "ready", the application ID string.  Packages representing different
 //       versions of the same app have the same appId.  The spk tool defines the app ID format
 //       and can cryptographically verify that a package belongs to a particular app ID.
@@ -604,6 +604,35 @@ if (Meteor.isServer) {
 
 // =======================================================================================
 // Below this point are newly-written or refactored functions.
+
+_.extend(SandstormDb.prototype, {
+  // TODO(cleanup): These methods shouldn't take a raw mongo queries or "aggregations" as inputs.
+  //   We want methods corresponding to each kind of query that is performed in practice. Letting
+  //   the caller pass an arbitrary query and aggregations is problematic because:
+  //   - We can't type-check them to prevent Mongo injections.
+  //   - It defeats the purpose of clearly seeing what kinds of queries we need to support, and
+  //     therefore what kind of indexes we might need.
+  //   - It doesn't make it any easier for us to substitute a non-Mongo database in the future.
+  //   - If the caller is just going to pass in a match-all query, we may be forcing Mongo into
+  //     a slower path by using $and.
+  userGrains: function userGrains (user, query, aggregations) {
+    var filteredQuery = { $and: [ { userId: user}, query ] };
+    return this.collections.grains.find(filteredQuery, aggregations);
+  },
+
+  currentUserGrains: function currentUserGrains (query, aggregations) {
+    return this.userGrains(Meteor.userId(), query, aggregations);
+  },
+
+  userActions: function userActions (user, query, aggregations) {
+    var filteredQuery = { $and: [ {userId: user}, query ] };
+    return this.collections.userActions.find(filteredQuery, aggregations);
+  },
+
+  currentUserActions: function currentUserActions (query, aggregations) {
+    return this.userActions(Meteor.userId(), query, aggregations);
+  },
+});
 
 if (Meteor.isServer) {
   var Crypto = Npm.require("crypto");

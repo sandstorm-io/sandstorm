@@ -3,6 +3,11 @@ SandstormAppList = function(db) {
   this._sortOrder = new ReactiveVar([["appTitle", "desc"]]);
   this._staticHost = db.makeWildcardHost("static");
   var ref = this;
+  // TODO(cleanup): Separate into separate files for client and server. Note that the server side
+  //   can grab the database in method and publish implementations as `this.connection.sandstormDb`,
+  //   so perhaps it's not necessary to construct a SandstormAppList object on the server.
+  // TODO(cleanup): Don't do Meteor.publish, Template.x.{helpers,events}, etc. in constructor code
+  //   since these things cannot be executed multiple times.
   if (Meteor.isServer) {
     Meteor.publish("userPackages", function() {
       // Users should be able to see packages that are any of:
@@ -13,75 +18,59 @@ SandstormAppList = function(db) {
       // refactoring or being turned into a library that handles reactive server-side joins.
       var self = this;
 
-      // Refcounting and subscription-tracking for packages
+      // Note that package information, once it is in the database, is static. There's no need to
+      // reactively subscribe to changes to a package since they don't change. It's also unecessary
+      // to reactively remove a package from the client side when it is removed on the server, or
+      // when the client stops using it, because the worst case is the client has a small amount
+      // of extra info on a no-longer-used package held in memory until they refresh Sandstorm.
+      // So, we implement this as a cache: the first time each package ID shows up among the user's
+      // stuff, we push the package info to the client, and then we never update it.
+      //
+      // Alternatively, we could subscribe to each individual package query, but this would waste
+      // lots of server-side resources watching for events that will never happen or don't matter.
+      var hasPackage = {};
       var cachedPackageRefcounts = {};
-      var cachedPackageSubscriptions = {};
       var refPackage = function (packageId) {
-        if (cachedPackageRefcounts[packageId] === undefined) {
-          cachedPackageRefcounts[packageId] = 0;
-          var thisPackageQuery = db.collections.packages.find({ _id: packageId });
-          var thisPackageSub = thisPackageQuery.observe({
-            added: function(pkg) {
-              self.added("packages", packageId, pkg);
-            },
-            removed: function(pkg) {
-              self.removed("packages", packageId, pkg);
-            },
-            updated: function(oldPkg, newPkg) {
-              var changedFields = {};
-              var newPkgKeys = Object.keys(newPkg);
-              for (var i = 0; i < newPkgKeys.length; i++) {
-                var key = newPkgKeys[i];
-                if (newPkg[key] !== oldPkg[key]) {
-                  changedFields[key] = newPkg[key];
-                }
-              }
-              self.updated("packages", packageId, changedFields);
-            }
-          });
-          cachedPackageSubscriptions[packageId] = thisPackageSub;
-        }
-        cachedPackageRefcounts[packageId] = cachedPackageRefcounts[packageId] + 1;
-      };
-      var unrefPackage = function (packageId) {
-        cachedPackageRefcounts[packageId] = cachedPackageRefcounts[packageId] - 1;
-        if (cachedPackageRefcounts[packageId] === 0) {
-          delete cachedPackageRefcounts[packageId];
-          var sub = cachedPackageSubscriptions[packageId];
-          delete cachedPackageSubscriptions[packageId];
-          sub.stop();
+        // Ignore dev apps.
+        if (packageId.lastIndexOf("dev-", 0) === 0) return;
+
+        if (!hasPackage[packageId]) {
+          hasPackage[packageId] = true;
+          var pkg = db.collections.packages.findOne(packageId);
+          if (pkg) {
+            self.added("packages", packageId, pkg);
+          } else {
+            console.error(
+                "shouldn't happen: missing package referenced by user's stuff:", packageId);
+          }
         }
       };
 
       // Refcounting and subscription-tracking for grains
+      // TODO(perf): This is possibly really inefficient to create a new subscription for each
+      //   grain. Fortunately we only need it for "shared with me" grains, but if someday users
+      //   have thousansd of grains shared with them this could get really slow. Need something
+      //   better.
       var cachedGrainRefcounts = {};
       var cachedGrainSubscriptions = {};
       var refGrain = function (grainId) {
-        if (cachedGrainRefcounts[grainId] === undefined) {
+        if (!(grainId in cachedGrainRefcounts)) {
           cachedGrainRefcounts[grainId] = 0;
           var thisGrainQuery = db.collections.grains.find({_id: grainId});
           var thisGrainSub = thisGrainQuery.observe({
             added: function(grain) {
               refPackage(grain.packageId);
             },
-            removed: function(grain) {
-              unrefPackage(grain.packageId);
-            },
             updated: function(oldGrain, newGrain) {
-              // The only field we care about reacting to is packageId
-              if (oldGrain.packageId !== newGrain.packageId) {
-                unrefPackage(oldGrain.packageId);
-                refPackage(newGrain.packageId);
-              }
+              refPackage(newGrain.packageId);
             }
           });
           cachedGrainSubscriptions[grainId] = thisGrainSub;
         }
-        cachedGrainRefcounts[grainId] = cachedGrainRefcounts[grainId] + 1;
+        ++cachedGrainRefcounts[grainId];
       };
       var unrefGrain = function (grainId) {
-        cachedGrainRefcounts[grainId] = cachedGrainRefcounts[grainId] - 1;
-        if (cachedGrainRefcounts[grainId] === 0) {
+        if (--cachedGrainRefcounts[grainId] === 0) {
           delete cachedGrainRefcounts[grainId];
           var sub = cachedGrainSubscriptions[grainId];
           delete cachedGrainSubscriptions[grainId];
@@ -95,14 +84,8 @@ SandstormAppList = function(db) {
         added: function(newAction) {
           refPackage(newAction.packageId);
         },
-        removed: function(oldAction) {
-          unrefPackage(oldAction.packageId);
-        },
         updated: function(oldAction, newAction) {
-          if (oldAction.packageId !== newAction.packageId) {
-            unrefPackage(oldAction.packageId);
-            refPackage(newAction.packageId);
-          }
+          refPackage(newAction.packageId);
         }
       });
 
@@ -112,14 +95,8 @@ SandstormAppList = function(db) {
         added: function(newGrain) {
           refPackage(newGrain.packageId);
         },
-        removed: function(oldGrain) {
-          unrefPackage(oldGrain.packageId);
-        },
         updated: function(oldGrain, newGrain) {
-          if (oldGrain.packageId !== newGrain.packageId) {
-            unrefPackage(oldGrain.packageId);
-            refPackage(newGrain.packageId);
-          }
+          refPackage(newGrain.packageId);
         }
       });
 
@@ -154,7 +131,6 @@ SandstormAppList = function(db) {
           }
         };
         cleanupSubs(cachedGrainSubscriptions);
-        cleanupSubs(cachedPackageSubscriptions);
       });
       this.ready();
     });
@@ -169,7 +145,7 @@ SandstormAppList = function(db) {
         // avoid causing noisy backtraces in the console.
         return "";
       }
-      return iconSrcForPackage(pkg, 'appGrid', ref._staticHost);
+      return Identicon.iconSrcForPackage(pkg, 'appGrid', ref._staticHost);
     };
     var appTitleForAction = function (action) {
       if (action.appTitle) return action.appTitle;
@@ -210,7 +186,7 @@ SandstormAppList = function(db) {
       // I look forward to the day I can remove most of this code.
       // Attempt to figure out the appropriate noun that this action will create.
       // Use an explicit noun phrase is one is available.  Apps should add these in the future.
-      if (action.nounPhrase && action.nounPhrase) return action.nounPhrase;
+      if (action.nounPhrase) return action.nounPhrase;
       // Otherwise, try to guess one from the structure of the action title field
       if (action.title) {
         var text = action.title;
@@ -279,7 +255,7 @@ SandstormAppList = function(db) {
               _id: devapp._id,
               appTitle: devapp.manifest.appTitle.defaultText,
               noun: nounFromAction(devapp.manifest.actions[i], devapp.manifest.appTitle.defaultText),
-              iconSrc: iconSrcForDevPackage(devapp, 'appGrid', ref._staticHost),
+              iconSrc: Identicon.iconSrcForDevPackage(devapp, 'appGrid', ref._staticHost),
               actionIndex: i
             });
           }
@@ -298,24 +274,28 @@ SandstormAppList = function(db) {
     });
     Template.sandstormAppList.events({
       "click .restore-button": function (event) {
-        // N.B.: this calls into a global in shell.js.  TODO: refactor into a safer dependency.
+        // N.B.: this calls into a global in shell.js.
+        // TODO(cleanup): refactor into a safer dependency.
         promptRestoreBackup();
       },
       "click .app-action": function(event) {
-        var actionId = event.target.getAttribute("data-actionid");
-        // N.B.: this calls into a global in shell.js.  TODO: refactor into a safer dependency.
+        var actionId = event.currentTarget.getAttribute("data-actionid");
+        // N.B.: this calls into a global in shell.js.
+        // TODO(cleanup): refactor into a safer dependency.
         launchAndEnterGrainByActionId(actionId);
       },
       "click .dev-action": function(event) {
-        var devId = event.target.getAttribute("data-devid");
-        var actionIndex = event.target.getAttribute("data-actionindex");
-        // N.B.: this calls into a global in shell.js.  TODO: refactor into a safer dependency.
+        var devId = event.currentTarget.getAttribute("data-devid");
+        var actionIndex = event.currentTarget.getAttribute("data-actionindex");
+        // N.B.: this calls into a global in shell.js.
+        // TODO(cleanup): refactor into a safer dependency.
         launchAndEnterGrainByActionId("dev", devId, actionIndex);
       },
-      // We use keyup rather than keypress because keypress's event.target.value will not have
-      // taken into account the keypress generating this event, so we'll miss a letter to filter by
+      // We use keyup rather than keypress because keypress's event.currentTarget.value will not
+      // have taken into account the keypress generating this event, so we'll miss a letter to
+      // filter by
       "keyup .search-bar": function(event) {
-        ref._filter.set(event.target.value);
+        ref._filter.set(event.currentTarget.value);
       },
       "keypress .search-bar": function(event) {
         if (event.keyCode === 13) {
@@ -324,7 +304,8 @@ SandstormAppList = function(db) {
           if (actions.length === 1) {
             // Unique grain found with current filter.  Activate it!
             var action = actions[0]._id;
-            // N.B.: this calls into a global in shell.js.  TODO: refactor into a safer dependency.
+            // N.B.: this calls into a global in shell.js.
+            // TODO(cleanup): refactor into a safer dependency.
             launchAndEnterGrainByActionId(action);
           }
         }

@@ -21,5 +21,5 @@ Package.describe({
 
 Package.onUse(function (api) {
   api.addFiles(["pnglib.js", "identicon.js", "helpers.js"], "client");
-  api.export(["Identicon", "iconSrcForPackage", "iconSrcForDevPackage"]);
+  api.export(["Identicon"]);
 });

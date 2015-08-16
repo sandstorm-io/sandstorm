@@ -460,7 +460,7 @@ if (Meteor.isClient) {
     } else {
       var action = UserActions.findOne(actionId);
       if (!action) {
-        console.error("no such action: ", actionId);
+        console.error("no such action:", actionId);
         return;
       }
 
@@ -630,7 +630,7 @@ if (Meteor.isClient) {
         // pick an app.
         alert("You are out of storage space. Please delete some things and try again.");
       } else {
-        document.location = "https://sandstorm.io/apps/?host=" + getOrigin();
+        document.location = "https://apps.sandstorm.io/?host=" + getOrigin();
       }
     },
 

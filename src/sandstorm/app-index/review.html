@@ -93,6 +93,16 @@
           img.src = "data:image/svg+xml;utf8," + data;
           return img;
         },
+        png: function (data) {
+          var img = document.createElement("img");
+          img.src = "data:image/png;base64," + data;
+          return img;
+        },
+        jpeg: function (data) {
+          var img = document.createElement("img");
+          img.src = "data:image/jpeg;base64," + data;
+          return img;
+        },
 
         packageId: function (id) {
           var span = textElement("span", id + " ");
@@ -197,6 +207,9 @@
           return div;
         }
       };
+
+      fieldHandlers.dpi1x = fieldHandlers.png;
+      fieldHandlers.dpi2x = fieldHandlers.png;
 
       function renderJson(value) {
         var type = typeof value;

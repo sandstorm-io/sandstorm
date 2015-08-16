@@ -29,6 +29,7 @@ if (Meteor.isServer) {
         appMarketingVersion: Match.Optional(Object),
         appVersion: Match.Integer,
         title: String,
+        nounPhrase: Match.Optional(String),
         command: {
           executablePath: Match.Optional(String),
           deprecatedExecutablePath: Match.Optional(String),
@@ -190,16 +191,21 @@ if (Meteor.isClient) {
       for (i in actions) {
         var action = actions[i];
         if ("none" in action.input) {
-          UserActions.insert({
+          var userAction = {
             userId: Meteor.userId(),
             packageId: package._id,
             appId: package.appId,
             appTitle: package.manifest.appTitle && package.manifest.appTitle.defaultText,
             appMarketingVersion: package.manifest.appMarketingVersion,
             appVersion: package.manifest.appVersion,
-            title: action.title.defaultText,
+            title: action.title.defaultText,  // TODO(someday): `.defaultText` here is wrong.
             command: action.command
-          });
+          };
+          if (action.nounPhrase) {
+            // TODO(someday): `.defaultText` here is wrong.
+            userAction.nounPhrase = action.nounPhrase.defaultText;
+          }
+          UserActions.insert(userAction);
         } else {
           // TODO(someday):  Implement actions with capability inputs.
         }
@@ -413,7 +419,8 @@ Router.map(function () {
         }
 
         if (!result.hasOlderVersion && !result.hasNewerVersion &&
-            document.referrer.lastIndexOf("https://sandstorm.io/apps/", 0) === 0) {
+            (document.referrer.lastIndexOf("https://sandstorm.io/apps/", 0) === 0 ||
+             document.referrer.lastIndexOf("https://apps.sandstorm.io/", 0) === 0)) {
           // Skip confirmation because we assume the Sandstorm app list is not evil.
           // TODO(security): This is not excellent. Think harder.
           addUserActions(result.packageId);

@@ -460,7 +460,7 @@ if (Meteor.isClient) {
     } else {
       var action = UserActions.findOne(actionId);
       if (!action) {
-        console.error("no such action: ", actionId);
+        console.error("no such action:", actionId);
         return;
       }
 

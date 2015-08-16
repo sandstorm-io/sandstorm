@@ -76,14 +76,14 @@ var iconSrcFor = function (appId, iconObj, staticHost, usage) {
   return identiconForApp(appId);
 };
 
-iconSrcForPackage = function (pkg, usage, staticHost) {
+Identicon.iconSrcForPackage = function (pkg, usage, staticHost) {
   checkUsage(usage);
   // N.B. only works for installed packages, for dev packages use iconSrcForDevPackage
   var iconObj = iconFromManifest(pkg.manifest, usage);
   return iconSrcFor(pkg.appId, iconObj, staticHost, usage);
 };
 
-iconSrcForDevPackage = function (devpkg, usage, staticHost) {
+Identicon.iconSrcForDevPackage = function (devpkg, usage, staticHost) {
   checkUsage(usage);
   var iconObj = iconFromManifest(devpkg.manifest, usage);
   return iconSrcFor(devpkg._id, iconObj, staticHost, usage);

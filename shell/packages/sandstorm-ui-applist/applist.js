@@ -236,9 +236,10 @@ SandstormAppList = function(db) {
         var grains = db.currentUserGrains({}, {fields: {appId: 1}}).fetch();
         var appCounts = _.countBy(grains, function(x) { return x.appId; });
         // Sort apps by the number of grains created descending.
-        var appIdsByGrainsCreated = _.sortBy(appIds, function(appId) {
-          return -1*appCounts[appId];
-        });
+        var appIdsByGrainsCreated = _.chain(appIds)
+            .sortBy(function(appId) { return appCounts[appId] || 0; })
+            .reverse()
+            .value();
         // Sort actions by the number of grains created by the matching app.
         var actionsByGrainCount = _.sortBy(actions, function(action) {
            return appIdsByGrainsCreated.indexOf(action.appId);

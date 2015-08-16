@@ -2209,9 +2209,9 @@ private:
   kj::Maybe<appindex::SubmissionState> publishState = appindex::SubmissionState::PUBLISH;
   // By default `spk publish` publishes the package.
 
-  kj::String appIndexEndpoint = nullptr;
-  kj::String appIndexToken = nullptr;
-  // TODO(now): Fill in defaults.
+  // https://alpha-api.sandstorm.io/#Rs-0TT13YrNSbv7Fiz5K9bBkLaJn3E5TB0PU1GSn1HE
+  kj::String appIndexEndpoint = kj::heapString("https://alpha-api.sandstorm.io");
+  kj::String appIndexToken = kj::heapString("Rs-0TT13YrNSbv7Fiz5K9bBkLaJn3E5TB0PU1GSn1HE");
 
   kj::MainFunc getPublishMain() {
     return addCommonOptions(OptionSet::KEYS_READONLY,
@@ -2240,6 +2240,11 @@ private:
   kj::MainBuilder::Validity setPublishWebkey(kj::StringPtr webkey) {
     auto parts = split(webkey, '#');
     if (parts.size() != 2) return "invalid webkey format";
+
+    // Strip trailing slashes from host.
+    while (parts[0].size() > 0 && parts[0][parts[0].size() - 1] == '/') {
+      parts[0] = parts[0].slice(0, parts[0].size() - 1);
+    }
 
     appIndexEndpoint = kj::str(parts[0]);
     appIndexToken = kj::str(parts[1]);

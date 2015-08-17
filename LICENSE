@@ -36,13 +36,6 @@ shell/packages/sandstorm-accounts-ui
     License: MIT
     License URL: https://github.com/meteor/meteor/blob/devel/LICENSE.txt
 
-icons/inbox.svg
-    What: Inbox icon
-    Source URL: https://thenounproject.com/term/inbox/55704/
-    Copyright: Rohith M S
-    License: CC BY 3.0
-    License URL: http://creativecommons.org/licenses/by/3.0/us/
-
 shell/client/ansi-up.js
     What: ansi_up library (converts ANSI escape codes to HTML)
     Source URL: http://github.com/drudru/ansi_up

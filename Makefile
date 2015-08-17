@@ -49,7 +49,6 @@ IMAGES= \
     shell/public/download.svg \
     shell/public/down.svg \
     shell/public/email.svg \
-    shell/public/inbox.svg \
     shell/public/install.svg \
     shell/public/key.svg \
     shell/public/link.svg \
@@ -69,7 +68,6 @@ IMAGES= \
     shell/public/debug-m.svg \
     shell/public/download-m.svg \
     shell/public/email-m.svg \
-    shell/public/inbox-m.svg \
     shell/public/key-m.svg \
     shell/public/link-m.svg \
     shell/public/notification-m.svg \

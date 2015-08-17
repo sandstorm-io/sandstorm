@@ -1059,6 +1059,9 @@ Router.map(function () {
   this.route("newGrain", {
     path: "/grain/new",
   });
+  this.route("selectGrain", {
+    path: "/grain",
+  });
   this.route("grain", {
     path: "/grain/:grainId/:path(.*)?",
 

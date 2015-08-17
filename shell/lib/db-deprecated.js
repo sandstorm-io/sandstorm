@@ -73,6 +73,7 @@ if (Meteor.isServer) {
 }
 
 globalAppList = new SandstormAppList(globalDb);
+globalGrainList = new SandstormGrainList(globalDb);
 
 if (Meteor.isClient) {
   globalTopbar = new SandstormTopbar({

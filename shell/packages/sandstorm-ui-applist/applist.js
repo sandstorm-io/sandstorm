@@ -153,15 +153,14 @@ SandstormAppList = function(db) {
       // N.B.: calls into shell.js.  TODO: refactor
       return appNameFromActionName(action.title);
     };
-    var orClauseFor = function (searchString) {
+    var andClauseFor = function (searchString) {
       var searchKeys = searchString.split(" ").filter(function(k) { return k != "";});
       var searchRegexes = searchKeys.map(function(key) {
-         return { "appTitle": { $regex: key , $options: 'i' } };
-      }).concat(searchKeys.map(function(key) {
-         return { "title": { $regex: key , $options: 'i' } };
-      }));
-      var orClause = searchRegexes.length > 0 ? { $or: searchRegexes} : {};
-      return orClause;
+         return {$or: [{ "appTitle": { $regex: key , $options: 'i' } },
+                       { "title": { $regex: key , $options: 'i' } }]};
+      });
+      var andClause = searchRegexes.length > 0 ? { $and: searchRegexes } : {};
+      return andClause;
     };
     var actionToTemplateObject = function(action) {
       var title = appTitleForAction(action);
@@ -177,8 +176,8 @@ SandstormAppList = function(db) {
       return result;
     };
     var matchActions = function (searchString, sortOrder) {
-        var orClause = orClauseFor(searchString);
-        var actions = db.currentUserActions(orClause, { sort: sortOrder } );
+        var andClause = andClauseFor(searchString);
+        var actions = db.currentUserActions(andClause, { sort: sortOrder } );
         return actions;
     };
     var nounFromAction = function (action, appTitle) {

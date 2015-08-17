@@ -24,5 +24,6 @@ sandstorm-db
 sandstorm-identicons
 sandstorm-ui-topbar
 sandstorm-ui-applist
+sandstorm-ui-grainlist
 fourseven:scss
 sandstorm-tabs

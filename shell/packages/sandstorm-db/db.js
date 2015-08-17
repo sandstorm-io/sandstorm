@@ -624,6 +624,14 @@ _.extend(SandstormDb.prototype, {
     return this.userGrains(Meteor.userId(), query, aggregations);
   },
 
+  userApiTokens: function userApiTokens (user) {
+    return this.collections.apiTokens.find({'owner.user.userId': user});
+  },
+
+  currentUserApiTokens: function currentUserApiTokens () {
+    return this.userApiTokens(Meteor.userId());
+  },
+
   userActions: function userActions (user, query, aggregations) {
     var filteredQuery = { $and: [ {userId: user}, query ] };
     return this.collections.userActions.find(filteredQuery, aggregations);

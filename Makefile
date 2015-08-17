@@ -44,14 +44,18 @@ endef
 IMAGES= \
     shell/public/battery.svg \
     shell/public/close.svg \
+    shell/public/copy.svg \
     shell/public/debug.svg \
     shell/public/download.svg \
     shell/public/down.svg \
+    shell/public/email.svg \
     shell/public/inbox.svg \
     shell/public/install.svg \
     shell/public/key.svg \
+    shell/public/link.svg \
     shell/public/menu.svg \
     shell/public/notification.svg \
+    shell/public/people.svg \
     shell/public/restart.svg \
     shell/public/restore.svg \
     shell/public/settings.svg \
@@ -61,11 +65,15 @@ IMAGES= \
     shell/public/up.svg \
                              \
     shell/public/close-m.svg \
+    shell/public/copy-m.svg \
     shell/public/debug-m.svg \
     shell/public/download-m.svg \
+    shell/public/email-m.svg \
     shell/public/inbox-m.svg \
     shell/public/key-m.svg \
+    shell/public/link-m.svg \
     shell/public/notification-m.svg \
+    shell/public/people-m.svg \
     shell/public/restart-m.svg \
     shell/public/settings-m.svg \
     shell/public/share-m.svg \

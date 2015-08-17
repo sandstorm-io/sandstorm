@@ -294,6 +294,7 @@ body>.topbar {
     >.backup>button    { background-image: url("/download.svg"); }
     >.restart>button   { background-image: url("/restart.svg"); }
     >.webkey>button    { background-image: url("/key.svg"); }
+    >.who-has-access img { width: 20px; }
   }
   @media #{$mobile} {
     >.delete>button    { background-image: url("/trash-m.svg"); }
@@ -417,6 +418,10 @@ body>.topbar {
 
 // =======================================================================================
 
+body>.popup.who-has-access>.frame {
+  width: 500px;
+}
+
 body>.popup {
   // Popup windows hang off the topbar, usually appearing when a topbar item is clicked.
 
@@ -520,29 +525,115 @@ body>.popup {
       }
     }
 
-    >h4.tabbed {
-      border-bottom: none;
-      margin-bottom: 0px;
+    $popup-background-color: #ededed;
+
+    >h4.share-with-others {
+       border-bottom: none;
+       background-color: $popup-background-color;
+       margin-bottom: 0;
+       padding-left: 20px;
+       padding-top: 10px;
+       padding-bottom: 30px;
     }
 
-    >.footer {
+    >h4.who-has-access {
+       border-bottom: none;
+       background-color: $popup-background-color;
+       margin-bottom: 0;
+       padding-left: 20px;
+       padding-top: 10px;
+       padding-bottom: 10px;
+    }
+
+    button.who-has-access {
+      @extend %unstyled-button;
+      cursor: pointer;
+    }
+
+    [data-which-tab=send-invite]>.send-invite>h5,[data-which-tab=sharable-link]>.sharable-link>h5 {
+      background-color: white;
+      border-bottom: 1px solid white;
+      // TODO(cleanup) It would be better to use z-index for this.
+    }
+
+    .share-tabs {
+      padding: 10px;
       border-top: 1px solid #ccc;
-      margin: 0px;
-      padding-top: 5px;
-      text-align: right;
-      >.who-has-access {
-        margin-right: 15px;
-     }
+      position: relative;
+      margin: 0;
+      section {
+        margin-left: 16px;
+        margin-right: 16px;
+      }
+    }
+    [data-which-tab=send-invite]>.sharable-link>.tab-content,
+    [data-which-tab=sharable-link]>.send-invite>.tab-content {
+      display: none;
+    }
+    section>h5.tab-top {
+      border-top-left-radius: 4px;
+      border-top-right-radius: 4px;
+      background-color: #f7f7f7;
+      border: 1px solid #ccc;
+      border-bottom: none;
+      position: absolute;
+      margin: 0;
+      padding: 3px;
+      width: 45%;
+      text-align: center;
+      top: -26px;
+      background-position: 15px 2px, left;
+      background-size: 20px, 20px;
+      background-repeat: no-repeat;
+      cursor: pointer;
+    }
+    section.send-invite>h5.tab-top {
+      left: 2%;
+      background-image: url(/email-m.svg);
+    }
+    section.sharable-link>h5.tab-top {
+      right: 2%;
+      background-image: url(/link-m.svg);
     }
 
+    button.reset-invite, button.reset-share-token {
+      @extend %unstyled-button;
+      cursor: pointer;
+    }
+
+    .button-container {
+      position: relative;
+      margin-top: 5px;
+      margin-bottom: 45px;
+    }
+    .share-tabs form button {
+       @extend %unstyled-button;
+       border: 1px solid #ccc;
+       border-radius: 4px;
+       padding: 5px;
+       font-size: 12pt;
+       position: absolute;
+       right: 0;
+       cursor: pointer;
+    }
     .share-token-role {
       max-width: 45%;
     }
     table .share-token-role {
       max-width: 160px;
     }
+    div.tables-container {
+      position: relative;
+      overflow-y: auto;
+      overflow-x: hidden; // A vertical scrollbar can cause horizontal overflow.
+      max-height: calc(100vh - 130px);
+      // HACK. This should be computed from the max-height of the containing div. Is that even
+      // possible?
+    }
     table.people, table.sharing-links {
       border: 1px solid #ddd;
+      border-right: none;
+      border-left: none;
       font-size: 10pt;
       width: 100%;
       border-collapse: collapse;
@@ -557,10 +648,14 @@ body>.popup {
       display: none;
     }
 
+    $input-background-color: #f4f4f4;
+
     .emails {
-       width: 50%;
+       background-color: $input-background-color;
+       width: 45%;
     }
     .label, .personal-message {
+      background-color: $input-background-color;
       width: 100%;
     }
     .label-explanation {
@@ -579,6 +674,21 @@ body>.popup {
 
     >*:last-child {
       margin-bottom: 16px;
+    }
+
+    .inline-icon { width: 20px; }
+
+    >.footer {
+      background-color: $popup-background-color;
+      border-top: 1px solid #ccc;
+      margin: 0px;
+      padding-top: 5px;
+      padding-bottom: 10px;
+      text-align: right;
+      font-size: 10pt;
+      >.who-has-access {
+        margin-right: 15px;
+     }
     }
 
     &.centered {

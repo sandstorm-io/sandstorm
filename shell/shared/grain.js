@@ -366,18 +366,32 @@ if (Meteor.isClient) {
     "click #share-grain-popup-closer": function (event) {
       Session.set("show-share-grain", false);
     },
-    "click button.who-has-access": function (event) {
+    "click button.who-has-access": function (event, instance) {
       event.preventDefault();
-      var instance = Template.instance();
-      instance.currentMode.set({"whoHasAccess": true});
-    },
-
-    "click button.share-with-others": function (event) {
-      Template.instance().currentMode.set({"shareWithOthers": true});
+      var closer = globalTopbar.addItem({
+        name: "who-has-access",
+        priority: 6,
+        template: Template.whoHasAccess,
+        popupTemplate: Template.whoHasAccessPopup,
+        data: new ReactiveVar(instance.data),
+        startOpen: true,
+        onDismiss: function () {
+          return "remove";
+        }
+      });
     },
 
     "click #privatize-grain": function (event) {
       Grains.update(this.grainId, {$set: {private: true}});
+    },
+  });
+
+  Template.shareWithOthers.events({
+    "click .sharable-link": function (event, instance) {
+      instance.find(".share-tabs").setAttribute("data-which-tab", "sharable-link");
+    },
+    "click .send-invite": function (event, instance) {
+      instance.find(".share-tabs").setAttribute("data-which-tab", "send-invite");
     },
   });
 
@@ -548,12 +562,12 @@ if (Meteor.isClient) {
     },
   });
 
-  Template.whoHasAccess.onCreated(function () {
-    var grainId = this.data.grainId;
+  Template.whoHasAccessPopup.onCreated(function () {
     var instance = this;
+    instance.grainId = this.data.grainId;
     instance.transitiveShares = new ReactiveVar(null);
     this.resetTransitiveShares = function() {
-      Meteor.call("transitiveShares", grainId, function(error, downstream) {
+      Meteor.call("transitiveShares", instance.grainId, function(error, downstream) {
         if (error) {
           console.error(error.stack);
         } else {
@@ -581,7 +595,7 @@ if (Meteor.isClient) {
     this.resetTransitiveShares();
   });
 
-  Template.whoHasAccess.events({
+  Template.whoHasAccessPopup.events({
     "change .share-token-role": function (event, instance) {
       var roleList = event.target;
       var assignment;
@@ -625,7 +639,21 @@ if (Meteor.isClient) {
     return true;
   }
 
-  Template.whoHasAccess.helpers({
+  Template.whoHasAccessPopup.helpers({
+    existingShareTokens: function () {
+      return ApiTokens.find({grainId: Template.instance().grainId, userId: Meteor.userId(),
+                             forSharing: true,
+                             $or: [{owner: {webkey:null}},
+                                   {owner: {$exists: false}}],
+                            }).fetch();
+    },
+    getPetname: function () {
+      if (this.petname) {
+        return this.petname;
+      } else {
+        return "Unlabeled Link";
+      }
+    },
     displayName: function (userId) {
       var name = DisplayNames.findOne(userId);
       if (name) {
@@ -673,20 +701,12 @@ if (Meteor.isClient) {
       }
       return false;
     },
-    tabs: function() {
-      return [{name: "Table view", slug: "table"},
-              {name: "Graph view", slug: "graph"}];
-    },
     displayToken: function() {
       return !this.revoked && !this.expiresIfUnused && !this.parentToken;
     },
   });
 
   Template.shareWithOthers.helpers({
-    tabs: function() {
-      return [{name: "Send an invite", slug: "invite"},
-              {name: "Get sharable link", slug: "link"}];
-    },
   });
 
   Template.selectRole.helpers({
@@ -779,10 +799,6 @@ if (Meteor.isClient) {
       instance.find("form").reset();
       instance.find("form option[data-default-selected=true]").selected = true;
     },
-  });
-
-  ReactiveTabs.createInterface({
-    template: 'basicTabs',
   });
 
   Template.grainPowerboxOfferPopup.helpers({
@@ -988,11 +1004,6 @@ function grainRouteHelper(route, result, openSessionMethod, openSessionArg, root
                                                 {owner: {$exists: false}}],
                                           expiresIfUnused: null}).fetch();
   result.showShareGrain = Session.get("show-share-grain");
-  result.existingShareTokens = ApiTokens.find({grainId: grainId, userId: Meteor.userId(),
-                                               forSharing: true,
-                                               $or: [{owner: {webkey:null}},
-                                                     {owner: {$exists: false}}],
-                                              }).fetch();
   result.showMenu = Session.get("showMenu");
   result.rootPath = rootPath;
 

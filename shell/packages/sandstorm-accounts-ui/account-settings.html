@@ -22,60 +22,62 @@ limitations under the License.
     Account Settings
   {{/sandstormTopbarItem}}
 
-  <h2>Your identities</h2>
+  <section class="profile">
+    <h2>Your profile</h2>
 
-  <ul class="identities">
-    {{#each identities}}
-      {{#if editing}}
-        <li class="edit">
-          <form><ul>
-            <li class="name">
-              <label>Full name:
-                <input type="text" name="nameInput" value="{{name}}" placeholder="full name">
-              </label>
-              <span class="details">Your regular first and last name, as you would like it displayed to others. This does not have to be your real name.</span>
-            </li>
-            <li class="handle">
-              <label>Handle:
-                <input type="text" name="handle" value="{{handle}}" placeholder="handle">
-              </label>
-              <span class="details">Your preferred handle or "username", for use in apps that use handles (often, chat apps). This is only your first choice; an app may make you rename if someone has already taken this name within the specific grain.</span>
-            </li>
-            <li class="picture">
-              <label>Picture: <button><img src="{{picture}}" alt="Upload picture"></button></label>
-              <input type="hidden" name="picture" value="{{picture}}">
-              <span class="details">This picture will be shown to other users to help identify you. Suggested dimensions: 512x512. Max size: 64 KiB.</span>
-            </li>
-            <li class="pronoun">
-              <label>Preferred pronoun:
-                <select name="pronoun">
-                  <option value="neutral" selected="{{isNeutral}}">they (ambiguous)</option>
-                  <option value="male" selected="{{isMale}}">he/him (male)</option>
-                  <option value="female" selected="{{isFemale}}">she/her (female)</option>
-                  <option value="robot" selected="{{isRobot}}">it (robot)</option>
-                </select>
-              </label>
-            </li>
-            <li class="save"><button>Save</button><button class="cancel">Cancel</button></li>
-          </ul></form>
-        </li>
-      {{else}}
-        <li class="display {{service}}"><ul>
-          <li class="name"><span class="label">Name:</span> {{name}}</li>
-          {{#if handle}}<li class="handle"><span class="label">Handle:</span> @{{handle}}</li>{{/if}}
-          <li class="picture"><span class="label">Picture:</span> <img src="{{picture}}"></li>
-          <li class="pronoun">
-            <span class="label">Pronoun:</span>
-            {{#if isMale}}he/him (male){{/if}}
-            {{#if isFemale}}she/her (female){{/if}}
-            {{#if isNeutral}}they (ambiguous){{/if}}
-            {{#if isRobot}}it (robot){{/if}}
+    <ul class="identities">
+      {{#each identities}}
+        {{#if editing}}
+          <li class="edit">
+            <form><ul>
+              <li class="name">
+                <label>Full name:
+                  <input type="text" name="nameInput" value="{{name}}" placeholder="full name">
+                </label>
+                <span class="details">Your regular first and last name, as you would like it displayed to others. This does not have to be your real name.</span>
+              </li>
+              <li class="handle">
+                <label>Handle:
+                  <input type="text" name="handle" value="{{handle}}" placeholder="handle">
+                </label>
+                <span class="details">Your preferred handle or "username", for use in apps that use handles (often, chat apps). This is only your first choice; an app may make you rename if someone has already taken this name within the specific grain.</span>
+              </li>
+              <li class="picture">
+                <label>Picture: <button><img src="{{picture}}" alt="Upload picture"></button></label>
+                <input type="hidden" name="picture" value="{{picture}}">
+                <span class="details">This picture will be shown to other users to help identify you. Suggested dimensions: 512x512. Max size: 64 KiB.</span>
+              </li>
+              <li class="pronoun">
+                <label>Preferred pronoun:
+                  <select name="pronoun">
+                    <option value="neutral" selected="{{isNeutral}}">they (ambiguous)</option>
+                    <option value="male" selected="{{isMale}}">he/him (male)</option>
+                    <option value="female" selected="{{isFemale}}">she/her (female)</option>
+                    <option value="robot" selected="{{isRobot}}">it (robot)</option>
+                  </select>
+                </label>
+              </li>
+              <li class="save"><button>Save</button><button class="cancel">Cancel</button></li>
+            </ul></form>
           </li>
-          <li class="edit"><button>Edit</button></li>
-        </ul></li>
-      {{/if}}
-    {{/each}}
-  </ul>
+        {{else}}
+          <li class="display {{service}}"><ul>
+            <li class="name"><span class="label">Name:</span> {{name}}</li>
+            {{#if handle}}<li class="handle"><span class="label">Handle:</span> @{{handle}}</li>{{/if}}
+            <li class="picture"><span class="label">Picture:</span> <img src="{{picture}}"></li>
+            <li class="pronoun">
+              <span class="label">Pronoun:</span>
+              {{#if isMale}}he/him (male){{/if}}
+              {{#if isFemale}}she/her (female){{/if}}
+              {{#if isNeutral}}they (ambiguous){{/if}}
+              {{#if isRobot}}it (robot){{/if}}
+            </li>
+            <li class="edit"><button>Edit</button></li>
+          </ul></li>
+        {{/if}}
+      {{/each}}
+    </ul>
+  </section>
 
   {{#if isPaymentsEnabled}}
     {{> billingSettings}}

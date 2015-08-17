@@ -65,9 +65,11 @@ cat > $SETTINGS << __EOF__
     "allowDevAccounts": true,
     "isTesting": true,
     "wildcardHost": "$WILDCARD_HOST",
-    "quotaEnabled": ${QUOTA_ENABLED:-false}
+    "quotaEnabled": ${QUOTA_ENABLED:-false},
+    "stripePublicKey": "${STRIPE_PUBLIC_KEY:-}"
   },
-  "home": "$SANDSTORM_HOME"
+  "home": "$SANDSTORM_HOME",
+  "stripeKey": "${STRIPE_KEY:-}"
 }
 __EOF__
 

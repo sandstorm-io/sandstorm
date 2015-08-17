@@ -525,24 +525,43 @@ body>.popup {
       }
     }
 
-    $popup-background-color: #ededed;
-
-    >h4.share-with-others {
-       border-bottom: none;
-       background-color: $popup-background-color;
-       margin-bottom: 0;
-       padding-left: 20px;
-       padding-top: 10px;
-       padding-bottom: 30px;
+    input, button, .login-button {
+      @media #{$mobile} { font-size: 15pt; }
     }
 
+    >* {
+      margin-left: 16px;
+      margin-right: 16px;
+    }
+
+    >*:last-child {
+      margin-bottom: 16px;
+    }
+
+    &.centered {
+      margin: 0px auto;
+      width: 600px;
+      margin-left: calc(50% - 300px);
+    }
+  }
+
+  &.share>.frame, &.who-has-access>.frame {
+    $popup-background-color: #ededed;
+
+    >h4 {
+      text-transform: uppercase;
+      background-color: $popup-background-color;
+      margin-bottom: 0;
+      padding: 10px 20px;
+    }
+
+    >h4.share-with-others {
+      border-bottom: none;
+      padding-bottom: 30px;
+    }
     >h4.who-has-access {
-       border-bottom: none;
-       background-color: $popup-background-color;
-       margin-bottom: 0;
-       padding-left: 20px;
-       padding-top: 10px;
-       padding-bottom: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #ccc;
     }
 
     button.who-has-access {
@@ -550,10 +569,11 @@ body>.popup {
       cursor: pointer;
     }
 
-    [data-which-tab=send-invite]>.send-invite>h5,[data-which-tab=sharable-link]>.sharable-link>h5 {
+    [data-which-tab=send-invite]>.send-invite>h5,
+    [data-which-tab=sharable-link]>.sharable-link>h5 {
       background-color: white;
       border-bottom: 1px solid white;
-      // TODO(cleanup) It would be better to use z-index for this.
+      // TODO(cleanup): It would be better to use z-index for this.
     }
 
     .share-tabs {
@@ -605,16 +625,18 @@ body>.popup {
       position: relative;
       margin-top: 5px;
       margin-bottom: 45px;
+      margin-top: 10px;
     }
     .share-tabs form button {
-       @extend %unstyled-button;
-       border: 1px solid #ccc;
-       border-radius: 4px;
-       padding: 5px;
-       font-size: 12pt;
-       position: absolute;
-       right: 0;
-       cursor: pointer;
+      @extend %unstyled-button;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 5px 16px;
+      font-size: 10pt;
+      position: absolute;
+      right: 0;
+      cursor: pointer;
+      text-transform: uppercase;
     }
     .share-token-role {
       max-width: 45%;
@@ -648,32 +670,32 @@ body>.popup {
       display: none;
     }
 
-    $input-background-color: #f4f4f4;
+    select {
+      background-color: white;
+      height: 25px;
+      text-transform: uppercase;
+      float: right;
+    }
+    input, textarea, select {
+      border: 1px solid #aaa;
+      padding: 4px;
+      border-radius: 2px;
+      vertical-align: top;
+    }
 
     .emails {
-       background-color: $input-background-color;
-       width: 45%;
+      width: 47%;
     }
     .label, .personal-message {
-      background-color: $input-background-color;
       width: 100%;
+      box-sizing: border-box;
+    }
+    .personal-message {
+      height: 100px;
     }
     .label-explanation {
       font-size: 8pt;
       font-style: italic;
-    }
-
-    input, button, .login-button {
-      @media #{$mobile} { font-size: 15pt; }
-    }
-
-    >* {
-      margin-left: 16px;
-      margin-right: 16px;
-    }
-
-    >*:last-child {
-      margin-bottom: 16px;
     }
 
     .inline-icon { width: 20px; }
@@ -688,13 +710,7 @@ body>.popup {
       font-size: 10pt;
       >.who-has-access {
         margin-right: 15px;
-     }
-    }
-
-    &.centered {
-      margin: 0px auto;
-      width: 600px;
-      margin-left: calc(50% - 300px);
+      }
     }
   }
 

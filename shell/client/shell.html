@@ -357,7 +357,7 @@ limitations under the License.
    <img src="/people.svg">
 </template>
 <template name="whoHasAccessPopup">
-  <h4 class="who-has-access">WHO HAS ACCESS</h4>
+  <h4 class="who-has-access">Who has access</h4>
   <div class="tables-container">
     <h5>People</h5>
     {{#if transitiveShares.empty}}
@@ -449,7 +449,7 @@ limitations under the License.
     </div>
     {{#if completionState.clear}}
     <div class="button-container">
-      <button>SEND</button>
+      <button>Send</button>
     </div>
     {{/if}}
   </form>
@@ -480,7 +480,7 @@ limitations under the License.
       Use a label to remind yourself to whom you sent this unique link.</p>
     {{#if completionState.clear}}
       <div class="button-container">
-        <button>CREATE</button>
+        <button>Create</button>
       </div>
     {{/if}}
   </form>
@@ -488,7 +488,7 @@ limitations under the License.
     {{#if success}}
       <p><img class="inline-icon" src="/copy-m.svg"> Copy this link:</p>
       <a id="share-token-text" class="copy-me" href="{{shareToken}}">{{success.url}}</a>
-      <p><button class="reset-share-token">&lt;&lt; create another link</button></p>
+      <p><button class="reset-share-token">+ Create another link</button></p>
     {{/if}}
     {{#if pending}}
       <p>Generating...</p>
@@ -498,7 +498,7 @@ limitations under the License.
 </template>
 
 <template name="shareWithOthers">
-  <h4 class="share-with-others">SHARE WITH OTHERS</h4>
+  <h4 class="share-with-others">Share with others</h4>
   {{#if oldSharingModel}}
     <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
        location bar.</p>

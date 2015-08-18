@@ -158,6 +158,7 @@ img {
 
 .centered-box {
   margin: 16px auto;
+  width: 600px;
   font-size: 125%;
 }
 
@@ -604,7 +605,7 @@ body>.popup.admin-alert>.frame>p {
     top: 48px;
   }
 
-  #demo > .centered-box {
+  #demo.centered-box {
     width: 80%;
   }
 

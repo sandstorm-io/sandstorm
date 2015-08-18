@@ -33,35 +33,30 @@ var mapGrainsToTemplateObject = function (grains) {
       title: grain.title,
       appTitle: appTitle,
       lastUsed: grain.lastUsed,
-      size: "0kb",
       iconSrc: iconSrc,
     };
   });
 };
 var mapApiTokensToTemplateObject = function (apiTokens) {
-  var db = Template.instance().data._db;
+  var ref = Template.instance().data;
   var tokensForGrain = _.groupBy(apiTokens, 'grainId');
   var grainIdsForApiTokens = Object.keys(tokensForGrain);
-  var sharedGrains = db.collections.grains.find({_id: {$in: grainIdsForApiTokens}}).fetch();
-  var packageIds = _.chain(sharedGrains)
-      .pluck('packageId')
-      .uniq()
-      .value();
-  var packages = db.collections.packages.find({ _id: { $in: packageIds } }).fetch();
-  var packagesById = _.indexBy(packages, '_id');
-  return sharedGrains.map(function(grain) {
-    var pkg = packagesById[grain.packageId];
-    var iconSrc = pkg ? Identicon.iconSrcForPackage(pkg, 'grain', Template.instance().data._staticHost) : "";
-    var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle &&
-                    pkg.manifest.appTitle.defaultText) || "";
+  var sharedGrains = ref._db.collections.grains.find({_id: {$in: grainIdsForApiTokens}}).fetch();
+  return grainIdsForApiTokens.map(function(grainId) {
     // It's theoretically possible to have multiple API tokens for the same grain.
     // Pick one arbitrarily to assign the grain petname from.
-    var token = tokensForGrain[grain._id][0];
+    var token = tokensForGrain[grainId][0];
+    var ownerData = token.owner.user;
+    var appTitle = (ownerData.appTitle && ownerData.appTitle.defaultText) || "";
+    // TODO(someday): use source sets and the dpi2x value
+    var iconSrc = (ownerData.icon && ownerData.icon.assetId) ?
+        (window.location.protocol + "//" + ref._staticHost + "/" + ownerData.icon.assetId) :
+        Identicon.identiconForApp(ownerData.appId || "00000000000000000000000000000000");
     return {
-      _id: grain._id,
-      title: token.owner.user.title,
+      _id: grainId,
+      title: ownerData.title,
       appTitle: appTitle,
-      lastUsed: grain.lastUsed,
+      lastUsed: ownerData.lastUsed,
       iconSrc: iconSrc,
     };
   });
@@ -89,7 +84,6 @@ Template.sandstormGrainList.helpers({
 Template.sandstormGrainList.onCreated(function () {
   Template.instance().subscribe("grainsMenu");
   Template.instance().subscribe("userPackages");
-  Template.instance().subscribe("sharedGrainInfo");
 });
 Template.sandstormGrainList.events({
   "click tr": function(event) {

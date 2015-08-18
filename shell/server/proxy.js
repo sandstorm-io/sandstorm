@@ -108,13 +108,13 @@ Meteor.methods({
           "You are out of storage space. Please delete some things and try again.");
     }
 
-    var package = Packages.findOne(packageId);
+    var pkg = Packages.findOne(packageId);
     var appId;
     var manifest;
     var isDev = false;
-    if (package) {
-      appId = package.appId;
-      manifest = package.manifest;
+    if (pkg) {
+      appId = pkg.appId;
+      manifest = pkg.manifest;
     } else {
       var devApp = DevApps.findOne({packageId: packageId});
       if (devApp) {
@@ -171,6 +171,15 @@ Meteor.methods({
     if (!grain) {
       throw new Meteor.Error(404, "Grain not found", "Grain ID: " + apiToken.grainId);
     }
+    var pkg = Packages.findOne({_id: grain.packageId});
+    var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ""};
+    var appIcon = undefined;
+    if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
+      var icons = pkg.manifest.metadata.icons;
+      appIcon = icons.grain || icons.appGrid;
+    }
+    // Only provide an app ID if we have no icon asset to provide and need to offer an identicon.
+    var appId = appIcon ? undefined : grain.appId;
     var title;
     if (grain.userId == apiToken.userId) {
       title = grain.title;
@@ -190,15 +199,20 @@ Meteor.methods({
           !ApiTokens.findOne({'owner.user.userId': this.userId, parentToken: hashedToken })) {
         // The current user is neither the sharer nor the grain owner,
         // and the current user has not already redeemed this token.
-        ApiTokens.insert({
+        var now = new Date();
+        var owner = {user: {userId: this.userId, title: title, appTitle: appTitle, lastUsed: now}};
+        if (appIcon) { owner.user.icon = appIcon; }
+        if (appId) { owner.user.appId = appId; }
+        var newToken = {
           grainId: apiToken.grainId,
           userId: apiToken.userId,
           parentToken: hashedToken,
           roleAssignment: {allAccess: null},
           petname: apiToken.petname,
           created: new Date(),
-          owner: {user: {userId: this.userId, title: title}}
-        });
+          owner: owner,
+        };
+        ApiTokens.insert(newToken);
       }
       return {redirectToGrain: apiToken.grainId};
     } else {
@@ -316,8 +330,8 @@ function openSessionInternal(grainId, user, title, apiToken) {
 }
 
 function updateLastActive(grainId, userId) {
-  // Update the lastActive date on the grain and its owner, and also update the user's storage
-  // usage.
+  // Update the lastActive date on the grain, any relevant API tokens, and the user,
+  // and also update the user's storage usage.
 
   var storagePromise = undefined;
   if (Meteor.settings.public.quotaEnabled) {
@@ -328,6 +342,10 @@ function updateLastActive(grainId, userId) {
   Grains.update(grainId, {$set: {lastUsed: now}});
   if (userId) {
     Meteor.users.update(userId, {$set: {lastActive: now}});
+    // Update any API tokens that match this user/grain pairing as well
+    var now = new Date();
+    ApiTokens.update({"grainId": grainId, "owner.user.userId": userId},
+        {$set: {"owner.user.lastUsed": now }});
   }
 
   if (Meteor.settings.public.quotaEnabled) {

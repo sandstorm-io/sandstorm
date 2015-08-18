@@ -24,7 +24,6 @@ Package.onUse(function (api) {
   // For the "userPackages" collection.  Perhaps that should move elsewhere.
   api.use(["sandstorm-ui-applist"], ["server"]);
   api.addFiles(["grainlist.html", "grainlist-client.js"], "client");
-  api.addFiles(["grainlist-server.js"], "server");
   api.addFiles(["grainlist-common.js"], ["client", "server"]);
   api.export("SandstormGrainList");
 });

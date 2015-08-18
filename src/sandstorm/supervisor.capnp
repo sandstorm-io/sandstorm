@@ -266,6 +266,24 @@ struct ApiTokenOwner {
 
       title @7 :Text;
       # Title as chosen by the user.
+
+      appTitle @8 :Util.LocalizedText;
+      # A copy of the app name for the corresponding UIView for presentation in the grain list.
+
+      lastUsed @9 :Int64;
+      # The last time the user used this API token with the associated grain, in milliseconds
+      # since the epoch (equivalent to javascript's new Date().getTime())
+
+      icon :group {
+        assetFormat @10 :Text;
+        # Icon asset format, if present.  One of "png" or "svg"
+
+        assetId @11 :Text;
+        # The asset ID associated with the grain-size icon for this token
+
+        assetId2xDpi @12 :Text;
+        # If present, the asset ID for the equivalent asset as assetId at twice-resolution
+      }
     }
   }
 }

@@ -1068,9 +1068,15 @@ GrainLog = new Mongo.Collection("grainLog");
 Router.map(function () {
   this.route("newGrain", {
     path: "/grain/new",
+    data: function () {
+      return new SandstormAppList(globalDb);
+    },
   });
   this.route("selectGrain", {
     path: "/grain",
+    data: function () {
+      return new SandstormGrainList(globalDb);
+    },
   });
   this.route("grain", {
     path: "/grain/:grainId/:path(.*)?",

@@ -213,6 +213,29 @@ interface PersistentHandle extends(SystemPersistent, Util.Handle) {}
 
 interface PersistentOngoingNotification extends(SystemPersistent, Grain.OngoingNotification) {}
 
+struct DenormalizedGrainMetadata {
+  # The metadata that we need to present contextual information for shared grains (in particular,
+  # information about the app providing that grain, like icon and title).
+
+  appTitle @0 :Util.LocalizedText;
+  # A copy of the app name for the corresponding UIView for presentation in the grain list.
+
+  union {
+    icon :group {
+      format @1 :Text;
+      # Icon asset format, if present.  One of "png" or "svg"
+
+      assetId @2 :Text;
+      # The asset ID associated with the grain-size icon for this token
+
+      assetId2xDpi @3 :Text;
+      # If present, the asset ID for the equivalent asset as assetId at twice-resolution
+    }
+    appId @4 :Text;
+    # App ID, needed to generate a favicon if no icon is provided.
+  }
+}
+
 struct ApiTokenOwner {
   # Defines who is permitted to use a particular API token.
 
@@ -267,23 +290,12 @@ struct ApiTokenOwner {
       title @7 :Text;
       # Title as chosen by the user.
 
-      appTitle @8 :Util.LocalizedText;
-      # A copy of the app name for the corresponding UIView for presentation in the grain list.
-
-      lastUsed @9 :Int64;
+      lastUsed @8 :Int64;
       # The last time the user used this API token with the associated grain, in milliseconds
       # since the epoch (equivalent to javascript's new Date().getTime())
 
-      icon :group {
-        assetFormat @10 :Text;
-        # Icon asset format, if present.  One of "png" or "svg"
-
-        assetId @11 :Text;
-        # The asset ID associated with the grain-size icon for this token
-
-        assetId2xDpi @12 :Text;
-        # If present, the asset ID for the equivalent asset as assetId at twice-resolution
-      }
+      denormalizedGrainMetadata @9 :DenormalizedGrainMetadata;
+      # Information needed to show the user an app title and icon in the grain list.
     }
   }
 }

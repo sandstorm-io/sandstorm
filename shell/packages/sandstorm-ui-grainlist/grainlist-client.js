@@ -47,11 +47,12 @@ var mapApiTokensToTemplateObject = function (apiTokens) {
     // Pick one arbitrarily to assign the grain petname from.
     var token = tokensForGrain[grainId][0];
     var ownerData = token.owner.user;
-    var appTitle = (ownerData.appTitle && ownerData.appTitle.defaultText) || "";
+    var grainInfo = ownerData.denormalizedGrainMetadata;
+    var appTitle = (grainInfo && grainInfo.appTitle && grainInfo.appTitle.defaultText) || "";
     // TODO(someday): use source sets and the dpi2x value
-    var iconSrc = (ownerData.icon && ownerData.icon.assetId) ?
-        (window.location.protocol + "//" + ref._staticHost + "/" + ownerData.icon.assetId) :
-        Identicon.identiconForApp(ownerData.appId || "00000000000000000000000000000000");
+    var iconSrc = (grainInfo && grainInfo.icon && grainInfo.icon.assetId) ?
+        (window.location.protocol + "//" + ref._staticHost + "/" + grainInfo.icon.assetId) :
+        Identicon.identiconForApp((grainInfo && grainInfo.appId) || "00000000000000000000000000000000");
     return {
       _id: grainId,
       title: ownerData.title,

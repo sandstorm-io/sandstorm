@@ -200,9 +200,11 @@ Meteor.methods({
         // The current user is neither the sharer nor the grain owner,
         // and the current user has not already redeemed this token.
         var now = new Date();
-        var owner = {user: {userId: this.userId, title: title, appTitle: appTitle, lastUsed: now}};
-        if (appIcon) { owner.user.icon = appIcon; }
-        if (appId) { owner.user.appId = appId; }
+        var grainInfo = { appTitle: appTitle };
+        if (appIcon) { grainInfo.icon = appIcon; }
+        if (appId) { grainInfo.appId = appId; }
+        var owner = {user: {userId: this.userId, title: title, lastUsed: now,
+                            denormalizedGrainMetadata: grainInfo}};
         var newToken = {
           grainId: apiToken.grainId,
           userId: apiToken.userId,

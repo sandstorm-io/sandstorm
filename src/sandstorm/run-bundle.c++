@@ -2282,25 +2282,23 @@ private:
   }
 
   void mongoCommand(const Config& config, kj::StringPtr command, kj::StringPtr db = "meteor") {
-    pid_t pid = fork();
-    if (pid == 0) {
-      // We don't want to unwind the stack in this subprocess.
-      KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
-        // Don't run as root.
-        dropPrivs(config.uids);
+    int pipeFds[2];
+    KJ_SYSCALL(pipe2(pipeFds, O_CLOEXEC));
+    kj::AutoCloseFd inPipe(pipeFds[0]);
+    kj::AutoCloseFd outPipe(pipeFds[1]);
 
-        execMongoClient(config, {"--quiet", "--eval", command }, db);
-      })) {
-        context.exitError(kj::str(*exception));
-      }
+    Subprocess process([KJ_MVCAP(inPipe), &config, db, this]() -> int {
+      // Don't run as root.
+      dropPrivs(config.uids);
 
+      KJ_SYSCALL(dup2(inPipe, STDIN_FILENO));
+      execMongoClient(config, {"--quiet"}, db);
       KJ_UNREACHABLE;
-    }
+    });
+    kj::FdOutputStream((int)outPipe).write(command.begin(), command.size());
+    outPipe = nullptr;
 
-    int status;
-    KJ_SYSCALL(waitpid(pid, &status, 0)) { return; }
-    KJ_ASSERT(WIFEXITED(status) && WEXITSTATUS(status) == 0,
-              "mongo command failed", command) { return; }
+    process.waitForSuccess();
   }
 
   [[noreturn]] void execMongoClient(const Config& config,

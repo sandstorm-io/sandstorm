@@ -45,6 +45,7 @@ Template.sandstormTopbarBlockReload.onDestroyed(function () {
 
 Template.sandstormTopbar.onCreated(function () {
   Template.instance().popupPosition = new ReactiveVar(undefined, _.isEqual);
+  // TODO: subscribe to the list of open grains for this session
 });
 
 Template.sandstormTopbar.helpers({
@@ -58,6 +59,22 @@ Template.sandstormTopbar.helpers({
     // Note that JS objects always iterate in the order in which keys were added, so this actually
     // produces a stable ordering.
     return _.sortBy(_.values(this._items), function (item) { return -(item.priority || 0); });
+  },
+
+  navitems: function() {
+    var a = [];
+    for (var i = 0; i < 32 ; i++) {
+      a.push({
+        name: "filename_filename_blah",
+        id: "somethingsomethinggrainid",
+        active: (i === 0)
+      });
+    }
+    return a;
+  },
+
+  grains: function () {
+    return this._grains.get();
   },
 
   currentPopup: function () {
@@ -161,6 +178,12 @@ Template.sandstormTopbar.events({
 
   "click .menu-button": function (event) {
     this._menuExpanded.set(!this._menuExpanded.get());
+  },
+
+  "click .navbar .close-button": function (event) {
+    // TODO: find the associated grain
+    console.log("Should close grain");
+    console.log(event.target.parentNode.dataset.grainid);
   }
 });
 
@@ -210,7 +233,7 @@ Template.sandstormTopbarItem.onDestroyed(function () {
 // =======================================================================================
 // Public interface
 
-SandstormTopbar = function (expandedVar) {
+SandstormTopbar = function (expandedVar, grainsVar, showSidebarVar) {
   // `expandedVar` is an optional object that behaves like a `ReactiveVar` and will be used to
   // track which popup is currently open. (The caller may wish to back this with a Session
   // variable.)
@@ -220,10 +243,19 @@ SandstormTopbar = function (expandedVar) {
 
   this._expanded = expandedVar || new ReactiveVar(null);
   this._menuExpanded = new ReactiveVar(false);
+  // showSidebar is different from menuExpanded:
+  //  - on desktop, we want to show the sidebar by default,
+  //    and toggle if the user clicks the logo
+  //  - on mobile, we wish to hide the menu by default,
+  //    and show it when the user clicks the menu button
+  this._showSidebar = showSidebarVar || new ReactiveVar(true);
+  this._grains = grainsVar || new ReactiveVar([]);
+
 }
 
 SandstormTopbar.prototype.reset = function () {
   this._menuExpanded.set(false);
+  this._showSidebar.set(true);
   this.closePopup();
 }
 

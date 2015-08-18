@@ -53,6 +53,9 @@ limitations under the License.
 
   {{!-- standard topbar items --}}
   {{#sandstormTopbarItem name="homelink" topbar=globalTopbar}}
+    {{!--
+    <button id="homelink" class="navlink">Sandstorm</button>
+    --}}
     <a href="/" id="homelink" class="navlink">Sandstorm</a>
   {{/sandstormTopbarItem}}
   {{>sandstormTopbarItem name="account" topbar=globalTopbar data=globalAccountsUi
@@ -61,6 +64,7 @@ limitations under the License.
     {{>sandstormTopbarItem name="notifications" topbar=globalTopbar
                            template="notifications" popupTemplate="notificationsPopup"}}
   {{/if}}
+  {{!-- admin alerts --}}
   {{#with adminAlert}}
     {{#if adminAlertIsTooLarge}}
       {{#sandstormTopbarItem name="admin-alert" topbar=globalTopbar}}
@@ -163,15 +167,14 @@ limitations under the License.
     <a href="/about" class="navlink">About</a>
   {{/sandstormTopbarItem}}
 
+      {{!--
   <div id="intro" class="main-content">
     {{#if hideSplashScreen}}
-
-      <div id="applist-closer" data-show="{{showMenu}}"></div>
-      <div id="applist-apps" data-show="{{showMenu}}">
+      <div id="applist-closer" data-show="true"></div>
+      <div id="applist-apps" data-show="true">
         <ul>
-         {{#if isSignedUpOrDemo}}
-           <li class="applist-tab-my-files {{#if selectedTab.myFiles}}selected{{/if}}">My Files</li>
-         {{/if}}
+         <li class="grain-list-tab"><a href="/grain">Open</a></li>
+         <li class="new-grain-tab"><a href="/grain/new">New Grain</a></li>
          <li class="applist-tab-shared-with-me {{#if selectedTab.sharedWithMe}}selected{{/if}}">
             Shared With Me</li>
           {{#each apps}}
@@ -258,7 +261,6 @@ limitations under the License.
           {{/unless}}
         {{/if}}
       </div>
-
     {{else}}
 
       <div id="logo">
@@ -285,6 +287,7 @@ limitations under the License.
       {{/if}}
     {{/if}}
   </div>
+      --}}
 </template>
 
 <template name="grainTitle">
@@ -601,7 +604,7 @@ limitations under the License.
         startOpen=true popupTemplate="grainPowerboxOfferPopup"}}
   {{/if}}
 
-  <div id="app" class="main-content">
+  <div id="app" class="main-content show-sidebar">
     {{#if error}}
       <pre>{{error}}</pre>
     {{else}}
@@ -626,13 +629,13 @@ limitations under the License.
 </template>
 
 <template name="newGrain">
-  <div class="main-content">
+  <div class="main-content show-sidebar">
     {{> sandstormAppList }}
   </div>
 </template>
 
 <template name="selectGrain">
-  <div class="main-content">
+  <div class="main-content show-sidebar">
     {{> sandstormGrainList}}
   </div>
 </template>

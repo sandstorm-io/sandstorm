@@ -197,10 +197,11 @@ Meteor.methods({
 });
 
 if (Meteor.isClient) {
+  var openGrains = [];
   var currentSessionId;
   var currentAppOrigin;
   var currentGrainId;
-  var sessionGrainSizeSubscription;
+  var currentSessionGrainSizeSubscription;
 
   Template.grain.events({
     "click #incognito-button": function (event) {
@@ -813,15 +814,15 @@ if (Meteor.isClient) {
   });
 
   function setCurrentSessionId(sessionId, appOrigin, grainId) {
-    if (sessionGrainSizeSubscription) {
-      sessionGrainSizeSubscription.stop();
-      sessionGrainSizeSubscription = undefined;
+    if (currentSessionGrainSizeSubscription) {
+      currentSessionGrainSizeSubscription.stop();
+      currentSessionGrainSizeSubscription = undefined;
     }
     currentSessionId = sessionId;
     currentAppOrigin = appOrigin;
     currentGrainId = grainId;
     if (sessionId) {
-      sessionGrainSizeSubscription = Meteor.subscribe("grainSize", sessionId);
+      currentSessionGrainSizeSubscription = Meteor.subscribe("grainSize", sessionId);
     }
   }
 
@@ -846,12 +847,21 @@ if (Meteor.isClient) {
   // Message handler for changing path in user's URL bar
   Meteor.startup(function () {
     var messageListener = function (event) {
-      if (event.origin !== currentAppOrigin) {
-        // Note: Meteor apparently likes to postMessage() to itself sometimes, so we really should
-        //   ignore any message not from our app.
+      if (event.origin === getOrigin()) {
+        // Meteor likes to postMessage() to itself sometimes, so we ignore these messages.
         return;
       }
 
+      /* disabled because multi-grain breaks things
+      if (event.origin !== currentAppOrigin) {
+        // TODO: better handling of multiple grain postMessage() calls.
+        // setPath should only change the window state if it's the currently-open grain.
+        // setTitle should set the title of the sending origin's state, not a singleton global.
+        // renderTemplate should always work.
+        // powerboxRequest...I'm not sure yet.
+        return;
+      }
+      */
       if (event.data.setPath) {
         var prefix = window.location.pathname.match("/[^/]*/[^/]*")[0];
         if (prefix.lastIndexOf("/grain/", 0) !== 0 &&
@@ -957,6 +967,7 @@ if (Meteor.isClient) {
         });
       } else {
         console.log("postMessage from app not understood: " + event.data);
+        console.log(event);
       }
     };
 

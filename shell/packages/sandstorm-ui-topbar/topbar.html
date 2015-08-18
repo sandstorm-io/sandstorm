@@ -42,6 +42,24 @@ limitations under the License.
     </ul>
   {{/if}}
 
+  <ul class="navbar {{#if _showSidebar.get}}show{{/if}}">
+    <li class="navitem-open-grain"><a href="/grain"><span>Open...</span></a></li>
+    <li class="navitem-create-grain"><a href="/grain/new">New...</a></li>
+    <ul class="navbar-grains">
+      {{#each navitems}}
+      <li class="navitem-grain {{#if active}}current{{/if}}">
+        <img class="app-icon" src="/icon.png">
+        <a data-grainid="{{id}}" href="/grain/{{id}}">{{name}}<button class="close-button"></button></a>
+      </li>
+      {{/each}}
+    </ul>
+    {{!-- TODO: check if admin --}}
+    {{!-- These are moving to the account dropdown, I think
+    <li class="navitem-admin navitem-active"><a href="/admin">Admin Settings</a></li>
+    <li class="navitem-about"><a href="/about">About Sandstorm</a></li>
+    --}}
+  </ul>
+
   {{#with currentPopup}}
     <div class="popup {{name}}">
       {{#if onlyPopup}}

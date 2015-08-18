@@ -8,3 +8,8 @@
 //   or possibly no stylesheet at all: the HTML is designed to be understandable with no style.
 $mobile: (max-width: 900px);
 $desktop: (min-width: 901px);
+
+$topbar-height-desktop: 32px;
+$topbar-height-mobile: 48px;
+$sidebar-width-desktop: 200px;
+

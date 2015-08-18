@@ -73,6 +73,20 @@ if (Meteor.isClient) {
     set: function (value) {
       Session.set("topbar-expanded", value);
     }
+  }, {
+    get: function () {
+      return Session.get("grains");
+    },
+    set: function (value) {
+      Session.set("grains", value);
+    }
+  }, {
+    get: function () {
+      return Session.get("show-sidebar");
+    },
+    set: function (value) {
+      Session.set("show-sidebar", value);
+    }
   });
 
   globalAccountsUi = new AccountsUi(globalDb);

@@ -177,7 +177,7 @@ if (Meteor.isClient) {
   }
 
   Router.onRun(function () {
-    // Close menus any time we navigate.
+    // Close menus and popups any time we navigate.
     globalTopbar.reset();
     this.next();
   });

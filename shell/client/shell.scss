@@ -137,11 +137,15 @@ img {
   padding: 0;
   position: fixed;
   left: 0;
-  width: 100%;
+  right: 0;
   top: 32px;
   bottom: 0px;
   color: black;
   overflow: auto;
+
+  &.show-sidebar {
+    left: 200px;
+  }
 }
 
 .main-content a {
@@ -154,7 +158,6 @@ img {
 
 .centered-box {
   margin: 16px auto;
-  width: 600px;
   font-size: 125%;
 }
 

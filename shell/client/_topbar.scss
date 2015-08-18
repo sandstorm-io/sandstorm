@@ -722,3 +722,114 @@ body>.popup {
     }
   }
 }
+
+body>.navbar {
+  //display: static;
+  position: fixed;
+  top: $topbar-height-desktop;
+  bottom: 0px;
+  left: 0px;
+  width: $sidebar-width-desktop;
+  margin: 0;
+  padding: 0;
+  background-color: #303030;
+  color: #606060;
+  z-index: 100;
+  font-weight: bold;
+  list-style-type: none;
+  li {
+    line-height: 32px;
+    height: 32px;
+    display: block;
+    position: relative;
+    border-bottom: 1px solid #676767;
+    margin: 0;
+    box-sizing: border-box;
+    a {
+      display: block;
+      box-sizing: border-box;
+      padding-left: 32px;
+      text-decoration: none;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      white-space: nowrap;
+      &, &:visited, &:active, &:hover {
+        color: inherit;
+        outline: 0px;
+      }
+    }
+    &.navitem-open-grain, &.navitem-create-grain {
+      font-size: 150%;
+      line-height: 48px;
+      height: 48px;
+      background-color: #232323;
+      &:hover {
+        background-color: #181818;
+      }
+      &.current, &.current:hover {
+        background-color: #d6d6d6;
+      }
+    }
+  }
+  ul.navbar-grains {
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    top: 96px;
+    bottom: 0px;
+    left: 0px;
+    width: 200px;
+    //height: 100%; // TODO: fix this, it should be 100% - (height of Open + New)
+    overflow-y: scroll;
+    li.navitem-grain {
+      a {
+        padding-right: 32px;
+      }
+      background-color: #333;
+      &:hover {
+        background-color: #494949;
+      }
+      &.current, &.current:hover {
+        background-color: #d6d6d6;
+        color: #494949;
+      }
+      .app-icon {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 24px;
+        height: 24px;
+        margin: 2px;
+      }
+      .close-button {
+        @extend %unstyled-button;
+        cursor: pointer;
+        box-sizing: border-box;
+        position: absolute;
+        top: 1px;
+        right: 0px;
+        width: 24px;
+        height: 24px;
+        margin: 2px;
+        display: block;
+        background-image: url("/close.svg");
+        border: 1px transparent;
+        border-radius: 4px;
+        &:hover {
+          border: 1px solid white;
+        }
+      }
+    }
+  }
+}
+
+/*
+body>.page-content {
+  position: fixed;
+  left: 200px;
+  right: 0px;
+  bottom: 0px;
+  top: 32px; // or 48 on mobile
+  display: block;
+}
+*/

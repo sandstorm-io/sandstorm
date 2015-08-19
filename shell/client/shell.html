@@ -52,11 +52,8 @@ limitations under the License.
   {{else}}
 
   {{!-- standard topbar items --}}
-  {{#sandstormTopbarItem name="homelink" topbar=globalTopbar}}
-    {{!--
-    <button id="homelink" class="navlink">Sandstorm</button>
-    --}}
-    <a href="/" id="homelink" class="navlink">Sandstorm</a>
+  {{#sandstormTopbarItem name="toggle-sidebar" topbar=globalTopbar}}
+    <button class="toggle-sidebar-button">Sandstorm</button>
   {{/sandstormTopbarItem}}
   {{>sandstormTopbarItem name="account" topbar=globalTopbar data=globalAccountsUi
                          template="loginButtons" popupTemplate="loginButtonsPopup"}}
@@ -98,7 +95,7 @@ limitations under the License.
     {{>billingPrompt}}
   {{/with}}
 
-  <div class="main-content">
+  <div class="main-content {{#if showSidebar}}show-sidebar{{/if}}">
   {{> yield}}
   </div>
 
@@ -627,10 +624,12 @@ limitations under the License.
 </template>
 
 <template name="newGrain">
+  {{>title "Apps"}}
   {{> sandstormAppList }}
 </template>
 
 <template name="selectGrain">
+  {{>title "Grains"}}
   {{> sandstormGrainList}}
 </template>
 

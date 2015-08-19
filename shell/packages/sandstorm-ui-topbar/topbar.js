@@ -151,7 +151,7 @@ Template.sandstormTopbar.events({
     unblockUpdate();
   },
 
-  "click .topbar>li": function (event) {
+  "click .topbar>.menubar>li": function (event) {
     var data = Blaze.getData(event.currentTarget);
     if (data.popupTemplate) {
       event.stopPropagation();
@@ -174,6 +174,13 @@ Template.sandstormTopbar.events({
   "click .popup>.frame>.close-popup": function (event) {
     event.stopPropagation();
     Template.instance().data.closePopup();
+  },
+
+  "click .toggle-sidebar": function (event) {
+    console.log("toggling sidebar");
+    console.log(Template.instance().data);
+    var topbar = Template.instance().data;
+    topbar._showSidebar.set(!topbar._showSidebar.get());
   },
 
   "click .menu-button": function (event) {
@@ -255,7 +262,6 @@ SandstormTopbar = function (expandedVar, grainsVar, showSidebarVar) {
 
 SandstormTopbar.prototype.reset = function () {
   this._menuExpanded.set(false);
-  this._showSidebar.set(true);
   this.closePopup();
 }
 

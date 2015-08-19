@@ -265,7 +265,6 @@ if (Meteor.isClient) {
 
   Template.layout.onCreated(function () {
     this.timer = new Tracker.Dependency();
-    this.showTopbar = new ReactiveVar(false);
     var resizeTracker = this.resizeTracker = new Tracker.Dependency();
     this.resizeFunc = function() {
       resizeTracker.changed();
@@ -293,7 +292,7 @@ if (Meteor.isClient) {
     //
     // - The current app title, if we can determine it, or
     //
-    // - The empty string "", if we can't determine the current app     //   title.
+    // - The empty string "", if we can't determine the current app title.
     var params = "";
 
     // Try our hardest to find the package's name, falling back on the default if needed.
@@ -357,7 +356,6 @@ if (Meteor.isClient) {
   }
 
   Template.layout.helpers({
-    showTopbar: function () {return Template.instance().showTopbar.get(); },
     adminAlertIsTooLarge: function () {
       Template.instance().resizeTracker.depend();
       var setting = Settings.findOne({_id: "adminAlert"});
@@ -494,6 +492,10 @@ if (Meteor.isClient) {
     return result;
   };
   Template.registerHelper("dateString", makeDateString);
+  Template.registerHelper("showSidebar", function() {
+    return Session.get("show-sidebar");
+  });
+
 
   Template.registerHelper("quotaEnabled", function() {
     return Meteor.settings.public.quotaEnabled;
@@ -575,78 +577,8 @@ if (Meteor.isClient) {
   });
 
   Template.root.helpers({
-    filteredGrains: function () {
-      var selectedTab = Session.get("selectedTab");
-      var userId = Meteor.userId();
-      if (selectedTab.sharedWithMe) {
-        var result = [];
-        var uniqueGrains = {};
-        ApiTokens.find({'owner.user.userId': userId},
-                       {sort:{created:1}}).forEach(function(apiToken) {
-          if (!(apiToken.grainId in uniqueGrains)) {
-            result.push({_id : apiToken.grainId, title: apiToken.owner.user.title});
-            uniqueGrains[apiToken.grainId] = true;
-          }
-        });
-        return result;
-      } else if (selectedTab.myFiles) {
-        return Grains.find({userId: userId}, {sort: {lastUsed: -1}}).fetch();
-      } else {
-        return Grains.find({userId: userId, appId: selectedTab.appId},
-                           {sort: {lastUsed: -1}}).fetch();
-      }
-    },
-
-    actions: function () {
-      return UserActions.find({userId: Meteor.userId(), appId: Session.get("selectedTab").appId});
-    },
-
-    devActions: function () {
-      var userId = Meteor.userId();
-      if (userId) {
-        var appId = Session.get("selectedTab").appId;
-        if (appId) {
-          var app = DevApps.findOne(appId);
-          if (app && app.manifest.actions) {
-            return app.manifest.actions.map(function (action, i) {
-              return {
-                _id: app._id,
-                index: i,
-                title: action.title.defaultText
-              };
-            });
-          };
-        }
-      }
-      return [];
-    },
-
     selectedTab: function () {
       return Session.get("selectedTab");
-    },
-
-    selectedAppMarketingVersion: function () {
-      var appMap = this.appMap;
-      var app = appMap && appMap[Session.get("selectedTab").appId];
-      return app && app.appMarketingVersion && app.appMarketingVersion.defaultText;
-    },
-
-    selectedAppIsDev: function () {
-      var tab = Session.get("selectedTab");
-      return tab && tab.appId && DevApps.findOne(tab.appId) ? true : false;
-    },
-
-    appTabClass: function (appId) {
-      if (Session.get("selectedTab").appId == appId) {
-        return "selected";
-      } else {
-        return "";
-      }
-    },
-
-    splashDialog: function() {
-      var setting = Settings.findOne("splashDialog");
-      return (setting && setting.value) || DEFAULT_SPLASH_DIALOG;
     },
 
     storageUsage: function() {
@@ -1003,9 +935,9 @@ Router.map(function () {
         build: getBuildInfo().build,
         missingWildcardParent: isMissingWildcardParent(),
         allowDemoAccounts: allowDemoAccounts,
-        apps: apps,
+        //apps: apps,
         showMenu: Session.get("showMenu"),
-        appMap: appMap,
+        //appMap: appMap,
         hideSplashScreen: isSignedUpOrDemo() ||
           ApiTokens.findOne({"owner.user.userId": Meteor.userId()})
       };

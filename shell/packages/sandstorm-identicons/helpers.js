@@ -73,7 +73,11 @@ var iconSrcFor = function (appId, iconObj, staticHost, usage) {
     }
   }
   // We should never reach here, but do something sensible anyway
-  return identiconForApp(appId);
+  return identiconForApp(appId, usage);
+};
+
+Identicon.identiconForApp = function(appId, usage) {
+  return identiconForApp(appId, usage);
 };
 
 Identicon.iconSrcForPackage = function (pkg, usage, staticHost) {

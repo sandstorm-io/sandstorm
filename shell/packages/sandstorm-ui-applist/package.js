@@ -21,6 +21,8 @@ Package.describe({
 
 Package.onUse(function (api) {
   api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "jparker:crypto-sha256", "sandstorm-identicons"], "client");
-  api.addFiles(["applist.html", "applist.js"], ["client","server"]);
+  api.addFiles(["applist-common.js"], ["client","server"]);
+  api.addFiles(["applist.html", "applist-client.js"], "client");
+  api.addFiles(["applist-server.js"], "server")
   api.export("SandstormAppList");
 });

@@ -2283,14 +2283,17 @@ private:
 
   void mongoCommand(const Config& config, kj::StringPtr command, kj::StringPtr db = "meteor") {
     char commandFile[] = "/tmp/mongo-command.XXXXXX";
-    int commandFd;
-    KJ_SYSCALL(commandFd = mkstemp(commandFile));
+    int commandRawFd;
+    KJ_SYSCALL(commandRawFd = mkstemp(commandFile));
+    kj::AutoCloseFd commandFd(commandRawFd);
     KJ_DEFER(unlink(commandFile));
-    KJ_SYSCALL(fchown(commandFd, -1, config.uids.gid));
-    KJ_SYSCALL(fchmod(commandFd, 0660));
-    kj::FdOutputStream(kj::AutoCloseFd(commandFd)).write(command.begin(), command.size());
+    if (runningAsRoot) {
+      KJ_SYSCALL(fchown(commandRawFd, -1, config.uids.gid));
+      KJ_SYSCALL(fchmod(commandRawFd, 0660));
+    }
+    kj::FdOutputStream(kj::mv(commandFd)).write(command.begin(), command.size());
 
-    Subprocess process([&config, db, commandFile, this]() -> int {
+    Subprocess process([&]() -> int {
       // Don't run as root.
       dropPrivs(config.uids);
 

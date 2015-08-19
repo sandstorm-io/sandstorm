@@ -759,7 +759,7 @@ public:
     dropPrivs(config.uids);
 
     // OK, run the Mongo client!
-    execMongoClient(config, {});
+    execMongoClient(config, {}, {});
     KJ_UNREACHABLE;
   }
 
@@ -2282,27 +2282,27 @@ private:
   }
 
   void mongoCommand(const Config& config, kj::StringPtr command, kj::StringPtr db = "meteor") {
-    int pipeFds[2];
-    KJ_SYSCALL(pipe2(pipeFds, O_CLOEXEC));
-    kj::AutoCloseFd inPipe(pipeFds[0]);
-    kj::AutoCloseFd outPipe(pipeFds[1]);
+    char commandFile[] = "/tmp/mongo-command.XXXXXX";
+    int commandFd;
+    KJ_SYSCALL(commandFd = mkstemp(commandFile));
+    KJ_DEFER(unlink(commandFile));
+    KJ_SYSCALL(fchown(commandFd, -1, config.uids.gid));
+    KJ_SYSCALL(fchmod(commandFd, 0660));
+    kj::FdOutputStream(kj::AutoCloseFd(commandFd)).write(command.begin(), command.size());
 
-    Subprocess process([KJ_MVCAP(inPipe), &config, db, this]() -> int {
+    Subprocess process([&config, db, commandFile, this]() -> int {
       // Don't run as root.
       dropPrivs(config.uids);
 
-      KJ_SYSCALL(dup2(inPipe, STDIN_FILENO));
-      execMongoClient(config, {"--quiet"}, db);
+      execMongoClient(config, {"--quiet"}, {commandFile}, db);
       KJ_UNREACHABLE;
     });
-    kj::FdOutputStream((int)outPipe).write(command.begin(), command.size());
-    outPipe = nullptr;
-
     process.waitForSuccess();
   }
 
   [[noreturn]] void execMongoClient(const Config& config,
-        std::initializer_list<kj::StringPtr> addlArgs,
+        std::initializer_list<kj::StringPtr> optionArgs,
+        std::initializer_list<kj::StringPtr> fileArgs,
         kj::StringPtr dbName = "meteor") {
     auto db = kj::str("127.0.0.1:", config.mongoPort, "/", dbName);
 
@@ -2322,11 +2322,16 @@ private:
       args.add("admin");
     }
 
-    for (auto& arg: addlArgs) {
+    for (auto& arg: optionArgs) {
       args.add(arg.cStr());
     }
 
     args.add(db.cStr());
+
+    for (auto& arg: fileArgs) {
+      args.add(arg.cStr());
+    }
+
     args.add(nullptr);
 
     // OK, run the Mongo client!

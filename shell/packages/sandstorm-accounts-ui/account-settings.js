@@ -14,8 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-SandstormAccountSettingsUi = function (topbar, staticHost) {
+SandstormAccountSettingsUi = function (topbar, db, staticHost) {
   this._topbar = topbar;
+  this._db = db;
   this._staticHost = staticHost;
   this._editing = new ReactiveVar(null);
 }
@@ -49,6 +50,10 @@ Template.sandstormAccountSettings.helpers({
       return false;
     }
   },
+
+  db: function () {
+    return Template.instance().data._db;
+  }
 });
 
 Template.sandstormAccountSettings.events({

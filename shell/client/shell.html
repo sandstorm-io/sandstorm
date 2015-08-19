@@ -991,7 +991,7 @@ limitations under the License.
         <td>Name</td>
         <td>User Class</td>
         {{#if quotaEnabled}}
-          <td>Quota</td>
+          <td>Plan</td>
           <td>Used</td>
         {{/if}}
         <td>Created</td>
@@ -1013,7 +1013,7 @@ limitations under the License.
             </select>
           </td>
           {{#if quotaEnabled}}
-            <td>{{userQuota}}</td>
+            <td>{{plan}}</td>
             <td>{{userStorageUsage}}</td>
           {{/if}}
           <td title="{{createdAt}}">{{dateString createdAt}}</td>

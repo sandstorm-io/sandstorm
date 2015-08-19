@@ -367,9 +367,6 @@ if (Meteor.isClient) {
     userIsGuest: function () {
       return !this.isAdmin && !this.signupKey;
     },
-    userQuota: function () {
-      return (typeof this.quota === "number") ? prettySize(this.quota) : "";
-    },
     userStorageUsage: function () {
       return (typeof this.storageUsage === "number") ? prettySize(this.storageUsage) : "";
     },

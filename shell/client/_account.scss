@@ -1,12 +1,13 @@
 body>.main-content.account {
-  text-align: center;
+  text-align: left;
 
   >* {
-    margin: 16px auto;
+    margin: 16px 24px;
   }
 
   >.profile>.identities {
     padding: 0;
+    padding-left: 16px;
 
     >li {
       display: inline-block;
@@ -96,8 +97,8 @@ body>.main-content.account {
       >form {
         position: absolute;
         z-index: 4;
-        left: calc(50% - 300px);
-        right: calc(50% - 300px);
+        left: 40px;
+        width: 600px;
         top: 64px;
         height: auto;
         background-color: white;
@@ -237,45 +238,63 @@ body>.main-content.account {
   }
 
   section {
-    margin: 16px auto;
     >h2 {
       text-align: left;
       border-bottom: 1px solid #aaa;
       text-transform: uppercase;
       font-weight: bold;
-      margin-left: 32px;
       margin-right: 48px;
+    }
+
+    >.balance {
+      margin-left: 16px;
+      box-sizing: border-box;
+      margin: 1em auto 2em;
+      padding-left: 150px;
+      text-align: left;
+
+      >.amount {
+        border: 1px solid #ccc;
+        padding: 4px 16px;
+        margin: 0 16px;
+      }
+
+      >.details {
+        font-size: 80%;
+        color: #444;
+      }
     }
 
     >table {
       text-align: left;
-      margin: 0px auto;
+      margin-left: 16px;
       min-width: 600px;
       border-collapse: collapse;
       border-spacing: 0;
-      width: 90%;
 
       >thead {
-        td:not(:first-child) {
+        td {
+          border-right: 1px solid white;
           background-color: #ccc;
           padding-left: 10px;
         }
-        td:nth-child(2) {
-          border-right: 1px solid white;
+        td:first-child {
+          background-color: white;
+          padding-left: 0;
         }
       }
 
       td:nth-child(1) {
-        width: 80px;
+        width: 100px;
       }
 
       td:nth-child(2) {
         width: 300px;
       }
 
-      // td:nth-child(3) {
-      //   width: 200px;
-      // }
+      td:nth-child(3) {
+        width: 100px;
+      }
 
       td:nth-child(4) {
         width: 80px;
@@ -288,12 +307,13 @@ body>.main-content.account {
           >button {
             background-color: transparent;
             border: 1px solid #ccc;
-            color: #999;
+            color: #5d5d5d;
             cursor: pointer;
             text-transform: uppercase;
+            border-radius: 2px;
 
             &:hover {
-              background-color: white;
+              background-color: #eee;
             }
           }
 
@@ -308,36 +328,26 @@ body>.main-content.account {
             }
           }
           &.checkbox {
-            width: 100px;
-            padding-right: 32px;
-
-            >.hidden {
-              visibility: hidden;
-            }
-            >.checkbox-wrapper {
+            text-align: right;
+            text-transform: uppercase;
+            font-size: 10pt;
+            >label {
+              font-size: 0;
               position: relative;
-              width: 20px;
-              height: 20px;
-              >label {
-                width: 16px;
-                height: 16px;
-                position: absolute;
-                top: 4px;
-                left: 4px;
-                cursor: pointer;
-                background: white;
-                border: 1px solid #888;
-
-                &:hover {
-                  background: #aaa;
-                }
-              }
-              input[type=checkbox] {
+              display: inline-block;
+              vertical-align: top;
+              width: 16px;
+              height: 16px;
+              margin-left: 16px;
+              border: 1px solid #aaa;
+              cursor: pointer;
+              border-radius: 2px;
+              >input {
                 visibility: hidden;
-                &:checked + label {
-                  background: #666;
-                  cursor: initial;
-                }
+              }
+              &.selected {
+                background: #aaa;
+                cursor: initial;
               }
             }
           }
@@ -379,10 +389,11 @@ body>.popup.billing-prompt>.frame.centered {
   text-align: center;
 }
 
-body>.popup.billing-prompt>.frame.centered, body>.main-content.account>section.subscription {
+body>.popup.billing-prompt>.frame, body>.main-content.account>section.subscription {
   h3 { text-align: left; }
 
   >.subscriptions {
+    max-width: 900px;
     font-size: 11px;
     margin: 32px 16px;
 
@@ -395,6 +406,7 @@ body>.popup.billing-prompt>.frame.centered, body>.main-content.account>section.s
       margin: 8px;
       padding: 8px;
       cursor: pointer;
+      text-align: center;
 
       &.selected {
         cursor: auto;
@@ -409,7 +421,7 @@ body>.popup.billing-prompt>.frame.centered, body>.main-content.account>section.s
         background-position: center;
       }
 
-      h3 {
+      h4 {
         font-size: 16px;
         text-transform: uppercase;
         margin-bottom: 0;

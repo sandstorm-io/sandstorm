@@ -45,7 +45,7 @@
 //               inviter admin attached to the key.
 //   signupEmail: If the user was invited by email, then this field contains the email address that
 //                the invite was sent to.
-//   quota: Number of bytes this user is allowed to store.
+//   plan: _id of an entry in the Plans table which determines the user's qutoa.
 //   storageUsage: Number of bytes this user is currently storing.
 //   expires: Date when this user's account should be deleted. Only present for demo users.
 //   isAppDemoUser: True if this is a demo user who arrived via an /appdemo/ link.
@@ -173,7 +173,6 @@ SignupKeys = new Mongo.Collection("signupKeys");
 //   used:  Boolean indicating whether this key has already been consumed.
 //   note:  Text note assigned when creating key, to keep track of e.g. whom the key was for.
 //   email: If this key was sent as an email invite, the email address to which it was sent.
-//   quota: If present, the storage quota to assign to the user claiming this invite.
 
 ActivityStats = new Mongo.Collection("activityStats");
 // Contains usage statistics taken on a regular interval. Each entry is a data point.
@@ -390,13 +389,26 @@ AssetUploadTokens = new Mongo.Collection("assetUploadTokens");
 //           identityId: Which of the user's identities shall be updated.
 //   expires:   Time when this token will go away if unused.
 
+Plans = new Mongo.Collection("plans");
+// Subscription plans, which determine quota.
+//
+// Each contains:
+//   _id: Plan ID, usually a short string like "free", "standard", "large", "mega", ...
+//   storage: Number of bytes this user is allowed to store.
+//   compute: Number of kilobyte-RAM-seconds this user is allowed to consume.
+//   grains: Total number of grains this user can create (often `Infinity`).
+//   price: Price per month in US cents.
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.
 
     if (this.userId) {
-      return Meteor.users.find({_id: this.userId},
-          {fields: {signupKey: 1, isAdmin: 1, expires: 1, quota: 1, storageUsage: 1}});
+      return [
+        Meteor.users.find({_id: this.userId},
+            {fields: {signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1, plan: 1}}),
+        Plans.find()
+      ];
     } else {
       return [];
     }
@@ -435,15 +447,17 @@ isSignedUpOrDemo = function () {
 }
 
 isUserOverQuota = function (user) {
-  return Meteor.settings.public.quotaEnabled &&
-         typeof user.quota === "number" &&
-         user.storageUsage && user.storageUsage >= user.quota;
+  if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
+
+  var plan = Plans.findOne(user.plan || "free");
+  return plan && user.storageUsage && user.storageUsage >= plan.storage;
 }
 
 isUserExcessivelyOverQuota = function (user) {
-  return Meteor.settings.public.quotaEnabled &&
-         typeof user.quota === "number" &&
-         user.storageUsage && user.storageUsage >= user.quota * 1.2;
+  if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
+
+  var plan = Plans.findOne(user.plan || "free");
+  return plan && user.storageUsage && user.storageUsage >= plan.storage * 1.2;
 }
 
 isAdmin = function() {
@@ -640,6 +654,24 @@ _.extend(SandstormDb.prototype, {
   currentUserActions: function currentUserActions (query, aggregations) {
     return this.userActions(Meteor.userId(), query, aggregations);
   },
+
+  getPlan: function (id) {
+    check(id, String);
+    var plan = Plans.findOne(id);
+    if (!plan) {
+      throw new Error("no such plan: " + id);
+    }
+    return plan;
+  },
+
+  listPlans: function () {
+    return Plans.find({});
+  },
+
+  getMyPlan: function () {
+    var user = Meteor.user();
+    return user && user.plan && Plans.findOne(user.plan);
+  }
 });
 
 if (Meteor.isServer) {

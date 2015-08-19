@@ -93,6 +93,15 @@
           img.src = "data:image/svg+xml;utf8," + data;
           return img;
         },
+        png: function (data) {
+          if (typeof data === "string") {
+            var img = document.createElement("img");
+            img.src = "data:image/png;base64," + data;
+            return img;
+          } else {
+            return undefined;
+          }
+        },
         dpi1x: function (data) {
           var img = document.createElement("img");
           img.src = "data:image/png;base64," + data;
@@ -254,10 +263,13 @@
           var result = {};
           for (var field in value) {
             if (field in fieldHandlers) {
-              result[field] = fieldHandlers[field](value[field]);
-            } else {
-              mergeObject(result, renderJson(value[field]), field);
+              var rendered = fieldHandlers[field](value[field]);
+              if (rendered !== undefined) {
+                result[field] = rendered;
+                continue;
+              }
             }
+            mergeObject(result, renderJson(value[field]), field);
           }
           return result;
         } else {

@@ -362,8 +362,9 @@ Meteor.startup(function () {
     }
   });
 
-  if (globalBlackrockPayments) {
-    WebApp.rawConnectHandlers.use(globalBlackrockPayments.connectHandler.bind(globalBlackrockPayments));
+  // BlackrockPayments is only defined in the Blackrock build of Sandstorm.
+  if (global.BlackrockPayments) { // Have to check with global, because it could be undefined.
+    WebApp.rawConnectHandlers.use(BlackrockPayments.makeConnectHandler(globalDb));
   }
 
   WebApp.rawConnectHandlers.use(function (req, res, next) {

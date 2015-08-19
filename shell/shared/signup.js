@@ -56,6 +56,12 @@ if (Meteor.isServer) {
       if ("quota" in keyInfo) {
         userFields.quota = keyInfo.quota;
       }
+      if (keyInfo.plan) {
+        userFields.plan = keyInfo.plan;
+      }
+      if (keyInfo.payments) {
+        userFields.payments = keyInfo.payments;
+      }
 
       Meteor.users.update(this.userId, {$set: userFields});
       SignupKeys.update(key, {$set: {used: true}});

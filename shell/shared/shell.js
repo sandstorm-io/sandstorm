@@ -574,8 +574,8 @@ if (Meteor.isClient) {
     },
 
     storageQuota: function() {
-      var quota = Meteor.user().quota;
-      return (typeof quota === "number") ? prettySize(quota) : undefined;
+      var plan = globalDb.getMyPlan();
+      return plan ? prettySize(plan.storage) : undefined;
     },
 
     overQuota: function() {
@@ -1006,7 +1006,7 @@ Router.map(function () {
         // Not logged in.
         Router.go("root");
       }
-      return new SandstormAccountSettingsUi(globalTopbar,
+      return new SandstormAccountSettingsUi(globalTopbar, globalDb,
           window.location.protocol + "//" + makeWildcardHost("static"));
     }
   });

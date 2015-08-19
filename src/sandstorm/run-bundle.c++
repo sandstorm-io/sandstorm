@@ -759,7 +759,7 @@ public:
     dropPrivs(config.uids);
 
     // OK, run the Mongo client!
-    execMongoClient(config, {});
+    execMongoClient(config, {}, {});
     KJ_UNREACHABLE;
   }
 
@@ -2282,29 +2282,30 @@ private:
   }
 
   void mongoCommand(const Config& config, kj::StringPtr command, kj::StringPtr db = "meteor") {
-    pid_t pid = fork();
-    if (pid == 0) {
-      // We don't want to unwind the stack in this subprocess.
-      KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
-        // Don't run as root.
-        dropPrivs(config.uids);
-
-        execMongoClient(config, {"--quiet", "--eval", command }, db);
-      })) {
-        context.exitError(kj::str(*exception));
-      }
-
-      KJ_UNREACHABLE;
+    char commandFile[] = "/tmp/mongo-command.XXXXXX";
+    int commandRawFd;
+    KJ_SYSCALL(commandRawFd = mkstemp(commandFile));
+    kj::AutoCloseFd commandFd(commandRawFd);
+    KJ_DEFER(unlink(commandFile));
+    if (runningAsRoot) {
+      KJ_SYSCALL(fchown(commandRawFd, -1, config.uids.gid));
+      KJ_SYSCALL(fchmod(commandRawFd, 0660));
     }
+    kj::FdOutputStream(kj::mv(commandFd)).write(command.begin(), command.size());
 
-    int status;
-    KJ_SYSCALL(waitpid(pid, &status, 0)) { return; }
-    KJ_ASSERT(WIFEXITED(status) && WEXITSTATUS(status) == 0,
-              "mongo command failed", command) { return; }
+    Subprocess process([&]() -> int {
+      // Don't run as root.
+      dropPrivs(config.uids);
+
+      execMongoClient(config, {"--quiet"}, {commandFile}, db);
+      KJ_UNREACHABLE;
+    });
+    process.waitForSuccess();
   }
 
   [[noreturn]] void execMongoClient(const Config& config,
-        std::initializer_list<kj::StringPtr> addlArgs,
+        std::initializer_list<kj::StringPtr> optionArgs,
+        std::initializer_list<kj::StringPtr> fileArgs,
         kj::StringPtr dbName = "meteor") {
     auto db = kj::str("127.0.0.1:", config.mongoPort, "/", dbName);
 
@@ -2324,11 +2325,16 @@ private:
       args.add("admin");
     }
 
-    for (auto& arg: addlArgs) {
+    for (auto& arg: optionArgs) {
       args.add(arg.cStr());
     }
 
     args.add(db.cStr());
+
+    for (auto& arg: fileArgs) {
+      args.add(arg.cStr());
+    }
+
     args.add(nullptr);
 
     // OK, run the Mongo client!

@@ -139,10 +139,7 @@ function fetchProfilePictures() {
 }
 
 function assignPlans() {
-  if (Meteor.settings.public.quotaEnabled) {
-    if (!SandstormDb.paymentsMigrationHook) {
-      throw new Error("Can't do payments migration without hook function.");
-    }
+  if (Meteor.settings.public.quotaEnabled && SandstormDb.paymentsMigrationHook) {
     SandstormDb.paymentsMigrationHook(SignupKeys, Plans.find().fetch());
   }
 }

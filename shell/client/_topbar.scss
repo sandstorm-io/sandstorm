@@ -539,9 +539,11 @@ body>.popup {
     }
 
     &.centered {
-      margin: 0px auto;
-      width: 600px;
-      margin-left: calc(50% - 300px);
+      @media #{$desktop} {
+        margin: 0px auto;
+        width: 600px;
+        margin-left: calc(50% - 300px);
+      }
     }
   }
 

@@ -382,11 +382,25 @@ body>.popup {
   }
 }
 
-body>.popup.billing-prompt>.frame.centered {
-  width: 820px;
-  max-width: none;
-  margin-left: calc(50% - 450px);
+body>.popup.billing-prompt>.frame {
   text-align: center;
+
+  @media #{$desktop} {
+    width: 932px;
+    max-width: 90%;
+    margin: 0 auto;
+    position: relative;
+    border: 1px solid #ccc;  // prevent margin collapse
+  }
+
+  @media #{$mobile} {
+    max-width: 500px;
+  }
+
+  >p.reason {
+    margin: 16px;
+    font-weight: bold;
+  }
 }
 
 body>.popup.billing-prompt>.frame, body>.main-content.account>section.subscription {
@@ -454,9 +468,9 @@ body>.popup.billing-prompt>.frame, body>.main-content.account>section.subscripti
       }
 
       >hr {
-        border-style: solid;
-        border-color: #ccc;
-        margin-bottom: 8px;
+        border: none;
+        border-bottom: 2px solid #ccc;
+        margin: 4px 4px 8px;
       }
     }
   }

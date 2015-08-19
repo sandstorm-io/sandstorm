@@ -447,17 +447,40 @@ isSignedUpOrDemo = function () {
 }
 
 isUserOverQuota = function (user) {
+  // Return false if user has quota space remaining, true if it is full. When this returns true,
+  // we will not allow the user to create new grains, though they may be able to open existing ones
+  // which may still increase their storage usage.
+  //
+  // (Actually returns a string which can be fed into `billingPrompt` as the reason.)
+
   if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
 
   var plan = Plans.findOne(user.plan || "free");
-  return plan && user.storageUsage && user.storageUsage >= plan.storage;
+
+  if (plan.grains < Infinity) {
+    var count = Grains.find({userId: user._id}, {fields: {}, limit: plan.grains}).count();
+    if (count >= plan.grains) return "outOfGrains";
+  }
+
+  return plan && user.storageUsage && user.storageUsage >= plan.storage && "outOfStorage";
 }
 
 isUserExcessivelyOverQuota = function (user) {
+  // Return true if user is so far over quota that we should prevent their existing grains from
+  // running at all.
+  //
+  // (Actually returns a string which can be fed into `billingPrompt` as the reason.)
+
   if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
 
   var plan = Plans.findOne(user.plan || "free");
-  return plan && user.storageUsage && user.storageUsage >= plan.storage * 1.2;
+
+  if (plan.grains < Infinity) {
+    var count = Grains.find({userId: user._id}, {fields: {}, limit: plan.grains * 2}).count();
+    if (count >= plan.grains * 2) return "outOfGrains";
+  }
+
+  return plan && user.storageUsage && user.storageUsage >= plan.storage * 1.2 && "outOfStorage";
 }
 
 isAdmin = function() {

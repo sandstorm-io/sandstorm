@@ -304,6 +304,28 @@ if (Meteor.isClient) {
     return params;
   };
 
+  var billingPromptState = new ReactiveVar(null);
+
+  var ifQuotaAvailable = function (next) {
+    var reason = isUserOverQuota(Meteor.user());
+    if (reason) {
+      if (window.BlackrockPayments) {
+        billingPromptState.set({reason: reason, db: globalDb, onComplete: function () {
+          billingPromptState.set(null);
+
+          // If the user successfully raised their quota, continue the operation.
+          if (!isUserOverQuota(Meteor.user())) {
+            next();
+          }
+        }});
+      } else {
+        alert("You are out of storage space. Please delete some things and try again.");
+      }
+    } else {
+      next();
+    }
+  }
+
   Template.layout.helpers({
     showTopbar: function () {return Template.instance().showTopbar.get(); },
     adminAlertIsTooLarge: function () {
@@ -367,6 +389,9 @@ if (Meteor.isClient) {
         alertUrl = alertUrl.replace("$APPNAME", determineAppName(this.grainId));
       }
       return {text: text, className: className, alertUrl: alertUrl};
+    },
+    billingPromptState: function () {
+      return billingPromptState.get();
     }
   });
 
@@ -579,7 +604,7 @@ if (Meteor.isClient) {
     },
 
     overQuota: function() {
-      return isUserOverQuota(Meteor.user());
+      return !window.BlackrockPayments && isUserOverQuota(Meteor.user());
     }
   });
 
@@ -625,27 +650,21 @@ if (Meteor.isClient) {
     },
 
     "click #install-apps-button": function (event) {
-      if (isUserOverQuota(Meteor.user())) {
-        // The install process would eventually fail. Alert the user now rather than let them go
-        // pick an app.
-        alert("You are out of storage space. Please delete some things and try again.");
-      } else {
+      ifQuotaAvailable(function () {
         document.location = "https://apps.sandstorm.io/?host=" + getOrigin();
-      }
+      });
     },
 
     "click #upload-app-button": function (event) {
-      if (isUserOverQuota(Meteor.user())) {
-        // The install process would eventually fail. Alert the user now rather than let them go
-        // pick an app.
-        alert("You are out of storage space. Please delete some things and try again.");
-      } else {
+      ifQuotaAvailable(function () {
         Router.go("uploadForm", {});
-      }
+      });
     },
 
     "click #restore-backup-button":  function (event) {
-      promptRestoreBackup();
+      ifQuotaAvailable(function () {
+        promptRestoreBackup();
+      });
     },
 
     "click .uninstall-app-button": function (event) {
@@ -672,7 +691,9 @@ if (Meteor.isClient) {
         var devIndex = event.currentTarget.getAttribute("data-index");
       }
 
-      launchAndEnterGrainByActionId(actionId, devId, devIndex);
+      ifQuotaAvailable(function () {
+        launchAndEnterGrainByActionId(actionId, devId, devIndex);
+      });
     },
 
     "click .action-required button": function (event) {

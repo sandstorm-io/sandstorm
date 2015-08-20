@@ -1,16 +1,36 @@
 // for convenience
 var loginButtonsSession = Accounts._loginButtonsSession;
 
-Template.loginButtons.helpers({
+var helpers = {
   isDemoUser: function () {
     return this._db.isDemoUser();
+  },
+  demoTimeLeft: function () {
+    var ms = Meteor.user().expires.getTime() - Date.now();
+    var sec = Math.floor(ms / 1000) % 60;
+    if (sec < 10) sec = "0" + sec;
+    var min = Math.floor(ms / 60000);
+    var comp = Tracker.currentComputation;
+    if (comp) {
+      Meteor.setTimeout(comp.invalidate.bind(comp), 1000);
+    }
+    return min + ":" + sec;
+  },
+  expiringSoon: function () {
+    var timeToExpiring = Meteor.user().expires.getTime() - Date.now() - 600000;
+    console.log(timeToExpiring);
+    if (timeToExpiring <= 0) return true;
+    var comp = Tracker.currentComputation;
+    if (comp) {
+      Meteor.setTimeout(comp.invalidate.bind(comp), timeToExpiring);
+    }
+    return false;
   }
-});
-Template.loginButtonsPopup.helpers({
-  isDemoUser: function () {
-    return this._db.isDemoUser();
-  }
-});
+};
+
+Template.loginButtons.helpers(helpers);
+Template.loginButtonsPopup.helpers(helpers);
+Template._loginButtonsLoggedOutDropdown.helpers(helpers);
 
 Template.loginButtonsPopup.events({
   'click button.login.logout': function() {
@@ -154,7 +174,7 @@ var loginWithToken = function (email, token, topbar) {
   });
 };
 
-Template._loginButtonsLoggedOutDropdown.events({
+Template.loginButtonsList.events({
   "click button.login.oneclick": function () {
     var topbar = Template.parentData(3);
 
@@ -184,7 +204,7 @@ Template._loginButtonsLoggedOutDropdown.events({
   }
 });
 
-Template._loginButtonsLoggedOutDropdown.helpers({
+Template.loginButtonsList.helpers({
   configured: function () {
     return !!ServiceConfiguration.configurations.findOne({service: this.name}) ||
            Template.instance().data._services.get(this.name);

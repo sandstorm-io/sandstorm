@@ -1,13 +1,10 @@
-body>.popup.billing-prompt>.frame>.login {
-  margin: 0 auto;
-  padding: 16px;
-  box-sizing: border-box;
+body>.popup.account>.frame {
+  width: 260px;
 }
 
-body>.popup.account>.frame, body>.popup.billing-prompt>.frame>.login {
-  font-size: inherit;
-  width: 260px;
-  padding-bottom: 16px;
+.login-buttons-list {
+  margin: 16px auto;
+  width: 228px;
 
   >a {
     display: block;

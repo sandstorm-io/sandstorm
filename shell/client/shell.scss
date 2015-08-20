@@ -537,6 +537,14 @@ ul.backer-list img, ul.dev-list img, ul.advisor-list img {
   vertical-align: middle;
 }
 
+#demo-expired {
+  >p, >h1, >h2, >h3, >h4 {
+    margin-left: auto;
+    margin-right: auto;
+    width: 300px;
+  }
+}
+
 // Admin settings styles
 @import "_admin.scss";
 

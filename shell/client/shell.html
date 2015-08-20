@@ -28,6 +28,24 @@ limitations under the License.
 <template name="layout">
   {{>sandstormTopbar globalTopbar}}
 
+  {{#with demoExpired}}
+    {{>title "Demo Expired"}}
+
+    <div id="demo-expired" class="main-content">
+      <h1>Demo Expired</h1>
+      {{#if canUpgradeDemo}}
+        <p>Thanks for trying the Sandstorm Demo! Your demo account has expired. If
+          you'd like to continue using Sandstorm and make your data permanent, please sign in.</p>
+        <div class="login">
+          {{> loginButtonsList globalAccountsUi}}
+        </div>
+      {{else}}
+        <p>Thanks for trying the Sandstorm Demo! Your demo account has expired.</p>
+        <p><button class="logout">Sign out</button></p>
+      {{/if}}
+    </div>
+  {{else}}
+
   {{!-- standard topbar items --}}
   {{#sandstormTopbarItem name="homelink" topbar=globalTopbar}}
     <a href="/" id="homelink" class="navlink">Sandstorm</a>
@@ -72,6 +90,7 @@ limitations under the License.
   {{/with}}
 
   {{> yield}}
+  {{/with}}
 </template>
 
 <template name="lightLayout">

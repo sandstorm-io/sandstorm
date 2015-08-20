@@ -1,21 +1,23 @@
 <template name="loginButtons">
   {{!-- Data context is an instance of AccountsUi. --}}
 
-  <a>
-    {{#if currentUser}}
-      {{#if loggingIn}}
-        {{! We aren't actually logged in yet; we're just setting Meteor.userId
-            optimistically during an at-startup login-with-token. We expose this
-            state so other UIs can treat it specially, but we'll just treat it
-            as logged out. }}
-        Sign in ▾
-      {{else}}
-        {{displayName}} ▾
-      {{/if}}
+  {{#if currentUser}}
+    {{#if loggingIn}}
+      {{! We aren't actually logged in yet; we're just setting Meteor.userId
+          optimistically during an at-startup login-with-token. We expose this
+          state so other UIs can treat it specially, but we'll just treat it
+          as logged out. }}
+      <a>Sign in ▾</a>
     {{else}}
-      Sign in ▾
+      {{#if isDemoUser}}
+        <a class="{{#if expiringSoon}}expiring-soon{{/if}}">Demo {{demoTimeLeft}} ▾</a>
+      {{else}}
+        <a>{{displayName}} ▾</a>
+      {{/if}}
     {{/if}}
-  </a>
+  {{else}}
+    <a>Sign in ▾</a>
+  {{/if}}
 </template>
 
 <template name="loginButtonsPopup">
@@ -52,18 +54,30 @@
 <template name="_loginButtonsLoggedInDropdown">
   <h4>Account</h4>
 
-  <a href="/account">Account settings</a>
+  {{!-- TODO(cleanup): Don't wrap this in login-buttons-list? --}}
+  <div class="login-buttons-list">
+    <a href="/account">Account settings</a>
 
-  <button class="login logout">
-    Sign out
-  </button>
+    <button class="login logout">
+      Sign out
+    </button>
 
-  {{> _loginButtonsMessages}}
+    {{> _loginButtonsMessages}}
+  </div>
 </template>
 
 <template name="_loginButtonsLoggedOutDropdown">
   <h4>Sign in</h4>
 
+  {{#if isDemoUser}}
+    <p>Sign in to make your data permanent.</p>
+  {{/if}}
+
+  {{> loginButtonsList}}
+</template>
+
+<template name="loginButtonsList">
+  <div class="login-buttons-list">
   {{#each services}}
     {{#if isEmailTokenService}}
       {{#if hasOtherServices}} {{! the email token service will always come last }}
@@ -101,6 +115,7 @@
       <a href="https://docs.sandstorm.io/en/latest/administering/faq/" target="_blank">troubleshooting</a>
     </p>
   {{/if}}
+  </div>
 </template>
 
 <template name="_loginButtonsSeparator">

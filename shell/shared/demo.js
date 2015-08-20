@@ -18,13 +18,15 @@ allowDemo = Meteor.settings && Meteor.settings.public &&
                 Meteor.settings.public.allowDemoAccounts;
 
 var DEMO_EXPIRATION_MS = 60 * 60 * 1000;
+var DEMO_GRACE_MS = 10 * 60 * 1000;  // time between expiration and deletion
 
 if (Meteor.isServer) {
   Accounts.validateLoginAttempt(function (attempt) {
     // Enforce expiration times for demo accounts.
 
     if (attempt.user && attempt.user.expires) {
-      if (attempt.user.expires.getTime() < Date.now()) {
+      var expireIn = attempt.user.expires.getTime() - Date.now() + DEMO_GRACE_MS;
+      if (expireIn < 0) {
         throw new Meteor.Error(403, "This demo account has expired.");
       }
 
@@ -37,7 +39,7 @@ if (Meteor.isServer) {
       // Force connection close when account expires, so that the client reconnects and
       // re-authenticates, which fails.
       var connection = attempt.connection;
-      var handle = Meteor.setTimeout(function () { connection.close(); }, DEMO_EXPIRATION_MS);
+      var handle = Meteor.setTimeout(function () { connection.close(); }, expireIn);
       connection.onClose(function () { Meteor.clearTimeout(handle); });
     }
 
@@ -47,7 +49,7 @@ if (Meteor.isServer) {
   function cleanupExpiredUsers() {
     // Delete expired demo accounts and all their grains.
 
-    var now = new Date();
+    var now = new Date(Date.now() - DEMO_GRACE_MS);
     Meteor.users.find({expires: {$lt: now}}, {fields: {_id: 1, lastActive: 1, isAppDemoUser: 1}})
                 .forEach(function (user) {
       Grains.find({userId: user._id}, {fields: {_id: 1, lastUsed: 1}})
@@ -213,12 +215,9 @@ if (Meteor.isServer) {
     });
 
     Meteor.setInterval(cleanupExpiredUsers, DEMO_EXPIRATION_MS);
-
-    // The demo displays some assets loaded from sandstorm.io.
-    BrowserPolicy.content.allowOriginForAll("https://sandstorm.io");
   } else {
     // Just run once, in case the config just changed from allowing demos to prohibiting them.
-    Meteor.setTimeout(cleanupExpiredUsers, DEMO_EXPIRATION_MS);
+    Meteor.setTimeout(cleanupExpiredUsers, DEMO_EXPIRATION_MS + DEMO_GRACE_MS);
   }
 }
 
@@ -239,6 +238,10 @@ if (Meteor.isClient && allowDemo) {
         Meteor.call("consumeDemoUser", demoToken, function (err, result) {
           if (result) {
             localStorage.removeItem("sandstormDemoLoginToken");
+
+            // Need to reload if a grain is open because otherwise the user is probably staring at
+            // an "unauthorized" notice or some other error.
+            window.location.reload();
           }
         });
       }

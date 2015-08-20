@@ -398,6 +398,25 @@ if (Meteor.isClient) {
     },
     billingPromptState: function () {
       return billingPromptState.get();
+    },
+    demoExpired: function () {
+      var user = Meteor.user();
+      if (!user) return false;
+      var expires = user.expires;
+      if (!expires) return false;
+      expires = expires.getTime() - Date.now();
+      if (expires <= 0) return true;
+      var comp = Tracker.currentComputation;
+      if (expires && comp) {
+        Meteor.setTimeout(comp.invalidate.bind(comp), expires);
+      }
+      return false;
+    },
+    canUpgradeDemo: function () {
+      return Meteor.settings.public.allowUninvited;
+    },
+    globalAccountsUi: function () {
+      return globalAccountsUi;
     }
   });
 
@@ -409,6 +428,9 @@ if (Meteor.isClient) {
     "click #admin-alert-closer": function (event) {
       var template = Template.instance();
       template.showTopbar.set(false);
+    },
+    "click .demo-expired.logout": function (event) {
+      Meteor.logout();
     }
   });
 

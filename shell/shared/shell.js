@@ -939,7 +939,8 @@ Router.map(function () {
         apps = appNames.map(function (appName) {
           return appMap[appName.appId];
         });
-      } else if (allowDemoAccounts) {
+      } else if (allowDemoAccounts && !Meteor.settings.public.allowUninvited) {
+        // This seems to be a demo server.
         Meteor.setTimeout(function () { Router.go("demo", {}, {replaceState: true}); }, 0);
       }
 

@@ -502,6 +502,7 @@ function startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev) 
 shutdownGrain = function (grainId, ownerId, keepSessions) {
   if (!keepSessions) {
     Sessions.remove({grainId: grainId});
+    delete runningGrains[grainId];
   }
 
   var grain = sandstormBackend.getGrain(ownerId, grainId).supervisor;

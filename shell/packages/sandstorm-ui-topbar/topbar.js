@@ -232,7 +232,7 @@ SandstormTopbar.prototype.closePopup = function () {
   if (!name) return;
 
   var item = this._items[name];
-  if (item.onDismiss) {
+  if (item && item.onDismiss) {
     var result = item.onDismiss();
     if (typeof result === "string") {
       if (result === "block") {

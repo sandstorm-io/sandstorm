@@ -61,6 +61,7 @@ if (Meteor.isServer) {
       });
       console.log("delete user: " + user._id);
       Meteor.users.remove(user._id);
+      waitPromise(sandstormBackend.deleteUser(user._id));
       if (user.lastActive) {
         // When deleting a user, we can specify it as a "normal" user
         // (type: user) or as a user who started out by using the app
@@ -110,13 +111,16 @@ if (Meteor.isServer) {
         var hashed = Accounts._hashLoginToken(token);
         var demoUser = Meteor.users.findOne({
             expires: {$exists: true}, "services.resume.loginTokens.hashedToken": hashed});
-        console.log("in consumeDemoUser", demoUser);
         var newUserId = this.userId;
         if (demoUser) {
           // Replace the demo user's ID with the full user's ID throughout the database.
           //
           // TODO(cleanup): Once we officially have account merging, use that.
 
+          // Record the set of grains now.
+          var grains = Grains.find({userId: demoUser._id}).fetch();
+
+          // Update database entries.
           var toUpdate = {
             userActions: ["userId"],
             grains: ["userId"],
@@ -132,12 +136,26 @@ if (Meteor.isServer) {
               query[field] = demoUser._id;
               var changes = {};
               changes[field] = newUserId;
-              console.log(name, query, changes);
               collection.update(query, {$set: changes}, {multi: true});
             });
           }
 
+          // Force all grains to shut down.
+          grains.map(function (grain) {
+            return shutdownGrain(grain._id, demoUser._id, false);
+          }).forEach(function (promise) {
+            waitPromise(promise);
+          });
+
+          // Transfer grain storage to new owner.
+          // Note: We don't parallelize this because it can cause some contention in the Blackrock
+          //   back-end.
+          grains.forEach(function (grain) {
+            return waitPromise(sandstormBackend.transferGrain(grain.userId, grain._id, newUserId));
+          });
+
           Meteor.users.remove(demoUser._id);
+          waitPromise(sandstormBackend.deleteUser(demoUser._id));
         }
         return true;  // either suceeded or token was not valid (and never will be)
       }

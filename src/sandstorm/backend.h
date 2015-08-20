@@ -39,6 +39,8 @@ protected:
   kj::Promise<void> startGrain(StartGrainContext context) override;
   kj::Promise<void> getGrain(GetGrainContext context) override;
   kj::Promise<void> deleteGrain(DeleteGrainContext context) override;
+  kj::Promise<void> transferGrain(TransferGrainContext context) override;
+  kj::Promise<void> deleteUser(DeleteUserContext context) override;
   kj::Promise<void> installPackage(InstallPackageContext context) override;
   kj::Promise<void> tryGetPackage(TryGetPackageContext context) override;
   kj::Promise<void> deletePackage(DeletePackageContext context) override;

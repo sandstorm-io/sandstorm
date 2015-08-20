@@ -42,6 +42,12 @@ interface Backend {
   deleteGrain @2 (ownerId :Text, grainId :Text);
   # Delete a grain from disk. Succeeds silently if the grain doesn't exist.
 
+  transferGrain @12 (ownerId :Text, grainId :Text, newOwnerId :Text);
+  # Transfer a grain's ownership.
+
+  deleteUser @13 (userId :Text);
+  # Delete an entire user. May or may not delete grains.
+
   # ----------------------------------------------------------------------------
 
   installPackage @3 () -> (stream :PackageUploadStream);

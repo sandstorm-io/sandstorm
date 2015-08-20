@@ -254,6 +254,16 @@ kj::Promise<void> BackendImpl::deleteGrain(DeleteGrainContext context) {
   });
 }
 
+kj::Promise<void> BackendImpl::transferGrain(TransferGrainContext context) {
+  // Nothing to do: Grains aren't stored by owner.
+  return kj::READY_NOW;
+}
+
+kj::Promise<void> BackendImpl::deleteUser(DeleteUserContext context) {
+  // Nothing to do: We store no per-user data in the back-end.
+  return kj::READY_NOW;
+}
+
 // =======================================================================================
 
 class BackendImpl::PackageUploadStreamImpl: public Backend::PackageUploadStream::Server {

@@ -430,20 +430,30 @@ isSignedUp = function() {
   // Returns true if the user has presented an invite key.
 
   var user = Meteor.user();
-  if (user && user.signupKey) {
-    return true;
-  } else {
-    return false;
-  }
+
+  if (!user) return false;  // not signed in
+
+  if (user.expires) return false;  // demo user.
+
+  if (Meteor.settings.public.allowUninvited) return true;  // all accounts qualify
+
+  if (user.signupKey) return true;  // user is invited
+
+  return false;
 }
 
 isSignedUpOrDemo = function () {
   var user = Meteor.user();
-  if (user && (user.signupKey || user.expires)) {
-    return true;
-  } else {
-    return false;
-  }
+
+  if (!user) return false;  // not signed in
+
+  if (user.expires) return true;  // demo user.
+
+  if (Meteor.settings.public.allowUninvited) return true;  // all accounts qualify
+
+  if (user.signupKey) return true;  // user is invited
+
+  return false;
 }
 
 isUserOverQuota = function (user) {
@@ -693,7 +703,7 @@ _.extend(SandstormDb.prototype, {
 
   getMyPlan: function () {
     var user = Meteor.user();
-    return user && user.plan && Plans.findOne(user.plan);
+    return user && Plans.findOne(user.plan || "free");
   }
 });
 

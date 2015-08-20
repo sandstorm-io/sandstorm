@@ -63,6 +63,7 @@ cat > $SETTINGS << __EOF__
     "buildstamp": "[local dev front-end]",
     "allowDemoAccounts": true,
     "allowDevAccounts": true,
+    "allowUninvited": ${ALLOW_UNINVITED:-false},
     "isTesting": true,
     "wildcardHost": "$WILDCARD_HOST",
     "quotaEnabled": ${QUOTA_ENABLED:-false},

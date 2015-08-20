@@ -1032,7 +1032,9 @@ Router.map(function () {
     data: function () {
       if (!isSignedUp()) {
         // Not logged in.
-        Router.go("root");
+        if (!Meteor.loggingIn()) {
+          Router.go("root");
+        }
       } else {
         return new SandstormAccountSettingsUi(globalTopbar, globalDb,
             window.location.protocol + "//" + makeWildcardHost("static"));

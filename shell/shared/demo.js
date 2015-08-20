@@ -160,6 +160,16 @@ if (Meteor.isServer) {
           waitPromise(sandstormBackend.deleteUser(demoUser._id));
         }
         return true;  // either suceeded or token was not valid (and never will be)
+      },
+
+      testExpireDemo: function () {
+        if (!isDemoUser()) throw new Meteor.Error(403, "not a demo user");
+
+        var newExpires = new Date(Date.now() + 15000);
+        if (Meteor.user().expires.getTime() < newExpires.getTime()) {
+          throw new Meteor.Error(403, "can't exend demo");
+        }
+        Meteor.users.update(this.userId, {$set: {expires: newExpires}});
       }
     });
 
@@ -228,6 +238,10 @@ if (Meteor.isClient && allowDemo) {
   }
   // Note: We intentionally don't register the demo service with Accounts.registerService(); we
   //   don't want it to appear in the sign-in drop-down.
+
+  window.testExpireDemo = function () {
+    Meteor.call("testExpireDemo");
+  }
 
   Accounts.onLogin(function () {
     // Note: We often don't have the right subscriptions yet to actually know if we're a demo

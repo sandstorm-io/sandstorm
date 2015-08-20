@@ -18,7 +18,6 @@ var helpers = {
   },
   expiringSoon: function () {
     var timeToExpiring = Meteor.user().expires.getTime() - Date.now() - 600000;
-    console.log(timeToExpiring);
     if (timeToExpiring <= 0) return true;
     var comp = Tracker.currentComputation;
     if (comp) {

@@ -1,6 +1,17 @@
 // for convenience
 var loginButtonsSession = Accounts._loginButtonsSession;
 
+Template.loginButtons.helpers({
+  isDemoUser: function () {
+    return this._db.isDemoUser();
+  }
+});
+Template.loginButtonsPopup.helpers({
+  isDemoUser: function () {
+    return this._db.isDemoUser();
+  }
+});
+
 Template.loginButtonsPopup.events({
   'click button.login.logout': function() {
     var topbar = Template.parentData(3);

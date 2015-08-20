@@ -29,7 +29,11 @@
           as logged out. }}
       {{> _loginButtonsLoggedOutDropdown}}
     {{else}}
-      {{> _loginButtonsLoggedInDropdown}}
+      {{#if isDemoUser}}
+        {{> _loginButtonsLoggedOutDropdown}}
+      {{else}}
+        {{> _loginButtonsLoggedInDropdown}}
+      {{/if}}
     {{/if}}
   {{else}}
     {{> _loginButtonsLoggedOutDropdown}}

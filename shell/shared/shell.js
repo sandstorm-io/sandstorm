@@ -310,14 +310,20 @@ if (Meteor.isClient) {
     var reason = isUserOverQuota(Meteor.user());
     if (reason) {
       if (window.BlackrockPayments) {
-        billingPromptState.set({reason: reason, db: globalDb, onComplete: function () {
-          billingPromptState.set(null);
+        billingPromptState.set({
+          reason: reason,
+          db: globalDb,
+          topbar: globalTopbar,
+          accountsUi: globalAccountsUi,
+          onComplete: function () {
+            billingPromptState.set(null);
 
-          // If the user successfully raised their quota, continue the operation.
-          if (!isUserOverQuota(Meteor.user())) {
-            next();
+            // If the user successfully raised their quota, continue the operation.
+            if (!isUserOverQuota(Meteor.user())) {
+              next();
+            }
           }
-        }});
+        });
       } else {
         alert("You are out of storage space. Please delete some things and try again.");
       }
@@ -595,7 +601,7 @@ if (Meteor.isClient) {
     },
 
     storageUsage: function() {
-      return prettySize(Meteor.user().storageUsage || 0);
+      return Meteor.userId() ? prettySize(Meteor.user().storageUsage || 0) : undefined;
     },
 
     storageQuota: function() {
@@ -1023,12 +1029,13 @@ Router.map(function () {
     path: "/account",
 
     data: function () {
-      if (!Meteor.userId()) {
+      if (!isSignedUp()) {
         // Not logged in.
         Router.go("root");
+      } else {
+        return new SandstormAccountSettingsUi(globalTopbar, globalDb,
+            window.location.protocol + "//" + makeWildcardHost("static"));
       }
-      return new SandstormAccountSettingsUi(globalTopbar, globalDb,
-          window.location.protocol + "//" + makeWildcardHost("static"));
     }
   });
 });

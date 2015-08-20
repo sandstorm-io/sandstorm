@@ -75,7 +75,7 @@ if (Meteor.isClient) {
     }
   });
 
-  globalAccountsUi = new AccountsUi();
+  globalAccountsUi = new AccountsUi(globalDb);
 
   Template.registerHelper("globalTopbar", function() { return globalTopbar; });
   Template.registerHelper("globalAccountsUi", function() { return globalAccountsUi; });

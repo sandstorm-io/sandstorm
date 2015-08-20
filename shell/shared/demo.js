@@ -98,8 +98,49 @@ if (Meteor.isServer) {
         // Log them in on this connection.
         return Accounts._loginMethod(this, "createDemoUser", arguments,
             "demo", function () { return { userId: userId }; });
-      }
+      },
 
+      consumeDemoUser: function (token) {
+        check(token, String);
+        if (!this.userId) throw new Meteor.Error(403, "can't consume demo user when not logged in");
+
+        // Only users who have permission to create grains can consume a demo account.
+        if (!isSignedUp()) return false;
+
+        var hashed = Accounts._hashLoginToken(token);
+        var demoUser = Meteor.users.findOne({
+            expires: {$exists: true}, "services.resume.loginTokens.hashedToken": hashed});
+        console.log("in consumeDemoUser", demoUser);
+        var newUserId = this.userId;
+        if (demoUser) {
+          // Replace the demo user's ID with the full user's ID throughout the database.
+          //
+          // TODO(cleanup): Once we officially have account merging, use that.
+
+          var toUpdate = {
+            userActions: ["userId"],
+            grains: ["userId"],
+            contacts: ["ownerId", "userId"],
+            apiTokens: ["userId", "owner.user.userId"],
+            notifications: ["userId"],
+          };
+
+          for (var name in toUpdate) {
+            var collection = globalDb.collections[name];
+            toUpdate[name].forEach(function (field) {
+              var query = {};
+              query[field] = demoUser._id;
+              var changes = {};
+              changes[field] = newUserId;
+              console.log(name, query, changes);
+              collection.update(query, {$set: changes}, {multi: true});
+            });
+          }
+
+          Meteor.users.remove(demoUser._id);
+        }
+        return true;  // either suceeded or token was not valid (and never will be)
+      }
     });
 
     // If demo mode is enabled, we permit the client to subscribe to
@@ -168,7 +209,23 @@ if (Meteor.isClient && allowDemo) {
     Router.go("demo");
     callback();
   }
-  Accounts.registerService("demo", globalAccountsUi);
+  // Note: We intentionally don't register the demo service with Accounts.registerService(); we
+  //   don't want it to appear in the sign-in drop-down.
+
+  Accounts.onLogin(function () {
+    // Note: We often don't have the right subscriptions yet to actually know if we're a demo
+    //   user, so we'll check again on the server side.
+    if (!isDemoUser()) {
+      var demoToken = localStorage.getItem("sandstormDemoLoginToken");
+      if (demoToken) {
+        Meteor.call("consumeDemoUser", demoToken, function (err, result) {
+          if (result) {
+            localStorage.removeItem("sandstormDemoLoginToken");
+          }
+        });
+      }
+    }
+  });
 
   Template.demo.events({
     "click #createDemoUser": function (event) {
@@ -186,6 +243,7 @@ if (Meteor.isClient && allowDemo) {
           if (err) {
             window.alert(err);
           } else {
+            localStorage.setItem("sandstormDemoLoginToken", Accounts._storedLoginToken());
             Router.go("root");
           }
         }
@@ -249,7 +307,8 @@ if (Meteor.isClient && allowDemo) {
           userCallback: userCallbackFunction
         });
       }
-    }});
+    }
+  });
 }
 
 Router.map(function () {

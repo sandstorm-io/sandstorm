@@ -721,7 +721,9 @@ limitations under the License.
 
 <template name="account">
   <div class="account main-content">
-    {{>sandstormAccountSettings .}}
+    {{#if .}}
+      {{>sandstormAccountSettings .}}
+    {{/if}}
   </div>
 </template>
 

@@ -575,6 +575,9 @@ enum Category {
   # Tools for scientific / academic pursuits: data gathering, data processing, paper publishing,
   # etc.
 
+  graphics @10 $categoryInfo(title = "Graphics");
+  # Tools for creating graphics / visual art.
+
   # ------------------------------------
   # Content consumption
 

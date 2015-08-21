@@ -74,7 +74,19 @@ Template.sandstormTopbar.helpers({
   },
 
   grains: function () {
-    return this._grains.get();
+    var grains = this._grains.get();
+    var data = grains.map(function (grain) {
+      grain.dep.depend();
+      var gr = Grains.findOne({_id: grain.grainId});
+      return {
+        title: gr && gr.title,
+        grainId: grain.grainId,
+        active: grain.active,
+      };
+    });
+    console.log("rendering sidebar with");
+    console.log(data);
+    return data;
   },
 
   currentPopup: function () {
@@ -110,7 +122,7 @@ Template.sandstormTopbar.helpers({
     var item = instance.data._items[instance.data._expanded.get()];
     if (item) {
       Meteor.defer(function () {
-        var element = instance.find(".topbar>." + item.name);
+        var element = instance.find(".topbar>.menubar>." + item.name);
         if (element) {
           // This positions the popup under the topbar item that spawned it. As a hacky heuristic,
           // we position the popup from the left if the item is closer to the left of the window,
@@ -188,9 +200,16 @@ Template.sandstormTopbar.events({
   },
 
   "click .navbar .close-button": function (event) {
-    // TODO: find the associated grain
-    console.log("Should close grain");
-    console.log(event.target.parentNode.dataset.grainid);
+    var grainId = event.currentTarget.parentNode.getAttribute("data-grainid");
+    console.log("Should close grain " + grainId);
+    // TODO(now) actually implement closing the grain
+    /*
+    var topbar = Template.instance().data;
+    var grains = topbar._grains.get();
+    newGrains = _.filter(grains, function(item) { return item.grainId != grainId; });
+    console.log(newGrains);
+    topbar._grains.set(newGrains);
+    */
   }
 });
 

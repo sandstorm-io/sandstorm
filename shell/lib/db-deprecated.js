@@ -65,29 +65,42 @@ if (Meteor.isServer) {
 }
 
 if (Meteor.isClient) {
+  Session.setDefault("show-sidebar", true);
+  FancyReactiveVar = function(initialValue) {
+    // Hack: ReactiveVar implementation doesn't preserve the original object prototype, which
+    // breaks reactivity.
+    this._val = (initialValue === undefined) ? [] : initialValue;
+    this._dep = new Tracker.Dependency;
+    this.get = function() {
+      this._dep.depend();
+      return this._val;
+    },
+    this.set = function(value) {
+      this._val = value;
+      this._dep.changed();
+    }
+    return this;
+  };
+  globalGrains = new FancyReactiveVar([]);
+  console.log('init grains');
   globalTopbar = new SandstormTopbar({
-    get: function () {
-      return Session.get("topbar-expanded");
-    },
+      get: function () {
+        return Session.get("topbar-expanded");
+      },
 
-    set: function (value) {
-      Session.set("topbar-expanded", value);
-    }
-  }, {
-    get: function () {
-      return Session.get("grains");
+      set: function (value) {
+        Session.set("topbar-expanded", value);
+      }
     },
-    set: function (value) {
-      Session.set("grains", value);
-    }
-  }, {
-    get: function () {
-      return Session.get("show-sidebar");
-    },
-    set: function (value) {
-      Session.set("show-sidebar", value);
-    }
-  });
+    globalGrains,
+    {
+      get: function () {
+        return Session.get("show-sidebar");
+      },
+      set: function (value) {
+        Session.set("show-sidebar", value);
+      }
+    });
 
   globalAccountsUi = new AccountsUi(globalDb);
 

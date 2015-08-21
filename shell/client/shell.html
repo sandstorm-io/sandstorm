@@ -97,6 +97,31 @@ limitations under the License.
 
   <div class="main-content {{#if showSidebar}}show-sidebar{{/if}}">
   {{> yield}}
+  {{!-- We place the grains in the main content on every page, so the iframes will not have to
+   reload on navigation. --}}
+  <div class="iframe-hider"></div>
+  {{#each grains}}
+  {{#if error}}
+    <pre>{{error}}</pre>
+  {{else}}
+  {{#if appOrigin}}
+    <iframe class="grain-frame {{#if active}}active-grain{{else}}inactive-grain{{/if}}" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{path}}{{hash}}"></iframe>
+    {{#if hasNotLoaded}}
+      {{> _grainSpinner}}
+    {{/if}}
+  {{else}}
+  {{#if interstitial}}
+    <div class="interstitial-button-box">
+      <p>This grain was shared by someone who is not in your contacts.</p>
+      <button id="redeem-token-button" data-token="{{token}}">Reveal your Identity</button>
+      <button id="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
+    </div>
+  {{else}}
+    {{> _grainSpinner}}
+  {{/if}}
+  {{/if}}
+  {{/if}}
+  {{/each}}
   </div>
 
   {{/if}}
@@ -601,26 +626,6 @@ limitations under the License.
         startOpen=true popupTemplate="grainPowerboxOfferPopup"}}
   {{/if}}
 
-  {{#if error}}
-    <pre>{{error}}</pre>
-  {{else}}
-  {{#if appOrigin}}
-    <iframe id="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{path}}{{hash}}"></iframe>
-    {{#if hasNotLoaded}}
-      {{> _grainSpinner}}
-    {{/if}}
-  {{else}}
-  {{#if interstitial}}
-    <div class="interstitial-button-box">
-      <p>This grain was shared by someone who is not in your contacts.</p>
-      <button id="redeem-token-button" data-token="{{token}}">Reveal your Identity</button>
-      <button id="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
-    </div>
-  {{else}}
-    {{> _grainSpinner}}
-  {{/if}}
-  {{/if}}
-  {{/if}}
 </template>
 
 <template name="newGrain">

@@ -307,7 +307,7 @@ svg {
   margin-top: 0;
 }
 
-#app iframe {
+iframe.grain-frame {
   border: none;
   padding: 0;
   width: 100%;
@@ -315,9 +315,28 @@ svg {
   margin: 0;
   display: block;
   position: absolute;
+  &.active-grain {
+    z-index: 0;
+    background: white;
+  }
+  &.inactive-grain {
+    z-index: -2;
+  }
 }
 
-body.ios #app iframe {
+div.iframe-hider {
+  border: none;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  display: block;
+  position: absolute;
+  background: white;
+  z-index: -1;
+}
+
+body.ios iframe.grain-frame {
   /* iOS Safari refuses to scroll iframes. But if you set display: inline and position: static
    * (the defaults for iframes, but we overrode them above) then it will expand the iframe's
    * content to be big enough to contain the entire embedded page, which then allows you to make
@@ -333,7 +352,7 @@ body.ios #app iframe {
   position: static;
 }
 
-body.ios #app.main-content {
+body.ios .main-content {
   /* Hint to iOS that this div is scrollable. */
   -webkit-overflow-scrolling: touch;
 }

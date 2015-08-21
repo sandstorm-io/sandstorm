@@ -41,8 +41,8 @@ limitations under the License.
         {{/each}}
       </ul>
       <ul class="navbar {{#unless _showSidebar.get}}hide-desktop{{/unless}}">
-        <li class="navitem-open-grain"><a href="/grain"><span>Open...</span></a></li>
-        <li class="navitem-create-grain"><a href="/grain/new">New...</a></li>
+        <li class="navitem-open-grain {{#if currentRoute 'selectGrain'}}current{{/if}}"><a href="{{pathFor route='selectGrain'}}"><span>Open...</span></a></li>
+        <li class="navitem-create-grain {{#if currentRoute 'newGrain'}}current{{/if}}"><a href="{{pathFor route='newGrain'}}">New...</a></li>
         <ul class="navbar-grains">
           {{#each grains}}
           <li data-grainid="{{grainId}}" class="navitem-grain {{#if active}}current{{/if}}">

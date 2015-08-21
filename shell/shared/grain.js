@@ -252,16 +252,17 @@ if (Meteor.isClient) {
 
   Template.grainDeleteButton.events({
     "click button": function (event) {
-      if (this.isOwner) {
+      var activeGrain = getActiveGrain(globalGrains.get());
+      if (!activeGrain.token) {
         if (window.confirm("Really delete this grain?")) {
           Session.set("showMenu", false);
-          Meteor.call("deleteGrain", this.grainId);
+          Meteor.call("deleteGrain", activeGrain.grainId);
           Router.go("root");
         }
       } else {
         if (window.confirm("Really forget this grain?")) {
           Session.set("showMenu", false);
-          Meteor.call("forgetGrain", this.grainId);
+          Meteor.call("forgetGrain", activeGrain.grainId);
           Router.go("root");
         }
       }
@@ -270,14 +271,16 @@ if (Meteor.isClient) {
 
   Template.grainDebugLogButton.events({
     "click button": function (event) {
-      window.open("/grainlog/" + this.grainId, "_blank",
+      var activeGrain = getActiveGrain(globalGrains.get());
+      window.open("/grainlog/" + activeGrain.grainId, "_blank",
           "menubar=no,status=no,toolbar=no,width=700,height=700");
     },
   });
 
   Template.grainBackupButton.events({
     "click button": function (event) {
-      Meteor.call("backupGrain", this.grainId, function (err, id) {
+      var activeGrain = getActiveGrain(globalGrains.get());
+      Meteor.call("backupGrain", activeGrain.grainId, function (err, id) {
         if (err) {
           alert("Backup failed: " + err); // TODO(someday): make this better UI
         } else {
@@ -289,7 +292,9 @@ if (Meteor.isClient) {
             var save = document.createElement("a");
             save.href = "/downloadBackup/" + id;
 
-            save.download = Session.get("grainFrameTitle") + ".zip";
+            var grain = Grains.findOne({_id: activeGrain.grainId});
+
+            save.download = grain.title + ".zip";
             var event = document.createEvent("MouseEvents");
             event.initMouseEvent(
                     "click", true, false, window, 0, 0, 0, 0, 0,
@@ -306,13 +311,14 @@ if (Meteor.isClient) {
 
   Template.grainRestartButton.events({
     "click button": function (event) {
-      var sessionId = this.sessionId;
-      var grainId = this.grainId;
+      var activeGrain = getActiveGrain(globalGrains.get());
+      var grainId = activeGrain.grainId;
 
       Meteor.call("shutdownGrain", grainId, function (err) {
         if (err) {
           alert("Restart failed: " + err); // TODO(someday): make this better UI
         } else {
+          // TODO(now): make this work with multigrain
           var frame = document.getElementById("grain-frame");
           frame.src = frame.src;
         }
@@ -552,6 +558,11 @@ if (Meteor.isClient) {
   });
 
   Template.grain.helpers({
+    isOwner: function () {
+      var current = getActiveGrain(globalGrains.get());
+      return current && (!current.token);
+    },
+
     grainSize: function () {
       var current = getActiveGrain(globalGrains.get());
       if (current) {

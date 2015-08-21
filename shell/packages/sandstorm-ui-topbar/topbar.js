@@ -61,6 +61,11 @@ Template.sandstormTopbar.helpers({
     return _.sortBy(_.values(this._items), function (item) { return -(item.priority || 0); });
   },
 
+  currentRoute: function (routeName) {
+    console.log("testing if current route is " + routeName);
+    return Router.current().route.getName() == routeName;
+  },
+
   grains: function () {
     var topbar = Template.instance().data;
     var grains = topbar._grains.get();
@@ -198,14 +203,6 @@ Template.sandstormTopbar.events({
     var topbar = Template.instance().data;
     var grains = topbar._grains.get();
 
-    if (grains.length == 1) {
-      // Redirect to /grain/ after closing the last grain.
-      topbar._grains.set([]);
-      console.log("set complete");
-      Router.go("selectGrain");
-      return;
-    }
-
     var activeIndex = -1;
     var closeIndex = -1;
     grains.forEach(function(grain, i){
@@ -216,6 +213,16 @@ Template.sandstormTopbar.events({
         closeIndex = i;
       }
     });
+
+    if (grains.length == 1) {
+      // Redirect to /grain/ after closing the last grain, if it was open.
+      topbar._grains.set([]);
+      if (activeIndex == 0) {
+        Router.go("selectGrain");
+      }
+      return;
+    }
+
     console.log("Closing index " + closeIndex)
     if (activeIndex == closeIndex) {
       // If the user closed the active grain, redirect to the next one after closing this one.

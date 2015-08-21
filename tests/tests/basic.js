@@ -46,7 +46,7 @@ if (!disable_demo) {
     browser
       .loginDemo()
       .waitForElementVisible('.topbar>.account>.show-popup>a', short_wait)
-      .assert.containsText(".topbar>.account>.show-popup>a", "Demo User")
+      .assert.containsText(".topbar>.account>.show-popup>a", "Demo")
       .end();
   };
 }

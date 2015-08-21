@@ -61,24 +61,17 @@ Template.sandstormTopbar.helpers({
     return _.sortBy(_.values(this._items), function (item) { return -(item.priority || 0); });
   },
 
-  navitems: function() {
-    var a = [];
-    for (var i = 0; i < 32 ; i++) {
-      a.push({
-        name: "filename_filename_blah",
-        id: "somethingsomethinggrainid",
-        active: (i === 0)
-      });
-    }
-    return a;
-  },
-
   grains: function () {
-    var grains = this._grains.get();
+    var topbar = Template.instance().data;
+    var grains = topbar._grains.get();
     var data = grains.map(function (grain) {
       grain.dep.depend();
       var gr = Grains.findOne({_id: grain.grainId});
+      // TODO: support pulling from ApiTokens
+      var pkg = Packages.findOne({_id: gr.packageId});
+      var iconSrc = Identicon.iconSrcForPackage(pkg, "grain", topbar._staticHost);
       return {
+        iconSrc: iconSrc,
         title: gr && gr.title,
         grainId: grain.grainId,
         active: grain.active,
@@ -189,27 +182,54 @@ Template.sandstormTopbar.events({
   },
 
   "click .toggle-sidebar": function (event) {
-    console.log("toggling sidebar");
-    console.log(Template.instance().data);
     var topbar = Template.instance().data;
     topbar._showSidebar.set(!topbar._showSidebar.get());
   },
 
   "click .menu-button": function (event) {
-    this._menuExpanded.set(!this._menuExpanded.get());
+    var topbar = Template.instance().data;
+    topbar._menuExpanded.set(!topbar._menuExpanded.get());
   },
 
   "click .navbar .close-button": function (event) {
     var grainId = event.currentTarget.parentNode.getAttribute("data-grainid");
     console.log("Should close grain " + grainId);
     // TODO(now) actually implement closing the grain
-    /*
     var topbar = Template.instance().data;
     var grains = topbar._grains.get();
-    newGrains = _.filter(grains, function(item) { return item.grainId != grainId; });
-    console.log(newGrains);
-    topbar._grains.set(newGrains);
-    */
+
+    if (grains.length == 1) {
+      // Redirect to /grain/ after closing the last grain.
+      topbar._grains.set([]);
+      console.log("set complete");
+      Router.go("selectGrain");
+      return;
+    }
+
+    var activeIndex = -1;
+    var closeIndex = -1;
+    grains.forEach(function(grain, i){
+      if (grain.active) {
+        activeIndex = i;
+      }
+      if (grain.grainId == grainId) {
+        closeIndex = i;
+      }
+    });
+    console.log("Closing index " + closeIndex)
+    if (activeIndex == closeIndex) {
+      // If the user closed the active grain, redirect to the next one after closing this one.
+      // Unless this grain was the last one, in which case redirect to the previous one.
+      var newActiveIndex = (activeIndex == grains.length - 1) ? activeIndex - 1 : activeIndex;
+      grains.splice(closeIndex, 1);
+      grains[newActiveIndex].active = true;
+      topbar._grains.set(grains);
+      grains[newActiveIndex].dep.changed();
+      Router.go("grain", {grainId: grains[newActiveIndex].grainId});
+    } else {
+      grains.splice(closeIndex, 1);
+      topbar._grains.set(grains);
+    }
   }
 });
 
@@ -259,10 +279,11 @@ Template.sandstormTopbarItem.onDestroyed(function () {
 // =======================================================================================
 // Public interface
 
-SandstormTopbar = function (expandedVar, grainsVar, showSidebarVar) {
+SandstormTopbar = function (db, expandedVar, grainsVar, showSidebarVar) {
   // `expandedVar` is an optional object that behaves like a `ReactiveVar` and will be used to
   // track which popup is currently open. (The caller may wish to back this with a Session
   // variable.)
+  this._staticHost = db.makeWildcardHost('static');
 
   this._items = {};
   this._itemsTracker = new Tracker.Dependency();

@@ -83,7 +83,8 @@ if (Meteor.isClient) {
   };
   globalGrains = new FancyReactiveVar([]);
   console.log('init grains');
-  globalTopbar = new SandstormTopbar({
+  globalTopbar = new SandstormTopbar(globalDb,
+    {
       get: function () {
         return Session.get("topbar-expanded");
       },

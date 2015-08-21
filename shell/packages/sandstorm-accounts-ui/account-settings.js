@@ -27,7 +27,7 @@ Template.sandstormAccountSettings.onCreated(function () {
 
 GENDERS = {male: "male", female: "female", neutral: "neutral", robot: "robot"};
 
-Template.sandstormAccountSettings.helpers({
+var helpers = {
   identities: function () {
     return SandstormDb.getUserIdentities(Meteor.user());
   },
@@ -54,13 +54,93 @@ Template.sandstormAccountSettings.helpers({
   db: function () {
     return Template.instance().data._db;
   }
+};
+
+Template.sandstormAccountSettings.helpers(helpers);
+Template._accountProfileEditor.helpers(helpers);
+
+Template.sandstormAccountsFirstSignIn.onCreated(function () {
+  this.subscribe("accountIdentities");
 });
+
+Template.sandstormAccountsFirstSignIn.helpers({
+  mainIdentity: function () {
+    return SandstormDb.getUserIdentities(Meteor.user())[0];
+  },
+  termsAndPrivacy: function () {
+    var result = {
+      termsUrl: Template.instance().data._db.getSetting("termsUrl"),
+      privacyUrl: Template.instance().data._db.getSetting("privacyUrl"),
+    };
+    if (result.termsUrl || result.privacyUrl) {
+      return result;
+    } else {
+      return undefined;
+    }
+  }
+});
+
+var submitProfileForm = function (event) {
+  event.preventDefault();
+  var form = Template.instance().find("form");
+
+  if (form.agreedToTerms && !form.agreedToTerms.checked) {
+    alert("You must agree to the terms to continue.");
+    return;
+  }
+
+  var newProfile = {
+    name: form.nameInput.value,
+    handle: form.handle.value,
+    pronoun: form.pronoun.value,
+    email: form.email.value,
+  };
+
+  if (!newProfile.name) {
+    alert("You must enter a name.");
+    return;
+  }
+  if (!newProfile.email) {
+    alert("You must enter an email.");
+    return;
+  }
+
+  if (!newProfile.handle.match(/^[a-z_][a-z0-9_]*$/)) {
+    // TODO(soon): Reject bad keystrokes in real-time.
+    alert("Invalid handle. Handles must contain only English letters, digits, and " +
+          "underscores, and must not start with a digit.");
+    return;
+  }
+
+  // Our "data" might be AccountsUi or it might be SandstormAccountSettingsUi.
+  // TODO(cleanup): That's terrible. Fix it.
+  var data = Template.instance().data;
+  if (data._editing) {
+    data._editing.set(null);
+  }
+
+  Meteor.call("updateProfile", newProfile, function (err) {
+    if (err) alert("Error updating profile: " + err.message);
+  });
+}
 
 Template.sandstormAccountSettings.events({
   "click .identities>.display>ul>.edit>button": function (event) {
     Template.instance().data._editing.set(this.id);
   },
-  "click .identities>.edit .picture button": function (event) {
+  "click .identities>.edit>form>ul>.save>.cancel": function (event) {
+    event.preventDefault();
+    Template.instance().data._editing.set(null);
+  },
+  "submit .identities>.edit>form": submitProfileForm
+});
+
+Template.sandstormAccountsFirstSignIn.events({
+  "submit form": submitProfileForm
+});
+
+Template._accountProfileEditor.events({
+  "click .picture button": function (event) {
     event.preventDefault();
 
     var staticHost = Template.instance().data._staticHost;
@@ -98,32 +178,5 @@ Template.sandstormAccountSettings.events({
     });
 
     input.click();
-  },
-  "click .identities>.edit>form>ul>.save>.cancel": function (event) {
-    event.preventDefault();
-    Template.instance().data._editing.set(null);
-  },
-  "submit .identities>.edit>form": function (event) {
-    event.preventDefault();
-    var form = Template.instance().find("form");
-
-    var newProfile = {
-      name: form.nameInput.value,
-      handle: form.handle.value,
-      // picture: form.picture.value,  // TODO(now)
-      pronoun: form.pronoun.value,
-    };
-
-    if (!newProfile.handle.match(/^[a-z_][a-z0-9_]*$/)) {
-      // TODO(soon): Reject bad keystrokes in real-time.
-      alert("Invalid handle. Handles must contain only English letters, digits, and " +
-            "underscores, and must not start with a digit.");
-      return;
-    }
-
-    Template.instance().data._editing.set(null);
-    Meteor.call("updateProfile", newProfile, function (err) {
-      if (err) alert("Error updating profile: " + err.message);
-    });
   }
 });

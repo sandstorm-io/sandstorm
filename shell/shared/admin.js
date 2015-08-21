@@ -16,7 +16,8 @@
 
 var ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
 var publicAdminSettings = ["google", "github", "emailToken", "splashDialog", "signupDialog",
-                           "adminAlert", "adminAlertTime", "adminAlertUrl"];
+                           "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
+                           "privacyUrl"];
 
 DEFAULT_SPLASH_DIALOG = "Contact the server admin for an invite " +
   "(or <a href=\"https://sandstorm.io/install/\">install your own</a>).";
@@ -678,7 +679,7 @@ if (Meteor.isClient) {
       var state = Iron.controller().state;
       var token = this.token;
       resetResult(state);
-      state.set("numSettings", 5);
+      state.set("numSettings", 7);
 
       if (successTracker) {
         successTracker.stop();
@@ -698,6 +699,8 @@ if (Meteor.isClient) {
       var handleErrorBound = handleError.bind(state);
       Meteor.call("setSetting", token, "splashDialog", event.target.splashDialog.value, handleErrorBound);
       Meteor.call("setSetting", token, "signupDialog", event.target.signupDialog.value, handleErrorBound);
+      Meteor.call("setSetting", token, "termsUrl", event.target.termsUrl.value, handleErrorBound);
+      Meteor.call("setSetting", token, "privacyUrl", event.target.privacyUrl.value, handleErrorBound);
       Meteor.call("setSetting", token, "adminAlert", event.target.adminAlert.value, handleErrorBound);
       var alertTimeString = event.target.alertTime.value.trim();
       if (alertTimeString) {
@@ -728,6 +731,14 @@ if (Meteor.isClient) {
     signupDialog: function() {
       var setting = Settings.findOne({_id: "signupDialog"});
       return (setting && setting.value) || DEFAULT_SIGNUP_DIALOG;
+    },
+    termsUrl: function() {
+      var setting = Settings.findOne({_id: "termsUrl"});
+      return setting && setting.value;
+    },
+    privacyUrl: function() {
+      var setting = Settings.findOne({_id: "privacyUrl"});
+      return setting && setting.value;
     },
     adminAlert: function() {
       var setting = Settings.findOne({_id: "adminAlert"});

@@ -170,6 +170,12 @@ if (Meteor.isClient) {
   HasUsers = new Mongo.Collection("hasUsers");  // dummy collection defined above
   Backers = new Mongo.Collection("backers");  // pseudo-collection defined above
 
+  if (Meteor.settings.public.quotaEnabled) {
+    window.testDisableQuotaClientSide = function () {
+      Meteor.settings.public.quotaEnabled = false;
+    }
+  }
+
   Router.onRun(function () {
     // Close menus any time we navigate.
     globalTopbar.reset();
@@ -417,6 +423,9 @@ if (Meteor.isClient) {
     },
     globalAccountsUi: function () {
       return globalAccountsUi;
+    },
+    firstLogin: function () {
+      return isSignedUp() && !Meteor.loggingIn() && !Meteor.user().hasCompletedSignup;
     }
   });
 

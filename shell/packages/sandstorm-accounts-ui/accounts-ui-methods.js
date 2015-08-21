@@ -26,9 +26,10 @@ Meteor.methods({
   updateProfile: function (profile) {
     // TODO(cleanup): This check also appears in sandstorm-db/users.js.
     check(profile, {
-      name: Match.OneOf(null, Match.Optional(String)),
-      handle: Match.Optional(ValidHandle),
-      pronoun: Match.Optional(Match.OneOf("male", "female", "neutral", "robot")),
+      name: String,
+      handle: ValidHandle,
+      pronoun: Match.OneOf("male", "female", "neutral", "robot"),
+      email: String
     });
 
     if (!this.userId) {
@@ -38,10 +39,26 @@ Meteor.methods({
     Meteor.users.update(this.userId, {$set: {
       "profile.name": profile.name,
       "profile.handle": profile.handle,
-      "profile.pronoun": profile.pronoun
+      "profile.pronoun": profile.pronoun,
+      "profile.email": profile.email,
+      "hasCompletedSignup": true
     }});
   },
+
+  testFirstSignup: function (profile) {
+    if (!this.userId) {
+      throw new Meteor.Error(403, "not logged in");
+    }
+
+    Meteor.users.update(this.userId, {$unset: {hasCompletedSignup: ""}});
+  }
 });
+
+if (Meteor.isClient) {
+  window.testFirstSignup = function () {
+    Meteor.call("testFirstSignup");
+  }
+}
 
 if (Meteor.isServer) {
   // Methods that can't be simulated.

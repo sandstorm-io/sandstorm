@@ -268,104 +268,7 @@ body>.main-content.account {
         position: absolute;
         z-index: 4;
         left: 40px;
-        width: 600px;
         top: 64px;
-        height: auto;
-        background-color: white;
-        border: 1px solid #ccc;
-        box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
-
-        >ul {
-          padding: 8px;
-
-          >li {
-            list-style-type: none;
-            overflow: hidden;
-            margin-bottom: 8px;
-
-            label {
-              display: block;
-              font-weight: bold;
-              text-align: right;
-            }
-
-            input[type="text"], select {
-              display: block;
-              width: 400px;
-              float: right;
-              box-sizing: border-box;
-              font-size: inherit;
-              line-height: inherit;
-              background-color: white;
-              border: 1px solid #ccc;
-              padding: 2px;
-              margin-left: 8px;
-            }
-
-            &.handle {
-              label::after {
-                content: "@";
-                float: right;
-                margin-right: -20px;
-                font-family: monospace;
-                padding-top: 2px;
-                color: #888;
-              }
-
-              input[type="text"] {
-                padding-left: 1em;
-                font-family: monospace;
-              }
-            }
-
-            &.picture {
-              button {
-                float: right;
-                border: none;
-                padding: 0;
-                width: 256px;
-                height: 256px;
-                margin-right: 144px;
-                margin-left: 8px;
-                position: relative;
-                background-color: transparent;
-
-                &:hover {
-                  cursor: pointer;
-
-                  &::before {
-                    position: absolute;
-                    content: " ";
-                    display: block;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    background-color: rgba(0, 0, 0, 0.2);
-                    z-index: 1;
-                  }
-                }
-
-                >img {
-                  display: block;
-                  max-width: 100%;
-                  max-height: 100%;
-                  margin: auto;
-                }
-              }
-            }
-
-            &.save {
-              text-align: right;
-            }
-
-            >.details {
-              display: block;
-              clear: right;
-              font-size: 80%;
-            }
-          }
-        }
       }
     }
 
@@ -522,6 +425,120 @@ body>.main-content.account {
             }
           }
         }
+      }
+    }
+  }
+}
+
+#first-sign-in.main-content {
+  h1 {
+    text-align: center;
+  }
+  >.account-profile-editor {
+    position: static;
+    margin: auto;
+  }
+}
+
+form.account-profile-editor {
+  width: 600px;
+  height: auto;
+  background-color: white;
+  border: 1px solid #ccc;
+  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+
+  >ul {
+    padding: 8px;
+
+    >li {
+      list-style-type: none;
+      overflow: hidden;
+      margin-bottom: 8px;
+
+      label {
+        display: block;
+        font-weight: bold;
+        text-align: right;
+      }
+
+      input[type="text"], input[type="email"], select {
+        display: block;
+        width: 400px;
+        float: right;
+        box-sizing: border-box;
+        font-size: inherit;
+        line-height: inherit;
+        background-color: white;
+        border: 1px solid #ccc;
+        padding: 2px;
+        margin-left: 8px;
+      }
+
+      input:invalid {
+        border: 1px solid #c00;
+      }
+
+      &.handle {
+        label::after {
+          content: "@";
+          float: right;
+          margin-right: -20px;
+          font-family: monospace;
+          padding-top: 2px;
+          color: #888;
+        }
+
+        input[type="text"] {
+          padding-left: 1em;
+          font-family: monospace;
+        }
+      }
+
+      &.picture {
+        button {
+          float: right;
+          border: none;
+          padding: 0;
+          width: 256px;
+          height: 256px;
+          margin-right: 144px;
+          margin-left: 8px;
+          position: relative;
+          background-color: transparent;
+
+          &:hover {
+            cursor: pointer;
+
+            &::before {
+              position: absolute;
+              content: " ";
+              display: block;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background-color: rgba(0, 0, 0, 0.2);
+              z-index: 1;
+            }
+          }
+
+          >img {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            margin: auto;
+          }
+        }
+      }
+
+      &.save {
+        text-align: right;
+      }
+
+      >.details {
+        display: block;
+        clear: right;
+        font-size: 80%;
       }
     }
   }

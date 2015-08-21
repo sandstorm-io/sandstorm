@@ -49,6 +49,7 @@
 //   storageUsage: Number of bytes this user is currently storing.
 //   expires: Date when this user's account should be deleted. Only present for demo users.
 //   isAppDemoUser: True if this is a demo user who arrived via an /appdemo/ link.
+//   payments: Object defined by payments module, if loaded.
 
 Packages = new Mongo.Collection("packages");
 // Packages which are installed or downloading.
@@ -406,7 +407,8 @@ if (Meteor.isServer) {
     if (this.userId) {
       return [
         Meteor.users.find({_id: this.userId},
-            {fields: {signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1, plan: 1}}),
+            {fields: {signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1,
+                      plan: 1, hasCompletedSignup: 1}}),
         Plans.find()
       ];
     } else {
@@ -704,7 +706,12 @@ _.extend(SandstormDb.prototype, {
   getMyPlan: function () {
     var user = Meteor.user();
     return user && Plans.findOne(user.plan || "free");
-  }
+  },
+
+  getSetting: function (name) {
+    var setting = Settings.findOne(name);
+    return setting && setting.value;
+  },
 });
 
 if (Meteor.isServer) {

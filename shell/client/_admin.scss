@@ -16,7 +16,7 @@
 }
 
 #admin-settings .nav > li > a {
-  padding: 15px;
+  padding: 10px;
 }
 
 #admin-settings .nav > li.active > a {
@@ -62,8 +62,8 @@
   font-size: 70%;
 }
 
-#admin-settings-form input[type="textarea"] {
-  min-width: 600px;
+#admin-settings-form input[type="text"] {
+  width: 100%;
 }
 
 #admin-settings .alert {

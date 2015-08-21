@@ -140,6 +140,7 @@ function googleIdentity(user, staticHost) {
     service: "google",
     id: id,
     name: profile.name || google.name || "Name Unknown",
+    email: profile.email || google.email,
     handle: profile.handle || emailToHandle(google.email) ||
             filterHandle(profile.name || google.name) || "unknown",
     picture: staticAssetUrl(profile.picture, staticHost) || makeIdenticon(id),
@@ -156,6 +157,7 @@ function githubIdentity(user, staticHost) {
     service: "github",
     id: id,
     name: profile.name || github.username || "Name Unknown",
+    email: profile.email || github.email,
     handle: profile.handle || filterHandle(github.username) ||
             filterHandle(profile.name) || "unknown",
     picture: staticAssetUrl(profile.picture, staticHost) || makeIdenticon(id),
@@ -172,6 +174,7 @@ function emailIdentity(user, staticHost) {
     service: "email",
     id: id,
     name: profile.name || email.email.split("@")[0] || "Name Unknown",
+    email: profile.email || email.email,
     handle: profile.handle || emailToHandle(email.email) ||
             filterHandle(profile.name) || "unknown",
     picture: staticAssetUrl(profile.picture, staticHost) || makeIdenticon(id),
@@ -210,6 +213,20 @@ function demoIdentity(user, staticHost) {
     picture: staticAssetUrl(profile.picture, staticHost) || makeIdenticon(id),
     pronoun: profile.pronoun || "neutral",
   }
+}
+
+SandstormDb.getVerifiedEmails = function (user) {
+  var result = [];
+
+  var services = user.services || {};
+  var google = services.google || {};
+  if (google.email && google.verified_email) result.push(google.email);
+  if (services.emailToken) result.push(services.emailToken.email);
+
+  // TODO(soon): Verification of email addresses -- perhaps through asking the user to log in as
+  //   the given identity?
+
+  return result;
 }
 
 SandstormDb.getUserIdentities = function (user) {

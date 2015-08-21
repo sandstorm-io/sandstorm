@@ -1740,7 +1740,12 @@ private:
           kj::heapString(words[0]) == "[GNUPG:]" &&
           kj::heapString(words[1]) == "VALIDSIG") {
         // This is the line we're looking for!
-        return kj::heapString(words[2]);
+
+        // words[11] is privacy-key-fpr, i.e. the fingerprint of the user's main key rather than
+        // the subkey used for this signature. The docs suggest it might not be present. words[2]
+        // is always the fingerprint of the exact key that did the signing, so fall back to that
+        // if needed.
+        return kj::heapString(words.size() > 11 ? words[11] : words[2]);
       }
     }
 

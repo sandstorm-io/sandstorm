@@ -168,26 +168,26 @@ limitations under the License.
 
       <div id="applist-closer" data-show="{{showMenu}}"></div>
       <div id="applist-apps" data-show="{{showMenu}}">
-        <ul>
+        <ul role="menu">
          {{#if isSignedUpOrDemo}}
-           <li class="applist-tab-my-files {{#if selectedTab.myFiles}}selected{{/if}}">My Files</li>
+           <li class="applist-tab-my-files {{#if selectedTab.myFiles}}selected{{/if}}" role="presentation"><a href="#" role="menuitem">My Files</a></li>
          {{/if}}
-         <li class="applist-tab-shared-with-me {{#if selectedTab.sharedWithMe}}selected{{/if}}">
-            Shared With Me</li>
+         <li class="applist-tab-shared-with-me {{#if selectedTab.sharedWithMe}}selected{{/if}}" role="presentation">
+            <a href="#" role="menuitem">Shared With Me</a></li>
           {{#each apps}}
             <li class="applist-tab {{appTabClass appId}} {{#if isDev}}dev{{/if}}"
-                data-appid="{{appId}}">{{name}}</li>
+                data-appid="{{appId}}" role="presentation"><a href="#" role="menuitem">{{name}}</a></li>
           {{/each}}
-          <li class="blank">&nbsp;</li>
+          <li class="blank" aria-hidden="true">&nbsp;</li>
           {{#if isAdmin}}
-            <li class="applist-tab-settings">Admin Settings</li>
+            <li class="applist-tab-settings" role="presentation"><a href="#" role="menuitem">Admin Settings</a></li>
           {{/if}}
-          <li class="applist-tab-about">About Sandstorm</li>
+          <li class="applist-tab-about" role="presentation"><a href="#" role="menuitem">About Sandstorm</a></li>
         </ul>
       </div>
       <div id="applist-grains" class="{{#if selectedAppIsDev}}dev{{/if}}">
         {{#if selectedTab.appId}}
-          <div class="button-box">
+          <div class="button-box" role="toolbar">
             <button class="show-apps">« My Apps</button>
             {{#each devActions}}
               <button class="new-grain-button" data-actionid="dev"
@@ -208,7 +208,7 @@ limitations under the License.
           </div>
         {{else}}
           {{#if selectedTab.myFiles}}
-            <div class="button-box">
+            <div class="button-box" role="toolbar">
               <button class="show-apps">« My Apps</button>
               <button id="install-apps-button" class="{{#if overQuota}}over-quota{{/if}}">
                   Install apps</button>
@@ -218,7 +218,7 @@ limitations under the License.
                   Restore a backup</button>
             </div>
           {{else}}
-            <div class="button-box">
+            <div class="button-box" role="toolbar">
               <button class="show-apps">« My Apps</button>
             </div>
           {{/if}}
@@ -246,7 +246,7 @@ limitations under the License.
             <tbody>
               {{#each filteredGrains}}
                 <tr class="grain" data-grainid="{{_id}}">
-                  <td>{{title}}</td>
+                  <td><a href="#">{{title}}</a></td>
                   <td title="{{lastUsed}}">{{dateString lastUsed}}</td>
                 </tr>
               {{/each}}

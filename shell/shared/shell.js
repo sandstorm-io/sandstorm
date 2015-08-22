@@ -443,6 +443,11 @@ if (Meteor.isClient) {
     }
   });
 
+  var tabIndexOnlyFirst = function(selector) {
+    $(selector).attr("tabindex", "-1");
+    $(selector)[0].tabIndex = 0
+  };
+
   Template.root.events({
     "click #logo": function (event) {
       doLogoAnimation(event.shiftKey, 0);
@@ -645,6 +650,11 @@ if (Meteor.isClient) {
     }
   });
 
+  Template.root.onRendered(function() {
+    tabIndexOnlyFirst("[role = menuitem]");
+    tabIndexOnlyFirst("[role = toolbar] button:visible");
+  });
+
   Template.root.events({
     "click .applist-tab": function (event) {
       Session.set("selectedTab", {appId: event.currentTarget.getAttribute("data-appid")});
@@ -659,6 +669,7 @@ if (Meteor.isClient) {
       Session.set("showMenu", false);
     },
     "click .applist-tab-settings": function (event) {
+      event.preventDefault();
       Router.go("adminSettings", {});
       Session.set("showMenu", false);
     },
@@ -671,6 +682,7 @@ if (Meteor.isClient) {
       Session.set("showMenu", false);
     },
     "click .applist-tab-about": function (event) {
+      event.preventDefault();
       Router.go("about", {});
       Session.set("showMenu", false);
     },
@@ -679,6 +691,7 @@ if (Meteor.isClient) {
     },
 
     "click #applist-grains tbody tr.grain": function (event) {
+      event.preventDefault();
       Router.go("grain", {grainId: event.currentTarget.getAttribute("data-grainid")});
     },
 
@@ -736,6 +749,49 @@ if (Meteor.isClient) {
     "click .action-required button": function (event) {
       event.currentTarget.parentNode.parentNode.style.display = "none";
     },
+
+    "blur [role=menu]": function(event, template) {
+      event.preventDefault();
+      tabIndexOnlyFirst($("[role=menuitem]"));
+    },
+
+    "blur [role=toolbar]": function(event, template) {
+      event.preventDefault();
+      tabIndexOnlyFirst($("[role=toolbar] button:visible"));
+    },
+
+    "keydown [role=menuitem]": function(event, template) {
+      template.$("[role = menuitem]").attr("tabindex", "-1");
+      $(event.currentTarget).attr("tabindex", "0");
+      if(event.keyCode == 37 || event.keyCode == 39)
+        event.preventDefault();
+    },
+
+    "keydown [role=toolbar]": function(event, template) {
+      if(event.keyCode == 38 || event.keyCode == 40)
+        event.preventDefault();
+      var focus = $(template.find(":focus"));
+      var items = template.$("button:visible");
+      var focusIndex = items.index(focus);
+      var newFocusIndex;
+      if(event.keyCode == 37) {
+        event.preventDefault();
+        newFocusIndex = focusIndex-1;
+        if(newFocusIndex == -1)
+          newFocusIndex = items.length-1;
+      } else if(event.keyCode == 39) {
+        event.preventDefault();
+        newFocusIndex = focusIndex+1;
+        if(newFocusIndex >= items.length)
+          newFocusIndex = 0;
+      }
+      if(newFocusIndex != null) {
+        items.attr("tabindex", "-1");
+        newFocus = $(items[newFocusIndex]);
+        newFocus.attr("tabindex", "0");
+        newFocus.focus();
+      }
+    }
   });
 
   Template.about.onCreated(function () {

@@ -125,7 +125,7 @@ struct Manifest {
     # never provide a way to make argv[0] contain something other than the executable name, as
     # you can technically do with the `exec` system call.
   }
-
+M
   struct Action {
     input :union {
       none @0 :Void;
@@ -494,6 +494,7 @@ enum OpenSourceLicense {
   mpl2      @14 $osiInfo(id = "MPL-2.0" , title = "Mozilla Public License v2", requireSource = true);
   cddl      @15 $osiInfo(id = "CDDL-1.0", title = "CDDL", requireSource = true);
   epl       @16 $osiInfo(id = "EPL-1.0" , title = "Eclipse Public License", requireSource = true);
+  cpal      @17 $osiInfo(id = "CPAL-1.0" , title = "Common Public Attribution License", requireSource = true);
 
   # Is your preferred license not on the list? We are happy to add any OSI-approved license; that
   # is, anything on this page:

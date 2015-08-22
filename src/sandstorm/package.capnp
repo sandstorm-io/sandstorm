@@ -125,7 +125,7 @@ struct Manifest {
     # never provide a way to make argv[0] contain something other than the executable name, as
     # you can technically do with the `exec` system call.
   }
-M
+
   struct Action {
     input :union {
       none @0 :Void;

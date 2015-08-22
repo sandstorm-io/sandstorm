@@ -46,8 +46,8 @@ limitations under the License.
         <ul class="navbar-grains">
           {{#each grains}}
           <li data-grainid="{{grainId}}" class="navitem-grain {{#if active}}current{{/if}}">
-            <img class="app-icon" src="{{iconSrc}}">
-            <a href="/grain/{{grainId}}">{{title}}</a>
+            <img class="app-icon" src="{{iconSrc}}" title="{{appTitle}}" alt="{{appTitle}}">
+            <a href="{{grainLink}}">{{title}}</a>
             <button class="close-button"></button>
           </li>
           {{/each}}

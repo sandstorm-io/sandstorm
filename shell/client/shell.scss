@@ -321,19 +321,8 @@ iframe.grain-frame {
   }
   &.inactive-grain {
     z-index: -2;
+    display: none;
   }
-}
-
-div.iframe-hider {
-  border: none;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  display: block;
-  position: absolute;
-  background: white;
-  z-index: -1;
 }
 
 body.ios iframe.grain-frame {

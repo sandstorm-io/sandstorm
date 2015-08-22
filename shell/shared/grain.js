@@ -54,7 +54,9 @@ if (Meteor.isServer) {
   });
 
   Meteor.publish("tokenInfo", function (token) {
-    // Allows the client side to map a raw token to its entry in ApiTokens.
+    // Allows the client side to map a raw token to its entry in ApiTokens, and the additional
+    // metadata that it will need to display the app icon and title.  We do not care about making
+    // the metadata reactive.
     check(token, String);
 
     var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
@@ -62,7 +64,21 @@ if (Meteor.isServer) {
     if (!apiToken || (apiToken.owner && !("webkey" in apiToken.owner))) {
       this.added("tokenInfo", token, {invalidToken: true});
     } else {
-      this.added("tokenInfo", token, {apiToken: apiToken});
+      var grainId = apiToken.grainId;
+      var grain = Grains.findOne({_id: grainId}, {fields: {packageId: 1, appId: 1}});
+      var pkg = Packages.findOne({_id: grain.packageId}, {fields: {manifest: 1}});
+      var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ""};
+      var appIcon = undefined;
+      if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
+        var icons = pkg.manifest.metadata.icons;
+        appIcon = icons.grain || icons.appGrid;
+      }
+      var denormalizedGrainMetadata = {
+        appTitle: appTitle,
+        icon: appIcon,
+        appId: appIcon ? undefined : grain.appId,
+      };
+      this.added("tokenInfo", token, {apiToken: apiToken, grainMetadata: denormalizedGrainMetadata});
     }
     this.ready();
     return;
@@ -117,9 +133,11 @@ if (Meteor.isServer) {
   });
 }
 
-var GrainSizes = new Mongo.Collection("grainSizes");
+// GrainSizes is used by grainview.js
+GrainSizes = new Mongo.Collection("grainSizes");
 var DisplayNames = new Mongo.Collection("displayNames");
-var TokenInfo = new Mongo.Collection("tokenInfo");
+// TokenInfo is used by grainview.js
+TokenInfo = new Mongo.Collection("tokenInfo");
 // Pseudo-collections published above.
 
 Meteor.methods({
@@ -207,11 +225,16 @@ if (Meteor.isClient) {
     // We need to keep track of certain data about each grain we can view
     var grains = globalGrains.get();
     grains.forEach(function(grain) {
-      Meteor.subscribe("grainTopBar", grain.grainId);
-      Meteor.subscribe("packageByGrainId", grain.grainId);
-      var session = Sessions.findOne({grainId: grain.grainId});
-      if (session) {
-        Meteor.subscribe("grainSize", session._id);
+      grain.depend();
+      var grainId = grain.grainId();
+      if (grainId) {
+        Meteor.subscribe("grainTopBar", grainId);
+        Meteor.subscribe("packageByGrainId", grainId);
+        // TODO(soon): only subscribe to grains the current user owns
+        var session = Sessions.findOne({grainId: grainId});
+        if (session && grain.isOwner()) {
+          Meteor.subscribe("grainSize", session._id);
+        }
       }
     });
   })
@@ -230,9 +253,9 @@ if (Meteor.isClient) {
     "click": function (event) {
       var title = window.prompt("Set new title:", this.title);
       if (title) {
-        //if (this.isOwner) {
-          var g = getActiveGrain(globalGrains.get());
-          if (g) {
+        var g = getActiveGrain(globalGrains.get());
+        if (g) {
+          if (g.isOwner()) {
             Grains.update(g.grainId, {$set: {title: title}});
           }
           /* TODO(now): fix this for ApiTokens.
@@ -244,8 +267,8 @@ if (Meteor.isClient) {
             ApiTokens.update(token._id,
                              {$set: {"owner.user.title" : title}});
           }
-        }
           */
+        }
       }
     },
   });
@@ -348,14 +371,15 @@ if (Meteor.isClient) {
     },
     "submit #newApiToken": function (event) {
       event.preventDefault();
-      var grainId = this.grainId;
+      var activeGrain = getActiveGrain(globalGrains.get());
+      var grainId = activeGrain.grainId;
       Session.set("api-token-" + grainId, "pending");
       var roleList = document.getElementById("api-token-role");
       var assignment = {allAccess: null};
       if (roleList && roleList.selectedIndex > 0) {
         assignment = {roleId: roleList.selectedIndex - 1};
       }
-      Meteor.call("newApiToken", this.grainId, document.getElementById("api-token-petname").value,
+      Meteor.call("newApiToken", grainId, document.getElementById("api-token-petname").value,
                   assignment, false, undefined,
                   function (error, result) {
         if (error) {
@@ -368,7 +392,8 @@ if (Meteor.isClient) {
       });
     },
     "click #resetApiToken": function (event) {
-      Session.set("api-token-" + this.grainId, undefined);
+      var grainId = getActiveGrain(globalGrains.get()).grainId;
+      Session.set("api-token-" + grainId, undefined);
     },
     "click button.revoke-token": function (event) {
       Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
@@ -453,7 +478,8 @@ if (Meteor.isClient) {
       if (!instance.completionState.get().clear) {
         return;
       }
-      var grainId = this.grainId;
+      var currentGrain = getActiveGrain(globalGrains.get());
+      var grainId = currentGrain.grainId;
       var roleList = event.target.getElementsByClassName("share-token-role")[0];
       var assignment;
       if (roleList) {
@@ -535,6 +561,7 @@ if (Meteor.isClient) {
     this.originalHash = window.location.hash;
   });
 
+  // TODO: use this or remove it
   //OpenGrains = new Mongo.Collection(null);
   // Client-side collection for containing open grain state
   // Looks like: {
@@ -565,36 +592,18 @@ if (Meteor.isClient) {
 
     grainSize: function () {
       var current = getActiveGrain(globalGrains.get());
-      if (current) {
-        current.dep.depend();
-        var session = Sessions.findOne({grainId: current.grainId});
-        if (session) {
-          sizeEntry = GrainSizes.findOne(session._id);
-          if (sizeEntry) {
-            return "(" + prettySize(sizeEntry.size) + ")";
-          }
-        }
+      var sizeBytes = current && current.size();
+      if (sizeBytes !== undefined) {
+        return "(" + prettySize(sizeBytes) + ")";
+      } else {
+        return "";
       }
-      return "";
     },
 
     setGrainWindowTitle:  function() {
       var current = getActiveGrain(globalGrains.get());
       if (current) {
-        current.dep.depend();
-        var grain = Grains.findOne({_id: current.grainId});
-        var pkg = grain && Packages.findOne({_id: grain.packageId})
-        // TODO(now): make this work with ApiTokens too
-        var grainTitle = grain && grain.title;
-        var appTitle = pkg && pkg.manifest && pkg.manifest.appTitle && pkg.manifest.appTitle.defaultText;
-        // TODO(someday) - shouldn't use defaultText
-        if (appTitle && grainTitle) {
-          document.title = appTitle + " · " + grainTitle + " · Sandstorm";
-        } else if (grainTitle) {
-          document.title = grainTitle + " · Sandstorm";
-        } else {
-          document.title = "Sandstorm";
-        }
+        current.updateDocumentTitle();
       }
     },
 
@@ -603,6 +612,7 @@ if (Meteor.isClient) {
     },
 
     showPowerboxOffer: function () {
+      var current = getActiveGrain(globalGrains.get());
       var session = Sessions.findOne({_id: this.sessionId}, {fields: {powerboxView: 1}});
       return session && session.powerboxView && !!session.powerboxView.offer;
     },
@@ -895,11 +905,11 @@ if (Meteor.isClient) {
     var grains = globalGrains.get();
     if (!grains) return;
     grains.forEach(function (grain) {
-      if (grain.sessionId) {
+      if (grain.sessionId()) {
         // TODO(soon):  Investigate what happens in background tabs.  Maybe arrange to re-open the
         //   app if it dies while in the background.
         console.log("keepalive: ", new Date());
-        Meteor.call("keepSessionAlive", grain.sessionId, function (error, result) {
+        Meteor.call("keepSessionAlive", grain.sessionId(), function (error, result) {
           if (!result) {
             // TODO(soon):  Make a UI for this.
             //   Hmm... Actually this may not be a real problem since the grain will be restarted
@@ -943,6 +953,7 @@ if (Meteor.isClient) {
       }
       */
       if (event.data.setPath) {
+        // TOOD(now): fix this
         var prefix = senderGrain.rootPath.match("/[^/]*/[^/]*")[0];
         if (prefix.lastIndexOf("/grain/", 0) !== 0 &&
             prefix.lastIndexOf("/shared/", 0) !== 0) {
@@ -951,14 +962,12 @@ if (Meteor.isClient) {
         }
 
         senderGrain.rootPath = prefix + event.data.setPath;
-        if (senderGrain.active) {
+        if (senderGrain.isActive()) {
           window.history.replaceState({}, "", prefix + event.data.setPath);
         }
         senderGrain.dep.changed();
       } else if (event.data.setTitle) {
-        //Session.set("grainFrameTitle", event.data.setTitle);
-        senderGrain.frameTitle = event.data.setTitle;
-        senderGrain.dep.changed();
+        senderGrain.setFrameTitle(event.data.setTitle);
       } else if (event.data.renderTemplate) {
         // Request creation of a single-use template with a privileged API token.
         // Why?  Apps should not be able to obtain capabilities-as-keys to
@@ -996,7 +1005,7 @@ if (Meteor.isClient) {
         if (Router.current().route.getName() === "shared") {
           rawParentToken = Router.current().params.token;
         }
-        Meteor.call("newApiToken", senderGrain.grainId, petname, assignment, forSharing,
+        Meteor.call("newApiToken", senderGrain.grainId(), petname, assignment, forSharing,
                     selfDestructDuration, rawParentToken, function (error, result) {
           if (error) {
             event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
@@ -1091,15 +1100,13 @@ function makeGrainIdActive(grainId) {
   var grains = globalGrains.get();
   for (var i = 0 ; i < grains.length ; i++) {
     var grain = grains[i];
-    if (grain.grainId === grainId) {
-      if (!grain.active) {
-        grain.active = true;
-        grain.dep.changed();
+    if (grain.grainId() === grainId) {
+      if (!grain.isActive()) {
+        grain.setActive(true);
       }
     } else {
-      if (grain.active) {
-        grain.active = false;
-        grain.dep.changed();
+      if (grain.isActive()) {
+        grain.setActive(false);
       }
     }
   }
@@ -1112,7 +1119,7 @@ function getActiveGrain(grains) {
 
 function activeGrainIndex(grains) {
   for (var i = 0; i < grains.length ; i++) {
-    if (grains[i].active) {
+    if (grains[i].isActive()) {
       return i;
     }
   }
@@ -1121,7 +1128,7 @@ function activeGrainIndex(grains) {
 
 function grainOriginToIndex(grains, origin) {
   for (var i = 0; i < grains.length ; i++) {
-    if (grains[i].cachedAppOrigin === origin) {
+    if (grains[i].origin() === origin) {
       return i;
     }
   }
@@ -1131,27 +1138,93 @@ function grainOriginToIndex(grains, origin) {
 function grainIdToIndex(grains, grainId) {
   for (var i = 0; i < grains.length ; i++) {
     var grain = grains[i];
-    if (grains[i].grainId === grainId) {
+    if (grains[i].grainId() === grainId) {
       return i;
     }
   }
   return -1;
 }
 
+function prepareNewApiTokenSession(grainId, path, query, hash, token) {
+  console.log("prepareNewApiTokenSession " + token + grainId + ' ' + path + ' ' + query + ' ' + hash);
+  var grainState = {
+    token: token,
+    path: path,
+    query: query,
+    hash: hash,
+    tokenOnly: true,
+    revealIdentity: null, // set to "redeem" to redeem a token and "incognito" otherwise
+    dep: new Tracker.Dependency,
+  };
+
+  var openSessionArg = {
+    token: token,
+    incognito: true,
+  };
+
+  Meteor.call("openSessionFromApiToken", openSessionArg, function(error, result) {
+    if (error) {
+      console.log("openSessionFromApiToken error");
+      grainState.error = error.message;
+      grainState.openingSession = undefined;
+      grainState.dep.changed();
+    } else if (result.redirectToGrain) {
+      console.log("openSessionFromApiToken redirectToGrain");
+      grainState.tokenOnly = false;
+      grainState.grainId = result.redirectToGrain;
+      grainState.dep.changed();
+      // Make sure to carry over any within-grain path.
+      var routeParams = { grainId: result.redirectToGrain };
+      if (grainState.path) {
+        routeParams.path = grainState.path;
+      }
+      var urlParams = {};
+      if (grainState.query) {
+        urlParams.query = grainState.query;
+      }
+      if (grainState.hash) {
+        urlParams.hash = grainState.hash;
+      }
+      // We should remove this tab from the tab list, since the /grain/<grainId> route
+      // will set up its own for this grain.  Maybe there's even such a tab already open.
+      // OK, go to the grain.
+      return Router.go("grain", routeParams, urlParams);
+    } else {
+      // We are viewing this via just the /shared/ link, either as an anonymous user on in our
+      // incognito mode (since we'd otherwise have redeemed the token and been redirected).
+      grainState.tokenOnly = true;
+      // If this session is tokenOnly, then we will use the cached title and sessionId, rather than
+      // looking them up in collections that we won't have subscriptions for.
+      console.log("openSessionFromApiToken success");
+      console.log(result);
+      grainState.title = result.title;
+      grainState.grainId = result.grainId;
+      grainState.sessionId = result.sessionId;
+      var subscription = Meteor.subscribe("sessions", result.sessionId);
+      Sessions.find({_id : result.sessionId}).observeChanges({
+        removed: function(session) {
+          console.log("session removed");
+          subscription.stop();
+          grainState.sessionSub = undefined;
+          grainState.dep.changed();
+        },
+        added: function(session) {
+          console.log("session added");
+          grainState.openingSession = undefined;
+          grainState.dep.changed();
+        }
+      });
+      grainState.sessionSub = subscription;
+      grainState.dep.changed();
+    }
+
+  });
+
+  return grainState;
+}
+
 function prepareNewGrainSession(grainId, path, query, hash) {
   console.log("prepareNewGrainSession " + grainId + ' ' + path + ' ' + query + ' ' + hash);
-  var title;
-  var grain = Grains.findOne(grainId);
-  if (grain) {
-    title = grain.title;
-  } else if (Meteor.userId()) {
-    var token = ApiTokens.findOne({grainId: grainId,
-                                   "owner.user.userId": Meteor.userId()},
-                                  {sort:{created:1}});
-    if (token) {
-      title = token.owner.user.title;
-    }
-  }
   var grainState = {
     grainId: grainId,
     path: path,
@@ -1166,29 +1239,14 @@ function prepareNewGrainSession(grainId, path, query, hash) {
       grainState.error = error.message;
       grainState.openingSession = undefined;
       grainState.dep.changed();
-    } else if (result.redirectToGrain) {
-      console.log("openSession redirectToGrain");
-      grainState.grainId = result.redirectToGrain;
-      grainState.dep.changed();
-      // TODO(now): verify that this is, in fact, the grain we're supposed to be showing?
-      // Make sure to carry over any within-grain path.
-      var routeParams = { grainId: result.redirectToGrain };
-      if (grainState.path) {
-        routeParams.path = grainState.path;
-      }
-      var urlParams = {};
-      if (grainState.query) {
-        urlParams.query = grainState.query;
-      }
-      if (grainState.hash) {
-        urlParams.hash = grainState.hash;
-      }
-      // OK, go to the grain.
-      return Router.go("grain", routeParams, urlParams);
     } else {
+      // result is an object containing sessionId, initial title, and grainId.
       console.log("openSession success");
       console.log(result);
-      if (result.title) { grainState.title = result.title; }
+      if (result.title) {
+        console.log("Title provided for grain session by ID?");
+        grainState.title = result.title;
+      }
       grainState.grainId = result.grainId;
       var subscription = Meteor.subscribe("sessions", result.sessionId);
       Sessions.find({_id : result.sessionId}).observeChanges({
@@ -1209,70 +1267,26 @@ function prepareNewGrainSession(grainId, path, query, hash) {
 
   });
   return grainState;
-
-  /*
-  var thisGrain = grainRouteHelper(this, {
-        grainId: grainId,
-        title: title,
-        isOwner: grain && grain.userId && grain.userId === Meteor.userId(),
-        isDemoUser: isDemoUser(),
-        oldSharingModel: grain && !grain.private,
-        state: new ReactiveDict(),
-        grainTracker: new Tracker.Dependency(),
-      },
-      "openSession",
-      grainId,
-      "/grain/" + grainId);
-  return thisGrain;
-  */
 }
 function mapGrainStateToTemplateData(grainState) {
-  grainState.dep.depend();
-
-  var title;
-  var token;
-  var grain = Grains.findOne({_id: grainState.grainId});
-  if (grain) {
-    title = grain.title;
-  } else if (Meteor.userId()) {
-    token = ApiTokens.findOne({grainId: grainState.grainId,
-                                   "owner.user.userId": Meteor.userId()},
-                                  {sort:{created:1}});
-    if (token) {
-      title = token.owner.user.title;
-    }
-  }
-  var session = Sessions.findOne({grainId: grainState.grainId});
-  if (session) {
-    var appOrigin = window.location.protocol + "//" + makeWildcardHost(session.hostId);
-    grainState.cachedAppOrigin = appOrigin;
-  }
-
   var templateData = {
-    grainId: grainState.grainId,
-    active: grainState.active,
-    title: title,
-    error: grainState.error,
-    appOrigin: session && appOrigin,
-    hasNotLoaded: !(session && session.hasLoaded),
-    sessionId: session && session._id,
-    path: encodeURIComponent(grainState.path || ""),
-    hash: grainState.hash || "",
-    viewInfo: session && session.viewInfo,
+    grainId: grainState.grainId(),
+    active: grainState.isActive(),
+    title: grainState.title(),
+    error: grainState.error(),
+    appOrigin: grainState.origin(),
+    hasNotLoaded: !(grainState.hasLoaded()),
+    sessionId: grainState.sessionId(),
+    path: encodeURIComponent(grainState._originalPath || ""), //TODO: cleanup
+    hash: grainState._originalHash || "", // TODO: cleanup
+    viewInfo: grainState.viewInfo(),
   };
-  /*
-  if (grainState.grainId) {
-    templateData.rootPath = "/grain/" + grainState.grainId;
-  }
-  if (grainState.sharedToken) {
-    templateData.rootPath = "/shared/" + grainState.sharedToken;
-  }
-  */
-  //templateData.showMenu = Session.get("showMenu");
+  console.log(templateData);
   return templateData;
 }
 
 function grainRouteHelper(route, grainState, openSessionMethod, openSessionArg, rootPath) {
+  return;
   var grainId = grainState.grainId;
 
   var apiToken = Session.get("api-token-" + grainId);
@@ -1383,7 +1397,9 @@ Router.map(function () {
       var grains = globalGrains.get();
       var grainIndex = grainIdToIndex(grains, grainId);
       if (grainIndex == -1) {
-        var grainToOpen = prepareNewGrainSession(grainId, path, query, hash);
+        var grainToOpen = new GrainView(grainId, path, query, hash);
+        grainToOpen._openSession();
+        //var grainToOpen = prepareNewGrainSession(grainId, path, query, hash);
         grainIndex = grains.push(grainToOpen) - 1;
         globalGrains.set(grains);
       }
@@ -1393,9 +1409,8 @@ Router.map(function () {
 
     onStop: function () {
       globalGrains.get().forEach(function (grain) {
-        if (grain.active) {
-          grain.active = false;
-          grain.dep.changed();
+        if (grain.isActive()) {
+          grain.setActive(false);
         }
       });
     }
@@ -1417,10 +1432,44 @@ Router.map(function () {
       ];
     },
 
+    onRun: function () {
+      var token = this.params.token;
+      var path = this.params.path;
+      var query = this.params.query;
+      var hash = this.params.hash;
+
+      Tracker.autorun(function() {
+        var tokenInfo = TokenInfo.findOne(token);
+        if (!tokenInfo || tokenInfo.invalidToken) {
+          console.log("invalid");
+        } else {
+          console.log("valid");
+          var grainId = tokenInfo.grainId;
+          if (!Grains.findOne({_id: tokenInfo.grainId, userId: Meteor.userId()}) &&
+              !ApiTokens.findOne({userId: tokenInfo.userId, "owner.user.userId": Meteor.userId()})) {
+            // The user neither owns the grain nor holds any sturdyrefs from this sharer.
+            // Therefore, we ask whether they would like to go incognito.
+            // TODO(soon): Base this decision on the contents of the Contacts collection.
+          }
+          var grains = globalGrains.get();
+          var grainIndex = grainIdToIndex(grains, grainId);
+          if (grainIndex == -1) {
+            var grainToOpen = prepareNewApiTokenSession(tokenInfo.grainId, path, query, hash, token);
+            grainIndex = grains.push(grainToOpen) - 1;
+            globalGrains.set(grains);
+          }
+          makeGrainIdActive(grainId);
+        }
+      });
+      this.next();
+    },
+
     data: function() {
       if (!this.ready || Meteor.loggingIn()) {
         return;
       }
+      return;
+      /*
       if (Meteor.userId() && !Session.get("visit-token-" + this.params.token)) {
         var tokenInfo = TokenInfo.findOne(this.params.token);
         if (!tokenInfo || !tokenInfo.apiToken) {
@@ -1451,6 +1500,7 @@ Router.map(function () {
                                incognito:
                                   "redeem" !== Session.get("visit-token-" + this.params.token)},
                               "/shared/" + this.params.token);
+                              */
     },
 
     onStop: function () {

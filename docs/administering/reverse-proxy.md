@@ -1,4 +1,6 @@
 ## Prerequisites
+Create DNS entries for `example.com` and `*.example.com`.
+
 Obtain or generate two TLS certificates in total for `example.com` and `*.example.com`.
 
 Install `nginx` with your package manager.

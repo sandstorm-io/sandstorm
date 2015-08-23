@@ -112,8 +112,8 @@ limitations under the License.
   {{#if interstitial}}
     <div class="interstitial-button-box">
       <p>This grain was shared by someone who is not in your contacts.</p>
-      <button id="redeem-token-button" data-token="{{token}}">Reveal your Identity</button>
-      <button id="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
+      <button class="redeem-token-button" data-token="{{token}}">Reveal your Identity</button>
+      <button class="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
     </div>
   {{else}}
     {{> _grainSpinner}}

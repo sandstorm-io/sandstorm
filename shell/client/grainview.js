@@ -316,7 +316,7 @@ GrainView.prototype._openApiTokenSession = function () {
       // We should remove this tab from the tab list, since the /grain/<grainId> route
       // will set up its own tab for this grain.  There could even already be a tab open, if the
       // user reuses a /shared/ link.
-      allGrains = globalGrains.get();
+      var allGrains = globalGrains.get();
       for (var i = 0 ; i < allGrains.length ; i++) {
         if (allGrains[i] === self) {
           allGrains.splice(i, 1);

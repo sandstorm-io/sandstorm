@@ -690,7 +690,8 @@ if (Meteor.isClient) {
 
   Template.whoHasAccessPopup.onCreated(function () {
     var instance = this;
-    instance.grainId = this.data.grainId;
+    var currentGrain = getActiveGrain(globalGrains.get());
+    instance.grainId = currentGrain.grainId();
     instance.transitiveShares = new ReactiveVar(null);
     this.resetTransitiveShares = function() {
       Meteor.call("transitiveShares", instance.grainId, function(error, downstream) {
@@ -796,7 +797,8 @@ if (Meteor.isClient) {
     indexedRoles: function () {
       var result = [];
       var instance = Template.instance();
-      var roles = instance.data.viewInfo.roles;
+      var currentGrain = getActiveGrain(globalGrains.get());
+      var roles = currentGrain.viewInfo().roles;
       for (var ii = 0; ii < roles.length; ++ii) {
         result.push({idx: ii, title: roles[ii].title, verbPhrase: roles[ii].verbPhrase});
       }

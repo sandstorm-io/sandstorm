@@ -52,6 +52,12 @@ GrainView.prototype.setActive = function (isActive) {
   this._dep.changed();
 }
 
+GrainView.prototype.isOldSharingModel = function () {
+  this._dep.depend();
+  var grain = Grains.findOne({_id: this._grainId})
+  return grain && !grain.private;
+}
+
 GrainView.prototype.isOwner = function () {
   this._dep.depend();
   // See if this is one of our own grains.

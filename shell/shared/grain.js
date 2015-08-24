@@ -832,9 +832,22 @@ if (Meteor.isClient) {
   });
 
   Template.shareWithOthers.helpers({
+    isOldSharingModel: function () {
+      var currentGrain = getActiveGrain(globalGrains.get());
+      return currentGrain && currentGrain.isOldSharingModel();
+    },
+    isOwner: function () {
+      var currentGrain = getActiveGrain(globalGrains.get());
+      return currentGrain && currentGrain.isOwner();
+    }
   });
 
   Template.selectRole.helpers({
+    viewInfo: function () {
+      var currentGrain = getActiveGrain(globalGrains.get());
+      return currentGrain && currentGrain.viewInfo();
+    },
+
     roleText: function () {
       if (this.verbPhrase) {
         return this.verbPhrase.defaultText;

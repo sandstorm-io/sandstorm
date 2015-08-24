@@ -307,6 +307,7 @@ if (Meteor.isClient) {
           Session.set("showMenu", false);
           Meteor.call("deleteGrain", activeGrain.grainId());
           // TODO: extract globalGrains into a class that has a "close" method for closing the active view
+          activeGrain.destroy();
           if (grains.length == 1) {
             globalGrains.set([]);
             Router.go("selectGrain");
@@ -314,7 +315,6 @@ if (Meteor.isClient) {
             grains.splice(activeIndex, 1);
             grains[newActiveIndex].setActive(true);
             globalGrains.set(grains);
-            activeGrain.destroy();
             Router.go("grain", {grainId: grains[newActiveIndex].grainId()});
           }
         }
@@ -323,6 +323,7 @@ if (Meteor.isClient) {
           Session.set("showMenu", false);
           Meteor.call("forgetGrain", activeGrain.grainId());
           // TODO: extract globalGrains into a class that has a "close" method for closing the active view
+          activeGrain.destroy();
           if (grains.length == 1) {
             globalGrains.set([]);
             Router.go("selectGrain");
@@ -330,7 +331,6 @@ if (Meteor.isClient) {
             grains.splice(activeIndex, 1);
             grains[newActiveIndex].setActive(true);
             globalGrains.set(grains);
-            activeGrain.destroy();
             Router.go("grain", {grainId: grains[newActiveIndex].grainId()});
           }
         }

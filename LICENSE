@@ -21,13 +21,17 @@ shell/public/spinner_96.gif
     License: MIT
     License URL: https://github.com/sjhcockrell/spinners/blob/master/README.md
 
-shell/public/opensans-light.woff
-shell/public/opensans-semibold.woff
-    What: Open Sans font
-    Source URL: https://www.google.com/fonts/specimen/Open+Sans
-    Copyright: Google, Inc.
-    License: Apache 2.0
-    License URL: http://www.apache.org/licenses/LICENSE-2.0.html
+shell/public/fonts/WOFF/OTF/SourceSansPro-Regular.otf.woff
+shell/public/fonts/WOFF/OTF/SourceSansPro-It.otf.woff
+shell/public/fonts/WOFF/OTF/SourceSansPro-Semibold.otf.woff
+shell/public/fonts/WOFF/OTF/SourceSansPro-SemiboldIt.otf.woff
+shell/public/fonts/WOFF/OTF/SourceSansPro-Bold.otf.woff
+shell/public/fonts/WOFF/OTF/SourceSansPro-BoldIt.otf.woff
+    What: Source Sans Pro font
+    Source URL: https://github.com/adobe-fonts/source-sans-pro
+    Copyright: Adobe Systems Incorporated
+    License: SIL Open Font License, Version 1.1
+    License URL: https://github.com/adobe-fonts/source-sans-pro/blob/master/LICENSE.txt
 
 shell/packages/sandstorm-accounts-ui
     What: forked from accounts-ui/accounts-ui-unstyled

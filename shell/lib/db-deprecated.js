@@ -66,22 +66,7 @@ if (Meteor.isServer) {
 
 if (Meteor.isClient) {
   Session.setDefault("show-sidebar", true);
-  FancyReactiveVar = function(initialValue) {
-    // Hack: ReactiveVar implementation doesn't preserve the original object prototype, which
-    // breaks reactivity.
-    this._val = (initialValue === undefined) ? [] : initialValue;
-    this._dep = new Tracker.Dependency;
-    this.get = function() {
-      this._dep.depend();
-      return this._val;
-    },
-    this.set = function(value) {
-      this._val = value;
-      this._dep.changed();
-    }
-    return this;
-  };
-  globalGrains = new FancyReactiveVar([]);
+  globalGrains = new ReactiveVar([]);
   console.log('init grains');
   globalTopbar = new SandstormTopbar(globalDb,
     {

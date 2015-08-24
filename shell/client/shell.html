@@ -841,12 +841,7 @@ limitations under the License.
            <button id="uploadButton">Upload</button></p>
       {{/if}}
     {{else}}
-      {{#if isDemoUser}}
-        <p>Sorry, demo users are not allowed to upload new apps, but you can
-          <a href="https://apps.sandstorm.io/?host={{origin}}">install apps from sandstorm.io</a>.</p>
-      {{else}}
-        <p>Sorry, Sandstorm is in closed alpha.  To install apps, you must first be invited.</p>
-      {{/if}}
+      <p>Sorry, this server requires an invite before you can install apps.</p>
     {{/if}}
     </div>
   </div>

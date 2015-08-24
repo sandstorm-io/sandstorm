@@ -312,27 +312,45 @@ if (Meteor.isClient) {
 
   var billingPromptState = new ReactiveVar(null);
 
+  var showBillingPrompt = function (reason, next) {
+    billingPromptState.set({
+      reason: reason,
+      db: globalDb,
+      topbar: globalTopbar,
+      accountsUi: globalAccountsUi,
+      onComplete: function () {
+        billingPromptState.set(null);
+        if (next) next();
+      }
+    });
+  };
+
   var ifQuotaAvailable = function (next) {
     var reason = isUserOverQuota(Meteor.user());
     if (reason) {
       if (window.BlackrockPayments) {
-        billingPromptState.set({
-          reason: reason,
-          db: globalDb,
-          topbar: globalTopbar,
-          accountsUi: globalAccountsUi,
-          onComplete: function () {
-            billingPromptState.set(null);
-
-            // If the user successfully raised their quota, continue the operation.
-            if (!isUserOverQuota(Meteor.user())) {
-              next();
-            }
+        showBillingPrompt(reason, function () {
+          // If the user successfully raised their quota, continue the operation.
+          if (!isUserOverQuota(Meteor.user())) {
+            next();
           }
         });
       } else {
         alert("You are out of storage space. Please delete some things and try again.");
       }
+    } else {
+      next();
+    }
+  }
+
+  ifPlanAllowsCustomApps = function (next) {
+    if (globalDb.isDemoUser() || globalDb.isUninvitedFreeUser()) {
+      showBillingPrompt("customApp", function () {
+        // If the user successfully chose a plan, continue the operation.
+        if (!globalDb.isDemoUser() && !globalDb.isUninvitedFreeUser()) {
+          next();
+        }
+      });
     } else {
       next();
     }

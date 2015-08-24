@@ -708,6 +708,13 @@ _.extend(SandstormDb.prototype, {
     return user && Plans.findOne(user.plan || "free");
   },
 
+  isUninvitedFreeUser: function () {
+    if (!Meteor.settings.public.allowUninvited) return false;
+
+    var user = Meteor.user();
+    return user && !user.expires && (!user.plan || user.plan === "free");
+  },
+
   getSetting: function (name) {
     var setting = Settings.findOne(name);
     return setting && setting.value;

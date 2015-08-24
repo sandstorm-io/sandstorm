@@ -80,6 +80,9 @@ if (Meteor.isServer) {
       if (!isSignedUp()) {
         throw new Meteor.Error(403, "Unauthorized", "Only invited users can upload apps.");
       }
+      if (globalDb.isUninvitedFreeUser()) {
+        throw new Meteor.Error(403, "Unauthorized", "Only paid users can upload apps.");
+      }
       var token = Random.id();
       uploadTokens[token] = setTimeout(function () {
         delete uploadTokens[token];
@@ -115,8 +118,7 @@ Meteor.methods({
 
     if (!isSignedUp() && !isDemoUser()) {
       throw new Meteor.Error(403,
-          "Sorry, Sandstorm is in closed alpha. You must receive an alpha key before you " +
-          "can install packages.");
+          "This Sandstorm server requires you to get an invite before installing apps.");
     }
 
     if (isUserOverQuota(Meteor.user())) {
@@ -126,6 +128,15 @@ Meteor.methods({
 
     if (!this.isSimulation) {
       var pkg = Packages.findOne(packageId);
+
+      if (!pkg || pkg.status !== "ready") {
+        if (isDemoUser() || globalDb.isUninvitedFreeUser()) {
+          if (!isSafeDemoAppUrl(url)) {
+            throw new Meteor.Error(403, "Sorry, demo and free users cannot upload new apps.");
+          }
+        }
+      }
+
       if (pkg) {
         if (isRetry) {
           if (pkg.status !== "failed") {
@@ -145,12 +156,6 @@ Meteor.methods({
           startInstall(packageId, url, false, pkg.appId);
         }
       } else {
-        if (isDemoUser()) {
-          if (!isSafeDemoAppUrl(url)) {
-            throw new Meteor.Error(403, "Sorry, demo users cannot upload new apps.");
-          }
-        }
-
         startInstall(packageId, url, true);
       }
     }
@@ -237,45 +242,47 @@ if (Meteor.isClient) {
 
   Template.uploadForm.events({
     "click #uploadButton": function (event) {
-      Session.set("uploadError", undefined);
+      ifPlanAllowsCustomApps(function () {
+        Session.set("uploadError", undefined);
 
-      var file = document.getElementById("uploadFile").files[0];
-      if (!file) {
-        alert("Please select a file.");
-        return;
-      }
+        var file = document.getElementById("uploadFile").files[0];
+        if (!file) {
+          alert("Please select a file.");
+          return;
+        }
 
-      var xhr = new XMLHttpRequest();
+        var xhr = new XMLHttpRequest();
 
-      xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4) {
-          Session.set("uploadProgress", undefined);
-          if (xhr.status == 200) {
-            Router.go("install", {packageId: xhr.responseText});
-          } else {
-            Session.set("uploadError", {
-              status: xhr.status,
-              statusText: xhr.statusText,
-              response: xhr.responseText
-            });
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState == 4) {
+            Session.set("uploadProgress", undefined);
+            if (xhr.status == 200) {
+              Router.go("install", {packageId: xhr.responseText});
+            } else {
+              Session.set("uploadError", {
+                status: xhr.status,
+                statusText: xhr.statusText,
+                response: xhr.responseText
+              });
+            }
           }
-        }
-      };
+        };
 
-      if (xhr.upload) {
-        xhr.upload.addEventListener("progress", function (progressEvent) {
-          Session.set("uploadProgress",
-              Math.round(progressEvent.loaded / progressEvent.total * 100));
+        if (xhr.upload) {
+          xhr.upload.addEventListener("progress", function (progressEvent) {
+            Session.set("uploadProgress",
+                Math.round(progressEvent.loaded / progressEvent.total * 100));
+          });
+        }
+
+        Meteor.call("newUploadToken", function (err, result) {
+          if (err) {
+            console.error(err);
+          } else {
+            xhr.open("POST", "/upload/" + result, true);
+            xhr.send(file);
+          }
         });
-      }
-
-      Meteor.call("newUploadToken", function (err, result) {
-        if (err) {
-          console.error(err);
-        } else {
-          xhr.open("POST", "/upload/" + result, true);
-          xhr.send(file);
-        }
       });
     }
   });
@@ -314,9 +321,9 @@ Router.map(function () {
       var packageUrl = this.params.query && this.params.query.url;
 
       if (!isSignedUp() && !isDemoUser()) {
-        return { error: "Sorry, Sandstorm is in closed alpha.  You must receive an alpha " +
-                        "key before you can install packages.",
-                 packageId: packageId };
+        return { error:
+            "This Sandstorm server requires you to get an invite before installing apps.",
+            packageId: packageId };
       }
 
       // If ensureInstalled throws an exception without even starting installation, we'll treat
@@ -444,8 +451,7 @@ Router.map(function () {
 
     data: function () {
       return {
-        isSignedUp: isSignedUp(),
-        isDemoUser: isDemoUser(),
+        isSignedUp: isSignedUpOrDemo(),
         progress: Session.get("uploadProgress"),
         error: Session.get("uploadError"),
         origin: getOrigin()

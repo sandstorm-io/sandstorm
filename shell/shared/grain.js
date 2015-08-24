@@ -298,18 +298,39 @@ if (Meteor.isClient) {
 
   Template.grainDeleteButton.events({
     "click button": function (event) {
-      var activeGrain = getActiveGrain(globalGrains.get());
+      var grains = globalGrains.get();
+      var activeIndex = activeGrainIndex(grains);
+      var activeGrain = grains[activeIndex];
+      var newActiveIndex = (activeIndex == grains.length - 1) ? activeIndex - 1 : activeIndex;
       if (activeGrain.isOwner()) {
         if (window.confirm("Really delete this grain?")) {
           Session.set("showMenu", false);
           Meteor.call("deleteGrain", activeGrain.grainId());
-          Router.go("selectGrain");
+          // TODO: extract globalGrains into a class that has a "close" method for closing the active view
+          if (grains.length == 1) {
+            globalGrains.set([]);
+            Router.go("selectGrain");
+          } else {
+            grains.splice(activeIndex, 1);
+            grains[newActiveIndex].setActive(true);
+            globalGrains.set(grains);
+            Router.go("grain", {grainId: grains[newActiveIndex].grainId()});
+          }
         }
       } else {
         if (window.confirm("Really forget this grain?")) {
           Session.set("showMenu", false);
           Meteor.call("forgetGrain", activeGrain.grainId());
-          Router.go("selectGrain");
+          // TODO: extract globalGrains into a class that has a "close" method for closing the active view
+          if (grains.length == 1) {
+            globalGrains.set([]);
+            Router.go("selectGrain");
+          } else {
+            grains.splice(activeIndex, 1);
+            grains[newActiveIndex].setActive(true);
+            globalGrains.set(grains);
+            Router.go("grain", {grainId: grains[newActiveIndex].grainId()});
+          }
         }
       }
     },

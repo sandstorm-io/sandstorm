@@ -1,0 +1,59 @@
+// Colors, mostly for the toolbar/navbar, but perhaps reusable elsewhere.
+
+
+////////  General shell elements
+// Default shell background and text colors
+$topbar-background-color: #191919;
+$topbar-foreground-color: #9e9e9e;
+
+// Colors for UI elements when hovered
+$topbar-background-color-hover: #383838;
+$topbar-foreground-color-hover: #ffffff;
+
+// Colors for topbar and navbar entries when "active" (i.e. current tab)
+$topbar-background-color-active: #efefef;
+$topbar-foreground-color-active: #191919;
+
+// Color for borders between topbar/navbar and navbar items
+$topbar-border-color: #383838;
+
+
+
+//////// Colors for the items in dropdowns from the topbar
+$topbar-dropdown-background-color: #ffffff;
+$topbar-dropdown-foreground-color: #383838; // Not sure this is right
+
+$topbar-dropdown-background-color-hover: #efefef;
+$topbar-dropdown-foreground-color-hover: #383838;
+
+$topbar-dropdown-border-color: #c1c1c1;
+
+
+
+//////// Grain list ("Open...") styles
+$grainlist-background-color: #efefef;
+$grainlist-foreground-color: #191919;
+
+$grainlist-searchbar-background-color: #ffffff;
+$grainlist-searchbar-outline-color: #9e9e9e;
+$grainlist-searchbar-outline-color-focus: #65468e;
+
+$grainlist-table-header-background-color: #d3d3d3;
+$grainlist-table-header-foreground-color: #191919;
+$grainlist-table-header-background-color-hover: #dddddd;
+// icons fills should be #9e9e9e
+
+$grainlist-table-row-background-color: #ffffff;
+$grainlist-table-row-foreground-color: #5d5d5d;
+$grainlist-table-row-background-color-hover: #e8e8e8;
+$grainlist-table-row-outline-color: #d3d3d3;
+
+///////// App list ("New...") styles
+$applist-background-color: #efefef;
+$applist-foreground-color: #191919;
+
+$applist-action-text-color: #5d5d5d;
+
+$applist-rule-color: #6d6d6d;
+$applist-pseudoapp-background-color: #ffffff;
+$applist-pseudoapp-outline-color: #d3d3d3;

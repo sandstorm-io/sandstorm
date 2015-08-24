@@ -1,9 +1,28 @@
 .grain-list {
   overflow: auto;
   padding: 0px 32px;
-  >input.search-bar {
-    font-size: 16pt;
+  background-color: $grainlist-background-color;
+  color: $grainlist-foreground-color;
+  >h2 {
+    font-size: 24pt;
+    font-weight: 400;
+  }
+  >.search-row {
     width: 100%;
+    margin-bottom: 36px;
+    >img.search-icon {
+      width: 24px;
+      height: 24px;
+      margin: 4px;
+    }
+    >input.search-bar {
+      font-size: 16pt;
+      background-color: $grainlist-searchbar-background-color;
+      border: .5px solid $grainlist-searchbar-outline-color;
+      &:focus {
+        border: .5px solid $grainlist-searchbar-outline-color-focus;
+      }
+    }
   }
   >table {
     width: 100%;
@@ -12,8 +31,17 @@
     border-collapse: collapse;
     background-color: rgba(255, 255, 255, 0.5);
     >thead>tr {
+      background-color: $grainlist-table-header-background-color;
+      color: $grainlist-table-header-foreground-color;
       font-weight: 600;
       border-bottom: 1px solid #aaa;
+      >td {
+        border: 1px solid white;
+        cursor:pointer;
+        &:hover {
+          background-color: $grainlist-table-header-background-color-hover;
+        }
+      }
       >td.td-app-icon {
         padding-left: 16px;
       }
@@ -21,7 +49,9 @@
     >tbody>tr {
       width: 100%;
       height: 32px;
-      border-bottom: 1px solid #ddd;
+      background-color: $grainlist-table-row-background-color;
+      color: $grainlist-table-row-foreground-color;
+      border-bottom: 1px solid $grainlist-table-row-outline-color;
       >td {
         cursor: pointer;
         &.td-app-icon {
@@ -39,7 +69,7 @@
       &.grain {
         cursor: pointer;
         &:hover {
-          background-color: #f0f0f0;
+          background-color: $grainlist-table-row-background-color-hover;
         }
       }
     }

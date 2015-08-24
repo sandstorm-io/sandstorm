@@ -1,6 +1,7 @@
 <template name="sandstormAppList">
   <div class="app-list">
-    <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
+    <h1>Apps</h1>
+    <img title="Search" class="search-icon" src="/search.svg"><input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
     <div class="popular-container {{#if searching }}hide{{/if}}">
       <h2 class="">Most used</h2>
       {{#each popularActions }}
@@ -13,15 +14,15 @@
     </div>
     <h2 class="all-apps">All apps</h2>
     <a class="app-button install-button {{#if searching}}hide{{/if}}" href="https://apps.sandstorm.io/?host={{ origin }}">
-      <img class="app-icon" src="/install.svg">
+      <img class="app-icon pseudoapp" src="/install.svg">
       <span class="action-title">Install...</span>
     </a>
     <a class="app-button upload-button {{#if searching}}hide{{/if}}" href="{{ pathFor route='uploadForm' }}">
-      <img class="app-icon" src="/upload.svg">
+      <img class="app-icon pseudoapp" src="/upload.svg">
       <span class="action-title">Upload...</span>
     </a>
     <button class="app-button restore-button {{#if searching}}hide{{/if}}"> {{!-- TODO: fix restore flow, needs forms and AJAX --}}
-      <img class="app-icon" src="/restore.svg">
+      <img class="app-icon pseudoapp" src="/restore.svg">
       <span class="action-title">Restore backup...</span>
     </button>
     {{#each devActions }}

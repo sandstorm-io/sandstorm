@@ -46,7 +46,6 @@ body>.topbar-update {
 }
 
 body>.topbar {
-  font-weight: bold;
   position: fixed;
   top: 0;
   margin: 0;
@@ -58,14 +57,15 @@ body>.topbar {
 
   line-height: 32px;
   height: 32px;
-  background-color: black;
+  background-color: $topbar-background-color;
   color: #ccc;
 
   @media #{$mobile} {
     line-height: 48px;
     height: 48px;
-    background-color: #eee;
-    color: black;
+    // TODO(now): figure out if these colors should be different
+    //background-color: #eee;
+    //color: black;
     transition: height 0.2s;
 
     &.expanded {
@@ -88,7 +88,7 @@ body>.topbar {
       overflow: hidden;
 
       &:hover {
-        background-color: #888;
+        background-color: $topbar-background-color-hover;
       }
 
       &:focus {
@@ -190,6 +190,7 @@ body>.topbar {
   >.menubar {
     padding-left: 0;
     margin-left: 0;
+    border-bottom: 1px solid $topbar-border-color;
     >.toggle-sidebar {
       >button {
         @extend %unstyled-button;
@@ -213,7 +214,7 @@ body>.topbar {
         &:hover {
           -webkit-filter: none;
           filter: none;
-          background-color: #666;
+          background-color: $topbar-background-color-hover;
         }
       }
 
@@ -235,8 +236,8 @@ body>.topbar {
 
         &:hover {
           cursor: pointer;
-          color: white;
-          background-color: #888;
+          color: $topbar-foreground-color-hover;
+          background-color: $topbar-background-color-hover;
         }
       }
 
@@ -439,10 +440,9 @@ body>.topbar {
         height: 32px;
         display: block;
         position: relative;
-        border-bottom: 1px solid #676767;
+        border-bottom: 1px solid $topbar-border-color;
         margin: 0;
         box-sizing: border-box;
-        font-weight: bold;
         list-style-type: none;
         a {
           display: block;
@@ -461,12 +461,15 @@ body>.topbar {
           font-size: 150%;
           line-height: 48px;
           height: 48px;
-          background-color: #232323;
+          background-color: $topbar-background-color;
+          color: $topbar-foreground-color;
           &:hover {
-            background-color: #181818;
+            background-color: $topbar-background-color-hover;
+            color: $topbar-foreground-color-hover;
           }
           &.current, &.current:hover {
-            background-color: #d6d6d6;
+            background-color: $topbar-background-color-active;
+            color: $topbar-foreground-color-active;
           }
         }
       }
@@ -514,13 +517,15 @@ body>.topbar {
         a {
           padding-right: 32px;
         }
-        background-color: #333;
+        background-color: $topbar-background-color;
+        color: $topbar-foreground-color;
         &:hover {
-          background-color: #494949;
+          background-color: $topbar-background-color-hover;
+          color: $topbar-foreground-color-hover;
         }
         &.current, &.current:hover {
-          background-color: #d6d6d6;
-          color: #494949;
+          background-color: $topbar-background-color-active;
+          color: $topbar-foreground-color-active;
         }
         .app-icon {
           position: absolute;
@@ -545,7 +550,7 @@ body>.topbar {
           border: 1px transparent;
           border-radius: 4px;
           &:hover {
-            border: 1px solid white;
+            border: 1px solid $topbar-foreground-color-hover;
           }
         }
       }

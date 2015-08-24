@@ -412,15 +412,13 @@ if (Meteor.isClient) {
 
   Template.grainApiTokenPopup.events({
     "click .copy-me": copyMe,
-    "click #api-token-popup-closer": function (event) {
-      Session.set("show-api-token", false);
-    },
-    "submit #newApiToken": function (event) {
+    "submit .newApiToken": function (event) {
       event.preventDefault();
       var activeGrain = getActiveGrain(globalGrains.get());
       var grainId = activeGrain.grainId();
-      Session.set("api-token-" + grainId, "pending");
+      activeGrain.setGeneratedApiToken("pending");
       var roleList = document.getElementById("api-token-role");
+      // TODO(cleanup): avoid using global ids; select a child of the current template instead
       var assignment = {allAccess: null};
       if (roleList && roleList.selectedIndex > 0) {
         assignment = {roleId: roleList.selectedIndex - 1};
@@ -429,17 +427,17 @@ if (Meteor.isClient) {
                   assignment, false, undefined,
                   function (error, result) {
         if (error) {
-          Session.set("api-token-" + grainId, undefined);
+          activeGrain.setGeneratedApiToken(undefined);
           window.alert("Failed to create token.\n" + error);
           console.error(error.stack);
         } else {
-          Session.set("api-token-" + grainId, result.endpointUrl + "#" + result.token);
+          activeGrain.setGeneratedApiToken(result.endpointUrl + "#" + result.token);
         }
       });
     },
     "click #resetApiToken": function (event) {
-      var grainId = getActiveGrain(globalGrains.get()).grainId();
-      Session.set("api-token-" + grainId, undefined);
+      var activeGrain = getActiveGrain(globalGrains.get());
+      activeGrain.setGeneratedApiToken(undefined);
     },
     "click button.revoke-token": function (event) {
       Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
@@ -668,6 +666,26 @@ if (Meteor.isClient) {
     displayToken: function() {
       return !this.revoked && !this.expiresIfUnused && !this.parentToken;
     },
+    existingTokens: function () {
+      var current = getActiveGrain(globalGrains.get());
+      return current && ApiTokens.find({grainId: current.grainId(), userId: Meteor.userId(),
+                                        forSharing: {$ne: true},
+                                        $or: [{owner: {webkey: null}},
+                                              {owner: {$exists: false}}],
+                                        expiresIfUnused: null});
+    },
+    generatedApiToken: function () {
+      var current = getActiveGrain(globalGrains.get());
+      return current && current.generatedApiToken();
+    },
+    generatedApiTokenPending: function() {
+      var current = getActiveGrain(globalGrains.get());
+      return (current && current.generatedApiToken()) == "pending";
+    },
+    viewInfo: function () {
+      var current = getActiveGrain(globalGrains.get());
+      return current && current.viewInfo();
+    }
   });
 
   Template.whoHasAccessPopup.onCreated(function () {

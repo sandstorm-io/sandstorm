@@ -446,3 +446,13 @@ GrainView.prototype.token = function () {
   this._dep.depend();
   return this._token;
 }
+
+GrainView.prototype.generatedApiToken = function () {
+  this._dep.depend();
+  return this._generatedApiToken;
+}
+
+GrainView.prototype.setGeneratedApiToken = function(newApiToken) {
+  this._generatedApiToken = newApiToken;
+  this._dep.changed();
+}

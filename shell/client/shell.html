@@ -333,20 +333,20 @@ limitations under the License.
 
 <template name="grainApiTokenPopup">
   <h4>Webkeys</h4>
-  {{#if apiToken}}
-    {{#if apiTokenPending}}
+  {{#if generatedApiToken}}
+    {{#if generatedApiTokenPending}}
       <p>Generating...</p>
       <p><button id="resetApiToken">Cancel</button></p>
     {{else}}
       <p>Copy this webkey and give it to the external app:</p>
-        <a id="apiTokenText" class="copy-me" href="{{apiToken}}">{{apiToken}}</a>
+        <a id="apiTokenText" class="copy-me" href="{{generatedApiToken}}">{{generatedApiToken}}</a>
       {{#if currentUser}}
         <p><button id="resetApiToken">Go back</button></p>
       {{/if}}
     {{/if}}
   {{else}}
     <p>A webkey allows you to connect an external app (e.g. a mobile app) to this app.</p>
-    <p><form id="newApiToken">
+    <p><form class="newApiToken">
     Label: <input type="text" id="api-token-petname" placeholder="e.g. 'Android app'">
     {{#with viewInfo}}
       {{#if roles}}

@@ -495,16 +495,6 @@ if (Meteor.isClient) {
     "click .copy-me": copyMe
   });
 
-  Template.grainSharePopup.onCreated(function () {
-    this.currentMode = new ReactiveVar({"shareWithOthers": true});
-  });
-
-  Template.grainSharePopup.helpers({
-    "currentMode": function() {
-      return Template.instance().currentMode.get();
-    },
-  });
-
   Template.grain.onCreated(function () {
     this.originalPath = window.location.pathname + window.location.search;
     this.originalHash = window.location.hash;

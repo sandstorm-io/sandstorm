@@ -45,7 +45,6 @@ Template.sandstormTopbarBlockReload.onDestroyed(function () {
 
 Template.sandstormTopbar.onCreated(function () {
   Template.instance().popupPosition = new ReactiveVar(undefined, _.isEqual);
-  // TODO: subscribe to the list of open grains for this session
 });
 
 Template.sandstormTopbar.helpers({

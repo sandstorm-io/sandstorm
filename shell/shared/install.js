@@ -132,7 +132,9 @@ Meteor.methods({
       if (!pkg || pkg.status !== "ready") {
         if (isDemoUser() || globalDb.isUninvitedFreeUser()) {
           if (!isSafeDemoAppUrl(url)) {
-            throw new Meteor.Error(403, "Sorry, demo and free users cannot upload new apps.");
+            // TODO(someday): Billing prompt on client side.
+            throw new Meteor.Error(403, "Sorry, demo and free users cannot upload custom apps; " +
+                "they may only install apps from apps.sandstorm.io.");
           }
         }
       }

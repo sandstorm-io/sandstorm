@@ -848,17 +848,17 @@ limitations under the License.
   </div>
 </template>
 
-<template name="restoreGrainStatus">
-  {{>title "Restoring Grain..."}}
+<template name="uploadStatus">
+  {{>title "Uploading..."}}
 
   <div id="restoreGrain" class="centered-box">
   {{#if status}}
-    <p>{{status}}... {{progress}}%</p>
+    <p>{{status}}... {{#if progress}}{{progress}}%{{/if}}</p>
   {{else}}
     {{#if error}}
-      <p>Restore failed: {{error.status}} {{error.statusText}}</p>
+      <p>Upload failed: {{error.status}} {{error.statusText}}</p>
     {{else}}
-      <p>Restore failed. Please try again.</p>
+      <p>Upload failed. Please try again.</p>
     {{/if}}
   {{/if}}
   </div>

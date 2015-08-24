@@ -7,7 +7,7 @@
     <div class="popular-container {{#if searching }}hide{{/if}}">
       <h2 class="">Most used</h2>
       {{#each popularActions }}
-      <button class="app-button app-action {{#if searching}}hide{{/if}}" data-actionid="{{_id}}">
+      <button class="app-button app-action {{#if searching}}hide{{/if}}">
         <img class="app-icon" src="{{ iconSrc }}">
         <span class="app-title">{{appTitle}}</span>
         <span class="action-text">New {{noun}}</span>
@@ -18,24 +18,27 @@
     <a class="app-button install-button {{#if searching}}hide{{/if}}" href="https://apps.sandstorm.io/?host={{ origin }}">
       <img class="app-icon pseudoapp" src="/install.svg">
       <span class="action-title">Install...</span>
+      <span class="action-text">from App Market</span>
     </a>
-    <a class="app-button upload-button {{#if searching}}hide{{/if}}" href="{{ pathFor route='uploadForm' }}">
+    <button class="app-button upload-button {{#if searching}}hide{{/if}}">
       <img class="app-icon pseudoapp" src="/upload.svg">
-      <span class="action-title">Upload...</span>
-    </a>
-    <button class="app-button restore-button {{#if searching}}hide{{/if}}"> {{!-- TODO: fix restore flow, needs forms and AJAX --}}
+      <span class="action-title">Upload app...</span>
+      <span class="action-text">choose SPK file</span>
+    </button>
+    <button class="app-button restore-button {{#if searching}}hide{{/if}}">
       <img class="app-icon pseudoapp" src="/restore.svg">
       <span class="action-title">Restore backup...</span>
+      <span class="action-text">choose ZIP file</span>
     </button>
     {{#each devActions }}
-    <button class="app-button dev-action {{#if searching}}hide{{/if}}" data-devid="{{_id}}" data-actionindex="{{actionIndex}}">
+    <button class="app-button dev-action {{#if searching}}hide{{/if}}">
       <img class="app-icon" src="{{ iconSrc }}">
       <span class="app-title">{{appTitle}}</span>
       <span class="action-text">New {{noun}}</span>
     </button>
     {{/each}}
     {{#each actions }}
-    <button class="app-button app-action" data-actionid="{{_id}}">
+    <button class="app-button app-action">
       <img class="app-icon" src="{{ iconSrc }}">
       <span class="app-title">{{appTitle}}</span>
       <span class="action-text">New {{noun}}</span>

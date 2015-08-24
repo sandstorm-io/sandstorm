@@ -1226,13 +1226,13 @@ Router.map(function () {
   this.route("newGrain", {
     path: "/grain/new",
     data: function () {
-      return new SandstormAppList(globalDb);
+      return new SandstormAppList(globalDb, globalQuotaEnforcer);
     },
   });
   this.route("selectGrain", {
     path: "/grain",
     data: function () {
-      return new SandstormGrainList(globalDb);
+      return new SandstormGrainList(globalDb, globalQuotaEnforcer);
     },
   });
   this.route("grain", {

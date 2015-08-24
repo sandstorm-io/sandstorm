@@ -138,23 +138,42 @@ Template.sandstormAppList.helpers({
   }
 });
 Template.sandstormAppList.events({
+  "click .install-button": function (event) {
+    event.preventDefault();
+    event.stopPropagation();
+    Template.instance().data._quotaEnforcer.ifQuotaAvailable(function () {
+      document.location = "https://apps.sandstorm.io/?host=" +
+          document.location.protocol + "//" + document.location.host;
+    });
+  },
+  "click .upload-button": function (event) {
+    Template.instance().data._quotaEnforcer.ifPlanAllowsCustomApps(function () {
+      // N.B.: this calls into a global in shell.js.
+      // TODO(cleanup): refactor into a safer dependency.
+      promptUploadApp();
+    });
+  },
   "click .restore-button": function (event) {
-    // N.B.: this calls into a global in shell.js.
-    // TODO(cleanup): refactor into a safer dependency.
-    promptRestoreBackup();
+    Template.instance().data._quotaEnforcer.ifQuotaAvailable(function () {
+      // N.B.: this calls into a global in shell.js.
+      // TODO(cleanup): refactor into a safer dependency.
+      promptRestoreBackup();
+    });
   },
   "click .app-action": function(event) {
-    var actionId = event.currentTarget.getAttribute("data-actionid");
-    // N.B.: this calls into a global in shell.js.
-    // TODO(cleanup): refactor into a safer dependency.
-    launchAndEnterGrainByActionId(actionId);
+    var actionId = this._id;
+    Template.instance().data._quotaEnforcer.ifQuotaAvailable(function () {
+      // N.B.: this calls into a global in shell.js.
+      // TODO(cleanup): refactor into a safer dependency.
+      launchAndEnterGrainByActionId(actionId);
+    });
   },
   "click .dev-action": function(event) {
-    var devId = event.currentTarget.getAttribute("data-devid");
-    var actionIndex = event.currentTarget.getAttribute("data-actionindex");
+    var devId = this._id;
+    var actionIndex = this.actionIndex;
     // N.B.: this calls into a global in shell.js.
     // TODO(cleanup): refactor into a safer dependency.
-    launchAndEnterGrainByActionId("dev", devId, actionIndex);
+    launchAndEnterGrainByActionId("dev", this._id, this.actionIndex);
   },
   // We use keyup rather than keypress because keypress's event.currentTarget.value will not
   // have taken into account the keypress generating this event, so we'll miss a letter to

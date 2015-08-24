@@ -344,16 +344,25 @@ if (Meteor.isClient) {
 
   ifPlanAllowsCustomApps = function (next) {
     if (globalDb.isDemoUser() || globalDb.isUninvitedFreeUser()) {
-      showBillingPrompt("customApp", function () {
-        // If the user successfully chose a plan, continue the operation.
-        if (!globalDb.isDemoUser() && !globalDb.isUninvitedFreeUser()) {
-          next();
-        }
-      });
+      if (window.BlackrockPayments) {
+        showBillingPrompt("customApp", function () {
+          // If the user successfully chose a plan, continue the operation.
+          if (!globalDb.isDemoUser() && !globalDb.isUninvitedFreeUser()) {
+            next();
+          }
+        });
+      } else {
+        alert("Sorry, demo users cannot upload custom apps.");
+      }
     } else {
       next();
     }
   }
+
+  globalQuotaEnforcer = {
+    ifQuotaAvailable: ifQuotaAvailable,
+    ifPlanAllowsCustomApps: ifPlanAllowsCustomApps
+  };
 
   Template.layout.helpers({
     adminAlertIsTooLarge: function () {
@@ -811,60 +820,88 @@ appNameFromActionName = function(name) {
   return name;
 }
 
-promptRestoreBackup = function() {
+var promptForFile = function (callback) {
   // TODO(cleanup): Share code with "upload picture" and other upload buttons.
   var input = document.createElement("input");
   input.type = "file";
   input.style = "display: none";
-  Session.set("uploadStatus", "Uploading");
 
   input.addEventListener("change", function (e) {
-    // TODO(cleanup): Use Meteor's HTTP, although this may require sending them a PR to support
-    //   progress callbacks (and officially document that binary input is accepted).
-    var file = e.currentTarget.files[0];
-
-    var xhr = new XMLHttpRequest();
-
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState == 4) {
-        if (xhr.status == 200) {
-          Session.set("uploadProgress", 0);
-          Session.set("uploadStatus", "Unpacking");
-          Meteor.call("restoreGrain", xhr.responseText, function (err, grainId) {
-            if (err) {
-              Session.set("uploadStatus", undefined);
-              Session.set("uploadError", {
-                status: 200,
-                statusText: err.reason + ": " + err.details,
-              });
-            } else {
-              Router.go("grain", {grainId: grainId});
-            }
-          });
-        } else {
-          Session.set("uploadError", {
-            status: xhr.status,
-            statusText: xhr.statusText,
-            response: xhr.responseText
-          });
-        }
-      }
-    };
-
-    if (xhr.upload) {
-      xhr.upload.addEventListener("progress", function (progressEvent) {
-        Session.set("uploadProgress",
-            Math.floor(progressEvent.loaded / progressEvent.total * 100));
-      });
-    }
-
-    xhr.open("POST", "/uploadBackup", true);
-    xhr.send(file);
-
-    Router.go("restoreGrainStatus");
+    callback(e.currentTarget.files[0]);
   });
 
   input.click();
+}
+
+var startUpload = function (file, endpoint, onComplete) {
+  // TODO(cleanup): Use Meteor's HTTP, although this may require sending them a PR to support
+  //   progress callbacks (and officially document that binary input is accepted).
+
+  Session.set("uploadStatus", "Uploading");
+
+  var xhr = new XMLHttpRequest();
+
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState == 4) {
+      if (xhr.status == 200) {
+        Session.set("uploadProgress", 0);
+        onComplete(xhr.responseText);
+      } else {
+        Session.set("uploadError", {
+          status: xhr.status,
+          statusText: xhr.statusText,
+          response: xhr.responseText
+        });
+      }
+    }
+  };
+
+  if (xhr.upload) {
+    xhr.upload.addEventListener("progress", function (progressEvent) {
+      Session.set("uploadProgress",
+          Math.floor(progressEvent.loaded / progressEvent.total * 100));
+    });
+  }
+
+  xhr.open("POST", endpoint, true);
+  xhr.send(file);
+
+  Router.go("uploadStatus");
+}
+
+promptRestoreBackup = function() {
+  promptForFile(function (file) {
+    startUpload(file, "/uploadBackup", function (response) {
+      Session.set("uploadStatus", "Unpacking");
+      Meteor.call("restoreGrain", response, function (err, grainId) {
+        if (err) {
+          Session.set("uploadStatus", undefined);
+          Session.set("uploadError", {
+            status: 200,
+            statusText: err.reason + ": " + err.details,
+          });
+        } else {
+          Router.go("grain", {grainId: grainId});
+        }
+      });
+    });
+  });
+}
+
+promptUploadApp = function () {
+  promptForFile(function (file) {
+    Meteor.call("newUploadToken", function (err, token) {
+      if (err) {
+        console.error(err);
+        alert(err.message);
+      } else {
+        startUpload(file, "/upload/" + token, function (response) {
+          Session.set("uploadStatus", undefined);
+          Router.go("install", {packageId: response})
+        });
+      }
+    });
+  });
 }
 
 Router.map(function () {
@@ -991,8 +1028,8 @@ Router.map(function () {
     }
   });
 
-  this.route("restoreGrainStatus", {
-    path: "/restore",
+  this.route("uploadStatus", {
+    path: "/upload",
 
     waitOn: function () {
       return Meteor.subscribe("credentials");

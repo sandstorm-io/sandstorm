@@ -339,7 +339,7 @@ if (Meteor.isClient) {
   Template.grainDebugLogButton.events({
     "click button": function (event) {
       var activeGrain = getActiveGrain(globalGrains.get());
-      window.open("/grainlog/" + activeGrain.grainId, "_blank",
+      window.open("/grainlog/" + activeGrain.grainId(), "_blank",
           "menubar=no,status=no,toolbar=no,width=700,height=700");
     },
   });
@@ -347,7 +347,7 @@ if (Meteor.isClient) {
   Template.grainBackupButton.events({
     "click button": function (event) {
       var activeGrain = getActiveGrain(globalGrains.get());
-      Meteor.call("backupGrain", activeGrain.grainId, function (err, id) {
+      Meteor.call("backupGrain", activeGrain.grainId(), function (err, id) {
         if (err) {
           alert("Backup failed: " + err); // TODO(someday): make this better UI
         } else {
@@ -359,9 +359,7 @@ if (Meteor.isClient) {
             var save = document.createElement("a");
             save.href = "/downloadBackup/" + id;
 
-            var grain = Grains.findOne({_id: activeGrain.grainId});
-
-            save.download = grain.title + ".zip";
+            save.download = activeGrain.title() + ".zip";
             var event = document.createEvent("MouseEvents");
             event.initMouseEvent(
                     "click", true, false, window, 0, 0, 0, 0, 0,

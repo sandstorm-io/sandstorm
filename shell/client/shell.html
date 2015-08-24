@@ -104,7 +104,7 @@ limitations under the License.
     <pre>{{error}}</pre>
   {{else}}
   {{#if appOrigin}}
-    <iframe class="grain-frame {{#if active}}active-grain{{else}}inactive-grain{{/if}}" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{path}}{{hash}}"></iframe>
+    <iframe data-grainid="{{grainId}}" class="grain-frame {{#if active}}active-grain{{else}}inactive-grain{{/if}}" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{path}}{{hash}}"></iframe>
     {{#if hasNotLoaded}}
       {{> _grainSpinner}}
     {{/if}}

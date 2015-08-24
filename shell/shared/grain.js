@@ -358,15 +358,19 @@ if (Meteor.isClient) {
   Template.grainRestartButton.events({
     "click button": function (event) {
       var activeGrain = getActiveGrain(globalGrains.get());
-      var grainId = activeGrain.grainId;
+      var grainId = activeGrain.grainId();
 
       Meteor.call("shutdownGrain", grainId, function (err) {
         if (err) {
           alert("Restart failed: " + err); // TODO(someday): make this better UI
         } else {
-          // TODO(now): make this work with multigrain
-          var frame = document.getElementById("grain-frame");
-          frame.src = frame.src;
+          var frames = document.getElementsByClassName("grain-frame");
+          for (var i = 0 ; i < frames.length ; i++) {
+            var frame = frames[i];
+            if (frame.dataset.grainid == grainId) {
+              frame.src = frame.src;
+            }
+          }
         }
       });
     },

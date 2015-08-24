@@ -1256,14 +1256,27 @@ Router.map(function () {
       var grains = globalGrains.get();
       var grainIndex = grainIdToIndex(grains, grainId);
       if (grainIndex == -1) {
-        var grainToOpen = new GrainView(grainId, path, query, hash, undefined,
-            document.querySelector("body>.main-content"));
-        // TODO(now): make this public or something
-        grainToOpen.openSession();
-        grainIndex = grains.push(grainToOpen) - 1;
-        globalGrains.set(grains);
+        // The element we need to attach our Blaze view to may not exist yet.
+        // In that case, defer creating the GrainView until we're sure it's
+        // had a chance to render.
+        var openView = function openView() {
+          var mainContentElement = document.querySelector("body>.main-content");
+          if (mainContentElement) {
+            var grains = globalGrains.get();
+            var grainToOpen = new GrainView(grainId, path, query, hash, undefined,
+                mainContentElement);
+            grainToOpen.openSession();
+            grainIndex = grains.push(grainToOpen) - 1;
+            globalGrains.set(grains);
+            makeGrainIdActive(grainId);
+          } else {
+            Meteor.defer(openView);
+          }
+        };
+        openView();
+      } else {
+        makeGrainIdActive(grainId);
       }
-      makeGrainIdActive(grainId);
       this.next();
     },
 
@@ -1312,14 +1325,25 @@ Router.map(function () {
           var grains = globalGrains.get();
           var grainIndex = grainIdToIndex(grains, grainId);
           if (grainIndex == -1) {
-            var grainToOpen = new GrainView(grainId, path, query, hash, token,
-                document.querySelector("body>.main-content"));
-
-            grainIndex = grains.push(grainToOpen) - 1;
-            globalGrains.set(grains);
+            var openView = function openView() {
+              var mainContentElement = document.querySelector("body>.main-content");
+              if (mainContentElement) {
+                var grains = globalGrains.get();
+                var grainToOpen = new GrainView(grainId, path, query, hash, token,
+                    mainContentElement);
+                grainToOpen.openSession();
+                grainIndex = grains.push(grainToOpen) - 1;
+                globalGrains.set(grains);
+                makeGrainIdActive(grainId);
+              } else {
+                Meteor.defer(openView);
+              }
+            };
+            openView();
+          } else {
+            makeGrainIdActive(grainId);
           }
 
-          makeGrainIdActive(grainId);
           var currentGrain = getActiveGrain(grains);
           if (!currentGrain.shouldShowInterstitial() && currentGrain.sessionStatus() == "closed") {
             currentGrain.openSession();

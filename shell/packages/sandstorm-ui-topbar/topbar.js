@@ -82,6 +82,11 @@ Template.sandstormTopbar.helpers({
     console.log(data);
     return data;
   },
+  grainCount: function () {
+    var topbar = Template.instance().data;
+    var grains = topbar._grains.get();
+    return grains.length;
+  },
 
   currentPopup: function () {
     var name = this._expanded.get();
@@ -325,6 +330,10 @@ SandstormTopbar.prototype.closePopup = function () {
   }
 
   this._expanded.set(null);
+}
+
+SandstormTopbar.prototype.isUpdateBlocked = function () {
+  return blockedReload.get();
 }
 
 SandstormTopbar.prototype.addItem = function (item) {

@@ -21,46 +21,44 @@ limitations under the License.
     <div class="topbar-update">
       Sandstorm has been updated &mdash; Click here to reload
     </div>
-  {{else}}
-    {{!-- Becomes hamburger menu button in mobile view. --}}
-    <div class="menu-button"></div>
-    <ul class="topbar {{#if _menuExpanded.get}}expanded{{/if}}">
-      <ul class="menubar">
-        {{#each items}}
-          {{#unless onlyPopup}}
-            <li class="{{name}}">
-              {{#if ./popupTemplate}}
-                <button class="show-popup">
-                  {{> template data.get}}
-                </button>
-              {{else}}
+  {{/if}}
+  {{!-- Becomes hamburger menu button in mobile view. --}}
+  <div class="menu-button"></div>
+  <ul class="topbar {{#if _menuExpanded.get}}expanded{{/if}}">
+    <ul class="menubar">
+      {{#each items}}
+        {{#unless onlyPopup}}
+          <li class="{{name}}">
+            {{#if ./popupTemplate}}
+              <button class="show-popup">
                 {{> template data.get}}
-              {{/if}}
-            </li>
-          {{/unless}}
+              </button>
+            {{else}}
+              {{> template data.get}}
+            {{/if}}
+          </li>
+        {{/unless}}
+      {{/each}}
+    </ul>
+    <ul class="navbar {{#unless showSidebar}}hide-desktop{{/unless}}">
+      <li class="navitem-open-grain {{#if currentRoute 'selectGrain'}}current{{/if}}"><a href="{{pathFor route='selectGrain'}}"><span>Open...</span></a></li>
+      <li class="navitem-create-grain {{#if currentRoute 'newGrain'}}current{{/if}}"><a href="{{pathFor route='newGrain'}}">New...</a></li>
+      <ul class="navbar-grains">
+        {{#each grains}}
+        <li data-grainid="{{grainId}}" class="navitem-grain {{#if active}}current{{/if}}">
+          <img class="app-icon" src="{{iconSrc}}" title="{{appTitle}}" alt="{{appTitle}}">
+          <a href="{{grainLink}}">{{title}}</a>
+          <button class="close-button"></button>
+        </li>
         {{/each}}
       </ul>
-      <ul class="navbar {{#unless _showSidebar.get}}hide-desktop{{/unless}}">
-        <li class="navitem-open-grain {{#if currentRoute 'selectGrain'}}current{{/if}}"><a href="{{pathFor route='selectGrain'}}"><span>Open...</span></a></li>
-        <li class="navitem-create-grain {{#if currentRoute 'newGrain'}}current{{/if}}"><a href="{{pathFor route='newGrain'}}">New...</a></li>
-        <ul class="navbar-grains">
-          {{#each grains}}
-          <li data-grainid="{{grainId}}" class="navitem-grain {{#if active}}current{{/if}}">
-            <img class="app-icon" src="{{iconSrc}}" title="{{appTitle}}" alt="{{appTitle}}">
-            <a href="{{grainLink}}">{{title}}</a>
-            <button class="close-button"></button>
-          </li>
-          {{/each}}
-        </ul>
-      </ul>
     </ul>
+  </ul>
+  {{!-- We wish to block reload if there are *any* grains open, regardless of the current route --}}
+  {{#if grainCount }}
+    {{>sandstormTopbarBlockReload}}
   {{/if}}
 
-    {{!-- TODO: check if admin --}}
-    {{!-- These are moving to the account dropdown, I think
-    <li class="navitem-admin navitem-active"><a href="/admin">Admin Settings</a></li>
-    <li class="navitem-about"><a href="/about">About Sandstorm</a></li>
-    --}}
   {{#with currentPopup}}
     <div class="popup {{name}}">
       {{#if onlyPopup}}

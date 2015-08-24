@@ -206,6 +206,7 @@ Template.sandstormTopbar.events({
       }
       if (grain.grainId() == grainId) {
         closeIndex = i;
+        grain.destroy();
       }
     });
 

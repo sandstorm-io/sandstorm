@@ -96,10 +96,19 @@ limitations under the License.
   {{/with}}
 
   <div class="main-content {{#if showSidebar}}show-sidebar{{/if}}">
-  {{> yield}}
-  {{!-- We place the grains in the main content on every page, so the iframes will not have to
-   reload on navigation. --}}
-  {{#each grains}}
+    {{> yield}}
+  </div>
+
+  {{/if}}
+  {{/with}}
+</template>
+
+<template name="grainView">
+  {{!-- This template is rendered manually using Blaze.renderWithData() for each currently-open
+        grain and then injected into .main-content. We do things manually so that we can be
+        sure that adding or removing grains from teh open grain list does not cause other grains'
+        iframes to be re-rendered, losing state. --}}
+  {{#with unpackedGrainState}}
   {{#if error}}
     <pre>{{error}}</pre>
   {{else}}
@@ -119,10 +128,6 @@ limitations under the License.
     {{> _grainSpinner}}
   {{/if}}
   {{/if}}
-  {{/if}}
-  {{/each}}
-  </div>
-
   {{/if}}
   {{/with}}
 </template>
@@ -638,9 +643,9 @@ limitations under the License.
 </template>
 
 <template name="_grainSpinner">
-  <!-- This is a terrible hack to center this thing. The styles shold go in css, but it's
+  {{!-- This is a terrible hack to center this thing. The styles shold go in css, but it's
     arguably more confusing to put them there when all they're doing is this archaic pattern to
-    get a horizontally+vertically centered div -->
+    get a horizontally+vertically centered div --}}
   <div id="grain-loading-spinner">
     <div style="display:table-cell;vertical-align:middle;">
       <div style="margin-left:auto;margin-right:auto;text-align:center;">

@@ -314,6 +314,7 @@ if (Meteor.isClient) {
             grains.splice(activeIndex, 1);
             grains[newActiveIndex].setActive(true);
             globalGrains.set(grains);
+            activeGrain.destroy();
             Router.go("grain", {grainId: grains[newActiveIndex].grainId()});
           }
         }
@@ -329,6 +330,7 @@ if (Meteor.isClient) {
             grains.splice(activeIndex, 1);
             grains[newActiveIndex].setActive(true);
             globalGrains.set(grains);
+            activeGrain.destroy();
             Router.go("grain", {grainId: grains[newActiveIndex].grainId()});
           }
         }
@@ -605,15 +607,10 @@ if (Meteor.isClient) {
     this.originalHash = window.location.hash;
   });
 
-  Template.layout.helpers({
-    grains: function() {
-      var grains = globalGrains.get();
-      // map the grains into their template helper form
-      var data = grains.map(function(grain) {
-        return mapGrainStateToTemplateData(grain);
-      });
-      return data;
-    },
+  Template.grainView.helpers({
+    unpackedGrainState: function () {
+      return mapGrainStateToTemplateData(this);
+    }
   });
 
   Template.grain.helpers({
@@ -1259,7 +1256,8 @@ Router.map(function () {
       var grains = globalGrains.get();
       var grainIndex = grainIdToIndex(grains, grainId);
       if (grainIndex == -1) {
-        var grainToOpen = new GrainView(grainId, path, query, hash);
+        var grainToOpen = new GrainView(grainId, path, query, hash, undefined,
+            document.querySelector("body>.main-content"));
         // TODO(now): make this public or something
         grainToOpen.openSession();
         grainIndex = grains.push(grainToOpen) - 1;
@@ -1314,7 +1312,8 @@ Router.map(function () {
           var grains = globalGrains.get();
           var grainIndex = grainIdToIndex(grains, grainId);
           if (grainIndex == -1) {
-            var grainToOpen = new GrainView(grainId, path, query, hash, token);
+            var grainToOpen = new GrainView(grainId, path, query, hash, token,
+                document.querySelector("body>.main-content"));
 
             grainIndex = grains.push(grainToOpen) - 1;
             globalGrains.set(grains);

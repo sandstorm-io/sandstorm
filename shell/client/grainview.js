@@ -1,4 +1,6 @@
-GrainView = function GrainView(grainId, path, query, hash, token) {
+var counter = 0;
+
+GrainView = function GrainView(grainId, path, query, hash, token, parentElement) {
   // Owned grains:
   // grainId, path, query, hash, dep.
   //   callback sets error, openingSession on failure,
@@ -23,6 +25,21 @@ GrainView = function GrainView(grainId, path, query, hash, token) {
   this._status = "closed";
   this._revealIdentity = undefined; // set to true or false to make explicit
   this._dep = new Tracker.Dependency();
+
+  // We manage our Blaze view directly in order to get more control over when iframes get
+  // re-rendered. E.g. if we were to instead use a template with {{#each grains}} iterating over
+  // the list of open grains, all grains might get re-rendered whenever a grain is removed from the
+  // list, which would reset all the iframe states, making users sad.
+  this._blazeView = Blaze.renderWithData(Template.grainView, this, parentElement);
+
+  this.id = counter++;
+}
+
+GrainView.prototype.destroy = function () {
+  // This must be called when the GrainView is removed from the list otherwise Blaze will go on
+  // rendering the iframe forever, even if it is no longer linked into the page DOM.
+
+  Blaze.remove(this._blazeView);
 }
 
 GrainView.prototype.isActive = function () {

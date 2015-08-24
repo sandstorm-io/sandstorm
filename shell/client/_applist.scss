@@ -3,20 +3,30 @@
   padding: 0px 32px;
   background-color: $applist-background-color;
   color: $applist-foreground-color;
+  >h1 {
+    font-size: 24pt;
+    font-weight: 400;
+  }
   .hide {
     // !important used to override other classes that might assign e.g. display: block
     display: none !important;
   }
-  >.search-icon {
-    width: 32px;
-    height: 32px;
-    margin: 8px;
-  }
-  >input.search-bar {
-    width: 80%;
-    line-height: 24pt;
-    height: 36pt;
-    font-size: 18pt;
+  >.search-row {
+    width: 100%;
+    margin-bottom: 36px;
+    >img.search-icon {
+      width: 24px;
+      height: 24px;
+      margin: 4px;
+    }
+    >input.search-bar {
+      font-size: 16pt;
+      background-color: $grainlist-searchbar-background-color;
+      border: .5px solid $grainlist-searchbar-outline-color;
+      &:focus {
+        border: .5px solid $grainlist-searchbar-outline-color-focus;
+      }
+    }
   }
   >.popular-container {
     // Restricts the visible portion of the "most used" section to a single row.

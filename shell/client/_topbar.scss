@@ -512,7 +512,7 @@ body>.topbar {
       left: 0px;
       width: 200px;
       //height: 100%; // TODO: fix this, it should be 100% - (height of Open + New)
-      overflow-y: scroll;
+      overflow-y: auto;
       >li.navitem-grain {
         a {
           padding-right: 32px;

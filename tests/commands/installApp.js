@@ -22,22 +22,18 @@ var utils = require("../utils"),
     long_wait = utils.long_wait,
     very_long_wait = utils.very_long_wait;
 
-exports.command = function(url, packageId, newUser, dontStartGrain, callback) {
-  var ret = this;
-  if (!this.sandstormAccount || newUser) {
-    ret = ret.loginDevAccount();
-  }
-
-  ret = ret
+exports.command = function(url, packageId, appId, dontStartGrain, callback) {
+  var ret = this
+    .loginDevAccount()
     .url(this.launch_url + "/install/" + packageId + "?url=" + url)
     .waitForElementVisible("#step-confirm", very_long_wait)
     .click("#confirmInstall")
-    .waitForElementVisible(".new-grain-button", short_wait)
+    .waitForElementVisible(".app-list", medium_wait)
     .resizeWindow(utils.default_width, utils.default_height);
 
   if (!dontStartGrain) {
     ret = ret
-      .click(".new-grain-button")
+      .click('.app-action[data-app-id="' + appId + '"]')
       .waitForElementVisible("#grainTitle", medium_wait);
   }
 

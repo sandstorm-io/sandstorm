@@ -38,7 +38,8 @@
     </button>
     {{/each}}
     {{#each actions }}
-    <button class="app-button app-action">
+    {{!-- data-app-id is only used for testing purposes --}}
+    <button class="app-button app-action" data-app-id="{{appId}}">
       <img class="app-icon" src="{{ iconSrc }}">
       <span class="app-title">{{appTitle}}</span>
       <span class="action-text">New {{noun}}</span>

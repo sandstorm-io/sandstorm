@@ -31,7 +31,8 @@ var actionToTemplateObject = function(action) {
     _id: action._id,
     iconSrc: iconForAction(action),
     appTitle: title,
-    noun: nounFromAction(action, title)
+    noun: nounFromAction(action, title),
+    appId: action.appId
   };
 };
 var matchActions = function (searchString, sortOrder) {

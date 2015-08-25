@@ -187,7 +187,7 @@ if (Meteor.isServer) {
         {appId: appId},
         {sort: {"manifest.appVersion": -1}});
 
-      var package = packageCursor.fetch()[0];
+      var pkg = packageCursor.fetch()[0];
 
       // This allows us to avoid creating duplicate UserActions.
       if (this.userId) {
@@ -198,30 +198,6 @@ if (Meteor.isServer) {
       }
 
       return packageCursor;
-    });
-
-    // For the demo, we allow users to learn package information about
-    // a grain they own.
-    //
-    // We only do this for the demo merely to avoid sending too much
-    // data to the client. It is not a security/privacy risk since it
-    // only exposes this information for grains the user owns.
-    Meteor.publish("packageByGrainId", function (grainId) {
-      check(grainId, String);
-      var publishThis = [];
-      // We need to publish the packageId so that client-side code can
-      // find the right package.
-      var thisGrainCursor = Grains.find({_id: grainId, userId: this.userId},
-                                        {fields: {packageId: 1}});
-      publishThis.push(thisGrainCursor);
-
-      if (thisGrainCursor.count()) {
-        var thisGrain = thisGrainCursor.fetch()[0];
-        var thisPackageCursor = Packages.find({_id: thisGrain.packageId});
-        publishThis.push(thisPackageCursor);
-      }
-
-      return publishThis;
     });
 
     Meteor.setInterval(cleanupExpiredUsers, DEMO_EXPIRATION_MS);

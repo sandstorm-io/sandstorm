@@ -20,20 +20,29 @@ var allowDevAccounts = Meteor.settings && Meteor.settings.public &&
 if (allowDevAccounts) {
   if (Meteor.isServer) {
     Meteor.methods({
-      createDevAccount: function (displayName, isAdmin) {
+      createDevAccount: function (displayName, isAdmin, profile) {
         // This is a login method that creates or logs in a dev account with the given displayName
 
         check(displayName, String);
         check(isAdmin, Match.OneOf(undefined, null, Boolean));
+        check(profile, Match.OneOf(undefined, null, Object));
 
         isAdmin = isAdmin || false;
+
+        profile = profile || {};
+        profile.name = profile.name || displayName;
+        var hasCompletedSignup = !!profile.email && !!profile.pronoun && !!profile.handle;
+
         var userId;
         var user = Meteor.users.findOne({devName: displayName});
         if (user) {
           userId = user._id;
         } else {
-          userId = Accounts.insertUserDoc({ profile: { name: displayName } },
-                                          { signupKey: "devAccounts", devName: displayName, isAdmin: isAdmin });
+          userId = Accounts.insertUserDoc({ profile: profile },
+                                          { signupKey: "devAccounts",
+                                            devName: displayName,
+                                            isAdmin: isAdmin,
+                                            hasCompletedSignup: hasCompletedSignup });
         }
         // Log them in on this connection.
         return Accounts._loginMethod(this, "createDevAccount", arguments,
@@ -62,6 +71,29 @@ if (allowDevAccounts) {
         }
       });
     };
+
+    loginDevAccountFast = function(displayName, isAdmin) {
+      // This skips the firstSignUp page. Mostly used for testing purposes.
+      var profile = {
+        name: displayName,
+        email: displayName + "@example.com",
+        pronoun: "robot",
+        handle: "_" + displayName.toLowerCase()
+      };
+
+      Accounts.callLoginMethod({
+        methodName: "createDevAccount",
+        methodArguments: [displayName, isAdmin, profile],
+        userCallback: function (err) {
+          if (err) {
+            window.alert(err);
+          } else {
+            Router.go("newGrain");
+          }
+        }
+      });
+    };
+
     Template.devAccounts.events({
       "click #loginAliceDevAccount": function (event) {
         var displayName = "Alice Dev Admin";

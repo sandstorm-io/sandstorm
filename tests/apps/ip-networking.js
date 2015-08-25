@@ -31,14 +31,14 @@ module.exports = {};
 
 module.exports["Test Ip Networking"] = function (browser) {
   browser
-    .loginGithub()
+    .loginDevAccount(null, true)
     .url(browser.launch_url + "/admin/capabilities")
     .waitForElementVisible("#offer-ipnetwork", short_wait)
     .click("#offer-ipnetwork")
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function(result) {
       browser
-        .installApp("http://sandstorm.io/apps/jparyani/ip-networking-0.spk", "4829503496b793dffb29040208e35921")
+        .installApp("http://sandstorm.io/apps/jparyani/ip-networking-0.spk", "4829503496b793dffb29040208e35921", "u30m2tdzecypfv9wf11u28dgmu4wjmz3tny80dqgq5aq4ge9z460")
         .assert.containsText("#grainTitle", "Untitled IpNetworkTest")
         .pause(short_wait)
         .frame("grain-frame")
@@ -56,13 +56,14 @@ module.exports["Test Ip Networking"] = function (browser) {
 
 module.exports["Test Ip Interface"] = function (browser) {
   browser
+    .loginDevAccount(null, true)
     .url(browser.launch_url + "/admin/capabilities")
     .waitForElementVisible("#offer-ipinterface", short_wait)
     .click("#offer-ipinterface")
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function(result) {
       browser
-        .installApp("http://sandstorm.io/apps/jparyani/ip-interface-1.spk", "0b2d293e7701341a4db74f365aef6832")
+        .installApp("http://sandstorm.io/apps/jparyani/ip-interface-1.spk", "0b2d293e7701341a4db74f365aef6832", "xnk8j642gzvxuxq5axts9qzg578rc4gmg1kr8qqqad81wgvan6z0")
         .assert.containsText("#grainTitle", "Untitled IpInterfaceTest")
         .pause(short_wait)
         .frame("grain-frame")

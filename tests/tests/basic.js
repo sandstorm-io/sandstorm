@@ -27,26 +27,19 @@ module.exports = {
       .assert.title('Sandstorm');
   },
 
-  "Test github login command" : function (browser) {
+  "Test login command" : function (browser) {
     browser
-      .loginGithub()
-      .waitForElementVisible('.topbar>.account>.show-popup>a', short_wait)
-      .assert.containsText(".topbar>.account>.show-popup>a", "Github User");
-  },
-
-  "Test google login command" : function (browser) {
-    browser
-      .loginGoogle()
-      .waitForElementVisible('.topbar>.account>.show-popup>a', short_wait)
-      .assert.containsText(".topbar>.account>.show-popup>a", "Google User");
+      .loginDevAccount("TestingLogin")
+      .waitForElementVisible('.topbar .account>.show-popup>a', short_wait)
+      .assert.containsText(".topbar .account>.show-popup>a", "TestingLogin");
   },
 };
 if (!disable_demo) {
   module.exports["Test demo login command"] = function (browser) {
     browser
       .loginDemo()
-      .waitForElementVisible('.topbar>.account>.show-popup>a', short_wait)
-      .assert.containsText(".topbar>.account>.show-popup>a", "Demo")
+      .waitForElementVisible('.topbar .account>.show-popup>a', short_wait)
+      .assert.containsText(".topbar .account>.show-popup>a", "Demo")
       .end();
   };
 }

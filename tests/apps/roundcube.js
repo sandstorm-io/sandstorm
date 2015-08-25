@@ -26,7 +26,7 @@ module.exports = {};
 
 module.exports["Install"] = function (browser) {
   browser
-    .installApp("http://sandstorm.io/apps/jparyani/roundcube-6.spk", "373a821a7a9cde5b13258922046fe217")
+    .installApp("http://sandstorm.io/apps/jparyani/roundcube-6.spk", "373a821a7a9cde5b13258922046fe217", "0qhha1v9ne1p42s5jw7r6qq6rt5tcx80zpg1f5ptsg7ryr4hws1h")
     .assert.containsText("#grainTitle", "Untitled Roundcube Mailbox");
 };
 

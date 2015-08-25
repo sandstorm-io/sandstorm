@@ -933,7 +933,8 @@ if (Meteor.isClient) {
         return this.powerboxOfferUrl;
       }
 
-      var session = Sessions.findOne({_id: this.sessionId}, {fields: {powerboxView: 1}});
+      var activeGrain = getActiveGrain(globalGrains.get());
+      var session = Sessions.findOne({_id: activeGrain.sessionId()}, {fields: {powerboxView: 1}});
       return session && session.powerboxView && session.powerboxView.offer;
     },
   });
@@ -1094,7 +1095,7 @@ if (Meteor.isClient) {
         var powerboxRequestInfo = {
           source: event.source,
           rpcId: rpcId,
-          grainId: currentGrainId,
+          grainId: senderGrain.grainId(),
           origin: event.origin,
           saveLabel: powerboxRequest.saveLabel,
           error: new ReactiveVar(null)

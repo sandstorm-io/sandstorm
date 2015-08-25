@@ -135,6 +135,7 @@ echo
 
 set +e
 
+export DISABLE_DEMO=true
 npm test
 
 cleanExit $?

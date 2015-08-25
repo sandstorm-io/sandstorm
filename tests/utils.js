@@ -8,15 +8,9 @@ var wrapLoginDemo = function(test) {
   };
 };
 
-var wrapLoginGithub = function(test) {
+var wrapLoginDev = function(test) {
   return function (browser) {
-    return browser.loginGithub(test.bind(browser, browser));
-  };
-};
-
-var wrapLoginGoogle = function(test) {
-  return function (browser) {
-    return browser.loginGoogle(test.bind(browser, browser));
+    return browser.loginDevAccount(null, false, test.bind(browser, browser));
   };
 };
 
@@ -48,19 +42,9 @@ module.exports = {
     for(name in tests) {
       test = tests[name];
       if (count === 0) {
-        test = wrapLoginGithub(test);
+        test = wrapLoginDev(test);
       }
-      newTests['Github: ' + name] = test;
-      ++count;
-    }
-
-    count = 0;
-    for(name in tests) {
-      test = tests[name];
-      if (count === 0) {
-        test = wrapLoginGoogle(test);
-      }
-      newTests['Google: ' + name] = test;
+      newTests['Dev Account: ' + name] = test;
       ++count;
     }
 

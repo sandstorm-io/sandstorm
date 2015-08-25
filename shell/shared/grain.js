@@ -1241,7 +1241,7 @@ Router.map(function () {
     waitOn: function () {
       var subscriptions = [
         Meteor.subscribe("grainTopBar", this.params.grainId),
-        // Needed to show the app icon and app title (accessibility text) in the sidebar.
+        // Needed to show the app icon and app title (accessibility text) in the navbar.
         Meteor.subscribe("packageByGrainId", this.params.grainId),
         Meteor.subscribe("devApps"),
       ];

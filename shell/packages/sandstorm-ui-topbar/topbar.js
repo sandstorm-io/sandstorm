@@ -78,7 +78,7 @@ Template.sandstormTopbar.helpers({
         appTitle: grain.appTitle(),
       };
     });
-    console.log("rendering sidebar with");
+    console.log("rendering navbar with");
     console.log(data);
     return data;
   },
@@ -187,9 +187,9 @@ Template.sandstormTopbar.events({
     Template.instance().data.closePopup();
   },
 
-  "click .toggle-sidebar": function (event) {
+  "click .toggle-navbar": function (event) {
     var topbar = Template.instance().data;
-    topbar._showSidebar.set(!topbar._showSidebar.get());
+    topbar._showNavbar.set(!topbar._showNavbar.get());
   },
 
   "click .menu-button": function (event) {
@@ -284,7 +284,7 @@ Template.sandstormTopbarItem.onDestroyed(function () {
 // =======================================================================================
 // Public interface
 
-SandstormTopbar = function (db, expandedVar, grainsVar, showSidebarVar) {
+SandstormTopbar = function (db, expandedVar, grainsVar, showNavbarVar) {
   // `expandedVar` is an optional object that behaves like a `ReactiveVar` and will be used to
   // track which popup is currently open. (The caller may wish to back this with a Session
   // variable.)
@@ -295,12 +295,12 @@ SandstormTopbar = function (db, expandedVar, grainsVar, showSidebarVar) {
 
   this._expanded = expandedVar || new ReactiveVar(null);
   this._menuExpanded = new ReactiveVar(false);
-  // showSidebar is different from menuExpanded:
-  //  - on desktop, we want to show the sidebar by default,
+  // showNavbar is different from menuExpanded:
+  //  - on desktop, we want to show the navbar by default,
   //    and toggle if the user clicks the logo
   //  - on mobile, we wish to hide the menu by default,
   //    and show it when the user clicks the menu button
-  this._showSidebar = showSidebarVar || new ReactiveVar(true);
+  this._showNavbar = showNavbarVar || new ReactiveVar(true);
   this._grains = grainsVar || new ReactiveVar([]);
 
 }

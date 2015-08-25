@@ -22,6 +22,7 @@ if (allowDevAccounts) {
     Meteor.methods({
       createDevAccount: function (displayName, isAdmin) {
         // This is a login method that creates or logs in a dev account with the given displayName
+        console.log("Attempting to create dev account called " + displayName);
 
         check(displayName, String);
         check(isAdmin, Match.OneOf(undefined, null, Boolean));
@@ -34,7 +35,9 @@ if (allowDevAccounts) {
         } else {
           userId = Accounts.insertUserDoc({ profile: { name: displayName } },
                                           { signupKey: "devAccounts", devName: displayName, isAdmin: isAdmin });
+          console.log("NOTE: Had to create it.");
         }
+        console.log("Success. Using user ID " + userId);
         // Log them in on this connection.
         return Accounts._loginMethod(this, "createDevAccount", arguments,
             "devAccounts", function () { return { userId: userId }; });
@@ -55,7 +58,9 @@ if (allowDevAccounts) {
         methodArguments: [displayName, isAdmin],
         userCallback: function (err) {
           if (err) {
-            window.alert(err);
+            console.log("OMG YOW");
+            console.log("SOME KIND OF ERROR + " err);
+            Router.go("root");
           } else {
             Router.go("root");
           }
@@ -105,4 +110,3 @@ if (allowDevAccounts) {
     });
   });
 }
-

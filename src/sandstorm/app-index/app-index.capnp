@@ -26,6 +26,7 @@
 #       status       Serialized SubmissionStatus (mutable).
 #   keybase/
 #     <keyId>        Serialized KeybaseIdentity for a person.
+#   descriptions     Serialized ShortDescriptionOverrides
 #   www/
 #     apps/
 #       index        GZIP-JSON of AppIndexForMatker.
@@ -112,6 +113,17 @@ struct KeybaseIdentity {
   twitterHandles @5 :List(Text);
   hackernewsHandles @6 :List(Text);
   redditHandles @7 :List(Text);
+}
+
+struct ShortDescriptionOverrides {
+  # Definition of a file which can be used to override short descriptions. We mainly have this
+  # because a number of apps were first submitted before short descriptions became required.
+
+  items @0 :List(Item);
+  struct Item {
+    appId @0 :Text;
+    shortDescription @1 :Text;
+  }
 }
 
 # ========================================================================================

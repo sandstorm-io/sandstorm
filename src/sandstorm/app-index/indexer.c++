@@ -380,6 +380,16 @@ void Indexer::updateIndex() {
     }
   }
 
+  KJ_IF_MAYBE(descriptionsFd, raiiOpenIfExists("/var/descriptions", O_RDONLY)) {
+    capnp::StreamFdMessageReader reader(kj::mv(*descriptionsFd));
+    for (auto override: reader.getRoot<ShortDescriptionOverrides>().getItems()) {
+      auto iter = appMap.find(override.getAppId());
+      if (iter != appMap.end()) {
+        iter->second.summary.get().setShortDescription(override.getShortDescription());
+      }
+    }
+  }
+
   AppIdJsonHandler appIdHandler;
   PackageIdJsonHandler packageIdHandler;
   capnp::JsonCodec json;
@@ -551,6 +561,10 @@ protected:
           "notifications regarding the app listing");
       KJ_ASSERT(metadata.getCategories().size() > 0,
           "package metadata does not list any categories (genres); you must list at least one!");
+      auto shortDescription = metadata.getShortDescription().getDefaultText();
+      KJ_ASSERT(shortDescription.size() > 0 && shortDescription.size() < 25,
+          "bad shortDescription; please provide a 1-to-3 word short description to display "
+          "under the app title, e.g. \"Document editor\"");
       auto packageDir = kj::str("/var/packages/", packageIdString(info.getPackageId()));
       auto spkFilename = kj::str(packageDir, "/spk");
       if (access(spkFilename.cStr(), F_OK) < 0) {

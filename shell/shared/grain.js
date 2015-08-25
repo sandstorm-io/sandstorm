@@ -254,9 +254,6 @@ if (Meteor.isClient) {
         grains.forEach(function (grain) {
           if (grain.token() == token) {
             grain.setRevealIdentity(false);
-            if (grain.sessionStatus() == "closed") {
-              grain.openSession();
-            }
           }
         });
       } else {
@@ -273,9 +270,6 @@ if (Meteor.isClient) {
         grains.forEach(function (grain) {
           if (grain.token() == token) {
             grain.setRevealIdentity(true);
-            if (grain.sessionStatus() == "closed") {
-              grain.openSession();
-            }
           }
         });
       } else {
@@ -1222,6 +1216,18 @@ function mapGrainStateToTemplateData(grainState) {
 GrainLog = new Mongo.Collection("grainLog");
 // Pseudo-collection created by subscribing to "grainLog", implemented in proxy.js.
 
+onceConditionIsTrue = function(condition, continuation) {
+  Tracker.nonreactive(function () {
+    Tracker.autorun(function(handle) {
+      if (!condition()) {
+        return;
+      }
+      handle.stop();
+      Tracker.nonreactive(continuation);
+    });
+  });
+}
+
 Router.map(function () {
   this.route("newGrain", {
     path: "/grain/new",
@@ -1310,8 +1316,9 @@ Router.map(function () {
       var path = this.params.path;
       var query = this.params.query;
       var hash = this.params.hash;
+      var self = this;
 
-      Tracker.autorun(function() {
+      onceConditionIsTrue(function () { return self.ready(); }, function() {
         var tokenInfo = TokenInfo.findOne({_id: token});
         if (tokenInfo && tokenInfo.apiToken) {
           console.log("valid");
@@ -1330,7 +1337,7 @@ Router.map(function () {
               if (mainContentElement) {
                 var grains = globalGrains.get();
                 var grainToOpen = new GrainView(grainId, path, query, hash, token,
-                    mainContentElement);
+                                                mainContentElement);
                 grainToOpen.openSession();
                 grainIndex = grains.push(grainToOpen) - 1;
                 globalGrains.set(grains);
@@ -1342,11 +1349,6 @@ Router.map(function () {
             openView();
           } else {
             makeGrainIdActive(grainId);
-          }
-
-          var currentGrain = getActiveGrain(grains);
-          if (!currentGrain.shouldShowInterstitial() && currentGrain.sessionStatus() == "closed") {
-            currentGrain.openSession();
           }
         } else {
           console.log("invalid");

@@ -23,7 +23,16 @@ GrainView = function GrainView(grainId, path, query, hash, token, parentElement)
   this._token = token;
 
   this._status = "closed";
-  this._revealIdentity = undefined; // set to true or false to make explicit
+  this._revealIdentity = new ReactiveVar(undefined); // set to true or false to make explicit
+
+  if (token) {
+    if (!Meteor.userId()) {
+      this._revealIdentity.set(false);
+    } else if (this._isIdentityAlreadyRevealedToOwner()) {
+      this._revealIdentity.set(true);
+    }
+  }
+
   this._dep = new Tracker.Dependency();
 
   // We manage our Blaze view directly in order to get more control over when iframes get
@@ -223,13 +232,13 @@ GrainView.prototype.depend = function () {
 }
 
 GrainView.prototype.setRevealIdentity = function (revealIdentity) {
-  this._revealIdentity = revealIdentity;
+  this._revealIdentity.set(revealIdentity);
   this._dep.changed();
 }
 
 GrainView.prototype.shouldRevealIdentity = function () {
   this._dep.depend();
-  return this._revealIdentity;
+  return this._revealIdentity.get();
 }
 
 GrainView.prototype._isIdentityAlreadyRevealedToOwner = function () {
@@ -250,7 +259,7 @@ GrainView.prototype._isIdentityAlreadyRevealedToOwner = function () {
 GrainView.prototype.shouldShowInterstitial = function () {
   this._dep.depend();
   // If we have explictly set _revealIdentity, we don't need to show the interstitial.
-  if (this._revealIdentity !== undefined) {
+  if (this._revealIdentity.get() !== undefined) {
     return false;
   }
   // If we are not logged in, we don't need to show the interstitial - we'll go incognito by default.
@@ -306,75 +315,74 @@ GrainView.prototype._openGrainSession = function () {
 
 GrainView.prototype._openApiTokenSession = function () {
   var self = this;
-  // Use explicit choice, if available.  Otherwise, if not logged in, go incognito, and if logged
-  // in, reveal iff we've already revealed our identity before.
-  var reveal = (this._revealIdentity !== undefined) ? this._revealIdentity :
-                  (Meteor.userId() ? this._isIdentityAlreadyRevealedToOwner() : false);
-  var openSessionArg = {
-    token: this._token,
-    incognito: !reveal,
-  };
-  Meteor.call("openSessionFromApiToken", openSessionArg, function(error, result) {
-    if (error) {
-      console.log("openSessionFromApiToken error");
-      self._error = error.message;
-      self._status = "error";
-      self._dep.changed();
-    } else if (result.redirectToGrain) {
-      console.log("openSessionFromApiToken redirectToGrain");
-      self._grainId = result.redirectToGrain;
-      self._dep.changed();
-      // Make sure to carry over any within-grain path.
-      var routeParams = { grainId: result.redirectToGrain };
-      if (self._path) {
-        routeParams.path = self._originalPath;
-      }
-      var urlParams = {};
-      if (self._query) {
-        urlParams.query = self._originalQuery;
-      }
-      if (self._hash) {
-        urlParams.hash = self._originalHash;
-      }
-      // We should remove this tab from the tab list, since the /grain/<grainId> route
-      // will set up its own tab for this grain.  There could even already be a tab open, if the
-      // user reuses a /shared/ link.
-      self.destroy();
-      var allGrains = globalGrains.get();
-      for (var i = 0 ; i < allGrains.length ; i++) {
-        if (allGrains[i] === self) {
-          allGrains.splice(i, 1);
-          globalGrains.set(allGrains);
+  function condition() { return self._revealIdentity.get() !== undefined; }
+  onceConditionIsTrue(condition, function () {
+    var openSessionArg = {
+      token: self._token,
+      incognito: !self._revealIdentity.get(),
+    };
+    Meteor.call("openSessionFromApiToken", openSessionArg, function(error, result) {
+      if (error) {
+        console.log("openSessionFromApiToken error");
+        self._error = error.message;
+        self._status = "error";
+        self._dep.changed();
+      } else if (result.redirectToGrain) {
+        console.log("openSessionFromApiToken redirectToGrain");
+        self._grainId = result.redirectToGrain;
+        self._dep.changed();
+        // Make sure to carry over any within-grain path.
+        var routeParams = { grainId: result.redirectToGrain };
+        if (self._path) {
+          routeParams.path = self._originalPath;
         }
-      }
+        var urlParams = {};
+        if (self._query) {
+          urlParams.query = self._originalQuery;
+        }
+        if (self._hash) {
+          urlParams.hash = self._originalHash;
+        }
+        // We should remove this tab from the tab list, since the /grain/<grainId> route
+        // will set up its own tab for this grain.  There could even already be a tab open, if the
+        // user reuses a /shared/ link.
+        self.destroy();
+        var allGrains = globalGrains.get();
+        for (var i = 0 ; i < allGrains.length ; i++) {
+          if (allGrains[i] === self) {
+            allGrains.splice(i, 1);
+            globalGrains.set(allGrains);
+          }
+        }
 
-      // OK, go to the grain.
-      return Router.go("grain", routeParams, urlParams);
-    } else {
-      // We are viewing this via just the /shared/ link, either as an anonymous user on in our
-      // incognito mode (since we'd otherwise have redeemed the token and been redirected).
-      console.log("openSessionFromApiToken success");
-      self._title = result.title;
-      self._grainId = result.grainId;
-      self._sessionId = result.sessionId;
-      var subscription = Meteor.subscribe("sessions", result.sessionId);
-      Sessions.find({_id : result.sessionId}).observeChanges({
-        removed: function(session) {
-          console.log("session removed");
-          subscription.stop();
-          self._sessionSub = undefined;
-          self._status = "closed";
-          self._dep.changed();
-        },
-        added: function(session) {
-          console.log("session added");
-          self._status = "opened";
-          self._dep.changed();
-        }
-      });
-      self._sessionSub = subscription;
-      self._dep.changed();
-    }
+        // OK, go to the grain.
+        return Router.go("grain", routeParams, urlParams);
+      } else {
+        // We are viewing this via just the /shared/ link, either as an anonymous user on in our
+        // incognito mode (since we'd otherwise have redeemed the token and been redirected).
+        console.log("openSessionFromApiToken success");
+        self._title = result.title;
+        self._grainId = result.grainId;
+        self._sessionId = result.sessionId;
+        var subscription = Meteor.subscribe("sessions", result.sessionId);
+        Sessions.find({_id : result.sessionId}).observeChanges({
+          removed: function(session) {
+            console.log("session removed");
+            subscription.stop();
+            self._sessionSub = undefined;
+            self._status = "closed";
+            self._dep.changed();
+          },
+          added: function(session) {
+            console.log("session added");
+            self._status = "opened";
+            self._dep.changed();
+          }
+        });
+        self._sessionSub = subscription;
+        self._dep.changed();
+      }
+    });
   });
 }
 
@@ -389,11 +397,7 @@ GrainView.prototype.openSession = function () {
     this._openGrainSession();
   } else {
     // Opening an ApiToken session.  Only do so if we don't need to show the interstitial first.
-    if (!this.shouldShowInterstitial()) {
-      this._openApiTokenSession();
-    } else {
-      console.error("GrainView: openSession() called but user needs to choose reveal or incognito");
-    }
+    this._openApiTokenSession();
   }
 }
 

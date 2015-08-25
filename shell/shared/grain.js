@@ -600,6 +600,9 @@ if (Meteor.isClient) {
     "currentMode": function() {
       return Template.instance().currentMode.get();
     },
+    "currentGrain": function() {
+      return getActiveGrain(globalGrains.get());
+    }
   });
 
   Template.grain.onCreated(function () {
@@ -614,6 +617,9 @@ if (Meteor.isClient) {
   });
 
   Template.grain.helpers({
+    currentGrain: function () {
+      return getActiveGrain(globalGrains.get());
+    },
     isOwner: function () {
       var current = getActiveGrain(globalGrains.get());
       return current && current.isOwner();
@@ -829,25 +835,13 @@ if (Meteor.isClient) {
     displayToken: function() {
       return !this.revoked && !this.expiresIfUnused && !this.parentToken;
     },
-  });
-
-  Template.shareWithOthers.helpers({
-    isOldSharingModel: function () {
-      var currentGrain = getActiveGrain(globalGrains.get());
-      return currentGrain && currentGrain.isOldSharingModel();
+    viewInfo: function() {
+      var activeGrain = getActiveGrain(globalGrains.get());
+      return activeGrain && activeGrain.viewInfo();
     },
-    isOwner: function () {
-      var currentGrain = getActiveGrain(globalGrains.get());
-      return currentGrain && currentGrain.isOwner();
-    }
   });
 
   Template.selectRole.helpers({
-    viewInfo: function () {
-      var currentGrain = getActiveGrain(globalGrains.get());
-      return currentGrain && currentGrain.viewInfo();
-    },
-
     roleText: function () {
       if (this.verbPhrase) {
         return this.verbPhrase.defaultText;

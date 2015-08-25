@@ -424,7 +424,7 @@ limitations under the License.
                 </span>
               </td>
               <td>
-                {{#if ../viewInfo.roles}}
+                {{#if viewInfo.roles}}
                   <select class="share-token-role" data-token-id="{{_id}}">
                     {{#each indexedRoles}}
                       <option title={{title.defaultText}}
@@ -475,7 +475,7 @@ limitations under the License.
     <img class="inline-icon" src="/people-m.svg">
     <input onclick="select()" type="text"
            class="emails" placeholder="Enter email addresses">
-    {{> selectRole}}
+    {{> selectRole viewInfo=viewInfo}}
     </p>
     <div>
       <textarea class="personal-message"
@@ -507,7 +507,7 @@ limitations under the License.
     <p>
       <img class="inline-icon" src="/people-m.svg">
       Anyone with this link{{#if viewInfo.roles}}:{{else}} can access the grain.{{/if}}
-      {{> selectRole}}
+      {{> selectRole viewInfo=viewInfo}}
     </p>
     <input type="text" class="label" placeholder="Label (optional)">
     <p class="label-explanation">
@@ -533,10 +533,10 @@ limitations under the License.
 
 <template name="shareWithOthers">
   <h4 class="share-with-others">Share with others</h4>
-  {{#if oldSharingModel}}
+  {{#if grain.oldSharingModel}}
     <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
        location bar.</p>
-    {{#if isOwner}}
+    {{#if grain.isOwner}}
       <p>You can upgrade this grain to the new model, but anyone with whom you shared this grain
          previously will lose access; you will have to share it with them again.</p>
       <p>Upgrading cannot be undone.</p>
@@ -547,13 +547,13 @@ limitations under the License.
     <section class="send-invite">
       <h5 class="tab-top"> Send an invite </h5>
       <div class="tab-content">
-        {{> emailInviteTab}}
+        {{> emailInviteTab viewInfo=grain.viewInfo }}
       </div>
     </section>
     <section class="sharable-link">
       <h5 class="tab-top"> Get sharable link </h5>
       <div class="tab-content">
-        {{> sharableLinkTab}}
+        {{> sharableLinkTab viewInfo=grain.viewInfo }}
       </div>
     </section>
   </div>
@@ -565,7 +565,7 @@ limitations under the License.
 </template>
 
 <template name="grainSharePopup">
-  {{> shareWithOthers }}
+  {{> shareWithOthers grain=currentGrain}}
 </template>
 
 <template name="grainPowerboxRequest">

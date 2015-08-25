@@ -579,19 +579,7 @@ if (Meteor.isClient) {
     });
   };
 
-  Tracker.autorun(function() {
-    if (isSignedUpOrDemo()) {
-      Session.set("selectedTab", {myFiles: true});
-    } else {
-      Session.set("selectedTab", {sharedWithMe: true});
-    }
-  });
-
   Template.root.helpers({
-    selectedTab: function () {
-      return Session.get("selectedTab");
-    },
-
     storageUsage: function() {
       return Meteor.userId() ? prettySize(Meteor.user().storageUsage || 0) : undefined;
     },
@@ -607,95 +595,16 @@ if (Meteor.isClient) {
   });
 
   Template.root.events({
-    "click .applist-tab": function (event) {
-      Session.set("selectedTab", {appId: event.currentTarget.getAttribute("data-appid")});
-      Session.set("showMenu", false);
-    },
-    "click .applist-tab-my-files": function (event) {
-      Session.set("selectedTab", {myFiles: true});
-      Session.set("showMenu", false);
-    },
-    "click .applist-tab-shared-with-me": function (event) {
-      Session.set("selectedTab", {sharedWithMe: true});
-      Session.set("showMenu", false);
-    },
-    "click .applist-tab-settings": function (event) {
-      Router.go("adminSettings", {});
-      Session.set("showMenu", false);
-    },
-    "click .applist-tab-invite": function (event) {
-      Router.go("invite", {});
-      Session.set("showMenu", false);
-    },
-    "click .applist-tab-stats": function (event) {
-      Router.go("stats", {});
-      Session.set("showMenu", false);
-    },
-    "click .applist-tab-about": function (event) {
-      Router.go("about", {});
-      Session.set("showMenu", false);
-    },
-    "click #applist-closer": function (event) {
-      Session.set("showMenu", false);
-    },
-
-    "click #applist-grains tbody tr.grain": function (event) {
-      Router.go("grain", {grainId: event.currentTarget.getAttribute("data-grainid")});
-    },
-
-    "click button.show-apps": function (event) {
-      Session.set("showMenu", true);
-    },
-
-    "click #install-apps-button": function (event) {
-      ifQuotaAvailable(function () {
-        document.location = "https://apps.sandstorm.io/?host=" + getOrigin();
-      });
-    },
-
-    "click #upload-app-button": function (event) {
-      ifQuotaAvailable(function () {
-        Router.go("uploadForm", {});
-      });
-    },
-
-    "click #restore-backup-button":  function (event) {
-      ifQuotaAvailable(function () {
-        promptRestoreBackup();
-      });
-    },
-
     "click .uninstall-app-button": function (event) {
+      // TODO(cleanup): This event handler is no longer used, but the new UI does not yet implement
+      //   uninstall. Leave this code here for reference until it does.
       var appId = event.currentTarget.getAttribute("data-appid");
       if (window.confirm("Really uninstall this app?")) {
         UserActions.find({appId: appId, userId: Meteor.userId()}).forEach(function (action) {
           UserActions.remove(action._id);
         });
         Meteor.call("deleteUnusedPackages", appId);
-        if (!Packages.findOne({appId: appId})) {
-          Session.set("selectedTab", {myFiles:true});
-        }
       }
-    },
-
-    "click .new-grain-button": function (event) {
-      var packageId;
-      var command;
-      var actionTitle;
-
-      var actionId = event.currentTarget.getAttribute("data-actionid");
-      if (actionId === "dev") {
-        var devId = event.currentTarget.getAttribute("data-devid");
-        var devIndex = event.currentTarget.getAttribute("data-index");
-      }
-
-      ifQuotaAvailable(function () {
-        launchAndEnterGrainByActionId(actionId, devId, devIndex);
-      });
-    },
-
-    "click .action-required button": function (event) {
-      event.currentTarget.parentNode.parentNode.style.display = "none";
     },
   });
 

@@ -313,6 +313,18 @@ GrainView.prototype._openGrainSession = function () {
   });
 }
 
+function onceConditionIsTrue(condition, continuation) {
+  Tracker.nonreactive(function () {
+    Tracker.autorun(function(handle) {
+      if (!condition()) {
+        return;
+      }
+      handle.stop();
+      Tracker.nonreactive(continuation);
+    });
+  });
+}
+
 GrainView.prototype._openApiTokenSession = function () {
   var self = this;
   function condition() { return self._revealIdentity.get() !== undefined; }

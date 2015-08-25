@@ -113,15 +113,15 @@ Meteor.methods({
     }
 
     if (!this.userId) {
-      throw new Meteor.Error(403, "You must be logged in to install packages.");
-    }
-
-    if (!isSignedUp() && !isDemoUser()) {
+      if (allowDemo && isSafeDemoAppUrl(url)) {
+        // continue on
+      } else {
+        throw new Meteor.Error(403, "You must be logged in to install packages.");
+      }
+    } else if (!isSignedUp() && !isDemoUser()) {
       throw new Meteor.Error(403,
           "This Sandstorm server requires you to get an invite before installing apps.");
-    }
-
-    if (isUserOverQuota(Meteor.user())) {
+    } else if (isUserOverQuota(Meteor.user())) {
       throw new Meteor.Error(402,
           "You are out of storage space. Please delete some things and try again.");
     }
@@ -130,7 +130,7 @@ Meteor.methods({
       var pkg = Packages.findOne(packageId);
 
       if (!pkg || pkg.status !== "ready") {
-        if (isDemoUser() || globalDb.isUninvitedFreeUser()) {
+        if (!this.userId || isDemoUser() || globalDb.isUninvitedFreeUser()) {
           if (!isSafeDemoAppUrl(url)) {
             // TODO(someday): Billing prompt on client side.
             throw new Meteor.Error(403, "Sorry, demo and free users cannot upload custom apps; " +
@@ -260,39 +260,42 @@ Router.map(function () {
       var packageId = this.params.packageId;
       var package = Packages.findOne(packageId);
       var userId = Meteor.userId();
+      var packageUrl = this.params.query && this.params.query.url;
 
       if (!userId) {
-        if (allowDemo && this.ready() && package) {
-          Router.go("appdemo", {appId: package.appId}, {replaceState: true});
+        if (allowDemo && this.ready() && isSafeDemoAppUrl(packageUrl)) {
+          if (package && package.status === "ready") {
+            Router.go("appdemo", {appId: package.appId}, {replaceState: true});
+          } else {
+            // continue on and install...
+          }
         } else {
           return { error: "You must sign in to install packages.", packageId: packageId };
         }
-      }
-
-      try {
-        // When the user clicks to install an app, the app store is opened in a new tab. When they
-        // choose an app in the app store, they are redirected back to Sandstorm. But we'd really
-        // like to bring them back to the tab where they clicked "install apps". It turns out we
-        // can exploit a terrible feature of the web platform to do this: window.opener is a
-        // pointer to the tab which opened this tab, and we can actually reach right into it and
-        // call functions in it. So, we redirect the original tab to install the app, then close
-        // this one.
-        if (globalGrains.get().length === 0 &&
-            window.opener.location.hostname === window.location.hostname &&
-            window.opener.Router) {
-          window.opener.Router.go("install", {packageId: packageId}, {query: this.params.query});
-          window.close();
+      } else {
+        try {
+          // When the user clicks to install an app, the app store is opened in a new tab. When they
+          // choose an app in the app store, they are redirected back to Sandstorm. But we'd really
+          // like to bring them back to the tab where they clicked "install apps". It turns out we
+          // can exploit a terrible feature of the web platform to do this: window.opener is a
+          // pointer to the tab which opened this tab, and we can actually reach right into it and
+          // call functions in it. So, we redirect the original tab to install the app, then close
+          // this one.
+          if (globalGrains.get().length === 0 &&
+              window.opener.location.hostname === window.location.hostname &&
+              window.opener.Router) {
+            window.opener.Router.go("install", {packageId: packageId}, {query: this.params.query});
+            window.close();
+          }
+        } catch (err) {
+          // Probably security error because window.opener is in a different domain.
         }
-      } catch (err) {
-        // Probably security error because window.opener is in a different domain.
-      }
 
-      var packageUrl = this.params.query && this.params.query.url;
-
-      if (!isSignedUp() && !isDemoUser()) {
-        return { error:
-            "This Sandstorm server requires you to get an invite before installing apps.",
-            packageId: packageId };
+        if (!isSignedUp() && !isDemoUser()) {
+          return { error:
+              "This Sandstorm server requires you to get an invite before installing apps.",
+              packageId: packageId };
+        }
       }
 
       // If ensureInstalled throws an exception without even starting installation, we'll treat

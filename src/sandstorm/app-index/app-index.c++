@@ -293,6 +293,9 @@ public:
         indexer.unapprove(path.slice(strlen("unapprove/")));
         indexer.updateIndex();
         context.getResults().initNoContent();
+      } else if (path == "reindex") {
+        indexer.updateIndex();
+        context.getResults().initNoContent();
       } else if (path.startsWith("keybase/")) {
         // As a temporary hack, we process keybase API results client-side and then upload them
         // in a non-JSON format.

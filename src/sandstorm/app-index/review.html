@@ -331,6 +331,14 @@
           alert(err.stack);
         })
       }
+
+      function reindex() {
+        doPost("/reindex").then(function (xhr) {
+          document.location.reload();
+        }, function (err) {
+          alert(err.stack);
+        })
+      }
     </script>
   </head>
   <body>
@@ -341,6 +349,8 @@
     <form onsubmit="unapprove(this, event);">
       Unapprove: <input placeholder="package ID" name="packageId">
     </form>
+
+    <button onclick="reindex()">reindex</button>
 
     <h2>Queue:</h2>
 

@@ -365,7 +365,7 @@ void Indexer::updateIndex() {
           time_t publishTime = status.getPublishDate();
           char timeStr[32];
           KJ_ASSERT(strftime(timeStr, sizeof(timeStr), "%FT%TZ", gmtime(&publishTime)) > 0);
-          details.setCreatedAt(timeStr);
+          summary.setCreatedAt(timeStr);
 
           kj::String appIdCopy = kj::str(appId);
           auto& slot = appMap[appIdCopy];

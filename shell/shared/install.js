@@ -256,21 +256,35 @@ Router.map(function () {
       ];
     },
 
-    onBeforeAction: function () {
-      var packageId = this.params.packageId;
-      var package = Packages.findOne(packageId);
-      if (allowDemo && this.ready() && !Meteor.user() && package) {
-        Router.go("appdemo", {appId: package.appId}, {replaceState: true});
-      } else {
-        this.next();
-      }
-    },
-
     data: function () {
       var packageId = this.params.packageId;
+      var package = Packages.findOne(packageId);
       var userId = Meteor.userId();
+
       if (!userId) {
-        return { error: "You must sign in to install packages.", packageId: packageId };
+        if (allowDemo && this.ready() && package) {
+          Router.go("appdemo", {appId: package.appId}, {replaceState: true});
+        } else {
+          return { error: "You must sign in to install packages.", packageId: packageId };
+        }
+      }
+
+      try {
+        // When the user clicks to install an app, the app store is opened in a new tab. When they
+        // choose an app in the app store, they are redirected back to Sandstorm. But we'd really
+        // like to bring them back to the tab where they clicked "install apps". It turns out we
+        // can exploit a terrible feature of the web platform to do this: window.opener is a
+        // pointer to the tab which opened this tab, and we can actually reach right into it and
+        // call functions in it. So, we redirect the original tab to install the app, then close
+        // this one.
+        if (globalGrains.get().length === 0 &&
+            window.opener.location.hostname === window.location.hostname &&
+            window.opener.Router) {
+          window.opener.Router.go("install", {packageId: packageId}, {query: this.params.query});
+          window.close();
+        }
+      } catch (err) {
+        // Probably security error because window.opener is in a different domain.
       }
 
       var packageUrl = this.params.query && this.params.query.url;
@@ -295,7 +309,6 @@ Router.map(function () {
          }
       });
 
-      var package = Packages.findOne(packageId);
       if (package === undefined) {
         if (!packageUrl) {
           return { error: "Unknown package ID: " + packageId +
@@ -363,8 +376,7 @@ Router.map(function () {
           // OK, the app is installed and everything and there's no warnings to print, so let's
           // just go to it! We use `replaceState` so that if the user clicks "back" they don't just
           // get redirected forward again, but end up back at the app list.
-          Session.set("selectedTab", {appId: package.appId});
-          Router.go("root", {}, {replaceState: true});
+          Router.go("newGrain", {}, {replaceState: true});
         }
 
         return result;
@@ -388,8 +400,7 @@ Router.map(function () {
           // Skip confirmation because we assume the Sandstorm app list is not evil.
           // TODO(security): This is not excellent. Think harder.
           addUserActions(result.packageId);
-          Session.set("selectedTab", {appId: package.appId});
-          Router.go("root", {}, {replaceState: true});
+          Router.go("newGrain", {}, {replaceState: true});
         }
 
         return result;

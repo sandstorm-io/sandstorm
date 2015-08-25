@@ -142,8 +142,8 @@ Template.sandstormAppList.events({
     event.preventDefault();
     event.stopPropagation();
     Template.instance().data._quotaEnforcer.ifQuotaAvailable(function () {
-      document.location = "https://apps.sandstorm.io/?host=" +
-          document.location.protocol + "//" + document.location.host;
+      window.open("https://apps.sandstorm.io/?host=" +
+          document.location.protocol + "//" + document.location.host, "_blank");
     });
   },
   "click .upload-button": function (event) {

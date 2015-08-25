@@ -46,6 +46,7 @@ if (Meteor.isServer) {
       },
     });
     this.onStop(function() { handle.stop(); });
+
     return [Grains.find({_id : grainId, $or: [{userId: this.userId}, {private: {$ne: true}}]},
                         {fields: {title: 1, userId: 1, private: 1}}),
             ApiTokens.find({grainId: grainId,
@@ -251,7 +252,6 @@ if (Meteor.isClient) {
       var grainId = grain.grainId();
       if (grainId) {
         Meteor.subscribe("grainTopBar", grainId);
-        // TODO(soon): only subscribe to grains the current user owns
         if (grain.isOwner()) {
           Meteor.subscribe("packageByGrainId", grainId);
           var session = Sessions.findOne({grainId: grainId});
@@ -676,7 +676,6 @@ if (Meteor.isClient) {
   Template.grainTitle.helpers({
     title: function () {
       var grain = getActiveGrain(globalGrains.get());
-      // TODO(now): make this work with ApiTokens
       return (grain && grain.title()) || "Untitled grain";
     }
   });

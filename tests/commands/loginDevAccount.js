@@ -20,10 +20,19 @@ var utils = require('../utils'),
     short_wait = utils.short_wait,
     medium_wait = utils.medium_wait;
 
-exports.command = function(name, callback) {
+var crypto = require("crypto");
+
+exports.command = function(name, isAdmin, callback) {
+  if (!name) {
+    name = crypto.randomBytes(10).toString("hex");
+  }
+  var isAdminString= '")';
+  if (isAdmin) {
+    isAdminString = '", true)';
+  }
   var ret = this
     .init()
-    .execute('window.loginDevAccount("' + name + '")')
+    .execute('window.loginDevAccountFast("' + name + isAdminString)
     .waitForElementVisible('#applist-apps', medium_wait)
     .resizeWindow(utils.default_width, utils.default_height);
 

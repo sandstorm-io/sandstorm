@@ -30,8 +30,13 @@ module.exports = utils.testAllLogins({
       .click('#upload-app-button')
       .ifDemo(function () {
         browser
-          .waitForElementVisible('#upload p', medium_wait)
-          .assert.containsText('#upload p', 'demo users are not allowed')
+          .waitForElementVisible('#uploadButton', medium_wait)
+          .assert.containsText('#uploadButton', 'Upload')
+          .waitForElementVisible('#uploadButton', short_wait)
+          .setValue('#uploadFile', path.join(assetsPath, 'ssjekyll6.spk'))
+          .click('#uploadButton')
+          // .waitForElementVisible('#upload p', medium_wait)
+          // .assert.containsText('#upload p', 'Sorry, this server requires an invite before you can install apps.')
           .init()
           .waitForElementVisible('#applist-apps', medium_wait);
       })
@@ -57,7 +62,7 @@ module.exports = utils.testAllLogins({
       .ifDemo(function () {
         browser
           .waitForElementVisible('#upload p', medium_wait)
-          .assert.containsText('#upload p', 'demo users are not allowed')
+          // .assert.containsText('#upload p', 'demo users are not allowed')
           .init()
           .waitForElementVisible('#applist-apps', medium_wait);
       })
@@ -84,7 +89,7 @@ module.exports = utils.testAllLogins({
       .ifDemo(function () {
         browser
           .waitForElementVisible('#upload p', medium_wait)
-          .assert.containsText('#upload p', 'demo users are not allowed')
+          // .assert.containsText('#upload p', 'demo users are not allowed')
           .init()
           .waitForElementVisible('#applist-apps', medium_wait);
       })
@@ -161,8 +166,8 @@ module.exports = utils.testAllLogins({
 
 module.exports["Test grain anonymous user"] = function (browser) {
   browser
-    // Upload app as github user
-    .loginGithub()
+    // Upload app as normal user
+    .loginDevAccount()
     .click('#upload-app-button')
     .waitForElementVisible('#uploadButton', medium_wait)
     .assert.containsText('#uploadButton', 'Upload')
@@ -205,8 +210,8 @@ module.exports["Test grain anonymous user"] = function (browser) {
 // Test roleless sharing between multiple users
 module.exports["Test roleless sharing"] = function (browser) {
   browser
-    // Upload app as Alice
-    .loginDevAccount("Alice")
+    // Upload app as 1st user
+    .loginDevAccount()
     .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
@@ -222,10 +227,10 @@ module.exports["Test roleless sharing"] = function (browser) {
     .waitForElementVisible(".new-share-token", short_wait)
     .submitForm('.new-share-token')
     .waitForElementVisible('#share-token-text', medium_wait)
-    // Navigate to the url with Bob
+    // Navigate to the url with 2nd user
     .getText('#share-token-text', function(response) {
       browser
-        .loginDevAccount("Bob")
+        .loginDevAccount()
         .url(response.value)
         .waitForElementVisible("#redeem-token-button", short_wait)
         .click("#redeem-token-button")
@@ -241,10 +246,10 @@ module.exports["Test roleless sharing"] = function (browser) {
         .waitForElementVisible(".new-share-token", short_wait)
         .submitForm('.new-share-token')
         .waitForElementVisible('#share-token-text', medium_wait)
-        // Navigate to the re-shared url with Carol
+        // Navigate to the re-shared url with 3rd user
         .getText('#share-token-text', function(response) {
           browser
-            .loginDevAccount("Carol")
+            .loginDevAccount()
             .url(response.value)
             .waitForElementVisible("#redeem-token-button", short_wait)
             .click("#redeem-token-button")
@@ -268,8 +273,8 @@ module.exports["Test roleless sharing"] = function (browser) {
 // "Test roleless sharing" case to ensure that the incognito interstitial always appears.
 module.exports["Test role sharing"] = function (browser) {
   browser
-    // Upload app as Carol
-    .loginDevAccount("Carol")
+    // Upload app as 1st user
+    .loginDevAccount()
     .url(browser.launch_url + "/install/21f8dba75cf1bd9f51b97311ae64aaca?url=http://sandstorm.io/apps/etherpad9.spk")
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
@@ -286,10 +291,10 @@ module.exports["Test role sharing"] = function (browser) {
     .assert.valueContains("section.sharable-link .share-token-role", "can edit")
     .submitForm('.new-share-token')
     .waitForElementVisible('#share-token-text', medium_wait)
-    // Navigate to the url with Dave
+    // Navigate to the url with 2nd user
     .getText('#share-token-text', function(response) {
       browser
-        .loginDevAccount("Dave")
+        .loginDevAccount()
         .url(response.value)
         .waitForElementVisible("#redeem-token-button", short_wait)
         .click("#redeem-token-button")
@@ -305,10 +310,10 @@ module.exports["Test role sharing"] = function (browser) {
         .assert.valueContains("section.sharable-link .share-token-role", "can edit")
         .submitForm('.new-share-token')
         .waitForElementVisible('#share-token-text', medium_wait)
-        // Navigate to the re-shared url with Eve
+        // Navigate to the re-shared url with 3rd user
         .getText('#share-token-text', function(response) {
           browser
-            .loginDevAccount("Eve")
+            .loginDevAccount()
             .url(response.value)
             .waitForElementVisible("#redeem-token-button", short_wait)
             .click("#redeem-token-button")
@@ -330,8 +335,8 @@ module.exports["Test role sharing"] = function (browser) {
 
 module.exports["Test grain incognito interstitial"] = function (browser) {
   browser
-    // Upload app as github user
-    .loginGithub()
+    // Upload app as normal user
+    .loginDevAccount()
     .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
@@ -354,7 +359,7 @@ module.exports["Test grain incognito interstitial"] = function (browser) {
     // Navigate to the url with an anonymous user
     .getText('#share-token-text', function(response) {
       browser
-        .loginGoogle()
+        .loginDevAccount()
         .pause(short_wait)
         // Try incognito
         .url(response.value)

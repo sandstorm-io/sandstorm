@@ -25,7 +25,7 @@ var utils = require("../utils"),
 exports.command = function(url, packageId, newUser, dontStartGrain, callback) {
   var ret = this;
   if (!this.sandstormAccount || newUser) {
-    ret = ret.loginGithub();
+    ret = ret.loginDevAccount();
   }
 
   ret = ret

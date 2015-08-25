@@ -62,6 +62,34 @@ if (allowDevAccounts) {
         }
       });
     };
+
+    loginDevAccountFast = function(displayName, isAdmin) {
+      // This skips the firstSignUp page. Mostly used for testing purposes.
+      Accounts.callLoginMethod({
+        methodName: "createDevAccount",
+        methodArguments: [displayName, isAdmin],
+        userCallback: function (err) {
+          if (err) {
+            window.alert(err);
+          } else {
+            var profile = {
+              name: displayName,
+              email: displayName + "@example.com",
+              pronoun: "robot",
+              handle: "_" + displayName.toLowerCase()
+            };
+            Meteor.call("updateProfile", profile, function (err) {
+              if (err) {
+                console.error(err);
+                return;
+              }
+              Router.go("root");
+            });
+          }
+        }
+      });
+    };
+
     Template.devAccounts.events({
       "click #loginAliceDevAccount": function (event) {
         var displayName = "Alice Dev Admin";

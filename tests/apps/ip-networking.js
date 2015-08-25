@@ -31,7 +31,7 @@ module.exports = {};
 
 module.exports["Test Ip Networking"] = function (browser) {
   browser
-    .loginGithub()
+    .loginDevAccount(null, true)
     .url(browser.launch_url + "/admin/capabilities")
     .waitForElementVisible("#offer-ipnetwork", short_wait)
     .click("#offer-ipnetwork")

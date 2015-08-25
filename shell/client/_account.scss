@@ -486,6 +486,8 @@ form.account-profile-editor {
           font-family: monospace;
           padding-top: 2px;
           color: #888;
+          position: relative;
+          z-index: 1;
         }
 
         input[type="text"] {

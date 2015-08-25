@@ -592,14 +592,7 @@ if (Meteor.isClient) {
     "click .copy-me": copyMe
   });
 
-  Template.grainSharePopup.onCreated(function () {
-    this.currentMode = new ReactiveVar({"shareWithOthers": true});
-  });
-
   Template.grainSharePopup.helpers({
-    "currentMode": function() {
-      return Template.instance().currentMode.get();
-    },
     "currentGrain": function() {
       return getActiveGrain(globalGrains.get());
     }

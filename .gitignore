@@ -28,6 +28,7 @@ shell/public/copy.svg
 shell/public/email.svg
 shell/public/link.svg
 shell/public/people.svg
+shell/public/search.svg
 shell/public/*-m.svg
 shell-build
 sandstorm-*.tar.xz

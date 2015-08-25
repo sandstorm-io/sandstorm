@@ -984,17 +984,9 @@ Router.map(function () {
   this.route("account", {
     path: "/account",
 
-    subscriptions: function () {
-      // We can't use waitOn, since this subscription can be ready when the user is logging in.
-      return Meteor.subscribe("credentials");
-    },
-
     data: function () {
-      if (!isSignedUp()) {
-        // Not logged in.
-        if (this.ready() && !Meteor.loggingIn()) {
-          Router.go("root");
-        }
+      if (!Meteor.user() && !Meteor.loggingIn()) {
+        Router.go("root");
       } else {
         return new SandstormAccountSettingsUi(globalTopbar, globalDb,
             window.location.protocol + "//" + makeWildcardHost("static"));

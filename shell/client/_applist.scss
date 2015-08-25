@@ -1,14 +1,32 @@
 .app-list {
+  overflow: auto; // Needed to make the background span everything on screen.
+  padding: 0px 32px;
+  background-color: $applist-background-color;
+  color: $applist-foreground-color;
+  >h1 {
+    font-size: 24pt;
+    font-weight: 400;
+  }
   .hide {
     // !important used to override other classes that might assign e.g. display: block
     display: none !important;
   }
-  >input.search-bar {
-    width: 80%;
-    margin-left: 24px;
-    line-height: 24pt;
-    height: 36pt;
-    font-size: 18pt;
+  >.search-row {
+    width: 100%;
+    margin-bottom: 36px;
+    >img.search-icon {
+      width: 24px;
+      height: 24px;
+      margin: 4px;
+    }
+    >input.search-bar {
+      font-size: 16pt;
+      background-color: $grainlist-searchbar-background-color;
+      border: .5px solid $grainlist-searchbar-outline-color;
+      &:focus {
+        border: .5px solid $grainlist-searchbar-outline-color-focus;
+      }
+    }
   }
   >.popular-container {
     // Restricts the visible portion of the "most used" section to a single row.
@@ -17,8 +35,8 @@
     overflow: hidden;
   }
   >h2, >.popular-container>h2 {
-    margin-left: 24px;
-    border-bottom: 1px solid #a9a9a9;
+    font-weight: 400;
+    border-bottom: 1px solid $applist-rule-color;
     clear: both;
   }
   >.app-button, >.popular-container>.app-button {
@@ -33,10 +51,10 @@
     position: relative;
     width: 148px;
     height: 200px;
-    margin-left: 20px;
-    margin-right: 20px;
-    margin-bottom: 40px;
-    box-shadow: 0 0 1px black;
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-bottom: 20px;
+    //box-shadow: 0 0 1px black;
     overflow: hidden;
     &.app-action {
     }
@@ -55,23 +73,29 @@
       margin: 10px;
       border-radius: 6px;
       vertical-align: top;
+      &.pseudoapp {
+        background-color: $applist-pseudoapp-background-color;
+        border: 1px $applist-pseudoapp-outline-color;
+      }
     }
     %apptext {
       @extend %overflow-ellipsis;
       position: absolute;
       left: 0px;
       width: 100%;
-      font-size: 12pt;
       vertical-align: top;
       text-align: center;
     }
     >.app-title, >.action-title {
       @extend %apptext;
       top: 148px;
+      font-size: 12pt;
     }
     >.action-text {
       @extend %apptext;
+      color: $applist-action-text-color;
       top: 168px;
+      font-size: 11pt
     }
   }
 }

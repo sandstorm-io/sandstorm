@@ -14,21 +14,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-@font-face {
-  font-family: 'Open Sans';
-  font-style: normal;
-  font-weight: normal;
-  src: local('Open Sans Light'), local('OpenSans-Light'), url(/opensans-light.woff) format('woff');
-}
-
-@font-face {
-  font-family: 'Open Sans';
-  font-style: normal;
-  font-weight: bold;
-  src: local('Open Sans Semibold'), local('OpenSans-Semibold'), url(/opensans-semibold.woff) format('woff');
-}
+// Include fonts (a somewhat verbose incantation) from _fonts.scss
+@import "_fonts.scss";
 
 @import "_geometry.scss";
+@import "_colors.scss";
 
 // Some utility partials intended to be extended or mixin'd
 @import "_partials.scss";
@@ -43,7 +33,7 @@ body {
   margin: 0;
   width: 100%;
   height: 100%;
-  font-family: "Open Sans", sans-serif;
+  font-family: "Source Sans Pro", sans-serif;
   font-weight: normal;
   background-color: white;
 }
@@ -137,17 +127,25 @@ img {
   padding: 0;
   position: fixed;
   left: 0;
-  width: 100%;
-  top: 32px;
+  right: 0;
   bottom: 0px;
   color: black;
   overflow: auto;
-}
 
-.main-content a {
-  font-weight: bold;
-  text-decoration: none;
-  color: #428bca;
+  @media #{$desktop} {
+    top: 32px;
+    &.show-sidebar {
+      left: 200px;
+    }
+  }
+  @media #{$mobile} {
+    top: 48px;
+  }
+  a {
+    font-weight: bold;
+    text-decoration: none;
+    color: #428bca;
+  }
 }
 
 @import "_grainlog.scss";
@@ -312,7 +310,7 @@ svg {
   margin-top: 0;
 }
 
-#app iframe {
+iframe.grain-frame {
   border: none;
   padding: 0;
   width: 100%;
@@ -320,9 +318,17 @@ svg {
   margin: 0;
   display: block;
   position: absolute;
+  &.active-grain {
+    z-index: 0;
+    background: white;
+  }
+  &.inactive-grain {
+    z-index: -2;
+    display: none;
+  }
 }
 
-body.ios #app iframe {
+body.ios iframe.grain-frame {
   /* iOS Safari refuses to scroll iframes. But if you set display: inline and position: static
    * (the defaults for iframes, but we overrode them above) then it will expand the iframe's
    * content to be big enough to contain the entire embedded page, which then allows you to make
@@ -338,7 +344,7 @@ body.ios #app iframe {
   position: static;
 }
 
-body.ios #app.main-content {
+body.ios .main-content {
   /* Hint to iOS that this div is scrollable. */
   -webkit-overflow-scrolling: touch;
 }
@@ -422,44 +428,6 @@ div.popup h2 {
   -webkit-transform: scaleX(-1);
   -ms-transform: scaleX(-1);
   transform: scaleX(-1);
-}
-
-#intro .action-required {
-  background-color: #eee;
-  border-radius: 8px;
-  width: 600px;
-  margin: 16px auto;
-  padding: 12px;
-  position: fixed;
-  right: 16px;
-  z-index: 16;
-}
-
-#intro .action-required h1 {
-  color: red;
-  text-align: center;
-  font-size: 75px;
-  font-weight: bold;
-  margin: 0 auto;
-}
-
-#intro .action-required p {
-  text-align: left;
-  max-width: 600px;
-  margin: 1em auto;
-}
-
-#intro .action-required button {
-  font-family: inherit;
-  background-color: #428bca;
-
-  font-size: 150%;
-  padding: 8px;
-  border-radius: 4px;
-  border: none;
-  color: white;
-  cursor: pointer;
-  text-align: center;
 }
 
 #demo h2 {
@@ -583,7 +551,7 @@ body>.popup.admin-alert>.frame>p {
   cursor: pointer;
 }
 
-@media screen and (max-width: 900px) {
+@media screen and #{$mobile} {
   #menu[data-show="true"] {
     left: 0px;
   }
@@ -597,11 +565,8 @@ body>.popup.admin-alert>.frame>p {
     -webkit-transition: background-color 200ms;
     transition: background-color 200ms;
   }
-  .main-content {
-    top: 48px;
-  }
 
-  #demo > .centered-box {
+  #demo.centered-box {
     width: 80%;
   }
 

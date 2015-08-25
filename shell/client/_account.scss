@@ -168,7 +168,7 @@ body>.popup.account>.frame {
   }
 }
 
-body>.main-content.account {
+body>.main-content>.account {
   text-align: left;
 
   >* {
@@ -546,7 +546,7 @@ form.account-profile-editor {
   }
 }
 
-body>.main-content.account,
+body>.main-content>.account,
 body>.popup {
   .mobile-iframe-hack {
     display: none;
@@ -592,7 +592,7 @@ body>.popup.billing-prompt>.frame {
   }
 }
 
-body>.popup.billing-prompt>.frame, body>.main-content.account>section.subscription {
+body>.popup.billing-prompt>.frame, body>.main-content>.account>section.subscription {
   h3 { text-align: left; }
 
   >.subscriptions {

@@ -87,7 +87,7 @@ Template.sandstormGrainList.onCreated(function () {
   Template.instance().subscribe("userPackages");
 });
 Template.sandstormGrainList.events({
-  "click tr": function(event) {
+  "click tbody tr": function(event) {
     var grainId = event.currentTarget.getAttribute('data-grainid');
     Router.go("grain", {grainId: grainId});
   },
@@ -109,4 +109,3 @@ Template.sandstormGrainList.events({
     }
   }
 });
-

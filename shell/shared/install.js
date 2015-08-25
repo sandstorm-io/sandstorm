@@ -241,53 +241,6 @@ if (Meteor.isClient) {
       Meteor.call("upgradeGrains", this.appId, this.version, this.packageId);
     }
   });
-
-  Template.uploadForm.events({
-    "click #uploadButton": function (event) {
-      ifPlanAllowsCustomApps(function () {
-        Session.set("uploadError", undefined);
-
-        var file = document.getElementById("uploadFile").files[0];
-        if (!file) {
-          alert("Please select a file.");
-          return;
-        }
-
-        var xhr = new XMLHttpRequest();
-
-        xhr.onreadystatechange = function () {
-          if (xhr.readyState == 4) {
-            Session.set("uploadProgress", undefined);
-            if (xhr.status == 200) {
-              Router.go("install", {packageId: xhr.responseText});
-            } else {
-              Session.set("uploadError", {
-                status: xhr.status,
-                statusText: xhr.statusText,
-                response: xhr.responseText
-              });
-            }
-          }
-        };
-
-        if (xhr.upload) {
-          xhr.upload.addEventListener("progress", function (progressEvent) {
-            Session.set("uploadProgress",
-                Math.round(progressEvent.loaded / progressEvent.total * 100));
-          });
-        }
-
-        Meteor.call("newUploadToken", function (err, result) {
-          if (err) {
-            console.error(err);
-          } else {
-            xhr.open("POST", "/upload/" + result, true);
-            xhr.send(file);
-          }
-        });
-      });
-    }
-  });
 }
 
 Router.map(function () {
@@ -441,23 +394,6 @@ Router.map(function () {
 
         return result;
       }
-    }
-  });
-
-  this.route("uploadForm", {
-    path: "/install",
-
-    waitOn: function () {
-      return Meteor.subscribe("credentials");
-    },
-
-    data: function () {
-      return {
-        isSignedUp: isSignedUpOrDemo(),
-        progress: Session.get("uploadProgress"),
-        error: Session.get("uploadError"),
-        origin: getOrigin()
-      };
     }
   });
 

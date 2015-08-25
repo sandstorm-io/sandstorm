@@ -56,6 +56,7 @@ module.exports["Test Ip Networking"] = function (browser) {
 
 module.exports["Test Ip Interface"] = function (browser) {
   browser
+    .loginDevAccount(null, true)
     .url(browser.launch_url + "/admin/capabilities")
     .waitForElementVisible("#offer-ipinterface", short_wait)
     .click("#offer-ipinterface")

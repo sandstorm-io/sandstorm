@@ -59,6 +59,7 @@ IMAGES= \
     shell/public/restore.svg \
     shell/public/settings.svg \
     shell/public/share.svg \
+    shell/public/search.svg \
     shell/public/trash.svg \
     shell/public/upload.svg \
     shell/public/up.svg \

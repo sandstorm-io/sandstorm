@@ -60,6 +60,34 @@ Template.sandstormTopbar.helpers({
     return _.sortBy(_.values(this._items), function (item) { return -(item.priority || 0); });
   },
 
+  currentRoute: function (routeName) {
+    return Router.current().route.getName() == routeName;
+  },
+
+  grains: function () {
+    var topbar = Template.instance().data;
+    var grains = topbar._grains.get();
+    var data = grains.map(function (grain) {
+      grain.depend();
+      return {
+        grainId: grain.grainId(),
+        active: grain.isActive(),
+        title: grain.title(),
+        grainLink: grain.route(),
+        iconSrc: grain.iconSrc(),
+        appTitle: grain.appTitle(),
+      };
+    });
+    console.log("rendering sidebar with");
+    console.log(data);
+    return data;
+  },
+  grainCount: function () {
+    var topbar = Template.instance().data;
+    var grains = topbar._grains.get();
+    return grains.length;
+  },
+
   currentPopup: function () {
     var name = this._expanded.get();
     if (name) {
@@ -93,7 +121,7 @@ Template.sandstormTopbar.helpers({
     var item = instance.data._items[instance.data._expanded.get()];
     if (item) {
       Meteor.defer(function () {
-        var element = instance.find(".topbar>." + item.name);
+        var element = instance.find(".topbar>.menubar>." + item.name);
         if (element) {
           // This positions the popup under the topbar item that spawned it. As a hacky heuristic,
           // we position the popup from the left if the item is closer to the left of the window,
@@ -134,7 +162,7 @@ Template.sandstormTopbar.events({
     unblockUpdate();
   },
 
-  "click .topbar>li": function (event) {
+  "click .topbar>.menubar>li": function (event) {
     var data = Blaze.getData(event.currentTarget);
     if (data.popupTemplate) {
       event.stopPropagation();
@@ -159,8 +187,54 @@ Template.sandstormTopbar.events({
     Template.instance().data.closePopup();
   },
 
+  "click .toggle-sidebar": function (event) {
+    var topbar = Template.instance().data;
+    topbar._showSidebar.set(!topbar._showSidebar.get());
+  },
+
   "click .menu-button": function (event) {
-    this._menuExpanded.set(!this._menuExpanded.get());
+    var topbar = Template.instance().data;
+    topbar._menuExpanded.set(!topbar._menuExpanded.get());
+  },
+
+  "click .navbar .close-button": function (event) {
+    var grainId = event.currentTarget.parentNode.getAttribute("data-grainid");
+    var topbar = Template.instance().data;
+    var grains = topbar._grains.get();
+
+    var activeIndex = -1;
+    var closeIndex = -1;
+    grains.forEach(function(grain, i){
+      if (grain.isActive()) {
+        activeIndex = i;
+      }
+      if (grain.grainId() == grainId) {
+        closeIndex = i;
+        grain.destroy();
+      }
+    });
+
+    if (grains.length == 1) {
+      // Redirect to /grain/ after closing the last grain, if it was the active view.
+      topbar._grains.set([]);
+      if (activeIndex == 0) {
+        Router.go("selectGrain");
+      }
+      return;
+    }
+
+    if (activeIndex == closeIndex) {
+      // If the user closed the active grain, redirect to the next one after closing this one.
+      var newActiveIndex = (activeIndex == grains.length - 1) ? activeIndex - 1 : activeIndex;
+      // Unless the active grain was the last one, in which case redirect to the previous one.
+      grains.splice(closeIndex, 1);
+      grains[newActiveIndex].setActive(true);
+      topbar._grains.set(grains);
+      Router.go("grain", {grainId: grains[newActiveIndex].grainId()});
+    } else {
+      grains.splice(closeIndex, 1);
+      topbar._grains.set(grains);
+    }
   }
 });
 
@@ -210,16 +284,25 @@ Template.sandstormTopbarItem.onDestroyed(function () {
 // =======================================================================================
 // Public interface
 
-SandstormTopbar = function (expandedVar) {
+SandstormTopbar = function (db, expandedVar, grainsVar, showSidebarVar) {
   // `expandedVar` is an optional object that behaves like a `ReactiveVar` and will be used to
   // track which popup is currently open. (The caller may wish to back this with a Session
   // variable.)
+  this._staticHost = db.makeWildcardHost('static');
 
   this._items = {};
   this._itemsTracker = new Tracker.Dependency();
 
   this._expanded = expandedVar || new ReactiveVar(null);
   this._menuExpanded = new ReactiveVar(false);
+  // showSidebar is different from menuExpanded:
+  //  - on desktop, we want to show the sidebar by default,
+  //    and toggle if the user clicks the logo
+  //  - on mobile, we wish to hide the menu by default,
+  //    and show it when the user clicks the menu button
+  this._showSidebar = showSidebarVar || new ReactiveVar(true);
+  this._grains = grainsVar || new ReactiveVar([]);
+
 }
 
 SandstormTopbar.prototype.reset = function () {
@@ -247,6 +330,10 @@ SandstormTopbar.prototype.closePopup = function () {
   }
 
   this._expanded.set(null);
+}
+
+SandstormTopbar.prototype.isUpdateBlocked = function () {
+  return blockedReload.get();
 }
 
 SandstormTopbar.prototype.addItem = function (item) {

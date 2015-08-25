@@ -65,15 +65,28 @@ if (Meteor.isServer) {
 }
 
 if (Meteor.isClient) {
-  globalTopbar = new SandstormTopbar({
-    get: function () {
-      return Session.get("topbar-expanded");
-    },
+  Session.setDefault("show-sidebar", true);
+  globalGrains = new ReactiveVar([]);
+  console.log('init grains');
+  globalTopbar = new SandstormTopbar(globalDb,
+    {
+      get: function () {
+        return Session.get("topbar-expanded");
+      },
 
-    set: function (value) {
-      Session.set("topbar-expanded", value);
-    }
-  });
+      set: function (value) {
+        Session.set("topbar-expanded", value);
+      }
+    },
+    globalGrains,
+    {
+      get: function () {
+        return Session.get("show-sidebar");
+      },
+      set: function (value) {
+        Session.set("show-sidebar", value);
+      }
+    });
 
   globalAccountsUi = new AccountsUi(globalDb);
 

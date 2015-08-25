@@ -52,8 +52,8 @@ limitations under the License.
   {{else}}
 
   {{!-- standard topbar items --}}
-  {{#sandstormTopbarItem name="homelink" topbar=globalTopbar}}
-    <a href="/" id="homelink" class="navlink">Sandstorm</a>
+  {{#sandstormTopbarItem name="toggle-sidebar" topbar=globalTopbar}}
+    <button class="toggle-sidebar-button">Sandstorm</button>
   {{/sandstormTopbarItem}}
   {{>sandstormTopbarItem name="account" topbar=globalTopbar data=globalAccountsUi
                          template="loginButtons" popupTemplate="loginButtonsPopup"}}
@@ -61,6 +61,7 @@ limitations under the License.
     {{>sandstormTopbarItem name="notifications" topbar=globalTopbar
                            template="notifications" popupTemplate="notificationsPopup"}}
   {{/if}}
+  {{!-- admin alerts --}}
   {{#with adminAlert}}
     {{#if adminAlertIsTooLarge}}
       {{#sandstormTopbarItem name="admin-alert" topbar=globalTopbar}}
@@ -94,15 +95,46 @@ limitations under the License.
     {{>billingPrompt}}
   {{/with}}
 
-  {{> yield}}
+  <div class="main-content {{#if showSidebar}}show-sidebar{{/if}}">
+    {{> yield}}
+  </div>
 
   {{/if}}
   {{/with}}
 </template>
 
-<template name="lightLayout">
-  {{>sandstormTopbar globalTopbar}}
+<template name="grainView">
+  {{!-- This template is rendered manually using Blaze.renderWithData() for each currently-open
+        grain and then injected into .main-content. We do things manually so that we can be
+        sure that adding or removing grains from teh open grain list does not cause other grains'
+        iframes to be re-rendered, losing state. --}}
+  {{#with unpackedGrainState}}
+  {{#if error}}
+    <pre>{{error}}</pre>
+  {{else}}
+  {{#if appOrigin}}
+    <iframe data-grainid="{{grainId}}" class="grain-frame {{#if active}}active-grain{{else}}inactive-grain{{/if}}" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{path}}{{hash}}"></iframe>
+    {{#if hasNotLoaded}}
+      {{> _grainSpinner}}
+    {{/if}}
+  {{else}}
+  {{#if interstitial}}
+    <div class="interstitial-button-box">
+      <p>This grain was shared by someone who is not in your contacts.</p>
+      <button class="redeem-token-button" data-token="{{token}}">Reveal your Identity</button>
+      <button class="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
+    </div>
+  {{else}}
+    {{> _grainSpinner}}
+  {{/if}}
+  {{/if}}
+  {{/if}}
+  {{/with}}
+</template>
 
+<template name="noLayout">
+  {{!-- An empty layout for resource windows e.g. grainLog that we want to put reactive stuff in,
+   but don't need the topbar and reload blocking and other fanciness that the layout gives --}}
   {{> yield}}
 </template>
 
@@ -139,16 +171,12 @@ limitations under the License.
 
 <template name="loading">
   {{>title "Loading..."}}
-  <div class="main-content">
-    <div class="centered-box">Loading...</div>
-  </div>
+  <div class="centered-box">Loading...</div>
 </template>
 
 <template name="notFound">
   {{>title "Not Found"}}
-  <div class="main-content">
-    <div class="centered-box">404 Not Found :(</div>
-  </div>
+  <div class="centered-box">404 Not Found :(</div>
 </template>
 
 <template name="root">
@@ -163,15 +191,14 @@ limitations under the License.
     <a href="/about" class="navlink">About</a>
   {{/sandstormTopbarItem}}
 
+      {{!--
   <div id="intro" class="main-content">
     {{#if hideSplashScreen}}
-
-      <div id="applist-closer" data-show="{{showMenu}}"></div>
-      <div id="applist-apps" data-show="{{showMenu}}">
+      <div id="applist-closer" data-show="true"></div>
+      <div id="applist-apps" data-show="true">
         <ul>
-         {{#if isSignedUpOrDemo}}
-           <li class="applist-tab-my-files {{#if selectedTab.myFiles}}selected{{/if}}">My Files</li>
-         {{/if}}
+         <li class="grain-list-tab"><a href="/grain">Open</a></li>
+         <li class="new-grain-tab"><a href="/grain/new">New Grain</a></li>
          <li class="applist-tab-shared-with-me {{#if selectedTab.sharedWithMe}}selected{{/if}}">
             Shared With Me</li>
           {{#each apps}}
@@ -258,7 +285,6 @@ limitations under the License.
           {{/unless}}
         {{/if}}
       </div>
-
     {{else}}
 
       <div id="logo">
@@ -285,6 +311,7 @@ limitations under the License.
       {{/if}}
     {{/if}}
   </div>
+      --}}
 </template>
 
 <template name="grainTitle">
@@ -309,20 +336,20 @@ limitations under the License.
 
 <template name="grainApiTokenPopup">
   <h4>Webkeys</h4>
-  {{#if apiToken}}
-    {{#if apiTokenPending}}
+  {{#if generatedApiToken}}
+    {{#if generatedApiTokenPending}}
       <p>Generating...</p>
       <p><button id="resetApiToken">Cancel</button></p>
     {{else}}
       <p>Copy this webkey and give it to the external app:</p>
-        <a id="apiTokenText" class="copy-me" href="{{apiToken}}">{{apiToken}}</a>
+        <a id="apiTokenText" class="copy-me" href="{{generatedApiToken}}">{{generatedApiToken}}</a>
       {{#if currentUser}}
         <p><button id="resetApiToken">Go back</button></p>
       {{/if}}
     {{/if}}
   {{else}}
     <p>A webkey allows you to connect an external app (e.g. a mobile app) to this app.</p>
-    <p><form id="newApiToken">
+    <p><form class="newApiToken">
     Label: <input type="text" id="api-token-petname" placeholder="e.g. 'Android app'">
     {{#with viewInfo}}
       {{#if roles}}
@@ -397,7 +424,7 @@ limitations under the License.
                 </span>
               </td>
               <td>
-                {{#if ../viewInfo.roles}}
+                {{#if viewInfo.roles}}
                   <select class="share-token-role" data-token-id="{{_id}}">
                     {{#each indexedRoles}}
                       <option title={{title.defaultText}}
@@ -448,7 +475,7 @@ limitations under the License.
     <img class="inline-icon" src="/people-m.svg">
     <input onclick="select()" type="text"
            class="emails" placeholder="Enter email addresses">
-    {{> selectRole}}
+    {{> selectRole viewInfo=viewInfo}}
     </p>
     <div>
       <textarea class="personal-message"
@@ -480,7 +507,7 @@ limitations under the License.
     <p>
       <img class="inline-icon" src="/people-m.svg">
       Anyone with this link{{#if viewInfo.roles}}:{{else}} can access the grain.{{/if}}
-      {{> selectRole}}
+      {{> selectRole viewInfo=viewInfo}}
     </p>
     <input type="text" class="label" placeholder="Label (optional)">
     <p class="label-explanation">
@@ -506,10 +533,10 @@ limitations under the License.
 
 <template name="shareWithOthers">
   <h4 class="share-with-others">Share with others</h4>
-  {{#if oldSharingModel}}
+  {{#if grain.oldSharingModel}}
     <p>This grain uses the old sharing model. You can share it by copy/pasting the URL from the
        location bar.</p>
-    {{#if isOwner}}
+    {{#if grain.isOwner}}
       <p>You can upgrade this grain to the new model, but anyone with whom you shared this grain
          previously will lose access; you will have to share it with them again.</p>
       <p>Upgrading cannot be undone.</p>
@@ -520,13 +547,13 @@ limitations under the License.
     <section class="send-invite">
       <h5 class="tab-top"> Send an invite </h5>
       <div class="tab-content">
-        {{> emailInviteTab}}
+        {{> emailInviteTab viewInfo=grain.viewInfo }}
       </div>
     </section>
     <section class="sharable-link">
       <h5 class="tab-top"> Get sharable link </h5>
       <div class="tab-content">
-        {{> sharableLinkTab}}
+        {{> sharableLinkTab viewInfo=grain.viewInfo }}
       </div>
     </section>
   </div>
@@ -538,7 +565,7 @@ limitations under the License.
 </template>
 
 <template name="grainSharePopup">
-  {{> shareWithOthers }}
+  {{> shareWithOthers grain=currentGrain}}
 </template>
 
 <template name="grainPowerboxRequest">
@@ -601,46 +628,22 @@ limitations under the License.
         startOpen=true popupTemplate="grainPowerboxOfferPopup"}}
   {{/if}}
 
-  <div id="app" class="main-content">
-    {{#if error}}
-      <pre>{{error}}</pre>
-    {{else}}
-    {{#if appOrigin}}
-      <iframe id="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{path}}{{hash}}"></iframe>
-      {{#if hasNotLoaded}}
-        {{> _grainSpinner}}
-      {{/if}}
-    {{else}}
-    {{#if interstitial}}
-      <div class="interstitial-button-box">
-        <p>This grain was shared by someone who is not in your contacts.</p>
-        <button id="redeem-token-button" data-token="{{token}}">Reveal your Identity</button>
-        <button id="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
-      </div>
-    {{else}}
-      {{> _grainSpinner}}
-    {{/if}}
-    {{/if}}
-    {{/if}}
-  </div>
 </template>
 
 <template name="newGrain">
-  <div class="main-content">
-    {{> sandstormAppList }}
-  </div>
+  {{>title "Apps"}}
+  {{> sandstormAppList }}
 </template>
 
 <template name="selectGrain">
-  <div class="main-content">
-    {{> sandstormGrainList}}
-  </div>
+  {{>title "Grains"}}
+  {{> sandstormGrainList}}
 </template>
 
 <template name="_grainSpinner">
-  <!-- This is a terrible hack to center this thing. The styles shold go in css, but it's
+  {{!-- This is a terrible hack to center this thing. The styles shold go in css, but it's
     arguably more confusing to put them there when all they're doing is this archaic pattern to
-    get a horizontally+vertically centered div -->
+    get a horizontally+vertically centered div --}}
   <div id="grain-loading-spinner">
     <div style="display:table-cell;vertical-align:middle;">
       <div style="margin-left:auto;margin-right:auto;text-align:center;">
@@ -651,11 +654,9 @@ limitations under the License.
 </template>
 
 <template name="grainLog">
-  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}
-    Debug log: {{title}}
-  {{/sandstormTopbarItem}}
-
-  <div id="grainLog" class="main-content">
+  <div class="grainlog-title">Debug log: {{title}}</div>
+  <hr>
+  <div id="grainLog">
     <pre>...{{{html}}}</pre>
   </div>
 </template>
@@ -664,7 +665,7 @@ limitations under the License.
   {{>title "Install app"}}
 
   {{#if error}}
-    <div id="install" class="main-content error">
+    <div id="install" class="error">
       <div class="centered-box">
         <p>Failed to install app!
           {{#if step}}<button id="retry">Try Again</button>{{/if}}</p>
@@ -672,7 +673,7 @@ limitations under the License.
       </div>
     </div>
   {{else}}
-    <div id="install" class="main-content instep-{{step}}">
+    <div id="install" class="instep-{{step}}">
       {{! TODO(cleanup):  The use of a list here is vestigial.  We now display only the step
             that is currently running. }}
       <ol>
@@ -723,7 +724,7 @@ limitations under the License.
 </template>
 
 <template name="account">
-  <div class="account main-content">
+  <div class="account">
     {{#if .}}
       {{>sandstormAccountSettings .}}
     {{/if}}
@@ -733,7 +734,6 @@ limitations under the License.
 <template name="signup">
   {{>title "Claim Invite"}}
 
-  <div id="signup" class="main-content">
   <div class="centered-box">
   {{#if alreadySignedUp}}
     <p>You're all signed up!  Now go <a href="https://apps.sandstorm.io/?host={{origin}}">install
@@ -754,7 +754,6 @@ limitations under the License.
       <p>Sorry, this is not a valid signup key.</p>
     {{/if}}
   {{/if}}
-  </div>
   </div>
 </template>
 
@@ -826,42 +825,38 @@ limitations under the License.
 <template name="uploadForm">
   {{>title "Upload App"}}
 
-  <div id="upload" class="main-content">
-    <div class="centered-box">
-    {{#if isSignedUp}}
-      {{#if progress}}
-        <p>Uploading... {{progress}}%</p>
-      {{else}}
-        {{#if error}}
-          <p>Upload failed: {{error.status}} {{error.statusText}}</p>
-        {{else}}
-          <p>Please choose an <code>spk</code> file to install.</p>
-        {{/if}}
-        <p><input type="file" id="uploadFile">
-           <button id="uploadButton">Upload</button></p>
-      {{/if}}
+  <div id="upload" class="centered-box">
+  {{#if isSignedUp}}
+    {{#if progress}}
+      <p>Uploading... {{progress}}%</p>
     {{else}}
-      <p>Sorry, this server requires an invite before you can install apps.</p>
+      {{#if error}}
+        <p>Upload failed: {{error.status}} {{error.statusText}}</p>
+      {{else}}
+        <p>Please choose an <code>spk</code> file to install.</p>
+      {{/if}}
+      <p><input type="file" id="uploadFile">
+         <button id="uploadButton">Upload</button></p>
     {{/if}}
-    </div>
+  {{else}}
+    <p>Sorry, this server requires an invite before you can install apps.</p>
+  {{/if}}
   </div>
 </template>
 
-<template name="restoreGrainStatus">
-  {{>title "Restoring Grain..."}}
+<template name="uploadStatus">
+  {{>title "Uploading..."}}
 
-  <div id="restoreGrain" class="main-content">
-    <div class="centered-box">
-    {{#if status}}
-      <p>{{status}}... {{progress}}%</p>
+  <div id="restoreGrain" class="centered-box">
+  {{#if status}}
+    <p>{{status}}... {{#if progress}}{{progress}}%{{/if}}</p>
+  {{else}}
+    {{#if error}}
+      <p>Upload failed: {{error.status}} {{error.statusText}}</p>
     {{else}}
-      {{#if error}}
-        <p>Restore failed: {{error.status}} {{error.statusText}}</p>
-      {{else}}
-        <p>Restore failed. Please try again.</p>
-      {{/if}}
+      <p>Upload failed. Please try again.</p>
     {{/if}}
-    </div>
+  {{/if}}
   </div>
 </template>
 
@@ -910,54 +905,52 @@ limitations under the License.
   {{>title "Admin Settings"}}
 
   {{> _adminConfigureLoginServiceDialog}}
-  <div id="admin-settings" class="main-content">
-    <div class="centered-box">
-      {{#if isUserPermitted}}
-        <ul id="settings-tabs" class="nav centered-box">
-          <li id="settings-tab" class="{{#if settingsActive}}active{{/if}}">
-            {{#linkTo route="adminSettings" data=getToken}}Settings{{/linkTo}}
-          </li>
-          <li id="users-tab" class="{{#if usersActive}}active{{/if}}">
-            {{#linkTo route="adminUsers" data=getToken}}Users{{/linkTo}}
-          </li>
-          <li id="stats-tab" class="{{#if statsActive}}active{{/if}}">
-            {{#linkTo route="adminStats" data=getToken}}Stats{{/linkTo}}
-          </li>
-          <li id="log-tab" class="{{#if logActive}}active{{/if}}">
-            {{#linkTo route="adminLog" data=getToken}}Log{{/linkTo}}
-          </li>
-          <li id="invites-tab" class="{{#if invitesActive}}active{{/if}}">
-            {{#linkTo route="adminInvites" data=getToken}}Send Invite{{/linkTo}}
-          </li>
-          <li id="caps-tab" class="{{#if capsActive}}active{{/if}}">
-            {{#linkTo route="adminCaps" data=getToken}}Capabilities{{/linkTo}}
-          </li>
-          <li id="advanced-tab" class="{{#if advancedActive}}active{{/if}}">
-            {{#linkTo route="adminAdvanced" data=getToken}}Advanced{{/linkTo}}
-          </li>
-        </ul>
-        {{> Template.dynamic template=adminTab}}
-        {{#if success}}
-        <div class="alert alert-success {{#if fadeAlert}}fade-out{{/if}}"><strong>Success!</strong> {{successMessage}}</div>
-        {{/if}}
-        {{#if failure}}
-        <div class="alert alert-danger {{#if fadeAlert}}fade-out{{/if}}"><strong>Failure!</strong>
-          <ul>
-            {{#each errors}}
-            <li>{{reason}}</li>
-            {{/each}}
-          </ul>
-          For internal server errors, see <code>&lt;install-location&gt;/var/log/sandstorm.log</code> for details.
-        </div>
-        {{/if}}
-      {{else}}
-        <p>
-          You are not logged in as admin and there isn't a valid token specified. You should
-          either log in as an admin user or generate a token from the command line by doing
-          `sandstorm admin-token` in order to access the admin settings page.
-        </p>
+  <div id="admin-settings" class="centered-box">
+    {{#if isUserPermitted}}
+      <ul id="settings-tabs" class="nav centered-box">
+        <li id="settings-tab" class="{{#if settingsActive}}active{{/if}}">
+          {{#linkTo route="adminSettings" data=getToken}}Settings{{/linkTo}}
+        </li>
+        <li id="users-tab" class="{{#if usersActive}}active{{/if}}">
+          {{#linkTo route="adminUsers" data=getToken}}Users{{/linkTo}}
+        </li>
+        <li id="stats-tab" class="{{#if statsActive}}active{{/if}}">
+          {{#linkTo route="adminStats" data=getToken}}Stats{{/linkTo}}
+        </li>
+        <li id="log-tab" class="{{#if logActive}}active{{/if}}">
+          {{#linkTo route="adminLog" data=getToken}}Log{{/linkTo}}
+        </li>
+        <li id="invites-tab" class="{{#if invitesActive}}active{{/if}}">
+          {{#linkTo route="adminInvites" data=getToken}}Send Invite{{/linkTo}}
+        </li>
+        <li id="caps-tab" class="{{#if capsActive}}active{{/if}}">
+          {{#linkTo route="adminCaps" data=getToken}}Capabilities{{/linkTo}}
+        </li>
+        <li id="advanced-tab" class="{{#if advancedActive}}active{{/if}}">
+          {{#linkTo route="adminAdvanced" data=getToken}}Advanced{{/linkTo}}
+        </li>
+      </ul>
+      {{> Template.dynamic template=adminTab}}
+      {{#if success}}
+      <div class="alert alert-success {{#if fadeAlert}}fade-out{{/if}}"><strong>Success!</strong> {{successMessage}}</div>
       {{/if}}
-    </div>
+      {{#if failure}}
+      <div class="alert alert-danger {{#if fadeAlert}}fade-out{{/if}}"><strong>Failure!</strong>
+        <ul>
+          {{#each errors}}
+          <li>{{reason}}</li>
+          {{/each}}
+        </ul>
+        For internal server errors, see <code>&lt;install-location&gt;/var/log/sandstorm.log</code> for details.
+      </div>
+      {{/if}}
+    {{else}}
+      <p>
+        You are not logged in as admin and there isn't a valid token specified. You should
+        either log in as an admin user or generate a token from the command line by doing
+        `sandstorm admin-token` in order to access the admin settings page.
+      </p>
+    {{/if}}
   </div>
 </template>
 
@@ -1144,207 +1137,201 @@ limitations under the License.
 <template name="drydemo">
   {{>title pageTitle}}
 
-  <div id="demo" class="main-content">
-    <div class="centered-box">
-      <h2>Sandstorm Demo</h2>
-      {{#if allowDemo}}
-        {{#if shouldShowStartDemo}}
-          {{#if loggingIn}}
-            <p>Logging in...</p>
-          {{else}}
-            <p><input id="demo-display-name" type="hidden" value="">
-               <button id="createDemoUser">{{ createDemoUserLabel }} »</button></p>
-          {{/if}}
+  <div id="demo" class="centered-box">
+    <h2>Sandstorm Demo</h2>
+    {{#if allowDemo}}
+      {{#if shouldShowStartDemo}}
+        {{#if loggingIn}}
+          <p>Logging in...</p>
         {{else}}
-          {{#if isDemoUser}}
-            <p>You are currently logged in as a one-hour demo user.</p>
-            <p><button onclick="browseHome()">Continue the demo</button></p>
-          {{else}}
-            <p>You are already logged in as a real user.</p>
-          {{/if}}
+          <p><input id="demo-display-name" type="hidden" value="">
+             <button id="createDemoUser">{{ createDemoUserLabel }} »</button></p>
         {{/if}}
-
-        <h3>What is this?</h3>
-        <p>Sandstorm is an open source hosting platform for personal instances of web apps. Users
-          can upload and install arbitrary software. In addition to improving privacy and control,
-          <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html">
-          this is the only way to make Open Source web apps viable.</a></p>
-        <p>Notes:</p>
-        <ul>
-          <li>Demo accounts last one hour.</li>
-          <li>Demo accounts can only install approved apps, but this
-            is an artificial limitation. Real users can upload
-            whatever code they want, as each app server runs in a
-            secure sandbox.</li>
-          <li>We only have one machine. It may get slow or crashy under excessive load.</li>
-          <li>We know the UI design needs work. This is a tech demo. ;)</li>
-          <li><a href="https://sandstorm.io">Read more at Sandstorm.io.</a></li>
-        </ul>
       {{else}}
-        <p>Sorry, this server does not allow demo accounts.</p>
+        {{#if isDemoUser}}
+          <p>You are currently logged in as a one-hour demo user.</p>
+          <p><button onclick="browseHome()">Continue the demo</button></p>
+        {{else}}
+          <p>You are already logged in as a real user.</p>
+        {{/if}}
       {{/if}}
-    </div>
+
+      <h3>What is this?</h3>
+      <p>Sandstorm is an open source hosting platform for personal instances of web apps. Users
+        can upload and install arbitrary software. In addition to improving privacy and control,
+        <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html">
+        this is the only way to make Open Source web apps viable.</a></p>
+      <p>Notes:</p>
+      <ul>
+        <li>Demo accounts last one hour.</li>
+        <li>Demo accounts can only install approved apps, but this
+          is an artificial limitation. Real users can upload
+          whatever code they want, as each app server runs in a
+          secure sandbox.</li>
+        <li>We only have one machine. It may get slow or crashy under excessive load.</li>
+        <li>We know the UI design needs work. This is a tech demo. ;)</li>
+        <li><a href="https://sandstorm.io">Read more at Sandstorm.io.</a></li>
+      </ul>
+    {{else}}
+      <p>Sorry, this server does not allow demo accounts.</p>
+    {{/if}}
   </div>
 </template>
 
 <template name="devAccounts">
   {{>title pageTitle}}
 
-  <div id="demo" class="main-content">
-    <div class="centered-box">
-      <h2>Developer Accounts</h2>
-        {{#if shouldShowStartDevAccounts}}
-          {{#if loggingIn}}
-            <p>Logging in...</p>
-          {{else}}
-            <button id="loginAliceDevAccount" class="devLogin">Log in as Alice (admin) »</button>
-            <button id="loginBobDevAccount" class="devLogin">Log in as Bob »</button>
-            <button id="loginCarolDevAccount" class="devLogin">Log in as Carol »</button>
-            <button id="loginDaveDevAccount" class="devLogin">Log in as Dave »</button>
-            <button id="loginEveDevAccount" class="devLogin">Log in as Eve »</button>
-          {{/if}}
-        {{else}}
-            <p>You are already logged in.</p>
-            <p><button onclick="browseHome()">See your apps »</button></p>
-        {{/if}}
+  <div id="demo" class="centered-box">
+    <h2>Developer Accounts</h2>
+    {{#if shouldShowStartDevAccounts}}
+      {{#if loggingIn}}
+        <p>Logging in...</p>
+      {{else}}
+        <button id="loginAliceDevAccount" class="devLogin">Log in as Alice (admin) »</button>
+        <button id="loginBobDevAccount" class="devLogin">Log in as Bob »</button>
+        <button id="loginCarolDevAccount" class="devLogin">Log in as Carol »</button>
+        <button id="loginDaveDevAccount" class="devLogin">Log in as Dave »</button>
+        <button id="loginEveDevAccount" class="devLogin">Log in as Eve »</button>
+      {{/if}}
+    {{else}}
+        <p>You are already logged in.</p>
+        <p><button onclick="browseHome()">See your apps »</button></p>
+    {{/if}}
 
-        <h3>What is this?</h3>
-        <p>This page is only for developer Sandstorm instances (ie. the ALLOW_DEV_ACCOUNTS setting
-        is enabled in your sandstorm.conf).</p>
-    </div>
+    <h3>What is this?</h3>
+    <p>This page is only for developer Sandstorm instances (ie. the ALLOW_DEV_ACCOUNTS setting
+    is enabled in your sandstorm.conf).</p>
   </div>
 </template>
 
 <template name="about">
   {{>title "About Sandstorm"}}
 
-  <div id="about" class="main-content">
-    <div class="centered-box">
-      <h2>Sandstorm Server</h2>
-      <p class="heading-subtext"><a href="https://sandstorm.io">https://sandstorm.io</a></p>
-      <p>Build {{build}}</p>
-      {{#if isUnofficial}}
-      <p><b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain
-        modifications not reviewed by the developers.</p>
-      {{/if}}
-      <button id="show-changelog">Show Changelog</button>
-      {{#if showChangelog}}
-        {{> changelog}}
-      {{/if}}
-      <p><a href="https://sandstorm.io">Sandstorm.io</a> is an open source hosting platform for
-        personal/private instances of web apps. Users can upload and install arbitrary software
-        through a simple app-store-like web interface. In addition to better privacy,
-        <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html">
-        this is the only way to make Open Source web apps viable.</a></p>
-      <h3>Core Developers</h3>
-      <ul class="dev-list">
-        <li><a href="https://github.com/kentonv">
-            <img src="/logos/kenton.jpg" alt="Kenton Varda"><br>
-            Kenton<br>Varda</a></li>
-        <li><a href="https://github.com/jadeqwang">
-            <img src="/logos/jade.jpg" alt="Jade Wang"><br>
-            Jade<br>Wang</a></li>
-        <li><a href="https://github.com/jparyani">
-            <img src="/logos/jparyani.jpg" alt="Jason Paryani"><br>
-            Jason<br>Paryani</a></li>
-        <li><a href="https://github.com/dwrensha">
-            <img src="/logos/drenshaw.jpg" alt="David Renshaw"><br>
-            David<br>Renshaw</a></li>
-        <li><a href="https://github.com/paulproteus">
-            <img src="/logos/asheesh.jpg" alt="Asheesh Laroia"><br>
-            Asheesh<br>Laroia</a></li>
-        <li><a href="http://nenanguyen.ca">
-            <img src="/logos/nena.jpg" alt="Néna Nguyễn"><br>
-            Néna<br>Nguyễn</a></li>
-        <li><a href="https://github.com/zarvox">
-            <img src="/logos/drew.jpg" alt="Drew Fisher"><br>
-            Drew<br>Fisher</a></li>
-        <li><a href="https://plus.google.com/u/0/114357619139436426265">
-            <img src="/logos/garply.jpg" alt="Garply"><br>
-            Garply<br>&nbsp;</a></li>
-      </ul>
-      <h3>Advisors</h3>
-      <ul class="advisor-list">
-        <li><a href="https://github.com/swetland">
-            <img src="/logos/swetland.jpg" alt="Brian Swetland"><br>
-            Brian<br>Swetland</a></li>
-        <li><a href="https://github.com/amluto">
-            <img src="/logos/luto.jpg" alt="Andrew Lutomirski"><br>
-            Andrew<br>Lutomirski</a></li>
-        <li><a href="https://github.com/jasvir">
-            <img src="/logos/jasvir.jpg" alt="Jasvir Nagra"><br>
-            Jasvir<br>Nagra</a></li>
-        <li><a href="https://github.com/mseaborn">
-            <img src="/logos/smiley.png" alt="Mark Seaborn"><br>
-            Mark<br>Seaborn</a></li>
-        <li><a href="http://en.wikipedia.org/wiki/Mark_S._Miller">
-            <img src="/logos/markm.jpg" alt="Mark Miller"><br>
-            Mark<br>Miller</a></li>
-      </ul>
-      <h3>Key Individual Sponsors</h3>
-      <p class="heading-subtext">from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign</a></p>
-      <ul class="backer-list">
-        <li><a href="http://rogerwagner.com/">
-            <img src="/logos/wagner.jpg"><br>
-            Roger Wagner</a></li>
-        <li><a href="https://github.com/audreyt">
-            <img src="/logos/audreyt.jpg"><br>
-            Audrey Tang</a></li>
-      </ul>
-      <h3>Corporate Sponsors</h3>
-      <p class="heading-subtext">from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign</a></p>
-      <div class="corptags">
-        <div class="corptag">
-          <a href="http://draw.io"><img src="/logos/draw.io-logo.svg"></a>
-        </div>
-        <div class="corptag">
-          <img src="/logos/humanweb.png" style="padding-top: 68px">
-        </div>
-        <div class="corptag">
-          <a href="https://uniregistry.com"><img src="/logos/uniregistry.svg"></a>
-        </div>
+  <div id="about" class="centered-box">
+    <h2>Sandstorm Server</h2>
+    <p class="heading-subtext"><a href="https://sandstorm.io">https://sandstorm.io</a></p>
+    <p>Build {{build}}</p>
+    {{#if isUnofficial}}
+    <p><b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain
+      modifications not reviewed by the developers.</p>
+    {{/if}}
+    <button id="show-changelog">Show Changelog</button>
+    {{#if showChangelog}}
+      {{> changelog}}
+    {{/if}}
+    <p><a href="https://sandstorm.io">Sandstorm.io</a> is an open source hosting platform for
+      personal/private instances of web apps. Users can upload and install arbitrary software
+      through a simple app-store-like web interface. In addition to better privacy,
+      <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html">
+      this is the only way to make Open Source web apps viable.</a></p>
+    <h3>Core Developers</h3>
+    <ul class="dev-list">
+      <li><a href="https://github.com/kentonv">
+          <img src="/logos/kenton.jpg" alt="Kenton Varda"><br>
+          Kenton<br>Varda</a></li>
+      <li><a href="https://github.com/jadeqwang">
+          <img src="/logos/jade.jpg" alt="Jade Wang"><br>
+          Jade<br>Wang</a></li>
+      <li><a href="https://github.com/jparyani">
+          <img src="/logos/jparyani.jpg" alt="Jason Paryani"><br>
+          Jason<br>Paryani</a></li>
+      <li><a href="https://github.com/dwrensha">
+          <img src="/logos/drenshaw.jpg" alt="David Renshaw"><br>
+          David<br>Renshaw</a></li>
+      <li><a href="https://github.com/paulproteus">
+          <img src="/logos/asheesh.jpg" alt="Asheesh Laroia"><br>
+          Asheesh<br>Laroia</a></li>
+      <li><a href="http://nenanguyen.ca">
+          <img src="/logos/nena.jpg" alt="Néna Nguyễn"><br>
+          Néna<br>Nguyễn</a></li>
+      <li><a href="https://github.com/zarvox">
+          <img src="/logos/drew.jpg" alt="Drew Fisher"><br>
+          Drew<br>Fisher</a></li>
+      <li><a href="https://plus.google.com/u/0/114357619139436426265">
+          <img src="/logos/garply.jpg" alt="Garply"><br>
+          Garply<br>&nbsp;</a></li>
+    </ul>
+    <h3>Advisors</h3>
+    <ul class="advisor-list">
+      <li><a href="https://github.com/swetland">
+          <img src="/logos/swetland.jpg" alt="Brian Swetland"><br>
+          Brian<br>Swetland</a></li>
+      <li><a href="https://github.com/amluto">
+          <img src="/logos/luto.jpg" alt="Andrew Lutomirski"><br>
+          Andrew<br>Lutomirski</a></li>
+      <li><a href="https://github.com/jasvir">
+          <img src="/logos/jasvir.jpg" alt="Jasvir Nagra"><br>
+          Jasvir<br>Nagra</a></li>
+      <li><a href="https://github.com/mseaborn">
+          <img src="/logos/smiley.png" alt="Mark Seaborn"><br>
+          Mark<br>Seaborn</a></li>
+      <li><a href="http://en.wikipedia.org/wiki/Mark_S._Miller">
+          <img src="/logos/markm.jpg" alt="Mark Miller"><br>
+          Mark<br>Miller</a></li>
+    </ul>
+    <h3>Key Individual Sponsors</h3>
+    <p class="heading-subtext">from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign</a></p>
+    <ul class="backer-list">
+      <li><a href="http://rogerwagner.com/">
+          <img src="/logos/wagner.jpg"><br>
+          Roger Wagner</a></li>
+      <li><a href="https://github.com/audreyt">
+          <img src="/logos/audreyt.jpg"><br>
+          Audrey Tang</a></li>
+    </ul>
+    <h3>Corporate Sponsors</h3>
+    <p class="heading-subtext">from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign</a></p>
+    <div class="corptags">
+      <div class="corptag">
+        <a href="http://draw.io"><img src="/logos/draw.io-logo.svg"></a>
       </div>
-      <h3>Backers</h3>
-      <p class="heading-subtext">from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign</a></p>
-      {{#if backers}}
-      <ul class="backer-list">
-        {{#each backers}}
-          <li>{{.}}</li>
-        {{/each}}
-        <li>{{anonCount}} anonymous contributors</li>
-      </ul>
-      {{else}}
-      <p>loading...</p>
-      {{/if}}
-      <h3>Third-party works used</h3>
-      <ul>
-        <!-- TODO(soon): This list has a lot missing. Review. -->
-        <li><a href="http://nodejs.org/">Node.js</a> (MIT license)</li>
-        <li><a href="https://www.meteor.com/">Meteor web framework</a> (MIT license)</li>
-        <li><a href="https://github.com/EventedMind/iron-router">Iron Router routing library</a> (MIT license)</li>
-        <li><a href="http://underscorejs.org/">Underscore.js</a> (MIT license)</li>
-        <li><a href="http://www.senchalabs.org/connect/">Connect middleware</a> (MIT license)</li>
-        <li><a href="https://github.com/andris9/simplesmtp">Simple SMTP by Andris Reinman</a> (MIT license)</li>
-        <li><a href="https://github.com/justmoon/node-bignum">node-bignum by Stefan Thomas</a> (MIT license)</li>
-        <li><a href="https://github.com/jedisct1/libsodium">libsodium</a> (MIT license)</li>
-        <li><a href="https://www.npmjs.org/package/es6-promises">ES6 Promises polyfill by Dmitry Korobkin</a> (MIT license)</li>
-        <li><a href="https://www.google.com/fonts/specimen/Open+Sans">Open Sans font by Google</a> (Apache 2.0 license)</li>
-        <li><a href="https://github.com/drudru/ansi_up">ansi_up library by Dru Nelson</a> (MIT license)</li>
-        <li><a href="https://github.com/joyent/http-parser">Node/nginx HTTP parser library maintained by Joyent</a> (MIT license)</li>
-        <li><a href="http://libb64.sourceforge.net/">libb64 by Chris Venter</a> (Public Domain)</li>
-        <li><a href="http://tukaani.org/xz/">XZ Utils</a> (Public Domain / GPL)</li>
-        <li><a href="http://www.gnu.org/software/libc/libc.html">GNU C library</a> and
-            <a href="https://gcc.gnu.org/libstdc++/">C++ Library</a> (LGPL license)</li>
-      </ul>
-      <p>These works are copyright the respective authors and used under the terms of the respective
-        licenses.</p>
-      <h3>Copyright</h3>
-      <p>The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and
-         contributors. The implementation is licensed under the Apache License 2.0.</p>
-      <p>"Sandstorm" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc.,
-         and may not be used to advertise derivative works nor commercial services without
-         written consent from Sandstorm Development Group, Inc.</p>
-      <p><a href="https://github.com/sandstorm-io/sandstorm/blob/master/LICENSE">Full license details.</a></p>
+      <div class="corptag">
+        <img src="/logos/humanweb.png" style="padding-top: 68px">
+      </div>
+      <div class="corptag">
+        <a href="https://uniregistry.com"><img src="/logos/uniregistry.svg"></a>
+      </div>
     </div>
+    <h3>Backers</h3>
+    <p class="heading-subtext">from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign</a></p>
+    {{#if backers}}
+    <ul class="backer-list">
+      {{#each backers}}
+        <li>{{.}}</li>
+      {{/each}}
+      <li>{{anonCount}} anonymous contributors</li>
+    </ul>
+    {{else}}
+    <p>loading...</p>
+    {{/if}}
+    <h3>Third-party works used</h3>
+    <ul>
+      <!-- TODO(soon): This list has a lot missing. Review. -->
+      <li><a href="http://nodejs.org/">Node.js</a> (MIT license)</li>
+      <li><a href="https://www.meteor.com/">Meteor web framework</a> (MIT license)</li>
+      <li><a href="https://github.com/EventedMind/iron-router">Iron Router routing library</a> (MIT license)</li>
+      <li><a href="http://underscorejs.org/">Underscore.js</a> (MIT license)</li>
+      <li><a href="http://www.senchalabs.org/connect/">Connect middleware</a> (MIT license)</li>
+      <li><a href="https://github.com/andris9/simplesmtp">Simple SMTP by Andris Reinman</a> (MIT license)</li>
+      <li><a href="https://github.com/justmoon/node-bignum">node-bignum by Stefan Thomas</a> (MIT license)</li>
+      <li><a href="https://github.com/jedisct1/libsodium">libsodium</a> (MIT license)</li>
+      <li><a href="https://www.npmjs.org/package/es6-promises">ES6 Promises polyfill by Dmitry Korobkin</a> (MIT license)</li>
+      <li><a href="https://www.google.com/fonts/specimen/Open+Sans">Open Sans font by Google</a> (Apache 2.0 license)</li>
+      <li><a href="https://github.com/drudru/ansi_up">ansi_up library by Dru Nelson</a> (MIT license)</li>
+      <li><a href="https://github.com/joyent/http-parser">Node/nginx HTTP parser library maintained by Joyent</a> (MIT license)</li>
+      <li><a href="http://libb64.sourceforge.net/">libb64 by Chris Venter</a> (Public Domain)</li>
+      <li><a href="http://tukaani.org/xz/">XZ Utils</a> (Public Domain / GPL)</li>
+      <li><a href="http://www.gnu.org/software/libc/libc.html">GNU C library</a> and
+          <a href="https://gcc.gnu.org/libstdc++/">C++ Library</a> (LGPL license)</li>
+    </ul>
+    <p>These works are copyright the respective authors and used under the terms of the respective
+      licenses.</p>
+    <h3>Copyright</h3>
+    <p>The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and
+       contributors. The implementation is licensed under the Apache License 2.0.</p>
+    <p>"Sandstorm" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc.,
+       and may not be used to advertise derivative works nor commercial services without
+       written consent from Sandstorm Development Group, Inc.</p>
+    <p><a href="https://github.com/sandstorm-io/sandstorm/blob/master/LICENSE">Full license details.</a></p>
   </div>
 </template>

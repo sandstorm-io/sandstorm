@@ -177,7 +177,7 @@ if (Meteor.isClient) {
   }
 
   Router.onRun(function () {
-    // Close menus any time we navigate.
+    // Close menus and popups any time we navigate.
     globalTopbar.reset();
     this.next();
   });
@@ -265,7 +265,6 @@ if (Meteor.isClient) {
 
   Template.layout.onCreated(function () {
     this.timer = new Tracker.Dependency();
-    this.showTopbar = new ReactiveVar(false);
     var resizeTracker = this.resizeTracker = new Tracker.Dependency();
     this.resizeFunc = function() {
       resizeTracker.changed();
@@ -293,7 +292,7 @@ if (Meteor.isClient) {
     //
     // - The current app title, if we can determine it, or
     //
-    // - The empty string "", if we can't determine the current app     //   title.
+    // - The empty string "", if we can't determine the current app title.
     var params = "";
 
     // Try our hardest to find the package's name, falling back on the default if needed.
@@ -345,19 +344,27 @@ if (Meteor.isClient) {
 
   ifPlanAllowsCustomApps = function (next) {
     if (globalDb.isDemoUser() || globalDb.isUninvitedFreeUser()) {
-      showBillingPrompt("customApp", function () {
-        // If the user successfully chose a plan, continue the operation.
-        if (!globalDb.isDemoUser() && !globalDb.isUninvitedFreeUser()) {
-          next();
-        }
-      });
+      if (window.BlackrockPayments) {
+        showBillingPrompt("customApp", function () {
+          // If the user successfully chose a plan, continue the operation.
+          if (!globalDb.isDemoUser() && !globalDb.isUninvitedFreeUser()) {
+            next();
+          }
+        });
+      } else {
+        alert("Sorry, demo users cannot upload custom apps.");
+      }
     } else {
       next();
     }
   }
 
+  globalQuotaEnforcer = {
+    ifQuotaAvailable: ifQuotaAvailable,
+    ifPlanAllowsCustomApps: ifPlanAllowsCustomApps
+  };
+
   Template.layout.helpers({
-    showTopbar: function () {return Template.instance().showTopbar.get(); },
     adminAlertIsTooLarge: function () {
       Template.instance().resizeTracker.depend();
       var setting = Settings.findOne({_id: "adminAlert"});
@@ -494,6 +501,12 @@ if (Meteor.isClient) {
     return result;
   };
   Template.registerHelper("dateString", makeDateString);
+  Template.registerHelper("showSidebar", function() {
+    // We also want to show the sidebar whenever we've blocked reload, since we cover the toggle
+    // and you'd be unable to switch to other grains before page refresh otherwise.
+    return Session.get("show-sidebar") || globalTopbar.isUpdateBlocked();
+  });
+
 
   Template.registerHelper("quotaEnabled", function() {
     return Meteor.settings.public.quotaEnabled;
@@ -575,78 +588,8 @@ if (Meteor.isClient) {
   });
 
   Template.root.helpers({
-    filteredGrains: function () {
-      var selectedTab = Session.get("selectedTab");
-      var userId = Meteor.userId();
-      if (selectedTab.sharedWithMe) {
-        var result = [];
-        var uniqueGrains = {};
-        ApiTokens.find({'owner.user.userId': userId},
-                       {sort:{created:1}}).forEach(function(apiToken) {
-          if (!(apiToken.grainId in uniqueGrains)) {
-            result.push({_id : apiToken.grainId, title: apiToken.owner.user.title});
-            uniqueGrains[apiToken.grainId] = true;
-          }
-        });
-        return result;
-      } else if (selectedTab.myFiles) {
-        return Grains.find({userId: userId}, {sort: {lastUsed: -1}}).fetch();
-      } else {
-        return Grains.find({userId: userId, appId: selectedTab.appId},
-                           {sort: {lastUsed: -1}}).fetch();
-      }
-    },
-
-    actions: function () {
-      return UserActions.find({userId: Meteor.userId(), appId: Session.get("selectedTab").appId});
-    },
-
-    devActions: function () {
-      var userId = Meteor.userId();
-      if (userId) {
-        var appId = Session.get("selectedTab").appId;
-        if (appId) {
-          var app = DevApps.findOne(appId);
-          if (app && app.manifest.actions) {
-            return app.manifest.actions.map(function (action, i) {
-              return {
-                _id: app._id,
-                index: i,
-                title: action.title.defaultText
-              };
-            });
-          };
-        }
-      }
-      return [];
-    },
-
     selectedTab: function () {
       return Session.get("selectedTab");
-    },
-
-    selectedAppMarketingVersion: function () {
-      var appMap = this.appMap;
-      var app = appMap && appMap[Session.get("selectedTab").appId];
-      return app && app.appMarketingVersion && app.appMarketingVersion.defaultText;
-    },
-
-    selectedAppIsDev: function () {
-      var tab = Session.get("selectedTab");
-      return tab && tab.appId && DevApps.findOne(tab.appId) ? true : false;
-    },
-
-    appTabClass: function (appId) {
-      if (Session.get("selectedTab").appId == appId) {
-        return "selected";
-      } else {
-        return "";
-      }
-    },
-
-    splashDialog: function() {
-      var setting = Settings.findOne("splashDialog");
-      return (setting && setting.value) || DEFAULT_SPLASH_DIALOG;
     },
 
     storageUsage: function() {
@@ -879,60 +822,88 @@ appNameFromActionName = function(name) {
   return name;
 }
 
-promptRestoreBackup = function() {
+var promptForFile = function (callback) {
   // TODO(cleanup): Share code with "upload picture" and other upload buttons.
   var input = document.createElement("input");
   input.type = "file";
   input.style = "display: none";
-  Session.set("uploadStatus", "Uploading");
 
   input.addEventListener("change", function (e) {
-    // TODO(cleanup): Use Meteor's HTTP, although this may require sending them a PR to support
-    //   progress callbacks (and officially document that binary input is accepted).
-    var file = e.currentTarget.files[0];
-
-    var xhr = new XMLHttpRequest();
-
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState == 4) {
-        if (xhr.status == 200) {
-          Session.set("uploadProgress", 0);
-          Session.set("uploadStatus", "Unpacking");
-          Meteor.call("restoreGrain", xhr.responseText, function (err, grainId) {
-            if (err) {
-              Session.set("uploadStatus", undefined);
-              Session.set("uploadError", {
-                status: 200,
-                statusText: err.reason + ": " + err.details,
-              });
-            } else {
-              Router.go("grain", {grainId: grainId});
-            }
-          });
-        } else {
-          Session.set("uploadError", {
-            status: xhr.status,
-            statusText: xhr.statusText,
-            response: xhr.responseText
-          });
-        }
-      }
-    };
-
-    if (xhr.upload) {
-      xhr.upload.addEventListener("progress", function (progressEvent) {
-        Session.set("uploadProgress",
-            Math.floor(progressEvent.loaded / progressEvent.total * 100));
-      });
-    }
-
-    xhr.open("POST", "/uploadBackup", true);
-    xhr.send(file);
-
-    Router.go("restoreGrainStatus");
+    callback(e.currentTarget.files[0]);
   });
 
   input.click();
+}
+
+var startUpload = function (file, endpoint, onComplete) {
+  // TODO(cleanup): Use Meteor's HTTP, although this may require sending them a PR to support
+  //   progress callbacks (and officially document that binary input is accepted).
+
+  Session.set("uploadStatus", "Uploading");
+
+  var xhr = new XMLHttpRequest();
+
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState == 4) {
+      if (xhr.status == 200) {
+        Session.set("uploadProgress", 0);
+        onComplete(xhr.responseText);
+      } else {
+        Session.set("uploadError", {
+          status: xhr.status,
+          statusText: xhr.statusText,
+          response: xhr.responseText
+        });
+      }
+    }
+  };
+
+  if (xhr.upload) {
+    xhr.upload.addEventListener("progress", function (progressEvent) {
+      Session.set("uploadProgress",
+          Math.floor(progressEvent.loaded / progressEvent.total * 100));
+    });
+  }
+
+  xhr.open("POST", endpoint, true);
+  xhr.send(file);
+
+  Router.go("uploadStatus");
+}
+
+promptRestoreBackup = function() {
+  promptForFile(function (file) {
+    startUpload(file, "/uploadBackup", function (response) {
+      Session.set("uploadStatus", "Unpacking");
+      Meteor.call("restoreGrain", response, function (err, grainId) {
+        if (err) {
+          Session.set("uploadStatus", undefined);
+          Session.set("uploadError", {
+            status: 200,
+            statusText: err.reason + ": " + err.details,
+          });
+        } else {
+          Router.go("grain", {grainId: grainId});
+        }
+      });
+    });
+  });
+}
+
+promptUploadApp = function () {
+  promptForFile(function (file) {
+    Meteor.call("newUploadToken", function (err, token) {
+      if (err) {
+        console.error(err);
+        alert(err.message);
+      } else {
+        startUpload(file, "/upload/" + token, function (response) {
+          Session.set("uploadStatus", undefined);
+          Router.go("install", {packageId: response})
+        });
+      }
+    });
+  });
 }
 
 Router.map(function () {
@@ -1003,9 +974,9 @@ Router.map(function () {
         build: getBuildInfo().build,
         missingWildcardParent: isMissingWildcardParent(),
         allowDemoAccounts: allowDemoAccounts,
-        apps: apps,
+        //apps: apps,
         showMenu: Session.get("showMenu"),
-        appMap: appMap,
+        //appMap: appMap,
         hideSplashScreen: isSignedUpOrDemo() ||
           ApiTokens.findOne({"owner.user.userId": Meteor.userId()})
       };
@@ -1059,8 +1030,8 @@ Router.map(function () {
     }
   });
 
-  this.route("restoreGrainStatus", {
-    path: "/restore",
+  this.route("uploadStatus", {
+    path: "/upload",
 
     waitOn: function () {
       return Meteor.subscribe("credentials");

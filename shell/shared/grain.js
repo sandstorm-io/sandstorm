@@ -1379,7 +1379,7 @@ Router.map(function () {
 
   this.route("grainLog", {
     path: "/grainlog/:grainId",
-    layoutTemplate: "lightLayout",
+    layoutTemplate: "noLayout",
 
     waitOn: function () {
       return [

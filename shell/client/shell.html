@@ -132,12 +132,10 @@ limitations under the License.
   {{/with}}
 </template>
 
-<template name="lightLayout">
-  {{>sandstormTopbar globalTopbar}}
-
-  <div class="main-content">
+<template name="noLayout">
+  {{!-- An empty layout for resource windows e.g. grainLog that we want to put reactive stuff in,
+   but don't need the topbar and reload blocking and other fanciness that the layout gives --}}
   {{> yield}}
-  </div>
 </template>
 
 <template name="notifications">
@@ -656,10 +654,8 @@ limitations under the License.
 </template>
 
 <template name="grainLog">
-  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}
-    Debug log: {{title}}
-  {{/sandstormTopbarItem}}
-
+  <div class="grainlog-title">Debug log: {{title}}</div>
+  <hr>
   <div id="grainLog">
     <pre>...{{{html}}}</pre>
   </div>

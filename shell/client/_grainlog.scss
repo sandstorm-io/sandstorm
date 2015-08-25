@@ -1,3 +1,7 @@
+.grainlog-title {
+  font-size: 14pt;
+  line-height: 32px;
+}
 #grainLog {
   overflow: auto;
   >pre {
@@ -37,4 +41,3 @@
   .ansi-bright-cyan-bg    { background-color:rgb(85, 255, 255);   }
   .ansi-bright-white-bg   { background-color:rgb(255, 255, 255);  }
 }
-

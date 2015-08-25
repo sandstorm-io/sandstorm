@@ -786,10 +786,6 @@ function getBuildInfo() {
   };
 }
 
-function isMissingWildcardParent() {
-  return Meteor.settings && Meteor.settings.public && Meteor.settings.public.missingWildcardParentUrl;
-}
-
 appNameFromPackage = function(packageObj) {
   // This function takes a Package object from Mongo and returns an
   // app title.
@@ -910,75 +906,14 @@ Router.map(function () {
   this.route("root", {
     path: "/",
     waitOn: function () {
-      return [
-        Meteor.subscribe("credentials"),
-        Meteor.subscribe("hasUsers"),
-        Meteor.subscribe("grainsMenu"),
-        Meteor.subscribe("devApps")
-      ];
+      return Meteor.subscribe("hasUsers");
     },
     data: function () {
-      if (!this.ready()) {
-        return;
-      }
-
-      var apps;
-      var appMap = {};
-      var allowDemoAccounts = Meteor.settings && Meteor.settings.public &&
-            Meteor.settings.public.allowDemoAccounts;
-      var userId = Meteor.userId();
-      if (userId) {
-        var appNames = [];
-
-        DevApps.find().forEach(function (app) {
-          var action = app.manifest && app.manifest.actions && app.manifest.actions[0];
-          var name = (app.manifest.appTitle && app.manifest.appTitle.defaultText) ||
-              appNameFromActionName(action && action.title && action.title.defaultText);
-          appMap[app._id] = {
-            name: name,
-            appId: app._id,
-            isDev: true,
-            appMarketingVersion: app.manifest.appMarketingVersion
-          };
-          appNames.push({name: name, appId: app._id});
-        });
-
-        UserActions.find({userId: userId}).forEach(function (action) {
-          if (!(action.appId in appMap)) {
-            var name = action.appTitle || appNameFromActionName(action.title);
-            appMap[action.appId] = {
-              name: name,
-              appId: action.appId,
-              appMarketingVersion: action.appMarketingVersion
-            };
-            appNames.push({name: name, appId: action.appId});
-          }
-        });
-
-        appNames.sort(function (a, b) { return a.name.localeCompare(b.name); });
-        apps = appNames.map(function (appName) {
-          return appMap[appName.appId];
-        });
-      } else if (allowDemoAccounts && !Meteor.settings.public.allowUninvited) {
-        // This seems to be a demo server.
-        Meteor.setTimeout(function () { Router.go("demo", {}, {replaceState: true}); }, 0);
-      }
-
+      var splashText = Settings.findOne("splashDialog");
       return {
-        host: document.location.host,
-        origin: getOrigin(),
-        isSignedUpOrDemo: isSignedUpOrDemo(),
-        isAdmin: isAdmin(),
-        isDemoUser: isDemoUser(),
-        isFirstRun: !HasUsers.findOne("hasUsers"),
+        isFirstRun: this.ready() && !HasUsers.findOne("hasUsers"),
         build: getBuildInfo().build,
-        missingWildcardParent: isMissingWildcardParent(),
-        allowDemoAccounts: allowDemoAccounts,
-        //apps: apps,
-        showMenu: Session.get("showMenu"),
-        //appMap: appMap,
-        hideSplashScreen: isSignedUpOrDemo() ||
-          ApiTokens.findOne({"owner.user.userId": Meteor.userId()})
+        splashDialog: splashText && splashText.value
       };
     }
   });

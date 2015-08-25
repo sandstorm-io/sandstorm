@@ -182,136 +182,24 @@ limitations under the License.
 <template name="root">
   {{>title "Home"}}
 
-  {{#if isAdmin}}
-    {{#sandstormTopbarItem name="admin" topbar=globalTopbar}}
-      <a href="{{pathFor route="adminSettings"}}" class="navlink">Admin Settings</a>
-    {{/sandstormTopbarItem}}
-  {{/if}}
-  {{#sandstormTopbarItem name="about" topbar=globalTopbar}}
-    <a href="/about" class="navlink">About</a>
-  {{/sandstormTopbarItem}}
-
-      {{!--
   <div id="intro" class="main-content">
-    {{#if hideSplashScreen}}
-      <div id="applist-closer" data-show="true"></div>
-      <div id="applist-apps" data-show="true">
-        <ul>
-         <li class="grain-list-tab"><a href="/grain">Open</a></li>
-         <li class="new-grain-tab"><a href="/grain/new">New Grain</a></li>
-         <li class="applist-tab-shared-with-me {{#if selectedTab.sharedWithMe}}selected{{/if}}">
-            Shared With Me</li>
-          {{#each apps}}
-            <li class="applist-tab {{appTabClass appId}} {{#if isDev}}dev{{/if}}"
-                data-appid="{{appId}}">{{name}}</li>
-          {{/each}}
-          <li class="blank">&nbsp;</li>
-          {{#if isAdmin}}
-            <li class="applist-tab-settings">Admin Settings</li>
-          {{/if}}
-          <li class="applist-tab-about">About Sandstorm</li>
-        </ul>
-      </div>
-      <div id="applist-grains" class="{{#if selectedAppIsDev}}dev{{/if}}">
-        {{#if selectedTab.appId}}
-          <div class="button-box">
-            <button class="show-apps">« My Apps</button>
-            {{#each devActions}}
-              <button class="new-grain-button" data-actionid="dev"
-                  data-devid="{{_id}}" data-index="{{index}}">{{title}}</button>
-            {{else}}
-              {{#each actions}}
-                <button class="new-grain-button {{#if overQuota}}over-quota{{/if}}"
-                    data-actionid="{{_id}}">{{title}}</button>
-              {{/each}}
-              <button class="uninstall-app-button" data-appid="{{selectedTab.appId}}">
-                Uninstall</button>
-            {{/each}}
-            <span>
-              {{#if selectedAppMarketingVersion}}
-                v{{selectedAppMarketingVersion}}
-              {{/if}}
-            </span>
-          </div>
-        {{else}}
-          {{#if selectedTab.myFiles}}
-            <div class="button-box">
-              <button class="show-apps">« My Apps</button>
-              <button id="install-apps-button" class="{{#if overQuota}}over-quota{{/if}}">
-                  Install apps</button>
-              <button id="upload-app-button" class="{{#if overQuota}}over-quota{{/if}}">
-                  Upload an app</button>
-              <button id="restore-backup-button" class="{{#if overQuota}}over-quota{{/if}}">
-                  Restore a backup</button>
-            </div>
-          {{else}}
-            <div class="button-box">
-              <button class="show-apps">« My Apps</button>
-            </div>
-          {{/if}}
-        {{/if}}
+    <div id="logo">
+      <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
+      </svg>
+      <script type="text/javascript">setTimeout(initLogoAnimation, 0);</script>
+    </div>
+    <h1>Sandstorm</h1>
+      <p class="build-tag">Build {{build}}</p>
 
-        {{#unless selectedTab.sharedWithMe}}
-          {{#if quotaEnabled}}
-            <div id="storage-usage" class="{{#if overQuota}}over-quota{{/if}}">{{storageUsage}}
-              {{#with storageQuota}}
-                of {{.}}
-              {{/with}}
-              used
-            </div>
-          {{/if}}
-        {{/unless}}
-
-        {{#if filteredGrains}}
-          <table>
-            <thead>
-              <tr>
-                <td>Title</td>
-                <td>Last Used</td>
-              </tr>
-            </thead>
-            <tbody>
-              {{#each filteredGrains}}
-                <tr class="grain" data-grainid="{{_id}}">
-                  <td>{{title}}</td>
-                  <td title="{{lastUsed}}">{{dateString lastUsed}}</td>
-                </tr>
-              {{/each}}
-            </tbody>
-          </table>
-        {{else}}
-          {{#unless selectedTab.sharedWithMe}}
-            <div id="install-arrow"></div>
-          {{/unless}}
-        {{/if}}
-      </div>
+    {{#if isFirstRun}}
+      <p>
+        This Sandstorm instance has no users. You should generate a token from the command line
+        with `sandstorm admin-token` in order to access the admin settings page.
+      </p>
     {{else}}
-
-      <div id="logo">
-        <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
-        </svg>
-        <script type="text/javascript">setTimeout(initLogoAnimation, 0);</script>
-      </div>
-      <h1>Sandstorm</h1>
-        <p class="build-tag">Build {{build}}</p>
-
-      {{#if isFirstRun}}
-        <p>
-          This Sandstorm instance has no users. You should generate a token from the command line
-          with `sandstorm admin-token` in order to access the admin settings page.
-        </p>
-      {{else}}
-        {{#if allowDemoAccounts}}
-          <p><a href="/demo">Try the demo!</a></p>
-        {{else}}
-        <p>
-          {{{splashDialog}}}
-        </p>
-        {{/if}}
-      {{/if}}
+      <p>{{{splashDialog}}}</p>
     {{/if}}
   </div>
-      --}}
 </template>
 
 <template name="grainTitle">

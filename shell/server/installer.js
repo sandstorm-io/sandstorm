@@ -247,9 +247,8 @@ function getAllManifestAssets(manifest) {
       }
     }
 
-    if (icons.main) icons.main.forEach(handleIcon);
-    if (icons.grain) icons.grain.forEach(handleIcon);
-    if (icons.banner) icons.banner.forEach(handleIcon);
+    if (icons.appGrid) handleIcon(icons.appGrid);
+    if (icons.grain) handleIcon(icons.grain);
   }
 
   var handleLocalizedText = function (text) {

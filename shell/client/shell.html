@@ -109,28 +109,30 @@ limitations under the License.
         sure that adding or removing grains from teh open grain list does not cause other grains'
         iframes to be re-rendered, losing state. --}}
   {{#with unpackedGrainState}}
-  {{#if error}}
-    <pre>{{error}}</pre>
-  {{else}}
-  {{#if appOrigin}}
-    {{!-- Selenium requires iframes to have an id in order to select them. id="grain-frame" is only
-          used for testing purposes. --}}
-    <iframe data-grainid="{{grainId}}" id="grain-frame" class="grain-frame {{#if active}}active-grain{{else}}inactive-grain{{/if}}" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{path}}{{hash}}"></iframe>
-    {{#if hasNotLoaded}}
+    <div class="grain-container {{#if active}}active-grain{{else}}inactive-grain{{/if}}">
+    {{#if error}}
+      <pre>{{error}}</pre>
+    {{else}}
+    {{#if appOrigin}}
+      {{!-- Selenium requires iframes to have an id in order to select them. id="grain-frame" is only
+            used for testing purposes. --}}
+      <iframe data-grainid="{{grainId}}" id="grain-frame" class="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{path}}{{hash}}"></iframe>
+      {{#if hasNotLoaded}}
+        {{> _grainSpinner}}
+      {{/if}}
+    {{else}}
+    {{#if interstitial}}
+      <div class="interstitial-button-box">
+        <p>This grain was shared by someone who is not in your contacts.</p>
+        <button class="redeem-token-button" data-token="{{token}}">Reveal your Identity</button>
+        <button class="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
+      </div>
+    {{else}}
       {{> _grainSpinner}}
     {{/if}}
-  {{else}}
-  {{#if interstitial}}
-    <div class="interstitial-button-box">
-      <p>This grain was shared by someone who is not in your contacts.</p>
-      <button class="redeem-token-button" data-token="{{token}}">Reveal your Identity</button>
-      <button class="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
+    {{/if}}
+    {{/if}}
     </div>
-  {{else}}
-    {{> _grainSpinner}}
-  {{/if}}
-  {{/if}}
-  {{/if}}
   {{/with}}
 </template>
 

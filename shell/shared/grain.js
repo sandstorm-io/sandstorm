@@ -904,8 +904,8 @@ if (Meteor.isClient) {
       if (!instance.completionState.get().clear) {
         return;
       }
-      var grainId = this.grainId;
-      var title = this.title;
+      var grainId = instance.data.grainId;
+      var title = instance.data.title;
 
       // MailComposer accepts a comma-delimited list, but we want to split the list before
       // sending the mail because we want a separate token for each user. Moreover, users

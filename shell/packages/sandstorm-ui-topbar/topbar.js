@@ -72,7 +72,7 @@ Template.sandstormTopbar.helpers({
       return {
         grainId: grain.grainId(),
         active: grain.isActive(),
-        title: grain.title(),
+        title: grain.title() || "(unknown grain)",
         grainLink: grain.route(),
         iconSrc: grain.iconSrc(),
         appTitle: grain.appTitle(),

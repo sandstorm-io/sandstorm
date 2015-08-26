@@ -310,14 +310,7 @@ svg {
   margin-top: 0;
 }
 
-iframe.grain-frame {
-  border: none;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  display: block;
-  position: absolute;
+div.grain-container {
   &.active-grain {
     z-index: 0;
     background: white;
@@ -326,6 +319,16 @@ iframe.grain-frame {
     z-index: -2;
     display: none;
   }
+}
+
+iframe.grain-frame {
+  border: none;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  display: block;
+  position: absolute;
 }
 
 body.ios iframe.grain-frame {

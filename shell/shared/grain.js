@@ -1267,7 +1267,11 @@ Router.map(function () {
       return subscriptions;
     },
 
-    onRun: function () {
+    onBeforeAction: function () {
+      // Run this hook only once.
+      if (this.state.get("beforeActionHookRan")) { return this.next(); }
+      this.state.set("beforeActionHookRan", true);
+
       var grainId = this.params.grainId;
       var path = this.params.path;
       var query = this.params.query;
@@ -1300,6 +1304,7 @@ Router.map(function () {
     },
 
     onStop: function () {
+      this.state.set("beforeActionHookRan", undefined);
       globalGrains.get().forEach(function (grain) {
         if (grain.isActive()) {
           grain.setActive(false);
@@ -1325,7 +1330,9 @@ Router.map(function () {
     },
 
     onBeforeAction: function () {
-      // Run this hook only once.
+      // Run this hook only once. We could accomplish the same thing by using the `onRun()` hook
+      // and waiting for `this.ready()`, but for some reason that fails in the case when a user
+      // logs in while visiting a /shared/ link.
       if (this.state.get("beforeActionHookRan")) { return this.next(); }
       this.state.set("beforeActionHookRan", true);
 
@@ -1366,6 +1373,7 @@ Router.map(function () {
     },
 
     onStop: function () {
+      this.state.set("beforeActionHookRan", undefined);
       globalGrains.get().forEach(function (grain) {
         if (grain.isActive()) {
           grain.setActive(false);

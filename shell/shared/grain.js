@@ -277,9 +277,6 @@ if (Meteor.isClient) {
         grains.forEach(function (grain) {
           if (grain.token() == token) {
             grain.setRevealIdentity(false);
-            if (grain.sessionStatus() == "closed") {
-              grain.openSession();
-            }
           }
         });
       } else {
@@ -296,9 +293,6 @@ if (Meteor.isClient) {
         grains.forEach(function (grain) {
           if (grain.token() == token) {
             grain.setRevealIdentity(true);
-            if (grain.sessionStatus() == "closed") {
-              grain.openSession();
-            }
           }
         });
       } else {
@@ -1273,7 +1267,11 @@ Router.map(function () {
       return subscriptions;
     },
 
-    onRun: function () {
+    onBeforeAction: function () {
+      // Run this hook only once.
+      if (this.state.get("beforeActionHookRan")) { return this.next(); }
+      this.state.set("beforeActionHookRan", true);
+
       var grainId = this.params.grainId;
       var path = this.params.path;
       var query = this.params.query;
@@ -1330,53 +1328,50 @@ Router.map(function () {
       ];
     },
 
-    onRun: function () {
+    onBeforeAction: function () {
+      // Run this hook only once.
+      if (this.state.get("beforeActionHookRan")) { return this.next(); }
+      this.state.set("beforeActionHookRan", true);
+
       var token = this.params.token;
       var path = this.params.path;
       var query = this.params.query;
       var hash = this.params.hash;
 
-      Tracker.autorun(function() {
-        var tokenInfo = TokenInfo.findOne({_id: token});
-        if (tokenInfo && tokenInfo.apiToken) {
-          console.log("valid");
-          var grainId = tokenInfo.apiToken.grainId;
-          if (!Grains.findOne({_id: grainId, userId: Meteor.userId()}) &&
-              !ApiTokens.findOne({userId: tokenInfo.userId, "owner.user.userId": Meteor.userId()})) {
-            // The user neither owns the grain nor holds any sturdyrefs from this sharer.
-            // Therefore, we ask whether they would like to go incognito.
-            // TODO(soon): Base this decision on the contents of the Contacts collection.
-          }
-          var grains = globalGrains.get();
-          var grainIndex = grainIdToIndex(grains, grainId);
-          if (grainIndex == -1) {
-            var openView = function openView() {
-              var mainContentElement = document.querySelector("body>.main-content");
-              if (mainContentElement) {
-                var grains = globalGrains.get();
-                var grainToOpen = new GrainView(grainId, path, query, hash, token,
-                    mainContentElement);
-                grainToOpen.openSession();
-                grainIndex = grains.push(grainToOpen) - 1;
-                globalGrains.set(grains);
-                makeGrainIdActive(grainId);
-              } else {
-                Meteor.defer(openView);
-              }
-            };
-            openView();
-          } else {
-            makeGrainIdActive(grainId);
-          }
-
-          var currentGrain = getActiveGrain(grains);
-          if (!currentGrain.shouldShowInterstitial() && currentGrain.sessionStatus() == "closed") {
-            currentGrain.openSession();
-          }
-        } else {
-          console.log("invalid");
+      var tokenInfo = TokenInfo.findOne({_id: token});
+      if (tokenInfo && tokenInfo.apiToken) {
+        console.log("valid");
+        var grainId = tokenInfo.apiToken.grainId;
+        if (!Grains.findOne({_id: grainId, userId: Meteor.userId()}) &&
+            !ApiTokens.findOne({userId: tokenInfo.userId, "owner.user.userId": Meteor.userId()})) {
+          // The user neither owns the grain nor holds any sturdyrefs from this sharer.
+          // Therefore, we ask whether they would like to go incognito.
+          // TODO(soon): Base this decision on the contents of the Contacts collection.
         }
-      });
+        var grains = globalGrains.get();
+        var grainIndex = grainIdToIndex(grains, grainId);
+        if (grainIndex == -1) {
+          var openView = function openView() {
+            var mainContentElement = document.querySelector("body>.main-content");
+            if (mainContentElement) {
+              var grains = globalGrains.get();
+              var grainToOpen = new GrainView(grainId, path, query, hash, token,
+                                              mainContentElement);
+              grainToOpen.openSession();
+              grainIndex = grains.push(grainToOpen) - 1;
+              globalGrains.set(grains);
+              makeGrainIdActive(grainId);
+            } else {
+              Meteor.defer(openView);
+            }
+          };
+          openView();
+        } else {
+          makeGrainIdActive(grainId);
+        }
+      } else {
+        console.log("invalid");
+      }
       this.next();
     },
 

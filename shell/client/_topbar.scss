@@ -387,7 +387,12 @@ body>.topbar {
     }
 
     >.account {
-      >button.show-popup { @extend %hamburger-menu-item; }
+      >button.show-popup {
+        @extend %hamburger-menu-item;
+        >a.expiring-soon {
+          color: #e82538;
+        }
+      }
 
       @media #{$desktop} {
         float: right;
@@ -405,20 +410,6 @@ body>.topbar {
     }
   }
 
-  >.account {
-    >button.show-popup {
-      @extend %hamburger-menu-item;
-
-      >a.expiring-soon {
-        color: #e82538;
-      }
-    }
-
-    >.about {
-      >a { @extend %hamburger-menu-item; }
-      @media #{$desktop} { display: none; }
-    }
-  }
   >.navbar {
     @media #{$desktop} {
       &.hide-desktop {

@@ -152,7 +152,7 @@ img {
 
 .centered-box {
   margin: 16px auto;
-  width: 600px;
+  max-width: 600px;
   font-size: 125%;
 }
 
@@ -468,7 +468,7 @@ ul.backer-list, ul.dev-list, ul.advisor-list {
 }
 
 ul.advisor-list {
-  width: 650px;
+  max-width: 650px;
   margin-left: -25px;
 }
 

@@ -129,7 +129,8 @@ img {
   left: 0;
   right: 0;
   bottom: 0px;
-  color: black;
+  color: $default-content-foreground-color;
+  background-color: $default-content-background-color;
   overflow: auto;
 
   @media #{$desktop} {

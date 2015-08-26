@@ -29,10 +29,13 @@ $topbar-dropdown-foreground-color-hover: #383838;
 $topbar-dropdown-border-color: #c1c1c1;
 
 
+//////// Default colors, which may be reused in other modules
+$default-content-background-color: #efefef;
+$default-content-foreground-color: #191919;
 
 //////// Grain list ("Open...") styles
-$grainlist-background-color: #efefef;
-$grainlist-foreground-color: #191919;
+$grainlist-background-color: $default-content-background-color;
+$grainlist-foreground-color: $default-content-foreground-color;
 
 $grainlist-searchbar-background-color: #ffffff;
 $grainlist-searchbar-outline-color: #9e9e9e;
@@ -49,8 +52,8 @@ $grainlist-table-row-background-color-hover: #e8e8e8;
 $grainlist-table-row-outline-color: #d3d3d3;
 
 ///////// App list ("New...") styles
-$applist-background-color: #efefef;
-$applist-foreground-color: #191919;
+$applist-background-color: $default-content-background-color;
+$applist-foreground-color: $default-content-foreground-color;
 
 $applist-action-text-color: #5d5d5d;
 

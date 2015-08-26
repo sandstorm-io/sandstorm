@@ -1,6 +1,14 @@
 <template name="sandstormGrainList">
   <div class="grain-list">
     <h1>Grains</h1>
+    {{#if quotaEnabled}}
+    <div class="light-box">
+      <span class="grains-size"><strong>My grains' total size:</strong> {{ myGrainsSize }}</span>
+    </div>
+    {{/if}}
+    <div class="light-box">
+      <span class="grain-count"><strong>Grains I own:</strong> {{ myGrainsCount }}</span>
+    </div>
     <div class="search-row">
       <img title="Search" class="search-icon" src="/search.svg"><input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
     </div>

@@ -1338,12 +1338,6 @@ Router.map(function () {
       if (tokenInfo && tokenInfo.apiToken) {
         console.log("valid");
         var grainId = tokenInfo.apiToken.grainId;
-        if (!Grains.findOne({_id: grainId, userId: Meteor.userId()}) &&
-            !ApiTokens.findOne({userId: tokenInfo.userId, "owner.user.userId": Meteor.userId()})) {
-          // The user neither owns the grain nor holds any sturdyrefs from this sharer.
-          // Therefore, we ask whether they would like to go incognito.
-          // TODO(soon): Base this decision on the contents of the Contacts collection.
-        }
         var grains = globalGrains.get();
         var grainIndex = grainIdToIndex(grains, grainId);
         if (grainIndex == -1) {

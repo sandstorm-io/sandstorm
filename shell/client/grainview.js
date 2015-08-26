@@ -293,20 +293,20 @@ GrainView.prototype._openGrainSession = function () {
       }
       self._grainId = result.grainId;
       self._sessionId = result.sessionId;
-      var subscription = Meteor.subscribe("sessions", result.sessionId);
+      self._sessionSub = Meteor.subscribe("sessions", result.sessionId);
       Sessions.find({_id : result.sessionId}).observeChanges({
         removed: function(session) {
           self._sessionSub.stop();
           self._sessionSub = undefined;
           self._status = "closed";
           self._dep.changed();
+          Meteor.defer(function () { self.openSession(); });
         },
         added: function(session) {
           self._status = "opened";
           self._dep.changed();
         }
       });
-      self._sessionSub = subscription;
       self._grainSizeSub = Meteor.subscribe("grainSize", result.sessionId);
       self._dep.changed();
     }
@@ -376,22 +376,20 @@ GrainView.prototype._openApiTokenSession = function () {
         self._title = result.title;
         self._grainId = result.grainId;
         self._sessionId = result.sessionId;
-        var subscription = Meteor.subscribe("sessions", result.sessionId);
+        self._sessionSub = Meteor.subscribe("sessions", result.sessionId);
         Sessions.find({_id : result.sessionId}).observeChanges({
           removed: function(session) {
-            console.log("session removed");
-            subscription.stop();
+            self._sessionSub.stop();
             self._sessionSub = undefined;
             self._status = "closed";
             self._dep.changed();
+            Meteor.defer(function () { self.openSession(); });
           },
           added: function(session) {
-            console.log("session added");
             self._status = "opened";
             self._dep.changed();
           }
         });
-        self._sessionSub = subscription;
         self._dep.changed();
       }
     });

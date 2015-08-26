@@ -1,3 +1,8 @@
+This document helps you serve Sandstorm with HTTPS and take the port (6080) out the URL.
+
+[nginx](http://nginx.org/en/) will listen on port 80 to redirect HTTP to HTTPS on port 443.
+On port 443, it will reverse proxy Sandstorm on port 6080.
+
 ## Prerequisites
 Create DNS entries for `example.com` and `*.example.com`.
 
@@ -7,7 +12,7 @@ Install `nginx` with your package manager.
 
 ## Configuration
 
-### NGINX
+### nginx
 Copy [nginx-example.conf](https://github.com/sandstorm-io/sandstorm/blob/master/nginx-example.conf) to `/etc/nginx/sites-enabled/`.
 
 `nginx-example.conf` may be renamed to anything, such as `example.com.conf`.
@@ -28,7 +33,7 @@ ssl_certificate /etc/keys/example.com.crt;
 ssl_certificate_key /etc/keys/example.com.key;
 ```
 
-Test your NGINX configuration:
+Test your nginx configuration:
 `sudo nginx -t`
 
 ### Sandstorm

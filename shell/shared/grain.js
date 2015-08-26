@@ -1267,11 +1267,7 @@ Router.map(function () {
       return subscriptions;
     },
 
-    onBeforeAction: function () {
-      // Run this hook only once.
-      if (this.state.get("beforeActionHookRan")) { return this.next(); }
-      this.state.set("beforeActionHookRan", true);
-
+    onRun: function () {
       var grainId = this.params.grainId;
       var path = this.params.path;
       var query = this.params.query;

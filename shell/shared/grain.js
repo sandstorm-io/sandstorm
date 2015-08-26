@@ -46,12 +46,36 @@ if (Meteor.isServer) {
       },
     });
     this.onStop(function() { handle.stop(); });
+
     return [Grains.find({_id : grainId, $or: [{userId: this.userId}, {private: {$ne: true}}]},
                         {fields: {title: 1, userId: 1, private: 1}}),
             ApiTokens.find({grainId: grainId,
                             $or : [{"owner.user.userId": this.userId}, {userId: this.userId}]}),
            ];
   });
+
+  // We allow users to learn package information about a grain they own.
+  // This is used for obtaining icon and app title information for grains
+  // you own, which is used in the sidebar. It is not a security/privacy
+  // risk since it only exposes this information for grains the user owns.
+  Meteor.publish("packageByGrainId", function (grainId) {
+    check(grainId, String);
+    var publishThis = [];
+    // We need to publish the packageId so that client-side code can
+    // find the right package.
+    var thisGrainCursor = Grains.find({_id: grainId, userId: this.userId},
+                                      {fields: {packageId: 1}});
+    publishThis.push(thisGrainCursor);
+
+    if (thisGrainCursor.count()) {
+      var thisGrain = thisGrainCursor.fetch()[0];
+      var thisPackageCursor = Packages.find({_id: thisGrain.packageId});
+      publishThis.push(thisPackageCursor);
+    }
+
+    return publishThis;
+  });
+
 
   Meteor.publish("tokenInfo", function (token) {
     // Allows the client side to map a raw token to its entry in ApiTokens, and the additional
@@ -228,9 +252,8 @@ if (Meteor.isClient) {
       var grainId = grain.grainId();
       if (grainId) {
         Meteor.subscribe("grainTopBar", grainId);
-        Meteor.subscribe("packageByGrainId", grainId);
-        // TODO(soon): only subscribe to grains the current user owns
         if (grain.isOwner()) {
+          Meteor.subscribe("packageByGrainId", grainId);
           var session = Sessions.findOne({grainId: grainId});
           if (session) {
             Meteor.subscribe("grainSize", session._id);
@@ -653,7 +676,6 @@ if (Meteor.isClient) {
   Template.grainTitle.helpers({
     title: function () {
       var grain = getActiveGrain(globalGrains.get());
-      // TODO(now): make this work with ApiTokens
       return (grain && grain.title()) || "Untitled grain";
     }
   });
@@ -1242,10 +1264,12 @@ Router.map(function () {
     waitOn: function () {
       var subscriptions = [
         Meteor.subscribe("grainTopBar", this.params.grainId),
-        // Needed to show the app icon and app title (accessibility text) in the sidebar.
-        Meteor.subscribe("packageByGrainId", this.params.grainId),
         Meteor.subscribe("devApps"),
       ];
+      if (Meteor.settings && Meteor.settings.public &&
+          Meteor.settings.public.allowDemoAccounts) {
+        Meteor.subscribe("packageByGrainId", this.params.grainId);
+      }
       return subscriptions;
     },
 
@@ -1299,7 +1323,7 @@ Router.map(function () {
         Meteor.subscribe("devApps"),
         Meteor.subscribe("tokenInfo", this.params.token),
 
-        Meteor.subscribe("grainsMenu"),
+        Meteor.subscribe("grainsMenu")
         // This subscription gives us the data we need for deciding whether to automatically reveal
         // our identity.
         // TODO(soon): Subscribe to contacts instead.

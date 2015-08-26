@@ -238,7 +238,7 @@ struct Metadata {
     # Data size limit: 64kB
 
     grain @1 :Icon;
-    # The icon shown to represent an individual grain, both in the grain table and on the sidebar.
+    # The icon shown to represent an individual grain, both in the grain table and on the navbar.
     # If omitted, the appGrid icon will be used.
     #
     # Size: 24x24

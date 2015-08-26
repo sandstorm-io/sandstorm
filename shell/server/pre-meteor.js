@@ -201,6 +201,7 @@ function checkMagic(buf, magic) {
 function serveStaticAsset(req, res) {
   inMeteor(function () {
     if (req.method === "GET") {
+      var assetCspHeader = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
       if (req.headers["if-none-match"] === "permanent") {
         // Cache never invalidates since we use a new URL for every resource.
         res.writeHead(304, {
@@ -208,7 +209,7 @@ function serveStaticAsset(req, res) {
           "ETag": "permanent",
 
           // To be safe, send these again, although it shouldn't be necessary.
-          "Content-Security-Policy": "default-src 'none'; sandbox",
+          "Content-Security-Policy": assetCspHeader,
           "Access-Control-Allow-Origin": "*",
           "X-Content-Type-Options": "nosniff",
         });
@@ -235,7 +236,7 @@ function serveStaticAsset(req, res) {
           // intended to serve HTML. Mostly, it serves images and javascript -- note that setting
           // the CSP header on Javascript files does not prevent other hosts from voluntarily
           // specifying these scripts in <script> tags.
-          "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+          "Content-Security-Policy": assetCspHeader,
 
           // Allow any host to fetch these assets. This is safe since requests to this host are
           // totally side-effect-free and the asset ID acts as a capability to prevent loading

@@ -191,7 +191,7 @@ body>.topbar {
     padding-left: 0;
     margin-left: 0;
     border-bottom: 1px solid $topbar-border-color;
-    >.toggle-sidebar {
+    >.toggle-navbar {
       >button {
         @extend %unstyled-button;
         @extend %hamburger-menu-item;
@@ -432,7 +432,7 @@ body>.topbar {
       top: $topbar-height-desktop;
       bottom: 0px;
       left: 0px;
-      width: $sidebar-width-desktop;
+      width: $navbar-width-desktop;
       background-color: #303030;
       color: #606060;
       li {

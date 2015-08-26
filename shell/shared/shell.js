@@ -501,10 +501,10 @@ if (Meteor.isClient) {
     return result;
   };
   Template.registerHelper("dateString", makeDateString);
-  Template.registerHelper("showSidebar", function() {
-    // We also want to show the sidebar whenever we've blocked reload, since we cover the toggle
+  Template.registerHelper("showNavbar", function() {
+    // We also want to show the navbar whenever we've blocked reload, since we cover the toggle
     // and you'd be unable to switch to other grains before page refresh otherwise.
-    return Session.get("show-sidebar") || globalTopbar.isUpdateBlocked();
+    return Session.get("show-navbar") || globalTopbar.isUpdateBlocked();
   });
 
 

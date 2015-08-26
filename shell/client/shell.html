@@ -52,8 +52,8 @@ limitations under the License.
   {{else}}
 
   {{!-- standard topbar items --}}
-  {{#sandstormTopbarItem name="toggle-sidebar" topbar=globalTopbar}}
-    <button class="toggle-sidebar-button">Sandstorm</button>
+  {{#sandstormTopbarItem name="toggle-navbar" topbar=globalTopbar}}
+    <button class="toggle-navbar-button">Sandstorm</button>
   {{/sandstormTopbarItem}}
   {{>sandstormTopbarItem name="account" topbar=globalTopbar data=globalAccountsUi
                          template="loginButtons" popupTemplate="loginButtonsPopup"}}
@@ -95,7 +95,7 @@ limitations under the License.
     {{>billingPrompt}}
   {{/with}}
 
-  <div class="main-content {{#if showSidebar}}show-sidebar{{/if}}">
+  <div class="main-content {{#if showNavbar}}show-navbar{{/if}}">
     {{> yield}}
   </div>
 
@@ -184,7 +184,7 @@ limitations under the License.
 <template name="root">
   {{>title "Home"}}
 
-  <div id="intro" class="main-content">
+  <div id="intro">
     <div id="logo">
       <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
       </svg>

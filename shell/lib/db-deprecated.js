@@ -65,7 +65,7 @@ if (Meteor.isServer) {
 }
 
 if (Meteor.isClient) {
-  Session.setDefault("show-sidebar", true);
+  Session.setDefault("show-navbar", true);
   globalGrains = new ReactiveVar([]);
   console.log('init grains');
   globalTopbar = new SandstormTopbar(globalDb,
@@ -81,10 +81,10 @@ if (Meteor.isClient) {
     globalGrains,
     {
       get: function () {
-        return Session.get("show-sidebar");
+        return Session.get("show-navbar");
       },
       set: function (value) {
-        Session.set("show-sidebar", value);
+        Session.set("show-navbar", value);
       }
     });
 

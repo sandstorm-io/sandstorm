@@ -21,15 +21,6 @@ var DEFAULT_TITLE = "Sandstorm";
 if (Meteor.isServer) {
   var Crypto = Npm.require("crypto");
 
-  Grains.allow({
-    update: function (userId, grain, fieldNames) {
-      // Allow owner to rename or privatize grain.
-      return userId && grain.userId === userId &&
-          ((fieldNames.length === 1 && fieldNames[0] === "title")
-           || (fieldNames.length === 1 && fieldNames[0] === "private"));
-    }
-  });
-
   Meteor.publish("grainTopBar", function (grainId) {
     check(grainId, String);
     var self = this;
@@ -191,6 +182,31 @@ Meteor.methods({
       ApiTokens.remove({grainId: grainId, "owner.user.userId": this.userId});
     }
   },
+  updateGrainTitle: function (grainId, newTitle) {
+    check(grainId, String);
+    check(newTitle, String);
+    if (this.userId) {
+      var grain = Grains.findOne(grainId);
+      if (grain) {
+        if (this.userId === grain.userId) {
+          Grains.update(grainId, {$set: {title: newTitle}});
+        } else {
+          var token = ApiTokens.findOne({grainId: grainId, objectId: {$exists: false},
+                                         "owner.user.userId": this.userId},
+                                        {sort:{created:1}});
+          if (token) {
+            ApiTokens.update(token._id, {$set: {"owner.user.title": newTitle}});
+          }
+        }
+      }
+    }
+  },
+  privatizeGrain: function (grainId) {
+    check(grainId, String);
+    if (this.userId) {
+      Grains.update({_id: grainId, userId: this.userId}, {$set: {private: true}});
+    }
+  },
   inviteUsersToGrain: function (origin, grainId, title, roleAssignment, emailAddresses, message) {
     if (!this.isSimulation) {
       check(origin, String);
@@ -303,11 +319,15 @@ if (Meteor.isClient) {
 
   Template.grainTitle.events({
     "click": function (event) {
-      var title = window.prompt("Set new title:", this.title);
-      if (title) {
-        var g = getActiveGrain(globalGrains.get());
-        if (g) {
-          g.setTitle(title);
+      var grain = getActiveGrain(globalGrains.get());
+      if (grain) {
+        var prompt = "Set new title:";
+        if (!grain.isOwner()) {
+          prompt = "Set a new personal title: (does not change the owner's title for this grain)";
+        }
+        var title = window.prompt(prompt, grain.title());
+        if (title) {
+          grain.setTitle(title);
         }
       }
     },
@@ -321,7 +341,6 @@ if (Meteor.isClient) {
       var newActiveIndex = (activeIndex == grains.length - 1) ? activeIndex - 1 : activeIndex;
       if (activeGrain.isOwner()) {
         if (window.confirm("Really delete this grain?")) {
-          Session.set("showMenu", false);
           Meteor.call("deleteGrain", activeGrain.grainId());
           // TODO: extract globalGrains into a class that has a "close" method for closing the active view
           activeGrain.destroy();
@@ -337,7 +356,6 @@ if (Meteor.isClient) {
         }
       } else {
         if (window.confirm("Really forget this grain?")) {
-          Session.set("showMenu", false);
           Meteor.call("forgetGrain", activeGrain.grainId());
           // TODO: extract globalGrains into a class that has a "close" method for closing the active view
           activeGrain.destroy();
@@ -492,9 +510,8 @@ if (Meteor.isClient) {
         }
       });
     },
-
     "click #privatize-grain": function (event) {
-      Grains.update(this.grainId, {$set: {private: true}});
+      Meteor.call("privatizeGrain", getActiveGrain(globalGrains.get()).grainId());
     },
   });
 

@@ -455,14 +455,6 @@ if (Meteor.isClient) {
   });
 
   Template.layout.events({
-    "click #admin-alert-icon": function (event) {
-      var template = Template.instance();
-      template.showTopbar.set(!template.showTopbar.get());
-    },
-    "click #admin-alert-closer": function (event) {
-      var template = Template.instance();
-      template.showTopbar.set(false);
-    },
     "click .demo-expired.logout": function (event) {
       Meteor.logout();
     }

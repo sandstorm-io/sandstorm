@@ -233,6 +233,12 @@ body>.topbar {
         display: inline-block;
         padding: 0 8px;
         margin-left: -8px;
+        @media #{$desktop} {
+          min-height: $topbar-height-desktop;
+        }
+        @media #{$mobile} {
+          min-height: $topbar-height-mobile;
+        }
 
         &:hover {
           cursor: pointer;
@@ -387,7 +393,12 @@ body>.topbar {
     }
 
     >.account {
-      >button.show-popup { @extend %hamburger-menu-item; }
+      >button.show-popup {
+        @extend %hamburger-menu-item;
+        >a.expiring-soon {
+          color: #e82538;
+        }
+      }
 
       @media #{$desktop} {
         float: right;
@@ -405,20 +416,6 @@ body>.topbar {
     }
   }
 
-  >.account {
-    >button.show-popup {
-      @extend %hamburger-menu-item;
-
-      >a.expiring-soon {
-        color: #e82538;
-      }
-    }
-
-    >.about {
-      >a { @extend %hamburger-menu-item; }
-      @media #{$desktop} { display: none; }
-    }
-  }
   >.navbar {
     @media #{$desktop} {
       &.hide-desktop {
@@ -447,6 +444,7 @@ body>.topbar {
         a {
           display: block;
           box-sizing: border-box;
+          min-height: 32px;
           padding-left: 32px;
           text-decoration: none;
           text-overflow: ellipsis;

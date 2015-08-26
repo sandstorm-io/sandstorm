@@ -58,7 +58,9 @@
   <div class="login-buttons-list">
     <a href="/account">Account settings</a>
     <a href="/about">About Sandstorm</a>
+    {{#if isAdmin}}
     <a href="/admin">Admin settings</a>
+    {{/if}}
 
     <button class="login logout">
       Sign out

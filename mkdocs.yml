@@ -38,4 +38,5 @@ pages:
     - "Demo mode": "administering/demo.md"
     - "Backups": "administering/backups.md"
     - "Wildcard hosts": "administering/wildcard.md"
+    - "Reverse Proxy": "administering/reverse-proxy.md"
     - "Frequently asked questions": "administering/faq.md"

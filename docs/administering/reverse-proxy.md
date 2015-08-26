@@ -1,61 +1,35 @@
 ## Prerequisites
 Create DNS entries for `example.com` and `*.example.com`.
 
-Obtain or generate two TLS certificates in total for `example.com` and `*.example.com`.
+Obtain or generate a key and TLS certificate with `example.com` and `*.example.com` in subjectAltName.
 
 Install `nginx` with your package manager.
 
 ## Configuration
+
 ### NGINX
-`/etc/nginx/sites-enabled/example.com.conf`
+Copy [nginx-example.conf](https://github.com/sandstorm-io/sandstorm/blob/master/nginx-example.conf) to `/etc/nginx/sites-enabled/`.
+
+`nginx-example.conf` may be renamed to anything, such as `example.com.conf`.
+
+Alter the `conf` file.
+
+- All `server_name` lines should match your DNS entries.
+- Point `ssl_certificate` and `ssl_certificate_key` to your corresponding TLS certificate and key files.
+
 ```
-# Redirect to HTTPS
-server {
-  listen 80;
-  server_name example.com *.example.com;
-  return 301 https://$server_name$request_uri;
-}
+listen 80;
+server_name example.com *.example.com;
 
-# HTTPS wildcard
-server {
-  listen 443;
-  server_name *.example.com;
+listen 443 ssl;
+server_name example.com *.example.com;
 
-  location / {
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header Host $http_host;
-    proxy_pass http://127.0.0.1:6080;
-
-    # Websocket
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection "upgrade";
-    proxy_set_header Host $host;
-    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-  }
-
-  ssl on;
-  ssl_certificate wildcard_example_com.crt;
-  ssl_certificate_key wildcard_example_com.key;
-}
-
-# HTTPS
-server {
-  listen 443;
-  server_name example.com;
-
-  location / {
-    proxy_set_header X-Real-IP $remote_addr;
-    proxy_set_header Host $http_host;
-    proxy_pass http://127.0.0.1:6080;
-  }
-
-  ssl on;
-  ssl_certificate example_com.crt;
-  ssl_certificate_key example_com.key;
-}
+ssl_certificate /etc/keys/example.com.crt;
+ssl_certificate_key /etc/keys/example.com.key;
 ```
 
+Test your NGINX configuration:
+`sudo nginx -t`
 
 ### Sandstorm
 Specify HTTPS, and remove port numbers from the base URL and wildcard host.
@@ -66,6 +40,7 @@ BASE_URL=https://example.com
 WILDCARD_HOST=*.example.com
 ```
 
+## Run
 Finally, start NGINX, and restart Sandstorm to use the new config.
 
 ```bash

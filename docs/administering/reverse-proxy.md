@@ -49,6 +49,6 @@ WILDCARD_HOST=*.example.com
 Finally, start NGINX, and restart Sandstorm to use the new config.
 
 ```bash
-sudo nginx
+sudo service nginx restart
 sudo /opt/sandstorm/sandstorm restart
 ```

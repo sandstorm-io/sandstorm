@@ -438,6 +438,7 @@ body>.topbar {
         a {
           display: block;
           box-sizing: border-box;
+          min-height: 32px;
           padding-left: 32px;
           text-decoration: none;
           text-overflow: ellipsis;

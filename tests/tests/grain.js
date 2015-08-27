@@ -192,182 +192,176 @@ module.exports["Test grain anonymous user"] = function (browser) {
     });
 }
 
-// TODO(soon): interstitials are broken
 // Test roleless sharing between multiple users
-// module.exports["Test roleless sharing"] = function (browser) {
-//   browser
-//     // Upload app as 1st user
-//     .loginDevAccount()
-//     .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
-//     .waitForElementVisible('#step-confirm', very_long_wait)
-//     .click('#confirmInstall')
-//     .waitForElementVisible('.new-grain-button', short_wait)
-//     .assert.containsText('.new-grain-button', 'New Hacker CMS Site')
-//     // Create grain with that user
-//     .click('.new-grain-button')
-//     .waitForElementVisible('#grainTitle', medium_wait)
-//     .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
-//     .click('.topbar .share > .show-popup')
-//     .waitForElementVisible("section.sharable-link>h5", short_wait)
-//     .click("section.sharable-link>h5")
-//     .waitForElementVisible(".new-share-token", short_wait)
-//     .submitForm('.new-share-token')
-//     .waitForElementVisible('#share-token-text', medium_wait)
-//     // Navigate to the url with 2nd user
-//     .getText('#share-token-text', function(response) {
-//       browser
-//         .loginDevAccount()
-//         .url(response.value)
-//         .waitForElementVisible("#redeem-token-button", short_wait)
-//         .click("#redeem-token-button")
-//         .waitForElementVisible('#grainTitle', medium_wait)
-//         .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
-//         .frame('grain-frame')
-//         .waitForElementPresent('#publish', medium_wait)
-//         .assert.containsText('#publish', 'Publish')
-//         .frame(null)
-//         .click('.topbar .share > .show-popup')
-//         .waitForElementVisible("section.sharable-link>h5", short_wait)
-//         .click("section.sharable-link>h5")
-//         .waitForElementVisible(".new-share-token", short_wait)
-//         .submitForm('.new-share-token')
-//         .waitForElementVisible('#share-token-text', medium_wait)
-//         // Navigate to the re-shared url with 3rd user
-//         .getText('#share-token-text', function(response) {
-//           browser
-//             .loginDevAccount()
-//             .url(response.value)
-//             .waitForElementVisible("#redeem-token-button", short_wait)
-//             .click("#redeem-token-button")
-//             .waitForElementVisible('#grainTitle', medium_wait)
-//             .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
-//             .frame('grain-frame')
-//             .waitForElementPresent('#publish', medium_wait)
-//             .assert.containsText('#publish', 'Publish')
-//             .frame(null)
-//             .click('.topbar .share > .show-popup')
-//             .waitForElementVisible("section.sharable-link>h5", short_wait)
-//             .click("section.sharable-link>h5")
-//             .waitForElementVisible(".new-share-token", short_wait)
-//             .submitForm('.new-share-token')
-//             .waitForElementVisible('#share-token-text', medium_wait)
-//         });
-//     });
-// }
+module.exports["Test roleless sharing"] = function (browser) {
+  browser
+  // Upload app as 1st user
+    .loginDevAccount()
+    .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
+    .waitForElementVisible('#step-confirm', very_long_wait)
+    .click('#confirmInstall')
+    .waitForElementVisible('.app-action', short_wait)
+    .assert.containsText('.app-action', 'Hacker CMS')
+    // Create grain with that user
+    .click('.app-action')
+    .waitForElementVisible('#grainTitle', medium_wait)
+    .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+    .click('.topbar .share > .show-popup')
+    .waitForElementVisible("section.sharable-link>h5", short_wait)
+    .click("section.sharable-link>h5")
+    .waitForElementVisible(".new-share-token", short_wait)
+    .submitForm('.new-share-token')
+    .waitForElementVisible('#share-token-text', medium_wait)
+    // Navigate to the url with 2nd user
+    .getText('#share-token-text', function(response) {
+      browser
+        .loginDevAccount()
+        .url(response.value)
+        .waitForElementVisible(".redeem-token-button", short_wait)
+        .click(".redeem-token-button")
+        .waitForElementVisible('#grainTitle', medium_wait)
+        .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+        .frame('grain-frame')
+        .waitForElementPresent('#publish', medium_wait)
+        .assert.containsText('#publish', 'Publish')
+        .frame(null)
+        .click('.topbar .share > .show-popup')
+        .waitForElementVisible("section.sharable-link>h5", short_wait)
+        .click("section.sharable-link>h5")
+        .waitForElementVisible(".new-share-token", short_wait)
+        .submitForm('.new-share-token')
+        .waitForElementVisible('#share-token-text', medium_wait)
+        // Navigate to the re-shared url with 3rd user
+        .getText('#share-token-text', function(response) {
+          browser
+            .loginDevAccount()
+            .url(response.value)
+            .waitForElementVisible(".redeem-token-button", short_wait)
+            .click(".redeem-token-button")
+            .waitForElementVisible('#grainTitle', medium_wait)
+            .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+            .frame('grain-frame')
+            .waitForElementPresent('#publish', medium_wait)
+            .assert.containsText('#publish', 'Publish')
+            .frame(null)
+            .click('.topbar .share > .show-popup')
+            .waitForElementVisible("section.sharable-link>h5", short_wait)
+            .click("section.sharable-link>h5")
+            .waitForElementVisible(".new-share-token", short_wait)
+            .submitForm('.new-share-token')
+            .waitForElementVisible('#share-token-text', medium_wait)
+        });
+    });
+}
 
 // Test sharing between multiple users. The users here are different from those in the
 // "Test roleless sharing" case to ensure that the incognito interstitial always appears.
 // TODO(soon): this test is failing intermittently. It seems to be a bug in etherpad? Re-write test using a different app.
-// module.exports["Test role sharing"] = function (browser) {
-//   browser
-//     // Upload app as 1st user
-//     .loginDevAccount()
-//     .url(browser.launch_url + "/install/21f8dba75cf1bd9f51b97311ae64aaca?url=http://sandstorm.io/apps/etherpad9.spk")
-//     .waitForElementVisible('#step-confirm', very_long_wait)
-//     .click('#confirmInstall')
-//     .waitForElementVisible('.new-grain-button', short_wait)
-//     .assert.containsText('.new-grain-button', 'New Etherpad Document')
-//     // Create grain with that user
-//     .click('.new-grain-button')
-//     .waitForElementVisible('#grainTitle', medium_wait)
-//     .assert.containsText('#grainTitle', 'Untitled Etherpad Document')
-//     .click('.topbar .share > .show-popup')
-//     .waitForElementVisible("section.sharable-link>h5", short_wait)
-//     .click("section.sharable-link>h5")
-//     .waitForElementVisible("section.sharable-link .share-token-role", medium_wait)
-//     .assert.valueContains("section.sharable-link .share-token-role", "can edit")
-//     .submitForm('.new-share-token')
-//     .waitForElementVisible('#share-token-text', medium_wait)
-//     // Navigate to the url with 2nd user
-//     .getText('#share-token-text', function(response) {
-//       browser
-//         .loginDevAccount()
-//         .url(response.value)
-//         .waitForElementVisible("#redeem-token-button", short_wait)
-//         .click("#redeem-token-button")
-//         .waitForElementVisible('#grainTitle', medium_wait)
-//         .assert.containsText('#grainTitle', 'Untitled Etherpad Document')
-//         .frame('grain-frame')
-//         .waitForElementPresent('#editorcontainerbox', medium_wait)
-//         .frame(null)
-//         .click('.topbar .share > .show-popup')
-//         .waitForElementVisible("section.sharable-link>h5", short_wait)
-//         .click("section.sharable-link>h5")
-//         .waitForElementVisible("section.sharable-link .share-token-role", medium_wait)
-//         .assert.valueContains("section.sharable-link .share-token-role", "can edit")
-//         .submitForm('.new-share-token')
-//         .waitForElementVisible('#share-token-text', medium_wait)
-//         // Navigate to the re-shared url with 3rd user
-//         .getText('#share-token-text', function(response) {
-//           browser
-//             .loginDevAccount()
-//             .url(response.value)
-//             .waitForElementVisible("#redeem-token-button", short_wait)
-//             .click("#redeem-token-button")
-//             .waitForElementVisible('#grainTitle', medium_wait)
-//             .assert.containsText('#grainTitle', 'Untitled Etherpad Document')
-//             .frame('grain-frame')
-//             .waitForElementPresent('#editorcontainerbox', medium_wait)
-//             .frame(null)
-//             .click('.topbar .share > .show-popup')
-//             .waitForElementVisible("section.sharable-link>h5", short_wait)
-//             .click("section.sharable-link>h5")
-//             .waitForElementVisible("section.sharable-link .share-token-role", medium_wait)
-//             .assert.valueContains("section.sharable-link .share-token-role", "can edit")
-//             .submitForm('.new-share-token')
-//             .waitForElementVisible('#share-token-text', medium_wait)
-//         });
-//     });
-// }
+module.exports["Test role sharing"] = function (browser) {
+  browser
+    // Upload app as 1st user
+    .loginDevAccount()
+    .url(browser.launch_url + "/install/21f8dba75cf1bd9f51b97311ae64aaca?url=http://sandstorm.io/apps/etherpad9.spk")
+    .waitForElementVisible('#step-confirm', very_long_wait)
+    .click('#confirmInstall')
+    .waitForElementVisible('.app-action', short_wait)
+    .assert.containsText('.app-action', 'Etherpad')
+     // Create grain with that user
+    .click('.app-action')
+    .waitForElementVisible('#grainTitle', medium_wait)
+    .assert.containsText('#grainTitle', 'Untitled Etherpad Document')
+    .click('.topbar .share > .show-popup')
+    .waitForElementVisible("section.sharable-link>h5", short_wait)
+    .click("section.sharable-link>h5")
+    .waitForElementVisible("section.sharable-link .share-token-role", medium_wait)
+    .assert.valueContains("section.sharable-link .share-token-role", "can edit")
+    .submitForm('.new-share-token')
+    .waitForElementVisible('#share-token-text', medium_wait)
+     // Navigate to the url with 2nd user
+    .getText('#share-token-text', function(response) {
+      browser
+        .loginDevAccount()
+        .url(response.value)
+        .waitForElementVisible(".redeem-token-button", short_wait)
+        .click(".redeem-token-button")
+        .waitForElementVisible('#grainTitle', medium_wait)
+        .assert.containsText('#grainTitle', 'Untitled Etherpad Document')
+        .frame('grain-frame')
+        .waitForElementPresent('#editorcontainerbox', medium_wait)
+        .frame(null)
+        .click('.topbar .share > .show-popup')
+        .waitForElementVisible("section.sharable-link>h5", short_wait)
+        .click("section.sharable-link>h5")
+        .waitForElementVisible("section.sharable-link .share-token-role", medium_wait)
+        .assert.valueContains("section.sharable-link .share-token-role", "can edit")
+        .submitForm('.new-share-token')
+        .waitForElementVisible('#share-token-text', medium_wait)
+        // Navigate to the re-shared url with 3rd user
+        .getText('#share-token-text', function(response) {
+          browser
+            .loginDevAccount()
+            .url(response.value)
+            .waitForElementVisible(".redeem-token-button", short_wait)
+            .click(".redeem-token-button")
+            .waitForElementVisible('#grainTitle', medium_wait)
+            .assert.containsText('#grainTitle', 'Untitled Etherpad Document')
+            .frame('grain-frame')
+            .waitForElementPresent('#editorcontainerbox', medium_wait)
+            .frame(null)
+            .click('.topbar .share > .show-popup')
+            .waitForElementVisible("section.sharable-link>h5", short_wait)
+            .click("section.sharable-link>h5")
+            .waitForElementVisible("section.sharable-link .share-token-role", medium_wait)
+            .assert.valueContains("section.sharable-link .share-token-role", "can edit")
+            .submitForm('.new-share-token')
+            .waitForElementVisible('#share-token-text', medium_wait)
+        });
+    });
+}
 
-// TODO(soon): interstitials are broken
-// module.exports["Test grain incognito interstitial"] = function (browser) {
-//   browser
-//     // Upload app as normal user
-//     .loginDevAccount()
-//     .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
-//     .waitForElementVisible('#step-confirm', very_long_wait)
-//     .click('#confirmInstall')
-//     // Navigate to app
-//     .click('#homelink')
-//     .waitForElementVisible('#applist-apps', medium_wait)
-//     .click("#applist-apps > ul > li:nth-child(3)")
-//     .waitForElementVisible('.new-grain-button', short_wait)
-//     .assert.containsText('.new-grain-button', 'New Hacker CMS Site')
-//     // Create grain with that user
-//     .click('.new-grain-button')
-//     .waitForElementVisible('#grainTitle', medium_wait)
-//     .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
-//     .click('.topbar .share > .show-popup')
-//     .waitForElementVisible("section.sharable-link>h5", short_wait)
-//     .click("section.sharable-link>h5")
-//     .waitForElementVisible(".new-share-token", short_wait)
-//     .submitForm('.new-share-token')
-//     .waitForElementVisible('#share-token-text', medium_wait)
-//     // Navigate to the url with an anonymous user
-//     .getText('#share-token-text', function(response) {
-//       browser
-//         .loginDevAccount()
-//         .pause(short_wait)
-//         // Try incognito
-//         .url(response.value)
-//         .waitForElementVisible("#incognito-button", short_wait)
-//         .click("#incognito-button")
-//         .waitForElementVisible('#grainTitle', medium_wait)
-//         .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
-//         .frame('grain-frame')
-//         .waitForElementPresent('#publish', medium_wait)
-//         .assert.containsText('#publish', 'Publish')
-//         // Try redeeming as current user
-//         // TODO(someday): pick a better app that shows off the different userid/username
-//         .url(response.value)
-//         .waitForElementVisible("#redeem-token-button", short_wait)
-//         .click("#redeem-token-button")
-//         .waitForElementVisible('#grainTitle', medium_wait)
-//         .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
-//         .frame('grain-frame')
-//         .waitForElementPresent('#publish', medium_wait)
-//         .assert.containsText('#publish', 'Publish')
-//         .frame(null)
-//     });
-// }
+module.exports["Test grain incognito interstitial"] = function (browser) {
+  browser
+    // Upload app as normal user
+    .loginDevAccount()
+    .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
+    .waitForElementVisible('#step-confirm', very_long_wait)
+    .click('#confirmInstall')
+    .waitForElementVisible('.app-action', short_wait)
+    .assert.containsText('.app-action', 'Hacker CMS')
+     // Create grain with that user
+    .click('.app-action')
+    .waitForElementVisible('#grainTitle', medium_wait)
+    .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+    .click('.topbar .share > .show-popup')
+    .waitForElementVisible("section.sharable-link>h5", short_wait)
+    .click("section.sharable-link>h5")
+    .waitForElementVisible(".new-share-token", short_wait)
+    .submitForm('.new-share-token')
+    .waitForElementVisible('#share-token-text', medium_wait)
+    // Navigate to the url with an anonymous user
+    .getText('#share-token-text', function(response) {
+      browser
+        .loginDevAccount()
+        .pause(short_wait)
+        // Try incognito
+        .url(response.value)
+        .waitForElementVisible(".incognito-button", short_wait)
+        .click(".incognito-button")
+        .waitForElementVisible('#grainTitle', medium_wait)
+        .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+        .frame('grain-frame')
+        .waitForElementPresent('#publish', medium_wait)
+        .assert.containsText('#publish', 'Publish')
+        // Try redeeming as current user
+        // TODO(someday): pick a better app that shows off the different userid/username
+        .url(response.value)
+        .waitForElementVisible(".redeem-token-button", short_wait)
+        .click(".redeem-token-button")
+        .waitForElementVisible('#grainTitle', medium_wait)
+        .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+        .frame('grain-frame')
+        .waitForElementPresent('#publish', medium_wait)
+        .assert.containsText('#publish', 'Publish')
+        .frame(null)
+    });
+}

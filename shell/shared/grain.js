@@ -1368,7 +1368,6 @@ Router.map(function () {
 
       var tokenInfo = TokenInfo.findOne({_id: token});
       if (tokenInfo && tokenInfo.apiToken) {
-        console.log("valid");
         var grainId = tokenInfo.apiToken.grainId;
         var grains = globalGrains.get();
         var grainIndex = grainIdToIndex(grains, grainId);
@@ -1391,14 +1390,25 @@ Router.map(function () {
         } else {
           makeGrainIdActive(grainId);
         }
+      } else if (tokenInfo && tokenInfo.invalidToken) {
+        this.state.set("invalidToken", true);
       } else {
-        console.log("invalid");
+        console.error("unrecognized tokenInfo: " + tokenInfo);
       }
       this.next();
     },
 
+    action: function () {
+      if (this.state.get("invalidToken")) {
+        this.render("invalidToken", {data: {token: this.params.token}});
+      } else {
+        this.render();
+      }
+    },
+
     onStop: function () {
       this.state.set("beforeActionHookRan", undefined);
+      this.state.set("invalidToken", undefined);
       globalGrains.get().forEach(function (grain) {
         if (grain.isActive()) {
           grain.setActive(false);

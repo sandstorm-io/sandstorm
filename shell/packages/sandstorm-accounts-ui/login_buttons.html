@@ -16,7 +16,11 @@
       {{/if}}
     {{/if}}
   {{else}}
-    <a>Sign in ▾</a>
+    {{#if isCurrentRoute 'shared'}}
+      <a>Don't lose this link! Sign up for free ▾</a>
+    {{else}}
+      <a>Sign in ▾</a>
+    {{/if}}
   {{/if}}
 </template>
 

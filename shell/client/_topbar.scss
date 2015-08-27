@@ -215,6 +215,14 @@ body>.topbar {
           filter: none;
           background-color: $topbar-background-color-hover;
         }
+
+        // Allow the LI to feel "disabled", in which case, it does not
+        // visually respond to hover.
+        &.disabled {
+          &:hover {
+            background-color: $topbar-background-color;
+          }
+        }
       }
 
       @media #{$mobile} {

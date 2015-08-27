@@ -502,9 +502,21 @@ if (Meteor.isClient) {
   };
   Template.registerHelper("dateString", makeDateString);
   Template.registerHelper("showNavbar", function() {
-    // We also want to show the navbar whenever we've blocked reload, since we cover the toggle
-    // and you'd be unable to switch to other grains before page refresh otherwise.
-    return Session.get("show-navbar") || globalTopbar.isUpdateBlocked();
+    // We show the navbar when:
+    //
+    // - The session indicates we should (i.e., the user clicked on
+    //   the Sandstorm logo in the top-left), or
+    //
+    // - We've blocked reload, since we cover the toggle and
+    //   you'd be unable to switch to other grains before page
+    //   refresh otherwise.
+    //
+    // We actively hide the navbar when:
+    //
+    // - The user is not logged-in. This is because "Open" and "New"
+    //   would have no meaning for a non-logged-in user, and since they
+    //   can't open any new grains, "multi-grain" has no meaning for them.
+    return Meteor.user() && (Session.get("show-navbar") || globalTopbar.isUpdateBlocked());
   });
 
 

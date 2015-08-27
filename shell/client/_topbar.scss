@@ -415,7 +415,15 @@ body>.topbar {
         display: block;
 
         >button.show-popup {
-          padding: 0 8px;
+          >a {
+            padding: 0 8px;
+            display: block;
+
+            &.highlight {
+              background-color: #762f87;
+              color: white;
+            }
+          }
         }
       }
       @media #{$mobile} {

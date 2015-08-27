@@ -17,7 +17,7 @@
     {{/if}}
   {{else}}
     {{#if isCurrentRoute 'shared'}}
-      <a>Don't lose this link! Sign up for free ▾</a>
+      <a class="highlight">Save this link ▾</a>
     {{else}}
       <a>Sign in ▾</a>
     {{/if}}
@@ -80,6 +80,10 @@
 
   {{#if isDemoUser}}
     <p class="demo-note">Sign in to make your demo data permanent.</p>
+  {{else}}
+    {{#if isCurrentRoute 'shared'}}
+      <p class="demo-note">Sign in to save this link.</p>
+    {{/if}}
   {{/if}}
 
   {{> loginButtonsList}}

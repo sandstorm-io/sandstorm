@@ -82,6 +82,10 @@ Template.sandstormAppList.helpers({
     var ref = Template.instance().data;
     return ref._filter.get().length > 0;
   },
+  actionsCount: function() {
+    var ref = Template.instance().data;
+    return ref._db.currentUserActions({}).count();
+  },
   actions: function() {
     var ref = Template.instance().data;
     var actions = matchActions(ref._filter.get(), ref._sortOrder.get());

@@ -151,11 +151,11 @@ var sendEmail = function (email) {
         // 409 is a special case where the user can resolve the problem on their own.
         // Specifically, we're using 409 to mean that the email wasn't sent because a rate limit
         // was hit.
-        loginButtonsSession.set("inSignupFlow", true);
+        loginButtonsSession.set("inSignupFlow", email);
       }
     } else {
-      loginButtonsSession.set("inSignupFlow", true);
-      loginButtonsSession.infoMessage("Email sent");
+      loginButtonsSession.set("inSignupFlow", email);
+      loginButtonsSession.resetMessages();
     }
   });
 };
@@ -172,6 +172,15 @@ var loginWithToken = function (email, token, topbar) {
     }
   });
 };
+
+Template.loginButtonsDialog.helpers({
+  allowUninvited: function () {
+    return Meteor.settings.public.allowUninvited;
+  },
+  message: function () {
+    return (Settings.findOne("splashDialog") || {}).value;
+  }
+});
 
 Template.loginButtonsList.events({
   "click button.login.oneclick": function () {
@@ -195,11 +204,17 @@ Template.loginButtonsList.events({
   "submit form": function (event) {
     event.preventDefault();
     var form = event.currentTarget;
-    if (loginButtonsSession.get("inSignupFlow")) {
-      loginWithToken(form.email.value, form.token.value, Template.parentData(3));
+    var email = loginButtonsSession.get("inSignupFlow");
+    if (email) {
+      loginWithToken(email, form.token.value, Template.parentData(3));
     } else {
       sendEmail(form.email.value);
     }
+  },
+
+  "click button.cancel": function (event) {
+    loginButtonsSession.set("inSignupFlow", false);
+    loginButtonsSession.resetMessages();
   }
 });
 
@@ -239,5 +254,5 @@ Template.loginButtonsList.helpers({
 
   awaitingToken: function () {
     return loginButtonsSession.get('inSignupFlow');
-  },
+  }
 });

@@ -44,10 +44,10 @@
 
 <template name="_loginButtonsMessages">
   {{#if errorMessage}}
-    <div class="message error-message">{{errorMessage}}</div>
+    <p class="message error-message">{{errorMessage}}</p>
   {{/if}}
   {{#if infoMessage}}
-    <div class="message info-message">{{infoMessage}}</div>
+    <p class="message info-message">{{infoMessage}}</p>
   {{/if}}
 </template>
 
@@ -72,10 +72,25 @@
   <h4>Sign in</h4>
 
   {{#if isDemoUser}}
-    <p>Sign in to make your data permanent.</p>
+    <p class="demo-note">Sign in to make your demo data permanent.</p>
   {{/if}}
 
   {{> loginButtonsList}}
+</template>
+
+<template name="loginButtonsDialog">
+  <div class="login-dialog">
+    {{!-- There's no actual difference between signing "up" and "in", but people expect there to
+          be a difference, so humor them by making the front-page login say "sign up". (But for a
+          private server, don't offer "sign up".) --}}
+    <h4>Sign {{#if allowUninvited}}up{{else}}in{{/if}}</h4>
+
+    {{#with message}}
+      <p>{{{.}}}</p>
+    {{/with}}
+
+    {{> loginButtonsList}}
+  </div>
 </template>
 
 <template name="loginButtonsList">
@@ -86,36 +101,44 @@
         {{> _loginButtonsSeparator}}
       {{/if}}
       <form class="email">
-        <label>Email
-         <span title="Passwordless E-mail Login allows you to log in using an e-mail address. No password is required; instead, every time you log in, we send you a new email confirmation code. You will only need to log in once per device." class="info">i</span>
+        with e-mail
+
+        <label class="email {{#if awaitingToken}}hidden{{/if}}">e-mail
+          <span title="Passwordless E-mail Login allows you to log in using an e-mail address. No password is required; instead, every time you log in, we send you a new email confirmation code. You will only need to log in once per device." class="info">i</span>
           <input name="email" type="email">
         </label>
 
-        {{#if awaitingToken}}
-          <label>Enter authentication code from email <input name="token" type="text"></label>
-          <button class="login token">Log in</button>
+        {{#with awaitingToken}}
+          <p>We've sent a login e-mail to {{.}}. It may take a few moments to show up in your
+             inbox.</p>
+          <label class="token">
+            Enter your token:
+            <input name="token" type="text">
+          </label>
+          <div class="button-box">
+            <button class="login token">Confirm</button>
+            <button type="reset" class="cancel">Cancel</button>
+          </div>
         {{else}}
-          <button class="login email">Send Login Email</button>
-        {{/if}}
+          <div class="button-box">
+            <button class="login email">Send Login Email</button>
+          </div>
+        {{/with}}
       </form>
     {{else}}
       <button class="login oneclick {{name}}">
-        Sign in with {{capitalizedName}}
+        with {{capitalizedName}}
       </button>
     {{/if}}
   {{else}}
-    <p class="troubleshooting-link">
-      <a href="/admin">configure login</a>
-    </p>
+    <a class="troubleshooting" href="/admin">configure login</a>
   {{/each}}
 
   {{> _loginButtonsMessages}}
 
   {{#if showTroubleshooting}}
     {{> _loginButtonsSeparator}}
-    <p class="troubleshooting-link">
-      <a href="https://docs.sandstorm.io/en/latest/administering/faq/" target="_blank">troubleshooting</a>
-    </p>
+    <a class="troubleshooting" href="https://docs.sandstorm.io/en/latest/administering/faq/" target="_blank">troubleshooting</a>
   {{/if}}
   </div>
 </template>

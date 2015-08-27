@@ -273,6 +273,11 @@ img {
 .notification-header {
   color: #ccc;
 }
+#intro {
+  background-color: #b6b6b6;
+  overflow: auto;
+  height: 100%;
+}
 #intro h1 {
   text-align: center;
   font-size: 100px;
@@ -302,7 +307,7 @@ svg {
   cursor: pointer;
 }
 
-#intro p {
+#intro>p {
   text-align: center;
 }
 
@@ -395,7 +400,7 @@ body.ios .main-content {
   margin-left: 2px;
 }
 
-div.popup p {
+div.popup>p {
   margin-top: 0;
 }
 

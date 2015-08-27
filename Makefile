@@ -49,6 +49,8 @@ IMAGES= \
     shell/public/download.svg \
     shell/public/down.svg \
     shell/public/email.svg \
+    shell/public/github.svg \
+    shell/public/google.svg \
     shell/public/install.svg \
     shell/public/key.svg \
     shell/public/link.svg \
@@ -61,6 +63,7 @@ IMAGES= \
     shell/public/share.svg \
     shell/public/search.svg \
     shell/public/trash.svg \
+    shell/public/troubleshoot.svg \
     shell/public/upload.svg \
     shell/public/up.svg \
                              \
@@ -76,7 +79,10 @@ IMAGES= \
     shell/public/restart-m.svg \
     shell/public/settings-m.svg \
     shell/public/share-m.svg \
-    shell/public/trash-m.svg
+    shell/public/trash-m.svg \
+                                  \
+    shell/public/github-color.svg \
+    shell/public/google-color.svg
 
 # ====================================================================
 # Meta rules
@@ -202,6 +208,13 @@ shell/client/changelog.html: CHANGELOG.md
 shell/public/%.svg: icons/%.svg
 	@$(call color,color for dark background $<)
 	@sed -e 's/#000000/#CCCCCC/g' < $< > $@
+
+shell/public/google-color.svg: icons/google.svg
+	@$(call color,color for dark background $<)
+	@sed -e 's/#111111/#a53232/g' < $< > $@
+shell/public/github-color.svg: icons/github.svg
+	@$(call color,color for dark background $<)
+	@sed -e 's/#111111/#191919/g' < $< > $@
 
 shell/public/%-m.svg: icons/%.svg
 	@$(call color,color for light background $<)

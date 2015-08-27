@@ -1243,12 +1243,20 @@ Router.map(function () {
   this.route("newGrain", {
     path: "/grain/new",
     data: function () {
+      if (!Meteor.userId() && !Meteor.loggingIn()) {
+        Router.go("root");
+      }
+
       return new SandstormAppList(globalDb, globalQuotaEnforcer);
     },
   });
   this.route("selectGrain", {
     path: "/grain",
     data: function () {
+      if (!Meteor.userId() && !Meteor.loggingIn()) {
+        Router.go("root");
+      }
+
       return new SandstormGrainList(globalDb, globalQuotaEnforcer);
     },
   });

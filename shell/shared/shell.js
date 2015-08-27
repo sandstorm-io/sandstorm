@@ -810,11 +810,13 @@ Router.map(function () {
       return Meteor.subscribe("hasUsers");
     },
     data: function () {
-      var splashText = Settings.findOne("splashDialog");
+      if (Meteor.userId()) {
+        Router.go("selectGrain");
+      }
+
       return {
         isFirstRun: this.ready() && !HasUsers.findOne("hasUsers"),
-        build: getBuildInfo().build,
-        splashDialog: splashText && splashText.value
+        build: getBuildInfo().build
       };
     }
   });

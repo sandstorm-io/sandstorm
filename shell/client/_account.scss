@@ -1,33 +1,35 @@
 body>.popup.account>.frame {
-  width: 260px;
+  width: 200px;
+  border: none;
+  min-width: 200px;
+
+  >p.demo-note {
+    border-bottom: 1px solid #c1c1c1;
+    font-size: 80%;
+    color: #444;
+    padding: 4px 16px;
+  }
+
+  >* {
+    margin: 0;
+  }
 }
 
 .login-buttons-list {
-  margin: 16px auto;
-  width: 228px;
-
-  >a {
-    display: block;
-    margin: 0;
-    padding: 8px 16px;
-    color: black;
-    text-decoration: underline;
-    text-align: center;
-
-    &:hover {
-      background-color: #eee;
-    }
-  }
+  width: 200px;
+  margin: 0;
+  text-align: left;
 
   // TODO(cleanup): Much of the below was brought it from Meteor's accounts-ui and needs cleanup.
 
-  button.login {
+  >button.login, >form, >a {
     display: block;
-    width: 228px;  // can't use "width: 100%" due to margin, but we know the exact width...
+    width: 200px;
+    height: 32px;
     box-sizing: border-box;
-
-    margin-top: 4px;
-    margin-bottom: 4px;
+    text-decoration: none;
+    color: black;
+    font-weight: normal;
 
     cursor: pointer;
     padding: 4px 8px;
@@ -36,25 +38,17 @@ body>.popup.account>.frame {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     line-height: 1.5;
 
-    text-align: center;
-    color: #fff;
+    text-align: left;
+    text-indent: 40px;
+    color: black;
 
-    $login-buttons-color: #596595;
-    $login-buttons-color-border: darken($login-buttons-color, 10%);
-    $login-buttons-color-active: lighten($login-buttons-color, 10%);
-    $login-buttons-color-active-border: darken($login-buttons-color-active, 10%);
+    background: white;
 
-    background: $login-buttons-color;
-    border: 1px solid $login-buttons-color-border;
-
-    border-radius: 4px;
+    border: none;
+    border-bottom: 1px solid #c1c1c1;
 
     &:hover {
-      background-color: $login-buttons-color-active;
-    }
-    &:active {
-      background-color: $login-buttons-color-active;
-      box-shadow: 0 2px 3px 0 rgba(0, 0, 0, 0.2) inset;
+      background-color: #f5f5f5;
     }
 
     &.login-button-disabled, &.login-button-disabled:active {
@@ -64,10 +58,35 @@ body>.popup.account>.frame {
       box-shadow: none;
     }
 
-    &.google { @extend %google-icon; }
-    &.github { @extend %github-icon; }
+    &.google {
+      background-image: url("/google.svg");
+      &:hover {
+        background-image: url("/google-color.svg");
+        color: #a53232;
+      }
+    }
+    &.github {
+      background-image: url("/github.svg");
+      &:hover {
+        background-image: url("/github-color.svg");
+        color: #191919;
+      }
+    }
+    &.email {
+      background-image: url("/email.svg");
+    }
+    &.troubleshooting {
+      background-image: url("/troubleshoot.svg");
+    }
+    &.devAccounts {
+      background-image: url("/debug.svg");
+      &:hover {
+        background-image: url("/debug-m.svg");
+      }
+    }
 
-    background-position: 6px center;
+    background-position: 16px center;
+    background-size: auto 90%;
     background-repeat: no-repeat;
   }
 
@@ -102,37 +121,100 @@ body>.popup.account>.frame {
     background-repeat: no-repeat;
   }
 
-  label, .email .info {
-    font-size: 80%;
-    margin-top: 7px;
-    margin-bottom: -2px;
+  >form.email {
+    line-height: 32px;
+    height: auto;
+    background-size: 24px 24px;
+    background-position: 16px 4px;
+
+    label {
+      display: block;
+      height: 32px;
+      line-height: normal;
+      font-size: 8pt;
+      text-indent: 0;
+      padding: 0 8px;
+    }
+    label.hidden {
+      display: none;
+    }
+    >p {
+      line-height: normal;
+      font-size: 8pt;
+      margin: 0 0 8px;
+      padding-left: 32px;
+      text-indent: 0;
+      background-image: url("/check.svg");
+      color: #444;
+    }
+
+    input {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 2px 4px;
+      border: 1px solid #9e9e9e;
+      border-radius: 3px;
+      line-height: normal;
+    }
+
+    .button-box {
+      text-align: right;
+      padding: 0 6px;
+
+      button {
+        @extend %unstyled-button;
+        border: 1px solid #9e9e9e;
+        border-radius: 3px;
+        line-height: normal;
+        height: 16px;
+        margin: 8px 2px;
+        padding: 2px 4px;
+        text-transform: uppercase;
+        font-size: 7pt;
+        color: #444;
+        display: inline-block;
+        cursor: pointer;
+        background-color: white;
+
+        &:hover {
+          background-color: #eee;
+        }
+      }
+    }
+
+    &:hover {
+      background-color: white;
+      cursor: auto;
+    }
+  }
+
+  >a {
+    line-height: 24px;
   }
 
   .email .info {
+    margin-top: 7px;
+    margin-bottom: -2px;
+
     border-radius: 50%;
-    padding: 0px 6px;
-    float: right;
-    cursor: pointer;
-    background-color: #762f87;
+    background-color: #444;
     color: white;
-  }
-
-  label {
-    // Bootstrap sets labels as 'display: block;'. Undo that.
-    display: inline;
-  }
-
-  input[type=text], input[type=email], input[type=password] {
-    box-sizing: border-box;
-    width: 100%;
-    padding: 4px;
-    border: 1px solid #aaa;
-    border-radius: 3px;
-    line-height: 1;
+    width: 10px;
+    height: 10px;
+    font-size: 10px;
+    display: inline-block;
+    text-align: center;
   }
 
   .login-button-form-submit { margin-top: 8px; }
-  .message { font-size: 80%; margin-top: 8px; line-height: 1.3; }
+  p.message {
+    font-size: 80%;
+    padding: 8px 16px;
+    margin: 0;
+    line-height: 1.3;
+    background-color: white;
+    border-bottom: 1px solid #c1c1c1;
+  }
   .error-message { color: red; }
   .info-message { color: green; }
   .additional-link { font-size: 75%; }
@@ -154,17 +236,92 @@ body>.popup.account>.frame {
     }
   }
 
-  .or {
+  >.or {
+    display: none;
+  }
+}
+
+.login-dialog {
+  width: 325px;
+  background-color: #f5f5f5;
+  margin: 0 auto;
+  border-radius: 8px;
+  border: 1px solid #9e9e9e;
+  overflow: hidden;
+
+  >h4 {
     text-align: center;
-    .hline { text-decoration: line-through; color: lightgrey; }
-    .or-text { font-weight: bold; }
+    background-color: white;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+    font-size: 20pt;
+    text-transform: uppercase;
+    font-weight: normal;
+    padding-top: 8px;
+    padding-bottom: 20px;
+    padding-right: 20px;
+    margin: 0;
+
+    &::before {
+      content: " ";
+      display: inline-block;
+      width: 64px;
+      height: 64px;
+      vertical-align: bottom;
+      background-image: url("/sandstorm-gradient-logo.svg");
+      background-repeat: no-repeat;
+    }
   }
 
-  p.troubleshooting-link {
-    text-align: center;
-    a {
+  >p {
+    width: 225px;
+    margin: 16px auto;
+    font-size: 10pt;
+
+    >a {
       color: black;
+      font-weight: normal;
+      text-decoration: underline;
     }
+  }
+
+  >.login-buttons-list {
+    margin: 0 auto 32px;
+    width: 225px;
+
+    >button.login, >form, >a {
+      border: 1px solid #9e9e9e;
+      border-radius: 2px;
+      margin: 8px 0;
+      background-position: 48px center;
+      text-indent: 72px;
+      color: black;
+      font-weight: normal;
+      width: 225px;
+    }
+
+    >form.email {
+      background-position: 48px 4px;
+    }
+
+    >.or {
+      display: block;
+      text-align: center;
+      margin: 16px 0;
+      border-bottom: 1px solid #c1c1c1;
+      .hline { display: none; }
+      .or-text { display: none; }
+    }
+
+    p.message {
+      border: 1px solid #9e9e9e;
+      border-radius: 2px;
+      margin: 8px 0;
+    }
+  }
+
+  #intro>& {
+    margin-top: 64px;
   }
 }
 

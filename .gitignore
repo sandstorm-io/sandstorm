@@ -29,6 +29,11 @@ shell/public/email.svg
 shell/public/link.svg
 shell/public/people.svg
 shell/public/search.svg
+shell/public/github-color.svg
+shell/public/github.svg
+shell/public/google-color.svg
+shell/public/google.svg
+shell/public/troubleshoot.svg
 shell/public/*-m.svg
 shell-build
 sandstorm-*.tar.xz

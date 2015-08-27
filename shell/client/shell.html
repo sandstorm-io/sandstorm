@@ -187,21 +187,13 @@ limitations under the License.
   {{>title "Home"}}
 
   <div id="intro">
-    <div id="logo">
-      <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1">
-      </svg>
-      <script type="text/javascript">setTimeout(initLogoAnimation, 0);</script>
-    </div>
-    <h1>Sandstorm</h1>
-      <p class="build-tag">Build {{build}}</p>
-
     {{#if isFirstRun}}
       <p>
         This Sandstorm instance has no users. You should generate a token from the command line
         with `sandstorm admin-token` in order to access the admin settings page.
       </p>
     {{else}}
-      <p>{{{splashDialog}}}</p>
+      {{> loginButtonsDialog globalAccountsUi}}
     {{/if}}
   </div>
 </template>

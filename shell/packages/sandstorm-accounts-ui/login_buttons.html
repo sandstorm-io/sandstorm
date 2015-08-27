@@ -61,10 +61,11 @@
   {{!-- TODO(cleanup): Don't wrap this in login-buttons-list? --}}
   <div class="login-buttons-list">
     <a href="/account">Account settings</a>
-    <a href="/about">About Sandstorm</a>
     {{#if isAdmin}}
     <a href="/admin">Admin settings</a>
     {{/if}}
+    <a href="mailto:support@sandstorm.io" target="_blank">Send Feedback</a>
+    <a href="/about">About Sandstorm</a>
 
     <button class="login logout">
       Sign out
@@ -146,6 +147,8 @@
     {{> _loginButtonsSeparator}}
     <a class="troubleshooting" href="https://docs.sandstorm.io/en/latest/administering/faq/" target="_blank">troubleshooting</a>
   {{/if}}
+
+  <a href="/about">about Sandstorm</a>
   </div>
 </template>
 

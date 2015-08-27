@@ -92,7 +92,7 @@ body>.popup.account>.frame {
     }
 
     background-position: 16px center;
-    background-size: auto 90%;
+    background-size: 27px 27px;
     background-repeat: no-repeat;
   }
 
@@ -166,6 +166,7 @@ body>.popup.account>.frame {
     .button-box {
       text-align: right;
       padding: 0 6px;
+      text-indent: 0;
 
       button {
         @extend %unstyled-button;
@@ -308,6 +309,10 @@ body>.popup.account>.frame {
 
     >form.email {
       background-position: 48px 4px;
+
+      .button-box {
+        text-indent: 0;
+      }
     }
 
     >.or {

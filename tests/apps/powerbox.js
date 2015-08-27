@@ -127,8 +127,8 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
           .windowHandles(function (windows) {
             browser
               .switchWindow(windows.value[1])
-              .waitForElementVisible("#grainLog > pre", short_wait)
-              .assert.containsText("#grainLog > pre", "Error: Requirements not satisfied")
+              .waitForElementVisible(".grainlog-contents > pre", short_wait)
+              .assert.containsText(".grainlog-contents > pre", "Error: Requirements not satisfied")
           });
     });
 };

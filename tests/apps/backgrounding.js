@@ -49,9 +49,9 @@ module.exports["Test Notification"] = function (browser) {
     .windowHandles(function (windows) {
       browser
         .switchWindow(windows.value[1])
-        .waitForElementVisible("#grainLog > pre", short_wait)
-        .assert.containsText("#grainLog > pre", "Grain has enabled backgrounding")
-        .assert.containsText("#grainLog > pre", "Grain's backgrounding has been disabled")
+        .waitForElementVisible(".grainlog-contents > pre", short_wait)
+        .assert.containsText(".grainlog-contents > pre", "Grain has enabled backgrounding")
+        .assert.containsText(".grainlog-contents > pre", "Grain's backgrounding has been disabled")
         .closeWindow()
         .end();
     });
@@ -74,10 +74,10 @@ module.exports["Test Notification Wakelock Dropper"] = function (browser) {
     .windowHandles(function (windows) {
       browser
         .switchWindow(windows.value[1])
-        .waitForElementVisible("#grainLog > pre", short_wait)
-        .assert.containsText("#grainLog > pre", "Grain has enabled backgrounding")
+        .waitForElementVisible(".grainlog-contents > pre", short_wait)
+        .assert.containsText(".grainlog-contents > pre", "Grain has enabled backgrounding")
         .pause(18000) // After 15 seconds, the app will drop its wakelock
-        .assert.containsText("#grainLog > pre", "Grain's backgrounding has been disabled")
+        .assert.containsText(".grainlog-contents > pre", "Grain's backgrounding has been disabled")
         .closeWindow()
         .end();
     });

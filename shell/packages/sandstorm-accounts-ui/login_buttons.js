@@ -2,7 +2,7 @@
 var loginButtonsSession = Accounts._loginButtonsSession;
 
 var helpers = {
-  currentRoute: function (routeName) {
+  isCurrentRoute: function (routeName) {
     return Router.current().route.getName() == routeName;
   },
   isDemoUser: function () {

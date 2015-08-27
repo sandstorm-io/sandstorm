@@ -60,7 +60,7 @@ Template.sandstormTopbar.helpers({
     return _.sortBy(_.values(this._items), function (item) { return -(item.priority || 0); });
   },
 
-  currentRoute: function (routeName) {
+  isCurrentRoute: function (routeName) {
     return Router.current().route.getName() == routeName;
   },
 

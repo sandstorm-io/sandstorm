@@ -28,6 +28,7 @@ exports.command = function(url, packageId, appId, dontStartGrain, callback) {
     .url(this.launch_url + "/install/" + packageId + "?url=" + url)
     .waitForElementVisible("#step-confirm", very_long_wait)
     .click("#confirmInstall")
+    .url(this.launch_url + "/grain/new")
     .waitForElementVisible(".app-list", medium_wait)
     .resizeWindow(utils.default_width, utils.default_height);
 

@@ -427,6 +427,12 @@ body>.main-content>.account {
             }
 
             &.add-new-card {
+              position: relative;
+
+              &.iframe-active {
+                position: static;
+              }
+
               >button {
                 padding: 2px 4px;
                 font-size: 16px;
@@ -441,6 +447,14 @@ body>.main-content>.account {
 
               >span {
                 margin-left: 16px;
+              }
+              >.mobile-iframe-hack {
+                position: absolute;
+                height: 24px;
+                width: 24px;
+                &.fullscreen {
+                  @extend %fullscreen-iframe-hack;
+                }
               }
             }
             &.checkbox {
@@ -688,30 +702,28 @@ form.account-profile-editor {
   }
 }
 
+%fullscreen-iframe-hack {
+  display: initial;
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 32px;
+  left: 0px;
+  z-index: 10000000;
+}
+
 body>.main-content>.account,
 body>.popup {
   .mobile-iframe-hack {
-    // @media #{$desktop} {
-    //   display: none;
-    // }
-
-    // TODO(soon): mobile
-    // position: absolute;
-    // width: 60px;
-    // height: 20px;
-    // z-index: 1;
-    // border: 0px;
-  }
-
-  .mobile-iframe-hack.fullscreen {
-    display: initial;
-    width: 100%;
-    height: 100%;
-    position: fixed;
-    top: 32px;
-    left: 0px;
-    z-index: 10000000;
     border: 0px;
+
+    @media #{$desktop} {
+      display: none;
+    }
+
+    &.fullscreen {
+      @extend %fullscreen-iframe-hack;
+    }
   }
 }
 
@@ -769,6 +781,23 @@ body>.popup.billing-prompt>.frame>.scroll-box {
       padding: 0px;
       cursor: pointer;
       text-align: center;
+
+      position: relative;
+
+      &.iframe-active {
+        position: static;
+      }
+
+      >.mobile-iframe-hack {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        top: 0px;
+        left: 0px;
+        &.fullscreen {
+          @extend %fullscreen-iframe-hack;
+        }
+      }
 
       &.selected {
         td {

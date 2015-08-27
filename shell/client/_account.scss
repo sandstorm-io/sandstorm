@@ -762,24 +762,44 @@ body>.popup.billing-prompt>.frame, body>.main-content>.account>section.subscript
     max-width: 900px;
     font-size: 11px;
     margin: 32px 16px;
+    font-family: "Source Sans Pro", sans-serif;
+    margin: auto;
 
     >.subscription {
       display: inline-block;
-      border: 2px dashed #999;
-      border-radius: 4px;
       height: 190px;
       width: 180px;
-      margin: 8px;
-      padding: 8px;
+      margin: 4px;
+      padding: 0px;
       cursor: pointer;
       text-align: center;
 
       &.selected {
         cursor: auto;
-        border-style: solid;
+
+        td {
+          background-color: #efefef;
+          color: #494949;
+        }
+
+        >table {
+          >tr:nth-child(1)>td {
+            background-color: #cccccc;
+            color: #494949;
+          }
+          >tr:nth-child(6) {
+            button {
+              background-color: #cccccc;
+              background: inherit;
+              color: #494949;
+              border: 1px solid #9e9e9e;
+              cursor: auto;
+            }
+          }
+        }
       }
 
-      &.selecting {
+      &.selecting>table>tr:nth-child(2)>td {
         background-size: 96px 96px;
         // TODO(soon): need spinner with transparent or #eee background
         background-image: url("/spinner_96.gif");
@@ -787,42 +807,94 @@ body>.popup.billing-prompt>.frame, body>.main-content>.account>section.subscript
         background-position: center;
       }
 
-      h4 {
+      >p {
+        color: #494949;
         font-size: 16px;
-        text-transform: uppercase;
-        margin-bottom: 0;
-        text-align: center;
       }
 
       >table {
         border-collapse: collapse;
         border-spacing: 0;
         margin: 0px auto 16px auto;
+        border: 1px solid #adadad;
+        border-radius: 4px;
+        width: 100%;
+
+        &:hover td {
+          background-color: white;
+        }
 
         td {
+          padding-top: 8px;
           padding-bottom: 8px;
+          font-size: 20px;
+          color: #6a237c;
 
-          &:nth-child(1) {
-            padding-right: 4px;
-            border-right: 1px solid #ccc;
-            text-align: right;
+          text-align: middle;
+
+          >p {
+            margin: 0px;
           }
 
-          &:nth-child(2) {
-            padding-left: 4px;
-            text-align: left;
+          background-color: #f2edf2;
+        }
+
+        tr {
+          border-bottom: 1px solid #d6c9d4;
+        }
+
+        tr:nth-child(1)>td {
+          font-size: 24px;
+          text-transform: uppercase;
+          background-color: #e4d6f4;
+        }
+
+        tr:nth-child(2)>td {
+          padding: 20px 0px 20px;
+          background-color: white;
+
+          >p:nth-child(1) {
+            font-size: 36px;
+            font-weight: 600;
+          }
+
+          >p:nth-child(2) {
+            font-size: 12px;
           }
         }
 
-        tr:last-child>td {
-          padding-bottom: 0px;
+        tr:nth-child(3)>td {
+          >p:nth-child(2) {
+            font-size: 12px;
+          }
         }
-      }
 
-      >hr {
-        border: none;
-        border-bottom: 2px solid #ccc;
-        margin: 4px 4px 8px;
+        tr:nth-child(4)>td {
+          >p:nth-child(2) {
+            font-size: 12px;
+          }
+        }
+
+        tr:nth-child(5) {
+          border-bottom: 0px;
+
+          >td>p:nth-child(2) {
+            font-size: 12px;
+          }
+        }
+
+        tr:nth-child(6) {
+          button {
+            width: 95%;
+            height: 40px;
+            font-size: 16px;
+            color: white;
+            background: linear-gradient(#662d91, #57236e);
+            cursor: pointer;
+            border: 0px;
+            border-radius: 4px;
+          }
+        }
       }
     }
   }

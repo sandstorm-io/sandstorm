@@ -343,6 +343,9 @@ body>.popup.account>.frame {
 body>.main-content>.account {
   text-align: left;
   padding: 32px;
+  @media #{$mobile} {
+    padding: 0;
+  }
 
   >* {
     margin: 16px 24px;
@@ -489,6 +492,7 @@ body>.main-content>.account {
       form, div.usage {
         display: inline-block;
         vertical-align: top;
+        margin-right: 32px;
 
         h3 {
           margin: 0.5em 0;
@@ -496,14 +500,17 @@ body>.main-content>.account {
       }
 
       div.usage {
-        width: 400px;
-        margin-left: 50px;
+        max-width: 400px;
+        padding: 0 16px;
 
         tr {
           height: 64px;
         }
         td {
           vertical-align: top;
+        }
+        td:first-child {
+          width: 90px;
         }
 
         span.grain-count {
@@ -543,6 +550,10 @@ body>.main-content>.account {
           >div {
             height: 100%;
             background-color: #65468e;
+          }
+
+          @media (max-width: 500px) {
+            width: 200px;
           }
         }
 
@@ -592,7 +603,7 @@ body>.main-content>.account {
 }
 
 form.account-profile-editor {
-  width: 500px;
+  max-width: 400px;
   height: auto;
   background-color: white;
   padding: 0 16px;
@@ -608,12 +619,11 @@ form.account-profile-editor {
       label {
         display: block;
         font-weight: bold;
-        text-align: right;
       }
 
       input[type="text"], input[type="email"], select {
         display: block;
-        width: 300px;
+        width: 100%;
         float: right;
         box-sizing: border-box;
         font-size: inherit;
@@ -648,13 +658,11 @@ form.account-profile-editor {
 
       &.picture {
         button {
-          float: right;
+          display:block;
           border: none;
           padding: 0;
           width: 256px;
           height: 256px;
-          margin-right: 44px;
-          margin-left: 8px;
           position: relative;
           background-color: transparent;
 
@@ -679,6 +687,11 @@ form.account-profile-editor {
             max-width: 100%;
             max-height: 100%;
             margin: auto;
+          }
+
+          @media (max-width: 352px) {
+            width: 192px;
+            height: 192px;
           }
         }
       }

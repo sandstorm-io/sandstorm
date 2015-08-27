@@ -207,7 +207,7 @@ shell/client/changelog.html: CHANGELOG.md
 
 shell/public/%.svg: icons/%.svg
 	@$(call color,color for dark background $<)
-	@sed -e 's/#000000/#CCCCCC/g' < $< > $@
+	@sed -e 's/#111111/#CCCCCC/g' < $< > $@
 
 shell/public/google-color.svg: icons/google.svg
 	@$(call color,color for dark background $<)

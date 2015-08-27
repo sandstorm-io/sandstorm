@@ -364,6 +364,11 @@ if (Meteor.isClient) {
     ifPlanAllowsCustomApps: ifPlanAllowsCustomApps
   };
 
+  function makeAccountSettingsUi() {
+    return new SandstormAccountSettingsUi(globalTopbar, globalDb,
+        window.location.protocol + "//" + makeWildcardHost("static"));
+  }
+
   Template.layout.helpers({
     adminAlertIsTooLarge: function () {
       Template.instance().resizeTracker.depend();
@@ -451,6 +456,9 @@ if (Meteor.isClient) {
     },
     firstLogin: function () {
       return isSignedUp() && !Meteor.loggingIn() && !Meteor.user().hasCompletedSignup;
+    },
+    accountSettingsUi: function () {
+      return makeAccountSettingsUi();
     }
   });
 
@@ -888,11 +896,14 @@ Router.map(function () {
     path: "/account",
 
     data: function () {
-      if (!Meteor.user() && !Meteor.loggingIn()) {
+      // Don't allow logged-out or demo users to visit the accounts page. There should be no way
+      // for them to get there except for typing the URL manually. In theory showing the accounts
+      // page to a demo user could make some sense for editing their profile, but we really do not
+      // want them signing up for subscription plans!
+      if ((!Meteor.user() && !Meteor.loggingIn()) || globalDb.isDemoUser()) {
         Router.go("root");
       } else {
-        return new SandstormAccountSettingsUi(globalTopbar, globalDb,
-            window.location.protocol + "//" + makeWildcardHost("static"));
+        return makeAccountSettingsUi();
       }
     }
   });

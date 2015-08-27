@@ -112,13 +112,6 @@ var submitProfileForm = function (event) {
     return;
   }
 
-  // Our "data" might be AccountsUi or it might be SandstormAccountSettingsUi.
-  // TODO(cleanup): That's terrible. Fix it.
-  var data = Template.instance().data;
-  if (data._editing) {
-    data._editing.set(null);
-  }
-
   Meteor.call("updateProfile", newProfile, function (err) {
     if (err) alert("Error updating profile: " + err.message);
   });
@@ -143,7 +136,8 @@ Template._accountProfileEditor.events({
   "click .picture button": function (event) {
     event.preventDefault();
 
-    var staticHost = Template.instance().data._staticHost;
+    var staticHost = Template.parentData(1)._staticHost;
+    if (!staticHost) throw new Error("missing _staticHost");
 
     // TODO(cleanup): Share code with "restore backup" and other upload buttons.
     var input = document.createElement("input");

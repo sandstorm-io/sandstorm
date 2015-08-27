@@ -80,6 +80,7 @@ IMAGES= \
     shell/public/settings-m.svg \
     shell/public/share-m.svg \
     shell/public/trash-m.svg \
+    shell/public/troubleshoot-m.svg \
                                   \
     shell/public/github-color.svg \
     shell/public/google-color.svg

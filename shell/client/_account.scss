@@ -74,9 +74,15 @@ body>.popup.account>.frame {
     }
     &.email {
       background-image: url("/email.svg");
+      &:hover {
+        background-image: url("/email-m.svg");
+      }
     }
     &.troubleshooting {
       background-image: url("/troubleshoot.svg");
+      &:hover {
+        background-image: url("/troubleshoot-m.svg");
+      }
     }
     &.devAccounts {
       background-image: url("/debug.svg");

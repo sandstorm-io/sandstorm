@@ -279,7 +279,11 @@ limitations under the License.
   <div class="tables-container">
     <h5>People</h5>
     {{#if transitiveShares.empty}}
-      <p> You have granted access to nobody. </p>
+      {{#if existingShareTokens}}
+        <p>No logged-in users have visited your links yet.</p>
+      {{else}}
+        <p>You have granted access to nobody.</p>
+      {{/if}}
     {{else}}
       <table class="people">
         {{#each transitiveShares}}

@@ -743,6 +743,7 @@ body>.popup {
       padding: 3px;
       width: 45%;
       text-align: center;
+      font-size: 14px; // Size must be the same on mobile and desktop for correct absolute position.
       top: -26px;
       background-position: 15px 2px, left;
       background-size: 20px, 20px;

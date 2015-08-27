@@ -145,6 +145,10 @@ limitations under the License.
   {{/with}}
 </template>
 
+<template name="invalidToken">
+   <pre> Invalid token: {{token}} </pre>
+</template>
+
 <template name="noLayout">
   {{!-- An empty layout for resource windows e.g. grainLog that we want to put reactive stuff in,
    but don't need the topbar and reload blocking and other fanciness that the layout gives --}}

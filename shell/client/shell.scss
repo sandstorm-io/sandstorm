@@ -439,28 +439,44 @@ div.popup h2 {
   transform: scaleX(-1);
 }
 
-#demo h2 {
+.demo-box {
+  width: 800px;
+  height: 500px;
+  margin: 64px auto;
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
   text-align: center;
-}
 
-#demo input {
-  width: 100%;
-  font-size: 60px;
-  text-align: center;
-}
-#demo button {
-  font-family: inherit;
-  background-color: #428bca;
+  h2 {
+    font-weight: normal;
+    font-size: 24pt;
+    margin: 64px 64px 1em;
+    >a {
+      font-weight: bold;
+      color: black;
+    }
+  }
+  p {
+    margin: 1em 56px;
+    font-size: 15pt;
+    >a {
+      font-weight: 600;
+      color: #65468e;
+    }
+  }
 
-  padding: 10px 16px;
-  font-size: 60px;
-  line-height: 1.33;
-  border-radius: 6px;
-  border: none;
-  color: white;
-  cursor: pointer;
-  width: 100%;
-  text-align: center;
+  button {
+    @extend %unstyled-button;
+    display: block;
+    width: 100%;
+    height: 100px;
+    background: linear-gradient(to right, black, #7f4b8c);
+    color: white;
+    font-size: 34pt;
+    cursor: pointer;
+    margin: 64px 0;
+  }
 }
 
 .devLogin {

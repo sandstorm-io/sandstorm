@@ -1037,41 +1037,23 @@ limitations under the License.
 <template name="drydemo">
   {{>title pageTitle}}
 
-  <div id="demo" class="centered-box">
-    <h2>Sandstorm Demo</h2>
+  <div class="demo-box">
     {{#if allowDemo}}
-      {{#if shouldShowStartDemo}}
-        {{#if loggingIn}}
-          <p>Logging in...</p>
-        {{else}}
-          <p><input id="demo-display-name" type="hidden" value="">
-             <button id="createDemoUser">{{ createDemoUserLabel }} »</button></p>
-        {{/if}}
+      {{#if appName}}
+        <h2><a href="https://sandstorm.io" target="_blank">Sandstorm</a> is an open source platform<br>for running apps like {{appName}}.</h2>
       {{else}}
-        {{#if isDemoUser}}
-          <p>You are currently logged in as a one-hour demo user.</p>
-          <p><button onclick="browseHome()">Continue the demo</button></p>
-        {{else}}
-          <p>You are already logged in as a real user.</p>
-        {{/if}}
+        <h2><a href="https://sandstorm.io" target="_blank">Sandstorm</a> is an open source platform<br>for personal instances of web apps.</h2>
       {{/if}}
 
-      <h3>What is this?</h3>
-      <p>Sandstorm is an open source hosting platform for personal instances of web apps. Users
-        can upload and install arbitrary software. In addition to improving privacy and control,
-        <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html">
-        this is the only way to make Open Source web apps viable.</a></p>
-      <p>Notes:</p>
-      <ul>
-        <li>Demo accounts last one hour.</li>
-        <li>Demo accounts can only install approved apps, but this
-          is an artificial limitation. Real users can upload
-          whatever code they want, as each app server runs in a
-          secure sandbox.</li>
-        <li>We only have one machine. It may get slow or crashy under excessive load.</li>
-        <li>We know the UI design needs work. This is a tech demo. ;)</li>
-        <li><a href="https://sandstorm.io">Read more at Sandstorm.io.</a></li>
-      </ul>
+      <button class="start">
+        {{#if appName}}
+          Try {{appName}} &#9654;
+        {{else}}
+          Try a quick demo &#9654;
+        {{/if}}
+      </button>
+
+      <p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and cotrol, <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html" target="_blank">this is the only way to make Open Source web apps viable.</a></p>
     {{else}}
       <p>Sorry, this server does not allow demo accounts.</p>
     {{/if}}

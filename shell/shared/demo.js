@@ -239,31 +239,32 @@ if (Meteor.isClient && allowDemo) {
   });
 
   Template.demo.events({
-    "click #createDemoUser": function (event) {
-      var displayName = document.getElementById("demo-display-name").value.trim();
-      if (displayName === "") {
-        displayName = "Demo User";
-      } else {
-        displayName += " (demo)";
+    "click button.start": function (event) {
+      var displayName = "Demo User";
+
+      var userCallbackFunction = function (err) {
+        if (err) {
+          window.alert(err);
+        } else {
+          localStorage.setItem("sandstormDemoLoginToken", Accounts._storedLoginToken());
+          Router.go("root");
+        }
       }
 
-      Accounts.callLoginMethod({
-        methodName: "createDemoUser",
-        methodArguments: [displayName, false],
-        userCallback: function (err) {
-          if (err) {
-            window.alert(err);
-          } else {
-            localStorage.setItem("sandstormDemoLoginToken", Accounts._storedLoginToken());
-            Router.go("root");
-          }
-        }
-      });
+      if (isSignedUpOrDemo()) {
+        userCallbackFunction();
+      } else {
+        Accounts.callLoginMethod({
+          methodName: "createDemoUser",
+          methodArguments: ["Demo User", false],
+          userCallback: userCallbackFunction
+        });
+      }
     }
   });
 
   Template.appdemo.events({
-    "click #createDemoUser": function (event) {
+    "click button.start": function (event) {
       // When clicking on the createDemoUser button on the app demo,
       // we want to:
       //
@@ -285,6 +286,8 @@ if (Meteor.isClient && allowDemo) {
         if (err) {
           window.alert(err);
         } else {
+          localStorage.setItem("sandstormDemoLoginToken", Accounts._storedLoginToken());
+
           // First, find the package ID, since that is what
           // addUserActions takes. Choose the package ID with
           // highest version number.
@@ -301,20 +304,13 @@ if (Meteor.isClient && allowDemo) {
         }
       }
 
-      if (Meteor.userId()) {
+      if (isSignedUpOrDemo()) {
         userCallbackFunction();
       } else {
         // 1. Create the Demo User & 2. Log the user in as this Demo User.
-        var displayName = document.getElementById("demo-display-name").value.trim();
-        if (displayName === "") {
-          displayName = "Demo User";
-        } else {
-          displayName += " (demo)";
-        }
-
         Accounts.callLoginMethod({
           methodName: "createDemoUser",
-          methodArguments: [displayName, true],
+          methodArguments: ["Demo User", true],
           userCallback: userCallbackFunction
         });
       }
@@ -331,9 +327,6 @@ Router.map(function () {
     data: function () {
       return {
         allowDemo: allowDemo,
-        // We show the Start the Demo button if you are not logged in.
-        shouldShowStartDemo: ! isSignedUpOrDemo(),
-        createDemoUserLabel: "Start the demo",
         pageTitle: "Demo",
         isDemoUser: isDemoUser()
       };
@@ -370,7 +363,7 @@ Router.map(function () {
         // demo a different app, we want them to experience the joy of
         // trying the second app.
         shouldShowStartDemo: true,
-        createDemoUserLabel: "Try " + appName,
+        appName: appName,
         pageTitle: appName + " Demo on Sandstorm",
         appId: this.params.appId,
         isDemoUser: isDemoUser()

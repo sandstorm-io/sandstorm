@@ -257,13 +257,15 @@ Router.map(function () {
     },
 
     data: function () {
+      if (!this.ready()) return;
+
       var packageId = this.params.packageId;
       var package = Packages.findOne(packageId);
       var userId = Meteor.userId();
       var packageUrl = this.params.query && this.params.query.url;
 
       if (!userId) {
-        if (allowDemo && this.ready() && isSafeDemoAppUrl(packageUrl)) {
+        if (allowDemo && isSafeDemoAppUrl(packageUrl)) {
           if (package && package.status === "ready") {
             Router.go("appdemo", {appId: package.appId}, {replaceState: true});
           } else {

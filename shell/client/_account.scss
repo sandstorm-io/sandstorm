@@ -604,7 +604,7 @@ form.account-profile-editor {
 
       input[type="text"], input[type="email"], select {
         display: block;
-        width: 300px;
+        max-width: 300px;
         float: right;
         box-sizing: border-box;
         font-size: inherit;

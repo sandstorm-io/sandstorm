@@ -78,6 +78,9 @@ GrainView.prototype.isOwner = function () {
 
 GrainView.prototype._isUsingAnonymously = function () {
   this._dep.depend();
+  if (this.isOldSharingModel()) {
+    return false;
+  }
   if (!Meteor.userId() && !this._token) {
     console.error("should never happen: anonymous, but no token either.");
   }
@@ -92,13 +95,13 @@ GrainView.prototype.size = function () {
 GrainView.prototype.title = function () {
   // Returns the user's name for this grain, not the browser tab title.
   // Three cases:
-  // 1) We own the grain.  Use the value from the Grains collection.
+  // 1) We own the grain or it is public. Use the value from the Grains collection.
   // 2) We own an ApiToken for the grain.  Use the value from the ApiTokens collection.
   // 3) We are using an ApiToken for the grain.  Use the transient value stored in this._title.
   this._dep.depend();
-  if (this.isOwner()) {
+  if (this.isOwner() || this.isOldSharingModel()) {
     // Case 1.
-    var grain = Grains.findOne({_id: this._grainId, userId: Meteor.userId()});
+    var grain = Grains.findOne({_id: this._grainId});
     return grain && grain.title;
   } else if (!this._isUsingAnonymously()) {
     // Case 2.
@@ -200,30 +203,8 @@ GrainView.prototype.sessionId = function () {
 }
 
 GrainView.prototype.setTitle = function (newTitle) {
-  // Three cases:
-  // 1) We own the grain.  Update the record in the Grains collection.
-  // 2) We own an ApiToken for the grain.  Update the user title in the ApiTokens collection.
-  // 3) We are anonymously using an ApiToken for the grain.  Update our in-memory title.
-  if (this.isOwner()) {
-    // Case 1
-    var grain = Grains.findOne({_id: this._grainId, userId: Meteor.userId()});
-    if (grain) {
-      // TODO(someday): remove the allow/deny rules and make this a Meteor method
-      Grains.update(this._grainId, {$set: {title: newTitle}});
-    }
-  } else if (!this._isUsingAnonymously()) {
-    // Case 2
-    var token = ApiTokens.findOne({grainId: this.grainId, objectId: {$exists: false},
-                                  "owner.user.userId": Meteor.userId()},
-                                  {sort:{created:1}});
-    if (token) {
-      // TODO(someday): remove the allow/deny rules and make this a Meteor method
-      ApiTokens.update(token._id, {$set: {"owner.user.title": newTitle}});
-    }
-  } else {
-    // Case 3
-    this._title = newTitle;
-  }
+  Meteor.call("updateGrainTitle", this._grainId, newTitle);
+  this._title = newTitle;
   this._dep.changed();
 }
 

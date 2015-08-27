@@ -129,7 +129,8 @@ img {
   left: 0;
   right: 0;
   bottom: 0px;
-  color: black;
+  color: $default-content-foreground-color;
+  background-color: $default-content-background-color;
   overflow: auto;
 
   @media #{$desktop} {
@@ -152,7 +153,7 @@ img {
 
 .centered-box {
   margin: 16px auto;
-  width: 600px;
+  max-width: 600px;
   font-size: 125%;
 }
 
@@ -473,7 +474,7 @@ ul.backer-list, ul.dev-list, ul.advisor-list {
 }
 
 ul.advisor-list {
-  width: 650px;
+  max-width: 650px;
   margin-left: -25px;
 }
 

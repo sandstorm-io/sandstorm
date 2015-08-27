@@ -5,6 +5,9 @@ var helpers = {
   isDemoUser: function () {
     return this._db.isDemoUser();
   },
+  isAdmin: function () {
+    return this._db.isAdmin();
+  },
   demoTimeLeft: function () {
     var ms = Meteor.user().expires.getTime() - Date.now();
     var sec = Math.floor(ms / 1000) % 60;
@@ -30,6 +33,7 @@ var helpers = {
 Template.loginButtons.helpers(helpers);
 Template.loginButtonsPopup.helpers(helpers);
 Template._loginButtonsLoggedOutDropdown.helpers(helpers);
+Template._loginButtonsLoggedInDropdown.helpers(helpers);
 
 Template.loginButtonsPopup.events({
   'click button.login.logout': function() {

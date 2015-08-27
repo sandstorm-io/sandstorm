@@ -1,8 +1,11 @@
 .grainlog-title {
   font-size: 14pt;
+  color: #ccc;
+  background-color: black;
   line-height: 32px;
 }
-#grainLog {
+.grainlog-contents {
+  max-height: calc(100% - 32px);
   overflow: auto;
   >pre {
     margin: 8px;

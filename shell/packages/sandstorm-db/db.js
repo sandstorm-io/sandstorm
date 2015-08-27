@@ -708,6 +708,23 @@ _.extend(SandstormDb.prototype, {
     return user && Plans.findOne(user.plan || "free");
   },
 
+  getMyUsage: function (user) {
+    user = user || Meteor.user();
+    if (user) {
+      if (Meteor.isClient) {
+        return user.pseudoUsage;  // filled by pseudo-subscription to "getMyUsage"
+      } else {
+        return {
+          grains: Grains.find({userId: user._id}).count(),
+          storage: user.storageUsage || 0,
+          compute: 0   // not tracked yet
+        };
+      }
+    } else {
+      return {grains: 0, storage: 0, compute: 0};
+    }
+  },
+
   isUninvitedFreeUser: function () {
     if (!Meteor.settings.public.allowUninvited) return false;
 

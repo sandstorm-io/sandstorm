@@ -21,3 +21,12 @@ Meteor.users.deny({
   remove: function () { return true; },
   fetch: []
 });
+
+Meteor.publish("getMyUsage", function () {
+  if (this.userId) {
+    // TODO(someday): Make this reactive.
+    var usage = this.connection.sandstormDb.getMyUsage(Meteor.users.findOne(this.userId));
+    this.added("users", this.userId, {pseudoUsage: usage});
+    this.ready();
+  }
+});

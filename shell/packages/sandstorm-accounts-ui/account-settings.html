@@ -22,35 +22,22 @@ limitations under the License.
     Account Settings
   {{/sandstormTopbarItem}}
 
-  <section class="profile">
-    <h2>Your profile</h2>
+  <h1>My Account</h1>
 
-    <ul class="identities">
-      {{#each identities}}
-        {{#if editing}}
-          <li class="edit">
-            <form class="account-profile-editor"><ul>
-              {{>_accountProfileEditor}}
-              <li class="save"><button>Save</button><button class="cancel">Cancel</button></li>
-            </ul></form>
-          </li>
-        {{else}}
-          <li class="display {{service}}"><ul>
-            <li class="name"><span class="label">Name:</span> {{name}}</li>
-            {{#if handle}}<li class="handle"><span class="label">Handle:</span> @{{handle}}</li>{{/if}}
-            <li class="picture"><span class="label">Picture:</span> <img src="{{picture}}"></li>
-            <li class="pronoun">
-              <span class="label">Pronoun:</span>
-              {{#if isMale}}he/him (male){{/if}}
-              {{#if isFemale}}she/her (female){{/if}}
-              {{#if isNeutral}}they (ambiguous){{/if}}
-              {{#if isRobot}}it (robot){{/if}}
-            </li>
-            <li class="edit"><button>Edit</button></li>
-          </ul></li>
-        {{/if}}
-      {{/each}}
-    </ul>
+  <section class="profile">
+    {{#each identities}}
+      <form class="account-profile-editor">
+        <h3>Profile</h3>
+        <ul>
+          {{>_accountProfileEditor}}
+          <li class="save"><button disabled="{{profileSaved}}">Save</button></li>
+        </ul>
+      </form>
+    {{/each}}
+
+    {{#if isPaymentsEnabled}}
+      {{> billingUsage db=db topbar=_topbar}}
+    {{/if}}
   </section>
 
   {{#if isPaymentsEnabled}}

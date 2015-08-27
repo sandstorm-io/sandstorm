@@ -333,155 +333,29 @@ body>.popup.account>.frame {
 
 body>.main-content>.account {
   text-align: left;
+  padding: 32px;
 
   >* {
     margin: 16px 24px;
   }
 
-  >.profile>.identities {
-    padding: 0;
-    padding-left: 16px;
+  h1, h2, h3 {
+    text-align: left;
+    border-bottom: 1px solid #6d6d6d;
+    font-weight: normal;
+  }
 
-    >li {
-      display: inline-block;
-      box-sizing: border-box;
-      width: 344px;
-      height: 80px;
-      padding: 8px 8px 8px 80px;
-      list-style-type: none;
-      text-align: left;
+  h1 {
+    font-size: 25pt;
+    padding-bottom: 8px;
+  }
 
-      border: 1px solid #aaa;
-      box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
-
-      &:hover {
-        background-color: #eee;
-      }
-    }
-
-    >.display {
-      position: relative;
-
-      background-position: right 8px top 8px;
-      background-repeat: no-repeat;
-
-      &.google { @extend %google-icon; }
-      &.github { @extend %github-icon; }
-
-      >ul {
-        padding: 0;
-
-        >li {
-          list-style-type: none;
-
-          >.label {
-            display: none;
-          }
-        }
-
-        >.handle {
-          font-family: monospace;
-        }
-
-        >.picture {
-          position: absolute;
-          left: 8px;
-          top: 8px;
-          width: 64px;
-          height: 64px;
-
-          >img {
-            display: block;
-            max-width: 100%;
-            max-height: 100%;
-            margin: auto;
-          }
-        }
-
-        >.pronoun {
-          font-size: 70%;
-          line-height: 20px;
-
-          >.label {
-            display: inline;
-          }
-        }
-
-        >.edit {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-
-          >button {
-            @extend %unstyled-button;
-            display: block;
-            width: 100%;
-            height: 100%;
-            color: transparent;
-            cursor: pointer;
-          }
-        }
-      }
-    }
-
-    >.edit {
-      >form {
-        position: absolute;
-        z-index: 4;
-        left: 40px;
-        top: 64px;
-      }
-    }
-
-    >.add {
-      background-color: transparent;
-      box-shadow: none;
-      border-width: 2px;
-      border-style: dashed;
-      border-top: none;
-      line-height: 64px;
-      text-align: center;
-      padding: 0;
-      position: relative;
-
-      >button {
-        @extend %unstyled-button;
-        display: block;
-        width: 100%;
-        height: 100%;
-        color: #888;
-        cursor: pointer;
-        position: relative;
-        z-index: 1;
-      }
-
-      &::before {
-        content: "+";
-        display: block;
-        position: absolute;
-        top: 4px;
-        left: 4px;
-        width: 64px;
-        height: 64px;
-        font-size: 72px;
-        line-height: 64px;
-        color: #888;
-        font-weight: bold;
-      }
-    }
+  h3 {
+    font-size: 20pt;
+    margin: 0.5em 0;
   }
 
   section {
-    >h2 {
-      text-align: left;
-      border-bottom: 1px solid #aaa;
-      text-transform: uppercase;
-      font-weight: bold;
-      margin-right: 48px;
-    }
-
     >.balance {
       margin-left: 16px;
       box-sizing: border-box;
@@ -510,13 +384,9 @@ body>.main-content>.account {
 
       >thead {
         td {
-          border-right: 1px solid white;
+          border-right: 1px solid $default-content-background-color;
           background-color: #ccc;
           padding-left: 10px;
-        }
-        td:first-child {
-          background-color: white;
-          padding-left: 0;
         }
       }
 
@@ -537,54 +407,160 @@ body>.main-content>.account {
       }
 
       >tbody {
-        >tr>td {
-          padding: 16px;
+        background-color: white;
+        >tr {
+          border-bottom: 1px solid #ccc;
+          >td {
+            padding: 16px;
 
-          >button {
-            background-color: transparent;
-            border: 1px solid #ccc;
-            color: #5d5d5d;
-            cursor: pointer;
+            >button {
+              background-color: transparent;
+              border: 1px solid #a199ad;
+              color: #5d5d5d;
+              cursor: pointer;
+              text-transform: uppercase;
+              border-radius: 2px;
+
+              &:hover {
+                color: #65468e;
+                background-color: #e6e1f4;
+              }
+            }
+
+            &.add-new-card {
+              >button {
+                font-size: 16px;
+                font-weight: bold;
+                border-color: #6d6d6d;
+                color: #6d6d6d;
+
+                &:hover {
+                  background-color: white;
+                }
+              }
+
+              >span {
+                margin-left: 16px;
+              }
+            }
+            &.checkbox {
+              text-align: right;
+              text-transform: uppercase;
+              font-size: 10pt;
+              >label {
+                font-size: 0;
+                position: relative;
+                display: inline-block;
+                vertical-align: top;
+                width: 16px;
+                height: 16px;
+                margin-left: 16px;
+                border: 1px solid #aaa;
+                cursor: pointer;
+                border-radius: 2px;
+                >input {
+                  visibility: hidden;
+                }
+                &.selected {
+                  background: #aaa;
+                  cursor: initial;
+                }
+              }
+            }
+          }
+        }
+
+        >tr:last-child {
+          background-color: $default-content-background-color;
+          border-bottom: none;
+        }
+      }
+    }
+
+    &.profile {
+      form, div.usage {
+        display: inline-block;
+        vertical-align: top;
+      }
+
+      div.usage {
+        width: 400px;
+        margin-left: 50px;
+
+        tr {
+          height: 64px;
+        }
+        td {
+          vertical-align: top;
+        }
+
+        span.grain-count {
+          border: 1px solid #b2b2b2;
+          background-color: white;
+          padding: 2px 8px;
+          color: #6d6d6d;
+          border-radius: 2px;
+
+          .used {
+            color: #65468e;
+          }
+          .total {
             text-transform: uppercase;
-            border-radius: 2px;
+          }
+        }
+
+        div.used, div.total {
+          font-size: 90%;
+          color: #6d6d6d;
+
+          .amount {
+            color: #191919;
+          }
+        }
+
+        div.used { float: left; }
+        div.total { float: right; }
+
+        div.progress-bar {
+          height: 12px;
+          width: 300px;
+          background-color: white;
+          border: 1px solid #b2b2b2;
+          margin: 4px 0;
+
+          >div {
+            height: 100%;
+            background-color: #65468e;
+          }
+        }
+
+        hr {
+          border: none;
+          border-bottom: 1px solid #6d6d6d;
+        }
+
+        >p {
+          color: #6d6d6d;
+          font-size: 90%;
+
+          .plan-name {
+            text-transform: uppercase;
+            color: #191919;
+          }
+
+          button.change-plan {
+            @extend %unstyled-button;
+            float: right;
+            font-size: 16px;
+            border: 1px solid #9e9e9e;
+            color: #5d5d5d;
+            border-radius: 3px;
+            padding: 4px 8px;
+            text-transform: uppercase;
 
             &:hover {
-              background-color: #eee;
-            }
-          }
-
-          &.add-new-card {
-            >button {
-              font-size: 16px;
-              font-weight: bold;
-            }
-
-            >span {
-              margin-left: 16px;
-            }
-          }
-          &.checkbox {
-            text-align: right;
-            text-transform: uppercase;
-            font-size: 10pt;
-            >label {
-              font-size: 0;
-              position: relative;
-              display: inline-block;
-              vertical-align: top;
-              width: 16px;
-              height: 16px;
-              margin-left: 16px;
-              border: 1px solid #aaa;
+              background-color: white;
               cursor: pointer;
-              border-radius: 2px;
-              >input {
-                visibility: hidden;
-              }
-              &.selected {
-                background: #aaa;
-                cursor: initial;
-              }
             }
           }
         }
@@ -604,11 +580,10 @@ body>.main-content>.account {
 }
 
 form.account-profile-editor {
-  width: 600px;
+  width: 500px;
   height: auto;
   background-color: white;
-  border: 1px solid #ccc;
-  box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+  padding: 0 16px;
 
   >ul {
     padding: 8px;
@@ -626,7 +601,7 @@ form.account-profile-editor {
 
       input[type="text"], input[type="email"], select {
         display: block;
-        width: 400px;
+        width: 300px;
         float: right;
         box-sizing: border-box;
         font-size: inherit;
@@ -666,7 +641,7 @@ form.account-profile-editor {
           padding: 0;
           width: 256px;
           height: 256px;
-          margin-right: 144px;
+          margin-right: 44px;
           margin-left: 8px;
           position: relative;
           background-color: transparent;

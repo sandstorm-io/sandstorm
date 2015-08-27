@@ -1261,7 +1261,7 @@ Router.map(function () {
     path: "/grain/new",
     data: function () {
       if (!Meteor.userId() && !Meteor.loggingIn()) {
-        Router.go("root");
+        Router.go("root", {}, {replaceState: true});
       }
 
       return new SandstormAppList(globalDb, globalQuotaEnforcer);
@@ -1271,7 +1271,7 @@ Router.map(function () {
     path: "/grain",
     data: function () {
       if (!Meteor.userId() && !Meteor.loggingIn()) {
-        Router.go("root");
+        Router.go("root", {}, {replaceState: true});
       }
 
       return new SandstormGrainList(globalDb, globalQuotaEnforcer);

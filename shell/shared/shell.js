@@ -819,7 +819,7 @@ Router.map(function () {
     },
     data: function () {
       if (Meteor.userId()) {
-        Router.go("selectGrain");
+        Router.go("selectGrain", {}, {replaceState: true});
       }
 
       return {
@@ -901,7 +901,7 @@ Router.map(function () {
       // page to a demo user could make some sense for editing their profile, but we really do not
       // want them signing up for subscription plans!
       if ((!Meteor.user() && !Meteor.loggingIn()) || globalDb.isDemoUser()) {
-        Router.go("root");
+        Router.go("root", {}, {replaceState: true});
       } else {
         return makeAccountSettingsUi();
       }

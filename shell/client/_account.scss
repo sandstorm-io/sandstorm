@@ -339,20 +339,19 @@ body>.main-content>.account {
     margin: 16px 24px;
   }
 
-  h1, h2, h3 {
+  h2, h3 {
     text-align: left;
     border-bottom: 1px solid #6d6d6d;
     font-weight: normal;
   }
 
-  h1 {
+  h2 {
     font-size: 25pt;
     padding-bottom: 8px;
   }
 
   h3 {
     font-size: 20pt;
-    margin: 0.5em 0;
   }
 
   section {
@@ -481,6 +480,10 @@ body>.main-content>.account {
       form, div.usage {
         display: inline-block;
         vertical-align: top;
+
+        h3 {
+          margin: 0.5em 0;
+        }
       }
 
       div.usage {

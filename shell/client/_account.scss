@@ -726,15 +726,26 @@ body>.popup.billing-prompt>.frame {
   @media #{$mobile} {
     max-width: 500px;
   }
-
-  >p.reason {
-    margin: 16px;
-    font-weight: bold;
-  }
 }
 
-body>.popup.billing-prompt>.frame, body>.main-content>.account>section.subscription {
-  h3 { text-align: left; }
+body>.popup.billing-prompt>.frame {
+  >h2 {
+    text-align: center;
+    margin-top: 64px;
+    color: #191919;
+    font-size: 24pt;
+    font-weight: normal;
+  }
+
+  >p {
+    text-align: center;
+    color: #494949;
+    font-size: 17pt;
+
+    >a {
+      color: inherit;
+    }
+  }
 
   >.subscriptions {
     max-width: 900px;
@@ -745,7 +756,6 @@ body>.popup.billing-prompt>.frame, body>.main-content>.account>section.subscript
 
     >.subscription {
       display: inline-block;
-      height: 190px;
       width: 180px;
       margin: 4px;
       padding: 0px;
@@ -753,8 +763,6 @@ body>.popup.billing-prompt>.frame, body>.main-content>.account>section.subscript
       text-align: center;
 
       &.selected {
-        cursor: auto;
-
         td {
           background-color: #efefef;
           color: #494949;
@@ -771,7 +779,6 @@ body>.popup.billing-prompt>.frame, body>.main-content>.account>section.subscript
               background: inherit;
               color: #494949;
               border: 1px solid #9e9e9e;
-              cursor: auto;
             }
           }
         }
@@ -873,6 +880,77 @@ body>.popup.billing-prompt>.frame, body>.main-content>.account>section.subscript
             border-radius: 4px;
           }
         }
+      }
+    }
+  }
+
+  >.faq {
+    margin: 0;
+    padding: 16px 0 32px;
+    background-color: #efefef;
+    color: #494949;
+    text-align: left;
+
+    >h3 {
+      margin: 0 32px 24px;
+      font-weight: normal;
+      font-size: 20pt;
+      border-bottom: 1px solid #c1c1c1;
+    }
+
+    .answer {
+      display: inline-block;
+      width: 400px;
+      margin: 0 32px;
+      vertical-align: top;
+
+      >h4 {
+        margin: 0 0 16px;
+        font-size: 14pt;
+        font-weight: normal;
+      }
+
+      >p {
+        font-size: 10pt;
+        font-weight: 300;
+
+        >a {
+          text-decoration: none;
+          font-weight: 600;
+          color: inherit;
+          &:hover {
+            color: #65468e;
+          }
+        }
+      }
+
+      &:last-of-type {
+        // Hacky space for "contact support" button.
+        padding-bottom: 40px;
+      }
+    }
+
+    >a.button {
+      text-decoration: none;
+      display: block;
+      margin: -32px 64px 0;
+      float: right;
+      border: 1px solid #b7b7b7;
+      padding: 8px 8px 8px 32px;
+      background-image: url("/email-494949.svg");
+      background-repeat: no-repeat;
+      background-position: 8px center;
+      background-size: 16px 16px;
+      color: #494949;
+      border-radius: 2px;
+      text-transform: uppercase;
+      font-size: 10pt;
+      position: relative;
+      z-index: 10;
+
+      &:hover {
+        background-color: white;
+        cursor: pointer;
       }
     }
   }

@@ -83,7 +83,8 @@ IMAGES= \
     shell/public/troubleshoot-m.svg \
                                   \
     shell/public/github-color.svg \
-    shell/public/google-color.svg
+    shell/public/google-color.svg \
+    shell/public/email-494949.svg
 
 # ====================================================================
 # Meta rules
@@ -211,11 +212,15 @@ shell/public/%.svg: icons/%.svg
 	@sed -e 's/#111111/#CCCCCC/g' < $< > $@
 
 shell/public/google-color.svg: icons/google.svg
-	@$(call color,color for dark background $<)
+	@$(call color,custom color $<)
 	@sed -e 's/#111111/#a53232/g' < $< > $@
 shell/public/github-color.svg: icons/github.svg
-	@$(call color,color for dark background $<)
+	@$(call color,custom color $<)
 	@sed -e 's/#111111/#191919/g' < $< > $@
+
+shell/public/email-494949.svg: icons/email.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#494949/g' < $< > $@
 
 shell/public/%-m.svg: icons/%.svg
 	@$(call color,color for light background $<)

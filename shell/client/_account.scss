@@ -592,7 +592,8 @@ body>.main-content>.account {
   }
 }
 
-#first-sign-in.main-content {
+.first-sign-in-main-content {
+  z-index: 1;
   h1 {
     text-align: center;
   }

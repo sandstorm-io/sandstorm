@@ -1,7 +1,7 @@
 @media #{$mobile} {
   // Only show the menu button on mobile
   body>.menu-button {
-    background-color: black;
+    background-color: $topbar-background-color;
     display: inline-block;
     vertical-align: top;
     background-image:url(/menu.svg);
@@ -20,7 +20,7 @@
     z-index: 1000;
   }
   body>.menu-button:hover {
-    background-color: #666;
+    background-color: $topbar-background-color-hover;
   }
 }
 
@@ -133,7 +133,7 @@ body>.topbar {
       height: 48px;
 
       &:hover {
-        background-color: #888;
+        background-color: $topbar-background-color-hover;
       }
 
       &:focus {
@@ -144,6 +144,10 @@ body>.topbar {
 
   %hamburger-menu-item {
     // Common styling for topbar items that are displayed as a hamburger menu item on mobile.
+    box-sizing: border-box;
+    @media #{$desktop} {
+      height: $topbar-height-desktop;
+    }
 
     @media #{$mobile} {
       display: block;
@@ -155,12 +159,12 @@ body>.topbar {
       text-align: left;
       padding-left: 48px;
       font-size: 14pt;
-      height: 48px;
+      height: $topbar-height-mobile;
       font-weight: normal;
       text-decoration: none;
 
       &:hover {
-        background-color: white;
+        background-color: $topbar-background-color-hover;
       }
     }
   }
@@ -189,14 +193,21 @@ body>.topbar {
   >.menubar {
     padding-left: 0;
     margin-left: 0;
+    box-sizing: border-box;
     border-bottom: 1px solid $topbar-border-color;
     overflow: hidden;
+    @media #{$desktop} {
+      height: $topbar-height-desktop;
+    }
 
     >.toggle-navbar {
       >button {
         @extend %unstyled-button;
         @extend %hamburger-menu-item;
         margin: 0px;
+        @media #{$desktop} {
+          height: $topbar-height-desktop;
+        }
       }
 
       @media #{$desktop} {
@@ -258,8 +269,8 @@ body>.topbar {
       }
 
       @media #{$mobile} {
-        background-color: black;
-        color: #ccc;
+        background-color: $topbar-background-color;
+        color: $topbar-foreground-color;
         padding-left: 60px;
         font-size: 120%;
       }
@@ -275,27 +286,17 @@ body>.topbar {
       @extend %topbar-button;
       @extend %hamburger-menu-item;
 
+      background-image: url("/share.svg");
+      background-position: left;
+      background-repeat: no-repeat;
+
       @media #{$desktop} {
-        background-image: url("/share.svg");
-        background-position: left;
-        background-repeat: no-repeat;
-        border-radius: 4px;
-        background-color: #428bca;
-        color: white;
         padding-left: 26px;
         padding-right: 4px;
         height: 28px;
         line-height: 28px;
         font-size: 12pt;
         margin-top: 2px;
-
-        &:hover {
-          background-color: #428bca;
-        }
-      }
-
-      @media #{$mobile} {
-        background-image: url("/share-m.svg");
       }
     }
 
@@ -304,21 +305,12 @@ body>.topbar {
       @extend %icon-button;
       @extend %hamburger-menu-item;
     }
-    @media #{$desktop} {
-      >.delete>button    { background-image: url("/trash.svg"); }
-      >.debug-log>button { background-image: url("/debug.svg"); }
-      >.backup>button    { background-image: url("/download.svg"); }
-      >.restart>button   { background-image: url("/restart.svg"); }
-      >.webkey>button    { background-image: url("/key.svg"); }
-      >.who-has-access img { width: 20px; }
-    }
-    @media #{$mobile} {
-      >.delete>button    { background-image: url("/trash-m.svg"); }
-      >.debug-log>button { background-image: url("/debug-m.svg"); }
-      >.backup>button    { background-image: url("/download-m.svg"); }
-      >.restart>button   { background-image: url("/restart-m.svg"); }
-      >.webkey>button    { background-image: url("/key-m.svg"); }
-    }
+    >.delete>button    { background-image: url("/trash.svg"); }
+    >.debug-log>button { background-image: url("/debug.svg"); }
+    >.backup>button    { background-image: url("/download.svg"); }
+    >.restart>button   { background-image: url("/restart.svg"); }
+    >.webkey>button    { background-image: url("/key.svg"); }
+    >.who-has-access img { width: 20px; }
 
     >.admin-alert {
       @media #{$desktop} {
@@ -441,7 +433,6 @@ body>.topbar {
         display: none !important;
       }
     }
-    //display: static;
     @media #{$desktop} {
       position: fixed;
       top: $topbar-height-desktop;

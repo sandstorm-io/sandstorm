@@ -588,7 +588,7 @@ body>.main-content>.account {
 }
 
 form.account-profile-editor {
-  width: 500px;
+  max-width: 500px;
   height: auto;
   background-color: white;
   padding: 0 16px;
@@ -609,7 +609,7 @@ form.account-profile-editor {
 
       input[type="text"], input[type="email"], select {
         display: block;
-        width: 300px;
+        max-width: 300px;
         float: right;
         box-sizing: border-box;
         font-size: inherit;

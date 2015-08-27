@@ -8,7 +8,7 @@ Use Sandstorm to install apps to create [documents](http://etherpad.org/),
 and [more](https://sandstorm.io/apps/) as easily as you'd install apps on your
 phone.
 
-Sandstorm is open source and can be installed on any x64-64 Linux
+Sandstorm is open source and can be installed on any x86-64 Linux
 system.
 
 * Read more at: https://sandstorm.io/

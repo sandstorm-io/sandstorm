@@ -80,6 +80,14 @@ Template.sandstormGrainList.helpers({
   filteredSortedGrains: filteredSortedGrains,
   searchText: function() {
     return Template.instance().data._filter.get();
+  },
+  myGrainsCount: function () {
+    return Template.instance().data._db.currentUserGrains({}, {}).count();
+  },
+  myGrainsSize: function () {
+    // TODO(cleanup): extract prettySize and other similar helpers from globals into a package
+    // TODO(cleanup): access Meteor.user() through db object
+    return prettySize(Meteor.user().storageUsage);
   }
 });
 Template.sandstormGrainList.onCreated(function () {

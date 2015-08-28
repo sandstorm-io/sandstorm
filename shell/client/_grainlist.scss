@@ -8,7 +8,9 @@
     font-weight: 400;
   }
   >.search-row {
-    width: 100%;
+    float: left;
+    display: block;
+    padding: 4px;
     margin-bottom: 36px;
     >img.search-icon {
       width: 24px;
@@ -16,6 +18,10 @@
       margin: 4px;
     }
     >input.search-bar {
+      margin-left: 4px;
+      margin-top: 4px;
+      margin-right: 0px;
+      margin-bottom: 4px;
       font-size: 16pt;
       background-color: $grainlist-searchbar-background-color;
       border: .5px solid $grainlist-searchbar-outline-color;
@@ -23,6 +29,14 @@
         border: .5px solid $grainlist-searchbar-outline-color-focus;
       }
     }
+  }
+  >.light-box {
+    float: right;
+    display: inline-block;
+    margin: 4px;
+    padding: 8px;
+    border-radius: 4px;
+    background-color: white;
   }
   >table {
     width: 100%;

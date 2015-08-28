@@ -55,7 +55,8 @@
       >td {
         cursor: pointer;
         &.td-app-icon {
-          >img.app-icon {
+          >.app-icon {
+            @extend %pseudo-img-tag;
             width: 24px;
             height: 24px;
           }

@@ -19,7 +19,7 @@
       <tbody>
         {{#each filteredSortedGrains}}
         <tr class="grain" data-grainid="{{ _id }}">
-          <td class="td-app-icon"><img class="app-icon" src="{{ iconSrc }}" title="{{appTitle}}"></td>
+          <td class="td-app-icon"><div class="app-icon" title="{{appTitle}}" style="background-image: url('{{ iconSrc }}');"></div></td>
           <td class="grain-name"><a href="{{ pathFor route='grain' grainId=_id }}">{{title}}</a></td>
           <td>{{dateString lastUsed}}</td>
           {{!-- Collaborators, size TODO

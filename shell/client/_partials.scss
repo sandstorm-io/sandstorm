@@ -28,3 +28,14 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+%pseudo-img-tag {
+  // Use this, and background-image: url();, when you want to
+  // create a DIV that feels like an IMG tag.
+  //
+  // Generally, we do this to allow Internet Explorer to show
+  // user-created SVG images (e.g., app icons) rescaled to
+  // the size of the (pseudo) IMG tag.
+  background-size: cover;
+  background-repeat: no-repeat;
+}

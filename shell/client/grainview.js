@@ -18,6 +18,7 @@ GrainView = function GrainView(grainId, path, query, hash, token, parentElement)
 
   this._grainId = grainId;
   this._originalPath = path;
+  this._path = this._originalPath;
   this._originalQuery = query;
   this._originalHash = hash;
   this._token = token;
@@ -208,6 +209,14 @@ GrainView.prototype.setTitle = function (newTitle) {
   this._dep.changed();
 }
 
+GrainView.prototype.setPath = function (newPath) {
+  this._path = newPath;
+  if (this.isActive()) {
+    window.history.replaceState({}, "", this.route());
+  }
+  this._dep.changed();
+}
+
 GrainView.prototype.depend = function () {
   this._dep.depend();
 }
@@ -326,14 +335,14 @@ GrainView.prototype._openApiTokenSession = function () {
         self._dep.changed();
         // Make sure to carry over any within-grain path.
         var routeParams = { grainId: result.redirectToGrain };
-        if (self._path) {
+        if (self._originalPath) {
           routeParams.path = self._originalPath;
         }
         var urlParams = {};
-        if (self._query) {
+        if (self._originalQuery) {
           urlParams.query = self._originalQuery;
         }
-        if (self._hash) {
+        if (self._originalHash) {
           urlParams.hash = self._originalHash;
         }
         // We should remove this tab from the tab list, since the /grain/<grainId> route
@@ -401,9 +410,9 @@ GrainView.prototype.sessionStatus = function () {
 GrainView.prototype.route = function () {
   this._dep.depend();
   if (this._token) {
-    return "/shared/" + this._token;
+    return "/shared/" + this._token + this._path;
   } else {
-    return "/grain/" + this._grainId;
+    return "/grain/" + this._grainId + this._path;
   }
 }
 

@@ -461,7 +461,8 @@ if (Meteor.isClient) {
       return globalAccountsUi;
     },
     firstLogin: function () {
-      return isSignedUp() && !Meteor.loggingIn() && !Meteor.user().hasCompletedSignup;
+      return credentialsSubscription.ready() && isSignedUp() && !Meteor.loggingIn()
+          && !Meteor.user().hasCompletedSignup;
     },
     accountSettingsUi: function () {
       return makeAccountSettingsUi();
@@ -480,7 +481,7 @@ if (Meteor.isClient) {
     }
   });
 
-  Meteor.subscribe("credentials");
+  credentialsSubscription = Meteor.subscribe("credentials");
 
   makeDateString = function (date) {
     // Note: this is also used by grain.js.

@@ -771,6 +771,30 @@ body>.popup.billing-prompt>.frame {
     }
   }
 
+  >p.success-note {
+    background-color: #cff4c6;
+    padding: 32px;
+    display: table;
+    margin: 1em auto;
+
+    >strong {
+      text-transform: capitalize;
+    }
+  }
+
+  >button.continue {
+    @extend %unstyled-button;
+
+    display: table;
+    margin: 16px auto 64px;
+    padding: 8px 16px;
+    background-color: #783189;
+    text-transform: uppercase;
+    color: white;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
   >.subscriptions {
     max-width: 900px;
     font-size: 11px;

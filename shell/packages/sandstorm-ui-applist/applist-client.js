@@ -143,6 +143,9 @@ Template.sandstormAppList.helpers({
   },
   origin: function() {
     return document.location.protocol + "//" + document.location.host;
+  },
+  isSignedUpOrDemo: function() {
+    return this._db.isSignedUpOrDemo();
   }
 });
 Template.sandstormAppList.events({

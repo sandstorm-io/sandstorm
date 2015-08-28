@@ -164,3 +164,13 @@
     }
   }
 }
+
+.main-content>.not-signed-up {
+  max-width: 300px;
+  background-color: white;
+  margin: 32px auto;
+  padding: 16px;
+  border-radius: 4px;
+  h1 { margin-top: 0; }
+  p { margin-bottom: 0; }
+}

@@ -1,4 +1,5 @@
 <template name="sandstormAppList">
+  {{#if isSignedUpOrDemo}}
   <div class="app-list">
     <h1>Apps</h1>
     <div class="search-row {{#unless actionsCount}}hide{{/unless}}">
@@ -46,4 +47,11 @@
     </button>
     {{/each}}
   </div>
+  {{else}}
+    <div class="not-signed-up">
+      <h1>Unauthorized! :(</h1>
+      <p>This is a private Sandstorm server. In order to install apps, you need to be invited
+        by the admin. The admin can create invites in the admin settings panel.</p>
+    </div>
+  {{/if}}
 </template>

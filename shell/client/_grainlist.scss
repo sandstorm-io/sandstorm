@@ -91,4 +91,14 @@
       }
     }
   }
+  >.no-grains {
+    width: 100%;
+    background-color: white;
+    overflow: hidden;  // don't let margins escape box
+    >p {
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
 }

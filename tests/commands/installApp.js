@@ -34,7 +34,7 @@ exports.command = function(url, packageId, appId, dontStartGrain, callback) {
 
   if (!dontStartGrain) {
     ret = ret
-      .click('.app-action[data-app-id="' + appId + '"]')
+      .click('.app-list>.app-action[data-app-id="' + appId + '"]')
       .waitForElementVisible("#grainTitle", medium_wait);
   }
 

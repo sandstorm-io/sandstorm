@@ -735,16 +735,14 @@ form.account-profile-editor {
   top: 32px;
   left: 0px;
   z-index: 10000000;
+  opacity: 1;
 }
 
 body>.main-content>.account,
 body>.popup {
   .mobile-iframe-hack {
     border: 0px;
-
-    @media #{$desktop} {
-      display: none;
-    }
+    opacity: .01;
 
     &.fullscreen {
       @extend %fullscreen-iframe-hack;

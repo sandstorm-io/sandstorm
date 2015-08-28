@@ -439,7 +439,14 @@ body>.main-content>.account {
             }
 
             &.add-new-card {
+              position: relative;
+
+              &.iframe-active {
+                position: static;
+              }
+
               >button {
+                padding: 2px 4px;
                 font-size: 16px;
                 font-weight: bold;
                 border-color: #6d6d6d;
@@ -452,6 +459,14 @@ body>.main-content>.account {
 
               >span {
                 margin-left: 16px;
+              }
+              >.mobile-iframe-hack {
+                position: absolute;
+                height: 24px;
+                width: 24px;
+                &.fullscreen {
+                  @extend %fullscreen-iframe-hack;
+                }
               }
             }
             &.checkbox {
@@ -711,33 +726,34 @@ form.account-profile-editor {
   }
 }
 
+%fullscreen-iframe-hack {
+  display: initial;
+  width: 100%;
+  height: 100%;
+  position: fixed;
+  top: 32px;
+  left: 0px;
+  z-index: 10000000;
+}
+
 body>.main-content>.account,
 body>.popup {
   .mobile-iframe-hack {
-    display: none;
-
-    // TODO(soon): mobile
-    // position: absolute;
-    // width: 60px;
-    // height: 20px;
-    // z-index: 1;
-    // border: 0px;
-  }
-
-  .mobile-iframe-hack.fullscreen {
-    display: initial;
-    width: 100%;
-    height: 100%;
-    position: fixed;
-    top: 32px;
-    left: 0px;
-    z-index: 10000000;
     border: 0px;
+
+    @media #{$desktop} {
+      display: none;
+    }
+
+    &.fullscreen {
+      @extend %fullscreen-iframe-hack;
+    }
   }
 }
 
 body>.popup.billing-prompt>.frame {
   text-align: center;
+  height: 100%;
 
   @media #{$desktop} {
     width: 932px;
@@ -752,10 +768,14 @@ body>.popup.billing-prompt>.frame {
   }
 }
 
-body>.popup.billing-prompt>.frame {
+body>.popup.billing-prompt>.frame>.scroll-box {
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+
   >h2 {
     text-align: center;
-    margin-top: 64px;
+    margin-top: 32px;
     color: #191919;
     font-size: 24pt;
     font-weight: normal;
@@ -810,21 +830,39 @@ body>.popup.billing-prompt>.frame {
       cursor: pointer;
       text-align: center;
 
+      position: relative;
+
+      &.iframe-active {
+        position: static;
+      }
+
+      >.mobile-iframe-hack {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        top: 0px;
+        left: 0px;
+        &.fullscreen {
+          @extend %fullscreen-iframe-hack;
+        }
+      }
+
       &.selected {
         td {
           background-color: #efefef;
           color: #494949;
         }
 
-        >table {
+        >table,
+        >table:hover {
           >tr:nth-child(1)>td {
             background-color: #cccccc;
             color: #494949;
           }
-          >tr:nth-child(6) {
+          >tr:nth-child(6)>td {
             button {
               background-color: #cccccc;
-              background: inherit;
+              background: #cccccc;
               color: #494949;
               border: 1px solid #9e9e9e;
             }
@@ -853,8 +891,13 @@ body>.popup.billing-prompt>.frame {
         border-radius: 4px;
         width: 100%;
 
-        &:hover td {
-          background-color: white;
+        &:hover {
+          td {
+            background-color: white;
+          }
+          >tr:nth-child(1)>td {
+            background-color: #e4d6f4;
+          }
         }
 
         td {
@@ -879,7 +922,7 @@ body>.popup.billing-prompt>.frame {
         tr:nth-child(1)>td {
           font-size: 24px;
           text-transform: uppercase;
-          background-color: #e4d6f4;
+          background-color: #d5bfe9;
         }
 
         tr:nth-child(2)>td {

@@ -1011,30 +1011,12 @@ if (Meteor.isClient) {
       }
       var senderGrain = grains[senderGrainIndex];
 
-      /* disabled because multi-grain breaks things
-      if (event.origin !== currentAppOrigin) {
-        // TODO: better handling of multiple grain postMessage() calls.
-        // setPath should only change the window state if it's the currently-open grain.
-        // setTitle should set the title of the sending origin's state, not a singleton global.
-        // renderTemplate should always work.
-        // powerboxRequest...I'm not sure yet.
-        return;
-      }
-      */
       if (event.data.setPath) {
-        // TOOD(now): fix this
-        var prefix = senderGrain.rootPath.match("/[^/]*/[^/]*")[0];
-        if (prefix.lastIndexOf("/grain/", 0) !== 0 &&
-            prefix.lastIndexOf("/shared/", 0) !== 0) {
-          throw new Error("Don't know how to add in-grain path to current URL. " +
-                          "This is a bug in Sandstorm; please file a report.");
-        }
-
-        senderGrain.rootPath = prefix + event.data.setPath;
-        if (senderGrain.isActive()) {
-          window.history.replaceState({}, "", prefix + event.data.setPath);
-        }
-        senderGrain.dep.changed();
+        var path = event.data.setPath;
+        check(path, String);
+        check(path.charAt(0), '/');
+        // TODO(security): More sanitization of this path. E.g. reject "/../../".
+        senderGrain.setPath(path);
       } else if (event.data.setTitle) {
         senderGrain.setFrameTitle(event.data.setTitle);
       } else if (event.data.renderTemplate) {
@@ -1280,7 +1262,7 @@ Router.map(function () {
       this.state.set("beforeActionHookRan", true);
 
       var grainId = this.params.grainId;
-      var path = this.params.path;
+      var path = "/" + (this.params.path || "");
       var query = this.params.query;
       var hash = this.params.hash;
       var grains = globalGrains.get();
@@ -1345,7 +1327,7 @@ Router.map(function () {
       this.state.set("beforeActionHookRan", true);
 
       var token = this.params.token;
-      var path = this.params.path;
+      var path = "/" + (this.params.path || "");
       var query = this.params.query;
       var hash = this.params.hash;
 

@@ -397,6 +397,7 @@ Plans = new Mongo.Collection("plans");
 //   _id: Plan ID, usually a short string like "free", "standard", "large", "mega", ...
 //   storage: Number of bytes this user is allowed to store.
 //   compute: Number of kilobyte-RAM-seconds this user is allowed to consume.
+//   computeLabel: Label to display to the user describing this plan's compute units.
 //   grains: Total number of grains this user can create (often `Infinity`).
 //   price: Price per month in US cents.
 
@@ -700,7 +701,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   listPlans: function () {
-    return Plans.find({});
+    return Plans.find({}, {sort: {price: 1}});
   },
 
   getMyPlan: function () {

@@ -205,7 +205,6 @@ Template.sandstormAppList.events({
   }
 });
 Template.sandstormAppList.onCreated(function() {
-  this.subscribe("grainsMenu"); // provides userActions, grains, apitokens
   this.subscribe("devApps");
   this.subscribe("userPackages");
 });

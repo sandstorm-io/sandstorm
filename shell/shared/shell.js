@@ -25,6 +25,12 @@ if (Meteor.isClient) {
   getOrigin = function() {
     return document.location.protocol + "//" + document.location.host;
   }
+
+  // Subscribe to basic grain information first and foremost, since
+  // without it we might e.g. redirect to the wrong place on login.
+  Meteor.startup(function() {
+    Meteor.subscribe("grainsMenu");
+  });
 }
 
 if (Meteor.isServer) {
@@ -827,11 +833,20 @@ Router.map(function () {
   this.route("root", {
     path: "/",
     waitOn: function () {
-      return Meteor.subscribe("hasUsers");
+      return [
+        Meteor.subscribe("hasUsers"),
+        Meteor.subscribe("grainsMenu")
+      ];
     },
     data: function () {
+      // If the user is logged-in, and can create new grains, and
+      // has no grains yet, then send them to "new".
       if (Meteor.userId()) {
-        Router.go("newGrain", {}, {replaceState: true});
+        if (isSignedUpOrDemo() && ! currentUserGrains({}, {}).count()) {
+          Router.go("newGrain", {}, {replaceState: true});
+        } else {
+          Router.go("selectGrain");
+        }
       }
 
       return {

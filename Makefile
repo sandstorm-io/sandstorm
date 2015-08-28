@@ -52,6 +52,7 @@ IMAGES= \
     shell/public/github.svg \
     shell/public/google.svg \
     shell/public/install.svg \
+    shell/public/install-purple.svg \
     shell/public/key.svg \
     shell/public/link.svg \
     shell/public/menu.svg \

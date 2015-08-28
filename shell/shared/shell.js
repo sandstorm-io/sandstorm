@@ -852,7 +852,7 @@ Router.map(function () {
             globalDb.currentUserApiTokens().count() === 0) {
           Router.go("newGrain", {}, {replaceState: true});
         } else {
-          Router.go("selectGrain");
+          Router.go("selectGrain", {}, {replaceState: true});
         }
       }
 

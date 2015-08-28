@@ -192,6 +192,13 @@ limitations under the License.
   <div class="centered-box">Loading...</div>
 </template>
 
+<template name="loadingNoMessage">
+  {{!-- When switching between grains, we don't really want to show a "loading..." message until
+  the grain's subscriptions are ready, since we've already loaded the iframe and the user can be
+  interacting with it immediately.  But we also want to use waitOn for the topbar items.  So we
+  set a loading template that is effectively empty string, and everything is great. --}}
+</template>
+
 <template name="notFound">
   {{>title "Not Found"}}
   <div class="centered-box">404 Not Found :(</div>

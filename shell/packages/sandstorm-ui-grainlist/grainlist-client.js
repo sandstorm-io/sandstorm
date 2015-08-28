@@ -82,17 +82,17 @@ Template.sandstormGrainList.helpers({
     return Template.instance().data._filter.get();
   },
   myGrainsCount: function () {
-    return Template.instance().data._db.currentUserGrains({}, {}).fetch().length;
+    return Template.instance().data._db.currentUserGrains({}, {}).count();
   },
   myGrainsSize: function () {
     // TODO(cleanup): extract prettySize and other similar helpers from globals into a package
-    return prettySize(Template.instance().data._db.getMyUsage().storage);
+    // TODO(cleanup): access Meteor.user() through db object
+    return prettySize(Meteor.user().storageUsage);
   }
 });
 Template.sandstormGrainList.onCreated(function () {
   Template.instance().subscribe("grainsMenu");
   Template.instance().subscribe("userPackages");
-  Template.instance().subscribe("getMyUsage");
 });
 Template.sandstormGrainList.events({
   "click tbody tr": function(event) {

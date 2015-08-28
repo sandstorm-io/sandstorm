@@ -70,8 +70,11 @@ limitations under the License.
   </li>
   <li class="handle">
     <label>Handle:
-      <input type="text" name="handle" value="{{handle}}" placeholder="handle"
-             pattern="^[a-z_][a-z0-9_]*$" required>
+      <div class="input-container">
+        <input type="text" name="handle" value="{{handle}}" placeholder="handle"
+               pattern="^[a-z_][a-z0-9_]*$" required>
+        <div class="background-text">@</div>
+      </div>
     </label>
     <span class="details">Your preferred handle or "username", for use in apps that use handles (often, chat apps). This is only your first choice; an app may make you rename if someone has already taken this name within the specific grain.</span>
   </li>

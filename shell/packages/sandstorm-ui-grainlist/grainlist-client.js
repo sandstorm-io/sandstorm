@@ -84,6 +84,11 @@ Template.sandstormGrainList.helpers({
   myGrainsCount: function () {
     return Template.instance().data._db.currentUserGrains({}, {}).count();
   },
+  hasAnyGrainsCreatedOrSharedWithMe: function() {
+    var _db = Template.instance().data._db;
+    return !! (_db.currentUserGrains({}, {}).count() ||
+               _db.currentUserApiTokens().count());
+  },
   myGrainsSize: function () {
     // TODO(cleanup): extract prettySize and other similar helpers from globals into a package
     // TODO(cleanup): access Meteor.user() through db object
@@ -91,7 +96,6 @@ Template.sandstormGrainList.helpers({
   }
 });
 Template.sandstormGrainList.onCreated(function () {
-  Template.instance().subscribe("grainsMenu");
   Template.instance().subscribe("userPackages");
 });
 Template.sandstormGrainList.onRendered(function () {

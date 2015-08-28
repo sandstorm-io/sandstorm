@@ -78,6 +78,24 @@
         background-color: $applist-pseudoapp-background-color;
         border: 1px $applist-pseudoapp-outline-color;
       }
+
+      &.restore-icon {
+        background-image: url('/restore-B7B7B7.svg');
+
+        &:hover {
+          background-image: url('/restore-5D5D5D.svg');
+        }
+      }
+      &.upload-icon {
+        background-image: url('/upload-B7B7B7.svg');
+
+        &:hover {
+          background-image: url('/upload-5D5D5D.svg');
+        }
+      }
+      &.install-icon {
+        background-image: url('/install-6A237C.svg');
+      }
     }
     %apptext {
       @extend %overflow-ellipsis;

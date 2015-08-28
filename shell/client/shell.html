@@ -513,9 +513,9 @@ limitations under the License.
     {{>sandstormTopbarItem name="delete" topbar=globalTopbar template="grainDeleteButton"}}
   {{/if}}
   {{#if isOwner}}
-    {{>sandstormTopbarItem name="debug-log" topbar=globalTopbar template="grainDebugLogButton"}}
-    {{>sandstormTopbarItem name="backup" topbar=globalTopbar template="grainBackupButton"}}
-    {{>sandstormTopbarItem name="restart" topbar=globalTopbar template="grainRestartButton"}}
+    {{>sandstormTopbarItem name="debug-log" topbar=globalTopbar template="grainDebugLogButton" data=globalTopbar}}
+    {{>sandstormTopbarItem name="backup" topbar=globalTopbar template="grainBackupButton" data=globalTopbar}}
+    {{>sandstormTopbarItem name="restart" topbar=globalTopbar template="grainRestartButton" data=globalTopbar}}
   {{/if}}
   {{#if displayWebkeyButton}}
     {{>sandstormTopbarItem name="webkey" topbar=globalTopbar

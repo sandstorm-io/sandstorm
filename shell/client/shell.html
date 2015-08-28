@@ -116,7 +116,7 @@ limitations under the License.
 <template name="grainView">
   {{!-- This template is rendered manually using Blaze.renderWithData() for each currently-open
         grain and then injected into .main-content. We do things manually so that we can be
-        sure that adding or removing grains from teh open grain list does not cause other grains'
+        sure that adding or removing grains from the open grain list does not cause other grains'
         iframes to be re-rendered, losing state. --}}
   {{#with unpackedGrainState}}
     <div class="grain-container {{#if active}}active-grain{{else}}inactive-grain{{/if}}">

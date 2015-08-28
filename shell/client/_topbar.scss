@@ -478,6 +478,11 @@ body>.topbar {
             background-color: $topbar-background-color-active;
             color: $topbar-foreground-color-active;
           }
+          // Make the "Open" and "New" verbs align with the start
+          // of the app icon.
+          a {
+            padding-left: 4px;
+          }
         }
       }
     }

@@ -100,11 +100,12 @@
       left: 0px;
       width: 128px;
       height: 128px;
+      margin: 10px;
       @media #{$mobile} {
         width: 64px;
         height: 64px;
+        margin: 5px;
       }
-      margin: 10px;
       border-radius: 6px;
       vertical-align: top;
       &.pseudoapp {

@@ -86,7 +86,7 @@ IMAGES= \
     shell/public/email-494949.svg \
                                   \
     shell/public/install-6A237C.svg \
-    shell/public/install-65468E.svg \
+    shell/public/install-9E40B5.svg \
     shell/public/upload-B7B7B7.svg \
     shell/public/upload-5D5D5D.svg \
     shell/public/restore-B7B7B7.svg \

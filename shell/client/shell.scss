@@ -190,22 +190,21 @@ img {
   color: red;
 }
 
-#app .interstitial-button-box {
+.main-content .interstitial-button-box {
   text-align: center;
-}
-
-#app .interstitial-button-box button {
-  font-family: inherit;
-  font-size: inherit;
-  font-weight: 600;
-  background-color: #428bca;
-
-  padding: 8px;
-  line-height: 1.33;
-  border-radius: 4px;
-  border: none;
-  color: white;
-  cursor: pointer;
+  background-color: $default-content-background-color;
+  & button {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 600;
+    background-color: #428bca;
+    padding: 8px;
+    line-height: 1.33;
+    border-radius: 4px;
+    border: none;
+    color: white;
+    cursor: pointer;
+  }
 }
 
 #notification-list {

@@ -753,7 +753,7 @@ body>.popup {
 
 body>.popup.billing-prompt>.frame {
   text-align: center;
-  height: 100%;
+  overflow-y: auto;
 
   @media #{$desktop} {
     width: 932px;
@@ -766,12 +766,6 @@ body>.popup.billing-prompt>.frame {
   @media #{$mobile} {
     max-width: 500px;
   }
-}
-
-body>.popup.billing-prompt>.frame>.scroll-box {
-  overflow-y: auto;
-  overflow-x: hidden;
-  height: 100%;
 
   >h2 {
     text-align: center;
@@ -991,7 +985,7 @@ body>.popup.billing-prompt>.frame>.scroll-box {
 
     .answer {
       display: inline-block;
-      width: 400px;
+      width: 390px;
       margin: 0 32px;
       vertical-align: top;
 

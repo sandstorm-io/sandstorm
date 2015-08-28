@@ -202,3 +202,6 @@ Template.sandstormAppList.onCreated(function() {
   this.subscribe("devApps");
   this.subscribe("userPackages");
 });
+Template.sandstormAppList.onRendered(function () {
+  this.findAll(".search-bar")[0].focus();
+});

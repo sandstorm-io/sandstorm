@@ -86,6 +86,9 @@ Template.sandstormGrainList.onCreated(function () {
   Template.instance().subscribe("grainsMenu");
   Template.instance().subscribe("userPackages");
 });
+Template.sandstormGrainList.onRendered(function () {
+  this.findAll(".search-bar")[0].focus();
+});
 Template.sandstormGrainList.events({
   "click tbody tr": function(event) {
     var grainId = event.currentTarget.getAttribute('data-grainid');

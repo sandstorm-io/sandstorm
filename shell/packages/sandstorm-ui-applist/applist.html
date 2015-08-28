@@ -4,7 +4,7 @@
     <div class="search-row {{#unless actionsCount}}hide{{/unless}}">
       <img title="Search" class="search-icon" src="/search.svg"><input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
     </div>
-    <div class="popular-container {{#if searching }}hide{{/if}} {{#unless userGrainsCount}}hide{{/unless}}">
+    <div class="popular-container {{#if searching }}hide{{/if}} {{#unless myGrainsCount}}hide{{/unless}}">
       <h2 class="">Most used</h2>
       {{#each popularActions }}
       <button class="app-button app-action {{#if searching}}hide{{/if}}">

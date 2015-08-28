@@ -82,9 +82,8 @@ Template.sandstormAppList.helpers({
     var ref = Template.instance().data;
     return ref._filter.get().length > 0;
   },
-  userGrainsCount: function() {
-    var ref = Template.instance().data;
-    return ref._db.currentUserGrains({}).count();
+  myGrainsCount: function () {
+    return Template.instance().data._db.currentUserGrains({}, {}).count();
   },
   actionsCount: function() {
     var ref = Template.instance().data;

@@ -831,7 +831,7 @@ Router.map(function () {
     },
     data: function () {
       if (Meteor.userId()) {
-        Router.go("selectGrain", {}, {replaceState: true});
+        Router.go("newGrain", {}, {replaceState: true});
       }
 
       return {

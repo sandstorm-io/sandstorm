@@ -51,7 +51,6 @@ IMAGES= \
     shell/public/email.svg \
     shell/public/github.svg \
     shell/public/google.svg \
-    shell/public/install.svg \
     shell/public/key.svg \
     shell/public/link.svg \
     shell/public/menu.svg \
@@ -84,7 +83,14 @@ IMAGES= \
                                   \
     shell/public/github-color.svg \
     shell/public/google-color.svg \
-    shell/public/email-494949.svg
+    shell/public/email-494949.svg \
+                                  \
+    shell/public/install-6A237C.svg \
+    shell/public/install-65468E.svg \
+    shell/public/upload-B7B7B7.svg \
+    shell/public/upload-5D5D5D.svg \
+    shell/public/restore-B7B7B7.svg \
+    shell/public/restore-5D5D5D.svg
 
 # ====================================================================
 # Meta rules
@@ -206,6 +212,30 @@ shell/client/changelog.html: CHANGELOG.md
 	@markdown CHANGELOG.md >> tmp/changelog.html
 	@echo '</template>' >> tmp/changelog.html
 	@cp tmp/changelog.html shell/client/changelog.html
+
+shell/public/install-6A237C.svg: icons/install.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#6A237C/g' < $< > $@
+
+shell/public/install-65468E.svg: icons/install.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#65468E/g' < $< > $@
+
+shell/public/upload-B7B7B7.svg: icons/upload.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#B7B7B7/g' < $< > $@
+
+shell/public/upload-5D5D5D.svg: icons/upload.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#5D5D5D/g' < $< > $@
+
+shell/public/restore-B7B7B7.svg: icons/restore.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#B7B7B7/g' < $< > $@
+
+shell/public/restore-5D5D5D.svg: icons/restore.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#5D5D5D/g' < $< > $@
 
 shell/public/%.svg: icons/%.svg
 	@$(call color,color for dark background $<)

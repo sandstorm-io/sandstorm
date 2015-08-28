@@ -300,7 +300,7 @@ body>.topbar {
       background-repeat: no-repeat;
 
       @media #{$desktop} {
-        background-color: #428bca;
+        background-color: #762f87;
         color: white;
         padding-left: 32px;
         padding-right: 8px;
@@ -309,7 +309,7 @@ body>.topbar {
         font-size: 12pt;
 
         &:hover {
-          background-color: lighten(#428bca, 8);
+          background-color: lighten(#762f87, 8);
         }
       }
     }

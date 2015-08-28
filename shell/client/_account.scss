@@ -817,6 +817,18 @@ body>.popup.billing-prompt>.frame {
     font-family: "Source Sans Pro", sans-serif;
     margin: auto;
 
+    >a.free-note {
+      display: block;
+      text-decoration: none;
+      font-weight: normal;
+      background-color: #f2edf2;
+      color: #6a237c;
+      max-width: 736px;
+      margin: 0 auto;
+      padding: 8px;
+      font-size: 25px;
+    }
+
     >.subscription {
       display: inline-block;
       width: 180px;

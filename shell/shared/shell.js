@@ -841,7 +841,7 @@ Router.map(function () {
     data: function () {
       // If the user is logged-in, and can create new grains, and
       // has no grains yet, then send them to "new".
-      if (Meteor.userId()) {
+      if (this.ready() && Meteor.userId()) {
         if (isSignedUpOrDemo() && ! currentUserGrains({}, {}).count()) {
           Router.go("newGrain", {}, {replaceState: true});
         } else {

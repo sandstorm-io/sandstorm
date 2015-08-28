@@ -200,10 +200,15 @@ module.exports["Test roleless sharing"] = function (browser) {
     .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
-    .waitForElementVisible('.app-action', short_wait)
-    .assert.containsText('.app-action', 'Hacker CMS')
+    .waitForElementVisible(
+      '.app-list>.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]',
+      short_wait)
+    .assert.containsText(
+      '.app-list>.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]',
+      'Hacker CMS')
     // Create grain with that user
-    .click('.app-action')
+    .click(
+      '.app-list>.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]')
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
     .click('.topbar .share > .show-popup')
@@ -264,10 +269,15 @@ module.exports["Test role sharing"] = function (browser) {
     .url(browser.launch_url + "/install/21f8dba75cf1bd9f51b97311ae64aaca?url=http://sandstorm.io/apps/etherpad9.spk")
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
-    .waitForElementVisible('.app-action', short_wait)
-    .assert.containsText('.app-action', 'Etherpad')
-     // Create grain with that user
-    .click('.app-action')
+    .waitForElementVisible(
+      '.app-list>.app-action[data-app-id="h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60"]',
+      short_wait)
+    .assert.containsText(
+      '.app-list>.app-action[data-app-id="h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60"]',
+      'Etherpad')
+    // Create grain with that user
+    .click(
+      '.app-list>.app-action[data-app-id="h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60"]')
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.containsText('#grainTitle', 'Untitled Etherpad Document')
     .click('.topbar .share > .show-popup')
@@ -326,10 +336,15 @@ module.exports["Test grain incognito interstitial"] = function (browser) {
     .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
-    .waitForElementVisible('.app-action', short_wait)
-    .assert.containsText('.app-action', 'Hacker CMS')
-     // Create grain with that user
-    .click('.app-action')
+    .waitForElementVisible(
+      '.app-list>.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]',
+      short_wait)
+    .assert.containsText(
+      '.app-list>.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]',
+      'Hacker CMS')
+    // Create grain with that user
+    .click(
+      '.app-list>.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]')
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
     .click('.topbar .share > .show-popup')

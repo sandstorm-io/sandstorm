@@ -711,7 +711,7 @@ _.extend(SandstormDb.prototype, {
 
   getMyUsage: function (user) {
     user = user || Meteor.user();
-    if (user) {
+    if (user && user.pseudoUsage) {
       if (Meteor.isClient) {
         return user.pseudoUsage;  // filled by pseudo-subscription to "getMyUsage"
       } else {

@@ -441,7 +441,7 @@ Router.map(function () {
           self.response.writeHead(500, {
             "Content-Type": "text/plain"
           });
-          self.response.write(error.stack);
+          self.response.write("Unpacking SPK failed; is it valid?");
           self.response.end();
         };
       } else {

@@ -749,7 +749,10 @@ var promptForFile = function (callback) {
     callback(e.currentTarget.files[0]);
   });
 
+  // IE wants the input element to be in the DOM, but only during the click() call.
+  document.body.appendChild(input);
   input.click();
+  document.body.removeChild(input);
 }
 
 var startUpload = function (file, endpoint, onComplete) {
@@ -762,6 +765,7 @@ var startUpload = function (file, endpoint, onComplete) {
 
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4) {
+      console.log(xhr.status);
       if (xhr.status == 200) {
         Session.set("uploadProgress", 0);
         onComplete(xhr.responseText);
@@ -794,10 +798,11 @@ promptRestoreBackup = function() {
       Session.set("uploadStatus", "Unpacking");
       Meteor.call("restoreGrain", response, function (err, grainId) {
         if (err) {
+          console.log(err);
           Session.set("uploadStatus", undefined);
           Session.set("uploadError", {
-            status: 200,
-            statusText: err.reason + ": " + err.details,
+            status: "",
+            statusText: err.message
           });
         } else {
           Router.go("grain", {grainId: grainId});

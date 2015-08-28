@@ -749,11 +749,12 @@ limitations under the License.
   {{>title "Uploading..."}}
 
   <div id="restoreGrain" class="centered-box">
-  {{#if status}}
-    <p>{{status}}... {{#if progress}}{{progress}}%{{/if}}</p>
+  {{#if error}}
+    <p>Upload failed: {{error.status}} {{error.statusText}}</p>
+    <pre>{{error.response}}</pre>
   {{else}}
-    {{#if error}}
-      <p>Upload failed: {{error.status}} {{error.statusText}}</p>
+    {{#if status}}
+      <p>{{status}}... {{#if progress}}{{progress}}%{{/if}}</p>
     {{else}}
       <p>Upload failed. Please try again.</p>
     {{/if}}

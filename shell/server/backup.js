@@ -84,7 +84,11 @@ Meteor.methods({
     var grainId = Random.id(22);
 
     try {
-      var grainInfo = waitPromise(sandstormBackend.restoreGrain(tokenId, this.userId, grainId)).info;
+      var grainInfo = waitPromise(sandstormBackend.restoreGrain(
+          tokenId, this.userId, grainId).catch(function (err) {
+            console.error("Unzip failure:", err.message);
+            throw new Meteor.Error(500, "Invalid backup file.");
+          })).info;
       if (!grainInfo.appId) {
         deleteGrain(grainId, this.userId);
         throw new Meteor.Error(500, "Metadata object for uploaded grain has no AppId");

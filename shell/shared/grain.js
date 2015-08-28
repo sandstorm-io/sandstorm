@@ -1027,8 +1027,7 @@ if (Meteor.isClient) {
       var senderGrainIndex = grainOriginToIndex(grains, event.origin);
       if (senderGrainIndex == -1) {
         // We got a postMessage from an origin that is not a grain we currently believe is open.
-        // Ignore it.
-        console.log("ignoring postmessage from unrecognized origin", event.origin);
+        // Ignore it. (It may be aimed at some other message listener registered elsewhere...)
         return;
       }
       var senderGrain = grains[senderGrainIndex];

@@ -489,7 +489,7 @@ body>.main-content>.account {
                 }
                 &.selected {
                   background: #aaa;
-                  cursor: initial;
+                  cursor: auto;
                 }
               }
             }
@@ -728,7 +728,7 @@ form.account-profile-editor {
 }
 
 %fullscreen-iframe-hack {
-  display: initial;
+  display: inline;
   width: 100%;
   height: 100%;
   position: fixed;

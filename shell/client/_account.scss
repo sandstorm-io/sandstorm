@@ -1046,3 +1046,20 @@ body>.popup.billing-prompt>.frame>.scroll-box {
     }
   }
 }
+
+.dev-accounts {
+  button {
+    font-family: inherit;
+    background-color: #428bca;
+
+    padding: 10px 16px;
+    font-size: 60px;
+    line-height: 1.33;
+    border-radius: 6px;
+    border: none;
+    color: white;
+    cursor: pointer;
+    width: 100%;
+    text-align: center;
+  }
+}

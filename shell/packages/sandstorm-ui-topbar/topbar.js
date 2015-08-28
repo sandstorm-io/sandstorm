@@ -17,8 +17,8 @@
 var reloadBlockingCount = 0;
 var blockedReload = new ReactiveVar(null);
 var explicitlyUnblocked = false;
-Reload._onMigrate(undefined, function (retry) {
-  if (reloadBlockingCount > 0 && !explicitlyUnblocked) {
+Reload._onMigrate(undefined, function (retry, options) {
+  if (reloadBlockingCount > 0 && !explicitlyUnblocked && !options.immediateMigration) {
     console.log("New version ready, but blocking reload because an app is open.");
     blockedReload.set(retry);
     return false;
@@ -333,7 +333,7 @@ SandstormTopbar.prototype.closePopup = function () {
 }
 
 SandstormTopbar.prototype.isUpdateBlocked = function () {
-  return blockedReload.get();
+  return !!blockedReload.get();
 }
 
 SandstormTopbar.prototype.addItem = function (item) {

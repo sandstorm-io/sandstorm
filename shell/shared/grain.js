@@ -375,6 +375,7 @@ if (Meteor.isClient) {
 
   Template.grainDebugLogButton.events({
     "click button": function (event) {
+      this.reset();
       var activeGrain = getActiveGrain(globalGrains.get());
       window.open("/grainlog/" + activeGrain.grainId(), "_blank",
           "menubar=no,status=no,toolbar=no,width=700,height=700");
@@ -383,6 +384,7 @@ if (Meteor.isClient) {
 
   Template.grainBackupButton.events({
     "click button": function (event) {
+      this.reset();
       var activeGrain = getActiveGrain(globalGrains.get());
       Meteor.call("backupGrain", activeGrain.grainId(), function (err, id) {
         if (err) {
@@ -413,6 +415,7 @@ if (Meteor.isClient) {
 
   Template.grainRestartButton.events({
     "click button": function (event) {
+      this.reset();
       var activeGrain = getActiveGrain(globalGrains.get());
       var grainId = activeGrain.grainId();
 

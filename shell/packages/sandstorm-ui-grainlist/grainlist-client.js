@@ -34,6 +34,7 @@ var mapGrainsToTemplateObject = function (grains) {
       appTitle: appTitle,
       lastUsed: grain.lastUsed,
       iconSrc: iconSrc,
+      isOwnedByMe: true,
     };
   });
 };
@@ -59,6 +60,7 @@ var mapApiTokensToTemplateObject = function (apiTokens) {
       appTitle: appTitle,
       lastUsed: ownerData.lastUsed,
       iconSrc: iconSrc,
+      isOwnedByMe: false,
     };
   });
 };

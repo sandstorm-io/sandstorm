@@ -18,6 +18,7 @@
             <td class="td-app-icon"></td>
             <td class="grain-name">Name</td>
             <td class="last-used">Last Activity</td>
+            <td class="shared-or-owned">Mine/Shared</td>
             {{!-- Collaborators, size TODO
             <td>Collaborators</td>
             <td>Size</td>
@@ -30,6 +31,7 @@
           <td class="td-app-icon"><div class="app-icon" title="{{appTitle}}" style="background-image: url('{{ iconSrc }}');"></div></td>
           <td class="grain-name"><a href="{{ pathFor route='grain' grainId=_id }}">{{title}}</a></td>
           <td class="last-used">{{dateString lastUsed}}</td>
+          <td class="shared-or-owned">{{#if isOwnedByMe }}My grain{{else}}Shared with me{{/if}}</td>
           {{!-- Collaborators, size TODO
           <td>TODO: collaborators</td>
           <td>{{ size }}</td>

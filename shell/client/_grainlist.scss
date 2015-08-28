@@ -105,6 +105,9 @@
         &.last-used {
           width: 100px;
         }
+        &.shared-or-owned {
+          width: 110px;
+        }
       }
       &.grain {
         cursor: pointer;

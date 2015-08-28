@@ -1,23 +1,23 @@
 <template name="sandstormGrainList">
   <div class="grain-list">
+    <div class="non-usage-info">
     <h1>Grains</h1>
-    {{#if quotaEnabled}}
-    <div class="light-box">
-      <span class="grains-size"><strong>My grains' total size:</strong> {{ myGrainsSize }}</span>
-    </div>
-    {{/if}}
-    <div class="light-box">
-      <span class="grain-count"><strong>Grains I own:</strong> {{ myGrainsCount }}</span>
-    </div>
     <div class="search-row">
-      <img title="Search" class="search-icon" src="/search.svg"><input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
+      <img title="Search" class="search-icon" src="/search.svg"><input class="search-bar" type="text" placeholder="search" value="{{ searchText }}">
+    </div>
+    </div>
+    <div class="usage-info">
+      <p class="grain-count"><strong>Grains I own:</strong> {{ myGrainsCount }}</p>
+      {{#if quotaEnabled}}
+        <p class="grains-size"><strong>My grains' total size:</strong> {{ myGrainsSize }}</p>
+      {{/if}}
     </div>
     <table class="grain-list-table">
       <thead>
         <tr>
-            <td class="td-app-icon">App</td>
+            <td class="td-app-icon"></td>
             <td class="grain-name">Name</td>
-            <td>Last Activity</td>
+            <td class="last-used">Last Activity</td>
             {{!-- Collaborators, size TODO
             <td>Collaborators</td>
             <td>Size</td>
@@ -29,7 +29,7 @@
         <tr class="grain" data-grainid="{{ _id }}">
           <td class="td-app-icon"><div class="app-icon" title="{{appTitle}}" style="background-image: url('{{ iconSrc }}');"></div></td>
           <td class="grain-name"><a href="{{ pathFor route='grain' grainId=_id }}">{{title}}</a></td>
-          <td>{{dateString lastUsed}}</td>
+          <td class="last-used">{{dateString lastUsed}}</td>
           {{!-- Collaborators, size TODO
           <td>TODO: collaborators</td>
           <td>{{ size }}</td>

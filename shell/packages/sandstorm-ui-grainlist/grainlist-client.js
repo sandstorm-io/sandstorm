@@ -99,7 +99,13 @@ Template.sandstormGrainList.onCreated(function () {
   Template.instance().subscribe("userPackages");
 });
 Template.sandstormGrainList.onRendered(function () {
-  this.findAll(".search-bar")[0].focus();
+  // Auto-focus search bar on desktop, but not mobile (on mobile it will open the software
+  // keyboard which is undesirable). window.orientation is generally defined on mobile browsers
+  // but not desktop browsers, but some mobile browsers don't support it, so we also check
+  // clientWidth. Note that it's better to err on the side of not auto-focusing.
+  if (window.orientation === undefined && window.innerWidth > 600) {
+    this.findAll(".search-bar")[0].focus();
+  }
 });
 Template.sandstormGrainList.events({
   "click tbody tr": function(event) {

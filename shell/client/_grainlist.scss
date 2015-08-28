@@ -1,42 +1,65 @@
 .grain-list {
   overflow: auto;
   padding: 0px 32px;
+  @media #{$mobile} {
+    padding: 0px 8px;
+  }
   background-color: $grainlist-background-color;
   color: $grainlist-foreground-color;
-  >h1 {
-    font-size: 24pt;
-    font-weight: 400;
-  }
-  >.search-row {
+  >.non-usage-info {
     float: left;
-    display: block;
-    padding: 4px;
-    margin-bottom: 36px;
-    >img.search-icon {
-      width: 24px;
-      height: 24px;
-      margin: 4px;
+    @media #{$mobile} {
+      float: none;
     }
-    >input.search-bar {
-      margin-left: 4px;
-      margin-top: 4px;
-      margin-right: 0px;
-      margin-bottom: 4px;
-      font-size: 16pt;
-      background-color: $grainlist-searchbar-background-color;
-      border: .5px solid $grainlist-searchbar-outline-color;
-      &:focus {
-        border: .5px solid $grainlist-searchbar-outline-color-focus;
+    >h1 {
+      font-size: 24pt;
+      font-weight: 400;
+      @media #{$mobile} {
+        display: inline-block;
+        vertical-align: middle;
+      }
+    }
+    >.search-row {
+      display: inline-block;
+      vertical-align: top;
+      margin-bottom: 36px;
+      @media #{$mobile} {
+        margin-bottom: 0;
+        display: inline-block;
+        vertical-align: middle;
+        width: calc(100% - 100px);
+      }
+      >img.search-icon {
+        width: 24px;
+        height: 24px;
+        margin: 4px;
+      }
+      >input.search-bar {
+        font-size: 16pt;
+        background-color: $grainlist-searchbar-background-color;
+        border: .5px solid $grainlist-searchbar-outline-color;
+        &:focus {
+          border: .5px solid $grainlist-searchbar-outline-color-focus;
+        }
+        @media #{$mobile} {
+          width: calc(100% - 32px);
+        }
       }
     }
   }
-  >.light-box {
+  >.usage-info {
     float: right;
-    display: inline-block;
+    vertical-align: top;
     margin: 4px;
+    margin-top: 80px;
     padding: 8px;
     border-radius: 4px;
     background-color: white;
+    >p { margin: 0; }
+    @media #{$mobile} {
+      float: none;
+      margin-top: 8px;
+    }
   }
   >table {
     width: 100%;
@@ -79,8 +102,8 @@
           width: 48px;
           padding-left: 16px;
         }
-        &.grain-name {
-          width: 400px;
+        &.last-used {
+          width: 100px;
         }
       }
       &.grain {

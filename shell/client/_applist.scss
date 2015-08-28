@@ -1,11 +1,18 @@
 .app-list {
   overflow: auto; // Needed to make the background span everything on screen.
   padding: 0px 32px;
+  @media #{$mobile} {
+    padding: 0px 8px;
+  }
   background-color: $applist-background-color;
   color: $applist-foreground-color;
   >h1 {
     font-size: 24pt;
     font-weight: 400;
+    @media #{$mobile} {
+      display: inline-block;
+      vertical-align: middle;
+    }
   }
   .hide {
     // !important used to override other classes that might assign e.g. display: block
@@ -14,6 +21,12 @@
   >.search-row {
     width: 100%;
     margin-bottom: 36px;
+    @media #{$mobile} {
+      margin-bottom: 0;
+      display: inline-block;
+      vertical-align: middle;
+      width: calc(100% - 100px);
+    }
     >img.search-icon {
       width: 24px;
       height: 24px;
@@ -26,6 +39,9 @@
       &:focus {
         border: .5px solid $grainlist-searchbar-outline-color-focus;
       }
+      @media #{$mobile} {
+        width: calc(100% - 32px);
+      }
     }
   }
   >.popular-container {
@@ -33,11 +49,17 @@
     display: block;
     height: 280px;
     overflow: hidden;
+    @media #{$mobile} {
+      height: 160px;
+    }
   }
   >h2, >.popular-container>h2 {
     font-weight: 400;
     border-bottom: 1px solid $applist-rule-color;
     clear: both;
+    @media #{$mobile} {
+      margin-bottom: 8px;
+    }
   }
   >.app-button, >.popular-container>.app-button {
     @extend %unstyled-button;
@@ -54,6 +76,13 @@
     margin-left: 10px;
     margin-right: 10px;
     margin-bottom: 20px;
+    @media #{$mobile} {
+      width: 74px;
+      height: 100px;
+      margin-left: 5px;
+      margin-right: 5px;
+      margin-bottom: 10px;
+    }
     //box-shadow: 0 0 1px black;
     overflow: hidden;
     &.app-action {
@@ -71,6 +100,10 @@
       left: 0px;
       width: 128px;
       height: 128px;
+      @media #{$mobile} {
+        width: 64px;
+        height: 64px;
+      }
       margin: 10px;
       border-radius: 6px;
       vertical-align: top;
@@ -113,12 +146,20 @@
       @extend %apptext;
       top: 148px;
       font-size: 12pt;
+      @media #{$mobile} {
+        top: 74px;
+        font-size: 8pt;
+      }
     }
     >.action-text {
       @extend %apptext;
       color: $applist-action-text-color;
       top: 168px;
-      font-size: 11pt
+      font-size: 11pt;
+      @media #{$mobile} {
+        top: 88px;
+        font-size: 8pt;
+      }
     }
   }
 }

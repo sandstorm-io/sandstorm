@@ -1281,6 +1281,7 @@ Router.map(function () {
   });
   this.route("grain", {
     path: "/grain/:grainId/:path(.*)?",
+    loadingTemplate: "loadingNoMessage",
 
     waitOn: function () {
       var subscriptions = [
@@ -1343,6 +1344,7 @@ Router.map(function () {
   this.route("/shared/:token/:path(.*)?", {
     name: "shared",
     template: "grain",
+    loadingTemplate: "loadingNoMessage",
 
     waitOn: function () {
       return [

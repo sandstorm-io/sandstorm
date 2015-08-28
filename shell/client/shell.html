@@ -46,7 +46,7 @@ limitations under the License.
     </div>
   {{else}}
   {{#if firstLogin}}
-    <div id="first-sign-in" class="main-content">
+    <div class="first-sign-in-main-content">
       {{> sandstormAccountsFirstSignIn accountSettingsUi}}
     </div>
   {{else}}
@@ -104,11 +104,12 @@ limitations under the License.
     {{>billingPrompt}}
   {{/with}}
 
-  <div class="main-content {{#if showNavbar}}show-navbar{{/if}}">
-    {{> yield}}
-  </div>
-
   {{/if}}
+  <div class="main-content {{#if showNavbar}}show-navbar{{/if}}">
+    {{#unless firstLogin}}
+      {{> yield}}
+    {{/unless}}
+  </div>
   {{/with}}
 </template>
 

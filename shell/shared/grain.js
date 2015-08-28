@@ -255,11 +255,6 @@ Meteor.methods({
 });
 
 if (Meteor.isClient) {
-  var currentSessionId;
-  var currentAppOrigin;
-  var currentGrainId;
-  var currentSessionGrainSizeSubscription;
-
   Tracker.autorun(function() {
     // We need to keep track of certain data about each grain we can view
     var grains = globalGrains.get();
@@ -975,22 +970,6 @@ if (Meteor.isClient) {
     },
   });
 
-  /*
-  function setCurrentSessionId(sessionId, appOrigin, grainId) {
-
-    if (currentSessionGrainSizeSubscription) {
-      currentSessionGrainSizeSubscription.stop();
-      currentSessionGrainSizeSubscription = undefined;
-    }
-    currentSessionId = sessionId;
-    currentAppOrigin = appOrigin;
-    currentGrainId = grainId;
-    if (sessionId) {
-      currentSessionGrainSizeSubscription = Meteor.subscribe("grainSize", sessionId);
-    }
-  }
-  */
-
   // Send a keep-alive for each grain every now and then.
   Meteor.setInterval(function () {
     var grains = globalGrains.get();
@@ -1013,7 +992,7 @@ if (Meteor.isClient) {
     });
   }, 60000);
 
-  // Message handler for changing path in user's URL bar
+  // Message handler for Sandstorm's client-side postMessage API.
   Meteor.startup(function () {
     var messageListener = function (event) {
       if (event.origin === getOrigin()) {

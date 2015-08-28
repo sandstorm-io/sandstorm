@@ -217,9 +217,9 @@ shell/public/install-6A237C.svg: icons/install.svg
 	@$(call color,custom color $<)
 	@sed -e 's/#111111/#6A237C/g' < $< > $@
 
-shell/public/install-65468E.svg: icons/install.svg
+shell/public/install-9E40B5.svg: icons/install.svg
 	@$(call color,custom color $<)
-	@sed -e 's/#111111/#65468E/g' < $< > $@
+	@sed -e 's/#111111/#9E40B5/g' < $< > $@
 
 shell/public/upload-B7B7B7.svg: icons/upload.svg
 	@$(call color,custom color $<)

@@ -94,7 +94,11 @@
         }
       }
       &.install-icon {
-        background-image: url('/install-6A237C.svg');
+        background-image: url('/install-9E40B5.svg');
+
+        &:hover {
+          background-image: url('/install-6A237C.svg');
+        }
       }
     }
     %apptext {

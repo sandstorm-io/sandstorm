@@ -78,8 +78,6 @@ Template.sandstormTopbar.helpers({
         appTitle: grain.appTitle(),
       };
     });
-    console.log("rendering navbar with");
-    console.log(data);
     return data;
   },
   grainCount: function () {

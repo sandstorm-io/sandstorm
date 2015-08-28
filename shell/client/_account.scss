@@ -654,21 +654,20 @@ form.account-profile-editor {
         border: 1px solid #c00;
       }
 
-      &.handle {
-        label::after {
-          content: "@";
-          float: right;
-          margin-right: -20px;
-          font-family: monospace;
-          padding-top: 2px;
-          color: #888;
-          position: relative;
-          z-index: 1;
-        }
-
+      &.handle .input-container {
+        position: relative;
         input[type="text"] {
-          padding-left: 1em;
+          font-size: 12pt;
           font-family: monospace;
+          padding-left: 1em;
+        }
+        .background-text {
+          font-size: 12pt;
+          font-family: monospace;
+          color: #888;
+          position: absolute;
+          top: 3px;
+          left: 4px;
         }
       }
 

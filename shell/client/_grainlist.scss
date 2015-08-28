@@ -37,10 +37,12 @@
       border-bottom: 1px solid #aaa;
       >td {
         border: 1px solid white;
+        /* interactivity disabled until we can sort by different column
         cursor:pointer;
         &:hover {
           background-color: $grainlist-table-header-background-color-hover;
         }
+        */
       }
       >td.td-app-icon {
         padding-left: 16px;

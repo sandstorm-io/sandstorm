@@ -38,5 +38,13 @@
         {{/each}}
       </tbody>
     </table>
+
+    {{#unless hasAnyGrainsCreatedOrSharedWithMe}}
+    <div>
+      <p>In Sandstorm, every document is a <em>grain</em>.</p>
+
+      <p><a href="/grain/new">Install apps now to start creating.</a></p>
+    </div>
+    {{/unless}}
   </div>
 </template>

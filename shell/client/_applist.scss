@@ -35,12 +35,12 @@
     >input.search-bar {
       font-size: 16pt;
       background-color: $grainlist-searchbar-background-color;
-      border: .5px solid $grainlist-searchbar-outline-color;
+      border: 1px solid $grainlist-searchbar-outline-color;
       &:focus {
-        border: .5px solid $grainlist-searchbar-outline-color-focus;
+        border: 1px solid $grainlist-searchbar-outline-color-focus;
       }
       @media #{$mobile} {
-        width: calc(100% - 32px);
+        width: calc(100% - 36px);
       }
     }
   }

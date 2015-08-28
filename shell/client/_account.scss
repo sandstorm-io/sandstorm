@@ -857,8 +857,7 @@ body>.popup.billing-prompt>.frame {
           color: #494949;
         }
 
-        >table,
-        >table:hover {
+        >table {
           >tr:nth-child(1)>td {
             background-color: #cccccc;
             color: #494949;
@@ -894,15 +893,6 @@ body>.popup.billing-prompt>.frame {
         border: 1px solid #adadad;
         border-radius: 4px;
         width: 100%;
-
-        &:hover {
-          td {
-            background-color: white;
-          }
-          >tr:nth-child(1)>td {
-            background-color: #e4d6f4;
-          }
-        }
 
         td {
           padding-top: 8px;
@@ -977,6 +967,27 @@ body>.popup.billing-prompt>.frame {
             cursor: pointer;
             border: 0px;
             border-radius: 4px;
+          }
+        }
+      }
+
+      &:hover {
+        >table {
+          td {
+            background-color: white;
+          }
+          >tr:nth-child(1)>td {
+            background-color: #e4d6f4;
+          }
+        }
+      }
+      &.selected:hover {
+        >table {
+          td {
+            background-color: white;
+          }
+          >tr:nth-child(1)>td {
+            background-color: #e2e2e2;
           }
         }
       }

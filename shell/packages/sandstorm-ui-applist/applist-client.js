@@ -82,6 +82,13 @@ Template.sandstormAppList.helpers({
     var ref = Template.instance().data;
     return ref._filter.get().length > 0;
   },
+  myGrainsCount: function () {
+    return Template.instance().data._db.currentUserGrains({}, {}).count();
+  },
+  actionsCount: function() {
+    var ref = Template.instance().data;
+    return ref._db.currentUserActions({}).count();
+  },
   actions: function() {
     var ref = Template.instance().data;
     var actions = matchActions(ref._filter.get(), ref._sortOrder.get());
@@ -198,7 +205,6 @@ Template.sandstormAppList.events({
   }
 });
 Template.sandstormAppList.onCreated(function() {
-  this.subscribe("grainsMenu"); // provides userActions, grains, apitokens
   this.subscribe("devApps");
   this.subscribe("userPackages");
 });

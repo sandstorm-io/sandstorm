@@ -346,7 +346,7 @@ if (Meteor.isClient) {
           activeGrain.destroy();
           if (grains.length == 1) {
             globalGrains.set([]);
-            Router.go("selectGrain");
+            Router.go("newGrain");
           } else {
             grains.splice(activeIndex, 1);
             grains[newActiveIndex].setActive(true);
@@ -361,7 +361,7 @@ if (Meteor.isClient) {
           activeGrain.destroy();
           if (grains.length == 1) {
             globalGrains.set([]);
-            Router.go("selectGrain");
+            Router.go("newGrain");
           } else {
             grains.splice(activeIndex, 1);
             grains[newActiveIndex].setActive(true);

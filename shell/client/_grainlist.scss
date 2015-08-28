@@ -80,6 +80,13 @@
           background-color: $grainlist-table-header-background-color-hover;
         }
         */
+        &.shared-or-owned {
+          width: 110px;
+          // The mobile viewport is too small to display this much text
+          @media #{$mobile} {
+            display: none;
+          }
+        }
       }
       >td.td-app-icon {
         padding-left: 16px;
@@ -107,6 +114,10 @@
         }
         &.shared-or-owned {
           width: 110px;
+          // The mobile viewport is too small to display this much text
+          @media #{$mobile} {
+            display: none;
+          }
         }
       }
       &.grain {

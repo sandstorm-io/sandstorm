@@ -442,7 +442,7 @@ div.popup h2 {
   h2 {
     font-weight: normal;
     font-size: 24pt;
-    margin: 64px 64px 1em;
+    margin: 56px 120px 1em;
     >a {
       font-weight: bold;
       color: black;
@@ -451,6 +451,7 @@ div.popup h2 {
   p {
     margin: 1em 56px;
     font-size: 15pt;
+    text-align: left;
     >a {
       font-weight: 600;
       color: #65468e;
@@ -466,7 +467,21 @@ div.popup h2 {
     color: white;
     font-size: 34pt;
     cursor: pointer;
-    margin: 64px 0;
+    margin: 48px 0;
+  }
+
+  @media #{$mobile} {
+    width: auto;
+    height: auto;
+    margin: 64px 8px;
+    h2 {
+      margin: 1em 32px;
+    }
+  }
+  @media (max-width: 500px) {
+    button {
+      font-size: 28px;
+    }
   }
 }
 

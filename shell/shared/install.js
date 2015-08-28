@@ -243,6 +243,11 @@ if (Meteor.isClient) {
   });
 }
 
+function referredFromSandstorm() {
+  return document.referrer.lastIndexOf("https://sandstorm.io/apps/", 0) === 0 ||
+         document.referrer.lastIndexOf("https://apps.sandstorm.io/", 0) === 0;
+}
+
 Router.map(function () {
   this.route("install", {
     path: "/install/:packageId",
@@ -286,6 +291,10 @@ Router.map(function () {
           if (globalGrains.get().length === 0 &&
               window.opener.location.hostname === window.location.hostname &&
               window.opener.Router) {
+            if (referredFromSandstorm()) {
+              // Hack: Communicate to parent that we were referred from Sandstorm.
+              window.opener.referredFromSandstorm = packageId;
+            }
             window.opener.Router.go("install", {packageId: packageId}, {query: this.params.query});
             window.close();
           }
@@ -400,10 +409,10 @@ Router.map(function () {
         }
 
         if (!result.hasOlderVersion && !result.hasNewerVersion &&
-            (document.referrer.lastIndexOf("https://sandstorm.io/apps/", 0) === 0 ||
-             document.referrer.lastIndexOf("https://apps.sandstorm.io/", 0) === 0)) {
+            (window.referredFromSandstorm === packageId || referredFromSandstorm())) {
           // Skip confirmation because we assume the Sandstorm app list is not evil.
           // TODO(security): This is not excellent. Think harder.
+          delete window.referredFromSandstorm;
           addUserActions(result.packageId);
           Router.go("newGrain", {}, {replaceState: true});
         }

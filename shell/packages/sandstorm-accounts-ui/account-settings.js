@@ -178,6 +178,9 @@ Template._accountProfileEditor.events({
       if (file && token) doUpload();
     });
 
+    // IE wants the input element to be in the DOM, but only during the click() call.
+    document.body.appendChild(input);
     input.click();
+    document.body.removeChild(input);
   }
 });

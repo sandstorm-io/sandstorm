@@ -711,9 +711,11 @@ _.extend(SandstormDb.prototype, {
 
   getMyUsage: function (user) {
     user = user || Meteor.user();
-    if (user && user.pseudoUsage) {
+    if (user && (Meteor.isServer || user.pseudoUsage)) {
       if (Meteor.isClient) {
-        return user.pseudoUsage;  // filled by pseudo-subscription to "getMyUsage"
+        // Filled by pseudo-subscription to "getMyUsage". WARNING: The subscription is currenly
+        // not reactive.
+        return user.pseudoUsage;
       } else {
         return {
           grains: Grains.find({userId: user._id}).count(),

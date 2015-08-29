@@ -27,6 +27,6 @@ Meteor.publish("getMyUsage", function () {
     // TODO(someday): Make this reactive.
     var usage = this.connection.sandstormDb.getMyUsage(Meteor.users.findOne(this.userId));
     this.added("users", this.userId, {pseudoUsage: usage});
-    this.ready();
   }
+  this.ready();
 });

@@ -528,13 +528,28 @@ ul.backer-list img, ul.dev-list img, ul.advisor-list img {
   height: 195px;
   display: inline-block;
   vertical-align: middle;
+  img {
+    max-width: 195px;
+    max-height: 195px;
+    vertical-align: middle;
+  }
+  div.draw-io-image {
+    @extend %pseudo-img-tag;
+    width: 195px;
+    height: 195px;
+    vertical-align: middle;
+    background-image: url("/logos/draw.io-logo.svg");
+  }
+  div.uniregistry-image {
+    @extend %pseudo-img-tag;
+    width: 195px;
+    height: 195px;
+    vertical-align: middle;
+    background-image: url("/logos/uniregistry.svg");
+  }
 }
 
-.corptag img {
-  max-width: 195px;
-  max-height: 195px;
-  vertical-align: middle;
-}
+
 
 #demo-expired {
   >p, >h1, >h2, >h3, >h4 {

@@ -115,6 +115,12 @@
           max-width: 122px;
           max-height: 121px;
         }
+        .uniregistry-image {
+          @extend %pseudo-img-tag;
+          width: 122px;
+          height: 121px;
+          background-image: url("/logos/uniregistry.svg");
+        }
       }
     }
   }

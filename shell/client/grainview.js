@@ -1,26 +1,26 @@
 var counter = 0;
 
-GrainView = function GrainView(grainId, path, query, hash, token, parentElement) {
+GrainView = function GrainView(grainId, path, token, parentElement) {
+  // `path` starts with a slash and includes the query and fragment.
+  //
   // Owned grains:
-  // grainId, path, query, hash, dep.
+  // grainId, path, dep.
   //   callback sets error, openingSession on failure,
   //                 grainId, sessionId, sessionSub on success.
   //
   // Sturdyref ApiTokens:
-  // grainId, path, query, hash, dep.
+  // grainId, path, dep.
   //   callback sets error, openingSession on failure
   //                 grainId, sessionId, sessionSub on success.
   //
   // Token-only sessions:
-  // grainId, token, path, query, hash, dep
+  // grainId, token, path, dep
   //   callback sets error, openingSession on failure
   //                 grainId, sessionId, title, and session Sub on success
 
   this._grainId = grainId;
   this._originalPath = path;
-  this._path = this._originalPath;
-  this._originalQuery = query;
-  this._originalHash = hash;
+  this._path = path;
   this._token = token;
 
   this._status = "closed";
@@ -333,18 +333,7 @@ GrainView.prototype._openApiTokenSession = function () {
         console.log("openSessionFromApiToken redirectToGrain");
         self._grainId = result.redirectToGrain;
         self._dep.changed();
-        // Make sure to carry over any within-grain path.
-        var routeParams = { grainId: result.redirectToGrain };
-        if (self._originalPath) {
-          routeParams.path = self._originalPath;
-        }
-        var urlParams = {};
-        if (self._originalQuery) {
-          urlParams.query = self._originalQuery;
-        }
-        if (self._originalHash) {
-          urlParams.hash = self._originalHash;
-        }
+
         // We should remove this tab from the tab list, since the /grain/<grainId> route
         // will set up its own tab for this grain.  There could even already be a tab open, if the
         // user reuses a /shared/ link.
@@ -358,7 +347,7 @@ GrainView.prototype._openApiTokenSession = function () {
         }
 
         // OK, go to the grain.
-        return Router.go("grain", routeParams, urlParams);
+        return Router.go("/grain/" + result.redirectToGrain + self._path);
       } else {
         // We are viewing this via just the /shared/ link, either as an anonymous user on in our
         // incognito mode (since we'd otherwise have redeemed the token and been redirected).

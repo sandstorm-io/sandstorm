@@ -689,7 +689,7 @@ body>.popup {
     >h4 {
       margin: 0px;
       font-size: 14px;
-      padding-left: 10px;
+      padding-left: $topbar-popup-padding;
       line-height: 32px;
       border-bottom: 1px solid #ccc;
       margin-bottom: 16px;
@@ -704,12 +704,12 @@ body>.popup {
     }
 
     >* {
-      margin-left: 16px;
-      margin-right: 16px;
+      margin-left: $topbar-popup-padding;
+      margin-right: $topbar-popup-padding;
     }
 
     >*:last-child {
-      margin-bottom: 16px;
+      margin-bottom: $topbar-popup-padding;
     }
 
     &.centered {
@@ -728,7 +728,7 @@ body>.popup {
       text-transform: uppercase;
       background-color: $popup-background-color;
       margin-bottom: 0;
-      padding: 10px 20px;
+      padding: $topbar-popup-padding 20px;
     }
 
     >h4.share-with-others {
@@ -736,7 +736,7 @@ body>.popup {
       padding-bottom: 30px;
     }
     >h4.who-has-access {
-      padding-bottom: 10px;
+      padding-bottom: $topbar-popup-padding;
       border-bottom: 1px solid #ccc;
     }
 
@@ -753,7 +753,7 @@ body>.popup {
     }
 
     .share-tabs {
-      padding: 10px;
+      padding: $topbar-popup-padding;
       border-top: 1px solid #ccc;
       position: relative;
       margin: 0;
@@ -882,7 +882,7 @@ body>.popup {
       border-top: 1px solid #ccc;
       margin: 0px;
       padding-top: 5px;
-      padding-bottom: 10px;
+      padding-bottom: $topbar-popup-padding;
       text-align: right;
       font-size: 10pt;
       >.who-has-access {

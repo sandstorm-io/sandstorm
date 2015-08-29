@@ -301,7 +301,8 @@ body>.topbar {
 
       @media #{$desktop} {
         background-color: #762f87;
-        color: white;
+        color: #cccccc; // Have the text match the icon.
+                        // This is the single place the button text is visible.
         padding-left: 32px;
         padding-right: 8px;
         height: 32px;

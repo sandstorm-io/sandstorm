@@ -49,10 +49,12 @@
     {{/each}}
   </div>
   {{else}}
-    <div class="not-signed-up">
-      <h1>Unauthorized! :(</h1>
-      <p>This is a private Sandstorm server. In order to install apps, you need to be invited
-        by the admin. The admin can create invites in the admin settings panel.</p>
-    </div>
+    {{#if Template.subscriptionsReady}}
+      <div class="not-signed-up">
+        <h1>Unauthorized! :(</h1>
+        <p>This is a private Sandstorm server. In order to install apps, you need to be invited
+          by the admin. The admin can create invites in the admin settings panel.</p>
+      </div>
+    {{/if}}
   {{/if}}
 </template>

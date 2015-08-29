@@ -213,6 +213,7 @@ Template.sandstormAppList.events({
 Template.sandstormAppList.onCreated(function() {
   this.subscribe("devApps");
   this.subscribe("userPackages");
+  this.subscribe("credentials");
 });
 Template.sandstormAppList.onRendered(function () {
   // Scroll to highlighted app, if any.

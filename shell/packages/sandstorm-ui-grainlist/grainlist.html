@@ -42,14 +42,16 @@
     </table>
 
     {{#unless hasAnyGrainsCreatedOrSharedWithMe}}
-    <div class="no-grains">
-      <p><strong>You have no grains.</strong></p>
+      {{#if Template.subscriptionsReady}}
+        <div class="no-grains">
+          <p><strong>You have no grains.</strong></p>
 
-      <p>A grain is an instance of a Sandstorm app. A grain might be a document, a chat room,
-        a mail box, a notebook, a blog, or more.</p>
+          <p>A grain is an instance of a Sandstorm app. A grain might be a document, a chat room,
+            a mail box, a notebook, a blog, or more.</p>
 
-      <p><a href="/grain/new">Install apps now to start creating.</a></p>
-    </div>
+          <p><a href="/grain/new">Install apps now to start creating.</a></p>
+        </div>
+      {{/if}}
     {{/unless}}
   </div>
 </template>

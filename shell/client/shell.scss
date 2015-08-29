@@ -214,7 +214,7 @@ img {
 #notification-list {
   list-style: outside none none;
   padding: 0px;
-  margin: 5px;
+  margin: $topbar-popup-padding;
 }
 .notification-selected button {
   background-color: #666;

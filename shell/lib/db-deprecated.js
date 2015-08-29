@@ -68,7 +68,6 @@ if (Meteor.isServer) {
 if (Meteor.isClient) {
   Session.setDefault("show-navbar", true);
   globalGrains = new ReactiveVar([]);
-  console.log('init grains');
   globalTopbar = new SandstormTopbar(globalDb,
     {
       get: function () {

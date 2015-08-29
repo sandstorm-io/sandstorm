@@ -201,6 +201,8 @@ body>.topbar {
     }
 
     >.toggle-navbar {
+      cursor: pointer;
+
       >button {
         @extend %unstyled-button;
         @extend %hamburger-menu-item;
@@ -208,14 +210,19 @@ body>.topbar {
         @media #{$desktop} {
           height: $topbar-height-desktop;
         }
+        &:focus {
+          outline: none;
+        }
       }
 
       @media #{$desktop} {
         padding-left: 32px;
         padding-right: 8px;
-        background-image: url("/icon.png");
-        background-repeat: no-repeat;
-        background-position: 8px center;
+
+        background-image: url("/icon.png"), url("/down.svg");
+        background-repeat: no-repeat, no-repeat;
+        background-position: 8px center, 8px 24px;
+        background-size: auto, 16px 8px;
         border-right: 1px solid #666;
 
         // Without this, Firefox renders the right-floats pushed down a line.
@@ -582,6 +589,12 @@ body>.topbar {
         }
       }
     }
+  }
+}
+
+body>.topbar.show-navbar>.menubar>.toggle-navbar {
+  @media #{$desktop} {
+    background-image: url("/icon.png"), url("/up.svg");
   }
 }
 

@@ -1099,131 +1099,165 @@ limitations under the License.
 <template name="about">
   {{>title "About Sandstorm"}}
 
-  <div id="about" class="centered-box">
-    <h2>Sandstorm Server</h2>
-    <p class="heading-subtext"><a href="https://sandstorm.io">https://sandstorm.io</a></p>
-    <p>Build {{build}}</p>
-    {{#if isUnofficial}}
-    <p><b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain
-      modifications not reviewed by the developers.</p>
-    {{/if}}
-    <button id="show-changelog">Show Changelog</button>
-    {{#if showChangelog}}
+  <div class="about">
+    <h1>About Sandstorm</h1>
+
+    <section class="intro">
+      <p><a href="https://sandstorm.io">Sandstorm.io</a> is an open source hosting platform for
+        personal/private instances of web apps. Users can upload and install arbitrary software
+        through a simple app-store-like web interface. In addition to better privacy,
+        <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html">
+        this is the only way to make Open Source web apps viable.</a></p>
+
+      <p class="version">Version: {{build}}</p>
+      {{#if isUnofficial}}
+        <p class="unofficial"><b>WARNING:</b> This server is running an unofficial build of Sandstorm which may contain modifications not reviewed by the developers.</p>
+      {{/if}}
+    </section>
+
+    <section class="changelog">
+      <h2>Recent Changes</h2>
+
       {{> changelog}}
-    {{/if}}
-    <p><a href="https://sandstorm.io">Sandstorm.io</a> is an open source hosting platform for
-      personal/private instances of web apps. Users can upload and install arbitrary software
-      through a simple app-store-like web interface. In addition to better privacy,
-      <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html">
-      this is the only way to make Open Source web apps viable.</a></p>
-    <h3>Core Developers</h3>
-    <ul class="dev-list">
-      <li><a href="https://github.com/kentonv">
-          <img src="/logos/kenton.jpg" alt="Kenton Varda"><br>
-          Kenton<br>Varda</a></li>
-      <li><a href="https://github.com/jadeqwang">
-          <img src="/logos/jade.jpg" alt="Jade Wang"><br>
-          Jade<br>Wang</a></li>
-      <li><a href="https://github.com/jparyani">
-          <img src="/logos/jparyani.jpg" alt="Jason Paryani"><br>
-          Jason<br>Paryani</a></li>
-      <li><a href="https://github.com/dwrensha">
-          <img src="/logos/drenshaw.jpg" alt="David Renshaw"><br>
-          David<br>Renshaw</a></li>
-      <li><a href="https://github.com/paulproteus">
-          <img src="/logos/asheesh.jpg" alt="Asheesh Laroia"><br>
-          Asheesh<br>Laroia</a></li>
-      <li><a href="http://nenanguyen.ca">
-          <img src="/logos/nena.jpg" alt="Néna Nguyễn"><br>
-          Néna<br>Nguyễn</a></li>
-      <li><a href="https://github.com/zarvox">
-          <img src="/logos/drew.jpg" alt="Drew Fisher"><br>
-          Drew<br>Fisher</a></li>
-      <li><a href="https://plus.google.com/u/0/114357619139436426265">
-          <img src="/logos/garply.jpg" alt="Garply"><br>
-          Garply<br>&nbsp;</a></li>
-    </ul>
-    <h3>Advisors</h3>
-    <ul class="advisor-list">
-      <li><a href="https://github.com/swetland">
-          <img src="/logos/swetland.jpg" alt="Brian Swetland"><br>
-          Brian<br>Swetland</a></li>
-      <li><a href="https://github.com/amluto">
-          <img src="/logos/luto.jpg" alt="Andrew Lutomirski"><br>
-          Andrew<br>Lutomirski</a></li>
-      <li><a href="https://github.com/jasvir">
-          <img src="/logos/jasvir.jpg" alt="Jasvir Nagra"><br>
-          Jasvir<br>Nagra</a></li>
-      <li><a href="https://github.com/mseaborn">
-          <img src="/logos/smiley.png" alt="Mark Seaborn"><br>
-          Mark<br>Seaborn</a></li>
-      <li><a href="http://en.wikipedia.org/wiki/Mark_S._Miller">
-          <img src="/logos/markm.jpg" alt="Mark Miller"><br>
-          Mark<br>Miller</a></li>
-    </ul>
-    <h3>Key Individual Sponsors</h3>
-    <p class="heading-subtext">from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign</a></p>
-    <ul class="backer-list">
+    </section>
+
+    <section class="developers">
+      <h2>Core Developers</h2>
+      <ul>
+        <li><a href="https://github.com/kentonv">
+            <img src="/logos/kenton.png" alt="Kenton Varda">
+            Kenton Varda</a></li><li>
+        <a href="https://github.com/jadeqwang">
+            <img src="/logos/jade.png" alt="Jade Wang">
+            Jade Wang</a></li><li>
+        <a href="https://github.com/jparyani">
+            <img src="/logos/jason.png" alt="Jason Paryani">
+            Jason Paryani</a></li><li>
+        <a href="https://github.com/dwrensha">
+            <img src="/logos/david.png" alt="David Renshaw">
+            David Renshaw</a></li><li>
+        <a href="https://github.com/paulproteus">
+            <img src="/logos/asheesh.png" alt="Asheesh Laroia">
+            Asheesh Laroia</a></li><li>
+        <a href="http://nenanguyen.ca">
+            <img src="/logos/nena.png" alt="Néna Nguyễn">
+            Néna Nguyễn</a></li><li>
+        <a href="https://github.com/zarvox">
+            <img src="/logos/drew.png" alt="Drew Fisher">
+            Drew Fisher</a></li><li>
+        <a href="https://plus.google.com/u/0/114357619139436426265">
+            <img src="/logos/garply.png" alt="Garply">
+            Garply</a></li>
+      </ul>
+    </section><section class="advisors">
+      <h2>Advisors</h2>
+      <ul>
+        <li><a href="https://github.com/swetland">
+            <img src="/logos/swetland.png" alt="Brian Swetland">
+            Brian Swetland</a></li><li>
+        <a href="https://github.com/amluto">
+            <img src="/logos/luto.png" alt="Andrew Lutomirski">
+            Andrew Lutomirski</a></li><li>
+        <a href="https://github.com/jasvir">
+            <img src="/logos/jasvir.png" alt="Jasvir Nagra">
+            Jasvir Nagra</a></li><li>
+        <a href="https://github.com/mseaborn">
+            <img src="/logos/seaborn.png" alt="Mark Seaborn">
+            Mark Seaborn</a></li><li>
+        <a href="http://en.wikipedia.org/wiki/Mark_S._Miller">
+            <img src="/logos/miller.png" alt="Mark Miller">
+            Mark Miller</a></li>
+      </ul>
+    </section>
+    <br>
+    <section class="corporate">
+      <h2>Corporate Sponsors</h2>
+      <p>These companies contributed heavily to Sandstorm's <a href="http://igg.me/at/sandstorm">crowdfunding campaign</a>.</p>
+      <ul>
+        <li><a href="http://draw.io"><img width="92.75" height="121" src="/logos/draw.io-logo.svg">&nbsp;</a></li><li>
+        <img src="/logos/humanweb.png">&nbsp;</li><li>
+        <a href="https://uniregistry.com"><img src="/logos/uniregistry.svg">&nbsp;</a></li>
+      </ul>
+      <div class="strut"></div>
+    </section><section class="individual">
+      <h2>Key Invididual Sponsors</h2>
+      <p>These individuals contributed heavily to Sandstorm's <a href="http://igg.me/at/sandstorm">crowdfunding campaign</a>.</p>
+      <ul>
       <li><a href="http://rogerwagner.com/">
-          <img src="/logos/wagner.jpg"><br>
-          Roger Wagner</a></li>
-      <li><a href="https://github.com/audreyt">
-          <img src="/logos/audreyt.jpg"><br>
+          <img src="/logos/wagner.png">
+          Roger Wagner</a></li><li>
+      <a href="https://github.com/audreyt">
+          <img src="/logos/audrey.png">
           Audrey Tang</a></li>
-    </ul>
-    <h3>Corporate Sponsors</h3>
-    <p class="heading-subtext">from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign</a></p>
-    <div class="corptags">
-      <div class="corptag">
-        <a href="http://draw.io"><img src="/logos/draw.io-logo.svg"></a>
-      </div>
-      <div class="corptag">
-        <img src="/logos/humanweb.png" style="padding-top: 68px">
-      </div>
-      <div class="corptag">
-        <a href="https://uniregistry.com"><img src="/logos/uniregistry.svg"></a>
-      </div>
-    </div>
-    <h3>Backers</h3>
-    <p class="heading-subtext">from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign</a></p>
-    {{#if backers}}
-    <ul class="backer-list">
-      {{#each backers}}
-        <li>{{.}}</li>
-      {{/each}}
-      <li>{{anonCount}} anonymous contributors</li>
-    </ul>
-    {{else}}
-    <p>loading...</p>
-    {{/if}}
-    <h3>Third-party works used</h3>
-    <ul>
-      <!-- TODO(soon): This list has a lot missing. Review. -->
-      <li><a href="http://nodejs.org/">Node.js</a> (MIT license)</li>
-      <li><a href="https://www.meteor.com/">Meteor web framework</a> (MIT license)</li>
-      <li><a href="https://github.com/EventedMind/iron-router">Iron Router routing library</a> (MIT license)</li>
-      <li><a href="http://underscorejs.org/">Underscore.js</a> (MIT license)</li>
-      <li><a href="http://www.senchalabs.org/connect/">Connect middleware</a> (MIT license)</li>
-      <li><a href="https://github.com/andris9/simplesmtp">Simple SMTP by Andris Reinman</a> (MIT license)</li>
-      <li><a href="https://github.com/justmoon/node-bignum">node-bignum by Stefan Thomas</a> (MIT license)</li>
-      <li><a href="https://github.com/jedisct1/libsodium">libsodium</a> (MIT license)</li>
-      <li><a href="https://www.npmjs.org/package/es6-promises">ES6 Promises polyfill by Dmitry Korobkin</a> (MIT license)</li>
-      <li><a href="https://www.google.com/fonts/specimen/Open+Sans">Open Sans font by Google</a> (Apache 2.0 license)</li>
-      <li><a href="https://github.com/drudru/ansi_up">ansi_up library by Dru Nelson</a> (MIT license)</li>
-      <li><a href="https://github.com/joyent/http-parser">Node/nginx HTTP parser library maintained by Joyent</a> (MIT license)</li>
-      <li><a href="http://libb64.sourceforge.net/">libb64 by Chris Venter</a> (Public Domain)</li>
-      <li><a href="http://tukaani.org/xz/">XZ Utils</a> (Public Domain / GPL)</li>
-      <li><a href="http://www.gnu.org/software/libc/libc.html">GNU C library</a> and
-          <a href="https://gcc.gnu.org/libstdc++/">C++ Library</a> (LGPL license)</li>
-    </ul>
-    <p>These works are copyright the respective authors and used under the terms of the respective
-      licenses.</p>
-    <h3>Copyright</h3>
-    <p>The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and
-       contributors. The implementation is licensed under the Apache License 2.0.</p>
-    <p>"Sandstorm" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc.,
-       and may not be used to advertise derivative works nor commercial services without
-       written consent from Sandstorm Development Group, Inc.</p>
-    <p><a href="https://github.com/sandstorm-io/sandstorm/blob/master/LICENSE">Full license details.</a></p>
+      </ul>
+    </section>
+
+    <section class="backers">
+      <h2>Backers</h2>
+      <p>from <a href="http://igg.me/at/sandstorm">our Indiegogo campaign &gt;</a></p>
+      {{#if backers}}
+      <ul>
+        {{#each backers}}
+          <li>{{.}}</li>
+        {{/each}}
+        <li>&nbsp;</li>
+        <li>&nbsp;</li>
+        <li>&nbsp;</li>
+        <li class="anonymous">and {{anonCount}} anonymous contributors</li>
+      </ul>
+      {{else}}
+      <p>loading...</p>
+      {{/if}}
+    </section>
+
+    <section class="dependencies">
+      <h2>Third-party works used</h2>
+      <ul>
+        <!-- TODO(soon): This list has a lot missing. Review. -->
+        <li><a href="http://nodejs.org/">Node.js</a> (MIT license)</li>
+        <li><a href="https://www.meteor.com/">Meteor web framework</a> (MIT license)</li>
+        <li><a href="https://github.com/jedisct1/libsodium">libsodium</a> (ISC license)</li>
+        <li><a href="https://github.com/seccomp/libseccomp">libseccomp</a> (LGPL license)</li>
+        <li><a href="https://www.mongodb.org/">MongoDB</a> (AGPL)</li>
+        <li><a href="https://github.com/EventedMind/iron-router">Iron Router</a> (MIT license)</li>
+        <li><a href="http://underscorejs.org/">Underscore.js</a> (MIT license)</li>
+        <li><a href="http://www.senchalabs.org/connect/">Connect middleware</a> (MIT license)</li>
+        <li><a href="https://www.npmjs.org/package/es6-promises">ES6-Promise polyfill by Dmitry Korobkin</a> (MIT license)</li>
+        <li><a href="https://www.google.com/fonts/specimen/Source+Sans+Pro">Source Sans Pro font</a> (SIL OFL)</li>
+        <li><a href="https://github.com/joyent/http-parser">Node/nginx HTTP parser library</a> (MIT license)</li>
+        <li><a href="https://github.com/andris9/simplesmtp">Simple SMTP by Andris Reinman</a> (MIT license)</li>
+        <li><a href="https://github.com/justmoon/node-bignum">node-bignum by Stefan Thomas</a> (MIT license)</li>
+        <li><a href="https://github.com/drudru/ansi_up">ansi_up library by Dru Nelson</a> (MIT license)</li>
+        <li><a href="https://github.com/stewartlord/identicon.js">identicon.js by Stewart Lord</a> (BSD license)</li>
+        <li><a href="http://www.xarg.org/2010/03/generate-client-side-png-files-using-javascript/">PNGlib by Robert Eisele</a> (BSD license)</li>
+        <li><a href="http://libb64.sourceforge.net/">libb64 by Chris Venter</a> (Public Domain)</li>
+        <li><a href="http://tukaani.org/xz/">XZ Utils</a> (Public Domain / GPL)</li>
+        <li><a href="http://www.info-zip.org/">Info-ZIP</a> (Info-ZIP license)</li>
+        <li><a href="http://www.gnu.org/software/libc/libc.html">GNU C library</a> (LGPL license)</li>
+        <li><a href="https://gcc.gnu.org/libstdc++/">GNU C++ Library</a> (LGPL license)</li>
+        <li class="spacer">&nbsp;</li>
+        <li class="spacer">&nbsp;</li>
+        <li class="spacer">&nbsp;</li>
+      </ul>
+      <p>These works are copyright the respective authors and used under the terms of the respective
+        licenses.</p>
+    </section>
+
+    <section class="copyright">
+      <h2>Copyright</h2>
+      <p>The Sandstorm implementation is copyright by Sandstorm Development Group, Inc. and
+         contributors. The implementation is licensed under the Apache License 2.0.</p>
+      <p>"Sandstorm" and the Sandstorm logo are trademarks of Sandstorm Development Group, Inc.,
+         and may not be used to advertise derivative works nor commercial services without
+         written consent from Sandstorm Development Group, Inc.</p>
+    </section>
+
+    <section class="terms">
+      <ul>
+        <li><a href="https://github.com/sandstorm-io/sandstorm/blob/master/LICENSE">License</a></li>
+        {{#with termsUrl}}<li><a href="{{.}}">Terms of Service</a></li>{{/with}}
+        {{#with privacyUrl}}<li><a href="{{.}}">Privacy Policy</a></li>{{/with}}
+      </ul>
+    </section>
   </div>
 </template>

@@ -906,6 +906,9 @@ Router.map(function () {
         });
       }
 
+      result.termsUrl = globalDb.getSetting("termsUrl");
+      result.privacyUrl = globalDb.getSetting("privacyUrl");
+
       return result;
     }
   });

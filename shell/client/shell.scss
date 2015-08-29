@@ -43,6 +43,10 @@ body {
 
 // Styles used by the user account settings page
 @import "_account.scss";
+
+// Styles used by the "about" page.
+@import "_about.scss";
+
 // =======================================================================================
 
 a.copy-me {
@@ -487,53 +491,6 @@ div.popup h2 {
 
 .devLogin {
   margin: 16px auto;
-}
-
-ul.backer-list, ul.dev-list, ul.advisor-list {
-  list-style: none;
-  text-align: center;
-  padding: 0;
-}
-
-ul.advisor-list {
-  max-width: 650px;
-  margin-left: -25px;
-}
-
-ul.backer-list li {
-  display: inline-block;
-  text-align: center;
-  min-width: 45%;
-}
-
-ul.dev-list li, ul.advisor-list li {
-  display: inline-block;
-  text-align: center;
-}
-
-ul.backer-list img, ul.dev-list img, ul.advisor-list img {
-  width: 120px;
-  height: 120px;
-  border-radius: 50%;
-}
-
-.corptags {
-  text-align: center;
-  margin: 1em auto;
-}
-
-.corptag {
-  text-align: center;
-  width: 195px;
-  height: 195px;
-  display: inline-block;
-  vertical-align: middle;
-}
-
-.corptag img {
-  max-width: 195px;
-  max-height: 195px;
-  vertical-align: middle;
 }
 
 #demo-expired {

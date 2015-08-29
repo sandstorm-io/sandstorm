@@ -273,6 +273,7 @@ Router.map(function () {
         if (allowDemo && isSafeDemoAppUrl(packageUrl)) {
           if (package && package.status === "ready") {
             Router.go("appdemo", {appId: package.appId}, {replaceState: true});
+            return;
           } else {
             // continue on and install...
           }
@@ -297,6 +298,7 @@ Router.map(function () {
             }
             window.opener.Router.go("install", {packageId: packageId}, {query: this.params.query});
             window.close();
+            return;
           }
         } catch (err) {
           // Probably security error because window.opener is in a different domain.

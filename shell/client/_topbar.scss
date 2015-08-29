@@ -206,6 +206,7 @@ body>.topbar {
       >button {
         @extend %unstyled-button;
         @extend %hamburger-menu-item;
+        cursor: pointer;
         margin: 0px;
         @media #{$desktop} {
           height: $topbar-height-desktop;

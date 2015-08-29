@@ -146,6 +146,9 @@ Template.sandstormAppList.helpers({
   },
   isSignedUpOrDemo: function() {
     return this._db.isSignedUpOrDemo();
+  },
+  shouldHighlight: function () {
+    return this.appId === Template.instance().data._highlight;
   }
 });
 Template.sandstormAppList.events({
@@ -212,11 +215,26 @@ Template.sandstormAppList.onCreated(function() {
   this.subscribe("userPackages");
 });
 Template.sandstormAppList.onRendered(function () {
-  // Auto-focus search bar on desktop, but not mobile (on mobile it will open the software
-  // keyboard which is undesirable). window.orientation is generally defined on mobile browsers
-  // but not desktop browsers, but some mobile browsers don't support it, so we also check
-  // clientWidth. Note that it's better to err on the side of not auto-focusing.
-  if (window.orientation === undefined && window.innerWidth > 600) {
-    this.findAll(".search-bar")[0].focus();
+  // Scroll to highlighted app, if any.
+  if (this.data._highlight) {
+    var self = this;
+    var auto = this.autorun(function () {
+      if (self.subscriptionsReady()) {
+        var item = self.findAll(".highlight")[0];
+        if (item) {
+          item.focus();
+          item.scrollIntoView();
+        }
+        auto.stop();
+      }
+    });
+  } else {
+    // Auto-focus search bar on desktop, but not mobile (on mobile it will open the software
+    // keyboard which is undesirable). window.orientation is generally defined on mobile browsers
+    // but not desktop browsers, but some mobile browsers don't support it, so we also check
+    // clientWidth. Note that it's better to err on the side of not auto-focusing.
+    if (window.orientation === undefined && window.innerWidth > 600) {
+      this.findAll(".search-bar")[0].focus();
+    }
   }
 });

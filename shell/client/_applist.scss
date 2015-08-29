@@ -92,6 +92,14 @@
       background-size: 100% auto;
       background-color: #ccc;
     }
+    &.highlight {
+      background-color: #ccc;
+      border-radius: 6px;
+      .app-icon {
+        animation-duration: 2s;
+        animation-name: new-app;
+      }
+    }
     >.app-icon {
       @extend %pseudo-img-tag;
       display: block;
@@ -173,4 +181,12 @@
   border-radius: 4px;
   h1 { margin-top: 0; }
   p { margin-bottom: 0; }
+}
+
+@keyframes new-app {
+  from { transform: scale(0); }
+  80% { transform: scale(1); }
+  85% { transform: rotate(15deg); }
+  95% { transform: rotate(-15deg); }
+  to {  }
 }

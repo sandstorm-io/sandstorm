@@ -1227,7 +1227,7 @@ Router.map(function () {
         Router.go("root", {}, {replaceState: true});
       }
 
-      return new SandstormAppList(globalDb, globalQuotaEnforcer);
+      return new SandstormAppList(globalDb, globalQuotaEnforcer, this.params.query.highlight);
     },
   });
   this.route("selectGrain", {

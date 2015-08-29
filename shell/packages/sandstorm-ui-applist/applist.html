@@ -40,7 +40,8 @@
     {{/each}}
     {{#each actions }}
     {{!-- data-app-id is only used for testing purposes --}}
-    <button class="app-button app-action" data-app-id="{{appId}}">
+    <button class="app-button app-action {{#if shouldHighlight}}highlight{{/if}}"
+            data-app-id="{{appId}}">
       <div class="app-icon" style="background-image: url('{{ iconSrc }}');"></div>
       <span class="app-title">{{appTitle}}</span>
       <span class="action-text">New {{noun}}</span>

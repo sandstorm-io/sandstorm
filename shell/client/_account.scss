@@ -22,7 +22,7 @@ body>.popup.account>.frame {
 
   // TODO(cleanup): Much of the below was brought it from Meteor's accounts-ui and needs cleanup.
 
-  >button.login, >form, >a {
+  >button.login, >button.logout, >form, >a {
     display: block;
     width: 200px;
     height: 32px;

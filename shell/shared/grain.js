@@ -280,7 +280,6 @@ if (Meteor.isClient) {
 
   Template.layout.events({
     "click .incognito-button": function (event) {
-      console.log("incognito button clicked");
       console.log(event);
       var grains = globalGrains.get();
       var token = event.currentTarget.getAttribute("data-token");
@@ -296,7 +295,6 @@ if (Meteor.isClient) {
     },
 
     "click .redeem-token-button": function (event) {
-      console.log("redeem button clicked");
       console.log(event);
       var grains = globalGrains.get();
       var token = event.currentTarget.getAttribute("data-token");
@@ -628,11 +626,6 @@ if (Meteor.isClient) {
     "currentGrain": function() {
       return getActiveGrain(globalGrains.get());
     }
-  });
-
-  Template.grain.onCreated(function () {
-    this.originalPath = window.location.pathname + window.location.search;
-    this.originalHash = window.location.hash;
   });
 
   Template.grainView.helpers({
@@ -1148,7 +1141,6 @@ if (Meteor.isClient) {
 }
 
 function makeGrainIdActive(grainId) {
-  console.log("making grain " + grainId + " active");
   var grains = globalGrains.get();
   for (var i = 0 ; i < grains.length ; i++) {
     var grain = grains[i];
@@ -1206,13 +1198,11 @@ function mapGrainStateToTemplateData(grainState) {
     appOrigin: grainState.origin(),
     hasNotLoaded: !(grainState.hasLoaded()),
     sessionId: grainState.sessionId(),
-    path: encodeURIComponent(grainState._originalPath || ""), //TODO: cleanup
-    hash: grainState._originalHash || "", // TODO: cleanup
+    originalPath: grainState._originalPath,
     interstitial: grainState.shouldShowInterstitial(),
     token: grainState.token(),
     viewInfo: grainState.viewInfo(),
   };
-  console.log(templateData);
   return templateData;
 }
 
@@ -1262,9 +1252,7 @@ Router.map(function () {
       this.state.set("beforeActionHookRan", true);
 
       var grainId = this.params.grainId;
-      var path = "/" + (this.params.path || "");
-      var query = this.params.query;
-      var hash = this.params.hash;
+      var path = "/" + (this.params.path || "") + window.location.search + window.location.hash;
       var grains = globalGrains.get();
       var grainIndex = grainIdToIndex(grains, grainId);
       if (grainIndex == -1) {
@@ -1275,8 +1263,7 @@ Router.map(function () {
           var mainContentElement = document.querySelector("body>.main-content");
           if (mainContentElement) {
             var grains = globalGrains.get();
-            var grainToOpen = new GrainView(grainId, path, query, hash, undefined,
-                mainContentElement);
+            var grainToOpen = new GrainView(grainId, path, undefined, mainContentElement);
             grainToOpen.openSession();
             grainIndex = grains.push(grainToOpen) - 1;
             globalGrains.set(grains);
@@ -1327,8 +1314,7 @@ Router.map(function () {
       this.state.set("beforeActionHookRan", true);
 
       var token = this.params.token;
-      var path = "/" + (this.params.path || "");
-      var query = this.params.query;
+      var path = "/" + (this.params.path || "") + window.location.search + window.location.hash;
       var hash = this.params.hash;
 
       var tokenInfo = TokenInfo.findOne({_id: token});
@@ -1341,8 +1327,7 @@ Router.map(function () {
             var mainContentElement = document.querySelector("body>.main-content");
             if (mainContentElement) {
               var grains = globalGrains.get();
-              var grainToOpen = new GrainView(grainId, path, query, hash, token,
-                                              mainContentElement);
+              var grainToOpen = new GrainView(grainId, path, token, mainContentElement);
               grainToOpen.openSession();
               grainIndex = grains.push(grainToOpen) - 1;
               globalGrains.set(grains);

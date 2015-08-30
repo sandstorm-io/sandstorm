@@ -58,42 +58,41 @@ body>.popup.account>.frame {
       box-shadow: none;
     }
 
-    &.google {
-      background-image: url("/google.svg");
-      &:hover {
-        background-image: url("/google-color.svg");
-        color: #a53232;
-      }
-    }
-    &.github {
-      background-image: url("/github.svg");
-      &:hover {
-        background-image: url("/github-color.svg");
-        color: #191919;
-      }
-    }
-    &.email {
-      background-image: url("/email.svg");
-      &:hover {
-        background-image: url("/email-m.svg");
-      }
-    }
-    &.troubleshooting {
-      background-image: url("/troubleshoot.svg");
-      &:hover {
-        background-image: url("/troubleshoot-m.svg");
-      }
-    }
-    &.devAccounts {
-      background-image: url("/debug.svg");
-      &:hover {
-        background-image: url("/debug-m.svg");
-      }
-    }
-
     background-position: 16px center;
     background-size: 27px 27px;
     background-repeat: no-repeat;
+  }
+  >button.login.google {
+    background-image: url("/google.svg");
+    &:hover {
+      background-image: url("/google-color.svg");
+      color: #a53232;
+    }
+  }
+  >button.login.github {
+    background-image: url("/github.svg");
+    &:hover {
+      background-image: url("/github-color.svg");
+      color: #191919;
+    }
+  }
+  >form.email {
+    background-image: url("/email.svg");
+    &:hover {
+      background-image: url("/email-m.svg");
+    }
+  }
+  >a.troubleshooting {
+    background-image: url("/troubleshoot.svg");
+    &:hover {
+      background-image: url("/troubleshoot-m.svg");
+    }
+  }
+  >button.login.devAccounts {
+    background-image: url("/debug.svg");
+    &:hover {
+      background-image: url("/debug-m.svg");
+    }
   }
 
   .login-image {
@@ -305,6 +304,14 @@ body>.popup.account>.frame {
       color: black;
       font-weight: normal;
       width: 225px;
+    }
+    >button.login.google {
+      background-image: url("/google-color.svg");
+      color: #a53232;
+    }
+    >button.login.github {
+      background-image: url("/github-color.svg");
+      color: #191919;
     }
 
     >form.email {
@@ -782,10 +789,37 @@ body>.popup.billing-prompt>.frame {
     text-align: center;
     color: #494949;
     font-size: 17pt;
+    max-width: 440px;
+    margin: 1em auto;
 
     >a {
       color: inherit;
     }
+
+    >.trash {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      background-image: url("/trash-m.svg");
+      font-size: 0;
+      vertical-align: top;
+    }
+
+    &.alternatives {
+      font-size: 10pt;
+      text-align: right;
+      width: 327px;
+      line-height: 22px;
+      margin-bottom: 32px;
+    }
+
+    &.custom-app {
+      max-width: 510px;
+    }
+  }
+
+  >.login {
+    margin-bottom: 16px;
   }
 
   >p.success-note {
@@ -1067,6 +1101,15 @@ body>.popup.billing-prompt>.frame {
         background-color: white;
         cursor: pointer;
       }
+    }
+
+    .trash {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      background-image: url("/trash-m.svg");
+      font-size: 0;
+      vertical-align: top;
     }
   }
 }

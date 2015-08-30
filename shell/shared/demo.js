@@ -332,6 +332,17 @@ Router.map(function () {
       };
     }
   });
+
+  this.route("demoRestart", {
+    path: "/demo-restart",
+    waitOn: function () {
+      return Meteor.subscribe("credentials");
+    },
+    data: function () {
+      Meteor.logout();
+      Router.go("demo");
+    }
+  });
 });
 
 Router.map(function () {

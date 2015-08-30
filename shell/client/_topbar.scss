@@ -713,10 +713,6 @@ body>.popup {
       }
     }
 
-    input, button, .login-button {
-      @media #{$mobile} { font-size: 15pt; }
-    }
-
     >* {
       margin-left: $topbar-popup-padding;
       margin-right: $topbar-popup-padding;

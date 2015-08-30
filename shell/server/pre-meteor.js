@@ -66,6 +66,9 @@ function wwwHandlerForGrain(grainId) {
     var charset = mime.charsets.lookup(type);
     if (charset) {
       type = type + "; charset=" + charset;
+    } else if (type === "application/json") {
+      // HACK: Apparently the MIME module does not assume UTF-8 for JSON. :(
+      type = type + "; charset=utf-8";
     }
 
     var started = false;

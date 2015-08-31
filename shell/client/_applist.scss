@@ -40,7 +40,7 @@
         border: 1px solid $grainlist-searchbar-outline-color-focus;
       }
       @media #{$mobile} {
-        width: calc(100% - 36px);
+        width: calc(100% - 60px);
       }
     }
   }

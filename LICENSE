@@ -69,7 +69,7 @@ src/joyent-http/*
     License: MIT
     License text: See comments at top of source files.
 
-base64 handling in src/sandstorm/legacy-bridge.c++
+base64 handling in src/sandstorm/sandstorm-http-bridge.c++
     What: Code copied from libb64
     Source URL: http://libb64.sourceforge.net/
     Copyright: Public Domain (authored by Chris Venter)

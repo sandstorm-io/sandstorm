@@ -185,6 +185,16 @@ Template.sandstormTopbar.events({
     }
   },
 
+  // The touchstart handler is to handle a bug in iOS with the click event above.
+  // From what I can tell, mobile safari seems to be optimizing out the click.
+  "touchstart .popup": function (event) {
+    if (event.target === event.currentTarget) {
+      // Clicked outside the popup; close it.
+      event.stopPropagation();
+      Template.instance().data.closePopup();
+    }
+  },
+
   "click .popup>.frame>.close-popup": function (event) {
     event.stopPropagation();
     Template.instance().data.closePopup();

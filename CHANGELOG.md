@@ -1,3 +1,6 @@
+### v0.107 (2015-08-31)
+- Fix sign-out button.
+
 ### v0.106 (2015-08-30)
 - Complete UI overhaul!
   - "New" and "Open" flows.

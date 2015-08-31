@@ -235,7 +235,8 @@ Template.sandstormAppList.onRendered(function () {
     // but not desktop browsers, but some mobile browsers don't support it, so we also check
     // clientWidth. Note that it's better to err on the side of not auto-focusing.
     if (window.orientation === undefined && window.innerWidth > 600) {
-      this.findAll(".search-bar")[0].focus();
+      var searchbar = this.findAll(".search-bar")[0];
+      if (searchbar) searchbar.focus();
     }
   }
 });

@@ -187,13 +187,15 @@ ActivityStats = new Mongo.Collection("activityStats");
 // Each of daily, weekly, and monthly contains:
 //   activeUsers: The number of unique users who have used a grain on the server in the time
 //       interval. Only counts logged-in users.
+//   demoUsers: Demo users.
+//   appDemoUsers: Users that came in through "app demo".
 //   activeGrains: The number of unique grains that have been used in the time interval.
 
 DeleteStats = new Mongo.Collection("deleteStats");
 // Contains records of objects that were deleted, for stat-keeping purposes.
 //
 // Each contains:
-//   type: "grain" or "user" or "appDemoUser"
+//   type: "grain" or "user" or "demoUser" or "appDemoUser"
 //   lastActive: Date of the user's or grain's last activity.
 
 FileTokens = new Mongo.Collection("fileTokens");

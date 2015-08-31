@@ -68,12 +68,14 @@ if (Meteor.isServer) {
         // When deleting a user, we can specify it as a "normal" user
         // (type: user) or as a user who started out by using the app
         // demo feature (type: appDemoUser).
-        var deleteStatsType = "user";
+        var deleteStatsType = "demoUser";
         var isAppDemoUser = !! user.isAppDemoUser;
         if (isAppDemoUser) {
           deleteStatsType = "appDemoUser";
         }
-        DeleteStats.insert({type: deleteStatsType, lastActive: user.lastActive});
+        // Intentionally record deleted users at time of deletion to avoid miscounting users that
+        // were demoing just before the day rolled over.
+        DeleteStats.insert({type: deleteStatsType, lastActive: new Date()});
       }
     });
   }
@@ -156,8 +158,10 @@ if (Meteor.isServer) {
             return waitPromise(sandstormBackend.transferGrain(grain.userId, grain._id, newUserId));
           });
 
-          Meteor.users.remove(demoUser._id);
-          waitPromise(sandstormBackend.deleteUser(demoUser._id));
+          // We could delete the user here, but it runs some risk that consumeDemoUser() could be
+          // called multiple times concurrently (maybe due to some random page refresh) and the
+          // second call, finding no grains to transfer, could delete the user before the first
+          // call is done transferring. So just let the demo user expire normally...
         }
         return true;  // either suceeded or token was not valid (and never will be)
       },

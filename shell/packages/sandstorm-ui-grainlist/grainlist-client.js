@@ -1,17 +1,26 @@
+var matchesAll = function matchesAll(needles, haystack) {
+  for (var i = 0 ; i < needles.length ; i++) {
+    if (haystack.indexOf(needles[i]) === -1) {
+      return false;
+    }
+  }
+  return true;
+};
 var compileMatchFilter = function (searchString) {
   // split up searchString into an array of regexes, use them to match against item
   var searchKeys = searchString.toLowerCase()
       .split(" ")
       .filter(function(k) { return k !== "";});
-  return function matchFilter(item) {
+  var matchesTitle = function (item) {
     // Keep any item that matches all substrings
-    var haystack = item.title.toLowerCase();
-    for (var i = 0 ; i < searchKeys.length ; i++) {
-      if (haystack.indexOf(searchKeys[i]) === -1) {
-        return false;
-      }
-    }
-    return true;
+    return matchesAll(searchKeys, item.title.toLowerCase());
+  };
+  var matchesAppTitle = function (item) {
+    // Keep any item that matches all substrings
+    return matchesAll(searchKeys, item.appTitle.toLowerCase());
+  };
+  return function matchFilter(item) {
+    return matchesTitle(item) || matchesAppTitle(item);
   };
 };
 var mapGrainsToTemplateObject = function (grains) {

@@ -764,6 +764,7 @@ body>.popup {
 body>.popup.billing-prompt>.frame {
   text-align: center;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 
   @media #{$desktop} {
     width: 932px;

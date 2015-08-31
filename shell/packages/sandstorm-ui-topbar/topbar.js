@@ -233,7 +233,7 @@ Template.sandstormTopbar.events({
       grains.splice(closeIndex, 1);
       grains[newActiveIndex].setActive(true);
       topbar._grains.set(grains);
-      Router.go("grain", {grainId: grains[newActiveIndex].grainId()});
+      Router.go(grains[newActiveIndex].route());
     } else {
       grains.splice(closeIndex, 1);
       topbar._grains.set(grains);

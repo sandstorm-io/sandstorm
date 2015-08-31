@@ -793,6 +793,10 @@ body>.popup.billing-prompt>.frame {
     max-width: 440px;
     margin: 1em auto;
 
+    &.wider {
+      max-width: 590px;
+    }
+
     >a {
       color: inherit;
     }

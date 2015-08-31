@@ -52,8 +52,10 @@ limitations under the License.
       {{>_accountProfileEditor}}
       {{#with termsAndPrivacy}}
         <li class="terms">
+          <label>
           <input type="checkbox" name="agreedToTerms" required> I have read and agree to the
           {{#if termsUrl}}<a target="_blank" href="{{termsUrl}}">Terms of Service</a>{{#if privacyUrl}} and {{/if}}{{/if}}{{#if privacyUrl}}<a target="_blank" href="{{privacyUrl}}">Privacy policy</a>{{/if}}.
+          </label>
         </li>
       {{/with}}
       <li class="save"><button>Continue</button></li>

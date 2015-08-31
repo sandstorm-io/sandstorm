@@ -5,7 +5,7 @@ Sandstorm makes it easy to run your own server.
 Use Sandstorm to install apps to create [documents](http://etherpad.org/),
 [spreadsheets](https://ethercalc.net/), [blogs](https://wordpress.org),
 [git repos](https://about.gitlab.com/), [task lists](http://libreboard.com/),
-and [more](https://sandstorm.io/apps/) as easily as you'd install apps on your
+and [more](https://apps.sandstorm.io/) as easily as you'd install apps on your
 phone.
 
 Sandstorm is open source and can be installed on any x86-64 Linux

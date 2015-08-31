@@ -760,7 +760,7 @@ body>.popup {
     }
 
     [data-which-tab=send-invite]>.send-invite>h5,
-    [data-which-tab=sharable-link]>.sharable-link>h5 {
+    [data-which-tab=shareable-link]>.shareable-link>h5 {
       background-color: white;
       border-bottom: 1px solid white;
       // TODO(cleanup): It would be better to use z-index for this.
@@ -776,8 +776,8 @@ body>.popup {
         margin-right: 16px;
       }
     }
-    [data-which-tab=send-invite]>.sharable-link>.tab-content,
-    [data-which-tab=sharable-link]>.send-invite>.tab-content {
+    [data-which-tab=send-invite]>.shareable-link>.tab-content,
+    [data-which-tab=shareable-link]>.send-invite>.tab-content {
       display: none;
     }
     section>h5.tab-top {
@@ -802,7 +802,7 @@ body>.popup {
       left: 2%;
       background-image: url(/email-m.svg);
     }
-    section.sharable-link>h5.tab-top {
+    section.shareable-link>h5.tab-top {
       right: 2%;
       background-image: url(/link-m.svg);
     }

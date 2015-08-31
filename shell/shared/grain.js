@@ -512,15 +512,15 @@ if (Meteor.isClient) {
   });
 
   Template.shareWithOthers.events({
-    "click .sharable-link": function (event, instance) {
-      instance.find(".share-tabs").setAttribute("data-which-tab", "sharable-link");
+    "click .shareable-link": function (event, instance) {
+      instance.find(".share-tabs").setAttribute("data-which-tab", "shareable-link");
     },
     "click .send-invite": function (event, instance) {
       instance.find(".share-tabs").setAttribute("data-which-tab", "send-invite");
     },
   });
 
-  Template.sharableLinkTab.events({
+  Template.shareableLinkTab.events({
     "change .share-token-role": function (event, instance) {
       var success = instance.completionState.get().success;
       if (success) {
@@ -868,7 +868,7 @@ if (Meteor.isClient) {
     },
   });
 
-  Template.sharableLinkTab.onCreated(function () {
+  Template.shareableLinkTab.onCreated(function () {
     this.completionState = new ReactiveVar({clear: true});
   });
 
@@ -876,7 +876,7 @@ if (Meteor.isClient) {
     this.completionState = new ReactiveVar({clear: true});
   });
 
-  Template.sharableLinkTab.helpers({
+  Template.shareableLinkTab.helpers({
     completionState: function() {
       var instance = Template.instance();
       return instance.completionState.get();

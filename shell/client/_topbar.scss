@@ -238,9 +238,13 @@ body>.topbar {
           background-color: $topbar-background-color-hover;
         }
 
-        // Allow the LI to feel "disabled", in which case, it does not
-        // visually respond to hover.
+        // Allow the LI to feel "disabled", in which case it does not
+        // show the caret and does not visually respond to hover
         &.disabled {
+          background-image: url("/icon.png");
+          background-repeat: no-repeat;
+          background-position: 8px center;
+          background-size: auto;
           &:hover {
             background-color: $topbar-background-color;
           }
@@ -711,10 +715,6 @@ body>.popup {
       @media #{$mobile} {
         font-size: 14pt;
       }
-    }
-
-    input, button, .login-button {
-      @media #{$mobile} { font-size: 15pt; }
     }
 
     >* {

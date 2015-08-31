@@ -128,14 +128,19 @@ Template.sandstormTopbar.helpers({
           // TODO(someday): Make this better. We could wait until the popup template has opened and
           //   rendered, then choose a better position based on its full size.
 
-          var rect = element.getBoundingClientRect();
-          var currentWindowWidth = windowWidth.get();
-          var windowMid = currentWindowWidth / 2;
-          var itemMid = (rect.left + rect.right) / 2;
-          instance.popupPosition.set(itemMid < windowMid
-              ? { name: item.name, align: "left", px: Math.max(itemMid - 50, 0) }
-              : { name: item.name, align: "right",
-                  px: Math.max(currentWindowWidth - itemMid - 50, 0) });
+          if (item.name == "account") {
+            // account should always be flush right
+            instance.popupPosition.set({ name: item.name, align: "right", px: 0});
+          } else {
+            var rect = element.getBoundingClientRect();
+            var currentWindowWidth = windowWidth.get();
+            var windowMid = currentWindowWidth / 2;
+            var itemMid = (rect.left + rect.right) / 2;
+            instance.popupPosition.set(itemMid < windowMid
+                ? { name: item.name, align: "left", px: Math.max(itemMid - 50, 0) }
+                : { name: item.name, align: "right",
+                    px: Math.max(currentWindowWidth - itemMid - 50, 0) });
+          }
         }
       });
     }
@@ -228,7 +233,7 @@ Template.sandstormTopbar.events({
       grains.splice(closeIndex, 1);
       grains[newActiveIndex].setActive(true);
       topbar._grains.set(grains);
-      Router.go("grain", {grainId: grains[newActiveIndex].grainId()});
+      Router.go(grains[newActiveIndex].route());
     } else {
       grains.splice(closeIndex, 1);
       topbar._grains.set(grains);

@@ -344,7 +344,7 @@ if (Meteor.isClient) {
             grains.splice(activeIndex, 1);
             grains[newActiveIndex].setActive(true);
             globalGrains.set(grains);
-            Router.go("grain", {grainId: grains[newActiveIndex].grainId()});
+            Router.go(grains[newActiveIndex].route());
           }
         }
       } else {
@@ -359,7 +359,7 @@ if (Meteor.isClient) {
             grains.splice(activeIndex, 1);
             grains[newActiveIndex].setActive(true);
             globalGrains.set(grains);
-            Router.go("grain", {grainId: grains[newActiveIndex].grainId()});
+            Router.go(grains[newActiveIndex].route());
           }
         }
       }

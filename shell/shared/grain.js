@@ -375,11 +375,23 @@ if (Meteor.isClient) {
     },
   });
 
+  Template.grainBackupButton.onCreated(function () {
+    this.isLoading = new ReactiveVar(false);
+  });
+
+  Template.grainBackupButton.helpers({
+    isLoading: function () {
+      return Template.instance().isLoading.get();
+    }
+  });
+
   Template.grainBackupButton.events({
-    "click button": function (event) {
+    "click button": function (event, template) {
+      template.isLoading.set(true);
       this.reset();
       var activeGrain = getActiveGrain(globalGrains.get());
       Meteor.call("backupGrain", activeGrain.grainId(), function (err, id) {
+        template.isLoading.set(false);
         if (err) {
           alert("Backup failed: " + err); // TODO(someday): make this better UI
         } else {

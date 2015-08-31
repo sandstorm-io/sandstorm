@@ -5,7 +5,7 @@
   line-height: 32px;
 }
 .grainlog-contents {
-  max-height: calc(100% - 32px);
+  height: calc(100% - 32px);
   overflow: auto;
   >pre {
     margin: 8px;

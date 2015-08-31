@@ -49,15 +49,15 @@ if (Meteor.isServer) {
     check(packageId, String);
 
     var packageCursor = Packages.find(packageId);
-    var package = packageCursor.fetch()[0];
+    var pkg = packageCursor.fetch()[0];
 
-    if (package && this.userId) {
+    if (pkg && this.userId) {
       // TODO(perf):  Grain list could be large.  In theory all we really need is to know whether
       //   grains of newer and older versions exist.
       return [
         packageCursor,
-        UserActions.find({ userId: this.userId, appId: package.appId }),
-        Grains.find({ userId: this.userId, appId: package.appId })
+        UserActions.find({ userId: this.userId, appId: pkg.appId }),
+        Grains.find({ userId: this.userId, appId: pkg.appId })
       ];
     } else {
       return packageCursor;
@@ -187,26 +187,26 @@ Meteor.methods({
 
 if (Meteor.isClient) {
   addUserActions = function(packageId) {
-    var package = Packages.findOne(packageId);
-    if (package) {
+    var pkg = Packages.findOne(packageId);
+    if (pkg) {
       // Remove old versions.
-      UserActions.find({userId: Meteor.userId(), appId: package.appId})
+      UserActions.find({userId: Meteor.userId(), appId: pkg.appId})
           .forEach(function (action) {
         UserActions.remove(action._id);
       });
 
       // Install new.
-      var actions = package.manifest.actions;
+      var actions = pkg.manifest.actions;
       for (i in actions) {
         var action = actions[i];
         if ("none" in action.input) {
           var userAction = {
             userId: Meteor.userId(),
-            packageId: package._id,
-            appId: package.appId,
-            appTitle: package.manifest.appTitle && package.manifest.appTitle.defaultText,
-            appMarketingVersion: package.manifest.appMarketingVersion,
-            appVersion: package.manifest.appVersion,
+            packageId: pkg._id,
+            appId: pkg.appId,
+            appTitle: pkg.manifest.appTitle && pkg.manifest.appTitle.defaultText,
+            appMarketingVersion: pkg.manifest.appMarketingVersion,
+            appVersion: pkg.manifest.appVersion,
             title: action.title.defaultText,  // TODO(someday): `.defaultText` here is wrong.
             command: action.command
           };
@@ -220,7 +220,7 @@ if (Meteor.isClient) {
         }
       }
 
-      Meteor.call("deleteUnusedPackages", package.appId);
+      Meteor.call("deleteUnusedPackages", pkg.appId);
     }
   }
 
@@ -265,14 +265,14 @@ Router.map(function () {
       if (!this.ready()) return;
 
       var packageId = this.params.packageId;
-      var package = Packages.findOne(packageId);
+      var pkg = Packages.findOne(packageId);
       var userId = Meteor.userId();
       var packageUrl = this.params.query && this.params.query.url;
 
       if (!userId) {
         if (allowDemo && isSafeDemoAppUrl(packageUrl)) {
-          if (package && package.status === "ready") {
-            Router.go("appdemo", {appId: package.appId}, {replaceState: true});
+          if (pkg && pkg.status === "ready") {
+            Router.go("appdemo", {appId: pkg.appId}, {replaceState: true});
             return;
           } else {
             // continue on and install...
@@ -325,7 +325,7 @@ Router.map(function () {
          }
       });
 
-      if (package === undefined) {
+      if (pkg === undefined) {
         if (!packageUrl) {
           return { error: "Unknown package ID: " + packageId +
                    "\nPerhaps it hasn't been uploaded?",
@@ -335,22 +335,22 @@ Router.map(function () {
         }
       }
 
-      if (package.status !== "ready") {
+      if (pkg.status !== "ready") {
         var progress;
-        if (package.progress < 0) {
+        if (pkg.progress < 0) {
           progress = "";  // -1 means no progress to report
-        } else if (package.progress > 1) {
+        } else if (pkg.progress > 1) {
           // Progress outside [0,1] indicates a byte count rather than a fraction.
           // TODO(cleanup):  This is pretty ugly.  What if exactly 1 byte had been downloaded?
-          progress = Math.round(package.progress / 1024) + " KiB";
+          progress = Math.round(pkg.progress / 1024) + " KiB";
         } else {
-          progress = Math.round(package.progress * 100) + "%";
+          progress = Math.round(pkg.progress * 100) + "%";
         }
 
         return {
-          step: package.status,
+          step: pkg.status,
           progress: progress,
-          error: package.status === "failed" ? package.error : null,
+          error: pkg.status === "failed" ? pkg.error : null,
           packageId: packageId,
           packageUrl: packageUrl
         };
@@ -359,8 +359,8 @@ Router.map(function () {
       var result = {
         packageId: packageId,
         packageUrl: packageUrl,
-        appId: package.appId,
-        version: package.manifest.appVersion
+        appId: pkg.appId,
+        version: pkg.manifest.appVersion
       };
 
       if (UserActions.findOne({ userId: Meteor.userId(), packageId: packageId })) {
@@ -368,7 +368,7 @@ Router.map(function () {
 
         result.step = "run";
 
-        var existingGrains = Grains.find({ userId: Meteor.userId(), appId: package.appId }).fetch();
+        var existingGrains = Grains.find({ userId: Meteor.userId(), appId: pkg.appId }).fetch();
 
         var maxVersion = result.version;
 
@@ -392,13 +392,13 @@ Router.map(function () {
           // OK, the app is installed and everything and there's no warnings to print, so let's
           // just go to it! We use `replaceState` so that if the user clicks "back" they don't just
           // get redirected forward again, but end up back at the app list.
-          Router.go("newGrain", {}, {replaceState: true, query: {highlight: package.appId }});
+          Router.go("newGrain", {}, {replaceState: true, query: {highlight: pkg.appId }});
         }
 
         return result;
       } else {
         // Check whether some other version is installed and whether it's an older or newer version.
-        var oldAction = UserActions.findOne({ userId: Meteor.userId(), appId: package.appId });
+        var oldAction = UserActions.findOne({ userId: Meteor.userId(), appId: pkg.appId });
 
         result.step = "confirm";
 

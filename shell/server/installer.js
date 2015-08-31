@@ -36,7 +36,7 @@ var installers = {};
 Meteor.methods({
   deleteUnusedPackages: function (appId) {
     check(appId, String);
-    Packages.find({appId:appId}).forEach(function (package) {deletePackage(package._id)});
+    Packages.find({appId:appId}).forEach(function (pkg) {deletePackage(pkg._id)});
   },
 });
 
@@ -53,13 +53,13 @@ deletePackage = function (packageId) {
     if (!grain && !action) {
       Packages.update({_id:packageId}, {$set: {status:"delete"}});
       waitPromise(sandstormBackend.deletePackage(packageId));
-      var package = Packages.findAndModify({
+      var pkg = Packages.findAndModify({
         query: {_id: packageId},
         remove: true
       });
 
       // Clean up assets (icon, etc).
-      getAllManifestAssets(package.manifest).forEach(function (assetId) {
+      getAllManifestAssets(pkg.manifest).forEach(function (assetId) {
         globalDb.unrefStaticAsset(assetId);
       });
     }

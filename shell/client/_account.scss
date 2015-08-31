@@ -830,7 +830,7 @@ body>.popup.billing-prompt>.frame {
   >p.success-note {
     background-color: #cff4c6;
     padding: 32px;
-    display: table;
+    max-width: 500px;
     margin: 1em auto;
 
     >strong {

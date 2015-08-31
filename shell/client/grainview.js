@@ -276,8 +276,6 @@ GrainView.prototype._openGrainSession = function () {
       self._dep.changed();
     } else {
       // result is an object containing sessionId, initial title, and grainId.
-      console.log("openSession success");
-      console.log(result);
       if (result.title) {
         self._title = result.title;
       }

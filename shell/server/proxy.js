@@ -1598,68 +1598,40 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     var path = request.url.slice(1);  // remove leading '/'
     var session = self.getSession(request);
 
+    function optionsForBody() {
+      return {
+        content: data,
+        encoding: request.headers["content-encoding"],
+        mimeType: request.headers["content-type"]
+      };
+    }
+
     if (request.method === "GET" || request.method === "HEAD") {
       return session.get(path, context);
     } else if (request.method === "POST") {
-      return session.post(path, {
-        mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data,
-        encoding: request.headers["content-encoding"]
-      }, context);
+      return session.post(path, optionsForBody(), context);
     } else if (request.method === "PUT") {
-      return session.put(path, {
-        mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data,
-        encoding: request.headers["content-encoding"]
-      }, context);
+      return session.put(path, optionsForBody(), context);
     } else if (request.method === "DELETE") {
       return session.delete(path, context);
     } else if (request.method === "PROPFIND") {
-      return session.propfind(path, {
-        mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data,
-        encoding: request.headers["content-encoding"]
-      }, context);
+      return session.propfind(path, optionsForBody(), context);
     } else if (request.method === "PROPPATCH") {
-      return session.proppatch(path, {
-        mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data,
-        encoding: request.headers["content-encoding"]
-      }, context);
+      return session.proppatch(path, optionsForBody(), context);
     } else if (request.method === "MKCOL") {
-      return session.mkcol(path, {
-        mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data,
-        encoding: request.headers["content-encoding"]
-      }, context);
+      return session.mkcol(path, optionsForBody(), context);
     } else if (request.method === "COPY") {
       return session.copy(path, context);
     } else if (request.method === "MOVE") {
       return session.move(path, context);
     } else if (request.method === "LOCK") {
-      return session.lock(path, {
-        mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data,
-        encoding: request.headers["content-encoding"]
-      }, context);
+      return session.lock(path, optionsForBody(), context);
     } else if (request.method === "UNLOCK") {
-      return session.unlock(path, {
-        mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data,
-        encoding: request.headers["content-encoding"]
-      }, context);
+      return session.unlock(path, optionsForBody(), context);
     } else if (request.method === "ACL") {
-      return session.acl(path, {
-        mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data,
-        encoding: request.headers["content-encoding"]
-      }, context);
+      return session.acl(path, optionsForBody(), context);
     } else if (request.method === "REPORT") {
-      return session.report(path, {
-        mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data,
-        encoding: request.headers["content-encoding"]
-      }, context);
+      return session.report(path, optionsForBody(), context);
     } else if (request.method === "OPTIONS") {
       return session.options(path, context).then(function (rpcResponse) {
 

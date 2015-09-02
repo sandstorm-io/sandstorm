@@ -29,20 +29,30 @@
         vertical-align: middle;
         width: calc(100% - 100px);
       }
-      >img.search-icon {
-        width: 24px;
-        height: 24px;
-        margin: 4px;
-      }
-      >input.search-bar {
-        font-size: 16pt;
-        background-color: $grainlist-searchbar-background-color;
-        border: 1px solid $grainlist-searchbar-outline-color;
-        &:focus {
-          border: 1px solid $grainlist-searchbar-outline-color-focus;
+      >label {
+        >span.search-icon {
+          @extend %pseudo-img-tag;
+          background-image: url("/search.svg");
+          background-size: 24px 24px;
+          background-position: center;
+          display: inline-block;
+          box-sizing: border-box;
+          width: 32px;
+          height: 32px;
+          vertical-align: top;
         }
-        @media #{$mobile} {
-          width: calc(100% - 36px);
+        >input.search-bar {
+          font-size: 16pt;
+          height: 32px;
+          box-sizing: border-box;
+          background-color: $grainlist-searchbar-background-color;
+          border: 1px solid $grainlist-searchbar-outline-color;
+          &:focus {
+            border: 1px solid $grainlist-searchbar-outline-color-focus;
+          }
+          @media #{$mobile} {
+            width: calc(100% - 36px);
+          }
         }
       }
     }

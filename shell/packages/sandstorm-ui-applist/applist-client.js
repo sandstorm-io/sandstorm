@@ -149,6 +149,9 @@ Template.sandstormAppList.helpers({
   },
   shouldHighlight: function () {
     return this.appId === Template.instance().data._highlight;
+  },
+  uninstalling: function () {
+    return Template.instance().data._uninstalling.get();
   }
 });
 Template.sandstormAppList.events({
@@ -182,12 +185,23 @@ Template.sandstormAppList.events({
       launchAndEnterGrainByActionId(actionId);
     });
   },
+  "click .uninstall-action": function(event) {
+    var actionId = this._id;
+    var appId = UserActions.findOne(actionId).appId;
+    console.log("Uninstalling action " + actionId);
+    UserActions.remove(actionId);
+    Meteor.call("deleteUnusedPackages", appId);
+  },
   "click .dev-action": function(event) {
     var devId = this._id;
     var actionIndex = this.actionIndex;
     // N.B.: this calls into a global in shell.js.
     // TODO(cleanup): refactor into a safer dependency.
     launchAndEnterGrainByActionId("dev", this._id, this.actionIndex);
+  },
+  "click button.toggle-uninstall": function(event) {
+    var uninstallVar = Template.instance().data._uninstalling;
+    uninstallVar.set(!uninstallVar.get());
   },
   // We use keyup rather than keypress because keypress's event.currentTarget.value will not
   // have taken into account the keypress generating this event, so we'll miss a letter to

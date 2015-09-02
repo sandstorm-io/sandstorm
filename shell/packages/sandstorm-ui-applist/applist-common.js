@@ -6,4 +6,5 @@ SandstormAppList = function(db, quotaEnforcer, highlight) {
   this._db = db;
   this._quotaEnforcer = quotaEnforcer;
   this._highlight = highlight;
+  this._uninstalling = new ReactiveVar(false);
 }

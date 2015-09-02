@@ -2,10 +2,21 @@
   {{#if isSignedUpOrDemo}}
   <div class="app-list">
     <h1>Apps</h1>
+
     <div class="search-row {{#unless actionsCount}}hide{{/unless}}">
-      <img title="Search" class="search-icon" src="/search.svg"><input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
+      <label>
+        <span class="search-icon" title="Search"></span>
+        <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
+      </label>
+      {{#if uninstalling}}
+      <button class="toggle-uninstall" title="Done uninstalling">Done uninstalling</button>
+      {{else}}
+      <button class="toggle-uninstall" title="Uninstall an app">Uninstall...</button>
+      {{/if}}
     </div>
-    <div class="popular-container {{#if searching }}hide{{/if}} {{#unless myGrainsCount}}hide{{/unless}}">
+
+
+    <div class="popular-container {{#if searching }}hide{{/if}} {{#if uninstalling }}hide{{/if}} {{#unless myGrainsCount}}hide{{/unless}}">
       <h2 class="">Most used</h2>
       {{#each popularActions }}
       <button class="app-button app-action {{#if searching}}hide{{/if}}">
@@ -15,7 +26,7 @@
       </button>
       {{/each}}
     </div>
-    <div class="clear-hack"> </div>
+
     <h2 class="{{#if searching}}hide{{/if}} {{#unless actionsCount}}hide{{/unless}} all-apps">All apps</h2>
     <a class="app-button install-button {{#if searching}}hide{{/if}}" href="https://apps.sandstorm.io/?host={{ origin }}">
       <div class="app-icon pseudoapp install-icon"></div>
@@ -41,12 +52,23 @@
     {{/each}}
     {{#each actions }}
     {{!-- data-app-id is only used for testing purposes --}}
+    {{#if uninstalling}}
+    <button class="app-button uninstall-action {{#if shouldHighlight}}highlight{{/if}}"
+            data-app-id="{{appId}}">
+      <div class="app-icon" style="background-image: url('/close-FFFFFF.svg'), url('/1x1-00000080.png'), url('{{ iconSrc }}');
+          background-size: 50%, cover, cover;
+          background-position: center, center, center;"></div>
+      <span class="app-title">{{appTitle}}</span>
+      <span class="action-text">Uninstall</span>
+    </button>
+    {{else}}
     <button class="app-button app-action {{#if shouldHighlight}}highlight{{/if}}"
             data-app-id="{{appId}}">
       <div class="app-icon" style="background-image: url('{{ iconSrc }}');"></div>
       <span class="app-title">{{appTitle}}</span>
       <span class="action-text">New {{noun}}</span>
     </button>
+    {{/if}}
     {{/each}}
   </div>
   {{else}}

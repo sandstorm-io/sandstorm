@@ -16,6 +16,16 @@
 
 // This file defines the database schema.
 
+// Useful for debugging: Set the env variable LOG_MONGO_QUERIES to have the server write every
+// query it makes, so you can see if it's doing queries too often, etc.
+if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
+  var oldFind = Mongo.Collection.prototype.find;
+  Mongo.Collection.prototype.find = function () {
+    console.log(this._prefix, arguments);
+    return oldFind.apply(this, arguments);
+  }
+}
+
 // Users = new Mongo.Collection("users");
 // The users collection is special and can be accessed through `Meteor.users`.
 // See https://docs.meteor.com/#/full/meteor_users. Entries in the users collection correspond to

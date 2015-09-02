@@ -1212,7 +1212,9 @@ GrainLog = new Mongo.Collection("grainLog");
 Router.map(function () {
   this.route("newGrain", {
     path: "/grain/new",
+    waitOn: function () { return globalSubs; },
     data: function () {
+      if (!this.ready()) return;
       if (!Meteor.userId() && !Meteor.loggingIn()) {
         Router.go("root", {}, {replaceState: true});
       }
@@ -1222,7 +1224,9 @@ Router.map(function () {
   });
   this.route("selectGrain", {
     path: "/grain",
+    waitOn: function () { return globalSubs; },
     data: function () {
+      if (!this.ready()) return;
       if (!Meteor.userId() && !Meteor.loggingIn()) {
         Router.go("root", {}, {replaceState: true});
       }
@@ -1235,15 +1239,7 @@ Router.map(function () {
     loadingTemplate: "loadingNoMessage",
 
     waitOn: function () {
-      var subscriptions = [
-        Meteor.subscribe("grainTopBar", this.params.grainId),
-        Meteor.subscribe("devApps"),
-      ];
-      if (Meteor.settings && Meteor.settings.public &&
-          Meteor.settings.public.allowDemoAccounts) {
-        Meteor.subscribe("packageByGrainId", this.params.grainId);
-      }
-      return subscriptions;
+      return globalSubs;
     },
 
     onBeforeAction: function () {
@@ -1252,7 +1248,7 @@ Router.map(function () {
       this.state.set("beforeActionHookRan", true);
 
       var grainId = this.params.grainId;
-      var path = "/" + (this.params.path || "") + window.location.search + window.location.hash;
+      var path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
       var grains = globalGrains.get();
       var grainIndex = grainIdToIndex(grains, grainId);
       if (grainIndex == -1) {
@@ -1314,7 +1310,7 @@ Router.map(function () {
       this.state.set("beforeActionHookRan", true);
 
       var token = this.params.token;
-      var path = "/" + (this.params.path || "") + window.location.search + window.location.hash;
+      var path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
       var hash = this.params.hash;
 
       var tokenInfo = TokenInfo.findOne({_id: token});

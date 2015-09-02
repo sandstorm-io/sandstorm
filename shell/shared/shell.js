@@ -28,10 +28,12 @@ if (Meteor.isClient) {
 
   // Subscribe to basic grain information first and foremost, since
   // without it we might e.g. redirect to the wrong place on login.
-  Meteor.startup(function() {
-    Meteor.subscribe("grainsMenu");
-    Meteor.subscribe("userPackages");
-  });
+  globalSubs = [
+    Meteor.subscribe("grainsMenu"),
+    Meteor.subscribe("userPackages"),
+    Meteor.subscribe("devApps"),
+    Meteor.subscribe("credentials")
+  ];
 }
 
 if (Meteor.isServer) {
@@ -675,15 +677,12 @@ if (Meteor.isClient) {
     }
   });
 
-  Template.notifications.onCreated(function () {
+  Meteor.startup(function () {
     var self = this;
-    this.subscribe("notifications");
+    Meteor.subscribe("notifications");
 
-    Template.instance().autorun(function () {
-      if (self.grainSubscription) {
-        self.grainSubscription.stop();
-      }
-      self.grainSubscription = self.subscribe("notificationGrains",
+    Meteor.autorun(function () {
+      Meteor.subscribe("notificationGrains",
         Notifications.find().map(function (row) {
           return row._id;
         })

@@ -97,9 +97,6 @@ Template.sandstormGrainList.helpers({
     return prettySize(Meteor.user().storageUsage);
   }
 });
-Template.sandstormGrainList.onCreated(function () {
-  Template.instance().subscribe("userPackages");
-});
 Template.sandstormGrainList.onRendered(function () {
   // Auto-focus search bar on desktop, but not mobile (on mobile it will open the software
   // keyboard which is undesirable). window.orientation is generally defined on mobile browsers

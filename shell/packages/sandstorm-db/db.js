@@ -897,4 +897,23 @@ if (Meteor.isServer) {
       cleanupExpiredAssetUploads();
     }, 3600000);
   }, Math.floor(Math.random() * 3600000));
+
+  var packageCache = {};
+  // Package info is immutable. Let's cache to save on mongo queries.
+
+  SandstormDb.prototype.getPackage = function (packageId) {
+    // Get the given package record. Since package info is immutable, cache the data in the server
+    // to reduce mongo query overhead, since it turns out we have to fetch specific packages a
+    // lot.
+
+    if (packageId in packageCache) {
+      return packageCache[packageId];
+    }
+
+    var package = Packages.findOne(packageId);
+    if (package) {
+      packageCache[packageId] = package;
+    }
+    return package;
+  }
 }

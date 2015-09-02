@@ -30,6 +30,7 @@ if (Meteor.isClient) {
   // without it we might e.g. redirect to the wrong place on login.
   Meteor.startup(function() {
     Meteor.subscribe("grainsMenu");
+    Meteor.subscribe("userPackages");
   });
 }
 

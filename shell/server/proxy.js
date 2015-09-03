@@ -609,6 +609,48 @@ Meteor.startup(function () {
   });
 });
 
+var getProxyForHostId = function (hostId) {
+  // Get the Proxy corresponding to the given grain session host, possibly (re)creating it if it
+  // doesn't already exist (which can be the case if the front-end recently restarted or if there
+  // are multiple front-ends).
+  check(hostId, String);
+
+  return Promise.resolve(undefined).then(function () {
+    if (hostId in proxiesByHostId) {
+      return proxiesByHostId[hostId];
+    } else {
+      return inMeteor(function () {
+        var session = Sessions.findOne({hostId: hostId});
+        if (!session) {
+          // Does not appear to be a valid session host.
+          return undefined;
+        }
+
+        var grain = Grains.findOne(session.grainId);
+        if (!grain) {
+          // Grain was deleted, I guess.
+          throw new Meteor.Error(410, "Resource has been deleted");
+        }
+
+        // Note that we don't need to call mayOpenGrain() because the existence of a session
+        // implies this check was already performed.
+        //
+        // TODO(perf): The Proxy is going to recompute the user's permissions. Maybe those should
+        //   be cached in the Session?
+
+        var user = session.userId && Meteor.users.findOne(session.userId);
+
+        var proxy = new Proxy(grain._id, grain.userId, session._id, hostId,
+                              user && user._id === grain._id, user, null, false);
+
+        proxiesByHostId[hostId] = proxy;
+
+        return proxy;
+      });
+    }
+  });
+}
+
 // =======================================================================================
 // API tokens
 
@@ -759,46 +801,53 @@ function apiTokenForRequest(req) {
 //
 
 tryProxyUpgrade = function (hostId, req, socket, head) {
+  // Attempt to handle a WebSocket upgrade by dispatching it to a grain. Returns a promise that
+  // resolves true if an appropriate grain is found, false if there was no match (but the caller
+  // should consider other host types, like static web publishing), or throws an error if the
+  // request is definitely invalid.
+
   if (hostId === "api") {
     var token = apiTokenForRequest(req);
     if (token) {
-      getProxyForApiToken(token).then(function (proxy) {
+      return getProxyForApiToken(token).then(function (proxy) {
         // Meteor sets the timeout to five seconds. Change that back to two
         // minutes, which is the default value.
         socket.setTimeout(120000);
 
         proxy.upgradeHandler(req, socket, head);
-      }, function (err) {
-        socket.destroy();
+        return true;
       });
     } else {
-      socket.destroy();
+      return Promise.resolve(false);
     }
-    return true;
   } else {
-    var origin = req.headers.origin;
-    if (origin !== (PROTOCOL + "//" + req.headers.host)) {
-      console.error("Detected illegal cross-origin WebSocket from:", origin);
-      socket.destroy();
-      return true;
-    }
+    return getProxyForHostId(hostId).then(function (proxy) {
+      if (proxy) {
+        // Cross-origin requests are not allowed on UI session hosts.
+        var origin = req.headers.origin;
+        if (origin !== (PROTOCOL + "//" + req.headers.host)) {
+          throw new Meteor.Error(403, "Detected illegal cross-origin WebSocket from: " + origin);
+        }
 
-    if (hostId in proxiesByHostId) {
-      var proxy = proxiesByHostId[hostId]
+        // Meteor sets the timeout to five seconds. Change that back to two
+        // minutes, which is the default value.
+        socket.setTimeout(120000);
 
-      // Meteor sets the timeout to five seconds. Change that back to two
-      // minutes, which is the default value.
-      socket.setTimeout(120000);
-
-      proxy.upgradeHandler(req, socket, head);
-      return true;
-    } else {
-      return false;
-    }
+        proxy.upgradeHandler(req, socket, head);
+        return true;
+      } else {
+        return false;
+      }
+    });
   }
 }
 
 tryProxyRequest = function (hostId, req, res) {
+  // Attempt to handle an HTTP request by dispatching it to a grain. Returns a promise that
+  // resolves true if an appropriate grain is found, false if there was no match (but the caller
+  // should consider other host types, like static web publishing), or throws an error if the
+  // request is definitely invalid.
+
   if (hostId === "api") {
     // This is a request for the API host.
 
@@ -886,13 +935,17 @@ tryProxyRequest = function (hostId, req, res) {
           "access data on your Sandstorm server. This address is not meant to be opened\n" +
           "in a regular browser.");
     }
-    return true;
-  } else if (hostId in proxiesByHostId) {
-    var proxy = proxiesByHostId[hostId];
-    proxy.requestHandler(req, res);
-    return true;
+    return Promise.resolve(true);
   } else {
-    return false;
+    var proxy = proxiesByHostId[hostId];
+    return getProxyForHostId(hostId).then(function (proxy) {
+      if (proxy) {
+        proxy.requestHandler(req, res);
+        return true;
+      } else {
+        return false;
+      }
+    });
   }
 }
 

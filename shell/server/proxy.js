@@ -936,7 +936,6 @@ tryProxyRequest = function (hostId, req, res) {
     }
     return Promise.resolve(true);
   } else {
-    var proxy = proxiesByHostId[hostId];
     return getProxyForHostId(hostId).then(function (proxy) {
       if (proxy) {
         proxy.requestHandler(req, res);

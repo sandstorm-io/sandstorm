@@ -272,7 +272,7 @@ hackSendEmail = function (session, email) {
       update: {$inc: {dailySentMailCount: 1}},
       fields: {dailySentMailCount: 1}
     });
-    if (user.dailySentMailCount > DAILY_LIMIT) {
+    if (user.dailySentMailCount >= DAILY_LIMIT) {
       throw new Error(
           "Sorry, you've reached your e-mail sending limit for today. Currently, Sandstorm " +
           "limits each user to " + DAILY_LIMIT + " e-mails per day for spam control reasons. " +

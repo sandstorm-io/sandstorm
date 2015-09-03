@@ -298,7 +298,9 @@ function validateWebkey (apiToken, refreshedExpiration) {
 function openSessionInternal(grainId, user, title, apiToken) {
   var userId = user ? user._id : undefined;
 
-  // Start the grain if it is not running.
+  // Start the grain if it is not running. This is an optimization: if we didn't start it here,
+  // it would start on the first request to the session host, but we'd like to get started before
+  // the round trip.
   var runningGrain = runningGrains[grainId];
   var grainInfo;
   if (runningGrain) {
@@ -311,16 +313,10 @@ function openSessionInternal(grainId, user, title, apiToken) {
 
   var isOwner = grainInfo.owner === userId;
 
-  var sessionId = Random.id();
-  var proxy = new Proxy(grainId, grainInfo.owner, sessionId, null, isOwner, user, null, false);
-  proxy.apiToken = apiToken;
-  proxies[sessionId] = proxy;
-  proxiesByHostId[proxy.hostId] = proxy;
-
   var session = {
-    _id: sessionId,
+    _id: Random.id(),
     grainId: grainId,
-    hostId: proxy.hostId,
+    hostId: generateRandomHostname(20),
     timestamp: new Date().getTime(),
     hasLoaded: false,
   };
@@ -335,7 +331,7 @@ function openSessionInternal(grainId, user, title, apiToken) {
 
   Sessions.insert(session);
 
-  return {sessionId: sessionId, title: title, grainId: grainId};
+  return {sessionId: session._id, title: title, grainId: grainId};
 }
 
 function updateLastActive(grainId, userId) {
@@ -577,7 +573,7 @@ Meteor.startup(function () {
   });
 });
 
-// Kill off proxies idle for >~5 minutes.
+// Kill off sessions idle for >~5 minutes.
 var TIMEOUT_MS = 300000;
 function gcSessions() {
   var now = new Date().getTime();
@@ -585,34 +581,11 @@ function gcSessions() {
 }
 Meteor.setInterval(gcSessions, 60000);
 
-// Try to restore sessions on server restart.
-Meteor.startup(function () {
-  // Delete stale sessions from session list.
-  gcSessions();
-
-  // Remake proxies for all sessions that remain.
-  Sessions.find({}).forEach(function (session) {
-    var grain = Grains.findOne(session.grainId);
-    if (!grain) return;
-
-    var user = null;
-    if (session.userId) {
-      user = Meteor.users.findOne({_id: session.userId});
-      if (!user) return;  // Session owner no longer exists.
-    }
-
-    var isOwner = grain.userId === session.userId;
-    var proxy = new Proxy(session.grainId, grain.userId, session._id, session.hostId, isOwner,
-                          user, null, false);
-    proxies[session._id] = proxy;
-    proxiesByHostId[session.hostId] = proxy;
-  });
-});
-
 var getProxyForHostId = function (hostId) {
   // Get the Proxy corresponding to the given grain session host, possibly (re)creating it if it
-  // doesn't already exist (which can be the case if the front-end recently restarted or if there
-  // are multiple front-ends).
+  // doesn't already exist. The first request on the session host will always create a new proxy.
+  // Later requests may create a proxy if they go to a different front-end replica or if the
+  // front-end was restarted.
   check(hostId, String);
 
   return Promise.resolve(undefined).then(function () {

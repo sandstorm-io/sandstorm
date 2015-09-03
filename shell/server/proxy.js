@@ -599,6 +599,16 @@ var getProxyForHostId = function (hostId) {
           return undefined;
         }
 
+        var apiToken;
+        if (session.hashedToken) {
+          apiToken = ApiTokens.findOne({_id: session.hashedToken});
+          // We don't have to fully validate the API token here because if it changed the session
+          // would have been deleted.
+          if (!apiToken) {
+            throw new Meteor.Error(410, "ApiToken has been deleted");
+          }
+        }
+
         var grain = Grains.findOne(session.grainId);
         if (!grain) {
           // Grain was deleted, I guess.
@@ -615,6 +625,7 @@ var getProxyForHostId = function (hostId) {
 
         var proxy = new Proxy(grain._id, grain.userId, session._id, hostId,
                               user && user._id === grain._id, user, null, false);
+        if (apiToken) proxy.apiToken = apiToken;
 
         proxiesByHostId[hostId] = proxy;
 

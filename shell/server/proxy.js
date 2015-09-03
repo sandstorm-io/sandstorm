@@ -589,9 +589,13 @@ var getProxyForHostId = function (hostId) {
   check(hostId, String);
 
   return Promise.resolve(undefined).then(function () {
-    if (hostId in proxiesByHostId) {
-      return proxiesByHostId[hostId];
+    var proxy = proxiesByHostId[hostId]
+    if (proxy) {
+      return proxy;
     } else {
+      // Set table entry to null for now so that we can detect if it is concurrently deleted.
+      proxiesByHostId[hostId] = null;
+
       return inMeteor(function () {
         var session = Sessions.findOne({hostId: hostId});
         if (!session) {
@@ -627,12 +631,12 @@ var getProxyForHostId = function (hostId) {
                               user && user._id === grain._id, user, null, false);
         if (apiToken) proxy.apiToken = apiToken;
 
-        proxiesByHostId[hostId] = proxy;
-
-        if (!Sessions.findOne(session._id)) {
-          // Oops, race: The session was destroyed while we were constructing thhe proxy. Better
-          // unregister it in case the main session observer already observed this change.
-          delete proxiesByHostId[hostId];
+        // Only add the proxy to the table if it was not concurrently deleted (which could happen
+        // e.g. if the user's access was revoked).
+        if (hostId in proxiesByHostId) {
+          proxiesByHostId[hostId] = proxy;
+        } else {
+          throw new Meteor.Error(403, "Session was concurrently closed.");
         }
 
         return proxy;
@@ -707,13 +711,16 @@ getProxyForApiToken = function (token) {
   check(token, String);
   var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
   return Promise.resolve(undefined).then(function () {
-    if (hashedToken in proxiesByApiToken) {
-      var proxy = proxiesByApiToken[hashedToken];
+    var proxy = proxiesByApiToken[hashedToken];
+    if (proxy) {
       if (proxy.expires && proxy.expires.getTime() <= Date.now()) {
         throw new Meteor.Error(403, "Authorization token expired");
       }
       return proxy;
     } else {
+      // Set table entry to null for now so that we can detect if it is concurrently deleted.
+      proxiesByApiToken[hashedToken] = null;
+
       return inMeteor(function () {
         var tokenInfo = ApiTokens.findOne(hashedToken);
         validateWebkey(tokenInfo);
@@ -752,12 +759,12 @@ getProxyForApiToken = function (token) {
           proxy.expires = tokenInfo.expires;
         }
 
-        proxiesByApiToken[hashedToken] = proxy;
-
-        if (!ApiTokens.findOne(hashedToken)) {
-          // Oops, race: The token was deleted while we were constructing thhe proxy. Better
-          // unregister it in case the main token observer already observed this change.
-          delete proxiesByApiToken[hashedToken];
+        // Only add the proxy to the table if it was not concurrently deleted (which could happen
+        // e.g. if the token was revoked).
+        if (hashedToken in proxiesByApiToken) {
+          proxiesByApiToken[hashedToken] = proxy;
+        } else {
+          throw new Meteor.Error(403, "Token was concurrently revoked.");
         }
 
         return proxy;

@@ -870,7 +870,7 @@ tryProxyRequest = function (hostId, req, res) {
 
       res.writeHead(204, accessControlHeaders);
       res.end();
-      return true;
+      return Promise.resolve(true);
     }
 
     var responseHeaders = {

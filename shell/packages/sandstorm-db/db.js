@@ -760,7 +760,24 @@ if (Meteor.isServer) {
   var Zlib = Npm.require("zlib");
 
   var replicaNumber = Meteor.settings.replicaNumber || 0;
-  var replicaCount = Meteor.settings.replicaCount || 1;
+
+  var computeStagger = function (n) {
+    // Compute a fraction in the range [0, 1) such that, for any natural number k, the values
+    // of computeStagger(n) for all n in [1, 2^k) are uniformly distributed between 0 and 1.
+    // The sequence looks like:
+    //   0, 1/2, 1/4, 3/4, 1/8, 3/8, 5/8, 7/8, 1/16, ...
+    //
+    // We use this to determine how we'll stagger periodic events performed by this replica.
+    // Notice that this allows us to compute a stagger which is independent of the number of
+    // front-end replicas present; we can add more replicas to the end without affecting how the
+    // earlier ones schedule their events.
+    var denom = 1;
+    while (denom <= n) denom <<= 1;
+    var num = n * 2 - denom + 1;
+    return num / denom;
+  }
+
+  var stagger = computeStagger(replicaNumber);
 
   SandstormDb.periodicCleanup = function (intervalMs, callback) {
     // Register a database cleanup function than should run periodically, roughly once every
@@ -778,12 +795,16 @@ if (Meteor.isServer) {
                       "are you using the right units?");
     }
 
-    // Schedule cleanups independently of when the front-end started up.
-    var first = Math.floor(Date.now() / intervalMs + 1) * intervalMs;
+    // Schedule first cleanup to happen at the next intervalMs interval from the epoch, so that
+    // the schedule is independent of the exact startup time.
+    var first = intervalMs - Date.now() % intervalMs;
 
     // Stagger cleanups across replicas so that we don't have all replicas trying to clean the
     // same data at the same time.
-    first += Math.floor(intervalMs * replicaNumber / replicaCount);
+    first += Math.floor(intervalMs * computeStagger(replicaNumber));
+
+    // If the stagger put us more than an interval away from now, back up.
+    if (first > intervalMs) first -= intervalMs;
 
     Meteor.setTimeout(function () {
       callback();

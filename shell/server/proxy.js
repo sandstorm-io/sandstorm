@@ -230,12 +230,19 @@ Meteor.methods({
     // TODO(security):  Prevent draining someone else's quota by holding open several grains shared
     //   by them.
     check(sessionId, String);
-    if (sessionId in proxies) {
-      Sessions.update(sessionId, {$set: {timestamp: new Date().getTime()}});
-      var proxy = proxies[sessionId];
-      var future = promiseToFuture(proxy.keepAlive());
-      updateLastActive(proxy.grainId, this.userId);
-      future.wait();
+
+    var session = Sessions.findAndModify({
+      query: {_id: sessionId},
+      update: {$set: {timestamp: new Date().getTime()}},
+      fields: {grainId: 1}
+    });
+
+    if (session) {
+      // Session still present in database, so send keep-alive to backend.
+
+      var grainId = session.grainId;
+      waitPromise(openGrain(grainId, false).supervisor.keepAlive());
+      updateLastActive(grainId, this.userId);
       return true;
     } else {
       return false;

@@ -727,11 +727,7 @@ getProxyForApiToken = function (token) {
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, isOwner, user, null, true);
           proxy.apiToken = tokenInfo;
         } else if (tokenInfo.userInfo) {
-          // Hack: When Mongo stores a Buffer, it comes back as some other type.
-          if ("userId" in tokenInfo.userInfo) {
-            tokenInfo.userInfo.userId = new Buffer(tokenInfo.userInfo.userId);
-          }
-          proxy = new Proxy(tokenInfo.grainId, null, null, false, null, tokenInfo.userInfo, true);
+          throw new Error("API tokens created with arbitrary userInfo no longer supported");
         } else {
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, null, true);
         }
@@ -941,7 +937,7 @@ tryProxyRequest = function (hostId, req, res) {
 // Connects to a grain and exports it on a wildcard host.
 //
 
-function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, userInfo, isApi,
+function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, userInfo, isApi,
                supervisor) {
   this.grainId = grainId;
   this.ownerId = ownerId;
@@ -951,11 +947,12 @@ function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, user
   this.isApi = isApi;
   this.hasLoaded = false;
   if (sessionId) {
-    if (!preferredHostId) {
-      this.hostId = generateRandomHostname(20);
-    } else {
-      this.hostId = preferredHostId;
-    }
+    if (!hostId) throw new Error("sessionId must come with hostId");
+    if (isApi) throw new Error("API proxy shouldn't have sessionId");
+    this.hostId = hostId;
+  } else {
+    if (!isApi) throw new Error("non-API proxy requires sessionId");
+    if (hostId) throw new Error("API proxy sholudn't have hostId");
   }
 
   if (userInfo) {

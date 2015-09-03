@@ -60,6 +60,7 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   expires: Date when this user's account should be deleted. Only present for demo users.
 //   isAppDemoUser: True if this is a demo user who arrived via an /appdemo/ link.
 //   payments: Object defined by payments module, if loaded.
+//   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
 
 Packages = new Mongo.Collection("packages");
 // Packages which are installed or downloading.
@@ -758,6 +759,38 @@ if (Meteor.isServer) {
   var ContentType = Npm.require("content-type");
   var Zlib = Npm.require("zlib");
 
+  var replicaNumber = Meteor.settings.replicaNumber || 0;
+  var replicaCount = Meteor.settings.replicaCount || 1;
+
+  SandstormDb.periodicCleanup = function (intervalMs, callback) {
+    // Register a database cleanup function than should run periodically, roughly once every
+    // interval of the given length.
+    //
+    // In a blackrock deployment with multiple front-ends, the frequency of the cleanup will be
+    // scaled appropriately on the assumption that more data is being generated demanding more
+    // frequent cleanups.
+
+    check(intervalMs, Number);
+    check(callback, Function);
+
+    if (intervalMs < 120000) {
+      throw new Error("less than 2-minute cleanup interval seems too fast; " +
+                      "are you using the right units?");
+    }
+
+    // Schedule cleanups independently of when the front-end started up.
+    var first = Math.floor(Date.now() / intervalMs + 1) * intervalMs;
+
+    // Stagger cleanups across replicas so that we don't have all replicas trying to clean the
+    // same data at the same time.
+    first += Math.floor(intervalMs * replicaNumber / replicaCount);
+
+    Meteor.setTimeout(function () {
+      callback();
+      Meteor.setInterval(callback, intervalMs);
+    }, first);
+  }
+
   // TODO(cleanup): Node 0.12 has a `gzipSync` but 0.10 (which Meteor still uses) does not.
   var gzipSync = Meteor.wrapAsync(Zlib.gzip, Zlib);
 
@@ -900,13 +933,8 @@ if (Meteor.isServer) {
     AssetUploadTokens.remove({expires: {$lt: Date.now()}});
   }
 
-  // Cleanup tokens every hour, with a random phase.
-  Meteor.setTimeout(function () {
-    cleanupExpiredAssetUploads();
-    Meteor.setInterval(function () {
-      cleanupExpiredAssetUploads();
-    }, 3600000);
-  }, Math.floor(Math.random() * 3600000));
+  // Cleanup tokens every hour.
+  SandstormDb.periodicCleanup(3600000, cleanupExpiredAssetUploads);
 
   var packageCache = {};
   // Package info is immutable. Let's cache to save on mongo queries.

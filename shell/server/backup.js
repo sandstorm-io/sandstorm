@@ -32,13 +32,13 @@ function cleanupToken(tokenId) {
 
 Meteor.startup(function () {
   // Cleanup tokens every TOKEN_CLEANUP_MINUTES
-  Meteor.setInterval(function () {
+  SandstormDb.periodicCleanup(TOKEN_CLEANUP_TIMER, function () {
     var queryDate = new Date(Date.now() - TOKEN_CLEANUP_TIMER);
 
     FileTokens.find({timestamp: {$lt: queryDate}}).forEach(function (token) {
       cleanupToken(token._id);
     });
-  }, TOKEN_CLEANUP_TIMER);
+  });
 });
 
 Meteor.methods({

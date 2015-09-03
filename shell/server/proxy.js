@@ -570,13 +570,13 @@ Meteor.startup(function () {
   });
 });
 
-// Kill off proxies idle for >~5 minutes.
-var TIMEOUT_MS = 300000;
+// Kill off proxies idle for >~3 minutes.
+var TIMEOUT_MS = 180000;
 function gcSessions() {
   var now = new Date().getTime();
   Sessions.remove({timestamp: {$lt: (now - TIMEOUT_MS)}});
 }
-Meteor.setInterval(gcSessions, 60000);
+SandstormDb.periodicCleanup(TIMEOUT_MS, gcSessions);
 
 // Try to restore sessions on server restart.
 Meteor.startup(function () {

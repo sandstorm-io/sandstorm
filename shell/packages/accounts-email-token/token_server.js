@@ -12,7 +12,7 @@ var cleanupExpiredTokens = function() {
 
 Meteor.startup(cleanupExpiredTokens);
 // Tokens can actually last up to 2 * TOKEN_EXPIRATION_MS
-Meteor.setInterval(cleanupExpiredTokens, TOKEN_EXPIRATION_MS);
+SandstormDb.periodicCleanup(TOKEN_EXPIRATION_MS, cleanupExpiredTokens);
 
 var checkToken = function (user, token) {
   var found = false;

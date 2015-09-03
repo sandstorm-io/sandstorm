@@ -645,6 +645,12 @@ var getProxyForHostId = function (hostId) {
 
         proxiesByHostId[hostId] = proxy;
 
+        if (!Sessions.findOne(session._id)) {
+          // Oops, race: The session was destroyed while we were constructing thhe proxy. Better
+          // unregister it in case the main session observer already observed this change.
+          delete proxiesByHostId[hostId];
+        }
+
         return proxy;
       });
     }
@@ -767,6 +773,12 @@ getProxyForApiToken = function (token) {
         }
 
         proxiesByApiToken[hashedToken] = proxy;
+
+        if (!ApiTokens.findOne(hashedToken)) {
+          // Oops, race: The token was deleted while we were constructing thhe proxy. Better
+          // unregister it in case the main token observer already observed this change.
+          delete proxiesByApiToken[hashedToken];
+        }
 
         return proxy;
       });

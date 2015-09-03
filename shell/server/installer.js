@@ -218,8 +218,10 @@ function extractManifestAssets(manifest) {
   if (author) {
     // We remove the PGP signature since it was already verified down to a key ID in the back-end.
     if (author.pgpSignature) delete author.pgpSignature;
-    if (author.pgpKeyring) delete author.pgpKeyring;
   }
+
+  // Don't need the keyring either.
+  if (metadata.pgpKeyring) delete metadata.pgpKeyring;
 
   // Perhaps used by the "about" page?
   if (metadata.description) metadata.description = handleLocalizedText(metadata.description);

@@ -144,6 +144,14 @@ function assignPlans() {
   }
 }
 
+function removeKeyrings() {
+  // These blobs full of public keys were not intended to find their way into mongo and while
+  // harmless they slow things down because they're huge. Remove them.
+  Packages.update({"manifest.metadata.pgpKeyring": {$exists: true}},
+      {$unset: {"manifest.metadata.pgpKeyring": ""}},
+      {multi: true});
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -155,6 +163,7 @@ var MIGRATIONS = [
   fixOasisStorageUsageStats,
   fetchProfilePictures,
   assignPlans,
+  removeKeyrings,
 ];
 
 function migrateToLatest() {

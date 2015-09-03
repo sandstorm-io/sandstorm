@@ -218,7 +218,7 @@ function extractManifestAssets(manifest) {
   if (author) {
     // We remove the PGP signature since it was already verified down to a key ID in the back-end.
     if (author.pgpSignature) delete author.pgpSignature;
-    if (author.pgpPublicKey) delete author.pgpPublicKey;
+    if (author.pgpKeyring) delete author.pgpKeyring;
   }
 
   // Perhaps used by the "about" page?

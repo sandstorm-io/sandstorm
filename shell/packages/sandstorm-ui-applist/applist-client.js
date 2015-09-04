@@ -45,7 +45,7 @@ var nounFromAction = function (action, appTitle) {
   // I look forward to the day I can remove most of this code.
   // Attempt to figure out the appropriate noun that this action will create.
   // Use an explicit noun phrase is one is available.  Apps should add these in the future.
-  if (action.nounPhrase) return action.nounPhrase;
+  if (action.nounPhrase) return action.nounPhrase.defaultText;
   // Otherwise, try to guess one from the structure of the action title field
   if (action.title) {
     var text = action.title;

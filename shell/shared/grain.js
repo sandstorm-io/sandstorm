@@ -99,19 +99,28 @@ if (Meteor.isServer) {
     return;
   });
 
-  Meteor.publish("grainSize", function (sessionId) {
+  Meteor.publish("grainSize", function (grainId) {
     // Publish pseudo-collection containing the size of the grain opened in the given session.
-    check(sessionId, String);
+    check(grainId, String);
+
+    var grain = Grains.findOne(grainId);
+    if (grain.userId !== this.userId) {
+      return [];
+    }
+
+    var supervisor = sandstormBackend.getGrain(this.userId, grainId).supervisor;
 
     var self = this;
     var stopped = false;
-    var promise = getGrainSize(sessionId);
+    var promise = getGrainSize(supervisor);
 
     function getNext(oldSize) {
-      promise = getGrainSize(sessionId, oldSize);
+      promise = getGrainSize(supervisor, oldSize);
       promise.then(function (size) {
         if (!stopped) {
-          self.changed("grainSizes", sessionId, {size: size});
+          if (size !== oldSize) {  // sometimes there are false alarms
+            self.changed("grainSizes", grainId, {size: size});
+          }
           getNext(size);
         }
       }, function (err) {
@@ -127,7 +136,7 @@ if (Meteor.isServer) {
 
     promise.then(function (size) {
       if (!stopped) {
-        self.added("grainSizes", sessionId, {size: size});
+        self.added("grainSizes", grainId, {size: size});
         self.ready();
         getNext(size);
       }
@@ -256,7 +265,8 @@ Meteor.methods({
 
 if (Meteor.isClient) {
   Tracker.autorun(function() {
-    // We need to keep track of certain data about each grain we can view
+    // We need to keep track of certain data about each grain we can view.
+    // TODO(cleanup): Do these in GrainView to avoid spurrious resubscribes.
     var grains = globalGrains.get();
     grains.forEach(function(grain) {
       grain.depend();
@@ -265,10 +275,6 @@ if (Meteor.isClient) {
         Meteor.subscribe("grainTopBar", grainId);
         if (grain.isOwner()) {
           Meteor.subscribe("packageByGrainId", grainId);
-          var session = Sessions.findOne({grainId: grainId});
-          if (session) {
-            Meteor.subscribe("grainSize", session._id);
-          }
         }
         var token = grain.token();
         if (token) {

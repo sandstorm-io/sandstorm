@@ -50,6 +50,7 @@ GrainView.prototype.destroy = function () {
   // rendering the iframe forever, even if it is no longer linked into the page DOM.
 
   Blaze.remove(this._blazeView);
+  if (this._grainSizeSub) this._grainSizeSub.stop();
 }
 
 GrainView.prototype.isActive = function () {
@@ -89,7 +90,7 @@ GrainView.prototype._isUsingAnonymously = function () {
 }
 
 GrainView.prototype.size = function () {
-  var size = GrainSizes.findOne(this._sessionId);
+  var size = GrainSizes.findOne(this._grainId);
   return size && size.size;
 }
 
@@ -295,7 +296,8 @@ GrainView.prototype._openGrainSession = function () {
           self._dep.changed();
         }
       });
-      self._grainSizeSub = Meteor.subscribe("grainSize", result.sessionId);
+      if (self._grainSizeSub) self._grainSizeSub.stop();
+      self._grainSizeSub = Meteor.subscribe("grainSize", result.grainId);
       self._dep.changed();
     }
   });

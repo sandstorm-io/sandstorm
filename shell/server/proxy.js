@@ -562,13 +562,13 @@ Meteor.startup(function () {
   });
 });
 
-// Kill off sessions idle for >~5 minutes.
-var TIMEOUT_MS = 300000;
+// Kill off sessions idle for >~3 minutes.
+var TIMEOUT_MS = 180000;
 function gcSessions() {
   var now = new Date().getTime();
   Sessions.remove({timestamp: {$lt: (now - TIMEOUT_MS)}});
 }
-Meteor.setInterval(gcSessions, 60000);
+SandstormDb.periodicCleanup(TIMEOUT_MS, gcSessions);
 
 var getProxyForHostId = function (hostId) {
   // Get the Proxy corresponding to the given grain session host, possibly (re)creating it if it

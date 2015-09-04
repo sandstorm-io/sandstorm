@@ -64,21 +64,24 @@ if (Meteor.isServer) {
     });
   }
 
-  // Wait until 10:00 UTC (2:00 PST / 5:00 EST), then start recording stats every 24 hours.
-  Meteor.setTimeout(function () {
-    Meteor.setInterval(function () {
+  if (!Meteor.settings.replicaNumber) {
+    // Wait until 10:00 UTC (2:00 PST / 5:00 EST), then start recording stats every 24 hours.
+    // (Only on the first replica to avoid conflicts.)
+    Meteor.setTimeout(function () {
+      Meteor.setInterval(function () {
+        recordStats();
+      }, DAY_MS);
+
       recordStats();
-    }, DAY_MS);
+    }, DAY_MS - (Date.now() - 10*60*60*1000) % DAY_MS);
 
-    recordStats();
-  }, DAY_MS - (Date.now() - 10*60*60*1000) % DAY_MS);
-
-  Meteor.startup(function () {
-    if (StatsTokens.find().count() === 0) {
-      StatsTokens.remove({});
-      StatsTokens.insert({_id: Random.id(22)});
-    }
-  });
+    Meteor.startup(function () {
+      if (StatsTokens.find().count() === 0) {
+        StatsTokens.remove({});
+        StatsTokens.insert({_id: Random.id(22)});
+      }
+    });
+  }
 
   Meteor.methods({
     regenerateStatsToken: function () {

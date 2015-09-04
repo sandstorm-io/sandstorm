@@ -4,6 +4,8 @@
 // side-effects, we should be careful to make sure all migrations are
 // idempotent and safe to accidentally run multiple times.
 
+var Future = Npm.require("fibers/future");
+
 var updateLoginStyleToRedirect = function() {
   var configurations = Package["service-configuration"].ServiceConfiguration.configurations;
   ["google", "github"].forEach(function(serviceName) {
@@ -167,24 +169,45 @@ var MIGRATIONS = [
 ];
 
 function migrateToLatest() {
-  var applied = Migrations.findOne({_id: "migrations_applied"});
-  var start;
-  if (!applied) {
-    // Migrations table is not yet seeded with a value.  This means it has
-    // applied 0 migrations.  Persist this.
-    Migrations.insert({_id: "migrations_applied", value: 0});
-    start = 0;
-  } else {
-    start = applied.value;
-  }
-  console.log("Migrations applied: " + start + "/" + MIGRATIONS.length);
+  if (Meteor.settings.replicaNumber) {
+    // This is a replica. Wait for the first replica to perform migrations.
 
-  for (var i = start ; i < MIGRATIONS.length ; i++) {
-    // Apply migration i, then record that migration i was successfully run.
-    console.log("Applying migration " + (i+1));
-    MIGRATIONS[i]();
-    Migrations.update({_id: "migrations_applied"}, {$set: {value: i+1}});
-    console.log("Applied migration " + (i+1));
+    console.log("Waiting for migrations on replica zero...");
+
+    var done = new Future();
+    var change = function (doc) {
+      console.log("Migrations applied elsewhere: " + doc.value + "/" + MIGRATIONS.length);
+      if (doc.value >= MIGRATIONS.length) done.return();
+    }
+    var observer = Migrations.find({_id: "migrations_applied"}).observe({
+      added: change,
+      changed: change
+    });
+
+    done.wait();
+    observer.stop();
+    console.log("Migrations have completed on replica zero.");
+
+  } else {
+    var applied = Migrations.findOne({_id: "migrations_applied"});
+    var start;
+    if (!applied) {
+      // Migrations table is not yet seeded with a value.  This means it has
+      // applied 0 migrations.  Persist this.
+      Migrations.insert({_id: "migrations_applied", value: 0});
+      start = 0;
+    } else {
+      start = applied.value;
+    }
+    console.log("Migrations applied: " + start + "/" + MIGRATIONS.length);
+
+    for (var i = start ; i < MIGRATIONS.length ; i++) {
+      // Apply migration i, then record that migration i was successfully run.
+      console.log("Applying migration " + (i+1));
+      MIGRATIONS[i]();
+      Migrations.update({_id: "migrations_applied"}, {$set: {value: i+1}});
+      console.log("Applied migration " + (i+1));
+    }
   }
 }
 

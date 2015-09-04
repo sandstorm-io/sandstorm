@@ -204,7 +204,7 @@ if (Meteor.isServer) {
       return packageCursor;
     });
 
-    Meteor.setInterval(cleanupExpiredUsers, DEMO_EXPIRATION_MS);
+    SandstormDb.periodicCleanup(DEMO_EXPIRATION_MS, cleanupExpiredUsers);
   } else {
     // Just run once, in case the config just changed from allowing demos to prohibiting them.
     Meteor.setTimeout(cleanupExpiredUsers, DEMO_EXPIRATION_MS + DEMO_GRACE_MS);

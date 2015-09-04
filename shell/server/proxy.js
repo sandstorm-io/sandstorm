@@ -83,7 +83,6 @@ waitPromise = function (promise) {
 // API for creating / starting grains from Meteor methods.
 
 var runningGrains = {};
-var proxies = {};
 var proxiesByHostId = {};
 
 Meteor.methods({
@@ -529,21 +528,12 @@ deleteGrain = function (grainId, ownerId) {
   });
 }
 
-getGrainSize = function (sessionId, oldSize) {
-  var proxy = proxies[sessionId];
-  if (!proxy) {
-    throw new Meteor.Error(500, "Session not running; can't get grain size.");
-  }
-
-  if (!proxy.supervisor) {
-    proxy.getConnection();
-  }
-
+getGrainSize = function (supervisor, oldSize) {
   var promise;
   if (oldSize === undefined) {
-    promise = proxy.supervisor.getGrainSize();
+    promise = supervisor.getGrainSize();
   } else {
-    promise = proxy.supervisor.getGrainSizeWhenDifferent(oldSize);
+    promise = supervisor.getGrainSizeWhenDifferent(oldSize);
   }
 
   var promise2 = promise.then(function (result) { return parseInt(result.size); });
@@ -567,7 +557,6 @@ Meteor.startup(function () {
 
   Sessions.find().observe({
     removed : function(session) {
-      delete proxies[session._id];
       delete proxiesByHostId[session.hostId];
     }
   });
@@ -621,9 +610,6 @@ var getProxyForHostId = function (hostId) {
 
         // Note that we don't need to call mayOpenGrain() because the existence of a session
         // implies this check was already performed.
-        //
-        // TODO(perf): The Proxy is going to recompute the user's permissions. Maybe those should
-        //   be cached in the Session?
 
         var user = session.userId && Meteor.users.findOne(session.userId);
 

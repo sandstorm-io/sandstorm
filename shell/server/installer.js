@@ -48,7 +48,7 @@ Meteor.methods({
 
 deletePackage = function (packageId) {
   // Mark package for possible deletion;
-  Packages.update({_id: packageId}, {$set: {shouldCleanup: true}});
+  Packages.update({_id: packageId, status: "ready"}, {$set: {shouldCleanup: true}});
 }
 
 var deletePackageInternal = function (package) {
@@ -92,8 +92,12 @@ startInstall = function (packageId, url, retryFailed) {
   if (retryFailed) {
     Packages.update({_id: packageId, status: "failed"}, {$set: fields});
   } else {
-    fields._id = packageId;
-    Packages.insert(fields);
+    try {
+      fields._id = packageId;
+      Packages.insert(fields);
+    } catch (err) {
+      console.error("Simultaneous startInstall()s?", err.stack);
+    }
   }
 }
 
@@ -133,9 +137,7 @@ if (!Meteor.settings.replicaNumber) {
 
   Meteor.startup(function () {
     // Restart any deletions that were killed while in-progress.
-    Packages.find({status: "delete"}).forEach(function (pkg) {
-      deletePackageInternal(pkg._id);
-    });
+    Packages.find({status: "delete"}).forEach(deletePackageInternal);
 
     // Watch for new installation requests and fulfill them.
     Packages.find({status: {$in: ["download", "verify", "unpack", "analyze"]}}).observe({

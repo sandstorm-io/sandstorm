@@ -80,8 +80,6 @@ if (Meteor.isServer) {
     });
   }
 
-  Meteor.startup(cleanupExpiredUsers);
-
   if (allowDemo) {
     Meteor.methods({
       createDemoUser: function (displayName, isAppDemoUser) {

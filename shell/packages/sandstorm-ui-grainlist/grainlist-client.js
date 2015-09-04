@@ -1,26 +1,19 @@
-var matchesAll = function matchesAll(needles, haystack) {
-  for (var i = 0 ; i < needles.length ; i++) {
-    if (haystack.indexOf(needles[i]) === -1) {
-      return false;
-    }
-  }
-  return true;
+var matchesAppOrGrainTitle = function (needle, grain) {
+  if (grain.title && grain.title.toLowerCase().indexOf(needle) !== -1) return true;
+  if (grain.appTitle && grain.appTitle.toLowerCase().indexOf(needle) !== -1) return true;
+  return false;
 };
 var compileMatchFilter = function (searchString) {
   // split up searchString into an array of regexes, use them to match against item
   var searchKeys = searchString.toLowerCase()
       .split(" ")
       .filter(function(k) { return k !== "";});
-  var matchesTitle = function (item) {
-    // Keep any item that matches all substrings
-    return matchesAll(searchKeys, item.title.toLowerCase());
-  };
-  var matchesAppTitle = function (item) {
-    // Keep any item that matches all substrings
-    return matchesAll(searchKeys, item.appTitle.toLowerCase());
-  };
   return function matchFilter(item) {
-    return matchesTitle(item) || matchesAppTitle(item);
+    if (searchKeys.length === 0) return true;
+    return _.chain(searchKeys)
+        .map(function (searchKey) { return matchesAppOrGrainTitle(searchKey, item); })
+        .reduce(function (a, b) { return a && b; })
+        .value();
   };
 };
 var mapGrainsToTemplateObject = function (grains) {

@@ -1,3 +1,9 @@
+### v0.108 (2015-09-03)
+- Oasis: Allow front-ends to be parallelized so that they can scale to arbitrary load.
+- Eliminated redundant subscriptions and added caching to reduce front-end load.
+- Placed grain title first in title bar, rather than app title.
+- Updated wording of app install prompt.
+
 ### v0.107 (2015-08-31)
 - Fix sign-out button.
 

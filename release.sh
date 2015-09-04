@@ -86,5 +86,4 @@ gce-ss copy-files $TARBALL fe:/var/www/dl.sandstorm.io
 gce-ss copy-files tmp/$CHANNEL fe:/var/www/install.sandstorm.io
 gce-ss copy-files install.sh fe:/var/www/install.sandstorm.io
 
-gce-ss ssh smalldemo --command 'sudo service sandstorm update'
 gce-ss ssh alpha --command 'sudo service sandstorm update dev'

@@ -17,9 +17,10 @@ system.
 
 ## Caveats
 
-Sandstorm is in the very early stages of development. We want
-developers to start playing with it, but please don't rely on it for
-mission-critical data or security yet.
+Sandstorm is in early beta. Lots of features are not done yet, and more review
+needs to be done before relying on it for mission-critical tasks.
+That said, we use it ourselves to get work done every day, and we hope you'll
+find it useful as well.
 
 ## Installing the Easy Way
 
@@ -56,8 +57,7 @@ under Docker.
 * If you want SSL, then you will definitely need an nginx proxy (or something equivalent). You will
   further need to use a wildcard certificate.
 
-For reference, [nginx-example.conf](nginx-example.conf) contains the http server part of nginx
-config used by Sandstorm Alpha.
+For reference, [nginx-example.conf](nginx-example.conf) contains an example nginx configuration.
 
 ## Installing from Source (the hard way)
 
@@ -74,6 +74,7 @@ Please install the following:
 * `unzip`
 * `strace`
 * `curl`
+* `gpg`
 * discount (markdown parser)
 * git
 * [Clang compiler](http://clang.llvm.org/) version 3.4 or better

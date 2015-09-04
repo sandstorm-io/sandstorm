@@ -316,18 +316,29 @@ if (Meteor.isClient) {
     },
   });
 
+  var promptNewTitle = function() {
+    var grain = getActiveGrain(globalGrains.get());
+    if (grain) {
+      var prompt = "Set new title:";
+      if (!grain.isOwner()) {
+        prompt = "Set a new personal title: (does not change the owner's title for this grain)";
+      }
+      var title = window.prompt(prompt, grain.title());
+      if (title) {
+        grain.setTitle(title);
+      }
+    }
+  };
   Template.grainTitle.events({
     "click": function (event) {
-      var grain = getActiveGrain(globalGrains.get());
-      if (grain) {
-        var prompt = "Set new title:";
-        if (!grain.isOwner()) {
-          prompt = "Set a new personal title: (does not change the owner's title for this grain)";
-        }
-        var title = window.prompt(prompt, grain.title());
-        if (title) {
-          grain.setTitle(title);
-        }
+      promptNewTitle();
+    },
+    "keydown": function (event) {
+      if ((event.keyCode === 13) || (event.keyCode === 32)) {
+        // Allow space or enter to trigger renaming the grain - Firefox doesn't treat enter on the
+        // focused element as click().
+        promptNewTitle();
+        event.preventDefault();
       }
     },
   });

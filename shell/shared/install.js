@@ -139,26 +139,8 @@ Meteor.methods({
         }
       }
 
-      if (pkg) {
-        if (isRetry) {
-          if (pkg.status !== "failed") {
-            throw new Meteor.Error(403, "Unauthorized",
-                                   "Can't retry an install that hasn't failed.");
-          }
-          startInstall(packageId, url, true, pkg.appId)
-        } else if (pkg.status === "failed" || pkg.status === "ready") {
-          return;
-        } else {
-          if (pkg.status === "delete") {
-            // Either someone is currently deleting the package, or
-            // the server previously crashed mid-delete. In either
-            // case, we try to resume the deletion before continuing.
-            deletePackage(packageId);
-          }
-          startInstall(packageId, url, false, pkg.appId);
-        }
-      } else {
-        startInstall(packageId, url, true);
+      if (!pkg || isRetry) {
+        startInstall(packageId, url, isRetry);
       }
     }
   },

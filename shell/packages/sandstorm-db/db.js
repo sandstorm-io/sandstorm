@@ -75,6 +75,10 @@ Packages = new Mongo.Collection("packages");
 //   appId:  If status is "ready", the application ID string.  Packages representing different
 //       versions of the same app have the same appId.  The spk tool defines the app ID format
 //       and can cryptographically verify that a package belongs to a particular app ID.
+//   shouldCleanup:  If true, a reference to this package was recently dropped, and the package
+//       collector should at some point check whether there are any other references and, if not,
+//       delete the package.
+//   url:  When status is "download", the URL from which the SPK can be obtained, if provided.
 
 DevApps = new Mongo.Collection("devapps");
 // List of applications currently made available via the dev tools running on the local machine.
@@ -970,7 +974,7 @@ if (Meteor.isServer) {
     }
 
     var package = Packages.findOne(packageId);
-    if (package) {
+    if (package && package.status === "ready") {
       packageCache[packageId] = package;
     }
     return package;

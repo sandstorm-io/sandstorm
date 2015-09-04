@@ -26,12 +26,18 @@ var Capnp = Npm.require("capnp");
 
 var Manifest = Capnp.importSystem("sandstorm/package.capnp").Manifest;
 
-var installers = {};
+var installers;  // set to {} on main replica
 // To protect against race conditions, we require that each row in the Packages
 // collection have at most one writer at a time, as tracked by this `installers`
 // map. Each key is a package ID and each value is either an AppInstaller object
 // or the string "uninstalling", indicating that some fiber is working on
 // uninstalling the package.
+
+var verifyIsMainReplica = function () {
+  if (Meteor.settings.replicaNumber) {
+    throw new Error("This can only be called on the main front-end replica.");
+  }
+}
 
 Meteor.methods({
   deleteUnusedPackages: function (appId) {
@@ -41,6 +47,15 @@ Meteor.methods({
 });
 
 deletePackage = function (packageId) {
+  // Mark package for possible deletion;
+  Packages.update({_id: packageId, status: "ready"}, {$set: {shouldCleanup: true}});
+}
+
+var deletePackageInternal = function (package) {
+  verifyIsMainReplica();
+
+  var packageId = package._id;
+
   if (packageId in installers) {
     return;
   }
@@ -51,17 +66,16 @@ deletePackage = function (packageId) {
     var action = UserActions.findOne({packageId:packageId});
     var grain = Grains.findOne({packageId:packageId});
     if (!grain && !action) {
-      Packages.update({_id:packageId}, {$set: {status:"delete"}});
+      Packages.update({_id:packageId}, {$set: {status:"delete"}, $unset: {shouldCleanup: ""}});
       waitPromise(sandstormBackend.deletePackage(packageId));
-      var package = Packages.findAndModify({
-        query: {_id: packageId},
-        remove: true
-      });
+      Packages.remove(packageId);
 
       // Clean up assets (icon, etc).
       getAllManifestAssets(package.manifest).forEach(function (assetId) {
         globalDb.unrefStaticAsset(assetId);
       });
+    } else {
+      Packages.update({_id:packageId}, {$unset: {shouldCleanup: ""}});
     }
     delete installers[packageId];
   } catch (error) {
@@ -70,28 +84,44 @@ deletePackage = function (packageId) {
   }
 }
 
-startInstall = function (packageId, url, fromBeginning, appId) {
-  if (packageId in installers) {
+startInstall = function (packageId, url, retryFailed) {
+  // Mark package for possible installation.
+
+  var fields = {status: "download", progress: 0, url: url};
+
+  if (retryFailed) {
+    Packages.update({_id: packageId, status: "failed"}, {$set: fields});
+  } else {
+    try {
+      fields._id = packageId;
+      Packages.insert(fields);
+    } catch (err) {
+      console.error("Simultaneous startInstall()s?", err.stack);
+    }
+  }
+}
+
+var startInstallInternal = function (package) {
+  verifyIsMainReplica();
+
+  if (package._id in installers) {
     return;
   }
 
-  var installer = new AppInstaller(packageId, url, appId);
-  installers[packageId] = installer;
-
-  if (fromBeginning) {
-    try {
-      Packages.upsert({ _id: packageId}, {$set: {status: "download", progress: 0 }});
-    } catch (error) {
-      delete installers[packageId];
-      throw error;
-    }
-  }
-
+  var installer = new AppInstaller(package._id, package.url, package.appId);
+  installers[package._id] = installer;
   installer.start();
 }
 
 cancelDownload = function (packageId) {
-  var installer = installers[packageId];
+  Packages.update({_id: packageId, status: "download"},
+      {$set: {status: "failed"}, $unset: {url: ""}});
+}
+
+var cancelDownloadInternal = function (package) {
+  verifyIsMainReplica();
+
+  var installer = installers[package._id];
 
   // Don't do anything unless a download is in progress.
   if (installer && installer.downloadRequest) {
@@ -100,6 +130,26 @@ cancelDownload = function (packageId) {
       throw new Error("Canceled");
     })();
   }
+}
+
+if (!Meteor.settings.replicaNumber) {
+  installers = {};
+
+  Meteor.startup(function () {
+    // Restart any deletions that were killed while in-progress.
+    Packages.find({status: "delete"}).forEach(deletePackageInternal);
+
+    // Watch for new installation requests and fulfill them.
+    Packages.find({status: {$in: ["download", "verify", "unpack", "analyze"]}}).observe({
+      added: startInstallInternal,
+      removed: cancelDownloadInternal
+    });
+
+    // Watch for new cleanup requests and fulfill them.
+    Packages.find({status: "ready", shouldCleanup: true}).observe({
+      added: deletePackageInternal
+    });
+  });
 }
 
 doClientUpload = function (stream) {
@@ -142,6 +192,8 @@ doClientUpload = function (stream) {
 }
 
 function AppInstaller(packageId, url, appId) {
+  verifyIsMainReplica();
+
   this.packageId = packageId;
   this.url = url;
   this.failed = false;

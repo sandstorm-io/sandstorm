@@ -154,7 +154,7 @@ GrainView.prototype.frameTitle = function () {
   var grainTitle = this.title();
   // Actually set the values
   if (appTitle && grainTitle) {
-    return appTitle + " · " + grainTitle + " · Sandstorm";
+    return grainTitle + " · " + appTitle + " · Sandstorm";
   } else if (grainTitle) {
     return grainTitle + " · Sandstorm";
   } else {

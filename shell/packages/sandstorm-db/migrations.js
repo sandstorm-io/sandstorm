@@ -154,6 +154,22 @@ function removeKeyrings() {
       {multi: true});
 }
 
+function useLocalizedTextInUserActions() {
+  function toLocalizedText(t) {
+    if (typeof t === "string") {
+      return { defaultText: t };
+    } else {
+      return t;
+    }
+  }
+  UserActions.find({}).forEach(function (userAction) {
+    var fields = { appTitle: toLocalizedText(userAction.appTitle),
+                   title: toLocalizedText(userAction.title),
+                   nounPhrase: toLocalizedText(userAction.nounPhrase) };
+    UserActions.update(userAction._id, {$set: fields});
+  });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -166,6 +182,7 @@ var MIGRATIONS = [
   fetchProfilePictures,
   assignPlans,
   removeKeyrings,
+  useLocalizedTextInUserActions,
 ];
 
 function migrateToLatest() {
@@ -199,7 +216,7 @@ function migrateToLatest() {
     } else {
       start = applied.value;
     }
-    console.log("Migrations applied: " + start + "/" + MIGRATIONS.length);
+    console.log("Migrations already applied: " + start + "/" + MIGRATIONS.length);
 
     for (var i = start ; i < MIGRATIONS.length ; i++) {
       // Apply migration i, then record that migration i was successfully run.

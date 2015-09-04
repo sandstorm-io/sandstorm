@@ -11,10 +11,10 @@ var iconForAction = function (action) {
   return Identicon.iconSrcForPackage(pkg, 'appGrid', ref._staticHost);
 };
 var appTitleForAction = function (action) {
-  if (action.appTitle) return action.appTitle;
+  if (action.appTitle) return action.appTitle.defaultText;
   // Legacy cruft: guess at the app title from the action text.
   // N.B.: calls into shell.js.  TODO: refactor
-  return appNameFromActionName(action.title);
+  return appNameFromActionName(action.title.defaultText);
 };
 var andClauseFor = function (searchString) {
   var searchKeys = searchString.split(" ").filter(function(k) { return k != "";});
@@ -48,11 +48,7 @@ var nounFromAction = function (action, appTitle) {
   if (action.nounPhrase) return action.nounPhrase.defaultText;
   // Otherwise, try to guess one from the structure of the action title field
   if (action.title) {
-    var text = action.title;
-    if (text.defaultText) {
-      // Dev apps require dereferencing the defaultText field; manifests do not.
-      text = text.defaultText;
-    }
+    var text = action.title.defaultText;
     // Strip a leading "New "
     if (text.lastIndexOf("New ", 0) === 0) {
       var candidate = text.slice(4);

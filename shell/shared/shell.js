@@ -581,7 +581,7 @@ if (Meteor.isClient) {
 
       packageId = action.packageId;
       command = action.command;
-      actionTitle = action.title;
+      actionTitle = action.title.defaultText;
     }
 
     var title = actionTitle;

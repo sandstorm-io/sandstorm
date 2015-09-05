@@ -152,7 +152,10 @@ Template.sandstormAppList.helpers({
   },
   uninstalling: function () {
     return Template.instance().data._uninstalling.get();
-  }
+  },
+  appIsLoading: function () {
+    return Template.instance().appIsLoading.get();
+  },
 });
 Template.sandstormAppList.events({
   "click .install-button": function (event) {
@@ -177,11 +180,12 @@ Template.sandstormAppList.events({
       promptRestoreBackup();
     });
   },
-  "click .app-action": function(event) {
+  "click .app-action": function(event, template) {
     var actionId = this._id;
     Template.instance().data._quotaEnforcer.ifQuotaAvailable(function () {
       // N.B.: this calls into a global in shell.js.
       // TODO(cleanup): refactor into a safer dependency.
+      template.appIsLoading.set(true);
       launchAndEnterGrainByActionId(actionId);
     });
   },
@@ -191,11 +195,12 @@ Template.sandstormAppList.events({
     UserActions.remove(actionId);
     Meteor.call("deleteUnusedPackages", appId);
   },
-  "click .dev-action": function(event) {
+  "click .dev-action": function(event, template) {
     var devId = this._id;
     var actionIndex = this.actionIndex;
     // N.B.: this calls into a global in shell.js.
     // TODO(cleanup): refactor into a safer dependency.
+    template.appIsLoading.set(true);
     launchAndEnterGrainByActionId("dev", this._id, this.actionIndex);
   },
   "click button.toggle-uninstall": function(event) {
@@ -208,7 +213,7 @@ Template.sandstormAppList.events({
   "keyup .search-bar": function(event) {
     Template.instance().data._filter.set(event.currentTarget.value);
   },
-  "keypress .search-bar": function(event) {
+  "keypress .search-bar": function(event, template) {
     var ref = Template.instance().data;
     if (event.keyCode === 13) {
       // Enter pressed.  If a single grain is shown, open it.
@@ -218,6 +223,7 @@ Template.sandstormAppList.events({
         var action = actions[0]._id;
         // N.B.: this calls into a global in shell.js.
         // TODO(cleanup): refactor into a safer dependency.
+        template.appIsLoading.set(true);
         launchAndEnterGrainByActionId(action);
       }
     }
@@ -247,4 +253,7 @@ Template.sandstormAppList.onRendered(function () {
       if (searchbar) searchbar.focus();
     }
   }
+});
+Template.sandstormAppList.onCreated(function () {
+  this.appIsLoading = new ReactiveVar(false);
 });

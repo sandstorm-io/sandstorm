@@ -55,9 +55,7 @@
     {{#if uninstalling}}
     <button class="app-button uninstall-action {{#if shouldHighlight}}highlight{{/if}}"
             data-app-id="{{appId}}">
-      <div class="app-icon" style="background-image: url('/close-FFFFFF.svg'), url('/1x1-00000080.png'), url('{{ iconSrc }}');
-          background-size: 50%, cover, cover;
-          background-position: center, center, center;"></div>
+      <div class="app-icon" style="background-image: url('{{ iconSrc }}');"></div>
       <span class="app-title">{{appTitle}}</span>
       <span class="action-text">Uninstall</span>
     </button>

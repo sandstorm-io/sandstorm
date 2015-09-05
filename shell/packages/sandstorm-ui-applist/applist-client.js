@@ -188,7 +188,6 @@ Template.sandstormAppList.events({
   "click .uninstall-action": function(event) {
     var actionId = this._id;
     var appId = UserActions.findOne(actionId).appId;
-    console.log("Uninstalling action " + actionId);
     UserActions.remove(actionId);
     Meteor.call("deleteUnusedPackages", appId);
   },

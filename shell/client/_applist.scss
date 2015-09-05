@@ -19,29 +19,60 @@
     display: none !important;
   }
   >.search-row {
+    position: relative;
     width: 100%;
-    margin-bottom: 36px;
+    margin-bottom: 24px;
+    vertical-align: top;
     @media #{$mobile} {
       margin-bottom: 0;
       display: inline-block;
-      vertical-align: middle;
       width: calc(100% - 100px);
+      vertical-align: middle;
     }
-    >img.search-icon {
-      width: 24px;
-      height: 24px;
-      margin: 4px;
+    >label {
+      display: inline-block;
+      >span.search-icon {
+        @extend %pseudo-img-tag;
+        background-image: url("/search.svg");
+        background-size: 24px 24px;
+        background-position: center;
+        display: inline-block;
+        box-sizing: border-box;
+        width: 32px;
+        height: 32px;
+        vertical-align: top;
+      }
+      >input.search-bar {
+        display: inline-block;
+        vertical-align: top;
+        width: 33%;
+        font-size: 16pt;
+        height: 32px;
+        background-color: $grainlist-searchbar-background-color;
+        border: 1px solid $grainlist-searchbar-outline-color;
+        box-sizing: border-box;
+        &:focus {
+          border: 1px solid $grainlist-searchbar-outline-color-focus;
+        }
+        @media #{$desktop} {
+          width: calc(100% - 36px);
+        }
+        @media #{$mobile} {
+          width: calc(100% - 60px);
+        }
+      }
+      @media #{$desktop} {
+        width: 50%;
+      }
     }
-    >input.search-bar {
-      font-size: 16pt;
-      background-color: $grainlist-searchbar-background-color;
-      border: 1px solid $grainlist-searchbar-outline-color;
-      &:focus {
-        border: 1px solid $grainlist-searchbar-outline-color-focus;
-      }
-      @media #{$mobile} {
-        width: calc(100% - 60px);
-      }
+    >button.toggle-uninstall {
+      display: inline-block;
+      float: right;
+      vertical-align: top;
+      font-size: 14pt;
+      line-height: 16pt;
+      height: 32px;
+      box-sizing: border-box;
     }
   }
   >.popular-container {
@@ -98,6 +129,24 @@
       .app-icon {
         animation-duration: 2s;
         animation-name: new-app;
+      }
+    }
+    &.uninstall-action>.app-icon {
+      &::before {
+        position: absolute;
+        content: " ";
+        display: block;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 6px;
+        background-color: rgba(0, 0, 0, 0.5);
+        background-image: url("/close-FFFFFF.svg");
+        background-position: center;
+        background-size: 50% 50%;
+        background-repeat: no-repeat;
+        z-index: 1;
       }
     }
     >.app-icon {

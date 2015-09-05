@@ -155,17 +155,20 @@ function removeKeyrings() {
 }
 
 function useLocalizedTextInUserActions() {
-  function toLocalizedText(t) {
-    if (typeof t === "string") {
-      return { defaultText: t };
-    } else {
-      return t;
+  function toLocalizedText(newObj, oldObj, field) {
+    if (field in oldObj) {
+      if (typeof oldObj[field] === "string") {
+        newObj[field] = {defaultText: oldObj[field]};
+      } else {
+        newObj[field] = oldObj[field];
+      }
     }
   }
   UserActions.find({}).forEach(function (userAction) {
-    var fields = { appTitle: toLocalizedText(userAction.appTitle),
-                   title: toLocalizedText(userAction.title),
-                   nounPhrase: toLocalizedText(userAction.nounPhrase) };
+    var fields = {};
+    toLocalizedText(fields, userAction, "appTitle");
+    toLocalizedText(fields, userAction, "title");
+    toLocalizedText(fields, userAction, "nounPhrase");
     UserActions.update(userAction._id, {$set: fields});
   });
 }

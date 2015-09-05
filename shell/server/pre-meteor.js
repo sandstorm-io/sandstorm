@@ -66,6 +66,9 @@ function wwwHandlerForGrain(grainId) {
     var charset = mime.charsets.lookup(type);
     if (charset) {
       type = type + "; charset=" + charset;
+    } else if (type === "application/json") {
+      // HACK: Apparently the MIME module does not assume UTF-8 for JSON. :(
+      type = type + "; charset=utf-8";
     }
 
     var started = false;
@@ -344,23 +347,27 @@ Meteor.startup(function () {
   WebApp.httpServer.removeAllListeners('upgrade');
 
   WebApp.httpServer.on('upgrade', function(req, socket, head) {
-    try {
+    Promise.resolve(undefined).then(function () {
       if (isSandstormShell(req.headers.host.split(":")[0])) {
         // Go on to Meteor.
         for (var ii = 0; ii < meteorUpgradeListeners.length; ++ii) {
           meteorUpgradeListeners[ii](req, socket, head);
         }
+        return true;
       } else {
         var id = matchWildcardHost(req.headers.host);
         if (id) {
-          if (!tryProxyUpgrade(id, req, socket, head)) {
-            socket.destroy();
-          }
+          return tryProxyUpgrade(id, req, socket, head);
+        } else {
+          return false;
         }
       }
-    } catch (err) {
+    }).then(function (handled) {
+      if (!handled) socket.destroy();
+    }).catch(function (err) {
       console.error("WebSocket event handler failed:", err.stack);
-    }
+      socket.destroy();
+    });
   });
 
   // BlackrockPayments is only defined in the Blackrock build of Sandstorm.
@@ -389,41 +396,50 @@ Meteor.startup(function () {
       }
 
       // Try to route the request to a session.
-      if (tryProxyRequest(id, req, res)) {
-        return;
-      }
-
-      publicIdPromise = Promise.resolve(id);
+      publicIdPromise = tryProxyRequest(id, req, res)
+          .then(function (handled) {
+        if (handled) {
+          return null;
+        } else {
+          return id;
+        }
+      });
     } else {
       // Not a wildcard host. Perhaps it is a custom host.
       publicIdPromise = lookupPublicIdFromDns(hostname);
     }
 
     publicIdPromise.then(function (publicId) {
-      var handler = staticHandlers[publicId];
-      if (handler) {
-        return handler;
-      } else {
-        // We don't have a handler for this publicId, so look it up in the grain DB.
-        return inMeteor(function () {
-          var grain = Grains.findOne({publicId: publicId}, {fields: {_id: 1}});
-          if (!grain) {
-            throw new Meteor.Error(404, "No such grain for public ID: " + publicId);
-          }
-          var grainId = grain._id;
+      if (publicId) {
+        return Promise.resolve(undefined).then(function () {
+          var handler = staticHandlers[publicId];
+          if (handler) {
+            return handler;
+          } else {
+            // We don't have a handler for this publicId, so look it up in the grain DB.
+            return inMeteor(function () {
+              var grain = Grains.findOne({publicId: publicId}, {fields: {_id: 1}});
+              if (!grain) {
+                throw new Meteor.Error(404, "No such grain for public ID: " + publicId);
+              }
+              var grainId = grain._id;
 
-          return staticHandlers[publicId] = wwwHandlerForGrain(grainId);
+              return staticHandlers[publicId] = wwwHandlerForGrain(grainId);
+            });
+          }
+        }).then(function (handler) {
+          handler(req, res, function (err) {
+            if (err) {
+              next(err);
+            } else {
+              res.writeHead(404, { "Content-Type": "text/plain" });
+              res.end("404 not found: " + req.url);
+            }
+          });
         });
+      } else {
+        return Promise.resolve(undefined);
       }
-    }).then(function (handler) {
-      handler(req, res, function (err) {
-        if (err) {
-          next(err);
-        } else {
-          res.writeHead(404, { "Content-Type": "text/plain" });
-          res.end("404 not found: " + req.url);
-        }
-      });
     }).catch(function (err) {
       writeErrorResponse(res, err);
     });

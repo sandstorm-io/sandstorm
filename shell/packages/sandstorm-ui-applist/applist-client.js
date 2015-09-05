@@ -149,6 +149,9 @@ Template.sandstormAppList.helpers({
   },
   shouldHighlight: function () {
     return this.appId === Template.instance().data._highlight;
+  },
+  uninstalling: function () {
+    return Template.instance().data._uninstalling.get();
   }
 });
 Template.sandstormAppList.events({
@@ -182,12 +185,22 @@ Template.sandstormAppList.events({
       launchAndEnterGrainByActionId(actionId);
     });
   },
+  "click .uninstall-action": function(event) {
+    var actionId = this._id;
+    var appId = UserActions.findOne(actionId).appId;
+    UserActions.remove(actionId);
+    Meteor.call("deleteUnusedPackages", appId);
+  },
   "click .dev-action": function(event) {
     var devId = this._id;
     var actionIndex = this.actionIndex;
     // N.B.: this calls into a global in shell.js.
     // TODO(cleanup): refactor into a safer dependency.
     launchAndEnterGrainByActionId("dev", this._id, this.actionIndex);
+  },
+  "click button.toggle-uninstall": function(event) {
+    var uninstallVar = Template.instance().data._uninstalling;
+    uninstallVar.set(!uninstallVar.get());
   },
   // We use keyup rather than keypress because keypress's event.currentTarget.value will not
   // have taken into account the keypress generating this event, so we'll miss a letter to
@@ -210,11 +223,6 @@ Template.sandstormAppList.events({
     }
   }
 });
-Template.sandstormAppList.onCreated(function() {
-  this.subscribe("devApps");
-  this.subscribe("userPackages");
-  this.subscribe("credentials");
-});
 Template.sandstormAppList.onRendered(function () {
   // Scroll to highlighted app, if any.
   if (this.data._highlight) {
@@ -235,7 +243,8 @@ Template.sandstormAppList.onRendered(function () {
     // but not desktop browsers, but some mobile browsers don't support it, so we also check
     // clientWidth. Note that it's better to err on the side of not auto-focusing.
     if (window.orientation === undefined && window.innerWidth > 600) {
-      this.findAll(".search-bar")[0].focus();
+      var searchbar = this.findAll(".search-bar")[0];
+      if (searchbar) searchbar.focus();
     }
   }
 });

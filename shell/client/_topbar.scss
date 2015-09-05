@@ -222,7 +222,7 @@ body>.topbar {
 
         background-image: url("/icon.png"), url("/down.svg");
         background-repeat: no-repeat, no-repeat;
-        background-position: 8px center, 8px 24px;
+        background-position: 8px center, 6px 24px;
         background-size: auto, 16px 8px;
         border-right: 1px solid #666;
 
@@ -238,9 +238,13 @@ body>.topbar {
           background-color: $topbar-background-color-hover;
         }
 
-        // Allow the LI to feel "disabled", in which case, it does not
-        // visually respond to hover.
+        // Allow the LI to feel "disabled", in which case it does not
+        // show the caret and does not visually respond to hover
         &.disabled {
+          background-image: url("/icon.png");
+          background-repeat: no-repeat;
+          background-position: 8px center;
+          background-size: auto;
           &:hover {
             background-color: $topbar-background-color;
           }
@@ -333,7 +337,14 @@ body>.topbar {
     }
     >.delete>button    { background-image: url("/trash.svg"); }
     >.debug-log>button { background-image: url("/debug.svg"); }
-    >.backup>button    { background-image: url("/download.svg"); }
+    >.backup>button    {
+      background-image: url("/download.svg");
+
+      &.loading {
+        background-image: url("/spinner_96.gif");
+        cursor: auto;
+      }
+    }
     >.restart>button   { background-image: url("/restart.svg"); }
     >.webkey>button    { background-image: url("/key.svg"); }
     >.who-has-access img { width: 20px; }
@@ -713,10 +724,6 @@ body>.popup {
       }
     }
 
-    input, button, .login-button {
-      @media #{$mobile} { font-size: 15pt; }
-    }
-
     >* {
       margin-left: $topbar-popup-padding;
       margin-right: $topbar-popup-padding;
@@ -760,7 +767,7 @@ body>.popup {
     }
 
     [data-which-tab=send-invite]>.send-invite>h5,
-    [data-which-tab=sharable-link]>.sharable-link>h5 {
+    [data-which-tab=shareable-link]>.shareable-link>h5 {
       background-color: white;
       border-bottom: 1px solid white;
       // TODO(cleanup): It would be better to use z-index for this.
@@ -776,8 +783,8 @@ body>.popup {
         margin-right: 16px;
       }
     }
-    [data-which-tab=send-invite]>.sharable-link>.tab-content,
-    [data-which-tab=sharable-link]>.send-invite>.tab-content {
+    [data-which-tab=send-invite]>.shareable-link>.tab-content,
+    [data-which-tab=shareable-link]>.send-invite>.tab-content {
       display: none;
     }
     section>h5.tab-top {
@@ -802,7 +809,7 @@ body>.popup {
       left: 2%;
       background-image: url(/email-m.svg);
     }
-    section.sharable-link>h5.tab-top {
+    section.shareable-link>h5.tab-top {
       right: 2%;
       background-image: url(/link-m.svg);
     }

@@ -1,3 +1,22 @@
+### v0.108 (2015-09-03)
+- Oasis: Allow front-ends to be parallelized so that they can scale to arbitrary load.
+- Eliminated redundant subscriptions and added caching to reduce front-end load.
+- Placed grain title first in title bar, rather than app title.
+- Updated wording of app install prompt.
+
+### v0.107 (2015-08-31)
+- Fix sign-out button.
+
+### v0.106 (2015-08-30)
+- Complete UI overhaul!
+  - "New" and "Open" flows.
+  - Ability to have multiple grains open at once and fast-switch between them.
+  - Icons.
+  - Better design all around.
+- App market launch!
+- Sandstorm Oasis is now in Open Beta with self-serve signup. (Self-hosted servers still use invite system.)
+- Demo server is now Oasis, and demo accounts can upgrade to full accounts. (Demo mode remains off by default for self-hosters.)
+
 ### v0.105 (2015-08-14)
 - The sharing UI can now directly send email with a sharing link, and has been reorganized. (More updates are coming in the next release.)
 - The new app metadata format has been improved (in backwards-incompatible ways, but it wasn't being used yet).

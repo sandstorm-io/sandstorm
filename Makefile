@@ -84,6 +84,7 @@ IMAGES= \
     shell/public/github-color.svg \
     shell/public/google-color.svg \
     shell/public/email-494949.svg \
+    shell/public/close-FFFFFF.svg \
                                   \
     shell/public/install-6A237C.svg \
     shell/public/install-9E40B5.svg \
@@ -212,6 +213,10 @@ shell/client/changelog.html: CHANGELOG.md
 	@markdown CHANGELOG.md >> tmp/changelog.html
 	@echo '</template>' >> tmp/changelog.html
 	@cp tmp/changelog.html shell/client/changelog.html
+
+shell/public/close-FFFFFF.svg: icons/close.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#FFFFFF/g' < $< > $@
 
 shell/public/install-6A237C.svg: icons/install.svg
 	@$(call color,custom color $<)

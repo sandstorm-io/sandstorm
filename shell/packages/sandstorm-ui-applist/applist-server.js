@@ -22,7 +22,7 @@ Meteor.publish("userPackages", function() {
 
     if (!hasPackage[packageId]) {
       hasPackage[packageId] = true;
-      var pkg = db.collections.packages.findOne(packageId);
+      var pkg = db.getPackage(packageId);
       if (pkg) {
         self.added("packages", packageId, pkg);
       } else {

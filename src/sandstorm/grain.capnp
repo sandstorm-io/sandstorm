@@ -710,7 +710,7 @@ using PermissionSet = List(Bool);
 # Set of permission IDs, represented as a bitfield.
 
 struct RoleDef {
-  # Metadata describing a sharable role.
+  # Metadata describing a shareable role.
 
   title @0 :Util.LocalizedText;
   # Name of the role, e.g. "editor" or "viewer".

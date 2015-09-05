@@ -24,7 +24,7 @@ if (Meteor.isServer) {
     // This calculates the number of user accounts that have been used
     // during the requested time period.
     var currentlyActiveUsersCount = Meteor.users.find(
-      {lastActive: timeConstraint}).count();
+      {expires: {$exists: false}, lastActive: timeConstraint}).count();
 
     // This calculates the number of grains that have been used during
     // the requested time period.
@@ -34,8 +34,8 @@ if (Meteor.isServer) {
     // contains records of type `user` and `appDemoUser`, indicating
     // the number of those types of accounts that were created and
     // then auto-expired through the demo mode's auto-account-expiry.
-    var deletedNormalUsersCount =  DeleteStats.find(
-      {type: "user", lastActive: timeConstraint}).count();
+    var deletedDemoUsersCount =  DeleteStats.find(
+      {type: "demoUser", lastActive: timeConstraint}).count();
     var deletedAppDemoUsersCount = DeleteStats.find(
       {type: "appDemoUser", lastActive: timeConstraint}).count();
 
@@ -46,9 +46,8 @@ if (Meteor.isServer) {
 
 
     return {
-      activeUsers: (currentlyActiveUsersCount +
-                    deletedAppDemoUsersCount +
-                    deletedNormalUsersCount),
+      activeUsers: currentlyActiveUsersCount,
+      demoUsers: deletedDemoUsersCount,
       appDemoUsers: deletedAppDemoUsersCount,
       activeGrains: (activeGrainsCount + deletedGrainsCount)
     }
@@ -65,21 +64,24 @@ if (Meteor.isServer) {
     });
   }
 
-  // Wait until 10:00 UTC (2:00 PST / 5:00 EST), then start recording stats every 24 hours.
-  Meteor.setTimeout(function () {
-    Meteor.setInterval(function () {
+  if (!Meteor.settings.replicaNumber) {
+    // Wait until 10:00 UTC (2:00 PST / 5:00 EST), then start recording stats every 24 hours.
+    // (Only on the first replica to avoid conflicts.)
+    Meteor.setTimeout(function () {
+      Meteor.setInterval(function () {
+        recordStats();
+      }, DAY_MS);
+
       recordStats();
-    }, DAY_MS);
+    }, DAY_MS - (Date.now() - 10*60*60*1000) % DAY_MS);
 
-    recordStats();
-  }, DAY_MS - (Date.now() - 10*60*60*1000) % DAY_MS);
-
-  Meteor.startup(function () {
-    if (StatsTokens.find().count() === 0) {
-      StatsTokens.remove({});
-      StatsTokens.insert({_id: Random.id(22)});
-    }
-  });
+    Meteor.startup(function () {
+      if (StatsTokens.find().count() === 0) {
+        StatsTokens.remove({});
+        StatsTokens.insert({_id: Random.id(22)});
+      }
+    });
+  }
 
   Meteor.methods({
     regenerateStatsToken: function () {

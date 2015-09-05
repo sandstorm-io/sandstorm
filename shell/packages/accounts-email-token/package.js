@@ -4,7 +4,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
-  api.use(["underscore", "random", "templating", "iron:router"]);
+  api.use(["underscore", "random", "templating", "iron:router", "sandstorm-db"]);
   api.use("accounts-base", ["client", "server"]);
   // Export Accounts (etc) to packages using this one.
   api.imply("accounts-base", ["client", "server"]);

@@ -16,6 +16,16 @@
 
 // This file defines the database schema.
 
+// Useful for debugging: Set the env variable LOG_MONGO_QUERIES to have the server write every
+// query it makes, so you can see if it's doing queries too often, etc.
+if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
+  var oldFind = Mongo.Collection.prototype.find;
+  Mongo.Collection.prototype.find = function () {
+    console.log(this._prefix, arguments);
+    return oldFind.apply(this, arguments);
+  }
+}
+
 // Users = new Mongo.Collection("users");
 // The users collection is special and can be accessed through `Meteor.users`.
 // See https://docs.meteor.com/#/full/meteor_users. Entries in the users collection correspond to
@@ -50,6 +60,7 @@
 //   expires: Date when this user's account should be deleted. Only present for demo users.
 //   isAppDemoUser: True if this is a demo user who arrived via an /appdemo/ link.
 //   payments: Object defined by payments module, if loaded.
+//   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
 
 Packages = new Mongo.Collection("packages");
 // Packages which are installed or downloading.
@@ -64,6 +75,10 @@ Packages = new Mongo.Collection("packages");
 //   appId:  If status is "ready", the application ID string.  Packages representing different
 //       versions of the same app have the same appId.  The spk tool defines the app ID format
 //       and can cryptographically verify that a package belongs to a particular app ID.
+//   shouldCleanup:  If true, a reference to this package was recently dropped, and the package
+//       collector should at some point check whether there are any other references and, if not,
+//       delete the package.
+//   url:  When status is "download", the URL from which the SPK can be obtained, if provided.
 
 DevApps = new Mongo.Collection("devapps");
 // List of applications currently made available via the dev tools running on the local machine.
@@ -187,13 +202,15 @@ ActivityStats = new Mongo.Collection("activityStats");
 // Each of daily, weekly, and monthly contains:
 //   activeUsers: The number of unique users who have used a grain on the server in the time
 //       interval. Only counts logged-in users.
+//   demoUsers: Demo users.
+//   appDemoUsers: Users that came in through "app demo".
 //   activeGrains: The number of unique grains that have been used in the time interval.
 
 DeleteStats = new Mongo.Collection("deleteStats");
 // Contains records of objects that were deleted, for stat-keeping purposes.
 //
 // Each contains:
-//   type: "grain" or "user" or "appDemoUser"
+//   type: "grain" or "user" or "demoUser" or "appDemoUser"
 //   lastActive: Date of the user's or grain's last activity.
 
 FileTokens = new Mongo.Collection("fileTokens");
@@ -746,6 +763,59 @@ if (Meteor.isServer) {
   var ContentType = Npm.require("content-type");
   var Zlib = Npm.require("zlib");
 
+  var replicaNumber = Meteor.settings.replicaNumber || 0;
+
+  var computeStagger = function (n) {
+    // Compute a fraction in the range [0, 1) such that, for any natural number k, the values
+    // of computeStagger(n) for all n in [1, 2^k) are uniformly distributed between 0 and 1.
+    // The sequence looks like:
+    //   0, 1/2, 1/4, 3/4, 1/8, 3/8, 5/8, 7/8, 1/16, ...
+    //
+    // We use this to determine how we'll stagger periodic events performed by this replica.
+    // Notice that this allows us to compute a stagger which is independent of the number of
+    // front-end replicas present; we can add more replicas to the end without affecting how the
+    // earlier ones schedule their events.
+    var denom = 1;
+    while (denom <= n) denom <<= 1;
+    var num = n * 2 - denom + 1;
+    return num / denom;
+  }
+
+  var stagger = computeStagger(replicaNumber);
+
+  SandstormDb.periodicCleanup = function (intervalMs, callback) {
+    // Register a database cleanup function than should run periodically, roughly once every
+    // interval of the given length.
+    //
+    // In a blackrock deployment with multiple front-ends, the frequency of the cleanup will be
+    // scaled appropriately on the assumption that more data is being generated demanding more
+    // frequent cleanups.
+
+    check(intervalMs, Number);
+    check(callback, Function);
+
+    if (intervalMs < 120000) {
+      throw new Error("less than 2-minute cleanup interval seems too fast; " +
+                      "are you using the right units?");
+    }
+
+    // Schedule first cleanup to happen at the next intervalMs interval from the epoch, so that
+    // the schedule is independent of the exact startup time.
+    var first = intervalMs - Date.now() % intervalMs;
+
+    // Stagger cleanups across replicas so that we don't have all replicas trying to clean the
+    // same data at the same time.
+    first += Math.floor(intervalMs * computeStagger(replicaNumber));
+
+    // If the stagger put us more than an interval away from now, back up.
+    if (first > intervalMs) first -= intervalMs;
+
+    Meteor.setTimeout(function () {
+      callback();
+      Meteor.setInterval(callback, intervalMs);
+    }, first);
+  }
+
   // TODO(cleanup): Node 0.12 has a `gzipSync` but 0.10 (which Meteor still uses) does not.
   var gzipSync = Meteor.wrapAsync(Zlib.gzip, Zlib);
 
@@ -888,11 +958,25 @@ if (Meteor.isServer) {
     AssetUploadTokens.remove({expires: {$lt: Date.now()}});
   }
 
-  // Cleanup tokens every hour, with a random phase.
-  Meteor.setTimeout(function () {
-    cleanupExpiredAssetUploads();
-    Meteor.setInterval(function () {
-      cleanupExpiredAssetUploads();
-    }, 3600000);
-  }, Math.floor(Math.random() * 3600000));
+  // Cleanup tokens every hour.
+  SandstormDb.periodicCleanup(3600000, cleanupExpiredAssetUploads);
+
+  var packageCache = {};
+  // Package info is immutable. Let's cache to save on mongo queries.
+
+  SandstormDb.prototype.getPackage = function (packageId) {
+    // Get the given package record. Since package info is immutable, cache the data in the server
+    // to reduce mongo query overhead, since it turns out we have to fetch specific packages a
+    // lot.
+
+    if (packageId in packageCache) {
+      return packageCache[packageId];
+    }
+
+    var package = Packages.findOne(packageId);
+    if (package && package.status === "ready") {
+      packageCache[packageId] = package;
+    }
+    return package;
+  }
 }

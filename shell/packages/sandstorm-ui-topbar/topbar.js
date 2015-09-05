@@ -45,6 +45,18 @@ Template.sandstormTopbarBlockReload.onDestroyed(function () {
 
 Template.sandstormTopbar.onCreated(function () {
   Template.instance().popupPosition = new ReactiveVar(undefined, _.isEqual);
+
+  var topbar = this.data;
+  this.escapeHandler = function (ev) {
+    if (ev.keyCode === 27) {
+      topbar.closePopup();
+    }
+  };
+  document.getElementsByTagName("body")[0].addEventListener("keydown", this.escapeHandler);
+});
+
+Template.sandstormTopbar.onDestroyed(function () {
+  document.getElementsByTagName("body")[0].removeEventListener("keydown", this.escapeHandler);
 });
 
 Template.sandstormTopbar.helpers({
@@ -128,14 +140,19 @@ Template.sandstormTopbar.helpers({
           // TODO(someday): Make this better. We could wait until the popup template has opened and
           //   rendered, then choose a better position based on its full size.
 
-          var rect = element.getBoundingClientRect();
-          var currentWindowWidth = windowWidth.get();
-          var windowMid = currentWindowWidth / 2;
-          var itemMid = (rect.left + rect.right) / 2;
-          instance.popupPosition.set(itemMid < windowMid
-              ? { name: item.name, align: "left", px: Math.max(itemMid - 50, 0) }
-              : { name: item.name, align: "right",
-                  px: Math.max(currentWindowWidth - itemMid - 50, 0) });
+          if (item.name == "account") {
+            // account should always be flush right
+            instance.popupPosition.set({ name: item.name, align: "right", px: 0});
+          } else {
+            var rect = element.getBoundingClientRect();
+            var currentWindowWidth = windowWidth.get();
+            var windowMid = currentWindowWidth / 2;
+            var itemMid = (rect.left + rect.right) / 2;
+            instance.popupPosition.set(itemMid < windowMid
+                ? { name: item.name, align: "left", px: Math.max(itemMid - 50, 0) }
+                : { name: item.name, align: "right",
+                    px: Math.max(currentWindowWidth - itemMid - 50, 0) });
+          }
         }
       });
     }
@@ -173,6 +190,16 @@ Template.sandstormTopbar.events({
   },
 
   "click .popup": function (event) {
+    if (event.target === event.currentTarget) {
+      // Clicked outside the popup; close it.
+      event.stopPropagation();
+      Template.instance().data.closePopup();
+    }
+  },
+
+  // The touchstart handler is to handle a bug in iOS with the click event above.
+  // From what I can tell, mobile safari seems to be optimizing out the click.
+  "touchstart .popup": function (event) {
     if (event.target === event.currentTarget) {
       // Clicked outside the popup; close it.
       event.stopPropagation();
@@ -228,7 +255,7 @@ Template.sandstormTopbar.events({
       grains.splice(closeIndex, 1);
       grains[newActiveIndex].setActive(true);
       topbar._grains.set(grains);
-      Router.go("grain", {grainId: grains[newActiveIndex].grainId()});
+      Router.go(grains[newActiveIndex].route());
     } else {
       grains.splice(closeIndex, 1);
       topbar._grains.set(grains);

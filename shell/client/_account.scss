@@ -22,7 +22,7 @@ body>.popup.account>.frame {
 
   // TODO(cleanup): Much of the below was brought it from Meteor's accounts-ui and needs cleanup.
 
-  >button.login, >form, >a {
+  >button.login, >button.logout, >form, >a {
     display: block;
     width: 200px;
     height: 32px;
@@ -764,6 +764,7 @@ body>.popup {
 body>.popup.billing-prompt>.frame {
   text-align: center;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 
   @media #{$desktop} {
     width: 932px;
@@ -791,6 +792,10 @@ body>.popup.billing-prompt>.frame {
     font-size: 17pt;
     max-width: 440px;
     margin: 1em auto;
+
+    &.wider {
+      max-width: 590px;
+    }
 
     >a {
       color: inherit;
@@ -825,7 +830,7 @@ body>.popup.billing-prompt>.frame {
   >p.success-note {
     background-color: #cff4c6;
     padding: 32px;
-    display: table;
+    max-width: 500px;
     margin: 1em auto;
 
     >strong {

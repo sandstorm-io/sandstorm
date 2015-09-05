@@ -39,7 +39,7 @@ Template._loginButtonsLoggedOutDropdown.helpers(helpers);
 Template._loginButtonsLoggedInDropdown.helpers(helpers);
 
 Template.loginButtonsPopup.events({
-  'click button.login.logout': function() {
+  'click button.logout': function() {
     var topbar = Template.parentData(3);
     Meteor.logout(function () {
       loginButtonsSession.closeDropdown();

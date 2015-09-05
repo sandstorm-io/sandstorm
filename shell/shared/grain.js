@@ -99,19 +99,28 @@ if (Meteor.isServer) {
     return;
   });
 
-  Meteor.publish("grainSize", function (sessionId) {
+  Meteor.publish("grainSize", function (grainId) {
     // Publish pseudo-collection containing the size of the grain opened in the given session.
-    check(sessionId, String);
+    check(grainId, String);
+
+    var grain = Grains.findOne(grainId);
+    if (grain.userId !== this.userId) {
+      return [];
+    }
+
+    var supervisor = sandstormBackend.getGrain(this.userId, grainId).supervisor;
 
     var self = this;
     var stopped = false;
-    var promise = getGrainSize(sessionId);
+    var promise = getGrainSize(supervisor);
 
     function getNext(oldSize) {
-      promise = getGrainSize(sessionId, oldSize);
+      promise = getGrainSize(supervisor, oldSize);
       promise.then(function (size) {
         if (!stopped) {
-          self.changed("grainSizes", sessionId, {size: size});
+          if (size !== oldSize) {  // sometimes there are false alarms
+            self.changed("grainSizes", grainId, {size: size});
+          }
           getNext(size);
         }
       }, function (err) {
@@ -127,7 +136,7 @@ if (Meteor.isServer) {
 
     promise.then(function (size) {
       if (!stopped) {
-        self.added("grainSizes", sessionId, {size: size});
+        self.added("grainSizes", grainId, {size: size});
         self.ready();
         getNext(size);
       }
@@ -256,7 +265,8 @@ Meteor.methods({
 
 if (Meteor.isClient) {
   Tracker.autorun(function() {
-    // We need to keep track of certain data about each grain we can view
+    // We need to keep track of certain data about each grain we can view.
+    // TODO(cleanup): Do these in GrainView to avoid spurrious resubscribes.
     var grains = globalGrains.get();
     grains.forEach(function(grain) {
       grain.depend();
@@ -265,10 +275,6 @@ if (Meteor.isClient) {
         Meteor.subscribe("grainTopBar", grainId);
         if (grain.isOwner()) {
           Meteor.subscribe("packageByGrainId", grainId);
-          var session = Sessions.findOne({grainId: grainId});
-          if (session) {
-            Meteor.subscribe("grainSize", session._id);
-          }
         }
         var token = grain.token();
         if (token) {
@@ -280,7 +286,6 @@ if (Meteor.isClient) {
 
   Template.layout.events({
     "click .incognito-button": function (event) {
-      console.log("incognito button clicked");
       console.log(event);
       var grains = globalGrains.get();
       var token = event.currentTarget.getAttribute("data-token");
@@ -296,7 +301,6 @@ if (Meteor.isClient) {
     },
 
     "click .redeem-token-button": function (event) {
-      console.log("redeem button clicked");
       console.log(event);
       var grains = globalGrains.get();
       var token = event.currentTarget.getAttribute("data-token");
@@ -312,18 +316,29 @@ if (Meteor.isClient) {
     },
   });
 
+  var promptNewTitle = function() {
+    var grain = getActiveGrain(globalGrains.get());
+    if (grain) {
+      var prompt = "Set new title:";
+      if (!grain.isOwner()) {
+        prompt = "Set a new personal title: (does not change the owner's title for this grain)";
+      }
+      var title = window.prompt(prompt, grain.title());
+      if (title) {
+        grain.setTitle(title);
+      }
+    }
+  };
   Template.grainTitle.events({
     "click": function (event) {
-      var grain = getActiveGrain(globalGrains.get());
-      if (grain) {
-        var prompt = "Set new title:";
-        if (!grain.isOwner()) {
-          prompt = "Set a new personal title: (does not change the owner's title for this grain)";
-        }
-        var title = window.prompt(prompt, grain.title());
-        if (title) {
-          grain.setTitle(title);
-        }
+      promptNewTitle();
+    },
+    "keydown": function (event) {
+      if ((event.keyCode === 13) || (event.keyCode === 32)) {
+        // Allow space or enter to trigger renaming the grain - Firefox doesn't treat enter on the
+        // focused element as click().
+        promptNewTitle();
+        event.preventDefault();
       }
     },
   });
@@ -346,7 +361,7 @@ if (Meteor.isClient) {
             grains.splice(activeIndex, 1);
             grains[newActiveIndex].setActive(true);
             globalGrains.set(grains);
-            Router.go("grain", {grainId: grains[newActiveIndex].grainId()});
+            Router.go(grains[newActiveIndex].route());
           }
         }
       } else {
@@ -361,7 +376,7 @@ if (Meteor.isClient) {
             grains.splice(activeIndex, 1);
             grains[newActiveIndex].setActive(true);
             globalGrains.set(grains);
-            Router.go("grain", {grainId: grains[newActiveIndex].grainId()});
+            Router.go(grains[newActiveIndex].route());
           }
         }
       }
@@ -377,11 +392,23 @@ if (Meteor.isClient) {
     },
   });
 
+  Template.grainBackupButton.onCreated(function () {
+    this.isLoading = new ReactiveVar(false);
+  });
+
+  Template.grainBackupButton.helpers({
+    isLoading: function () {
+      return Template.instance().isLoading.get();
+    }
+  });
+
   Template.grainBackupButton.events({
-    "click button": function (event) {
+    "click button": function (event, template) {
+      template.isLoading.set(true);
       this.reset();
       var activeGrain = getActiveGrain(globalGrains.get());
       Meteor.call("backupGrain", activeGrain.grainId(), function (err, id) {
+        template.isLoading.set(false);
         if (err) {
           alert("Backup failed: " + err); // TODO(someday): make this better UI
         } else {
@@ -514,15 +541,15 @@ if (Meteor.isClient) {
   });
 
   Template.shareWithOthers.events({
-    "click .sharable-link": function (event, instance) {
-      instance.find(".share-tabs").setAttribute("data-which-tab", "sharable-link");
+    "click .shareable-link": function (event, instance) {
+      instance.find(".share-tabs").setAttribute("data-which-tab", "shareable-link");
     },
     "click .send-invite": function (event, instance) {
       instance.find(".share-tabs").setAttribute("data-which-tab", "send-invite");
     },
   });
 
-  Template.sharableLinkTab.events({
+  Template.shareableLinkTab.events({
     "change .share-token-role": function (event, instance) {
       var success = instance.completionState.get().success;
       if (success) {
@@ -628,11 +655,6 @@ if (Meteor.isClient) {
     "currentGrain": function() {
       return getActiveGrain(globalGrains.get());
     }
-  });
-
-  Template.grain.onCreated(function () {
-    this.originalPath = window.location.pathname + window.location.search;
-    this.originalHash = window.location.hash;
   });
 
   Template.grainView.helpers({
@@ -875,7 +897,7 @@ if (Meteor.isClient) {
     },
   });
 
-  Template.sharableLinkTab.onCreated(function () {
+  Template.shareableLinkTab.onCreated(function () {
     this.completionState = new ReactiveVar({clear: true});
   });
 
@@ -883,7 +905,7 @@ if (Meteor.isClient) {
     this.completionState = new ReactiveVar({clear: true});
   });
 
-  Template.sharableLinkTab.helpers({
+  Template.shareableLinkTab.helpers({
     completionState: function() {
       var instance = Template.instance();
       return instance.completionState.get();
@@ -1148,7 +1170,6 @@ if (Meteor.isClient) {
 }
 
 function makeGrainIdActive(grainId) {
-  console.log("making grain " + grainId + " active");
   var grains = globalGrains.get();
   for (var i = 0 ; i < grains.length ; i++) {
     var grain = grains[i];
@@ -1206,13 +1227,11 @@ function mapGrainStateToTemplateData(grainState) {
     appOrigin: grainState.origin(),
     hasNotLoaded: !(grainState.hasLoaded()),
     sessionId: grainState.sessionId(),
-    path: encodeURIComponent(grainState._originalPath || ""), //TODO: cleanup
-    hash: grainState._originalHash || "", // TODO: cleanup
+    originalPath: grainState._originalPath,
     interstitial: grainState.shouldShowInterstitial(),
     token: grainState.token(),
     viewInfo: grainState.viewInfo(),
   };
-  console.log(templateData);
   return templateData;
 }
 
@@ -1222,7 +1241,9 @@ GrainLog = new Mongo.Collection("grainLog");
 Router.map(function () {
   this.route("newGrain", {
     path: "/grain/new",
+    waitOn: function () { return globalSubs; },
     data: function () {
+      if (!this.ready()) return;
       if (!Meteor.userId() && !Meteor.loggingIn()) {
         Router.go("root", {}, {replaceState: true});
       }
@@ -1232,7 +1253,9 @@ Router.map(function () {
   });
   this.route("selectGrain", {
     path: "/grain",
+    waitOn: function () { return globalSubs; },
     data: function () {
+      if (!this.ready()) return;
       if (!Meteor.userId() && !Meteor.loggingIn()) {
         Router.go("root", {}, {replaceState: true});
       }
@@ -1245,15 +1268,7 @@ Router.map(function () {
     loadingTemplate: "loadingNoMessage",
 
     waitOn: function () {
-      var subscriptions = [
-        Meteor.subscribe("grainTopBar", this.params.grainId),
-        Meteor.subscribe("devApps"),
-      ];
-      if (Meteor.settings && Meteor.settings.public &&
-          Meteor.settings.public.allowDemoAccounts) {
-        Meteor.subscribe("packageByGrainId", this.params.grainId);
-      }
-      return subscriptions;
+      return globalSubs;
     },
 
     onBeforeAction: function () {
@@ -1262,9 +1277,7 @@ Router.map(function () {
       this.state.set("beforeActionHookRan", true);
 
       var grainId = this.params.grainId;
-      var path = "/" + (this.params.path || "");
-      var query = this.params.query;
-      var hash = this.params.hash;
+      var path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
       var grains = globalGrains.get();
       var grainIndex = grainIdToIndex(grains, grainId);
       if (grainIndex == -1) {
@@ -1275,8 +1288,7 @@ Router.map(function () {
           var mainContentElement = document.querySelector("body>.main-content");
           if (mainContentElement) {
             var grains = globalGrains.get();
-            var grainToOpen = new GrainView(grainId, path, query, hash, undefined,
-                mainContentElement);
+            var grainToOpen = new GrainView(grainId, path, undefined, mainContentElement);
             grainToOpen.openSession();
             grainIndex = grains.push(grainToOpen) - 1;
             globalGrains.set(grains);
@@ -1327,8 +1339,7 @@ Router.map(function () {
       this.state.set("beforeActionHookRan", true);
 
       var token = this.params.token;
-      var path = "/" + (this.params.path || "");
-      var query = this.params.query;
+      var path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
       var hash = this.params.hash;
 
       var tokenInfo = TokenInfo.findOne({_id: token});
@@ -1341,8 +1352,7 @@ Router.map(function () {
             var mainContentElement = document.querySelector("body>.main-content");
             if (mainContentElement) {
               var grains = globalGrains.get();
-              var grainToOpen = new GrainView(grainId, path, query, hash, token,
-                                              mainContentElement);
+              var grainToOpen = new GrainView(grainId, path, token, mainContentElement);
               grainToOpen.openSession();
               grainIndex = grains.push(grainToOpen) - 1;
               globalGrains.set(grains);

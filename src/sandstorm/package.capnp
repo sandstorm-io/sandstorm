@@ -195,7 +195,7 @@ struct BridgeConfig {
 
   viewInfo @0 :Grain.UiView.ViewInfo;
   # What to return from the UiView's getViewInfo(). This structure defines, among other things, the
-  # list of sharable permissions and roles that apply to this app. See grain.capnp for more details.
+  # list of shareable permissions and roles that apply to this app. See grain.capnp for more details.
   #
   # When a request comes in from the user, sandstorm-http-bridge will set the
   # X-Sandstorm-Permissions header to a comma-delimited list of permission names corresponding to

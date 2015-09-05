@@ -32,12 +32,19 @@ var HOSTNAME = ROOT_URL.hostname;
 var DAILY_LIMIT = 50;
 var RECIPIENT_LIMIT = 20;
 
-var dailySendCounts = {};
-// Maps user IDs to counts of the number of e-mails they have sent today.
-
 var CLIENT_TIMEOUT = 15000; // 15s
 
-Meteor.setInterval(function () { dailySendCounts = {}; }, 86400);
+// Every day, reset all per-user sent counts to zero.
+// TODO(cleanup): Consider a more granular approach. For example, each user could have a timer
+//   after which their count will reset. We'd only check the timer when that user is trying to
+//   send a new message. This avoids a global query.
+if (!Meteor.settings.replicaNumber) {  // only first replica
+  SandstormDb.periodicCleanup(86400000, function () {
+    Meteor.users.update({dailySentMailCount: {$exists: true}},
+                        {$unset: {dailySentMailCount: ""}},
+                        {multi: true});
+  });
+}
 
 Meteor.startup(function() {
   var SANDSTORM_SMTP_PORT = parseInt(process.env.SANDSTORM_SMTP_PORT, 10) || 30025;
@@ -260,11 +267,12 @@ hackSendEmail = function (session, email) {
       });
     }
 
-    if (!(this.userId in dailySendCounts)) {
-      dailySendCounts[this.userId] = 0;
-    }
-    var sentToday = ++dailySendCounts[this.userId];
-    if (sentToday > DAILY_LIMIT) {
+    var user = Meteor.users.findAndModify({
+      query: {_id: session.userId},
+      update: {$inc: {dailySentMailCount: 1}},
+      fields: {dailySentMailCount: 1}
+    });
+    if (user.dailySentMailCount >= DAILY_LIMIT) {
       throw new Error(
           "Sorry, you've reached your e-mail sending limit for today. Currently, Sandstorm " +
           "limits each user to " + DAILY_LIMIT + " e-mails per day for spam control reasons. " +

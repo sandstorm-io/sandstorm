@@ -462,7 +462,7 @@ var cleanupSelfDestructing = function() {
 
 // Make self-destructing tokens actually self-destruct, so they don't
 // clutter the token list view.
-Meteor.setInterval(cleanupSelfDestructing, 60 * 1000);
+SandstormDb.periodicCleanup(5 * 60 * 1000, cleanupSelfDestructing);
 
 Meteor.methods({
   transitiveShares: function(grainId) {

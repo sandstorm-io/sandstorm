@@ -319,7 +319,7 @@ void Indexer::updateIndex() {
             summary.setUpstreamAuthor(author.getUpstreamAuthor());
           }
 
-          // TODO(now): Additional HTML sanitization? Client should be doing that already...
+          // TODO(soon): Additional HTML sanitization? Client should be doing that already...
           summary.setShortDescription(metadata.getShortDescription().getDefaultText());
           details.setDescription(metadata.getDescription().getDefaultText());
 

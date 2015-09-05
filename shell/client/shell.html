@@ -126,7 +126,7 @@ limitations under the License.
     {{#if appOrigin}}
       {{!-- Selenium requires iframes to have an id in order to select them. id="grain-frame" is only
             used for testing purposes. --}}
-      <iframe data-grainid="{{grainId}}" id="grain-frame" class="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{path}}{{hash}}"></iframe>
+      <iframe data-grainid="{{grainId}}" id="grain-frame" class="grain-frame" src="{{appOrigin}}/_sandstorm-init?sessionid={{sessionId}}&path={{originalPath}}"></iframe>
       {{#if hasNotLoaded}}
         {{> _grainSpinner}}
       {{/if}}
@@ -220,7 +220,7 @@ limitations under the License.
 </template>
 
 <template name="grainTitle">
-  <span class="editable" title="Rename" id="grainTitle">{{title}}</span>
+  <span class="editable" title="Rename" id="grainTitle" tabindex="0">{{title}}</span>
 </template>
 <template name="grainDeleteButton">
   <button class="grain-button" title="Delete" id="deleteGrain">Delete</button>
@@ -229,7 +229,7 @@ limitations under the License.
   <button class="grain-button" title="Show Debug Log" id="openDebugLog">Log</button>
 </template>
 <template name="grainBackupButton">
-  <button class="grain-button" title="Download Backup" id="backupGrain">Backup</button>
+  <button class="grain-button {{#if isLoading}}loading{{/if}}" title="Download Backup" id="backupGrain" disabled="{{#if isLoading}}true{{/if}}">Backup</button>
 </template>
 <template name="grainRestartButton">
   <button class="grain-button" title="Restart App" id="restartGrain">Restart</button>
@@ -411,7 +411,7 @@ limitations under the License.
   {{/with}}
 </template>
 
-<template name="sharableLinkTab">
+<template name="shareableLinkTab">
   <form class="new-share-token">
     <p>
       <img class="inline-icon" src="/people-m.svg">
@@ -430,7 +430,7 @@ limitations under the License.
   {{#with completionState}}
     {{#if success}}
       <p><img class="inline-icon" src="/copy-m.svg"> Copy this link:</p>
-      <a id="share-token-text" class="copy-me" href="{{shareToken}}">{{success.url}}</a>
+      <a id="share-token-text" class="copy-me" href="{{success.url}}">{{success.url}}</a>
       <p><button class="reset-share-token">+ Create another link</button></p>
     {{/if}}
     {{#if pending}}
@@ -459,10 +459,10 @@ limitations under the License.
         {{> emailInviteTab viewInfo=grain.viewInfo title=grain.title grainId=grain.grainId }}
       </div>
     </section>
-    <section class="sharable-link">
-      <h5 class="tab-top"> Get sharable link </h5>
+    <section class="shareable-link">
+      <h5 class="tab-top"> Get shareable link </h5>
       <div class="tab-content">
-        {{> sharableLinkTab viewInfo=grain.viewInfo }}
+        {{> shareableLinkTab viewInfo=grain.viewInfo }}
       </div>
     </section>
   </div>
@@ -610,7 +610,7 @@ limitations under the License.
           </div></li>
         <li id="step-run">App Installed
           <div class="done-notice">
-            <p>Installation complete.  Click "My Files" to create a new file with this app.</p>
+            <p>Installation complete.  Click "New ..." to create a new file with this app.</p>
 
             {{#if hasNewerVersion}}
               <p>Some of your files were made with a
@@ -865,15 +865,16 @@ limitations under the License.
 
 <template name="adminSettings">
   <form id="admin-settings-form">
-    <p><input type="checkbox" class="oauth-checkbox" name="googleLogin"
-              value="value" checked={{googleEnabled}} data-servicename="google"> Enable Google Login
+    <p>
+      <label><input type="checkbox" class="oauth-checkbox" name="googleLogin"
+             value="value" checked={{googleEnabled}} data-servicename="google"> Enable Google Login
        (<a class="configure-oauth" data-servicename="google" href="">configure</a>)
-       (<a class="reset-login-tokens" data-servicename="google" href="">log out all users</a>)<br>
-       <input type="checkbox" class="oauth-checkbox" name="githubLogin"
+       (<a class="reset-login-tokens" data-servicename="google" href="">log out all users</a>)</label><br>
+       <label><input type="checkbox" class="oauth-checkbox" name="githubLogin"
               value="value" checked={{githubEnabled}} data-servicename="github"> Enable Github Login
        (<a class="configure-oauth" data-servicename="github" href="">configure</a>)
-       (<a class="reset-login-tokens" data-servicename="github" href="">log out all users</a>)<br>
-       <input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login<br>
+       (<a class="reset-login-tokens" data-servicename="github" href="">log out all users</a>)</label><br>
+       <label><input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login</label><br>
       <span class="details">Choose which services users may use to identify themselves. Anyone can log in, but only users you {{#linkTo route="adminInvites" data=getToken}}invite{{/linkTo}} will be able to install apps or create files.</span></p>
     <p>SMTP Url: <button id="admin-settings-send-toggle">Test</button><input id="smptUrl" type="text" name="smtpUrl" value="{{smtpUrl}}"><br>
       <span class="details">Address of an SMTP relay server, like <code>smtp://user:pass@host:port</code>, which will be used by email apps and to send {{#linkTo route="adminInvites" data=getToken}}email invites{{/linkTo}}. The SMTP server should be configured to allow sending email from your Sandstorm domain and from email addresses that will be used to send invites.</span>
@@ -1062,7 +1063,7 @@ limitations under the License.
         {{/if}}
       </button>
 
-      <p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and cotrol, <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html" target="_blank">this is the only way to make Open Source web apps viable.</a></p>
+      <p>Sandstorm makes it easy to run apps on your own server. In addition to improving privacy and control, <a href="https://blog.sandstorm.io/news/2014-07-21-open-source-web-apps-require-federated-hosting.html" target="_blank">this is the only way to make Open Source web apps viable.</a></p>
       <p>Sandstorm is also <strong>ridiculously secure</strong>. If security interests you, check out <a href="https://docs.sandstorm.io/en/latest/developing/security-practices/" target="_blank">Sandstorm's security model overview</a>.</p>
     {{else}}
       <p>Sorry, this server does not allow demo accounts.</p>

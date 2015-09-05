@@ -1,17 +1,19 @@
+var matchesAppOrGrainTitle = function (needle, grain) {
+  if (grain.title && grain.title.toLowerCase().indexOf(needle) !== -1) return true;
+  if (grain.appTitle && grain.appTitle.toLowerCase().indexOf(needle) !== -1) return true;
+  return false;
+};
 var compileMatchFilter = function (searchString) {
   // split up searchString into an array of regexes, use them to match against item
   var searchKeys = searchString.toLowerCase()
       .split(" ")
       .filter(function(k) { return k !== "";});
   return function matchFilter(item) {
-    // Keep any item that matches all substrings
-    var haystack = item.title.toLowerCase();
-    for (var i = 0 ; i < searchKeys.length ; i++) {
-      if (haystack.indexOf(searchKeys[i]) === -1) {
-        return false;
-      }
-    }
-    return true;
+    if (searchKeys.length === 0) return true;
+    return _.chain(searchKeys)
+        .map(function (searchKey) { return matchesAppOrGrainTitle(searchKey, item); })
+        .reduce(function (a, b) { return a && b; })
+        .value();
   };
 };
 var mapGrainsToTemplateObject = function (grains) {
@@ -97,16 +99,14 @@ Template.sandstormGrainList.helpers({
     return prettySize(Meteor.user().storageUsage);
   }
 });
-Template.sandstormGrainList.onCreated(function () {
-  Template.instance().subscribe("userPackages");
-});
 Template.sandstormGrainList.onRendered(function () {
   // Auto-focus search bar on desktop, but not mobile (on mobile it will open the software
   // keyboard which is undesirable). window.orientation is generally defined on mobile browsers
   // but not desktop browsers, but some mobile browsers don't support it, so we also check
   // clientWidth. Note that it's better to err on the side of not auto-focusing.
   if (window.orientation === undefined && window.innerWidth > 600) {
-    this.findAll(".search-bar")[0].focus();
+    var searchbar = this.findAll(".search-bar")[0];
+    if (searchbar) searchbar.focus();
   }
 });
 Template.sandstormGrainList.events({

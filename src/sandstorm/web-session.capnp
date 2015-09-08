@@ -118,6 +118,8 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     }
 
     const headerWhitelist :List(Text) = [
+      "if-match",              # webdav etag
+      "if-not-match",          # webdav etag
       "depth",                 # webdav PROPFIND
       "destination",           # webdav COPY/MOVE
       "overwrite",             # webdav COPY/MOVE

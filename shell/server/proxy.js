@@ -647,11 +647,23 @@ Meteor.startup(function() {
     var users = [];
     var tokenIds = [];
     downstream.forEach(function (token) {
+      var proxy = proxiesByApiToken[token._id];
+      if (proxy) {
+        proxy.close();
+      }
       delete proxiesByApiToken[token._id];
       tokenIds.push(token._id);
       if (token.owner && token.owner.user){
         users.push(token.owner.user.userId);
       }
+    });
+    Sessions.find({grainId: token.grainId, $or: [{userId: {$in: users}},
+      {hashedToken: {$in: tokenIds}}]}, {fields: {hostId: 1}}).forEach(function (session) {
+      var proxy = proxiesByHostId[session.hostId];
+      if (proxy) {
+        proxy.close();
+      }
+      delete proxiesByHostId[session.hostId];
     });
     Sessions.remove({grainId: token.grainId, $or: [{userId: {$in: users}},
                                                    {hashedToken: {$in: tokenIds}}]});
@@ -950,6 +962,7 @@ function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, userInfo, isA
   this.isOwner = isOwner;
   this.isApi = isApi;
   this.hasLoaded = false;
+  this.isClosed = false;
   if (sessionId) {
     if (!hostId) throw new Error("sessionId must come with hostId");
     if (isApi) throw new Error("API proxy shouldn't have sessionId");
@@ -1045,6 +1058,10 @@ function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, userInfo, isA
       socket.destroy();
     });
   };
+}
+
+Proxy.prototype.close = function () {
+  this.isClosed = true;
 }
 
 Proxy.prototype.getConnection = function () {
@@ -1803,15 +1820,23 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
 // -----------------------------------------------------------------------------
 // WebSocket handling
 
-function WebSocketReceiver(socket) {
+function WebSocketReceiver(socket, proxy) {
   var queue = [];
   this.go = function () {
+    if (proxy.isClosed) {
+      socket.end();
+      return;
+    }
     for (var i in queue) {
       socket.write(queue[i]);
     }
     queue = null;
   };
   this.sendBytes = function (message) {
+    if (proxy.isClosed) {
+      socket.end();
+      return;
+    }
     // TODO(someday):  Flow control of some sort?
     if (queue === null) {
       socket.write(message);
@@ -1860,7 +1885,7 @@ Proxy.prototype.handleWebSocket = function (request, socket, head, retryCount) {
           .split(",").map(function (s) { return s.trim(); });
     }
 
-    var receiver = new WebSocketReceiver(socket);
+    var receiver = new WebSocketReceiver(socket, self);
 
     var promise = session.openWebSocket(path, context, protocols, receiver);
 

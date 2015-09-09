@@ -44,6 +44,12 @@ Template.loginButtonsPopup.events({
     Meteor.logout(function () {
       loginButtonsSession.closeDropdown();
       topbar.closePopup();
+      var openGrains = globalGrains.get();
+      openGrains.forEach(function(grain) {
+        grain.destroy();
+      });
+      globalGrains.set([]);
+      Router.go("root");
     });
   }
 });

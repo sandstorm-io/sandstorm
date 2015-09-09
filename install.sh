@@ -148,6 +148,7 @@ USE_DEFAULTS="no"
 USE_EXTERNAL_INTERFACE="no"
 USE_SANDCATS="no"
 SANDCATS_SUCCESSFUL="no"
+SANDCATS_HTTPS_SUCCESSFUL="no"
 CURRENTLY_UID_ZERO="no"
 PREFER_ROOT="yes"
 USERNS_CLONE_AT_ALL=""
@@ -163,6 +164,7 @@ DEFAULT_UPDATE_CHANNEL="dev"
 DEFAULT_SERVER_USER="sandstorm"
 SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-sandcats.io}"
 ALLOW_DEV_ACCOUNTS="false"
+SANDCATS_GETCERTIFICATE="yes"
 
 # Define functions for each stage of the install process.
 
@@ -174,6 +176,7 @@ usage() {
   echo '' >&2
   echo 'If -d is specified, the auto-installs with defaults suitable for app development.' >&2
   echo 'If -e is specified, default to listening on an external interface, not merely loopback.' >&2
+  echo 'If -s is specified, (EXPERIMENTAL) request a HTTPS certificate.' >&2
   echo 'If -u is specified, default to avoiding root priviliges. Note that the dev tools only work if the server as root privileges.' >&2
   exit 1
 }
@@ -188,13 +191,16 @@ handle_args() {
   SCRIPT_NAME=$1
   shift
 
-  while getopts ":deu" opt; do
+  while getopts ":desu" opt; do
     case $opt in
       d)
         USE_DEFAULTS="yes"
         ;;
       e)
         USE_EXTERNAL_INTERFACE="yes"
+        ;;
+      s)
+        SANDCATS_GETCERTIFICATE="yes"
         ;;
       u)
         PREFER_ROOT=no
@@ -651,6 +657,9 @@ full_server_install() {
     echo ""
     echo "* Install Sandstorm in $DEFAULT_DIR_FOR_ROOT"
     echo "* Automatically keep Sandstorm up-to-date"
+    if [ "yes" == "$SANDCATS_GETCERTIFICATE" ] ; then
+      echo "* (EXPERIMENTAL) Configure a HTTPS security certificate, if you use a subdomain of sandcats.io"
+    fi
     echo "* Create a service user ($DEFAULT_SERVER_USER) that owns Sandstorm's files"
     if [ "unknown" == "$INIT_SYSTEM" ]; then
       echo "*** WARNING: Could not detect how to run Sandstorm at startup on your system. ***"
@@ -729,6 +738,10 @@ sandcats_configure() {
   # it succeeds and/or returning when the user expresses a desire to
   # cancel the process.
   sandcats_register_name
+
+  # If appropriate, we configure HTTPS. We always call the function,
+  # allowing it to determine if any action is required.
+  sandcats_configure_https
 }
 
 configure_hostnames() {
@@ -1478,6 +1491,94 @@ sandcats_register_name() {
     # Show the server's output, and re-run this function.
     error "$(cat "$LOG_PATH")"
     sandcats_register_name
+    return
+  fi
+}
+
+sandcats_configure_https() {
+  # Insist that the experimental flag enabling this code was passed
+  # into argv.
+  if [ "yes" != "$SANDCATS_GETCERTIFICATE" ] ; then
+    return
+  fi
+
+  # Insist that Sandcats setup successfully finished.
+  if [ "yes" != "$SANDCATS_SUCCESSFUL" ] ; then
+    return
+  fi
+
+  # Let's request a certificate. Note that on the dev service, at
+  # least, this takes about 30 seconds. So we need to print a message
+  # so the user doesn't get sad and go away.
+  echo "Now we're going to auto-configure HTTPS for your server."
+  echo ""
+  echo "* This will take about 30 seconds, and needs no input from you."
+  echo "* Thanks to GlobalSign for their help making this happen."
+  echo ""
+
+  # Store https data in var/sandcats/https, under a directory named
+  # for the current hostname. Set its permissions to something pretty
+  # restrictive.
+  #
+  # The hostname is in the path so that, if the Sandstorm admin
+  # adjusts the hostname, the Sandstorm code can easily figure out to
+  # not use these certificates without having to parse the actual
+  # X.509 certificate data.
+  local HTTPS_CONFIG_DIR="var/sandcats/https/$SS_HOSTNAME"
+  mkdir -p -m 0700 "$HTTPS_CONFIG_DIR"
+  chmod 0700 "$HTTPS_CONFIG_DIR"
+
+  # Create a certificate signing request and corresponding key.
+  #
+  # The filename is the UNIX timestamp after which to start using this
+  # key.  This script uses a filename of "0" to indicate that this key
+  # should be used since time 0 (1970), which is to say, should
+  # definitely be used.
+  echo "Generating certificate request..."
+  openssl \
+    req `# Invoke OpenSSL's PKCS#10 X.509 bits.` \
+    -nodes `# no DES -- that is, do not encrypt the key at rest.` \
+    -newkey rsa:4096 `# Create a new RSA key of length 4096 bits.` \
+    `# Sandcats just needs the CN= (common name) in the request.` \
+    -subj "/CN=$SS_HOSTNAME/" \
+    -keyout "$HTTPS_CONFIG_DIR"/0 `# Store the resulting RSA private key in 0` \
+    -out "$HTTPS_CONFIG_DIR"/0.csr `# Store the resulting certificate in 0.pub` \
+    2>/dev/null `# Silence the progress output.`
+
+  echo "Requesting certificate (BE PATIENT)..."
+  # Note that the "LOG_PATH" is a machine-readable JSON file that the
+  # Sandstorm code will read while auto-configuring its HTTPS
+  # support. This bash script does not read that file.
+  #
+  # Since we want JSON, we omit "Content-Type: text/plain" from this
+  # request.
+  local LOG_PATH
+  LOG_PATH="$HTTPS_CONFIG_DIR/0.response-json"
+  HTTP_STATUS=$(
+    dotdotdot_curl \
+      --silent \
+      --max-time 20 \
+      $SANDCATS_CURL_PARAMS \
+      -A "$CURL_USER_AGENT" \
+      -X POST \
+      --data-urlencode "rawHostname=$DESIRED_SANDCATS_NAME" \
+      --data-urlencode "certificateSigningRequest=$(cat "$HTTPS_CONFIG_DIR/0.csr")" \
+      --output "$LOG_PATH" \
+      -w '%{http_code}' \
+      -H 'X-Sand: cats' \
+      --cert var/sandcats/id_rsa.private_combined \
+      "${SANDCATS_API_BASE}/getcertificate")
+
+  if [ "200" = "$HTTP_STATUS" ]
+  then
+    # Say something nice to the user.
+    echo "Successfully auto-configured HTTPS!"
+    # Set these global variables to inform the installer down the
+    # road.
+    SANDCATS_HTTPS_SUCCESSFUL="yes"
+  else
+    # Express our sadness to the user, and proceed without HTTPS.
+    error "Some part of HTTPS autoconfiguration failed. Log data available in $LOG_PATH"
     return
   fi
 }

@@ -140,7 +140,7 @@ Meteor.methods({
     return grainId;
   },
 
-  openSession: function (grainId) {
+  openSession: function (grainId, cachedHostId, cachedSessionId) {
     // Open a new UI session on an existing grain.  Starts the grain if it is not already
     // running.
 
@@ -150,10 +150,10 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
-    return openSessionInternal(grainId, Meteor.user(), null);
+    return openSessionInternal(grainId, Meteor.user(), null, null, cachedHostId, cachedSessionId);
   },
 
-  openSessionFromApiToken: function(params) {
+  openSessionFromApiToken: function(params, cachedHostId, cachedSessionId) {
     // Given an API token, either opens a new WebSession to the underlying grain or returns a
     // path to which the client should redirect in order to open such a session.
 
@@ -222,7 +222,8 @@ Meteor.methods({
         throw new Meteor.Error(403, "Unauthorized",
                                "User is not authorized to open this grain.");
       }
-      return openSessionInternal(apiToken.grainId, null, title, apiToken);
+      return openSessionInternal(apiToken.grainId, null, title, apiToken, cachedHostId,
+        cachedSessionId);
     }
   },
 
@@ -295,7 +296,7 @@ function validateWebkey (apiToken, refreshedExpiration) {
   }
 }
 
-function openSessionInternal(grainId, user, title, apiToken) {
+function openSessionInternal(grainId, user, title, apiToken, cachedHostId, cachedSessionId) {
   var userId = user ? user._id : undefined;
 
   // Start the grain if it is not running. This is an optimization: if we didn't start it here,
@@ -309,16 +310,26 @@ function openSessionInternal(grainId, user, title, apiToken) {
     grainInfo = continueGrain(grainId);
   }
 
+  var session = Sessions.findOne({_id: sessionId});
+  if (session) {
+    // If user or cachedHostId doesn't match, use a new session/hostId
+    if ((session.userId && session.userId !== userId) ||
+        (session.hostId !== cachedHostId)) {
+      cachedSessionId = null;
+      cachedHostId = null;
+    } else {
+      return {sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId};
+    }
+  }
+
   updateLastActive(grainId, userId);
 
-  var isOwner = grainInfo.owner === userId;
-
-  var session = {
-    _id: Random.id(),
+  session = {
+    _id: cachedSessionId || Random.id(),
     grainId: grainId,
-    hostId: generateRandomHostname(20),
+    hostId: cachedHostId || generateRandomHostname(20),
     timestamp: new Date().getTime(),
-    hasLoaded: false,
+    hasLoaded: false
   };
 
   if (userId) {
@@ -331,7 +342,7 @@ function openSessionInternal(grainId, user, title, apiToken) {
 
   Sessions.insert(session);
 
-  return {sessionId: session._id, title: title, grainId: grainId};
+  return {sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId};
 }
 
 function updateLastActive(grainId, userId) {

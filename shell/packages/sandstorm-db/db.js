@@ -182,6 +182,12 @@ Sessions = new Mongo.Collection("sessions");
 //   powerboxView: If present, this is a view that should be presented as part of a powerbox
 //       interaction.
 //     offer: The webkey that corresponds to cap that was passed to the `offer` RPC.
+//   viewInfo: The UiView.ViewInfo corresponding to the underlying UiSession. This isn't populated
+//       until newSession is called on the UiView.
+//   permissions: The permissions for the current user on this UiView. This isn't populated
+//       until newSession is called on the UiView.
+//   hasLoaded: Marked as true by the proxy when the underlying UiSession has responded to its first
+//       request
 
 SignupKeys = new Mongo.Collection("signupKeys");
 // Invite keys which may be used by users to get access to Sandstorm.

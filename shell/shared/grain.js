@@ -1067,7 +1067,7 @@ if (Meteor.isClient) {
             //   Hmm... Actually this may not be a real problem since the grain will be restarted
             //   on the next request. The only real problem is if the proxy has been removed on the
             //   server side, so perhaps check for that.
-            console.error("Session seems to have died.  Please reload to fix.");
+            console.error("Session seems to have died.  It should restart automatically");
           }
         });
       }

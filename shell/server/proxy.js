@@ -140,7 +140,7 @@ Meteor.methods({
     return grainId;
   },
 
-  openSession: function (grainId, cachedHostId, cachedSessionId) {
+  openSession: function (grainId, cachedSalt) {
     // Open a new UI session on an existing grain.  Starts the grain if it is not already
     // running.
 
@@ -150,10 +150,10 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
-    return openSessionInternal(grainId, Meteor.user(), null, null, cachedHostId, cachedSessionId);
+    return openSessionInternal(grainId, Meteor.user(), null, null, cachedSalt);
   },
 
-  openSessionFromApiToken: function(params, cachedHostId, cachedSessionId) {
+  openSessionFromApiToken: function(params, cachedSalt) {
     // Given an API token, either opens a new WebSession to the underlying grain or returns a
     // path to which the client should redirect in order to open such a session.
 
@@ -222,8 +222,7 @@ Meteor.methods({
         throw new Meteor.Error(403, "Unauthorized",
                                "User is not authorized to open this grain.");
       }
-      return openSessionInternal(apiToken.grainId, null, title, apiToken, cachedHostId,
-        cachedSessionId);
+      return openSessionInternal(apiToken.grainId, null, title, apiToken, cachedSalt);
     }
   },
 
@@ -296,7 +295,16 @@ function validateWebkey (apiToken, refreshedExpiration) {
   }
 }
 
-function openSessionInternal(grainId, user, title, apiToken, cachedHostId, cachedSessionId) {
+function generateSessionId(grainId, userId, salt) {
+  var sessionParts = [grainId, salt];
+  if (userId) {
+    sessionParts.push(userId);
+  }
+  var sessionInput = sessionParts.join(":");
+  return Crypto.createHash("sha256").update(sessionInput).digest("hex");
+}
+
+function openSessionInternal(grainId, user, title, apiToken, cachedSalt) {
   var userId = user ? user._id : undefined;
 
   // Start the grain if it is not running. This is an optimization: if we didn't start it here,
@@ -310,24 +318,25 @@ function openSessionInternal(grainId, user, title, apiToken, cachedHostId, cache
     grainInfo = continueGrain(grainId);
   }
 
+  updateLastActive(grainId, userId);
+
+  var sessionId = generateSessionId(grainId, userId, cachedSalt);
   var session = Sessions.findOne({_id: sessionId});
   if (session) {
-    // If user or cachedHostId doesn't match, use a new session/hostId
+    // TODO(someday): also do some more checks for anonymous sessions (sessions without a userId).
     if ((session.userId && session.userId !== userId) ||
-        (session.hostId !== cachedHostId)) {
-      cachedSessionId = null;
-      cachedHostId = null;
+        (session.grainId !== grainId)) {
+      cachedSalt = Random.id(22);
+      sessionId = generateSessionId(grainId, userId, cachedSalt);
     } else {
       return {sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId};
     }
   }
 
-  updateLastActive(grainId, userId);
-
   session = {
-    _id: cachedSessionId || Random.id(),
+    _id: sessionId,
     grainId: grainId,
-    hostId: cachedHostId || generateRandomHostname(20),
+    hostId: Crypto.createHash("sha256").update(sessionId).digest("hex").slice(0, 32),
     timestamp: new Date().getTime(),
     hasLoaded: false
   };
@@ -342,7 +351,7 @@ function openSessionInternal(grainId, user, title, apiToken, cachedHostId, cache
 
   Sessions.insert(session);
 
-  return {sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId};
+  return {sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId, salt: cachedSalt};
 }
 
 function updateLastActive(grainId, userId) {

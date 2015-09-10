@@ -309,7 +309,7 @@ GrainView.prototype._addSessionObserver = function (sessionId) {
 
 GrainView.prototype._openGrainSession = function () {
   var self = this;
-  Meteor.call("openSession", self._grainId, self._hostId, self._sessionId, function(error, result) {
+  Meteor.call("openSession", self._grainId, self._sessionSalt, function(error, result) {
     if (error) {
       console.log("openSession error");
       self._error = error.message;
@@ -323,6 +323,7 @@ GrainView.prototype._openGrainSession = function () {
       self._grainId = result.grainId;
       self._sessionId = result.sessionId;
       self._hostId = result.hostId;
+      self._sessionSalt = result.salt;
 
       self._addSessionObserver(result.sessionId);
 
@@ -353,7 +354,7 @@ GrainView.prototype._openApiTokenSession = function () {
       token: self._token,
       incognito: !self._revealIdentity.get(),
     };
-    Meteor.call("openSessionFromApiToken", openSessionArg, self._hostId, self._sessionId, function(error, result) {
+    Meteor.call("openSessionFromApiToken", openSessionArg, self._sessionSalt, function(error, result) {
       if (error) {
         console.log("openSessionFromApiToken error");
         self._error = error.message;
@@ -386,6 +387,7 @@ GrainView.prototype._openApiTokenSession = function () {
         self._grainId = result.grainId;
         self._sessionId = result.sessionId;
         self._hostId = result.hostId;
+        self._sessionSalt = result.salt;
         self._addSessionObserver(result.sessionId);
         self._dep.changed();
       }

@@ -45,11 +45,18 @@ if (Meteor.isServer) {
       {type: "grain", lastActive: timeConstraint}).count();
 
 
+    var planStats = _.countBy(
+      Meteor.users.find({expires: {$exists: false}, payments: {$exists: true}},
+                        {fields: {plan: 1}}).fetch(),
+      "plan"
+    );
+
     return {
       activeUsers: currentlyActiveUsersCount,
       demoUsers: deletedDemoUsersCount,
       appDemoUsers: deletedAppDemoUsersCount,
-      activeGrains: (activeGrainsCount + deletedGrainsCount)
+      activeGrains: (activeGrainsCount + deletedGrainsCount),
+      plans: planStats,
     }
   }
 

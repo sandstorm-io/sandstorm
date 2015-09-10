@@ -110,12 +110,14 @@ UserActions = new Mongo.Collection("userActions");
 //   userId:  User who has installed this action.
 //   packageId:  Package used to run this action.
 //   appId:  Same as Packages.findOne(packageId).appId; denormalized for searchability.
-//   appTitle:  Same as Packages.findOne(packageId).manifest.appTitle.defaultText; denormalized so
+//   appTitle:  Same as Packages.findOne(packageId).manifest.appTitle; denormalized so
 //       that clients can access it without subscribing to the Packages collection.
 //   appVersion:  Same as Packages.findOne(packageId).manifest.appVersion; denormalized for
 //       searchability.
 //   appMarketingVersion:  Human-readable presentation of the app version, e.g. "2.9.17"
-//   title:  Human-readable title for this action, e.g. "New Spreadsheet".
+//   title: JSON-encoded LocalizedText title for this action, e.g.
+//       `{defaultText: "New Spreadsheet"}`.
+//   nounPhrase: JSON-encoded LocalizedText describing what is created when this action is run.
 //   command:  Manifest.Command to run this action (see package.capnp).
 
 Grains = new Mongo.Collection("grains");

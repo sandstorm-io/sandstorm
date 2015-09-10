@@ -942,16 +942,18 @@ limitations under the License.
     <table>
       <tr>
         <td rowspan="2">date</td>
-        <td colspan="3">users</td>
-        <td colspan="3">grains</td>
+        <td colspan="4">users</td>
+        <td colspan="4">grains</td>
       </tr>
       <tr>
         <td>daily</td>
         <td>weekly</td>
         <td>monthly</td>
+        <td>forever</td>
         <td>daily</td>
         <td>weekly</td>
         <td>monthly</td>
+        <td>forever</td>
       </tr>
       {{#each points}}
         <tr>
@@ -959,9 +961,11 @@ limitations under the License.
           <td>{{daily.activeUsers}}</td>
           <td>{{weekly.activeUsers}}</td>
           <td>{{monthly.activeUsers}}</td>
+          <td>{{forever.activeUsers}}</td>
           <td>{{daily.activeGrains}}</td>
           <td>{{weekly.activeGrains}}</td>
           <td>{{monthly.activeGrains}}</td>
+          <td>{{forever.activeGrains}}</td>
         </tr>
       {{else}}
         <tr>

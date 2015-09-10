@@ -22,6 +22,7 @@ var Fs = Npm.require("fs");
 var Dns = Npm.require("dns");
 var Promise = Npm.require("es6-promise").Promise;
 var Future = Npm.require("fibers/future");
+var Http = Npm.require("http");
 
 var HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 var DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
@@ -375,11 +376,56 @@ Meteor.startup(function () {
     WebApp.rawConnectHandlers.use(BlackrockPayments.makeConnectHandler(globalDb));
   }
 
-  WebApp.rawConnectHandlers.use(function (req, res, next) {
+  // This function serves responses on Sandstorm's main HTTP/HTTPS
+  // port.
+  var serveMeteorOrStaticPublishing = function(req, res, next) {
+    return dispatchToMeteorOrStaticPublishing(req, res, next, false, true);
+  }
+
+  // Bind listeners to FD #4 and higher, if we are supposed to be
+  // listening on multiple ports.
+  function getNumberOfAlternatePorts() {
+    var numCommas = (process.env.PORT.match(/,/g) || {}).length;
+    var numPorts = numCommas + 1;
+    var numAlternatePorts = numPorts - 1;
+    return numAlternatePorts;
+  };
+
+  // For alternate ports, always do HTTP redirects rather than serve
+  // up real Meteor responses. Depending on details, serve static
+  // publishing.
+  var redirectToMeteorOrServeStaticPublishing = function (req, res, next) {
+    return dispatchToMeteorOrStaticPublishing(req, res, next, true, true);
+  };
+  var redirectToMeteorOrBust = function(req, res, next) {
+    return dispatchToMeteorOrStaticPublishing(req, res, next, true, false);
+  };
+
+  for (var i = 0; i < getNumberOfAlternatePorts(); i++) {
+    var alternatePortServer;
+
+    // If HTTPS is enabled, then also serve static publishing on the
+    // first non-HTTPS port. The "true" argument here means skip our
+    // monkeypatching.
+    if ((i === 0) && (process.env.HTTPS_PORT)) {
+      alternatePortServer = Http.createServer(redirectToMeteorAndServeStaticPublishing, true);
+    } else {
+      alternatePortServer = Http.createServer(redirectToMeteorOrBust, true);
+    }
+    alternatePortServer.listen({fd: i + 4});
+  }
+
+  var dispatchToMeteorOrStaticPublishing = function (req, res, next, redirectRatherThanServeShell, allowStaticPublishing) {
     var hostname = req.headers.host.split(":")[0];
     if (isSandstormShell(hostname)) {
-      // Go on to Meteor.
-      return next();
+      // Go on to Meteor, or serve a redirect.
+      if (redirectRatherThanServeShell) {
+        res.writeHead(302, {"Location": process.env.ROOT_URL + req.url});
+        res.end();
+        return;
+      } else {
+        return next();
+      }
     }
 
     // This is not our main host. See if it's a member of the wildcard.
@@ -388,6 +434,11 @@ Meteor.startup(function () {
     var id = matchWildcardHost(req.headers.host);
     if (id) {
       // Match!
+      if (redirectRatherThanServeShell) {
+        res.writeHead(302, {"Location": process.env.ROOT_URL + req.url});
+        res.end();
+        return;
+      }
 
       if (id === "static") {
         // Static assets domain.
@@ -404,9 +455,15 @@ Meteor.startup(function () {
           return id;
         }
       });
-    } else {
-      // Not a wildcard host. Perhaps it is a custom host.
+    }
+
+    // Not a wildcard host. Perhaps it is a custom host.
+    if (allowStaticPublishing) {
       publicIdPromise = lookupPublicIdFromDns(hostname);
+    } else {
+      res.writeHead(404, { "Content-Type": "text/plain" });
+      res.end("404 not found: Resource not available.");
+      return;
     }
 
     publicIdPromise.then(function (publicId) {
@@ -443,7 +500,9 @@ Meteor.startup(function () {
     }).catch(function (err) {
       writeErrorResponse(res, err);
     });
-  });
+  };
+
+  WebApp.rawConnectHandlers.use(serveMeteorAndStaticPublishing);
 });
 
 var errorTxtMapping = {};

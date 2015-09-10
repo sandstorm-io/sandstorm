@@ -22,6 +22,7 @@ browser-policy
 reactive-var
 sandstorm-db
 sandstorm-identicons
+sandstorm-permissions
 sandstorm-ui-topbar
 sandstorm-ui-applist
 sandstorm-ui-grainlist

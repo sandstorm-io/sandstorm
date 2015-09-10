@@ -145,7 +145,8 @@ Meteor.methods({
     // running.
 
     check(grainId, String);
-    if (!mayOpenGrain({grain: {_id: grainId, userId: this.userId}})) {
+    if (!SandstormPermissions.mayOpenGrain(globalDb,
+                                           {grain: {_id: grainId, userId: this.userId}})) {
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
@@ -217,7 +218,7 @@ Meteor.methods({
       }
       return {redirectToGrain: apiToken.grainId};
     } else {
-      if (!mayOpenGrain({token: apiToken})) {
+      if (!SandstormPermissions.mayOpenGrain(globalDb, {token: apiToken})) {
         throw new Meteor.Error(403, "Unauthorized",
                                "User is not authorized to open this grain.");
       }
@@ -641,7 +642,7 @@ Meteor.startup(function() {
     // Clears all sessions and API proxies associated with `token` or any token that is downstream
     // in the sharing graph.
     // TODO(soon): Only clear sessions and proxies for which the permissions have changed.
-    var downstream = downstreamTokens({token: token});
+    var downstream = SandstormPermissions.downstreamTokens(globalDb, {token: token});
     downstream.push(token);
     var users = [];
     var tokenIds = [];
@@ -1202,7 +1203,7 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
       // (self.userId might be null; this is fine)
       vertex = {grain: {_id: self.grainId, userId: self.userId}};
     }
-    var permissions = grainPermissions(vertex, viewInfo);
+    var permissions = SandstormPermissions.grainPermissions(globalDb, vertex, viewInfo);
     if (!permissions) {
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }

@@ -63,6 +63,7 @@ if (Meteor.isServer) {
     //   packages to actually use the DB, but it's pretty sad.
     connection.sandstormDb = globalDb;
   });
+  globalSandstormPermissions = new SandstormPermissions(globalDb);
 }
 
 if (Meteor.isClient) {

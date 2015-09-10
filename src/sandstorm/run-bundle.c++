@@ -205,6 +205,13 @@ struct UserIds {
   kj::Array<gid_t> groups;
 };
 
+kj::Maybe<uint> getPorts(kj::StringPtr portList) {
+    // For now, this function returns just the one port that is in the config.
+    auto result = parseUInt(portList, 10);
+    // For now, we cannot fail.
+    return kj::mv(result);
+}
+
 kj::Maybe<UserIds> getUserIds(kj::StringPtr name) {
   // We can't use getpwnam() in a statically-linked binary, so we shell out to id(1).  lol.
 
@@ -1214,7 +1221,7 @@ private:
           KJ_FAIL_REQUIRE("invalid config value SERVER_USER", value);
         }
       } else if (key == "PORT") {
-        KJ_IF_MAYBE(p, parseUInt(value, 10)) {
+        KJ_IF_MAYBE(p, getPorts(value)) {
           config.port = *p;
         } else {
           KJ_FAIL_REQUIRE("invalid config value PORT", value);

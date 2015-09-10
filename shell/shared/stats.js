@@ -60,7 +60,8 @@ if (Meteor.isServer) {
       timestamp: now,
       daily: computeStats(new Date(now.getTime() - DAY_MS)),
       weekly: computeStats(new Date(now.getTime() - 7 * DAY_MS)),
-      monthly: computeStats(new Date(now.getTime() - 30 * DAY_MS))
+      monthly: computeStats(new Date(now.getTime() - 30 * DAY_MS)),
+      forever: computeStats(new Date(0)),
     });
   }
 

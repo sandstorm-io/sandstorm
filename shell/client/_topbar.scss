@@ -90,10 +90,6 @@ body>.topbar {
       &:hover {
         background-color: $topbar-background-color-hover;
       }
-
-      &:focus {
-        outline: none;
-      }
     }
   }
 
@@ -134,10 +130,6 @@ body>.topbar {
 
       &:hover {
         background-color: $topbar-background-color-hover;
-      }
-
-      &:focus {
-        outline: none;
       }
     }
   }
@@ -210,9 +202,6 @@ body>.topbar {
         margin: 0px;
         @media #{$desktop} {
           height: $topbar-height-desktop;
-        }
-        &:focus {
-          outline: none;
         }
       }
 
@@ -499,7 +488,6 @@ body>.topbar {
           white-space: nowrap;
           &, &:visited, &:active, &:hover {
             color: inherit;
-            outline: 0px;
           }
         }
         &.navitem-open-grain, &.navitem-create-grain {
@@ -545,7 +533,6 @@ body>.topbar {
           white-space: nowrap;
           &, &:visited, &:active, &:hover {
             color: inherit;
-            outline: 0px;
           }
         }
       }
@@ -705,10 +692,6 @@ body>.popup {
     >.close-popup:hover {
       background-color: #eee;
       cursor: pointer;
-    }
-
-    >.close-popup:focus {
-      outline: none;
     }
 
     >h4 {

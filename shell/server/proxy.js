@@ -982,7 +982,7 @@ function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, userInfo, isA
   this.isOwner = isOwner;
   this.isApi = isApi;
   this.hasLoaded = false;
-  this.isClosed = false;
+  this.websockets = [];
   if (sessionId) {
     if (!hostId) throw new Error("sessionId must come with hostId");
     if (isApi) throw new Error("API proxy shouldn't have sessionId");
@@ -1081,7 +1081,9 @@ function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, userInfo, isA
 }
 
 Proxy.prototype.close = function () {
-  this.isClosed = true;
+  this.websockets.forEach(function (socket) {
+    socket.destroy();
+  });
 }
 
 Proxy.prototype.getConnection = function () {
@@ -1840,23 +1842,15 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
 // -----------------------------------------------------------------------------
 // WebSocket handling
 
-function WebSocketReceiver(socket, proxy) {
+function WebSocketReceiver(socket) {
   var queue = [];
   this.go = function () {
-    if (proxy.isClosed) {
-      socket.end();
-      return;
-    }
     for (var i in queue) {
       socket.write(queue[i]);
     }
     queue = null;
   };
   this.sendBytes = function (message) {
-    if (proxy.isClosed) {
-      socket.end();
-      return;
-    }
     // TODO(someday):  Flow control of some sort?
     if (queue === null) {
       socket.write(message);
@@ -1905,7 +1899,9 @@ Proxy.prototype.handleWebSocket = function (request, socket, head, retryCount) {
           .split(",").map(function (s) { return s.trim(); });
     }
 
-    var receiver = new WebSocketReceiver(socket, self);
+    var receiver = new WebSocketReceiver(socket);
+    // TODO(someday): do we want to make these be weak references somehow?
+    self.websockets.push(socket);
 
     var promise = session.openWebSocket(path, context, protocols, receiver);
 

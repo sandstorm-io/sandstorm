@@ -311,7 +311,7 @@ GrainView.prototype._openGrainSession = function () {
   var self = this;
   Meteor.call("openSession", self._grainId, self._sessionSalt, function(error, result) {
     if (error) {
-      console.log("openSession error");
+      console.error("openSession error", error);
       self._error = error.message;
       self._status = "error";
       self._dep.changed();

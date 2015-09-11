@@ -145,6 +145,7 @@ Meteor.methods({
     // running.
 
     check(grainId, String);
+    check(cachedSalt, Match.OneOf(undefined, null, String));
     if (!SandstormPermissions.mayOpenGrain(globalDb,
                                            {grain: {_id: grainId, userId: this.userId}})) {
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
@@ -161,6 +162,7 @@ Meteor.methods({
       token: String,
       incognito: Boolean,
     });
+    check(cachedSalt, Match.OneOf(undefined, null, String));
 
     var token = params.token;
     var incognito = params.incognito;
@@ -320,16 +322,18 @@ function openSessionInternal(grainId, user, title, apiToken, cachedSalt) {
 
   updateLastActive(grainId, userId);
 
+  cachedSalt = cachedSalt || Random.id(22);
   var sessionId = generateSessionId(grainId, userId, cachedSalt);
   var session = Sessions.findOne({_id: sessionId});
   if (session) {
     // TODO(someday): also do some more checks for anonymous sessions (sessions without a userId).
     if ((session.userId && session.userId !== userId) ||
         (session.grainId !== grainId)) {
-      cachedSalt = Random.id(22);
-      sessionId = generateSessionId(grainId, userId, cachedSalt);
+      var e = Meteor.Error(500, "Duplicate SessionId");
+      console.error(e);
+      throw e;
     } else {
-      return {sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId};
+      return {sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId, salt: cachedSalt};
     }
   }
 

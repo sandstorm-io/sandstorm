@@ -773,6 +773,9 @@ body>.popup {
           background-size: 20px, 20px;
           background-repeat: no-repeat;
           cursor: pointer;
+          &:focus {
+            outline: $focus-outline-color solid 1px;
+          }
         }
         #send-invite-tab-header {
           left: 2%;

@@ -18,6 +18,9 @@ button:focus {
 }
 
 input:focus {
-  outline: $focus-outline-color auto 5px;
-  outline-offset: -2px;
+  outline: $focus-outline-color solid 1px;
+}
+
+textarea:focus {
+  outline: $focus-outline-color solid 1px;
 }

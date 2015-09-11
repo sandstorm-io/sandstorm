@@ -1,0 +1,23 @@
+// Styles relating to how elements should be styled when focused.
+// Resets aside, these should not change geometry.
+
+// In Gecko, these additional attributes are added to buttons and certain inputs, which causes
+// button sizes to be different in Gecko than other engines.
+button::-moz-focus-inner,
+input::-moz-focus-inner {
+    border: 0;
+    padding: 0;
+}
+
+a:focus {
+  outline: $focus-outline-color solid 1px;
+}
+
+button:focus {
+  outline: $focus-outline-color solid 1px;
+}
+
+input:focus {
+  outline: $focus-outline-color auto 5px;
+  outline-offset: -2px;
+}

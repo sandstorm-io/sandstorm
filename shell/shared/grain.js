@@ -547,7 +547,6 @@ if (Meteor.isClient) {
   });
 
   Template.shareWithOthers.onRendered(function () {
-    console.log("rendered shareWithOthers template, should focus widget");
     this.find("[role=tab]").focus();
   });
   var activateTargetTab = function(event, instance) {

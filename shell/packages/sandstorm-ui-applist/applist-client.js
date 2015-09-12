@@ -229,14 +229,14 @@ Template.sandstormAppList.onRendered(function () {
   // Scroll to highlighted app, if any.
   if (this.data._highlight) {
     var self = this;
-    var auto = this.autorun(function () {
+    this.autorun(function (computation) {
       if (self.subscriptionsReady()) {
         var item = self.findAll(".highlight")[0];
         if (item) {
           item.focus();
           item.scrollIntoView();
         }
-        auto.stop();
+        computation.stop();
       }
     });
   } else {

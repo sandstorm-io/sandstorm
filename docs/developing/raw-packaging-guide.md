@@ -113,9 +113,7 @@ This will build `my-app.spk` for distribution. You can upload this to any Sandst
 
 If you packaged a cool app to Sandstorm, [we want to know about it](https://groups.google.com/group/sandstorm-dev)!
 
-You can submit your app to the [app list](https://sandstorm.io/apps) by submitting a pull request on our [website repo](https://github.com/sandstorm-io/sandstorm-website/blob/master/apps/index.html). You can get your data-app-id from your `sandstorm-pkgdef.capnp` file, and you can get your data-package-id by running the following command:
-
-    sha256sum package.spk | head -c 32; echo
+You should check out the [app publishing guide](publishing-apps.md) for details on how to submit your app to the [App Market](https://apps.sandstorm.io).
 
 ## Tips and Tricks
 
@@ -144,6 +142,14 @@ When running in dev mode (`spk dev`), the keyring is not actually needed. Since 
 Keyrings can be merged by concatenating them (with plain old `cat`). To pull specific keys out of your keyring to send to people, use the `spk getkey` command (type `spk help getkey` for usage information).
 
 Currently, keyrings are not encrypted, which means they are vulnerable to any software running under your user account. This is probably bad and will be improved eventually, though in general if you have malware running as yourself then you're pretty screwed already.
+
+### Package IDs
+
+You can get your data-package-id by running the following command:
+
+    sha256sum package.spk | head -c 32; echo
+
+This is no longer particularly important info now that the app market has launched, and this is handled automatically.
 
 ### What makes a good Sandstorm app?
 

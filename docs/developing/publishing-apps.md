@@ -8,7 +8,7 @@ Sandstorm packages are signed in two ways to ensure the authenticity of the pack
 
 ### Sign up with [Keybase.io](https://keybase.io)
 
-Currently, Keybase is invite-only. If you need an invite, you can contact [community@sandstorm.io](mailto:community@sandstorm.io). You should connect some of your public identites with your Keybase account, like Twitter and Github.
+Currently, Keybase is invite-only. If you need an invite, you can contact [community@sandstorm.io](mailto:community@sandstorm.io). You should connect some of your public identites with your Keybase account, like Twitter and GitHub.
 
 Sandstorm app authors are verified using a PGP key linked to Keybase. You should get the [prerequisites](https://keybase.io/docs/command_line/prerequisites) and follow [their directions](https://keybase.io/docs/command_line/installation) to get their software set up.
 
@@ -50,7 +50,7 @@ This should be the app's main website URL.
 
 #### codeUrl
 
-This should be the URL of the app's source code repository, like Github. It is recommended if there is a repository specific to the Sandstorm package, you utilize that one, rather than the upstream one. This field is mandatory if you utilize a license that requires redistributing code, like the GPL, but is optional otherwise.
+This should be the URL of the app's source code repository, like GitHub. It is recommended if there is a repository specific to the Sandstorm package, you utilize that one, rather than the upstream one. This field is mandatory if you utilize a license that requires redistributing code, like the GPL, but is optional otherwise.
 
 #### license
 
@@ -94,7 +94,7 @@ You can attach a number of screenshots here. You should specify the height and w
 
 #### changeLog
 
-Here you may embed a log of changes in Github-flavored Markdown. It is recommended to format this with a H1 heading for each release followed by a bullet list of changes. As an example, you can look at Etherpad's changelog [here](https://raw.githubusercontent.com/kentonv/etherpad-lite/sandstorm/CHANGELOG.md).
+Here you may embed a log of changes in GitHub-flavored Markdown. It is recommended to format this with a H1 heading for each release followed by a bullet list of changes. As an example, you can look at Etherpad's changelog [here](https://raw.githubusercontent.com/kentonv/etherpad-lite/sandstorm/CHANGELOG.md).
 
 ## Check your work
 

@@ -5,7 +5,7 @@
 Sandstorm is an open source platform for personal servers.
 
 Sandstorm lets you run your own server and install apps like
-EtherCalc, GitLab, Etherpad, LibreBoard, and more as easily as you'd
+EtherCalc, GitLab, Etherpad, Wekan, and more as easily as you'd
 install apps on your phone. Sandstorm handles login & access control,
 and can run any web app that runs on Linux, though some apps may need
 changes to work within the Sandstorm sandbox.

@@ -90,10 +90,6 @@ body>.topbar {
       &:hover {
         background-color: $topbar-background-color-hover;
       }
-
-      &:focus {
-        outline: none;
-      }
     }
   }
 
@@ -134,10 +130,6 @@ body>.topbar {
 
       &:hover {
         background-color: $topbar-background-color-hover;
-      }
-
-      &:focus {
-        outline: none;
       }
     }
   }
@@ -210,9 +202,6 @@ body>.topbar {
         margin: 0px;
         @media #{$desktop} {
           height: $topbar-height-desktop;
-        }
-        &:focus {
-          outline: none;
         }
       }
 
@@ -499,7 +488,6 @@ body>.topbar {
           white-space: nowrap;
           &, &:visited, &:active, &:hover {
             color: inherit;
-            outline: 0px;
           }
         }
         &.navitem-open-grain, &.navitem-create-grain {
@@ -545,7 +533,6 @@ body>.topbar {
           white-space: nowrap;
           &, &:visited, &:active, &:hover {
             color: inherit;
-            outline: 0px;
           }
         }
       }
@@ -707,10 +694,6 @@ body>.popup {
       cursor: pointer;
     }
 
-    >.close-popup:focus {
-      outline: none;
-    }
-
     >h4 {
       margin: 0px;
       font-size: 14px;
@@ -766,52 +749,54 @@ body>.popup {
       cursor: pointer;
     }
 
-    [data-which-tab=send-invite]>.send-invite>h5,
-    [data-which-tab=shareable-link]>.shareable-link>h5 {
-      background-color: white;
-      border-bottom: 1px solid white;
-      // TODO(cleanup): It would be better to use z-index for this.
-    }
-
     .share-tabs {
       padding: $topbar-popup-padding;
       border-top: 1px solid #ccc;
       position: relative;
       margin: 0;
-      section {
+      >ul {
+        list-style: none;
+        >li {
+          border-top-left-radius: 4px;
+          border-top-right-radius: 4px;
+          background-color: #f7f7f7;
+          border: 1px solid #ccc;
+          border-bottom: none;
+          position: absolute;
+          margin: 0;
+          padding: 3px;
+          width: 45%;
+          text-align: center;
+          font-size: 14px; // Size must be the same on mobile and desktop for correct absolute position.
+          top: -26px;
+          background-position: 15px 2px, left;
+          background-size: 20px, 20px;
+          background-repeat: no-repeat;
+          cursor: pointer;
+          &:focus {
+            outline: $focus-outline-color solid 1px;
+          }
+        }
+        #send-invite-tab-header {
+          left: 2%;
+          background-image: url(/email-m.svg);
+        }
+        #shareable-link-tab-header {
+          right: 2%;
+          background-image: url(/link-m.svg);
+        }
+        [aria-selected=true] {
+          background-color: white;
+          border-bottom: 1px solid white;
+        }
+      }
+      >div.tabpanel {
         margin-left: 16px;
         margin-right: 16px;
+        &[aria-hidden=true] {
+          display: none;
+        }
       }
-    }
-    [data-which-tab=send-invite]>.shareable-link>.tab-content,
-    [data-which-tab=shareable-link]>.send-invite>.tab-content {
-      display: none;
-    }
-    section>h5.tab-top {
-      border-top-left-radius: 4px;
-      border-top-right-radius: 4px;
-      background-color: #f7f7f7;
-      border: 1px solid #ccc;
-      border-bottom: none;
-      position: absolute;
-      margin: 0;
-      padding: 3px;
-      width: 45%;
-      text-align: center;
-      font-size: 14px; // Size must be the same on mobile and desktop for correct absolute position.
-      top: -26px;
-      background-position: 15px 2px, left;
-      background-size: 20px, 20px;
-      background-repeat: no-repeat;
-      cursor: pointer;
-    }
-    section.send-invite>h5.tab-top {
-      left: 2%;
-      background-image: url(/email-m.svg);
-    }
-    section.shareable-link>h5.tab-top {
-      right: 2%;
-      background-image: url(/link-m.svg);
     }
 
     button.reset-invite, button.reset-share-token {

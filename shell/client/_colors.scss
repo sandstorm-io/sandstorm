@@ -1,5 +1,10 @@
 // Colors, mostly for the toolbar/navbar, but perhaps reusable elsewhere.
 
+// The purple that we use for
+$sandstorm-purple-color: #762F87;
+
+// The color that we use to outline focused elements, for accessibility
+$focus-outline-color: $sandstorm-purple-color;
 
 ////////  General shell elements
 // Default shell background and text colors

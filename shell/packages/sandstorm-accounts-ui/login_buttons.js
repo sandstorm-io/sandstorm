@@ -38,6 +38,10 @@ Template.loginButtonsPopup.helpers(helpers);
 Template._loginButtonsLoggedOutDropdown.helpers(helpers);
 Template._loginButtonsLoggedInDropdown.helpers(helpers);
 
+Template.loginButtonsPopup.onRendered(function() {
+  this.find("[role=menuitem]").focus();
+});
+
 Template.loginButtonsPopup.events({
   'click button.logout': function() {
     var topbar = Template.parentData(3);

@@ -47,13 +47,6 @@ if (Meteor.isServer) {
     var deletedGrainsCount = DeleteStats.find(
       {type: "grain", lastActive: timeConstraint}).count();
 
-
-    var planStats = _.countBy(
-      Meteor.users.find({expires: {$exists: false}, payments: {$exists: true}},
-                        {fields: {plan: 1}}).fetch(),
-      "plan"
-    );
-
     var grainCollection = Grains.rawCollection();
     var grainAggregate = Meteor.wrapAsync(grainCollection.aggregate, grainCollection);
     var appCount = grainAggregate([
@@ -76,7 +69,6 @@ if (Meteor.isServer) {
       demoUsers: deletedDemoUsersCount,
       appDemoUsers: deletedAppDemoUsersCount,
       activeGrains: (activeGrainsCount + deletedGrainsCount),
-      plans: planStats,
       computeTime: Date.now() - startTime,
       packages: appCount,
     };
@@ -85,12 +77,19 @@ if (Meteor.isServer) {
   function recordStats() {
     var now = new Date();
 
+    var planStats = _.countBy(
+      Meteor.users.find({expires: {$exists: false}, payments: {$exists: true}},
+                        {fields: {plan: 1}}).fetch(),
+      "plan"
+    );
+
     ActivityStats.insert({
       timestamp: now,
       daily: computeStats(new Date(now.getTime() - DAY_MS)),
       weekly: computeStats(new Date(now.getTime() - 7 * DAY_MS)),
       monthly: computeStats(new Date(now.getTime() - 30 * DAY_MS)),
       forever: computeStats(new Date(0)),
+      plans: planStats,
     });
   }
 

@@ -17,16 +17,7 @@
 var Crypto = Npm.require("crypto");
 var Url = Npm.require("url");
 
-SandstormPermissions = function (db) {
-  function cleanupSelfDestructing() {
-    var now = new Date();
-    db.collections.apiTokens.remove({expiresIfUnused: {$lt: now}});
-  };
-
-  // Make self-destructing tokens actually self-destruct, so they don't
-  // clutter the token list view.
-  SandstormDb.periodicCleanup(5 * 60 * 1000, cleanupSelfDestructing);
-};
+SandstormPermissions = {};
 
 function PermissionSet(array) {
   // A wrapper around an array of booleans.
@@ -146,7 +137,7 @@ function collectEdges(db, vertex) {
   } else if (vertex.grain) {
     grainId = vertex.grain._id;
   }
-  var grain = db.collections.grains.findOne(grainId);
+  var grain = db.getGrain(grainId);
   if (!grain) {
     return {grainDoesNotExist: true};
   }
@@ -370,7 +361,7 @@ SandstormPermissions.downstreamTokens = function(db, root) {
     grainId = root.grain._id;
   }
 
-  var grain = db.collections.grains.findOne(grainId);
+  var grain = db.getGrain(grainId);
   if (!grain || !grain.private ) { return result; }
 
   db.collections.apiTokens.find({grainId: grainId,
@@ -442,7 +433,7 @@ SandstormPermissions.createNewApiToken = function (db, userId, grainId, petname,
     }
   }
 
-  var grain = db.collections.grains.findOne(grainId);
+  var grain = db.getGrain(grainId);
   if (!grain) {
     throw new Meteor.Error(403, "Unauthorized", "No grain found.");
   }
@@ -471,6 +462,15 @@ SandstormPermissions.createNewApiToken = function (db, userId, grainId, petname,
 
   var endpointUrl = Url.parse(process.env.ROOT_URL).protocol + "//" + db.makeWildcardHost("api");
   return {id: apiToken._id, token: token, endpointUrl: endpointUrl};
+}
+
+// Make self-destructing tokens actually self-destruct, so they don't
+// clutter the token list view.
+SandstormPermissions.cleanupSelfDestructing = function (db) {
+  return function () {
+    var now = new Date();
+    db.collections.apiTokens.remove({expiresIfUnused: {$lt: now}});
+  }
 }
 
 Meteor.methods({

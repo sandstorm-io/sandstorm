@@ -15,8 +15,12 @@
 // limitations under the License.
 
 var globalDb = new SandstormDb();
+// TODO(cleanup): Use a lightweight fake (minimongo-based?) database here and construct a clean
+// instance at the start of each test case.
 
 globalDb.collections.grains.remove({});
+// Note that `meteor test-packages` starts with a fresh Mongo instance. That instance, however,
+// does not automatically get cleared on hot code reload.
 
 var aliceUserId = Accounts.insertUserDoc({ profile: {name: "Alice"}}, {});
 var bobUserId = Accounts.insertUserDoc({ profile: {name: "Bob"}}, {});

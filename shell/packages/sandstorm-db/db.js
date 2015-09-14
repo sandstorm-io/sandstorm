@@ -693,6 +693,11 @@ _.extend(SandstormDb.prototype, {
     return this.userGrains(Meteor.userId(), query, aggregations);
   },
 
+  getGrain: function getGrain (grainId) {
+    check(grainId, String);
+    return this.collections.grains.findOne(grainId);
+  },
+
   userApiTokens: function userApiTokens (user) {
     return this.collections.apiTokens.find({'owner.user.userId': user});
   },

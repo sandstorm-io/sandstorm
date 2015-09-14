@@ -18,6 +18,9 @@ var DAY_MS = 24*60*60*1000;
 
 if (Meteor.isServer) {
   computeStats = function (since) {
+    // Time how long this computation takes
+    var startTime = Date.now();
+
     // We'll need this for a variety of queries.
     var timeConstraint = {$gt: since};
 
@@ -51,14 +54,33 @@ if (Meteor.isServer) {
       "plan"
     );
 
+    var grainCollection = Grains.rawCollection();
+    var grainAggregate = Meteor.wrapAsync(grainCollection.aggregate, grainCollection);
+    var appCount = grainAggregate([
+      {$match: {lastUsed: timeConstraint}},
+      {$group: {_id: "$appId", tempGrainCount: {$sum: 1}, userIds: {$addToSet: "$userId"}}},
+      {$unwind: "$userIds"},
+      {$group: {_id: "$_id", grains: {$max: "$tempGrainCount"}, owners: {$sum: 1}}},
+    ]);
+    appCount = _.indexBy(appCount, "_id");
+    for (var appId in appCount) {
+      var app = appCount[appId];
+      delete app["_id"];
+      var grains = Grains.find({lastUsed: timeConstraint, appId: appId}, {fields: {_id: 1}}).fetch();
+      var grainIds = _.pluck(grains, "_id");
+      app.sharedUsers = ApiTokens.find({"owner.user.lastUsed": timeConstraint, "grainId": {$in: grainIds}}).count();
+    }
+
     return {
       activeUsers: currentlyActiveUsersCount,
       demoUsers: deletedDemoUsersCount,
       appDemoUsers: deletedAppDemoUsersCount,
       activeGrains: (activeGrainsCount + deletedGrainsCount),
       plans: planStats,
-    }
-  }
+      computeTime: Date.now() - startTime,
+      packages: appCount,
+    };
+  };
 
   function recordStats() {
     var now = new Date();

@@ -88,3 +88,50 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     libvirt.memory = assign_ram_mb
   end
 end
+
+### If you're on Windows, and you want to SMB share the
+### /home/vagrant directory in the guest with your Windows
+### machines, run "vagrant ssh" then do the following:
+###
+### sudo apt-get install samba pwgen
+###
+### Then sudo nano -w /etc/samba/smb.conf and make it contain the
+### following, only remove the ### from the beginning of every line.
+###
+### [global]
+### workgroup = WORKGROUP
+### dns proxy = no
+### bind interfaces only = no
+### syslog only = yes
+### syslog = 1
+### server role = standalone server
+### passdb backend = tdbsam
+### obey pam restrictions = yes
+### unix password sync = no
+### pam password change = no
+### map to guest = bad user
+### usershare allow guests = no
+###
+### [vagranthome]
+### comment = Vagrant home
+### browseable = yes
+### create mask = 0750
+### directory mask = 0700
+### read only = no
+### valid users = vagrant
+### path = /home/vagrant
+###
+### Then set a password for the vagrant user on Linux and enable it for
+### samba use by running:
+###
+### pwgen -1  # generate a password
+###
+### sudo passwd vagrant
+### sudo smbpasswd -a vagrant
+###
+### Then restart the VM via "vagrant reload" and visit
+###
+### \\169.254.254.2\vagranthome
+###
+### and log in with username vagrant (and password whatever
+### you set above).

@@ -323,7 +323,9 @@ limitations under the License.
     {{/if}}
     {{#if existingShareTokens}}
       <h5>Sharing Links</h5>
-      <table class="sharing-links">
+      <table class="shared-links">
+      {{!-- Renamed from sharing-links to shared-links due to a common adblock rule
+            in https://easylist.adblockplus.org/fanboy-social.txt --}}
         {{#each existingShareTokens}}
           {{#if displayToken}}
             <tr>

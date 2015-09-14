@@ -148,6 +148,7 @@ SandstormEmail.send = function (options) {
     to: options.to,
     cc: options.cc,
     bcc: options.bcc,
+    envelope: options.envelope,
     replyTo: options.replyTo,
     subject: options.subject,
     text: options.text,

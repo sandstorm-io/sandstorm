@@ -284,6 +284,18 @@ Meteor.methods({
       var accountId = this.userId
       var identity = globalDb.getIdentity(identityId);
       var sharerDisplayName = identity.profile.name;
+      var sharerVerifiedEmails = SandstormDb.getVerifiedEmails(identity);
+      var sharerEmail = (sharerVerifiedEmails &&
+                         sharerVerifiedEmails.length > 0 &&
+                         sharerVerifiedEmails[0]) || ("no-reply@" + HOSTNAME);
+      var minimalEscape = function (s) {
+        // Not super thorough, but I think this is enough to avoid confusing MTAs about sender name
+        // vs address, and to avoid confusing browser user agents about content/script/styles.
+        return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g,"&gt;");
+      };
+      var messageFrom = minimalEscape(sharerDisplayName) + " <" + sharerEmail + ">";
+      var envelopeFrom = "Sandstorm server <no-reply@" + HOSTNAME + ">";
+      var escapedTitle = minimalEscape(title);
       var outerResult = {successes: [], failures: []};
       contacts.forEach(function(contact) {
         if (contact.isDefault && contact.profile.service === "email") {
@@ -295,17 +307,21 @@ Meteor.methods({
           var url = origin + "/shared/" + result.token;
           var html = message.html + "<br><br>" +
               "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
-              "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
-              "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
-              "Open Shared Grain</a><div style='font-size:8pt;font-style:italic;color:gray'>" +
+              "font-family:sans-serif;min-width:200px;min-height:30px;line-height:30px;padding:4px;" +
+              "border-radius:4px;text-align:center;background:#762f87;color:white'>" +
+              "Open " + escapedTitle + "</a><div style='font-size:8pt;font-style:italic;color:gray'>" +
               "Note: If you forward this email to other people, they will be able to access " +
               "the share as well. To prevent this, remove the button before forwarding.</div>";
           try {
             SandstormEmail.send({
               to: emailAddress,
-              from: "Sandstorm server <no-reply@" + HOSTNAME + ">",
-              subject: sharerDisplayName + " has invited you to join a grain: " + title,
-              text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
+              from: messageFrom,
+              envelope: {
+                from: envelopeFrom,
+                to: emailAddress,
+              },
+              subject: title + " - invitation to collaborate",
+              text: message.text + "\n\nFollow this link to collaborate on " + title + ":\n\n" + url +
                 "\n\nNote: If you forward this email to other people, they will be able to " +
                 "access the share as well. To prevent this, remove the link before forwarding.",
               html: html,
@@ -336,16 +352,20 @@ Meteor.methods({
               }
               var html = message.html + "<br><br>" +
                   "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
-                  "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
-                  "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
-                  "Open Shared Grain</a><div style='font-size:8pt;font-style:italic;color:gray'>" +
+                  "font-family:sans-serif;min-width:200px;min-height:30px;line-height:30px;padding:4px;" +
+                  "border-radius:4px;text-align:center;background:#762f87;color:white'>" +
+                  "Open " + escapedTitle + "</a><div style='font-size:8pt;font-style:italic;color:gray'>" +
                   "Note: You will need to log in with your " + loginNote +
                   " to access this grain."
               SandstormEmail.send({
                 to: emailAddress,
-                from: "Sandstorm server <no-reply@" + HOSTNAME + ">",
-                subject: sharerDisplayName + " has invited you to join a grain: " + title,
-                text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
+                from: messageFrom,
+                envelope: {
+                  from: envelopeFrom,
+                  to: emailAddress,
+                },
+                subject: title + " - invitation to collaborate",
+                text: message.text + "\n\nFollow this link to collaborate on " + title + ":\n\n" + url +
                   "\n\nNote: You will need to log in with your " + loginNote +
                   " to access this grain.",
                 html: html,

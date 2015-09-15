@@ -410,7 +410,7 @@ SandstormPermissions.createNewApiToken = function (db, userId, grainId, petname,
   // Meteor bug #3877: we get null here instead of undefined when we
   // explicitly pass in undefined.
   check(expiresIfUnusedDuration, Match.OneOf(undefined, null, Number));
-  check(rawParentToken, Match.Optional(String));
+  check(rawParentToken, Match.OneOf(undefined, null, String));
 
   var parentToken;
   if (rawParentToken) {

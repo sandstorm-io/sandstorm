@@ -1,17 +1,19 @@
+var matchesAppOrGrainTitle = function (needle, grain) {
+  if (grain.title && grain.title.toLowerCase().indexOf(needle) !== -1) return true;
+  if (grain.appTitle && grain.appTitle.toLowerCase().indexOf(needle) !== -1) return true;
+  return false;
+};
 var compileMatchFilter = function (searchString) {
   // split up searchString into an array of regexes, use them to match against item
   var searchKeys = searchString.toLowerCase()
       .split(" ")
       .filter(function(k) { return k !== "";});
   return function matchFilter(item) {
-    // Keep any item that matches all substrings
-    var haystack = item.title.toLowerCase();
-    for (var i = 0 ; i < searchKeys.length ; i++) {
-      if (haystack.indexOf(searchKeys[i]) === -1) {
-        return false;
-      }
-    }
-    return true;
+    if (searchKeys.length === 0) return true;
+    return _.chain(searchKeys)
+        .map(function (searchKey) { return matchesAppOrGrainTitle(searchKey, item); })
+        .reduce(function (a, b) { return a && b; })
+        .value();
   };
 };
 var mapGrainsToTemplateObject = function (grains) {

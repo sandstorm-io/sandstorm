@@ -11,10 +11,10 @@ var iconForAction = function (action) {
   return Identicon.iconSrcForPackage(pkg, 'appGrid', ref._staticHost);
 };
 var appTitleForAction = function (action) {
-  if (action.appTitle) return action.appTitle;
+  if (action.appTitle) return action.appTitle.defaultText;
   // Legacy cruft: guess at the app title from the action text.
   // N.B.: calls into shell.js.  TODO: refactor
-  return appNameFromActionName(action.title);
+  return appNameFromActionName(action.title.defaultText);
 };
 var andClauseFor = function (searchString) {
   var searchKeys = searchString.split(" ").filter(function(k) { return k != "";});
@@ -45,14 +45,10 @@ var nounFromAction = function (action, appTitle) {
   // I look forward to the day I can remove most of this code.
   // Attempt to figure out the appropriate noun that this action will create.
   // Use an explicit noun phrase is one is available.  Apps should add these in the future.
-  if (action.nounPhrase) return action.nounPhrase;
+  if (action.nounPhrase) return action.nounPhrase.defaultText;
   // Otherwise, try to guess one from the structure of the action title field
   if (action.title) {
-    var text = action.title;
-    if (text.defaultText) {
-      // Dev apps require dereferencing the defaultText field; manifests do not.
-      text = text.defaultText;
-    }
+    var text = action.title.defaultText;
     // Strip a leading "New "
     if (text.lastIndexOf("New ", 0) === 0) {
       var candidate = text.slice(4);
@@ -149,7 +145,13 @@ Template.sandstormAppList.helpers({
   },
   shouldHighlight: function () {
     return this.appId === Template.instance().data._highlight;
-  }
+  },
+  uninstalling: function () {
+    return Template.instance().data._uninstalling.get();
+  },
+  appIsLoading: function () {
+    return Template.instance().appIsLoading.get();
+  },
 });
 Template.sandstormAppList.events({
   "click .install-button": function (event) {
@@ -174,20 +176,32 @@ Template.sandstormAppList.events({
       promptRestoreBackup();
     });
   },
-  "click .app-action": function(event) {
+  "click .app-action": function(event, template) {
     var actionId = this._id;
     Template.instance().data._quotaEnforcer.ifQuotaAvailable(function () {
       // N.B.: this calls into a global in shell.js.
       // TODO(cleanup): refactor into a safer dependency.
+      template.appIsLoading.set(true);
       launchAndEnterGrainByActionId(actionId);
     });
   },
-  "click .dev-action": function(event) {
+  "click .uninstall-action": function(event) {
+    var actionId = this._id;
+    var appId = UserActions.findOne(actionId).appId;
+    UserActions.remove(actionId);
+    Meteor.call("deleteUnusedPackages", appId);
+  },
+  "click .dev-action": function(event, template) {
     var devId = this._id;
     var actionIndex = this.actionIndex;
     // N.B.: this calls into a global in shell.js.
     // TODO(cleanup): refactor into a safer dependency.
+    template.appIsLoading.set(true);
     launchAndEnterGrainByActionId("dev", this._id, this.actionIndex);
+  },
+  "click button.toggle-uninstall": function(event) {
+    var uninstallVar = Template.instance().data._uninstalling;
+    uninstallVar.set(!uninstallVar.get());
   },
   // We use keyup rather than keypress because keypress's event.currentTarget.value will not
   // have taken into account the keypress generating this event, so we'll miss a letter to
@@ -195,7 +209,7 @@ Template.sandstormAppList.events({
   "keyup .search-bar": function(event) {
     Template.instance().data._filter.set(event.currentTarget.value);
   },
-  "keypress .search-bar": function(event) {
+  "keypress .search-bar": function(event, template) {
     var ref = Template.instance().data;
     if (event.keyCode === 13) {
       // Enter pressed.  If a single grain is shown, open it.
@@ -205,6 +219,7 @@ Template.sandstormAppList.events({
         var action = actions[0]._id;
         // N.B.: this calls into a global in shell.js.
         // TODO(cleanup): refactor into a safer dependency.
+        template.appIsLoading.set(true);
         launchAndEnterGrainByActionId(action);
       }
     }
@@ -214,14 +229,14 @@ Template.sandstormAppList.onRendered(function () {
   // Scroll to highlighted app, if any.
   if (this.data._highlight) {
     var self = this;
-    var auto = this.autorun(function () {
+    this.autorun(function (computation) {
       if (self.subscriptionsReady()) {
         var item = self.findAll(".highlight")[0];
         if (item) {
           item.focus();
           item.scrollIntoView();
         }
-        auto.stop();
+        computation.stop();
       }
     });
   } else {
@@ -234,4 +249,7 @@ Template.sandstormAppList.onRendered(function () {
       if (searchbar) searchbar.focus();
     }
   }
+});
+Template.sandstormAppList.onCreated(function () {
+  this.appIsLoading = new ReactiveVar(false);
 });

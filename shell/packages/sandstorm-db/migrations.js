@@ -154,6 +154,25 @@ function removeKeyrings() {
       {multi: true});
 }
 
+function useLocalizedTextInUserActions() {
+  function toLocalizedText(newObj, oldObj, field) {
+    if (field in oldObj) {
+      if (typeof oldObj[field] === "string") {
+        newObj[field] = {defaultText: oldObj[field]};
+      } else {
+        newObj[field] = oldObj[field];
+      }
+    }
+  }
+  UserActions.find({}).forEach(function (userAction) {
+    var fields = {};
+    toLocalizedText(fields, userAction, "appTitle");
+    toLocalizedText(fields, userAction, "title");
+    toLocalizedText(fields, userAction, "nounPhrase");
+    UserActions.update(userAction._id, {$set: fields});
+  });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -166,6 +185,7 @@ var MIGRATIONS = [
   fetchProfilePictures,
   assignPlans,
   removeKeyrings,
+  useLocalizedTextInUserActions,
 ];
 
 function migrateToLatest() {
@@ -199,7 +219,7 @@ function migrateToLatest() {
     } else {
       start = applied.value;
     }
-    console.log("Migrations applied: " + start + "/" + MIGRATIONS.length);
+    console.log("Migrations already applied: " + start + "/" + MIGRATIONS.length);
 
     for (var i = start ; i < MIGRATIONS.length ; i++) {
       // Apply migration i, then record that migration i was successfully run.

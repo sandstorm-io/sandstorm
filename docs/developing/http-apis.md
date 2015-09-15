@@ -5,9 +5,8 @@ useful for:
 
 * Allowing static web pages to interact with Sandstorm servers. (For
   instance, this could be used to implement comments on a blog
-  published via [Sandstorm's web
-  publishing](https://github.com/sandstorm-io/sandstorm/wiki/Publishing-to-the-user%27s-domain)
-  -- posting a comment would make an API request.)
+  published via [Sandstorm's web publishing](web-publishing.md) --
+  posting a comment would make an API request.)
 
 * Federation between servers.
 
@@ -37,8 +36,8 @@ There are various ways to obtain an API key:
 
 * The app itself can make a call to
   `HackSessionContext.generateApiToken()`. See the [web publishing
-  guide](https://github.com/sandstorm-io/sandstorm/wiki/Publishing-to-the-user%27s-domain)
-  for more about how to access `HackSessionContext`.
+  guide](web-publishing.md) for more about how to access
+  `HackSessionContext`.
 
 * In the future, we will implement an OAuth flow allowing a third
   party to initiate a request for access to the user's apps.

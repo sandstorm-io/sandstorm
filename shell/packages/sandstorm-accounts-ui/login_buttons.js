@@ -38,12 +38,22 @@ Template.loginButtonsPopup.helpers(helpers);
 Template._loginButtonsLoggedOutDropdown.helpers(helpers);
 Template._loginButtonsLoggedInDropdown.helpers(helpers);
 
+Template.loginButtonsPopup.onRendered(function() {
+  this.find("[role=menuitem]").focus();
+});
+
 Template.loginButtonsPopup.events({
   'click button.logout': function() {
     var topbar = Template.parentData(3);
     Meteor.logout(function () {
       loginButtonsSession.closeDropdown();
       topbar.closePopup();
+      var openGrains = globalGrains.get();
+      openGrains.forEach(function(grain) {
+        grain.destroy();
+      });
+      globalGrains.set([]);
+      Router.go("root");
     });
   }
 });

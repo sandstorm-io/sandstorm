@@ -45,6 +45,18 @@ Template.sandstormTopbarBlockReload.onDestroyed(function () {
 
 Template.sandstormTopbar.onCreated(function () {
   Template.instance().popupPosition = new ReactiveVar(undefined, _.isEqual);
+
+  var topbar = this.data;
+  this.escapeHandler = function (ev) {
+    if (ev.keyCode === 27) {
+      topbar.closePopup();
+    }
+  };
+  document.getElementsByTagName("body")[0].addEventListener("keydown", this.escapeHandler);
+});
+
+Template.sandstormTopbar.onDestroyed(function () {
+  document.getElementsByTagName("body")[0].removeEventListener("keydown", this.escapeHandler);
 });
 
 Template.sandstormTopbar.helpers({

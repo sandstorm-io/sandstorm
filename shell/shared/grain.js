@@ -316,18 +316,29 @@ if (Meteor.isClient) {
     },
   });
 
+  var promptNewTitle = function() {
+    var grain = getActiveGrain(globalGrains.get());
+    if (grain) {
+      var prompt = "Set new title:";
+      if (!grain.isOwner()) {
+        prompt = "Set a new personal title: (does not change the owner's title for this grain)";
+      }
+      var title = window.prompt(prompt, grain.title());
+      if (title) {
+        grain.setTitle(title);
+      }
+    }
+  };
   Template.grainTitle.events({
     "click": function (event) {
-      var grain = getActiveGrain(globalGrains.get());
-      if (grain) {
-        var prompt = "Set new title:";
-        if (!grain.isOwner()) {
-          prompt = "Set a new personal title: (does not change the owner's title for this grain)";
-        }
-        var title = window.prompt(prompt, grain.title());
-        if (title) {
-          grain.setTitle(title);
-        }
+      promptNewTitle();
+    },
+    "keydown": function (event) {
+      if ((event.keyCode === 13) || (event.keyCode === 32)) {
+        // Allow space or enter to trigger renaming the grain - Firefox doesn't treat enter on the
+        // focused element as click().
+        promptNewTitle();
+        event.preventDefault();
       }
     },
   });
@@ -381,11 +392,23 @@ if (Meteor.isClient) {
     },
   });
 
+  Template.grainBackupButton.onCreated(function () {
+    this.isLoading = new ReactiveVar(false);
+  });
+
+  Template.grainBackupButton.helpers({
+    isLoading: function () {
+      return Template.instance().isLoading.get();
+    }
+  });
+
   Template.grainBackupButton.events({
-    "click button": function (event) {
+    "click button": function (event, template) {
+      template.isLoading.set(true);
       this.reset();
       var activeGrain = getActiveGrain(globalGrains.get());
       Meteor.call("backupGrain", activeGrain.grainId(), function (err, id) {
+        template.isLoading.set(false);
         if (err) {
           alert("Backup failed: " + err); // TODO(someday): make this better UI
         } else {
@@ -434,23 +457,28 @@ if (Meteor.isClient) {
     },
   });
 
-  function copyMe(event) {
-    event.preventDefault();
+  function selectElementContents(element) {
     if (document.body.createTextRange) {
       var range = document.body.createTextRange();
-      range.moveToElementText(event.currentTarget);
+      range.moveToElementText(element);
       range.select();
     } else if (window.getSelection) {
       var selection = window.getSelection();
       var range = document.createRange();
-      range.selectNodeContents(event.currentTarget);
+      range.selectNodeContents(element);
       selection.removeAllRanges();
       selection.addRange(range);
     }
   }
 
+  function selectTargetContents(event) {
+    event.preventDefault();
+    selectElementContents(event.currentTarget);
+  }
+
   Template.grainApiTokenPopup.events({
-    "click .copy-me": copyMe,
+    "click .copy-me": selectTargetContents,
+    "focus .copy-me": selectTargetContents,
     "submit .newApiToken": function (event) {
       event.preventDefault();
       var activeGrain = getActiveGrain(globalGrains.get());
@@ -495,7 +523,8 @@ if (Meteor.isClient) {
   });
 
   Template.grainSharePopup.events({
-    "click .copy-me": copyMe,
+    "click .copy-me": selectTargetContents,
+    "focus .copy-me": selectTargetContents,
     "click #share-grain-popup-closer": function (event) {
       Session.set("show-share-grain", false);
     },
@@ -517,12 +546,58 @@ if (Meteor.isClient) {
     },
   });
 
+  Template.shareWithOthers.onRendered(function () {
+    this.find("[role=tab]").focus();
+  });
+  var activateTargetTab = function(event, instance) {
+    // Deactivate all tabs and all tab panels.
+    instance.findAll("ul[role=tablist]>li[role=tab]").forEach(function (element) {
+      element.setAttribute("aria-selected", false);
+    });
+    instance.findAll(".tabpanel").forEach(function (element) {
+      element.setAttribute("aria-hidden", true);
+    });
+
+    // Activate the tab header the user selected.
+    event.currentTarget.setAttribute("aria-selected", true);
+    // Show the corresponding tab panel.
+    var idToShow = event.currentTarget.getAttribute("aria-controls");
+    var tabPanelToShow = instance.find("#" + idToShow);
+    tabPanelToShow.setAttribute("aria-hidden", false);
+  };
   Template.shareWithOthers.events({
-    "click .shareable-link": function (event, instance) {
-      instance.find(".share-tabs").setAttribute("data-which-tab", "shareable-link");
-    },
-    "click .send-invite": function (event, instance) {
-      instance.find(".share-tabs").setAttribute("data-which-tab", "send-invite");
+    "click #send-invite-tab-header": activateTargetTab,
+    "click #shareable-link-tab-header": activateTargetTab,
+    "keydown [role=tab]": function(event, template) {
+      if (event.keyCode == 38 || event.keyCode == 40) { // up and down arrows
+        event.preventDefault();
+      }
+      var focus = $(template.find(":focus"));
+      var items = template.$("[role=tab]:visible");
+      var focusIndex = items.index(focus);
+      var newFocusIndex;
+      if (event.keyCode == 37) { // left arrow
+        event.preventDefault();
+        newFocusIndex = focusIndex-1;
+        if (newFocusIndex == -1) {
+          newFocusIndex = items.length-1;
+        }
+      } else if (event.keyCode == 39) { // right arrow
+        event.preventDefault();
+        newFocusIndex = focusIndex+1;
+        if (newFocusIndex >= items.length) {
+          newFocusIndex = 0;
+        }
+      } else if (event.keyCode == 13) { // Enter key
+        event.preventDefault();
+        activateTargetTab(event, template);
+      }
+      if (newFocusIndex != null) {
+        items.attr("tabindex", "-1");
+        newFocus = $(items[newFocusIndex]);
+        newFocus.attr("tabindex", "0")
+        newFocus.focus();
+      }
     },
   });
 
@@ -578,6 +653,12 @@ if (Meteor.isClient) {
         } else {
           result.url = getOrigin() + "/shared/" + result.token;
           instance.completionState.set({"success": result});
+          // On the next render, .copy-me will exist, and we should focus it then.
+          Meteor.defer(function() {
+            var element = instance.find(".copy-me")
+            element.focus();
+            selectElementContents(element);
+          });
         }
       });
     },
@@ -625,7 +706,8 @@ if (Meteor.isClient) {
         Iron.controller().state.set("powerboxOfferUrl", null);
       }
     },
-    "click .copy-me": copyMe
+    "click .copy-me": selectTargetContents,
+    "focus .copy-me": selectTargetContents
   });
 
   Template.grainSharePopup.helpers({

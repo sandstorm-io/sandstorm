@@ -220,7 +220,7 @@ limitations under the License.
 </template>
 
 <template name="grainTitle">
-  <span class="editable" title="Rename" id="grainTitle">{{title}}</span>
+  <span class="editable" title="Rename" id="grainTitle" tabindex="0">{{title}}</span>
 </template>
 <template name="grainDeleteButton">
   <button class="grain-button" title="Delete" id="deleteGrain">Delete</button>
@@ -229,7 +229,7 @@ limitations under the License.
   <button class="grain-button" title="Show Debug Log" id="openDebugLog">Log</button>
 </template>
 <template name="grainBackupButton">
-  <button class="grain-button" title="Download Backup" id="backupGrain">Backup</button>
+  <button class="grain-button {{#if isLoading}}loading{{/if}}" title="Download Backup" id="backupGrain" disabled="{{#if isLoading}}true{{/if}}">Backup</button>
 </template>
 <template name="grainRestartButton">
   <button class="grain-button" title="Restart App" id="restartGrain">Restart</button>
@@ -323,7 +323,9 @@ limitations under the License.
     {{/if}}
     {{#if existingShareTokens}}
       <h5>Sharing Links</h5>
-      <table class="sharing-links">
+      <table class="shared-links">
+      {{!-- Renamed from sharing-links to shared-links due to a common adblock rule
+            in https://easylist.adblockplus.org/fanboy-social.txt --}}
         {{#each existingShareTokens}}
           {{#if displayToken}}
             <tr>
@@ -381,7 +383,7 @@ limitations under the License.
 <template name="emailInviteTab">
   <form class="email-invite">
     <p>
-    <img class="inline-icon" src="/people-m.svg">
+    <img class="inline-icon" src="/people-m.svg" role="presentation">
     <input onclick="select()" type="text"
            class="emails" placeholder="Enter email addresses">
     {{> selectRole viewInfo=viewInfo}}
@@ -391,7 +393,7 @@ limitations under the License.
                 placeholder="Type a personal message (optional)..."></textarea>
     </div>
     {{#if completionState.clear}}
-    <div class="button-container">
+    <div class="button-container" role="presentation">
       <button>Send</button>
     </div>
     {{/if}}
@@ -414,7 +416,7 @@ limitations under the License.
 <template name="shareableLinkTab">
   <form class="new-share-token">
     <p>
-      <img class="inline-icon" src="/people-m.svg">
+      <img class="inline-icon" src="/people-m.svg" role="presentation">
       Anyone with this link{{#if viewInfo.roles}}:{{else}} can access the grain.{{/if}}
       {{> selectRole viewInfo=viewInfo}}
     </p>
@@ -429,7 +431,7 @@ limitations under the License.
   </form>
   {{#with completionState}}
     {{#if success}}
-      <p><img class="inline-icon" src="/copy-m.svg"> Copy this link:</p>
+      <p><img class="inline-icon" src="/copy-m.svg" role="presentation"> Copy this link:</p>
       <a id="share-token-text" class="copy-me" href="{{success.url}}">{{success.url}}</a>
       <p><button class="reset-share-token">+ Create another link</button></p>
     {{/if}}
@@ -452,20 +454,19 @@ limitations under the License.
       <p><button id="privatize-grain">upgrade</button></p>
     {{/if}}
   {{else}}
-  <div class="share-tabs" data-which-tab="send-invite">
-    <section class="send-invite">
-      <h5 class="tab-top"> Send an invite </h5>
-      <div class="tab-content">
-        {{> emailInviteTab viewInfo=grain.viewInfo title=grain.title grainId=grain.grainId }}
-      </div>
-    </section>
-    <section class="shareable-link">
-      <h5 class="tab-top"> Get shareable link </h5>
-      <div class="tab-content">
-        {{> shareableLinkTab viewInfo=grain.viewInfo }}
-      </div>
-    </section>
+  <div class="share-tabs" role="presentation">
+    <ul role="tablist">
+      <li id="send-invite-tab-header" tabindex="0" role="tab" aria-controls="send-invite-tab" aria-selected="true"> Send an invite </li>
+      <li id="shareable-link-tab-header" tabindex="-1" role="tab" aria-controls="shareable-link-tab" aria-selected="false"> Get shareable link </li>
+    </ul>
+    <div id="send-invite-tab" role="tabpanel" class="tabpanel" aria-labelledby="send-invite-tab-header" aria-hidden="false">
+      {{> emailInviteTab viewInfo=grain.viewInfo title=grain.title grainId=grain.grainId }}
+    </div>
+    <div id="shareable-link-tab" role="tabpanel" class="tabpanel" aria-labelledby="shareable-link-tab-header" aria-hidden="true">
+      {{> shareableLinkTab viewInfo=grain.viewInfo }}
+    </div>
   </div>
+
   <div class="footer">
     <img class="inline-icon" src="/people-m.svg">
     <button class="who-has-access">See who has access</button>

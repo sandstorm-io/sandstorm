@@ -16,6 +16,11 @@
 
 // This file covers /install and /upload.
 
+var localizedTextPattern = {
+  defaultText: String,
+  localizations: Match.Optional([{locale: String, text: String}])
+}
+
 if (Meteor.isServer) {
   UserActions.allow({
     insert: function (userId, action) {
@@ -25,11 +30,11 @@ if (Meteor.isServer) {
         userId: String,
         packageId: String,
         appId: String,
-        appTitle: Match.Optional(String),
+        appTitle: Match.Optional(localizedTextPattern),
         appMarketingVersion: Match.Optional(Object),
         appVersion: Match.Integer,
-        title: String,
-        nounPhrase: Match.Optional(String),
+        title: localizedTextPattern,
+        nounPhrase: Match.Optional(localizedTextPattern),
         command: {
           executablePath: Match.Optional(String),
           deprecatedExecutablePath: Match.Optional(String),
@@ -186,16 +191,13 @@ if (Meteor.isClient) {
             userId: Meteor.userId(),
             packageId: package._id,
             appId: package.appId,
-            appTitle: package.manifest.appTitle && package.manifest.appTitle.defaultText,
+            appTitle: package.manifest.appTitle,
             appMarketingVersion: package.manifest.appMarketingVersion,
             appVersion: package.manifest.appVersion,
-            title: action.title.defaultText,  // TODO(someday): `.defaultText` here is wrong.
+            title: action.title,
+            nounPhrase: action.nounPhrase,
             command: action.command
           };
-          if (action.nounPhrase) {
-            // TODO(someday): `.defaultText` here is wrong.
-            userAction.nounPhrase = action.nounPhrase.defaultText;
-          }
           UserActions.insert(userAction);
         } else {
           // TODO(someday):  Implement actions with capability inputs.

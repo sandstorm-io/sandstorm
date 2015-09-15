@@ -347,7 +347,7 @@ GrainView.prototype._openApiTokenSession = function () {
         }
 
         // OK, go to the grain.
-        return Router.go("/grain/" + result.redirectToGrain + self._path);
+        return Router.go("/grain/" + result.redirectToGrain + self._path, {}, {replaceState: true});
       } else {
         // We are viewing this via just the /shared/ link, either as an anonymous user on in our
         // incognito mode (since we'd otherwise have redeemed the token and been redirected).

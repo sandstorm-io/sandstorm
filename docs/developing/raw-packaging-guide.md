@@ -4,8 +4,9 @@ This tutorial will show you how to package an app for Sandstorm using
 the raw `spk` tooling, helping you understand Sandstorm at a deeper
 level.
 
-**Note:** If you're new to Sandstorm packaging, please read the [Five
-minute packaging tutorial](../vagrant-spk/packaging-tutorial.md) first!
+**Note:** If you're new to Sandstorm packaging, or don't run Linux as
+your main operating system. please read the [Five minute packaging
+tutorial](../vagrant-spk/packaging-tutorial.md) first!
 
 A Sandstorm application package includes the entire userspace needed
 to run your app, including all binaries, libraries, modules,
@@ -16,39 +17,34 @@ the server uses.
 
 Let's walk through an example.
 
-(If you get stuck, see [Packaging Troubleshooting](https://github.com/sandstorm-io/sandstorm/wiki/Packaging-Troubleshooting).)
+(If you get stuck, see [Packaging Troubleshooting](troubleshooting.md).)
 
 ## Prerequisites
 
 1. Learn about Sandstorm, if you haven't already.
   - [Try using Sandstorm](https://demo.sandstorm.io) to get a feel for how it operates.
-  - [Read the App Developer Handbook](https://github.com/sandstorm-io/sandstorm/wiki/Sandstorm-App-Developer-Handbook) to understand the higher-level design issues faced by Sandstorm apps.
+  - [Read the App Developer Handbook](handbook.md) to understand the higher-level design issues faced by Sandstorm apps.
 
 2. Install Sandstorm on your local machine.
-  - If you run Linux:
-    - Install Linux. Kernel version 3.13 or later. [Ubuntu](http://ubuntu.com) 14.04 is sufficient.
-    - Install Sandstorm: `curl https://install.sandstorm.io | bash`
-      - You will use this local Sandstorm server for development, so make sure it's running.
-      - Make sure to make yourself a member of the server's group, usually called `sandstorm`.
-        You may have to log out and back in before this takes effect.
-  - If you run Mac OS, or another platform supported by Vagrant:
-    - Follow the [Install Sandstorm via Vagrant](https://github.com/sandstorm-io/sandstorm/wiki/Install-Sandstorm-via-Vagrant) guide.
+  - Install Linux. Kernel version 3.13 or later. [Ubuntu](http://ubuntu.com) 14.04 is sufficient.
+  - Install Sandstorm: `curl https://install.sandstorm.io | bash`
+    - You will use this local Sandstorm server for development, so make sure it's running.
+    - Make sure to make yourself a member of the server's group, usually called `sandstorm`.
+      You may have to log out and back in before this takes effect.
 
 ## Framework-specific tools/guides
 
 For some frameworks, we have special tools and/or guides to help you package apps more easily:
 
 - [Meteor](https://meteor.com): Use [meteor-spk](https://github.com/sandstorm-io/meteor-spk).
-- Python: See [Python](https://github.com/sandstorm-io/sandstorm/wiki/Python).
-- Ruby on Rails: See [Ruby on Rails](https://github.com/sandstorm-io/sandstorm/wiki/Ruby-on-Rails).
-- Pure-client/browser-side: (e.g. [Unhosted](https://unhosted.org)-style) See [Pure client apps](https://github.com/sandstorm-io/sandstorm/wiki/Pure-client-apps).
+- Python: See [Python](raw-python.md).
+- Ruby on Rails: See [Ruby on Rails](raw-ruby-on-rails.md).
+- Pure-client/browser-side: (e.g. [Unhosted](https://unhosted.org)-style) See [Pure client apps](raw-pure-client-apps.md).
 - (more soon)
 
 Even if your framework is listed above, you should still read everything on this page as well in order to better understand Sandstorm.
 
-## Generic steps, if your main OS is Linux
-
-**Note**: These steps assume your app is running on the same machine as Sandstorm. If you are running Sandstorm via Vagrant, follow the packaging guide on the [Install Sandstorm via Vagrant](https://github.com/sandstorm-io/sandstorm/wiki/Install-Sandstorm-via-Vagrant) page.
+## Generic steps
 
 ### Write an app
 
@@ -113,15 +109,13 @@ This will build `my-app.spk` for distribution. You can upload this to any Sandst
 
 If you packaged a cool app to Sandstorm, [we want to know about it](https://groups.google.com/group/sandstorm-dev)!
 
-You can submit your app to the [app list](https://sandstorm.io/apps) by submitting a pull request on our [website repo](https://github.com/sandstorm-io/sandstorm-website/blob/master/apps/index.html). You can get your data-app-id from your `sandstorm-pkgdef.capnp` file, and you can get your data-package-id by running the following command:
-
-    sha256sum package.spk | head -c 32; echo
+You should check out the [app publishing guide](publishing-apps.md) for details on how to submit your app to the [App Market](https://apps.sandstorm.io).
 
 ## Tips and Tricks
 
 ### Accessing external resources
 
-By default, your app does not have network access, even on the server side. It can only answer HTTP request from the user. If you need access to things in the outside world, you will have to request them through the Sandstorm APIs. Guides for accessing specific kinds of external resources -- including sending outgoing HTTP requests, sending and receiving e-mail, etc. -- can be found [on the wiki](../wiki).
+By default, your app does not have network access, even on the server side. It can only answer HTTP request from the user. If you need access to things in the outside world, you will have to request them through the Sandstorm APIs. Guides for accessing specific kinds of external resources -- including sending outgoing HTTP requests, sending and receiving e-mail, etc. -- can be found [in the full developer documentation](../developing.md).
 
 ### Reproducible builds
 
@@ -144,6 +138,14 @@ When running in dev mode (`spk dev`), the keyring is not actually needed. Since 
 Keyrings can be merged by concatenating them (with plain old `cat`). To pull specific keys out of your keyring to send to people, use the `spk getkey` command (type `spk help getkey` for usage information).
 
 Currently, keyrings are not encrypted, which means they are vulnerable to any software running under your user account. This is probably bad and will be improved eventually, though in general if you have malware running as yourself then you're pretty screwed already.
+
+### Package IDs
+
+You can get your data-package-id by running the following command:
+
+    sha256sum package.spk | head -c 32; echo
+
+This is no longer particularly important info now that the app market has launched, and this is handled automatically.
 
 ### What makes a good Sandstorm app?
 

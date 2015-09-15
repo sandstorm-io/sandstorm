@@ -83,7 +83,6 @@ waitPromise = function (promise) {
 // API for creating / starting grains from Meteor methods.
 
 var runningGrains = {};
-var proxies = {};
 var proxiesByHostId = {};
 
 Meteor.methods({
@@ -230,12 +229,19 @@ Meteor.methods({
     // TODO(security):  Prevent draining someone else's quota by holding open several grains shared
     //   by them.
     check(sessionId, String);
-    if (sessionId in proxies) {
-      Sessions.update(sessionId, {$set: {timestamp: new Date().getTime()}});
-      var proxy = proxies[sessionId];
-      var future = promiseToFuture(proxy.keepAlive());
-      updateLastActive(proxy.grainId, this.userId);
-      future.wait();
+
+    var session = Sessions.findAndModify({
+      query: {_id: sessionId},
+      update: {$set: {timestamp: new Date().getTime()}},
+      fields: {grainId: 1}
+    });
+
+    if (session) {
+      // Session still present in database, so send keep-alive to backend.
+
+      var grainId = session.grainId;
+      waitPromise(openGrain(grainId, false).supervisor.keepAlive());
+      updateLastActive(grainId, this.userId);
       return true;
     } else {
       return false;
@@ -291,7 +297,9 @@ function validateWebkey (apiToken, refreshedExpiration) {
 function openSessionInternal(grainId, user, title, apiToken) {
   var userId = user ? user._id : undefined;
 
-  // Start the grain if it is not running.
+  // Start the grain if it is not running. This is an optimization: if we didn't start it here,
+  // it would start on the first request to the session host, but we'd like to get started before
+  // the round trip.
   var runningGrain = runningGrains[grainId];
   var grainInfo;
   if (runningGrain) {
@@ -304,16 +312,10 @@ function openSessionInternal(grainId, user, title, apiToken) {
 
   var isOwner = grainInfo.owner === userId;
 
-  var sessionId = Random.id();
-  var proxy = new Proxy(grainId, grainInfo.owner, sessionId, null, isOwner, user, null, false);
-  proxy.apiToken = apiToken;
-  proxies[sessionId] = proxy;
-  proxiesByHostId[proxy.hostId] = proxy;
-
   var session = {
-    _id: sessionId,
+    _id: Random.id(),
     grainId: grainId,
-    hostId: proxy.hostId,
+    hostId: generateRandomHostname(20),
     timestamp: new Date().getTime(),
     hasLoaded: false,
   };
@@ -328,7 +330,7 @@ function openSessionInternal(grainId, user, title, apiToken) {
 
   Sessions.insert(session);
 
-  return {sessionId: sessionId, title: title, grainId: grainId};
+  return {sessionId: session._id, title: title, grainId: grainId};
 }
 
 function updateLastActive(grainId, userId) {
@@ -526,21 +528,12 @@ deleteGrain = function (grainId, ownerId) {
   });
 }
 
-getGrainSize = function (sessionId, oldSize) {
-  var proxy = proxies[sessionId];
-  if (!proxy) {
-    throw new Meteor.Error(500, "Session not running; can't get grain size.");
-  }
-
-  if (!proxy.supervisor) {
-    proxy.getConnection();
-  }
-
+getGrainSize = function (supervisor, oldSize) {
   var promise;
   if (oldSize === undefined) {
-    promise = proxy.supervisor.getGrainSize();
+    promise = supervisor.getGrainSize();
   } else {
-    promise = proxy.supervisor.getGrainSizeWhenDifferent(oldSize);
+    promise = supervisor.getGrainSizeWhenDifferent(oldSize);
   }
 
   var promise2 = promise.then(function (result) { return parseInt(result.size); });
@@ -564,43 +557,79 @@ Meteor.startup(function () {
 
   Sessions.find().observe({
     removed : function(session) {
-      delete proxies[session._id];
       delete proxiesByHostId[session.hostId];
     }
   });
 });
 
-// Kill off proxies idle for >~5 minutes.
-var TIMEOUT_MS = 300000;
+// Kill off sessions idle for >~3 minutes.
+var TIMEOUT_MS = 180000;
 function gcSessions() {
   var now = new Date().getTime();
   Sessions.remove({timestamp: {$lt: (now - TIMEOUT_MS)}});
 }
-Meteor.setInterval(gcSessions, 60000);
+SandstormDb.periodicCleanup(TIMEOUT_MS, gcSessions);
 
-// Try to restore sessions on server restart.
-Meteor.startup(function () {
-  // Delete stale sessions from session list.
-  gcSessions();
+var getProxyForHostId = function (hostId) {
+  // Get the Proxy corresponding to the given grain session host, possibly (re)creating it if it
+  // doesn't already exist. The first request on the session host will always create a new proxy.
+  // Later requests may create a proxy if they go to a different front-end replica or if the
+  // front-end was restarted.
+  check(hostId, String);
 
-  // Remake proxies for all sessions that remain.
-  Sessions.find({}).forEach(function (session) {
-    var grain = Grains.findOne(session.grainId);
-    if (!grain) return;
+  return Promise.resolve(undefined).then(function () {
+    var proxy = proxiesByHostId[hostId]
+    if (proxy) {
+      return proxy;
+    } else {
+      // Set table entry to null for now so that we can detect if it is concurrently deleted.
+      proxiesByHostId[hostId] = null;
 
-    var user = null;
-    if (session.userId) {
-      user = Meteor.users.findOne({_id: session.userId});
-      if (!user) return;  // Session owner no longer exists.
+      return inMeteor(function () {
+        var session = Sessions.findOne({hostId: hostId});
+        if (!session) {
+          // Does not appear to be a valid session host.
+          return undefined;
+        }
+
+        var apiToken;
+        if (session.hashedToken) {
+          apiToken = ApiTokens.findOne({_id: session.hashedToken});
+          // We don't have to fully validate the API token here because if it changed the session
+          // would have been deleted.
+          if (!apiToken) {
+            throw new Meteor.Error(410, "ApiToken has been deleted");
+          }
+        }
+
+        var grain = Grains.findOne(session.grainId);
+        if (!grain) {
+          // Grain was deleted, I guess.
+          throw new Meteor.Error(410, "Resource has been deleted");
+        }
+
+        // Note that we don't need to call mayOpenGrain() because the existence of a session
+        // implies this check was already performed.
+
+        var user = session.userId && Meteor.users.findOne(session.userId);
+
+        var proxy = new Proxy(grain._id, grain.userId, session._id, hostId,
+                              user && user._id === grain._id, user, null, false);
+        if (apiToken) proxy.apiToken = apiToken;
+
+        // Only add the proxy to the table if it was not concurrently deleted (which could happen
+        // e.g. if the user's access was revoked).
+        if (hostId in proxiesByHostId) {
+          proxiesByHostId[hostId] = proxy;
+        } else {
+          throw new Meteor.Error(403, "Session was concurrently closed.");
+        }
+
+        return proxy;
+      });
     }
-
-    var isOwner = grain.userId === session.userId;
-    var proxy = new Proxy(session.grainId, grain.userId, session._id, session.hostId, isOwner,
-                          user, null, false);
-    proxies[session._id] = proxy;
-    proxiesByHostId[session.hostId] = proxy;
   });
-});
+}
 
 // =======================================================================================
 // API tokens
@@ -668,13 +697,16 @@ getProxyForApiToken = function (token) {
   check(token, String);
   var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
   return Promise.resolve(undefined).then(function () {
-    if (hashedToken in proxiesByApiToken) {
-      var proxy = proxiesByApiToken[hashedToken];
+    var proxy = proxiesByApiToken[hashedToken];
+    if (proxy) {
       if (proxy.expires && proxy.expires.getTime() <= Date.now()) {
         throw new Meteor.Error(403, "Authorization token expired");
       }
       return proxy;
     } else {
+      // Set table entry to null for now so that we can detect if it is concurrently deleted.
+      proxiesByApiToken[hashedToken] = null;
+
       return inMeteor(function () {
         var tokenInfo = ApiTokens.findOne(hashedToken);
         validateWebkey(tokenInfo);
@@ -699,11 +731,7 @@ getProxyForApiToken = function (token) {
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, isOwner, user, null, true);
           proxy.apiToken = tokenInfo;
         } else if (tokenInfo.userInfo) {
-          // Hack: When Mongo stores a Buffer, it comes back as some other type.
-          if ("userId" in tokenInfo.userInfo) {
-            tokenInfo.userInfo.userId = new Buffer(tokenInfo.userInfo.userId);
-          }
-          proxy = new Proxy(tokenInfo.grainId, null, null, false, null, tokenInfo.userInfo, true);
+          throw new Error("API tokens created with arbitrary userInfo no longer supported");
         } else {
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, null, true);
         }
@@ -717,7 +745,13 @@ getProxyForApiToken = function (token) {
           proxy.expires = tokenInfo.expires;
         }
 
-        proxiesByApiToken[hashedToken] = proxy;
+        // Only add the proxy to the table if it was not concurrently deleted (which could happen
+        // e.g. if the token was revoked).
+        if (hashedToken in proxiesByApiToken) {
+          proxiesByApiToken[hashedToken] = proxy;
+        } else {
+          throw new Meteor.Error(403, "Token was concurrently revoked.");
+        }
 
         return proxy;
       });
@@ -752,46 +786,53 @@ function apiTokenForRequest(req) {
 //
 
 tryProxyUpgrade = function (hostId, req, socket, head) {
+  // Attempt to handle a WebSocket upgrade by dispatching it to a grain. Returns a promise that
+  // resolves true if an appropriate grain is found, false if there was no match (but the caller
+  // should consider other host types, like static web publishing), or throws an error if the
+  // request is definitely invalid.
+
   if (hostId === "api") {
     var token = apiTokenForRequest(req);
     if (token) {
-      getProxyForApiToken(token).then(function (proxy) {
+      return getProxyForApiToken(token).then(function (proxy) {
         // Meteor sets the timeout to five seconds. Change that back to two
         // minutes, which is the default value.
         socket.setTimeout(120000);
 
         proxy.upgradeHandler(req, socket, head);
-      }, function (err) {
-        socket.destroy();
+        return true;
       });
     } else {
-      socket.destroy();
+      return Promise.resolve(false);
     }
-    return true;
   } else {
-    var origin = req.headers.origin;
-    if (origin !== (PROTOCOL + "//" + req.headers.host)) {
-      console.error("Detected illegal cross-origin WebSocket from:", origin);
-      socket.destroy();
-      return true;
-    }
+    return getProxyForHostId(hostId).then(function (proxy) {
+      if (proxy) {
+        // Cross-origin requests are not allowed on UI session hosts.
+        var origin = req.headers.origin;
+        if (origin !== (PROTOCOL + "//" + req.headers.host)) {
+          throw new Meteor.Error(403, "Detected illegal cross-origin WebSocket from: " + origin);
+        }
 
-    if (hostId in proxiesByHostId) {
-      var proxy = proxiesByHostId[hostId]
+        // Meteor sets the timeout to five seconds. Change that back to two
+        // minutes, which is the default value.
+        socket.setTimeout(120000);
 
-      // Meteor sets the timeout to five seconds. Change that back to two
-      // minutes, which is the default value.
-      socket.setTimeout(120000);
-
-      proxy.upgradeHandler(req, socket, head);
-      return true;
-    } else {
-      return false;
-    }
+        proxy.upgradeHandler(req, socket, head);
+        return true;
+      } else {
+        return false;
+      }
+    });
   }
 }
 
 tryProxyRequest = function (hostId, req, res) {
+  // Attempt to handle an HTTP request by dispatching it to a grain. Returns a promise that
+  // resolves true if an appropriate grain is found, false if there was no match (but the caller
+  // should consider other host types, like static web publishing), or throws an error if the
+  // request is definitely invalid.
+
   if (hostId === "api") {
     // This is a request for the API host.
 
@@ -833,7 +874,7 @@ tryProxyRequest = function (hostId, req, res) {
 
       res.writeHead(204, accessControlHeaders);
       res.end();
-      return true;
+      return Promise.resolve(true);
     }
 
     var responseHeaders = {
@@ -879,13 +920,16 @@ tryProxyRequest = function (hostId, req, res) {
           "access data on your Sandstorm server. This address is not meant to be opened\n" +
           "in a regular browser.");
     }
-    return true;
-  } else if (hostId in proxiesByHostId) {
-    var proxy = proxiesByHostId[hostId];
-    proxy.requestHandler(req, res);
-    return true;
+    return Promise.resolve(true);
   } else {
-    return false;
+    return getProxyForHostId(hostId).then(function (proxy) {
+      if (proxy) {
+        proxy.requestHandler(req, res);
+        return true;
+      } else {
+        return false;
+      }
+    });
   }
 }
 
@@ -896,7 +940,7 @@ tryProxyRequest = function (hostId, req, res) {
 // Connects to a grain and exports it on a wildcard host.
 //
 
-function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, userInfo, isApi,
+function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, userInfo, isApi,
                supervisor) {
   this.grainId = grainId;
   this.ownerId = ownerId;
@@ -906,11 +950,12 @@ function Proxy(grainId, ownerId, sessionId, preferredHostId, isOwner, user, user
   this.isApi = isApi;
   this.hasLoaded = false;
   if (sessionId) {
-    if (!preferredHostId) {
-      this.hostId = generateRandomHostname(20);
-    } else {
-      this.hostId = preferredHostId;
-    }
+    if (!hostId) throw new Error("sessionId must come with hostId");
+    if (isApi) throw new Error("API proxy shouldn't have sessionId");
+    this.hostId = hostId;
+  } else {
+    if (!isApi) throw new Error("non-API proxy requires sessionId");
+    if (hostId) throw new Error("API proxy sholudn't have hostId");
   }
 
   if (userInfo) {

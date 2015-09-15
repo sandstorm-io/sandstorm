@@ -16,6 +16,11 @@
 
 // This file covers /install and /upload.
 
+var localizedTextPattern = {
+  defaultText: String,
+  localizations: Match.Optional([{locale: String, text: String}])
+}
+
 if (Meteor.isServer) {
   UserActions.allow({
     insert: function (userId, action) {
@@ -25,11 +30,11 @@ if (Meteor.isServer) {
         userId: String,
         packageId: String,
         appId: String,
-        appTitle: Match.Optional(String),
+        appTitle: Match.Optional(localizedTextPattern),
         appMarketingVersion: Match.Optional(Object),
         appVersion: Match.Integer,
-        title: String,
-        nounPhrase: Match.Optional(String),
+        title: localizedTextPattern,
+        nounPhrase: Match.Optional(localizedTextPattern),
         command: {
           executablePath: Match.Optional(String),
           deprecatedExecutablePath: Match.Optional(String),
@@ -139,26 +144,8 @@ Meteor.methods({
         }
       }
 
-      if (pkg) {
-        if (isRetry) {
-          if (pkg.status !== "failed") {
-            throw new Meteor.Error(403, "Unauthorized",
-                                   "Can't retry an install that hasn't failed.");
-          }
-          startInstall(packageId, url, true, pkg.appId)
-        } else if (pkg.status === "failed" || pkg.status === "ready") {
-          return;
-        } else {
-          if (pkg.status === "delete") {
-            // Either someone is currently deleting the package, or
-            // the server previously crashed mid-delete. In either
-            // case, we try to resume the deletion before continuing.
-            deletePackage(packageId);
-          }
-          startInstall(packageId, url, false, pkg.appId);
-        }
-      } else {
-        startInstall(packageId, url, true);
+      if (!pkg || isRetry) {
+        startInstall(packageId, url, isRetry);
       }
     }
   },
@@ -204,16 +191,13 @@ if (Meteor.isClient) {
             userId: Meteor.userId(),
             packageId: package._id,
             appId: package.appId,
-            appTitle: package.manifest.appTitle && package.manifest.appTitle.defaultText,
+            appTitle: package.manifest.appTitle,
             appMarketingVersion: package.manifest.appMarketingVersion,
             appVersion: package.manifest.appVersion,
-            title: action.title.defaultText,  // TODO(someday): `.defaultText` here is wrong.
+            title: action.title,
+            nounPhrase: action.nounPhrase,
             command: action.command
           };
-          if (action.nounPhrase) {
-            // TODO(someday): `.defaultText` here is wrong.
-            userAction.nounPhrase = action.nounPhrase.defaultText;
-          }
           UserActions.insert(userAction);
         } else {
           // TODO(someday):  Implement actions with capability inputs.

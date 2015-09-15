@@ -17,7 +17,7 @@ long as it's on Sandstorm, you can run whatever apps you want, because
 we trust Sandstorm to keep things secure."
 
 Using a wildcard host is just one part of [Sandstorm's security
-model](https://github.com/sandstorm-io/sandstorm/wiki/Security-Practices-Overview).
+model](../using/security-practices.md).
 
 ## Sandstorm handles this for localhost + sandcats users
 

@@ -1,6 +1,8 @@
 .app-list {
   overflow: auto; // Needed to make the background span everything on screen.
-  padding: 0px 32px;
+  @media #{$desktop} {
+    padding: 0px 32px;
+  }
   @media #{$mobile} {
     padding: 0px 8px;
   }
@@ -19,36 +21,71 @@
     display: none !important;
   }
   >.search-row {
-    width: 100%;
-    margin-bottom: 36px;
+    position: relative;
+    @media #{$desktop} {
+      margin-bottom: 24px;
+      width: 100%;
+      vertical-align: top;
+    }
     @media #{$mobile} {
       margin-bottom: 0;
       display: inline-block;
-      vertical-align: middle;
       width: calc(100% - 100px);
+      vertical-align: middle;
     }
-    >img.search-icon {
-      width: 24px;
-      height: 24px;
-      margin: 4px;
+    >label {
+      display: inline-block;
+      >span.search-icon {
+        @extend %pseudo-img-tag;
+        background-image: url("/search.svg");
+        background-size: 24px 24px;
+        background-position: center;
+        display: inline-block;
+        box-sizing: border-box;
+        width: 32px;
+        height: 32px;
+        vertical-align: top;
+      }
+      >input.search-bar {
+        display: inline-block;
+        vertical-align: top;
+        width: 33%;
+        font-size: 16pt;
+        height: 32px;
+        background-color: $grainlist-searchbar-background-color;
+        border: 1px solid $grainlist-searchbar-outline-color;
+        box-sizing: border-box;
+        &:focus {
+          border: 1px solid $grainlist-searchbar-outline-color-focus;
+        }
+        @media #{$desktop} {
+          width: calc(100% - 36px);
+        }
+        @media #{$mobile} {
+          width: calc(100% - 60px);
+        }
+      }
+      @media #{$desktop} {
+        width: 50%;
+      }
     }
-    >input.search-bar {
-      font-size: 16pt;
-      background-color: $grainlist-searchbar-background-color;
-      border: 1px solid $grainlist-searchbar-outline-color;
-      &:focus {
-        border: 1px solid $grainlist-searchbar-outline-color-focus;
-      }
-      @media #{$mobile} {
-        width: calc(100% - 60px);
-      }
+    >button.toggle-uninstall {
+      display: inline-block;
+      float: right;
+      vertical-align: top;
+      font-size: 14pt;
+      line-height: 16pt;
+      height: 32px;
+      box-sizing: border-box;
     }
   }
   >.popular-container {
     // Restricts the visible portion of the "most used" section to a single row.
     display: block;
-    height: 280px;
     overflow: hidden;
+    @media #{$desktop} {
+      height: 280px;
+    }
     @media #{$mobile} {
       height: 160px;
     }
@@ -71,11 +108,13 @@
     // specify position: relative here and position: absolute for the image and text label.
     // Strictly speaking, you're not supposed to have a <button> with a child <img>.  Oh well.
     position: relative;
-    width: 148px;
-    height: 200px;
-    margin-left: 10px;
-    margin-right: 10px;
-    margin-bottom: 20px;
+    @media #{$desktop} {
+      width: 148px;
+      height: 200px;
+      margin-left: 10px;
+      margin-right: 10px;
+      margin-bottom: 20px;
+    }
     @media #{$mobile} {
       width: 74px;
       height: 100px;
@@ -100,15 +139,35 @@
         animation-name: new-app;
       }
     }
+    &.uninstall-action>.app-icon {
+      &::before {
+        position: absolute;
+        content: " ";
+        display: block;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border-radius: 6px;
+        background-color: rgba(0, 0, 0, 0.5);
+        background-image: url("/close-FFFFFF.svg");
+        background-position: center;
+        background-size: 50% 50%;
+        background-repeat: no-repeat;
+        z-index: 1;
+      }
+    }
     >.app-icon {
       @extend %pseudo-img-tag;
       display: block;
       position: absolute;
       top: 0px;
       left: 0px;
-      width: 128px;
-      height: 128px;
-      margin: 10px;
+      @media #{$desktop} {
+        width: 128px;
+        height: 128px;
+        margin: 10px;
+      }
       @media #{$mobile} {
         width: 64px;
         height: 64px;
@@ -149,12 +208,20 @@
       left: 0px;
       width: 100%;
       vertical-align: top;
-      text-align: center;
+      text-align: left;
+      @media #{$desktop} {
+        margin-left: 10px;
+      }
+      @media #{$mobile} {
+        margin-left: 5px;
+      }
     }
     >.app-title, >.action-title {
       @extend %apptext;
-      top: 148px;
-      font-size: 12pt;
+      @media #{$desktop} {
+        top: 148px;
+        font-size: 14pt;
+      }
       @media #{$mobile} {
         top: 74px;
         font-size: 8pt;
@@ -163,8 +230,10 @@
     >.action-text {
       @extend %apptext;
       color: $applist-action-text-color;
-      top: 168px;
-      font-size: 11pt;
+      @media #{$desktop} {
+        top: 168px;
+        font-size: 13pt;
+      }
       @media #{$mobile} {
         top: 88px;
         font-size: 8pt;

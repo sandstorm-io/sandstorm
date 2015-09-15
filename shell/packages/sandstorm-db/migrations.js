@@ -4,6 +4,8 @@
 // side-effects, we should be careful to make sure all migrations are
 // idempotent and safe to accidentally run multiple times.
 
+var Future = Npm.require("fibers/future");
+
 var updateLoginStyleToRedirect = function() {
   var configurations = Package["service-configuration"].ServiceConfiguration.configurations;
   ["google", "github"].forEach(function(serviceName) {
@@ -144,6 +146,33 @@ function assignPlans() {
   }
 }
 
+function removeKeyrings() {
+  // These blobs full of public keys were not intended to find their way into mongo and while
+  // harmless they slow things down because they're huge. Remove them.
+  Packages.update({"manifest.metadata.pgpKeyring": {$exists: true}},
+      {$unset: {"manifest.metadata.pgpKeyring": ""}},
+      {multi: true});
+}
+
+function useLocalizedTextInUserActions() {
+  function toLocalizedText(newObj, oldObj, field) {
+    if (field in oldObj) {
+      if (typeof oldObj[field] === "string") {
+        newObj[field] = {defaultText: oldObj[field]};
+      } else {
+        newObj[field] = oldObj[field];
+      }
+    }
+  }
+  UserActions.find({}).forEach(function (userAction) {
+    var fields = {};
+    toLocalizedText(fields, userAction, "appTitle");
+    toLocalizedText(fields, userAction, "title");
+    toLocalizedText(fields, userAction, "nounPhrase");
+    UserActions.update(userAction._id, {$set: fields});
+  });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -155,27 +184,50 @@ var MIGRATIONS = [
   fixOasisStorageUsageStats,
   fetchProfilePictures,
   assignPlans,
+  removeKeyrings,
+  useLocalizedTextInUserActions,
 ];
 
 function migrateToLatest() {
-  var applied = Migrations.findOne({_id: "migrations_applied"});
-  var start;
-  if (!applied) {
-    // Migrations table is not yet seeded with a value.  This means it has
-    // applied 0 migrations.  Persist this.
-    Migrations.insert({_id: "migrations_applied", value: 0});
-    start = 0;
-  } else {
-    start = applied.value;
-  }
-  console.log("Migrations applied: " + start + "/" + MIGRATIONS.length);
+  if (Meteor.settings.replicaNumber) {
+    // This is a replica. Wait for the first replica to perform migrations.
 
-  for (var i = start ; i < MIGRATIONS.length ; i++) {
-    // Apply migration i, then record that migration i was successfully run.
-    console.log("Applying migration " + (i+1));
-    MIGRATIONS[i]();
-    Migrations.update({_id: "migrations_applied"}, {$set: {value: i+1}});
-    console.log("Applied migration " + (i+1));
+    console.log("Waiting for migrations on replica zero...");
+
+    var done = new Future();
+    var change = function (doc) {
+      console.log("Migrations applied elsewhere: " + doc.value + "/" + MIGRATIONS.length);
+      if (doc.value >= MIGRATIONS.length) done.return();
+    }
+    var observer = Migrations.find({_id: "migrations_applied"}).observe({
+      added: change,
+      changed: change
+    });
+
+    done.wait();
+    observer.stop();
+    console.log("Migrations have completed on replica zero.");
+
+  } else {
+    var applied = Migrations.findOne({_id: "migrations_applied"});
+    var start;
+    if (!applied) {
+      // Migrations table is not yet seeded with a value.  This means it has
+      // applied 0 migrations.  Persist this.
+      Migrations.insert({_id: "migrations_applied", value: 0});
+      start = 0;
+    } else {
+      start = applied.value;
+    }
+    console.log("Migrations already applied: " + start + "/" + MIGRATIONS.length);
+
+    for (var i = start ; i < MIGRATIONS.length ; i++) {
+      // Apply migration i, then record that migration i was successfully run.
+      console.log("Applying migration " + (i+1));
+      MIGRATIONS[i]();
+      Migrations.update({_id: "migrations_applied"}, {$set: {value: i+1}});
+      console.log("Applied migration " + (i+1));
+    }
   }
 }
 

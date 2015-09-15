@@ -38,7 +38,7 @@ the package you're creating.
 
 Sandstorm packages rely on the Sandstorm platform to handle adding new user
 accounts and other access control elements. Read more in the
-[App Developer Handbook](https://github.com/sandstorm-io/sandstorm/wiki/Sandstorm-App-Developer-Handbook).
+[App Developer Handbook](../developing/handbook.md).
 
 ## Before proceeding, install vagrant-spk
 

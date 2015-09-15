@@ -39,5 +39,5 @@ pages:
     - "Backups": "administering/backups.md"
     - "Wildcard hosts": "administering/wildcard.md"
     - "Reverse Proxy": "administering/reverse-proxy.md"
-    - "SSL": "administering/ssl.md"
+    - "Self-Signed SSL": "administering/ssl.md"
     - "Frequently asked questions": "administering/faq.md"

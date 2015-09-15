@@ -207,15 +207,17 @@ struct UserIds {
 
 kj::Array<uint> getPorts(kj::StringPtr portList) {
     // For now, this function returns just the one port that is in the config.
+    //
+    // TODO: Use a kj Parser, that'd be nice.
     auto portNumber = parseUInt(portList, 10);
-    kj::Array<uint> result;
     KJ_IF_MAYBE(portNumber, parseUInt(portList, 10)) {
-        result = kj::heapArray<uint>(1);
+        auto result = kj::heapArray<uint>(1);
         result[0] = *portNumber;
+        return result;
     } else {
-      result = kj::heapArray<uint>(0);
+      auto result = kj::heapArray<uint>(0);
+      return result;
     }
-    return result;
 }
 
 kj::Maybe<UserIds> getUserIds(kj::StringPtr name) {
@@ -1231,8 +1233,11 @@ private:
               // alive as long as the program does, since we don't typically
               // delete the Config object.
         auto ports = getPorts(value);
+        context.warning("WHOA");
         if (ports.size() == 0) {
           KJ_FAIL_REQUIRE("invalid config value PORT", value);
+        } else {
+          config.ports = kj::mv(ports);
         }
       } else if (key == "MONGO_PORT") {
         KJ_IF_MAYBE(p, parseUInt(value, 10)) {
@@ -1433,7 +1438,7 @@ private:
     // Create the mongo user if it hasn't been created already.
     maybeCreateMongoUser(config);
 
-    context.warning("** Back-end and Mongo started; now starting front-end...");
+    context.warning("** Back-end zand Mongo started; now starting front-end...");
 
     // If we're root, run the dev daemon. At present the dev daemon requires root (in order to
     // use FUSE), so we don't run it if we aren't root.

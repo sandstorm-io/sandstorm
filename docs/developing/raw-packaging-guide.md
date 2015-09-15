@@ -16,39 +16,34 @@ the server uses.
 
 Let's walk through an example.
 
-(If you get stuck, see [Packaging Troubleshooting](https://github.com/sandstorm-io/sandstorm/wiki/Packaging-Troubleshooting).)
+(If you get stuck, see [Packaging Troubleshooting](troubleshooting.md).)
 
 ## Prerequisites
 
 1. Learn about Sandstorm, if you haven't already.
   - [Try using Sandstorm](https://demo.sandstorm.io) to get a feel for how it operates.
-  - [Read the App Developer Handbook](https://github.com/sandstorm-io/sandstorm/wiki/Sandstorm-App-Developer-Handbook) to understand the higher-level design issues faced by Sandstorm apps.
+  - [Read the App Developer Handbook](handbook.md) to understand the higher-level design issues faced by Sandstorm apps.
 
 2. Install Sandstorm on your local machine.
-  - If you run Linux:
-    - Install Linux. Kernel version 3.13 or later. [Ubuntu](http://ubuntu.com) 14.04 is sufficient.
-    - Install Sandstorm: `curl https://install.sandstorm.io | bash`
-      - You will use this local Sandstorm server for development, so make sure it's running.
-      - Make sure to make yourself a member of the server's group, usually called `sandstorm`.
-        You may have to log out and back in before this takes effect.
-  - If you run Mac OS, or another platform supported by Vagrant:
-    - Follow the [Install Sandstorm via Vagrant](https://github.com/sandstorm-io/sandstorm/wiki/Install-Sandstorm-via-Vagrant) guide.
+  - Install Linux. Kernel version 3.13 or later. [Ubuntu](http://ubuntu.com) 14.04 is sufficient.
+  - Install Sandstorm: `curl https://install.sandstorm.io | bash`
+    - You will use this local Sandstorm server for development, so make sure it's running.
+    - Make sure to make yourself a member of the server's group, usually called `sandstorm`.
+      You may have to log out and back in before this takes effect.
 
 ## Framework-specific tools/guides
 
 For some frameworks, we have special tools and/or guides to help you package apps more easily:
 
 - [Meteor](https://meteor.com): Use [meteor-spk](https://github.com/sandstorm-io/meteor-spk).
-- Python: See [Python](https://github.com/sandstorm-io/sandstorm/wiki/Python).
-- Ruby on Rails: See [Ruby on Rails](https://github.com/sandstorm-io/sandstorm/wiki/Ruby-on-Rails).
-- Pure-client/browser-side: (e.g. [Unhosted](https://unhosted.org)-style) See [Pure client apps](https://github.com/sandstorm-io/sandstorm/wiki/Pure-client-apps).
+- Python: See [Python](raw-python.md).
+- Ruby on Rails: See [Ruby on Rails](raw-ruby-on-rails.md).
+- Pure-client/browser-side: (e.g. [Unhosted](https://unhosted.org)-style) See [Pure client apps](raw-pure-client-apps.md).
 - (more soon)
 
 Even if your framework is listed above, you should still read everything on this page as well in order to better understand Sandstorm.
 
-## Generic steps, if your main OS is Linux
-
-**Note**: These steps assume your app is running on the same machine as Sandstorm. If you are running Sandstorm via Vagrant, follow the packaging guide on the [Install Sandstorm via Vagrant](https://github.com/sandstorm-io/sandstorm/wiki/Install-Sandstorm-via-Vagrant) page.
+## Generic steps
 
 ### Write an app
 

@@ -231,10 +231,11 @@ Meteor.methods({
       var sharerDisplayName = Meteor.user().profile.name;
       var outerResult = {successes: [], failures: []};
       emailAddresses.forEach(function(emailAddress) {
-        var result = createNewApiToken(userId, grainId,
-                                       "email invitation for " + emailAddress,
-                                       roleAssignment,
-                                       true, undefined);
+        var result = SandstormPermissions.createNewApiToken(
+          globalDb, userId, grainId,
+          "email invitation for " + emailAddress,
+          roleAssignment,
+          true, undefined);
         var url = origin + "/shared/" + result.token;
         var html = message.html + "<br><br>" +
             "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +

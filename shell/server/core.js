@@ -152,8 +152,8 @@ checkRequirements = function (requirements) {
     } else if (requirement.permissionsHeld) {
       var p = requirement.permissionsHeld;
       var viewInfo = Grains.findOne(p.grainId, {fields: {cachedViewInfo: 1}}).cachedViewInfo;
-      var currentPermissions = grainPermissions({grain: {_id: p.grainId, userId: p.userId}},
-                                                viewInfo || {});
+      var currentPermissions = SandstormPermissions.grainPermissions(
+        globalDb, {grain: {_id: p.grainId, userId: p.userId}}, viewInfo || {});
       if (!currentPermissions) {
         return false;
       }

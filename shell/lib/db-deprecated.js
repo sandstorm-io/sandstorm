@@ -63,6 +63,7 @@ if (Meteor.isServer) {
     //   packages to actually use the DB, but it's pretty sad.
     connection.sandstormDb = globalDb;
   });
+  SandstormDb.periodicCleanup(5 * 60 * 1000, SandstormPermissions.cleanupSelfDestructing(globalDb));
 }
 
 if (Meteor.isClient) {

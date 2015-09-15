@@ -42,6 +42,7 @@ private:
 
   void writeSetgroupsIfPresent(const char *contents);
   void writeUserNSMap(const char *type, kj::StringPtr contents);
+  void bind(kj::StringPtr src, kj::StringPtr dst, unsigned long flags);
   static void pump(kj::InputStream& in, kj::OutputStream& out);
   bool findFilesToZip(kj::StringPtr path, kj::OutputStream& out);
 };

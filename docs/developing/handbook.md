@@ -329,10 +329,6 @@ to /var/www, and then call "publish static" from the
 "HackSessionContext". You can [read more on the
 wiki](https://github.com/sandstorm-io/sandstorm/wiki/Publishing-to-the-user's-domain).
 
-Note: Sandstorm displays the static pages within an `<iframe>`, so if your
-HTML contains external hyperlinks, consider adding a `<base target="_blank">`
-to your HTML document, so they open in a new window instead of within the frame.
-
 ## Apps can expose an external API for authorized users
 
 Sandstorm apps can export HTTP APIs for consumption by other servers

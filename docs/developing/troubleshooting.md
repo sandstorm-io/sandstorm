@@ -8,6 +8,18 @@ Note that language-specific issues should be documented in the language-specific
 * [Ruby on Rails](raw-ruby-on-rails.md)
 * [Pure client apps](https://github.com/sandstorm-io/sandstorm/wiki/Pure-client-apps)
 
+## Clicking a link in the app does not open the link
+
+Sandstorm apps cannot navigate the user away from the app. Therefore, app
+authors should set `target="_blank"` on links within the app.
+
+A convenient way to do this automatically for all links in the page is to add
+the following HTML to your document's `<head>`:
+
+```html
+<base target="_blank">
+```
+
 ## KeyError: 'getpwuid(): uid not found: 1000'
 
 This is a Python bug. See [the Python packaging guide](raw-python.md#keyerror-getpwuid-uid-not-found-1000) for a work-around.

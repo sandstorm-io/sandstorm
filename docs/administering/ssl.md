@@ -28,22 +28,22 @@ The following is a process for self-hosted instances of Sandstorm to use SSL wit
 4. Sign the Certificate Authority (CA) Key and Create Certificate Authority (CA) certificate (Expires in 10 years):
   `openssl req -x509 -new -nodes -key rootCA.key -days 3650 -out rootCA.pem`
 
-`rootCA.pem` is the file for the Certificate Authority (CA) certificate
+  `rootCA.pem` is the file for the Certificate Authority (CA) certificate
 
 5. Create Sandstorm Device Private Key:
   `openssl genrsa -out sandstorm.key 4096`
 
-`sandstorm.key` is the Sandstorm Device Private Key
+  `sandstorm.key` is the Sandstorm Device Private Key
 
 6. Create Sandstorm Device Certificate Signing Request (CSR) using the copied and edited openssl.cnf file:
   `openssl req -new -key sandstorm.key -out sandstorm.csr -config openssl.cnf`
 
-`sandstorm.csr` is the Sandstorm Device Certificate Signing Request (CSR)
+  `sandstorm.csr` is the Sandstorm Device Certificate Signing Request (CSR)
 
 7. Create and sign the Sandstorm Certificate (Expire in 2 years):
   `openssl x509 -req -in sandstorm.csr -CA rootCA.pem -CAkey rootCA.key -CAcreateserial -out sandstorm.crt -days 730 -extensions v3_req -extfile openssl.cnf`
 
-`sandstorm.crt` is the Sandstorm Certificate
+  `sandstorm.crt` is the Sandstorm Certificate
 
 8. Import the Certificate Authority (CA) Certificate (`rootCA.pem`) into the browser's that will be using Sandstorm. Some browsers may load grains without this step and ask users to add a security excpetion in order to fully load grains.
 

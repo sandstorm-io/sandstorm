@@ -52,8 +52,12 @@ if (Meteor.isServer) {
     var now = new Date(Date.now() - DEMO_GRACE_MS);
     Meteor.users.find({expires: {$lt: now}}, {fields: {_id: 1, lastActive: 1, isAppDemoUser: 1}})
                 .forEach(function (user) {
-      Grains.find({userId: user._id}, {fields: {_id: 1, lastUsed: 1}})
+      // Store the appId for appDemo users.
+      // TODO(someday): handle the case where an appDemo user makes grains with many different apps.
+      var appId;
+      Grains.find({userId: user._id}, {fields: {_id: 1, lastUsed: 1, appId: 1}})
             .forEach(function (grain) {
+        appId = grain.appId;
         console.log("delete grain: " + grain._id);
         Grains.remove(grain._id);
         if (grain.lastUsed) {
@@ -65,6 +69,7 @@ if (Meteor.isServer) {
       Meteor.users.remove(user._id);
       waitPromise(sandstormBackend.deleteUser(user._id));
       if (user.lastActive) {
+        var stat = {lastActive: new Date()};
         // When deleting a user, we can specify it as a "normal" user
         // (type: user) or as a user who started out by using the app
         // demo feature (type: appDemoUser).
@@ -72,10 +77,12 @@ if (Meteor.isServer) {
         var isAppDemoUser = !! user.isAppDemoUser;
         if (isAppDemoUser) {
           deleteStatsType = "appDemoUser";
+          stat.appId = appId;
         }
+        stat.type = deleteStatsType;
         // Intentionally record deleted users at time of deletion to avoid miscounting users that
         // were demoing just before the day rolled over.
-        DeleteStats.insert({type: deleteStatsType, lastActive: new Date()});
+        DeleteStats.insert(stat);
       }
     });
   }

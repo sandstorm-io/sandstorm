@@ -249,6 +249,12 @@ GrainView.prototype._isIdentityAlreadyRevealedToOwner = function () {
 
 GrainView.prototype.shouldShowInterstitial = function () {
   this._dep.depend();
+
+  // We only show the interstitial for /shared/ routes.
+  if (!this._token) {
+    return false;
+  }
+
   // If we have explictly set _revealIdentity, we don't need to show the interstitial.
   if (this._revealIdentity.get() !== undefined) {
     return false;

@@ -39,21 +39,21 @@ The following is a process for self-hosted instances of Sandstorm to use SSL wit
 
 5. **Create Sandstorm Device Private Key:**
 
-    openssl genrsa -out sandstorm.key 4096
+        openssl genrsa -out sandstorm.key 4096
 
     `sandstorm.key` is the Sandstorm Device Private Key  
     _
 
 6. **Create Sandstorm Device Certificate Signing Request (CSR) using the copied and edited openssl.cnf file:**
 
-    openssl req -new -key sandstorm.key -out sandstorm.csr -config openssl.cnf
+        openssl req -new -key sandstorm.key -out sandstorm.csr -config openssl.cnf
 
     `sandstorm.csr` is the Sandstorm Device Certificate Signing Request (CSR)  
     _
 
 7. **Create and sign the Sandstorm Certificate (Expire in 2 years):**
 
-    openssl x509 -req -in sandstorm.csr -CA rootCA.pem -CAkey rootCA.key -CAcreateserial -out sandstorm.crt -days 730 -extensions v3_req -extfile openssl.cnf
+        openssl x509 -req -in sandstorm.csr -CA rootCA.pem -CAkey rootCA.key -CAcreateserial -out sandstorm.crt -days 730 -extensions v3_req -extfile openssl.cnf
 
     `sandstorm.crt` is the Sandstorm Certificate  
     _

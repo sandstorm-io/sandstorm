@@ -737,7 +737,7 @@ getProxyForApiToken = function (token) {
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, null, true);
         }
 
-        if (!mayOpenGrain({token: tokenInfo})) {
+        if (!SandstormPermissions.mayOpenGrain(globalDb, {token: tokenInfo})) {
           // Note that only public grains may be opened without a user ID.
           throw new Meteor.Error(403, "Unauthorized.");
         }

@@ -205,11 +205,17 @@ struct UserIds {
   kj::Array<gid_t> groups;
 };
 
-kj::Maybe<uint> getPorts(kj::StringPtr portList) {
+kj::Array<uint> getPorts(kj::StringPtr portList) {
     // For now, this function returns just the one port that is in the config.
-    auto result = parseUInt(portList, 10);
-    // For now, we cannot fail.
-    return kj::mv(result);
+    auto portNumber = parseUInt(portList, 10);
+    kj::Array<uint> result;
+    KJ_IF_MAYBE(portNumber, parseUInt(portList, 10)) {
+        result = kj::heapArray<uint>(1);
+        result[0] = *portNumber;
+    } else {
+      result = kj::heapArray<uint>(0);
+    }
+    return result;
 }
 
 kj::Maybe<UserIds> getUserIds(kj::StringPtr name) {
@@ -907,7 +913,7 @@ private:
   // Alternate main function we'll use depending on the program name.
 
   struct Config {
-    uint port = 3000;
+    kj::Array<uint> ports;
     uint mongoPort = 3001;
     UserIds uids;
     kj::String bindIp = kj::str("127.0.0.1");
@@ -1221,9 +1227,11 @@ private:
           KJ_FAIL_REQUIRE("invalid config value SERVER_USER", value);
         }
       } else if (key == "PORT") {
-        KJ_IF_MAYBE(p, getPorts(value)) {
-          config.port = *p;
-        } else {
+              // Memory leak? Who owns this pointer? I guess it has to stay
+              // alive as long as the program does, since we don't typically
+              // delete the Config object.
+        auto ports = getPorts(value);
+        if (ports.size() == 0) {
           KJ_FAIL_REQUIRE("invalid config value PORT", value);
         }
       } else if (key == "MONGO_PORT") {
@@ -1691,7 +1699,7 @@ private:
       sockaddr_in sa;
       memset(&sa, 0, sizeof sa);
       sa.sin_family = AF_INET;
-      sa.sin_port = htons(config.port);
+      sa.sin_port = htons(config.ports[0]);
       int rc = inet_pton(AF_INET, config.bindIp.cStr(), &(sa.sin_addr));
       // If ipv4 address parsing fails, try ipv6
       if (rc == 0) {
@@ -1738,11 +1746,11 @@ private:
         KJ_SYSCALL(setenv("MAIL_URL", config.mailUrl.cStr(), true));
       }
       if (config.rootUrl == nullptr) {
-        if (config.port == 80) {
+        if (config.ports[0] == 80) {
           KJ_SYSCALL(setenv("ROOT_URL", kj::str("http://", config.bindIp).cStr(), true));
         } else {
           KJ_SYSCALL(setenv("ROOT_URL",
-              kj::str("http://", config.bindIp, ":", config.port).cStr(), true));
+              kj::str("http://", config.bindIp, ":", config.ports[0]).cStr(), true));
         }
       } else {
         KJ_SYSCALL(setenv("ROOT_URL", config.rootUrl.cStr(), true));

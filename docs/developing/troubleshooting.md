@@ -6,7 +6,7 @@ Note that language-specific issues should be documented in the language-specific
 
 * [Python](raw-python.md)
 * [Ruby on Rails](raw-ruby-on-rails.md)
-* [Pure client apps](https://github.com/sandstorm-io/sandstorm/wiki/Pure-client-apps)
+* [Pure client apps](raw-pure-client-apps.md)
 
 ## Clicking a link in the app does not open the link
 

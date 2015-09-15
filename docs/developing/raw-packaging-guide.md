@@ -115,7 +115,7 @@ You should check out the [app publishing guide](publishing-apps.md) for details 
 
 ### Accessing external resources
 
-By default, your app does not have network access, even on the server side. It can only answer HTTP request from the user. If you need access to things in the outside world, you will have to request them through the Sandstorm APIs. Guides for accessing specific kinds of external resources -- including sending outgoing HTTP requests, sending and receiving e-mail, etc. -- can be found [on the wiki](../wiki).
+By default, your app does not have network access, even on the server side. It can only answer HTTP request from the user. If you need access to things in the outside world, you will have to request them through the Sandstorm APIs. Guides for accessing specific kinds of external resources -- including sending outgoing HTTP requests, sending and receiving e-mail, etc. -- can be found [in the full developer documentation](../developing.md).
 
 ### Reproducible builds
 

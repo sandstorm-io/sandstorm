@@ -329,7 +329,7 @@ function openSessionInternal(grainId, user, title, apiToken, cachedSalt) {
     // TODO(someday): also do some more checks for anonymous sessions (sessions without a userId).
     if ((session.userId && session.userId !== userId) ||
         (session.grainId !== grainId)) {
-      var e = Meteor.Error(500, "Duplicate SessionId");
+      var e = new Meteor.Error(500, "Duplicate SessionId");
       console.error(e);
       throw e;
     } else {

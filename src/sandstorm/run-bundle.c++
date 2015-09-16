@@ -1738,20 +1738,22 @@ private:
       KJ_SYSCALL(bind(sockFd, reinterpret_cast<sockaddr *>(&sa), sizeof sa));
       KJ_SYSCALL(listen(sockFd, 511)); // 511 is what node uses as its default backlog
 
-      if (sockFd != 3) {
+      if (sockFd != targetFdNum) {
         // dup socket to correct fd.
-        KJ_SYSCALL(dup2(sockFd, 3));
+        KJ_SYSCALL(dup2(sockFd, targetFdNum));
         KJ_SYSCALL(close(sockFd));
       }
-
-  }
+}
 
   pid_t startNode(const Config& config) {
     Subprocess process([&]() -> int {
       // TODO: Listen on all ports, not just config.ports[0].
 
-      // Create a listening socket for the meteor app on fd=3
-      bindSocketToFd(config, config.ports[0], 3);
+      // Create a listening socket for the meteor app on fd=3 and up
+      uint socketFdStart = 3;
+      for (size_t i = 0; i < config.ports.size(); i++) {
+        bindSocketToFd(config, config.ports[i], i + socketFdStart);
+      }
 
       dropPrivs(config.uids);
       clearSignalMask();

@@ -1716,11 +1716,7 @@ private:
     return result;
   }
 
-  pid_t startNode(const Config& config) {
-    Subprocess process([&]() -> int {
-      // TODO: Listen on all ports, not just config.ports[0].
-
-      // Create a listening socket for the meteor app on fd=3
+  void bindSocketToFd(const Config& config, uint port, uint targetFdNum) {
       int sockFd;
       KJ_SYSCALL(sockFd = socket(PF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
 
@@ -1731,7 +1727,7 @@ private:
       sockaddr_in sa;
       memset(&sa, 0, sizeof sa);
       sa.sin_family = AF_INET;
-      sa.sin_port = htons(config.ports[0]);
+      sa.sin_port = htons(port);
       int rc = inet_pton(AF_INET, config.bindIp.cStr(), &(sa.sin_addr));
       // If ipv4 address parsing fails, try ipv6
       if (rc == 0) {
@@ -1747,6 +1743,15 @@ private:
         KJ_SYSCALL(dup2(sockFd, 3));
         KJ_SYSCALL(close(sockFd));
       }
+
+  }
+
+  pid_t startNode(const Config& config) {
+    Subprocess process([&]() -> int {
+      // TODO: Listen on all ports, not just config.ports[0].
+
+      // Create a listening socket for the meteor app on fd=3
+      bindSocketToFd(config, config.ports[0], 3);
 
       dropPrivs(config.uids);
       clearSignalMask();

@@ -212,7 +212,7 @@ kj::Maybe<kj::Array<uint>> parsePorts(kj::Maybe<uint> httpsPort, kj::StringPtr p
     // a semantics error (dealt with when it's time to bind to things)
     // rather than a syntax error (dealt with now), but I noticed that I
     // actually INTRODUCED this problem on my dev setup because I was
-    // careless, so presumably other people will be equally careless.8
+    // careless, so presumably other people will be equally careless.
     auto portsSplitOnComma = split(portList, ',');
     size_t numHttpPorts = portsSplitOnComma.size();
     size_t numHttpsPorts;

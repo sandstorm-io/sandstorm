@@ -477,9 +477,9 @@ Meteor.methods({
   transitiveShares: function(grainId) {
     check(grainId, String);
     if (this.userId) {
-      return this.sandstormPermissions.downstreamTokens(
-        this.connection.sandstormDb,
-        {grain: {_id: grainId, userId: this.userId}});
+      var db = this.connection.sandstormDb;
+      return SandstormPermissions.downstreamTokens(db,
+          {grain: {_id: grainId, userId: this.userId}});
     }
   },
 

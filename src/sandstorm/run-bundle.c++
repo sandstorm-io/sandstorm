@@ -205,19 +205,26 @@ struct UserIds {
   kj::Array<gid_t> groups;
 };
 
-kj::Array<uint> getPorts(kj::StringPtr portList) {
-    // For now, this function returns just the one port that is in the config.
-    //
-    // TODO: Use a kj Parser, that'd be nice.
-    auto portNumber = parseUInt(portList, 10);
-    KJ_IF_MAYBE(portNumber, parseUInt(portList, 10)) {
-        auto result = kj::heapArray<uint>(1);
-        result[0] = *portNumber;
-        return result;
-    } else {
-      auto result = kj::heapArray<uint>(0);
-      return result;
+kj::Maybe<kj::Array<uint>> getPorts(kj::StringPtr portList) {
+    // Return null if something bad seems to happen, allowing the
+    // caller to detect it and bail with an error message.
+    if (portList.size() == 0) {
+        return nullptr;
     }
+    auto portsSplitOnComma = split(portList, ',');
+    auto result = kj::heapArray<uint>(portsSplitOnComma.size());
+    if (result.size() == 0) {
+        return nullptr; // allow the caller to detect something bad happened.
+    }
+    for (size_t i = 0; i < portsSplitOnComma.size(); i++) {
+      KJ_IF_MAYBE(portNumber, parseUInt(kj::heapString(portsSplitOnComma[i]), 10)) {
+        result[i] = *portNumber;
+      } else {
+        // allow the caller to detect something bad happened
+        return nullptr;
+    }
+    return kj::mv(result);
+  }
 }
 
 kj::Maybe<UserIds> getUserIds(kj::StringPtr name) {
@@ -1229,15 +1236,13 @@ private:
           KJ_FAIL_REQUIRE("invalid config value SERVER_USER", value);
         }
       } else if (key == "PORT") {
+          KJ_IF_MAYBE(ports, getPorts(value)) {
               // Memory leak? Who owns this pointer? I guess it has to stay
               // alive as long as the program does, since we don't typically
               // delete the Config object.
-        auto ports = getPorts(value);
-        context.warning("WHOA");
-        if (ports.size() == 0) {
-          KJ_FAIL_REQUIRE("invalid config value PORT", value);
-        } else {
-          config.ports = kj::mv(ports);
+              config.ports = kj::mv(*ports);
+          } else {
+            KJ_FAIL_REQUIRE("invalid config value PORT", value);
         }
       } else if (key == "MONGO_PORT") {
         KJ_IF_MAYBE(p, parseUInt(value, 10)) {

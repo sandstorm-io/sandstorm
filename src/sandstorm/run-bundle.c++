@@ -206,6 +206,13 @@ struct UserIds {
 };
 
 kj::Maybe<kj::Array<uint>> getPorts(uint httpsPort, kj::StringPtr portList) {
+    // TODO: Whose responsibility is it to bail out if httpsPort shows up
+    // in portList? Presumably I don't want to try binding on the same
+    // port multiple times down the road. I can live with deciding that's
+    // a semantics error (dealt with when it's time to bind to things)
+    // rather than a syntax error (dealt with now), but I noticed that I
+    // actually INTRODUCED this problem on my dev setup because I was
+    // careless, so presumably other people will be equally careless.8
     auto portsSplitOnComma = split(portList, ',');
     size_t arraySize = portsSplitOnComma.size();
     if (httpsPort) {
@@ -1726,6 +1733,8 @@ private:
 
   pid_t startNode(const Config& config) {
     Subprocess process([&]() -> int {
+      // TODO: Listen on all ports, not just config.ports[0].
+
       // Create a listening socket for the meteor app on fd=3
       int sockFd;
       KJ_SYSCALL(sockFd = socket(PF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
@@ -1784,6 +1793,7 @@ private:
         KJ_SYSCALL(setenv("MAIL_URL", config.mailUrl.cStr(), true));
       }
       if (config.rootUrl == nullptr) {
+        // TODO: Do something similar for port 443 and HTTPS.
         if (config.ports[0] == 80) {
           KJ_SYSCALL(setenv("ROOT_URL", kj::str("http://", config.bindIp).cStr(), true));
         } else {

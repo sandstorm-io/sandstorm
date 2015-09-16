@@ -289,7 +289,7 @@ if (Meteor.isClient) {
           }
           return packObj;
         })
-        .sortBy("daily.owners")
+        .sortBy(function (app) { return -((app.daily || {}).owners || 0); })
         .value();
     },
     current: function () {

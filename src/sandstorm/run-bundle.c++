@@ -214,13 +214,12 @@ kj::Maybe<kj::Array<uint>> getPorts(kj::StringPtr portList) {
     auto portsSplitOnComma = split(portList, ',');
     auto result = kj::heapArray<uint>(portsSplitOnComma.size());
     if (result.size() == 0) {
-        return nullptr; // allow the caller to detect something bad happened.
+        return nullptr;
     }
     for (size_t i = 0; i < portsSplitOnComma.size(); i++) {
       KJ_IF_MAYBE(portNumber, parseUInt(kj::heapString(portsSplitOnComma[i]), 10)) {
         result[i] = *portNumber;
       } else {
-        // allow the caller to detect something bad happened
         return nullptr;
     }
   }

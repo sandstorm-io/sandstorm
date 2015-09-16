@@ -857,7 +857,7 @@ Router.map(function () {
       }
 
       return {
-        isFirstRun: this.ready() && !HasUsers.findOne("hasUsers"),
+        needsAdminTokenLogin: this.ready() && !HasUsers.findOne("hasUsers") && !globalDb.allowDevAccounts(),
         build: getBuildInfo().build
       };
     }

@@ -1,6 +1,13 @@
-// This file is used by Sandstorm to monkey-patch certain classes/functions in Nodejs
-// Specifically, we're changing http.Server.listen to listen on fd=3 instead of the normal
-// parameters. This is fine to do globally, since there's only ever one http server in meteor.
+// Typically, Meteor binds to a port and speaks HTTP.
+//
+// For us, however, `run-bundle` has already bound the port for us as
+// FD #3, and we might need to speak HTTPS. So this file runs before
+// Meteor starts, monkey-patching the node world so Meteor doesn't
+// have to be in on the joke.
+//
+// Additionally, `run-bundle` may have bound a number of ports that we
+// are supposed to run a HTTP redirector service on. This file runs
+// those HTTP redirector services.
 
 var http = require('http');
 var https = require('https');

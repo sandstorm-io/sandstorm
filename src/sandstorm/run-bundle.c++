@@ -205,7 +205,7 @@ struct UserIds {
   kj::Array<gid_t> groups;
 };
 
-kj::Maybe<kj::Array<uint>> getPorts(uint httpsPort, kj::StringPtr portList) {
+kj::Maybe<kj::Array<uint>> getPorts(kj::Maybe<uint> httpsPort, kj::StringPtr portList) {
     // TODO: Whose responsibility is it to bail out if httpsPort shows up
     // in portList? Presumably I don't want to try binding on the same
     // port multiple times down the road. I can live with deciding that's
@@ -214,26 +214,24 @@ kj::Maybe<kj::Array<uint>> getPorts(uint httpsPort, kj::StringPtr portList) {
     // actually INTRODUCED this problem on my dev setup because I was
     // careless, so presumably other people will be equally careless.8
     auto portsSplitOnComma = split(portList, ',');
-    size_t arraySize = portsSplitOnComma.size();
-    if (httpsPort) {
-        arraySize += 1;
-    }
-    if (arraySize == 0) {
-        return nullptr;
-    }
-    auto result = kj::heapArray<uint>(arraySize);
+    size_t numHttpPorts = portsSplitOnComma.size();
+    size_t numHttpsPorts;
+    kj::Array<uint> result;
 
-    // If there a HTTPS port, inject it into the array first.
-    size_t i = 0;
-    if (httpsPort) {
-        result[i] = httpsPort;
-        i += 1;
+    // If the configuration has a https port, then add it first.
+    KJ_IF_MAYBE(portNumber, httpsPort) {
+        numHttpsPorts = 1;
+        result = kj::heapArray<uint>(numHttpsPorts + numHttpPorts);
+        result[0] = *portNumber;
+    } else {
+        numHttpsPorts = 0;
+        result = kj::heapArray<uint>(numHttpsPorts + numHttpPorts);
     }
-    for (; i < portsSplitOnComma.size(); i++) {
-      KJ_IF_MAYBE(portNumber, parseUInt(kj::heapString(portsSplitOnComma[i]), 10)) {
-        result[i] = *portNumber;
+
+    for (size_t i = 0; i < portsSplitOnComma.size(); i++) {
+      KJ_IF_MAYBE(portNumber, parseUInt(trim(portsSplitOnComma[i]), 10)) {
+        result[i + numHttpsPorts] = *portNumber;
       } else {
-        // TODO: Do I need to free "result"? Presumably yes.
         return nullptr;
     }
   }
@@ -936,7 +934,7 @@ private:
   // Alternate main function we'll use depending on the program name.
 
   struct Config {
-    uint httpsPort = 0;
+    kj::Maybe<uint> httpsPort;
     kj::Array<uint> ports;
     uint mongoPort = 3001;
     UserIds uids;

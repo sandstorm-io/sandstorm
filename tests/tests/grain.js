@@ -194,9 +194,14 @@ module.exports["Test grain anonymous user"] = function (browser) {
 
 // Test roleless sharing between multiple users
 module.exports["Test roleless sharing"] = function (browser) {
+  var firstUserName;
+  var secondUserName;
   browser
   // Upload app as 1st user
     .loginDevAccount()
+    .execute(function () { return Meteor.user().profile.name; }, [], function(result) {
+      firstUserName = result.value;
+    })
     .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
@@ -221,6 +226,9 @@ module.exports["Test roleless sharing"] = function (browser) {
     .getText('#share-token-text', function(response) {
       browser
         .loginDevAccount()
+        .execute(function () { return Meteor.user().profile.name; }, [], function(result) {
+          secondUserName = result.value;
+        })
         .url(response.value)
         .waitForElementVisible(".redeem-token-button", short_wait)
         .click(".redeem-token-button")
@@ -255,6 +263,15 @@ module.exports["Test roleless sharing"] = function (browser) {
             .waitForElementVisible(".new-share-token", short_wait)
             .submitForm('.new-share-token')
             .waitForElementVisible('#share-token-text', medium_wait)
+
+            .loginDevAccount(firstUserName)
+            .url(response.value)
+            .waitForElementVisible('#grainTitle', medium_wait)
+            .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+            .click('.topbar .share > .show-popup')
+            .click('.popup.share .who-has-access')
+            .waitForElementVisible('.popup.who-has-access', medium_wait)
+            .assert.containsText('.popup.who-has-access .people td', secondUserName)
         });
     });
 }

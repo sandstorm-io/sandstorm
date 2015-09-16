@@ -1,3 +1,6 @@
+### v0.111 (2015-09-16)
+- Fix bug preventing "who has access" table from displaying properly.
+
 ### v0.110 (2015-09-16)
 - Fix problem with display of app stats (in admin panel) in presence of broken package uploads.
 

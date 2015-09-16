@@ -223,8 +223,9 @@ kj::Maybe<kj::Array<uint>> getPorts(kj::StringPtr portList) {
         // allow the caller to detect something bad happened
         return nullptr;
     }
-    return kj::mv(result);
   }
+
+  return kj::mv(result);
 }
 
 kj::Maybe<UserIds> getUserIds(kj::StringPtr name) {

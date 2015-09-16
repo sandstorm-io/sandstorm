@@ -178,20 +178,25 @@ GrainView.prototype.error = function () {
 
 GrainView.prototype.hasLoaded = function () {
   this._dep.depend();
+  if (this._hasLoaded) {
+    return true;
+  }
+
   var session = Sessions.findOne({_id: this._sessionId});
-  return session && session.hasLoaded;
+  // TODO(soon): this is a hack to cache hasLoaded. Consider moving it to an autorun.
+  this._hasLoaded = session && session.hasLoaded;
+
+  return this._hasLoaded;
 }
 
 GrainView.prototype.origin = function () {
   this._dep.depend();
-  var session = Sessions.findOne({_id: this._sessionId});
-  return session && (window.location.protocol + "//" + makeWildcardHost(session.hostId));
+  return this._hostId && (window.location.protocol + "//" + makeWildcardHost(this._hostId));
 }
 
 GrainView.prototype.viewInfo = function () {
   this._dep.depend();
-  var session = Sessions.findOne({_id: this._sessionId});
-  return session && session.viewInfo;
+  return this._viewInfo;
 }
 
 GrainView.prototype.grainId = function () {
@@ -273,11 +278,40 @@ GrainView.prototype.shouldShowInterstitial = function () {
   return true;
 }
 
+GrainView.prototype._addSessionObserver = function (sessionId) {
+  var self = this;
+  self._sessionSub = Meteor.subscribe("sessions", sessionId);
+  self._sessionObserver = Sessions.find({_id : sessionId}).observe({
+    removed: function(session) {
+      self._sessionSub.stop();
+      self._sessionSub = undefined;
+      self._status = "closed";
+      self._dep.changed();
+      if (self._sessionObserver) {
+        self._sessionObserver.stop();
+      }
+      Meteor.defer(function () { self.openSession(); });
+    },
+    changed: function(session) {
+      self._viewInfo = session.viewInfo || self._viewInfo;
+      self._permissions = session.permissions || self._permissions;
+      self._dep.changed();
+    },
+    added: function(session) {
+      self._viewInfo = session.viewInfo || self._viewInfo;
+      self._permissions = session.permissions || self._permissions;
+      self._status = "opened";
+      self._dep.changed();
+    }
+  });
+
+}
+
 GrainView.prototype._openGrainSession = function () {
   var self = this;
-  Meteor.call("openSession", self._grainId, function(error, result) {
+  Meteor.call("openSession", self._grainId, self._sessionSalt, function(error, result) {
     if (error) {
-      console.log("openSession error");
+      console.error("openSession error", error);
       self._error = error.message;
       self._status = "error";
       self._dep.changed();
@@ -288,20 +322,11 @@ GrainView.prototype._openGrainSession = function () {
       }
       self._grainId = result.grainId;
       self._sessionId = result.sessionId;
-      self._sessionSub = Meteor.subscribe("sessions", result.sessionId);
-      Sessions.find({_id : result.sessionId}).observeChanges({
-        removed: function(session) {
-          self._sessionSub.stop();
-          self._sessionSub = undefined;
-          self._status = "closed";
-          self._dep.changed();
-          Meteor.defer(function () { self.openSession(); });
-        },
-        added: function(session) {
-          self._status = "opened";
-          self._dep.changed();
-        }
-      });
+      self._hostId = result.hostId;
+      self._sessionSalt = result.salt;
+
+      self._addSessionObserver(result.sessionId);
+
       if (self._grainSizeSub) self._grainSizeSub.stop();
       self._grainSizeSub = Meteor.subscribe("grainSize", result.grainId);
       self._dep.changed();
@@ -329,7 +354,7 @@ GrainView.prototype._openApiTokenSession = function () {
       token: self._token,
       incognito: !self._revealIdentity.get(),
     };
-    Meteor.call("openSessionFromApiToken", openSessionArg, function(error, result) {
+    Meteor.call("openSessionFromApiToken", openSessionArg, self._sessionSalt, function(error, result) {
       if (error) {
         console.log("openSessionFromApiToken error");
         self._error = error.message;
@@ -361,20 +386,9 @@ GrainView.prototype._openApiTokenSession = function () {
         self._title = result.title;
         self._grainId = result.grainId;
         self._sessionId = result.sessionId;
-        self._sessionSub = Meteor.subscribe("sessions", result.sessionId);
-        Sessions.find({_id : result.sessionId}).observeChanges({
-          removed: function(session) {
-            self._sessionSub.stop();
-            self._sessionSub = undefined;
-            self._status = "closed";
-            self._dep.changed();
-            Meteor.defer(function () { self.openSession(); });
-          },
-          added: function(session) {
-            self._status = "opened";
-            self._dep.changed();
-          }
-        });
+        self._hostId = result.hostId;
+        self._sessionSalt = result.salt;
+        self._addSessionObserver(result.sessionId);
         self._dep.changed();
       }
     });

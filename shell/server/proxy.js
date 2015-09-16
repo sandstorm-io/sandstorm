@@ -140,20 +140,21 @@ Meteor.methods({
     return grainId;
   },
 
-  openSession: function (grainId) {
+  openSession: function (grainId, cachedSalt) {
     // Open a new UI session on an existing grain.  Starts the grain if it is not already
     // running.
 
     check(grainId, String);
+    check(cachedSalt, Match.OneOf(undefined, null, String));
     if (!SandstormPermissions.mayOpenGrain(globalDb,
                                            {grain: {_id: grainId, userId: this.userId}})) {
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
-    return openSessionInternal(grainId, Meteor.user(), null);
+    return openSessionInternal(grainId, Meteor.user(), null, null, cachedSalt);
   },
 
-  openSessionFromApiToken: function(params) {
+  openSessionFromApiToken: function(params, cachedSalt) {
     // Given an API token, either opens a new WebSession to the underlying grain or returns a
     // path to which the client should redirect in order to open such a session.
 
@@ -161,6 +162,7 @@ Meteor.methods({
       token: String,
       incognito: Boolean,
     });
+    check(cachedSalt, Match.OneOf(undefined, null, String));
 
     var token = params.token;
     var incognito = params.incognito;
@@ -222,7 +224,7 @@ Meteor.methods({
         throw new Meteor.Error(403, "Unauthorized",
                                "User is not authorized to open this grain.");
       }
-      return openSessionInternal(apiToken.grainId, null, title, apiToken);
+      return openSessionInternal(apiToken.grainId, null, title, apiToken, cachedSalt);
     }
   },
 
@@ -295,7 +297,16 @@ function validateWebkey (apiToken, refreshedExpiration) {
   }
 }
 
-function openSessionInternal(grainId, user, title, apiToken) {
+function generateSessionId(grainId, userId, salt) {
+  var sessionParts = [grainId, salt];
+  if (userId) {
+    sessionParts.push(userId);
+  }
+  var sessionInput = sessionParts.join(":");
+  return Crypto.createHash("sha256").update(sessionInput).digest("hex");
+}
+
+function openSessionInternal(grainId, user, title, apiToken, cachedSalt) {
   var userId = user ? user._id : undefined;
 
   // Start the grain if it is not running. This is an optimization: if we didn't start it here,
@@ -311,14 +322,27 @@ function openSessionInternal(grainId, user, title, apiToken) {
 
   updateLastActive(grainId, userId);
 
-  var isOwner = grainInfo.owner === userId;
+  cachedSalt = cachedSalt || Random.id(22);
+  var sessionId = generateSessionId(grainId, userId, cachedSalt);
+  var session = Sessions.findOne({_id: sessionId});
+  if (session) {
+    // TODO(someday): also do some more checks for anonymous sessions (sessions without a userId).
+    if ((session.userId && session.userId !== userId) ||
+        (session.grainId !== grainId)) {
+      var e = new Meteor.Error(500, "Duplicate SessionId");
+      console.error(e);
+      throw e;
+    } else {
+      return {sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId, salt: cachedSalt};
+    }
+  }
 
-  var session = {
-    _id: Random.id(),
+  session = {
+    _id: sessionId,
     grainId: grainId,
-    hostId: generateRandomHostname(20),
+    hostId: Crypto.createHash("sha256").update(sessionId).digest("hex").slice(0, 32),
     timestamp: new Date().getTime(),
-    hasLoaded: false,
+    hasLoaded: false
   };
 
   if (userId) {
@@ -331,7 +355,7 @@ function openSessionInternal(grainId, user, title, apiToken) {
 
   Sessions.insert(session);
 
-  return {sessionId: session._id, title: title, grainId: grainId};
+  return {sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId, salt: cachedSalt};
 }
 
 function updateLastActive(grainId, userId) {
@@ -647,11 +671,23 @@ Meteor.startup(function() {
     var users = [];
     var tokenIds = [];
     downstream.forEach(function (token) {
+      var proxy = proxiesByApiToken[token._id];
+      if (proxy) {
+        proxy.close();
+      }
       delete proxiesByApiToken[token._id];
       tokenIds.push(token._id);
       if (token.owner && token.owner.user){
         users.push(token.owner.user.userId);
       }
+    });
+    Sessions.find({grainId: token.grainId, $or: [{userId: {$in: users}},
+      {hashedToken: {$in: tokenIds}}]}, {fields: {hostId: 1}}).forEach(function (session) {
+      var proxy = proxiesByHostId[session.hostId];
+      if (proxy) {
+        proxy.close();
+      }
+      delete proxiesByHostId[session.hostId];
     });
     Sessions.remove({grainId: token.grainId, $or: [{userId: {$in: users}},
                                                    {hashedToken: {$in: tokenIds}}]});
@@ -950,6 +986,7 @@ function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, userInfo, isA
   this.isOwner = isOwner;
   this.isApi = isApi;
   this.hasLoaded = false;
+  this.websockets = [];
   if (sessionId) {
     if (!hostId) throw new Error("sessionId must come with hostId");
     if (isApi) throw new Error("API proxy shouldn't have sessionId");
@@ -1045,6 +1082,12 @@ function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, userInfo, isA
       socket.destroy();
     });
   };
+}
+
+Proxy.prototype.close = function () {
+  this.websockets.forEach(function (socket) {
+    socket.destroy();
+  });
 }
 
 Proxy.prototype.getConnection = function () {
@@ -1861,6 +1904,8 @@ Proxy.prototype.handleWebSocket = function (request, socket, head, retryCount) {
     }
 
     var receiver = new WebSocketReceiver(socket);
+    // TODO(someday): do we want to make these be weak references somehow?
+    self.websockets.push(socket);
 
     var promise = session.openWebSocket(path, context, protocols, receiver);
 

@@ -208,7 +208,7 @@ limitations under the License.
   {{>title "Home"}}
 
   <div id="intro">
-    {{#if isFirstRun}}
+    {{#if needsAdminTokenLogin }}
       <p>
         This Sandstorm instance has no users. You should generate a token from the command line
         with `sandstorm admin-token` in order to access the admin settings page.

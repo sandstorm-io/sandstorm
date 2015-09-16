@@ -1055,7 +1055,9 @@ if (Meteor.isServer) {
 
   Meteor.publish("allPackages", function (token) {
     if (!authorizedAsAdmin(token, this.userId)) return [];
-    return Packages.find({}, {fields: {appId: 1, "manifest.actions": 1, "manifest.appTitle": 1}});
+    return Packages.find({manifest: {$exists: true}},
+        {fields: {appId: 1, "manifest.appVersion": 1,
+        "manifest.actions": 1, "manifest.appTitle": 1}});
   });
 
   Meteor.publish("realTimeStats", function (token) {

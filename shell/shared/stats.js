@@ -281,7 +281,9 @@ if (Meteor.isClient) {
       return _.chain(apps)
         .map(function (packObj, appId) {
           packObj.appId = appId;
-          var p = Packages.findOne({appId: appId});
+          // Find the newest version of this app.
+          var p = Packages.findOne({appId: appId, manifest: {$exists: true}},
+                                   {sort: {"manifest.appVersion": -1}});
           if (p) {
             packObj.appTitle = appNameFromPackage(p);
           }

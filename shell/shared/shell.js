@@ -718,6 +718,7 @@ appNameFromPackage = function(packageObj) {
   // This function takes a Package object from Mongo and returns an
   // app title.
   var manifest = packageObj.manifest;
+  if (!manifest) return packageObj.appId || packageObj._id || "unknown";
   var action = manifest.actions[0];
   appName = (manifest.appTitle && manifest.appTitle.defaultText) ||
     appNameFromActionName(action.title.defaultText);

@@ -205,18 +205,32 @@ struct UserIds {
   kj::Array<gid_t> groups;
 };
 
-kj::Maybe<kj::Array<uint>> getPorts(kj::StringPtr portList) {
+kj::Maybe<kj::Array<uint>> getPorts(uint httpsPort, kj::StringPtr portList) {
+    if (httpsPort) {
+
+    }
     // Return null if something bad seems to happen, allowing the
     // caller to detect it and bail with an error message.
     if (portList.size() == 0) {
         return nullptr;
     }
     auto portsSplitOnComma = split(portList, ',');
-    auto result = kj::heapArray<uint>(portsSplitOnComma.size());
-    if (result.size() == 0) {
+    size_t arraySize = portsSplitOnComma.size();
+    if (httpsPort) {
+        arraySize += 1;
+    }
+    if (arraySize == 0) {
         return nullptr;
     }
-    for (size_t i = 0; i < portsSplitOnComma.size(); i++) {
+    auto result = kj::heapArray<uint>(arraySize);
+
+    // If there a HTTPS port, inject it into the array first.
+    size_t i = 0;
+    if (httpsPort) {
+        result[i] = httpsPort;
+        i += 1;
+    }
+    for (; i < portsSplitOnComma.size(); i++) {
       KJ_IF_MAYBE(portNumber, parseUInt(kj::heapString(portsSplitOnComma[i]), 10)) {
         result[i] = *portNumber;
       } else {
@@ -922,6 +936,7 @@ private:
   // Alternate main function we'll use depending on the program name.
 
   struct Config {
+    uint httpsPort = 0;
     kj::Array<uint> ports;
     uint mongoPort = 3001;
     UserIds uids;
@@ -1222,6 +1237,10 @@ private:
     config.uids.uid = getuid();
     config.uids.gid = getgid();
 
+    // Store the PORT and HTTPS_PORT values in variables here so we can
+    // process them at the end.
+    kj::Maybe<kj::String> maybePortValue = nullptr;
+
     auto lines = splitLines(readAll("../sandstorm.conf"));
     for (auto& line: lines) {
       auto equalsPos = KJ_ASSERT_NONNULL(line.findFirst('='), "Invalid config line", line);
@@ -1235,15 +1254,14 @@ private:
         } else {
           KJ_FAIL_REQUIRE("invalid config value SERVER_USER", value);
         }
-      } else if (key == "PORT") {
-          KJ_IF_MAYBE(ports, getPorts(value)) {
-              // Memory leak? Who owns this pointer? I guess it has to stay
-              // alive as long as the program does, since we don't typically
-              // delete the Config object.
-              config.ports = kj::mv(*ports);
+      } else if (key == "HTTPS_PORT") {
+          KJ_IF_MAYBE(p, parseUInt(value, 10)) {
+            config.httpsPort = *p;
           } else {
-            KJ_FAIL_REQUIRE("invalid config value PORT", value);
+            KJ_FAIL_REQUIRE("invalid config value HTTPS_PORT", value);
         }
+      } else if (key == "PORT") {
+          maybePortValue = kj::mv(value);
       } else if (key == "MONGO_PORT") {
         KJ_IF_MAYBE(p, parseUInt(value, 10)) {
           config.mongoPort = *p;
@@ -1292,6 +1310,23 @@ private:
         } else {
           KJ_FAIL_REQUIRE("invalid config value SMTP_LISTEN_PORT", value);
         }
+      }
+    }
+
+    // Now process the PORT setting, since the actual value in config.ports
+    // depends on if HTTPS_PORT was provided at any point in reading the
+    // config file.
+    //
+    // Outer KJ_IF_MAYBE so we only run this code if the config file contained
+    // a PORT= declaration.
+    KJ_IF_MAYBE(portValue, maybePortValue) {
+        KJ_IF_MAYBE(ports, getPorts(config.httpsPort, *portValue)) {
+            // Memory leak? Who owns this pointer? I guess it has to stay
+            // alive as long as the program does, since we don't typically
+            // delete the Config object.
+            config.ports = kj::mv(*ports);
+        } else {
+          KJ_FAIL_REQUIRE("invalid config value PORT", *portValue);
       }
     }
 

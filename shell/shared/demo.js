@@ -52,12 +52,12 @@ if (Meteor.isServer) {
     var now = new Date(Date.now() - DEMO_GRACE_MS);
     Meteor.users.find({expires: {$lt: now}}, {fields: {_id: 1, lastActive: 1, isAppDemoUser: 1}})
                 .forEach(function (user) {
-      Grains.find({userId: user._id}, {fields: {_id: 1, lastUsed: 1}})
+      Grains.find({userId: user._id}, {fields: {_id: 1, lastUsed: 1, appId: 1}})
             .forEach(function (grain) {
         console.log("delete grain: " + grain._id);
         Grains.remove(grain._id);
         if (grain.lastUsed) {
-          DeleteStats.insert({type: "grain", lastActive: grain.lastUsed});
+          DeleteStats.insert({type: "grain", lastActive: grain.lastUsed, appId: grain.appId});
         }
         deleteGrain(grain._id, grain.userId);
       });
@@ -73,16 +73,17 @@ if (Meteor.isServer) {
         if (isAppDemoUser) {
           deleteStatsType = "appDemoUser";
         }
+
         // Intentionally record deleted users at time of deletion to avoid miscounting users that
         // were demoing just before the day rolled over.
-        DeleteStats.insert({type: deleteStatsType, lastActive: new Date()});
+        DeleteStats.insert({type: deleteStatsType, lastActive: new Date(), appId: user.appDemoId});
       }
     });
   }
 
   if (allowDemo) {
     Meteor.methods({
-      createDemoUser: function (displayName, isAppDemoUser) {
+      createDemoUser: function (displayName, isAppDemoUser, appId) {
         // This is a login method that creates a new temporary user
         // every time it is used.
         //
@@ -90,12 +91,14 @@ if (Meteor.isServer) {
         // cleanupExpiredUsers().
         check(displayName, String);
         check(isAppDemoUser, Boolean);
+        check(appId, Match.OneOf(undefined, null, String));
 
         // Create the new user.
         var expires = new Date(Date.now() + DEMO_EXPIRATION_MS);
         var userId = Accounts.insertUserDoc({ profile: { name: displayName } },
                                             { expires: expires,
-                                              isAppDemoUser: isAppDemoUser
+                                              isAppDemoUser: isAppDemoUser,
+                                              appDemoId: appId
                                             });
 
         // Log them in on this connection.
@@ -258,7 +261,7 @@ if (Meteor.isClient && allowDemo) {
       } else {
         Accounts.callLoginMethod({
           methodName: "createDemoUser",
-          methodArguments: ["Demo User", false],
+          methodArguments: ["Demo User", false, null],
           userCallback: userCallbackFunction
         });
       }
@@ -312,7 +315,7 @@ if (Meteor.isClient && allowDemo) {
         // 1. Create the Demo User & 2. Log the user in as this Demo User.
         Accounts.callLoginMethod({
           methodName: "createDemoUser",
-          methodArguments: ["Demo User", true],
+          methodArguments: ["Demo User", true, appId],
           userCallback: userCallbackFunction
         });
       }

@@ -943,16 +943,18 @@ limitations under the License.
     <table>
       <tr>
         <td rowspan="2">date</td>
-        <td colspan="3">users</td>
-        <td colspan="3">grains</td>
+        <td colspan="4">users</td>
+        <td colspan="4">grains</td>
       </tr>
       <tr>
         <td>daily</td>
         <td>weekly</td>
         <td>monthly</td>
+        <td>forever</td>
         <td>daily</td>
         <td>weekly</td>
         <td>monthly</td>
+        <td>forever</td>
       </tr>
       {{#each points}}
         <tr>
@@ -960,9 +962,64 @@ limitations under the License.
           <td>{{daily.activeUsers}}</td>
           <td>{{weekly.activeUsers}}</td>
           <td>{{monthly.activeUsers}}</td>
+          <td>{{forever.activeUsers}}</td>
           <td>{{daily.activeGrains}}</td>
           <td>{{weekly.activeGrains}}</td>
           <td>{{monthly.activeGrains}}</td>
+          <td>{{forever.activeGrains}}</td>
+        </tr>
+      {{else}}
+        <tr>
+          <td colspan="7">There are no stats yet, or you are not admin.</td>
+        </tr>
+      {{/each}}
+    </table>
+
+
+    <h3 id="app-stats">App Installs</h3>
+
+    <span>Select a date:</span>
+    <select class="package-date">
+      {{#each packageDates}}
+        <option value="{{_id}}" selected="{{#if selected}}true{{/if}}">{{day}}</option>
+      {{/each}}
+    </select>
+    <table class="packages">
+      <tr>
+        <td rowspan="2">App Name</td>
+        <td colspan="4">owners</td>
+        <td colspan="4">sharedUsers</td>
+        <td colspan="4">grains</td>
+      </tr>
+      <tr>
+        <td>daily</td>
+        <td>weekly</td>
+        <td>monthly</td>
+        <td>forever</td>
+        <td>daily</td>
+        <td>weekly</td>
+        <td>monthly</td>
+        <td>forever</td>
+        <td>daily</td>
+        <td>weekly</td>
+        <td>monthly</td>
+        <td>forever</td>
+      </tr>
+      {{#each packages}}
+        <tr>
+          <td title="{{appId}}">{{appTitle}}</td>
+          <td>{{daily.owners}}</td>
+          <td>{{weekly.owners}}</td>
+          <td>{{monthly.owners}}</td>
+          <td>{{forever.owners}}</td>
+          <td>{{daily.sharedUsers}}</td>
+          <td>{{weekly.sharedUsers}}</td>
+          <td>{{monthly.sharedUsers}}</td>
+          <td>{{forever.sharedUsers}}</td>
+          <td>{{daily.grains}}</td>
+          <td>{{weekly.grains}}</td>
+          <td>{{monthly.grains}}</td>
+          <td>{{forever.grains}}</td>
         </tr>
       {{else}}
         <tr>

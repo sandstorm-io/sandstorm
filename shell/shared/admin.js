@@ -1053,6 +1053,11 @@ if (Meteor.isServer) {
     return StatsTokens.find();
   });
 
+  Meteor.publish("allPackages", function (token) {
+    if (!authorizedAsAdmin(token, this.userId)) return [];
+    return Packages.find({}, {fields: {appId: 1, "manifest.actions": 1, "manifest.appTitle": 1}});
+  });
+
   Meteor.publish("realTimeStats", function (token) {
     if (!authorizedAsAdmin(token, this.userId)) return [];
 

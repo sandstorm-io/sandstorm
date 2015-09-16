@@ -18,6 +18,9 @@ var DAY_MS = 24*60*60*1000;
 
 if (Meteor.isServer) {
   computeStats = function (since) {
+    // Time how long this computation takes
+    var startTime = Date.now();
+
     // We'll need this for a variety of queries.
     var timeConstraint = {$gt: since};
 
@@ -44,23 +47,56 @@ if (Meteor.isServer) {
     var deletedGrainsCount = DeleteStats.find(
       {type: "grain", lastActive: timeConstraint}).count();
 
+    var grainCollection = Grains.rawCollection();
+    var grainAggregate = Meteor.wrapAsync(grainCollection.aggregate, grainCollection);
+    var appCount = grainAggregate([
+      {$match: {lastUsed: timeConstraint}},
+      {$group: {_id: "$appId", tempGrainCount: {$sum: 1}, userIds: {$addToSet: "$userId"}}},
+      {$unwind: "$userIds"},
+      {$group: {_id: "$_id", grains: {$max: "$tempGrainCount"}, owners: {$sum: 1}}},
+    ]);
+    appCount = _.indexBy(appCount, "_id");
+    for (var appId in appCount) {
+      var app = appCount[appId];
+      delete app["_id"];
+      var grains = Grains.find({lastUsed: timeConstraint, appId: appId}, {fields: {_id: 1}}).fetch();
+      var grainIds = _.pluck(grains, "_id");
+      app.sharedUsers = ApiTokens.find({"owner.user.lastUsed": timeConstraint, "grainId": {$in: grainIds}}).count();
+    }
+    DeleteStats.find({type: "appDemoUser", lastActive: timeConstraint, appId: {$exists: true}}).forEach(function (appDemo) {
+      var app = appCount[appDemo.appId];
+      if (!app) {
+        app = appCount[appDemo.appId] = {};
+      }
+      app.appDemoUsers = (app.appDemoUsers || 0) + 1;
+    });
 
     return {
       activeUsers: currentlyActiveUsersCount,
       demoUsers: deletedDemoUsersCount,
       appDemoUsers: deletedAppDemoUsersCount,
-      activeGrains: (activeGrainsCount + deletedGrainsCount)
-    }
-  }
+      activeGrains: (activeGrainsCount + deletedGrainsCount),
+      computeTime: Date.now() - startTime,
+      packages: appCount,
+    };
+  };
 
   function recordStats() {
     var now = new Date();
+
+    var planStats = _.countBy(
+      Meteor.users.find({expires: {$exists: false}, payments: {$exists: true}},
+                        {fields: {plan: 1}}).fetch(),
+      "plan"
+    );
 
     ActivityStats.insert({
       timestamp: now,
       daily: computeStats(new Date(now.getTime() - DAY_MS)),
       weekly: computeStats(new Date(now.getTime() - 7 * DAY_MS)),
-      monthly: computeStats(new Date(now.getTime() - 30 * DAY_MS))
+      monthly: computeStats(new Date(now.getTime() - 30 * DAY_MS)),
+      forever: computeStats(new Date(0)),
+      plans: planStats,
     });
   }
 
@@ -138,14 +174,26 @@ if (Meteor.isClient) {
   Template.adminStats.events({
     'click #regenerateStatsToken': function () {
       Meteor.call('regenerateStatsToken');
+    },
+    "change select.package-date": function (ev, template) {
+      template.currentPackageDate.set(ev.currentTarget.value);
     }
   });
   Template.adminStats.onCreated(function () {
     var state = Iron.controller().state;
     var token = state.get("token");
+    this.currentPackageDate = new ReactiveVar(null);
+    var self = this;
+    this.autorun(function () {
+      var stat = ActivityStats.findOne({}, {sort: {timestamp: -1}});
+      if (stat) {
+        self.currentPackageDate.set(stat._id);
+      }
+    });
     this.subscribe("activityStats", token);
     this.subscribe("realTimeStats", token);
     this.subscribe("statsTokens", token);
+    this.subscribe("allPackages", token);
   });
   Template.adminStats.helpers({
     points: function () {
@@ -155,6 +203,52 @@ if (Meteor.isClient) {
           day: new Date(point.timestamp.getTime() - 12*60*60*1000).toLocaleDateString()
         }, point);
       });
+    },
+    packageDates: function () {
+      var template = Template.instance();
+      return ActivityStats.find({}, {sort: {timestamp: -1}, fields: {timestamp: 1}}).map(function (point) {
+        return _.extend({
+          // Report date of midpoint of sample period.
+          day: new Date(point.timestamp.getTime() - 12*60*60*1000).toLocaleDateString(),
+          selected: point._id === template.currentPackageDate.get()
+        }, point);
+      });
+    },
+    packages: function () {
+      var template = Template.instance();
+      var stats = ActivityStats.findOne({_id: template.currentPackageDate.get()});
+      if (!stats) {
+        return;
+      }
+
+      var packages = {};
+      var pivotPackages = function (time) {
+        var data = stats[time];
+        if (!data) {
+          return;
+        }
+        data = data.packages;
+        for (var appId in data) {
+          var p = data[appId];
+          packages[appId] = packages[appId] || {};
+          packages[appId][time] = p;
+        }
+      };
+      pivotPackages("daily");
+      pivotPackages("weekly");
+      pivotPackages("monthly");
+      pivotPackages("forever");
+      return _.chain(packages)
+        .map(function (packObj, appId) {
+          packObj.appId = appId;
+          var p = Packages.findOne({appId: appId});
+          if (p) {
+            packObj.appTitle = appNameFromPackage(p);
+          }
+          return packObj;
+        })
+        .sortBy("daily.owners")
+        .value();
     },
     current: function () {
       return RealTimeStats.findOne("now");

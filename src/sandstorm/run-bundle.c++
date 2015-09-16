@@ -205,7 +205,7 @@ struct UserIds {
   kj::Array<gid_t> groups;
 };
 
-kj::Maybe<kj::Array<uint>> parsePorts(kj::Maybe<uint> httpsPort, kj::StringPtr portList) {
+kj::Array<uint> parsePorts(kj::Maybe<uint> httpsPort, kj::StringPtr portList) {
     auto portsSplitOnComma = split(portList, ',');
     size_t numHttpPorts = portsSplitOnComma.size();
     size_t numHttpsPorts;
@@ -225,7 +225,7 @@ kj::Maybe<kj::Array<uint>> parsePorts(kj::Maybe<uint> httpsPort, kj::StringPtr p
       KJ_IF_MAYBE(portNumber, parseUInt(trim(portsSplitOnComma[i]), 10)) {
         result[i + numHttpsPorts] = *portNumber;
       } else {
-        return nullptr;
+        KJ_FAIL_REQUIRE("invalid config value PORT", portList);
     }
   }
 
@@ -1311,14 +1311,8 @@ private:
     // Outer KJ_IF_MAYBE so we only run this code if the config file contained
     // a PORT= declaration.
     KJ_IF_MAYBE(portValue, maybePortValue) {
-        KJ_IF_MAYBE(ports, parsePorts(config.httpsPort, *portValue)) {
-            // Memory leak? Who owns this pointer? I guess it has to stay
-            // alive as long as the program does, since we don't typically
-            // delete the Config object.
-            config.ports = kj::mv(*ports);
-        } else {
-          KJ_FAIL_REQUIRE("invalid config value PORT", *portValue);
-      }
+      auto ports = parsePorts(config.httpsPort, *portValue);
+      config.ports = kj::mv(ports);
     }
 
     if (runningAsRoot) {

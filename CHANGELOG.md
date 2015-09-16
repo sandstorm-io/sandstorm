@@ -1,3 +1,17 @@
+### v0.109 (2015-09-15)
+- You now uninstall apps again.
+- Suspending your machine for a few minutes or more and then resuming will no longer cause all your open Sandstorm grains to stop working until you reload them.
+- Fixed brief display of "Reveal your identity?" prompt when loading your own grains (where this prompt makes no sense).
+- Clicking on an app in the app list will now immediately show the loading spinner without waiting for the server to respond. (Previously, when the server was overloaded, there could be a delay with no feedback. People would often click the app repeatedly, causing multiple grains to be created.)
+- Worked around bogus Adblock Plus rule that blocked parts of the sharing "who has access?" UI.
+- Better accessibility for non-visual users.
+- Readability improvements.
+- You can now close popups by pressing "escape".
+- In the grain list, you can now type an app title to filter for grains of that app.
+- More detailed stats gathering, particularly app-specific stats (see "stats" in the admin UI).
+- Refactored permissions code into a package with better tests.
+- Oasis: Fixed problem where a particular app package might occasionally become broken on a particular worker machine, especially popular apps. The most common symptom was Etherpad or Wekan sporatically failing to load even in new grains, often fixed by restarting the grain (but not by simply reloading the page), since this pushed it to a different worker. No user data was damaged by this problem.
+
 ### v0.108 (2015-09-03)
 - Oasis: Allow front-ends to be parallelized so that they can scale to arbitrary load.
 - Eliminated redundant subscriptions and added caching to reduce front-end load.

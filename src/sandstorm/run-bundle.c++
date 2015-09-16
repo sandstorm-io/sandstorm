@@ -1726,7 +1726,8 @@ private:
             true));
       }
 
-      KJ_SYSCALL(setenv("PORT", kj::str(config.port).cStr(), true));
+      // TODO: ",".join(config.ports) rather than relying on default behavior.
+      KJ_SYSCALL(setenv("PORT", kj::str(config.ports).cStr(), true));
       KJ_SYSCALL(setenv("SANDSTORM_SMTP_PORT", kj::str(config.smtpListenPort).cStr(), true));
       KJ_SYSCALL(setenv("MONGO_URL",
           kj::str("mongodb://", authPrefix, "127.0.0.1:", config.mongoPort,

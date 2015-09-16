@@ -1,3 +1,6 @@
+### v0.110 (2015-09-16)
+- Fix problem with display of app stats (in admin panel) in presence of broken package uploads.
+
 ### v0.109 (2015-09-15)
 - You now uninstall apps again.
 - Suspending your machine for a few minutes or more and then resuming will no longer cause all your open Sandstorm grains to stop working until you reload them.

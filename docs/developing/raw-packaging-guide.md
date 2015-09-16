@@ -5,7 +5,7 @@ the raw `spk` tooling, helping you understand Sandstorm at a deeper
 level.
 
 **Note:** If you're new to Sandstorm packaging, or don't run Linux as
-your main operating system. please read the [Five minute packaging
+your main operating system, please read the [Five minute packaging
 tutorial](../vagrant-spk/packaging-tutorial.md) first!
 
 A Sandstorm application package includes the entire userspace needed

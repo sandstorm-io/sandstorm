@@ -206,13 +206,6 @@ struct UserIds {
 };
 
 kj::Maybe<kj::Array<uint>> parsePorts(kj::Maybe<uint> httpsPort, kj::StringPtr portList) {
-    // TODO: Whose responsibility is it to bail out if httpsPort shows up
-    // in portList? Presumably I don't want to try binding on the same
-    // port multiple times down the road. I can live with deciding that's
-    // a semantics error (dealt with when it's time to bind to things)
-    // rather than a syntax error (dealt with now), but I noticed that I
-    // actually INTRODUCED this problem on my dev setup because I was
-    // careless, so presumably other people will be equally careless.
     auto portsSplitOnComma = split(portList, ',');
     size_t numHttpPorts = portsSplitOnComma.size();
     size_t numHttpsPorts;

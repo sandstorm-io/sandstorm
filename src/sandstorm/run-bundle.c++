@@ -205,7 +205,7 @@ struct UserIds {
   kj::Array<gid_t> groups;
 };
 
-kj::Maybe<kj::Array<uint>> getPorts(kj::Maybe<uint> httpsPort, kj::StringPtr portList) {
+kj::Maybe<kj::Array<uint>> parsePorts(kj::Maybe<uint> httpsPort, kj::StringPtr portList) {
     // TODO: Whose responsibility is it to bail out if httpsPort shows up
     // in portList? Presumably I don't want to try binding on the same
     // port multiple times down the road. I can live with deciding that's
@@ -1318,7 +1318,7 @@ private:
     // Outer KJ_IF_MAYBE so we only run this code if the config file contained
     // a PORT= declaration.
     KJ_IF_MAYBE(portValue, maybePortValue) {
-        KJ_IF_MAYBE(ports, getPorts(config.httpsPort, *portValue)) {
+        KJ_IF_MAYBE(ports, parsePorts(config.httpsPort, *portValue)) {
             // Memory leak? Who owns this pointer? I guess it has to stay
             // alive as long as the program does, since we don't typically
             // delete the Config object.

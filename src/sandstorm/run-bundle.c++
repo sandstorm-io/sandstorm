@@ -234,6 +234,7 @@ kj::Maybe<kj::Array<uint>> getPorts(uint httpsPort, kj::StringPtr portList) {
       KJ_IF_MAYBE(portNumber, parseUInt(kj::heapString(portsSplitOnComma[i]), 10)) {
         result[i] = *portNumber;
       } else {
+        // TODO: Do I need to free "result"? Presumably yes.
         return nullptr;
     }
   }

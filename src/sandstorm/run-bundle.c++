@@ -206,14 +206,6 @@ struct UserIds {
 };
 
 kj::Maybe<kj::Array<uint>> getPorts(uint httpsPort, kj::StringPtr portList) {
-    if (httpsPort) {
-
-    }
-    // Return null if something bad seems to happen, allowing the
-    // caller to detect it and bail with an error message.
-    if (portList.size() == 0) {
-        return nullptr;
-    }
     auto portsSplitOnComma = split(portList, ',');
     size_t arraySize = portsSplitOnComma.size();
     if (httpsPort) {

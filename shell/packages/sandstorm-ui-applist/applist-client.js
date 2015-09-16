@@ -16,15 +16,25 @@ var appTitleForAction = function (action) {
   // N.B.: calls into shell.js.  TODO: refactor
   return appNameFromActionName(action.title.defaultText);
 };
-var andClauseFor = function (searchString) {
-  var searchKeys = searchString.split(" ").filter(function(k) { return k != "";});
-  var searchRegexes = searchKeys.map(function(key) {
-     return {$or: [{ "appTitle": { $regex: key , $options: 'i' } },
-                   { "title": { $regex: key , $options: 'i' } }]};
-  });
-  var andClause = searchRegexes.length > 0 ? { $and: searchRegexes } : {};
-  return andClause;
-};
+var matchesAppOrActionTitle = function (needle, action) {
+  var appTitle = appTitleForAction(action);
+  if (nounFromAction(action, appTitle).toLowerCase().indexOf(needle) !== -1) return true;
+  if (appTitle.toLowerCase().indexOf(needle) !== -1) return true;
+  return false;
+}
+var compileMatchFilter = function(searchString) {
+  var searchKeys = searchString.toLowerCase()
+      .split(" ")
+      .filter(function(k) { return k !== "";});
+  return function matchFilter(item) {
+    if (searchKeys.length === 0) return true;
+    return _.chain(searchKeys)
+        .map(function (searchKey) {return matchesAppOrActionTitle(searchKey, item); })
+        .reduce(function (a, b) {return a && b; })
+        .value();
+  };
+}
+
 var actionToTemplateObject = function(action) {
   var title = appTitleForAction(action);
   return {
@@ -35,9 +45,13 @@ var actionToTemplateObject = function(action) {
     appId: action.appId
   };
 };
-var matchActions = function (searchString, sortOrder) {
-  var andClause = andClauseFor(searchString);
-  var actions = Template.instance().data._db.currentUserActions(andClause, { sort: sortOrder } );
+var matchActions = function (searchString) {
+  var filter = compileMatchFilter(searchString)
+
+  var allActions = Template.instance().data._db.currentUserActions().fetch();
+  var actions = _.chain(allActions)
+                 .filter(filter)
+                 .value()
   return actions;
 };
 var nounFromAction = function (action, appTitle) {
@@ -79,7 +93,7 @@ Template.sandstormAppList.helpers({
     return ref._filter.get().length > 0;
   },
   myGrainsCount: function () {
-    return Template.instance().data._db.currentUserGrains({}, {}).count();
+    return Template.instance().data._db.currentUserGrains().count();
   },
   actionsCount: function() {
     var ref = Template.instance().data;
@@ -87,8 +101,11 @@ Template.sandstormAppList.helpers({
   },
   actions: function() {
     var ref = Template.instance().data;
-    var actions = matchActions(ref._filter.get(), ref._sortOrder.get());
-    return actions.map(actionToTemplateObject);
+    var actions = matchActions(ref._filter.get());
+    return _.chain(actions)
+            .map(actionToTemplateObject)
+            .sortBy(function (action) { return action.appTitle.toLowerCase(); })
+            .value();
   },
   assetPath: function(assetId) {
     return makeWildcardHost("static") + assetId;
@@ -97,11 +114,11 @@ Template.sandstormAppList.helpers({
     var ref = Template.instance().data;
     // We approximate action popularity by the number of grains the user has for the app
     // which provides that action.
-    var actions = matchActions(ref._filter.get(), ref._sortOrder.get()).fetch();
+    var actions = matchActions(ref._filter.get());
     // Map actions into the apps that own them.
     var appIds = _.pluck(actions, "appId");
     // Count the number of grains owned by this user created by that app.
-    var grains = ref._db.currentUserGrains({}, {fields: {appId: 1}}).fetch();
+    var grains = ref._db.currentUserGrains().fetch();
     var appCounts = _.countBy(grains, function(x) { return x.appId; });
     // Sort apps by the number of grains created descending.
     var appIdsByGrainsCreated = _.chain(appIds)
@@ -213,7 +230,7 @@ Template.sandstormAppList.events({
     var ref = Template.instance().data;
     if (event.keyCode === 13) {
       // Enter pressed.  If a single grain is shown, open it.
-      var actions = matchActions(ref._filter.get(), ref._sortOrder.get()).fetch();
+      var actions = matchActions(ref._filter.get());
       if (actions.length === 1) {
         // Unique grain found with current filter.  Activate it!
         var action = actions[0]._id;

@@ -690,13 +690,12 @@ _.extend(SandstormDb.prototype, {
   //   - It doesn't make it any easier for us to substitute a non-Mongo database in the future.
   //   - If the caller is just going to pass in a match-all query, we may be forcing Mongo into
   //     a slower path by using $and.
-  userGrains: function userGrains (user, query, aggregations) {
-    var filteredQuery = { $and: [ { userId: user}, query ] };
-    return this.collections.grains.find(filteredQuery, aggregations);
+  userGrains: function userGrains (user) {
+    return this.collections.grains.find({ userId: user}, {});
   },
 
-  currentUserGrains: function currentUserGrains (query, aggregations) {
-    return this.userGrains(Meteor.userId(), query, aggregations);
+  currentUserGrains: function currentUserGrains () {
+    return this.userGrains(Meteor.userId());
   },
 
   getGrain: function getGrain (grainId) {
@@ -712,13 +711,12 @@ _.extend(SandstormDb.prototype, {
     return this.userApiTokens(Meteor.userId());
   },
 
-  userActions: function userActions (user, query, aggregations) {
-    var filteredQuery = { $and: [ {userId: user}, query ] };
-    return this.collections.userActions.find(filteredQuery, aggregations);
+  userActions: function userActions (user) {
+    return this.collections.userActions.find({userId: user}, {});
   },
 
-  currentUserActions: function currentUserActions (query, aggregations) {
-    return this.userActions(Meteor.userId(), query, aggregations);
+  currentUserActions: function currentUserActions () {
+    return this.userActions(Meteor.userId());
   },
 
   getPlan: function (id) {

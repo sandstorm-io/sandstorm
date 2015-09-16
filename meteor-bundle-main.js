@@ -79,7 +79,11 @@ function bindListenerToMainPort() {
      */
     monkeypatchHttp();
   } else {
-    // Then we don't.
+    // Monkey-patch http.createServer() so it listens on FD #3.
+    var oldListen = http.Server.prototype._oldListen = http.Server.prototype.listen;
+    http.Server.prototype.listen = function (port, host, cb) {
+      oldListen.call(this, {fd: 3}, cb);
+    }
   }
 }
 
@@ -101,10 +105,30 @@ function bindListenerToAlternatePorts() {
   // We look at the PORTS config option to determine how many of these
   // to listen on.
   function getNumberOfAlternatePorts() {
+    var numCommas = (process.env.PORT.match(/,/g) || {}).length;
+    var numPorts = numCommas + 1;
+    var numAlternatePorts = numPorts - 1;
+    console.log('omgyay', numAlternatePorts);
+    return numAlternatePorts;
   };
+
+  for (var i = 0; i < getNumberOfAlternatePorts(); i++) {
+    // Load the http module to create an http server.
+    var http = require('http');
+
+    // Configure our HTTP server to redirect to base URL
+    var server = http.createServer(function (request, response) {
+      console.log(request);
+      response.writeHead(302, {"Location": process.env.ROOT_URL + request.url});
+      response.end();
+    });
+
+    server.listen({fd: i + 4});
+  }
 
 }
 
+bindListenerToAlternatePorts();
 bindListenerToMainPort();
 
 require("./main.js");

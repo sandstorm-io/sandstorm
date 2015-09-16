@@ -59,6 +59,7 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   storageUsage: Number of bytes this user is currently storing.
 //   expires: Date when this user's account should be deleted. Only present for demo users.
 //   isAppDemoUser: True if this is a demo user who arrived via an /appdemo/ link.
+//   appDemoId: If this is an appdemo user (see above), the app ID they started out demoing.
 //   payments: Object defined by payments module, if loaded.
 //   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
 
@@ -213,13 +214,23 @@ ActivityStats = new Mongo.Collection("activityStats");
 //   demoUsers: Demo users.
 //   appDemoUsers: Users that came in through "app demo".
 //   activeGrains: The number of unique grains that have been used in the time interval.
+//   apps: An object indexed by app ID recording, for each app:
+//       owners: Number of unique owners of this app (counting only grains that still exist).
+//       sharedUsers: Number of users who have accessed other people's grains of this app (counting
+//         only grains that still exist).
+//       grains: Number of active grains of this app (that still exist).
+//       deleted: Number of non-demo grains of this app that were deleted.
+//       demoed: Number of demo grains created and expired.
+//       appDemoUsers: Number of app demos initiated with this app.
 
 DeleteStats = new Mongo.Collection("deleteStats");
 // Contains records of objects that were deleted, for stat-keeping purposes.
 //
 // Each contains:
-//   type: "grain" or "user" or "demoUser" or "appDemoUser"
+//   type: "grain" or "user" or "demoGrain" or "demoUser" or "appDemoUser"
 //   lastActive: Date of the user's or grain's last activity.
+//   appId: For type = "grain", the app ID of the grain. For type = "appDemoUser", the app ID they
+//     arrived to demo. For others, undefined.
 
 FileTokens = new Mongo.Collection("fileTokens");
 // Tokens corresponding to backup files that are currently stored on the server. A user receives

@@ -175,7 +175,8 @@ Meteor.methods({
         ApiTokens.remove({grainId : grainId, $or: [{owner: {$exists: false}},
                                                    {owner: {webkey: null}}]});
         if (grain.lastUsed) {
-          DeleteStats.insert({type: "grain", lastActive: grain.lastUsed});
+          DeleteStats.insert({type: isDemoUser() ? "demoGrain" : "grain",
+                              lastActive: grain.lastUsed, appId: grain.appId});
         }
         if (!this.isSimulation) {
           waitPromise(deleteGrain(grainId, this.userId));

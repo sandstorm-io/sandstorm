@@ -976,15 +976,15 @@ limitations under the License.
     </table>
 
 
-    <h3 id="app-stats">App Installs</h3>
+    <h3 id="app-stats">Apps</h3>
 
     <span>Select a date:</span>
     <select class="package-date">
-      {{#each packageDates}}
+      {{#each appDates}}
         <option value="{{_id}}" selected="{{#if selected}}true{{/if}}">{{day}}</option>
       {{/each}}
     </select>
-    <table class="packages">
+    <table class="apps">
       <tr>
         <td rowspan="2">App Name</td>
         <td colspan="4">owners</td>
@@ -1005,7 +1005,7 @@ limitations under the License.
         <td>monthly</td>
         <td>forever</td>
       </tr>
-      {{#each packages}}
+      {{#each apps}}
         <tr>
           <td title="{{appId}}">{{appTitle}}</td>
           <td>{{daily.owners}}</td>

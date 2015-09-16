@@ -57,7 +57,7 @@ if (Meteor.isServer) {
         console.log("delete grain: " + grain._id);
         Grains.remove(grain._id);
         if (grain.lastUsed) {
-          DeleteStats.insert({type: "grain", lastActive: grain.lastUsed, appId: grain.appId});
+          DeleteStats.insert({type: "demoGrain", lastActive: grain.lastUsed, appId: grain.appId});
         }
         deleteGrain(grain._id, grain.userId);
       });

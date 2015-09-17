@@ -43,7 +43,7 @@ BASIC_AUTH_USER_AGENTS = [
   "git\\/",
   "GitHub-Hookshot\\/",
   "mirall\\/",
-  "Mozilla\\/5\.0 \\([^\\]]*\\) mirall\\/",
+  "Mozilla\\/5\\.0 \\([^\\\\]*\\) mirall\\/",
   "litmus\\/",
 ];
 BASIC_AUTH_USER_AGENTS_REGEX = new RegExp("^(" + BASIC_AUTH_USER_AGENTS.join("|") + ")", '');

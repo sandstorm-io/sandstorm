@@ -1332,7 +1332,7 @@ function parseEntityTag(headerValue) {
 
   return etags.map(function(etag) {
     var m = etag.match(/^(W\/)?"?(.*?)"?$/);
-    return { weak: !!m[1], etag: m[2] };
+    return { weak: !!m[1], value: m[2] };
   });
 }
 

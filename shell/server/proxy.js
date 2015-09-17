@@ -1679,6 +1679,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     } else if (request.method === "REPORT") {
       return session.report(path, optionsForBody(), context);
     } else if (request.method === "OPTIONS") {
+      // Reply to CORS preflight request.
       return session.options(path, context).then(function (rpcResponse) {
 
         // All we want to do is permit APIs to be accessed from arbitrary origins. Since clients must

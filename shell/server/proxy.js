@@ -1303,6 +1303,39 @@ function parseCookies(request) {
   return result;
 }
 
+function parsePreconditionHeader(request) {
+  if (request.headers['if-match']) {
+    if (request.headers['if-match'] === "*") {
+      return { exists: null };
+    }
+
+    var matches = parseEntityTag(request.headers['if-match']);
+    if (matches.length > 0) {
+      return { matchesOneOf: matches };
+    }
+  }
+
+  if (request.headers['if-none-match']) {
+    var noneMatches = parseEntityTag(request.headers['if-none-match']);
+    if (noneMatches.length > 0) {
+      return { matchesNoneOf: noneMatches };
+    }
+  }
+
+  return { none: null };
+}
+
+function parseEntityTag(headerValue) {
+  // ETags can consist of a series of values, comma-separated, that may be enclosed
+  // in quote marks or not, and may begin with W/ to denote weak ETags
+  var etags = headerValue.match(/\s?(W?\/?"[^"]+"|[^,]+)/);
+
+  return etags.map(function(etag) {
+    var m = etag.match(/^(W\/)?"?(.*?)"?$/);
+    return { weak: !!m[1], etag: m[2] };
+  });
+}
+
 function parseAcceptHeader(request) {
   var header = request.headers["accept"];
 
@@ -1379,6 +1412,8 @@ Proxy.prototype.makeContext = function (request, response) {
   }
 
   context.accept = parseAcceptHeader(request);
+
+  context.etagPrecondition = parsePreconditionHeader(request);
 
   context.additionalHeaders = [];
   WebSession.Context.headerWhitelist.forEach(function(headerName) {

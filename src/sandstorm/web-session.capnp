@@ -109,6 +109,13 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     accept @2 :List(AcceptedType);
     # This corresponds to the Accept header
 
+    etagPrecondition :union {
+      none @4 :Void;  # No precondition.
+      exists @5 :Void;  # If-Match: *
+      matchesOneOf @6 :List(ETag);  # If-Match
+      matchesNoneOf @7 :List(ETag);  # If-None-Match
+    }
+
     additionalHeaders @3 :List(Header);
     # Additional headers present in the request. Only whitelisted headers are
     # permitted.
@@ -124,8 +131,6 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       # without Sandstorm in mind -- especially to avoid modifying client apps. Feel free
       # to send us pull requests adding additional headers.
 
-      "if-match",              # webdav etag
-      "if-not-match",          # webdav etag
       "depth",                 # webdav PROPFIND
       "destination",           # webdav COPY/MOVE
       "overwrite",             # webdav COPY/MOVE
@@ -192,6 +197,13 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   }
 
   # TODO(apibump): Remove PostContent and PutContent, replacing them with Content.
+
+  struct ETag {
+    value @0 :Text;  # does not include quotes
+    weak @1 :Bool;
+    # denotes that the resource may not be byte-for-byte identical, but is
+    # semantically equivalent
+  }
 
   struct Cookie {
     name @0 :Text;

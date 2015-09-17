@@ -1178,6 +1178,29 @@ private:
         lines.add(kj::str(header.getName(), ": ", header.getValue()));
       }
     }
+    auto etagPrecondition = context.getEtagPrecondition();
+    switch (etagPrecondition.which()) {
+      case WebSession::Context::EtagPrecondition::EXISTS:
+        lines.add(kj::str("If-Match: *"));
+      case WebSession::Context::EtagPrecondition::MATCHES_ONE_OF:
+        lines.add(kj::str("If-Match: ", kj::strArray(
+              KJ_MAP(e, etagPrecondition.getMatchesOneOf()) {
+                if (e.getWeak()) {
+                  return kj::str("W/", e.getValue());
+                } else {
+                  return kj::str(e.getValue());
+                }
+              }, ", ")));
+      case WebSession::Context::EtagPrecondition::MATCHES_NONE_OF:
+        lines.add(kj::str("If-None-Match: ", kj::strArray(
+              KJ_MAP(e, etagPrecondition.getMatchesNoneOf()) {
+                if (e.getWeak()) {
+                  return kj::str("W/", e.getValue());
+                } else {
+                  return kj::str(e.getValue());
+                }
+              }, ", ")));
+    }
 
     lines.add(kj::str(""));
     lines.add(kj::str(""));

@@ -94,54 +94,31 @@ function bindListenerToMainPort() {
       }
     };
 
-    // This function monkey-patches two parts of the 'http' module:
-    function monkeypatchHttp() {
+    var fakeHttpCreateServer = function(app) {
+      var httpsServer = https.createServer(getHttpsOptions(), app);
+      // Meteor calls httpServer.setTimeout() to set a default socket
+      // timeout. Since the method is not available on the nodejs
+      // v0.10.x https server object, we ignore it entirely for now.
       //
-      // - createServer, so that we can add HTTPS certificate info, and
-      //
-      // - listen, so we can listen on a file descriptor rater than a port.
+      // Note that upon actually receiving a connection, Meteor
+      // adjusts the timeouts, so setTimeout only the socket before
+      // the HTTP message got parsed.
+      httpsServer.setTimeout = function() {};
 
-      var fakeHttpCreateServer = function(app) {
-        console.log('fakeHttpCreateServer: function starts');
-        var httpsServer = https.createServer(getHttpsOptions(), app);
-
-        // Meteor (at least version 1.1 and earlier) calls
-        // httpServer.setTimeout(), which sets a default socket
-        // timeout. This method is not available on the nodejs v. 0.10.x httpsServer.
-        //
-        // Upon actually receiving a connection, Meteor adjusts the
-        // timeouts, and since those operations occur on a It then, upon
-        // actually receiving a connection, adjusts the socket timeouts.
-        httpsServer.setTimeout = function(timeout) {
-          console.log("httpsServer via fakeHttpCreateServer: Ignoring timeout!");
-        };
-
-        // Provide a modified listen() function that ignores port & host
-        // and binds to file descriptor 3.
-
-        var oldListen = https.Server.prototype.listen;
-        httpsServer.listen = function (port, host, cb) {
-          oldListen.call(this, {fd: 3}, cb);
-        }
-
-        console.log('fakeHttpCreateServer: function ends');
-        return httpsServer;
+      // When Meteor calls .listen() we bind to FD #3 and speak HTTPS.
+      var oldListen = https.Server.prototype.listen;
+      httpsServer.listen = function (port, host, cb) {
+        oldListen.call(this, {fd: 3}, cb);
       }
 
-      // Stash the original http.createServer somewhere, in case someone
-      // needs it later. Then replace it.
-      http._oldCreateServer = http.createServer;
-      http.createServer = fakeHttpCreateServer;
-    };
+      return httpsServer;
+    }
 
-    /* This is node code that is a proof of concept for how we're
-     * going to mock out enough things so you can run a HTTPS
-     * service via calls to a HTTP server setup.
-     */
-    monkeypatchHttp();
-  } else {
-    // Monkey-patch http.createServer() so it listens on FD #3.
-    var oldListen = http.Server.prototype._oldListen = http.Server.prototype.listen;
+    http.createServer = fakeHttpCreateServer;
+  }
+  else {
+    // If no HTTPS, then monkey-patch http.Server to bind to FD #3.
+    var oldListen = http.Server.prototype.listen;
     http.Server.prototype.listen = function (port, host, cb) {
       oldListen.call(this, {fd: 3}, cb);
     }

@@ -880,6 +880,12 @@ public:
     return sendRequest(toBytes(httpRequest), context);
   }
 
+  kj::Promise<void> head(HeadContext context) override {
+    HeadParams::Reader params = context.getParams();
+    kj::String httpRequest = makeHeaders("HEAD", params.getPath(), params.getContext());
+    return sendRequest(toBytes(httpRequest), context);
+  }
+
   kj::Promise<void> post(PostContext context) override {
     PostParams::Reader params = context.getParams();
     auto content = params.getContent();

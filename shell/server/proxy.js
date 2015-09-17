@@ -1652,8 +1652,10 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
       };
     }
 
-    if (request.method === "GET" || request.method === "HEAD") {
+    if (request.method === "GET") {
       return session.get(path, context);
+    } else if (request.method === "HEAD") {
+      return session.head(path, context);
     } else if (request.method === "POST") {
       return session.post(path, optionsForBody(), context);
     } else if (request.method === "PUT") {

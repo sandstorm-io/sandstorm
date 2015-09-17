@@ -58,6 +58,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   post @1 (path :Text, content :PostContent, context :Context) -> Response;
   put @3 (path :Text, content :PutContent, context :Context) -> Response;
   delete @4 (path :Text, context :Context) -> Response;
+  head @17 (path :Text, context :Context) -> Response;
 
   postStreaming @5 (path :Text, mimeType :Text, context :Context, encoding :Text)
       -> (stream :RequestStream);

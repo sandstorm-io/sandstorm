@@ -104,7 +104,7 @@ if (Meteor.isServer) {
     check(grainId, String);
 
     var grain = Grains.findOne(grainId);
-    if (grain.userId !== this.userId) {
+    if (!grain || grain.userId !== this.userId) {
       return [];
     }
 

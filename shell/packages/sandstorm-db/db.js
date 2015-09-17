@@ -692,22 +692,12 @@ if (Meteor.isServer) {
 // Below this point are newly-written or refactored functions.
 
 _.extend(SandstormDb.prototype, {
-  // TODO(cleanup): These methods shouldn't take a raw mongo queries or "aggregations" as inputs.
-  //   We want methods corresponding to each kind of query that is performed in practice. Letting
-  //   the caller pass an arbitrary query and aggregations is problematic because:
-  //   - We can't type-check them to prevent Mongo injections.
-  //   - It defeats the purpose of clearly seeing what kinds of queries we need to support, and
-  //     therefore what kind of indexes we might need.
-  //   - It doesn't make it any easier for us to substitute a non-Mongo database in the future.
-  //   - If the caller is just going to pass in a match-all query, we may be forcing Mongo into
-  //     a slower path by using $and.
-  userGrains: function userGrains (user, query, aggregations) {
-    var filteredQuery = { $and: [ { userId: user}, query ] };
-    return this.collections.grains.find(filteredQuery, aggregations);
+  userGrains: function userGrains (user) {
+    return this.collections.grains.find({ userId: user});
   },
 
-  currentUserGrains: function currentUserGrains (query, aggregations) {
-    return this.userGrains(Meteor.userId(), query, aggregations);
+  currentUserGrains: function currentUserGrains () {
+    return this.userGrains(Meteor.userId());
   },
 
   getGrain: function getGrain (grainId) {
@@ -723,13 +713,12 @@ _.extend(SandstormDb.prototype, {
     return this.userApiTokens(Meteor.userId());
   },
 
-  userActions: function userActions (user, query, aggregations) {
-    var filteredQuery = { $and: [ {userId: user}, query ] };
-    return this.collections.userActions.find(filteredQuery, aggregations);
+  userActions: function userActions (user) {
+    return this.collections.userActions.find({userId: user});
   },
 
-  currentUserActions: function currentUserActions (query, aggregations) {
-    return this.userActions(Meteor.userId(), query, aggregations);
+  currentUserActions: function currentUserActions () {
+    return this.userActions(Meteor.userId());
   },
 
   getPlan: function (id) {

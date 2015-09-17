@@ -1,3 +1,6 @@
+### v0.112 (2015-09-16)
+- Fix another stats bug causing stats recording to sometimes be interrupted by an exception.
+
 ### v0.111 (2015-09-16)
 - Fix bug preventing "who has access" table from displaying properly.
 

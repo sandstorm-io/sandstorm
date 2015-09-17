@@ -119,6 +119,11 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     }
 
     const headerWhitelist :List(Text) = [
+      # Non-standard request headers which are whitelisted for backwards-compatibility
+      # purposes. This whitelist exists to help avoid the need to modify code originally written
+      # without Sandstorm in mind -- especially to avoid modifying client apps. Feel free
+      # to send us pull requests adding additional headers.
+
       "if-match",              # webdav etag
       "if-not-match",          # webdav etag
       "depth",                 # webdav PROPFIND
@@ -130,10 +135,6 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       "oc-fileid",             # Owncloud client
       "oc-chunked",            # Owncloud client
     ];
-    # Non-standard request headers which are whitelisted for backwards-compatibility
-    # purposes. This whitelist exists to help avoid the need to modify code originally written
-    # without Sandstorm in mind -- especially to avoid modifying client apps. Feel free
-    # to send us pull requests adding additional headers.
   }
 
   struct PostContent {
@@ -189,6 +190,8 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     content @1 :Data;
     encoding @2 :Text;  # Content-Encoding header (optional).
   }
+
+  # TODO(apibump): Remove PostContent and PutContent, replacing them with Content.
 
   struct Cookie {
     name @0 :Text;

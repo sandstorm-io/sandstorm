@@ -398,7 +398,7 @@ Meteor.startup(function () {
     if (isSandstormShell(hostname)) {
       // Go on to Meteor, or serve a redirect.
       if (redirectRatherThanServeShell) {
-        res.writeHead(302, {"Location": process.env.ROOT_URL + request.url});
+        res.writeHead(302, {"Location": process.env.ROOT_URL + req.url});
         res.end();
         return;
       } else {
@@ -413,7 +413,7 @@ Meteor.startup(function () {
     if (id) {
       // Match!
       if (redirectRatherThanServeShell) {
-        res.writeHead(302, {"Location": process.env.ROOT_URL + request.url});
+        res.writeHead(302, {"Location": process.env.ROOT_URL + req.url});
         res.end();
         return;
       }
@@ -439,7 +439,7 @@ Meteor.startup(function () {
       publicIdPromise = lookupPublicIdFromDns(hostname);
     } else {
       res.writeHead(404, { "Content-Type": "text/plain" });
-      res.end("404 not found: " + req.url);
+      res.end("404 not found: Resource not available.");
       return;
     }
 

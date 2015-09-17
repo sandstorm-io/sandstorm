@@ -38,7 +38,8 @@ SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
 
 // User-agent strings that should be allowed to use http basic authentication.
 // These are regex matches, so ensure they are escaped properly with double
-// backslashes.
+// backslashes. For security reasons, we MUST NOT whitelist any user-agents
+// that may render html and execute embedded scripts.
 BASIC_AUTH_USER_AGENTS = [
   "git\\/",
   "GitHub-Hookshot\\/",

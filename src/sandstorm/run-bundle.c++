@@ -2101,6 +2101,9 @@ private:
     if (access("../var/sandcats", F_OK) == 0) {
         setOwnerGroupAndMode(kj::str("../var/sandcats"), 0700, config.uids.uid, config.uids.gid);
     }
+    if (access("../var/sandcats/https", F_OK) == 0) {
+        setOwnerGroupAndMode(kj::str("../var/sandcats/https"), 0700, config.uids.uid, config.uids.gid);
+    }
     // var/sandcats/{register-log,id_rsa{,.pub,private_combined}} should each be 0640, with corrected
     // owner/group
     static const char* const files[] = {"register-log", "id_rsa", "id_rsa.pub", "id_rsa.private_combined"};

@@ -43,18 +43,18 @@ function bindListenerToAlternatePorts() {
     return numAlternatePorts;
   };
 
-  globals.secondaryPortCallback = null;
-  globals.tertiaryPortCallback = null;
+  global.secondaryPortCallback = null;
+  global.tertiaryPortCallback = null;
 
   for (var i = 0; i < getNumberOfAlternatePorts(); i++) {
     var alternatePortServer;
     if (i === 0) {
       alternatePortServer = http.createServer(function (request, response, next) {
-        globals.secondaryPortCallback(request, response, next);
+        global.secondaryPortCallback(request, response, next);
       });
     }  else {
       alternatePortServer = http.createServer(function (request, response, next) {
-        globals.tertiaryPortCallback(request, response, next);
+        global.tertiaryPortCallback(request, response, next);
       });
     }
     alternatePortServer.listen({fd: i + 4});

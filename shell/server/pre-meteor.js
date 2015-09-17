@@ -384,14 +384,14 @@ Meteor.startup(function () {
   var redirectToMeteorAndServeStaticPublishing = function (req, res, next) {
     return dispatchToMeteorOrStaticPublishing(req, res, next, true, true);
   };
-  globals.secondaryPortCallback = redirectToMeteorAndServeStaticPublishing;
+  global.secondaryPortCallback = redirectToMeteorAndServeStaticPublishing;
 
 
   // This is what we bind to FD #5 and up.
   var redirectToMeteorOrBust = function(req, res, next) {
     return dispatchToMeteorOrStaticPublishing(req, res, next, true, false);
   };
-  globals.tertiaryPortCallback = redirectToMeteorOrBust;
+  global.tertiaryPortCallback = redirectToMeteorOrBust;
 
   var dispatchToMeteorOrStaticPublishing = function (req, res, next, redirectRatherThanServeShell, allowStaticPublishing) {
     var hostname = req.headers.host.split(":")[0];

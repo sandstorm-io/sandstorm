@@ -33,7 +33,7 @@ function bindListenerToAlternatePorts() {
   // real Sandstorm BASE_URL plus any path component the visitor has
   // supplied.
   //
-  // Puprose: If a Sandstorm self-install changes port, it can still
+  // Purpose: If a Sandstorm self-install changes port, it can still
   // listen on the old port and serve up redirects so that old links
   // work.
   function getNumberOfAlternatePorts() {
@@ -43,12 +43,21 @@ function bindListenerToAlternatePorts() {
     return numAlternatePorts;
   };
 
+  globals.secondaryPortCallback = null;
+  globals.tertiaryPortCallback = null;
+
   for (var i = 0; i < getNumberOfAlternatePorts(); i++) {
-    var redirectServer = http.createServer(function (request, response) {
-      response.writeHead(302, {"Location": process.env.ROOT_URL + request.url});
-      response.end();
-    });
-    redirectServer.listen({fd: i + 4});
+    var alternatePortServer;
+    if (i === 0) {
+      alternatePortServer = http.createServer(function (request, response, next) {
+        globals.secondaryPortCallback(request, response, next);
+      });
+    }  else {
+      alternatePortServer = http.createServer(function (request, response, next) {
+        globals.tertiaryPortCallback(request, response, next);
+      });
+    }
+    alternatePortServer.listen({fd: i + 4});
   }
 }
 

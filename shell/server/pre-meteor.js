@@ -375,30 +375,32 @@ Meteor.startup(function () {
     WebApp.rawConnectHandlers.use(BlackrockPayments.makeConnectHandler(globalDb));
   }
 
-  var dispatchToMeteorOrStaticPublishing = function (req, res, next) {
-    // For FD #3, this logic is great.
-    //
-    // For FD #4, if the request matches the shell or a wildcard host,
-    // do a HTTP redirect to the host the user requested, plus the
-    // path.
-    //
-    // For FD #4, otherwise, run the lookup public ID from DNS thing.
-    // If that returns true, then... serve it. How? NOTE that this is
-    // essential so that we don't break static publishing.
-    //
-    // For FD >=5, if the request matches the shell or a wildcard host,
-    // do a HTTP redirect as per fd #4.
-    //
-    // For FD >= 5, otherwise, provide some kind of standard error I
-    // guess.
-    // a Thinking aloud -- with HTTPS enabled,
+  // This is what we bind to FD #3.
+  var serveMeteorAndStaticPublishing = function(req, res, next) {
+    return dispatchToMeteorOrStaticPublishing(req, res, next, false, true);
+  }
+
+  // This is what we bind to FD #4.
+  var redirectToMeteorAndServeStaticPublishing = function (req, res, next) {
+    return dispatchToMeteorOrStaticPublishing(req, res, next, true, true);
+  };
+  globals.secondaryPortCallback = redirectToMeteorAndServeStaticPublishing;
 
 
+  // This is what we bind to FD #5 and up.
+  var redirectToMeteorOrBust = function(req, res, next) {
+    return dispatchToMeteorOrStaticPublishing(req, res, next, true, false);
+  };
+  globals.tertiaryPortCallback = redirectToMeteorOrBust;
+
+  var dispatchToMeteorOrStaticPublishing = function (req, res, next, redirectRatherThanServeShell, allowStaticPublishing) {
     var hostname = req.headers.host.split(":")[0];
     if (isSandstormShell(hostname)) {
-      // Go on to Meteor.
-      if (req.comesFromSecondaryPort) {
-        // TODO: Redirect it.
+      // Go on to Meteor, or serve a redirect.
+      if (redirectRatherThanServeShell) {
+        res.writeHead(302, {"Location": process.env.ROOT_URL + request.url});
+        res.end();
+        return;
       } else {
         return next();
       }
@@ -410,9 +412,9 @@ Meteor.startup(function () {
     var id = matchWildcardHost(req.headers.host);
     if (id) {
       // Match!
-
-      if (req.comesFromSecondaryPort) {
-        // TODO: Redirect it.
+      if (redirectRatherThanServeShell) {
+        res.writeHead(302, {"Location": process.env.ROOT_URL + request.url});
+        res.end();
         return;
       }
 
@@ -431,17 +433,14 @@ Meteor.startup(function () {
           return id;
         }
       });
-    } else {
-      // Not a wildcard host. Perhaps it is a custom host.
-      // If it's from FD #3, this is great.
-      // If it's from FD #4 and we're not speaking HTTPS, then we honestly
-      // probably should redirect, but whatevs.
-      // If it's from FD #4 and we're speaking HTTP, then we definitely want
-      // to serve this, since static publishing domains don't necessarily do
-      // HTTPS.
-      // If it's from FD #5, then we probably should abort.
+    }
 
+    if (allowStaticPublishing) {
       publicIdPromise = lookupPublicIdFromDns(hostname);
+    } else {
+      res.writeHead(404, { "Content-Type": "text/plain" });
+      res.end("404 not found: " + req.url);
+      return;
     }
 
     publicIdPromise.then(function (publicId) {
@@ -480,7 +479,7 @@ Meteor.startup(function () {
     });
   };
 
-  WebApp.rawConnectHandlers.use(dispatchToMeteorOrStaticPublishing);
+  WebApp.rawConnectHandlers.use(serveMeteorAndStaticPublishing);
 });
 
 var errorTxtMapping = {};

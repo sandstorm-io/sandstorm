@@ -53,12 +53,13 @@ SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
     var save = castedCap.save({webkey: null});
     var sturdyRef = waitPromise(save).sturdyRef;
 
+    var identity = globalDb.getUserIdentities(self.userId)[0];
     // TODO(soon): This will eventually use SystemPersistent.addRequirements when membranes
     // are fully implemented for supervisors.
     var requirement = {
       permissionsHeld: {
         grainId: self.grainId,
-        userId: self.userId,
+        identityId: identity.id,
         permissions: requiredPermissions
       }
     };
@@ -84,6 +85,7 @@ Meteor.methods({
     if (!userId) {
       throw new Meteor.Error(403, "User must be logged in to user powerbox.");
     }
+    var identity = this.connection.sandstormDb.getUserIdentities(userId)[0];
     var parsedWebkey = Url.parse(webkeyUrl.trim());
     if (parsedWebkey.host !== makeWildcardHost("api")) {
       console.log(parsedWebkey.hostname, makeWildcardHost("api"));
@@ -104,7 +106,7 @@ Meteor.methods({
     var castedCap = cap.castAs(SystemPersistent);
     var grainOwner = {
       grainId: grainId,
-      introducerUser: userId
+      introducerIdentity: identity.id
     };
     if (saveLabel) {
       grainOwner.saveLabel = {
@@ -119,7 +121,7 @@ Meteor.methods({
   finishPowerboxOffer: function (sessionId) {
     check(sessionId, String);
 
-    Sessions.update({_id: sessionId, userId: Meteor.userId()}, {$unset: {powerboxView: null}});
+    Sessions.update({_id: sessionId}, {$unset: {powerboxView: null}});
   }
 });
 

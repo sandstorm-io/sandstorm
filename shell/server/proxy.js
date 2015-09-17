@@ -152,6 +152,7 @@ Meteor.methods({
         throw new Meteor.Error(404, "Not Found", "No such package is installed.");
       }
     }
+    var userIdentity = this.connection.sandstormDb.getUserIdentities(this.userId)[0];
 
     var grainId = Random.id(22);  // 128 bits of entropy
     Grains.insert({
@@ -160,11 +161,12 @@ Meteor.methods({
       appId: appId,
       appVersion: manifest.appVersion,
       userId: this.userId,
+      identityId: userIdentity.id,
       title: title,
       private: true
     });
     startGrainInternal(packageId, grainId, this.userId, command, true, isDev);
-    updateLastActive(grainId, this.userId);
+    updateLastActive(grainId, this.userId, userIdentity.id);
     return grainId;
   },
 
@@ -173,9 +175,11 @@ Meteor.methods({
     // running.
 
     check(grainId, String);
+    var db = this.connection.sandstormDb;
+    var identity = db.getUserIdentities(this.userId)[0];
     check(cachedSalt, Match.OneOf(undefined, null, String));
-    if (!SandstormPermissions.mayOpenGrain(globalDb,
-                                           {grain: {_id: grainId, userId: this.userId}})) {
+    if (!SandstormPermissions.mayOpenGrain(db,
+                                           {grain: {_id: grainId, identityId: identity.id}})) {
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
@@ -211,12 +215,12 @@ Meteor.methods({
     // Only provide an app ID if we have no icon asset to provide and need to offer an identicon.
     var appId = appIcon ? undefined : grain.appId;
     var title;
-    if (grain.userId == apiToken.userId) {
+    if (grain.identityId == apiToken.identityId) {
       title = grain.title;
     } else {
-      if (apiToken.userId) {
+      if (apiToken.identityId) {
         var sharerToken = ApiTokens.findOne({grainId: apiToken.grainId,
-                                             "owner.user.userId": apiToken.userId},
+                                             "owner.user.identityId": apiToken.identityId},
                                             {sort : {created : 1}});
         if (sharerToken) {
           title = sharerToken.owner.user.title;
@@ -225,19 +229,20 @@ Meteor.methods({
     }
 
     if (this.userId && !incognito) {
-      if (this.userId != apiToken.userId && this.userId != grain.userId &&
-          !ApiTokens.findOne({'owner.user.userId': this.userId, parentToken: hashedToken })) {
+      var identity = globalDb.getUserIdentities(this.userId)[0];
+      if (identity.id != apiToken.identityId && identity.id != grain.identityId &&
+          !ApiTokens.findOne({'owner.user.identityId': identity.id, parentToken: hashedToken })) {
         // The current user is neither the sharer nor the grain owner,
         // and the current user has not already redeemed this token.
         var now = new Date();
         var grainInfo = { appTitle: appTitle };
         if (appIcon) { grainInfo.icon = appIcon; }
         if (appId) { grainInfo.appId = appId; }
-        var owner = {user: {userId: this.userId, title: title, lastUsed: now,
+        var owner = {user: {identityId: identity.id, title: title, lastUsed: now,
                             denormalizedGrainMetadata: grainInfo}};
         var newToken = {
           grainId: apiToken.grainId,
-          userId: apiToken.userId,
+          identityId: apiToken.identityId,
           parentToken: hashedToken,
           roleAssignment: {allAccess: null},
           petname: apiToken.petname,
@@ -272,7 +277,7 @@ Meteor.methods({
 
       var grainId = session.grainId;
       waitPromise(openGrain(grainId, false).supervisor.keepAlive());
-      updateLastActive(grainId, this.userId);
+      updateLastActive(grainId, this.userId, session.identityId);
       return true;
     } else {
       return false;
@@ -336,6 +341,7 @@ function generateSessionId(grainId, userId, salt) {
 
 function openSessionInternal(grainId, user, title, apiToken, cachedSalt) {
   var userId = user ? user._id : undefined;
+  var identityId = user ? SandstormDb.getUserIdentities(user)[0].id : undefined;
 
   // Start the grain if it is not running. This is an optimization: if we didn't start it here,
   // it would start on the first request to the session host, but we'd like to get started before
@@ -348,14 +354,14 @@ function openSessionInternal(grainId, user, title, apiToken, cachedSalt) {
     grainInfo = continueGrain(grainId);
   }
 
-  updateLastActive(grainId, userId);
+  updateLastActive(grainId, userId, identityId);
 
   cachedSalt = cachedSalt || Random.id(22);
   var sessionId = generateSessionId(grainId, userId, cachedSalt);
   var session = Sessions.findOne({_id: sessionId});
   if (session) {
     // TODO(someday): also do some more checks for anonymous sessions (sessions without a userId).
-    if ((session.userId && session.userId !== userId) ||
+    if ((session.identityId && session.identityId !== identityId) ||
         (session.grainId !== grainId)) {
       var e = new Meteor.Error(500, "Duplicate SessionId");
       console.error(e);
@@ -374,6 +380,7 @@ function openSessionInternal(grainId, user, title, apiToken, cachedSalt) {
   };
 
   if (userId) {
+    session.identityId = identityId;
     session.userId = userId;
   } else if (apiToken) {
     session.hashedToken = apiToken._id;
@@ -386,7 +393,7 @@ function openSessionInternal(grainId, user, title, apiToken, cachedSalt) {
   return {sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId, salt: cachedSalt};
 }
 
-function updateLastActive(grainId, userId) {
+function updateLastActive(grainId, userId, identityId) {
   // Update the lastActive date on the grain, any relevant API tokens, and the user,
   // and also update the user's storage usage.
 
@@ -399,9 +406,11 @@ function updateLastActive(grainId, userId) {
   Grains.update(grainId, {$set: {lastUsed: now}});
   if (userId) {
     Meteor.users.update(userId, {$set: {lastActive: now}});
+  }
+  if (identityId) {
     // Update any API tokens that match this user/grain pairing as well
     var now = new Date();
-    ApiTokens.update({"grainId": grainId, "owner.user.userId": userId},
+    ApiTokens.update({"grainId": grainId, "owner.user.identityId": identityId},
         {$set: {"owner.user.lastUsed": now }});
   }
 
@@ -696,7 +705,7 @@ Meteor.startup(function() {
     // TODO(soon): Only clear sessions and proxies for which the permissions have changed.
     var downstream = SandstormPermissions.downstreamTokens(globalDb, {token: token});
     downstream.push(token);
-    var users = [];
+    var identityIds = [];
     var tokenIds = [];
     downstream.forEach(function (token) {
       var proxy = proxiesByApiToken[token._id];
@@ -706,25 +715,27 @@ Meteor.startup(function() {
       delete proxiesByApiToken[token._id];
       tokenIds.push(token._id);
       if (token.owner && token.owner.user){
-        users.push(token.owner.user.userId);
+        identityIds.push(token.owner.user.identityId);
       }
     });
-    Sessions.find({grainId: token.grainId, $or: [{userId: {$in: users}},
-      {hashedToken: {$in: tokenIds}}]}, {fields: {hostId: 1}}).forEach(function (session) {
+    Sessions.find({grainId: token.grainId,
+                   $or: [{identityId: {$in: identityIds}},
+                         {hashedToken: {$in: tokenIds}}]},
+                  {fields: {hostId: 1}}).forEach(function (session) {
       var proxy = proxiesByHostId[session.hostId];
       if (proxy) {
         proxy.close();
       }
       delete proxiesByHostId[session.hostId];
     });
-    Sessions.remove({grainId: token.grainId, $or: [{userId: {$in: users}},
+    Sessions.remove({grainId: token.grainId, $or: [{identityId: {$in: identityIds}},
                                                    {hashedToken: {$in: tokenIds}}]});
   }
 
   Grains.find().observe({
     changed: function (newGrain, oldGrain) {
       if (oldGrain.private != newGrain.private) {
-        Sessions.remove({grainId: oldGrain._id, userId: {$ne: oldGrain.userId}});
+        Sessions.remove({grainId: oldGrain._id, identityId: {$ne: oldGrain.identityId}});
         ApiTokens.find({grainId: oldGrain._id}).forEach(function(apiToken) {
           delete proxiesByApiToken[apiToken._id];
         });
@@ -1039,6 +1050,7 @@ function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, userInfo, isA
     }
     var identity = identities[0];
     this.userId = user._id;
+    this.identityId = identity.id;
 
     this.userInfo = {
       displayName: {defaultText: identity.name},
@@ -1272,7 +1284,7 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
       vertex = {token: self.apiToken};
     } else {
       // (self.userId might be null; this is fine)
-      vertex = {grain: {_id: self.grainId, userId: self.userId}};
+      vertex = {grain: {_id: self.grainId, identityId: self.identityId}};
     }
     var permissions = SandstormPermissions.grainPermissions(globalDb, vertex, viewInfo);
     if (!permissions) {

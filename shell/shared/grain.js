@@ -25,24 +25,37 @@ if (Meteor.isServer) {
     check(grainId, String);
     var self = this;
 
-    // Alice is allowed to know Bob's display name if Bob has received a UiView from Alice
-    // for *any* grain.
-    var handle = ApiTokens.find({userId: this.userId,
-                                 "owner.user.userId": {$exists: true}}).observe({
-      added: function(token) {
-        var user = Meteor.users.findOne(token.owner.user.userId);
-        if (user) {
-          self.added("displayNames", user._id, {displayName: user.profile.name});
-        }
-      },
-    });
-    this.onStop(function() { handle.stop(); });
+    var result = [Grains.find({_id : grainId, $or: [{userId: this.userId}, {private: {$ne: true}}]},
+                              {fields: {title: 1, userId: 1, identityId: 1, private: 1}})];
+    if (this.userId) {
+      // TODO how will this work with multiple identities?
+      var myIdentity = globalDb.getUserIdentities(this.userId)[0];
+      self.added("displayNames", myIdentity.id, {displayName: myIdentity.name});
 
-    return [Grains.find({_id : grainId, $or: [{userId: this.userId}, {private: {$ne: true}}]},
-                        {fields: {title: 1, userId: 1, private: 1}}),
-            ApiTokens.find({grainId: grainId,
-                            $or : [{"owner.user.userId": this.userId}, {userId: this.userId}]}),
-           ];
+      // Alice is allowed to know Bob's display name if Bob has received a UiView from Alice
+      // for *any* grain.
+      var handle = ApiTokens.find({identityId: myIdentity.id,
+                                   "owner.user.identityId": {$exists: true}}).observe({
+        added: function(token) {
+          var user = Meteor.users.findOne({identityIds: token.owner.user.identityId});
+          if (user) {
+            var identity = _.findWhere(SandstormDb.getUserIdentities(user),
+                                       {id: token.owner.user.identityId});
+            if (identity) {
+              self.added("displayNames", identity.id, {displayName: identity.name});
+            }
+
+          }
+        },
+      });
+      this.onStop(function() { handle.stop(); });
+
+      result.push(ApiTokens.find({grainId: grainId,
+                                  $or : [{"owner.user.identityId": myIdentity.id},
+                                         {identityId: myIdentity.id}]}));
+
+    }
+    return result;
   });
 
   // We allow users to learn package information about a grain they own.
@@ -66,7 +79,6 @@ if (Meteor.isServer) {
 
     return publishThis;
   });
-
 
   Meteor.publish("tokenInfo", function (token) {
     // Allows the client side to map a raw token to its entry in ApiTokens, and the additional
@@ -189,20 +201,22 @@ Meteor.methods({
     check(grainId, String);
 
     if (this.userId) {
-      ApiTokens.remove({grainId: grainId, "owner.user.userId": this.userId});
+      var identity = globalDb.getUserIdentities(this.userId)[0];
+      ApiTokens.remove({grainId: grainId, "owner.user.identityId": identity.id});
     }
   },
   updateGrainTitle: function (grainId, newTitle) {
     check(grainId, String);
     check(newTitle, String);
     if (this.userId) {
+      var identityId = globalDb.getUserIdentities(this.userId)[0].id
       var grain = Grains.findOne(grainId);
       if (grain) {
-        if (this.userId === grain.userId) {
+        if (identityId === grain.identityId) {
           Grains.update(grainId, {$set: {title: newTitle}});
         } else {
           var token = ApiTokens.findOne({grainId: grainId, objectId: {$exists: false},
-                                         "owner.user.userId": this.userId},
+                                         "owner.user.identityId": identityId},
                                         {sort:{created:1}});
           if (token) {
             ApiTokens.update(token._id, {$set: {"owner.user.title": newTitle}});
@@ -694,8 +708,8 @@ if (Meteor.isClient) {
   });
 
   Template.grainPowerboxOfferPopup.events({
-    "click button.dismiss": function (event) {
-      var sessionId = Template.instance().data.sessionId;
+    "click button.dismiss": function (event, instance) {
+      var sessionId = instance.data.sessionId;
       if (sessionId) {
         Meteor.call("finishPowerboxOffer", sessionId, function (err) {
           // TODO(someday): display the error nicely to the user
@@ -810,13 +824,13 @@ if (Meteor.isClient) {
         } else {
           var sharesByRecipient = {};
           downstream.forEach(function (token) {
-            if (Match.test(token.owner, {user: Match.ObjectIncluding({userId: String})})) {
-              var recipient = token.owner.user.userId;
+            if (Match.test(token.owner, {user: Match.ObjectIncluding({identityId: String})})) {
+              var recipient = token.owner.user.identityId;
               if (!sharesByRecipient[recipient]) {
                 sharesByRecipient[recipient] = {recipient: recipient, shares: []};
               }
               var shares = sharesByRecipient[recipient].shares;
-              if (!shares.some(function(share) { return share.userId === token.userId; })) {
+              if (!shares.some(function(share) { return share.identityId === token.identityId; })) {
                 sharesByRecipient[recipient].shares.push(token);
               }
             }
@@ -878,11 +892,15 @@ if (Meteor.isClient) {
 
   Template.whoHasAccessPopup.helpers({
     existingShareTokens: function () {
-      return ApiTokens.find({grainId: Template.instance().grainId, userId: Meteor.userId(),
-                             forSharing: true,
-                             $or: [{owner: {webkey:null}},
-                                   {owner: {$exists: false}}],
-                            }).fetch();
+      if (Meteor.userId()) {
+        var identity = globalDb.getUserIdentities(Meteor.userId())[0];
+        var result = ApiTokens.find({grainId: Template.instance().grainId, identityId: identity.id,
+                               forSharing: true,
+                               $or: [{owner: {webkey:null}},
+                                     {owner: {$exists: false}}],
+                                    }).fetch();
+        return result;
+      }
     },
     getPetname: function () {
       if (this.petname) {
@@ -891,14 +909,12 @@ if (Meteor.isClient) {
         return "Unlabeled Link";
       }
     },
-    displayName: function (userId) {
-      var name = DisplayNames.findOne(userId);
+    displayName: function (identityId) {
+      var name = DisplayNames.findOne(identityId);
       if (name) {
         return name.displayName;
-      } else if (userId === Meteor.userId()) {
-        return Meteor.user().profile.name + " (you)";
       } else {
-        return "Unknown User (" + userId + ")";
+        return "Unknown User (" + identityId.slice(0,16) + ")";
       }
     },
     transitiveShares: function () {

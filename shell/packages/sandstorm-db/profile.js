@@ -237,21 +237,23 @@ SandstormDb.getUserIdentities = function (user) {
   var staticHost = httpProtocol + "//" + makeWildcardHost("static");
 
   var result = [];
-  if (user && user.services) {
-    if ("google" in user.services) {
-      result.push(googleIdentity(user, staticHost));
-    }
-    if ("github" in user.services) {
-      result.push(githubIdentity(user, staticHost));
-    }
-    if ("emailToken" in user.services) {
-      result.push(emailIdentity(user, staticHost));
-    }
+  if (user) {
     if ("devName" in user) {
       result.push(devIdentity(user, staticHost));
     }
     if ("expires" in user) {
       result.push(demoIdentity(user, staticHost));
+    }
+    if (user.services) {
+      if ("google" in user.services) {
+        result.push(googleIdentity(user, staticHost));
+      }
+      if ("github" in user.services) {
+        result.push(githubIdentity(user, staticHost));
+      }
+      if ("emailToken" in user.services) {
+        result.push(emailIdentity(user, staticHost));
+      }
     }
   }
   return result;

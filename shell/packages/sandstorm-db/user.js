@@ -97,6 +97,6 @@ Accounts.onCreateUser(function (options, user) {
       user.profile.picture = assetId;
     }
   }
-
+  user.identityIds = SandstormDb.getUserIdentities(user).map(function (i) { return i.id; });
   return user;
 });

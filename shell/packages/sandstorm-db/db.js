@@ -49,6 +49,9 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //       picture: _id into the StaticAssets table for the user's picture. Default: identicon.
 //       pronoun: One of "male", "female", "neutral", or "robot". Default: neutral.
 //   services: Object containing login and identity data used by Meteor authentication services.
+//   identityIds: Array of identity ID strings, one for each identity held by this user. This data
+//                could be computed from the other fields of this collection; it's denormalized
+//                here to allow fast lookup of users by identity.
 //   isAdmin: Boolean indicating whether this user is allowed to access the Sandstorm admin panel.
 //   signupKey: If this is an invited user, then this field contains their signup key.
 //   signupNote: If the user was invited through a link, then this field contains the note that the
@@ -130,7 +133,8 @@ Grains = new Mongo.Collection("grains");
 //   appId:  Same as Packages.findOne(packageId).appId; denormalized for searchability.
 //   appVersion:  Same as Packages.findOne(packageId).manifest.appVersion; denormalized for
 //       searchability.
-//   userId:  User who owns this grain.
+//   userId: The _id of the user who owns this grain.
+//   identityId: Identity of user who owns this grain.
 //   title:  Human-readable string title, as chosen by the user.
 //   lastUsed:  Date when the grain was last used by a user.
 //   private: If true, then knowledge of `_id` does not suffice to open this grain.
@@ -160,7 +164,7 @@ Contacts = new Mongo.Collection("contacts");
 // Each contains:
 //   _id: random
 //   ownerId: The `_id` of the user who owns this contact.
-//   userId:  The `_id` of the contacted user.
+//   identityId:  The identity of the contacted user.
 //   petname: Human-readable label chosen by and only visible to the owner. Uniquely identifies
 //            the contact to the owner.
 //   created: Date when this contact was created.
@@ -175,7 +179,8 @@ Sessions = new Mongo.Collection("sessions");
 //       '*' in WILDCARD_HOST.
 //   timestamp:  Time of last keep-alive message to this session.  Sessions time out after some
 //       period.
-//   userId:  User who owns this session.
+//   userId:  User ID of the user who owns this session.
+//   identityId:  Identity ID of the user who owns this session.
 //   hashedToken: If the session is owned by an anonymous user, the _id of the entry in ApiTokens
 //       that was used to open it. Note that for old-style sharing (i.e. when !grain.private),
 //       anonymous users can get access without an API token and so neither userId nor hashedToken
@@ -692,6 +697,15 @@ if (Meteor.isServer) {
 // Below this point are newly-written or refactored functions.
 
 _.extend(SandstormDb.prototype, {
+  getUserIdentities: function getUserIdentities (userId) {
+    check(userId, String);
+    var user = Meteor.users.findOne(userId);
+    if (!user) {
+      throw new Error("no such user: " + userId);
+    }
+    return SandstormDb.getUserIdentities(user);
+  },
+
   userGrains: function userGrains (user) {
     return this.collections.grains.find({ userId: user});
   },
@@ -705,8 +719,11 @@ _.extend(SandstormDb.prototype, {
     return this.collections.grains.findOne(grainId);
   },
 
-  userApiTokens: function userApiTokens (user) {
-    return this.collections.apiTokens.find({'owner.user.userId': user});
+  userApiTokens: function userApiTokens (userId) {
+    check(userId, String);
+    var identityIds = this.getUserIdentities(userId)
+        .map(function (identity) { return identity.id; });
+    return this.collections.apiTokens.find({'owner.user.identityId': {$in: identityIds}});
   },
 
   currentUserApiTokens: function currentUserApiTokens () {

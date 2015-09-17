@@ -106,8 +106,10 @@ GrainView.prototype.title = function () {
     var grain = Grains.findOne({_id: this._grainId});
     return grain && grain.title;
   } else if (!this._isUsingAnonymously()) {
+    var identity = SandstormDb.getUserIdentities(Meteor.user())[0];
     // Case 2.
-    var apiToken = ApiTokens.findOne({grainId: this._grainId, "owner.user.userId": Meteor.userId()},
+    var apiToken = ApiTokens.findOne({grainId: this._grainId,
+                                      "owner.user.identityId": identity.id},
                                      {sort: {created: 1}});
     return apiToken && apiToken.owner && apiToken.owner.user && apiToken.owner.user.title;
   } else {
@@ -130,7 +132,8 @@ GrainView.prototype.appTitle = function () {
     return pkg && pkg.manifest && pkg.manifest.appTitle && pkg.manifest.appTitle.defaultText;
   } else if (!this._isUsingAnonymously()) {
     // Case 2
-    var token = ApiTokens.findOne({grainId: this._grainId, 'owner.user.userId': Meteor.userId()},
+    var identity = globalDb.getUserIdentities(Meteor.userId())[0];
+    var token = ApiTokens.findOne({grainId: this._grainId, 'owner.user.identityId': identity.id},
                                      {sort: {created: 1}});
     return (token && token.owner && token.owner.user && token.owner.user.denormalizedGrainMetadata &&
       token.owner.user.denormalizedGrainMetadata.appTitle.defaultText);
@@ -181,7 +184,6 @@ GrainView.prototype.hasLoaded = function () {
   if (this._hasLoaded) {
     return true;
   }
-
   var session = Sessions.findOne({_id: this._sessionId});
   // TODO(soon): this is a hack to cache hasLoaded. Consider moving it to an autorun.
   this._hasLoaded = session && session.hasLoaded;

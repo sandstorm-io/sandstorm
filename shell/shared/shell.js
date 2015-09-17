@@ -32,7 +32,8 @@ if (Meteor.isClient) {
     Meteor.subscribe("grainsMenu"),
     Meteor.subscribe("userPackages"),
     Meteor.subscribe("devApps"),
-    Meteor.subscribe("credentials")
+    Meteor.subscribe("credentials"),
+    Meteor.subscribe("accountIdentities")
   ];
 }
 
@@ -86,11 +87,11 @@ if (Meteor.isServer) {
           }
         });
       }
-
+      var identity = globalDb.getUserIdentities(this.userId)[0]
       return [
         UserActions.find({userId: this.userId}),
         Grains.find({userId: this.userId}),
-        ApiTokens.find({'owner.user.userId': this.userId}),
+        ApiTokens.find({'owner.user.identityId': identity.id}),
       ];
     } else {
       return [];

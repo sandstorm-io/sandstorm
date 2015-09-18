@@ -190,7 +190,7 @@ Sessions = new Mongo.Collection("sessions");
 //     offer: The webkey that corresponds to cap that was passed to the `offer` RPC.
 //   viewInfo: The UiView.ViewInfo corresponding to the underlying UiSession. This isn't populated
 //       until newSession is called on the UiView.
-//   permissions: The permissions for the current user on this UiView. This isn't populated
+//   permissions: The permissions for the current identity on this UiView. This isn't populated
 //       until newSession is called on the UiView.
 //   hasLoaded: Marked as true by the proxy when the underlying UiSession has responded to its first
 //       request
@@ -260,31 +260,32 @@ ApiTokens = new Mongo.Collection("apiTokens");
 // Each contains:
 //   _id:       A SHA-256 hash of the token.
 //   grainId:   The grain servicing this API. (Not present if the API isn't serviced by a grain.)
-//   userId:    For UiView capabilities, this is the user for whom the view is attenuated. That
-//              is, the UiView's newSession() method will intersect the requested permissions with
-//              this user's permissions before forwarding on to the underlying app. If `userId` is
-//              not present, then no user attenuation is applied, i.e. this is a raw UiView as
-//              implemented by the app. (The `roleAssignment` field, below, may still apply.)
-//              For non-UiView capabilities, `userId` is never present.
-//              Note that this is NOT the user against whom the `requiredPermissions` parameter of
-//              `SandstormApi.restore()` is checked; that would be `owner.grain.introducerUser`.
+//   identitiyId: For UiView capabilities, this is the identity for which the view is attenuated.
+//              That is, the UiView's newSession() method will intersect the requested permissions
+//              with this identity's permissions before forwarding on to the underlying app. If
+//              `identityId` is not present, then no identity attenuation is applied, i.e. this is
+//              a raw UiView as implemented by the app. (The `roleAssignment` field, below, may
+//              still apply. For non-UiView capabilities, `identityId` is never present. Note that
+//              this is NOT the identity against which the `requiredPermissions` parameter of
+//              `SandstormApi.restore()` is checked; that would be `owner.grain.introducerIdentity`.
 //   userInfo:  *DEPRECATED* For API tokens created by the app through HackSessionContext, the
 //              UserInfo struct that should be passed to `newSession()` when exercising this token,
-//              in decoded (JS object) format. This is a temporary hack. `userId` is never present
-//              when `userInfo` is present.
+//              in decoded (JS object) format. This is a temporary hack. `identityId` is never
+//              present when `userInfo` is present.
 //   roleAssignment: If this API token represents a UiView, this field contains a JSON-encoded
 //              Grain.ViewSharingLink.RoleAssignment representing the permissions it carries. These
-//              permissions will be intersected with those held by `userId` when the view is opened.
+//              permissions will be intersected with those held by `identityId` when the view is
+//              opened.
 //   forSharing: If true, requests sent to the HTTP API endpoint with this token will be treated as
-//              anonymous rather than as directly associated with `userId`. This has no effect on
-//              the permissions granted.
+//              anonymous rather than as directly associated with `identityId`. This has no effect
+//              on the permissions granted.
 //   objectId:  If present, this token represents an arbitrary Cap'n Proto capability exported by
 //              the app or its supervisor (whereas without this it strictly represents UiView).
 //              sturdyRef is the JSON-encoded SupervisorObjectId (defined in `supervisor.capnp`).
 //              Note that if the SupervisorObjectId contains an AppObjectId, that field is
 //              treated as type AnyPointer, and so encoded as a raw Cap'n Proto message.
 //   frontendRef: If present, this token actually refers to an object implemented by the front-end,
-//              not a particular grain. (`grainId` and `userId` are not set.) This is an object
+//              not a particular grain. (`grainId` and `identityId` are not set.) This is an object
 //              containing exactly one of the following fields:
 //       notificationHandle: A `Handle` for an ongoing notification, as returned by
 //                           `NotificationTarget.addOngoing`. The value is an `_id` from the
@@ -297,8 +298,8 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   parentToken: If present, then this token represents exactly the capability represented by
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
 //              by `roleAssignment` (if present). To facilitate permissions computations, if the
-//              capability is a UiView, then `grainId` is set to the backing grain and `userId` is
-//              set to the user who shared the view. None of `userInfo`, `objectId`, or
+//              capability is a UiView, then `grainId` is set to the backing grain and `identityId`
+//              is set to the identity that shared the view. None of `userInfo`, `objectId`, or
 //              `frontendRef` are present when `parentToken` is present.
 //   petname:   Human-readable label for this access token, useful for identifying tokens for
 //              revocation. This should be displayed when visualizing incoming capabilities to
@@ -330,7 +331,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //       grainId :Text;
 //       union {
 //         uiView :group {
-//           userId :Text;
+//           identityId :Text;
 //           roleAssignment :RoleAssignment;
 //           forSharing :Bool;
 //         }
@@ -347,7 +348,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //       union {
 //         uiView :group {
 //           grainId :Text;
-//           userId :Text;
+//           identityId :Text;
 //           roleAssignment :RoleAssignment = (allAccess = ());
 //         }
 //         other :Void;

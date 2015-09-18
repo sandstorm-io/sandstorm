@@ -1121,10 +1121,16 @@ private:
     KJ_SYSCALL(mount("/dev/urandom", "dev/urandom", nullptr, MS_BIND, nullptr));
     KJ_SYSCALL(mount("/dev/fuse", "dev/fuse", nullptr, MS_BIND, nullptr));
 
-    // Mount a tmpfs at /etc and copy over necessary config files from the host.
+    // Bind in the host's /etc as /etc.host.
+    // As noted in backup.c++, MS_BIND does not respect mount flags on the initial bind, and
+    // we have to issue a remount to set them.
+    KJ_SYSCALL(mount("/etc", "etc.host", nullptr, MS_BIND, nullptr));
+    KJ_SYSCALL(mount("/etc", "etc.host", nullptr, MS_BIND | MS_REMOUNT | MS_RDONLY, nullptr));
+
+    // Mount a tmpfs at /etc and symlink in necessary config files from the host.
     KJ_SYSCALL(mount("tmpfs", "etc", "tmpfs", MS_NOSUID | MS_NOEXEC,
                      kj::str("size=2m,nr_inodes=128,mode=755", tmpfsUidOpts).cStr()));
-    copyEtc();
+    linkEtc();
 
     // OK, change our root directory.
     KJ_SYSCALL(syscall(SYS_pivot_root, ".", "tmp"));
@@ -1183,18 +1189,17 @@ private:
     KJ_SYSCALL(sigprocmask(SIG_SETMASK, &sigset, nullptr));
   }
 
-  void copyEtc() {
+  void linkEtc() {
     auto files = splitLines(readAll("etc.list"));
 
-    // Now copy over each file.
+    // Now bind in each file.
     for (auto& file: files) {
-      if (access(file.cStr(), R_OK) == 0) {
-        auto in = raiiOpen(file, O_RDONLY);
-        auto out = raiiOpen(kj::str(".", file), O_WRONLY | O_CREAT | O_EXCL);
-        ssize_t n;
-        do {
-          KJ_SYSCALL(n = sendfile(out, in, nullptr, 1 << 20));
-        } while (n > 0);
+      KJ_REQUIRE(file.startsWith(kj::str("/etc/")), "asked to link in file outside of /etc/");
+      auto source = kj::str("etc.host/", file.slice(5));
+      auto sourceAsSeenByTarget = kj::str("/", source);
+      if (access(source.cStr(), R_OK) == 0) {
+        auto target = kj::str(".", file);
+        KJ_SYSCALL(symlink(sourceAsSeenByTarget.cStr(), target.cStr()));
       }
     }
   }

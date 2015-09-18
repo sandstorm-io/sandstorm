@@ -142,7 +142,7 @@ strace tmp/dnstest 2>&1 | grep -o '"/[^"]*"' | tr -d '"' | copyDeps
 cat tmp/etc.list | grep -v '/ld[.]so[.]' | sort | uniq > bundle/etc.list
 
 # Make mount points.
-mkdir -p bundle/{dev,proc,tmp,etc,var}
+mkdir -p bundle/{dev,proc,tmp,etc,etc.host,var}
 touch bundle/dev/{null,zero,random,urandom,fuse}
 
 # Mongo wants these localization files.

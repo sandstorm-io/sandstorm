@@ -570,7 +570,7 @@ function lookupPublicIdFromDns(hostname) {
           "If you got here after trying to log in via OAuth (e.g. through Github or Google),<br>\n" +
           "the problem is probably that the OAuth callback URL was set wrong. You need to<br>\n" +
           "update it through the respective login provider's management console.</p>";
-        error.httpErrorCode = err.code === "ENOTFOUND" ? 404 : 500;
+        error.httpErrorCode = (_.contains(["ENOTFOUND", "ENODATA"], err.code)) ? 404 : 500;
         reject(error);
       } else if (records.length !== 1) {
         reject(new Error("Host 'sandstorm-www." + hostname + "' must have exactly one TXT record."));

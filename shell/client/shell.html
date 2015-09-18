@@ -895,7 +895,7 @@ limitations under the License.
     <thead>
       <tr>
         <td>Service</td>
-        <td>Username</td>
+        <td>Handle</td>
         <td>Name</td>
         <td>User Class</td>
         {{#if quotaEnabled}}
@@ -910,9 +910,11 @@ limitations under the License.
     <tbody>
       {{#each users}}
         <tr>
-          <td>{{userService}}</td>
-          <td>{{userName}}</td>
-          <td>{{profile.name}}</td>
+          {{#with userIdentity}}
+            <td>{{service}}</td>
+            <td>{{handle}}</td>
+            <td>{{name}}</td>
+          {{/with}}
           <td>
             <select class="user-class" name="select">
               <option value="admin" selected={{#if userIsAdmin}}selected{{/if}}>Admin</option>

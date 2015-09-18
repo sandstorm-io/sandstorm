@@ -1580,6 +1580,9 @@ sandcats_configure_https() {
 
   chmod 0600 "$LOG_PATH"
 
+  # Make sure the Sandstorm service can read these files.
+  chown "$SERVER_USER":"$SERVER_USER" "$HTTPS_CONFIG_DIR/"*
+
   if [ "200" = "$HTTP_STATUS" ]
   then
     # Say something nice to the user.

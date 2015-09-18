@@ -765,10 +765,10 @@ getProxyForApiToken = function (token) {
         }
 
         var proxy;
-        if (tokenInfo.userId) {
+        if (tokenInfo.identityId) {
           var user = null;
           if (!tokenInfo.forSharing) {
-            user = Meteor.users.findOne({_id: tokenInfo.userId});
+            user = Meteor.users.findOne({identityIds: tokenInfo.identityId});
             if (!user) {
               throw new Meteor.Error(403, "User has been deleted");
             }

@@ -375,11 +375,35 @@ Meteor.startup(function () {
     WebApp.rawConnectHandlers.use(BlackrockPayments.makeConnectHandler(globalDb));
   }
 
-  WebApp.rawConnectHandlers.use(function (req, res, next) {
+  // This is what we bind to FD #3.
+  var serveMeteorAndStaticPublishing = function(req, res, next) {
+    return dispatchToMeteorOrStaticPublishing(req, res, next, false, true);
+  }
+
+  // This is what we bind to FD #4.
+  var redirectToMeteorAndServeStaticPublishing = function (req, res, next) {
+    return dispatchToMeteorOrStaticPublishing(req, res, next, true, true);
+  };
+  global.secondaryPortCallback = redirectToMeteorAndServeStaticPublishing;
+
+
+  // This is what we bind to FD #5 and up.
+  var redirectToMeteorOrBust = function(req, res, next) {
+    return dispatchToMeteorOrStaticPublishing(req, res, next, true, false);
+  };
+  global.tertiaryPortCallback = redirectToMeteorOrBust;
+
+  var dispatchToMeteorOrStaticPublishing = function (req, res, next, redirectRatherThanServeShell, allowStaticPublishing) {
     var hostname = req.headers.host.split(":")[0];
     if (isSandstormShell(hostname)) {
-      // Go on to Meteor.
-      return next();
+      // Go on to Meteor, or serve a redirect.
+      if (redirectRatherThanServeShell) {
+        res.writeHead(302, {"Location": process.env.ROOT_URL + req.url});
+        res.end();
+        return;
+      } else {
+        return next();
+      }
     }
 
     // This is not our main host. See if it's a member of the wildcard.
@@ -388,6 +412,11 @@ Meteor.startup(function () {
     var id = matchWildcardHost(req.headers.host);
     if (id) {
       // Match!
+      if (redirectRatherThanServeShell) {
+        res.writeHead(302, {"Location": process.env.ROOT_URL + req.url});
+        res.end();
+        return;
+      }
 
       if (id === "static") {
         // Static assets domain.
@@ -404,9 +433,14 @@ Meteor.startup(function () {
           return id;
         }
       });
-    } else {
-      // Not a wildcard host. Perhaps it is a custom host.
+    }
+
+    if (allowStaticPublishing) {
       publicIdPromise = lookupPublicIdFromDns(hostname);
+    } else {
+      res.writeHead(404, { "Content-Type": "text/plain" });
+      res.end("404 not found: Resource not available.");
+      return;
     }
 
     publicIdPromise.then(function (publicId) {
@@ -443,7 +477,9 @@ Meteor.startup(function () {
     }).catch(function (err) {
       writeErrorResponse(res, err);
     });
-  });
+  };
+
+  WebApp.rawConnectHandlers.use(serveMeteorAndStaticPublishing);
 });
 
 var errorTxtMapping = {};

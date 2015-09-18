@@ -179,7 +179,6 @@ function splitUserIdsIntoAccountIdsAndIdentityIds() {
     if (identities.length != 1) {
       throw new Error("user has unexpected number of identities: " + JSON.stringify(user));
     }
-    var service = identities[0].service;
     var identityId = identities[0].id;
 
     Meteor.users.update(user._id, {$set: {identityIds: [identityId]}});

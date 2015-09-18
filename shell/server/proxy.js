@@ -647,8 +647,7 @@ var getProxyForHostId = function (hostId) {
 
         var user = session.userId && Meteor.users.findOne(session.userId);
 
-        var proxy = new Proxy(grain._id, grain.userId, session._id, hostId,
-                              user && user._id === grain.userId, user, false);
+        var proxy = new Proxy(grain._id, grain.userId, session._id, hostId, user, false);
         if (apiToken) proxy.apiToken = apiToken;
 
         // Only add the proxy to the table if it was not concurrently deleted (which could happen
@@ -775,13 +774,12 @@ getProxyForApiToken = function (token) {
             }
           }
 
-          var isOwner = grain.userId === tokenInfo.userId;
-          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, isOwner, user, true);
+          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, user, true);
           proxy.apiToken = tokenInfo;
         } else if (tokenInfo.userInfo) {
           throw new Error("API tokens created with arbitrary userInfo no longer supported");
         } else {
-          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, true);
+          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, null, true);
         }
 
         if (!SandstormPermissions.mayOpenGrain(globalDb, {token: tokenInfo})) {
@@ -988,12 +986,11 @@ tryProxyRequest = function (hostId, req, res) {
 // Connects to a grain and exports it on a wildcard host.
 //
 
-function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, isApi, supervisor) {
+function Proxy(grainId, ownerId, sessionId, hostId, user, isApi, supervisor) {
   this.grainId = grainId;
   this.ownerId = ownerId;
   this.supervisor = supervisor;  // note: optional parameter; we can reconnect
   this.sessionId = sessionId;
-  this.isOwner = isOwner;
   this.isApi = isApi;
   this.hasLoaded = false;
   this.websockets = [];

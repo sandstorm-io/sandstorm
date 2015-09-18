@@ -648,7 +648,7 @@ var getProxyForHostId = function (hostId) {
         var user = session.userId && Meteor.users.findOne(session.userId);
 
         var proxy = new Proxy(grain._id, grain.userId, session._id, hostId,
-                              user && user._id === grain._id, user, null, false);
+                              user && user._id === grain.userId, user, false);
         if (apiToken) proxy.apiToken = apiToken;
 
         // Only add the proxy to the table if it was not concurrently deleted (which could happen
@@ -776,12 +776,12 @@ getProxyForApiToken = function (token) {
           }
 
           var isOwner = grain.userId === tokenInfo.userId;
-          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, isOwner, user, null, true);
+          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, isOwner, user, true);
           proxy.apiToken = tokenInfo;
         } else if (tokenInfo.userInfo) {
           throw new Error("API tokens created with arbitrary userInfo no longer supported");
         } else {
-          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, null, true);
+          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, true);
         }
 
         if (!SandstormPermissions.mayOpenGrain(globalDb, {token: tokenInfo})) {
@@ -988,8 +988,7 @@ tryProxyRequest = function (hostId, req, res) {
 // Connects to a grain and exports it on a wildcard host.
 //
 
-function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, userInfo, isApi,
-               supervisor) {
+function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, isApi, supervisor) {
   this.grainId = grainId;
   this.ownerId = ownerId;
   this.supervisor = supervisor;  // note: optional parameter; we can reconnect
@@ -1007,9 +1006,7 @@ function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, userInfo, isA
     if (hostId) throw new Error("API proxy sholudn't have hostId");
   }
 
-  if (userInfo) {
-    this.userInfo = userInfo;
-  } else if (user) {
+  if (user) {
     var identities = SandstormDb.getUserIdentities(user);
     if (identities.length !== 1) {
       if (identities.length === 0) {
@@ -1027,7 +1024,7 @@ function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, userInfo, isA
     this.userInfo = {
       displayName: {defaultText: identity.name},
       preferredHandle: identity.handle,
-      userId: new Buffer(identity.id, "hex")
+      identityId: new Buffer(identity.id, "hex")
     };
     if (identity.picture) this.userInfo.pictureUrl = identity.picture;
     if (identity.pronoun) this.userInfo.pronouns = identity.pronoun;
@@ -1255,7 +1252,7 @@ Proxy.prototype._callNewSession = function (request, viewInfo) {
     if (self.apiToken) {
       vertex = {token: self.apiToken};
     } else {
-      // (self.userId might be null; this is fine)
+      // (self.identityId might be null; this is fine)
       vertex = {grain: {_id: self.grainId, identityId: self.identityId}};
     }
     var permissions = SandstormPermissions.grainPermissions(globalDb, vertex, viewInfo);

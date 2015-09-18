@@ -33,10 +33,10 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //
 // Note that accounts are not the same thing as identities. An account may have multiple identities
 // attached to it. Identities provide a way to authenticate the user and are also used to present
-// globally unique and stable user indentifiers to grains via `Grain.UserInfo.userId`.
+// globally unique and stable user indentifiers to grains via `Grain.UserInfo.identityId`.
 //
 // Each entry in this collection contains:
-//   _id: Random.
+//   _id: Random string. What we're talking about when we say "User ID" or "Account ID".
 //   createdAt: Date when this entry was added to the collection.
 //   lastActive: Date of the user's most recent interaction with this Sandstorm server.
 //   profile: Object containing profile data editable by the user and visible to other users. May
@@ -268,10 +268,6 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              still apply. For non-UiView capabilities, `identityId` is never present. Note that
 //              this is NOT the identity against which the `requiredPermissions` parameter of
 //              `SandstormApi.restore()` is checked; that would be `owner.grain.introducerIdentity`.
-//   userInfo:  *DEPRECATED* For API tokens created by the app through HackSessionContext, the
-//              UserInfo struct that should be passed to `newSession()` when exercising this token,
-//              in decoded (JS object) format. This is a temporary hack. `identityId` is never
-//              present when `userInfo` is present.
 //   roleAssignment: If this API token represents a UiView, this field contains a JSON-encoded
 //              Grain.ViewSharingLink.RoleAssignment representing the permissions it carries. These
 //              permissions will be intersected with those held by `identityId` when the view is
@@ -299,8 +295,8 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
 //              by `roleAssignment` (if present). To facilitate permissions computations, if the
 //              capability is a UiView, then `grainId` is set to the backing grain and `identityId`
-//              is set to the identity that shared the view. None of `userInfo`, `objectId`, or
-//              `frontendRef` are present when `parentToken` is present.
+//              is set to the identity that shared the view. Neither `objectId` nor `frontendRef`
+//              is present when `parentToken` is present.
 //   petname:   Human-readable label for this access token, useful for identifying tokens for
 //              revocation. This should be displayed when visualizing incoming capabilities to
 //              the grain identified by `grainId`.

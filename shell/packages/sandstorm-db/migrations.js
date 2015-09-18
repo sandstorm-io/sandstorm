@@ -199,6 +199,11 @@ function splitUserIdsIntoAccountIdsAndIdentityIds() {
                      {$set: {"requirements.$.permissionsHeld.identityId": identityId}},
                      {multi: true});
   });
+
+  ApiTokens.remove({userInfo: {$exists: true}});
+  // We've renamed `Grain.UserInfo.userId` to `Grain.userInfo.identityId`. The only place
+  // that this field could show up in the database was in this deprecated, no-longer-functional
+  // form of API token.
 }
 
 // This must come after all the functions named within are defined.

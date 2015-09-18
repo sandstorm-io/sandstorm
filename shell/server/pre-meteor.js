@@ -394,6 +394,21 @@ Meteor.startup(function () {
   // For alternate ports, always do HTTP redirects rather than serve
   // up real Meteor responses. Depending on details, serve static
   // publishing.
+  var canonicalizeShellOrWildcardUrl = function(hostname, url) {
+    // Start with ROOT_URL, apply host & path from inbound URL, then
+    // redirect.
+    var targetUrl = Url.parse(process.env.ROOT_URL);
+
+    // Retain the protocol & port from ROOT_URL but use the inbound
+    // hostname.
+    targetUrl.host = hostname + ':' + targetUrl.port;
+
+    // The following allows to avoid decoding + re-encoding query
+    // string parameters, if provided.
+    targetUrl = Url.resolve(Url.format(targetUrl), url);
+    return targetUrl;
+  };
+
   var redirectToMeteorOrServeStaticPublishing = function (req, res, next) {
     return dispatchToMeteorOrStaticPublishing(req, res, next, true, true);
   };
@@ -420,13 +435,7 @@ Meteor.startup(function () {
     if (isSandstormShell(hostname)) {
       // Go on to Meteor, or serve a redirect.
       if (redirectRatherThanServeShell) {
-        // Here we redirect to ROOT_URL, since we know that this
-        // request is aimed for the shell.
-        //
-        // TODO: Turn redirectRatherThanServeShell into a function, so
-        // that this logic can live outside of
-        // dispatchToMeteorOrStaticPublishing().
-        res.writeHead(302, {"Location": process.env.ROOT_URL + req.url});
+        res.writeHead(302, {"Location": canonicalizeShellOrWildcardUrl(hostname, req.url)});
         res.end();
         return;
       } else {
@@ -441,15 +450,7 @@ Meteor.startup(function () {
     if (id) {
       // Match!
       if (redirectRatherThanServeShell) {
-        // Start with ROOT_URL, apply host & path from inbound URL,
-        // then redirect.
-        var targetUrl = Url.parse(process.env.ROOT_URL);
-
-        // Retain the protocol & port from ROOT_URL but use the
-        // inbound hostname.
-        targetUrl.host = hostname + ':' + targetUrl.port;
-        targetUrl.path = Url.parse(req.url).path;
-        res.writeHead(302, {"Location": Url.format(targetUrl)});
+        res.writeHead(302, {"Location": canonicalizeShellOrWildcardUrl(hostname, req.url)});
         res.end();
         return;
       }

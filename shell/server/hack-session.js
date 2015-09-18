@@ -36,16 +36,16 @@ var Url = Npm.require("url");
 ROOT_URL = Url.parse(process.env.ROOT_URL);
 HOSTNAME = ROOT_URL.hostname;
 
-function SessionContextImpl(grainId, sessionId, userId) {
+function SessionContextImpl(grainId, sessionId, identityId) {
   this.grainId = grainId;
   this.sessionId = sessionId;
-  this.userId = userId;
+  this.identityId = identityId;
 }
 
 SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
   var self = this;
   return inMeteor((function () {
-    if (!self.userId) {
+    if (!self.identityId) {
       // TODO(soon): allow non logged in users?
       throw new Meteor.Error(400, "Only logged in users can offer capabilities.")
     }
@@ -53,13 +53,12 @@ SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
     var save = castedCap.save({webkey: null});
     var sturdyRef = waitPromise(save).sturdyRef;
 
-    var identity = globalDb.getUserIdentities(self.userId)[0];
     // TODO(soon): This will eventually use SystemPersistent.addRequirements when membranes
     // are fully implemented for supervisors.
     var requirement = {
       permissionsHeld: {
         grainId: self.grainId,
-        identityId: identity.id,
+        identityId: self.identityId,
         permissions: requiredPermissions
       }
     };
@@ -125,15 +124,15 @@ Meteor.methods({
   }
 });
 
-function HackSessionContextImpl(grainId, sessionId, userId) {
-  SessionContextImpl.call(this, grainId, sessionId, userId);
+function HackSessionContextImpl(grainId, sessionId, identityId) {
+  SessionContextImpl.call(this, grainId, sessionId, identityId);
 }
 
 HackSessionContextImpl.prototype = Object.create(SessionContextImpl.prototype);
 HackSessionContextImpl.prototype.constructor = HackSessionContextImpl;
 
-makeHackSessionContext = function (grainId, sessionId, userId) {
-  return new Capnp.Capability(new HackSessionContextImpl(grainId, sessionId, userId),
+makeHackSessionContext = function (grainId, sessionId, identityId) {
+  return new Capnp.Capability(new HackSessionContextImpl(grainId, sessionId, identityId),
                               HackSessionContext);
 };
 
@@ -156,10 +155,10 @@ HackSessionContextImpl.prototype._getPublicId = function () {
 
   while (!this.publicId) {
     // We haven't looked up the public ID yet.
-    var grain = Grains.findOne(this.grainId, {fields: {publicId: 1, userId: 1}});
+    var grain = Grains.findOne(this.grainId, {fields: {publicId: 1, identityId: 1}});
     if (!grain) throw new Error("Grain does not exist.");
 
-    this.userId = grain.userId;
+    this.identityId = grain.identityId;
 
     if (grain.publicId) {
       this.publicId = grain.publicId;

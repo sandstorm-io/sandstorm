@@ -26,7 +26,7 @@ var TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 
 function cleanupToken(tokenId) {
   check(tokenId, String);
-  waitPromise(sandstormBackend.deleteBackup(tokenId));
+  waitPromise(globalBackend.cap().deleteBackup(tokenId));
   FileTokens.remove({_id: tokenId});
 }
 
@@ -62,7 +62,7 @@ Meteor.methods({
     var grainInfo = _.pick(grain, "appId", "appVersion", "title");
 
     FileTokens.insert(token);
-    waitPromise(sandstormBackend.backupGrain(token._id, this.userId, grainId, grainInfo));
+    waitPromise(globalBackend.cap().backupGrain(token._id, this.userId, grainId, grainInfo));
 
     return token._id;
   },
@@ -84,7 +84,7 @@ Meteor.methods({
     var grainId = Random.id(22);
 
     try {
-      var grainInfo = waitPromise(sandstormBackend.restoreGrain(
+      var grainInfo = waitPromise(globalBackend.cap().restoreGrain(
           tokenId, this.userId, grainId).catch(function (err) {
             console.error("Unzip failure:", err.message);
             throw new Meteor.Error(500, "Invalid backup file.");
@@ -195,7 +195,7 @@ Router.map(function () {
         }
       };
 
-      waitPromise(sandstormBackend.downloadBackup(this.params.tokenId, stream));
+      waitPromise(globalBackend.cap().downloadBackup(this.params.tokenId, stream));
 
       if (!sawEnd) {
         console.error("backend failed to call done() when downloading backup");
@@ -220,7 +220,7 @@ Router.map(function () {
             _id: Random.id(),
             timestamp: new Date()
           };
-          var stream = sandstormBackend.uploadBackup(token._id).stream;
+          var stream = globalBackend.cap().uploadBackup(token._id).stream;
 
           FileTokens.insert(token);
 

@@ -77,7 +77,7 @@ if (Meteor.isServer) {
         // TODO(someday): Implement the ability to reactively subscribe to storage usage from the
         //   back-end?
         var userId = this.userId;
-        sandstormBackend.getUserStorageUsage(userId).then(function (results) {
+        globalBackend.cap().getUserStorageUsage(userId).then(function (results) {
           inMeteor(function () {
             Meteor.users.update(userId, {$set: {storageUsage: parseInt(results.size)}});
           });
@@ -591,8 +591,10 @@ if (Meteor.isClient) {
     }
     title = "Untitled " + title;
 
+    var identity = _.findWhere(SandstormDb.getUserIdentities(Meteor.user()), {main: true});
+
     // We need to ask the server to start a new grain, then browse to it.
-    Meteor.call("newGrain", packageId, command, title, function (error, grainId) {
+    Meteor.call("newGrain", packageId, command, title, identity.id, function (error, grainId) {
       if (error) {
         console.error(error);
         alert(error.message);

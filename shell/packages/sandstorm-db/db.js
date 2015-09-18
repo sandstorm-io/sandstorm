@@ -39,19 +39,26 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   _id: Random string. What we're talking about when we say "User ID" or "Account ID".
 //   createdAt: Date when this entry was added to the collection.
 //   lastActive: Date of the user's most recent interaction with this Sandstorm server.
-//   profile: Object containing profile data editable by the user and visible to other users. May
-//            include the following fields. Note that if any field is missing, the first fallback
-//            is to check `services` for details provided by the identity provider (the details
-//            of which differ per-provider). Only if that is also missing do we fall back to
-//            defaults.
+//   profile: Obsolete now that we allow only one identity per account.
+//   identities: Array of identity profile objects, each of which may include the following fields.
+//               Note that if any field is missing, the first fallback
+//               is to check `services` for details provided by the identity provider (the details
+//               of which differ per-provider). Only if that is also missing do we fall back to
+//               defaults.
+//       id: The globally-stable SHA-256 ID of this identity. This field must be present.
+//       service: String identifying the authentication scheme used by this identity, e.g. "github"
+//                or "google".
 //       name: String containing the display name of the user. Default: first part of email.
 //       handle: String containing the user's preferred handle. Default: first part of email.
 //       picture: _id into the StaticAssets table for the user's picture. Default: identicon.
 //       pronoun: One of "male", "female", "neutral", or "robot". Default: neutral.
+//       verifiedEmail: Only provided by some services. Cannot be directly edited by the user.
+//       main: True is this is the user's main identity.
+//       allowsLogin: True if the user trusts this identity for account authentication.
 //   services: Object containing login and identity data used by Meteor authentication services.
-//   identityIds: Array of identity ID strings, one for each identity held by this user. This data
-//                could be computed from the other fields of this collection; it's denormalized
-//                here to allow fast lookup of users by identity.
+//   mergedUsers: Array of User _id strings, representing the accounts that have been merged into this
+//                one. Those accounts remain in the Users collection, stripped of their `identities`
+//                and `services` fields.
 //   isAdmin: Boolean indicating whether this user is allowed to access the Sandstorm admin panel.
 //   signupKey: If this is an invited user, then this field contains their signup key.
 //   signupNote: If the user was invited through a link, then this field contains the note that the
@@ -260,7 +267,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 // Each contains:
 //   _id:       A SHA-256 hash of the token.
 //   grainId:   The grain servicing this API. (Not present if the API isn't serviced by a grain.)
-//   identitiyId: For UiView capabilities, this is the identity for which the view is attenuated.
+//   identityId: For UiView capabilities, this is the identity for which the view is attenuated.
 //              That is, the UiView's newSession() method will intersect the requested permissions
 //              with this identity's permissions before forwarding on to the underlying app. If
 //              `identityId` is not present, then no identity attenuation is applied, i.e. this is
@@ -707,6 +714,24 @@ _.extend(SandstormDb.prototype, {
       throw new Error("no such user: " + userId);
     }
     return SandstormDb.getUserIdentities(user);
+  },
+
+  getIdentity: function getIdentity (identityId) {
+    check(identityId, String);
+    var user = Meteor.users.findOne({"identities.id": identityId}, {fields: {"identities.$": 1}});
+    if (user) {
+      return user.identities[0];
+    }
+  },
+
+  getIdentityOfUser: function getIdentity (identityId, userId) {
+    check(identityId, String);
+    check(userId, String);
+    var user = Meteor.users.findOne({_id: userId, "identities.id": identityId},
+                                    {fields: {"identities.$": 1}});
+    if (user) {
+      return user.identities[0];
+    }
   },
 
   userGrains: function userGrains (user) {

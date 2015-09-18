@@ -36,18 +36,17 @@ SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 SANDSTORM_LOGDIR = (SANDSTORM_ALTHOME || "") + "/var/log";
 SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
 
-sandstormExe = function (progname) {
-  if (SANDSTORM_ALTHOME) {
-    return SANDSTORM_ALTHOME + "/latest/bin/" + progname;
-  } else {
-    return progname;
-  }
-}
-
 var sandstormCoreFactory = makeSandstormCoreFactory();
 var backendAddress = "unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath;
-sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
-sandstormBackend = sandstormBackendConnection.restore(null, Backend);
+var sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
+var sandstormBackend = sandstormBackendConnection.restore(null, Backend);
+
+// TODO(cleanup): This initilization belongs with the rest of our package initialization in
+//   db-deprecates.js. We can't put it there now because we need to contruct sandstormCoreFactory first.
+globalBackend = new SandstormBackend(globalDb, sandstormBackend);
+if (!Meteor.settings.replicaNumber) {
+  SandstormAccountsMerge.registerObservers(globalDb, globalBackend);
+}
 
 // We've observed a problem in production where occasionally the front-end stops talking to the
 // back-end. It happens very rarely -- like once a month -- and we've been unable to reproduce it
@@ -56,6 +55,7 @@ sandstormBackend = sandstormBackendConnection.restore(null, Backend);
 //
 // Here, I've added some code that attempts to detect the problem by doing a health check
 // periodically and then remaking the connection if it seems broken. We'll see if this helps!
+
 var backendHealthy = true;
 Meteor.setInterval(function () {
   if (!backendHealthy) {
@@ -110,19 +110,22 @@ waitPromise = function (promise) {
 // =======================================================================================
 // API for creating / starting grains from Meteor methods.
 
-var runningGrains = {};
 var proxiesByHostId = {};
 
 Meteor.methods({
-  newGrain: function (packageId, command, title) {
+  newGrain: function (packageId, command, title, identityId) {
     // Create and start a new grain.
 
     check(packageId, String);
     check(command, Object);  // Manifest.Command from package.capnp.
     check(title, String);
+    check(identityId, String);
 
     if (!this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "Must be logged in to create grains.");
+    }
+    if (!globalDb.getIdentityOfUser(identityId, this.userId)) {
+      throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
     if (!isSignedUpOrDemo()) {
@@ -152,7 +155,7 @@ Meteor.methods({
         throw new Meteor.Error(404, "Not Found", "No such package is installed.");
       }
     }
-    var userIdentity = this.connection.sandstormDb.getUserIdentities(this.userId)[0];
+    var userIdentity = this.connection.sandstormDb.getIdentity(identityId);
 
     var grainId = Random.id(22);  // 128 bits of entropy
     Grains.insert({
@@ -165,28 +168,34 @@ Meteor.methods({
       title: title,
       private: true
     });
-    startGrainInternal(packageId, grainId, this.userId, command, true, isDev);
-    updateLastActive(grainId, this.userId, userIdentity.id);
+    globalBackend._startGrainInternal(packageId, grainId, this.userId, command, true, isDev);
+    globalBackend.updateLastActive(grainId, this.userId, userIdentity.id);
     return grainId;
   },
 
-  openSession: function (grainId, cachedSalt) {
+  openSession: function (grainId, identityId, cachedSalt) {
     // Open a new UI session on an existing grain.  Starts the grain if it is not already
     // running.
 
     check(grainId, String);
+    check(identityId, Match.OneOf(undefined, null, String));
+    check(cachedSalt, Match.OneOf(undefined, null, String));
+
+    if (this.userId && !globalDb.getIdentityOfUser(identityId, this.userId)) {
+      throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
+    }
+
     var db = this.connection.sandstormDb;
-    var identity = db.getUserIdentities(this.userId)[0];
     check(cachedSalt, Match.OneOf(undefined, null, String));
     if (!SandstormPermissions.mayOpenGrain(db,
-                                           {grain: {_id: grainId, identityId: identity.id}})) {
+                                           {grain: {_id: grainId, identityId: identityId}})) {
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
-    return openSessionInternal(grainId, Meteor.user(), null, null, cachedSalt);
+    return globalBackend._openSessionInternal(grainId, this.userId, identityId, null, null, cachedSalt);
   },
 
-  openSessionFromApiToken: function(params, cachedSalt) {
+  openSessionFromApiToken: function(params, identityId, cachedSalt) {
     // Given an API token, either opens a new WebSession to the underlying grain or returns a
     // path to which the client should redirect in order to open such a session.
 
@@ -194,7 +203,12 @@ Meteor.methods({
       token: String,
       incognito: Boolean,
     });
+    check(identityId, Match.OneOf(undefined, null, String));
     check(cachedSalt, Match.OneOf(undefined, null, String));
+
+    if (this.userId && identityId && !globalDb.getIdentityOfUser(identityId, this.userId)) {
+      throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
+    }
 
     var token = params.token;
     var incognito = params.incognito;
@@ -229,16 +243,15 @@ Meteor.methods({
     }
 
     if (this.userId && !incognito) {
-      var identity = globalDb.getUserIdentities(this.userId)[0];
-      if (identity.id != apiToken.identityId && identity.id != grain.identityId &&
-          !ApiTokens.findOne({'owner.user.identityId': identity.id, parentToken: hashedToken })) {
+      if (identityId != apiToken.identityId && identityId != grain.identityId &&
+          !ApiTokens.findOne({'owner.user.identityId': identityId, parentToken: hashedToken })) {
         // The current user is neither the sharer nor the grain owner,
         // and the current user has not already redeemed this token.
         var now = new Date();
         var grainInfo = { appTitle: appTitle };
         if (appIcon) { grainInfo.icon = appIcon; }
         if (appId) { grainInfo.appId = appId; }
-        var owner = {user: {identityId: identity.id, title: title, lastUsed: now,
+        var owner = {user: {identityId: identityId, title: title, lastUsed: now,
                             denormalizedGrainMetadata: grainInfo}};
         var newToken = {
           grainId: apiToken.grainId,
@@ -257,7 +270,7 @@ Meteor.methods({
         throw new Meteor.Error(403, "Unauthorized",
                                "User is not authorized to open this grain.");
       }
-      return openSessionInternal(apiToken.grainId, null, title, apiToken, cachedSalt);
+      return globalBackend._openSessionInternal(apiToken.grainId, null, null, title, apiToken, cachedSalt);
     }
   },
 
@@ -276,8 +289,8 @@ Meteor.methods({
       // Session still present in database, so send keep-alive to backend.
 
       var grainId = session.grainId;
-      waitPromise(openGrain(grainId, false).supervisor.keepAlive());
-      updateLastActive(grainId, this.userId, session.identityId);
+      waitPromise(globalBackend.openGrain(grainId, false).supervisor.keepAlive());
+      globalBackend.updateLastActive(grainId, this.userId, session.identityId);
       return true;
     } else {
       return false;
@@ -291,7 +304,7 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
     }
 
-    waitPromise(shutdownGrain(grainId, grain.userId, true));
+    waitPromise(globalBackend.shutdownGrain(grainId, grain.userId, true));
   }
 });
 
@@ -330,266 +343,6 @@ function validateWebkey (apiToken, refreshedExpiration) {
   }
 }
 
-function generateSessionId(grainId, userId, salt) {
-  var sessionParts = [grainId, salt];
-  if (userId) {
-    sessionParts.push(userId);
-  }
-  var sessionInput = sessionParts.join(":");
-  return Crypto.createHash("sha256").update(sessionInput).digest("hex");
-}
-
-function openSessionInternal(grainId, user, title, apiToken, cachedSalt) {
-  var userId = user ? user._id : undefined;
-  var identityId = user ? SandstormDb.getUserIdentities(user)[0].id : undefined;
-
-  // Start the grain if it is not running. This is an optimization: if we didn't start it here,
-  // it would start on the first request to the session host, but we'd like to get started before
-  // the round trip.
-  var runningGrain = runningGrains[grainId];
-  var grainInfo;
-  if (runningGrain) {
-    grainInfo = waitPromise(runningGrain);
-  } else {
-    grainInfo = continueGrain(grainId);
-  }
-
-  updateLastActive(grainId, userId, identityId);
-
-  cachedSalt = cachedSalt || Random.id(22);
-  var sessionId = generateSessionId(grainId, userId, cachedSalt);
-  var session = Sessions.findOne({_id: sessionId});
-  if (session) {
-    // TODO(someday): also do some more checks for anonymous sessions (sessions without a userId).
-    if ((session.identityId && session.identityId !== identityId) ||
-        (session.grainId !== grainId)) {
-      var e = new Meteor.Error(500, "Duplicate SessionId");
-      console.error(e);
-      throw e;
-    } else {
-      return {sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId, salt: cachedSalt};
-    }
-  }
-
-  session = {
-    _id: sessionId,
-    grainId: grainId,
-    hostId: Crypto.createHash("sha256").update(sessionId).digest("hex").slice(0, 32),
-    timestamp: new Date().getTime(),
-    hasLoaded: false
-  };
-
-  if (userId) {
-    session.identityId = identityId;
-    session.userId = userId;
-  } else if (apiToken) {
-    session.hashedToken = apiToken._id;
-  } else {
-    // Must be old-style sharing, i.e. !grain.private.
-  }
-
-  Sessions.insert(session);
-
-  return {sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId, salt: cachedSalt};
-}
-
-function updateLastActive(grainId, userId, identityId) {
-  // Update the lastActive date on the grain, any relevant API tokens, and the user,
-  // and also update the user's storage usage.
-
-  var storagePromise = undefined;
-  if (Meteor.settings.public.quotaEnabled) {
-    storagePromise = sandstormBackend.getUserStorageUsage(userId);
-  }
-
-  var now = new Date();
-  Grains.update(grainId, {$set: {lastUsed: now}});
-  if (userId) {
-    Meteor.users.update(userId, {$set: {lastActive: now}});
-  }
-  if (identityId) {
-    // Update any API tokens that match this user/grain pairing as well
-    var now = new Date();
-    ApiTokens.update({"grainId": grainId, "owner.user.identityId": identityId},
-        {$set: {"owner.user.lastUsed": now }});
-  }
-
-  if (Meteor.settings.public.quotaEnabled) {
-    try {
-      var ownerId = Grains.findOne(grainId).userId;
-      var size = parseInt(waitPromise(storagePromise).size);
-      Meteor.users.update(ownerId, {$set: {storageUsage: size}});
-      // TODO(security): Consider actively killing grains if the user is excessively over quota?
-      //   Otherwise a constantly-active grain could consume arbitrary space without being stopped.
-    } catch (err) {
-      if (err.kjType !== "unimplemented") {
-        console.error("error getting user storage usage:", err.stack);
-      }
-    }
-  }
-}
-
-openGrain = function (grainId, isRetry) {
-  // Create a Cap'n Proto connection to the given grain. Note that this function does not actually
-  // verify that the connection succeeded. Instead, if an RPC call to the connection fails, check
-  // shouldRestartGrain(). If it returns true, call continueGrain() and then openGrain()
-  // again with isRetry = true, and then retry.
-  //
-  // Must be called in a Meteor context.
-
-  if (isRetry) {
-    // Since this is a retry, try starting the grain even if we think it's already running.
-    return continueGrain(grainId);
-  } else {
-    // Start the grain if it is not running.
-    var runningGrain = runningGrains[grainId];
-    if (runningGrain) {
-      return waitPromise(runningGrain);
-    } else {
-      return continueGrain(grainId);
-    }
-  }
-}
-
-shouldRestartGrain = function (error, retryCount) {
-  // Given an error thrown by an RPC call to a grain, return whether or not it makes sense to try
-  // to restart the grain and retry. `retryCount` is the number of times that the request has
-  // already gone through this cycle (should be zero for the first call).
-
-  return error.kjType === "disconnected" && retryCount < 1;
-}
-
-function maybeRetryUseGrain(grainId, cb, retryCount, err) {
-  if (shouldRestartGrain(err, retryCount)) {
-    return inMeteor(function () {
-      return cb(openGrain(grainId, true).supervisor)
-          .catch(maybeRetryUseGrain.bind(undefined, grainId, cb, retryCount + 1));
-    });
-  } else {
-    throw err;
-  }
-}
-
-useGrain = function (grainId, cb) {
-  // This will open a grain for you, handling restarts if needed, and call the passed function with
-  // the supervisor capability as the only parameter. The callback must return a promise that used
-  // the supervisor, so that we can check if a disconnect error occurred, and retry if possible.
-  // This function returns the same promise that your callback returns.
-  //
-  // This function is NOT expected to be run in a meteor context.
-
-  var runningGrain = runningGrains[grainId];
-  if (runningGrain) {
-    return runningGrain.then(function (grainInfo) {
-      return cb(grainInfo.supervisor);
-    }).catch(maybeRetryUseGrain.bind(undefined, grainId, cb, 0));
-  } else {
-    return inMeteor(function () {
-      return cb(openGrain(grainId, false).supervisor)
-          .catch(maybeRetryUseGrain.bind(undefined, grainId, cb, 0));
-    });
-  }
-}
-
-function continueGrain(grainId) {
-  var grain = Grains.findOne(grainId);
-  if (!grain) {
-    throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainId);
-  }
-
-  var manifest;
-  var packageId;
-  var devApp = DevApps.findOne({_id: grain.appId});
-  var isDev;
-  if (devApp) {
-    // If a DevApp with the same app ID is currently active, we let it override the installed
-    // package, so that the grain runs using the dev app.
-    manifest = devApp.manifest;
-    packageId = devApp.packageId;
-    isDev = true;
-  } else {
-    var pkg = Packages.findOne(grain.packageId);
-    if (pkg) {
-      manifest = pkg.manifest;
-      packageId = pkg._id;
-    } else {
-      throw new Meteor.Error(500, "Grain's package not installed",
-                             "Package ID: " + grain.packageId);
-    }
-  }
-
-  if (!("continueCommand" in manifest)) {
-    throw new Meteor.Error(500, "Package manifest defines no continueCommand.",
-                           "Package ID: " + packageId);
-  }
-
-  return startGrainInternal(
-      packageId, grainId, grain.userId, manifest.continueCommand, false, isDev);
-}
-
-function startGrainInternal(packageId, grainId, ownerId, command, isNew, isDev) {
-  // Starts the grain supervisor.  Must be executed in a Meteor context.  Blocks until grain is
-  // started. Returns a promise for an object containing two fields: `owner` (the ID of the owning
-  // user) and `supervisor` (the supervisor capability).
-
-  if (isUserExcessivelyOverQuota(Meteor.users.findOne(ownerId))) {
-    throw new Meteor.Error(402, "Cannot start grain because owner's storage is exhausted.");
-  }
-
-  // Ugly: Stay backwards-compatible with old manifests that had "executablePath" and "args" rather
-  //   than just "argv".
-  if ("args" in command) {
-    if (!("argv" in command)) {
-      command.argv = command.args;
-    }
-    delete command.args;
-  }
-  if ("executablePath" in command) {
-    if (!("deprecatedExecutablePath" in command)) {
-      command.deprecatedExecutablePath = command.executablePath;
-    }
-    delete command.executablePath;
-  }
-
-  var whenReady = sandstormBackend.startGrain(ownerId, grainId, packageId, command, isNew, isDev)
-      .then(function (results) {
-    return {
-      owner: ownerId,
-      supervisor: results.supervisor
-    };
-  });
-
-  runningGrains[grainId] = whenReady;
-  return waitPromise(whenReady);
-}
-
-shutdownGrain = function (grainId, ownerId, keepSessions) {
-  if (!keepSessions) {
-    Sessions.remove({grainId: grainId});
-    delete runningGrains[grainId];
-  }
-
-  var grain = sandstormBackend.getGrain(ownerId, grainId).supervisor;
-  return grain.shutdown().then(function () {
-    grain.close();
-    throw new Error("expected shutdown() to throw disconnected");
-  }, function (err) {
-    grain.close();
-    if (err.kjType !== "disconnected") {
-      throw err;
-    }
-  });
-}
-
-deleteGrain = function (grainId, ownerId) {
-  // We leave it up to the caller if they want to actually wait, but some don't so we report
-  // exceptions.
-  return sandstormBackend.deleteGrain(ownerId, grainId).catch(function (err) {
-    console.error("problem deleting grain " + grainId + ":", err.message);
-    throw err;
-  });
-}
-
 getGrainSize = function (supervisor, oldSize) {
   var promise;
   if (oldSize === undefined) {
@@ -607,7 +360,7 @@ getGrainSize = function (supervisor, oldSize) {
 Meteor.startup(function () {
   function shutdownApp(appId) {
     Grains.find({appId: appId}).forEach(function(grain) {
-      waitPromise(shutdownGrain(grain._id, grain.userId));
+      waitPromise(globalBackend.shutdownGrain(grain._id, grain.userId));
     });
   }
 
@@ -673,10 +426,7 @@ var getProxyForHostId = function (hostId) {
         // Note that we don't need to call mayOpenGrain() because the existence of a session
         // implies this check was already performed.
 
-        var user = session.userId && Meteor.users.findOne(session.userId);
-
-        var proxy = new Proxy(grain._id, grain.userId, session._id, hostId,
-                              user && user._id === grain.userId, user, false);
+        var proxy = new Proxy(grain._id, grain.userId, session._id, hostId, session.identityId, false);
         if (apiToken) proxy.apiToken = apiToken;
 
         // Only add the proxy to the table if it was not concurrently deleted (which could happen
@@ -794,22 +544,18 @@ getProxyForApiToken = function (token) {
         }
 
         var proxy;
-        if (tokenInfo.userId) {
-          var user = null;
+        if (tokenInfo.identityId) {
+          var identityId = null;
           if (!tokenInfo.forSharing) {
-            user = Meteor.users.findOne({_id: tokenInfo.userId});
-            if (!user) {
-              throw new Meteor.Error(403, "User has been deleted");
-            }
+            identityId = tokenInfo.identityId;
           }
 
-          var isOwner = grain.userId === tokenInfo.userId;
-          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, isOwner, user, true);
+          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, identityId, true);
           proxy.apiToken = tokenInfo;
         } else if (tokenInfo.userInfo) {
           throw new Error("API tokens created with arbitrary userInfo no longer supported");
         } else {
-          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, false, null, true);
+          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, null, true);
         }
 
         if (!SandstormPermissions.mayOpenGrain(globalDb, {token: tokenInfo})) {
@@ -1016,12 +762,12 @@ tryProxyRequest = function (hostId, req, res) {
 // Connects to a grain and exports it on a wildcard host.
 //
 
-function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, isApi, supervisor) {
+function Proxy(grainId, ownerId, sessionId, hostId, identityId, isApi, supervisor) {
   this.grainId = grainId;
   this.ownerId = ownerId;
+  this.identityId = identityId;
   this.supervisor = supervisor;  // note: optional parameter; we can reconnect
   this.sessionId = sessionId;
-  this.isOwner = isOwner;
   this.isApi = isApi;
   this.hasLoaded = false;
   this.websockets = [];
@@ -1034,27 +780,17 @@ function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, isApi, superv
     if (hostId) throw new Error("API proxy sholudn't have hostId");
   }
 
-  if (user) {
-    var identities = SandstormDb.getUserIdentities(user);
-    if (identities.length !== 1) {
-      if (identities.length === 0) {
-        // Make sure that if we add a new user type we don't forget to update this.
-        throw new Meteor.Error(500, "Unknown user type.");
-      } else {
-        // Make sure that if we implement multiple identities we don't forget to update this.
-        throw new Meteor.Error(500, "User has multiple or zero identities?");
-      }
+  if (this.identityId) {
+    var identity = globalDb.getIdentity(this.identityId);
+    if (!identity) {
+      throw new Error("identity not found: " + this.identityId);
     }
-    var identity = identities[0];
-    this.userId = user._id;
-    this.identityId = identity.id;
-
     this.userInfo = {
       displayName: {defaultText: identity.name},
       preferredHandle: identity.handle,
       identityId: new Buffer(identity.id, "hex")
     };
-    if (identity.picture) this.userInfo.pictureUrl = identity.picture;
+    if (identity.pictureUrl) this.userInfo.pictureUrl = identity.pictureUrl;
     if (identity.pronoun) this.userInfo.pronouns = identity.pronoun;
   } else {
     this.userInfo = {
@@ -1062,7 +798,6 @@ function Proxy(grainId, ownerId, sessionId, hostId, isOwner, user, isApi, superv
       preferredHandle: "anonymous"
     }
   }
-
   var self = this;
 
   this.requestHandler = function (request, response) {
@@ -1129,7 +864,7 @@ Proxy.prototype.close = function () {
 
 Proxy.prototype.getConnection = function () {
   if (!this.supervisor) {
-    this.supervisor = sandstormBackend.getGrain(this.ownerId, this.grainId).supervisor;
+    this.supervisor = globalBackend.cap().getGrain(this.ownerId, this.grainId).supervisor;
     this.uiView = null;
   }
   if (!this.uiView) {
@@ -1150,9 +885,8 @@ Proxy.prototype._callNewWebSession = function (request, userInfo) {
         ? request.headers["accept-language"].split(",").map(function (s) { return s.trim(); })
         : [ "en-US", "en" ]
   });
-
   return this.uiView.newSession(userInfo,
-                                makeHackSessionContext(this.grainId, this.sessionId, this.userId),
+                                makeHackSessionContext(this.grainId, this.sessionId, this.identityId),
                                 WebSession.typeId, params).session;
 };
 
@@ -1263,7 +997,7 @@ Proxy.prototype._callNewApiSession = function (request, userInfo) {
   // calling newSession with an ApiSession._id.
   // Eventually we'll remove this logic once we're sure apps have updated.
   return this.uiView.newSession(userInfo,
-                                makeHackSessionContext(this.grainId, this.sessionId, this.userId),
+                                makeHackSessionContext(this.grainId, this.sessionId, this.identityId),
                                 ApiSession.typeId, serializedParams)
       .then(function (session) {
     return session.session;
@@ -1340,7 +1074,6 @@ Proxy.prototype.getSession = function (request) {
     });
     this.session = new Capnp.Capability(promise, WebSession);
   }
-
   return this.session;
 }
 
@@ -1360,7 +1093,7 @@ Proxy.prototype.resetConnection = function () {
   }
   if (this.supervisor) {
     this.supervisor.close();
-    delete runningGrains[this.grainId];
+    delete globalBackend.runningGrains[this.grainId];
     delete this.supervisor;
   }
 }
@@ -1373,10 +1106,10 @@ Proxy.prototype.maybeRetryAfterError = function (error, retryCount) {
 
   var self = this;
 
-  if (shouldRestartGrain(error, retryCount)) {
+  if (SandstormBackend.shouldRestartGrain(error, retryCount)) {
     this.resetConnection();
     return inMeteor(function () {
-      self.supervisor = continueGrain(self.grainId).supervisor;
+      self.supervisor = globalBackend._continueGrain(self.grainId).supervisor;
     });
   } else {
     throw error;
@@ -1722,7 +1455,6 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
 
 Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
   var self = this;
-
   return Promise.resolve(undefined).then(function () {
     return self.makeContext(request, response);
   }).then(function (context) {
@@ -1861,7 +1593,7 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
       err.kjType = "unimplemented";
     }
 
-    if (shouldRestartGrain(err, 0)) {
+    if (SandstormBackend.shouldRestartGrain(err, 0)) {
       // This is the kind of error that indicates we should retry. Note that we passed 0 for the
       // retry count above because we were just checking if this is a retriable error (vs. possibly
       // a method-not-implemented error); maybeRetryAfterError() will check again with the proper
@@ -2016,7 +1748,7 @@ Meteor.publish("grainLog", function (grainId) {
   };
 
   try {
-    var handle = waitPromise(useGrain(grainId, function (supervisor) {
+    var handle = waitPromise(globalBackend.useGrain(grainId, function (supervisor) {
       return supervisor.watchLog(8192, receiver);
     })).handle;
     connected = true;

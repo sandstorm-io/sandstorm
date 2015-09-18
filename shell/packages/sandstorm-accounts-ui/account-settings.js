@@ -90,18 +90,14 @@ var submitProfileForm = function (event, cb) {
   }
 
   var newProfile = {
+    id: form.getAttribute("data-identity-id"),
     name: form.nameInput.value,
     handle: form.handle.value,
     pronoun: form.pronoun.value,
-    email: form.email.value,
   };
 
   if (!newProfile.name) {
     alert("You must enter a name.");
-    return;
-  }
-  if (!newProfile.email) {
-    alert("You must enter an email.");
     return;
   }
 

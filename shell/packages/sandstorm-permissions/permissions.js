@@ -399,10 +399,9 @@ SandstormPermissions.downstreamTokens = function(db, root) {
   return result;
 }
 
-SandstormPermissions.createNewApiToken = function (db, userId, grainId, petname,
+SandstormPermissions.createNewApiToken = function (db, provider, grainId, petname,
                                                    roleAssignment, forSharing,
-                                                   expiresIfUnusedDuration,
-                                                   rawParentToken) {
+                                                   expiresIfUnusedDuration) {
   // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
   check(grainId, String);
   check(petname, String);
@@ -411,32 +410,7 @@ SandstormPermissions.createNewApiToken = function (db, userId, grainId, petname,
   // Meteor bug #3877: we get null here instead of undefined when we
   // explicitly pass in undefined.
   check(expiresIfUnusedDuration, Match.OneOf(undefined, null, Number));
-  check(rawParentToken, Match.OneOf(undefined, null, String));
-
-  var parentToken;
-  if (rawParentToken) {
-    parentToken = Crypto.createHash("sha256").update(rawParentToken).digest("base64");
-  }
-  var identityId;
-  if (userId) {
-    check(userId, String);
-    identityId = db.getUserIdentities(userId)[0].id;
-  } else {
-    if (!rawParentToken) {
-      throw new Meteor.Error(403, "If you are not logged in, you must specify a parent token to " +
-                             "create a new API token.");
-    } else {
-      var parentApiToken = db.collections.apiTokens.findOne(
-        {_id: parentToken, grainId: grainId, objectId: {$exists: false}});
-      if (!parentApiToken) {
-        throw new Meteor.Error(403, "No such parent token found.");
-      }
-      identityId = parentApiToken.identityId;
-      if (parentApiToken.forSharing) {
-        forSharing = true;
-      }
-    }
-  }
+  check(provider, Match.OneOf({identityId: String}, {rawParentToken: String}));
 
   var grain = db.getGrain(grainId);
   if (!grain) {
@@ -444,21 +418,32 @@ SandstormPermissions.createNewApiToken = function (db, userId, grainId, petname,
   }
 
   var token = Random.secret();
-
-  var apiToken = {
+        var apiToken = {
     _id: Crypto.createHash("sha256").update(token).digest("base64"),
-    identityId: identityId,
     grainId: grainId,
     roleAssignment: roleAssignment,
     petname: petname,
     created: new Date(),
     expires: null,
-    forSharing: forSharing,
   };
 
-  if (parentToken) {
+  if (provider.rawParentToken) {
+    var parentToken = Crypto.createHash("sha256").update(rawParentToken).digest("base64");
+    var parentApiToken = db.collections.apiTokens.findOne(
+      {_id: parentToken, grainId: grainId, objectId: {$exists: false}});
+    if (!parentApiToken) {
+      throw new Meteor.Error(403, "No such parent token found.");
+    }
+    identityId = parentApiToken.identityId;
+    if (parentApiToken.forSharing) {
+      forSharing = true;
+    }
     apiToken.parentToken = parentToken;
+  } else {
+    apiToken.identityId = provider.identityId;
   }
+  apiToken.forSharing = forSharing;
+
   if (expiresIfUnusedDuration) {
     apiToken.expiresIfUnused = new Date(Date.now() + expiresIfUnusedDuration);
   }
@@ -479,20 +464,28 @@ SandstormPermissions.cleanupSelfDestructing = function (db) {
 }
 
 Meteor.methods({
-  transitiveShares: function(grainId) {
+  transitiveShares: function(identityId, grainId) {
+    check(identityId, String);
     check(grainId, String);
     if (this.userId) {
       var db = this.connection.sandstormDb;
       return SandstormPermissions.downstreamTokens(db,
-          {grain: {_id: grainId, identityId: db.getUserIdentities(this.userId)[0].id }});
+          {grain: {_id: grainId, identityId: identityId }});
     }
   },
 
-  newApiToken: function (grainId, petname, roleAssignment, forSharing,
-                         expiresIfUnusedDuration, rawParentToken) {
+  newApiToken: function (provider, grainId, petname, roleAssignment, forSharing,
+                         expiresIfUnusedDuration) {
+    check(provider, Match.OneOf({identityId: String}, {rawParentToken: String}));
+    var db = this.connection.sandstormDb;
+    if (provider.identityId) {
+      if (!this.userId || !db.getIdentityOfUser(provider.identityId, this.userId)) {
+        throw new Meteor.Error(403, "Not an identity of the current user: " + provider.identityId);
+      }
+    }
     return SandstormPermissions.createNewApiToken(
-      this.connection.sandstormDb, this.userId, grainId, petname, roleAssignment, forSharing,
-      expiresIfUnusedDuration, rawParentToken);
+      this.connection.sandstormDb, provider, grainId, petname, roleAssignment, forSharing,
+      expiresIfUnusedDuration);
   },
 
   updateApiToken: function (token, newFields) {

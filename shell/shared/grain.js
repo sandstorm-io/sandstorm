@@ -29,15 +29,18 @@ if (Meteor.isServer) {
                               {fields: {title: 1, userId: 1, identityId: 1, private: 1}})];
     if (this.userId) {
       // TODO how will this work with multiple identities?
-      var myIdentity = globalDb.getUserIdentities(this.userId)[0];
-      self.added("displayNames", myIdentity.id, {displayName: myIdentity.name});
+      var myIdentities = globalDb.getUserIdentities(this.userId);
+      var myIdentityIds = myIdentities.map(function (x) { return x.id; });
+      myIdentities.forEach(function(identity) {
+        self.added("displayNames", identity.id, {displayName: identity.name});
+      });
 
       // Alice is allowed to know Bob's display name if Bob has received a UiView from Alice
       // for *any* grain.
-      var handle = ApiTokens.find({identityId: myIdentity.id,
+      var handle = ApiTokens.find({identityId: {$in: myIdentityIds},
                                    "owner.user.identityId": {$exists: true}}).observe({
         added: function(token) {
-          var user = Meteor.users.findOne({identityIds: token.owner.user.identityId});
+          var user = Meteor.users.findOne({"identities.id": token.owner.user.identityId});
           if (user) {
             var identity = _.findWhere(SandstormDb.getUserIdentities(user),
                                        {id: token.owner.user.identityId});
@@ -51,8 +54,8 @@ if (Meteor.isServer) {
       this.onStop(function() { handle.stop(); });
 
       result.push(ApiTokens.find({grainId: grainId,
-                                  $or : [{"owner.user.identityId": myIdentity.id},
-                                         {identityId: myIdentity.id}]}));
+                                  $or : [{"owner.user.identityId": {$in: myIdentityIds}},
+                                         {identityId: {$in: myIdentityIds}}]}));
 
     }
     return result;
@@ -120,7 +123,7 @@ if (Meteor.isServer) {
       return [];
     }
 
-    var supervisor = sandstormBackend.getGrain(this.userId, grainId).supervisor;
+    var supervisor = globalBackend.cap().getGrain(this.userId, grainId).supervisor;
 
     var self = this;
     var stopped = false;
@@ -191,25 +194,22 @@ Meteor.methods({
                               lastActive: grain.lastUsed, appId: grain.appId});
         }
         if (!this.isSimulation) {
-          waitPromise(deleteGrain(grainId, this.userId));
+          waitPromise(globalBackend.deleteGrain(grainId, this.userId));
           Meteor.call("deleteUnusedPackages", grain.appId);
         }
       }
     }
   },
-  forgetGrain: function (grainId) {
+  forgetGrain: function (grainId, identityId) {
     check(grainId, String);
-
-    if (this.userId) {
-      var identity = globalDb.getUserIdentities(this.userId)[0];
-      ApiTokens.remove({grainId: grainId, "owner.user.identityId": identity.id});
-    }
+    check(identityId, String);
+    ApiTokens.remove({grainId: grainId, "owner.user.identityId": identityId});
   },
-  updateGrainTitle: function (grainId, newTitle) {
+  updateGrainTitle: function (grainId, newTitle, identityId) {
     check(grainId, String);
     check(newTitle, String);
+    check(identityId, String);
     if (this.userId) {
-      var identityId = globalDb.getUserIdentities(this.userId)[0].id
       var grain = Grains.findOne(grainId);
       if (grain) {
         if (identityId === grain.identityId) {
@@ -231,26 +231,26 @@ Meteor.methods({
       Grains.update({_id: grainId, userId: this.userId}, {$set: {private: true}});
     }
   },
-  inviteUsersToGrain: function (origin, grainId, title, roleAssignment, emailAddresses, message) {
+  inviteUsersToGrain: function (origin, identityId, grainId, title, roleAssignment,
+                                emailAddresses, message) {
     if (!this.isSimulation) {
       check(origin, String);
+      check(identityId, String);
       check(grainId, String);
       check(title, String);
       check(roleAssignment, roleAssignmentPattern);
       check(emailAddresses, [String]);
       check(message, {text: String, html: String});
-      var userId = this.userId;
-      if (!userId) {
-        throw new Meteor.Error(403, "Must be logged in to share by email.");
+      if (!this.userId || !globalDb.getIdentityOfUser(identityId, this.userId)) {
+        throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
       }
       var sharerDisplayName = Meteor.user().profile.name;
       var outerResult = {successes: [], failures: []};
       emailAddresses.forEach(function(emailAddress) {
         var result = SandstormPermissions.createNewApiToken(
-          globalDb, userId, grainId,
+          globalDb, {identityId: identityId}, grainId,
           "email invitation for " + emailAddress,
-          roleAssignment,
-          true, undefined);
+          roleAssignment, true);
         var url = origin + "/shared/" + result.token;
         var html = message.html + "<br><br>" +
             "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
@@ -308,7 +308,7 @@ if (Meteor.isClient) {
       if (token) {
         grains.forEach(function (grain) {
           if (grain.token() == token) {
-            grain.setRevealIdentity(false);
+            grain.doNotRevealIdentity();
           }
         });
       } else {
@@ -323,7 +323,7 @@ if (Meteor.isClient) {
       if (token) {
         grains.forEach(function (grain) {
           if (grain.token() == token) {
-            grain.setRevealIdentity(true);
+            grain.revealIdentity();
           }
         });
       } else {
@@ -382,7 +382,9 @@ if (Meteor.isClient) {
         }
       } else {
         if (window.confirm("Really forget this grain?")) {
-          Meteor.call("forgetGrain", activeGrain.grainId());
+          if (identity) {
+            Meteor.call("forgetGrain", activeGrain.grainId(), activeGrain.identityId());
+          }
           // TODO: extract globalGrains into a class that has a "close" method for closing the active view
           activeGrain.destroy();
           if (grains.length == 1) {
@@ -506,7 +508,8 @@ if (Meteor.isClient) {
       if (roleList && roleList.selectedIndex > 0) {
         assignment = {roleId: roleList.selectedIndex - 1};
       }
-      Meteor.call("newApiToken", grainId, document.getElementById("api-token-petname").value,
+      Meteor.call("newApiToken", {identityId: activeGrain.identityId()}, grainId,
+                  document.getElementById("api-token-petname").value,
                   assignment, false, undefined,
                   function (error, result) {
         if (error) {
@@ -661,7 +664,8 @@ if (Meteor.isClient) {
         assignment = {none: null};
       }
       instance.completionState.set({"pending": true});
-      Meteor.call("newApiToken", grainId, event.target.getElementsByClassName("label")[0].value,
+      Meteor.call("newApiToken", {identityId: currentGrain.identityId()}, grainId,
+                  event.target.getElementsByClassName("label")[0].value,
                   assignment, true, undefined,
                   function (error, result) {
         if (error) {
@@ -815,10 +819,12 @@ if (Meteor.isClient) {
   Template.whoHasAccessPopup.onCreated(function () {
     var instance = this;
     var currentGrain = getActiveGrain(globalGrains.get());
+    instance.identityId = currentGrain.identityId();
     instance.grainId = currentGrain.grainId();
     instance.transitiveShares = new ReactiveVar(null);
     this.resetTransitiveShares = function() {
-      Meteor.call("transitiveShares", instance.grainId, function(error, downstream) {
+      Meteor.call("transitiveShares", instance.identityId, instance.grainId,
+                  function(error, downstream) {
         if (error) {
           console.error(error.stack);
         } else {
@@ -893,13 +899,12 @@ if (Meteor.isClient) {
   Template.whoHasAccessPopup.helpers({
     existingShareTokens: function () {
       if (Meteor.userId()) {
-        var identity = globalDb.getUserIdentities(Meteor.userId())[0];
-        var result = ApiTokens.find({grainId: Template.instance().grainId, identityId: identity.id,
+        return ApiTokens.find({grainId: Template.instance().grainId,
+                               identityId: Template.instance().identityId,
                                forSharing: true,
                                $or: [{owner: {webkey:null}},
                                      {owner: {$exists: false}}],
-                                    }).fetch();
-        return result;
+                              }).fetch();
       }
     },
     getPetname: function () {
@@ -1024,12 +1029,15 @@ if (Meteor.isClient) {
       var message = event.target.getElementsByClassName("personal-message")[0].value;
       instance.completionState.set({pending: true});
 
+      var currentGrain = getActiveGrain(globalGrains.get());
+
       // HTML-escape the message.
       var div = document.createElement('div');
       div.appendChild(document.createTextNode(message));
       var htmlMessage = div.innerHTML.replace(/\n/g, "<br>");
 
-      Meteor.call("inviteUsersToGrain", getOrigin(), grainId, title, assignment, emails,
+      Meteor.call("inviteUsersToGrain", getOrigin(), currentGrain.identityId(),
+                  grainId, title, assignment, emails,
                   {text: message, html: htmlMessage}, function (error, result) {
         if (error) {
           instance.completionState.set({error: error.toString()});

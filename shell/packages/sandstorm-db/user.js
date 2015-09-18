@@ -14,6 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+var Crypto = Npm.require("crypto");
 var Future = Npm.require("fibers/future");
 
 userPictureUrl = function (user) {
@@ -97,6 +98,51 @@ Accounts.onCreateUser(function (options, user) {
       user.profile.picture = assetId;
     }
   }
-  user.identityIds = SandstormDb.getUserIdentities(user).map(function (i) { return i.id; });
+  var identity = _.pick(user.profile, "name", "handle", "pronouns", "picture");
+  identity.main = true;
+  identity.allowsLogin = true;
+
+  var serviceUserId;
+  if ("devName" in user) {
+    identity.service = "dev";
+    serviceUserId = user.devName;
+  } else if ("expires" in user) {
+    identity.service = "demo";
+    serviceUserId = user._id;
+  } else if (user.services && "google" in user.services) {
+    identity.service = "google";
+    if (user.services.google.email && user.services.google.verified_email) {
+      identity.verifiedEmail = user.services.google.email;
+    }
+    serviceUserId = user.services.google.id;
+  } else if (user.services && "github" in user.services) {
+    identity.service = "github";
+    serviceUserId = user.services.github.id;
+  } else if (user.services && "emailToken" in user.services) {
+    identity.service = "emailToken";
+    identity.verifiedEmail = user.services.emailToken.email;
+    serviceUserId = user.services.emailToken.email;
+  }
+  identity.id = Crypto.createHash("sha256")
+      .update(identity.service + ":" + serviceUserId).digest("hex");
+
+  user.identities = [identity];
   return user;
 });
+
+Accounts.validateLoginAttempt(function(info) {
+  if (info.allowed) {
+    if (info.type === "resume") {
+      return true;
+    } else {
+      var identities = info.user.identities;
+      for (var ii = 0; ii < identities.length; ++ii) {
+        if (identities[ii].service === info.type) {
+          return identities[ii].allowsLogin;
+        }
+      }
+    }
+  }
+});
+
+Meteor.users._ensureIndex("identities.id", {unique: 1, sparse: 1});

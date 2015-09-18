@@ -40,7 +40,7 @@ function makeNotificationHandle(notificationId, saved) {
 }
 
 function dropWakelock(grainId, wakeLockNotificationId) {
-  waitPromise(useGrain(grainId, function (supervisor) {
+  waitPromise(globalBackend.useGrain(grainId, function (supervisor) {
     return supervisor.drop({wakeLockNotification: wakeLockNotificationId});
   }));
 }
@@ -220,7 +220,7 @@ restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
     if (token.objectId.appRef) {
       token.objectId.appRef = new Buffer(token.objectId.appRef);
     }
-    return waitPromise(useGrain(token.grainId, function (supervisor) {
+    return waitPromise(globalBackend.useGrain(token.grainId, function (supervisor) {
       return supervisor.restore(token.objectId, requirements, parentToken);
     }));
   } else if (token.parentToken) {

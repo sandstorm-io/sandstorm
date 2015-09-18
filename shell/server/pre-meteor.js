@@ -474,7 +474,6 @@ Meteor.startup(function () {
       // Not a wildcard host. Perhaps it is a custom host.
       if (allowStaticPublishing) {
         publicIdPromise = lookupPublicIdFromDns(hostname);
-        console.log("YAY I GUESS");
       } else {
         res.writeHead(404, {"Content-Type": "text/plain"});
         res.end("404 not found: Resource not available.");

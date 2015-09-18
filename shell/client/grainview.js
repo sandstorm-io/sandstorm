@@ -22,19 +22,22 @@ GrainView = function GrainView(grainId, path, token, parentElement) {
   this._originalPath = path;
   this._path = path;
   this._token = token;
-
   this._status = "closed";
-  this._revealIdentity = new ReactiveVar(undefined); // set to true or false to make explicit
+  this._dep = new Tracker.Dependency();
+
+  this._userIdentity = new ReactiveVar(undefined);
+  // `false` means incognito; `undefined` means we still need to decide whether to reveal
+  // an identity.
 
   if (token) {
     if (!Meteor.userId()) {
-      this._revealIdentity.set(false);
+      this.doNotRevealIdentity();
     } else if (this._isIdentityAlreadyRevealedToOwner()) {
-      this._revealIdentity.set(true);
+      this.revealIdentity();
     }
+  } else {
+    this.revealIdentity();
   }
-
-  this._dep = new Tracker.Dependency();
 
   // We manage our Blaze view directly in order to get more control over when iframes get
   // re-rendered. E.g. if we were to instead use a template with {{#each grains}} iterating over
@@ -106,10 +109,9 @@ GrainView.prototype.title = function () {
     var grain = Grains.findOne({_id: this._grainId});
     return grain && grain.title;
   } else if (!this._isUsingAnonymously()) {
-    var identity = SandstormDb.getUserIdentities(Meteor.user())[0];
     // Case 2.
     var apiToken = ApiTokens.findOne({grainId: this._grainId,
-                                      "owner.user.identityId": identity.id},
+                                      "owner.user.identityId": this._userIdentity.get().id},
                                      {sort: {created: 1}});
     return apiToken && apiToken.owner && apiToken.owner.user && apiToken.owner.user.title;
   } else {
@@ -132,9 +134,9 @@ GrainView.prototype.appTitle = function () {
     return pkg && pkg.manifest && pkg.manifest.appTitle && pkg.manifest.appTitle.defaultText;
   } else if (!this._isUsingAnonymously()) {
     // Case 2
-    var identity = globalDb.getUserIdentities(Meteor.userId())[0];
-    var token = ApiTokens.findOne({grainId: this._grainId, 'owner.user.identityId': identity.id},
-                                     {sort: {created: 1}});
+    var token = ApiTokens.findOne({grainId: this._grainId,
+                                   'owner.user.identityId': this._userIdentity.get().id},
+                                  {sort: {created: 1}});
     return (token && token.owner && token.owner.user && token.owner.user.denormalizedGrainMetadata &&
       token.owner.user.denormalizedGrainMetadata.appTitle.defaultText);
     // TODO(someday) - shouldn't use defaultText
@@ -212,8 +214,10 @@ GrainView.prototype.sessionId = function () {
 }
 
 GrainView.prototype.setTitle = function (newTitle) {
-  Meteor.call("updateGrainTitle", this._grainId, newTitle);
   this._title = newTitle;
+  if (this._userIdentity.get()) {
+    Meteor.call("updateGrainTitle", this._grainId, newTitle, this._userIdentity.get().id);
+  }
   this._dep.changed();
 }
 
@@ -229,14 +233,28 @@ GrainView.prototype.depend = function () {
   this._dep.depend();
 }
 
-GrainView.prototype.setRevealIdentity = function (revealIdentity) {
-  this._revealIdentity.set(revealIdentity);
+GrainView.prototype.revealIdentity = function () {
+  if (!Meteor.user()) {
+    throw new Error("Cannot reveal identity if not logged in.");
+  }
+  var identity = SandstormDb.getUserIdentities(Meteor.user())[0];
+  this._userIdentity.set(identity);
+  this._dep.changed();
+}
+
+GrainView.prototype.doNotRevealIdentity = function () {
+  this._userIdentity.set(false);
   this._dep.changed();
 }
 
 GrainView.prototype.shouldRevealIdentity = function () {
   this._dep.depend();
-  return this._revealIdentity.get();
+  return !!this._userIdentity.get();
+}
+
+GrainView.prototype.identity = function () {
+  this._dep.depend();
+  return this._userIdentity.get() || null;
 }
 
 GrainView.prototype._isIdentityAlreadyRevealedToOwner = function () {
@@ -262,8 +280,8 @@ GrainView.prototype.shouldShowInterstitial = function () {
     return false;
   }
 
-  // If we have explictly set _revealIdentity, we don't need to show the interstitial.
-  if (this._revealIdentity.get() !== undefined) {
+  // If we have explictly set _userIdentity, we don't need to show the interstitial.
+  if (this._userIdentity.get() !== undefined) {
     return false;
   }
   // If we are not logged in, we don't need to show the interstitial - we'll go incognito by default.
@@ -350,11 +368,11 @@ function onceConditionIsTrue(condition, continuation) {
 
 GrainView.prototype._openApiTokenSession = function () {
   var self = this;
-  function condition() { return self._revealIdentity.get() !== undefined; }
+  function condition() { return self._userIdentity.get() !== undefined; }
   onceConditionIsTrue(condition, function () {
     var openSessionArg = {
       token: self._token,
-      incognito: !self._revealIdentity.get(),
+      incognito: !self._userIdentity.get(),
     };
     Meteor.call("openSessionFromApiToken", openSessionArg, self._sessionSalt, function(error, result) {
       if (error) {

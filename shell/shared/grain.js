@@ -197,19 +197,16 @@ Meteor.methods({
       }
     }
   },
-  forgetGrain: function (grainId) {
+  forgetGrain: function (grainId, identityId) {
     check(grainId, String);
-
-    if (this.userId) {
-      var identity = globalDb.getUserIdentities(this.userId)[0];
-      ApiTokens.remove({grainId: grainId, "owner.user.identityId": identity.id});
-    }
+    check(identityId, String);
+    ApiTokens.remove({grainId: grainId, "owner.user.identityId": identityId});
   },
-  updateGrainTitle: function (grainId, newTitle) {
+  updateGrainTitle: function (grainId, newTitle, identityId) {
     check(grainId, String);
     check(newTitle, String);
+    check(identityId, String);
     if (this.userId) {
-      var identityId = globalDb.getUserIdentities(this.userId)[0].id
       var grain = Grains.findOne(grainId);
       if (grain) {
         if (identityId === grain.identityId) {
@@ -308,7 +305,7 @@ if (Meteor.isClient) {
       if (token) {
         grains.forEach(function (grain) {
           if (grain.token() == token) {
-            grain.setRevealIdentity(false);
+            grain.doNotRevealIdentity();
           }
         });
       } else {
@@ -323,7 +320,7 @@ if (Meteor.isClient) {
       if (token) {
         grains.forEach(function (grain) {
           if (grain.token() == token) {
-            grain.setRevealIdentity(true);
+            grain.revealIdentity();
           }
         });
       } else {
@@ -382,7 +379,10 @@ if (Meteor.isClient) {
         }
       } else {
         if (window.confirm("Really forget this grain?")) {
-          Meteor.call("forgetGrain", activeGrain.grainId());
+          var identity = activeGrain.identity();
+          if (identity) {
+            Meteor.call("forgetGrain", activeGrain.grainId(), identity.id);
+          }
           // TODO: extract globalGrains into a class that has a "close" method for closing the active view
           activeGrain.destroy();
           if (grains.length == 1) {

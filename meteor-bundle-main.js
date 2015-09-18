@@ -49,18 +49,30 @@ function monkeypatchHttpAndHttps() {
       // metadata about the key is available in e.g. 0.csr. So find
       // the most recent numbered file, then pull metadata out.
 
+      var reverseIntComparator = function (a, b) {
+        return (parseInt(a) < parseInt(b));
+      };
       var keyFilesDescending = files.filter(function (filename) {
         return filename.match(/^[0-9]*$/);
-      }).sort(function (a, b) {
-        return (parseInt(a) < parseInt(b));
-      }).reverse();
+      }).sort(reverseIntComparator);
 
       var result = {};
       var nowUnixTimestamp = new Date() / 1000;
       for (var i = 0; i < keyFilesDescending.length; i++) {
         var keyFilename = basePath + '/' + keyFilesDescending[i];
         var metadataFilename = keyFilename + '.response-json';
-        var metadata = JSON.parse(fs.readFileSync(metadataFilename));
+        try {
+          var metadata = JSON.parse(fs.readFileSync(metadataFilename));
+        } catch (e) {
+          // If somehow the metadata has the wrong permissions,
+          // attempt to continue.
+          if (e.code === 'EACCES') {
+            console.log("Skipping unreadable HTTPS key information file:", metadataFilename);
+            continue;
+          } else {
+            throw e;
+          }
+        }
 
         // If this certificate isn't valid yet, keep looping, hoping
         // to find one that is valid.

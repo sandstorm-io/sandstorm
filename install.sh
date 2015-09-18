@@ -164,7 +164,7 @@ DEFAULT_UPDATE_CHANNEL="dev"
 DEFAULT_SERVER_USER="sandstorm"
 SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-sandcats.io}"
 ALLOW_DEV_ACCOUNTS="false"
-SANDCATS_GETCERTIFICATE="yes"
+SANDCATS_GETCERTIFICATE="no"
 
 # Define functions for each stage of the install process.
 

@@ -22,6 +22,21 @@ fi
 
 . $SANDSTORM_HOME/sandstorm.conf
 
+# If HTTPS_PORT is specified, then probably the BASE_URL contains HTTPS_PORT
+# as well, and run-dev.sh does not know how to listen on HTTPS, so tell the
+# user to disable that.
+if [ -n "${HTTPS_PORT:-}" ] ; then
+  echo "Please remove the HTTPS_PORT= line in your Sandstorm configuration" >&2
+  echo "since run-dev.sh does not support HTTPS." >&2
+fi
+
+# If PORT specifies two ports to listen on, this script only listens on the
+# first, since it calls Meteor directly, and Meteor has no ability to listen
+# on multiple ports.
+if [[ "${PORT:-}" =~ ^(.*?), ]] ; then
+  PORT=${BASH_REMATCH[1]} >&2
+fi
+
 if [ "$SERVER_USER" != "$USER" ]; then
   echo "Please change your Sandstorm installation to be owned by your own user" >&2
   echo "account. E.g. run as root:" >&2

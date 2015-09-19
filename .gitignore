@@ -42,6 +42,8 @@ shell/public/email-494949.svg
 shell/public/*-m.svg
 shell-build
 sandstorm-*.tar.xz
+sandstorm-*.tar.xz.sig
+install.sh.sig
 bundle/
 .docker
 .shell-env

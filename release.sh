@@ -81,9 +81,21 @@ git push origin "$TAG_NAME"
 
 echo "**** Pushing build $BUILD ****"
 
+rm -f $TARBALL.sig install.sh.sig
+
+# Sign the tarball and the install script. Note that we don't sign the channel build number because
+# it wouldn't accomplish anything: If an attacker wanted to provide an old number, they could
+# provide the old signature to match. If an attacker provided a number that hasn't been used
+# before, they would not be able to provide a matching package because no such signed package
+# exists.
+gpg -u 9DA8CCBD --detach-sig $TARBALL
+gpg -u 9DA8CCBD --detach-sig install.sh
+
 echo $BUILD > tmp/$CHANNEL
 gce-ss copy-files $TARBALL fe:/var/www/dl.sandstorm.io
+gce-ss copy-files $TARBALL.sig fe:/var/www/dl.sandstorm.io
 gce-ss copy-files tmp/$CHANNEL fe:/var/www/install.sandstorm.io
 gce-ss copy-files install.sh fe:/var/www/install.sandstorm.io
+gce-ss copy-files install.sh.sig fe:/var/www/install.sandstorm.io
 
 gce-ss ssh alpha --command 'sudo service sandstorm update dev'

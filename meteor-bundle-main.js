@@ -6,6 +6,7 @@
 // so that, along with pre-meteor.js, we create the the right
 // HTTP+HTTPS services.
 
+var crypto = require('crypto');
 var fs = require('fs');
 var http = require('http');
 var https = require('https');
@@ -43,14 +44,29 @@ function monkeypatchHttpAndHttps() {
   // in pre-meteor.js we sometimes need to bind HTTP sockets.
   http.createServerForSandstorm = http.createServer;
   var fakeHttpCreateServer = function(requestListener) {
-    function getHttpsOptions() {
+    function getCurrentSandcatsKeyAndNextRekeyTime() {
+      // Call this function to get up-to-date sandcats https key
+      // information.
+      //
+      // This returns an object with keys [ca, key, cert] which are
+      // valid options for https.createServer(). The object we return
+      // has one additional key, nextRekeyTime, which is a JS
+      // timestamp (UNIX time * 1000) of when the next key becomes
+      // valid.
+      //
+      // The intended use-case is that someone else will check the time
+      // and if the time is greater than nextRekeyTime, then call this
+      // function again.
+      //
+      // If nextRekeyTime is null, then the caller should not bother
+      // calling this function, since it means this function has no
+      // knowledge of other keys that will become valid.
       var basePath = '/var/sandcats/https/' + (
         url.parse(process.env.ROOT_URL).hostname);
       var files = fs.readdirSync(basePath);
       // The key files in this directory are named 0 1 2 3 etc., and
       // metadata about the key is available in e.g. 0.csr. So find
       // the most recent numbered file, then pull metadata out.
-
       var reverseIntComparator = function (a, b) {
         return (parseInt(a) < parseInt(b));
       };
@@ -59,7 +75,8 @@ function monkeypatchHttpAndHttps() {
       }).sort(reverseIntComparator);
 
       var result = {};
-      var nowUnixTimestamp = new Date() / 1000;
+      result.nextRekeyTime = null;  // by default, no rekeying.
+      var nowUnixTimestamp = new Date().getTime() / 1000;
       for (var i = 0; i < keyFilesDescending.length; i++) {
         var keyFilename = basePath + '/' + keyFilesDescending[i];
         var metadataFilename = keyFilename + '.response-json';
@@ -84,6 +101,14 @@ function monkeypatchHttpAndHttps() {
         // to find one that is valid.
         var notBefore = metadata['notBefore'];
         if (notBefore && (notBefore < nowUnixTimestamp)) {
+          // Convert this notBefore into a nextRekeyTime (JS
+          // timestamp) and save it as nextRekeyTime.
+          //
+          // Note that currently we re-key right at the notBefore, so
+          // in the case of clock skew, bad things might happen. We
+          // could delay the rekey time a little bit if that seems
+          // like a problem.
+          result.nextRekeyTime = notBefore * 1000;
           continue;
         }
 
@@ -95,7 +120,69 @@ function monkeypatchHttpAndHttps() {
     };
 
     if (process.env.HTTPS_PORT) {
-      var httpsServer = https.createServer(getHttpsOptions(), requestListener);
+      // Great! FD #3 will speak HTTPS.
+      //
+      // NOTE: This assumes that the user will only set HTTPS_PORT if
+      // there are valid certificates for us to use. This could be a
+      // problem if BASE_URL is https but we aren't ready.
+
+      // Create a local variable with key information.
+      var sandcatsState = {};
+
+      // Create a global that others can call into if they want to
+      // re-key, such as when `sandcats.js` downloads a new
+      // certificate.
+      global.sandcats = {};
+      global.sandcats.rekey = function () {
+        sandcatsState = getCurrentSandcatsKeyAndNextRekeyTime();
+      };
+
+      // Actually set up keys!
+      global.sandcats.rekey();
+
+      // Configure options for httpsServer.createServer().
+      var httpsOptions = {
+        ca: sandcatsState.ca,
+        key: sandcatsState.key,
+        cert: sandcatsState.cert
+      };
+
+      // The SNICallback option is a function that nodejs will call on
+      // every inbound request with the inbound hostname. We get to
+      // return an object of ca & key & cert to use.
+      //
+      // This gives us an opportunity to fetch the latest key
+      // information from the filesystem, allowing for smooth,
+      // zero-downtime, https service re-keying. Note that the
+      // automatic re-keying only works for clients that support the
+      // HTTPS feature called Server Name Indication. Per
+      // http://caniuse.com/#feat=sni SNI is very popular.
+      httpsOptions.SNICallback = function(servername) {
+        var certAtStart = sandcatsState.cert;
+
+        var jsTimeNow = new Date().getTime();
+
+        if ((sandcatsState.nextRekeyTime !== null) &&
+            (jsTimeNow >= sandcatsState.nextRekeyTime)) {
+          console.log("Since", jsTimeNow, "is greater than", sandcatsState.nextRekeyTime,
+                      "doing a https re-key.");
+          global.sandcats.rekey();
+
+          if (certAtStart == sandcatsState.cert) {
+            console.log("Re-keying resulted in the same certificate. Strange.");
+          } else {
+            console.log("Re-keying resulting in a new certificate. Good.");
+          }
+        }
+
+        return crypto.createCredentials({
+          ca: sandcatsState.ca,
+          key: sandcatsState.key,
+          cert: sandcatsState.cert
+        }).context;
+      };
+      var httpsServer = https.createServer(httpsOptions, requestListener);
+
       // Meteor calls httpServer.setTimeout() to set a default socket
       // timeout. Since the method is not available on the nodejs
       // v0.10.x https server object, we ignore it entirely for now.

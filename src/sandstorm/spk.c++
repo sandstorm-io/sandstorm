@@ -345,66 +345,6 @@ private:
   bool committed = false;
 };
 
-size_t getFileSize(int fd, kj::StringPtr filename) {
-  struct stat stats;
-  KJ_SYSCALL(fstat(fd, &stats));
-  KJ_REQUIRE(S_ISREG(stats.st_mode), "Not a regular file.", filename);
-  return stats.st_size;
-}
-
-class MemoryMapping {
-public:
-  MemoryMapping(): content(nullptr) {}
-
-  explicit MemoryMapping(int fd, kj::StringPtr filename): content(nullptr) {
-    size_t size = getFileSize(fd, filename);
-
-    if (size != 0) {
-      void* ptr = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
-      if (ptr == MAP_FAILED) {
-        KJ_FAIL_SYSCALL("mmap", errno, filename);
-      }
-
-      content = kj::arrayPtr(reinterpret_cast<byte*>(ptr), size);
-    }
-  }
-
-  ~MemoryMapping() {
-    if (content != nullptr) {
-      KJ_SYSCALL(munmap(content.begin(), content.size()));
-    }
-  }
-
-  KJ_DISALLOW_COPY(MemoryMapping);
-  inline MemoryMapping(MemoryMapping&& other): content(other.content) {
-    other.content = nullptr;
-  }
-  inline MemoryMapping& operator=(MemoryMapping&& other) {
-    MemoryMapping old(kj::mv(*this));
-    content = other.content;
-    other.content = nullptr;
-    return *this;
-  }
-
-  inline operator kj::ArrayPtr<const byte>() const {
-    return content;
-  }
-
-  inline operator capnp::Data::Reader() const {
-    return content;
-  }
-
-  inline operator kj::ArrayPtr<const capnp::word>() const {
-    return kj::arrayPtr(reinterpret_cast<const capnp::word*>(content.begin()),
-                        content.size() / sizeof(capnp::word));
-  }
-
-  inline size_t size() const { return content.size(); }
-
-private:
-  kj::ArrayPtr<byte> content;
-};
-
 class SpkTool: public AbstractMain {
   // Main class for the Sandstorm spk tool.
 

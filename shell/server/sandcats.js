@@ -28,7 +28,7 @@ var ROOT_URL = Url.parse(process.env.ROOT_URL);
 var HOSTNAME = ROOT_URL.hostname;
 var SANDCATS_NAME; // Look at `startup` below to see where this is set
 
-function updateSandcats() {
+function updateSandcatsIp() {
   var options = {
     hostname: SANDCATS_HOSTNAME,
     path: "/update",
@@ -68,7 +68,7 @@ function pingUdp() {
   message = new Buffer(SANDCATS_NAME + " " + secret);
   socket.on("message", function (buf) {
     if (buf.toString() === secret) {
-      updateSandcats();
+      updateSandcatsIp();
     } else {
       console.error("Received unexpected response in UDP sandcats ping:", buf.toString());
     }

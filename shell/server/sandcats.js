@@ -29,36 +29,20 @@ var HOSTNAME = ROOT_URL.hostname;
 var SANDCATS_NAME; // Look at `startup` below to see where this is set
 
 function updateSandcatsIp() {
-  var options = {
-    hostname: SANDCATS_HOSTNAME,
-    path: "/update",
-    method: "POST",
-    agent: false,
-    key: fs.readFileSync(SANDCATS_VARDIR + "/id_rsa"),
-    cert: fs.readFileSync(SANDCATS_VARDIR + "/id_rsa.pub"),
-    headers: {
-      "X-Sand": "cats",
-      "Content-Type": "application/x-www-form-urlencoded"
-    }
-  };
-
-  var req = https.request(options, function(res) {
+  var responseCallback = function(res) {
     if (res.statusCode === 200) {
       console.log("Successfully updated sandcats IP");
     } else {
       console.error("Failed to update sandcats IP:", res.headers);
     }
-  });
+  };
 
-  var post_data = querystring.stringify({
-    rawHostname : SANDCATS_NAME
-  });
-  req.write(post_data);
-  req.end();
-
-  req.on("error", function(err) {
+  var errorCallback = function(err) {
     console.error("Couldn't send update sandcats hostname", err);
-  });
+  };
+
+  performSandcatsRequest("/update", SANDCATS_HOSTNAME, {rawHostname: SANDCATS_NAME},
+                         errorCallback, responseCallback);
 };
 
 function pingUdp() {
@@ -85,6 +69,30 @@ function pingUdp() {
   }, 10 * 1000);
 };
 
+function performSandcatsRequest(path, hostname, postData, errorCallback, responseCallback) {
+  var options = {
+    hostname: hostname,
+    path: path,
+    method: "POST",
+    agent: false,
+    key: fs.readFileSync(SANDCATS_VARDIR + "/id_rsa"),
+    cert: fs.readFileSync(SANDCATS_VARDIR + "/id_rsa.pub"),
+    headers: {
+      "X-Sand": "cats",
+      "Content-Type": "application/x-www-form-urlencoded"
+    }
+  };
+  var post_data = querystring.stringify(postData);
+  var req = https.request(options, responseCallback);
+  req.write(post_data);
+  req.end();
+
+  if (errorCallback) {
+    req.on('error', errorCallback);
+  }
+  return req;
+}
+
 if (SANDCATS_HOSTNAME) {
   Meteor.startup(function () {
     var i = HOSTNAME.lastIndexOf(SANDCATS_HOSTNAME);
@@ -92,8 +100,10 @@ if (SANDCATS_HOSTNAME) {
       console.error("SANDCATS_BASE_DOMAIN is configured but your HOSTNAME doesn't appear to contain it:",
                     SANDCATS_HOSTNAME, HOSTNAME);
     } else {
+      var oneMinute = 60 * 1000;
+      // All Sandcats installs need dyndns updating.
       SANDCATS_NAME = HOSTNAME.slice(0, i - 1);
-      Meteor.setInterval(pingUdp, 60 * 1000);
+      Meteor.setInterval(pingUdp, oneMinute);
     }
   });
 }

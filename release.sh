@@ -88,8 +88,8 @@ rm -f $TARBALL.sig install.sh.sig
 # provide the old signature to match. If an attacker provided a number that hasn't been used
 # before, they would not be able to provide a matching package because no such signed package
 # exists.
-gpg -u 160D2D577518B58D94C9800B63F227499DA8CCBD --detach-sig $TARBALL
-gpg -u 160D2D577518B58D94C9800B63F227499DA8CCBD --detach-sig install.sh
+gpg -u 160D2D577518B58D94C9800B63F227499DA8CCBD --digest-algo SHA512 --detach-sig $TARBALL
+gpg -u 160D2D577518B58D94C9800B63F227499DA8CCBD --digest-algo SHA512 --detach-sig install.sh
 
 echo $BUILD > tmp/$CHANNEL
 gce-ss copy-files $TARBALL fe:/var/www/dl.sandstorm.io

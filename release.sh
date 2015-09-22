@@ -81,8 +81,12 @@ git push origin "$TAG_NAME"
 
 echo "**** Pushing build $BUILD ****"
 
+# Create signature used to verify updates.
+tmp/sandstorm/update-tool sign ~/.sandstorm-update-keyring $TARBALL > $TARBALL.update-sig
+
 echo $BUILD > tmp/$CHANNEL
 gce-ss copy-files $TARBALL fe:/var/www/dl.sandstorm.io
+gce-ss copy-files $TARBALL.update-sig fe:/var/www/dl.sandstorm.io
 gce-ss copy-files tmp/$CHANNEL fe:/var/www/install.sandstorm.io
 gce-ss copy-files install.sh fe:/var/www/install.sandstorm.io
 

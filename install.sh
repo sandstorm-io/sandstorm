@@ -1095,7 +1095,8 @@ __EOF__
       fail "Bad package -- did not contain $BUILD_DIR directory."
     fi
 
-    if [ $(stat --printf=%Y $BUILD_DIR/buildstamp) -lt $(( $(date +%s) - 30*24*60*60 )) ]; then
+    if [ ! -e "$BUILD_DIR/buildstamp" ] || \
+       [ $(stat --printf=%Y "$BUILD_DIR/buildstamp") -lt $(( $(date +%s) - 30*24*60*60 )) ]; then
       rm -rf "$BUILD_DIR"
       fail "The downloaded package seems to be more than a month old. Please verify that your" \
            "computer's clock is correct and try again. It could also be that an attacker is" \

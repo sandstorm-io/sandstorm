@@ -1038,12 +1038,12 @@ download_latest_bundle_and_extract_if_needed() {
     WORK_DIR="$(mktemp -d --tmpdir sandstorm-installer.XXXXXXXXXX)"
     local URL="https://dl.sandstorm.io/sandstorm-$BUILD.tar.xz"
     echo "Downloading: $URL"
-    curl -A "$CURL_USER_AGENT" -f "$URL" > $WORK_DIR/sandstorm-$BUILD.tar.xz
-    curl -s -A "$CURL_USER_AGENT" -f "$URL.sig" > $WORK_DIR/sandstorm-$BUILD.tar.xz.sig
+    curl -A "$CURL_USER_AGENT" -f "$URL" > "$WORK_DIR/sandstorm-$BUILD.tar.xz"
+    curl -s -A "$CURL_USER_AGENT" -f "$URL.sig" > "$WORK_DIR/sandstorm-$BUILD.tar.xz.sig"
 
     if which gpg > /dev/null; then
       # Regenerate with: gpg --armor --export 160D2D577518B58D94C9800B63F227499DA8CCBD
-      gpg --dearmor > $WORK_DIR/sandstorm-keyring.gpg << __EOF__
+      gpg --dearmor > "$WORK_DIR/sandstorm-keyring.gpg" << __EOF__
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 Version: GnuPG v1
 
@@ -1089,8 +1089,8 @@ __EOF__
       echo "WARNING: gpg not installed; not verifying signatures (but it's HTTPS so you're probably fine)" >&2
     fi
 
-    tar Jxof $WORK_DIR/sandstorm-$BUILD.tar.xz
-    rm -rf $WORK_DIR
+    tar Jxof "$WORK_DIR/sandstorm-$BUILD.tar.xz"
+    rm -rf "$WORK_DIR"
 
     if [ ! -e "$BUILD_DIR" ]; then
       fail "Bad package -- did not contain $BUILD_DIR directory."

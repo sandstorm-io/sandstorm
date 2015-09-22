@@ -1035,15 +1035,16 @@ download_latest_bundle_and_extract_if_needed() {
 
   do-download() {
     rm -rf $BUILD_DIR
+    WORK_DIR="$(mktemp -d --tmpdir sandstorm-installer.XXXXXXXXXX)"
     local URL="https://dl.sandstorm.io/sandstorm-$BUILD.tar.xz"
     echo "Downloading: $URL"
-    curl -A "$CURL_USER_AGENT" -f "$URL" > /var/tmp/sandstorm-$BUILD.tar.xz
-    curl -s -A "$CURL_USER_AGENT" -f "$URL.sig" > /var/tmp/sandstorm-$BUILD.tar.xz.sig
-    curl -s -A "$CURL_USER_AGENT" -f "https://dl.sandstorm.io/keyring.gpg" > /var/tmp/sandstorm-keyring.gpg
+    curl -A "$CURL_USER_AGENT" -f "$URL" > $WORK_DIR/sandstorm-$BUILD.tar.xz
+    curl -s -A "$CURL_USER_AGENT" -f "$URL.sig" > $WORK_DIR/sandstorm-$BUILD.tar.xz.sig
+    curl -s -A "$CURL_USER_AGENT" -f "https://dl.sandstorm.io/keyring.gpg" > $WORK_DIR/sandstorm-keyring.gpg
 
     if which gpg > /dev/null; then
-      if gpg --no-default-keyring --keyring /var/tmp/sandstorm-keyring.gpg --status-fd 1 \
-             --verify /var/tmp/sandstorm-$BUILD.tar.xz{.sig,} 2>/dev/null | \
+      if gpg --no-default-keyring --keyring $WORK_DIR/sandstorm-keyring.gpg --status-fd 1 \
+             --verify $WORK_DIR/sandstorm-$BUILD.tar.xz{.sig,} 2>/dev/null | \
           grep -q '^\[GNUPG:\] VALIDSIG 160D2D577518B58D94C9800B63F227499DA8CCBD '; then
         echo "GPG signature is valid."
       else
@@ -1055,8 +1056,8 @@ download_latest_bundle_and_extract_if_needed() {
       echo "WARNING: gpg not installed; not verifying signatures (but it's HTTPS so you're probably fine)" >&2
     fi
 
-    tar Jxof /var/tmp/sandstorm-$BUILD.tar.xz
-    rm -f /var/tmp/sandstorm-$BUILD.tar.xz{,.sig}
+    tar Jxof $WORK_DIR/sandstorm-$BUILD.tar.xz
+    rm -rf $WORK_DIR
 
     if [ ! -e "$BUILD_DIR" ]; then
       fail "Bad package -- did not contain $BUILD_DIR directory."

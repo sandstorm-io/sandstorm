@@ -1081,9 +1081,8 @@ __EOF__
           grep -q '^\[GNUPG:\] VALIDSIG 160D2D577518B58D94C9800B63F227499DA8CCBD '; then
         echo "GPG signature is valid."
       else
-        echo "GPG signature is NOT valid! Please report to security@sandstorm.io immediately!" >&2
         rm -rf sandstorm-$BUILD
-        exit 1
+        fail "GPG signature is NOT valid! Please report to security@sandstorm.io immediately!"
       fi
     else
       echo "WARNING: gpg not installed; not verifying signatures (but it's HTTPS so you're probably fine)" >&2

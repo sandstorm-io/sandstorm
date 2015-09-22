@@ -1095,6 +1095,14 @@ __EOF__
     if [ ! -e "$BUILD_DIR" ]; then
       fail "Bad package -- did not contain $BUILD_DIR directory."
     fi
+
+    if [ $(stat --printf=%Y $BUILD_DIR/buildstamp) -lt $(( $(date +%s) - 30*24*60*60 )) ]; then
+      rm -rf "$BUILD_DIR"
+      fail "The downloaded package seems to be more than a month old. Please verify that your" \
+           "computer's clock is correct and try again. It could also be that an attacker is" \
+           "trying to trick you into installing an old version. Please contact" \
+           "security@sandstorm.io if the problem persists."
+    fi
   }
 
   if [ -e $BUILD_DIR ]; then

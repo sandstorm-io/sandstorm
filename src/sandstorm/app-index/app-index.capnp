@@ -78,6 +78,7 @@ struct AppIndexForMarket {
     upstreamAuthor @11 :Text;
     shortDescription @10 :Text;
     createdAt @12 :Text;   # date like "2014-08-21T09:19:29.761Z"
+    versionNumber @13 :UInt32;
   }
 }
 

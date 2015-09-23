@@ -20,8 +20,11 @@ function sandstormMain() {
 }
 
 function monkeypatchHttpAndHttps() {
-  // Monkey-patch the HTTP object's listen() function so if Meteor
-  // calls it, then we listen on FD #3.
+  // Two very different monkey-patchings here.
+  //
+  // 1. Monkey-patch HTTP in the smallest way -- if someone calls
+  // listen() but doesn't provide an FD, assume they are Meteor and
+  // they want to bind to FD #3.
   var oldListen = http.Server.prototype.listen;
   http.Server.prototype.listen = function (port, host, cb) {
     // Overridable by passing e.g. {fd: 4} as port.
@@ -31,16 +34,15 @@ function monkeypatchHttpAndHttps() {
     return oldListen.call(this, {fd: 3}, cb);
   }
 
-  // When Meteor calls createServer(), if we are in HTTPS mode, give it a HTTPS server.
-  //
-  // Passing a second argument of `true` allows us to call the real
-  // createServer directly in pre-meteor.js.
-  var originalHttpCreateServer = http.createServer;
-  var fakeHttpCreateServer = function(requestListener, calledBySandstorm) {
-    if (calledBySandstorm) {
-      return originalHttpCreateServer(requestListener);
-    }
+  // 2. If we are in HTTPS mode, monkey-patch HTTP in a large way:
+  // return a HTTPS server, not a HTTP server, so that Meteor gets a
+  // HTTPS server on FD #3 without Meteor being aware of the
+  // complexity.
 
+  // Stash the original function in createServerForSandstorm(), since
+  // in pre-meteor.js we sometimes need to bind HTTP sockets.
+  http.createServerForSandstorm = http.createServer;
+  var fakeHttpCreateServer = function(requestListener) {
     function getHttpsOptions() {
       var basePath = '/var/sandcats/https/' + (
         url.parse(process.env.ROOT_URL).hostname);
@@ -109,7 +111,9 @@ function monkeypatchHttpAndHttps() {
       }
       return httpsServer;
     } else {
-      return originalHttpCreateServer(requestListener);
+      // Call http.createServerForSandstorm(), knowing that .listen()
+      // has been monkey-patched separately.
+      return http.createServerForSandstorm(requestListener);
     }
   }
 

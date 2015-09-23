@@ -423,9 +423,9 @@ Meteor.startup(function () {
     // first non-HTTPS port. The "true" argument here means skip our
     // monkeypatching.
     if ((i === 0) && (process.env.HTTPS_PORT)) {
-      alternatePortServer = Http.createServer(redirectToMeteorOrServeStaticPublishing, true);
+      alternatePortServer = Http.createServerForSandstorm(redirectToMeteorOrServeStaticPublishing);
     } else {
-      alternatePortServer = Http.createServer(redirectToMeteorOrBust, true);
+      alternatePortServer = Http.createServerForSandstorm(redirectToMeteorOrBust);
     }
     alternatePortServer.listen({fd: i + 4});
   }

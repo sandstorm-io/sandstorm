@@ -1,3 +1,10 @@
+### v0.113 (2015-09-23)
+- The installer script is now PGP-signed such that it can be verified by third parties without relying on the integrity of HTTPS.
+- The installer now verifies downloads using GPG (in addition to using HTTPS as it always has).
+- Updates are now verified using libsodium ed25519 signatures (in addition to being downloaded over HTTPS as they always have).
+- Oasis: Fixed storage bug that was causing random app restarts (but no data loss).
+- Various small UI usability tweaks.
+
 ### v0.112 (2015-09-16)
 - Fix another stats bug causing stats recording to sometimes be interrupted by an exception.
 

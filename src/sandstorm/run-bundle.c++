@@ -24,7 +24,9 @@
 #include <capnp/serialize.h>
 #include <capnp/compat/json.h>
 #include <sandstorm/package.capnp.h>
+#include <sandstorm/update-tool.capnp.h>
 #include <sodium/randombytes.h>
+#include <sodium/crypto_sign_ed25519.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <limits.h>
@@ -290,7 +292,17 @@ public:
     }
   }
 
-  ~CurlRequest() {
+  explicit CurlRequest(kj::StringPtr url, int outFd): url(kj::heapString(url)) {
+    KJ_SYSCALL(pid = fork());
+    if (pid == 0) {
+      KJ_SYSCALL(dup2(outFd, STDOUT_FILENO));
+      KJ_SYSCALL(execlp("curl", "curl", isatty(STDERR_FILENO) ? "-f" : "-fs",
+                        url.cStr(), EXEC_END_ARGS), url);
+      KJ_UNREACHABLE;
+    }
+  }
+
+  ~CurlRequest() noexcept(false) {
     if (pid == 0) return;
 
     // Close the pipe first, in case the child is waiting for that.
@@ -1861,17 +1873,56 @@ private:
       return false;
     }
 
-    // Start http request to download bundle.
+    // Download bundle to temporary file.
     auto url = kj::str("https://dl.sandstorm.io/sandstorm-", targetBuild, ".tar.xz");
+    auto file = openTemporary("/var/tmp/sandstorm-update");
     context.warning(kj::str("Downloading: ", url));
-    auto download = kj::heap<CurlRequest>(url);
-    int fd = download->getPipe();
-    unpackUpdate(fd, kj::mv(download), targetBuild);
+    CurlRequest(url, file);
+    KJ_SYSCALL(lseek(file, 0, SEEK_SET));
+
+    // Verify signature.
+    {
+      context.warning("Checking signature...");
+      KJ_ON_SCOPE_FAILURE(context.warning(
+          "*** Aborting update because signature check failed! Most likely this is due to a "
+          "network glitch, but if you suspect an attack, notify security@sandstorm.io."));
+
+      // Download and parse signature file for this update.
+      capnp::StreamFdMessageReader signatureMessage(
+          CurlRequest(kj::str(url, ".update-sig")).getPipe());
+      auto sigs = signatureMessage.getRoot<UpdateSignature>().getSignatures();
+
+      // Always verify using the *last* key in updatePublicKeys, as it is the most recent.
+      uint keyIndex = UPDATE_PUBLIC_KEYS->size() - 1;
+      PublicSigningKey::Reader key = (*UPDATE_PUBLIC_KEYS)[keyIndex];
+      KJ_ASSERT(sigs.size() > keyIndex,
+          "signature is missing the most recent signing key");
+      Signature::Reader signature = sigs[keyIndex];
+
+      // mmap the file and check the signature.
+      MemoryMapping mapping(file, "(update tarball)");
+      capnp::Data::Reader data = mapping;
+      KJ_ASSERT(crypto_sign_ed25519_verify_detached(
+          structToBytes(signature, crypto_sign_ed25519_BYTES),
+          data.begin(), data.size(),
+          structToBytes(key, crypto_sign_ed25519_PUBLICKEYBYTES)) == 0,
+          "signature is invalid");
+
+      context.warning("Signature is valid.");
+    }
+
+    unpackUpdate(file, targetBuild);
+
     return true;
   }
 
-  void unpackUpdate(int bundleFd, kj::Maybe<kj::Own<CurlRequest>> curlRequest = nullptr,
-                    uint expectedBuild = 0) {
+  const byte* structToBytes(capnp::AnyStruct::Reader reader, size_t size) {
+    auto data = reader.getDataSection();
+    KJ_REQUIRE(data.size() >= size);
+    return data.begin();
+  }
+
+  void unpackUpdate(int bundleFd, uint expectedBuild = 0) {
     char tmpdir[] = "../downloading.XXXXXX";
     if (mkdtemp(tmpdir) != tmpdir) {
       KJ_FAIL_SYSCALL("mkdtemp", errno);
@@ -1885,9 +1936,6 @@ private:
       KJ_SYSCALL(execlp("tar", "tar", "Jxo", EXEC_END_ARGS));
       KJ_UNREACHABLE;
     }
-
-    // Make sure to report CURL status before tar status.
-    curlRequest = nullptr;
 
     int tarStatus;
     KJ_SYSCALL(waitpid(tarPid, &tarStatus, 0));

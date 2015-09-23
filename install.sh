@@ -586,7 +586,7 @@ dev_server_install() {
     echo "We're going to:"
     echo ""
     echo "* Install Sandstorm in ${DEFAULT_DIR_FOR_ROOT}."
-    echo "* Automatically keep Sandstorm up-to-date."
+    echo "* Automatically keep Sandstorm up-to-date (with signed updates)."
     echo "* Create a service user ($DEFAULT_SERVER_USER) that owns Sandstorm's files."
     echo "* Add you ($USER) to the $DEFAULT_SERVER_USER group so you can read/write app data."
     echo "* Expose the service only on localhost aka local.sandstorm.io, not the public Internet."

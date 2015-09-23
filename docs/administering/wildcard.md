@@ -21,10 +21,14 @@ model](../using/security-practices.md).
 
 ## Sandstorm handles this for localhost + sandcats users
 
-Sandstorm runs `local.sandstorm.io` as wildcard domain where all
-subdomains point to `127.0.0.1`, the same as `localhost`. This
-allows you to run Sandstorm on your own computer; since each
-Sandstorm session
+Sandstorm runs `local.sandstorm.io` as a wildcard domain where
+both `local.sandstorm.io` and all of its subdomains
+(`*.local.sandstorm.io`) point to `127.0.0.1`, the same as
+`localhost`. This allows you to conveniently run Sandstorm on
+your own computer or a virtual machine for development and
+testing by configuring it to use `local.sandstorm.io` and
+`*.local.sandstorm.io`, without needing to own a domain and
+configure wildcard DNS for a subdomain.
 
 For the `sandcats.io` DNS service, each domain is also a wildcard
 domain. This allows a self-hosted Sandstorm domain to operate

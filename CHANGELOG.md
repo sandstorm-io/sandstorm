@@ -1,3 +1,6 @@
+### v0.114 (2015-09-23)
+- No-op release just to test end-to-end that the new signed update mechanism works. (We did lots of tests in advance, but touching the updater code always makes me nervous, so test again!)
+
 ### v0.113 (2015-09-23)
 - The installer script is now PGP-signed such that it can be verified by third parties without relying on the integrity of HTTPS.
 - The installer now verifies downloads using GPG (in addition to using HTTPS as it always has).

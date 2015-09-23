@@ -1246,10 +1246,10 @@ private:
           KJ_FAIL_REQUIRE("invalid config value SERVER_USER", value);
         }
       } else if (key == "HTTPS_PORT") {
-          KJ_IF_MAYBE(p, parseUInt(value, 10)) {
-            config.httpsPort = *p;
-          } else {
-            KJ_FAIL_REQUIRE("invalid config value HTTPS_PORT", value);
+        KJ_IF_MAYBE(p, parseUInt(value, 10)) {
+          config.httpsPort = *p;
+        } else {
+          KJ_FAIL_REQUIRE("invalid config value HTTPS_PORT", value);
         }
       } else if (key == "PORT") {
           maybePortValue = kj::mv(value);
@@ -1717,33 +1717,33 @@ private:
   }
 
   void bindSocketToFd(const Config& config, uint port, uint targetFdNum) {
-      int sockFd;
-      KJ_SYSCALL(sockFd = socket(PF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
+    int sockFd;
+    KJ_SYSCALL(sockFd = socket(PF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
 
-      // Enable SO_REUSEADDR so that `sandstorm restart` doesn't take minutes to succeed.
-      int optval = 1;
-      KJ_SYSCALL(setsockopt(sockFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
+    // Enable SO_REUSEADDR so that `sandstorm restart` doesn't take minutes to succeed.
+    int optval = 1;
+    KJ_SYSCALL(setsockopt(sockFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
 
-      sockaddr_in sa;
-      memset(&sa, 0, sizeof sa);
-      sa.sin_family = AF_INET;
-      sa.sin_port = htons(port);
-      int rc = inet_pton(AF_INET, config.bindIp.cStr(), &(sa.sin_addr));
-      // If ipv4 address parsing fails, try ipv6
-      if (rc == 0) {
-        rc = inet_pton(AF_INET6, config.bindIp.cStr(), &(sa.sin_addr));
-        KJ_REQUIRE(rc == 1, "Bind IP is an invalid IP address:", config.bindIp);
-      }
+    sockaddr_in sa;
+    memset(&sa, 0, sizeof sa);
+    sa.sin_family = AF_INET;
+    sa.sin_port = htons(port);
+    int rc = inet_pton(AF_INET, config.bindIp.cStr(), &(sa.sin_addr));
+    // If ipv4 address parsing fails, try ipv6
+    if (rc == 0) {
+      rc = inet_pton(AF_INET6, config.bindIp.cStr(), &(sa.sin_addr));
+      KJ_REQUIRE(rc == 1, "Bind IP is an invalid IP address:", config.bindIp);
+    }
 
-      KJ_SYSCALL(bind(sockFd, reinterpret_cast<sockaddr *>(&sa), sizeof sa));
-      KJ_SYSCALL(listen(sockFd, 511)); // 511 is what node uses as its default backlog
+    KJ_SYSCALL(bind(sockFd, reinterpret_cast<sockaddr *>(&sa), sizeof sa));
+    KJ_SYSCALL(listen(sockFd, 511)); // 511 is what node uses as its default backlog
 
-      if (sockFd != targetFdNum) {
-        // dup socket to correct fd.
-        KJ_SYSCALL(dup2(sockFd, targetFdNum));
-        KJ_SYSCALL(close(sockFd));
-      }
-}
+    if (sockFd != targetFdNum) {
+      // dup socket to correct fd.
+      KJ_SYSCALL(dup2(sockFd, targetFdNum));
+      KJ_SYSCALL(close(sockFd));
+    }
+  }
 
   pid_t startNode(const Config& config) {
     Subprocess process([&]() -> int {

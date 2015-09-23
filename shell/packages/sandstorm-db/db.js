@@ -583,8 +583,8 @@ matchWildcardHost = function(host) {
   var prefix = wildcardHost[0];
   var suffix = wildcardHost[1];
 
-  // We ignore everything after the first : character to be agnostic
-  // as to what port a request came in on.
+  // We remove everything after the first ":" character so that our
+  // comparison logic ignores port numbers.
   suffix = suffix.split(":")[0];
   host = host.split(":")[0];
 

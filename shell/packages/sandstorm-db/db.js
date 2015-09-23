@@ -585,8 +585,8 @@ matchWildcardHost = function(host) {
 
   // We ignore everything after the first : character to be agnostic
   // as to what port a request came in on.
-  suffix = suffix.replace(/:.*/, "");
-  host = host.replace(/:.*/, "");
+  suffix = suffix.split(":")[0];
+  host = host.split(":")[0];
 
   if (host.lastIndexOf(prefix, 0) >= 0 &&
       host.indexOf(suffix, -suffix.length) >= 0 &&

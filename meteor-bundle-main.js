@@ -66,8 +66,9 @@ function monkeypatchHttpAndHttps() {
         try {
           var metadata = JSON.parse(fs.readFileSync(metadataFilename));
         } catch (e) {
-          // If somehow the metadata has the wrong permissions,
-          // attempt to continue.
+          // If the key metadata has the wrong permissions due to an
+          // installer bug that went out during September, then skip
+          // those keys and attempt to continue.
           if (e.code === 'EACCES') {
             console.log("Skipping unreadable HTTPS key information file:", metadataFilename);
             continue;

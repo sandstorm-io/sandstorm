@@ -12,7 +12,7 @@ var https = require('https');
 var net = require('net');
 var url = require('url');
 
-function sandstorm_main() {
+function sandstormMain() {
   monkeypatchHttpAndHttps();
 
   // Delegate to Meteor.
@@ -116,4 +116,4 @@ function monkeypatchHttpAndHttps() {
   http.createServer = fakeHttpCreateServer;
 }
 
-sandstorm_main();
+sandstormMain();

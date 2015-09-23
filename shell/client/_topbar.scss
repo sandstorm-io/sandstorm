@@ -300,22 +300,18 @@ body>.topbar {
 
       background-image: url("/share.svg");
       background-repeat: no-repeat;
-      background-position: 8px center;
-
       @media #{$desktop} {
-        background-position: left;
-        background-color: #762f87;
+        background-position: 2px center;
         color: #cccccc; // Have the text match the icon.
                         // This is the single place the button text is visible.
-        padding-left: 32px;
+        padding-left: 36px;
         padding-right: 8px;
         height: 32px;
         line-height: 28px;
         font-size: 12pt;
-
-        &:hover {
-          background-color: lighten(#762f87, 8);
-        }
+      }
+      @media #{$mobile} {
+        background-position: 10px center;
       }
     }
 
@@ -437,11 +433,6 @@ body>.topbar {
           >a {
             padding: 0 8px;
             display: block;
-
-            &.highlight {
-              background-color: #762f87;
-              color: white;
-            }
           }
         }
       }

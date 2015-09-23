@@ -385,8 +385,7 @@ Meteor.startup(function () {
   // Bind listeners to FD #4 and higher, if we are supposed to be
   // listening on multiple ports.
   function getNumberOfAlternatePorts() {
-    var numCommas = (process.env.PORT.match(/,/g) || {}).length;
-    var numPorts = numCommas + 1;
+    var numPorts = process.env.PORTS.split(",").length;
     var numAlternatePorts = numPorts - 1;
     return numAlternatePorts;
   };

@@ -1883,8 +1883,9 @@ private:
     // Verify signature.
     {
       context.warning("Checking signature...");
-      KJ_ON_SCOPE_FAILURE(
-          context.warning("*** SIGNATURE CHECK FAILED: please notify security@sandstorm.io ***"));
+      KJ_ON_SCOPE_FAILURE(context.warning(
+          "*** Aborting update because signature check failed! Most likely this is due to a "
+          "network glitch, but if you suspect an attack, notify security@sandstorm.io."));
 
       // Download and parse signature file for this update.
       capnp::StreamFdMessageReader signatureMessage(

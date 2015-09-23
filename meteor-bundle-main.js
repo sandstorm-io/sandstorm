@@ -97,7 +97,7 @@ function monkeypatchHttpAndHttps() {
       // timeout. Since the method is not available on the nodejs
       // v0.10.x https server object, we ignore it entirely for now.
       //
-      // TODO(soon): Run slowloris against this to make sure it is
+      // TODO(security): Run slowloris against this to make sure it is
       // safe to ignore.
       //
       // Note that upon actually receiving a connection, Meteor

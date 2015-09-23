@@ -1786,14 +1786,14 @@ private:
         KJ_SYSCALL(setenv("MAIL_URL", config.mailUrl.cStr(), true));
       }
       if (config.rootUrl == nullptr) {
-        kj::String scheme;
+        kj::StringPtr scheme;
         uint defaultPort;
 
         if (config.httpsPort == nullptr) {
-          scheme = kj::str("http://");
+          scheme = "http://";
           defaultPort = 80;
         } else {
-          scheme = kj::str("https://");
+          scheme = "https://";
           defaultPort = 443;
         }
         if (config.ports[0] == defaultPort) {

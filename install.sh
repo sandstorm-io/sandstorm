@@ -1035,12 +1035,73 @@ download_latest_bundle_and_extract_if_needed() {
 
   do-download() {
     rm -rf $BUILD_DIR
+    WORK_DIR="$(mktemp -d --tmpdir sandstorm-installer.XXXXXXXXXX)"
     local URL="https://dl.sandstorm.io/sandstorm-$BUILD.tar.xz"
     echo "Downloading: $URL"
-    curl -A "$CURL_USER_AGENT" -f "$URL" | tar Jxo
+    curl -A "$CURL_USER_AGENT" -f "$URL" > "$WORK_DIR/sandstorm-$BUILD.tar.xz"
+    curl -s -A "$CURL_USER_AGENT" -f "$URL.sig" > "$WORK_DIR/sandstorm-$BUILD.tar.xz.sig"
+
+    if which gpg > /dev/null; then
+      # Regenerate with: gpg --armor --export 160D2D577518B58D94C9800B63F227499DA8CCBD
+      gpg --dearmor > "$WORK_DIR/sandstorm-keyring.gpg" << __EOF__
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1
+
+mQENBFX8ypkBCAC8sjX5yZqKdW8nY7aE/GpVeS+qSCbpYSJwixYNFXbz3MQihR3S
+suvg5uw1KyuQb23c0LwirfxazVf7txKhQNaNU3ek62LG3wcGeBrvQGsIUMbkatay
+/163CLeVWfSK1Z4pFc4dhdjXYSOz0oZxd7Mp78crBbGKmyn7PtzdAqt+XfEXNuee
+cDbx++P57n5s5xc5fQWznt333IMgmgTREGUROfh4kL376rFAS208XIywJlUVkoKM
+kIzgcjevFGwYKdsLigHXCDp9toQHl8oPjFV+RE8Br8ciJlMp9CqCfHGwj0Orxasc
+e9moLqqUc+iKdg9bQfuAbJ/jFNhGmV/CVv9tABEBAAG0LlNhbmRzdG9ybS5pbyAo
+cmVsZWFzZXMpIDxzdXBwb3J0QHNhbmRzdG9ybS5pbz6JATgEEwECACIFAlX8ypkC
+GwMGCwkIBwMCBhUIAgkKCwQWAgMBAh4BAheAAAoJEGPyJ0mdqMy91bYH/iTg9qbw
+G3th57Yf70NtyMJE3UBFDYDNAgT45UBEHoHhQM5cdFu/EIHggOKl/A2zL19Nh555
+5F5o3jiJChQ0cvpoVnDdA5lRKD9iK6hzAba9fCVAx/od1PULQP7KV+uHTQuclSFO
+DBvpgT8bMY9LmlpTl+l2lvYd+c50w3jZMFwh8JrJYAc3X0kBfVEywVZkjH8Nw5nD
+v/j5Of3XXfEg84tNyWSYUMrYVORJyfHtA9e3JXNv5BMxH73AVLnyCJhCaodQsC6Z
+hFkHUvvRb58ZqKXMtLYTd/8XLIvpkgRNX6EHWDslJh3BaBwHSuqDNssh1TW5xPjA
+9vkPDzeZfLkuxpy5AQ0EVfzKmQEIANyi22M/3KhkghsPA6Rpha1lx6JJCb4p7E21
+y82OGFUwcMpZkSgh1lARgp/Mvc2CHhAXi6NkGbgYc1q5rgARSvim2EMZNQOEqRb9
+teEeI3w7Nz8Q/WoWck9WaXg8EdELtBOXYgVEirVddUl6ftUvCeBh3hE2Y/CLQSXL
+CYXdQ2/MN6xV8tepuWOu0aPxxPUNea9ceDNZ8/CXEL32pzv9SUX/3KgSnFTzmxNP
+thzXGuaAQGMZRu3cdTSeK9UUX4L3lxv7p0nE/2K18MU3FayTJqspfUCc4BgHZRMN
+sh+2/YNfJgi0uWex1WnU94ZIp4A0uic54bU1ZECSwxg81KHaEEkAEQEAAYkBHwQY
+AQIACQUCVfzKmQIbDAAKCRBj8idJnajMvZgPB/0THpTPnfsYNkwQrBsrTq413ZTF
+JmVyeZ9xnGDImOdyHhGLlnLC1YEnaNUVEyMKifya4TF2utrLrsMT9TC/dWvFsYlJ
+oMcUpaSlrFoAoPp3pdOGCIRYNhWGHoxy0Ti1WAa/6A+GoHJpUEz85/jD4vjgYlCX
+ZFW1Pji9PbdIZFZQR4FyYBkkZOUq6yyTNR0syQPVy3EsPVvXzszm2zV/1YjGymgj
+MKeYR9+VU+PlFAY9wwLWLTFeSzxTyVjbPwF5bWHV32GM8g0/NgA6a1JLL40v7pqf
+uYvFk2KJpo3gZNGJ72gLkSzie7Eu1/V67JIG9TwfrJUEj8Uwd5zPv1MOqfWl
+=OiS5
+-----END PGP PUBLIC KEY BLOCK-----
+__EOF__
+
+      if gpg --no-default-keyring --keyring $WORK_DIR/sandstorm-keyring.gpg --status-fd 1 \
+             --verify $WORK_DIR/sandstorm-$BUILD.tar.xz{.sig,} 2>/dev/null | \
+          grep -q '^\[GNUPG:\] VALIDSIG 160D2D577518B58D94C9800B63F227499DA8CCBD '; then
+        echo "GPG signature is valid."
+      else
+        rm -rf sandstorm-$BUILD
+        fail "GPG signature is NOT valid! Please report to security@sandstorm.io immediately!"
+      fi
+    else
+      echo "WARNING: gpg not installed; not verifying signatures (but it's HTTPS so you're probably fine)" >&2
+    fi
+
+    tar Jxof "$WORK_DIR/sandstorm-$BUILD.tar.xz"
+    rm -rf "$WORK_DIR"
 
     if [ ! -e "$BUILD_DIR" ]; then
       fail "Bad package -- did not contain $BUILD_DIR directory."
+    fi
+
+    if [ ! -e "$BUILD_DIR/buildstamp" ] || \
+       [ $(stat --printf=%Y "$BUILD_DIR/buildstamp") -lt $(( $(date +%s) - 30*24*60*60 )) ]; then
+      rm -rf "$BUILD_DIR"
+      fail "The downloaded package seems to be more than a month old. Please verify that your" \
+           "computer's clock is correct and try again. It could also be that an attacker is" \
+           "trying to trick you into installing an old version. Please contact" \
+           "security@sandstorm.io if the problem persists."
     fi
   }
 

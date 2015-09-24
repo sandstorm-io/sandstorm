@@ -206,6 +206,10 @@ BackendImpl::RunningGrain::~RunningGrain() noexcept(false) {
   backend.supervisors.erase(grainId);
 }
 
+kj::Promise<void> BackendImpl::ping(PingContext context) {
+  return kj::READY_NOW;
+}
+
 kj::Promise<void> BackendImpl::startGrain(StartGrainContext context) {
   auto params = context.getParams();
   return bootGrain(validateId(params.getGrainId()),

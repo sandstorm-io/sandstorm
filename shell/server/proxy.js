@@ -44,9 +44,37 @@ sandstormExe = function (progname) {
   }
 }
 
-sandstormBackendConnection = Capnp.connect("unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath,
-  makeSandstormCoreFactory());
+var sandstormCoreFactory = makeSandstormCoreFactory();
+var backendAddress = "unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath;
+sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
 sandstormBackend = sandstormBackendConnection.restore(null, Backend);
+
+// We've observed a problem in production where occasionally the front-end stops talking to the
+// back-end. It happens very rarely -- like once a month -- and we've been unable to reproduce it
+// in testing, making it very hard to debug. The problem appears both on Sandstorm and Blackrock.
+// Restarting the node process (and only the node process) always fixes the problem.
+//
+// Here, I've added some code that attempts to detect the problem by doing a health check
+// periodically and then remaking the connection if it seems broken. We'll see if this helps!
+var backendHealthy = true;
+Meteor.setInterval(function () {
+  if (!backendHealthy) {
+    console.error("error: Backend hasn't responded in 30 seconds! Reconnecting.");
+    sandstormBackendConnection.close();
+    sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
+    sandstormBackend = sandstormBackendConnection.restore(null, Backend);
+  }
+
+  backendHealthy = false;
+  sandstormBackend.ping().then(function () {
+    backendHealthy = true;
+  }, function (err) {
+    console.error("error: Backend ping threw error!", err.stack);
+    // The connection will be remade on the next interval. Note that we do NOT normally observe
+    // exceptions being thrown for this problem; we see the connection simply stop responding.
+    // So we don't expect this branch to execute in any case.
+  });
+}, 30000);
 
 // =======================================================================================
 // Meteor context <-> Async Node.js context adapters

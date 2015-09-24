@@ -31,6 +31,11 @@ interface Backend {
 
   const socketPath :Text = "/var/sandstorm/socket/backend";
 
+  ping @14 ();
+  # Just returns. Used to verify that the connection to the back-end is alive and well.
+
+  # ----------------------------------------------------------------------------
+
   startGrain @0 (ownerId :Text, grainId :Text, packageId :Text,
                  command :Package.Manifest.Command, isNew :Bool, devMode :Bool = false)
              -> (supervisor :Supervisor);

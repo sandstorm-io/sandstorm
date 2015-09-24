@@ -12,9 +12,9 @@ The easiest way to install Sandstorm is by running:
 curl https://install.sandstorm.io | bash
 ```
 
-## Option 2: Github-verified install
+## Option 2: GitHub-verified install
 
-If you are uncomfortable with `curl|bash`, another option is to [download install.sh from our Github repository](https://raw.githubusercontent.com/sandstorm-io/sandstorm/master/install.sh) and then run it:
+If you are uncomfortable with `curl|bash`, another option is to [download install.sh from our GitHub repository](https://raw.githubusercontent.com/sandstorm-io/sandstorm/master/install.sh) and then run it:
 
 ```bash
 wget https://raw.githubusercontent.com/sandstorm-io/sandstorm/master/install.sh
@@ -25,7 +25,7 @@ This verifies that you're running our published installer script, even in the un
 
 ## Option 3: PGP-verified install
 
-If you'd rather not trust HTTPS at all, even from Github, another option is PGP-verified install.
+If you'd rather not trust HTTPS at all, even from GitHub, another option is PGP-verified install.
 
 1. Determine the PGP key of a Sandstorm developer you trust. There are several ways to do this:
     * Web of trust (for PGP experts).

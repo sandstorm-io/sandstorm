@@ -66,10 +66,13 @@ function monkeypatchHttpAndHttps() {
         try {
           var metadata = JSON.parse(fs.readFileSync(metadataFilename));
         } catch (e) {
-          // If the key metadata has the wrong permissions due to an
-          // installer bug that went out during September, then skip
-          // those keys and attempt to continue.
-          if (e.code === 'EACCES') {
+          // Ignore EACCESS: The key metadata may have bad permissions
+          // due to an installer bug that went out during September.
+          //
+          // Ignore ENOENT: If we created a key+csr but the server
+          // hasn't given us a signed certificate yet, the response-json
+          // won't exist.
+          if ((e.code === 'EACCES') || (e.code == 'ENOENT')) {
             console.log("Skipping unreadable HTTPS key information file:", metadataFilename);
             continue;
           } else {

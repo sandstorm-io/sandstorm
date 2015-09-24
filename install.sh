@@ -5,11 +5,9 @@
 #
 #     curl https://install.sandstorm.io | bash
 #
-# Alternatively, if it makes you feel better, you can download and run the
-# script:
+# If `curl|bash` makes you uncomfortable, see other options here:
 #
-#     wget https://install.sandstorm.io/install.sh
-#     bash install.sh
+#     https://docs.sandstorm.io/en/latest/install/
 #
 # This script only modifies your system in the following ways:
 # - Install Sandstorm into the directory you choose, typically /opt/sandstorm.
@@ -22,14 +20,15 @@
 # and the dev tools will not work (due to limitations with using FUSE in a
 # sandbox).
 #
-# This script downloads an installs binaries. This means that to use this
+# This script downloads and installs binaries. This means that to use this
 # script, you need to trust that the authors are not evil, or you must use
 # an isolated machine or VM. Of course, since the Sandstorm authors'
 # identities are widely known, if they did try to do anything evil, you
 # could easily get them arrested. That said, if you'd rather install from
 # 100% auditable source code, please check out the Github repository instead.
 #
-# All downloads occur over HTTPS.
+# All downloads occur over HTTPS from Sandstorm's servers and are further
+# verified using PGP.
 
 if test -z "$BASH_VERSION"; then
   echo "Please run this script using bash, not sh or any other shell." >&2
@@ -586,7 +585,7 @@ dev_server_install() {
     echo "We're going to:"
     echo ""
     echo "* Install Sandstorm in ${DEFAULT_DIR_FOR_ROOT}."
-    echo "* Automatically keep Sandstorm up-to-date."
+    echo "* Automatically keep Sandstorm up-to-date (with signed updates)."
     echo "* Create a service user ($DEFAULT_SERVER_USER) that owns Sandstorm's files."
     echo "* Add you ($USER) to the $DEFAULT_SERVER_USER group so you can read/write app data."
     echo "* Expose the service only on localhost aka local.sandstorm.io, not the public Internet."

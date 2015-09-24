@@ -243,7 +243,7 @@ Template.sandstormTopbar.events({
       // Redirect to /grain/ after closing the last grain, if it was the active view.
       topbar._grains.set([]);
       if (activeIndex == 0) {
-        Router.go("selectGrain");
+        Router.go("grains");
       }
       return;
     }

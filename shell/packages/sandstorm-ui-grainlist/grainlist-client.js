@@ -16,61 +16,13 @@ var compileMatchFilter = function (searchString) {
         .value();
   };
 };
-var mapGrainsToTemplateObject = function (grains) {
-  // Do package lookup all at once, rather than doing N queries for N grains
-  var db = Template.instance().data._db;
-  var packageIds = _.chain(grains)
-      .pluck('packageId')
-      .uniq()
-      .value();
-  var packages = db.collections.packages.find({ _id: { $in: packageIds } }).fetch();
-  var packagesById = _.indexBy(packages, '_id');
-  return grains.map(function(grain) {
-    var pkg = packagesById[grain.packageId];
-    var iconSrc = pkg ? db.iconSrcForPackage(pkg, 'grain') : "";
-    var appTitle = pkg ? SandstormDb.appNameFromPackage(pkg) : "";
-    return {
-      _id: grain._id,
-      title: grain.title,
-      appTitle: appTitle,
-      lastUsed: grain.lastUsed,
-      iconSrc: iconSrc,
-      isOwnedByMe: true,
-    };
-  });
-};
-var mapApiTokensToTemplateObject = function (apiTokens) {
-  var ref = Template.instance().data;
-  var tokensForGrain = _.groupBy(apiTokens, 'grainId');
-  var grainIdsForApiTokens = Object.keys(tokensForGrain);
-  var sharedGrains = ref._db.collections.grains.find({_id: {$in: grainIdsForApiTokens}}).fetch();
-  return grainIdsForApiTokens.map(function(grainId) {
-    // It's theoretically possible to have multiple API tokens for the same grain.
-    // Pick one arbitrarily to assign the grain petname from.
-    var token = tokensForGrain[grainId][0];
-    var ownerData = token.owner.user;
-    var grainInfo = ownerData.denormalizedGrainMetadata;
-    var appTitle = (grainInfo && grainInfo.appTitle && grainInfo.appTitle.defaultText) || "";
-    // TODO(someday): use source sets and the dpi2x value
-    var iconSrc = (grainInfo && grainInfo.icon && grainInfo.icon.assetId) ?
-        (window.location.protocol + "//" + ref._staticHost + "/" + grainInfo.icon.assetId) :
-        Identicon.identiconForApp((grainInfo && grainInfo.appId) || "00000000000000000000000000000000");
-    return {
-      _id: grainId,
-      title: ownerData.title,
-      appTitle: appTitle,
-      lastUsed: ownerData.lastUsed,
-      iconSrc: iconSrc,
-      isOwnedByMe: false,
-    };
-  });
-};
 var filteredSortedGrains = function() {
-  var db = Template.instance().data._db;
+  var ref = Template.instance().data;
+  var db = ref._db;
   var grains = db.currentUserGrains().fetch();
-  var itemsFromGrains = mapGrainsToTemplateObject(grains);
+  var itemsFromGrains = SandstormGrainListPage.mapGrainsToTemplateObject(grains, db);
   var apiTokens = db.currentUserApiTokens().fetch();
-  var itemsFromSharedGrains = mapApiTokensToTemplateObject(apiTokens);
+  var itemsFromSharedGrains = SandstormGrainListPage.mapApiTokensToTemplateObject(apiTokens, ref._staticHost);
   var filter = compileMatchFilter(Template.instance().data._filter.get());
   return _.chain([itemsFromGrains, itemsFromSharedGrains])
       .flatten()
@@ -79,7 +31,7 @@ var filteredSortedGrains = function() {
       .reverse()
       .value();
 };
-Template.sandstormGrainList.helpers({
+Template.sandstormGrainListPage.helpers({
   setDocumentTitle: function() {
     document.title = "Grains · Sandstorm";
   },
@@ -99,9 +51,14 @@ Template.sandstormGrainList.helpers({
     // TODO(cleanup): extract prettySize and other similar helpers from globals into a package
     // TODO(cleanup): access Meteor.user() through db object
     return prettySize(Meteor.user().storageUsage);
-  }
+  },
+  onGrainClicked: function () {
+    return function (grainId) {
+      Router.go("grain", {grainId: grainId});
+    };
+  },
 });
-Template.sandstormGrainList.onRendered(function () {
+Template.sandstormGrainListPage.onRendered(function () {
   // Auto-focus search bar on desktop, but not mobile (on mobile it will open the software
   // keyboard which is undesirable). window.orientation is generally defined on mobile browsers
   // but not desktop browsers, but some mobile browsers don't support it, so we also check
@@ -111,14 +68,9 @@ Template.sandstormGrainList.onRendered(function () {
     if (searchbar) searchbar.focus();
   }
 });
-Template.sandstormGrainList.events({
-  "click tbody tr": function(event) {
-    var grainId = event.currentTarget.getAttribute('data-grainid');
-    Router.go("grain", {grainId: grainId});
-  },
-  // We use keyup rather than keypress because keypress's event.target.value will not have
-  // taken into account the keypress generating this event, so we'll miss a letter to filter by
-  "keyup .search-bar": function(event) {
+
+Template.sandstormGrainListPage.events({
+  "input .search-bar": function(event) {
     Template.instance().data._filter.set(event.target.value);
   },
   "keypress .search-bar": function(event) {
@@ -133,4 +85,11 @@ Template.sandstormGrainList.events({
       }
     }
   }
+});
+
+Template.sandstormGrainTable.events({
+  "click tbody tr": function(event) {
+    var context = Template.instance().data;
+    context.onGrainClicked && context.onGrainClicked(this._id);
+  },
 });

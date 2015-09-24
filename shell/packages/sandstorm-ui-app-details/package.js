@@ -15,15 +15,14 @@
 // limitations under the License.
 
 Package.describe({
-  summary: "Sandstorm UI grain list",
+  summary: "Sandstorm UI app details page",
   version: "0.1.0"
 });
 
 Package.onUse(function (api) {
-  api.use(["check", "reactive-var", "reload", "templating", "tracker", "sandstorm-db", "sandstorm-identicons", "underscore"], "client");
-  // For the "userPackages" collection.  Perhaps that should move elsewhere.
-  api.use(["sandstorm-ui-applist"], ["server"]);
-  api.addFiles(["grainlist.html", "grainlist-client.js"], "client");
-  api.addFiles(["grainlist-common.js"], ["client", "server"]);
-  api.export("SandstormGrainListPage");
+  api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-identicons"], "client");
+  api.addFiles(["app-details-common.js"], ["client","server"]);
+  api.addFiles(["app-details.html", "app-details-client.js"], "client");
+  api.addFiles(["app-details-server.js"], "server")
+  api.export("SandstormAppDetails");
 });

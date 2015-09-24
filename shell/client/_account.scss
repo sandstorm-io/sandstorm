@@ -727,6 +727,10 @@ form.account-profile-editor {
 
       &.save {
         text-align: right;
+        >button {
+          @extend %button-base;
+          @extend %button-primary;
+        }
       }
 
       >.details {

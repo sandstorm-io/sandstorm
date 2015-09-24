@@ -34,7 +34,7 @@ exports.command = function(name, isAdmin, callback) {
     .init()
     .execute('window.loginDevAccountFast("' + name + isAdminString)
     .pause(short_wait)
-    .url(this.launch_url + "/grain/new")
+    .url(this.launch_url + "/apps")
     .waitForElementVisible('.app-list', medium_wait)
     .resizeWindow(utils.default_width, utils.default_height);
 

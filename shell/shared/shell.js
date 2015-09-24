@@ -852,9 +852,9 @@ Router.map(function () {
       if (this.ready() && Meteor.userId() && !Meteor.loggingIn()) {
         if (globalDb.currentUserGrains({}, {}).count() === 0 &&
             globalDb.currentUserApiTokens().count() === 0) {
-          Router.go("newGrain", {}, {replaceState: true});
+          Router.go("apps", {}, {replaceState: true});
         } else {
-          Router.go("selectGrain", {}, {replaceState: true});
+          Router.go("grains", {}, {replaceState: true});
         }
       }
 

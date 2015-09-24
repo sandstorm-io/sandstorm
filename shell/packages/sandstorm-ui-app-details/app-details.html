@@ -1,0 +1,87 @@
+<template name="sandstormAppDetails">
+  {{setDocumentTitle}}
+  {{#if newGrainIsLoading}}
+    {{!-- It's bad style to use the globally defined _grainSpinner, but we get the benefit of blaze
+          re-using the live HTML and not causing a flash for the user. --}}
+    {{> _grainSpinner}}
+  {{else}}
+  <div class="app-details{{#if isAppInDevMode}} dev-background{{/if}}">
+    <div class="app-icon" style="background-image: url('{{appIconSrc}}');"></div>
+    <div class="app-details-box">
+      <h1 class="app-title">{{appTitle}}</h1>
+      <ul class="app-links">
+        {{#if website}}<li role="presentation"><a class="website-link" href="{{website}}">Website</a></li>{{/if}}
+        <li role="presentation"><a class="app-market-link" href="https://apps.sandstorm.io/app/{{appId}}">App Market</a></li>
+        {{#if codeUrl}}<li role="presentation"><a class="source-code-link" href="{{codeUrl}}">Source</a></li>{{/if}}
+        {{#if contactEmail}}<li role="presentation"><a class="bug-report-link" href="mailto:{{contactEmail}}">Report Issue</a></li>{{/if}}
+      </ul>
+      <div class="info-row">
+        {{#unless isAppInDevMode}}
+        <button class="uninstall-button">Uninstall</button>
+        {{/unless}}
+        <ul class="package-info">
+          <li class="version">
+            <span class="label">Version</span>
+            <span class="content">{{marketingVersion}}</span>
+          </li>
+          <li class="last-update">
+            <span class="label">Last Updated</span>
+            {{#if lastUpdated}}
+            <span class="content">{{dateString lastUpdated}}</span>
+            {{else}}
+            <span class="content">&lt;unknown&gt;</span>
+            {{/if}}
+          </li>
+          {{#if authorPgpFingerprint}}
+          <li class="publisher">
+            <span class="name">Publisher</span>
+            <button class="show-authorship-button{{#if showPublisherDetails}} expanded{{/if}}">{{publisherDisplayName}}</button>
+          </li>
+          {{/if}}
+        </ul>
+      </div>
+      <div class="publisher-details {{#unless showPublisherDetails}}hide{{/unless}}">
+        <p>The app publisher has proven using PGP that they control these accounts.</p>
+        <ul class="publisher-proofs">
+          {{#each publisherProofs}}
+          <li class="publisher-proof">
+            <a class="{{proofTypeClass}}"
+               href="{{linkTarget}}">
+              {{#if isPgpKey proofTypeClass}}
+                {{#each keyFragments}}<span>{{fragment}}</span>{{/each}}
+              {{else}}
+                {{linkText}}
+              {{/if}}
+            </a>
+          </li>
+          {{/each}}
+        </ul>
+      </div>
+      {{!-- TODO: Somehow, we need to have the publishing proof toggle visibility below,
+            but not get pushed too far down or something --}}
+    </div>
+
+    {{!-- Buttons for each action, to create --}}
+    <div class="actions">
+    {{#if isAppInDevMode}}
+      {{#each devActions }}
+        <button class="dev-action">(Dev) Create new {{nounPhrase}}</button>
+      {{/each}}
+    {{else}}
+      {{#each actions }}
+        <button class="action">Create new {{nounPhrase}}</button>
+      {{/each}}
+    {{/if}}
+    </div>
+
+    <div class="search-bar">
+      <label>
+        <span class="search-icon" title="Search"></span>
+        <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
+      </label>
+    </div>
+
+    {{>sandstormGrainTable grains=filteredSortedGrains onGrainClicked=onGrainClicked}}
+  </div>
+  {{/if}}
+</template>

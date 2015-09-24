@@ -1,4 +1,4 @@
-<template name="sandstormGrainList">
+<template name="sandstormGrainListPage">
   {{setDocumentTitle}}
   <div class="grain-list">
     <div class="non-usage-info">
@@ -16,34 +16,8 @@
         <p class="grains-size"><strong>My grains' total size:</strong> {{ myGrainsSize }}</p>
       {{/if}}
     </div>
-    <table class="grain-list-table">
-      <thead>
-        <tr>
-            <td class="td-app-icon"></td>
-            <td class="grain-name">Name</td>
-            <td class="last-used">Last Activity</td>
-            <td class="shared-or-owned">Mine/Shared</td>
-            {{!-- Collaborators, size TODO
-            <td>Collaborators</td>
-            <td>Size</td>
-            --}}
-        </tr>
-      </thead>
-      <tbody>
-        {{#each filteredSortedGrains}}
-        <tr class="grain" data-grainid="{{ _id }}">
-          <td class="td-app-icon"><div class="app-icon" title="{{appTitle}}" style="background-image: url('{{ iconSrc }}');"></div></td>
-          <td class="grain-name"><a href="{{ pathFor route='grain' grainId=_id }}">{{title}}</a></td>
-          <td class="last-used">{{dateString lastUsed}}</td>
-          <td class="shared-or-owned">{{#if isOwnedByMe }}My grain{{else}}Shared with me{{/if}}</td>
-          {{!-- Collaborators, size TODO
-          <td>TODO: collaborators</td>
-          <td>{{ size }}</td>
-          --}}
-        </tr>
-        {{/each}}
-      </tbody>
-    </table>
+
+    {{>sandstormGrainTable grains=filteredSortedGrains onGrainClicked=onGrainClicked}}
 
     {{#unless hasAnyGrainsCreatedOrSharedWithMe}}
       {{#if Template.subscriptionsReady}}
@@ -58,4 +32,48 @@
       {{/if}}
     {{/unless}}
   </div>
+</template>
+
+<template name="sandstormGrainTable">
+  {{!-- A pure functional template.  Pass in grains as a list of objects with shape:
+  {
+    _id: String,
+    appTitle: String,
+    iconSrc: String,
+    title: String,
+    lastUsed: Date,
+    isOwnedByMe: Boolean
+  }
+  and (optionally):
+  an onGrainClicked callback function, which takes a single argument grainId as a String
+  Future work: callbacks for requesting different sort orders?
+  --}}
+    <table class="grain-list-table">
+      <thead>
+        <tr>
+            <td class="td-app-icon"></td>
+            <td class="grain-name">Name</td>
+            <td class="last-used">Last Activity</td>
+            <td class="shared-or-owned">Mine/Shared</td>
+            {{!-- Collaborators, size TODO
+            <td>Collaborators</td>
+            <td>Size</td>
+            --}}
+        </tr>
+      </thead>
+      <tbody>
+        {{#each grains}}
+        <tr class="grain" data-grainid="{{ _id }}">
+          <td class="td-app-icon"><div class="app-icon" title="{{appTitle}}" style="background-image: url('{{ iconSrc }}');"></div></td>
+          <td class="grain-name"><a href="{{ pathFor route='grain' grainId=_id }}">{{title}}</a></td>
+          <td class="last-used">{{dateString lastUsed}}</td>
+          <td class="shared-or-owned">{{#if isOwnedByMe }}My grain{{else}}Shared with me{{/if}}</td>
+          {{!-- Collaborators, size TODO
+          <td>TODO: collaborators</td>
+          <td>{{ size }}</td>
+          --}}
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
 </template>

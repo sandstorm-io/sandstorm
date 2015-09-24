@@ -719,6 +719,7 @@ SandstormDb = function () {
     misc: Misc,
     settings: Settings,
     appIndex: AppIndex,
+    keybaseProfiles: KeybaseProfiles,
 
     // Intentionally omitted:
     // - Migrations, since it's used only within this package.
@@ -912,7 +913,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   getKeybaseProfile: function (keyFingerprint) {
-    return KeybaseProfiles.findOne(keyFingerprint) || {};
+    return this.collections.keybaseProfiles.findOne(keyFingerprint) || {};
   },
 });
 
@@ -1357,13 +1358,21 @@ if (Meteor.isServer) {
 
   Meteor.publish("keybaseProfile", function (keyFingerprint) {
     check(keyFingerprint, ValidKeyFingerprint);
+    var db = this.connection.sandstormDb;
 
-    var cursor = KeybaseProfiles.find(keyFingerprint);
+    var cursor = db.collections.keybaseProfiles.find(keyFingerprint);
     if (cursor.count() === 0) {
       // Fire off async update.
-      this.connection.sandstormDb.updateKeybaseProfileAsync(keyFingerprint);
+      db.updateKeybaseProfileAsync(keyFingerprint);
     }
 
+    return cursor;
+  });
+
+  Meteor.publish("appIndex", function (appId) {
+    check(appId, String);
+    var db = this.connection.sandstormDb;
+    var cursor = db.collections.appIndex.find({_id: appId});
     return cursor;
   });
 }

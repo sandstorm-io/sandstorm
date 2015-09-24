@@ -1,0 +1,215 @@
+.app-details {
+  position: relative;
+  @media #{$desktop} {
+    padding: 24px 32px;
+  }
+  @media #{$mobile} {
+    padding: 0px 8px;
+  }
+  background-color: $app-details-background-color;
+  color: $app-details-foreground-color;
+
+  &.dev-background {
+    background-image: url("/devmode.png");
+    background-size: auto;
+    background-color: #ccc;
+  }
+
+  >.app-icon {
+    position: absolute;
+    @extend %pseudo-img-tag;
+    @media #{$desktop} {
+      left: 32px;
+      top: 24px;
+    }
+    @media #{$mobile} {
+      left: 8px;
+      top: 0px;
+    }
+    width: 128px;
+    height: 128px;
+  }
+  >.app-details-box {
+    margin-left: 128px;
+    padding-left: 12px;
+    min-height: 128px;
+    >h1.app-title {
+      margin: 0px;
+      font-weight: normal;
+      display: block;
+      float: left;
+    }
+    >ul.app-links {
+      display: block;
+      float: right;
+      margin-left: 0px;
+      padding-left: 0px;
+      list-style: none;
+      >li {
+        display: inline-block;
+        float: left;
+        margin-left: 24px;
+
+        >a {
+          padding-left: 28px;
+
+          background-size: 24px 24px;
+          background-position: 0px center;
+          background-repeat: no-repeat;
+          &.website-link {
+            background-image: url("/web-m.svg");
+          }
+          &.app-market-link {
+            background-image: url("/appmarket-m.svg");
+          }
+          &.source-code-link {
+            background-image: url("/source-m.svg");
+          }
+          &.bug-report-link {
+            background-image: url("/bug-m.svg");
+          }
+          // TODO: these need more styles and less overrides
+          display: inline-block;
+          font-weight: normal;
+          color: #000000;
+          &:hover {
+            color: $sandstorm-purple-color;
+          }
+        }
+      }
+    }
+    >div.info-row {
+      display: block;
+      clear: both;
+      float:left;
+      width: 100%;
+      >ul.package-info {
+        position: relative;
+        margin: 0px;
+        padding: 0px;
+        list-style: none;
+        >li {
+          display: block;
+          float: left;
+          margin-right: 32px;
+          >span {
+            padding-left: 8px;
+            display: block;
+            clear: both;
+          }
+          >span.label, >span.name {
+            font-weight: 600;
+          }
+          >button.show-authorship-button {
+            @extend %unstyled-button;
+            padding-left: 8px;
+            padding-right: 24px;
+            background-repeat: no-repeat;
+            background-position: right center;
+            background-size: 24px 24px;
+            background-image: url("/down-m.svg");
+            &.expanded {
+              background-image: url("/up-m.svg");
+              background-color: #ffffff;
+            }
+          }
+        }
+        display: block;
+        float: left;
+      }
+      >button.uninstall-button {
+        @extend %button-base;
+        @extend %button-secondary;
+        display: block;
+        float: right;
+        min-height: 32px;
+      }
+    }
+    >div.publisher-details {
+      display: block;
+      clear: both;
+      background-color: #ffffff;
+      >p {
+        padding-left: 8px;
+        display: inline-block;
+        max-width: 30%;
+      }
+      >ul.publisher-proofs {
+        display: inline-block;
+        max-width: 65%;
+        list-style: none;
+        >li.publisher-proof {
+          display: block;
+          >a {
+            display: block;
+            padding-left: 32px;
+            background-size: 24px 24px;
+            background-position: 0px center;
+            background-repeat: no-repeat;
+          }
+          >a.keybase {
+            background-image: url("/keybase-m.svg");
+          }
+          >a.pgpkey {
+            background-image: url("/key-m.svg");
+            >span {
+              padding-right: 4px;
+            }
+          }
+          >a.twitter {
+            background-image: url("/twitter-m.svg");
+          }
+          >a.github {
+            background-image: url("/github-m.svg");
+          }
+          >a.dns {
+            background-image: url("/link-m.svg");
+          }
+          >a.https {
+            background-image: url("/link-m.svg");
+          }
+        }
+      }
+      &.hide {
+        display:none;
+      }
+    }
+  }
+  >.actions {
+    margin-top: 12px;
+    >button {
+      @extend %button-base;
+      @extend %button-primary;
+    }
+  }
+  >.search-bar {
+    margin-top: 12px;
+    clear: both;
+    >label {
+      >span.search-icon {
+        @extend %pseudo-img-tag;
+        background-image: url("/search.svg");
+        background-size: 24px 24px;
+        background-position: center;
+        display: inline-block;
+        box-sizing: border-box;
+        width: 32px;
+        height: 32px;
+        vertical-align: top;
+      }
+      >input.search-bar {
+        font-size: 16pt;
+        height: 32px;
+        box-sizing: border-box;
+        background-color: $app-details-searchbar-background-color;
+        border: 1px solid $app-details-searchbar-outline-color;
+        &:focus {
+          border: 1px solid $app-details-searchbar-outline-color-focus;
+        }
+      }
+    }
+  }
+  >table.grain-list-table {
+    @extend %grain-table;
+  }
+}

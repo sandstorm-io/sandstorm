@@ -28,6 +28,7 @@ sandstorm-identicons
 sandstorm-permissions
 sandstorm-ui-topbar
 sandstorm-ui-applist
+sandstorm-ui-app-details
 sandstorm-ui-grainlist
 meteor-node-forge
 fourseven:scss

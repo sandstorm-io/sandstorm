@@ -28,13 +28,15 @@ exports.command = function(url, packageId, appId, dontStartGrain, callback) {
     .url(this.launch_url + "/install/" + packageId + "?url=" + url)
     .waitForElementVisible("#step-confirm", very_long_wait)
     .click("#confirmInstall")
-    .url(this.launch_url + "/grain/new")
+    .url(this.launch_url + "/apps")
     .waitForElementVisible(".app-list", medium_wait)
     .resizeWindow(utils.default_width, utils.default_height);
 
   if (!dontStartGrain) {
     ret = ret
-      .click('.app-list>.app-action[data-app-id="' + appId + '"]')
+      .click('.app-list>.app-button[data-app-id="' + appId + '"]')
+      .waitForElementVisible('.actions > button.action', short_wait)
+      .click('.actions > button.action')
       .waitForElementVisible("#grainTitle", medium_wait);
   }
 

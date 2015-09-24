@@ -42,7 +42,10 @@ endef
 
 
 IMAGES= \
+    shell/public/apps.svg \
+    shell/public/appmarket.svg \
     shell/public/battery.svg \
+    shell/public/bug.svg \
     shell/public/close.svg \
     shell/public/copy.svg \
     shell/public/debug.svg \
@@ -55,31 +58,45 @@ IMAGES= \
     shell/public/link.svg \
     shell/public/menu.svg \
     shell/public/notification.svg \
+    shell/public/open-grain.svg \
     shell/public/people.svg \
     shell/public/restart.svg \
     shell/public/restore.svg \
     shell/public/settings.svg \
+    shell/public/source.svg \
     shell/public/share.svg \
     shell/public/search.svg \
     shell/public/trash.svg \
     shell/public/troubleshoot.svg \
     shell/public/upload.svg \
     shell/public/up.svg \
+    shell/public/web.svg \
                              \
+    shell/public/apps-m.svg \
+    shell/public/appmarket-m.svg \
+    shell/public/bug-m.svg \
     shell/public/close-m.svg \
     shell/public/copy-m.svg \
+    shell/public/down-m.svg \
     shell/public/debug-m.svg \
     shell/public/download-m.svg \
     shell/public/email-m.svg \
+    shell/public/github-m.svg \
     shell/public/key-m.svg \
+    shell/public/keybase-m.svg \
     shell/public/link-m.svg \
     shell/public/notification-m.svg \
+    shell/public/open-grain-m.svg \
     shell/public/people-m.svg \
     shell/public/restart-m.svg \
     shell/public/settings-m.svg \
     shell/public/share-m.svg \
+    shell/public/source-m.svg \
     shell/public/trash-m.svg \
     shell/public/troubleshoot-m.svg \
+    shell/public/twitter-m.svg \
+    shell/public/up-m.svg \
+    shell/public/web-m.svg \
                                   \
     shell/public/github-color.svg \
     shell/public/google-color.svg \
@@ -259,8 +276,8 @@ shell/public/email-494949.svg: icons/email.svg
 
 shell/public/%-m.svg: icons/%.svg
 	@$(call color,color for light background $<)
-	@# Leave as black.
-	@cp $< $@
+	@# Make completely black.
+	@sed -e 's/#111111/#000000/g' < $< > $@
 
 shell-build: shell/lib/* shell/client/* shell/server/* shell/shared/* shell/public/* shell/packages/* shell/packages/*/* shell/.meteor/packages shell/.meteor/release shell/.meteor/versions tmp/.shell-env
 	@$(call color,meteor frontend)

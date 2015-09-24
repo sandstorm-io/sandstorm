@@ -117,13 +117,15 @@ module.exports = utils.testAllLogins({
       .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
       .waitForElementVisible('#step-confirm', very_long_wait)
       .click('#confirmInstall')
-      .waitForElementVisible('.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]', short_wait)
-      .assert.containsText('.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]>.app-title', 'Hacker CMS');
+      .waitForElementVisible('.app-button[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]', short_wait)
+      .assert.containsText('.app-button[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]>.app-title', 'Hacker CMS');
   },
 
   "Test new grain" : function (browser) {
     browser
-      .click('.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]')
+      .click('.app-button[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]')
+      .waitForElementVisible('.actions > button.action', short_wait)
+      .click('.actions > button.action')
       .waitForElementVisible('#grainTitle', medium_wait)
       .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle);
   },
@@ -209,14 +211,16 @@ module.exports["Test roleless sharing"] = function (browser) {
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
     .waitForElementVisible(
-      '.app-list>.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]',
+      '.app-list>.app-button[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]',
       short_wait)
     .assert.containsText(
-      '.app-list>.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]',
+      '.app-list>.app-button[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]',
       'Hacker CMS')
     // Create grain with that user
     .click(
-      '.app-list>.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]')
+      '.app-list>.app-button[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]')
+    .waitForElementVisible('.actions > button.action', short_wait)
+    .click('.actions > button.action')
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
     .click('.topbar .share > .show-popup')
@@ -290,14 +294,17 @@ module.exports["Test role sharing"] = function (browser) {
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
     .waitForElementVisible(
-      '.app-list>.app-action[data-app-id="h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60"]',
+      '.app-list>.app-button[data-app-id="h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60"]',
       short_wait)
     .assert.containsText(
-      '.app-list>.app-action[data-app-id="h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60"]',
+      '.app-list>.app-button[data-app-id="h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60"]',
       'Etherpad')
     // Create grain with that user
     .click(
-      '.app-list>.app-action[data-app-id="h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60"]')
+      '.app-list>.app-button[data-app-id="h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60"]')
+    .waitForElementVisible('.actions > button.action', short_wait)
+    .click('.actions > button.action')
+
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.containsText('#grainTitle', expectedEtherpadGrainTitle)
     .click('.topbar .share > .show-popup')
@@ -357,14 +364,16 @@ module.exports["Test grain incognito interstitial"] = function (browser) {
     .waitForElementVisible('#step-confirm', very_long_wait)
     .click('#confirmInstall')
     .waitForElementVisible(
-      '.app-list>.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]',
+      '.app-list>.app-button[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]',
       short_wait)
     .assert.containsText(
-      '.app-list>.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]',
+      '.app-list>.app-button[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]',
       'Hacker CMS')
     // Create grain with that user
     .click(
-      '.app-list>.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]')
+      '.app-list>.app-button[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]')
+    .waitForElementVisible('.actions > button.action', short_wait)
+    .click('.actions > button.action')
     .waitForElementVisible('#grainTitle', medium_wait)
     .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
     .click('.topbar .share > .show-popup')

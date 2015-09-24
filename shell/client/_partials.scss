@@ -39,3 +39,34 @@
   background-size: cover;
   background-repeat: no-repeat;
 }
+
+%button-base {
+  // Default button shape, layout, and size.
+  cursor: pointer;
+  border-radius: 5px;
+  padding: 4px 8px;
+  box-sizing: border-box;
+  min-height: 26px;
+  font-size: 13px;
+  text-align: center;
+}
+
+%button-primary {
+  // A button coloring for the primary action of a form.
+  background-color: $sandstorm-purple-color;
+  color: white;
+  border: 1px solid darken($sandstorm-purple-color, 10%);
+  &:hover {
+    background-color: darken($sandstorm-purple-color, 10%);
+  }
+}
+
+%button-secondary {
+  // A button coloring for secondary (less important) actions.
+  background-color: white;
+  color: black;
+  border: 1px solid darken(white, 30%);
+  &:hover {
+    background-color: darken(white, 10%);
+  }
+}

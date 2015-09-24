@@ -38,16 +38,32 @@ If you'd rather not trust HTTPS at all, even from GitHub, another option is PGP-
 
 3. Obtain the PGP key fingerprint of a Sandstorm developer you trust. There are several ways to do this:
     * Web of trust (for PGP experts).
-    * Meet us in person and ask for our business cards.
+    * [Meet us in person](http://www.meetup.com/Sandstorm-SF-Bay-Area/) and ask for our business cards.
     * Use our Keybase profiles, for example: [Kenton Varda (kentonv)](https://keybase.io/kentonv), [Asheesh Laroia (asheesh)](https://keybase.io/asheesh), [Drew Fisher (zarvox)](https://keybase.io/zarvox)
 
-4. Download that developer's corresponding release key certificate [from the Sandstorm github repo](https://github.com/sandstorm-io/sandstorm/tree/master/keys).
+4. Download that developer's corresponding release key certificate [from the Sandstorm github repo](https://github.com/sandstorm-io/sandstorm/tree/master/keys). For example, if you chose Kenton:
+
+    <pre><code class="hljs bash">wget https://raw.githubusercontent.com/sandstorm-io/sandstorm/master/keys/release-certificate.kentonv.sig</code></pre>
 
 5. Verify the certificate with GPG. For example:
 
     <pre><code class="hljs bash">gpg --decrypt release-certificate.kentonv.sig</code></pre>
 
-    Read the signed statement and decide if it checks out, and make sure the fingerprint of the signer (the last thing GPG prints) matches the one you trust. Note that you can ignore GPG's warning that the signature isn't trusted because you're checking the fingerprint directly (an advanced user would instead have pre-arranged to trust the key and could thus ignore the fingerprint).
+    The output looks something like (emphasis added):
+
+    <pre><code class="hljs nohighlight"><b>As of September 2015, Sandstorm releases are signed with the PGP key with
+    fingerprint 160D 2D57 7518 B58D 94C9  800B 63F2 2749 9DA8 CCBD. This assertion
+    will be updated monthly; do not trust this certificate after October 2015.</b>
+    <span style="color: #888">gpg: Signature made Wed 23 Sep 2015 04:20:25 PM PDT using RSA key ID 440DDCF1
+    gpg: Good signature from "Kenton Varda &lt;kentonv@keybase.io&gt;"
+    gpg:                 aka "Kenton Varda &lt;temporal@gmail.com&gt;"
+    gpg:                 aka "Kenton Varda &lt;kenton@sandstorm.io&gt;"
+    gpg:                 aka "Kenton Varda &lt;kenton@kentonshouse.com&gt;"
+    gpg: WARNING: This key is not certified with a trusted signature!
+    gpg:          There is no indication that the signature belongs to the owner.</span>
+    <b>Primary key fingerprint: 8802 23DF 25AA 25A9 433A  F0FB 4067 8458 440D DCF1</b></code></pre>
+
+    Read the signed statement (top bolded part) and decide if it checks out, and make sure the fingerprint of the signer (bottom bolded part) matches the one you trust. Note that you can ignore GPG's warning that the signature isn't trusted because you're checking the fingerprint directly (an advanced user would instead have pre-arranged to trust the key and could thus ignore the fingerprint).
 
     If you have the Keybase tools installed, you can use this much-friendlier command instead:
 
@@ -61,6 +77,10 @@ If you'd rather not trust HTTPS at all, even from GitHub, another option is PGP-
 7. Verify the signature, making sure the signing key's fingerprint matches the one from the certificate.
 
     <pre><code class="hljs bash">gpg --verify install.sh.sig install.sh</code></pre>
+
+8. Run the installer.
+
+    <pre><code class="hljs bash">bash install.sh</code></pre>
 
 (Aside: You may wonder why our "release certificates" are signed natural-language statements, rather than using PGP key signing. The answer is that PGP key signing, or at least the GPG interface, does not seem well-equipped to handle expiring signatures that must be refreshed monthly. We'd like to improve this; please let us know if you have ideas!)
 

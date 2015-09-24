@@ -173,6 +173,38 @@ function useLocalizedTextInUserActions() {
   });
 }
 
+function splitUserIdsIntoAccountIdsAndIdentityIds() {
+  Meteor.users.find().forEach(function (user) {
+    var identities = SandstormDb.getUserIdentities(user);
+    if (identities.length != 1) {
+      throw new Error("user has unexpected number of identities: " + JSON.stringify(user));
+    }
+    var identityId = identities[0].id;
+
+    Meteor.users.update(user._id, {$set: {identityIds: [identityId]}});
+
+    Grains.update({userId: user._id}, {$set: {identityId: identityId}}, {multi: true});
+    Sessions.update({userId: user._id}, {$set: {identityId: identityId}}, {multi: true});
+    ApiTokens.update({userId: user._id},
+                     {$set: {identityId: identityId}},
+                     {multi: true});
+    ApiTokens.update({"owner.user.userId": user._id},
+                     {$set: {"owner.user.identityId": identityId}},
+                     {multi: true});
+    ApiTokens.update({"owner.grain.introducerUser": user._id},
+                     {$set: {"owner.grain.introducerIdentity": identityId}},
+                     {multi: true});
+    ApiTokens.update({"requirements.permissionsHeld.userId": user._id},
+                     {$set: {"requirements.$.permissionsHeld.identityId": identityId}},
+                     {multi: true});
+  });
+
+  ApiTokens.remove({userInfo: {$exists: true}});
+  // We've renamed `Grain.UserInfo.userId` to `Grain.userInfo.identityId`. The only place
+  // that this field could show up in the database was in this deprecated, no-longer-functional
+  // form of API token.
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -186,6 +218,7 @@ var MIGRATIONS = [
   assignPlans,
   removeKeyrings,
   useLocalizedTextInUserActions,
+  splitUserIdsIntoAccountIdsAndIdentityIds
 ];
 
 function migrateToLatest() {

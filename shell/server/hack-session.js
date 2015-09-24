@@ -53,12 +53,13 @@ SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
     var save = castedCap.save({webkey: null});
     var sturdyRef = waitPromise(save).sturdyRef;
 
+    var identity = globalDb.getUserIdentities(self.userId)[0];
     // TODO(soon): This will eventually use SystemPersistent.addRequirements when membranes
     // are fully implemented for supervisors.
     var requirement = {
       permissionsHeld: {
         grainId: self.grainId,
-        userId: self.userId,
+        identityId: identity.id,
         permissions: requiredPermissions
       }
     };
@@ -84,6 +85,7 @@ Meteor.methods({
     if (!userId) {
       throw new Meteor.Error(403, "User must be logged in to user powerbox.");
     }
+    var identity = this.connection.sandstormDb.getUserIdentities(userId)[0];
     var parsedWebkey = Url.parse(webkeyUrl.trim());
     if (parsedWebkey.host !== makeWildcardHost("api")) {
       console.log(parsedWebkey.hostname, makeWildcardHost("api"));
@@ -104,7 +106,7 @@ Meteor.methods({
     var castedCap = cap.castAs(SystemPersistent);
     var grainOwner = {
       grainId: grainId,
-      introducerUser: userId
+      introducerIdentity: identity.id
     };
     if (saveLabel) {
       grainOwner.saveLabel = {
@@ -119,7 +121,7 @@ Meteor.methods({
   finishPowerboxOffer: function (sessionId) {
     check(sessionId, String);
 
-    Sessions.update({_id: sessionId, userId: Meteor.userId()}, {$unset: {powerboxView: null}});
+    Sessions.update({_id: sessionId}, {$unset: {powerboxView: null}});
   }
 });
 
@@ -312,56 +314,15 @@ HackSessionContextImpl.prototype.getUserAddress = function () {
 };
 
 HackSessionContextImpl.prototype.generateApiToken = function (petname, userInfo, expires) {
-  return inMeteor((function () {
-    var token = Random.secret();
-    var endpointUrl = ROOT_URL.protocol + "//" + makeWildcardHost("api");
-
-    var tokenId = ApiTokens.insert({
-      _id: Crypto.createHash("sha256").update(token).digest("base64"),
-      userInfo: userInfo,
-      grainId: this.grainId,
-      petname: petname,
-      created: new Date(),
-      expires: expires > 0 ? new Date(expires * 1000) : null
-    });
-
-    return [token, endpointUrl, tokenId];
-  }).bind(this));
+  throw new Error("generateApiToken() has been removed. Use offer templates instead.");
 };
 
 HackSessionContextImpl.prototype.listApiTokens = function () {
-  return inMeteor((function () {
-    results = [];
-    ApiTokens.find({grainId: this.grainId, userInfo: {$exists: true}})
-        .forEach(function (token) {
-      if (token.expires && token.expires.getTime() < Date.now()) {
-        // Skip.
-        return;
-      }
-
-      // Hack: When Mongo stores a Buffer, it comes back as some other type.
-      if ("userId" in token.userInfo) {
-        token.userInfo.userId = new Buffer(token.userInfo.userId);
-      }
-      results.push({
-        tokenId: token._id,
-        petname: token.petname,
-        userInfo: token.userInfo
-      });
-    });
-
-    return [results];
-  }).bind(this));
+  throw new Error("listApiTokens() has been removed. Use offer templates instead.");
 };
 
 HackSessionContextImpl.prototype.revokeApiToken = function (tokenId) {
-  return inMeteor((function () {
-    if (ApiTokens.remove({_id: tokenId, grainId: this.grainId, userInfo: {$exists: true}}) === 0) {
-      var err = new Error("No such token.");
-      err.nature = "precondition";
-      throw err;
-    }
-  }).bind(this));
+  throw new Error("revokeApiToken() has been removed. Use offer templates instead.");
 };
 
 HackSessionContextImpl.prototype.getUiViewForEndpoint = function (url) {

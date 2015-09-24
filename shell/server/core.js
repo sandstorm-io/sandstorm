@@ -153,7 +153,7 @@ checkRequirements = function (requirements) {
       var p = requirement.permissionsHeld;
       var viewInfo = Grains.findOne(p.grainId, {fields: {cachedViewInfo: 1}}).cachedViewInfo;
       var currentPermissions = SandstormPermissions.grainPermissions(
-        globalDb, {grain: {_id: p.grainId, userId: p.userId}}, viewInfo || {});
+        globalDb, {grain: {_id: p.grainId, identityId: p.identityId}}, viewInfo || {});
       if (!currentPermissions) {
         return false;
       }
@@ -239,11 +239,11 @@ SandstormCoreImpl.prototype.restore = function (sturdyRef, requiredPermissions) 
       tokenValid: hashedSturdyRef
     }];
 
-    if (requiredPermissions && token.owner.grain.introducerUser) {
+    if (requiredPermissions && token.owner.grain.introducerIdentity) {
       requirements.push({
         permissionsHeld: {
           permissions: requiredPermissions,
-          userId: token.owner.grain.introducerUser,
+          identityId: token.owner.grain.introducerIdentity,
           grainId: self.grainId
         }
       });

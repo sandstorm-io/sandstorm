@@ -144,18 +144,18 @@ The following is a process for self-hosted instances of Sandstorm to use SSL wit
 
 
 2. **Add the following to the end of the copied `openssl.cnf` file:**
-        
+
         [req]
         req_extensions = v3_req
-        
+
         [ v3_req ]
-        
+
         # Extensions to add to a certificate request
-        
+
         basicConstraints = CA:FALSE
         keyUsage = nonRepudiation, digitalSignature, keyEncipherment
         subjectAltName = @alt_names
-        
+
         [alt_names]
         DNS.1 = [your-domain-name].sandcats.io
         DNS.2 = *.[your-domain-name].sandcats.io
@@ -163,41 +163,41 @@ The following is a process for self-hosted instances of Sandstorm to use SSL wit
 3. **Create the Certificate Authority (CA) Key:**
 
         openssl genrsa -out rootCA.key 4096
-    `rootCA.key` is the file for the Certificate Authority (CA) key.  
-    _  
+    `rootCA.key` is the file for the Certificate Authority (CA) key.
+    _
 
 4. **Sign the Certificate Authority (CA) Key and Create Certificate Authority (CA) certificate (Expires in 10 years):**
 
         openssl req -x509 -new -nodes -key rootCA.key -days 3650 -out rootCA.pem
 
-    `rootCA.pem` is the file for the Certificate Authority (CA) certificate  
-    _  
+    `rootCA.pem` is the file for the Certificate Authority (CA) certificate
+    _
 
 5. **Create Sandstorm Device Private Key:**
 
         openssl genrsa -out sandstorm.key 4096
 
-    `sandstorm.key` is the Sandstorm Device Private Key  
+    `sandstorm.key` is the Sandstorm Device Private Key
     _
 
 6. **Create Sandstorm Device Certificate Signing Request (CSR) using the copied and edited openssl.cnf file:**
 
         openssl req -new -key sandstorm.key -out sandstorm.csr -config openssl.cnf
 
-    `sandstorm.csr` is the Sandstorm Device Certificate Signing Request (CSR)  
+    `sandstorm.csr` is the Sandstorm Device Certificate Signing Request (CSR)
     _
 
 7. **Create and sign the Sandstorm Certificate (Expire in 2 years):**
 
         openssl x509 -req -in sandstorm.csr -CA rootCA.pem -CAkey rootCA.key -CAcreateserial -out sandstorm.crt -days 730 -extensions v3_req -extfile openssl.cnf
 
-    `sandstorm.crt` is the Sandstorm Certificate  
+    `sandstorm.crt` is the Sandstorm Certificate
     _
 
-8. **Import the Certificate Authority (CA) Certificate (`rootCA.pem`) into the browser's that will be using Sandstorm. Some browsers may load grains without this step and ask users to add a security excpetion in order to fully load grains.**  
+8. **Import the Certificate Authority (CA) Certificate (`rootCA.pem`) into the browser's that will be using Sandstorm. Some browsers may load grains without this step and ask users to add a security excpetion in order to fully load grains.**
 _
 
-9. **Copy (FTP/SSH) the Sandstorm Certificate and Sandstorm Private Key to the nginx ssl directory, it may be `/etc/nginx/ssl`**.  
+9. **Copy (FTP/SSH) the Sandstorm Certificate and Sandstorm Private Key to the nginx ssl directory, it may be `/etc/nginx/ssl`**.
 _
 
 10. **Change these lines in your nginx conf file to reflect the new Sandstorm Certificate and Private Key filenames**:
@@ -211,8 +211,8 @@ _
 
 12. **Restart Sandstorm:**
 
-        sudo sandstorm restart 
-    or  
+        sudo sandstorm restart
+    or
 
         sudo /opt/sandstorm/sandstorm restart
 

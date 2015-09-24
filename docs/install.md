@@ -27,34 +27,40 @@ This verifies that you're running our published installer script, even in the un
 
 If you'd rather not trust HTTPS at all, even from GitHub, another option is PGP-verified install.
 
-1. Determine the PGP key of a Sandstorm developer you trust. There are several ways to do this:
+1. If you aren't experienced with GPG already, let's do these instructions in a new empty workspace to avoid confusion. (If you know what you're doing, you can skip this.)
+
+    <pre><code class="hljs bash">export GNUPGHOME=$(mktemp -d)</code></pre>
+
+2. Download and import the Sandstorm releases keyring.
+
+    <pre><code class="hljs bash">curl https://raw.githubusercontent.com/sandstorm-io/sandstorm/master/keys/release-keyring.gpg | \
+        gpg --import</code></pre>
+
+3. Obtain the PGP key fingerprint of a Sandstorm developer you trust. There are several ways to do this:
     * Web of trust (for PGP experts).
     * Meet us in person and ask for our business cards.
     * Use our Keybase profiles, for example: [Kenton Varda (kentonv)](https://keybase.io/kentonv), [Asheesh Laroia (asheesh)](https://keybase.io/asheesh), [Drew Fisher (zarvox)](https://keybase.io/zarvox)
-2. Download that developer's corresponding release key certificate [from the Sandstorm github repo](https://github.com/sandstorm-io/sandstorm/tree/master/keys).
-3. Verify the certificate with GPG. For example:
 
-        gpg --decrypt release-certificate.kentonv.sig
+4. Download that developer's corresponding release key certificate [from the Sandstorm github repo](https://github.com/sandstorm-io/sandstorm/tree/master/keys).
 
-    Or, using Keybase:
+5. Verify the certificate with GPG. For example:
 
-        keybase decrypt -S kentonv release-certificate.kentonv.sig
+    <pre><code class="hljs bash">gpg --decrypt release-certificate.kentonv.sig</code></pre>
 
-    Read the signed statement and decide if it checks out.
+    Read the signed statement and decide if it checks out, and make sure the fingerprint of the signer (the last thing GPG prints) matches the one you trust. Note that you can ignore GPG's warning that the signature isn't trusted because you're checking the fingerprint directly (an advanced user would instead have pre-arranged to trust the key and could thus ignore the fingerprint).
 
-4. Download the Sandstorm release keyring and verify that the key it contains exactly one key matching the fingerprint in the certificate.
+    If you have the Keybase tools installed, you can use this much-friendlier command instead:
 
-        wget https://raw.githubusercontent.com/sandstorm-io/sandstorm/master/keys/release-keyring.gpg
-        gpg --no-default-keyring --keyring ./release-keyring.gpg --list-keys --fingerprint
+    <pre><code class="hljs bash">keybase decrypt -S kentonv release-certificate.kentonv.sig</code></pre>
 
-5. Download the installer script and its signature.
+6. Download the installer script and its signature.
 
-        wget https://install.sandstorm.io/install.sh
-        wget https://install.sandstorm.io/install.sh.sig
+    <pre><code class="hljs bash">wget https://install.sandstorm.io/install.sh
+    wget https://install.sandstorm.io/install.sh.sig</code></pre>
 
-6. Verify the signature.
+7. Verify the signature, making sure the signing key's fingerprint matches the one from the certificate.
 
-        gpg --no-default-keyring --keyring ./release-keyring.gpg --verify install.sh.sig install.sh
+    <pre><code class="hljs bash">gpg --verify install.sh.sig install.sh</code></pre>
 
 (Aside: You may wonder why our "release certificates" are signed natural-language statements, rather than using PGP key signing. The answer is that PGP key signing, or at least the GPG interface, does not seem well-equipped to handle expiring signatures that must be refreshed monthly. We'd like to improve this; please let us know if you have ideas!)
 

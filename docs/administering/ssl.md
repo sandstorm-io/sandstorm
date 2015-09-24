@@ -1,3 +1,139 @@
+<!--
+
+(Using an HTML comment to comment out documentation that we want users not
+to see, but that I want to write right now.
+
+## Sandstorm and HTTPS
+
+### Automatic HTTPS for Sandcats.io users (PROPOSED)
+
+**NOTE**: This section documents PROPOSED NEW behavior of Sandstorm, not behavior that works today.
+
+For new Sandstorm installations, HTTPS is (in the future) enabled by
+default. Sandstorm listens on port 443 for HTTPS connections and port
+80 for HTTP connections.
+
+When HTTPS mode is enabled (by setting the `HTTPS_PORT` configuration
+option), the Sandstorm software (in the future) uses port 443 for all
+traffic to the Sandstorm shell. If any requests come in on port 80,
+Sandstorm serves a HTTP redirect.
+
+Sandstorm grains can publish static content to the web on whatever
+domain the user wants. Since the Sandstorm software can't currently
+get a valid HTTPS certificate for all domain names, it serves static
+publishing content over HTTP as well as HTTPS.
+
+#### Enabling HTTPS for an existing Sandstorm server
+
+**NOTE**: This section documents PROPOSED NEW behavior of Sandstorm, not behavior that works today.
+
+If you are using the `sandcats.io` DNS service, you can (in the
+future) migrate from running Sandstorm on port 6080 (perhaps with a
+reverse-proxy) to having Sandstorm own port 443 (HTTPS) and port 80
+(HTTP).
+
+In this example, we presume your server is on
+_example.sandcats.io_. We also assume your Sandstorm server runs on
+port 6080 currently.
+
+This process will require reconfiguring any OAuth login providers like
+Google or GitHub, so it may take you up to thirty minutes to complete.
+
+First, enable HTTPS by (in the future) by modifying your Sandstorm
+configuration file (`sudo nano -w /opt/sandstorm/sandstorm.conf`) to add a
+`HTTPS_PORT=` configuration value as follows.
+
+```bash
+HTTPS_PORT=443
+```
+
+Now, stop and start Sandstorm:
+
+```bash
+sudo sandstorm stop
+sudo sandstorm start
+```
+
+Sandstorm will continue to operate as before on port 6080. In
+addition, Sandstorm will log a message in
+`/opt/sandstorm/var/log/sandstorm.log` indicating it is retrieving a
+HTTPS certificate for you to use. This process can take about two
+minutes. You can read that log by running:
+
+```bash
+sudo tail -f /opt/sandstorm/var/log/sandstorm.log
+```
+
+Once you see a message indicating `Sandstorm has successfully received
+a HTTPS certificate`, it is safe to reconfigure Sandstorm to use HTTPS
+by default. To do that, make the following changes to your
+`sandstorm.conf` file.
+
+```bash
+PORT=80,6080
+HTTPS_PORT=443
+BASE_URL=https://example.sandcats.io
+WILDCARD_HOST=*.example.sandcats.io
+```
+
+If you chose the default HTTPS port (443), you do not need to specify
+a port number in the `BASE_URL` or `WILDCARD_HOST`. We recommend this
+configuration with multiple `PORT=` values so that Sandstorm listens
+on two standard ports, 443 (HTTPS) and 80 (HTTP), and still listens on
+port 6080 in case anyone else links to your server on port 6080.
+
+Having made these changes, you will need to restart Sandstorm.
+
+```bash
+sudo sandstorm stop
+sudo sandstorm start
+```
+
+You can now visit your
+
+*NOTE* that if you had Google or GitHub login enabled (or other OAuth
+providers), the change in `BASE_URL` means that you need to
+reconfigure those services. You can log into Sandstorm in a special admin
+mode by running:
+
+```bash
+sudo sandstorm admin-token
+```
+
+and follow the prompts to configure Google and/or GitHub login
+again. Once you have saved those settings, sign in via the top-right
+corner of Sandstorm.
+
+**Congratulations!** You're now using HTTPS, also known as TLS and
+SSL.
+
+### How multiple ports affect the shell, grains, and static publishing
+
+When HTTPS is enabled, Sandstorm (in the future) serves its interface
+(the shell and all grains) over HTTPS only. If such a request destined
+on any other port, Sandstorm responds with a HTTP redirect to the
+HTTPS version.
+
+Sandstorm serves (in the future) static publishing content on HTTPS as
+well as HTTP (ports 6080 and 80 in the above configuration). This way,
+if you use WordPress or other publishing apps on Sandstorm, visitors
+can reach those sites even if you do not have a valid HTTPS
+certificate for those domain names.
+
+This will result in duplicate content, where the same web pages are
+available on port 80 and 6080. Based on our understanding of [how
+duplicate content is handled by search
+engines](https://support.google.com/webmasters/answer/66359?hl=en),
+this will not be a problem for your site's ranking. In the long run,
+consider turning off port 6080 by removing it from the `PORT=` line.
+If you think the Sandstorm code should support something more
+complicated involving (for example) HTTP redirects, please file a bug
+so we can make sure we're serving your needs.
+
+-->
+
+## Self-hosted HTTPS with a custom certificate authority
+
 The following is a process for self-hosted instances of Sandstorm to use SSL with sandcats.io DNS. These steps create a Certificate Authority (CA), corresponding CA Certificate, and the private and public keys for the `[anything].sandcats.io` and `*.[anything].sandcats.io` domains.
 
 **Note**: Web browsers will display a big red certificate error when you try to connect to this install. This tutorial is appropriate if you are OK with reconfiguring web browsers to trust a custom certificate authority that you will create during this tutorial. For automatically-trusted SSL configuration, you will need to buy a certificate from a certificate authority.

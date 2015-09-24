@@ -1,3 +1,7 @@
+### v0.115 (2015-09-24)
+- Attempt to work around very rare problem where front-end inexplicably stops talking to back-end by monitoring and recreating the connection.
+- Oasis: Fix "download backup", which broke due to unexpected interaction between security hardening to the sandbox in which zip/unzip runs and security settings on Oasis.
+
 ### v0.114 (2015-09-23)
 - No-op release just to test end-to-end that the new signed update mechanism works. (We did lots of tests in advance, but touching the updater code always makes me nervous, so test again!)
 

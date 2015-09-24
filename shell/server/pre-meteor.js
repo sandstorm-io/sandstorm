@@ -379,20 +379,21 @@ Meteor.startup(function () {
   // This function serves responses on Sandstorm's main HTTP/HTTPS
   // port.
   var serveMeteorOrStaticPublishing = function(req, res, next) {
-    return dispatchToMeteorOrStaticPublishing(req, res, next, false, true);
+    return dispatchToMeteorOrStaticPublishing(req, res, next, false);
   }
 
-  // Bind listeners to FD #4 and higher, if we are supposed to be
-  // listening on multiple ports.
+  // "Alternate ports" are ports other than the main HTTP or HTTPS
+  // port. For requests to the shell & grains, we redirect to the main
+  // port. For static publishing, we serve it.
+  //
+  // They are bound to FD #4 and higher.
+
   function getNumberOfAlternatePorts() {
     var numPorts = process.env.PORTS.split(",").length;
     var numAlternatePorts = numPorts - 1;
     return numAlternatePorts;
   };
 
-  // For alternate ports, always do HTTP redirects rather than serve
-  // up real Meteor responses. Depending on details, serve static
-  // publishing.
   var canonicalizeShellOrWildcardUrl = function(hostname, url) {
     // Start with ROOT_URL, apply host & path from inbound URL, then
     // redirect.
@@ -409,27 +410,16 @@ Meteor.startup(function () {
   };
 
   var redirectToMeteorOrServeStaticPublishing = function (req, res, next) {
-    return dispatchToMeteorOrStaticPublishing(req, res, next, true, true);
-  };
-  var redirectToMeteorOrBust = function(req, res, next) {
-    return dispatchToMeteorOrStaticPublishing(req, res, next, true, false);
+    return dispatchToMeteorOrStaticPublishing(req, res, next, true);
   };
 
   for (var i = 0; i < getNumberOfAlternatePorts(); i++) {
-    var alternatePortServer;
-
-    // If HTTPS is enabled, then also serve static publishing on the
-    // first non-HTTPS port. The "true" argument here means skip our
-    // monkeypatching.
-    if ((i === 0) && (process.env.HTTPS_PORT)) {
-      alternatePortServer = Http.createServerForSandstorm(redirectToMeteorOrServeStaticPublishing);
-    } else {
-      alternatePortServer = Http.createServerForSandstorm(redirectToMeteorOrBust);
-    }
+    // Call createServerForSandstorm() to skip our monkey patching.
+    var alternatePortServer = Http.createServerForSandstorm(redirectToMeteorOrServeStaticPublishing);
     alternatePortServer.listen({fd: i + 4});
   }
 
-  var dispatchToMeteorOrStaticPublishing = function (req, res, next, redirectRatherThanServeShell, allowStaticPublishing) {
+  var dispatchToMeteorOrStaticPublishing = function (req, res, next, redirectRatherThanServeShell) {
     var hostname = req.headers.host.split(":")[0];
     if (isSandstormShell(hostname)) {
       // Go on to Meteor, or serve a redirect.
@@ -471,13 +461,7 @@ Meteor.startup(function () {
       });
     } else {
       // Not a wildcard host. Perhaps it is a custom host.
-      if (allowStaticPublishing) {
-        publicIdPromise = lookupPublicIdFromDns(hostname);
-      } else {
-        res.writeHead(404, {"Content-Type": "text/plain"});
-        res.end("404 not found: Resource not available.");
-        return;
-      }
+      publicIdPromise = lookupPublicIdFromDns(hostname);
     }
 
     publicIdPromise.then(function (publicId) {

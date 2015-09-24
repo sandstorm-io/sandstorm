@@ -389,7 +389,7 @@ Meteor.startup(function () {
   // They are bound to FD #4 and higher.
 
   function getNumberOfAlternatePorts() {
-    var numPorts = process.env.PORTS.split(",").length;
+    var numPorts = process.env.PORT.split(",").length;
     var numAlternatePorts = numPorts - 1;
     return numAlternatePorts;
   };

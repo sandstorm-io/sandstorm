@@ -168,19 +168,34 @@ limitations under the License.
   <ul id="notification-list">
     {{#each notifications}}
       <li>
-        <div class="notification-item">
-          <div class="notification-header">
-              <span>{{grainTitle}}</span>
-              <span title="Stops the background app" class="cancel-notification" data-notificationid="{{_id}}">Cancel</span>
-              <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
-          </div>
-          <span>{{text.defaultText}}</span>
-        </div>
+        {{> notificationItem}}
       </li>
     {{else}}
     <li>No Notifications...</li>
     {{/each}}
   </ul>
+</template>
+
+<template name="notificationItem">
+  <div class="notification-item">
+    <div class="notification-header">
+      {{#if isAppUpdates}}
+        <span>App Market has updated apps</span>
+        <span title="Ignore the below updates" class="cancel-notification">Dismiss</span>
+        <span title="Update all of the below apps" class="accept-notification">Apply Updates</span>
+      {{else}}
+        <span><em>{{grainTitle}}</em> is backgrounded</span>
+        <span title="Stops the background app" class="cancel-notification">Cancel</span>
+      {{/if}}
+      <br>
+      <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
+    </div>
+    {{#if isAppUpdates}}
+    <p>{{appUpdatesText}}</p>
+    {{else}}
+    <span>{{text.defaultText}}</span>
+    {{/if}}
+  </div>
 </template>
 
 <template name="title">

@@ -262,7 +262,16 @@ img {
 }
 
 .notification-timestamp {
-  float: right
+  float: right;
+  font-weight: bold;
+}
+
+.accept-notification {
+  cursor: pointer;
+  color: green;
+  float: right;
+  margin-left: 5px;
+  vertical-align: center;
 }
 
 .cancel-notification {
@@ -275,6 +284,10 @@ img {
 
 .notification-item {
   font-size: 14px;
+
+  >p {
+    white-space: pre;
+  }
 }
 
 .notification-header {

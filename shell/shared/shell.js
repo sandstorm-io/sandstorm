@@ -111,7 +111,7 @@ if (Meteor.isServer) {
 
   Meteor.publish("notifications", function () {
     return Notifications.find({userId: this.userId},
-      {fields: {timestamp: 1, text: 1, grainId: 1, userId: 1, isUnread: 1}});
+      {fields: {timestamp: 1, text: 1, grainId: 1, userId: 1, isUnread: 1, appUpdates: 1}});
   });
 
 
@@ -667,14 +667,38 @@ if (Meteor.isClient) {
   });
 
   Template.notificationsPopup.events({
-    "click .cancel-notification": function (event) {
-      Meteor.call("dismissNotification", event.currentTarget.getAttribute("data-notificationid"));
-      return false;
-    },
-
     "click #notification-dropdown": function (event) {
       return false;
     }
+  });
+
+  Template.notificationItem.helpers({
+    isAppUpdates: function () {
+      return !!this.appUpdates;
+    },
+    appUpdatesText: function () {
+      var lines = _.map(this.appUpdates, function (val, key) {
+        return val.name + " has been updated to " + val.marketingVersion;
+      });
+      return lines.join("\n");
+    },
+  });
+
+  Template.notificationItem.events({
+    "click .cancel-notification": function (event) {
+      Meteor.call("dismissNotification", this._id);
+      return false;
+    },
+    "click .accept-notification": function (event) {
+      if (this.appUpdates) {
+        var self = this;
+        Meteor.call("updateApps", this.appUpdates, function (err) {
+          // TODO(someday): if (err)
+          Meteor.call("dismissNotification", self._id);
+        });
+      }
+      return false;
+    },
   });
 
   Meteor.startup(function () {

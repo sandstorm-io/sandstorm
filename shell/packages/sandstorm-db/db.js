@@ -80,6 +80,8 @@ Packages = new Mongo.Collection("packages");
 //       collector should at some point check whether there are any other references and, if not,
 //       delete the package.
 //   url:  When status is "download", the URL from which the SPK can be obtained, if provided.
+//   isAutoUpdated: This package was downloaded as part of an auto-update. We shouldn't clean it up
+//     even if it has no users.
 
 DevApps = new Mongo.Collection("devapps");
 // List of applications currently made available via the dev tools running on the local machine.
@@ -365,6 +367,13 @@ Notifications = new Mongo.Collection("notifications");
 //   text:         The JSON-ified LocalizedText to display in the notification.
 //   isUnread:     Boolean indicating if this notification is unread.
 //   timestamp:    Date when this notification was last updated
+//   appUpdates:   If present, this is an app update notification. It is an object with the appIds
+//                 as keys.
+//     $appId:     The appId that has an outstanding update.
+//       packageId: The packageId that it will update to.
+//       name: The name of the app. (appTitle from package.manifest)
+//       version: The app's version number. (appVersion from package.manifest)
+//       marketingVersion: String marketing version of this app. (appMarketingVersion from package.manifest)
 
 StatsTokens = new Mongo.Collection("statsTokens");
 // Access tokens for the Stats collection
@@ -436,6 +445,13 @@ Plans = new Mongo.Collection("plans");
 //   computeLabel: Label to display to the user describing this plan's compute units.
 //   grains: Total number of grains this user can create (often `Infinity`).
 //   price: Price per month in US cents.
+
+AppIndex = new Mongo.Collection("appIndex");
+// A mirror of the data from the App Market index
+//
+// Each contains:
+//   _id: the appId of the app
+//  The rest of the fields are defined in src/sandstorm/app-index/app-index.capnp:AppIndexForMarket
 
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
@@ -659,6 +675,7 @@ SandstormDb = function () {
     statsTokens: StatsTokens,
     misc: Misc,
     settings: Settings,
+    appIndex: AppIndex,
 
     // Intentionally omitted:
     // - Migrations, since it's used only within this package.
@@ -1038,6 +1055,35 @@ if (Meteor.isServer) {
     }
     return package;
   }
+
+  SandstormDb.prototype.sendAppUpdateNotifications = function (appId, packageId, name, versionNumber, marketingVersion) {
+    var db = this;
+    var actions = db.collections.userActions.find({appId: appId, appVersion: {$lt: versionNumber}}, {fields: {userId: 1}});
+    actions.forEach(function (action) {
+      var userId = action.userId;
+      var updater = {
+        userId: userId,
+        timestamp: new Date(),
+        isUnread: true,
+      };
+
+      // Set only the appId that we care about. Use mongo's dot notation to specify only a single field
+      // inside of an object to update
+      updater["appUpdates." + appId] = {
+        marketingVersion: marketingVersion,
+        packageId: packageId,
+        name: name,
+        version: versionNumber,
+      };
+      db.collections.notifications.upsert({userId: userId}, { $set: updater});
+    });
+
+    db.collections.appIndex.update({_id: appId}, {$set: {hasSentNotifications: true}});
+
+    // In the case where we replaced a previous notification and that was the only reference to the
+    // package, we need to clean it up
+    Meteor.call("deleteUnusedPackages", appId);
+  };
 
   SandstormDb.prototype.upgradeGrains =  function (appId, version, packageId) {
     check(appId, String);

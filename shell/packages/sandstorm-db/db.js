@@ -780,6 +780,41 @@ _.extend(SandstormDb.prototype, {
     var setting = Settings.findOne(name);
     return setting && setting.value;
   },
+
+  addUserActions: function(packageId) {
+    var pack = Packages.findOne(packageId);
+    if (pack) {
+      // Remove old versions.
+      UserActions.find({userId: Meteor.userId(), appId: pack.appId})
+          .forEach(function (action) {
+        UserActions.remove(action._id);
+      });
+
+      // Install new.
+      var actions = pack.manifest.actions;
+      for (i in actions) {
+        var action = actions[i];
+        if ("none" in action.input) {
+          var userAction = {
+            userId: Meteor.userId(),
+            packageId: pack._id,
+            appId: pack.appId,
+            appTitle: pack.manifest.appTitle,
+            appMarketingVersion: pack.manifest.appMarketingVersion,
+            appVersion: pack.manifest.appVersion,
+            title: action.title,
+            nounPhrase: action.nounPhrase,
+            command: action.command
+          };
+          UserActions.insert(userAction);
+        } else {
+          // TODO(someday):  Implement actions with capability inputs.
+        }
+      }
+
+      Meteor.call("deleteUnusedPackages", pack.appId);
+    }
+  },
 });
 
 if (Meteor.isServer) {
@@ -1003,4 +1038,42 @@ if (Meteor.isServer) {
     }
     return package;
   }
+
+  SandstormDb.prototype.upgradeGrains =  function (appId, version, packageId) {
+    check(appId, String);
+    check(version, Match.Integer);
+    check(packageId, String);
+
+    var selector = {
+      userId: Meteor.userId(),
+      appId: appId,
+      appVersion: { $lte: version },
+      packageId: { $ne: packageId }
+    };
+
+    if (!this.isSimulation) {
+      Grains.find(selector).forEach(function (grain) {
+        shutdownGrain(grain._id, grain.userId);
+      });
+    }
+
+    Grains.update(selector, { $set: { appVersion: version, packageId: packageId }}, {multi: true});
+  };
+
+  SandstormDb.prototype.startInstall = function (packageId, url, retryFailed, isAutoUpdated) {
+    // Mark package for possible installation.
+
+    var fields = {status: "download", progress: 0, url: url, isAutoUpdated: !!isAutoUpdated};
+
+    if (retryFailed) {
+      Packages.update({_id: packageId, status: "failed"}, {$set: fields});
+    } else {
+      try {
+        fields._id = packageId;
+        Packages.insert(fields);
+      } catch (err) {
+        console.error("Simultaneous startInstall()s?", err.stack);
+      }
+    }
+  };
 }

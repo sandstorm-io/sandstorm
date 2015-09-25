@@ -151,63 +151,11 @@ Meteor.methods({
   },
 
   upgradeGrains: function (appId, version, packageId) {
-    check(appId, String);
-    check(version, Match.Integer);
-    check(packageId, String);
-
-    var selector = {
-      userId: this.userId,
-      appId: appId,
-      appVersion: { $lte: version },
-      packageId: { $ne: packageId }
-    };
-
-    if (!this.isSimulation) {
-      Grains.find(selector).forEach(function (grain) {
-        shutdownGrain(grain._id, grain.userId);
-      });
-    }
-
-    Grains.update(selector, { $set: { appVersion: version, packageId: packageId }}, {multi: true});
+    this.connection.sandstormDb.upgradeGrains(appId, version, packageId);
   },
 });
 
 if (Meteor.isClient) {
-  addUserActions = function(packageId) {
-    var package = Packages.findOne(packageId);
-    if (package) {
-      // Remove old versions.
-      UserActions.find({userId: Meteor.userId(), appId: package.appId})
-          .forEach(function (action) {
-        UserActions.remove(action._id);
-      });
-
-      // Install new.
-      var actions = package.manifest.actions;
-      for (i in actions) {
-        var action = actions[i];
-        if ("none" in action.input) {
-          var userAction = {
-            userId: Meteor.userId(),
-            packageId: package._id,
-            appId: package.appId,
-            appTitle: package.manifest.appTitle,
-            appMarketingVersion: package.manifest.appMarketingVersion,
-            appVersion: package.manifest.appVersion,
-            title: action.title,
-            nounPhrase: action.nounPhrase,
-            command: action.command
-          };
-          UserActions.insert(userAction);
-        } else {
-          // TODO(someday):  Implement actions with capability inputs.
-        }
-      }
-
-      Meteor.call("deleteUnusedPackages", package.appId);
-    }
-  }
-
   Template.install.events({
     "click #retry": function (event) {
       Meteor.call("ensureInstalled", this.packageId, this.packageUrl, true);

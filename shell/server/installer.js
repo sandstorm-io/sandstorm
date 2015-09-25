@@ -84,23 +84,6 @@ var deletePackageInternal = function (package) {
   }
 }
 
-startInstall = function (packageId, url, retryFailed) {
-  // Mark package for possible installation.
-
-  var fields = {status: "download", progress: 0, url: url};
-
-  if (retryFailed) {
-    Packages.update({_id: packageId, status: "failed"}, {$set: fields});
-  } else {
-    try {
-      fields._id = packageId;
-      Packages.insert(fields);
-    } catch (err) {
-      console.error("Simultaneous startInstall()s?", err.stack);
-    }
-  }
-}
-
 var startInstallInternal = function (package) {
   verifyIsMainReplica();
 

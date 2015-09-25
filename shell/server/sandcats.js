@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+Sandcats = {};
+
 var querystring = Npm.require("querystring");
 var https = Npm.require("https");
 var fs = Npm.require("fs");
@@ -103,7 +105,7 @@ function performSandcatsRequest(path, hostname, postData, errorCallback, respons
   return req;
 }
 
-generateKeyAndCsr = function(commonName) {
+var generateKeyAndCsr = function(commonName) {
   // This function relies on the this.forge object created by the
   // meteor-node-forge package.
   check(commonName, String);
@@ -130,7 +132,7 @@ generateKeyAndCsr = function(commonName) {
           csrAsPem: this.forge.pki.certificationRequestToPem(csr)};
 };
 
-storeNewKeyAndCsr = function(hostname, basePath) {
+Sandcats.storeNewKeyAndCsr = function(hostname, basePath) {
   // We use the current JS time (like UNIX timestamp but in
   // milliseconds) as the key number. Note that the keyNumber is
   // intended to be an opaque identifier; the only important thing is
@@ -154,12 +156,12 @@ storeNewKeyAndCsr = function(hostname, basePath) {
           responseFilename: responseFilename};
 }
 
-renewHttpsCertificateIfNeeded = function() {
+Sandcats.renewHttpsCertificateIfNeeded = function() {
   function renewHttpsCertificate() {
     var hostname = Url.parse(process.env.ROOT_URL).hostname;
     var basePath = '/var/sandcats/https/' + (
       hostname);
-    var filenames = storeNewKeyAndCsr(hostname, basePath);
+    var filenames = Sandcats.storeNewKeyAndCsr(hostname, basePath);
 
     var errorCallback = function (err) {
       console.error("Error while renewing HTTPS certificate (will continue to retry)", err);
@@ -226,11 +228,19 @@ renewHttpsCertificateIfNeeded = function() {
     }, errorCallback, responseCallback);
   }
 
-  // TODO: Actually check timestamps.
-  return renewHttpsCertificate();
+  // We only want to fetch a new certificate if such an action is
+  // needed. The strategy is that if we're on a certificate right now,
+  // and there is no nextRekeyTime available, then we should get a
+  // fresh cert.
+  if (global.sandcats.hasNextRekeyTime()) {
+    return;
+  } else {
+    console.log("renewHttpsCertificateIfNeeded: Happily choosing to renew certificate because we found no rekey time.");
+    return renewHttpsCertificate();
+  }
 }
 
-initializeSandcats = function() {
+Sandcats.initializeSandcats = function() {
   var i = HOSTNAME.lastIndexOf(SANDCATS_HOSTNAME);
   if (i < 0) {
     console.error("SANDCATS_BASE_DOMAIN is configured but your HOSTNAME doesn't appear to contain it:",
@@ -245,16 +255,16 @@ initializeSandcats = function() {
     // If process.env.HTTPS_PORT is set, we need to auto-refresh our HTTPS certificate.
     if (process.env.HTTPS_PORT) {
       // Always do a HTTPS certificate update check on Sandstorm start.
-      renewHttpsCertificateIfNeeded();
+      Sandcats.renewHttpsCertificateIfNeeded();
 
       // After that's done, schedule it for every approx 1-2 hours in
       // the future.
-      Meteor.setInterval(renewHttpsCertificateIfNeeded,
+      Meteor.setInterval(Sandcats.renewHttpsCertificateIfNeeded,
                          oneHour + randomIntervalZeroToOneHour);
     }
   }
 }
 
 if (SANDCATS_HOSTNAME) {
-  Meteor.startup(initializeSandcats);
+  Meteor.startup(Sandcats.initializeSandcats);
 };

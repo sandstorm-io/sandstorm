@@ -6,12 +6,16 @@
 // so that, along with pre-meteor.js, we create the the right
 // HTTP+HTTPS services.
 
+// Import modules provided by nodejs core.
 var crypto = require('crypto');
 var fs = require('fs');
 var http = require('http');
 var https = require('https');
 var net = require('net');
 var url = require('url');
+
+// Borrow the "node-forge" dependency of our meteor-node-forge package.
+var forge = require('./programs/server/npm/meteor-node-forge/node_modules/node-forge');
 
 function sandstormMain() {
   monkeypatchHttpAndHttps();
@@ -68,20 +72,39 @@ function monkeypatchHttpAndHttps() {
       // metadata about the key is available in e.g. 0.csr. So find
       // the most recent numbered file, then pull metadata out.
       var reverseIntComparator = function (a, b) {
-        return (parseInt(a) < parseInt(b));
+        return (parseInt(b) - parseInt(a));
       };
       var keyFilesDescending = files.filter(function (filename) {
         return filename.match(/^[0-9]*$/);
       }).sort(reverseIntComparator);
 
-      var result = {};
-      result.nextRekeyTime = null;  // by default, no rekeying.
-      var nowUnixTimestamp = new Date().getTime() / 1000;
+      // We might have lots and lots of valid certificates. We're
+      // interested in finding the oldest one that is still valid,
+      // because we'll actually use that one.
+      //
+      // "oldest" here means "lowest notBefore" value.
+      //
+      // The second-best certificate would be a certificate with the
+      // second-lowest notBefore that is also still valid.
+      //
+      // We use the second-best certificate to calculate when to
+      // re-key.
+      var validCertificates = [];
+
+      // We need the current time to make sure we don't pick a
+      // certificate that is expired (now > notAfter).
+      var now = new Date().getTime();
+
       for (var i = 0; i < keyFilesDescending.length; i++) {
         var keyFilename = basePath + '/' + keyFilesDescending[i];
         var metadataFilename = keyFilename + '.response-json';
         try {
           var metadata = JSON.parse(fs.readFileSync(metadataFilename));
+          var validity = forge.pki.certificateFromPem(metadata['cert']).validity;
+          metadata.notBefore = Date.parse(validity.notBefore);
+          metadata.notAfter = Date.parse(validity.notAfter);
+          // Store this so we can log it.
+          metadata.keyFilename = keyFilename;
         } catch (e) {
           // Ignore EACCESS: The key metadata may have bad permissions
           // due to an installer bug that went out during September.
@@ -90,33 +113,76 @@ function monkeypatchHttpAndHttps() {
           // hasn't given us a signed certificate yet, the response-json
           // won't exist.
           if ((e.code === 'EACCES') || (e.code == 'ENOENT')) {
-            console.log("Skipping unreadable HTTPS key information file:", metadataFilename);
+            console.log("Skipping unreadable HTTPS key information file while examining:",
+                        metadataFilename);
             continue;
           } else {
-            throw e;
+            // Sometimes the server gives us a 0-byte response,
+            // presumably due to a connection getting reset?.
+            console.error("Got exception reading JSON from server. Dazed and confused, but trying to continue.", e);
+            continue;
           }
         }
 
-        // If this certificate isn't valid yet, keep looping, hoping
-        // to find one that is valid.
-        var notBefore = metadata['notBefore'];
-        if (notBefore && (notBefore < nowUnixTimestamp)) {
-          // Convert this notBefore into a nextRekeyTime (JS
-          // timestamp) and save it as nextRekeyTime.
-          //
-          // Note that currently we re-key right at the notBefore, so
-          // in the case of clock skew, bad things might happen. We
-          // could delay the rekey time a little bit if that seems
-          // like a problem.
-          result.nextRekeyTime = notBefore * 1000;
+        // If the cert is expired, definitely don't use it.
+        if (now > metadata.notAfter) {
+          console.log("Skipping", keyFilename, "because", metadata.notAfter, "is in the past.");
           continue;
         }
 
-        result['ca'] = metadata['ca'];
-        result['key'] = fs.readFileSync(keyFilename, 'utf-8');
-        result['cert'] = metadata['cert'];
-        return result;
+        validCertificates.push(metadata);
       }
+
+      // Sort by notBefore, ascending.
+      validCertificates.sort(function(cert1, cert2) {
+        return (cert1.notBefore - cert2.notBefore);
+      });
+
+      if (! validCertificates) {
+        // TODO: Be more robust here, though it's not clear how.
+        console.error("Aieee, we found zero valid certificates. Allowing Sandstorm to crash.");
+        return;
+      }
+
+      console.log("Using this HTTPS key:", validCertificates[0].keyFilename,
+                  "valid starting", new Date(validCertificates[0].notBefore),
+                  "until", new Date(validCertificates[0].notAfter));
+
+      // Store HTTPS configuration data from the oldest certificate.
+      var result = {
+        ca: validCertificates[0].ca,
+        key: fs.readFileSync(validCertificates[0].keyFilename, 'utf-8'),
+        cert: validCertificates[0].cert
+      };
+
+      // Calculate re-key time.
+      //
+      // - If the cert we want to switch to is not valid yet, then we
+      //   re-key at its notBefore time.
+      //
+      // - If the cert we want to switch to *is* already valid, then
+      //   we re-key at the notAfter time of our current cert.
+      //
+      // - If there is no cert we want to switch to, then the
+      //   nextRekeyTime is null.
+      result.nextRekeyTime = null;
+
+      if (validCertificates.length >= 2) {
+        var secondBest = validCertificates[1];
+        if (now < secondBest.notBefore) {
+          result.nextRekeyTime = secondBest.notBefore;
+        } else {
+          result.nextRekeyTime = validCertificates[0].notAfter;
+        }
+
+        console.log("Will switch to", validCertificates[1].keyFilename,
+                    "at time", new Date(result.nextRekeyTime),
+                    "via real-time SNI re-keying system.");
+      } else {
+        console.log("We have only the one key that we know about. We'll need to renew soon.");
+      }
+
+      return result;
     };
 
     if (process.env.HTTPS_PORT) {
@@ -136,9 +202,17 @@ function monkeypatchHttpAndHttps() {
       global.sandcats.rekey = function () {
         sandcatsState = getCurrentSandcatsKeyAndNextRekeyTime();
       };
+      global.sandcats.hasNextRekeyTime = function() {
+        return !! sandcatsState.nextRekeyTime;
+      }
 
       // Actually set up keys!
       global.sandcats.rekey();
+
+      if (! sandcatsState.key) {
+        console.log("We seem to have no key! For now, allowing Sandstorm to crash.");
+        process.exit(99);
+      }
 
       // Configure options for httpsServer.createServer().
       var httpsOptions = {

@@ -816,7 +816,7 @@ limitations under the License.
   {{> _adminConfigureLoginServiceDialog}}
   <div id="admin-settings" class="centered-box">
     {{#if isUserPermitted}}
-      <ul id="settings-tabs" class="nav centered-box">
+      <ul class="nav centered-box settings-tabs">
         <li id="settings-tab" class="{{#if settingsActive}}active{{/if}}">
           {{#linkTo route="adminSettings" data=getToken}}Settings{{/linkTo}}
         </li>

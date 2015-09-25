@@ -135,19 +135,16 @@ button.revoke-token {
   margin: 16px auto;
   max-width: 600px;
   font-size: 125%;
-}
-
-.centered-box h2 {
-  margin-top: 0;
-  font-size: 60px;
-}
-
-.centered-box p:nth-child(1) {
-  margin-top: 0;
-}
-
-.centered-box p {
-  margin-bottom: 0;
+  h2 {
+    margin-top: 0;
+    font-size: 60px;
+  }
+  p {
+    margin-bottom: 0;
+  }
+  p:nth-child(1) {
+    margin-top: 0;
+  }
 }
 
 // new app list (unified)
@@ -249,46 +246,23 @@ button.revoke-token {
 .notification-header {
   color: #ccc;
 }
+
 #intro {
   background-color: #b6b6b6;
   overflow: auto;
   height: 100%;
-}
-#intro h1 {
-  text-align: center;
-  font-size: 100px;
-  font-weight: bold;
-  margin: 0 auto;
-}
-
-svg {
-  width: 400px;
-  height: 300px;
-}
-
-#logo {
-  width: 400px;
-  height: 300px;
-  margin: 64px auto 16px;
-  z-index: -1;
-  padding-left: 94px;
-}
-
-.static-logo {
-  background-image:url(/logo.png);
-  background-repeat:no-repeat;
-}
-
-.dynamic-logo {
-  cursor: pointer;
-}
-
-#intro>p {
-  text-align: center;
-}
-
-#intro .build-tag {
-  margin-top: 0;
+  h1 {
+    text-align: center;
+    font-size: 100px;
+    font-weight: bold;
+    margin: 0 auto;
+  }
+  >p {
+    text-align: center;
+  }
+  .build-tag {
+    margin-top: 0;
+  }
 }
 
 div.grain-container {

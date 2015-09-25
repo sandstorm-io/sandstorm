@@ -22,6 +22,7 @@ var Fs = Npm.require("fs");
 var Dns = Npm.require("dns");
 var Promise = Npm.require("es6-promise").Promise;
 var Future = Npm.require("fibers/future");
+var Http = Npm.require("http");
 
 var HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 var DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
@@ -375,11 +376,60 @@ Meteor.startup(function () {
     WebApp.rawConnectHandlers.use(BlackrockPayments.makeConnectHandler(globalDb));
   }
 
-  WebApp.rawConnectHandlers.use(function (req, res, next) {
+  // This function serves responses on Sandstorm's main HTTP/HTTPS
+  // port.
+  var serveMeteorOrStaticPublishing = function(req, res, next) {
+    return dispatchToMeteorOrStaticPublishing(req, res, next, false);
+  }
+
+  // "Alternate ports" are ports other than the main HTTP or HTTPS
+  // port. For requests to the shell & grains, we redirect to the main
+  // port. For static publishing, we serve it.
+  //
+  // They are bound to FD #4 and higher.
+
+  function getNumberOfAlternatePorts() {
+    var numPorts = process.env.PORT.split(",").length;
+    var numAlternatePorts = numPorts - 1;
+    return numAlternatePorts;
+  };
+
+  var canonicalizeShellOrWildcardUrl = function(hostname, url) {
+    // Start with ROOT_URL, apply host & path from inbound URL, then
+    // redirect.
+    var targetUrl = Url.parse(process.env.ROOT_URL);
+
+    // Retain the protocol & port from ROOT_URL but use the inbound
+    // hostname.
+    targetUrl.host = hostname + ':' + targetUrl.port;
+
+    // The following allows to avoid decoding + re-encoding query
+    // string parameters, if provided.
+    targetUrl = Url.resolve(Url.format(targetUrl), url);
+    return targetUrl;
+  };
+
+  var redirectToMeteorOrServeStaticPublishing = function (req, res, next) {
+    return dispatchToMeteorOrStaticPublishing(req, res, next, true);
+  };
+
+  for (var i = 0; i < getNumberOfAlternatePorts(); i++) {
+    // Call createServerForSandstorm() to skip our monkey patching.
+    var alternatePortServer = Http.createServerForSandstorm(redirectToMeteorOrServeStaticPublishing);
+    alternatePortServer.listen({fd: i + 4});
+  }
+
+  var dispatchToMeteorOrStaticPublishing = function (req, res, next, redirectRatherThanServeShell) {
     var hostname = req.headers.host.split(":")[0];
     if (isSandstormShell(hostname)) {
-      // Go on to Meteor.
-      return next();
+      // Go on to Meteor, or serve a redirect.
+      if (redirectRatherThanServeShell) {
+        res.writeHead(302, {"Location": canonicalizeShellOrWildcardUrl(hostname, req.url)});
+        res.end();
+        return;
+      } else {
+        return next();
+      }
     }
 
     // This is not our main host. See if it's a member of the wildcard.
@@ -388,6 +438,11 @@ Meteor.startup(function () {
     var id = matchWildcardHost(req.headers.host);
     if (id) {
       // Match!
+      if (redirectRatherThanServeShell) {
+        res.writeHead(302, {"Location": canonicalizeShellOrWildcardUrl(hostname, req.url)});
+        res.end();
+        return;
+      }
 
       if (id === "static") {
         // Static assets domain.
@@ -443,7 +498,9 @@ Meteor.startup(function () {
     }).catch(function (err) {
       writeErrorResponse(res, err);
     });
-  });
+  };
+
+  WebApp.rawConnectHandlers.use(serveMeteorOrStaticPublishing);
 });
 
 var errorTxtMapping = {};
@@ -496,7 +553,7 @@ function lookupPublicIdFromDns(hostname) {
           "If you got here after trying to log in via OAuth (e.g. through Github or Google),<br>\n" +
           "the problem is probably that the OAuth callback URL was set wrong. You need to<br>\n" +
           "update it through the respective login provider's management console.</p>";
-        error.httpErrorCode = err.code === "ENOTFOUND" ? 404 : 500;
+        error.httpErrorCode = (_.contains(["ENOTFOUND", "ENODATA"], err.code)) ? 404 : 500;
         reject(error);
       } else if (records.length !== 1) {
         reject(new Error("Host 'sandstorm-www." + hostname + "' must have exactly one TXT record."));

@@ -177,10 +177,6 @@ img {
   margin-bottom: 0;
 }
 
-// old app list
-@import "_applist-apps.scss";
-// old grain list (by application)
-@import "_applist-grains.scss";
 // new app list (unified)
 @import "_applist.scss";
 // new grainlist (unified)

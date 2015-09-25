@@ -473,7 +473,7 @@ if (Meteor.isClient) {
   });
 
   Template.layout.events({
-    "click .demo-expired.logout": function (event) {
+    "click #demo-expired.logout": function (event) {
       Meteor.logout();
     }
   });

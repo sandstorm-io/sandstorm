@@ -170,7 +170,7 @@ button.revoke-token {
     font-family: inherit;
     font-size: inherit;
     font-weight: 600;
-    background-color: #762f87;
+    background-color: $sandstorm-purple-color;
     padding: 8px;
     line-height: 1.33;
     border-radius: 4px;
@@ -458,7 +458,7 @@ body>.popup.admin-alert>.frame>p {
 
 #admin-alert-icon {
   display: inline-block;
-  background-color: #762f87;
+  background-color: $sandstorm-purple-color;
   color: white;
   font-size: 20px;
   font-weight: bold;

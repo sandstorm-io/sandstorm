@@ -472,34 +472,11 @@ body>.popup.admin-alert>.frame>p {
 }
 
 @media screen and #{$mobile} {
-  #applist-closer[data-show="true"], #menu-closer[data-show="true"] {
-    display: block;
-    position: fixed;
-    width: 2000px;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1;
-    -webkit-transition: background-color 200ms;
-    transition: background-color 200ms;
-  }
-
   #demo.centered-box {
     width: 80%;
   }
 
   button#createDemoUser, #demo h2 {
     font-size: 30px;
-  }
-
-  #install-arrow {
-    top: 80px;
-    left: 96px;
-  }
-}
-@media screen and (max-width: 450px) {
-  #install-arrow {
-    top: 68px;
-    left: 96px;
-    background-size: 372px 526px;
   }
 }

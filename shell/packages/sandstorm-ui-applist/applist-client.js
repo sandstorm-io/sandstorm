@@ -1,6 +1,5 @@
 var iconForAction = function (action) {
   var ref = Template.instance().data;
-  var appId = action.appId;
   var pkg = ref._db.collections.packages.findOne({_id: action.packageId});
   if (!pkg) {
     // Sometimes pkg may not have synced to minimongo yet on pageload.
@@ -8,20 +7,23 @@ var iconForAction = function (action) {
     // avoid causing noisy backtraces in the console.
     return "";
   }
-  return Identicon.iconSrcForPackage(pkg, 'appGrid', ref._staticHost);
+  return ref._db.iconSrcForPackage(pkg, 'appGrid');
 };
+
 var appTitleForAction = function (action) {
   if (action.appTitle) return action.appTitle.defaultText;
   // Legacy cruft: guess at the app title from the action text.
-  // N.B.: calls into shell.js.  TODO: refactor
-  return appNameFromActionName(action.title.defaultText);
+  return SandstormDb.appNameFromActionName(action.title.defaultText);
 };
+
 var matchesAppOrActionTitle = function (needle, action) {
   var appTitle = appTitleForAction(action);
-  if (nounFromAction(action, appTitle).toLowerCase().indexOf(needle) !== -1) return true;
+  if (SandstormDb.nounPhraseForActionAndAppTitle(action, appTitle)
+                 .toLowerCase().indexOf(needle) !== -1) return true;
   if (appTitle.toLowerCase().indexOf(needle) !== -1) return true;
   return false;
-}
+};
+
 var compileMatchFilter = function(searchString) {
   var searchKeys = searchString.toLowerCase()
       .split(" ")
@@ -33,7 +35,7 @@ var compileMatchFilter = function(searchString) {
         .reduce(function (a, b) {return a && b; })
         .value();
   };
-}
+};
 
 var actionToTemplateObject = function(action) {
   var title = appTitleForAction(action);
@@ -41,7 +43,7 @@ var actionToTemplateObject = function(action) {
     _id: action._id,
     iconSrc: iconForAction(action),
     appTitle: title,
-    noun: nounFromAction(action, title),
+    noun: SandstormDb.nounPhraseForActionAndAppTitle(action, title),
     appId: action.appId
   };
 };
@@ -53,37 +55,6 @@ var matchActions = function (searchString) {
                  .filter(filter)
                  .value()
   return actions;
-};
-var nounFromAction = function (action, appTitle) {
-  // A hack to deal with legacy apps not including fields in their manifests.
-  // I look forward to the day I can remove most of this code.
-  // Attempt to figure out the appropriate noun that this action will create.
-  // Use an explicit noun phrase is one is available.  Apps should add these in the future.
-  if (action.nounPhrase) return action.nounPhrase.defaultText;
-  // Otherwise, try to guess one from the structure of the action title field
-  if (action.title) {
-    var text = action.title.defaultText;
-    // Strip a leading "New "
-    if (text.lastIndexOf("New ", 0) === 0) {
-      var candidate = text.slice(4);
-      // Strip a leading appname too, if provided
-      if (candidate.lastIndexOf(appTitle, 0) === 0) {
-        var newCandidate = candidate.slice(appTitle.length);
-        // Unless that leaves you with no noun, in which case, use "instance"
-        if (newCandidate.length > 0) {
-          return newCandidate.toLowerCase();
-        } else {
-          return "instance";
-        }
-      }
-      return candidate.toLowerCase();
-    }
-    // Some other verb phrase was given.  Just use it verbatim, and hope the app author updates
-    // the package soon.
-    return text;
-  } else {
-    return "instance";
-  }
 };
 
 // Client-only stuff...
@@ -142,9 +113,10 @@ Template.sandstormAppList.helpers({
       for (var i = 0 ; i < devapp.manifest.actions.length ; i++) {
         thisAppActions.push({
           _id: devapp._id,
-          appTitle: devapp.manifest.appTitle.defaultText,
-          noun: nounFromAction(devapp.manifest.actions[i], devapp.manifest.appTitle.defaultText),
-          iconSrc: Identicon.iconSrcForDevPackage(devapp, 'appGrid', Template.instance().data._staticHost),
+          appTitle: SandstormDb.appNameFromPackage(devapp),
+          noun: SandstormDb.nounPhraseForActionAndAppTitle(devapp.manifest.actions[i],
+                  devapp.manifest.appTitle.defaultText),
+          iconSrc: ref._db.iconSrcForPackage(devapp, 'appGrid'),
           actionIndex: i
         });
       }

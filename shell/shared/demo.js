@@ -384,7 +384,7 @@ Router.map(function () {
       var appName = 'missing package';
 
       if (thisPackage) {
-        appName = appNameFromPackage(thisPackage);
+        appName = SandstormDb.appNameFromPackage(thisPackage);
       }
 
       return {

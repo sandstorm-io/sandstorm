@@ -112,6 +112,7 @@ DevApps = new Mongo.Collection("devapps");
 //
 // Each contains:
 //   _id:  The application ID string (as with Packages.appId).
+//   appId: The same as _id, included to mimic Packages.appId.
 //   packageId:  The directory name where the dev package is mounted.
 //   timestamp:  Time when the package was last updated. If this changes while the package is
 //     published, all running instances are reset. This is used e.g. to reset the app each time
@@ -801,6 +802,10 @@ _.extend(SandstormDb.prototype, {
     return this.userActions(Meteor.userId());
   },
 
+  iconSrcForPackage: function iconSrcForPackage (pkg, usage) {
+    return Identicon.iconSrcForPackage(pkg, usage, this.makeWildcardHost("static"));
+  },
+
   getPlan: function (id) {
     check(id, String);
     var plan = Plans.findOne(id);
@@ -888,6 +893,86 @@ _.extend(SandstormDb.prototype, {
   getKeybaseProfile: function (keyFingerprint) {
     return KeybaseProfiles.findOne(keyFingerprint) || {};
   },
+});
+
+var appNameFromPackage = function(packageObj) {
+  // This function takes a Package object from Mongo and returns an
+  // app title.
+  var manifest = packageObj.manifest;
+  if (!manifest) return packageObj.appId || packageObj._id || "unknown";
+  var action = manifest.actions[0];
+  appName = (manifest.appTitle && manifest.appTitle.defaultText) ||
+    appNameFromActionName(action.title.defaultText);
+  return appName;
+};
+
+var appNameFromActionName = function(name) {
+  // Hack: Historically we only had action titles, like "New Etherpad Document", not app
+  //   titles. But for this UI we want app titles. As a transitionary measure, try to
+  //   derive the app title from the action title.
+  // TODO(cleanup): Get rid of this once apps have real titles.
+  if (!name) {
+    return "(unnamed)";
+  }
+  if (name.lastIndexOf("New ", 0) === 0) {
+    name = name.slice(4);
+  }
+  if (name.lastIndexOf("Hacker CMS", 0) === 0) {
+    name = "Hacker CMS";
+  } else {
+    var space = name.indexOf(" ");
+    if (space > 0) {
+      name = name.slice(0, space);
+    }
+  }
+  return name;
+};
+
+var appShortDescriptionFromPackage = function (pkg) {
+  return pkg && pkg.manifest && pkg.manifest.metadata &&
+         pkg.manifest.metadata.shortDescription &&
+         pkg.manifest.metadata.shortDescription.defaultText;
+};
+
+var nounPhraseForActionAndAppTitle = function(action, appTitle) {
+  // A hack to deal with legacy apps not including fields in their manifests.
+  // I look forward to the day I can remove most of this code.
+  // Attempt to figure out the appropriate noun that this action will create.
+  // Use an explicit noun phrase is one is available.  Apps should add these in the future.
+  if (action.nounPhrase) return action.nounPhrase.defaultText;
+  // Otherwise, try to guess one from the structure of the action title field
+  if (action.title && action.title.defaultText) {
+    var text = action.title.defaultText;
+    // Strip a leading "New "
+    if (text.lastIndexOf("New ", 0) === 0) {
+      var candidate = text.slice(4);
+      // Strip a leading appname too, if provided
+      if (candidate.lastIndexOf(appTitle, 0) === 0) {
+        var newCandidate = candidate.slice(appTitle.length);
+        // Unless that leaves you with no noun, in which case, use "instance"
+        if (newCandidate.length > 0) {
+          return newCandidate.toLowerCase();
+        } else {
+          return "instance";
+        }
+      }
+      return candidate.toLowerCase();
+    }
+    // Some other verb phrase was given.  Just use it verbatim, and hope the app author updates
+    // the package soon.
+    return text;
+  } else {
+    return "instance";
+  }
+};
+
+// Static methods on SandstormDb that don't need an instance.
+// Largely things that deal with backwards-compatibility.
+_.extend(SandstormDb, {
+  appNameFromActionName: appNameFromActionName,
+  appNameFromPackage: appNameFromPackage,
+  appShortDescriptionFromPackage: appShortDescriptionFromPackage,
+  nounPhraseForActionAndAppTitle: nounPhraseForActionAndAppTitle,
 });
 
 if (Meteor.isServer) {

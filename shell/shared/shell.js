@@ -318,7 +318,7 @@ if (Meteor.isClient) {
       if (grain && grain.packageId) {
         var thisPackage = Packages.findOne({_id: grain.packageId});
         if (thisPackage) {
-          params = appNameFromPackage(thisPackage);
+          params = SandstormDb.appNameFromPackage(thisPackage);
         }
       }
     }
@@ -570,6 +570,9 @@ if (Meteor.isClient) {
   launchAndEnterGrainByActionId = function(actionId, devId, devIndex) {
     // Note that this takes a devId and a devIndex as well. If provided,
     // they override the actionId.
+    var packageId;
+    var command;
+    var nounPhrase;
     if (devId) {
       var devApp = DevApps.findOne(devId);
       if (!devApp) {
@@ -579,7 +582,8 @@ if (Meteor.isClient) {
       var devAction = devApp.manifest.actions[devIndex];
       packageId = devApp.packageId;
       command = devAction.command;
-      actionTitle = devAction.title.defaultText;
+      var appTitle = SandstormDb.appNameFromPackage(devApp);
+      nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(devAction, appTitle);
     } else {
       var action = UserActions.findOne(actionId);
       if (!action) {
@@ -588,15 +592,13 @@ if (Meteor.isClient) {
       }
 
       packageId = action.packageId;
+      var pkg = Packages.findOne(packageId);
       command = action.command;
-      actionTitle = action.title.defaultText;
+      var appTitle = SandstormDb.appNameFromPackage(pkg);
+      nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(action, appTitle);
     }
 
-    var title = actionTitle;
-    if (title.lastIndexOf("New ", 0) === 0) {
-      title = actionTitle.slice(4);
-    }
-    title = "Untitled " + title;
+    var title = "Untitled " + nounPhrase;
 
     var identity = _.findWhere(SandstormDb.getUserIdentities(Meteor.user()), {main: true});
 
@@ -729,39 +731,6 @@ function getBuildInfo() {
     build: build,
     isUnofficial: !isNumber
   };
-}
-
-appNameFromPackage = function(packageObj) {
-  // This function takes a Package object from Mongo and returns an
-  // app title.
-  var manifest = packageObj.manifest;
-  if (!manifest) return packageObj.appId || packageObj._id || "unknown";
-  var action = manifest.actions[0];
-  appName = (manifest.appTitle && manifest.appTitle.defaultText) ||
-    appNameFromActionName(action.title.defaultText);
-  return appName;
-}
-
-appNameFromActionName = function(name) {
-  // Hack: Historically we only had action titles, like "New Etherpad Document", not app
-  //   titles. But for this UI we want app titles. As a transitionary measure, try to
-  //   derive the app title from the action title.
-  // TODO(cleanup): Get rid of this once apps have real titles.
-  if (!name) {
-    return "(unnamed)";
-  }
-  if (name.lastIndexOf("New ", 0) === 0) {
-    name = name.slice(4);
-  }
-  if (name.lastIndexOf("Hacker CMS", 0) === 0) {
-    name = "Hacker CMS";
-  } else {
-    var space = name.indexOf(" ");
-    if (space > 0) {
-      name = name.slice(0, space);
-    }
-  }
-  return name;
 }
 
 var promptForFile = function (input, callback) {

@@ -2363,6 +2363,7 @@ private:
     mongoCommand(config, kj::str(
         "db.devapps.insert({"
           "_id:\"", appId, "\","
+          "appId:\"", appId, "\","
           "packageId:\"", pkgId, "\","
           "timestamp:", time(nullptr), ","
           "manifest:", toMongoJson(manifest),

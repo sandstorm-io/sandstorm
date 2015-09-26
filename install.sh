@@ -1168,7 +1168,7 @@ install_sandstorm_symlinks() {
 
   # Install tools.
   ln -sfT $PWD/sandstorm /usr/local/bin/sandstorm
-  ./sandstorm devtools
+  ln -sfT $PWD/sandstorm /usr/local/bin/spk
 }
 
 ask_about_starting_at_boot() {

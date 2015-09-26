@@ -481,16 +481,6 @@ public:
               return alternateMain->getMain();
             },
             "Manipulate spk files.")
-        .addSubCommand("devtools",
-            [this]() {
-              return kj::MainBuilder(context, VERSION,
-                      "Places symlinks in <bindir> (default: /usr/local/bin) to the dev tools "
-                      "in this package.")
-                  .expectOptionalArg("<bindir>", KJ_BIND_METHOD(*this, setDevtoolsBindir))
-                  .callAfterParsing(KJ_BIND_METHOD(*this, devtools))
-                  .build();
-            },
-            "Install Sandstorm devtools.")
         .addSubCommand("reset-oauth",
             [this]() {
               return kj::MainBuilder(context, VERSION,
@@ -838,23 +828,6 @@ public:
     }
   }
 
-  kj::MainBuilder::Validity devtools() {
-    auto dir = getInstallDir();
-    auto parent = kj::heapString(dir.slice(0, KJ_ASSERT_NONNULL(dir.findLast('/'))));
-
-    KJ_SYSCALL(access(kj::str(parent, "/latest").cStr(), F_OK),
-               "No \"latest\" symlink? Sandstorm doesn't seem to be installed the way I "
-               "expected it.");
-    KJ_SYSCALL(access(kj::str(parent, "/sandstorm").cStr(), F_OK),
-               "No \"sandstorm\" symlink? Sandstorm doesn't seem to be installed the way I "
-               "expected it.");
-
-    auto to = kj::str(devtoolsBindir, "/spk");
-    unlink(to.cStr());
-    KJ_SYSCALL(symlink(kj::str(parent, "/sandstorm").cStr(), to.cStr()));
-    context.exitInfo(kj::str("created: ", devtoolsBindir, "/spk"));
-  }
-
   kj::MainBuilder::Validity resetOauth() {
     changeToInstallDir();
 
@@ -958,7 +931,6 @@ private:
   };
 
   kj::String updateFile;
-  kj::StringPtr devtoolsBindir = "/usr/local/bin";
 
   bool changedDir = false;
   bool unsharedUidNamespace = false;
@@ -2495,14 +2467,6 @@ private:
       updateFile = kj::heapString(arg);
       return true;
     }
-  }
-
-  kj::MainBuilder::Validity setDevtoolsBindir(kj::StringPtr arg) {
-    if (access(arg.cStr(), F_OK) != 0) {
-      return "not found";
-    }
-    devtoolsBindir = arg;
-    return true;
   }
 };
 

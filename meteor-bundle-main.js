@@ -119,7 +119,7 @@ function monkeypatchHttpAndHttps() {
           } else {
             // Sometimes the server gives us a 0-byte response,
             // presumably due to a connection getting reset?.
-            console.error("Got exception reading JSON from server. Dazed and confused, but trying to continue.", e);
+            console.error("Got exception reading JSON from file:", metadataFilename, "Dazed and confused, but trying to continue.", e);
             continue;
           }
         }

@@ -190,14 +190,14 @@ Sandcats.renewHttpsCertificateIfNeeded = function() {
             responseBody = "{}";
           }
 
-          fs.writeFile(filenames.responseFilename, responseBody, function(err) {
-            if (err) {
-              return console.error("Failure while saveing new HTTPS certificate to",
-                                   filenames.responseFilename,
-                                   "will continue to retry. Exception was:",
-                                   err);
-            }
-          });
+          try {
+            fs.writeFileSync(filenames.responseFilename, responseBody, "utf-8");
+          } catch (err) {
+            return console.error("Failure while saveing new HTTPS certificate to",
+                                 filenames.responseFilename,
+                                 "will continue to retry. Exception was:",
+                                 err);
+          }
 
           // Tell Sandcats that now is a good time to update its info
           // about which keys are available.

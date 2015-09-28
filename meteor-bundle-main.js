@@ -139,10 +139,9 @@ function monkeypatchHttpAndHttps() {
         return (cert1.notBefore - cert2.notBefore);
       });
 
-      if (! validCertificates) {
-        // TODO: Be more robust here, though it's not clear how.
-        console.error("Aieee, we found zero valid certificates. Allowing Sandstorm to crash.");
-        return;
+      if (! validCertificates.length) {
+        console.error("HTTPS mode is enabled but no certs found.");
+        return {nextRekeyTime: null};
       }
 
       console.log("Using this HTTPS key:", validCertificates[0].keyFilename,
@@ -201,18 +200,54 @@ function monkeypatchHttpAndHttps() {
       // certificate.
       global.sandcats = {};
       global.sandcats.rekey = function () {
+        // If rekey() is run, but there is no existing key, it means
+        // there is also no usable SNICallback function. That means
+        // that we have no way to switch to the new key while
+        // Sandstorm is running. Instead, stop the process (and let
+        // auto-restart bring us back up) in order to be able to pick
+        // the new key.
+        //
+        // This should only happen for users who enable HTTPS_PORT= in
+        // a Sandstorm install for the first time while they are
+        // downloading keys.
+        var hadKeysBefore = !! sandcatsState.key;
         sandcatsState = getCurrentSandcatsKeyAndNextRekeyTime();
+        var haveKeysAfter = !! sandcatsState.key;
+        if (!hadKeysBefore && haveKeysAfter) {
+          console.log("Stopping the Sandstorm shell, allowing auto-restart to bring HTTPS up.");
+          process.exit(0);
+        }
       };
       global.sandcats.hasNextRekeyTime = function() {
         return !! sandcatsState.nextRekeyTime;
       }
 
-      // Actually set up keys!
-      global.sandcats.rekey();
+      // Set up initial keys. We do this directly, skipping the
+      // rekey() machinery, since rekey() wants to restart the process
+      // sometimes, and we never want that on initial startup.
+      sandcatsState = getCurrentSandcatsKeyAndNextRekeyTime();
 
       if (! sandcatsState.key) {
-        console.log("We seem to have no key! For now, allowing Sandstorm to crash.");
-        process.exit(99);
+        // Our ability to serve HTTPS in this process is doomed.
+        //
+        // Return a fake HTTP Server object that does nothing
+        // ever. Allow the cert renewal process in the background to
+        // cause us to restart.
+        console.error("NOTE: Refusing to bind to HTTPS socket because we have no HTTPS " +
+                      "certificates. Your Sandstorm server will not work until it " +
+                      "fetches certificates and auto-restarts.");
+
+        // Bind Meteor's HTTP server to /dev/null (rather, a socket
+        // that where no events will occur -- can't use /dev/null
+        // because it's not a socket). To do that, monkey-patch
+        // .listen() accordingly.
+
+        var httpServer = http.createServerForSandstorm(requestListener);
+        var realHttpListen = http.Server.prototype.listen;
+        httpServer.listen = function (port, host, cb) {
+          realHttpListen.call(this, "/tmp/private-sandstorm-dummy-socket", cb);
+        }
+        return httpServer;
       }
 
       // Configure options for httpsServer.createServer().

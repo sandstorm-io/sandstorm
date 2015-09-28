@@ -17,7 +17,7 @@
 var ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
 var publicAdminSettings = ["google", "github", "emailToken", "splashDialog", "signupDialog",
                            "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
-                           "privacyUrl"];
+                           "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled"];
 
 DEFAULT_SPLASH_DIALOG = "Contact the server admin for an invite " +
   "(or <a href=\"https://sandstorm.io/install/\">install your own</a>).";
@@ -679,7 +679,7 @@ if (Meteor.isClient) {
       var state = Iron.controller().state;
       var token = this.token;
       resetResult(state);
-      state.set("numSettings", 7);
+      state.set("numSettings", 10);
 
       if (successTracker) {
         successTracker.stop();
@@ -702,6 +702,9 @@ if (Meteor.isClient) {
       Meteor.call("setSetting", token, "termsUrl", event.target.termsUrl.value, handleErrorBound);
       Meteor.call("setSetting", token, "privacyUrl", event.target.privacyUrl.value, handleErrorBound);
       Meteor.call("setSetting", token, "adminAlert", event.target.adminAlert.value, handleErrorBound);
+      Meteor.call("setSetting", token, "appMarketUrl", event.target.appMarketUrl.value, handleErrorBound);
+      Meteor.call("setSetting", token, "appIndexUrl", event.target.appIndexUrl.value, handleErrorBound);
+      Meteor.call("setSetting", token, "appUpdatesEnabled", event.target.appUpdatesEnabled.checked, handleErrorBound);
       var alertTimeString = event.target.alertTime.value.trim();
       if (alertTimeString) {
         var alertTime = new Date(alertTimeString);
@@ -754,6 +757,18 @@ if (Meteor.isClient) {
     },
     alertUrl: function() {
       var setting = Settings.findOne({_id: "adminAlertUrl"});
+      return (setting && setting.value);
+    },
+    appMarketUrl: function() {
+      var setting = Settings.findOne({_id: "appMarketUrl"});
+      return (setting && setting.value);
+    },
+    appIndexUrl: function() {
+      var setting = Settings.findOne({_id: "appIndexUrl"});
+      return (setting && setting.value);
+    },
+    appUpdatesEnabled: function() {
+      var setting = Settings.findOne({_id: "appUpdatesEnabled"});
       return (setting && setting.value);
     },
   });
@@ -839,7 +854,7 @@ if (Meteor.isServer) {
     setSetting: function (token, name, value) {
       checkAuth(token);
       check(name, String);
-      check(value, Match.OneOf(null, String, Date));
+      check(value, Match.OneOf(null, String, Date, Boolean));
 
       Settings.upsert({_id: name}, {$set: {value: value}});
     },

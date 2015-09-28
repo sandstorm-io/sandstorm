@@ -17,8 +17,15 @@
 SandstormAutoupdateApps = {};
 
 SandstormAutoupdateApps.getAppIndex = function (db) {
+  var appUpdatesEnabled = Settings.findOne({_id: "appUpdatesEnabled"}).value;
+  if (!appUpdatesEnabled) {
+    // It's much simpler to check appUpdatesEnabled here rather than reactively deactivate the
+    // timer that triggers this call.
+    return;
+  }
+  var appIndexUrl = Settings.findOne({_id: "appIndexUrl"}).value;
   var appIndex = db.collections.appIndex;
-  var data = HTTP.get("https://app-index.sandstorm.io/apps/index.json").data;
+  var data = HTTP.get(appIndexUrl + "/apps/index.json").data;
   data.apps.forEach(function (app) {
     app._id = app.appId;
 
@@ -28,7 +35,7 @@ SandstormAutoupdateApps.getAppIndex = function (db) {
     if ((!oldApp || app.versionNumber > oldApp.versionNumber) &&
         UserActions.findOne({appId: app.appId})) {
       var pack = Packages.findOne({_id: app.packageId});
-      var url = "https://app-index.sandstorm.io/packages/" + app.packageId;
+      var url = appIndexUrl + "/packages/" + app.packageId;
       if (pack) {
         if (pack.status === "ready") {
           db.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber, app.version);

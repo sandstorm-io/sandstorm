@@ -68,7 +68,7 @@ prompts.
 
 # Disabling the sandcats service
 
-If you want to run Sandstorm without the Sandstorm service, remove the
+If you want to run Sandstorm without the Sandcats service, remove the
 
 ```bash
 SANDCATS_BASE_DOMAIN=...

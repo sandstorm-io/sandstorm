@@ -359,7 +359,8 @@ AppInstaller.prototype.updateProgress = function (status, progress, error, manif
         progress: self.progress,
         error: self.error ? self.error.message : null,
         manifest: self.manifest,
-        appId: self.appId
+        appId: self.appId,
+        authorPgpKeyFingerprint: self.authorPgpKeyFingerprint
       }});
     }).catch (function (err) {
       console.error(err.stack);
@@ -405,6 +406,7 @@ AppInstaller.prototype.start = function () {
         .then(this.wrapCallback(function(info) {
       if (info.appId) {
         this.appId = info.appId;
+        this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
         this.done(info.manifest);
       } else {
         this.doDownload();
@@ -507,6 +509,7 @@ AppInstaller.prototype.doDownloadTo = function (out) {
       this.updateProgress("unpack");
       out.saveAs(this.packageId).then(this.wrapCallback(function (info) {
         this.appId = info.appId;
+        this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
         this.done(info.manifest);
       }), this.wrapCallback(function (err) {
         throw err;

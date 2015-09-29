@@ -73,7 +73,7 @@ copyDeps() {
 }
 
 # Check for requiremnets.
-for CMD in zip unzip xz; do
+for CMD in zip unzip xz gpg; do
   if ! which "$CMD" > /dev/null; then
     echo "Please install $CMD" >&2
     fail ${LINENO}
@@ -96,7 +96,7 @@ cp bin/sandstorm-http-bridge bundle/bin/sandstorm-http-bridge
 cp bin/sandstorm bundle/sandstorm
 cp $METEOR_DEV_BUNDLE/bin/node bundle/bin
 cp $METEOR_DEV_BUNDLE/mongodb/bin/{mongo,mongod} bundle/bin
-cp $(which zip unzip xz) bundle/bin
+cp $(which zip unzip xz gpg) bundle/bin
 
 # Older installs might be symlinking /usr/local/bin/spk to
 # /opt/sandstorm/latest/bin/spk, while newer installs link it to

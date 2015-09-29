@@ -1397,6 +1397,8 @@ private:
 
   friend kj::String unpackSpk(int spkfd, kj::StringPtr outdir, kj::StringPtr tmpdir);
   friend void verifySpk(int spkfd, int tmpfile, spk::VerifiedInfo::Builder output);
+  friend kj::Maybe<kj::String> checkPgpSignature(
+      kj::StringPtr appIdString, spk::Metadata::Reader metadata);
 
   static kj::String verifyImpl(
       int spkfd, int tmpfile, kj::Maybe<spk::VerifiedInfo::Builder> maybeInfo,
@@ -1550,11 +1552,7 @@ private:
                   "author's PGP signature is present but no PGP keyring is provided");
             }
 
-            auto expectedContent = kj::str(
-                "I am the author of the Sandstorm.io app with the following ID: ",
-                appIdString);
-
-            info->setAuthorPgpKeyFingerprint(checkPgpSignature(expectedContent,
+            info->setAuthorPgpKeyFingerprint(checkPgpSignature(appIdString,
                 author.getPgpSignature(), metadata.getPgpKeyring(), validationError));
           }
 
@@ -1577,8 +1575,12 @@ private:
   }
 
   static kj::String checkPgpSignature(
-      kj::StringPtr expectedContent, kj::ArrayPtr<const byte> sig, kj::ArrayPtr<const byte> key,
+      kj::StringPtr appIdString, kj::ArrayPtr<const byte> sig, kj::ArrayPtr<const byte> key,
       kj::Function<kj::String(kj::StringPtr problem)>& validationError) {
+    auto expectedContent = kj::str(
+        "I am the author of the Sandstorm.io app with the following ID: ",
+        appIdString);
+
     char keyfile[] = "/tmp/spk-pgp-key.XXXXXX";
     int keyfd;
     KJ_SYSCALL(keyfd = mkstemp(keyfile));
@@ -2397,6 +2399,23 @@ void verifySpk(int spkfd, int tmpfile, spk::VerifiedInfo::Builder output) {
   SpkTool::verifyImpl(spkfd, tmpfile, output, [](kj::StringPtr problem) -> kj::String {
     KJ_FAIL_ASSERT("spk verification failed", problem);
   });
+}
+
+kj::Maybe<kj::String> checkPgpSignature(kj::StringPtr appIdString, spk::Metadata::Reader metadata) {
+  auto author = metadata.getAuthor();
+
+  if (author.hasPgpSignature()) {
+    KJ_REQUIRE(metadata.hasPgpKeyring(), "package metadata contains PGP signature but no keyring");
+
+    kj::Function<kj::String(kj::StringPtr problem)> error =
+        [](kj::StringPtr problem) -> kj::String {
+      KJ_FAIL_ASSERT("PGP signature verification problem", problem);
+    };
+    return SpkTool::checkPgpSignature(appIdString,
+        author.getPgpSignature(), metadata.getPgpKeyring(), error);
+  } else {
+    return nullptr;
+  }
 }
 
 }  // namespace sandstorm

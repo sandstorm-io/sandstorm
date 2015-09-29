@@ -207,6 +207,33 @@ struct UserIds {
   kj::Array<gid_t> groups;
 };
 
+kj::Array<uint> parsePorts(kj::Maybe<uint> httpsPort, kj::StringPtr portList) {
+  auto portsSplitOnComma = split(portList, ',');
+  size_t numHttpPorts = portsSplitOnComma.size();
+  size_t numHttpsPorts;
+  kj::Array<uint> result;
+
+  // If the configuration has a https port, then add it first.
+  KJ_IF_MAYBE(portNumber, httpsPort) {
+    numHttpsPorts = 1;
+    result = kj::heapArray<uint>(numHttpsPorts + numHttpPorts);
+    result[0] = *portNumber;
+  } else {
+    numHttpsPorts = 0;
+    result = kj::heapArray<uint>(numHttpsPorts + numHttpPorts);
+  }
+
+  for (size_t i = 0; i < portsSplitOnComma.size(); i++) {
+    KJ_IF_MAYBE(portNumber, parseUInt(trim(portsSplitOnComma[i]), 10)) {
+      result[i + numHttpsPorts] = *portNumber;
+    } else {
+      KJ_FAIL_REQUIRE("invalid config value PORT", portList);
+    }
+  }
+
+  return kj::mv(result);
+}
+
 kj::Maybe<UserIds> getUserIds(kj::StringPtr name) {
   // We can't use getpwnam() in a statically-linked binary, so we shell out to id(1).  lol.
 
@@ -454,16 +481,6 @@ public:
               return alternateMain->getMain();
             },
             "Manipulate spk files.")
-        .addSubCommand("devtools",
-            [this]() {
-              return kj::MainBuilder(context, VERSION,
-                      "Places symlinks in <bindir> (default: /usr/local/bin) to the dev tools "
-                      "in this package.")
-                  .expectOptionalArg("<bindir>", KJ_BIND_METHOD(*this, setDevtoolsBindir))
-                  .callAfterParsing(KJ_BIND_METHOD(*this, devtools))
-                  .build();
-            },
-            "Install Sandstorm devtools.")
         .addSubCommand("reset-oauth",
             [this]() {
               return kj::MainBuilder(context, VERSION,
@@ -811,23 +828,6 @@ public:
     }
   }
 
-  kj::MainBuilder::Validity devtools() {
-    auto dir = getInstallDir();
-    auto parent = kj::heapString(dir.slice(0, KJ_ASSERT_NONNULL(dir.findLast('/'))));
-
-    KJ_SYSCALL(access(kj::str(parent, "/latest").cStr(), F_OK),
-               "No \"latest\" symlink? Sandstorm doesn't seem to be installed the way I "
-               "expected it.");
-    KJ_SYSCALL(access(kj::str(parent, "/sandstorm").cStr(), F_OK),
-               "No \"sandstorm\" symlink? Sandstorm doesn't seem to be installed the way I "
-               "expected it.");
-
-    auto to = kj::str(devtoolsBindir, "/spk");
-    unlink(to.cStr());
-    KJ_SYSCALL(symlink(kj::str(parent, "/sandstorm").cStr(), to.cStr()));
-    context.exitInfo(kj::str("created: ", devtoolsBindir, "/spk"));
-  }
-
   kj::MainBuilder::Validity resetOauth() {
     changeToInstallDir();
 
@@ -912,7 +912,8 @@ private:
   // Alternate main function we'll use depending on the program name.
 
   struct Config {
-    uint port = 3000;
+    kj::Maybe<uint> httpsPort;
+    kj::Array<uint> ports;
     uint mongoPort = 3001;
     UserIds uids;
     kj::String bindIp = kj::str("127.0.0.1");
@@ -930,7 +931,6 @@ private:
   };
 
   kj::String updateFile;
-  kj::StringPtr devtoolsBindir = "/usr/local/bin";
 
   bool changedDir = false;
   bool unsharedUidNamespace = false;
@@ -1212,6 +1212,10 @@ private:
     config.uids.uid = getuid();
     config.uids.gid = getgid();
 
+    // Store the PORT and HTTPS_PORT values in variables here so we can
+    // process them at the end.
+    kj::Maybe<kj::String> maybePortValue = nullptr;
+
     auto lines = splitLines(readAll("../sandstorm.conf"));
     for (auto& line: lines) {
       auto equalsPos = KJ_ASSERT_NONNULL(line.findFirst('='), "Invalid config line", line);
@@ -1225,12 +1229,14 @@ private:
         } else {
           KJ_FAIL_REQUIRE("invalid config value SERVER_USER", value);
         }
-      } else if (key == "PORT") {
+      } else if (key == "HTTPS_PORT") {
         KJ_IF_MAYBE(p, parseUInt(value, 10)) {
-          config.port = *p;
+          config.httpsPort = *p;
         } else {
-          KJ_FAIL_REQUIRE("invalid config value PORT", value);
+          KJ_FAIL_REQUIRE("invalid config value HTTPS_PORT", value);
         }
+      } else if (key == "PORT") {
+          maybePortValue = kj::mv(value);
       } else if (key == "MONGO_PORT") {
         KJ_IF_MAYBE(p, parseUInt(value, 10)) {
           config.mongoPort = *p;
@@ -1280,6 +1286,17 @@ private:
           KJ_FAIL_REQUIRE("invalid config value SMTP_LISTEN_PORT", value);
         }
       }
+    }
+
+    // Now process the PORT setting, since the actual value in config.ports
+    // depends on if HTTPS_PORT was provided at any point in reading the
+    // config file.
+    //
+    // Outer KJ_IF_MAYBE so we only run this code if the config file contained
+    // a PORT= declaration.
+    KJ_IF_MAYBE(portValue, maybePortValue) {
+      auto ports = parsePorts(config.httpsPort, *portValue);
+      config.ports = kj::mv(ports);
     }
 
     if (runningAsRoot) {
@@ -1683,34 +1700,41 @@ private:
     return result;
   }
 
+  void bindSocketToFd(const Config& config, uint port, uint targetFdNum) {
+    int sockFd;
+    KJ_SYSCALL(sockFd = socket(PF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
+
+    // Enable SO_REUSEADDR so that `sandstorm restart` doesn't take minutes to succeed.
+    int optval = 1;
+    KJ_SYSCALL(setsockopt(sockFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
+
+    sockaddr_in sa;
+    memset(&sa, 0, sizeof sa);
+    sa.sin_family = AF_INET;
+    sa.sin_port = htons(port);
+    int rc = inet_pton(AF_INET, config.bindIp.cStr(), &(sa.sin_addr));
+    // If ipv4 address parsing fails, try ipv6
+    if (rc == 0) {
+      rc = inet_pton(AF_INET6, config.bindIp.cStr(), &(sa.sin_addr));
+      KJ_REQUIRE(rc == 1, "Bind IP is an invalid IP address:", config.bindIp);
+    }
+
+    KJ_SYSCALL(bind(sockFd, reinterpret_cast<sockaddr *>(&sa), sizeof sa));
+    KJ_SYSCALL(listen(sockFd, 511)); // 511 is what node uses as its default backlog
+
+    if (sockFd != targetFdNum) {
+      // dup socket to correct fd.
+      KJ_SYSCALL(dup2(sockFd, targetFdNum));
+      KJ_SYSCALL(close(sockFd));
+    }
+  }
+
   pid_t startNode(const Config& config) {
     Subprocess process([&]() -> int {
-      // Create a listening socket for the meteor app on fd=3
-      int sockFd;
-      KJ_SYSCALL(sockFd = socket(PF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
-
-      // Enable SO_REUSEADDR so that `sandstorm restart` doesn't take minutes to succeed.
-      int optval = 1;
-      KJ_SYSCALL(setsockopt(sockFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
-
-      sockaddr_in sa;
-      memset(&sa, 0, sizeof sa);
-      sa.sin_family = AF_INET;
-      sa.sin_port = htons(config.port);
-      int rc = inet_pton(AF_INET, config.bindIp.cStr(), &(sa.sin_addr));
-      // If ipv4 address parsing fails, try ipv6
-      if (rc == 0) {
-        rc = inet_pton(AF_INET6, config.bindIp.cStr(), &(sa.sin_addr));
-        KJ_REQUIRE(rc == 1, "Bind IP is an invalid IP address:", config.bindIp);
-      }
-
-      KJ_SYSCALL(bind(sockFd, reinterpret_cast<sockaddr *>(&sa), sizeof sa));
-      KJ_SYSCALL(listen(sockFd, 511)); // 511 is what node uses as its default backlog
-
-      if (sockFd != 3) {
-        // dup socket to correct fd.
-        KJ_SYSCALL(dup2(sockFd, 3));
-        KJ_SYSCALL(close(sockFd));
+      // Create a listening socket for the meteor app on fd=3 and up
+      uint socketFdStart = 3;
+      for (size_t i = 0; i < config.ports.size(); i++) {
+        bindSocketToFd(config, config.ports[i], i + socketFdStart);
       }
 
       dropPrivs(config.uids);
@@ -1731,7 +1755,11 @@ private:
             true));
       }
 
-      KJ_SYSCALL(setenv("PORT", kj::str(config.port).cStr(), true));
+      KJ_SYSCALL(setenv("PORT", kj::strArray(config.ports, ",").cStr(), true));
+      KJ_IF_MAYBE(httpsPort, config.httpsPort) {
+        KJ_SYSCALL(setenv("HTTPS_PORT", kj::str(*httpsPort).cStr(), true));
+      }
+
       KJ_SYSCALL(setenv("SANDSTORM_SMTP_PORT", kj::str(config.smtpListenPort).cStr(), true));
       KJ_SYSCALL(setenv("MONGO_URL",
           kj::str("mongodb://", authPrefix, "127.0.0.1:", config.mongoPort,
@@ -1742,11 +1770,21 @@ private:
         KJ_SYSCALL(setenv("MAIL_URL", config.mailUrl.cStr(), true));
       }
       if (config.rootUrl == nullptr) {
-        if (config.port == 80) {
-          KJ_SYSCALL(setenv("ROOT_URL", kj::str("http://", config.bindIp).cStr(), true));
+        kj::StringPtr scheme;
+        uint defaultPort;
+
+        if (config.httpsPort == nullptr) {
+          scheme = "http://";
+          defaultPort = 80;
+        } else {
+          scheme = "https://";
+          defaultPort = 443;
+        }
+        if (config.ports[0] == defaultPort) {
+          KJ_SYSCALL(setenv("ROOT_URL", kj::str(scheme, config.bindIp).cStr(), true));
         } else {
           KJ_SYSCALL(setenv("ROOT_URL",
-              kj::str("http://", config.bindIp, ":", config.port).cStr(), true));
+              kj::str(scheme, config.bindIp, ":", config.ports[0]).cStr(), true));
         }
       } else {
         KJ_SYSCALL(setenv("ROOT_URL", config.rootUrl.cStr(), true));
@@ -2090,6 +2128,18 @@ private:
     if (access("../var/sandcats", F_OK) == 0) {
         setOwnerGroupAndMode(kj::str("../var/sandcats"), 0700, config.uids.uid, config.uids.gid);
     }
+
+    // Same issue with https directory & its subdirectories.
+    kj::String httpsBaseDir = kj::str("../var/sandcats/https");
+    if (access(httpsBaseDir.cStr(), F_OK) == 0) {
+      setOwnerGroupAndMode(httpsBaseDir, 0700, config.uids.uid, config.uids.gid);
+
+      kj::Array<kj::String> entries = listDirectory(kj::str(httpsBaseDir));
+      for (size_t i = 0; i < entries.size(); i++) {
+        setOwnerGroupAndMode(kj::str(httpsBaseDir, "/", entries[i]), 0700, config.uids.uid, config.uids.gid);
+      }
+    }
+
     // var/sandcats/{register-log,id_rsa{,.pub,private_combined}} should each be 0640, with corrected
     // owner/group
     static const char* const files[] = {"register-log", "id_rsa", "id_rsa.pub", "id_rsa.private_combined"};
@@ -2417,14 +2467,6 @@ private:
       updateFile = kj::heapString(arg);
       return true;
     }
-  }
-
-  kj::MainBuilder::Validity setDevtoolsBindir(kj::StringPtr arg) {
-    if (access(arg.cStr(), F_OK) != 0) {
-      return "not found";
-    }
-    devtoolsBindir = arg;
-    return true;
   }
 };
 

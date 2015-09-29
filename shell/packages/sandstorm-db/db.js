@@ -582,6 +582,12 @@ matchWildcardHost = function(host) {
 
   var prefix = wildcardHost[0];
   var suffix = wildcardHost[1];
+
+  // We remove everything after the first ":" character so that our
+  // comparison logic ignores port numbers.
+  suffix = suffix.split(":")[0];
+  host = host.split(":")[0];
+
   if (host.lastIndexOf(prefix, 0) >= 0 &&
       host.indexOf(suffix, -suffix.length) >= 0 &&
       host.length >= prefix.length + suffix.length) {

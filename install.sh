@@ -1168,7 +1168,7 @@ install_sandstorm_symlinks() {
 
   # Install tools.
   ln -sfT $PWD/sandstorm /usr/local/bin/sandstorm
-  ./sandstorm devtools
+  ln -sfT $PWD/sandstorm /usr/local/bin/spk
 }
 
 ask_about_starting_at_boot() {
@@ -1584,9 +1584,15 @@ sandcats_configure_https() {
   # adjusts the hostname, the Sandstorm code can easily figure out to
   # not use these certificates without having to parse the actual
   # X.509 certificate data.
-  local HTTPS_CONFIG_DIR="var/sandcats/https/$SS_HOSTNAME"
+  local HTTPS_BASE_DIR="var/sandcats/https"
+  local HTTPS_CONFIG_DIR="$HTTPS_BASE_DIR/$SS_HOSTNAME"
   mkdir -p -m 0700 "$HTTPS_CONFIG_DIR"
   chmod 0700 "$HTTPS_CONFIG_DIR"
+
+  # Make this readable by Sandstorm.
+  if [ "yes" = "$CURRENTLY_UID_ZERO" ] ; then
+    chown -R "$SERVER_USER":"$SERVER_USER" "$HTTPS_BASE_DIR"
+  fi
 
   # Create a certificate signing request and corresponding key.
   #
@@ -1604,6 +1610,9 @@ sandcats_configure_https() {
     -keyout "$HTTPS_CONFIG_DIR"/0 `# Store the resulting RSA private key in 0` \
     -out "$HTTPS_CONFIG_DIR"/0.csr `# Store the resulting certificate in 0.pub` \
     2>/dev/null `# Silence the progress output.`
+
+  chmod 0600 "$HTTPS_CONFIG_DIR"/0
+  chmod 0600 "$HTTPS_CONFIG_DIR"/0.csr
 
   echo "Requesting certificate (BE PATIENT)..."
   # Note that the "LOG_PATH" is a machine-readable JSON file that the
@@ -1628,6 +1637,11 @@ sandcats_configure_https() {
       -H 'X-Sand: cats' \
       --cert var/sandcats/id_rsa.private_combined \
       "${SANDCATS_API_BASE}/getcertificate")
+
+  chmod 0600 "$LOG_PATH"
+
+  # Make sure the Sandstorm service can read these files.
+  chown "$SERVER_USER":"$SERVER_USER" "$HTTPS_CONFIG_DIR/"*
 
   if [ "200" = "$HTTP_STATUS" ]
   then

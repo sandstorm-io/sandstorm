@@ -1590,7 +1590,7 @@ public:
     req.setOwner(owner);
     req.setRequirements(requirements);
     return req.send().then([context](auto args) mutable {
-      context.getResults().setSturdyRef(args.getToken());
+      return context.getResults().setSturdyRef(args.getToken());
     });
   }
 
@@ -1623,7 +1623,7 @@ public:
       req.setOwner(owner);
       // TODO(someday): Set requirements. This will require membranes to work properly.
       return req.send().then([context](auto response) mutable {
-        context.getResults().setSturdyRef(response.getToken());
+        return context.getResults().setSturdyRef(response.getToken());
       });
      });
   }
@@ -1684,12 +1684,12 @@ public:
 
     kj::Promise<void> cancel(CancelContext context) override {
       cancel();
-      return ongoingNotification.cancelRequest().send().then([](auto args) {});
+      return ongoingNotification.cancelRequest().send().then([](auto args) { return; });
     }
 
     kj::Promise<void> save(SaveContext context) override {
       return wakelockSet.save(ongoingNotification).then([context] (auto args) mutable {
-        context.getResults().setSturdyRef(args.getToken());
+        return context.getResults().setSturdyRef(args.getToken());
       });
     }
   private:
@@ -1773,7 +1773,7 @@ public:
     grainOwner.setGrainId(grainId);
     grainOwner.setSaveLabel(args.getLabel());
     return req.send().then([this, context](auto args) mutable {
-      context.getResults().setToken(args.getSturdyRef());
+      return context.getResults().setToken(args.getSturdyRef());
     });
   }
 
@@ -1782,14 +1782,14 @@ public:
     req.setToken(context.getParams().getToken());
     req.setRequiredPermissions(context.getParams().getRequiredPermissions());
     return req.send().then([context](auto args) mutable {
-      context.getResults().setCap(args.getCap());
+      return context.getResults().setCap(args.getCap());
     });
   }
 
   kj::Promise<void> drop(DropContext context) override {
     auto req = sandstormCore.dropRequest();
     req.setToken(context.getParams().getToken());
-    return req.send().then([](auto args) {});
+    return req.send().then([](auto args) { return; });
   }
 
 //  kj::Promise<void> deleted(DeletedContext context) override {
@@ -1843,6 +1843,7 @@ public:
       return req.send().then([this, context](auto args) mutable {
         SANDSTORM_LOG("Grain has enabled backgrounding.");
         context.getResults().setHandle(kj::heap<WakelockHandle>(args.getSturdyRef(), *this));
+        return;
       });
     });
   }
@@ -1853,7 +1854,7 @@ private:
     req.setToken(sturdyRef);
     // TODO(someday): Handle failures for drop? Currently, if the the frontend never drops the
     // notification or calls cancel on it, then this handle will essentially leak.
-    tasks.add(req.send().then([](auto args) {}));
+    tasks.add(req.send().then([](auto args) { return; }));
   }
 
   void taskFailed(kj::Exception&& exception) override {
@@ -1957,7 +1958,7 @@ public:
         auto req = mainView.restoreRequest();
         req.setObjectId(objectId.getAppRef());
         return req.send().then([this, params, context](auto args) mutable {
-          context.getResults().setCap(kj::heap<SaveWrapper>(
+          return context.getResults().setCap(kj::heap<SaveWrapper>(
             args.getCap().template castAs<AppPersistent<>>(), params.getRequirements(), params.getParentToken(), sandstormCore));
         });
       }
@@ -2096,7 +2097,7 @@ private:
         }
         req.adoptData(kj::mv(orphan));
 
-        tasks.add(req.send().then([](auto) {}));
+        tasks.add(req.send().then([](auto) { return; }));
 
         if (done) break;
       }

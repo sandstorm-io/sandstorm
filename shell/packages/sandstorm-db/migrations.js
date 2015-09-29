@@ -173,6 +173,24 @@ function useLocalizedTextInUserActions() {
   });
 }
 
+function verifyAllPgpSignatures() {
+  Packages.find({}).forEach(function (pkg) {
+    try {
+      console.log("checking PGP signature for package:", pkg._id);
+      var info = waitPromise(sandstormBackend.tryGetPackage(pkg._id));
+      if (info.authorPgpKeyFingerprint) {
+        console.log("  " + info.authorPgpKeyFingerprint);
+        Packages.update(pkg._id,
+            {$set: {authorPgpKeyFingerprint: info.authorPgpKeyFingerprint}});
+      } else {
+        console.log("  no signature");
+      }
+    } catch (err) {
+      console.error(err.stack);
+    }
+  });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -186,6 +204,7 @@ var MIGRATIONS = [
   assignPlans,
   removeKeyrings,
   useLocalizedTextInUserActions,
+  verifyAllPgpSignatures,
 ];
 
 function migrateToLatest() {

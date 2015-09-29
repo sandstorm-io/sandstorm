@@ -223,10 +223,15 @@ function monkeypatchHttpAndHttps() {
       // Calculate re-key time.
       //
       // - If the cert we want to switch to is not valid yet, then we
-      //   re-key at its notBefore time.
+      //   re-key at its notBefore. If there is overlapping validity,
+      //   then actualy re-key at its notBefore + 15 minutes to
+      //   account for possible clock skew.
       //
       // - If the cert we want to switch to *is* already valid, then
-      //   we re-key at the notAfter time of our current cert.
+      //   we re-key at the notAfter time of our current cert. If
+      //   there is overlapping validity, then we actually re-key at
+      //   the notAfter time minus 15 minutes to account for possible
+      //   clock skew.
       //
       // - If there is no cert we want to switch to, then the
       //   nextRekeyTime is null.
@@ -234,10 +239,26 @@ function monkeypatchHttpAndHttps() {
 
       if (validCertificates.length >= 2) {
         var secondBest = validCertificates[1];
+        var fiftenMinutesInMilliseconds = 1000 * 60 * 15;
         if (now < secondBest.notBefore) {
-          result.nextRekeyTime = secondBest.notBefore;
+          var nextRekeyTime = secondBest.notBefore;
+          // Maybe we can re-key a little later, just in case our
+          // clocks are wrong.
+          var alternateRekeyTime = secondBest.notBefore + fiftenMinutesInMilliseconds;
+          if (validCertificates[0].notAfter > alternateRekeyTime) {
+            nextRekeyTime = alternateRekeyTime;
+          }
+          result.nextRekeyTime = nextRekeyTime;
         } else {
-          result.nextRekeyTime = validCertificates[0].notAfter;
+          var nextRekeyTime = validCertificates[0].notAfter;
+          // Maybe we can re-key a little sooner, just in case our clocks
+          // are wrong.
+          var alternateRekeyTime = nextRekeyTime - fiftenMinutesInMilliseconds;
+          if ((now < alternateRekeyTime) &&
+              (alternateRekeyTime > validCertificates[1].notBefore)) {
+            nextRekeyTime = alternateRekeyTime;
+          }
+          result.nextRekeyTime = nextRekeyTime;
         }
 
         console.log("Will switch to", validCertificates[1].keyFilename,

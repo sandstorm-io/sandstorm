@@ -1660,7 +1660,7 @@ private:
       }
     }
 
-    if (gpg.waitForExit() != 0) {
+    if (gpg.waitForExitOrSignal() != 0) {
       return validationError(kj::str(
           "SPK PGP signature check validation failed. GPG output follows.\n",
           kj::implicitCast<kj::ArrayPtr<const char>>(message)));

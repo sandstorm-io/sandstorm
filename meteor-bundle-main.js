@@ -48,6 +48,18 @@ function monkeypatchHttpAndHttps() {
   // in pre-meteor.js we sometimes need to bind HTTP sockets.
   http.createServerForSandstorm = http.createServer;
   var fakeHttpCreateServer = function(requestListener) {
+    function makeHttpsDir(hostname) {
+      var httpsBasePath = '/var/sandcats/https';
+      if (! fs.existsSync(httpsBasePath)) {
+        fs.mkdirSync(httpsBasePath, 0700);
+      }
+      var hostnameDir = httpsBasePath + '/' + hostname;
+      if (! fs.existsSync(hostnameDir)) {
+        fs.mkdirSync(hostnameDir, 0700);
+      }
+      return hostnameDir;
+    };
+
     function getNonSniKey() {
       // Call this function to get a 'ca', 'cert', 'key' for browsers
       // that don't support a HTTPS feature called Server Name
@@ -55,10 +67,7 @@ function monkeypatchHttpAndHttps() {
 
       // If we're lucky, we already have the files.
       var hostname = 'for-clients-without-sni.sandstorm-requires-sni.invalid';
-      var basePath = '/var/sandcats/https/' + hostname;
-      if (! fs.existsSync(basePath)) {
-        fs.mkdirSync(basePath, 0700);
-      }
+      var basePath = makeHttpsDir(hostname);
       var keyBasename = "0.key";
       var certBasename = "0.crt";
       var keyFilename = basePath + "/" + keyBasename;
@@ -121,8 +130,7 @@ function monkeypatchHttpAndHttps() {
       // function again.
       //
       // If nextRekeyTime is null, it means we have only one key.
-      var basePath = '/var/sandcats/https/' + (
-        url.parse(process.env.ROOT_URL).hostname);
+      var basePath = makeHttpsDir(url.parse(process.env.ROOT_URL).hostname);
       var files = fs.readdirSync(basePath);
       // The key files in this directory are named 0 1 2 3 etc., and
       // metadata about the key is available in e.g. 0.csr. So find

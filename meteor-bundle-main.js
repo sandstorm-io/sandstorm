@@ -66,7 +66,7 @@ function monkeypatchHttpAndHttps() {
       // Indication ("SNI").
 
       // If we're lucky, we already have the files.
-      var hostname = 'for-clients-without-sni.sandstorm-requires-sni.invalid';
+      var hostname = 'client-does-not-support-sni.sandstorm-requires-sni.invalid';
       var basePath = makeHttpsDir(hostname);
       var keyBasename = "0.key";
       var certBasename = "0.crt";

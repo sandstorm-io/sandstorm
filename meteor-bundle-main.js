@@ -48,6 +48,64 @@ function monkeypatchHttpAndHttps() {
   // in pre-meteor.js we sometimes need to bind HTTP sockets.
   http.createServerForSandstorm = http.createServer;
   var fakeHttpCreateServer = function(requestListener) {
+    function getNonSniKey() {
+      // Call this function to get a 'ca', 'cert', 'key' for browsers
+      // that don't support a HTTPS feature called Server Name
+      // Indication ("SNI").
+
+      // If we're lucky, we already have the files.
+      var hostname = 'for-clients-without-sni.sandstorm-requires-sni.invalid';
+      var basePath = '/var/sandcats/https/' + hostname;
+      if (! fs.existsSync(basePath)) {
+        fs.mkdirSync(basePath, 0700);
+      }
+      var keyBasename = "0.key";
+      var certBasename = "0.crt";
+      var keyFilename = basePath + "/" + keyBasename;
+      var certFilename = basePath + "/" + certBasename;
+      var files = fs.readdirSync(basePath);
+      if ((files.indexOf(keyBasename) == -1) ||
+          (files.indexOf(certBasename) == -1)) {
+        // Otherwise, we generate them synchronously. This could slow down the
+        // first startup of a HTTPS-enabled Sandstorm.
+        console.log("Generating default HTTPS key for use with non-SNI clients.");
+
+        // Generate 2048-bit key.
+        var keys = forge.pki.rsa.generateKeyPair({bits: 2048});
+        var keyAsText = forge.pki.privateKeyToPem(keys.privateKey);
+        fs.writeFileSync(keyFilename, keyAsText, "utf-8");
+
+        // Generate certificate.
+        var cert = forge.pki.createCertificate();
+        cert.publicKey = keys.publicKey;
+        cert.serialNumber = '01';
+        cert.validity.notBefore = new Date("2015-09-01T00:00:00Z");
+        cert.validity.notAfter = new Date("2025-09-01T00:00:00Z");
+        var attribs = [{
+          name: 'commonName',
+          value: hostname
+        }];
+        cert.setSubject(attribs);
+        cert.setIssuer(attribs);
+
+        // Sign it with the same key.
+        cert.sign(keys.privateKey);
+
+        // Save it to disk.
+        var certAsText = forge.pki.certificateToPem(cert);
+        fs.writeFileSync(certFilename, certAsText, "utf-8");
+        console.log("Non-SNI key generation done.");
+      }
+
+      var keyAsText = fs.readFileSync(keyFilename, "utf-8");
+      var certAsText = fs.readFileSync(certFilename, "utf-8");
+      return {
+        ca: [],
+        key: keyAsText,
+        cert: certAsText
+      };
+    };
+
     function getCurrentSandcatsKeyAndNextRekeyTime() {
       // Call this function to get up-to-date sandcats https key
       // information.
@@ -201,23 +259,7 @@ function monkeypatchHttpAndHttps() {
       // certificate.
       global.sandcats = {};
       global.sandcats.rekey = function () {
-        // If rekey() is run, but there is no existing key, it means
-        // there is also no usable SNICallback function. That means
-        // that we have no way to switch to the new key while
-        // Sandstorm is running. Instead, stop the process (and let
-        // auto-restart bring us back up) in order to be able to pick
-        // the new key.
-        //
-        // This should only happen for users who enable HTTPS_PORT= in
-        // a Sandstorm install for the first time while they are
-        // downloading keys.
-        var hadKeysBefore = !! sandcatsState.key;
         sandcatsState = getCurrentSandcatsKeyAndNextRekeyTime();
-        var haveKeysAfter = !! sandcatsState.key;
-        if (!hadKeysBefore && haveKeysAfter) {
-          console.log("Stopping the Sandstorm shell, allowing auto-restart to bring HTTPS up.");
-          process.exit(0);
-        }
       };
       global.sandcats.shouldGetAnotherCertificate = function() {
         // Get a new certificate if our current cert (a) does not
@@ -245,35 +287,8 @@ function monkeypatchHttpAndHttps() {
       // sometimes, and we never want that on initial startup.
       sandcatsState = getCurrentSandcatsKeyAndNextRekeyTime();
 
-      if (! sandcatsState.key) {
-        // Our ability to serve HTTPS in this process is doomed.
-        //
-        // Return a fake HTTP Server object that does nothing
-        // ever. Allow the cert renewal process in the background to
-        // cause us to restart.
-        console.error("NOTE: Refusing to bind to HTTPS socket because we have no HTTPS " +
-                      "certificates. Your Sandstorm server will not work until it " +
-                      "fetches certificates and auto-restarts.");
-
-        // Bind Meteor's HTTP server to /dev/null (rather, a socket
-        // that where no events will occur -- can't use /dev/null
-        // because it's not a socket). To do that, monkey-patch
-        // .listen() accordingly.
-
-        var httpServer = http.createServerForSandstorm(requestListener);
-        var realHttpListen = http.Server.prototype.listen;
-        httpServer.listen = function (port, host, cb) {
-          realHttpListen.call(this, "/tmp/private-sandstorm-dummy-socket", cb);
-        }
-        return httpServer;
-      }
-
       // Configure options for httpsServer.createServer().
-      var httpsOptions = {
-        ca: sandcatsState.ca,
-        key: sandcatsState.key,
-        cert: sandcatsState.cert
-      };
+      var httpsOptions = getNonSniKey();
 
       // The SNICallback option is a function that nodejs will call on
       // every inbound request with the inbound hostname. We get to
@@ -326,7 +341,23 @@ function monkeypatchHttpAndHttps() {
       // When Meteor calls .listen() we bind to FD #3 and speak HTTPS.
       var oldListen = https.Server.prototype.listen;
       httpsServer.listen = function (port, host, cb) {
-        oldListen.call(this, {fd: 3}, cb);
+        var server = this;
+        // If we have a key ready, then we listen
+        // immediately. Otherwise retry loop.
+        var listenIfKey = function() {
+          var shouldListen = !! sandcatsState.key;
+          if (shouldListen) {
+            oldListen.call(server, {fd: 3}, cb);
+          }
+          return shouldListen;
+        };
+        var attemptToListen = function() {
+          if (! listenIfKey()) {
+            console.log("No key, so can't listen for HTTPS yet. Will retry in three seconds.");
+            setTimeout(attemptToListen, 3000);
+          }
+        }
+        attemptToListen();
       }
       return httpsServer;
     } else {

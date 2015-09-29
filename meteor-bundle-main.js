@@ -152,7 +152,8 @@ function monkeypatchHttpAndHttps() {
       var result = {
         ca: validCertificates[0].ca,
         key: fs.readFileSync(validCertificates[0].keyFilename, 'utf-8'),
-        cert: validCertificates[0].cert
+        cert: validCertificates[0].cert,
+        notAfter: validCertificates[0].notAfter
       };
 
       // Calculate re-key time.
@@ -218,8 +219,25 @@ function monkeypatchHttpAndHttps() {
           process.exit(0);
         }
       };
-      global.sandcats.hasNextRekeyTime = function() {
-        return !! sandcatsState.nextRekeyTime;
+      global.sandcats.shouldGetAnotherCertificate = function() {
+        // Get a new certificate if our current cert (a) does not
+        // exist, or (b) has fewer than three days left.
+        if (! sandcatsState.key) {
+          console.log("shouldGetAnotherCertificate: There is no key, so yes get a new one.");
+          return true;
+        }
+
+        var threeDaysInMilliseconds = 1000 * 60 * 60 * 24 * 3;
+        var now = new Date();
+        var expiry = sandcatsState.notAfter;
+        var timeLeft = expiry - now.getTime();
+
+        if (timeLeft < threeDaysInMilliseconds) {
+          return true;
+        } else {
+          console.log("Since", now, "is more than three days away from",
+                      new Date(expiry), "not renewing HTTPS cert yet.");
+        }
       }
 
       // Set up initial keys. We do this directly, skipping the

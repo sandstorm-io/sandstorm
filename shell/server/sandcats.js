@@ -228,14 +228,8 @@ Sandcats.renewHttpsCertificateIfNeeded = function() {
     }, errorCallback, responseCallback);
   }
 
-  // We only want to fetch a new certificate if such an action is
-  // needed. The strategy is that if we're on a certificate right now,
-  // and there is no nextRekeyTime available, then we should get a
-  // fresh cert.
-  if (global.sandcats.hasNextRekeyTime()) {
-    return;
-  } else {
-    console.log("renewHttpsCertificateIfNeeded: Happily choosing to renew certificate because we found no rekey time.");
+  if (global.sandcats.shouldGetAnotherCertificate()) {
+    console.log("renewHttpsCertificateIfNeeded: Happily choosing to renew certificate.");
     return renewHttpsCertificate();
   }
 }

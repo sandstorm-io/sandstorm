@@ -26,4 +26,5 @@ sandstorm-permissions
 sandstorm-ui-topbar
 sandstorm-ui-applist
 sandstorm-ui-grainlist
+meteor-node-forge
 fourseven:scss

@@ -66,7 +66,19 @@ You may also need to include `notices` if your app is required to display any th
 
 You may select the market categories to which your app belongs. You may select multiple, but you may be asked to make changes if the market moderators feel they are inappropriate.
 
-Currently, the following categories are accepted: productivity, communications, social, webPublishing, office, developerTools, science, graphics, media, games, and other.
+Currently, the following categories are accepted:
+
+* `productivity` is for apps you use to get organized, not the apps you use to produce content. (Examples: Note-taking apps, kanban boards, project management.)
+* `communications` is for apps you use to directly communicate with others. (Examples: Chat apps, email apps.)
+* `social` is for apps used for social networking, where content is shared and networks of people are managed.
+* `webPublishing` is for apps used for publishing websites and blogs.
+* `office` is for apps which are tools commonly used for office. (Examples: Word processors, spreadsheets, presentation apps.)
+* `developerTools` is for apps which are tools for software development. (Examples: Source control, test automation, compilers, IDEs.)
+* `science` is for apps used for scientific and academic pursuits. (Examples: Data gathering, data processing, paper publishing.)
+* `graphics` is for apps used to create graphics and artwork.
+* `media` is for apps used to consume media such as music, movies, and photos.
+* `games` is for apps that let you play games by yourself or with others.
+* `other` is for apps which fit into no other category. But you may wish to suggest we add a category if none currently applies.
 
 #### author
 

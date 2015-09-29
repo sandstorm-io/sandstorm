@@ -66,9 +66,9 @@ function monkeypatchHttpAndHttps() {
       var files = fs.readdirSync(basePath);
       if ((files.indexOf(keyBasename) == -1) ||
           (files.indexOf(certBasename) == -1)) {
-        // Otherwise, we generate them synchronously. This could slow down the
-        // first startup of a HTTPS-enabled Sandstorm.
-        console.log("Generating default HTTPS key for use with non-SNI clients.");
+        // Generate them synchronously. This could slow down the first
+        // start of a HTTPS-enabled Sandstorm.
+        console.log("Generating default HTTPS key for use with non-SNI clients. Expect a 45 second delay.");
 
         // Generate 2048-bit key.
         var keys = forge.pki.rsa.generateKeyPair({bits: 2048});
@@ -120,9 +120,7 @@ function monkeypatchHttpAndHttps() {
       // and if the time is greater than nextRekeyTime, then call this
       // function again.
       //
-      // If nextRekeyTime is null, then the caller should not bother
-      // calling this function, since it means this function has no
-      // knowledge of other keys that will become valid.
+      // If nextRekeyTime is null, it means we have only one key.
       var basePath = '/var/sandcats/https/' + (
         url.parse(process.env.ROOT_URL).hostname);
       var files = fs.readdirSync(basePath);

@@ -1606,7 +1606,7 @@ sandcats_configure_https() {
     -nodes `# no DES -- that is, do not encrypt the key at rest.` \
     -newkey rsa:4096 `# Create a new RSA key of length 4096 bits.` \
     `# Sandcats just needs the CN= (common name) in the request.` \
-    -subj "/CN=$SS_HOSTNAME/" \
+    -subj "/CN=*.${SS_HOSTNAME}/" \
     -keyout "$HTTPS_CONFIG_DIR"/0 `# Store the resulting RSA private key in 0` \
     -out "$HTTPS_CONFIG_DIR"/0.csr `# Store the resulting certificate in 0.pub` \
     2>/dev/null `# Silence the progress output.`

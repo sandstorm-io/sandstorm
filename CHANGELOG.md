@@ -1,3 +1,6 @@
+### v0.117 (2015-09-30)
+- Self-hosters using Sandcats now get automatic free HTTPS certificates. This is normally set up automatically during install. If you first installed before this release, [see the docs to find out how to enable HTTPS](https://docs.sandstorm.io/en/latest/administering/ssl/).
+
 ### v0.116 (2015-09-29)
 - (Probably) fix very rare bug in which front-end stops talking to back-end causing grains to fail to load until the next front-end restart. The bug was in node-capnp's use of libuv.
 - Check PGP signatures on packages on install and store them in the database (not yet surfaced in UI).

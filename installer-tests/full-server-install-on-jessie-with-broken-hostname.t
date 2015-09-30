@@ -34,6 +34,7 @@ What *.sandcats-dev.sandstorm.io subdomain would you like? []$[type]none
 URL users will enter in browser: [http://nonexistentbroken:6080]$[type]
 Wildcard host: [*.nonexistentbroken:6080]$[type]
 $[veryslow]Downloading: https://dl.sandstorm.io
+$[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started. PID =
 Visit this link to configure it:
   http://

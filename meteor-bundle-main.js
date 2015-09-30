@@ -317,6 +317,18 @@ function monkeypatchHttpAndHttps() {
       // Configure options for httpsServer.createServer().
       var httpsOptions = getNonSniKey();
 
+      // Set default ciphers & tell HTTPS clients we really like our ciphers.
+      //
+      // This ciphers list is from the nginx configuration for
+      // oasis.sandstorm.io.
+      var ciphers = ('ECDH+AESGCM:DH+AESGCM:ECDH+AES256:DH+AES256:' +
+                     'ECDH+AES128:DH+AES:ECDH+3DES:DH+3DES:RSA+AESGCM:' +
+                     'RSA+AES:RSA+3DES:!aNULL:!MD5:!DSS');
+      var honorCipherOrder = true;
+
+      httpsOptions.ciphers = ciphers;
+      httpsOptions.honorCipherOrder = honorCipherOrder;
+
       // The SNICallback option is a function that nodejs will call on
       // every inbound request with the inbound hostname. We get to
       // return an object of ca & key & cert to use.
@@ -346,6 +358,8 @@ function monkeypatchHttpAndHttps() {
         }
 
         return crypto.createCredentials({
+          ciphers: ciphers,
+          honorCipherOrder: honorCipherOrder,
           ca: sandcatsState.ca,
           key: sandcatsState.key,
           cert: sandcatsState.cert

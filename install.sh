@@ -163,7 +163,7 @@ DEFAULT_UPDATE_CHANNEL="dev"
 DEFAULT_SERVER_USER="sandstorm"
 SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-sandcats.io}"
 ALLOW_DEV_ACCOUNTS="false"
-SANDCATS_GETCERTIFICATE="no"
+SANDCATS_GETCERTIFICATE="${OVERRIDE_SANDCATS_GETCERTIFICATE:-yes}"
 
 # Define functions for each stage of the install process.
 
@@ -175,7 +175,7 @@ usage() {
   echo '' >&2
   echo 'If -d is specified, the auto-installs with defaults suitable for app development.' >&2
   echo 'If -e is specified, default to listening on an external interface, not merely loopback.' >&2
-  echo 'If -s is specified, (EXPERIMENTAL) request a HTTPS certificate.' >&2
+  echo 'If -i is specified, default to (i)nsecure mode where we do not request a HTTPS certificate.' >&2
   echo 'If -u is specified, default to avoiding root priviliges. Note that the dev tools only work if the server as root privileges.' >&2
   exit 1
 }
@@ -186,11 +186,42 @@ detect_current_uid() {
   fi
 }
 
+detect_default_port() {
+  # If port 80 and 443 are both available, then let's use
+  # DEFAULT_PORT=80. This value is what the Sandstorm installer will
+  # write to PORT= in the Sandstorm configuration file.
+  #
+  # If either 80 or 443 is not available, then we set
+  # SANDCATS_GETCERTIFICATE to no.
+  #
+  # From the rest of the installer's perspective, if
+  # SANDCATS_GETCERTIFICATE is yes, it is safe to bind to port 443.
+  #
+  # There is a theoretical race condition here. I think that's
+  # life.
+  #
+  # This also means that if a user has port 443 taken but port 80
+  # available, we will use port 6080 as the default port. I think
+  # that's OK.
+  local PORT_80_AVAILABLE="no"
+  nc -z 0.0.0.0 80 || PORT_80_AVAILABLE="yes"
+
+  local PORT_443_AVAILABLE="no"
+  nc -z 0.0.0.0 443 || PORT_443_AVAILABLE="yes"
+
+  if [ "$PORT_443_AVAILABLE" == "yes" -a "$PORT_80_AVAILABLE" == "yes" ] ; then
+    PORT="80"
+  else
+    SANDCATS_GETCERTIFICATE="no"
+  fi
+}
+
+
 handle_args() {
   SCRIPT_NAME=$1
   shift
 
-  while getopts ":desu" opt; do
+  while getopts ":deiu" opt; do
     case $opt in
       d)
         USE_DEFAULTS="yes"
@@ -198,8 +229,8 @@ handle_args() {
       e)
         USE_EXTERNAL_INTERFACE="yes"
         ;;
-      s)
-        SANDCATS_GETCERTIFICATE="yes"
+      i)
+        SANDCATS_GETCERTIFICATE="no"
         ;;
       u)
         PREFER_ROOT=no
@@ -466,6 +497,9 @@ assert_dependencies() {
     # and if it is missing, bail out and tell the user they have to
     # install it.
     which openssl > /dev/null|| fail "Please install openssl(1). Sandstorm uses it for the Sandcats.io dynamic DNS service."
+    # To find out if port 80 and 443 are available, we need `nc` on
+    # the path.
+    which nc > /dev/null || fail "Please install nc(1). (Package may be called 'netcat-traditional' or 'netcat-openbsd'.)"
   fi
 
   which tar > /dev/null || fail "Please install tar(1)."
@@ -652,12 +686,15 @@ full_server_install() {
   fi
 
   if [ "yes" != "${ACCEPTED_FULL_SERVER_INSTALL:-}" ]; then
+    # If this is a Sandcats-y server, try to use port 80 and 443!
+    detect_default_port
+
     echo "We're going to:"
     echo ""
     echo "* Install Sandstorm in $DEFAULT_DIR_FOR_ROOT"
     echo "* Automatically keep Sandstorm up-to-date"
     if [ "yes" == "$SANDCATS_GETCERTIFICATE" ] ; then
-      echo "* (EXPERIMENTAL) Configure a HTTPS security certificate, if you use a subdomain of sandcats.io"
+      echo "* Configure auto-renewing HTTPS if you use a subdomain of sandcats.io"
     fi
     echo "* Create a service user ($DEFAULT_SERVER_USER) that owns Sandstorm's files"
     if [ "unknown" == "$INIT_SYSTEM" ]; then
@@ -695,6 +732,7 @@ full_server_install() {
                              ACCEPTED_FULL_SERVER_INSTALL=yes \
                              OVERRIDE_SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-}" \
                              OVERRIDE_SANDCATS_API_BASE="${OVERRIDE_SANDCATS_API_BASE:-}" \
+                             OVERRIDE_SANDCATS_GETCERTIFICATE="${SANDCATS_GETCERTIFICATE}" \
                              OVERRIDE_SANDCATS_CURL_PARAMS="${OVERRIDE_SANDCATS_CURL_PARAMS:-}"
       fi
 
@@ -772,7 +810,15 @@ configure_hostnames() {
     fi
   fi
 
+  # A typical server's DEFAULT_BASE_URL is its hostname plus port over HTTP.
   DEFAULT_BASE_URL="http://$SS_HOSTNAME:$PORT"
+
+  # If SANDCATS_HTTPS_SUCCESSFUL is true, then use a HTTPS URL.
+  if [ "$SANDCATS_HTTPS_SUCCESSFUL" = "yes" ]; then
+    DEFAULT_BASE_URL="https://$SS_HOSTNAME"
+    HTTPS_PORT=443
+  fi
+
   if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then
     # Do not prompt for BASE_URL configuration if Sandcats bringup
     # succeeded.
@@ -1011,6 +1057,9 @@ save_config() {
   writeConfig SERVER_USER PORT MONGO_PORT BIND_IP BASE_URL WILDCARD_HOST UPDATE_CHANNEL ALLOW_DEV_ACCOUNTS > sandstorm.conf
   if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then
     writeConfig SANDCATS_BASE_DOMAIN >> sandstorm.conf
+  fi
+  if [ "yes" = "$SANDCATS_HTTPS_SUCCESSFUL" ] ; then
+    writeConfig HTTPS_PORT >> sandstorm.conf
   fi
 
   echo
@@ -1294,16 +1343,28 @@ generate_admin_token() {
 }
 
 print_success() {
+  echo ""
   if [ "yes" = "$SANDSTORM_NEEDS_TO_BE_STARTED" ] ; then
     echo "Setup complete. To start your server now, run:"
     echo "  $DIR/sandstorm start"
-    echo "You should then configure the site at:"
+    echo "Once that's done, visit this link to configure it:"
   else
-    echo "Setup complete. You should configure the site at:"
+    echo -n "Your server is now online! "
+    if [ "${SANDCATS_HTTPS_SUCCESSFUL}" = "yes" ] ; then
+      echo "It should work immediately if you use Chrome."
+    fi
+    echo "Visit this link to configure it:"
   fi
+  echo ""
   echo "  ${BASE_URL:-(unknown; bad config)}/admin/settings/$ADMIN_TOKEN"
-  echo "WARNING: This token expires in 15 minutes."
-  echo "You can generate a new token by running 'sandstorm admin-token' from the command line"
+  if [ "${SANDCATS_HTTPS_SUCCESSFUL}" = "yes" ] ; then
+    echo ""
+    echo "(If your browser shows you an OCSP error, wait 10 minutes for it to auto-resolve"
+    echo "and try Chrome until then.)"
+  fi
+  echo ""
+  echo "NOTE: This URL expires in 15 minutes. You can generate a new setup URL by running"
+  echo "'sudo sandstorm admin-token' from the command line."
   echo
   echo "To learn how to control the server, run:"
   if [ "yes" = "$CURRENTLY_UID_ZERO" ] ; then
@@ -1606,7 +1667,7 @@ sandcats_configure_https() {
     -nodes `# no DES -- that is, do not encrypt the key at rest.` \
     -newkey rsa:4096 `# Create a new RSA key of length 4096 bits.` \
     `# Sandcats just needs the CN= (common name) in the request.` \
-    -subj "/CN=$SS_HOSTNAME/" \
+    -subj "/CN=*.${SS_HOSTNAME}/" \
     -keyout "$HTTPS_CONFIG_DIR"/0 `# Store the resulting RSA private key in 0` \
     -out "$HTTPS_CONFIG_DIR"/0.csr `# Store the resulting certificate in 0.pub` \
     2>/dev/null `# Silence the progress output.`
@@ -1654,6 +1715,35 @@ sandcats_configure_https() {
     # Express our sadness to the user, and proceed without HTTPS.
     error "Some part of HTTPS autoconfiguration failed. Log data available in $LOG_PATH"
     return
+  fi
+}
+
+wait_for_server_bind_to_https_if_needed() {
+  if [ "${SANDCATS_HTTPS_SUCCESSFUL}" != "yes" ] ; then
+    return
+  fi
+
+  # For sandcats HTTPS, we have to generate the initial non-SNI key before
+  # Sandstorm binds to port 443. So we let the user know it could be slow.
+  echo -n "Your server is coming online. Waiting up to 90 seconds..."
+  local ONLINE_YET="no"
+  for waited_n_seconds in $(seq 0 89); do
+    nc -z 0.0.0.0 443 && ONLINE_YET="yes"
+    if [ "$ONLINE_YET" == "yes" ] ; then
+      echo ''
+      break
+    fi
+    echo -n "."
+    sleep 1
+  done
+
+  # One last check before we bail out.
+  nc -z 0.0.0.0 443 && ONLINE_YET="yes"
+
+  if [ "$ONLINE_YET" == "yes" ]; then
+    return
+  else
+    fail "Your server never started listening."
   fi
 }
 
@@ -1746,6 +1836,7 @@ set_permissions
 install_sandstorm_symlinks
 ask_about_starting_at_boot
 configure_start_at_boot_if_desired
+wait_for_server_bind_to_https_if_needed
 print_success
 }
 

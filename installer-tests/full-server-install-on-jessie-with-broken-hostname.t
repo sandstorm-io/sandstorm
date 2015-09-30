@@ -9,7 +9,7 @@ $[slow]0
 $[run]sudo hostname nonexistentbroken ; hostname
 $[slow]nonexistentbroken
 $[exitcode]0
-$[run]CURL_USER_AGENT=testing OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k bash /vagrant/install.sh
+$[run]CURL_USER_AGENT=testing OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k bash /vagrant/install.sh -i
 $[slow]Sandstorm makes it easy to run web apps on your own server. You can have:
 
 1. A full server with automatic setup (press enter to accept this default)
@@ -34,8 +34,9 @@ What *.sandcats-dev.sandstorm.io subdomain would you like? []$[type]none
 URL users will enter in browser: [http://nonexistentbroken:6080]$[type]
 Wildcard host: [*.nonexistentbroken:6080]$[type]
 $[veryslow]Downloading: https://dl.sandstorm.io
+$[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started. PID =
-Setup complete. You should configure the site at:
+Visit this link to configure it:
   http://
 To learn how to control the server, run:
   sandstorm help

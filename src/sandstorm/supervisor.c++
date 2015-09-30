@@ -1589,7 +1589,7 @@ public:
     req.setParent(parentToken);
     req.setOwner(owner);
     req.setRequirements(requirements);
-    return req.send().then([context](auto args) mutable {
+    return req.send().then([context](auto args) mutable -> void {
       context.getResults().setSturdyRef(args.getToken());
     });
   }
@@ -1622,7 +1622,7 @@ public:
       req.getRef().setAppRef(response.getObjectId());
       req.setOwner(owner);
       // TODO(someday): Set requirements. This will require membranes to work properly.
-      return req.send().then([context](auto response) mutable {
+      return req.send().then([context](auto response) mutable -> void {
         context.getResults().setSturdyRef(response.getToken());
       });
      });
@@ -1684,11 +1684,11 @@ public:
 
     kj::Promise<void> cancel(CancelContext context) override {
       cancel();
-      return ongoingNotification.cancelRequest().send().then([](auto args) {});
+      return ongoingNotification.cancelRequest().send().then([](auto args) -> void {});
     }
 
     kj::Promise<void> save(SaveContext context) override {
-      return wakelockSet.save(ongoingNotification).then([context] (auto args) mutable {
+      return wakelockSet.save(ongoingNotification).then([context] (auto args) mutable -> void {
         context.getResults().setSturdyRef(args.getToken());
       });
     }
@@ -1772,7 +1772,7 @@ public:
     auto grainOwner = req.getSealFor().initGrain();
     grainOwner.setGrainId(grainId);
     grainOwner.setSaveLabel(args.getLabel());
-    return req.send().then([this, context](auto args) mutable {
+    return req.send().then([this, context](auto args) mutable -> void {
       context.getResults().setToken(args.getSturdyRef());
     });
   }
@@ -1781,7 +1781,7 @@ public:
     auto req = sandstormCore.restoreRequest();
     req.setToken(context.getParams().getToken());
     req.setRequiredPermissions(context.getParams().getRequiredPermissions());
-    return req.send().then([context](auto args) mutable {
+    return req.send().then([context](auto args) mutable -> void {
       context.getResults().setCap(args.getCap());
     });
   }
@@ -1789,7 +1789,7 @@ public:
   kj::Promise<void> drop(DropContext context) override {
     auto req = sandstormCore.dropRequest();
     req.setToken(context.getParams().getToken());
-    return req.send().then([](auto args) {});
+    return req.send().then([](auto args) -> void {});
   }
 
 //  kj::Promise<void> deleted(DeletedContext context) override {
@@ -1840,7 +1840,7 @@ public:
       auto grainOwner = req.getSealFor().initGrain();
       grainOwner.setGrainId(grainId);
       grainOwner.getSaveLabel().setDefaultText("ongoing notification handle");
-      return req.send().then([this, context](auto args) mutable {
+      return req.send().then([this, context](auto args) mutable -> void {
         SANDSTORM_LOG("Grain has enabled backgrounding.");
         context.getResults().setHandle(kj::heap<WakelockHandle>(args.getSturdyRef(), *this));
       });
@@ -1853,7 +1853,7 @@ private:
     req.setToken(sturdyRef);
     // TODO(someday): Handle failures for drop? Currently, if the the frontend never drops the
     // notification or calls cancel on it, then this handle will essentially leak.
-    tasks.add(req.send().then([](auto args) {}));
+    tasks.add(req.send().then([](auto args) -> void {}));
   }
 
   void taskFailed(kj::Exception&& exception) override {
@@ -1956,7 +1956,7 @@ public:
       case SupervisorObjectId<>::APP_REF: {
         auto req = mainView.restoreRequest();
         req.setObjectId(objectId.getAppRef());
-        return req.send().then([this, params, context](auto args) mutable {
+        return req.send().then([this, params, context](auto args) mutable -> void {
           context.getResults().setCap(kj::heap<SaveWrapper>(
             args.getCap().template castAs<AppPersistent<>>(), params.getRequirements(), params.getParentToken(), sandstormCore));
         });
@@ -2096,7 +2096,7 @@ private:
         }
         req.adoptData(kj::mv(orphan));
 
-        tasks.add(req.send().then([](auto) {}));
+        tasks.add(req.send().then([](auto) -> void {}));
 
         if (done) break;
       }

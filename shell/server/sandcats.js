@@ -143,7 +143,8 @@ Sandcats.storeNewKeyAndCsr = function(hostname, basePath) {
   var keyFilename = basePath + "/" + keyNumber;
   var csrFilename = keyFilename + ".csr";
   var responseFilename = keyFilename + ".response-json";
-  var keyAndCsr = generateKeyAndCsr(hostname);
+  var withWildcard = '*.' + hostname;
+  var keyAndCsr = generateKeyAndCsr(withWildcard);
   fs.writeFileSync(keyFilename, keyAndCsr.privateKeyAsPem,
                    {'mode': 0400});
   fs.writeFileSync(csrFilename, keyAndCsr.csrAsPem);

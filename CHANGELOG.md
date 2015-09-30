@@ -1,3 +1,7 @@
+### v0.116 (2015-09-29)
+- (Probably) fix very rare bug in which front-end stops talking to back-end causing grains to fail to load until the next front-end restart. The bug was in node-capnp's use of libuv.
+- Check PGP signatures on packages on install and store them in the database (not yet surfaced in UI).
+
 ### v0.115 (2015-09-24)
 - Attempt to work around very rare problem where front-end inexplicably stops talking to back-end by monitoring and recreating the connection.
 - Oasis: Fix "download backup", which broke due to unexpected interaction between security hardening to the sandbox in which zip/unzip runs and security settings on Oasis.

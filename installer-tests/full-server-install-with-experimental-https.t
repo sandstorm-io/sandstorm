@@ -6,7 +6,7 @@ Cleanup: uninstall_sandstorm(parsed_headers['vagrant-box'])
 
 $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]0
-$[run]sudo CURL_USER_AGENT=testing OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k bash /vagrant/install.sh -s
+$[run]sudo CURL_USER_AGENT=testing OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k bash /vagrant/install.sh
 $[slow]Sandstorm makes it easy to run web apps on your own server. You can have:
 
 1. A full server with automatic setup (press enter to accept this default)
@@ -17,7 +17,7 @@ We're going to:
 
 * Install Sandstorm in /opt/sandstorm
 * Automatically keep Sandstorm up-to-date
-* (EXPERIMENTAL) Configure a HTTPS security certificate, if you use a subdomain of sandcats.io
+* Configure auto-renewing HTTPS
 * Create a service user (sandstorm) that owns Sandstorm's files
 * Configure Sandstorm to start on System boot (with sysvinit)
 * Configure your system to enable unprivileged user namespaces, via sysctl.
@@ -36,9 +36,11 @@ $[slow]Now we're going to auto-configure HTTPS for your server.
 $[veryslow]Requesting certificate
 $[veryslow]Successfully auto-configured HTTPS
 $[veryslow]Downloading: https://dl.sandstorm.io
+$[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started. PID =
-Setup complete. You should configure the site at:
-  http://
+Your server is coming online
+$[veryslow]Visit this link to configure it:
+  https://
 To learn how to control the server, run:
   sandstorm help
 $[exitcode]0

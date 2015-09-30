@@ -12,7 +12,7 @@ Config written to /opt/sandstorm/sandstorm.conf.
 Finding latest build for dev channel...
 $[veryslow]Downloading: https://dl.sandstorm.io/
 $[veryslow]Sandstorm started.
-Setup complete. You should configure the site at:
+Visit this link to configure it:
   http://local.sandstorm.io:6080/admin/
 To learn how to control the server, run:
   sandstorm help

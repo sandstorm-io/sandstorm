@@ -1347,7 +1347,7 @@ print_success() {
   if [ "yes" = "$SANDSTORM_NEEDS_TO_BE_STARTED" ] ; then
     echo "Setup complete. To start your server now, run:"
     echo "  $DIR/sandstorm start"
-    echo "You should then configure the site at:"
+    echo "Once that's done, visit this link to configure it:"
   else
     echo -n "Your server is now online! "
     if [ "${SANDCATS_HTTPS_SUCCESSFUL}" = "yes" ] ; then

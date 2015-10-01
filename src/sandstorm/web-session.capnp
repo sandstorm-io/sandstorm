@@ -54,11 +54,15 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     # TODO(soon):  Support utility factor (e.g. ";q=0.7").
   }
 
-  get @0 (path :Text, context :Context) -> Response;
+  get @0 (path :Text, context :Context, ignoreBody :Bool) -> Response;
+  # GET or HEAD request.
+  #
+  # If `ignoreBody` is true, then the caller intends to ignore any content body returned. The
+  # caller may choose to return an empty body. (This is used e.g. for HEAD requests.)
+
   post @1 (path :Text, content :PostContent, context :Context) -> Response;
   put @3 (path :Text, content :PutContent, context :Context) -> Response;
   delete @4 (path :Text, context :Context) -> Response;
-  head @17 (path :Text, context :Context) -> Response;
 
   postStreaming @5 (path :Text, mimeType :Text, context :Context, encoding :Text)
       -> (stream :RequestStream);

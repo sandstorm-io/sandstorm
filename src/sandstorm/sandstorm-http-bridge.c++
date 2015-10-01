@@ -876,13 +876,8 @@ public:
 
   kj::Promise<void> get(GetContext context) override {
     GetParams::Reader params = context.getParams();
-    kj::String httpRequest = makeHeaders("GET", params.getPath(), params.getContext());
-    return sendRequest(toBytes(httpRequest), context);
-  }
-
-  kj::Promise<void> head(HeadContext context) override {
-    HeadParams::Reader params = context.getParams();
-    kj::String httpRequest = makeHeaders("HEAD", params.getPath(), params.getContext());
+    kj::String httpRequest = makeHeaders(
+        params.getIgnoreBody() ? "HEAD" : "GET", params.getPath(), params.getContext());
     return sendRequest(toBytes(httpRequest), context);
   }
 

@@ -1,4 +1,4 @@
-Title: Can install with root on Debian jessie, in full server mode
+Title: Can install even if hostname is misconfigured on Debian jessie, in full server mode
 Vagrant-Box: jessie
 Vagrant-Precondition-bash: ! -d $HOME/sandstorm
 Vagrant-Precondition-bash: ! -d /opt/sandstorm

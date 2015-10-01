@@ -186,7 +186,7 @@ detect_current_uid() {
   fi
 }
 
-detect_default_port() {
+disable_https_if_ports_unavailable() {
   # If port 80 and 443 are both available, then let's use
   # DEFAULT_PORT=80. This value is what the Sandstorm installer will
   # write to PORT= in the Sandstorm configuration file.
@@ -209,9 +209,7 @@ detect_default_port() {
   local PORT_443_AVAILABLE="no"
   nc -z 0.0.0.0 443 || PORT_443_AVAILABLE="yes"
 
-  if [ "$PORT_443_AVAILABLE" == "yes" -a "$PORT_80_AVAILABLE" == "yes" ] ; then
-    PORT="80"
-  else
+  if [ "$PORT_443_AVAILABLE" == "no" -o "$PORT_80_AVAILABLE" == "no" ] ; then
     SANDCATS_GETCERTIFICATE="no"
   fi
 }
@@ -686,8 +684,8 @@ full_server_install() {
   fi
 
   if [ "yes" != "${ACCEPTED_FULL_SERVER_INSTALL:-}" ]; then
-    # If this is a Sandcats-y server, try to use port 80 and 443!
-    detect_default_port
+    # Disable Sandcats HTTPS if ports 80 or 443 aren't available.
+    disable_https_if_ports_unavailable
 
     echo "We're going to:"
     echo ""
@@ -817,6 +815,7 @@ configure_hostnames() {
   if [ "$SANDCATS_HTTPS_SUCCESSFUL" = "yes" ]; then
     DEFAULT_BASE_URL="https://$SS_HOSTNAME"
     HTTPS_PORT=443
+    PORT=80
   fi
 
   if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then

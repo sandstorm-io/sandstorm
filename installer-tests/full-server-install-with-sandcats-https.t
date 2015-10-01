@@ -1,4 +1,4 @@
-Title: Can install with root on Debian jessie, in full server mode
+Title: Can enable sandcats HTTPS when installing in full server mode
 Vagrant-Box: jessie
 Vagrant-Precondition-bash: ! -d $HOME/sandstorm
 Vagrant-Precondition-bash: ! -d /opt/sandstorm
@@ -44,3 +44,7 @@ $[veryslow]Visit this link to configure it:
 To learn how to control the server, run:
   sandstorm help
 $[exitcode]0
+$[run]nc -z localhost 443 && echo yay
+$[slow]yay
+$[run]nc -z localhost 80 && echo yay
+$[slow]yay

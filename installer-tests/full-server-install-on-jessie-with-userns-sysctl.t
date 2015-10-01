@@ -41,3 +41,5 @@ $[veryslow]Visit this link to configure it:
 To learn how to control the server, run:
   sandstorm help
 $[exitcode]0
+$[run]nc -z localhost 6080 && echo yay
+$[slow]yay

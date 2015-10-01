@@ -30,18 +30,25 @@ Meteor.methods({
       name: String,
       handle: ValidHandle,
       pronoun: Match.OneOf("male", "female", "neutral", "robot"),
+      unverifiedEmail: Match.Optional(String)
     });
 
     if (!this.userId) {
       throw new Meteor.Error(403, "not logged in");
     }
 
-    Meteor.users.update({_id: this.userId, "identities.id": profile.id}, {$set: {
+    var newValues = {
       "identities.$.name": profile.name,
       "identities.$.handle": profile.handle,
       "identities.$.pronoun": profile.pronoun,
       "hasCompletedSignup": true
-    }});
+    };
+
+    if (profile.unverifiedEmail) {
+      newValues["identities.$.unverifiedEmail"] = profile.unverifiedEmail
+    }
+
+    Meteor.users.update({_id: this.userId, "identities.id": profile.id}, {$set: newValues});
   },
 
   testFirstSignup: function (profile) {
@@ -79,4 +86,3 @@ if (Meteor.isServer) {
     },
   });
 }
-

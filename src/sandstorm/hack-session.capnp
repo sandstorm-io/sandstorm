@@ -63,10 +63,10 @@ interface HackSessionContext @0xe14c1f5321159b8f
   getUserAddress @2 () -> Email.EmailAddress;
   # Returns the address of the owner of the grain.
 
-  generateApiToken @3 (petname :Text, userInfo :Grain.UserInfo, expires :UInt64 = 0)
+  obsoleteGenerateApiToken @3 (petname :Text, userInfo :Grain.UserInfo, expires :UInt64 = 0)
       -> (token :Text, endpointUrl :Text, tokenId :Text);
-  listApiTokens @4 () -> (tokens :List(TokenInfo));
-  revokeApiToken @5 (tokenId :Text);
+  obsoleteListApiTokens @4 () -> (tokens :List(TokenInfo));
+  obsoleteRevokeApiToken @5 (tokenId :Text);
   # OBSOLETE. Apps that need to present API tokens to users should use offer templates.
 
   getUiViewForEndpoint @8 (url :Text) -> (view :Grain.UiView);

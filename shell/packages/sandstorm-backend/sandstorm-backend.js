@@ -97,14 +97,14 @@ SandstormBackend.prototype.openGrain = function (grainId, isRetry) {
 
   if (isRetry) {
     // Since this is a retry, try starting the grain even if we think it's already running.
-    return this._continueGrain(grainId);
+    return this.continueGrain(grainId);
   } else {
     // Start the grain if it is not running.
     var runningGrain = this.runningGrains[grainId];
     if (runningGrain) {
       return waitPromise(runningGrain);
     } else {
-      return this._continueGrain(grainId);
+      return this.continueGrain(grainId);
     }
   }
 }
@@ -151,7 +151,7 @@ SandstormBackend.prototype.useGrain = function (grainId, cb) {
   }
 }
 
-SandstormBackend.prototype._continueGrain = function(grainId) {
+SandstormBackend.prototype.continueGrain = function(grainId) {
   var grain = Grains.findOne(grainId);
   if (!grain) {
     throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainId);
@@ -183,11 +183,11 @@ SandstormBackend.prototype._continueGrain = function(grainId) {
                            "Package ID: " + packageId);
   }
 
-  return this._startGrainInternal(
+  return this.startGrainInternal(
       packageId, grainId, grain.userId, manifest.continueCommand, false, isDev);
 }
 
-SandstormBackend.prototype._startGrainInternal = function(packageId, grainId, ownerId, command, isNew, isDev) {
+SandstormBackend.prototype.startGrainInternal = function(packageId, grainId, ownerId, command, isNew, isDev) {
   // Starts the grain supervisor.  Must be executed in a Meteor context.  Blocks until grain is
   // started. Returns a promise for an object containing two fields: `owner` (the ID of the owning
   // user) and `supervisor` (the supervisor capability).
@@ -269,7 +269,7 @@ function generateSessionId(grainId, userId, salt) {
   return Crypto.createHash("sha256").update(sessionInput).digest("hex");
 }
 
-SandstormBackend.prototype._openSessionInternal = function (grainId, userId, identityId, title, apiToken, cachedSalt) {
+SandstormBackend.prototype.openSessionInternal = function (grainId, userId, identityId, title, apiToken, cachedSalt) {
 
   // Start the grain if it is not running. This is an optimization: if we didn't start it here,
   // it would start on the first request to the session host, but we'd like to get started before
@@ -279,7 +279,7 @@ SandstormBackend.prototype._openSessionInternal = function (grainId, userId, ide
   if (runningGrain) {
     grainInfo = waitPromise(runningGrain);
   } else {
-    grainInfo = this._continueGrain(grainId);
+    grainInfo = this.continueGrain(grainId);
   }
 
   this.updateLastActive(grainId, userId, identityId);

@@ -87,11 +87,12 @@ if (Meteor.isServer) {
           }
         });
       }
-      var identity = globalDb.getUserIdentities(this.userId)[0]
+      var identityIds = SandstormDb.getUserIdentities(globalDb.getUser(this.userId))
+          .map(function (x) { return x.id; });
       return [
         UserActions.find({userId: this.userId}),
         Grains.find({userId: this.userId}),
-        ApiTokens.find({'owner.user.identityId': identity.id}),
+        ApiTokens.find({'owner.user.identityId': {$in: identityIds}}),
       ];
     } else {
       return [];

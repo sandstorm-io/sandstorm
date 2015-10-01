@@ -428,7 +428,7 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   };
 
   if (provider.rawParentToken) {
-    var parentToken = Crypto.createHash("sha256").update(rawParentToken).digest("base64");
+    var parentToken = Crypto.createHash("sha256").update(provider.rawParentToken).digest("base64");
     var parentApiToken = db.collections.apiTokens.findOne(
       {_id: parentToken, grainId: grainId, objectId: {$exists: false}});
     if (!parentApiToken) {

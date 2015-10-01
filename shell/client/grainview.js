@@ -111,7 +111,7 @@ GrainView.prototype.title = function () {
   } else if (!this._isUsingAnonymously()) {
     // Case 2.
     var apiToken = ApiTokens.findOne({grainId: this._grainId,
-                                      "owner.user.identityId": this._userIdentity.get().id},
+                                      "owner.user.identityId": this.identityId()},
                                      {sort: {created: 1}});
     return apiToken && apiToken.owner && apiToken.owner.user && apiToken.owner.user.title;
   } else {
@@ -135,7 +135,7 @@ GrainView.prototype.appTitle = function () {
   } else if (!this._isUsingAnonymously()) {
     // Case 2
     var token = ApiTokens.findOne({grainId: this._grainId,
-                                   'owner.user.identityId': this._userIdentity.get().id},
+                                   'owner.user.identityId': this.identityId()},
                                   {sort: {created: 1}});
     return (token && token.owner && token.owner.user && token.owner.user.denormalizedGrainMetadata &&
       token.owner.user.denormalizedGrainMetadata.appTitle.defaultText);
@@ -186,6 +186,7 @@ GrainView.prototype.hasLoaded = function () {
   if (this._hasLoaded) {
     return true;
   }
+
   var session = Sessions.findOne({_id: this._sessionId});
   // TODO(soon): this is a hack to cache hasLoaded. Consider moving it to an autorun.
   this._hasLoaded = session && session.hasLoaded;
@@ -235,14 +236,14 @@ GrainView.prototype.depend = function () {
 
 GrainView.prototype.revealIdentity = function () {
   if (!Meteor.user()) {
-    throw new Error("Cannot reveal identity if not logged in.");
+    return;
   }
   var identities = SandstormDb.getUserIdentities(Meteor.user());
   var identityIds = identities.map(function(x) { return x.id; });
-  var identity = identities[0];
-  // Choose a plausible identity.
+  var identity = identities[0]; // Default.
   var grain = Grains.findOne(this._grainId);
   if (grain && identityIds.indexOf(grain.identityId) != -1) {
+    // If we own the grain, open it as the owning identity.
     identity = _.findWhere(identities, {id: grain.identityId});
   } else {
     var token = ApiTokens.findOne({"owner.user.identityId": {$in: identityIds}});
@@ -262,11 +263,6 @@ GrainView.prototype.doNotRevealIdentity = function () {
 GrainView.prototype.shouldRevealIdentity = function () {
   this._dep.depend();
   return !!this._userIdentity.get();
-}
-
-GrainView.prototype.identity = function () {
-  this._dep.depend();
-  return this._userIdentity.get() || null;
 }
 
 GrainView.prototype.identityId = function () {

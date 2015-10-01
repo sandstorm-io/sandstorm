@@ -208,7 +208,6 @@ function splitUserIdsIntoAccountIdsAndIdentityIds() {
       }
     }
     identity.main = true;
-    identity.allowsLogin = true;
 
     Meteor.users.update(user._id, {$set: {identities: [identity]}});
 

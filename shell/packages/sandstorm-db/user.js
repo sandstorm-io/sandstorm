@@ -100,7 +100,6 @@ Accounts.onCreateUser(function (options, user) {
   }
   var identity = _.pick(user.profile, "name", "handle", "pronouns", "picture");
   identity.main = true;
-  identity.allowsLogin = true;
 
   var serviceUserId;
   if ("devName" in user) {
@@ -117,6 +116,9 @@ Accounts.onCreateUser(function (options, user) {
     serviceUserId = user.services.google.id;
   } else if (user.services && "github" in user.services) {
     identity.service = "github";
+    if (user.services.github.email) {
+      identity.unverifiedEmail = user.services.github.email;
+    }
     serviceUserId = user.services.github.id;
   } else if (user.services && "emailToken" in user.services) {
     identity.service = "emailToken";
@@ -138,7 +140,7 @@ Accounts.validateLoginAttempt(function(info) {
       var identities = info.user.identities;
       for (var ii = 0; ii < identities.length; ++ii) {
         if (identities[ii].service === info.type) {
-          return identities[ii].allowsLogin;
+          return !identities[ii].noLogin;
         }
       }
     }

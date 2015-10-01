@@ -75,16 +75,16 @@ SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
 };
 
 Meteor.methods({
-  finishPowerboxRequest: function (webkeyUrl, saveLabel, grainId) {
+  finishPowerboxRequest: function (webkeyUrl, saveLabel, identityId, grainId) {
     check(webkeyUrl, String);
     check(saveLabel, Match.OneOf(undefined, null, String));
+    check(identityId, String);
     check(grainId, String);
 
     var userId = Meteor.userId();
-    if (!userId) {
-      throw new Meteor.Error(403, "User must be logged in to user powerbox.");
+    if (!userId || !globalDb.getIdentityOfUser(identityId, userId)) {
+      throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
     }
-    var identity = this.connection.sandstormDb.getUserIdentities(userId)[0];
     var parsedWebkey = Url.parse(webkeyUrl.trim());
     if (parsedWebkey.host !== makeWildcardHost("api")) {
       console.log(parsedWebkey.hostname, makeWildcardHost("api"));
@@ -105,7 +105,7 @@ Meteor.methods({
     var castedCap = cap.castAs(SystemPersistent);
     var grainOwner = {
       grainId: grainId,
-      introducerIdentity: identity.id
+      introducerIdentity: identityId
     };
     if (saveLabel) {
       grainOwner.saveLabel = {
@@ -312,15 +312,15 @@ HackSessionContextImpl.prototype.getUserAddress = function () {
   }).bind(this));
 };
 
-HackSessionContextImpl.prototype.generateApiToken = function (petname, userInfo, expires) {
+HackSessionContextImpl.prototype.obsoleteGenerateApiToken = function (petname, userInfo, expires) {
   throw new Error("generateApiToken() has been removed. Use offer templates instead.");
 };
 
-HackSessionContextImpl.prototype.listApiTokens = function () {
+HackSessionContextImpl.prototype.obsoleteListApiTokens = function () {
   throw new Error("listApiTokens() has been removed. Use offer templates instead.");
 };
 
-HackSessionContextImpl.prototype.revokeApiToken = function (tokenId) {
+HackSessionContextImpl.prototype.obsoleteRevokeApiToken = function (tokenId) {
   throw new Error("revokeApiToken() has been removed. Use offer templates instead.");
 };
 

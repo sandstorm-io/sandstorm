@@ -42,7 +42,7 @@ var sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFact
 var sandstormBackend = sandstormBackendConnection.restore(null, Backend);
 
 // TODO(cleanup): This initilization belongs with the rest of our package initialization in
-//   db-deprecates.js. We can't put it there now because we need to contruct sandstormCoreFactory first.
+//   db-deprecated.js. We can't put it there now because we need to contruct sandstormCoreFactory first.
 globalBackend = new SandstormBackend(globalDb, sandstormBackend);
 if (!Meteor.settings.replicaNumber) {
   SandstormAccountsMerge.registerObservers(globalDb, globalBackend);
@@ -55,7 +55,6 @@ if (!Meteor.settings.replicaNumber) {
 //
 // Here, I've added some code that attempts to detect the problem by doing a health check
 // periodically and then remaking the connection if it seems broken. We'll see if this helps!
-
 var backendHealthy = true;
 Meteor.setInterval(function () {
   if (!backendHealthy) {
@@ -155,7 +154,6 @@ Meteor.methods({
         throw new Meteor.Error(404, "Not Found", "No such package is installed.");
       }
     }
-    var userIdentity = this.connection.sandstormDb.getIdentity(identityId);
 
     var grainId = Random.id(22);  // 128 bits of entropy
     Grains.insert({
@@ -164,12 +162,12 @@ Meteor.methods({
       appId: appId,
       appVersion: manifest.appVersion,
       userId: this.userId,
-      identityId: userIdentity.id,
+      identityId: identityId,
       title: title,
       private: true
     });
-    globalBackend._startGrainInternal(packageId, grainId, this.userId, command, true, isDev);
-    globalBackend.updateLastActive(grainId, this.userId, userIdentity.id);
+    globalBackend.startGrainInternal(packageId, grainId, this.userId, command, true, isDev);
+    globalBackend.updateLastActive(grainId, this.userId, identityId);
     return grainId;
   },
 
@@ -181,7 +179,7 @@ Meteor.methods({
     check(identityId, Match.OneOf(undefined, null, String));
     check(cachedSalt, Match.OneOf(undefined, null, String));
 
-    if (this.userId && !globalDb.getIdentityOfUser(identityId, this.userId)) {
+    if (this.userId && identityId && !globalDb.getIdentityOfUser(identityId, this.userId)) {
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
@@ -192,7 +190,7 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
-    return globalBackend._openSessionInternal(grainId, this.userId, identityId, null, null, cachedSalt);
+    return globalBackend.openSessionInternal(grainId, this.userId, identityId, null, null, cachedSalt);
   },
 
   openSessionFromApiToken: function(params, identityId, cachedSalt) {
@@ -270,7 +268,7 @@ Meteor.methods({
         throw new Meteor.Error(403, "Unauthorized",
                                "User is not authorized to open this grain.");
       }
-      return globalBackend._openSessionInternal(apiToken.grainId, null, null, title, apiToken, cachedSalt);
+      return globalBackend.openSessionInternal(apiToken.grainId, null, null, title, apiToken, cachedSalt);
     }
   },
 
@@ -1109,7 +1107,7 @@ Proxy.prototype.maybeRetryAfterError = function (error, retryCount) {
   if (SandstormBackend.shouldRestartGrain(error, retryCount)) {
     this.resetConnection();
     return inMeteor(function () {
-      self.supervisor = globalBackend._continueGrain(self.grainId).supervisor;
+      self.supervisor = globalBackend.continueGrain(self.grainId).supervisor;
     });
   } else {
     throw error;

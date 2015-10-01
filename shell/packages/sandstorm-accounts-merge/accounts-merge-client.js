@@ -14,13 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+
 Accounts.onLogin(function() {
   var oldLoginToken = sessionStorage.getItem("mergeAccountsLoginToken");
   sessionStorage.removeItem("mergeAccountsLoginToken");
 
   if (oldLoginToken) {
     Meteor.call("mergeWithAccount", oldLoginToken, function (err, result) {
-      console.log("merged!");
       if (err) {
         throw new Error("error: " + err);
       }
@@ -34,3 +34,4 @@ SandstormAccountsMerge.mergeWithGoogle = function () {
   sessionStorage.setItem("mergeAccountsLoginToken", oldLoginToken);
   Meteor.loginWithGoogle();
 }
+

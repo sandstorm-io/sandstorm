@@ -28,8 +28,7 @@ if (Meteor.isServer) {
     var result = [Grains.find({_id : grainId, $or: [{userId: this.userId}, {private: {$ne: true}}]},
                               {fields: {title: 1, userId: 1, identityId: 1, private: 1}})];
     if (this.userId) {
-      // TODO how will this work with multiple identities?
-      var myIdentities = globalDb.getUserIdentities(this.userId);
+      var myIdentities = SandstormDb.getUserIdentities(globalDb.getUser(this.userId));
       var myIdentityIds = myIdentities.map(function (x) { return x.id; });
       myIdentities.forEach(function(identity) {
         self.added("displayNames", identity.id, {displayName: identity.name});
@@ -282,7 +281,7 @@ Meteor.methods({
 if (Meteor.isClient) {
   Tracker.autorun(function() {
     // We need to keep track of certain data about each grain we can view.
-    // TODO(cleanup): Do these in GrainView to avoid spurrious resubscribes.
+    // TODO(cleanup): Do these in GrainView to avoid spurious resubscribes.
     var grains = globalGrains.get();
     grains.forEach(function(grain) {
       grain.depend();
@@ -382,8 +381,9 @@ if (Meteor.isClient) {
         }
       } else {
         if (window.confirm("Really forget this grain?")) {
-          if (identity) {
-            Meteor.call("forgetGrain", activeGrain.grainId(), activeGrain.identityId());
+          var identityId = activeGrain.identityId();
+          if (identityId) {
+            Meteor.call("forgetGrain", activeGrain.grainId(), identityId);
           }
           // TODO: extract globalGrains into a class that has a "close" method for closing the active view
           activeGrain.destroy();
@@ -693,8 +693,9 @@ if (Meteor.isClient) {
     "submit #powerbox-request-form": function (event) {
       event.preventDefault();
       var powerboxRequestInfo = this;
+      var identityId = getActiveGrain(globalGrains.get()).identityId();
       Meteor.call("finishPowerboxRequest", event.target.token.value, powerboxRequestInfo.saveLabel,
-        powerboxRequestInfo.grainId,
+                  identityId, powerboxRequestInfo.grainId,
         function (err, token) {
           if (err) {
             powerboxRequestInfo.error.set(err.toString());
@@ -1153,12 +1154,15 @@ if (Meteor.isClient) {
         // Tokens expire by default in 5 minutes from generation date
         var selfDestructDuration = 5 * 60 * 1000;
 
-        var rawParentToken;
+        var provider;
         if (Router.current().route.getName() === "shared") {
-          rawParentToken = Router.current().params.token;
+          provider = {rawParentToken: Router.current().params.token};
+        } else {
+          provider = {identityId: senderGrain.identityId()};
         }
-        Meteor.call("newApiToken", senderGrain.grainId(), petname, assignment, forSharing,
-                    selfDestructDuration, rawParentToken, function (error, result) {
+
+        Meteor.call("newApiToken", provider, senderGrain.grainId(), petname, assignment, forSharing,
+                    selfDestructDuration, function (error, result) {
           if (error) {
             event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
           } else {

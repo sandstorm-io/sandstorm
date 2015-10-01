@@ -53,6 +53,10 @@ var helpers = {
 
   db: function () {
     return Template.instance().data._db;
+  },
+
+  emailSuggestion: function(verifiedEmail, unverifiedEmail) {
+    return verifiedEmail || unverifiedEmail;
   }
 };
 
@@ -101,6 +105,15 @@ var submitProfileForm = function (event, cb) {
     return;
   }
 
+  if (!form.email.value) {
+    alert("You must enter an email.");
+    return;
+  }
+
+  if (form.email.value !== form.email.getAttribute("data-verified-email")) {
+    newProfile.unverifiedEmail = form.email.value;
+  }
+
   if (!newProfile.handle.match(/^[a-z_][a-z0-9_]*$/)) {
     // TODO(soon): Reject bad keystrokes in real-time.
     alert("Invalid handle. Handles must contain only English letters, digits, and " +
@@ -112,7 +125,6 @@ var submitProfileForm = function (event, cb) {
     if (err) {
       alert("Error updating profile: " + err.message);
     } else if (cb) {
-      console.log(cb);
       cb();
     }
   });

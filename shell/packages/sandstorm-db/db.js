@@ -39,7 +39,7 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   _id: Random string. What we're talking about when we say "User ID" or "Account ID".
 //   createdAt: Date when this entry was added to the collection.
 //   lastActive: Date of the user's most recent interaction with this Sandstorm server.
-//   profile: Obsolete now that we allow only one identity per account.
+//   profile: Obsolete now that we allow more than one identity per account.
 //   identities: Array of identity profile objects, each of which may include the following fields.
 //               Note that if any field is missing, the first fallback
 //               is to check `services` for details provided by the identity provider (the details
@@ -55,7 +55,7 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //       unverifiedEmail: Email address specified by the user.
 //       verifiedEmail: Only provided by some services. Cannot be directly edited by the user.
 //       main: True is this is the user's main identity.
-//       allowsLogin: True if the user trusts this identity for account authentication.
+//       noLogin: True if the user does not trust this identity for account authentication.
 //   services: Object containing login and identity data used by Meteor authentication services.
 //   mergedUsers: Array of User _id strings, representing the accounts that have been merged into this
 //                one. Those accounts remain in the Users collection, stripped of their `identities`
@@ -708,13 +708,9 @@ if (Meteor.isServer) {
 // Below this point are newly-written or refactored functions.
 
 _.extend(SandstormDb.prototype, {
-  getUserIdentities: function getUserIdentities (userId) {
+  getUser: function getUser (userId) {
     check(userId, String);
-    var user = Meteor.users.findOne(userId);
-    if (!user) {
-      throw new Error("no such user: " + userId);
-    }
-    return SandstormDb.getUserIdentities(user);
+    return Meteor.users.findOne(userId);
   },
 
   getIdentity: function getIdentity (identityId) {
@@ -750,7 +746,7 @@ _.extend(SandstormDb.prototype, {
 
   userApiTokens: function userApiTokens (userId) {
     check(userId, String);
-    var identityIds = this.getUserIdentities(userId)
+    var identityIds = SandstormDb.getUserIdentities(this.getUser(userId))
         .map(function (identity) { return identity.id; });
     return this.collections.apiTokens.find({'owner.user.identityId': {$in: identityIds}});
   },

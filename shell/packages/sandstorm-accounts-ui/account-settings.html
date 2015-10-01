@@ -80,12 +80,14 @@ limitations under the License.
     </label>
     <span class="details">Your preferred handle or "username", for use in apps that use handles (often, chat apps). This is only your first choice; an app may make you rename if someone has already taken this name within the specific grain.</span>
   </li>
-  {{#if verifiedEmail}}
   <li class="email">
-    E-mail:<p>{{verifiedEmail}}</p>
-    <span class="details">E-mail address attached to this identity.</span>
+    <label>E-mail:
+      <input type="email" name="email" data-verified-email="{{verifiedEmail}}"
+             value="{{emailSuggestion verifiedEmail unverifiedEmail}}"
+             placeholder="email address" required>
+    </label>
+    <span class="details">E-mail address for service-related notifications.</span>
   </li>
-  {{/if}}
   <li class="picture">
     <label>Picture: <button type="button"><img src="{{pictureUrl}}" alt="Upload picture"></button></label>
     <input type="hidden" name="picture" value="{{pictureUrl}}">

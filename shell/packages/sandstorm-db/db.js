@@ -52,6 +52,7 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //       handle: String containing the user's preferred handle. Default: first part of email.
 //       picture: _id into the StaticAssets table for the user's picture. Default: identicon.
 //       pronoun: One of "male", "female", "neutral", or "robot". Default: neutral.
+//       unverifiedEmail: Email address specified by the user.
 //       verifiedEmail: Only provided by some services. Cannot be directly edited by the user.
 //       main: True is this is the user's main identity.
 //       allowsLogin: True if the user trusts this identity for account authentication.

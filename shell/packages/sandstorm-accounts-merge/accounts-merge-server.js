@@ -28,6 +28,8 @@ waitPromise = function (promise) {
 
 Meteor.methods({
   mergeWithAccount: function (token) {
+    throw new Meteor.Error(400, "Accounts merging turned off for now. Needs more testing.");
+
     check(token, String);
     if (!this.userId) {
       throw new Meteor.Error(403, "Cannot merge accounts if not logged in.");
@@ -72,6 +74,8 @@ Meteor.methods({
   },
 
   unmergeToAccount: function (destUserId) {
+    throw new Meteor.Error(400, "Accounts unmerging turned off for now. Needs more testing.");
+
     check(destUserId, String);
     if (!this.userId) {
       throw new Meteor.Error(403, "Cannot merge accounts if not logged in.");

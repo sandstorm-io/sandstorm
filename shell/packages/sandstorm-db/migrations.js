@@ -179,6 +179,7 @@ function splitUserIdsIntoAccountIdsAndIdentityIds() {
       serviceUserId = user.services.google.id;
     } else if (user.services && "github" in user.services) {
       identity.service = "github";
+      identity.unverifiedEmail = user.services.github.email;
       serviceUserId = user.services.github.id;
     } else if (user.services && "emailToken" in user.services) {
       identity.service = "emailToken";
@@ -201,6 +202,9 @@ function splitUserIdsIntoAccountIdsAndIdentityIds() {
       }
       if (user.profile.pronoun) {
         identity.pronoun = user.profile.pronoun;
+      }
+      if (user.profile.email) {
+        identity.unverifiedEmail = user.profile.email;
       }
     }
     identity.main = true;

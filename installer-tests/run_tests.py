@@ -259,7 +259,7 @@ def main():
 
     testfiles = args.testfiles
     if not testfiles:
-        testfiles = glob.glob('*.t')
+        testfiles = sorted(glob.glob('*.t'))
 
     keep_going = True
 

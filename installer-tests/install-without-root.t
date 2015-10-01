@@ -45,10 +45,9 @@ $[veryslow]GPG signature is valid.
 $[veryslow]Start sandstorm at system boot (using sysvinit)? [yes] $[type]
 Setup complete. To start your server now, run:
 sandstorm start
-You should then configure the site at:
+Once that's done, visit this link to configure it:
   http://local.sandstorm.io:6080/admin/
-NOTE: This token expires in 15 minutes.
-You can generate a new configuration URL by running 'sandstorm admin-token' from the command line
+NOTE: This URL expires in 15 minutes.
 
 To learn how to control the server, run:
 help

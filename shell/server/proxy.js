@@ -1607,7 +1607,7 @@ ResponseStream.prototype.close = function () {
   }
 }
 
-Proxy.prototype.translateResponse = function (rpcResponse, response) {
+Proxy.prototype.translateResponse = function (rpcResponse, response, dropBody) {
   if (this.hostId) {
     if (rpcResponse.setCookies && rpcResponse.setCookies.length > 0) {
       response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
@@ -1665,14 +1665,20 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
           content.disposition.download.replace(/([\\"\n])/g, "\\$1") + "\"");
     }
     if ("stream" in content.body) {
-      var streamHandle = content.body.stream;
-      response.writeHead(code.id, code.title);
-      var promise = new Promise(function (resolve, reject) {
-        response.resolveResponseStream(new Capnp.Capability(
-            new ResponseStream(response, streamHandle, resolve, reject), ByteStream));
-      });
-      promise.streamHandle = streamHandle;
-      return promise;
+      if (dropBody) {
+        content.body.stream.close();
+        response.rejectResponseStream(
+            new Error("HEAD request; content doesn't matter."));
+      } else {
+        var streamHandle = content.body.stream;
+        response.writeHead(code.id, code.title);
+        var promise = new Promise(function (resolve, reject) {
+          response.resolveResponseStream(new Capnp.Capability(
+              new ResponseStream(response, streamHandle, resolve, reject), ByteStream));
+        });
+        promise.streamHandle = streamHandle;
+        return promise;
+      }
     } else {
       response.rejectResponseStream(
         new Error("Response content body was not a stream."));
@@ -1686,9 +1692,10 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
 
     response.writeHead(code.id, code.title);
 
-    if ("bytes" in content.body) {
-      response.end(content.body.bytes);
+    if ("bytes" in content.body && !dropBody) {
+      response.write(content.body.bytes);
     }
+    response.end();
   } else if ("noContent" in rpcResponse) {
     var noContent = rpcResponse.noContent;
     var noContentCode = noContentSuccessCodes[noContent.statusCode];
@@ -1717,23 +1724,29 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
     response.writeHead(errorCode.id, errorCode.title, {
       "Content-Type": "text/html"
     });
-    if (clientError.descriptionHtml) {
-      response.end(clientError.descriptionHtml);
-    } else {
-      // TODO(someday):  Better default error page.
-      response.end("<html><body><h1>" + errorCode.id + ": " + errorCode.title +
-                   "</h1></body></html>");
+    if (!dropBody) {
+      if (clientError.descriptionHtml) {
+        response.write(clientError.descriptionHtml);
+      } else {
+        // TODO(someday):  Better default error page.
+        response.write("<html><body><h1>" + errorCode.id + ": " + errorCode.title +
+                       "</h1></body></html>");
+      }
     }
+    response.end();
   } else if ("serverError" in rpcResponse) {
     response.writeHead(500, "Internal Server Error", {
       "Content-Type": "text/html"
     });
-    if (rpcResponse.serverError.descriptionHtml) {
-      response.end(rpcResponse.serverError.descriptionHtml);
-    } else {
-      // TODO(someday):  Better default error page.
-      response.end("<html><body><h1>500: Internal Server Error</h1></body></html>");
+    if (!dropBody) {
+      if (rpcResponse.serverError.descriptionHtml) {
+        response.write(rpcResponse.serverError.descriptionHtml);
+      } else {
+        // TODO(someday):  Better default error page.
+        response.write("<html><body><h1>500: Internal Server Error</h1></body></html>");
+      }
     }
+    response.end();
   } else {
     throw new Error("Unknown HTTP response type:\n" + JSON.stringify(rpcResponse));
   }
@@ -1833,7 +1846,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     }
 
   }).then(function (rpcResponse) {
-    return self.translateResponse(rpcResponse, response);
+    return self.translateResponse(rpcResponse, response, request.method === "HEAD");
   }).catch(function (error) {
     return self.maybeRetryAfterError(error, retryCount).then(function () {
       return self.handleRequest(request, data, response, retryCount + 1);

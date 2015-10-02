@@ -678,7 +678,7 @@ if (Meteor.isClient) {
     },
     appUpdatesText: function () {
       var lines = _.map(this.appUpdates, function (val, key) {
-        return val.name + " has been updated to " + val.marketingVersion;
+        return val.name + " has been updated to version " + val.marketingVersion;
       });
       return lines.join("\n");
     },

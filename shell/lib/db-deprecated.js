@@ -54,11 +54,9 @@ matchWildcardHost = globalDb.matchWildcardHost.bind(globalDb);
 makeWildcardHost = globalDb.makeWildcardHost.bind(globalDb);
 allowDevAccounts = globalDb.allowDevAccounts.bind(globalDb);
 roleAssignmentPattern = globalDb.roleAssignmentPattern;
-addUserActions = globalDb.addUserActions.bind(globalDb);
 
 if (Meteor.isServer) {
   getWildcardOrigin = globalDb.getWildcardOrigin.bind(globalDb);
-  startInstall = globalDb.startInstall.bind(globalDb);
 
   Meteor.onConnection(function (connection) {
     // TODO(cleanup): This is the best way I've thought of so far to allow methods declared in

@@ -301,7 +301,7 @@ if (Meteor.isClient && allowDemo) {
 
           // 3. Install this app for the user, if needed.
           if (UserActions.find({appId: appId, userId: Meteor.userId()}).count() == 0) {
-            addUserActions(packageId);
+            globalDb.addUserActions(packageId);
           }
 
           // 4. Create new grain and 5. browse to it.

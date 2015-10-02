@@ -145,7 +145,7 @@ Meteor.methods({
       }
 
       if (!pkg || isRetry) {
-        startInstall(packageId, url, isRetry);
+        globalDb.startInstall(packageId, url, isRetry);
       }
     }
   },
@@ -166,7 +166,7 @@ if (Meteor.isClient) {
     },
 
     "click #confirmInstall": function (event) {
-      addUserActions(this.packageId);
+      globalDb.addUserActions(this.packageId);
     },
 
     "click #upgradeGrains": function (event) {
@@ -347,7 +347,7 @@ Router.map(function () {
           // Skip confirmation because we assume the Sandstorm app list is not evil.
           // TODO(security): This is not excellent. Think harder.
           delete window.referredFromSandstorm;
-          addUserActions(result.packageId);
+          globalDb.addUserActions(result.packageId);
           Router.go("newGrain", {}, {replaceState: true});
         }
 

@@ -17,13 +17,13 @@
 SandstormAutoupdateApps = {};
 
 SandstormAutoupdateApps.updateAppIndex = function (db) {
-  var appUpdatesEnabled = Settings.findOne({_id: "appUpdatesEnabled"}).value;
+  var appUpdatesEnabled = db.collections.settings.findOne({_id: "appUpdatesEnabled"}).value;
   if (!appUpdatesEnabled) {
     // It's much simpler to check appUpdatesEnabled here rather than reactively deactivate the
     // timer that triggers this call.
     return;
   }
-  var appIndexUrl = Settings.findOne({_id: "appIndexUrl"}).value;
+  var appIndexUrl = db.collections.settings.findOne({_id: "appIndexUrl"}).value;
   var appIndex = db.collections.appIndex;
   var data = HTTP.get(appIndexUrl + "/apps/index.json").data;
   data.apps.forEach(function (app) {
@@ -33,8 +33,8 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
     app.hasSentNotifications = false;
     appIndex.upsert({_id: app._id}, app);
     if ((!oldApp || app.versionNumber > oldApp.versionNumber) &&
-        UserActions.findOne({appId: app.appId})) {
-      var pack = Packages.findOne({_id: app.packageId});
+        db.collections.userActions.findOne({appId: app.appId})) {
+      var pack = db.collections.packages.findOne({_id: app.packageId});
       var url = appIndexUrl + "/packages/" + app.packageId;
       if (pack) {
         if (pack.status === "ready") {

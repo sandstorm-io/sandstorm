@@ -16,15 +16,17 @@
 
 Package.describe({
   summary: "Sandstorm package for dealing with app updating.",
-  version: "0.1.0"
+  version: "0.1.0",
 });
 
 Package.onUse(function (api) {
+  api.use("http");
   api.addFiles(["autoupdate-apps.js"], ["client", "server"]);
   api.export("SandstormAutoupdateApps");
 });
 
 Package.onTest(function (api) {
-  api.use(["sandstorm-db", "tinytest", "sandstorm-autoupdate-apps"], ["server"]);
-  api.addFiles('autoupdate-apps-tests.js', 'server');
+  api.use(["http", "practicalmeteor:sinon", "accounts-base", "sandstorm-db",
+    "tinytest", "sandstorm-autoupdate-apps"], ["server"]);
+  api.addFiles("autoupdate-apps-tests.js", "server");
 });

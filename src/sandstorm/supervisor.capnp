@@ -174,17 +174,20 @@ struct MembraneRequirement {
     # specifies the `_id` of the other ApiToken.
 
     permissionsHeld :group {
-      # This token is valid only as long as some specified user holds some specified set of
+      # This token is valid only as long as some specified identity holds some specified set of
       # permissions on some specified grain.
 
-      userId @1 :Text;
-      # The user who must hold the permissions.
+      identityId @5 :Text;
+      # The identity that must hold the permissions.
 
       grainId @2 :Text;
       # The grain on which the permissions must be held.
 
       permissions @3 :Grain.PermissionSet;
       # The permissions the user must hold on the grain.
+
+      userId @1 :Text;
+      # Deprecated. See `identityId`.
     }
 
     userIsAdmin @4 :Text;
@@ -261,12 +264,15 @@ struct ApiTokenOwner {
       saveLabel @2 :Util.LocalizedText;
       # As passed to `save()` in Sandstorm's Persistent interface.
 
-      introducerUser @5 :Text;
-      # The user ID (`_id` in the users table) of the user whose powerbox action caused the grain
-      # to receive this token. This is the user against which the `requiredPermissions` parameter
+      introducerIdentity @10 :Text;
+      # The identity ID through which a user's powerbox action caused the grain to receive this
+      # token. This is the identity against which the `requiredPermissions` parameter
       # to `restore()` will be checked. This field is only intended to be filled in by the
       # front-end during a powerbox request; a regular `save()` call produces a capability that
       # has no "introducer".
+
+      introducerUser @5 :Text;
+      # Deprecated. See `introducerIdentity`.
     }
 
     internet @3 :AnyPointer;
@@ -281,11 +287,11 @@ struct ApiTokenOwner {
     # Owned by the front-end, i.e. stored in its Mongo database.
 
     user :group {
-      # Owned by a user. If the token represents a UiView, then it will show up in this user's
-      # grain list.
+      # Owned by a user's identity. If the token represents a UiView, then it will show up in this
+      # user's grain list.
 
-      userId @6 :Text;
-      # The ID (`_id` in the users table) of the user who is allowed to restore this token.
+      identityId @11 :Text;
+      # The identity that is allowed to restore this token.
 
       title @7 :Text;
       # Title as chosen by the user.
@@ -296,6 +302,9 @@ struct ApiTokenOwner {
 
       denormalizedGrainMetadata @9 :DenormalizedGrainMetadata;
       # Information needed to show the user an app title and icon in the grain list.
+
+      userId @6 :Text;
+      # Deprecated. See `identityId`.
     }
   }
 }

@@ -67,7 +67,7 @@ var deletePackageInternal = function (package) {
     var grain = Grains.findOne({packageId:packageId});
     if (!grain && !action) {
       Packages.update({_id:packageId}, {$set: {status:"delete"}, $unset: {shouldCleanup: ""}});
-      waitPromise(sandstormBackend.deletePackage(packageId));
+      waitPromise(globalBackend.cap().deletePackage(packageId));
       Packages.remove(packageId);
 
       // Clean up assets (icon, etc).
@@ -156,7 +156,7 @@ doClientUpload = function (stream) {
   return new Promise(function (resolve, reject) {
     var id = Random.id();
 
-    var backendStream = sandstormBackend.installPackage().stream;
+    var backendStream = globalBackend.cap().installPackage().stream;
     var hasher = Crypto.createHash("sha256");
 
     stream.on("data", function (chunk) {
@@ -402,7 +402,7 @@ AppInstaller.prototype.start = function () {
   return this.wrapCallback(function () {
     this.cleanup();
 
-    sandstormBackend.tryGetPackage(this.packageId)
+    globalBackend.cap().tryGetPackage(this.packageId)
         .then(this.wrapCallback(function(info) {
       if (info.appId) {
         this.appId = info.appId;
@@ -425,7 +425,7 @@ AppInstaller.prototype.doDownload = function () {
   console.log("Downloading app:", this.url);
   this.updateProgress("download");
 
-  this.uploadStream = sandstormBackend.installPackage().stream;
+  this.uploadStream = globalBackend.cap().installPackage().stream;
   return this.doDownloadTo(this.uploadStream);
 }
 

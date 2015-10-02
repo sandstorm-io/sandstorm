@@ -26,7 +26,7 @@ limitations under the License.
 
   <section class="profile">
     {{#each identities}}
-      <form class="account-profile-editor">
+      <form class="account-profile-editor" data-identity-id="{{id}}">
         <h3>Profile</h3>
         <ul>
           {{>_accountProfileEditor}}
@@ -48,7 +48,7 @@ limitations under the License.
 <template name="sandstormAccountsFirstSignIn">
   <h1>Confirm your profile</h1>
   {{#with mainIdentity}}
-    <form class="account-profile-editor"><ul>
+    <form class="account-profile-editor" data-identity-id="{{id}}"><ul>
       {{>_accountProfileEditor}}
       {{#with termsAndPrivacy}}
         <li class="terms">
@@ -82,13 +82,15 @@ limitations under the License.
   </li>
   <li class="email">
     <label>E-mail:
-      <input type="email" name="email" value="{{email}}" placeholder="email address" required>
+      <input type="email" name="email" data-verified-email="{{verifiedEmail}}"
+             value="{{emailSuggestion unverifiedEmail verifiedEmail}}"
+             placeholder="email address" required>
     </label>
     <span class="details">E-mail address for service-related notifications.</span>
   </li>
   <li class="picture">
-    <label>Picture: <button type="button"><img src="{{picture}}" alt="Upload picture"></button></label>
-    <input type="hidden" name="picture" value="{{picture}}">
+    <label>Picture: <button type="button"><img src="{{pictureUrl}}" alt="Upload picture"></button></label>
+    <input type="hidden" name="picture" value="{{pictureUrl}}">
     <span class="details">This picture will be shown to other users to help identify you. Suggested dimensions: 512x512. Max size: 64 KiB.</span>
   </li>
   <li class="pronoun">

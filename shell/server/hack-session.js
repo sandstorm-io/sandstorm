@@ -36,16 +36,16 @@ var Url = Npm.require("url");
 ROOT_URL = Url.parse(process.env.ROOT_URL);
 HOSTNAME = ROOT_URL.hostname;
 
-function SessionContextImpl(grainId, sessionId, userId) {
+function SessionContextImpl(grainId, sessionId, identityId) {
   this.grainId = grainId;
   this.sessionId = sessionId;
-  this.userId = userId;
+  this.identityId = identityId;
 }
 
 SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
   var self = this;
   return inMeteor((function () {
-    if (!self.userId) {
+    if (!self.identityId) {
       // TODO(soon): allow non logged in users?
       throw new Meteor.Error(400, "Only logged in users can offer capabilities.")
     }
@@ -58,7 +58,7 @@ SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
     var requirement = {
       permissionsHeld: {
         grainId: self.grainId,
-        userId: self.userId,
+        identityId: self.identityId,
         permissions: requiredPermissions
       }
     };
@@ -75,14 +75,15 @@ SessionContextImpl.prototype.offer = function (cap, requiredPermissions) {
 };
 
 Meteor.methods({
-  finishPowerboxRequest: function (webkeyUrl, saveLabel, grainId) {
+  finishPowerboxRequest: function (webkeyUrl, saveLabel, identityId, grainId) {
     check(webkeyUrl, String);
     check(saveLabel, Match.OneOf(undefined, null, String));
+    check(identityId, String);
     check(grainId, String);
 
     var userId = Meteor.userId();
-    if (!userId) {
-      throw new Meteor.Error(403, "User must be logged in to user powerbox.");
+    if (!userId || !globalDb.getIdentityOfUser(identityId, userId)) {
+      throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
     }
     var parsedWebkey = Url.parse(webkeyUrl.trim());
     if (parsedWebkey.host !== makeWildcardHost("api")) {
@@ -104,7 +105,7 @@ Meteor.methods({
     var castedCap = cap.castAs(SystemPersistent);
     var grainOwner = {
       grainId: grainId,
-      introducerUser: userId
+      introducerIdentity: identityId
     };
     if (saveLabel) {
       grainOwner.saveLabel = {
@@ -119,19 +120,19 @@ Meteor.methods({
   finishPowerboxOffer: function (sessionId) {
     check(sessionId, String);
 
-    Sessions.update({_id: sessionId, userId: Meteor.userId()}, {$unset: {powerboxView: null}});
+    Sessions.update({_id: sessionId}, {$unset: {powerboxView: null}});
   }
 });
 
-function HackSessionContextImpl(grainId, sessionId, userId) {
-  SessionContextImpl.call(this, grainId, sessionId, userId);
+function HackSessionContextImpl(grainId, sessionId, identityId) {
+  SessionContextImpl.call(this, grainId, sessionId, identityId);
 }
 
 HackSessionContextImpl.prototype = Object.create(SessionContextImpl.prototype);
 HackSessionContextImpl.prototype.constructor = HackSessionContextImpl;
 
-makeHackSessionContext = function (grainId, sessionId, userId) {
-  return new Capnp.Capability(new HackSessionContextImpl(grainId, sessionId, userId),
+makeHackSessionContext = function (grainId, sessionId, identityId) {
+  return new Capnp.Capability(new HackSessionContextImpl(grainId, sessionId, identityId),
                               HackSessionContext);
 };
 
@@ -154,10 +155,10 @@ HackSessionContextImpl.prototype._getPublicId = function () {
 
   while (!this.publicId) {
     // We haven't looked up the public ID yet.
-    var grain = Grains.findOne(this.grainId, {fields: {publicId: 1, userId: 1}});
+    var grain = Grains.findOne(this.grainId, {fields: {publicId: 1, identityId: 1}});
     if (!grain) throw new Error("Grain does not exist.");
 
-    this.userId = grain.userId;
+    this.identityId = grain.identityId;
 
     if (grain.publicId) {
       this.publicId = grain.publicId;
@@ -311,57 +312,16 @@ HackSessionContextImpl.prototype.getUserAddress = function () {
   }).bind(this));
 };
 
-HackSessionContextImpl.prototype.generateApiToken = function (petname, userInfo, expires) {
-  return inMeteor((function () {
-    var token = Random.secret();
-    var endpointUrl = ROOT_URL.protocol + "//" + makeWildcardHost("api");
-
-    var tokenId = ApiTokens.insert({
-      _id: Crypto.createHash("sha256").update(token).digest("base64"),
-      userInfo: userInfo,
-      grainId: this.grainId,
-      petname: petname,
-      created: new Date(),
-      expires: expires > 0 ? new Date(expires * 1000) : null
-    });
-
-    return [token, endpointUrl, tokenId];
-  }).bind(this));
+HackSessionContextImpl.prototype.obsoleteGenerateApiToken = function (petname, userInfo, expires) {
+  throw new Error("generateApiToken() has been removed. Use offer templates instead.");
 };
 
-HackSessionContextImpl.prototype.listApiTokens = function () {
-  return inMeteor((function () {
-    results = [];
-    ApiTokens.find({grainId: this.grainId, userInfo: {$exists: true}})
-        .forEach(function (token) {
-      if (token.expires && token.expires.getTime() < Date.now()) {
-        // Skip.
-        return;
-      }
-
-      // Hack: When Mongo stores a Buffer, it comes back as some other type.
-      if ("userId" in token.userInfo) {
-        token.userInfo.userId = new Buffer(token.userInfo.userId);
-      }
-      results.push({
-        tokenId: token._id,
-        petname: token.petname,
-        userInfo: token.userInfo
-      });
-    });
-
-    return [results];
-  }).bind(this));
+HackSessionContextImpl.prototype.obsoleteListApiTokens = function () {
+  throw new Error("listApiTokens() has been removed. Use offer templates instead.");
 };
 
-HackSessionContextImpl.prototype.revokeApiToken = function (tokenId) {
-  return inMeteor((function () {
-    if (ApiTokens.remove({_id: tokenId, grainId: this.grainId, userInfo: {$exists: true}}) === 0) {
-      var err = new Error("No such token.");
-      err.nature = "precondition";
-      throw err;
-    }
-  }).bind(this));
+HackSessionContextImpl.prototype.obsoleteRevokeApiToken = function (tokenId) {
+  throw new Error("revokeApiToken() has been removed. Use offer templates instead.");
 };
 
 HackSessionContextImpl.prototype.getUiViewForEndpoint = function (url) {

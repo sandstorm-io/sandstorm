@@ -275,7 +275,7 @@ public:
           content.setMimeType(*mimeType);
         }
         KJ_IF_MAYBE(etag, findHeader("etag")) {
-          content.setETag(*etag);
+          parseETag(*etag, content.initETag());
         }
         KJ_IF_MAYBE(disposition, findHeader("content-disposition")) {
           // Parse `attachment; filename="foo"`
@@ -342,7 +342,7 @@ public:
       case WebSession::Response::PRECONDITION_FAILED: {
         auto preconditionFailed = builder.initPreconditionFailed();
         KJ_IF_MAYBE(etag, findHeader("etag")) {
-          preconditionFailed.setMatchingETag(*etag);
+          parseETag(*etag, preconditionFailed.initMatchingETag());
         }
         break;
       }
@@ -633,6 +633,34 @@ private:
 #undef ON_DATA
 #undef ON_EVENT
 
+  static void parseETag(kj::StringPtr input, WebSession::ETag::Builder builder) {
+    auto trimmed = trim(input);
+    input = trimmed;
+    if (input.startsWith("W/")) {
+      input = input.slice(2);
+      builder.setWeak(true);
+    }
+
+    KJ_REQUIRE(input.startsWith("\"") && input.endsWith("\"") && input.size() > 1,
+               "app returned invalid ETag header", input);
+
+    bool escaped = false;
+    kj::Vector<char> result(input.size() - 2);
+    for (char c: input.slice(1, input.size() - 1)) {
+      if (escaped) {
+        escaped = false;
+      } else {
+        KJ_REQUIRE(c != '"', "app returned invalid ETag header", input);
+        if (c == '\\') {
+          escaped = true;
+          continue;
+        }
+      }
+      result.add(c);
+    }
+
+    memcpy(builder.initValue(result.size()).begin(), result.begin(), result.size());
+  }
 };
 
 class WebSocketPump final: public WebSession::WebSocketStream::Server,

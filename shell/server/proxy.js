@@ -1415,6 +1415,12 @@ function parseETagList(input) {
   return results;
 }
 
+function composeETag(tag) {
+  var result = '"' + (tag.value || "").replace(/([\\"])/g, "\\$1") + '"';
+  if (tag.weak) result = "W/" + result;
+  return result;
+}
+
 function parseAcceptHeader(request) {
   var header = request.headers["accept"];
 
@@ -1659,7 +1665,7 @@ Proxy.prototype.translateResponse = function (rpcResponse, response, request) {
       response.setHeader("Content-Language", content.language);
     }
     if (content.eTag) {
-      response.setHeader("ETag", content.eTag);
+      response.setHeader("ETag", composeETag(content.eTag));
     }
     if (("disposition" in content) && ("download" in content.disposition)) {
       response.setHeader("Content-Disposition", "attachment; filename=\"" +
@@ -1706,7 +1712,7 @@ Proxy.prototype.translateResponse = function (rpcResponse, response, request) {
     var preconditionFailed = rpcResponse.preconditionFailed;
     if (request.method === "GET" && "if-none-match" in request.headers) {
       if (preconditionFailed.matchingETag) {
-        response.setHeader("ETag", preconditionFailed.matchingETag);
+        response.setHeader("ETag", composeETag(preconditionFailed.matchingETag));
       }
       response.writeHead(304, "Not Modified");
     } else {

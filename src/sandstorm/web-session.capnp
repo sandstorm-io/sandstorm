@@ -273,7 +273,10 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
         language @3 :Text;  # Content-Language header (optional).
         mimeType @4 :Text;  # Content-Type header.
 
-        eTag @17 :Text;
+        eTag @17 :ETag;
+        # Optional entity tag for this content. This can be used to express preconditions on future
+        # requests, useful for implementing, for example, cache validation (on GETs) and optimistic
+        # concurrency (on PUTs). See `eTagPrecondition` in `WebSession.Context`.
 
         body :union {
           bytes @5 :Data;
@@ -305,7 +308,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
         # HTTP 412 "Precondition Failed". (We unify these two HTTP status codes because they really
         # mean the same thing and should be implemented by the same code.)
 
-        matchingETag @18 :Text;
+        matchingETag @18 :ETag;
         # If the precondition failed because the etag matched a tag specified in `matchesNoneOf`,
         # this is the tag that it matched. For other types of preconditions, this is null.
         #

@@ -180,15 +180,14 @@ limitations under the License.
   <div class="notification-item">
     <div class="notification-header">
       {{#if isAppUpdates}}
-        <span>App Market has updated apps</span>
-        <span title="Ignore the below updates" class="cancel-notification">Dismiss</span>
-        <span title="Update all of the below apps" class="accept-notification">Apply Updates</span>
+        App updates are available
+        <button title="Ignore the below updates" class="cancel-notification">Dismiss</button>
+        <button title="Update all of the below apps" class="accept-notification">Apply Updates</button>
       {{else}}
-        <span><em>{{grainTitle}}</em> is backgrounded</span>
-        <span title="Stops the background app" class="cancel-notification">Cancel</span>
+        <em>{{grainTitle}}</em> is backgrounded
+        <button title="Stops the background app" class="cancel-notification">Cancel</button>
       {{/if}}
-      <br>
-      <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
+      <div title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</div>
     </div>
     {{#if isAppUpdates}}
     <p>{{appUpdatesText}}</p>
@@ -1105,7 +1104,7 @@ limitations under the License.
         </ul>
       </span>
     </p>
-    <p>App Store URL: <input type="text" name="appMarketUrl" value="{{appMarketUrl}}"><br>
+    <p>App Market URL: <input type="text" name="appMarketUrl" value="{{appMarketUrl}}"><br>
        App Index URL: <input type="text" name="appIndexUrl" value="{{appIndexUrl}}"><br>
        <label><input type="checkbox" name="appUpdatesEnabled" checked={{appUpdatesEnabled}}> App Update Notifications Enabled</label><br>
       <span class="details">Updates to apps will be automatically downloaded by the Sandstorm server daily and notifications sent to users asking if they want to update their installed apps.</span></p>

@@ -262,7 +262,7 @@ img {
 }
 
 .notification-timestamp {
-  float: right;
+  text-align: right;
   font-weight: bold;
 }
 
@@ -287,6 +287,7 @@ img {
 
   >p {
     white-space: pre;
+    margin: 0px;
   }
 }
 

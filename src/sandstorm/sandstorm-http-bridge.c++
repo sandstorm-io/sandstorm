@@ -1187,8 +1187,11 @@ private:
     }
     auto etagPrecondition = context.getEtagPrecondition();
     switch (etagPrecondition.which()) {
+      case WebSession::Context::EtagPrecondition::NONE:
+        break;
       case WebSession::Context::EtagPrecondition::EXISTS:
         lines.add(kj::str("If-Match: *"));
+        break;
       case WebSession::Context::EtagPrecondition::MATCHES_ONE_OF:
         lines.add(kj::str("If-Match: ", kj::strArray(
               KJ_MAP(e, etagPrecondition.getMatchesOneOf()) {
@@ -1198,6 +1201,7 @@ private:
                   return kj::str(e.getValue());
                 }
               }, ", ")));
+        break;
       case WebSession::Context::EtagPrecondition::MATCHES_NONE_OF:
         lines.add(kj::str("If-None-Match: ", kj::strArray(
               KJ_MAP(e, etagPrecondition.getMatchesNoneOf()) {
@@ -1207,6 +1211,7 @@ private:
                   return kj::str(e.getValue());
                 }
               }, ", ")));
+        break;
     }
 
     lines.add(kj::str(""));

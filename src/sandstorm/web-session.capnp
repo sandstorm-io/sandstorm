@@ -81,7 +81,6 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   # `clientStream` is the capability which will receive server -> client messages, while
   # serverStream represents client -> server.
 
-  # WebDAV methods
   propfind @7 (path :Text, xmlContent :Text, context :Context) -> Response;
   proppatch @8 (path :Text, xmlContent :Text, context :Context) -> Response;
   mkcol @9 (path :Text, content :PostContent, context :Context) -> Response;
@@ -91,7 +90,10 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   unlock @13 (path :Text, lockToken :Text, context :Context) -> Response;
   acl @14 (path :Text, xmlContent :Text, context :Context) -> Response;
   report @15 (path :Text, content :PostContent, context :Context) -> Response;
-  options @16 (path :Text, context :Context) -> Response;
+  # WebDAV methods
+
+  options @16 (path :Text, context :Context) -> Options;
+  # OPTIONS request.
 
   struct Context {
     # Additional per-request context.
@@ -271,10 +273,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
         language @3 :Text;  # Content-Language header (optional).
         mimeType @4 :Text;  # Content-Type header.
 
-        dav @18 :Text;
-        # Supported webdav modes
-
-        etag @19 :Text;
+        etag @18 :Text;
 
         body :union {
           bytes @5 :Data;
@@ -299,10 +298,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
         # If this is the response to a form submission, should the form be reset to empty?
         # Distinguishes between HTTP response 204 (False) and 205 (True)
 
-        dav @20 :Text;
-        # Supported webdav modes
-
-        etag @21 :Text;
+        etag @19 :Text;
       }
 
       redirect :group {
@@ -429,6 +425,12 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     # of these inputs.
 
     # TODO(someday): Support etags.
+  }
+
+  struct Options {
+    davClass1 @0 :Bool = false;
+    davClass2 @1 :Bool = false;
+    davClass3 @2 :Bool = false;
   }
 
   # Request headers that we will probably add later:

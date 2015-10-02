@@ -266,9 +266,6 @@ public:
         KJ_IF_MAYBE(mimeType, findHeader("content-type")) {
           content.setMimeType(*mimeType);
         }
-        KJ_IF_MAYBE(dav, findHeader("dav")) {
-          content.setDav(*dav);
-        }
         KJ_IF_MAYBE(etag, findHeader("etag")) {
           content.setEtag(*etag);
         }
@@ -333,9 +330,6 @@ public:
         auto noContent = builder.initNoContent();
         noContent.setStatusCode(statusInfo.successCode);
         noContent.setShouldResetForm(statusInfo.noContent.shouldResetForm);
-        KJ_IF_MAYBE(dav, findHeader("dav")) {
-          noContent.setDav(*dav);
-        }
         KJ_IF_MAYBE(etag, findHeader("etag")) {
           noContent.setEtag(*etag);
         }
@@ -382,6 +376,24 @@ public:
 
     // TODO(soon):  Should we do more validation here, like checking the exact value of the Upgrade
     //   header or Sec-WebSocket-Accept?
+  }
+
+  void buildOptions(WebSession::Options::Builder builder) {
+    KJ_ASSERT(!upgrade,
+        "Sandboxed app attempted to upgrade protocol when client did not request this.");
+
+    KJ_IF_MAYBE(dav, findHeader("dav")) {
+      for (auto level: split(*dav, ',')) {
+        auto trimmed = trim(level);
+        if (trimmed == "1") {
+          builder.setDavClass1(true);
+        } else if (trimmed == "2") {
+          builder.setDavClass2(true);
+        } else if (trimmed == "3") {
+          builder.setDavClass3(true);
+        }
+      }
+    }
   }
 
 private:
@@ -992,7 +1004,7 @@ public:
   kj::Promise<void> options(OptionsContext context) override {
     OptionsParams::Reader params = context.getParams();
     kj::String httpRequest = makeHeaders("OPTIONS", params.getPath(), params.getContext());
-    return sendRequest(toBytes(httpRequest), context);
+    return sendOptionsRequest(kj::mv(httpRequest), context);
   }
 
   kj::Promise<void> postStreaming(PostStreamingContext context) override {
@@ -1246,6 +1258,40 @@ private:
       context.getResults().setStream(kj::mv(requestStream));
     });
   }
+
+  kj::Promise<void> sendOptionsRequest(kj::String httpRequest, OptionsContext& context) {
+    context.releaseParams();
+    return serverAddr.connect().then(
+        [KJ_MVCAP(httpRequest), context]
+        (kj::Own<kj::AsyncIoStream>&& stream) mutable {
+      kj::StringPtr httpRequestRef = httpRequest;
+      auto& streamRef = *stream;
+      return streamRef.write(httpRequestRef.begin(), httpRequestRef.size())
+          .attach(kj::mv(httpRequest))
+          .then([KJ_MVCAP(stream), context]() mutable {
+        // Note:  Do not do stream->shutdownWrite() as some HTTP servers will decide to close the
+        // socket immediately on EOF, even if they have not actually responded to previous requests
+        // yet.
+        auto parser = kj::heap<HttpParser>(kj::heap<IgnoreStream>());
+
+        return parser->readResponse(*stream).then(
+            [context, KJ_MVCAP(stream), KJ_MVCAP(parser)]
+            (kj::ArrayPtr<byte> remainder) mutable {
+          KJ_ASSERT(remainder.size() == 0);
+          parser->pumpStream(kj::mv(stream));
+          auto &parserRef = *parser;
+          parserRef.buildOptions(context.getResults());
+        });
+      });
+    });
+  }
+
+  class IgnoreStream: public ByteStream::Server {
+  protected:
+    kj::Promise<void> write(WriteContext context) override { return kj::READY_NOW; }
+    kj::Promise<void> done(DoneContext context) override { return kj::READY_NOW; }
+    kj::Promise<void> expectSize(ExpectSizeContext context) override { return kj::READY_NOW; }
+  };
 };
 
 class EmailSessionImpl final: public HackEmailSession::Server {

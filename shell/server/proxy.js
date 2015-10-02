@@ -1654,9 +1654,6 @@ Proxy.prototype.translateResponse = function (rpcResponse, response, dropBody) {
     if (content.language) {
       response.setHeader("Content-Language", content.language);
     }
-    if (content.dav) {
-      response.setHeader("DAV", content.dav);
-    }
     if (content.etag) {
       response.setHeader("ETag", content.etag);
     }
@@ -1699,9 +1696,6 @@ Proxy.prototype.translateResponse = function (rpcResponse, response, dropBody) {
   } else if ("noContent" in rpcResponse) {
     var noContent = rpcResponse.noContent;
     var noContentCode = noContentSuccessCodes[noContent.statusCode];
-    if (noContent.dav) {
-      response.setHeader("DAV", noContent.dav);
-    }
     if (noContent.etag) {
       response.setHeader("ETag", noContent.etag);
     }
@@ -1824,54 +1818,66 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     } else if (request.method === "REPORT") {
       return session.report(path, requestContent(), context);
     } else if (request.method === "OPTIONS") {
-      // Reply to CORS preflight request.
-      return session.options(path, context).then(function (rpcResponse) {
+      // Reply to CORS preflight request, and also let app indicate that it supports DAV.
 
-        // All we want to do is permit APIs to be accessed from arbitrary origins. Since clients must
-        // send a valid Authorization header, and since cookies are not used for authorization, this
-        // is perfectly safe. In a sane world, we would only need to send back
-        // "Access-Control-Allow-Origin: *" and be done with it.
-        //
-        // However, CORS demands that we explicitly whitelist individual methods and headers for use
-        // cross-origin, as if this is somehow useful for implementing any practical security policy
-        // (it isn't). To make matters worse, we are REQUIRED to enumerate each one individually.
-        // We cannot just write "*" for these lists. WTF, CORS?
-        //
-        // Luckily, the request tells us exactly what method and headers are being requested, so we
-        // only need to copy those over, rather than create an exhaustive list. But this is still
-        // overly complicated.
+      return session.options(path, context).then(function (options) {
+        if (this.isApi) {
+          // All we want to do is permit APIs to be accessed from arbitrary origins. Since clients
+          // must send a valid Authorization header, and since cookies are not used for
+          // authorization, this is perfectly safe. In a sane world, we would only need to send back
+          // "Access-Control-Allow-Origin: *" and be done with it.
+          //
+          // However, CORS demands that we explicitly whitelist individual methods and headers for
+          // use cross-origin, as if this is somehow useful for implementing any practical security
+          // policy (it isn't). To make matters worse, we are REQUIRED to enumerate each one
+          // individually. We cannot just write "*" for these lists. WTF, CORS?
+          //
+          // Luckily, the request tells us exactly what method and headers are being requested, so we
+          // only need to copy those over, rather than create an exhaustive list. But this is still
+          // overly complicated.
 
-        var accessControlHeaders = {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, HEAD, POST, PUT, DELETE",
-          "Access-Control-Max-Age": "3600"
-        };
+          var accessControlHeaders = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, HEAD, POST, PUT, DELETE",
+            "Access-Control-Max-Age": "3600"
+          };
 
-        // Copy all requested headers to the allowed headers list.
-        var requestedHeaders = request.headers["access-control-request-headers"];
-        if (requestedHeaders) {
-          accessControlHeaders["Access-Control-Allow-Headers"] = requestedHeaders;
+          // Copy all requested headers to the allowed headers list.
+          var requestedHeaders = request.headers["access-control-request-headers"];
+          if (requestedHeaders) {
+            accessControlHeaders["Access-Control-Allow-Headers"] = requestedHeaders;
+          }
+
+          // Add the requested method to the allowed methods list, if it's not there already.
+          var requestedMethod = request.headers["access-control-request-method"];
+          if (requestedMethod &&
+              !(_.contains(["GET", "HEAD", "POST", "PUT", "DELETE"], requestedMethod))) {
+            accessControlHeaders["Access-Control-Allow-Methods"] += ", " + requestedMethod;
+          }
+
+          for (header in accessControlHeaders) {
+            response.setHeader(header, accessControlHeaders[header]);
+          }
         }
 
-        // Add the requested method to the allowed methods list, if it's not there already.
-        var requestedMethod = request.headers["access-control-request-method"];
-        if (requestedMethod &&
-            !(_.contains(["GET", "HEAD", "POST", "PUT", "DELETE"], requestedMethod))) {
-          accessControlHeaders["Access-Control-Allow-Methods"] += ", " + requestedMethod;
-        }
+        var dav = [];
+        if (options.davClass1) dav.push("1");
+        if (options.davClass2) dav.push("2");
+        if (options.davClass3) dav.push("3");
+        if (dav.length > 0) response.setHeader("DAV", dav.join(", "));
 
-        for (header in accessControlHeaders) {
-          response.setHeader(header, accessControlHeaders[header]);
-        }
+        response.end();
 
-        return rpcResponse;
+        // Return no response; we already handled everything.
       });
     } else {
       throw new Error("Sandstorm only supports the following methods: GET, POST, PUT, DELETE, HEAD, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK, ACL, REPORT, and OPTIONS.");
     }
 
   }).then(function (rpcResponse) {
-    return self.translateResponse(rpcResponse, response, request.method === "HEAD");
+    if (rpcResponse !== undefined) {  // Will be undefined for OPTIONS request.
+      return self.translateResponse(rpcResponse, response, request.method === "HEAD");
+    }
   }).catch(function (error) {
     return self.maybeRetryAfterError(error, retryCount).then(function () {
       return self.handleRequest(request, data, response, retryCount + 1);

@@ -55,8 +55,8 @@ var helpers = {
     return Template.instance().data._db;
   },
 
-  emailSuggestion: function(verifiedEmail, unverifiedEmail) {
-    return verifiedEmail || unverifiedEmail;
+  emailSuggestion: function(unverifiedEmail, verifiedEmail) {
+    return unverifiedEmail || verifiedEmail;
   }
 };
 

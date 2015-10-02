@@ -1754,6 +1754,10 @@ Proxy.prototype.translateResponse = function (rpcResponse, response, dropBody) {
   return Promise.resolve(undefined);
 }
 
+// TODO(cleanup): Node 0.12 has a `gunzipSync` but 0.10 (which Meteor still uses) does not.
+var Zlib = Npm.require("zlib");
+var gunzipSync = Meteor.wrapAsync(Zlib.gunzip, Zlib);
+
 Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
   var self = this;
 
@@ -1764,7 +1768,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     var path = request.url.slice(1);  // remove leading '/'
     var session = self.getSession(request);
 
-    function optionsForBody() {
+    function requestContent() {
       return {
         content: data,
         encoding: request.headers["content-encoding"],
@@ -1772,32 +1776,53 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
       };
     }
 
+    function xmlContent() {
+      var type = request.headers["content-type"] || "application/xml;charset=utf-8";
+      var match = type.match(/[^/]*\/xml(; *charset *= *([^ ;]*))?/);
+      if (!match) {
+        response.writeHead(415, "Unsupported media type.", {
+          "Content-Type": "text/plain"
+        });
+        response.end("expected XML request body");
+        throw new Error("expected XML request body");
+      }
+      var charset = match[2] || "ISO-8859-1";
+
+      var encoding = response.headers['content-encoding'];
+      if (encoding && encoding !== "identity") {
+        if (encoding !== "gzip") throw new Error("unknown Content-Encoding: " + encoding);
+        data = gunzipSync(data);
+      }
+
+      return data.toString(charset.toLowerCase() === "utf-8" ? "utf8" : "binary");
+    }
+
     if (request.method === "GET" || request.method === "HEAD") {
       return session.get(path, context, request.method === "HEAD");
     } else if (request.method === "POST") {
-      return session.post(path, optionsForBody(), context);
+      return session.post(path, requestContent(), context);
     } else if (request.method === "PUT") {
-      return session.put(path, optionsForBody(), context);
+      return session.put(path, requestContent(), context);
     } else if (request.method === "DELETE") {
       return session.delete(path, context);
     } else if (request.method === "PROPFIND") {
-      return session.propfind(path, optionsForBody(), context);
+      return session.propfind(path, xmlContent(), context);
     } else if (request.method === "PROPPATCH") {
-      return session.proppatch(path, optionsForBody(), context);
+      return session.proppatch(path, xmlContent(), context);
     } else if (request.method === "MKCOL") {
-      return session.mkcol(path, optionsForBody(), context);
+      return session.mkcol(path, requestContent(), context);
     } else if (request.method === "COPY") {
       return session.copy(path, context);
     } else if (request.method === "MOVE") {
       return session.move(path, context);
     } else if (request.method === "LOCK") {
-      return session.lock(path, optionsForBody(), context);
+      return session.lock(path, xmlContent(), context);
     } else if (request.method === "UNLOCK") {
-      return session.unlock(path, optionsForBody(), context);
+      return session.unlock(path, request.headers["lock-token"], context);
     } else if (request.method === "ACL") {
-      return session.acl(path, optionsForBody(), context);
+      return session.acl(path, xmlContent(), context);
     } else if (request.method === "REPORT") {
-      return session.report(path, optionsForBody(), context);
+      return session.report(path, requestContent(), context);
     } else if (request.method === "OPTIONS") {
       // Reply to CORS preflight request.
       return session.options(path, context).then(function (rpcResponse) {

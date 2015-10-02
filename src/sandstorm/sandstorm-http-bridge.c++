@@ -909,31 +909,32 @@ public:
 
   kj::Promise<void> propfind(PropfindContext context) override {
     PropfindParams::Reader params = context.getParams();
-    auto content = params.getContent();
-    kj::String httpRequest = makeHeaders("PROPFIND", params.getPath(), params.getContext(),
-                                         kj::str("Content-Type: ", content.getMimeType()),
-                                         kj::str("Content-Length: ", content.getContent().size()),
-                                         content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
-    return sendRequest(toBytes(httpRequest, content.getContent()), context);
+    auto xml = params.getXmlContent();
+    kj::String httpRequest = makeHeaders(
+        "PROPFIND", params.getPath(), params.getContext(),
+        kj::str("Content-Type: application/xml;charset=utf-8"),
+        kj::str("Content-Length: ", xml.size()));
+    return sendRequest(toBytes(httpRequest, xml.asBytes()), context);
   }
 
   kj::Promise<void> proppatch(ProppatchContext context) override {
     ProppatchParams::Reader params = context.getParams();
-    auto content = params.getContent();
-    kj::String httpRequest = makeHeaders("PROPPATCH", params.getPath(), params.getContext(),
-                                         kj::str("Content-Type: ", content.getMimeType()),
-                                         kj::str("Content-Length: ", content.getContent().size()),
-                                         content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
-    return sendRequest(toBytes(httpRequest, content.getContent()), context);
+    auto xml = params.getXmlContent();
+    kj::String httpRequest = makeHeaders(
+        "PROPPATCH", params.getPath(), params.getContext(),
+        kj::str("Content-Type: application/xml;charset=utf-8"),
+        kj::str("Content-Length: ", xml.size()));
+    return sendRequest(toBytes(httpRequest, xml.asBytes()), context);
   }
 
   kj::Promise<void> mkcol(MkcolContext context) override {
     MkcolParams::Reader params = context.getParams();
     auto content = params.getContent();
-    kj::String httpRequest = makeHeaders("MKCOL", params.getPath(), params.getContext(),
-                                         kj::str("Content-Type: ", content.getMimeType()),
-                                         kj::str("Content-Length: ", content.getContent().size()),
-                                         content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
+    kj::String httpRequest = makeHeaders(
+        "MKCOL", params.getPath(), params.getContext(),
+        kj::str("Content-Type: ", content.getMimeType()),
+        kj::str("Content-Length: ", content.getContent().size()),
+        content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
     return sendRequest(toBytes(httpRequest, content.getContent()), context);
   }
 
@@ -951,41 +952,40 @@ public:
 
   kj::Promise<void> lock(LockContext context) override {
     LockParams::Reader params = context.getParams();
-    auto content = params.getContent();
-    kj::String httpRequest = makeHeaders("LOCK", params.getPath(), params.getContext(),
-                                         kj::str("Content-Type: ", content.getMimeType()),
-                                         kj::str("Content-Length: ", content.getContent().size()),
-                                         content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
-    return sendRequest(toBytes(httpRequest, content.getContent()), context);
+    auto xml = params.getXmlContent();
+    kj::String httpRequest = makeHeaders(
+        "LOCK", params.getPath(), params.getContext(),
+        kj::str("Content-Type: application/xml;charset=utf-8"),
+        kj::str("Content-Length: ", xml.size()));
+    return sendRequest(toBytes(httpRequest, xml.asBytes()), context);
   }
 
   kj::Promise<void> unlock(UnlockContext context) override {
     UnlockParams::Reader params = context.getParams();
-    auto content = params.getContent();
-    kj::String httpRequest = makeHeaders("UNLOCK", params.getPath(), params.getContext(),
-                                         kj::str("Content-Type: ", content.getMimeType()),
-                                         kj::str("Content-Length: ", content.getContent().size()),
-                                         content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
-    return sendRequest(toBytes(httpRequest, content.getContent()), context);
+    kj::String httpRequest = makeHeaders(
+        "UNLOCK", params.getPath(), params.getContext(),
+        kj::str("Lock-Token: ", params.getLockToken()));
+    return sendRequest(toBytes(httpRequest, nullptr), context);
   }
 
   kj::Promise<void> acl(AclContext context) override {
     AclParams::Reader params = context.getParams();
-    auto content = params.getContent();
-    kj::String httpRequest = makeHeaders("ACL", params.getPath(), params.getContext(),
-                                         kj::str("Content-Type: ", content.getMimeType()),
-                                         kj::str("Content-Length: ", content.getContent().size()),
-                                         content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
-    return sendRequest(toBytes(httpRequest, content.getContent()), context);
+    auto xml = params.getXmlContent();
+    kj::String httpRequest = makeHeaders(
+        "ACL", params.getPath(), params.getContext(),
+        kj::str("Content-Type: application/xml;charset=utf-8"),
+        kj::str("Content-Length: ", xml.size()));
+    return sendRequest(toBytes(httpRequest, xml.asBytes()), context);
   }
 
   kj::Promise<void> report(ReportContext context) override {
     ReportParams::Reader params = context.getParams();
     auto content = params.getContent();
-    kj::String httpRequest = makeHeaders("REPORT", params.getPath(), params.getContext(),
-                                         kj::str("Content-Type: ", content.getMimeType()),
-                                         kj::str("Content-Length: ", content.getContent().size()),
-                                         content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
+    kj::String httpRequest = makeHeaders(
+        "REPORT", params.getPath(), params.getContext(),
+        kj::str("Content-Type: ", content.getMimeType()),
+        kj::str("Content-Length: ", content.getContent().size()),
+        content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
     return sendRequest(toBytes(httpRequest, content.getContent()), context);
   }
 

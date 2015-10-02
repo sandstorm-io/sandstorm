@@ -82,15 +82,15 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   # serverStream represents client -> server.
 
   # WebDAV methods
-  propfind @7 (path :Text, content :PropfindContent, context :Context) -> Response;
-  proppatch @8 (path :Text, content :ProppatchContent, context :Context) -> Response;
-  mkcol @9 (path :Text, content :MkcolContent, context :Context) -> Response;
+  propfind @7 (path :Text, xmlContent :Text, context :Context) -> Response;
+  proppatch @8 (path :Text, xmlContent :Text, context :Context) -> Response;
+  mkcol @9 (path :Text, content :PostContent, context :Context) -> Response;
   copy @10 (path :Text, context :Context) -> Response;
   move @11 (path :Text, context :Context) -> Response;
-  lock @12 (path :Text, content :LockContent, context :Context) -> Response;
-  unlock @13 (path :Text, content :UnlockContent, context :Context) -> Response;
-  acl @14 (path :Text, content :AclContent, context :Context) -> Response;
-  report @15 (path :Text, content :ReportContent, context :Context) -> Response;
+  lock @12 (path :Text, xmlContent :Text, context :Context) -> Response;
+  unlock @13 (path :Text, lockToken :Text, context :Context) -> Response;
+  acl @14 (path :Text, xmlContent :Text, context :Context) -> Response;
+  report @15 (path :Text, content :PostContent, context :Context) -> Response;
   options @16 (path :Text, context :Context) -> Response;
 
   struct Context {
@@ -147,60 +147,20 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   }
 
   struct PostContent {
+    # TODO(apibump): Rename this to just `Content` or maybe `RequestContent`.
+
     mimeType @0 :Text;
     content @1 :Data;
     encoding @2 :Text;  # Content-Encoding header (optional).
   }
 
   struct PutContent {
+    # TODO(apibump): Remove this and replace it with `PostContent` (renamed to `Content`).
+
     mimeType @0 :Text;
     content @1 :Data;
     encoding @2 :Text;  # Content-Encoding header (optional).
   }
-
-  struct PropfindContent {
-    mimeType @0 :Text;
-    content @1 :Data;
-    encoding @2 :Text;  # Content-Encoding header (optional).
-  }
-
-  struct ProppatchContent {
-    mimeType @0 :Text;
-    content @1 :Data;
-    encoding @2 :Text;  # Content-Encoding header (optional).
-  }
-
-  struct AclContent {
-    mimeType @0 :Text;
-    content @1 :Data;
-    encoding @2 :Text;  # Content-Encoding header (optional).
-  }
-
-  struct MkcolContent {
-    mimeType @0 :Text;
-    content @1 :Data;
-    encoding @2 :Text;  # Content-Encoding header (optional).
-  }
-
-  struct LockContent {
-    mimeType @0 :Text;
-    content @1 :Data;
-    encoding @2 :Text;  # Content-Encoding header (optional).
-  }
-
-  struct UnlockContent {
-    mimeType @0 :Text;
-    content @1 :Data;
-    encoding @2 :Text;  # Content-Encoding header (optional).
-  }
-
-  struct ReportContent {
-    mimeType @0 :Text;
-    content @1 :Data;
-    encoding @2 :Text;  # Content-Encoding header (optional).
-  }
-
-  # TODO(apibump): Remove PostContent and PutContent, replacing them with Content.
 
   struct ETag {
     value @0 :Text;  # does not include quotes

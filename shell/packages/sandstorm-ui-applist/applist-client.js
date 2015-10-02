@@ -139,8 +139,10 @@ Template.sandstormAppList.helpers({
   },
   appMarketUrl: function() {
     var appMarket = Settings.findOne({_id: "appMarketUrl"});
-    // If the Settings subscription hasn't yet propagated client-side, default to app.sandstorm.io
-    return ((appMarket && appMarket.value) || "https://apps.sandstorm.io") + "/?host=" + document.location.protocol + "//" + document.location.host;
+    if (!appMarket) {
+      return "#";
+    }
+    return appMarket.value + "/?host=" + document.location.protocol + "//" + document.location.host;
   },
   isSignedUpOrDemo: function() {
     return this._db.isSignedUpOrDemo();

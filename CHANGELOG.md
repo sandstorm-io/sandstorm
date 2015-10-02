@@ -1,3 +1,27 @@
+### v0.117 (2015-09-30)
+- Self-hosters using Sandcats now get automatic free HTTPS certificates. This is normally set up automatically during install. If you first installed before this release, [see the docs to find out how to enable HTTPS](https://docs.sandstorm.io/en/latest/administering/ssl/).
+
+### v0.116 (2015-09-29)
+- (Probably) fix very rare bug in which front-end stops talking to back-end causing grains to fail to load until the next front-end restart. The bug was in node-capnp's use of libuv.
+- Check PGP signatures on packages on install and store them in the database (not yet surfaced in UI).
+
+### v0.115 (2015-09-24)
+- Attempt to work around very rare problem where front-end inexplicably stops talking to back-end by monitoring and recreating the connection.
+- Oasis: Fix "download backup", which broke due to unexpected interaction between security hardening to the sandbox in which zip/unzip runs and security settings on Oasis.
+
+### v0.114 (2015-09-23)
+- No-op release just to test end-to-end that the new signed update mechanism works. (We did lots of tests in advance, but touching the updater code always makes me nervous, so test again!)
+
+### v0.113 (2015-09-23)
+- The installer script is now PGP-signed such that it can be verified by third parties without relying on the integrity of HTTPS.
+- The installer now verifies downloads using GPG (in addition to using HTTPS as it always has).
+- Updates are now verified using libsodium ed25519 signatures (in addition to being downloaded over HTTPS as they always have).
+- Oasis: Fixed storage bug that was causing random app restarts (but no data loss).
+- Various small UI usability tweaks.
+
+### v0.112 (2015-09-16)
+- Fix another stats bug causing stats recording to sometimes be interrupted by an exception.
+
 ### v0.111 (2015-09-16)
 - Fix bug preventing "who has access" table from displaying properly.
 

@@ -33,7 +33,7 @@ Meteor.publish("userPackages", function() {
   };
 
   // package source 1: packages referred to by actions
-  var actions = db.userActions(this.userId, {}, {});
+  var actions = db.userActions(this.userId);
   var actionsHandle = actions.observe({
     added: function(newAction) {
       refPackage(newAction.packageId);
@@ -44,7 +44,7 @@ Meteor.publish("userPackages", function() {
   });
 
   // package source 2: packages referred to by grains directly
-  var grains = db.userGrains(this.userId, {}, {});
+  var grains = db.userGrains(this.userId);
   var grainsHandle = grains.observe({
     added: function(newGrain) {
       refPackage(newGrain.packageId);

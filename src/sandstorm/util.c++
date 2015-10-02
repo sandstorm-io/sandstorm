@@ -27,6 +27,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <map>
+#include <sys/mman.h>
 
 namespace sandstorm {
 
@@ -83,6 +84,32 @@ kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExists(
     }
   } else {
     return kj::AutoCloseFd(fd);
+  }
+}
+
+size_t getFileSize(int fd, kj::StringPtr filename) {
+  struct stat stats;
+  KJ_SYSCALL(fstat(fd, &stats));
+  KJ_REQUIRE(S_ISREG(stats.st_mode), "Not a regular file.", filename);
+  return stats.st_size;
+}
+
+MemoryMapping::MemoryMapping(int fd, kj::StringPtr filename): content(nullptr) {
+  size_t size = getFileSize(fd, filename);
+
+  if (size != 0) {
+    void* ptr = mmap(nullptr, size, PROT_READ, MAP_PRIVATE, fd, 0);
+    if (ptr == MAP_FAILED) {
+      KJ_FAIL_SYSCALL("mmap", errno, filename);
+    }
+
+    content = kj::arrayPtr(reinterpret_cast<byte*>(ptr), size);
+  }
+}
+
+MemoryMapping::~MemoryMapping() noexcept(false) {
+  if (content != nullptr) {
+    KJ_SYSCALL(munmap(content.begin(), content.size()));
   }
 }
 

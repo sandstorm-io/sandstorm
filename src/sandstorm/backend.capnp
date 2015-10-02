@@ -31,6 +31,11 @@ interface Backend {
 
   const socketPath :Text = "/var/sandstorm/socket/backend";
 
+  ping @14 ();
+  # Just returns. Used to verify that the connection to the back-end is alive and well.
+
+  # ----------------------------------------------------------------------------
+
   startGrain @0 (ownerId :Text, grainId :Text, packageId :Text,
                  command :Package.Manifest.Command, isNew :Bool, devMode :Bool = false)
              -> (supervisor :Supervisor);
@@ -52,10 +57,14 @@ interface Backend {
 
   installPackage @3 () -> (stream :PackageUploadStream);
   interface PackageUploadStream extends(Util.ByteStream) {
-    saveAs @0 (packageId :Text) -> (appId :Text, manifest :Package.Manifest);
+    saveAs @0 (packageId :Text) -> (appId :Text, manifest :Package.Manifest,
+                                    authorPgpKeyFingerprint :Text);
+    # `authorPgpKeyFingerprint` is present only if the signature is valid, and is null if there
+    # is no signature. (Invalid signature throws exception.)
   }
 
-  tryGetPackage @4 (packageId :Text) -> (appId :Text, manifest :Package.Manifest);
+  tryGetPackage @4 (packageId :Text) -> (appId :Text, manifest :Package.Manifest,
+                                         authorPgpKeyFingerprint :Text);
   # Get info from an already-installed package. Return values are null if the package doesn't
   # exist.
 

@@ -5,11 +5,9 @@
 #
 #     curl https://install.sandstorm.io | bash
 #
-# Alternatively, if it makes you feel better, you can download and run the
-# script:
+# If `curl|bash` makes you uncomfortable, see other options here:
 #
-#     wget https://install.sandstorm.io/install.sh
-#     bash install.sh
+#     https://docs.sandstorm.io/en/latest/install/
 #
 # This script only modifies your system in the following ways:
 # - Install Sandstorm into the directory you choose, typically /opt/sandstorm.
@@ -22,14 +20,15 @@
 # and the dev tools will not work (due to limitations with using FUSE in a
 # sandbox).
 #
-# This script downloads an installs binaries. This means that to use this
+# This script downloads and installs binaries. This means that to use this
 # script, you need to trust that the authors are not evil, or you must use
 # an isolated machine or VM. Of course, since the Sandstorm authors'
 # identities are widely known, if they did try to do anything evil, you
 # could easily get them arrested. That said, if you'd rather install from
 # 100% auditable source code, please check out the Github repository instead.
 #
-# All downloads occur over HTTPS.
+# All downloads occur over HTTPS from Sandstorm's servers and are further
+# verified using PGP.
 
 if test -z "$BASH_VERSION"; then
   echo "Please run this script using bash, not sh or any other shell." >&2
@@ -164,7 +163,7 @@ DEFAULT_UPDATE_CHANNEL="dev"
 DEFAULT_SERVER_USER="sandstorm"
 SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-sandcats.io}"
 ALLOW_DEV_ACCOUNTS="false"
-SANDCATS_GETCERTIFICATE="yes"
+SANDCATS_GETCERTIFICATE="${OVERRIDE_SANDCATS_GETCERTIFICATE:-yes}"
 
 # Define functions for each stage of the install process.
 
@@ -176,7 +175,7 @@ usage() {
   echo '' >&2
   echo 'If -d is specified, the auto-installs with defaults suitable for app development.' >&2
   echo 'If -e is specified, default to listening on an external interface, not merely loopback.' >&2
-  echo 'If -s is specified, (EXPERIMENTAL) request a HTTPS certificate.' >&2
+  echo 'If -i is specified, default to (i)nsecure mode where we do not request a HTTPS certificate.' >&2
   echo 'If -u is specified, default to avoiding root priviliges. Note that the dev tools only work if the server as root privileges.' >&2
   exit 1
 }
@@ -187,11 +186,40 @@ detect_current_uid() {
   fi
 }
 
+disable_https_if_ports_unavailable() {
+  # If port 80 and 443 are both available, then let's use
+  # DEFAULT_PORT=80. This value is what the Sandstorm installer will
+  # write to PORT= in the Sandstorm configuration file.
+  #
+  # If either 80 or 443 is not available, then we set
+  # SANDCATS_GETCERTIFICATE to no.
+  #
+  # From the rest of the installer's perspective, if
+  # SANDCATS_GETCERTIFICATE is yes, it is safe to bind to port 443.
+  #
+  # There is a theoretical race condition here. I think that's
+  # life.
+  #
+  # This also means that if a user has port 443 taken but port 80
+  # available, we will use port 6080 as the default port. I think
+  # that's OK.
+  local PORT_80_AVAILABLE="no"
+  nc -z 0.0.0.0 80 || PORT_80_AVAILABLE="yes"
+
+  local PORT_443_AVAILABLE="no"
+  nc -z 0.0.0.0 443 || PORT_443_AVAILABLE="yes"
+
+  if [ "$PORT_443_AVAILABLE" == "no" -o "$PORT_80_AVAILABLE" == "no" ] ; then
+    SANDCATS_GETCERTIFICATE="no"
+  fi
+}
+
+
 handle_args() {
   SCRIPT_NAME=$1
   shift
 
-  while getopts ":desu" opt; do
+  while getopts ":deiu" opt; do
     case $opt in
       d)
         USE_DEFAULTS="yes"
@@ -199,8 +227,8 @@ handle_args() {
       e)
         USE_EXTERNAL_INTERFACE="yes"
         ;;
-      s)
-        SANDCATS_GETCERTIFICATE="yes"
+      i)
+        SANDCATS_GETCERTIFICATE="no"
         ;;
       u)
         PREFER_ROOT=no
@@ -467,6 +495,9 @@ assert_dependencies() {
     # and if it is missing, bail out and tell the user they have to
     # install it.
     which openssl > /dev/null|| fail "Please install openssl(1). Sandstorm uses it for the Sandcats.io dynamic DNS service."
+    # To find out if port 80 and 443 are available, we need `nc` on
+    # the path.
+    which nc > /dev/null || fail "Please install nc(1). (Package may be called 'netcat-traditional' or 'netcat-openbsd'.)"
   fi
 
   which tar > /dev/null || fail "Please install tar(1)."
@@ -586,7 +617,7 @@ dev_server_install() {
     echo "We're going to:"
     echo ""
     echo "* Install Sandstorm in ${DEFAULT_DIR_FOR_ROOT}."
-    echo "* Automatically keep Sandstorm up-to-date."
+    echo "* Automatically keep Sandstorm up-to-date (with signed updates)."
     echo "* Create a service user ($DEFAULT_SERVER_USER) that owns Sandstorm's files."
     echo "* Add you ($USER) to the $DEFAULT_SERVER_USER group so you can read/write app data."
     echo "* Expose the service only on localhost aka local.sandstorm.io, not the public Internet."
@@ -653,12 +684,15 @@ full_server_install() {
   fi
 
   if [ "yes" != "${ACCEPTED_FULL_SERVER_INSTALL:-}" ]; then
+    # Disable Sandcats HTTPS if ports 80 or 443 aren't available.
+    disable_https_if_ports_unavailable
+
     echo "We're going to:"
     echo ""
     echo "* Install Sandstorm in $DEFAULT_DIR_FOR_ROOT"
     echo "* Automatically keep Sandstorm up-to-date"
     if [ "yes" == "$SANDCATS_GETCERTIFICATE" ] ; then
-      echo "* (EXPERIMENTAL) Configure a HTTPS security certificate, if you use a subdomain of sandcats.io"
+      echo "* Configure auto-renewing HTTPS if you use a subdomain of sandcats.io"
     fi
     echo "* Create a service user ($DEFAULT_SERVER_USER) that owns Sandstorm's files"
     if [ "unknown" == "$INIT_SYSTEM" ]; then
@@ -696,6 +730,7 @@ full_server_install() {
                              ACCEPTED_FULL_SERVER_INSTALL=yes \
                              OVERRIDE_SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-}" \
                              OVERRIDE_SANDCATS_API_BASE="${OVERRIDE_SANDCATS_API_BASE:-}" \
+                             OVERRIDE_SANDCATS_GETCERTIFICATE="${SANDCATS_GETCERTIFICATE}" \
                              OVERRIDE_SANDCATS_CURL_PARAMS="${OVERRIDE_SANDCATS_CURL_PARAMS:-}"
       fi
 
@@ -773,7 +808,16 @@ configure_hostnames() {
     fi
   fi
 
+  # A typical server's DEFAULT_BASE_URL is its hostname plus port over HTTP.
   DEFAULT_BASE_URL="http://$SS_HOSTNAME:$PORT"
+
+  # If SANDCATS_HTTPS_SUCCESSFUL is true, then use a HTTPS URL.
+  if [ "$SANDCATS_HTTPS_SUCCESSFUL" = "yes" ]; then
+    DEFAULT_BASE_URL="https://$SS_HOSTNAME"
+    HTTPS_PORT=443
+    PORT=80
+  fi
+
   if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then
     # Do not prompt for BASE_URL configuration if Sandcats bringup
     # succeeded.
@@ -1013,6 +1057,9 @@ save_config() {
   if [ "yes" = "$SANDCATS_SUCCESSFUL" ] ; then
     writeConfig SANDCATS_BASE_DOMAIN >> sandstorm.conf
   fi
+  if [ "yes" = "$SANDCATS_HTTPS_SUCCESSFUL" ] ; then
+    writeConfig HTTPS_PORT >> sandstorm.conf
+  fi
 
   echo
   echo "Config written to $PWD/sandstorm.conf."
@@ -1035,12 +1082,73 @@ download_latest_bundle_and_extract_if_needed() {
 
   do-download() {
     rm -rf $BUILD_DIR
+    WORK_DIR="$(mktemp -d --tmpdir sandstorm-installer.XXXXXXXXXX)"
     local URL="https://dl.sandstorm.io/sandstorm-$BUILD.tar.xz"
     echo "Downloading: $URL"
-    curl -A "$CURL_USER_AGENT" -f "$URL" | tar Jxo
+    curl -A "$CURL_USER_AGENT" -f "$URL" > "$WORK_DIR/sandstorm-$BUILD.tar.xz"
+    curl -s -A "$CURL_USER_AGENT" -f "$URL.sig" > "$WORK_DIR/sandstorm-$BUILD.tar.xz.sig"
+
+    if which gpg > /dev/null; then
+      # Regenerate with: gpg --armor --export 160D2D577518B58D94C9800B63F227499DA8CCBD
+      gpg --dearmor > "$WORK_DIR/sandstorm-keyring.gpg" << __EOF__
+-----BEGIN PGP PUBLIC KEY BLOCK-----
+Version: GnuPG v1
+
+mQENBFX8ypkBCAC8sjX5yZqKdW8nY7aE/GpVeS+qSCbpYSJwixYNFXbz3MQihR3S
+suvg5uw1KyuQb23c0LwirfxazVf7txKhQNaNU3ek62LG3wcGeBrvQGsIUMbkatay
+/163CLeVWfSK1Z4pFc4dhdjXYSOz0oZxd7Mp78crBbGKmyn7PtzdAqt+XfEXNuee
+cDbx++P57n5s5xc5fQWznt333IMgmgTREGUROfh4kL376rFAS208XIywJlUVkoKM
+kIzgcjevFGwYKdsLigHXCDp9toQHl8oPjFV+RE8Br8ciJlMp9CqCfHGwj0Orxasc
+e9moLqqUc+iKdg9bQfuAbJ/jFNhGmV/CVv9tABEBAAG0LlNhbmRzdG9ybS5pbyAo
+cmVsZWFzZXMpIDxzdXBwb3J0QHNhbmRzdG9ybS5pbz6JATgEEwECACIFAlX8ypkC
+GwMGCwkIBwMCBhUIAgkKCwQWAgMBAh4BAheAAAoJEGPyJ0mdqMy91bYH/iTg9qbw
+G3th57Yf70NtyMJE3UBFDYDNAgT45UBEHoHhQM5cdFu/EIHggOKl/A2zL19Nh555
+5F5o3jiJChQ0cvpoVnDdA5lRKD9iK6hzAba9fCVAx/od1PULQP7KV+uHTQuclSFO
+DBvpgT8bMY9LmlpTl+l2lvYd+c50w3jZMFwh8JrJYAc3X0kBfVEywVZkjH8Nw5nD
+v/j5Of3XXfEg84tNyWSYUMrYVORJyfHtA9e3JXNv5BMxH73AVLnyCJhCaodQsC6Z
+hFkHUvvRb58ZqKXMtLYTd/8XLIvpkgRNX6EHWDslJh3BaBwHSuqDNssh1TW5xPjA
+9vkPDzeZfLkuxpy5AQ0EVfzKmQEIANyi22M/3KhkghsPA6Rpha1lx6JJCb4p7E21
+y82OGFUwcMpZkSgh1lARgp/Mvc2CHhAXi6NkGbgYc1q5rgARSvim2EMZNQOEqRb9
+teEeI3w7Nz8Q/WoWck9WaXg8EdELtBOXYgVEirVddUl6ftUvCeBh3hE2Y/CLQSXL
+CYXdQ2/MN6xV8tepuWOu0aPxxPUNea9ceDNZ8/CXEL32pzv9SUX/3KgSnFTzmxNP
+thzXGuaAQGMZRu3cdTSeK9UUX4L3lxv7p0nE/2K18MU3FayTJqspfUCc4BgHZRMN
+sh+2/YNfJgi0uWex1WnU94ZIp4A0uic54bU1ZECSwxg81KHaEEkAEQEAAYkBHwQY
+AQIACQUCVfzKmQIbDAAKCRBj8idJnajMvZgPB/0THpTPnfsYNkwQrBsrTq413ZTF
+JmVyeZ9xnGDImOdyHhGLlnLC1YEnaNUVEyMKifya4TF2utrLrsMT9TC/dWvFsYlJ
+oMcUpaSlrFoAoPp3pdOGCIRYNhWGHoxy0Ti1WAa/6A+GoHJpUEz85/jD4vjgYlCX
+ZFW1Pji9PbdIZFZQR4FyYBkkZOUq6yyTNR0syQPVy3EsPVvXzszm2zV/1YjGymgj
+MKeYR9+VU+PlFAY9wwLWLTFeSzxTyVjbPwF5bWHV32GM8g0/NgA6a1JLL40v7pqf
+uYvFk2KJpo3gZNGJ72gLkSzie7Eu1/V67JIG9TwfrJUEj8Uwd5zPv1MOqfWl
+=OiS5
+-----END PGP PUBLIC KEY BLOCK-----
+__EOF__
+
+      if gpg --no-default-keyring --keyring $WORK_DIR/sandstorm-keyring.gpg --status-fd 1 \
+             --verify $WORK_DIR/sandstorm-$BUILD.tar.xz{.sig,} 2>/dev/null | \
+          grep -q '^\[GNUPG:\] VALIDSIG 160D2D577518B58D94C9800B63F227499DA8CCBD '; then
+        echo "GPG signature is valid."
+      else
+        rm -rf sandstorm-$BUILD
+        fail "GPG signature is NOT valid! Please report to security@sandstorm.io immediately!"
+      fi
+    else
+      echo "WARNING: gpg not installed; not verifying signatures (but it's HTTPS so you're probably fine)" >&2
+    fi
+
+    tar Jxof "$WORK_DIR/sandstorm-$BUILD.tar.xz"
+    rm -rf "$WORK_DIR"
 
     if [ ! -e "$BUILD_DIR" ]; then
       fail "Bad package -- did not contain $BUILD_DIR directory."
+    fi
+
+    if [ ! -e "$BUILD_DIR/buildstamp" ] || \
+       [ $(stat --printf=%Y "$BUILD_DIR/buildstamp") -lt $(( $(date +%s) - 30*24*60*60 )) ]; then
+      rm -rf "$BUILD_DIR"
+      fail "The downloaded package seems to be more than a month old. Please verify that your" \
+           "computer's clock is correct and try again. It could also be that an attacker is" \
+           "trying to trick you into installing an old version. Please contact" \
+           "security@sandstorm.io if the problem persists."
     fi
   }
 
@@ -1108,7 +1216,7 @@ install_sandstorm_symlinks() {
 
   # Install tools.
   ln -sfT $PWD/sandstorm /usr/local/bin/sandstorm
-  ./sandstorm devtools
+  ln -sfT $PWD/sandstorm /usr/local/bin/spk
 }
 
 ask_about_starting_at_boot() {
@@ -1234,16 +1342,28 @@ generate_admin_token() {
 }
 
 print_success() {
+  echo ""
   if [ "yes" = "$SANDSTORM_NEEDS_TO_BE_STARTED" ] ; then
     echo "Setup complete. To start your server now, run:"
     echo "  $DIR/sandstorm start"
-    echo "You should then configure the site at:"
+    echo "Once that's done, visit this link to configure it:"
   else
-    echo "Setup complete. You should configure the site at:"
+    echo -n "Your server is now online! "
+    if [ "${SANDCATS_HTTPS_SUCCESSFUL}" = "yes" ] ; then
+      echo "It should work immediately if you use Chrome."
+    fi
+    echo "Visit this link to configure it:"
   fi
+  echo ""
   echo "  ${BASE_URL:-(unknown; bad config)}/admin/settings/$ADMIN_TOKEN"
-  echo "WARNING: This token expires in 15 minutes."
-  echo "You can generate a new token by running 'sandstorm admin-token' from the command line"
+  if [ "${SANDCATS_HTTPS_SUCCESSFUL}" = "yes" ] ; then
+    echo ""
+    echo "(If your browser shows you an OCSP error, wait 10 minutes for it to auto-resolve"
+    echo "and try Chrome until then.)"
+  fi
+  echo ""
+  echo "NOTE: This URL expires in 15 minutes. You can generate a new setup URL by running"
+  echo "'sudo sandstorm admin-token' from the command line."
   echo
   echo "To learn how to control the server, run:"
   if [ "yes" = "$CURRENTLY_UID_ZERO" ] ; then
@@ -1524,9 +1644,15 @@ sandcats_configure_https() {
   # adjusts the hostname, the Sandstorm code can easily figure out to
   # not use these certificates without having to parse the actual
   # X.509 certificate data.
-  local HTTPS_CONFIG_DIR="var/sandcats/https/$SS_HOSTNAME"
+  local HTTPS_BASE_DIR="var/sandcats/https"
+  local HTTPS_CONFIG_DIR="$HTTPS_BASE_DIR/$SS_HOSTNAME"
   mkdir -p -m 0700 "$HTTPS_CONFIG_DIR"
   chmod 0700 "$HTTPS_CONFIG_DIR"
+
+  # Make this readable by Sandstorm.
+  if [ "yes" = "$CURRENTLY_UID_ZERO" ] ; then
+    chown -R "$SERVER_USER":"$SERVER_USER" "$HTTPS_BASE_DIR"
+  fi
 
   # Create a certificate signing request and corresponding key.
   #
@@ -1540,10 +1666,13 @@ sandcats_configure_https() {
     -nodes `# no DES -- that is, do not encrypt the key at rest.` \
     -newkey rsa:4096 `# Create a new RSA key of length 4096 bits.` \
     `# Sandcats just needs the CN= (common name) in the request.` \
-    -subj "/CN=$SS_HOSTNAME/" \
+    -subj "/CN=*.${SS_HOSTNAME}/" \
     -keyout "$HTTPS_CONFIG_DIR"/0 `# Store the resulting RSA private key in 0` \
     -out "$HTTPS_CONFIG_DIR"/0.csr `# Store the resulting certificate in 0.pub` \
     2>/dev/null `# Silence the progress output.`
+
+  chmod 0600 "$HTTPS_CONFIG_DIR"/0
+  chmod 0600 "$HTTPS_CONFIG_DIR"/0.csr
 
   echo "Requesting certificate (BE PATIENT)..."
   # Note that the "LOG_PATH" is a machine-readable JSON file that the
@@ -1569,6 +1698,11 @@ sandcats_configure_https() {
       --cert var/sandcats/id_rsa.private_combined \
       "${SANDCATS_API_BASE}/getcertificate")
 
+  chmod 0600 "$LOG_PATH"
+
+  # Make sure the Sandstorm service can read these files.
+  chown "$SERVER_USER":"$SERVER_USER" "$HTTPS_CONFIG_DIR/"*
+
   if [ "200" = "$HTTP_STATUS" ]
   then
     # Say something nice to the user.
@@ -1580,6 +1714,35 @@ sandcats_configure_https() {
     # Express our sadness to the user, and proceed without HTTPS.
     error "Some part of HTTPS autoconfiguration failed. Log data available in $LOG_PATH"
     return
+  fi
+}
+
+wait_for_server_bind_to_https_if_needed() {
+  if [ "${SANDCATS_HTTPS_SUCCESSFUL}" != "yes" ] ; then
+    return
+  fi
+
+  # For sandcats HTTPS, we have to generate the initial non-SNI key before
+  # Sandstorm binds to port 443. So we let the user know it could be slow.
+  echo -n "Your server is coming online. Waiting up to 90 seconds..."
+  local ONLINE_YET="no"
+  for waited_n_seconds in $(seq 0 89); do
+    nc -z 0.0.0.0 443 && ONLINE_YET="yes"
+    if [ "$ONLINE_YET" == "yes" ] ; then
+      echo ''
+      break
+    fi
+    echo -n "."
+    sleep 1
+  done
+
+  # One last check before we bail out.
+  nc -z 0.0.0.0 443 && ONLINE_YET="yes"
+
+  if [ "$ONLINE_YET" == "yes" ]; then
+    return
+  else
+    fail "Your server never started listening."
   fi
 }
 
@@ -1672,6 +1835,7 @@ set_permissions
 install_sandstorm_symlinks
 ask_about_starting_at_boot
 configure_start_at_boot_if_desired
+wait_for_server_bind_to_https_if_needed
 print_success
 }
 

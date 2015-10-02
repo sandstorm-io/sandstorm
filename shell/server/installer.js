@@ -69,7 +69,7 @@ var deletePackageInternal = function (package) {
     notificationQuery["appUpdates." + package.appId] = {$exists: true};
     if (!grain && !action && !(package.isAutoUpdated && Notifications.findOne(notificationQuery))) {
       Packages.update({_id:packageId}, {$set: {status:"delete"}, $unset: {shouldCleanup: ""}});
-      waitPromise(sandstormBackend.deletePackage(packageId));
+      waitPromise(globalBackend.cap().deletePackage(packageId));
       Packages.remove(packageId);
 
       // Clean up assets (icon, etc).
@@ -141,7 +141,7 @@ doClientUpload = function (stream) {
   return new Promise(function (resolve, reject) {
     var id = Random.id();
 
-    var backendStream = sandstormBackend.installPackage().stream;
+    var backendStream = globalBackend.cap().installPackage().stream;
     var hasher = Crypto.createHash("sha256");
 
     stream.on("data", function (chunk) {
@@ -345,7 +345,8 @@ AppInstaller.prototype.updateProgress = function (status, progress, error, manif
         progress: self.progress,
         error: self.error ? self.error.message : null,
         manifest: self.manifest,
-        appId: self.appId
+        appId: self.appId,
+        authorPgpKeyFingerprint: self.authorPgpKeyFingerprint
       }});
     }).catch (function (err) {
       console.error(err.stack);
@@ -387,10 +388,11 @@ AppInstaller.prototype.start = function () {
   return this.wrapCallback(function () {
     this.cleanup();
 
-    sandstormBackend.tryGetPackage(this.packageId)
+    globalBackend.cap().tryGetPackage(this.packageId)
         .then(this.wrapCallback(function(info) {
       if (info.appId) {
         this.appId = info.appId;
+        this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
         this.done(info.manifest);
       } else {
         this.doDownload();
@@ -409,7 +411,7 @@ AppInstaller.prototype.doDownload = function () {
   console.log("Downloading app:", this.url);
   this.updateProgress("download");
 
-  this.uploadStream = sandstormBackend.installPackage().stream;
+  this.uploadStream = globalBackend.cap().installPackage().stream;
   return this.doDownloadTo(this.uploadStream);
 }
 
@@ -493,6 +495,7 @@ AppInstaller.prototype.doDownloadTo = function (out) {
       this.updateProgress("unpack");
       out.saveAs(this.packageId).then(this.wrapCallback(function (info) {
         this.appId = info.appId;
+        this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
         this.done(info.manifest);
       }), this.wrapCallback(function (err) {
         throw err;

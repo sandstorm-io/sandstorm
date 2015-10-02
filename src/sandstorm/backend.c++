@@ -17,6 +17,7 @@
 #include "backend.h"
 #include <kj/debug.h>
 #include "util.h"
+#include "spk.h"
 #include <capnp/serialize.h>
 #include <capnp/serialize-async.h>
 #include <stdio.h>  // rename()
@@ -206,6 +207,10 @@ BackendImpl::RunningGrain::~RunningGrain() noexcept(false) {
   backend.supervisors.erase(grainId);
 }
 
+kj::Promise<void> BackendImpl::ping(PingContext context) {
+  return kj::READY_NOW;
+}
+
 kj::Promise<void> BackendImpl::startGrain(StartGrainContext context) {
   auto params = context.getParams();
   return bootGrain(validateId(params.getGrainId()),
@@ -343,6 +348,9 @@ protected:
       auto results = context.getResults(sizeHint);
       results.setAppId(trim(text));
       results.setManifest(manifest);
+      KJ_IF_MAYBE(fp, checkPgpSignature(results.getAppId(), manifest.getMetadata())) {
+        results.setAuthorPgpKeyFingerprint(*fp);
+      }
     }, [this](kj::Exception&& e) {
       kj::runCatchingExceptions([&]() { recursivelyDelete(tmpdir); });
       kj::throwRecoverableException(kj::mv(e));
@@ -395,6 +403,9 @@ kj::Promise<void> BackendImpl::tryGetPackage(TryGetPackageContext context) {
     auto results = context.getResults(sizeHint);
     results.setAppId(trim(appid));
     results.setManifest(manifest);
+    KJ_IF_MAYBE(fp, checkPgpSignature(results.getAppId(), manifest.getMetadata())) {
+      results.setAuthorPgpKeyFingerprint(*fp);
+    }
   }
 
   return kj::READY_NOW;

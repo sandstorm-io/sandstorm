@@ -46,7 +46,7 @@ if (allowDevAccounts) {
         }
         // Log them in on this connection.
         return Accounts._loginMethod(this, "createDevAccount", arguments,
-            "devAccounts", function () { return { userId: userId }; });
+            "dev", function () { return { userId: userId }; });
       }
     });
   }

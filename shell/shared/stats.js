@@ -97,7 +97,7 @@ if (Meteor.isServer) {
     ]).forEach(function (deletion) {
       var app = apps[deletion._id.appId];
       if (!app) {
-        app = apps[deleted.appId] = {};
+        app = apps[deletion.appId] = {};
       }
       if (deletion._id.type === "appDemoUser") {
         app.appDemoUsers = deletion.count;

@@ -32,7 +32,8 @@ if (Meteor.isClient) {
     Meteor.subscribe("grainsMenu"),
     Meteor.subscribe("userPackages"),
     Meteor.subscribe("devApps"),
-    Meteor.subscribe("credentials")
+    Meteor.subscribe("credentials"),
+    Meteor.subscribe("accountIdentities")
   ];
 }
 
@@ -76,7 +77,7 @@ if (Meteor.isServer) {
         // TODO(someday): Implement the ability to reactively subscribe to storage usage from the
         //   back-end?
         var userId = this.userId;
-        sandstormBackend.getUserStorageUsage(userId).then(function (results) {
+        globalBackend.cap().getUserStorageUsage(userId).then(function (results) {
           inMeteor(function () {
             Meteor.users.update(userId, {$set: {storageUsage: parseInt(results.size)}});
           });
@@ -86,11 +87,12 @@ if (Meteor.isServer) {
           }
         });
       }
-
+      var identityIds = SandstormDb.getUserIdentities(globalDb.getUser(this.userId))
+          .map(function (x) { return x.id; });
       return [
         UserActions.find({userId: this.userId}),
         Grains.find({userId: this.userId}),
-        ApiTokens.find({'owner.user.userId': this.userId}),
+        ApiTokens.find({'owner.user.identityId': {$in: identityIds}}),
       ];
     } else {
       return [];
@@ -473,7 +475,7 @@ if (Meteor.isClient) {
   });
 
   Template.layout.events({
-    "click .demo-expired.logout": function (event) {
+    "click #demo-expired.logout": function (event) {
       Meteor.logout();
     }
   });
@@ -590,8 +592,10 @@ if (Meteor.isClient) {
     }
     title = "Untitled " + title;
 
+    var identity = _.findWhere(SandstormDb.getUserIdentities(Meteor.user()), {main: true});
+
     // We need to ask the server to start a new grain, then browse to it.
-    Meteor.call("newGrain", packageId, command, title, function (error, grainId) {
+    Meteor.call("newGrain", packageId, command, title, identity.id, function (error, grainId) {
       if (error) {
         console.error(error);
         alert(error.message);
@@ -628,23 +632,6 @@ if (Meteor.isClient) {
         Meteor.call("deleteUnusedPackages", appId);
       }
     },
-  });
-
-  Template.about.onCreated(function () {
-    this.showChangelog = new ReactiveVar(false);
-  });
-
-  Template.about.helpers({
-    showChangelog: function () {
-      return Template.instance().showChangelog.get();
-    }
-  });
-
-  Template.about.events({
-    "click #show-changelog": function (ev) {
-      var showChangelog = Template.instance().showChangelog;
-      showChangelog.set(!showChangelog.get());
-    }
   });
 
   Template.notificationsPopup.helpers({

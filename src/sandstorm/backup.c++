@@ -135,7 +135,7 @@ bool BackupMain::run(kj::StringPtr grainDir) {
   // Bind in the grain's `log`. When restoring, we discard the log.
   if (!restore) {
     KJ_SYSCALL(mknod("/tmp/tmp/log", S_IFREG | 0600, 0));
-    bind(kj::str(grainDir, "/log"), "/tmp/tmp/log", MS_RDONLY | MS_NOEXEC);
+    bind(kj::str(grainDir, "/log"), "/tmp/tmp/log", MS_RDONLY | MS_NOEXEC | MS_NOSUID | MS_NODEV);
   }
 
   // Bind in the file.

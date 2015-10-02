@@ -22,9 +22,12 @@ browser-policy
 reactive-var
 sandstorm-autoupdate-apps
 sandstorm-db
+sandstorm-backend
+sandstorm-accounts-merge
 sandstorm-identicons
 sandstorm-permissions
 sandstorm-ui-topbar
 sandstorm-ui-applist
 sandstorm-ui-grainlist
+meteor-node-forge
 fourseven:scss

@@ -36,6 +36,7 @@ public:
               SandstormCoreFactory::Client&& sandstormCoreFactory);
 
 protected:
+  kj::Promise<void> ping(PingContext context) override;
   kj::Promise<void> startGrain(StartGrainContext context) override;
   kj::Promise<void> getGrain(GetGrainContext context) override;
   kj::Promise<void> deleteGrain(DeleteGrainContext context) override;

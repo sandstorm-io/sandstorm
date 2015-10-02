@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "node-forge": {
+      "version": "0.6.34"
+    }
+  }
+}

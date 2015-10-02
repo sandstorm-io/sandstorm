@@ -129,7 +129,7 @@ Meteor.startup(function() {
               var grain = Grains.findOne({publicId: publicId}, {fields: {}});
               if (grain) {
                 grainId = grain._id;
-                return openGrain(grainId, retryCount > 0);
+                return globalBackend.openGrain(grainId, retryCount > 0);
               } else {
                 // TODO(someday): We really ought to rig things up so that the "RCPT TO" SMTP command
                 //   fails in this case, but simplesmtp doesn't appear to support that.
@@ -156,7 +156,7 @@ Meteor.startup(function() {
                   .session.castAs(EmailSendPort);
               return session.send(mailMessage);
             }).catch(function (err) {
-              if (shouldRestartGrain(err, retryCount)) {
+              if (SandstormBackend.shouldRestartGrain(err, retryCount)) {
                 return tryDeliver(retryCount + 1);
               } else {
                 throw err;
@@ -268,7 +268,7 @@ hackSendEmail = function (session, email) {
     }
 
     var user = Meteor.users.findAndModify({
-      query: {_id: session.userId},
+      query: {"identities.id": session.identityId},
       update: {$inc: {dailySentMailCount: 1}},
       fields: {dailySentMailCount: 1}
     });

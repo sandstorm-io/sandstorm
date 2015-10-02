@@ -566,9 +566,9 @@ struct UserInfo {
   # permissions.  Either way, the application need not worry about permissions changing during a
   # session.
 
-  userId @2 :Data;
+  identityId @2 :Data;
   # A unique, stable identifier for the calling user. This is computed such that a user's ID will
-  # be the same across all Sandstorm servers, and will not collide with any other user ID in the
+  # be the same across all Sandstorm servers, and will not collide with any other identity ID in the
   # world. Therefore, grains transferred between servers can still count on the user IDs being the
   # same and secure (unless the new host is itself malicious, of course, in which case all bets are
   # off).

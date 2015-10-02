@@ -123,6 +123,7 @@ Meteor.methods({
 });
 
 SandstormAccountsMerge.registerObservers = function (db, backend) {
+  // TODO(before enabling merging): make these handlers robust to exceptions.
 
   Meteor.users.find({"merging.status": "pending"}).observe({
     added: function(losingUser) {
@@ -185,6 +186,7 @@ SandstormAccountsMerge.registerObservers = function (db, backend) {
       // Transfer grain storage to new owner.
       // Note: We don't parallelize this because it can cause some contention in the Blackrock
       //   back-end.
+      // TODO(before enabling): make this robust to mid-transfer server crashes.
       grains.forEach(function (grain) {
         return waitPromise(backend.cap().transferGrain(grain.userId, grain._id, winningUserId));
       });
@@ -230,6 +232,7 @@ SandstormAccountsMerge.registerObservers = function (db, backend) {
       // Transfer grain storage to new owner.
       // Note: We don't parallelize this because it can cause some contention in the Blackrock
       //   back-end.
+      // TODO(before enabling): make this robust to mid-transfer server crashes.
       grains.forEach(function (grain) {
         return waitPromise(backend.cap().transferGrain(grain.userId, grain._id, destUserId));
       });

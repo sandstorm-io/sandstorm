@@ -54,7 +54,7 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //       pronoun: One of "male", "female", "neutral", or "robot". Default: neutral.
 //       unverifiedEmail: Email address specified by the user.
 //       verifiedEmail: Only provided by some services. Cannot be directly edited by the user.
-//       main: True is this is the user's main identity.
+//       main: True if this is the user's main identity.
 //       noLogin: True if the user does not trust this identity for account authentication.
 //   services: Object containing login and identity data used by Meteor authentication services.
 //   mergedUsers: Array of User _id strings, representing the accounts that have been merged into this

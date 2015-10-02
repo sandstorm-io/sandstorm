@@ -222,9 +222,14 @@ function splitUserIdsIntoAccountIdsAndIdentityIds() {
     ApiTokens.update({"owner.grain.introducerUser": user._id},
                      {$set: {"owner.grain.introducerIdentity": identity.id}},
                      {multi: true});
-    ApiTokens.update({"requirements.permissionsHeld.userId": user._id},
-                     {$set: {"requirements.$.permissionsHeld.identityId": identity.id}},
-                     {multi: true});
+
+    while (ApiTokens.update({"requirements.permissionsHeld.userId": user._id},
+                            {$set: {"requirements.$.permissionsHeld.identityId": identity.id},
+                             $unset: {"requirements.$.permissionsHeld.userId": 1}},
+                            {multi: true}) > 0);
+    // The `$` operatorer modifies the first element in the array that matches the query. Since
+    // there may be many matches, we need to repeat until no documents are modified.
+
   });
 
   ApiTokens.remove({userInfo: {$exists: true}});

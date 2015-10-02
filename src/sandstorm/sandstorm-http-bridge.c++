@@ -1207,9 +1207,9 @@ private:
         lines.add(kj::str("If-Match: ", kj::strArray(
               KJ_MAP(e, eTagPrecondition.getMatchesOneOf()) {
                 if (e.getWeak()) {
-                  return kj::str("W/", e.getValue());
+                  return kj::str("W/\"", e.getValue(), '"');
                 } else {
-                  return kj::str(e.getValue());
+                  return kj::str('"', e.getValue(), '"');
                 }
               }, ", ")));
         break;
@@ -1217,9 +1217,9 @@ private:
         lines.add(kj::str("If-None-Match: ", kj::strArray(
               KJ_MAP(e, eTagPrecondition.getMatchesNoneOf()) {
                 if (e.getWeak()) {
-                  return kj::str("W/", e.getValue());
+                  return kj::str("W/\"", e.getValue(), '"');
                 } else {
-                  return kj::str(e.getValue());
+                  return kj::str('"', e.getValue(), '"');
                 }
               }, ", ")));
         break;

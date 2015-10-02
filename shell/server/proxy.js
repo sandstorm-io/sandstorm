@@ -1377,18 +1377,18 @@ function parseCookies(request) {
 
 function parsePreconditionHeader(request) {
   if (request.headers['if-match']) {
-    if (request.headers['if-match'] === "*") {
+    if (request.headers['if-match'].trim() === "*") {
       return { exists: null };
     }
 
-    var matches = parseEntityTag(request.headers['if-match']);
+    var matches = parseETagList(request.headers['if-match']);
     if (matches.length > 0) {
       return { matchesOneOf: matches };
     }
   }
 
   if (request.headers['if-none-match']) {
-    var noneMatches = parseEntityTag(request.headers['if-none-match']);
+    var noneMatches = parseETagList(request.headers['if-none-match']);
     if (noneMatches.length > 0) {
       return { matchesNoneOf: noneMatches };
     }
@@ -1397,15 +1397,22 @@ function parsePreconditionHeader(request) {
   return { none: null };
 }
 
-function parseEntityTag(headerValue) {
-  // ETags can consist of a series of values, comma-separated, that may be enclosed
-  // in quote marks or not, and may begin with W/ to denote weak ETags
-  var etags = headerValue.match(/\s?(W?\/?"[^"]+"|[^,]+)/);
+function parseETagList(input) {
+  // An ETag is a quoted, \-escaped string, possibly prefixed with W/ (outside the quotes) to
+  // indicate that it is weak. We are parsing a list of comma-delimited etags.
 
-  return etags.map(function(etag) {
-    var m = etag.match(/^(W\/)?"?(.*?)"?$/);
-    return { weak: !!m[1], value: m[2] };
-  });
+  input = input.trim();
+  var results = [];
+
+  while (input.length > 0) {
+    var match = input.match(/^\s*(W\/)?"(([^"\\]|\\.)*)"\s*($|,)/);
+    if (!match) throw new Meteor.Error(400, "invalid etag");
+
+    input = input.slice(match[0].length).trim();
+    results.push({ weak: !!match[1], value: match[2].replace(/\\(.)/g, '$1') });
+  }
+
+  return results;
 }
 
 function parseAcceptHeader(request) {

@@ -115,7 +115,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     accept @2 :List(AcceptedType);
     # This corresponds to the Accept header
 
-    etagPrecondition :union {
+    eTagPrecondition :union {
       none @4 :Void;  # No precondition.
       exists @5 :Void;  # If-Match: *
       matchesOneOf @6 :List(ETag);  # If-Match
@@ -273,7 +273,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
         language @3 :Text;  # Content-Language header (optional).
         mimeType @4 :Text;  # Content-Type header.
 
-        etag @18 :Text;
+        eTag @17 :Text;
 
         body :union {
           bytes @5 :Data;
@@ -292,13 +292,24 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       noContent :group {
         # Return successful, but with no content (status codes 204 and 205)
 
-        statusCode @17 :SuccessCode;
-
         shouldResetForm @15 :Bool;
         # If this is the response to a form submission, should the form be reset to empty?
         # Distinguishes between HTTP response 204 (False) and 205 (True)
+      }
 
-        etag @19 :Text;
+      preconditionFailed :group {
+        # One of the preconditions specified in the request context was not met.
+        #
+        # If the request was a GET or HEAD and the precodition was If-None-Match, then this response
+        # corresponds to HTTP 304 "Not Modified". In all other ctases, this response corresponds to
+        # HTTP 412 "Precondition Failed". (We unify these two HTTP status codes because they really
+        # mean the same thing and should be implemented by the same code.)
+
+        matchingETag @18 :Text;
+        # If the precondition failed because the etag matched a tag specified in `matchesNoneOf`,
+        # this is the tag that it matched. For other types of preconditions, this is null.
+        #
+        # (This is in particular used for GET requests where the result is "304 not modified".)
       }
 
       redirect :group {
@@ -423,8 +434,6 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     # Indicates what inputs in `Context` would have caused a different response to be served.
     # If these are false and caching is enabled, it is assumed the resource is identical regardless
     # of these inputs.
-
-    # TODO(someday): Support etags.
   }
 
   struct Options {

@@ -1485,7 +1485,7 @@ Proxy.prototype.makeContext = function (request, response) {
 
   context.accept = parseAcceptHeader(request);
 
-  context.etagPrecondition = parsePreconditionHeader(request);
+  context.eTagPrecondition = parsePreconditionHeader(request);
 
   context.additionalHeaders = [];
   WebSession.Context.headerWhitelist.forEach(function(headerName) {
@@ -1551,13 +1551,11 @@ var successCodes = {
   accepted:    { id: 202, title: "Accepted" },
   multiStatus: { id: 207, title: "Multi-Status" }
 };
-var noContentSuccessCodes = {
-  noContent:      { id: 204, title: "No Content" },
-  resetContent:   { id: 205, title: "Reset Content" },
-  partialContent: { id: 206, title: "Partial Content" },
-  multiStatus:    { id: 207, title: "Multi-Status" },
-  notModified:    { id: 304, title: "Not Modified" }
-};
+var noContentSuccessCodes = [
+  // Indexed by shouldResetForm * 1
+  { id: 204, title: "No Content" },
+  { id: 205, title: "Reset Content" }
+];
 var redirectCodes = [
   // Indexed by switchToGet * 2 + isPermanent
   { id: 307, title: "Temporary Redirect" },
@@ -1573,7 +1571,6 @@ var errorCodes = {
   notAcceptable:         { id: 406, title: "Not Acceptable" },
   conflict:              { id: 409, title: "Conflict" },
   gone:                  { id: 410, title: "Gone" },
-  preconditionFailed:    { id: 412, title: "Precondition Failed" },
   requestEntityTooLarge: { id: 413, title: "Request Entity Too Large" },
   requestUriTooLong:     { id: 414, title: "Request-URI Too Long" },
   unsupportedMediaType:  { id: 415, title: "Unsupported Media Type" },
@@ -1607,7 +1604,7 @@ ResponseStream.prototype.close = function () {
   }
 }
 
-Proxy.prototype.translateResponse = function (rpcResponse, response, dropBody) {
+Proxy.prototype.translateResponse = function (rpcResponse, response, request) {
   if (this.hostId) {
     if (rpcResponse.setCookies && rpcResponse.setCookies.length > 0) {
       response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
@@ -1654,15 +1651,15 @@ Proxy.prototype.translateResponse = function (rpcResponse, response, dropBody) {
     if (content.language) {
       response.setHeader("Content-Language", content.language);
     }
-    if (content.etag) {
-      response.setHeader("ETag", content.etag);
+    if (content.eTag) {
+      response.setHeader("ETag", content.eTag);
     }
     if (("disposition" in content) && ("download" in content.disposition)) {
       response.setHeader("Content-Disposition", "attachment; filename=\"" +
           content.disposition.download.replace(/([\\"\n])/g, "\\$1") + "\"");
     }
     if ("stream" in content.body) {
-      if (dropBody) {
+      if (request.method === "HEAD") {
         content.body.stream.close();
         response.rejectResponseStream(
             new Error("HEAD request; content doesn't matter."));
@@ -1689,18 +1686,25 @@ Proxy.prototype.translateResponse = function (rpcResponse, response, dropBody) {
 
     response.writeHead(code.id, code.title);
 
-    if ("bytes" in content.body && !dropBody) {
+    if ("bytes" in content.body && request.method !== "HEAD") {
       response.write(content.body.bytes);
     }
     response.end();
   } else if ("noContent" in rpcResponse) {
     var noContent = rpcResponse.noContent;
-    var noContentCode = noContentSuccessCodes[noContent.statusCode];
-    if (noContent.etag) {
-      response.setHeader("ETag", noContent.etag);
-    }
-
+    var noContentCode = noContentSuccessCodes[noContent.shouldResetForm * 1];
     response.writeHead(noContentCode.id, noContentCode.title);
+    response.end();
+  } else if ("preconditionFailed" in rpcResponse) {
+    var preconditionFailed = rpcResponse.preconditionFailed;
+    if (request.method === "GET" && "if-none-match" in request.headers) {
+      if (preconditionFailed.matchingETag) {
+        response.setHeader("ETag", preconditionFailed.matchingETag);
+      }
+      response.writeHead(304, "Not Modified");
+    } else {
+      response.writeHead(412, "Precondition Failed");
+    }
     response.end();
   } else if ("redirect" in rpcResponse) {
     var redirect = rpcResponse.redirect;
@@ -1718,7 +1722,7 @@ Proxy.prototype.translateResponse = function (rpcResponse, response, dropBody) {
     response.writeHead(errorCode.id, errorCode.title, {
       "Content-Type": "text/html"
     });
-    if (!dropBody) {
+    if (request.method !== "HEAD") {
       if (clientError.descriptionHtml) {
         response.write(clientError.descriptionHtml);
       } else {
@@ -1732,7 +1736,7 @@ Proxy.prototype.translateResponse = function (rpcResponse, response, dropBody) {
     response.writeHead(500, "Internal Server Error", {
       "Content-Type": "text/html"
     });
-    if (!dropBody) {
+    if (request.method !== "HEAD") {
       if (rpcResponse.serverError.descriptionHtml) {
         response.write(rpcResponse.serverError.descriptionHtml);
       } else {
@@ -1876,7 +1880,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
 
   }).then(function (rpcResponse) {
     if (rpcResponse !== undefined) {  // Will be undefined for OPTIONS request.
-      return self.translateResponse(rpcResponse, response, request.method === "HEAD");
+      return self.translateResponse(rpcResponse, response, request);
     }
   }).catch(function (error) {
     return self.maybeRetryAfterError(error, retryCount).then(function () {
@@ -1974,7 +1978,7 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
       // Stop here if the upload stream has already failed.
       if (uploadStreamError) throw uploadStreamError;
 
-      var promise = self.translateResponse(rpcResponse, response);
+      var promise = self.translateResponse(rpcResponse, response, request);
       downloadStreamHandle = promise.streamHandle;
       return promise;
     });

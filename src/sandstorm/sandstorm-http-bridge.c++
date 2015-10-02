@@ -92,11 +92,10 @@ struct HttpStatusInfo {
   };
 };
 
-HttpStatusInfo noContentInfo(bool shouldResetForm, WebSession::Response::SuccessCode code) {
+HttpStatusInfo noContentInfo(bool shouldResetForm) {
   HttpStatusInfo result;
   result.type = WebSession::Response::NO_CONTENT;
   result.noContent.shouldResetForm = shouldResetForm;
-  result.successCode = code;
   return result;
 }
 
@@ -105,6 +104,12 @@ HttpStatusInfo redirectInfo(bool isPermanent, bool switchToGet) {
   result.type = WebSession::Response::REDIRECT;
   result.redirect.isPermanent = isPermanent;
   result.redirect.switchToGet = switchToGet;
+  return result;
+}
+
+HttpStatusInfo preconditionFailedInfo() {
+  HttpStatusInfo result;
+  result.type = WebSession::Response::PRECONDITION_FAILED;
   return result;
 }
 
@@ -134,15 +139,18 @@ std::unordered_map<uint, HttpStatusInfo> makeStatusCodes() {
         static_cast<WebSession::Response::ClientErrorCode>(enumerant.getOrdinal());
   }
 
-  result[204] = noContentInfo(false, result[204].successCode);
-  result[205] = noContentInfo(true, result[205].successCode);
-  result[304] = noContentInfo(false, result[304].successCode);
+  result[204] = noContentInfo(false);
+  result[205] = noContentInfo(true);
+
+  result[304] = preconditionFailedInfo();
 
   result[301] = redirectInfo(true, true);
   result[302] = redirectInfo(false, true);
   result[303] = redirectInfo(false, true);
   result[307] = redirectInfo(false, false);
   result[308] = redirectInfo(true, false);
+
+  result[412] = preconditionFailedInfo();
 
   return result;
 }
@@ -267,7 +275,7 @@ public:
           content.setMimeType(*mimeType);
         }
         KJ_IF_MAYBE(etag, findHeader("etag")) {
-          content.setEtag(*etag);
+          content.setETag(*etag);
         }
         KJ_IF_MAYBE(disposition, findHeader("content-disposition")) {
           // Parse `attachment; filename="foo"`
@@ -328,10 +336,13 @@ public:
       }
       case WebSession::Response::NO_CONTENT: {
         auto noContent = builder.initNoContent();
-        noContent.setStatusCode(statusInfo.successCode);
         noContent.setShouldResetForm(statusInfo.noContent.shouldResetForm);
+        break;
+      }
+      case WebSession::Response::PRECONDITION_FAILED: {
+        auto preconditionFailed = builder.initPreconditionFailed();
         KJ_IF_MAYBE(etag, findHeader("etag")) {
-          noContent.setEtag(*etag);
+          preconditionFailed.setMatchingETag(*etag);
         }
         break;
       }
@@ -1185,16 +1196,16 @@ private:
         lines.add(kj::str(header.getName(), ": ", header.getValue()));
       }
     }
-    auto etagPrecondition = context.getEtagPrecondition();
-    switch (etagPrecondition.which()) {
-      case WebSession::Context::EtagPrecondition::NONE:
+    auto eTagPrecondition = context.getETagPrecondition();
+    switch (eTagPrecondition.which()) {
+      case WebSession::Context::ETagPrecondition::NONE:
         break;
-      case WebSession::Context::EtagPrecondition::EXISTS:
+      case WebSession::Context::ETagPrecondition::EXISTS:
         lines.add(kj::str("If-Match: *"));
         break;
-      case WebSession::Context::EtagPrecondition::MATCHES_ONE_OF:
+      case WebSession::Context::ETagPrecondition::MATCHES_ONE_OF:
         lines.add(kj::str("If-Match: ", kj::strArray(
-              KJ_MAP(e, etagPrecondition.getMatchesOneOf()) {
+              KJ_MAP(e, eTagPrecondition.getMatchesOneOf()) {
                 if (e.getWeak()) {
                   return kj::str("W/", e.getValue());
                 } else {
@@ -1202,9 +1213,9 @@ private:
                 }
               }, ", ")));
         break;
-      case WebSession::Context::EtagPrecondition::MATCHES_NONE_OF:
+      case WebSession::Context::ETagPrecondition::MATCHES_NONE_OF:
         lines.add(kj::str("If-None-Match: ", kj::strArray(
-              KJ_MAP(e, etagPrecondition.getMatchesNoneOf()) {
+              KJ_MAP(e, eTagPrecondition.getMatchesNoneOf()) {
                 if (e.getWeak()) {
                   return kj::str("W/", e.getValue());
                 } else {

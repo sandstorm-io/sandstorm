@@ -89,19 +89,6 @@ a.copy-me {
   background-color: #888;
 }
 
-#menu {
-  display: inline;
-}
-
-#menu-closer {
-  display: none;
-}
-
-.revoked-role-assignment {
-   text-decoration: line-through;
-   font-style: italic;
-}
-
 button.revoke-token {
   background-position: center;
   background-repeat: no-repeat;
@@ -113,20 +100,6 @@ button.revoke-token {
   background-color: transparent;
   cursor: pointer;
   background-image: url("/close.svg");
-}
-
-img.icon {
-  height: 16px;
-  padding: 0 8px;
-}
-
-img.photo {
-  height: 30px;
-  padding: 0 8px;
-}
-
-img {
-  vertical-align: middle;
 }
 
 .main-content, .first-sign-in-main-content {
@@ -162,19 +135,16 @@ img {
   margin: 16px auto;
   max-width: 600px;
   font-size: 125%;
-}
-
-.centered-box h2 {
-  margin-top: 0;
-  font-size: 60px;
-}
-
-.centered-box p:nth-child(1) {
-  margin-top: 0;
-}
-
-.centered-box p {
-  margin-bottom: 0;
+  h2 {
+    margin-top: 0;
+    font-size: 60px;
+  }
+  p {
+    margin-bottom: 0;
+  }
+  p:nth-child(1) {
+    margin-top: 0;
+  }
 }
 
 // new app list (unified)
@@ -200,7 +170,7 @@ img {
     font-family: inherit;
     font-size: inherit;
     font-weight: 600;
-    background-color: #762f87;
+    background-color: $sandstorm-purple-color;
     padding: 8px;
     line-height: 1.33;
     border-radius: 4px;
@@ -276,46 +246,23 @@ img {
 .notification-header {
   color: #ccc;
 }
+
 #intro {
   background-color: #b6b6b6;
   overflow: auto;
   height: 100%;
-}
-#intro h1 {
-  text-align: center;
-  font-size: 100px;
-  font-weight: bold;
-  margin: 0 auto;
-}
-
-svg {
-  width: 400px;
-  height: 300px;
-}
-
-#logo {
-  width: 400px;
-  height: 300px;
-  margin: 64px auto 16px;
-  z-index: -1;
-  padding-left: 94px;
-}
-
-.static-logo {
-  background-image:url(/logo.png);
-  background-repeat:no-repeat;
-}
-
-.dynamic-logo {
-  cursor: pointer;
-}
-
-#intro>p {
-  text-align: center;
-}
-
-#intro .build-tag {
-  margin-top: 0;
+  h1 {
+    text-align: center;
+    font-size: 100px;
+    font-weight: bold;
+    margin: 0 auto;
+  }
+  >p {
+    text-align: center;
+  }
+  .build-tag {
+    margin-top: 0;
+  }
 }
 
 div.grain-container {
@@ -504,21 +451,6 @@ div.popup h2 {
 // Admin settings styles
 @import "_admin.scss";
 
-#show-changelog {
-  font-family: inherit;
-  font-size: inherit;
-  font-weight: 600;
-  background-color: #762f87;
-
-  margin-top: 20px;
-  padding: 8px;
-  line-height: 1.33;
-  border-radius: 4px;
-  border: none;
-  color: white;
-  cursor: pointer;
-}
-
 body>.popup.admin-alert>.frame>p {
   display: block;
   margin: 16px;
@@ -526,7 +458,7 @@ body>.popup.admin-alert>.frame>p {
 
 #admin-alert-icon {
   display: inline-block;
-  background-color: #762f87;
+  background-color: $sandstorm-purple-color;
   color: white;
   font-size: 20px;
   font-weight: bold;
@@ -540,37 +472,11 @@ body>.popup.admin-alert>.frame>p {
 }
 
 @media screen and #{$mobile} {
-  #menu[data-show="true"] {
-    left: 0px;
-  }
-  #applist-closer[data-show="true"], #menu-closer[data-show="true"] {
-    display: block;
-    position: fixed;
-    width: 2000px;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    z-index: 1;
-    -webkit-transition: background-color 200ms;
-    transition: background-color 200ms;
-  }
-
   #demo.centered-box {
     width: 80%;
   }
 
   button#createDemoUser, #demo h2 {
     font-size: 30px;
-  }
-
-  #install-arrow {
-    top: 80px;
-    left: 96px;
-  }
-}
-@media screen and (max-width: 450px) {
-  #install-arrow {
-    top: 68px;
-    left: 96px;
-    background-size: 372px 526px;
   }
 }

@@ -18,7 +18,6 @@ limitations under the License.
 
 <head>
   <title>Sandstorm</title>
-  <script type="text/javascript" src="/logo.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
@@ -817,7 +816,7 @@ limitations under the License.
   {{> _adminConfigureLoginServiceDialog}}
   <div id="admin-settings" class="centered-box">
     {{#if isUserPermitted}}
-      <ul id="settings-tabs" class="nav centered-box">
+      <ul class="nav centered-box settings-tabs">
         <li id="settings-tab" class="{{#if settingsActive}}active{{/if}}">
           {{#linkTo route="adminSettings" data=getToken}}Settings{{/linkTo}}
         </li>

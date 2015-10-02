@@ -473,7 +473,7 @@ if (Meteor.isClient) {
   });
 
   Template.layout.events({
-    "click .demo-expired.logout": function (event) {
+    "click #demo-expired.logout": function (event) {
       Meteor.logout();
     }
   });
@@ -628,23 +628,6 @@ if (Meteor.isClient) {
         Meteor.call("deleteUnusedPackages", appId);
       }
     },
-  });
-
-  Template.about.onCreated(function () {
-    this.showChangelog = new ReactiveVar(false);
-  });
-
-  Template.about.helpers({
-    showChangelog: function () {
-      return Template.instance().showChangelog.get();
-    }
-  });
-
-  Template.about.events({
-    "click #show-changelog": function (ev) {
-      var showChangelog = Template.instance().showChangelog;
-      showChangelog.set(!showChangelog.get());
-    }
   });
 
   Template.notificationsPopup.helpers({

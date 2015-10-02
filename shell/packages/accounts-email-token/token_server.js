@@ -1,7 +1,7 @@
 var TOKEN_EXPIRATION_MS = 15 * 60 * 1000;
 
 var cleanupExpiredTokens = function() {
-  Meteor.users.update({}, {
+  Meteor.users.update({"services.emailToken.tokens": {$exists: true}}, {
     $pull: {
       "services.emailToken.tokens": {
         createdAt: {$lt: new Date(Date.now() - TOKEN_EXPIRATION_MS)}

@@ -18,7 +18,6 @@ limitations under the License.
 
 <head>
   <title>Sandstorm</title>
-  <script type="text/javascript" src="/logo.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
@@ -313,7 +312,7 @@ limitations under the License.
             <td> added by
               <ul>
                 {{#each shares}}
-                  <li>{{displayName userId}}</li>
+                  <li>{{displayName identityId}}</li>
                 {{/each}}
               </ul>
             </td>
@@ -817,7 +816,7 @@ limitations under the License.
   {{> _adminConfigureLoginServiceDialog}}
   <div id="admin-settings" class="centered-box">
     {{#if isUserPermitted}}
-      <ul id="settings-tabs" class="nav centered-box">
+      <ul class="nav centered-box settings-tabs">
         <li id="settings-tab" class="{{#if settingsActive}}active{{/if}}">
           {{#linkTo route="adminSettings" data=getToken}}Settings{{/linkTo}}
         </li>
@@ -895,7 +894,7 @@ limitations under the License.
     <thead>
       <tr>
         <td>Service</td>
-        <td>Username</td>
+        <td>Handle</td>
         <td>Name</td>
         <td>User Class</td>
         {{#if quotaEnabled}}
@@ -910,9 +909,11 @@ limitations under the License.
     <tbody>
       {{#each users}}
         <tr>
-          <td>{{userService}}</td>
-          <td>{{userName}}</td>
-          <td>{{profile.name}}</td>
+          {{#with userIdentity}}
+            <td>{{service}}</td>
+            <td>{{handle}}</td>
+            <td>{{name}}</td>
+          {{/with}}
           <td>
             <select class="user-class" name="select">
               <option value="admin" selected={{#if userIsAdmin}}selected{{/if}}>Admin</option>

@@ -91,41 +91,10 @@ function mergeRoleAssignmentsIntoApiTokens() {
   });
 }
 
-function fixOasisStorageUsageStats() {
-  // Before storage quota enforcement was first implemented, there were some bugs with the way the
-  // Oasis backend tracked storage usage, which were not initially noticed since the resulting
-  // number wasn't acutally used for anything.
-  //
-  // With the underlying bugs fixed, simply starting up each grain (supervisor only, not the app)
-  // and then immediately shutting it down should cause the sizes to be recalculated correctly.
-  //
-  // This problem only applies to Oasis.
-
-  if (Meteor.settings.public.quotaEnabled) {
-    var dummyCommand = {
-      argv: ["foo", "bar"],
-      environ: []
-    };
-
-    Grains.find().forEach(function (grain) {
-      try {
-        console.log("refreshing grain:", grain._id);
-
-        // We take a highly synchronous approach here so that the logging is understandable.
-        var supervisor = waitPromise(sandstormBackend.startGrain(
-            grain.userId, grain._id, grain.packageId, dummyCommand, false, false)).supervisor;
-        try {
-          waitPromise(supervisor.shutdown());
-          throw new Error("shutdown() didn't disconnect!");
-        } catch (err) {
-          if (err.kjType !== "disconnected") throw err;
-        }
-      } catch (err) {
-        console.log(err.stack);
-      }
-    });
-  }
-}
+function fixOasisStorageUsageStats() {}
+// This migration only pertained to Oasis and it was successfully applied there. Since it referred
+// to some global variables that we later wanted to remove and/or rename, we've since replaced it
+// with a no-op.
 
 function fetchProfilePictures() {
   Meteor.users.find({}).forEach(function (user) {
@@ -177,7 +146,7 @@ function verifyAllPgpSignatures() {
   Packages.find({}).forEach(function (pkg) {
     try {
       console.log("checking PGP signature for package:", pkg._id);
-      var info = waitPromise(sandstormBackend.tryGetPackage(pkg._id));
+      var info = waitPromise(globalBackend.cap().tryGetPackage(pkg._id));
       if (info.authorPgpKeyFingerprint) {
         console.log("  " + info.authorPgpKeyFingerprint);
         Packages.update(pkg._id,
@@ -189,6 +158,84 @@ function verifyAllPgpSignatures() {
       console.error(err.stack);
     }
   });
+}
+
+function splitUserIdsIntoAccountIdsAndIdentityIds() {
+  var Crypto = Npm.require("crypto");
+  Meteor.users.find().forEach(function (user) {
+    var identity = {};
+    var serviceUserId;
+    if ("devName" in user) {
+      identity.service = "dev";
+      serviceUserId = user.devName;
+    } else if ("expires" in user) {
+      identity.service = "demo";
+      serviceUserId = user._id;
+    } else if (user.services && "google" in user.services) {
+      identity.service = "google";
+      if (user.services.google.email && user.services.google.verified_email) {
+        identity.verifiedEmail = user.services.google.email;
+      }
+      serviceUserId = user.services.google.id;
+    } else if (user.services && "github" in user.services) {
+      identity.service = "github";
+      identity.unverifiedEmail = user.services.github.email;
+      serviceUserId = user.services.github.id;
+    } else if (user.services && "emailToken" in user.services) {
+      identity.service = "emailToken";
+      identity.verifiedEmail = user.services.emailToken.email;
+      serviceUserId = user.services.emailToken.email;
+    }
+
+    identity.id = Crypto.createHash("sha256")
+        .update(identity.service + ":" + serviceUserId).digest("hex");
+
+    if (user.profile) {
+      if (user.profile.name) {
+        identity.name = user.profile.name;
+      }
+      if (user.profile.handle) {
+        identity.handle = user.profile.handle;
+      }
+      if (user.profile.picture) {
+        identity.picture = user.profile.picture;
+      }
+      if (user.profile.pronoun) {
+        identity.pronoun = user.profile.pronoun;
+      }
+      if (user.profile.email) {
+        identity.unverifiedEmail = user.profile.email;
+      }
+    }
+    identity.main = true;
+
+    Meteor.users.update(user._id, {$set: {identities: [identity]}});
+
+    Grains.update({userId: user._id}, {$set: {identityId: identity.id}}, {multi: true});
+    Sessions.update({userId: user._id}, {$set: {identityId: identity.id}}, {multi: true});
+    ApiTokens.update({userId: user._id},
+                     {$set: {identityId: identity.id}},
+                     {multi: true});
+    ApiTokens.update({"owner.user.userId": user._id},
+                     {$set: {"owner.user.identityId": identity.id}},
+                     {multi: true});
+    ApiTokens.update({"owner.grain.introducerUser": user._id},
+                     {$set: {"owner.grain.introducerIdentity": identity.id}},
+                     {multi: true});
+
+    while (ApiTokens.update({"requirements.permissionsHeld.userId": user._id},
+                            {$set: {"requirements.$.permissionsHeld.identityId": identity.id},
+                             $unset: {"requirements.$.permissionsHeld.userId": 1}},
+                            {multi: true}) > 0);
+    // The `$` operatorer modifies the first element in the array that matches the query. Since
+    // there may be many matches, we need to repeat until no documents are modified.
+
+  });
+
+  ApiTokens.remove({userInfo: {$exists: true}});
+  // We've renamed `Grain.UserInfo.userId` to `Grain.userInfo.identityId`. The only place
+  // that this field could show up in the database was in this deprecated, no-longer-functional
+  // form of API token.
 }
 
 // This must come after all the functions named within are defined.
@@ -205,6 +252,7 @@ var MIGRATIONS = [
   removeKeyrings,
   useLocalizedTextInUserActions,
   verifyAllPgpSignatures,
+  splitUserIdsIntoAccountIdsAndIdentityIds
 ];
 
 function migrateToLatest() {

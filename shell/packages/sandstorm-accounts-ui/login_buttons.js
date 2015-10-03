@@ -63,14 +63,8 @@ var displayName = function () {
   if (!user)
     return '';
 
-  if (user.profile && user.profile.name)
-    return user.profile.name;
-  if (user.username)
-    return user.username;
-  if (user.emails && user.emails[0] && user.emails[0].address)
-    return user.emails[0].address;
-
-  return '';
+  var mainIdentity = _.findWhere(user.identities, {main: true});
+  return mainIdentity ? mainIdentity.name : "Name Unknown";
 };
 
 Template.loginButtons.helpers({

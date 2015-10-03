@@ -53,6 +53,10 @@ var helpers = {
 
   db: function () {
     return Template.instance().data._db;
+  },
+
+  emailSuggestion: function(unverifiedEmail, verifiedEmail) {
+    return unverifiedEmail || verifiedEmail;
   }
 };
 
@@ -90,19 +94,24 @@ var submitProfileForm = function (event, cb) {
   }
 
   var newProfile = {
+    id: form.getAttribute("data-identity-id"),
     name: form.nameInput.value,
     handle: form.handle.value,
     pronoun: form.pronoun.value,
-    email: form.email.value,
   };
 
   if (!newProfile.name) {
     alert("You must enter a name.");
     return;
   }
-  if (!newProfile.email) {
+
+  if (!form.email.value) {
     alert("You must enter an email.");
     return;
+  }
+
+  if (form.email.value !== form.email.getAttribute("data-verified-email")) {
+    newProfile.unverifiedEmail = form.email.value;
   }
 
   if (!newProfile.handle.match(/^[a-z_][a-z0-9_]*$/)) {
@@ -116,7 +125,6 @@ var submitProfileForm = function (event, cb) {
     if (err) {
       alert("Error updating profile: " + err.message);
     } else if (cb) {
-      console.log(cb);
       cb();
     }
   });

@@ -26,23 +26,29 @@ Meteor.methods({
   updateProfile: function (profile) {
     // TODO(cleanup): This check also appears in sandstorm-db/users.js.
     check(profile, {
+      id: String,
       name: String,
       handle: ValidHandle,
       pronoun: Match.OneOf("male", "female", "neutral", "robot"),
-      email: String
+      unverifiedEmail: Match.Optional(String)
     });
 
     if (!this.userId) {
       throw new Meteor.Error(403, "not logged in");
     }
 
-    Meteor.users.update(this.userId, {$set: {
-      "profile.name": profile.name,
-      "profile.handle": profile.handle,
-      "profile.pronoun": profile.pronoun,
-      "profile.email": profile.email,
+    var newValues = {
+      "identities.$.name": profile.name,
+      "identities.$.handle": profile.handle,
+      "identities.$.pronoun": profile.pronoun,
       "hasCompletedSignup": true
-    }});
+    };
+
+    if (profile.unverifiedEmail) {
+      newValues["identities.$.unverifiedEmail"] = profile.unverifiedEmail
+    }
+
+    Meteor.users.update({_id: this.userId, "identities.id": profile.id}, {$set: newValues});
   },
 
   testFirstSignup: function (profile) {

@@ -911,12 +911,12 @@ public:
         acceptLanguages(kj::mv(acceptLanguages)),
         rootPath(kj::mv(rootPath)),
         remoteAddress(kj::mv(remoteAddress)) {
-    if (userInfo.hasUserId()) {
-      auto id = userInfo.getUserId();
-      KJ_ASSERT(id.size() == 32, "User ID not a SHA-256?");
+    if (userInfo.hasIdentityId()) {
+      auto id = userInfo.getIdentityId();
+      KJ_ASSERT(id.size() == 32, "Identity ID not a SHA-256?");
 
       // We truncate to 128 bits to be a little more wieldy. Still 32 chars, though.
-      userId = hexEncode(userInfo.getUserId().slice(0, 16));
+      userId = hexEncode(userInfo.getIdentityId().slice(0, 16));
     }
     sessionContextMap.insert({kj::StringPtr(this->sessionId), this->sessionContext});
   }

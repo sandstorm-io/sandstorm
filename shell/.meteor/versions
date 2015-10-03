@@ -64,9 +64,11 @@ reactive-var@1.0.5
 reload@1.1.3
 retry@1.0.3
 routepolicy@1.0.5
+sandstorm-accounts-merge@0.1.0
 sandstorm-accounts-oauth@1.1.4
 sandstorm-accounts-packages@0.1.0
 sandstorm-accounts-ui@0.1.0
+sandstorm-backend@0.1.0
 sandstorm-db@0.1.0
 sandstorm-email@0.1.0
 sandstorm-identicons@0.1.0

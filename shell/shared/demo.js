@@ -63,7 +63,7 @@ if (Meteor.isServer) {
       });
       console.log("delete user: " + user._id);
       Meteor.users.remove(user._id);
-      waitPromise(sandstormBackend.deleteUser(user._id));
+      waitPromise(globalBackend.cap().deleteUser(user._id));
       if (user.lastActive) {
         // When deleting a user, we can specify it as a "normal" user
         // (type: user) or as a user who started out by using the app
@@ -156,7 +156,7 @@ if (Meteor.isServer) {
           // Note: We don't parallelize this because it can cause some contention in the Blackrock
           //   back-end.
           grains.forEach(function (grain) {
-            return waitPromise(sandstormBackend.transferGrain(grain.userId, grain._id, newUserId));
+            return waitPromise(globalBackend.cap().transferGrain(grain.userId, grain._id, newUserId));
           });
 
           // We could delete the user here, but it runs some risk that consumeDemoUser() could be

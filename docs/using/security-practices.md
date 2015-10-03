@@ -159,7 +159,7 @@ Since Sandstorm isolates and confines apps by default, we need a way
 to allow the user to connect apps to each other easily and
 securely. Capability-based security helps enable this by representing
 permissions as "capabilities", objects which the user may pass around
-between apps. A capbility both identifies a resource (like an address)
+between apps. A capability both identifies a resource (like an address)
 and grants its bearer permission to _use_ that resource.
 
 The advantage of capability-based security is that it effectively

@@ -1808,6 +1808,27 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
       return data.toString(charset.toLowerCase() === "utf-8" ? "utf8" : "binary");
     }
 
+    function propfindDepth() {
+      var depth = request.headers["depth"];
+      return depth === "0" ? "zero"
+           : depth === "1" ? "one"
+                           : "infinity";
+    }
+
+    function shallow() {
+      return request.headers["depth"] === "0";
+    }
+
+    function noOverwrite() {
+      return request.headers["overwrite"].toLowerCase() === "f";
+    }
+
+    function destination() {
+      var result = request.headers["destination"];
+      if (!result) throw new Error("missing destination");
+      return Url.parse(result).path.slice(1);  // remove leading '/'
+    }
+
     if (request.method === "GET" || request.method === "HEAD") {
       return session.get(path, context, request.method === "HEAD");
     } else if (request.method === "POST") {
@@ -1817,17 +1838,17 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     } else if (request.method === "DELETE") {
       return session.delete(path, context);
     } else if (request.method === "PROPFIND") {
-      return session.propfind(path, xmlContent(), context);
+      return session.propfind(path, xmlContent(), propfindDepth(), context);
     } else if (request.method === "PROPPATCH") {
       return session.proppatch(path, xmlContent(), context);
     } else if (request.method === "MKCOL") {
       return session.mkcol(path, requestContent(), context);
     } else if (request.method === "COPY") {
-      return session.copy(path, context);
+      return session.copy(path, destination(), noOverwrite(), shallow(), context);
     } else if (request.method === "MOVE") {
-      return session.move(path, context);
+      return session.move(path, destination(), noOverwrite(), context);
     } else if (request.method === "LOCK") {
-      return session.lock(path, xmlContent(), context);
+      return session.lock(path, xmlContent(), shallow(), context);
     } else if (request.method === "UNLOCK") {
       return session.unlock(path, request.headers["lock-token"], context);
     } else if (request.method === "ACL") {

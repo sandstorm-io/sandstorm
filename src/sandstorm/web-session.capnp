@@ -16,7 +16,8 @@
 
 @0xa8cb0f2f1a756b32;
 
-$import "/capnp/c++.capnp".namespace("sandstorm");
+using Cxx = import "/capnp/c++.capnp";
+$Cxx.namespace("sandstorm");
 
 using Grain = import "grain.capnp";
 using Util = import "util.capnp";
@@ -81,16 +82,26 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   # `clientStream` is the capability which will receive server -> client messages, while
   # serverStream represents client -> server.
 
-  propfind @7 (path :Text, xmlContent :Text, context :Context) -> Response;
+  propfind @7 (path :Text, xmlContent :Text, depth :PropfindDepth, context :Context) -> Response;
   proppatch @8 (path :Text, xmlContent :Text, context :Context) -> Response;
   mkcol @9 (path :Text, content :PostContent, context :Context) -> Response;
-  copy @10 (path :Text, context :Context) -> Response;
-  move @11 (path :Text, context :Context) -> Response;
-  lock @12 (path :Text, xmlContent :Text, context :Context) -> Response;
+  copy @10 (path :Text, destination :Text, noOverwrite :Bool,
+            shallow :Bool, context :Context) -> Response;
+  move @11 (path :Text, destination :Text, noOverwrite :Bool, context :Context) -> Response;
+  lock @12 (path :Text, xmlContent :Text, shallow :Bool, context :Context) -> Response;
   unlock @13 (path :Text, lockToken :Text, context :Context) -> Response;
   acl @14 (path :Text, xmlContent :Text, context :Context) -> Response;
   report @15 (path :Text, content :PostContent, context :Context) -> Response;
   # WebDAV methods
+  #
+  # "destination" is a *path*, but *not* a URI -- the origin is stripped, and there is no leading
+  #   '/', just like with the `path` parameter.
+  # "shallow = true" means "Depth: 0"
+  # "noOverwrite = true" means "Overwrite: F"; note that this behaves a precondition -- if the
+  #   destination already exists then a preconditionFailed response is returned.
+  #
+  # (These boolean flags were intentionally chosen so that the spec-defined default values are
+  # false.)
 
   options @16 (path :Text, context :Context) -> Options;
   # OPTIONS request.
@@ -137,9 +148,6 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       # without Sandstorm in mind -- especially to avoid modifying client apps. Feel free
       # to send us pull requests adding additional headers.
 
-      "depth",                 # webdav PROPFIND
-      "destination",           # webdav COPY/MOVE
-      "overwrite",             # webdav COPY/MOVE
       "oc-total-length",       # Owncloud client
       "oc-chunk-size",         # Owncloud client
       "x-oc-mtime",            # Owncloud client
@@ -443,6 +451,12 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     davClass1 @0 :Bool = false;
     davClass2 @1 :Bool = false;
     davClass3 @2 :Bool = false;
+  }
+
+  enum PropfindDepth {
+    infinity @0 $Cxx.name("infinity_");  # INFINITY is a macro in C
+    zero @1;
+    one @2;
   }
 
   # Request headers that we will probably add later:

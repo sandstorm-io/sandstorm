@@ -960,11 +960,20 @@ public:
 
   kj::Promise<void> propfind(PropfindContext context) override {
     PropfindParams::Reader params = context.getParams();
+
+    const char* depth = "infinity";
+    switch (params.getDepth()) {
+      case WebSession::PropfindDepth::INFINITY_: depth = "infinity"; break;
+      case WebSession::PropfindDepth::ZERO:      depth = "0"; break;
+      case WebSession::PropfindDepth::ONE:       depth = "1"; break;
+    }
+
     auto xml = params.getXmlContent();
     kj::String httpRequest = makeHeaders(
         "PROPFIND", params.getPath(), params.getContext(),
         kj::str("Content-Type: application/xml;charset=utf-8"),
-        kj::str("Content-Length: ", xml.size()));
+        kj::str("Content-Length: ", xml.size()),
+        kj::str("Depth: ", depth));
     return sendRequest(toBytes(httpRequest, xml.asBytes()), context);
   }
 
@@ -991,13 +1000,20 @@ public:
 
   kj::Promise<void> copy(CopyContext context) override {
     CopyParams::Reader params = context.getParams();
-    kj::String httpRequest = makeHeaders("COPY", params.getPath(), params.getContext());
+    kj::String httpRequest = makeHeaders(
+        "COPY", params.getPath(), params.getContext(),
+        makeDestinationHeader(params.getDestination()),
+        makeOverwriteHeader(params.getNoOverwrite()),
+        makeDepthHeader(params.getShallow()));
     return sendRequest(toBytes(httpRequest), context);
   }
 
   kj::Promise<void> move(MoveContext context) override {
     MoveParams::Reader params = context.getParams();
-    kj::String httpRequest = makeHeaders("MOVE", params.getPath(), params.getContext());
+    kj::String httpRequest = makeHeaders(
+        "MOVE", params.getPath(), params.getContext(),
+        makeDestinationHeader(params.getDestination()),
+        makeOverwriteHeader(params.getNoOverwrite()));
     return sendRequest(toBytes(httpRequest), context);
   }
 
@@ -1007,7 +1023,8 @@ public:
     kj::String httpRequest = makeHeaders(
         "LOCK", params.getPath(), params.getContext(),
         kj::str("Content-Type: application/xml;charset=utf-8"),
-        kj::str("Content-Length: ", xml.size()));
+        kj::str("Content-Length: ", xml.size()),
+        makeDepthHeader(params.getShallow()));
     return sendRequest(toBytes(httpRequest, xml.asBytes()), context);
   }
 
@@ -1336,6 +1353,23 @@ private:
     kj::Promise<void> done(DoneContext context) override { return kj::READY_NOW; }
     kj::Promise<void> expectSize(ExpectSizeContext context) override { return kj::READY_NOW; }
   };
+
+  kj::String makeDestinationHeader(kj::StringPtr destination) {
+    for (char c: destination) {
+      KJ_ASSERT(c > ' ' && c != ',', "invalid destination", destination);
+    }
+    return kj::str("Destination: ", basePath, destination);
+  }
+
+  kj::String makeOverwriteHeader(bool noOverwrite) {
+    return noOverwrite ? kj::heapString("Overwrite: F")
+                       : kj::heapString("Overwrite: T");
+  }
+
+  kj::String makeDepthHeader(bool shallow) {
+    return shallow ? kj::heapString("Depth: 0")
+                   : kj::heapString("Depth: infinity");
+  }
 };
 
 class EmailSessionImpl final: public HackEmailSession::Server {

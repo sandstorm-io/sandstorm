@@ -146,7 +146,7 @@ function verifyAllPgpSignatures() {
   Packages.find({}).forEach(function (pkg) {
     try {
       console.log("checking PGP signature for package:", pkg._id);
-      var info = waitPromise(sandstormBackend.tryGetPackage(pkg._id));
+      var info = waitPromise(globalBackend.cap().tryGetPackage(pkg._id));
       if (info.authorPgpKeyFingerprint) {
         console.log("  " + info.authorPgpKeyFingerprint);
         Packages.update(pkg._id,

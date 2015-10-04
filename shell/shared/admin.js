@@ -330,25 +330,8 @@ if (Meteor.isClient) {
     users: function () {
       return Meteor.users.find({}, {sort: {createdAt: 1}});
     },
-    userService: function () {
-      var services = _.without(Object.keys(this.services), "resume");
-      if (services.length === 0) {
-        return "dev";
-      } else {
-        return services[0];
-      }
-    },
-    userName: function () {
-      var services = this.services;
-      if (services.github) {
-        return services.github.username;
-      } else if (services.google) {
-        return services.google.email;
-      } else if (services.emailToken) {
-        return services.emailToken.email;
-      } else {
-        return this.profile && this.profile.name;
-      }
+    userIdentity: function () {
+      return SandstormDb.getUserIdentities(this)[0];
     },
     userSignupNote: function () {
       if (this.signupEmail) {
@@ -1051,6 +1034,13 @@ if (Meteor.isServer) {
   Meteor.publish("statsTokens", function (token) {
     if (!authorizedAsAdmin(token, this.userId)) return [];
     return StatsTokens.find();
+  });
+
+  Meteor.publish("allPackages", function (token) {
+    if (!authorizedAsAdmin(token, this.userId)) return [];
+    return Packages.find({manifest: {$exists: true}},
+        {fields: {appId: 1, "manifest.appVersion": 1,
+        "manifest.actions": 1, "manifest.appTitle": 1}});
   });
 
   Meteor.publish("realTimeStats", function (token) {

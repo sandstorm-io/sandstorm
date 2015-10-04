@@ -52,18 +52,18 @@ if (Meteor.isServer) {
     var now = new Date(Date.now() - DEMO_GRACE_MS);
     Meteor.users.find({expires: {$lt: now}}, {fields: {_id: 1, lastActive: 1, isAppDemoUser: 1}})
                 .forEach(function (user) {
-      Grains.find({userId: user._id}, {fields: {_id: 1, lastUsed: 1}})
+      Grains.find({userId: user._id}, {fields: {_id: 1, lastUsed: 1, appId: 1}})
             .forEach(function (grain) {
         console.log("delete grain: " + grain._id);
         Grains.remove(grain._id);
         if (grain.lastUsed) {
-          DeleteStats.insert({type: "grain", lastActive: grain.lastUsed});
+          DeleteStats.insert({type: "demoGrain", lastActive: grain.lastUsed, appId: grain.appId});
         }
         deleteGrain(grain._id, grain.userId);
       });
       console.log("delete user: " + user._id);
       Meteor.users.remove(user._id);
-      waitPromise(sandstormBackend.deleteUser(user._id));
+      waitPromise(globalBackend.cap().deleteUser(user._id));
       if (user.lastActive) {
         // When deleting a user, we can specify it as a "normal" user
         // (type: user) or as a user who started out by using the app
@@ -73,16 +73,17 @@ if (Meteor.isServer) {
         if (isAppDemoUser) {
           deleteStatsType = "appDemoUser";
         }
+
         // Intentionally record deleted users at time of deletion to avoid miscounting users that
         // were demoing just before the day rolled over.
-        DeleteStats.insert({type: deleteStatsType, lastActive: new Date()});
+        DeleteStats.insert({type: deleteStatsType, lastActive: new Date(), appId: user.appDemoId});
       }
     });
   }
 
   if (allowDemo) {
     Meteor.methods({
-      createDemoUser: function (displayName, isAppDemoUser) {
+      createDemoUser: function (displayName, isAppDemoUser, appId) {
         // This is a login method that creates a new temporary user
         // every time it is used.
         //
@@ -90,12 +91,14 @@ if (Meteor.isServer) {
         // cleanupExpiredUsers().
         check(displayName, String);
         check(isAppDemoUser, Boolean);
+        check(appId, Match.OneOf(undefined, null, String));
 
         // Create the new user.
         var expires = new Date(Date.now() + DEMO_EXPIRATION_MS);
         var userId = Accounts.insertUserDoc({ profile: { name: displayName } },
                                             { expires: expires,
-                                              isAppDemoUser: isAppDemoUser
+                                              isAppDemoUser: isAppDemoUser,
+                                              appDemoId: appId
                                             });
 
         // Log them in on this connection.
@@ -153,7 +156,7 @@ if (Meteor.isServer) {
           // Note: We don't parallelize this because it can cause some contention in the Blackrock
           //   back-end.
           grains.forEach(function (grain) {
-            return waitPromise(sandstormBackend.transferGrain(grain.userId, grain._id, newUserId));
+            return waitPromise(globalBackend.cap().transferGrain(grain.userId, grain._id, newUserId));
           });
 
           // We could delete the user here, but it runs some risk that consumeDemoUser() could be
@@ -258,7 +261,7 @@ if (Meteor.isClient && allowDemo) {
       } else {
         Accounts.callLoginMethod({
           methodName: "createDemoUser",
-          methodArguments: ["Demo User", false],
+          methodArguments: ["Demo User", false, null],
           userCallback: userCallbackFunction
         });
       }
@@ -312,7 +315,7 @@ if (Meteor.isClient && allowDemo) {
         // 1. Create the Demo User & 2. Log the user in as this Demo User.
         Accounts.callLoginMethod({
           methodName: "createDemoUser",
-          methodArguments: ["Demo User", true],
+          methodArguments: ["Demo User", true, appId],
           userCallback: userCallbackFunction
         });
       }

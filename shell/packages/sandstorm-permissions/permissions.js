@@ -15,6 +15,9 @@
 // limitations under the License.
 
 var Crypto = Npm.require("crypto");
+var Url = Npm.require("url");
+
+SandstormPermissions = {};
 
 function PermissionSet(array) {
   // A wrapper around an array of booleans.
@@ -104,17 +107,17 @@ function roleAssignmentPermissions(roleAssignment, viewInfo) {
   return result;
 }
 
-function collectEdges(vertex) {
+function collectEdges(db, vertex) {
   // Given a vertex in the sharing graph in the format specified by the `check()` invocation below,
   // collects the data needed for permissions computations pertaining to that vertex. There are four
   // self-explanatory special cases for the return value. In order of decreasing precedence, they
   // are: `{grainDoesNotExist: true}`, `{openerIsOwner: true}`, `{grainIsPublic: true}`, and
   // `{disallowedAnonymousAccess: true}`. In all other cases, this function returns an object
-  // of the form: `{owner: <userId>, edgesByRecipient: <object>, terminalEdge: Maybe(<object>)}`.
+  // of the form: `{owner: <identityId>, edgesByRecipient: <object>, terminalEdge: Maybe(<object>)}`.
   // The `owner` field indicates the user who owns the grain. The `edgesByRecipient` field is a map
   // that coalesces chains of `parentToken` UiView tokens into direct user-to-user edges; its keys
-  // are IDs of recipient users and ites values are lists of "edge" objects of the form
-  // `{sharer: <userId>, roleAssignments: <list of role assignments>}`.  The role assignments
+  // are identity IDs of recipient users and its values are lists of "edge" objects of the form
+  // `{sharer: <identityId>, roleAssignments: <list of role assignments>}`.  The role assignments
   // should be applied in sequence to compute the set of permissions that flow to a recipient from
   // a sharer. The `terminalEdge` field is an edge object representing the link to `vertex` from
   // the nearest user in the sharing graph. If `vertex` is already a user, then this edge is
@@ -125,8 +128,9 @@ function collectEdges(vertex) {
   // them in this computation.
   check(vertex,
         Match.OneOf({token: Match.ObjectIncluding({_id: String, grainId: String})},
-                    {grain: Match.ObjectIncluding({_id: String,
-                                                   userId: Match.OneOf(String, null, undefined)})}));
+                    {grain: Match.ObjectIncluding(
+                      {_id: String,
+                       identityId: Match.OneOf(String, null, undefined)})}));
 
   var grainId;
   if (vertex.token) {
@@ -134,24 +138,25 @@ function collectEdges(vertex) {
   } else if (vertex.grain) {
     grainId = vertex.grain._id;
   }
-  var grain = Grains.findOne(grainId);
+  var grain = db.getGrain(grainId);
   if (!grain) {
     return {grainDoesNotExist: true};
   }
 
-  if (vertex.grain && grain.userId === vertex.grain.userId) {
+  if (vertex.grain && grain.identityId === vertex.grain.identityId) {
     return {openerIsOwner: true};
   }
 
   if (!grain.private) {
     return {grainIsPublic: true};
-  } else if (vertex.grain && !vertex.grain.userId) {
+  } else if (vertex.grain && !vertex.grain.identityId) {
     return {disallowedAnonymousAccess: true};
   }
 
-  var result = {edgesByRecipient: {}, owner: grain.userId};
+  var result = {edgesByRecipient: {}, owner: grain.identityId};
   var tokensById = {};
-  ApiTokens.find({grainId: grainId, revoked: {$ne: true}}).forEach(function(token) {
+  db.collections.apiTokens.find({grainId: grainId,
+                                 revoked: {$ne: true}}).forEach(function(token) {
     tokensById[token._id] = token;
   });
 
@@ -165,18 +170,18 @@ function collectEdges(vertex) {
       }
       curToken = tokensById[curToken.parentToken];
     }
-    if (curToken && curToken.grainId && curToken.userId) {
+    if (curToken && curToken.grainId && curToken.identityId) {
       roleAssignments.push(curToken.roleAssignment);
-      return {sharer: curToken.userId, roleAssignments: roleAssignments};
+      return {sharer: curToken.identityId, roleAssignments: roleAssignments};
     } else {
       return;
     }
   }
 
   if (vertex.token) {
-    result.terminalEdge = computeEdge(vertex.token);
+    result.terminalEdge = computeEdge(tokensById[vertex.token._id]);
   } else if (vertex.grain) {
-    result.terminalEdge = {sharer: vertex.grain.userId, roleAssignments: []};
+    result.terminalEdge = {sharer: vertex.grain.identityId, roleAssignments: []};
   }
 
   for (var id in tokensById) {
@@ -184,7 +189,7 @@ function collectEdges(vertex) {
     if (Match.test(token.owner, {user: Match.Any})) {
       var edge = computeEdge(token);
       if (edge) {
-        var recipient = token.owner.user.userId ;
+        var recipient = token.owner.user.identityId ;
         if (!result.edgesByRecipient[recipient]) {
           result.edgesByRecipient[recipient] = [];
         }
@@ -195,10 +200,10 @@ function collectEdges(vertex) {
   return result;
 }
 
-grainPermissions = function(vertex, viewInfo) {
+SandstormPermissions.grainPermissions = function(db, vertex, viewInfo) {
   // Computes the permissions of a vertex. If the vertex is not allowed to open the grain,
   // returns null. Otherwise, returns an array of bools representing the permissions held.
-  var edges = collectEdges(vertex);
+  var edges = collectEdges(db, vertex);
   if (edges.openerIsOwner) {
     return roleAssignmentPermissions({allAccess: null}, viewInfo).array;
   }
@@ -211,7 +216,7 @@ grainPermissions = function(vertex, viewInfo) {
     return null;
   }
 
-  var openerUserId = edges.terminalEdge.sharer;
+  var openerIdentityId = edges.terminalEdge.sharer;
   var edgesByRecipient = edges.edgesByRecipient;
   var owner = edges.owner;
 
@@ -219,13 +224,13 @@ grainPermissions = function(vertex, viewInfo) {
   // Keeps track of the permissions that the opener receives from each user. The final result of
   // our computation will be stored in permissionsMap[owner].
 
-  var userStack = [openerUserId];
+  var userStack = [openerIdentityId];
 
   var openerAttenuation = roleAssignmentPermissions({allAccess: null}, viewInfo);
   edges.terminalEdge.roleAssignments.forEach(function(roleAssignment) {
     openerAttenuation.intersect(roleAssignmentPermissions(roleAssignment, viewInfo));
   });
-  permissionsMap[openerUserId] = openerAttenuation;
+  permissionsMap[openerIdentityId] = openerAttenuation;
 
   while (userStack.length > 0) {
     var recipient = userStack.pop();
@@ -265,11 +270,11 @@ grainPermissions = function(vertex, viewInfo) {
   }
 }
 
-mayOpenGrain = function(vertex) {
+SandstormPermissions.mayOpenGrain = function(db, vertex) {
   // Determines whether the vertex is allowed to open the grain by searching depth first
   // for a path of active role assignments leading from the grain owner to the vertex.
 
-  var edges = collectEdges(vertex);
+  var edges = collectEdges(db, vertex);
   if (edges.grainDoesNotExist || edges.disallowedAnonymousAccess) {
     return false;
   }
@@ -283,10 +288,10 @@ mayOpenGrain = function(vertex) {
     return true;
   }
 
-  var openerUserId = edges.terminalEdge.sharer;
+  var openerIdentityId = edges.terminalEdge.sharer;
   var stackedUsers = {};
-  stackedUsers[openerUserId] = true;
-  var userStack = [openerUserId];
+  stackedUsers[openerIdentityId] = true;
+  var userStack = [openerIdentityId];
 
   while (userStack.length > 0) {
     var recipient = userStack.pop();
@@ -308,7 +313,7 @@ mayOpenGrain = function(vertex) {
   return false;
 }
 
-downstreamTokens = function(root) {
+SandstormPermissions.downstreamTokens = function(db, root) {
   // Computes a list of the UiView tokens that are downstream in the sharing graph from a given
   // source. The source, `root`, can either be a token or a (grain, user) pair. The exact format
   // of `root` is specified in the `check()` invocation below.
@@ -317,7 +322,7 @@ downstreamTokens = function(root) {
   // them in this computation.
 
   check(root, Match.OneOf({token: Match.ObjectIncluding({_id: String, grainId: String})},
-                          {grain: Match.ObjectIncluding({_id: String, userId: String})}));
+                          {grain: Match.ObjectIncluding({_id: String, identityId: String})}));
 
   var result = [];
   var tokenStack = [];
@@ -357,28 +362,29 @@ downstreamTokens = function(root) {
     grainId = root.grain._id;
   }
 
-  var grain = Grains.findOne(grainId);
+  var grain = db.getGrain(grainId);
   if (!grain || !grain.private ) { return result; }
 
-  ApiTokens.find({grainId: grainId, revoked: {$ne: true}}).forEach(function (token) {
+  db.collections.apiTokens.find({grainId: grainId,
+                                 revoked: {$ne: true}}).forEach(function (token) {
     tokensById[token._id] = token;
     if (token.parentToken) {
       if (!tokensByParent[token.parentToken]) {
         tokensByParent[token.parentToken] = [];
       }
       tokensByParent[token.parentToken].push(token);
-    } else if (token.userId) {
-      if (!tokensBySharer[token.userId]) {
-        tokensBySharer[token.userId] = [];
+    } else if (token.identityId) {
+      if (!tokensBySharer[token.identityId]) {
+        tokensBySharer[token.identityId] = [];
       }
-      tokensBySharer[token.userId].push(token);
+      tokensBySharer[token.identityId].push(token);
     }
   });
 
   if (root.token) {
     addChildren(root.token._id);
   } else if (root.grain) {
-    addSharedTokens(root.grain.userId);
+    addSharedTokens(root.grain.identityId);
   }
 
   while (tokenStack.length > 0) {
@@ -386,111 +392,117 @@ downstreamTokens = function(root) {
     result.push(token);
     addChildren(token._id);
     if (token.owner && token.owner.user) {
-      addSharedTokens(token.owner.user.userId);
+      addSharedTokens(token.owner.user.identityId);
     }
   }
 
   return result;
 }
 
-createNewApiToken = function (userId, grainId, petname, roleAssignment, forSharing,
-                              expiresIfUnusedDuration, rawParentToken) {
+SandstormPermissions.createNewApiToken = function (db, provider, grainId, petname,
+                                                   roleAssignment, forSharing,
+                                                   expiresIfUnusedDuration) {
   // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
   check(grainId, String);
   check(petname, String);
-  check(roleAssignment, roleAssignmentPattern);
+  check(roleAssignment, db.roleAssignmentPattern);
   check(forSharing, Boolean);
   // Meteor bug #3877: we get null here instead of undefined when we
   // explicitly pass in undefined.
   check(expiresIfUnusedDuration, Match.OneOf(undefined, null, Number));
+  check(provider, Match.OneOf({identityId: String}, {rawParentToken: String}));
 
-  var parentToken;
-  if (!userId) {
-    if (!rawParentToken) {
-      throw new Meteor.Error(403, "If you are not logged in, you must specify a parent token to " +
-                             "create a new API token.");
-    } else {
-      check(rawParentToken, String);
-      parentToken = Crypto.createHash("sha256").update(rawParentToken).digest("base64");
-      var parentApiToken = ApiTokens.findOne({_id: parentToken, grainId: grainId,
-                                              objectId: {$exists: false}});
-      if (!parentApiToken) {
-        throw new Meteor.Error(403, "No such parent token found.");
-      }
-      userId = parentApiToken.userId;
-      if (parentApiToken.forSharing) {
-        forSharing = true;
-      }
-    }
-  }
-
-  var grain = Grains.findOne(grainId);
+  var grain = db.getGrain(grainId);
   if (!grain) {
     throw new Meteor.Error(403, "Unauthorized", "No grain found.");
   }
 
   var token = Random.secret();
-
-  var apiToken = {
+        var apiToken = {
     _id: Crypto.createHash("sha256").update(token).digest("base64"),
-    userId: userId,
     grainId: grainId,
     roleAssignment: roleAssignment,
     petname: petname,
     created: new Date(),
     expires: null,
-    forSharing: forSharing,
   };
 
-  if (parentToken) {
+  if (provider.rawParentToken) {
+    var parentToken = Crypto.createHash("sha256").update(provider.rawParentToken).digest("base64");
+    var parentApiToken = db.collections.apiTokens.findOne(
+      {_id: parentToken, grainId: grainId, objectId: {$exists: false}});
+    if (!parentApiToken) {
+      throw new Meteor.Error(403, "No such parent token found.");
+    }
+    identityId = parentApiToken.identityId;
+    if (parentApiToken.forSharing) {
+      forSharing = true;
+    }
     apiToken.parentToken = parentToken;
+  } else {
+    apiToken.identityId = provider.identityId;
   }
+  apiToken.forSharing = forSharing;
+
   if (expiresIfUnusedDuration) {
     apiToken.expiresIfUnused = new Date(Date.now() + expiresIfUnusedDuration);
   }
 
-  ApiTokens.insert(apiToken);
+  db.collections.apiTokens.insert(apiToken);
 
-  var endpointUrl = ROOT_URL.protocol + "//" + makeWildcardHost("api");
+  var endpointUrl = Url.parse(process.env.ROOT_URL).protocol + "//" + db.makeWildcardHost("api");
   return {id: apiToken._id, token: token, endpointUrl: endpointUrl};
 }
 
-var cleanupSelfDestructing = function() {
-  var now = new Date();
-  ApiTokens.remove({expiresIfUnused: {$lt: now}});
-};
-
 // Make self-destructing tokens actually self-destruct, so they don't
 // clutter the token list view.
-SandstormDb.periodicCleanup(5 * 60 * 1000, cleanupSelfDestructing);
+SandstormPermissions.cleanupSelfDestructing = function (db) {
+  return function () {
+    var now = new Date();
+    db.collections.apiTokens.remove({expiresIfUnused: {$lt: now}});
+  }
+}
 
 Meteor.methods({
-  transitiveShares: function(grainId) {
+  transitiveShares: function(identityId, grainId) {
+    check(identityId, String);
     check(grainId, String);
     if (this.userId) {
-      return downstreamTokens({grain: {_id: grainId, userId: this.userId}});
+      var db = this.connection.sandstormDb;
+      return SandstormPermissions.downstreamTokens(db,
+          {grain: {_id: grainId, identityId: identityId }});
     }
   },
 
-  newApiToken: function (grainId, petname, roleAssignment, forSharing,
-                         expiresIfUnusedDuration, rawParentToken) {
-    return createNewApiToken(this.userId, grainId, petname, roleAssignment, forSharing,
-                             expiresIfUnusedDuration, rawParentToken);
+  newApiToken: function (provider, grainId, petname, roleAssignment, forSharing,
+                         expiresIfUnusedDuration) {
+    check(provider, Match.OneOf({identityId: String}, {rawParentToken: String}));
+    var db = this.connection.sandstormDb;
+    if (provider.identityId) {
+      if (!this.userId || !db.getIdentityOfUser(provider.identityId, this.userId)) {
+        throw new Meteor.Error(403, "Not an identity of the current user: " + provider.identityId);
+      }
+    }
+    return SandstormPermissions.createNewApiToken(
+      this.connection.sandstormDb, provider, grainId, petname, roleAssignment, forSharing,
+      expiresIfUnusedDuration);
   },
 
   updateApiToken: function (token, newFields) {
+    var db = this.connection.sandstormDb;
+
     check(token, String);
     check(newFields, {petname: Match.Optional(String),
-                      roleAssignment: Match.Optional(roleAssignmentPattern),
+                      roleAssignment: Match.Optional(db.roleAssignmentPattern),
                       revoked: Match.Optional(Boolean)});
 
-    var apiToken = ApiTokens.findOne(token);
+    var apiToken = db.collections.apiTokens.findOne(token);
     if (!apiToken) {
       throw new Meteor.Error(404, "No such token found.");
     }
-    if (this.userId && (apiToken.userId === this.userId)) {
+    if (this.userId && apiToken.identityId == db.getUserIdentities(this.userId)[0].id) {
       var modifier = {$set: newFields};
-      ApiTokens.update(token, modifier);
+      db.collections.apiTokens.update(token, modifier);
     } else {
       throw new Meteor.Error(403, "User not authorized to modify this token.");
     }

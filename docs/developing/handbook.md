@@ -28,8 +28,8 @@ minimum.
 
 This document serves as a conceptual overview but is not the
 authoritative source of technical documentation. Within each section,
-we typically link to more detailed documentation on the wiki. Those
-detailed documents provide further context on how stable each API is.
+we typically link to more detailed documentation. Those detailed
+documents provide further context on how stable each API is.
 
 # Change history
 
@@ -326,8 +326,7 @@ available.
 
 The key things to know here is that the app should write an HTML tree
 to /var/www, and then call "publish static" from the
-"HackSessionContext". You can [read more on the
-wiki](https://github.com/sandstorm-io/sandstorm/wiki/Publishing-to-the-user's-domain).
+"HackSessionContext". You can [read more](publishing-apps.md).
 
 ## Apps can expose an external API for authorized users
 
@@ -336,8 +335,7 @@ or client apps, authorized using API keys. These API keys are bound to
 a specific user, so when you receive a request via this API, the
 platform has populated the `X-Sandstorm-User-Id` and related headers.
 
-You can [read more on the
-wiki](https://github.com/sandstorm-io/sandstorm/wiki/Exporting-HTTP-APIs).
+You can [read more](http-apis.md).
 
 ## Apps can expose an external API for the world
 

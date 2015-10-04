@@ -1,3 +1,47 @@
+### v0.117 (2015-09-30)
+- Self-hosters using Sandcats now get automatic free HTTPS certificates. This is normally set up automatically during install. If you first installed before this release, [see the docs to find out how to enable HTTPS](https://docs.sandstorm.io/en/latest/administering/ssl/).
+
+### v0.116 (2015-09-29)
+- (Probably) fix very rare bug in which front-end stops talking to back-end causing grains to fail to load until the next front-end restart. The bug was in node-capnp's use of libuv.
+- Check PGP signatures on packages on install and store them in the database (not yet surfaced in UI).
+
+### v0.115 (2015-09-24)
+- Attempt to work around very rare problem where front-end inexplicably stops talking to back-end by monitoring and recreating the connection.
+- Oasis: Fix "download backup", which broke due to unexpected interaction between security hardening to the sandbox in which zip/unzip runs and security settings on Oasis.
+
+### v0.114 (2015-09-23)
+- No-op release just to test end-to-end that the new signed update mechanism works. (We did lots of tests in advance, but touching the updater code always makes me nervous, so test again!)
+
+### v0.113 (2015-09-23)
+- The installer script is now PGP-signed such that it can be verified by third parties without relying on the integrity of HTTPS.
+- The installer now verifies downloads using GPG (in addition to using HTTPS as it always has).
+- Updates are now verified using libsodium ed25519 signatures (in addition to being downloaded over HTTPS as they always have).
+- Oasis: Fixed storage bug that was causing random app restarts (but no data loss).
+- Various small UI usability tweaks.
+
+### v0.112 (2015-09-16)
+- Fix another stats bug causing stats recording to sometimes be interrupted by an exception.
+
+### v0.111 (2015-09-16)
+- Fix bug preventing "who has access" table from displaying properly.
+
+### v0.110 (2015-09-16)
+- Fix problem with display of app stats (in admin panel) in presence of broken package uploads.
+
+### v0.109 (2015-09-15)
+- You now uninstall apps again.
+- Suspending your machine for a few minutes or more and then resuming will no longer cause all your open Sandstorm grains to stop working until you reload them.
+- Fixed brief display of "Reveal your identity?" prompt when loading your own grains (where this prompt makes no sense).
+- Clicking on an app in the app list will now immediately show the loading spinner without waiting for the server to respond. (Previously, when the server was overloaded, there could be a delay with no feedback. People would often click the app repeatedly, causing multiple grains to be created.)
+- Worked around bogus Adblock Plus rule that blocked parts of the sharing "who has access?" UI.
+- Better accessibility for non-visual users.
+- Readability improvements.
+- You can now close popups by pressing "escape".
+- In the grain list, you can now type an app title to filter for grains of that app.
+- More detailed stats gathering, particularly app-specific stats (see "stats" in the admin UI).
+- Refactored permissions code into a package with better tests.
+- Oasis: Fixed problem where a particular app package might occasionally become broken on a particular worker machine, especially popular apps. The most common symptom was Etherpad or Wekan sporatically failing to load even in new grains, often fixed by restarting the grain (but not by simply reloading the page), since this pushed it to a different worker. No user data was damaged by this problem.
+
 ### v0.108 (2015-09-03)
 - Oasis: Allow front-ends to be parallelized so that they can scale to arbitrary load.
 - Eliminated redundant subscriptions and added caching to reduce front-end load.

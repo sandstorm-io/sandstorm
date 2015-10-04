@@ -22,19 +22,22 @@ GrainView = function GrainView(grainId, path, token, parentElement) {
   this._originalPath = path;
   this._path = path;
   this._token = token;
-
   this._status = "closed";
-  this._revealIdentity = new ReactiveVar(undefined); // set to true or false to make explicit
+  this._dep = new Tracker.Dependency();
+
+  this._userIdentity = new ReactiveVar(undefined);
+  // `false` means incognito; `undefined` means we still need to decide whether to reveal
+  // an identity.
 
   if (token) {
     if (!Meteor.userId()) {
-      this._revealIdentity.set(false);
+      this.doNotRevealIdentity();
     } else if (this._isIdentityAlreadyRevealedToOwner()) {
-      this._revealIdentity.set(true);
+      this.revealIdentity();
     }
+  } else {
+    this.revealIdentity();
   }
-
-  this._dep = new Tracker.Dependency();
 
   // We manage our Blaze view directly in order to get more control over when iframes get
   // re-rendered. E.g. if we were to instead use a template with {{#each grains}} iterating over
@@ -107,7 +110,8 @@ GrainView.prototype.title = function () {
     return grain && grain.title;
   } else if (!this._isUsingAnonymously()) {
     // Case 2.
-    var apiToken = ApiTokens.findOne({grainId: this._grainId, "owner.user.userId": Meteor.userId()},
+    var apiToken = ApiTokens.findOne({grainId: this._grainId,
+                                      "owner.user.identityId": this.identityId()},
                                      {sort: {created: 1}});
     return apiToken && apiToken.owner && apiToken.owner.user && apiToken.owner.user.title;
   } else {
@@ -130,8 +134,9 @@ GrainView.prototype.appTitle = function () {
     return pkg && pkg.manifest && pkg.manifest.appTitle && pkg.manifest.appTitle.defaultText;
   } else if (!this._isUsingAnonymously()) {
     // Case 2
-    var token = ApiTokens.findOne({grainId: this._grainId, 'owner.user.userId': Meteor.userId()},
-                                     {sort: {created: 1}});
+    var token = ApiTokens.findOne({grainId: this._grainId,
+                                   'owner.user.identityId': this.identityId()},
+                                  {sort: {created: 1}});
     return (token && token.owner && token.owner.user && token.owner.user.denormalizedGrainMetadata &&
       token.owner.user.denormalizedGrainMetadata.appTitle.defaultText);
     // TODO(someday) - shouldn't use defaultText
@@ -178,20 +183,25 @@ GrainView.prototype.error = function () {
 
 GrainView.prototype.hasLoaded = function () {
   this._dep.depend();
+  if (this._hasLoaded) {
+    return true;
+  }
+
   var session = Sessions.findOne({_id: this._sessionId});
-  return session && session.hasLoaded;
+  // TODO(soon): this is a hack to cache hasLoaded. Consider moving it to an autorun.
+  this._hasLoaded = session && session.hasLoaded;
+
+  return this._hasLoaded;
 }
 
 GrainView.prototype.origin = function () {
   this._dep.depend();
-  var session = Sessions.findOne({_id: this._sessionId});
-  return session && (window.location.protocol + "//" + makeWildcardHost(session.hostId));
+  return this._hostId && (window.location.protocol + "//" + makeWildcardHost(this._hostId));
 }
 
 GrainView.prototype.viewInfo = function () {
   this._dep.depend();
-  var session = Sessions.findOne({_id: this._sessionId});
-  return session && session.viewInfo;
+  return this._viewInfo;
 }
 
 GrainView.prototype.grainId = function () {
@@ -205,8 +215,10 @@ GrainView.prototype.sessionId = function () {
 }
 
 GrainView.prototype.setTitle = function (newTitle) {
-  Meteor.call("updateGrainTitle", this._grainId, newTitle);
   this._title = newTitle;
+  if (this._userIdentity.get()) {
+    Meteor.call("updateGrainTitle", this._grainId, newTitle, this._userIdentity.get().id);
+  }
   this._dep.changed();
 }
 
@@ -222,14 +234,45 @@ GrainView.prototype.depend = function () {
   this._dep.depend();
 }
 
-GrainView.prototype.setRevealIdentity = function (revealIdentity) {
-  this._revealIdentity.set(revealIdentity);
+GrainView.prototype.revealIdentity = function () {
+  if (!Meteor.user()) {
+    return;
+  }
+  var identities = SandstormDb.getUserIdentities(Meteor.user());
+  var identityIds = identities.map(function(x) { return x.id; });
+  var identity = identities[0]; // Default.
+  var grain = Grains.findOne(this._grainId);
+  if (grain && identityIds.indexOf(grain.identityId) != -1) {
+    // If we own the grain, open it as the owning identity.
+    identity = _.findWhere(identities, {id: grain.identityId});
+  } else {
+    var token = ApiTokens.findOne({"owner.user.identityId": {$in: identityIds}});
+    if (token) {
+      identity = _.findWhere(identities, {id: token.owner.user.identityId});
+    }
+  }
+  this._userIdentity.set(identity);
+  this._dep.changed();
+}
+
+GrainView.prototype.doNotRevealIdentity = function () {
+  this._userIdentity.set(false);
   this._dep.changed();
 }
 
 GrainView.prototype.shouldRevealIdentity = function () {
   this._dep.depend();
-  return this._revealIdentity.get();
+  return !!this._userIdentity.get();
+}
+
+GrainView.prototype.identityId = function () {
+  this._dep.depend();
+  var identity = this._userIdentity.get();
+  if (identity) {
+    return identity.id;
+  } else {
+    return null;
+  }
 }
 
 GrainView.prototype._isIdentityAlreadyRevealedToOwner = function () {
@@ -249,8 +292,14 @@ GrainView.prototype._isIdentityAlreadyRevealedToOwner = function () {
 
 GrainView.prototype.shouldShowInterstitial = function () {
   this._dep.depend();
-  // If we have explictly set _revealIdentity, we don't need to show the interstitial.
-  if (this._revealIdentity.get() !== undefined) {
+
+  // We only show the interstitial for /shared/ routes.
+  if (!this._token) {
+    return false;
+  }
+
+  // If we have explictly set _userIdentity, we don't need to show the interstitial.
+  if (this._userIdentity.get() !== undefined) {
     return false;
   }
   // If we are not logged in, we don't need to show the interstitial - we'll go incognito by default.
@@ -267,11 +316,41 @@ GrainView.prototype.shouldShowInterstitial = function () {
   return true;
 }
 
+GrainView.prototype._addSessionObserver = function (sessionId) {
+  var self = this;
+  self._sessionSub = Meteor.subscribe("sessions", sessionId);
+  self._sessionObserver = Sessions.find({_id : sessionId}).observe({
+    removed: function(session) {
+      self._sessionSub.stop();
+      self._sessionSub = undefined;
+      self._status = "closed";
+      self._dep.changed();
+      if (self._sessionObserver) {
+        self._sessionObserver.stop();
+      }
+      Meteor.defer(function () { self.openSession(); });
+    },
+    changed: function(session) {
+      self._viewInfo = session.viewInfo || self._viewInfo;
+      self._permissions = session.permissions || self._permissions;
+      self._dep.changed();
+    },
+    added: function(session) {
+      self._viewInfo = session.viewInfo || self._viewInfo;
+      self._permissions = session.permissions || self._permissions;
+      self._status = "opened";
+      self._dep.changed();
+    }
+  });
+
+}
+
 GrainView.prototype._openGrainSession = function () {
   var self = this;
-  Meteor.call("openSession", self._grainId, function(error, result) {
+  var identityId = self.identityId();
+  Meteor.call("openSession", self._grainId, identityId, self._sessionSalt, function(error, result) {
     if (error) {
-      console.log("openSession error");
+      console.error("openSession error", error);
       self._error = error.message;
       self._status = "error";
       self._dep.changed();
@@ -282,20 +361,11 @@ GrainView.prototype._openGrainSession = function () {
       }
       self._grainId = result.grainId;
       self._sessionId = result.sessionId;
-      self._sessionSub = Meteor.subscribe("sessions", result.sessionId);
-      Sessions.find({_id : result.sessionId}).observeChanges({
-        removed: function(session) {
-          self._sessionSub.stop();
-          self._sessionSub = undefined;
-          self._status = "closed";
-          self._dep.changed();
-          Meteor.defer(function () { self.openSession(); });
-        },
-        added: function(session) {
-          self._status = "opened";
-          self._dep.changed();
-        }
-      });
+      self._hostId = result.hostId;
+      self._sessionSalt = result.salt;
+
+      self._addSessionObserver(result.sessionId);
+
       if (self._grainSizeSub) self._grainSizeSub.stop();
       self._grainSizeSub = Meteor.subscribe("grainSize", result.grainId);
       self._dep.changed();
@@ -317,13 +387,15 @@ function onceConditionIsTrue(condition, continuation) {
 
 GrainView.prototype._openApiTokenSession = function () {
   var self = this;
-  function condition() { return self._revealIdentity.get() !== undefined; }
+  function condition() { return self._userIdentity.get() !== undefined; }
   onceConditionIsTrue(condition, function () {
+    var identityId = self.identityId();
     var openSessionArg = {
       token: self._token,
-      incognito: !self._revealIdentity.get(),
+      incognito: !identityId,
     };
-    Meteor.call("openSessionFromApiToken", openSessionArg, function(error, result) {
+    Meteor.call("openSessionFromApiToken", openSessionArg, identityId, self._sessionSalt,
+                function(error, result) {
       if (error) {
         console.log("openSessionFromApiToken error");
         self._error = error.message;
@@ -355,20 +427,9 @@ GrainView.prototype._openApiTokenSession = function () {
         self._title = result.title;
         self._grainId = result.grainId;
         self._sessionId = result.sessionId;
-        self._sessionSub = Meteor.subscribe("sessions", result.sessionId);
-        Sessions.find({_id : result.sessionId}).observeChanges({
-          removed: function(session) {
-            self._sessionSub.stop();
-            self._sessionSub = undefined;
-            self._status = "closed";
-            self._dep.changed();
-            Meteor.defer(function () { self.openSession(); });
-          },
-          added: function(session) {
-            self._status = "opened";
-            self._dep.changed();
-          }
-        });
+        self._hostId = result.hostId;
+        self._sessionSalt = result.salt;
+        self._addSessionObserver(result.sessionId);
         self._dep.changed();
       }
     });

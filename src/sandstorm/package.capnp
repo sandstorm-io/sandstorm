@@ -365,7 +365,7 @@ struct Metadata {
     # It is extremely important to users that they be able to verify the author's identity in a way
     # that is not susceptible to spoofing or forgery. Therefore, we *only* identify the author by
     # PGP key. Various PGP infrastructure exists which can be used to determine the author's
-    # identity based on their PGP key. For exmaple, Keybase.io has done a really good job of
+    # identity based on their PGP key. For example, Keybase.io has done a really good job of
     # connecting PGP keys to other Internet identities in a verifiable way.
 
     upstreamAuthor @19 :Text;

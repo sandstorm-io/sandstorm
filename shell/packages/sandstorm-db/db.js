@@ -33,22 +33,33 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //
 // Note that accounts are not the same thing as identities. An account may have multiple identities
 // attached to it. Identities provide a way to authenticate the user and are also used to present
-// globally unique and stable user indentifiers to grains via `Grain.UserInfo.userId`.
+// globally unique and stable user indentifiers to grains via `Grain.UserInfo.identityId`.
 //
 // Each entry in this collection contains:
-//   _id: Random.
+//   _id: Random string. What we're talking about when we say "User ID" or "Account ID".
 //   createdAt: Date when this entry was added to the collection.
 //   lastActive: Date of the user's most recent interaction with this Sandstorm server.
-//   profile: Object containing profile data editable by the user and visible to other users. May
-//            include the following fields. Note that if any field is missing, the first fallback
-//            is to check `services` for details provided by the identity provider (the details
-//            of which differ per-provider). Only if that is also missing do we fall back to
-//            defaults.
+//   profile: Obsolete now that we allow more than one identity per account.
+//   identities: Array of identity profile objects, each of which may include the following fields.
+//               Note that if any field is missing, the first fallback
+//               is to check `services` for details provided by the identity provider (the details
+//               of which differ per-provider). Only if that is also missing do we fall back to
+//               defaults.
+//       id: The globally-stable SHA-256 ID of this identity. This field must be present.
+//       service: String identifying the authentication scheme used by this identity, e.g. "github"
+//                or "google".
 //       name: String containing the display name of the user. Default: first part of email.
 //       handle: String containing the user's preferred handle. Default: first part of email.
 //       picture: _id into the StaticAssets table for the user's picture. Default: identicon.
 //       pronoun: One of "male", "female", "neutral", or "robot". Default: neutral.
+//       unverifiedEmail: Email address specified by the user.
+//       verifiedEmail: Only provided by some services. Cannot be directly edited by the user.
+//       main: True if this is the user's main identity.
+//       noLogin: True if the user does not trust this identity for account authentication.
 //   services: Object containing login and identity data used by Meteor authentication services.
+//   mergedUsers: Array of User _id strings, representing the accounts that have been merged into this
+//                one. Those accounts remain in the Users collection, stripped of their `identities`
+//                and `services` fields.
 //   isAdmin: Boolean indicating whether this user is allowed to access the Sandstorm admin panel.
 //   signupKey: If this is an invited user, then this field contains their signup key.
 //   signupNote: If the user was invited through a link, then this field contains the note that the
@@ -59,6 +70,7 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   storageUsage: Number of bytes this user is currently storing.
 //   expires: Date when this user's account should be deleted. Only present for demo users.
 //   isAppDemoUser: True if this is a demo user who arrived via an /appdemo/ link.
+//   appDemoId: If this is an appdemo user (see above), the app ID they started out demoing.
 //   payments: Object defined by payments module, if loaded.
 //   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
 
@@ -110,12 +122,14 @@ UserActions = new Mongo.Collection("userActions");
 //   userId:  User who has installed this action.
 //   packageId:  Package used to run this action.
 //   appId:  Same as Packages.findOne(packageId).appId; denormalized for searchability.
-//   appTitle:  Same as Packages.findOne(packageId).manifest.appTitle.defaultText; denormalized so
+//   appTitle:  Same as Packages.findOne(packageId).manifest.appTitle; denormalized so
 //       that clients can access it without subscribing to the Packages collection.
 //   appVersion:  Same as Packages.findOne(packageId).manifest.appVersion; denormalized for
 //       searchability.
 //   appMarketingVersion:  Human-readable presentation of the app version, e.g. "2.9.17"
-//   title:  Human-readable title for this action, e.g. "New Spreadsheet".
+//   title: JSON-encoded LocalizedText title for this action, e.g.
+//       `{defaultText: "New Spreadsheet"}`.
+//   nounPhrase: JSON-encoded LocalizedText describing what is created when this action is run.
 //   command:  Manifest.Command to run this action (see package.capnp).
 
 Grains = new Mongo.Collection("grains");
@@ -127,7 +141,8 @@ Grains = new Mongo.Collection("grains");
 //   appId:  Same as Packages.findOne(packageId).appId; denormalized for searchability.
 //   appVersion:  Same as Packages.findOne(packageId).manifest.appVersion; denormalized for
 //       searchability.
-//   userId:  User who owns this grain.
+//   userId: The _id of the user who owns this grain.
+//   identityId: Identity of user who owns this grain.
 //   title:  Human-readable string title, as chosen by the user.
 //   lastUsed:  Date when the grain was last used by a user.
 //   private: If true, then knowledge of `_id` does not suffice to open this grain.
@@ -157,7 +172,7 @@ Contacts = new Mongo.Collection("contacts");
 // Each contains:
 //   _id: random
 //   ownerId: The `_id` of the user who owns this contact.
-//   userId:  The `_id` of the contacted user.
+//   identityId:  The identity of the contacted user.
 //   petname: Human-readable label chosen by and only visible to the owner. Uniquely identifies
 //            the contact to the owner.
 //   created: Date when this contact was created.
@@ -172,7 +187,8 @@ Sessions = new Mongo.Collection("sessions");
 //       '*' in WILDCARD_HOST.
 //   timestamp:  Time of last keep-alive message to this session.  Sessions time out after some
 //       period.
-//   userId:  User who owns this session.
+//   userId:  User ID of the user who owns this session.
+//   identityId:  Identity ID of the user who owns this session.
 //   hashedToken: If the session is owned by an anonymous user, the _id of the entry in ApiTokens
 //       that was used to open it. Note that for old-style sharing (i.e. when !grain.private),
 //       anonymous users can get access without an API token and so neither userId nor hashedToken
@@ -180,6 +196,12 @@ Sessions = new Mongo.Collection("sessions");
 //   powerboxView: If present, this is a view that should be presented as part of a powerbox
 //       interaction.
 //     offer: The webkey that corresponds to cap that was passed to the `offer` RPC.
+//   viewInfo: The UiView.ViewInfo corresponding to the underlying UiSession. This isn't populated
+//       until newSession is called on the UiView.
+//   permissions: The permissions for the current identity on this UiView. This isn't populated
+//       until newSession is called on the UiView.
+//   hasLoaded: Marked as true by the proxy when the underlying UiSession has responded to its first
+//       request
 
 SignupKeys = new Mongo.Collection("signupKeys");
 // Invite keys which may be used by users to get access to Sandstorm.
@@ -205,13 +227,23 @@ ActivityStats = new Mongo.Collection("activityStats");
 //   demoUsers: Demo users.
 //   appDemoUsers: Users that came in through "app demo".
 //   activeGrains: The number of unique grains that have been used in the time interval.
+//   apps: An object indexed by app ID recording, for each app:
+//       owners: Number of unique owners of this app (counting only grains that still exist).
+//       sharedUsers: Number of users who have accessed other people's grains of this app (counting
+//         only grains that still exist).
+//       grains: Number of active grains of this app (that still exist).
+//       deleted: Number of non-demo grains of this app that were deleted.
+//       demoed: Number of demo grains created and expired.
+//       appDemoUsers: Number of app demos initiated with this app.
 
 DeleteStats = new Mongo.Collection("deleteStats");
 // Contains records of objects that were deleted, for stat-keeping purposes.
 //
 // Each contains:
-//   type: "grain" or "user" or "demoUser" or "appDemoUser"
+//   type: "grain" or "user" or "demoGrain" or "demoUser" or "appDemoUser"
 //   lastActive: Date of the user's or grain's last activity.
+//   appId: For type = "grain", the app ID of the grain. For type = "appDemoUser", the app ID they
+//     arrived to demo. For others, undefined.
 
 FileTokens = new Mongo.Collection("fileTokens");
 // Tokens corresponding to backup files that are currently stored on the server. A user receives
@@ -236,31 +268,28 @@ ApiTokens = new Mongo.Collection("apiTokens");
 // Each contains:
 //   _id:       A SHA-256 hash of the token.
 //   grainId:   The grain servicing this API. (Not present if the API isn't serviced by a grain.)
-//   userId:    For UiView capabilities, this is the user for whom the view is attenuated. That
-//              is, the UiView's newSession() method will intersect the requested permissions with
-//              this user's permissions before forwarding on to the underlying app. If `userId` is
-//              not present, then no user attenuation is applied, i.e. this is a raw UiView as
-//              implemented by the app. (The `roleAssignment` field, below, may still apply.)
-//              For non-UiView capabilities, `userId` is never present.
-//              Note that this is NOT the user against whom the `requiredPermissions` parameter of
-//              `SandstormApi.restore()` is checked; that would be `owner.grain.introducerUser`.
-//   userInfo:  *DEPRECATED* For API tokens created by the app through HackSessionContext, the
-//              UserInfo struct that should be passed to `newSession()` when exercising this token,
-//              in decoded (JS object) format. This is a temporary hack. `userId` is never present
-//              when `userInfo` is present.
+//   identityId: For UiView capabilities, this is the identity for which the view is attenuated.
+//              That is, the UiView's newSession() method will intersect the requested permissions
+//              with this identity's permissions before forwarding on to the underlying app. If
+//              `identityId` is not present, then no identity attenuation is applied, i.e. this is
+//              a raw UiView as implemented by the app. (The `roleAssignment` field, below, may
+//              still apply. For non-UiView capabilities, `identityId` is never present. Note that
+//              this is NOT the identity against which the `requiredPermissions` parameter of
+//              `SandstormApi.restore()` is checked; that would be `owner.grain.introducerIdentity`.
 //   roleAssignment: If this API token represents a UiView, this field contains a JSON-encoded
 //              Grain.ViewSharingLink.RoleAssignment representing the permissions it carries. These
-//              permissions will be intersected with those held by `userId` when the view is opened.
+//              permissions will be intersected with those held by `identityId` when the view is
+//              opened.
 //   forSharing: If true, requests sent to the HTTP API endpoint with this token will be treated as
-//              anonymous rather than as directly associated with `userId`. This has no effect on
-//              the permissions granted.
+//              anonymous rather than as directly associated with `identityId`. This has no effect
+//              on the permissions granted.
 //   objectId:  If present, this token represents an arbitrary Cap'n Proto capability exported by
 //              the app or its supervisor (whereas without this it strictly represents UiView).
 //              sturdyRef is the JSON-encoded SupervisorObjectId (defined in `supervisor.capnp`).
 //              Note that if the SupervisorObjectId contains an AppObjectId, that field is
 //              treated as type AnyPointer, and so encoded as a raw Cap'n Proto message.
 //   frontendRef: If present, this token actually refers to an object implemented by the front-end,
-//              not a particular grain. (`grainId` and `userId` are not set.) This is an object
+//              not a particular grain. (`grainId` and `identityId` are not set.) This is an object
 //              containing exactly one of the following fields:
 //       notificationHandle: A `Handle` for an ongoing notification, as returned by
 //                           `NotificationTarget.addOngoing`. The value is an `_id` from the
@@ -273,9 +302,9 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   parentToken: If present, then this token represents exactly the capability represented by
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
 //              by `roleAssignment` (if present). To facilitate permissions computations, if the
-//              capability is a UiView, then `grainId` is set to the backing grain and `userId` is
-//              set to the user who shared the view. None of `userInfo`, `objectId`, or
-//              `frontendRef` are present when `parentToken` is present.
+//              capability is a UiView, then `grainId` is set to the backing grain and `identityId`
+//              is set to the identity that shared the view. Neither `objectId` nor `frontendRef`
+//              is present when `parentToken` is present.
 //   petname:   Human-readable label for this access token, useful for identifying tokens for
 //              revocation. This should be displayed when visualizing incoming capabilities to
 //              the grain identified by `grainId`.
@@ -306,7 +335,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //       grainId :Text;
 //       union {
 //         uiView :group {
-//           userId :Text;
+//           identityId :Text;
 //           roleAssignment :RoleAssignment;
 //           forSharing :Bool;
 //         }
@@ -323,7 +352,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //       union {
 //         uiView :group {
 //           grainId :Text;
-//           userId :Text;
+//           identityId :Text;
 //           roleAssignment :RoleAssignment = (allAccess = ());
 //         }
 //         other :Void;
@@ -563,6 +592,12 @@ matchWildcardHost = function(host) {
 
   var prefix = wildcardHost[0];
   var suffix = wildcardHost[1];
+
+  // We remove everything after the first ":" character so that our
+  // comparison logic ignores port numbers.
+  suffix = suffix.split(":")[0];
+  host = host.split(":")[0];
+
   if (host.lastIndexOf(prefix, 0) >= 0 &&
       host.indexOf(suffix, -suffix.length) >= 0 &&
       host.length >= prefix.length + suffix.length) {
@@ -673,39 +708,59 @@ if (Meteor.isServer) {
 // Below this point are newly-written or refactored functions.
 
 _.extend(SandstormDb.prototype, {
-  // TODO(cleanup): These methods shouldn't take a raw mongo queries or "aggregations" as inputs.
-  //   We want methods corresponding to each kind of query that is performed in practice. Letting
-  //   the caller pass an arbitrary query and aggregations is problematic because:
-  //   - We can't type-check them to prevent Mongo injections.
-  //   - It defeats the purpose of clearly seeing what kinds of queries we need to support, and
-  //     therefore what kind of indexes we might need.
-  //   - It doesn't make it any easier for us to substitute a non-Mongo database in the future.
-  //   - If the caller is just going to pass in a match-all query, we may be forcing Mongo into
-  //     a slower path by using $and.
-  userGrains: function userGrains (user, query, aggregations) {
-    var filteredQuery = { $and: [ { userId: user}, query ] };
-    return this.collections.grains.find(filteredQuery, aggregations);
+  getUser: function getUser (userId) {
+    check(userId, String);
+    return Meteor.users.findOne(userId);
   },
 
-  currentUserGrains: function currentUserGrains (query, aggregations) {
-    return this.userGrains(Meteor.userId(), query, aggregations);
+  getIdentity: function getIdentity (identityId) {
+    check(identityId, String);
+    var user = Meteor.users.findOne({"identities.id": identityId}, {fields: {"identities.$": 1}});
+    if (user) {
+      return user.identities[0];
+    }
   },
 
-  userApiTokens: function userApiTokens (user) {
-    return this.collections.apiTokens.find({'owner.user.userId': user});
+  getIdentityOfUser: function getIdentity (identityId, userId) {
+    check(identityId, String);
+    check(userId, String);
+    var user = Meteor.users.findOne({_id: userId, "identities.id": identityId},
+                                    {fields: {"identities.$": 1}});
+    if (user) {
+      return user.identities[0];
+    }
+  },
+
+  userGrains: function userGrains (user) {
+    return this.collections.grains.find({ userId: user});
+  },
+
+  currentUserGrains: function currentUserGrains () {
+    return this.userGrains(Meteor.userId());
+  },
+
+  getGrain: function getGrain (grainId) {
+    check(grainId, String);
+    return this.collections.grains.findOne(grainId);
+  },
+
+  userApiTokens: function userApiTokens (userId) {
+    check(userId, String);
+    var identityIds = SandstormDb.getUserIdentities(this.getUser(userId))
+        .map(function (identity) { return identity.id; });
+    return this.collections.apiTokens.find({'owner.user.identityId': {$in: identityIds}});
   },
 
   currentUserApiTokens: function currentUserApiTokens () {
     return this.userApiTokens(Meteor.userId());
   },
 
-  userActions: function userActions (user, query, aggregations) {
-    var filteredQuery = { $and: [ {userId: user}, query ] };
-    return this.collections.userActions.find(filteredQuery, aggregations);
+  userActions: function userActions (user) {
+    return this.collections.userActions.find({userId: user});
   },
 
-  currentUserActions: function currentUserActions (query, aggregations) {
-    return this.userActions(Meteor.userId(), query, aggregations);
+  currentUserActions: function currentUserActions () {
+    return this.userActions(Meteor.userId());
   },
 
   getPlan: function (id) {

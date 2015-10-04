@@ -90,10 +90,6 @@ body>.topbar {
       &:hover {
         background-color: $topbar-background-color-hover;
       }
-
-      &:focus {
-        outline: none;
-      }
     }
   }
 
@@ -134,10 +130,6 @@ body>.topbar {
 
       &:hover {
         background-color: $topbar-background-color-hover;
-      }
-
-      &:focus {
-        outline: none;
       }
     }
   }
@@ -210,9 +202,6 @@ body>.topbar {
         margin: 0px;
         @media #{$desktop} {
           height: $topbar-height-desktop;
-        }
-        &:focus {
-          outline: none;
         }
       }
 
@@ -311,22 +300,18 @@ body>.topbar {
 
       background-image: url("/share.svg");
       background-repeat: no-repeat;
-      background-position: 8px center;
-
       @media #{$desktop} {
-        background-position: left;
-        background-color: #762f87;
+        background-position: 2px center;
         color: #cccccc; // Have the text match the icon.
                         // This is the single place the button text is visible.
-        padding-left: 32px;
+        padding-left: 36px;
         padding-right: 8px;
         height: 32px;
         line-height: 28px;
         font-size: 12pt;
-
-        &:hover {
-          background-color: lighten(#762f87, 8);
-        }
+      }
+      @media #{$mobile} {
+        background-position: 10px center;
       }
     }
 
@@ -369,7 +354,7 @@ body>.topbar {
       }
 
       .alert {
-        background-color: #762f87;
+        background-color: $sandstorm-purple-color;
         color: white;
         text-decoration: none;
 
@@ -448,11 +433,6 @@ body>.topbar {
           >a {
             padding: 0 8px;
             display: block;
-
-            &.highlight {
-              background-color: #762f87;
-              color: white;
-            }
           }
         }
       }
@@ -499,7 +479,6 @@ body>.topbar {
           white-space: nowrap;
           &, &:visited, &:active, &:hover {
             color: inherit;
-            outline: 0px;
           }
         }
         &.navitem-open-grain, &.navitem-create-grain {
@@ -545,7 +524,6 @@ body>.topbar {
           white-space: nowrap;
           &, &:visited, &:active, &:hover {
             color: inherit;
-            outline: 0px;
           }
         }
       }
@@ -707,10 +685,6 @@ body>.popup {
       cursor: pointer;
     }
 
-    >.close-popup:focus {
-      outline: none;
-    }
-
     >h4 {
       margin: 0px;
       font-size: 14px;
@@ -766,52 +740,54 @@ body>.popup {
       cursor: pointer;
     }
 
-    [data-which-tab=send-invite]>.send-invite>h5,
-    [data-which-tab=shareable-link]>.shareable-link>h5 {
-      background-color: white;
-      border-bottom: 1px solid white;
-      // TODO(cleanup): It would be better to use z-index for this.
-    }
-
     .share-tabs {
       padding: $topbar-popup-padding;
       border-top: 1px solid #ccc;
       position: relative;
       margin: 0;
-      section {
+      >ul {
+        list-style: none;
+        >li {
+          border-top-left-radius: 4px;
+          border-top-right-radius: 4px;
+          background-color: #f7f7f7;
+          border: 1px solid #ccc;
+          border-bottom: none;
+          position: absolute;
+          margin: 0;
+          padding: 3px;
+          width: 45%;
+          text-align: center;
+          font-size: 14px; // Size must be the same on mobile and desktop for correct absolute position.
+          top: -26px;
+          background-position: 15px 2px, left;
+          background-size: 20px, 20px;
+          background-repeat: no-repeat;
+          cursor: pointer;
+          &:focus {
+            outline: $focus-outline-color solid 1px;
+          }
+        }
+        #send-invite-tab-header {
+          left: 2%;
+          background-image: url(/email-m.svg);
+        }
+        #shareable-link-tab-header {
+          right: 2%;
+          background-image: url(/link-m.svg);
+        }
+        [aria-selected=true] {
+          background-color: white;
+          border-bottom: 1px solid white;
+        }
+      }
+      >div.tabpanel {
         margin-left: 16px;
         margin-right: 16px;
+        &[aria-hidden=true] {
+          display: none;
+        }
       }
-    }
-    [data-which-tab=send-invite]>.shareable-link>.tab-content,
-    [data-which-tab=shareable-link]>.send-invite>.tab-content {
-      display: none;
-    }
-    section>h5.tab-top {
-      border-top-left-radius: 4px;
-      border-top-right-radius: 4px;
-      background-color: #f7f7f7;
-      border: 1px solid #ccc;
-      border-bottom: none;
-      position: absolute;
-      margin: 0;
-      padding: 3px;
-      width: 45%;
-      text-align: center;
-      font-size: 14px; // Size must be the same on mobile and desktop for correct absolute position.
-      top: -26px;
-      background-position: 15px 2px, left;
-      background-size: 20px, 20px;
-      background-repeat: no-repeat;
-      cursor: pointer;
-    }
-    section.send-invite>h5.tab-top {
-      left: 2%;
-      background-image: url(/email-m.svg);
-    }
-    section.shareable-link>h5.tab-top {
-      right: 2%;
-      background-image: url(/link-m.svg);
     }
 
     button.reset-invite, button.reset-share-token {
@@ -850,7 +826,7 @@ body>.popup {
       // HACK. This should be computed from the max-height of the containing div. Is that even
       // possible?
     }
-    table.people, table.sharing-links {
+    table.people, table.shared-links {
       border: 1px solid #ddd;
       border-right: none;
       border-left: none;

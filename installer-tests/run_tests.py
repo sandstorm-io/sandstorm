@@ -206,6 +206,7 @@ def uninstall_sandstorm(vagrant_box_name):
             'if [ -e /proc/sys/kernel/unprivileged_userns_clone  ] ; then echo 0 | sudo dd of=/proc/sys/kernel/unprivileged_userns_clone ; fi',
             'sudo pkill -9 sudo || true',
             'sudo hostname localhost',
+            'sudo modprobe fuse',  # Workaround for issue #858
     ]:
         exitcode = subprocess.call(['vagrant', 'ssh', vagrant_box_name,
                                     '-c', cmd], cwd=TEST_ROOT)
@@ -258,7 +259,7 @@ def main():
 
     testfiles = args.testfiles
     if not testfiles:
-        testfiles = glob.glob('*.t')
+        testfiles = sorted(glob.glob('*.t'))
 
     keep_going = True
 

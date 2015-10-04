@@ -1066,8 +1066,6 @@ body>.popup.billing-prompt>.frame {
 
       >p {
         font-size: 10pt;
-        font-weight: 300;
-
         >a {
           text-decoration: none;
           font-weight: 600;
@@ -1122,7 +1120,7 @@ body>.popup.billing-prompt>.frame {
 .dev-accounts {
   button {
     font-family: inherit;
-    background-color: #762f87;
+    background-color: $sandstorm-purple-color;
 
     padding: 10px 16px;
     font-size: 60px;

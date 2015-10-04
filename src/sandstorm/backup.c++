@@ -76,6 +76,16 @@ void BackupMain::writeUserNSMap(const char *type, kj::StringPtr contents) {
       .write(contents.begin(), contents.size());
 }
 
+void BackupMain::bind(kj::StringPtr src, kj::StringPtr dst, unsigned long flags) {
+  // Contrary to the documentation of MS_BIND claiming this is no longer the case after 2.6.26,
+  // mountflags are ignored on the initial bind.  We have to issue a subsequent remount to set
+  // them.
+  KJ_SYSCALL(mount(src.cStr(), dst.cStr(), nullptr, MS_BIND | MS_REC, nullptr), src, dst);
+  KJ_SYSCALL(mount(src.cStr(), dst.cStr(), nullptr,
+                   MS_BIND | MS_REC | MS_REMOUNT | flags, nullptr),
+      src, dst);
+}
+
 bool BackupMain::run(kj::StringPtr grainDir) {
   // Enable no_new_privs so that once we drop privileges we can never regain them through e.g.
   // execing a suid-root binary, as a backup measure. This is a backup measure in case someone
@@ -93,9 +103,13 @@ bool BackupMain::run(kj::StringPtr grainDir) {
   writeUserNSMap("uid", kj::str("1000 ", uid, " 1\n"));
   writeUserNSMap("gid", kj::str("1000 ", gid, " 1\n"));
 
+  // To really unshare the mount namespace, we also have to make sure all mounts are private.
+  // The parameters here were derived by strace'ing `mount --make-rprivate /`.  AFAICT the flags
+  // are undocumented.  :(
+  KJ_SYSCALL(mount("none", "/", nullptr, MS_REC | MS_PRIVATE, nullptr));
+
   // Mount root read-only.
-  KJ_SYSCALL(mount(kj::str(root, "/").cStr(), "/tmp", nullptr,
-                   MS_BIND | MS_REC | MS_RDONLY, nullptr));
+  bind(kj::str(root, "/"), "/tmp", MS_BIND | MS_NOSUID | MS_RDONLY);
 
   if (access("/tmp/dev/null", F_OK) != 0) {
     // Looks like we need to bind in /dev.
@@ -115,14 +129,13 @@ bool BackupMain::run(kj::StringPtr grainDir) {
     KJ_SYSCALL(mkdir(kj::str(grainDir, "/sandbox").cStr(), 0770));
   }
   KJ_SYSCALL(mkdir("/tmp/tmp/data", 0700));
-  KJ_SYSCALL(mount(kj::str(grainDir, "/sandbox").cStr(), "/tmp/tmp/data", nullptr,
-                   MS_BIND | MS_NODEV | MS_NOSUID | (restore ? 0 : MS_RDONLY), nullptr));
+  bind(kj::str(grainDir, "/sandbox"), "/tmp/tmp/data",
+       MS_NODEV | MS_NOSUID | MS_NOEXEC | (restore ? 0 : MS_RDONLY));
 
   // Bind in the grain's `log`. When restoring, we discard the log.
   if (!restore) {
     KJ_SYSCALL(mknod("/tmp/tmp/log", S_IFREG | 0600, 0));
-    KJ_SYSCALL(mount(kj::str(grainDir, "/log").cStr(), "/tmp/tmp/log", nullptr,
-                     MS_BIND | MS_RDONLY, nullptr));
+    bind(kj::str(grainDir, "/log"), "/tmp/tmp/log", MS_RDONLY | MS_NOEXEC | MS_NOSUID | MS_NODEV);
   }
 
   // Bind in the file.

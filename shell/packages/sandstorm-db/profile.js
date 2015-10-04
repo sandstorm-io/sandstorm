@@ -25,7 +25,7 @@ if (Meteor.isServer) {
     return [
       Meteor.users.find(Meteor.userId,
         {fields: {
-          "profile":1,
+          "identities":1,
           "devName":1,
           "expires":1,
 
@@ -127,94 +127,6 @@ function emailToHandle(email) {
   return filterHandle(base);
 }
 
-function identityId(service, id) {
-  return sha256(service + ":" + id);
-}
-
-function googleIdentity(user, staticHost) {
-  var google = (user.services && user.services.google) || {};
-  var profile = user.profile || {};
-  var id = identityId("google", google.id);
-
-  return {
-    service: "google",
-    id: id,
-    name: profile.name || google.name || "Name Unknown",
-    email: profile.email || google.email,
-    handle: profile.handle || emailToHandle(google.email) ||
-            filterHandle(profile.name || google.name) || "unknown",
-    picture: staticAssetUrl(profile.picture, staticHost) || makeIdenticon(id),
-    pronoun: profile.pronoun || GENDERS[google.gender] || "neutral",
-  }
-}
-
-function githubIdentity(user, staticHost) {
-  var github = (user.services && user.services.github) || {};
-  var profile = user.profile || {};
-  var id = identityId("github", github.id);
-
-  return {
-    service: "github",
-    id: id,
-    name: profile.name || github.username || "Name Unknown",
-    email: profile.email || github.email,
-    handle: profile.handle || filterHandle(github.username) ||
-            filterHandle(profile.name) || "unknown",
-    picture: staticAssetUrl(profile.picture, staticHost) || makeIdenticon(id),
-    pronoun: profile.pronoun,
-  }
-}
-
-function emailIdentity(user, staticHost) {
-  var email = (user.services && user.services.emailToken) || {};
-  var profile = user.profile || {};
-  var id = identityId("email", email.email);
-
-  return {
-    service: "email",
-    id: id,
-    name: profile.name || email.email.split("@")[0] || "Name Unknown",
-    email: profile.email || email.email,
-    handle: profile.handle || emailToHandle(email.email) ||
-            filterHandle(profile.name) || "unknown",
-    picture: staticAssetUrl(profile.picture, staticHost) || makeIdenticon(id),
-    pronoun: profile.pronoun,
-  }
-}
-
-function devIdentity(user, staticHost) {
-  var email = (user.services && user.services.emailToken) || {};
-  var profile = user.profile || {};
-  var name = user.devName.split(" ")[0].toLowerCase();
-  var id = identityId("dev", user.devName);
-
-  return {
-    service: "dev",
-    id: id,
-    name: profile.name || user.devName,
-    handle: profile.handle || filterHandle(name),
-    picture: staticAssetUrl(profile.picture, staticHost) || makeIdenticon(id),
-    pronoun: profile.pronoun ||
-             (_.contains(["alice", "carol", "eve"], name) ? "female" :
-              _.contains(["bob", "dave"], name) ? "male" : "neutral"),
-  }
-}
-
-function demoIdentity(user, staticHost) {
-  var email = (user.services && user.services.emailToken) || {};
-  var profile = user.profile || {};
-  var id = identityId("demo", user._id);
-
-  return {
-    service: "demo",
-    id: id,
-    name: profile.name || "Demo User",
-    handle: profile.handle || "demo",
-    picture: staticAssetUrl(profile.picture, staticHost) || makeIdenticon(id),
-    pronoun: profile.pronoun || "neutral",
-  }
-}
-
 SandstormDb.getVerifiedEmails = function (user) {
   var result = [];
 
@@ -229,30 +141,47 @@ SandstormDb.getVerifiedEmails = function (user) {
   return result;
 }
 
+function fillInDefaults(identity, user) {
+  if (identity.service === "github") {
+    identity.name = identity.name || user.services.github.username || "Name Unknown";
+    identity.handle = identity.handle || filterHandle(user.services.github.username) ||
+        filterHandle(identity.name) || "unknown";
+  } else if (identity.service === "google") {
+    identity.name = identity.name || user.services.google.name || "Name Unknown";
+    identity.handle = identity.handle || emailToHandle(user.services.google.email) ||
+        filterHandle(identity.name) || "unknown";
+    identity.pronoun = identity.pronoun || GENDERS[user.services.google.gender] || "neutral";
+  } else if (identity.service === "emailToken") {
+    identity.name = identity.name || user.services.emailToken.email.split("@")[0] || "Name Unknown";
+    identity.handle = identity.handle || emailToHandle(user.services.emailToken.email) ||
+        filterHandle(identity.name) || "unknown";
+  } else if (identity.service === "dev") {
+    var lowerCaseName = user.devName.split(" ")[0].toLowerCase();
+    identity.name = identity.name || user.devName;
+    identity.handle = identity.handle | filterHandle(lowerCaseName);
+    identity.pronoun = identity.pronoun ||
+        (_.contains(["alice", "carol", "eve"], lowerCaseName) ? "female" :
+         _.contains(["bob", "dave"], lowerCaseName) ? "male" : "neutral");
+  } else if (identity.service === "demo") {
+    identity.name = identity.name || "Demo User";
+    identity.handle = identity.handle || "demo";
+  } else {
+    throw new Error("unrecognized identity service: " + identity.service);
+  }
+
+  identity.pronoun = identity.pronoun || "netural";
+}
+
 SandstormDb.getUserIdentities = function (user) {
   // Given a user object, return all of the user's identities.
   //
   // On the client, must be subscribed "accountIdentities" for the user.
+  if (!user) return [];
 
   var staticHost = httpProtocol + "//" + makeWildcardHost("static");
-
-  var result = [];
-  if (user && user.services) {
-    if ("google" in user.services) {
-      result.push(googleIdentity(user, staticHost));
-    }
-    if ("github" in user.services) {
-      result.push(githubIdentity(user, staticHost));
-    }
-    if ("emailToken" in user.services) {
-      result.push(emailIdentity(user, staticHost));
-    }
-    if ("devName" in user) {
-      result.push(devIdentity(user, staticHost));
-    }
-    if ("expires" in user) {
-      result.push(demoIdentity(user, staticHost));
-    }
-  }
-  return result;
+  return user.identities.map(function(identity) {
+    identity.pictureUrl = staticAssetUrl(identity.picture, staticHost) || makeIdenticon(identity.id);
+    fillInDefaults(identity, user);
+    return identity;
+  });
 }

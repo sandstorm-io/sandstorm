@@ -16,11 +16,7 @@
       {{/if}}
     {{/if}}
   {{else}}
-    {{#if isCurrentRoute 'shared'}}
-      <a class="highlight">Save this link ▾</a>
-    {{else}}
-      <a>Sign in ▾</a>
-    {{/if}}
+    <a>Sign in ▾</a>
   {{/if}}
 </template>
 
@@ -48,10 +44,10 @@
 
 <template name="_loginButtonsMessages">
   {{#if errorMessage}}
-    <p class="message error-message">{{errorMessage}}</p>
+    <p class="message error-message" role="menuitem" aria-disabled="true">{{errorMessage}}</p>
   {{/if}}
   {{#if infoMessage}}
-    <p class="message info-message">{{infoMessage}}</p>
+    <p class="message info-message" role="menuitem" aria-disabled="true">{{infoMessage}}</p>
   {{/if}}
 </template>
 
@@ -59,15 +55,15 @@
   <h4>Account</h4>
 
   {{!-- TODO(cleanup): Don't wrap this in login-buttons-list? --}}
-  <div class="login-buttons-list">
-    <a href="/account">Account settings</a>
+  <div class="login-buttons-list" role="menu">
+    <a href="/account" role="menuitem">Account settings</a>
     {{#if isAdmin}}
-    <a href="/admin">Admin settings</a>
+    <a href="/admin" role="menuitem">Admin settings</a>
     {{/if}}
-    <a href="mailto:support@sandstorm.io" target="_blank">Send Feedback</a>
-    <a href="/about">About Sandstorm</a>
+    <a href="mailto:support@sandstorm.io" target="_blank" role="menuitem">Send Feedback</a>
+    <a href="/about" role="menuitem">About Sandstorm</a>
 
-    <button class="logout">
+    <button class="logout" role="menuitem">
       Sign out
     </button>
 
@@ -105,13 +101,13 @@
 </template>
 
 <template name="loginButtonsList">
-  <div class="login-buttons-list">
+  <div class="login-buttons-list" role="menu">
   {{#each services}}
     {{#if isEmailTokenService}}
       {{#if hasOtherServices}} {{! the email token service will always come last }}
         {{> _loginButtonsSeparator}}
       {{/if}}
-      <form class="email">
+      <form class="email" role="menuitem">
         with e-mail
 
         <label class="email {{#if awaitingToken}}hidden{{/if}}">e-mail
@@ -137,22 +133,22 @@
         {{/with}}
       </form>
     {{else}}
-      <button class="login oneclick {{name}}">
+      <button class="login oneclick {{name}}" role="menuitem">
         with {{capitalizedName}}
       </button>
     {{/if}}
   {{else}}
-    <a class="troubleshooting" href="/admin">configure login</a>
+    <a class="troubleshooting" href="/admin" role="menuitem">configure login</a>
   {{/each}}
 
   {{> _loginButtonsMessages}}
 
   {{#if showTroubleshooting}}
     {{> _loginButtonsSeparator}}
-    <a class="troubleshooting" href="https://docs.sandstorm.io/en/latest/administering/faq/" target="_blank">troubleshooting</a>
+    <a class="troubleshooting" href="https://docs.sandstorm.io/en/latest/administering/faq/" role="menuitem" target="_blank">troubleshooting</a>
   {{/if}}
 
-  <a href="/about">about Sandstorm</a>
+  <a href="/about" role="menuitem">about Sandstorm</a>
   </div>
 </template>
 

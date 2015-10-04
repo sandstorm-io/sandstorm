@@ -40,7 +40,7 @@ function makeNotificationHandle(notificationId, saved) {
 }
 
 function dropWakelock(grainId, wakeLockNotificationId) {
-  waitPromise(useGrain(grainId, function (supervisor) {
+  waitPromise(globalBackend.useGrain(grainId, function (supervisor) {
     return supervisor.drop({wakeLockNotification: wakeLockNotificationId});
   }));
 }
@@ -152,8 +152,8 @@ checkRequirements = function (requirements) {
     } else if (requirement.permissionsHeld) {
       var p = requirement.permissionsHeld;
       var viewInfo = Grains.findOne(p.grainId, {fields: {cachedViewInfo: 1}}).cachedViewInfo;
-      var currentPermissions = grainPermissions({grain: {_id: p.grainId, userId: p.userId}},
-                                                viewInfo || {});
+      var currentPermissions = SandstormPermissions.grainPermissions(
+        globalDb, {grain: {_id: p.grainId, identityId: p.identityId}}, viewInfo || {});
       if (!currentPermissions) {
         return false;
       }
@@ -220,7 +220,7 @@ restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
     if (token.objectId.appRef) {
       token.objectId.appRef = new Buffer(token.objectId.appRef);
     }
-    return waitPromise(useGrain(token.grainId, function (supervisor) {
+    return waitPromise(globalBackend.useGrain(token.grainId, function (supervisor) {
       return supervisor.restore(token.objectId, requirements, parentToken);
     }));
   } else if (token.parentToken) {
@@ -239,11 +239,11 @@ SandstormCoreImpl.prototype.restore = function (sturdyRef, requiredPermissions) 
       tokenValid: hashedSturdyRef
     }];
 
-    if (requiredPermissions && token.owner.grain.introducerUser) {
+    if (requiredPermissions && token.owner.grain.introducerIdentity) {
       requirements.push({
         permissionsHeld: {
           permissions: requiredPermissions,
-          userId: token.owner.grain.introducerUser,
+          identityId: token.owner.grain.introducerIdentity,
           grainId: self.grainId
         }
       });

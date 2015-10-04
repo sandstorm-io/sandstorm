@@ -67,6 +67,44 @@ kj::Maybe<kj::AutoCloseFd> raiiOpenIfExists(
 kj::Maybe<kj::AutoCloseFd> raiiOpenAtIfExists(
     int dirfd, kj::StringPtr name, int flags, mode_t mode = 0666);
 
+size_t getFileSize(int fd, kj::StringPtr filename);
+
+class MemoryMapping {
+public:
+  MemoryMapping(): content(nullptr) {}
+  explicit MemoryMapping(int fd, kj::StringPtr filename);
+  ~MemoryMapping() noexcept(false);
+
+  KJ_DISALLOW_COPY(MemoryMapping);
+  inline MemoryMapping(MemoryMapping&& other): content(other.content) {
+    other.content = nullptr;
+  }
+  inline MemoryMapping& operator=(MemoryMapping&& other) {
+    MemoryMapping old(kj::mv(*this));
+    content = other.content;
+    other.content = nullptr;
+    return *this;
+  }
+
+  inline operator kj::ArrayPtr<const byte>() const {
+    return content;
+  }
+
+  inline operator capnp::Data::Reader() const {
+    return content;
+  }
+
+  inline operator kj::ArrayPtr<const capnp::word>() const {
+    return kj::arrayPtr(reinterpret_cast<const capnp::word*>(content.begin()),
+                        content.size() / sizeof(capnp::word));
+  }
+
+  inline size_t size() const { return content.size(); }
+
+private:
+  kj::ArrayPtr<byte> content;
+};
+
 kj::Maybe<kj::String> readLine(kj::BufferedInputStream& input);
 
 kj::Promise<void> pump(kj::AsyncInputStream& input, ByteStream::Client stream);

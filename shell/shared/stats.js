@@ -17,6 +17,16 @@
 var DAY_MS = 24*60*60*1000;
 
 if (Meteor.isServer) {
+  if (Mongo.Collection.prototype.aggregate) {
+    throw new Error("Looks like Meteor wrapped the Collection.aggregate() call. Make sure it " +
+                    "works then delete our own wrapper.");
+  }
+  Mongo.Collection.prototype.aggregate = function () {
+    // Meteor doesn't wrapp Mongo's aggregate() method.
+    var raw = this.rawCollection();
+    return Meteor.wrapAsync(raw.aggregate, raw).apply(raw, arguments);
+  };
+
   computeStats = function (since) {
     // We'll need this for a variety of queries.
     var timeConstraint = {$gt: since};
@@ -44,24 +54,89 @@ if (Meteor.isServer) {
     var deletedGrainsCount = DeleteStats.find(
       {type: "grain", lastActive: timeConstraint}).count();
 
+    var apps = Grains.aggregate([
+      {$match: {lastUsed: timeConstraint}},
+      {$group: {_id: "$appId", grains: {$sum: 1}, userIds: {$addToSet: "$userId"}}},
+      {$project: {grains: 1, owners: {$size: "$userIds"}}}
+    ]);
+    apps = _.indexBy(apps, "_id");
+
+    for (var appId in apps) {
+      // We need to count ApiTokens, which don't have appId denormalized into them. We therefore
+      // have to fetch a list of grainIds first.
+      // TODO(perf): If stats are getting slow, denormalize appId into ApiTokens. Note that it is
+      //   already denormalized for the specific case of apps that don't have icons, but the data
+      //   for that use case is NOT safe to use here because it's intended that we might allow an
+      //   app to mimic another app's icon by spoofing that app ID. In other words, the existing
+      //   denormalization of appId should be considered "app ID for identicon purposes only". We'll
+      //   need to add a new denormalization for stats purposes -- and make sure that it is not
+      //   revealed to the user.
+      var app = apps[appId];
+      delete app["_id"];
+      var grains = Grains.find({lastUsed: timeConstraint, appId: appId}, {fields: {_id: 1}}).fetch();
+      var grainIds = _.pluck(grains, "_id");
+
+      var counts = ApiTokens.aggregate([
+        {$match: {"owner.user.lastUsed": timeConstraint, "grainId": {$in: grainIds}}},
+        {$group: {_id: "$owner.user.userId"}},
+        {$group: {_id: "count", count: {$sum: 1}}}
+      ]);
+
+      if (counts.length > 0) {
+        if (counts.length !== 1) {
+          console.error("error: sharedUsers aggregation returned multiple rows");
+        }
+        app.sharedUsers = counts[0].count;
+      }
+    }
+
+    // Count per-app appdemo users and deleted grains.
+    DeleteStats.aggregate([
+      {$match: {lastActive: timeConstraint, appId: {$exists: true}}},
+      {$group: {_id: {appId: "$appId", type: "$type"}, count: {$sum: 1}}}
+    ]).forEach(function (deletion) {
+      var app = apps[deletion._id.appId];
+      if (!app) {
+        app = apps[deletion.appId] = {};
+      }
+      if (deletion._id.type === "appDemoUser") {
+        app.appDemoUsers = deletion.count;
+      } else if (deletion._id.type === "grain") {
+        app.deleted = deletion.count;
+      } else if (deletion._id.type === "demoGrain") {
+        app.demoed = deletion.count;
+      }
+    });
 
     return {
       activeUsers: currentlyActiveUsersCount,
       demoUsers: deletedDemoUsersCount,
       appDemoUsers: deletedAppDemoUsersCount,
-      activeGrains: (activeGrainsCount + deletedGrainsCount)
-    }
-  }
+      activeGrains: (activeGrainsCount + deletedGrainsCount),
+      apps: apps,
+    };
+  };
 
   function recordStats() {
     var now = new Date();
 
-    ActivityStats.insert({
+    var planStats = _.countBy(
+      Meteor.users.find({expires: {$exists: false}, payments: {$exists: true}},
+                        {fields: {plan: 1}}).fetch(),
+      "plan"
+    );
+
+    var record = {
       timestamp: now,
       daily: computeStats(new Date(now.getTime() - DAY_MS)),
       weekly: computeStats(new Date(now.getTime() - 7 * DAY_MS)),
-      monthly: computeStats(new Date(now.getTime() - 30 * DAY_MS))
-    });
+      monthly: computeStats(new Date(now.getTime() - 30 * DAY_MS)),
+      forever: computeStats(new Date(0)),
+      plans: planStats
+    };
+    record.computeTime = Date.now() - now;
+
+    ActivityStats.insert(record);
   }
 
   if (!Meteor.settings.replicaNumber) {
@@ -138,14 +213,26 @@ if (Meteor.isClient) {
   Template.adminStats.events({
     'click #regenerateStatsToken': function () {
       Meteor.call('regenerateStatsToken');
+    },
+    "change select.package-date": function (ev, template) {
+      template.currentPackageDate.set(ev.currentTarget.value);
     }
   });
   Template.adminStats.onCreated(function () {
     var state = Iron.controller().state;
     var token = state.get("token");
+    this.currentPackageDate = new ReactiveVar(null);
+    var self = this;
+    this.autorun(function () {
+      var stat = ActivityStats.findOne({}, {sort: {timestamp: -1}});
+      if (stat) {
+        self.currentPackageDate.set(stat._id);
+      }
+    });
     this.subscribe("activityStats", token);
     this.subscribe("realTimeStats", token);
     this.subscribe("statsTokens", token);
+    this.subscribe("allPackages", token);
   });
   Template.adminStats.helpers({
     points: function () {
@@ -155,6 +242,55 @@ if (Meteor.isClient) {
           day: new Date(point.timestamp.getTime() - 12*60*60*1000).toLocaleDateString()
         }, point);
       });
+    },
+    appDates: function () {
+      var template = Template.instance();
+      return ActivityStats.find({}, {sort: {timestamp: -1}, fields: {timestamp: 1}})
+          .map(function (point) {
+        return _.extend({
+          // Report date of midpoint of sample period.
+          day: new Date(point.timestamp.getTime() - 12*60*60*1000).toLocaleDateString(),
+          selected: point._id === template.currentPackageDate.get()
+        }, point);
+      });
+    },
+    apps: function () {
+      var template = Template.instance();
+      var stats = ActivityStats.findOne({_id: template.currentPackageDate.get()});
+      if (!stats) {
+        return;
+      }
+
+      var apps = {};
+      var pivotApps = function (time) {
+        var data = stats[time];
+        if (!data) {
+          return;
+        }
+        data = data.apps;
+        for (var appId in data) {
+          var p = data[appId];
+          apps[appId] = apps[appId] || {};
+          apps[appId][time] = p;
+        }
+      };
+      pivotApps("daily");
+      pivotApps("weekly");
+      pivotApps("monthly");
+      pivotApps("forever");
+      return _.chain(apps)
+        .map(function (packObj, appId) {
+          packObj.appId = appId;
+          // Find the newest version of this app.
+          var p = Packages.findOne({appId: appId, manifest: {$exists: true}},
+                                   {sort: {"manifest.appVersion": -1}});
+          if (p) {
+            packObj.appTitle = appNameFromPackage(p);
+          }
+          return packObj;
+        })
+        .sortBy(function (app) { return -((app.daily || {}).owners || 0); })
+        .value();
     },
     current: function () {
       return RealTimeStats.findOne("now");

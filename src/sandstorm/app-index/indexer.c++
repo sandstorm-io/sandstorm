@@ -278,6 +278,7 @@ void Indexer::updateIndex() {
           summary.setAppId(info.getAppId());
           summary.setName(info.getTitle().getDefaultText());
           summary.setVersion(info.getMarketingVersion().getDefaultText());
+          summary.setVersionNumber(info.getVersion());
           summary.setPackageId(info.getPackageId());
 
           auto icons = metadata.getIcons();

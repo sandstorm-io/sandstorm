@@ -58,6 +58,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   post @1 (path :Text, content :PostContent, context :Context) -> Response;
   put @3 (path :Text, content :PutContent, context :Context) -> Response;
   delete @4 (path :Text, context :Context) -> Response;
+  head @17 (path :Text, context :Context) -> Response;
 
   postStreaming @5 (path :Text, mimeType :Text, context :Context, encoding :Text)
       -> (stream :RequestStream);
@@ -76,7 +77,17 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   # `clientStream` is the capability which will receive server -> client messages, while
   # serverStream represents client -> server.
 
-  # TODO(someday): Add WebDAV and CalDAV methods?
+  # WebDAV methods
+  propfind @7 (path :Text, content :PropfindContent, context :Context) -> Response;
+  proppatch @8 (path :Text, content :ProppatchContent, context :Context) -> Response;
+  mkcol @9 (path :Text, content :MkcolContent, context :Context) -> Response;
+  copy @10 (path :Text, context :Context) -> Response;
+  move @11 (path :Text, context :Context) -> Response;
+  lock @12 (path :Text, content :LockContent, context :Context) -> Response;
+  unlock @13 (path :Text, content :UnlockContent, context :Context) -> Response;
+  acl @14 (path :Text, content :AclContent, context :Context) -> Response;
+  report @15 (path :Text, content :ReportContent, context :Context) -> Response;
+  options @16 (path :Text, context :Context) -> Response;
 
   struct Context {
     # Additional per-request context.
@@ -97,6 +108,38 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
 
     accept @2 :List(AcceptedType);
     # This corresponds to the Accept header
+
+    etagPrecondition :union {
+      none @4 :Void;  # No precondition.
+      exists @5 :Void;  # If-Match: *
+      matchesOneOf @6 :List(ETag);  # If-Match
+      matchesNoneOf @7 :List(ETag);  # If-None-Match
+    }
+
+    additionalHeaders @3 :List(Header);
+    # Additional headers present in the request. Only whitelisted headers are
+    # permitted.
+
+    struct Header {
+      name @0 :Text;  # lower-cased name
+      value @1 :Text;
+    }
+
+    const headerWhitelist :List(Text) = [
+      # Non-standard request headers which are whitelisted for backwards-compatibility
+      # purposes. This whitelist exists to help avoid the need to modify code originally written
+      # without Sandstorm in mind -- especially to avoid modifying client apps. Feel free
+      # to send us pull requests adding additional headers.
+
+      "depth",                 # webdav PROPFIND
+      "destination",           # webdav COPY/MOVE
+      "overwrite",             # webdav COPY/MOVE
+      "oc-total-length",       # Owncloud client
+      "oc-chunk-size",         # Owncloud client
+      "x-oc-mtime",            # Owncloud client
+      "oc-fileid",             # Owncloud client
+      "oc-chunked",            # Owncloud client
+    ];
   }
 
   struct PostContent {
@@ -109,6 +152,57 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     mimeType @0 :Text;
     content @1 :Data;
     encoding @2 :Text;  # Content-Encoding header (optional).
+  }
+
+  struct PropfindContent {
+    mimeType @0 :Text;
+    content @1 :Data;
+    encoding @2 :Text;  # Content-Encoding header (optional).
+  }
+
+  struct ProppatchContent {
+    mimeType @0 :Text;
+    content @1 :Data;
+    encoding @2 :Text;  # Content-Encoding header (optional).
+  }
+
+  struct AclContent {
+    mimeType @0 :Text;
+    content @1 :Data;
+    encoding @2 :Text;  # Content-Encoding header (optional).
+  }
+
+  struct MkcolContent {
+    mimeType @0 :Text;
+    content @1 :Data;
+    encoding @2 :Text;  # Content-Encoding header (optional).
+  }
+
+  struct LockContent {
+    mimeType @0 :Text;
+    content @1 :Data;
+    encoding @2 :Text;  # Content-Encoding header (optional).
+  }
+
+  struct UnlockContent {
+    mimeType @0 :Text;
+    content @1 :Data;
+    encoding @2 :Text;  # Content-Encoding header (optional).
+  }
+
+  struct ReportContent {
+    mimeType @0 :Text;
+    content @1 :Data;
+    encoding @2 :Text;  # Content-Encoding header (optional).
+  }
+
+  # TODO(apibump): Remove PostContent and PutContent, replacing them with Content.
+
+  struct ETag {
+    value @0 :Text;  # does not include quotes
+    weak @1 :Bool;
+    # denotes that the resource may not be byte-for-byte identical, but is
+    # semantically equivalent
   }
 
   struct Cookie {
@@ -154,12 +248,16 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       created  @1 $httpStatus(id = 201, title = "Created");
       accepted @2 $httpStatus(id = 202, title = "Accepted");
 
+      noContent      @3 $httpStatus(id = 204, title = "No Content");
+      partialContent @4 $httpStatus(id = 206, title = "Partial Content");
+      multiStatus    @5 $httpStatus(id = 207, title = "Multi-Status");
+
+      # This seems to fit better here than in the 3xx range
+      notModified    @6 $httpStatus(id = 304, title = "Not Modified");
+
       # Not applicable:
       #   203 Non-Authoritative Information:  Only applicable to proxies?
-      #   204 No Content:  Meant for old form-based interaction.  Obsolete.  Seems like bad UX, too.
-      #     If desired, should be handled differently because there should be no entity body.
       #   205 Reset Content:  Like 204, but even stranger.
-      #   206 Partial Content:  Range requests not implemented yet.
       #   Others:  Not standard.
     }
 
@@ -180,6 +278,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       notAcceptable         @4 $httpStatus(id = 406, title = "Not Acceptable");
       conflict              @5 $httpStatus(id = 409, title = "Conflict");
       gone                  @6 $httpStatus(id = 410, title = "Gone");
+      preconditionFailed   @11 $httpStatus(id = 412, title = "Precondition Failed");
       requestEntityTooLarge @7 $httpStatus(id = 413, title = "Request Entity Too Large");
       requestUriTooLong     @8 $httpStatus(id = 414, title = "Request-URI Too Long");
       unsupportedMediaType  @9 $httpStatus(id = 415, title = "Unsupported Media Type");
@@ -208,6 +307,11 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
         language @3 :Text;  # Content-Language header (optional).
         mimeType @4 :Text;  # Content-Type header.
 
+        dav @18 :Text;
+        # Supported webdav modes
+
+        etag @19 :Text;
+
         body :union {
           bytes @5 :Data;
 
@@ -225,9 +329,16 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       noContent :group {
         # Return successful, but with no content (status codes 204 and 205)
 
+        statusCode @17 :SuccessCode;
+
         shouldResetForm @15 :Bool;
         # If this is the response to a form submission, should the form be reset to empty?
         # Distinguishes between HTTP response 204 (False) and 205 (True)
+
+        dav @20 :Text;
+        # Supported webdav modes
+
+        etag @21 :Text;
       }
 
       redirect :group {

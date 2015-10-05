@@ -36,6 +36,19 @@ SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 SANDSTORM_LOGDIR = (SANDSTORM_ALTHOME || "") + "/var/log";
 SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
 
+// User-agent strings that should be allowed to use http basic authentication.
+// These are regex matches, so ensure they are escaped properly with double
+// backslashes. For security reasons, we MUST NOT whitelist any user-agents
+// that may render html and execute embedded scripts.
+BASIC_AUTH_USER_AGENTS = [
+  "git\\/",
+  "GitHub-Hookshot\\/",
+  "mirall\\/",
+  "Mozilla\\/5\\.0 \\([^\\\\]*\\) mirall\\/",
+  "litmus\\/",
+];
+BASIC_AUTH_USER_AGENTS_REGEX = new RegExp("^(" + BASIC_AUTH_USER_AGENTS.join("|") + ")", '');
+
 var sandstormCoreFactory = makeSandstormCoreFactory();
 var backendAddress = "unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath;
 var sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
@@ -583,11 +596,7 @@ function apiUseBasicAuth(req) {
   // For clients with no convenient way to add an "Authorization: Bearer" header, we allow the token
   // to be transmitted as a basic auth password.
   var agent = req.headers["user-agent"];
-  if (agent && ((agent.slice(0, 4) === "git/") || (agent.slice(0, 16) === "GitHub-Hookshot/"))) {
-    return true;
-  } else {
-    return false;
-  }
+  return agent.match(BASIC_AUTH_USER_AGENTS_REGEX);
 }
 
 function apiTokenForRequest(req) {
@@ -655,47 +664,6 @@ tryProxyRequest = function (hostId, req, res) {
 
   if (hostId === "api") {
     // This is a request for the API host.
-
-    if (req.method === "OPTIONS") {
-      // Reply to CORS preflight request.
-
-      // All we want to do is permit APIs to be accessed from arbitrary origins. Since clients must
-      // send a valid Authorization header, and since cookies are not used for authorization, this
-      // is perfectly safe. In a sane world, we would only need to send back
-      // "Access-Control-Allow-Origin: *" and be done with it.
-      //
-      // However, CORS demands that we explicitly whitelist individual methods and headers for use
-      // cross-origin, as if this is somehow useful for implementing any practical security policy
-      // (it isn't). To make matters worse, we are REQUIRED to enumerate each one individually.
-      // We cannot just write "*" for these lists. WTF, CORS?
-      //
-      // Luckily, the request tells us exactly what method and headers are being requested, so we
-      // only need to copy those over, rather than create an exhaustive list. But this is still
-      // overly complicated.
-
-      var accessControlHeaders = {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, HEAD, POST, PUT, DELETE",
-        "Access-Control-Max-Age": "3600"
-      };
-
-      // Copy all requested headers to the allowed headers list.
-      var requestedHeaders = req.headers["access-control-request-headers"];
-      if (requestedHeaders) {
-        accessControlHeaders["Access-Control-Allow-Headers"] = requestedHeaders;
-      }
-
-      // Add the requested method to the allowed methods list, if it's not there already.
-      var requestedMethod = req.headers["access-control-request-method"];
-      if (requestedMethod &&
-          !(_.contains(["GET", "HEAD", "POST", "PUT", "DELETE"], requestedMethod))) {
-        accessControlHeaders["Access-Control-Allow-Methods"] += ", " + requestedMethod;
-      }
-
-      res.writeHead(204, accessControlHeaders);
-      res.end();
-      return Promise.resolve(true);
-    }
 
     var responseHeaders = {
       "Access-Control-Allow-Origin": "*",
@@ -1147,6 +1115,39 @@ function parseCookies(request) {
   return result;
 }
 
+function parsePreconditionHeader(request) {
+  if (request.headers['if-match']) {
+    if (request.headers['if-match'] === "*") {
+      return { exists: null };
+    }
+
+    var matches = parseEntityTag(request.headers['if-match']);
+    if (matches.length > 0) {
+      return { matchesOneOf: matches };
+    }
+  }
+
+  if (request.headers['if-none-match']) {
+    var noneMatches = parseEntityTag(request.headers['if-none-match']);
+    if (noneMatches.length > 0) {
+      return { matchesNoneOf: noneMatches };
+    }
+  }
+
+  return { none: null };
+}
+
+function parseEntityTag(headerValue) {
+  // ETags can consist of a series of values, comma-separated, that may be enclosed
+  // in quote marks or not, and may begin with W/ to denote weak ETags
+  var etags = headerValue.match(/\s?(W?\/?"[^"]+"|[^,]+)/);
+
+  return etags.map(function(etag) {
+    var m = etag.match(/^(W\/)?"?(.*?)"?$/);
+    return { weak: !!m[1], value: m[2] };
+  });
+}
+
 function parseAcceptHeader(request) {
   var header = request.headers["accept"];
 
@@ -1224,6 +1225,18 @@ Proxy.prototype.makeContext = function (request, response) {
 
   context.accept = parseAcceptHeader(request);
 
+  context.etagPrecondition = parsePreconditionHeader(request);
+
+  context.additionalHeaders = [];
+  WebSession.Context.headerWhitelist.forEach(function(headerName) {
+    if(request.headers[headerName]) {
+      context.additionalHeaders.push({
+        name: headerName,
+        value: request.headers[headerName]
+      });
+    };
+  });
+
   var promise = new Promise(function (resolve, reject) {
     response.resolveResponseStream = resolve;
     response.rejectResponseStream = reject;
@@ -1273,15 +1286,18 @@ function makeSetCookieHeader(cookie) {
 
 // TODO(cleanup):  Auto-generate based on annotations in web-session.capnp.
 var successCodes = {
-  ok:       { id: 200, title: "OK" },
-  created:  { id: 201, title: "Created" },
-  accepted: { id: 202, title: "Accepted" }
+  ok:          { id: 200, title: "OK" },
+  created:     { id: 201, title: "Created" },
+  accepted:    { id: 202, title: "Accepted" },
+  multiStatus: { id: 207, title: "Multi-Status" }
 };
-var noContentSuccessCodes = [
-  // Indexed by shouldResetForm * 1
-  { id: 204, title: "No Content" },
-  { id: 205, title: "Reset Content" }
-];
+var noContentSuccessCodes = {
+  noContent:      { id: 204, title: "No Content" },
+  resetContent:   { id: 205, title: "Reset Content" },
+  partialContent: { id: 206, title: "Partial Content" },
+  multiStatus:    { id: 207, title: "Multi-Status" },
+  notModified:    { id: 304, title: "Not Modified" }
+};
 var redirectCodes = [
   // Indexed by switchToGet * 2 + isPermanent
   { id: 307, title: "Temporary Redirect" },
@@ -1297,6 +1313,7 @@ var errorCodes = {
   notAcceptable:         { id: 406, title: "Not Acceptable" },
   conflict:              { id: 409, title: "Conflict" },
   gone:                  { id: 410, title: "Gone" },
+  preconditionFailed:    { id: 412, title: "Precondition Failed" },
   requestEntityTooLarge: { id: 413, title: "Request Entity Too Large" },
   requestUriTooLong:     { id: 414, title: "Request-URI Too Long" },
   unsupportedMediaType:  { id: 415, title: "Unsupported Media Type" },
@@ -1377,6 +1394,12 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
     if (content.language) {
       response.setHeader("Content-Language", content.language);
     }
+    if (content.dav) {
+      response.setHeader("DAV", content.dav);
+    }
+    if (content.etag) {
+      response.setHeader("ETag", content.etag);
+    }
     if (("disposition" in content) && ("download" in content.disposition)) {
       response.setHeader("Content-Disposition", "attachment; filename=\"" +
           content.disposition.download.replace(/([\\"\n])/g, "\\$1") + "\"");
@@ -1408,7 +1431,14 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
     }
   } else if ("noContent" in rpcResponse) {
     var noContent = rpcResponse.noContent;
-    var noContentCode = noContentSuccessCodes[noContent.shouldResetForm * 1];
+    var noContentCode = noContentSuccessCodes[noContent.statusCode];
+    if (noContent.dav) {
+      response.setHeader("DAV", noContent.dav);
+    }
+    if (noContent.etag) {
+      response.setHeader("ETag", noContent.etag);
+    }
+
     response.writeHead(noContentCode.id, noContentCode.title);
     response.end();
   } else if ("redirect" in rpcResponse) {
@@ -1460,24 +1490,87 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     var path = request.url.slice(1);  // remove leading '/'
     var session = self.getSession(request);
 
+    function optionsForBody() {
+      return {
+        content: data,
+        encoding: request.headers["content-encoding"],
+        mimeType: request.headers["content-type"]
+      };
+    }
+
     if (request.method === "GET") {
       return session.get(path, context);
+    } else if (request.method === "HEAD") {
+      return session.head(path, context);
     } else if (request.method === "POST") {
-      return session.post(path, {
-        mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data,
-        encoding: request.headers["content-encoding"]
-      }, context);
+      return session.post(path, optionsForBody(), context);
     } else if (request.method === "PUT") {
-      return session.put(path, {
-        mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data,
-        encoding: request.headers["content-encoding"]
-      }, context);
+      return session.put(path, optionsForBody(), context);
     } else if (request.method === "DELETE") {
       return session.delete(path, context);
+    } else if (request.method === "PROPFIND") {
+      return session.propfind(path, optionsForBody(), context);
+    } else if (request.method === "PROPPATCH") {
+      return session.proppatch(path, optionsForBody(), context);
+    } else if (request.method === "MKCOL") {
+      return session.mkcol(path, optionsForBody(), context);
+    } else if (request.method === "COPY") {
+      return session.copy(path, context);
+    } else if (request.method === "MOVE") {
+      return session.move(path, context);
+    } else if (request.method === "LOCK") {
+      return session.lock(path, optionsForBody(), context);
+    } else if (request.method === "UNLOCK") {
+      return session.unlock(path, optionsForBody(), context);
+    } else if (request.method === "ACL") {
+      return session.acl(path, optionsForBody(), context);
+    } else if (request.method === "REPORT") {
+      return session.report(path, optionsForBody(), context);
+    } else if (request.method === "OPTIONS") {
+      // Reply to CORS preflight request.
+      return session.options(path, context).then(function (rpcResponse) {
+
+        // All we want to do is permit APIs to be accessed from arbitrary origins. Since clients must
+        // send a valid Authorization header, and since cookies are not used for authorization, this
+        // is perfectly safe. In a sane world, we would only need to send back
+        // "Access-Control-Allow-Origin: *" and be done with it.
+        //
+        // However, CORS demands that we explicitly whitelist individual methods and headers for use
+        // cross-origin, as if this is somehow useful for implementing any practical security policy
+        // (it isn't). To make matters worse, we are REQUIRED to enumerate each one individually.
+        // We cannot just write "*" for these lists. WTF, CORS?
+        //
+        // Luckily, the request tells us exactly what method and headers are being requested, so we
+        // only need to copy those over, rather than create an exhaustive list. But this is still
+        // overly complicated.
+
+        var accessControlHeaders = {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, HEAD, POST, PUT, DELETE",
+          "Access-Control-Max-Age": "3600"
+        };
+
+        // Copy all requested headers to the allowed headers list.
+        var requestedHeaders = request.headers["access-control-request-headers"];
+        if (requestedHeaders) {
+          accessControlHeaders["Access-Control-Allow-Headers"] = requestedHeaders;
+        }
+
+        // Add the requested method to the allowed methods list, if it's not there already.
+        var requestedMethod = request.headers["access-control-request-method"];
+        if (requestedMethod &&
+            !(_.contains(["GET", "HEAD", "POST", "PUT", "DELETE"], requestedMethod))) {
+          accessControlHeaders["Access-Control-Allow-Methods"] += ", " + requestedMethod;
+        }
+
+        for (header in accessControlHeaders) {
+          response.setHeader(header, accessControlHeaders[header]);
+        }
+
+        return rpcResponse;
+      });
     } else {
-      throw new Error("Sandstorm only supports GET, POST, PUT, and DELETE requests.");
+      throw new Error("Sandstorm only supports the following methods: GET, POST, PUT, DELETE, HEAD, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK, ACL, REPORT, and OPTIONS.");
     }
 
   }).then(function (rpcResponse) {
@@ -1496,7 +1589,7 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
   var session = this.getSession(request);
 
   var mimeType = request.headers["content-type"] || "application/octet-stream";
-  var encoding = request.headers["content-encoding"]
+  var encoding = request.headers["content-encoding"];
 
   var requestStreamPromise;
   if (request.method === "POST") {

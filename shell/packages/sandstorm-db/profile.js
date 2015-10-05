@@ -16,7 +16,6 @@
 
 var makeIdenticon;
 var httpProtocol;
-var sha256;
 
 if (Meteor.isServer) {
   Meteor.publish("accountIdentities", function () {
@@ -52,11 +51,6 @@ if (Meteor.isServer) {
 
   var Url = Npm.require("url");
   httpProtocol = Url.parse(process.env.ROOT_URL).protocol;
-
-  var Crypto = Npm.require("crypto");
-  sha256 = function (data) {
-    return Crypto.createHash("sha256").update(data).digest("hex");
-  };
 } else {
   var identiconCache = {};
 
@@ -82,10 +76,6 @@ if (Meteor.isServer) {
   }
 
   httpProtocol = window.location.protocol;
-
-  sha256 = function (data) {
-    return CryptoJS.SHA256(data).toString();
-  };
 }
 
 var GENDERS = {male: "male", female: "female", neutral: "neutral", robot: "robot"};

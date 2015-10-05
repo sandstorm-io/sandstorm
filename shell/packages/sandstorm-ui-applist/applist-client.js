@@ -154,8 +154,12 @@ Template.sandstormAppList.helpers({
       return [];
     }
   },
-  origin: function() {
-    return document.location.protocol + "//" + document.location.host;
+  appMarketUrl: function() {
+    var appMarket = Settings.findOne({_id: "appMarketUrl"});
+    if (!appMarket) {
+      return "#";
+    }
+    return appMarket.value + "/?host=" + document.location.protocol + "//" + document.location.host;
   },
   isSignedUpOrDemo: function() {
     return this._db.isSignedUpOrDemo();

@@ -65,7 +65,9 @@ var deletePackageInternal = function (package) {
   try {
     var action = UserActions.findOne({packageId:packageId});
     var grain = Grains.findOne({packageId:packageId});
-    if (!grain && !action) {
+    var notificationQuery = {};
+    notificationQuery["appUpdates." + package.appId] = {$exists: true};
+    if (!grain && !action && !(package.isAutoUpdated && Notifications.findOne(notificationQuery))) {
       Packages.update({_id:packageId}, {$set: {status:"delete"}, $unset: {shouldCleanup: ""}});
       waitPromise(globalBackend.cap().deletePackage(packageId));
       Packages.remove(packageId);
@@ -84,23 +86,6 @@ var deletePackageInternal = function (package) {
   }
 }
 
-startInstall = function (packageId, url, retryFailed) {
-  // Mark package for possible installation.
-
-  var fields = {status: "download", progress: 0, url: url};
-
-  if (retryFailed) {
-    Packages.update({_id: packageId, status: "failed"}, {$set: fields});
-  } else {
-    try {
-      fields._id = packageId;
-      Packages.insert(fields);
-    } catch (err) {
-      console.error("Simultaneous startInstall()s?", err.stack);
-    }
-  }
-}
-
 var startInstallInternal = function (package) {
   verifyIsMainReplica();
 
@@ -108,7 +93,7 @@ var startInstallInternal = function (package) {
     return;
   }
 
-  var installer = new AppInstaller(package._id, package.url, package.appId);
+  var installer = new AppInstaller(package._id, package.url, package.appId, package.isAutoUpdated);
   installers[package._id] = installer;
   installer.start();
 }
@@ -191,13 +176,14 @@ doClientUpload = function (stream) {
   });
 }
 
-function AppInstaller(packageId, url, appId) {
+function AppInstaller(packageId, url, appId, isAutoUpdated) {
   verifyIsMainReplica();
 
   this.packageId = packageId;
   this.url = url;
   this.failed = false;
   this.appId = appId;
+  this.isAutoUpdated = isAutoUpdated;
 
   // Serializes database writes.
   this.writeChain = Promise.resolve();
@@ -528,7 +514,15 @@ AppInstaller.prototype.done = function(manifest) {
   console.log("App ready:", this.packageId);
   this.updateProgress("ready", 1, undefined, manifest);
   var self = this;
-  self.writeChain = self.writeChain.then(function() {
+  self.writeChain = self.writeChain.then(function () {
+    return inMeteor(function () {
+      if (self.isAutoUpdated) {
+        globalDb.sendAppUpdateNotifications(self.appId, self.packageId,
+          (manifest.appTitle && manifest.appTitle.defaultText), manifest.appVersion,
+          (manifest.appMarketingVersion && manifest.appMarketingVersion.defaultText));
+      }
+    });
+  }).then(function() {
     delete installers[self.packageId];
   });
 }

@@ -238,6 +238,12 @@ function splitUserIdsIntoAccountIdsAndIdentityIds() {
   // form of API token.
 }
 
+function appUpdateSettings() {
+  Settings.insert({_id: "appMarketUrl", value: "https://apps.sandstorm.io"});
+  Settings.insert({_id: "appIndexUrl", value: "https://app-index.sandstorm.io"});
+  Settings.insert({_id: "appUpdatesEnabled", value: true});
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -252,7 +258,8 @@ var MIGRATIONS = [
   removeKeyrings,
   useLocalizedTextInUserActions,
   verifyAllPgpSignatures,
-  splitUserIdsIntoAccountIdsAndIdentityIds
+  splitUserIdsIntoAccountIdsAndIdentityIds,
+  appUpdateSettings,
 ];
 
 function migrateToLatest() {

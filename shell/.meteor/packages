@@ -20,6 +20,7 @@ http
 browser-policy
 
 reactive-var
+sandstorm-autoupdate-apps
 sandstorm-db
 sandstorm-backend
 sandstorm-accounts-merge

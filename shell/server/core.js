@@ -72,6 +72,10 @@ function dismissNotification(notificationId, callCancel) {
           }
         }
       }
+    } else if (notification.appUpdates) {
+      _.forEach(notification.appUpdates, function (app, appId) {
+        deletePackage(app.packageId);
+      });
     }
   }
 }

@@ -25,15 +25,15 @@ globalDb.collections.grains.remove({});
 // does not automatically get cleared on hot code reload.
 
 var aliceUserId = Accounts.insertUserDoc({profile: {name: "Alice"}},
-                                         {services: [],
+                                         {services: {},
                                           devName: "alice" + Crypto.randomBytes(10).toString("hex")});
 var aliceIdentityId = SandstormDb.getUserIdentities(globalDb.getUser(aliceUserId))[0].id;
 var bobUserId = Accounts.insertUserDoc({profile: {name: "Bob"}},
-                                       {services: [],
+                                       {services: {},
                                         devName: "Bob" + Crypto.randomBytes(10).toString("hex")});
 var bobIdentityId = SandstormDb.getUserIdentities(globalDb.getUser(bobUserId))[0].id;
 var carolUserId = Accounts.insertUserDoc({profile: {name: "Carol"}},
-                                         {services: [],
+                                         {services: {},
                                           devName: "Carol" + Crypto.randomBytes(10).toString("hex")});
 var carolIdentityId = SandstormDb.getUserIdentities(globalDb.getUser(carolUserId))[0].id;
 

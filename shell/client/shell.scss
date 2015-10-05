@@ -228,7 +228,16 @@ button.revoke-token {
 }
 
 .notification-timestamp {
-  float: right
+  text-align: right;
+  font-weight: bold;
+}
+
+.accept-notification {
+  cursor: pointer;
+  color: green;
+  float: right;
+  margin-left: 5px;
+  vertical-align: center;
 }
 
 .cancel-notification {
@@ -241,6 +250,11 @@ button.revoke-token {
 
 .notification-item {
   font-size: 14px;
+
+  >p {
+    white-space: pre;
+    margin: 0px;
+  }
 }
 
 .notification-header {

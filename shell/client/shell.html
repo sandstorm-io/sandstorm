@@ -167,19 +167,33 @@ limitations under the License.
   <ul id="notification-list">
     {{#each notifications}}
       <li>
-        <div class="notification-item">
-          <div class="notification-header">
-              <span>{{grainTitle}}</span>
-              <span title="Stops the background app" class="cancel-notification" data-notificationid="{{_id}}">Cancel</span>
-              <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
-          </div>
-          <span>{{text.defaultText}}</span>
-        </div>
+        {{> notificationItem}}
       </li>
     {{else}}
     <li>No Notifications...</li>
     {{/each}}
   </ul>
+</template>
+
+<template name="notificationItem">
+  <div class="notification-item">
+    <div class="notification-header">
+      {{#if isAppUpdates}}
+        App updates are available
+        <button title="Ignore the below updates" class="cancel-notification">Dismiss</button>
+        <button title="Update all of the below apps" class="accept-notification">Apply Updates</button>
+      {{else}}
+        <em>{{grainTitle}}</em> is backgrounded
+        <button title="Stops the background app" class="cancel-notification">Cancel</button>
+      {{/if}}
+      <div title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</div>
+    </div>
+    {{#if isAppUpdates}}
+    <p>{{appUpdatesText}}</p>
+    {{else}}
+    <span>{{text.defaultText}}</span>
+    {{/if}}
+  </div>
 </template>
 
 <template name="title">
@@ -1091,6 +1105,10 @@ limitations under the License.
         </ul>
       </span>
     </p>
+    <p>App Market URL: <input type="text" name="appMarketUrl" value="{{appMarketUrl}}"><br>
+       App Index URL: <input type="text" name="appIndexUrl" value="{{appIndexUrl}}"><br>
+       <label><input type="checkbox" name="appUpdatesEnabled" checked={{appUpdatesEnabled}}> App Update Notifications Enabled</label><br>
+      <span class="details">Updates to apps will be automatically downloaded by the Sandstorm server daily and notifications sent to users asking if they want to update their installed apps.</span></p>
     <p><button id="admin-settings-save">Save</button></p>
   </form>
 </template>

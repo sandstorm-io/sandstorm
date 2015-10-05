@@ -272,8 +272,9 @@ function serveStaticAsset(req, res) {
       }
 
       var userId = purpose.profilePicture.userId;
-      // TODO(someday): Implement identities, pay attention to identityId.
+      var identityId = purpose.profilePicture.identityId;
       check(userId, String);
+      check(identityId, String);
 
       var buffers = [];
       var totalSize = 0;
@@ -310,12 +311,12 @@ function serveStaticAsset(req, res) {
       var assetId = globalDb.addStaticAsset({mimeType: type}, content);
 
       var old = Meteor.users.findAndModify({
-        query: {_id: userId},
-        update: {$set: {"profile.picture": assetId}},
-        fields: {"profile.picture": 1}
+        query: {"identities.id": identityId},
+        update: {$set: {"identities.$.picture": assetId}},
+        fields: {"identities.$.picture": 1}
       });
-      if (old && old.profile && old.profile.picture) {
-        globalDb.unrefStaticAsset(old.profile.picture);
+      if (old && old.identities.length > 0 && old.identities[0].picture) {
+        globalDb.unrefStaticAsset(old.identities[0].picture);
       }
 
       res.writeHead(204, {});

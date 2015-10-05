@@ -268,7 +268,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 // `MainView`) -- the fields of type `Data` are API tokens.
 //
 // Each contains:
-//   _id:       A SHA-256 hash of the token.
+//   _id:       A SHA-256 hash of the token, base64-encoded.
 //   grainId:   The grain servicing this API. (Not present if the API isn't serviced by a grain.)
 //   identityId: For UiView capabilities, this is the identity for which the view is attenuated.
 //              That is, the UiView's newSession() method will intersect the requested permissions
@@ -425,7 +425,7 @@ StaticAssets = new Mongo.Collection("staticAssets");
 //
 // Each contains:
 //   _id:       Random ID; will be used in the URL.
-//   hash:      A SHA-256 hash of the data, used to de-dupe.
+//   hash:      A base64-encoded SHA-256 hash of the data, used to de-dupe.
 //   mimeType:  MIME type of the asset, suitable for Content-Type header.
 //   encoding:  Either "gzip" or not present, suitable for Content-Encoding header.
 //   content:   The asset content (byte buffer).

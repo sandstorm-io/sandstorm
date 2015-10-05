@@ -158,7 +158,7 @@ function fillInDefaults(identity, user) {
   } else if (identity.service === "dev") {
     var lowerCaseName = user.devName.split(" ")[0].toLowerCase();
     identity.name = identity.name || user.devName;
-    identity.handle = identity.handle | filterHandle(lowerCaseName);
+    identity.handle = identity.handle || filterHandle(lowerCaseName);
     identity.pronoun = identity.pronoun ||
         (_.contains(["alice", "carol", "eve"], lowerCaseName) ? "female" :
          _.contains(["bob", "dave"], lowerCaseName) ? "male" : "neutral");

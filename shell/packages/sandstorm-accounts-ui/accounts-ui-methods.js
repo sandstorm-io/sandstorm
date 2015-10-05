@@ -70,13 +70,14 @@ if (Meteor.isServer) {
   // Methods that can't be simulated.
 
   Meteor.methods({
-    uploadProfilePicture: function () {
-      if (!this.userId) {
-        throw new Meteor.Error(403, "Must log in to upload profile picture.");
+    uploadProfilePicture: function (identityId) {
+      check(identityId, String);
+      if (!this.userId || !this.connection.sandstormDb.getIdentityOfUser(identityId, this.userId)) {
+        throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
       }
 
       return this.connection.sandstormDb.newAssetUpload({
-        profilePicture: { userId: this.userId }
+        profilePicture: { userId: this.userId, identityId: identityId }
       });
     },
 

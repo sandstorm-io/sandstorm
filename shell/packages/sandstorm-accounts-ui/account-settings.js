@@ -148,7 +148,7 @@ Template.sandstormAccountsFirstSignIn.events({
 });
 
 Template._accountProfileEditor.events({
-  "click .picture button": function (event) {
+  "click .picture button": function (event, instance) {
     event.preventDefault();
 
     var staticHost = Template.parentData(1)._staticHost;
@@ -172,7 +172,7 @@ Template._accountProfileEditor.events({
       });
     }
 
-    Meteor.call("uploadProfilePicture", function (err, result) {
+    Meteor.call("uploadProfilePicture", instance.data.id, function (err, result) {
       if (err) {
         alert("Upload rejected: " + err.message);
       } else {

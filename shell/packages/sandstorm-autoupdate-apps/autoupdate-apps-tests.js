@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+var Crypto = Npm.require("crypto");
+
 var globalDb = new SandstormDb();
 // TODO(cleanup): Use a lightweight fake (minimongo-based?) database here and construct a clean
 // instance at the start of each test case.
@@ -26,8 +28,12 @@ Meteor.users.remove({});
 // Note that `meteor test-packages` starts with a fresh Mongo instance. That instance, however,
 // does not automatically get cleared on hot code reload.
 
-var aliceUserId = Accounts.insertUserDoc({ profile: {name: "Alice"}}, {});
-var bobUserId = Accounts.insertUserDoc({ profile: {name: "Bob"}}, {});
+var aliceUserId = Accounts.insertUserDoc({profile: {name: "Alice"}},
+                                         {services: {},
+                                          devName: "alice" + Crypto.randomBytes(10).toString("hex")});
+var bobUserId = Accounts.insertUserDoc({profile: {name: "Bob"}},
+                                       {services: {},
+                                        devName: "Bob" + Crypto.randomBytes(10).toString("hex")});
 
 var packageV0 = { _id: "mock-package-id1",
   status: "ready",

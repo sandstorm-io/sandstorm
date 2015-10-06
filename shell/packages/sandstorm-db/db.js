@@ -1116,7 +1116,7 @@ if (Meteor.isServer) {
     Meteor.call("deleteUnusedPackages", appId);
   };
 
-  SandstormDb.prototype.upgradeGrains =  function (appId, version, packageId) {
+  SandstormDb.prototype.upgradeGrains =  function (appId, version, packageId, backend) {
     check(appId, String);
     check(version, Match.Integer);
     check(packageId, String);
@@ -1130,7 +1130,7 @@ if (Meteor.isServer) {
 
     if (!this.isSimulation) {
       Grains.find(selector).forEach(function (grain) {
-        shutdownGrain(grain._id, grain.userId);
+        backend.shutdownGrain(grain._id, grain.userId);
       });
     }
 

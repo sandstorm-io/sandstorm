@@ -57,6 +57,9 @@ var sandstormBackend = sandstormBackendConnection.restore(null, Backend);
 // TODO(cleanup): This initilization belongs with the rest of our package initialization in
 //   db-deprecated.js. We can't put it there now because we need to contruct sandstormCoreFactory first.
 globalBackend = new SandstormBackend(globalDb, sandstormBackend);
+Meteor.onConnection(function (connection) {
+    connection.sandstormBackend = globalBackend;
+});
 if (!Meteor.settings.replicaNumber) {
   SandstormAccountsMerge.registerObservers(globalDb, globalBackend);
 }

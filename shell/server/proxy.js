@@ -665,17 +665,54 @@ tryProxyRequest = function (hostId, req, res) {
   if (hostId === "api") {
     // This is a request for the API host.
 
-    var responseHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Content-Type": "text/plain",
-    };
+    res.setHeader("Access-Control-Allow-Origin", "*");
+
+    if (req.method === "OPTIONS") {
+      // Reply to CORS preflight request.
+
+      // All we want to do is permit APIs to be accessed from arbitrary origins. Since clients
+      // must send a valid Authorization header, and since cookies are not used for
+      // authorization, this is perfectly safe. In a sane world, we would only need to send back
+      // "Access-Control-Allow-Origin: *" and be done with it.
+      //
+      // However, CORS demands that we explicitly whitelist individual methods and headers for
+      // use cross-origin, as if this is somehow useful for implementing any practical security
+      // policy (it isn't). To make matters worse, we are REQUIRED to enumerate each one
+      // individually. We cannot just write "*" for these lists. WTF, CORS?
+      //
+      // Luckily, the request tells us exactly what method and headers are being requested, so we
+      // only need to copy those over, rather than create an exhaustive list. But this is still
+      // overly complicated.
+
+      var accessControlHeaders = {
+        "Access-Control-Allow-Methods": "GET, HEAD, POST, PUT, DELETE",
+        "Access-Control-Max-Age": "3600"
+      };
+
+      // Copy all requested headers to the allowed headers list.
+      var requestedHeaders = req.headers["access-control-request-headers"];
+      if (requestedHeaders) {
+        accessControlHeaders["Access-Control-Allow-Headers"] = requestedHeaders;
+      }
+
+      // Add the requested method to the allowed methods list, if it's not there already.
+      var requestedMethod = req.headers["access-control-request-method"];
+      if (requestedMethod &&
+          !(_.contains(["GET", "HEAD", "POST", "PUT", "DELETE"], requestedMethod))) {
+        accessControlHeaders["Access-Control-Allow-Methods"] += ", " + requestedMethod;
+      }
+
+      for (header in accessControlHeaders) {
+        res.setHeader(header, accessControlHeaders[header]);
+      }
+    }
 
     function errorHandler(err) {
       if (err instanceof Meteor.Error) {
         console.log("error: " + err);
-        res.writeHead(err.error, err.reason, responseHeaders);
+        res.writeHead(err.error, err.reason, { "Content-Type": "text/plain" });
       } else {
-        res.writeHead(500, "Internal Server Error", responseHeaders);
+        res.writeHead(500, "Internal Server Error", { "Content-Type": "text/plain" });
       }
       res.end(err.stack);
     }
@@ -688,20 +725,24 @@ tryProxyRequest = function (hostId, req, res) {
         var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
         validateWebkey(ApiTokens.findOne(hashedToken), new Date(Date.now() + keepaliveDuration));
       }).then(function() {
-        res.writeHead(200, responseHeaders);
+        res.writeHead(200, {});
         res.end();
       }, errorHandler);
     } else if (token) {
       getProxyForApiToken(token).then(function (proxy) {
         proxy.requestHandler(req, res);
       }, errorHandler);
+    } else if (req.method === "OPTIONS") {
+      // OPTIONS request with no authorization token. Fine to end here.
+      res.writeHead(200, {});
+      res.end();
     } else {
       if (apiUseBasicAuth(req)) {
         res.writeHead(401, {"Content-Type": "text/plain",
                             "WWW-Authenticate": "Basic realm=\"Sandstorm API\""});
       } else {
         // TODO(someday): Display some sort of nifty API browser.
-        res.writeHead(403, responseHeaders);
+        res.writeHead(403, { "Content-Type": "text/plain" });
       }
       res.end("Missing or invalid authorization header.\n\n" +
           "This address serves APIs, which allow external apps (such as a phone app) to\n" +
@@ -1595,54 +1636,17 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     } else if (request.method === "REPORT") {
       return session.report(path, requestContent(), context);
     } else if (request.method === "OPTIONS") {
-      // Reply to CORS preflight request, and also let app indicate that it supports DAV.
-
       return session.options(path, context).then(function (options) {
-        if (this.isApi) {
-          // All we want to do is permit APIs to be accessed from arbitrary origins. Since clients
-          // must send a valid Authorization header, and since cookies are not used for
-          // authorization, this is perfectly safe. In a sane world, we would only need to send back
-          // "Access-Control-Allow-Origin: *" and be done with it.
-          //
-          // However, CORS demands that we explicitly whitelist individual methods and headers for
-          // use cross-origin, as if this is somehow useful for implementing any practical security
-          // policy (it isn't). To make matters worse, we are REQUIRED to enumerate each one
-          // individually. We cannot just write "*" for these lists. WTF, CORS?
-          //
-          // Luckily, the request tells us exactly what method and headers are being requested, so we
-          // only need to copy those over, rather than create an exhaustive list. But this is still
-          // overly complicated.
-
-          var accessControlHeaders = {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, HEAD, POST, PUT, DELETE",
-            "Access-Control-Max-Age": "3600"
-          };
-
-          // Copy all requested headers to the allowed headers list.
-          var requestedHeaders = request.headers["access-control-request-headers"];
-          if (requestedHeaders) {
-            accessControlHeaders["Access-Control-Allow-Headers"] = requestedHeaders;
-          }
-
-          // Add the requested method to the allowed methods list, if it's not there already.
-          var requestedMethod = request.headers["access-control-request-method"];
-          if (requestedMethod &&
-              !(_.contains(["GET", "HEAD", "POST", "PUT", "DELETE"], requestedMethod))) {
-            accessControlHeaders["Access-Control-Allow-Methods"] += ", " + requestedMethod;
-          }
-
-          for (header in accessControlHeaders) {
-            response.setHeader(header, accessControlHeaders[header]);
-          }
-        }
-
         var dav = [];
         if (options.davClass1) dav.push("1");
         if (options.davClass2) dav.push("2");
         if (options.davClass3) dav.push("3");
         if (dav.length > 0) response.setHeader("DAV", dav.join(", "));
+        response.end();
 
+        // Return no response; we already handled everything.
+      }, function (err) {
+        if (err.kjType !== "unimplemented") throw err;
         response.end();
 
         // Return no response; we already handled everything.

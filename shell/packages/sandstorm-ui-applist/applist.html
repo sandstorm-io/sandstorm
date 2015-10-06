@@ -1,4 +1,5 @@
 <template name="sandstormAppList">
+  {{setDocumentTitle}}
   {{#if appIsLoading}}
     {{!-- It's bad style to use the globally defined _grainSpinner, but we get the benefit of blaze
           re-using the live HTML and not causing a flash for the user. --}}

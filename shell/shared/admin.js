@@ -266,6 +266,9 @@ if (Meteor.isClient) {
   });
 
   Template.adminSettings.helpers({
+    setDocumentTitle: function () {
+      document.title = "Settings · Admin · Sandstorm";
+    },
     googleEnabled: function () {
       var setting = Settings.findOne({_id: "google"});
       if (setting) {
@@ -327,6 +330,9 @@ if (Meteor.isClient) {
     }
   });
   Template.adminUsers.helpers({
+    setDocumentTitle: function () {
+      document.title = "Users · Admin · Sandstorm";
+    },
     users: function () {
       return Meteor.users.find({}, {sort: {createdAt: 1}});
     },
@@ -513,6 +519,9 @@ if (Meteor.isClient) {
   });
 
   Template.adminInvites.helpers({
+    setDocumentTitle: function () {
+      document.title = "Invites · Admin · Sandstorm";
+    },
     error: function () {
       var res = Iron.controller().state.get("inviteMessage");
       return res && res.error;
@@ -565,6 +574,9 @@ if (Meteor.isClient) {
     this.subscribe("adminLog", token);
   });
   Template.adminLog.helpers({
+    setDocumentTitle: function () {
+      document.title = "Log · Admin · Sandstorm";
+    },
     html: function () {
       return AnsiUp.ansi_to_html(AdminLog.find({}, {$sort: {_id: 1}})
               .map(function (entry) { return entry.text; })
@@ -579,6 +591,9 @@ if (Meteor.isClient) {
   });
 
   Template.adminCaps.helpers({
+    setDocumentTitle: function () {
+      document.title = "Capabilities · Admin · Sandstorm";
+    },
     powerboxOfferUrl: function () {
       var state = Iron.controller().state;
       return state.get("powerboxOfferUrl");
@@ -710,6 +725,9 @@ if (Meteor.isClient) {
   });
 
   Template.adminAdvanced.helpers({
+    setDocumentTitle: function () {
+      document.title = "Advanced · Admin · Sandstorm";
+    },
     splashDialog: function() {
       var setting = Settings.findOne({_id: "splashDialog"});
       return (setting && setting.value) || DEFAULT_SPLASH_DIALOG;

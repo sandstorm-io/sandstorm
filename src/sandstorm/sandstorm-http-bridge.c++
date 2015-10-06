@@ -107,6 +107,12 @@ HttpStatusInfo redirectInfo(bool isPermanent, bool switchToGet) {
   return result;
 }
 
+HttpStatusInfo preconditionFailedInfo() {
+  HttpStatusInfo result;
+  result.type = WebSession::Response::PRECONDITION_FAILED;
+  return result;
+}
+
 HttpStatusDescriptor::Reader getHttpStatusAnnotation(capnp::EnumSchema::Enumerant enumerant) {
   for (auto annotation: enumerant.getProto().getAnnotations()) {
     if (annotation.getId() == HTTP_STATUS_ANNOTATION_ID) {
@@ -136,11 +142,15 @@ std::unordered_map<uint, HttpStatusInfo> makeStatusCodes() {
   result[204] = noContentInfo(false);
   result[205] = noContentInfo(true);
 
+  result[304] = preconditionFailedInfo();
+
   result[301] = redirectInfo(true, true);
   result[302] = redirectInfo(false, true);
   result[303] = redirectInfo(false, true);
   result[307] = redirectInfo(false, false);
   result[308] = redirectInfo(true, false);
+
+  result[412] = preconditionFailedInfo();
 
   return result;
 }
@@ -264,6 +274,9 @@ public:
         KJ_IF_MAYBE(mimeType, findHeader("content-type")) {
           content.setMimeType(*mimeType);
         }
+        KJ_IF_MAYBE(etag, findHeader("etag")) {
+          parseETag(*etag, content.initETag());
+        }
         KJ_IF_MAYBE(disposition, findHeader("content-disposition")) {
           // Parse `attachment; filename="foo"`
           // TODO(cleanup):  This is awful.  Use KJ parser library?
@@ -326,6 +339,13 @@ public:
         noContent.setShouldResetForm(statusInfo.noContent.shouldResetForm);
         break;
       }
+      case WebSession::Response::PRECONDITION_FAILED: {
+        auto preconditionFailed = builder.initPreconditionFailed();
+        KJ_IF_MAYBE(etag, findHeader("etag")) {
+          parseETag(*etag, preconditionFailed.initMatchingETag());
+        }
+        break;
+      }
       case WebSession::Response::REDIRECT: {
         auto redirect = builder.initRedirect();
         redirect.setIsPermanent(statusInfo.redirect.isPermanent);
@@ -367,6 +387,24 @@ public:
 
     // TODO(soon):  Should we do more validation here, like checking the exact value of the Upgrade
     //   header or Sec-WebSocket-Accept?
+  }
+
+  void buildOptions(WebSession::Options::Builder builder) {
+    KJ_ASSERT(!upgrade,
+        "Sandboxed app attempted to upgrade protocol when client did not request this.");
+
+    KJ_IF_MAYBE(dav, findHeader("dav")) {
+      for (auto level: split(*dav, ',')) {
+        auto trimmed = trim(level);
+        if (trimmed == "1") {
+          builder.setDavClass1(true);
+        } else if (trimmed == "2") {
+          builder.setDavClass2(true);
+        } else if (trimmed == "3") {
+          builder.setDavClass3(true);
+        }
+      }
+    }
   }
 
 private:
@@ -595,6 +633,34 @@ private:
 #undef ON_DATA
 #undef ON_EVENT
 
+  static void parseETag(kj::StringPtr input, WebSession::ETag::Builder builder) {
+    auto trimmed = trim(input);
+    input = trimmed;
+    if (input.startsWith("W/")) {
+      input = input.slice(2);
+      builder.setWeak(true);
+    }
+
+    KJ_REQUIRE(input.startsWith("\"") && input.endsWith("\"") && input.size() > 1,
+               "app returned invalid ETag header", input);
+
+    bool escaped = false;
+    kj::Vector<char> result(input.size() - 2);
+    for (char c: input.slice(1, input.size() - 1)) {
+      if (escaped) {
+        escaped = false;
+      } else {
+        KJ_REQUIRE(c != '"', "app returned invalid ETag header", input);
+        if (c == '\\') {
+          escaped = true;
+          continue;
+        }
+      }
+      result.add(c);
+    }
+
+    memcpy(builder.initValue(result.size()).begin(), result.begin(), result.size());
+  }
 };
 
 class WebSocketPump final: public WebSession::WebSocketStream::Server,
@@ -861,7 +927,8 @@ public:
 
   kj::Promise<void> get(GetContext context) override {
     GetParams::Reader params = context.getParams();
-    kj::String httpRequest = makeHeaders("GET", params.getPath(), params.getContext());
+    kj::String httpRequest = makeHeaders(
+        params.getIgnoreBody() ? "HEAD" : "GET", params.getPath(), params.getContext());
     return sendRequest(toBytes(httpRequest), context);
   }
 
@@ -889,6 +956,111 @@ public:
     DeleteParams::Reader params = context.getParams();
     kj::String httpRequest = makeHeaders("DELETE", params.getPath(), params.getContext());
     return sendRequest(toBytes(httpRequest), context);
+  }
+
+  kj::Promise<void> propfind(PropfindContext context) override {
+    PropfindParams::Reader params = context.getParams();
+
+    const char* depth = "infinity";
+    switch (params.getDepth()) {
+      case WebSession::PropfindDepth::INFINITY_: depth = "infinity"; break;
+      case WebSession::PropfindDepth::ZERO:      depth = "0"; break;
+      case WebSession::PropfindDepth::ONE:       depth = "1"; break;
+    }
+
+    auto xml = params.getXmlContent();
+    kj::String httpRequest = makeHeaders(
+        "PROPFIND", params.getPath(), params.getContext(),
+        kj::str("Content-Type: application/xml;charset=utf-8"),
+        kj::str("Content-Length: ", xml.size()),
+        kj::str("Depth: ", depth));
+    return sendRequest(toBytes(httpRequest, xml.asBytes()), context);
+  }
+
+  kj::Promise<void> proppatch(ProppatchContext context) override {
+    ProppatchParams::Reader params = context.getParams();
+    auto xml = params.getXmlContent();
+    kj::String httpRequest = makeHeaders(
+        "PROPPATCH", params.getPath(), params.getContext(),
+        kj::str("Content-Type: application/xml;charset=utf-8"),
+        kj::str("Content-Length: ", xml.size()));
+    return sendRequest(toBytes(httpRequest, xml.asBytes()), context);
+  }
+
+  kj::Promise<void> mkcol(MkcolContext context) override {
+    MkcolParams::Reader params = context.getParams();
+    auto content = params.getContent();
+    kj::String httpRequest = makeHeaders(
+        "MKCOL", params.getPath(), params.getContext(),
+        kj::str("Content-Type: ", content.getMimeType()),
+        kj::str("Content-Length: ", content.getContent().size()),
+        content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
+    return sendRequest(toBytes(httpRequest, content.getContent()), context);
+  }
+
+  kj::Promise<void> copy(CopyContext context) override {
+    CopyParams::Reader params = context.getParams();
+    kj::String httpRequest = makeHeaders(
+        "COPY", params.getPath(), params.getContext(),
+        makeDestinationHeader(params.getDestination()),
+        makeOverwriteHeader(params.getNoOverwrite()),
+        makeDepthHeader(params.getShallow()));
+    return sendRequest(toBytes(httpRequest), context);
+  }
+
+  kj::Promise<void> move(MoveContext context) override {
+    MoveParams::Reader params = context.getParams();
+    kj::String httpRequest = makeHeaders(
+        "MOVE", params.getPath(), params.getContext(),
+        makeDestinationHeader(params.getDestination()),
+        makeOverwriteHeader(params.getNoOverwrite()));
+    return sendRequest(toBytes(httpRequest), context);
+  }
+
+  kj::Promise<void> lock(LockContext context) override {
+    LockParams::Reader params = context.getParams();
+    auto xml = params.getXmlContent();
+    kj::String httpRequest = makeHeaders(
+        "LOCK", params.getPath(), params.getContext(),
+        kj::str("Content-Type: application/xml;charset=utf-8"),
+        kj::str("Content-Length: ", xml.size()),
+        makeDepthHeader(params.getShallow()));
+    return sendRequest(toBytes(httpRequest, xml.asBytes()), context);
+  }
+
+  kj::Promise<void> unlock(UnlockContext context) override {
+    UnlockParams::Reader params = context.getParams();
+    kj::String httpRequest = makeHeaders(
+        "UNLOCK", params.getPath(), params.getContext(),
+        kj::str("Lock-Token: ", params.getLockToken()));
+    return sendRequest(toBytes(httpRequest, nullptr), context);
+  }
+
+  kj::Promise<void> acl(AclContext context) override {
+    AclParams::Reader params = context.getParams();
+    auto xml = params.getXmlContent();
+    kj::String httpRequest = makeHeaders(
+        "ACL", params.getPath(), params.getContext(),
+        kj::str("Content-Type: application/xml;charset=utf-8"),
+        kj::str("Content-Length: ", xml.size()));
+    return sendRequest(toBytes(httpRequest, xml.asBytes()), context);
+  }
+
+  kj::Promise<void> report(ReportContext context) override {
+    ReportParams::Reader params = context.getParams();
+    auto content = params.getContent();
+    kj::String httpRequest = makeHeaders(
+        "REPORT", params.getPath(), params.getContext(),
+        kj::str("Content-Type: ", content.getMimeType()),
+        kj::str("Content-Length: ", content.getContent().size()),
+        content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
+    return sendRequest(toBytes(httpRequest, content.getContent()), context);
+  }
+
+  kj::Promise<void> options(OptionsContext context) override {
+    OptionsParams::Reader params = context.getParams();
+    kj::String httpRequest = makeHeaders("OPTIONS", params.getPath(), params.getContext());
+    return sendOptionsRequest(kj::mv(httpRequest), context);
   }
 
   kj::Promise<void> postStreaming(PostStreamingContext context) override {
@@ -1063,6 +1235,40 @@ private:
     } else {
       lines.add(kj::str("Accept: */*"));
     }
+    auto additionalHeaderList = context.getAdditionalHeaders();
+    if (additionalHeaderList.size() > 0) {
+      for (auto header : additionalHeaderList) {
+        lines.add(kj::str(header.getName(), ": ", header.getValue()));
+      }
+    }
+    auto eTagPrecondition = context.getETagPrecondition();
+    switch (eTagPrecondition.which()) {
+      case WebSession::Context::ETagPrecondition::NONE:
+        break;
+      case WebSession::Context::ETagPrecondition::EXISTS:
+        lines.add(kj::str("If-Match: *"));
+        break;
+      case WebSession::Context::ETagPrecondition::MATCHES_ONE_OF:
+        lines.add(kj::str("If-Match: ", kj::strArray(
+              KJ_MAP(e, eTagPrecondition.getMatchesOneOf()) {
+                if (e.getWeak()) {
+                  return kj::str("W/\"", e.getValue(), '"');
+                } else {
+                  return kj::str('"', e.getValue(), '"');
+                }
+              }, ", ")));
+        break;
+      case WebSession::Context::ETagPrecondition::MATCHES_NONE_OF:
+        lines.add(kj::str("If-None-Match: ", kj::strArray(
+              KJ_MAP(e, eTagPrecondition.getMatchesNoneOf()) {
+                if (e.getWeak()) {
+                  return kj::str("W/\"", e.getValue(), '"');
+                } else {
+                  return kj::str('"', e.getValue(), '"');
+                }
+              }, ", ")));
+        break;
+    }
 
     lines.add(kj::str(""));
     lines.add(kj::str(""));
@@ -1112,6 +1318,57 @@ private:
           kj::mv(httpRequest), kj::mv(stream), responseStream);
       context.getResults().setStream(kj::mv(requestStream));
     });
+  }
+
+  kj::Promise<void> sendOptionsRequest(kj::String httpRequest, OptionsContext& context) {
+    context.releaseParams();
+    return serverAddr.connect().then(
+        [KJ_MVCAP(httpRequest), context]
+        (kj::Own<kj::AsyncIoStream>&& stream) mutable {
+      kj::StringPtr httpRequestRef = httpRequest;
+      auto& streamRef = *stream;
+      return streamRef.write(httpRequestRef.begin(), httpRequestRef.size())
+          .attach(kj::mv(httpRequest))
+          .then([KJ_MVCAP(stream), context]() mutable {
+        // Note:  Do not do stream->shutdownWrite() as some HTTP servers will decide to close the
+        // socket immediately on EOF, even if they have not actually responded to previous requests
+        // yet.
+        auto parser = kj::heap<HttpParser>(kj::heap<IgnoreStream>());
+
+        return parser->readResponse(*stream).then(
+            [context, KJ_MVCAP(stream), KJ_MVCAP(parser)]
+            (kj::ArrayPtr<byte> remainder) mutable {
+          KJ_ASSERT(remainder.size() == 0);
+          parser->pumpStream(kj::mv(stream));
+          auto &parserRef = *parser;
+          parserRef.buildOptions(context.getResults());
+        });
+      });
+    });
+  }
+
+  class IgnoreStream: public ByteStream::Server {
+  protected:
+    kj::Promise<void> write(WriteContext context) override { return kj::READY_NOW; }
+    kj::Promise<void> done(DoneContext context) override { return kj::READY_NOW; }
+    kj::Promise<void> expectSize(ExpectSizeContext context) override { return kj::READY_NOW; }
+  };
+
+  kj::String makeDestinationHeader(kj::StringPtr destination) {
+    for (char c: destination) {
+      KJ_ASSERT(c > ' ' && c != ',', "invalid destination", destination);
+    }
+    return kj::str("Destination: ", basePath, destination);
+  }
+
+  kj::String makeOverwriteHeader(bool noOverwrite) {
+    return noOverwrite ? kj::heapString("Overwrite: F")
+                       : kj::heapString("Overwrite: T");
+  }
+
+  kj::String makeDepthHeader(bool shallow) {
+    return shallow ? kj::heapString("Depth: 0")
+                   : kj::heapString("Depth: infinity");
   }
 };
 

@@ -36,6 +36,19 @@ SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 SANDSTORM_LOGDIR = (SANDSTORM_ALTHOME || "") + "/var/log";
 SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
 
+// User-agent strings that should be allowed to use http basic authentication.
+// These are regex matches, so ensure they are escaped properly with double
+// backslashes. For security reasons, we MUST NOT whitelist any user-agents
+// that may render html and execute embedded scripts.
+BASIC_AUTH_USER_AGENTS = [
+  "git\\/",
+  "GitHub-Hookshot\\/",
+  "mirall\\/",
+  "Mozilla\\/5\\.0 \\([^\\\\]*\\) mirall\\/",
+  "litmus\\/",
+];
+BASIC_AUTH_USER_AGENTS_REGEX = new RegExp("^(" + BASIC_AUTH_USER_AGENTS.join("|") + ")", '');
+
 var sandstormCoreFactory = makeSandstormCoreFactory();
 var backendAddress = "unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath;
 var sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
@@ -583,11 +596,7 @@ function apiUseBasicAuth(req) {
   // For clients with no convenient way to add an "Authorization: Bearer" header, we allow the token
   // to be transmitted as a basic auth password.
   var agent = req.headers["user-agent"];
-  if (agent && ((agent.slice(0, 4) === "git/") || (agent.slice(0, 16) === "GitHub-Hookshot/"))) {
-    return true;
-  } else {
-    return false;
-  }
+  return agent.match(BASIC_AUTH_USER_AGENTS_REGEX);
 }
 
 function apiTokenForRequest(req) {
@@ -656,25 +665,26 @@ tryProxyRequest = function (hostId, req, res) {
   if (hostId === "api") {
     // This is a request for the API host.
 
+    res.setHeader("Access-Control-Allow-Origin", "*");
+
     if (req.method === "OPTIONS") {
       // Reply to CORS preflight request.
 
-      // All we want to do is permit APIs to be accessed from arbitrary origins. Since clients must
-      // send a valid Authorization header, and since cookies are not used for authorization, this
-      // is perfectly safe. In a sane world, we would only need to send back
+      // All we want to do is permit APIs to be accessed from arbitrary origins. Since clients
+      // must send a valid Authorization header, and since cookies are not used for
+      // authorization, this is perfectly safe. In a sane world, we would only need to send back
       // "Access-Control-Allow-Origin: *" and be done with it.
       //
-      // However, CORS demands that we explicitly whitelist individual methods and headers for use
-      // cross-origin, as if this is somehow useful for implementing any practical security policy
-      // (it isn't). To make matters worse, we are REQUIRED to enumerate each one individually.
-      // We cannot just write "*" for these lists. WTF, CORS?
+      // However, CORS demands that we explicitly whitelist individual methods and headers for
+      // use cross-origin, as if this is somehow useful for implementing any practical security
+      // policy (it isn't). To make matters worse, we are REQUIRED to enumerate each one
+      // individually. We cannot just write "*" for these lists. WTF, CORS?
       //
       // Luckily, the request tells us exactly what method and headers are being requested, so we
       // only need to copy those over, rather than create an exhaustive list. But this is still
       // overly complicated.
 
       var accessControlHeaders = {
-        "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, HEAD, POST, PUT, DELETE",
         "Access-Control-Max-Age": "3600"
       };
@@ -692,22 +702,17 @@ tryProxyRequest = function (hostId, req, res) {
         accessControlHeaders["Access-Control-Allow-Methods"] += ", " + requestedMethod;
       }
 
-      res.writeHead(204, accessControlHeaders);
-      res.end();
-      return Promise.resolve(true);
+      for (header in accessControlHeaders) {
+        res.setHeader(header, accessControlHeaders[header]);
+      }
     }
-
-    var responseHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Content-Type": "text/plain",
-    };
 
     function errorHandler(err) {
       if (err instanceof Meteor.Error) {
         console.log("error: " + err);
-        res.writeHead(err.error, err.reason, responseHeaders);
+        res.writeHead(err.error, err.reason, { "Content-Type": "text/plain" });
       } else {
-        res.writeHead(500, "Internal Server Error", responseHeaders);
+        res.writeHead(500, "Internal Server Error", { "Content-Type": "text/plain" });
       }
       res.end(err.stack);
     }
@@ -720,20 +725,24 @@ tryProxyRequest = function (hostId, req, res) {
         var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
         validateWebkey(ApiTokens.findOne(hashedToken), new Date(Date.now() + keepaliveDuration));
       }).then(function() {
-        res.writeHead(200, responseHeaders);
+        res.writeHead(200, {});
         res.end();
       }, errorHandler);
     } else if (token) {
       getProxyForApiToken(token).then(function (proxy) {
         proxy.requestHandler(req, res);
       }, errorHandler);
+    } else if (req.method === "OPTIONS") {
+      // OPTIONS request with no authorization token. Fine to end here.
+      res.writeHead(200, {});
+      res.end();
     } else {
       if (apiUseBasicAuth(req)) {
         res.writeHead(401, {"Content-Type": "text/plain",
                             "WWW-Authenticate": "Basic realm=\"Sandstorm API\""});
       } else {
         // TODO(someday): Display some sort of nifty API browser.
-        res.writeHead(403, responseHeaders);
+        res.writeHead(403, { "Content-Type": "text/plain" });
       }
       res.end("Missing or invalid authorization header.\n\n" +
           "This address serves APIs, which allow external apps (such as a phone app) to\n" +
@@ -1147,6 +1156,52 @@ function parseCookies(request) {
   return result;
 }
 
+function parsePreconditionHeader(request) {
+  if (request.headers['if-match']) {
+    if (request.headers['if-match'].trim() === "*") {
+      return { exists: null };
+    }
+
+    var matches = parseETagList(request.headers['if-match']);
+    if (matches.length > 0) {
+      return { matchesOneOf: matches };
+    }
+  }
+
+  if (request.headers['if-none-match']) {
+    var noneMatches = parseETagList(request.headers['if-none-match']);
+    if (noneMatches.length > 0) {
+      return { matchesNoneOf: noneMatches };
+    }
+  }
+
+  return { none: null };
+}
+
+function parseETagList(input) {
+  // An ETag is a quoted, \-escaped string, possibly prefixed with W/ (outside the quotes) to
+  // indicate that it is weak. We are parsing a list of comma-delimited etags.
+
+  input = input.trim();
+  var results = [];
+
+  while (input.length > 0) {
+    var match = input.match(/^\s*(W\/)?"(([^"\\]|\\.)*)"\s*($|,)/);
+    if (!match) throw new Meteor.Error(400, "invalid etag");
+
+    input = input.slice(match[0].length).trim();
+    results.push({ weak: !!match[1], value: match[2].replace(/\\(.)/g, '$1') });
+  }
+
+  return results;
+}
+
+function composeETag(tag) {
+  var result = '"' + (tag.value || "").replace(/([\\"])/g, "\\$1") + '"';
+  if (tag.weak) result = "W/" + result;
+  return result;
+}
+
 function parseAcceptHeader(request) {
   var header = request.headers["accept"];
 
@@ -1224,6 +1279,18 @@ Proxy.prototype.makeContext = function (request, response) {
 
   context.accept = parseAcceptHeader(request);
 
+  context.eTagPrecondition = parsePreconditionHeader(request);
+
+  context.additionalHeaders = [];
+  WebSession.Context.headerWhitelist.forEach(function(headerName) {
+    if(request.headers[headerName]) {
+      context.additionalHeaders.push({
+        name: headerName,
+        value: request.headers[headerName]
+      });
+    };
+  });
+
   var promise = new Promise(function (resolve, reject) {
     response.resolveResponseStream = resolve;
     response.rejectResponseStream = reject;
@@ -1273,9 +1340,10 @@ function makeSetCookieHeader(cookie) {
 
 // TODO(cleanup):  Auto-generate based on annotations in web-session.capnp.
 var successCodes = {
-  ok:       { id: 200, title: "OK" },
-  created:  { id: 201, title: "Created" },
-  accepted: { id: 202, title: "Accepted" }
+  ok:          { id: 200, title: "OK" },
+  created:     { id: 201, title: "Created" },
+  accepted:    { id: 202, title: "Accepted" },
+  multiStatus: { id: 207, title: "Multi-Status" }
 };
 var noContentSuccessCodes = [
   // Indexed by shouldResetForm * 1
@@ -1330,7 +1398,7 @@ ResponseStream.prototype.close = function () {
   }
 }
 
-Proxy.prototype.translateResponse = function (rpcResponse, response) {
+Proxy.prototype.translateResponse = function (rpcResponse, response, request) {
   if (this.hostId) {
     if (rpcResponse.setCookies && rpcResponse.setCookies.length > 0) {
       response.setHeader("Set-Cookie", rpcResponse.setCookies.map(makeSetCookieHeader));
@@ -1377,19 +1445,28 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
     if (content.language) {
       response.setHeader("Content-Language", content.language);
     }
+    if (content.eTag) {
+      response.setHeader("ETag", composeETag(content.eTag));
+    }
     if (("disposition" in content) && ("download" in content.disposition)) {
       response.setHeader("Content-Disposition", "attachment; filename=\"" +
           content.disposition.download.replace(/([\\"\n])/g, "\\$1") + "\"");
     }
     if ("stream" in content.body) {
-      var streamHandle = content.body.stream;
-      response.writeHead(code.id, code.title);
-      var promise = new Promise(function (resolve, reject) {
-        response.resolveResponseStream(new Capnp.Capability(
-            new ResponseStream(response, streamHandle, resolve, reject), ByteStream));
-      });
-      promise.streamHandle = streamHandle;
-      return promise;
+      if (request.method === "HEAD") {
+        content.body.stream.close();
+        response.rejectResponseStream(
+            new Error("HEAD request; content doesn't matter."));
+      } else {
+        var streamHandle = content.body.stream;
+        response.writeHead(code.id, code.title);
+        var promise = new Promise(function (resolve, reject) {
+          response.resolveResponseStream(new Capnp.Capability(
+              new ResponseStream(response, streamHandle, resolve, reject), ByteStream));
+        });
+        promise.streamHandle = streamHandle;
+        return promise;
+      }
     } else {
       response.rejectResponseStream(
         new Error("Response content body was not a stream."));
@@ -1403,13 +1480,25 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
 
     response.writeHead(code.id, code.title);
 
-    if ("bytes" in content.body) {
-      response.end(content.body.bytes);
+    if ("bytes" in content.body && request.method !== "HEAD") {
+      response.write(content.body.bytes);
     }
+    response.end();
   } else if ("noContent" in rpcResponse) {
     var noContent = rpcResponse.noContent;
     var noContentCode = noContentSuccessCodes[noContent.shouldResetForm * 1];
     response.writeHead(noContentCode.id, noContentCode.title);
+    response.end();
+  } else if ("preconditionFailed" in rpcResponse) {
+    var preconditionFailed = rpcResponse.preconditionFailed;
+    if (request.method === "GET" && "if-none-match" in request.headers) {
+      if (preconditionFailed.matchingETag) {
+        response.setHeader("ETag", composeETag(preconditionFailed.matchingETag));
+      }
+      response.writeHead(304, "Not Modified");
+    } else {
+      response.writeHead(412, "Precondition Failed");
+    }
     response.end();
   } else if ("redirect" in rpcResponse) {
     var redirect = rpcResponse.redirect;
@@ -1427,29 +1516,39 @@ Proxy.prototype.translateResponse = function (rpcResponse, response) {
     response.writeHead(errorCode.id, errorCode.title, {
       "Content-Type": "text/html"
     });
-    if (clientError.descriptionHtml) {
-      response.end(clientError.descriptionHtml);
-    } else {
-      // TODO(someday):  Better default error page.
-      response.end("<html><body><h1>" + errorCode.id + ": " + errorCode.title +
-                   "</h1></body></html>");
+    if (request.method !== "HEAD") {
+      if (clientError.descriptionHtml) {
+        response.write(clientError.descriptionHtml);
+      } else {
+        // TODO(someday):  Better default error page.
+        response.write("<html><body><h1>" + errorCode.id + ": " + errorCode.title +
+                       "</h1></body></html>");
+      }
     }
+    response.end();
   } else if ("serverError" in rpcResponse) {
     response.writeHead(500, "Internal Server Error", {
       "Content-Type": "text/html"
     });
-    if (rpcResponse.serverError.descriptionHtml) {
-      response.end(rpcResponse.serverError.descriptionHtml);
-    } else {
-      // TODO(someday):  Better default error page.
-      response.end("<html><body><h1>500: Internal Server Error</h1></body></html>");
+    if (request.method !== "HEAD") {
+      if (rpcResponse.serverError.descriptionHtml) {
+        response.write(rpcResponse.serverError.descriptionHtml);
+      } else {
+        // TODO(someday):  Better default error page.
+        response.write("<html><body><h1>500: Internal Server Error</h1></body></html>");
+      }
     }
+    response.end();
   } else {
     throw new Error("Unknown HTTP response type:\n" + JSON.stringify(rpcResponse));
   }
 
   return Promise.resolve(undefined);
 }
+
+// TODO(cleanup): Node 0.12 has a `gunzipSync` but 0.10 (which Meteor still uses) does not.
+var Zlib = Npm.require("zlib");
+var gunzipSync = Meteor.wrapAsync(Zlib.gunzip, Zlib);
 
 Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
   var self = this;
@@ -1460,28 +1559,106 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     var path = request.url.slice(1);  // remove leading '/'
     var session = self.getSession(request);
 
-    if (request.method === "GET") {
-      return session.get(path, context);
+    function requestContent() {
+      return {
+        content: data,
+        encoding: request.headers["content-encoding"],
+        mimeType: request.headers["content-type"]
+      };
+    }
+
+    function xmlContent() {
+      var type = request.headers["content-type"] || "application/xml;charset=utf-8";
+      var match = type.match(/[^/]*\/xml(; *charset *= *([^ ;]*))?/);
+      if (!match) {
+        response.writeHead(415, "Unsupported media type.", {
+          "Content-Type": "text/plain"
+        });
+        response.end("expected XML request body");
+        throw new Error("expected XML request body");
+      }
+      var charset = match[2] || "ISO-8859-1";
+
+      var encoding = response.headers['content-encoding'];
+      if (encoding && encoding !== "identity") {
+        if (encoding !== "gzip") throw new Error("unknown Content-Encoding: " + encoding);
+        data = gunzipSync(data);
+      }
+
+      return data.toString(charset.toLowerCase() === "utf-8" ? "utf8" : "binary");
+    }
+
+    function propfindDepth() {
+      var depth = request.headers["depth"];
+      return depth === "0" ? "zero"
+           : depth === "1" ? "one"
+                           : "infinity";
+    }
+
+    function shallow() {
+      return request.headers["depth"] === "0";
+    }
+
+    function noOverwrite() {
+      return request.headers["overwrite"].toLowerCase() === "f";
+    }
+
+    function destination() {
+      var result = request.headers["destination"];
+      if (!result) throw new Error("missing destination");
+      return Url.parse(result).path.slice(1);  // remove leading '/'
+    }
+
+    if (request.method === "GET" || request.method === "HEAD") {
+      return session.get(path, context, request.method === "HEAD");
     } else if (request.method === "POST") {
-      return session.post(path, {
-        mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data,
-        encoding: request.headers["content-encoding"]
-      }, context);
+      return session.post(path, requestContent(), context);
     } else if (request.method === "PUT") {
-      return session.put(path, {
-        mimeType: request.headers["content-type"] || "application/octet-stream",
-        content: data,
-        encoding: request.headers["content-encoding"]
-      }, context);
+      return session.put(path, requestContent(), context);
     } else if (request.method === "DELETE") {
       return session.delete(path, context);
+    } else if (request.method === "PROPFIND") {
+      return session.propfind(path, xmlContent(), propfindDepth(), context);
+    } else if (request.method === "PROPPATCH") {
+      return session.proppatch(path, xmlContent(), context);
+    } else if (request.method === "MKCOL") {
+      return session.mkcol(path, requestContent(), context);
+    } else if (request.method === "COPY") {
+      return session.copy(path, destination(), noOverwrite(), shallow(), context);
+    } else if (request.method === "MOVE") {
+      return session.move(path, destination(), noOverwrite(), context);
+    } else if (request.method === "LOCK") {
+      return session.lock(path, xmlContent(), shallow(), context);
+    } else if (request.method === "UNLOCK") {
+      return session.unlock(path, request.headers["lock-token"], context);
+    } else if (request.method === "ACL") {
+      return session.acl(path, xmlContent(), context);
+    } else if (request.method === "REPORT") {
+      return session.report(path, requestContent(), context);
+    } else if (request.method === "OPTIONS") {
+      return session.options(path, context).then(function (options) {
+        var dav = [];
+        if (options.davClass1) dav.push("1");
+        if (options.davClass2) dav.push("2");
+        if (options.davClass3) dav.push("3");
+        if (dav.length > 0) response.setHeader("DAV", dav.join(", "));
+        response.end();
+
+        // Return no response; we already handled everything.
+      }, function (err) {
+        if (err.kjType !== "unimplemented") throw err;
+        response.end();
+
+        // Return no response; we already handled everything.
+      });
     } else {
-      throw new Error("Sandstorm only supports GET, POST, PUT, and DELETE requests.");
+      throw new Error("Sandstorm only supports the following methods: GET, POST, PUT, DELETE, HEAD, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK, ACL, REPORT, and OPTIONS.");
     }
 
   }).then(function (rpcResponse) {
-    return self.translateResponse(rpcResponse, response);
+    if (rpcResponse !== undefined) {  // Will be undefined for OPTIONS request.
+      return self.translateResponse(rpcResponse, response, request);
+    }
   }).catch(function (error) {
     return self.maybeRetryAfterError(error, retryCount).then(function () {
       return self.handleRequest(request, data, response, retryCount + 1);
@@ -1496,7 +1673,7 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
   var session = this.getSession(request);
 
   var mimeType = request.headers["content-type"] || "application/octet-stream";
-  var encoding = request.headers["content-encoding"]
+  var encoding = request.headers["content-encoding"];
 
   var requestStreamPromise;
   if (request.method === "POST") {
@@ -1578,7 +1755,7 @@ Proxy.prototype.handleRequestStreaming = function (request, response, contentLen
       // Stop here if the upload stream has already failed.
       if (uploadStreamError) throw uploadStreamError;
 
-      var promise = self.translateResponse(rpcResponse, response);
+      var promise = self.translateResponse(rpcResponse, response, request);
       downloadStreamHandle = promise.streamHandle;
       return promise;
     });

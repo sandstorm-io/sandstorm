@@ -64,6 +64,7 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
 Meteor.methods({
   updateApps: function(appUpdates) {
     var db = this.connection.sandstormDb;
+    var backend = this.connection.sandstormBackend;
 
     _.forEach(appUpdates, function (val, appId) {
       var pack = db.collections.packages.findOne({_id: val.packageId});
@@ -71,7 +72,7 @@ Meteor.methods({
         console.error("Newer app not installed", val.name);
       } else {
         db.addUserActions(val.packageId);
-        db.upgradeGrains(appId, val.version, val.packageId);
+        db.upgradeGrains(appId, val.version, val.packageId, backend);
         Meteor.call("deleteUnusedPackages", appId);
       }
     });

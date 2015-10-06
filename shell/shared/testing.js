@@ -23,7 +23,7 @@ if (isTesting) {
       UserActions.remove({userId: id});
       ApiTokens.remove({userId: id});
       Grains.find({userId: id}).forEach(function (grain) {
-        deleteGrain(grain._id);
+        globalBackend.deleteGrain(grain._id);
       });
       Grains.remove({userId: id});
       Meteor.users.remove({_id: id});

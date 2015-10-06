@@ -118,7 +118,7 @@ function wwwHandlerForGrain(grainId) {
       }
     };
 
-    useGrain(grainId, function (supervisor) {
+    globalBackend.useGrain(grainId, function (supervisor) {
       return supervisor.getWwwFileHack(path, stream)
           .then(function (result) {
         var status = result.status;

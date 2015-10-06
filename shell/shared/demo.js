@@ -147,7 +147,7 @@ if (Meteor.isServer) {
 
           // Force all grains to shut down.
           grains.map(function (grain) {
-            return shutdownGrain(grain._id, demoUser._id, false);
+            return globalBackend.shutdownGrain(grain._id, demoUser._id, false);
           }).forEach(function (promise) {
             waitPromise(promise);
           });

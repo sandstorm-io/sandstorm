@@ -93,7 +93,11 @@ if (Meteor.isServer) {
         delete uploadTokens[token];
       }, 20 * 60 * 1000);
       return token;
-    }
+    },
+
+    upgradeGrains: function (appId, version, packageId) {
+      this.connection.sandstormDb.upgradeGrains(appId, version, packageId, globalBackend);
+    },
   });
 }
 
@@ -148,10 +152,6 @@ Meteor.methods({
         globalDb.startInstall(packageId, url, isRetry);
       }
     }
-  },
-
-  upgradeGrains: function (appId, version, packageId) {
-    this.connection.sandstormDb.upgradeGrains(appId, version, packageId);
   },
 });
 

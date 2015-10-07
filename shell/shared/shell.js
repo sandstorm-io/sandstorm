@@ -113,7 +113,8 @@ if (Meteor.isServer) {
 
   Meteor.publish("notifications", function () {
     return Notifications.find({userId: this.userId},
-      {fields: {timestamp: 1, text: 1, grainId: 1, userId: 1, isUnread: 1, appUpdates: 1}});
+      {fields: {timestamp: 1, text: 1, grainId: 1, userId: 1, isUnread: 1, appUpdates: 1,
+                admin: 1}});
   });
 
 
@@ -663,6 +664,26 @@ if (Meteor.isClient) {
     isAppUpdates: function () {
       return !!this.appUpdates;
     },
+    notificationTitle: function () {
+      if (this.admin) {
+        return "Notification from System";
+      }
+
+      return this.grainTitle + " is backgrounded";
+    },
+    titleHelperText: function () {
+      if (this.admin) {
+        return "Dismiss this system notification";
+      }
+
+      return "Stops the background app";
+    },
+    showDismiss: function () {
+      return !(this.admin && this.admin.action);
+    },
+    adminLink: function () {
+      return this.admin && this.admin.action;
+    },
     appUpdatesText: function () {
       var lines = _.map(this.appUpdates, function (val, key) {
         return val.name + " has been updated to version " + val.marketingVersion;
@@ -685,6 +706,10 @@ if (Meteor.isClient) {
         });
       }
       return false;
+    },
+    "click a": function (event) {
+      Meteor.call("dismissNotification", this._id);
+      return true;
     },
   });
 

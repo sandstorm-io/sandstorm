@@ -183,15 +183,21 @@ limitations under the License.
         <button title="Ignore the below updates" class="cancel-notification">Dismiss</button>
         <button title="Update all of the below apps" class="accept-notification">Apply Updates</button>
       {{else}}
-        <em>{{grainTitle}}</em> is backgrounded
-        <button title="Stops the background app" class="cancel-notification">Cancel</button>
+        {{notificationTitle}}
+        {{#if showDismiss}}
+          <button title="{{titleHelperText}}" class="cancel-notification">Cancel</button>
+        {{/if}}
       {{/if}}
       <div title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</div>
     </div>
     {{#if isAppUpdates}}
     <p>{{appUpdatesText}}</p>
     {{else}}
-    <span>{{text.defaultText}}</span>
+      {{#if adminLink}}
+        <a href="{{adminLink}}">{{text.defaultText}}</a>
+      {{else}}
+        {{text.defaultText}}
+      {{/if}}
     {{/if}}
   </div>
 </template>

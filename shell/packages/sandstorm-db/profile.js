@@ -24,8 +24,18 @@ if (Meteor.isServer) {
     return [
       Meteor.users.find(Meteor.userId,
         {fields: {
-          "identities":1,
-          "devName":1,
+          "identities.id":1,
+          "identities.service":1,
+          "identities.name":1,
+          "identities.handle":1,
+          "identities.verifiedEmail":1,
+          "identities.unverifiedEmail":1,
+          "identities.picture":1,
+          "identities.pronoun":1,
+          "identities.main":1,
+          "identities.noLogin":1,
+          "identities.devName":1,
+
           "expires":1,
 
           "services.google.id":1,
@@ -38,8 +48,6 @@ if (Meteor.isServer) {
           "services.github.id":1,
           "services.github.email":1,
           "services.github.username":1,
-
-          "services.emailToken.email":1
         }})
     ];
   });
@@ -142,12 +150,11 @@ function fillInDefaults(identity, user) {
         filterHandle(identity.name) || "unknown";
     identity.pronoun = identity.pronoun || GENDERS[user.services.google.gender] || "neutral";
   } else if (identity.service === "emailToken") {
-    identity.name = identity.name || user.services.emailToken.email.split("@")[0] || "Name Unknown";
-    identity.handle = identity.handle || emailToHandle(user.services.emailToken.email) ||
-        filterHandle(identity.name) || "unknown";
+    identity.name = identity.name || identity.verifiedEmail.split("@")[0];
+    identity.handle = identity.handle || emailToHandle(identity.verifiedEmail);
   } else if (identity.service === "dev") {
-    var lowerCaseName = user.devName.split(" ")[0].toLowerCase();
-    identity.name = identity.name || user.devName;
+    var lowerCaseName = identity.devName.split(" ")[0].toLowerCase();
+    identity.name = identity.name || identity.devName;
     identity.handle = identity.handle || filterHandle(lowerCaseName);
     identity.pronoun = identity.pronoun ||
         (_.contains(["alice", "carol", "eve"], lowerCaseName) ? "female" :
@@ -166,7 +173,7 @@ SandstormDb.getUserIdentities = function (user) {
   // Given a user object, return all of the user's identities.
   //
   // On the client, must be subscribed "accountIdentities" for the user.
-  if (!user) return [];
+  if (!user || !user.identities) return [];
 
   var staticHost = httpProtocol + "//" + makeWildcardHost("static");
   return user.identities.map(function(identity) {

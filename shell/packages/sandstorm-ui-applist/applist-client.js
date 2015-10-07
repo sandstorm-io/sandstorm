@@ -155,7 +155,7 @@ Template.sandstormAppList.helpers({
     }
   },
   appMarketUrl: function() {
-    var appMarket = Settings.findOne({_id: "appMarketUrl"});
+    var appMarket = SandstormAutoupdateApps.appMarketUrl(Template.instance().data._db);
     if (!appMarket) {
       return "#";
     }

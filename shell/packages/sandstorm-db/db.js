@@ -41,10 +41,9 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   lastActive: Date of the user's most recent interaction with this Sandstorm server.
 //   profile: Obsolete now that we allow more than one identity per account.
 //   identities: Array of identity profile objects, each of which may include the following fields.
-//               Note that if any field is missing, the first fallback
-//               is to check `services` for details provided by the identity provider (the details
-//               of which differ per-provider). Only if that is also missing do we fall back to
-//               defaults.
+//               Note that if a field is missing, the first fallback is to use data provided
+//               by the identity provider (the details of which differ per-provider). Only if that
+//               is also missing do we fall back to the defaults specified below.
 //       id: The globally-stable SHA-256 ID of this identity. This field must be present.
 //       service: String identifying the authentication scheme used by this identity, e.g. "github"
 //                or "google".
@@ -56,6 +55,11 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //       verifiedEmail: Only provided by some services. Cannot be directly edited by the user.
 //       main: True if this is the user's main identity.
 //       noLogin: True if the user does not trust this identity for account authentication.
+//       devName: Only present when `service` is "dev". A string containing the name used to create
+//                this dev account.
+//       emailTokens: Only present when `service` is "emailToken". An array of objects of the form
+//                    `{digest: String, algorithm: String, createdAt: Date}`, representing tokens
+//                    that can be used to log in through this identity.
 //   services: Object containing login and identity data used by Meteor authentication services.
 //   mergedUsers: Array of User _id strings, representing the accounts that have been merged into this
 //                one. Those accounts remain in the Users collection, stripped of their `identities`

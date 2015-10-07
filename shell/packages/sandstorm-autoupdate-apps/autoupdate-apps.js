@@ -16,14 +16,41 @@
 
 SandstormAutoupdateApps = {};
 
+SandstormAutoupdateApps.appIndexUrl = function(db) {
+  var setting = db.collections.settings.findOne({_id: "appIndexUrl"});
+  if (setting) {
+    return setting.value;
+  } else {
+    return "https://app-index.sandstorm.io";
+  }
+}
+
+SandstormAutoupdateApps.appUpdatesEnabled = function(db) {
+  var setting = db.collections.settings.findOne({_id: "appUpdatesEnabled"});
+    if (setting) {
+    return setting.value;
+  } else {
+    return true;
+  }
+}
+
+SandstormAutoupdateApps.appMarketUrl = function(db) {
+  var setting = db.collections.settings.findOne({_id: "appMarketUrl"});
+  if (setting) {
+    return setting.value;
+  } else {
+    return "https://apps.sandstorm.io";
+  }
+}
+
 SandstormAutoupdateApps.updateAppIndex = function (db) {
-  var appUpdatesEnabled = db.collections.settings.findOne({_id: "appUpdatesEnabled"}).value;
+  var appUpdatesEnabled = SandstormAutoupdateApps.appUpdatesEnabled(db);
   if (!appUpdatesEnabled) {
     // It's much simpler to check appUpdatesEnabled here rather than reactively deactivate the
     // timer that triggers this call.
     return;
   }
-  var appIndexUrl = db.collections.settings.findOne({_id: "appIndexUrl"}).value;
+  var appIndexUrl = SandstormAutoupdateApps.appIndexUrl(db);
   var appIndex = db.collections.appIndex;
   var data = HTTP.get(appIndexUrl + "/apps/index.json").data;
   data.apps.forEach(function (app) {

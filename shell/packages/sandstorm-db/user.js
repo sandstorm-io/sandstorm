@@ -82,12 +82,9 @@ Accounts.onCreateUser(function (options, user) {
     check(options.profile, Match.ObjectIncluding({
       name: Match.OneOf(null, Match.Optional(String)),
       handle: Match.Optional(ValidHandle),
+      unverifiedEmail: Match.Optional(String),
       pronoun: Match.Optional(Match.OneOf("male", "female", "neutral", "robot")),
     }));
-
-    user.profile = options.profile;
-  } else {
-    user.profile = {};
   }
 
   // Try downloading avatar.
@@ -95,19 +92,29 @@ Accounts.onCreateUser(function (options, user) {
   if (url) {
     var assetId = fetchPicture(url);
     if (assetId) {
-      user.profile.picture = assetId;
+      options.profile.picture = assetId;
     }
   }
-  var identity = _.pick(user.profile, "name", "handle", "pronouns", "picture");
+
+  var identity = _.pick(options.profile || {}, "name", "handle", "unverifiedEmail", "pronouns");
   identity.main = true;
 
   var serviceUserId;
-  if ("devName" in user) {
+  if ("devName" in options) {
+    check(options.devName, String);
     identity.service = "dev";
-    serviceUserId = user.devName;
+    identity.devName = options.devName;
+    serviceUserId = options.devName;
   } else if ("expires" in user) {
     identity.service = "demo";
     serviceUserId = user._id;
+  } else if ("emailToken" in options) {
+    check(options.emailToken, {email: String,
+                               tokens: [{digest: String, algorithm: String, createdAt: Date}]});
+    identity.service = "emailToken";
+    identity.verifiedEmail = options.emailToken.email;
+    identity.emailTokens = options.emailToken.tokens;
+    serviceUserId = options.emailToken.email;
   } else if (user.services && "google" in user.services) {
     identity.service = "google";
     if (user.services.google.email && user.services.google.verified_email) {
@@ -120,10 +127,6 @@ Accounts.onCreateUser(function (options, user) {
       identity.unverifiedEmail = user.services.github.email;
     }
     serviceUserId = user.services.github.id;
-  } else if (user.services && "emailToken" in user.services) {
-    identity.service = "emailToken";
-    identity.verifiedEmail = user.services.emailToken.email;
-    serviceUserId = user.services.emailToken.email;
   }
   identity.id = Crypto.createHash("sha256")
       .update(identity.service + ":" + serviceUserId).digest("hex");

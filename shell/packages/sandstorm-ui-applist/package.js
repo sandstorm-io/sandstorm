@@ -20,7 +20,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
-  api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-identicons"], "client");
+  api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-identicons", "sandstorm-autoupdate-apps"], "client");
   api.addFiles(["applist-common.js"], ["client","server"]);
   api.addFiles(["applist.html", "applist-client.js"], "client");
   api.addFiles(["applist-server.js"], "server")

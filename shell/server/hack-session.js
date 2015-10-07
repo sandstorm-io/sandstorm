@@ -199,17 +199,19 @@ HackSessionContextImpl.prototype._getUserAddress = function () {
   //
   // Must be called in a Meteor context.
 
-  var grain = Grains.findOne(this.grainId, {fields: {userId: 1}});
-  var user = Meteor.users.findOne(grain.userId);
+  var grain = Grains.findOne(this.grainId, {fields: {identityId: 1}});
 
-  var email = (user.emails && user.emails.length && user.emails[0].address) || (user.services.google && user.services.google.email) || (user.services.github && user.services.github.email);
+  var identity = globalDb.getIdentity(grain.identityId);
+
+  var email = null; //identity.verifiedEmail || identity.unverifiedEmail;
+  // TODO(soon): The RoundCube test fails if we uncomment the above line. What is going on?
 
   var result = {};
   if (email) {
     result.address = email;
   }
-  if (user.profile.name) {
-    result.name = user.profile.name;
+  if (identity.name) {
+    result.name = identity.name;
   }
 
   return result;

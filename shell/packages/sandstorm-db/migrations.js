@@ -238,10 +238,28 @@ function splitUserIdsIntoAccountIdsAndIdentityIds() {
   // form of API token.
 }
 
-function appUpdateSettings() {
-  Settings.insert({_id: "appMarketUrl", value: "https://apps.sandstorm.io"});
-  Settings.insert({_id: "appIndexUrl", value: "https://app-index.sandstorm.io"});
-  Settings.insert({_id: "appUpdatesEnabled", value: true});
+function appUpdateSettings() {}
+// This migration was written to populate initial values for the "appMarketUrl", "appIndexUrl",
+// and "appUpdatesEnabled" settings. We've replaced it with a no-op becuase it's more convenient
+// to lazily initialize these settings, returning the canonical values as defaults.
+
+function moveDevAndEmailLoginDataIntoIdentities() {
+  var Crypto = Npm.require("crypto");
+  Meteor.users.find().forEach(function (user) {
+    var identityId;
+    if (user.devName) {
+      identityId = Crypto.createHash("sha256").update("dev" + ":" + user.devName).digest("hex");
+      Meteor.users.update({_id: user._id, "identities.id": identityId},
+                          {$set: {"identities.$.devName": user.devName},
+                           $unset: {devName: 1}});
+    } else if (user.services.emailToken) {
+      identityId = Crypto.createHash("sha256")
+        .update("emailToken" + ":" + user.services.emailToken.email).digest("hex");
+      Meteor.users.update({_id: user._id, "identities.id": identityId},
+                          {$set: {"identities.$.emailTokens": user.services.emailToken.tokens},
+                           $unset: {"services.emailToken": 1}});
+    }
+  });
 }
 
 // This must come after all the functions named within are defined.
@@ -260,6 +278,7 @@ var MIGRATIONS = [
   verifyAllPgpSignatures,
   splitUserIdsIntoAccountIdsAndIdentityIds,
   appUpdateSettings,
+  moveDevAndEmailLoginDataIntoIdentities,
 ];
 
 function migrateToLatest() {
@@ -305,5 +324,4 @@ function migrateToLatest() {
   }
 }
 
-// Apply all migrations on startup.
-Meteor.startup(migrateToLatest);
+SandstormDb.prototype.migrateToLatest = migrateToLatest;

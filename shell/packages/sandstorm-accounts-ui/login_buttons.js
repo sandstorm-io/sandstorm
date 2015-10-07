@@ -63,7 +63,7 @@ var displayName = function () {
   if (!user)
     return '';
 
-  var mainIdentity = _.findWhere(user.identities, {main: true});
+  var mainIdentity = _.findWhere(SandstormDb.getUserIdentities(user), {main: true});
   return mainIdentity ? mainIdentity.name : "Name Unknown";
 };
 

@@ -28,12 +28,12 @@ Meteor.users.remove({});
 // Note that `meteor test-packages` starts with a fresh Mongo instance. That instance, however,
 // does not automatically get cleared on hot code reload.
 
-var aliceUserId = Accounts.insertUserDoc({profile: {name: "Alice"}},
-                                         {services: {},
-                                          devName: "alice" + Crypto.randomBytes(10).toString("hex")});
-var bobUserId = Accounts.insertUserDoc({profile: {name: "Bob"}},
-                                       {services: {},
-                                        devName: "Bob" + Crypto.randomBytes(10).toString("hex")});
+var aliceUserId = Accounts.insertUserDoc({profile: {name: "Alice"},
+                                          devName: "alice" + Crypto.randomBytes(10).toString("hex")},
+                                         {});
+var bobUserId = Accounts.insertUserDoc({profile: {name: "Bob"},
+                                        devName: "Bob" + Crypto.randomBytes(10).toString("hex")},
+                                       {});
 
 var packageV0 = { _id: "mock-package-id1",
   status: "ready",

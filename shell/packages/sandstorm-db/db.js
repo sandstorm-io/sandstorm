@@ -93,6 +93,8 @@ Packages = new Mongo.Collection("packages");
 //   url:  When status is "download", the URL from which the SPK can be obtained, if provided.
 //   isAutoUpdated: This package was downloaded as part of an auto-update. We shouldn't clean it up
 //     even if it has no users.
+//   authorPgpKeyFingerprint: Verified PGP key fingerprint (SHA-1, hex, all-caps) of the app
+//     packager.
 
 DevApps = new Mongo.Collection("devapps");
 // List of applications currently made available via the dev tools running on the local machine.
@@ -462,6 +464,26 @@ AppIndex = new Mongo.Collection("appIndex");
 // Each contains:
 //   _id: the appId of the app
 //  The rest of the fields are defined in src/sandstorm/app-index/app-index.capnp:AppIndexForMarket
+
+KeybaseProfiles = new Mongo.Collection("keybaseProfiles");
+// Cache of Keybase profile information. The profile for a user is re-fetched every time a package
+// by that user is installed, as well as if the keybase profile is requested and not already
+// present for some reason.
+//
+// Each contains:
+//   _id: PGP key fingerprint (SHA-1, hex, all-caps)
+//   displayName: Display name from Keybase. (NOT VERIFIED AT ALL.)
+//   handle: Keybase handle.
+//   proofs: The "proofs_summary.all" array from the Keybase lookup. See the non-existent Keybase
+//     docs for details. We also add a boolean "status" field to each proof indicating whether
+//     we have directly verified the proof ourselves. Its values may be "unverified" (Keybase
+//     returned this but we haven't checked it directly), "verified" (we verified the proof and it
+//     is valid), "invalid" (we checked the proof and it was definitely bogus), or "checking" (the
+//     server is currently actively checking this proof). Note that if a check fails due to network
+//     errors, the status goes back to "unverified".
+//
+//     WARNING: Currently verification is NOT IMPLEMENTED, so all proofs will be "unverified"
+//       for now and we just trust Keybase.
 
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
@@ -863,6 +885,10 @@ _.extend(SandstormDb.prototype, {
       Meteor.call("deleteUnusedPackages", pack.appId);
     }
   },
+
+  getKeybaseProfile: function (keyFingerprint) {
+    return KeybaseProfiles.findOne(keyFingerprint) || {};
+  },
 });
 
 if (Meteor.isServer) {
@@ -1153,4 +1179,74 @@ if (Meteor.isServer) {
       }
     }
   };
+
+  var ValidKeyFingerprint = Match.Where(function (keyFingerprint) {
+    check(keyFingerprint, String);
+    return !!keyFingerprint.match(/^[0-9A-F]{40}$/);
+  });
+
+  SandstormDb.prototype.updateKeybaseProfileAsync = function (keyFingerprint) {
+    // Asynchronously fetch the given Keybase profile and populate the KeybaseProfiles collection.
+
+    check(keyFingerprint, ValidKeyFingerprint);
+
+    console.log("fetching keybase", keyFingerprint);
+
+    HTTP.get(
+        "https://keybase.io/_/api/1.0/user/lookup.json?key_fingerprint=" + keyFingerprint +
+        "&fields=basics,profile,proofs_summary", {
+      timeout: 5000
+    }, function (err, keybaseResponse) {
+      if (err) {
+        console.log("keybase lookup error:", err.stack);
+        return;
+      }
+
+      if (!keybaseResponse.data) {
+        console.log("keybase didn't return JSON? Headers:", keybaseResponse.headers);
+        return;
+      }
+
+      var profile = (keybaseResponse.data.them || [])[0];
+
+      if (profile) {
+        var record = {
+          displayName: (profile.profile || {}).full_name,
+          handle: (profile.basics || {}).username,
+          proofs: (profile.proofs_summary || {}).all || []
+        };
+
+        record.proofs.forEach(function (proof) {
+          // Remove potentially Mongo-incompatible stuff. (Currently Keybase returns nothing that
+          // this would filter.)
+          for (var field in proof) {
+            if (field.match(/[.$]/) || typeof(proof[field]) === "object") {
+              delete proof[field];
+            }
+          }
+
+          // Indicate not verified.
+          // TODO(security): Asynchronously verify proofs. Presumably we can borrow code from the
+          //   Keybase node-based CLI.
+          proof.status = "unverified";
+        });
+
+        KeybaseProfiles.update(keyFingerprint, {$set: record}, {upsert: true});
+      } else {
+        KeybaseProfiles.update(keyFingerprint, {$unset: {profile: ""}}, {upsert: true});
+      }
+    });
+  };
+
+  Meteor.publish("keybaseProfile", function (keyFingerprint) {
+    check(keyFingerprint, ValidKeyFingerprint);
+
+    var cursor = KeybaseProfiles.find(keyFingerprint);
+    if (cursor.count() === 0) {
+      // Fire off async update.
+      this.connection.sandstormDb.updateKeybaseProfileAsync(keyFingerprint);
+    }
+
+    return cursor;
+  });
 }

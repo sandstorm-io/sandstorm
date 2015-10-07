@@ -82,47 +82,48 @@ Accounts.onCreateUser(function (options, user) {
     check(options.profile, Match.ObjectIncluding({
       name: Match.OneOf(null, Match.Optional(String)),
       handle: Match.Optional(ValidHandle),
-      unverifiedEmail: Match.Optional(String),
       pronoun: Match.Optional(Match.OneOf("male", "female", "neutral", "robot")),
     }));
   }
+
+  check(options.unverifiedEmail, Match.Optional(String));
+
+  var identity = _.pick(options, "unverifiedEmail");
+  identity.profile = _.pick(options.profile || {}, "name", "handle", "pronouns", "picture");
+  identity.main = true;
 
   // Try downloading avatar.
   var url = userPictureUrl(user);
   if (url) {
     var assetId = fetchPicture(url);
     if (assetId) {
-      options.profile.picture = assetId;
+      identity.profile.picture = assetId;
     }
   }
 
-  var identity = _.pick(options.profile || {}, "name", "handle", "unverifiedEmail", "pronouns");
-  identity.main = true;
-
   var serviceUserId;
-  if ("devName" in options) {
-    check(options.devName, String);
-    identity.service = "dev";
-    identity.devName = options.devName;
-    serviceUserId = options.devName;
+  if (options.service && options.service.dev) {
+    check(options.service, {dev: {name: String}});
+    identity.service = options.service;
+    serviceUserId = options.service.dev.name;
   } else if ("expires" in user) {
     identity.service = "demo";
     serviceUserId = user._id;
-  } else if ("emailToken" in options) {
-    check(options.emailToken, {email: String,
-                               tokens: [{digest: String, algorithm: String, createdAt: Date}]});
-    identity.service = "emailToken";
-    identity.verifiedEmail = options.emailToken.email;
-    identity.emailTokens = options.emailToken.tokens;
-    serviceUserId = options.emailToken.email;
+  } else if (options.service && options.service.emailToken) {
+    check(options.service, {emailToken:
+                            {email: String,
+                             tokens: [{digest: String, algorithm: String, createdAt: Date}]}});
+    identity.service = options.service;
+    identity.verifiedEmail = options.service.emailToken.email;
+    serviceUserId = identity.verifiedEmail;
   } else if (user.services && "google" in user.services) {
-    identity.service = "google";
+    identity.service = {google: {}};
     if (user.services.google.email && user.services.google.verified_email) {
       identity.verifiedEmail = user.services.google.email;
     }
     serviceUserId = user.services.google.id;
   } else if (user.services && "github" in user.services) {
-    identity.service = "github";
+    identity.service = {github: {}};
     if (user.services.github.email) {
       identity.unverifiedEmail = user.services.github.email;
     }
@@ -142,7 +143,7 @@ Accounts.validateLoginAttempt(function(info) {
     } else {
       var identities = info.user.identities;
       for (var ii = 0; ii < identities.length; ++ii) {
-        if (identities[ii].service === info.type) {
+        if (info.type in identities[ii].service) {
           return !identities[ii].noLogin;
         }
       }

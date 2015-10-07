@@ -36,10 +36,10 @@ globalDb.collections.settings.upsert({_id: "appUpdatesEnabled"},
                                      {$set: {value: true}});
 
 var aliceUserId = Accounts.insertUserDoc({profile: {name: "Alice"},
-                                          devName: "alice" + Crypto.randomBytes(10).toString("hex")},
+                                          service: {dev: {name: "alice" + Crypto.randomBytes(10).toString("hex")}}},
                                          {});
 var bobUserId = Accounts.insertUserDoc({profile: {name: "Bob"},
-                                        devName: "Bob" + Crypto.randomBytes(10).toString("hex")},
+                                        service: {dev: {name: "Bob" + Crypto.randomBytes(10).toString("hex")}}},
                                        {});
 
 var packageV0 = { _id: "mock-package-id1",

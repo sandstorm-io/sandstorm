@@ -66,14 +66,14 @@ limitations under the License.
 <template name="_accountProfileEditor">
   <li class="name">
     <label>Full name:
-      <input type="text" name="nameInput" value="{{name}}" placeholder="full name" required>
+      <input type="text" name="nameInput" value="{{profile.name}}" placeholder="full name" required>
     </label>
     <span class="details">Your regular first and last name, as you would like it displayed to others. This does not have to be your real name.</span>
   </li>
   <li class="handle">
     <label>Handle:
       <div class="input-container">
-        <input type="text" name="handle" value="{{handle}}" placeholder="handle"
+        <input type="text" name="handle" value="{{profile.handle}}" placeholder="handle"
                pattern="^[a-z_][a-z0-9_]*$" required>
         <div class="background-text">@</div>
       </div>
@@ -89,8 +89,8 @@ limitations under the License.
     <span class="details">E-mail address for service-related notifications.</span>
   </li>
   <li class="picture">
-    <label>Picture: <button type="button"><img src="{{pictureUrl}}" alt="Upload picture"></button></label>
-    <input type="hidden" name="picture" value="{{pictureUrl}}">
+    <label>Picture: <button type="button"><img src="{{profile.pictureUrl}}" alt="Upload picture"></button></label>
+    <input type="hidden" name="picture" value="{{profile.pictureUrl}}">
     <span class="details">This picture will be shown to other users to help identify you. Suggested dimensions: 512x512. Max size: 64 KiB.</span>
   </li>
   <li class="pronoun">

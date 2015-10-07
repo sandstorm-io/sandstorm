@@ -796,12 +796,12 @@ function Proxy(grainId, ownerId, sessionId, hostId, identityId, isApi, superviso
       throw new Error("identity not found: " + this.identityId);
     }
     this.userInfo = {
-      displayName: {defaultText: identity.name},
-      preferredHandle: identity.handle,
+      displayName: {defaultText: identity.profile.name},
+      preferredHandle: identity.profile.handle,
       identityId: new Buffer(identity.id, "hex")
     };
-    if (identity.pictureUrl) this.userInfo.pictureUrl = identity.pictureUrl;
-    if (identity.pronoun) this.userInfo.pronouns = identity.pronoun;
+    if (identity.profile.pictureUrl) this.userInfo.pictureUrl = identity.profile.pictureUrl;
+    if (identity.profile.pronoun) this.userInfo.pronouns = identity.profile.pronoun;
   } else {
     this.userInfo = {
       displayName: {defaultText: "Anonymous User"},

@@ -247,19 +247,36 @@ function appUpdateSettings() {
 function moveDevAndEmailLoginDataIntoIdentities() {
   var Crypto = Npm.require("crypto");
   Meteor.users.find().forEach(function (user) {
-    var identityId;
-    if (user.devName) {
-      identityId = Crypto.createHash("sha256").update("dev" + ":" + user.devName).digest("hex");
-      Meteor.users.update({_id: user._id, "identities.id": identityId},
-                          {$set: {"identities.$.devName": user.devName},
-                           $unset: {devName: 1}});
-    } else if (user.services.emailToken) {
-      identityId = Crypto.createHash("sha256")
-        .update("emailToken" + ":" + user.services.emailToken.email).digest("hex");
-      Meteor.users.update({_id: user._id, "identities.id": identityId},
-                          {$set: {"identities.$.emailTokens": user.services.emailToken.tokens},
-                           $unset: {"services.emailToken": 1}});
+    if (user.identities.length != 1) {
+      throw new Error("User does not have exactly one identity: ", user);
     }
+    var identity = user.identities[0];
+    if (Match.test(identity.service, Object)) { return; } // Already migrated.
+
+    var newIdentity = _.pick(identity, "id", "main", "noLogin", "verifiedEmail", "unverifiedEmail");
+    newIdentity.profile = _.pick(identity, "name", "picture", "pronoun");
+
+    var serviceObject = {};
+    var fieldsToUnset = {}
+
+    if (identity.service === "dev") {
+      serviceObject.name = user.devName;
+      fieldsToUnset.devName = 1;
+    } else if (identity.service === "emailToken") {
+      serviceObject.tokens = user.services.emailToken.tokens;
+      serviceObject.email = user.services.emailToken.email;
+      fieldsToUnset["services.emailToken"] = 1;
+    }
+
+    newIdentity.service = {};
+    newIdentity.service[identity.service] = serviceObject;
+
+    var modifier = {$set: {identities: [newIdentity]}};
+    if (Object.keys(fieldsToUnset).length > 0) {
+      modifier["$unset"] = fieldsToUnset;
+    }
+
+    Meteor.users.update({_id: user._id}, modifier);
   });
 }
 

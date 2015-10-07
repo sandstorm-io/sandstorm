@@ -43,7 +43,7 @@ if (allowDevAccounts) {
         if (user) {
           userId = user._id;
         } else {
-          userId = Accounts.insertUserDoc({ profile: profile, devName: displayName },
+          userId = Accounts.insertUserDoc({ profile: profile, service: {dev: {name: displayName}}},
                                           { signupKey: "devAccounts",
                                             isAdmin: isAdmin,
                                             hasCompletedSignup: hasCompletedSignup });

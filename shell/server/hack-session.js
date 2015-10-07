@@ -203,8 +203,7 @@ HackSessionContextImpl.prototype._getUserAddress = function () {
 
   var identity = globalDb.getIdentity(grain.identityId);
 
-  var email = null; //identity.verifiedEmail || identity.unverifiedEmail;
-  // TODO(soon): The RoundCube test fails if we uncomment the above line. What is going on?
+  var email = identity.verifiedEmail || identity.unverifiedEmail;
 
   var result = {};
   if (email) {

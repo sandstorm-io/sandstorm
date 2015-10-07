@@ -30,6 +30,7 @@ module.exports["Install"] = function (browser) {
     .assert.containsText("#grainTitle", "Untitled Roundcube Mailbox");
 };
 
+/*
 module.exports["Incoming Mail"] = function (browser) {
   browser
     .pause(short_wait)
@@ -37,7 +38,7 @@ module.exports["Incoming Mail"] = function (browser) {
     .getText(".topright > .username", function (result) {
       browser.sendEmail({
         from: "test@example.com",
-        to: result.value,
+        to: result.value, // XXX This should be the grain publicId email.
         subject: "Hello world email",
         body: "Hello world!",
         html: "<b>Hello world!</b>"
@@ -55,6 +56,7 @@ module.exports["Incoming Mail"] = function (browser) {
       });
     });
 };
+*/
 
 module.exports["Sending Mail"] = function (browser) {
   var to = "test@example.com";

@@ -40,26 +40,23 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   createdAt: Date when this entry was added to the collection.
 //   lastActive: Date of the user's most recent interaction with this Sandstorm server.
 //   profile: Obsolete now that we allow more than one identity per account.
-//   identities: Array of identity profile objects, each of which may include the following fields.
-//               Note that if a field is missing, the first fallback is to use data provided
-//               by the identity provider (the details of which differ per-provider). Only if that
-//               is also missing do we fall back to the defaults specified below.
+//   identities: Array of identity objects, each of which may include the following fields.
 //       id: The globally-stable SHA-256 ID of this identity. This field must be present.
-//       service: String identifying the authentication scheme used by this identity, e.g. "github"
-//                or "google".
-//       name: String containing the display name of the user. Default: first part of email.
-//       handle: String containing the user's preferred handle. Default: first part of email.
-//       picture: _id into the StaticAssets table for the user's picture. Default: identicon.
-//       pronoun: One of "male", "female", "neutral", or "robot". Default: neutral.
+//       service: Object specifying how to authenticate as this identity. The object contains a
+//                single key, representing the name of the service, corresponding to the `type`
+//                field in `Accounts.validateLoginAttempt()`. The value associated with the key
+//                is an object containing provider-specific data, e.g. for the `emailToken`
+//                service it contains the active tokens.
 //       unverifiedEmail: Email address specified by the user.
 //       verifiedEmail: Only provided by some services. Cannot be directly edited by the user.
 //       main: True if this is the user's main identity.
 //       noLogin: True if the user does not trust this identity for account authentication.
-//       devName: Only present when `service` is "dev". A string containing the name used to create
-//                this dev account.
-//       emailTokens: Only present when `service` is "emailToken". An array of objects of the form
-//                    `{digest: String, algorithm: String, createdAt: Date}`, representing tokens
-//                    that can be used to log in through this identity.
+//       profile: Object containing the data that will be shared with users grains that come into
+//                contact with this identity. May include the following fields.
+//           name: String containing the display name of the identity. Default: first part of email.
+//           handle: String containing the identity's preferred handle. Default: first part of email.
+//           picture: _id into the StaticAssets table for the identity's picture. Default: identicon.
+//           pronoun: One of "male", "female", "neutral", or "robot". Default: neutral.
 //   services: Object containing login and identity data used by Meteor authentication services.
 //   mergedUsers: Array of User _id strings, representing the accounts that have been merged into this
 //                one. Those accounts remain in the Users collection, stripped of their `identities`

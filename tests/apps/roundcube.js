@@ -30,12 +30,16 @@ module.exports["Install"] = function (browser) {
     .assert.containsText("#grainTitle", "Untitled Roundcube Mailbox");
 };
 
-/*
+
 module.exports["Incoming Mail"] = function (browser) {
   browser
     .pause(short_wait)
     .frame("grain-frame")
-    .getText(".topright > .username", function (result) {
+    .click(".button-settings")
+    .waitForElementVisible("#settings-tabs .identities > a", short_wait)
+    .click("#settings-tabs .identities > a")
+    .waitForElementVisible("#identities-table", short_wait)
+    .getText("#identities-table #rcmrow2 .mail", function (result) {
       browser.sendEmail({
         from: "test@example.com",
         to: result.value, // XXX This should be the grain publicId email.
@@ -47,7 +51,9 @@ module.exports["Incoming Mail"] = function (browser) {
           browser.assert.equal(err, "");
         } else {
           browser
-            .click(".mailbox.inbox > a") // Make sure we have the inbox selected
+            .click("#toplogo")
+            .waitForElementVisible(".mailbox.inbox > a", short_wait)
+//            .click(".mailbox.inbox > a") // Make sure we have the inbox selected
             .pause(short_wait) // It's sad, but there's no good way to wait for the mail to be delivered other than pausing
             .click(".mailbox.inbox > a") // This is equivalent to refreshing the inbox
             .waitForElementVisible("#messagelist tbody tr:nth-child(1)", short_wait)
@@ -56,7 +62,6 @@ module.exports["Incoming Mail"] = function (browser) {
       });
     });
 };
-*/
 
 module.exports["Sending Mail"] = function (browser) {
   var to = "test@example.com";

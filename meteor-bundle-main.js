@@ -115,52 +115,13 @@ function monkeypatchHttpAndHttps() {
       };
     };
 
-    function getCurrentSandcatsKeyAndNextRekeyTime() {
-      // Call this function to get up-to-date sandcats https key
-      // information.
-      //
-      // This returns an object with keys [ca, key, cert] which are
-      // valid options for https.createServer(). The object we return
-      // has one additional key, nextRekeyTime, which is a JS
-      // timestamp (UNIX time * 1000) of when the next key becomes
-      // valid.
-      //
-      // The intended use-case is that someone else will check the time
-      // and if the time is greater than nextRekeyTime, then call this
-      // function again.
-      //
-      // If nextRekeyTime is null, it means we have only one key.
-      var basePath = makeHttpsDir(url.parse(process.env.ROOT_URL).hostname);
-      var files = fs.readdirSync(basePath);
-      // The key files in this directory are named 0 1 2 3 etc., and
-      // metadata about the key is available in e.g. 0.csr. So find
-      // the most recent numbered file, then pull metadata out.
-      var reverseIntComparator = function (a, b) {
-        return (parseInt(b) - parseInt(a));
-      };
-      var keyFilesDescending = files.filter(function (filename) {
-        return filename.match(/^[0-9]*$/);
-      }).sort(reverseIntComparator);
-
-      // We might have lots and lots of valid certificates. We're
-      // interested in finding the oldest one that is still valid,
-      // because we'll actually use that one.
-      //
-      // "oldest" here means "lowest notBefore" value.
-      //
-      // The second-best certificate would be a certificate with the
-      // second-lowest notBefore that is also still valid.
-      //
-      // We use the second-best certificate to calculate when to
-      // re-key.
+    function getBestCertificate(now, files, basePath, preferOldest) {
+      // Get the newest certificate from disk, using "now" as a
+      // reference time by which to judge if a certificate is valid
+      // yet.
       var validCertificates = [];
-
-      // We need the current time to make sure we don't pick a
-      // certificate that is expired (now > notAfter).
-      var now = new Date().getTime();
-
-      for (var i = 0; i < keyFilesDescending.length; i++) {
-        var keyFilename = basePath + '/' + keyFilesDescending[i];
+      for (var i = 0; i < files.length; i++) {
+        var keyFilename = basePath + '/' + files[i];
         var metadataFilename = keyFilename + '.response-json';
         try {
           var metadata = JSON.parse(fs.readFileSync(metadataFilename));
@@ -194,75 +155,149 @@ function monkeypatchHttpAndHttps() {
           console.log("Skipping", keyFilename, "because", metadata.notAfter, "is in the past.");
           continue;
         }
-
         validCertificates.push(metadata);
       }
 
-      // Sort by notBefore, ascending.
+      // Sort by notBefore, descending (freshest first).
       validCertificates.sort(function(cert1, cert2) {
-        return (cert1.notBefore - cert2.notBefore);
+        return (cert2.notBefore - cert1.notBefore);
       });
 
-      if (! validCertificates.length) {
+      // If we prefer oldest, reverse that.
+      if (preferOldest) {
+        validCertificates = validCertificates.reverse();
+      }
+
+      return validCertificates[0];
+    }
+
+    function getCurrentSandcatsKeyAndNextRekeyTime() {
+      // Call this function to get up-to-date sandcats https key
+      // information.
+      //
+      // This returns an object with keys [ca, key, cert] which are
+      // valid options for https.createServer(). The object we return
+      // has one additional key, nextRekeyTime, which is a JS
+      // timestamp (UNIX time * 1000) of when the next key becomes
+      // valid.
+      //
+      // The intended use-case is that someone else will check the time
+      // and if the time is greater than nextRekeyTime, then call this
+      // function again.
+      //
+      // If nextRekeyTime is null, it means we have only one key.
+      var basePath = makeHttpsDir(url.parse(process.env.ROOT_URL).hostname);
+      // The key files in this directory are named 0 1 2 3 etc, but we
+      // ignore their filenames.
+      var files = fs.readdirSync(basePath);
+
+      // We might have lots and lots of valid certificates. We're
+      // interested in finding:
+      //
+      // - A "reference" certificate, which is the _newest_
+      //   certificate that is currently valid. Newest is defined as
+      //   the greatest NotBefore value.
+      //
+      // - If the "reference" certificate only started being valid in
+      //   the past 20 minutes, then try to find a "temporary"
+      //   certificate to use in that time, and schedule a re-key for
+      //   when the "reference" certificate is worth using.
+      //
+      // - We should do all "Should we renew?" calculations based on
+      //   the reference certificate, even if we aren't actually using
+      //   it yet.
+      //
+      // We avoid using a cert so fresh as the past 20 minutes so that
+      // GlobalSign has some time to update OCSP.
+      var now = new Date().getTime();
+      var twentyMinutesAgo = now - (1000 * 60 * 20);
+      var referenceCertificate = getBestCertificate(now, files, basePath, false);
+
+      if (! referenceCertificate) {
         console.error("HTTPS mode is enabled but no certs found.");
         return {nextRekeyTime: null};
       }
 
-      console.log("Using this HTTPS key:", validCertificates[0].keyFilename,
-                  "valid starting", new Date(validCertificates[0].notBefore),
-                  "until", new Date(validCertificates[0].notAfter));
+      // By default, we will use the reference certificate immediately.
+      var useThisCertificate = referenceCertificate;
 
-      // Store HTTPS configuration data from the oldest certificate.
+      // We know that now > referenceCertificate.notBefore because it was
+      // returned to us.
+      //
+      // Has it been valid for the past 20 minutes? Meaning, is
+      // twentyMinutesAgo > referenceCertificate.notBefore? If it is,
+      // then great, let's definitely use the reference
+      // certificate. If not, then let's try to find a different cert.
+      if (twentyMinutesAgo > referenceCertificate.notBefore) {
+        // Great!
+      } else {
+        console.log("Looks like",
+                    new Date(referenceCertificate.notBefore),
+                    "started being fresh in the last 20 min, i.e. before",
+                    new Date(twentyMinutesAgo));
+        // Look for the oldest cert we can. Maybe it'll be the same,
+        // maybe not, but at least we tried.
+        //
+        // This is useful if a Sandstorm restart occurs at an
+        // inopportune time, causing us to accidentally re-key.
+        var maybeUseThisCertificateInstead = getBestCertificate(now, files, basePath, true);
+        if (maybeUseThisCertificateInstead.keyFilename != referenceCertificate.keyFilename) {
+          useThisCertificate = maybeUseThisCertificateInstead;
+        }
+      }
+
+      console.log("Certificate we want to use:", referenceCertificate.keyFilename,
+                  "valid starting", new Date(referenceCertificate.notBefore),
+                  "until", new Date(referenceCertificate.notAfter));
+
+      if (useThisCertificate.keyFilename != referenceCertificate.keyFilename) {
+        console.log("Going to use this one for a little while first:",
+                    useThisCertificate.keyFilename,
+                    "valid starting", new Date(useThisCertificate.notBefore),
+                    "until", new Date(useThisCertificate.notAfter));
+      }
+
+      // Store HTTPS configuration data from the cert we want to use.
+      //
+      // Also store bestCertExpiryTime (only looked-at within this
+      // file) based on the reference cert, even if we're not using it
+      // yet.
       var result = {
-        ca: validCertificates[0].ca,
-        key: fs.readFileSync(validCertificates[0].keyFilename, 'utf-8'),
-        cert: validCertificates[0].cert,
-        notAfter: validCertificates[0].notAfter
+        ca: useThisCertificate.ca,
+        key: fs.readFileSync(useThisCertificate.keyFilename, 'utf-8'),
+        cert: useThisCertificate.cert,
+        notAfter: useThisCertificate.notAfter,
+        bestCertExpiryTime: referenceCertificate.notAfter
       };
 
       // Calculate re-key time.
       //
-      // - If the cert we want to switch to is not valid yet, then we
-      //   re-key at its notBefore. If there is overlapping validity,
-      //   then actualy re-key at its notBefore + 15 minutes to
-      //   account for possible clock skew.
+      // - If we're not using the reference certificate yet, then we
+      //   should switch to it at the soonest of (20 min from now) and
+      //   when the current cert expires (minus 20 min to avoid clock
+      //   skew).
       //
-      // - If the cert we want to switch to *is* already valid, then
-      //   we re-key at the notAfter time of our current cert. If
-      //   there is overlapping validity, then we actually re-key at
-      //   the notAfter time minus 15 minutes to account for possible
-      //   clock skew.
-      //
-      // - If there is no cert we want to switch to, then the
-      //   nextRekeyTime is null.
+      // - Otherwise, we know nothing about when to re-key, and we
+      //   just sit here waiting for `sandcats.js` to download a new
+      //   key for us to use, at which point we will either switch to
+      //   it immediately or do the reference-cert-wait-20-min dance.
       result.nextRekeyTime = null;
 
-      if (validCertificates.length >= 2) {
-        var secondBest = validCertificates[1];
-        var fiftenMinutesInMilliseconds = 1000 * 60 * 15;
-        if (now < secondBest.notBefore) {
-          var nextRekeyTime = secondBest.notBefore;
-          // Maybe we can re-key a little later, just in case our
-          // clocks are wrong.
-          var alternateRekeyTime = secondBest.notBefore + fiftenMinutesInMilliseconds;
-          if (validCertificates[0].notAfter > alternateRekeyTime) {
-            nextRekeyTime = alternateRekeyTime;
-          }
-          result.nextRekeyTime = nextRekeyTime;
-        } else {
-          var nextRekeyTime = validCertificates[0].notAfter;
-          // Maybe we can re-key a little sooner, just in case our clocks
-          // are wrong.
-          var alternateRekeyTime = nextRekeyTime - fiftenMinutesInMilliseconds;
-          if ((now < alternateRekeyTime) &&
-              (alternateRekeyTime > validCertificates[1].notBefore)) {
-            nextRekeyTime = alternateRekeyTime;
-          }
-          result.nextRekeyTime = nextRekeyTime;
+      if (useThisCertificate.keyFilename != referenceCertificate.keyFilename) {
+        var twentyMinutesInMilliseconds = 1000 * 60 * 20;
+        var twentyMinutesFromNow = now + twentyMinutesFromNow;
+        var notAfterMinusTwentyMinutes = result.notAfter - twentyMinutesFromNow;
+
+        // But never attempt to re-key in the past...
+        if (notAfterMinusTwentyMinutes < now) {
+          notAfterMinusTwentyMinutes = result.notAfter;
         }
 
-        console.log("Will switch to", validCertificates[1].keyFilename,
-                    "at time", new Date(result.nextRekeyTime),
+        result.nextRekeyTime = Math.min(
+          notAfterMinusTwentyMinutes, twentyMinutesFromNow);
+
+        console.log("Will switch certs, probably to", referenceCertificate.keyFilename,
+                    ", at time", new Date(result.nextRekeyTime),
                     "via real-time SNI re-keying system.");
       } else {
         console.log("We have only the one key that we know about. We'll need to renew soon.");
@@ -298,7 +333,7 @@ function monkeypatchHttpAndHttps() {
 
         var threeDaysInMilliseconds = 1000 * 60 * 60 * 24 * 3;
         var now = new Date();
-        var expiry = sandcatsState.notAfter;
+        var expiry = sandcatsState.bestCertExpiryTime;
         var timeLeft = expiry - now.getTime();
 
         if (timeLeft < threeDaysInMilliseconds) {

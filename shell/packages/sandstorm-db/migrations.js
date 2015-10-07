@@ -238,10 +238,11 @@ function splitUserIdsIntoAccountIdsAndIdentityIds() {
   // form of API token.
 }
 
-function appUpdateSettings() {}
-// This migration was written to populate initial values for the "appMarketUrl", "appIndexUrl",
-// and "appUpdatesEnabled" settings. We've replaced it with a no-op becuase it's more convenient
-// to lazily initialize these settings, returning the canonical values as defaults.
+function appUpdateSettings() {
+  Settings.insert({_id: "appMarketUrl", value: "https://apps.sandstorm.io"});
+  Settings.insert({_id: "appIndexUrl", value: "https://app-index.sandstorm.io"});
+  Settings.insert({_id: "appUpdatesEnabled", value: true});
+}
 
 function moveDevAndEmailLoginDataIntoIdentities() {
   var Crypto = Npm.require("crypto");

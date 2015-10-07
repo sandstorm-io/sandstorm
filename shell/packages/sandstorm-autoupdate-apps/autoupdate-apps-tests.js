@@ -28,6 +28,13 @@ Meteor.users.remove({});
 // Note that `meteor test-packages` starts with a fresh Mongo instance. That instance, however,
 // does not automatically get cleared on hot code reload.
 
+globalDb.collections.settings.upsert({_id: "appMarketUrl"},
+                                     {$set: {value: "https://apps.sandstorm.io"}});
+globalDb.collections.settings.upsert({_id: "appIndexUrl"},
+                                     {$set: {value: "https://app-index.sandstorm.io"}});
+globalDb.collections.settings.upsert({_id: "appUpdatesEnabled"},
+                                     {$set: {value: true}});
+
 var aliceUserId = Accounts.insertUserDoc({profile: {name: "Alice"},
                                           devName: "alice" + Crypto.randomBytes(10).toString("hex")},
                                          {});

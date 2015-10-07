@@ -743,13 +743,16 @@ if (Meteor.isClient) {
       return (setting && setting.value);
     },
     appMarketUrl: function() {
-      return SandstormAutoupdateApps.appMarketUrl(globalDb);
+      var setting = Settings.findOne({_id: "appMarketUrl"});
+      return (setting && setting.value);
     },
     appIndexUrl: function() {
-      return SandstormAutoupdateApps.appIndexUrl(globalDb);
+      var setting = Settings.findOne({_id: "appIndexUrl"});
+      return (setting && setting.value);
     },
     appUpdatesEnabled: function() {
-      return SandstormAutoupdateApps.appUpdatesEnabled(globalDb);
+      var setting = Settings.findOne({_id: "appUpdatesEnabled"});
+      return (setting && setting.value);
     },
   });
 }

@@ -1,3 +1,7 @@
+### v0.118 (2015-10-07)
+- Fixed problem where Sandcats-HTTPS-enabled servers would request new certificates too often.
+- This is a cherry-pick release -- no other changes merged in the last week are included.
+
 ### v0.117 (2015-09-30)
 - Self-hosters using Sandcats now get automatic free HTTPS certificates. This is normally set up automatically during install. If you first installed before this release, [see the docs to find out how to enable HTTPS](https://docs.sandstorm.io/en/latest/administering/ssl/).
 

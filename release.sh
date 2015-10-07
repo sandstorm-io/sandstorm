@@ -27,13 +27,13 @@ fi
 
 . branch.conf
 
-if [ $(git rev-parse --abbrev-ref HEAD) = master ]; then
-  CHANNEL=dev
-elif [ $IS_STABLE = true ]; then
-  CHANNEL=stable
-else
-  CHANNEL=beta
-fi
+#if [ $(git rev-parse --abbrev-ref HEAD) = master ]; then
+CHANNEL=dev
+#elif [ $IS_STABLE = true ]; then
+#  CHANNEL=stable
+#else
+#  CHANNEL=beta
+#fi
 
 echo "**** Determining next build number for $CHANNEL channel ****"
 

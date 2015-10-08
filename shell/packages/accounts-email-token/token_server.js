@@ -1,22 +1,21 @@
 var TOKEN_EXPIRATION_MS = 15 * 60 * 1000;
 
 var cleanupExpiredTokens = function() {
-  Meteor.users.update({"services.emailToken.tokens": {$exists: true}}, {
-    $pull: {
-      "services.emailToken.tokens": {
-        createdAt: {$lt: new Date(Date.now() - TOKEN_EXPIRATION_MS)}
-      }
-    }
-  }, { multi: true });
+  while (0 < Meteor.users.update(
+      {"identities.service.emailToken.tokens.createdAt": {$lt: new Date(Date.now() - TOKEN_EXPIRATION_MS)}},
+      {$pull: {
+        "identities.$.service.emailToken.tokens": {
+          createdAt: {$lt: new Date(Date.now() - TOKEN_EXPIRATION_MS)}}}},
+    { multi: true }));
 };
 
 Meteor.startup(cleanupExpiredTokens);
 // Tokens can actually last up to 2 * TOKEN_EXPIRATION_MS
 SandstormDb.periodicCleanup(TOKEN_EXPIRATION_MS, cleanupExpiredTokens);
 
-var checkToken = function (user, token) {
+var checkToken = function (tokens, token) {
   var found = false;
-  user.services.emailToken.tokens.forEach(function (userToken) {
+  tokens.forEach(function (userToken) {
     if((userToken.algorithm === token.algorithm) &&
        (userToken.digest === token.digest)) {
       found = true;
@@ -33,6 +32,8 @@ Accounts.emailToken.setEmailPackage = function (packageName) {
   EMAIL_PACKAGE = packageName;
 };
 
+var Crypto = Npm.require("crypto");
+
 // Handler to login with a token.
 Accounts.registerLoginHandler("emailToken", function (options) {
   if (!options.emailToken)
@@ -44,7 +45,10 @@ Accounts.registerLoginHandler("emailToken", function (options) {
     token: String
   });
 
-  var user = Meteor.users.findOne({"services.emailToken.email": options.email});
+  var identityId = Crypto.createHash("sha256")
+      .update("emailToken" + ":" + options.email).digest("hex");
+  var user = Meteor.users.findOne({"identities.id": identityId},
+                                  {fields: {"identities.$": 1}});
 
   if (!user) {
     console.error("User not found:", options.email);
@@ -53,8 +57,9 @@ Accounts.registerLoginHandler("emailToken", function (options) {
     };
   }
 
-  if (!user.services || !user.services.emailToken ||
-      !(user.services.emailToken.tokens)) {
+  var identity = user.identities[0];
+
+  if (!user.identities[0].service.emailToken.tokens) {
     console.error("User has no token set:", options.email);
     return {
       error: new Meteor.Error(403, "User has no token set")
@@ -62,19 +67,17 @@ Accounts.registerLoginHandler("emailToken", function (options) {
   }
 
   var token = Accounts.emailToken._hashToken(options.token.trim());
-  var found = checkToken(
-    user,
-    token
-  );
+  var found = checkToken(user.identities[0].service.emailToken.tokens, token);
 
   if (!found) {
-    console.error("Token not found:", user.services.emailToken);
+    console.error("Token not found:", user.identities[0]);
     return {
       error: new Meteor.Error(403, "Invalid authentication code")
     };
   }
 
-  Meteor.users.update({_id: user._id}, {$pull: {"services.emailToken.tokens": token}});
+  Meteor.users.update({"identities.id": identityId},
+                      {$pull: {"identities.$.service.emailToken.tokens": token}});
   return {
     userId: user._id
   };
@@ -121,9 +124,10 @@ var createAndEmailTokenForUser = function (email) {
     throw new Meteor.Error(400, "No @ symbol was found in your email");
   }
 
-  var username = email.slice(0, atIndex);
-
-  var user = Meteor.users.findOne({"services.emailToken.email": email});
+  var identityId = Crypto.createHash("sha256")
+      .update("emailToken" + ":" + email).digest("hex");
+  var user = Meteor.users.findOne({"identities.id": identityId},
+                                  {fields: {"identities.$": 1}});
   var userId;
 
   // TODO(someday): make this shorter, and handle requests that try to brute force it.
@@ -132,28 +136,22 @@ var createAndEmailTokenForUser = function (email) {
   tokenObj.createdAt = new Date();
 
   if (user) {
-    if (user.services.emailToken.tokens && user.services.emailToken.tokens.length > 2) {
+    var identity = user.identities[0];
+    if (identity.service.emailToken.tokens && identity.service.emailToken.tokens.length > 2) {
       throw new Meteor.Error(409, "It looks like we sent a log in email to this address not long " +
         "ago. Please use the one that was already sent (check your spam folder if you can't find " +
         "it), or wait a while and try again");
     }
     userId = user._id;
 
-    Meteor.users.update({_id: userId}, {$push: {"services.emailToken.tokens": tokenObj}});
+    Meteor.users.update({"identities.id": identityId},
+                        {$push: {"identities.$.service.emailToken.tokens": tokenObj}});
   } else {
     var options = {
-      email: email,
-      profile: {
-        name: username
-      }
+      service: {emailToken: {email: email, tokens: [tokenObj]}},
     };
 
-    user = {services: {emailToken: {
-      tokens: [tokenObj],
-      email: options.email
-    }}};
-
-    userId = Accounts.insertUserDoc(options, user);
+    userId = Accounts.insertUserDoc(options, {});
   }
 
   sendTokenEmail(email, token);
@@ -173,9 +171,3 @@ Meteor.methods({createAndEmailTokenForUser: function (email) {
   // Create user. result contains id and token.
   var user = createAndEmailTokenForUser(email);
 }});
-
-///
-/// INDEXES ON USERS
-///
-Meteor.users._ensureIndex("services.emailToken.email",
-                          {unique: 1, sparse: 1});

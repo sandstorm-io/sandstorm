@@ -17,7 +17,8 @@
 SandstormAutoupdateApps = {};
 
 SandstormAutoupdateApps.updateAppIndex = function (db) {
-  var appUpdatesEnabled = db.collections.settings.findOne({_id: "appUpdatesEnabled"}).value;
+  var appUpdatesEnabledSetting = db.collections.settings.findOne({_id: "appUpdatesEnabled"});
+  var appUpdatesEnabled = appUpdatesEnabledSetting && appUpdatesEnabledSetting.value;
   if (!appUpdatesEnabled) {
     // It's much simpler to check appUpdatesEnabled here rather than reactively deactivate the
     // timer that triggers this call.

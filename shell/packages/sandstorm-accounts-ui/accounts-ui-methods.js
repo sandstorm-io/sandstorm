@@ -38,9 +38,9 @@ Meteor.methods({
     }
 
     var newValues = {
-      "identities.$.name": profile.name,
-      "identities.$.handle": profile.handle,
-      "identities.$.pronoun": profile.pronoun,
+      "identities.$.profile.name": profile.name,
+      "identities.$.profile.handle": profile.handle,
+      "identities.$.profile.pronoun": profile.pronoun,
       "hasCompletedSignup": true
     };
 

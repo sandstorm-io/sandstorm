@@ -127,12 +127,17 @@ Meteor.methods({
                                ", Old version: " + appVersion);
       }
 
+      var identity = _.findWhere(SandstormDb.getUserIdentities(Meteor.user()), {main: true});
+      // TODO(soon): Backed-up grains should remember the identity that owned them.
+      // Until that is the case, we restore using the user's main identity.
+
       Grains.insert({
         _id: grainId,
         packageId: packageId,
         appId: grainInfo.appId,
         appVersion: appVersion,
         userId: this.userId,
+        identityId: identity.id,
         title: grainInfo.title,
         private: true
       });

@@ -339,6 +339,10 @@ if (Meteor.isClient) {
     userIdentity: function () {
       return SandstormDb.getUserIdentities(this)[0];
     },
+    serviceName: function () {
+      var keys = Object.keys(this.service);
+      return keys && keys.length > 0 && keys[0];
+    },
     userSignupNote: function () {
       if (this.signupEmail) {
         return this.signupEmail;

@@ -91,6 +91,47 @@ dotdotdot_curl() {
   echo -ne '\r' >&2
 }
 
+is_port_bound() {
+  # If we are using a traditional netcat, then -z (zero i/o mode)
+  # works for scanning-type uses. (Debian defaults to this.)
+  #
+  # If we are using the netcat from the nmap package, then we can use
+  # --recv-only --send-only to get the same behavior. (Fedora defaults
+  # to this.)
+  #
+  # nc will either:
+  #
+  # - return true (exit 0) if it connected to the port, or
+  #
+  # - return false (exit 1) if it failed to connect to the port, or
+  #
+  # - return false (exit 1) if we are passing it the wrong flags.
+  #
+  # So if either if these invocations returns true, then we know the
+  # port is bound.
+  local DEBIAN_STYLE_INDICATED_BOUND="no"
+  local SCAN_HOST="$1"
+  local SCAN_PORT="$2"
+  ${NC_PATH} -z "$SCAN_HOST" "$SCAN_PORT" >/dev/null 2>/dev/null && DEBIAN_STYLE_INDICATED_BOUND=yes
+
+  if [ "$DEBIAN_STYLE_INDICATED_BOUND" == "yes" ] ; then
+      return 0
+  fi
+
+  # Not sure yet. Let's try the nmap-style way.
+  local NMAP_STYLE_INDICATED_BOUND="no"
+  ${NC_PATH} --wait 1 --recv-only --send-only "$SCAN_HOST" "$SCAN_PORT" >/dev/null 2>/dev/null && \
+      NMAP_STYLE_INDICATED_BOUND=yes
+
+  if [ "$NMAP_STYLE_INDICATED_BOUND" == "yes" ] ; then
+      return 0
+  fi
+
+  # As far as we can tell, nmap can't connect to the port, so return 1
+  # to indicate it is not bound.
+  return 1
+}
+
 # writeConfig takes a list of shell variable names and saves them, and
 # their contents, to stdout. Therefore, the caller should redirect its
 # output to a config file.
@@ -154,6 +195,10 @@ USERNS_CLONE_AT_ALL=""
 USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET=""
 SYSCTL_PROBABLY_WORKS="yes"
 
+# Allow the test suite to override the path to netcat in order to
+# reproduce a compatibility issue between different nc versions.
+NC_PATH="${OVERRIDE_NC_PATH:-nc}"
+
 # Defaults for some config options, so that if the user requests no
 # prompting, they get these values.
 DEFAULT_PORT=6080
@@ -204,10 +249,10 @@ disable_https_if_ports_unavailable() {
   # available, we will use port 6080 as the default port. I think
   # that's OK.
   local PORT_80_AVAILABLE="no"
-  nc -z 0.0.0.0 80 || PORT_80_AVAILABLE="yes"
+  is_port_bound 0.0.0.0 80 || PORT_80_AVAILABLE="yes"
 
   local PORT_443_AVAILABLE="no"
-  nc -z 0.0.0.0 443 || PORT_443_AVAILABLE="yes"
+  is_port_bound 0.0.0.0 443 || PORT_443_AVAILABLE="yes"
 
   if [ "$PORT_443_AVAILABLE" == "no" -o "$PORT_80_AVAILABLE" == "no" ] ; then
     SANDCATS_GETCERTIFICATE="no"
@@ -731,6 +776,7 @@ full_server_install() {
                              OVERRIDE_SANDCATS_BASE_DOMAIN="${OVERRIDE_SANDCATS_BASE_DOMAIN:-}" \
                              OVERRIDE_SANDCATS_API_BASE="${OVERRIDE_SANDCATS_API_BASE:-}" \
                              OVERRIDE_SANDCATS_GETCERTIFICATE="${SANDCATS_GETCERTIFICATE}" \
+                             OVERRIDE_NC_PATH="${OVERRIDE_NC_PATH:-}" \
                              OVERRIDE_SANDCATS_CURL_PARAMS="${OVERRIDE_SANDCATS_CURL_PARAMS:-}"
       fi
 
@@ -1727,7 +1773,7 @@ wait_for_server_bind_to_https_if_needed() {
   echo -n "Your server is coming online. Waiting up to 90 seconds..."
   local ONLINE_YET="no"
   for waited_n_seconds in $(seq 0 89); do
-    nc -z 0.0.0.0 443 && ONLINE_YET="yes"
+    is_port_bound 0.0.0.0 443 && ONLINE_YET="yes"
     if [ "$ONLINE_YET" == "yes" ] ; then
       echo ''
       break
@@ -1737,7 +1783,7 @@ wait_for_server_bind_to_https_if_needed() {
   done
 
   # One last check before we bail out.
-  nc -z 0.0.0.0 443 && ONLINE_YET="yes"
+  is_port_bound 0.0.0.0 443 && ONLINE_YET="yes"
 
   if [ "$ONLINE_YET" == "yes" ]; then
     return

@@ -94,6 +94,7 @@ limitations under the License.
     <span class="details">This picture will be shown to other users to help identify you. Suggested dimensions: 512x512. Max size: 64 KiB.</span>
   </li>
   <li class="pronoun">
+    {{#with profile}}
     <label>Preferred pronoun:
       <select name="pronoun">
         <option value="neutral" selected="{{isNeutral}}">they (unspecified)</option>
@@ -102,5 +103,6 @@ limitations under the License.
         <option value="robot" selected="{{isRobot}}">it (robot)</option>
       </select>
     </label>
+    {{/with}}
   </li>
 </template>

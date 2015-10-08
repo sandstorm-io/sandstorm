@@ -209,8 +209,8 @@ HackSessionContextImpl.prototype._getUserAddress = function () {
   if (email) {
     result.address = email;
   }
-  if (identity.name) {
-    result.name = identity.name;
+  if (identity.profile.name) {
+    result.name = identity.profile.name;
   }
 
   return result;

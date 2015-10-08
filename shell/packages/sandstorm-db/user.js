@@ -107,7 +107,7 @@ Accounts.onCreateUser(function (options, user) {
     identity.service = options.service;
     serviceUserId = options.service.dev.name;
   } else if ("expires" in user) {
-    identity.service = "demo";
+    identity.service = {demo: {}};
     serviceUserId = user._id;
   } else if (options.service && options.service.emailToken) {
     check(options.service, {emailToken:

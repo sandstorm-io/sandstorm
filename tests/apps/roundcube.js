@@ -53,8 +53,9 @@ module.exports["Incoming Mail"] = function (browser) {
           browser
             .click("#toplogo")
             .waitForElementVisible(".mailbox.inbox > a", short_wait)
-//            .click(".mailbox.inbox > a") // Make sure we have the inbox selected
+            .click(".mailbox.inbox > a") // Make sure we have the inbox selected
             .pause(short_wait) // It's sad, but there's no good way to wait for the mail to be delivered other than pausing
+            .frame("grain-frame")
             .click(".mailbox.inbox > a") // This is equivalent to refreshing the inbox
             .waitForElementVisible("#messagelist tbody tr:nth-child(1)", short_wait)
             .assert.containsText("#messagelist tbody tr:nth-child(1) .subject", "Hello world email");

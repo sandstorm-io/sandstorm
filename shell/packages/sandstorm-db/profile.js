@@ -27,7 +27,6 @@ if (Meteor.isServer) {
           "identities.id":1,
           "identities.service":1,
           "identities.profile":1,
-          "identities.handle":1,
           "identities.verifiedEmail":1,
           "identities.unverifiedEmail":1,
           "identities.main":1,

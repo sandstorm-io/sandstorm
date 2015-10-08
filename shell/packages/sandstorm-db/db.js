@@ -733,9 +733,10 @@ _.extend(SandstormDb.prototype, {
 
   getIdentity: function getIdentity (identityId) {
     check(identityId, String);
-    var user = Meteor.users.findOne({"identities.id": identityId}, {fields: {"identities.$": 1}});
+    var user = Meteor.users.findOne({"identities.id": identityId},
+                                    {fields: {"identities.$": 1, "services": 1}});
     if (user) {
-      return user.identities[0];
+      return SandstormDb.getUserIdentities(user)[0];
     }
   },
 
@@ -743,9 +744,9 @@ _.extend(SandstormDb.prototype, {
     check(identityId, String);
     check(userId, String);
     var user = Meteor.users.findOne({_id: userId, "identities.id": identityId},
-                                    {fields: {"identities.$": 1}});
+                                    {fields: {"identities.$": 1}, "services": 1});
     if (user) {
-      return user.identities[0];
+      return SandstormDb.getUserIdentities(user)[0];
     }
   },
 

@@ -1674,6 +1674,13 @@ private:
         // Make socket available to server user.
         KJ_SYSCALL(chmod(socketPath.cStr(), 0770));
         KJ_SYSCALL(chown(socketPath.cStr(), 0, config.uids.gid));
+
+        // Also make the socket parent directory available to user.
+        KJ_IF_MAYBE(pos, socketPath.findLast('/')) {
+          kj::String parent = kj::heapString(socketPath.slice(0, *pos));
+          KJ_SYSCALL(chmod(parent.cStr(), 0770));
+          KJ_SYSCALL(chown(parent.cStr(), 0, config.uids.gid));
+        }
       }
 
       dropPrivs(config.uids);

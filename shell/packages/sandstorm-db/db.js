@@ -1220,6 +1220,9 @@ if (Meteor.isServer) {
           // Remove potentially Mongo-incompatible stuff. (Currently Keybase returns nothing that
           // this would filter.)
           for (var field in proof) {
+            // Don't allow field names containing '.' or '$'. Also don't allow sub-objects mainly
+            // because I'm too lazy to check the field names recursively (and Keybase doesn't
+            // return any objects anyway).
             if (field.match(/[.$]/) || typeof(proof[field]) === "object") {
               delete proof[field];
             }

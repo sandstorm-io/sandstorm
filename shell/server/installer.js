@@ -348,6 +348,10 @@ AppInstaller.prototype.updateProgress = function (status, progress, error, manif
         appId: self.appId,
         authorPgpKeyFingerprint: self.authorPgpKeyFingerprint
       }});
+
+      if (self.authorPgpKeyFingerprint) {
+        globalDb.updateKeybaseProfileAsync(self.authorPgpKeyFingerprint);
+      }
     }).catch (function (err) {
       console.error(err.stack);
     });

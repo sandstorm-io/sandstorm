@@ -141,8 +141,8 @@ if (Meteor.isServer) {
       var reportSetting = Settings.findOne({_id: "reportStats"});
       if (!reportSetting) {
         // Setting not set yet, send out notifications and set it to false
-        globalDb.sendAdminNotification("Sandstorm.io would like you to opt-in to stats " +
-          "collection. Please click here to see what stats would be reported.", "/admin/stats");
+        globalDb.sendAdminNotification("You can help Sandstorm by sending us some anonymous " +
+          "usage stats. Click here for more info.", "/admin/stats");
         Settings.insert({_id: "reportStats", value: false});
       } else if (reportSetting.value) {
         HTTP.post("https://alpha-api.sandstorm.io/data", {

@@ -28,6 +28,9 @@ Template.sandstormAccountSettings.onCreated(function () {
 GENDERS = {male: "male", female: "female", neutral: "neutral", robot: "robot"};
 
 var helpers = {
+  setDocumentTitle: function () {
+    document.title = "Account settings · Sandstorm";
+  },
   identities: function () {
     return SandstormDb.getUserIdentities(Meteor.user());
   },

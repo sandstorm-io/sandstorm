@@ -204,6 +204,12 @@ if (Meteor.isClient) {
     }
   });
 
+  Template.about.helpers({
+    setDocumentTitle: function () {
+      document.title = "About · Sandstorm";
+    }
+  });
+
   Template.body.onRendered(function () {
     // If we're on iOS, set a class name on <body> so we can use CSS styles to work around mobile
     // Safari's ridiculous iframe rendering behavior.

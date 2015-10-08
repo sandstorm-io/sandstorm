@@ -680,6 +680,7 @@ limitations under the License.
 </template>
 
 <template name="adminInvites">
+  {{setDocumentTitle}}
   <div id="invite">
     {{#if error}}
       <p>{{error}}</p>
@@ -739,6 +740,7 @@ limitations under the License.
 </template>
 
 <template name="adminLog">
+  {{setDocumentTitle}}
   <div id="adminLog">
     <pre>...{{{html}}}</pre>
   </div>
@@ -878,6 +880,7 @@ limitations under the License.
 </template>
 
 <template name="adminSettings">
+  {{setDocumentTitle}}
   <form id="admin-settings-form">
     <p>
       <label><input type="checkbox" class="oauth-checkbox" name="googleLogin"
@@ -904,6 +907,7 @@ limitations under the License.
 </template>
 
 <template name="adminUsers">
+  {{setDocumentTitle}}
   <table class="admin-table">
     <thead>
       <tr>
@@ -949,6 +953,7 @@ limitations under the License.
 </template>
 
 <template name="adminStats">
+  {{setDocumentTitle}}
   <div id="stats">
     <p>Right now: {{current.activeUsers}} users, {{current.activeGrains}} grains</p>
     <p>Today: {{today.activeUsers}} users, {{today.activeGrains}} grains</p>
@@ -1049,6 +1054,7 @@ limitations under the License.
 </template>
 
 <template name="adminCaps">
+  {{setDocumentTitle}}
   {{#if powerboxOfferUrl}}
     {{#with powerboxOfferUrl=powerboxOfferUrl}}
       {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"
@@ -1081,6 +1087,7 @@ limitations under the License.
 </template>
 
 <template name="adminAdvanced">
+  {{setDocumentTitle}}
   <form id="admin-settings-form">
     <p>Splash Dialog: <input type="text" name="splashDialog" value="{{splashDialog}}"><br>
        Signup Dialog: <input type="text" name="signupDialog" value="{{signupDialog}}"><br>
@@ -1175,6 +1182,7 @@ limitations under the License.
 </template>
 
 <template name="about">
+  {{setDocumentTitle}}
   {{>title "About Sandstorm"}}
 
   <div class="about">

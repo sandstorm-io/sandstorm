@@ -88,6 +88,9 @@ var nounFromAction = function (action, appTitle) {
 
 // Client-only stuff...
 Template.sandstormAppList.helpers({
+  setDocumentTitle: function() {
+    document.title = "Apps · Sandstorm";
+  },
   searching: function() {
     var ref = Template.instance().data;
     return ref._filter.get().length > 0;

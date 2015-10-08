@@ -956,6 +956,7 @@ limitations under the License.
 
 <template name="adminStats">
   <div id="stats">
+    <label><input class="enableStatsCollection" type="checkbox" name="reportStats" checked={{reportStats}}>Report anonymized stats below to sandstorm.io</label>
     <p>Right now: {{current.activeUsers}} users, {{current.activeGrains}} grains</p>
     <p>Today: {{today.activeUsers}} users, {{today.activeGrains}} grains</p>
 

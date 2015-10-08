@@ -137,6 +137,23 @@ if (Meteor.isServer) {
     record.computeTime = Date.now() - now;
 
     ActivityStats.insert(record);
+    if (ActivityStats.find().count() > 3) {
+      var reportSetting = Settings.findOne({_id: "reportStats"});
+      if (!reportSetting) {
+        // Setting not set yet, send out notifications and set it to false
+        globalDb.sendAdminNotification("Sandstorm.io would like you to opt-in to stats " +
+          "collection. Please click here to see what stats would be reported.", "/admin/stats");
+        Settings.insert({_id: "reportStats", value: false});
+      } else if (reportSetting.value) {
+        HTTP.post("https://alpha-api.sandstorm.io/data", {
+          data: record,
+          headers: {
+            Authorization: "Bearer aT-mGyNwsgwZBbZvd5FWr0Ma79O9IehI4NiEO94y_oR",
+            "Content-Type": "application/json",
+          },
+        });
+      }
+    }
   }
 
   if (!Meteor.settings.replicaNumber) {
@@ -216,7 +233,12 @@ if (Meteor.isClient) {
     },
     "change select.package-date": function (ev, template) {
       template.currentPackageDate.set(ev.currentTarget.value);
-    }
+    },
+    "change input.enableStatsCollection": function (ev, template) {
+      var state = Iron.controller().state;
+      var token = state.get("token");
+      Meteor.call("setSetting", token, "reportStats", ev.target.checked);
+    },
   });
   Template.adminStats.onCreated(function () {
     var state = Iron.controller().state;
@@ -300,6 +322,10 @@ if (Meteor.isClient) {
     },
     token: function () {
       return StatsTokens.findOne();
-    }
+    },
+    reportStats: function () {
+      var setting = Settings.findOne({_id: "reportStats"});
+      return setting && setting.value;
+    },
   });
 }

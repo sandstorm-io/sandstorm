@@ -14,7 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
+// We also define an onLogin() callback in demo.js. Apparently this one overrides that one.
+// We should consolidate.
+/*
 Accounts.onLogin(function() {
   var oldLoginToken = sessionStorage.getItem("mergeAccountsLoginToken");
   sessionStorage.removeItem("mergeAccountsLoginToken");
@@ -28,6 +30,7 @@ Accounts.onLogin(function() {
     });
   }
 });
+*/
 
 SandstormAccountsMerge.mergeWithGoogle = function () {
   var oldLoginToken = Accounts._storedLoginToken();

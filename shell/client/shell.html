@@ -924,9 +924,9 @@ limitations under the License.
       {{#each users}}
         <tr>
           {{#with userIdentity}}
-            <td>{{service}}</td>
-            <td>{{handle}}</td>
-            <td>{{name}}</td>
+            <td>{{serviceName}}</td>
+            <td>{{profile.handle}}</td>
+            <td>{{profile.name}}</td>
           {{/with}}
           <td>
             <select class="user-class" name="select">

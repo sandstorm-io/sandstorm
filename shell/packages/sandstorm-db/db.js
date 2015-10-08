@@ -1233,7 +1233,14 @@ if (Meteor.isServer) {
 
         KeybaseProfiles.update(keyFingerprint, {$set: record}, {upsert: true});
       } else {
-        KeybaseProfiles.update(keyFingerprint, {$unset: {profile: ""}}, {upsert: true});
+        // Keybase reports no match, so remove what we know of this user. We don't want to remove
+        // the item entirely from the cache as this will cause us to repeatedly re-fetch the data
+        // from Keybase.
+        //
+        // TODO(someday): We could perhaps keep the proofs if we can still verify them directly,
+        //   but at present we don't have the ability to verify proofs.
+        KeybaseProfiles.update(keyFingerprint,
+            {$unset: {displayName: "", handle: "", proofs: ""}}, {upsert: true});
       }
     });
   };

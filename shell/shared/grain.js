@@ -89,7 +89,7 @@ if (Meteor.isServer) {
     check(token, String);
 
     var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
-    var apiToken = ApiTokens.findOne({_id: hashedToken}, {fields: {grainId: 1, userId: 1}});
+    var apiToken = ApiTokens.findOne({_id: hashedToken}, {fields: {grainId: 1, identityId: 1}});
     if (!apiToken || (apiToken.owner && !("webkey" in apiToken.owner))) {
       this.added("tokenInfo", token, {invalidToken: true});
     } else {

@@ -956,7 +956,25 @@ limitations under the License.
 
 <template name="adminStats">
   <div id="stats">
-    <label><input class="enableStatsCollection" type="checkbox" name="reportStats" checked={{reportStats}}>Report anonymized stats below to sandstorm.io</label>
+    <label class="report-stats">
+      {{#unless reportStatsFirstVisit}}
+      <input class="enableStatsCollection" type="checkbox" name="reportStats" checked={{reportStats}}>
+      {{/unless}}
+      Enable automically reporting the anonymized statistics below to Sandstorm.io
+      {{#if reportStatsSaving}}
+        {{#if reportStatsSaved}}
+        <span class="check-mark" title="saved">✓</span>
+        {{else}}
+        <img src="/spinner_96.gif" alt="loading">
+        {{/if}}
+      {{/if}}
+      {{#if reportStatsFirstVisit}}
+      <div>
+        <button class="yes">Yes</button>
+        <button class="no">No</button>
+      </div>
+      {{/if}}
+    </label>
     <p>Right now: {{current.activeUsers}} users, {{current.activeGrains}} grains</p>
     <p>Today: {{today.activeUsers}} users, {{today.activeGrains}} grains</p>
 

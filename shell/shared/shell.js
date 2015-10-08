@@ -679,7 +679,7 @@ if (Meteor.isClient) {
       return "Stops the background app";
     },
     showDismiss: function () {
-      return !(this.admin && this.admin.action);
+      return !(this.admin && this.admin.type == "reportStats");
     },
     adminLink: function () {
       return this.admin && this.admin.action;
@@ -706,10 +706,6 @@ if (Meteor.isClient) {
         });
       }
       return false;
-    },
-    "click a": function (event) {
-      Meteor.call("dismissNotification", this._id);
-      return true;
     },
   });
 

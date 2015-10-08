@@ -227,6 +227,22 @@ Router.map(function () {
 });
 
 if (Meteor.isClient) {
+  var saveReportStats = function (newValue, template, cb) {
+    var state = Iron.controller().state;
+    var token = state.get("token");
+    template.reportStatsSaved.set(false);
+    Meteor.call("setSetting", token, "reportStats", newValue, function (err) {
+      if (err) {
+        // TODO(someday): do something with error, for now spinner will just show forever
+        return;
+      }
+      template.reportStatsSaved.set(true);
+      if (cb) {
+        cb();
+      }
+    });
+  };
+
   Template.adminStats.events({
     'click #regenerateStatsToken': function () {
       Meteor.call('regenerateStatsToken');
@@ -235,15 +251,26 @@ if (Meteor.isClient) {
       template.currentPackageDate.set(ev.currentTarget.value);
     },
     "change input.enableStatsCollection": function (ev, template) {
+      saveReportStats(ev.target.checked, template);
+    },
+    "click .report-stats .yes": function (ev, template) {
       var state = Iron.controller().state;
       var token = state.get("token");
-      Meteor.call("setSetting", token, "reportStats", ev.target.checked);
+      saveReportStats(true, template, Meteor.call.bind(Meteor,
+        "dismissAdminStatsNotifications", token));
+    },
+    "click .report-stats .no": function (ev, template) {
+      var state = Iron.controller().state;
+      var token = state.get("token");
+      saveReportStats(false, template, Meteor.call.bind(Meteor,
+        "dismissAdminStatsNotifications", token));
     },
   });
   Template.adminStats.onCreated(function () {
     var state = Iron.controller().state;
     var token = state.get("token");
     this.currentPackageDate = new ReactiveVar(null);
+    this.reportStatsSaved = new ReactiveVar(null);
     var self = this;
     this.autorun(function () {
       var stat = ActivityStats.findOne({}, {sort: {timestamp: -1}});
@@ -326,6 +353,16 @@ if (Meteor.isClient) {
     reportStats: function () {
       var setting = Settings.findOne({_id: "reportStats"});
       return setting && setting.value;
+    },
+    reportStatsFirstVisit: function () {
+      var setting = Settings.findOne({_id: "reportStats"});
+      return  Match.test(setting, Match.OneOf(undefined, null));
+    },
+    reportStatsSaving: function() {
+      return !Match.test(Template.instance().reportStatsSaved.get(), Match.OneOf(undefined, null));
+    },
+    reportStatsSaved: function() {
+      return Template.instance().reportStatsSaved.get();
     },
   });
 }

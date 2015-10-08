@@ -380,6 +380,7 @@ Notifications = new Mongo.Collection("notifications");
 //   admin:        If present, this is a notification intended for an admin.
 //     action:     If present, this is a (string) link that the notification should direct the
 //                 admin to.
+//     type:       The type of notification (currently only "reportStats").
 //   appUpdates:   If present, this is an app update notification. It is an object with the appIds
 //                 as keys.
 //     $appId:     The appId that has an outstanding update.
@@ -872,6 +873,7 @@ _.extend(SandstormDb.prototype, {
       Notifications.insert({
         admin: {
           action: link,
+          type: "reportStats",
         },
         userId: user._id,
         text: {defaultText: message},

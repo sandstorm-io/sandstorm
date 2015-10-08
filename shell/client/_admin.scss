@@ -163,6 +163,18 @@ input.autoSelect {
 }
 
 #stats {
+  .report-stats {
+    button {
+      margin-right: 5px;
+    }
+    img {
+      width: 16px;
+    }
+    .check-mark {
+      color: green;
+    }
+  }
+
   td {
     text-align: center;
     vertical-align: middle;

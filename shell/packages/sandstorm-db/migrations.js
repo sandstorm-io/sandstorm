@@ -245,7 +245,6 @@ function appUpdateSettings() {
 }
 
 function moveDevAndEmailLoginDataIntoIdentities() {
-  var Crypto = Npm.require("crypto");
   Meteor.users.find().forEach(function (user) {
     if (user.identities.length != 1) {
       throw new Error("User does not have exactly one identity: ", user);

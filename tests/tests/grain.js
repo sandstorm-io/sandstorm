@@ -199,7 +199,7 @@ module.exports["Test roleless sharing"] = function (browser) {
   browser
   // Upload app as 1st user
     .loginDevAccount()
-    .execute(function () { return Meteor.user().identities[0].devName; }, [], function(result) {
+    .execute(function () { return Meteor.user().identities[0].service.dev.name; }, [], function(result) {
       firstUserName = result.value;
     })
     .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
@@ -226,7 +226,7 @@ module.exports["Test roleless sharing"] = function (browser) {
     .getText('#share-token-text', function(response) {
       browser
         .loginDevAccount()
-        .execute(function () { return Meteor.user().identities[0].devName; }, [], function(result) {
+        .execute(function () { return Meteor.user().identities[0].service.dev.name; }, [], function(result) {
           secondUserName = result.value;
         })
         .url(response.value)

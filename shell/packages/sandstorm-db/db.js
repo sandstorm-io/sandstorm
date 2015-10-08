@@ -744,7 +744,7 @@ _.extend(SandstormDb.prototype, {
     check(identityId, String);
     check(userId, String);
     var user = Meteor.users.findOne({_id: userId, "identities.id": identityId},
-                                    {fields: {"identities.$": 1}, "services": 1});
+                                    {fields: {"identities.$": 1, "services": 1}});
     if (user) {
       return SandstormDb.getUserIdentities(user)[0];
     }

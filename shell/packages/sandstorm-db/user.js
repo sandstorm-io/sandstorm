@@ -130,7 +130,7 @@ Accounts.onCreateUser(function (options, user) {
     serviceUserId = user.services.github.id;
   }
   identity.id = Crypto.createHash("sha256")
-      .update(identity.service + ":" + serviceUserId).digest("hex");
+      .update(Object.keys(identity.service)[0] + ":" + serviceUserId).digest("hex");
 
   user.identities = [identity];
   return user;

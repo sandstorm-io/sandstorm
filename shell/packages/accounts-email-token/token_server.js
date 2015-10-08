@@ -2,9 +2,9 @@ var TOKEN_EXPIRATION_MS = 15 * 60 * 1000;
 
 var cleanupExpiredTokens = function() {
   while (0 < Meteor.users.update(
-      {"identities.emailTokens.createdAt": {$lt: new Date(Date.now() - TOKEN_EXPIRATION_MS)}},
+      {"identities.service.emailToken.tokens.createdAt": {$lt: new Date(Date.now() - TOKEN_EXPIRATION_MS)}},
       {$pull: {
-        "identities.$.emailTokens": {
+        "identities.$.service.emailToken.tokens": {
           createdAt: {$lt: new Date(Date.now() - TOKEN_EXPIRATION_MS)}}}},
     { multi: true }));
 };
@@ -59,7 +59,7 @@ Accounts.registerLoginHandler("emailToken", function (options) {
 
   var identity = user.identities[0];
 
-  if (!user.identities[0].emailTokens) {
+  if (!user.identities[0].service.emailToken.tokens) {
     console.error("User has no token set:", options.email);
     return {
       error: new Meteor.Error(403, "User has no token set")
@@ -67,7 +67,7 @@ Accounts.registerLoginHandler("emailToken", function (options) {
   }
 
   var token = Accounts.emailToken._hashToken(options.token.trim());
-  var found = checkToken(user.identities[0].emailTokens, token);
+  var found = checkToken(user.identities[0].service.emailToken.tokens, token);
 
   if (!found) {
     console.error("Token not found:", user.identities[0]);
@@ -76,7 +76,8 @@ Accounts.registerLoginHandler("emailToken", function (options) {
     };
   }
 
-  Meteor.users.update({"identities.id": identityId}, {$pull: {"identities.$.emailTokens": token}});
+  Meteor.users.update({"identities.id": identityId},
+                      {$pull: {"identities.$.service.emailToken.tokens": token}});
   return {
     userId: user._id
   };
@@ -136,17 +137,18 @@ var createAndEmailTokenForUser = function (email) {
 
   if (user) {
     var identity = user.identities[0];
-    if (identity.emailTokens && identity.emailTokens.length > 2) {
+    if (identity.service.emailToken.tokens && identity.service.emailToken.tokens.length > 2) {
       throw new Meteor.Error(409, "It looks like we sent a log in email to this address not long " +
         "ago. Please use the one that was already sent (check your spam folder if you can't find " +
         "it), or wait a while and try again");
     }
     userId = user._id;
 
-    Meteor.users.update({"identities.id": identityId}, {$push: {"identities.$.emailTokens": tokenObj}});
+    Meteor.users.update({"identities.id": identityId},
+                        {$push: {"identities.$.service.emailToken.tokens": tokenObj}});
   } else {
     var options = {
-      emailToken: {email: email, tokens: [tokenObj]},
+      service: {emailToken: {email: email, tokens: [tokenObj]}},
     };
 
     userId = Accounts.insertUserDoc(options, {});

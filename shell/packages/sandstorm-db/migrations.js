@@ -254,7 +254,7 @@ function moveDevAndEmailLoginDataIntoIdentities() {
     if (Match.test(identity.service, Object)) { return; } // Already migrated.
 
     var newIdentity = _.pick(identity, "id", "main", "noLogin", "verifiedEmail", "unverifiedEmail");
-    newIdentity.profile = _.pick(identity, "name", "picture", "pronoun");
+    newIdentity.profile = _.pick(identity, "name", "handle", "picture", "pronoun");
 
     var serviceObject = {};
     var fieldsToUnset = {}

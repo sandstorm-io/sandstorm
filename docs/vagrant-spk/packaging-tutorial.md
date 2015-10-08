@@ -1,4 +1,4 @@
-# Packaging tutorial
+# Packaging tutorial (Generic)
 
 Style: Hands-on introductory tutorial.
 

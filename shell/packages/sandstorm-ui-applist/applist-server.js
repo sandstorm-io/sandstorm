@@ -38,7 +38,7 @@ Meteor.publish("userPackages", function() {
     added: function(newAction) {
       refPackage(newAction.packageId);
     },
-    updated: function(oldAction, newAction) {
+    changed: function(oldAction, newAction) {
       refPackage(newAction.packageId);
     }
   });
@@ -49,7 +49,7 @@ Meteor.publish("userPackages", function() {
     added: function(newGrain) {
       refPackage(newGrain.packageId);
     },
-    updated: function(oldGrain, newGrain) {
+    changed: function(oldGrain, newGrain) {
       refPackage(newGrain.packageId);
     }
   });

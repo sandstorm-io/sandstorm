@@ -154,23 +154,17 @@ Meteor.methods({
     }
 
     var pkg = Packages.findOne(packageId);
-    var appId;
-    var manifest;
     var isDev = false;
-    if (pkg) {
-      appId = pkg.appId;
-      manifest = pkg.manifest;
-    } else {
-      var devApp = DevApps.findOne({packageId: packageId});
-      if (devApp) {
-        appId = devApp._id;
-        manifest = devApp.manifest;
-        isDev = true;
-      } else {
-        throw new Meteor.Error(404, "Not Found", "No such package is installed.");
-      }
+    if (!pkg) {
+      // Maybe they wanted a dev package.  Check there too.
+      pkg = DevPackages.findOne(packageId);
+      isDev = true;
     }
-
+    if (!pkg) {
+      throw new Meteor.Error(404, "Not Found", "No such package is installed.");
+    }
+    var appId = pkg.appId
+    var manifest = pkg.manifest;
     var grainId = Random.id(22);  // 128 bits of entropy
     Grains.insert({
       _id: grainId,
@@ -378,10 +372,15 @@ Meteor.startup(function () {
     });
   }
 
-  DevApps.find().observeChanges({
-    removed: shutdownApp,
-    updated: shutdownApp,
-    added:   shutdownApp,
+  DevPackages.find().observe({
+    removed: function(devPackage) { shutdownApp(devPackage.appId); },
+    changed: function(oldDevPackage, newDevPackage) {
+      shutdownApp(oldDevPackage.appId);
+      if (oldDevPackage.appId !== newDevPackage.appId) {
+        shutdownApp(newDevPackage.appId);
+      }
+    },
+    added:   function(devPackage) { shutdownApp(devPackage.appId); },
   });
 
   Sessions.find().observe({

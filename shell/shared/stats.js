@@ -285,7 +285,7 @@ if (Meteor.isClient) {
           var p = Packages.findOne({appId: appId, manifest: {$exists: true}},
                                    {sort: {"manifest.appVersion": -1}});
           if (p) {
-            packObj.appTitle = appNameFromPackage(p);
+            packObj.appTitle = SandstormDb.appNameFromPackage(p);
           }
           return packObj;
         })

@@ -98,7 +98,7 @@ module.exports["Install Powerbox with failing requirements"] = function (browser
   browser
     .init()
     .installApp("http://sandstorm.io/apps/jparyani/powerbox-2.spk", "9d6493e63bc9919de3959fe0c5a131ad", "jm40yaw7zvnxyggqt2dddp5ztt0f5wku7a8wfz8uzn9cjus46ygh")
-    .assert.containsText("#grainTitle", "Untitled SandstormTest");
+    .assert.containsText("#grainTitle", "Untitled PowerboxTest sandstormtest");
 };
 
 module.exports["Test Powerbox with failing requirements"] = function (browser) {

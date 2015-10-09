@@ -140,11 +140,11 @@ Template.sandstormAccountSettings.events({
     });
   },
   "change": function (event, instance) {
-    if (event.target == instance.find("input[name='picture']")) { return; }
     // Pictures get saved right away.
     //
     // TODO(someday): Upload pictures to a staging area, perhaps allowing the user to resize
     //   and crop them before saving.
+    if (event.target == instance.find("input[name='picture']")) { return; }
 
     instance._profileSaved.set(false);
   },

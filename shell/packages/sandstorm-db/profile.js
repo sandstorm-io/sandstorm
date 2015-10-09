@@ -24,8 +24,14 @@ if (Meteor.isServer) {
     return [
       Meteor.users.find(Meteor.userId,
         {fields: {
-          "identities":1,
-          "devName":1,
+          "identities.id":1,
+          "identities.service":1,
+          "identities.profile":1,
+          "identities.verifiedEmail":1,
+          "identities.unverifiedEmail":1,
+          "identities.main":1,
+          "identities.noLogin":1,
+
           "expires":1,
 
           "services.google.id":1,
@@ -38,8 +44,6 @@ if (Meteor.isServer) {
           "services.github.id":1,
           "services.github.email":1,
           "services.github.username":1,
-
-          "services.emailToken.email":1
         }})
     ];
   });
@@ -132,31 +136,32 @@ SandstormDb.getVerifiedEmails = function (user) {
 }
 
 function fillInDefaults(identity, user) {
-  if (identity.service === "github") {
-    identity.name = identity.name || user.services.github.username || "Name Unknown";
-    identity.handle = identity.handle || filterHandle(user.services.github.username) ||
-        filterHandle(identity.name) || "unknown";
-  } else if (identity.service === "google") {
-    identity.name = identity.name || user.services.google.name || "Name Unknown";
-    identity.handle = identity.handle || emailToHandle(user.services.google.email) ||
-        filterHandle(identity.name) || "unknown";
-    identity.pronoun = identity.pronoun || GENDERS[user.services.google.gender] || "neutral";
-  } else if (identity.service === "emailToken") {
-    identity.name = identity.name || user.services.emailToken.email.split("@")[0] || "Name Unknown";
-    identity.handle = identity.handle || emailToHandle(user.services.emailToken.email) ||
-        filterHandle(identity.name) || "unknown";
-  } else if (identity.service === "dev") {
-    var lowerCaseName = user.devName.split(" ")[0].toLowerCase();
-    identity.name = identity.name || user.devName;
-    identity.handle = identity.handle || filterHandle(lowerCaseName);
-    identity.pronoun = identity.pronoun ||
+  if (identity.service.github) {
+    identity.profile.name = identity.profile.name || user.services.github.username || "Name Unknown";
+    identity.profile.handle = identity.profile.handle ||
+        filterHandle(user.services.github.username) ||
+        filterHandle(identity.profile.name) || "unknown";
+  } else if (identity.service.google) {
+    identity.profile.name = identity.profile.name || user.services.google.name || "Name Unknown";
+    identity.profile.handle = identity.profile.handle || emailToHandle(user.services.google.email) ||
+        filterHandle(identity.profile.name) || "unknown";
+    identity.profile.pronoun = identity.profile.pronoun || GENDERS[user.services.google.gender] ||
+        "neutral";
+  } else if (identity.service.emailToken) {
+    identity.profile.name = identity.profile.name || identity.verifiedEmail.split("@")[0];
+    identity.profile.handle = identity.profile.handle || emailToHandle(identity.verifiedEmail);
+  } else if (identity.service.dev) {
+    var lowerCaseName = identity.service.dev.name.split(" ")[0].toLowerCase();
+    identity.profile.name = identity.profile.name || identity.service.dev.name;
+    identity.profile.handle = identity.profile.handle || filterHandle(lowerCaseName);
+    identity.profile.pronoun = identity.profile.pronoun ||
         (_.contains(["alice", "carol", "eve"], lowerCaseName) ? "female" :
          _.contains(["bob", "dave"], lowerCaseName) ? "male" : "neutral");
-  } else if (identity.service === "demo") {
-    identity.name = identity.name || "Demo User";
-    identity.handle = identity.handle || "demo";
+  } else if (identity.service.demo) {
+    identity.profile.name = identity.profile.name || "Demo User";
+    identity.profile.handle = identity.profile.handle || "demo";
   } else {
-    throw new Error("unrecognized identity service: " + identity.service);
+    throw new Error("unrecognized identity service: ", identity.service);
   }
 
   identity.pronoun = identity.pronoun || "netural";
@@ -166,11 +171,12 @@ SandstormDb.getUserIdentities = function (user) {
   // Given a user object, return all of the user's identities.
   //
   // On the client, must be subscribed "accountIdentities" for the user.
-  if (!user) return [];
+  if (!user || !user.identities) return [];
 
   var staticHost = httpProtocol + "//" + makeWildcardHost("static");
   return user.identities.map(function(identity) {
-    identity.pictureUrl = staticAssetUrl(identity.picture, staticHost) || makeIdenticon(identity.id);
+    identity.profile.pictureUrl = staticAssetUrl(identity.profile.picture, staticHost) ||
+        makeIdenticon(identity.id);
     fillInDefaults(identity, user);
     return identity;
   });

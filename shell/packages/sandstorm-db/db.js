@@ -40,22 +40,23 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   createdAt: Date when this entry was added to the collection.
 //   lastActive: Date of the user's most recent interaction with this Sandstorm server.
 //   profile: Obsolete now that we allow more than one identity per account.
-//   identities: Array of identity profile objects, each of which may include the following fields.
-//               Note that if any field is missing, the first fallback
-//               is to check `services` for details provided by the identity provider (the details
-//               of which differ per-provider). Only if that is also missing do we fall back to
-//               defaults.
+//   identities: Array of identity objects, each of which may include the following fields.
 //       id: The globally-stable SHA-256 ID of this identity. This field must be present.
-//       service: String identifying the authentication scheme used by this identity, e.g. "github"
-//                or "google".
-//       name: String containing the display name of the user. Default: first part of email.
-//       handle: String containing the user's preferred handle. Default: first part of email.
-//       picture: _id into the StaticAssets table for the user's picture. Default: identicon.
-//       pronoun: One of "male", "female", "neutral", or "robot". Default: neutral.
+//       service: Object specifying how to authenticate as this identity. The object contains a
+//                single key, representing the name of the service, corresponding to the `type`
+//                field in `Accounts.validateLoginAttempt()`. The value associated with the key
+//                is an object containing provider-specific data, e.g. for the `emailToken`
+//                service it contains the active tokens.
 //       unverifiedEmail: Email address specified by the user.
 //       verifiedEmail: Only provided by some services. Cannot be directly edited by the user.
 //       main: True if this is the user's main identity.
 //       noLogin: True if the user does not trust this identity for account authentication.
+//       profile: Object containing the data that will be shared with users grains that come into
+//                contact with this identity. May include the following fields.
+//           name: String containing the display name of the identity. Default: first part of email.
+//           handle: String containing the identity's preferred handle. Default: first part of email.
+//           picture: _id into the StaticAssets table for the identity's picture. Default: identicon.
+//           pronoun: One of "male", "female", "neutral", or "robot". Default: neutral.
 //   services: Object containing login and identity data used by Meteor authentication services.
 //   mergedUsers: Array of User _id strings, representing the accounts that have been merged into this
 //                one. Those accounts remain in the Users collection, stripped of their `identities`
@@ -93,23 +94,25 @@ Packages = new Mongo.Collection("packages");
 //   url:  When status is "download", the URL from which the SPK can be obtained, if provided.
 //   isAutoUpdated: This package was downloaded as part of an auto-update. We shouldn't clean it up
 //     even if it has no users.
+//   authorPgpKeyFingerprint: Verified PGP key fingerprint (SHA-1, hex, all-caps) of the app
+//     packager.
 
-DevApps = new Mongo.Collection("devapps");
-// List of applications currently made available via the dev tools running on the local machine.
+DevPackages = new Mongo.Collection("devpackages");
+// List of packages currently made available via the dev tools running on the local machine.
 // This is normally empty; the only time it is non-empty is when a developer is using the spk tool
 // on the local machine to publish an under-development app to this server. That should only ever
 // happen on developers' desktop machines.
 //
-// While a dev app is published, it automatically appears as installed by every user of the server,
-// and it overrides all packages with the same application ID. If any instances of those packages
-// are currently open, they are killed and reset on publish.
+// While a dev package is published, it automatically appears as installed by every user of the
+// server, and it overrides all packages with the same application ID. If any instances of those
+// packages are currently open, they are killed and reset on publish.
 //
-// When the dev tool disconnects, the app is automatically unpublished, and any open instances
+// When the dev tool disconnects, the package is automatically unpublished, and any open instances
 // are again killed and refreshed.
 //
 // Each contains:
-//   _id:  The application ID string (as with Packages.appId).
-//   packageId:  The directory name where the dev package is mounted.
+//   _id:  The package ID string (as with Packages._id).
+//   appId: The app ID this package is intended to override (as with Packages.appId).
 //   timestamp:  Time when the package was last updated. If this changes while the package is
 //     published, all running instances are reset. This is used e.g. to reset the app each time
 //     changes are made to the source code.
@@ -467,6 +470,26 @@ AppIndex = new Mongo.Collection("appIndex");
 //   _id: the appId of the app
 //  The rest of the fields are defined in src/sandstorm/app-index/app-index.capnp:AppIndexForMarket
 
+KeybaseProfiles = new Mongo.Collection("keybaseProfiles");
+// Cache of Keybase profile information. The profile for a user is re-fetched every time a package
+// by that user is installed, as well as if the keybase profile is requested and not already
+// present for some reason.
+//
+// Each contains:
+//   _id: PGP key fingerprint (SHA-1, hex, all-caps)
+//   displayName: Display name from Keybase. (NOT VERIFIED AT ALL.)
+//   handle: Keybase handle.
+//   proofs: The "proofs_summary.all" array from the Keybase lookup. See the non-existent Keybase
+//     docs for details. We also add a boolean "status" field to each proof indicating whether
+//     we have directly verified the proof ourselves. Its values may be "unverified" (Keybase
+//     returned this but we haven't checked it directly), "verified" (we verified the proof and it
+//     is valid), "invalid" (we checked the proof and it was definitely bogus), or "checking" (the
+//     server is currently actively checking this proof). Note that if a check fails due to network
+//     errors, the status goes back to "unverified".
+//
+//     WARNING: Currently verification is NOT IMPLEMENTED, so all proofs will be "unverified"
+//       for now and we just trust Keybase.
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.
@@ -681,7 +704,7 @@ SandstormDb = function () {
     //   direct access to the collections.
 
     packages: Packages,
-    devApps: DevApps,
+    devPackages: DevPackages,
     userActions: UserActions,
     grains: Grains,
     contacts: Contacts,
@@ -736,20 +759,18 @@ _.extend(SandstormDb.prototype, {
 
   getIdentity: function getIdentity (identityId) {
     check(identityId, String);
-    var user = Meteor.users.findOne({"identities.id": identityId}, {fields: {"identities.$": 1}});
+    // This would be a prime place to use Mongo's $ operator. Unfortunately, $ is not available
+    // in Minimongo. Maybe this method should have separate server and client implementations?
+    var user = Meteor.users.findOne({"identities.id": identityId});
     if (user) {
-      return user.identities[0];
+      return _.findWhere(SandstormDb.getUserIdentities(user), {id: identityId});
     }
   },
 
-  getIdentityOfUser: function getIdentity (identityId, userId) {
-    check(identityId, String);
+  userHasIdentity: function (userId, identityId) {
     check(userId, String);
-    var user = Meteor.users.findOne({_id: userId, "identities.id": identityId},
-                                    {fields: {"identities.$": 1}});
-    if (user) {
-      return user.identities[0];
-    }
+    check(identityId, String);
+    return !!Meteor.users.findOne({_id: userId, "identities.id": identityId});
   },
 
   userGrains: function userGrains (user) {
@@ -782,6 +803,10 @@ _.extend(SandstormDb.prototype, {
 
   currentUserActions: function currentUserActions () {
     return this.userActions(Meteor.userId());
+  },
+
+  iconSrcForPackage: function iconSrcForPackage (pkg, usage) {
+    return Identicon.iconSrcForPackage(pkg, usage, this.makeWildcardHost("static"));
   },
 
   getPlan: function (id) {
@@ -882,6 +907,90 @@ _.extend(SandstormDb.prototype, {
       });
     });
   },
+
+  getKeybaseProfile: function (keyFingerprint) {
+    return KeybaseProfiles.findOne(keyFingerprint) || {};
+  },
+});
+
+var appNameFromPackage = function(packageObj) {
+  // This function takes a Package object from Mongo and returns an
+  // app title.
+  var manifest = packageObj.manifest;
+  if (!manifest) return packageObj.appId || packageObj._id || "unknown";
+  var action = manifest.actions[0];
+  appName = (manifest.appTitle && manifest.appTitle.defaultText) ||
+    appNameFromActionName(action.title.defaultText);
+  return appName;
+};
+
+var appNameFromActionName = function(name) {
+  // Hack: Historically we only had action titles, like "New Etherpad Document", not app
+  //   titles. But for this UI we want app titles. As a transitionary measure, try to
+  //   derive the app title from the action title.
+  // TODO(cleanup): Get rid of this once apps have real titles.
+  if (!name) {
+    return "(unnamed)";
+  }
+  if (name.lastIndexOf("New ", 0) === 0) {
+    name = name.slice(4);
+  }
+  if (name.lastIndexOf("Hacker CMS", 0) === 0) {
+    name = "Hacker CMS";
+  } else {
+    var space = name.indexOf(" ");
+    if (space > 0) {
+      name = name.slice(0, space);
+    }
+  }
+  return name;
+};
+
+var appShortDescriptionFromPackage = function (pkg) {
+  return pkg && pkg.manifest && pkg.manifest.metadata &&
+         pkg.manifest.metadata.shortDescription &&
+         pkg.manifest.metadata.shortDescription.defaultText;
+};
+
+var nounPhraseForActionAndAppTitle = function(action, appTitle) {
+  // A hack to deal with legacy apps not including fields in their manifests.
+  // I look forward to the day I can remove most of this code.
+  // Attempt to figure out the appropriate noun that this action will create.
+  // Use an explicit noun phrase is one is available.  Apps should add these in the future.
+  if (action.nounPhrase) return action.nounPhrase.defaultText;
+  // Otherwise, try to guess one from the structure of the action title field
+  if (action.title && action.title.defaultText) {
+    var text = action.title.defaultText;
+    // Strip a leading "New "
+    if (text.lastIndexOf("New ", 0) === 0) {
+      var candidate = text.slice(4);
+      // Strip a leading appname too, if provided
+      if (candidate.lastIndexOf(appTitle, 0) === 0) {
+        var newCandidate = candidate.slice(appTitle.length);
+        // Unless that leaves you with no noun, in which case, use "instance"
+        if (newCandidate.length > 0) {
+          return newCandidate.toLowerCase();
+        } else {
+          return "instance";
+        }
+      }
+      return candidate.toLowerCase();
+    }
+    // Some other verb phrase was given.  Just use it verbatim, and hope the app author updates
+    // the package soon.
+    return text;
+  } else {
+    return "instance";
+  }
+};
+
+// Static methods on SandstormDb that don't need an instance.
+// Largely things that deal with backwards-compatibility.
+_.extend(SandstormDb, {
+  appNameFromActionName: appNameFromActionName,
+  appNameFromPackage: appNameFromPackage,
+  appShortDescriptionFromPackage: appShortDescriptionFromPackage,
+  nounPhraseForActionAndAppTitle: nounPhraseForActionAndAppTitle,
 });
 
 if (Meteor.isServer) {
@@ -1172,4 +1281,84 @@ if (Meteor.isServer) {
       }
     }
   };
+
+  var ValidKeyFingerprint = Match.Where(function (keyFingerprint) {
+    check(keyFingerprint, String);
+    return !!keyFingerprint.match(/^[0-9A-F]{40}$/);
+  });
+
+  SandstormDb.prototype.updateKeybaseProfileAsync = function (keyFingerprint) {
+    // Asynchronously fetch the given Keybase profile and populate the KeybaseProfiles collection.
+
+    check(keyFingerprint, ValidKeyFingerprint);
+
+    console.log("fetching keybase", keyFingerprint);
+
+    HTTP.get(
+        "https://keybase.io/_/api/1.0/user/lookup.json?key_fingerprint=" + keyFingerprint +
+        "&fields=basics,profile,proofs_summary", {
+      timeout: 5000
+    }, function (err, keybaseResponse) {
+      if (err) {
+        console.log("keybase lookup error:", err.stack);
+        return;
+      }
+
+      if (!keybaseResponse.data) {
+        console.log("keybase didn't return JSON? Headers:", keybaseResponse.headers);
+        return;
+      }
+
+      var profile = (keybaseResponse.data.them || [])[0];
+
+      if (profile) {
+        var record = {
+          displayName: (profile.profile || {}).full_name,
+          handle: (profile.basics || {}).username,
+          proofs: (profile.proofs_summary || {}).all || []
+        };
+
+        record.proofs.forEach(function (proof) {
+          // Remove potentially Mongo-incompatible stuff. (Currently Keybase returns nothing that
+          // this would filter.)
+          for (var field in proof) {
+            // Don't allow field names containing '.' or '$'. Also don't allow sub-objects mainly
+            // because I'm too lazy to check the field names recursively (and Keybase doesn't
+            // return any objects anyway).
+            if (field.match(/[.$]/) || typeof(proof[field]) === "object") {
+              delete proof[field];
+            }
+          }
+
+          // Indicate not verified.
+          // TODO(security): Asynchronously verify proofs. Presumably we can borrow code from the
+          //   Keybase node-based CLI.
+          proof.status = "unverified";
+        });
+
+        KeybaseProfiles.update(keyFingerprint, {$set: record}, {upsert: true});
+      } else {
+        // Keybase reports no match, so remove what we know of this user. We don't want to remove
+        // the item entirely from the cache as this will cause us to repeatedly re-fetch the data
+        // from Keybase.
+        //
+        // TODO(someday): We could perhaps keep the proofs if we can still verify them directly,
+        //   but at present we don't have the ability to verify proofs.
+        KeybaseProfiles.update(keyFingerprint,
+            {$unset: {displayName: "", handle: "", proofs: ""}}, {upsert: true});
+      }
+    });
+  };
+
+  Meteor.publish("keybaseProfile", function (keyFingerprint) {
+    check(keyFingerprint, ValidKeyFingerprint);
+
+    var cursor = KeybaseProfiles.find(keyFingerprint);
+    if (cursor.count() === 0) {
+      // Fire off async update.
+      this.connection.sandstormDb.updateKeybaseProfileAsync(keyFingerprint);
+    }
+
+    return cursor;
+  });
 }

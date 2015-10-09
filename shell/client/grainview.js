@@ -25,15 +25,18 @@ GrainView = function GrainView(grainId, path, token, parentElement) {
   this._status = "closed";
   this._dep = new Tracker.Dependency();
 
-  this._userIdentity = new ReactiveVar(undefined);
+  this._userIdentityId = new ReactiveVar(undefined);
   // `false` means incognito; `undefined` means we still need to decide whether to reveal
   // an identity.
 
   if (token) {
     if (!Meteor.userId()) {
       this.doNotRevealIdentity();
-    } else if (this._isIdentityAlreadyRevealedToOwner()) {
-      this.revealIdentity();
+    } else {
+      var revealedIdentityId = this._identityAlreadyRevealedToOwner();
+      if (revealedIdentityId) {
+        this._userIdentityId.set(revealedIdentityId);
+      }
     }
   } else {
     this.revealIdentity();
@@ -216,8 +219,8 @@ GrainView.prototype.sessionId = function () {
 
 GrainView.prototype.setTitle = function (newTitle) {
   this._title = newTitle;
-  if (this._userIdentity.get()) {
-    Meteor.call("updateGrainTitle", this._grainId, newTitle, this._userIdentity.get().id);
+  if (this._userIdentityId.get()) {
+    Meteor.call("updateGrainTitle", this._grainId, newTitle, this._userIdentityId.get());
   }
   this._dep.changed();
 }
@@ -251,41 +254,54 @@ GrainView.prototype.revealIdentity = function () {
       identity = _.findWhere(identities, {id: token.owner.user.identityId});
     }
   }
-  this._userIdentity.set(identity);
+  this._userIdentityId.set(identity.id);
   this._dep.changed();
 }
 
 GrainView.prototype.doNotRevealIdentity = function () {
-  this._userIdentity.set(false);
+  this._userIdentityId.set(false);
   this._dep.changed();
 }
 
 GrainView.prototype.shouldRevealIdentity = function () {
   this._dep.depend();
-  return !!this._userIdentity.get();
+  return !!this._userIdentityId.get();
 }
 
 GrainView.prototype.identityId = function () {
   this._dep.depend();
-  var identity = this._userIdentity.get();
-  if (identity) {
-    return identity.id;
+  var identityId = this._userIdentityId.get();
+  if (identityId) {
+    return identityId;
   } else {
     return null;
   }
 }
 
-GrainView.prototype._isIdentityAlreadyRevealedToOwner = function () {
-  // If we own the grain, we have revealed our identity to ourself
-  if (Grains.findOne({_id: this._grainId, userId: Meteor.userId()})) {
-    return true;
+GrainView.prototype._identityAlreadyRevealedToOwner = function () {
+  // Returns the ID of an identity that the current user has already revealed to the owner of
+  // this._token, if such an identity exists. Returns `false` otherwise.
+
+  var grain = Grains.findOne({_id: this._grainId, userId: Meteor.userId()});
+  if (grain) {
+    // If we own the grain, we have revealed our identity to ourself
+    return grain.identityId;
   }
   // If we own a sturdyref from the grain owner, we have revealed our identity to that grain owner
   // TODO(soon): Base this decision on the contents of the Contacts collection.
   var tokenInfo = TokenInfo.findOne({_id: this._token});
-  if (tokenInfo && tokenInfo.apiToken &&
-     ApiTokens.findOne({userId: tokenInfo.apiToken.userId, "owner.user.userId": Meteor.userId()})) {
-    return true;
+  if (tokenInfo && tokenInfo.apiToken) {
+    var identities = SandstormDb.getUserIdentities(Meteor.user());
+    var identityIds = identities.map(function(x) { return x.id; });
+    if (identityIds.indexOf(tokenInfo.apiToken.identityId) != -1) {
+      // A self-share.
+      return tokenInfo.apiToken.identityId;
+    }
+    var otherToken = ApiTokens.findOne({identityId: tokenInfo.apiToken.identityId,
+                                        "owner.user.identityId": {$in: identityIds}});
+    if (otherToken) {
+      return otherToken.owner.user.identityId;
+    }
   }
   return false;
 }
@@ -298,8 +314,8 @@ GrainView.prototype.shouldShowInterstitial = function () {
     return false;
   }
 
-  // If we have explictly set _userIdentity, we don't need to show the interstitial.
-  if (this._userIdentity.get() !== undefined) {
+  // If we have explictly set _userIdentityId, we don't need to show the interstitial.
+  if (this._userIdentityId.get() !== undefined) {
     return false;
   }
   // If we are not logged in, we don't need to show the interstitial - we'll go incognito by default.
@@ -308,7 +324,7 @@ GrainView.prototype.shouldShowInterstitial = function () {
   }
   // If we have already revealed our identity to the grain's owner, we don't need to show the
   // interstitial, we can ask to reveal our identity without consequence.
-  if (this._isIdentityAlreadyRevealedToOwner()) {
+  if (this._identityAlreadyRevealedToOwner()) {
     return false;
   }
 
@@ -387,7 +403,7 @@ function onceConditionIsTrue(condition, continuation) {
 
 GrainView.prototype._openApiTokenSession = function () {
   var self = this;
-  function condition() { return self._userIdentity.get() !== undefined; }
+  function condition() { return self._userIdentityId.get() !== undefined; }
   onceConditionIsTrue(condition, function () {
     var identityId = self.identityId();
     var openSessionArg = {

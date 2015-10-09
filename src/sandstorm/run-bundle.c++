@@ -1674,6 +1674,13 @@ private:
         // Make socket available to server user.
         KJ_SYSCALL(chmod(socketPath.cStr(), 0770));
         KJ_SYSCALL(chown(socketPath.cStr(), 0, config.uids.gid));
+
+        // Also make the socket parent directory available to user.
+        KJ_IF_MAYBE(pos, socketPath.findLast('/')) {
+          kj::String parent = kj::heapString(socketPath.slice(0, *pos));
+          KJ_SYSCALL(chmod(parent.cStr(), 0770));
+          KJ_SYSCALL(chown(parent.cStr(), 0, config.uids.gid));
+        }
       }
 
       dropPrivs(config.uids);
@@ -2171,7 +2178,7 @@ private:
   }
 
   [[noreturn]] void runDevDaemon(const Config& config) {
-    clearDevApps(config);
+    clearDevPackages(config);
 
     // Make sure socket directory exists (since the installer doesn't create it).
     if (mkdir("/var/sandstorm/socket", 0770) == 0) {
@@ -2295,11 +2302,11 @@ private:
             raiiOpen(kj::str(dir, "/sandstorm-manifest"), O_RDONLY), manifestLimits);
 
         // Notify the front-end that the app exists.
-        insertDevApp(config, appId, pkgId, reader.getRoot<spk::Manifest>());
+        insertDevPackage(config, appId, pkgId, reader.getRoot<spk::Manifest>());
       }
 
       {
-        KJ_DEFER(removeDevApp(config, appId));
+        KJ_DEFER(removeDevPackage(config, pkgId));
 
         for (;;) {
           KJ_IF_MAYBE(line, readLine(input)) {
@@ -2309,7 +2316,7 @@ private:
                   raiiOpen(kj::str(dir, "/sandstorm-manifest"), O_RDONLY), manifestLimits);
 
               // Notify front-end that the app changed.
-              updateDevApp(config, appId, reader.getRoot<spk::Manifest>());
+              updateDevPackage(config, pkgId, reader.getRoot<spk::Manifest>());
             }
           } else {
             break;
@@ -2351,32 +2358,32 @@ private:
     return json.encode(kj::fwd<T>(value));
   }
 
-  void insertDevApp(const Config& config, kj::StringPtr appId, kj::StringPtr pkgId,
-                    spk::Manifest::Reader manifest) {
+  void insertDevPackage(const Config& config, kj::StringPtr appId, kj::StringPtr pkgId,
+                        spk::Manifest::Reader manifest) {
     mongoCommand(config, kj::str(
-        "db.devapps.insert({"
-          "_id:\"", appId, "\","
-          "packageId:\"", pkgId, "\","
+        "db.devpackages.insert({"
+          "_id:\"", pkgId, "\","
+          "appId:\"", appId, "\","
           "timestamp:", time(nullptr), ","
           "manifest:", toMongoJson(manifest),
         "})"));
   }
 
-  void updateDevApp(const Config& config, kj::StringPtr appId, spk::Manifest::Reader manifest) {
+  void updateDevPackage(const Config& config, kj::StringPtr pkgId, spk::Manifest::Reader manifest) {
     mongoCommand(config, kj::str(
-        "db.devapps.update({_id:\"", appId, "\"}, {$set: {"
+        "db.devpackages.update({_id:\"", pkgId, "\"}, {$set: {"
           "timestamp:", time(nullptr), ","
           "manifest:", toMongoJson(manifest),
         "}})"));
   }
 
-  void removeDevApp(const Config& config, kj::StringPtr appId) {
+  void removeDevPackage(const Config& config, kj::StringPtr pkgId) {
     mongoCommand(config, kj::str(
-        "db.devapps.remove({_id:\"", appId, "\"})"));
+        "db.devpackages.remove({_id:\"", pkgId, "\"})"));
   }
 
-  void clearDevApps(const Config& config) {
-    mongoCommand(config, kj::str("db.devapps.remove({})"));
+  void clearDevPackages(const Config& config) {
+    mongoCommand(config, kj::str("db.devpackages.remove({})"));
   }
 
   void mongoCommand(const Config& config, kj::StringPtr command, kj::StringPtr db = "meteor") {

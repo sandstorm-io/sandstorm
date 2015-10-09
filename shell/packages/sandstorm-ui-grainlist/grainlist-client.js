@@ -27,9 +27,8 @@ var mapGrainsToTemplateObject = function (grains) {
   var packagesById = _.indexBy(packages, '_id');
   return grains.map(function(grain) {
     var pkg = packagesById[grain.packageId];
-    var iconSrc = pkg ? Identicon.iconSrcForPackage(pkg, 'grain', Template.instance().data._staticHost) : "";
-    var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle &&
-                    pkg.manifest.appTitle.defaultText) || "";
+    var iconSrc = pkg ? db.iconSrcForPackage(pkg, 'grain') : "";
+    var appTitle = pkg ? SandstormDb.appNameFromPackage(pkg) : "";
     return {
       _id: grain._id,
       title: grain.title,
@@ -68,7 +67,7 @@ var mapApiTokensToTemplateObject = function (apiTokens) {
 };
 var filteredSortedGrains = function() {
   var db = Template.instance().data._db;
-  var grains = db.currentUserGrains({}, {}).fetch();
+  var grains = db.currentUserGrains().fetch();
   var itemsFromGrains = mapGrainsToTemplateObject(grains);
   var apiTokens = db.currentUserApiTokens().fetch();
   var itemsFromSharedGrains = mapApiTokensToTemplateObject(apiTokens);
@@ -81,16 +80,19 @@ var filteredSortedGrains = function() {
       .value();
 };
 Template.sandstormGrainList.helpers({
+  setDocumentTitle: function() {
+    document.title = "Grains · Sandstorm";
+  },
   filteredSortedGrains: filteredSortedGrains,
   searchText: function() {
     return Template.instance().data._filter.get();
   },
   myGrainsCount: function () {
-    return Template.instance().data._db.currentUserGrains({}, {}).count();
+    return Template.instance().data._db.currentUserGrains().count();
   },
   hasAnyGrainsCreatedOrSharedWithMe: function() {
     var _db = Template.instance().data._db;
-    return !! (_db.currentUserGrains({}, {}).count() ||
+    return !! (_db.currentUserGrains().count() ||
                _db.currentUserApiTokens().count());
   },
   myGrainsSize: function () {

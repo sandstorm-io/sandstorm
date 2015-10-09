@@ -139,7 +139,7 @@ Meteor.methods({
     if (!this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "Must be logged in to create grains.");
     }
-    if (!globalDb.getIdentityOfUser(identityId, this.userId)) {
+    if (!globalDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
@@ -154,23 +154,17 @@ Meteor.methods({
     }
 
     var pkg = Packages.findOne(packageId);
-    var appId;
-    var manifest;
     var isDev = false;
-    if (pkg) {
-      appId = pkg.appId;
-      manifest = pkg.manifest;
-    } else {
-      var devApp = DevApps.findOne({packageId: packageId});
-      if (devApp) {
-        appId = devApp._id;
-        manifest = devApp.manifest;
-        isDev = true;
-      } else {
-        throw new Meteor.Error(404, "Not Found", "No such package is installed.");
-      }
+    if (!pkg) {
+      // Maybe they wanted a dev package.  Check there too.
+      pkg = DevPackages.findOne(packageId);
+      isDev = true;
     }
-
+    if (!pkg) {
+      throw new Meteor.Error(404, "Not Found", "No such package is installed.");
+    }
+    var appId = pkg.appId
+    var manifest = pkg.manifest;
     var grainId = Random.id(22);  // 128 bits of entropy
     Grains.insert({
       _id: grainId,
@@ -195,7 +189,7 @@ Meteor.methods({
     check(identityId, Match.OneOf(undefined, null, String));
     check(cachedSalt, Match.OneOf(undefined, null, String));
 
-    if (this.userId && identityId && !globalDb.getIdentityOfUser(identityId, this.userId)) {
+    if (this.userId && identityId && !globalDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
@@ -220,7 +214,7 @@ Meteor.methods({
     check(identityId, Match.OneOf(undefined, null, String));
     check(cachedSalt, Match.OneOf(undefined, null, String));
 
-    if (this.userId && identityId && !globalDb.getIdentityOfUser(identityId, this.userId)) {
+    if (this.userId && identityId && !globalDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
@@ -378,10 +372,15 @@ Meteor.startup(function () {
     });
   }
 
-  DevApps.find().observeChanges({
-    removed: shutdownApp,
-    updated: shutdownApp,
-    added:   shutdownApp,
+  DevPackages.find().observe({
+    removed: function(devPackage) { shutdownApp(devPackage.appId); },
+    changed: function(oldDevPackage, newDevPackage) {
+      shutdownApp(oldDevPackage.appId);
+      if (oldDevPackage.appId !== newDevPackage.appId) {
+        shutdownApp(newDevPackage.appId);
+      }
+    },
+    added:   function(devPackage) { shutdownApp(devPackage.appId); },
   });
 
   Sessions.find().observe({
@@ -796,12 +795,12 @@ function Proxy(grainId, ownerId, sessionId, hostId, identityId, isApi, superviso
       throw new Error("identity not found: " + this.identityId);
     }
     this.userInfo = {
-      displayName: {defaultText: identity.name},
-      preferredHandle: identity.handle,
+      displayName: {defaultText: identity.profile.name},
+      preferredHandle: identity.profile.handle,
       identityId: new Buffer(identity.id, "hex")
     };
-    if (identity.pictureUrl) this.userInfo.pictureUrl = identity.pictureUrl;
-    if (identity.pronoun) this.userInfo.pronouns = identity.pronoun;
+    if (identity.profile.pictureUrl) this.userInfo.pictureUrl = identity.profile.pictureUrl;
+    if (identity.profile.pronoun) this.userInfo.pronouns = identity.profile.pronoun;
   } else {
     this.userInfo = {
       displayName: {defaultText: "Anonymous User"},

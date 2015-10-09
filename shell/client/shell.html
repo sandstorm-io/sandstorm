@@ -686,6 +686,7 @@ limitations under the License.
 </template>
 
 <template name="adminInvites">
+  {{setDocumentTitle}}
   <div id="invite">
     {{#if error}}
       <p>{{error}}</p>
@@ -745,30 +746,9 @@ limitations under the License.
 </template>
 
 <template name="adminLog">
+  {{setDocumentTitle}}
   <div id="adminLog">
     <pre>...{{{html}}}</pre>
-  </div>
-</template>
-
-<template name="uploadForm">
-  {{>title "Upload App"}}
-
-  <div id="upload" class="centered-box">
-  {{#if isSignedUp}}
-    {{#if progress}}
-      <p>Uploading... {{progress}}%</p>
-    {{else}}
-      {{#if error}}
-        <p>Upload failed: {{error.status}} {{error.statusText}}</p>
-      {{else}}
-        <p>Please choose an <code>spk</code> file to install.</p>
-      {{/if}}
-      <p><input type="file" id="uploadFile">
-         <button id="uploadButton">Upload</button></p>
-    {{/if}}
-  {{else}}
-    <p>Sorry, this server requires an invite before you can install apps.</p>
-  {{/if}}
   </div>
 </template>
 
@@ -884,6 +864,7 @@ limitations under the License.
 </template>
 
 <template name="adminSettings">
+  {{setDocumentTitle}}
   <form id="admin-settings-form">
     <p>
       <label><input type="checkbox" class="oauth-checkbox" name="googleLogin"
@@ -910,6 +891,7 @@ limitations under the License.
 </template>
 
 <template name="adminUsers">
+  {{setDocumentTitle}}
   <table class="admin-table">
     <thead>
       <tr>
@@ -930,9 +912,9 @@ limitations under the License.
       {{#each users}}
         <tr>
           {{#with userIdentity}}
-            <td>{{service}}</td>
-            <td>{{handle}}</td>
-            <td>{{name}}</td>
+            <td>{{serviceName}}</td>
+            <td>{{profile.handle}}</td>
+            <td>{{profile.name}}</td>
           {{/with}}
           <td>
             <select class="user-class" name="select">
@@ -955,6 +937,7 @@ limitations under the License.
 </template>
 
 <template name="adminStats">
+  {{setDocumentTitle}}
   <div id="stats">
     <label class="report-stats">
       {{#unless reportStatsFirstVisit}}
@@ -1077,6 +1060,7 @@ limitations under the License.
 </template>
 
 <template name="adminCaps">
+  {{setDocumentTitle}}
   {{#if powerboxOfferUrl}}
     {{#with powerboxOfferUrl=powerboxOfferUrl}}
       {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"
@@ -1109,6 +1093,7 @@ limitations under the License.
 </template>
 
 <template name="adminAdvanced">
+  {{setDocumentTitle}}
   <form id="admin-settings-form">
     <p>Splash Dialog: <input type="text" name="splashDialog" value="{{splashDialog}}"><br>
        Signup Dialog: <input type="text" name="signupDialog" value="{{signupDialog}}"><br>
@@ -1203,6 +1188,7 @@ limitations under the License.
 </template>
 
 <template name="about">
+  {{setDocumentTitle}}
   {{>title "About Sandstorm"}}
 
   <div class="about">

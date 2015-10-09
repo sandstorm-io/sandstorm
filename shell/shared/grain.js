@@ -31,7 +31,7 @@ if (Meteor.isServer) {
       var myIdentities = SandstormDb.getUserIdentities(globalDb.getUser(this.userId));
       var myIdentityIds = myIdentities.map(function (x) { return x.id; });
       myIdentities.forEach(function(identity) {
-        self.added("displayNames", identity.id, {displayName: identity.name});
+        self.added("displayNames", identity.id, {displayName: identity.profile.name});
       });
 
       // Alice is allowed to know Bob's display name if Bob has received a UiView from Alice
@@ -44,7 +44,7 @@ if (Meteor.isServer) {
             var identity = _.findWhere(SandstormDb.getUserIdentities(user),
                                        {id: token.owner.user.identityId});
             if (identity) {
-              self.added("displayNames", identity.id, {displayName: identity.name});
+              self.added("displayNames", identity.id, {displayName: identity.profile.name});
             }
 
           }
@@ -89,7 +89,7 @@ if (Meteor.isServer) {
     check(token, String);
 
     var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
-    var apiToken = ApiTokens.findOne({_id: hashedToken}, {fields: {grainId: 1, userId: 1}});
+    var apiToken = ApiTokens.findOne({_id: hashedToken}, {fields: {grainId: 1, identityId: 1}});
     if (!apiToken || (apiToken.owner && !("webkey" in apiToken.owner))) {
       this.added("tokenInfo", token, {invalidToken: true});
     } else {
@@ -240,10 +240,14 @@ Meteor.methods({
       check(roleAssignment, roleAssignmentPattern);
       check(emailAddresses, [String]);
       check(message, {text: String, html: String});
-      if (!this.userId || !globalDb.getIdentityOfUser(identityId, this.userId)) {
+      if (!this.userId) {
+        throw new Meteor.Error(403, "Must be logged in to share by email.");
+      }
+      if (!globalDb.userHasIdentity(this.userId, identityId)) {
         throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
       }
-      var sharerDisplayName = Meteor.user().profile.name;
+      var identity = globalDb.getIdentity(identityId);
+      var sharerDisplayName = identity.profile.name;
       var outerResult = {successes: [], failures: []};
       emailAddresses.forEach(function(emailAddress) {
         var result = SandstormPermissions.createNewApiToken(
@@ -1404,7 +1408,7 @@ Router.map(function () {
 
     waitOn: function () {
       return [
-        Meteor.subscribe("devApps"),
+        Meteor.subscribe("devPackages"),
         Meteor.subscribe("tokenInfo", this.params.token),
 
         Meteor.subscribe("grainsMenu")

@@ -1,6 +1,5 @@
 var iconForAction = function (action) {
   var ref = Template.instance().data;
-  var appId = action.appId;
   var pkg = ref._db.collections.packages.findOne({_id: action.packageId});
   if (!pkg) {
     // Sometimes pkg may not have synced to minimongo yet on pageload.
@@ -8,20 +7,23 @@ var iconForAction = function (action) {
     // avoid causing noisy backtraces in the console.
     return "";
   }
-  return Identicon.iconSrcForPackage(pkg, 'appGrid', ref._staticHost);
+  return ref._db.iconSrcForPackage(pkg, 'appGrid');
 };
+
 var appTitleForAction = function (action) {
   if (action.appTitle) return action.appTitle.defaultText;
   // Legacy cruft: guess at the app title from the action text.
-  // N.B.: calls into shell.js.  TODO: refactor
-  return appNameFromActionName(action.title.defaultText);
+  return SandstormDb.appNameFromActionName(action.title.defaultText);
 };
+
 var matchesAppOrActionTitle = function (needle, action) {
   var appTitle = appTitleForAction(action);
-  if (nounFromAction(action, appTitle).toLowerCase().indexOf(needle) !== -1) return true;
+  if (SandstormDb.nounPhraseForActionAndAppTitle(action, appTitle)
+                 .toLowerCase().indexOf(needle) !== -1) return true;
   if (appTitle.toLowerCase().indexOf(needle) !== -1) return true;
   return false;
-}
+};
+
 var compileMatchFilter = function(searchString) {
   var searchKeys = searchString.toLowerCase()
       .split(" ")
@@ -33,7 +35,7 @@ var compileMatchFilter = function(searchString) {
         .reduce(function (a, b) {return a && b; })
         .value();
   };
-}
+};
 
 var actionToTemplateObject = function(action) {
   var title = appTitleForAction(action);
@@ -41,7 +43,7 @@ var actionToTemplateObject = function(action) {
     _id: action._id,
     iconSrc: iconForAction(action),
     appTitle: title,
-    noun: nounFromAction(action, title),
+    noun: SandstormDb.nounPhraseForActionAndAppTitle(action, title),
     appId: action.appId
   };
 };
@@ -54,40 +56,12 @@ var matchActions = function (searchString) {
                  .value()
   return actions;
 };
-var nounFromAction = function (action, appTitle) {
-  // A hack to deal with legacy apps not including fields in their manifests.
-  // I look forward to the day I can remove most of this code.
-  // Attempt to figure out the appropriate noun that this action will create.
-  // Use an explicit noun phrase is one is available.  Apps should add these in the future.
-  if (action.nounPhrase) return action.nounPhrase.defaultText;
-  // Otherwise, try to guess one from the structure of the action title field
-  if (action.title) {
-    var text = action.title.defaultText;
-    // Strip a leading "New "
-    if (text.lastIndexOf("New ", 0) === 0) {
-      var candidate = text.slice(4);
-      // Strip a leading appname too, if provided
-      if (candidate.lastIndexOf(appTitle, 0) === 0) {
-        var newCandidate = candidate.slice(appTitle.length);
-        // Unless that leaves you with no noun, in which case, use "instance"
-        if (newCandidate.length > 0) {
-          return newCandidate.toLowerCase();
-        } else {
-          return "instance";
-        }
-      }
-      return candidate.toLowerCase();
-    }
-    // Some other verb phrase was given.  Just use it verbatim, and hope the app author updates
-    // the package soon.
-    return text;
-  } else {
-    return "instance";
-  }
-};
 
 // Client-only stuff...
 Template.sandstormAppList.helpers({
+  setDocumentTitle: function() {
+    document.title = "Apps · Sandstorm";
+  },
   searching: function() {
     var ref = Template.instance().data;
     return ref._filter.get().length > 0;
@@ -133,15 +107,16 @@ Template.sandstormAppList.helpers({
   },
   devActions: function () {
     var ref = Template.instance().data;
-    var result = ref._db.collections.devApps.find().fetch();
-    var actionList = result.map(function(devapp) {
+    var result = ref._db.collections.devPackages.find().fetch();
+    var actionList = result.map(function(devPackage) {
       var thisAppActions = [];
-      for (var i = 0 ; i < devapp.manifest.actions.length ; i++) {
+      for (var i = 0 ; i < devPackage.manifest.actions.length ; i++) {
         thisAppActions.push({
-          _id: devapp._id,
-          appTitle: devapp.manifest.appTitle.defaultText,
-          noun: nounFromAction(devapp.manifest.actions[i], devapp.manifest.appTitle.defaultText),
-          iconSrc: Identicon.iconSrcForDevPackage(devapp, 'appGrid', Template.instance().data._staticHost),
+          _id: devPackage._id,
+          appTitle: SandstormDb.appNameFromPackage(devPackage),
+          noun: SandstormDb.nounPhraseForActionAndAppTitle(devPackage.manifest.actions[i],
+                  devPackage.manifest.appTitle.defaultText),
+          iconSrc: ref._db.iconSrcForPackage(devPackage, 'appGrid'),
           actionIndex: i
         });
       }
@@ -183,18 +158,22 @@ Template.sandstormAppList.events({
           document.location.protocol + "//" + document.location.host, "_blank");
     });
   },
-  "click .upload-button": function (event) {
-    Template.instance().data._quotaEnforcer.ifPlanAllowsCustomApps(function () {
+  "click .upload-button": function (event, instance) {
+    var input = instance.find(instance.find(".upload-button input"));
+    if (input == event.target) { return; } // Click event generated by upload handler.
+    instance.data._quotaEnforcer.ifPlanAllowsCustomApps(function () {
       // N.B.: this calls into a global in shell.js.
       // TODO(cleanup): refactor into a safer dependency.
-      promptUploadApp();
+      promptUploadApp(input);
     });
   },
-  "click .restore-button": function (event) {
-    Template.instance().data._quotaEnforcer.ifQuotaAvailable(function () {
+  "click .restore-button": function (event, instance) {
+    var input = instance.find(".restore-button input");
+    if (input == event.target) { return; } // Click event generated by upload handler.
+    instance.data._quotaEnforcer.ifQuotaAvailable(function () {
       // N.B.: this calls into a global in shell.js.
       // TODO(cleanup): refactor into a safer dependency.
-      promptRestoreBackup();
+      promptRestoreBackup(input);
     });
   },
   "click .app-action": function(event, template) {
@@ -213,12 +192,12 @@ Template.sandstormAppList.events({
     Meteor.call("deleteUnusedPackages", appId);
   },
   "click .dev-action": function(event, template) {
-    var devId = this._id;
+    var devPackageId = this._id;
     var actionIndex = this.actionIndex;
     // N.B.: this calls into a global in shell.js.
     // TODO(cleanup): refactor into a safer dependency.
     template.appIsLoading.set(true);
-    launchAndEnterGrainByActionId("dev", this._id, this.actionIndex);
+    launchAndEnterGrainByActionId("dev", devPackageId, actionIndex);
   },
   "click button.toggle-uninstall": function(event) {
     var uninstallVar = Template.instance().data._uninstalling;

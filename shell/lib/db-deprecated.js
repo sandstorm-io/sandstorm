@@ -26,7 +26,7 @@
 globalDb = new SandstormDb();
 
 Packages = globalDb.collections.packages;
-DevApps = globalDb.collections.devApps;
+DevPackages = globalDb.collections.devPackages;
 UserActions = globalDb.collections.userActions;
 Grains = globalDb.collections.grains;
 Contacts = globalDb.collections.contacts;
@@ -67,6 +67,8 @@ if (Meteor.isServer) {
   SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, function () {
     SandstormAutoupdateApps.updateAppIndex(globalDb);
   });
+
+  Meteor.startup(function() { globalDb.migrateToLatest(); });
 }
 
 if (Meteor.isClient) {

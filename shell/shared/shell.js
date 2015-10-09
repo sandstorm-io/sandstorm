@@ -31,7 +31,7 @@ if (Meteor.isClient) {
   globalSubs = [
     Meteor.subscribe("grainsMenu"),
     Meteor.subscribe("userPackages"),
-    Meteor.subscribe("devApps"),
+    Meteor.subscribe("devPackages"),
     Meteor.subscribe("credentials"),
     Meteor.subscribe("accountIdentities")
   ];
@@ -107,8 +107,8 @@ if (Meteor.isServer) {
     return Sessions.find({_id: sessionId, $or: [{userId: this.userId}, {userId: null}]});
   });
 
-  Meteor.publish("devApps", function () {
-    return DevApps.find();
+  Meteor.publish("devPackages", function () {
+    return DevPackages.find();
   });
 
   Meteor.publish("notifications", function () {
@@ -202,6 +202,12 @@ if (Meteor.isClient) {
       if (!event.isDefaultPrevented()) {
         globalTopbar.reset();
       }
+    }
+  });
+
+  Template.about.helpers({
+    setDocumentTitle: function () {
+      document.title = "About · Sandstorm";
     }
   });
 
@@ -313,7 +319,7 @@ if (Meteor.isClient) {
       if (grain && grain.packageId) {
         var thisPackage = Packages.findOne({_id: grain.packageId});
         if (thisPackage) {
-          params = appNameFromPackage(thisPackage);
+          params = SandstormDb.appNameFromPackage(thisPackage);
         }
       }
     }
@@ -562,19 +568,24 @@ if (Meteor.isClient) {
     }
   };
 
-  launchAndEnterGrainByActionId = function(actionId, devId, devIndex) {
-    // Note that this takes a devId and a devIndex as well. If provided,
+  launchAndEnterGrainByActionId = function(actionId, devPackageId, devIndex) {
+    // Note that this takes a devPackageId and a devIndex as well. If provided,
     // they override the actionId.
-    if (devId) {
-      var devApp = DevApps.findOne(devId);
-      if (!devApp) {
-        console.error("no such dev app: ", devId);
+    var packageId;
+    var command;
+    var appTitle;
+    var nounPhrase;
+    if (devPackageId) {
+      var devPackage = DevPackages.findOne(devPackageId);
+      if (!devPackage) {
+        console.error("no such dev package: ", devPackageId);
         return;
       }
-      var devAction = devApp.manifest.actions[devIndex];
-      packageId = devApp.packageId;
+      var devAction = devPackage.manifest.actions[devIndex];
+      packageId = devPackageId
       command = devAction.command;
-      actionTitle = devAction.title.defaultText;
+      appTitle = SandstormDb.appNameFromPackage(devPackage);
+      nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(devAction, appTitle);
     } else {
       var action = UserActions.findOne(actionId);
       if (!action) {
@@ -583,15 +594,13 @@ if (Meteor.isClient) {
       }
 
       packageId = action.packageId;
+      var pkg = Packages.findOne(packageId);
       command = action.command;
-      actionTitle = action.title.defaultText;
+      appTitle = SandstormDb.appNameFromPackage(pkg);
+      nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(action, appTitle);
     }
 
-    var title = actionTitle;
-    if (title.lastIndexOf("New ", 0) === 0) {
-      title = actionTitle.slice(4);
-    }
-    title = "Untitled " + title;
+    var title = "Untitled " + appTitle + " " + nounPhrase;
 
     var identity = _.findWhere(SandstormDb.getUserIdentities(Meteor.user()), {main: true});
 
@@ -746,53 +755,14 @@ function getBuildInfo() {
   };
 }
 
-appNameFromPackage = function(packageObj) {
-  // This function takes a Package object from Mongo and returns an
-  // app title.
-  var manifest = packageObj.manifest;
-  if (!manifest) return packageObj.appId || packageObj._id || "unknown";
-  var action = manifest.actions[0];
-  appName = (manifest.appTitle && manifest.appTitle.defaultText) ||
-    appNameFromActionName(action.title.defaultText);
-  return appName;
-}
-
-appNameFromActionName = function(name) {
-  // Hack: Historically we only had action titles, like "New Etherpad Document", not app
-  //   titles. But for this UI we want app titles. As a transitionary measure, try to
-  //   derive the app title from the action title.
-  // TODO(cleanup): Get rid of this once apps have real titles.
-  if (!name) {
-    return "(unnamed)";
-  }
-  if (name.lastIndexOf("New ", 0) === 0) {
-    name = name.slice(4);
-  }
-  if (name.lastIndexOf("Hacker CMS", 0) === 0) {
-    name = "Hacker CMS";
-  } else {
-    var space = name.indexOf(" ");
-    if (space > 0) {
-      name = name.slice(0, space);
-    }
-  }
-  return name;
-}
-
-var promptForFile = function (callback) {
+var promptForFile = function (input, callback) {
   // TODO(cleanup): Share code with "upload picture" and other upload buttons.
-  var input = document.createElement("input");
-  input.type = "file";
-  input.style = "display: none";
-
-  input.addEventListener("change", function (e) {
+  function listener(e) {
+    input.removeEventListener("change", listener);
     callback(e.currentTarget.files[0]);
-  });
-
-  // IE wants the input element to be in the DOM, but only during the click() call.
-  document.body.appendChild(input);
+  }
+  input.addEventListener("change", listener);
   input.click();
-  document.body.removeChild(input);
 }
 
 var startUpload = function (file, endpoint, onComplete) {
@@ -832,8 +802,8 @@ var startUpload = function (file, endpoint, onComplete) {
   Router.go("uploadStatus");
 }
 
-promptRestoreBackup = function() {
-  promptForFile(function (file) {
+promptRestoreBackup = function(input) {
+  promptForFile(input, function (file) {
     startUpload(file, "/uploadBackup", function (response) {
       Session.set("uploadStatus", "Unpacking");
       Meteor.call("restoreGrain", response, function (err, grainId) {
@@ -852,8 +822,8 @@ promptRestoreBackup = function() {
   });
 }
 
-promptUploadApp = function () {
-  promptForFile(function (file) {
+promptUploadApp = function (input) {
+  promptForFile(input, function (file) {
     Meteor.call("newUploadToken", function (err, token) {
       if (err) {
         console.error(err);

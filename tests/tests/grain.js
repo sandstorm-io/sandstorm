@@ -23,6 +23,9 @@ var utils = require('../utils'),
     very_long_wait = utils.very_long_wait;
 var path = require('path');
 var assetsPath = path.resolve(__dirname, '../assets');
+var expectedHackerCMSButtonText = 'New Hacker CMS site';
+var expectedHackerCMSGrainTitle = 'Untitled Hacker CMS site';
+var expectedEtherpadGrainTitle = 'Untitled Etherpad document';
 
 module.exports = utils.testAllLogins({
   // TODO(soon): Uploading tests are broken. Waiting on refactor of upload input to fix.
@@ -51,7 +54,7 @@ module.exports = utils.testAllLogins({
   //         .waitForElementVisible('#step-confirm', long_wait)
   //         .click('#confirmInstall')
   //         .waitForElementVisible('.new-grain-button', short_wait)
-  //         .assert.containsText('.new-grain-button', 'New Hacker CMS Site');
+  //         .assert.containsText('.new-grain-button', expectedHackerCMSButtonText);
   //     });
   // },
 
@@ -78,7 +81,7 @@ module.exports = utils.testAllLogins({
   //         .assert.containsText('#confirmInstall', 'Upgrade')
   //         .click('#confirmInstall')
   //         .waitForElementVisible('.new-grain-button', short_wait)
-  //         .assert.containsText('.new-grain-button', 'New Hacker CMS Site');
+  //         .assert.containsText('.new-grain-button', expectedHackerCMSButtonText);
   //     });
   // },
 
@@ -105,7 +108,7 @@ module.exports = utils.testAllLogins({
   //         .assert.containsText('#confirmInstall', 'Downgrade')
   //         .click('#confirmInstall')
   //         .waitForElementVisible('.new-grain-button', short_wait)
-  //         .assert.containsText('.new-grain-button', 'New Hacker CMS Site');
+  //         .assert.containsText('.new-grain-button', expectedHackerCMSButtonText);
   //     });
   // },
 
@@ -122,7 +125,7 @@ module.exports = utils.testAllLogins({
     browser
       .click('.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]')
       .waitForElementVisible('#grainTitle', medium_wait)
-      .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site');
+      .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle);
   },
 
   "Test grain frame" : function (browser) {
@@ -159,7 +162,7 @@ module.exports = utils.testAllLogins({
         browser.switchWindow(windows.value[1]);
       })
       .pause(short_wait)
-      .assert.containsText('.grainlog-title', 'Debug log: Untitled Hacker CMS Site')
+      .assert.containsText('.grainlog-title', 'Debug log: ' + expectedHackerCMSGrainTitle)
       .closeWindow()
       .end();
   },
@@ -170,7 +173,7 @@ module.exports["Test grain anonymous user"] = function (browser) {
     // Upload app as normal user
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible('#grainTitle', medium_wait)
-    .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+    .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
     .click('.topbar .share > .show-popup')
     .waitForElementVisible('#shareable-link-tab-header', short_wait)
     .click('#shareable-link-tab-header')
@@ -184,7 +187,7 @@ module.exports["Test grain anonymous user"] = function (browser) {
         .pause(short_wait)
         .url(response.value)
         .waitForElementVisible('#grainTitle', medium_wait)
-        .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+        .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .frame('grain-frame')
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
@@ -199,7 +202,7 @@ module.exports["Test roleless sharing"] = function (browser) {
   browser
   // Upload app as 1st user
     .loginDevAccount()
-    .execute(function () { return Meteor.user().profile.name; }, [], function(result) {
+    .execute(function () { return Meteor.user().identities[0].service.dev.name; }, [], function(result) {
       firstUserName = result.value;
     })
     .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
@@ -215,7 +218,7 @@ module.exports["Test roleless sharing"] = function (browser) {
     .click(
       '.app-list>.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]')
     .waitForElementVisible('#grainTitle', medium_wait)
-    .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+    .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
     .click('.topbar .share > .show-popup')
     .waitForElementVisible("#shareable-link-tab-header", short_wait)
     .click("#shareable-link-tab-header")
@@ -226,14 +229,14 @@ module.exports["Test roleless sharing"] = function (browser) {
     .getText('#share-token-text', function(response) {
       browser
         .loginDevAccount()
-        .execute(function () { return Meteor.user().profile.name; }, [], function(result) {
+        .execute(function () { return Meteor.user().identities[0].service.dev.name; }, [], function(result) {
           secondUserName = result.value;
         })
         .url(response.value)
         .waitForElementVisible(".redeem-token-button", short_wait)
         .click(".redeem-token-button")
         .waitForElementVisible('#grainTitle', medium_wait)
-        .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+        .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .frame('grain-frame')
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
@@ -252,7 +255,7 @@ module.exports["Test roleless sharing"] = function (browser) {
             .waitForElementVisible(".redeem-token-button", short_wait)
             .click(".redeem-token-button")
             .waitForElementVisible('#grainTitle', medium_wait)
-            .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+            .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
             .frame('grain-frame')
             .waitForElementPresent('#publish', medium_wait)
             .assert.containsText('#publish', 'Publish')
@@ -267,7 +270,7 @@ module.exports["Test roleless sharing"] = function (browser) {
             .loginDevAccount(firstUserName)
             .url(response.value)
             .waitForElementVisible('#grainTitle', medium_wait)
-            .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+            .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
             .click('.topbar .share > .show-popup')
             .click('.popup.share .who-has-access')
             .waitForElementVisible('.popup.who-has-access', medium_wait)
@@ -296,7 +299,7 @@ module.exports["Test role sharing"] = function (browser) {
     .click(
       '.app-list>.app-action[data-app-id="h37dm17aa89yrd8zuqpdn36p6zntumtv08fjpu8a8zrte7q1cn60"]')
     .waitForElementVisible('#grainTitle', medium_wait)
-    .assert.containsText('#grainTitle', 'Untitled Etherpad Document')
+    .assert.containsText('#grainTitle', expectedEtherpadGrainTitle)
     .click('.topbar .share > .show-popup')
     .waitForElementVisible("#shareable-link-tab-header", short_wait)
     .click("#shareable-link-tab-header")
@@ -312,7 +315,7 @@ module.exports["Test role sharing"] = function (browser) {
         .waitForElementVisible(".redeem-token-button", short_wait)
         .click(".redeem-token-button")
         .waitForElementVisible('#grainTitle', medium_wait)
-        .assert.containsText('#grainTitle', 'Untitled Etherpad Document')
+        .assert.containsText('#grainTitle', expectedEtherpadGrainTitle)
         .frame('grain-frame')
         .waitForElementPresent('#editorcontainerbox', medium_wait)
         .frame(null)
@@ -331,7 +334,7 @@ module.exports["Test role sharing"] = function (browser) {
             .waitForElementVisible(".redeem-token-button", short_wait)
             .click(".redeem-token-button")
             .waitForElementVisible('#grainTitle', medium_wait)
-            .assert.containsText('#grainTitle', 'Untitled Etherpad Document')
+            .assert.containsText('#grainTitle', expectedEtherpadGrainTitle)
             .frame('grain-frame')
             .waitForElementPresent('#editorcontainerbox', medium_wait)
             .frame(null)
@@ -363,7 +366,7 @@ module.exports["Test grain incognito interstitial"] = function (browser) {
     .click(
       '.app-list>.app-action[data-app-id="nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh"]')
     .waitForElementVisible('#grainTitle', medium_wait)
-    .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+    .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
     .click('.topbar .share > .show-popup')
     .waitForElementVisible("#shareable-link-tab-header", short_wait)
     .click("#shareable-link-tab-header")
@@ -380,7 +383,7 @@ module.exports["Test grain incognito interstitial"] = function (browser) {
         .waitForElementVisible(".incognito-button", short_wait)
         .click(".incognito-button")
         .waitForElementVisible('#grainTitle', medium_wait)
-        .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+        .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .frame('grain-frame')
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
@@ -390,7 +393,7 @@ module.exports["Test grain incognito interstitial"] = function (browser) {
         .waitForElementVisible(".redeem-token-button", short_wait)
         .click(".redeem-token-button")
         .waitForElementVisible('#grainTitle', medium_wait)
-        .assert.containsText('#grainTitle', 'Untitled Hacker CMS Site')
+        .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .frame('grain-frame')
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')

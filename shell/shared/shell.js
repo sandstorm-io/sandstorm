@@ -31,7 +31,7 @@ if (Meteor.isClient) {
   globalSubs = [
     Meteor.subscribe("grainsMenu"),
     Meteor.subscribe("userPackages"),
-    Meteor.subscribe("devApps"),
+    Meteor.subscribe("devPackages"),
     Meteor.subscribe("credentials"),
     Meteor.subscribe("accountIdentities")
   ];
@@ -107,8 +107,8 @@ if (Meteor.isServer) {
     return Sessions.find({_id: sessionId, $or: [{userId: this.userId}, {userId: null}]});
   });
 
-  Meteor.publish("devApps", function () {
-    return DevApps.find();
+  Meteor.publish("devPackages", function () {
+    return DevPackages.find();
   });
 
   Meteor.publish("notifications", function () {
@@ -567,23 +567,23 @@ if (Meteor.isClient) {
     }
   };
 
-  launchAndEnterGrainByActionId = function(actionId, devId, devIndex) {
-    // Note that this takes a devId and a devIndex as well. If provided,
+  launchAndEnterGrainByActionId = function(actionId, devPackageId, devIndex) {
+    // Note that this takes a devPackageId and a devIndex as well. If provided,
     // they override the actionId.
     var packageId;
     var command;
     var appTitle;
     var nounPhrase;
-    if (devId) {
-      var devApp = DevApps.findOne(devId);
-      if (!devApp) {
-        console.error("no such dev app: ", devId);
+    if (devPackageId) {
+      var devPackage = DevPackages.findOne(devPackageId);
+      if (!devPackage) {
+        console.error("no such dev package: ", devPackageId);
         return;
       }
-      var devAction = devApp.manifest.actions[devIndex];
-      packageId = devApp.packageId;
+      var devAction = devPackage.manifest.actions[devIndex];
+      packageId = devPackageId
       command = devAction.command;
-      appTitle = SandstormDb.appNameFromPackage(devApp);
+      appTitle = SandstormDb.appNameFromPackage(devPackage);
       nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(devAction, appTitle);
     } else {
       var action = UserActions.findOne(actionId);

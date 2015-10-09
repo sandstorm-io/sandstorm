@@ -107,16 +107,16 @@ Template.sandstormAppList.helpers({
   },
   devActions: function () {
     var ref = Template.instance().data;
-    var result = ref._db.collections.devApps.find().fetch();
-    var actionList = result.map(function(devapp) {
+    var result = ref._db.collections.devPackages.find().fetch();
+    var actionList = result.map(function(devPackage) {
       var thisAppActions = [];
-      for (var i = 0 ; i < devapp.manifest.actions.length ; i++) {
+      for (var i = 0 ; i < devPackage.manifest.actions.length ; i++) {
         thisAppActions.push({
-          _id: devapp._id,
-          appTitle: SandstormDb.appNameFromPackage(devapp),
-          noun: SandstormDb.nounPhraseForActionAndAppTitle(devapp.manifest.actions[i],
-                  devapp.manifest.appTitle.defaultText),
-          iconSrc: ref._db.iconSrcForPackage(devapp, 'appGrid'),
+          _id: devPackage._id,
+          appTitle: SandstormDb.appNameFromPackage(devPackage),
+          noun: SandstormDb.nounPhraseForActionAndAppTitle(devPackage.manifest.actions[i],
+                  devPackage.manifest.appTitle.defaultText),
+          iconSrc: ref._db.iconSrcForPackage(devPackage, 'appGrid'),
           actionIndex: i
         });
       }
@@ -192,12 +192,12 @@ Template.sandstormAppList.events({
     Meteor.call("deleteUnusedPackages", appId);
   },
   "click .dev-action": function(event, template) {
-    var devId = this._id;
+    var devPackageId = this._id;
     var actionIndex = this.actionIndex;
     // N.B.: this calls into a global in shell.js.
     // TODO(cleanup): refactor into a safer dependency.
     template.appIsLoading.set(true);
-    launchAndEnterGrainByActionId("dev", this._id, this.actionIndex);
+    launchAndEnterGrainByActionId("dev", devPackageId, actionIndex);
   },
   "click button.toggle-uninstall": function(event) {
     var uninstallVar = Template.instance().data._uninstalling;

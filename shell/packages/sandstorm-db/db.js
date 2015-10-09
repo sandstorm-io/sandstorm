@@ -97,23 +97,22 @@ Packages = new Mongo.Collection("packages");
 //   authorPgpKeyFingerprint: Verified PGP key fingerprint (SHA-1, hex, all-caps) of the app
 //     packager.
 
-DevApps = new Mongo.Collection("devapps");
-// List of applications currently made available via the dev tools running on the local machine.
+DevPackages = new Mongo.Collection("devpackages");
+// List of packages currently made available via the dev tools running on the local machine.
 // This is normally empty; the only time it is non-empty is when a developer is using the spk tool
 // on the local machine to publish an under-development app to this server. That should only ever
 // happen on developers' desktop machines.
 //
-// While a dev app is published, it automatically appears as installed by every user of the server,
-// and it overrides all packages with the same application ID. If any instances of those packages
-// are currently open, they are killed and reset on publish.
+// While a dev package is published, it automatically appears as installed by every user of the
+// server, and it overrides all packages with the same application ID. If any instances of those
+// packages are currently open, they are killed and reset on publish.
 //
-// When the dev tool disconnects, the app is automatically unpublished, and any open instances
+// When the dev tool disconnects, the package is automatically unpublished, and any open instances
 // are again killed and refreshed.
 //
 // Each contains:
-//   _id:  The application ID string (as with Packages.appId).
-//   appId: The same as _id, included to mimic Packages.appId.
-//   packageId:  The directory name where the dev package is mounted.
+//   _id:  The package ID string (as with Packages._id).
+//   appId: The app ID this package is intended to override (as with Packages.appId).
 //   timestamp:  Time when the package was last updated. If this changes while the package is
 //     published, all running instances are reset. This is used e.g. to reset the app each time
 //     changes are made to the source code.
@@ -701,7 +700,7 @@ SandstormDb = function () {
     //   direct access to the collections.
 
     packages: Packages,
-    devApps: DevApps,
+    devPackages: DevPackages,
     userActions: UserActions,
     grains: Grains,
     contacts: Contacts,

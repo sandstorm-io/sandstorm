@@ -1408,7 +1408,7 @@ Router.map(function () {
 
     waitOn: function () {
       return [
-        Meteor.subscribe("devApps"),
+        Meteor.subscribe("devPackages"),
         Meteor.subscribe("tokenInfo", this.params.token),
 
         Meteor.subscribe("grainsMenu")

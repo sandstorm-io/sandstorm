@@ -157,26 +157,21 @@ SandstormBackend.prototype.continueGrain = function(grainId) {
     throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainId);
   }
 
-  var manifest;
-  var packageId;
-  var devApp = DevApps.findOne({_id: grain.appId});
+  // If a DevPackage with the same app ID is currently active, we let it override the installed
+  // package, so that the grain runs using the dev app.
+  var devPackage = DevPackages.findOne({_appId: grain.appId});
   var isDev;
-  if (devApp) {
-    // If a DevApp with the same app ID is currently active, we let it override the installed
-    // package, so that the grain runs using the dev app.
-    manifest = devApp.manifest;
-    packageId = devApp.packageId;
+  if (devPackage) {
     isDev = true;
   } else {
     var pkg = Packages.findOne(grain.packageId);
-    if (pkg) {
-      manifest = pkg.manifest;
-      packageId = pkg._id;
-    } else {
+    if (!pkg) {
       throw new Meteor.Error(500, "Grain's package not installed",
                              "Package ID: " + grain.packageId);
     }
   }
+  var manifest = pkg.manifest;
+  var packageId = pkg._id;
 
   if (!("continueCommand" in manifest)) {
     throw new Meteor.Error(500, "Package manifest defines no continueCommand.",

@@ -1032,7 +1032,11 @@ if (Meteor.isServer) {
         throw new Meteor.Error(404, "These addresses did not map to any user nor invite: " +
             invalid.join(", "));
       }
-    }
+    },
+    dismissAdminStatsNotifications: function (token) {
+      checkAuth(token);
+      globalDb.collections.notifications.remove({"admin.type": "reportStats"});
+    },
   });
 
   var authorizedAsAdmin = function (token, userId) {

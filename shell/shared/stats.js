@@ -137,6 +137,23 @@ if (Meteor.isServer) {
     record.computeTime = Date.now() - now;
 
     ActivityStats.insert(record);
+    if (ActivityStats.find().count() > 3) {
+      var reportSetting = Settings.findOne({_id: "reportStats"});
+      if (!reportSetting) {
+        // Setting not set yet, send out notifications and set it to false
+        globalDb.sendAdminNotification("You can help Sandstorm by sending us some anonymous " +
+          "usage stats. Click here for more info.", "/admin/stats");
+        Settings.insert({_id: "reportStats", value: false});
+      } else if (reportSetting.value) {
+        HTTP.post("https://alpha-api.sandstorm.io/data", {
+          data: record,
+          headers: {
+            Authorization: "Bearer aT-mGyNwsgwZBbZvd5FWr0Ma79O9IehI4NiEO94y_oR",
+            "Content-Type": "application/json",
+          },
+        });
+      }
+    }
   }
 
   if (!Meteor.settings.replicaNumber) {
@@ -210,18 +227,59 @@ Router.map(function () {
 });
 
 if (Meteor.isClient) {
+  var saveReportStats = function (newValue, template, cb) {
+    var state = Iron.controller().state;
+    var token = state.get("token");
+    template.reportStatsSaved.set(false);
+    template.fadeCheckmark.set(false);
+    if (template.fadeTimeoutId) {
+      Meteor.clearTimeout(template.fadeTimeoutId);
+    }
+
+    Meteor.call("setSetting", token, "reportStats", newValue, function (err) {
+      if (err) {
+        // TODO(someday): do something with error, for now spinner will just show forever
+        return;
+      }
+      template.reportStatsSaved.set(true);
+      template.fadeTimeoutId = Meteor.setTimeout(function () {
+        template.fadeCheckmark.set(true);
+      }, 1000);
+      if (cb) {
+        cb();
+      }
+    });
+  };
+
   Template.adminStats.events({
     'click #regenerateStatsToken': function () {
       Meteor.call('regenerateStatsToken');
     },
     "change select.package-date": function (ev, template) {
       template.currentPackageDate.set(ev.currentTarget.value);
-    }
+    },
+    "change input.enableStatsCollection": function (ev, template) {
+      saveReportStats(ev.target.checked, template);
+    },
+    "click .report-stats .yes": function (ev, template) {
+      var state = Iron.controller().state;
+      var token = state.get("token");
+      saveReportStats(true, template, Meteor.call.bind(Meteor,
+        "dismissAdminStatsNotifications", token));
+    },
+    "click .report-stats .no": function (ev, template) {
+      var state = Iron.controller().state;
+      var token = state.get("token");
+      saveReportStats(false, template, Meteor.call.bind(Meteor,
+        "dismissAdminStatsNotifications", token));
+    },
   });
   Template.adminStats.onCreated(function () {
     var state = Iron.controller().state;
     var token = state.get("token");
     this.currentPackageDate = new ReactiveVar(null);
+    this.reportStatsSaved = new ReactiveVar(null);
+    this.fadeCheckmark = new ReactiveVar(false);
     var self = this;
     this.autorun(function () {
       var stat = ActivityStats.findOne({}, {sort: {timestamp: -1}});
@@ -300,6 +358,23 @@ if (Meteor.isClient) {
     },
     token: function () {
       return StatsTokens.findOne();
+    },
+    reportStats: function () {
+      var setting = Settings.findOne({_id: "reportStats"});
+      return setting && setting.value;
+    },
+    reportStatsFirstVisit: function () {
+      var setting = Settings.findOne({_id: "reportStats"});
+      return  Match.test(setting, Match.OneOf(undefined, null));
+    },
+    reportStatsSaving: function() {
+      return !Match.test(Template.instance().reportStatsSaved.get(), Match.OneOf(undefined, null));
+    },
+    reportStatsSaved: function() {
+      return Template.instance().reportStatsSaved.get();
+    },
+    fadeCheckmark: function() {
+      return Template.instance().fadeCheckmark.get();
     }
   });
 }

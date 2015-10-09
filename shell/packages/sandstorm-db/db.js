@@ -373,13 +373,17 @@ Notifications = new Mongo.Collection("notifications");
 //
 // Each contains:
 //   _id:          random
-//   ongoing:      If present, this is an ongoing notification, and this field contains an
-//                 ApiToken referencing the `OngoingNotification` capability.
 //   grainId:      The grain originating this notification, if any.
 //   userId:       The user receiving the notification.
 //   text:         The JSON-ified LocalizedText to display in the notification.
 //   isUnread:     Boolean indicating if this notification is unread.
 //   timestamp:    Date when this notification was last updated
+//   ongoing:      If present, this is an ongoing notification, and this field contains an
+//                 ApiToken referencing the `OngoingNotification` capability.
+//   admin:        If present, this is a notification intended for an admin.
+//     action:     If present, this is a (string) link that the notification should direct the
+//                 admin to.
+//     type:       The type of notification (currently only "reportStats").
 //   appUpdates:   If present, this is an app update notification. It is an object with the appIds
 //                 as keys.
 //     $appId:     The appId that has an outstanding update.
@@ -887,6 +891,21 @@ _.extend(SandstormDb.prototype, {
 
       Meteor.call("deleteUnusedPackages", pack.appId);
     }
+  },
+
+  sendAdminNotification: function (message, link) {
+    Meteor.users.find({isAdmin: true}, {fields: {_id: 1}}).forEach(function (user) {
+      Notifications.insert({
+        admin: {
+          action: link,
+          type: "reportStats",
+        },
+        userId: user._id,
+        text: {defaultText: message},
+        timestamp: new Date(),
+        isUnread: true,
+      });
+    });
   },
 
   getKeybaseProfile: function (keyFingerprint) {

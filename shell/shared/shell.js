@@ -572,6 +572,7 @@ if (Meteor.isClient) {
     // they override the actionId.
     var packageId;
     var command;
+    var appTitle;
     var nounPhrase;
     if (devId) {
       var devApp = DevApps.findOne(devId);
@@ -582,7 +583,7 @@ if (Meteor.isClient) {
       var devAction = devApp.manifest.actions[devIndex];
       packageId = devApp.packageId;
       command = devAction.command;
-      var appTitle = SandstormDb.appNameFromPackage(devApp);
+      appTitle = SandstormDb.appNameFromPackage(devApp);
       nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(devAction, appTitle);
     } else {
       var action = UserActions.findOne(actionId);
@@ -594,11 +595,11 @@ if (Meteor.isClient) {
       packageId = action.packageId;
       var pkg = Packages.findOne(packageId);
       command = action.command;
-      var appTitle = SandstormDb.appNameFromPackage(pkg);
+      appTitle = SandstormDb.appNameFromPackage(pkg);
       nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(action, appTitle);
     }
 
-    var title = "Untitled " + nounPhrase;
+    var title = "Untitled " + appTitle + " " + nounPhrase;
 
     var identity = _.findWhere(SandstormDb.getUserIdentities(Meteor.user()), {main: true});
 

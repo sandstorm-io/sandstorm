@@ -746,28 +746,6 @@ limitations under the License.
   </div>
 </template>
 
-<template name="uploadForm">
-  {{>title "Upload App"}}
-
-  <div id="upload" class="centered-box">
-  {{#if isSignedUp}}
-    {{#if progress}}
-      <p>Uploading... {{progress}}%</p>
-    {{else}}
-      {{#if error}}
-        <p>Upload failed: {{error.status}} {{error.statusText}}</p>
-      {{else}}
-        <p>Please choose an <code>spk</code> file to install.</p>
-      {{/if}}
-      <p><input type="file" id="uploadFile">
-         <button id="uploadButton">Upload</button></p>
-    {{/if}}
-  {{else}}
-    <p>Sorry, this server requires an invite before you can install apps.</p>
-  {{/if}}
-  </div>
-</template>
-
 <template name="uploadStatus">
   {{>title "Uploading..."}}
 

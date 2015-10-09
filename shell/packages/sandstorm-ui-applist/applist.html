@@ -40,11 +40,13 @@
     </a>
     <button class="app-button upload-button {{#if searching}}hide{{/if}}">
       <div class="app-icon pseudoapp upload-icon"></div>
+      <input type="file" style="display:none">
       <span class="action-title">Upload app...</span>
       <span class="action-text">choose SPK file</span>
     </button>
     <button class="app-button restore-button {{#if searching}}hide{{/if}}">
       <div class="app-icon pseudoapp restore-icon"></div>
+      <input type="file" style="display:none">
       <span class="action-title">Restore backup...</span>
       <span class="action-text">choose ZIP file</span>
     </button>

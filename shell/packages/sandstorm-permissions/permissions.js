@@ -479,7 +479,7 @@ Meteor.methods({
     check(provider, Match.OneOf({identityId: String}, {rawParentToken: String}));
     var db = this.connection.sandstormDb;
     if (provider.identityId) {
-      if (!this.userId || !db.getIdentityOfUser(provider.identityId, this.userId)) {
+      if (!this.userId || !db.userHasIdentity(this.userId, provider.identityId)) {
         throw new Meteor.Error(403, "Not an identity of the current user: " + provider.identityId);
       }
     }

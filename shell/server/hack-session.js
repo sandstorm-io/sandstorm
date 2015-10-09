@@ -82,7 +82,7 @@ Meteor.methods({
     check(grainId, String);
 
     var userId = Meteor.userId();
-    if (!userId || !globalDb.getIdentityOfUser(identityId, userId)) {
+    if (!userId || !globalDb.userHasIdentity(userId, identityId)) {
       throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
     }
     var parsedWebkey = Url.parse(webkeyUrl.trim());

@@ -59,7 +59,7 @@ Accounts.registerLoginHandler("emailToken", function (options) {
 
   var identity = user.identities[0];
 
-  if (!user.identities[0].service.emailToken.tokens) {
+  if (!identity.service.emailToken.tokens) {
     console.error("User has no token set:", options.email);
     return {
       error: new Meteor.Error(403, "User has no token set")
@@ -67,10 +67,10 @@ Accounts.registerLoginHandler("emailToken", function (options) {
   }
 
   var token = Accounts.emailToken._hashToken(options.token.trim());
-  var found = checkToken(user.identities[0].service.emailToken.tokens, token);
+  var found = checkToken(identity.service.emailToken.tokens, token);
 
   if (!found) {
-    console.error("Token not found:", user.identities[0]);
+    console.error("Token not found:", identity);
     return {
       error: new Meteor.Error(403, "Invalid authentication code")
     };

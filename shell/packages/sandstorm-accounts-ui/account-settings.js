@@ -139,7 +139,15 @@ Template.sandstormAccountSettings.events({
       instance._profileSaved.set(true);
     });
   },
-  "change": function () { Template.instance()._profileSaved.set(false); },
+  "change": function (event, instance) {
+    // Pictures get saved right away.
+    //
+    // TODO(someday): Upload pictures to a staging area, perhaps allowing the user to resize
+    //   and crop them before saving.
+    if (event.target == instance.find("input[name='picture']")) { return; }
+
+    instance._profileSaved.set(false);
+  },
   "input input": function () { Template.instance()._profileSaved.set(false); },
   "keypress": function () { Template.instance()._profileSaved.set(false); },
 });
@@ -158,9 +166,7 @@ Template._accountProfileEditor.events({
     if (!staticHost) throw new Error("missing _staticHost");
 
     // TODO(cleanup): Share code with "restore backup" and other upload buttons.
-    var input = document.createElement("input");
-    input.type = "file";
-    input.style = "display: none";
+    var input = instance.find("input[name='picture']");
 
     var file = undefined;
     var token = undefined;
@@ -184,14 +190,12 @@ Template._accountProfileEditor.events({
       }
     });
 
-    input.addEventListener("change", function (event) {
+    function listener(event) {
+      input.removeEventListener("change", listener);
       file = event.currentTarget.files[0];
       if (file && token) doUpload();
-    });
-
-    // IE wants the input element to be in the DOM, but only during the click() call.
-    document.body.appendChild(input);
+    }
+    input.addEventListener("change", listener);
     input.click();
-    document.body.removeChild(input);
   }
 });

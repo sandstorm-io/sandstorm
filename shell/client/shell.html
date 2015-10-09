@@ -963,13 +963,16 @@ limitations under the License.
       Enable automically reporting the anonymized statistics below to Sandstorm.io
       {{#if reportStatsSaving}}
         {{#if reportStatsSaved}}
-        <span class="check-mark" title="saved">✓</span>
+        <span class="check-mark {{#if fadeCheckmark}}fade-out{{/if}}" title="saved">✓</span>
         {{else}}
         <img src="/spinner_96.gif" alt="loading">
         {{/if}}
       {{/if}}
       {{#if reportStatsFirstVisit}}
-      <div>
+      <div class="yesno-box">
+        <p>
+          You can help the Sandstorm project understand our users better by sending these numbers to us, which we will aggregate with stats from all other servers mainly in order to make graphs showing our growth. Any stats you submit are anonymous; we only see the numbers listed below with no identifying information and no way we know of to track them back to you. Is this OK?
+        </p>
         <button class="yes">Yes</button>
         <button class="no">No</button>
       </div>

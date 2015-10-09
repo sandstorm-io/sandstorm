@@ -167,11 +167,18 @@ input.autoSelect {
     button {
       margin-right: 5px;
     }
+    .yesno-box {
+      background-color: #D8BFD8;
+    }
     img {
       width: 16px;
     }
     .check-mark {
       color: green;
+      transition: all 2s ease-in-out;
+      &.fade-out {
+        opacity: .2;
+      }
     }
   }
 

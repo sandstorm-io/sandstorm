@@ -231,12 +231,20 @@ if (Meteor.isClient) {
     var state = Iron.controller().state;
     var token = state.get("token");
     template.reportStatsSaved.set(false);
+    template.fadeCheckmark.set(false);
+    if (template.fadeTimeoutId) {
+      Meteor.clearTimeout(template.fadeTimeoutId);
+    }
+
     Meteor.call("setSetting", token, "reportStats", newValue, function (err) {
       if (err) {
         // TODO(someday): do something with error, for now spinner will just show forever
         return;
       }
       template.reportStatsSaved.set(true);
+      template.fadeTimeoutId = Meteor.setTimeout(function () {
+        template.fadeCheckmark.set(true);
+      }, 1000);
       if (cb) {
         cb();
       }
@@ -271,6 +279,7 @@ if (Meteor.isClient) {
     var token = state.get("token");
     this.currentPackageDate = new ReactiveVar(null);
     this.reportStatsSaved = new ReactiveVar(null);
+    this.fadeCheckmark = new ReactiveVar(false);
     var self = this;
     this.autorun(function () {
       var stat = ActivityStats.findOne({}, {sort: {timestamp: -1}});
@@ -364,5 +373,8 @@ if (Meteor.isClient) {
     reportStatsSaved: function() {
       return Template.instance().reportStatsSaved.get();
     },
+    fadeCheckmark: function() {
+      return Template.instance().fadeCheckmark.get();
+    }
   });
 }

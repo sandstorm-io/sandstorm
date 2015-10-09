@@ -98,18 +98,17 @@ Meteor.methods({
       // Create variables we'll use for later Mongo query.
       var packageId;
       var appVersion;
-      // DevApps are system-wide, so we do not check the user ID.
-      var devApp = DevApps.findOne({_id: grainInfo.appId});
-
-      if (action) {
+      // DevPackages are system-wide, so we do not check the user ID.
+      var devPackage = DevPackages.findOne({appId: grainInfo.appId});
+      if (devPackage) {
+        // If the dev app package exists, it should override the user action.
+        packageId = devPackage.packageId;
+        appVersion = devPackage.manifest.appVersion;
+      } else if (action) {
         // The app is installed, so we can continue restoring this
         // grain.
         packageId = action.packageId;
         appVersion = action.appVersion;
-      } else if (devApp) {
-        // If the dev app exists, permit this.
-        packageId = devApp.packageId;
-        appVersion = devApp.manifest.appVersion;
       } else {
         // If the package isn't installed at all, bail out.
         deleteGrain(grainId, this.userId);

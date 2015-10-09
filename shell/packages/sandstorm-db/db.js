@@ -755,25 +755,18 @@ _.extend(SandstormDb.prototype, {
 
   getIdentity: function getIdentity (identityId) {
     check(identityId, String);
-    var user = Meteor.users.findOne({"identities.id": identityId},
-                                    {fields: {"identities.$": 1, "services": 1}});
-    // TODO(cleanup): Minimongo doesn't support "$", so this actually doesn't work on the client.
-
+    // This would be a prime place to use Mongo's $ operator. Unfortunately, $ is not available
+    // in Minimongo. Maybe this method should have separate server and client implementations?
+    var user = Meteor.users.findOne({"identities.id": identityId});
     if (user) {
-      return SandstormDb.getUserIdentities(user)[0];
+      return _.findWhere(SandstormDb.getUserIdentities(user), {id: identityId});
     }
   },
 
-  getIdentityOfUser: function getIdentity (identityId, userId) {
-    check(identityId, String);
+  userHasIdentity: function (userId, identityId) {
     check(userId, String);
-    var user = Meteor.users.findOne({_id: userId, "identities.id": identityId},
-                                    {fields: {"identities.$": 1, "services": 1}});
-    // TODO(cleanup): Minimongo doesn't support "$", so this actually doesn't work on the client.
-
-    if (user) {
-      return SandstormDb.getUserIdentities(user)[0];
-    }
+    check(identityId, String);
+    return !!Meteor.users.findOne({_id: userId, "identities.id": identityId});
   },
 
   userGrains: function userGrains (user) {

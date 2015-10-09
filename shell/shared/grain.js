@@ -243,10 +243,10 @@ Meteor.methods({
       if (!this.userId) {
         throw new Meteor.Error(403, "Must be logged in to share by email.");
       }
-      var identity = globalDb.getIdentityOfUser(identityId, this.userId);
-      if (!identity) {
+      if (!globalDb.userHasIdentity(this.userId, identityId)) {
         throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
       }
+      var identity = globalDb.getIdentity(identityId);
       var sharerDisplayName = identity.profile.name;
       var outerResult = {successes: [], failures: []};
       emailAddresses.forEach(function(emailAddress) {

@@ -139,7 +139,7 @@ Meteor.methods({
     if (!this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "Must be logged in to create grains.");
     }
-    if (!globalDb.getIdentityOfUser(identityId, this.userId)) {
+    if (!globalDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
@@ -195,7 +195,7 @@ Meteor.methods({
     check(identityId, Match.OneOf(undefined, null, String));
     check(cachedSalt, Match.OneOf(undefined, null, String));
 
-    if (this.userId && identityId && !globalDb.getIdentityOfUser(identityId, this.userId)) {
+    if (this.userId && identityId && !globalDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
@@ -220,7 +220,7 @@ Meteor.methods({
     check(identityId, Match.OneOf(undefined, null, String));
     check(cachedSalt, Match.OneOf(undefined, null, String));
 
-    if (this.userId && identityId && !globalDb.getIdentityOfUser(identityId, this.userId)) {
+    if (this.userId && identityId && !globalDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 

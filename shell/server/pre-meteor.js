@@ -312,11 +312,11 @@ function serveStaticAsset(req, res) {
 
       var old = Meteor.users.findAndModify({
         query: {"identities.id": identityId},
-        update: {$set: {"identities.$.picture": assetId}},
-        fields: {"identities.$.picture": 1}
+        update: {$set: {"identities.$.profile.picture": assetId}},
+        fields: {"identities.$.profile.picture": 1}
       });
-      if (old && old.identities.length > 0 && old.identities[0].picture) {
-        globalDb.unrefStaticAsset(old.identities[0].picture);
+      if (old && old.identities.length > 0 && old.identities[0].profile.picture) {
+        globalDb.unrefStaticAsset(old.identities[0].profile.picture);
       }
 
       res.writeHead(204, {});

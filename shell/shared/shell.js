@@ -204,6 +204,12 @@ if (Meteor.isClient) {
     }
   });
 
+  Template.about.helpers({
+    setDocumentTitle: function () {
+      document.title = "About · Sandstorm";
+    }
+  });
+
   Template.body.onRendered(function () {
     // If we're on iOS, set a class name on <body> so we can use CSS styles to work around mobile
     // Safari's ridiculous iframe rendering behavior.
@@ -758,20 +764,14 @@ appNameFromActionName = function(name) {
   return name;
 }
 
-var promptForFile = function (callback) {
+var promptForFile = function (input, callback) {
   // TODO(cleanup): Share code with "upload picture" and other upload buttons.
-  var input = document.createElement("input");
-  input.type = "file";
-  input.style = "display: none";
-
-  input.addEventListener("change", function (e) {
+  function listener(e) {
+    input.removeEventListener("change", listener);
     callback(e.currentTarget.files[0]);
-  });
-
-  // IE wants the input element to be in the DOM, but only during the click() call.
-  document.body.appendChild(input);
+  }
+  input.addEventListener("change", listener);
   input.click();
-  document.body.removeChild(input);
 }
 
 var startUpload = function (file, endpoint, onComplete) {
@@ -811,8 +811,8 @@ var startUpload = function (file, endpoint, onComplete) {
   Router.go("uploadStatus");
 }
 
-promptRestoreBackup = function() {
-  promptForFile(function (file) {
+promptRestoreBackup = function(input) {
+  promptForFile(input, function (file) {
     startUpload(file, "/uploadBackup", function (response) {
       Session.set("uploadStatus", "Unpacking");
       Meteor.call("restoreGrain", response, function (err, grainId) {
@@ -831,8 +831,8 @@ promptRestoreBackup = function() {
   });
 }
 
-promptUploadApp = function () {
-  promptForFile(function (file) {
+promptUploadApp = function (input) {
+  promptForFile(input, function (file) {
     Meteor.call("newUploadToken", function (err, token) {
       if (err) {
         console.error(err);

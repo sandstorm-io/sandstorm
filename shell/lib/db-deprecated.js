@@ -67,6 +67,8 @@ if (Meteor.isServer) {
   SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, function () {
     SandstormAutoupdateApps.updateAppIndex(globalDb);
   });
+
+  Meteor.startup(function() { globalDb.migrateToLatest(); });
 }
 
 if (Meteor.isClient) {

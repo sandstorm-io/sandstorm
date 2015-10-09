@@ -84,49 +84,53 @@ Accounts.onCreateUser(function (options, user) {
       handle: Match.Optional(ValidHandle),
       pronoun: Match.Optional(Match.OneOf("male", "female", "neutral", "robot")),
     }));
-
-    user.profile = options.profile;
-  } else {
-    user.profile = {};
   }
+
+  check(options.unverifiedEmail, Match.Optional(String));
+
+  var identity = _.pick(options, "unverifiedEmail");
+  identity.profile = _.pick(options.profile || {}, "name", "handle", "pronouns", "picture");
+  identity.main = true;
 
   // Try downloading avatar.
   var url = userPictureUrl(user);
   if (url) {
     var assetId = fetchPicture(url);
     if (assetId) {
-      user.profile.picture = assetId;
+      identity.profile.picture = assetId;
     }
   }
-  var identity = _.pick(user.profile, "name", "handle", "pronouns", "picture");
-  identity.main = true;
 
   var serviceUserId;
-  if ("devName" in user) {
-    identity.service = "dev";
-    serviceUserId = user.devName;
+  if (options.service && options.service.dev) {
+    check(options.service, {dev: {name: String}});
+    identity.service = options.service;
+    serviceUserId = options.service.dev.name;
   } else if ("expires" in user) {
-    identity.service = "demo";
+    identity.service = {demo: {}};
     serviceUserId = user._id;
+  } else if (options.service && options.service.emailToken) {
+    check(options.service, {emailToken:
+                            {email: String,
+                             tokens: [{digest: String, algorithm: String, createdAt: Date}]}});
+    identity.service = options.service;
+    identity.verifiedEmail = options.service.emailToken.email;
+    serviceUserId = identity.verifiedEmail;
   } else if (user.services && "google" in user.services) {
-    identity.service = "google";
+    identity.service = {google: {}};
     if (user.services.google.email && user.services.google.verified_email) {
       identity.verifiedEmail = user.services.google.email;
     }
     serviceUserId = user.services.google.id;
   } else if (user.services && "github" in user.services) {
-    identity.service = "github";
+    identity.service = {github: {}};
     if (user.services.github.email) {
       identity.unverifiedEmail = user.services.github.email;
     }
     serviceUserId = user.services.github.id;
-  } else if (user.services && "emailToken" in user.services) {
-    identity.service = "emailToken";
-    identity.verifiedEmail = user.services.emailToken.email;
-    serviceUserId = user.services.emailToken.email;
   }
   identity.id = Crypto.createHash("sha256")
-      .update(identity.service + ":" + serviceUserId).digest("hex");
+      .update(Object.keys(identity.service)[0] + ":" + serviceUserId).digest("hex");
 
   user.identities = [identity];
   return user;
@@ -139,7 +143,7 @@ Accounts.validateLoginAttempt(function(info) {
     } else {
       var identities = info.user.identities;
       for (var ii = 0; ii < identities.length; ++ii) {
-        if (identities[ii].service === info.type) {
+        if (info.type in identities[ii].service) {
           return !identities[ii].noLogin;
         }
       }

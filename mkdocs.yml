@@ -14,6 +14,7 @@ pages:
     - "Overview of vagrant-spk": "vagrant-spk/index.md"
     - "Installation": "vagrant-spk/installation.md"
     - "Packaging tutorial": "vagrant-spk/packaging-tutorial.md"
+    - "Packaging tutorial (Meteor)": "vagrant-spk/packaging-tutorial-meteor.md"
     - "App publishing guide": "developing/publishing-apps.md"
     - "App Developer Handbook": "developing/handbook.md"
     - "User authentication & permissions": "developing/auth.md"

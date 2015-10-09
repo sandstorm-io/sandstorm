@@ -244,6 +244,41 @@ function appUpdateSettings() {
   Settings.insert({_id: "appUpdatesEnabled", value: true});
 }
 
+function moveDevAndEmailLoginDataIntoIdentities() {
+  Meteor.users.find().forEach(function (user) {
+    if (user.identities.length != 1) {
+      throw new Error("User does not have exactly one identity: ", user);
+    }
+    var identity = user.identities[0];
+    if (Match.test(identity.service, Object)) { return; } // Already migrated.
+
+    var newIdentity = _.pick(identity, "id", "main", "noLogin", "verifiedEmail", "unverifiedEmail");
+    newIdentity.profile = _.pick(identity, "name", "handle", "picture", "pronoun");
+
+    var serviceObject = {};
+    var fieldsToUnset = {}
+
+    if (identity.service === "dev") {
+      serviceObject.name = user.devName;
+      fieldsToUnset.devName = 1;
+    } else if (identity.service === "emailToken") {
+      serviceObject.tokens = user.services.emailToken.tokens;
+      serviceObject.email = user.services.emailToken.email;
+      fieldsToUnset["services.emailToken"] = 1;
+    }
+
+    newIdentity.service = {};
+    newIdentity.service[identity.service] = serviceObject;
+
+    var modifier = {$set: {identities: [newIdentity]}};
+    if (Object.keys(fieldsToUnset).length > 0) {
+      modifier["$unset"] = fieldsToUnset;
+    }
+
+    Meteor.users.update({_id: user._id}, modifier);
+  });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -260,6 +295,7 @@ var MIGRATIONS = [
   verifyAllPgpSignatures,
   splitUserIdsIntoAccountIdsAndIdentityIds,
   appUpdateSettings,
+  moveDevAndEmailLoginDataIntoIdentities,
 ];
 
 function migrateToLatest() {
@@ -305,5 +341,4 @@ function migrateToLatest() {
   }
 }
 
-// Apply all migrations on startup.
-Meteor.startup(migrateToLatest);
+SandstormDb.prototype.migrateToLatest = migrateToLatest;

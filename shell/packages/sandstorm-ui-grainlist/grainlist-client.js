@@ -81,6 +81,9 @@ var filteredSortedGrains = function() {
       .value();
 };
 Template.sandstormGrainList.helpers({
+  setDocumentTitle: function() {
+    document.title = "Grains · Sandstorm";
+  },
   filteredSortedGrains: filteredSortedGrains,
   searchText: function() {
     return Template.instance().data._filter.get();

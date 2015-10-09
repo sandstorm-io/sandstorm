@@ -139,7 +139,7 @@ Meteor.methods({
     if (!this.userId) {
       throw new Meteor.Error(403, "Unauthorized", "Must be logged in to create grains.");
     }
-    if (!globalDb.getIdentityOfUser(identityId, this.userId)) {
+    if (!globalDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
@@ -195,7 +195,7 @@ Meteor.methods({
     check(identityId, Match.OneOf(undefined, null, String));
     check(cachedSalt, Match.OneOf(undefined, null, String));
 
-    if (this.userId && identityId && !globalDb.getIdentityOfUser(identityId, this.userId)) {
+    if (this.userId && identityId && !globalDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
@@ -220,7 +220,7 @@ Meteor.methods({
     check(identityId, Match.OneOf(undefined, null, String));
     check(cachedSalt, Match.OneOf(undefined, null, String));
 
-    if (this.userId && identityId && !globalDb.getIdentityOfUser(identityId, this.userId)) {
+    if (this.userId && identityId && !globalDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
@@ -796,12 +796,12 @@ function Proxy(grainId, ownerId, sessionId, hostId, identityId, isApi, superviso
       throw new Error("identity not found: " + this.identityId);
     }
     this.userInfo = {
-      displayName: {defaultText: identity.name},
-      preferredHandle: identity.handle,
+      displayName: {defaultText: identity.profile.name},
+      preferredHandle: identity.profile.handle,
       identityId: new Buffer(identity.id, "hex")
     };
-    if (identity.pictureUrl) this.userInfo.pictureUrl = identity.pictureUrl;
-    if (identity.pronoun) this.userInfo.pronouns = identity.pronoun;
+    if (identity.profile.pictureUrl) this.userInfo.pictureUrl = identity.profile.pictureUrl;
+    if (identity.profile.pronoun) this.userInfo.pronouns = identity.profile.pronoun;
   } else {
     this.userInfo = {
       displayName: {defaultText: "Anonymous User"},

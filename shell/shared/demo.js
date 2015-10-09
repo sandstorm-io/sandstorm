@@ -117,6 +117,7 @@ if (Meteor.isServer) {
         var demoUser = Meteor.users.findOne({
             expires: {$exists: true}, "services.resume.loginTokens.hashedToken": hashed});
         var newUserId = this.userId;
+        var newIdentity = _.findWhere(SandstormDb.getUserIdentities(Meteor.user()), {main: true});
         if (demoUser) {
           // Replace the demo user's ID with the full user's ID throughout the database.
           //
@@ -126,21 +127,37 @@ if (Meteor.isServer) {
           var grains = Grains.find({userId: demoUser._id}).fetch();
 
           // Update database entries.
-          var toUpdate = {
+          var userIdsToUpdate = {
             userActions: ["userId"],
             grains: ["userId"],
-            contacts: ["ownerId", "userId"],
-            apiTokens: ["userId", "owner.user.userId"],
+            contacts: ["ownerId"],
             notifications: ["userId"],
           };
 
-          for (var name in toUpdate) {
+          var identityIdsToUpdate = {
+            grains: ["identityId"],
+            contacts: ["identityId"],
+            apiTokens: ["identityId", "owner.user.identityId"],
+          };
+
+          for (var name in userIdsToUpdate) {
             var collection = globalDb.collections[name];
-            toUpdate[name].forEach(function (field) {
+            userIdsToUpdate[name].forEach(function (field) {
               var query = {};
               query[field] = demoUser._id;
               var changes = {};
               changes[field] = newUserId;
+              collection.update(query, {$set: changes}, {multi: true});
+            });
+          }
+
+          for (var name in identityIdsToUpdate) {
+            var collection = globalDb.collections[name];
+            identityIdsToUpdate[name].forEach(function (field) {
+              var query = {};
+              query[field] = demoUser.identities[0].id;
+              var changes = {};
+              changes[field] = newIdentity.id;
               collection.update(query, {$set: changes}, {multi: true});
             });
           }

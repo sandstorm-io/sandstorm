@@ -479,7 +479,7 @@ Meteor.methods({
     check(provider, Match.OneOf({identityId: String}, {rawParentToken: String}));
     var db = this.connection.sandstormDb;
     if (provider.identityId) {
-      if (!this.userId || !db.getIdentityOfUser(provider.identityId, this.userId)) {
+      if (!this.userId || !db.userHasIdentity(this.userId, provider.identityId)) {
         throw new Meteor.Error(403, "Not an identity of the current user: " + provider.identityId);
       }
     }
@@ -496,11 +496,16 @@ Meteor.methods({
                       roleAssignment: Match.Optional(db.roleAssignmentPattern),
                       revoked: Match.Optional(Boolean)});
 
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Must be logged in to modify a token");
+    }
     var apiToken = db.collections.apiTokens.findOne(token);
     if (!apiToken) {
       throw new Meteor.Error(404, "No such token found.");
     }
-    if (this.userId && apiToken.identityId == db.getUserIdentities(this.userId)[0].id) {
+
+    if (_.findWhere(SandstormDb.getUserIdentities(db.getUser(this.userId)),
+                    {id: apiToken.identityId})) {
       var modifier = {$set: newFields};
       db.collections.apiTokens.update(token, modifier);
     } else {

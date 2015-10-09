@@ -38,9 +38,9 @@ Meteor.methods({
     }
 
     var newValues = {
-      "identities.$.name": profile.name,
-      "identities.$.handle": profile.handle,
-      "identities.$.pronoun": profile.pronoun,
+      "identities.$.profile.name": profile.name,
+      "identities.$.profile.handle": profile.handle,
+      "identities.$.profile.pronoun": profile.pronoun,
       "hasCompletedSignup": true
     };
 
@@ -72,7 +72,7 @@ if (Meteor.isServer) {
   Meteor.methods({
     uploadProfilePicture: function (identityId) {
       check(identityId, String);
-      if (!this.userId || !this.connection.sandstormDb.getIdentityOfUser(identityId, this.userId)) {
+      if (!this.userId || !this.connection.sandstormDb.userHasIdentity(this.userId, identityId)) {
         throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
       }
 

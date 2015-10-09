@@ -19,28 +19,35 @@ var allowDevAccounts = Meteor.settings && Meteor.settings.public &&
 
 if (allowDevAccounts) {
   if (Meteor.isServer) {
+    var Crypto = Npm.require("crypto");
+
     Meteor.methods({
-      createDevAccount: function (displayName, isAdmin, profile) {
+      createDevAccount: function (displayName, isAdmin, profile, unverifiedEmail) {
         // This is a login method that creates or logs in a dev account with the given displayName
 
         check(displayName, String);
         check(isAdmin, Match.OneOf(undefined, null, Boolean));
         check(profile, Match.OneOf(undefined, null, Object));
+        check(unverifiedEmail, Match.OneOf(undefined, null, String));
 
         isAdmin = isAdmin || false;
 
         profile = profile || {};
         profile.name = profile.name || displayName;
-        var hasCompletedSignup = !!profile.email && !!profile.pronoun && !!profile.handle;
+        var hasCompletedSignup = !!unverifiedEmail && !!profile.pronoun && !!profile.handle;
 
+        var identityId = Crypto.createHash("sha256")
+            .update("dev" + ":" + displayName).digest("hex");
+        var user = Meteor.users.findOne({"identities.id": identityId});
         var userId;
-        var user = Meteor.users.findOne({devName: displayName});
+
         if (user) {
           userId = user._id;
         } else {
-          userId = Accounts.insertUserDoc({ profile: profile },
+          userId = Accounts.insertUserDoc({ profile: profile,
+                                            service: {dev: {name: displayName}},
+                                            unverifiedEmail: unverifiedEmail},
                                           { signupKey: "devAccounts",
-                                            devName: displayName,
                                             isAdmin: isAdmin,
                                             hasCompletedSignup: hasCompletedSignup });
         }
@@ -76,14 +83,13 @@ if (allowDevAccounts) {
       // This skips the firstSignUp page. Mostly used for testing purposes.
       var profile = {
         name: displayName,
-        email: displayName + "@example.com",
         pronoun: "robot",
         handle: "_" + displayName.toLowerCase()
       };
 
       Accounts.callLoginMethod({
         methodName: "createDevAccount",
-        methodArguments: [displayName, isAdmin, profile],
+        methodArguments: [displayName, isAdmin, profile, displayName + "@example.com"],
         userCallback: function (err) {
           if (err) {
             window.alert(err);

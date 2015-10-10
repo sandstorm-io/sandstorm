@@ -137,7 +137,8 @@ if (Meteor.isServer) {
     record.computeTime = Date.now() - now;
 
     ActivityStats.insert(record);
-    if (ActivityStats.find().count() > 3) {
+    var age = ActivityStats.find().count();
+    if (age > 3) {
       var reportSetting = Settings.findOne({_id: "reportStats"});
       if (!reportSetting) {
         // Setting not set yet, send out notifications and set it to false
@@ -145,6 +146,12 @@ if (Meteor.isServer) {
           "usage stats. Click here for more info.", "/admin/stats");
         Settings.insert({_id: "reportStats", value: false});
       } else if (reportSetting.value) {
+        // The stats page which the user agreed we can send actually displays the whole history
+        // of the server, but we're only sending stats from the last day. Let's also throw in the
+        // length of said history. This is still strictly less information than what the user said
+        // we're allowed to send.
+        record.serverAge = age;
+
         HTTP.post("https://alpha-api.sandstorm.io/data", {
           data: record,
           headers: {
@@ -261,13 +268,13 @@ if (Meteor.isClient) {
     "change input.enableStatsCollection": function (ev, template) {
       saveReportStats(ev.target.checked, template);
     },
-    "click .report-stats .yes": function (ev, template) {
+    "click .report-stats-yesno-box>.yes": function (ev, template) {
       var state = Iron.controller().state;
       var token = state.get("token");
       saveReportStats(true, template, Meteor.call.bind(Meteor,
         "dismissAdminStatsNotifications", token));
     },
-    "click .report-stats .no": function (ev, template) {
+    "click .report-stats-yesno-box>.no": function (ev, template) {
       var state = Iron.controller().state;
       var token = state.get("token");
       saveReportStats(false, template, Meteor.call.bind(Meteor,

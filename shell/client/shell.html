@@ -939,28 +939,25 @@ limitations under the License.
 <template name="adminStats">
   {{setDocumentTitle}}
   <div id="stats">
-    <label class="report-stats">
-      {{#unless reportStatsFirstVisit}}
-      <input class="enableStatsCollection" type="checkbox" name="reportStats" checked={{reportStats}}>
-      {{/unless}}
-      Enable automically reporting the anonymized statistics below to Sandstorm.io
-      {{#if reportStatsSaving}}
-        {{#if reportStatsSaved}}
-        <span class="check-mark {{#if fadeCheckmark}}fade-out{{/if}}" title="saved">✓</span>
-        {{else}}
-        <img src="/spinner_96.gif" alt="loading">
-        {{/if}}
-      {{/if}}
-      {{#if reportStatsFirstVisit}}
-      <div class="yesno-box">
-        <p>
-          You can help the Sandstorm project understand our users better by sending these numbers to us, which we will aggregate with stats from all other servers mainly in order to make graphs showing our growth. Any stats you submit are anonymous; we only see the numbers listed below with no identifying information and no way we know of to track them back to you. Is this OK?
-        </p>
-        <button class="yes">Yes</button>
-        <button class="no">No</button>
+    {{#if reportStatsFirstVisit}}
+      <div class="report-stats-yesno-box">
+        <p>We'd like to know how many Sandstorm users there are, to make graphs and such. Is it OK to send the numbers on this page to Sandstorm, so that we can add them to the totals? Any stats you send are anonymous.</p>
+        <button class="yes">Send anonymous stats</button>
+        <button class="no">Don't send</button>
       </div>
-      {{/if}}
-    </label>
+    {{else}}
+      <label class="report-stats">
+        <input class="enableStatsCollection" type="checkbox" name="reportStats" checked={{reportStats}}>
+        Anonymously share the stats below with Sandstorm.io.
+        {{#if reportStatsSaving}}
+          {{#if reportStatsSaved}}
+          <span class="check-mark {{#if fadeCheckmark}}fade-out{{/if}}" title="saved">✓</span>
+          {{else}}
+          <img src="/spinner_96.gif" alt="loading">
+          {{/if}}
+        {{/if}}
+      </label>
+    {{/if}}
     <p>Right now: {{current.activeUsers}} users, {{current.activeGrains}} grains</p>
     <p>Today: {{today.activeUsers}} users, {{today.activeGrains}} grains</p>
 

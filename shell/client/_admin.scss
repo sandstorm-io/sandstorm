@@ -163,13 +163,30 @@ input.autoSelect {
 }
 
 #stats {
-  .report-stats {
+  .report-stats-yesno-box {
+    background-color: #D8BFD8;
+    padding: 16px;
+    text-align: right;
+    p {
+      text-align: left;
+      margin-bottom: 16px;
+    }
     button {
       margin-right: 5px;
+
+      &.yes {
+        padding: 8px 16px;
+      }
+      &.no {
+        background: none;
+        color: black;
+        text-decoration: underline;
+        font-weight: normal;
+        font-size: 85%;
+      }
     }
-    .yesno-box {
-      background-color: #D8BFD8;
-    }
+  }
+  .report-stats {
     img {
       width: 16px;
     }

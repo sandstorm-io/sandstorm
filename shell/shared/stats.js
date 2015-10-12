@@ -144,8 +144,8 @@ if (Meteor.isServer) {
         // Setting not set yet, send out notifications and set it to false
         globalDb.sendAdminNotification("You can help Sandstorm by sending us some anonymous " +
           "usage stats. Click here for more info.", "/admin/stats");
-        Settings.insert({_id: "reportStats", value: false});
-      } else if (reportSetting.value) {
+        Settings.insert({_id: "reportStats", value: "unset"});
+      } else if (reportSetting.value === true) {
         // The stats page which the user agreed we can send actually displays the whole history
         // of the server, but we're only sending stats from the last day. Let's also throw in the
         // length of said history. This is still strictly less information than what the user said
@@ -234,7 +234,7 @@ Router.map(function () {
 });
 
 if (Meteor.isClient) {
-  var saveReportStats = function (newValue, template, cb) {
+  var saveReportStats = function (newValue, template) {
     var state = Iron.controller().state;
     var token = state.get("token");
     template.reportStatsSaved.set(false);
@@ -252,9 +252,8 @@ if (Meteor.isClient) {
       template.fadeTimeoutId = Meteor.setTimeout(function () {
         template.fadeCheckmark.set(true);
       }, 1000);
-      if (cb) {
-        cb();
-      }
+
+      Meteor.call("dismissAdminStatsNotifications", token);
     });
   };
 
@@ -269,16 +268,10 @@ if (Meteor.isClient) {
       saveReportStats(ev.target.checked, template);
     },
     "click .report-stats-yesno-box>.yes": function (ev, template) {
-      var state = Iron.controller().state;
-      var token = state.get("token");
-      saveReportStats(true, template, Meteor.call.bind(Meteor,
-        "dismissAdminStatsNotifications", token));
+      saveReportStats(true, template);
     },
     "click .report-stats-yesno-box>.no": function (ev, template) {
-      var state = Iron.controller().state;
-      var token = state.get("token");
-      saveReportStats(false, template, Meteor.call.bind(Meteor,
-        "dismissAdminStatsNotifications", token));
+      saveReportStats(false, template);
     },
   });
   Template.adminStats.onCreated(function () {
@@ -368,11 +361,11 @@ if (Meteor.isClient) {
     },
     reportStats: function () {
       var setting = Settings.findOne({_id: "reportStats"});
-      return setting && setting.value;
+      return setting && setting.value === true;
     },
     reportStatsFirstVisit: function () {
       var setting = Settings.findOne({_id: "reportStats"});
-      return  Match.test(setting, Match.OneOf(undefined, null));
+      return !setting || setting.value === "unset";
     },
     reportStatsSaving: function() {
       return !Match.test(Template.instance().reportStatsSaved.get(), Match.OneOf(undefined, null));

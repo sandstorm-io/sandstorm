@@ -1093,7 +1093,12 @@ private:
         "  argv = [", argv, "],\n"
         "  environ = [\n"
         "    # Note that this defines the *entire* environment seen by your app.\n"
-        "    (key = \"PATH\", value = \"/usr/local/bin:/usr/bin:/bin\")\n"
+        "    (key = \"PATH\", value = \"/usr/local/bin:/usr/bin:/bin\"),\n"
+        "    (key = \"SANDSTORM\", value = \"1\"),\n"
+        "    # Apps that are adapted for Sandstorm may benefit from enabling additional\n"
+        "    # Sandstorm-specific integrations or disabling features that Sandstorm replaces.\n"
+        "    # This line lets an app detect that it is running under Sandstorm by testing for\n"
+        "    # the presence of the SANDSTORM environment variable.\n"
         "  ]\n"
         ");\n");
 

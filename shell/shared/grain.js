@@ -801,7 +801,8 @@ if (Meteor.isClient) {
     },
     existingTokens: function () {
       var current = getActiveGrain(globalGrains.get());
-      return current && ApiTokens.find({grainId: current.grainId(), userId: Meteor.userId(),
+      return current && ApiTokens.find({grainId: current.grainId(),
+                                        identityId: current.identityId(),
                                         forSharing: {$ne: true},
                                         $or: [{owner: {webkey: null}},
                                               {owner: {$exists: false}}],

@@ -181,3 +181,35 @@ SandstormDb.getUserIdentities = function (user) {
     return identity;
   });
 }
+
+SandstormDb.getUserEmails = function (user) {
+  // Given a user object, returns an array containing all email addresses associated with that user.
+  // Each entry in the array is an object of the form:
+  //     `{email: String, verified: Bool, primary: Optional(Bool)}`
+  //
+  // At most one entry in the result has `primary = true`.
+
+  var result = [];
+  if (!user || !user.identities) return result;
+
+  user.identities.forEach(function (identity) {
+    if (identity.verifiedEmail) {
+      result.push({email: identity.verifiedEmail, verified: true});
+    }
+    if (identity.unverifiedEmail) {
+      result.push({email: identity.unverifiedEmail, verified: false});
+    }
+  });
+
+  // TODO(soon): Allow the user to select a verified email as their primary email.
+  for (var ii = 0; ii < result.length; ++ii) {
+    if (result[ii].verified) {
+      result[ii].primary = true;
+      break;
+    } else if (ii == result.length - 1) {
+      // No verified addresses. Mark the first address as primary.
+      result[0].primary = true;
+    }
+  }
+  return result;
+}

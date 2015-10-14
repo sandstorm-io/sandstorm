@@ -850,7 +850,7 @@ limitations under the License.
           <li>{{reason}}</li>
           {{/each}}
         </ul>
-        For internal server errors, see <code>&lt;install-location&gt;/var/log/sandstorm.log</code> for details.
+        For internal server errors, see {{#linkTo route='adminLog' data=getToken}}the Sandstorm server log{{/linkTo}} for details.
       </div>
       {{/if}}
     {{else}}

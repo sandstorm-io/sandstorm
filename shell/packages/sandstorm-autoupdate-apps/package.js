@@ -21,7 +21,7 @@ Package.describe({
 
 Package.onUse(function (api) {
   api.use("http");
-  api.addFiles(["autoupdate-apps.js"], ["client", "server"]);
+  api.addFiles(["autoupdate-apps.js"], ["server"]);
   api.export("SandstormAutoupdateApps");
 });
 

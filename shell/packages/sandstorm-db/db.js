@@ -1218,7 +1218,8 @@ if (Meteor.isServer) {
     return package;
   }
 
-  SandstormDb.prototype.sendAppUpdateNotifications = function (appId, packageId, name, versionNumber, marketingVersion) {
+  SandstormDb.prototype.sendAppUpdateNotifications = function (appId, packageId, name,
+                                                               versionNumber, marketingVersion) {
     var db = this;
     var actions = db.collections.userActions.find({appId: appId, appVersion: {$lt: versionNumber}}, {fields: {userId: 1}});
     actions.forEach(function (action) {
@@ -1229,8 +1230,8 @@ if (Meteor.isServer) {
         isUnread: true,
       };
 
-      // Set only the appId that we care about. Use mongo's dot notation to specify only a single field
-      // inside of an object to update
+      // Set only the appId that we care about. Use mongo's dot notation to specify only a single
+      // field inside of an object to update
       updater["appUpdates." + appId] = {
         marketingVersion: marketingVersion,
         packageId: packageId,

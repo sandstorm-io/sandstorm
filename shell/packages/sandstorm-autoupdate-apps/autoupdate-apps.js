@@ -39,7 +39,8 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
       var url = appIndexUrl + "/packages/" + app.packageId;
       if (pack) {
         if (pack.status === "ready") {
-          db.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber, app.version);
+          db.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
+            app.version);
         } else {
           var newPack = Packages.findAndModify({
             query: {_id: app.packageId},
@@ -49,7 +50,8 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
             // The package was marked as ready before we applied isAutoUpdated=true. We should send
             // notifications ourselves to be sure there's no timing issue (sending more than one is
             // fine, since it will de-dupe).
-            db.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber, app.version);
+            db.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
+              app.version);
           } else if (newPack.status === "failed") {
             // If the package has failed, retry it
             db.startInstall(app.packageId, url, true, true);

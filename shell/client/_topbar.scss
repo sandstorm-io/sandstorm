@@ -889,7 +889,7 @@ body>.popup {
   }
 
   &.notifications {
-    #notification-list {
+    .notification-list {
       list-style: outside none none;
       padding: 0px;
       margin: $topbar-popup-padding;

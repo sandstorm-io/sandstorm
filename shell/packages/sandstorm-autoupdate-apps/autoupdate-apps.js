@@ -70,7 +70,7 @@ Meteor.methods({
     var backend = this.connection.sandstormBackend;
 
     _.forEach(appUpdates, function (val, appId) {
-      var pack = db.collections.packages.findOne({_id: val.packageId});
+      var pack = db.collections.packages.findOne({_id: val.packageId, appId: appId});
       if (!pack || !pack.manifest) {
         console.error("Newer app not installed", val.name);
       } else {

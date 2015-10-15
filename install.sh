@@ -810,9 +810,16 @@ sandcats_configure() {
   # hostname, and if that succeeds, we are totally done. This avoids a
   # possible time-of-check-time-of-use race.
   echo -n "As a Sandstorm user, you are invited to use a free Internet hostname "
-  echo "as a subdomain of sandcats.io."
+  echo "as a subdomain of sandcats.io,"
+  echo "a service operated by the Sandstorm development team."
 
   sandcats_generate_keys
+
+  echo ""
+  echo "Sandcats.io protects your privacy and is subject to terms of use. By using it,"
+  echo "you agree to the terms of service & privacy policy available here:"
+  echo "https://sandcats.io/terms https://sandcats.io/privacy"
+  echo ""
 
   # Having set up the keys, we run the function to register a name
   # with Sandcats. This function handles tail-recursing itself until

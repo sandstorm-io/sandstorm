@@ -1,3 +1,13 @@
+### v0.119 (2015-10-15)
+- Sandstorm now notifies you when app updates are available.
+- A few days after installing Sandstorm, it will ask you for permission to send anonymous usage stats back to us. The stats sent are a subset of what appears at /admin/stats, so you can inspect them for yourself.
+- Apps can now expose WebDAV APIs. This will soon be used to support Dropbox-like file sync.
+- Large under-the-hood changes have been made towards the goal of supporting multiple login methods for the same account, but these changes should not yet be user-visible unless there are bugs.
+- Fix bug where file upload dialogs (e.g. profile picture, spk upload, etc.) would sometimes randomly do nothing after a file was chosen.
+- Page title is now correctly updated when browsing to a non-grain route.
+- HTTP proxy now passes through ETags and ETag preconditions, probably improving performance for some apps.
+- Attempt again to fix rare bug where front-end stops talking to back-end, apparently not fixed by 0.116 as we thought. Most likely still not fixed, but new logging has been added to try to debug.
+
 ### v0.118 (2015-10-07)
 - Fixed problem where Sandcats-HTTPS-enabled servers would request new certificates too often.
 - This is a cherry-pick release -- no other changes merged in the last week are included.

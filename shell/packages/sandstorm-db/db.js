@@ -1221,14 +1221,6 @@ if (Meteor.isServer) {
   SandstormDb.prototype.sendAppUpdateNotifications = function (appId, packageId, name,
                                                                versionNumber, marketingVersion) {
     var db = this;
-    var pack = db.collections.packages.findOne({_id: packageId});
-    if (!pack) {
-      throw new Meteor.Error(500, "Couldn't find package to send update notification for: "
-        + packageId);
-    } else if (pack.appId !== appId) {
-      throw new Meteor.Error(500, "AppIds don't match. Not sending update notification for: " +
-        packageId);
-    }
     var actions = db.collections.userActions.find({appId: appId, appVersion: {$lt: versionNumber}},
       {fields: {userId: 1}});
     actions.forEach(function (action) {

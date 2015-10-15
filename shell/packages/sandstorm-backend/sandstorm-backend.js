@@ -122,7 +122,7 @@ SandstormBackend.prototype.maybeRetryUseGrain = function (grainId, cb, retryCoun
   if (SandstormBackend.shouldRestartGrain(err, retryCount)) {
     return inMeteor(function () {
       return cb(self.openGrain(grainId, true).supervisor)
-          .catch(self.maybeRetryUseGrain.bind(undefined, grainId, cb, retryCount + 1));
+          .catch(self.maybeRetryUseGrain.bind(self, grainId, cb, retryCount + 1));
     });
   } else {
     throw err;
@@ -142,11 +142,11 @@ SandstormBackend.prototype.useGrain = function (grainId, cb) {
   if (runningGrain) {
     return runningGrain.then(function (grainInfo) {
       return cb(grainInfo.supervisor);
-    }).catch(self.maybeRetryUseGrain.bind(undefined, grainId, cb, 0));
+    }).catch(self.maybeRetryUseGrain.bind(self, grainId, cb, 0));
   } else {
     return inMeteor(function () {
       return cb(self.openGrain(grainId, false).supervisor)
-          .catch(self.maybeRetryUseGrain.bind(undefined, grainId, cb, 0));
+          .catch(self.maybeRetryUseGrain.bind(self, grainId, cb, 0));
     });
   }
 }

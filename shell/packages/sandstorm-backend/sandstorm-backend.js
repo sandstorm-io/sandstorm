@@ -159,12 +159,14 @@ SandstormBackend.prototype.continueGrain = function(grainId) {
 
   // If a DevPackage with the same app ID is currently active, we let it override the installed
   // package, so that the grain runs using the dev app.
-  var devPackage = DevPackages.findOne({_appId: grain.appId});
+  var devPackage = DevPackages.findOne({appId: grain.appId});
   var isDev;
+  var pkg;
   if (devPackage) {
     isDev = true;
+    pkg = devPackage;
   } else {
-    var pkg = Packages.findOne(grain.packageId);
+    pkg = Packages.findOne(grain.packageId);
     if (!pkg) {
       throw new Meteor.Error(500, "Grain's package not installed",
                              "Package ID: " + grain.packageId);

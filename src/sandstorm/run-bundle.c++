@@ -1195,9 +1195,9 @@ private:
     auto files = splitLines(readAll("etc.list"));
     for (auto& file: files) {
       auto pathElements = split(file, '/');
-      KJ_REQUIRE(pathElements.size() >= 3, kj::str("Invalid path ", file));
-      KJ_REQUIRE(pathElements[0].size() == 0, kj::str("Relative path given in etc.list: ", file));
-      KJ_REQUIRE(kj::str(pathElements[1]) == "etc", "etc.list asked to symlink in file outside of /etc/");
+      KJ_REQUIRE(pathElements.size() >= 3, "invalid path", file);
+      KJ_REQUIRE(pathElements[0].size() == 0, kj::str("relative path given in etc.list", file));
+      KJ_REQUIRE(kj::str(pathElements[1]) == "etc", "etc.list asked to symlink in file outside of /etc/", file);
       auto etcChild = pathElements[2];
       auto linkTargetAsSeenByLink = kj::str("/etc.host/", etcChild);
       auto linkToCreate = kj::str("./etc/", etcChild);

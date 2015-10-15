@@ -1,3 +1,6 @@
+### v0.121 (2015-10-15)
+- Fix regression where `spk dev` might fail to override normally-installed versions of the app. (Only affects development servers.)
+
 ### v0.120 (2015-10-15)
 - Fix bug causing intermittent timeouts in web publishing.
 

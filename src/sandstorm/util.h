@@ -172,6 +172,9 @@ bool isDirectory(kj::StringPtr path);
 kj::Array<kj::String> listDirectory(kj::StringPtr dirname);
 // Get names of all files in the given directory except for "." and "..".
 
+kj::Array<kj::String> listDirectoryAt(int dirfd, kj::StringPtr path);
+// Like `listDirectory()` but operates on a subdirectory of the given file descriptor.
+
 kj::Array<kj::String> listDirectoryFd(int dirfd);
 // Like `listDirectory()` but operates on a file descriptor.
 

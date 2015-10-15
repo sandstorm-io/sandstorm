@@ -262,16 +262,21 @@ kj::Array<kj::String> listDirectory(kj::StringPtr dirname) {
   return listDirectoryAndClose(dir);
 }
 
-kj::Array<kj::String> listDirectoryFd(int dirfd) {
-  // We need to reopen the directory FD to get a separately-seekable file, and because closedir()
-  // will close the fd even if opened with fdopendir().
+kj::Array<kj::String> listDirectoryAt(int dirfd, kj::StringPtr path) {
   int fd;
-  KJ_SYSCALL(fd = openat(dirfd, ".", O_RDONLY | O_DIRECTORY));
+  KJ_SYSCALL(fd = openat(dirfd, path.cStr(), O_RDONLY | O_DIRECTORY));
   DIR* dir = fdopendir(fd);
   if (dir == nullptr) {
     KJ_FAIL_SYSCALL("fdopendir", errno);
   }
   return listDirectoryAndClose(dir);
+}
+
+kj::Array<kj::String> listDirectoryFd(int dirfd) {
+  // We can't actually use `dirfd` directly because we'd mess up the seek state and because
+  // closedir() unfortunately always closes the FD even if opened with fdopendir(). So instead
+  // we delegate to listDirectoryAt() which will open a new FD.
+  return listDirectoryAt(dirfd, ".");
 }
 
 void recursivelyDelete(kj::StringPtr path) {

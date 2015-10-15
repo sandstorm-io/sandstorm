@@ -138,6 +138,21 @@ __EOF__
 gcc tmp/dnstest.c -o tmp/dnstest
 strace tmp/dnstest 2>&1 | grep -o '"/[^"]*"' | tr -d '"' | copyDeps
 
+# Add some whitelisted entries to etc.list that we always want to include,
+# even if the build machine doesn't necessarily use them.  This helps handle
+# systems that use resolvconf to manage /etc/resolv.conf.
+# We skip copyDeps because it only adds files that exist on this system; we
+# wish to make things work for systems configured differently from the build host.
+cat >> tmp/etc.list << '__EOF__'
+/etc/gai.conf
+/etc/host.conf
+/etc/hosts
+/etc/nsswitch.conf
+/etc/resolvconf
+/etc/resolv.conf
+/etc/services
+__EOF__
+
 # Dedup the etc.list and copy over.  Don't copy the ld.so.x files, though.
 cat tmp/etc.list | grep -v '/ld[.]so[.]' | sort | uniq > bundle/etc.list
 

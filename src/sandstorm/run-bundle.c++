@@ -1190,16 +1190,22 @@ private:
   }
 
   void linkEtc() {
+    // We will create a symlink for the first child of /etc named in each line of etc.list to
+    // symlink that file or folder from the host into the /etc/ tmpfs.
     auto files = splitLines(readAll("etc.list"));
-
-    // Now bind in each file.
     for (auto& file: files) {
-      KJ_REQUIRE(file.startsWith(kj::str("/etc/")), "asked to link in file outside of /etc/");
-      auto source = kj::str("etc.host/", file.slice(5));
-      auto sourceAsSeenByTarget = kj::str("/", source);
-      if (access(source.cStr(), R_OK) == 0) {
-        auto target = kj::str(".", file);
-        KJ_SYSCALL(symlink(sourceAsSeenByTarget.cStr(), target.cStr()));
+      auto pathElements = split(file, '/');
+      KJ_REQUIRE(pathElements.size() >= 3, kj::str("Invalid path ", file));
+      KJ_REQUIRE(pathElements[0].size() == 0, kj::str("Relative path given in etc.list: ", file));
+      KJ_REQUIRE(kj::str(pathElements[1]) == "etc", "etc.list asked to symlink in file outside of /etc/");
+      auto etcChild = pathElements[2];
+      auto linkTargetAsSeenByLink = kj::str("/etc.host/", etcChild);
+      auto linkToCreate = kj::str("./etc/", etcChild);
+
+      // Only attempt to create the symlink if we haven't created it already.
+      struct stat stats;
+      if (lstat(linkToCreate.cStr(), &stats) < 0 && errno == ENOENT) {
+        KJ_SYSCALL(symlink(linkTargetAsSeenByLink.cStr(), linkToCreate.cStr()));
       }
     }
   }

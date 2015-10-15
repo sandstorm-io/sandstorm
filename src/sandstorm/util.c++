@@ -212,6 +212,15 @@ kj::Maybe<uint> parseUInt(kj::StringPtr s, int base) {
   return result;
 }
 
+kj::Maybe<uint64_t> parseUInt64(kj::StringPtr s, int base) {
+  char* end;
+  uint64_t result = strtoull(s.cStr(), &end, base);
+  if (s.size() == 0 || *end != '\0') {
+    return nullptr;
+  }
+  return result;
+}
+
 kj::AutoCloseFd openTemporary(kj::StringPtr near) {
   // TODO(someday):  Use O_TMPFILE?  New in Linux 3.11.
 

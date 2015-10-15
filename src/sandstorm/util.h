@@ -160,6 +160,7 @@ void toLower(kj::ArrayPtr<char> text);
 // Force entire array of chars to lower-case.
 
 kj::Maybe<uint> parseUInt(kj::StringPtr s, int base);
+kj::Maybe<uint64_t> parseUInt64(kj::StringPtr s, int base);
 // Try to parse an integer with strtoul(), return null if parsing fails or doesn't consume all
 // input.
 

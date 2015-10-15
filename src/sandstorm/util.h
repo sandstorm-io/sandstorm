@@ -180,6 +180,7 @@ kj::Array<kj::String> listDirectoryFd(int dirfd);
 // Like `listDirectory()` but operates on a file descriptor.
 
 void recursivelyDelete(kj::StringPtr path);
+void recursivelyDeleteAt(int fd, kj::StringPtr path);
 // Delete the given path, recursively if it is a directory.
 //
 // Since this may be used in KJ_DEFER to delete temporary directories, all exceptions are

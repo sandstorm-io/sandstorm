@@ -301,6 +301,19 @@ void recursivelyDelete(kj::StringPtr path) {
   }
 }
 
+void recursivelyDeleteAt(int fd, kj::StringPtr path) {
+  struct stat stats;
+  KJ_SYSCALL(fstatat(fd, path.cStr(), &stats, AT_SYMLINK_NOFOLLOW), path) { return; }
+  if (S_ISDIR(stats.st_mode)) {
+    for (auto& file: listDirectoryAt(fd, path)) {
+      recursivelyDeleteAt(fd, kj::str(path, "/", file));
+    }
+    KJ_SYSCALL(unlinkat(fd, path.cStr(), AT_REMOVEDIR), path) { break; }
+  } else {
+    KJ_SYSCALL(unlinkat(fd, path.cStr(), 0), path) { break; }
+  }
+}
+
 void recursivelyCreateParent(kj::StringPtr path) {
   KJ_IF_MAYBE(pos, path.findLast('/')) {
     if (*pos == 0) return;

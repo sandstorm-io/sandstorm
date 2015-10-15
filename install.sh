@@ -811,7 +811,7 @@ sandcats_configure() {
   # possible time-of-check-time-of-use race.
   echo -n "As a Sandstorm user, you are invited to use a free Internet hostname "
   echo "as a subdomain of sandcats.io,"
-  echo "a free service by the Sandstorm development team."
+  echo "a service operated by the Sandstorm development team."
 
   sandcats_generate_keys
 

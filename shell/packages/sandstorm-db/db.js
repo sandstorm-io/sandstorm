@@ -753,8 +753,10 @@ if (Meteor.isServer) {
 
 _.extend(SandstormDb.prototype, {
   getUser: function getUser (userId) {
-    check(userId, String);
-    return Meteor.users.findOne(userId);
+    check(userId, Match.OneOf(String, undefined, null));
+    if (userId) {
+      return Meteor.users.findOne(userId);
+    }
   },
 
   getIdentity: function getIdentity (identityId) {
@@ -773,8 +775,9 @@ _.extend(SandstormDb.prototype, {
     return !!Meteor.users.findOne({_id: userId, "identities.id": identityId});
   },
 
-  userGrains: function userGrains (user) {
-    return this.collections.grains.find({ userId: user});
+  userGrains: function userGrains (userId) {
+    check(userId, Match.OneOf(String, undefined, null));
+    return this.collections.grains.find({userId: userId});
   },
 
   currentUserGrains: function currentUserGrains () {
@@ -787,8 +790,8 @@ _.extend(SandstormDb.prototype, {
   },
 
   userApiTokens: function userApiTokens (userId) {
-    check(userId, String);
-    var identityIds = SandstormDb.getUserIdentities(this.getUser(userId))
+    check(userId, Match.OneOf(String, undefined, null));
+    identityIds = SandstormDb.getUserIdentities(this.getUser(userId))
         .map(function (identity) { return identity.id; });
     return this.collections.apiTokens.find({'owner.user.identityId': {$in: identityIds}});
   },
@@ -1215,9 +1218,19 @@ if (Meteor.isServer) {
     return package;
   }
 
-  SandstormDb.prototype.sendAppUpdateNotifications = function (appId, packageId, name, versionNumber, marketingVersion) {
+  SandstormDb.prototype.sendAppUpdateNotifications = function (appId, packageId, name,
+                                                               versionNumber, marketingVersion) {
     var db = this;
-    var actions = db.collections.userActions.find({appId: appId, appVersion: {$lt: versionNumber}}, {fields: {userId: 1}});
+    var pack = db.collections.packages.findOne({_id: packageId});
+    if (!pack) {
+      throw new Meteor.Error(500, "Couldn't find package to send update notification for: "
+        + packageId);
+    } else if (pack.appId !== appId) {
+      throw new Meteor.Error(500, "AppIds don't match. Not sending update notification for: " +
+        packageId);
+    }
+    var actions = db.collections.userActions.find({appId: appId, appVersion: {$lt: versionNumber}},
+      {fields: {userId: 1}});
     actions.forEach(function (action) {
       var userId = action.userId;
       var updater = {
@@ -1226,8 +1239,8 @@ if (Meteor.isServer) {
         isUnread: true,
       };
 
-      // Set only the appId that we care about. Use mongo's dot notation to specify only a single field
-      // inside of an object to update
+      // Set only the appId that we care about. Use mongo's dot notation to specify only a single
+      // field inside of an object to update
       updater["appUpdates." + appId] = {
         marketingVersion: marketingVersion,
         packageId: packageId,

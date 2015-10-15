@@ -126,7 +126,12 @@ line from your `/opt/sandstorm/sandstorm.conf`. That will disable the
 functionality. Note that this does not delete any domains you
 registered. It does cause them to stop updating.
 
-# Contact us for help
+# Terms of service, privacy policy, & contact information
+
+Sandcats.io has the following formal documents:
+
+* [Sandcats.io privacy policy](https://sandcats.io/privacy)
+* [Sandcats.io terms of service](https://sandcats.io/terms)
 
 If you have more questions, or are having trouble, email:
 

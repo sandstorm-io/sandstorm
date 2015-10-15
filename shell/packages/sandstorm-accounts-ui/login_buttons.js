@@ -179,7 +179,7 @@ var loginWithToken = function (email, token, topbar) {
     } else {
       loginButtonsSession.set("inSignupFlow", false);
       loginButtonsSession.closeDropdown();
-      topbar.closePopup();
+      if (topbar) topbar.closePopup();
     }
   });
 };

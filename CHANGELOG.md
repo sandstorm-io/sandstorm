@@ -1,3 +1,6 @@
+### v0.120 (2015-10-15)
+- Fix bug causing intermittent timeouts in web publishing.
+
 ### v0.119 (2015-10-15)
 - Sandstorm now notifies you when app updates are available.
 - A few days after installing Sandstorm, it will ask you for permission to send anonymous usage stats back to us. The stats sent are a subset of what appears at /admin/stats, so you can inspect them for yourself.

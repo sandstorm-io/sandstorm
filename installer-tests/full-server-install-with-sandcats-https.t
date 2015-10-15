@@ -23,7 +23,7 @@ We're going to:
 * Configure your system to enable unprivileged user namespaces, via sysctl.
 
 OK to continue? [yes] $[type]
-$[slow]As a Sandstorm user, you are invited to use a free Internet hostname as a subdomain of sandcats.io.
+$[slow]As a Sandstorm user, you are invited to use a free Internet hostname as a subdomain of sandcats.io
 $[slow]Choose your desired Sandcats subdomain (alphanumeric, max 20 characters).
 Type the word none to skip this step, or help for help.
 What *.sandcats-dev.sandstorm.io subdomain would you like? []$[type]gensym

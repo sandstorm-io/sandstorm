@@ -676,6 +676,8 @@ if (Meteor.isClient) {
     notificationTitle: function () {
       if (this.admin) {
         return "Notification from System";
+      } else if (this.appUpdates) {
+        return "App updates are available";
       }
 
       return this.grainTitle + " is backgrounded";
@@ -693,11 +695,8 @@ if (Meteor.isClient) {
     adminLink: function () {
       return this.admin && this.admin.action;
     },
-    appUpdatesText: function () {
-      var lines = _.map(this.appUpdates, function (val, key) {
-        return val.name + " has been updated to version " + val.marketingVersion;
-      });
-      return lines.join("\n");
+    appUpdatesList: function () {
+      return _.values(this.appUpdates);
     },
   });
 

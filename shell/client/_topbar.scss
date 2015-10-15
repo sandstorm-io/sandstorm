@@ -887,4 +887,82 @@ body>.popup {
       }
     }
   }
+
+  &.notifications {
+
+    ul.notification-list {
+      list-style: outside none none;
+      padding: 0px;
+      margin: $topbar-popup-padding;
+
+      >li {
+        margin: 10px 0px;
+        border-bottom: 1px solid black;
+        &:last-child {
+          border-bottom: 0px;
+        }
+      }
+
+      .notification-item {
+        font-size: 14px;
+
+        >p {
+          white-space: pre;
+          margin: 0px;
+        }
+
+        .notification-footer {
+          margin: 12px 0px;
+          height: 26px;
+          >button {
+            cursor: pointer;
+            border-radius: 5px;
+            padding: 4px 8px;
+            box-sizing: border-box;
+
+            &.accept-notification {
+              background-color: purple;
+              color: white;
+              float: right;
+              margin-left: 5px;
+              border: 1px solid white;
+            }
+
+            &.cancel-notification {
+              background-color: white;
+              float: right;
+              margin-left: 5px;
+              border: 1px solid #ccc;
+            }
+          }
+        }
+      }
+    }
+
+    .notification-selected button {
+      background-color: #666;
+    }
+
+    .notification-icon {
+      background-position: center 4px;
+      background-repeat: no-repeat;
+      background-size: contain;
+      width: 32px;
+      height: 32px;
+      border: none;
+      color: transparent;
+      background-color: black;
+      background-image: url("/notification.svg");
+      vertical-align: top;
+    }
+
+    .notification-timestamp {
+      text-align: left;
+      color: #ccc;
+    }
+
+    .notification-title {
+      margin-bottom: 14px;
+    }
+  }
 }

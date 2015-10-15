@@ -164,7 +164,7 @@ limitations under the License.
 
 <template name="notificationsPopup">
   <h4>Notifications</h4>
-  <ul id="notification-list">
+  <ul class="notification-list">
     {{#each notifications}}
       <li>
         {{> notificationItem}}
@@ -177,21 +177,13 @@ limitations under the License.
 
 <template name="notificationItem">
   <div class="notification-item">
-    <div class="notification-header">
-      {{#if isAppUpdates}}
-        App updates are available
-        <button title="Ignore the below updates" class="cancel-notification">Dismiss</button>
-        <button title="Update all of the below apps" class="accept-notification">Apply Updates</button>
-      {{else}}
-        {{notificationTitle}}
-        {{#if showDismiss}}
-          <button title="{{titleHelperText}}" class="cancel-notification">Cancel</button>
-        {{/if}}
-      {{/if}}
-      <div title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</div>
+    <div class="notification-title">
+      {{notificationTitle}}:
     </div>
     {{#if isAppUpdates}}
-    <p>{{appUpdatesText}}</p>
+      {{#each appUpdatesList}}
+        <b>{{name}}</b> has been updated to version {{marketingVersion}}
+      {{/each}}
     {{else}}
       {{#if adminLink}}
         <a href="{{adminLink}}">{{text.defaultText}}</a>
@@ -199,6 +191,17 @@ limitations under the License.
         {{text.defaultText}}
       {{/if}}
     {{/if}}
+    <div class="notification-footer">
+      <span title="{{timestamp}}" class="notification-timestamp">{{dateString timestamp}}</span>
+      {{#if isAppUpdates}}
+        <button title="Ignore the above updates" class="cancel-notification">Dismiss</button>
+        <button title="Update all of the above apps" class="accept-notification">Apply Updates</button>
+      {{else}}
+        {{#if showDismiss}}
+          <button title="{{titleHelperText}}" class="cancel-notification">Cancel</button>
+        {{/if}}
+      {{/if}}
+    </div>
   </div>
 </template>
 

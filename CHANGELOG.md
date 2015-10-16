@@ -1,3 +1,7 @@
+### v0.122 (2015-10-16)
+- Fix formatting of app update notification.
+- Add temporary debug logging aimed at diagnosing the rare event loop stalling bug which is apparently still not fixed.
+
 ### v0.121 (2015-10-15)
 - Fix regression where `spk dev` might fail to override normally-installed versions of the app. (Only affects development servers.)
 

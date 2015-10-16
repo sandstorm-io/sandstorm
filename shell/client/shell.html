@@ -181,9 +181,11 @@ limitations under the License.
       {{notificationTitle}}:
     </div>
     {{#if isAppUpdates}}
+      <ul class="app-updates">
       {{#each appUpdatesList}}
-        <b>{{name}}</b> has been updated to version {{marketingVersion}}
+        <li><b>{{name}}</b> has been updated to version {{marketingVersion}}</li>
       {{/each}}
+      </ul>
     {{else}}
       {{#if adminLink}}
         <a href="{{adminLink}}">{{text.defaultText}}</a>

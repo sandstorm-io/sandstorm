@@ -1093,7 +1093,11 @@ private:
         "  argv = [", argv, "],\n"
         "  environ = [\n"
         "    # Note that this defines the *entire* environment seen by your app.\n"
-        "    (key = \"PATH\", value = \"/usr/local/bin:/usr/bin:/bin\")\n"
+        "    (key = \"PATH\", value = \"/usr/local/bin:/usr/bin:/bin\"),\n"
+        "    (key = \"SANDSTORM\", value = \"1\"),\n"
+        "    # Export SANDSTORM=1 into the environment, so that apps running within Sandstorm\n"
+        "    # can detect if $SANDSTORM=\"1\" at runtime, switching UI and/or backend to use\n"
+        "    # the app's Sandstorm-specific integration code.\n"
         "  ]\n"
         ");\n");
 

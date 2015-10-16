@@ -78,11 +78,13 @@ Meteor.setInterval(function () {
     sandstormBackendConnection.close();
     sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
     sandstormBackend = sandstormBackendConnection.restore(null, Backend);
+    if (Capnp.enableVerboseDebugLogging) Capnp.enableVerboseDebugLogging(true);
   }
 
   backendHealthy = false;
   sandstormBackend.ping().then(function () {
     backendHealthy = true;
+    if (Capnp.enableVerboseDebugLogging) Capnp.enableVerboseDebugLogging(false);
   }, function (err) {
     console.error("error: Backend ping threw error!", err.stack);
     // The connection will be remade on the next interval. Note that we do NOT normally observe

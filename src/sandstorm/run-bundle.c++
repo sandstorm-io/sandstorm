@@ -1109,8 +1109,8 @@ private:
 
     // Bind var -> ../var, so that all versions share the same var.
     // Same for tmp, though we clear it on every startup.
-    KJ_SYSCALL(mount("../var", "var", nullptr, MS_BIND, nullptr));
-    KJ_SYSCALL(mount("../tmp", "tmp", nullptr, MS_BIND, nullptr));
+    KJ_SYSCALL(mount("../var", "var", nullptr, MS_BIND | MS_REC, nullptr));
+    KJ_SYSCALL(mount("../tmp", "tmp", nullptr, MS_BIND | MS_REC, nullptr));
 
     // Bind devices from /dev into our chroot environment.
     // We can't bind /dev itself because this is apparently not allowed when in a UID namespace
@@ -1125,10 +1125,12 @@ private:
     // As noted in backup.c++, MS_BIND does not respect mount flags on the initial bind, and
     // we have to issue a remount to set them.  Because the host /etc may have been mounted nosuid,
     // nodev, and noexec, we also add those flags here lest mount() think we're trying to remove
-    // them (which would cause mount() to fail)
-    KJ_SYSCALL(mount("/etc", "etc.host", nullptr, MS_BIND, nullptr));
+    // them (which would cause mount() to fail).  We also need MS_REC because the host may have
+    // mounted other FSes under /etc, and we need to recursively rebind those.
+    KJ_SYSCALL(mount("/etc", "etc.host", nullptr, MS_BIND | MS_REC, nullptr));
     KJ_SYSCALL(mount("/etc", "etc.host", nullptr,
-                     MS_BIND | MS_REMOUNT | MS_RDONLY | MS_NOSUID | MS_NODEV | MS_NOEXEC, nullptr));
+                     MS_BIND | MS_REC | MS_REMOUNT | MS_RDONLY | MS_NOSUID | MS_NODEV | MS_NOEXEC,
+                     nullptr));
 
     // Mount a tmpfs at /etc and symlink in necessary config files from the host.
     KJ_SYSCALL(mount("tmpfs", "etc", "tmpfs", MS_NOSUID | MS_NOEXEC,

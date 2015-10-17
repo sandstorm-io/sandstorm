@@ -1123,9 +1123,12 @@ private:
 
     // Bind in the host's /etc as /etc.host.
     // As noted in backup.c++, MS_BIND does not respect mount flags on the initial bind, and
-    // we have to issue a remount to set them.
+    // we have to issue a remount to set them.  Because the host /etc may have been mounted nosuid,
+    // nodev, and noexec, we also add those flags here lest mount() think we're trying to remove
+    // them (which would cause mount() to fail)
     KJ_SYSCALL(mount("/etc", "etc.host", nullptr, MS_BIND, nullptr));
-    KJ_SYSCALL(mount("/etc", "etc.host", nullptr, MS_BIND | MS_REMOUNT | MS_RDONLY, nullptr));
+    KJ_SYSCALL(mount("/etc", "etc.host", nullptr,
+                     MS_BIND | MS_REMOUNT | MS_RDONLY | MS_NOSUID | MS_NODEV | MS_NOEXEC, nullptr));
 
     // Mount a tmpfs at /etc and symlink in necessary config files from the host.
     KJ_SYSCALL(mount("tmpfs", "etc", "tmpfs", MS_NOSUID | MS_NOEXEC,

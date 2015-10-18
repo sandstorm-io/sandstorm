@@ -109,12 +109,12 @@ Accounts.onCreateUser(function (options, user) {
   } else if ("expires" in user) {
     identity.service = {demo: {}};
     serviceUserId = user._id;
-  } else if (options.service && options.service.emailToken) {
-    check(options.service, {emailToken:
+  } else if (options.service && options.service.email) {
+    check(options.service, {email:
                             {email: String,
                              tokens: [{digest: String, algorithm: String, createdAt: Date}]}});
     identity.service = options.service;
-    identity.verifiedEmail = options.service.emailToken.email;
+    identity.verifiedEmail = options.service.email.email;
     serviceUserId = identity.verifiedEmail;
   } else if (user.services && "google" in user.services) {
     identity.service = {google: {}};

@@ -279,6 +279,39 @@ function moveDevAndEmailLoginDataIntoIdentities() {
   });
 }
 
+function repairEmailIdentityIds() {
+  var Crypto = Npm.require("crypto");
+  Meteor.users.find({"identities.service.emailToken": {$exists: 1}}).forEach(function (user) {
+    if (user.identities.length != 1) {
+      throw new Error("User does not have exactly one identity: ", user);
+    }
+    var identity = user.identities[0];
+    var newIdentity = _.pick(identity, "main", "noLogin", "verifiedEmail", "unverifiedMail",
+                             "profile");
+    newIdentity.service = {email: identity.service.emailToken};
+    newIdentity.id = Crypto.createHash("sha256")
+      .update("email:" + identity.service.emailToken.email).digest("hex");
+
+    Grains.update({identityId: identity.id}, {$set: {identityId: newIdentity.id}}, {multi: true});
+    Sessions.update({identityId: identity.id}, {$set: {identityId: newIdentity.id}}, {multi: true});
+    ApiTokens.update({identityId: identity.id},
+                     {$set: {identityId: newIdentity.id}},
+                     {multi: true});
+    ApiTokens.update({"owner.user.identityId": identity.id},
+                     {$set: {"owner.user.identityId": newIdentity.id}},
+                     {multi: true});
+    ApiTokens.update({"owner.grain.introducerIdentity": identity.id},
+                     {$set: {"owner.grain.introducerIdentity": newIdentity.id}},
+                     {multi: true});
+
+    while (ApiTokens.update({"requirements.permissionsHeld.identityId": identity.id},
+                            {$set: {"requirements.$.permissionsHeld.identityId": newIdentity.id}},
+                            {multi: true}) > 0);
+
+    Meteor.users.update({_id: user._id}, {$set: {identities: [newIdentity]}});
+  });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -296,6 +329,7 @@ var MIGRATIONS = [
   splitUserIdsIntoAccountIdsAndIdentityIds,
   appUpdateSettings,
   moveDevAndEmailLoginDataIntoIdentities,
+  repairEmailIdentityIds,
 ];
 
 function migrateToLatest() {

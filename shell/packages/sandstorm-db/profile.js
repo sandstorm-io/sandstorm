@@ -147,7 +147,7 @@ function fillInDefaults(identity, user) {
         filterHandle(identity.profile.name) || "unknown";
     identity.profile.pronoun = identity.profile.pronoun || GENDERS[user.services.google.gender] ||
         "neutral";
-  } else if (identity.service.emailToken) {
+  } else if (identity.service.email) {
     identity.profile.name = identity.profile.name || identity.verifiedEmail.split("@")[0];
     identity.profile.handle = identity.profile.handle || emailToHandle(identity.verifiedEmail);
   } else if (identity.service.dev) {

@@ -121,20 +121,6 @@ function emailToHandle(email) {
   return filterHandle(base);
 }
 
-SandstormDb.getVerifiedEmails = function (user) {
-  var result = [];
-
-  var services = user.services || {};
-  var google = services.google || {};
-  if (google.email && google.verified_email) result.push(google.email);
-  if (services.emailToken) result.push(services.emailToken.email);
-
-  // TODO(soon): Verification of email addresses -- perhaps through asking the user to log in as
-  //   the given identity?
-
-  return result;
-}
-
 function fillInDefaults(identity, user) {
   if (identity.service.github) {
     identity.profile.name = identity.profile.name || user.services.github.username || "Name Unknown";

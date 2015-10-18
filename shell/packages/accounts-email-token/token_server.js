@@ -2,9 +2,9 @@ var TOKEN_EXPIRATION_MS = 15 * 60 * 1000;
 
 var cleanupExpiredTokens = function() {
   while (0 < Meteor.users.update(
-      {"identities.service.emailToken.tokens.createdAt": {$lt: new Date(Date.now() - TOKEN_EXPIRATION_MS)}},
+      {"identities.service.email.tokens.createdAt": {$lt: new Date(Date.now() - TOKEN_EXPIRATION_MS)}},
       {$pull: {
-        "identities.$.service.emailToken.tokens": {
+        "identities.$.service.email.tokens": {
           createdAt: {$lt: new Date(Date.now() - TOKEN_EXPIRATION_MS)}}}},
     { multi: true }));
 };
@@ -35,18 +35,18 @@ Accounts.emailToken.setEmailPackage = function (packageName) {
 var Crypto = Npm.require("crypto");
 
 // Handler to login with a token.
-Accounts.registerLoginHandler("emailToken", function (options) {
-  if (!options.emailToken)
+Accounts.registerLoginHandler("email", function (options) {
+  if (!options.email)
     return undefined; // don't handle
 
-  options = options.emailToken;
+  options = options.email;
   check(options, {
     email: String,
     token: String
   });
 
   var identityId = Crypto.createHash("sha256")
-      .update("emailToken" + ":" + options.email).digest("hex");
+      .update("email:" + options.email).digest("hex");
   var user = Meteor.users.findOne({"identities.id": identityId},
                                   {fields: {"identities.$": 1}});
 
@@ -59,7 +59,7 @@ Accounts.registerLoginHandler("emailToken", function (options) {
 
   var identity = user.identities[0];
 
-  if (!identity.service.emailToken.tokens) {
+  if (!identity.service.email.tokens) {
     console.error("User has no token set:", options.email);
     return {
       error: new Meteor.Error(403, "User has no token set")
@@ -67,7 +67,7 @@ Accounts.registerLoginHandler("emailToken", function (options) {
   }
 
   var token = Accounts.emailToken._hashToken(options.token.trim());
-  var found = checkToken(identity.service.emailToken.tokens, token);
+  var found = checkToken(identity.service.email.tokens, token);
 
   if (!found) {
     console.error("Token not found:", identity);
@@ -77,7 +77,7 @@ Accounts.registerLoginHandler("emailToken", function (options) {
   }
 
   Meteor.users.update({"identities.id": identityId},
-                      {$pull: {"identities.$.service.emailToken.tokens": token}});
+                      {$pull: {"identities.$.service.email.tokens": token}});
   return {
     userId: user._id
   };
@@ -125,7 +125,7 @@ var createAndEmailTokenForUser = function (email) {
   }
 
   var identityId = Crypto.createHash("sha256")
-      .update("emailToken" + ":" + email).digest("hex");
+      .update("email:" + email).digest("hex");
   var user = Meteor.users.findOne({"identities.id": identityId},
                                   {fields: {"identities.$": 1}});
   var userId;
@@ -137,7 +137,7 @@ var createAndEmailTokenForUser = function (email) {
 
   if (user) {
     var identity = user.identities[0];
-    if (identity.service.emailToken.tokens && identity.service.emailToken.tokens.length > 2) {
+    if (identity.service.email.tokens && identity.service.email.tokens.length > 2) {
       throw new Meteor.Error(409, "It looks like we sent a log in email to this address not long " +
         "ago. Please use the one that was already sent (check your spam folder if you can't find " +
         "it), or wait a while and try again");
@@ -145,10 +145,10 @@ var createAndEmailTokenForUser = function (email) {
     userId = user._id;
 
     Meteor.users.update({"identities.id": identityId},
-                        {$push: {"identities.$.service.emailToken.tokens": tokenObj}});
+                        {$push: {"identities.$.service.email.tokens": tokenObj}});
   } else {
     var options = {
-      service: {emailToken: {email: email, tokens: [tokenObj]}},
+      service: {email: {email: email, tokens: [tokenObj]}},
     };
 
     userId = Accounts.insertUserDoc(options, {});

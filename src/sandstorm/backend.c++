@@ -25,7 +25,7 @@
 namespace sandstorm {
 
 static kj::StringPtr validateId(kj::StringPtr id) {
-  KJ_REQUIRE(!id.startsWith(".") && id.findFirst('/') == nullptr, id);
+  KJ_REQUIRE(id.size() >= 8 && !id.startsWith(".") && id.findFirst('/') == nullptr, id);
   return id;
 }
 

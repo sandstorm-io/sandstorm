@@ -289,6 +289,9 @@ kj::Array<kj::String> listDirectoryFd(int dirfd) {
 }
 
 void recursivelyDelete(kj::StringPtr path) {
+  KJ_REQUIRE(!path.endsWith("/"),
+      "refusing to recursively delete directory name with trailing / to reduce risk of "
+      "catastrophic empty-string bugs");
   struct stat stats;
   KJ_SYSCALL(lstat(path.cStr(), &stats), path) { return; }
   if (S_ISDIR(stats.st_mode)) {
@@ -302,6 +305,9 @@ void recursivelyDelete(kj::StringPtr path) {
 }
 
 void recursivelyDeleteAt(int fd, kj::StringPtr path) {
+  KJ_REQUIRE(!path.endsWith("/"),
+      "refusing to recursively delete directory name with trailing / to reduce risk of "
+      "catastrophic empty-string bugs");
   struct stat stats;
   KJ_SYSCALL(fstatat(fd, path.cStr(), &stats, AT_SYMLINK_NOFOLLOW), path) { return; }
   if (S_ISDIR(stats.st_mode)) {

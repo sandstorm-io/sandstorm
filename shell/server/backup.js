@@ -90,7 +90,7 @@ Meteor.methods({
             throw new Meteor.Error(500, "Invalid backup file.");
           })).info;
       if (!grainInfo.appId) {
-        deleteGrain(grainId, this.userId);
+        globalBackend.deleteGrain(grainId, this.userId);
         throw new Meteor.Error(500, "Metadata object for uploaded grain has no AppId");
       }
 
@@ -111,14 +111,14 @@ Meteor.methods({
         appVersion = action.appVersion;
       } else {
         // If the package isn't installed at all, bail out.
-        deleteGrain(grainId, this.userId);
+        globalBackend.deleteGrain(grainId, this.userId);
         throw new Meteor.Error(500,
                                "App id for uploaded grain not installed",
                                "App Id: " + grainInfo.appId);
       }
 
       if (appVersion < grainInfo.appVersion) {
-        deleteGrain(grainId, this.userId);
+        globalBackend.deleteGrain(grainId, this.userId);
         throw new Meteor.Error(500,
                                "App version for uploaded grain is newer than any " +
                                "installed version. You need to upgrade your app first",

@@ -54,16 +54,17 @@ There are various ways to obtain an API token:
   information for the user of the app, and Sandstorm places the token
   into this template before displaying it to the user.
 
-* The app itself can make a Cap'n Proto RPC call to
-  `HackSessionContext.generateApiToken()`. See the [web publishing
-  guide](web-publishing.md) for more about how to access
-  `HackSessionContext`.
-
 * The user can click the key icon in the top bar when they have an app
   open.
 
 In the future, we will implement an OAuth flow allowing a third party
 to initiate a request for access to the user's apps.
+
+Sandstorm's `HackSessionContext` exports a Cap'n Proto RPC method
+called `HackSessionContext.generateApiToken()`. That method is
+deprecated in favor of offer templates. If you need to use it, read
+the [web publishing guide](web-publishing.md) for more about how to
+access `HackSessionContext`.
 
 ## Creating an offer template
 

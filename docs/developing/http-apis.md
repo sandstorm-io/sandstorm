@@ -121,6 +121,10 @@ window.addEventListener("message", messageListener);
 </script>
 ```
 
+As an implementation detail: the `rpcId` in the `event.data` response
+is the same as the value provided to the `renderTemplate` request. We
+used `"0"` here; you can choose any value.
+
 * When your page loads, make the request.
 
 ```html

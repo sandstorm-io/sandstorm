@@ -85,7 +85,7 @@ To create an offer template:
 * Create an `IFRAME` element within your page with a memorable ID. For example:
 
 ```html
-<iframe width="100%" height="55px" id="offer-iframe">
+<iframe style="width: 100%; height: 55px; margin: 0; border: 0;" id="offer-iframe">
 </iframe>
 ```
 

@@ -30,6 +30,9 @@ static kj::StringPtr validateId(kj::StringPtr id) {
 }
 
 static void tryRecursivelyDelete(kj::StringPtr path) {
+  KJ_REQUIRE(!path.endsWith("/"),
+      "refusing to recursively delete directory name with trailing / to reduce risk of "
+      "catastrophic empty-string bugs");
   static uint counter = 0;
   auto tmpPath = kj::str("/var/sandstorm/tmp/deleting.", time(nullptr), ".", counter++);
 

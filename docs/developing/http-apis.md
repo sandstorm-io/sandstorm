@@ -131,7 +131,7 @@ document.addEventListener("DOMContentLoaded", fillIframe);
 * Your offer template will now contain text such as:
 
 ```html
-You can use the 49Np9sqkYV4g_FpOQk1p0j1yJlvoHrZm9SVhQt7H2-9 to reach me at https://alpha-api.sandstorm.io/.
+You can use the 49Np9sqkYV4g_FpOQk1p0j1yJlvoHrZm9SVhQt7H2-9 key to reach me at https://alpha-api.sandstorm.io/.
 ```
 
 **Note**: API tokens created this way must be used within 15 minutes,

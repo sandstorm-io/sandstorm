@@ -1,4 +1,4 @@
-### v0.122 (2015-10-18)
+### v0.123 (2015-10-18)
 - Fixed regression introduced in v0.119 where `X-Sandstorm-User-Id` (as reported to apps) was computed incorrectly for email login users, causing apps to think the user was a different person than they were before the change. E.g. Etherpad would assign the user a different color from before. For some apps, this problem triggered app bugs of varying severity, such as Wekan making the board read-only and Laverna refusing to save changes. (Unfortunately, fixing this bug means that any grains created during the time when the bug was present will now show the same problems.)
 
 ### v0.122 (2015-10-16)

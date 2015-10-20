@@ -1,5 +1,8 @@
 A Sandstorm app delegates authentication to the Sandstorm
-platform. This page documents the details.
+platform. This page explains how to identify human visitors to an app
+via HTTP(S). For information on authenticating mobile apps, native
+clients, and other automated agents, see [Exporting HTTP
+APIs](http-apis.md).
 
 ## About sandstorm-http-bridge
 

@@ -1457,7 +1457,8 @@ private:
     uint64_t backendStartTime = getTime();
 
     context.warning("** Starting MongoDB...");
-    pid_t mongoPid = startMongo(config);
+    bool doMongoRepair = false;
+    pid_t mongoPid = startMongo(config, doMongoRepair);
     int64_t mongoStartTime = getTime();
 
     // Create the mongo user if it hasn't been created already.
@@ -1527,8 +1528,14 @@ private:
           backendStartTime = getTime();
         }
         if (mongoDied) {
+          // If Mongo died, let's try doing a repair. This way, every second mongo starting is a
+          // repair.
+          //
+          // Mongo's --repair argument causes Mongo to exit once the repair is over. This will
+          // re-trigger this branch, and we'll then re-start Mongo not in repair mode.
+          doMongoRepair = ! doMongoRepair;
           maybeWaitAfterChildDeath("MongoDB", mongoStartTime);
-          mongoPid = startMongo(config);
+          mongoPid = startMongo(config, doMongoRepair);
           mongoStartTime = getTime();
         }
         if (nodeDied) {
@@ -1572,36 +1579,65 @@ private:
     }
   }
 
-  pid_t startMongo(const Config& config) {
+  pid_t startMongo(const Config& config, bool doMongoRepair) {
     Subprocess process([&]() -> int {
       dropPrivs(config.uids);
       clearSignalMask();
 
-      KJ_SYSCALL(execl("/bin/mongod", "/bin/mongod", "--fork",
-          "--bind_ip", "127.0.0.1", "--port", kj::str(config.mongoPort).cStr(),
-          "--dbpath", "/var/mongo", "--logpath", "/var/log/mongo.log",
-          "--pidfilepath", "/var/pid/mongo.pid",
-          "--auth", "--nohttpinterface", "--noprealloc", "--nopreallocj", "--smallfiles",
-          "--replSet", "ssrs", "--oplogSize", "16",
-          EXEC_END_ARGS));
+      kj::Vector<const char*> args;
+      args.add("/bin/mongod");
+      args.add("--fork");
+      args.add("--bind_ip");
+      args.add("127.0.0.1");
+      args.add("--port");
+      args.add(kj::str(config.mongoPort).cStr());
+      args.add("--dbpath");
+      args.add("/var/mongo");
+      args.add("--logpath");
+      args.add("/var/log/mongo.log");
+      args.add("--pidfilepath");
+      args.add("/var/pid/mongo.pid");
+      args.add("--auth");
+      args.add("--nohttpinterface");
+      args.add("--noprealloc");
+      args.add("--nopreallocj");
+      args.add("--smallfiles");
+      args.add("--replSet");
+      args.add("ssrs");
+      args.add("--oplogSize");
+      args.add("16");
+
+      if (doMongoRepair) {
+        args.add("--repair");
+      }
+
+      args.add(nullptr);
+
+      context.warning(kj::str("MONGO ARGS: ", args));
+
+      KJ_SYSCALL(execv(args[0], const_cast<char**>(args.begin())));
       KJ_UNREACHABLE;
     });
 
     // Wait for mongod to return, meaning the database is up.  Then get its real pid via the
     // pidfile.
-    process.waitForSuccess();
+    int exitCode = process.waitForExit();
 
-    // Even after the startup command exits, MongoDB takes exactly two seconds to elect itself as
-    // master of the repl set (of which it is the only damned member). Unforutnately, if Node
-    // connects during this time, it fails, sometimes without actually exiting, leaving the entire
-    // server hosed. It appears that this always takes exactly two seconds from startup, since
-    // MongoDB does some sort of heartbeat every second where it checks the replset status, and it
-    // takes three of these for the election to complete, and the first of the three happens
-    // immediately on startup, meaning the last one is two seconds in. So, we'll sleep for 3
-    // seconds to be safe.
-    // TODO(cleanup): There must be a better way...
-    int n = 3;
-    while (n > 0) n = sleep(n);
+    if (exitCode == 0) {
+      // Even after the startup command exits, MongoDB takes exactly two seconds to elect itself as
+      // master of the repl set (of which it is the only damned member). Unforutnately, if Node
+      // connects during this time, it fails, sometimes without actually exiting, leaving the entire
+      // server hosed. It appears that this always takes exactly two seconds from startup, since
+      // MongoDB does some sort of heartbeat every second where it checks the replset status, and it
+      // takes three of these for the election to complete, and the first of the three happens
+      // immediately on startup, meaning the last one is two seconds in. So, we'll sleep for 3
+      // seconds to be safe.
+      // TODO(cleanup): There must be a better way...
+      int n = 3;
+      while (n > 0) n = sleep(n);
+    } else {
+      context.warning(kj::str("** Mongo exited with exitCode: ", exitCode));
+    }
 
     return KJ_ASSERT_NONNULL(parseUInt(trim(readAll("/var/pid/mongo.pid")), 10));
   }
@@ -1871,7 +1907,12 @@ private:
 
     int status;
 
-    KJ_SYSCALL(kill(pid, SIGTERM));
+    KJ_IF_MAYBE(exception, kj::runCatchingExceptions([&]() {
+      KJ_SYSCALL(kill(pid, SIGTERM));
+    })) {
+      KJ_LOG(ERROR, "Error while killing child process.", *exception);
+      return;
+    }
 
     alarmed = false;
     uint timeout = 5;
@@ -1895,7 +1936,7 @@ private:
           // Some other signal; ignore.
         }
       } else {
-        KJ_FAIL_SYSCALL("waitpid()", error, title);
+        // omg KJ_FAIL_SYSCALL("waitpid()", error, title);
       }
     }
   }

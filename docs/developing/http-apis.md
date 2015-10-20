@@ -139,10 +139,35 @@ document.addEventListener("DOMContentLoaded", fillIframe);
 You can use the 49Np9sqkYV4g_FpOQk1p0j1yJlvoHrZm9SVhQt7H2-9 key to reach me at https://alpha-api.sandstorm.io/.
 ```
 
-**Note**: API tokens created this way must be used within 15 minutes,
-or else they automatically expire. To prevent this from becoming a
-serious problem, the Sandstorm shell automatically refreshes the
-IFRAME every 15 minutes.
+**Note**: API tokens created this way must be used within 5 minutes,
+or else they [automatically
+expire](https://github.com/sandstorm-io/sandstorm/search?utf8=%E2%9C%93&q=selfDestructDuration). To
+prevent this from becoming a serious problem, the Sandstorm shell
+automatically refreshes the IFRAME every 5 minutes.
+
+## Parameters to renderTemplate()
+
+`renderTemplate()` accepts the following parameters:
+
+* `rpcId`: **String** of a message ID that will be passed back to your
+  code.
+
+* `template`: **String** to display to the user, where `$API_HOST`
+  and `$API_TOKEN` will be replaced.
+
+* `petname`: **String (optional)** of a name that this API token will
+  have, when the user lists the API tokens and sharing links they have
+  generated.
+
+* `roleAssignment`: **roleAssignmentPattern (optional)** of
+  permissions to apply to inbound requests. Use this to create API
+  tokens with limited permissions, such as a read-only view.
+
+* `forSharing`: **Boolean (optional)** true if this token should
+  represent the anonymous user. You can use this to detach the token
+  from the user who created it. **Note** that this also allows users
+  to redeem it as a sharing link of the form
+  `https://sandstorm.example.com/shared/$API_TOKEN`.
 
 ## About WebKeys
 
@@ -169,8 +194,8 @@ might use the following `curl` command:
 
 ## Bearer tokens vs. Basic auth
 
-Typically, HTTP APIs on Sandstorm should be accessed using an OAuth 2.0-style
-Bearer token in an Authorization header:
+Typically, HTTP APIs on Sandstorm should be accessed using an OAuth
+2.0-style Bearer token in an Authorization header:
 
 ```bash
     Authorization: Bearer <token>

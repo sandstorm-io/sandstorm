@@ -140,21 +140,21 @@
         list-style: none;
         >li.publisher-proof {
           display: block;
-          >a {
+          >a, >span.pgpkey {
             display: block;
             padding-left: 32px;
             background-size: 24px 24px;
             background-position: 0px center;
             background-repeat: no-repeat;
           }
-          >a.keybase {
-            background-image: url("/keybase-m.svg");
-          }
-          >a.pgpkey {
+          >span.pgpkey {
             background-image: url("/key-m.svg");
             >span {
               padding-right: 4px;
             }
+          }
+          >a.keybase {
+            background-image: url("/keybase-m.svg");
           }
           >a.twitter {
             background-image: url("/twitter-m.svg");

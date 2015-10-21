@@ -249,14 +249,8 @@ Template.sandstormAppDetails.helpers({
     if (!profile) return [];
 
     var returnValue = [];
-    // Add the keybase profile for that key
-    if (profile.handle) {
-      returnValue.push({
-        proofTypeClass: "keybase",
-        linkTarget: "https://keybase.io/" + profile.handle,
-        linkText: profile.handle,
-      });
-    }
+
+    // Add the key fingerprint.
     var keyFragments = [];
     for (var i = 0 ; i <= ((fingerprint.length / 4) - 1); i++) {
       keyFragments.push({ fragment: fingerprint.slice(4*i, 4*(i+1)) });
@@ -268,7 +262,17 @@ Template.sandstormAppDetails.helpers({
       keyFragments: keyFragments,
     });
 
+    // Add the keybase profile for that key
+    if (profile.handle) {
+      returnValue.push({
+        proofTypeClass: "keybase",
+        linkTarget: "https://keybase.io/" + profile.handle,
+        linkText: profile.handle,
+      });
+    }
+
     var proofs = profile.proofs;
+    console.log(proofs);
     if (proofs) {
       var externalProofs = _.chain(proofs)
           // Filter down to twitter, github, and web
@@ -279,7 +283,7 @@ Template.sandstormAppDetails.helpers({
           // Then map fields into the things the template cares about
           .map(function (proof) { return {
             proofTypeClass: proof.proof_type,
-            linkTarget: proof.proof_url,
+            linkTarget: proof.service_url,
             linkText: proof.nametag,
           }; })
           .value();

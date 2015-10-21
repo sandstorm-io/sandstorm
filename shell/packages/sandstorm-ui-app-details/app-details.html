@@ -46,20 +46,20 @@
         <ul class="publisher-proofs">
           {{#each publisherProofs}}
           <li class="publisher-proof">
+            {{#if isPgpKey proofTypeClass}}
+              <span class="pgpkey">
+                {{#each keyFragments}}<span>{{fragment}}</span>{{/each}}
+              </span>
+            {{else}}
             <a class="{{proofTypeClass}}"
                href="{{linkTarget}}">
-              {{#if isPgpKey proofTypeClass}}
-                {{#each keyFragments}}<span>{{fragment}}</span>{{/each}}
-              {{else}}
                 {{linkText}}
-              {{/if}}
             </a>
+            {{/if}}
           </li>
           {{/each}}
         </ul>
       </div>
-      {{!-- TODO: Somehow, we need to have the publishing proof toggle visibility below,
-            but not get pushed too far down or something --}}
     </div>
 
     {{!-- Buttons for each action, to create --}}

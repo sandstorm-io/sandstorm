@@ -85,9 +85,11 @@ function performSandcatsRequest(path, hostname, postData, errorCallback, respons
     }
   };
 
-  console.log("Submitting certificate request for host",
-              postData.rawHostname, "where the request has length",
-              postData.certificateSigningRequest.length);
+  if (postData.certificateSigningRequest) {
+    console.log("Submitting certificate request for host",
+                postData.rawHostname, "where the request has length",
+                postData.certificateSigningRequest.length);
+  }
   var post_data = querystring.stringify(postData);
   if ((SANDCATS_HOSTNAME === "sandcats-dev.sandstorm.io") &&
       ! process.env.NODE_TLS_REJECT_UNAUTHORIZED) {

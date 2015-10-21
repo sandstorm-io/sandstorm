@@ -190,7 +190,7 @@ module.exports["Test grain anonymous user"] = function (browser) {
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .frame('grain-frame')
         .waitForElementPresent('#publish', medium_wait)
-        .assert.containsText('#publish', 'Publish')
+        .assert.containsText('#publish', 'not publish')
         .frame(null)
     });
 }

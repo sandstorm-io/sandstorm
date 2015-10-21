@@ -1,3 +1,13 @@
+SandstormAppList = function(db, quotaEnforcer, highlight) {
+  this._filter = new ReactiveVar("");
+  this._sortOrder = new ReactiveVar([["appTitle", 1]]);
+  this._staticHost = db.makeWildcardHost("static");
+  this._db = db;
+  this._quotaEnforcer = quotaEnforcer;
+  this._highlight = highlight;
+  this._uninstalling = new ReactiveVar(false);
+}
+
 var matchesApp = function (needle, app) {
   var appTitle = SandstormDb.appNameFromPackage(app);
   // We match if the app title is matched...

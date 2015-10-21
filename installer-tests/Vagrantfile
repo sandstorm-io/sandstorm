@@ -5,7 +5,7 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  # We have a few box types. The boxes, such as trust64 or
+  # We have a few box types. The boxes, such as trusty64 or
   # thoughtbot_jessie, are created by prepare-for-tests.sh.
 
   # In general, we use a shell script to "provision" the box. just
@@ -29,15 +29,17 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # forward any ports. If we need to test if ports are available, we
   # can do that by SSH-ing in.
 
-  # Similarly, when testing the install script, we don't need a lot of
-  # CPU or RAM, so we use whatever is Vagrant's default.
-
   # Use qemu driver for libvirt. See README.md for rationale.
   config.vm.provider :libvirt do |libvirt|
     libvirt.driver = 'qemu'
+    # Use a healthy but small amount of RAM to avoid OOMing.
+    libvirt.memory = 400
+    # Use just one virtual CPU, since the install script is not
+    # CPU bound.
+    libvirt.cpus = 1
   end
 
-  config.vm.define "default" do |default|
+  config.vm.define "trusty64" do |default|
     default.vm.box = "trusty64"
   end
 

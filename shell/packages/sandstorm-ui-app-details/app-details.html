@@ -14,7 +14,7 @@
         {{#if website}}<li role="presentation"><a class="website-link" href="{{website}}">Website</a></li>{{/if}}
         <li role="presentation"><a class="app-market-link" href="https://apps.sandstorm.io/app/{{appId}}">App Market</a></li>
         {{#if codeUrl}}<li role="presentation"><a class="source-code-link" href="{{codeUrl}}">Source</a></li>{{/if}}
-        {{#if contactEmail}}<li role="presentation"><a class="bug-report-link" href="mailto:{{contactEmail}}">Report Issue</a></li>{{/if}}
+        {{#if bugReportLink}}<li role="presentation"><a class="bug-report-link" href="{{bugReportLink}}">Report Issue</a></li>{{/if}}
       </ul>
       <div class="info-row">
         {{#unless isAppInDevMode}}

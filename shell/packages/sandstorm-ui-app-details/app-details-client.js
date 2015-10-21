@@ -102,6 +102,15 @@ Template.sandstormAppDetails.onDestroyed(function () {
   }
 });
 
+var codeUrlForPackage = function(pkg) {
+  return pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.codeUrl;
+};
+
+var contactEmailForPackage = function (pkg) {
+  return pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.author &&
+         pkg.manifest.metadata.author.contactEmail;
+};
+
 Template.sandstormAppDetails.helpers({
   setDocumentTitle: function() {
     var ref = Template.instance().data;
@@ -169,13 +178,29 @@ Template.sandstormAppDetails.helpers({
   codeUrl: function () {
     var ref = Template.instance().data;
     var pkg = latestPackageForAppId(ref._db, ref._appId);
-    return pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.codeUrl;
+    return codeUrlForPackage(pkg);
   },
   contactEmail: function () {
     var ref = Template.instance().data;
     var pkg = latestPackageForAppId(ref._db, ref._appId);
-    return pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.author &&
-           pkg.manifest.metadata.author.contactEmail;
+    return contactEmailForPackage(pkg);
+  },
+  bugReportLink: function () {
+    var ref = Template.instance().data;
+    var pkg = latestPackageForAppId(ref._db, ref._appId);
+    // TODO(someday): allow app manifests to include an explicit bug report link.
+    // If the source code link is a github URL, then append /issues to it and use that.
+    var codeUrl = codeUrlForPackage(pkg);
+    if (codeUrl && codeUrl.lastIndexOf("https://github.com/", 0) === 0) {
+      return codeUrl + "/issues";
+    }
+    // Otherwise, provide a mailto: to the package's contact email if available.
+    var contactEmail = contactEmailForPackage(pkg);
+    if (contactEmail) {
+      return "mailto:" + contactEmail;
+    }
+    // Older app packages may have neither; return undefined.
+    return undefined;
   },
   isPgpKey: function (arg) {
     return arg === "pgpkey";

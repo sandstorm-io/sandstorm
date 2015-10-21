@@ -1,3 +1,6 @@
+### v0.125 (2015-10-21)
+- Fix bug causing Sandcats servers not to update their IP dynamically.
+
 ### v0.124 (2015-10-19)
 - Harden back-end code against possible front-end bugs that could inadvertently delete data. We do not believe any such bugs exist, but we like having extra layers of protection.
 

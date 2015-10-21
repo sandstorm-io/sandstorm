@@ -3,7 +3,7 @@
   "description": "Tests for the sandstorm platform",
   "version": "0.0.1",
   "devDependencies": {
-    "nightwatch": "0.6.11",
+    "nightwatch": "0.8.6",
     "phantomjs": "~1.9.10",
     "selenium-standalone": "4.2.2"
   },

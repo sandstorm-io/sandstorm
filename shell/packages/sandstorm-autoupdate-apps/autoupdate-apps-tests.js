@@ -85,30 +85,34 @@ function stubUser(test, userId) {
   });
 }
 
-Tinytest.add("test update notifications", sinon.test(function (test) {
+Tinytest.add("test update notifications", function (test) {
   globalDb.collections.appIndex.remove({});
   globalDb.collections.userActions.remove({});
   globalDb.collections.notifications.remove({});
 
-  this.stub(Meteor, "call", function() {});
-  stubUser(this, aliceUserId);
-  this.stub(HTTP, "get", function () {
-    return {data: { apps: [{
-      appId: "mock-app-id",
-      versionNumber: 1,
-      version: "0.2",
-      packageId: "mock-package-id2",
-      name: "Mock App",
-    }]}};
-  });
+  sinon.test(function (test2) {
+    this.stub(Meteor, "call", function() {});
+    stubUser(this, aliceUserId);
+    this.stub(HTTP, "get", function () {
+      return {data: { apps: [{
+        appId: "mock-app-id",
+        versionNumber: 1,
+        version: "0.2",
+        packageId: "mock-package-id2",
+        name: "Mock App",
+      }]}};
+    });
 
-  globalDb.addUserActions("mock-package-id1");
+    globalDb.addUserActions("mock-package-id1");
+    SandstormAutoupdateApps.updateAppIndex(globalDb);
+  })(test);
 
-  SandstormAutoupdateApps.updateAppIndex(globalDb);
+  // This blocking call to findOne was having some weird interaction with sinon.test. I've moved it,
+  // and the rest of the test out of the sinon.test block.
   var notification = globalDb.collections.notifications.findOne();
   var appUpdate = notification.appUpdates["mock-app-id"];
   test.isNotNull(appUpdate);
   test.equal(appUpdate.name, "Mock App");
   test.equal(appUpdate.marketingVersion, "0.2");
-}));
+});
 

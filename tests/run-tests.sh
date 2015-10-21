@@ -21,6 +21,7 @@ set -euo pipefail
 THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
 cd "$THIS_DIR"
+../shell/test-packages.sh -f
 
 export SANDSTORM_DIR="${SANDSTORM_DIR:-/opt/sandstorm}"
 

@@ -4,6 +4,11 @@
 
 set -euo pipefail
 
+if ! $(which "spacejam" >/dev/null 2>/dev/null) ; then
+  echo "Couldn't find executable 'spacejam' - try installing the package from npm with 'sudo -H npm install -g spacejam'?"
+  exit 1
+fi
+
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 cd "$SCRIPT_DIR"
 

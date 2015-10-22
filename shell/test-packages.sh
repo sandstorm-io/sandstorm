@@ -56,4 +56,4 @@ __EOF__
 # over its own bundled version, and the system gyp doesn't work.
 export PYTHONPATH=$("$SCRIPT_DIR/../find-meteor-dev-bundle.sh")/lib/node_modules/npm/node_modules/node-gyp/gyp/pylib
 
-exec spacejam test-packages --settings $SETTINGS
+exec spacejam test-packages --settings $SETTINGS ./packages/sandstorm-permissions

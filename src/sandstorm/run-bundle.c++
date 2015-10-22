@@ -1577,6 +1577,42 @@ private:
       dropPrivs(config.uids);
       clearSignalMask();
 
+      // Before starting Mongo, we remove "mongod.lock" basically unconditionally.
+      //
+      // Here's how MongoDB wants to use this lockfile: If MongoDB stopped abruptly in the past, and
+      // there is no journal, then MongoDB wants to prompt the admin to start it with
+      // --recover. Presumably it refuses to repair automatically in the absence of a journal
+      // because it can't always be sure of how to do recovery.
+      //
+      // If replica sets are enabled, MongoDB would prefer to ask the admin to restore it from a
+      // replica. Indeed, we do have replica sets enabled. But we can't restore from a replica
+      // because there is just "one replica" -- replica sets are enabled merely to enable Meteor to
+      // do oplog tailing.
+      //
+      // In our case, we do have journaling enabled, and we have no replica we can restore from, so
+      // in the case of crash, the best we can do is ask MongoDB to start itself up and restore from
+      // journal. That's what removing the lock file means.
+      //
+      // See http://docs.mongodb.org/manual/reference/command/repairDatabase/ and
+      // http://docs.mongodb.org/manual/tutorial/recover-data-following-unexpected-shutdown/ for
+      // more information.
+      kj::String lockFilePath = kj::str("/var/mongo/mongod.lock");
+      if (access(lockFilePath.cStr(), F_OK) == 0) {
+        kj::String contents = trim(readAll(raiiOpen(lockFilePath.cStr(), O_RDONLY)));
+        if (contents != "") {
+          // This file should contain a PID, hence UInt.
+          //
+          // If somehow there are two instances of Sandstorm running, and the other one is running a
+          // mongod, then this action could dangerously cause two mongod instances to be
+          // running. However, in that case, we also can't see the other process, since it's in a
+          // pid namespace. So this is all the sanity-checking we can do.
+          KJ_ASSERT_NONNULL(parseUInt(contents, 10),
+                            "mongod.lock exists & contains non-integer, refusing to unlink");
+          context.warning("Found a stale mongod lock file. Removing it.");
+          unlink(lockFilePath.cStr());
+        }
+      }
+
       KJ_SYSCALL(execl("/bin/mongod", "/bin/mongod", "--fork",
           "--bind_ip", "127.0.0.1", "--port", kj::str(config.mongoPort).cStr(),
           "--dbpath", "/var/mongo", "--logpath", "/var/log/mongo.log",
@@ -1589,21 +1625,30 @@ private:
 
     // Wait for mongod to return, meaning the database is up.  Then get its real pid via the
     // pidfile.
-    process.waitForSuccess();
+    auto status = process.waitForExit();
 
-    // Even after the startup command exits, MongoDB takes exactly two seconds to elect itself as
-    // master of the repl set (of which it is the only damned member). Unforutnately, if Node
-    // connects during this time, it fails, sometimes without actually exiting, leaving the entire
-    // server hosed. It appears that this always takes exactly two seconds from startup, since
-    // MongoDB does some sort of heartbeat every second where it checks the replset status, and it
-    // takes three of these for the election to complete, and the first of the three happens
-    // immediately on startup, meaning the last one is two seconds in. So, we'll sleep for 3
-    // seconds to be safe.
-    // TODO(cleanup): There must be a better way...
-    int n = 3;
-    while (n > 0) n = sleep(n);
+    if (status == 0) {
+      // Even after the startup command exits, MongoDB takes exactly two seconds to elect itself as
+      // master of the repl set (of which it is the only damned member). Unforutnately, if Node
+      // connects during this time, it fails, sometimes without actually exiting, leaving the entire
+      // server hosed. It appears that this always takes exactly two seconds from startup, since
+      // MongoDB does some sort of heartbeat every second where it checks the replset status, and it
+      // takes three of these for the election to complete, and the first of the three happens
+      // immediately on startup, meaning the last one is two seconds in. So, we'll sleep for 3
+      // seconds to be safe.
+      // TODO(cleanup): There must be a better way...
+      int n = 3;
+      while (n > 0) n = sleep(n);
+      KJ_IF_MAYBE(mongoPid, parseUInt(trim(readAll("/var/pid/mongo.pid")), 10)) {
+        return *mongoPid;
+      }
+    }
 
-    return KJ_ASSERT_NONNULL(parseUInt(trim(readAll("/var/pid/mongo.pid")), 10));
+    // If we got here, mongod either exited non-zero, or has no PID in its pidfile. In that case,
+    // we do not know how proceed.
+    KJ_FAIL_ASSERT("**mongod failed to start. Initial exit code: ", status,
+                   "bailing out now.");
+    return 0;
   }
 
   void maybeCreateMongoUser(const Config& config) {

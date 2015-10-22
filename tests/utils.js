@@ -49,5 +49,9 @@ module.exports = {
     }
 
     return newTests;
-  }
+  },
+  appSelector: function (appId) {
+    return '.app-list>.app-button[data-app-id="' + appId + '"]';
+  },
+  actionSelector: '.grain-list-table tr.action button.action'
 };

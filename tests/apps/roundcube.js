@@ -52,7 +52,7 @@ module.exports["Incoming Mail"] = function (browser) {
         } else {
           browser
             .click("#toplogo")
-            .waitForElementVisible(".mailbox.inbox > a", short_wait)
+            .waitForElementVisible(".mailbox.inbox > a", medium_wait)
             .click(".mailbox.inbox > a") // Make sure we have the inbox selected
             .pause(short_wait) // It's sad, but there's no good way to wait for the mail to be delivered other than pausing
             .frame("grain-frame")

@@ -6,7 +6,7 @@ Cleanup: uninstall_sandstorm(parsed_headers['vagrant-box'])
 
 $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]0
-$[run]sudo dpkg --configure -a && echo dpkg-fixed
+$[run]sudo dpkg --configure -a && sudo apt-get -f install && echo dpkg-fixed
 $[veryslow]dpkg-fixed
 $[run]sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nmap && echo nmap-installed
 $[veryslow]nmap-installed

@@ -49,6 +49,8 @@ BASIC_AUTH_USER_AGENTS = [
 ];
 BASIC_AUTH_USER_AGENTS_REGEX = new RegExp("^(" + BASIC_AUTH_USER_AGENTS.join("|") + ")", '');
 
+var SESSION_PROXY_TIMEOUT = 15000;
+
 var sandstormCoreFactory = makeSandstormCoreFactory();
 var backendAddress = "unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath;
 var sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
@@ -398,7 +400,7 @@ function gcSessions() {
 }
 SandstormDb.periodicCleanup(TIMEOUT_MS, gcSessions);
 
-var getProxyForHostId = function (hostId) {
+var getProxyForHostId = function (hostId, isAlreadyOpened) {
   // Get the Proxy corresponding to the given grain session host, possibly (re)creating it if it
   // doesn't already exist. The first request on the session host will always create a new proxy.
   // Later requests may create a proxy if they go to a different front-end replica or if the
@@ -416,8 +418,29 @@ var getProxyForHostId = function (hostId) {
       return inMeteor(function () {
         var session = Sessions.findOne({hostId: hostId});
         if (!session) {
-          // Does not appear to be a valid session host.
-          return undefined;
+          if (isAlreadyOpened) {
+            return new Promise(function (resolve, reject) {
+              inMeteorInternal(function () {
+                var isResolved = false;
+                var observer;
+                var task = Meteor.setTimeout(function() {
+                  observer.stop();
+                  reject(new Meteor.Error(500, "Session was never opened."));
+                }, SESSION_PROXY_TIMEOUT);
+                observer = Sessions.find({hostId: hostId}).observe({
+                  added: function() {
+                    isResolved = true;
+                    observer.stop();
+                    Meteor.clearTimeout(task);
+                    resolve(getProxyForHostId(hostId, false));
+                  }
+                });
+              });
+            });
+          } else {
+            // Does not appear to be a valid session host.
+            return undefined;
+          }
         }
 
         var apiToken;
@@ -637,7 +660,8 @@ tryProxyUpgrade = function (hostId, req, socket, head) {
       return Promise.resolve(false);
     }
   } else {
-    return getProxyForHostId(hostId).then(function (proxy) {
+    var isAlreadyOpened = req.headers.cookie && req.headers.cookie.indexOf("sandstorm-sid=") !== -1;
+    return getProxyForHostId(hostId, isAlreadyOpened).then(function (proxy) {
       if (proxy) {
         // Cross-origin requests are not allowed on UI session hosts.
         var origin = req.headers.origin;
@@ -753,7 +777,8 @@ tryProxyRequest = function (hostId, req, res) {
     }
     return Promise.resolve(true);
   } else {
-    return getProxyForHostId(hostId).then(function (proxy) {
+    var isAlreadyOpened = req.headers.cookie && req.headers.cookie.indexOf("sandstorm-sid=") !== -1;
+    return getProxyForHostId(hostId, isAlreadyOpened).then(function (proxy) {
       if (proxy) {
         proxy.requestHandler(req, res);
         return true;

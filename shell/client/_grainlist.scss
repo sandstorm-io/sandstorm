@@ -71,72 +71,9 @@
       margin-top: 8px;
     }
   }
+
   >table {
-    width: 100%;
-    padding: 0;
-    margin: 8px 0 0 0;
-    border-collapse: collapse;
-    background-color: rgba(255, 255, 255, 0.5);
-    >thead>tr {
-      background-color: $grainlist-table-header-background-color;
-      color: $grainlist-table-header-foreground-color;
-      font-weight: 600;
-      border-bottom: 1px solid #aaa;
-      >td {
-        border: 1px solid white;
-        /* interactivity disabled until we can sort by different column
-        cursor:pointer;
-        &:hover {
-          background-color: $grainlist-table-header-background-color-hover;
-        }
-        */
-        &.shared-or-owned {
-          width: 110px;
-          // The mobile viewport is too small to display this much text
-          @media #{$mobile} {
-            display: none;
-          }
-        }
-      }
-      >td.td-app-icon {
-        padding-left: 16px;
-      }
-    }
-    >tbody>tr {
-      width: 100%;
-      height: 32px;
-      background-color: $grainlist-table-row-background-color;
-      color: $grainlist-table-row-foreground-color;
-      border-bottom: 1px solid $grainlist-table-row-outline-color;
-      >td {
-        cursor: pointer;
-        &.td-app-icon {
-          >.app-icon {
-            @extend %pseudo-img-tag;
-            width: 24px;
-            height: 24px;
-          }
-          width: 48px;
-          padding-left: 16px;
-        }
-        &.last-used {
-          width: 100px;
-        }
-        &.shared-or-owned {
-          width: 110px;
-          // The mobile viewport is too small to display this much text
-          @media #{$mobile} {
-            display: none;
-          }
-        }
-      }
-      &.grain {
-        cursor: pointer;
-        &:hover {
-          background-color: $grainlist-table-row-background-color-hover;
-        }
-      }
-    }
+    @extend %grain-table;
   }
   >.no-grains {
     width: 100%;
@@ -146,6 +83,105 @@
       max-width: 400px;
       margin-left: auto;
       margin-right: auto;
+    }
+  }
+}
+
+%grain-table {
+  width: 100%;
+  padding: 0;
+  margin: 8px 0 0 0;
+  border-collapse: collapse;
+  background-color: rgba(255, 255, 255, 0.5);
+  >thead>tr {
+    background-color: $grainlist-table-header-background-color;
+    color: $grainlist-table-header-foreground-color;
+    font-weight: 600;
+    border-bottom: 1px solid #aaa;
+    >td {
+      border: 1px solid white;
+      /* interactivity disabled until we can sort by different column
+      cursor:pointer;
+      &:hover {
+        background-color: $grainlist-table-header-background-color-hover;
+      }
+      */
+      &.shared-or-owned {
+        width: 110px;
+        // The mobile viewport is too small to display this much text
+        @media #{$mobile} {
+          display: none;
+        }
+      }
+      &.td-app-icon {
+        width: 48px;
+        padding-left: 16px;
+      }
+    }
+  }
+  >tbody>tr {
+    width: 100%;
+    height: 32px;
+    background-color: $grainlist-table-row-background-color;
+    color: $grainlist-table-row-foreground-color;
+    border-bottom: 1px solid $grainlist-table-row-outline-color;
+    border-left: 1px solid #fff;
+    border-right: 1px solid #fff;
+    >td {
+      cursor: pointer;
+      &.td-app-icon {
+        >.app-icon {
+          @extend %pseudo-img-tag;
+          width: 24px;
+          height: 24px;
+        }
+        width: 48px;
+        padding-left: 16px;
+      }
+      &.last-used {
+        width: 100px;
+      }
+      &.shared-or-owned {
+        width: 110px;
+        // The mobile viewport is too small to display this much text
+        @media #{$mobile} {
+          display: none;
+        }
+      }
+    }
+    &.action {
+      cursor: pointer;
+      background-color: $grainlist-table-row-action-background-color;
+      &:hover {
+        background-color: $grainlist-table-row-action-background-color-hover;
+        >td>.new-grain-icon {
+          background-image: url("/plus-6A237C.svg");
+        }
+      }
+      >td.td-app-icon {
+        font-weight: bold;
+        font-size: 32px;
+        color: #9E40B5;
+      }
+      >td {
+        >.new-grain-icon {
+          @extend %pseudo-img-tag;
+          width: 24px;
+          height: 24px;
+          background-image: url("/plus-9E40B5.svg");
+        }
+      }
+      button {
+        color: black;
+        font-weight: bold;
+        @extend %unstyled-button;
+      }
+    }
+    &.grain {
+      cursor: pointer;
+      &:hover {
+        background-color: $grainlist-table-row-background-color-hover;
+      }
     }
   }
 }

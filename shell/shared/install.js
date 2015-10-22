@@ -324,7 +324,7 @@ Router.map(function () {
           // OK, the app is installed and everything and there's no warnings to print, so let's
           // just go to it! We use `replaceState` so that if the user clicks "back" they don't just
           // get redirected forward again, but end up back at the app list.
-          Router.go("newGrain", {}, {replaceState: true, query: {highlight: package.appId }});
+          Router.go("apps", {}, {replaceState: true, query: {highlight: package.appId }});
         }
 
         return result;
@@ -348,7 +348,7 @@ Router.map(function () {
           // TODO(security): This is not excellent. Think harder.
           delete window.referredFromSandstorm;
           globalDb.addUserActions(result.packageId);
-          Router.go("newGrain", {}, {replaceState: true});
+          Router.go("apps", {}, {replaceState: true});
         }
 
         return result;

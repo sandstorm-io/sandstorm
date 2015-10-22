@@ -22,19 +22,6 @@
       }
     }
   }
-  button {
-    font-family: inherit;
-    font-size: inherit;
-    font-weight: 600;
-    background-color: $sandstorm-purple-color;
-
-    padding: 8px;
-    line-height: 1.33;
-    border-radius: 4px;
-    border: none;
-    color: white;
-    cursor: pointer;
-  }
   .details {
     font-size: 70%;
   }
@@ -69,18 +56,21 @@
 }
 
 #admin-settings-save {
+  @extend %button-base;
+  @extend %button-primary;
   margin-top: 20px;
   margin-bottom: 20px;
 }
 
 #admin-settings-send-toggle {
+  @extend %button-base;
+  @extend %button-secondary;
   margin-left: 10px;
 }
 
-#admin-settings-save:hover,
-#admin-settings-send-test:hover,
-#admin-settings-send-toggle:hover {
-  background-color: #396F9E;
+#admin-settings-send-test {
+  @extend %button-base;
+  @extend %button-secondary;
 }
 
 #admin-settings-form input[type="text"] {
@@ -146,16 +136,12 @@ input.autoSelect {
     box-sizing: border-box;
   }
   button {
+    @extend %button-base;
+    @extend %button-primary;
     font-family: inherit;
     font-size: 90%;
-    background-color: $sandstorm-purple-color;
-
     padding: 6px;
     line-height: 1.33;
-    border-radius: 4px;
-    border: none;
-    color: white;
-    cursor: pointer;
     &:disabled {
       background-color: #888;
     }
@@ -175,10 +161,13 @@ input.autoSelect {
       margin-right: 5px;
 
       &.yes {
+        @extend %button-base;
+        @extend %button-primary;
         padding: 8px 16px;
       }
       &.no {
         background: none;
+        border: none;
         color: black;
         text-decoration: underline;
         font-weight: normal;
@@ -198,6 +187,10 @@ input.autoSelect {
       }
     }
   }
+  >button#regenerateStatsToken {
+    @extend %button-base;
+    @extend %button-primary;
+  }
 
   td {
     text-align: center;
@@ -214,4 +207,10 @@ input.autoSelect {
       }
     }
   }
+}
+button#offer-ipnetwork, button#offer-ipinterface {
+  @extend %button-base;
+  @extend %button-primary;
+  font-size: 14px;
+  min-height: 32px;
 }

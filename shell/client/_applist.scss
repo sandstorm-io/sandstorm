@@ -70,13 +70,14 @@
       }
     }
     >button.toggle-uninstall {
+      @extend %button-base;
+      @extend %button-secondary;
       display: inline-block;
       float: right;
       vertical-align: top;
       font-size: 14pt;
       line-height: 16pt;
       height: 32px;
-      box-sizing: border-box;
     }
   }
   >.popular-container {
@@ -126,7 +127,7 @@
     overflow: hidden;
     &.app-action {
     }
-    &.dev-action {
+    &.dev-background {
       background-image: url("/devmode.png");
       background-size: 100% auto;
       background-color: #ccc;

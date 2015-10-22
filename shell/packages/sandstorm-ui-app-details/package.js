@@ -15,12 +15,12 @@
 // limitations under the License.
 
 Package.describe({
-  summary: "Sandstorm UI app list",
+  summary: "Sandstorm UI app details page",
   version: "0.1.0"
 });
 
 Package.onUse(function (api) {
-  api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-db", "sandstorm-ui-topbar", "sandstorm-autoupdate-apps"], "client");
-  api.addFiles(["applist.html", "applist-client.js"], "client");
-  api.export("SandstormAppList");
+  api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-db", "sandstorm-identicons", "sandstorm-ui-topbar"], "client");
+  api.addFiles(["app-details.html", "app-details-client.js"], "client");
+  api.export("SandstormAppDetails");
 });

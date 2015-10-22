@@ -37,23 +37,31 @@ $topbar-dropdown-border-color: #c1c1c1;
 //////// Default colors, which may be reused in other modules
 $default-content-background-color: #efefef;
 $default-content-foreground-color: #191919;
+$default-table-header-background-color: #d3d3d3;
+$default-table-header-foreground-color: #191919;
+$default-table-header-background-color-hover: #dddddd;
+$default-textinput-background-color: #ffffff;
+$default-textinput-outline-color: #9e9e9e;
+$default-textinput-outline-color-focus: #65468e;
 
 //////// Grain list ("Open...") styles
 $grainlist-background-color: $default-content-background-color;
 $grainlist-foreground-color: $default-content-foreground-color;
 
-$grainlist-searchbar-background-color: #ffffff;
-$grainlist-searchbar-outline-color: #9e9e9e;
-$grainlist-searchbar-outline-color-focus: #65468e;
+$grainlist-searchbar-background-color: $default-textinput-background-color;
+$grainlist-searchbar-outline-color: $default-textinput-outline-color;
+$grainlist-searchbar-outline-color-focus: $default-textinput-outline-color-focus;
 
-$grainlist-table-header-background-color: #d3d3d3;
-$grainlist-table-header-foreground-color: #191919;
-$grainlist-table-header-background-color-hover: #dddddd;
+$grainlist-table-header-background-color: $default-table-header-background-color;
+$grainlist-table-header-foreground-color: $default-table-header-foreground-color;
+$grainlist-table-header-background-color-hover: $default-table-header-background-color-hover;
 // icons fills should be #9e9e9e
 
 $grainlist-table-row-background-color: #ffffff;
 $grainlist-table-row-foreground-color: #5d5d5d;
 $grainlist-table-row-background-color-hover: #e8e8e8;
+$grainlist-table-row-action-background-color: lighten($sandstorm-purple-color, 53%);
+$grainlist-table-row-action-background-color-hover: lighten($sandstorm-purple-color, 40%);
 $grainlist-table-row-outline-color: #d3d3d3;
 
 ///////// App list ("New...") styles
@@ -65,3 +73,11 @@ $applist-action-text-color: #5d5d5d;
 $applist-rule-color: #6d6d6d;
 $applist-pseudoapp-background-color: #ffffff;
 $applist-pseudoapp-outline-color: #d3d3d3;
+
+///////// App details page styles
+$app-details-background-color: $default-content-background-color;
+$app-details-foreground-color: $default-content-foreground-color;
+
+$app-details-searchbar-background-color: $default-textinput-background-color;
+$app-details-searchbar-outline-color: $default-textinput-outline-color;
+$app-details-searchbar-outline-color-focus: $default-textinput-outline-color-focus;

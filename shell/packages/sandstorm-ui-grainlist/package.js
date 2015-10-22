@@ -20,11 +20,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
-  api.use(["check", "reactive-var", "reload", "templating", "tracker", "sandstorm-db", "sandstorm-identicons", "underscore"], "client");
-  // For the "userPackages" collection.  Perhaps that should move elsewhere.
-  api.use(["sandstorm-ui-applist"], ["server"]);
+  api.use(["check", "reactive-var", "reload", "templating", "tracker", "sandstorm-db", "sandstorm-identicons", "sandstorm-ui-topbar", "underscore"], "client");
   api.addFiles(["grainlist.html", "grainlist-client.js"], "client");
-  api.addFiles(["grainlist-common.js"], ["client", "server"]);
-  api.export("SandstormGrainList");
+  api.export("SandstormGrainListPage");
 });
-

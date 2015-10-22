@@ -94,7 +94,7 @@ if (allowDevAccounts) {
           if (err) {
             window.alert(err);
           } else {
-            Router.go("newGrain");
+            Router.go("apps");
           }
         }
       });

@@ -1327,8 +1327,8 @@ GrainLog = new Mongo.Collection("grainLog");
 // Pseudo-collection created by subscribing to "grainLog", implemented in proxy.js.
 
 Router.map(function () {
-  this.route("newGrain", {
-    path: "/grain/new",
+  this.route("apps", {
+    path: "/apps",
     waitOn: function () { return globalSubs; },
     data: function () {
       if (!this.ready()) return;
@@ -1339,7 +1339,7 @@ Router.map(function () {
       return new SandstormAppList(globalDb, globalQuotaEnforcer, this.params.query.highlight);
     },
   });
-  this.route("selectGrain", {
+  this.route("grains", {
     path: "/grain",
     waitOn: function () { return globalSubs; },
     data: function () {
@@ -1348,7 +1348,7 @@ Router.map(function () {
         Router.go("root", {}, {replaceState: true});
       }
 
-      return new SandstormGrainList(globalDb, globalQuotaEnforcer);
+      return new SandstormGrainListPage(globalDb, globalQuotaEnforcer);
     },
   });
   this.route("grain", {
@@ -1503,5 +1503,18 @@ Router.map(function () {
         };
       }
     }
+  });
+
+  this.route("appDetails", {
+    path: "/apps/:appId",
+    template: "appDetails",
+    waitOn: function () {
+      return [
+        Meteor.subscribe("appIndex", this.params.appId),
+      ];
+    },
+    data: function () {
+      return new SandstormAppDetails(globalDb, globalQuotaEnforcer, this.params.appId);
+    },
   });
 });

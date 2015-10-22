@@ -564,14 +564,16 @@ limitations under the License.
 
 </template>
 
-<template name="newGrain">
-  {{>title "Apps"}}
+<template name="apps">
   {{> sandstormAppList }}
 </template>
 
-<template name="selectGrain">
-  {{>title "Grains"}}
-  {{> sandstormGrainList}}
+<template name="grains">
+  {{> sandstormGrainListPage}}
+</template>
+
+<template name="appDetails">
+  {{> sandstormAppDetails }}
 </template>
 
 <template name="_grainSpinner">
@@ -635,7 +637,7 @@ limitations under the License.
           </div></li>
         <li id="step-run">App Installed
           <div class="done-notice">
-            <p>Installation complete.  Click "New ..." to create a new file with this app.</p>
+            <p>Installation complete.  Click "Apps" to create a new file with this app.</p>
 
             {{#if hasNewerVersion}}
               <p>Some of your files were made with a

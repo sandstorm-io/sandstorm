@@ -46,7 +46,13 @@
     isOwnedByMe: Boolean
   }
   and (optionally):
-  an onGrainClicked callback function, which takes a single argument grainId as a String
+  * a list "actions" containing objects with shape:
+    {
+      buttonText: String,
+      onClick: parameterless callback function
+    }, and/or
+  * an onGrainClicked callback function, which takes a single argument grainId as a String
+
   Future work: callbacks for requesting different sort orders?
   --}}
     <table class="grain-list-table">
@@ -63,6 +69,12 @@
         </tr>
       </thead>
       <tbody>
+        {{#each actions}}
+        <tr class="action">
+          <td class="td-app-icon"><div class="new-grain-icon"></div></td>
+          <td class="action-button" colspan="3"><button>{{buttonText}}</button></td>
+        </tr>
+        {{/each}}
         {{#each grains}}
         <tr class="grain" data-grainid="{{ _id }}">
           <td class="td-app-icon"><div class="app-icon" title="{{appTitle}}" style="background-image: url('{{ iconSrc }}');"></div></td>

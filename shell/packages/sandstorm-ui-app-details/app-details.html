@@ -62,19 +62,6 @@
       </div>
     </div>
 
-    {{!-- Buttons for each action, to create --}}
-    <div class="actions">
-    {{#if isAppInDevMode}}
-      {{#each devActions }}
-        <button class="dev-action">(Dev) Create new {{nounPhrase}}</button>
-      {{/each}}
-    {{else}}
-      {{#each actions }}
-        <button class="action">Create new {{nounPhrase}}</button>
-      {{/each}}
-    {{/if}}
-    </div>
-
     <div class="search-bar">
       <label>
         <span class="search-icon" title="Search"></span>
@@ -82,7 +69,7 @@
       </label>
     </div>
 
-    {{>sandstormGrainTable grains=filteredSortedGrains onGrainClicked=onGrainClicked}}
+    {{>sandstormGrainTable grains=filteredSortedGrains actions=actions onGrainClicked=onGrainClicked}}
   </div>
   {{/if}}
 </template>

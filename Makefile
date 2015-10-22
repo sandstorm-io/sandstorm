@@ -105,6 +105,8 @@ IMAGES= \
                                   \
     shell/public/install-6A237C.svg \
     shell/public/install-9E40B5.svg \
+    shell/public/plus-6A237C.svg \
+    shell/public/plus-9E40B5.svg \
     shell/public/upload-B7B7B7.svg \
     shell/public/upload-5D5D5D.svg \
     shell/public/restore-B7B7B7.svg \
@@ -240,6 +242,14 @@ shell/public/install-6A237C.svg: icons/install.svg
 	@sed -e 's/#111111/#6A237C/g' < $< > $@
 
 shell/public/install-9E40B5.svg: icons/install.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#9E40B5/g' < $< > $@
+
+shell/public/plus-6A237C.svg: icons/plus.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#6A237C/g' < $< > $@
+
+shell/public/plus-9E40B5.svg: icons/plus.svg
 	@$(call color,custom color $<)
 	@sed -e 's/#111111/#9E40B5/g' < $< > $@
 

@@ -43,6 +43,9 @@
       display: block;
       float: right;
       margin-left: 0px;
+      margin-right: 0px;
+      margin-top: 10px;
+      margin-bottom: 10px;
       padding-left: 0px;
       list-style: none;
       >li {
@@ -81,7 +84,9 @@
     >div.info-row {
       display: block;
       clear: both;
-      float:left;
+      float: left;
+      border-top: 1px solid #909090;
+      padding-top: 4px;
       width: 100%;
       >ul.package-info {
         position: relative;

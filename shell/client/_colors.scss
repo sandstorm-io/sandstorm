@@ -60,6 +60,8 @@ $grainlist-table-header-background-color-hover: $default-table-header-background
 $grainlist-table-row-background-color: #ffffff;
 $grainlist-table-row-foreground-color: #5d5d5d;
 $grainlist-table-row-background-color-hover: #e8e8e8;
+$grainlist-table-row-action-background-color: lighten($sandstorm-purple-color, 53%);
+$grainlist-table-row-action-background-color-hover: lighten($sandstorm-purple-color, 40%);
 $grainlist-table-row-outline-color: #d3d3d3;
 
 ///////// App list ("New...") styles

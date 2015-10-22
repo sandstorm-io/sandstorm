@@ -113,9 +113,10 @@
           display: none;
         }
       }
-    }
-    >td.td-app-icon {
-      padding-left: 16px;
+      &.td-app-icon {
+        width: 48px;
+        padding-left: 16px;
+      }
     }
   }
   >tbody>tr {
@@ -124,6 +125,8 @@
     background-color: $grainlist-table-row-background-color;
     color: $grainlist-table-row-foreground-color;
     border-bottom: 1px solid $grainlist-table-row-outline-color;
+    border-left: 1px solid #fff;
+    border-right: 1px solid #fff;
     >td {
       cursor: pointer;
       &.td-app-icon {
@@ -144,6 +147,34 @@
         @media #{$mobile} {
           display: none;
         }
+      }
+    }
+    &.action {
+      cursor: pointer;
+      background-color: $grainlist-table-row-action-background-color;
+      &:hover {
+        background-color: $grainlist-table-row-action-background-color-hover;
+        >td>.new-grain-icon {
+          background-image: url("/plus-6A237C.svg");
+        }
+      }
+      >td.td-app-icon {
+        font-weight: bold;
+        font-size: 32px;
+        color: #9E40B5;
+      }
+      >td {
+        >.new-grain-icon {
+          @extend %pseudo-img-tag;
+          width: 24px;
+          height: 24px;
+          background-image: url("/plus-9E40B5.svg");
+        }
+      }
+      button {
+        color: black;
+        font-weight: bold;
+        @extend %unstyled-button;
       }
     }
     &.grain {

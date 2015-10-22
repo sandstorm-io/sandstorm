@@ -143,7 +143,11 @@ Template.sandstormGrainListPage.events({
 });
 
 Template.sandstormGrainTable.events({
-  "click tbody tr": function(event) {
+  "click tbody tr.action": function(event) {
+    console.log("action clicked");
+    this && this.onClick();
+  },
+  "click tbody tr.grain": function(event) {
     var context = Template.instance().data;
     context.onGrainClicked && context.onGrainClicked(this._id);
   },

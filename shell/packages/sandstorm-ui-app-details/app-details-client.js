@@ -53,6 +53,8 @@ var compileMatchFilter = function (searchString) {
 };
 
 var filteredSortedGrains = function(db, staticAssetHost, appId, appTitle, filterText) {
+  var pkg = latestPackageForAppId(db, appId);
+
   var grainsMatchingAppId = _.filter(db.currentUserGrains().fetch(),
                         function (grain) { return grain.appId === appId; });
   var tokensForGrain = _.groupBy(db.currentUserApiTokens().fetch(), 'grainId');
@@ -138,37 +140,53 @@ Template.sandstormAppDetails.helpers({
     var ref = Template.instance().data;
     return getAppTitle(ref);
   },
-  devActions: function () {
+  actions: function () {
     var ref = Template.instance().data;
-    var devPackage = ref._db.collections.devPackages.findOne({appId: ref._appId});
-    var actions = [];
+    if (ref._filter.get()) return []; // Hide actions when searching.
+    var pkg = latestPackageForAppId(ref._db, ref._appId);
+    if (!pkg) return []; // No package means no actions.
     var appTitle = getAppTitle(ref);
-    for (var i = 0; devPackage && i < devPackage.manifest.actions.length ; i++) {
-      actions.push({
-        appId: devPackage.appId,
-        devPackageId: devPackage._id,
-        nounPhrase: SandstormDb.nounPhraseForActionAndAppTitle(
-          devPackage.manifest.actions[i],
-          appTitle
-        ),
-        actionIndex: i,
-      });
+    if (pkg.dev) {
+      // Dev mode.  Only show dev mode actions.
+      var actions = [];
+      for (var i = 0; i < pkg.manifest.actions.length ; i++) {
+        var index = i; // for use inside the closure below
+        actions.push({
+          buttonText: "(Dev) Create new " + SandstormDb.nounPhraseForActionAndAppTitle(
+            pkg.manifest.actions[i],
+            appTitle
+          ),
+          onClick: function () {
+            ref._quotaEnforcer.ifQuotaAvailable(function () {
+              ref._newGrainIsLaunching.set(true);
+              // TODO(soon): this calls a global function in shell.js, refactor
+              launchAndEnterGrainByActionId(undefined, pkg._id, index);
+            });
+          },
+        });
+      }
+      return actions;
+    } else {
+      // N.B. it's weird that we have to look up our userAction ID here when it'd be easier to just
+      // enumerate the actions listed in the package that we've already retrieved.  UserActions is
+      // not a very useful collection.
+      return _.chain(ref._db.currentUserActions().fetch())
+          .filter(function(a) { return a.appId === ref._appId; })
+          .map(function(a) {
+            return {
+              buttonText: "Create new " + SandstormDb.nounPhraseForActionAndAppTitle(a, appTitle),
+              onClick: function() {
+                ref._quotaEnforcer.ifQuotaAvailable(function () {
+                  ref._newGrainIsLaunching.set(true);
+                  // TODO(soon): this calls a global function in shell.js, refactor
+                  launchAndEnterGrainByActionId(a._id);
+                });
+              },
+            }
+          })
+          .value();
     }
-    return actions;
-  },
-  actions: function() {
-    var ref = Template.instance().data;
-    var appTitle = getAppTitle(ref);
-    var actions = _.chain(ref._db.currentUserActions().fetch())
-                   .filter(function(a) { return a.appId === ref._appId; })
-                   .map(function(a) {
-                     return {
-                       actionId: a._id,
-                       nounPhrase: SandstormDb.nounPhraseForActionAndAppTitle(a, appTitle),
-                     };
-                   })
-                   .value();
-    return actions
+
   },
   website: function () {
     var ref = Template.instance().data;
@@ -308,25 +326,6 @@ Template.sandstormAppDetails.events({
         Router.go("grain", {grainId: grainId});
       }
     }
-  },
-  "click .action": function (event) {
-    var ref = Template.instance().data;
-    var actionId = this.actionId;
-    ref._quotaEnforcer.ifQuotaAvailable(function () {
-      ref._newGrainIsLaunching.set(true);
-      // TODO(soon): this calls a global function in shell.js, refactor
-      launchAndEnterGrainByActionId(actionId);
-    });
-  },
-  "click .dev-action": function(event) {
-    var ref = Template.instance().data;
-    var devPackageId = this.devPackageId;
-    var actionIndex = this.actionIndex;
-    Template.instance().data._quotaEnforcer.ifQuotaAvailable(function () {
-      ref._newGrainIsLaunching.set(true);
-      // TODO(soon): this calls a global function in shell.js, refactor
-      launchAndEnterGrainByActionId(undefined, devPackageId, actionIndex);
-    });
   },
   "click .uninstall-button": function(event) {
     var ref = Template.instance().data;

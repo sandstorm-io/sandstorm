@@ -423,7 +423,6 @@ var getProxyForHostId = function (hostId, isAlreadyOpened) {
           if (isAlreadyOpened) {
             return new Promise(function (resolve, reject) {
               inMeteorInternal(function () {
-                var isResolved = false;
                 var observer;
                 var task = Meteor.setTimeout(function() {
                   observer.stop();
@@ -431,7 +430,6 @@ var getProxyForHostId = function (hostId, isAlreadyOpened) {
                 }, SESSION_PROXY_TIMEOUT);
                 observer = Sessions.find({hostId: hostId}).observe({
                   added: function() {
-                    isResolved = true;
                     observer.stop();
                     Meteor.clearTimeout(task);
                     resolve(getProxyForHostId(hostId, false));

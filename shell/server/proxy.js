@@ -387,7 +387,9 @@ Meteor.startup(function () {
 
   Sessions.find().observe({
     removed : function(session) {
+      var proxy = proxiesByHostId[session.hostId];
       delete proxiesByHostId[session.hostId];
+      proxy.close();
     }
   });
 });
@@ -508,10 +510,6 @@ Meteor.startup(function() {
                    $or: [{identityId: {$in: identityIds}},
                          {hashedToken: {$in: tokenIds}}]},
                   {fields: {hostId: 1}}).forEach(function (session) {
-      var proxy = proxiesByHostId[session.hostId];
-      if (proxy) {
-        proxy.close();
-      }
       delete proxiesByHostId[session.hostId];
     });
     Sessions.remove({grainId: token.grainId, $or: [{identityId: {$in: identityIds}},
@@ -894,6 +892,19 @@ Proxy.prototype.close = function () {
   this.websockets.forEach(function (socket) {
     socket.destroy();
   });
+  this.websockets = [];
+  if (this.session) {
+    this.session.close();
+    delete this.session;
+  }
+  if (this.uiView) {
+    this.uiView.close();
+    delete this.uiView;
+  }
+  if (this.supervisor) {
+    this.supervisor.close();
+    delete this.supervisor;
+  }
 }
 
 Proxy.prototype.getConnection = function () {

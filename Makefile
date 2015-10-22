@@ -119,7 +119,7 @@ test: sandstorm-$(BUILD)-fast.tar.xz
 	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz
 
 installer-test:
-	(cd installer-tests && bash prepare-for-tests.sh && SLOW_TEXT_TIMEOUT=60 python run_tests.py --rsync --uninstall-first --halt-afterward)
+	(cd installer-tests && bash prepare-for-tests.sh && SLOW_TEXT_TIMEOUT=60 python run_tests.py --rsync --uninstall-first)
 
 # ====================================================================
 # Dependencies

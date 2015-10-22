@@ -6,8 +6,10 @@ Cleanup: uninstall_sandstorm(parsed_headers['vagrant-box'])
 
 $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]0
-$[run]sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nmap
-$[veryslow]0
+$[run]sudo dpkg --configure -a && echo dpkg-fixed
+$[veryslow]dpkg-fixed
+$[run]sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nmap && echo nmap-installed
+$[veryslow]nmap-installed
 $[run]CURL_USER_AGENT=testing OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k OVERRIDE_NC_PATH=/usr/bin/ncat bash /vagrant/install.sh -i
 $[slow]Sandstorm makes it easy to run web apps on your own server. You can have:
 
@@ -43,5 +45,5 @@ $[veryslow]Visit this link to configure it:
 To learn how to control the server, run:
   sandstorm help
 $[exitcode]0
-$[run]for i in `seq 0 20`; do ncat --send-only --recv-only 0.0.0.0 6080 && { echo yay; break; } || sleep 1 ; done
+$[run]for i in `seq 0 20`; do /usr/bin/ncat --send-only --recv-only 0.0.0.0 6080 && { echo yay; break; } || sleep 1 ; done
 $[slow]yay

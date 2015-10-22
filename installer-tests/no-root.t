@@ -1,5 +1,5 @@
 Title: Can't install Sandstorm without root, by default
-Vagrant-Box: default
+Vagrant-Box: trusty64
 Vagrant-Precondition-bash: ! -d $HOME/sandstorm
 Vagrant-Precondition-bash: ! -d /opt/sandstorm
 Vagrant-Postcondition-bash: ! -d $HOME/sandstorm

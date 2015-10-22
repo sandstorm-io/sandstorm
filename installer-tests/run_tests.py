@@ -1,6 +1,12 @@
+from __future__ import (
+    unicode_literals,
+    print_function,
+    absolute_import,
+)
 import argparse
 import glob
 import logging
+import datetime
 import os
 import pexpect
 import random
@@ -8,8 +14,15 @@ import re
 import subprocess
 import sys
 
-
-VM_LIST = ['jessie', 'default', 'precise64', 'debian-7.8-32-nocm']
+def _run_capture_output(*args, **kwargs):
+    kwargs = dict(kwargs)
+    kwargs['stdout'] = subprocess.PIPE
+    p = subprocess.Popen(*args, **kwargs)
+    status = p.wait()
+    output = p.communicate()[0]
+    assert status == 0, ("subprocess failed: argv=%s, status=%d, output=%s" % (
+        args, status, output))
+    return output
 
 
 def _expect(line, current_cmd, do_re_escape=True, do_detect_slow=True,
@@ -22,18 +35,18 @@ def _expect(line, current_cmd, do_re_escape=True, do_detect_slow=True,
     if do_detect_slow:
         slow_token = '$[slow]'
         if line.startswith(slow_token):
-            print 'Slow line...'
+            print('Slow line...')
             timeout = slow_text_timeout
             line = line.replace(slow_token, '', 1)
 
         veryslow_token = '$[veryslow]'
         if line.startswith(veryslow_token):
-            print 'Very slow line...'
+            print('Very slow line...')
             timeout = veryslow_text_timeout
             line = line.replace(veryslow_token, '', 1)
 
     if verbose:
-        print 'expecting', line
+        print('expecting', line)
 
     if do_re_escape:
         line = re.escape(line)
@@ -45,7 +58,7 @@ TEST_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 
 def vagrant_destroy():
-    subprocess.check_output(['vagrant', 'destroy', '-f'], cwd=TEST_ROOT)
+    _run_capture_output(['vagrant', 'destroy', '-f'], cwd=TEST_ROOT)
 
 
 def handle_test_script(vagrant_box_name, lines):
@@ -56,7 +69,7 @@ def handle_test_script(vagrant_box_name, lines):
         if line.startswith('$[run]'):
             arg = line.replace('$[run]', '')
             arg = 'vagrant ssh ' + vagrant_box_name + ' -c "' + arg + '"'
-            print 'starting', arg, '...'
+            print('$', arg)
             current_cmd = pexpect.spawn(arg, cwd=TEST_ROOT)
         elif '$[exitcode]' in line:
             left, right = map(lambda s: s.strip(), line.split('$[exitcode]'))
@@ -127,7 +140,7 @@ def handle_headers(parsed_headers):
     vagrant_box_name = parsed_headers['vagrant-box']
 
     # Bring up VM, if needed.
-    vagrant_up(vagrant_box_name)
+    vagrant_up_or_resume(vagrant_box_name)
 
     values = parsed_headers.get('vagrant-destroy-if-bash')
     if values:
@@ -137,18 +150,18 @@ def handle_headers(parsed_headers):
             exitcode = subprocess.call(['vagrant', 'ssh', vagrant_box_name,
                                         '-c', full_bash_cmd], cwd=TEST_ROOT)
             if exitcode == 0:
-                print 'Destroying all...'
+                print('Destroying all...')
                 vagrant_destroy()
-                print 'Recreating as needed...'
-                vagrant_up(vagrant_box_name)
+                print('Recreating as needed...')
+                vagrant_up_or_resume(vagrant_box_name)
 
     values = parsed_headers.get('vagrant-precondition-bash')
     if values:
         for value in values:
             full_bash_cmd = 'if [ %s ] ; then exit 0 ; else exit 1 ; fi' % (
                 value,)
-            subprocess.check_output(['vagrant', 'ssh', vagrant_box_name,
-                                     '-c', full_bash_cmd], cwd=TEST_ROOT)
+            _run_capture_output(['vagrant', 'ssh', vagrant_box_name,
+                                 '-c', full_bash_cmd], cwd=TEST_ROOT)
 
 
 def handle_postconditions(postconditions_list):
@@ -158,17 +171,30 @@ def handle_postconditions(postconditions_list):
                 evald_value)
 
 
-def vagrant_up(vagrant_box_name):
+def call_vagrant(*args):
     env_for_subprocess = os.environ.copy()
     env_for_subprocess['VAGRANT_DEFAULT_PROVIDER'] = 'libvirt'
-    subprocess.check_output(
-        ['vagrant', 'up', vagrant_box_name],
-        cwd=TEST_ROOT,
-        env=env_for_subprocess,
-    )
+    argv = ['vagrant']
+    argv.extend(args)
+    print('$', *argv, end='')
+    now = datetime.datetime.utcnow()
+    try:
+        output = _run_capture_output(
+            argv,
+            cwd=TEST_ROOT,
+            env=env_for_subprocess,
+        )
+        nowagain = datetime.datetime.utcnow()
+        print(' [%d sec]' % ((nowagain - now).seconds,))
+    except:
+        # Finish the line so exceptions don't show up on the same line
+        # as informational text, then raise the exception so the program
+        # can fail.
+        print('')
+        raise
+    return output
 
-
-def run_one_test(filename):
+def parse_test_by_filename(filename):
     lines = open(filename).read().split('\n')
     position_of_blank_line = lines.index('')
 
@@ -176,19 +202,24 @@ def run_one_test(filename):
                             lines[position_of_blank_line+1:])
 
     parsed_headers, postconditions, cleanups = parse_test_file(headers)
+    return parsed_headers, postconditions, cleanups, headers, test_script
+
+
+def run_one_test(filename):
+    parsed_headers, postconditions, cleanups, headers, test_script = parse_test_by_filename(filename)
 
     # Make the VM etc., if necessary.
     handle_headers(parsed_headers)
-    print "*** Running test:", parsed_headers['title']
-    print " -> Extra info:", repr(headers)
+    print("*** Running test from file:", filename)
+    print(" -> Extra info:", repr(headers))
 
     # Run the test script, using pexpect to track its output.
     try:
         handle_test_script(parsed_headers['vagrant-box'], test_script)
-    except Exception, e:
-        print e
+    except Exception as e:
+        print(e)
         raise
-        print 'Dazed and confused, but trying to continue.'
+        print('Dazed and confused, but trying to continue.')
 
     # Run any sanity-checks in the test script, as needed.
     handle_postconditions(postconditions)
@@ -215,14 +246,36 @@ def uninstall_sandstorm(vagrant_box_name):
 
 def handle_cleanups(parsed_headers, cleanups):
     for key, value in cleanups:
-        print 'Doing cleanup task', value
+        print('Doing cleanup task', value)
         try:
             eval(value)
-        except Exception, e:
-            print 'Ran into error', e
+        except Exception as e:
+            print('Ran into error', e)
             raise
-            print 'Dazed and confused, but trying to continue.'
+            print('Dazed and confused, but trying to continue.')
 
+def vagrant_up_or_resume(vm):
+    # First, try a resume.
+    needs_up = False
+    try:
+        output = call_vagrant('resume', vm)
+        if 'VM not created. Moving on' in output:
+            # We need to do a vagrant up instead. Continue executing
+            # the rest of the function.
+            pass
+        elif 'Domain is not created' in output:
+            pass  # also need vagrant up
+        elif 'Domain is not suspended' in output:
+            pass  # also need vagrant up
+        else:
+            return output
+    except Exception as e:
+        print("** Warning: exception during vagrant resume", vm)
+        print("Going to do vagrant up instead.")
+        print(e)
+
+    output = call_vagrant('up', vm)
+    return output
 
 def main():
     parser = argparse.ArgumentParser(description='Run Sandstorm install script tests.')
@@ -245,25 +298,49 @@ def main():
 
     args = parser.parse_args()
 
-    if args.uninstall_first:
-        # TODO: Pull these out of the output of `vagrant status`.
-        for vm in VM_LIST:
-            vagrant_up(vm)
-            uninstall_sandstorm(vm)
-
-    if args.rsync:
-        subprocess.check_output(
-            ['vagrant', 'rsync'],
-            cwd=TEST_ROOT,
-        )
-
     testfiles = args.testfiles
     if not testfiles:
         testfiles = sorted(glob.glob('*.t'))
 
+    # Sort testfiles by the Vagrant box they use. That way, we can minimize
+    # up/resume/suspend churn.
+    testfiles = sorted(testfiles,
+                       key=lambda filename: parse_test_by_filename(filename)[0]['vagrant-box'])
+
     keep_going = True
 
+    previous_vagrant_box = None
+    this_vagrant_box = None
+
+    boxes_that_have_been_prepared = {}
+
     for filename in testfiles:
+        previous_vagrant_box = this_vagrant_box
+        this_vagrant_box = parse_test_by_filename(filename)[0]['vagrant-box']
+        if this_vagrant_box != previous_vagrant_box:
+            # Suspend or halt the previous VM.
+            stop_action = 'suspend'
+            if args.halt_afterward:
+                stop_action = 'halt'
+            if previous_vagrant_box:
+                call_vagrant(stop_action, previous_vagrant_box)
+
+            # Prepare this box.
+            #
+            # First, make sure it's online.
+            vagrant_up_or_resume(this_vagrant_box)
+
+            if this_vagrant_box not in boxes_that_have_been_prepared:
+                # If we were told to uninstall first, let's do that.
+                if args.uninstall_first:
+                    print('** Uninstalling Sandstorm from', this_vagrant_box)
+                    uninstall_sandstorm(this_vagrant_box)
+                # Same with rsyncing.
+                if args.rsync:
+                    print('** rsync-ing the latest Sandstorm installer etc. to', this_vagrant_box)
+                    call_vagrant('rsync', this_vagrant_box)
+                # Indicate that no further prep is needed.
+                boxes_that_have_been_prepared[this_vagrant_box] = True
         try:
             if keep_going:
                 run_one_test(filename)

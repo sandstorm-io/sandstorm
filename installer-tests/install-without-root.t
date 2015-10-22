@@ -1,5 +1,5 @@
 Title: Can install without root, with -u
-Vagrant-Box: default
+Vagrant-Box: trusty64
 Vagrant-Destroy-If-bash: -d $HOME/sandstorm
 Vagrant-Precondition-bash: ! -d $HOME/sandstorm
 Cleanup: uninstall_sandstorm(parsed_headers['vagrant-box'])

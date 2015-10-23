@@ -1583,7 +1583,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
       }
       var charset = match[2] || "ISO-8859-1";
 
-      var encoding = response.headers['content-encoding'];
+      var encoding = request.headers["content-encoding"];
       if (encoding && encoding !== "identity") {
         if (encoding !== "gzip") throw new Error("unknown Content-Encoding: " + encoding);
         data = gunzipSync(data);

@@ -52,7 +52,7 @@ setInterval(function() {
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4) {
        if (xhr.status == 200) {
-          record.exires = Date.now() + selfDestructDuration;
+          record.expires = Date.now() + selfDestructDuration;
           sessionStorage.setItem(templateToken, JSON.stringify(record));
        } else {
           var errorText = "Error refreshing token. Reloading the page might help.";

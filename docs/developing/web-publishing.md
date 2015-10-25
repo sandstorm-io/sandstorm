@@ -85,9 +85,11 @@ cd ..
 
 This should result in a
 `/opt/app/sandstorm-integration/bin/getPublicId` binary showing up in
-your directory tree.
+your directory tree. When you run it and provide the current
+`X-Sandstorm-Session-Id` header as a command-line parameter, it will
+output a `publicId` (and other information, see below).
 
-If you prefer your own build system, please use the above as
+If you prefer to use your own build system, you can use the above as
 inspiration. If you prefer to call Sandstorm's RPC directly, keep
 reading.
 
@@ -172,15 +174,22 @@ code](https://github.com/kentonv/ssjekyll).
 
 ## Note: Provisional API
 
-The current implementation of web publishing is hacky and not intended
-to be the long-term solution. In the long term, users will be able to
-connect domains to their Sandstorm account and then grant them to apps
-as capabilities through the Powerbox UI. Since the Powerbox and
-persistent capabilities are not yet implemented -- much less the
+The current Cap'n Proto RPC for web publishing is hacky and not
+intended to be the long-term solution. In the long term, users will be
+able to connect domains to their Sandstorm account and then grant them
+to apps as capabilities through the Powerbox UI. Since the Powerbox
+and persistent capabilities are not yet implemented -- much less the
 ability to connect domains -- we are providing a hack so that
 developers can get started on such apps now. The hack allows a user to
 designate a Sandstorm app to host their domain via a special TXT
 record.
+
+Also, the use of a C++ binary that you must embed might not be the
+most convenient way to expose the Cap'n Proto API. We're considering
+creating a pure-frontend Javascript API like [offer
+templates](http-apis.md) or a `postMessage`-based API, and/or a
+backend API that is part of `sandstorm-http-bridge`. Let us know if
+you have a preference for what you would like to use.
 
 ## Why only static content?
 

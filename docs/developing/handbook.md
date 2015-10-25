@@ -326,7 +326,7 @@ available.
 
 The key things to know here is that the app should write an HTML tree
 to /var/www, and then call "publish static" from the
-"HackSessionContext". You can [read more](publishing-apps.md).
+"HackSessionContext". You can [read more](web-publishing.md).
 
 ## Apps can expose an external API for authorized users
 

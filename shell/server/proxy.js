@@ -300,9 +300,17 @@ Meteor.methods({
     if (session) {
       // Session still present in database, so send keep-alive to backend.
 
-      var grainId = session.grainId;
-      waitPromise(globalBackend.openGrain(grainId, false).supervisor.keepAlive());
-      globalBackend.updateLastActive(grainId, this.userId, session.identityId);
+      try {
+        var grainId = session.grainId;
+        waitPromise(globalBackend.openGrain(grainId, false).supervisor.keepAlive());
+        globalBackend.updateLastActive(grainId, this.userId, session.identityId);
+      } catch (err) {
+        // Ignore disconnects, which imply that the grain shut down already. It'll start back up on
+        // the next request, so whatever.
+        if (err.kjType !== "disconnected") {
+          throw err;
+        }
+      }
       return true;
     } else {
       return false;

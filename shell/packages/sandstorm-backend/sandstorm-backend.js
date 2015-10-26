@@ -230,7 +230,10 @@ SandstormBackend.prototype.updateLastActive = function(grainId, userId, identity
   }
 
   var now = new Date();
-  Grains.update(grainId, {$set: {lastUsed: now}});
+  if (Grains.update(grainId, {$set: {lastUsed: now}}) === 0) {
+    // Grain must have been deleted. Ignore.
+    return;
+  }
   if (userId) {
     Meteor.users.update(userId, {$set: {lastActive: now}});
   }

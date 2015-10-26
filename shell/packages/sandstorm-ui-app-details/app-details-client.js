@@ -63,7 +63,8 @@ var filteredSortedGrains = function(db, staticAssetHost, appId, appTitle, filter
   var grainTokens = grainIdsForApiTokens.map(function(grainId) { return tokensForGrain[grainId][0]; });
   var grainTokensMatchingAppTitle = grainTokens.filter(function(token) {
     var tokenMetadata = token.owner.user.denormalizedGrainMetadata;
-    return tokenMetadata.appTitle.defaultText === appTitle;
+    return tokenMetadata && tokenMetadata.appTitle &&
+        tokenMetadata.appTitle.defaultText === appTitle;
   });
   var itemsFromGrains = SandstormGrainListPage.mapGrainsToTemplateObject(grainsMatchingAppId, db);
   var itemsFromSharedGrains = SandstormGrainListPage.mapApiTokensToTemplateObject(
@@ -290,7 +291,6 @@ Template.sandstormAppDetails.helpers({
     }
 
     var proofs = profile.proofs;
-    console.log(proofs);
     if (proofs) {
       var externalProofs = _.chain(proofs)
           // Filter down to twitter, github, and web

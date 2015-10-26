@@ -422,19 +422,17 @@ var getProxyForHostId = function (hostId, isAlreadyOpened) {
         if (!session) {
           if (isAlreadyOpened) {
             return new Promise(function (resolve, reject) {
-              inMeteorInternal(function () {
-                var observer;
-                var task = Meteor.setTimeout(function() {
+              var observer;
+              var task = Meteor.setTimeout(function() {
+                observer.stop();
+                reject(new Meteor.Error(500, "Session was never opened."));
+              }, SESSION_PROXY_TIMEOUT);
+              observer = Sessions.find({hostId: hostId}).observe({
+                added: function() {
                   observer.stop();
-                  reject(new Meteor.Error(500, "Session was never opened."));
-                }, SESSION_PROXY_TIMEOUT);
-                observer = Sessions.find({hostId: hostId}).observe({
-                  added: function() {
-                    observer.stop();
-                    Meteor.clearTimeout(task);
-                    resolve(getProxyForHostId(hostId, false));
-                  }
-                });
+                  Meteor.clearTimeout(task);
+                  resolve(getProxyForHostId(hostId, false));
+                }
               });
             });
           } else {

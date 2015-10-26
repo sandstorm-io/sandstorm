@@ -1,3 +1,6 @@
+### v0.127 (2015-10-26)
+- Fix bug in app details page causing pages to be blank in the presence of very old sharing tokens that lacked certain expected metadata.
+
 ### v0.126 (2015-10-26)
 - Added app details page. Clicking on an app in the app grid now brings you to the details page rather than creating a new grain. From there, you can see your existing grains of that app and create new ones.
 - Fixed problem where some apps would refresh to a 404 page when resuming a laptop from suspend.

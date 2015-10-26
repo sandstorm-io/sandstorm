@@ -1,3 +1,8 @@
+### v0.126 (2015-10-26)
+- Added app details page. Clicking on an app in the app grid now brings you to the details page rather than creating a new grain. From there, you can see your existing grains of that app and create new ones.
+- Fixed problem where some apps would refresh to a 404 page when resuming a laptop from suspend.
+- Sandstorm will now automatically repair its Mongo database after a dirty shutdown (e.g. power outage), rather than go into an infinite loop of Mongo failing to start.
+
 ### v0.125 (2015-10-21)
 - Fix bug causing Sandcats servers not to update their IP dynamically.
 

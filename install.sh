@@ -1739,7 +1739,7 @@ sandcats_configure_https() {
   HTTP_STATUS=$(
     dotdotdot_curl \
       --silent \
-      --max-time 20 \
+      --max-time 60 \
       $SANDCATS_CURL_PARAMS \
       -A "$CURL_USER_AGENT" \
       -X POST \

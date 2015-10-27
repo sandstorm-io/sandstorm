@@ -48,7 +48,7 @@ HTTPS) provides seven-day certificates and an API for automatic
 renewal.
 
 Sandcats uses **HTTPS client certificates** for authentication, which
-Sandstorm (and the install script) manage for users. You can find
+Sandstorm and the install script manage for users. You can find
 these certificates under `/opt/sandstorm/var/sandcats` by
 default. Please save these somewhere safe so you can hold onto your
 domain.
@@ -62,7 +62,7 @@ Sandcats.io service (via the `/getcertificate` JSON-RPC endpoint).
 Sandcats verifies that the request is coming from the owner of this
 particular `example.sandcats.io` domain name, and if so, passes the
 request along to GlobalSign for signing. The install script receives
-the signed certificate and places it in places it in
+the signed certificate and places it in
 `/opt/sandstorm/var/sandcats/https/example.sandcats.io/`.
 
 When Sandstorm starts, it looks in the above directory for keys &
@@ -90,7 +90,9 @@ Sandstorm on a new server, you can **recover a domain** automatically
 by using the Sandstorm installer and typing `help` at the Sandcats
 prompts.
 
-**File-based recovery:** To manually recover a domain:
+**File-based recovery:**
+
+To manually recover a domain:
 
 * Find your three three `id_rsa` certificate files (usually
   `/opt/sandstorm/var/sandcats`) and keep them safe somewhere.
@@ -135,4 +137,4 @@ Sandcats.io has the following formal documents:
 
 If you have more questions, or are having trouble, email:
 
-support@sandstorm.io
+[support@sandstorm.io](mailto:support@sandstorm.io)

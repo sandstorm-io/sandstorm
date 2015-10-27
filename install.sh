@@ -628,7 +628,8 @@ dev_server_install() {
     echo "due to limitations in the Linux kernel."
     echo ""
 
-    echo "To set up Sandstorm, we will need to use sudo."
+    echo "To set up Sandstorm, we will use sudo to switch to root, then"
+    echo "provide further information before doing the install."
     echo "Sandstorm's database and web interface won't run as root."
 
     # If we are running in USE_DEFAULTS mode, then it is not OK to ask

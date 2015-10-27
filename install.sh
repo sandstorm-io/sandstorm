@@ -194,6 +194,7 @@ PREFER_ROOT="yes"
 USERNS_CLONE_AT_ALL=""
 USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET=""
 SYSCTL_PROBABLY_WORKS="yes"
+SHOW_MESSAGE_ABOUT_NEEDING_PORTS_OPEN="no"
 
 # Allow the test suite to override the path to netcat in order to
 # reproduce a compatibility issue between different nc versions.
@@ -256,6 +257,7 @@ disable_https_if_ports_unavailable() {
 
   if [ "$PORT_443_AVAILABLE" == "no" -o "$PORT_80_AVAILABLE" == "no" ] ; then
     SANDCATS_GETCERTIFICATE="no"
+    SHOW_MESSAGE_ABOUT_NEEDING_PORTS_OPEN="yes"
   fi
 }
 
@@ -762,6 +764,23 @@ full_server_install() {
       ACCEPTED_FULL_SERVER_INSTALL=yes
     else
       ACCEPTED_FULL_SERVER_INSTALL=no
+    fi
+
+    if [ "yes" = "$SHOW_MESSAGE_ABOUT_NEEDING_PORTS_OPEN" ] ; then
+      echo ""
+      echo "NOTE: Your system has port 80 and/or 443 bound, so we won't automatically"
+      echo "      listen on the standard HTTP port or set up HTTPS . If you installed nginx"
+      echo "      or a similar tool by accident, consider removing it so Sandstorm can"
+      echo "      listen on port 80 & 443."
+      echo ""
+      echo "      If you want Sandstorm available behind a reverse proxy, consider reading"
+      echo "      https://docs.sandstorm.io/en/latest/administering/reverse-proxy/"
+      echo ""
+      echo "      Sandstorm will work fine on port $DEFAULT_PORT, so it is safe to just press enter."
+      echo ""
+      if ! prompt-yesno "OK to skip automatic HTTPS setup & bind to port $DEFAULT_PORT instead?" "yes" ; then
+        fail "Exiting now. You can re-run the installer whenever you are ready."
+      fi
     fi
 
     # If they are OK continuing, and the script is not running as root

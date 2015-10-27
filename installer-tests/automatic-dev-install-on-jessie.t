@@ -7,6 +7,7 @@ Cleanup: uninstall_sandstorm(parsed_headers['vagrant-box'])
 $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]0
 $[run]sudo CURL_USER_AGENT=testing bash /vagrant/install.sh -d
+$[slow]* Add you (vagrant) to the sandstorm group so you can read/write app data.
 $[slow]Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled.
 Config written to /opt/sandstorm/sandstorm.conf.
 Finding latest build for dev channel...

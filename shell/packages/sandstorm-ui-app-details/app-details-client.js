@@ -189,6 +189,11 @@ Template.sandstormAppDetails.helpers({
     }
 
   },
+  onGrainClicked: function() {
+    return function (grainId) {
+      Router.go("grain", {grainId: grainId});
+    };
+  },
   website: function () {
     var ref = Template.instance().data;
     var pkg = latestPackageForAppId(ref._db, ref._appId);

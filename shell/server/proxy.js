@@ -399,7 +399,9 @@ Meteor.startup(function () {
     removed : function(session) {
       var proxy = proxiesByHostId[session.hostId];
       delete proxiesByHostId[session.hostId];
-      proxy.close();
+      if (proxy) {
+        proxy.close();
+      }
     }
   });
 });

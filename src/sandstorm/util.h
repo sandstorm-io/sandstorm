@@ -57,6 +57,7 @@ struct Pipe {
 
   static Pipe make();
   static Pipe makeAsync();
+  static Pipe makeTwoWayAsync();
 };
 
 kj::AutoCloseFd raiiOpen(kj::StringPtr name, int flags, mode_t mode = 0666);
@@ -301,7 +302,9 @@ public:
   KJ_DISALLOW_COPY(Subprocess);
 
   inline Subprocess(Subprocess&& other)
-      : name(kj::mv(other.name)), pid(other.pid) { other.pid = 0; }
+      : name(kj::mv(other.name)), pid(other.pid), subprocessSet(other.subprocessSet) {
+    other.pid = 0;
+  }
 
   ~Subprocess() noexcept(false);
   // Kills the subprocess (with SIGKILL) and waitpid()s it if it hasn't already finished.

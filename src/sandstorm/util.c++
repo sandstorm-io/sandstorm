@@ -28,6 +28,7 @@
 #include <sys/wait.h>
 #include <map>
 #include <sys/mman.h>
+#include <sys/socket.h>
 
 namespace sandstorm {
 
@@ -40,6 +41,12 @@ Pipe Pipe::make() {
 Pipe Pipe::makeAsync() {
   int fds[2];
   KJ_SYSCALL(pipe2(fds, O_CLOEXEC | O_ASYNC));
+  return { kj::AutoCloseFd(fds[0]), kj::AutoCloseFd(fds[1]) };
+}
+
+Pipe Pipe::makeTwoWayAsync() {
+  int fds[2];
+  KJ_SYSCALL(socketpair(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0, fds));
   return { kj::AutoCloseFd(fds[0]), kj::AutoCloseFd(fds[1]) };
 }
 

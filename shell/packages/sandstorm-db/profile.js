@@ -19,10 +19,10 @@ var httpProtocol;
 
 if (Meteor.isServer) {
   Meteor.publish("accountIdentities", function () {
-    if (!Meteor.userId) return [];
+    if (!this.userId) return [];
 
     return [
-      Meteor.users.find(Meteor.userId,
+      Meteor.users.find(this.userId,
         {fields: {
           "identities.id":1,
           "identities.service":1,

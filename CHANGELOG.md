@@ -1,3 +1,6 @@
+### v0.128 (2015-10-28)
+- Internal bugfixes.
+
 ### v0.127 (2015-10-26)
 - Fix bug in app details page causing pages to be blank in the presence of very old sharing tokens that lacked certain expected metadata.
 

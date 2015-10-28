@@ -24,6 +24,7 @@
 #include <capnp/rpc-twoparty.h>
 #include <capnp/rpc.capnp.h>
 #include <unistd.h>
+#include <netinet/in.h> // needs to be included before sys/capability.h
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/time.h>
@@ -35,7 +36,6 @@
 #include <sys/capability.h>
 #include <sys/ptrace.h>
 #include <sys/syscall.h>
-#include <netinet/in.h>
 #include <linux/sockios.h>
 #include <linux/route.h>
 #include <sandstorm/ip_tables.h>  // created by Makefile from <linux/netfilter_ipv4/ip_tables.h>

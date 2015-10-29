@@ -91,38 +91,6 @@ var matchApps = function (searchString) {
   return matchingApps;
 };
 
-var nounFromAction = function (action, appTitle) {
-  // A hack to deal with legacy apps not including fields in their manifests.
-  // I look forward to the day I can remove most of this code.
-  // Attempt to figure out the appropriate noun that this action will create.
-  // Use an explicit noun phrase is one is available.  Apps should add these in the future.
-  if (action.nounPhrase) return action.nounPhrase.defaultText;
-  // Otherwise, try to guess one from the structure of the action title field
-  if (action.title) {
-    var text = action.title.defaultText;
-    // Strip a leading "New "
-    if (text.lastIndexOf("New ", 0) === 0) {
-      var candidate = text.slice(4);
-      // Strip a leading appname too, if provided
-      if (candidate.lastIndexOf(appTitle, 0) === 0) {
-        var newCandidate = candidate.slice(appTitle.length);
-        // Unless that leaves you with no noun, in which case, use "instance"
-        if (newCandidate.length > 0) {
-          return newCandidate.toLowerCase();
-        } else {
-          return "instance";
-        }
-      }
-      return candidate.toLowerCase();
-    }
-    // Some other verb phrase was given.  Just use it verbatim, and hope the app author updates
-    // the package soon.
-    return text;
-  } else {
-    return "instance";
-  }
-};
-
 Template.sandstormAppList.helpers({
   setDocumentTitle: function() {
     document.title = "Apps · Sandstorm";

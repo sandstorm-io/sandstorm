@@ -1038,7 +1038,7 @@ private:
           "  #    #\n"
           "  #    # IMPORTANT: only ever append to this list!  Reordering or removing fields\n"
           "  #    # will change behavior and permissions for existing grains!  To deprecate a\n"
-          "  #    # permission, or for more information, see \"PermissionDef\" in \n"
+          "  #    # permission, or for more information, see \"PermissionDef\" in\n"
           "  #    # https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/grain.capnp\n"
           "  #      (\n"
           "  #        name = \"editor\",\n"
@@ -1055,7 +1055,7 @@ private:
           "  #    ],\n"
           "  #    roles = [\n"
           "  #      # Roles are logical collections of permissions.  For instance, your app may have\n"
-          "  #      # a \"viewer\" role and an \"editor\" \n"
+          "  #      # a \"viewer\" role and an \"editor\" role\n"
           "  #      (\n"
           "  #        title = (defaultText = \"editor\"),\n"
           "  #        # Name of the role.  Shown in the Sandstorm UI to indicate which users have which roles.\n"
@@ -2262,7 +2262,7 @@ private:
 
       if (!includeAll) {
         context.warning(
-            "Your program used the following files. (If you would specify `fileList` in \n"
+            "Your program used the following files. (If you would specify `fileList` in\n"
             "the package definition, I could write the list there.)\n\n");
         auto msg = kj::str(
             kj::StringTree(KJ_MAP(file, usedFiles) { return kj::strTree(file); }, "\n"), "\n");

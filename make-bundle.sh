@@ -41,7 +41,7 @@ copyDep() {
   elif [[ "$FILE" == /etc/* ]]; then
     # We'll want to copy configuration (e.g. for DNS) from the host at runtime.
     if [ -f "$FILE" ]; then
-      echo "$FILE" >> tmp/etc.list
+      echo "$FILE" >> tmp/host.list
     fi
   elif [ -h "$FILE" ]; then
     # Symbolic link.
@@ -138,11 +138,27 @@ __EOF__
 gcc tmp/dnstest.c -o tmp/dnstest
 strace tmp/dnstest 2>&1 | grep -o '"/[^"]*"' | tr -d '"' | copyDeps
 
-# Dedup the etc.list and copy over.  Don't copy the ld.so.x files, though.
-cat tmp/etc.list | grep -v '/ld[.]so[.]' | sort | uniq > bundle/etc.list
+# Add some whitelisted entries to host.list that we always want to include,
+# even if the build machine doesn't necessarily use them.  This helps handle
+# systems that use resolvconf to manage /etc/resolv.conf.
+# We skip copyDeps because it only adds files that exist on this system; we
+# wish to make things work for systems configured differently from the build host.
+cat >> tmp/host.list << '__EOF__'
+/etc/gai.conf
+/etc/host.conf
+/etc/hosts
+/etc/nsswitch.conf
+/etc/resolvconf
+/etc/resolv.conf
+/etc/services
+/run/resolvconf
+__EOF__
+
+# Dedup the host.list and copy over.  Don't copy the ld.so.x files, though.
+cat tmp/host.list | grep -v '/ld[.]so[.]' | sort | uniq > bundle/host.list
 
 # Make mount points.
-mkdir -p bundle/{dev,proc,tmp,etc,var}
+mkdir -p bundle/{dev,proc,tmp,etc,etc.host,run,run.host,var}
 touch bundle/dev/{null,zero,random,urandom,fuse}
 
 # Mongo wants these localization files.

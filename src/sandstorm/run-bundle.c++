@@ -1109,8 +1109,8 @@ private:
 
     // Bind var -> ../var, so that all versions share the same var.
     // Same for tmp, though we clear it on every startup.
-    KJ_SYSCALL(mount("../var", "var", nullptr, MS_BIND, nullptr));
-    KJ_SYSCALL(mount("../tmp", "tmp", nullptr, MS_BIND, nullptr));
+    KJ_SYSCALL(mount("../var", "var", nullptr, MS_BIND | MS_REC, nullptr));
+    KJ_SYSCALL(mount("../tmp", "tmp", nullptr, MS_BIND | MS_REC, nullptr));
 
     // Bind devices from /dev into our chroot environment.
     // We can't bind /dev itself because this is apparently not allowed when in a UID namespace
@@ -1121,10 +1121,30 @@ private:
     KJ_SYSCALL(mount("/dev/urandom", "dev/urandom", nullptr, MS_BIND, nullptr));
     KJ_SYSCALL(mount("/dev/fuse", "dev/fuse", nullptr, MS_BIND, nullptr));
 
-    // Mount a tmpfs at /etc and copy over necessary config files from the host.
+    // Bind in the host's /etc as /etc.host.
+    // As noted in backup.c++, MS_BIND does not respect mount flags on the initial bind, and
+    // we have to issue a remount to set them.  Because the host /etc may have been mounted nosuid,
+    // nodev, and noexec, we also add those flags here lest mount() think we're trying to remove
+    // them (which would cause mount() to fail).  We also need MS_REC because the host may have
+    // mounted other FSes under /etc, and we need to recursively rebind those.
+    KJ_SYSCALL(mount("/etc", "etc.host", nullptr, MS_BIND | MS_REC, nullptr));
+    KJ_SYSCALL(mount("/etc", "etc.host", nullptr,
+                     MS_BIND | MS_REC | MS_REMOUNT | MS_RDONLY | MS_NOSUID | MS_NODEV | MS_NOEXEC,
+                     nullptr));
+    // Then do the same for /run.
+    KJ_SYSCALL(mount("/run", "run.host", nullptr, MS_BIND | MS_REC, nullptr));
+    KJ_SYSCALL(mount("/run", "run.host", nullptr,
+                     MS_BIND | MS_REC | MS_REMOUNT | MS_RDONLY | MS_NOSUID | MS_NODEV | MS_NOEXEC,
+                     nullptr));
+
+    // Mount a tmpfs at /run.
+    KJ_SYSCALL(mount("tmpfs", "run", "tmpfs", MS_NOSUID | MS_NOEXEC,
+                     kj::str("size=2m,nr_inodes=128,mode=755", tmpfsUidOpts).cStr()));
+    // Mount a tmpfs at /etc.
     KJ_SYSCALL(mount("tmpfs", "etc", "tmpfs", MS_NOSUID | MS_NOEXEC,
                      kj::str("size=2m,nr_inodes=128,mode=755", tmpfsUidOpts).cStr()));
-    copyEtc();
+    // Symlink in necessary config files from the host, as described in the bundle's host.list
+    linkHostFiles();
 
     // OK, change our root directory.
     KJ_SYSCALL(syscall(SYS_pivot_root, ".", "tmp"));
@@ -1183,18 +1203,26 @@ private:
     KJ_SYSCALL(sigprocmask(SIG_SETMASK, &sigset, nullptr));
   }
 
-  void copyEtc() {
-    auto files = splitLines(readAll("etc.list"));
+  void linkHostFiles() {
+    // We will create a symlink for the first child of /etc or /run named in each line of host.list to
+    // symlink that file or folder from the host into the /etc or /run tmpfs.
+    auto files = splitLines(readAll("host.list"));
 
     // Now copy over each file.
     for (auto& file: files) {
-      if (access(file.cStr(), R_OK) == 0) {
-        auto in = raiiOpen(file, O_RDONLY);
-        auto out = raiiOpen(kj::str(".", file), O_WRONLY | O_CREAT | O_EXCL);
-        ssize_t n;
-        do {
-          KJ_SYSCALL(n = sendfile(out, in, nullptr, 1 << 20));
-        } while (n > 0);
+      auto pathElements = split(file, '/');
+      KJ_REQUIRE(pathElements.size() >= 3, "invalid path", file);
+      KJ_REQUIRE(pathElements[0].size() == 0,"relative path given in host.list", file);
+      auto firstDir = kj::str(pathElements[1]);
+      KJ_REQUIRE(firstDir == "etc" || firstDir == "run", "host.list asked to symlink in file outside of /etc/ or /run/", file);
+      auto child = pathElements[2];
+      auto linkTargetAsSeenByLink = kj::str("../", firstDir, ".host/", child);
+      auto linkToCreate = kj::str("./", firstDir, "/", child);
+
+      // Only attempt to create the symlink if we haven't created it already.
+      struct stat stats;
+      if (lstat(linkToCreate.cStr(), &stats) < 0 && errno == ENOENT) {
+        KJ_SYSCALL(symlink(linkTargetAsSeenByLink.cStr(), linkToCreate.cStr()));
       }
     }
   }

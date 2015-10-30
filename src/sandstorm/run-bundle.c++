@@ -1145,6 +1145,9 @@ private:
                      kj::str("size=2m,nr_inodes=128,mode=755", tmpfsUidOpts).cStr()));
     // Symlink in necessary config files from the host, as described in the bundle's host.list
     linkHostFiles();
+    // And just in case the user has /etc/resolv.conf as a symlink to something we haven't linked
+    // in, copy its contents to /etc/resolv.conf.host-initial so we can use that if needed.
+    backupResolvConf();
 
     // OK, change our root directory.
     KJ_SYSCALL(syscall(SYS_pivot_root, ".", "tmp"));
@@ -1159,6 +1162,9 @@ private:
     KJ_SYSCALL(setenv("LANG", "C.UTF-8", true));
     KJ_SYSCALL(setenv("PATH", "/usr/bin:/bin", true));
     KJ_SYSCALL(setenv("LD_LIBRARY_PATH", "/usr/local/lib:/usr/lib:/lib", true));
+
+    // See if /etc/resolv.conf exists, and if not, try replacing it with the backup made earlier.
+    restoreResolvConfIfNeeded();
   }
 
   void dropPrivs(const UserIds& uids) {
@@ -1223,6 +1229,38 @@ private:
       struct stat stats;
       if (lstat(linkToCreate.cStr(), &stats) < 0 && errno == ENOENT) {
         KJ_SYSCALL(symlink(linkTargetAsSeenByLink.cStr(), linkToCreate.cStr()));
+      }
+    }
+  }
+
+  void backupResolvConf() {
+    if (access("/etc/resolv.conf", R_OK) == 0) {
+      auto in = raiiOpen("/etc/resolv.conf", O_RDONLY);
+      auto out = raiiOpen("./etc/resolv.conf.host-initial", O_WRONLY | O_CREAT | O_EXCL);
+      ssize_t n;
+      do {
+        KJ_SYSCALL(n = sendfile(out, in, nullptr, 1 << 20));
+      } while (n > 0);
+    } else {
+      context.warning("WARNING: Couldn't read host's /etc/resolv.conf, DNS may be broken");
+    }
+  }
+
+  void restoreResolvConfIfNeeded() {
+    struct stat stats;
+    if (stat("/etc/resolv.conf", &stats) < 0) {
+      auto error = errno;
+      if (error == ENOENT) {
+        if (access("/etc/resolv.conf.host-initial", R_OK) == 0) {
+          context.warning("WARNING: /etc/resolv.conf is unreachable from container, "
+                          "using backup from host");
+          KJ_SYSCALL(rename("/etc/resolv.conf.host-initial", "/etc/resolv.conf"));
+        } else {
+          context.warning("WARNING: Wanted to fall back to /etc/resolv.conf.host-initial, "
+                          "but it is unavailable.  Carrying on without DNS.");
+        }
+      } else {
+        KJ_FAIL_SYSCALL("stat('/etc/resolv.conf')", error);
       }
     }
   }

@@ -35,7 +35,7 @@ module.exports["Basic web publishing"] = function (browser) {
     .init()
     .installApp("http://sandstorm.io/apps/jparyani/web-publishing-1.spk",
       "ea3ef5ac80af4fb8041c635185b2a10f", "qkag0k1ta3guun74g4rxx4xfqun8a3d7vsagh3843cvvxhh6n8s0")
-    .assert.containsText("#grainTitle", "Untitled WebPublishingTest instance")
+    .assert.containsText("#grainTitle", "Untitled WebPublishingTest grain")
     .pause(short_wait)
     .frame("grain-frame")
     .waitForElementVisible("#public-address", short_wait)
@@ -53,7 +53,7 @@ module.exports["Web publishing with grain shutdown"] = function (browser) {
     .init()
     .installApp("http://sandstorm.io/apps/jparyani/web-publishing-1.spk",
       "ea3ef5ac80af4fb8041c635185b2a10f", "qkag0k1ta3guun74g4rxx4xfqun8a3d7vsagh3843cvvxhh6n8s0")
-    .assert.containsText("#grainTitle", "Untitled WebPublishingTest instance")
+    .assert.containsText("#grainTitle", "Untitled WebPublishingTest grain")
     .pause(short_wait)
     .frame("grain-frame")
     .waitForElementVisible("#public-address", short_wait)

@@ -135,7 +135,7 @@ the `SessionContext` capability you receive as a parameter to the
 `UiView.newSession()` method can be cast to `HackSessionContext`.  *
 If you are using `sandstorm-http-bridge`, you must open a Cap'n Proto
 connection to `unix:/tmp/sandstorm-api`, which will give you a
-[SandstormHttpBridge](../blob/master/src/sandstorm/sandstorm-http-bridge.capnp)
+[SandstormHttpBridge](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/sandstorm-http-bridge.capnp)
 capability. Call `getSessionContext()` on that capability, using the
 ID that sandstorm-http-bridge places in the `X-Sandstorm-Session-Id`
 header, and cast the result to a `HackSessionContext`.

@@ -1339,6 +1339,15 @@ Router.map(function () {
       return new SandstormAppList(globalDb, globalQuotaEnforcer, this.params.query.highlight);
     },
   });
+  this.route("newGrainRedirect", {
+    // The path /grain/new used to be where you would go to create new grains.
+    // Its functionality has been superceded by the apps route, so redirect in
+    // case anyone has the old link saved somewhere.
+    path: "/grain/new",
+    onBeforeAction: function () {
+      Router.go("apps", {}, {replaceState: true});
+    },
+  });
   this.route("grains", {
     path: "/grain",
     waitOn: function () { return globalSubs; },

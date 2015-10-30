@@ -1019,8 +1019,8 @@ if (Meteor.isClient) {
       // sending the mail because we want a separate token for each user. Moreover, users
       // will probably expect space-delimited lists to work, and when we eventually implement
       // autocompletion and inline validation, we expect that we will display a space-delimited
-      // list. So we split on spaces here and allow MailComposer to clean up any stray commas.
-      var emails = event.target.getElementsByClassName("emails")[0].value.split(" ");
+      // list.
+      var emails = event.target.getElementsByClassName("emails")[0].value.split(/[ ,]/);
       emails = emails.filter(function (email) { return email.length > 0;});
       if (emails.length == 0) {
         return;

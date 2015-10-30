@@ -152,6 +152,7 @@ cat >> tmp/host.list << '__EOF__'
 /etc/resolv.conf
 /etc/services
 /run/resolvconf
+/run/systemd/resolve/resolv.conf
 __EOF__
 
 # Dedup the host.list and copy over.  Don't copy the ld.so.x files, though.

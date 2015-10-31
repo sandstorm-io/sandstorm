@@ -493,7 +493,7 @@ GrainView.prototype._urlForAsset = function (assetId) {
 
 GrainView.prototype.iconSrc = function() {
   // Several options here:
-  // 1. We own the grain.  Look up the icon metadata in the Package manifest.
+  // 1. We own the grain.  Look up the icon metadata in the Package manifest (or DevPackage if applicable).
   // 2. We own an Api token for the grain.  Use the denormalizedGrainMetadata.
   // 3. We're using an ApiToken anonymously.  Use the data from the TokenInfo pseudocollection.
   this._dep.depend();
@@ -501,7 +501,8 @@ GrainView.prototype.iconSrc = function() {
     // Case 1
     var grain = Grains.findOne({_id: this._grainId});
     if (grain) {
-      var pkg = Packages.findOne({_id: grain.packageId});
+      var pkg = DevPackages.findOne({appId: grain.appId}) ||
+                Packages.findOne({_id: grain.packageId});
       if (pkg) return Identicon.iconSrcForPackage(pkg, "grain", makeWildcardHost('static'));
     }
   } else if (!this._isUsingAnonymously()) {

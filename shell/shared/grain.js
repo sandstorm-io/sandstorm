@@ -1019,8 +1019,8 @@ if (Meteor.isClient) {
       // sending the mail because we want a separate token for each user. Moreover, users
       // will probably expect space-delimited lists to work, and when we eventually implement
       // autocompletion and inline validation, we expect that we will display a space-delimited
-      // list. So we split on spaces here and allow MailComposer to clean up any stray commas.
-      var emails = event.target.getElementsByClassName("emails")[0].value.split(" ");
+      // list.
+      var emails = event.target.getElementsByClassName("emails")[0].value.split(/[ ,]/);
       emails = emails.filter(function (email) { return email.length > 0;});
       if (emails.length == 0) {
         return;
@@ -1337,6 +1337,15 @@ Router.map(function () {
       }
 
       return new SandstormAppList(globalDb, globalQuotaEnforcer, this.params.query.highlight);
+    },
+  });
+  this.route("newGrainRedirect", {
+    // The path /grain/new used to be where you would go to create new grains.
+    // Its functionality has been superceded by the apps route, so redirect in
+    // case anyone has the old link saved somewhere.
+    path: "/grain/new",
+    onBeforeAction: function () {
+      Router.go("apps", {}, {replaceState: true});
     },
   });
   this.route("grains", {

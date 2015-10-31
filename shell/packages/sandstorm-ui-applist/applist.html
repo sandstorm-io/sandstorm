@@ -25,7 +25,7 @@
     <div class="popular-container">
       <h2 class="">Most used</h2>
       {{#each popularApps }}
-	  <a class="app-button {{#if dev}}dev-background {{/if}}{{#if shouldHighlight}}highlight{{/if}}" href="/apps/{{appId}}">
+      <a class="app-button {{#if dev}}dev-background {{/if}}" href="/apps/{{appId}}">
         <div class="app-icon" style="background-image: url('{{ iconSrc }}');"></div>
         <span class="app-title">{{appTitle}}</span>
         <span class="action-text">{{shortDescription}}</span>

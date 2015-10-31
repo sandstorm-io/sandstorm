@@ -971,11 +971,11 @@ var nounPhraseForActionAndAppTitle = function(action, appTitle) {
       // Strip a leading appname too, if provided
       if (candidate.lastIndexOf(appTitle, 0) === 0) {
         var newCandidate = candidate.slice(appTitle.length);
-        // Unless that leaves you with no noun, in which case, use "instance"
+        // Unless that leaves you with no noun, in which case, use "grain"
         if (newCandidate.length > 0) {
           return newCandidate.toLowerCase();
         } else {
-          return "instance";
+          return "grain";
         }
       }
       return candidate.toLowerCase();
@@ -984,7 +984,7 @@ var nounPhraseForActionAndAppTitle = function(action, appTitle) {
     // the package soon.
     return text;
   } else {
-    return "instance";
+    return "grain";
   }
 };
 

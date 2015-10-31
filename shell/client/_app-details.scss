@@ -107,6 +107,7 @@
           }
           >button.show-authorship-button {
             @extend %unstyled-button;
+            cursor: pointer;
             padding-left: 8px;
             padding-right: 24px;
             background-repeat: no-repeat;

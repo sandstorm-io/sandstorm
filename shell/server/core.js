@@ -255,6 +255,8 @@ SandstormCoreImpl.prototype.restore = function (sturdyRef, requiredPermissions) 
     return restoreInternal(hashedSturdyRef,
                            {grain: Match.ObjectIncluding({grainId: self.grainId})},
                            requirements, sturdyRef);
+  }).catch(function (err) {
+    console.error("couldn't restore: ", err);
   });
 };
 

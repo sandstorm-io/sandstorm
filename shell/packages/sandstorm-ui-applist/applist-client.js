@@ -9,15 +9,17 @@ SandstormAppList = function(db, quotaEnforcer, highlight) {
 }
 
 var matchesApp = function (needle, app) {
-  var appTitle = SandstormDb.appNameFromPackage(app);
+  var pkg = app && app.pkg;
+  var appTitle = SandstormDb.appNameFromPackage(pkg);
   // We match if the app title is matched...
   if (appTitle.toLowerCase().indexOf(needle) !== -1) return true;
   // ...or the metadata's shortDescription matches...
-  var shortDesc = SandstormDb.appShortDescriptionFromPackage(app);
+  var shortDesc = SandstormDb.appShortDescriptionFromPackage(pkg);
   if (shortDesc && shortDesc.toLowerCase().indexOf(needle) !== -1 ) return true;
   // ...or any of the app's action's nouns match.
-  for (var i = 0 ; i < app.actions.length ; i++) {
-    if (SandstormDb.nounPhraseForActionAndAppTitle(app.actions[i], appTitle).toLowerCase().indexOf(needle) !== -1) return true;
+  for (var i = 0 ; i < pkg.manifest.actions.length ; i++) {
+    var nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(pkg.manifest.actions[i], appTitle);
+    if (nounPhrase.toLowerCase().indexOf(needle) !== -1) return true;
   }
   // Otherwise, nope.
   return false;

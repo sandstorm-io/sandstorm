@@ -84,7 +84,6 @@ body>.topbar {
       height: 100%;
       margin: 0;
       padding: 0;
-      cursor: pointer;
       overflow: hidden;
 
       &:hover {
@@ -119,7 +118,6 @@ body>.topbar {
       display: block;
       margin: 0;
       padding: 0;
-      cursor: pointer;
       overflow: hidden;
       background-position: center;
       background-repeat: no-repeat;
@@ -198,7 +196,6 @@ body>.topbar {
       >button {
         @extend %unstyled-button;
         @extend %hamburger-menu-item;
-        cursor: pointer;
         margin: 0px;
         @media #{$desktop} {
           height: $topbar-height-desktop;
@@ -576,7 +573,6 @@ body>.topbar {
         }
         .close-button {
           @extend %unstyled-button;
-          cursor: pointer;
           box-sizing: border-box;
           position: absolute;
           top: 1px;
@@ -747,7 +743,6 @@ body>.popup {
 
     button.who-has-access {
       @extend %unstyled-button;
-      cursor: pointer;
     }
 
     .share-tabs {
@@ -802,7 +797,6 @@ body>.popup {
 
     button.reset-invite, button.reset-share-token {
       @extend %unstyled-button;
-      cursor: pointer;
     }
 
     .button-container {
@@ -819,7 +813,6 @@ body>.popup {
       font-size: 10pt;
       position: absolute;
       right: 0;
-      cursor: pointer;
       text-transform: uppercase;
     }
     .share-token-role {

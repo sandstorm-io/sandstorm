@@ -1,0 +1,99 @@
+<template name="sandstormAppInstall">
+  {{setDocumentTitle}}
+  {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}Install app{{/sandstormTopbarItem}}
+{{#if ready}}
+  {{#if error }}
+    <div class="install">
+      <h1>Failed to install app</h1>
+      <pre>{{error}}</pre>
+      <button id="retry">Try Again</button>
+    </div>
+  {{else}}
+    <div class="install">
+    {{#if isCurrentStep "wait"}}
+      <div id="step-wait">
+        <h1>Waiting for write access...</h1>
+      </div>
+    {{/if}}
+    {{#if isCurrentStep "download"}}
+      <div id="step-download">
+        <h1>Downloading...</h1>
+        <p><span class="progress">{{progress}}</span></p>
+        <p><button id="cancelDownload">Cancel</button></p>
+      </div>
+    {{/if}}
+    {{#if isCurrentStep "verify"}}
+      <div id="step-verify">
+        <h1>Verifying...</h1>
+      </div>
+    {{/if}}
+    {{#if isCurrentStep "unpack"}}
+      <div id="step-unpack">
+        <h1>Unpacking...</h1>
+      </div>
+    {{/if}}
+    {{#if isCurrentStep "analyze"}}
+      <div id="step-analyze">
+        <h1>Analyzing...</h1>
+      </div>
+    {{/if}}
+    {{#if isCurrentStep "confirm"}}
+      <div id="step-confirm">
+        <h1>Install {{ appTitle }}?</h1>
+        {{> sandstormAppDetails
+           showPublisherDetails=true
+           showUninstall=false
+           pkg=pkg
+           staticHost=staticHost
+           keybaseProfile=keybaseProfile
+        }}
+        <div class="confirm-form">
+          {{#if hasOlderVersion}}
+            <p>You have an older version of this app installed.  Do you want to upgrade?</p>
+            <p><button id="confirmInstall">Upgrade {{ appTitle }}</button></p>
+          {{else}}
+            {{#if hasNewerVersion}}
+              <p>You already have a newer version of this app installed.  Are
+                you sure you want to revert to this older version?</p>
+              <p><button id="confirmInstall">Downgrade {{ appTitle }}</button></p>
+            {{else}}
+              <p><button id="confirmInstall">Install {{ appTitle }}</button></p>
+            {{/if}}
+          {{/if}}
+        </div>
+      </div>
+    {{/if}}
+    {{#if isCurrentStep "run"}}
+      <div id="step-run">
+        <h1>{{ appTitle }} installed</h1>
+        <div class="done-notice">
+          <p>Installation complete.</p>
+          {{#if hasNewerVersion}}
+            <p>Some of your files were made with a
+              newer version of this app.  They will keep
+              using the newer version, as going backwards could break them.</p>
+            <p><a href="{{pathFor route='appDetails' appId=appId}}">Go to {{appTitle}}</a></p>
+          {{/if}}
+          {{#if hasOlderVersion}}
+            <p>Some of your files were made with an older version of this app.  Upgrade them?</p>
+            <p><button id="upgradeGrains">Upgrade Files</button></p>
+          {{/if}}
+        </div>
+      </div>
+    {{/if}}
+    {{#if isCurrentStep "delete"}}
+      <div id="step-delete">
+        <h1>Deleting...</h1>
+        <p>Server is currently deleting this app...</p>
+      </div>
+    {{/if}}
+    {{#if isCurrentStep "failed"}}
+      <div id="step-failed">
+        <h1>Failed</h1>
+        <p>Installation failed: {{error}}</p>
+      </div>
+    {{/if}}
+    </div>
+  {{/if}}
+{{/if}}
+</template>

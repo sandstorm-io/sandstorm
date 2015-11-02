@@ -50,25 +50,6 @@ if (Meteor.isServer) {
     }
   });
 
-  Meteor.publish("packageInfo", function (packageId) {
-    check(packageId, String);
-
-    var packageCursor = Packages.find(packageId);
-    var package = packageCursor.fetch()[0];
-
-    if (package && this.userId) {
-      // TODO(perf):  Grain list could be large.  In theory all we really need is to know whether
-      //   grains of newer and older versions exist.
-      return [
-        packageCursor,
-        UserActions.find({ userId: this.userId, appId: package.appId }),
-        Grains.find({ userId: this.userId, appId: package.appId })
-      ];
-    } else {
-      return packageCursor;
-    }
-  });
-
   var uploadTokens = {};
   // Not all users are allowed to upload apps. We need to manually implement authorization
   // because Meteor.userId() is not available in server-side routes.
@@ -155,26 +136,6 @@ Meteor.methods({
   },
 });
 
-if (Meteor.isClient) {
-  Template.install.events({
-    "click #retry": function (event) {
-      Meteor.call("ensureInstalled", this.packageId, this.packageUrl, true);
-    },
-
-    "click #cancelDownload": function (event) {
-      Meteor.call("cancelDownload", this.packageId);
-    },
-
-    "click #confirmInstall": function (event) {
-      globalDb.addUserActions(this.packageId);
-    },
-
-    "click #upgradeGrains": function (event) {
-      Meteor.call("upgradeGrains", this.appId, this.version, this.packageId);
-    }
-  });
-}
-
 function referredFromSandstorm() {
   return document.referrer.lastIndexOf("https://sandstorm.io/apps/", 0) === 0 ||
          document.referrer.lastIndexOf("https://apps.sandstorm.io/", 0) === 0;
@@ -197,20 +158,21 @@ Router.map(function () {
       if (!this.ready()) return;
 
       var packageId = this.params.packageId;
-      var package = Packages.findOne(packageId);
-      var userId = Meteor.userId();
       var packageUrl = this.params.query && this.params.query.url;
+      var handle = new SandstormAppInstall(packageId, packageUrl, globalDb, globalQuotaEnforcer);
 
-      if (!userId) {
+      var pkg = Packages.findOne(packageId);
+      if (!Meteor.userId()) {
         if (allowDemo && isSafeDemoAppUrl(packageUrl)) {
-          if (package && package.status === "ready") {
-            Router.go("appdemo", {appId: package.appId}, {replaceState: true});
-            return;
+          if (pkg && pkg.status === "ready") {
+            Router.go("appdemo", {appId: pkg.appId}, {replaceState: true});
+            return handle;
           } else {
             // continue on and install...
           }
         } else {
-          return { error: "You must sign in to install packages.", packageId: packageId };
+          handle.setError("You must sign in to install packages.");
+          return handle;
         }
       } else {
         try {
@@ -230,129 +192,52 @@ Router.map(function () {
             }
             window.opener.Router.go("install", {packageId: packageId}, {query: this.params.query});
             window.close();
-            return;
+            return handle;
           }
         } catch (err) {
           // Probably security error because window.opener is in a different domain.
         }
 
         if (!isSignedUp() && !isDemoUser()) {
-          return { error:
-              "This Sandstorm server requires you to get an invite before installing apps.",
-              packageId: packageId };
+          handle.setError("This Sandstorm server requires you to get an invite before installing apps.");
+          return handle;
         }
-      }
-
-      // If ensureInstalled throws an exception without even starting installation, we'll treat
-      // it as a permanent error.
-      var previousError = Session.get("install-error-" + packageId);
-      if (previousError) {
-        return { error: previousError, packageId: packageId };
       }
 
       Meteor.call("ensureInstalled", packageId, packageUrl, false,
             function (err, result) {
          if (err) {
-           Session.set("install-error-" + packageId, err.message);
+           console.log(err);
+           handle.setError(err.message);
          }
       });
 
-      if (package === undefined) {
+      if (pkg === undefined) {
         if (!packageUrl) {
-          return { error: "Unknown package ID: " + packageId +
-                   "\nPerhaps it hasn't been uploaded?",
-                   packageId: packageId, packageUrl: packageUrl };
-        } else {
-          return { step: "wait" };
+          handle.setError("Unknown package ID: " + packageId +
+                   "\nPerhaps it hasn't been uploaded?");
         }
+        return handle;
       }
 
-      if (package.status !== "ready") {
-        var progress;
-        if (package.progress < 0) {
-          progress = "";  // -1 means no progress to report
-        } else if (package.progress > 1) {
-          // Progress outside [0,1] indicates a byte count rather than a fraction.
-          // TODO(cleanup):  This is pretty ugly.  What if exactly 1 byte had been downloaded?
-          progress = Math.round(package.progress / 1024) + " KiB";
-        } else {
-          progress = Math.round(package.progress * 100) + "%";
+      if (pkg.status !== "ready") {
+        if (pkg.status === "failed") {
+          handle.setError(pkg.error);
         }
-
-        return {
-          step: package.status,
-          progress: progress,
-          error: package.status === "failed" ? package.error : null,
-          packageId: packageId,
-          packageUrl: packageUrl
-        };
+        return handle;
       }
 
-      var result = {
-        packageId: packageId,
-        packageUrl: packageUrl,
-        appId: package.appId,
-        version: package.manifest.appVersion
-      };
-
-      if (UserActions.findOne({ userId: Meteor.userId(), packageId: packageId })) {
-        // This app appears to be installed already.  Check if any grains need updating.
-
-        result.step = "run";
-
-        var existingGrains = Grains.find({ userId: Meteor.userId(), appId: package.appId }).fetch();
-
-        var maxVersion = result.version;
-
-        for (var i in existingGrains) {
-          var grain = existingGrains[i];
-          if (grain.packageId !== packageId) {
-            // Some other package version.
-            if (grain.appVersion <= result.version) {
-              result.hasOlderVersion = true;
-            } else {
-              result.hasNewerVersion = true;
-              if (grain.appVersion > maxVersion) {
-                maxVersion = grain.appVersion;
-                result.newVersionId = grain.packageId;
-              }
-            }
-          }
-        }
-
-        if (!result.hasOlderVersion && !result.hasNewerVersion) {
+      // From here on, we know the package is installed in the global store, but we
+      // might have some per-user things to attend to.
+      if (handle.isInstalled()) {
+        if (handle.canRedirectAfterInstall()) {
           // OK, the app is installed and everything and there's no warnings to print, so let's
           // just go to it! We use `replaceState` so that if the user clicks "back" they don't just
           // get redirected forward again, but end up back at the app list.
-          Router.go("apps", {}, {replaceState: true, query: {highlight: package.appId }});
+          Router.go("appDetails", {appId: handle.appId()}, {replaceState: true});
         }
-
-        return result;
-      } else {
-        // Check whether some other version is installed and whether it's an older or newer version.
-        var oldAction = UserActions.findOne({ userId: Meteor.userId(), appId: package.appId });
-
-        result.step = "confirm";
-
-        if (oldAction) {
-          if (oldAction.appVersion <= result.version) {
-            result.hasOlderVersion = true;
-          } else {
-            result.hasNewerVersion = true;
-          }
-        }
-
-        if (!result.hasOlderVersion && !result.hasNewerVersion &&
-            (window.referredFromSandstorm === packageId || referredFromSandstorm())) {
-          // Skip confirmation because we assume the Sandstorm app list is not evil.
-          // TODO(security): This is not excellent. Think harder.
-          delete window.referredFromSandstorm;
-          globalDb.addUserActions(result.packageId);
-          Router.go("apps", {}, {replaceState: true});
-        }
-
-        return result;
       }
+      return handle;
     }
   });
 

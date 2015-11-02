@@ -573,7 +573,7 @@ limitations under the License.
 </template>
 
 <template name="appDetails">
-  {{> sandstormAppDetails }}
+  {{> sandstormAppDetailsPage }}
 </template>
 
 <template name="_grainSpinner">
@@ -596,6 +596,10 @@ limitations under the License.
   </div>
 </template>
 
+<template name="install">
+  {{> sandstormAppInstall }}
+</template>
+<!--
 <template name="install">
   {{>title "Install app"}}
 
@@ -657,7 +661,7 @@ limitations under the License.
     </div>
   {{/if}}
 </template>
-
+ -->
 <template name="account">
   <div class="account">
     {{#if .}}

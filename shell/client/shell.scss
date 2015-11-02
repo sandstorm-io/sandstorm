@@ -153,6 +153,8 @@ button.revoke-token {
 @import "_grainlist.scss";
 // app details page
 @import "_app-details.scss";
+// app installation page
+@import "_install.scss";
 
 #storage-usage {
   margin: 16px 4px;
@@ -302,8 +304,6 @@ div.popup h2 {
   font-weight: bold;
   margin: 4px;
 }
-
-@import "_install.scss";
 
 #sign-in-arrow {
   left: auto;

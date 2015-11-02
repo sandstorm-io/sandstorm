@@ -15,17 +15,48 @@
     background-color: #ccc;
   }
 
+  >.app-details-widget {
+    @extend %app-details-widget;
+  }
+  >.search-bar {
+    margin-top: 12px;
+    clear: both;
+    >label {
+      >span.search-icon {
+        @extend %pseudo-img-tag;
+        background-image: url("/search.svg");
+        background-size: 24px 24px;
+        background-position: center;
+        display: inline-block;
+        box-sizing: border-box;
+        width: 32px;
+        height: 32px;
+        vertical-align: top;
+      }
+      >input.search-bar {
+        font-size: 16pt;
+        height: 32px;
+        box-sizing: border-box;
+        background-color: $app-details-searchbar-background-color;
+        border: 1px solid $app-details-searchbar-outline-color;
+        &:focus {
+          border: 1px solid $app-details-searchbar-outline-color-focus;
+        }
+      }
+    }
+  }
+  >table.grain-list-table {
+    @extend %grain-table;
+  }
+}
+
+%app-details-widget {
+  margin: 0;
+  padding: 0;
+  position: relative;
   >.app-icon {
     position: absolute;
     @extend %pseudo-img-tag;
-    @media #{$desktop} {
-      left: 32px;
-      top: 24px;
-    }
-    @media #{$mobile} {
-      left: 8px;
-      top: 0px;
-    }
     width: 128px;
     height: 128px;
   }
@@ -179,42 +210,5 @@
         display:none;
       }
     }
-  }
-  >.actions {
-    margin-top: 12px;
-    >button {
-      @extend %button-base;
-      @extend %button-primary;
-    }
-  }
-  >.search-bar {
-    margin-top: 12px;
-    clear: both;
-    >label {
-      >span.search-icon {
-        @extend %pseudo-img-tag;
-        background-image: url("/search.svg");
-        background-size: 24px 24px;
-        background-position: center;
-        display: inline-block;
-        box-sizing: border-box;
-        width: 32px;
-        height: 32px;
-        vertical-align: top;
-      }
-      >input.search-bar {
-        font-size: 16pt;
-        height: 32px;
-        box-sizing: border-box;
-        background-color: $app-details-searchbar-background-color;
-        border: 1px solid $app-details-searchbar-outline-color;
-        &:focus {
-          border: 1px solid $app-details-searchbar-outline-color-focus;
-        }
-      }
-    }
-  }
-  >table.grain-list-table {
-    @extend %grain-table;
   }
 }

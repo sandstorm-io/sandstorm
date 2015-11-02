@@ -99,8 +99,7 @@ var startInstallInternal = function (package) {
 }
 
 cancelDownload = function (packageId) {
-  Packages.update({_id: packageId, status: "download"},
-      {$set: {status: "failed"}, $unset: {url: ""}});
+  Packages.remove({_id: packageId, status: "download"});
 }
 
 var cancelDownloadInternal = function (package) {

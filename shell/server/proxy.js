@@ -77,10 +77,10 @@ var backendHealthy = true;
 Meteor.setInterval(function () {
   if (!backendHealthy) {
     console.error("error: Backend hasn't responded in 30 seconds! Reconnecting.");
+    if (Capnp.enableVerboseDebugLogging) Capnp.enableVerboseDebugLogging(true);
     sandstormBackendConnection.close();
     sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
     sandstormBackend = sandstormBackendConnection.restore(null, Backend);
-    if (Capnp.enableVerboseDebugLogging) Capnp.enableVerboseDebugLogging(true);
   }
 
   backendHealthy = false;

@@ -1,3 +1,11 @@
+### v0.129 (2015-11-03)
+- Changes to /etc/resolv.conf (DNS client configuration) will now be seen by Sandstorm without a restart. This should fix a number of outgoing name lookup problems seen on machines where the network configuration changes frequently, especilaly laptops that change Wifi networks often.
+- Fix app icons not showing when using `spk dev`.
+- Fix weird rendering of the "most-used" row of the app list immediately after updating an app that wasn't in the top row.
+- Fixed regressions in app search.
+- Attempt to fix "session was never opened" error.
+- Fix regression where "first user becomes admin" could apply to dev accounts.
+
 ### v0.128 (2015-10-28)
 - Internal bugfixes.
 

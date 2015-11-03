@@ -437,7 +437,11 @@ var getProxyForHostId = function (hostId, isAlreadyOpened) {
               var observer;
               var task = Meteor.setTimeout(function() {
                 observer.stop();
-                reject(new Meteor.Error(500, "Session was never opened."));
+                reject(new Meteor.Error(504, "Requested session that no longer exists, and " +
+                    "timed out waiting for client to restore it. This can happen if you have " +
+                    "opened an app's content in a new window and then closed it in the " +
+                    "UI. If you see this error *inside* the Sandstorm UI, please report a " +
+                    "bug and describe the circumstances of the error."));
               }, SESSION_PROXY_TIMEOUT);
               observer = Sessions.find({hostId: hostId}).observe({
                 added: function() {

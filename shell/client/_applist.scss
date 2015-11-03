@@ -101,7 +101,6 @@
   }
   >.app-button, >.popular-container>.app-button {
     @extend %unstyled-button;
-    cursor: pointer;
     float: left;
     display: block;
     // Browsers render button contents vertically-centered by default.

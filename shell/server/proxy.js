@@ -49,7 +49,7 @@ BASIC_AUTH_USER_AGENTS = [
 ];
 BASIC_AUTH_USER_AGENTS_REGEX = new RegExp("^(" + BASIC_AUTH_USER_AGENTS.join("|") + ")", '');
 
-var SESSION_PROXY_TIMEOUT = 15000;
+var SESSION_PROXY_TIMEOUT = 60000;
 
 var sandstormCoreFactory = makeSandstormCoreFactory();
 var backendAddress = "unix:" + (SANDSTORM_ALTHOME || "") + Backend.socketPath;

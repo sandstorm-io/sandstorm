@@ -179,7 +179,6 @@ body>.popup.account>.frame {
         font-size: 7pt;
         color: #444;
         display: inline-block;
-        cursor: pointer;
         background-color: white;
 
         &:hover {
@@ -610,7 +609,6 @@ body>.main-content>.account {
 
             &:hover {
               background-color: white;
-              cursor: pointer;
             }
           }
         }
@@ -852,7 +850,6 @@ body>.popup.billing-prompt>.frame {
     text-transform: uppercase;
     color: white;
     border-radius: 3px;
-    cursor: pointer;
   }
 
   >.subscriptions {

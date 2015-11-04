@@ -71,7 +71,7 @@ var ValidHandle = Match.Where(function (handle) {
 Accounts.onCreateUser(function (options, user) {
   // The first non-dev user to sign in should be automatically upgraded to admin.
   if (Meteor.users.find({"identities.service.dev": {$exists: 0}}).count() === 0 &&
-      !options.service.dev) {
+      !(options && options.service && options.service.dev)) {
     user.isAdmin = true;
     user.signupKey = "admin";
   }

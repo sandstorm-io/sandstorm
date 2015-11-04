@@ -194,6 +194,7 @@ PREFER_ROOT="yes"
 USERNS_CLONE_AT_ALL=""
 USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET=""
 SYSCTL_PROBABLY_WORKS="yes"
+SHOW_MESSAGE_ABOUT_NEEDING_PORTS_OPEN="no"
 
 # Allow the test suite to override the path to netcat in order to
 # reproduce a compatibility issue between different nc versions.
@@ -256,6 +257,7 @@ disable_https_if_ports_unavailable() {
 
   if [ "$PORT_443_AVAILABLE" == "no" -o "$PORT_80_AVAILABLE" == "no" ] ; then
     SANDCATS_GETCERTIFICATE="no"
+    SHOW_MESSAGE_ABOUT_NEEDING_PORTS_OPEN="yes"
   fi
 }
 
@@ -628,7 +630,8 @@ dev_server_install() {
     echo "due to limitations in the Linux kernel."
     echo ""
 
-    echo "To set up Sandstorm, we will need to use sudo."
+    echo "To set up Sandstorm, we will use sudo to switch to root, then"
+    echo "provide further information before doing the install."
     echo "Sandstorm's database and web interface won't run as root."
 
     # If we are running in USE_DEFAULTS mode, then it is not OK to ask
@@ -664,7 +667,9 @@ dev_server_install() {
     echo "* Install Sandstorm in ${DEFAULT_DIR_FOR_ROOT}."
     echo "* Automatically keep Sandstorm up-to-date (with signed updates)."
     echo "* Create a service user ($DEFAULT_SERVER_USER) that owns Sandstorm's files."
-    echo "* Add you ($USER) to the $DEFAULT_SERVER_USER group so you can read/write app data."
+    if [ -n "${SUDO_USER:-}" ]; then
+      echo "* Add you ($SUDO_USER) to the $DEFAULT_SERVER_USER group so you can read/write app data."
+    fi
     echo "* Expose the service only on localhost aka local.sandstorm.io, not the public Internet."
     echo "* Enable 'dev accounts', for easy developer login."
     if [ "yes" == "$USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET" ] ; then
@@ -761,6 +766,27 @@ full_server_install() {
       ACCEPTED_FULL_SERVER_INSTALL=yes
     else
       ACCEPTED_FULL_SERVER_INSTALL=no
+    fi
+
+    if [ "yes" = "$SHOW_MESSAGE_ABOUT_NEEDING_PORTS_OPEN" ] ; then
+      echo ""
+      echo "NOTE: It looks like your system already has some other web server installed"
+      echo "      (port 80 and/or 443 are taken), so Sandstorm cannot act as your main"
+      echo "      web server."
+      echo ""
+      echo "      This script can set up Sandstorm to run on port $DEFAULT_PORT instead,"
+      echo "      without HTTPS. This makes sense if you're OK with typing the port number"
+      echo "      into your browser whenever you access Sandstorm and you don't need"
+      echo "      security. This also mkaes sense you are going to set up a reverse proxy;"
+      echo "      if so, see https://docs.sandstorm.io/en/latest/administering/reverse-proxy/"
+      echo ""
+      echo "      If you want, you can quit this script with Ctrl-C now, and go uninstall"
+      echo "      your other web server, and then run this script again. It is also OK to"
+      echo "      proceed if you want."
+      echo ""
+      if ! prompt-yesno "OK to skip automatic HTTPS setup & bind to port $DEFAULT_PORT instead?" "yes" ; then
+        fail "Exiting now. You can re-run the installer whenever you are ready."
+      fi
     fi
 
     # If they are OK continuing, and the script is not running as root

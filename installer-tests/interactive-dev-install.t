@@ -1,4 +1,4 @@
-Title: Auto-install with root on Debian jessie, in dev mode
+Title: Auto-install with root on Debian jessie, in dev mode, showing $SUDO_USER
 Vagrant-Box: jessie
 Vagrant-Precondition-bash: ! -d $HOME/sandstorm
 Vagrant-Precondition-bash: ! -d /opt/sandstorm
@@ -6,8 +6,12 @@ Cleanup: uninstall_sandstorm(parsed_headers['vagrant-box'])
 
 $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]0
-$[run]sudo CURL_USER_AGENT=testing bash /vagrant/install.sh -d
-$[slow]Sandstorm requires sysctl kernel.unprivileged_userns_clone to be enabled.
+$[run]CURL_USER_AGENT=testing bash /vagrant/install.sh
+$[slow]How are you going to use this Sandstorm install? [1]$[type]2
+OK to continue? [yes]$[type]
+$[slow]We're going to:
+* Add you (vagrant) to the sandstorm group so you can read/write app data.
+Press enter to accept defaults. Type 'no' to customize. [yes]$[type]
 Config written to /opt/sandstorm/sandstorm.conf.
 Finding latest build for dev channel...
 $[veryslow]Downloading: https://dl.sandstorm.io/

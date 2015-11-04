@@ -1,3 +1,6 @@
+### v0.130 (2015-11-03)
+- Fix regression in v0.129 preventing the first user to log in from using Google or Github as the login service.
+
 ### v0.129 (2015-11-03)
 - Changes to /etc/resolv.conf (DNS client configuration) will now be seen by Sandstorm without a restart. This should fix a number of outgoing name lookup problems seen on machines where the network configuration changes frequently, especilaly laptops that change Wifi networks often.
 - Fix app icons not showing when using `spk dev`.

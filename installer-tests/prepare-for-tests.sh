@@ -25,10 +25,14 @@ for dep in vagrant ; do
     which $dep > /dev/null || fail "Please install $dep(1)."
 done
 
-# Check if Vagrant has the mutate plugin; if not, we install it, since
-# we use it during this script to convert a few Vagrant base boxes
-# into libvirt format.
-(vagrant plugin list | grep -q mutate) || vagrant plugin install vagrant-mutate
+# Check if Vagrant has plugins we need; if not, we install them.
+#
+# vagrant-libvirt plugin: used to run VMs via qemu.
+#
+# vagrant-mutate: used to convert VMs into qemu format.
+for vgplugin in vagrant-mutate vagrant-libvirt; do
+  (vagrant plugin list | grep -q "$vgplugin") || vagrant plugin install "$vgplugin"
+done
 
 # Download this particular random Debian Jessie VM and then convert it to
 # libvirt format.

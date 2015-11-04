@@ -1,4 +1,4 @@
-Title: Auto-install with root on Debian jessie, in dev mode, showing $SUDO_USER
+Title: Install on Debian jessie, in dev mode, showing $SUDO_USER
 Vagrant-Box: jessie
 Vagrant-Precondition-bash: ! -d $HOME/sandstorm
 Vagrant-Precondition-bash: ! -d /opt/sandstorm

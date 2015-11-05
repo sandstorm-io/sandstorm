@@ -74,6 +74,7 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   appDemoId: If this is an appdemo user (see above), the app ID they started out demoing.
 //   payments: Object defined by payments module, if loaded.
 //   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
+//   referredBy: User._id for an Account that referred this user.
 
 Packages = new Mongo.Collection("packages");
 // Packages which are installed or downloading.
@@ -281,6 +282,9 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              still apply. For non-UiView capabilities, `identityId` is never present. Note that
 //              this is NOT the identity against which the `requiredPermissions` parameter of
 //              `SandstormApi.restore()` is checked; that would be `owner.grain.introducerIdentity`.
+//   createdByAccountId: This is Account (not identity) that created the ApiToken. This information
+//              is consumed by the Sandstorm referral program, which gives accounts credit for
+//              inviting others to use Sandstorm.
 //   roleAssignment: If this API token represents a UiView, this field contains a JSON-encoded
 //              Grain.ViewSharingLink.RoleAssignment representing the permissions it carries. These
 //              permissions will be intersected with those held by `identityId` when the view is
@@ -462,6 +466,18 @@ Plans = new Mongo.Collection("plans");
 //   computeLabel: Label to display to the user describing this plan's compute units.
 //   grains: Total number of grains this user can create (often `Infinity`).
 //   price: Price per month in US cents.
+
+Referrals = new Mongo.Collection("referrals");
+// Stores information about which accounts "referred" which other accounts. This
+// is account-based, not identity-based. Information in Referrals documents is
+// in transit -- once a referral is successful, info about it moves to the
+// User document. That way, database queries about successful referrals are
+// done against the smaller set of referral-related data in `Users`.
+//
+// Each contains:
+//   _id:                 Random ID.
+//   referredAccountId:   User._id for "Bob"'s account in the "Alice refers Bob" scenario.
+//   referredByAccountId: User._id for "Alice"'s account in the "Alice refers Bob" scenario.
 
 AppIndex = new Mongo.Collection("appIndex");
 // A mirror of the data from the App Market index

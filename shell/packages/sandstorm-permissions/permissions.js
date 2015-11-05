@@ -418,14 +418,15 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   }
 
   var token = Random.secret();
-        var apiToken = {
+  var apiToken = {
     _id: Crypto.createHash("sha256").update(token).digest("base64"),
     grainId: grainId,
     roleAssignment: roleAssignment,
     petname: petname,
     created: new Date(),
     expires: null,
-  };
+    createdByAccountId: accountId,
+ };
 
   if (provider.rawParentToken) {
     var parentToken = Crypto.createHash("sha256").update(provider.rawParentToken).digest("base64");

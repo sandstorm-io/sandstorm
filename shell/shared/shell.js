@@ -931,6 +931,10 @@ Router.map(function () {
     }
   });
 
+  this.route("referrals", {
+    path: "/referrals"
+  });
+
   this.route("account", {
     path: "/account",
 

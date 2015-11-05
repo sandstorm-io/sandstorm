@@ -17,6 +17,18 @@
 // This file implements the common shell components such as the top bar.
 // It also covers the root page.
 
+var getNamesFromIdentityIds = function(identityIds) {
+  check(identityIds, [String]);
+  if (identityIds.length === 0) {
+    return [];
+  }
+
+  var identities = Meteor.users.find(
+    {_id: {$in: identityIds }});
+  return identities.map(function(identity) {
+    return {name: identity.profile.name}});
+}
+
 browseHome = function() {
   Router.go("root");
 }
@@ -152,6 +164,49 @@ if (Meteor.isServer) {
       });
     }
     self.ready();
+  });
+
+  Meteor.publish("myNotYetCompleteReferrals", function() {
+    if (!this.userId) {
+      return [];
+    }
+
+    // A not-yet-complete referral shows up as an Identity where referredBy=this.userId.
+    var notCompletedReferralIdentities = Meteor.users.find(
+      {referredBy: this.userId,
+       "profile.name": {$exists: true}},
+      {fields: {
+        "_id": 1,
+        "referredBy": 1,
+        "profile.name": 1}});
+    return notCompletedReferralIdentities;
+  });
+
+  Meteor.publish("myReferrals", function() {
+    if (!this.userId) {
+      return [];
+    }
+
+    // A completed referral shows up on ourselves, under Account.referredIdentityIds. So fetch the
+    // identity IDs, and make sure the client has that list of identity IDs. Separately we make sure
+    // the names names of the identities are sent, so the client can show useful information.
+    var completedIdentityIdsCursor = Meteor.users.find(
+      {_id: this.userId},
+      {fields: {"referredIdentityIds": 1}});
+    return completedIdentityIdsCursor;
+  });
+
+  Meteor.publish("myReferralsNames", function() {
+    var user = Meteor.users.findOne({_id: this.userId},
+                                    {fields: {"referredIdentityIds": 1}});
+    if (user && user.referredIdentityIds) {
+      // Completed referral IDs are not reactive at the moment.
+      return Meteor.users.find(
+        {_id: {$in: user.referredIdentityIds}},
+        {fields: {
+          "profile.name": 1}});
+    }
+    return [];
   });
 
   Meteor.publish("backers", function () {
@@ -303,6 +358,24 @@ if (Meteor.isClient) {
   Template.layout.onDestroyed(function () {
     Meteor.clearTimeout(this.timeout);
     window.removeEventListener("resize", this.resizeFunc, false);
+  });
+
+  Template.referrals.helpers({
+    isPaid: (Meteor.user() && Meteor.user().plan !== "free"),
+    notYetCompleteReferralNames: function() {
+      var ret = [];
+      var notYetCompleteReferralIdentityIds = Meteor.users.find({referredBy: Meteor.userId()}).map(
+        function(i) { return i._id });
+      return getNamesFromIdentityIds(notYetCompleteReferralIdentityIds);
+    },
+    completeReferralNames: function() {
+      var empty = [];
+      var user = Meteor.user();
+      if (user && user.referredIdentityIds) {
+        return getNamesFromIdentityIds(user.referredIdentityIds);
+      }
+      return empty;
+    },
   });
 
   var determineAppName = function (grainId) {
@@ -932,6 +1005,16 @@ Router.map(function () {
         status: Session.get("uploadStatus"),
         error: Session.get("uploadError")
       };
+    }
+  });
+
+  this.route("referrals", {
+    path: "/referrals",
+
+    waitOn: function() {
+      return [Meteor.subscribe("myReferrals"),
+              Meteor.subscribe("myReferralsNames"),
+              Meteor.subscribe("myNotYetCompleteReferrals")];
     }
   });
 

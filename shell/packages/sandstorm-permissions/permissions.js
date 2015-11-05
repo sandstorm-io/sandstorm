@@ -404,6 +404,26 @@ SandstormPermissions.downstreamTokens = function(db, root) {
   return result;
 }
 
+var storeReferralProgramInfoApiTokenCreated = function(db, userId, apiTokenAccountId) {
+  // From the Referral program's perspective, if Bob has not opened a sharing link before, then we
+  // should create a Referral document indicating Alice referred Bob.
+
+  // Bail out early if quota enforcement is disabled.
+  if (! Meteor.settings.public.quotaEnabled) {
+    return;
+  }
+
+  var aliceAccountId = apiTokenAccountId;
+  var bob = Meteor.users.findOne({_id: userId});
+  if (bob.referredBy === undefined) {
+    if (db.collections.referrals.find({_id: bob._id}).count() === 0) {
+      db.collections.referrals.insert({
+        _id: bob._id,
+        referredBy: aliceAccountId});
+    }
+  }
+}
+
 SandstormPermissions.createNewApiToken = function (db, provider, grainId, petname,
                                                    roleAssignment, owner) {
   // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
@@ -452,6 +472,16 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
     apiToken.accountId = parentApiToken.accountId;
 
     apiToken.parentToken = parentToken;
+
+    // If the parent API token is forSharing and it has an accountId, then the logged-in user (call
+    // them Bob) is about to access a grain owned by someone (call them Alice) and save a reference
+    // to it as a new ApiToken. (For share-by-link, this occurs when viewing the grain. For
+    // share-by-identity, this happens immediately.)
+    if (parentForSharing) {
+      if (parentApiToken && parentApiToken.accountId)  {
+        storeReferralProgramInfoApiTokenCreated(db, Meteor.user()._id, parentApiToken.accountId);
+      }
+    }
   } else if (provider.identityId) {
     apiToken.identityId = provider.identityId;
     apiToken.accountId = provider.accountId;

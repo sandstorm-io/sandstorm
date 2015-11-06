@@ -1336,7 +1336,7 @@ Router.map(function () {
         Router.go("root", {}, {replaceState: true});
       }
 
-      return new SandstormAppList(globalDb, globalQuotaEnforcer, this.params.query.highlight);
+      return new SandstormAppList(globalDb, globalQuotaEnforcer);
     },
   });
   this.route("newGrainRedirect", {

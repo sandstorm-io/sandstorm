@@ -1,10 +1,9 @@
-SandstormAppList = function(db, quotaEnforcer, highlight) {
+SandstormAppList = function(db, quotaEnforcer) {
   this._filter = new ReactiveVar("");
   this._sortOrder = new ReactiveVar([["appTitle", 1]]);
   this._staticHost = db.makeWildcardHost("static");
   this._db = db;
   this._quotaEnforcer = quotaEnforcer;
-  this._highlight = highlight;
   this._uninstalling = new ReactiveVar(false);
 }
 
@@ -141,9 +140,6 @@ Template.sandstormAppList.helpers({
   isSignedUpOrDemo: function() {
     return this._db.isSignedUpOrDemo();
   },
-  shouldHighlight: function () {
-    return this.appId === Template.instance().data._highlight;
-  },
   showMostPopular: function () {
     // Only show if not searching, not uninstalling, and you have apps installed
     var ref = Template.instance().data;
@@ -216,28 +212,13 @@ Template.sandstormAppList.events({
   }
 });
 Template.sandstormAppList.onRendered(function () {
-  // Scroll to highlighted app, if any.
-  if (this.data._highlight) {
-    var self = this;
-    this.autorun(function (computation) {
-      if (self.subscriptionsReady()) {
-        var item = self.findAll(".highlight")[0];
-        if (item) {
-          item.focus();
-          item.scrollIntoView();
-        }
-        computation.stop();
-      }
-    });
-  } else {
-    // Auto-focus search bar on desktop, but not mobile (on mobile it will open the software
-    // keyboard which is undesirable). window.orientation is generally defined on mobile browsers
-    // but not desktop browsers, but some mobile browsers don't support it, so we also check
-    // clientWidth. Note that it's better to err on the side of not auto-focusing.
-    if (window.orientation === undefined && window.innerWidth > 600) {
-      var searchbar = this.findAll(".search-bar")[0];
-      if (searchbar) searchbar.focus();
-    }
+  // Auto-focus search bar on desktop, but not mobile (on mobile it will open the software
+  // keyboard which is undesirable). window.orientation is generally defined on mobile browsers
+  // but not desktop browsers, but some mobile browsers don't support it, so we also check
+  // clientWidth. Note that it's better to err on the side of not auto-focusing.
+  if (window.orientation === undefined && window.innerWidth > 600) {
+    var searchbar = this.findAll(".search-bar")[0];
+    if (searchbar) searchbar.focus();
   }
 });
 Template.sandstormAppList.onCreated(function () {

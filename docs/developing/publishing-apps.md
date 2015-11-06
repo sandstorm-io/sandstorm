@@ -64,7 +64,7 @@ list your contact details on your app's listing page.
 
 The process is that you will:
 
-* Create a short text file indicating that you control this app ID.
+* Create a standardized text file of the form: `I am the author of the Sandstorm.io app with the following ID: <app-id>`.
 
 * Use GPG to digitally sign the text.
 

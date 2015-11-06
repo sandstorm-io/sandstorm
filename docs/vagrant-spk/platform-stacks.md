@@ -6,6 +6,14 @@
 and/or web frameworks, each of which have different practices on how
 to go from the app's source code to a running web server.
 
+The following stacks exist:
+
+* `lemp`: a PHP-oriented software collection including nginx, MySQL, and PHP.
+* `meteor`: a stack for [Meteor](https://meteor.com) apps, including MongoDB.
+* `static`: `nginx` configured to serve static files from `/opt/app`.
+* `uwsgi`: a Python-oriented stack including nginx and uwsgi.
+* `diy`: Create your own.
+
 Running this command:
 
 ```

@@ -565,15 +565,15 @@ limitations under the License.
 </template>
 
 <template name="apps">
-  {{> sandstormAppList }}
+  {{> sandstormAppListPage . }}
 </template>
 
 <template name="grains">
-  {{> sandstormGrainListPage}}
+  {{> sandstormGrainListPage . }}
 </template>
 
 <template name="appDetails">
-  {{> sandstormAppDetailsPage }}
+  {{> sandstormAppDetailsPage . }}
 </template>
 
 <template name="_grainSpinner">
@@ -597,7 +597,7 @@ limitations under the License.
 </template>
 
 <template name="install">
-  {{> sandstormAppInstall }}
+  {{> sandstormAppInstallPage . }}
 </template>
 
 <template name="account">

@@ -92,7 +92,7 @@ var matchApps = function (searchString) {
   return matchingApps;
 };
 
-Template.sandstormAppList.helpers({
+Template.sandstormAppListPage.helpers({
   setDocumentTitle: function() {
     document.title = "Apps · Sandstorm";
   },
@@ -154,7 +154,7 @@ Template.sandstormAppList.helpers({
     return Template.instance().appIsLoading.get();
   },
 });
-Template.sandstormAppList.events({
+Template.sandstormAppListPage.events({
   "click .install-button": function (event) {
     event.preventDefault();
     event.stopPropagation();
@@ -211,7 +211,7 @@ Template.sandstormAppList.events({
     }
   }
 });
-Template.sandstormAppList.onRendered(function () {
+Template.sandstormAppListPage.onRendered(function () {
   // Auto-focus search bar on desktop, but not mobile (on mobile it will open the software
   // keyboard which is undesirable). window.orientation is generally defined on mobile browsers
   // but not desktop browsers, but some mobile browsers don't support it, so we also check
@@ -221,6 +221,6 @@ Template.sandstormAppList.onRendered(function () {
     if (searchbar) searchbar.focus();
   }
 });
-Template.sandstormAppList.onCreated(function () {
+Template.sandstormAppListPage.onCreated(function () {
   this.appIsLoading = new ReactiveVar(false);
 });

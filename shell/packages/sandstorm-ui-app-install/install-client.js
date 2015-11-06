@@ -109,7 +109,7 @@ SandstormAppInstall.prototype.progress = function () {
   return Math.round(progress * 100) + "%";
 };
 
-Template.sandstormAppInstall.onCreated(function () {
+Template.sandstormAppInstallPage.onCreated(function () {
   var ref = Template.instance().data;
   Tracker.autorun(function () {
     var pkg = ref.pkg();
@@ -124,14 +124,14 @@ Template.sandstormAppInstall.onCreated(function () {
   });
 });
 
-Template.sandstormAppInstall.onDestroyed(function () {
+Template.sandstormAppInstallPage.onDestroyed(function () {
   if (this._keybaseSubscription) {
     this._keybaseSubscription.stop();
     this._keybaseSubscription = undefined;
   }
 });
 
-Template.sandstormAppInstall.helpers({
+Template.sandstormAppInstallPage.helpers({
   setDocumentTitle: function() {
     document.title = "Installing app · Sandstorm";
   },
@@ -188,7 +188,7 @@ Template.sandstormAppInstall.helpers({
   },
 });
 
-Template.sandstormAppInstall.events({
+Template.sandstormAppInstallPage.events({
   "click #retry": function(event) {
     var ref = Template.instance().data;
     Meteor.call("ensureInstalled", ref._packageId, ref._packageUrl, true);

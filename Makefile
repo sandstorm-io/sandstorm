@@ -177,6 +177,7 @@ deps/libsodium:
 	@$(call color,downloading libsodium)
 	@mkdir -p deps
 	git clone $(REMOTE_libsodium) deps/libsodium
+	@cd deps/libsodium && git checkout stable
 
 deps/node-capnp:
 	@$(call color,downloading node-capnp)

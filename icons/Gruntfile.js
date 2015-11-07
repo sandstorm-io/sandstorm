@@ -9,12 +9,16 @@ module.exports = function(grunt) {
         dest: "../shell/public/icons",
         destCss: "../shell/client",
         options: {
-          font: "sandstorm-icons",
+          font: "icons",
           engine: "node",
           autoHint: false,
           htmlDemo: false,
           relativeFontPath: "/icons/",
           stylesheet: "scss",
+          templateOptions: {
+            classPrefix: "icon-",
+            mixinPrefix: "icon-",
+          },
         },
       },
     },

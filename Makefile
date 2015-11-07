@@ -220,7 +220,7 @@ shell-env: tmp/.shell-env
 
 # Note that we need Ekam to build node_modules before we can run Meteor, hence
 # the dependency on tmp/.ekam-run.
-tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html shell/client/_sandstorm-icons.scss
+tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html shell/client/_icons.scss
 	@mkdir -p tmp
 	@touch tmp/.shell-env
 	@mkdir -p node_modules/capnp
@@ -229,7 +229,7 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html shell/client
 icons/node_modules: icons/package.json
 	cd icons && npm install
 
-shell/client/_sandstorm-icons.scss: icons/node_modules icons/*svg icons/Gruntfile.js
+shell/client/_icons.scss: icons/node_modules icons/*svg icons/Gruntfile.js
 	cd icons && ./node_modules/.bin/grunt
 
 shell/client/changelog.html: CHANGELOG.md

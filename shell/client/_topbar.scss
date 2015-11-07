@@ -4,7 +4,7 @@
   &:before {
     font-size: 24px;
     color: $color;
-    font-family: "sandstorm-icons";
+    font-family: "icons";
 
     @media #{$mobile} {
       font-size: 40px;
@@ -409,7 +409,7 @@ body>.topbar {
         @extend %mobile-icon-button;
 
         @include webfont-icon(#CCCCCC, #CCCCCC);
-        @extend .icon_notification;
+        @extend .icon-notification;
 
         >.count {
           display: block;

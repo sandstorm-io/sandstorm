@@ -17,7 +17,6 @@
 "use strict";
 
 var utils = require("../utils"),
-    appSelector = utils.appSelector,
     actionSelector = utils.actionSelector,
     short_wait = utils.short_wait,
     medium_wait = utils.medium_wait,
@@ -31,12 +30,11 @@ exports.command = function(url, packageId, appId, dontStartGrain, callback) {
     .waitForElementVisible("#step-confirm", very_long_wait)
     .click("#confirmInstall")
     .url(this.launch_url + "/apps")
-    .waitForElementVisible(".app-list", medium_wait)
+    .waitForElementVisible(".app-details", medium_wait)
     .resizeWindow(utils.default_width, utils.default_height);
 
   if (!dontStartGrain) {
     ret = ret
-      .click(appSelector(appId))
       .waitForElementVisible(actionSelector, short_wait)
       .click(actionSelector)
       .waitForElementVisible("#grainTitle", medium_wait);

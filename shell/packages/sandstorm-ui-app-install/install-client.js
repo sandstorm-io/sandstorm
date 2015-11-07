@@ -3,11 +3,10 @@ var checkStep = function(step) {
   if (INSTALL_STEPS.indexOf(step) === -1) throw new Error("Invalid step " + step + ".");
 };
 
-SandstormAppInstall = function(packageId, packageUrl, db, quotaEnforcer) {
+SandstormAppInstall = function(packageId, packageUrl, db) {
   this._packageId = packageId;
   this._packageUrl = packageUrl;
   this._db = db;
-  this._quotaEnforcer = quotaEnforcer;
   this._error = new ReactiveVar("");
   this._recoverable = new ReactiveVar(true);
   this._keybaseSubscription = undefined;
@@ -55,10 +54,6 @@ SandstormAppInstall.prototype.step = function () {
   checkStep(pkg.status); // Expect no novel package statuses.
   if (pkg.status !== "ready") return pkg.status;
   return this.isInstalled() ? "run" : "confirm";
-};
-
-SandstormAppInstall.prototype.canRedirectAfterInstall = function () {
-  return this.isInstalled() && !this.hasOlderVersion() && !this.hasNewerVersion()
 };
 
 SandstormAppInstall.prototype.isInstalled = function () {
@@ -201,9 +196,5 @@ Template.sandstormAppInstallPage.events({
   "click #confirmInstall": function (event) {
     var ref = Template.instance().data;
     ref._db.addUserActions(ref.packageId());
-  },
-  "click #upgradeGrains": function (event) {
-    var ref = Template.instance().data;
-    Meteor.call("upgradeGrains", ref.appId(), ref.appVersion(), ref.packageId());
   },
 });

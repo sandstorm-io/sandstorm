@@ -18,6 +18,15 @@
   >.app-details-widget {
     @extend %app-details-widget;
   }
+  >.newer-version, >.older-version {
+    background-color: darken($app-details-background-color, 10%);
+    >p {
+      >button {
+        @extend %button-base;
+        @extend %button-primary;
+      }
+    }
+  }
   >.search-bar {
     margin-top: 12px;
     clear: both;

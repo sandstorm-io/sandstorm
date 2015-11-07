@@ -15,6 +15,19 @@
        staticHost=staticHost
        keybaseProfile=keybaseProfile
     }}
+    {{#if hasNewerVersion}}
+    <div class="newer-version">
+      <p>Some of your files were made with a
+        newer version of this app.  They will keep
+        using the newer version, as going backwards could break them.</p>
+    </div>
+    {{/if}}
+    {{#if hasOlderVersion}}
+    <div class="older-version">
+      <p>Some of your files were made with an older version of this app.  Upgrade them?</p>
+      <p><button class="upgradeGrains">Upgrade Files</button></p>
+    </div>
+    {{/if}}
     <div class="search-bar">
       <label>
         <span class="search-icon" title="Search"></span>

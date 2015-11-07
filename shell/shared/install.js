@@ -136,11 +136,6 @@ Meteor.methods({
   },
 });
 
-function referredFromSandstorm() {
-  return document.referrer.lastIndexOf("https://sandstorm.io/apps/", 0) === 0 ||
-         document.referrer.lastIndexOf("https://apps.sandstorm.io/", 0) === 0;
-}
-
 Router.map(function () {
   this.route("install", {
     path: "/install/:packageId",
@@ -159,7 +154,7 @@ Router.map(function () {
 
       var packageId = this.params.packageId;
       var packageUrl = this.params.query && this.params.query.url;
-      var handle = new SandstormAppInstall(packageId, packageUrl, globalDb, globalQuotaEnforcer);
+      var handle = new SandstormAppInstall(packageId, packageUrl, globalDb);
 
       var pkg = Packages.findOne(packageId);
       if (!Meteor.userId()) {
@@ -186,10 +181,6 @@ Router.map(function () {
           if (globalGrains.get().length === 0 &&
               window.opener.location.hostname === window.location.hostname &&
               window.opener.Router) {
-            if (referredFromSandstorm()) {
-              // Hack: Communicate to parent that we were referred from Sandstorm.
-              window.opener.referredFromSandstorm = packageId;
-            }
             window.opener.Router.go("install", {packageId: packageId}, {query: this.params.query});
             window.close();
             return handle;
@@ -230,12 +221,10 @@ Router.map(function () {
       // From here on, we know the package is installed in the global store, but we
       // might have some per-user things to attend to.
       if (handle.isInstalled()) {
-        if (handle.canRedirectAfterInstall()) {
-          // OK, the app is installed and everything and there's no warnings to print, so let's
-          // just go to it! We use `replaceState` so that if the user clicks "back" they don't just
-          // get redirected forward again, but end up back at the app list.
-          Router.go("appDetails", {appId: handle.appId()}, {replaceState: true});
-        }
+        // The app is installed, so let's send the user to it!  We use `replaceState` so that if
+        // the user clicks "back" they don't just get redirected forward again, but end up back
+        // at the app list.
+        Router.go("appDetails", {appId: handle.appId()}, {replaceState: true});
       }
       return handle;
     }

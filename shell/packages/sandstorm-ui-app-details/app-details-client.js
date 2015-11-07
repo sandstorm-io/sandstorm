@@ -52,11 +52,15 @@ var compileMatchFilter = function (searchString) {
   };
 };
 
+var appGrains = function(db, appId) {
+  return _.filter(db.currentUserGrains().fetch(),
+                  function (grain) {return grain.appId === appId; });
+};
+
 var filteredSortedGrains = function(db, staticAssetHost, appId, appTitle, filterText) {
   var pkg = latestPackageForAppId(db, appId);
 
-  var grainsMatchingAppId = _.filter(db.currentUserGrains().fetch(),
-                        function (grain) { return grain.appId === appId; });
+  var grainsMatchingAppId = appGrains(db, appId);
   var tokensForGrain = _.groupBy(db.currentUserApiTokens().fetch(), 'grainId');
   var grainIdsForApiTokens = Object.keys(tokensForGrain);
   // grainTokens is a list of all apiTokens, but guarantees at most one token per grain
@@ -340,6 +344,24 @@ Template.sandstormAppDetailsPage.helpers({
     var profile = fingerprint && ref._db.getKeybaseProfile(fingerprint);
     return profile;
   },
+  hasNewerVersion: function () {
+    var ref = Template.instance().data;
+    var pkg = latestPackageForAppId(ref._db, ref._appId);
+    if (!pkg) return false;
+    var grains = appGrains(ref._db, ref._appId);
+    return _.some(grains, function (grain) {
+      return grain.appVersion > pkg.manifest.appVersion;
+    });
+  },
+  hasOlderVersion: function () {
+    var ref = Template.instance().data;
+    var pkg = latestPackageForAppId(ref._db, ref._appId);
+    if (!pkg) return false;
+    var grains = appGrains(ref._db, ref._appId);
+    return _.some(grains, function (grain) {
+      return grain.appVersion < pkg.manifest.appVersion;
+    });
+  },
 });
 Template.sandstormAppDetailsPage.events({
   "input .search-bar": function(event) {
@@ -373,5 +395,10 @@ Template.sandstormAppDetailsPage.events({
   "click .show-authorship-button": function(event) {
     var ref = Template.instance().data;
     ref._showPublisherDetails.set(!ref._showPublisherDetails.get());
+  },
+  "click .upgradeGrains": function (event) {
+    var ref = Template.instance().data;
+    var pkg = latestPackageForAppId(ref._db, ref._appId);
+    Meteor.call("upgradeGrains", ref._appId, pkg.manifest.appVersion, pkg._id);
   },
 });

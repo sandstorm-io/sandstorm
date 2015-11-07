@@ -64,20 +64,13 @@
       </div>
     {{/if}}
     {{#if isCurrentStep "run"}}
+      {{!-- Note that this step should never really be shown -- you should be redirected to the app
+            page in this scenario automatically. --}}
       <div id="step-run">
         <h1>{{ appTitle }} installed</h1>
         <div class="done-notice">
           <p>Installation complete.</p>
-          {{#if hasNewerVersion}}
-            <p>Some of your files were made with a
-              newer version of this app.  They will keep
-              using the newer version, as going backwards could break them.</p>
-            <p><a href="{{pathFor route='appDetails' appId=appId}}">Go to {{appTitle}}</a></p>
-          {{/if}}
-          {{#if hasOlderVersion}}
-            <p>Some of your files were made with an older version of this app.  Upgrade them?</p>
-            <p><button id="upgradeGrains">Upgrade Files</button></p>
-          {{/if}}
+          <p><a href="{{pathFor 'appDetails' appId=appId}}">Go to {{appTitle}}</a></p>
         </div>
       </div>
     {{/if}}

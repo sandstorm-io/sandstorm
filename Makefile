@@ -228,10 +228,10 @@ tmp/.shell-env: tmp/.ekam-run $(IMAGES) shell/client/changelog.html shell/client
 	@bash -O extglob -c 'cp src/capnp/!(*test*).capnp node_modules/capnp'
 
 icons/node_modules: icons/package.json
-	cd icons && npm install
+	cd icons && $(METEOR_DEV_BUNDLE)/bin/npm install
 
 shell/client/_icons.scss: icons/node_modules icons/*svg icons/Gruntfile.js
-	cd icons && ./node_modules/.bin/grunt
+	cd icons && PATH=$(METEOR_DEV_BUNDLE)/bin:$$PATH ./node_modules/.bin/grunt
 
 shell/client/changelog.html: CHANGELOG.md
 	@mkdir -p tmp

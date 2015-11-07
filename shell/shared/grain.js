@@ -1124,6 +1124,14 @@ if (Meteor.isClient) {
         check(path.charAt(0), '/');
         // TODO(security): More sanitization of this path. E.g. reject "/../../".
         senderGrain.setPath(path);
+      } else if (event.data.startSharing) {
+        // Allow the current grain to request that the "Share Access" menu be shown.
+        // Only show this popup if no other popup is currently active.
+        // TODO(security): defend against malicious apps spamming this call, blocking all other UI.
+        var currentGrain = getActiveGrain(globalGrains.get());
+        if (senderGrain === currentGrain && !globalTopbar.isPopupOpen()) {
+          globalTopbar.openPopup("share");
+        }
       } else if (event.data.setTitle) {
         senderGrain.setFrameTitle(event.data.setTitle);
       } else if (event.data.renderTemplate) {

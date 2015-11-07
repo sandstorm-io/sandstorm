@@ -18,12 +18,20 @@
     font-family: inherit;
     font-size: inherit;
   }
-  
+
   #step-wait {
     display: block;
   }
   #step-download {
     display: block;
+    >p {
+      width: 100%;
+      margin: 16px auto;
+      >.progress {
+        height: 32px;
+        width: 100%;
+      }
+    }
   }
   #step-verify {
     display: block;

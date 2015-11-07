@@ -18,7 +18,13 @@
     {{#if isCurrentStep "download"}}
       <div id="step-download">
         <h1>Downloading...</h1>
-        <p><span class="progress">{{progress}}</span></p>
+        <p class="centered">
+          {{#if hasFractionalProgress}}
+          <progress class="progress" value="{{progressFraction}}">{{progressText}}</progress>
+          {{else}}
+          <span class="progress">{{progressText}}</span>
+          {{/if}}
+        </p>
         <p><button id="cancelDownload">Cancel</button></p>
       </div>
     {{/if}}

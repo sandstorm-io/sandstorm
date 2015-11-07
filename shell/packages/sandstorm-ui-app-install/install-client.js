@@ -90,7 +90,19 @@ SandstormAppInstall.prototype.hasNewerVersion = function () {
   return false;
 };
 
-SandstormAppInstall.prototype.progress = function () {
+SandstormAppInstall.prototype.hasFractionalProgress = function () {
+  var pkg = this.pkg();
+  var progress = pkg && pkg.progress;
+  return (progress > 0 && progress < 1);
+};
+
+SandstormAppInstall.prototype.progressFraction = function () {
+  var pkg = this.pkg();
+  var progress = pkg && pkg.progress;
+  return progress;
+}
+
+SandstormAppInstall.prototype.progressText = function () {
   var pkg = this.pkg();
   var progress = pkg && pkg.progress;
   if (!progress) return ""
@@ -153,9 +165,17 @@ Template.sandstormAppInstallPage.helpers({
     var ref = Template.instance().data;
     return ref.step() === step;
   },
-  progress: function () {
+  hasFractionalProgress: function () {
     var ref = Template.instance().data;
-    return ref.progress();
+    return ref.hasFractionalProgress();
+  },
+  progressFraction: function () {
+    var ref = Template.instance().data;
+    return ref.progressFraction();
+  },
+  progressText: function () {
+    var ref = Template.instance().data;
+    return ref.progressText();
   },
   pkg: function () {
     var ref = Template.instance().data;

@@ -477,7 +477,7 @@ AppInstaller.prototype.doDownloadTo = function (out) {
           this.updateProgress("download", bytesReceived);
         }
       }
-    }), 1000);
+    }), 500);
 
     response.on("data", this.wrapCallback(function (chunk) {
       hasher.update(chunk);

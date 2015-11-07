@@ -174,14 +174,33 @@
       display: block;
       clear: both;
       background-color: #ffffff;
-      >p {
+      vertical-align: top;
+      >p.no-fingerprint {
+        padding: 8px;
+      }
+      >p.has-fingerprint {
+        vertical-align: top;
         padding-left: 8px;
-        display: inline-block;
-        max-width: 30%;
+        @media #{$desktop} {
+          display: inline-block;
+          max-width: 30%;
+        }
+        @media #{$mobile} {
+          display: block;
+          width: 100%;
+        }
       }
       >ul.publisher-proofs {
-        display: inline-block;
-        max-width: 65%;
+        @media #{$desktop} {
+          display: inline-block;
+          width: 65%;
+        }
+        @media #{$mobile} {
+          display: block;
+          width: 100%;
+        }
+        box-sizing: border-box;
+        padding: 8px;
         list-style: none;
         >li.publisher-proof {
           display: block;

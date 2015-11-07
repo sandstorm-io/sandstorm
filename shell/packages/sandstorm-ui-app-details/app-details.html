@@ -85,7 +85,8 @@
         </ul>
       </div>
       <div class="publisher-details {{#unless showPublisherDetails}}hide{{/unless}}">
-        <p>The app publisher has proven using PGP that they control these accounts.</p>
+        {{#if authorPgpFingerprint}}
+        <p class="has-fingerprint">The app publisher has proven using PGP that they control these accounts.</p>
         <ul class="publisher-proofs">
           {{#each publisherProofs}}
           <li class="publisher-proof">
@@ -103,6 +104,9 @@
           </li>
           {{/each}}
         </ul>
+        {{else}}
+        <p class="no-fingerprint">This app has no signature from its creator; its author cannot be verified.</p>
+        {{/if}}
       </div>
     </div>
   </div>

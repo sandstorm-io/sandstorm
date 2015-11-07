@@ -1129,9 +1129,8 @@ if (Meteor.isClient) {
         // Only show this popup if no other popup is currently active.
         // TODO(security): defend against malicious apps spamming this call, blocking all other UI.
         var currentGrain = getActiveGrain(globalGrains.get());
-        if (senderGrain === currentGrain && !globalTopbar._expanded.get()) {
-          globalTopbar._expanded.set("share");
-          globalTopbar._menuExpanded.set(false);
+        if (senderGrain === currentGrain && !globalTopbar.isPopupOpen()) {
+          globalTopbar.openPopup("share");
         }
       } else if (event.data.setTitle) {
         senderGrain.setFrameTitle(event.data.setTitle);

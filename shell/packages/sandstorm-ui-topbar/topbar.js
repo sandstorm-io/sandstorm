@@ -357,6 +357,15 @@ SandstormTopbar.prototype.closePopup = function () {
   this._expanded.set(null);
 }
 
+SandstormTopbar.prototype.isPopupOpen = function () {
+  return !!this._expanded.get();
+}
+
+SandstormTopbar.prototype.openPopup = function(name) {
+  this._expanded.set(name);
+  this._menuExpanded.set(false);
+}
+
 SandstormTopbar.prototype.isUpdateBlocked = function () {
   return !!blockedReload.get();
 }

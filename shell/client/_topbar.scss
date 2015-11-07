@@ -1,3 +1,18 @@
+@mixin webfont-icon ($color, $mobile-color) {
+  text-align: center;
+  @extend .icon;
+  &:before {
+    font-size: 24px;
+    color: $color;
+    font-family: "icons";
+
+    @media #{$mobile} {
+      font-size: 40px;
+      color: $mobile-color;
+    }
+  }
+}
+
 @media #{$mobile} {
   // Only show the menu button on mobile
   body>.menu-button {
@@ -390,13 +405,14 @@ body>.topbar {
         @extend %icon-button;
         @extend %mobile-icon-button;
 
-        background-image: url("/notification.svg");
+        @include webfont-icon(#CCCCCC, #CCCCCC);
+        @extend .icon-notification;
 
         >.count {
           display: block;
           position: absolute;
-          bottom: 0;
-          left: 0;
+          top: 16px;
+          left: 16px;
           width: 16px;
           height: 16px;
           background-color: red;
@@ -407,8 +423,8 @@ body>.topbar {
           font-size: 8pt;
 
           @media #{$mobile} {
-            left: 4px;
-            bottom: 8px;
+            top: 24px;
+            left: 24px;
           }
         }
       }
@@ -943,19 +959,6 @@ body>.popup {
 
     .notification-selected button {
       background-color: #666;
-    }
-
-    .notification-icon {
-      background-position: center 4px;
-      background-repeat: no-repeat;
-      background-size: contain;
-      width: 32px;
-      height: 32px;
-      border: none;
-      color: transparent;
-      background-color: black;
-      background-image: url("/notification.svg");
-      vertical-align: top;
     }
 
     .notification-timestamp {

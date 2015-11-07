@@ -3,6 +3,7 @@ tmp
 deps
 node_modules
 shell/client/changelog.html
+shell/client/_icons.scss
 shell/sandstorm-shell.config
 shell/sandstorm-shell.creator
 shell/sandstorm-shell.creator.user
@@ -47,6 +48,7 @@ shell/public/google.svg
 shell/public/troubleshoot.svg
 shell/public/email-494949.svg
 shell/public/*-m.svg
+shell/public/sandstorm-icons
 shell-build
 sandstorm-*.tar.xz
 sandstorm-*.tar.xz.sig

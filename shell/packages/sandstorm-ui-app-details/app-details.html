@@ -1,4 +1,4 @@
-<template name="sandstormAppDetails">
+<template name="sandstormAppDetailsPage">
   {{setDocumentTitle}}
   {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}{{appTitle}}{{/sandstormTopbarItem}}
   {{#if newGrainIsLoading}}
@@ -6,20 +6,63 @@
           re-using the live HTML and not causing a flash for the user. --}}
     {{> _grainSpinner}}
   {{else}}
+
   <div class="app-details{{#if isAppInDevMode}} dev-background{{/if}}">
+    {{>sandstormAppDetails
+       showPublisherDetails=showPublisherDetails
+       showUninstall=isAppNotInDevMode
+       pkg=pkg
+       staticHost=staticHost
+       keybaseProfile=keybaseProfile
+    }}
+    {{#if hasNewerVersion}}
+    <div class="newer-version">
+      <p>Some of your files were made with a
+        newer version of this app.  They will keep
+        using the newer version, as going backwards could break them.</p>
+    </div>
+    {{/if}}
+    {{#if hasOlderVersion}}
+    <div class="older-version">
+      <p>Some of your files were made with an older version of this app.  Upgrade them?</p>
+      <p><button class="upgradeGrains">Upgrade Files</button></p>
+    </div>
+    {{/if}}
+    <div class="search-bar">
+      <label>
+        <span class="search-icon" title="Search"></span>
+        <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
+      </label>
+    </div>
+
+    {{>sandstormGrainTable grains=filteredSortedGrains actions=actions onGrainClicked=onGrainClicked}}
+  </div>
+  {{/if}}
+</template>
+
+<template name="sandstormAppDetails">
+  {{!-- Arguments to this template are:
+       showPublisherDetails: Boolean.  Show Keybase/PGP infomation.
+       showUninstall: Boolean.  Show the uninstall button.
+       pkg: Object shaped like an element from the Packages collection.
+       staticHost: String.  The static wildcard host, needed for identicons.
+       keybaseProfile: Object shaped like an element from the KeybaseProfiles collection.
+  --}}
+  <div class="app-details-widget">
+    {{debug}}
     <div class="app-icon" style="background-image: url('{{appIconSrc}}');"></div>
     <div class="app-details-box">
       <h1 class="app-title">{{appTitle}}</h1>
       <ul class="app-links">
-        {{#if website}}<li role="presentation"><a class="website-link" href="{{website}}">Website</a></li>{{/if}}
-        <li role="presentation"><a class="app-market-link" href="https://apps.sandstorm.io/app/{{appId}}">App Market</a></li>
-        {{#if codeUrl}}<li role="presentation"><a class="source-code-link" href="{{codeUrl}}">Source</a></li>{{/if}}
-        {{#if bugReportLink}}<li role="presentation"><a class="bug-report-link" href="{{bugReportLink}}">Report Issue</a></li>{{/if}}
+        {{#if website}}<li role="presentation"><a class="website-link" target="_blank" href="{{website}}">Website</a></li>{{/if}}
+        <li role="presentation"><a class="app-market-link" target="_blank" href="https://apps.sandstorm.io/app/{{appId}}">App Market</a></li>
+        {{#if codeUrl}}<li role="presentation"><a class="source-code-link" target="_blank" href="{{codeUrl}}">Source</a></li>{{/if}}
+        {{#if bugReportLink}}<li role="presentation"><a class="bug-report-link" target="_blank" href="{{bugReportLink}}">Report Issue</a></li>{{/if}}
       </ul>
       <div class="info-row">
-        {{#unless isAppInDevMode}}
+        {{#if showUninstall}}
         <button class="uninstall-button">Uninstall</button>
-        {{/unless}}
+        {{/if}}
         <ul class="package-info">
           <li class="version">
             <span class="label">Version</span>
@@ -42,7 +85,8 @@
         </ul>
       </div>
       <div class="publisher-details {{#unless showPublisherDetails}}hide{{/unless}}">
-        <p>The app publisher has proven using PGP that they control these accounts.</p>
+        {{#if authorPgpFingerprint}}
+        <p class="has-fingerprint">The app publisher has proven using PGP that they control these accounts.</p>
         <ul class="publisher-proofs">
           {{#each publisherProofs}}
           <li class="publisher-proof">
@@ -52,6 +96,7 @@
               </span>
             {{else}}
             <a class="{{proofTypeClass}}"
+               target="_blank"
                href="{{linkTarget}}">
                 {{linkText}}
             </a>
@@ -59,17 +104,10 @@
           </li>
           {{/each}}
         </ul>
+        {{else}}
+        <p class="no-fingerprint">This app has no signature from its creator; its author cannot be verified.</p>
+        {{/if}}
       </div>
     </div>
-
-    <div class="search-bar">
-      <label>
-        <span class="search-icon" title="Search"></span>
-        <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
-      </label>
-    </div>
-
-    {{>sandstormGrainTable grains=filteredSortedGrains actions=actions onGrainClicked=onGrainClicked}}
   </div>
-  {{/if}}
 </template>

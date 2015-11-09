@@ -1,4 +1,4 @@
-<template name="sandstormAppList">
+<template name="sandstormAppListPage">
   {{setDocumentTitle}}
   {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar }}Apps{{/sandstormTopbarItem}}
   {{#if appIsLoading}}
@@ -57,14 +57,14 @@
     {{!-- data-app-id is only used for testing purposes --}}
     {{#each apps }}
     {{#if uninstalling}}
-    <button class="app-button uninstall-action {{#if shouldHighlight}}highlight{{/if}}"
+    <button class="app-button uninstall-action"
             data-app-id="{{appId}}">
       <div class="app-icon" style="background-image: url('{{ iconSrc }}');"></div>
       <span class="app-title">{{appTitle}}</span>
       <span class="action-text">Uninstall</span>
     </button>
     {{else}}
-    <a class="app-button {{#if dev}}dev-background {{/if}}{{#if shouldHighlight}}highlight{{/if}}" href="/apps/{{appId}}"
+    <a class="app-button {{#if dev}}dev-background {{/if}}" href="/apps/{{appId}}"
             data-app-id="{{appId}}">
       <div class="app-icon" style="background-image: url('{{ iconSrc }}');"></div>
       <span class="app-title">{{appTitle}}</span>

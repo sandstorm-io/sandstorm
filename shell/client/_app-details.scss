@@ -15,17 +15,57 @@
     background-color: #ccc;
   }
 
+  >.app-details-widget {
+    @extend %app-details-widget;
+  }
+  >.newer-version, >.older-version {
+    background-color: darken($app-details-background-color, 10%);
+    >p {
+      >button {
+        @extend %button-base;
+        @extend %button-primary;
+      }
+    }
+  }
+  >.search-bar {
+    margin-top: 12px;
+    clear: both;
+    >label {
+      >span.search-icon {
+        @extend %pseudo-img-tag;
+        background-image: url("/search.svg");
+        background-size: 24px 24px;
+        background-position: center;
+        display: inline-block;
+        box-sizing: border-box;
+        width: 32px;
+        height: 32px;
+        vertical-align: top;
+      }
+      >input.search-bar {
+        font-size: 16pt;
+        height: 32px;
+        box-sizing: border-box;
+        background-color: $app-details-searchbar-background-color;
+        border: 1px solid $app-details-searchbar-outline-color;
+        &:focus {
+          border: 1px solid $app-details-searchbar-outline-color-focus;
+        }
+      }
+    }
+  }
+  >table.grain-list-table {
+    @extend %grain-table;
+  }
+}
+
+%app-details-widget {
+  margin: 0;
+  padding: 0;
+  position: relative;
   >.app-icon {
     position: absolute;
     @extend %pseudo-img-tag;
-    @media #{$desktop} {
-      left: 32px;
-      top: 24px;
-    }
-    @media #{$mobile} {
-      left: 8px;
-      top: 0px;
-    }
     width: 128px;
     height: 128px;
   }
@@ -134,14 +174,33 @@
       display: block;
       clear: both;
       background-color: #ffffff;
-      >p {
+      vertical-align: top;
+      >p.no-fingerprint {
+        padding: 8px;
+      }
+      >p.has-fingerprint {
+        vertical-align: top;
         padding-left: 8px;
-        display: inline-block;
-        max-width: 30%;
+        @media #{$desktop} {
+          display: inline-block;
+          max-width: 30%;
+        }
+        @media #{$mobile} {
+          display: block;
+          width: 100%;
+        }
       }
       >ul.publisher-proofs {
-        display: inline-block;
-        max-width: 65%;
+        @media #{$desktop} {
+          display: inline-block;
+          width: 65%;
+        }
+        @media #{$mobile} {
+          display: block;
+          width: 100%;
+        }
+        box-sizing: border-box;
+        padding: 8px;
         list-style: none;
         >li.publisher-proof {
           display: block;
@@ -179,42 +238,5 @@
         display:none;
       }
     }
-  }
-  >.actions {
-    margin-top: 12px;
-    >button {
-      @extend %button-base;
-      @extend %button-primary;
-    }
-  }
-  >.search-bar {
-    margin-top: 12px;
-    clear: both;
-    >label {
-      >span.search-icon {
-        @extend %pseudo-img-tag;
-        background-image: url("/search.svg");
-        background-size: 24px 24px;
-        background-position: center;
-        display: inline-block;
-        box-sizing: border-box;
-        width: 32px;
-        height: 32px;
-        vertical-align: top;
-      }
-      >input.search-bar {
-        font-size: 16pt;
-        height: 32px;
-        box-sizing: border-box;
-        background-color: $app-details-searchbar-background-color;
-        border: 1px solid $app-details-searchbar-outline-color;
-        &:focus {
-          border: 1px solid $app-details-searchbar-outline-color-focus;
-        }
-      }
-    }
-  }
-  >table.grain-list-table {
-    @extend %grain-table;
   }
 }

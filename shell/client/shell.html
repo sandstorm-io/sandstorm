@@ -565,15 +565,15 @@ limitations under the License.
 </template>
 
 <template name="apps">
-  {{> sandstormAppList }}
+  {{> sandstormAppListPage . }}
 </template>
 
 <template name="grains">
-  {{> sandstormGrainListPage}}
+  {{> sandstormGrainListPage . }}
 </template>
 
 <template name="appDetails">
-  {{> sandstormAppDetails }}
+  {{> sandstormAppDetailsPage . }}
 </template>
 
 <template name="_grainSpinner">
@@ -597,65 +597,7 @@ limitations under the License.
 </template>
 
 <template name="install">
-  {{>title "Install app"}}
-
-  {{#if error}}
-    <div id="install" class="error">
-      <div class="centered-box">
-        <p>Failed to install app!
-          {{#if step}}<button id="retry">Try Again</button>{{/if}}</p>
-        <pre>{{error}}</pre>
-      </div>
-    </div>
-  {{else}}
-    <div id="install" class="instep-{{step}}">
-      {{! TODO(cleanup):  The use of a list here is vestigial.  We now display only the step
-            that is currently running. }}
-      <ol>
-        <li id="step-wait">Waiting for write access...</li>
-        <li id="step-download">Downloading... <span class="progress">{{progress}}
-            <button id="cancelDownload">Cancel</button></span></li>
-        <li id="step-verify">Verifying... <span class="progress">{{progress}}</span></li>
-        <li id="step-unpack">Unpacking... <span class="progress">{{progress}}</span></li>
-        <li id="step-analyze">Analyzing... <span class="progress">{{progress}}</span></li>
-        <li id="step-confirm">Install this app?
-          <div class="confirm-form">
-            {{! TODO(someday):  Support editing action names (i.e. make them petnames). }}
-            {{#if hasOlderVersion}}
-              <p>You have an older version of this app installed.  Do you want to upgrade?</p>
-              <p><button id="confirmInstall">Upgrade</button></p>
-            {{else}}
-            {{#if hasNewerVersion}}
-              <p>You already have a newer version of this app installed.  Are
-                you sure you want to revert to this older version?</p>
-              <p><button id="confirmInstall">Downgrade</button></p>
-            {{else}}
-              <p>Do you want to install this app?</p>
-              <p><button id="confirmInstall">Install</button></p>
-            {{/if}}
-            {{/if}}
-          </div></li>
-        <li id="step-run">App Installed
-          <div class="done-notice">
-            <p>Installation complete.  Click "Apps" to create a new file with this app.</p>
-
-            {{#if hasNewerVersion}}
-              <p>Some of your files were made with a
-                <a href="{{newVersionId}}">newer version</a> of this app.  They will keep
-                using the newer version, as going backwards could break them.</p>
-            {{else}}
-            {{#if hasOlderVersion}}
-              <p>Some of your files were made with an older version of this app.  Upgrade them?</p>
-              <p><button id="upgradeGrains">Upgrade Files</button></p>
-            {{else}}
-              <div id="my-files-arrow"></div>
-            {{/if}}
-            {{/if}}
-          </div></li>
-        <li id="step-delete">Server is currently deleting this app...</li>
-      </ol>
-    </div>
-  {{/if}}
+  {{> sandstormAppInstallPage . }}
 </template>
 
 <template name="account">

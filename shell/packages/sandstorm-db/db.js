@@ -863,6 +863,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   addUserActions: function(packageId) {
+    //TODO(cleanup): implement this with meteor methods rather than client-side inserts/removes.
     var pack = Packages.findOne(packageId);
     if (pack) {
       // Remove old versions.

@@ -99,8 +99,7 @@ var startInstallInternal = function (package) {
 }
 
 cancelDownload = function (packageId) {
-  Packages.update({_id: packageId, status: "download"},
-      {$set: {status: "failed"}, $unset: {url: ""}});
+  Packages.remove({_id: packageId, status: "download"});
 }
 
 var cancelDownloadInternal = function (package) {
@@ -478,7 +477,7 @@ AppInstaller.prototype.doDownloadTo = function (out) {
           this.updateProgress("download", bytesReceived);
         }
       }
-    }), 1000);
+    }), 500);
 
     response.on("data", this.wrapCallback(function (chunk) {
       hasher.update(chunk);

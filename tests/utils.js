@@ -53,5 +53,6 @@ module.exports = {
   appSelector: function (appId) {
     return '.app-list>.app-button[data-app-id="' + appId + '"]';
   },
+  appDetailsTitleSelector: '.app-details .app-details-widget .app-title',
   actionSelector: '.grain-list-table tr.action button.action'
 };

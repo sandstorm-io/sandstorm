@@ -32,7 +32,7 @@ var latestAppManifestForAppId = function (db, appId) {
 
 var getAppTitle = function (appDetailsHandle) {
   var pkg = latestPackageForAppId(appDetailsHandle._db, appDetailsHandle._appId);
-  return SandstormDb.appNameFromPackage(pkg);
+  return pkg && SandstormDb.appNameFromPackage(pkg) || "<unknown>";
 };
 
 var matchesGrainTitle = function (needle, grain) {
@@ -52,11 +52,15 @@ var compileMatchFilter = function (searchString) {
   };
 };
 
+var appGrains = function(db, appId) {
+  return _.filter(db.currentUserGrains().fetch(),
+                  function (grain) {return grain.appId === appId; });
+};
+
 var filteredSortedGrains = function(db, staticAssetHost, appId, appTitle, filterText) {
   var pkg = latestPackageForAppId(db, appId);
 
-  var grainsMatchingAppId = _.filter(db.currentUserGrains().fetch(),
-                        function (grain) { return grain.appId === appId; });
+  var grainsMatchingAppId = appGrains(db, appId);
   var tokensForGrain = _.groupBy(db.currentUserApiTokens().fetch(), 'grainId');
   var grainIdsForApiTokens = Object.keys(tokensForGrain);
   // grainTokens is a list of all apiTokens, but guarantees at most one token per grain
@@ -82,7 +86,7 @@ var pgpFingerprint = function (pkg) {
   return pkg && pkg.authorPgpKeyFingerprint;
 }
 
-Template.sandstormAppDetails.onCreated(function () {
+Template.sandstormAppDetailsPage.onCreated(function () {
   var ref = Template.instance().data;
   var templateThis = this;
   Tracker.autorun(function () {
@@ -98,7 +102,7 @@ Template.sandstormAppDetails.onCreated(function () {
   });
 });
 
-Template.sandstormAppDetails.onDestroyed(function () {
+Template.sandstormAppDetailsPage.onDestroyed(function () {
   if (this._keybaseSubscription) {
     this._keybaseSubscription.stop();
     this._keybaseSubscription = undefined;
@@ -115,27 +119,149 @@ var contactEmailForPackage = function (pkg) {
 };
 
 Template.sandstormAppDetails.helpers({
+  isPgpKey: function (arg) {
+    return arg === "pgpkey";
+  },
+  appIconSrc: function() {
+    var ref = Template.instance().data;
+    var pkg = ref.pkg;
+    return pkg && Identicon.iconSrcForPackage(pkg, 'appGrid', ref.staticHost);
+  },
+  debug: function () {
+    var ref = Template.instance().data;
+    console.log(ref);
+    console.log(ref.pkg);
+  },
+  appId: function() {
+    var pkg = Template.instance().data.pkg;
+    return pkg && pkg.appId;
+  },
+  appTitle: function() {
+    var pkg = Template.instance().data.pkg;
+    return pkg && SandstormDb.appNameFromPackage(pkg) || "<unknown>";
+  },
+  website: function () {
+    var pkg = Template.instance().data.pkg;
+    return pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.website;
+  },
+  codeUrl: function () {
+    var pkg = Template.instance().data.pkg;
+    return codeUrlForPackage(pkg);
+  },
+  contactEmail: function () {
+    var pkg = Template.instance().data.pkg;
+    return contactEmailForPackage(pkg);
+  },
+  bugReportLink: function () {
+    var pkg = Template.instance().data.pkg;
+    // TODO(someday): allow app manifests to include an explicit bug report link.
+    // If the source code link is a github URL, then append /issues to it and use that.
+    var codeUrl = codeUrlForPackage(pkg);
+    if (codeUrl && codeUrl.lastIndexOf("https://github.com/", 0) === 0) {
+      return codeUrl + "/issues";
+    }
+    // Otherwise, provide a mailto: to the package's contact email if available.
+    var contactEmail = contactEmailForPackage(pkg);
+    if (contactEmail) {
+      return "mailto:" + contactEmail;
+    }
+    // Older app packages may have neither; return undefined.
+    return undefined;
+  },
+  authorPgpFingerprint: function () {
+    var pkg = Template.instance().data.pkg;
+    return pgpFingerprint(pkg);
+  },
+  marketingVersion: function () {
+    var pkg = Template.instance().data.pkg;
+    return pkg && pkg.manifest && pkg.manifest.appMarketingVersion &&
+           pkg.manifest.appMarketingVersion.defaultText || "<unknown>";
+  },
+  publisherDisplayName: function () {
+    var ref = Template.instance().data;
+    var fingerprint = pgpFingerprint(ref.pkg);
+    var profile = ref.keybaseProfile;
+    return (profile && profile.displayName) || fingerprint;
+  },
+  publisherProofs: function () {
+    var ref = Template.instance().data;
+    var pkg = ref.pkg;
+    var fingerprint = pgpFingerprint(pkg);
+    if (!fingerprint) return [];
+    var profile = ref.keybaseProfile;
+    if (!profile) return [];
+
+    var returnValue = [];
+
+    // Add the key fingerprint.
+    var keyFragments = [];
+    for (var i = 0 ; i <= ((fingerprint.length / 4) - 1); i++) {
+      keyFragments.push({ fragment: fingerprint.slice(4*i, 4*(i+1)) });
+    }
+    returnValue.push({
+      proofTypeClass: "pgpkey",
+      linkTarget: "",
+      linkText: fingerprint,
+      keyFragments: keyFragments,
+    });
+
+    // Add the keybase profile for that key
+    if (profile.handle) {
+      returnValue.push({
+        proofTypeClass: "keybase",
+        linkTarget: "https://keybase.io/" + profile.handle,
+        linkText: profile.handle,
+      });
+    }
+
+    var proofs = profile.proofs;
+    if (proofs) {
+      var externalProofs = _.chain(proofs)
+          // Filter down to twitter, github, and web
+          .filter(function(proof) {
+             return _.contains(["twitter", "github", "dns", "https"],
+             proof.proof_type);
+          })
+          // Then map fields into the things the template cares about
+          .map(function (proof) { return {
+            proofTypeClass: proof.proof_type,
+            linkTarget: proof.service_url,
+            linkText: proof.nametag,
+          }; })
+          .value();
+      externalProofs.forEach(function (proof) { returnValue.push(proof) });
+    }
+    return returnValue;
+  },
+});
+
+Template.sandstormAppDetailsPage.helpers({
   setDocumentTitle: function() {
     var ref = Template.instance().data;
     document.title = (getAppTitle(ref) + " details · Sandstorm");
+  },
+  pkg: function() {
+    var ref = Template.instance().data;
+    var pkg = latestPackageForAppId(ref._db, ref._appId);
+    return pkg;
+  },
+  staticHost: function () {
+    var ref = Template.instance().data;
+    return ref._staticHost;
   },
   isAppInDevMode: function() {
     var ref = Template.instance().data;
     var pkg = latestPackageForAppId(ref._db, ref._appId);
     return pkg && pkg.dev;
   },
+  isAppNotInDevMode: function() {
+    var ref = Template.instance().data;
+    var pkg = latestPackageForAppId(ref._db, ref._appId);
+    return !(pkg && pkg.dev);
+  },
   newGrainIsLoading: function () {
     var ref = Template.instance().data;
     return ref._newGrainIsLaunching.get();
-  },
-  appId: function() {
-    var ref = Template.instance().data;
-    return ref._appId
-  },
-  appIconSrc: function() {
-    var ref = Template.instance().data;
-    var pkg = latestPackageForAppId(ref._db, ref._appId);
-    return pkg && Identicon.iconSrcForPackage(pkg, 'appGrid', ref._staticHost);
   },
   appTitle: function() {
     var ref = Template.instance().data;
@@ -194,41 +320,6 @@ Template.sandstormAppDetails.helpers({
       Router.go("grain", {grainId: grainId});
     };
   },
-  website: function () {
-    var ref = Template.instance().data;
-    var pkg = latestPackageForAppId(ref._db, ref._appId);
-    return pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.website;
-  },
-  codeUrl: function () {
-    var ref = Template.instance().data;
-    var pkg = latestPackageForAppId(ref._db, ref._appId);
-    return codeUrlForPackage(pkg);
-  },
-  contactEmail: function () {
-    var ref = Template.instance().data;
-    var pkg = latestPackageForAppId(ref._db, ref._appId);
-    return contactEmailForPackage(pkg);
-  },
-  bugReportLink: function () {
-    var ref = Template.instance().data;
-    var pkg = latestPackageForAppId(ref._db, ref._appId);
-    // TODO(someday): allow app manifests to include an explicit bug report link.
-    // If the source code link is a github URL, then append /issues to it and use that.
-    var codeUrl = codeUrlForPackage(pkg);
-    if (codeUrl && codeUrl.lastIndexOf("https://github.com/", 0) === 0) {
-      return codeUrl + "/issues";
-    }
-    // Otherwise, provide a mailto: to the package's contact email if available.
-    var contactEmail = contactEmailForPackage(pkg);
-    if (contactEmail) {
-      return "mailto:" + contactEmail;
-    }
-    // Older app packages may have neither; return undefined.
-    return undefined;
-  },
-  isPgpKey: function (arg) {
-    return arg === "pgpkey";
-  },
   filteredSortedGrains: function () {
     var ref = Template.instance().data;
     return filteredSortedGrains(ref._db, ref._staticHost, ref._appId, getAppTitle(ref), ref._filter.get());
@@ -246,76 +337,33 @@ Template.sandstormAppDetails.helpers({
     var ref = Template.instance().data;
     return ref._showPublisherDetails.get();
   },
-  authorPgpFingerprint: function () {
-    var ref = Template.instance().data;
-    var pkg = latestPackageForAppId(ref._db, ref._appId);
-    return pgpFingerprint(pkg);
-  },
-  marketingVersion: function () {
-    var ref = Template.instance().data;
-    var pkg = latestPackageForAppId(ref._db, ref._appId);
-    return pkg && pkg.manifest && pkg.manifest.appMarketingVersion &&
-           pkg.manifest.appMarketingVersion.defaultText || "<unknown>";
-  },
-  publisherDisplayName: function () {
+  keybaseProfile: function () {
     var ref = Template.instance().data;
     var pkg = latestPackageForAppId(ref._db, ref._appId);
     var fingerprint = pgpFingerprint(pkg);
     var profile = fingerprint && ref._db.getKeybaseProfile(fingerprint);
-    return (profile && profile.displayName) || fingerprint;
+    return profile;
   },
-  publisherProofs: function () {
+  hasNewerVersion: function () {
     var ref = Template.instance().data;
     var pkg = latestPackageForAppId(ref._db, ref._appId);
-    var fingerprint = pgpFingerprint(pkg);
-    if (!fingerprint) return [];
-    var profile = ref._db.getKeybaseProfile(fingerprint);
-    if (!profile) return [];
-
-    var returnValue = [];
-
-    // Add the key fingerprint.
-    var keyFragments = [];
-    for (var i = 0 ; i <= ((fingerprint.length / 4) - 1); i++) {
-      keyFragments.push({ fragment: fingerprint.slice(4*i, 4*(i+1)) });
-    }
-    returnValue.push({
-      proofTypeClass: "pgpkey",
-      linkTarget: "",
-      linkText: fingerprint,
-      keyFragments: keyFragments,
+    if (!pkg) return false;
+    var grains = appGrains(ref._db, ref._appId);
+    return _.some(grains, function (grain) {
+      return grain.appVersion > pkg.manifest.appVersion;
     });
-
-    // Add the keybase profile for that key
-    if (profile.handle) {
-      returnValue.push({
-        proofTypeClass: "keybase",
-        linkTarget: "https://keybase.io/" + profile.handle,
-        linkText: profile.handle,
-      });
-    }
-
-    var proofs = profile.proofs;
-    if (proofs) {
-      var externalProofs = _.chain(proofs)
-          // Filter down to twitter, github, and web
-          .filter(function(proof) {
-             return _.contains(["twitter", "github", "dns", "https"],
-             proof.proof_type);
-          })
-          // Then map fields into the things the template cares about
-          .map(function (proof) { return {
-            proofTypeClass: proof.proof_type,
-            linkTarget: proof.service_url,
-            linkText: proof.nametag,
-          }; })
-          .value();
-      externalProofs.forEach(function (proof) { returnValue.push(proof) });
-    }
-    return returnValue;
+  },
+  hasOlderVersion: function () {
+    var ref = Template.instance().data;
+    var pkg = latestPackageForAppId(ref._db, ref._appId);
+    if (!pkg) return false;
+    var grains = appGrains(ref._db, ref._appId);
+    return _.some(grains, function (grain) {
+      return grain.appVersion < pkg.manifest.appVersion;
+    });
   },
 });
-Template.sandstormAppDetails.events({
+Template.sandstormAppDetailsPage.events({
   "input .search-bar": function(event) {
     Template.instance().data._filter.set(event.target.value);
   },
@@ -347,5 +395,10 @@ Template.sandstormAppDetails.events({
   "click .show-authorship-button": function(event) {
     var ref = Template.instance().data;
     ref._showPublisherDetails.set(!ref._showPublisherDetails.get());
+  },
+  "click .upgradeGrains": function (event) {
+    var ref = Template.instance().data;
+    var pkg = latestPackageForAppId(ref._db, ref._appId);
+    Meteor.call("upgradeGrains", ref._appId, pkg.manifest.appVersion, pkg._id);
   },
 });

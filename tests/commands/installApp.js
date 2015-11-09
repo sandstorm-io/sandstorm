@@ -17,8 +17,8 @@
 "use strict";
 
 var utils = require("../utils"),
-    appSelector = utils.appSelector,
     actionSelector = utils.actionSelector,
+    appSelector = utils.appSelector,
     short_wait = utils.short_wait,
     medium_wait = utils.medium_wait,
     long_wait = utils.long_wait,

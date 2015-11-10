@@ -1,3 +1,9 @@
+### v0.131 (2015-11-10)
+- App details are now displayed at install time, giving you a chance to review the app's signature and other metadata before completing installation.
+- Apps can now directly request (via postMessage) that Sandstorm display the sharing dialog.
+- Work around bug where web publishing could stop working on a particular grain saying that the capability had been closed. (Proper fix requires some refactoring, but at least now it will reconnect.)
+- Started to transition icons to a font rather than lots of separate SVGs.
+
 ### v0.130 (2015-11-03)
 - Fix regression in v0.129 preventing the first user to log in from using Google or Github as the login service.
 

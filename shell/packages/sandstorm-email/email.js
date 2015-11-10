@@ -171,6 +171,10 @@ SandstormEmail.send = function (options) {
  * @param {String} smtpUrl SMTP server to use. If falsey, defaults to configured one.
 */
 SandstormEmail.rawSend = function (mc, smtpUrl) {
+  // SimpleSmtp does not add leading dots, so we need to.
+  // See http://tools.ietf.org/html/rfc5321#section-4.5.2
+  mc._message.body = mc._message.body.replace(/\n[.]([^.])/g, "\n..$1");
+
   var pool = getPool(smtpUrl);
   if (pool) {
     smtpSend(pool, mc);

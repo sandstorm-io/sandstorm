@@ -303,7 +303,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 // Originally API tokens were only used by external users through the HTTP API endpoint. However,
 // now they are also used to implement SturdyRefs, not just held by external users, but also when
 // an app holds a SturdyRef to another app within the same server. See the various `save()`,
-// `restore()`, and `drop()` methods in `grain.capnp` (on `SansdtormApi`, `AppPersistent`, and
+// `restore()`, and `drop()` methods in `grain.capnp` (on `SandstormApi`, `AppPersistent`, and
 // `MainView`) -- the fields of type `Data` are API tokens.
 //
 // Each contains:
@@ -356,7 +356,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   revoked:   If true, then this sturdyref has been revoked and can no longer be restored. It may
 //              become un-revoked in the future.
 //   expires:   Optional expiration Date. If undefined, the token does not expire.
-//   owner:     A `ApiTokenRefOwner` (defined in `supervisor.capnp`, stored as a JSON object)
+//   owner:     A `ApiTokenOwner` (defined in `supervisor.capnp`, stored as a JSON object)
 //              as passed to the `save()` call that created this token. If not present, treat
 //              as `webkey` (the default for `ApiTokenOwner`).
 //   expiresIfUnused:
@@ -382,6 +382,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //           identityId :Text;
 //           roleAssignment :RoleAssignment;
 //           forSharing :Bool;
+//           sealed :Bool; // If true, this is a SealedUiView capability
 //         }
 //         objectId :SupervisorObjectId;
 //       }
@@ -943,6 +944,25 @@ _.extend(SandstormDb.prototype, {
 
   iconSrcForPackage: function iconSrcForPackage (pkg, usage) {
     return Identicon.iconSrcForPackage(pkg, usage, this.makeWildcardHost("static"));
+  },
+
+  getDenormalizedGrainInfo: function getDenormalizedGrainInfo(grainId) {
+    var grain = this.getGrain(grainId);
+    var pkg = this.collections.packages.findOne(grain.packageId);
+    var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ""};
+    var grainInfo = { appTitle: appTitle };
+
+    if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
+      var icons = pkg.manifest.metadata.icons;
+      grainInfo.icon = icons.grain || icons.appGrid;
+    }
+
+    // Only provide an app ID if we have no icon asset to provide and need to offer an identicon.
+    if (!grainInfo.icon && pkg) {
+      grainInfo.appId = pkg.appId;
+    }
+
+    return grainInfo;
   },
 
   getPlan: function (id) {

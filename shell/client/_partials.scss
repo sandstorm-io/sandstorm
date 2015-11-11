@@ -57,6 +57,9 @@
   background-color: $sandstorm-purple-color;
   color: white;
   border: 1px solid darken($sandstorm-purple-color, 10%);
+  &:disabled {
+    background-color: #333333;
+  }
   &:hover {
     background-color: darken($sandstorm-purple-color, 10%);
   }

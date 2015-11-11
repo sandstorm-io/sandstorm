@@ -1,0 +1,114 @@
+body>.popup.request>.frame {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-begin;
+  justify-content: flex-begin;
+
+  >h4 {
+    flex: none;
+    margin-top: 0px;
+    margin-bottom: 10px;
+  }
+  >.search-row {
+    flex: none;
+    display: inline-block;
+    width: 100%;
+    margin: 0px;
+    padding-left: 10px;
+    padding-right: 10px;
+    box-sizing: border-box;
+    vertical-align: top;
+    >label {
+      >span.search-icon {
+        @extend %pseudo-img-tag;
+        background-image: url("/search.svg");
+        background-size: 24px 24px;
+        background-position: center;
+        display: inline-block;
+        box-sizing: border-box;
+        width: 32px;
+        height: 32px;
+        vertical-align: top;
+      }
+      >input.search-bar {
+        font-size: 16pt;
+        height: 32px;
+        width: calc(100% - 36px);
+        box-sizing: border-box;
+        background-color: $grainlist-searchbar-background-color;
+        border: 1px solid $grainlist-searchbar-outline-color;
+        &:focus {
+          border: 1px solid $grainlist-searchbar-outline-color-focus;
+        }
+      }
+    }
+  }
+  >ul.candidate-grains {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0px;
+    margin: 10px;
+    margin-top: 10px;
+    >li.grain-card {
+      @extend %grain-card;
+    }
+  }
+  >.selected-grain {
+    flex: none;
+    box-sizing: border-box;
+    >div.grain-card {
+      box-sizing: border-box;
+      border: 1px solid #dddddd;
+      background-color: #eeeeee;
+      display: block;
+      vertical-align: middle;
+      width: 100%;
+      height: 32px;
+      line-height: 32px;
+      background-size: 24px 24px;
+      background-position: 4px 4px;
+      background-repeat: no-repeat;
+      padding-left: 32px;
+    }
+    >form {
+      margin-top: 10px;
+      >p {
+        margin-top: 0px;
+        margin-bottom: 5px;
+      }
+      >label {
+        display: block;
+      }
+      >button {
+        margin-top: 10px;
+      }
+    }
+    button.connect-button {
+      @extend %button-base;
+      @extend %button-primary;
+    }
+  }
+}
+
+%grain-card {
+  border-top: 1px solid #dddddd;
+  border-left: 1px solid #dddddd;
+  border-right: 1px solid #dddddd;
+  &:last-child {
+    border-bottom: 1px solid #dddddd;
+  }
+  background-color: #eeeeee;
+  display: block;
+  vertical-align: middle;
+  height: 32px;
+  >button.grain-button {
+    @extend %unstyled-button;
+    @extend %overflow-ellipsis;
+    width: 100%;
+    background-size: 24px 24px;
+    background-position: 4px 4px;
+    background-repeat: no-repeat;
+    padding-left: 32px;
+    height: 32px;
+  }
+}

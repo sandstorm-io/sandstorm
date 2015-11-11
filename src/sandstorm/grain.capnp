@@ -336,7 +336,7 @@ interface SandstormApi(AppObjectId) {
   #   failure.
 }
 
-interface UiView {
+interface UiView @0xdbb4d798ea67e2e7 {
   # Implements a user interface with which a user can interact with the grain.  We call this a
   # "view" because a single grain may actually have multiple "views" that provide different
   # functionality or represent multiple logical objects in the same physical grain.
@@ -439,7 +439,7 @@ interface UiView {
 
     matchOffers @4 :List(PowerboxDescriptor);
     # Indicates what kinds of powerbox offers this grain is interested in accepting. If the grain
-    # is chones by the user during a powerbox offer, then `newOfferSession()` will be called
+    # is chosen by the user during a powerbox offer, then `newOfferSession()` will be called
     # to start a session around this.
   }
 
@@ -633,7 +633,20 @@ interface SessionContext {
   #   saveLabel: A string petname to give this label. This will be displayed to the user as the name
   #          for this capability.
   #
-  # (eg. window.parent.postMessage({powerboxRequest: {rpcId: myRpcId, query: [{}]}}, "*")
+  # e.g.:
+  #   window.parent.postMessage({
+  #     powerboxRequest: {
+  #       rpcId: myRpcId,
+  #       query: [
+  #         {
+  #           tags: [
+  #             { id: "10145426045091321204" },
+  #           ],
+  #         },
+  #       ],
+  #       saveLabel: "Linked grain",
+  #     },
+  #   }, "*");
   #
   # The postMessage searches for capabilities in the user's powerbox matching the given query and
   # displays a selection UI to the user.
@@ -645,12 +658,12 @@ interface SessionContext {
   #   }
   # }, false)
 
-  provide @4 (cap :Capability, requiredPermissions :PermissionSet,
+  fulfillRequest @4 (cap :Capability, requiredPermissions :PermissionSet,
               descriptor :PowerboxDescriptor, displayInfo :PowerboxDisplayInfo);
   # For sessions started with `newRequestSession()`, fulfills the original request. If only one
-  # capability was requested, the powerbox will close upon `provide()` being called. If multiple
-  # capabilities were requested, then the powerbox remains open and `provide()` may be called
-  # repeatedly.
+  # capability was requested, the powerbox will close upon `fulfillRequest()` being called. If
+  # multiple capabilities were requested, then the powerbox remains open and `fulfillRequest()` may
+  # be called repeatedly.
   #
   # If the session was not started with `newRequestSession()`, this method is equivalent to
   # `offer()`. This can be helpful when building a UI that can be used both embedded in the
@@ -739,7 +752,17 @@ struct RoleDef {
   # "default", then such sharing actions will be treated as having an empty permissions set (the
   # user can open the grain, but the grain is told that the user has no permissions).
   #
+  # This field should *not* be used to specify a default role hint for sharing!  For that, use
+  # `defaultSelection` immediately below.
+  #
   # See also `ViewSharingLink.RoleAssignment.none`, below.
+
+  defaultSelection @6 :Bool = false;
+  # If true, this role should be hinted as the default option when presenting a user with a choice
+  # of RoleAssignments.  This should only be set to true on a single role for a given package.
+  #
+  # It is unfortunate that this field cannot be named "default" without changing the behavior of
+  # existing text pkgdefs.
 }
 
 interface SharingLink {

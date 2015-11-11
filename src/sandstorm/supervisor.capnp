@@ -97,12 +97,13 @@ interface Supervisor {
 }
 
 interface SandstormCore {
-  # When the front-end connects to a Sandstorm supervisor, it exports a SandstormCore capability as
-  # the default capability on the connection. This SandstormCore instance is specific to the
-  # supervisor's grain; e.g. the grain ID is used to enforce ownership restrictions in `restore()`
-  # and to fill out the `grainId` field in the `ApiTokens` table in calls to `wrapSaved()`.
+  # When the front-end connects to a Sandstorm supervisor, the front-end exports a SandstormCore
+  # capability as the default capability on the connection. This SandstormCore instance is specific
+  # to the supervisor's grain; e.g. the grain ID is used to enforce ownership restrictions in
+  # `restore()` and to fill out the `grainId` field in the `ApiTokens` table in calls to
+  # `wrapSaved()`.
   #
-  # If the front-end disconnects, it probably means that it is restarting. It will connect again
+  # If the front-end disconnects, this probably means that it is restarting. It will connect again
   # after restart. In the meantime, the supervisor should queue any RPCs to this interface and
   # retry them after the front-end has reconnected.
 

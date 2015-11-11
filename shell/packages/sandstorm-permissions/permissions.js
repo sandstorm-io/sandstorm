@@ -417,7 +417,11 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   check(owner, Match.OneOf({webkey: {forSharing: Boolean,
                                      expiresIfUnusedDuration: Match.Optional(Number)}},
                            {user: {identityId: String,
-                                   title: String}}));
+                                   title: String}},
+                           {grain: {grainId: String,
+                                    saveLabel: Match.ObjectIncluding({defaultText: String}),
+                                    introducerIdentity: String,
+                                    sealed: Boolean}}));
 
   var grain = db.getGrain(grainId);
   if (!grain) {
@@ -462,18 +466,7 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
       apiToken.expiresIfUnused = new Date(Date.now() + owner.webkey.expiresIfUnusedDuration);
     }
   } else if (owner.user) {
-    var pkg = db.collections.packages.findOne(grain.packageId);
-    var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ""};
-    var grainInfo = {appTitle: appTitle};
-
-    if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
-      var icons = pkg.manifest.metadata.icons;
-      grainInfo.icon = icons.grain || icons.appGrid;
-    }
-    // Only provide an app ID if we have no icon asset to provide and need to offer an identicon.
-    if (!grainInfo.icon && pkg) {
-      grainInfo.appId = pkg.appId;
-    }
+    var grainInfo = db.getDenormalizedGrainInfo(grainId);
     apiToken.owner = {
       user: {
         identityId: owner.user.identityId,
@@ -481,6 +474,15 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
         // lastUsed: ??
         denormalizedGrainMetadata: grainInfo,
       }
+    };
+  } else if (owner.grain) {
+    apiToken.owner = {
+      grain: {
+        grainId: owner.grain.grainId,
+        saveLabel: owner.grain.saveLabel,
+        introducerIdentity: owner.grain.introducerIdentity,
+        sealed: owner.grain.sealed,
+      },
     };
   }
 

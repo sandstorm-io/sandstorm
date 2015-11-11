@@ -21,6 +21,7 @@ const PersistentHandle = Capnp.importSystem('sandstorm/supervisor.capnp').Persis
 const SandstormCore = Capnp.importSystem('sandstorm/supervisor.capnp').SandstormCore;
 const SandstormCoreFactory = Capnp.importSystem('sandstorm/backend.capnp').SandstormCoreFactory;
 const PersistentOngoingNotification = Capnp.importSystem('sandstorm/supervisor.capnp').PersistentOngoingNotification;
+const Sealed = Capnp.importSystem("sandstorm/sealed.capnp");
 
 class SandstormCoreImpl {
   constructor(grainId) {
@@ -146,6 +147,46 @@ class NotificationHandle {
     return saveFrontendRef({notificationHandle: this.notificationId}, params.sealFor);
   }
 }
+
+class PersistentSealedUiViewImpl {
+  constructor(token, membraneRequirements) {
+    this._token = token;
+    // TODO: implement SystemPersistent.addRequirements() in a way that collects requirements, and
+    // then saves them appropriately in save().
+    this._membraneRequirements = membraneRequirements || [];
+  }
+
+  save(params) {
+    // Create a new child apiToken for the user whose session attempted to save this capability.
+    // The token should specify this.token as the parent token, and needs to gain an additional membrane
+    // requirement (TODO):
+    // * if params.sealFor is a user, then the user must still have access to the grain that offered
+    //   this cap.  Today, this is handled by offer() in SessionContextImpl.
+    const res = inMeteor(() => {
+      const owner = _.extend({}, params.sealFor);
+      const grainId = this._token.grainId;
+
+      if (owner.user) {
+        // Copy the owner's save label for this capability, if available, to be the new title.
+        if (this._token && this._token.owner && this._token.owner.grain &&
+            this._token.owner.grain.saveLabel && this._token.owner.grain.saveLabel.defaultText) {
+          owner.user.title = this._token.owner.grain.saveLabel.defaultText;
+        }
+
+        // Denormalize this grain's app metadata into owner.user.
+        owner.user.denormalizedGrainMetadata = globalDb.getDenormalizedGrainInfo(grainId);
+      }
+
+      const ret = makeChildTokenInternal(this._token._id, owner, this._membraneRequirements, grainId);
+      return {sturdyRef: ret.token};
+    });
+    return res;
+  }
+}
+
+const makePersistentSealedUiView = function (token) {
+  return new Capnp.Capability(new PersistentSealedUiViewImpl(token, []), Sealed.PersistentSealedUiView);
+};
 
 function makeNotificationHandle(notificationId, saved) {
   return new Capnp.Capability(new NotificationHandle(notificationId, saved), PersistentHandle);
@@ -293,7 +334,7 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
   if (token.revoked) {
     throw new Meteor.Error(403, 'Token has been revoked');
   }
-
+  // The ownerPattern should specify the appropriate user or grain involved, if appropriate.
   check(token.owner, ownerPattern);
   if (!checkRequirements(token.requirements)) {
     throw new Meteor.Error(403, 'Requirements not satisfied.');
@@ -313,6 +354,7 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
   }
 
   if (token.frontendRef) {
+    // A token which represents a capability implemented by a pseudo-driver.
     if (token.frontendRef.notificationHandle) {
       const notificationId = token.frontendRef.notificationHandle;
       return {cap: makeNotificationHandle(notificationId, true)};
@@ -324,6 +366,7 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
       throw new Meteor.Error(500, 'Unknown frontend token type.');
     }
   } else if (token.objectId) {
+    // A token which represents a specific capability exported by a grain.
     if (!checkRequirements(requirements)) {
       throw new Meteor.Error(403, 'Requirements not satisfied.');
     }
@@ -332,13 +375,25 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
       token.objectId.appRef = new Buffer(token.objectId.appRef);
     }
 
+    // Ensure the grain is running, then restore the capability.
     return waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
       return supervisor.restore(token.objectId, requirements, parentToken);
     }));
   } else if (token.parentToken) {
+    // A token which chains to some parent token.  Restore the parent token (possibly recursively),
+    // checking requirements on the way up.
     return restoreInternal(token.parentToken, Match.Any, requirements, parentToken);
+  } else if (token && token.owner && token.owner.grain && token.owner.grain.sealed) {
+    // A sealed UiView is being restored.  This is implemented by the shell.
+    return {cap: makePersistentSealedUiView(token)};
   } else {
-    throw new Meteor.Error(500, 'Unknown token type.');
+    throw new Meteor.Error(500, "Unknown token type.");
+    // This is a token for a grain's main UiView.  Ensure the grain is running, then
+    // ask the supervisor for the main UiView.  Right now this is unsafe, so we don't
+    // expose UiViews directly.
+    //return waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
+    //  return supervisor.getMainView();
+    //}));
   }
 };
 

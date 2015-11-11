@@ -46,6 +46,7 @@ sandstorm-ui-app-details
 sandstorm-ui-app-install
 sandstorm-ui-grainlist
 sandstorm-ui-autocomplete-input
+sandstorm-ui-powerbox
 meteor-node-forge
 fourseven:scss
 introjs

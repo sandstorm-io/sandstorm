@@ -572,9 +572,22 @@ if (Meteor.isClient) {
     setDocumentTitle: function () {
       document.title = "Capabilities · Admin · " + globalDb.getServerTitle();
     },
-    powerboxOfferUrl: function () {
-      var state = Iron.controller().state;
-      return state.get("powerboxOfferUrl");
+    showPowerboxOffer: function() {
+      const state = Iron.controller().state;
+      return !!state.get("powerboxOfferUrl");
+    },
+    powerboxOfferData: function () {
+      const state = Iron.controller().state;
+      return {
+        get: function() {
+          return {
+            url: state.get("powerboxOfferUrl"),
+            onDismiss: () => {
+              state.set("powerboxOfferUrl", null);
+            },
+          };
+        },
+      };
     },
     caps: function () {
       return ApiTokens.find({$or: [{"frontendRef.ipNetwork": {$exists: true}},

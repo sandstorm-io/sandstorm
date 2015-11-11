@@ -562,16 +562,7 @@ limitations under the License.
   P
 </template>
 <template name="grainPowerboxRequestPopup">
-  <h4>Powerbox Request</h4>
-  <div>
-    <form id="powerbox-request-form">
-      <label>Please input an api token: </label><input name="token" type="text" id="powerbox-request-input"><br>
-      <button class="submit">Import token</button>
-    </form>
-    {{#if error.get}}
-    <div class="error">{{error.get}}</div>
-    {{/if}}
-  </div>
+  {{>powerboxRequest . }}
 </template>
 
 <template name="grainPowerboxOffer">
@@ -610,12 +601,12 @@ limitations under the License.
         template="grainApiTokenButton" popupTemplate="grainApiTokenPopup"}}
   {{/if}}
   {{#if showPowerboxRequest}}
-    {{>sandstormTopbarItem name="request" topbar=globalTopbar template="grainPowerboxRequest"
-        startOpen=true popupTemplate="grainPowerboxRequestPopup"}}
+  {{>sandstormTopbarItem name="request" topbar=globalTopbar template="grainPowerboxRequest"
+        startOpen=true popupTemplate="grainPowerboxRequestPopup" data=powerboxRequestData}}
   {{/if}}
   {{#if showPowerboxOffer}}
     {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"
-        startOpen=true popupTemplate="grainPowerboxOfferPopup"}}
+        startOpen=true popupTemplate="grainPowerboxOfferPopup" data=powerboxOfferData}}
   {{/if}}
 </template>
 
@@ -1099,11 +1090,9 @@ limitations under the License.
 
 <template name="adminCaps">
   {{setDocumentTitle}}
-  {{#if powerboxOfferUrl}}
-    {{#with powerboxOfferUrl=powerboxOfferUrl}}
-      {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"
-          startOpen=true popupTemplate="grainPowerboxOfferPopup"}}
-    {{/with}}
+  {{#if showPowerboxOffer}}
+    {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"
+        startOpen=true popupTemplate="grainPowerboxOfferPopup" data=powerboxOfferData}}
   {{/if}}
   <p><button id="offer-ipnetwork">Offer IpNetwork Capability</button>
      <button id="offer-ipinterface">Offer IpInterface Capability</button><br>

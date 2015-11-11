@@ -1,0 +1,80 @@
+<template name="powerboxRequest">
+  <h4>Powerbox request</h4>
+  {{#if showWebkeyInput}}
+    <form id="powerbox-request-form">
+      <label>Please input an api token: </label><input name="token" type="text" id="powerbox-request-input"><br>
+      <button class="submit">Import token</button>
+    </form>
+    {{#if webkeyError}}
+    <div class="error">{{webkeyError}}</div>
+    {{/if}}
+  {{else}}
+    <h4>Connect this grain with:</h4>
+    {{#if selectedProvider }}
+      {{> Template.dynamic template=selectedProviderTemplate data=selectedProviderTemplateData }}
+    {{else}}
+      {{#if requestedInterfaceIsImplementedByFrontendRef}}
+      {{!-- TODO: switch this to support all interfaces --}}
+      <div class="search-row">
+        <label>
+          <span title="Search" class="search-icon"></span>
+          <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}">
+        </label>
+      </div>
+      <ul class="candidate-grains">
+      {{#each grains}}
+        <li class="grain-card">
+          {{>grainCardButton title=title iconSrc=iconSrc id=_id onClick=callback}}
+        </li>
+      {{/each}}
+      </ul>
+      {{else}}
+      <p>Requests for arbitrary interfaces not yet supported.  (Soon!)</p>
+      {{/if}}
+    {{/if}}
+  {{/if}}
+</template>
+
+<template name="grainCardButton">
+  {{!-- Pure template. Expects:
+        title: String     The grain title to show in the button.
+      iconSrc: String     The URL for the icon image.
+           id: String     The grain id associated with this grain.  Used primarily for tests.
+      onClick: Function   A parameterless callback function triggered on button activation.
+                          Note that Blaze will unhelpfully invoke the function if it's in the data
+                          context, so you may need to use a function which returns your actual
+                          callback function.
+  --}}
+    <button class="grain-button" data-grain-id="{{ id }}" style="background-image: url({{ iconSrc }});">{{ title }}</button>
+</template>
+
+<template name="grainCard">
+  {{!-- Pure template  Expects:
+        title: String  The grain title to show in the button.
+           id: String  The grain id associated with this grain.  Used primarily for tests.
+      iconSrc: String  The URL for the icon image.
+  --}}
+    <div class="grain-card" data-grain-id="{{ id }}" style="background-image: url({{ iconSrc }});">{{ title }}</div>
+</template>
+
+<template name="powerboxProviderSealedUiView">
+  {{!-- Pure template.  Expects:
+             _id: String     Grain ID.
+           title: String     Grain title.
+         iconSrc: String     URL to grain's app icon.
+      onComplete: Function   Takes a single argument, which is a roleAssignment.  Called when the
+                             form is submitted.
+  --}}
+  <div class="selected-grain">
+    {{>grainCard id=_id title=title iconSrc=iconSrc}}
+    <form>
+    <p>with permissions:</p>
+    {{#each role in viewInfo.roles}}
+    <label><input type="radio" name="role" value="{{role.index}}">{{role.title.defaultText}} - {{role.verbPhrase.defaultText}}</label>
+    {{else}}
+    <label><input type="radio" checked="true" name="role" value="all">Full access</label>
+    {{/each}}
+    <button class="connect-button">Connect</button>
+    </form>
+  </div>
+</template>

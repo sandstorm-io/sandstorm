@@ -171,8 +171,12 @@ SandstormEmail.send = function (options) {
  * @param {String} smtpUrl SMTP server to use. If falsey, defaults to configured one.
 */
 SandstormEmail.rawSend = function (mc, smtpUrl) {
-  // SimpleSmtp does not add leading dots, so we need to.
-  // See http://tools.ietf.org/html/rfc5321#section-4.5.2
+  // Lines starting with a dot in the raw text of the message should have already been prepended
+  // with an additional dot in _message.body, as per
+  // http://tools.ietf.org/html/rfc5321#section-4.5.2 . SimpleSmtp does not validate against this
+  // requirement, so for robustness we additionally add a dot in cases where we know that the caller
+  // failed to do so. In particular, this prevents a caller from triggering a premature
+  // end-of-message by including the string "< CLRF >.< CLRF >".
   mc._message.body = mc._message.body.replace(/\n[.]([^.])/g, "\n..$1");
 
   var pool = getPool(smtpUrl);

@@ -177,7 +177,7 @@ SandstormEmail.rawSend = function (mc, smtpUrl) {
   // requirement, so for robustness we additionally add a dot in cases where we know that the caller
   // failed to do so. In particular, this prevents a caller from triggering a premature
   // end-of-message by including the string "< CLRF >.< CLRF >".
-  mc._message.body = mc._message.body.replace(/\n[.]([^.])/g, "\n..$1");
+  mc._message.body = mc._message.body.replace(/(^|\n)\./g, "$1..");
 
   var pool = getPool(smtpUrl);
   if (pool) {

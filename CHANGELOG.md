@@ -1,3 +1,7 @@
+### v0.132 (2015-11-11)
+- Fixed regression where app detail page showed "last updated" as "unknown" for all apps.
+- Fixed SMTP escaping issue that was otherwise causing errors when sending from Roundcube through Mailgun.
+
 ### v0.131 (2015-11-10)
 - App details are now displayed at install time, giving you a chance to review the app's signature and other metadata before completing installation.
 - Apps can now directly request (via postMessage) that Sandstorm display the sharing dialog.

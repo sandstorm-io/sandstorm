@@ -10,6 +10,7 @@ SandstormAppInstall = function(packageId, packageUrl, db) {
   this._error = new ReactiveVar("");
   this._recoverable = new ReactiveVar(true);
   this._keybaseSubscription = undefined;
+  this._appIndexSubscription = undefined;
 };
 
 SandstormAppInstall.prototype.pkg = function () {
@@ -128,6 +129,10 @@ Template.sandstormAppInstallPage.onCreated(function () {
     if (fingerprint) {
       ref._keybaseSubscription = Meteor.subscribe("keybaseProfile", fingerprint);
     }
+    var appId = pkg && pkg.appId;
+    if (appId) {
+      ref._appIndexSubscription = Meteor.subscribe("appIndex", pkg.appId);
+    }
   });
 });
 
@@ -135,6 +140,10 @@ Template.sandstormAppInstallPage.onDestroyed(function () {
   if (this._keybaseSubscription) {
     this._keybaseSubscription.stop();
     this._keybaseSubscription = undefined;
+  }
+  if (this._appIndexSubscription) {
+    this._appIndexSubscription.stop();
+    this._appIndexSubscription = undefined;
   }
 });
 
@@ -191,6 +200,15 @@ Template.sandstormAppInstallPage.helpers({
     var fingerprint = pkg && pkg.authorPgpKeyFingerprint;
     var profile = fingerprint && ref._db.getKeybaseProfile(fingerprint);
     return profile;
+  },
+  lastUpdated: function () {
+    var ref = Template.instance().data;
+    var pkg = ref.pkg();
+    if (!pkg) return undefined;
+    if (pkg.dev) return new Date(); // Might as well just indicate "now"
+    var db = ref._db;
+    var appIndexEntry = db.collections.appIndex.findOne({packageId: pkg._id});
+    return appIndexEntry && appIndexEntry.createdAt && new Date(appIndexEntry.createdAt);
   },
   appTitle: function () {
     var ref = Template.instance().data;

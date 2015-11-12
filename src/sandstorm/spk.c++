@@ -1934,14 +1934,18 @@ private:
     return kj::MainBuilder(context, "Sandstorm version " SANDSTORM_VERSION,
             "Check that <spkfile>'s signature is valid. If so, print the app ID to stdout.")
         .addOption({'d', "details"}, KJ_BIND_METHOD(*this, setDetailed),
+            // `spk verify` now prints details by default, but the --details switch is left here for
+            // backwards compatibility for callers.
             "Print detailed metadata extracted from the app manifest. The output is intended to "
-            "be machine-parseable.")
+            "be machine-parseable.  This flag is now enabled by default.")
         .expectArg("<spkfile>", KJ_BIND_METHOD(*this, setUnpackSpkfile))
         .callAfterParsing(KJ_BIND_METHOD(*this, doVerify))
         .build();
   }
 
-  bool detailed = false;
+  bool detailed = true;
+  // Print verbose details by default when verifying, since that's the primary
+  // reason anyone will call the verify subcommand.
 
   bool setDetailed() {
     detailed = true;

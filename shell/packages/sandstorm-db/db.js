@@ -564,6 +564,46 @@ isSignedUpOrDemo = function () {
   return false;
 }
 
+calculateReferralBonus = function(accountId) {
+  // This function returns an object of the form:
+  //
+  // - {grains: 0, storageMegabytes: 0}
+  //
+  // which are extra resources this account gets as part of participating
+  // in the referral program.
+  //
+  // TODO: Actually query for this.
+  var user = Meteor.users.find({_id: accountId});
+
+  // Having any "plan" at at all means you're on a paid plan of some kind.
+  var isPaid = !! user.plan;
+
+  var successfulReferralsCount = Meteor.users.find({referredByAccountId: accountId}).count();
+  // HACK: Pretend this is always 3 people right now.
+  successfulReferralsCount = 3;
+  if (isPaid) {
+    return {grains: 0,
+            storageMegabytes: successfulReferralsCount * 250};
+  } else {
+    return {grains: successfulReferralsCount * Infinity,
+            storageMegabytes: successfulReferralsCount * 50};
+  }
+}
+
+getUserQuota = function (user) {
+  // Re-fetch the user, since typically Meteor gives is an object
+  debugger;
+  // with just an _id.
+  var user = Meteor.users.findOne({_id: user._id});
+  var plan = Plans.findOne(user.plan || "free");
+  var referralBonus = calculateReferralBonus(userId, plan);
+  var userQuota = {};
+  // TODO: Check units!
+  userQuota.storage = (plan.storage + referralBonus.storageMegabytes);
+  userQuota.grains = (plan.grains + referralBonus.grains);
+  return userQuota;
+}
+
 isUserOverQuota = function (user) {
   // Return false if user has quota space remaining, true if it is full. When this returns true,
   // we will not allow the user to create new grains, though they may be able to open existing ones
@@ -574,13 +614,12 @@ isUserOverQuota = function (user) {
   if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
 
   var plan = Plans.findOne(user.plan || "free");
-
   if (plan.grains < Infinity) {
     var count = Grains.find({userId: user._id}, {fields: {}, limit: plan.grains}).count();
     if (count >= plan.grains) return "outOfGrains";
   }
 
-  return plan && user.storageUsage && user.storageUsage >= plan.storage && "outOfStorage";
+  return quota && user.storageUsage && user.storageUsage >= quota.storage && "outOfStorage";
 }
 
 isUserExcessivelyOverQuota = function (user) {
@@ -591,14 +630,16 @@ isUserExcessivelyOverQuota = function (user) {
 
   if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
 
-  var plan = Plans.findOne(user.plan || "free");
+  console.log("YOW");
+  var quota = getUserQuota(user);
+  console.log("getUserQuota", "of", user, "is", quota);
 
-  if (plan.grains < Infinity) {
-    var count = Grains.find({userId: user._id}, {fields: {}, limit: plan.grains * 2}).count();
-    if (count >= plan.grains * 2) return "outOfGrains";
+  if (quota.grains < Infinity) {
+    var count = Grains.find({userId: user._id}, {fields: {}, limit: quota.grains * 2}).count();
+    if (count >= quota.grains * 2) return "outOfGrains";
   }
 
-  return plan && user.storageUsage && user.storageUsage >= plan.storage * 1.2 && "outOfStorage";
+  return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
 }
 
 isAdmin = function() {
@@ -843,8 +884,18 @@ _.extend(SandstormDb.prototype, {
   },
 
   getMyPlan: function () {
+    // TODO(cleanup): Fix name of this to be getMyQuota().
     var user = Meteor.user();
-    return user && Plans.findOne(user.plan || "free");
+    return user && getUserQuota(user);
+  },
+
+  getMyReferralBonus: function(user) {
+    user = user || Meteor.user();
+    if (Meteor.isClient) {
+      return user.pseudoReferrals;
+    } else {
+      return calculateReferralBonus(user._id);
+    }
   },
 
   getMyUsage: function (user) {

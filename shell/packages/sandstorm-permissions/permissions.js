@@ -401,12 +401,13 @@ SandstormPermissions.downstreamTokens = function(db, root) {
 
 SandstormPermissions.createNewApiToken = function (db, provider, grainId, petname,
                                                    roleAssignment, forSharing,
-                                                   expiresIfUnusedDuration) {
+                                                   expiresIfUnusedDuration, accountId) {
   // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
   check(grainId, String);
   check(petname, String);
   check(roleAssignment, db.roleAssignmentPattern);
   check(forSharing, Boolean);
+  check(accountId, Match.OneOf(null, String));
   // Meteor bug #3877: we get null here instead of undefined when we
   // explicitly pass in undefined.
   check(expiresIfUnusedDuration, Match.OneOf(undefined, null, Number));
@@ -484,9 +485,17 @@ Meteor.methods({
         throw new Meteor.Error(403, "Not an identity of the current user: " + provider.identityId);
       }
     }
+    // If the ApiToken is forSharing, then we store the accountId in
+    // the ApiToken as well. We access it via this.userId since the
+    // current Meteor user is always an account.
+    if (forSharing) {
+      accountId = this.userId;
+    } else {
+      accountId = null;
+    }
     return SandstormPermissions.createNewApiToken(
       this.connection.sandstormDb, provider, grainId, petname, roleAssignment, forSharing,
-      expiresIfUnusedDuration);
+      expiresIfUnusedDuration, this.userId);
   },
 
   updateApiToken: function (token, newFields) {

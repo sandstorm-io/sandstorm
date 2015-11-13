@@ -28,6 +28,9 @@ Meteor.publish("getMyUsage", function () {
     var user = Meteor.users.findOne(this.userId);
     var usage = this.connection.sandstormDb.getMyUsage(user);
     var referralBonus = this.connection.sandstormDb.getMyReferralBonus(user);
+    console.log("YAY");
+    console.log(JSON.stringify(referralBonus));
+    console.log("</YAY>");
     this.added("users", this.userId, {
       pseudoUsage: usage,
       pseudoReferralBonus: referralBonus,

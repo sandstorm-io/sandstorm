@@ -567,7 +567,7 @@ isSignedUpOrDemo = function () {
 calculateReferralBonus = function(accountId) {
   // This function returns an object of the form:
   //
-  // - {grains: 0, storageMegabytes: 0}
+  // - {grains: 0, storage: 0}
   //
   // which are extra resources this account gets as part of participating
   // in the referral program.
@@ -583,16 +583,15 @@ calculateReferralBonus = function(accountId) {
   successfulReferralsCount = 3;
   if (isPaid) {
     return {grains: 0,
-            storageMegabytes: successfulReferralsCount * 250};
+            storage: successfulReferralsCount * 25000 * 1e6};
   } else {
     return {grains: successfulReferralsCount * Infinity,
-            storageMegabytes: successfulReferralsCount * 50};
+            storage: successfulReferralsCount * 5000 * 1e6};
   }
 }
 
 getUserQuota = function (user) {
   // Re-fetch the user, since typically Meteor gives is an object
-  debugger;
   // with just an _id.
   var user = Meteor.users.findOne({_id: user._id});
   var plan = Plans.findOne(user.plan || "free");
@@ -891,11 +890,25 @@ _.extend(SandstormDb.prototype, {
   },
 
   getMyReferralBonus: function(user) {
-    user = user || Meteor.user();
+    // This function is called from the server and from the client.
+    //
+    // When called from the server, calculate the user's actual
+    // referral bonus. We use this elsewhere to store a value in user.pseudoReferralBonus.
+    //
+    // When called from the client, return the value of user.pseudoReferralBonus (if it exists).
     if (Meteor.isClient) {
-      return user.pseudoReferrals;
-    } else {
-      return calculateReferralBonus(user._id);
+      if (user && user.pseudoReferralBonus) {
+        return user.pseudoReferralBonus;
+      }
+      // If we get to this, the subscriptions haven't arrived yet.
+      var noBonus = {grains: 0, storage: 0};
+      return noBonus;
+    }
+    if (Meteor.isServer) {
+      console.log('zomg');
+      var x = calculateReferralBonus(user);
+      console.log(JSON.stringify(x));
+      return x;
     }
   },
 

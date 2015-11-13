@@ -361,6 +361,10 @@ vagrant-spk pack ~/projects/package.spk
 This will take a few moments, and once it is done, there will be a
 file in `~/projects/package.spk` that contains the full app.
 
+Note
+
+Packaging your data requires running the `vagrant-spk dev` command first. `vagrant-spk pack` only copies the output from the dev command into the package. This might be an oversight when applying minor changes without testing on your local sandstorm instance.
+
 You can see how large it is by running the following command:
 
 ```bash

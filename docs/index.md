@@ -10,9 +10,8 @@ install apps on your phone. Sandstorm handles login & access control,
 and can run any web app that runs on Linux, though some apps may need
 changes to work within the Sandstorm sandbox.
 
-Sandstorm is in the very early stages of development. We want
-developers to start playing with it, but please don't rely on it for
-mission-critical data or security yet.
+Sandstorm is very new and a lot of features have yet to be developed.
+But, many people are already using it for real work every day.
 
 ## Choose your adventure
 

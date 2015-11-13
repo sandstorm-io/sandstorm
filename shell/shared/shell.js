@@ -616,10 +616,6 @@ if (Meteor.isClient) {
   };
 
   Template.root.helpers({
-    storageUsage: function() {
-      return Meteor.userId() ? prettySize(Meteor.user().storageUsage || 0) : undefined;
-    },
-
     storageQuota: function() {
       var plan = globalDb.getMyPlan();
       return plan ? prettySize(plan.storage) : undefined;

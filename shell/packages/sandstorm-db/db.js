@@ -619,7 +619,7 @@ isUserOverQuota = function (user) {
     if (count >= plan.grains) return "outOfGrains";
   }
 
-  return quota && user.storageUsage && user.storageUsage >= quota.storage && "outOfStorage";
+  return plan && user.storageUsage && user.storageUsage >= plan.storage && "outOfStorage";
 }
 
 isUserExcessivelyOverQuota = function (user) {
@@ -630,16 +630,18 @@ isUserExcessivelyOverQuota = function (user) {
 
   if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
 
-  console.log("YOW");
-  var quota = getUserQuota(user);
-  console.log("getUserQuota", "of", user, "is", quota);
+  var plan = Plans.findOne(user.plan || "free");
+  /*
+    var quota = getUserQuota(user);
+    console.log("getUserQuota", "of", user, "is", quota);
+  */
 
-  if (quota.grains < Infinity) {
-    var count = Grains.find({userId: user._id}, {fields: {}, limit: quota.grains * 2}).count();
-    if (count >= quota.grains * 2) return "outOfGrains";
+  if (plan.grains < Infinity) {
+    var count = Grains.find({userId: user._id}, {fields: {}, limit: plan.grains * 2}).count();
+    if (count >= plan.grains * 2) return "outOfGrains";
   }
 
-  return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
+  return plan && user.storageUsage && user.storageUsage >= plan.storage * 1.2 && "outOfStorage";
 }
 
 isAdmin = function() {
@@ -884,9 +886,8 @@ _.extend(SandstormDb.prototype, {
   },
 
   getMyPlan: function () {
-    // TODO(cleanup): Fix name of this to be getMyQuota().
     var user = Meteor.user();
-    return user && getUserQuota(user);
+    return user && Plans.findOne(user.plan || "free");
   },
 
   getMyReferralBonus: function(user) {

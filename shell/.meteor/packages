@@ -12,6 +12,7 @@ sandstorm-accounts-packages
 sandstorm-email
 accounts-email-token
 email
+accounts-identity
 reload
 simplesmtp
 bignum
@@ -23,7 +24,6 @@ reactive-var
 sandstorm-autoupdate-apps
 sandstorm-db
 sandstorm-backend
-sandstorm-accounts-merge
 sandstorm-identicons
 sandstorm-permissions
 sandstorm-ui-topbar

@@ -205,7 +205,7 @@ module.exports["Test roleless sharing"] = function (browser) {
   browser
   // Upload app as 1st user
     .loginDevAccount()
-    .execute(function () { return Meteor.user().identities[0].service.dev.name; }, [], function(result) {
+    .execute(function () { return SandstormDb.getUserIdentities(Meteor.user())[0].profile.intrinsicName; }, [], function(result) {
       firstUserName = result.value;
     })
     .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
@@ -228,12 +228,12 @@ module.exports["Test roleless sharing"] = function (browser) {
     .getText('#share-token-text', function(response) {
       browser
         .loginDevAccount()
-        .execute(function () { return Meteor.user().identities[0].service.dev.name; }, [], function(result) {
+        .execute(function () { return SandstormDb.getUserIdentities(Meteor.user())[0].profile.intrinsicName; }, [], function(result) {
           secondUserName = result.value;
         })
         .url(response.value)
-        .waitForElementVisible(".redeem-token-button", short_wait)
-        .click(".redeem-token-button")
+        .waitForElementVisible("button.pick-identity", short_wait)
+        .click("button.pick-identity")
         .waitForElementVisible('#grainTitle', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .frame('grain-frame')
@@ -251,8 +251,8 @@ module.exports["Test roleless sharing"] = function (browser) {
           browser
             .loginDevAccount()
             .url(response.value)
-            .waitForElementVisible(".redeem-token-button", short_wait)
-            .click(".redeem-token-button")
+            .waitForElementVisible("button.pick-identity", short_wait)
+            .click("button.pick-identity")
             .waitForElementVisible('#grainTitle', medium_wait)
             .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
             .frame('grain-frame')
@@ -268,6 +268,8 @@ module.exports["Test roleless sharing"] = function (browser) {
 
             .loginDevAccount(firstUserName)
             .url(response.value)
+            .waitForElementVisible("button.pick-identity", short_wait)
+            .click("button.pick-identity")
             .waitForElementVisible('#grainTitle', medium_wait)
             .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
             .click('.topbar .share > .show-popup')
@@ -308,8 +310,8 @@ module.exports["Test role sharing"] = function (browser) {
       browser
         .loginDevAccount()
         .url(response.value)
-        .waitForElementVisible(".redeem-token-button", short_wait)
-        .click(".redeem-token-button")
+        .waitForElementVisible("button.pick-identity", short_wait)
+        .click("button.pick-identity")
         .waitForElementVisible('#grainTitle', medium_wait)
         .assert.containsText('#grainTitle', expectedEtherpadGrainTitle)
         .frame('grain-frame')
@@ -327,8 +329,8 @@ module.exports["Test role sharing"] = function (browser) {
           browser
             .loginDevAccount()
             .url(response.value)
-            .waitForElementVisible(".redeem-token-button", short_wait)
-            .click(".redeem-token-button")
+            .waitForElementVisible("button.pick-identity", short_wait)
+            .click("button.pick-identity")
             .waitForElementVisible('#grainTitle', medium_wait)
             .assert.containsText('#grainTitle', expectedEtherpadGrainTitle)
             .frame('grain-frame')
@@ -382,8 +384,8 @@ module.exports["Test grain incognito interstitial"] = function (browser) {
         // Try redeeming as current user
         // TODO(someday): pick a better app that shows off the different userid/username
         .url(response.value)
-        .waitForElementVisible(".redeem-token-button", short_wait)
-        .click(".redeem-token-button")
+        .waitForElementVisible("button.pick-identity", short_wait)
+        .click("button.pick-identity")
         .waitForElementVisible('#grainTitle', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
         .frame('grain-frame')

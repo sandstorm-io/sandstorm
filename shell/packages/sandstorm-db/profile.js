@@ -21,18 +21,31 @@ if (Meteor.isServer) {
   Meteor.publish("accountIdentities", function () {
     if (!this.userId) return [];
 
-    return [
-      Meteor.users.find(this.userId,
-        {fields: {
-          "identities.id":1,
-          "identities.service":1,
-          "identities.profile":1,
-          "identities.verifiedEmail":1,
-          "identities.unverifiedEmail":1,
-          "identities.main":1,
-          "identities.noLogin":1,
+    // The bad news is that we need to do a join here. The good news is that linking a new
+    // identity is a relatively uncommon action, and the client initiating the action gets
+    // automatically resubscribed during the authentication handshake. Unlinking an identity
+    // is less of a problem, as it just means that subscribers will have more information than
+    // they need.
+    //
+    // TODO(someday): Implement a fully reactive join for this.
+    var user = Meteor.users.findOne(this.userId);
+    var linkedIdentities = user.loginIdentities &&
+        user.loginIdentities.concat(user.nonloginIdentities);
+    var linkedIdentityIds =
+      linkedIdentities ? _.pluck(linkedIdentities, "id") : [];
 
-          "expires":1,
+    return [
+      Meteor.users.find({$or: [{_id: this.userId}, {_id: {$in: linkedIdentityIds}}]},
+        {fields: {
+          "profile":1,
+          "verifiedEmail":1,
+          "unverifiedEmail":1,
+          "loginIdentities": 1,
+          "nonloginIdentities": 1,
+          "expires": 1,
+          "primaryEmail": 1,
+
+          "services.dev.name":1,
 
           "services.google.id":1,
           "services.google.email":1,
@@ -44,6 +57,8 @@ if (Meteor.isServer) {
           "services.github.id":1,
           "services.github.email":1,
           "services.github.username":1,
+
+          "services.email.email":1,
         }})
     ];
   });
@@ -121,49 +136,89 @@ function emailToHandle(email) {
   return filterHandle(base);
 }
 
-function fillInDefaults(identity, user) {
-  if (identity.service.github) {
-    identity.profile.name = identity.profile.name || user.services.github.username || "Name Unknown";
-    identity.profile.handle = identity.profile.handle ||
-        filterHandle(user.services.github.username) ||
-        filterHandle(identity.profile.name) || "unknown";
-  } else if (identity.service.google) {
-    identity.profile.name = identity.profile.name || user.services.google.name || "Name Unknown";
-    identity.profile.handle = identity.profile.handle || emailToHandle(user.services.google.email) ||
-        filterHandle(identity.profile.name) || "unknown";
-    identity.profile.pronoun = identity.profile.pronoun || GENDERS[user.services.google.gender] ||
-        "neutral";
-  } else if (identity.service.email) {
-    identity.profile.name = identity.profile.name || identity.verifiedEmail.split("@")[0];
-    identity.profile.handle = identity.profile.handle || emailToHandle(identity.verifiedEmail);
-  } else if (identity.service.dev) {
-    var lowerCaseName = identity.service.dev.name.split(" ")[0].toLowerCase();
-    identity.profile.name = identity.profile.name || identity.service.dev.name;
-    identity.profile.handle = identity.profile.handle || filterHandle(lowerCaseName);
-    identity.profile.pronoun = identity.profile.pronoun ||
+function fillInDefaults(user) {
+  var profile = user.profile;
+  if (profile.service === "github") {
+    profile.intrinsicName = user.services.github.username;
+    profile.name = profile.name || user.services.github.username || "Name Unknown";
+    profile.handle = profile.handle || filterHandle(user.services.github.username) ||
+        filterHandle(profile.name);
+  } else if (profile.service === "google") {
+    profile.intrinsicName = user.services.google.name;
+    user.privateIntrinsicName = user.services.google.email;
+    profile.name = profile.name || user.services.google.name || "Name Unknown";
+    profile.handle = profile.handle || emailToHandle(user.services.google.email) ||
+        filterHandle(profile.name);
+    profile.pronoun = profile.pronoun || GENDERS[user.services.google.gender] || "neutral";
+  } else if (profile.service === "email") {
+    var email = user.services.email.email
+    profile.intrinsicName = profile.intrinsicName || email;
+    profile.name = profile.name || email.split("@")[0];
+    profile.handle = profile.handle || emailToHandle(email);
+  } else if (profile.service === "dev") {
+    profile.intrinsicName = profile.intrinsicName || user.services.dev.name;
+    var lowerCaseName = user.services.dev.name.split(" ")[0].toLowerCase();
+    profile.name = profile.name || user.services.dev.name;
+    profile.handle = profile.handle || filterHandle(lowerCaseName);
+    profile.pronoun = profile.pronoun ||
         (_.contains(["alice", "carol", "eve"], lowerCaseName) ? "female" :
          _.contains(["bob", "dave"], lowerCaseName) ? "male" : "neutral");
-  } else if (identity.service.demo) {
-    identity.profile.name = identity.profile.name || "Demo User";
-    identity.profile.handle = identity.profile.handle || "demo";
+  } else if (profile.service === "demo") {
+    profile.name = profile.name || "Demo User";
+    profile.handle = profile.handle || "demo";
   } else {
-    throw new Error("unrecognized identity service: ", identity.service);
+    throw new Error("unrecognized identity service: ", profile.service);
   }
 
-  identity.pronoun = identity.pronoun || "netural";
+  profile.pronoun = profile.pronoun || "neutral";
+}
+
+SandstormDb.fillInIdenticon = function(user) {
+  var staticHost = httpProtocol + "//" + makeWildcardHost("static");
+  user.profile.pictureUrl = staticAssetUrl(user.profile.picture, staticHost) ||
+    makeIdenticon(user._id);
 }
 
 SandstormDb.getUserIdentities = function (user) {
-  // Given a user object, return all of the user's identities.
+  // Given a user object, return an array containing all of the user's identities. Always returns
+  // the user's most recently added login identity first.
   //
   // On the client, must be subscribed "accountIdentities" for the user.
-  if (!user || !user.identities) return [];
+  //
+  // TODO(cleanup): This actually does need to query the database to fetch profile information
+  //   for linked identities, so it probably makes more sense for it to be a non-static method
+  //   on SandstormDb.
+  if (!user) return [];
 
-  var staticHost = httpProtocol + "//" + makeWildcardHost("static");
-  return user.identities.map(function(identity) {
-    identity.profile.pictureUrl = staticAssetUrl(identity.profile.picture, staticHost) ||
-        makeIdenticon(identity.id);
-    fillInDefaults(identity, user);
+  var rawIdentities = [];
+  if (user.profile) {
+    rawIdentities.push(user);
+  } else if (user.loginIdentities) {
+    // We call reverse() because we want the most recently added identities to appear first.
+    var loginIdentities =
+        user.loginIdentities.map(function (i) { return _.extend(i, {login: true}); }).reverse();
+    var nonloginIdentities =
+        user.nonloginIdentities.map(function (i) { return _.extend(i, {login: false}); }).reverse();
+    var linkedIdentities = loginIdentities.concat(nonloginIdentities);
+    var linkedIdentityIds = linkedIdentities.map(function (i) { return i.id; });
+    var linkedUsersMap = {};
+    Meteor.users.find({_id: {$in: linkedIdentityIds}}).forEach(function (user) {
+      linkedUsersMap[user._id] = user;
+    });
+    linkedIdentities.forEach(function (linkedIdentity) {
+      if (linkedUsersMap[linkedIdentity.id]) {
+        rawIdentities.push(_.extend({login: linkedIdentity.login},
+                                    linkedUsersMap[linkedIdentity.id]));
+      }
+    });
+  } else {
+    return [];
+  }
+
+  return rawIdentities.map(function(identity) {
+    SandstormDb.fillInIdenticon(identity);
+      makeIdenticon(identity._id);
+    fillInDefaults(identity);
     return identity;
   });
 }
@@ -174,27 +229,46 @@ SandstormDb.getUserEmails = function (user) {
   //     `{email: String, verified: Bool, primary: Optional(Bool)}`
   //
   // At most one entry in the result has `primary = true`.
+  //
+  // TODO(cleanup): This actually does need to query the database to fetch profile information
+  //   for linked identities, so it probably makes more sense for it to be a non-static method
+  //   on SandstormDb.
 
-  var result = [];
-  if (!user || !user.identities) return result;
+  var identities = SandstormDb.getUserIdentities(user);
+  result = [];
 
-  user.identities.forEach(function (identity) {
-    if (identity.verifiedEmail) {
-      result.push({email: identity.verifiedEmail, verified: true});
+  identities.forEach(function (identity) {
+    if (identity.services) {
+      if (identity.services.google && identity.services.google.email &&
+          identity.services.google.verified_email) {
+        result.push({email: identity.services.google.email, verified: true});
+      } else if (identity.services.email) {
+        result.push({email: identity.services.email.email, verified: true});
+      } else if (identity.services.github && identity.services.github.email) {
+        result.push({email: identity.services.github.email, verified: false});
+      }
     }
+
     if (identity.unverifiedEmail) {
       result.push({email: identity.unverifiedEmail, verified: false});
     }
   });
 
-  // TODO(soon): Allow the user to select a verified email as their primary email.
+  var foundPrimary = false;
   for (var ii = 0; ii < result.length; ++ii) {
-    if (result[ii].verified) {
+    if (result[ii].verified && user.primaryEmail && result[ii].email === user.primaryEmail) {
       result[ii].primary = true;
+      foundPrimary = true;
       break;
-    } else if (ii == result.length - 1) {
-      // No verified addresses. Mark the first address as primary.
-      result[0].primary = true;
+    }
+  }
+  if (!foundPrimary) {
+    // Fall back to the first verified email, if there is one.
+    for (var ii = 0; ii < result.length; ++ii) {
+      if (result[ii].verified) {
+        result[ii].primary = true;
+        break;
+      }
     }
   }
   return result;

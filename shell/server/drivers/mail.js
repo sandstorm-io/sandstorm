@@ -147,9 +147,12 @@ Meteor.startup(function() {
               var emptyParams = Capnp.serialize(EmailRpc.EmailAddress, {});
 
               // Create a new session of type HackEmailSession. This is a short-term hack until
-              // persistent capabilities and the Powerbox are implemented. A session of type
-              // HackEmailSession expects a HackSessionContext and the session context and does not
-              // take any session parameters.
+              // persistent capabilities and the Powerbox are implemented. We need to pass along a
+              // HackSessionContext because old versions of sandstorm-http-bridge always use
+              // the context of the most recent session; if an old RoundCube grain has a
+              // WebSession open, receives an email, and then tries to send an email, the request
+              // will go out on the SessionContext associated with the HackEmailSession that
+              // delivered the email.
               var session = uiView
                   .newSession({}, makeHackSessionContext(grainId),
                               "0xc3b5ced7344b04a6", emptyParams)
@@ -266,9 +269,11 @@ hackSendEmail = function (session, email) {
         });
       });
     }
+    var grain = Grains.findOne(session.grainId);
+    if (!grain) throw new Error("Grain does not exist.");
 
     var user = Meteor.users.findAndModify({
-      query: {"identities.id": session.identityId},
+      query: {_id: grain.userId},
       update: {$inc: {dailySentMailCount: 1}},
       fields: {dailySentMailCount: 1}
     });

@@ -155,10 +155,8 @@ HackSessionContextImpl.prototype._getPublicId = function () {
 
   while (!this.publicId) {
     // We haven't looked up the public ID yet.
-    var grain = Grains.findOne(this.grainId, {fields: {publicId: 1, identityId: 1}});
+    var grain = Grains.findOne(this.grainId, {fields: {publicId: 1}});
     if (!grain) throw new Error("Grain does not exist.");
-
-    this.identityId = grain.identityId;
 
     if (grain.publicId) {
       this.publicId = grain.publicId;

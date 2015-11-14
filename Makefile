@@ -88,6 +88,7 @@ IMAGES= \
     shell/public/notification-m.svg \
     shell/public/open-grain-m.svg \
     shell/public/people-m.svg \
+    shell/public/pronoun-m.svg \
     shell/public/restart-m.svg \
     shell/public/settings-m.svg \
     shell/public/share-m.svg \

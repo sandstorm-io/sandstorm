@@ -64,9 +64,6 @@ globalBackend = new SandstormBackend(globalDb, sandstormBackend);
 Meteor.onConnection(function (connection) {
     connection.sandstormBackend = globalBackend;
 });
-if (!Meteor.settings.replicaNumber) {
-  SandstormAccountsMerge.registerObservers(globalDb, globalBackend);
-}
 
 // We've observed a problem in production where occasionally the front-end stops talking to the
 // back-end. It happens very rarely -- like once a month -- and we've been unable to reproduce it
@@ -259,24 +256,9 @@ Meteor.methods({
     if (this.userId && !incognito) {
       if (identityId != apiToken.identityId && identityId != grain.identityId &&
           !ApiTokens.findOne({'owner.user.identityId': identityId, parentToken: hashedToken })) {
-        // The current user is neither the sharer nor the grain owner,
-        // and the current user has not already redeemed this token.
-        var now = new Date();
-        var grainInfo = { appTitle: appTitle };
-        if (appIcon) { grainInfo.icon = appIcon; }
-        if (appId) { grainInfo.appId = appId; }
-        var owner = {user: {identityId: identityId, title: title, lastUsed: now,
-                            denormalizedGrainMetadata: grainInfo}};
-        var newToken = {
-          grainId: apiToken.grainId,
-          identityId: apiToken.identityId,
-          parentToken: hashedToken,
-          roleAssignment: {allAccess: null},
-          petname: apiToken.petname,
-          created: new Date(),
-          owner: owner,
-        };
-        ApiTokens.insert(newToken);
+        var owner = {user: {identityId: identityId, title: title}};
+        SandstormPermissions.createNewApiToken(globalDb, {rawParentToken: token}, apiToken.grainId,
+                                               apiToken.petname, {allAccess: null}, owner);
       }
       return {redirectToGrain: apiToken.grainId};
     } else {
@@ -834,7 +816,7 @@ function Proxy(grainId, ownerId, sessionId, hostId, identityId, isApi, superviso
     this.userInfo = {
       displayName: {defaultText: identity.profile.name},
       preferredHandle: identity.profile.handle,
-      identityId: new Buffer(identity.id, "hex")
+      identityId: new Buffer(identity._id, "hex")
     };
     if (identity.profile.pictureUrl) this.userInfo.pictureUrl = identity.profile.pictureUrl;
     if (identity.profile.pronoun) this.userInfo.pronouns = identity.profile.pronoun;

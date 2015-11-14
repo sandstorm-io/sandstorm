@@ -32,9 +32,10 @@ SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, stati
   var tokensForGrain = _.groupBy(apiTokens, 'grainId');
   var grainIdsForApiTokens = Object.keys(tokensForGrain);
   return grainIdsForApiTokens.map(function(grainId) {
-    // It's theoretically possible to have multiple API tokens for the same grain.
-    // Pick one arbitrarily to assign the grain petname from.
-    var token = tokensForGrain[grainId][0];
+    // Pick the most recently used one.
+    var token = _.sortBy(tokensForGrain[grainId], function (t) {
+      if (t.owner && t.owner.user && t.owner.user.lastUsed) { return -t.owner.user.lastUsed }
+      else {return 0; } })[0];
     var ownerData = token.owner.user;
     var grainInfo = ownerData.denormalizedGrainMetadata;
     var appTitle = (grainInfo && grainInfo.appTitle && grainInfo.appTitle.defaultText) || "";

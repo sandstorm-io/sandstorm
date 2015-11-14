@@ -312,6 +312,50 @@ function repairEmailIdentityIds() {
   });
 }
 
+function splitAccountUsersAndIdentityUsers() {
+  Meteor.users.find({"identities": {$exists: true}}).forEach(function (user) {
+    if (user.identities.length != 1) {
+      throw new Error("User does not have exactly one identity: ", user);
+    }
+    var identity = user.identities[0];
+    var identityUser = _.pick(user, "createdAt", "lastActive", "expires")
+    identityUser._id = identity.id;
+    identityUser.profile = identity.profile;
+    _.extend(identityUser, _.pick(identity, "unverifiedEmail"));
+    identityUser.profile.service = Object.keys(identity.service)[0];
+
+    // Updating this user needs to be a two step process because the `services` field typically
+    // contains subfields that are constrained to be unique by Mongo indices.
+    identityUser.stagedServices = _.omit(user.services, "resume");
+    if (identity.service.dev) {
+      identityUser.stagedServices.dev = identity.service.dev;
+    } else if (identity.service.email) {
+      identityUser.stagedServices.email = identity.service.email;
+    }
+
+    var accountUser = _.pick(user, "_id", "createdAt", "lastActive", "expires",
+                             "isAdmin", "signupKey", "signupNote", "signupEmail",
+                             "plan", "storageUsage", "isAppDemoUser", "appDemoId",
+                             "payments", "dailySentMailCount", "hasCompletedSignup");
+    accountUser.loginIdentities = [_.pick(identity, "id")];
+    accountUser.nonloginIdentities = [];
+    if (user.services.resume) {
+      accountUser.services = {resume: user.services.resume};
+    }
+
+    ApiTokens.update({identityId: identityUser._id}, {$set: {accountId: user._id}},
+                     {multi: true});
+
+    Meteor.users.upsert({_id: identityUser._id}, identityUser);
+    Meteor.users.update({_id: user._id}, accountUser);
+  });
+
+  Meteor.users.find({"stagedServices": {$exists: true}}).forEach(function (identity) {
+    Meteor.users.update({_id: identity._id}, {$unset: {stagedServices: 1},
+                                              $set: {services: identity.stagedServices}});
+  });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -330,6 +374,7 @@ var MIGRATIONS = [
   appUpdateSettings,
   moveDevAndEmailLoginDataIntoIdentities,
   repairEmailIdentityIds,
+  splitAccountUsersAndIdentityUsers,
 ];
 
 function migrateToLatest() {

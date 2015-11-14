@@ -69,11 +69,19 @@ var ValidHandle = Match.Where(function (handle) {
 });
 
 Accounts.onCreateUser(function (options, user) {
-  // The first non-dev user to sign in should be automatically upgraded to admin.
-  if (Meteor.users.find({"identities.service.dev": {$exists: 0}}).count() === 0 &&
-      !(options && options.service && options.service.dev)) {
-    user.isAdmin = true;
-    user.signupKey = "admin";
+  if (user.loginIdentities) {
+    // it's an account
+    check(user, {_id: String,
+                 createdAt: Date,
+                 isAdmin: Match.Optional(Boolean),
+                 hasCompletedSignup: Match.Optional(Boolean),
+                 signupKey: Match.Optional(String),
+                 signupNote: Match.Optional(String),
+                 signupEmail: Match.Optional(String),
+                 expires: Match.Optional(Date),
+                 loginIdentities: [{id: String}],
+                 nonloginIdentities: [{id: String}]});
+    return user;
   }
 
   // Check profile.
@@ -88,67 +96,49 @@ Accounts.onCreateUser(function (options, user) {
 
   check(options.unverifiedEmail, Match.Optional(String));
 
-  var identity = _.pick(options, "unverifiedEmail");
-  identity.profile = _.pick(options.profile || {}, "name", "handle", "pronouns", "picture");
-  identity.main = true;
+  if (options.unverifiedEmail) {
+    user.unverifiedEmail = options.unverifiedEmail;
+  }
+  user.profile = _.pick(options.profile || {}, "name", "handle", "pronouns");
 
   // Try downloading avatar.
   var url = userPictureUrl(user);
   if (url) {
     var assetId = fetchPicture(url);
     if (assetId) {
-      identity.profile.picture = assetId;
+      user.profile.picture = assetId;
     }
   }
 
   var serviceUserId;
-  if (options.service && options.service.dev) {
-    check(options.service, {dev: {name: String}});
-    identity.service = options.service;
-    serviceUserId = options.service.dev.name;
+  if (user.services && user.services.dev) {
+    check(user.services.dev, {name: String, isAdmin: Boolean, hasCompletedSignup: Boolean});
+    serviceUserId = user.services.dev.name;
+    user.profile.service = "dev";
   } else if ("expires" in user) {
-    identity.service = {demo: {}};
     serviceUserId = user._id;
-  } else if (options.service && options.service.email) {
-    check(options.service, {email:
-                            {email: String,
-                             tokens: [{digest: String, algorithm: String, createdAt: Date}]}});
-    identity.service = options.service;
-    identity.verifiedEmail = options.service.email.email;
-    serviceUserId = identity.verifiedEmail;
+    user.profile.service = "demo";
+  } else if (user.services && user.services.email) {
+    check(user.services.email,
+          {email: String,
+           tokens: [{digest: String, algorithm: String, createdAt: Date}]});
+    serviceUserId = user.services.email.email;
+    user.profile.service = "email";
   } else if (user.services && "google" in user.services) {
-    identity.service = {google: {}};
-    if (user.services.google.email && user.services.google.verified_email) {
-      identity.verifiedEmail = user.services.google.email;
-    }
     serviceUserId = user.services.google.id;
+    user.profile.service = "google";
   } else if (user.services && "github" in user.services) {
-    identity.service = {github: {}};
-    if (user.services.github.email) {
-      identity.unverifiedEmail = user.services.github.email;
-    }
     serviceUserId = user.services.github.id;
+    user.profile.service = "github";
   }
-  identity.id = Crypto.createHash("sha256")
-      .update(Object.keys(identity.service)[0] + ":" + serviceUserId).digest("hex");
+  user._id = Crypto.createHash("sha256")
+    .update(user.profile.service + ":" + serviceUserId).digest("hex");
 
-  user.identities = [identity];
   return user;
 });
 
-Accounts.validateLoginAttempt(function(info) {
-  if (info.allowed) {
-    if (info.type === "resume") {
-      return true;
-    } else {
-      var identities = info.user.identities;
-      for (var ii = 0; ii < identities.length; ++ii) {
-        if (info.type in identities[ii].service) {
-          return !identities[ii].noLogin;
-        }
-      }
-    }
-  }
-});
-
+// TODO delete this obsolete index.
 Meteor.users._ensureIndex("identities.id", {unique: 1, sparse: 1});
+
+Meteor.users._ensureIndex("loginIdentities.id", {unique: 1, sparse: 1});
+Meteor.users._ensureIndex("nonloginIdentities.id", {sparse: 1});

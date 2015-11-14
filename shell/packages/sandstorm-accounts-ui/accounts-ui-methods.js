@@ -23,10 +23,11 @@ var ValidHandle = Match.Where(function (handle) {
 });
 
 Meteor.methods({
-  updateProfile: function (profile) {
+  updateProfile: function (identityId, profile) {
     // TODO(cleanup): This check also appears in sandstorm-db/users.js.
+    check(identityId, String);
+
     check(profile, {
-      id: String,
       name: String,
       handle: ValidHandle,
       pronoun: Match.OneOf("male", "female", "neutral", "robot"),
@@ -37,18 +38,24 @@ Meteor.methods({
       throw new Meteor.Error(403, "not logged in");
     }
 
-    var newValues = {
-      "identities.$.profile.name": profile.name,
-      "identities.$.profile.handle": profile.handle,
-      "identities.$.profile.pronoun": profile.pronoun,
-      "hasCompletedSignup": true
-    };
+    var userToUpdate = Meteor.users.findOne({_id: identityId});
 
-    if (profile.unverifiedEmail) {
-      newValues["identities.$.unverifiedEmail"] = profile.unverifiedEmail
+    if (!this.isSimulation &&
+        !this.connection.sandstormDb.userHasIdentity(this.userId, identityId)) {
+      throw new Meteor.Error(403, "identity is not linked to current user: "+ identityId);
     }
 
-    Meteor.users.update({_id: this.userId, "identities.id": profile.id}, {$set: newValues});
+    var newValues = {
+      "profile.name": profile.name,
+      "profile.handle": profile.handle,
+      "profile.pronoun": profile.pronoun,
+    };
+
+    Meteor.users.update({_id: userToUpdate._id}, {$set: newValues});
+
+    if (!Meteor.user().hasCompletedSignup) {
+      Meteor.users.update({_id: this.userId}, {$set: {hasCompletedSignup: true}});
+    }
   },
 
   testFirstSignup: function (profile) {
@@ -57,7 +64,7 @@ Meteor.methods({
     }
 
     Meteor.users.update(this.userId, {$unset: {hasCompletedSignup: ""}});
-  }
+  },
 });
 
 if (Meteor.isClient) {
@@ -84,6 +91,19 @@ if (Meteor.isServer) {
     cancelUploadProfilePicture: function (id) {
       check(id, String);
       this.connection.sandstormDb.fulfillAssetUpload(id);
+    },
+
+    setPrimaryEmail: function(email) {
+      check(email, String);
+      if (!this.userId) {
+        throw new Meteor.Error(403, "Not logged in.");
+      }
+      var emails = SandstormDb.getUserEmails(Meteor.user());
+      if (!_.findWhere(emails, {email: email, verified: true})) {
+        throw new Meteor.Error(403, "Not a verified email of the current user: " + email);
+      }
+
+      Meteor.users.update({_id: this.userId}, {$set: {primaryEmail: email}});
     },
   });
 }

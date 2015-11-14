@@ -36,20 +36,18 @@ if (allowDevAccounts) {
         profile.name = profile.name || displayName;
         var hasCompletedSignup = !!unverifiedEmail && !!profile.pronoun && !!profile.handle;
 
-        var identityId = Crypto.createHash("sha256")
-            .update("dev" + ":" + displayName).digest("hex");
-        var user = Meteor.users.findOne({"identities.id": identityId});
+        var user = Meteor.users.findOne({"services.dev.name": displayName});
         var userId;
 
         if (user) {
           userId = user._id;
         } else {
           userId = Accounts.insertUserDoc({ profile: profile,
-                                            service: {dev: {name: displayName}},
                                             unverifiedEmail: unverifiedEmail},
-                                          { signupKey: "devAccounts",
-                                            isAdmin: isAdmin,
-                                            hasCompletedSignup: hasCompletedSignup });
+                                          { services:
+                                              {dev: {name: displayName,
+                                                     isAdmin: isAdmin,
+                                                     hasCompletedSignup: hasCompletedSignup}}});
         }
         // Log them in on this connection.
         return Accounts._loginMethod(this, "createDevAccount", arguments,

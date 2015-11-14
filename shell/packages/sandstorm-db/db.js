@@ -28,48 +28,55 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 
 // Users = new Mongo.Collection("users");
 // The users collection is special and can be accessed through `Meteor.users`.
-// See https://docs.meteor.com/#/full/meteor_users. Entries in the users collection correspond to
-// accounts. Each represents a capability store belonging to a human.
+// See https://docs.meteor.com/#/full/meteor_users.
 //
-// Note that accounts are not the same thing as identities. An account may have multiple identities
-// attached to it. Identities provide a way to authenticate the user and are also used to present
-// globally unique and stable user indentifiers to grains via `Grain.UserInfo.identityId`.
+// There are two distinct types of entries in the users collection: identities and accounts. An
+// identity contains personal profile information and typically includes some intrinsic method for
+// authenticating as the owner of that information.
 //
-// Each entry in this collection contains:
-//   _id: Random string. What we're talking about when we say "User ID" or "Account ID".
+// An account is an owner of app actions, grains, contacts, notifications, and payment info.
+// Each account can have multiple identities linked to it. To log in as an account you must first
+// authenticate as one of its linked identities.
+//
+// Every user contains the following fields:
+//   _id: Unique string ID. For accounts, this is random. For identities, this is the globally
+//        stable SHA-256 ID of this identity, hex-encoded.
 //   createdAt: Date when this entry was added to the collection.
 //   lastActive: Date of the user's most recent interaction with this Sandstorm server.
-//   profile: Obsolete now that we allow more than one identity per account.
-//   identities: Array of identity objects, each of which may include the following fields.
-//       id: The globally-stable SHA-256 ID of this identity. This field must be present.
-//       service: Object specifying how to authenticate as this identity. The object contains a
-//                single key, representing the name of the service, corresponding to the `type`
-//                field in `Accounts.validateLoginAttempt()`. The value associated with the key
-//                is an object containing provider-specific data, e.g. for the `emailToken`
-//                service it contains the active tokens.
-//       unverifiedEmail: Email address specified by the user.
-//       verifiedEmail: Only provided by some services. Cannot be directly edited by the user.
-//       main: True if this is the user's main identity.
-//       noLogin: True if the user does not trust this identity for account authentication.
-//       profile: Object containing the data that will be shared with users grains that come into
-//                contact with this identity. May include the following fields.
-//           name: String containing the display name of the identity. Default: first part of email.
-//           handle: String containing the identity's preferred handle. Default: first part of email.
-//           picture: _id into the StaticAssets table for the identity's picture. Default: identicon.
-//           pronoun: One of "male", "female", "neutral", or "robot". Default: neutral.
-//   services: Object containing login and identity data used by Meteor authentication services.
-//   mergedUsers: Array of User _id strings, representing the accounts that have been merged into this
-//                one. Those accounts remain in the Users collection, stripped of their `identities`
-//                and `services` fields.
-//   isAdmin: Boolean indicating whether this user is allowed to access the Sandstorm admin panel.
+//   services: Object containing login data used by Meteor authentication services.
+//   expires: Date when this user should be deleted. Only present for demo users.
+//   upgradedFromDemo: If present, the date when this user was upgraded from being a demo user.
+//
+// Identity users additionally contain the following fields:
+//   profile: Object containing the data that will be shared with users and grains that come into
+//            contact with this identity. Includes the following fields:
+//       service: String containing the name of this identity's authentication method.
+//       name: String containing the chosen display name of the identity.
+//       handle: String containing the identity's preferred handle.
+//       picture: _id into the StaticAssets table for the identity's picture. If not present,
+//                an identicon will be used.
+//       pronoun: One of "male", "female", "neutral", or "robot".
+//   unverifiedEmail: If present, a string containing an email address specified by the user.
+//
+// Account users additionally contain the following fields:
+//   loginIdentities: Array of identity objects, each of which may include the following fields.
+//       id: The globally-stable SHA-256 ID of this identity, hex-encoded.
+//   nonloginIdentities: Array of identity objects, of the same form as `loginIdentities`. We use
+//                       a separate array here so that we can use a Mongo index to enforce the
+//                       invariant that an identity only be a login identity for a single account.
+//   primaryEmail: String containing this account's primary email address. Must be a verified adress
+//                 of one of this account's linked identities. Call SandstormDb.getUserEmails()
+//                 to do this checking automatically.
+//   isAdmin: Boolean indicating whether this account is allowed to access the Sandstorm admin panel.
 //   signupKey: If this is an invited user, then this field contains their signup key.
 //   signupNote: If the user was invited through a link, then this field contains the note that the
 //               inviter admin attached to the key.
 //   signupEmail: If the user was invited by email, then this field contains the email address that
 //                the invite was sent to.
+//   hasCompletedSignup: True if this account has confirmed its profile and agreed to this server's
+//                       terms of service.
 //   plan: _id of an entry in the Plans table which determines the user's qutoa.
 //   storageUsage: Number of bytes this user is currently storing.
-//   expires: Date when this user's account should be deleted. Only present for demo users.
 //   isAppDemoUser: True if this is a demo user who arrived via an /appdemo/ link.
 //   appDemoId: If this is an appdemo user (see above), the app ID they started out demoing.
 //   payments: Object defined by payments module, if loaded.
@@ -146,8 +153,8 @@ Grains = new Mongo.Collection("grains");
 //   appId:  Same as Packages.findOne(packageId).appId; denormalized for searchability.
 //   appVersion:  Same as Packages.findOne(packageId).manifest.appVersion; denormalized for
 //       searchability.
-//   userId: The _id of the user who owns this grain.
-//   identityId: Identity of user who owns this grain.
+//   userId: The _id of the account that owns this grain.
+//   identityId: The identity with which the owning account prefers to open this grain.
 //   title:  Human-readable string title, as chosen by the user.
 //   lastUsed:  Date when the grain was last used by a user.
 //   private: If true, then knowledge of `_id` does not suffice to open this grain.
@@ -281,6 +288,8 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              still apply. For non-UiView capabilities, `identityId` is never present. Note that
 //              this is NOT the identity against which the `requiredPermissions` parameter of
 //              `SandstormApi.restore()` is checked; that would be `owner.grain.introducerIdentity`.
+//   accountId: For tokens where `identityId` is set, the `_id` (in the Users table) of the account
+//              that created the token.
 //   roleAssignment: If this API token represents a UiView, this field contains a JSON-encoded
 //              Grain.ViewSharingLink.RoleAssignment representing the permissions it carries. These
 //              permissions will be intersected with those held by `identityId` when the view is
@@ -762,18 +771,18 @@ _.extend(SandstormDb.prototype, {
 
   getIdentity: function getIdentity (identityId) {
     check(identityId, String);
-    // This would be a prime place to use Mongo's $ operator. Unfortunately, $ is not available
-    // in Minimongo. Maybe this method should have separate server and client implementations?
-    var user = Meteor.users.findOne({"identities.id": identityId});
+    var user = Meteor.users.findOne({_id: identityId});
     if (user) {
-      return _.findWhere(SandstormDb.getUserIdentities(user), {id: identityId});
+      return _.findWhere(SandstormDb.getUserIdentities(user), {_id: identityId});
     }
   },
 
   userHasIdentity: function (userId, identityId) {
     check(userId, String);
     check(identityId, String);
-    return !!Meteor.users.findOne({_id: userId, "identities.id": identityId});
+
+    var user = Meteor.users.findOne(userId);
+    return !!_.findWhere(SandstormDb.getUserIdentities(user), {_id: identityId});
   },
 
   userGrains: function userGrains (userId) {
@@ -793,7 +802,7 @@ _.extend(SandstormDb.prototype, {
   userApiTokens: function userApiTokens (userId) {
     check(userId, Match.OneOf(String, undefined, null));
     identityIds = SandstormDb.getUserIdentities(this.getUser(userId))
-        .map(function (identity) { return identity.id; });
+        .map(function (identity) { return identity._id; });
     return this.collections.apiTokens.find({'owner.user.identityId': {$in: identityIds}});
   },
 

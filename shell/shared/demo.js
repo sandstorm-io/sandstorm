@@ -106,84 +106,6 @@ if (Meteor.isServer) {
             "demo", function () { return { userId: userId }; });
       },
 
-      consumeDemoUser: function (token) {
-        check(token, String);
-        if (!this.userId) throw new Meteor.Error(403, "can't consume demo user when not logged in");
-
-        // Only users who have permission to create grains can consume a demo account.
-        if (!isSignedUp()) return false;
-
-        var hashed = Accounts._hashLoginToken(token);
-        var demoUser = Meteor.users.findOne({
-            expires: {$exists: true}, "services.resume.loginTokens.hashedToken": hashed});
-        var newUserId = this.userId;
-        var newIdentity = _.findWhere(SandstormDb.getUserIdentities(Meteor.user()), {main: true});
-        if (demoUser) {
-          // Replace the demo user's ID with the full user's ID throughout the database.
-          //
-          // TODO(cleanup): Once we officially have account merging, use that.
-
-          // Record the set of grains now.
-          var grains = Grains.find({userId: demoUser._id}).fetch();
-
-          // Update database entries.
-          var userIdsToUpdate = {
-            userActions: ["userId"],
-            grains: ["userId"],
-            contacts: ["ownerId"],
-            notifications: ["userId"],
-          };
-
-          var identityIdsToUpdate = {
-            grains: ["identityId"],
-            contacts: ["identityId"],
-            apiTokens: ["identityId", "owner.user.identityId"],
-          };
-
-          for (var name in userIdsToUpdate) {
-            var collection = globalDb.collections[name];
-            userIdsToUpdate[name].forEach(function (field) {
-              var query = {};
-              query[field] = demoUser._id;
-              var changes = {};
-              changes[field] = newUserId;
-              collection.update(query, {$set: changes}, {multi: true});
-            });
-          }
-
-          for (var name in identityIdsToUpdate) {
-            var collection = globalDb.collections[name];
-            identityIdsToUpdate[name].forEach(function (field) {
-              var query = {};
-              query[field] = demoUser.identities[0].id;
-              var changes = {};
-              changes[field] = newIdentity.id;
-              collection.update(query, {$set: changes}, {multi: true});
-            });
-          }
-
-          // Force all grains to shut down.
-          grains.map(function (grain) {
-            return globalBackend.shutdownGrain(grain._id, demoUser._id, false);
-          }).forEach(function (promise) {
-            waitPromise(promise);
-          });
-
-          // Transfer grain storage to new owner.
-          // Note: We don't parallelize this because it can cause some contention in the Blackrock
-          //   back-end.
-          grains.forEach(function (grain) {
-            return waitPromise(globalBackend.cap().transferGrain(grain.userId, grain._id, newUserId));
-          });
-
-          // We could delete the user here, but it runs some risk that consumeDemoUser() could be
-          // called multiple times concurrently (maybe due to some random page refresh) and the
-          // second call, finding no grains to transfer, could delete the user before the first
-          // call is done transferring. So just let the demo user expire normally...
-        }
-        return true;  // either suceeded or token was not valid (and never will be)
-      },
-
       testExpireDemo: function () {
         if (!isDemoUser()) throw new Meteor.Error(403, "not a demo user");
 
@@ -241,25 +163,6 @@ if (Meteor.isClient && allowDemo) {
     Meteor.call("testExpireDemo");
   }
 
-  Accounts.onLogin(function () {
-    // Note: We often don't have the right subscriptions yet to actually know if we're a demo
-    //   user, so we'll check again on the server side.
-    if (!isDemoUser()) {
-      var demoToken = localStorage.getItem("sandstormDemoLoginToken");
-      if (demoToken) {
-        Meteor.call("consumeDemoUser", demoToken, function (err, result) {
-          if (result) {
-            localStorage.removeItem("sandstormDemoLoginToken");
-
-            // Need to reload if a grain is open because otherwise the user is probably staring at
-            // an "unauthorized" notice or some other error.
-            window.location.reload();
-          }
-        });
-      }
-    }
-  });
-
   Template.demo.events({
     "click button.start": function (event) {
       var displayName = "Demo User";
@@ -268,7 +171,6 @@ if (Meteor.isClient && allowDemo) {
         if (err) {
           window.alert(err);
         } else {
-          localStorage.setItem("sandstormDemoLoginToken", Accounts._storedLoginToken());
           Router.go("root");
         }
       }
@@ -308,8 +210,6 @@ if (Meteor.isClient && allowDemo) {
         if (err) {
           window.alert(err);
         } else {
-          localStorage.setItem("sandstormDemoLoginToken", Accounts._storedLoginToken());
-
           // First, find the package ID, since that is what
           // addUserActions takes. Choose the package ID with
           // highest version number.

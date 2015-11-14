@@ -107,31 +107,7 @@
       {{#if hasOtherServices}} {{! the email token service will always come last }}
         {{> _loginButtonsSeparator}}
       {{/if}}
-      <form class="email">
-        with e-mail
-
-        <label class="email {{#if awaitingToken}}hidden{{/if}}">e-mail
-          <span title="Passwordless E-mail Login allows you to log in using an e-mail address. No password is required; instead, every time you log in, we send you a new email confirmation code. You will only need to log in once per device." class="info">i</span>
-          <input name="email" type="email">
-        </label>
-
-        {{#with awaitingToken}}
-          <p>We've sent a login e-mail to {{.}}. It may take a few moments to show up in your
-             inbox.</p>
-          <label class="token">
-            Enter your token:
-            <input name="token" type="text">
-          </label>
-          <div class="button-box">
-            <button class="login token">Confirm</button>
-            <button type="reset" class="cancel">Cancel</button>
-          </div>
-        {{else}}
-          <div class="button-box">
-            <button class="login email">Send Login Email</button>
-          </div>
-        {{/with}}
-      </form>
+      {{> emailLoginForm linkingNewIdentity=linkingNewIdentity prompt="with e-mail"}}
     {{else}}
       <button class="login oneclick {{name}}" role="menuitem">
         with {{capitalizedName}}
@@ -150,6 +126,34 @@
 
   <a href="/about" role="menuitem">about Sandstorm</a>
   </div>
+</template>
+
+<template name="emailLoginForm">
+  <form class="email">
+    {{prompt}}
+
+    <label class="email {{#if awaitingToken}}hidden{{/if}}">e-mail
+      <span title="Passwordless E-mail Login allows you to log in using an e-mail address. No password is required; instead, every time you log in, we send you a new email confirmation code. You will only need to log in once per device." class="info">i</span>
+      <input name="email" type="email">
+    </label>
+
+    {{#with awaitingToken}}
+    <p>We've sent a login e-mail to {{.}}. It may take a few moments to show up in your
+      inbox.</p>
+    <label class="token">
+      Enter your token:
+      <input name="token" type="text">
+    </label>
+    <div class="button-box">
+      <button class="login token">Confirm</button>
+      <button type="reset" class="cancel">Cancel</button>
+    </div>
+    {{else}}
+    <div class="button-box">
+      <button class="login email">Send Login Email</button>
+    </div>
+    {{/with}}
+  </form>
 </template>
 
 <template name="_loginButtonsSeparator">

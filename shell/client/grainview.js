@@ -22,6 +22,7 @@ GrainView = function GrainView(grainId, path, token, parentElement) {
   this._originalPath = path;
   this._path = path;
   this._token = token;
+  this._parentElement = parentElement;
   this._status = "closed";
   this._dep = new Tracker.Dependency();
 
@@ -32,11 +33,6 @@ GrainView = function GrainView(grainId, path, token, parentElement) {
   if (token) {
     if (!Meteor.userId()) {
       this.doNotRevealIdentity();
-    } else {
-      var revealedIdentityId = this._identityAlreadyRevealedToOwner();
-      if (revealedIdentityId) {
-        this._userIdentityId.set(revealedIdentityId);
-      }
     }
   } else {
     this.revealIdentity();
@@ -49,6 +45,71 @@ GrainView = function GrainView(grainId, path, token, parentElement) {
   this._blazeView = Blaze.renderWithData(Template.grainView, this, parentElement);
 
   this.id = counter++;
+}
+
+GrainView.prototype.reset = function (identityId) {
+  // TODO(cleanup): This duplicates some code from the GrainView constructor.
+
+  this._dep.changed();
+  this.destroy();
+  this._sessionId = null;
+  this._sessionSalt = null;
+  if (this._sessionObserver) {
+    this._sessionObserver.stop();
+    this._sessionObserver = undefined;
+  }
+  if (this._sessionSub) {
+    this._sessionSub.stop();
+    this._sessionSub = undefined;
+  }
+
+  this._status = "closed";
+  this._userIdentityId = new ReactiveVar(undefined);
+  this.revealIdentity(identityId);
+  this._blazeView = Blaze.renderWithData(Template.grainView, this, this._parentElement);
+}
+
+GrainView.prototype.switchIdentity = function (identityId) {
+  check(identityId, String);
+  var currentIdentityId = this.identityId();
+  var grainId = this.grainId();
+  if (currentIdentityId === identityId) return;
+  var self = this;
+  if (this._token) {
+    self.reset(identityId);
+    self.openSession();
+  } else if (this.isOwner()) {
+    Meteor.call("updateGrainPreferredIdentity", grainId, identityId,
+                function (err, result) {
+      if (err) {
+        console.log("error:", err);
+      } else {
+        self.reset(identityId);
+        self.openSession();
+      }
+    });
+  } else {
+    if (ApiTokens.findOne({grainId: grainId,
+                           "owner.user.identityId": identityId, revoked: {$ne: true}})) {
+      // just do the switch
+      self.reset(identityId);
+      self.openSession();
+    } else {
+      // Should we maybe prompt the user first?
+      //  "That identity does not already have access to this grain. Would you like to share access
+      //   from your current identity? Y/ cancel."
+      Meteor.call("newApiToken", {identityId: currentIdentityId}, grainId, "direct share",
+                  {allAccess: null}, {user: {identityId: identityId, title: self.title()}},
+                  function (err, result) {
+        if (err) {
+          console.log("error:", err);
+        } else {
+          self.reset(identityId);
+          self.openSession();
+        }
+      });
+    }
+  }
 }
 
 GrainView.prototype.destroy = function () {
@@ -237,35 +298,34 @@ GrainView.prototype.depend = function () {
   this._dep.depend();
 }
 
-GrainView.prototype.revealIdentity = function () {
+GrainView.prototype.revealIdentity = function (identityId) {
   if (!Meteor.user()) {
     return;
   }
-  var identities = SandstormDb.getUserIdentities(Meteor.user());
-  var identityIds = identities.map(function(x) { return x.id; });
-  var identity = identities[0]; // Default.
+  var myIdentities = SandstormDb.getUserIdentities(Meteor.user());
+  var myIdentityIds = myIdentities.map(function(x) { return x._id; });
+  var identity = myIdentities[0]; // Default.
   var grain = Grains.findOne(this._grainId);
-  if (grain && identityIds.indexOf(grain.identityId) != -1) {
+  if (identityId && myIdentityIds.indexOf(identityId) != -1) {
+    identity = _.findWhere(myIdentities, {_id: identityId});
+  } else if (grain && myIdentityIds.indexOf(grain.identityId) != -1) {
     // If we own the grain, open it as the owning identity.
-    identity = _.findWhere(identities, {id: grain.identityId});
+    identity = _.findWhere(myIdentities, {_id: grain.identityId});
   } else {
-    var token = ApiTokens.findOne({"owner.user.identityId": {$in: identityIds}});
+    var token = ApiTokens.findOne({grainId: this._grainId,
+                                   "owner.user.identityId": {$in: myIdentityIds}},
+                                  {sort:{"owner.user.lastUsed": -1}});
     if (token) {
-      identity = _.findWhere(identities, {id: token.owner.user.identityId});
+      identity = _.findWhere(myIdentities, {_id: token.owner.user.identityId});
     }
   }
-  this._userIdentityId.set(identity.id);
+  this._userIdentityId.set(identity._id);
   this._dep.changed();
 }
 
 GrainView.prototype.doNotRevealIdentity = function () {
   this._userIdentityId.set(false);
   this._dep.changed();
-}
-
-GrainView.prototype.shouldRevealIdentity = function () {
-  this._dep.depend();
-  return !!this._userIdentityId.get();
 }
 
 GrainView.prototype.identityId = function () {
@@ -292,7 +352,7 @@ GrainView.prototype._identityAlreadyRevealedToOwner = function () {
   var tokenInfo = TokenInfo.findOne({_id: this._token});
   if (tokenInfo && tokenInfo.apiToken) {
     var identities = SandstormDb.getUserIdentities(Meteor.user());
-    var identityIds = identities.map(function(x) { return x.id; });
+    var identityIds = identities.map(function(x) { return x._id; });
     if (identityIds.indexOf(tokenInfo.apiToken.identityId) != -1) {
       // A self-share.
       return tokenInfo.apiToken.identityId;
@@ -322,12 +382,6 @@ GrainView.prototype.shouldShowInterstitial = function () {
   if (!Meteor.userId()) {
     return false;
   }
-  // If we have already revealed our identity to the grain's owner, we don't need to show the
-  // interstitial, we can ask to reveal our identity without consequence.
-  if (this._identityAlreadyRevealedToOwner()) {
-    return false;
-  }
-
   // Otherwise, we should show it.
   return true;
 }

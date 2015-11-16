@@ -87,11 +87,11 @@ Template.sandstormAccountSettings.helpers({
     return Template.instance()._isLinkingNewIdentity.get()
   },
   verifiedEmails: function () {
-    return SandstormDb.getUserEmails(Meteor.user())
+    return Meteor.user() && SandstormDb.getUserEmails(Meteor.user())
       .filter(function (e) { return !!e.verified; });
   },
   needsVerifiedEmail: function () {
-    return SandstormDb.getUserEmails(Meteor.user())
+    return Meteor.user() && SandstormDb.getUserEmails(Meteor.user())
       .filter(function (e) { return !!e.verified; }).length == 0;
   },
 });
@@ -161,7 +161,6 @@ Template.sandstormAccountSettings.events({
   },
 
   "change input.primary-email": function (event, instance) {
-    console.log("changed! ", event.target.getAttribute("data-email"));
     Meteor.call("setPrimaryEmail", event.target.getAttribute("data-email"));
   },
 });

@@ -343,6 +343,8 @@ function splitAccountUsersAndIdentityUsers() {
       accountUser.services = {resume: user.services.resume};
     }
 
+    accountUser.stashedOldUser = user;
+
     ApiTokens.update({identityId: identityUser._id}, {$set: {accountId: user._id}},
                      {multi: true});
 

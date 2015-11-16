@@ -81,6 +81,8 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   appDemoId: If this is an appdemo user (see above), the app ID they started out demoing.
 //   payments: Object defined by payments module, if loaded.
 //   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
+//   stashedOldUser: A complete copy of this user from before the accounts/identities migration.
+//                   TODO(cleanup): Delete this field once we're sure it's safe to do so.
 
 Packages = new Mongo.Collection("packages");
 // Packages which are installed or downloading.

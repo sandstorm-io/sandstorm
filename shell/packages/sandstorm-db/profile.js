@@ -235,41 +235,39 @@ SandstormDb.getUserEmails = function (user) {
   //   on SandstormDb.
 
   var identities = SandstormDb.getUserIdentities(user);
-  result = [];
+  verifiedEmails = {};
+  unverifiedEmails = {};
 
   identities.forEach(function (identity) {
     if (identity.services) {
       if (identity.services.google && identity.services.google.email &&
           identity.services.google.verified_email) {
-        result.push({email: identity.services.google.email, verified: true});
+        verifiedEmails[identity.services.google.email] = true;
       } else if (identity.services.email) {
-        result.push({email: identity.services.email.email, verified: true});
+        verifiedEmails[identity.services.email.email] = true;
       } else if (identity.services.github && identity.services.github.email) {
-        result.push({email: identity.services.github.email, verified: false});
+        unverifiedEmails[identity.services.github.email] = true;
       }
     }
 
     if (identity.unverifiedEmail) {
-      result.push({email: identity.unverifiedEmail, verified: false});
+      unverifiedEmails[identity.unverifiedEmail] = true;
     }
   });
 
-  var foundPrimary = false;
-  for (var ii = 0; ii < result.length; ++ii) {
-    if (result[ii].verified && user.primaryEmail && result[ii].email === user.primaryEmail) {
-      result[ii].primary = true;
-      foundPrimary = true;
-      break;
-    }
-  }
-  if (!foundPrimary) {
-    // Fall back to the first verified email, if there is one.
-    for (var ii = 0; ii < result.length; ++ii) {
-      if (result[ii].verified) {
-        result[ii].primary = true;
-        break;
-      }
-    }
+  var result = [];
+  _.keys(verifiedEmails).map(function (email) {
+    result.push({email: email,
+                 verified: true,
+                 primary: email === user.primaryEmail});
+  });
+  _.keys(unverifiedEmails).map(function (email) {
+    if (!(email in verifiedEmails)) { result.push({email: email, verified: false}) }
+  });
+
+  // If `user.primaryEmail` is not among the verified emails, mark the first as primary.
+  if (!(user.primaryEmail in verifiedEmails) && result.length > 0) {
+    result[0].primary = true;
   }
   return result;
 }

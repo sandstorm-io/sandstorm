@@ -51,6 +51,12 @@ var adminRoute = RouteController.extend({
     Meteor.call("getSmtpUrl", this.params._token, function(error, result){
       state.set("smtpUrl", result);
     });
+    var user = Meteor.user();
+    if (user) {
+      if (!user.signupKey || !user.isAdmin) {
+        Meteor.call("signUpAsAdmin", this.params._token);
+      }
+    }
     resetResult(state);
     state.set("configurationServiceName", null);
     state.set("token", this.params._token);
@@ -821,6 +827,12 @@ if (Meteor.isServer) {
       throw new Meteor.Error(403, "User must be admin or provide a valid token");
     }
   };
+  function clearAdminToken(token) {
+    if (tokenIsValid(token)) {
+      Fs.unlinkSync(SANDSTORM_ADMIN_TOKEN);
+      console.log("Admin token deleted.");
+    }
+  }
   Meteor.methods({
     setAccountSetting: function (token, serviceName, value) {
       checkAuth(token);
@@ -874,10 +886,7 @@ if (Meteor.isServer) {
     },
     clearAdminToken: function(token) {
       check(token, String);
-      if (tokenIsValid(token)) {
-        Fs.unlinkSync(SANDSTORM_ADMIN_TOKEN);
-        console.log("Admin token deleted.");
-      }
+      clearAdminToken(token);
     },
     clearResumeTokensForService: function (token, serviceName) {
       // TODO(now): With the identity/account split, this no longer does the right thing.
@@ -1034,6 +1043,15 @@ if (Meteor.isServer) {
       checkAuth(token);
       globalDb.collections.notifications.remove({"admin.type": "reportStats"});
     },
+    signUpAsAdmin: function (token) {
+      check(token, String);
+      checkAuth(token);
+      if (!this.userId) {
+        throw new Meteor.Error(403, "Must be logged in to sign up as admin.");
+      }
+      Meteor.users.update({_id: this.userId}, {$set: {isAdmin: true, signupKey: "admin"}});
+      clearAdminToken(token);
+    }
   });
 
   var authorizedAsAdmin = function (token, userId) {

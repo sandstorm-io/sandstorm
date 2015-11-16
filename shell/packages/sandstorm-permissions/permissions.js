@@ -109,18 +109,18 @@ function roleAssignmentPermissions(roleAssignment, viewInfo) {
 
 function collectEdges(db, vertex) {
   // Given a vertex in the sharing graph in the format specified by the `check()` invocation below,
-  // collects the data needed for permissions computations pertaining to that vertex. There are four
+  // collects the data needed for permissions computations pertaining to that vertex. There are three
   // self-explanatory special cases for the return value. In order of decreasing precedence, they
-  // are: `{grainDoesNotExist: true}`, `{openerIsOwner: true}`, `{grainIsPublic: true}`, and
-  // `{disallowedAnonymousAccess: true}`. In all other cases, this function returns an object
-  // of the form: `{owner: <identityId>, edgesByRecipient: <object>, terminalEdge: Maybe(<object>)}`.
-  // The `owner` field indicates the user who owns the grain. The `edgesByRecipient` field is a map
-  // that coalesces chains of `parentToken` UiView tokens into direct user-to-user edges; its keys
-  // are identity IDs of recipient users and its values are lists of "edge" objects of the form
-  // `{sharer: <identityId>, roleAssignments: <list of role assignments>}`.  The role assignments
-  // should be applied in sequence to compute the set of permissions that flow to a recipient from
-  // a sharer. The `terminalEdge` field is an edge object representing the link to `vertex` from
-  // the nearest user in the sharing graph. If `vertex` is already a user, then this edge is
+  // are: `{grainDoesNotExist: true}`, `{grainIsPublic: true}`, and `{disallowedAnonymousAccess: true}`.
+  // In all other cases, this function returns an object of the form:
+  //   `{edgesByRecipient: <object>, terminalEdge: Optional(<object>)}`.
+  // The `edgesByRecipient` field is a map that coalesces chains of `parentToken` UiView tokens into
+  // direct user-to-user edges; its keys are identity IDs of recipient users and its values are lists
+  // of "edge" objects of the form
+  //   `{sharer: OneOf(<identityId>, "OwningAccount"), roleAssignments: <list of role assignments>}`.
+  // The role assignments should be applied in sequence to compute the set of permissions that flow to a
+  // recipient from a sharer. The `terminalEdge` field is an edge object representing the link to
+  // `vertex` from the nearest user in the sharing graph. If `vertex` is already a user, then this edge is
   // trivial and its `roleAssignments` field is an empty list. If `terminalEdge` is not present,
   // then there is no such link.
   //
@@ -143,17 +143,14 @@ function collectEdges(db, vertex) {
     return {grainDoesNotExist: true};
   }
 
-  if (vertex.grain && grain.identityId === vertex.grain.identityId) {
-    return {openerIsOwner: true};
-  }
-
   if (!grain.private) {
     return {grainIsPublic: true};
   } else if (vertex.grain && !vertex.grain.identityId) {
     return {disallowedAnonymousAccess: true};
   }
 
-  var result = {edgesByRecipient: {}, owner: grain.identityId};
+  var result = {edgesByRecipient: {}};
+
   var tokensById = {};
   db.collections.apiTokens.find({grainId: grainId,
                                  revoked: {$ne: true}}).forEach(function(token) {
@@ -197,6 +194,14 @@ function collectEdges(db, vertex) {
       }
     }
   }
+
+  var owningUser = Meteor.users.findOne({_id: grain.userId});
+  if (owningUser) {
+    SandstormDb.getUserIdentities(owningUser).forEach(function(identity) {
+      result.edgesByRecipient[identity._id] = [{sharer: "OwningAccount", roleAssignments: []}];
+    });
+  }
+
   return result;
 }
 
@@ -218,7 +223,7 @@ SandstormPermissions.grainPermissions = function(db, vertex, viewInfo) {
 
   var openerIdentityId = edges.terminalEdge.sharer;
   var edgesByRecipient = edges.edgesByRecipient;
-  var owner = edges.owner;
+  var owner = "OwningAccount";
 
   var permissionsMap = {};
   // Keeps track of the permissions that the opener receives from each user. The final result of
@@ -278,11 +283,11 @@ SandstormPermissions.mayOpenGrain = function(db, vertex) {
   if (edges.grainDoesNotExist || edges.disallowedAnonymousAccess) {
     return false;
   }
-  if (edges.openerIsOwner || edges.grainIsPublic) {
+  if (edges.grainIsPublic) {
     return true;
   }
   var edgesByRecipient = edges.edgesByRecipient;
-  var owner = edges.owner;
+  var owner = "OwningAccount";
   if (!edges.terminalEdge) { return false; }
   if (owner == edges.terminalEdge.sharer) {
     return true;
@@ -400,17 +405,19 @@ SandstormPermissions.downstreamTokens = function(db, root) {
 }
 
 SandstormPermissions.createNewApiToken = function (db, provider, grainId, petname,
-                                                   roleAssignment, forSharing,
-                                                   expiresIfUnusedDuration) {
+                                                   roleAssignment, owner) {
   // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
   check(grainId, String);
   check(petname, String);
   check(roleAssignment, db.roleAssignmentPattern);
-  check(forSharing, Boolean);
   // Meteor bug #3877: we get null here instead of undefined when we
   // explicitly pass in undefined.
-  check(expiresIfUnusedDuration, Match.OneOf(undefined, null, Number));
-  check(provider, Match.OneOf({identityId: String}, {rawParentToken: String}));
+  check(provider, Match.OneOf({identityId: String, accountId: String},
+                              {rawParentToken: String}));
+  check(owner, Match.OneOf({webkey: {forSharing: Boolean,
+                                     expiresIfUnusedDuration: Match.Optional(Number)}},
+                           {user: {identityId: String,
+                                   title: String}}));
 
   var grain = db.getGrain(grainId);
   if (!grain) {
@@ -418,7 +425,7 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   }
 
   var token = Random.secret();
-        var apiToken = {
+  var apiToken = {
     _id: Crypto.createHash("sha256").update(token).digest("base64"),
     grainId: grainId,
     roleAssignment: roleAssignment,
@@ -427,6 +434,7 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
     expires: null,
   };
 
+  var parentForSharing = false;
   if (provider.rawParentToken) {
     var parentToken = Crypto.createHash("sha256").update(provider.rawParentToken).digest("base64");
     var parentApiToken = db.collections.apiTokens.findOne(
@@ -434,18 +442,47 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
     if (!parentApiToken) {
       throw new Meteor.Error(403, "No such parent token found.");
     }
-    identityId = parentApiToken.identityId;
     if (parentApiToken.forSharing) {
-      forSharing = true;
+      parentForSharing = true;
     }
-    apiToken.parentToken = parentToken;
-  } else {
-    apiToken.identityId = provider.identityId;
-  }
-  apiToken.forSharing = forSharing;
 
-  if (expiresIfUnusedDuration) {
-    apiToken.expiresIfUnused = new Date(Date.now() + expiresIfUnusedDuration);
+    // TODO(soon): For a while this field was failing to get set due to a typo. We should migrate
+    //   old entries in ApiTokens to populate this field where appropriate.
+    apiToken.identityId = parentApiToken.identityId;
+    apiToken.accountId = parentApiToken.accountId;
+
+    apiToken.parentToken = parentToken;
+  } else if (provider.identityId) {
+    apiToken.identityId = provider.identityId;
+    apiToken.accountId = provider.accountId;
+  }
+
+  if (owner.webkey) {
+    apiToken.owner = {webkey: null};
+    apiToken.forSharing = parentForSharing || owner.webkey.forSharing;
+    if (owner.webkey.expiresIfUnusedDuration) {
+      apiToken.expiresIfUnused = new Date(Date.now() + owner.webkey.expiresIfUnusedDuration);
+    }
+  } else if (owner.user) {
+    var pkg = db.collections.packages.findOne(grain.packageId);
+    var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ""};
+    var grainInfo = {appTitle: appTitle};
+
+    if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
+      var icons = pkg.manifest.metadata.icons;
+      grainInfo.appIcon = icons.grain || icons.appGrid;
+    }
+    if (!grainInfo.appIcon && pkg) {
+      grainInfo.appId = pkg.appId;
+    }
+    apiToken.owner = {
+      user: {
+        identityId: owner.user.identityId,
+        title: owner.user.title,
+        // lastUsed: ??
+        denormalizedGrainMetadata: grainInfo,
+      }
+    };
   }
 
   db.collections.apiTokens.insert(apiToken);
@@ -474,8 +511,7 @@ Meteor.methods({
     }
   },
 
-  newApiToken: function (provider, grainId, petname, roleAssignment, forSharing,
-                         expiresIfUnusedDuration) {
+  newApiToken: function (provider, grainId, petname, roleAssignment, owner) {
     check(provider, Match.OneOf({identityId: String}, {rawParentToken: String}));
     var db = this.connection.sandstormDb;
     if (provider.identityId) {
@@ -483,9 +519,9 @@ Meteor.methods({
         throw new Meteor.Error(403, "Not an identity of the current user: " + provider.identityId);
       }
     }
+    provider.accountId = this.userId;
     return SandstormPermissions.createNewApiToken(
-      this.connection.sandstormDb, provider, grainId, petname, roleAssignment, forSharing,
-      expiresIfUnusedDuration);
+      this.connection.sandstormDb, provider, grainId, petname, roleAssignment, owner);
   },
 
   updateApiToken: function (token, newFields) {

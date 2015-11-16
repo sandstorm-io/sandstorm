@@ -334,14 +334,10 @@ if (Meteor.isClient) {
       document.title = "Users · Admin · Sandstorm";
     },
     users: function () {
-      return Meteor.users.find({}, {sort: {createdAt: 1}});
+      return Meteor.users.find({loginIdentities: {$exists: 1}}, {sort: {createdAt: 1}});
     },
     userIdentity: function () {
       return SandstormDb.getUserIdentities(this)[0];
-    },
-    serviceName: function () {
-      var keys = Object.keys(this.service);
-      return keys && keys.length > 0 && keys[0];
     },
     userSignupNote: function () {
       if (this.signupEmail) {
@@ -884,6 +880,7 @@ if (Meteor.isServer) {
       }
     },
     clearResumeTokensForService: function (token, serviceName) {
+      // TODO(now): With the identity/account split, this no longer does the right thing.
       checkAuth(token);
       check(serviceName, String);
 

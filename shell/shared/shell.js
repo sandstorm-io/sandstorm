@@ -33,7 +33,7 @@ if (Meteor.isClient) {
     Meteor.subscribe("userPackages"),
     Meteor.subscribe("devPackages"),
     Meteor.subscribe("credentials"),
-    Meteor.subscribe("accountIdentities")
+    Meteor.subscribe("accountIdentities"),
   ];
 }
 
@@ -88,7 +88,7 @@ if (Meteor.isServer) {
         });
       }
       var identityIds = SandstormDb.getUserIdentities(globalDb.getUser(this.userId))
-          .map(function (x) { return x.id; });
+          .map(function (x) { return x._id; });
       return [
         UserActions.find({userId: this.userId}),
         Grains.find({userId: this.userId}),
@@ -472,9 +472,13 @@ if (Meteor.isClient) {
     globalAccountsUi: function () {
       return globalAccountsUi;
     },
+    identityUser: function () {
+      var user = Meteor.user();
+      return user && user.profile;
+    },
     firstLogin: function () {
-      return credentialsSubscription.ready() && isSignedUp() && !Meteor.loggingIn()
-          && !Meteor.user().hasCompletedSignup;
+      return credentialsSubscription.ready() && !isDemoUser() && !Meteor.loggingIn()
+          && Meteor.user() && !Meteor.user().hasCompletedSignup;
     },
     accountSettingsUi: function () {
       return makeAccountSettingsUi();
@@ -602,10 +606,10 @@ if (Meteor.isClient) {
 
     var title = "Untitled " + appTitle + " " + nounPhrase;
 
-    var identity = _.findWhere(SandstormDb.getUserIdentities(Meteor.user()), {main: true});
+    var identity = SandstormDb.getUserIdentities(Meteor.user())[0];
 
     // We need to ask the server to start a new grain, then browse to it.
-    Meteor.call("newGrain", packageId, command, title, identity.id, function (error, grainId) {
+    Meteor.call("newGrain", packageId, command, title, identity._id, function (error, grainId) {
       if (error) {
         console.error(error);
         alert(error.message);
@@ -945,5 +949,9 @@ Router.map(function () {
         return makeAccountSettingsUi();
       }
     }
+  });
+
+  this.route("accountUsage", {
+    path: "/account/usage",
   });
 });

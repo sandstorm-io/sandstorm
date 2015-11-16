@@ -18,92 +18,191 @@ limitations under the License.
 
 <template name="sandstormAccountSettings">
   {{setDocumentTitle}}
-  {{!-- TODO(now): better reuse here --}}
+
   {{#sandstormTopbarItem name="title" priority=5 topbar=_topbar}}
     Account Settings
   {{/sandstormTopbarItem}}
 
   <h2>My Account</h2>
-
+  <div class="identities-editor">
+  <div class="title-bar"> Linked Identities: </div>
+  <div class="identities-tabs">
+  {{#unless isLinkingNewIdentity}}
+  <ul role="tablist" >
+    {{#each identities}}
+    <li role="tab" aria-controls="profile-tab-{{_id}}" id="profile-tab-header-{{_id}}"
+        aria-selected="{{isIdentitySelected _id}}" data-identity-id="{{_id}}">
+      {{> identityCard .}}
+    </li>
+    {{/each}}
+  </ul>
+  {{/unless}}
+  {{#if isAccountUser}}
+    {{#if isLinkingNewIdentity}}
+      <h4>Link new identity:</h4>
+      {{#with linkingNewIdentity=true}}
+        {{> loginButtonsList globalAccountsUi}}
+      {{/with}}
+    <p><button class="cancel-link-new-identity">Cancel</button></p>
+    {{else}}
+    <p><button class="link-new-identity">Link new identity</button></p>
+    {{/if}}
+  {{/if}}
+  <p><button class="logout-other-sessions">Log out all other sessions</button></p>
+  </div>
   <section class="profile">
     {{#each identities}}
-      <form class="account-profile-editor" data-identity-id="{{id}}">
-        <h3>Profile</h3>
-        <ul>
-          {{>_accountProfileEditor}}
-          <li class="save"><button disabled="{{profileSaved}}">Save</button></li>
-        </ul>
-      </form>
+    <div id="profile-tab-{{_id}}" aria-labelled-by="profile-tab-header-{{_id}}"
+         role="tabpanel" aria-hidden="{{isIdentityHidden _id}}">
+       {{>_accountProfileEditor}}
+     </div>
     {{/each}}
 
-    {{#if isPaymentsEnabled}}
-      {{> billingUsage db=db topbar=_topbar}}
-    {{/if}}
   </section>
+  </div>
+
+  <div class="title-bar">Primary e-mail address for service-related notifications.</div>
+  <div class="verified-emails-editor">
+    <div class="already-verified">
+      {{#if verifiedEmails}}
+      <ul>
+        {{#each verifiedEmails}}
+        <li>
+          <label><input type="radio" name="verifiedEmail" class="primary-email"
+                        data-email="{{email}}" checked={{primary}}> {{email}}
+          </label>
+        </li>
+        {{/each}}
+      </ul>
+      {{else}}
+      <p> No verified emails! </p>
+      {{/if}}
+    </div>
+    <div class="add-new">
+      {{> emailLoginForm linkingNewIdentity=true prompt="Add new email adress"}}
+      {{> _loginButtonsMessages}}
+    </div>
+  </div>
+
 
   {{#if isPaymentsEnabled}}
-    {{> billingSettings db=db}}
+  <div class="billing">
+  {{> billingUsage db=db topbar=_topbar}}
+  {{> billingSettings db=db}}
+  </div>
   {{/if}}
 </template>
 
 <template name="sandstormAccountsFirstSignIn">
   <h1>Confirm your profile</h1>
-  {{#with mainIdentity}}
-    <form class="account-profile-editor" data-identity-id="{{id}}"><ul>
+  <div class="single-identity-editor">
+  {{#with identityToConfirm}}
       {{>_accountProfileEditor}}
-      {{#with termsAndPrivacy}}
-        <li class="terms">
-          <label>
-          <input type="checkbox" name="agreedToTerms" required> I have read and agree to the
-          {{#if termsUrl}}<a target="_blank" href="{{termsUrl}}">Terms of Service</a>{{#if privacyUrl}} and {{/if}}{{/if}}{{#if privacyUrl}}<a target="_blank" href="{{privacyUrl}}">Privacy policy</a>{{/if}}.
-          </label>
-        </li>
-      {{/with}}
-      <li class="save"><button>Continue</button></li>
-    </ul></form>
   {{/with}}
+  </div>
 </template>
 
 <template name="_accountProfileEditor">
-  <li class="name">
-    <label>Full name:
-      <input type="text" name="nameInput" value="{{profile.name}}" placeholder="full name" required>
-    </label>
-    <span class="details">Your regular first and last name, as you would like it displayed to others. This does not have to be your real name.</span>
-  </li>
-  <li class="handle">
-    <label>Handle:
-      <div class="input-container">
-        <input type="text" name="handle" value="{{profile.handle}}" placeholder="handle"
-               pattern="^[a-z_][a-z0-9_]*$" required>
-        <div class="background-text">@</div>
+  <div class="identity-editor">
+    <form class="account-profile-editor" data-identity-id="{{_id}}">
+      <div class="editor">
+        <div class="picture">
+          <label>Avatar:
+            <button type="button">
+              <img src="{{profile.pictureUrl}}" alt="Upload picture">
+            </button>
+          </label>
+          <input type="file" name="picture" style="display:none">
+          <span class="details">
+            <p>This picture will be shown to other users to help identify you.</p>
+            <p>512x512px, 64KiB max.</p>
+          </span>
+        </div>
+        <ul>
+          <li class="name">
+            <label><img class="inline-icon" src="/people-m.svg" role="presentation">
+              Full name:
+              <input type="text" name="nameInput" value="{{profile.name}}"
+                     placeholder="full name" required>
+            </label>
+            <span class="details">Your regular first and last name, as you would like it
+              displayed to others. This does not have to be your real name.
+            </span>
+          </li>
+          <li class="handle">
+            <label>@ Handle:
+              <div class="input-container">
+                <input type="text" name="handle" value="{{profile.handle}}" placeholder="handle"
+                       pattern="^[a-z_][a-z0-9_]*$" required>
+              </div>
+            </label>
+            <span class="details">
+              For use in apps that use handles (often, chat apps).
+              This is only your first choice; an app may make you rename if someone has
+              already taken this name within the specific grain.
+            </span>
+          </li>
+          {{#if verifiedEmail}}
+          <li class="email">
+            <label><img class="inline-icon" src="/email-m.svg" role="presentation">
+              E-mail:
+              <span class="email-address">{{verifiedEmail}}</span>
+            </label>
+            <span class="details">E-mail address attached to this identity.</span>
+          </li>
+          {{/if}}
+          <li class="pronoun">
+            {{#with profile}}
+            <label><img class="inline-icon" src="/pronoun-m.svg" role="presentation">
+              Preferred pronoun:
+              <select name="pronoun">
+                <option value="neutral" selected="{{isNeutral}}">they (unspecified)</option>
+                <option value="male" selected="{{isMale}}">he/him (male)</option>
+                <option value="female" selected="{{isFemale}}">she/her (female)</option>
+                <option value="robot" selected="{{isRobot}}">it (robot)</option>
+              </select>
+            </label>
+            {{/with}}
+          </li>
+          {{#unless hasCompletedSignup}}
+          {{#with termsAndPrivacy}}
+          <li class="terms">
+            <label>
+              <input type="checkbox" name="agreedToTerms" required> I have read and agree to the
+              {{#if termsUrl}}
+              <a target="_blank" href="{{termsUrl}}">Terms of Service</a>
+              {{#if privacyUrl}} and
+              {{/if}}
+              {{/if}}
+              {{#if privacyUrl}}
+              <a target="_blank" href="{{privacyUrl}}">Privacy policy</a>
+              {{/if}}.
+            </label>
+          </li>
+          {{/with}}
+          {{/unless}}
+          <li class="save">
+            <button disabled="{{profileSaved}}">
+              {{#if hasCompletedSignup}}Save{{else}}Continue{{/if}}
+            </button>
+            {{#unless hasCompletedSignup}}
+            <button class="logout">Cancel</button>
+            {{/unless}}
+          </li>
+        </ul>
       </div>
-    </label>
-    <span class="details">Your preferred handle or "username", for use in apps that use handles (often, chat apps). This is only your first choice; an app may make you rename if someone has already taken this name within the specific grain.</span>
-  </li>
-  <li class="email">
-    <label>E-mail:
-      <input type="email" name="email" data-verified-email="{{verifiedEmail}}"
-             value="{{emailSuggestion unverifiedEmail verifiedEmail}}"
-             placeholder="email address" required>
-    </label>
-    <span class="details">E-mail address for service-related notifications.</span>
-  </li>
-  <li class="picture">
-    <label>Picture: <button type="button"><img src="{{profile.pictureUrl}}" alt="Upload picture"></button></label>
-    <input type="file" name="picture" style="display:none">
-    <span class="details">This picture will be shown to other users to help identify you. Suggested dimensions: 512x512. Max size: 64 KiB.</span>
-  </li>
-  <li class="pronoun">
-    {{#with profile}}
-    <label>Preferred pronoun:
-      <select name="pronoun">
-        <option value="neutral" selected="{{isNeutral}}">they (unspecified)</option>
-        <option value="male" selected="{{isMale}}">he/him (male)</option>
-        <option value="female" selected="{{isFemale}}">she/her (female)</option>
-        <option value="robot" selected="{{isRobot}}">it (robot)</option>
-      </select>
-    </label>
-    {{/with}}
-  </li>
+    </form>
+    {{#if hasCompletedSignup}}
+    <div>
+      <button class="unlink" data-identity-id="{{_id}}">Unlink this identity</button>
+    </div>
+    <div>
+      {{#if login}}
+      <button class="make-no-login" data-identity-id="{{_id}}">Login enabled</button>
+      {{else}}
+      <button class="make-login" data-identity-id="{{_id}}">Login disabled</button>
+      {{/if}}
+    </div>
+    {{/if}}
+  </div>
 </template>

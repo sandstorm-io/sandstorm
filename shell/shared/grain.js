@@ -29,9 +29,9 @@ if (Meteor.isServer) {
                               {fields: {title: 1, userId: 1, identityId: 1, private: 1}})];
     if (this.userId) {
       var myIdentities = SandstormDb.getUserIdentities(globalDb.getUser(this.userId));
-      var myIdentityIds = myIdentities.map(function (x) { return x.id; });
+      var myIdentityIds = myIdentities.map(function (x) { return x._id; });
       myIdentities.forEach(function(identity) {
-        self.added("displayNames", identity.id, {displayName: identity.profile.name});
+        self.added("displayNames", identity._id, {displayName: identity.profile.name});
       });
 
       // Alice is allowed to know Bob's display name if Bob has received a UiView from Alice
@@ -39,12 +39,12 @@ if (Meteor.isServer) {
       var handle = ApiTokens.find({identityId: {$in: myIdentityIds},
                                    "owner.user.identityId": {$exists: true}}).observe({
         added: function(token) {
-          var user = Meteor.users.findOne({"identities.id": token.owner.user.identityId});
+          var user = Meteor.users.findOne({_id: token.owner.user.identityId});
           if (user) {
             var identity = _.findWhere(SandstormDb.getUserIdentities(user),
-                                       {id: token.owner.user.identityId});
+                                       {_id: token.owner.user.identityId});
             if (identity) {
-              self.added("displayNames", identity.id, {displayName: identity.profile.name});
+              self.added("displayNames", identity._id, {displayName: identity.profile.name});
             }
 
           }
@@ -200,9 +200,30 @@ Meteor.methods({
     }
   },
   forgetGrain: function (grainId, identityId) {
+    // TODO(cleanup): For now we are ignoring `identityId`, but maybe we should expose finer-grained
+    //  forgetting.
+
     check(grainId, String);
     check(identityId, String);
-    ApiTokens.remove({grainId: grainId, "owner.user.identityId": identityId});
+
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Must be logged in to forget a grain.");
+    }
+    SandstormDb.getUserIdentities(Meteor.user()).forEach(function (identity) {
+      ApiTokens.remove({grainId: grainId, "owner.user.identityId": identity._id});
+    });
+  },
+  updateGrainPreferredIdentity: function (grainId, identityId) {
+    check(grainId, String);
+    check(identityId, String);
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Must be logged in.");
+    }
+    var grain = globalDb.getGrain(grainId) || {};
+    if (!grain.userId === this.userId) {
+      throw new Meteor.Error(403, "Grain not owned by current user.");
+    }
+    Grains.update({_id: grainId}, {$set: {identityId: identityId}});
   },
   updateGrainTitle: function (grainId, newTitle, identityId) {
     check(grainId, String);
@@ -211,9 +232,12 @@ Meteor.methods({
     if (this.userId) {
       var grain = Grains.findOne(grainId);
       if (grain) {
-        if (identityId === grain.identityId) {
-          Grains.update(grainId, {$set: {title: newTitle}});
+        if (grain.userId === this.userId) {
+          Grains.update({_id: grainId, userId: this.userId}, {$set: {title: newTitle}});
         } else {
+          if (!globalDb.userHasIdentity(this.userId, identityId)) {
+            throw new Meteor.Error(403, "Current user does not have identity " + identityId);
+          }
           var token = ApiTokens.findOne({grainId: grainId, objectId: {$exists: false},
                                          "owner.user.identityId": identityId},
                                         {sort:{created:1}});
@@ -246,14 +270,15 @@ Meteor.methods({
       if (!globalDb.userHasIdentity(this.userId, identityId)) {
         throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
       }
+      var accountId = this.userId
       var identity = globalDb.getIdentity(identityId);
       var sharerDisplayName = identity.profile.name;
       var outerResult = {successes: [], failures: []};
       emailAddresses.forEach(function(emailAddress) {
         var result = SandstormPermissions.createNewApiToken(
-          globalDb, {identityId: identityId}, grainId,
+          globalDb, {identityId: identityId, accountId: accountId}, grainId,
           "email invitation for " + emailAddress,
-          roleAssignment, true);
+          roleAssignment, {webkey: {forSharing: true}});
         var url = origin + "/shared/" + result.token;
         var html = message.html + "<br><br>" +
             "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
@@ -312,21 +337,6 @@ if (Meteor.isClient) {
         grains.forEach(function (grain) {
           if (grain.token() == token) {
             grain.doNotRevealIdentity();
-          }
-        });
-      } else {
-        console.error("Interstitial prompt answered, but no token present?");
-      }
-    },
-
-    "click .redeem-token-button": function (event) {
-      console.log(event);
-      var grains = globalGrains.get();
-      var token = event.currentTarget.getAttribute("data-token");
-      if (token) {
-        grains.forEach(function (grain) {
-          if (grain.token() == token) {
-            grain.revealIdentity();
           }
         });
       } else {
@@ -514,7 +524,7 @@ if (Meteor.isClient) {
       }
       Meteor.call("newApiToken", {identityId: activeGrain.identityId()}, grainId,
                   document.getElementById("api-token-petname").value,
-                  assignment, false, undefined,
+                  assignment, {webkey: {forSharing: false}},
                   function (error, result) {
         if (error) {
           activeGrain.setGeneratedApiToken(undefined);
@@ -670,7 +680,7 @@ if (Meteor.isClient) {
       instance.completionState.set({"pending": true});
       Meteor.call("newApiToken", {identityId: currentGrain.identityId()}, grainId,
                   event.target.getElementsByClassName("label")[0].value,
-                  assignment, true, undefined,
+                  assignment, {webkey: {forSharing: true}},
                   function (error, result) {
         if (error) {
           console.error(error.stack);
@@ -744,6 +754,11 @@ if (Meteor.isClient) {
   Template.grainView.helpers({
     unpackedGrainState: function () {
       return mapGrainStateToTemplateData(this);
+    },
+    identityPickerData: function () {
+      var grain = getActiveGrain(globalGrains.get());
+      return {identities: SandstormDb.getUserIdentities(Meteor.user()),
+              onPicked: function(identityId) { grain.revealIdentity(identityId) }};
     }
   });
 
@@ -786,6 +801,16 @@ if (Meteor.isClient) {
       }
       return false;
     },
+
+  });
+
+  Template.grainIdentityPopup.helpers({
+    identityPickerData: function () {
+      var current = getActiveGrain(globalGrains.get());
+      return {currentIdentityId: current && current.identityId(),
+              identities: SandstormDb.getUserIdentities(Meteor.user()),
+              onPicked: function(identityId) { current.switchIdentity(identityId); } };
+    }
   });
 
   Template.grainTitle.helpers({
@@ -1173,9 +1198,11 @@ if (Meteor.isClient) {
         } else {
           provider = {identityId: senderGrain.identityId()};
         }
+        var owner = {webkey: {forSharing: forSharing,
+                              expiresIfUnusedDuration: selfDestructDuration}};
 
-        Meteor.call("newApiToken", provider, senderGrain.grainId(), petname, assignment, forSharing,
-                    selfDestructDuration, function (error, result) {
+        Meteor.call("newApiToken", provider, senderGrain.grainId(), petname, assignment, owner,
+                    function (error, result) {
           if (error) {
             event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
           } else {

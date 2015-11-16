@@ -46,6 +46,7 @@ Template.loginButtonsPopup.events({
   'click button.logout': function() {
     var topbar = Template.parentData(3);
     Meteor.logout(function () {
+      sessionStorage.removeItem("linkingIdentityLoginToken");
       loginButtonsSession.closeDropdown();
       topbar.closePopup();
       var openGrains = globalGrains.get();
@@ -60,11 +61,9 @@ Template.loginButtonsPopup.events({
 
 var displayName = function () {
   var user = Meteor.user();
-  if (!user)
-    return '';
-
-  var mainIdentity = _.findWhere(SandstormDb.getUserIdentities(user), {main: true});
-  return mainIdentity ? mainIdentity.profile.name : "Name Unknown";
+  if (!user) return '';
+  var mainIdentity = SandstormDb.getUserIdentities(user)[0];
+  return mainIdentity && mainIdentity.profile.name;
 };
 
 Template.loginButtons.helpers({
@@ -193,9 +192,22 @@ Template.loginButtonsDialog.helpers({
   }
 });
 
+Template.loginButtonsList.onCreated(function() {
+   if (this.view.parentView.name === "Template._loginButtonsLoggedOutDropdown") {
+     this._topbar = Template.parentData(3);
+   }
+
+  this._linkingNewIdentity = isDemoUser();
+  if (Template.parentData(1).linkingNewIdentity) {
+    this._linkingNewIdentity = true;
+  }
+});
+
 Template.loginButtonsList.events({
-  "click button.login.oneclick": function () {
-    var topbar = Template.parentData(3);
+  "click button.login.oneclick": function (event, instance) {
+    if (instance._linkingNewIdentity) {
+      sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
+    }
 
     var serviceName = this.name;
     loginButtonsSession.resetMessages();
@@ -208,25 +220,9 @@ Template.loginButtonsList.events({
                                    capitalize(serviceName))];
 
     loginWithService({}, function (err) {
-      loginResultCallback(serviceName, err, topbar);
+      loginResultCallback(serviceName, err, instance.topbar);
     });
   },
-
-  "submit form": function (event) {
-    event.preventDefault();
-    var form = event.currentTarget;
-    var email = loginButtonsSession.get("inSignupFlow");
-    if (email) {
-      loginWithToken(email, form.token.value, Template.parentData(3));
-    } else {
-      sendEmail(form.email.value);
-    }
-  },
-
-  "click button.cancel": function (event) {
-    loginButtonsSession.set("inSignupFlow", false);
-    loginButtonsSession.resetMessages();
-  }
 });
 
 Template.loginButtonsList.helpers({
@@ -263,7 +259,38 @@ Template.loginButtonsList.helpers({
       Meteor.settings.public.hideTroubleshooting);
   },
 
+  linkingNewIdentity: function () {
+    return Template.instance()._linkingNewIdentity;
+  }
+});
+
+Template.emailLoginForm.onCreated(function () {
+  this._linkingNewIdentity = this.data.linkingNewIdentity;
+});
+
+Template.emailLoginForm.events({
+  "submit form": function (event, instance) {
+    event.preventDefault();
+    var form = event.currentTarget;
+    var email = loginButtonsSession.get("inSignupFlow");
+    if (email) {
+      if (instance._linkingNewIdentity) {
+        sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
+      }
+      loginWithToken(email, form.token.value, instance._topbar);
+    } else {
+      sendEmail(form.email.value);
+    }
+  },
+
+  "click button.cancel": function (event) {
+    loginButtonsSession.set("inSignupFlow", false);
+    loginButtonsSession.resetMessages();
+  },
+});
+
+Template.emailLoginForm.helpers({
   awaitingToken: function () {
     return loginButtonsSession.get('inSignupFlow');
-  }
+  },
 });

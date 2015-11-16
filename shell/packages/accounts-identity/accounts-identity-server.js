@@ -105,8 +105,8 @@ Meteor.methods({
       throw new Meteor.Error(404, "No account found for token: " + token);
     }
 
-    if (accountUser.identity) {
-      throw new Meteor.Error(400, "Cannot link to an account that has an identity.");
+    if (accountUser.profile) {
+      throw new Meteor.Error(400, "Cannot link an identity to another identity.");
     }
 
     var identityUser = Meteor.user();

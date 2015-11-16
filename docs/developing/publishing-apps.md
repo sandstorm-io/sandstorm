@@ -2,6 +2,18 @@
 
 After you've completed developing and testing your app's package for Sandstorm, you can publish it in the [Sandstorm App Market](https://apps.sandstorm.io/).
 
+## Get feedback on your app
+
+Before publishing an app to the Sandstorm app market, we recommend you
+email the [Sandstorm development email
+list](https://groups.google.com/forum/#!forum/sandstorm-dev) with a
+link to your package, to get feedback. Consider creating a
+[FileDrop](https://apps.sandstorm.io/app/nn7axgy3y8kvd0m1mtk3cwca34t916p5d7m4j1j2e874nuz3t8y0)
+grain containing your SPK file.
+
+The [app testing guide](https://github.com/sandstorm-io/sandstorm/wiki/Testing) provides
+some guidelines for what to look for while testing.
+
 ## Double-check your app ID
 
 Sandstorm identifies every app by a [public
@@ -189,6 +201,11 @@ You can attach a number of screenshots here. You should specify the height and w
 Here you may embed a log of changes in GitHub-flavored Markdown. It is recommended to format this with a H1 heading for each release followed by a bullet list of changes. As an example, you can look at Etherpad's changelog [here](https://raw.githubusercontent.com/kentonv/etherpad-lite/sandstorm/CHANGELOG.md).
 
 ## Check your work
+
+Consider working through the [app testing
+guide](https://github.com/sandstorm-io/sandstorm/wiki/Testing) and/or
+emailing your app to the [sandstorm-dev email
+group](https://groups.google.com/forum/#!forum/sandstorm-dev).
 
 You can run `spk verify mypackage.spk` on your app package to see the details of your metadata. Ensure everything looks like it is supposed to before you publish your app.
 

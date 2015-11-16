@@ -339,7 +339,7 @@ function splitAccountUsersAndIdentityUsers() {
                              "payments", "dailySentMailCount", "hasCompletedSignup");
     accountUser.loginIdentities = [_.pick(identity, "id")];
     accountUser.nonloginIdentities = [];
-    if (user.services.resume) {
+    if (user.services && user.services.resume) {
       accountUser.services = {resume: user.services.resume};
     }
 

@@ -318,9 +318,10 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   parentToken: If present, then this token represents exactly the capability represented by
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
 //              by `roleAssignment` (if present). To facilitate permissions computations, if the
-//              capability is a UiView, then `grainId` is set to the backing grain and `identityId`
-//              is set to the identity that shared the view. Neither `objectId` nor `frontendRef`
-//              is present when `parentToken` is present.
+//              capability is a UiView, then `grainId` is set to the backing grain, `identityId`
+//              is set to the identity that shared the view, and `accountId` is set to the account
+//              that shared the view. Neither `objectId` nor `frontendRef` is present when
+//              `parentToken` is present.
 //   petname:   Human-readable label for this access token, useful for identifying tokens for
 //              revocation. This should be displayed when visualizing incoming capabilities to
 //              the grain identified by `grainId`.

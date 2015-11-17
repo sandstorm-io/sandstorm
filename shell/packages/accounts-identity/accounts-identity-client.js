@@ -19,6 +19,9 @@ Template.identityLoginInterstitial.helpers({
     var identities = SandstormDb.getUserIdentities(Meteor.user());
     return identities && identities.length > 0 && identities[0];
   },
+  foundNonloginAccounts: function () {
+    return !!Session.get("nonloginAccounts");
+  },
   nonloginAccounts: function () {
     return Session.get("nonloginAccounts");
   },

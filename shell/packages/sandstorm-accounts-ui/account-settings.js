@@ -127,11 +127,18 @@ Template.sandstormAccountSettings.events({
 
   "click button.logout-other-sessions": function() {
     Meteor.logoutOtherClients(function(err) {
-      // TODO handle error?
+      if (err) {
+        console.log("Error logging out other clients: ", err);
+      }
+    });
+    Meteor.call("logoutIdentitiesOfCurrentAccount", function(err) {
+      if (err) {
+        console.log("Error logging out identities: ", err);
+      }
     });
   },
 
-  "click button.unlink": function (event, instance) {
+  "click button.unlink-identity": function (event, instance) {
     var identityId = event.target.getAttribute("data-identity-id");
     Meteor.call("unlinkIdentity", Meteor.userId(), identityId, function (err, result) {
       if (err) {

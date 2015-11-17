@@ -355,7 +355,7 @@ body>.main-content>.account {
 
   .identities-editor {
     position: relative;
-    height: 480px;
+    white-space: nowrap;
   }
 
   h2, h3 {
@@ -370,49 +370,64 @@ body>.main-content>.account {
     margin-top: 12px;
   }
 
-  h3 {
-    font-size: 20pt;
-  }
-
-  div.title-bar {
+  h3.title-bar {
     background-color: white;
-    width: 684px;
+    width: 660px;
     margin-bottom: 5px;
+    border: none;
   }
 
   .identities-tabs {
-    position: absolute;
-    left: 0px;
+    display: inline-block;
+    white-space: normal;
+    vertical-align: top;
     width: 225px;
     ul {
-     max-height: 280px;
-     overflow: scroll;
-     margin-top: 0;
-     padding-left: 0;
-     li {
-       position: relative;
-       list-style-type: none;
-       cursor: pointer;
-       background-color: white;
-       width: 218px;
+      position: relative;
+      margin-top: 0;
+      padding-left: 0;
+      li {
+        list-style-type: none;
+        cursor: pointer;
+        background-color: white;
+        width: 218px;
 
-       &[aria-selected=true] {
-         width: 225px;
-       }
+        &[aria-selected=true] {
+          z-index: 1;
+          width: 225px;
+        }
 
-       .make-login {
-         @extend %unstyled-button;
-       }
-       .make-no-login {
-         @extend %unstyled-button;
-       }
-     }
+        .make-login {
+          @extend %unstyled-button;
+        }
+        .make-no-login {
+          @extend %unstyled-button;
+        }
+      }
+    }
+    .login-buttons-list {
+      .troubleshooting, a[href="/about"] {
+        display: none;
+      }
+    }
+
+    button.account-button {
+      @extend %button-base;
+      @extend %button-secondary;
+      width: 218px;
+      height: 30px;
+
+      &.link-new-identity {
+        background-image: url("link-m.svg");
+        background-repeat: no-repeat;
+        background-position: 25px;
+      }
     }
   }
 
   .profile {
-    position: absolute;
-    left: 225px;
+    display: inline-block;
+    white-space: normal;
 
     div[aria-hidden=true] {
       display: none;
@@ -420,11 +435,13 @@ body>.main-content>.account {
 
     ul {
       margin-top: 0;
+      padding: 0;
     }
   }
 
   .verified-emails-editor {
     position: relative;
+    width: 680px;
     .already-verified {
       width: 320px;
       left: 0px;
@@ -432,8 +449,16 @@ body>.main-content>.account {
         padding-left: 15px;
         background-color: white;
         li {
-          height: 40px;
+          height: 30px;
           list-style-type: none;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          padding-top: 10px;
+
+          &:last-child hr {
+            display: none;
+          }
         }
       }
     }
@@ -441,6 +466,20 @@ body>.main-content>.account {
       position: absolute;
       top: 0px;
       left: 340px;
+      .info, .hidden {
+        display: none;
+      }
+      input[name="email"] {
+        width: 200px;
+        height: 20px;
+      }
+      div.button-box {
+        display: inline-block;
+        >button {
+          @extend %button-base;
+          @extend %button-secondary;
+        }
+      }
     }
   }
 }
@@ -698,19 +737,24 @@ div.billing {
 }
 
 div.identity-editor {
-  width: 415px;
+  width: 391px;
   background-color: white;
-  padding: 0 22px;
+  padding: 15px 22px;
 
   .details {
     display: block;
     clear: right;
     font-size: 80%;
+    color: #777777;
   }
 
   .picture {
     width: 128px;
     position: absolute;
+    label {
+      display: block;
+      font-weight: bold;
+    }
     button {
       display:block;
       border: none;
@@ -757,9 +801,9 @@ div.identity-editor {
     }
     ul {
       position: relative;
-      left: 160px;
+      left: 140px;
       padding: 8px;
-      width: 240px;
+      width: 250px;
 
       >li {
         list-style-type: none;
@@ -800,9 +844,22 @@ div.identity-editor {
             @extend %button-base;
             @extend %button-primary;
           }
+          >button.logout{
+            @extend %button-secondary;
+          }
         }
       }
     }
+  }
+
+  button.unlink-identity {
+    @extend %button-base;
+    @extend %button-secondary;
+    width: 200px;
+    height: 30px;
+    background-image: url("unlink-m.svg");
+    background-repeat: no-repeat;
+    background-position: 10px;
   }
 }
 
@@ -1202,9 +1259,45 @@ body>.popup.billing-prompt>.frame {
 }
 
 .identity-login-interstitial {
-  background-color: #eeeeee;
-  margin: auto;
-  width: 400px;
+  background-color: #efefef;
+  height: 100%;
+  div.centered-content{
+    margin: auto;
+    text-align: center;
+    width: 400px;
+    background-color: white;
+    h1 {
+      padding: 20px;
+    }
+    .warning-banner {
+      padding: 10px;
+      background-color: #b52931;
+      color: white;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+      li{
+        position: relative;
+        padding-bottom: 10px;
+        button.unlink {
+          @extend %button-base;
+          @extend %button-secondary;
+          position: absolute;
+          right: 30px;
+          top: 15px;
+        }
+      }
+    }
+    .identity-card {
+      margin: auto;
+      border: 2px solid gray;
+    }
+    button.logout {
+      @extend %button-base;
+      @extend %button-primary;
+    }
+  }
 }
 
 ul.identity-card-list {
@@ -1279,5 +1372,6 @@ ul.identity-card-list {
     white-space: nowrap;
     height:30px;
     font-size: 10pt;
+    color: #777777;
   }
 }

@@ -27,7 +27,7 @@ Accounts.emailToken.isEnabled = function () {
   return enabled;
 };
 
-Router.route("/_emailToken/:_email/:_token", function () {
+Router.route("/_emailLogin/:_email/:_token", function () {
   this.render("Loading");
   var that = this;
   Meteor.loginWithEmailToken(this.params._email, this.params._token, function (err) {
@@ -43,4 +43,22 @@ Router.route("/_emailToken/:_email/:_token", function () {
       Router.go("/");
     }
   });
+});
+
+Router.route("/_emailLinkIdentity/:_email/:_token/:_accountId", function () {
+  this.render("Loading");
+  var self = this;
+  if (Meteor.userId() === this.params._accountId) {
+    Meteor.call("linkEmailIdentityToAccount",
+                this.params._email, this.params._token, this.params._accountId,
+                function (err, result) {
+      if (err) {
+        self.render("_emailLinkIdentityError", {data: function () {return {error: err};}});
+      } else {
+        Router.go("/account");
+      }
+    });
+  } else {
+    this.render("_emailLinkIdentityError");
+  }
 });

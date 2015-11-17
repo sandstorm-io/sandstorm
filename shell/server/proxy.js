@@ -1634,7 +1634,7 @@ Proxy.prototype.handleRequest = function (request, data, response, retryCount) {
     }
 
     function noOverwrite() {
-      return request.headers["overwrite"].toLowerCase() === "f";
+      return (request.headers["overwrite"] || "").toLowerCase() === "f";
     }
 
     function destination() {

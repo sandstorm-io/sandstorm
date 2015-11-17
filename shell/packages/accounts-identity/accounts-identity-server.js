@@ -16,6 +16,12 @@
 
 Meteor.methods({
   loginWithIdentity: function (accountUserId) {
+    // Logs into the account with ID `accountUserId`. Throws an exception if the current user is
+    // not an identity user listed in the account's `loginIdentities` field. This method is not
+    // intended to be called directly; client-side code should only invoke it through
+    // `Meteor.loginWithIdentity()`, which additionally maintains the standard Meteor client-side
+    // login state.
+
     check(accountUserId, String);
 
     var identityUser = Meteor.user();
@@ -39,9 +45,19 @@ Meteor.methods({
                                  "identity", function () { return { userId: accountUserId }; });
   },
 
-  checkForLinkedAccounts: function() {
+  getLoginAccountOfIdentity: function() {
+    // Attempts to find an account that has the current user as a login identity. If the identity
+    // is not linked to any account, creates a new account for it. Returns a value of type
+    // `OneOf({loginAccountId: String},
+    //        {nonloginAccounts: [{accountId: String, loginIdentityUser: User}]})`
+    // where the nonloginAccounts variant indicates that this identity cannot log in to any existing
+    // account, and the corresponding list has information about the accounts that this identity is
+    // linked to.
+
     var user = Meteor.user();
-    if (user.loginIdentities) return {alreadyAccount: true};
+    if (!user || !user.profile) {
+      throw new Meteor.Error(403, "Must be logged in as an identity to look up accounts.")
+    }
 
     var loginAccount = Meteor.users.findOne({"loginIdentities.id": user._id},
                                             {fields: {_id: 1, "loginIdentities.$": 1}});
@@ -142,7 +158,7 @@ Meteor.methods({
   },
 
   unlinkIdentity: function (accountUserId, identityId) {
-    // Unlinks `identityId` from `accountUserId`.
+    // Unlinks the identity with ID `identityId` from the account with ID `accountUserId`.
 
     check(identityId, String);
     check(accountUserId, String);
@@ -165,6 +181,8 @@ Meteor.methods({
   },
 
   setIdentityAllowsLogin: function(identityId, allowLogin) {
+    // Sets whether the current account allows the identity with ID `identityId` to log in.
+
     check(identityId, String);
     check(allowLogin, Boolean);
     if (!this.userId) {
@@ -177,7 +195,10 @@ Meteor.methods({
     var user = Meteor.user();
     var currentlyLogin = !!_.findWhere(user.loginIdentities, {id: identityId});
     var currentlyNonlogin = !!_.findWhere(user.nonloginIdentities, {id: identityId});
-    if (allowLogin && !currentlyLogin && currentlyNonlogin) {
+    if ((allowLogin && currentlyLogin && !currentlyNonlogin) ||
+        (!allowLogin && !currentlyLogin && currentlyNonlogin)) {
+      return;
+    } else if (allowLogin && !currentlyLogin && currentlyNonlogin) {
       Meteor.users.update({_id: this.userId},
                           {$pull: {nonloginIdentities: {id: identityId}},
                            $push: {loginIdentities: {id: identityId}}});
@@ -186,9 +207,6 @@ Meteor.methods({
                           {$pull: {loginIdentities: {id: identityId}},
                            $push: {nonloginIdentities: {id: identityId}}});
     } else {
-      console.log("allowLogin", allowLogin);
-      console.log("currentlyLogin", currentlyLogin);
-      console.log("currentlyNonlogin", currentlyNonlogin);
       throw new Meteor.Error(500, "malformed user record");
     }
   },

@@ -68,12 +68,14 @@ Template.identityCard.helpers({
   },
 });
 
-Meteor.loginWithIdentity = function (userId, callback) {
-  check(userId, String);
+Meteor.loginWithIdentity = function (accountId, callback) {
+  // Attempts to log into the account with ID `accountId`.
+
+  check(accountId, String);
 
   Accounts.callLoginMethod({
     methodName: "loginWithIdentity",
-    methodArguments: [userId],
+    methodArguments: [accountId],
     userCallback: function (error, result) {
       if (error) {
         callback && callback(error);
@@ -100,7 +102,7 @@ Accounts.onLogin(function () {
       Meteor.loginWithToken(token);
     });
   } else {
-    Meteor.call("checkForLinkedAccounts", function(err, result) {
+    Meteor.call("getLoginAccountOfIdentity", function(err, result) {
       if (err) {
         console.log("Error", err);
         Meteor.logout();

@@ -190,7 +190,7 @@ update-deps:
 	@$(foreach DEP,capnproto ekam libseccomp libsodium node-capnp, \
 	    cd deps/$(DEP) && \
 	    echo "pulling $(DEP)..." && \
-	    git pull $(REMOTE_$(DEP)) && \
+	    git pull $(REMOTE_$(DEP)) `git symbolic-ref --short HEAD` && \
 	    cd ../..;)
 
 # ====================================================================

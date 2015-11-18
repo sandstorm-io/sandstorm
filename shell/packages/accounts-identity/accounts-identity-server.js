@@ -48,16 +48,18 @@ Meteor.methods({
   getLoginAccountOfIdentity: function() {
     // Attempts to find an account that has the current user as a login identity. If the identity
     // is not linked to any account, creates a new account for it. Returns a value of type
-    // `OneOf({loginAccountId: String},
+    // `OneOf({alreadyAccount: null},
+    //        {loginAccountId: String},
     //        {nonloginAccounts: [{accountId: String, loginIdentityUser: User}]})`
     // where the nonloginAccounts variant indicates that this identity cannot log in to any existing
     // account, and the corresponding list has information about the accounts that this identity is
     // linked to.
 
     var user = Meteor.user();
-    if (!user || !user.profile) {
-      throw new Meteor.Error(403, "Must be logged in as an identity to look up accounts.")
+    if (!user) {
+      throw new Meteor.Error(403, "Must be logged in to look up accounts.")
     }
+    if (user.loginIdentities) return {alreadyAccount: null};
 
     var loginAccount = Meteor.users.findOne({"loginIdentities.id": user._id},
                                             {fields: {_id: 1, "loginIdentities.$": 1}});

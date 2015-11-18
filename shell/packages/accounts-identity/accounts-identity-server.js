@@ -53,7 +53,9 @@ Meteor.methods({
     //        {nonloginAccounts: [{accountId: String, loginIdentityUser: User}]})`
     // where the nonloginAccounts variant indicates that this identity cannot log in to any existing
     // account, and the corresponding list has information about the accounts that this identity is
-    // linked to.
+    // linked to. The alreadyAccount variant is not an error because the client is allowed to call
+    // this method before its accountIdentities subscription is ready, and therefore it might
+    // not yet know whether the user is an identity or an account.
 
     var user = Meteor.user();
     if (!user) {

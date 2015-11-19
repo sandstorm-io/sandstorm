@@ -107,13 +107,20 @@ Please install the following:
 On Debian or Ubuntu, you should be able to get all these with:
 
     sudo apt-get install build-essential libcap-dev xz-utils zip \
-        unzip imagemagick strace curl clang-3.4 discount
+        unzip imagemagick strace curl clang-3.4 discount git
     curl https://install.meteor.com/ | sh
+
+### Get the sources
+
+Get the sources from the git repository
+    
+    git clone https://github.com/sandstorm-io/sandstorm.git
 
 ### Building / installing the binaries
 
 Build the Sandstorm bundle:
 
+    cd sandstorm
     make
 
 (Note: You should *not* use `-j`, as we only use make as a meta-build system. The major components will utilize all CPU cores.)

@@ -254,14 +254,14 @@ Meteor.methods({
     }
   },
   inviteUsersToGrain: function (origin, identityId, grainId, title, roleAssignment,
-                                emailAddresses, message) {
+                                contacts, message) {
     if (!this.isSimulation) {
       check(origin, String);
       check(identityId, String);
       check(grainId, String);
       check(title, String);
       check(roleAssignment, roleAssignmentPattern);
-      check(emailAddresses, [String]);
+      check(contacts, [Object]);
       check(message, {text: String, html: String});
       if (!this.userId) {
         throw new Meteor.Error(403, "Must be logged in to share by email.");
@@ -273,32 +273,40 @@ Meteor.methods({
       var identity = globalDb.getIdentity(identityId);
       var sharerDisplayName = identity.profile.name;
       var outerResult = {successes: [], failures: []};
-      emailAddresses.forEach(function(emailAddress) {
-        var result = SandstormPermissions.createNewApiToken(
-          globalDb, {identityId: identityId, accountId: accountId}, grainId,
-          "email invitation for " + emailAddress,
-          roleAssignment, {webkey: {forSharing: true}});
-        var url = origin + "/shared/" + result.token;
-        var html = message.html + "<br><br>" +
-            "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
-            "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
-            "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
-            "Open Shared Grain</a><div style='font-size:8pt;font-style:italic;color:gray'>" +
-            "Note: If you forward this email to other people, they will be able to access " +
-            "the share as well. To prevent this, remove the button before forwarding.</div>";
-        try {
-          SandstormEmail.send({
-            to: emailAddress,
-            from: "Sandstorm server <no-reply@" + HOSTNAME + ">",
-            subject: sharerDisplayName + " has invited you to join a grain: " + title,
-            text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
-              "\n\nNote: If you forward this email to other people, they will be able to access " +
-              "the share as well. To prevent this, remove the link before forwarding.",
-            html: html,
-          });
-          outerResult.successes.push(emailAddress);
-        } catch (e) {
-          outerResult.failures.push({email: emailAddress, error: e.toString()});
+      contacts.forEach(function(contact) {
+        if (contact.isDefault && contact.profile.service === "email") {
+          var emailAddress = contact.profile.name;
+          var result = SandstormPermissions.createNewApiToken(
+            globalDb, {identityId: identityId, accountId: accountId}, grainId,
+            "email invitation for " + emailAddress,
+            roleAssignment, {webkey: {forSharing: true}});
+          var url = origin + "/shared/" + result.token;
+          var html = message.html + "<br><br>" +
+              "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
+              "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
+              "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
+              "Open Shared Grain</a><div style='font-size:8pt;font-style:italic;color:gray'>" +
+              "Note: If you forward this email to other people, they will be able to access " +
+              "the share as well. To prevent this, remove the button before forwarding.</div>";
+          try {
+            SandstormEmail.send({
+              to: emailAddress,
+              from: "Sandstorm server <no-reply@" + HOSTNAME + ">",
+              subject: sharerDisplayName + " has invited you to join a grain: " + title,
+              text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
+                "\n\nNote: If you forward this email to other people, they will be able to " +
+                "access the share as well. To prevent this, remove the link before forwarding.",
+              html: html,
+            });
+          } catch (e) {
+            outerResult.failures.push({contact: contact, error: e.toString()});
+          }
+        } else {
+          // TODO(someday): notify the user somehow?
+          SandstormPermissions.createNewApiToken(
+            globalDb, {identityId: identityId, accountId: accountId}, grainId,
+            "direct invitation to " + contact.profile.intrinsicName,
+            roleAssignment, {user: {identityId: contact.identityId, title: title}});
         }
       });
       return outerResult;
@@ -1015,6 +1023,7 @@ if (Meteor.isClient) {
 
   Template.emailInviteTab.onCreated(function () {
     this.completionState = new ReactiveVar({clear: true});
+    this.contacts = new ReactiveVar([]);
   });
 
   Template.shareableLinkTab.helpers({
@@ -1028,6 +1037,9 @@ if (Meteor.isClient) {
       var instance = Template.instance();
       return instance.completionState.get();
     },
+    contacts: function() {
+      return Template.instance().contacts;
+    }
   });
 
   Template.emailInviteTab.events({
@@ -1039,16 +1051,6 @@ if (Meteor.isClient) {
       var grainId = instance.data.grainId;
       var title = instance.data.title;
 
-      // MailComposer accepts a comma-delimited list, but we want to split the list before
-      // sending the mail because we want a separate token for each user. Moreover, users
-      // will probably expect space-delimited lists to work, and when we eventually implement
-      // autocompletion and inline validation, we expect that we will display a space-delimited
-      // list.
-      var emails = event.target.getElementsByClassName("emails")[0].value.split(/[ ,]/);
-      emails = emails.filter(function (email) { return email.length > 0;});
-      if (emails.length == 0) {
-        return;
-      }
       var roleList = event.target.getElementsByClassName("share-token-role")[0];
       var assignment;
       if (roleList) {
@@ -1067,7 +1069,7 @@ if (Meteor.isClient) {
       var htmlMessage = div.innerHTML.replace(/\n/g, "<br>");
 
       Meteor.call("inviteUsersToGrain", getOrigin(), currentGrain.identityId(),
-                  grainId, title, assignment, emails,
+                  grainId, title, assignment, instance.contacts.get(),
                   {text: message, html: htmlMessage}, function (error, result) {
         if (error) {
           instance.completionState.set({error: error.toString()});
@@ -1078,7 +1080,7 @@ if (Meteor.isClient) {
               if (ii != 0) {
                 message += ", ";
               }
-              message += result.failures[ii].email;
+              message += result.failures[ii].contact.profile.name;
             }
             instance.completionState.set({error: message});
           } else {

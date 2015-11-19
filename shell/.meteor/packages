@@ -31,6 +31,7 @@ sandstorm-ui-applist
 sandstorm-ui-app-details
 sandstorm-ui-app-install
 sandstorm-ui-grainlist
+sandstorm-ui-autocomplete-input
 meteor-node-forge
 fourseven:scss
 standard-minifiers

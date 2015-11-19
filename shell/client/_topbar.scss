@@ -813,6 +813,104 @@ body>.popup {
     }
   }
 
+  &.share {
+    .contact-box {
+      position: relative;
+      display: inline-block;
+      width: 320px;
+      border: 1px solid #e4e4e4;
+      >ul.completed-contacts {
+        list-style: outside none none;
+        padding: 0px;
+        display: inline;
+        >li {
+          display: inline-block;
+          background-color: $sandstorm-purple-color;
+          color: white;
+          border-radius: 8px;
+          padding: 2px 4px;
+          border: 1px solid #e4e4e4;
+          cursor: pointer;
+          position: relative;
+
+          &:focus, &:hover:focus {
+            cursor: default;
+            .closer {
+              float: right;
+              width: 16px;
+              height: 16px;
+              color: transparent;
+              overflow: hidden;
+              background-image: url("/close-m.svg");
+              background-size: 12px 12px;
+              background-repeat: no-repeat;
+              background-position: center;
+              border: none;
+              border-radius: 8px;
+              background-color: transparent;
+              margin: 0px 0px 0px 4px;
+
+              &:hover {
+                background-color: #eee;
+                cursor: pointer;
+              }
+            }
+            background-color: lighten($sandstorm-purple-color, 30%);
+          }
+          &:hover {
+            background-color: darken($sandstorm-purple-color, 10%);
+          }
+          .picture {
+            width: 14px;
+            height: 14px;
+            background-size: contain;
+            background-repeat: no-repeat;
+            display: inline-block;
+            margin-right: 4px;
+           }
+        }
+      }
+      >ul.autocomplete-suggestions {
+        position: absolute;
+        width: 350px;
+        display: block;
+        background: white;
+        z-index: 1;
+        border: 1px solid #e4e4e4;
+
+        list-style: outside none none;
+        padding: 0px;
+        margin: 2px 0px;
+        >li {
+          display: block;
+          border: 1px solid rgba(0, 0, 0, 0);
+          border-bottom: 1px solid #e4e4e4;
+          box-sizing: border-box;
+          cursor: pointer;
+
+          &.selected {
+            border: $focus-outline-color solid 1px;
+          }
+          &:hover {
+            background-color: #999;
+            * {
+              background-color: #999;
+            }
+          }
+        }
+      }
+
+      input.emails {
+        border: 0px;
+        outline: 0px;
+        width: 200px;
+      }
+      &.active {
+        outline: $focus-outline-color solid 1px;
+      }
+    }
+  }
+
   &.share>.frame, &.who-has-access>.frame {
     $popup-background-color: #ededed;
 
@@ -951,9 +1049,6 @@ body>.popup {
       vertical-align: top;
     }
 
-    .emails {
-      width: 47%;
-    }
     .label, .personal-message {
       width: 100%;
       box-sizing: border-box;

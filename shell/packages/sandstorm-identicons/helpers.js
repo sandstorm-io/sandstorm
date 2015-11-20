@@ -31,10 +31,21 @@ var hashAppIdForIdenticon = function (id) {
   return result.join("");
 }
 
+// Keep a static global cache of all app identicons produced in this way.
+// If memory usage is excessive, we can revisit this decision.
+var cachedIdenticons = {};
+var cachedIdenticon = function(hashedAppId, size) {
+  var cacheKey = hashedAppId + "-" + size;
+  if (!cachedIdenticons[cacheKey]) {
+    var data = new Identicon(hashedAppId, size).toString();
+    cachedIdenticons[cacheKey] = "data:image/png;base64," + data;
+  }
+  return cachedIdenticons[cacheKey];
+}
+
 var identiconForApp = function (appId, usage) {
   var size = (usage === "appGrid" ? 128 : 24);
-  var data = new Identicon(hashAppIdForIdenticon(appId), size).toString();
-  return "data:image/png;base64," + data;
+  return cachedIdenticon(hashAppIdForIdenticon(appId), size);
 };
 
 var bytesToBase64 = function(bytes) {

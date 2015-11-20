@@ -136,27 +136,22 @@ function emailToHandle(email) {
   return filterHandle(base);
 }
 
-function fillInDefaults(user) {
+function fillInProfileDefaults(user) {
   var profile = user.profile;
   if (profile.service === "github") {
-    profile.intrinsicName = user.services.github.username;
     profile.name = profile.name || user.services.github.username || "Name Unknown";
     profile.handle = profile.handle || filterHandle(user.services.github.username) ||
         filterHandle(profile.name);
   } else if (profile.service === "google") {
-    profile.intrinsicName = user.services.google.name;
-    user.privateIntrinsicName = user.services.google.email;
     profile.name = profile.name || user.services.google.name || "Name Unknown";
     profile.handle = profile.handle || emailToHandle(user.services.google.email) ||
         filterHandle(profile.name);
     profile.pronoun = profile.pronoun || GENDERS[user.services.google.gender] || "neutral";
   } else if (profile.service === "email") {
     var email = user.services.email.email
-    profile.intrinsicName = profile.intrinsicName || email;
     profile.name = profile.name || email.split("@")[0];
     profile.handle = profile.handle || emailToHandle(email);
   } else if (profile.service === "dev") {
-    profile.intrinsicName = profile.intrinsicName || user.services.dev.name;
     var lowerCaseName = user.services.dev.name.split(" ")[0].toLowerCase();
     profile.name = profile.name || user.services.dev.name;
     profile.handle = profile.handle || filterHandle(lowerCaseName);
@@ -178,6 +173,24 @@ function fillInDefaults(user) {
   }
 }
 
+SandstormDb.fillInIntrinsicName = function(user) {
+  var profile = user.profile;
+  if (profile.service === "github") {
+    profile.intrinsicName = user.services.github.username;
+  } else if (profile.service === "google") {
+    profile.intrinsicName = user.services.google.name;
+    user.privateIntrinsicName = user.services.google.email;
+  } else if (profile.service === "email") {
+    profile.intrinsicName = user.services.email.email
+  } else if (profile.service === "dev") {
+    profile.intrinsicName = user.services.dev.name;
+  } else if (profile.service === "demo") {
+    // No intrinsic name.
+  } else {
+    throw new Error("unrecognized identity service: ", profile.service);
+  }
+}
+
 function getVerifiedEmail(identity) {
   if (identity.services.google && identity.services.google.email &&
       identity.services.google.verified_email) {
@@ -187,7 +200,7 @@ function getVerifiedEmail(identity) {
   }
 }
 
-SandstormDb.fillInIdenticon = function(user) {
+SandstormDb.fillInPictureUrl = function(user) {
   var staticHost = httpProtocol + "//" + makeWildcardHost("static");
   user.profile.pictureUrl = staticAssetUrl(user.profile.picture, staticHost) ||
     makeIdenticon(user._id);
@@ -230,9 +243,9 @@ SandstormDb.getUserIdentities = function (user) {
   }
 
   return rawIdentities.map(function(identity) {
-    SandstormDb.fillInIdenticon(identity);
-      makeIdenticon(identity._id);
-    fillInDefaults(identity);
+    SandstormDb.fillInPictureUrl(identity);
+    fillInProfileDefaults(identity);
+    SandstormDb.fillInIntrinsicName(identity);
     return identity;
   });
 }

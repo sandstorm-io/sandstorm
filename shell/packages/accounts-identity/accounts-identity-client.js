@@ -114,7 +114,7 @@ Accounts.onLogin(function () {
           Meteor.loginWithIdentity(result.loginAccountId);
         } else if (result.nonloginAccounts) {
           var loginIdentities = result.nonloginAccounts.map(function (account) {
-            SandstormDb.fillInIdenticon(account.loginIdentityUser);
+            SandstormDb.fillInPictureUrl(account.loginIdentityUser);
             return {accountId: account.accountId,
                     identity: account.loginIdentityUser};
           });

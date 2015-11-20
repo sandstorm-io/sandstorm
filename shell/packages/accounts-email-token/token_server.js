@@ -88,10 +88,6 @@ var Url = Npm.require("url");
 var ROOT_URL = Url.parse(process.env.ROOT_URL);
 var HOSTNAME = ROOT_URL.hostname;
 
-var makeTokenUrl = function (email, token) {
-  return process.env.ROOT_URL + "/_emailLogin/" + encodeURIComponent(email) + "/" + encodeURIComponent(token);
-};
-
 var makeTokenUrl = function (email, token, linkingIdentity) {
   if (linkingIdentity) {
     return process.env.ROOT_URL + "/_emailLinkIdentity/" + encodeURIComponent(email) + "/" +
@@ -191,14 +187,13 @@ Meteor.methods({
     var user = createAndEmailTokenForUser(email, linkingIdentity);
   },
 
-  linkEmailIdentityToAccount: function (email, token, accountId) {
-    // Links the email identity with address `email` and login token `token` to the account with
-    // ID `accountId`, which must also be the current account.
+  linkEmailIdentityToAccount: function (email, token) {
+    // Links the email identity with address `email` and login token `token` to the current account.
     check(email, String);
     check(token, String);
     var account = Meteor.user();
-    if (!account || account._id !== accountId) {
-      throw new Meteor.Error(403, "Cannot link to an account other than the current account.");
+    if (!account || !account.loginIdentities) {
+      throw new Meteor.Error(403, "Must be logged in to an account to link an email identity.");
     }
     var identity = Meteor.users.findOne({"services.email.email": email},
                                         {fields: {"services.email": 1}});
@@ -209,7 +204,7 @@ Meteor.methods({
       throw new Meteor.Error(403, "Invalid authorization token.");
     }
 
-    Accounts.linkIdentityToAccount(identity._id, accountId);
+    Accounts.linkIdentityToAccount(identity._id, account._id);
   }
 });
 

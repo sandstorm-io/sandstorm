@@ -231,7 +231,9 @@ Accounts.linkIdentityToAccount = function (identityId, accountId) {
   check(accountId, String);
 
   // Make sure not to add the same identity twice.
-  Meteor.users.update({_id: accountId, "nonloginIdentities.id": {$ne: identityId},
+  Meteor.users.update({_id: accountId,
+                       loginIdentities: {$exists: true},
+                       "nonloginIdentities.id": {$ne: identityId},
                        "loginIdentities.id": {$ne: identityId}},
                       {$push: {"nonloginIdentities": {id: identityId}}});
 

@@ -226,7 +226,7 @@ public:
 
 }  // namespace
 
-void Indexer::updateIndex() {
+void Indexer::updateIndexInternal(kj::StringPtr outputFilename, bool unapprovedApps) {
   capnp::MallocMessageBuilder scratch;
   auto orphanage = scratch.getOrphanage();
 
@@ -248,7 +248,10 @@ void Indexer::updateIndex() {
 
       capnp::StreamFdMessageReader statusMessage(raiiOpen(statusFile, O_RDONLY));
       auto status = statusMessage.getRoot<SubmissionStatus>();
-      if (status.getRequestState() == SubmissionState::PUBLISH && status.isApproved()) {
+      if ((!unapprovedApps && status.getRequestState() == SubmissionState::PUBLISH &&
+            status.isApproved()) ||
+          (unapprovedApps && status.getRequestState() != SubmissionState::IGNORE &&
+            !status.isApproved())) {
         capnp::StreamFdMessageReader metadataMessage(raiiOpen(metadataFile, O_RDONLY));
         auto info = metadataMessage.getRoot<spk::VerifiedInfo>();
         auto metadata = info.getMetadata();
@@ -414,7 +417,12 @@ void Indexer::updateIndex() {
   auto text = json.encode(indexData);
   StagingFile file("/var/www/apps");
   kj::FdOutputStream(file.getFd()).write(text.begin(), text.size());
-  file.finalize(kj::str("/var/www/apps/index.json"));
+  file.finalize(kj::str("/var/www/apps/", outputFilename));
+}
+
+void Indexer::updateIndex() {
+  updateIndexInternal("index.json", false);
+  updateIndexInternal("index-unpublished.json", true);
 }
 
 kj::String Indexer::writeIcon(spk::Metadata::Icon::Reader icon) {

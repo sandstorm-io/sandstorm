@@ -62,6 +62,8 @@ private:
   kj::String writeScreenshot(spk::Metadata::Screenshot::Reader screenshot);
   kj::String writeImage(kj::ArrayPtr<const byte> data, kj::StringPtr extension);
   capnp::Text::Reader categoryName(spk::Category category);
+
+  void updateIndexInternal(kj::StringPtr outputFilename, bool unapprovedApps);
 };
 
 } // namespace appindex

@@ -1224,11 +1224,11 @@ if (Meteor.isServer) {
       return packageCache[packageId];
     }
 
-    var package = Packages.findOne(packageId);
-    if (package && package.status === "ready") {
-      packageCache[packageId] = package;
+    var pkg = Packages.findOne(packageId);
+    if (pkg && pkg.status === "ready") {
+      packageCache[packageId] = pkg;
     }
-    return package;
+    return pkg;
   }
 
   SandstormDb.prototype.sendAppUpdateNotifications = function (appId, packageId, name,

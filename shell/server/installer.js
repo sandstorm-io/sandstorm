@@ -42,7 +42,7 @@ var verifyIsMainReplica = function () {
 Meteor.methods({
   deleteUnusedPackages: function (appId) {
     check(appId, String);
-    Packages.find({appId:appId}).forEach(function (package) {deletePackage(package._id)});
+    Packages.find({appId:appId}).forEach(function (pkg) {deletePackage(pkg._id)});
   },
 });
 
@@ -51,10 +51,10 @@ deletePackage = function (packageId) {
   Packages.update({_id: packageId, status: "ready"}, {$set: {shouldCleanup: true}});
 }
 
-var deletePackageInternal = function (package) {
+var deletePackageInternal = function (pkg) {
   verifyIsMainReplica();
 
-  var packageId = package._id;
+  var packageId = pkg._id;
 
   if (packageId in installers) {
     return;
@@ -66,14 +66,14 @@ var deletePackageInternal = function (package) {
     var action = UserActions.findOne({packageId:packageId});
     var grain = Grains.findOne({packageId:packageId});
     var notificationQuery = {};
-    notificationQuery["appUpdates." + package.appId] = {$exists: true};
-    if (!grain && !action && !(package.isAutoUpdated && Notifications.findOne(notificationQuery))) {
+    notificationQuery["appUpdates." + pkg.appId] = {$exists: true};
+    if (!grain && !action && !(pkg.isAutoUpdated && Notifications.findOne(notificationQuery))) {
       Packages.update({_id:packageId}, {$set: {status:"delete"}, $unset: {shouldCleanup: ""}});
       waitPromise(globalBackend.cap().deletePackage(packageId));
       Packages.remove(packageId);
 
       // Clean up assets (icon, etc).
-      getAllManifestAssets(package.manifest).forEach(function (assetId) {
+      getAllManifestAssets(pkg.manifest).forEach(function (assetId) {
         globalDb.unrefStaticAsset(assetId);
       });
     } else {
@@ -86,15 +86,15 @@ var deletePackageInternal = function (package) {
   }
 }
 
-var startInstallInternal = function (package) {
+var startInstallInternal = function (pkg) {
   verifyIsMainReplica();
 
-  if (package._id in installers) {
+  if (pkg._id in installers) {
     return;
   }
 
-  var installer = new AppInstaller(package._id, package.url, package.appId, package.isAutoUpdated);
-  installers[package._id] = installer;
+  var installer = new AppInstaller(pkg._id, pkg.url, pkg.appId, pkg.isAutoUpdated);
+  installers[pkg._id] = installer;
   installer.start();
 }
 
@@ -102,10 +102,10 @@ cancelDownload = function (packageId) {
   Packages.remove({_id: packageId, status: "download"});
 }
 
-var cancelDownloadInternal = function (package) {
+var cancelDownloadInternal = function (pkg) {
   verifyIsMainReplica();
 
-  var installer = installers[package._id];
+  var installer = installers[pkg._id];
 
   // Don't do anything unless a download is in progress.
   if (installer && installer.downloadRequest) {

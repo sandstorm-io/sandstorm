@@ -315,8 +315,8 @@ function serveStaticAsset(req, res) {
         update: {$set: {"profile.picture": assetId}},
         fields: {"profile.picture": 1}
       });
-      if (old && old.identity && old.identity.profile.picture) {
-        globalDb.unrefStaticAsset(old.identity.profile.picture);
+      if (old && old.profile && old.profile.picture) {
+        globalDb.unrefStaticAsset(old.profile.picture);
       }
 
       res.writeHead(204, {});

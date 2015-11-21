@@ -25,7 +25,7 @@ limitations under the License.
 
   <h2>My Account</h2>
   <div class="identities-editor">
-  <div class="title-bar"> Linked Identities: </div>
+  <h3 class="title-bar"> Linked Identities </h3>
   <div class="identities-tabs">
   {{#unless isLinkingNewIdentity}}
   <ul role="tablist" >
@@ -43,25 +43,25 @@ limitations under the License.
       {{#with linkingNewIdentity=true}}
         {{> loginButtonsList globalAccountsUi}}
       {{/with}}
-    <p><button class="cancel-link-new-identity">Cancel</button></p>
+    <p><button class="account-button cancel-link-new-identity">Cancel</button></p>
     {{else}}
-    <p><button class="link-new-identity">Link new identity</button></p>
+    <p><button class="account-button link-new-identity">Link new identity</button></p>
     {{/if}}
   {{/if}}
-  <p><button class="logout-other-sessions">Log out all other sessions</button></p>
-  </div>
-  <section class="profile">
+  {{#unless isLinkingNewIdentity}}
+    <p><button class="account-button logout-other-sessions">Log out all other sessions</button></p>
+  {{/unless}}
+  </div><section class="profile">
     {{#each identities}}
     <div id="profile-tab-{{_id}}" aria-labelled-by="profile-tab-header-{{_id}}"
          role="tabpanel" aria-hidden="{{isIdentityHidden _id}}">
        {{>_accountProfileEditor}}
      </div>
     {{/each}}
-
   </section>
   </div>
 
-  <div class="title-bar">Primary e-mail address for service-related notifications.</div>
+  <h3 class="title-bar">Primary e-mail address for service-related notifications</h3>
   <div class="verified-emails-editor">
     <div class="already-verified">
       {{#if verifiedEmails}}
@@ -69,8 +69,10 @@ limitations under the License.
         {{#each verifiedEmails}}
         <li>
           <label><input type="radio" name="verifiedEmail" class="primary-email"
-                        data-email="{{email}}" checked={{primary}}> {{email}}
+                        data-email="{{email}}" checked={{primary}}>
+            {{email}}
           </label>
+          <hr>
         </li>
         {{/each}}
       </ul>
@@ -79,11 +81,11 @@ limitations under the License.
       {{/if}}
     </div>
     <div class="add-new">
-      {{> emailLoginForm linkingNewIdentity=true prompt="Add new email adress"}}
+      Add new e-mail address
+      {{> emailLoginForm linkingNewIdentity=true sendButtonText="Confirm"}}
       {{> _loginButtonsMessages}}
     </div>
   </div>
-
 
   {{#if isPaymentsEnabled}}
   <div class="billing">
@@ -194,7 +196,7 @@ limitations under the License.
     </form>
     {{#if hasCompletedSignup}}
     <div>
-      <button class="unlink" data-identity-id="{{_id}}">Unlink this identity</button>
+      <button class="unlink-identity" data-identity-id="{{_id}}">Unlink this identity</button>
     </div>
     <div>
       {{#if login}}

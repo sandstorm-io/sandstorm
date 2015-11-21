@@ -16,6 +16,12 @@
 
 Meteor.methods({
   loginWithIdentity: function (accountUserId) {
+    // Logs into the account with ID `accountUserId`. Throws an exception if the current user is
+    // not an identity user listed in the account's `loginIdentities` field. This method is not
+    // intended to be called directly; client-side code should only invoke it through
+    // `Meteor.loginWithIdentity()`, which additionally maintains the standard Meteor client-side
+    // login state.
+
     check(accountUserId, String);
 
     var identityUser = Meteor.user();
@@ -39,9 +45,23 @@ Meteor.methods({
                                  "identity", function () { return { userId: accountUserId }; });
   },
 
-  checkForLinkedAccounts: function() {
+  getLoginAccountOfIdentity: function() {
+    // Attempts to find an account that has the current user as a login identity. If the identity
+    // is not linked to any account, creates a new account for it. Returns a value of type
+    // `OneOf({alreadyAccount: null},
+    //        {loginAccountId: String},
+    //        {nonloginAccounts: [{accountId: String, loginIdentityUser: User}]})`
+    // where the nonloginAccounts variant indicates that this identity cannot log in to any existing
+    // account, and the corresponding list has information about the accounts that this identity is
+    // linked to. The alreadyAccount variant is not an error because the client is allowed to call
+    // this method before its accountIdentities subscription is ready, and therefore it might
+    // not yet know whether the user is an identity or an account.
+
     var user = Meteor.user();
-    if (user.loginIdentities) return {alreadyAccount: true};
+    if (!user) {
+      throw new Meteor.Error(403, "Must be logged in to look up accounts.")
+    }
+    if (user.loginIdentities) return {alreadyAccount: null};
 
     var loginAccount = Meteor.users.findOne({"loginIdentities.id": user._id},
                                             {fields: {_id: 1, "loginIdentities.$": 1}});
@@ -76,12 +96,14 @@ Meteor.methods({
       var resultData = [];
       nonloginAccounts.forEach(function(account) {
         if (account.loginIdentities.length > 0) {
-          var loginIdentityUser =
-              Meteor.users.findOne({_id: account.loginIdentities[0].id});
-          if (loginIdentityUser) {
-            var userWithDefaults = SandstormDb.getUserIdentities(loginIdentityUser)[0];
-            resultData.push({accountId: account._id,
-                             loginIdentityUser: _.pick(userWithDefaults, "_id", "profile")});
+          for (var jj = 0; jj < account.loginIdentities.length; ++jj) {
+            var loginIdentityUser =
+                Meteor.users.findOne({_id: account.loginIdentities[jj].id});
+            if (loginIdentityUser) {
+              var userWithDefaults = SandstormDb.getUserIdentities(loginIdentityUser)[0];
+              resultData.push({accountId: account._id,
+                               loginIdentityUser: _.pick(userWithDefaults, "_id", "profile")});
+            }
           }
         }
       });
@@ -142,7 +164,7 @@ Meteor.methods({
   },
 
   unlinkIdentity: function (accountUserId, identityId) {
-    // Unlinks `identityId` from `accountUserId`.
+    // Unlinks the identity with ID `identityId` from the account with ID `accountUserId`.
 
     check(identityId, String);
     check(accountUserId, String);
@@ -165,6 +187,8 @@ Meteor.methods({
   },
 
   setIdentityAllowsLogin: function(identityId, allowLogin) {
+    // Sets whether the current account allows the identity with ID `identityId` to log in.
+
     check(identityId, String);
     check(allowLogin, Boolean);
     if (!this.userId) {
@@ -174,25 +198,43 @@ Meteor.methods({
       throw new Meteor.Error(403, "Current user does not own identity " + identityId);
     }
 
-    var user = Meteor.user();
-    var currentlyLogin = !!_.findWhere(user.loginIdentities, {id: identityId});
-    var currentlyNonlogin = !!_.findWhere(user.nonloginIdentities, {id: identityId});
-    if (allowLogin && !currentlyLogin && currentlyNonlogin) {
-      Meteor.users.update({_id: this.userId},
+    if (allowLogin) {
+      Meteor.users.update({_id: this.userId,
+                           "nonloginIdentities.id": identityId,
+                           "loginIdentities.id": {$not: {$eq: identityId}}},
                           {$pull: {nonloginIdentities: {id: identityId}},
                            $push: {loginIdentities: {id: identityId}}});
-    } else if (!allowLogin && currentlyLogin && !currentlyNonlogin) {
-      Meteor.users.update({_id: this.userId},
+    } else {
+      Meteor.users.update({_id: this.userId,
+                           "loginIdentities.id": identityId,
+                           "nonloginIdentities.id": {$not: {$eq: identityId}}},
                           {$pull: {loginIdentities: {id: identityId}},
                            $push: {nonloginIdentities: {id: identityId}}});
-    } else {
-      console.log("allowLogin", allowLogin);
-      console.log("currentlyLogin", currentlyLogin);
-      console.log("currentlyNonlogin", currentlyNonlogin);
-      throw new Meteor.Error(500, "malformed user record");
     }
   },
 
+  logoutIdentitiesOfCurrentAccount: function() {
+    // Logs out all identities that are allowed to log in to the current account.
+    var user = Meteor.user();
+    if (user && user.loginIdentities) {
+      user.loginIdentities.forEach(function(identity) {
+        Meteor.users.update({_id: identity.id}, {$set: {"services.resume.loginTokens": []}});
+      });
+    }
+  }
 });
 
+Accounts.linkIdentityToAccount = function (identityId, accountId) {
+  // Links the identity to the account.
 
+  check(identityId, String);
+  check(accountId, String);
+
+  // Make sure not to add the same identity twice.
+  Meteor.users.update({_id: accountId,
+                       loginIdentities: {$exists: true},
+                       "nonloginIdentities.id": {$ne: identityId},
+                       "loginIdentities.id": {$ne: identityId}},
+                      {$push: {"nonloginIdentities": {id: identityId}}});
+
+}

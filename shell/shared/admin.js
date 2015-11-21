@@ -889,14 +889,19 @@ if (Meteor.isServer) {
       clearAdminToken(token);
     },
     clearResumeTokensForService: function (token, serviceName) {
-      // TODO(now): With the identity/account split, this no longer does the right thing.
       checkAuth(token);
       check(serviceName, String);
 
       var query = {};
       query["services." + serviceName] = {$exists: true};
-      query["services.resume.loginTokens"] = {$exists: true};
-      Meteor.users.update(query, {$set: {"services.resume.loginTokens": []}});
+      Meteor.users.find(query).forEach(function(identity) {
+        if (identity.services.resume && identity.services.resume.loginTokens &&
+            identity.services.resume.loginTokens.length > 0) {
+          Meteor.users.update({_id: identity._id}, {$set: {"services.resume.loginTokens": []}});
+        }
+        Meteor.users.update({"loginIdentities.id": identity._id},
+                            {$set: {"services.resume.loginTokens": []}});
+      });
     },
     adminUpdateUser: function (token, userInfo) {
       checkAuth(token);

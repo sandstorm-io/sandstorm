@@ -32,6 +32,17 @@ Accounts.emailToken.setEmailPackage = function (packageName) {
   EMAIL_PACKAGE = packageName;
 };
 
+function consumeToken (user, token) {
+  var hashedToken = Accounts.emailToken._hashToken(token);
+  var found = checkToken(user.services.email.tokens, hashedToken);
+
+  if (found) {
+    Meteor.users.update({_id: user._id}, {$pull: {"services.email.tokens": hashedToken}});
+  }
+
+  return found;
+}
+
 // Handler to login with a token.
 Accounts.registerLoginHandler("email", function (options) {
   if (!options.email)
@@ -60,18 +71,13 @@ Accounts.registerLoginHandler("email", function (options) {
     };
   }
 
-  var token = Accounts.emailToken._hashToken(options.token.trim());
-  var found = checkToken(user.services.email.tokens, token);
-
-  if (!found) {
+  if (!consumeToken(user, options.token.trim())) {
     console.error("Token not found:", options.email);
     return {
       error: new Meteor.Error(403, "Invalid authentication code")
     };
   }
 
-  Meteor.users.update({_id: user._id},
-                      {$pull: {"services.email.tokens": token}});
   return {
     userId: user._id
   };
@@ -82,26 +88,39 @@ var Url = Npm.require("url");
 var ROOT_URL = Url.parse(process.env.ROOT_URL);
 var HOSTNAME = ROOT_URL.hostname;
 
-var makeTokenUrl = function (email, token) {
-  return process.env.ROOT_URL + "/_emailToken/" + encodeURIComponent(email) + "/" + encodeURIComponent(token);
+var makeTokenUrl = function (email, token, linkingIdentity) {
+  if (linkingIdentity) {
+    return process.env.ROOT_URL + "/_emailLinkIdentity/" + encodeURIComponent(email) + "/" +
+        encodeURIComponent(token) + "/" + Meteor.userId();
+  } else {
+    return process.env.ROOT_URL + "/_emailLogin/" + encodeURIComponent(email) + "/" +
+        encodeURIComponent(token);
+  }
 };
 
 ///
 /// EMAIL VERIFICATION
 ///
-var sendTokenEmail = function (email, token) {
+var sendTokenEmail = function (email, token, linkingIdentity) {
+  var subject;
+  var text;
+  if (!linkingIdentity) {
+    subject = "Log in to " + HOSTNAME;
+    text = "To confirm this email address on ";
+  } else {
+    subject = "Confirm this email address on " + HOSTNAME;
+    text = "To confirm this email address on ";
+  }
+  text = text + HOSTNAME + ", click on the following link:\n\n" +
+      makeTokenUrl(email, token, linkingIdentity) + "\n\n" +
+      "Alternatively, enter the following one-time authentication code into the log-in form:\n\n" +
+      token;
+
   var options = {
     to:  email,
     from: HOSTNAME + " <no-reply@" + HOSTNAME + ">",
-    subject: "Log in to " + HOSTNAME,
-    text: "To log in to " + HOSTNAME + ", click on the following link:\n\n" +
-          makeTokenUrl(email, token) + "\n\n" +
-          "Alternatively, enter the following one-time authentication code into the log-in form:\n\n" +
-          token + "\n\n" +
-          "You are receiving this because someone (hopefully you) requested to log in to " +
-          HOSTNAME + " with your email address. If you did not request to log into " + HOSTNAME +
-          ", you may ignore this message.\n\n" +
-          "This information will expire in 15 minutes.\n"
+    subject: subject,
+    text: text,
   };
 
   global[EMAIL_PACKAGE].send(options);
@@ -111,8 +130,9 @@ var sendTokenEmail = function (email, token) {
 /// CREATING USERS
 ///
 // returns the user id
-var createAndEmailTokenForUser = function (email) {
+var createAndEmailTokenForUser = function (email, linkingIdentity) {
   check(email, String);
+  check(linkingIdentity, Boolean);
   var atIndex = email.indexOf("@");
   if (atIndex === -1) {
     throw new Meteor.Error(400, "No @ symbol was found in your email");
@@ -146,22 +166,46 @@ var createAndEmailTokenForUser = function (email) {
     userId = Accounts.insertUserDoc(options, user);
   }
 
-  sendTokenEmail(email, token);
+  sendTokenEmail(email, token, linkingIdentity);
 
   return userId;
 };
 
-// method for create user. Requests come from the client.
-// This method will create a user if it doesn't exist, otherwise it will generate a token.
-// It will always send an email to the user
-Meteor.methods({createAndEmailTokenForUser: function (email) {
-  check(email, String);
+Meteor.methods({
+  createAndEmailTokenForUser: function (email, linkingIdentity) {
+    // method for create user. Requests come from the client.
+    // This method will create a user if it doesn't exist, otherwise it will generate a token.
+    // It will always send an email to the user
 
-  if (!Accounts.emailToken.isEnabled()) {
-    throw new Meteor.Error(403, "Email Token service is disabled.");
+    check(email, String);
+    check(linkingIdentity, Boolean);
+
+    if (!Accounts.emailToken.isEnabled()) {
+      throw new Meteor.Error(403, "Email identity service is disabled.");
+    }
+    // Create user. result contains id and token.
+    var user = createAndEmailTokenForUser(email, linkingIdentity);
+  },
+
+  linkEmailIdentityToAccount: function (email, token) {
+    // Links the email identity with address `email` and login token `token` to the current account.
+    check(email, String);
+    check(token, String);
+    var account = Meteor.user();
+    if (!account || !account.loginIdentities) {
+      throw new Meteor.Error(403, "Must be logged in to an account to link an email identity.");
+    }
+    var identity = Meteor.users.findOne({"services.email.email": email},
+                                        {fields: {"services.email": 1}});
+    if (!identity) {
+      throw new Meteor.Error(403, "Invalid authorization token.");
+    }
+    if (!consumeToken(identity, token)) {
+      throw new Meteor.Error(403, "Invalid authorization token.");
+    }
+
+    Accounts.linkIdentityToAccount(identity._id, account._id);
   }
-  // Create user. result contains id and token.
-  var user = createAndEmailTokenForUser(email);
-}});
+});
 
 Meteor.users._ensureIndex("services.email.email", {unique: 1, sparse: 1});

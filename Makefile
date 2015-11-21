@@ -97,6 +97,7 @@ IMAGES= \
     shell/public/troubleshoot-m.svg \
     shell/public/twitter-m.svg \
     shell/public/up-m.svg \
+    shell/public/unlink-m.svg \
     shell/public/web-m.svg \
                                   \
     shell/public/github-color.svg \

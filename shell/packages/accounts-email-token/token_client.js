@@ -30,9 +30,10 @@ Meteor.loginWithEmailToken = function (email, token, callback) {
  * @param {String} email The user's email address.
  * @param {Function} [callback] Client only, optional callback. Called with no arguments on success, or with a single `Error` argument on failure.
  */
-Accounts.createAndEmailTokenForUser = function (email, callback) {
+Accounts.createAndEmailTokenForUser = function (email, linkingNewIdentity, callback) {
   check(email, String);
+  check(linkingNewIdentity, Boolean);
 
-  Meteor.call("createAndEmailTokenForUser", email, callback);
+  Meteor.call("createAndEmailTokenForUser", email, linkingNewIdentity, callback);
 };
 

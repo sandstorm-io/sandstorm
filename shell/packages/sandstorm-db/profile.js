@@ -171,6 +171,20 @@ function fillInDefaults(user) {
   }
 
   profile.pronoun = profile.pronoun || "neutral";
+
+  var verifiedEmail = getVerifiedEmail(user);
+  if (verifiedEmail) {
+    user.verifiedEmail = verifiedEmail;
+  }
+}
+
+function getVerifiedEmail(identity) {
+  if (identity.services.google && identity.services.google.email &&
+      identity.services.google.verified_email) {
+    return identity.services.google.email;
+  } else if (identity.services.email) {
+    return identity.services.email.email;
+  }
 }
 
 SandstormDb.fillInIdenticon = function(user) {
@@ -240,16 +254,11 @@ SandstormDb.getUserEmails = function (user) {
 
   identities.forEach(function (identity) {
     if (identity.services) {
-      if (identity.services.google && identity.services.google.email &&
-          identity.services.google.verified_email) {
-        verifiedEmails[identity.services.google.email] = true;
-      } else if (identity.services.email) {
-        verifiedEmails[identity.services.email.email] = true;
-      } else if (identity.services.github && identity.services.github.email) {
-        unverifiedEmails[identity.services.github.email] = true;
+      var verifiedEmail = getVerifiedEmail(identity);
+      if (verifiedEmail) {
+        verifiedEmails[verifiedEmail] = true;
       }
     }
-
     if (identity.unverifiedEmail) {
       unverifiedEmails[identity.unverifiedEmail] = true;
     }

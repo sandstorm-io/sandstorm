@@ -18,31 +18,37 @@ limitations under the License.
 
 <template name="identityLoginInterstitial">
   <div class="identity-login-interstitial">
-    {{#if nonloginAccounts}}
-    <br><br>
-    <p>
-      You have authenticated as this identity:
-    </p>
-    {{#with currentIdentity}}
-    {{>identityCard .}}
-    {{/with}}
-    <p> but that is a not a login identity for any account.
-    </p>
-    <p> Your identity is linked to the following accounts. Click 'cancel' to
-        go back and log in as one of them.
-    </p>
-    <ul>
-      {{#each nonloginAccounts}}
-      <li>
-     {{> identityCard identity}}
-     <button class="unlink" data-user-id="{{accountId}}">unlink</button>
-      </li>
-      {{/each}}
-    </ul>
-    {{else}}
-    <h1>logging in to account...</h1>
-    {{/if}}
-    <button class="logout">Cancel</button>
+    {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}
+      Logging in...
+    {{/sandstormTopbarItem}}
+
+    <div class="centered-content">
+      {{#if foundNonloginAccounts}}
+      <br><br>
+      <p>
+        You have authenticated as this identity
+      </p>
+      {{#with currentIdentity}}
+      {{>identityCard .}}
+      {{/with}}
+      <p class="warning-banner"> but that is a not a login identity for any account.
+      </p>
+      <p> The following identities can log in to your identity's accounts
+      </p>
+      <ul>
+        {{#each nonloginAccounts}}
+        <li>
+          {{> identityCard identity}}
+          <button class="unlink" data-user-id="{{accountId}}">unlink</button>
+        </li>
+        {{/each}}
+      </ul>
+      <button class="logout">Go back</button>
+      {{else}}
+      <h1>logging in to account...</h1>
+      <button class="logout">Cancel</button>
+      {{/if}}
+    </div>
   </div>
 </template>
 

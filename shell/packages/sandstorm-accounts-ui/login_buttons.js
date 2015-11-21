@@ -152,9 +152,9 @@ Template._loginButtonsLoggedInDropdown.helpers({
   displayName: displayName,
 });
 
-var sendEmail = function (email) {
+var sendEmail = function (email, linkingNewIdentity) {
   loginButtonsSession.infoMessage("Sending email...");
-  Accounts.createAndEmailTokenForUser(email, function(err) {
+  Accounts.createAndEmailTokenForUser(email, linkingNewIdentity, function(err) {
     if (err) {
       loginButtonsSession.errorMessage(err.reason || "Unknown error");
       if (err.error === 409) {
@@ -279,7 +279,7 @@ Template.emailLoginForm.events({
       }
       loginWithToken(email, form.token.value, instance._topbar);
     } else {
-      sendEmail(form.email.value);
+      sendEmail(form.email.value, !!instance._linkingNewIdentity);
     }
   },
 

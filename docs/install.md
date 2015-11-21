@@ -110,9 +110,9 @@ On Debian or Ubuntu, you should be able to get all these with:
         unzip imagemagick strace curl clang-3.4 discount git
     curl https://install.meteor.com/ | sh
 
-### Get the sources
+### Get the source code:
 
-Get the sources from the git repository
+Get the source code from the git repository
     
     git clone https://github.com/sandstorm-io/sandstorm.git
 

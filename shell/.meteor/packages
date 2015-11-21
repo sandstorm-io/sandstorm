@@ -33,3 +33,4 @@ sandstorm-ui-app-install
 sandstorm-ui-grainlist
 meteor-node-forge
 fourseven:scss
+standard-minifiers

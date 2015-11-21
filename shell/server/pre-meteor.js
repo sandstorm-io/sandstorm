@@ -84,6 +84,7 @@ function wwwHandlerForGrain(grainId) {
     };
 
     if (path === "apps/index.json" ||
+        path === "apps/index-unpublished.json" ||
         path.match(/apps\/[a-z0-9]{52}[.]json/)) {
       // TODO(cleanup): Extra special terrible hack: The app index needs to serve these JSON files
       //   cross-origin. We could almost just make all web sites allow cross-origin since generally

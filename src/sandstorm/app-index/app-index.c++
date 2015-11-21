@@ -137,7 +137,7 @@ public:
           indexer.getSubmissionStatus(packageId, response);
 
           auto status = response.getRoot<SubmissionStatus>();
-          if (status.isApproved() && changed) {
+          if (changed) {
             // Force update now!
             indexer.updateIndex();
           }

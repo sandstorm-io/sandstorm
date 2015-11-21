@@ -50,8 +50,7 @@ Router.route("/_emailLinkIdentity/:_email/:_token/:_accountId", function () {
   var self = this;
   if (Meteor.userId() === this.params._accountId) {
     Meteor.call("linkEmailIdentityToAccount",
-                this.params._email, this.params._token, this.params._accountId,
-                function (err, result) {
+                this.params._email, this.params._token, function (err, result) {
       if (err) {
         self.render("_emailLinkIdentityError", {data: function () {return {error: err};}});
       } else {

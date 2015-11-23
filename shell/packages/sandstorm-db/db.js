@@ -81,7 +81,9 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   appDemoId: If this is an appdemo user (see above), the app ID they started out demoing.
 //   payments: Object defined by payments module, if loaded.
 //   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
-//   referredBy: User._id for an Account that referred this user.
+//   referredBy: User._id for an Account that first shared with this user.
+//   referralComplete: Boolean (false if null/undefined) indicating that the user created a sharing
+//                     link after their referredBy was set.
 //   stashedOldUser: A complete copy of this user from before the accounts/identities migration.
 //                   TODO(cleanup): Delete this field once we're sure it's safe to do so.
 
@@ -474,16 +476,6 @@ Plans = new Mongo.Collection("plans");
 //   computeLabel: Label to display to the user describing this plan's compute units.
 //   grains: Total number of grains this user can create (often `Infinity`).
 //   price: Price per month in US cents.
-
-Referrals = new Mongo.Collection("referrals");
-// Stores information about which accounts "referred" which other accounts. This is account-based,
-// not identity-based. Information in Referrals documents is in transit -- once a referral is
-// successful, info about it moves to the User document. That way, database queries about successful
-// referrals are done against the smaller set of referral-related data in `Users`.
-//
-// Each contains:
-//   _id:                 User._id for Bob's account in the "Alice refers Bob" scenario.
-//   referredBy:          User._id for Alice's account in the "Alice refers Bob" scenario.
 
 AppIndex = new Mongo.Collection("appIndex");
 // A mirror of the data from the App Market index

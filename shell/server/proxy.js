@@ -41,30 +41,18 @@ function referralProgramLogSharingTokenUse(db, bobAccountId) {
   // UiView to this grain!  This means that the user who created this apiToken knows how to use
   // the "share access" interface. Let's call them Bob.
   //
-  // If Bob's User.referredBy is not set, then we should set it to the value in the Referrals
-  // collection (see storeReferralProgramInfoApiTokenCreated elsewhere). This does mean that Alice
-  // can get referral credit for Bob by sharing a link with Bob, even if Bob already had an account.
+  // If Bob's User.referredBy is set, and their referralComplete is not yet set, then we should set
+  // referralComplete to true so that the person who referred them gets credit. Implementation note:
+  // this does mean that Alice can get referral credit for Bob by sharing a link with Bob, even if
+  // Bob already had an account.
 
   // Bail out early if quota support is not enabled.
   if (! Meteor.settings.public.quotaEnabled) {
     return;
   }
 
-  var referralData = db.collections.referrals.findOne({_id: bobAccountId});
-  if (referralData) {
-    var aliceAccountId = referralData.referredBy;
-    Meteor.users.update({_id: bobAccountId,
-                                 referredBy: {$exists: false}},
-                                {$set: {referredBy: aliceAccountId}},
-                                function (err, numDocuments) {
-                                  if (err) {
-                                    throw err;
-                                  }
-                                  if (numDocuments) {
-                                    db.collections.referrals.remove({_id: bobAccountId});
-                                  }
-                                });
-  }
+  Meteor.users.update({_id: bobAccountId, referredBy: {$exists: true}, referralComplete: false},
+                      {$set: {referralComplete: true}});
 }
 
 // User-agent strings that should be allowed to use http basic authentication.

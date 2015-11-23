@@ -407,21 +407,17 @@ SandstormPermissions.downstreamTokens = function(db, root) {
 var storeReferralProgramInfoApiTokenCreated = function(db, userId, apiTokenAccountId) {
   // From the Referral program's perspective, if Bob has not opened a sharing link before, then we
   // should create a Referral document indicating Alice referred Bob.
+  check(userId, String);
+  check(apiTokenAccountId, String);
 
   // Bail out early if quota enforcement is disabled.
   if (! Meteor.settings.public.quotaEnabled) {
     return;
   }
 
-  var aliceAccountId = apiTokenAccountId;
-  var bob = Meteor.users.findOne({_id: userId});
-  if (bob.referredBy === undefined) {
-    if (db.collections.referrals.find({_id: bob._id}).count() === 0) {
-      db.collections.referrals.insert({
-        _id: bob._id,
-        referredBy: aliceAccountId});
-    }
-  }
+  Meteor.users.update(
+    {_id: userId, referredBy: {$exists: false}, referralComplete: {$exists: false}},
+    {$set: {referredBy: apiTokenAccountId, referralComplete: false}});
 }
 
 SandstormPermissions.createNewApiToken = function (db, provider, grainId, petname,

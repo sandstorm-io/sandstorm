@@ -585,7 +585,7 @@ calculateReferralBonus = function(accountId, plan) {
 }
 
 countReferrals = function (accountId) {
-  var count = Meteor.users.find({referredByAccountId: accountId}).count();
+  var count = Meteor.users.find({referredBy: accountId, referralComplete: true}).count();
   return count;
 }
 

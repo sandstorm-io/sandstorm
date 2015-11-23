@@ -202,15 +202,19 @@ struct BridgeConfig {
   # the user's permissions.
 
   apiPath @1 :Text;
-  # This variable's purpose is two-fold:
-  # First, if it's set to anything non-empty, it will enable ApiSessions in sandstorm-http-bridge.
-  # This means calling newSession with an ApiSession type id will return an ApiSession correctly.
-  # Second, as the name implies, this specifies the path to the API in an app. For example, if
-  # your API endpoints always begin with /v1/api/, then you would provide that path. This path will
-  # always be prepended for you, and clients accessing the API will not have to provide it. This
-  # also has the effect of limiting your clients to only accessing endpoints under that path you
-  # provide. It should always end in a trailing '/'.
-  # "/" is a valid value, and will give clients access to all paths.
+  # Specifies a path which will be prefixed to all API requests -- that is, requests coming in
+  # through the API endpoint as described in:
+  #     https://docs.sandstorm.io/en/latest/developing/http-apis/
+  #
+  # apiPath must end with "/".
+  #
+  # WARNING: Specifying this does NOT prevent access to other paths. Anyone holding an API token
+  # can convert it into a sharing token, which provides full access to the grain's web interface.
+  # The purpose of apiPath is only to allow you to design your API URL schema independently of
+  # your UI's URL schema, which is often convenient. To actually restrict what an API token
+  # holder is allowed to do, you MUST use permissions and enforce them for both API and UI
+  # requests. See:
+  #     https://docs.sandstorm.io/en/latest/developing/auth/
 }
 
 struct Metadata {

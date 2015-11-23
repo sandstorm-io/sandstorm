@@ -771,7 +771,6 @@ SandstormDb = function () {
     settings: Settings,
     appIndex: AppIndex,
     keybaseProfiles: KeybaseProfiles,
-    referrals: Referrals,
 
     // Intentionally omitted:
     // - Migrations, since it's used only within this package.

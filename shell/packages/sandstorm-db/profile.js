@@ -136,7 +136,7 @@ function emailToHandle(email) {
   return filterHandle(base);
 }
 
-function fillInProfileDefaults(user) {
+SandstormDb.fillInProfileDefaults = function(user) {
   var profile = user.profile;
   if (profile.service === "github") {
     profile.name = profile.name || user.services.github.username || "Name Unknown";
@@ -244,7 +244,7 @@ SandstormDb.getUserIdentities = function (user) {
 
   return rawIdentities.map(function(identity) {
     SandstormDb.fillInPictureUrl(identity);
-    fillInProfileDefaults(identity);
+    SandstormDb.fillInProfileDefaults(identity);
     SandstormDb.fillInIntrinsicName(identity);
     return identity;
   });

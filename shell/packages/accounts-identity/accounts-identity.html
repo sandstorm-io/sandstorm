@@ -17,13 +17,16 @@ limitations under the License.
 -->
 
 <template name="identityLoginInterstitial">
+  {{!--
+    Interstitial to display when the user is logged in as an identity, rather than as an account.
+  --}}
   <div class="identity-login-interstitial">
     {{#sandstormTopbarItem name="title" priority=5 topbar=globalTopbar}}
       Logging in...
     {{/sandstormTopbarItem}}
 
     <div class="centered-content">
-      {{#if foundNonloginAccounts}}
+      {{#if needInput}}
       <br><br>
       <p>
         You have authenticated as this identity
@@ -38,18 +41,48 @@ limitations under the License.
       <ul>
         {{#each nonloginAccounts}}
         <li>
-          {{> identityCard identity}}
-          <button class="unlink" data-user-id="{{accountId}}">unlink</button>
+          {{> identityCard .}}
+          <button class="unlink" data-user-id="{{loginAccountId}}">unlink</button>
         </li>
         {{/each}}
       </ul>
       <button class="logout">Go back</button>
       {{else}}
+      {{#if linkingIdentity}}
+      <h1>linking identity to account...</h1>
+      {{else}}
       <h1>logging in to account...</h1>
+      {{/if}}
       <button class="logout">Cancel</button>
       {{/if}}
     </div>
   </div>
+</template>
+
+<template name="loginIdentitiesOfLinkedAccounts">
+  {{#if showOtherAccounts}}
+  <div class="login-identities-of-linked-accounts">
+    <p>This identity is shared with other accounts.
+       Those accounts have the following login identities:
+    </p>
+    <ul class="unlinkable-identities">
+      {{#each getOtherAccounts}}
+      <li>
+        {{> identityCard .}}
+        <button class="unlink" data-user-id="{{loginAccountId}}">unlink</button>
+      </li>
+      {{/each}}
+    </ul>
+    <button class="hide-other-accounts">hide other accounts</button>
+  </div>
+  {{else}}
+  {{#if getOtherAccounts}}
+  <div class="login-identities-of-linked-accounts">
+    This identity is shared with at least one other account.
+    <button class="show-other-accounts">show other accounts</button>
+  </div>
+  {{/if}}
+  {{/if}}
 </template>
 
 <template name="identityPicker">

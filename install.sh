@@ -1168,6 +1168,9 @@ download_latest_bundle_and_extract_if_needed() {
     curl -s -A "$CURL_USER_AGENT" -f "$URL.sig" > "$WORK_DIR/sandstorm-$BUILD.tar.xz.sig"
 
     if which gpg > /dev/null; then
+      export GNUPGHOME="$WORK_DIR/.gnupg"
+      mkdir -p "$GNUPGHOME"
+
       # Regenerate with: gpg --armor --export 160D2D577518B58D94C9800B63F227499DA8CCBD
       gpg --dearmor > "$WORK_DIR/sandstorm-keyring.gpg" << __EOF__
 -----BEGIN PGP PUBLIC KEY BLOCK-----
@@ -1210,6 +1213,8 @@ __EOF__
         rm -rf sandstorm-$BUILD
         fail "GPG signature is NOT valid! Please report to security@sandstorm.io immediately!"
       fi
+
+      unset GNUPGHOME
     else
       echo "WARNING: gpg not installed; not verifying signatures (but it's HTTPS so you're probably fine)" >&2
     fi

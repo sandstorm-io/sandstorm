@@ -205,13 +205,18 @@ Accounts.linkIdentityToAccount = function (identityId, accountId) {
 
 Meteor.publish("accountsOfIdentity", function (identityId) {
   check(identityId, String);
-  var hasIdentityCursor =
-      Meteor.users.find({$or: [{_id: identityId},
-                               {_id: this.userId, "loginIdentities.id": identityId},
-                               {_id: this.userId, "nonloginIdentities.id": identityId}]});
-  if (hasIdentityCursor.count() == 0) return;
   var self = this;
-  hasIdentityCursor.observe({removed: function () { self.stop(); }});
+
+  // Dummy query handle for the case where this.userId === identityId
+  var hasIdentityHandle = {stop: function () {} };
+
+  if (this.userId !== identityId) {
+    var hasIdentityCursor =
+      Meteor.users.find({$or: [{_id: this.userId, "loginIdentities.id": identityId},
+                               {_id: this.userId, "nonloginIdentities.id": identityId}]});
+    if (hasIdentityCursor.count() == 0) return;
+    hasIdentityHandle = hasIdentityCursor.observe({removed: function () { self.stop(); }});
+  }
 
   // We maintain a map from identity IDs to live query handles that track profile changes.
   var loginIdentities = {};
@@ -239,8 +244,6 @@ Meteor.publish("accountsOfIdentity", function (identityId) {
   }
   var cursor = Meteor.users.find({$or: [{"loginIdentities.id": identityId},
                                         {"nonloginIdentities.id": identityId}]});
-  cursor.forEach(addIdentitiesOfAccount);
-  this.ready();
 
   var handle = cursor.observe({
     added: function (account) {
@@ -259,5 +262,10 @@ Meteor.publish("accountsOfIdentity", function (identityId) {
       });
     },
   });
-  this.onStop(function() { handle.stop(); });
+  this.ready();
+
+  this.onStop(function() {
+    hasIdentityHandle.stop();
+    handle.stop();
+  });
 });

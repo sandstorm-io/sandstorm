@@ -73,8 +73,10 @@ Meteor.onConnection(function (connection) {
 // Here, I've added some code that attempts to detect the problem by doing a health check
 // periodically and then remaking the connection if it seems broken. We'll see if this helps!
 var backendHealthy = true;
+var disconnectCount = 0;
 Meteor.setInterval(function () {
   if (!backendHealthy) {
+    if (disconnectCount++ > 2) process.abort();
     console.error("error: Backend hasn't responded in 30 seconds! Reconnecting.");
     if (Capnp.enableVerboseDebugLogging) Capnp.enableVerboseDebugLogging(true);
     sandstormBackendConnection.close();

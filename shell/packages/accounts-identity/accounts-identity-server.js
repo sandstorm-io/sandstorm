@@ -267,5 +267,9 @@ Meteor.publish("accountsOfIdentity", function (identityId) {
   this.onStop(function() {
     hasIdentityHandle.stop();
     handle.stop();
+    Object.keys(loginIdentities).forEach(function(identityId) {
+      loginIdentities[identityId].stop();
+      delete loginIdentities[identityId];
+    });
   });
 });

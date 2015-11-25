@@ -174,15 +174,21 @@ automatically refreshes the IFRAME every 5 minutes.
 ## Getting the user IP address
 
 By default, for privacy, Sandstorm removes the user's IP address from
-API requests. The API _client code_ can request that Sandstorm provide
-the IP address to the grain in an API request by setting a header:
+API requests. The API _client code_ can request that Sandstorm pass
+the IP address to the grain by setting a header on the API request:
+
 
 ```
 X-Sandstorm-Passthrough: address
 ```
 
-Your app can provide sample Javascript to make make API requests which
-sets this header on `XMLHttpRequest` calls to the API endpoint.
+Your app will receive the IP address via the `X-Real-IP` request
+header, assuming it is using `sandstorm-http-bridge`.
+
+To make sure API requests to your API provide an IP address, if your
+API requires an IP address to be useful, your app can provide sample
+JavaScript code that sets header on `XMLHttpRequest` calls to the API
+endpoint.
 
 ## About WebKeys
 

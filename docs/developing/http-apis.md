@@ -36,7 +36,9 @@ typical Sandstorm authentication headers like `X-Sandstorm-User-Id`,
 and passes the request to the app. Sandstorm combines it with the app
 package's `bridgeConfig.apiPath` as part of sending the request to the
 grain. Sandstorm sanitizes responses and removes any `Set-Cookie`
-response header.
+response header. Sandstorm **removes the user IP address** from the
+request by default; API clients can
+[opt-in](#getting-the-user-ip-address) to sending it.
 
 The API endpoint is set up to allow **cross-origin requests from any
 origin**, which means you can access an API from `XMLHttpRequest` on
@@ -168,6 +170,19 @@ automatically refreshes the IFRAME every 5 minutes.
   from the user who created it. **Note** that this also allows users
   to redeem it as a sharing link of the form
   `https://sandstorm.example.com/shared/$API_TOKEN`.
+
+## Getting the user IP address
+
+By default, for privacy, Sandstorm removes the user's IP address from
+API requests. The API _client code_ can request that Sandstorm provide
+the IP address to the grain in an API request by setting a header:
+
+```
+X-Sandstorm-Passthrough: address
+```
+
+Your app can provide sample Javascript to make make API requests which
+sets this header on `XMLHttpRequest` calls to the API endpoint.
 
 ## About WebKeys
 

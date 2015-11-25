@@ -1119,7 +1119,13 @@ private:
     KJ_SYSCALL(mount("/dev/zero", "dev/zero", nullptr, MS_BIND, nullptr));
     KJ_SYSCALL(mount("/dev/random", "dev/random", nullptr, MS_BIND, nullptr));
     KJ_SYSCALL(mount("/dev/urandom", "dev/urandom", nullptr, MS_BIND, nullptr));
-    KJ_SYSCALL(mount("/dev/fuse", "dev/fuse", nullptr, MS_BIND, nullptr));
+
+    if (runningAsRoot && access("/dev/fuse", F_OK) == 0) {
+      // Bring in FUSE just in case we need it for "spk dev".
+      // TODO(cleanup): We should probably instead open /dev/fuse in the "spk" command (i.e.
+      //   outside the namespace) and then pass the FD to the server.
+      KJ_SYSCALL(mount("/dev/fuse", "dev/fuse", nullptr, MS_BIND, nullptr));
+    }
 
     // Bind in the host's /etc as /etc.host.
     // As noted in backup.c++, MS_BIND does not respect mount flags on the initial bind, and

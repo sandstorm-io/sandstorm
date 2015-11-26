@@ -327,7 +327,7 @@ vagrant global-status
 Now that you've seen the basics of how a Sandstorm app works, you
 might be interested in any of the following:
 
-* What makes a great Sandstorm app? See the App Developer Handbook.
+* What makes a great Sandstorm app? See the [App Developer Handbook](../developing/handbook.md).
 * How do I learn more about the technical underpinnings of `vagrant-spk`? How do I make `vagrant-spk` faster?
 Read about [understanding & customizing vagrant-spk](customizing.md).
 * How do I package-up a Python, Meteor, or other non-PHP app? Read about [platform stacks](platform-stacks.md).

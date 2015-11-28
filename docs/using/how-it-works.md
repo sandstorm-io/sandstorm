@@ -12,14 +12,15 @@
 * App servers are aggressively killed off as soon as the user closes the browser tab, then restarted when the user returns later.
 * Packages are cryptographically signed.  Packages signed with the same key represent versions of the same app, and are thus allowed to replace older versions -- although the user must still confirm these upgrades.
 
-HTTP Communication Overview
-===========================
+## HTTP Communication Overview
 
-This diagram shows shows how communications flows from a web client, such as a
-browser, to a native Sandstorm app (one which speaks Cap'n Proto).
+While web clients speak HTTP to Sandstorm, all communications between Sandstorm
+and the grain occur over the Cap'n Proto WebSession format.  With existing
+applications, the Sandstorm HTTP bridge is used to translate between Cap'n
+Proto and HTTP.
 
-{% dot communication_overview_native_app.svg
-    graph G {
+{% dot communication_overview_http_app.svg
+    graph communication_overview_http_app {
       rankdir=LR;
       compound=true;
       node [shape=box fontsize=10];
@@ -28,8 +29,38 @@ browser, to a native Sandstorm app (one which speaks Cap'n Proto).
 
       subgraph cluster_sandstorm {
         label="Sandstorm";
-        proxy [label="Proxy";];
-        websession [label="WebSession Serialization\n(HTTP over Cap'n Proto)"];
+        proxy [label="Proxy\n (proxy.js)";];
+        websession [label="WebSession Serialization\n(HTTP over Cap'n Proto,\nweb-session.capnp)"];
+      }
+
+      subgraph cluster_grain {
+        label="Grain";
+        bridge [label="Sandstorm\nHTTP Bridge\n(sandstorm-http\n-bridge.c++)"]
+        app [label="HTTP App"];
+      }
+
+      client -- proxy;
+      proxy -- websession;
+      websession -- bridge;
+      bridge -- app;
+    }
+%}
+
+When an application can speak Cap'n Proto directly to Sandstorm, the HTTP
+bridge is not needed.
+
+{% dot communication_overview_native_app.svg
+    graph communication_overview_native_app {
+      rankdir=LR;
+      compound=true;
+      node [shape=box fontsize=10];
+
+      client [label="Web client\n(eg. browser)"];
+
+      subgraph cluster_sandstorm {
+        label="Sandstorm";
+        proxy [label="Proxy\n (proxy.js)";];
+        websession [label="WebSession Serialization\n(HTTP over Cap'n Proto,\nweb-session.capnp)"];
       }
 
       subgraph cluster_grain {
@@ -43,32 +74,3 @@ browser, to a native Sandstorm app (one which speaks Cap'n Proto).
     }
 %}
 
-With legacy HTTP applications, the Sandstorm HTTP bridge is used to translate
-the Cap'n Proto WebSession to HTTP.
-
-{% dot communication_overview_http_app.svg
-    graph G {
-      rankdir=LR;
-      compound=true;
-      node [shape=box fontsize=10];
-
-      client [label="Web client\n(eg. browser)"];
-
-      subgraph cluster_sandstorm {
-        label="Sandstorm";
-        proxy [label="Proxy";];
-        websession [label="WebSession Serialization\n(HTTP over Cap'n Proto)"];
-      }
-
-      subgraph cluster_grain {
-        label="Grain";
-        bridge [label="Sandstorm\nHTTP Bridge"]
-        app [label="Legacy HTTP App"];
-      }
-
-      client -- proxy;
-      proxy -- websession;
-      websession -- bridge;
-      bridge -- app;
-    }
-%}

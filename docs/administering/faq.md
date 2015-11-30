@@ -76,6 +76,7 @@ traffic.
 _Default configuration_
 
 * **TCP port 6080**
+* **TCP port 30025**
 
 _Optionally_
 

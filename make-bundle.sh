@@ -162,11 +162,9 @@ cat tmp/host.list | grep -v '/ld[.]so[.]' | sort | uniq > bundle/host.list
 mkdir -p bundle/{dev,proc,tmp,etc,etc.host,run,run.host,var}
 touch bundle/dev/{null,zero,random,urandom,fuse}
 
-# Mongo wants these localization files.
-mkdir -p bundle/usr/lib
-cp -r /usr/lib/locale bundle/usr/lib
-mkdir -p bundle/usr/share/locale
-cp /usr/share/locale/locale.alias bundle/usr/share/locale
+# Generate a suitable C.UTF-8 locale that we and Mongo can rely on
+mkdir -p bundle/usr/lib/locale
+localedef --no-archive --inputfile=./localedata-C --charmap=UTF-8 bundle/usr/lib/locale/C.UTF-8
 
 # Make bundle smaller by stripping stuff.
 strip bundle/sandstorm bundle/bin/*

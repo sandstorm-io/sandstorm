@@ -1,6 +1,8 @@
 site_name: Sandstorm
 theme: 'readthedocs'
 repo_url: https://github.com/sandstorm-io/sandstorm/tree/master/docs
+markdown_extensions:
+    - inline_graphviz
 pages:
 - "Home": "index.md"
 - Using:
@@ -18,7 +20,7 @@ pages:
     - "App publishing guide": "developing/publishing-apps.md"
     - "App Developer Handbook": "developing/handbook.md"
     - "User authentication & permissions": "developing/auth.md"
-    - "Paths and URLs": "developing/path.md"
+    - "URLs, domain names, page titles": "developing/path.md"
     - "Understanding & customizing": "vagrant-spk/customizing.md"
     - "Platform stacks": "vagrant-spk/platform-stacks.md"
     - "Code dependencies": "vagrant-spk/code-dependencies.md"

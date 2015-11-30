@@ -24,32 +24,32 @@ function initializeDb() {
   globalDb.collections.grains.remove({});
   globalDb.collections.apiTokens.remove({});
 
-  var aliceUserId = Accounts.insertUserDoc(
+  var aliceIdentityId = Accounts.insertUserDoc(
     {profile: {name: "Alice"}},
-    {services: {dev : {name: "alice" + Crypto.randomBytes(10).toString("hex"),
-                       isAdmin: false, hasCompletedSignup: true}}});
-  var aliceIdentityId = SandstormDb.getUserIdentities(globalDb.getUser(aliceUserId))[0]._id;
-  var bobUserId = Accounts.insertUserDoc(
+    {services: {dev: {name: "alice" + Crypto.randomBytes(10).toString("hex"),
+                      isAdmin: false, hasCompletedSignup: true}}});
+  var aliceAccountId = Accounts.insertUserDoc({},
+    {loginIdentities: [{id: aliceIdentityId}], nonloginIdentities: []});
+  var bobIdentityId = Accounts.insertUserDoc(
     {profile: {name: "Bob"}},
     {services: {dev: {name: "Bob" + Crypto.randomBytes(10).toString("hex"),
                       isAdmin: false, hasCompletedSignup: true}}});
-  var bobIdentityId = SandstormDb.getUserIdentities(globalDb.getUser(bobUserId))[0]._id;
-  var carolUserId = Accounts.insertUserDoc(
+  var carolIdentityId = Accounts.insertUserDoc(
     {profile: {name: "Carol"}},
     {services: {dev:{name: "Carol" + Crypto.randomBytes(10).toString("hex"),
                      isAdmin: false, hasCompletedSignup: true}}});
-  var carolIdentityId = SandstormDb.getUserIdentities(globalDb.getUser(carolUserId))[0]._id;
 
   var grain = { _id: "mock-grain-id", packageId: "mock-package-id", appId: "mock-app-id",
-                appVersion: 0, userId: aliceUserId,
+                appVersion: 0, userId: aliceAccountId,
                 identityId: carolIdentityId, // Shouldn't affect permissions computations.
                 title: "mock-grain-title", private: true };
 
   globalDb.collections.grains.insert(grain);
   return {grainId: grain._id,
-          aliceUserId: aliceUserId,
+          aliceUserId: aliceAccountId,
           aliceIdentityId: aliceIdentityId,
-          bobIdentityId: bobIdentityId, carolIdentityId: carolIdentityId};
+          bobIdentityId: bobIdentityId,
+          carolIdentityId: carolIdentityId};
 }
 
 var viewInfo = {

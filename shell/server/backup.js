@@ -67,8 +67,9 @@ Meteor.methods({
     return token._id;
   },
 
-  restoreGrain: function (tokenId) {
+  restoreGrain: function (tokenId, identityId) {
     check(tokenId, String);
+    check(identityId, String);
     var token = FileTokens.findOne(tokenId);
     if (!token || !isSignedUpOrDemo()) {
       throw new Meteor.Error(403, "Unauthorized",
@@ -126,17 +127,13 @@ Meteor.methods({
                                ", Old version: " + appVersion);
       }
 
-      var identity = SandstormDb.getUserIdentities(Meteor.user())[0];
-      // TODO(soon): Backed-up grains should remember the identity that owned them.
-      // Until that is the case, we restore using the user's main identity.
-
       Grains.insert({
         _id: grainId,
         packageId: packageId,
         appId: grainInfo.appId,
         appVersion: appVersion,
         userId: this.userId,
-        identityId: identity._id,
+        identityId: identityId,
         title: grainInfo.title,
         private: true
       });

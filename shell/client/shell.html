@@ -66,8 +66,13 @@ limitations under the License.
       <div class="toggle-navbar-button">Sandstorm</div>
       {{/sandstormTopbarItem}}
   {{/if}}
-  {{>sandstormTopbarItem name="account" topbar=globalTopbar data=globalAccountsUi
-                         template="loginButtons" popupTemplate="loginButtonsPopup"}}
+  {{#if showAccountButtons}}
+    {{>sandstormTopbarItem name="account" topbar=globalTopbar template="loginButtons"
+                           popupTemplate="accountButtonsPopup"}}
+  {{else}}
+    {{>sandstormTopbarItem name="login" topbar=globalTopbar data=globalAccountsUi
+                           template="loginButtons" popupTemplate="loginButtonsPopup"}}
+  {{/if}}
   {{#if currentUser}}
     {{>sandstormTopbarItem name="notifications" topbar=globalTopbar
                            template="notifications" popupTemplate="notificationsPopup"}}
@@ -531,14 +536,6 @@ limitations under the License.
   </div>
 </template>
 
-<template name="grainIdentityPopup">
-  {{> identityPicker identityPickerData}}
-</template>
-
-<template name="grainIdentity">
-  <div>Switch Identity</div>
-</template>
-
 <template name="grain">
   {{>sandstormTopbarItem name="title" priority=5 topbar=globalTopbar template="grainTitle"}}
   {{#sandstormTopbarItem name="grain-size" priority=5 topbar=globalTopbar}}
@@ -571,10 +568,6 @@ limitations under the License.
     {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"
         startOpen=true popupTemplate="grainPowerboxOfferPopup"}}
   {{/if}}
-
-  {{>sandstormTopbarItem name="identity" topbar=globalTopbar
-                         template="grainIdentity" popupTemplate="grainIdentityPopup"}}
-
 </template>
 
 <template name="apps">

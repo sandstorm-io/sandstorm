@@ -774,9 +774,12 @@ _.extend(SandstormDb.prototype, {
 
   getIdentity: function getIdentity (identityId) {
     check(identityId, String);
-    var user = Meteor.users.findOne({_id: identityId});
-    if (user) {
-      return _.findWhere(SandstormDb.getUserIdentities(user), {_id: identityId});
+    var identity = Meteor.users.findOne({_id: identityId});
+    if (identity) {
+      SandstormDb.fillInProfileDefaults(identity);
+      SandstormDb.fillInIntrinsicName(identity);
+      SandstormDb.fillInPictureUrl(identity);
+      return identity;
     }
   },
 
@@ -784,8 +787,10 @@ _.extend(SandstormDb.prototype, {
     check(userId, String);
     check(identityId, String);
 
+    if (userId === identityId) return true;
+
     var user = Meteor.users.findOne(userId);
-    return !!_.findWhere(SandstormDb.getUserIdentities(user), {_id: identityId});
+    return SandstormDb.getUserIdentityIds(user).indexOf(identityId) != -1;
   },
 
   userGrains: function userGrains (userId) {
@@ -804,8 +809,7 @@ _.extend(SandstormDb.prototype, {
 
   userApiTokens: function userApiTokens (userId) {
     check(userId, Match.OneOf(String, undefined, null));
-    identityIds = SandstormDb.getUserIdentities(this.getUser(userId))
-        .map(function (identity) { return identity._id; });
+    var identityIds = SandstormDb.getUserIdentityIds(this.getUser(userId));
     return this.collections.apiTokens.find({'owner.user.identityId': {$in: identityIds}});
   },
 

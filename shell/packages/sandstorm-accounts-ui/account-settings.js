@@ -22,17 +22,22 @@ SandstormAccountSettingsUi = function (topbar, db, staticHost) {
 
 Template.sandstormAccountSettings.onCreated(function () {
   this._isLinkingNewIdentity = new ReactiveVar(false);
-  this._selectedIdentityId = new ReactiveVar(null);
-
+  this._selectedIdentityId = new ReactiveVar();
   var self = this;
-  this.resetSelectedIdentity = function() {
-    var identity = SandstormDb.getUserIdentities(Meteor.user())[0];
-    if (identity) {
-      self._selectedIdentityId.set(identity._id);
-    }
-  }
 
-  this.subscribe("accountIdentities", {onReady: this.resetSelectedIdentity});
+  Tracker.autorun(function () {
+    // Reset the selected identity ID when appropriate.
+    var user = Meteor.user();
+    if (user && user.loginIdentities) {
+      var identities = user.loginIdentities.concat(user.nonloginIdentities);
+      var currentlySelected = self._selectedIdentityId.get();
+      if (!currentlySelected || !_.findWhere(identities, {id: currentlySelected})) {
+        if (identities.length > 0) {
+          self._selectedIdentityId.set(identities[0].id);
+        }
+      }
+    }
+  });
 });
 
 GENDERS = {male: "male", female: "female", neutral: "neutral", robot: "robot"};
@@ -42,7 +47,15 @@ var helpers = {
     document.title = "Account settings · Sandstorm";
   },
   identities: function () {
-    return SandstormDb.getUserIdentities(Meteor.user());
+    return SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {
+      var identity = Meteor.users.findOne({_id: id});
+      if (identity) {
+        SandstormDb.fillInProfileDefaults(identity);
+        SandstormDb.fillInIntrinsicName(identity);
+        SandstormDb.fillInPictureUrl(identity);
+        return identity;
+      }
+    });
   },
   isNeutral: function () {
     return this.pronoun === "neutral" || !(this.pronoun in GENDERS);
@@ -101,6 +114,10 @@ Template._accountProfileEditor.helpers({
     var user = Meteor.user();
     return user && user.hasCompletedSignup;
   },
+  isLogin: function (identityId) {
+    var user = Meteor.user();
+    return user.loginIdentities && !!_.findWhere(user.loginIdentities, {id: identityId});
+  },
   termsAndPrivacy: function () {
     var result = {
       termsUrl: Template.parentData(1)._db.getSetting("termsUrl"),
@@ -143,8 +160,6 @@ Template.sandstormAccountSettings.events({
     Meteor.call("unlinkIdentity", Meteor.userId(), identityId, function (err, result) {
       if (err) {
         console.log("err: ", err);
-      } else {
-        instance.resetSelectedIdentity();
       }
     });
   },
@@ -175,7 +190,14 @@ Template.sandstormAccountSettings.events({
 
 Template.sandstormAccountsFirstSignIn.helpers({
   identityToConfirm: function () {
-    return SandstormDb.getUserIdentities(Meteor.user())[0];
+    var identityId = SandstormDb.getUserIdentityIds(Meteor.user())[0];
+    var identity = Meteor.users.findOne({_id: identityId});
+    if (identity) {
+      SandstormDb.fillInProfileDefaults(identity);
+      SandstormDb.fillInIntrinsicName(identity);
+      SandstormDb.fillInPictureUrl(identity);
+      return identity;
+    }
   },
 });
 

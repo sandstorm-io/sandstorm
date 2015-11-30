@@ -22,24 +22,11 @@
 
 <template name="loginButtonsPopup">
   {{!-- Data context is an instance of AccountsUi. --}}
+  {{> _loginButtonsLoggedOutDropdown}}
+</template>
 
-  {{#if currentUser}}
-    {{#if loggingIn}}
-      {{! We aren't actually logged in yet; we're just setting Meteor.userId
-          optimistically during an at-startup login-with-token. We expose this
-          state so other UIs can treat it specially, but we'll just treat it
-          as logged out. }}
-      {{> _loginButtonsLoggedOutDropdown}}
-    {{else}}
-      {{#if isDemoUser}}
-        {{> _loginButtonsLoggedOutDropdown}}
-      {{else}}
-        {{> _loginButtonsLoggedInDropdown}}
-      {{/if}}
-    {{/if}}
-  {{else}}
-    {{> _loginButtonsLoggedOutDropdown}}
-  {{/if}}
+<template name="accountButtonsPopup">
+  {{> _loginButtonsLoggedInDropdown}}
 </template>
 
 <template name="_loginButtonsMessages">
@@ -54,9 +41,16 @@
 <template name="_loginButtonsLoggedInDropdown">
   <h4>Account</h4>
 
-  {{!-- TODO(cleanup): Don't wrap this in login-buttons-list? --}}
-  <div class="login-buttons-list" role="menu">
+  <div class="account-buttons-list" role="menu">
     <a href="/account" role="menuitem">Account settings</a>
+    <button class="switch-identity">
+      Switch identity {{#if showIdentitySwitcher}}▴{{else}}▾{{/if}}
+    </button>
+    {{#if showIdentitySwitcher}}
+    <div class="inline-identity-switcher">
+      {{> identityPicker identitySwitcherData}}
+    </div>
+    {{/if}}
     {{#if isAdmin}}
     <a href="/admin" role="menuitem">Admin settings</a>
     {{/if}}

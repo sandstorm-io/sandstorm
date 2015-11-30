@@ -42,7 +42,7 @@ Template.loginButtonsPopup.onRendered(function() {
   this.find("[role=menuitem]").focus();
 });
 
-Template.loginButtonsPopup.events({
+Template.accountButtonsPopup.events({
   'click button.logout': function() {
     var topbar = Template.parentData(3);
     Meteor.logout(function () {
@@ -60,10 +60,12 @@ Template.loginButtonsPopup.events({
 });
 
 var displayName = function () {
-  var user = Meteor.user();
-  if (!user) return '';
-  var mainIdentity = SandstormDb.getUserIdentities(user)[0];
-  return mainIdentity && mainIdentity.profile.name;
+  var currentIdentityId = Accounts.getCurrentIdentityId();
+  var user = Meteor.users.findOne({_id: currentIdentityId});
+  if (!user) return "(incognito)";
+
+  SandstormDb.fillInProfileDefaults(user);
+  return user.profile.name;
 };
 
 Template.loginButtons.helpers({
@@ -148,8 +150,39 @@ var capitalize = function(str){
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
+Template._loginButtonsLoggedInDropdown.onCreated(function() {
+  this._identitySwitcherExpanded = new ReactiveVar(false);
+});
+
 Template._loginButtonsLoggedInDropdown.helpers({
   displayName: displayName,
+  showIdentitySwitcher: function () {
+    return Template.instance()._identitySwitcherExpanded.get();
+  },
+  identitySwitcherData: function () {
+    var identities = SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {
+      var identity = Meteor.users.findOne({_id: id});
+      if (identity) {
+        SandstormDb.fillInProfileDefaults(identity);
+        SandstormDb.fillInIntrinsicName(identity);
+        SandstormDb.fillInPictureUrl(identity);
+        return identity;
+      }
+    });
+    function onPicked(identityId) {
+      Accounts.setCurrentIdentityId(identityId);
+    }
+    return { identities: identities, onPicked: onPicked,
+             currentIdentityId: Accounts.getCurrentIdentityId() };
+  },
+
+
+});
+
+Template._loginButtonsLoggedInDropdown.events({
+  "click button.switch-identity" : function (event, instance) {
+    instance._identitySwitcherExpanded.set(!instance._identitySwitcherExpanded.get());
+  }
 });
 
 var sendEmail = function (email, linkingNewIdentity) {

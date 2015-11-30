@@ -197,8 +197,8 @@ function collectEdges(db, vertex) {
 
   var owningUser = Meteor.users.findOne({_id: grain.userId});
   if (owningUser) {
-    SandstormDb.getUserIdentities(owningUser).forEach(function(identity) {
-      result.edgesByRecipient[identity._id] = [{sharer: "OwningAccount", roleAssignments: []}];
+    SandstormDb.getUserIdentityIds(owningUser).forEach(function(identityId) {
+      result.edgesByRecipient[identityId] = [{sharer: "OwningAccount", roleAssignments: []}];
     });
   }
 
@@ -542,8 +542,7 @@ Meteor.methods({
       throw new Meteor.Error(404, "No such token found.");
     }
 
-    if (_.findWhere(SandstormDb.getUserIdentities(db.getUser(this.userId)),
-                    {id: apiToken.identityId})) {
+    if (db.userHasIdentity(this.userId, apiToken.identityId)) {
       var modifier = {$set: newFields};
       db.collections.apiTokens.update(token, modifier);
     } else {

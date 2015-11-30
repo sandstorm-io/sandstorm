@@ -343,7 +343,13 @@ if (Meteor.isClient) {
       return Meteor.users.find({loginIdentities: {$exists: 1}}, {sort: {createdAt: 1}});
     },
     userIdentity: function () {
-      return SandstormDb.getUserIdentities(this)[0];
+      var identityId = SandstormDb.getUserIdentityIds(this)[0];
+      var identity = Meteor.users.findOne({_id: identityId});
+      if (identity) {
+        SandstormDb.fillInProfileDefaults(identity);
+        SandstormDb.fillInIntrinsicName(identity);
+        return identity;
+      }
     },
     userSignupNote: function () {
       if (this.signupEmail) {

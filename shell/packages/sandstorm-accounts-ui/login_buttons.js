@@ -8,9 +8,6 @@ var helpers = {
   isDemoUser: function () {
     return this._db.isDemoUser();
   },
-  isAdmin: function () {
-    return this._db.isAdmin();
-  },
   demoTimeLeft: function () {
     var ms = Meteor.user().expires.getTime() - Date.now();
     var sec = Math.floor(ms / 1000) % 60;
@@ -68,7 +65,7 @@ var displayName = function () {
   return user.profile.name;
 };
 
-Template.loginButtons.helpers({
+Template.accountButtons.helpers({
   displayName: displayName
 });
 

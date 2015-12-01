@@ -497,6 +497,9 @@ if (Meteor.isClient) {
     showAccountButtons: function () {
       return Meteor.user() && !Meteor.loggingIn() && !isDemoUser();
     },
+    accountButtonsData: function () {
+      return {isAdmin: globalDb.isAdmin()};
+    },
     firstLogin: function () {
       return credentialsSubscription.ready() && !isDemoUser() && !Meteor.loggingIn()
           && Meteor.user() && !Meteor.user().hasCompletedSignup;

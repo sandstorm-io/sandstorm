@@ -67,8 +67,8 @@ limitations under the License.
       {{/sandstormTopbarItem}}
   {{/if}}
   {{#if showAccountButtons}}
-    {{>sandstormTopbarItem name="account" topbar=globalTopbar template="loginButtons"
-                           popupTemplate="accountButtonsPopup"}}
+    {{>sandstormTopbarItem name="account" topbar=globalTopbar data=accountButtonsData
+                           template="accountButtons" popupTemplate="accountButtonsPopup"}}
   {{else}}
     {{>sandstormTopbarItem name="login" topbar=globalTopbar data=globalAccountsUi
                            template="loginButtons" popupTemplate="loginButtonsPopup"}}

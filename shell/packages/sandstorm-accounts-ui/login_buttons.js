@@ -156,7 +156,10 @@ Template._loginButtonsLoggedInDropdown.onCreated(function() {
 
 Template._loginButtonsLoggedInDropdown.helpers({
   displayName: displayName,
-  showIdentitySwitcher: function () {
+  showIdentitySwitcher: function() {
+    return SandstormDb.getUserIdentityIds(Meteor.user()).length > 1;
+  },
+  identitySwitcherExpanded: function () {
     return Template.instance()._identitySwitcherExpanded.get();
   },
   identitySwitcherData: function () {

@@ -43,13 +43,15 @@
 
   <div class="account-buttons-list" role="menu">
     <a href="/account" role="menuitem">Account settings</a>
-    <button class="switch-identity">
-      Switch identity {{#if showIdentitySwitcher}}▴{{else}}▾{{/if}}
-    </button>
     {{#if showIdentitySwitcher}}
+    <button class="switch-identity">
+      Switch identity {{#if identitySwitcherExpanded}}▴{{else}}▾{{/if}}
+    </button>
+    {{#if identitySwitcherExpanded}}
     <div class="inline-identity-switcher">
       {{> identityPicker identitySwitcherData}}
     </div>
+    {{/if}}
     {{/if}}
     {{#if isAdmin}}
     <a href="/admin" role="menuitem">Admin settings</a>

@@ -519,7 +519,9 @@ Meteor.methods({
         throw new Meteor.Error(403, "Not an identity of the current user: " + provider.identityId);
       }
     }
-    provider.accountId = this.userId;
+    if (provider.identityId) {
+      provider.accountId = this.userId;
+    }
     return SandstormPermissions.createNewApiToken(
       this.connection.sandstormDb, provider, grainId, petname, roleAssignment, owner);
   },

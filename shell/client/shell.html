@@ -1151,6 +1151,91 @@ limitations under the License.
   </div>
 </template>
 
+<template name="referrals">
+  {{#if quotaEnabled}}
+  {{setDocumentTitle}}
+  {{>title "About Sandstorm"}}
+  <div class="about">
+    {{#if isPaid}}
+    <h1>Get up to 30GB of free space when your friends share on Oasis!</h1>
+    {{else}}
+    <h1>Get unlimited grains &amp; up to 2GB of free space when
+      your friends share on Oasis!</h1>
+    {{/if}}
+
+    <h2>Your reward</h2>
+
+    {{#if isPaid}}
+    <p>
+      Once someone clicks a sharing link that your friend created,
+      we'll reward you with 2 GB of free storage. You can earn <strong>
+      up to 30GB of free storage</strong> this way!
+    </p>
+    {{else}}
+    <p>
+      Once someone clicks a sharing link that your friend created,
+      we'll reward you with <strong>unlimited grains</strong> and 50
+      MB of free storage.
+      Tell them to share an Etherpad grain or a
+      Game of Y game with you.
+    </p>
+
+    <p>You'll also earn 50 MB per person you successfully
+      refer after the first, <strong>up to 2 GB of free storage.</strong></p>
+    {{/if}}
+
+    <h2>Sharing is referring</h2>
+
+    <ol>
+      <li>You share a grain with your friend (who isn't already an Oasis user).</li>
+      <li>Your friend shares a grain with any other person (including you).</li>
+    </ol>
+
+    <p>To get started, <a href="{{pathFor grains}}">open any
+        grain</a> and click <strong>Share access.</strong></p>
+
+    <!--
+
+    TODO(soon): Integrate with Powerbox identity picker to get referral link
+                sending to exist and to look nice.
+
+    <h2>Or send a referral link</h2>
+
+    <p>You can type their email address here:</p>
+
+    <form
+    <textarea style="width: 100%" placeholder="Add emails"></textarea>
+
+    -->
+
+    <h2>The fine print</h2>
+
+    <!--
+
+    TODO(soon): Create a referral link mechanism.
+
+    <p>If you prefer, you can share this referral link:
+      <a href="#">https://oasis.sandstorm.io/r/miequ3ie</a></p>
+
+    -->
+
+    <p>Your referral bonus lasts until <strong>1 year after the
+        referral.</strong> The terms of this referral program may
+        change without warning; however, such changes will not affect
+        bonuses you have already received. If you need even more
+        space, <a href="/account">upgrade your account.</a>
+    </p>
+
+    <p>Paid subscribers can get up to 30 GB of free storage, 2 GB per
+        person they refer, in addition to the storage from their
+        account level. Free account holders can earn unlimited grains
+        and 50 MB of free storage per person they refer, up to 2 GB
+        total.</p>
+
+  </div>
+  {{/if}}
+</template>
+
 <template name="about">
   {{setDocumentTitle}}
   {{>title "About Sandstorm"}}

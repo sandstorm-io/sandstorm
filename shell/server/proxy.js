@@ -36,6 +36,25 @@ SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 SANDSTORM_LOGDIR = (SANDSTORM_ALTHOME || "") + "/var/log";
 SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
 
+function referralProgramLogSharingTokenUse(db, bobAccountId) {
+  // Hooray! The sharing token is valid! Someone (let's call them Charlie) is going to get a
+  // UiView to this grain!  This means that the user who created this apiToken knows how to use
+  // the "share access" interface. Let's call them Bob.
+  //
+  // If Bob's User.referredBy is set, and their referralComplete is not yet set, then we should set
+  // referralComplete to true so that the person who referred them gets credit. Implementation note:
+  // this does mean that Alice can get referral credit for Bob by sharing a link with Bob, even if
+  // Bob already had an account.
+
+  // Bail out early if quota support is not enabled.
+  if (! Meteor.settings.public.quotaEnabled) {
+    return;
+  }
+
+  Meteor.users.update({_id: bobAccountId, referredBy: {$exists: true}, referralComplete: false},
+                      {$set: {referralComplete: true}});
+}
+
 // User-agent strings that should be allowed to use http basic authentication.
 // These are regex matches, so ensure they are escaped properly with double
 // backslashes. For security reasons, we MUST NOT whitelist any user-agents
@@ -232,6 +251,11 @@ Meteor.methods({
     if (!grain) {
       throw new Meteor.Error(404, "Grain not found", "Grain ID: " + apiToken.grainId);
     }
+
+    if (apiToken.accountId) {
+      referralProgramLogSharingTokenUse(globalDb, apiToken.accountId);
+    }
+
     var pkg = Packages.findOne({_id: grain.packageId});
     var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ""};
     var appIcon = undefined;

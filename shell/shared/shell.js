@@ -305,6 +305,10 @@ if (Meteor.isClient) {
     window.removeEventListener("resize", this.resizeFunc, false);
   });
 
+  Template.referrals.helpers({
+    isPaid: (Meteor.user() && Meteor.user().plan !== "free")
+  });
+
   var determineAppName = function (grainId) {
     // Returns:
     //
@@ -933,6 +937,10 @@ Router.map(function () {
         error: Session.get("uploadError")
       };
     }
+  });
+
+  this.route("referrals", {
+    path: "/referrals"
   });
 
   this.route("account", {

@@ -61,6 +61,9 @@
     <a href="/admin" role="menuitem">Admin settings</a>
     {{/if}}
     <a href="mailto:support@sandstorm.io" target="_blank" role="menuitem">Send Feedback</a>
+    {{#if quotaEnabled }}
+    <a href="/referrals">Referral program</a>
+    {{/if}}
     <a href="/about" role="menuitem">About Sandstorm</a>
 
     <button class="logout" role="menuitem">

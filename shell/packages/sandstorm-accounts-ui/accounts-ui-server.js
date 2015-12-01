@@ -25,8 +25,13 @@ Meteor.users.deny({
 Meteor.publish("getMyUsage", function () {
   if (this.userId) {
     // TODO(someday): Make this reactive.
-    var usage = this.connection.sandstormDb.getMyUsage(Meteor.users.findOne(this.userId));
-    this.added("users", this.userId, {pseudoUsage: usage});
+    var user = Meteor.users.findOne(this.userId);
+    var usage = this.connection.sandstormDb.getMyUsage(user);
+    var referralBonus = this.connection.sandstormDb.getMyReferralBonus(user);
+    this.added("users", this.userId, {
+      pseudoUsage: usage,
+      pseudoReferralBonus: referralBonus,
+    });
   }
   this.ready();
 });

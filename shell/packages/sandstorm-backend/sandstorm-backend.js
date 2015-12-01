@@ -190,7 +190,9 @@ SandstormBackend.prototype.startGrainInternal = function(packageId, grainId, own
   // user) and `supervisor` (the supervisor capability).
 
   if (isUserExcessivelyOverQuota(Meteor.users.findOne(ownerId))) {
-    throw new Meteor.Error(402, "Cannot start grain because owner's storage is exhausted.");
+    throw new Meteor.Error(402,
+                           ("Cannot start grain because owner's storage is exhausted.\n"
+                            "Please ask them to upgrade."));
   }
 
   // Ugly: Stay backwards-compatible with old manifests that had "executablePath" and "args" rather

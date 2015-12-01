@@ -45,70 +45,38 @@ Meteor.methods({
                                  "identity", function () { return { userId: accountUserId }; });
   },
 
-  getLoginAccountOfIdentity: function() {
-    // Attempts to find an account that has the current user as a login identity. If the identity
-    // is not linked to any account, creates a new account for it. Returns a value of type
-    // `OneOf({alreadyAccount: null},
-    //        {loginAccountId: String},
-    //        {nonloginAccounts: [{accountId: String, loginIdentityUser: User}]})`
-    // where the nonloginAccounts variant indicates that this identity cannot log in to any existing
-    // account, and the corresponding list has information about the accounts that this identity is
-    // linked to. The alreadyAccount variant is not an error because the client is allowed to call
-    // this method before its accountIdentities subscription is ready, and therefore it might
-    // not yet know whether the user is an identity or an account.
+  createAccountForIdentity: function() {
+    // Creates a new account for the currently-logged-in identity.
 
     var user = Meteor.user();
-    if (!user) {
-      throw new Meteor.Error(403, "Must be logged in to look up accounts.")
-    }
-    if (user.loginIdentities) return {alreadyAccount: null};
-
-    var loginAccount = Meteor.users.findOne({"loginIdentities.id": user._id},
-                                            {fields: {_id: 1, "loginIdentities.$": 1}});
-
-    if (loginAccount) {
-      return {loginAccountId: loginAccount._id};
+    if (!(user && user.profile)) {
+      throw new Meteor.Error(403, "Must be logged in as an identity in order to create an account.");
     }
 
-    var nonloginAccounts = Meteor.users.find({"nonloginIdentities.id": user._id}).fetch();
+    if (Meteor.users.findOne({"loginIdentities.id": user._id})) {
+      throw new Meteor.Error(403,
+                             "Cannot create an account for an identity that can already a login");
+    }
 
-    var accountUserId;
-    if (nonloginAccounts.length == 0) {
-      // Make a new account for this user.
-      var newUser = {loginIdentities: [{id: user._id}],
-                     nonloginIdentities: []};
-      if (user.services.dev) {
-        newUser.signupKey = "devAccounts";
-        if (user.services.dev.isAdmin) {
-          newUser.isAdmin = true;
-        }
-        if (user.services.dev.hasCompletedSignup) {
-          newUser.hasCompletedSignup = true;
-        }
-      } else if (user.expires) {
-        // Demo user.
-        newUser.expires = user.expires;
+    var newUser = {loginIdentities: [{id: user._id}],
+                   nonloginIdentities: []};
+    if (user.services.dev) {
+      newUser.signupKey = "devAccounts";
+      if (user.services.dev.isAdmin) {
+        newUser.isAdmin = true;
       }
-      var options = {};
-      accountUserId = Accounts.insertUserDoc(options, newUser);
-      return {loginAccountId: accountUserId};
-    } else {
-      var resultData = [];
-      nonloginAccounts.forEach(function(account) {
-        if (account.loginIdentities.length > 0) {
-          for (var jj = 0; jj < account.loginIdentities.length; ++jj) {
-            var loginIdentityUser =
-                Meteor.users.findOne({_id: account.loginIdentities[jj].id});
-            if (loginIdentityUser) {
-              var userWithDefaults = SandstormDb.getUserIdentities(loginIdentityUser)[0];
-              resultData.push({accountId: account._id,
-                               loginIdentityUser: _.pick(userWithDefaults, "_id", "profile")});
-            }
-          }
-        }
-      });
-      return {nonloginAccounts: resultData};
+      if (user.services.dev.hasCompletedSignup) {
+        newUser.hasCompletedSignup = true;
+      }
+    } else if (user.expires) {
+      // Demo user.
+      newUser.expires = user.expires;
     }
+    var options = {};
+
+    // This will throw an error if the identity has been added as a login identity to some
+    // other account while we were executing the body of this method.
+    return Accounts.insertUserDoc(options, newUser);
   },
 
   linkIdentityToAccount: function(token) {
@@ -172,18 +140,14 @@ Meteor.methods({
     if (!this.userId) {
       throw new Meteor.Error(403, "Not logged in.");
     }
-    if (!this.connection.sandstormDb.userHasIdentity(accountUserId, identityId)) {
+    if (!this.connection.sandstormDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Current user does not own identity " + identityId);
     }
 
     var identityUser = Meteor.users.findOne({_id: identityId});
-    if (this.userId === accountUserId || this.userId === identityUser._id) {
-      Meteor.users.update({_id: accountUserId},
-                          {$pull: {nonloginIdentities: {id: identityId},
-                                   loginIdentities: {id: identityId}}});
-    } else {
-      throw new Meteor.Error(403, "Not authorized to unlink identity " + identityId);
-    }
+    Meteor.users.update({_id: accountUserId},
+                        {$pull: {nonloginIdentities: {id: identityId},
+                                 loginIdentities: {id: identityId}}});
   },
 
   setIdentityAllowsLogin: function(identityId, allowLogin) {
@@ -238,3 +202,74 @@ Accounts.linkIdentityToAccount = function (identityId, accountId) {
                       {$push: {"nonloginIdentities": {id: identityId}}});
 
 }
+
+Meteor.publish("accountsOfIdentity", function (identityId) {
+  check(identityId, String);
+  var self = this;
+
+  // Dummy query handle for the case where this.userId === identityId
+  var hasIdentityHandle = {stop: function () {} };
+
+  if (this.userId !== identityId) {
+    var hasIdentityCursor =
+      Meteor.users.find({$or: [{_id: this.userId, "loginIdentities.id": identityId},
+                               {_id: this.userId, "nonloginIdentities.id": identityId}]});
+    if (hasIdentityCursor.count() == 0) return;
+    hasIdentityHandle = hasIdentityCursor.observe({removed: function () { self.stop(); }});
+  }
+
+  // We maintain a map from identity IDs to live query handles that track profile changes.
+  var loginIdentities = {};
+
+  function addIdentitiesOfAccount(account) {
+    account.loginIdentities.forEach(function(identity) {
+      if (!(identity.id in loginIdentities)) {
+        var user = Meteor.users.findOne({_id: identity.id});
+        if (user) {
+          SandstormDb.fillInProfileDefaults(user);
+          SandstormDb.fillInIntrinsicName(user);
+          var filteredUser = _.pick(user, "_id", "profile");
+          filteredUser.loginAccountId = account._id;
+          filteredUser.sourceIdentityId = identityId;
+          self.added("loginIdentitiesOfLinkedAccounts", user._id, filteredUser);
+        }
+        loginIdentities[identity.id] =
+          Meteor.users.find({_id: identity.id}, {fields: {profile: 1}}).observeChanges({
+            changed: function (id, fields) {
+              self.changed("loginIdentitiesOfLinkedAccounts", id, fields);
+            }
+          });
+      }
+    });
+  }
+  var cursor = Meteor.users.find({$or: [{"loginIdentities.id": identityId},
+                                        {"nonloginIdentities.id": identityId}]});
+
+  var handle = cursor.observe({
+    added: function (account) {
+      addIdentitiesOfAccount(account);
+    },
+    changed: function (newAccount, oldAccount) {
+      addIdentitiesOfAccount(newAccount);
+    },
+    removed: function (account) {
+      account.loginIdentities.forEach(function(identity) {
+        if (identity.id in loginIdentities) {
+          self.removed("loginIdentitiesOfLinkedAccounts", identity.id);
+          loginIdentities[identity.id].stop();
+          delete loginIdentities[identity.id];
+        }
+      });
+    },
+  });
+  this.ready();
+
+  this.onStop(function() {
+    hasIdentityHandle.stop();
+    handle.stop();
+    Object.keys(loginIdentities).forEach(function(identityId) {
+      loginIdentities[identityId].stop();
+      delete loginIdentities[identityId];
+    });
+  });
+});

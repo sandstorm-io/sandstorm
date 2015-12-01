@@ -748,7 +748,7 @@ div.identity-editor {
     color: #777777;
   }
 
-  .picture {
+  .editor .picture {
     width: 128px;
     position: absolute;
     label {
@@ -1298,6 +1298,38 @@ body>.popup.billing-prompt>.frame {
       @extend %button-primary;
     }
   }
+}
+
+.login-identities-of-linked-accounts {
+  border: 1px solid gray;
+  border-radius: 2px;
+  padding: 10px;
+  ul.unlinkable-identities {
+    list-style-type: none;
+    padding: 0;
+    li{
+      position: relative;
+      padding-bottom: 10px;
+      .identity-card {
+        border: 1px solid black;
+      }
+      button.unlink {
+        @extend %button-base;
+        @extend %button-secondary;
+        position: absolute;
+        left: 240px;
+        top: 15px;
+      }
+    }
+  }
+  button.hide-other-accounts {
+    @extend %button-base;
+    @extend %button-secondary;
+  }
+}
+button.show-other-accounts {
+  @extend %button-base;
+  @extend %button-secondary;
 }
 
 ul.identity-card-list {

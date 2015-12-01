@@ -205,22 +205,12 @@ Accounts.linkIdentityToAccount = function (identityId, accountId) {
 
 Meteor.publish("accountsOfIdentity", function (identityId) {
   check(identityId, String);
-  var self = this;
-
-  // Dummy query handle for the case where this.userId === identityId
-  var hasIdentityHandle = {stop: function () {} };
-
-  if (this.userId !== identityId) {
-    var hasIdentityCursor =
-      Meteor.users.find({$or: [{_id: this.userId, "loginIdentities.id": identityId},
-                               {_id: this.userId, "nonloginIdentities.id": identityId}]});
-    if (hasIdentityCursor.count() == 0) return;
-    hasIdentityHandle = hasIdentityCursor.observe({removed: function () { self.stop(); }});
-  }
+  if (!SandstormDb.ensureSubscriberHasIdentity(this, identityId)) return;
 
   // We maintain a map from identity IDs to live query handles that track profile changes.
   var loginIdentities = {};
 
+  var self = this;
   function addIdentitiesOfAccount(account) {
     account.loginIdentities.forEach(function(identity) {
       if (!(identity.id in loginIdentities)) {
@@ -265,7 +255,6 @@ Meteor.publish("accountsOfIdentity", function (identityId) {
   this.ready();
 
   this.onStop(function() {
-    hasIdentityHandle.stop();
     handle.stop();
     Object.keys(loginIdentities).forEach(function(identityId) {
       loginIdentities[identityId].stop();

@@ -18,21 +18,32 @@ var makeIdenticon;
 var httpProtocol;
 
 if (Meteor.isServer) {
+  SandstormDb.ensureSubscriberHasIdentity = function(publishHandler, identityId) {
+    // Helper for publish functions that need to restrict access based on whether the subscriber
+    // has a given identity linked. Automatically stops the subscription if the user loses the
+    // identity. Returns a boolean indicating whether the user initially has the identity.
+
+    var userId = publishHandler.userId;
+    if (userId === identityId) {
+      return true;
+    } else {
+      var hasIdentityCursor =
+          Meteor.users.find({$or: [{_id: userId, "loginIdentities.id": identityId},
+                                   {_id: userId, "nonloginIdentities.id": identityId}]});
+      if (hasIdentityCursor.count() == 0) {
+        publishHandler.stop();
+        return false;
+      }
+      var handle = hasIdentityCursor.observe({removed: function () { publishHandler.stop(); }});
+      publishHandler.onStop(function () { handle.stop(); });
+      return true;
+    }
+  }
+
   Meteor.publish("identityProfile", function (identityId) {
     check(identityId, String);
+    if (!SandstormDb.ensureSubscriberHasIdentity(this, identityId)) return;
 
-    // Dummy query handle for the case where this.userId === identityId
-    var hasIdentityHandle = {stop: function () {} };
-
-    if (this.userId !== identityId) {
-      var hasIdentityCursor =
-          Meteor.users.find({$or: [{_id: this.userId, "loginIdentities.id": identityId},
-                                   {_id: this.userId, "nonloginIdentities.id": identityId}]});
-      if (hasIdentityCursor.count() == 0) return;
-      hasIdentityHandle = hasIdentityCursor.observe({removed: function () { self.stop(); }});
-    }
-
-    this.onStop(function () { hasIdentityHandle.stop(); });
     return Meteor.users.find({_id: identityId},
       {fields: {
         "profile":1,
@@ -217,6 +228,8 @@ SandstormDb.fillInPictureUrl = function(user) {
 }
 
 SandstormDb.getUserIdentityIds = function (user) {
+  // Given an account user object, returns an array containing the ID of each identity linked to the
+  // account. Always returns the most recently added login identity first.
   if (user && user.loginIdentities) {
     return _.pluck(user.nonloginIdentities.concat(user.loginIdentities), "id").reverse();
   } else {

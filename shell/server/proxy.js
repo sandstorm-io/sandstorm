@@ -348,6 +348,7 @@ Meteor.methods({
         // Create a new API token for the identity redeeming this token.
         var result = SandstormPermissions.createNewApiToken(
           globalDb, {rawParentToken: token}, apiToken.grainId, apiToken.petname, {allAccess: null}, owner);
+        globalDb.addContact(apiToken.accountId, identityId);
 
         // If the parent API token is forSharing and it has an accountId, then the logged-in user (call
         // them Bob) is about to access a grain owned by someone (call them Alice) and save a reference

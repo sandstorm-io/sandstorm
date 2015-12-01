@@ -92,26 +92,6 @@ if (Meteor.isServer) {
 
   var Url = Npm.require("url");
   httpProtocol = Url.parse(process.env.ROOT_URL).protocol;
-
-  var Crypto = Npm.require("crypto");
-  Meteor.methods({
-    revealIdentity: function (token, identityId) {
-      var db = this.connection.sandstormDb;
-      if (!db.userHasIdentity(this.userId, identityId)) {
-        throw new Meteor.Error(403, "User doesn't own this indentity.");
-      }
-      var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
-      var ownerId = db.collections.apiTokens.findOne({_id: hashedToken}).accountId;
-      var profile = db.getIdentity(identityId).profile;
-      db.collections.contacts.upsert({ownerId: ownerId, identityId: identityId}, {
-        ownerId: ownerId,
-        petname: profile && profile.name,
-        created: new Date(),
-        identityId: identityId,
-        profile: profile,
-      });
-    }
-  });
 } else {
   var identiconCache = {};
 
@@ -302,4 +282,16 @@ SandstormDb.getUserEmails = function (user) {
     result[0].primary = true;
   }
   return result;
+}
+
+SandstormDb.prototype.addContact = function (ownerId, identityId) {
+  var db = this;
+  var profile = db.getIdentity(identityId).profile;
+  db.collections.contacts.upsert({ownerId: ownerId, identityId: identityId}, {
+    ownerId: ownerId,
+    petname: profile && profile.name,
+    created: new Date(),
+    identityId: identityId,
+    profile: profile,
+  });
 }

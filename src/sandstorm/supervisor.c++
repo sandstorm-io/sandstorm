@@ -2009,7 +2009,7 @@ public:
         req.setSize(stats.st_size);
         auto expectSizeTask = req.send();
         auto inStream = kj::heap<kj::FdInputStream>(kj::mv(*fd));
-        return pump(*inStream, kj::mv(stream)).attach(kj::mv(inStream));
+        return pump(*inStream, kj::mv(stream)).attach(kj::mv(inStream), kj::mv(expectSizeTask));
       } else if (S_ISDIR(stats.st_mode)) {
         context.getResults(capnp::MessageSize {4, 0})
             .setStatus(Supervisor::WwwFileStatus::DIRECTORY);

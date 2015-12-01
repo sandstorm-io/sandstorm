@@ -65,7 +65,7 @@ function generateAutoCompleteContacts(template) {
   results.forEach(function (contact) {
     var oldId = contact._id;
     contact._id = contact.identityId;
-    SandstormDb.fillInIdenticon(contact);
+    SandstormDb.fillInPictureUrl(contact);
     contact._id = oldId;
   })
   template.autoCompleteContacts.set(defaults.concat(results));

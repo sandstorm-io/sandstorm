@@ -24,7 +24,7 @@ limitations under the License.
   {{/if}}
   {{!-- Becomes hamburger menu button in mobile view. --}}
   <div class="menu-button"></div>
-  <ul class="topbar {{#if _menuExpanded.get}}expanded{{/if}} {{#if showNavbar}}show-navbar{{/if}}">
+  <ul class="topbar {{#if _menuExpanded.get}}expanded{{/if}}">
     <ul class="menubar">
       {{#each items}}
         {{#unless onlyPopup}}
@@ -40,13 +40,13 @@ limitations under the License.
         {{/unless}}
       {{/each}}
     </ul>
-    <ul class="navbar {{#unless showNavbar}}hide-desktop{{/unless}}">
+    <ul class="navbar {{#if hideNavbar}}hide-desktop{{else}}{{#if shrinkNavbar}}shrink-desktop{{/if}}{{/if}}">
       <li class="navitem-create-grain {{#if isCurrentRoute 'apps'}}current{{/if}}"><a href="{{pathFor route='apps'}}">Apps</a></li>
       <li class="navitem-open-grain {{#if isCurrentRoute 'grains'}}current{{/if}}"><a href="{{pathFor route='grains'}}"><span>Grains</span></a></li>
 
       <!-- TODO(cleanup): ul's can only contain li's, so stuff below here is not really valid -->
       <button class="navbar-shrink">
-        {{#if showNavbar}}&lt;{{else}}&gt;{{/if}}
+        {{#if shrinkNavbar}}&gt;{{else}}&lt;{{/if}}
       </button>
 
       <ul class="navbar-grains">

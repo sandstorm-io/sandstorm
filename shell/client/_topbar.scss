@@ -453,13 +453,16 @@ body>.topbar {
         transition: border-left-width 0.2s;
       }
 
-      &.hide-desktop {
+      &.shrink-desktop {
         // !important used to override other classes that might assign e.g. display: block
         width: $navbar-width-desktop-shrunk !important;
 
         >button.navbar-shrink {
           border-left-width: 0;
         }
+      }
+      &.hide-desktop {
+        display: none;
       }
 
       overflow: hidden;

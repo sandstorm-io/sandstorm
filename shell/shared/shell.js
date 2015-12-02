@@ -548,24 +548,14 @@ if (Meteor.isClient) {
     return result;
   };
   Template.registerHelper("dateString", makeDateString);
-  Template.registerHelper("showNavbar", function() {
-    // We show the navbar when:
-    //
-    // - The session indicates we should (i.e., the user clicked on
-    //   the Sandstorm logo in the top-left), or
-    //
-    // - We've blocked reload, since we cover the toggle and
-    //   you'd be unable to switch to other grains before page
-    //   refresh otherwise.
-    //
-    // We actively hide the navbar when:
-    //
-    // - The user is not logged-in. This is because "Open" and "New"
-    //   would have no meaning for a non-logged-in user, and since they
-    //   can't open any new grains, "multi-grain" has no meaning for them.
-    return Meteor.user() && (Session.get("show-navbar") || globalTopbar.isUpdateBlocked());
+  Template.registerHelper("hideNavbar", function() {
+    // Hide navbar if user is not logged in, since they can't go anywhere with it.
+    return !Meteor.userId();
   });
-
+  Template.registerHelper("shrinkNavbar", function() {
+    // Shrink the navbar if the user clicked the button to do so.
+    return Session.get("shrink-navbar");
+  });
 
   Template.registerHelper("quotaEnabled", function() {
     return Meteor.settings.public.quotaEnabled;

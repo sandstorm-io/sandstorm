@@ -116,9 +116,12 @@ button.revoke-token {
 
   @media #{$desktop} {
     top: 32px;
-    left: $navbar-width-desktop-shrunk;
-    &.show-navbar {
-      left: $navbar-width-desktop;
+    left: $navbar-width-desktop;
+    &.shrink-navbar {
+      left: $navbar-width-desktop-shrunk;
+    }
+    &.hide-navbar {
+      left: 0;
     }
     transition: left 0.2s;
   }

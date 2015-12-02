@@ -58,7 +58,7 @@ var storeReferralProgramInfoApiTokenCreated = function(db, accountId, identityId
   }
 
   // Only actually update Bob's Identity ID if there is no referredBy.
-  var updatedCount = Meteor.users.update(
+  Meteor.users.update(
     {_id: bobIdentityId, referredBy: {$exists: false}},
     {$set: {referredBy: aliceAccountId}});
 }

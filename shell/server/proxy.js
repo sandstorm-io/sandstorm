@@ -36,6 +36,33 @@ SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 SANDSTORM_LOGDIR = (SANDSTORM_ALTHOME || "") + "/var/log";
 SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
 
+var storeReferralProgramInfoApiTokenCreated = function(db, accountId, identityId, apiTokenAccountId) {
+  // From the Referral program's perspective, if Bob's Account has no referredByComplete, then we
+  // update Bob's Identity to say it's referredBy Alice's Account (which is apiTokenAccountId).
+  check(accountId, String);
+  check(identityId, String);
+  check(apiTokenAccountId, String);
+
+  // Bail out early if quota enforcement is disabled.
+  if (! Meteor.settings.public.quotaEnabled) {
+    return;
+  }
+
+  var aliceAccountId = apiTokenAccountId;
+  var bobAccountId = accountId;
+  var bobIdentityId = identityId;
+
+  if (Meteor.users.find({_id: bobAccountId,
+                         referredByComplete: {$exists: true}}).count() > 0) {
+    return;
+  }
+
+  // Only actually update Bob's Identity ID if there is no referredBy.
+  var updatedCount = Meteor.users.update(
+    {_id: bobIdentityId, referredBy: {$exists: false}},
+    {$set: {referredBy: aliceAccountId}});
+}
+
 function referralProgramLogSharingTokenUse(db, bobAccountId) {
   // Hooray! The sharing token is valid! Someone (let's call them Charlie) is going to get a UiView
   // to this grain!  This means that the user who created this apiToken knows how to use the "share
@@ -314,8 +341,22 @@ Meteor.methods({
       if (identityId != apiToken.identityId && identityId != grain.identityId &&
           !ApiTokens.findOne({'owner.user.identityId': identityId, parentToken: hashedToken })) {
         var owner = {user: {identityId: identityId, title: title}};
-        SandstormPermissions.createNewApiToken(globalDb, {rawParentToken: token}, apiToken.grainId,
-                                               apiToken.petname, {allAccess: null}, owner);
+
+        // Create a new API token for the identity redeeming this token.
+        var result = SandstormPermissions.createNewApiToken(
+          globalDb, {rawParentToken: token}, apiToken.grainId, apiToken.petname, {allAccess: null}, owner);
+
+        // If the parent API token is forSharing and it has an accountId, then the logged-in user (call
+        // them Bob) is about to access a grain owned by someone (call them Alice) and save a reference
+        // to it as a new ApiToken. (For share-by-link, this occurs when viewing the grain. For
+        // share-by-identity, this happens immediately.)
+        if (result.parentApiToken) {
+          var parentApiToken = result.parentApiToken;
+          if (parentApiToken.forSharing && parentApiToken.accountId) {
+            storeReferralProgramInfoApiTokenCreated(
+              globalDb, this.userId, owner.user.identityId, parentApiToken.accountId);
+          }
+        }
       }
       return {redirectToGrain: apiToken.grainId};
     } else {

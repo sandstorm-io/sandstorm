@@ -404,33 +404,6 @@ SandstormPermissions.downstreamTokens = function(db, root) {
   return result;
 }
 
-var storeReferralProgramInfoApiTokenCreated = function(db, accountId, identityId, apiTokenAccountId) {
-  // From the Referral program's perspective, if Bob's Account has no referredByComplete, then we
-  // update Bob's Identity to say it's referredBy Alice's Account (which is apiTokenAccountId).
-  check(accountId, String);
-  check(identityId, String);
-  check(apiTokenAccountId, String);
-
-  // Bail out early if quota enforcement is disabled.
-  if (! Meteor.settings.public.quotaEnabled) {
-    return;
-  }
-
-  var aliceAccountId = apiTokenAccountId;
-  var bobAccountId = accountId;
-  var bobIdentityId = identityId;
-
-  if (Meteor.users.find({_id: bobAccountId,
-                         referredByComplete: {$exists: true}}).count() > 0) {
-    return;
-  }
-
-  // Only actually update Bob's Identity ID if there is no referredBy.
-  var updatedCount = Meteor.users.update(
-    {_id: bobIdentityId, referredBy: {$exists: false}},
-    {$set: {referredBy: aliceAccountId}});
-}
-
 SandstormPermissions.createNewApiToken = function (db, provider, grainId, petname,
                                                    roleAssignment, owner) {
   // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
@@ -479,16 +452,6 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
     apiToken.accountId = parentApiToken.accountId;
 
     apiToken.parentToken = parentToken;
-
-    // If the parent API token is forSharing and it has an accountId, then the logged-in user (call
-    // them Bob) is about to access a grain owned by someone (call them Alice) and save a reference
-    // to it as a new ApiToken. (For share-by-link, this occurs when viewing the grain. For
-    // share-by-identity, this happens immediately.)
-    if (parentForSharing) {
-      if (parentApiToken && parentApiToken.accountId)  {
-        storeReferralProgramInfoApiTokenCreated(db, Meteor.user()._id, owner.user.identityId, parentApiToken.accountId);
-      }
-    }
   } else if (provider.identityId) {
     apiToken.identityId = provider.identityId;
     apiToken.accountId = provider.accountId;
@@ -525,7 +488,7 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   db.collections.apiTokens.insert(apiToken);
 
   var endpointUrl = Url.parse(process.env.ROOT_URL).protocol + "//" + db.makeWildcardHost("api");
-  return {id: apiToken._id, token: token, endpointUrl: endpointUrl};
+  return {id: apiToken._id, token: token, endpointUrl: endpointUrl, parentApiToken: parentApiToken};
 }
 
 // Make self-destructing tokens actually self-destruct, so they don't

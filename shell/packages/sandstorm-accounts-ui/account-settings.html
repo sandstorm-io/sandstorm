@@ -55,11 +55,25 @@ limitations under the License.
     {{#each identities}}
     <div id="profile-tab-{{_id}}" aria-labelled-by="profile-tab-header-{{_id}}"
          role="tabpanel" aria-hidden="{{isIdentityHidden _id}}">
-       {{>_accountProfileEditor}}
+      {{>_accountProfileEditor identity=. setActionCompleted=setActionCompleted
+                               staticHost=../_staticHost}}
      </div>
     {{/each}}
   </section>
   </div>
+
+  {{#with actionCompleted}}
+  {{#with success}}
+  <div class="action-completed success">
+    Success: {{.}}
+  </div>
+  {{/with}}
+  {{#with error}}
+  <div class="action-completed error">
+    Error: {{.}}
+  </div>
+  {{/with}}
+  {{/with}}
 
   <h3 class="title-bar">Primary e-mail address for service-related notifications</h3>
   <div class="verified-emails-editor">
@@ -68,10 +82,14 @@ limitations under the License.
       <ul>
         {{#each verifiedEmails}}
         <li>
-          <label><input type="radio" name="verifiedEmail" class="primary-email"
-                        data-email="{{email}}" checked={{primary}}>
-            {{email}}
-          </label>
+          <span class="email" title="{{email}}">{{email}}</span>
+          {{#if primary}}
+          <span class="primary-badge">Primary</span>
+          {{else}}
+          <button class="make-primary" data-email="{{email}}" checked={{primary}}>
+            make primary
+          </button>
+          {{/if}}
           <hr>
         </li>
         {{/each}}
@@ -98,20 +116,19 @@ limitations under the License.
 <template name="sandstormAccountsFirstSignIn">
   <h1>Confirm your profile</h1>
   <div class="single-identity-editor">
-  {{#with identityToConfirm}}
-      {{>_accountProfileEditor}}
-  {{/with}}
+    {{>_accountProfileEditor identity=identityToConfirm termsAndPrivacy=termsAndPrivacy
+                             staticHost=_staticHost}}
   </div>
 </template>
 
 <template name="_accountProfileEditor">
   <div class="identity-editor">
-    <form class="account-profile-editor" data-identity-id="{{_id}}">
+    <form class="account-profile-editor" data-identity-id="{{identity._id}}">
       <div class="editor">
         <div class="picture">
           <label>Avatar:
             <button type="button">
-              <img src="{{profile.pictureUrl}}" alt="Upload picture">
+              <img src="{{identity.profile.pictureUrl}}" alt="Upload picture">
             </button>
           </label>
           <input type="file" name="picture" style="display:none">
@@ -124,7 +141,7 @@ limitations under the License.
           <li class="name">
             <label><img class="inline-icon" src="/people-m.svg" role="presentation">
               Full name:
-              <input type="text" name="nameInput" value="{{profile.name}}"
+              <input type="text" name="nameInput" value="{{identity.profile.name}}"
                      placeholder="full name" required>
             </label>
             <span class="details">Your regular first and last name, as you would like it
@@ -134,8 +151,8 @@ limitations under the License.
           <li class="handle">
             <label>@ Handle:
               <div class="input-container">
-                <input type="text" name="handle" value="{{profile.handle}}" placeholder="handle"
-                       pattern="^[a-z_][a-z0-9_]*$" required>
+                <input type="text" name="handle" value="{{identity.profile.handle}}"
+                       placeholder="handle" pattern="^[a-z_][a-z0-9_]*$" required>
               </div>
             </label>
             <span class="details">
@@ -144,17 +161,17 @@ limitations under the License.
               already taken this name within the specific grain.
             </span>
           </li>
-          {{#if verifiedEmail}}
+          {{#if identity.verifiedEmail}}
           <li class="email">
             <label><img class="inline-icon" src="/email-m.svg" role="presentation">
               E-mail:
-              <span class="email-address">{{verifiedEmail}}</span>
+              <span class="email-address">{{identity.verifiedEmail}}</span>
             </label>
             <span class="details">E-mail address attached to this identity.</span>
           </li>
           {{/if}}
           <li class="pronoun">
-            {{#with profile}}
+            {{#with identity.profile}}
             <label><img class="inline-icon" src="/pronoun-m.svg" role="presentation">
               Preferred pronoun:
               <select name="pronoun">
@@ -195,17 +212,7 @@ limitations under the License.
       </div>
     </form>
     {{#if hasCompletedSignup}}
-    <div>
-      <button class="unlink-identity" data-identity-id="{{_id}}">Unlink this identity</button>
-    </div>
-    <div>
-      {{#if isLogin _id}}
-      <button class="make-no-login" data-identity-id="{{_id}}">Login enabled</button>
-      {{else}}
-      <button class="make-login" data-identity-id="{{_id}}">Login disabled</button>
-      {{/if}}
-    </div>
-    {{>loginIdentitiesOfLinkedAccounts _id=_id}}
+      {{> identityManagementButtons identityManagementButtonsData}}
     {{/if}}
   </div>
 </template>

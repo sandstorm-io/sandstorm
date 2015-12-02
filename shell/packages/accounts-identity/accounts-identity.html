@@ -59,6 +59,24 @@ limitations under the License.
   </div>
 </template>
 
+<template name="identityManagementButtons">
+  <div class="identity-management-controls">
+    <div class="toggle-login">
+      <label title={{disableToggleLogin.why}}>
+        <input class="toggle-login" type=checkbox checked={{isLogin}} disabled={{disableToggleLogin}}
+               data-identity-id="{{_id}}">
+        Allow this identity to log in to your account.
+      </label>
+    </div>
+    {{>loginIdentitiesOfLinkedAccounts _id=_id}}
+    <div>
+      <button class="unlink-identity" data-identity-id="{{_id}}">
+        Unlink this identity
+      </button>
+    </div>
+  </div>
+</template>
+
 <template name="loginIdentitiesOfLinkedAccounts">
   {{#if showOtherAccounts}}
   <div class="login-identities-of-linked-accounts">

@@ -9,10 +9,15 @@ Accounts.emailToken._hashToken = function (token) {
 
 var enabled = false;
 
+if (Meteor.isClient) {
+  var enabledReactive = new ReactiveVar(false);
+}
+
 Accounts.emailToken.enable = function (accountsUi) {
   enabled = true;
   if (Meteor.isClient) {
     accountsUi.registerService("emailToken", "an Email + Token");
+    enabledReactive.set(true);
   }
 };
 
@@ -20,11 +25,16 @@ Accounts.emailToken.disable = function (accountsUi) {
   enabled = false;
   if (Meteor.isClient) {
     accountsUi.deregisterService("emailToken");
+    enabledReactive.set(false);
   }
 };
 
 Accounts.emailToken.isEnabled = function () {
-  return enabled;
+  if (Meteor.isClient) {
+    return enabledReactive.get();
+  } else {
+    return enabled;
+  }
 };
 
 Router.route("/_emailLogin/:_email/:_token", function () {

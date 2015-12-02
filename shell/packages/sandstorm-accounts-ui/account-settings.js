@@ -23,6 +23,7 @@ SandstormAccountSettingsUi = function (topbar, db, staticHost) {
 Template.sandstormAccountSettings.onCreated(function () {
   this._isLinkingNewIdentity = new ReactiveVar(false);
   this._selectedIdentityId = new ReactiveVar();
+  this._actionCompleted = new ReactiveVar();
   var self = this;
 
   Tracker.autorun(function () {
@@ -107,6 +108,13 @@ Template.sandstormAccountSettings.helpers({
     return Meteor.user() && SandstormDb.getUserEmails(Meteor.user())
       .filter(function (e) { return !!e.verified; }).length == 0;
   },
+  actionCompleted: function () {
+    return Template.instance()._actionCompleted.get();
+  },
+  setActionCompleted: function () {
+    var actionCompleted = Template.instance()._actionCompleted;
+    return function (x) { actionCompleted.set(x); };
+  }
 });
 
 Template._accountProfileEditor.helpers({
@@ -114,25 +122,22 @@ Template._accountProfileEditor.helpers({
     var user = Meteor.user();
     return user && user.hasCompletedSignup;
   },
-  isLogin: function (identityId) {
-    var user = Meteor.user();
-    return user.loginIdentities && !!_.findWhere(user.loginIdentities, {id: identityId});
-  },
-  termsAndPrivacy: function () {
-    var result = {
-      termsUrl: Template.parentData(1)._db.getSetting("termsUrl"),
-      privacyUrl: Template.parentData(1)._db.getSetting("privacyUrl"),
-    };
-    if (result.termsUrl || result.privacyUrl) {
-      return result;
-    } else {
-      return undefined;
+  identityManagementButtonsData: function () {
+    if (this.identity) {
+      var user = Meteor.user();
+      var identityId = this.identity._id;
+      return {
+        _id: identityId,
+        isLogin: user.loginIdentities && !!_.findWhere(user.loginIdentities, {id: identityId}),
+        setActionCompleted: Template.instance()._setActionCompleted,
+      };
     }
   },
 });
 
 Template.sandstormAccountSettings.events({
   "click [role='tab']": function(event, instance) {
+    instance._actionCompleted.set();
     instance._selectedIdentityId.set(event.currentTarget.getAttribute("data-identity-id"));
   },
   "click button.link-new-identity": function(event, instance) {
@@ -142,47 +147,23 @@ Template.sandstormAccountSettings.events({
     instance._isLinkingNewIdentity.set(false);
   },
 
-  "click button.logout-other-sessions": function() {
+  "click button.logout-other-sessions": function(event, instance) {
     Meteor.logoutOtherClients(function(err) {
       if (err) {
-        console.log("Error logging out other clients: ", err);
-      }
-    });
-    Meteor.call("logoutIdentitiesOfCurrentAccount", function(err) {
-      if (err) {
-        console.log("Error logging out identities: ", err);
-      }
-    });
-  },
-
-  "click button.unlink-identity": function (event, instance) {
-    var identityId = event.target.getAttribute("data-identity-id");
-    Meteor.call("unlinkIdentity", Meteor.userId(), identityId, function (err, result) {
-      if (err) {
-        console.log("err: ", err);
+        instance._actionCompleted.set({error: err});
+      } else {
+        Meteor.call("logoutIdentitiesOfCurrentAccount", function(err) {
+          if (err) {
+            instance._actionCompleted.set({error: err});
+          } else {
+            instance._actionCompleted.set({success: "logged out other sessions"});
+          }
+        });
       }
     });
   },
 
-  "click button.make-login": function (event, instance) {
-    var identityId = event.target.getAttribute("data-identity-id");
-    Meteor.call("setIdentityAllowsLogin", identityId, true, function (err, result) {
-      if (err) {
-        console.log("err: ", err);
-      }
-    });
-  },
-
-  "click button.make-no-login": function (event, instance) {
-    var identityId = event.target.getAttribute("data-identity-id");
-    Meteor.call("setIdentityAllowsLogin", identityId, false, function (err, result) {
-      if (err) {
-        console.log("err: ", err);
-      }
-    });
-  },
-
-  "change input.primary-email": function (event, instance) {
+  "click button.make-primary": function (event, instance) {
     Meteor.call("setPrimaryEmail", event.target.getAttribute("data-email"));
   },
 });
@@ -197,6 +178,17 @@ Template.sandstormAccountsFirstSignIn.helpers({
       SandstormDb.fillInIntrinsicName(identity);
       SandstormDb.fillInPictureUrl(identity);
       return identity;
+    }
+  },
+  termsAndPrivacy: function () {
+    var result = {
+      termsUrl: Template.currentData()._db.getSetting("termsUrl"),
+      privacyUrl: Template.currentData()._db.getSetting("privacyUrl"),
+    };
+    if (result.termsUrl || result.privacyUrl) {
+      return result;
+    } else {
+      return undefined;
     }
   },
 });
@@ -242,6 +234,7 @@ Template._accountProfileEditor.events({
   "submit form.account-profile-editor": function (event, instance) {
     submitProfileForm(event, function () {
       instance._profileSaved.set(true);
+      instance._setActionCompleted({success: "profile saved"});
     });
   },
   "change": function (event, instance) {
@@ -264,13 +257,14 @@ Template._accountProfileEditor.events({
 
 Template._accountProfileEditor.onCreated(function () {
   this._profileSaved = new ReactiveVar(true);
+  this._setActionCompleted = this.data.setActionCompleted || function () {};
 });
 
 Template._accountProfileEditor.events({
   "click .picture button": function (event, instance) {
     event.preventDefault();
 
-    var staticHost = Template.parentData(1)._staticHost;
+    var staticHost = Template.currentData().staticHost;
     if (!staticHost) throw new Error("missing _staticHost");
 
     // TODO(cleanup): Share code with "restore backup" and other upload buttons.
@@ -285,11 +279,13 @@ Template._accountProfileEditor.events({
           alert("Upload failed: " + err.message);
         } else if (result.statusCode >= 400) {
           alert("Upload failed: " + result.statusCode + " " + result.content);
+        } else {
+          instance._setActionCompleted({success: "picture updated"});
         }
       });
     }
 
-    Meteor.call("uploadProfilePicture", instance.data._id, function (err, result) {
+    Meteor.call("uploadProfilePicture", instance.data.identity._id, function (err, result) {
       if (err) {
         alert("Upload rejected: " + err.message);
       } else {

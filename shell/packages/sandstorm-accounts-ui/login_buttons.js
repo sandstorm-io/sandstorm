@@ -39,6 +39,10 @@ Template.loginButtonsPopup.onRendered(function() {
   this.find("[role=menuitem]").focus();
 });
 
+Template.accountButtonsPopup.onRendered(function() {
+  this.find("[role=menuitem]").focus();
+});
+
 Template.accountButtonsPopup.events({
   'click button.logout': function() {
     var topbar = Template.parentData(3);
@@ -323,6 +327,9 @@ Template.emailLoginForm.events({
 });
 
 Template.emailLoginForm.helpers({
+  disabled: function () {
+    return !hasEmailTokenService();
+  },
   awaitingToken: function () {
     return loginButtonsSession.get('inSignupFlow');
   },

@@ -191,7 +191,7 @@ SandstormBackend.prototype.startGrainInternal = function(packageId, grainId, own
 
   if (isUserExcessivelyOverQuota(Meteor.users.findOne(ownerId))) {
     throw new Meteor.Error(402,
-                           ("Cannot start grain because owner's storage is exhausted.\n"
+                           ("Cannot start grain because owner's storage is exhausted.\n" +
                             "Please ask them to upgrade."));
   }
 

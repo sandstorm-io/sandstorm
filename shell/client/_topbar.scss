@@ -459,9 +459,38 @@ body>.topbar {
 
   >.navbar {
     @media #{$desktop} {
+      >button.navbar-shrink {
+        @extend %unstyled-button;
+        display: block;
+        width: 100%;
+        height: $navbar-shrink-button-height;
+        border: 0px solid #303030;
+        border-left-width: ($navbar-width-desktop - $navbar-width-desktop-shrunk);
+        background-color: #606060;
+        color: #ddd;
+        text-align: center;
+        line-height: $navbar-shrink-button-height;
+        padding: 0;
+        outline: none;
+
+        transition: border-left-width 0.2s;
+      }
+
       &.hide-desktop {
         // !important used to override other classes that might assign e.g. display: block
-        display: none !important;
+        width: $navbar-width-desktop-shrunk !important;
+
+        >button.navbar-shrink {
+          border-left-width: 0;
+        }
+      }
+
+      overflow: hidden;
+      transition: width 0.2s;
+    }
+    @media #{$mobile} {
+      >button.navbar-shrink {
+        display: none;
       }
     }
     @media #{$desktop} {
@@ -485,7 +514,7 @@ body>.topbar {
           display: block;
           box-sizing: border-box;
           min-height: 32px;
-          padding-left: 32px;
+          padding-left: $navbar-width-desktop-shrunk;
           text-decoration: none;
           text-overflow: ellipsis;
           overflow: hidden;
@@ -496,7 +525,7 @@ body>.topbar {
         }
         &.navitem-open-grain, &.navitem-create-grain {
           background-repeat: no-repeat;
-          background-position: 4px center;
+          background-position: (($navbar-width-desktop-shrunk - 24px) / 2) center;
           background-size: 24px 24px;
           font-size: 150%;
           line-height: 48px;
@@ -517,6 +546,7 @@ body>.topbar {
           &.current, &.current:hover {
             background-image: url('/open-grain-m.svg');
           }
+          border-bottom: none;
         }
         &.navitem-create-grain {
           background-image: url('/apps.svg');
@@ -558,7 +588,7 @@ body>.topbar {
       margin: 0;
       padding: 0;
       position: absolute;
-      top: 96px;
+      top: (96px + $navbar-shrink-button-height);
       bottom: 0px;
       left: 0px;
       width: 200px;
@@ -567,6 +597,10 @@ body>.topbar {
       >li.navitem-grain {
         a {
           padding-right: 32px;
+
+          // Stack above .app-icon so the icon doesn't block clicks.
+          position: relative;
+          z-index: 1;
         }
         background-color: $topbar-background-color;
         color: $topbar-foreground-color;
@@ -581,11 +615,10 @@ body>.topbar {
         .app-icon {
           @extend %pseudo-img-tag;
           position: absolute;
-          top: 2px;
-          left: 2px;
+          top: 4px;
+          left: (($navbar-width-desktop-shrunk - 24px) / 2);
           width: 24px;
           height: 24px;
-          margin: 2px;
         }
         .close-button {
           @extend %unstyled-button;
@@ -603,6 +636,7 @@ body>.topbar {
           &:hover {
             border: 1px solid $topbar-foreground-color-hover;
           }
+          z-index: 2;  // Stack above <a>.
         }
       }
     }

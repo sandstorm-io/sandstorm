@@ -43,6 +43,12 @@ limitations under the License.
     <ul class="navbar {{#unless showNavbar}}hide-desktop{{/unless}}">
       <li class="navitem-create-grain {{#if isCurrentRoute 'apps'}}current{{/if}}"><a href="{{pathFor route='apps'}}">Apps</a></li>
       <li class="navitem-open-grain {{#if isCurrentRoute 'grains'}}current{{/if}}"><a href="{{pathFor route='grains'}}"><span>Grains</span></a></li>
+
+      <!-- TODO(cleanup): ul's can only contain li's, so stuff below here is not really valid -->
+      <button class="navbar-shrink">
+        {{#if showNavbar}}&lt;{{else}}&gt;{{/if}}
+      </button>
+
       <ul class="navbar-grains">
         {{#each grains}}
         <li data-grainid="{{grainId}}" class="navitem-grain {{#if active}}current{{/if}}">

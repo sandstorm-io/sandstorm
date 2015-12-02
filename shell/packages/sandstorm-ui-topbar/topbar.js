@@ -239,6 +239,11 @@ Template.sandstormTopbar.events({
     topbar._menuExpanded.set(!topbar._menuExpanded.get());
   },
 
+  "click .navbar-shrink": function (event) {
+    var topbar = Template.instance().data;
+    topbar._showNavbar.set(!topbar._showNavbar.get());
+  },
+
   "click .navbar .close-button": function (event) {
     var grainId = event.currentTarget.parentNode.getAttribute("data-grainid");
     var topbar = Template.instance().data;

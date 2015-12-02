@@ -76,6 +76,15 @@ base64 handling in src/sandstorm/sandstorm-http-bridge.c++
     License: Public Domain
     License text: http://creativecommons.org/licenses/publicdomain/
 
+localedata-C
+    What: A C locale supporting UTF-8, based on Debian and Fedora's C.UTF-8 locales
+    Source URLs:
+      http://sources.debian.net/data/main/g/glibc/2.19-22/localedata/locales/C
+      https://lists.stg.fedoraproject.org/archives/list/glibc%40lists.fedoraproject.org/message/RAIVZBJH55SKKLPSR6AX7RJOIUG3BF57/attachment/2/0001-Add-a-C.UTF-8-locale.patch
+    Copyright: Aurelien Jarno (Debian), Mike Fabian (Fedora)
+    License: LGPL Version 2.1 or later
+    License text: http://opensource.org/licenses/LGPL-2.1
+
 Trademarks
 ==========
 

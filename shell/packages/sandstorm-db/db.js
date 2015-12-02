@@ -196,8 +196,6 @@ Contacts = new Mongo.Collection("contacts");
 //            the contact to the owner.
 //   created: Date when this contact was created.
 //   identityId: The `_id` of the user whose contact info this contains.
-//   profile: An object containing denormalized profile data for this contact. See the `Users`
-//             Collection for a list of all the fields
 
 Sessions = new Mongo.Collection("sessions");
 // UI sessions open to particular grains.  A new session is created each time a user opens a grain.

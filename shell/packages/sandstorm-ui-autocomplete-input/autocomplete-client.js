@@ -1,3 +1,5 @@
+window.UserContacts = new Mongo.Collection("userContacts");
+
 Template.contactInputBox.onCreated(function () {
   var self = this;
   this.currentText = new ReactiveVar(null);
@@ -48,7 +50,7 @@ function generateAutoCompleteContacts(template) {
   }
   currentText = currentText.toLowerCase();
   var selectedContactsIds = template.selectedContactsIds.get();
-  var contacts = globalDb.collections.contacts.find({_id: {$nin: selectedContactsIds}}).fetch();
+  var contacts = UserContacts.find({_id: {$nin: selectedContactsIds}}).fetch();
   var results;
   if (currentText.lastIndexOf("@", 0) === 0) {
     var textWithoutAt = currentText.slice(1);
@@ -64,9 +66,7 @@ function generateAutoCompleteContacts(template) {
   }
   results.forEach(function (contact) {
     var oldId = contact._id;
-    contact._id = contact.identityId;
     SandstormDb.fillInPictureUrl(contact);
-    contact._id = oldId;
   })
   template.autoCompleteContacts.set(defaults.concat(results));
 };

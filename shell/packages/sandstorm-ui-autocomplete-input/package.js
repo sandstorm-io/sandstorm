@@ -20,7 +20,8 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
-  api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-db", "sandstorm-ui-topbar", "sandstorm-autoupdate-apps"], "client");
+  api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-ui-topbar", "sandstorm-autoupdate-apps", "mongo"], "client");
+  api.use(["sandstorm-db"], ["client", "server"]);
   api.addFiles(["autocomplete.html", "autocomplete-client.js"], "client");
   api.addFiles(["autocomplete-server.js"], "server");
 });

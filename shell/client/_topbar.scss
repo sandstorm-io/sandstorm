@@ -460,6 +460,9 @@ body>.topbar {
         button.navbar-shrink {
           border-left-width: 0;
         }
+        button.close-button {
+          display: none !important;
+        }
       }
       &.hide-desktop {
         display: none;

@@ -286,17 +286,18 @@ Template.sandstormTopbarItem.onCreated(function () {
     item.popupTemplate = view.templateElseBlock;
   }
 
+  item.data = new ReactiveVar(null, _.isEqual);
   if ("data" in item) {
-    // TODO(someday): Verify that the template is recreated if the input data changes, or
-    //   otherwise force this ReactiveVar to update whenever the data changes.
-    item.data = new ReactiveVar(item.data);
-  } else {
-    // TODO(someday): We really want to pull the whole data *stack*, but I don't know how.
-    var dataVar = new ReactiveVar(Template.parentData(1), _.isEqual);
-    instance.autorun(function () {
-      dataVar.set(Template.parentData(1));
+    // Changes to the input data do not cause this template to get created anew, so we must
+    // propagate such changes to the item.
+    instance.autorun(function() {
+      item.data.set(Template.currentData().data);
     });
-    item.data = dataVar;
+  } else {
+    instance.autorun(function () {
+      // TODO(someday): We really want to pull the whole data *stack*, but I don't know how.
+      item.data.set(Template.parentData(1));
+    });
   }
 
   instance.topbarCloser = topbar.addItem(item);

@@ -1,4 +1,4 @@
-body>.popup.account>.frame {
+body>.popup.login>.frame {
   width: 200px;
   border: none;
   min-width: 200px;
@@ -15,6 +15,63 @@ body>.popup.account>.frame {
   }
 }
 
+body>.popup.account>.frame {
+  width: 250px;
+  border: none;
+
+  >p.demo-note {
+    border-bottom: 1px solid #c1c1c1;
+    font-size: 80%;
+    color: #444;
+    padding: 4px 16px;
+  }
+
+  >* {
+    margin: 0;
+  }
+}
+
+.account-buttons-list {
+  width: 250px;
+  margin: 0;
+  text-align: left;
+
+  >button.logout, >button.switch-identity, >form, >a {
+    display: block;
+    width: 250px;
+    height: 32px;
+    box-sizing: border-box;
+    text-decoration: none;
+    color: black;
+    font-weight: normal;
+
+    cursor: pointer;
+    padding: 4px 8px;
+
+    font-size: 80%;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+
+    text-align: left;
+    text-indent: 40px;
+    color: black;
+
+    background: white;
+
+    border: none;
+    border-bottom: 1px solid #c1c1c1;
+
+    &:hover {
+      background-color: #f5f5f5;
+    }
+  }
+  .inline-identity-switcher {
+    padding-left: 16px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #c1c1c1;
+  }
+}
+
 .login-buttons-list {
   width: 200px;
   margin: 0;
@@ -22,7 +79,7 @@ body>.popup.account>.frame {
 
   /* TODO(cleanup): Much of the below was brought it from Meteor's accounts-ui and needs cleanup. */
 
-  >button.login, >button.logout, >form, >a {
+  >button.login, >form, >a {
     display: block;
     width: 200px;
     height: 32px;
@@ -95,29 +152,6 @@ body>.popup.account>.frame {
     }
   }
 
-  .login-image {
-    display: inline-block;
-    position: absolute;
-    left: 6px;
-    top: 6px;
-    width: 16px;
-    height: 16px;
-  }
-
-  .login-buttons-with-only-one-button {
-    display: inline-block;
-    .login-button { display: inline-block; }
-    .login-text-and-button {
-      display: inline-block;
-    }
-  }
-
-  .login-display-name {
-    display: inline-block;
-    padding-right: 2px;
-    line-height: 1.5;
-    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  }
   .loading {
     line-height: 1;
     background-image: url("data:image/gif;base64,R0lGODlhEAALAPQAAP///wAAANra2tDQ0Orq6gYGBgAAAC4uLoKCgmBgYLq6uiIiIkpKSoqKimRkZL6+viYmJgQEBE5OTubm5tjY2PT09Dg4ONzc3PLy8ra2tqCgoMrKyu7u7gAAAAAAAAAAACH/C05FVFNDQVBFMi4wAwEAAAAh/hpDcmVhdGVkIHdpdGggYWpheGxvYWQuaW5mbwAh+QQJCwAAACwAAAAAEAALAAAFLSAgjmRpnqSgCuLKAq5AEIM4zDVw03ve27ifDgfkEYe04kDIDC5zrtYKRa2WQgAh+QQJCwAAACwAAAAAEAALAAAFJGBhGAVgnqhpHIeRvsDawqns0qeN5+y967tYLyicBYE7EYkYAgAh+QQJCwAAACwAAAAAEAALAAAFNiAgjothLOOIJAkiGgxjpGKiKMkbz7SN6zIawJcDwIK9W/HISxGBzdHTuBNOmcJVCyoUlk7CEAAh+QQJCwAAACwAAAAAEAALAAAFNSAgjqQIRRFUAo3jNGIkSdHqPI8Tz3V55zuaDacDyIQ+YrBH+hWPzJFzOQQaeavWi7oqnVIhACH5BAkLAAAALAAAAAAQAAsAAAUyICCOZGme1rJY5kRRk7hI0mJSVUXJtF3iOl7tltsBZsNfUegjAY3I5sgFY55KqdX1GgIAIfkECQsAAAAsAAAAABAACwAABTcgII5kaZ4kcV2EqLJipmnZhWGXaOOitm2aXQ4g7P2Ct2ER4AMul00kj5g0Al8tADY2y6C+4FIIACH5BAkLAAAALAAAAAAQAAsAAAUvICCOZGme5ERRk6iy7qpyHCVStA3gNa/7txxwlwv2isSacYUc+l4tADQGQ1mvpBAAIfkECQsAAAAsAAAAABAACwAABS8gII5kaZ7kRFGTqLLuqnIcJVK0DeA1r/u3HHCXC/aKxJpxhRz6Xi0ANAZDWa+kEAA7AAAAAAAAAAAA");
@@ -391,6 +425,7 @@ body>.main-content>.account {
         cursor: pointer;
         background-color: white;
         width: 218px;
+        margin-bottom: 10px;
 
         &[aria-selected=true] {
           z-index: 1;
@@ -1333,6 +1368,7 @@ button.show-other-accounts {
 }
 
 ul.identity-card-list {
+  padding-left: 0;
   li {
     list-style-type: none;
     button {
@@ -1350,7 +1386,7 @@ ul.identity-card-list {
   height: 52px;
   width: 218px;
   text-align: left;
-  margin-bottom: 10px;
+  margin-bottom: 0;
   background-color: white;
   background-repeat: no-repeat;
   background-position: 50px 30px;

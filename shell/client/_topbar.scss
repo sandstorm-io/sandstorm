@@ -430,7 +430,7 @@ body>.topbar {
       }
     }
 
-    >.account {
+    >.account, >.login {
       >button.show-popup {
         @extend %hamburger-menu-item;
         >a.expiring-soon {

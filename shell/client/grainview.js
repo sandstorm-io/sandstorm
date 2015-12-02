@@ -302,24 +302,23 @@ GrainView.prototype.revealIdentity = function (identityId) {
   if (!Meteor.user()) {
     return;
   }
-  var myIdentities = SandstormDb.getUserIdentities(Meteor.user());
-  var myIdentityIds = myIdentities.map(function(x) { return x._id; });
-  var identity = myIdentities[0]; // Default.
+  var myIdentityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+  var resultIdentityId = myIdentityIds[0];
   var grain = Grains.findOne(this._grainId);
   if (identityId && myIdentityIds.indexOf(identityId) != -1) {
-    identity = _.findWhere(myIdentities, {_id: identityId});
+    resultIdentityId = identityId;
   } else if (grain && myIdentityIds.indexOf(grain.identityId) != -1) {
     // If we own the grain, open it as the owning identity.
-    identity = _.findWhere(myIdentities, {_id: grain.identityId});
+    resultIdentityId = grain.identityId;
   } else {
     var token = ApiTokens.findOne({grainId: this._grainId,
                                    "owner.user.identityId": {$in: myIdentityIds}},
                                   {sort:{"owner.user.lastUsed": -1}});
     if (token) {
-      identity = _.findWhere(myIdentities, {_id: token.owner.user.identityId});
+      resultIdentityId = token.owner.user.identityId;
     }
   }
-  this._userIdentityId.set(identity._id);
+  this._userIdentityId.set(resultIdentityId);
   this._dep.changed();
 }
 
@@ -336,34 +335,6 @@ GrainView.prototype.identityId = function () {
   } else {
     return null;
   }
-}
-
-GrainView.prototype._identityAlreadyRevealedToOwner = function () {
-  // Returns the ID of an identity that the current user has already revealed to the owner of
-  // this._token, if such an identity exists. Returns `false` otherwise.
-
-  var grain = Grains.findOne({_id: this._grainId, userId: Meteor.userId()});
-  if (grain) {
-    // If we own the grain, we have revealed our identity to ourself
-    return grain.identityId;
-  }
-  // If we own a sturdyref from the grain owner, we have revealed our identity to that grain owner
-  // TODO(soon): Base this decision on the contents of the Contacts collection.
-  var tokenInfo = TokenInfo.findOne({_id: this._token});
-  if (tokenInfo && tokenInfo.apiToken) {
-    var identities = SandstormDb.getUserIdentities(Meteor.user());
-    var identityIds = identities.map(function(x) { return x._id; });
-    if (identityIds.indexOf(tokenInfo.apiToken.identityId) != -1) {
-      // A self-share.
-      return tokenInfo.apiToken.identityId;
-    }
-    var otherToken = ApiTokens.findOne({identityId: tokenInfo.apiToken.identityId,
-                                        "owner.user.identityId": {$in: identityIds}});
-    if (otherToken) {
-      return otherToken.owner.user.identityId;
-    }
-  }
-  return false;
 }
 
 GrainView.prototype.shouldShowInterstitial = function () {

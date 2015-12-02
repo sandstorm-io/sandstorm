@@ -18,49 +18,70 @@ var makeIdenticon;
 var httpProtocol;
 
 if (Meteor.isServer) {
+  SandstormDb.ensureSubscriberHasIdentity = function(publishHandler, identityId) {
+    // Helper for publish functions that need to restrict access based on whether the subscriber
+    // has a given identity linked. Automatically stops the subscription if the user loses the
+    // identity. Returns a boolean indicating whether the user initially has the identity.
+
+    var userId = publishHandler.userId;
+    if (userId === identityId) {
+      return true;
+    } else {
+      var hasIdentityCursor =
+          Meteor.users.find({$or: [{_id: userId, "loginIdentities.id": identityId},
+                                   {_id: userId, "nonloginIdentities.id": identityId}]});
+      if (hasIdentityCursor.count() == 0) {
+        publishHandler.stop();
+        return false;
+      }
+      var handle = hasIdentityCursor.observe({removed: function () { publishHandler.stop(); }});
+      publishHandler.onStop(function () { handle.stop(); });
+      return true;
+    }
+  }
+
+  Meteor.publish("identityProfile", function (identityId) {
+    check(identityId, String);
+    if (!SandstormDb.ensureSubscriberHasIdentity(this, identityId)) return;
+
+    return Meteor.users.find({_id: identityId},
+      {fields: {
+        "profile":1,
+        "unverifiedEmail":1,
+        "expires": 1,
+
+        "services.dev.name":1,
+
+        "services.google.id":1,
+        "services.google.email":1,
+        "services.google.verified_email":1,
+        "services.google.name":1,
+        "services.google.picture":1,
+        "services.google.gender":1,
+
+        "services.github.id":1,
+        "services.github.email":1,
+        "services.github.username":1,
+
+        "services.email.email":1,
+      }});
+  }),
+
   Meteor.publish("accountIdentities", function () {
+    // Maybe this should be folded into the "credentials" subscription?
+
     if (!this.userId) return [];
 
-    // The bad news is that we need to do a join here. The good news is that linking a new
-    // identity is a relatively uncommon action, and the client initiating the action gets
-    // automatically resubscribed during the authentication handshake. Unlinking an identity
-    // is less of a problem, as it just means that subscribers will have more information than
-    // they need.
-    //
-    // TODO(someday): Implement a fully reactive join for this.
-    var user = Meteor.users.findOne(this.userId);
-    var linkedIdentities = user.loginIdentities &&
-        user.loginIdentities.concat(user.nonloginIdentities);
-    var linkedIdentityIds =
-      linkedIdentities ? _.pluck(linkedIdentities, "id") : [];
-
-    return [
-      Meteor.users.find({$or: [{_id: this.userId}, {_id: {$in: linkedIdentityIds}}]},
-        {fields: {
-          "profile":1,
-          "verifiedEmail":1,
-          "unverifiedEmail":1,
-          "loginIdentities": 1,
-          "nonloginIdentities": 1,
-          "expires": 1,
-          "primaryEmail": 1,
-
-          "services.dev.name":1,
-
-          "services.google.id":1,
-          "services.google.email":1,
-          "services.google.verified_email":1,
-          "services.google.name":1,
-          "services.google.picture":1,
-          "services.google.gender":1,
-
-          "services.github.id":1,
-          "services.github.email":1,
-          "services.github.username":1,
-
-          "services.email.email":1,
-        }})
-    ];
+    return Meteor.users.find(
+      {_id: this.userId},
+      {fields: {
+        "profile": 1,
+        "verifiedEmail": 1,
+        "loginIdentities": 1,
+        "nonloginIdentities": 1,
+        "expires": 1,
+        "primaryEmail": 1,
+      }});
   });
 
   makeIdenticon = function (id) {
@@ -206,49 +227,15 @@ SandstormDb.fillInPictureUrl = function(user) {
     makeIdenticon(user._id);
 }
 
-SandstormDb.getUserIdentities = function (user) {
-  // Given a user object, return an array containing all of the user's identities. Always returns
-  // the user's most recently added login identity first.
-  //
-  // On the client, must be subscribed "accountIdentities" for the user.
-  //
-  // TODO(cleanup): This actually does need to query the database to fetch profile information
-  //   for linked identities, so it probably makes more sense for it to be a non-static method
-  //   on SandstormDb.
-  if (!user) return [];
-
-  var rawIdentities = [];
-  if (user.profile) {
-    rawIdentities.push(user);
-  } else if (user.loginIdentities) {
-    // We call reverse() because we want the most recently added identities to appear first.
-    var loginIdentities =
-        user.loginIdentities.map(function (i) { return _.extend(i, {login: true}); }).reverse();
-    var nonloginIdentities =
-        user.nonloginIdentities.map(function (i) { return _.extend(i, {login: false}); }).reverse();
-    var linkedIdentities = loginIdentities.concat(nonloginIdentities);
-    var linkedIdentityIds = linkedIdentities.map(function (i) { return i.id; });
-    var linkedUsersMap = {};
-    Meteor.users.find({_id: {$in: linkedIdentityIds}}).forEach(function (user) {
-      linkedUsersMap[user._id] = user;
-    });
-    linkedIdentities.forEach(function (linkedIdentity) {
-      if (linkedUsersMap[linkedIdentity.id]) {
-        rawIdentities.push(_.extend({login: linkedIdentity.login},
-                                    linkedUsersMap[linkedIdentity.id]));
-      }
-    });
+SandstormDb.getUserIdentityIds = function (user) {
+  // Given an account user object, returns an array containing the ID of each identity linked to the
+  // account. Always returns the most recently added login identity first.
+  if (user && user.loginIdentities) {
+    return _.pluck(user.nonloginIdentities.concat(user.loginIdentities), "id").reverse();
   } else {
     return [];
   }
-
-  return rawIdentities.map(function(identity) {
-    SandstormDb.fillInPictureUrl(identity);
-    SandstormDb.fillInProfileDefaults(identity);
-    SandstormDb.fillInIntrinsicName(identity);
-    return identity;
-  });
-}
+};
 
 SandstormDb.getUserEmails = function (user) {
   // Given a user object, returns an array containing all email addresses associated with that user.
@@ -261,18 +248,19 @@ SandstormDb.getUserEmails = function (user) {
   //   for linked identities, so it probably makes more sense for it to be a non-static method
   //   on SandstormDb.
 
-  var identities = SandstormDb.getUserIdentities(user);
+  var identityIds = SandstormDb.getUserIdentityIds(user);
   verifiedEmails = {};
   unverifiedEmails = {};
 
-  identities.forEach(function (identity) {
-    if (identity.services) {
+  identityIds.forEach(function (id) {
+    var identity = Meteor.users.findOne({_id: id});
+    if (identity && identity.services) {
       var verifiedEmail = getVerifiedEmail(identity);
       if (verifiedEmail) {
         verifiedEmails[verifiedEmail] = true;
       }
     }
-    if (identity.unverifiedEmail) {
+    if (identity && identity.unverifiedEmail) {
       unverifiedEmails[identity.unverifiedEmail] = true;
     }
   });

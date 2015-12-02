@@ -130,6 +130,9 @@ Accounts.onCreateUser(function (options, user) {
   } else if (user.services && "github" in user.services) {
     serviceUserId = user.services.github.id;
     user.profile.service = "github";
+  } else {
+    throw new Meteor.Error(400, "user does not have a recognized identity provider: " +
+                           JSON.stringify(user));
   }
   user._id = Crypto.createHash("sha256")
     .update(user.profile.service + ":" + serviceUserId).digest("hex");

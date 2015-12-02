@@ -35,6 +35,25 @@ if (Meteor.isClient) {
     Meteor.subscribe("credentials"),
     Meteor.subscribe("accountIdentities"),
   ];
+
+  Tracker.autorun(function () {
+    var me = Meteor.user();
+    if (me) {
+      if (me.profile) {
+        Meteor.subscribe("identityProfile", me._id);
+      }
+      if (me.loginIdentities) {
+        me.loginIdentities.forEach(function (identity) {
+          Meteor.subscribe("identityProfile", identity.id);
+        })
+      }
+      if (me.nonloginIdentities) {
+        me.nonloginIdentities.forEach(function (identity) {
+          Meteor.subscribe("identityProfile", identity.id);
+        })
+      }
+    }
+  });
 }
 
 if (Meteor.isServer) {
@@ -87,8 +106,7 @@ if (Meteor.isServer) {
           }
         });
       }
-      var identityIds = SandstormDb.getUserIdentities(globalDb.getUser(this.userId))
-          .map(function (x) { return x._id; });
+      var identityIds = SandstormDb.getUserIdentityIds(globalDb.getUser(this.userId));
       return [
         UserActions.find({userId: this.userId}),
         Grains.find({userId: this.userId}),
@@ -476,6 +494,12 @@ if (Meteor.isClient) {
       var user = Meteor.user();
       return user && user.profile;
     },
+    showAccountButtons: function () {
+      return Meteor.user() && !Meteor.loggingIn() && !isDemoUser();
+    },
+    accountButtonsData: function () {
+      return {isAdmin: globalDb.isAdmin()};
+    },
     firstLogin: function () {
       return credentialsSubscription.ready() && !isDemoUser() && !Meteor.loggingIn()
           && Meteor.user() && !Meteor.user().hasCompletedSignup;
@@ -606,10 +630,10 @@ if (Meteor.isClient) {
 
     var title = "Untitled " + appTitle + " " + nounPhrase;
 
-    var identity = SandstormDb.getUserIdentities(Meteor.user())[0];
+    var identityId = Accounts.getCurrentIdentityId();
 
     // We need to ask the server to start a new grain, then browse to it.
-    Meteor.call("newGrain", packageId, command, title, identity._id, function (error, grainId) {
+    Meteor.call("newGrain", packageId, command, title, identityId, function (error, grainId) {
       if (error) {
         console.error(error);
         alert(error.message);
@@ -809,7 +833,8 @@ promptRestoreBackup = function(input) {
   promptForFile(input, function (file) {
     startUpload(file, "/uploadBackup", function (response) {
       Session.set("uploadStatus", "Unpacking");
-      Meteor.call("restoreGrain", response, function (err, grainId) {
+      var identityId = Accounts.getCurrentIdentityId();
+      Meteor.call("restoreGrain", response, identityId, function (err, grainId) {
         if (err) {
           console.log(err);
           Session.set("uploadStatus", undefined);

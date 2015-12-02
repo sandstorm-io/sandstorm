@@ -28,9 +28,9 @@ if (Meteor.isServer) {
     var result = [Grains.find({_id : grainId, $or: [{userId: this.userId}, {private: {$ne: true}}]},
                               {fields: {title: 1, userId: 1, identityId: 1, private: 1}})];
     if (this.userId) {
-      var myIdentities = SandstormDb.getUserIdentities(globalDb.getUser(this.userId));
-      var myIdentityIds = myIdentities.map(function (x) { return x._id; });
-      myIdentities.forEach(function(identity) {
+      var myIdentityIds =SandstormDb.getUserIdentityIds(globalDb.getUser(this.userId));
+      myIdentityIds.forEach(function(id) {
+        var identity = globalDb.getUser(id);
         self.added("displayNames", identity._id, {displayName: identity.profile.name});
       });
 
@@ -41,8 +41,7 @@ if (Meteor.isServer) {
         added: function(token) {
           var user = Meteor.users.findOne({_id: token.owner.user.identityId});
           if (user) {
-            var identity = _.findWhere(SandstormDb.getUserIdentities(user),
-                                       {_id: token.owner.user.identityId});
+            var identity = globalDb.getUser(token.owner.user.identityId);
             if (identity) {
               self.added("displayNames", identity._id, {displayName: identity.profile.name});
             }
@@ -209,8 +208,8 @@ Meteor.methods({
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to forget a grain.");
     }
-    SandstormDb.getUserIdentities(Meteor.user()).forEach(function (identity) {
-      ApiTokens.remove({grainId: grainId, "owner.user.identityId": identity._id});
+    SandstormDb.getUserIdentityIds(Meteor.user()).forEach(function (identityId) {
+      ApiTokens.remove({grainId: grainId, "owner.user.identityId": identityId});
     });
   },
   updateGrainPreferredIdentity: function (grainId, identityId) {
@@ -756,8 +755,17 @@ if (Meteor.isClient) {
       return mapGrainStateToTemplateData(this);
     },
     identityPickerData: function () {
+      var identities = SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {
+        var identity = Meteor.users.findOne({_id: id});
+        if (identity) {
+          SandstormDb.fillInProfileDefaults(identity);
+          SandstormDb.fillInIntrinsicName(identity);
+          SandstormDb.fillInPictureUrl(identity);
+          return identity;
+        }
+      });
       var grain = getActiveGrain(globalGrains.get());
-      return {identities: SandstormDb.getUserIdentities(Meteor.user()),
+      return {identities: identities,
               onPicked: function(identityId) { grain.revealIdentity(identityId) }};
     }
   });
@@ -802,15 +810,6 @@ if (Meteor.isClient) {
       return false;
     },
 
-  });
-
-  Template.grainIdentityPopup.helpers({
-    identityPickerData: function () {
-      var current = getActiveGrain(globalGrains.get());
-      return {currentIdentityId: current && current.identityId(),
-              identities: SandstormDb.getUserIdentities(Meteor.user()),
-              onPicked: function(identityId) { current.switchIdentity(identityId); } };
-    }
   });
 
   Template.grainTitle.helpers({

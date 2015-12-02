@@ -70,8 +70,11 @@ Template.identityLoginInterstitial.helpers({
     return "linkingIdentity" in Template.instance()._state.get();
   },
   currentIdentity: function () {
-    var identities = SandstormDb.getUserIdentities(Meteor.user());
-    return identities && identities.length > 0 && identities[0];
+    var identity = Meteor.user();
+    SandstormDb.fillInProfileDefaults(identity);
+    SandstormDb.fillInIntrinsicName(identity);
+    SandstormDb.fillInPictureUrl(identity);
+    return identity;
   },
   nonloginAccounts: function () {
     return LoginIdentitiesOfLinkedAccounts.find().fetch().map(function (identity) {
@@ -99,7 +102,9 @@ Template.identityLoginInterstitial.events({
 });
 
 Template.loginIdentitiesOfLinkedAccounts.onCreated(function() {
-  this.subscribe("accountsOfIdentity", this.data._id);
+  if (this.data._id) {
+    this.subscribe("accountsOfIdentity", this.data._id);
+  }
   this._showOtherAccounts = new ReactiveVar(false);
 });
 
@@ -163,6 +168,7 @@ Meteor.loginWithIdentity = function (accountId, callback) {
   // Attempts to log into the account with ID `accountId`.
 
   check(accountId, String);
+  var identityId = Meteor.userId();
 
   Accounts.callLoginMethod({
     methodName: "loginWithIdentity",
@@ -171,8 +177,45 @@ Meteor.loginWithIdentity = function (accountId, callback) {
       if (error) {
         callback && callback(error);
       } else {
+        Accounts.setCurrentIdentityId(identityId);
         callback && callback();
       }
     }
   });
 };
+
+var CURRENT_IDENTITY_KEY = "Accounts.CurrentIdentityId";
+
+Accounts.getCurrentIdentityId = function () {
+  // TODO(cleanup): `globalGrains` is only in scope here because of a Meteor bug. We should figure
+  //   out a better way to track a reference to it.
+  var grainList = globalGrains.get();
+  for (var i = 0; i < grainList.length ; i++) {
+    if (grainList[i].isActive()) {
+      return grainList[i].identityId();
+    }
+  }
+
+  var identityId = Session.get(CURRENT_IDENTITY_KEY);
+  var identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+  if (identityId && (identityIds.indexOf(identityId) != -1)) {
+    return identityId;
+  } else {
+    return identityIds[0];
+  }
+};
+
+Accounts.setCurrentIdentityId = function (identityId) {
+  check(identityId, String);
+
+  // TODO(cleanup): `globalGrains` is only in scope here because of a Meteor bug. We should figure
+  //   out a better way to track a reference to it.
+  var grainList = globalGrains.get();
+  for (var i = 0; i < grainList.length ; i++) {
+    if (grainList[i].isActive()) {
+      return grainList[i].switchIdentity(identityId);
+    }
+  }
+
+  Session.set(CURRENT_IDENTITY_KEY, identityId);
+}

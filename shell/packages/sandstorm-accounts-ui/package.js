@@ -6,7 +6,7 @@ Package.describe({
 Package.onUse(function (api) {
   api.use(['check', 'tracker', 'service-configuration', 'accounts-base',
            'underscore', 'templating', 'session', 'http', 'sandstorm-db'], 'client');
-  api.use(['check', 'accounts-base'], 'server');
+  api.use(['check', 'accounts-base', "accounts-identity"], 'server');
 
   // Export Accounts (etc) to packages using this one.
   api.imply('accounts-base', ['client', 'server']);

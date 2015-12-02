@@ -199,7 +199,7 @@ limitations under the License.
       <button class="unlink-identity" data-identity-id="{{_id}}">Unlink this identity</button>
     </div>
     <div>
-      {{#if login}}
+      {{#if isLogin _id}}
       <button class="make-no-login" data-identity-id="{{_id}}">Login enabled</button>
       {{else}}
       <button class="make-login" data-identity-id="{{_id}}">Login disabled</button>

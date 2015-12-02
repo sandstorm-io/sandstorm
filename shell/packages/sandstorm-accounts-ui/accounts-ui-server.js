@@ -23,11 +23,12 @@ Meteor.users.deny({
 });
 
 Meteor.publish("getMyUsage", function () {
+  var db = this.connection.sandstormDb;
   if (this.userId) {
     // TODO(someday): Make this reactive.
     var user = Meteor.users.findOne(this.userId);
-    var usage = this.connection.sandstormDb.getMyUsage(user);
-    var referralBonus = this.connection.sandstormDb.getMyReferralBonus(user);
+    var usage = db.getMyUsage(user);
+    var referralBonus = db.getMyReferralBonus(user);
     this.added("users", this.userId, {
       pseudoUsage: usage,
       pseudoReferralBonus: referralBonus,

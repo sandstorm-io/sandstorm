@@ -640,6 +640,7 @@ isUserExcessivelyOverQuota = function (user) {
 
   var quota = getUserQuota(user);
 
+  // quota.grains = Infinity means unlimited grains. IEEE754 defines Infinity == Infinity.
   if (quota.grains < Infinity) {
     var count = Grains.find({userId: user._id}, {fields: {}, limit: quota.grains * 2}).count();
     if (count >= quota.grains * 2) return "outOfGrains";

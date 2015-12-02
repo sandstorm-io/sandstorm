@@ -587,10 +587,17 @@ var calculateReferralBonus = function(accountId, plan) {
               maxPaidStorageBonus)};
   } else {
     var maxFreeStorageBonus = 2 * 1e9;
-    return {grains: successfulReferralsCount * Infinity,
-            storage: Math.min(
-              successfulReferralsCount * 50 * 1e6,
-              maxFreeStorageBonus)};
+    var bonus = {
+      storage: Math.min(
+        successfulReferralsCount * 50 * 1e6,
+        maxFreeStorageBonus)
+    };
+    if (successfulReferralsCount >= 0) {
+      bonus.grains = Infinity;
+    } else {
+      bonus.grains = 0;
+    }
+    return bonus;
   }
 }
 

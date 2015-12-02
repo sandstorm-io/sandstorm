@@ -609,8 +609,6 @@ var countReferrals = function (accountId) {
 }
 
 getUserQuota = function (user) {
-  // Re-fetch the user, since typically Meteor gives is an object with just an _id.
-  var user = Meteor.users.findOne({_id: user._id});
   var plan = Plans.findOne(user.plan || "free");
   var referralBonus = calculateReferralBonus(user._id, plan);
   var userQuota = {};

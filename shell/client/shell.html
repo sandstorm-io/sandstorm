@@ -54,18 +54,9 @@ limitations under the License.
   {{else}}
 
   {{!-- standard topbar items --}}
-  {{#if currentUser}}
-    {{#sandstormTopbarItem name="toggle-navbar" topbar=globalTopbar}}
-      <button class="toggle-navbar-button">Sandstorm</button>
-      {{/sandstormTopbarItem}}
-  {{else}}
-    {{!-- if the user is not logged in, we will not show the navbar,
-      so we apply the "disabled" class to the li to avoid
-      visually hinting that clicking it would do anything. --}}
-    {{#sandstormTopbarItem name="toggle-navbar disabled" topbar=globalTopbar}}
-      <div class="toggle-navbar-button">Sandstorm</div>
-      {{/sandstormTopbarItem}}
-  {{/if}}
+  {{#sandstormTopbarItem name="home-button" topbar=globalTopbar}}
+    <a href="/">Sandstorm</a>
+  {{/sandstormTopbarItem}}
   {{#if showAccountButtons}}
     {{>sandstormTopbarItem name="account" topbar=globalTopbar data=accountButtonsData
                            template="accountButtons" popupTemplate="accountButtonsPopup"}}

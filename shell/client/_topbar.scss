@@ -205,58 +205,35 @@ body>.topbar {
       height: $topbar-height-desktop;
     }
 
-    >.toggle-navbar {
-      cursor: pointer;
-
-      >button {
-        @extend %unstyled-button;
-        @extend %hamburger-menu-item;
-        margin: 0px;
-        @media #{$desktop} {
-          height: $topbar-height-desktop;
-        }
-      }
-
+    >.home-button {
       @media #{$desktop} {
-        padding-left: 32px;
-        padding-right: 8px;
-
-        background-image: url("/icon.png"), url("/down.svg");
-        background-repeat: no-repeat, no-repeat;
-        background-position: 8px center, 6px 24px;
-        background-size: auto, 16px 8px;
-        border-right: 1px solid #666;
-
-        // Without this, Firefox renders the right-floats pushed down a line.
         float:left;
 
-        // TODO(cleanup): Use of filter for brightness on hover is hacky and not very widely
-        //   supported.
+        >a {
+          display: block;
+          color: inherit;
+          margin: 0px;
+          text-decoration: none;
+          height: $topbar-height-desktop;
+          padding-left: 32px;
+          padding-right: 8px;
 
-        &:hover {
-          -webkit-filter: none;
-          filter: none;
-          background-color: $topbar-background-color-hover;
-        }
-
-        // Allow the LI to feel "disabled", in which case it does not
-        // show the caret and does not visually respond to hover
-        &.disabled {
           background-image: url("/icon.png");
           background-repeat: no-repeat;
-          background-position: 8px center;
-          background-size: auto;
+          background-position: 8px center, 6px 24px;
+          background-size: auto, 16px 8px;
+          border-right: 1px solid #666;
+
           &:hover {
-            background-color: $topbar-background-color;
+            background-color: $topbar-background-color-hover;
+            color: $topbar-foreground-color-hover;
           }
         }
       }
 
       @media #{$mobile} {
+        // Hide home link -- it's not very useful anyway.
         display: none;
-        >a {
-          background-image: url("/icon32.png");
-        }
       }
     }
 
@@ -687,12 +664,6 @@ body>.topbar {
         margin-top: 8px;
       }
     }
-  }
-}
-
-body>.topbar.show-navbar>.menubar>.toggle-navbar {
-  @media #{$desktop} {
-    background-image: url("/icon.png"), url("/up.svg");
   }
 }
 

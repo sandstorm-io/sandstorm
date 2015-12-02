@@ -620,15 +620,11 @@ if (Meteor.isClient) {
       if (!user) {
         return "no user";
       }
-      var services = user.services;
-      if (services.github) {
-        return services.github.username;
-      } else if (services.google) {
-        return services.google.email;
-      } else if (services.emailToken) {
-        return services.emailToken.email;
-      } else {
-        return user.profile.name;
+      var identityId = SandstormDb.getUserIdentityIds(user)[0];
+      var identity = Meteor.users.findOne({_id: identityId});
+      if (identity) {
+        SandstormDb.fillInProfileDefaults(identity);
+        return identity.profile.name;
       }
     },
     isDisabled: function () {

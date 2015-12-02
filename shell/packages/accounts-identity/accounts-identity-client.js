@@ -39,7 +39,7 @@ Template.identityLoginInterstitial.onCreated(function () {
   } else {
     var self = this;
     var sub = this.subscribe("accountsOfIdentity", Meteor.userId());
-    Tracker.autorun(function() {
+    this.autorun(function() {
       if (sub.ready()) {
         var loginAccount =
             LoginIdentitiesOfLinkedAccounts.findOne({sourceIdentityId: Meteor.userId(),

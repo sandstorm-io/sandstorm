@@ -25,7 +25,7 @@ Template.sandstormAccountSettings.onCreated(function () {
   this._selectedIdentityId = new ReactiveVar();
   var self = this;
 
-  Tracker.autorun(function () {
+  this.autorun(function () {
     // Reset the selected identity ID when appropriate.
     var user = Meteor.user();
     if (user && user.loginIdentities) {

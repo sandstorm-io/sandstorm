@@ -119,7 +119,7 @@ SandstormAppInstall.prototype.progressText = function () {
 
 Template.sandstormAppInstallPage.onCreated(function () {
   var ref = Template.instance().data;
-  Tracker.autorun(function () {
+  this.autorun(function () {
     var pkg = ref.pkg();
     if (ref._keybaseSubscription) {
       ref._keybaseSubscription.stop();

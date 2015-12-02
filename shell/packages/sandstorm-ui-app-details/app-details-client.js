@@ -89,7 +89,7 @@ var pgpFingerprint = function (pkg) {
 Template.sandstormAppDetailsPage.onCreated(function () {
   var ref = Template.instance().data;
   var templateThis = this;
-  Tracker.autorun(function () {
+  this.autorun(function () {
     var pkg = latestPackageForAppId(ref._db, ref._appId);
     if (templateThis._keybaseSubscription) {
       templateThis._keybaseSubscription.stop();

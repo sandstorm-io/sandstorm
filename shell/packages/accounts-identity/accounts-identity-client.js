@@ -92,12 +92,58 @@ Template.identityLoginInterstitial.events({
     var userId = event.target.getAttribute("data-user-id")
     var user = Meteor.user();
     var identityId = user && user._id;
+    var loginIdentity = LoginIdentitiesOfLinkedAccounts.findOne({loginAccountId: userId});
+    var name = loginIdentity.profile.name;
+    if (window.confirm("Are you sure you want to unlink your identity from the account of " +
+                       name + " ?")) {
+      Meteor.call("unlinkIdentity", userId, identityId, function (err, result) {
+        if (err) {
+          console.log("error: ", err);
+        }
+      });
+    }
+  },
+});
 
-    Meteor.call("unlinkIdentity", userId, identityId, function (err, result) {
+Template.identityManagementButtons.events({
+  "click button.unlink-identity": function (event, instance) {
+    if (instance.data.isLogin && Meteor.user().loginIdentities.length <= 1) {
+      window.alert("You are not allowed to unlink your only login identity.");
+    } else if (window.confirm("Are you sure you want to unlink this identity? " +
+                              "You will lose access to grains that were shared to this identity.")) {
+      var identityId = event.target.getAttribute("data-identity-id");
+      Meteor.call("unlinkIdentity", Meteor.userId(), identityId, function (err, result) {
+        if (err) {
+          console.log("err: ", err);
+        }
+      });
+    }
+  },
+
+  "change input.toggle-login": function (event, instance) {
+    var identityId = event.target.getAttribute("data-identity-id");
+    Meteor.call("setIdentityAllowsLogin", identityId, event.target.checked, function (err, result) {
       if (err) {
-        console.log("error: ", err);
+        instance.data.setActionCompleted({error: err});
+      } else {
+        instance.data.setActionCompleted({success: "changed login ability of identity"});
       }
     });
+  },
+});
+
+Template.identityManagementButtons.helpers({
+  disableToggleLogin: function () {
+    if (this.isLogin) {
+      if (Meteor.user().loginIdentities.length <= 1) {
+        return {why: "You must have at least one login identity."}
+      }
+    } else {
+      if (LoginIdentitiesOfLinkedAccounts.findOne({sourceIdentityId: this._id,
+                                                   loginAccountId: {$ne: Meteor.userId()}})) {
+        return {why: "A shared identity is not allowed to be promoted to a login identity."}
+      }
+    }
   },
 });
 
@@ -133,12 +179,16 @@ Template.loginIdentitiesOfLinkedAccounts.events({
   "click button.unlink": function (event, instance) {
     var userId = event.target.getAttribute("data-user-id")
     var identityId = instance.data._id;
-
-    Meteor.call("unlinkIdentity", userId, identityId, function (err, result) {
-      if (err) {
-        console.log("error: ", err);
-      }
-    });
+    var loginIdentity = LoginIdentitiesOfLinkedAccounts.findOne({loginAccountId: userId});
+    var name = loginIdentity.profile.name;
+    if (window.confirm("Are you sure you want to unlink this identity from the account of " +
+                       name + " ?")) {
+      Meteor.call("unlinkIdentity", userId, identityId, function (err, result) {
+        if (err) {
+          console.log("error: ", err);
+        }
+      });
+    }
   },
 });
 

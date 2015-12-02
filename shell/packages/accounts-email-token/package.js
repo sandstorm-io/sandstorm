@@ -11,6 +11,7 @@ Package.onUse(function (api) {
   api.use("check");
   api.use("sha", ["client", "server"]);
   api.use("email", ["server"]);
+  api.use("reactive-var", ["client"]);
 
   api.addFiles("token_common.js", ["client", "server"]);
   api.addFiles(["token_client.js", "token_templates.html"], ["client"]);

@@ -411,6 +411,24 @@ body>.main-content>.account {
     border: none;
   }
 
+  div.action-completed {
+    margin-top: 10px;
+    width: 660px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+
+    &.success {
+      color: #3c763d;
+      background-color: #dff0d8;
+      border-color: #d6e9c6;
+    }
+    &.error {
+      color: #a94442;
+      background-color: #f2dede;
+      border-color: #ebccd1;
+    }
+  }
+
   .identities-tabs {
     display: inline-block;
     white-space: normal;
@@ -478,21 +496,39 @@ body>.main-content>.account {
     position: relative;
     width: 680px;
     .already-verified {
-      width: 320px;
+      width: 340px;
       left: 0px;
       ul {
+        margin-top: 5px;
         padding-left: 15px;
         background-color: white;
         li {
           height: 30px;
           list-style-type: none;
-          overflow: hidden;
-          text-overflow: ellipsis;
           white-space: nowrap;
           padding-top: 10px;
 
           &:last-child hr {
             display: none;
+          }
+          span.email {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: inline-block;
+            width: 63%;
+          }
+          button.make-primary {
+            @extend %button-base;
+            @extend %button-secondary;
+            width: 32%;
+            display: inline-block;
+          }
+          span.primary-badge {
+            background-color: $sandstorm-purple-color;
+            color: white;
+            width: 32%;
+            text-align: center;
+            display: inline-block;
           }
         }
       }
@@ -500,7 +536,7 @@ body>.main-content>.account {
     .add-new {
       position: absolute;
       top: 0px;
-      left: 340px;
+      left: 360px;
       .info, .hidden {
         display: none;
       }
@@ -885,16 +921,6 @@ div.identity-editor {
         }
       }
     }
-  }
-
-  button.unlink-identity {
-    @extend %button-base;
-    @extend %button-secondary;
-    width: 200px;
-    height: 30px;
-    background-image: url("unlink-m.svg");
-    background-repeat: no-repeat;
-    background-position: 10px;
   }
 }
 
@@ -1335,36 +1361,50 @@ body>.popup.billing-prompt>.frame {
   }
 }
 
-.login-identities-of-linked-accounts {
-  border: 1px solid gray;
-  border-radius: 2px;
-  padding: 10px;
-  ul.unlinkable-identities {
-    list-style-type: none;
-    padding: 0;
-    li{
-      position: relative;
-      padding-bottom: 10px;
-      .identity-card {
-        border: 1px solid black;
-      }
-      button.unlink {
-        @extend %button-base;
-        @extend %button-secondary;
-        position: absolute;
-        left: 240px;
-        top: 15px;
+.identity-management-controls {
+  >div {
+    margin-top: 10px;
+  }
+  .login-identities-of-linked-accounts {
+    border: 1px solid gray;
+    border-radius: 2px;
+    padding: 10px;
+    ul.unlinkable-identities {
+      list-style-type: none;
+      padding: 0;
+      li{
+        position: relative;
+        padding-bottom: 10px;
+        .identity-card {
+          border: 1px solid black;
+        }
+        button.unlink {
+          @extend %button-base;
+          @extend %button-secondary;
+          position: absolute;
+          left: 240px;
+          top: 15px;
+        }
       }
     }
+    button.hide-other-accounts {
+      @extend %button-base;
+      @extend %button-secondary;
+    }
   }
-  button.hide-other-accounts {
+  button.show-other-accounts {
     @extend %button-base;
     @extend %button-secondary;
   }
-}
-button.show-other-accounts {
-  @extend %button-base;
-  @extend %button-secondary;
+  button.unlink-identity {
+    @extend %button-base;
+    @extend %button-secondary;
+    width: 200px;
+    height: 30px;
+    background-image: url("unlink-m.svg");
+    background-repeat: no-repeat;
+    background-position: 10px;
+  }
 }
 
 ul.identity-card-list {

@@ -53,8 +53,6 @@
     <button class="logout" role="menuitem">
       Sign out
     </button>
-
-    {{> _loginButtonsMessages}}
   </div>
 </template>
 
@@ -122,7 +120,7 @@
 
     <label class="email {{#if awaitingToken}}hidden{{/if}}">{{prompt}}
       <span title="Passwordless E-mail Login allows you to log in using an e-mail address. No password is required; instead, every time you log in, we send you a new email confirmation code. You will only need to log in once per device." class="info">i</span>
-      <input name="email" type="email">
+      <input name="email" type="email" disabled={{disabled}}>
     </label>
 
     {{#with awaitingToken}}
@@ -138,9 +136,13 @@
     </div>
     {{else}}
     <div class="button-box">
-      <button class="login email">{{sendButtonText}}</button>
+      <button class="login email" disabled={{disabled}}>{{sendButtonText}}</button>
     </div>
     {{/with}}
+
+    {{#if disabled}}
+    <p>A server admin must enable email authentication before you can confirm your email.</p>
+    {{/if}}
   </form>
 </template>
 

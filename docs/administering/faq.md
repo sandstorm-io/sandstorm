@@ -182,4 +182,4 @@ temporary subdomain. Here's what to check:
 WILDCARD_HOST=*.yourname.sandcats.io:6080
 ```
 
-* **Make sure wildcard DNS works for your chosen domain**. See also [this issue in our repository](https://github.com/sandstorm-io/sandstorm/issues/114). If setting up wildcard DNS is a hassle for you, consider using our free [Sandcats dynamic DNS](Sandcats-dynamic-DNS) service for your `WILDCARD_HOST`.
+* **Make sure wildcard DNS works for your chosen domain**. See also [this issue in our repository](https://github.com/sandstorm-io/sandstorm/issues/114). If setting up wildcard DNS is a hassle for you, consider using our free [Sandcats dynamic DNS](sandcats.md) service for your `WILDCARD_HOST`.

@@ -436,7 +436,7 @@ body>.topbar {
 
   >.navbar {
     @media #{$desktop} {
-      >button.navbar-shrink {
+      button.navbar-shrink {
         @extend %unstyled-button;
         display: block;
         width: 100%;
@@ -457,7 +457,7 @@ body>.topbar {
         // !important used to override other classes that might assign e.g. display: block
         width: $navbar-width-desktop-shrunk !important;
 
-        >button.navbar-shrink {
+        button.navbar-shrink {
           border-left-width: 0;
         }
       }
@@ -469,7 +469,7 @@ body>.topbar {
       transition: width 0.2s;
     }
     @media #{$mobile} {
-      >button.navbar-shrink {
+      li.navbar-shrink-item {
         display: none;
       }
     }
@@ -533,6 +533,11 @@ body>.topbar {
           &.current, &.current:hover {
             background-image: url('/apps-m.svg');
           }
+        }
+        &.navbar-shrink-item {
+          border: none;
+          height: auto;
+          width: auto;
         }
       }
     }

@@ -592,7 +592,7 @@ var calculateReferralBonus = function(accountId, plan) {
         successfulReferralsCount * 50 * 1e6,
         maxFreeStorageBonus)
     };
-    if (successfulReferralsCount >= 0) {
+    if (successfulReferralsCount > 0) {
       bonus.grains = Infinity;
     } else {
       bonus.grains = 0;

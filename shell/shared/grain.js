@@ -306,7 +306,7 @@ Meteor.methods({
           SandstormPermissions.createNewApiToken(
             globalDb, {identityId: identityId, accountId: accountId}, grainId,
             "direct invitation to " + contact.profile.intrinsicName,
-            roleAssignment, {user: {identityId: contact.identityId, title: title}});
+            roleAssignment, {user: {identityId: contact._id, title: title}});
         }
       });
       return outerResult;

@@ -608,15 +608,32 @@ limitations under the License.
 
 <template name="account">
   <div class="account">
-    {{#if .}}
-      {{>sandstormAccountSettings .}}
+    <h2>My Account</h2>
+    {{#if isPaymentsEnabled}}
+    <ul class="account-tabs">
+      <li class="{{#if profileActive}}active{{/if}}">
+        {{#linkTo route="accountProfile"}}Profile{{/linkTo}}
+      </li>
+      <li class="{{#if billingActive}}active{{/if}}">
+        {{#linkTo route="accountBilling"}}Billing{{/linkTo}}
+      </li>
+    </ul>
     {{/if}}
+    {{> Template.dynamic template=accountTab}}
   </div>
 </template>
 
-<template name="accountUsage">
-  {{> billingUsage db=globalDb}}
-  {{> billingSettings db=globalDb}}
+<template name="accountProfile">
+  {{#if .}}
+    {{>sandstormAccountSettings .}}
+  {{/if}}
+</template>
+
+<template name="accountBilling">
+  <div class="billing">
+    {{> billingUsage db=db topbar=_topbar}}
+    {{> billingSettings db=db}}
+  </div>
 </template>
 
 <template name="signup">

@@ -7,26 +7,6 @@ var helpers = {
   },
   isDemoUser: function () {
     return this._db.isDemoUser();
-  },
-  demoTimeLeft: function () {
-    var ms = Meteor.user().expires.getTime() - Date.now();
-    var sec = Math.floor(ms / 1000) % 60;
-    if (sec < 10) sec = "0" + sec;
-    var min = Math.floor(ms / 60000);
-    var comp = Tracker.currentComputation;
-    if (comp) {
-      Meteor.setTimeout(comp.invalidate.bind(comp), 1000);
-    }
-    return min + ":" + sec;
-  },
-  expiringSoon: function () {
-    var timeToExpiring = Meteor.user().expires.getTime() - Date.now() - 600000;
-    if (timeToExpiring <= 0) return true;
-    var comp = Tracker.currentComputation;
-    if (comp) {
-      Meteor.setTimeout(comp.invalidate.bind(comp), timeToExpiring);
-    }
-    return false;
   }
 };
 

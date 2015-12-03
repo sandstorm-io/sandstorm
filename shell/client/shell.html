@@ -75,12 +75,13 @@ limitations under the License.
   {{/if}}
   {{#if currentUser}}
     {{>sandstormTopbarItem name="notifications" topbar=globalTopbar
-                           template="notifications" popupTemplate="notificationsPopup"}}
+                           template="notifications" popupTemplate="notificationsPopup"
+                           priority=-1}}
   {{/if}}
   {{!-- admin alerts --}}
   {{#with adminAlert}}
     {{#if adminAlertIsTooLarge}}
-      {{#sandstormTopbarItem name="admin-alert" topbar=globalTopbar}}
+      {{#sandstormTopbarItem name="admin-alert" topbar=globalTopbar priority=-2}}
         {{!-- TODO(cleaup): Awkwardly, the event handlers on Template.layout actually work
             on this topbar item solely because the whole topbar itself is embedded inside the
             "layout" template. But, we shouldn't be relying on that! Move this to its own

@@ -165,6 +165,23 @@ Template.sandstormTopbar.helpers({
       return { align: "left", px: -10000 };
     }
   },
+
+  accountExpires: function () {
+    if (!Meteor.user().expires) return null;
+
+    var ms = Meteor.user().expires.getTime() - Date.now();
+    var sec = Math.floor(ms / 1000) % 60;
+    if (sec < 10) sec = "0" + sec;
+    var min = Math.floor(ms / 60000);
+    var comp = Tracker.currentComputation;
+    if (comp) {
+      Meteor.setTimeout(comp.invalidate.bind(comp), 1000);
+    }
+    return {
+      countdown: min + ":" + sec,
+      urgent: ms < 600000
+    };
+  },
 });
 
 var windowWidth = new ReactiveVar(window.innerWidth);
@@ -260,7 +277,12 @@ Template.sandstormTopbar.events({
       grains.splice(closeIndex, 1);
       topbar._grains.set(grains);
     }
-  }
+  },
+
+  "click .demo-notice .sign-in": function (event) {
+    var topbar = Template.instance().data;
+    topbar.openPopup("login");
+  },
 });
 
 Template.sandstormTopbarItem.onCreated(function () {

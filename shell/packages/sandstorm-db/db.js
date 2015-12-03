@@ -82,7 +82,7 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   appDemoId: If this is an appdemo user (see above), the app ID they started out demoing.
 //   payments: Object defined by payments module, if loaded.
 //   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
-//   referralCompletedBy: The Account that referred this Account. If this is set, we
+//   referredByComplete: ID of the Account that referred this Account. If this is set, we
 //                        stop writing new referredBy values onto Identities for this account.
 //   referredCompleteDate: The Date at which the completed referral occurred.
 //   referredIdentityIds: List of Identity IDs that this Account has referred. This is used for

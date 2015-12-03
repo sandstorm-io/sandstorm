@@ -359,7 +359,7 @@ function splitAccountUsersAndIdentityUsers() {
 }
 
 function populateContactsFromApiTokens() {
-  ApiTokens.find({"owner.user": {$exists: 1}}).forEach(function(token) {
+  ApiTokens.find({"owner.user": {$exists: 1}, accountId: {$exists: 1}}).forEach(function(token) {
     var identityId = token.owner.user.identityId;
     var profile = SandstormDb.prototype.getIdentity(identityId).profile;
     Contacts.upsert({ownerId: token.accountId, identityId: identityId}, {

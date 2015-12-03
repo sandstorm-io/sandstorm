@@ -465,6 +465,10 @@ body>.topbar {
         >ul.navbar-grains>li.navitem-grain a {
           padding-right: 0 !important;
         }
+        .demo-notice {
+          p { font-size: 0 !important; padding: 4px !important; }
+          button { display: none !important; }
+        }
       }
       &.hide-desktop {
         display: none;
@@ -632,11 +636,17 @@ body>.topbar {
     }
 
     .demo-notice {
+      width: 100%;
+      overflow: hidden;
+      box-sizing: border-box;
+
       p {
         color: $topbar-foreground-color;
-        margin: 8px;
+        padding: 8px;
+        margin: 0;
         line-height: normal;
         font-size: 14px;
+        transition: font-size 0.2s;
 
         a {
           color: white;

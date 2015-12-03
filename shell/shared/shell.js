@@ -400,6 +400,34 @@ if (Meteor.isClient) {
     ifPlanAllowsCustomApps: ifPlanAllowsCustomApps
   };
 
+  var isDemoExpired = function () {
+    var user = Meteor.user();
+    if (!user) return false;
+    var expires = user.expires;
+    if (!expires) return false;
+    expires = expires.getTime() - Date.now();
+    if (expires <= 0) return true;
+    var comp = Tracker.currentComputation;
+    if (expires && comp) {
+      Meteor.setTimeout(comp.invalidate.bind(comp), expires);
+    }
+    return false;
+  };
+
+  logoutSandstorm = function () {
+    Meteor.logout(function () {
+      sessionStorage.removeItem("linkingIdentityLoginToken");
+      Accounts._loginButtonsSession.closeDropdown();
+      globalTopbar.closePopup();
+      var openGrains = globalGrains.get();
+      openGrains.forEach(function(grain) {
+        grain.destroy();
+      });
+      globalGrains.set([]);
+      Router.go("root");
+    });
+  }
+
   function makeAccountSettingsUi() {
     return new SandstormAccountSettingsUi(globalTopbar, globalDb,
         window.location.protocol + "//" + makeWildcardHost("static"));
@@ -471,19 +499,7 @@ if (Meteor.isClient) {
     billingPromptState: function () {
       return billingPromptState.get();
     },
-    demoExpired: function () {
-      var user = Meteor.user();
-      if (!user) return false;
-      var expires = user.expires;
-      if (!expires) return false;
-      expires = expires.getTime() - Date.now();
-      if (expires <= 0) return true;
-      var comp = Tracker.currentComputation;
-      if (expires && comp) {
-        Meteor.setTimeout(comp.invalidate.bind(comp), expires);
-      }
-      return false;
-    },
+    demoExpired: isDemoExpired,
     canUpgradeDemo: function () {
       return Meteor.settings.public.allowUninvited;
     },
@@ -510,8 +526,8 @@ if (Meteor.isClient) {
   });
 
   Template.layout.events({
-    "click #demo-expired.logout": function (event) {
-      Meteor.logout();
+    "click #demo-expired .logout": function (event) {
+      logoutSandstorm();
     }
   });
 
@@ -550,7 +566,7 @@ if (Meteor.isClient) {
   Template.registerHelper("dateString", makeDateString);
   Template.registerHelper("hideNavbar", function() {
     // Hide navbar if user is not logged in, since they can't go anywhere with it.
-    return !Meteor.userId();
+    return !Meteor.userId() || isDemoExpired();
   });
   Template.registerHelper("shrinkNavbar", function() {
     // Shrink the navbar if the user clicked the button to do so.

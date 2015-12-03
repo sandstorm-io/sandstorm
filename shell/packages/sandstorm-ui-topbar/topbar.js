@@ -167,7 +167,8 @@ Template.sandstormTopbar.helpers({
   },
 
   accountExpires: function () {
-    if (!Meteor.user().expires) return null;
+    var user = Meteor.user();
+    if (!user || !Meteor.user().expires) return null;
 
     var ms = Meteor.user().expires.getTime() - Date.now();
     var sec = Math.floor(ms / 1000) % 60;
@@ -178,7 +179,9 @@ Template.sandstormTopbar.helpers({
       Meteor.setTimeout(comp.invalidate.bind(comp), 1000);
     }
     return {
-      countdown: min + ":" + sec,
+      // We put zero-width spaces on either side of the : in order to allow wrapping when the
+      // sidebar is shrunk.
+      countdown: min + "\u200b:\u200b" + sec,
       urgent: ms < 600000
     };
   },

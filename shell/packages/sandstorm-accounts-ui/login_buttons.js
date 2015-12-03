@@ -25,18 +25,8 @@ Template.accountButtonsPopup.onRendered(function() {
 
 Template.accountButtonsPopup.events({
   'click button.logout': function() {
-    var topbar = Template.parentData(3);
-    Meteor.logout(function () {
-      sessionStorage.removeItem("linkingIdentityLoginToken");
-      loginButtonsSession.closeDropdown();
-      topbar.closePopup();
-      var openGrains = globalGrains.get();
-      openGrains.forEach(function(grain) {
-        grain.destroy();
-      });
-      globalGrains.set([]);
-      Router.go("root");
-    });
+    // TODO(cleanup): Don't rely on global var set in outermost package!
+    logoutSandstorm();
   }
 });
 

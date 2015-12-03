@@ -261,10 +261,13 @@ Meteor.methods({
       check(grainId, String);
       check(title, String);
       check(roleAssignment, roleAssignmentPattern);
-      check(contacts, [{_id: String, profile: Match.ObjectIncluding({
-        service: String,
-        name: String,
-        intrinsicName: String,
+      check(contacts, [{
+        _id: String,
+        isDefault: Match.Optional(Boolean),
+        profile: Match.ObjectIncluding({
+          service: String,
+          name: String,
+          intrinsicName: String,
       })}]);
       check(message, {text: String, html: String});
       if (!this.userId) {
@@ -279,7 +282,7 @@ Meteor.methods({
       var outerResult = {successes: [], failures: []};
       contacts.forEach(function(contact) {
         if (contact.isDefault && contact.profile.service === "email") {
-          var emailAddress = contact.profile.name;
+          var emailAddress = contact.profile.intrinsicName;
           var result = SandstormPermissions.createNewApiToken(
             globalDb, {identityId: identityId, accountId: accountId}, grainId,
             "email invitation for " + emailAddress,
@@ -311,6 +314,37 @@ Meteor.methods({
             globalDb, {identityId: identityId, accountId: accountId}, grainId,
             "direct invitation to " + contact.profile.intrinsicName,
             roleAssignment, {user: {identityId: contact._id, title: title}});
+            try {
+              var identity = Meteor.users.findOne({_id: contact._id});
+              var emailAddress = SandstormDb.getVerifiedEmails(identity)[0];
+              var url = origin + "/grain/" + grainId;
+              var html = message.html + "<br><br>" +
+                  "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
+                  "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
+                  "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
+                  "Open Shared Grain</a><div style='font-size:8pt;font-style:italic;color:gray'>" +
+                  "Note: This was shared directly with you. No one else can open the above " +
+                  "link, and you will need to be logged in with your "+  contact.profile.service +
+                  " account with username " + contact.profile.intrinsicName;
+              if (emailAddress) {
+                SandstormEmail.send({
+                  to: emailAddress,
+                  from: "Sandstorm server <no-reply@" + HOSTNAME + ">",
+                  subject: sharerDisplayName + " has invited you to join a grain: " + title,
+                  text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
+                    "\n\nNote: This was shared directly with you. No one else can open the above " +
+                    "link, and you will need to be logged in with your " + contact.profile.service +
+                    " account with username " + contact.profile.intrinsicName,
+                  html: html,
+                });
+              } else {
+                outerResult.failures.push({contact: contact, warning: "User does not have a " +
+                  "verified email, so notification of this share was not sent to them. Please " +
+                  "manually share " + url + " with them."});
+              }
+            } catch (e) {
+              outerResult.failures.push({contact: contact, error: e.toString()});
+            }
         }
       });
       return outerResult;
@@ -1085,6 +1119,10 @@ if (Meteor.isClient) {
                 message += ", ";
               }
               message += result.failures[ii].contact.profile.name;
+              var warning = result.failures[ii].warning;
+              if (warning) {
+                message += ". " + warning;
+              }
             }
             instance.completionState.set({error: message});
           } else {

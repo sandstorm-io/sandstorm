@@ -101,6 +101,7 @@ function selectContact(template, highlightedContact, inputBox) {
     if (highlightedContact.profile.service === "email") {
       highlightedContact._id = inputBox.value;
       highlightedContact.profile.name = inputBox.value;
+      highlightedContact.profile.intrinsicName = inputBox.value;
       highlightedContact.profile.pictureUrl = "/email.svg";
     }
   }

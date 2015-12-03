@@ -556,147 +556,161 @@ body>.main-content>.account {
 }
 
 div.billing {
-  >.balance {
-    margin-left: 16px;
-    box-sizing: border-box;
-    margin: 1em auto 2em;
-    padding-left: 150px;
-    text-align: left;
+  >section.payment-methods {
+    display: inline-block;
+    vertical-align: top;
 
-    >.amount {
-      border: 1px solid #ccc;
-      padding: 4px 16px;
-      margin: 0 16px;
+    h3 {
+      margin: 0.5em 0;
     }
 
-    >.details {
-      font-size: 80%;
-      color: #444;
-    }
-  }
+    max-width: 400px;
+    padding: 0 16px;
 
-  >table {
-    text-align: left;
-    margin-left: 16px;
-    min-width: 600px;
-    border-collapse: collapse;
-    border-spacing: 0;
+    >.balance {
+      margin-left: 16px;
+      box-sizing: border-box;
+      margin: 1em auto 2em;
+      padding-left: 150px;
+      text-align: left;
 
-    >thead {
-      td {
-        border-right: 1px solid $default-content-background-color;
-        background-color: #ccc;
-        padding-left: 10px;
+      >.amount {
+        border: 1px solid #ccc;
+        padding: 4px 16px;
+        margin: 0 16px;
+      }
+
+      >.details {
+        font-size: 80%;
+        color: #444;
       }
     }
 
-    td:nth-child(1) {
-      width: 100px;
-    }
+    >table {
+      text-align: left;
+      width: 100%;
+      border-collapse: collapse;
+      border-spacing: 0;
 
-    td:nth-child(2) {
-      width: 300px;
-    }
+      >thead {
+        td {
+          border-right: 1px solid $default-content-background-color;
+          background-color: #ccc;
+          padding-left: 10px;
+        }
+      }
 
-    td:nth-child(3) {
-      width: 100px;
-    }
+      td:nth-child(1) {
+        width: 75px;
+        text-align: center;
+      }
 
-    td:nth-child(4) {
-      width: 80px;
-    }
+      td:nth-child(2) {
+        width: 200px;
+        padding-right: 16px;
+        text-align: right;
+      }
 
-    >tbody {
-      background-color: white;
-      >tr {
-        border-bottom: 1px solid #ccc;
-        >td {
-          padding: 16px;
+      td:nth-child(3) {
+        width: 75px;
+        text-align: center;
+      }
 
-          button {
-            background-color: transparent;
-            border: 1px solid #a199ad;
-            color: #5d5d5d;
-            cursor: pointer;
-            text-transform: uppercase;
-            border-radius: 2px;
+      td:nth-child(4) {
+        width: 50px;
+        text-align: center;
+      }
 
-            &:hover {
-              color: #65468e;
-              background-color: #e6e1f4;
-            }
-          }
-
-          &.add-new-card {
-            position: relative;
-
-            &.iframe-active {
-              position: static;
-            }
+      >tbody {
+        background-color: white;
+        >tr {
+          border-bottom: 1px solid #ccc;
+          >td {
+            height: 2em;
 
             button {
-              padding: 2px 4px;
-              font-size: 16px;
-              font-weight: bold;
-              border-color: #6d6d6d;
-              color: #6d6d6d;
+              background-color: transparent;
+              border: 1px solid #a199ad;
+              color: #5d5d5d;
+              cursor: pointer;
+              text-transform: uppercase;
+              border-radius: 2px;
 
               &:hover {
+                color: #65468e;
+                background-color: #e6e1f4;
+              }
+            }
+
+            &.add-new-card {
+              position: relative;
+              text-align: left;
+
+              &.iframe-active {
+                position: static;
+              }
+
+              button {
+                padding: 2px 4px;
+                font-size: 16px;
+                font-weight: bold;
+                border-color: #6d6d6d;
+                color: #6d6d6d;
+
+                &:hover {
+                  background-color: white;
+                }
+                margin-right: 16px;
+              }
+
+              &:hover button {
                 background-color: white;
               }
-              margin-right: 16px;
-            }
+              &:hover {
+                cursor: pointer;
+              }
 
-            &:hover button {
-              background-color: white;
-            }
-            &:hover {
-              cursor: pointer;
-            }
-
-            >.mobile-iframe-hack {
-              position: absolute;
-              height: 24px;
-              width: 300px;
-              &.fullscreen {
-                @extend %fullscreen-iframe-hack;
+              >.mobile-iframe-hack {
+                position: absolute;
+                height: 24px;
+                width: 300px;
+                &.fullscreen {
+                  @extend %fullscreen-iframe-hack;
+                }
               }
             }
-          }
-          &.checkbox {
-            text-align: right;
-            text-transform: uppercase;
-            font-size: 10pt;
-            >label {
-              font-size: 0;
-              position: relative;
-              display: inline-block;
-              vertical-align: top;
-              width: 16px;
-              height: 16px;
-              margin-left: 16px;
-              border: 1px solid #aaa;
-              cursor: pointer;
-              border-radius: 2px;
-              >input {
-                visibility: hidden;
-              }
-              &.selected {
-                background: #aaa;
-                cursor: auto;
+            &.checkbox {
+              >label {
+                font-size: 0;
+                position: relative;
+                display: inline-block;
+                vertical-align: top;
+                width: 16px;
+                height: 16px;
+                border: 1px solid #aaa;
+                cursor: pointer;
+                border-radius: 2px;
+                >input {
+                  visibility: hidden;
+                }
+                &.selected {
+                  background: #aaa;
+                  cursor: auto;
+                }
               }
             }
           }
         }
-      }
 
-      >tr:last-child {
-        background-color: $default-content-background-color;
-        border-bottom: none;
+        >tr:last-child {
+          background-color: $default-content-background-color;
+          border-bottom: none;
+        }
       }
     }
   }
-  form, div.usage {
+
+  div.usage {
     display: inline-block;
     vertical-align: top;
     margin-right: 32px;
@@ -704,9 +718,7 @@ div.billing {
     h3 {
       margin: 0.5em 0;
     }
-  }
 
-  div.usage {
     max-width: 400px;
     padding: 0 16px;
 

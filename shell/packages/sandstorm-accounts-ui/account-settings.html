@@ -23,6 +23,7 @@ limitations under the License.
     Account Settings
   {{/sandstormTopbarItem}}
 
+  <h2>My Account</h2>
   <div class="identities-editor">
   <h3 class="title-bar"> Linked Identities </h3>
   <div class="identities-tabs">
@@ -103,6 +104,13 @@ limitations under the License.
       {{> _loginButtonsMessages}}
     </div>
   </div>
+
+  {{#if isPaymentsEnabled}}
+  <div class="billing">
+  {{> billingUsage db=db topbar=_topbar}}
+  {{> billingSettings db=db}}
+  </div>
+  {{/if}}
 </template>
 
 <template name="sandstormAccountsFirstSignIn">

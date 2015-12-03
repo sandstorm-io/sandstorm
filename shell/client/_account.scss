@@ -387,29 +387,6 @@ body>.main-content>.account {
     padding: 0;
   }
 
-  ul.account-tabs {
-    position: absolute;
-    top: 5px;
-    left: 300px;
-    font-size: 18px;
-    >li {
-      float: left;
-      display: block;
-      >a {
-        padding: 10px;
-        border-radius: 4px;
-        &:hover {
-          background-color: lighten($sandstorm-purple-color, 40%);
-        }
-      }
-      &.active >a {
-        color: white;
-        background-color: $sandstorm-purple-color;
-      }
-
-    }
-  }
-
   .identities-editor {
     position: relative;
     white-space: nowrap;

@@ -26,6 +26,14 @@ Template.sandstormAccountSettings.onCreated(function () {
   this._actionCompleted = new ReactiveVar();
   var self = this;
 
+  // TODO(cleanup): Figure out a better way to pass in this data. Perhaps it should be part of
+  //   the URL?
+  if (Session.get("linkingIdentityError")) {
+    this._actionCompleted.set(
+      {error: "Error linking identity: " + Session.get("linkingIdentityError")});
+    Session.set("linkingIdentityError");
+  }
+
   this.autorun(function () {
     // Reset the selected identity ID when appropriate.
     var user = Meteor.user();
@@ -129,6 +137,7 @@ Template._accountProfileEditor.helpers({
       return {
         _id: identityId,
         isLogin: user.loginIdentities && !!_.findWhere(user.loginIdentities, {id: identityId}),
+        isDemo: this.identity.profile.service === "demo",
         setActionCompleted: Template.instance()._setActionCompleted,
       };
     }

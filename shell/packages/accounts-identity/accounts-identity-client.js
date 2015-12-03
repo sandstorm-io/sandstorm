@@ -31,8 +31,10 @@ Template.identityLoginInterstitial.onCreated(function () {
     sessionStorage.removeItem("linkingIdentityLoginToken");
     Meteor.call("linkIdentityToAccount", token, function (err, result) {
       if (err) {
-        // TODO(soon): display this error somewhere that the user will see.
-        console.log("Error", err);
+        // TODO(cleanup): Figure out a better way to get this data to the /account page.
+        Session.set("linkingIdentityError", err.toString());
+      } else {
+        Session.set("linkingIdentityError");
       }
       Meteor.loginWithToken(token);
     });
@@ -142,6 +144,9 @@ Template.identityManagementButtons.helpers({
       if (LoginIdentitiesOfLinkedAccounts.findOne({sourceIdentityId: this._id,
                                                    loginAccountId: {$ne: Meteor.userId()}})) {
         return {why: "A shared identity is not allowed to be promoted to a login identity."}
+      }
+      if (this.isDemo) {
+        return {why: "Demo identities cannot be used to log in."}
       }
     }
   },

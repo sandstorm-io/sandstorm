@@ -57,17 +57,21 @@ Router.route("/_emailLogin/:_email/:_token", function () {
 
 Router.route("/_emailLinkIdentity/:_email/:_token/:_accountId", function () {
   this.render("Loading");
-  var self = this;
-  if (Meteor.userId() === this.params._accountId) {
-    Meteor.call("linkEmailIdentityToAccount",
-                this.params._email, this.params._token, function (err, result) {
-      if (err) {
-        self.render("_emailLinkIdentityError", {data: function () {return {error: err};}});
-      } else {
-        Router.go("/account");
-      }
-    });
+  if (this.state.get("error")) {
+    this.render("_emailLinkIdentityError", {data: {error: this.state.get("error")}});
   } else {
-    this.render("_emailLinkIdentityError");
+    var self = this;
+    if (Meteor.userId() === this.params._accountId) {
+      Meteor.call("linkEmailIdentityToAccount",
+                  this.params._email, this.params._token, function (err, result) {
+        if (err) {
+          self.state.set("error", err.toString());
+        } else {
+          Router.go("/account");
+        }
+      });
+    } else {
+      this.render("_emailLinkIdentityError");
+    }
   }
 });

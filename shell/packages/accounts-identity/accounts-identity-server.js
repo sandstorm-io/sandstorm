@@ -14,6 +14,68 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+function linkIdentityToAccountInternal(identityId, accountId) {
+  // Links the identity to the account. If the account is a demo account, makes the account durable
+  // and gives the identity login access to it.
+
+  check(identityId, String);
+  check(accountId, String);
+
+  var accountUser = Meteor.users.findOne({_id: accountId});
+  if (!accountUser) {
+    throw new Meteor.Error(404, "No account found with ID " + accountId);
+  }
+
+  if (accountUser.profile) {
+    throw new Meteor.Error(400, "Cannot link an identity to another identity.");
+  }
+
+  var identityUser = Meteor.users.findOne({_id: identityId});
+
+  if (!identityUser) {
+    throw new Meteor.Error(404, "No identity found with ID " + identityId);
+  }
+
+  if (!identityUser.profile) {
+    throw new Meteor.Error(400, "Cannot link an account to another account");
+  }
+
+  if (Meteor.users.findOne({"loginIdentities.id": identityUser._id})) {
+    throw new Meteor.Error(403,
+                           "Cannot link an identity that can already log into another account");
+  }
+
+  var modifier;
+  if (accountUser.expires) {
+    modifier = {$push: {loginIdentities: {id: identityUser._id}},
+                $unset: {expires: 1},
+                $set: {upgradedFromDemo: Date.now()}};
+  } else {
+    modifier = {$push: {nonloginIdentities: {id: identityUser._id}}};
+  }
+
+  // Make sure not to add the same identity twice.
+  Meteor.users.update({_id: accountUser._id, "nonloginIdentities.id": {$ne: identityUser._id},
+                       "loginIdentities.id": {$ne: identityUser._id}},
+                      modifier);
+
+  if (accountUser.expires) {
+    var demoIdentityId = SandstormDb.getUserIdentityIds(accountUser)[0];
+    Meteor.users.update({_id: demoIdentityId},
+                        {$unset: {expires: 1},
+                         $set: {upgradedFromDemo: Date.now()}});
+
+    // Mark the demo identity as nonlogin. It'd be nicer if the identity started out as nonlogin,
+    // but to get that to work we would need to adjust the account creation and first login logic.
+    Meteor.users.update({_id: accountUser._id,
+                         "loginIdentities.id": demoIdentityId,
+                         "nonloginIdentities.id": {$not: {$eq: demoIdentityId}}},
+                        {$pull: {loginIdentities: {id: demoIdentityId}},
+                         $push: {nonloginIdentities: {id: demoIdentityId}}});
+
+  }
+}
+
 Meteor.methods({
   loginWithIdentity: function (accountUserId) {
     // Logs into the account with ID `accountUserId`. Throws an exception if the current user is
@@ -25,8 +87,8 @@ Meteor.methods({
     check(accountUserId, String);
 
     var identityUser = Meteor.user();
-    if (!identityUser) {
-      throw new Meteor.Error(403, "Must be already logged in to used linked user login.");
+    if (!identityUser || !identityUser.profile) {
+      throw new Meteor.Error(403, "Must be already logged in as an identity.");
     }
 
     var accountUser = Meteor.users.findOne(accountUserId);
@@ -81,7 +143,8 @@ Meteor.methods({
 
   linkIdentityToAccount: function(token) {
     // Links the identity of the current user to the account that has `token` as a resume token.
-    // If the account is a demo account, attempts to gives the identity login access to the account.
+    // If the account is a demo account, makes the account durable and gives the identity login
+    // access to it.
 
     check(token, String);
 
@@ -91,44 +154,7 @@ Meteor.methods({
     var hashed = Accounts._hashLoginToken(token);
     var accountUser = Meteor.users.findOne({"services.resume.loginTokens.hashedToken": hashed});
 
-    if (!accountUser) {
-      throw new Meteor.Error(404, "No account found for token: " + token);
-    }
-
-    if (accountUser.profile) {
-      throw new Meteor.Error(400, "Cannot link an identity to another identity.");
-    }
-
-    var identityUser = Meteor.user();
-
-    if (!identityUser.profile) {
-      throw new Meteor.Error(400, "Current user is not an identity user.");
-    }
-
-    var modifier;
-    if (accountUser.expires) {
-      if (Meteor.users.findOne({"loginIdentities.id": identityUser._id})) {
-        throw new Meteor.Error(403, "Cannot upgrade demo account with an identity that can " +
-                               "already be used for login on another account.");
-      }
-
-      modifier = {$push: {loginIdentities: {id: identityUser._id}},
-                  $unset: {expires: 1},
-                  $set: {upgradedFromDemo: Date.now()}};
-    } else {
-      modifier = {$push: {nonloginIdentities: {id: identityUser._id}}};
-    }
-
-    // Make sure not to add the same identity twice.
-    Meteor.users.update({_id: accountUser._id, "nonloginIdentities.id": {$ne: identityUser._id},
-                        "loginIdentities.id": {$ne: identityUser._id}},
-                        modifier);
-
-    if (accountUser.expires) {
-      Meteor.users.update({_id: accountUser.loginIdentities[0].id},
-                          {$unset: {expires: 1},
-                           $set: {upgradedFromDemo: Date.now()}});
-    }
+    linkIdentityToAccountInternal(this.userId, accountUser._id);
   },
 
   unlinkIdentity: function (accountUserId, identityId) {
@@ -189,18 +215,11 @@ Meteor.methods({
 });
 
 Accounts.linkIdentityToAccount = function (identityId, accountId) {
-  // Links the identity to the account.
-
+  // Links the identity to the account. If the account is a demo account, makes it durable and
+  // gives the identity login access to it.
   check(identityId, String);
   check(accountId, String);
-
-  // Make sure not to add the same identity twice.
-  Meteor.users.update({_id: accountId,
-                       loginIdentities: {$exists: true},
-                       "nonloginIdentities.id": {$ne: identityId},
-                       "loginIdentities.id": {$ne: identityId}},
-                      {$push: {"nonloginIdentities": {id: identityId}}});
-
+  linkIdentityToAccountInternal(identityId, accountId);
 }
 
 Meteor.publish("accountsOfIdentity", function (identityId) {

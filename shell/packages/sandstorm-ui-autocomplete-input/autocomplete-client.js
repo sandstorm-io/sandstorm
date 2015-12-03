@@ -1,4 +1,9 @@
 var UserContacts = new Mongo.Collection("userContacts");
+// A psuedo-collection used to store the results of joining Contacts with identity profiles
+//
+// Each contains:
+//   _id: the id of identity (from Meteor.users collection)
+//   profile: the profile of the identity (see db.js for fields in this object) 
 
 Template.contactInputBox.onCreated(function () {
   var self = this;

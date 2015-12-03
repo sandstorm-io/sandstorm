@@ -261,7 +261,11 @@ Meteor.methods({
       check(grainId, String);
       check(title, String);
       check(roleAssignment, roleAssignmentPattern);
-      check(contacts, [Object]);
+      check(contacts, [{_id: String, profile: Match.ObjectIncluding({
+        service: String,
+        name: String,
+        intrinsicName: String,
+      })}]);
       check(message, {text: String, html: String});
       if (!this.userId) {
         throw new Meteor.Error(403, "Must be logged in to share by email.");

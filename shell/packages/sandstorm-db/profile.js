@@ -285,6 +285,8 @@ SandstormDb.getUserEmails = function (user) {
 }
 
 SandstormDb.prototype.addContact = function addContact (ownerId, identityId) {
+  check(ownerId, String);
+  check(identityId, String);
   var db = this;
   var profile = db.getIdentity(identityId).profile;
   db.collections.contacts.upsert({ownerId: ownerId, identityId: identityId}, {

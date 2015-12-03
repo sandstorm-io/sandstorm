@@ -61,6 +61,7 @@ if (Meteor.isServer) {
 
         "services.github.id":1,
         "services.github.email":1,
+        "services.github.emails":1,
         "services.github.username":1,
 
         "services.email.email":1,
@@ -187,11 +188,6 @@ SandstormDb.fillInProfileDefaults = function(user) {
   }
 
   profile.pronoun = profile.pronoun || "neutral";
-
-  var verifiedEmail = getVerifiedEmail(user);
-  if (verifiedEmail) {
-    user.verifiedEmail = verifiedEmail;
-  }
 }
 
 SandstormDb.fillInIntrinsicName = function(user) {
@@ -212,13 +208,18 @@ SandstormDb.fillInIntrinsicName = function(user) {
   }
 }
 
-function getVerifiedEmail(identity) {
+SandstormDb.getVerifiedEmails = function(identity) {
   if (identity.services.google && identity.services.google.email &&
       identity.services.google.verified_email) {
-    return identity.services.google.email;
+    return [identity.services.google.email];
   } else if (identity.services.email) {
-    return identity.services.email.email;
+    return [identity.services.email.email];
+  } else if (identity.services.github && identity.services.github.emails) {
+    return _.pluck(_.filter(identity.services.github.emails,
+                            function(email) { return email.verified; }),
+                   "email");
   }
+  return [];
 }
 
 SandstormDb.fillInPictureUrl = function(user) {
@@ -255,10 +256,11 @@ SandstormDb.getUserEmails = function (user) {
   identityIds.forEach(function (id) {
     var identity = Meteor.users.findOne({_id: id});
     if (identity && identity.services) {
-      var verifiedEmail = getVerifiedEmail(identity);
-      if (verifiedEmail) {
-        verifiedEmails[verifiedEmail] = true;
-      }
+      SandstormDb.getVerifiedEmails(identity).forEach(function(verifiedEmail) {
+        if (verifiedEmail) {
+          verifiedEmails[verifiedEmail] = true;
+        }
+      });
     }
     if (identity && identity.unverifiedEmail) {
       unverifiedEmails[identity.unverifiedEmail] = true;

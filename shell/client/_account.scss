@@ -870,7 +870,7 @@ div.identity-editor {
     .inline-icon {
       width: 20px;
     }
-    ul {
+    >ul {
       position: relative;
       left: 140px;
       padding: 8px;
@@ -886,7 +886,7 @@ div.identity-editor {
           font-weight: bold;
         }
 
-        input[type="text"], input[type="email"], select {
+        input[type="text"], select {
           display: block;
           width: 230px;
           box-sizing: border-box;

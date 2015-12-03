@@ -198,12 +198,11 @@ Meteor.methods({
     var identity = Meteor.users.findOne({"services.email.email": email},
                                         {fields: {"services.email": 1}});
     if (!identity) {
-      throw new Meteor.Error(403, "Invalid authorization token.");
+      throw new Meteor.Error(403, "Invalid authentication code.");
     }
     if (!consumeToken(identity, token)) {
-      throw new Meteor.Error(403, "Invalid authorization token.");
+      throw new Meteor.Error(403, "Invalid authentication code.");
     }
-
     Accounts.linkIdentityToAccount(identity._id, account._id);
   }
 });

@@ -84,9 +84,9 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
 //   referralCompletedBy: The Account that referred this Account. If this is set, we
 //                        stop writing new referredBy values onto Identities for this account.
-//   referralCompletedOn: The Date at which the completed referral occurred.
-//   identitiesReferred: List of Identity IDs that this Account has referred. This is used for
-//                       reliably determining which Identity's names are safe to display.
+//   referredCompleteDate: The Date at which the completed referral occurred.
+//   referredIdentityIds: List of Identity IDs that this Account has referred. This is used for
+//                        reliably determining which Identity's names are safe to display.
 //   stashedOldUser: A complete copy of this user from before the accounts/identities migration.
 //                   TODO(cleanup): Delete this field once we're sure it's safe to do so.
 

@@ -30,7 +30,7 @@ limitations under the License.
   {{#with demoExpired}}
     {{>title "Demo Expired"}}
 
-    <div id="demo-expired" class="main-content">
+    <div id="demo-expired" class="main-content {{#if hideNavbar}}hide-navbar{{else}}{{#if shrinkNavbar}}shrink-navbar{{/if}}{{/if}}">
       <h1>Demo Expired</h1>
       {{#if canUpgradeDemo}}
         <p>Thanks for trying the Sandstorm Demo! Your demo account has expired. If
@@ -48,24 +48,15 @@ limitations under the License.
       {{> identityLoginInterstitial}}
   {{else}}
   {{#if firstLogin}}
-    <div class="first-sign-in-main-content">
+    <div class="first-sign-in-main-content {{#if hideNavbar}}hide-navbar{{else}}{{#if shrinkNavbar}}shrink-navbar{{/if}}{{/if}}">
       {{> sandstormAccountsFirstSignIn accountSettingsUi}}
     </div>
   {{else}}
 
   {{!-- standard topbar items --}}
-  {{#if currentUser}}
-    {{#sandstormTopbarItem name="toggle-navbar" topbar=globalTopbar}}
-      <button class="toggle-navbar-button">Sandstorm</button>
-      {{/sandstormTopbarItem}}
-  {{else}}
-    {{!-- if the user is not logged in, we will not show the navbar,
-      so we apply the "disabled" class to the li to avoid
-      visually hinting that clicking it would do anything. --}}
-    {{#sandstormTopbarItem name="toggle-navbar disabled" topbar=globalTopbar}}
-      <div class="toggle-navbar-button">Sandstorm</div>
-      {{/sandstormTopbarItem}}
-  {{/if}}
+  {{#sandstormTopbarItem name="home-button" topbar=globalTopbar}}
+    <a href="/">Sandstorm</a>
+  {{/sandstormTopbarItem}}
   {{#if showAccountButtons}}
     {{>sandstormTopbarItem name="account" topbar=globalTopbar data=accountButtonsData
                            template="accountButtons" popupTemplate="accountButtonsPopup"}}
@@ -112,7 +103,7 @@ limitations under the License.
     {{>billingPrompt}}
   {{/with}}
 
-  <div class="main-content {{#if showNavbar}}show-navbar{{/if}}">
+  <div class="main-content {{#if hideNavbar}}hide-navbar{{else}}{{#if shrinkNavbar}}shrink-navbar{{/if}}{{/if}}">
     {{> yield}}
   </div>
   {{/if}} {{!-- firstLogin --}}

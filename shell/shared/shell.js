@@ -400,6 +400,34 @@ if (Meteor.isClient) {
     ifPlanAllowsCustomApps: ifPlanAllowsCustomApps
   };
 
+  var isDemoExpired = function () {
+    var user = Meteor.user();
+    if (!user) return false;
+    var expires = user.expires;
+    if (!expires) return false;
+    expires = expires.getTime() - Date.now();
+    if (expires <= 0) return true;
+    var comp = Tracker.currentComputation;
+    if (expires && comp) {
+      Meteor.setTimeout(comp.invalidate.bind(comp), expires);
+    }
+    return false;
+  };
+
+  logoutSandstorm = function () {
+    Meteor.logout(function () {
+      sessionStorage.removeItem("linkingIdentityLoginToken");
+      Accounts._loginButtonsSession.closeDropdown();
+      globalTopbar.closePopup();
+      var openGrains = globalGrains.get();
+      openGrains.forEach(function(grain) {
+        grain.destroy();
+      });
+      globalGrains.set([]);
+      Router.go("root");
+    });
+  }
+
   function makeAccountSettingsUi() {
     return new SandstormAccountSettingsUi(globalTopbar, globalDb,
         window.location.protocol + "//" + makeWildcardHost("static"));
@@ -471,19 +499,7 @@ if (Meteor.isClient) {
     billingPromptState: function () {
       return billingPromptState.get();
     },
-    demoExpired: function () {
-      var user = Meteor.user();
-      if (!user) return false;
-      var expires = user.expires;
-      if (!expires) return false;
-      expires = expires.getTime() - Date.now();
-      if (expires <= 0) return true;
-      var comp = Tracker.currentComputation;
-      if (expires && comp) {
-        Meteor.setTimeout(comp.invalidate.bind(comp), expires);
-      }
-      return false;
-    },
+    demoExpired: isDemoExpired,
     canUpgradeDemo: function () {
       return Meteor.settings.public.allowUninvited;
     },
@@ -510,8 +526,8 @@ if (Meteor.isClient) {
   });
 
   Template.layout.events({
-    "click #demo-expired.logout": function (event) {
-      Meteor.logout();
+    "click #demo-expired .logout": function (event) {
+      logoutSandstorm();
     }
   });
 
@@ -548,24 +564,14 @@ if (Meteor.isClient) {
     return result;
   };
   Template.registerHelper("dateString", makeDateString);
-  Template.registerHelper("showNavbar", function() {
-    // We show the navbar when:
-    //
-    // - The session indicates we should (i.e., the user clicked on
-    //   the Sandstorm logo in the top-left), or
-    //
-    // - We've blocked reload, since we cover the toggle and
-    //   you'd be unable to switch to other grains before page
-    //   refresh otherwise.
-    //
-    // We actively hide the navbar when:
-    //
-    // - The user is not logged-in. This is because "Open" and "New"
-    //   would have no meaning for a non-logged-in user, and since they
-    //   can't open any new grains, "multi-grain" has no meaning for them.
-    return Meteor.user() && (Session.get("show-navbar") || globalTopbar.isUpdateBlocked());
+  Template.registerHelper("hideNavbar", function() {
+    // Hide navbar if user is not logged in, since they can't go anywhere with it.
+    return !Meteor.userId() || isDemoExpired();
   });
-
+  Template.registerHelper("shrinkNavbar", function() {
+    // Shrink the navbar if the user clicked the button to do so.
+    return Session.get("shrink-navbar");
+  });
 
   Template.registerHelper("quotaEnabled", function() {
     return Meteor.settings.public.quotaEnabled;

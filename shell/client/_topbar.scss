@@ -205,58 +205,35 @@ body>.topbar {
       height: $topbar-height-desktop;
     }
 
-    >.toggle-navbar {
-      cursor: pointer;
-
-      >button {
-        @extend %unstyled-button;
-        @extend %hamburger-menu-item;
-        margin: 0px;
-        @media #{$desktop} {
-          height: $topbar-height-desktop;
-        }
-      }
-
+    >.home-button {
       @media #{$desktop} {
-        padding-left: 32px;
-        padding-right: 8px;
-
-        background-image: url("/icon.png"), url("/down.svg");
-        background-repeat: no-repeat, no-repeat;
-        background-position: 8px center, 6px 24px;
-        background-size: auto, 16px 8px;
-        border-right: 1px solid #666;
-
-        // Without this, Firefox renders the right-floats pushed down a line.
         float:left;
 
-        // TODO(cleanup): Use of filter for brightness on hover is hacky and not very widely
-        //   supported.
+        >a {
+          display: block;
+          color: inherit;
+          margin: 0px;
+          text-decoration: none;
+          height: $topbar-height-desktop;
+          padding-left: 32px;
+          padding-right: 8px;
 
-        &:hover {
-          -webkit-filter: none;
-          filter: none;
-          background-color: $topbar-background-color-hover;
-        }
-
-        // Allow the LI to feel "disabled", in which case it does not
-        // show the caret and does not visually respond to hover
-        &.disabled {
           background-image: url("/icon.png");
           background-repeat: no-repeat;
-          background-position: 8px center;
-          background-size: auto;
+          background-position: 8px center, 6px 24px;
+          background-size: auto, 16px 8px;
+          border-right: 1px solid #666;
+
           &:hover {
-            background-color: $topbar-background-color;
+            background-color: $topbar-background-color-hover;
+            color: $topbar-foreground-color-hover;
           }
         }
       }
 
       @media #{$mobile} {
+        // Hide home link -- it's not very useful anyway.
         display: none;
-        >a {
-          background-image: url("/icon32.png");
-        }
       }
     }
 
@@ -459,9 +436,49 @@ body>.topbar {
 
   >.navbar {
     @media #{$desktop} {
-      &.hide-desktop {
+      button.navbar-shrink {
+        @extend %unstyled-button;
+        display: block;
+        width: 100%;
+        height: $navbar-shrink-button-height;
+        border: 0px solid #303030;
+        border-left-width: ($navbar-width-desktop - $navbar-width-desktop-shrunk);
+        background-color: #606060;
+        color: #ddd;
+        text-align: center;
+        line-height: $navbar-shrink-button-height;
+        padding: 0;
+
+        transition: border-left-width 0.2s;
+      }
+
+      &.shrink-desktop {
         // !important used to override other classes that might assign e.g. display: block
-        display: none !important;
+        width: $navbar-width-desktop-shrunk !important;
+
+        button.navbar-shrink {
+          border-left-width: 0;
+        }
+        button.close-button {
+          display: none !important;
+        }
+        >ul.navbar-grains>li.navitem-grain a {
+          padding-right: 0 !important;
+        }
+        .demo-notice {
+          p { font-size: 0 !important; padding: 4px !important; }
+          button { display: none !important; }
+        }
+      }
+      &.hide-desktop {
+        display: none;
+      }
+
+      transition: width 0.2s;
+    }
+    @media #{$mobile} {
+      li.navbar-shrink-item {
+        display: none;
       }
     }
     @media #{$desktop} {
@@ -485,7 +502,7 @@ body>.topbar {
           display: block;
           box-sizing: border-box;
           min-height: 32px;
-          padding-left: 32px;
+          padding-left: $navbar-width-desktop-shrunk;
           text-decoration: none;
           text-overflow: ellipsis;
           overflow: hidden;
@@ -496,7 +513,7 @@ body>.topbar {
         }
         &.navitem-open-grain, &.navitem-create-grain {
           background-repeat: no-repeat;
-          background-position: 4px center;
+          background-position: (($navbar-width-desktop-shrunk - 24px) / 2) center;
           background-size: 24px 24px;
           font-size: 150%;
           line-height: 48px;
@@ -517,12 +534,18 @@ body>.topbar {
           &.current, &.current:hover {
             background-image: url('/open-grain-m.svg');
           }
+          border-bottom: none;
         }
         &.navitem-create-grain {
           background-image: url('/apps.svg');
           &.current, &.current:hover {
             background-image: url('/apps-m.svg');
           }
+        }
+        &.navbar-shrink-item {
+          border: none;
+          height: auto;
+          width: auto;
         }
       }
     }
@@ -558,15 +581,20 @@ body>.topbar {
       margin: 0;
       padding: 0;
       position: absolute;
-      top: 96px;
+      top: (96px + $navbar-shrink-button-height);
       bottom: 0px;
       left: 0px;
-      width: 200px;
+      width: 100%;
       //height: 100%; // TODO: fix this, it should be 100% - (height of Open + New)
       overflow-y: auto;
       >li.navitem-grain {
         a {
           padding-right: 32px;
+          transition: padding-right 0.2s;
+
+          // Stack above .app-icon so the icon doesn't block clicks.
+          position: relative;
+          z-index: 1;
         }
         background-color: $topbar-background-color;
         color: $topbar-foreground-color;
@@ -581,11 +609,10 @@ body>.topbar {
         .app-icon {
           @extend %pseudo-img-tag;
           position: absolute;
-          top: 2px;
-          left: 2px;
+          top: 4px;
+          left: (($navbar-width-desktop-shrunk - 24px) / 2);
           width: 24px;
           height: 24px;
-          margin: 2px;
         }
         .close-button {
           @extend %unstyled-button;
@@ -603,16 +630,23 @@ body>.topbar {
           &:hover {
             border: 1px solid $topbar-foreground-color-hover;
           }
+          z-index: 2;  // Stack above <a>.
         }
       }
     }
 
     .demo-notice {
+      width: 100%;
+      overflow: hidden;
+      box-sizing: border-box;
+
       p {
         color: $topbar-foreground-color;
-        margin: 8px;
+        padding: 8px;
+        margin: 0;
         line-height: normal;
         font-size: 14px;
+        transition: font-size 0.2s;
 
         a {
           color: white;
@@ -653,12 +687,6 @@ body>.topbar {
         margin-top: 8px;
       }
     }
-  }
-}
-
-body>.topbar.show-navbar>.menubar>.toggle-navbar {
-  @media #{$desktop} {
-    background-image: url("/icon.png"), url("/up.svg");
   }
 }
 

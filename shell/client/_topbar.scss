@@ -462,6 +462,9 @@ body>.topbar {
         button.close-button {
           display: none !important;
         }
+        >ul.navbar-grains>li.navitem-grain a {
+          padding-right: 0 !important;
+        }
       }
       &.hide-desktop {
         display: none;
@@ -583,6 +586,7 @@ body>.topbar {
       >li.navitem-grain {
         a {
           padding-right: 32px;
+          transition: padding-right 0.2s;
 
           // Stack above .app-icon so the icon doesn't block clicks.
           position: relative;

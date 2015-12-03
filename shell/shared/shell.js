@@ -763,26 +763,6 @@ if (Meteor.isClient) {
       );
     });
   });
-
-  Template.account.helpers({
-    accountTab: function () {
-      return Router.current().route.getName();
-    },
-    profileActive: function () {
-      return Router.current().route.getName() === "accountProfile";
-    },
-    billingActive: function () {
-      return Router.current().route.getName() === "accountBilling";
-    },
-    isPaymentsEnabled: function () {
-      try {
-        BlackrockPayments; // This checks that BlackrockPayments is defined.
-        return true;
-      } catch (e) {
-        return false;
-      }
-    },
-  });
 }
 Router.configure({
   layoutTemplate: 'layout',
@@ -892,10 +872,6 @@ promptUploadApp = function (input) {
   });
 }
 
-var accountRoute = RouteController.extend({
-  template: "account",
-});
-
 Router.map(function () {
   this.route("root", {
     path: "/",
@@ -992,14 +968,6 @@ Router.map(function () {
 
   this.route("account", {
     path: "/account",
-    action: function () {
-      this.redirect("accountProfile");
-    },
-  });
-
-  this.route("accountProfile", {
-    path: "/account/profile",
-    controller: accountRoute,
 
     data: function () {
       // Don't allow logged-out or demo users to visit the accounts page. There should be no way
@@ -1014,9 +982,7 @@ Router.map(function () {
     }
   });
 
-  this.route("accountBilling", {
-    path: "/account/billing",
-    controller: accountRoute,
-    data: {db: globalDb},
+  this.route("accountUsage", {
+    path: "/account/usage",
   });
 });

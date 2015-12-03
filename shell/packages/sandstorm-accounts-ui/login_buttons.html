@@ -1,7 +1,7 @@
 <template name="loginButtons">
   {{!-- Data context is an instance of AccountsUi. --}}
   {{#if isDemoUser}}
-    <a class="{{#if expiringSoon}}expiring-soon{{/if}}">Demo {{demoTimeLeft}} ▾</a>
+    <a>Create Account ▾</a>
   {{else}}
     <a>Sign in ▾</a>
   {{/if}}
@@ -57,11 +57,11 @@
 </template>
 
 <template name="_loginButtonsLoggedOutDropdown">
-  <h4>Sign in</h4>
-
   {{#if isDemoUser}}
-    <p class="demo-note">Sign in to make your demo data permanent.</p>
+    <h4>Create Account</h4>
+    <p class="demo-note">Your demo data will be transferred to your new account.</p>
   {{else}}
+    <h4>Sign in</h4>
     {{#if isCurrentRoute 'shared'}}
       <p class="demo-note">Sign in to save this link.</p>
     {{/if}}

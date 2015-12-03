@@ -3,7 +3,7 @@ var UserContacts = new Mongo.Collection("userContacts");
 //
 // Each contains:
 //   _id: the id of identity (from Meteor.users collection)
-//   profile: the profile of the identity (see db.js for fields in this object) 
+//   profile: the profile of the identity (see db.js for fields in this object)
 
 Template.contactInputBox.onCreated(function () {
   var self = this;
@@ -131,10 +131,14 @@ function deleteSelected(contact, template) {
 }
 
 Template.contactInputBox.events({
-  // "click .contact-box": function (event) {
-  //   var input = event.currentTarget.getElementsByTagName("input")[0];
-  //   input.focus();
-  // },
+  "click .contact-box": function (event, template) {
+    // Clicking anywhere inside the fake contact-box should focus the input
+    template.find("input").focus();
+  },
+  "click .completed-contact": function (event, template) {
+    // Prevent clicking on completed contacts from triggering the above focus
+    return false;
+  },
   "input input": function (event, template) {
     template.currentText.set(event.target.value);
   },

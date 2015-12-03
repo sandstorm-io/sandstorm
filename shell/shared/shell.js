@@ -166,12 +166,42 @@ if (Meteor.isServer) {
     self.ready();
   });
 
-  Meteor.publish("myNotYetCompleteReferrals", function() {
-    if (!this.userId) {
+  Meteor.publish("referralInfoPseudo", function() {
+    // This publishes a pseudo-collection called referralInfo whose documents have the following
+    // form:
+    //
+    // - id: (String) same as the User._id of an identity this user has referred
+    // - name: (String) the profile.name from that identity
+    // - completed: (Boolean) if this referral is complete
+
+    // TODO(someday): Make this reactive in any way.
+    var self = this;
+
+    //  If the user is not logged in, then we have no referralInfo.
+    if (! self.userId) {
       return [];
     }
 
-    // A not-yet-complete referral shows up as an Identity where referredBy=this.userId.
+    // Function that can publish a list of userIds (for identities) as pseudo-collection objects.
+    var publishReferralInfo = function(identityIds, isCompleted, userData) {
+      if (identityIds === undefined) {
+        return;
+      }
+      // Get the info we need about each identity, if not provided.
+      if (userData === undefined) {
+        userData = Meteor.users.find(
+          {_id: {$in: identityIds}},
+          {fields: {
+            "profile.name": 1}});
+      }
+      userData.map(function(x) {
+        self.added("referralInfo", x._id, {name: x.profile.name,
+                                           completed: isCompleted});
+      });
+    };
+
+    // Publish names & IDs for the not-yet-completed referrals. Pass the Mongo cursor into our
+    // helper function, already did the query.
     var notCompletedReferralIdentities = Meteor.users.find(
       {referredBy: this.userId,
        "profile.name": {$exists: true}},
@@ -179,35 +209,20 @@ if (Meteor.isServer) {
         "_id": 1,
         "referredBy": 1,
         "profile.name": 1}});
-    return notCompletedReferralIdentities;
-  });
+    publishReferralInfo(notCompletedReferralIdentities.map(function(x) {
+      return x._id;
+    }), false, notCompletedReferralIdentities);
 
-  Meteor.publish("myReferrals", function() {
-    if (!this.userId) {
-      return [];
-    }
-
-    // A completed referral shows up on ourselves, under Account.referredIdentityIds. So fetch the
-    // identity IDs, and make sure the client has that list of identity IDs. Separately we make sure
-    // the names names of the identities are sent, so the client can show useful information.
-    var completedIdentityIdsCursor = Meteor.users.find(
+    // Publish names & IDs for the completed referrals.
+    var completedIdentityIds = Meteor.users.findOne(
       {_id: this.userId},
-      {fields: {"referredIdentityIds": 1}});
-    return completedIdentityIdsCursor;
+      {fields: {
+        referredIdentityIds: true}}).referredIdentityIds;
+    publishReferralInfo(completedIdentityIds, true);
+
+    self.ready();
   });
 
-  Meteor.publish("myReferralsNames", function() {
-    var user = Meteor.users.findOne({_id: this.userId},
-                                    {fields: {"referredIdentityIds": 1}});
-    if (user && user.referredIdentityIds) {
-      // Completed referral IDs are not reactive at the moment.
-      return Meteor.users.find(
-        {_id: {$in: user.referredIdentityIds}},
-        {fields: {
-          "profile.name": 1}});
-    }
-    return [];
-  });
 
   Meteor.publish("backers", function () {
     var backers = Assets.getText("backers.txt");
@@ -236,6 +251,7 @@ if (Meteor.isServer) {
 if (Meteor.isClient) {
   HasUsers = new Mongo.Collection("hasUsers");  // dummy collection defined above
   Backers = new Mongo.Collection("backers");  // pseudo-collection defined above
+  ReferralInfo = new Meteor.Collection("referralInfo"); // pseudo-collection
 
   if (Meteor.settings.public.quotaEnabled) {
     window.testDisableQuotaClientSide = function () {
@@ -363,18 +379,10 @@ if (Meteor.isClient) {
   Template.referrals.helpers({
     isPaid: (Meteor.user() && Meteor.user().plan !== "free"),
     notYetCompleteReferralNames: function() {
-      var ret = [];
-      var notYetCompleteReferralIdentityIds = Meteor.users.find({referredBy: Meteor.userId()}).map(
-        function(i) { return i._id });
-      return getNamesFromIdentityIds(notYetCompleteReferralIdentityIds);
+      return ReferralInfo.find({completed: false});
     },
     completeReferralNames: function() {
-      var empty = [];
-      var user = Meteor.user();
-      if (user && user.referredIdentityIds) {
-        return getNamesFromIdentityIds(user.referredIdentityIds);
-      }
-      return empty;
+      return ReferralInfo.find({completed: true});
     },
   });
 
@@ -1012,9 +1020,7 @@ Router.map(function () {
     path: "/referrals",
 
     waitOn: function() {
-      return [Meteor.subscribe("myReferrals"),
-              Meteor.subscribe("myReferralsNames"),
-              Meteor.subscribe("myNotYetCompleteReferrals")];
+      return Meteor.subscribe("referralInfoPseudo");
     }
   });
 

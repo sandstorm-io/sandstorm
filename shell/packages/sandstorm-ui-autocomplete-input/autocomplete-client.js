@@ -1,4 +1,4 @@
-window.UserContacts = new Mongo.Collection("userContacts");
+var UserContacts = new Mongo.Collection("userContacts");
 
 Template.contactInputBox.onCreated(function () {
   var self = this;

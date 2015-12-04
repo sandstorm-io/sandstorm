@@ -47,6 +47,11 @@ function linkIdentityToAccountInternal(identityId, accountId) {
 
   var modifier;
   if (accountUser.expires) {
+    if (Meteor.users.findOne({"nonloginIdentities.id": identityUser._id})) {
+      throw new Meteor.Error(403, "Cannot create an account for an identity that's " +
+                                  "already linked to another account.");
+    }
+
     modifier = {$push: {loginIdentities: {id: identityUser._id}},
                 $unset: {expires: 1},
                 $set: {upgradedFromDemo: Date.now()}};
@@ -115,9 +120,10 @@ Meteor.methods({
       throw new Meteor.Error(403, "Must be logged in as an identity in order to create an account.");
     }
 
-    if (Meteor.users.findOne({"loginIdentities.id": user._id})) {
-      throw new Meteor.Error(403,
-                             "Cannot create an account for an identity that can already a login");
+    if (Meteor.users.findOne({$or: [{"loginIdentities.id": user._id},
+                                    {"nonloginIdentities.id": user._id}]})) {
+      throw new Meteor.Error(403, "Cannot create an account for an identity that's already " +
+                                  "linked to another account.");
     }
 
     var newUser = {loginIdentities: [{id: user._id}],

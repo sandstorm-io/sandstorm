@@ -87,10 +87,9 @@ limitations under the License.
           <span class="primary-badge">Primary</span>
           {{else}}
           <button class="make-primary" data-email="{{email}}" checked={{primary}}>
-            make primary
+            Set as primary
           </button>
           {{/if}}
-          <hr>
         </li>
         {{/each}}
       </ul>
@@ -212,6 +211,7 @@ limitations under the License.
       </div>
     </form>
     {{#if hasCompletedSignup}}
+      <hr>
       {{> identityManagementButtons identityManagementButtonsData}}
     {{/if}}
   </div>

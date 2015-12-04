@@ -406,9 +406,11 @@ body>.main-content>.account {
 
   h3.title-bar {
     background-color: white;
-    width: 660px;
+    width: 650px;
     margin-bottom: 5px;
     border: none;
+    font-size: 12pt;
+    padding: 5px;
   }
 
   div.action-completed {
@@ -499,29 +501,28 @@ body>.main-content>.account {
       width: 340px;
       left: 0px;
       ul {
-        margin-top: 5px;
-        padding-left: 15px;
-        background-color: white;
+        margin-top: 4px;
+        padding-left: 0px;
         li {
+          background-color: white;
           height: 30px;
           list-style-type: none;
           white-space: nowrap;
-          padding-top: 10px;
-
-          &:last-child hr {
-            display: none;
-          }
+          margin-top: 4px;
           span.email {
+            line-height: 30px;
             overflow: hidden;
             text-overflow: ellipsis;
-            display: inline-block;
+            padding-left: 3%;
+            float: left;
             width: 63%;
           }
           button.make-primary {
             @extend %button-base;
             @extend %button-secondary;
             width: 32%;
-            display: inline-block;
+            height: 26px;
+            margin-top: 2px;
           }
           span.primary-badge {
             background-color: $sandstorm-purple-color;
@@ -529,6 +530,8 @@ body>.main-content>.account {
             width: 32%;
             text-align: center;
             display: inline-block;
+            height: 24px;
+            margin-top: 3px;
           }
         }
       }

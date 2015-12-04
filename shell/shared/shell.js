@@ -174,51 +174,136 @@ if (Meteor.isServer) {
     // - name: (String) the profile.name from that identity
     // - completed: (Boolean) if this referral is complete
 
-    // TODO(someday): Make this reactive in any way.
-    var self = this;
-
     //  If the user is not logged in, then we have no referralInfo.
-    if (! self.userId) {
+    if (! this.userId) {
       return [];
     }
 
-    // Function that can publish a list of userIds (for identities) as pseudo-collection objects.
-    var publishReferralInfo = function(identityIds, isCompleted, userData) {
-      if (identityIds === undefined) {
-        return;
-      }
-      // Get the info we need about each identity, if not provided.
-      if (userData === undefined) {
-        userData = Meteor.users.find(
-          {_id: {$in: identityIds}},
-          {fields: {
-            "profile.name": 1}});
-      }
-      userData.map(function(x) {
-        self.added("referralInfo", x._id, {name: x.profile.name,
-                                           completed: isCompleted});
-      });
-    };
+    // Implementation note:
+    //
+    // This pseudo-collection is populated very differently for (1) the completed: false case versus
+    // the (2) completed: true case.
 
-    // Publish names & IDs for the not-yet-completed referrals. Pass the Mongo cursor into our
-    // helper function, to avoid re-doing the same query just to fetch profile.name.
-    var notCompletedReferralIdentities = Meteor.users.find(
+    // Case 1. Publish information about not-yet-complete referrals.
+    var self = this;
+    var notCompletedReferralIdentitiesCursor = Meteor.users.find(
       {referredBy: this.userId,
        "profile.name": {$exists: true}},
       {fields: {
         "_id": 1,
         "referredBy": 1,
         "profile.name": 1}});
-    publishReferralInfo(notCompletedReferralIdentities.map(function(x) {
-      return x._id;
-    }), false, notCompletedReferralIdentities);
+    var notCompletedReferralIdentitiesHandle = notCompletedReferralIdentitiesCursor.observeChanges({
+      // The added function gets called with the id of Bob when Alice refers Bob.
+      added: function(id, fields) {
+        self.added("referralInfo", id, {name: fields.profile.name, completed: false});
+      },
+      // The removed function gets called when Bob is no longer an uncompleted referral.  Note that
+      // this will get more complicated once we support sending completed referrals to the client.
+      removed: function(id) {
+        self.removed("referralInfo", id);
+      },
+      // The modified function gets called when Bob's profile.name changed.
+      modified: function(id, fields) {
+        self.modified("referralInfo", id, {name: fields.profile.name, completed: false});
+      }});
 
-    // Publish names & IDs for the completed referrals.
-    var completedIdentityIds = Meteor.users.findOne(
-      {_id: this.userId},
+    // Case 2. Handle completed referrals.
+    //
+    // - Do a query for the current list of completed identities.
+    //
+    // - Every time we see a new such identity, we create a query that watches that one identity in
+    //   case its profile.name changes.
+    //
+    // - Also watch the first query, since the list of completed identities might change.
+    var handleForProfileNameByIdentityId = {};
+    var stopWatchingAllIdentities = function() {
+      Object.keys(handleForProfileNameByIdentityId).forEach(function(identityId) {
+        stopWatchingIdentity(identityId);
+      });
+    };
+    var stopWatchingIdentity = function(identityId) {
+      var handleForProfileName = handleForProfileNameByIdentityId[identityId];
+      if (handleForProfileName) {
+        self.removed("referralInfo", identityId);
+        handleForProfileName.stop();
+        handleForProfileNameByIdentityId[identityId] = null;
+      }
+    };
+    var watchIdentityAndPublishReferralSuccess = function(identityId) {
+      var handleForProfileName = handleForProfileNameByIdentityId[identityId];
+      if (handleForProfileName) {
+        return;
+      }
+
+      handleForProfileName = Meteor.users.find(
+        {_id: identityId},
+        {fields: {
+          "profile.name": 1}}).observeChanges({
+            added: function(id, fields) {
+              self.added("referralInfo", id, {name: fields.profile.name, completed: true});
+            },
+            changed: function(id, fields) {
+              self.changed("referralInfo", id, {name: fields.profile.name, completed: true});
+            },
+            removed: function(id) {
+              stopWatchingIdentity(id);
+            }});
+      handleForProfileNameByIdentityId[identityId] = handleForProfileName;
+    };
+
+    var completedIdentityIdsCursor = Meteor.users.find(
+      {_id: this.userId,
+       referredIdentityIds: {$exists: true}},
       {fields: {
-        referredIdentityIds: true}}).referredIdentityIds;
-    publishReferralInfo(completedIdentityIds, true);
+        referredIdentityIds: true}});
+    completedIdentityIdsCursor.observeChanges({
+      // `added` gets called when a user gets their first completed referral.
+      added: function(id, fields) {
+        for (var i = 0; i < fields.referredIdentityIds.length; i++) {
+          // Unconditionally mark these as successful referrals and start watching.
+          watchIdentityAndPublishReferralSuccess(
+            fields.referredIdentityIds[i]);
+        }
+      },
+      // `changed` gets called when a user adds/removes referredIdentityIds, usually when a referral
+      // becomes complete.
+      changed: function(id, fields) {
+        // Two major tasks.
+        //
+        // 1. Look for identityIds to unsubscribe from & send removed notices to the client.
+        //
+        // 2. Look for identityIds to subscribe to.
+
+        // Task 1. Unsubscribe where needed.
+        var referredIdentityIdsAsObject = {};
+        fields.referredIdentityIds.forEach(function(i) { referredIdentityIdsAsObject[i] = true; });
+        Object.keys(handleForProfileNameByIdentityId).forEach(function(identityId) {
+          // If the handle is non-null and doesn't show up in the new list of referredIdentityIds,
+          // then remove info from the client & stop it on the server & make it null.
+          var handleForProfileName = handleForProfileNameByIdentityId[identityId];
+          if (handleForProfileName && ! referredIdentityIdsAsObject.hasOwnProperty(identityId)) {
+            stopWatchingIdentity(identityId);
+          }
+        });
+
+        // Task 2. Subscribe where needed.
+        for (var i = 0; i < fields.referredIdentityIds.length; i++) {
+          // The watch... function will avoid double-creating subscriptions, so this is safe.
+          watchIdentityAndPublishReferralSuccess(fields.referredIdentityIds[i]);
+        }
+      },
+      // `removed` gets called when a User suddenly has no referredIdentityIds.
+      removed: function() {
+        // Remove all data from client; stop all handles.
+        stopWatchingAllIdentities();
+      }});
+
+    // With cases 1 and 2 handled, register a cleanup function, then declare victory.
+    self.onStop(function() {
+      stopWatchingAllIdentities();
+      notCompletedReferralIdentitiesHandle.stop();
+    });
 
     self.ready();
   });

@@ -28,7 +28,7 @@ limitations under the License.
     <ul class="menubar">
       {{#each items}}
         {{#unless onlyPopup}}
-          <li class="{{name}}">
+          <li style="{{inlineStyle}}" class="{{name}}">
             {{#if ./popupTemplate}}
               <button class="show-popup">
                 {{> template data.get}}

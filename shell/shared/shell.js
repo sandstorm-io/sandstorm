@@ -201,7 +201,7 @@ if (Meteor.isServer) {
     };
 
     // Publish names & IDs for the not-yet-completed referrals. Pass the Mongo cursor into our
-    // helper function, already did the query.
+    // helper function, to avoid re-doing the same query just to fetch profile.name.
     var notCompletedReferralIdentities = Meteor.users.find(
       {referredBy: this.userId,
        "profile.name": {$exists: true}},

@@ -1430,22 +1430,22 @@ ul.identity-card-list {
   background-color: white;
   background-repeat: no-repeat;
   background-position: 50px 30px;
-  background-size: 15px 15px;
+  background-size: 16px 16px;
 
   &[data-service-name=github] {
-    background-image: url("/github.svg");
+    background-image: url("/github-9E9E9E.svg");
   }
 
   &[data-service-name=google] {
-    background-image: url("/google.svg");
+    background-image: url("/google-9E9E9E.svg");
   }
 
   &[data-service-name=dev] {
-    background-image: url("/debug.svg");
+    background-image: url("/debug-9E9E9E.svg");
   }
 
   &[data-service-name=email] {
-    background-image: url("/email.svg");
+    background-image: url("/email-9E9E9E.svg");
   }
 
   .picture {

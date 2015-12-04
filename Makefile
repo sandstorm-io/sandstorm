@@ -105,6 +105,11 @@ IMAGES= \
     shell/public/email-494949.svg \
     shell/public/close-FFFFFF.svg \
                                   \
+    shell/public/debug-9E9E9E.svg \
+    shell/public/email-9E9E9E.svg \
+    shell/public/github-9E9E9E.svg \
+    shell/public/google-9E9E9E.svg \
+                                  \
     shell/public/install-6A237C.svg \
     shell/public/install-9E40B5.svg \
     shell/public/plus-6A237C.svg \
@@ -288,6 +293,10 @@ shell/public/google-color.svg: icons/google.svg
 shell/public/github-color.svg: icons/github.svg
 	@$(call color,custom color $<)
 	@sed -e 's/#111111/#191919/g' < $< > $@
+
+shell/public/%-9E9E9E.svg: icons/%.svg
+	@$(call color,custom color $<)
+	@sed -e 's/#111111/#9E9E9E/g' < $< > $@
 
 shell/public/email-494949.svg: icons/email.svg
 	@$(call color,custom color $<)

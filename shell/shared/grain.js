@@ -342,7 +342,9 @@ Meteor.methods({
                   "manually share " + url + " with them."});
               }
             } catch (e) {
-              outerResult.failures.push({contact: contact, error: e.toString()});
+              outerResult.failures.push({contact: contact, error: e.toString(),
+                warning: "Share succeeded, but there was an error emailing the user. Please " +
+                "manually share " + url + " with them."});
             }
         }
       });

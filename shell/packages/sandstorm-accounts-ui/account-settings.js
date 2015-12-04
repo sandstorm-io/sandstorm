@@ -142,6 +142,23 @@ Template._accountProfileEditor.helpers({
       };
     }
   },
+  verifiedEmails: function() {
+    if (this.identity) {
+      return SandstormDb.getVerifiedEmails(this.identity);
+    }
+  },
+  emailDetails: function () {
+    if (this.identity) {
+      var emails = SandstormDb.getVerifiedEmails(this.identity);
+      if (emails.length == 0) {
+        return "This identity has no attached e-mail.";
+      } else if (emails.length == 1) {
+        return "E-mail attached to this identity";
+      } else {
+        return "E-mails attached to this identity";
+      }
+    }
+  }
 });
 
 Template.sandstormAccountSettings.events({

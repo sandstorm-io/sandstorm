@@ -201,7 +201,8 @@ HackSessionContextImpl.prototype._getUserAddress = function () {
 
   var identity = globalDb.getIdentity(grain.identityId);
 
-  var email = identity.verifiedEmail || identity.unverifiedEmail;
+  var emails = SandstormDb.getVerifiedEmails(identity);
+  var email = emails.length > 0 && emails[0] || identity.unverifiedEmail;
 
   var result = {};
   if (email) {

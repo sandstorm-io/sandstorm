@@ -160,15 +160,17 @@ limitations under the License.
               already taken this name within the specific grain.
             </span>
           </li>
-          {{#if identity.verifiedEmail}}
           <li class="email">
             <label><img class="inline-icon" src="/email-m.svg" role="presentation">
               E-mail:
-              <span class="email-address">{{identity.verifiedEmail}}</span>
             </label>
-            <span class="details">E-mail address attached to this identity.</span>
+            <ul class="verified-email-list">
+              {{#each verifiedEmails}}
+              <li> {{.}} </li>
+              {{/each}}
+            </ul>
+            <span class="details">{{emailDetails}}</span>
           </li>
-          {{/if}}
           <li class="pronoun">
             {{#with identity.profile}}
             <label><img class="inline-icon" src="/pronoun-m.svg" role="presentation">

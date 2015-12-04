@@ -3,7 +3,8 @@ var UserContacts = new Mongo.Collection("userContacts");
 //
 // Each contains:
 //   _id: the id of identity (from Meteor.users collection)
-//   profile: the profile of the identity (see db.js for fields in this object)
+//   profile: the profile of the identity (see db.js for fields in this object) with profile
+//     default values and `intrinsicName` added.
 
 Template.contactInputBox.onCreated(function () {
   var self = this;

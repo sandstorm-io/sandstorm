@@ -1,5 +1,4 @@
 Meteor.publish("userContacts", function () {
-  // TODO(someday): make this reactive
   var db = this.connection.sandstormDb;
   var self = this;
 

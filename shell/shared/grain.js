@@ -309,7 +309,6 @@ Meteor.methods({
             outerResult.failures.push({contact: contact, error: e.toString()});
           }
         } else {
-          // TODO(someday): notify the user somehow?
           SandstormPermissions.createNewApiToken(
             globalDb, {identityId: identityId, accountId: accountId}, grainId,
             "direct invitation to " + contact.profile.intrinsicName,

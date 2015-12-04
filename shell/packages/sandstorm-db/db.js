@@ -57,7 +57,7 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //                an identicon will be used.
 //       pronoun: One of "male", "female", "neutral", or "robot".
 //   unverifiedEmail: If present, a string containing an email address specified by the user.
-//   referredBy: The Account that referred this Identity.
+//   referredBy: ID of the Account that referred this Identity.
 //
 // Account users additionally contain the following fields:
 //   loginIdentities: Array of identity objects, each of which may include the following fields.

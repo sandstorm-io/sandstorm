@@ -508,6 +508,10 @@ Meteor.startup(function() {
                    $or: [{identityId: {$in: identityIds}},
                          {hashedToken: {$in: tokenIds}}]},
                   {fields: {hostId: 1}}).forEach(function (session) {
+      var proxy = proxiesByHostId[session.hostId];
+      if (proxy) {
+        proxy.close();
+      }
       delete proxiesByHostId[session.hostId];
     });
     Sessions.remove({grainId: token.grainId, $or: [{identityId: {$in: identityIds}},

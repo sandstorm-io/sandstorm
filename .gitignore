@@ -53,6 +53,10 @@ shell/public/github-9E9E9E.svg
 shell/public/google-9E9E9E.svg
 shell/public/*-m.svg
 shell/public/sandstorm-icons
+shell/public/icons/icons-*.eot
+shell/public/icons/icons-*.ttf
+shell/public/icons/icons-*.svg
+shell/public/icons/icons-*.woff
 shell-build
 sandstorm-*.tar.xz
 sandstorm-*.tar.xz.sig

@@ -1,3 +1,13 @@
+### v0.133 (2015-12-06)
+- It is now possible to link multiple login identities to an account. For example, you can connect both your Google and your Github identity to the same account, so that you can log in with either. This was added for a few reasons, including:
+    * To make it safer for us to expand the set of login providers, which might otherwise lead to confusion as people forget which provider they used to log in previously.
+    * To allow sharing based on social identities rather than secret links. E.g. you may want to share a document with a particular Github user without knowing if they have a Sandstorm account.
+    * To allow you to verify multiple email addresses, so that you can choose which one should receive Sandstorm service notifications independently of your login provider.
+- Github login now receives your email address even if it isn't public on your Github account. This is necessary as Sandstorm needs a verified email address for notifications. You can control where notifications are sent by changing your primary address in the account settings.
+- The sidebar can now be shrunk for more space, using a highly-visible slider button. This replaces the old functionality in which clicking the "sandstorm" button in the upper-left would toggle the sidebar entirely; few people realized that that was there, and those who did click the button expected it to go "home", which it now does.
+- Demo mode now features a prominent timer in the sidebar. We found that people did not notice the timer in its previous upper-right location.
+- `spk verify` now defaults to printing extended details, previously gated by the `--detail` flag.
+
 ### v0.132 (2015-11-11)
 - Fixed regression where app detail page showed "last updated" as "unknown" for all apps.
 - Fixed SMTP escaping issue that was otherwise causing errors when sending from Roundcube through Mailgun.

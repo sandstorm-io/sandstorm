@@ -936,6 +936,13 @@ div.identity-editor {
         }
       }
     }
+
+    ul.verified-email-list {
+      padding: 0;
+      li {
+        list-style-type: none;
+      }
+    }
   }
 }
 

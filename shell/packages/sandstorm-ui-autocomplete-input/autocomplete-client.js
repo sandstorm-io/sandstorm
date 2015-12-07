@@ -162,7 +162,10 @@ Template.contactInputBox.events({
   "keyup input": function (event, template) {
     if (event.keyCode === 8) { // Backspace
       if (!event.target.value) {
-        template.find(".completed-contacts>li:last-child").focus();
+        var chip = template.find(".completed-contacts>li:last-child");
+        if (chip) {
+          chip.focus();
+        }
         return false;
       }
     }

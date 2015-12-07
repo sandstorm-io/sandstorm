@@ -317,23 +317,34 @@ Meteor.methods({
               var identity = Meteor.users.findOne({_id: contact._id});
               var emailAddress = SandstormDb.getVerifiedEmails(identity)[0];
               var url = origin + "/grain/" + grainId;
-              var html = message.html + "<br><br>" +
-                  "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
-                  "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
-                  "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
-                  "Open Shared Grain</a><div style='font-size:8pt;font-style:italic;color:gray'>" +
-                  "Note: This was shared directly with you. No one else can open the above " +
-                  "link, and you will need to be logged in with your "+  contact.profile.service +
-                  " account with username " + contact.profile.intrinsicName;
               if (emailAddress) {
+                var intrinsicName = contact.profile.intrinsicName;
+                var loginNote;
+                if (contact.profile.service === 'google') {
+                  intrinsicName = emailAddress;
+                    // Hack to work around google providing a not very useful intrinsic name.
+                  loginNote = "Google account with address " + intrinsicName;
+                } else if (contact.profile.service === 'github') {
+                  loginNote = "Github account with username " + intrinsicName;
+                } else if (contact.profile.service === 'email') {
+                  loginNote = "email address " + intrinsicName;
+                } else {
+                  throw new Meteor.Error(500, "Unknown service to email share link.")
+                }
+                var html = message.html + "<br><br>" +
+                    "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
+                    "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
+                    "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
+                    "Open Shared Grain</a><div style='font-size:8pt;font-style:italic;color:gray'>" +
+                    "Note: You will need to log in with your " + loginNote +
+                    " to access this grain."
                 SandstormEmail.send({
                   to: emailAddress,
                   from: "Sandstorm server <no-reply@" + HOSTNAME + ">",
                   subject: sharerDisplayName + " has invited you to join a grain: " + title,
                   text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
-                    "\n\nNote: This was shared directly with you. No one else can open the above " +
-                    "link, and you will need to be logged in with your " + contact.profile.service +
-                    " account with username " + contact.profile.intrinsicName,
+                    "\n\nNote: You will need to log in with your " + loginNote +
+                    " to access this grain.",
                   html: html,
                 });
               } else {
@@ -1120,6 +1131,7 @@ if (Meteor.isClient) {
           if (result.failures.length > 0) {
             var message = "Failed to send to: ";
             for (var ii = 0; ii < result.failures.length; ++ii) {
+              console.error(result.failures[ii].error);
               if (ii != 0) {
                 message += ", ";
               }

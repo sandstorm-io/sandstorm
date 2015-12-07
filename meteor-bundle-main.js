@@ -286,7 +286,7 @@ function monkeypatchHttpAndHttps() {
       if (useThisCertificate.keyFilename != referenceCertificate.keyFilename) {
         var twentyMinutesInMilliseconds = 1000 * 60 * 20;
         var twentyMinutesFromNow = now + twentyMinutesFromNow;
-        var notAfterMinusTwentyMinutes = result.notAfter - twentyMinutesFromNow;
+        var notAfterMinusTwentyMinutes = result.notAfter - twentyMinutesInMilliseconds;
 
         // But never attempt to re-key in the past...
         if (notAfterMinusTwentyMinutes < now) {

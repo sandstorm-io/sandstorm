@@ -18,7 +18,12 @@ Template.contactInputBox.onCreated(function () {
   this.autoCompleteContacts = new ReactiveVar([]);
   this.autorun(generateAutoCompleteContacts.bind(this, this));
   this.autorun(function () {
-    var selectedContactId = self.highlightedContact.get()._id;
+    var selectedContact = self.highlightedContact.get();
+    if (!selectedContact) {
+      selectedContact = {_id: null};
+      self.highlightedContact.set(selectedContact);
+    }
+    var selectedContactId = selectedContact._id;
     var filterFunc = function (contact) {
       return contact._id === selectedContactId;
     }

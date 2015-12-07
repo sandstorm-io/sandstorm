@@ -253,57 +253,57 @@ if (Meteor.isServer) {
       handleForProfileNameByIdentityId[identityId] = handleForProfileName;
     };
 
-    var completedIdentityIdsCursor = Meteor.users.find(
+    var completedIdentityIdsHandle = Meteor.users.find(
       {_id: this.userId,
        referredIdentityIds: {$exists: true}},
       {fields: {
-        referredIdentityIds: true}});
-    completedIdentityIdsCursor.observeChanges({
-      // `added` gets called when a user gets their first completed referral.
-      added: function(id, fields) {
-        for (var i = 0; i < fields.referredIdentityIds.length; i++) {
-          // Unconditionally mark these as successful referrals and start watching.
-          watchIdentityAndPublishReferralSuccess(
-            fields.referredIdentityIds[i]);
-        }
-      },
-      // `changed` gets called when a user adds/removes referredIdentityIds, usually when a referral
-      // becomes complete.
-      changed: function(id, fields) {
-        // Two major tasks.
-        //
-        // 1. Look for identityIds to unsubscribe from & send removed notices to the client.
-        //
-        // 2. Look for identityIds to subscribe to.
+        referredIdentityIds: true}}).observeChanges({
+          // `added` gets called when a user gets their first completed referral.
+          added: function(id, fields) {
+            for (var i = 0; i < fields.referredIdentityIds.length; i++) {
+              // Unconditionally mark these as successful referrals and start watching.
+              watchIdentityAndPublishReferralSuccess(
+                fields.referredIdentityIds[i]);
+            }
+          },
+          // `changed` gets called when a user adds/removes referredIdentityIds, usually when a
+          // referral becomes complete.
+          changed: function(id, fields) {
+            // Two major tasks.
+            //
+            // 1. Look for identityIds to unsubscribe from & send removed notices to the client.
+            //
+            // 2. Look for identityIds to subscribe to.
 
-        // Task 1. Unsubscribe where needed.
-        var referredIdentityIdsAsObject = {};
-        fields.referredIdentityIds.forEach(function(i) { referredIdentityIdsAsObject[i] = true; });
-        Object.keys(handleForProfileNameByIdentityId).forEach(function(identityId) {
-          // If the handle is non-null and doesn't show up in the new list of referredIdentityIds,
-          // then remove info from the client & stop it on the server & make it null.
-          var handleForProfileName = handleForProfileNameByIdentityId[identityId];
-          if (handleForProfileName && ! referredIdentityIdsAsObject.hasOwnProperty(identityId)) {
-            stopWatchingIdentity(identityId);
-          }
-        });
+            // Task 1. Unsubscribe where needed.
+            var referredIdentityIdsAsObject = {};
+            fields.referredIdentityIds.forEach(function(i) { referredIdentityIdsAsObject[i] = true; });
+            Object.keys(handleForProfileNameByIdentityId).forEach(function(identityId) {
+              // If the handle doesn't show up in the new list of referredIdentityIds, then remove
+              // info from the client & stop it on the server & make it null.
+              var handleForProfileName = handleForProfileNameByIdentityId[identityId];
+              if (referredIdentityIdsAsObject.hasOwnProperty(identityId)) {
+                stopWatchingIdentity(identityId);
+              }
+            });
 
-        // Task 2. Subscribe where needed.
-        for (var i = 0; i < fields.referredIdentityIds.length; i++) {
-          // The watch... function will avoid double-creating subscriptions, so this is safe.
-          watchIdentityAndPublishReferralSuccess(fields.referredIdentityIds[i]);
-        }
-      },
-      // `removed` gets called when a User suddenly has no referredIdentityIds.
-      removed: function() {
-        // Remove all data from client; stop all handles.
-        stopWatchingAllIdentities();
-      }});
+            // Task 2. Subscribe where needed.
+            for (var i = 0; i < fields.referredIdentityIds.length; i++) {
+              // The watch... function will avoid double-creating subscriptions, so this is safe.
+              watchIdentityAndPublishReferralSuccess(fields.referredIdentityIds[i]);
+            }
+          },
+          // `removed` gets called when a User suddenly has no referredIdentityIds.
+          removed: function() {
+            // Remove all data from client; stop all handles.
+            stopWatchingAllIdentities();
+          }});
 
     // With cases 1 and 2 handled, register a cleanup function, then declare victory.
     self.onStop(function() {
       stopWatchingAllIdentities();
       notCompletedReferralIdentitiesHandle.stop();
+      completedIdentityIdsHandle.stop();
     });
 
     self.ready();

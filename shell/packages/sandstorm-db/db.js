@@ -57,6 +57,7 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //                an identicon will be used.
 //       pronoun: One of "male", "female", "neutral", or "robot".
 //   unverifiedEmail: If present, a string containing an email address specified by the user.
+//   referredBy: ID of the Account that referred this Identity.
 //
 // Account users additionally contain the following fields:
 //   loginIdentities: Array of identity objects, each of which may include the following fields.
@@ -81,6 +82,11 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   appDemoId: If this is an appdemo user (see above), the app ID they started out demoing.
 //   payments: Object defined by payments module, if loaded.
 //   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
+//   referredByComplete: ID of the Account that referred this Account. If this is set, we
+//                        stop writing new referredBy values onto Identities for this account.
+//   referredCompleteDate: The Date at which the completed referral occurred.
+//   referredIdentityIds: List of Identity IDs that this Account has referred. This is used for
+//                        reliably determining which Identity's names are safe to display.
 //   stashedOldUser: A complete copy of this user from before the accounts/identities migration.
 //                   TODO(cleanup): Delete this field once we're sure it's safe to do so.
 
@@ -560,6 +566,57 @@ isSignedUpOrDemo = function () {
   return false;
 }
 
+var calculateReferralBonus = function(accountId, plan) {
+  // This function returns an object of the form:
+  //
+  // - {grains: 0, storage: 0}
+  //
+  // which are extra resources this account gets as part of participating in the referral
+  // program. (Storage is measured in bytes, as usual for plans.)
+
+
+  // Authorization note: Only call this if accountId is the current user!
+  var isPaid = (plan && plan !== "free");
+
+  successfulReferralsCount = countReferrals(accountId);
+  if (isPaid) {
+    var maxPaidStorageBonus = 30 * 1e9;
+    return {grains: 0,
+            storage: Math.min(
+              successfulReferralsCount * 2 * 1e9,
+              maxPaidStorageBonus)};
+  } else {
+    var maxFreeStorageBonus = 2 * 1e9;
+    var bonus = {
+      storage: Math.min(
+        successfulReferralsCount * 50 * 1e6,
+        maxFreeStorageBonus)
+    };
+    if (successfulReferralsCount > 0) {
+      bonus.grains = Infinity;
+    } else {
+      bonus.grains = 0;
+    }
+    return bonus;
+  }
+}
+
+var countReferrals = function (accountId) {
+  var referredIdentityIds = Meteor.users.findOne(
+    {_id: accountId},
+    {fields: {referredIdentityIds: 1}}).referredIdentityIds;
+  return (referredIdentityIds && referredIdentityIds.length || 0);
+}
+
+getUserQuota = function (user) {
+  var plan = Plans.findOne(user.plan || "free");
+  var referralBonus = calculateReferralBonus(user._id, plan);
+  var userQuota = {};
+  userQuota.storage = (plan.storage + referralBonus.storage);
+  userQuota.grains = (plan.grains + referralBonus.grains);
+  return userQuota;
+}
+
 isUserOverQuota = function (user) {
   // Return false if user has quota space remaining, true if it is full. When this returns true,
   // we will not allow the user to create new grains, though they may be able to open existing ones
@@ -569,8 +626,7 @@ isUserOverQuota = function (user) {
 
   if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
 
-  var plan = Plans.findOne(user.plan || "free");
-
+  var plan = getUserQuota(user);
   if (plan.grains < Infinity) {
     var count = Grains.find({userId: user._id}, {fields: {}, limit: plan.grains}).count();
     if (count >= plan.grains) return "outOfGrains";
@@ -587,14 +643,15 @@ isUserExcessivelyOverQuota = function (user) {
 
   if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
 
-  var plan = Plans.findOne(user.plan || "free");
+  var quota = getUserQuota(user);
 
-  if (plan.grains < Infinity) {
-    var count = Grains.find({userId: user._id}, {fields: {}, limit: plan.grains * 2}).count();
-    if (count >= plan.grains * 2) return "outOfGrains";
+  // quota.grains = Infinity means unlimited grains. IEEE754 defines Infinity == Infinity.
+  if (quota.grains < Infinity) {
+    var count = Grains.find({userId: user._id}, {fields: {}, limit: quota.grains * 2}).count();
+    if (count >= quota.grains * 2) return "outOfGrains";
   }
 
-  return plan && user.storageUsage && user.storageUsage >= plan.storage * 1.2 && "outOfStorage";
+  return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
 }
 
 isAdmin = function() {
@@ -845,6 +902,30 @@ _.extend(SandstormDb.prototype, {
   getMyPlan: function () {
     var user = Meteor.user();
     return user && Plans.findOne(user.plan || "free");
+  },
+
+  getMyReferralBonus: function(user) {
+    // This function is called from the server and from the client, similar to getMyPlan().
+    //
+    // When called from the server, calculate the user's actual referral bonus. We use this
+    // elsewhere to store a value in user.pseudoReferralBonus.
+    //
+    // When called from the client, return the value of user.pseudoReferralBonus (if it exists).
+    if (Meteor.isClient) {
+      // If called on the client side, always use the currently logged-in user.
+      user = Meteor.user();
+
+      if (user && user.pseudoReferralBonus) {
+        return user.pseudoReferralBonus;
+      }
+      // If we get to this, the subscriptions haven't arrived yet.
+      var noBonus = {grains: 0, storage: 0};
+      return noBonus;
+    }
+    if (Meteor.isServer) {
+      var x = calculateReferralBonus(user._id, user.plan);
+      return x;
+    }
   },
 
   getMyUsage: function (user) {

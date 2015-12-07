@@ -17,6 +17,18 @@
 // This file implements the common shell components such as the top bar.
 // It also covers the root page.
 
+var getNamesFromIdentityIds = function(identityIds) {
+  check(identityIds, [String]);
+  if (identityIds.length === 0) {
+    return [];
+  }
+
+  var identities = Meteor.users.find(
+    {_id: {$in: identityIds }});
+  return identities.map(function(identity) {
+    return {name: identity.profile.name}});
+}
+
 browseHome = function() {
   Router.go("root");
 }
@@ -172,6 +184,150 @@ if (Meteor.isServer) {
     self.ready();
   });
 
+  Meteor.publish("referralInfoPseudo", function() {
+    // This publishes a pseudo-collection called referralInfo whose documents have the following
+    // form:
+    //
+    // - id: (String) same as the User._id of an identity this user has referred
+    // - name: (String) the profile.name from that identity
+    // - completed: (Boolean) if this referral is complete
+
+    //  If the user is not logged in, then we have no referralInfo.
+    if (! this.userId) {
+      return [];
+    }
+
+    // Implementation note:
+    //
+    // This pseudo-collection is populated very differently for (1) the completed: false case versus
+    // the (2) completed: true case.
+
+    // Case 1. Publish information about not-yet-complete referrals.
+    var self = this;
+    var notCompletedReferralIdentitiesCursor = Meteor.users.find(
+      {referredBy: this.userId,
+       "profile.name": {$exists: true}},
+      {fields: {
+        "_id": 1,
+        "referredBy": 1,
+        "profile.name": 1}});
+    var notCompletedReferralIdentitiesHandle = notCompletedReferralIdentitiesCursor.observeChanges({
+      // The added function gets called with the id of Bob when Alice refers Bob.
+      added: function(id, fields) {
+        self.added("referralInfo", id, {name: fields.profile.name, completed: false});
+      },
+      // The removed function gets called when Bob is no longer an uncompleted referral.  Note that
+      // this will get more complicated once we support sending completed referrals to the client.
+      removed: function(id) {
+        self.removed("referralInfo", id);
+      },
+      // The modified function gets called when Bob's profile.name changed.
+      modified: function(id, fields) {
+        self.modified("referralInfo", id, {name: fields.profile.name, completed: false});
+      }});
+
+    // Case 2. Handle completed referrals.
+    //
+    // - Do a query for the current list of completed identities.
+    //
+    // - Every time we see a new such identity, we create a query that watches that one identity in
+    //   case its profile.name changes.
+    //
+    // - Also watch the first query, since the list of completed identities might change.
+    var handleForProfileNameByIdentityId = {};
+    var stopWatchingAllIdentities = function() {
+      Object.keys(handleForProfileNameByIdentityId).forEach(function(identityId) {
+        stopWatchingIdentity(identityId);
+      });
+    };
+    var stopWatchingIdentity = function(identityId) {
+      var handleForProfileName = handleForProfileNameByIdentityId[identityId];
+      if (handleForProfileName) {
+        self.removed("referralInfo", identityId);
+        handleForProfileName.stop();
+        // delete is safe because we iterate across `Object.keys()` which returns a copy.
+        delete handleForProfileNameByIdentityId[identityId];
+      }
+    };
+    var watchIdentityAndPublishReferralSuccess = function(identityId) {
+      var handleForProfileName = handleForProfileNameByIdentityId[identityId];
+      if (handleForProfileName) {
+        return;
+      }
+
+      handleForProfileName = Meteor.users.find(
+        {_id: identityId},
+        {fields: {
+          "profile.name": 1}}).observeChanges({
+            added: function(id, fields) {
+              self.added("referralInfo", id, {name: fields.profile.name, completed: true});
+            },
+            changed: function(id, fields) {
+              self.changed("referralInfo", id, {name: fields.profile.name, completed: true});
+            },
+            removed: function(id) {
+              stopWatchingIdentity(id);
+            }});
+      handleForProfileNameByIdentityId[identityId] = handleForProfileName;
+    };
+
+    var completedIdentityIdsHandle = Meteor.users.find(
+      {_id: this.userId,
+       referredIdentityIds: {$exists: true}},
+      {fields: {
+        referredIdentityIds: true}}).observeChanges({
+          // `added` gets called when a user gets their first completed referral.
+          added: function(id, fields) {
+            for (var i = 0; i < fields.referredIdentityIds.length; i++) {
+              // Unconditionally mark these as successful referrals and start watching.
+              watchIdentityAndPublishReferralSuccess(
+                fields.referredIdentityIds[i]);
+            }
+          },
+          // `changed` gets called when a user adds/removes referredIdentityIds, usually when a
+          // referral becomes complete.
+          changed: function(id, fields) {
+            // Two major tasks.
+            //
+            // 1. Look for identityIds to unsubscribe from & send removed notices to the client.
+            //
+            // 2. Look for identityIds to subscribe to.
+
+            // Task 1. Unsubscribe where needed.
+            var referredIdentityIdsAsObject = {};
+            fields.referredIdentityIds.forEach(function(i) { referredIdentityIdsAsObject[i] = true; });
+            Object.keys(handleForProfileNameByIdentityId).forEach(function(identityId) {
+              // If the handle doesn't show up in the new list of referredIdentityIds, then remove
+              // info from the client & stop it on the server & make it null.
+              var handleForProfileName = handleForProfileNameByIdentityId[identityId];
+              if (referredIdentityIdsAsObject.hasOwnProperty(identityId)) {
+                stopWatchingIdentity(identityId);
+              }
+            });
+
+            // Task 2. Subscribe where needed.
+            for (var i = 0; i < fields.referredIdentityIds.length; i++) {
+              // The watch... function will avoid double-creating subscriptions, so this is safe.
+              watchIdentityAndPublishReferralSuccess(fields.referredIdentityIds[i]);
+            }
+          },
+          // `removed` gets called when a User suddenly has no referredIdentityIds.
+          removed: function() {
+            // Remove all data from client; stop all handles.
+            stopWatchingAllIdentities();
+          }});
+
+    // With cases 1 and 2 handled, register a cleanup function, then declare victory.
+    self.onStop(function() {
+      stopWatchingAllIdentities();
+      notCompletedReferralIdentitiesHandle.stop();
+      completedIdentityIdsHandle.stop();
+    });
+
+    self.ready();
+  });
+
+
   Meteor.publish("backers", function () {
     var backers = Assets.getText("backers.txt");
     var self = this;
@@ -199,6 +355,7 @@ if (Meteor.isServer) {
 if (Meteor.isClient) {
   HasUsers = new Mongo.Collection("hasUsers");  // dummy collection defined above
   Backers = new Mongo.Collection("backers");  // pseudo-collection defined above
+  ReferralInfo = new Meteor.Collection("referralInfo"); // pseudo-collection
 
   if (Meteor.settings.public.quotaEnabled) {
     window.testDisableQuotaClientSide = function () {
@@ -321,6 +478,16 @@ if (Meteor.isClient) {
   Template.layout.onDestroyed(function () {
     Meteor.clearTimeout(this.timeout);
     window.removeEventListener("resize", this.resizeFunc, false);
+  });
+
+  Template.referrals.helpers({
+    isPaid: (Meteor.user() && Meteor.user().plan !== "free"),
+    notYetCompleteReferralNames: function() {
+      return ReferralInfo.find({completed: false});
+    },
+    completeReferralNames: function() {
+      return ReferralInfo.find({completed: true});
+    },
   });
 
   var determineAppName = function (grainId) {
@@ -963,6 +1130,14 @@ Router.map(function () {
         status: Session.get("uploadStatus"),
         error: Session.get("uploadError")
       };
+    }
+  });
+
+  this.route("referrals", {
+    path: "/referrals",
+
+    waitOn: function() {
+      return Meteor.subscribe("referralInfoPseudo");
     }
   });
 

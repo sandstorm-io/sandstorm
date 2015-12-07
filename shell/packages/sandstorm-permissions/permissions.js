@@ -488,7 +488,7 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   db.collections.apiTokens.insert(apiToken);
 
   var endpointUrl = Url.parse(process.env.ROOT_URL).protocol + "//" + db.makeWildcardHost("api");
-  return {id: apiToken._id, token: token, endpointUrl: endpointUrl};
+  return {id: apiToken._id, token: token, endpointUrl: endpointUrl, parentApiToken: parentApiToken};
 }
 
 // Make self-destructing tokens actually self-destruct, so they don't

@@ -36,6 +36,85 @@ SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 SANDSTORM_LOGDIR = (SANDSTORM_ALTHOME || "") + "/var/log";
 SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
 
+var storeReferralProgramInfoApiTokenCreated = function(db, accountId, identityId, apiTokenAccountId) {
+  // From the Referral program's perspective, if Bob's Account has no referredByComplete, then we
+  // update Bob's Identity to say it's referredBy Alice's Account (which is apiTokenAccountId).
+  check(accountId, String);
+  check(identityId, String);
+  check(apiTokenAccountId, String);
+
+  // Bail out early if quota enforcement is disabled.
+  if (! Meteor.settings.public.quotaEnabled) {
+    return;
+  }
+
+  var aliceAccountId = apiTokenAccountId;
+  var bobAccountId = accountId;
+  var bobIdentityId = identityId;
+
+  if (Meteor.users.find({_id: bobAccountId,
+                         referredByComplete: {$exists: true}}).count() > 0) {
+    return;
+  }
+
+  // Only actually update Bob's Identity ID if there is no referredBy.
+  Meteor.users.update(
+    {_id: bobIdentityId, referredBy: {$exists: false}},
+    {$set: {referredBy: aliceAccountId}});
+}
+
+function referralProgramLogSharingTokenUse(db, bobAccountId) {
+  // Hooray! The sharing token is valid! Someone (let's call them Charlie) is going to get a UiView
+  // to this grain!  This means that the user who created this apiToken knows how to use the "share
+  // access" interface. Let's call them Bob.
+  //
+  // If Bob's Account.referredByComplete is not yet set, then look at Bob's Identities and take the
+  // first referredBy we find -- let's call that Alice.
+  //
+  // Copy Alice's account ID Account.referredByComplete, and then update Alice's referredIdentityIds
+  // to point at Bob's Identity, and then remove the referredBy from Bob's Identity since it has
+  // become redundant.
+  //
+  // Implementation note: this does mean that Alice can get referral credit for Bob by sharing a
+  // link with Bob, even if Bob already had an account.
+
+  // Bail out early if quota support is not enabled.
+  if (! Meteor.settings.public.quotaEnabled) {
+    return;
+  }
+
+  // Bail out if Bob has a referredByComplete.
+  if (Meteor.users.find({_id: bobAccountId, referredByComplete: {$exists: true}}).count() > 0) {
+    return;
+  }
+
+  // Look for a referredBy on any of Bob's identities.
+  var identities = SandstormDb.getUserIdentities(Meteor.users.findOne({_id: bobAccountId}));
+  var identitiesWithReferredBy = _.filter(identities, function(identity) {
+    return !! identity.referredBy;
+  });
+  if (identitiesWithReferredBy.length === 0) {
+    return;
+  }
+
+  var bobIdentity = identitiesWithReferredBy[0];
+  var aliceAccountId = bobIdentity.referredBy;
+
+  // Store Bob's Account.referralCompletedBy.
+  var now = new Date();
+  Meteor.users.update({_id: bobAccountId, referredByComplete: {$exists: false}},
+                      {$set: {referredByComplete: bobIdentity.referredBy,
+                              referredCompleteDate: now}});
+
+  // Update Alice's Account.referredIdentityIds.
+  Meteor.users.update({_id: aliceAccountId},
+                      {$push: {referredIdentityIds: bobIdentity._id}});
+
+  // Remove now-redundant Bob identity referredBy.
+  Meteor.users.update({_id: bobIdentity._id},
+                      {$unset: {referredBy: true}});
+}
+
 // User-agent strings that should be allowed to use http basic authentication.
 // These are regex matches, so ensure they are escaped properly with double
 // backslashes. For security reasons, we MUST NOT whitelist any user-agents
@@ -232,6 +311,11 @@ Meteor.methods({
     if (!grain) {
       throw new Meteor.Error(404, "Grain not found", "Grain ID: " + apiToken.grainId);
     }
+
+    if (apiToken.accountId) {
+      referralProgramLogSharingTokenUse(globalDb, apiToken.accountId);
+    }
+
     var pkg = Packages.findOne({_id: grain.packageId});
     var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ""};
     var appIcon = undefined;
@@ -259,8 +343,22 @@ Meteor.methods({
       if (identityId != apiToken.identityId && identityId != grain.identityId &&
           !ApiTokens.findOne({'owner.user.identityId': identityId, parentToken: hashedToken })) {
         var owner = {user: {identityId: identityId, title: title}};
-        SandstormPermissions.createNewApiToken(globalDb, {rawParentToken: token}, apiToken.grainId,
-                                               apiToken.petname, {allAccess: null}, owner);
+
+        // Create a new API token for the identity redeeming this token.
+        var result = SandstormPermissions.createNewApiToken(
+          globalDb, {rawParentToken: token}, apiToken.grainId, apiToken.petname, {allAccess: null}, owner);
+
+        // If the parent API token is forSharing and it has an accountId, then the logged-in user (call
+        // them Bob) is about to access a grain owned by someone (call them Alice) and save a reference
+        // to it as a new ApiToken. (For share-by-link, this occurs when viewing the grain. For
+        // share-by-identity, this happens immediately.)
+        if (result.parentApiToken) {
+          var parentApiToken = result.parentApiToken;
+          if (parentApiToken.forSharing && parentApiToken.accountId) {
+            storeReferralProgramInfoApiTokenCreated(
+              globalDb, this.userId, owner.user.identityId, parentApiToken.accountId);
+          }
+        }
       }
       return {redirectToGrain: apiToken.grainId};
     } else {

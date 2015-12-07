@@ -71,9 +71,9 @@ function referralProgramLogSharingTokenUse(db, bobAccountId) {
   // If Bob's Account.referredByComplete is not yet set, then look at Bob's Identities and take the
   // first referredBy we find -- let's call that Alice.
   //
-  // Copy Alice's account ID Account.referredByComplete, and then update Alice's referredIdentityIds
-  // to point at Bob's Identity, and then remove the referredBy from Bob's Identity since it has
-  // become redundant.
+  // We copy Alice's account ID to Bob's Account.referredByComplete, and then update Alice's
+  // referredIdentityIds to point at Bob's Identity, and then remove the referredBy from Bob's
+  // Identity since it has become redundant.
   //
   // Implementation note: this does mean that Alice can get referral credit for Bob by sharing a
   // link with Bob, even if Bob already had an account.
@@ -89,29 +89,28 @@ function referralProgramLogSharingTokenUse(db, bobAccountId) {
   }
 
   // Look for a referredBy on any of Bob's identities.
-  var identities = SandstormDb.getUserIdentities(Meteor.users.findOne({_id: bobAccountId}));
-  var identitiesWithReferredBy = _.filter(identities, function(identity) {
-    return !! identity.referredBy;
-  });
-  if (identitiesWithReferredBy.length === 0) {
+  var bobIdentityIds = SandstormDb.getUserIdentityIds(Meteor.users.findOne({_id: bobAccountId}));
+  var bobIdentityWithReferredBy = Meteor.users.findOne(
+    {_id: {$in: bobIdentityIds},
+     referredBy: {$exists: true}});
+  if (! bobIdentityWithReferredBy) {
     return;
   }
 
-  var bobIdentity = identitiesWithReferredBy[0];
-  var aliceAccountId = bobIdentity.referredBy;
+  var aliceAccountId = bobIdentityWithReferredBy.referredBy;
 
   // Store Bob's Account.referralCompletedBy.
   var now = new Date();
   Meteor.users.update({_id: bobAccountId, referredByComplete: {$exists: false}},
-                      {$set: {referredByComplete: bobIdentity.referredBy,
+                      {$set: {referredByComplete: bobIdentityWithReferredBy.referredBy,
                               referredCompleteDate: now}});
 
   // Update Alice's Account.referredIdentityIds.
   Meteor.users.update({_id: aliceAccountId},
-                      {$push: {referredIdentityIds: bobIdentity._id}});
+                      {$push: {referredIdentityIds: bobIdentityWithReferredBy._id}});
 
   // Remove now-redundant Bob identity referredBy.
-  Meteor.users.update({_id: bobIdentity._id},
+  Meteor.users.update({_id: bobIdentityWithReferredBy._id},
                       {$unset: {referredBy: true}});
 }
 

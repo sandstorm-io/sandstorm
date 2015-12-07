@@ -227,7 +227,8 @@ if (Meteor.isServer) {
       if (handleForProfileName) {
         self.removed("referralInfo", identityId);
         handleForProfileName.stop();
-        handleForProfileNameByIdentityId[identityId] = null;
+        // delete is safe because we iterate across `Object.keys()` which returns a copy.
+        delete handleForProfileNameByIdentityId[identityId];
       }
     };
     var watchIdentityAndPublishReferralSuccess = function(identityId) {

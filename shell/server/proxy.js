@@ -324,17 +324,19 @@ Meteor.methods({
     }
     // Only provide an app ID if we have no icon asset to provide and need to offer an identicon.
     var appId = appIcon ? undefined : grain.appId;
+
     var title;
-    if (grain.identityId == apiToken.identityId) {
+    if (grain.userId === apiToken.accountId) {
       title = grain.title;
     } else {
-      if (apiToken.identityId) {
-        var sharerToken = ApiTokens.findOne({grainId: apiToken.grainId,
-                                             "owner.user.identityId": apiToken.identityId},
-                                            {sort : {created : 1}});
-        if (sharerToken) {
-          title = sharerToken.owner.user.title;
-        }
+      var sharerToken = apiToken.identityId &&
+          ApiTokens.findOne({grainId: apiToken.grainId,
+                             "owner.user.identityId": apiToken.identityId},
+                            {sort : {"owner.user.lastUsed": -1}});
+      if (sharerToken) {
+        title = sharerToken.owner.user.title;
+      } else {
+        title = "shared grain";
       }
     }
 

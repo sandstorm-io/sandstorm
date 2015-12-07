@@ -1084,20 +1084,24 @@ if (Meteor.isClient) {
   Template.emailInviteTab.events({
     "submit form.email-invite": function (event, instance) {
       event.preventDefault();
+      return false;
+    },
+    "click form.email-invite button": function (event, instance) {
+      event.preventDefault();
       if (!instance.completionState.get().clear) {
         return;
       }
       var grainId = instance.data.grainId;
       var title = instance.data.title;
 
-      var roleList = event.target.getElementsByClassName("share-token-role")[0];
+      var roleList = instance.find(".share-token-role");
       var assignment;
       if (roleList) {
         assignment = {roleId: roleList.selectedIndex};
       } else {
         assignment = {none: null};
       }
-      var message = event.target.getElementsByClassName("personal-message")[0].value;
+      var message = instance.find(".personal-message").value;
       instance.completionState.set({pending: true});
 
       var currentGrain = getActiveGrain(globalGrains.get());

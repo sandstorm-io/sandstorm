@@ -150,9 +150,21 @@ Template.contactInputBox.events({
     template.currentText.set(event.target.value);
   },
   "keydown .completed-contact": function (event, template) {
-    if (event.keyCode === 8) { // Backspace
+    if (event.keyCode === 8 || event.keyCode == 46) { // Backspace or Delete
       deleteSelected(this, template);
       return false;
+    } else if (event.keyCode === 37) { // Left
+      var previous = event.target.previousElementSibling;
+      if (previous) {
+        previous.focus();
+      }
+    } else if (event.keyCode === 39) { // Right
+      var next = event.target.nextElementSibling;
+      if (next) {
+        next.focus();
+      } else {
+        template.find("input").focus();
+      }
     }
   },
   "click .closer": function (event, template) {
@@ -205,6 +217,12 @@ Template.contactInputBox.events({
         newContact = contacts[contacts.length - 1];
       }
       template.highlightedContact.set(newContact);
+      return false;
+    } else if (event.keyCode === 37) { // Left
+      var chip = template.find(".completed-contacts>li:last-child");
+      if (chip) {
+        chip.focus();
+      }
       return false;
     } else if (event.keyCode === 13) { // Enter
       var highlightedContact = template.highlightedContact.get();

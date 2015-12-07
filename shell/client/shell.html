@@ -1213,33 +1213,32 @@ limitations under the License.
     <p>Once you send a sharing link out, people will appear in this list
       <strong>after they sign in.</strong></p>
 
-    {{#if notYetCompleteReferralNames}}
-
+    {{#with notYetCompleteReferralNames}}{{#if this.count}}
     <h3>Still needs to share</h3>
 
     <p>Tell these people to make a grain and share it with you. You
       must actually view the grain they shared with you!</p>
 
     <ul>
-      {{#each notYetCompleteReferralNames}}
+      {{#each this}}
       <li>{{name}}</li>
       {{/each}}
     </ul>
 
-    {{/if}}
+    {{/if}}{{/with}}
 
-    {{#if completeReferralNames}}
+    {{#with completeReferralNames}}{{#if this.count}}
     <h3>Successful referrals</h3>
 
     <p>You've successfully referred these people. Congratulations!</p>
 
     <ul>
-      {{#each completeReferralNames}}
+      {{#each this}}
       <li>{{name}}</li>
       {{/each}}
     </ul>
 
-    {{/if}}
+    {{/if}}{{/with}}
 
     <h2>The fine print</h2>
 

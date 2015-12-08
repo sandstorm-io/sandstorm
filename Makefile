@@ -193,11 +193,18 @@ deps/node-capnp:
 
 update-deps:
 	@$(call color,updating all dependencies)
-	@$(foreach DEP,capnproto ekam libseccomp libsodium node-capnp, \
+	@$(foreach DEP,capnproto ekam libseccomp node-capnp, \
 	    cd deps/$(DEP) && \
 	    echo "pulling $(DEP)..." && \
 	    git pull $(REMOTE_$(DEP)) `git symbolic-ref --short HEAD` && \
 	    cd ../..;)
+	# Argh, libsodium did a force push of their stable branch,
+	# necessitating an explicit checkout.
+	@cd deps/libsodium && \
+	    echo "pulling deps/libsodium..." && \
+	    git fetch $(REMOTE_libsodium) stable && \
+	    git checkout FETCH_HEAD && \
+	    cd ../../
 
 # ====================================================================
 # Ekam bootstrap and C++ binaries

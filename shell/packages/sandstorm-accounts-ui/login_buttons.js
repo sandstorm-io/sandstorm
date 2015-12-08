@@ -204,9 +204,10 @@ Template.loginButtonsList.onCreated(function() {
      this._topbar = Template.parentData(3);
    }
 
-  this._linkingNewIdentity = isDemoUser();
-  if (Template.parentData(1).linkingNewIdentity) {
-    this._linkingNewIdentity = true;
+  if (isDemoUser()) {
+    this._linkingNewIdentity = { doneCallback: function() {} };
+  } else if (Template.parentData(1).linkingNewIdentity) {
+    this._linkingNewIdentity = Template.parentData(1).linkingNewIdentity;
   }
 });
 
@@ -271,22 +272,27 @@ Template.loginButtonsList.helpers({
   }
 });
 
-Template.emailLoginForm.onCreated(function () {
-  this._linkingNewIdentity = this.data.linkingNewIdentity;
-});
-
 Template.emailLoginForm.events({
   "submit form": function (event, instance) {
     event.preventDefault();
     var form = event.currentTarget;
     var email = loginButtonsSession.get("inSignupFlow");
     if (email) {
-      if (instance._linkingNewIdentity) {
-        sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
+      if (instance.data.linkingNewIdentity) {
+        Meteor.call("linkEmailIdentityToAccount", email, form.token.value, function (err, result) {
+          if (err) {
+            loginButtonsSession.errorMessage(err.reason || "Unknown error");
+          } else {
+            loginButtonsSession.set("inSignupFlow", false);
+            loginButtonsSession.closeDropdown();
+            instance.data.linkingNewIdentity.doneCallback();
+          }
+        });
+      } else {
+        loginWithToken(email, form.token.value, instance._topbar);
       }
-      loginWithToken(email, form.token.value, instance._topbar);
     } else {
-      sendEmail(form.email.value, !!instance._linkingNewIdentity);
+      sendEmail(form.email.value, !!instance.data.linkingNewIdentity);
     }
   },
 

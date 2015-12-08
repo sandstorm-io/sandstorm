@@ -122,6 +122,30 @@ Template.sandstormAccountSettings.helpers({
   setActionCompleted: function () {
     var actionCompleted = Template.instance()._actionCompleted;
     return function (x) { actionCompleted.set(x); };
+  },
+  linkingNewIdentityData: function () {
+    var instance = Template.instance();
+    return {
+      doneCallback: function () {
+        instance._isLinkingNewIdentity.set(false);
+        instance._actionCompleted.set({success: "identity added"});
+      }
+    };
+  },
+  emailLoginFormData: function () {
+    var instance = Template.instance();
+    return {
+      linkingNewIdentity: {
+        doneCallback: function() {
+          var input = instance.find("input[name='email']");
+          if (input) {
+            input.value = "";
+          };
+          instance._actionCompleted.set({success: "identity added"});
+        }
+      },
+      sendButtonText: "Confirm",
+    }
   }
 });
 

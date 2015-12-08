@@ -40,7 +40,7 @@ limitations under the License.
   {{#if isAccountUser}}
     {{#if isLinkingNewIdentity}}
       <h4>Link new identity:</h4>
-      {{#with linkingNewIdentity=true}}
+      {{#with linkingNewIdentity=linkingNewIdentityData}}
         {{> loginButtonsList globalAccountsUi}}
       {{/with}}
     <p><button class="account-button cancel-link-new-identity">Cancel</button></p>
@@ -99,7 +99,7 @@ limitations under the License.
     </div>
     <div class="add-new">
       Add new e-mail address
-      {{> emailLoginForm linkingNewIdentity=true sendButtonText="Confirm"}}
+      {{> emailLoginForm emailLoginFormData}}
       {{> _loginButtonsMessages}}
     </div>
   </div>

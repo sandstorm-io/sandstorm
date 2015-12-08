@@ -200,7 +200,6 @@ if (Meteor.isClient) {
     }
   };
 
-  var successTracker;
   Template.adminSettings.events({
     "click .oauth-checkbox": function (event) {
       var state = Iron.controller().state;
@@ -242,21 +241,6 @@ if (Meteor.isClient) {
       resetResult(state);
       state.set("numSettings", 4);
 
-      if (successTracker) {
-        successTracker.stop();
-        successTracker = null;
-      }
-      if (token) {
-        successTracker = Tracker.autorun(function () {
-          if (state.get("successes") == state.get("numSettings")) {
-            Meteor.call("clearAdminToken", token, function (err) {
-              if (err) {
-                console.error("Failed to clear admin token: ", err);
-              }
-            });
-          }
-        });
-      }
       var handleErrorBound = handleError.bind(state);
       if (event.target.emailTokenLogin.checked && !event.target.smtpUrl.value) {
         handleErrorBound(new Meteor.Error(400,
@@ -687,21 +671,6 @@ if (Meteor.isClient) {
       resetResult(state);
       state.set("numSettings", 10);
 
-      if (successTracker) {
-        successTracker.stop();
-        successTracker = null;
-      }
-      if (token) {
-        successTracker = Tracker.autorun(function () {
-          if (state.get("successes") == state.get("numSettings")) {
-            Meteor.call("clearAdminToken", token, function (err) {
-              if (err) {
-                console.error("Failed to clear admin token: ", err);
-              }
-            });
-          }
-        });
-      }
       var handleErrorBound = handleError.bind(state);
       Meteor.call("setSetting", token, "splashDialog", event.target.splashDialog.value, handleErrorBound);
       Meteor.call("setSetting", token, "signupDialog", event.target.signupDialog.value, handleErrorBound);

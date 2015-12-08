@@ -52,7 +52,7 @@ var adminRoute = RouteController.extend({
       state.set("smtpUrl", result);
     });
     var user = Meteor.user();
-    if (user) {
+    if (user && user.loginIdentities) {
       if (!user.signupKey || !user.isAdmin) {
         Meteor.call("signUpAsAdmin", this.params._token);
       }
@@ -1055,6 +1055,9 @@ if (Meteor.isServer) {
       checkAuth(token);
       if (!this.userId) {
         throw new Meteor.Error(403, "Must be logged in to sign up as admin.");
+      }
+      if (!Meteor.user().loginIdentities) {
+        throw new Meteor.Error(403, "Must be logged into an account to sign up as admin.");
       }
       Meteor.users.update({_id: this.userId}, {$set: {isAdmin: true, signupKey: "admin"}});
       clearAdminToken(token);

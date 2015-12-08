@@ -240,8 +240,8 @@ SandstormBackend.prototype.updateLastActive = function(grainId, userId, identity
     Meteor.users.update(userId, {$set: {lastActive: now}});
   }
   if (identityId) {
+    Meteor.users.update({_id: identityId}, {$set: {lastActive: now}});
     // Update any API tokens that match this user/grain pairing as well
-    var now = new Date();
     ApiTokens.update({"grainId": grainId, "owner.user.identityId": identityId},
         {$set: {"owner.user.lastUsed": now }});
   }

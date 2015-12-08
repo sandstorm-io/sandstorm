@@ -42,6 +42,7 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   _id: Unique string ID. For accounts, this is random. For identities, this is the globally
 //        stable SHA-256 ID of this identity, hex-encoded.
 //   createdAt: Date when this entry was added to the collection.
+//   lastActive: Date of the user's most recent interaction with this Sandstorm server.
 //   services: Object containing login data used by Meteor authentication services.
 //   expires: Date when this user should be deleted. Only present for demo users.
 //   upgradedFromDemo: If present, the date when this user was upgraded from being a demo user.
@@ -67,7 +68,6 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   primaryEmail: String containing this account's primary email address. Must be a verified adress
 //                 of one of this account's linked identities. Call SandstormDb.getUserEmails()
 //                 to do this checking automatically.
-//   lastActive: Date of the user's most recent interaction with this Sandstorm server.
 //   isAdmin: Boolean indicating whether this account is allowed to access the Sandstorm admin panel.
 //   signupKey: If this is an invited user, then this field contains their signup key.
 //   signupNote: If the user was invited through a link, then this field contains the note that the

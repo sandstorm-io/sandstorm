@@ -160,6 +160,7 @@ Meteor.setInterval(function () {
     sandstormBackendConnection.close();
     sandstormBackendConnection = Capnp.connect(backendAddress, sandstormCoreFactory);
     sandstormBackend = sandstormBackendConnection.restore(null, Backend);
+    globalBackend._backendCap = sandstormBackend;
   }
 
   backendHealthy = false;

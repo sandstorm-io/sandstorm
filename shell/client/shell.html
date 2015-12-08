@@ -103,10 +103,17 @@ limitations under the License.
     {{>billingPrompt}}
   {{/with}}
 
-  <div class="main-content {{#if hideNavbar}}hide-navbar{{else}}{{#if shrinkNavbar}}shrink-navbar{{/if}}{{/if}}">
-    {{> yield}}
-  </div>
   {{/if}} {{!-- firstLogin --}}
+
+  {{!-- If the main-content div were inside the {{#if firstLogin}} block, then grain views could be
+        blanked out when a demo user upgrades to a real account by linking an email identity.
+   --}}
+  <div class="main-content {{#if hideNavbar}}hide-navbar{{else}}{{#if shrinkNavbar}}shrink-navbar{{/if}}{{/if}}">
+    {{#unless firstLogin}}
+      {{> yield}}
+    {{/unless}}
+  </div>
+
   {{/if}} {{!-- identityUser --}}
   {{/with}}
 </template>

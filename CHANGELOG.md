@@ -1,3 +1,9 @@
+### v0.134 (2015-12-07)
+- Fix signup key consumption.
+- Fix bug where sharing links didn't work after the owner unlinked the identity under which the grain was created.
+- Sandcats: Fix bug that sometimes caused certificate rotation not to happen on time.
+- Oasis: Implement referral program.
+
 ### v0.133 (2015-12-06)
 - It is now possible to link multiple login identities to an account. For example, you can connect both your Google and your Github identity to the same account, so that you can log in with either. This was added for a few reasons, including:
     * To make it safer for us to expand the set of login providers, which might otherwise lead to confusion as people forget which provider they used to log in previously.

@@ -50,7 +50,8 @@ if (Meteor.isServer) {
     // Delete expired demo accounts and all their grains.
 
     var now = new Date(Date.now() - DEMO_GRACE_MS);
-    Meteor.users.find({expires: {$lt: now}}, {fields: {_id: 1, lastActive: 1, isAppDemoUser: 1}})
+    Meteor.users.find({expires: {$lt: now}},
+                      {fields: {_id: 1, loginIdentities: 1, lastActive: 1, isAppDemoUser: 1}})
                 .forEach(function (user) {
       Grains.find({userId: user._id}, {fields: {_id: 1, lastUsed: 1, appId: 1}})
             .forEach(function (grain) {
@@ -64,7 +65,7 @@ if (Meteor.isServer) {
       console.log("delete user: " + user._id);
       Meteor.users.remove(user._id);
       waitPromise(globalBackend.cap().deleteUser(user._id));
-      if (user.lastActive) {
+      if (user.loginIdentities && user.lastActive) {
         // When deleting a user, we can specify it as a "normal" user
         // (type: user) or as a user who started out by using the app
         // demo feature (type: appDemoUser).

@@ -855,10 +855,6 @@ if (Meteor.isServer) {
 
       ServiceConfiguration.configurations.upsert({service: options.service}, options);
     },
-    clearAdminToken: function(token) {
-      check(token, String);
-      clearAdminToken(token);
-    },
     clearResumeTokensForService: function (token, serviceName) {
       checkAuth(token);
       check(serviceName, String);

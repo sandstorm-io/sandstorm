@@ -56,6 +56,7 @@ if (Meteor.isServer) {
       Grains.find({userId: user._id}, {fields: {_id: 1, lastUsed: 1, appId: 1}})
             .forEach(function (grain) {
         console.log("delete grain: " + grain._id);
+        ApiTokens.remove({grainId: grain._id});
         Grains.remove(grain._id);
         if (grain.lastUsed) {
           DeleteStats.insert({type: "demoGrain", lastActive: grain.lastUsed, appId: grain.appId});
@@ -63,6 +64,11 @@ if (Meteor.isServer) {
         globalBackend.deleteGrain(grain._id, user._id);
       });
       console.log("delete user: " + user._id);
+      // We intentionally do not do `ApiTokens.remove({accountId: user._id})`, because some such
+      // tokens might still play an active role in the sharing graph.
+      Contacts.remove({ownerId: user._id});
+      UserActions.remove({userId: user._id});
+      Notifications.remove({userId: user._id});
       Meteor.users.remove(user._id);
       waitPromise(globalBackend.cap().deleteUser(user._id));
       if (user.loginIdentities && user.lastActive) {

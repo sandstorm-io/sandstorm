@@ -34,7 +34,8 @@ if (Meteor.isServer) {
     // This calculates the number of user accounts that have been used
     // during the requested time period.
     var currentlyActiveUsersCount = Meteor.users.find(
-      {expires: {$exists: false}, lastActive: timeConstraint}).count();
+      {expires: {$exists: false}, loginIdentities: {$exists: true},
+       lastActive: timeConstraint}).count();
 
     // This calculates the number of grains that have been used during
     // the requested time period.

@@ -321,9 +321,7 @@ Meteor.methods({
               var intrinsicName = contact.profile.intrinsicName;
               var loginNote;
               if (contact.profile.service === "google") {
-                intrinsicName = emailAddress;
-                  // Hack to work around google providing a not very useful intrinsic name.
-                loginNote = "Google account with address " + intrinsicName;
+                loginNote = "Google account with address " + emailAddress;
               } else if (contact.profile.service === "github") {
                 loginNote = "Github account with username " + intrinsicName;
               } else if (contact.profile.service === "email") {

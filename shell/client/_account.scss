@@ -72,6 +72,19 @@ body>.popup.account>.frame {
   }
 }
 
+.login-suggestion {
+  >button {
+    @extend %button-base;
+    @extend %button-primary;
+    width: calc(100% - 20px);
+    display: block;
+    margin: 10px;
+  }
+  >button.dismiss {
+    @extend %button-secondary;
+  }
+}
+
 .login-buttons-list {
   width: 200px;
   margin: 0;

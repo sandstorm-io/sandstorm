@@ -33,6 +33,9 @@ GrainView = function GrainView(grainId, path, token, parentElement) {
   if (token) {
     if (!Meteor.userId()) {
       this.doNotRevealIdentity();
+
+      // Suggest to the user that they log in by opening the login menu.
+      globalTopbar.openPopup("login");
     }
   } else {
     this.revealIdentity();

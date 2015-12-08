@@ -31,7 +31,8 @@ if (Meteor.isServer) {
         throw new Meteor.Error(403, "Must be signed in.");
       }
 
-      if (isSignedUp()) {
+      var user = Meteor.user();
+      if (user.signupKey) {
         // Don't waste it.
         return;
       }
@@ -41,9 +42,24 @@ if (Meteor.isServer) {
             "Demo users cannot accept invite keys. Please sign in as a real user.");
       }
 
+      if (!user.loginIdentities) {
+        // Don't consume signup key as identity user.
+        return;
+      }
+
       var keyInfo = SignupKeys.findOne(key);
       if (!keyInfo || keyInfo.used) {
         throw new Meteor.Error(403, "Invalid key or already used.");
+      }
+
+      if (isSignedUp() && user.payments) {
+        // This user is already signed up with a payment account. Possibly, they signed up before
+        // using their invite, and then went back and clicked on the invite. As a result they
+        // probably now have two payment accounts. Mark this invite as used but also add a special
+        // flag so we can find it later and cancel the dupe payment account. Record who tried to
+        // use it so that we can transfer credits over if needed.
+        SignupKeys.update(key, {$set: {used: true, rejectedBy: this.userId}});
+        return;
       }
 
       var userFields = {
@@ -91,12 +107,15 @@ Router.map(function () {
 
     data: function () {
       var keyInfo = SignupKeys.findOne(this.params.key);
+      var user = Meteor.user();
 
       var result = {
         keyIsValid: !!keyInfo,
         keyIsUsed: keyInfo && keyInfo.used,
         origin: getOrigin(),
-        alreadySignedUp: isSignedUp()
+        alreadySignedUp: (user && !!user.signupKey) ||
+                         (keyInfo && keyInfo.rejectedBy === user._id),
+        hasPaymentInfo: keyInfo && !!keyInfo.payments
       };
 
       if (result.keyIsValid && !result.keyIsUsed && Meteor.userId()) {

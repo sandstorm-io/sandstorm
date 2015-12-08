@@ -616,8 +616,12 @@ limitations under the License.
 
   <div class="centered-box">
   {{#if alreadySignedUp}}
-    <p>You're all signed up!  Now go <a href="https://apps.sandstorm.io/?host={{origin}}">install
-      some apps</a>.</p>
+    {{#if keyIsUsed}}
+      <p>You're all signed up!  Now go <a href="https://apps.sandstorm.io/?host={{origin}}">install
+        some apps</a>.</p>
+    {{else}}
+      <p>It looks like you already have an account, so you don't need this signup key.</p>
+    {{/if}}
   {{else}}
     {{#if keyIsValid}}
       {{#if keyIsUsed}}

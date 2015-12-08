@@ -94,19 +94,24 @@ if (Meteor.isServer) {
     } else {
       var grainId = apiToken.grainId;
       var grain = Grains.findOne({_id: grainId}, {fields: {packageId: 1, appId: 1}});
-      var pkg = Packages.findOne({_id: grain.packageId}, {fields: {manifest: 1}});
-      var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ""};
-      var appIcon = undefined;
-      if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
-        var icons = pkg.manifest.metadata.icons;
-        appIcon = icons.grain || icons.appGrid;
+      if (!grain) {
+        this.added("tokenInfo", token, {invalidToken: true});
+      } else {
+        var pkg = Packages.findOne({_id: grain.packageId}, {fields: {manifest: 1}});
+        var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ""};
+        var appIcon = undefined;
+        if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
+          var icons = pkg.manifest.metadata.icons;
+          appIcon = icons.grain || icons.appGrid;
+        }
+        var denormalizedGrainMetadata = {
+          appTitle: appTitle,
+          icon: appIcon,
+          appId: appIcon ? undefined : grain.appId,
+        };
+        this.added("tokenInfo", token,
+                   {apiToken: apiToken, grainMetadata: denormalizedGrainMetadata});
       }
-      var denormalizedGrainMetadata = {
-        appTitle: appTitle,
-        icon: appIcon,
-        appId: appIcon ? undefined : grain.appId,
-      };
-      this.added("tokenInfo", token, {apiToken: apiToken, grainMetadata: denormalizedGrainMetadata});
     }
     this.ready();
     return;

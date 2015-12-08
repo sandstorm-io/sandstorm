@@ -121,6 +121,27 @@ var capitalize = function(str){
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
+Template._loginButtonsLoggedOutDropdown.onCreated(function() {
+  this._topbar = Template.parentData(3);
+  this._choseLogin = new ReactiveVar(false);
+});
+
+Template._loginButtonsLoggedOutDropdown.helpers({
+  choseLogin: function () {
+    return Template.instance()._choseLogin.get();
+  }
+});
+
+Template._loginButtonsLoggedOutDropdown.events({
+  "click .login-suggestion>button.login": function (event, instance) {
+    instance._choseLogin.set(true);
+  },
+
+  "click .login-suggestion>button.dismiss": function (event, instance) {
+    instance._topbar.closePopup();
+  }
+});
+
 Template._loginButtonsLoggedInDropdown.onCreated(function() {
   this._identitySwitcherExpanded = new ReactiveVar(false);
 });
@@ -156,7 +177,7 @@ Template._loginButtonsLoggedInDropdown.helpers({
 Template._loginButtonsLoggedInDropdown.events({
   "click button.switch-identity" : function (event, instance) {
     instance._identitySwitcherExpanded.set(!instance._identitySwitcherExpanded.get());
-  }
+  },
 });
 
 var sendEmail = function (email, linkingNewIdentity) {

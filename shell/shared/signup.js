@@ -114,7 +114,7 @@ Router.map(function () {
         keyIsUsed: keyInfo && keyInfo.used,
         origin: getOrigin(),
         alreadySignedUp: (user && !!user.signupKey) ||
-                         (keyInfo && keyInfo.rejectedBy === user._id),
+                         (keyInfo && user && keyInfo.rejectedBy === user._id),
         hasPaymentInfo: keyInfo && !!keyInfo.payments
       };
 

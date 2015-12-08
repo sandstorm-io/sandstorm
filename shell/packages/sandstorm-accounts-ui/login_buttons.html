@@ -63,14 +63,27 @@
   {{#if isDemoUser}}
     <h4>Create Account</h4>
     <p class="demo-note">Your demo data will be transferred to your new account.</p>
+    {{> loginButtonsList}}
   {{else}}
     <h4>Sign in</h4>
     {{#if isCurrentRoute 'shared'}}
-      <p class="demo-note">Sign in to save this link.</p>
+      <p class="demo-note">Sign in so that collaborators know who you are.</p>
+      {{#if choseLogin}}
+        {{> loginButtonsList}}
+      {{else}}
+        <div class="login-suggestion" role="menu">
+          <button class="login" role="menuitem">
+            Sign in
+          </button>
+          <button class="dismiss" role="menuitem">
+            Stay anonymous
+          </button>
+        </div>
+      {{/if}}
+    {{else}}
+      {{> loginButtonsList}}
     {{/if}}
   {{/if}}
-
-  {{> loginButtonsList}}
 </template>
 
 <template name="loginButtonsDialog">

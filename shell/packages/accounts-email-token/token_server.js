@@ -203,7 +203,7 @@ Meteor.methods({
     if (!consumeToken(identity, token)) {
       throw new Meteor.Error(403, "Invalid authentication code.");
     }
-    Accounts.linkIdentityToAccount(identity._id, account._id);
+    Accounts.linkIdentityToAccount(this.connection.sandstormDb, identity._id, account._id);
   }
 });
 

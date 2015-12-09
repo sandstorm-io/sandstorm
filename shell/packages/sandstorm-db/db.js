@@ -1454,7 +1454,7 @@ if (Meteor.isServer) {
     });
   };
 
-  SandstormDb.prototype.deleteUnusedAccount = function(identityId) {
+  SandstormDb.prototype.deleteUnusedAccount = function(backend, identityId) {
     // If there is an *unused* account that has `identityId` as a login identity, deletes it.
 
     check(identityId, String);
@@ -1465,9 +1465,11 @@ if (Meteor.isServer) {
         !Grains.findOne({userId: account._id}) &&
         !ApiTokens.findOne({accountId: account._id}) &&
         (!account.plan || account.plan === "free") &&
+        !account.payments &&
         !Notifications.findOne({userId: account._id}) &&
         !Contacts.findOne({ownerId: account._id})) {
       Meteor.users.remove({_id: account._id});
+      backend.deleteUser(account._id);
     }
   }
 

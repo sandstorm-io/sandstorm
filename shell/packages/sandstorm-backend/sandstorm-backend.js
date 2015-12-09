@@ -59,6 +59,10 @@ SandstormBackend.prototype.cap = function() {
   return this._backendCap;
 }
 
+SandstormBackend.prototype.deleteUser = function (userId) {
+  return waitPromise(this._backendCap.deleteUser());
+}
+
 SandstormBackend.prototype.shutdownGrain = function (grainId, ownerId, keepSessions) {
   if (!keepSessions) {
     Sessions.remove({grainId: grainId});

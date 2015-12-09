@@ -14,11 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-function linkIdentityToAccountInternal(db, identityId, accountId) {
+function linkIdentityToAccountInternal(db, backend, identityId, accountId) {
   // Links the identity to the account. If the account is a demo account, makes the account durable
   // and gives the identity login access to it.
 
   check(db, SandstormDb);
+  check(backend, SandstormBackend);
   check(identityId, String);
   check(accountId, String);
 
@@ -46,7 +47,7 @@ function linkIdentityToAccountInternal(db, identityId, accountId) {
     throw new Meteor.Error(400, "Cannot link an account to another account");
   }
 
-  db.deleteUnusedAccount(identityUser._id);
+  db.deleteUnusedAccount(backend, identityUser._id);
   if (Meteor.users.findOne({"loginIdentities.id": identityUser._id})) {
     throw new Meteor.Error(403,
                            "Cannot link an identity that can already log into another account");
@@ -167,7 +168,8 @@ Meteor.methods({
     var hashed = Accounts._hashLoginToken(token);
     var accountUser = Meteor.users.findOne({"services.resume.loginTokens.hashedToken": hashed});
 
-    linkIdentityToAccountInternal(this.connection.sandstormDb, this.userId, accountUser._id);
+    linkIdentityToAccountInternal(this.connection.sandstormDb, this.connection.sandstormBackend,
+                                  this.userId, accountUser._id);
   },
 
   unlinkIdentity: function (accountUserId, identityId) {
@@ -227,13 +229,14 @@ Meteor.methods({
   }
 });
 
-Accounts.linkIdentityToAccount = function (db, identityId, accountId) {
+Accounts.linkIdentityToAccount = function (db, backend, identityId, accountId) {
   // Links the identity to the account. If the account is a demo account, makes it durable and
   // gives the identity login access to it.
   check(db, SandstormDb);
+  check(backend, SandstormBackend);
   check(identityId, String);
   check(accountId, String);
-  linkIdentityToAccountInternal(db, identityId, accountId);
+  linkIdentityToAccountInternal(db, backend, identityId, accountId);
 }
 
 Meteor.publish("accountsOfIdentity", function (identityId) {

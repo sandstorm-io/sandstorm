@@ -481,7 +481,9 @@ if (Meteor.isClient) {
   });
 
   Template.referrals.helpers({
-    isPaid: (Meteor.user() && Meteor.user().plan !== "free"),
+    isPaid: function() {
+      return (Meteor.user() && Meteor.user().plan && Meteor.user().plan !== "free");
+    },
     notYetCompleteReferralNames: function() {
       return ReferralInfo.find({completed: false});
     },

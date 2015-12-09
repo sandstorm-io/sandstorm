@@ -557,7 +557,7 @@ isSignedUpOrDemo = function () {
 
   if (!user) return false;  // not signed in
 
-  if (user.expires) return true;  // demo user.
+  if (user.expires && user.loginIdentities) return true;  // demo user.
 
   if (Meteor.settings.public.allowUninvited) return true;  // all accounts qualify
 

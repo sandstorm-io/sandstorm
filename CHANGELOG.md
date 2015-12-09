@@ -1,3 +1,9 @@
+### v0.135 (2015-12-08)
+- When visiting a share link anonymously, we now gently encourage the user to log in, since most apps work better when users are logged in.
+- Fixed variosu problems that could cause blank gray screens (no error message) when visiting sharing links.
+- Fixed double-counting of users in server stats, introduced in 0.133.
+- Fixed recent regression in first-time setup flow which forced the admin to create two or even three admin tokens in order to complete setup. Only one should be required (which the install script auto-generates).
+
 ### v0.134 (2015-12-07)
 - Fix signup key consumption.
 - Fix bug where sharing links didn't work after the owner unlinked the identity under which the grain was created.

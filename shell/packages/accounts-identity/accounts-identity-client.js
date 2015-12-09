@@ -52,8 +52,6 @@ Template.identityLoginInterstitial.onCreated(function () {
           Meteor.call("createAccountForIdentity", function(err, result) {
             if (err) {
               console.log("error", err);
-            } else {
-              Meteor.loginWithIdentity(result);
             }
           });
         } else if ("justLoggingIn" in self._state.get()) {
@@ -223,7 +221,7 @@ Meteor.loginWithIdentity = function (accountId, callback) {
   // Attempts to log into the account with ID `accountId`.
 
   check(accountId, String);
-  var identityId = Meteor.userId();
+  var identity = Meteor.user();
 
   Accounts.callLoginMethod({
     methodName: "loginWithIdentity",
@@ -232,7 +230,9 @@ Meteor.loginWithIdentity = function (accountId, callback) {
       if (error) {
         callback && callback(error);
       } else {
-        Accounts.setCurrentIdentityId(identityId);
+        if (identity.profile.service !== "demo") {
+          Accounts.setCurrentIdentityId(identity._id);
+        }
         callback && callback();
       }
     }

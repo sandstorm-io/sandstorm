@@ -1002,41 +1002,47 @@ var startUpload = function (file, endpoint, onComplete) {
   Router.go("uploadStatus");
 }
 
-promptRestoreBackup = function(input) {
-  promptForFile(input, function (file) {
-    startUpload(file, "/uploadBackup", function (response) {
-      Session.set("uploadStatus", "Unpacking");
-      var identityId = Accounts.getCurrentIdentityId();
-      Meteor.call("restoreGrain", response, identityId, function (err, grainId) {
-        if (err) {
-          console.log(err);
-          Session.set("uploadStatus", undefined);
-          Session.set("uploadError", {
-            status: "",
-            statusText: err.message
-          });
-        } else {
-          Router.go("grain", {grainId: grainId});
-        }
-      });
-    });
-  });
-}
-
-promptUploadApp = function (input) {
-  promptForFile(input, function (file) {
-    Meteor.call("newUploadToken", function (err, token) {
+// This function is global so tests can call it
+restoreBackup = function(file) {
+  startUpload(file, "/uploadBackup", function (response) {
+    Session.set("uploadStatus", "Unpacking");
+    var identityId = Accounts.getCurrentIdentityId();
+    Meteor.call("restoreGrain", response, identityId, function (err, grainId) {
       if (err) {
-        console.error(err);
-        alert(err.message);
-      } else {
-        startUpload(file, "/upload/" + token, function (response) {
-          Session.set("uploadStatus", undefined);
-          Router.go("install", {packageId: response})
+        console.log(err);
+        Session.set("uploadStatus", undefined);
+        Session.set("uploadError", {
+          status: "",
+          statusText: err.message
         });
+      } else {
+        Router.go("grain", {grainId: grainId});
       }
     });
   });
+};
+
+promptRestoreBackup = function(input) {
+  promptForFile(input, restoreBackup);
+};
+
+// This function is global so tests can call it
+uploadApp = function (file) {
+  Meteor.call("newUploadToken", function (err, token) {
+    if (err) {
+      console.error(err);
+      alert(err.message);
+    } else {
+      startUpload(file, "/upload/" + token, function (response) {
+        Session.set("uploadStatus", undefined);
+        Router.go("install", {packageId: response})
+      });
+    }
+  });
+};
+
+promptUploadApp = function (input) {
+  promptForFile(input, uploadApp);
 }
 
 Router.map(function () {

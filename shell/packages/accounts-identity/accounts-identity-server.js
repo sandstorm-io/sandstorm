@@ -147,6 +147,9 @@ Meteor.methods({
     } else if (user.expires) {
       // Demo user.
       newUser.expires = user.expires;
+      if (!!user.appDemoId) {
+        newUser.appDemoId = user.appDemoId;
+      }
     }
     var options = {};
 

@@ -46,6 +46,12 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   services: Object containing login data used by Meteor authentication services.
 //   expires: Date when this user should be deleted. Only present for demo users.
 //   upgradedFromDemo: If present, the date when this user was upgraded from being a demo user.
+//                     TODO(cleanup): Unlike other dates in our database, this is stored as a number
+//                     rather than as a Date object. We should fix that.
+//   appDemoId: If present and non-null, then the user is a demo user who arrived via an /appdemo/
+//              link. This field contains the app ID of the app that the user started out demoing.
+//              Unlike the `expires` field, this field is not cleared when the user upgrades from
+//              being a demo user.
 //
 // Identity users additionally contain the following fields:
 //   profile: Object containing the data that will be shared with users and grains that come into
@@ -78,8 +84,6 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //                       terms of service.
 //   plan: _id of an entry in the Plans table which determines the user's qutoa.
 //   storageUsage: Number of bytes this user is currently storing.
-//   isAppDemoUser: True if this is a demo user who arrived via an /appdemo/ link.
-//   appDemoId: If this is an appdemo user (see above), the app ID they started out demoing.
 //   payments: Object defined by payments module, if loaded.
 //   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
 //   referredByComplete: ID of the Account that referred this Account. If this is set, we

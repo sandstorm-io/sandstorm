@@ -79,6 +79,7 @@ Accounts.onCreateUser(function (options, user) {
                  signupNote: Match.Optional(String),
                  signupEmail: Match.Optional(String),
                  expires: Match.Optional(Date),
+                 appDemoId: Match.Optional(String),
                  loginIdentities: [{id: String}],
                  nonloginIdentities: [{id: String}]});
     return user;

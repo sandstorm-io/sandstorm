@@ -1002,8 +1002,8 @@ var startUpload = function (file, endpoint, onComplete) {
   Router.go("uploadStatus");
 }
 
-// This function is global so tests can call it
 restoreBackup = function(file) {
+  // This function is global so tests can call it
   startUpload(file, "/uploadBackup", function (response) {
     Session.set("uploadStatus", "Unpacking");
     var identityId = Accounts.getCurrentIdentityId();
@@ -1026,8 +1026,8 @@ promptRestoreBackup = function(input) {
   promptForFile(input, restoreBackup);
 };
 
-// This function is global so tests can call it
 uploadApp = function (file) {
+  // This function is global so tests can call it
   Meteor.call("newUploadToken", function (err, token) {
     if (err) {
       console.error(err);

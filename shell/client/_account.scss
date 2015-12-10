@@ -509,10 +509,11 @@ body>.main-content>.account {
 
   .verified-emails-editor {
     position: relative;
-    width: 680px;
     .already-verified {
+      display: inline-block;
       width: 340px;
       left: 0px;
+      vertical-align: top;
       ul {
         margin-top: 4px;
         padding-left: 0px;
@@ -550,9 +551,9 @@ body>.main-content>.account {
       }
     }
     .add-new {
-      position: absolute;
-      top: 0px;
-      left: 360px;
+      display: inline-block;
+      width: 330px;
+      vertical-align: top;
       .info, .hidden {
         display: none;
       }

@@ -211,12 +211,28 @@ if (Meteor.isClient && allowDemo) {
 
       // calculate the appId
 
-      // We copy the appId into the scope so the userCallbackFunction can access it.
+      // We copy the appId into the scope so the autorun function can access it.
       var appId = this.appId;
-      var userCallbackFunction = function(err) {
-        if (err) {
-          window.alert(err);
+      var signingIn = false;
+
+      // TODO(cleanup): Is there a better way to do this? Before multi-identity, we could use the
+      //   `userCallback` option of `Accounts.callLoginMethod()`, but now that doesn't work because
+      //   it fires too early.
+      var handle = Tracker.autorun(function () {
+        if (!isSignedUpOrDemo()) {
+          if (!signingIn) {
+            signingIn = true;
+            // 1. Create the Demo User & 2. Log the user in as this Demo User.
+            Accounts.callLoginMethod({
+              methodName: "createDemoUser",
+              methodArguments: ["Demo User", true, appId],
+            });
+          } else {
+            return;
+          }
         } else {
+          handle.stop();
+
           // First, find the package ID, since that is what
           // addUserActions takes. Choose the package ID with
           // highest version number.
@@ -231,18 +247,7 @@ if (Meteor.isClient && allowDemo) {
           // 4. Create new grain and 5. browse to it.
           launchAndEnterGrainByPackageId(packageId);
         }
-      }
-
-      if (isSignedUpOrDemo()) {
-        userCallbackFunction();
-      } else {
-        // 1. Create the Demo User & 2. Log the user in as this Demo User.
-        Accounts.callLoginMethod({
-          methodName: "createDemoUser",
-          methodArguments: ["Demo User", true, appId],
-          userCallback: userCallbackFunction
-        });
-      }
+      });
     }
   });
 }

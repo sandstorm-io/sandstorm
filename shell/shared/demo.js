@@ -218,6 +218,9 @@ if (Meteor.isClient && allowDemo) {
       // TODO(cleanup): Is there a better way to do this? Before multi-identity, we could use the
       //   `userCallback` option of `Accounts.callLoginMethod()`, but now that doesn't work because
       //   it fires too early.
+      //
+      // Note that we don't use Template.instance().autorun() because the template gets destroyed
+      // and recreated during account creation.
       var handle = Tracker.autorun(function () {
         if (!isSignedUpOrDemo()) {
           if (!signingIn) {
@@ -231,7 +234,8 @@ if (Meteor.isClient && allowDemo) {
             return;
           }
         } else {
-          handle.stop();
+          // `handle` may not have been assigned yet if this is the first run of the callback.
+          Meteor.defer(function() { handle.stop(); });
 
           // First, find the package ID, since that is what
           // addUserActions takes. Choose the package ID with

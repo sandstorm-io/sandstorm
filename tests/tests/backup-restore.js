@@ -171,7 +171,7 @@ module.exports["Test backup and restore"] = function(browser) {
       input.style["display"] = "inline";
     }, [])
     .perform(function (client, done) {
-      // Have to defer referencing fileDownloaded until after the previous steps have run, so this
+      // Have to defer referencing downloadPath until after the previous steps have run, so this
       // is wrapped in a .perform rather than simply chaining a .setValue()
       client.setValue('button.restore-button input[type=file]', downloadPath, function() {
         console.log("finished setting the form value");

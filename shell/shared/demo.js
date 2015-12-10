@@ -221,7 +221,10 @@ if (Meteor.isClient && allowDemo) {
       //
       // Note that we don't use Template.instance().autorun() because the template gets destroyed
       // and recreated during account creation.
+      var done = false;
       var handle = Tracker.autorun(function () {
+        if (done) return;
+
         if (!isSignedUpOrDemo()) {
           if (!signingIn) {
             signingIn = true;
@@ -235,6 +238,9 @@ if (Meteor.isClient && allowDemo) {
           }
         } else {
           // `handle` may not have been assigned yet if this is the first run of the callback.
+          // But we definitely don't want the callback to run again. So we have to resort to
+          // setting a flag that disables subsequent runs, and then deferring the actual stop. Ick.
+          done = true;
           Meteor.defer(function() { handle.stop(); });
 
           // First, find the package ID, since that is what

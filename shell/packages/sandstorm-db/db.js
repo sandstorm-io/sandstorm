@@ -1458,6 +1458,25 @@ if (Meteor.isServer) {
     });
   };
 
+  SandstormDb.prototype.deleteUnusedAccount = function(backend, identityId) {
+    // If there is an *unused* account that has `identityId` as a login identity, deletes it.
+
+    check(identityId, String);
+    var account = Meteor.users.findOne({"loginIdentities.id": identityId});
+    if (account &&
+        account.loginIdentities.length == 1 &&
+        account.nonloginIdentities.length == 0 &&
+        !Grains.findOne({userId: account._id}) &&
+        !ApiTokens.findOne({accountId: account._id}) &&
+        (!account.plan || account.plan === "free") &&
+        !account.payments &&
+        !Notifications.findOne({userId: account._id}) &&
+        !Contacts.findOne({ownerId: account._id})) {
+      Meteor.users.remove({_id: account._id});
+      backend.deleteUser(account._id);
+    }
+  }
+
   Meteor.publish("keybaseProfile", function (keyFingerprint) {
     check(keyFingerprint, ValidKeyFingerprint);
     var db = this.connection.sandstormDb;

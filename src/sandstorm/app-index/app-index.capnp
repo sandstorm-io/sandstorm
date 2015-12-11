@@ -163,8 +163,8 @@ const pkgdef :Package.PackageDefinition = (
 
   manifest = (
     appTitle = (defaultText = "Sandstorm App Index"),
-    appVersion = 0,
-    appMarketingVersion = (defaultText = "0.0.0"),
+    appVersion = 1,
+    appMarketingVersion = (defaultText = "2015-12-11"),
 
     actions = [
       ( title = (defaultText = "New Sandstorm App Index"),

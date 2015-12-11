@@ -1064,7 +1064,8 @@ Router.map(function () {
 
       return {
         needsAdminTokenLogin: this.ready() && !HasUsers.findOne("hasUsers") && !globalDb.allowDevAccounts(),
-        build: getBuildInfo().build
+        build: getBuildInfo().build,
+        splashUrl: (Settings.findOne("splashUrl") || {}).value
       };
     }
   });

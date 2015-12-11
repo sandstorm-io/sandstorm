@@ -214,9 +214,6 @@ var loginWithToken = function (email, token, topbar) {
 Template.loginButtonsDialog.helpers({
   allowUninvited: function () {
     return Meteor.settings.public.allowUninvited;
-  },
-  message: function () {
-    return (Settings.findOne("splashDialog") || {}).value;
   }
 });
 

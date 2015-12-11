@@ -81,6 +81,14 @@ Accounts.onCreateUser(function (options, user) {
                  expires: Match.Optional(Date),
                  loginIdentities: [{id: String}],
                  nonloginIdentities: [{id: String}]});
+
+    if (Meteor.settings.public.quotaEnabled) {
+      user.experiments = user.experiments || {};
+      user.experiments = {
+        firstTimeBillingPrompt: Math.random() < 0.5 ? "control" : "test"
+      };
+    }
+
     return user;
   }
 

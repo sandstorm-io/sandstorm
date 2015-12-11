@@ -701,6 +701,9 @@ if (Meteor.isClient) {
       // Don't show if not logged in.
       if (!user) return;
 
+      // Don't show if not in the experiment.
+      if (!user.experiments || user.experiments.firstTimeBillingPrompt !== "test") return;
+
       // Don't show if the user has selected a plan already.
       if (user.plan && !Session.get("firstTimeBillingPromptOpen")) return;
 

@@ -87,6 +87,19 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   referredCompleteDate: The Date at which the completed referral occurred.
 //   referredIdentityIds: List of Identity IDs that this Account has referred. This is used for
 //                        reliably determining which Identity's names are safe to display.
+//   experiments: Object where each field is an experiment that the user is in, and each value
+//           is the parameters for that experiment. Typically, the value simply names which
+//           experiment group which the user is in, where "control" is one group. If an experiment
+//           is not listed, then the user should not be considered at all for the purpose of that
+//           experiment. Each experiment may define a point in time where users not already in the
+//           experiment may be added to it and assigned to a group (for example, at user creation
+//           time). Current experiments:
+//       firstTimeBillingPrompt: Value is "control" or "test". Users are assigned to groups at
+//               account creation on servers where billing is enabled (i.e. Oasis). Users in the
+//               test group will see a plan selection dialog and asked to make an explitic choice
+//               (possibly "free") before they can create grains (but not when opening someone
+//               else's shared grain). The goal of the experiment is to determine whether this
+//               prompt scares users away -- and also whether it increases paid signups.
 //   stashedOldUser: A complete copy of this user from before the accounts/identities migration.
 //                   TODO(cleanup): Delete this field once we're sure it's safe to do so.
 
@@ -516,7 +529,7 @@ if (Meteor.isServer) {
       return [
         Meteor.users.find({_id: this.userId},
             {fields: {signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1,
-                      plan: 1, hasCompletedSignup: 1}}),
+                      plan: 1, hasCompletedSignup: 1, experiments: 1}}),
         Plans.find()
       ];
     } else {

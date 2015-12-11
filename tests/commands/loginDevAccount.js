@@ -16,32 +16,40 @@
 
 'use strict';
 
-var utils = require('../utils'),
-    short_wait = utils.short_wait,
-    medium_wait = utils.medium_wait;
-
 var crypto = require("crypto");
+var utils = require('../utils');
 
 exports.command = function(name, isAdmin, callback) {
   if (!name) {
     name = crypto.randomBytes(10).toString("hex");
   }
-  var isAdminString= '")';
-  if (isAdmin) {
-    isAdminString = '", true)';
-  }
+  var self = this;
   var ret = this
     .init()
-    .execute('window.loginDevAccountFast("' + name + isAdminString)
-    .pause(short_wait)
+    // loginDevAccountFast is fast, but not 3ms fast, which is ~the default script timeout
+    .timeouts("script", 5000)
+    .executeAsync(function(name, isAdmin, done) {
+      window.loginDevAccountFast(name, isAdmin)
+        .then(function () {
+          done();
+        }, function (err) {
+          throw err;
+        });
+    }, [name, isAdmin], function (result) {
+      if (result.status !== 0) console.log(result);
+      // Make sure to propagate failure on script timeout/failure
+      self.assert.ok(result.status === 0, "login completed successfully");
+    })
     .url(this.launch_url + "/apps")
-    .waitForElementVisible('.app-list', medium_wait)
-    .resizeWindow(utils.default_width, utils.default_height);
+    .waitForElementVisible('.app-list', utils.medium_wait)
+    .resizeWindow(utils.default_width, utils.default_height)
+    .perform(function(client, done) {
+      if (typeof callback === "function") {
+        callback.call(self, name);
+      }
+      done();
+    });
 
   this.sandstormAccount = 'dev';
-  if (typeof callback === "function") {
-    return ret.status(callback);
-  } else {
-    return ret;
-  }
+  return ret;
 };

@@ -358,6 +358,21 @@ function splitAccountUsersAndIdentityUsers() {
   });
 }
 
+function populateContactsFromApiTokens() {
+  ApiTokens.find({"owner.user.identityId": {$exists: 1},
+                  accountId: {$exists: 1}}).forEach(function(token) {
+    var identityId = token.owner.user.identityId;
+    var profile = SandstormDb.prototype.getIdentity(identityId).profile;
+    Contacts.upsert({ownerId: token.accountId, identityId: identityId}, {
+      ownerId: token.accountId,
+      petname: profile && profile.name,
+      created: new Date(),
+      identityId: identityId,
+      profile: profile,
+    });
+  });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -377,6 +392,7 @@ var MIGRATIONS = [
   moveDevAndEmailLoginDataIntoIdentities,
   repairEmailIdentityIds,
   splitAccountUsersAndIdentityUsers,
+  populateContactsFromApiTokens,
 ];
 
 function migrateToLatest() {

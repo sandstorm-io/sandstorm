@@ -283,3 +283,16 @@ SandstormDb.getUserEmails = function (user) {
   }
   return result;
 }
+
+SandstormDb.prototype.addContact = function addContact (ownerId, identityId) {
+  check(ownerId, String);
+  check(identityId, String);
+  var db = this;
+  var profile = db.getIdentity(identityId).profile;
+  db.collections.contacts.upsert({ownerId: ownerId, identityId: identityId}, {
+    ownerId: ownerId,
+    petname: profile && profile.name,
+    created: new Date(),
+    identityId: identityId,
+  });
+}

@@ -195,11 +195,11 @@ Contacts = new Mongo.Collection("contacts");
 //
 // Each contains:
 //   _id: random
-//   ownerId: The `_id` of the user who owns this contact.
-//   identityId:  The identity of the contacted user.
+//   ownerId: The accountId of the user account who owns this contact.
 //   petname: Human-readable label chosen by and only visible to the owner. Uniquely identifies
 //            the contact to the owner.
 //   created: Date when this contact was created.
+//   identityId: The `_id` of the user whose contact info this contains.
 
 Sessions = new Mongo.Collection("sessions");
 // UI sessions open to particular grains.  A new session is created each time a user opens a grain.

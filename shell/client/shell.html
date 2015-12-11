@@ -414,8 +414,7 @@ limitations under the License.
   <form class="email-invite">
     <p>
     <img class="inline-icon" src="/people-m.svg" role="presentation">
-    <input onclick="select()" type="text"
-           class="emails" placeholder="Enter email addresses">
+    {{> contactInputBox contacts=contacts}}
     {{> selectRole viewInfo=viewInfo}}
     </p>
     <div>

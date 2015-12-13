@@ -777,7 +777,7 @@ full_server_install() {
       echo "      This script can set up Sandstorm to run on port $DEFAULT_PORT instead,"
       echo "      without HTTPS. This makes sense if you're OK with typing the port number"
       echo "      into your browser whenever you access Sandstorm and you don't need"
-      echo "      security. This also mkaes sense you are going to set up a reverse proxy;"
+      echo "      security. This also makes sense if you are going to set up a reverse proxy;"
       echo "      if so, see https://docs.sandstorm.io/en/latest/administering/reverse-proxy/"
       echo ""
       echo "      If you want, you can quit this script with Ctrl-C now, and go uninstall"

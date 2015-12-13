@@ -15,12 +15,10 @@
 // limitations under the License.
 
 var ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
-var publicAdminSettings = ["google", "github", "emailToken", "splashDialog", "signupDialog",
+var publicAdminSettings = ["google", "github", "emailToken", "splashUrl", "signupDialog",
                            "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
                            "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled"];
 
-DEFAULT_SPLASH_DIALOG = "Contact the server admin for an invite " +
-  "(or <a href=\"https://sandstorm.io/install/\">install your own</a>).";
 DEFAULT_SIGNUP_DIALOG = "You've been invited to join this Sandstorm server!";
 
 var adminRoute = RouteController.extend({
@@ -672,7 +670,7 @@ if (Meteor.isClient) {
       state.set("numSettings", 10);
 
       var handleErrorBound = handleError.bind(state);
-      Meteor.call("setSetting", token, "splashDialog", event.target.splashDialog.value, handleErrorBound);
+      Meteor.call("setSetting", token, "splashUrl", event.target.splashUrl.value, handleErrorBound);
       Meteor.call("setSetting", token, "signupDialog", event.target.signupDialog.value, handleErrorBound);
       Meteor.call("setSetting", token, "termsUrl", event.target.termsUrl.value, handleErrorBound);
       Meteor.call("setSetting", token, "privacyUrl", event.target.privacyUrl.value, handleErrorBound);
@@ -705,10 +703,11 @@ if (Meteor.isClient) {
     setDocumentTitle: function () {
       document.title = "Advanced · Admin · Sandstorm";
     },
-    splashDialog: function() {
-      var setting = Settings.findOne({_id: "splashDialog"});
-      return (setting && setting.value) || DEFAULT_SPLASH_DIALOG;
+    splashUrl: function() {
+      var setting = Settings.findOne({_id: "splashUrl"});
+      return (setting && setting.value) || "";
     },
+    origin: function () { return getOrigin(); },
     signupDialog: function() {
       var setting = Settings.findOne({_id: "signupDialog"});
       return (setting && setting.value) || DEFAULT_SIGNUP_DIALOG;

@@ -93,10 +93,6 @@
           private server, don't offer "sign up".) --}}
     <h4>Sign {{#if allowUninvited}}up{{else}}in{{/if}}</h4>
 
-    {{#with message}}
-      <p>{{{.}}}</p>
-    {{/with}}
-
     {{> loginButtonsList}}
   </div>
 </template>

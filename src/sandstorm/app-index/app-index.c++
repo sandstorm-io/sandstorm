@@ -417,6 +417,7 @@ public:
 
   kj::MainBuilder::Validity init() {
     KJ_SYSCALL(mkdir("/var/packages", 0777));
+    KJ_SYSCALL(mkdir("/var/apps", 0777));
     KJ_SYSCALL(mkdir("/var/keybase", 0777));
     KJ_SYSCALL(mkdir("/var/www", 0777));
     KJ_SYSCALL(mkdir("/var/www/apps", 0777));
@@ -429,6 +430,7 @@ public:
 
   kj::MainBuilder::Validity run() {
     mkdir("/var/www/experimental", 0777);  // back-compat; ignore already exists error
+    mkdir("/var/apps", 0777);  // back-compat; ignore already exists error
 
     Indexer indexer;
 

@@ -25,6 +25,7 @@
 #include <time.h>
 #include <capnp/schema.h>
 #include <capnp/compat/json.h>
+#include <stdio.h>  // rename()
 
 namespace sandstorm {
 namespace appindex {
@@ -410,6 +411,17 @@ void Indexer::updateIndexInternal(kj::StringPtr outputFilename, kj::StringPtr ou
     StagingFile file(outputDir);
     kj::FdOutputStream(file.getFd()).write(text.begin(), text.size());
     file.finalize(kj::str(outputDir, "/", appEntry.first, ".json"));
+
+    if (approvedApps) {
+      // Write the symlink under /var/apps.
+      auto target = kj::str("../packages/",
+          packageIdString(appEntry.second.summary.getReader().getPackageId()));
+      auto linkPath = kj::str("/var/apps/", appEntry.first);
+      auto tmpLinkPath = kj::str(linkPath, ".tmp");
+      unlink(tmpLinkPath.cStr());  // just in case
+      KJ_SYSCALL(symlink(target.cStr(), tmpLinkPath.cStr()));
+      KJ_SYSCALL(rename(tmpLinkPath.cStr(), linkPath.cStr()));
+    }
   }
   KJ_ASSERT(i == apps.size());
 
@@ -573,6 +585,16 @@ protected:
       KJ_ASSERT(shortDescription.size() > 0 && shortDescription.size() < 25,
           "bad shortDescription; please provide a 1-to-3 word short description to display "
           "under the app title, e.g. \"Document editor\"");
+
+      KJ_IF_MAYBE(previous, sandstorm::raiiOpenIfExists(
+          kj::str("/var/apps/", appIdString(info.getAppId()), "/metadata"), O_RDONLY)) {
+        capnp::StreamFdMessageReader reader(previous->get());
+        auto previouslyPublished = reader.getRoot<spk::VerifiedInfo>();
+        KJ_ASSERT(info.getVersion() > previouslyPublished.getVersion(),
+            "oops, it looks like you forgot to bump appVersion -- it must be greater than the "
+            "previous published version of this app", previouslyPublished.getVersion());
+      }
+
       auto packageDir = kj::str("/var/packages/", packageIdString(info.getPackageId()));
       auto spkFilename = kj::str(packageDir, "/spk");
       if (access(spkFilename.cStr(), F_OK) < 0) {

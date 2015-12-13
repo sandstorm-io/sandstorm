@@ -497,6 +497,9 @@ Plans = new Mongo.Collection("plans");
 //   computeLabel: Label to display to the user describing this plan's compute units.
 //   grains: Total number of grains this user can create (often `Infinity`).
 //   price: Price per month in US cents.
+//   hidden: If true, a user cannot switch to this plan, but some users may be on it and are
+//       allowed to switch away.
+//   title: Title from display purposes. If missing, default to capitalizing _id.
 
 AppIndex = new Mongo.Collection("appIndex");
 // A mirror of the data from the App Market index

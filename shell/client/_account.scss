@@ -972,7 +972,8 @@ div.identity-editor {
 }
 
 body>.main-content>.account,
-body>.popup {
+body>.popup,
+.first-time-billing-prompt {
   .mobile-iframe-hack {
     border: 0px;
     opacity: .01;
@@ -984,7 +985,6 @@ body>.popup {
 }
 
 body>.popup.billing-prompt>.frame {
-  text-align: center;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 
@@ -999,6 +999,17 @@ body>.popup.billing-prompt>.frame {
   @media #{$mobile} {
     max-width: 500px;
   }
+}
+
+.first-time-billing-prompt {
+  max-width: 932px;
+  margin: 32px auto 0;
+  background-color: white;
+  overflow: hidden;
+}
+
+body>.popup.billing-prompt>.frame, .first-time-billing-prompt {
+  text-align: center;
 
   >h2 {
     text-align: center;
@@ -1262,7 +1273,6 @@ body>.popup.billing-prompt>.frame {
   >.faq {
     margin: 0;
     padding: 16px 0 32px;
-    background-color: #efefef;
     color: #494949;
     text-align: left;
 

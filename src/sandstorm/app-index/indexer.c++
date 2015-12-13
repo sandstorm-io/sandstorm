@@ -226,7 +226,8 @@ public:
 
 }  // namespace
 
-void Indexer::updateIndexInternal(kj::StringPtr outputFilename, bool approvedApps) {
+void Indexer::updateIndexInternal(kj::StringPtr outputFilename, kj::StringPtr outputDir,
+                                  bool approvedApps) {
   capnp::MallocMessageBuilder scratch;
   auto orphanage = scratch.getOrphanage();
 
@@ -406,9 +407,9 @@ void Indexer::updateIndexInternal(kj::StringPtr outputFilename, bool approvedApp
     apps.setWithCaveats(i++, appEntry.second.summary.getReader());
 
     auto text = json.encode(appEntry.second.details.getReader());
-    StagingFile file("/var/www/apps");
+    StagingFile file(outputDir);
     kj::FdOutputStream(file.getFd()).write(text.begin(), text.size());
-    file.finalize(kj::str("/var/www/apps/", appEntry.first, ".json"));
+    file.finalize(kj::str(outputDir, "/", appEntry.first, ".json"));
   }
   KJ_ASSERT(i == apps.size());
 
@@ -419,8 +420,8 @@ void Indexer::updateIndexInternal(kj::StringPtr outputFilename, bool approvedApp
 }
 
 void Indexer::updateIndex() {
-  updateIndexInternal("index.json", true);
-  updateIndexInternal("index-experimental.json", false);
+  updateIndexInternal("index.json", "/var/www/apps", true);
+  updateIndexInternal("index-experimental.json", "/var/www/experimental", false);
 }
 
 kj::String Indexer::writeIcon(spk::Metadata::Icon::Reader icon) {

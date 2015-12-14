@@ -88,19 +88,17 @@ module.exports['Test startSharing'] = function (browser) {
   browser
     .frame('grain-frame')
       .click('#startSharing')
-      .pause(very_short_wait)
     .frameParent()
-    .waitForElementVisible('.popup.share', very_short_wait)
+    .waitForElementVisible('.popup.share', short_wait)
     .click('button.close-popup')
-    .waitForElementNotPresent('.popup.share', very_short_wait)
+    .waitForElementNotPresent('.popup.share', short_wait)
 };
 
 module.exports['Test renderTemplate'] = function (browser) {
   browser
     .frame('grain-frame')
       .click('#renderTemplate')
-      .pause(very_short_wait)
-      .assert.attributeEquals('#template-frame', 'data-rendered', 'true')
+      .waitForElementVisible('#template-frame[data-rendered=true]', short_wait)
       .frame('template-frame')
         .getText('#text', function (result) {
           this.assert.equal(typeof result, "object");

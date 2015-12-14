@@ -15,6 +15,7 @@ var wrapLoginDev = function(test) {
 };
 
 module.exports = {
+  very_short_wait: 200,
   short_wait: 5000,
   medium_wait: 30000,
   long_wait: 60000,

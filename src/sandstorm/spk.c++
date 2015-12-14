@@ -63,6 +63,11 @@ typedef kj::byte byte;
 static const uint64_t APP_SIZE_LIMIT = 1ull << 30;
 // For now, we will refuse to unpack an app over 1 GB (decompressed size).
 
+static const uint32_t MAX_DEFINED_APIVERSION = 0;
+// The maximum API version that has been defined, as of this source code's compilation.  We should
+// outright refuse to pack an app claiming compatibility with a newer API version than this, because
+// we can't possibly know what the constraints are on that API.
+
 // =======================================================================================
 // base32 encode/decode derived from google-authenticator code, Apache 2.0 license:
 //   https://code.google.com/p/google-authenticator/source/browse/libpam/base32.c
@@ -500,6 +505,26 @@ private:
           return kj::str("missing `appMarketingVersion`\n"
                          "Under ", constantName, ".manifest, add something like ",
                          "`appMarketingVersion = (defaultText = \"0.0.0\")`.");
+        }
+
+        if (manifest.getMinApiVersion() > MAX_DEFINED_APIVERSION) {
+          return kj::str("The minimum API version this app claims it can run on is ",
+                         manifest.getMinApiVersion(), ", but the maximum API version "
+                         "known to this version of spk is ", MAX_DEFINED_APIVERSION, ".\n"
+                         "Please upgrade sandstorm to the latest version to pack this app.");
+        }
+
+        if (manifest.getMaxApiVersion() > MAX_DEFINED_APIVERSION) {
+          return kj::str("The maximum API version this app claims it can run on is ",
+                         manifest.getMaxApiVersion(), ", but the maximum API version known "
+                         "to this version of spk is ", MAX_DEFINED_APIVERSION, ".\n"
+                         "Please upgrade sandstorm to the latest version.");
+        }
+
+        if (manifest.getMinApiVersion() > manifest.getMaxApiVersion()) {
+          return kj::str("Your manifest specifies a maxApiVersion of ", manifest.getMaxApiVersion(),
+                         " which is less than its minApiVersion of ", manifest.getMinApiVersion(),
+                         ".\nPlease correct this.");
         }
 
         if (manifest.totalSize().wordCount > spk::Manifest::SIZE_LIMIT_IN_WORDS) {

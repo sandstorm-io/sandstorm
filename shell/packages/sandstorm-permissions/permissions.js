@@ -470,9 +470,10 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
 
     if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
       var icons = pkg.manifest.metadata.icons;
-      grainInfo.appIcon = icons.grain || icons.appGrid;
+      grainInfo.icon = icons.grain || icons.appGrid;
     }
-    if (!grainInfo.appIcon && pkg) {
+    // Only provide an app ID if we have no icon asset to provide and need to offer an identicon.
+    if (!grainInfo.icon && pkg) {
       grainInfo.appId = pkg.appId;
     }
     apiToken.owner = {

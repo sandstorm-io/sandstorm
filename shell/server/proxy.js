@@ -316,16 +316,6 @@ Meteor.methods({
       referralProgramLogSharingTokenUse(globalDb, apiToken.accountId);
     }
 
-    var pkg = Packages.findOne({_id: grain.packageId});
-    var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ""};
-    var appIcon = undefined;
-    if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
-      var icons = pkg.manifest.metadata.icons;
-      appIcon = icons.grain || icons.appGrid;
-    }
-    // Only provide an app ID if we have no icon asset to provide and need to offer an identicon.
-    var appId = appIcon ? undefined : grain.appId;
-
     var title;
     if (grain.userId === apiToken.accountId) {
       title = grain.title;

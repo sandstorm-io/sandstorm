@@ -24,6 +24,8 @@
 #       spk          Raw SPK file (immutable).
 #       metadata     Serialized Package.VerifiedInfo (immutable).
 #       status       Serialized SubmissionStatus (mutable).
+#   apps/
+#     <appId>        Symlink to latest approved package version.
 #   keybase/
 #     <keyId>        Serialized KeybaseIdentity for a person.
 #   descriptions     Serialized ShortDescriptionOverrides
@@ -163,7 +165,7 @@ const pkgdef :Package.PackageDefinition = (
 
   manifest = (
     appTitle = (defaultText = "Sandstorm App Index"),
-    appVersion = 1,
+    appVersion = 2,
     appMarketingVersion = (defaultText = "2015-12-11"),
 
     actions = [
@@ -171,7 +173,14 @@ const pkgdef :Package.PackageDefinition = (
         command = (argv = ["/app-index", "--init"])
       )
     ],
-    continueCommand = (argv = ["/app-index"])
+    continueCommand = (argv = ["/app-index"]),
+
+    metadata = (
+      author = (contactEmail = "support@sandstorm.io"),
+      categories = [developerTools],
+      license = (openSource = apache2),
+      shortDescription = (defaultText = "App Market")
+    )
   ),
 
   fileList = "app-index-sandstorm-files.list",

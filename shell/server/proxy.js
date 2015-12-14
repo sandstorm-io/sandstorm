@@ -671,18 +671,15 @@ getProxyForApiToken = function (token) {
         }
 
         var proxy;
-        if (tokenInfo.identityId) {
-          var identityId = null;
-          if (!tokenInfo.forSharing) {
-            identityId = tokenInfo.identityId;
-          }
-
-          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, identityId, true);
-          proxy.apiToken = tokenInfo;
-        } else if (tokenInfo.userInfo) {
+        if (tokenInfo.userInfo) {
           throw new Error("API tokens created with arbitrary userInfo no longer supported");
         } else {
-          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, null, true);
+          var identityId = null;
+          if (tokenInfo.identityId && !tokenInfo.forSharing) {
+            identityId = tokenInfo.identityId;
+          }
+          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, identityId, true);
+          proxy.apiToken = tokenInfo;
         }
 
         if (!SandstormPermissions.mayOpenGrain(globalDb, {token: tokenInfo})) {

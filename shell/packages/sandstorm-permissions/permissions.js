@@ -446,8 +446,6 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
       parentForSharing = true;
     }
 
-    // TODO(soon): For a while this field was failing to get set due to a typo. We should migrate
-    //   old entries in ApiTokens to populate this field where appropriate.
     apiToken.identityId = parentApiToken.identityId;
     apiToken.accountId = parentApiToken.accountId;
 

@@ -199,6 +199,21 @@ update-deps:
 	    git pull $(REMOTE_$(DEP)) `git symbolic-ref --short HEAD` && \
 	    cd ../..;)
 
+clobber-deps:
+	@$(call color,forcibly updating all dependencies)
+	@$(foreach DEP,capnproto ekam libseccomp node-capnp, \
+	    cd deps/$(DEP) && \
+	    echo "fetching $(DEP)..." && \
+	    git fetch $(REMOTE_$(DEP)) master && \
+	    git reset --hard FETCH_HEAD && \
+	    cd ../..;)
+	@cd deps/libsodium && \
+	    echo "fetching libsodium..." && \
+	    git fetch $(REMOTE_libsodium) stable && \
+	    git reset --hard FETCH_HEAD && \
+	    cd ../../
+
+
 # ====================================================================
 # Ekam bootstrap and C++ binaries
 

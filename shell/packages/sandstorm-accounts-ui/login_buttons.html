@@ -1,7 +1,7 @@
 <template name="loginButtons">
   {{!-- Data context is an instance of AccountsUi. --}}
   {{#if isDemoUser}}
-    <a>Create Account ▾</a>
+    <a>Create account ▾</a>
   {{else}}
     <a>Sign in ▾</a>
   {{/if}}
@@ -61,7 +61,7 @@
 
 <template name="_loginButtonsLoggedOutDropdown">
   {{#if isDemoUser}}
-    <h4>Create Account</h4>
+    <h4>Create account</h4>
     <p class="demo-note">Your demo data will be transferred to your new account.</p>
     {{> loginButtonsList}}
   {{else}}
@@ -91,7 +91,7 @@
     {{!-- There's no actual difference between signing "up" and "in", but people expect there to
           be a difference, so humor them by making the front-page login say "sign up". (But for a
           private server, don't offer "sign up".) --}}
-    <h4>Sign {{#if allowUninvited}}up{{else}}in{{/if}}</h4>
+    <h4>{{#if allowUninvited}}Create account{{else}}Sign in{{/if}}</h4>
 
     {{> loginButtonsList}}
   </div>

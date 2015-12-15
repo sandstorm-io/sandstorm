@@ -373,6 +373,34 @@ function populateContactsFromApiTokens() {
   });
 }
 
+function cleanUpApiTokens() {
+  // The `splitUserIdsIntoAccountIdsAndIdentityIds()` migration only added `identityId` in cases
+  // where the user still existed in the database.
+  ApiTokens.remove({userId: {$exists: true}, identityId: {$exists: false}});
+  ApiTokens.remove({"owner.user.userId": {$exists: true},
+                    "owner.user.identityId": {$exists: false}});
+
+  // For a while we were accidentally setting `appIcon` instead of `icon`.
+  ApiTokens.find({"owner.user.denormalizedGrainMetadata.appIcon": {$exists: true}}).forEach(
+      function (apiToken) {
+    var icon = apiToken.owner.user.denormalizedGrainMetadata.appIcon;
+    ApiTokens.update({_id: apiToken._id},
+                     {$set: {"owner.user.denormalizedGrainMetadata.icon": icon},
+                      $unset: {"owner.user.denormalizedGrainMetadata.appIcon": true}});
+  });
+
+  // For a while the `identityId` field of child UiView tokens was not getting set.
+  function repairChain(parentToken) {
+    ApiTokens.find({parentToken: parentToken._id, grainId: {$exists: true},
+                    identityId: {$exists: false}}).forEach(function (childToken) {
+      ApiTokens.update({_id: childToken._id}, {$set: {identityId: parentToken.identityId}});
+      repairChain(childToken);
+    })
+  }
+  ApiTokens.find({grainId: {$exists: true}, identityId: {$exists: true},
+                  parentToken: {$exists: false}}).forEach(repairChain);
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -393,6 +421,7 @@ var MIGRATIONS = [
   repairEmailIdentityIds,
   splitAccountUsersAndIdentityUsers,
   populateContactsFromApiTokens,
+  cleanUpApiTokens,
 ];
 
 function migrateToLatest() {

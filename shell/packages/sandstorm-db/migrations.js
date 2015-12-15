@@ -362,14 +362,17 @@ function populateContactsFromApiTokens() {
   ApiTokens.find({"owner.user.identityId": {$exists: 1},
                   accountId: {$exists: 1}}).forEach(function(token) {
     var identityId = token.owner.user.identityId;
-    var profile = SandstormDb.prototype.getIdentity(identityId).profile;
-    Contacts.upsert({ownerId: token.accountId, identityId: identityId}, {
-      ownerId: token.accountId,
-      petname: profile && profile.name,
-      created: new Date(),
-      identityId: identityId,
-      profile: profile,
-    });
+    var identity = SandstormDb.prototype.getIdentity(identityId);
+    if (identity) {
+      var profile = identity.profile;
+      Contacts.upsert({ownerId: token.accountId, identityId: identityId}, {
+        ownerId: token.accountId,
+        petname: profile && profile.name,
+        created: new Date(),
+        identityId: identityId,
+        profile: profile,
+      });
+    }
   });
 }
 
@@ -395,7 +398,7 @@ function cleanUpApiTokens() {
                     identityId: {$exists: false}}).forEach(function (childToken) {
       ApiTokens.update({_id: childToken._id}, {$set: {identityId: parentToken.identityId}});
       repairChain(childToken);
-    })
+    });
   }
   ApiTokens.find({grainId: {$exists: true}, identityId: {$exists: true},
                   parentToken: {$exists: false}}).forEach(repairChain);

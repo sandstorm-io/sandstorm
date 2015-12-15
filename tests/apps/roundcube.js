@@ -33,7 +33,7 @@ module.exports["Install"] = function (browser) {
 
 module.exports["Incoming Mail"] = function (browser) {
   browser
-    .pause(short_wait)
+    .waitForElementVisible('.grain-frame', short_wait)
     .frame("grain-frame")
     .click(".button-settings")
     .waitForElementVisible("#settings-tabs .identities > a", short_wait)

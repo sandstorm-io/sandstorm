@@ -37,25 +37,25 @@ module.exports["Install Powerbox"] = function (browser) {
 
 module.exports["Test Powerbox"] = function (browser) {
   browser
-    .pause(short_wait)
+    .waitForElementVisible('.grain-frame', short_wait)
     .frame("grain-frame")
-    .waitForElementVisible("#offer", short_wait)
-    .click("#offer")
-    .waitForElementVisible("#offer-result", short_wait)
-    .assert.containsText("#offer-result", "offer: success")
-    .frame()
+      .waitForElementVisible("#offer", short_wait)
+      .click("#offer")
+      .waitForElementVisible("#offer-result", short_wait)
+      .assert.containsText("#offer-result", "offer: success")
+    .frameParent()
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
         browser
           .frame("grain-frame")
-          .click("#request")
-          .frame()
+            .click("#request")
+          .frameParent()
           .waitForElementVisible("#powerbox-request-input", short_wait)
           .setValue("#powerbox-request-input", result.value)
           .click("#powerbox-request-form button")
           .frame("grain-frame")
-          .waitForElementVisible("#request-result", short_wait)
-          .assert.containsText("#request-result", "request: footest");
+            .waitForElementVisible("#request-result", short_wait)
+            .assert.containsText("#request-result", "request: footest");
     });
 };
 
@@ -69,25 +69,25 @@ module.exports["Install PowerboxSave"] = function (browser) {
 
 module.exports["Test PowerboxSave"] = function (browser) {
   browser
-    .pause(short_wait)
+    .waitForElementVisible('.grain-frame', short_wait)
     .frame("grain-frame")
-    .waitForElementVisible("#offer", short_wait)
-    .click("#offer")
-    .waitForElementVisible("#offer-result", short_wait)
-    .assert.containsText("#offer-result", "offer: success")
-    .frame()
+      .waitForElementVisible("#offer", short_wait)
+      .click("#offer")
+      .waitForElementVisible("#offer-result", short_wait)
+      .assert.containsText("#offer-result", "offer: success")
+    .frameParent()
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
         browser
           .frame("grain-frame")
-          .click("#request")
-          .frame()
+            .click("#request")
+          .frameParent()
           .waitForElementVisible("#powerbox-request-input", short_wait)
           .setValue("#powerbox-request-input", result.value)
           .click("#powerbox-request-form button")
           .frame("grain-frame")
-          .waitForElementVisible("#request-result", short_wait)
-          .assert.containsText("#request-result", "request: footest");
+            .waitForElementVisible("#request-result", short_wait)
+            .assert.containsText("#request-result", "request: footest");
     });
 };
 
@@ -105,30 +105,30 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
   browser
     // We'll use the debugLog at the bottom of the test, but it's nice to open it early and give it time to load.
     .click("#openDebugLog")
-    .pause(short_wait)
+    .waitForElementVisible('.grain-frame', short_wait)
     .frame("grain-frame")
-    .waitForElementVisible("#offer", short_wait)
-    .click("#offer")
-    .waitForElementVisible("#offer-result", short_wait)
-    .assert.containsText("#offer-result", "offer: success")
-    .frame()
+      .waitForElementVisible("#offer", short_wait)
+      .click("#offer")
+      .waitForElementVisible("#offer-result", short_wait)
+      .assert.containsText("#offer-result", "offer: success")
+    .frameParent()
     .waitForElementVisible("#powerbox-offer-url", short_wait)
     .getText("#powerbox-offer-url", function (result) {
         browser
           .frame("grain-frame")
-          .click("#request")
+            .click("#request")
           .frame()
           .waitForElementVisible("#powerbox-request-input", short_wait)
           .setValue("#powerbox-request-input", result.value)
           .click("#powerbox-request-form button")
           .frame("grain-frame")
-          .waitForElementVisible("#request-result", short_wait)
-          .assert.containsText("#request-result", "request:")
-          .windowHandles(function (windows) {
-            browser
-              .switchWindow(windows.value[1])
-              .waitForElementVisible(".grainlog-contents > pre", short_wait)
-              .assert.containsText(".grainlog-contents > pre", "Error: Requirements not satisfied")
-          });
+            .waitForElementVisible("#request-result", short_wait)
+            .assert.containsText("#request-result", "request:")
+            .windowHandles(function (windows) {
+              browser
+                .switchWindow(windows.value[1])
+                .waitForElementVisible(".grainlog-contents > pre", short_wait)
+                .assert.containsText(".grainlog-contents > pre", "Error: Requirements not satisfied")
+            });
     });
 };

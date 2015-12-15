@@ -40,7 +40,7 @@ module.exports["Test Ip Networking"] = function (browser) {
       browser
         .installApp("http://sandstorm.io/apps/jparyani/ip-networking-0.spk", "4829503496b793dffb29040208e35921", "u30m2tdzecypfv9wf11u28dgmu4wjmz3tny80dqgq5aq4ge9z460")
         .assert.containsText("#grainTitle", "Untitled IpNetworkTest")
-        .pause(short_wait)
+        .waitForElementVisible('.grain-frame', short_wait)
         .frame("grain-frame")
         .waitForElementVisible("#request", short_wait)
         .click("#request")
@@ -65,7 +65,7 @@ module.exports["Test Ip Interface"] = function (browser) {
       browser
         .installApp("http://sandstorm.io/apps/jparyani/ip-interface-1.spk", "0b2d293e7701341a4db74f365aef6832", "xnk8j642gzvxuxq5axts9qzg578rc4gmg1kr8qqqad81wgvan6z0")
         .assert.containsText("#grainTitle", "Untitled IpInterfaceTest")
-        .pause(short_wait)
+        .waitForElementVisible('.grain-frame', short_wait)
         .frame("grain-frame")
         .waitForElementVisible("#request-port", short_wait)
         .setValue("#request-port", IP_INTERFACE_TEST_PORT)

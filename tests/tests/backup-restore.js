@@ -78,10 +78,6 @@ module.exports = {
     makeCleanDownloadsDirSync();
     configureAutoDownload(browser, done);
   },
-  after: function(browser, done) {
-    browser.end();
-    done();
-  }
 };
 
 module.exports["Test backup and restore"] = function(browser) {

@@ -40,6 +40,5 @@ if (!disable_demo) {
       .loginDemo()
       .waitForElementVisible('.topbar .account>.show-popup>a', short_wait)
       .assert.containsText(".topbar .account>.show-popup>a", "Demo")
-      .end();
   };
 }

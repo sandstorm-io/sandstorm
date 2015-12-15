@@ -133,17 +133,11 @@ module.exports = utils.testAllLogins({
 
   "Test grain frame" : function (browser) {
     browser
-      .pause(short_wait)
+      .waitForElementPresent('iframe.grain-frame', short_wait)
       .frame('grain-frame')
-      .waitForElementPresent('#publish', medium_wait)
-      .assert.containsText('#publish', 'Publish')
-      .frame(null);
-  },
-
-  "Test grain download" : function (browser) {
-    browser
-      .click('#backupGrain');
-      // TODO(someday): detect if error occurred, since there's no way for selenium to verify downloads
+        .waitForElementPresent('#publish', medium_wait)
+        .assert.containsText('#publish', 'Publish')
+      .frameParent();
   },
 
   "Test grain restart" : function (browser) {
@@ -151,10 +145,9 @@ module.exports = utils.testAllLogins({
       .click('#restartGrain')
       .pause(short_wait)
       .frame('grain-frame')
-      .waitForElementPresent('#publish', medium_wait)
-      .pause(short_wait)
-      .assert.containsText('#publish', 'Publish')
-      .frame(null);
+        .waitForElementPresent('#publish', medium_wait)
+        .assert.containsText('#publish', 'Publish')
+      .frameParent();
   },
 
   "Test grain debug" : function (browser) {
@@ -186,8 +179,17 @@ module.exports["Test grain anonymous user"] = function (browser) {
     // Navigate to the url with an anonymous user
     .getText('#share-token-text', function(response) {
       browser
-        .execute('window.Meteor.logout()')
-        .pause(short_wait)
+        .executeAsync(function (done) {
+          var handle = new Promise(function (resolve, reject) {
+            window.Meteor.logout(function (err) {
+              if (err) reject(err);
+              resolve();
+            });
+          });
+          handle.then(function () {
+            done();
+          });
+        }, [])
         .url(response.value)
         .waitForElementVisible('#grainTitle', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
@@ -275,6 +277,7 @@ module.exports["Test roleless sharing"] = function (browser) {
             .click('.topbar .share > .show-popup')
             .click('.popup.share .who-has-access')
             .waitForElementVisible('.popup.who-has-access', medium_wait)
+            .waitForElementVisible('.popup.who-has-access .people td', medium_wait)
             .assert.containsText('.popup.who-has-access .people td', secondUserName)
         });
     });

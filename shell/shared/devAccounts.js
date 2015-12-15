@@ -78,23 +78,26 @@ if (allowDevAccounts) {
     };
 
     loginDevAccountFast = function(displayName, isAdmin) {
-      // This skips the firstSignUp page. Mostly used for testing purposes.
-      var profile = {
-        name: displayName,
-        pronoun: "robot",
-        handle: "_" + displayName.toLowerCase()
-      };
+      return new Promise(function (resolve, reject) {
+        // This skips the firstSignUp page. Mostly used for testing purposes.
+        var profile = {
+          name: displayName,
+          pronoun: "robot",
+          handle: "_" + displayName.toLowerCase()
+        };
 
-      Accounts.callLoginMethod({
-        methodName: "createDevAccount",
-        methodArguments: [displayName, isAdmin, profile, displayName + "@example.com"],
-        userCallback: function (err) {
-          if (err) {
-            window.alert(err);
-          } else {
-            Router.go("apps");
+        Accounts.callLoginMethod({
+          methodName: "createDevAccount",
+          methodArguments: [displayName, isAdmin, profile, displayName + "@example.com"],
+          userCallback: function (err) {
+            if (err) {
+              reject(new Error(err));
+            } else {
+              Router.go("apps");
+              resolve();
+            }
           }
-        }
+        });
       });
     };
 

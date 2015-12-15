@@ -19,7 +19,7 @@
 set -euo pipefail
 
 XVFB_PID=""
-RUN_SELENIUM="true"
+RUN_SELENIUM="${RUN_SELENIUM:-true}"
 BUNDLE_PATH=""
 
 cleanExit () {

@@ -15,29 +15,7 @@
 // limitations under the License.
 
 .main-content>.about {
-  color: #191919;
-  padding: 64px;
-  max-width: 1110px;
-  @media #{$mobile} {
-    padding: 8px;
-  }
-  text-align: center;
-
-  h1, h2 {
-    font-weight: normal;
-    text-align: left;
-  }
-
-  h1 {
-    font-size: 25pt;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #6d6d6d;
-    margin-top: 0;
-  }
-
-  h2 {
-    font-size: 20pt;
-  }
+  @extend %padded-info-page;
 
   >section.intro {
     text-align: left;
@@ -92,10 +70,9 @@
   }
 
   >section.developers, >section.advisors, >section.corporate, >section.individual {
-    margin-top: 32px;
-    background-color: white;
+    @extend %content-section;
     padding: 8px;
-    display: inline-block;
+    margin-top: 32px;
 
     h2 {
       text-align: center;
@@ -277,4 +254,36 @@
       }
     }
   }
+}
+
+%padded-info-page {
+  color: #191919;
+
+  padding: 64px;
+  max-width: 1110px;
+  @media #{$mobile} {
+    padding: 8px;
+  }
+  text-align: center;
+
+  h1, h2 {
+    font-weight: normal;
+    text-align: left;
+  }
+
+  h1 {
+    font-size: 25pt;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #6d6d6d;
+    margin-top: 0;
+  }
+
+  h2 {
+    font-size: 20pt;
+  }
+}
+
+%content-section {
+    background-color: white;
+    display: inline-block;
 }

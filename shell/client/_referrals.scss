@@ -1,0 +1,91 @@
+.referrals {
+  @extend %padded-info-page;
+
+  .pageheader {
+    background-color: #6d5eb7;
+    color: white;
+
+    // Use DIV nesting so that we can have two different backgrounds.
+    .leftbackground {
+      background-image: url("/referral-graphics/referral-edge.svg");
+      background-repeat: no-repeat;
+      background-position: left;
+      .rightbackground {
+        background-image: url("/referral-graphics/referral-edge-rotated.svg");
+        background-repeat: no-repeat;
+        background-position: right;
+
+        // Use padding so that text appears within the image.
+        padding-top: 1em;
+        padding-bottom: 1em;
+        padding-left: 8em;
+        padding-right: 8em;
+      }
+    }
+
+    .reward-amount {
+      font-size: 150%;
+    }
+  }
+
+  section {
+    @extend %content-section;
+    padding-left: 50px;
+    padding-right: 50px;
+    padding-top: 40px;
+    padding-bottom: 75px;
+
+    // Left-align all text in the SECTION element by default.
+    text-align: left;
+
+    h1, h2, h3 {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    h3 {
+      font-weight: normal;
+      border-bottom: 1px solid #6d6d6d;
+    }
+    p {
+      font-size: 125%;
+      margin-top: 0;
+    }
+    p.gentle-hint {
+      font-size: inherit;
+      color: #636363;
+    }
+    .comma-separated-ul {
+      list-style-type: none;
+      li {
+        display: inline;
+      }
+      li:after {
+        content: ", ";
+      }
+      li:last-child:after {
+        content: "";
+      }
+    }
+
+    .image-tutorial {
+      // Step text, numbered list items, and images show up centered in the visual tutorial.
+      text-align: center;
+      list-style-position: inside;
+
+      li {
+        padding: 1em;
+      }
+
+      img {
+        display: block;
+        margin: auto;
+        max-width: 50%;
+      }
+    }
+
+    .fine-print {
+      margin-top: 1.5em;
+    }
+  }
+}

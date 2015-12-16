@@ -1,3 +1,7 @@
+### v0.137 (2015-12-15)
+- Tweak wording of app update notification.
+- Bug fixes for servers running demo mode (probably only Oasis).
+
 ### v0.136 (2015-12-14)
 - You can now share with other users "by identity" without ever creating a secret link (and thus you can avoid any chance of that link leaking). The sharing dialog implements an auto-complete interface for selecting such contacts. Only users who have previously revealed their identities to you will be shown. Note that e-mail invites to other users still generate secret URLs.
 - When trying to link an additional identity to your account, if the identity already has an account, but that account is empty (no grains, no payment plan, etc.), Sandstorm will now automatically delete the other account so that the identity can be linked to yours. Previously, this situation reported an error saying that the identity couldn't be linked because it was already the login identity for another account. This was problematic because many users have logged in with various other "identities" in the past, causing those identities to have empty accounts attached.
@@ -7,7 +11,7 @@
 
 ### v0.135 (2015-12-08)
 - When visiting a share link anonymously, we now gently encourage the user to log in, since most apps work better when users are logged in.
-- Fixed variosu problems that could cause blank gray screens (no error message) when visiting sharing links.
+- Fixed various problems that could cause blank gray screens (no error message) when visiting sharing links.
 - Fixed double-counting of users in server stats, introduced in 0.133.
 - Fixed recent regression in first-time setup flow which forced the admin to create two or even three admin tokens in order to complete setup. Only one should be required (which the install script auto-generates).
 

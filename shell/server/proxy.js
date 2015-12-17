@@ -1509,6 +1509,18 @@ class Proxy {
     context.eTagPrecondition = parsePreconditionHeader(request);
 
     context.additionalHeaders = [];
+
+    // If the whitelist entry is prefixed with the app header prefix, add it.
+    Object.keys(request.headers).forEach(function(requestHeaderName) {
+      if (requestHeaderName.startsWith(WebSession.appHeaderPrefix)) {
+        context.additionalHeaders.push({
+          name: requestHeaderName,
+          value: request.headers[requestHeaderName]
+        });
+      }
+    });
+
+    // Add any headers that appear in the whitelist.
     WebSession.Context.headerWhitelist.forEach((headerName) => {
       if (headerName.endsWith("*")) {
         const prefix = headerName.substr(0, headerName.length - 1);

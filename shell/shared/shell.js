@@ -386,6 +386,13 @@ if (Meteor.isClient) {
     }
   });
 
+  Template.referrals.helpers({
+    setDocumentTitle: function () {
+      document.title = "Referral Program · Sandstorm";
+    }
+  });
+
+
   Template.body.onRendered(function () {
     // If we're on iOS, set a class name on <body> so we can use CSS styles to work around mobile
     // Safari's ridiculous iframe rendering behavior.

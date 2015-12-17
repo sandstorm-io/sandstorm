@@ -1,7 +1,7 @@
 .referrals {
   @extend %padded-info-page;
 
-  .pageheader {
+  header {
     background-color: #6d5eb7;
     color: white;
 
@@ -30,6 +30,8 @@
 
   section {
     @extend %content-section;
+    box-sizing: border-box;
+    width: 100%;
     padding-left: 50px;
     padding-right: 50px;
     padding-top: 40px;

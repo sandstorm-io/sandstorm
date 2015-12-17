@@ -4,6 +4,12 @@
   header {
     color: white;
 
+    // Most text in a padded-info-page is text-align: center by default. However, H1 and H2 elements
+    // override that to be aligned left. By contrast, we want to center everything in our header.
+    h1, h2 {
+      text-align: center;
+    }
+
     background: left/contain no-repeat url("/referral-graphics/referral-edge.svg"),
                 right/contain no-repeat url("/referral-graphics/referral-edge-rotated.svg"),
                 #6d5eb7;

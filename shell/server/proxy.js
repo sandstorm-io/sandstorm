@@ -1582,6 +1582,26 @@ class Proxy {
       response.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
     }
 
+    if (rpcResponse.additionalHeaders && rpcResponse.additionalHeaders.length > 0) {
+      // Build object for whitelisted header lookup
+      var whitelisted = {};
+      WebSession.Response.headerWhitelist.forEach(function(header) {
+        whitelisted[header] = 1;
+      });
+
+      // Add any additional prefixed/whitelisted headers to the response.
+      // We cannot trust that the headers in the RPC response are actually
+      // allowed, so we check if they are prefixed or whitelisted.
+      rpcResponse.additionalHeaders.forEach(function(header) {
+        if (header.name.startsWith(WebSession.appHeaderPrefix) ||
+            whitelisted[header.name]) {
+          // If header is prefixed with appHeaderPrefix,
+          // or if the header name is in whitelist, set it.
+          response.setHeader(header.name,  header.value);
+        }
+      });
+    }
+
     // On first response, update the session to have hasLoaded=true
     this.setHasLoaded();
 

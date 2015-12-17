@@ -38,6 +38,11 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   # application's storage was written and may automatically implement etags based on hashing the
   # content.
 
+  const appHeaderPrefix :Text = "x-sandstorm-app-";
+  # Headers with this prefix will always be allowed in both the request and response.
+  # They represent custom HTTP headers that an app is intentionally exposing through
+  # Sandstorm.
+
   struct Params {
     # Startup params for web sessions.  See `UiView.newSession()`.
 

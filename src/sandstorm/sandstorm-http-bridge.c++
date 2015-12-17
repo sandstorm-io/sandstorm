@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <map>
 #include <unordered_map>
+#include <set>
 #include <time.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -260,6 +261,42 @@ public:
           break;
       }
       cookie.setHttpOnly(cookies[i].httpOnly);
+    }
+
+    // Add whitelisted headers to additionalHeaders. With respect to security,
+    // the consumers of  WebSession::Response are responsible for making sure
+    // these headers are actually whitelisted. Since this bridge is included in
+    // the app package and runs in the grain itself, we cannot trust that the
+    // whitelist is correctly implemented here. An alternate implementation may
+    // not respect the whitelist. However, for the sake of building a Response
+    // that contains only valid headers, only whitelisted headers are added
+    // here.
+
+    // Create a set from the headerWhitelist
+    auto headerWhitelist = std::set<std::string>(
+        WebSession::Response::HEADER_WHITELIST->begin(),
+        WebSession::Response::HEADER_WHITELIST->end());
+
+    // Add whitelisted headers, and headers matching the app prefix, to a
+    // temporary vector of headers. It is possible for a header name to appear
+    // more than once.
+    kj::Vector<Header> headersMatching;
+    for (auto &header : headers) {
+      auto headerName = header.first;
+      if (headerWhitelist.find(headerName) != headerWhitelist.end() ||
+          headerName.startsWith(WebSession::APP_HEADER_PREFIX)) {
+        headersMatching.add(kj::mv(header.second));
+      }
+    }
+    // Initialize additionalHeaders once we know how many headers to include.
+    auto headerList = builder.initAdditionalHeaders(headersMatching.size());
+    // Add the headers matching the whitelist
+    int i = 0;
+    for (auto const &header : headersMatching) {
+      auto respHeader = headerList[i];
+      respHeader.setName(header.name);
+      respHeader.setValue(header.value);
+      i++;
     }
 
     switch (statusInfo.type) {

@@ -1163,29 +1163,23 @@ limitations under the License.
   <div class="referrals">
     <h1>Referral Program</h1>
     <header>
-      <div class="leftbackground">
-        <div class="rightbackground">
-          <div class="stoprotating">
-            {{#if isPaid}}
-            <h2>Get up to <span class="reward-amount">30 GB</span> of free space when your friends share on Oasis!</h2>
-            {{else}}
-            <h2>Get unlimited grains &amp; up to <span class="reward-amount">2 GB</span> of free space when
-              your friends share on Oasis!</h2>
-            {{/if}}
+      {{#if isPaid}}
+      <h2>Get up to <span class="reward-amount">30 GB</span> of free space when your friends share on Oasis!</h2>
+      {{else}}
+      <h2>Get unlimited grains &amp; up to <span class="reward-amount">2 GB</span> of free space when
+        your friends share on Oasis!</h2>
+      {{/if}}
 
-            {{#if isPaid}}
-            <p>
-              For each friend that creates a sharing link, we'll reward you with 2 GB.
-            </p>
-            {{else}}
-            <p>
-              For each friend that creates a sharing link, we'll reward you with 50 MB.
-              You'll also get unlimited grains.
-            </p>
-            {{/if}}
-          </div>
-        </div>
-      </div>
+      {{#if isPaid}}
+      <p>
+        For each friend that creates a sharing link, we'll reward you with 2 GB.
+      </p>
+      {{else}}
+      <p>
+        For each friend that creates a sharing link, we'll reward you with 50 MB.
+        You'll also get unlimited grains.
+      </p>
+      {{/if}}
     </header>
     <section>
       <h1>Sharing is referring</h1>

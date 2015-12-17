@@ -281,6 +281,9 @@ Meteor.methods({
       if (!globalDb.userHasIdentity(this.userId, identityId)) {
         throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
       }
+      if (contacts.length === 0) {
+        throw new Meteor.Error(400, "No contacts were provided.");
+      }
       var accountId = this.userId
       var identity = globalDb.getIdentity(identityId);
       var sharerDisplayName = identity.profile.name;
@@ -1125,8 +1128,32 @@ if (Meteor.isClient) {
       div.appendChild(document.createTextNode(message));
       var htmlMessage = div.innerHTML.replace(/\n/g, "<br>");
 
+      var contacts = instance.contacts.get();
+      var emails = instance.find("input.emails");
+      var emailsValue = emails.value;
+      if (emailsValue) {
+        if (emailsValue.match(/.+\@.+\..+/)) {
+          contacts.push({
+            _id: emailsValue,
+            profile: {
+              service: "email",
+              name: emailsValue,
+              intrinsicName: emailsValue,
+              pictureUrl: "/email.svg",
+            },
+            isDefault: true,
+          });
+          instance.contacts.set(contacts);
+          emails.value = "";
+        } else {
+          instance.completionState.set(
+            {error: "Invalid text in contact input box: " + emailsValue});
+          return;
+        }
+      }
+
       Meteor.call("inviteUsersToGrain", getOrigin(), currentGrain.identityId(),
-                  grainId, title, assignment, instance.contacts.get(),
+                  grainId, title, assignment, contacts,
                   {text: message, html: htmlMessage}, function (error, result) {
         if (error) {
           instance.completionState.set({error: error.toString()});

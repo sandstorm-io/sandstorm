@@ -2,26 +2,17 @@
   @extend %padded-info-page;
 
   header {
-    background-color: #6d5eb7;
     color: white;
 
-    // Use DIV nesting so that we can have two different backgrounds.
-    .leftbackground {
-      background-image: url("/referral-graphics/referral-edge.svg");
-      background-repeat: no-repeat;
-      background-position: left;
-      .rightbackground {
-        background-image: url("/referral-graphics/referral-edge-rotated.svg");
-        background-repeat: no-repeat;
-        background-position: right;
+    background: left/contain no-repeat url("/referral-graphics/referral-edge.svg"),
+                right/contain no-repeat url("/referral-graphics/referral-edge-rotated.svg"),
+                #6d5eb7;
 
-        // Use padding so that text appears within the image.
-        padding-top: 1em;
-        padding-bottom: 1em;
-        padding-left: 8em;
-        padding-right: 8em;
-      }
-    }
+    // Use padding so that text appears within the image.
+    padding-top: 1em;
+    padding-bottom: 1em;
+    padding-left: 8em;
+    padding-right: 8em;
 
     .reward-amount {
       font-size: 150%;

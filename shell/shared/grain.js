@@ -1152,6 +1152,7 @@ if (Meteor.isClient) {
       });
     },
     "click .reset-invite": function (event, instance) {
+      instance.contacts.set([]);
       instance.completionState.set({clear: true});
       instance.find("form").reset();
       instance.find("form option[data-default-selected=true]").selected = true;

@@ -162,9 +162,10 @@ Meteor.setInterval(function () {
     sandstormBackend = sandstormBackendConnection.restore(null, Backend);
     globalBackend._backendCap = sandstormBackend;
   }
+  var debugLog = !backendHealthy;
 
   backendHealthy = false;
-  sandstormBackend.ping().then(function () {
+  var promise = sandstormBackend.ping().then(function () {
     backendHealthy = true;
     if (Capnp.enableVerboseDebugLogging) Capnp.enableVerboseDebugLogging(false);
   }, function (err) {
@@ -173,6 +174,10 @@ Meteor.setInterval(function () {
     // exceptions being thrown for this problem; we see the connection simply stop responding.
     // So we don't expect this branch to execute in any case.
   });
+
+  if (debugLog) {
+    console.log("capnp.js: outer promise:", promise);
+  }
 }, 30000);
 
 // =======================================================================================

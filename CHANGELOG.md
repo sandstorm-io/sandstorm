@@ -1,3 +1,7 @@
+### v0.138 (2015-12-18)
+- Fix bug in new sharing interface where if you typed an email address but did not press "enter" to turn it into a chip, then tried to send the invite, nothing was sent.
+- Oasis: Referral program page is now designed.
+
 ### v0.137 (2015-12-15)
 - Tweak wording of app update notification.
 - Bug fixes for servers running demo mode (probably only Oasis).

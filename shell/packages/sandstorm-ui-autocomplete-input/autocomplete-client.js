@@ -17,26 +17,6 @@ Template.contactInputBox.onCreated(function () {
   this.randomId = Random.id();  // For use with aria requiring ids in html
   this.autoCompleteContacts = new ReactiveVar([]);
   this.autorun(generateAutoCompleteContacts.bind(this, this));
-  this.autorun(function () {
-    var selectedContact = self.highlightedContact.get();
-    if (!selectedContact) {
-      selectedContact = {_id: null};
-      self.highlightedContact.set(selectedContact);
-    }
-    var selectedContactId = selectedContact._id;
-    var filterFunc = function (contact) {
-      return contact._id === selectedContactId;
-    }
-    var contacts = self.autoCompleteContacts.get();
-    if (contacts.length > 0 && (!selectedContactId || !_.find(contacts, filterFunc))) {
-      var nonDefault = _.find(contacts, function (contact) { return !contact.isDefault; });
-      if (nonDefault) {
-        self.highlightedContact.set(nonDefault);
-      } else {
-        self.highlightedContact.set(contacts[0]);
-      }
-    }
-  });
 });
 
 function generateAutoCompleteContacts(template) {
@@ -76,10 +56,16 @@ function generateAutoCompleteContacts(template) {
     });
   }
   results.forEach(function (contact) {
-    var oldId = contact._id;
     SandstormDb.fillInPictureUrl(contact);
   })
   template.autoCompleteContacts.set(defaults.concat(results));
+  if (results.length > 0) {
+    template.highlightedContact.set(results[0]);
+  } else if (defaults.length > 0) {
+    template.highlightedContact.set(defaults[0]);
+  } else {
+    template.highlightedContact.set({_id: null});
+  }
 };
 
 Template.contactInputBox.helpers({

@@ -145,7 +145,7 @@ test: sandstorm-$(BUILD)-fast.tar.xz
 	tests/run-local.sh sandstorm-$(BUILD)-fast.tar.xz
 
 installer-test:
-	(cd installer-tests && bash prepare-for-tests.sh && TERM=xterm SLOW_TEXT_TIMEOUT=60 ~/.local/bin/stodgy-tester --plugin stodgy_tester.plugins.sandstorm_installer_tests --on-vm-start=uninstall_sandstorm --rsync)
+	(cd installer-tests && bash prepare-for-tests.sh && PYTHONUNBUFFERED=yes TERM=xterm SLOW_TEXT_TIMEOUT=60 ~/.local/bin/stodgy-tester --plugin stodgy_tester.plugins.sandstorm_installer_tests --on-vm-start=uninstall_sandstorm --rsync)
 
 # ====================================================================
 # Dependencies

@@ -1,4 +1,4 @@
-You can backup an individual grain by clicking the download backup
+You can back up an individual grain by clicking the download backup
 icon at the top of your sandstorm app. The entire sandstorm
 installation can be backed up safely by stopping sandstorm:
 

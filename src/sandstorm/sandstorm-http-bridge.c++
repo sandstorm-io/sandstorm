@@ -31,6 +31,7 @@
 #include <capnp/serialize.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <regex>
 #include <map>
 #include <unordered_map>
 #include <set>
@@ -1546,8 +1547,24 @@ private:
     }
     auto additionalHeaderList = context.getAdditionalHeaders();
     if (additionalHeaderList.size() > 0) {
+
+      // Create a set from the headerWhitelist
+      auto headerWhitelist = std::set<std::string>(
+          WebSession::Context::HEADER_WHITELIST->begin(),
+          WebSession::Context::HEADER_WHITELIST->end());
+
       for (auto header : additionalHeaderList) {
-        lines.add(kj::str(header.getName(), ": ", header.getValue()));
+        auto headerName = header.getName();
+        auto headerValue = header.getValue();
+        if (headerWhitelist.find(headerName) != headerWhitelist.end() ||
+            headerName.startsWith(WebSession::APP_HEADER_PREFIX)) {
+          // Check header is present in whitelist.
+          // Check header name and value to prevent header injection.
+          lines.add(kj::str(
+            checkIsHttpToken(headerName),
+            ": ",
+            checkIsHeaderValue(headerValue)));
+        }
       }
     }
     auto eTagPrecondition = context.getETagPrecondition();
@@ -1584,6 +1601,36 @@ private:
 
     lines.add(kj::str(""));
     lines.add(kj::str(""));
+  }
+
+  static kj::StringPtr checkIsHttpToken(kj::StringPtr val) {
+    // Allowable values for HTTP tokens per RFC 7230 ("token").
+    // Same as valid header field names ("field-name").
+    // Notably, this excludes CR and LF, thus preventing header injection.
+    // TODO(cleanup): Use kj::parse rather than std::regex.
+    static const std::regex tokenRe = std::regex("^[a-zA-Z0-9_!#$%&'*+.^`|~-]+$");
+    if (!std::regex_match(val.cStr(), tokenRe)) {
+      KJ_FAIL_ASSERT("Invalid HTTP token.", val.cStr());
+    } else {
+      return val;
+    }
+  }
+
+  static kj::StringPtr  checkIsHeaderValue(kj::StringPtr val) {
+    static const std::regex headerValRe = std::regex(
+      "^[\x21-\x7E,\x80-\xFF]+([\x20,\x09]+[\x21-\x7E,\x80-\xFF]+)*?$");
+    // Allowable values for header field values per RFC 7230 ("field-content").
+    // Does not check for obsolete line-folding ("obs-fold").
+    // Notably, this excludes CR and LF, thus preventing header injection.
+    // Character ranges explained:
+    // \x21-\x7E: visible (printing) characters ("VCHAR").
+    // \x80-\xFF: characters outside of US ASCII, treated as opaque data ("obs-text").
+    // \x20,x09: space and horizontal tab ("SP / HTAB")
+    if (!std::regex_match(val.cStr(), headerValRe)) {
+      KJ_FAIL_ASSERT("Invalid HTTP token.", val.cStr());
+    } else {
+      return val;
+    }
   }
 
   template <typename Context>

@@ -593,7 +593,7 @@ detect_init_system() {
 
 choose_install_mode() {
   if [ "yes" = "$USE_DEFAULTS" ] ; then
-    CHOSEN_INSTALL_MODE=2  # dev server mode
+    CHOSEN_INSTALL_MODE="${CHOSEN_INSTALL_MODE:-2}"  # dev server mode by default
   fi
 
   if [ -z "${CHOSEN_INSTALL_MODE:-}" ]; then
@@ -731,6 +731,24 @@ full_server_install() {
   # it to your heart's content.
   if [ "yes" != "${PREFER_ROOT}" ] ; then
     fail "The automatic setup process requires sudo. Try again with option 2, development server, to customize."
+  fi
+
+  if [ "yes" = "$USE_DEFAULTS" ] ; then
+    if [ -z "${DESIRED_SANDCATS_NAME-}" ] ; then
+      local MSG="For now, USE_DEFAULTS for full server installs requires a DESIRED_SANDCATS_NAME variable."
+      MSG="$MSG If you need support for non-sandcats full-server unattended installs, please file a bug."
+      fail "$MSG"
+    else
+      if [ -z "${SANDCATS_DOMAIN_RESERVATION_TOKEN:-}" ] ; then
+        local MSG="When operating in USE_DEFAULTS mode, if you want a sandcats.io domain,"
+        MSG="$MSG you must pre-reserve it before running this script. Specify it via the"
+        MSG="$MSG SANDCATS_DOMAIN_RESERVATION_TOKEN environment variable."
+        fail "$MSG"
+      fi
+    fi
+
+    # If they said USE_DEFAULTS then they don't need to be prompted.
+    ACCEPTED_FULL_SERVER_INSTALL="yes"
   fi
 
   if [ "yes" != "${ACCEPTED_FULL_SERVER_INSTALL:-}" ]; then
@@ -1169,7 +1187,7 @@ download_latest_bundle_and_extract_if_needed() {
 
     if which gpg > /dev/null; then
       export GNUPGHOME="$WORK_DIR/.gnupg"
-      mkdir -p "$GNUPGHOME"
+      mkdir -m 0700 -p "$GNUPGHOME"
 
       # Regenerate with: gpg --armor --export 160D2D577518B58D94C9800B63F227499DA8CCBD
       gpg --dearmor > "$WORK_DIR/sandstorm-keyring.gpg" << __EOF__
@@ -1422,6 +1440,16 @@ __EOF__
 }
 
 generate_admin_token() {
+  # Allow the person running the install.sh script to pre-generate an admin token, specified as an
+  # environment variable, so that they can ignore the output text of install.sh.
+  if [ ! -z "${ADMIN_TOKEN:-}" ] ; then
+    local FILENAME="./var/sandstorm/adminToken"
+    touch "$FILENAME"
+    chmod 0640 "$FILENAME"
+    echo -n "$ADMIN_TOKEN" > ./var/sandstorm/adminToken
+    return
+  fi
+
   ADMIN_TOKEN=$(./sandstorm admin-token --quiet)
 }
 
@@ -1602,12 +1630,64 @@ sandcats_provide_help() {
   echo "Your credentials to use it are in $(readlink -f var/sandcats); consider making a backup."
 }
 
+sandcats_registerreserved() {
+  echo "Registering your pre-reserved domain."
+  local LOG_PATH
+  LOG_PATH="var/sandcats/registerreserved-log"
+  HTTP_STATUS=$(
+    dotdotdot_curl \
+      --silent \
+      --max-time 20 \
+      $SANDCATS_CURL_PARAMS \
+      -A "$CURL_USER_AGENT" \
+      -X POST \
+      --data-urlencode "domainReservationToken=$SANDCATS_DOMAIN_RESERVATION_TOKEN" \
+      --data-urlencode "rawHostname=$DESIRED_SANDCATS_NAME" \
+      --output "$LOG_PATH" \
+      -w '%{http_code}' \
+      -H 'X-Sand: cats' \
+      -H "Accept: text/plain" \
+      --cert var/sandcats/id_rsa.private_combined \
+      "${SANDCATS_API_BASE}/registerreserved")
+
+  chmod 0640 "$LOG_PATH"
+
+  if [ "200" = "$HTTP_STATUS" ]
+  then
+    # Show the server's output, which presumably is some happy
+    # message.
+    cat "$LOG_PATH"
+    # Make sure that is on a line of its own.
+    echo ''
+    # Set these global variables to inform the installer down the
+    # road.
+    SS_HOSTNAME="${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN}"
+    USE_EXTERNAL_INTERFACE="yes"
+    SANDCATS_SUCCESSFUL="yes"
+    echo "Congratulations! We have registered your ${DESIRED_SANDCATS_NAME}.${SANDCATS_BASE_DOMAIN} name."
+    echo "Your credentials to use it are in $(readlink -f var/sandcats); consider making a backup."
+  else
+    # Show the server's output, and bail out.
+    #
+    # TODO(soon): Wait 1 minute in case the sandcats.io service had a brief hiccup, and retry (let's
+    # say) 5 times.
+    fail "$(cat "$LOG_PATH")"
+  fi
+}
+
 sandcats_register_name() {
   # We allow environment variables to override some details of the
   # Sandcats service, so that during development, we can test against
   # a non-production Sandcats service.
   SANDCATS_API_BASE="${OVERRIDE_SANDCATS_API_BASE:-https://sandcats.io}"
   SANDCATS_CURL_PARAMS="${OVERRIDE_SANDCATS_CURL_PARAMS:-}"
+
+  # If there is a SANDCATS_DOMAIN_RESERVATION_TOKEN provided, then we call a different function to
+  # do the work.
+  if [ ! -z "${SANDCATS_DOMAIN_RESERVATION_TOKEN:-}" ] ; then
+    sandcats_registerreserved
+    return
+  fi
 
   echo "Choose your desired Sandcats subdomain (alphanumeric, max 20 characters)."
   echo "Type the word none to skip this step, or help for help."

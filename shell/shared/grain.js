@@ -1248,7 +1248,7 @@ if (Meteor.isClient) {
         if (senderGrain === currentGrain && !globalTopbar.isPopupOpen()) {
           globalTopbar.openPopup("share");
         }
-      } else if (event.data.setTitle) {
+      } else if (event.data.setTitle || event.data.setTitle === '') {
         senderGrain.setFrameTitle(event.data.setTitle);
       } else if (event.data.renderTemplate) {
         // Request creation of a single-use template with a privileged API token.

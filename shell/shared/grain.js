@@ -1644,9 +1644,8 @@ Router.map(function () {
     path: "/apps/:appId",
     template: "appDetails",
     waitOn: function () {
-      return [
-        Meteor.subscribe("appIndex", this.params.appId),
-      ];
+      return globalSubs.concat(
+        Meteor.subscribe("appIndex", this.params.appId));
     },
     data: function () {
       return new SandstormAppDetails(globalDb, globalQuotaEnforcer, this.params.appId);

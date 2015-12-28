@@ -36,7 +36,7 @@
       </label>
     </div>
 
-    {{>sandstormGrainTable grains=filteredSortedGrains actions=actions onGrainClicked=onGrainClicked}}
+    {{>sandstormGrainTable grains=filteredSortedGrains actions=actions onGrainClicked=onGrainClicked _db=_db showHintIfEmpty=1}}
   </div>
   {{/if}}
 </template>
@@ -52,7 +52,7 @@
   --}}
   <div class="app-details-widget">
     {{debug}}
-    <div class="app-icon" style="background-image: url('{{appIconSrc}}');"></div>
+    <div class="app-icon" style="background-image: url('{{appIconSrc}}'); height: 128; width: 128;"></div>
     <div class="app-details-box">
       <h1 class="app-title">{{appTitle}}</h1>
       <ul class="app-links">

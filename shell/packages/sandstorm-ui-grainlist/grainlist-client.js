@@ -145,10 +145,57 @@ Template.sandstormGrainListPage.events({
 
 Template.sandstormGrainTable.events({
   "click tbody tr.action": function(event) {
+    if (Template.instance().data.intro) {
+      Template.instance().data.intro.exit();
+      Template.instance().data.intro = undefined;
+    }
     this && this.onClick();
   },
   "click tbody tr.grain": function(event) {
     var context = Template.instance().data;
     context.onGrainClicked && context.onGrainClicked(this._id);
   },
+});
+
+Template.sandstormGrainTable.onRendered(function() {
+  // Set up the guided tour box, via introJs, if desired.
+  if (! Template.instance().data.showHintIfEmpty) {
+    return;
+  }
+  var _db = Template.instance().data._db;
+  if (! _db) {
+    return;
+  }
+  if (Session.get('dismissedGrainTableGuidedTour')) {
+    return;
+  }
+
+  // We could abort this function if (! globalSubs['grainsMenu'].ready()). However, at the moment,
+  // we already waitOn the globalSubs, so that would be a no-op.
+
+  var hasGrains = !! (_db.currentUserGrains().count() ||
+                      _db.currentUserApiTokens().count());
+  if (! hasGrains) {
+    var intro = Template.instance().data.intro = introJs();
+    intro.setOptions({
+      steps: [
+        {
+          element: document.querySelector('.grain-list-table'),
+          intro: 'You can click here to create a new grain and start the app. Make as many as you want.',
+          position: 'bottom'
+        }
+      ],
+      tooltipPosition: 'auto',
+      positionPrecedence: ['bottom', 'top', 'left', 'right'],
+      showStepNumbers: false,
+      exitOnOverlayClick: true,
+      overlayOpacity: 0.7,
+      showBullets: false,
+      doneLabel: 'Got it'
+    });
+    intro.oncomplete(function() {
+      Session.set('dismissedGrainTableGuidedTour', true);
+    });
+    intro.start();
+  }
 });

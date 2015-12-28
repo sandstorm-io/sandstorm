@@ -1446,7 +1446,7 @@ generate_admin_token() {
     local FILENAME="./var/sandstorm/adminToken"
     touch "$FILENAME"
     chmod 0640 "$FILENAME"
-    echo -n "$ADMIN_TOKEN" > ./var/sandstorm/adminToken
+    echo -n "$ADMIN_TOKEN" > "$FILENAME"
     return
   fi
 

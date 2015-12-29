@@ -84,6 +84,21 @@ module.exports['Test setTitle'] = function (browser) {
     .assert.title(randomValue);
 };
 
+module.exports['Test setTitle to blank'] = function (browser) {
+  var origTitle = undefined;
+  var blank = "";
+  browser
+    .getTitle(function (title) {
+      origTitle = title;
+    })
+    .frame('grain-frame')
+      .setValue('#title', [ blank ] )
+      .click('#setTitle')
+      .pause(very_short_wait)
+    .frameParent()
+    .assert.title(blank);
+};
+
 module.exports['Test startSharing'] = function (browser) {
   browser
     .frame('grain-frame')

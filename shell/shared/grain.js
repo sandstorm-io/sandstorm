@@ -1234,8 +1234,8 @@ if (Meteor.isClient) {
       }
       var senderGrain = grains[senderGrainIndex];
 
-      if (event.data.setPath) {
-        var path = event.data.setPath;
+      if (event.data.setPath || event.data.setPath === '') {
+        var path = event.data.setPath || '/';
         check(path, String);
         check(path.charAt(0), '/');
         // TODO(security): More sanitization of this path. E.g. reject "/../../".

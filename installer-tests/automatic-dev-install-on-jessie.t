@@ -1,8 +1,7 @@
 Title: Auto-install with root on Debian jessie, in dev mode
 Vagrant-Box: jessie
-Vagrant-Precondition-bash: ! -d $HOME/sandstorm
-Vagrant-Precondition-bash: ! -d /opt/sandstorm
-Cleanup: uninstall_sandstorm(parsed_headers['vagrant-box'])
+Precondition: sandstorm_not_installed
+Cleanup: uninstall_sandstorm
 
 $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]0

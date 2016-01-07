@@ -11,6 +11,7 @@ pages:
     - "Top bar": "using/top-bar.md"
     - "How it works": "using/how-it-works.md"
     - "Security practices": "using/security-practices.md"
+    - "Security non-events": "using/security-non-events.md"
 - Developing apps:
     - "Overview": "developing.md"
     - "Overview of vagrant-spk": "vagrant-spk/index.md"

@@ -42,6 +42,8 @@ This model has a downside: comments are currently not supported. However, with s
 
 ## Roundcube
 
+When using Roundcube for email on Sandstorm, each user creates a unique grain of the app. This is by contrast with standard Roundcube, where a central install serves multiple users.
+
 * [CVE-2015-5381](https://security-tracker.debian.org/tracker/CVE-2015-5381): Reflected cross-site scripting. Sandstorm mitigates reflected-XSS attacks in much the same way it mitigates CSRF attacks: the attacker would have to know the app's randomly-generated hostname for the attack to work. An attacker with passive network MITM abilities or some other way of obtaining the hostname might be able to carry out an attack, but this is a much higher bar than outside of Sandstorm.
 * [CVE-2015-5382](https://security-tracker.debian.org/tracker/CVE-2015-5382): Reading arbitrary files on the filesystem. Much like with similar Etherpad issues, this is irrelevant on Sandstorm because each Roundcube mailbox runs as a separate instance of the app in an isolated container, these instances cannot see each other's files, and there is no way to send requests to a particular mailbox instance unless the owner has explicitly shared access with you.
 * [CVE-2015-5385](https://security-tracker.debian.org/tracker/CVE-2015-5383): Log data leakage. Irrelevant on Sandstorm because each Roundcube mailbox has a separate log file visible only to it.

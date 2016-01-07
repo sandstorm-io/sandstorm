@@ -17,6 +17,16 @@
 var allowDevAccounts = Meteor.settings && Meteor.settings.public &&
                  Meteor.settings.public.allowDevAccounts;
 
+Accounts.identityServices.dev = {
+  isEnabled: function () {
+    return allowDevAccounts;
+  },
+  loginTemplate: {
+    name: "devLoginForm",
+    priority: -10, // Put it at the top.
+  }
+}
+
 if (allowDevAccounts) {
   if (Meteor.isServer) {
     var Crypto = Npm.require("crypto");
@@ -57,12 +67,6 @@ if (allowDevAccounts) {
   }
 
   if (Meteor.isClient) {
-    Meteor.loginWithDevAccounts = function (options, callback) {
-      Router.go("devAccounts");
-      callback();
-    };
-    globalAccountsUi.registerService("devAccounts", "a Dev Account");
-
     loginDevAccount = function(displayName, isAdmin) {
       Accounts.callLoginMethod({
         methodName: "createDevAccount",
@@ -70,8 +74,6 @@ if (allowDevAccounts) {
         userCallback: function (err) {
           if (err) {
             window.alert(err);
-          } else {
-            Router.go("root");
           }
         }
       });
@@ -100,48 +102,6 @@ if (allowDevAccounts) {
         });
       });
     };
-
-    Template.devAccounts.events({
-      "click #loginAliceDevAccount": function (event) {
-        var displayName = "Alice Dev Admin";
-        loginDevAccount(displayName, true);
-      },
-      "click #loginBobDevAccount": function (event) {
-        var displayName = "Bob Dev User";
-        loginDevAccount(displayName);
-      },
-      "click #loginCarolDevAccount": function (event) {
-        var displayName = "Carol Dev User";
-        loginDevAccount(displayName);
-      },
-      "click #loginDaveDevAccount": function (event) {
-        var displayName = "Dave Dev User";
-        loginDevAccount(displayName);
-      },
-      "click #loginEveDevAccount": function (event) {
-        var displayName = "Eve Dev User";
-        loginDevAccount(displayName);
-      },
-    });
   }
-
-  Router.map(function () {
-    this.route("devAccounts", {
-      path: "/devAccounts",
-      waitOn: function () {
-        return Meteor.subscribe("credentials");
-      },
-      data: function () {
-        return {
-          allowDevAccounts: allowDevAccounts,
-          // We show the Start the Demo button if you are not logged in.
-          shouldShowStartDevAccounts: ! isSignedUpOrDemo(),
-          createLocalUserLabel: "Start the devAccounts",
-          pageTitle: "Developer Accounts",
-          isDemoUser: isDemoUser()
-        };
-      }
-    });
-  });
 }
 

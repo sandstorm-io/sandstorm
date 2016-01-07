@@ -100,17 +100,9 @@
 <template name="loginButtonsList">
   <div class="login-buttons-list" role="menu">
   {{#each services}}
-    {{#if isEmailTokenService}}
-      {{#if hasOtherServices}} {{! the email token service will always come last }}
-        {{> _loginButtonsSeparator}}
-      {{/if}}
-      {{> emailLoginForm linkingNewIdentity=linkingNewIdentity description="with e-mail"
-                         prompt="email" sendButtonText="send Login Email"}}
-    {{else}}
-      <button class="login oneclick {{name}}" role="menuitem">
-        with {{capitalizedName}}
-      </button>
-    {{/if}}
+    {{#with data=loginTemplate.data linkingNewIdentity=linkingNewIdentity}}
+      {{> Template.dynamic template=../loginTemplate.name }}
+    {{/with}}
   {{else}}
     <a class="troubleshooting" href="/admin" role="menuitem">configure login</a>
   {{/each}}
@@ -126,7 +118,44 @@
   </div>
 </template>
 
+<template name="oauthLoginButton">
+  <button class="login oneclick {{data.name}}" role="menuitem">
+    with {{data.displayName}}
+  </button>
+</template>
+
+<template name="devLoginForm">
+  <form class="dev login expand">
+    with a Dev account {{#if expanded}}▴{{else}}▾{{/if}}
+    {{#if expanded}}
+    <ul class="dev-identities">
+      <li><button type="button" class="login-dev-account" data-name="Alice Dev Admin"
+                  data-is-admin="true">
+          Alice (admin)
+      </button></li>
+      <li><button type="button" class="login-dev-account" data-name="Bob Dev User">
+          Bob
+      </button></li>
+      <li><button type="button" class="login-dev-account" data-name="Carol Dev User">
+          Carol
+      </button></li>
+      <li><button type="button" class="login-dev-account" data-name="Dave Dev User">
+          Dave
+      </button></li>
+      <li><button type="button" class="login-dev-account" data-name="Eve Dev User">
+          Eve
+      </button></li>
+    </ul>
+    {{/if}}
+  </form>
+</template>
+
 <template name="emailLoginForm">
+  {{> emailAuthenticationForm linkingNewIdentity=linkingNewIdentity description="with e-mail"
+                              prompt="email" sendButtonText="send Login Email"}}
+</template>
+
+<template name="emailAuthenticationForm">
   <form class="email">
     {{description}}
 

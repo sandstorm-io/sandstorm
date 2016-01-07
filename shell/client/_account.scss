@@ -158,10 +158,26 @@ body>.popup.account>.frame {
       background-image: url("/troubleshoot-m.svg");
     }
   }
-  >button.login.devAccounts {
+  >form.login.dev {
     background-image: url("/debug.svg");
+    background-position-y: 0px;
+    height: auto;
     &:hover {
       background-image: url("/debug-m.svg");
+    }
+    ul.dev-identities {
+      text-indent: 0;
+      list-style-type: none;
+      padding-left: 0;
+      li {
+        margin: 0;
+        width: auto;
+        button {
+          @extend %button-base;
+          @extend %button-secondary;
+          width: 100%;
+        }
+      }
     }
   }
 

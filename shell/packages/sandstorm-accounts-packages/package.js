@@ -9,7 +9,6 @@ Package.onUse(function (api) {
   // Export Accounts (etc) to packages using this one.
   api.imply("accounts-base", ["client", "server"]);
   api.use("sandstorm-accounts-oauth", ["client", "server"]);
-  api.use("sandstorm-accounts-ui", {weak: true});
   api.use("google", ["client", "server"]);
   api.use("github", ["client", "server"]);
 

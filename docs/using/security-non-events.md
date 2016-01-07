@@ -31,7 +31,7 @@ This model has a downside: comments are currently not supported. However, with s
 
 [WordPress has reported many vulnerabilities](http://www.cvedetails.com/vulnerability-list/vendor_id-2337/product_id-4096/). Below, we cover all WordPress CVEs scored with a severity of 6 or more in 2014 and 2015.
 
-* [CVE-2015-5731](http://www.cvedetails.com/cve/CVE-2015-5731/): CSRF allows exercising admin's ability to lock posts. Sandstorm provides additional CSRF protection as described above.
+* [CVE-2015-5731](http://www.cvedetails.com/cve/CVE-2015-5731/): A CSRF vulnerability allows exercising admin's ability to lock posts. Sandstorm provides additional CSRF protection as described above.
 * [CVE-2015-2213](http://www.cvedetails.com/cve/CVE-2015-2213/): XSS in comments. WordPress on Sandstorm currently does not support comments, but see the discussion of comments above.
 * [CVE-2015-9038](http://www.cvedetails.com/cve/CVE-2014-9038/): Unauthenticated attacker can cause the WordPress server to make HTTP requests back to itself which may be given more authority than remote requests would. On Sandstorm, only editors/admins would be able to exploit the vulnerability.
 * [CVE-2015-9037](http://www.cvedetails.com/cve/CVE-2014-9037/): Bug in authentication code could allow hijacking long-dormant accounts that used an older password hash algorithm. Sandstorm unaffected because WordPress on Sandstorm relies on Sandstorm for authentication.

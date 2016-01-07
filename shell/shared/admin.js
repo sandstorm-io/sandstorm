@@ -51,7 +51,7 @@ var adminRoute = RouteController.extend({
     });
     var user = Meteor.user();
     if (user && user.loginIdentities) {
-      if (!user.signupKey || !user.isAdmin) {
+      if (this.params._token && (!user.signupKey || !user.isAdmin)) {
         Meteor.call("signUpAsAdmin", this.params._token);
       }
     }

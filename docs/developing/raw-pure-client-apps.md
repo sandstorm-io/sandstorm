@@ -21,7 +21,7 @@ instead automatically save to a hard-coded location under `/var`.
 
 ## Caveat: Collaboration
 
-The down side of pure-client apps is that they are hard to make
+The downside of pure-client apps is that they are hard to make
 collaborative. If multiple users open a file at once, they will likely
 clobber each other's changes. Once your app is on Sandstorm, you may
 want to consider extending it for collaboration by implementing a

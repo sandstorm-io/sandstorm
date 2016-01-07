@@ -25,7 +25,7 @@ The WordPress app on Sandstorm is used to publish public web sites. However, the
 
 As a result of this model, there is no way to exploit a bug in WordPress on Sandstorm if you only have access to the published site, because there is no way for you to cause any WordPress code to execute at all. The site owner must explicitly share access to the admin interface with you before you can interact with the app.
 
-Additionally, because the WordPress admin interface is served through Sandstorm [on a random, unguessable hostname](https://docs.sandstorm.io/en/latest/developing/security-practices/#client-sandboxing), CSRF attacks are far more difficult to carry out against this interface. (They are not impossible, but they require a passive MITM of network traffic or other information leaks to carry out.)
+Additionally, because the WordPress admin interface is served through Sandstorm [on a random, unguessable hostname](security-practices.md#client-sandboxing), CSRF attacks are far more difficult to carry out against this interface. (They are not impossible, but they require a passive MITM of network traffic or other information leaks to carry out.)
 
 This model has a downside: comments are currently not supported. However, with some engineering effort, comments could be re-enabled while maintaining strong security. To accomplish this, the public-facing web site would use client-side Javascript to communicate with an HTTP API exported by the Sandstorm app whenever a user posts a comment. In order to prevent vulnerabilities in the comment-handling code from threatening core site administration, comments could be managed by a separate app that runs in a separate grain (container) from the core site. With the right design, there is no need for information about comments to flow into the core site management, so vulnerabilities in the comment infrastructure would at worst allow an attacker to deface other users' comments, not the whole web site.
 
@@ -50,7 +50,7 @@ When using Roundcube for email on Sandstorm, each user creates a unique grain of
 
 ## Linux kernel
 
-The Linux kernel has had many bugs that could allow any local process to gain root privileges or otherwise bypass security rules. Sandstorm blocks most of these vulnerabilities by virtue of its [server-side sandbox](https://docs.sandstorm.io/en/latest/developing/security-practices/#server-sandboxing) which disables much of the Linux kernel API thereby reducing the surface of attack only to core, well-reviewed functionality.
+The Linux kernel has had many bugs that could allow any local process to gain root privileges or otherwise bypass security rules. Sandstorm blocks most of these vulnerabilities by virtue of its [server-side sandbox](security-practices.md#server-sandboxing) which disables much of the Linux kernel API thereby reducing the surface of attack only to core, well-reviewed functionality.
 
 Some bugs blocked include:
 

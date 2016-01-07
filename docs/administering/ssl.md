@@ -235,7 +235,7 @@ The following is a process for self-hosted instances of Sandstorm to use SSL wit
 
 Created with help from:
 
-* [https://docs.sandstorm.io/en/latest/administering/reverse-proxy/](https://docs.sandstorm.io/en/latest/administering/reverse-proxy/)
+* [https://docs.sandstorm.io/en/latest/administering/reverse-proxy/](reverse-proxy.md)
 * [http://datacenteroverlords.com/2012/03/01/creating-your-own-ssl-certificate-authority/](http://datacenteroverlords.com/2012/03/01/creating-your-own-ssl-certificate-authority/)
 * [https://wiki.cacert.org/FAQ/subjectAltName](https://wiki.cacert.org/FAQ/subjectAltName)
 * [http://www.codeproject.com/Tips/833087/X-SSL-Certificates-With-Custom-Extensions](http://www.codeproject.com/Tips/833087/X-SSL-Certificates-With-Custom-Extensions)

@@ -169,9 +169,19 @@ Template.contactInputBox.events({
     }
   },
   "keydown input": function(event, template) {
-    if (event.keyCode === 38) { // Up
-      var contactId = template.highlightedContact.get()._id;
+    if ((event.keyCode === 37 || event.keyCode === 38) && // Left or Up
+        event.currentTarget.selectionStart === 0) { // Check that cursor is at beginning of input
+      var chip = template.find(".completed-contacts>li:last-child");
+      if (chip) {
+        chip.focus();
+      }
+      return false;
+    } else if (event.keyCode === 38) { // Up
       var contacts = template.autoCompleteContacts.get();
+      if (contacts.length === 0) {
+        return true;
+      }
+      var contactId = template.highlightedContact.get()._id;
       var ids = _.pluck(contacts, "_id");
       var index = ids.indexOf(contactId);
       var newContact = null;
@@ -188,8 +198,11 @@ Template.contactInputBox.events({
       template.highlightedContact.set(newContact);
       return false;
     } else if (event.keyCode === 40) { // Down
-      var contactId = template.highlightedContact.get()._id;
       var contacts = template.autoCompleteContacts.get();
+      if (contacts.length === 0) {
+        return true;
+      }
+      var contactId = template.highlightedContact.get()._id;
       var ids = _.pluck(contacts, "_id");
       var index = ids.indexOf(contactId);
       var newContact = null;
@@ -203,12 +216,6 @@ Template.contactInputBox.events({
         newContact = contacts[contacts.length - 1];
       }
       template.highlightedContact.set(newContact);
-      return false;
-    } else if (event.keyCode === 37) { // Left
-      var chip = template.find(".completed-contacts>li:last-child");
-      if (chip) {
-        chip.focus();
-      }
       return false;
     } else if (event.keyCode === 13) { // Enter
       var highlightedContact = template.highlightedContact.get();

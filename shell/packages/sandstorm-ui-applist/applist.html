@@ -9,7 +9,7 @@
   <div class="app-list">
     <h1>Apps</h1>
 
-    <div class="search-row {{#unless actionsCount}}hide{{/unless}}">
+    <div class="search-row">
       <label>
         <span class="search-icon" title="Search"></span>
         <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}" />
@@ -17,8 +17,11 @@
       {{#if uninstalling}}
       <button class="toggle-uninstall" title="Done uninstalling">Done uninstalling</button>
       {{else}}
-      <button class="toggle-uninstall" title="Uninstall an app">Uninstall...</button>
+      <button class="toggle-uninstall {{#unless actionsCount}}hide{{/unless}}" title="Uninstall an app">Uninstall...</button>
       {{/if}}
+      <button class="upload-button {{#if searching}}hide{{/if}}">Upload...
+        <input type="file" style="display:none">
+      </button>
     </div>
 
     {{#if showMostPopular}}
@@ -41,18 +44,6 @@
       <span class="action-title">Install...</span>
       <span class="action-text">from App Market</span>
     </a>
-    <button class="app-button upload-button {{#if searching}}hide{{/if}}">
-      <div class="app-icon pseudoapp upload-icon"></div>
-      <input type="file" style="display:none">
-      <span class="action-title">Upload app...</span>
-      <span class="action-text">choose SPK file</span>
-    </button>
-    <button class="app-button restore-button {{#if searching}}hide{{/if}}">
-      <div class="app-icon pseudoapp restore-icon"></div>
-      <input type="file" style="display:none">
-      <span class="action-title">Restore backup...</span>
-      <span class="action-text">choose ZIP file</span>
-    </button>
 
     {{!-- data-app-id is only used for testing purposes --}}
     {{#each apps }}

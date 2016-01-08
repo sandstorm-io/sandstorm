@@ -212,3 +212,10 @@ Template.sandstormGrainTable.onRendered(function() {
     }, 2000);
   }
 });
+
+Template.sandstormGrainTable.onDestroyed(function() {
+  if (Template.instance().data.intro) {
+    Template.instance().data.intro.exit();
+    Template.instance().data.intro = undefined;
+  }
+});

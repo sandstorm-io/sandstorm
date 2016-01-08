@@ -69,7 +69,7 @@
         width: 50%;
       }
     }
-    >button.toggle-uninstall {
+    >button.toggle-uninstall, >button.upload-button {
       @extend %button-base;
       @extend %button-secondary;
       display: inline-block;
@@ -188,6 +188,7 @@
       }
       &.install-icon {
         background-image: url('/install-9E40B5.svg');
+        border: 1px solid #b3b3b3;
 
         &:hover {
           background-image: url('/install-6A237C.svg');

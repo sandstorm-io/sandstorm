@@ -57,6 +57,19 @@
       }
     }
   }
+  >.buttons {
+    float: right;
+    >button {
+      @extend %button-base;
+      @extend %button-secondary;
+      display: inline-block;
+      float: right;
+      font-size: 14pt;
+      line-height: 16pt;
+      height: 32px;
+      margin-top: 80px;
+    }
+  }
   >.usage-info {
     float: right;
     vertical-align: top;

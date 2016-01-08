@@ -162,7 +162,7 @@
         display: block;
         float: left;
       }
-      >button.uninstall-button {
+      >button.uninstall-button, >button.restore-button {
         @extend %button-base;
         @extend %button-secondary;
         display: block;

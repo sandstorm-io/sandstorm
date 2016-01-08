@@ -21,6 +21,10 @@ set -euo pipefail
 XVFB_PID=""
 RUN_SELENIUM="${RUN_SELENIUM:-true}"
 BUNDLE_PATH=""
+THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+METEOR_DEV_BUNDLE=$($THIS_DIR/../find-meteor-dev-bundle.sh)
+NODEJS=$METEOR_DEV_BUNDLE/bin/node
+NPM=$METEOR_DEV_BUNDLE/bin/npm
 
 cleanExit () {
   rc=$1
@@ -51,13 +55,11 @@ checkInstalled() {
 }
 
 getNewPort() {
-  node -e 'var net = require("net");
+  $NODEJS -e 'var net = require("net");
   var sock = net.connect({port: 0});
   console.log(sock.address().port);
   sock.destroy()';
 }
-
-THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 
 # Parse arguments.
 while [ $# -gt 0 ] ; do
@@ -83,10 +85,9 @@ fi
 
 cd "$THIS_DIR"
 
-checkInstalled npm npm
 checkInstalled firefox firefox
 
-npm install
+$NPM install
 
 if [ "$RUN_SELENIUM" != "false" ] ; then
   checkInstalled java default-jre-headless
@@ -136,6 +137,6 @@ echo
 set +e
 
 export DISABLE_DEMO=true
-npm test
+$NPM test
 
 cleanExit $?

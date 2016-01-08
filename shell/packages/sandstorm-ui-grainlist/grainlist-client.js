@@ -145,10 +145,6 @@ Template.sandstormGrainListPage.events({
 
 Template.sandstormGrainTable.events({
   "click tbody tr.action": function(event) {
-    if (Template.instance().data.intro) {
-      Template.instance().data.intro.exit();
-      Template.instance().data.intro = undefined;
-    }
     this && this.onClick();
   },
   "click tbody tr.grain": function(event) {

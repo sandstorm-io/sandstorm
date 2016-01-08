@@ -202,6 +202,11 @@ Template.sandstormGrainTable.onRendered(function() {
     // sometimes introJs calculates the wrong location of the table, because the table loaded before
     // the text. We trigger the resize event because introJs hooks resize to look for the location
     // of the table.
+    //
+    // MutationObserver doesn't seem to notice the resizing.
+    //
+    // We could use a ResizeSensor that plays games with CSS, but that seems like more work than is
+    // sensible.
     Meteor.setTimeout(function() {
       window.dispatchEvent(new Event('resize'));
     }, 2000);

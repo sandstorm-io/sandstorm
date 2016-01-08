@@ -139,12 +139,12 @@ Template.contactInputBox.events({
     if (event.keyCode === 8 || event.keyCode == 46) { // Backspace or Delete
       deleteSelected(this, template);
       return false;
-    } else if (event.keyCode === 37) { // Left
+    } else if (event.keyCode === 37 || event.keyCode === 38) { // Left or Up
       var previous = event.target.previousElementSibling;
       if (previous) {
         previous.focus();
       }
-    } else if (event.keyCode === 39) { // Right
+    } else if (event.keyCode === 39 || event.keyCode === 40) { // Right or Down
       var next = event.target.nextElementSibling;
       if (next) {
         next.focus();

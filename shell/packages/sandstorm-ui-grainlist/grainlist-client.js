@@ -197,5 +197,13 @@ Template.sandstormGrainTable.onRendered(function() {
       Session.set('dismissedGrainTableGuidedTour', true);
     });
     intro.start();
+
+    // HACK: After 2 seconds, triger window resize. This is a workaround for a problem where
+    // sometimes introJs calculates the wrong location of the table, because the table loaded before
+    // the text. We trigger the resize event because introJs hooks resize to look for the location
+    // of the table.
+    Meteor.setTimeout(function() {
+      window.dispatchEvent(new Event('resize'));
+    }, 2000);
   }
 });

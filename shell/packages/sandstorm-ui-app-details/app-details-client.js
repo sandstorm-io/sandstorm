@@ -127,11 +127,6 @@ Template.sandstormAppDetails.helpers({
     var pkg = ref.pkg;
     return pkg && Identicon.iconSrcForPackage(pkg, 'appGrid', ref.staticHost);
   },
-  debug: function () {
-    var ref = Template.instance().data;
-    console.log(ref);
-    console.log(ref.pkg);
-  },
   appId: function() {
     var pkg = Template.instance().data.pkg;
     return pkg && pkg.appId;

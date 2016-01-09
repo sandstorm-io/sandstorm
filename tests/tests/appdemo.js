@@ -32,7 +32,7 @@ module.exports["Test appdemo link"] = function (browser) {
     .execute("window.Meteor.logout()")
     .pause(short_wait)
     .url(browser.launch_url + "/appdemo/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
-    .waitForElementVisible(".start", short_wait)
+    .waitForElementVisible(".start", medium_wait)
     .assert.containsText(".start", "Hacker CMS")
     .click(".start")
     .waitForElementPresent("iframe.grain-frame", short_wait)

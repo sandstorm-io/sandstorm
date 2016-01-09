@@ -1207,7 +1207,7 @@ if (Meteor.isClient) {
     // Meteor has an exponential backoff of up to 5 minutes for reconnect. This is unnacceptable
     // for us, since we rely on Sessions being re-established in under 60s.
     if (Meteor.status().status === "waiting") {
-      console.log("Sandstorm is trying to reconnect meteor.");
+      console.log("Sandstorm is trying to reconnect...");
       Meteor.reconnect();
     }
 

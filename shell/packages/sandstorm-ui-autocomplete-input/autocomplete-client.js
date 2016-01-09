@@ -224,7 +224,7 @@ Template.contactInputBox.events({
   "blur input": function(event, template) {
     template.inputActive.set(false);
   },
-  "mousedown .autocomplete, click .autocomplete": function(event, template) {
+  "mousedown .autocomplete": function(event, template) {
     selectContact(template, this, template.find("input"));
     template.find("input").focus();
 

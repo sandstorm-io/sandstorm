@@ -98,7 +98,7 @@
 </template>
 
 <template name="loginButtonsList">
-  <div class="login-buttons-list" role="menu">
+  <div class="login-buttons-list">
   {{#each services}}
     {{#if isEmailTokenService}}
       {{#if hasOtherServices}} {{! the email token service will always come last }}
@@ -107,22 +107,22 @@
       {{> emailLoginForm linkingNewIdentity=linkingNewIdentity description="with e-mail"
                          prompt="email" sendButtonText="send Login Email"}}
     {{else}}
-      <button class="login oneclick {{name}}" role="menuitem">
+      <button class="login oneclick {{name}}">
         with {{capitalizedName}}
       </button>
     {{/if}}
   {{else}}
-    <a class="troubleshooting" href="/admin" role="menuitem">configure login</a>
+    <a class="troubleshooting" href="/admin">configure login</a>
   {{/each}}
 
   {{> _loginButtonsMessages}}
 
   {{#if showTroubleshooting}}
     {{> _loginButtonsSeparator}}
-    <a class="troubleshooting" href="https://docs.sandstorm.io/en/latest/administering/faq/" role="menuitem" target="_blank">troubleshooting</a>
+    <a class="troubleshooting" href="https://docs.sandstorm.io/en/latest/administering/faq/" target="_blank">troubleshooting</a>
   {{/if}}
 
-  <a href="/about" role="menuitem">about Sandstorm</a>
+  <a href="/about">about Sandstorm</a>
   </div>
 </template>
 

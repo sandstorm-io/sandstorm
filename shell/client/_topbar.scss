@@ -984,8 +984,13 @@ body>.popup {
       }
     }
 
-    button.reset-invite, button.reset-share-token {
+    button.reset-invite, button.reset-share-token, button.start-over-invite {
       @extend %unstyled-button;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 5px 16px;
+      font-size: 10pt;
+      text-transform: uppercase;
     }
 
     .button-container {

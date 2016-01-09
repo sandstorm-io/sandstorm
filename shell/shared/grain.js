@@ -1184,6 +1184,9 @@ if (Meteor.isClient) {
       instance.find("form").reset();
       instance.find("form option[data-default-selected=true]").selected = true;
     },
+    "click .start-over-invite": function (event, instance) {
+      instance.completionState.set({clear: true});
+    },
   });
 
   Template.grainPowerboxOfferPopup.helpers({

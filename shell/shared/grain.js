@@ -1510,6 +1510,15 @@ Router.map(function () {
       if (this.state.get("beforeActionHookRan")) { return this.next(); }
       this.state.set("beforeActionHookRan", true);
 
+      // Tell app authors how to run JS in the context of the grain-frame.
+      console.log(
+        "%c App authors: to debug an app, make sure you execute Javascript " +
+          "in the context of the 'grain-frame' IFRAME. See " +
+          "https://stackoverflow.com/questions/3275816/debugging-iframes-with-chrome-developer-tools " +
+          "and https://developer.mozilla.org/en-US/docs/Tools/Working_with_iframes and " +
+          "https://docs.sandstorm.io/en/latest/developing/path/ ",
+        "font-size: x-large; background-color: yellow;");
+
       var grainId = this.params.grainId;
       var path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
       var grains = globalGrains.get();

@@ -1,4 +1,4 @@
-Meteor.publish("packageInfo", function (packageId) {
+Meteor.publish('packageInfo', function(packageId) {
   check(packageId, String);
   var db = this.connection.sandstormDb;
   var pkgCursor = db.collections.packages.find(packageId);

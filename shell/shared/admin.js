@@ -115,19 +115,6 @@ if (Meteor.isClient) {
     state.set("powerboxOfferUrl", null);
   };
 
-  Meteor.startup(function () {
-    ["github", "google", "emailToken"].forEach(function(loginProvider) {
-      Tracker.autorun(function () {
-        var setting = Settings.findOne({_id: loginProvider});
-        if (setting && setting.value) {
-          Accounts.registerService(loginProvider, globalAccountsUi);
-        } else {
-          Accounts.deregisterService(loginProvider, globalAccountsUi);
-        }
-      });
-    });
-  });
-
   var getToken = function () {
     var state = Iron.controller().state;
     var token = state.get("token");
@@ -778,19 +765,6 @@ if (Meteor.isServer) {
     }
   };
 
-  var registerServiceOnStartup = function (serviceName) {
-    var setting = Settings.findOne({_id: serviceName});
-    if (setting && setting.value) {
-      Accounts.registerService(serviceName, globalAccountsUi);
-    }
-  };
-
-  Meteor.startup(function () {
-    registerServiceOnStartup("google");
-    registerServiceOnStartup("github");
-    registerServiceOnStartup("emailToken");
-  });
-
   var checkAuth = function (token) {
     check(token, Match.OneOf(undefined, null, String));
     if (!isAdmin() && !tokenIsValid(token)) {
@@ -828,11 +802,6 @@ if (Meteor.isServer) {
         }
       }
       Settings.upsert({_id: serviceName}, {$set: {value: value}});
-      if (value) {
-        Accounts.registerService(serviceName, globalAccountsUi);
-      } else {
-        Accounts.deregisterService(serviceName, globalAccountsUi);
-      }
     },
     setSetting: function (token, name, value) {
       checkAuth(token);
@@ -1131,4 +1100,66 @@ if (Meteor.isServer) {
                                  {"frontendRef.ipInterface": {$exists: true}}]},
                           {fields: {frontendRef: 1, created: 1, requirements: 1, revoked: 1}});
   });
+}
+
+function serviceEnabled(name) {
+  var setting = Settings.findOne({_id: name});
+  return setting && !!setting.value;
+}
+
+if (Meteor.server) {
+  function observeOauthService(name) {
+    Settings.find({_id: name, value: true}).observe({
+      added: function() {
+        // Tell the oauth library it should accept login attempts from this service.
+        Accounts.oauth.registerService(name);
+      },
+      removed: function() {
+        // Tell the oauth library it should deny login attempts from this service.
+        Accounts.oauth.deregisterService(name);
+      }
+    });
+  }
+  observeOauthService("github");
+  observeOauthService("google");
+}
+
+Accounts.identityServices.github = {
+  isEnabled: function () {
+    return serviceEnabled("github");
+  },
+  loginTemplate: {
+    name: "oauthLoginButton",
+    priority: 1,
+    data: {
+      method: "loginWithGithub",
+      name: "github",
+      displayName: "GitHub",
+    }
+  }
+};
+
+Accounts.identityServices.google = {
+  isEnabled: function () {
+    return serviceEnabled("google");
+  },
+  loginTemplate: {
+    name: "oauthLoginButton",
+    priority: 2,
+    data: {
+      method: "loginWithGoogle",
+      name: "google",
+      displayName: "Google",
+    }
+  }
+};
+
+Accounts.identityServices.email = {
+  isEnabled: function () {
+    return serviceEnabled("emailToken");
+  },
+  loginTemplate: {
+    name: "emailLoginForm",
+    priority: 10, // Put it at the bottom of the list.
+  },
 }

@@ -1184,6 +1184,9 @@ if (Meteor.isClient) {
       instance.find("form").reset();
       instance.find("form option[data-default-selected=true]").selected = true;
     },
+    "click .start-over-invite": function (event, instance) {
+      instance.completionState.set({clear: true});
+    },
   });
 
   Template.grainPowerboxOfferPopup.helpers({
@@ -1203,6 +1206,14 @@ if (Meteor.isClient) {
   Meteor.setInterval(function () {
     var grains = globalGrains.get();
     if (!grains) return;
+
+    // Meteor has an exponential backoff of up to 5 minutes for reconnect. This is unnacceptable
+    // for us, since we rely on Sessions being re-established in under 60s.
+    if (Meteor.status().status === "waiting") {
+      console.log("Sandstorm is trying to reconnect...");
+      Meteor.reconnect();
+    }
+
     grains.forEach(function (grain) {
       if (grain.sessionId()) {
         // TODO(soon):  Investigate what happens in background tabs.  Maybe arrange to re-open the

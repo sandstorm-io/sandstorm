@@ -446,7 +446,7 @@ limitations under the License.
     {{/if}}
     {{#if error}}
       <p> {{error}} </p>
-      <p><button class="reset-invite">&lt;&lt; Start over</button></p>
+      <p><button class="start-over-invite">&lt;&lt; Start over</button></p>
     {{/if}}
   {{/with}}
 </template>
@@ -1127,32 +1127,6 @@ limitations under the License.
     {{else}}
       <p>Sorry, this server does not allow demo accounts.</p>
     {{/if}}
-  </div>
-</template>
-
-<template name="devAccounts">
-  {{>title pageTitle}}
-
-  <div class="dev-accounts centered-box">
-    <h2>Developer Accounts</h2>
-    {{#if shouldShowStartDevAccounts}}
-      {{#if loggingIn}}
-        <p>Logging in...</p>
-      {{else}}
-        <button id="loginAliceDevAccount" class="devLogin">Log in as Alice (admin) »</button>
-        <button id="loginBobDevAccount" class="devLogin">Log in as Bob »</button>
-        <button id="loginCarolDevAccount" class="devLogin">Log in as Carol »</button>
-        <button id="loginDaveDevAccount" class="devLogin">Log in as Dave »</button>
-        <button id="loginEveDevAccount" class="devLogin">Log in as Eve »</button>
-      {{/if}}
-    {{else}}
-        <p>You are already logged in.</p>
-        <p><button onclick="browseHome()">See your apps »</button></p>
-    {{/if}}
-
-    <h3>What is this?</h3>
-    <p>This page is only for developer Sandstorm instances (ie. the ALLOW_DEV_ACCOUNTS setting
-    is enabled in your sandstorm.conf).</p>
   </div>
 </template>
 

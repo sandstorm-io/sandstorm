@@ -11,9 +11,7 @@ Package.onUse(function (api) {
   // Export Accounts (etc) to packages using this one.
   api.imply('accounts-base', ['client', 'server']);
 
-  // Allow us to call Accounts.oauth.serviceNames, if there are any OAuth
-  // services.
-  api.use('sandstorm-accounts-oauth', {weak: true});
+  api.use('sandstorm-accounts-packages', {weak: true});
 
   // Allow us to check if payments are enabled
   api.use('blackrock-payments', {weak: true});

@@ -1,7 +1,6 @@
 Accounts.oauth = {};
 
 var services = {};
-var servicesDep = new Tracker.Dependency;
 
 // Helper for registering OAuth based accounts packages.
 // On the server, adds an index to the user collection.
@@ -9,7 +8,6 @@ Accounts.oauth.registerService = function (name) {
   if (_.has(services, name))
     throw new Error("Duplicate service: " + name);
   services[name] = true;
-  servicesDep.changed();
 
   if (Meteor.server) {
     // Accounts.updateOrCreateUserFromExternalService does a lookup by this id,
@@ -30,10 +28,8 @@ Accounts.oauth.deregisterService = function (name) {
   if (!_.has(services, name))
     throw new Error("Service not found: " + name);
   delete services[name];
-  servicesDep.changed();
 };
 
 Accounts.oauth.serviceNames = function () {
-  servicesDep.depend();
   return _.keys(services);
 };

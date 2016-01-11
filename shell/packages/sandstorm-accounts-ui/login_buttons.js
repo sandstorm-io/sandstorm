@@ -43,40 +43,13 @@ Template.accountButtons.helpers({
   displayName: displayName
 });
 
-// returns an array of the login services used by this app. each
-// element of the array is an object (eg {name: 'facebook'}), since
-// that makes it useful in combination with handlebars {{#each}}.
-//
-// don't cache the output of this function: if called during startup (before
-// oauth packages load) it might not include them all.
-//
-// NOTE: It is very important to have this return email token last
-// because of the way we render the different providers in
-// login_buttons_dropdown.html
-getLoginServices = function () {
-  var self = this;
-
-  // First look for OAuth services.
-  var services = (Accounts.oauth && Accounts.oauth.serviceNames) ? Accounts.oauth.serviceNames() : [];
-
-  services = _.without(services, "emailToken");
-  // Be equally kind to all login services. This also preserves
-  // backwards-compatibility. (But maybe order should be
-  // configurable?)
-  services.sort();
-
-  // Add email token, if it's there; it must come last.
-  if (hasEmailTokenService())
-    services.push('emailToken');
-
-  return _.map(services, function(name) {
-    return {name: name};
-  });
-};
-
-hasEmailTokenService = function () {
-  return Accounts.emailToken && Accounts.emailToken.isEnabled();
-};
+function getServices() {
+  return _.keys(Accounts.identityServices).map(function (key) {
+    return _.extend(Accounts.identityServices[key], {name: key});
+  }).filter(function (service) {
+    return service.isEnabled() && !!service.loginTemplate;
+  }).sort(function (s1, s2) { return s1.loginTemplate.priority - s2.loginTemplate.priority; });
+}
 
 Template._loginButtonsMessages.helpers({
   errorMessage: function () {
@@ -90,10 +63,9 @@ Template._loginButtonsMessages.helpers({
   }
 });
 
-var loginResultCallback = function (serviceName, err, topbar) {
+var loginResultCallback = function (serviceName, err) {
   if (!err) {
     loginButtonsSession.closeDropdown();
-    if (topbar) topbar.closePopup();
   } else if (err instanceof Accounts.LoginCancelledError) {
     // do nothing
   } else if (err instanceof ServiceConfiguration.ConfigError) {
@@ -111,7 +83,7 @@ var loginResultCallback = function (serviceName, err, topbar) {
 //
 Accounts.onPageLoadLogin(function (attemptInfo) {
   // Ignore if we have a left over login attempt for a service that is no longer registered.
-  if (_.contains(_.pluck(getLoginServices(), "name"), attemptInfo.type))
+  if (_.contains(_.pluck(getServices(), "name"), attemptInfo.type))
     loginResultCallback(attemptInfo.type, attemptInfo.error);
 });
 
@@ -198,7 +170,7 @@ var sendEmail = function (email, linkingNewIdentity) {
   });
 };
 
-var loginWithToken = function (email, token, topbar) {
+var loginWithToken = function (email, token) {
   loginButtonsSession.infoMessage("Logging in...");
   Meteor.loginWithEmailToken(email, token, function (err) {
     if (err) {
@@ -206,7 +178,6 @@ var loginWithToken = function (email, token, topbar) {
     } else {
       loginButtonsSession.set("inSignupFlow", false);
       loginButtonsSession.closeDropdown();
-      if (topbar) topbar.closePopup();
     }
   });
 };
@@ -218,10 +189,6 @@ Template.loginButtonsDialog.helpers({
 });
 
 Template.loginButtonsList.onCreated(function() {
-   if (this.view.parentView.name === "Template._loginButtonsLoggedOutDropdown") {
-     this._topbar = Template.parentData(3);
-   }
-
   if (isDemoUser()) {
     this._linkingNewIdentity = { doneCallback: function() {} };
   } else if (Template.parentData(1).linkingNewIdentity) {
@@ -229,24 +196,18 @@ Template.loginButtonsList.onCreated(function() {
   }
 });
 
-Template.loginButtonsList.events({
+Template.oauthLoginButton.events({
   "click button.login.oneclick": function (event, instance) {
-    if (instance._linkingNewIdentity) {
+    if (instance.data.linkingNewIdentity) {
       sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
     }
 
-    var serviceName = this.name;
     loginButtonsSession.resetMessages();
 
-    // XXX Service providers should be able to specify their
-    // `Meteor.loginWithX` method name.
-    var loginWithService = Meteor["loginWith" +
-                                  (serviceName === 'meteor-developer' ?
-                                   'MeteorDeveloperAccount' :
-                                   capitalize(serviceName))];
+    var loginWithService = Meteor[instance.data.data.method];
 
     loginWithService({}, function (err) {
-      loginResultCallback(serviceName, err, instance.topbar);
+      loginResultCallback(serviceName, err);
     });
   },
 });
@@ -257,28 +218,7 @@ Template.loginButtonsList.helpers({
            Template.instance().data._services.get(this.name);
   },
 
-  capitalizedName: function () {
-    var text = Template.instance().data._services.get(this.name);
-    if (text) return text;
-
-    if (this.name === 'github')
-      // XXX we should allow service packages to set their capitalized name
-      return 'GitHub';
-    else if (this.name === 'meteor-developer')
-      return 'Meteor';
-    else
-      return capitalize(this.name);
-  },
-
-  services: getLoginServices,
-
-  isEmailTokenService: function () {
-    return this.name === 'emailToken';
-  },
-
-  hasOtherServices: function () {
-    return getLoginServices().length > 1;
-  },
+  services: getServices,
 
   showTroubleshooting: function () {
     return !(Meteor.settings && Meteor.settings.public &&
@@ -290,7 +230,7 @@ Template.loginButtonsList.helpers({
   }
 });
 
-Template.emailLoginForm.events({
+Template.emailAuthenticationForm.events({
   "submit form": function (event, instance) {
     event.preventDefault();
     var form = event.currentTarget;
@@ -307,7 +247,7 @@ Template.emailLoginForm.events({
           }
         });
       } else {
-        loginWithToken(email, form.token.value, instance._topbar);
+        loginWithToken(email, form.token.value);
       }
     } else {
       sendEmail(form.email.value, !!instance.data.linkingNewIdentity);
@@ -320,11 +260,36 @@ Template.emailLoginForm.events({
   },
 });
 
-Template.emailLoginForm.helpers({
+Template.emailAuthenticationForm.helpers({
   disabled: function () {
-    return !hasEmailTokenService();
+    return !(Accounts.identityServices.email && Accounts.identityServices.email.isEnabled());
   },
   awaitingToken: function () {
     return loginButtonsSession.get('inSignupFlow');
+  },
+});
+
+Template.devLoginForm.onCreated(function () {
+  this._expanded = new ReactiveVar(false);
+});
+
+Template.devLoginForm.helpers({
+  expanded: function () {
+    return Template.instance()._expanded.get();
+  }
+});
+
+Template.devLoginForm.events({
+  "click form.expand": function (event, instance) {
+    event.preventDefault();
+    instance._expanded.set(!instance._expanded.get());
+  },
+  "click button.login-dev-account": function (event, instance) {
+    var displayName = event.currentTarget.getAttribute("data-name");
+    var isAdmin = !!event.currentTarget.getAttribute("data-is-admin");
+    if (instance.data.linkingNewIdentity) {
+      sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
+    }
+    loginDevAccount(displayName, isAdmin);
   },
 });

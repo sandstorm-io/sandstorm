@@ -180,7 +180,7 @@ Meteor.methods({
     check(email, String);
     check(linkingIdentity, Boolean);
 
-    if (!Accounts.emailToken.isEnabled()) {
+    if (!Accounts.identityServices.email.isEnabled()) {
       throw new Meteor.Error(403, "Email identity service is disabled.");
     }
     // Create user. result contains id and token.

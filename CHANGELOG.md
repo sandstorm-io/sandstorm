@@ -1,3 +1,11 @@
+### v0.139 (2016-01-11)
+- Refactored authentication framework. No visible changes.
+- Improved UX for logging in as a dev user.
+- On installing first app, highlight the "create grain" UI and explain how it works.
+- Up/down now work for selecting chips in sharing UI.
+- Sidebar tabs now have tooltips with titles (for when sidebar is shrunk).
+- Fix `setPath` postMessage API when passed an empty string.
+
 ### v0.138 (2015-12-18)
 - Fix bug in new sharing interface where if you typed an email address but did not press "enter" to turn it into a chip, then tried to send the invite, nothing was sent.
 - Oasis: Referral program page is now designed.

@@ -1,0 +1,7 @@
+{
+  "preset": "airbnb",
+  "fileExtensions": [".js"],
+  "validateQuoteMarks": {"mark": "'", "escape": true},
+  "disallowVar": true,
+  "excludeFiles": ['.meteor', '**/node_modules']
+}

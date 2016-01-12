@@ -16,19 +16,19 @@
 
 // This file is for various startup code that doesn't fit neatly anywhere else
 
-var ROOT_URL = process.env.ROOT_URL;
+const ROOT_URL = process.env.ROOT_URL;
 
-Meteor.startup(function () {
-  var baseUrlRow = Misc.findOne({_id: "BASE_URL"});
+Meteor.startup(() => {
+  let baseUrlRow = Misc.findOne({_id: 'BASE_URL'});
 
   if (!baseUrlRow) {
     // Fill data with current value in the case this is a first run
-    baseUrlRow = {_id: "BASE_URL", value: ROOT_URL};
+    baseUrlRow = {_id: 'BASE_URL', value: ROOT_URL};
     Misc.insert(baseUrlRow);
   } else if (baseUrlRow.value !== ROOT_URL) {
-    console.log("resetting oauth");
+    console.log('resetting oauth');
     Accounts.loginServiceConfiguration.remove({});
-    baseUrlRow = {_id: "BASE_URL", value: ROOT_URL};
-    Misc.update({_id: "BASE_URL"}, {$set: {value: ROOT_URL}});
+    baseUrlRow = {_id: 'BASE_URL', value: ROOT_URL};
+    Misc.update({_id: 'BASE_URL'}, {$set: {value: ROOT_URL}});
   }
 });

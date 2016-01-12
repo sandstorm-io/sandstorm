@@ -159,7 +159,7 @@ module.exports["Test backup and restore"] = function(browser) {
       });
     })
     .click('li.navitem-grain.current button.close-button')
-    .url(browser.launch_url + "/grains")
+    .url(browser.launch_url + "/grain")
     .waitForElementVisible('button.restore-button', short_wait)
     .execute(function () {
       // Firefox/Selenium oddity: invisible inputs cannot have their values set

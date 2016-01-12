@@ -15,13 +15,14 @@
 // limitations under the License.
 
 Package.describe({
-  summary: "Sandstorm UI install page",
-  version: "0.1.0"
+  summary: 'Sandstorm UI install page',
+  version: '0.1.0',
 });
 
-Package.onUse(function (api) {
-  api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-db", "sandstorm-ui-app-details"], "client");
-  api.addFiles(["install-server.js"], "server");
-  api.addFiles(["install.html", "install-client.js"], "client");
-  api.export("SandstormAppInstall");
+Package.onUse(function(api) {
+  api.use(['ecmascript', 'check', 'reactive-var', 'reload', 'templating', 'tracker', 'underscore', 'sandstorm-db', 'sandstorm-ui-app-details'], 'client');
+  api.use(['ecmascript'], 'server');
+  api.addFiles(['install-server.js'], 'server');
+  api.addFiles(['install.html', 'install-client.js'], 'client');
+  api.export('SandstormAppInstall');
 });

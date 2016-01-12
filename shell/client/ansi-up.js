@@ -1,3 +1,4 @@
+// jscs:disable
 // ansi_up.js
 // version : 1.1.0
 // author : Dru Nelson

@@ -1218,7 +1218,6 @@ if (Meteor.isClient) {
       if (grain.sessionId()) {
         // TODO(soon):  Investigate what happens in background tabs.  Maybe arrange to re-open the
         //   app if it dies while in the background.
-        console.log("keepalive: ", new Date());
         Meteor.call("keepSessionAlive", grain.sessionId(), function (error, result) {
           // Sessions will automatically resume if possible, otherwise they will refresh.
         });
@@ -1509,17 +1508,6 @@ Router.map(function () {
       // Run this hook only once.
       if (this.state.get("beforeActionHookRan")) { return this.next(); }
       this.state.set("beforeActionHookRan", true);
-
-      // Tell app authors how to run JS in the context of the grain-frame.
-      console.log(
-        "%c App authors: to debug an app, make sure you execute Javascript " +
-          "in the context of the 'grain-frame' IFRAME. See " +
-          "https://stackoverflow.com/questions/3275816/debugging-iframes-with-chrome-developer-tools " +
-          "and https://developer.mozilla.org/en-US/docs/Tools/Working_with_iframes . Read" +
-          "https://docs.sandstorm.io/en/latest/developing/path/ to learn more about the grain-frame and " +
-          "https://docs.sandstorm.io/en/latest/using/top-bar/ to read how to find server-side logs.",
-        "font-size: x-large; background-color: yellow;");
-
       var grainId = this.params.grainId;
       var path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
       var grains = globalGrains.get();

@@ -3,5 +3,6 @@
   "fileExtensions": [".js"],
   "validateQuoteMarks": {"mark": "'", "escape": true},
   "disallowVar": true,
+  "requirePaddingNewLinesBeforeLineComments": false,
   "excludeFiles": ['.meteor', '**/node_modules']
 }

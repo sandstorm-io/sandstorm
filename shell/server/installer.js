@@ -111,7 +111,7 @@ const cancelDownloadInternal = (pkg) => {
   // Don't do anything unless a download is in progress.
   if (installer && installer.downloadRequest) {
     // OK, effect cancellation by faking an error.
-    installer.wrapCallback(function() {
+    installer.wrapCallback(() => {
       throw new Error('Canceled');
     })();
   }
@@ -234,11 +234,10 @@ AppInstaller = class AppInstaller {
   }
 
   wrapCallback(method) {
-    // Note that you should *not* pass an arrow function to wrapCallback(), since
-    // arrow functions capture the value of `this` from their lexical scope, and
-    // we cannot apply them with an overriding value for `this`.
+    // Note that the function below must not be an arrow function, since arrow functions do not have
+    // access to the context's arguments array.
     const _this = this;
-    return () => {
+    return function() {
       if (_this.failed) return;
       try {
         return method.apply(_this, _.toArray(arguments));
@@ -273,11 +272,10 @@ AppInstaller = class AppInstaller {
   }
 
   start() {
-    return this.wrapCallback(function() {
+    return this.wrapCallback(() => {
       this.cleanup();
 
-      globalBackend.cap().tryGetPackage(this.packageId)
-          .then(this.wrapCallback(function(info) {
+      globalBackend.cap().tryGetPackage(this.packageId).then(this.wrapCallback((info) => {
         if (info.appId) {
           this.appId = info.appId;
           this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
@@ -285,7 +283,7 @@ AppInstaller = class AppInstaller {
         } else {
           this.doDownload();
         }
-      }), this.wrapCallback(function(err) {
+      }), this.wrapCallback((err) => {
         throw err;
       }));
     })();
@@ -328,7 +326,7 @@ AppInstaller = class AppInstaller {
 
     // TODO(security):  It could arguably be a security problem that it's possible to probe the
     //   server's local network (behind any firewalls) by presenting URLs here.
-    const request = protocol.get(options, this.wrapCallback(function(response) {
+    const request = protocol.get(options, this.wrapCallback((response) => {
       if (response.statusCode === 301 ||
           response.statusCode === 302 ||
           response.statusCode === 303 ||
@@ -355,7 +353,7 @@ AppInstaller = class AppInstaller {
       let done = false;
       const hasher = Crypto.createHash('sha256');
 
-      const updateDownloadProgress = _.throttle(this.wrapCallback(function() {
+      const updateDownloadProgress = _.throttle(this.wrapCallback(() => {
         if (!done) {
           if (bytesExpected) {
             this.updateProgress('download', bytesReceived / bytesExpected);
@@ -365,14 +363,14 @@ AppInstaller = class AppInstaller {
         }
       }), 500);
 
-      response.on('data', this.wrapCallback(function(chunk) {
+      response.on('data', this.wrapCallback((chunk) => {
         hasher.update(chunk);
         out.write(chunk);
         bytesReceived += chunk.length;
         updateDownloadProgress();
       }));
 
-      response.on('end', this.wrapCallback(function() {
+      response.on('end', this.wrapCallback(() => {
         out.done();
 
         if (hasher.digest('hex').slice(0, 32) !== this.packageId) {
@@ -383,21 +381,21 @@ AppInstaller = class AppInstaller {
         delete this.downloadRequest;
 
         this.updateProgress('unpack');
-        out.saveAs(this.packageId).then(this.wrapCallback(function(info) {
+        out.saveAs(this.packageId).then(this.wrapCallback((info) => {
           this.appId = info.appId;
           this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
           this.done(info.manifest);
-        }), this.wrapCallback(function(err) {
+        }), this.wrapCallback((err) => {
           throw err;
         }));
       }));
 
-      response.on('error', this.wrapCallback(function(err) { throw err; }));
+      response.on('error', this.wrapCallback((err) => { throw err; }));
     }));
 
     this.downloadRequest = request;
 
-    request.on('error', this.wrapCallback(function(err) { throw err; }));
+    request.on('error', this.wrapCallback((err) => { throw err; }));
   }
 
   done(manifest) {

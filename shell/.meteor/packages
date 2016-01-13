@@ -3,17 +3,31 @@
 # 'meteor add' and 'meteor remove' will edit this file for you,
 # but you can also edit it by hand.
 
-standard-app-packages
-iron:router
+# ES6 support.
+ecmascript
+ecmascript-collections
+
+# Formerly standard-app-packages, which was deprecated in favor of meteor-platform,
+# which was deprecated in favor of splitting things out separately
+meteor-base
 underscore
+mongo
+blaze-html-templates
+jquery
+session
+tracker
+check
+reload
 random
+standard-minifiers
+
+iron:router
 sandstorm-accounts-ui
 sandstorm-accounts-packages
 sandstorm-email
 accounts-email-token
 email
 accounts-identity
-reload
 simplesmtp
 bignum
 connect
@@ -34,5 +48,4 @@ sandstorm-ui-grainlist
 sandstorm-ui-autocomplete-input
 meteor-node-forge
 fourseven:scss
-standard-minifiers
 introjs

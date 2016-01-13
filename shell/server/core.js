@@ -14,25 +14,137 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var Crypto = Npm.require("crypto");
-var Capnp = Npm.require("capnp");
+const Crypto = Npm.require('crypto');
+const Capnp = Npm.require('capnp');
 
-var PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
-var SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;
-var SandstormCoreFactory = Capnp.importSystem("sandstorm/backend.capnp").SandstormCoreFactory;
-var PersistentOngoingNotification = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentOngoingNotification;
+const PersistentHandle = Capnp.importSystem('sandstorm/supervisor.capnp').PersistentHandle;
+const SandstormCore = Capnp.importSystem('sandstorm/supervisor.capnp').SandstormCore;
+const SandstormCoreFactory = Capnp.importSystem('sandstorm/backend.capnp').SandstormCoreFactory;
+const PersistentOngoingNotification = Capnp.importSystem('sandstorm/supervisor.capnp').PersistentOngoingNotification;
 
-function SandstormCoreImpl(grainId) {
-  this.grainId = grainId;
+class SandstormCoreImpl {
+  constructor(grainId) {
+    this.grainId = grainId;
+  }
+
+  restore(sturdyRef, requiredPermissions) {
+    const _this = this;
+    return inMeteor(() => {
+      const hashedSturdyRef = hashSturdyRef(sturdyRef);
+      const token = ApiTokens.findOne(hashedSturdyRef);
+      const requirements = [
+        {
+          tokenValid: hashedSturdyRef,
+        },
+      ];
+
+      if (requiredPermissions && token.owner.grain.introducerIdentity) {
+        requirements.push({
+          permissionsHeld: {
+            permissions: requiredPermissions,
+            identityId: token.owner.grain.introducerIdentity,
+            grainId: _this.grainId,
+          },
+        });
+      }
+
+      return restoreInternal(hashedSturdyRef,
+                             {grain: Match.ObjectIncluding({grainId: _this.grainId})},
+                             requirements, sturdyRef);
+    });
+  }
+
+  drop(sturdyRef) {
+    const _this = this;
+    return inMeteor(() => {
+      return dropInternal(sturdyRef, {grain: Match.ObjectIncluding({grainId: _this.grainId})});
+    });
+  }
+
+  makeToken(ref, owner, requirements) {
+    const _this = this;
+    return inMeteor(() => {
+      const sturdyRef = new Buffer(generateSturdyRef());
+      const hashedSturdyRef = hashSturdyRef(sturdyRef);
+      ApiTokens.insert({
+        _id: hashedSturdyRef,
+        grainId: _this.grainId,
+        objectId: ref,
+        owner: owner,
+        created: new Date(),
+        requirements: requirements,
+      });
+
+      return {
+        token: sturdyRef,
+      };
+    });
+  }
+
+  makeChildToken(parent, owner, requirements) {
+    const _this = this;
+    return inMeteor(() => {
+      return makeChildTokenInternal(hashSturdyRef(parent), owner, requirements, _this.grainId);
+    });
+  }
+
+  getOwnerNotificationTarget() {
+    const grainId = this.grainId;
+    return {
+      owner: {
+        addOngoing: (displayInfo, notification) => {
+          return inMeteor(() => {
+            const grain = Grains.findOne({_id: grainId});
+            if (!grain) {
+              throw new Error('Grain not found.');
+            }
+
+            const castedNotification = notification.castAs(PersistentOngoingNotification);
+            const wakelockToken = waitPromise(castedNotification.save()).sturdyRef;
+
+            // We have to close both the casted cap and the original. Perhaps this should be fixed in
+            // node-capnp?
+            castedNotification.close();
+            notification.close();
+            const notificationId = Notifications.insert({
+              ongoing: wakelockToken,
+              grainId: grainId,
+              userId: grain.userId,
+              text: displayInfo.caption,
+              timestamp: new Date(),
+              isUnread: true,
+            });
+
+            return {handle: makeNotificationHandle(notificationId, false)};
+          });
+        },
+      },
+    };
+  }
 }
 
-var makeSandstormCore = function (grainId) {
+const makeSandstormCore = (grainId) => {
   return new Capnp.Capability(new SandstormCoreImpl(grainId), SandstormCore);
 };
 
-function NotificationHandle(notificationId, saved) {
-  this.notificationId = notificationId;
-  this.saved = saved;
+class NotificationHandle {
+  constructor(notificationId, saved) {
+    this.notificationId = notificationId;
+    this.saved = saved;
+  }
+
+  close() {
+    const _this = this;
+    return inMeteor(() => {
+      if (!_this.saved) {
+        dismissNotification(_this.notificationId);
+      }
+    });
+  }
+
+  save(params) {
+    return saveFrontendRef({notificationHandle: this.notificationId}, params.sealFor);
+  }
 }
 
 function makeNotificationHandle(notificationId, saved) {
@@ -40,32 +152,32 @@ function makeNotificationHandle(notificationId, saved) {
 }
 
 function dropWakelock(grainId, wakeLockNotificationId) {
-  waitPromise(globalBackend.useGrain(grainId, function (supervisor) {
+  waitPromise(globalBackend.useGrain(grainId, (supervisor) => {
     return supervisor.drop({wakeLockNotification: wakeLockNotificationId});
   }));
 }
 
 function dismissNotification(notificationId, callCancel) {
-  var notification = Notifications.findOne({_id: notificationId});
+  const notification = Notifications.findOne({_id: notificationId});
   if (notification) {
     Notifications.remove({_id: notificationId});
     if (notification.ongoing) {
       // For some reason, Mongo returns an object that looks buffer-like, but isn't a buffer.
       // Only way to fix seems to be to copy it.
-      var id = new Buffer(notification.ongoing);
+      const id = new Buffer(notification.ongoing);
 
       if (!callCancel) {
         dropInternal(id, {frontend: null});
       } else {
-        var notificationCap = restoreInternal(hashSturdyRef(id), {frontend: null}).cap;
-        var castedNotification = notificationCap.castAs(PersistentOngoingNotification);
+        const notificationCap = restoreInternal(hashSturdyRef(id), {frontend: null}).cap;
+        const castedNotification = notificationCap.castAs(PersistentOngoingNotification);
         dropInternal(id, {frontend: null});
         try {
           waitPromise(castedNotification.cancel());
           castedNotification.close();
           notificationCap.close();
         } catch (err) {
-          if (err.kjType !== "disconnected") {
+          if (err.kjType !== 'disconnected') {
             // ignore disconnected errors, since cancel may shutdown the grain before the supervisor
             // responds.
             throw err;
@@ -73,95 +185,86 @@ function dismissNotification(notificationId, callCancel) {
         }
       }
     } else if (notification.appUpdates) {
-      _.forEach(notification.appUpdates, function (app, appId) {
+      _.forEach(notification.appUpdates, (app, appId) => {
         deletePackage(app.packageId);
       });
     }
   }
 }
 
-hashSturdyRef = function (sturdyRef) {
-  return Crypto.createHash("sha256").update(sturdyRef).digest("base64");
-}
+hashSturdyRef = (sturdyRef) => {
+  return Crypto.createHash('sha256').update(sturdyRef).digest('base64');
+};
 
 function generateSturdyRef() {
   return Random.id(22);
 }
 
 Meteor.methods({
-  dismissNotification: function (notificationId) {
+  dismissNotification(notificationId) {
     // This will remove notifications from the database and from view of the user.
     // For ongoing notifications, it will begin the process of cancelling and dropping them from
     // the app.
 
     check(notificationId, String);
 
-    var notification = Notifications.findOne({_id: notificationId});
+    const notification = Notifications.findOne({_id: notificationId});
     if (!notification) {
-      throw new Meteor.Error(404, "Notification id not found.");
+      throw new Meteor.Error(404, 'Notification id not found.');
     } else if (notification.userId !== Meteor.userId()) {
-      throw new Meteor.Error(403, "Notification does not belong to current user.");
+      throw new Meteor.Error(403, 'Notification does not belong to current user.');
     } else {
       dismissNotification(notificationId, true);
     }
   },
-  readAllNotifications: function () {
+
+  readAllNotifications() {
     // Marks all notifications as read for the current user.
     if (!Meteor.userId()) {
-      throw new Meteor.Error(403, "User not logged in.");
+      throw new Meteor.Error(403, 'User not logged in.');
     }
+
     Notifications.update({userId: Meteor.userId()}, {$set: {isUnread: false}}, {multi: true});
-  }
+  },
 });
 
-NotificationHandle.prototype.close = function () {
-  var self = this;
-  return inMeteor(function () {
-    if (!self.saved) {
-      dismissNotification(self.notificationId);
-    }
-  });
-};
-
-saveFrontendRef = function (frontendRef, owner, requirements) {
-  return inMeteor(function () {
-    var sturdyRef = new Buffer(generateSturdyRef());
-    var hashedSturdyRef = hashSturdyRef(sturdyRef);
+saveFrontendRef = (frontendRef, owner, requirements) => {
+  return inMeteor(() => {
+    const sturdyRef = new Buffer(generateSturdyRef());
+    const hashedSturdyRef = hashSturdyRef(sturdyRef);
     ApiTokens.insert({
       _id: hashedSturdyRef,
       frontendRef: frontendRef,
       owner: owner,
       created: new Date(),
-      requirements: requirements
+      requirements: requirements,
     });
     return {sturdyRef: sturdyRef};
   });
 };
 
-NotificationHandle.prototype.save = function (params) {
-  return saveFrontendRef({notificationHandle: this.notificationId}, params.sealFor);
-};
-
-checkRequirements = function (requirements) {
+checkRequirements = (requirements) => {
   if (!requirements) {
     return true;
   }
-  for (var i in requirements) {
-    var requirement = requirements[i];
+
+  for (let i in requirements) {
+    const requirement = requirements[i];
     if (requirement.tokenValid) {
-      var token = ApiTokens.findOne({_id: requirement.tokenValid}, {fields: {requirements: 1}});
+      const token = ApiTokens.findOne({_id: requirement.tokenValid}, {fields: {requirements: 1}});
       if (!checkRequirements(token.requirements)) {
         return false;
       }
     } else if (requirement.permissionsHeld) {
-      var p = requirement.permissionsHeld;
-      var viewInfo = Grains.findOne(p.grainId, {fields: {cachedViewInfo: 1}}).cachedViewInfo;
-      var currentPermissions = SandstormPermissions.grainPermissions(
+      const p = requirement.permissionsHeld;
+      const viewInfo = Grains.findOne(p.grainId, {fields: {cachedViewInfo: 1}}).cachedViewInfo;
+      const currentPermissions = SandstormPermissions.grainPermissions(
         globalDb, {grain: {_id: p.grainId, identityId: p.identityId}}, viewInfo || {});
       if (!currentPermissions) {
         return false;
       }
-      for (var ii = 0; ii < p.permissions.length; ++ii) {
+
+      for (let ii = 0; ii < p.permissions.length; ++ii) {
         if (p.permissions[ii] && !currentPermissions[ii]) {
           return false;
         }
@@ -171,35 +274,38 @@ checkRequirements = function (requirements) {
         return false;
       }
     } else {
-      throw new Meteor.Error(403, "Unknown requirement");
+      throw new Meteor.Error(403, 'Unknown requirement');
     }
   }
+
   return true;
 };
 
-restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
+restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
   // Restores `sturdyRef`, checking first that its owner matches `ownerPattern`.
   // parentToken and requirements are optional params that are only used in the case of an objectId
   // token
-  var token = ApiTokens.findOne(tokenId);
+  const token = ApiTokens.findOne(tokenId);
   if (!token) {
-    throw new Meteor.Error(403, "No token found to restore");
+    throw new Meteor.Error(403, 'No token found to restore');
   }
+
   if (token.revoked) {
-    throw new Meteor.Error(403, "Token has been revoked");
+    throw new Meteor.Error(403, 'Token has been revoked');
   }
+
   check(token.owner, ownerPattern);
   if (!checkRequirements(token.requirements)) {
-    throw new Meteor.Error(403, "Requirements not satisfied.");
+    throw new Meteor.Error(403, 'Requirements not satisfied.');
   }
 
   if (token.expires && token.expires.getTime() <= Date.now()) {
-    throw new Meteor.Error(403, "Authorization token expired");
+    throw new Meteor.Error(403, 'Authorization token expired');
   }
 
   if (token.expiresIfUnused) {
     if (token.expiresIfUnused.getTime() <= Date.now()) {
-      throw new Meteor.Error(403, "Authorization token expired");
+      throw new Meteor.Error(403, 'Authorization token expired');
     } else {
       // It's getting used now, so clear the expiresIfUnused field.
       ApiTokens.update(token._id, {$set: {expiresIfUnused: null}});
@@ -208,184 +314,101 @@ restoreInternal = function (tokenId, ownerPattern, requirements, parentToken) {
 
   if (token.frontendRef) {
     if (token.frontendRef.notificationHandle) {
-      var notificationId = token.frontendRef.notificationHandle;
+      const notificationId = token.frontendRef.notificationHandle;
       return {cap: makeNotificationHandle(notificationId, true)};
     } else if (token.frontendRef.ipNetwork) {
       return {cap: makeIpNetwork(tokenId)};
     } else if (token.frontendRef.ipInterface) {
       return {cap: makeIpInterface(tokenId)};
     } else {
-      throw new Meteor.Error(500, "Unknown frontend token type.");
+      throw new Meteor.Error(500, 'Unknown frontend token type.');
     }
   } else if (token.objectId) {
     if (!checkRequirements(requirements)) {
-      throw new Meteor.Error(403, "Requirements not satisfied.");
+      throw new Meteor.Error(403, 'Requirements not satisfied.');
     }
+
     if (token.objectId.appRef) {
       token.objectId.appRef = new Buffer(token.objectId.appRef);
     }
-    return waitPromise(globalBackend.useGrain(token.grainId, function (supervisor) {
+
+    return waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
       return supervisor.restore(token.objectId, requirements, parentToken);
     }));
   } else if (token.parentToken) {
     return restoreInternal(token.parentToken, Match.Any, requirements, parentToken);
   } else {
-    throw new Meteor.Error(500, "Unknown token type.");
+    throw new Meteor.Error(500, 'Unknown token type.');
   }
 };
 
-SandstormCoreImpl.prototype.restore = function (sturdyRef, requiredPermissions) {
-  var self = this;
-  return inMeteor(function () {
-    var hashedSturdyRef = hashSturdyRef(sturdyRef);
-    var token = ApiTokens.findOne(hashedSturdyRef);
-    var requirements = [{
-      tokenValid: hashedSturdyRef
-    }];
-
-    if (requiredPermissions && token.owner.grain.introducerIdentity) {
-      requirements.push({
-        permissionsHeld: {
-          permissions: requiredPermissions,
-          identityId: token.owner.grain.introducerIdentity,
-          grainId: self.grainId
-        }
-      });
-    }
-    return restoreInternal(hashedSturdyRef,
-                           {grain: Match.ObjectIncluding({grainId: self.grainId})},
-                           requirements, sturdyRef);
-  });
-};
-
-function dropInternal (sturdyRef, ownerPattern) {
+function dropInternal(sturdyRef, ownerPattern) {
   // Drops `sturdyRef`, checking first that its owner matches `ownerPattern`.
 
-  var hashedSturdyRef = hashSturdyRef(sturdyRef);
-  var token = ApiTokens.findOne({_id: hashedSturdyRef});
+  const hashedSturdyRef = hashSturdyRef(sturdyRef);
+  const token = ApiTokens.findOne({_id: hashedSturdyRef});
   if (!token) {
     return;
   }
+
   check(token.owner, ownerPattern);
 
   if (token.frontendRef) {
     if (token.frontendRef.notificationHandle) {
-      var notificationId = token.frontendRef.notificationHandle;
+      const notificationId = token.frontendRef.notificationHandle;
       ApiTokens.remove({_id: hashedSturdyRef});
-      var anyToken = ApiTokens.findOne({"frontendRef.notificationHandle": notificationId});
+      const anyToken = ApiTokens.findOne({'frontendRef.notificationHandle': notificationId});
       if (!anyToken) {
         // No other tokens referencing this notification exist, so dismiss the notification
         dismissNotification(notificationId);
       }
     } else {
-      throw new Error("Unknown frontend token type.");
+      throw new Error('Unknown frontend token type.');
     }
   } else if (token.objectId) {
     if (token.objectId.wakeLockNotification) {
       dropWakelock(token.grainId, token.objectId.wakeLockNotification);
     } else {
-      throw new Error("Unknown objectId token type.");
+      throw new Error('Unknown objectId token type.');
     }
   } else {
-    throw new Error("Unknown token type.");
+    throw new Error('Unknown token type.');
   }
 }
 
-SandstormCoreImpl.prototype.drop = function (sturdyRef) {
-  var self = this;
-  return inMeteor(function () {
-    return dropInternal(sturdyRef, {grain: Match.ObjectIncluding({grainId: self.grainId})});
-  });
-};
+makeChildTokenInternal = (hashedParent, owner, requirements, grainId) => {
+  const sturdyRef = new Buffer(generateSturdyRef());
+  const hashedSturdyRef = hashSturdyRef(sturdyRef);
 
-SandstormCoreImpl.prototype.makeToken = function (ref, owner, requirements) {
-  var self = this;
-  return inMeteor(function () {
-    var sturdyRef = new Buffer(generateSturdyRef());
-    var hashedSturdyRef = hashSturdyRef(sturdyRef);
-    ApiTokens.insert({
-      _id: hashedSturdyRef,
-      grainId: self.grainId,
-      objectId: ref,
-      owner: owner,
-      created: new Date(),
-      requirements: requirements
-    });
-
-    return {
-      token: sturdyRef
-    };
-  });
-};
-
-makeChildTokenInternal = function (hashedParent, owner, requirements, grainId) {
-  var sturdyRef = new Buffer(generateSturdyRef());
-  var hashedSturdyRef = hashSturdyRef(sturdyRef);
-
-  requirements = requirements.filter(function (requirement) {
+  requirements = requirements.filter((requirement) => {
     return requirement.tokenValid !== hashedParent;
   });
 
-  var tokenInfo = {
+  const tokenInfo = {
     _id: hashedSturdyRef,
     parentToken: hashedParent,
     owner: owner,
     created: new Date(),
-    requirements: requirements
+    requirements: requirements,
   };
   if (grainId) {
     tokenInfo.grainId = grainId;
   }
+
   ApiTokens.insert(tokenInfo);
 
   return {
-    token: sturdyRef
+    token: sturdyRef,
   };
-};
-
-SandstormCoreImpl.prototype.makeChildToken = function (parent, owner, requirements) {
-  var self = this;
-  return inMeteor(function () {
-    return makeChildTokenInternal(hashSturdyRef(parent), owner, requirements, self.grainId);
-  });
-};
-
-SandstormCoreImpl.prototype.getOwnerNotificationTarget = function() {
-  var grainId = this.grainId;
-  return {owner: {addOngoing: function(displayInfo, notification) {
-    return inMeteor(function () {
-      var grain = Grains.findOne({_id: grainId});
-      if (!grain) {
-        throw new Error("Grain not found.");
-      }
-      var castedNotification = notification.castAs(PersistentOngoingNotification);
-      var wakelockToken = waitPromise(castedNotification.save()).sturdyRef;
-
-      // We have to close both the casted cap and the original. Perhaps this should be fixed in
-      // node-capnp?
-      castedNotification.close();
-      notification.close();
-      var notificationId = Notifications.insert({
-        ongoing: wakelockToken,
-        grainId: grainId,
-        userId: grain.userId,
-        text: displayInfo.caption,
-        timestamp: new Date(),
-        isUnread: true
-      });
-
-      return {handle: makeNotificationHandle(notificationId, false)};
-    });
-  }}};
 };
 
 function SandstormCoreFactoryImpl() {
 }
 
-SandstormCoreFactoryImpl.prototype.getSandstormCore = function (grainId){
+SandstormCoreFactoryImpl.prototype.getSandstormCore = (grainId) => {
   return {core: makeSandstormCore(grainId)};
 };
 
-makeSandstormCoreFactory = function () {
+makeSandstormCoreFactory = () => {
   return new Capnp.Capability(new SandstormCoreFactoryImpl(), SandstormCoreFactory);
 };

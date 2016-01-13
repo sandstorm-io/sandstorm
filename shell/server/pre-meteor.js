@@ -17,24 +17,24 @@
 // This file implements logic that we place in front of our main Meteor application,
 // including routing of requests to proxies and handling of static web publishing.
 
-var Url = Npm.require("url");
-var Fs = Npm.require("fs");
-var Dns = Npm.require("dns");
-var Promise = Npm.require("es6-promise").Promise;
-var Future = Npm.require("fibers/future");
-var Http = Npm.require("http");
+const Url = Npm.require('url');
+const Fs = Npm.require('fs');
+const Dns = Npm.require('dns');
+const Promise = Npm.require('es6-promise').Promise;
+const Future = Npm.require('fibers/future');
+const Http = Npm.require('http');
 
-var HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
-var DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
+const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
+const DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
     Url.parse(process.env.DDP_DEFAULT_CONNECTION_URL).hostname;
-var CACHE_TTL_SECONDS = 30;  // 30 seconds.  Cache-Control expects units of seconds, not millis.
-var DNS_CACHE_TTL = CACHE_TTL_SECONDS * 1000; // DNS cache is in millis.
+const CACHE_TTL_SECONDS = 30;  // 30 seconds.  Cache-Control expects units of seconds, not millis.
+const DNS_CACHE_TTL = CACHE_TTL_SECONDS * 1000; // DNS cache is in millis.
 
-var staticHandlers = {};
+const staticHandlers = {};
 // Maps grain public IDs to Connect handlers.
 // TODO(perf): Garbage-collect this map?
 
-var dnsCache = {};
+const dnsCache = {};
 // Unfortunately, node's DNS library doesn't cache results, so we do our own caching.
 // Unfortunately, node's DNS library also dosen't give us TTLs. So, we'll cache for
 // DNS_CACHE_TTL (a relatively small value) and rely on the upstream DNS server to implement
@@ -46,45 +46,45 @@ function isSandstormShell(hostname) {
   return (hostname === HOSTNAME || (DDP_HOSTNAME && hostname === DDP_HOSTNAME));
 }
 
-var mime = Connect.static.mime;
+const mime = Connect.static.mime;
 
 function wwwHandlerForGrain(grainId) {
-  return function (request, response, cb) {
-    var path = request.url;
+  return (request, response, cb) => {
+    let path = request.url;
 
-    // If a directory, open "index.html".
-    if (path.slice(-1) === "/") {
-      path = path + "index.html";
+    // If a directory, open 'index.html'.
+    if (path.slice(-1) === '/') {
+      path = path + 'index.html';
     }
 
     // Strip leading '/'.
     if (path[0] === '/') path = path.slice(1);
 
     // Strip query.
-    path = path.split("?")[0];
+    path = path.split('?')[0];
 
-    var type = mime.lookup(path);
-    var charset = mime.charsets.lookup(type);
+    let type = mime.lookup(path);
+    const charset = mime.charsets.lookup(type);
     if (charset) {
-      type = type + "; charset=" + charset;
-    } else if (type === "application/json") {
+      type = type + '; charset=' + charset;
+    } else if (type === 'application/json') {
       // HACK: Apparently the MIME module does not assume UTF-8 for JSON. :(
-      type = type + "; charset=utf-8";
+      type = type + '; charset=utf-8';
     }
 
-    var started = false;
-    var sawEnd = false;
+    let started = false;
+    let sawEnd = false;
 
-    // TODO(perf): Automatically gzip text content? Use Express's "compress" middleware for this?
+    // TODO(perf): Automatically gzip text content? Use Express's 'compress' middleware for this?
     //   Note that nginx will also auto-compress things...
 
-    var headers = {
-      "Content-Type": type,
-      "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS
+    const headers = {
+      'Content-Type': type,
+      'Cache-Control': 'public, max-age=' + CACHE_TTL_SECONDS,
     };
 
-    if (path === "apps/index.json" ||
-        path === "apps/index-experimental.json" ||
+    if (path === 'apps/index.json' ||
+        path === 'apps/index-experimental.json' ||
         path.match(/apps\/[a-z0-9]{52}[.]json/)) {
       // TODO(cleanup): Extra special terrible hack: The app index needs to serve these JSON files
       //   cross-origin. We could almost just make all web sites allow cross-origin since generally
@@ -92,93 +92,98 @@ function wwwHandlerForGrain(grainId) {
       //   problematic, though: sites behind a firewall. Those sites could potentially be read
       //   by outside sites if CORS is enabled on them. Some day we should make it so apps can
       //   explicitly opt-in to allowing cross-origin queries but that day is not today.
-      headers["Access-Control-Allow-Origin"] = "*";
+      headers['Access-Control-Allow-Origin'] = '*';
     }
 
-    var stream = {
-      expectSize: function (size) {
+    const stream = {
+      expectSize(size) {
         if (!started) {
           started = true;
-          response.writeHead(200, _.extend(headers, { "Content-Length": size }));
+          response.writeHead(200, _.extend(headers, { 'Content-Length': size }));
         }
       },
-      write: function (data) {
+
+      write(data) {
         if (!started) {
           started = true;
           response.writeHead(200, headers);
         }
+
         response.write(data);
       },
-      done: function (data) {
+
+      done(data) {
         if (!started) {
           started = true;
-          response.writeHead(200, _.extend(headers, { "Content-Length": 0, }));
+          response.writeHead(200, _.extend(headers, { 'Content-Length': 0, }));
         }
+
         sawEnd = true;
         response.end();
-      }
+      },
     };
 
-    globalBackend.useGrain(grainId, function (supervisor) {
-      return supervisor.getWwwFileHack(path, stream)
-          .then(function (result) {
-        var status = result.status;
-        if (status === "file") {
+    globalBackend.useGrain(grainId, (supervisor) => {
+      return supervisor.getWwwFileHack(path, stream).then((result) => {
+        // jscs:disable disallowQuotedKeysInObjects
+        const status = result.status;
+        if (status === 'file') {
           if (!sawEnd) {
-            console.error("getWwwFileHack didn't write file to stream");
+            console.error('getWwwFileHack didn\'t write file to stream');
             if (!started) {
               response.writeHead(500, {
-                "Content-Type": "text/plain",
+                'Content-Type': 'text/plain',
               });
-              response.end("Internal server error");
+              response.end('Internal server error');
             }
+
             response.end();
           }
-        } else if (status === "directory") {
+        } else if (status === 'directory') {
           if (started) {
-            console.error("getWwwFileHack wrote to stream for directory");
+            console.error('getWwwFileHack wrote to stream for directory');
             if (!sawEnd) {
               response.end();
             }
           } else {
             response.writeHead(303, {
-              "Content-Type": "text/plain",
-              "Location": "/" + path + "/",
-              "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS
+              'Content-Type': 'text/plain',
+              'Location': '/' + path + '/',
+              'Cache-Control': 'public, max-age=' + CACHE_TTL_SECONDS,
             });
-            response.end("redirect: /" + path + "/");
+            response.end('redirect: /' + path + '/');
           }
-        } else if (status === "notFound") {
+        } else if (status === 'notFound') {
           if (started) {
-            console.error("getWwwFileHack wrote to stream for notFound");
+            console.error('getWwwFileHack wrote to stream for notFound');
             if (!sawEnd) {
               response.end();
             }
           } else {
             response.writeHead(404, {
-              "Content-Type": "text/plain"
+              'Content-Type': 'text/plain',
             });
-            response.end("404 not found: /" + path);
+            response.end('404 not found: /' + path);
           }
         } else {
-          console.error("didn't understand result of getWwwFileHack:", status);
+          console.error('didn\'t understand result of getWwwFileHack:', status);
           if (!started) {
             response.writeHead(500, {
-              "Content-Type": "text/plain",
+              'Content-Type': 'text/plain',
             });
-            response.end("Internal server error");
+            response.end('Internal server error');
           }
         }
       });
-    }).catch(function (err) {
+    }).catch((err) => {
       console.error(err.stack);
     });
   };
 }
 
 function writeErrorResponse(res, err) {
-  var status = 500;
-  if (err instanceof Meteor.Error && typeof err.error === "number" &&
+  let status = 500;
+  if (err instanceof Meteor.Error && typeof err.error === 'number' &&
       err.error >= 400 && err.error < 600) {
     status = err.error;
   } else if (err.httpErrorCode) {
@@ -188,187 +193,194 @@ function writeErrorResponse(res, err) {
   // Log errors that are our fault, but not errors that are the client's fault.
   if (status >= 500) console.error(err.stack);
 
-  res.writeHead(status, { "Content-Type": err.htmlMessage ? "text/html" : "text/plain" });
+  res.writeHead(status, { 'Content-Type': err.htmlMessage ? 'text/html' : 'text/plain' });
   res.end(err.htmlMessage || err.message);
 }
 
-var PNG_MAGIC = new Buffer([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
-var JPEG_MAGIC = new Buffer([0xFF, 0xD8, 0xFF]);
+const PNG_MAGIC = new Buffer([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]);
+const JPEG_MAGIC = new Buffer([0xFF, 0xD8, 0xFF]);
 
 function checkMagic(buf, magic) {
   if (buf.length < magic.length) return false;
-  for (var i = 0; i < magic.length; i++) {
+
+  for (let i = 0; i < magic.length; i++) {
     if (buf[i] != magic[i]) return false;
   }
+
   return true;
 }
 
 function serveStaticAsset(req, res) {
-  inMeteor(function () {
-    if (req.method === "GET") {
-      var assetCspHeader = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
-      if (req.headers["if-none-match"] === "permanent") {
+  inMeteor(() => {
+    if (req.method === 'GET') {
+      // jscs:disable validateQuoteMarks
+      const assetCspHeader = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
+      if (req.headers['if-none-match'] === 'permanent') {
         // Cache never invalidates since we use a new URL for every resource.
         res.writeHead(304, {
-          "Cache-Control": "public, max-age=31536000",
-          "ETag": "permanent",
+          'Cache-Control': 'public, max-age=31536000',
+          'ETag': 'permanent',
 
           // To be safe, send these again, although it shouldn't be necessary.
-          "Content-Security-Policy": assetCspHeader,
-          "Access-Control-Allow-Origin": "*",
-          "X-Content-Type-Options": "nosniff",
+          'Content-Security-Policy': assetCspHeader,
+          'Access-Control-Allow-Origin': '*',
+          'X-Content-Type-Options': 'nosniff',
         });
         res.end();
         return;
       }
 
-      var url = Url.parse(req.url);
-      var asset = globalDb.getStaticAsset(url.pathname.slice(1));
+      const url = Url.parse(req.url);
+      const asset = globalDb.getStaticAsset(url.pathname.slice(1));
 
       if (asset) {
-        var headers = {
-          "Content-Type": asset.mimeType,
-          "Content-Length": asset.content.length,
+        const headers = {
+          'Content-Type': asset.mimeType,
+          'Content-Length': asset.content.length,
 
           // Assets can be cached forever because each one has a unique ID.
-          "Cache-Control": "public, max-age=31536000",
+          'Cache-Control': 'public, max-age=31536000',
 
           // Since different resources get different URLs, we can use a static etag.
-          "ETag": "permanent",
+          'ETag': 'permanent',
 
           // Set strict Content-Security-Policy to prevent static assets from executing any script
           // or doing basically anything when browsed to directly. The static assets host is not
           // intended to serve HTML. Mostly, it serves images and javascript -- note that setting
           // the CSP header on Javascript files does not prevent other hosts from voluntarily
           // specifying these scripts in <script> tags.
-          "Content-Security-Policy": assetCspHeader,
+          'Content-Security-Policy': assetCspHeader,
 
           // Allow any host to fetch these assets. This is safe since requests to this host are
           // totally side-effect-free and the asset ID acts as a capability to prevent loading
           // assets you're not supposed to know about.
-          "Access-Control-Allow-Origin": "*",
+          'Access-Control-Allow-Origin': '*',
 
           // Extra protection against content type trickery.
-          "X-Content-Type-Options": "nosniff",
+          'X-Content-Type-Options': 'nosniff',
         };
+
         if (asset.encoding) {
-          headers["Content-Encoding"] = asset.encoding;
+          headers['Content-Encoding'] = asset.encoding;
         }
 
         res.writeHead(200, headers);
         res.end(asset.content);
       } else {
-        res.writeHead(404, {"Content-Type": "text/plain"});
-        res.end("not found");
+        res.writeHead(404, {'Content-Type': 'text/plain'});
+        res.end('not found');
       }
-    } else if (req.method === "POST") {
-      res.setHeader("Access-Control-Allow-Origin", "*");
+    } else if (req.method === 'POST') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
 
-      var url = Url.parse(req.url);
-      var purpose = globalDb.fulfillAssetUpload(url.pathname.slice(1));
+      const url = Url.parse(req.url);
+      const purpose = globalDb.fulfillAssetUpload(url.pathname.slice(1));
       if (!purpose) {
-        res.writeHead(404, { "Content-Type": "text/plain" });
-        res.end("Upload token not found or expired.");
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Upload token not found or expired.');
         return;
       }
 
-      var userId = purpose.profilePicture.userId;
-      var identityId = purpose.profilePicture.identityId;
+      const userId = purpose.profilePicture.userId;
+      const identityId = purpose.profilePicture.identityId;
       check(userId, String);
       check(identityId, String);
 
-      var buffers = [];
-      var totalSize = 0;
-      var done = new Future();
-      req.on("data", function (buf) {
+      const buffers = [];
+      let totalSize = 0;
+      const done = new Future();
+      req.on('data', (buf) => {
         totalSize += buf.length;
         if (totalSize <= (64 * 1024)) {
           buffers.push(buf);
         }
       });
-      req.on("end", done.return.bind(done));
-      req.on("error", done.throw.bind(done));
+      req.on('end', done.return.bind(done));
+      req.on('error', done.throw.bind(done));
       done.wait();
 
       if (totalSize > (64 * 1024)) {
         // TODO(soon): Resize the image ourselves.
-        res.writeHead(400, { "Content-Type": "text/plain" });
-        res.end("Picture too large; please use an image under 64 KiB.");
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('Picture too large; please use an image under 64 KiB.');
         return;
       }
 
-      var content = Buffer.concat(buffers);
-      var type;
+      const content = Buffer.concat(buffers);
+      let type;
       if (checkMagic(content, PNG_MAGIC)) {
-        type = "image/png";
+        type = 'image/png';
       } else if (checkMagic(content, JPEG_MAGIC)) {
-        type = "image/jpeg";
+        type = 'image/jpeg';
       } else {
-        res.writeHead(400, { "Content-Type": "text/plain" });
-        res.end("Image must be PNG or JPEG.");
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('Image must be PNG or JPEG.');
         return;
       }
 
-      var assetId = globalDb.addStaticAsset({mimeType: type}, content);
-
-      var old = Meteor.users.findAndModify({
-        query: {"_id": identityId},
-        update: {$set: {"profile.picture": assetId}},
-        fields: {"profile.picture": 1}
+      const assetId = globalDb.addStaticAsset({mimeType: type}, content);
+      const old = Meteor.users.findAndModify({
+        query: {'_id': identityId},
+        update: {$set: {'profile.picture': assetId}},
+        fields: {'profile.picture': 1},
       });
+
       if (old && old.profile && old.profile.picture) {
         globalDb.unrefStaticAsset(old.profile.picture);
       }
 
       res.writeHead(204, {});
       res.end();
-    } else if (req.method === "OPTIONS") {
-      var requestedHeaders = req.headers["access-control-request-headers"];
+    } else if (req.method === 'OPTIONS') {
+      const requestedHeaders = req.headers['access-control-request-headers'];
       if (requestedHeaders) {
-        res.setHeader("Access-Control-Allow-Headers", requestedHeaders);
+        res.setHeader('Access-Control-Allow-Headers', requestedHeaders);
       }
+
       res.writeHead(204, {
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
-          "Access-Control-Max-Age": "3600"});
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS',
+        'Access-Control-Max-Age': '3600',
+      });
       res.end();
     } else {
-      res.writeHead(405, "Method Not Allowed", {
-        "Allow": "GET, POST, OPTIONS",
-        "Content-Type": "text/plain"
+      res.writeHead(405, 'Method Not Allowed', {
+        'Allow': 'GET, POST, OPTIONS',
+        'Content-Type': 'text/plain',
       });
-      res.end("405 Method Not Allowed: " + req.method);
+      res.end('405 Method Not Allowed: ' + req.method);
     }
-  }).catch (function (err) {
+  }).catch((err) => {
     writeErrorResponse(res, err);
   });
 }
 
-Meteor.startup(function () {
+Meteor.startup(() => {
 
-  var meteorUpgradeListeners = WebApp.httpServer.listeners('upgrade');
+  const meteorUpgradeListeners = WebApp.httpServer.listeners('upgrade');
   WebApp.httpServer.removeAllListeners('upgrade');
 
-  WebApp.httpServer.on('upgrade', function(req, socket, head) {
-    Promise.resolve(undefined).then(function () {
-      if (isSandstormShell(req.headers.host.split(":")[0])) {
+  WebApp.httpServer.on('upgrade', (req, socket, head) => {
+    Promise.resolve(undefined).then(() => {
+      if (isSandstormShell(req.headers.host.split(':')[0])) {
         // Go on to Meteor.
-        for (var ii = 0; ii < meteorUpgradeListeners.length; ++ii) {
+        for (let ii = 0; ii < meteorUpgradeListeners.length; ++ii) {
           meteorUpgradeListeners[ii](req, socket, head);
         }
+
         return true;
       } else {
-        var id = matchWildcardHost(req.headers.host);
+        const id = matchWildcardHost(req.headers.host);
         if (id) {
           return tryProxyUpgrade(id, req, socket, head);
         } else {
           return false;
         }
       }
-    }).then(function (handled) {
+    }).then((handled) => {
       if (!handled) socket.destroy();
-    }).catch(function (err) {
-      console.error("WebSocket event handler failed:", err.stack);
+    }).catch((err) => {
+      console.error('WebSocket event handler failed:', err.stack);
       socket.destroy();
     });
   });
@@ -380,9 +392,9 @@ Meteor.startup(function () {
 
   // This function serves responses on Sandstorm's main HTTP/HTTPS
   // port.
-  var serveMeteorOrStaticPublishing = function(req, res, next) {
+  const serveMeteorOrStaticPublishing = (req, res, next) => {
     return dispatchToMeteorOrStaticPublishing(req, res, next, false);
-  }
+  };
 
   // "Alternate ports" are ports other than the main HTTP or HTTPS
   // port. For requests to the shell & grains, we redirect to the main
@@ -391,15 +403,15 @@ Meteor.startup(function () {
   // They are bound to FD #4 and higher.
 
   function getNumberOfAlternatePorts() {
-    var numPorts = process.env.PORT.split(",").length;
-    var numAlternatePorts = numPorts - 1;
+    const numPorts = process.env.PORT.split(',').length;
+    const numAlternatePorts = numPorts - 1;
     return numAlternatePorts;
   };
 
-  var canonicalizeShellOrWildcardUrl = function(hostname, url) {
+  const canonicalizeShellOrWildcardUrl = (hostname, url) => {
     // Start with ROOT_URL, apply host & path from inbound URL, then
     // redirect.
-    var targetUrl = Url.parse(process.env.ROOT_URL);
+    let targetUrl = Url.parse(process.env.ROOT_URL);
 
     // Retain the protocol & port from ROOT_URL but use the inbound
     // hostname.
@@ -411,22 +423,22 @@ Meteor.startup(function () {
     return targetUrl;
   };
 
-  var redirectToMeteorOrServeStaticPublishing = function (req, res, next) {
+  const redirectToMeteorOrServeStaticPublishing = (req, res, next) => {
     return dispatchToMeteorOrStaticPublishing(req, res, next, true);
   };
 
-  for (var i = 0; i < getNumberOfAlternatePorts(); i++) {
+  for (let i = 0; i < getNumberOfAlternatePorts(); i++) {
     // Call createServerForSandstorm() to skip our monkey patching.
-    var alternatePortServer = Http.createServerForSandstorm(redirectToMeteorOrServeStaticPublishing);
+    const alternatePortServer = Http.createServerForSandstorm(redirectToMeteorOrServeStaticPublishing);
     alternatePortServer.listen({fd: i + 4});
   }
 
-  var dispatchToMeteorOrStaticPublishing = function (req, res, next, redirectRatherThanServeShell) {
-    var hostname = req.headers.host.split(":")[0];
+  const dispatchToMeteorOrStaticPublishing = (req, res, next, redirectRatherThanServeShell) => {
+    const hostname = req.headers.host.split(':')[0];
     if (isSandstormShell(hostname)) {
       // Go on to Meteor, or serve a redirect.
       if (redirectRatherThanServeShell) {
-        res.writeHead(302, {"Location": canonicalizeShellOrWildcardUrl(hostname, req.url)});
+        res.writeHead(302, {'Location': canonicalizeShellOrWildcardUrl(hostname, req.url)});
         res.end();
         return;
       } else {
@@ -435,26 +447,25 @@ Meteor.startup(function () {
     }
 
     // This is not our main host. See if it's a member of the wildcard.
-    var publicIdPromise;
+    let publicIdPromise;
 
-    var id = matchWildcardHost(req.headers.host);
+    const id = matchWildcardHost(req.headers.host);
     if (id) {
       // Match!
       if (redirectRatherThanServeShell) {
-        res.writeHead(302, {"Location": canonicalizeShellOrWildcardUrl(hostname, req.url)});
+        res.writeHead(302, {'Location': canonicalizeShellOrWildcardUrl(hostname, req.url)});
         res.end();
         return;
       }
 
-      if (id === "static") {
+      if (id === 'static') {
         // Static assets domain.
         serveStaticAsset(req, res);
         return;
       }
 
       // Try to route the request to a session.
-      publicIdPromise = tryProxyRequest(id, req, res)
-          .then(function (handled) {
+      publicIdPromise = tryProxyRequest(id, req, res).then((handled) => {
         if (handled) {
           return null;
         } else {
@@ -466,38 +477,38 @@ Meteor.startup(function () {
       publicIdPromise = lookupPublicIdFromDns(hostname);
     }
 
-    publicIdPromise.then(function (publicId) {
+    publicIdPromise.then((publicId) => {
       if (publicId) {
-        return Promise.resolve(undefined).then(function () {
-          var handler = staticHandlers[publicId];
+        return Promise.resolve(undefined).then(() => {
+          const handler = staticHandlers[publicId];
           if (handler) {
             return handler;
           } else {
             // We don't have a handler for this publicId, so look it up in the grain DB.
-            return inMeteor(function () {
-              var grain = Grains.findOne({publicId: publicId}, {fields: {_id: 1}});
+            return inMeteor(() => {
+              const grain = Grains.findOne({publicId: publicId}, {fields: {_id: 1}});
               if (!grain) {
-                throw new Meteor.Error(404, "No such grain for public ID: " + publicId);
+                throw new Meteor.Error(404, 'No such grain for public ID: ' + publicId);
               }
-              var grainId = grain._id;
 
+              const grainId = grain._id;
               return staticHandlers[publicId] = wwwHandlerForGrain(grainId);
             });
           }
-        }).then(function (handler) {
-          handler(req, res, function (err) {
+        }).then((handler) => {
+          handler(req, res, (err) => {
             if (err) {
               next(err);
             } else {
-              res.writeHead(404, { "Content-Type": "text/plain" });
-              res.end("404 not found: " + req.url);
+              res.writeHead(404, { 'Content-Type': 'text/plain' });
+              res.end('404 not found: ' + req.url);
             }
           });
         });
       } else {
         return Promise.resolve(undefined);
       }
-    }).catch(function (err) {
+    }).catch((err) => {
       writeErrorResponse(res, err);
     });
   };
@@ -505,17 +516,17 @@ Meteor.startup(function () {
   WebApp.rawConnectHandlers.use(serveMeteorOrStaticPublishing);
 });
 
-var errorTxtMapping = {};
-errorTxtMapping[Dns.NOTFOUND] = "<br>\n" +
-    "If you were trying to connect this address to a Sandstorm app hosted at this server,<br>\n" +
-    "you either have not set your DNS TXT records correctly or the DNS cache has not<br>\n" +
-    "updated yet (may take a while).<br>\n";
+const errorTxtMapping = {};
+errorTxtMapping[Dns.NOTFOUND] = '<br>\n' +
+    'If you were trying to connect this address to a Sandstorm app hosted at this server,<br>\n' +
+    'you either have not set your DNS TXT records correctly or the DNS cache has not<br>\n' +
+    'updated yet (may take a while).<br>\n';
 errorTxtMapping[Dns.NODATA] = errorTxtMapping[Dns.NOTFOUND];
-errorTxtMapping[Dns.TIMEOUT] = "<br>\n" +
-    "The DNS query has timed out, which may be a sign of poorly configured DNS on the server.<br>\n";
-errorTxtMapping[Dns.CONNREFUSED] = "<br>\n" +
-    "The DNS server refused the connection, which means either your DNS server is down/unreachable,<br>\n" +
-    "or the server has misconfigured their DNS.<br>\n";
+errorTxtMapping[Dns.TIMEOUT] = '<br>\n' +
+    'The DNS query has timed out, which may be a sign of poorly configured DNS on the server.<br>\n';
+errorTxtMapping[Dns.CONNREFUSED] = '<br>\n' +
+    'The DNS server refused the connection, which means either your DNS server is down/unreachable,<br>\n' +
+    'or the server has misconfigured their DNS.<br>\n';
 
 function lookupPublicIdFromDns(hostname) {
   // Given a hostname, determine its public ID.
@@ -531,36 +542,36 @@ function lookupPublicIdFromDns(hostname) {
   // first, but has a number of problems, the biggest being that it breaks the ability to place a
   // CDN like CloudFlare in front of the site.
 
-  var cache = dnsCache[hostname];
+  const cache = dnsCache[hostname];
   if (cache && Date.now() < cache.expiration) {
     return Promise.resolve(cache.value);
   }
 
-  return new Promise(function (resolve, reject) {
-    Dns.resolveTxt("sandstorm-www." + hostname, function (err, records) {
+  return new Promise((resolve, reject) => {
+    Dns.resolveTxt('sandstorm-www.' + hostname, (err, records) => {
       if (err) {
-        var errorMsg = errorTxtMapping[err.code] || "";
-        var error = new Error(
-            "Error looking up DNS TXT records for host '" + hostname + "': " + err.message);
+        const errorMsg = errorTxtMapping[err.code] || '';
+        const error = new Error(
+            'Error looking up DNS TXT records for host "' + hostname + '": ' + err.message);
         error.htmlMessage =
-          "<p>Error looking up DNS TXT records for host '" + hostname + "': " + err.message + "<br>\n" +
-          "<br>\n" +
-          "This Sandstorm server's main interface is at: <a href=\"" + process.env.ROOT_URL + "\">" +
-          process.env.ROOT_URL + "</a><br>\n" +
+          '<p>Error looking up DNS TXT records for host "' + hostname + '": ' + err.message + '<br>\n' +
+          '<br>\n' +
+          'This Sandstorm server\'s main interface is at: <a href=\'' + process.env.ROOT_URL + '\'>' +
+          process.env.ROOT_URL + '</a><br>\n' +
           errorMsg +
-          "<br>\n" +
-          "If you are the server admin and want to use this address as the main interface,<br>\n" +
-          "edit /opt/sandstorm/sandstorm.conf, modify the BASE_URL setting, and restart.<br>\n" +
-          "<br>\n" +
-          "If you got here after trying to log in via OAuth (e.g. through Github or Google),<br>\n" +
-          "the problem is probably that the OAuth callback URL was set wrong. You need to<br>\n" +
-          "update it through the respective login provider's management console.</p>";
-        error.httpErrorCode = (_.contains(["ENOTFOUND", "ENODATA"], err.code)) ? 404 : 500;
+          '<br>\n' +
+          'If you are the server admin and want to use this address as the main interface,<br>\n' +
+          'edit /opt/sandstorm/sandstorm.conf, modify the BASE_URL setting, and restart.<br>\n' +
+          '<br>\n' +
+          'If you got here after trying to log in via OAuth (e.g. through Github or Google),<br>\n' +
+          'the problem is probably that the OAuth callback URL was set wrong. You need to<br>\n' +
+          'update it through the respective login provider\'s management console.</p>';
+        error.httpErrorCode = (_.contains(['ENOTFOUND', 'ENODATA'], err.code)) ? 404 : 500;
         reject(error);
       } else if (records.length !== 1) {
-        reject(new Error("Host 'sandstorm-www." + hostname + "' must have exactly one TXT record."));
+        reject(new Error('Host "sandstorm-www.' + hostname + '" must have exactly one TXT record.'));
       } else {
-        var result = records[0];
+        const result = records[0];
         dnsCache[hostname] = { value: result, expiration: Date.now() + DNS_CACHE_TTL };
         resolve(result);
       }

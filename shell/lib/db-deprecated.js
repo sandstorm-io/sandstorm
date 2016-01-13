@@ -58,46 +58,47 @@ roleAssignmentPattern = globalDb.roleAssignmentPattern;
 if (Meteor.isServer) {
   getWildcardOrigin = globalDb.getWildcardOrigin.bind(globalDb);
 
-  Meteor.onConnection(function (connection) {
+  Meteor.onConnection((connection) => {
     // TODO(cleanup): This is the best way I've thought of so far to allow methods declared in
     //   packages to actually use the DB, but it's pretty sad.
     connection.sandstormDb = globalDb;
   });
   SandstormDb.periodicCleanup(5 * 60 * 1000, SandstormPermissions.cleanupSelfDestructing(globalDb));
-  SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, function () {
+  SandstormDb.periodicCleanup(24 * 60 * 60 * 1000, () => {
     SandstormAutoupdateApps.updateAppIndex(globalDb);
   });
 
-  Meteor.startup(function() { globalDb.migrateToLatest(); });
+  Meteor.startup(() => { globalDb.migrateToLatest(); });
 }
 
 if (Meteor.isClient) {
-  Session.setDefault("shrink-navbar", false);
+  Session.setDefault('shrink-navbar', false);
   globalGrains = new ReactiveVar([]);
   globalTopbar = new SandstormTopbar(globalDb,
     {
-      get: function () {
-        return Session.get("topbar-expanded");
+      get() {
+        return Session.get('topbar-expanded');
       },
 
-      set: function (value) {
-        Session.set("topbar-expanded", value);
-      }
+      set(value) {
+        Session.set('topbar-expanded', value);
+      },
     },
     globalGrains,
     {
-      get: function () {
-        return Session.get("shrink-navbar");
+      get() {
+        return Session.get('shrink-navbar');
       },
-      set: function (value) {
-        Session.set("shrink-navbar", value);
-      }
+
+      set(value) {
+        Session.set('shrink-navbar', value);
+      },
     });
 
   globalAccountsUi = new AccountsUi(globalDb);
 
-  Template.registerHelper("globalTopbar", function() { return globalTopbar; });
-  Template.registerHelper("globalAccountsUi", function() { return globalAccountsUi; });
+  Template.registerHelper('globalTopbar', () => { return globalTopbar; });
+  Template.registerHelper('globalAccountsUi', () => { return globalAccountsUi; });
 } else {
   // TODO(cleanup): Refactor accounts registration stuff so that this doesn't need to be defined
   //   at all on the server.

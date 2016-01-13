@@ -14,136 +14,137 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var Fs = Npm.require("fs");
-var Path = Npm.require("path");
-var Crypto = Npm.require("crypto");
-var ChildProcess = Npm.require("child_process");
-var Http = Npm.require("http");
-var Https = Npm.require("https");
-var Url = Npm.require("url");
-var Promise = Npm.require("es6-promise").Promise;
-var Capnp = Npm.require("capnp");
+const Fs = Npm.require('fs');
+const Path = Npm.require('path');
+const Crypto = Npm.require('crypto');
+const ChildProcess = Npm.require('child_process');
+const Http = Npm.require('http');
+const Https = Npm.require('https');
+const Url = Npm.require('url');
+const Promise = Npm.require('es6-promise').Promise;
+const Capnp = Npm.require('capnp');
 
-var Manifest = Capnp.importSystem("sandstorm/package.capnp").Manifest;
+const Manifest = Capnp.importSystem('sandstorm/package.capnp').Manifest;
 
-var installers;  // set to {} on main replica
+let installers;  // set to {} on main replica
 // To protect against race conditions, we require that each row in the Packages
 // collection have at most one writer at a time, as tracked by this `installers`
 // map. Each key is a package ID and each value is either an AppInstaller object
-// or the string "uninstalling", indicating that some fiber is working on
+// or the string 'uninstalling', indicating that some fiber is working on
 // uninstalling the package.
 
-var verifyIsMainReplica = function () {
+const verifyIsMainReplica = () => {
   if (Meteor.settings.replicaNumber) {
-    throw new Error("This can only be called on the main front-end replica.");
+    throw new Error('This can only be called on the main front-end replica.');
   }
-}
+};
 
 Meteor.methods({
-  deleteUnusedPackages: function (appId) {
+  deleteUnusedPackages(appId) {
     check(appId, String);
-    Packages.find({appId:appId}).forEach(function (pkg) {deletePackage(pkg._id)});
+    Packages.find({appId:appId}).forEach((pkg) => {deletePackage(pkg._id);});
   },
 });
 
-deletePackage = function (packageId) {
+deletePackage = (packageId) => {
   // Mark package for possible deletion;
-  Packages.update({_id: packageId, status: "ready"}, {$set: {shouldCleanup: true}});
-}
+  Packages.update({_id: packageId, status: 'ready'}, {$set: {shouldCleanup: true}});
+};
 
-var deletePackageInternal = function (pkg) {
+const deletePackageInternal = (pkg) => {
   verifyIsMainReplica();
 
-  var packageId = pkg._id;
+  const packageId = pkg._id;
 
   if (packageId in installers) {
     return;
   }
 
-  installers[packageId] = "uninstalling";
+  installers[packageId] = 'uninstalling';
 
   try {
-    var action = UserActions.findOne({packageId:packageId});
-    var grain = Grains.findOne({packageId:packageId});
-    var notificationQuery = {};
-    notificationQuery["appUpdates." + pkg.appId] = {$exists: true};
+    const action = UserActions.findOne({packageId:packageId});
+    const grain = Grains.findOne({packageId:packageId});
+    const notificationQuery = {};
+    notificationQuery['appUpdates.' + pkg.appId] = {$exists: true};
     if (!grain && !action && !(pkg.isAutoUpdated && Notifications.findOne(notificationQuery))) {
-      Packages.update({_id:packageId}, {$set: {status:"delete"}, $unset: {shouldCleanup: ""}});
+      Packages.update({_id:packageId}, {$set: {status:'delete'}, $unset: {shouldCleanup: ''}});
       waitPromise(globalBackend.cap().deletePackage(packageId));
       Packages.remove(packageId);
 
       // Clean up assets (icon, etc).
-      getAllManifestAssets(pkg.manifest).forEach(function (assetId) {
+      getAllManifestAssets(pkg.manifest).forEach((assetId) => {
         globalDb.unrefStaticAsset(assetId);
       });
     } else {
-      Packages.update({_id:packageId}, {$unset: {shouldCleanup: ""}});
+      Packages.update({_id:packageId}, {$unset: {shouldCleanup: ''}});
     }
+
     delete installers[packageId];
   } catch (error) {
     delete installers[packageId];
     throw error;
   }
-}
+};
 
-var startInstallInternal = function (pkg) {
+const startInstallInternal = (pkg) => {
   verifyIsMainReplica();
 
   if (pkg._id in installers) {
     return;
   }
 
-  var installer = new AppInstaller(pkg._id, pkg.url, pkg.appId, pkg.isAutoUpdated);
+  const installer = new AppInstaller(pkg._id, pkg.url, pkg.appId, pkg.isAutoUpdated);
   installers[pkg._id] = installer;
   installer.start();
-}
+};
 
-cancelDownload = function (packageId) {
-  Packages.remove({_id: packageId, status: "download"});
-}
+cancelDownload = (packageId) => {
+  Packages.remove({_id: packageId, status: 'download'});
+};
 
-var cancelDownloadInternal = function (pkg) {
+const cancelDownloadInternal = (pkg) => {
   verifyIsMainReplica();
 
-  var installer = installers[pkg._id];
+  const installer = installers[pkg._id];
 
   // Don't do anything unless a download is in progress.
   if (installer && installer.downloadRequest) {
     // OK, effect cancellation by faking an error.
-    installer.wrapCallback(function () {
-      throw new Error("Canceled");
+    installer.wrapCallback(() => {
+      throw new Error('Canceled');
     })();
   }
-}
+};
 
 if (!Meteor.settings.replicaNumber) {
   installers = {};
 
-  Meteor.startup(function () {
+  Meteor.startup(() => {
     // Restart any deletions that were killed while in-progress.
-    Packages.find({status: "delete"}).forEach(deletePackageInternal);
+    Packages.find({status: 'delete'}).forEach(deletePackageInternal);
 
     // Watch for new installation requests and fulfill them.
-    Packages.find({status: {$in: ["download", "verify", "unpack", "analyze"]}}).observe({
+    Packages.find({status: {$in: ['download', 'verify', 'unpack', 'analyze']}}).observe({
       added: startInstallInternal,
-      removed: cancelDownloadInternal
+      removed: cancelDownloadInternal,
     });
 
     // Watch for new cleanup requests and fulfill them.
-    Packages.find({status: "ready", shouldCleanup: true}).observe({
-      added: deletePackageInternal
+    Packages.find({status: 'ready', shouldCleanup: true}).observe({
+      added: deletePackageInternal,
     });
   });
 }
 
-doClientUpload = function (stream) {
-  return new Promise(function (resolve, reject) {
-    var id = Random.id();
+doClientUpload = (stream) => {
+  return new Promise((resolve, reject) => {
+    const id = Random.id();
 
-    var backendStream = globalBackend.cap().installPackage().stream;
-    var hasher = Crypto.createHash("sha256");
+    const backendStream = globalBackend.cap().installPackage().stream;
+    const hasher = Crypto.createHash('sha256');
 
-    stream.on("data", function (chunk) {
+    stream.on('data', (chunk) => {
       try {
         hasher.update(chunk);
         backendStream.write(chunk);
@@ -151,11 +152,12 @@ doClientUpload = function (stream) {
         reject(err);
       }
     });
-    stream.on("end", function () {
+
+    stream.on('end', () => {
       try {
         backendStream.done();
-        var packageId = hasher.digest("hex").slice(0, 32);
-        resolve(backendStream.saveAs(packageId).then(function () {
+        const packageId = hasher.digest('hex').slice(0, 32);
+        resolve(backendStream.saveAs(packageId).then(() => {
           return packageId;
         }));
         backendStream.close();
@@ -163,7 +165,8 @@ doClientUpload = function (stream) {
         reject(err);
       }
     });
-    stream.on("error", function (err) {
+
+    stream.on('error', (err) => {
       // TODO(soon):  This event does't seem to fire if the user leaves the page mid-upload.
       try {
         backendStream.close();
@@ -173,51 +176,277 @@ doClientUpload = function (stream) {
       }
     });
   });
-}
+};
 
-function AppInstaller(packageId, url, appId, isAutoUpdated) {
-  verifyIsMainReplica();
+AppInstaller = class AppInstaller {
+  constructor(packageId, url, appId, isAutoUpdated) {
+    verifyIsMainReplica();
 
-  this.packageId = packageId;
-  this.url = url;
-  this.failed = false;
-  this.appId = appId;
-  this.isAutoUpdated = isAutoUpdated;
+    this.packageId = packageId;
+    this.url = url;
+    this.failed = false;
+    this.appId = appId;
+    this.isAutoUpdated = isAutoUpdated;
 
-  // Serializes database writes.
-  this.writeChain = Promise.resolve();
-}
+    // Serializes database writes.
+    this.writeChain = Promise.resolve();
+  }
 
-function extractManifestAssets(manifest) {
-  var metadata = manifest.metadata;
+  updateProgress(status, progress, error, manifest) {
+    // TODO(security):  On error, we should actually delete the package from the database and only
+    //   display the error to whomever was watching at the time.  Otherwise it's easy to confuse
+    //   people by 'pre-failing' packages.  (Actually, perhaps if a user tries to download an
+    //   already-downloading package but specifies a different URL, we really should initiate an
+    //   entirely separate download...  but cancel it if the first download succeeds.)
+
+    this.status = status;
+    this.progress = progress || -1;
+    this.error = error;
+    this.manifest = manifest || null;
+
+    const _this = this;
+
+    // The callback passed to inMeteor() runs in a new fiber. We need to make sure database writes
+    // occur in exactly the order in which we generate them, so we use a promise chain to serialize
+    // them.
+    this.writeChain = this.writeChain.then(() => {
+      return inMeteor(() => {
+        if (manifest) extractManifestAssets(manifest);
+
+        Packages.update(_this.packageId, {
+          $set: {
+            status: _this.status,
+            progress: _this.progress,
+            error: _this.error ? _this.error.message : null,
+            manifest: _this.manifest,
+            appId: _this.appId,
+            authorPgpKeyFingerprint: _this.authorPgpKeyFingerprint,
+          },
+        });
+
+        if (_this.authorPgpKeyFingerprint) {
+          globalDb.updateKeybaseProfileAsync(_this.authorPgpKeyFingerprint);
+        }
+      }).catch((err) => {
+        console.error(err.stack);
+      });
+    });
+  }
+
+  wrapCallback(method) {
+    // Note that the function below must not be an arrow function, since arrow functions do not have
+    // access to the context's arguments array.
+    const _this = this;
+    return function() {
+      if (_this.failed) return;
+      try {
+        return method.apply(_this, _.toArray(arguments));
+      } catch (err) {
+        _this.failed = true;
+        _this.cleanup();
+        _this.updateProgress('failed', 0, err);
+        _this.writeChain = _this.writeChain.then(() => {
+          delete installers[_this.packageId];
+        });
+        console.error('Failed to install app:', err.stack);
+      }
+    };
+  }
+
+  cleanup() {
+    if (this.uploadStream) {
+      try {
+        this.uploadStream.close();
+      } catch (err) {}
+
+      delete this.uploadStream;
+    }
+
+    if (this.downloadRequest) {
+      try {
+        this.downloadRequest.abort();
+      } catch (err) {}
+
+      delete this.downloadRequest;
+    }
+  }
+
+  start() {
+    return this.wrapCallback(() => {
+      this.cleanup();
+
+      globalBackend.cap().tryGetPackage(this.packageId).then(this.wrapCallback((info) => {
+        if (info.appId) {
+          this.appId = info.appId;
+          this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
+          this.done(info.manifest);
+        } else {
+          this.doDownload();
+        }
+      }), this.wrapCallback((err) => {
+        throw err;
+      }));
+    })();
+  }
+
+  doDownload() {
+    if (!this.url) {
+      throw new Error('Unknown package ID, and no URL was provided.');
+    }
+
+    console.log('Downloading app:', this.url);
+    this.updateProgress('download');
+
+    this.uploadStream = globalBackend.cap().installPackage().stream;
+    return this.doDownloadTo(this.uploadStream);
+  }
+
+  doDownloadTo(out) {
+    const url = Url.parse(this.url);
+    const options = {
+      hostname: url.hostname,
+      port: url.port,
+      path: url.path,
+    };
+
+    let protocol;
+    if (url.protocol === 'http:') {
+      protocol = Http;
+    } else if (url.protocol === 'https:') {
+      // Since we will verify the download against a hash anyway, we don't need to verify the server's
+      // certificate. In fact, the only reason we support HTTPS at all here is because some servers
+      // refuse to serve over HTTP (which is, in general, a good thing). Skipping the certificate check
+      // here is helpful in that it means we don't have to worry about having a reasonable list of trusted
+      // CAs available to Sandstorm.
+      options.rejectUnauthorized = false;
+      protocol = Https;
+    } else {
+      throw new Error('Protocol not supported: ' + url.protocol);
+    }
+
+    // TODO(security):  It could arguably be a security problem that it's possible to probe the
+    //   server's local network (behind any firewalls) by presenting URLs here.
+    const request = protocol.get(options, this.wrapCallback((response) => {
+      if (response.statusCode === 301 ||
+          response.statusCode === 302 ||
+          response.statusCode === 303 ||
+          response.statusCode === 307 ||
+          response.statusCode === 308) {
+        // jscs:disable requireDotNotation
+        // Got redirect. Follow it.
+        this.url = Url.resolve(this.url, response.headers['location']);
+        this.doDownloadTo(out);
+        return;
+      }
+
+      if (response.statusCode !== 200) {
+        throw new Error('Download failed with HTTP status code: ' + response.statusCode);
+      }
+
+      let bytesExpected = undefined;
+      let bytesReceived = 0;
+
+      if ('content-length' in response.headers) {
+        bytesExpected = parseInt(response.headers['content-length']);
+      }
+
+      let done = false;
+      const hasher = Crypto.createHash('sha256');
+
+      const updateDownloadProgress = _.throttle(this.wrapCallback(() => {
+        if (!done) {
+          if (bytesExpected) {
+            this.updateProgress('download', bytesReceived / bytesExpected);
+          } else {
+            this.updateProgress('download', bytesReceived);
+          }
+        }
+      }), 500);
+
+      response.on('data', this.wrapCallback((chunk) => {
+        hasher.update(chunk);
+        out.write(chunk);
+        bytesReceived += chunk.length;
+        updateDownloadProgress();
+      }));
+
+      response.on('end', this.wrapCallback(() => {
+        out.done();
+
+        if (hasher.digest('hex').slice(0, 32) !== this.packageId) {
+          throw new Error('Package hash did not match.');
+        }
+
+        done = true;
+        delete this.downloadRequest;
+
+        this.updateProgress('unpack');
+        out.saveAs(this.packageId).then(this.wrapCallback((info) => {
+          this.appId = info.appId;
+          this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
+          this.done(info.manifest);
+        }), this.wrapCallback((err) => {
+          throw err;
+        }));
+      }));
+
+      response.on('error', this.wrapCallback((err) => { throw err; }));
+    }));
+
+    this.downloadRequest = request;
+
+    request.on('error', this.wrapCallback((err) => { throw err; }));
+  }
+
+  done(manifest) {
+    console.log('App ready:', this.packageId);
+    this.updateProgress('ready', 1, undefined, manifest);
+    const _this = this;
+    _this.writeChain = _this.writeChain.then(() => {
+      return inMeteor(() => {
+        if (_this.isAutoUpdated) {
+          globalDb.sendAppUpdateNotifications(_this.appId, _this.packageId,
+            (manifest.appTitle && manifest.appTitle.defaultText), manifest.appVersion,
+            (manifest.appMarketingVersion && manifest.appMarketingVersion.defaultText));
+        }
+      });
+    }).then(() => {
+      delete installers[_this.packageId];
+    });
+  }
+};
+
+extractManifestAssets = (manifest) => {
+  const metadata = manifest.metadata;
   if (!metadata) return;
 
-  var icons = metadata.icons;
+  const icons = metadata.icons;
   if (icons) {
-    var handleIcon = function (icon) {
+    const handleIcon = (icon) => {
       if (icon.svg) {
-        icon.assetId = globalDb.addStaticAsset({mimeType: "image/svg+xml"}, icon.svg);
-        icon.format = "svg";
+        icon.assetId = globalDb.addStaticAsset({mimeType: 'image/svg+xml'}, icon.svg);
+        icon.format = 'svg';
         delete icon.svg;
         return true;
       } else if (icon.png) {
-        // Use the 1x version for "normal" DPI, unless 1x isn't provided, in which case use 2x.
-        var normalDpi = icon.png.dpi1x || icon.png.dpi2x;
+        // Use the 1x version for 'normal' DPI, unless 1x isn't provided, in which case use 2x.
+        const normalDpi = icon.png.dpi1x || icon.png.dpi2x;
         if (!normalDpi) return false;
-        icon.format = "png";
-        icon.assetId = globalDb.addStaticAsset({mimeType: "image/png"}, normalDpi);
+        icon.format = 'png';
+        icon.assetId = globalDb.addStaticAsset({mimeType: 'image/png'}, normalDpi);
 
         if (icon.png.dpi1x && icon.png.dpi2x) {
           // Icon specifies both resolutions, so also record a 2x DPI option.
-          icon.assetId2xDpi = globalDb.addStaticAsset({mimeType: "image/png"}, icon.png.dpi2x);
+          icon.assetId2xDpi = globalDb.addStaticAsset({mimeType: 'image/png'}, icon.png.dpi2x);
         }
+
         delete icon.png;
         return true;
       } else {
         // Unknown icon. Filter it.
         return false;
       }
-    }
+    };
 
     if (icons.appGrid && !handleIcon(icons.appGrid)) delete icons.appGrid;
     if (icons.grain && !handleIcon(icons.grain)) delete icons.grain;
@@ -227,31 +456,31 @@ function extractManifestAssets(manifest) {
     if (icons.marketBig) delete icons.marketBig;
   }
 
-  var handleLocalizedText = function (text) {
+  const handleLocalizedText = (text) => {
     if (text.defaultText) {
-      text.defaultTextAssetId = globalDb.addStaticAsset({mimeType: "text/plain"}, text.defaultText);
+      text.defaultTextAssetId = globalDb.addStaticAsset({mimeType: 'text/plain'}, text.defaultText);
       delete text.defaultText;
     }
 
     if (text.localizations) {
-      text.localizations.forEach(function (localization) {
+      text.localizations.forEach((localization) => {
         if (localization.text) {
           localization.assetId = globalDb.addStaticAsset(
-              {mimeType: "text/plain"}, localization.text);
+              {mimeType: 'text/plain'}, localization.text);
           delete localization.text;
         }
       });
     }
-  }
+  };
 
-  var license = metadata.license;
+  const license = metadata.license;
   if (license) {
     if (license.proprietary) license.proprietary = handleLocalizedText(license.proprietary);
     if (license.publicDomain) license.publicDomain = handleLocalizedText(license.proprietary);
     if (license.notices) license.notices = handleLocalizedText(license.notices);
   }
 
-  var author = metadata.author;
+  const author = metadata.author;
   if (author) {
     // We remove the PGP signature since it was already verified down to a key ID in the back-end.
     if (author.pgpSignature) delete author.pgpSignature;
@@ -260,7 +489,7 @@ function extractManifestAssets(manifest) {
   // Don't need the keyring either.
   if (metadata.pgpKeyring) delete metadata.pgpKeyring;
 
-  // Perhaps used by the "about" page?
+  // Perhaps used by the 'about' page?
   if (metadata.description) metadata.description = handleLocalizedText(metadata.description);
 
   // Screenshots are for app marketing; we don't use them post-install.
@@ -268,43 +497,43 @@ function extractManifestAssets(manifest) {
 
   // We might allow the user to view the changelog.
   if (metadata.changeLog) metadata.changeLog = handleLocalizedText(metadata.changeLog);
-}
+};
 
-function getAllManifestAssets(manifest) {
+getAllManifestAssets = (manifest) => {
   // Returns a list of all asset IDs in the given manifest.
 
-  var metadata = manifest.metadata;
+  const metadata = manifest.metadata;
   if (!metadata) return [];
 
-  var result = [];
+  const result = [];
 
-  var icons = metadata.icons;
+  const icons = metadata.icons;
   if (icons) {
-    var handleIcon = function (icon) {
+    const handleIcon = (icon) => {
       if (icon.assetId) {
         result.push(icon.assetId);
       }
-    }
+    };
 
     if (icons.appGrid) handleIcon(icons.appGrid);
     if (icons.grain) handleIcon(icons.grain);
   }
 
-  var handleLocalizedText = function (text) {
+  const handleLocalizedText = (text) => {
     if (text.defaultTextAssetId) {
       result.push(defaultTextAssetId);
     }
 
     if (text.localizations) {
-      text.localizations.forEach(function (localization) {
+      text.localizations.forEach((localization) => {
         if (localization.assetId) {
           result.push(localization.assetId);
         }
       });
     }
-  }
+  };
 
-  var license = metadata.license;
+  const license = metadata.license;
   if (license) {
     if (license.proprietary) handleLocalizedText(license.proprietary);
     if (license.publicDomain) handleLocalizedText(license.publicDomain);
@@ -315,217 +544,4 @@ function getAllManifestAssets(manifest) {
   if (metadata.changeLog) handleLocalizedText(metadata.changeLog);
 
   return result;
-}
-
-
-AppInstaller.prototype.updateProgress = function (status, progress, error, manifest) {
-  // TODO(security):  On error, we should actually delete the package from the database and only
-  //   display the error to whomever was watching at the time.  Otherwise it's easy to confuse
-  //   people by "pre-failing" packages.  (Actually, perhaps if a user tries to download an
-  //   already-downloading package but specifies a different URL, we really should initiate an
-  //   entirely separate download...  but cancel it if the first download succeeds.)
-
-  this.status = status;
-  this.progress = progress || -1;
-  this.error = error;
-  this.manifest = manifest || null;
-
-  var self = this;
-
-  // The callback passed to inMeteor() runs in a new fiber. We need to make sure database writes
-  // occur in exactly the order in which we generate them, so we use a promise chain to serialize
-  // them.
-  this.writeChain = this.writeChain.then(function () {
-    return inMeteor(function () {
-      if (manifest) extractManifestAssets(manifest);
-
-      Packages.update(self.packageId, {$set: {
-        status: self.status,
-        progress: self.progress,
-        error: self.error ? self.error.message : null,
-        manifest: self.manifest,
-        appId: self.appId,
-        authorPgpKeyFingerprint: self.authorPgpKeyFingerprint
-      }});
-
-      if (self.authorPgpKeyFingerprint) {
-        globalDb.updateKeybaseProfileAsync(self.authorPgpKeyFingerprint);
-      }
-    }).catch (function (err) {
-      console.error(err.stack);
-    });
-  });
-}
-
-AppInstaller.prototype.wrapCallback = function (method) {
-  var self = this;
-  return function () {
-    if (self.failed) return;
-    try {
-      return method.apply(self, _.toArray(arguments));
-    } catch (err) {
-      self.failed = true;
-      self.cleanup();
-      self.updateProgress("failed", 0, err);
-      self.writeChain = self.writeChain.then(function() {
-        delete installers[self.packageId];
-      });
-      console.error("Failed to install app:", err.stack);
-    }
-  }
-}
-
-AppInstaller.prototype.cleanup = function () {
-  if (this.uploadStream) {
-    try { this.uploadStream.close(); } catch (err) {}
-    delete this.uploadStream;
-  }
-
-  if (this.downloadRequest) {
-    try { this.downloadRequest.abort(); } catch (err) {}
-    delete this.downloadRequest;
-  }
-}
-
-AppInstaller.prototype.start = function () {
-  return this.wrapCallback(function () {
-    this.cleanup();
-
-    globalBackend.cap().tryGetPackage(this.packageId)
-        .then(this.wrapCallback(function(info) {
-      if (info.appId) {
-        this.appId = info.appId;
-        this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
-        this.done(info.manifest);
-      } else {
-        this.doDownload();
-      }
-    }), this.wrapCallback(function (err) {
-      throw err;
-    }));
-  })();
-}
-
-AppInstaller.prototype.doDownload = function () {
-  if (!this.url) {
-    throw new Error("Unknown package ID, and no URL was provided.")
-  }
-
-  console.log("Downloading app:", this.url);
-  this.updateProgress("download");
-
-  this.uploadStream = globalBackend.cap().installPackage().stream;
-  return this.doDownloadTo(this.uploadStream);
-}
-
-AppInstaller.prototype.doDownloadTo = function (out) {
-  var url = Url.parse(this.url);
-  var options = {
-    hostname: url.hostname,
-    port: url.port,
-    path: url.path
-  };
-
-  var protocol;
-  if (url.protocol === "http:") {
-    protocol = Http;
-  } else if (url.protocol === "https:") {
-    // Since we will verify the download against a hash anyway, we don't need to verify the server's
-    // certificate. In fact, the only reason we support HTTPS at all here is because some servers
-    // refuse to serve over HTTP (which is, in general, a good thing). Skipping the certificate check
-    // here is helpful in that it means we don't have to worry about having a reasonable list of trusted
-    // CAs available to Sandstorm.
-    options.rejectUnauthorized = false;
-    protocol = Https;
-  } else {
-    throw new Error("Protocol not supported: " + url.protocol);
-  }
-
-  // TODO(security):  It could arguably be a security problem that it's possible to probe the
-  //   server's local network (behind any firewalls) by presenting URLs here.
-  var request = protocol.get(options, this.wrapCallback(function (response) {
-    if (response.statusCode === 301 ||
-        response.statusCode === 302 ||
-        response.statusCode === 303 ||
-        response.statusCode === 307 ||
-        response.statusCode === 308) {
-      // Got redirect. Follow it.
-      this.url = Url.resolve(this.url, response.headers["location"]);
-      this.doDownloadTo(out);
-      return;
-    }
-
-    if (response.statusCode !== 200) {
-      throw new Error("Download failed with HTTP status code: " + response.statusCode);
-    }
-
-    var bytesExpected = undefined;
-    var bytesReceived = 0;
-
-    if ("content-length" in response.headers) {
-      bytesExpected = parseInt(response.headers["content-length"]);
-    }
-
-    var done = false;
-    var hasher = Crypto.createHash("sha256");
-
-    var updateDownloadProgress = _.throttle(this.wrapCallback(function () {
-      if (!done) {
-        if (bytesExpected) {
-          this.updateProgress("download", bytesReceived / bytesExpected);
-        } else {
-          this.updateProgress("download", bytesReceived);
-        }
-      }
-    }), 500);
-
-    response.on("data", this.wrapCallback(function (chunk) {
-      hasher.update(chunk);
-      out.write(chunk);
-      bytesReceived += chunk.length;
-      updateDownloadProgress();
-    }));
-    response.on("end", this.wrapCallback(function () {
-      out.done();
-
-      if (hasher.digest("hex").slice(0, 32) !== this.packageId) {
-        throw new Error("Package hash did not match.");
-      }
-
-      done = true;
-      delete this.downloadRequest;
-
-      this.updateProgress("unpack");
-      out.saveAs(this.packageId).then(this.wrapCallback(function (info) {
-        this.appId = info.appId;
-        this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
-        this.done(info.manifest);
-      }), this.wrapCallback(function (err) {
-        throw err;
-      }));
-    }));
-
-    response.on("error", this.wrapCallback(function (err) { throw err; }));
-  }));
-
-  this.downloadRequest = request;
-
-  request.on("error", this.wrapCallback(function (err) { throw err; }));
-}
-
-AppInstaller.prototype.done = function(manifest) {
-  console.log("App ready:", this.packageId);
-  this.updateProgress("ready", 1, undefined, manifest);
-  var self = this;
-  self.writeChain = self.writeChain.then(function () {
-    return inMeteor(function () {
-      if (self.isAutoUpdated) {
-        globalDb.sendAppUpdateNotifications(self.appId, self.packageId,
-          (manifest.appTitle && manifest.appTitle.defaultText), manifest.appVersion,
-          (manifest.appMarketingVersion && manifest.appMarketingVersion.defaultText));
-      }
-    });
-  }).then(function() {
-    delete installers[self.packageId];
-  });
-}
+};

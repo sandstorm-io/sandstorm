@@ -31,7 +31,7 @@ if (Meteor.isServer) {
         throw new Meteor.Error(403, 'Must be signed in.');
       }
 
-      var user = Meteor.user();
+      const user = Meteor.user();
       if (user.signupKey) {
         // Don't waste it.
         return;
@@ -47,7 +47,7 @@ if (Meteor.isServer) {
         return;
       }
 
-      var keyInfo = SignupKeys.findOne(key);
+      const keyInfo = SignupKeys.findOne(key);
       if (!keyInfo || keyInfo.used) {
         throw new Meteor.Error(403, 'Invalid key or already used.');
       }
@@ -62,7 +62,7 @@ if (Meteor.isServer) {
         return;
       }
 
-      var userFields = {
+      const userFields = {
         signupKey: key,
         signupNote: keyInfo.note,
       };
@@ -91,7 +91,7 @@ if (Meteor.isServer) {
 if (Meteor.isClient) {
   Template.signup.helpers({
     signupDialog: function() {
-      var setting = Settings.findOne('signupDialog');
+      const setting = Settings.findOne('signupDialog');
       return (setting && setting.value) || DEFAULT_SIGNUP_DIALOG;
     },
   });
@@ -109,10 +109,10 @@ Router.map(function() {
     },
 
     data: function() {
-      var keyInfo = SignupKeys.findOne(this.params.key);
-      var user = Meteor.user();
+      const keyInfo = SignupKeys.findOne(this.params.key);
+      const user = Meteor.user();
 
-      var result = {
+      const result = {
         keyIsValid: !!keyInfo,
         keyIsUsed: keyInfo && keyInfo.used,
         origin: getOrigin(),

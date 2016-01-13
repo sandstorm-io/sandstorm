@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var isTesting = Meteor.settings && Meteor.settings.public &&
-                Meteor.settings.public.isTesting;
+const isTesting = Meteor.settings && Meteor.settings.public &&
+                  Meteor.settings.public.isTesting;
 
 if (isTesting) {
   if (Meteor.isServer) {
@@ -42,9 +42,11 @@ if (isTesting) {
       },
 
       createMockGoogleUser: function() {
+        // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
         Meteor.users.update({ _id: '6WJcRo2gg2Ysuxsok'},
                             {$set: {createdAt: new Date('2014-08-21T07:52:55.581Z'), profile: { name: 'Google User' }, services: { google: { accessToken: 'sometoken', expiresAt: 4562182723000, id: '116893057283177439912', verified_email: true, name: 'Google User', given_name: 'Google', family_name: 'User', picture: 'https://lh3.googleusercontent.com/-XdUIqdMkCWA/AAAAAAAAAAI/AAAAAAAAAAA/4252rscbv5M/photo.jpg', locale: 'en', gender: 'male' }, resume: { loginTokens: [{       when: new Date('2099-08-21T07:52:55.592Z'),   hashedToken: 'cbJGxLGKW3f0j7Ehit77hdK58W7xuPjzZhGHgKhyddo=' }] } }, signupKey: 'admin' }},
                            {upsert: true});
+        // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
       },
 
       clearMockGoogleUser: function() {

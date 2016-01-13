@@ -69,7 +69,9 @@ var loginResultCallback = function (serviceName, err) {
   } else if (err instanceof Accounts.LoginCancelledError) {
     // do nothing
   } else if (err instanceof ServiceConfiguration.ConfigError) {
-    Router.go("adminSettings");
+    loginButtonsSession.errorMessage(
+        "The " + serviceName + " login service has a configuration problem (" + err.message + ")." +
+        "\n\n\n Please contact your server administrator. ");
   } else {
     loginButtonsSession.errorMessage(err.reason || "Unknown error");
   }
@@ -206,6 +208,7 @@ Template.oauthLoginButton.events({
 
     var loginWithService = Meteor[instance.data.data.method];
 
+    var serviceName = instance.data.data.displayName;
     loginWithService({}, function (err) {
       loginResultCallback(serviceName, err);
     });

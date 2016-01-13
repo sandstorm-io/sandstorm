@@ -2108,8 +2108,8 @@ WebSocketReceiver = class WebSocketReceiver {
   }
 
   go() {
-    for (let i in queue) {
-      this.socket.write(queue[i]);
+    for (let i in this.queue) {
+      this.socket.write(this.queue[i]);
     }
 
     this.queue = null;

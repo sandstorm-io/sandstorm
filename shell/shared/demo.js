@@ -17,15 +17,15 @@
 allowDemo = Meteor.settings && Meteor.settings.public &&
                 Meteor.settings.public.allowDemoAccounts;
 
-var DEMO_EXPIRATION_MS = 60 * 60 * 1000;
-var DEMO_GRACE_MS = 10 * 60 * 1000;  // time between expiration and deletion
+const DEMO_EXPIRATION_MS = 60 * 60 * 1000;
+const DEMO_GRACE_MS = 10 * 60 * 1000;  // time between expiration and deletion
 
 if (Meteor.isServer) {
   Accounts.validateLoginAttempt(function(attempt) {
     // Enforce expiration times for demo accounts.
 
     if (attempt.user && attempt.user.expires) {
-      var expireIn = attempt.user.expires.getTime() - Date.now() + DEMO_GRACE_MS;
+      const expireIn = attempt.user.expires.getTime() - Date.now() + DEMO_GRACE_MS;
       if (expireIn < 0) {
         throw new Meteor.Error(403, 'This demo account has expired.');
       }
@@ -38,8 +38,8 @@ if (Meteor.isServer) {
 
       // Force connection close when account expires, so that the client reconnects and
       // re-authenticates, which fails.
-      var connection = attempt.connection;
-      var handle = Meteor.setTimeout(function() { connection.close(); }, expireIn);
+      const connection = attempt.connection;
+      const handle = Meteor.setTimeout(function() { connection.close(); }, expireIn);
 
       connection.onClose(function() { Meteor.clearTimeout(handle); });
     }
@@ -50,7 +50,7 @@ if (Meteor.isServer) {
   function cleanupExpiredUsers() {
     // Delete expired demo accounts and all their grains.
 
-    var now = new Date(Date.now() - DEMO_GRACE_MS);
+    const now = new Date(Date.now() - DEMO_GRACE_MS);
     Meteor.users.find({expires: {$lt: now}},
                       {fields: {_id: 1, loginIdentities: 1, lastActive: 1, appDemoId: 1}})
                 .forEach(function(user) {
@@ -78,8 +78,8 @@ if (Meteor.isServer) {
         // When deleting a user, we can specify it as a "normal" user
         // (type: user) or as a user who started out by using the app
         // demo feature (type: appDemoUser).
-        var deleteStatsType = 'demoUser';
-        var isAppDemoUser = !!user.appDemoId;
+        let deleteStatsType = 'demoUser';
+        const isAppDemoUser = !!user.appDemoId;
         if (isAppDemoUser) {
           deleteStatsType = 'appDemoUser';
         }
@@ -102,12 +102,12 @@ if (Meteor.isServer) {
         check(appDemoId, Match.OneOf(undefined, null, String));
 
         // Create the new user.
-        var newUser = { expires: new Date(Date.now() + DEMO_EXPIRATION_MS) };
+        const newUser = { expires: new Date(Date.now() + DEMO_EXPIRATION_MS) };
         if (appDemoId) {
           newUser.appDemoId = appDemoId;
         }
 
-        var userId = Accounts.insertUserDoc({ profile: { name: displayName } }, newUser);
+        const userId = Accounts.insertUserDoc({ profile: { name: displayName } }, newUser);
 
         // Log them in on this connection.
         return Accounts._loginMethod(this, 'createDemoUser', arguments,
@@ -117,7 +117,7 @@ if (Meteor.isServer) {
       testExpireDemo: function() {
         if (!isDemoUser()) throw new Meteor.Error(403, 'not a demo user');
 
-        var newExpires = new Date(Date.now() + 15000);
+        const newExpires = new Date(Date.now() + 15000);
         if (Meteor.user().expires.getTime() < newExpires.getTime()) {
           throw new Meteor.Error(403, "can't exend demo");
         }
@@ -136,11 +136,11 @@ if (Meteor.isServer) {
       // list of UserActions.
       check(appId, String);
 
-      var packageCursor = Packages.find(
+      const packageCursor = Packages.find(
         {appId: appId},
         {sort: {'manifest.appVersion': -1}});
 
-      var pkg = packageCursor.fetch()[0];
+      const pkg = packageCursor.fetch()[0];
 
       // This allows us to avoid creating duplicate UserActions.
       if (this.userId) {
@@ -174,9 +174,9 @@ if (Meteor.isClient && allowDemo) {
 
   Template.demo.events({
     'click button.start': function(event) {
-      var displayName = 'Demo User';
+      const displayName = 'Demo User';
 
-      var userCallbackFunction = function(err) {
+      const userCallbackFunction = function(err) {
         if (err) {
           window.alert(err);
         } else {
@@ -214,8 +214,8 @@ if (Meteor.isClient && allowDemo) {
       // calculate the appId
 
       // We copy the appId into the scope so the autorun function can access it.
-      var appId = this.appId;
-      var signingIn = false;
+      const appId = this.appId;
+      let signingIn = false;
 
       // TODO(cleanup): Is there a better way to do this? Before multi-identity, we could use the
       //   `userCallback` option of `Accounts.callLoginMethod()`, but now that doesn't work because
@@ -223,8 +223,8 @@ if (Meteor.isClient && allowDemo) {
       //
       // Note that we don't use Template.instance().autorun() because the template gets destroyed
       // and recreated during account creation.
-      var done = false;
-      var handle = Tracker.autorun(function() {
+      let done = false;
+      const handle = Tracker.autorun(function() {
         if (done) return;
 
         if (!isSignedUpOrDemo()) {
@@ -248,8 +248,11 @@ if (Meteor.isClient && allowDemo) {
           // First, find the package ID, since that is what
           // addUserActions takes. Choose the package ID with
           // highest version number.
-          var packageId = Packages.findOne({appId: appId},
-                                           {sort: {'manifest.appVersion': -1}})._id;
+          const packageId = Packages.findOne({
+            appId: appId,
+          }, {
+            sort: {'manifest.appVersion': -1},
+          })._id;
 
           // 3. Install this app for the user, if needed.
           if (UserActions.find({appId: appId, userId: Meteor.userId()}).count() == 0) {
@@ -303,12 +306,15 @@ Router.map(function() {
     data: function() {
       // find the newest (highest version, so "first" when sorting by
       // inverse order) matching package.
-      var thisPackage = Packages.findOne({appId: this.params.appId},
-                                        {sort: {'manifest.appVersion': -1}});
+      const thisPackage = Packages.findOne({
+        appId: this.params.appId,
+      }, {
+        sort: {'manifest.appVersion': -1},
+      });
 
       // In the case that the app requested is not present, we show
       // this string as the app name.
-      var appName = 'missing package';
+      let appName = 'missing package';
 
       if (thisPackage) {
         appName = SandstormDb.appNameFromPackage(thisPackage);

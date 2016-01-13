@@ -16,7 +16,7 @@
 
 // This file covers /install and /upload.
 
-var localizedTextPattern = {
+const localizedTextPattern = {
   defaultText: String,
   localizations: Match.Optional([{locale: String, text: String}]),
 };
@@ -51,7 +51,7 @@ if (Meteor.isServer) {
     },
   });
 
-  var uploadTokens = {};
+  const uploadTokens = {};
   // Not all users are allowed to upload apps. We need to manually implement authorization
   // because Meteor.userId() is not available in server-side routes.
 
@@ -72,7 +72,7 @@ if (Meteor.isServer) {
         throw new Meteor.Error(403, 'Unauthorized', 'Only paid users can upload apps.');
       }
 
-      var token = Random.id();
+      const token = Random.id();
       uploadTokens[token] = setTimeout(function() {
         delete uploadTokens[token];
       }, 20 * 60 * 1000);
@@ -107,11 +107,13 @@ Meteor.methods({
     }
 
     if (!this.userId) {
+      // jscs:disable disallowEmptyBlocks
       if (allowDemo && isSafeDemoAppUrl(url)) {
         // continue on
       } else {
         throw new Meteor.Error(403, 'You must be logged in to install packages.');
       }
+      // jscs:enable disallowEmptyBlocks
     } else if (!isSignedUp() && !isDemoUser()) {
       throw new Meteor.Error(403,
           'This Sandstorm server requires you to get an invite before installing apps.');
@@ -121,7 +123,7 @@ Meteor.methods({
     }
 
     if (!this.isSimulation) {
-      var pkg = Packages.findOne(packageId);
+      const pkg = Packages.findOne(packageId);
 
       if (!pkg || pkg.status !== 'ready') {
         if (!this.userId || isDemoUser() || globalDb.isUninvitedFreeUser()) {
@@ -156,19 +158,21 @@ Router.map(function() {
     data: function() {
       if (!this.ready()) return;
 
-      var packageId = this.params.packageId;
-      var packageUrl = this.params.query && this.params.query.url;
-      var handle = new SandstormAppInstall(packageId, packageUrl, globalDb);
+      const packageId = this.params.packageId;
+      const packageUrl = this.params.query && this.params.query.url;
+      const handle = new SandstormAppInstall(packageId, packageUrl, globalDb);
 
-      var pkg = Packages.findOne(packageId);
+      const pkg = Packages.findOne(packageId);
       if (!Meteor.userId()) {
         if (allowDemo && isSafeDemoAppUrl(packageUrl)) {
+          // jscs:disable disallowEmptyBlocks
           if (pkg && pkg.status === 'ready') {
             Router.go('appdemo', {appId: pkg.appId}, {replaceState: true});
             return handle;
           } else {
             // continue on and install...
           }
+          // jscs:enable disallowEmptyBlocks
         } else {
           handle.setError('You must sign in to install packages.');
           return handle;
@@ -250,23 +254,23 @@ Router.map(function() {
         this.response.end();
       } else if (this.request.method === 'POST') {
         try {
-          var self = this;
-          var packageId = promiseToFuture(doClientUpload(this.request)).wait();
+          const _this = this;
+          const packageId = promiseToFuture(doClientUpload(this.request)).wait();
           self.response.writeHead(200, {
             'Content-Length': packageId.length,
             'Content-Type': 'text/plain',
           });
-          self.response.write(packageId);
-          self.response.end();
+          _this.response.write(packageId);
+          _this.response.end();
           clearTimeout(uploadTokens[this.params.token]);
           delete uploadTokens[this.params.token];
         } catch (error) {
           console.error(error.stack);
-          self.response.writeHead(500, {
+          _this.response.writeHead(500, {
             'Content-Type': 'text/plain',
           });
-          self.response.write('Unpacking SPK failed; is it valid?');
-          self.response.end();
+          _this.response.write('Unpacking SPK failed; is it valid?');
+          _this.response.end();
         };
       } else {
         this.response.writeHead(405, {

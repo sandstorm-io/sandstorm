@@ -99,8 +99,19 @@ git_push_if_desired() {
   popd > /dev/null
 }
 
+generate_redirect_to() {
+  echo "<html><head><meta http-equiv='refresh' content='0;url=$1'><link rel='canonical' href='$1'><script type='text/javascript'>window.location.replace('$1' + window.location.hash);</script></head><body><p>Moved to: <a href='$1'>$1</a><br>(Sandstorm Web Publishing doesn't support 301 redirects :(.)</body></html>"
+}
+
+add_redirect_hacks() {
+  # Add a hack to make sure that a doc that got moved has a redirect stub.
+  mkdir -p "$OUTPUT_DIR/en/latest/developing/security-practices"
+  generate_redirect_to "https://docs.sandstorm.io/en/latest/using/security-practices/" > "$OUTPUT_DIR/en/latest/developing/security-practices/index.html"
+}
+
 assert_dependencies
 handle_args "$@"
 create_index_page
 run_mkdocs_build
+add_redirect_hacks
 git_push_if_desired

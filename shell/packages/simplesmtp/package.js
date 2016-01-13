@@ -5,6 +5,6 @@ Npm.depends({
   mailcomposer: '0.2.11',
 });
 
-Package.on_use(function(api) {
-  api.add_files('import.js', 'server');
+Package.onUse(function(api) {
+  api.addFiles('import.js', 'server');
 });

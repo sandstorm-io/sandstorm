@@ -4,14 +4,14 @@
 // side-effects, we should be careful to make sure all migrations are
 // idempotent and safe to accidentally run multiple times.
 
-var Future = Npm.require("fibers/future");
+var Future = Npm.require('fibers/future');
 
 var updateLoginStyleToRedirect = function() {
-  var configurations = Package["service-configuration"].ServiceConfiguration.configurations;
-  ["google", "github"].forEach(function(serviceName) {
+  var configurations = Package['service-configuration'].ServiceConfiguration.configurations;
+  ['google', 'github'].forEach(function(serviceName) {
     var config = configurations.findOne({service: serviceName});
-    if (config && config.loginStyle !== "redirect") {
-      configurations.update({service: serviceName}, {$set: {loginStyle: "redirect"}});
+    if (config && config.loginStyle !== 'redirect') {
+      configurations.update({service: serviceName}, {$set: {loginStyle: 'redirect'}});
     }
   });
 };
@@ -33,8 +33,8 @@ var enableLegacyOAuthProvidersIfNotInSettings = function() {
   // explicitly enable it in Settings, and then the rest of the logic can just
   // depend on what value is in Settings and default to false without breaking
   // user installations.
-  var configurations = Package["service-configuration"].ServiceConfiguration.configurations;
-  ["google", "github"].forEach(function(serviceName) {
+  var configurations = Package['service-configuration'].ServiceConfiguration.configurations;
+  ['google', 'github'].forEach(function(serviceName) {
     var config = configurations.findOne({service: serviceName});
     var serviceConfig = Settings.findOne({_id: serviceName});
     if (config && !serviceConfig) {
@@ -60,13 +60,13 @@ var denormalizeInviteInfo = function() {
   // `signupEmail` were added to the users table. We can backfill these values by denormalizing
   // from the SignupKeys table.
 
-  Meteor.users.find().forEach(function (user) {
-    if (user.signupKey && (typeof user.signupKey) === "string" && user.signupKey !== "admin") {
+  Meteor.users.find().forEach(function(user) {
+    if (user.signupKey && (typeof user.signupKey) === 'string' && user.signupKey !== 'admin') {
       var signupInfo = SignupKeys.findOne(user.signupKey);
       if (signupInfo && signupInfo.note) {
         var newFields = { signupNote: signupInfo.note };
 
-        var prefix = "E-mail invite to ";
+        var prefix = 'E-mail invite to ';
         if (signupInfo.note.lastIndexOf(prefix) === 0) {
           newFields.signupEmail = signupInfo.note.slice(prefix.length);
         }
@@ -75,7 +75,7 @@ var denormalizeInviteInfo = function() {
       }
     }
   });
-}
+};
 
 function mergeRoleAssignmentsIntoApiTokens() {
   RoleAssignments.find().forEach(function(roleAssignment) {
@@ -86,7 +86,7 @@ function mergeRoleAssignmentsIntoApiTokens() {
       petname: roleAssignment.petname,
       created: roleAssignment.created,
       owner: {user: {userId: roleAssignment.recipient,
-                     title: roleAssignment.title}},
+                     title: roleAssignment.title, }, },
     });
   });
 }
@@ -97,13 +97,13 @@ function fixOasisStorageUsageStats() {}
 // with a no-op.
 
 function fetchProfilePictures() {
-  Meteor.users.find({}).forEach(function (user) {
+  Meteor.users.find({}).forEach(function(user) {
     var url = userPictureUrl(user);
     if (url) {
-      console.log("Fetching user picture:", url);
+      console.log('Fetching user picture:', url);
       var assetId = fetchPicture(url);
       if (assetId) {
-        Meteor.users.update(user._id, {$set: {"profile.picture": assetId}});
+        Meteor.users.update(user._id, {$set: {'profile.picture': assetId}});
       }
     }
   });
@@ -118,41 +118,42 @@ function assignPlans() {
 function removeKeyrings() {
   // These blobs full of public keys were not intended to find their way into mongo and while
   // harmless they slow things down because they're huge. Remove them.
-  Packages.update({"manifest.metadata.pgpKeyring": {$exists: true}},
-      {$unset: {"manifest.metadata.pgpKeyring": ""}},
+  Packages.update({'manifest.metadata.pgpKeyring': {$exists: true}},
+      {$unset: {'manifest.metadata.pgpKeyring': ''}},
       {multi: true});
 }
 
 function useLocalizedTextInUserActions() {
   function toLocalizedText(newObj, oldObj, field) {
     if (field in oldObj) {
-      if (typeof oldObj[field] === "string") {
+      if (typeof oldObj[field] === 'string') {
         newObj[field] = {defaultText: oldObj[field]};
       } else {
         newObj[field] = oldObj[field];
       }
     }
   }
-  UserActions.find({}).forEach(function (userAction) {
+
+  UserActions.find({}).forEach(function(userAction) {
     var fields = {};
-    toLocalizedText(fields, userAction, "appTitle");
-    toLocalizedText(fields, userAction, "title");
-    toLocalizedText(fields, userAction, "nounPhrase");
+    toLocalizedText(fields, userAction, 'appTitle');
+    toLocalizedText(fields, userAction, 'title');
+    toLocalizedText(fields, userAction, 'nounPhrase');
     UserActions.update(userAction._id, {$set: fields});
   });
 }
 
 function verifyAllPgpSignatures() {
-  Packages.find({}).forEach(function (pkg) {
+  Packages.find({}).forEach(function(pkg) {
     try {
-      console.log("checking PGP signature for package:", pkg._id);
+      console.log('checking PGP signature for package:', pkg._id);
       var info = waitPromise(globalBackend.cap().tryGetPackage(pkg._id));
       if (info.authorPgpKeyFingerprint) {
-        console.log("  " + info.authorPgpKeyFingerprint);
+        console.log('  ' + info.authorPgpKeyFingerprint);
         Packages.update(pkg._id,
             {$set: {authorPgpKeyFingerprint: info.authorPgpKeyFingerprint}});
       } else {
-        console.log("  no signature");
+        console.log('  no signature');
       }
     } catch (err) {
       console.error(err.stack);
@@ -161,52 +162,58 @@ function verifyAllPgpSignatures() {
 }
 
 function splitUserIdsIntoAccountIdsAndIdentityIds() {
-  var Crypto = Npm.require("crypto");
-  Meteor.users.find().forEach(function (user) {
+  var Crypto = Npm.require('crypto');
+  Meteor.users.find().forEach(function(user) {
     var identity = {};
     var serviceUserId;
-    if ("devName" in user) {
-      identity.service = "dev";
+    if ('devName' in user) {
+      identity.service = 'dev';
       serviceUserId = user.devName;
-    } else if ("expires" in user) {
-      identity.service = "demo";
+    } else if ('expires' in user) {
+      identity.service = 'demo';
       serviceUserId = user._id;
-    } else if (user.services && "google" in user.services) {
-      identity.service = "google";
+    } else if (user.services && 'google' in user.services) {
+      identity.service = 'google';
       if (user.services.google.email && user.services.google.verified_email) {
         identity.verifiedEmail = user.services.google.email;
       }
+
       serviceUserId = user.services.google.id;
-    } else if (user.services && "github" in user.services) {
-      identity.service = "github";
+    } else if (user.services && 'github' in user.services) {
+      identity.service = 'github';
       identity.unverifiedEmail = user.services.github.email;
       serviceUserId = user.services.github.id;
-    } else if (user.services && "emailToken" in user.services) {
-      identity.service = "emailToken";
+    } else if (user.services && 'emailToken' in user.services) {
+      identity.service = 'emailToken';
       identity.verifiedEmail = user.services.emailToken.email;
       serviceUserId = user.services.emailToken.email;
     }
 
-    identity.id = Crypto.createHash("sha256")
-        .update(identity.service + ":" + serviceUserId).digest("hex");
+    identity.id = Crypto.createHash('sha256')
+        .update(identity.service + ':' + serviceUserId).digest('hex');
 
     if (user.profile) {
       if (user.profile.name) {
         identity.name = user.profile.name;
       }
+
       if (user.profile.handle) {
         identity.handle = user.profile.handle;
       }
+
       if (user.profile.picture) {
         identity.picture = user.profile.picture;
       }
+
       if (user.profile.pronoun) {
         identity.pronoun = user.profile.pronoun;
       }
+
       if (user.profile.email) {
         identity.unverifiedEmail = user.profile.email;
       }
     }
+
     identity.main = true;
 
     Meteor.users.update(user._id, {$set: {identities: [identity]}});
@@ -216,16 +223,16 @@ function splitUserIdsIntoAccountIdsAndIdentityIds() {
     ApiTokens.update({userId: user._id},
                      {$set: {identityId: identity.id}},
                      {multi: true});
-    ApiTokens.update({"owner.user.userId": user._id},
-                     {$set: {"owner.user.identityId": identity.id}},
+    ApiTokens.update({'owner.user.userId': user._id},
+                     {$set: {'owner.user.identityId': identity.id}},
                      {multi: true});
-    ApiTokens.update({"owner.grain.introducerUser": user._id},
-                     {$set: {"owner.grain.introducerIdentity": identity.id}},
+    ApiTokens.update({'owner.grain.introducerUser': user._id},
+                     {$set: {'owner.grain.introducerIdentity': identity.id}},
                      {multi: true});
 
-    while (ApiTokens.update({"requirements.permissionsHeld.userId": user._id},
-                            {$set: {"requirements.$.permissionsHeld.identityId": identity.id},
-                             $unset: {"requirements.$.permissionsHeld.userId": 1}},
+    while (ApiTokens.update({'requirements.permissionsHeld.userId': user._id},
+                            {$set: {'requirements.$.permissionsHeld.identityId': identity.id},
+                             $unset: {'requirements.$.permissionsHeld.userId': 1}, },
                             {multi: true}) > 0);
     // The `$` operatorer modifies the first element in the array that matches the query. Since
     // there may be many matches, we need to repeat until no documents are modified.
@@ -239,32 +246,33 @@ function splitUserIdsIntoAccountIdsAndIdentityIds() {
 }
 
 function appUpdateSettings() {
-  Settings.insert({_id: "appMarketUrl", value: "https://apps.sandstorm.io"});
-  Settings.insert({_id: "appIndexUrl", value: "https://app-index.sandstorm.io"});
-  Settings.insert({_id: "appUpdatesEnabled", value: true});
+  Settings.insert({_id: 'appMarketUrl', value: 'https://apps.sandstorm.io'});
+  Settings.insert({_id: 'appIndexUrl', value: 'https://app-index.sandstorm.io'});
+  Settings.insert({_id: 'appUpdatesEnabled', value: true});
 }
 
 function moveDevAndEmailLoginDataIntoIdentities() {
-  Meteor.users.find().forEach(function (user) {
+  Meteor.users.find().forEach(function(user) {
     if (user.identities.length != 1) {
-      throw new Error("User does not have exactly one identity: ", user);
+      throw new Error('User does not have exactly one identity: ', user);
     }
+
     var identity = user.identities[0];
     if (Match.test(identity.service, Object)) { return; } // Already migrated.
 
-    var newIdentity = _.pick(identity, "id", "main", "noLogin", "verifiedEmail", "unverifiedEmail");
-    newIdentity.profile = _.pick(identity, "name", "handle", "picture", "pronoun");
+    var newIdentity = _.pick(identity, 'id', 'main', 'noLogin', 'verifiedEmail', 'unverifiedEmail');
+    newIdentity.profile = _.pick(identity, 'name', 'handle', 'picture', 'pronoun');
 
     var serviceObject = {};
-    var fieldsToUnset = {}
+    var fieldsToUnset = {};
 
-    if (identity.service === "dev") {
+    if (identity.service === 'dev') {
       serviceObject.name = user.devName;
       fieldsToUnset.devName = 1;
-    } else if (identity.service === "emailToken") {
+    } else if (identity.service === 'emailToken') {
       serviceObject.tokens = user.services.emailToken.tokens;
       serviceObject.email = user.services.emailToken.email;
-      fieldsToUnset["services.emailToken"] = 1;
+      fieldsToUnset['services.emailToken'] = 1;
     }
 
     newIdentity.service = {};
@@ -272,7 +280,7 @@ function moveDevAndEmailLoginDataIntoIdentities() {
 
     var modifier = {$set: {identities: [newIdentity]}};
     if (Object.keys(fieldsToUnset).length > 0) {
-      modifier["$unset"] = fieldsToUnset;
+      modifier['$unset'] = fieldsToUnset;
     }
 
     Meteor.users.update({_id: user._id}, modifier);
@@ -280,32 +288,33 @@ function moveDevAndEmailLoginDataIntoIdentities() {
 }
 
 function repairEmailIdentityIds() {
-  var Crypto = Npm.require("crypto");
-  Meteor.users.find({"identities.service.emailToken": {$exists: 1}}).forEach(function (user) {
+  var Crypto = Npm.require('crypto');
+  Meteor.users.find({'identities.service.emailToken': {$exists: 1}}).forEach(function(user) {
     if (user.identities.length != 1) {
-      throw new Error("User does not have exactly one identity: ", user);
+      throw new Error('User does not have exactly one identity: ', user);
     }
+
     var identity = user.identities[0];
-    var newIdentity = _.pick(identity, "main", "noLogin", "verifiedEmail", "unverifiedMail",
-                             "profile");
+    var newIdentity = _.pick(identity, 'main', 'noLogin', 'verifiedEmail', 'unverifiedMail',
+                             'profile');
     newIdentity.service = {email: identity.service.emailToken};
-    newIdentity.id = Crypto.createHash("sha256")
-      .update("email:" + identity.service.emailToken.email).digest("hex");
+    newIdentity.id = Crypto.createHash('sha256')
+      .update('email:' + identity.service.emailToken.email).digest('hex');
 
     Grains.update({identityId: identity.id}, {$set: {identityId: newIdentity.id}}, {multi: true});
     Sessions.update({identityId: identity.id}, {$set: {identityId: newIdentity.id}}, {multi: true});
     ApiTokens.update({identityId: identity.id},
                      {$set: {identityId: newIdentity.id}},
                      {multi: true});
-    ApiTokens.update({"owner.user.identityId": identity.id},
-                     {$set: {"owner.user.identityId": newIdentity.id}},
+    ApiTokens.update({'owner.user.identityId': identity.id},
+                     {$set: {'owner.user.identityId': newIdentity.id}},
                      {multi: true});
-    ApiTokens.update({"owner.grain.introducerIdentity": identity.id},
-                     {$set: {"owner.grain.introducerIdentity": newIdentity.id}},
+    ApiTokens.update({'owner.grain.introducerIdentity': identity.id},
+                     {$set: {'owner.grain.introducerIdentity': newIdentity.id}},
                      {multi: true});
 
-    while (ApiTokens.update({"requirements.permissionsHeld.identityId": identity.id},
-                            {$set: {"requirements.$.permissionsHeld.identityId": newIdentity.id}},
+    while (ApiTokens.update({'requirements.permissionsHeld.identityId': identity.id},
+                            {$set: {'requirements.$.permissionsHeld.identityId': newIdentity.id}},
                             {multi: true}) > 0);
 
     Meteor.users.update({_id: user._id}, {$set: {identities: [newIdentity]}});
@@ -313,31 +322,32 @@ function repairEmailIdentityIds() {
 }
 
 function splitAccountUsersAndIdentityUsers() {
-  Meteor.users.find({"identities": {$exists: true}}).forEach(function (user) {
+  Meteor.users.find({identities: {$exists: true}}).forEach(function(user) {
     if (user.identities.length != 1) {
-      throw new Error("User does not have exactly one identity: ", user);
+      throw new Error('User does not have exactly one identity: ', user);
     }
+
     var identity = user.identities[0];
-    var identityUser = _.pick(user, "createdAt", "lastActive", "expires")
+    var identityUser = _.pick(user, 'createdAt', 'lastActive', 'expires');
     identityUser._id = identity.id;
     identityUser.profile = identity.profile;
-    _.extend(identityUser, _.pick(identity, "unverifiedEmail"));
+    _.extend(identityUser, _.pick(identity, 'unverifiedEmail'));
     identityUser.profile.service = Object.keys(identity.service)[0];
 
     // Updating this user needs to be a two step process because the `services` field typically
     // contains subfields that are constrained to be unique by Mongo indices.
-    identityUser.stagedServices = _.omit(user.services, "resume");
+    identityUser.stagedServices = _.omit(user.services, 'resume');
     if (identity.service.dev) {
       identityUser.stagedServices.dev = identity.service.dev;
     } else if (identity.service.email) {
       identityUser.stagedServices.email = identity.service.email;
     }
 
-    var accountUser = _.pick(user, "_id", "createdAt", "lastActive", "expires",
-                             "isAdmin", "signupKey", "signupNote", "signupEmail",
-                             "plan", "storageUsage", "isAppDemoUser", "appDemoId",
-                             "payments", "dailySentMailCount", "hasCompletedSignup");
-    accountUser.loginIdentities = [_.pick(identity, "id")];
+    var accountUser = _.pick(user, '_id', 'createdAt', 'lastActive', 'expires',
+                             'isAdmin', 'signupKey', 'signupNote', 'signupEmail',
+                             'plan', 'storageUsage', 'isAppDemoUser', 'appDemoId',
+                             'payments', 'dailySentMailCount', 'hasCompletedSignup');
+    accountUser.loginIdentities = [_.pick(identity, 'id')];
     accountUser.nonloginIdentities = [];
     if (user.services && user.services.resume) {
       accountUser.services = {resume: user.services.resume};
@@ -352,15 +362,15 @@ function splitAccountUsersAndIdentityUsers() {
     Meteor.users.update({_id: user._id}, accountUser);
   });
 
-  Meteor.users.find({"stagedServices": {$exists: true}}).forEach(function (identity) {
+  Meteor.users.find({stagedServices: {$exists: true}}).forEach(function(identity) {
     Meteor.users.update({_id: identity._id}, {$unset: {stagedServices: 1},
-                                              $set: {services: identity.stagedServices}});
+                                              $set: {services: identity.stagedServices}, });
   });
 }
 
 function populateContactsFromApiTokens() {
-  ApiTokens.find({"owner.user.identityId": {$exists: 1},
-                  accountId: {$exists: 1}}).forEach(function(token) {
+  ApiTokens.find({'owner.user.identityId': {$exists: 1},
+                  accountId: {$exists: 1}, }).forEach(function(token) {
     var identityId = token.owner.user.identityId;
     var identity = SandstormDb.prototype.getIdentity(identityId);
     if (identity) {
@@ -380,28 +390,29 @@ function cleanUpApiTokens() {
   // The `splitUserIdsIntoAccountIdsAndIdentityIds()` migration only added `identityId` in cases
   // where the user still existed in the database.
   ApiTokens.remove({userId: {$exists: true}, identityId: {$exists: false}});
-  ApiTokens.remove({"owner.user.userId": {$exists: true},
-                    "owner.user.identityId": {$exists: false}});
+  ApiTokens.remove({'owner.user.userId': {$exists: true},
+                    'owner.user.identityId': {$exists: false}, });
 
   // For a while we were accidentally setting `appIcon` instead of `icon`.
-  ApiTokens.find({"owner.user.denormalizedGrainMetadata.appIcon": {$exists: true}}).forEach(
-      function (apiToken) {
+  ApiTokens.find({'owner.user.denormalizedGrainMetadata.appIcon': {$exists: true}}).forEach(
+      function(apiToken) {
     var icon = apiToken.owner.user.denormalizedGrainMetadata.appIcon;
     ApiTokens.update({_id: apiToken._id},
-                     {$set: {"owner.user.denormalizedGrainMetadata.icon": icon},
-                      $unset: {"owner.user.denormalizedGrainMetadata.appIcon": true}});
+                     {$set: {'owner.user.denormalizedGrainMetadata.icon': icon},
+                      $unset: {'owner.user.denormalizedGrainMetadata.appIcon': true}, });
   });
 
   // For a while the `identityId` field of child UiView tokens was not getting set.
   function repairChain(parentToken) {
     ApiTokens.find({parentToken: parentToken._id, grainId: {$exists: true},
-                    identityId: {$exists: false}}).forEach(function (childToken) {
+                    identityId: {$exists: false}, }).forEach(function(childToken) {
       ApiTokens.update({_id: childToken._id}, {$set: {identityId: parentToken.identityId}});
       repairChain(childToken);
     });
   }
+
   ApiTokens.find({grainId: {$exists: true}, identityId: {$exists: true},
-                  parentToken: {$exists: false}}).forEach(repairChain);
+                  parentToken: {$exists: false}, }).forEach(repairChain);
 }
 
 // This must come after all the functions named within are defined.
@@ -431,41 +442,43 @@ function migrateToLatest() {
   if (Meteor.settings.replicaNumber) {
     // This is a replica. Wait for the first replica to perform migrations.
 
-    console.log("Waiting for migrations on replica zero...");
+    console.log('Waiting for migrations on replica zero...');
 
     var done = new Future();
-    var change = function (doc) {
-      console.log("Migrations applied elsewhere: " + doc.value + "/" + MIGRATIONS.length);
+    var change = function(doc) {
+      console.log('Migrations applied elsewhere: ' + doc.value + '/' + MIGRATIONS.length);
       if (doc.value >= MIGRATIONS.length) done.return();
-    }
-    var observer = Migrations.find({_id: "migrations_applied"}).observe({
+    };
+
+    var observer = Migrations.find({_id: 'migrations_applied'}).observe({
       added: change,
-      changed: change
+      changed: change,
     });
 
     done.wait();
     observer.stop();
-    console.log("Migrations have completed on replica zero.");
+    console.log('Migrations have completed on replica zero.');
 
   } else {
-    var applied = Migrations.findOne({_id: "migrations_applied"});
+    var applied = Migrations.findOne({_id: 'migrations_applied'});
     var start;
     if (!applied) {
       // Migrations table is not yet seeded with a value.  This means it has
       // applied 0 migrations.  Persist this.
-      Migrations.insert({_id: "migrations_applied", value: 0});
+      Migrations.insert({_id: 'migrations_applied', value: 0});
       start = 0;
     } else {
       start = applied.value;
     }
-    console.log("Migrations already applied: " + start + "/" + MIGRATIONS.length);
 
-    for (var i = start ; i < MIGRATIONS.length ; i++) {
+    console.log('Migrations already applied: ' + start + '/' + MIGRATIONS.length);
+
+    for (var i = start; i < MIGRATIONS.length; i++) {
       // Apply migration i, then record that migration i was successfully run.
-      console.log("Applying migration " + (i+1));
+      console.log('Applying migration ' + (i + 1));
       MIGRATIONS[i]();
-      Migrations.update({_id: "migrations_applied"}, {$set: {value: i+1}});
-      console.log("Applied migration " + (i+1));
+      Migrations.update({_id: 'migrations_applied'}, {$set: {value: i + 1}});
+      console.log('Applied migration ' + (i + 1));
     }
   }
 }

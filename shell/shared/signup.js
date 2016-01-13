@@ -18,17 +18,17 @@
 // users of the Sandstorm server).
 
 if (Meteor.isServer) {
-  Meteor.publish("signupKey", function (key) {
+  Meteor.publish('signupKey', function(key) {
     check(key, String);
     return SignupKeys.find(key);
   });
 
   Meteor.methods({
-    useSignupKey: function (key) {
+    useSignupKey: function(key) {
       check(key, String);
 
       if (!this.userId) {
-        throw new Meteor.Error(403, "Must be signed in.");
+        throw new Meteor.Error(403, 'Must be signed in.');
       }
 
       var user = Meteor.user();
@@ -39,7 +39,7 @@ if (Meteor.isServer) {
 
       if (isDemoUser()) {
         throw new Meteor.Error(403,
-            "Demo users cannot accept invite keys. Please sign in as a real user.");
+            'Demo users cannot accept invite keys. Please sign in as a real user.');
       }
 
       if (!user.loginIdentities) {
@@ -49,7 +49,7 @@ if (Meteor.isServer) {
 
       var keyInfo = SignupKeys.findOne(key);
       if (!keyInfo || keyInfo.used) {
-        throw new Meteor.Error(403, "Invalid key or already used.");
+        throw new Meteor.Error(403, 'Invalid key or already used.');
       }
 
       if (isSignedUp() && user.payments) {
@@ -64,48 +64,51 @@ if (Meteor.isServer) {
 
       var userFields = {
         signupKey: key,
-        signupNote: keyInfo.note
+        signupNote: keyInfo.note,
       };
       if (keyInfo.email) {
         userFields.signupEmail = keyInfo.email;
       }
-      if ("quota" in keyInfo) {
+
+      if ('quota' in keyInfo) {
         userFields.quota = keyInfo.quota;
       }
+
       if (keyInfo.plan) {
         userFields.plan = keyInfo.plan;
       }
+
       if (keyInfo.payments) {
         userFields.payments = keyInfo.payments;
       }
 
       Meteor.users.update(this.userId, {$set: userFields});
       SignupKeys.update(key, {$set: {used: true}});
-    }
+    },
   });
 }
 
 if (Meteor.isClient) {
   Template.signup.helpers({
-    signupDialog: function () {
-      var setting = Settings.findOne("signupDialog");
+    signupDialog: function() {
+      var setting = Settings.findOne('signupDialog');
       return (setting && setting.value) || DEFAULT_SIGNUP_DIALOG;
-    }
+    },
   });
 }
 
-Router.map(function () {
-  this.route("signup", {
-    path: "/signup/:key",
+Router.map(function() {
+  this.route('signup', {
+    path: '/signup/:key',
 
-    waitOn: function () {
+    waitOn: function() {
       return [
-        Meteor.subscribe("signupKey", this.params.key),
-        Meteor.subscribe("credentials")
+        Meteor.subscribe('signupKey', this.params.key),
+        Meteor.subscribe('credentials'),
       ];
     },
 
-    data: function () {
+    data: function() {
       var keyInfo = SignupKeys.findOne(this.params.key);
       var user = Meteor.user();
 
@@ -115,14 +118,14 @@ Router.map(function () {
         origin: getOrigin(),
         alreadySignedUp: (user && !!user.signupKey) ||
                          (keyInfo && user && keyInfo.rejectedBy === user._id),
-        hasPaymentInfo: keyInfo && !!keyInfo.payments
+        hasPaymentInfo: keyInfo && !!keyInfo.payments,
       };
 
       if (result.keyIsValid && !result.keyIsUsed && Meteor.userId()) {
-        Meteor.call("useSignupKey", this.params.key);
+        Meteor.call('useSignupKey', this.params.key);
       }
 
       return result;
-    }
+    },
   });
 });

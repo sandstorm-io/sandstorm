@@ -18,12 +18,12 @@
 
 var localizedTextPattern = {
   defaultText: String,
-  localizations: Match.Optional([{locale: String, text: String}])
-}
+  localizations: Match.Optional([{locale: String, text: String}]),
+};
 
 if (Meteor.isServer) {
   UserActions.allow({
-    insert: function (userId, action) {
+    insert: function(userId, action) {
       // TODO(cleanup): This check keeps breaking. Use a method instead that takes the package
       //   ID as an argument.
       check(action, {
@@ -40,14 +40,15 @@ if (Meteor.isServer) {
           deprecatedExecutablePath: Match.Optional(String),
           args: Match.Optional([String]),
           argv: Match.Optional([String]),
-          environ: Match.Optional([{key: String, value: String}])
-        }
+          environ: Match.Optional([{key: String, value: String}]),
+        },
       });
       return userId && isSignedUpOrDemo() && action.userId === userId;
     },
-    remove: function (userId, action) {
+
+    remove: function(userId, action) {
       return userId && action.userId === userId;
-    }
+    },
   });
 
   var uploadTokens = {};
@@ -55,28 +56,31 @@ if (Meteor.isServer) {
   // because Meteor.userId() is not available in server-side routes.
 
   Meteor.methods({
-    cancelDownload: function (packageId) {
+    cancelDownload: function(packageId) {
       check(packageId, String);
 
       // TODO(security):  Only let user cancel download if they initiated it.
       cancelDownload(packageId);
     },
 
-    newUploadToken: function () {
+    newUploadToken: function() {
       if (!isSignedUp()) {
-        throw new Meteor.Error(403, "Unauthorized", "Only invited users can upload apps.");
+        throw new Meteor.Error(403, 'Unauthorized', 'Only invited users can upload apps.');
       }
+
       if (globalDb.isUninvitedFreeUser()) {
-        throw new Meteor.Error(403, "Unauthorized", "Only paid users can upload apps.");
+        throw new Meteor.Error(403, 'Unauthorized', 'Only paid users can upload apps.');
       }
+
       var token = Random.id();
-      uploadTokens[token] = setTimeout(function () {
+      uploadTokens[token] = setTimeout(function() {
         delete uploadTokens[token];
       }, 20 * 60 * 1000);
+
       return token;
     },
 
-    upgradeGrains: function (appId, version, packageId) {
+    upgradeGrains: function(appId, version, packageId) {
       this.connection.sandstormDb.upgradeGrains(appId, version, packageId, globalBackend);
     },
   });
@@ -86,45 +90,45 @@ function isSafeDemoAppUrl(url) {
   // For demo accounts, we allow using a bare hash with no URL (which will never upload a new app)
   // and we allow specifying a sandstorm.io URL.
   return !url ||
-      url.lastIndexOf("http://sandstorm.io/", 0) === 0 ||
-      url.lastIndexOf("https://sandstorm.io/", 0) === 0 ||
-      url.lastIndexOf("https://alpha-j7uny7u376jnimcsx34c.sandstorm.io/", 0) === 0 ||
-      url.lastIndexOf("https://app-index.sandstorm.io/", 0) === 0;
+      url.lastIndexOf('http://sandstorm.io/', 0) === 0 ||
+      url.lastIndexOf('https://sandstorm.io/', 0) === 0 ||
+      url.lastIndexOf('https://alpha-j7uny7u376jnimcsx34c.sandstorm.io/', 0) === 0 ||
+      url.lastIndexOf('https://app-index.sandstorm.io/', 0) === 0;
 }
 
 Meteor.methods({
-  ensureInstalled: function (packageId, url, isRetry) {
+  ensureInstalled: function(packageId, url, isRetry) {
     check(packageId, String);
     check(url, Match.OneOf(String, undefined, null));
     check(isRetry, Boolean);
 
     if (!packageId.match(/^[a-zA-Z0-9]*$/)) {
-      throw new Meteor.Error(400, "The package ID contains illegal characters.");
+      throw new Meteor.Error(400, 'The package ID contains illegal characters.');
     }
 
     if (!this.userId) {
       if (allowDemo && isSafeDemoAppUrl(url)) {
         // continue on
       } else {
-        throw new Meteor.Error(403, "You must be logged in to install packages.");
+        throw new Meteor.Error(403, 'You must be logged in to install packages.');
       }
     } else if (!isSignedUp() && !isDemoUser()) {
       throw new Meteor.Error(403,
-          "This Sandstorm server requires you to get an invite before installing apps.");
+          'This Sandstorm server requires you to get an invite before installing apps.');
     } else if (isUserOverQuota(Meteor.user())) {
       throw new Meteor.Error(402,
-          "You are out of storage space. Please delete some things and try again.");
+          'You are out of storage space. Please delete some things and try again.');
     }
 
     if (!this.isSimulation) {
       var pkg = Packages.findOne(packageId);
 
-      if (!pkg || pkg.status !== "ready") {
+      if (!pkg || pkg.status !== 'ready') {
         if (!this.userId || isDemoUser() || globalDb.isUninvitedFreeUser()) {
           if (!isSafeDemoAppUrl(url)) {
             // TODO(someday): Billing prompt on client side.
-            throw new Meteor.Error(403, "Sorry, demo and free users cannot upload custom apps; " +
-                "they may only install apps from apps.sandstorm.io.");
+            throw new Meteor.Error(403, 'Sorry, demo and free users cannot upload custom apps; ' +
+                'they may only install apps from apps.sandstorm.io.');
           }
         }
       }
@@ -136,20 +140,20 @@ Meteor.methods({
   },
 });
 
-Router.map(function () {
-  this.route("install", {
-    path: "/install/:packageId",
+Router.map(function() {
+  this.route('install', {
+    path: '/install/:packageId',
 
-    waitOn: function () {
+    waitOn: function() {
       return [
-        Meteor.subscribe("packageInfo", this.params.packageId),
-        Meteor.subscribe("credentials"),
+        Meteor.subscribe('packageInfo', this.params.packageId),
+        Meteor.subscribe('credentials'),
         // We need UserActions and Grains populated so we can check if we need to upgrade them.
-        Meteor.subscribe("grainsMenu")
+        Meteor.subscribe('grainsMenu'),
       ];
     },
 
-    data: function () {
+    data: function() {
       if (!this.ready()) return;
 
       var packageId = this.params.packageId;
@@ -159,14 +163,14 @@ Router.map(function () {
       var pkg = Packages.findOne(packageId);
       if (!Meteor.userId()) {
         if (allowDemo && isSafeDemoAppUrl(packageUrl)) {
-          if (pkg && pkg.status === "ready") {
-            Router.go("appdemo", {appId: pkg.appId}, {replaceState: true});
+          if (pkg && pkg.status === 'ready') {
+            Router.go('appdemo', {appId: pkg.appId}, {replaceState: true});
             return handle;
           } else {
             // continue on and install...
           }
         } else {
-          handle.setError("You must sign in to install packages.");
+          handle.setError('You must sign in to install packages.');
           return handle;
         }
       } else {
@@ -181,7 +185,7 @@ Router.map(function () {
           if (globalGrains.get().length === 0 &&
               window.opener.location.hostname === window.location.hostname &&
               window.opener.Router) {
-            window.opener.Router.go("install", {packageId: packageId}, {query: this.params.query});
+            window.opener.Router.go('install', {packageId: packageId}, {query: this.params.query});
             window.close();
             return handle;
           }
@@ -190,31 +194,33 @@ Router.map(function () {
         }
 
         if (!isSignedUp() && !isDemoUser()) {
-          handle.setError("This Sandstorm server requires you to get an invite before installing apps.");
+          handle.setError('This Sandstorm server requires you to get an invite before installing apps.');
           return handle;
         }
       }
 
-      Meteor.call("ensureInstalled", packageId, packageUrl, false,
-            function (err, result) {
-         if (err) {
-           console.log(err);
-           handle.setError(err.message);
-         }
-      });
+      Meteor.call('ensureInstalled', packageId, packageUrl, false,
+            function(err, result) {
+              if (err) {
+                console.log(err);
+                handle.setError(err.message);
+              }
+            });
 
       if (pkg === undefined) {
         if (!packageUrl) {
-          handle.setError("Unknown package ID: " + packageId +
+          handle.setError('Unknown package ID: ' + packageId +
                    "\nPerhaps it hasn't been uploaded?");
         }
+
         return handle;
       }
 
-      if (pkg.status !== "ready") {
-        if (pkg.status === "failed") {
+      if (pkg.status !== 'ready') {
+        if (pkg.status === 'failed') {
           handle.setError(pkg.error);
         }
+
         return handle;
       }
 
@@ -224,50 +230,51 @@ Router.map(function () {
         // The app is installed, so let's send the user to it!  We use `replaceState` so that if
         // the user clicks "back" they don't just get redirected forward again, but end up back
         // at the app list.
-        Router.go("appDetails", {appId: handle.appId()}, {replaceState: true});
+        Router.go('appDetails', {appId: handle.appId()}, {replaceState: true});
       }
+
       return handle;
-    }
+    },
   });
 
-  this.route("upload", {
-    where: "server",
-    path: "/upload/:token",
+  this.route('upload', {
+    where: 'server',
+    path: '/upload/:token',
 
-    action: function () {
+    action: function() {
       if (!this.params.token || !uploadTokens[this.params.token]) {
         this.response.writeHead(403, {
-          "Content-Type": "text/plain"
+          'Content-Type': 'text/plain',
         });
-        this.response.write("Invalid upload token.");
+        this.response.write('Invalid upload token.');
         this.response.end();
-      } else if (this.request.method === "POST") {
+      } else if (this.request.method === 'POST') {
         try {
           var self = this;
           var packageId = promiseToFuture(doClientUpload(this.request)).wait();
           self.response.writeHead(200, {
-            "Content-Length": packageId.length,
-            "Content-Type": "text/plain"
+            'Content-Length': packageId.length,
+            'Content-Type': 'text/plain',
           });
           self.response.write(packageId);
           self.response.end();
           clearTimeout(uploadTokens[this.params.token]);
           delete uploadTokens[this.params.token];
-        } catch(error) {
+        } catch (error) {
           console.error(error.stack);
           self.response.writeHead(500, {
-            "Content-Type": "text/plain"
+            'Content-Type': 'text/plain',
           });
-          self.response.write("Unpacking SPK failed; is it valid?");
+          self.response.write('Unpacking SPK failed; is it valid?');
           self.response.end();
         };
       } else {
         this.response.writeHead(405, {
-          "Content-Type": "text/plain"
+          'Content-Type': 'text/plain',
         });
-        this.response.write("You can only POST here.");
+        this.response.write('You can only POST here.');
         this.response.end();
       }
-    }
+    },
   });
 });

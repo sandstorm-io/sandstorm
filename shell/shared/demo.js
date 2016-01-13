@@ -21,26 +21,27 @@ var DEMO_EXPIRATION_MS = 60 * 60 * 1000;
 var DEMO_GRACE_MS = 10 * 60 * 1000;  // time between expiration and deletion
 
 if (Meteor.isServer) {
-  Accounts.validateLoginAttempt(function (attempt) {
+  Accounts.validateLoginAttempt(function(attempt) {
     // Enforce expiration times for demo accounts.
 
     if (attempt.user && attempt.user.expires) {
       var expireIn = attempt.user.expires.getTime() - Date.now() + DEMO_GRACE_MS;
       if (expireIn < 0) {
-        throw new Meteor.Error(403, "This demo account has expired.");
+        throw new Meteor.Error(403, 'This demo account has expired.');
       }
 
       if (!allowDemo) {
         // An expiration time implies that this is a demo account, but those have been disabled.
         // Perhaps the config was just changed.
-        throw new Meteor.Error(403, "Demo accounts have been disabled.");
+        throw new Meteor.Error(403, 'Demo accounts have been disabled.');
       }
 
       // Force connection close when account expires, so that the client reconnects and
       // re-authenticates, which fails.
       var connection = attempt.connection;
-      var handle = Meteor.setTimeout(function () { connection.close(); }, expireIn);
-      connection.onClose(function () { Meteor.clearTimeout(handle); });
+      var handle = Meteor.setTimeout(function() { connection.close(); }, expireIn);
+
+      connection.onClose(function() { Meteor.clearTimeout(handle); });
     }
 
     return true;
@@ -52,18 +53,20 @@ if (Meteor.isServer) {
     var now = new Date(Date.now() - DEMO_GRACE_MS);
     Meteor.users.find({expires: {$lt: now}},
                       {fields: {_id: 1, loginIdentities: 1, lastActive: 1, appDemoId: 1}})
-                .forEach(function (user) {
+                .forEach(function(user) {
       Grains.find({userId: user._id}, {fields: {_id: 1, lastUsed: 1, appId: 1}})
-            .forEach(function (grain) {
-        console.log("delete grain: " + grain._id);
+            .forEach(function(grain) {
+        console.log('delete grain: ' + grain._id);
         ApiTokens.remove({grainId: grain._id});
         Grains.remove(grain._id);
         if (grain.lastUsed) {
-          DeleteStats.insert({type: "demoGrain", lastActive: grain.lastUsed, appId: grain.appId});
+          DeleteStats.insert({type: 'demoGrain', lastActive: grain.lastUsed, appId: grain.appId});
         }
+
         globalBackend.deleteGrain(grain._id, user._id);
       });
-      console.log("delete user: " + user._id);
+
+      console.log('delete user: ' + user._id);
       // We intentionally do not do `ApiTokens.remove({accountId: user._id})`, because some such
       // tokens might still play an active role in the sharing graph.
       Contacts.remove({ownerId: user._id});
@@ -75,10 +78,10 @@ if (Meteor.isServer) {
         // When deleting a user, we can specify it as a "normal" user
         // (type: user) or as a user who started out by using the app
         // demo feature (type: appDemoUser).
-        var deleteStatsType = "demoUser";
-        var isAppDemoUser = !! user.appDemoId;
+        var deleteStatsType = 'demoUser';
+        var isAppDemoUser = !!user.appDemoId;
         if (isAppDemoUser) {
-          deleteStatsType = "appDemoUser";
+          deleteStatsType = 'appDemoUser';
         }
 
         // Intentionally record deleted users at time of deletion to avoid miscounting users that
@@ -90,7 +93,7 @@ if (Meteor.isServer) {
 
   if (allowDemo) {
     Meteor.methods({
-      createDemoUser: function (displayName, appDemoId) {
+      createDemoUser: function(displayName, appDemoId) {
         // This is a login method that creates a new temporary user
         // every time it is used.
         //
@@ -103,29 +106,31 @@ if (Meteor.isServer) {
         if (appDemoId) {
           newUser.appDemoId = appDemoId;
         }
+
         var userId = Accounts.insertUserDoc({ profile: { name: displayName } }, newUser);
 
         // Log them in on this connection.
-        return Accounts._loginMethod(this, "createDemoUser", arguments,
-            "demo", function () { return { userId: userId }; });
+        return Accounts._loginMethod(this, 'createDemoUser', arguments,
+            'demo', function() { return { userId: userId }; });
       },
 
-      testExpireDemo: function () {
-        if (!isDemoUser()) throw new Meteor.Error(403, "not a demo user");
+      testExpireDemo: function() {
+        if (!isDemoUser()) throw new Meteor.Error(403, 'not a demo user');
 
         var newExpires = new Date(Date.now() + 15000);
         if (Meteor.user().expires.getTime() < newExpires.getTime()) {
           throw new Meteor.Error(403, "can't exend demo");
         }
+
         Meteor.users.update(this.userId, {$set: {expires: newExpires}});
-      }
+      },
     });
 
     // If demo mode is enabled, we permit the client to subscribe to
     // information about an app by appId. If this were available in
     // non-demo mode, then anonymous users could effectively ask the
     // server which apps are installed.
-    Meteor.publish("appInfo", function (appId) {
+    Meteor.publish('appInfo', function(appId) {
       // This publishes info about an app, including the latest
       // version of it. Once you log in, it also publishes your
       // list of UserActions.
@@ -133,7 +138,7 @@ if (Meteor.isServer) {
 
       var packageCursor = Packages.find(
         {appId: appId},
-        {sort: {"manifest.appVersion": -1}});
+        {sort: {'manifest.appVersion': -1}});
 
       var pkg = packageCursor.fetch()[0];
 
@@ -141,7 +146,7 @@ if (Meteor.isServer) {
       if (this.userId) {
         return [
           packageCursor,
-          UserActions.find({userId: this.userId, appId: appId})
+          UserActions.find({userId: this.userId, appId: appId}),
         ];
       }
 
@@ -156,43 +161,43 @@ if (Meteor.isServer) {
 }
 
 if (Meteor.isClient && allowDemo) {
-  Meteor.loginWithDemo = function (options, callback) {
-    Router.go("demo");
+  Meteor.loginWithDemo = function(options, callback) {
+    Router.go('demo');
     callback();
-  }
+  };
   // Note: We intentionally don't register the demo service with Accounts.registerService(); we
   //   don't want it to appear in the sign-in drop-down.
 
-  window.testExpireDemo = function () {
-    Meteor.call("testExpireDemo");
-  }
+  window.testExpireDemo = function() {
+    Meteor.call('testExpireDemo');
+  };
 
   Template.demo.events({
-    "click button.start": function (event) {
-      var displayName = "Demo User";
+    'click button.start': function(event) {
+      var displayName = 'Demo User';
 
-      var userCallbackFunction = function (err) {
+      var userCallbackFunction = function(err) {
         if (err) {
           window.alert(err);
         } else {
-          Router.go("root");
+          Router.go('root');
         }
-      }
+      };
 
       if (isSignedUpOrDemo()) {
         userCallbackFunction();
       } else {
         Accounts.callLoginMethod({
-          methodName: "createDemoUser",
-          methodArguments: ["Demo User", null],
-          userCallback: userCallbackFunction
+          methodName: 'createDemoUser',
+          methodArguments: ['Demo User', null],
+          userCallback: userCallbackFunction,
         });
       }
-    }
+    },
   });
 
   Template.appdemo.events({
-    "click button.start": function (event) {
+    'click button.start': function(event) {
       // When clicking on the createDemoUser button on the app demo,
       // we want to:
       //
@@ -219,7 +224,7 @@ if (Meteor.isClient && allowDemo) {
       // Note that we don't use Template.instance().autorun() because the template gets destroyed
       // and recreated during account creation.
       var done = false;
-      var handle = Tracker.autorun(function () {
+      var handle = Tracker.autorun(function() {
         if (done) return;
 
         if (!isSignedUpOrDemo()) {
@@ -227,8 +232,8 @@ if (Meteor.isClient && allowDemo) {
             signingIn = true;
             // 1. Create the Demo User & 2. Log the user in as this Demo User.
             Accounts.callLoginMethod({
-              methodName: "createDemoUser",
-              methodArguments: ["Demo User", appId],
+              methodName: 'createDemoUser',
+              methodArguments: ['Demo User', appId],
             });
           } else {
             return;
@@ -244,7 +249,7 @@ if (Meteor.isClient && allowDemo) {
           // addUserActions takes. Choose the package ID with
           // highest version number.
           var packageId = Packages.findOne({appId: appId},
-                                           {sort: {"manifest.appVersion": -1}})._id;
+                                           {sort: {'manifest.appVersion': -1}})._id;
 
           // 3. Install this app for the user, if needed.
           if (UserActions.find({appId: appId, userId: Meteor.userId()}).count() == 0) {
@@ -255,48 +260,51 @@ if (Meteor.isClient && allowDemo) {
           launchAndEnterGrainByPackageId(packageId);
         }
       });
-    }
+    },
   });
 }
 
-Router.map(function () {
-  this.route("demo", {
-    path: "/demo",
-    waitOn: function () {
-      return Meteor.subscribe("credentials");
+Router.map(function() {
+  this.route('demo', {
+    path: '/demo',
+    waitOn: function() {
+      return Meteor.subscribe('credentials');
     },
-    data: function () {
+
+    data: function() {
       return {
         allowDemo: allowDemo,
-        pageTitle: "Demo",
-        isDemoUser: isDemoUser()
+        pageTitle: 'Demo',
+        isDemoUser: isDemoUser(),
       };
-    }
+    },
   });
 
-  this.route("demoRestart", {
-    path: "/demo-restart",
-    waitOn: function () {
-      return Meteor.subscribe("credentials");
+  this.route('demoRestart', {
+    path: '/demo-restart',
+    waitOn: function() {
+      return Meteor.subscribe('credentials');
     },
-    data: function () {
+
+    data: function() {
       Meteor.logout();
-      Router.go("demo");
-    }
+      Router.go('demo');
+    },
   });
 });
 
-Router.map(function () {
-  this.route("appdemo", {
-    path: "/appdemo/:appId",
-    waitOn: function () {
-      return Meteor.subscribe("appInfo", this.params.appId);
+Router.map(function() {
+  this.route('appdemo', {
+    path: '/appdemo/:appId',
+    waitOn: function() {
+      return Meteor.subscribe('appInfo', this.params.appId);
     },
-    data: function () {
+
+    data: function() {
       // find the newest (highest version, so "first" when sorting by
       // inverse order) matching package.
       var thisPackage = Packages.findOne({appId: this.params.appId},
-                                        {sort: {"manifest.appVersion": -1}});
+                                        {sort: {'manifest.appVersion': -1}});
 
       // In the case that the app requested is not present, we show
       // this string as the app name.
@@ -316,10 +324,10 @@ Router.map(function () {
         // trying the second app.
         shouldShowStartDemo: true,
         appName: appName,
-        pageTitle: appName + " Demo on Sandstorm",
+        pageTitle: appName + ' Demo on Sandstorm',
         appId: this.params.appId,
-        isDemoUser: isDemoUser()
+        isDemoUser: isDemoUser(),
       };
-    }
+    },
   });
 });

@@ -15,13 +15,13 @@
 // limitations under the License.
 
 Package.describe({
-  summary: "Sandstorm UI autocomplete input",
-  version: "0.1.0"
+  summary: 'Sandstorm UI autocomplete input',
+  version: '0.1.0',
 });
 
-Package.onUse(function (api) {
-  api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-ui-topbar", "sandstorm-autoupdate-apps", "mongo"], "client");
-  api.use(["sandstorm-db"], ["client", "server"]);
-  api.addFiles(["autocomplete.html", "autocomplete-client.js"], "client");
-  api.addFiles(["autocomplete-server.js"], "server");
+Package.onUse(function(api) {
+  api.use(['check', 'reactive-var', 'reload', 'templating', 'tracker', 'underscore', 'sandstorm-ui-topbar', 'sandstorm-autoupdate-apps', 'mongo'], 'client');
+  api.use(['sandstorm-db'], ['client', 'server']);
+  api.addFiles(['autocomplete.html', 'autocomplete-client.js'], 'client');
+  api.addFiles(['autocomplete-server.js'], 'server');
 });

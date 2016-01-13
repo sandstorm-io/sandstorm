@@ -1,4 +1,4 @@
-Meteor.publish("userContacts", function () {
+Meteor.publish('userContacts', function() {
   var db = this.connection.sandstormDb;
   var self = this;
 
@@ -12,28 +12,32 @@ Meteor.publish("userContacts", function () {
       if (user) {
         SandstormDb.fillInProfileDefaults(user);
         SandstormDb.fillInIntrinsicName(user);
-        var filteredUser = _.pick(user, "_id", "profile");
-        self.added("userContacts", user._id, filteredUser);
+        var filteredUser = _.pick(user, '_id', 'profile');
+        self.added('userContacts', user._id, filteredUser);
       }
+
       contactIdentities[contact.identityId] =
         Meteor.users.find({_id: contact.identityId}, {fields: {profile: 1}}).observeChanges({
-          changed: function (id, fields) {
-            self.changed("userContacts", id, fields);
-          }
+          changed: function(id, fields) {
+            self.changed('userContacts', id, fields);
+          },
         });
     }
   }
+
   var cursor = db.collections.contacts.find({ownerId: this.userId});
 
   var handle = cursor.observe({
-    added: function (contact) {
+    added: function(contact) {
       addIdentityOfContact(contact);
     },
-    changed: function (contact) {
+
+    changed: function(contact) {
       addIdentityOfContact(contact);
     },
-    removed: function (contact) {
-      self.removed("userContacts", contact.identityId);
+
+    removed: function(contact) {
+      self.removed('userContacts', contact.identityId);
       contactIdentities[contact.identityId].stop();
       delete contactIdentities[contact.identityId];
     },

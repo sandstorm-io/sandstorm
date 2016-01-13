@@ -16,18 +16,19 @@
 
 SandstormAutoupdateApps = {};
 
-SandstormAutoupdateApps.updateAppIndex = function (db) {
-  var appUpdatesEnabledSetting = db.collections.settings.findOne({_id: "appUpdatesEnabled"});
+SandstormAutoupdateApps.updateAppIndex = function(db) {
+  var appUpdatesEnabledSetting = db.collections.settings.findOne({_id: 'appUpdatesEnabled'});
   var appUpdatesEnabled = appUpdatesEnabledSetting && appUpdatesEnabledSetting.value;
   if (!appUpdatesEnabled) {
     // It's much simpler to check appUpdatesEnabled here rather than reactively deactivate the
     // timer that triggers this call.
     return;
   }
-  var appIndexUrl = db.collections.settings.findOne({_id: "appIndexUrl"}).value;
+
+  var appIndexUrl = db.collections.settings.findOne({_id: 'appIndexUrl'}).value;
   var appIndex = db.collections.appIndex;
-  var data = HTTP.get(appIndexUrl + "/apps/index.json").data;
-  data.apps.forEach(function (app) {
+  var data = HTTP.get(appIndexUrl + '/apps/index.json').data;
+  data.apps.forEach(function(app) {
     app._id = app.appId;
 
     var oldApp = appIndex.findOne({_id: app.appId});
@@ -36,9 +37,9 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
     if ((!oldApp || app.versionNumber > oldApp.versionNumber) &&
         db.collections.userActions.findOne({appId: app.appId})) {
       var pack = db.collections.packages.findOne({_id: app.packageId});
-      var url = appIndexUrl + "/packages/" + app.packageId;
+      var url = appIndexUrl + '/packages/' + app.packageId;
       if (pack) {
-        if (pack.status === "ready") {
+        if (pack.status === 'ready') {
           if (pack.appId && pack.appId !== app.appId) {
             console.error("app index returned app ID and package ID that don't match:",
                           JSON.stringify(app));
@@ -51,7 +52,7 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
             query: {_id: app.packageId},
             update: {$set: {isAutoUpdated: true}},
           });
-          if (newPack.status === "ready") {
+          if (newPack.status === 'ready') {
             // The package was marked as ready before we applied isAutoUpdated=true. We should send
             // notifications ourselves to be sure there's no timing issue (sending more than one is
             // fine, since it will de-dupe).
@@ -62,7 +63,7 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
               db.sendAppUpdateNotifications(app.appId, app.packageId, app.name, app.versionNumber,
                 app.version);
             }
-          } else if (newPack.status === "failed") {
+          } else if (newPack.status === 'failed') {
             // If the package has failed, retry it
             db.startInstall(app.packageId, url, true, true);
           }
@@ -79,14 +80,14 @@ Meteor.methods({
     var db = this.connection.sandstormDb;
     var backend = this.connection.sandstormBackend;
 
-    _.forEach(appUpdates, function (val, appId) {
+    _.forEach(appUpdates, function(val, appId) {
       var pack = db.collections.packages.findOne({_id: val.packageId, appId: appId});
       if (!pack || !pack.manifest) {
-        console.error("Newer app not installed", val.name);
+        console.error('Newer app not installed', val.name);
       } else {
         db.addUserActions(val.packageId);
         db.upgradeGrains(appId, val.version, val.packageId, backend);
-        Meteor.call("deleteUnusedPackages", appId);
+        Meteor.call('deleteUnusedPackages', appId);
       }
     });
   },

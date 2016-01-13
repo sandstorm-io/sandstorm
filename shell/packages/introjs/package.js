@@ -3,7 +3,7 @@ Package.describe({
   version: '2.0.0',
   summary: 'A copy of introjs, packaged as a Meteor package',
   git: '',
-  documentation: 'README.md'
+  documentation: 'README.md',
 });
 
 Package.onUse(function(api) {

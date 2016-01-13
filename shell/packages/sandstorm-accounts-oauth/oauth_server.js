@@ -1,6 +1,6 @@
 // Listen to calls to `login` with an oauth option set. This is where
 // users actually get logged in to meteor via oauth.
-Accounts.registerLoginHandler(function (options) {
+Accounts.registerLoginHandler(function(options) {
   if (!options.oauth)
     return undefined; // don't handle
 
@@ -10,7 +10,7 @@ Accounts.registerLoginHandler(function (options) {
     // the error in the pending credentials table, with a secret of
     // null. The client can call the login method with a secret of null
     // to retrieve the error.
-    credentialSecret: Match.OneOf(null, String)
+    credentialSecret: Match.OneOf(null, String),
   });
 
   var result = OAuth.retrieveCredential(options.oauth.credentialToken,
@@ -31,10 +31,10 @@ Accounts.registerLoginHandler(function (options) {
     // seems unlikely.
     //
     // XXX we want `type` to be the service name such as "facebook"
-    return { type: "oauth",
+    return { type: 'oauth',
              error: new Meteor.Error(
                Accounts.LoginCancelledError.numericError,
-               "No matching login attempt found") };
+               'No matching login attempt found'), };
   }
 
   if (result instanceof Error)
@@ -46,12 +46,13 @@ Accounts.registerLoginHandler(function (options) {
       // serviceName was not found in the registered services list.
       // This could happen because the service never registered itself or
       // deregisterService was called on it.
-      return { type: "oauth",
+      return { type: 'oauth',
                error: new Meteor.Error(
                  Accounts.LoginCancelledError.numericError,
-                 "No registered oauth service found for: " + result.serviceName) };
+                 'No registered oauth service found for: ' + result.serviceName), };
 
     }
+
     return Accounts.updateOrCreateUserFromExternalService(result.serviceName, result.serviceData, result.options);
   }
 });

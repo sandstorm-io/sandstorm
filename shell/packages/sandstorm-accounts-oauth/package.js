@@ -1,9 +1,9 @@
 Package.describe({
-  summary: "Common code for OAuth-based login services",
-  version: "1.1.4"
+  summary: 'Common code for OAuth-based login services',
+  version: '1.1.4',
 });
 
-Package.onUse(function (api) {
+Package.onUse(function(api) {
   api.use('underscore', ['client', 'server']);
   api.use('random', ['client', 'server']);
   api.use('check', ['client', 'server']);
@@ -19,7 +19,6 @@ Package.onUse(function (api) {
   api.addFiles('oauth_server.js', 'server');
 });
 
-
-Package.onTest(function (api) {
-  api.addFiles("oauth_tests.js", 'server');
+Package.onTest(function(api) {
+  api.addFiles('oauth_tests.js', 'server');
 });

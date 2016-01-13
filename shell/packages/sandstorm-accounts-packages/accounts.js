@@ -1,7 +1,7 @@
 if (Meteor.isClient) {
   Meteor.loginWithGoogle = function(options, callback) {
     // support a callback without options
-    if (! callback && typeof options === "function") {
+    if (!callback && typeof options === 'function') {
       callback = options;
       options = null;
     }
@@ -9,9 +9,10 @@ if (Meteor.isClient) {
     var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback);
     Google.requestCredential(options, credentialRequestCompleteCallback);
   };
+
   Meteor.loginWithGithub = function(options, callback) {
     // support a callback without options
-    if (! callback && typeof options === "function") {
+    if (!callback && typeof options === 'function') {
       callback = options;
       options = null;
     }

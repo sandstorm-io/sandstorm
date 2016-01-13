@@ -1,1 +1,1 @@
-this.forge = Npm.require("node-forge");
+this.forge = Npm.require('node-forge');

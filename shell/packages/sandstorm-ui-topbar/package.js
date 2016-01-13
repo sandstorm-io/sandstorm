@@ -15,14 +15,14 @@
 // limitations under the License.
 
 Package.describe({
-  summary: "Sandstorm UI top bar",
-  version: "0.1.0"
+  summary: 'Sandstorm UI top bar',
+  version: '0.1.0',
 });
 
-Package.onUse(function (api) {
-  api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-identicons"], "client");
-  api.addFiles(["topbar.html", "topbar.js"], "client");
-  api.export("SandstormTopbar");
+Package.onUse(function(api) {
+  api.use(['check', 'reactive-var', 'reload', 'templating', 'tracker', 'underscore', 'sandstorm-identicons'], 'client');
+  api.addFiles(['topbar.html', 'topbar.js'], 'client');
+  api.export('SandstormTopbar');
 });
 
 // TODO(test): tests

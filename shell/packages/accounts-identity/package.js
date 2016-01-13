@@ -15,17 +15,17 @@
 // limitations under the License.
 
 Package.describe({
-  summary: "Accounts with multiple associated identities.",
-  version: "0.1.0"
+  summary: 'Accounts with multiple associated identities.',
+  version: '0.1.0',
 });
 
-Package.onUse(function (api) {
-  api.use(["underscore", "random", "sandstorm-db", "sandstorm-backend", "mongo"]);
-  api.use("accounts-base", ["client", "server"]);
-  api.use(["session", "templating"], ["client"]);
-  api.imply("accounts-base", ["client", "server"]);
-  api.use("check");
+Package.onUse(function(api) {
+  api.use(['underscore', 'random', 'sandstorm-db', 'sandstorm-backend', 'mongo']);
+  api.use('accounts-base', ['client', 'server']);
+  api.use(['session', 'templating'], ['client']);
+  api.imply('accounts-base', ['client', 'server']);
+  api.use('check');
 
-  api.addFiles(["accounts-identity.html", "accounts-identity-client.js"], ["client"]);
-  api.addFiles(["accounts-identity-server.js"], ["server"]);
+  api.addFiles(['accounts-identity.html', 'accounts-identity-client.js'], ['client']);
+  api.addFiles(['accounts-identity-server.js'], ['server']);
 });

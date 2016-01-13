@@ -14,10 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var Crypto = Npm.require("crypto");
-var Future = Npm.require("fibers/future");
+var Crypto = Npm.require('crypto');
+var Future = Npm.require('fibers/future');
 
-userPictureUrl = function (user) {
+userPictureUrl = function(user) {
   if (user.services && !(user.profile && user.profile.picture)) {
     // Try to determine user's avatar URL from login service.
 
@@ -28,7 +28,7 @@ userPictureUrl = function (user) {
 
     var github = user.services.github;
     if (github && github.id) {
-      return "https://avatars.githubusercontent.com/u/" + github.id;
+      return 'https://avatars.githubusercontent.com/u/' + github.id;
     }
 
     // Note that we do NOT support Gravatar for email addresses because pinging Gravatar would be
@@ -36,39 +36,40 @@ userPictureUrl = function (user) {
     // Github are different because they are actually the identity providers, so they already know
     // the user logged in.
   }
-}
+};
 
-fetchPicture = function (url) {
+fetchPicture = function(url) {
   try {
     var result = HTTP.get(url, {
       npmRequestOptions: { encoding: null },
-      timeout: 5000
+      timeout: 5000,
     });
 
     var metadata = {};
 
-    metadata.mimeType = result.headers["content-type"];
-    if (metadata.mimeType.lastIndexOf("image/png", 0) === -1 &&
-        metadata.mimeType.lastIndexOf("image/jpeg", 0) === -1) {
-      throw new Error("unexpected Content-Type:", metadata.mimeType);
+    metadata.mimeType = result.headers['content-type'];
+    if (metadata.mimeType.lastIndexOf('image/png', 0) === -1 &&
+        metadata.mimeType.lastIndexOf('image/jpeg', 0) === -1) {
+      throw new Error('unexpected Content-Type:', metadata.mimeType);
     }
-    var enc = result.headers["content-encoding"];
-    if (enc && enc !== "identity") {
+
+    var enc = result.headers['content-encoding'];
+    if (enc && enc !== 'identity') {
       metadata.encoding = enc;
     }
 
     return addStaticAsset(metadata, result.content);
   } catch (err) {
-    console.error("failed to fetch user profile picture:", url, err.stack);
+    console.error('failed to fetch user profile picture:', url, err.stack);
   }
-}
+};
 
-var ValidHandle = Match.Where(function (handle) {
+var ValidHandle = Match.Where(function(handle) {
   check(handle, String);
   return !!handle.match(/^[a-z_][a-z0-9_]*$/);
 });
 
-Accounts.onCreateUser(function (options, user) {
+Accounts.onCreateUser(function(options, user) {
   if (user.loginIdentities) {
     // it's an account
     check(user, {_id: String,
@@ -81,12 +82,12 @@ Accounts.onCreateUser(function (options, user) {
                  expires: Match.Optional(Date),
                  appDemoId: Match.Optional(String),
                  loginIdentities: [{id: String}],
-                 nonloginIdentities: [{id: String}]});
+                 nonloginIdentities: [{id: String}], });
 
     if (Meteor.settings.public.quotaEnabled) {
       user.experiments = user.experiments || {};
       user.experiments = {
-        firstTimeBillingPrompt: Math.random() < 0.5 ? "control" : "test"
+        firstTimeBillingPrompt: Math.random() < 0.5 ? 'control' : 'test',
       };
     }
 
@@ -99,7 +100,7 @@ Accounts.onCreateUser(function (options, user) {
     check(options.profile, Match.ObjectIncluding({
       name: Match.OneOf(null, Match.Optional(String)),
       handle: Match.Optional(ValidHandle),
-      pronoun: Match.Optional(Match.OneOf("male", "female", "neutral", "robot")),
+      pronoun: Match.Optional(Match.OneOf('male', 'female', 'neutral', 'robot')),
     }));
   }
 
@@ -108,7 +109,8 @@ Accounts.onCreateUser(function (options, user) {
   if (options.unverifiedEmail) {
     user.unverifiedEmail = options.unverifiedEmail;
   }
-  user.profile = _.pick(options.profile || {}, "name", "handle", "pronouns");
+
+  user.profile = _.pick(options.profile || {}, 'name', 'handle', 'pronouns');
 
   // Try downloading avatar.
   var url = userPictureUrl(user);
@@ -123,34 +125,35 @@ Accounts.onCreateUser(function (options, user) {
   if (user.services && user.services.dev) {
     check(user.services.dev, {name: String, isAdmin: Boolean, hasCompletedSignup: Boolean});
     serviceUserId = user.services.dev.name;
-    user.profile.service = "dev";
-  } else if ("expires" in user) {
+    user.profile.service = 'dev';
+  } else if ('expires' in user) {
     serviceUserId = user._id;
-    user.profile.service = "demo";
+    user.profile.service = 'demo';
   } else if (user.services && user.services.email) {
     check(user.services.email,
           {email: String,
-           tokens: [{digest: String, algorithm: String, createdAt: Date}]});
+           tokens: [{digest: String, algorithm: String, createdAt: Date}], });
     serviceUserId = user.services.email.email;
-    user.profile.service = "email";
-  } else if (user.services && "google" in user.services) {
+    user.profile.service = 'email';
+  } else if (user.services && 'google' in user.services) {
     serviceUserId = user.services.google.id;
-    user.profile.service = "google";
-  } else if (user.services && "github" in user.services) {
+    user.profile.service = 'google';
+  } else if (user.services && 'github' in user.services) {
     serviceUserId = user.services.github.id;
-    user.profile.service = "github";
+    user.profile.service = 'github';
   } else {
-    throw new Meteor.Error(400, "user does not have a recognized identity provider: " +
+    throw new Meteor.Error(400, 'user does not have a recognized identity provider: ' +
                            JSON.stringify(user));
   }
-  user._id = Crypto.createHash("sha256")
-    .update(user.profile.service + ":" + serviceUserId).digest("hex");
+
+  user._id = Crypto.createHash('sha256')
+    .update(user.profile.service + ':' + serviceUserId).digest('hex');
 
   return user;
 });
 
 // TODO delete this obsolete index.
-Meteor.users._ensureIndex("identities.id", {unique: 1, sparse: 1});
+Meteor.users._ensureIndex('identities.id', {unique: 1, sparse: 1});
 
-Meteor.users._ensureIndex("loginIdentities.id", {unique: 1, sparse: 1});
-Meteor.users._ensureIndex("nonloginIdentities.id", {sparse: 1});
+Meteor.users._ensureIndex('loginIdentities.id', {unique: 1, sparse: 1});
+Meteor.users._ensureIndex('nonloginIdentities.id', {sparse: 1});

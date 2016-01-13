@@ -17,7 +17,7 @@
 
 // Allow server to specify a specify subclass of errors. We should come
 // up with a more generic way to do this!
-var convertError = function (err) {
+var convertError = function(err) {
   if (err && err instanceof Meteor.Error &&
       err.error === Accounts.LoginCancelledError.numericError)
     return new Accounts.LoginCancelledError(err.reason);
@@ -25,16 +25,15 @@ var convertError = function (err) {
     return err;
 };
 
-
 // For the redirect login flow, the final step is that we're
 // redirected back to the application.  The credentialToken for this
 // login attempt is stored in the reload migration data, and the
 // credentialSecret for a successful login is stored in session
 // storage.
 
-Meteor.startup(function () {
+Meteor.startup(function() {
   var oauth = OAuth.getDataAfterRedirect();
-  if (! oauth)
+  if (!oauth)
     return;
 
   // We'll only have the credentialSecret if the login completed
@@ -46,7 +45,7 @@ Meteor.startup(function () {
 
   Accounts.callLoginMethod({
     methodArguments: methodArguments,
-    userCallback: function (err) {
+    userCallback: function(err) {
       // The redirect login flow is complete.  Construct an
       // `attemptInfo` object with the login result, and report back
       // to the code which initiated the login attempt
@@ -57,12 +56,11 @@ Meteor.startup(function () {
         allowed: !err,
         error: err,
         methodName: methodName,
-        methodArguments: methodArguments
+        methodArguments: methodArguments,
       });
-    }
+    },
   });
 });
-
 
 // Send an OAuth login method to the server. If the user authorized
 // access in the popup this should log the user in, otherwise
@@ -72,16 +70,16 @@ Accounts.oauth.tryLoginAfterPopupClosed = function(credentialToken, callback) {
   Accounts.callLoginMethod({
     methodArguments: [{oauth: {
       credentialToken: credentialToken,
-      credentialSecret: credentialSecret
-    }}],
-    userCallback: callback && function (err) {
+      credentialSecret: credentialSecret,
+    }, }, ],
+    userCallback: callback && function(err) {
       callback(convertError(err));
-    }});
+    }, });
 };
 
 Accounts.oauth.credentialRequestCompleteHandler = function(callback) {
-  return function (credentialTokenOrError) {
-    if(credentialTokenOrError && credentialTokenOrError instanceof Error) {
+  return function(credentialTokenOrError) {
+    if (credentialTokenOrError && credentialTokenOrError instanceof Error) {
       callback && callback(credentialTokenOrError);
     } else {
       Accounts.oauth.tryLoginAfterPopupClosed(credentialTokenOrError, callback);

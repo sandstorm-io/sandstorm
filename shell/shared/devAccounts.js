@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var allowDevAccounts = Meteor.settings && Meteor.settings.public &&
+const allowDevAccounts = Meteor.settings && Meteor.settings.public &&
                  Meteor.settings.public.allowDevAccounts;
 
 Accounts.identityServices.dev = {
@@ -30,7 +30,7 @@ Accounts.identityServices.dev = {
 
 if (allowDevAccounts) {
   if (Meteor.isServer) {
-    var Crypto = Npm.require('crypto');
+    const Crypto = Npm.require('crypto');
 
     Meteor.methods({
       createDevAccount: function(displayName, isAdmin, profile, unverifiedEmail) {
@@ -45,10 +45,10 @@ if (allowDevAccounts) {
 
         profile = profile || {};
         profile.name = profile.name || displayName;
-        var hasCompletedSignup = !!unverifiedEmail && !!profile.pronoun && !!profile.handle;
+        const hasCompletedSignup = !!unverifiedEmail && !!profile.pronoun && !!profile.handle;
 
-        var user = Meteor.users.findOne({'services.dev.name': displayName});
-        var userId;
+        const user = Meteor.users.findOne({'services.dev.name': displayName});
+        let userId;
 
         if (user) {
           userId = user._id;
@@ -83,7 +83,7 @@ if (allowDevAccounts) {
     loginDevAccountFast = function(displayName, isAdmin) {
       return new Promise(function(resolve, reject) {
         // This skips the firstSignUp page. Mostly used for testing purposes.
-        var profile = {
+        const profile = {
           name: displayName,
           pronoun: 'robot',
           handle: '_' + displayName.toLowerCase(),

@@ -16,34 +16,40 @@
 
 // This file implements /grain, i.e. the main view into an app.
 
-var DEFAULT_TITLE = 'Sandstorm';
+const DEFAULT_TITLE = 'Sandstorm';
 
 if (Meteor.isServer) {
-  var Crypto = Npm.require('crypto');
+  const Crypto = Npm.require('crypto');
 
   Meteor.publish('grainTopBar', function(grainId) {
     check(grainId, String);
-    var self = this;
+    const _this = this;
 
-    var result = [Grains.find({_id: grainId, $or: [{userId: this.userId}, {private: {$ne: true}}]},
-                              {fields: {title: 1, userId: 1, identityId: 1, private: 1}}),];
+    const result = [
+      Grains.find({
+        _id: grainId,
+        $or: [{userId: this.userId}, {private: {$ne: true}}],
+      }, {
+        fields: {title: 1, userId: 1, identityId: 1, private: 1},
+      }),
+    ];
     if (this.userId) {
-      var myIdentityIds = SandstormDb.getUserIdentityIds(globalDb.getUser(this.userId));
+      const myIdentityIds = SandstormDb.getUserIdentityIds(globalDb.getUser(this.userId));
       myIdentityIds.forEach(function(id) {
-        var identity = globalDb.getUser(id);
-        self.added('displayNames', identity._id, {displayName: identity.profile.name});
+        const identity = globalDb.getUser(id);
+        _this.added('displayNames', identity._id, {displayName: identity.profile.name});
       });
 
       // Alice is allowed to know Bob's display name if Bob has received a UiView from Alice
       // for *any* grain.
-      var handle = ApiTokens.find({identityId: {$in: myIdentityIds},
+      const handle = ApiTokens.find({identityId: {$in: myIdentityIds},
                                    'owner.user.identityId': {$exists: true}, }).observe({
         added: function(token) {
-          var user = Meteor.users.findOne({_id: token.owner.user.identityId});
+          const user = Meteor.users.findOne({_id: token.owner.user.identityId});
           if (user) {
-            var identity = globalDb.getUser(token.owner.user.identityId);
+            const identity = globalDb.getUser(token.owner.user.identityId);
             if (identity) {
-              self.added('displayNames', identity._id, {displayName: identity.profile.name});
+              _this.added('displayNames', identity._id, {displayName: identity.profile.name});
             }
 
           }
@@ -51,9 +57,13 @@ if (Meteor.isServer) {
       });
       this.onStop(function() { handle.stop(); });
 
-      result.push(ApiTokens.find({grainId: grainId,
-                                  $or: [{'owner.user.identityId': {$in: myIdentityIds}},
-                                         {identityId: {$in: myIdentityIds}},], }));
+      result.push(ApiTokens.find({
+        grainId: grainId,
+        $or: [
+          {'owner.user.identityId': {$in: myIdentityIds}},
+          {identityId: {$in: myIdentityIds}},
+        ],
+      }));
 
     }
 
@@ -66,16 +76,16 @@ if (Meteor.isServer) {
   // risk since it only exposes this information for grains the user owns.
   Meteor.publish('packageByGrainId', function(grainId) {
     check(grainId, String);
-    var publishThis = [];
+    const publishThis = [];
     // We need to publish the packageId so that client-side code can
     // find the right package.
-    var thisGrainCursor = Grains.find({_id: grainId, userId: this.userId},
+    const thisGrainCursor = Grains.find({_id: grainId, userId: this.userId},
                                       {fields: {packageId: 1}});
     publishThis.push(thisGrainCursor);
 
     if (thisGrainCursor.count()) {
-      var thisGrain = thisGrainCursor.fetch()[0];
-      var thisPackageCursor = Packages.find({_id: thisGrain.packageId});
+      const thisGrain = thisGrainCursor.fetch()[0];
+      const thisPackageCursor = Packages.find({_id: thisGrain.packageId});
       publishThis.push(thisPackageCursor);
     }
 
@@ -88,25 +98,25 @@ if (Meteor.isServer) {
     // the metadata reactive.
     check(token, String);
 
-    var hashedToken = Crypto.createHash('sha256').update(token).digest('base64');
-    var apiToken = ApiTokens.findOne({_id: hashedToken}, {fields: {grainId: 1, identityId: 1}});
+    const hashedToken = Crypto.createHash('sha256').update(token).digest('base64');
+    const apiToken = ApiTokens.findOne({_id: hashedToken}, {fields: {grainId: 1, identityId: 1}});
     if (!apiToken || (apiToken.owner && !('webkey' in apiToken.owner))) {
       this.added('tokenInfo', token, {invalidToken: true});
     } else {
-      var grainId = apiToken.grainId;
-      var grain = Grains.findOne({_id: grainId}, {fields: {packageId: 1, appId: 1}});
+      const grainId = apiToken.grainId;
+      const grain = Grains.findOne({_id: grainId}, {fields: {packageId: 1, appId: 1}});
       if (!grain) {
         this.added('tokenInfo', token, {invalidToken: true});
       } else {
-        var pkg = Packages.findOne({_id: grain.packageId}, {fields: {manifest: 1}});
-        var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ''};
-        var appIcon = undefined;
+        const pkg = Packages.findOne({_id: grain.packageId}, {fields: {manifest: 1}});
+        const appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ''};
+        let appIcon = undefined;
         if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
-          var icons = pkg.manifest.metadata.icons;
+          const icons = pkg.manifest.metadata.icons;
           appIcon = icons.grain || icons.appGrid;
         }
 
-        var denormalizedGrainMetadata = {
+        const denormalizedGrainMetadata = {
           appTitle: appTitle,
           icon: appIcon,
           appId: appIcon ? undefined : grain.appId,
@@ -124,23 +134,23 @@ if (Meteor.isServer) {
     // Publish pseudo-collection containing the size of the grain opened in the given session.
     check(grainId, String);
 
-    var grain = Grains.findOne(grainId);
+    const grain = Grains.findOne(grainId);
     if (!grain || grain.userId !== this.userId) {
       return [];
     }
 
-    var supervisor = globalBackend.cap().getGrain(this.userId, grainId).supervisor;
+    const supervisor = globalBackend.cap().getGrain(this.userId, grainId).supervisor;
 
-    var self = this;
-    var stopped = false;
-    var promise = getGrainSize(supervisor);
+    const _this = this;
+    let stopped = false;
+    const promise = getGrainSize(supervisor);
 
     function getNext(oldSize) {
-      promise = getGrainSize(supervisor, oldSize);
+      const promise = getGrainSize(supervisor, oldSize);
       promise.then(function(size) {
         if (!stopped) {
           if (size !== oldSize) {  // sometimes there are false alarms
-            self.changed('grainSizes', grainId, {size: size});
+            _this.changed('grainSizes', grainId, {size: size});
           }
 
           getNext(size);
@@ -149,9 +159,9 @@ if (Meteor.isServer) {
 
         if (!stopped) {
           if (err.kjType === 'disconnected') {
-            self.stop();
+            _this.stop();
           } else {
-            self.error(err);
+            _this.error(err);
           }
         }
       });
@@ -159,22 +169,22 @@ if (Meteor.isServer) {
 
     promise.then(function(size) {
       if (!stopped) {
-        self.added('grainSizes', grainId, {size: size});
-        self.ready();
+        _this.added('grainSizes', grainId, {size: size});
+        _this.ready();
         getNext(size);
       }
     }, function(err) {
 
       if (!stopped) {
         if (err.kjType === 'disconnected') {
-          self.stop();
+          _this.stop();
         } else {
-          self.error(err);
+          _this.error(err);
         }
       }
     });
 
-    self.onStop(function() {
+    _this.onStop(function() {
       stopped = true;
       promise.cancel();
     });
@@ -183,7 +193,7 @@ if (Meteor.isServer) {
 
 // GrainSizes is used by grainview.js
 GrainSizes = new Mongo.Collection('grainSizes');
-var DisplayNames = new Mongo.Collection('displayNames');
+const DisplayNames = new Mongo.Collection('displayNames');
 // TokenInfo is used by grainview.js
 TokenInfo = new Mongo.Collection('tokenInfo');
 // Pseudo-collections published above.
@@ -193,14 +203,22 @@ Meteor.methods({
     check(grainId, String);
 
     if (this.userId) {
-      var grain = Grains.findOne({_id: grainId, userId: this.userId});
+      const grain = Grains.findOne({_id: grainId, userId: this.userId});
       if (grain) {
         Grains.remove(grainId);
-        ApiTokens.remove({grainId: grainId, $or: [{owner: {$exists: false}},
-                                                   {owner: {webkey: null}},], });
+        ApiTokens.remove({
+          grainId: grainId,
+          $or: [
+            {owner: {$exists: false}},
+            {owner: {webkey: null}},
+          ],
+        });
         if (grain.lastUsed) {
-          DeleteStats.insert({type: isDemoUser() ? 'demoGrain' : 'grain',
-                              lastActive: grain.lastUsed, appId: grain.appId, });
+          DeleteStats.insert({
+            type: isDemoUser() ? 'demoGrain' : 'grain',
+            lastActive: grain.lastUsed,
+            appId: grain.appId,
+          });
         }
 
         if (!this.isSimulation) {
@@ -234,7 +252,7 @@ Meteor.methods({
       throw new Meteor.Error(403, 'Must be logged in.');
     }
 
-    var grain = globalDb.getGrain(grainId) || {};
+    const grain = globalDb.getGrain(grainId) || {};
     if (!grain.userId === this.userId) {
       throw new Meteor.Error(403, 'Grain not owned by current user.');
     }
@@ -247,7 +265,7 @@ Meteor.methods({
     check(newTitle, String);
     check(identityId, String);
     if (this.userId) {
-      var grain = Grains.findOne(grainId);
+      const grain = Grains.findOne(grainId);
       if (grain) {
         if (grain.userId === this.userId) {
           Grains.update({_id: grainId, userId: this.userId}, {$set: {title: newTitle}});
@@ -256,9 +274,13 @@ Meteor.methods({
             throw new Meteor.Error(403, 'Current user does not have identity ' + identityId);
           }
 
-          var token = ApiTokens.findOne({grainId: grainId, objectId: {$exists: false},
-                                         'owner.user.identityId': identityId, },
-                                        {sort:{created:1}});
+          const token = ApiTokens.findOne({
+            grainId: grainId,
+            objectId: {$exists: false},
+            'owner.user.identityId': identityId,
+          }, {
+            sort:{created:1},
+          });
           if (token) {
             ApiTokens.update(token._id, {$set: {'owner.user.title': newTitle}});
           }
@@ -282,14 +304,17 @@ Meteor.methods({
       check(grainId, String);
       check(title, String);
       check(roleAssignment, roleAssignmentPattern);
-      check(contacts, [{
-        _id: String,
-        isDefault: Match.Optional(Boolean),
-        profile: Match.ObjectIncluding({
-          service: String,
-          name: String,
-          intrinsicName: String,
-        }), },]);
+      check(contacts, [
+        {
+          _id: String,
+          isDefault: Match.Optional(Boolean),
+          profile: Match.ObjectIncluding({
+            service: String,
+            name: String,
+            intrinsicName: String,
+          }),
+        },
+      ]);
       check(message, {text: String, html: String});
       if (!this.userId) {
         throw new Meteor.Error(403, 'Must be logged in to share by email.');
@@ -303,19 +328,19 @@ Meteor.methods({
         throw new Meteor.Error(400, 'No contacts were provided.');
       }
 
-      var accountId = this.userId;
-      var identity = globalDb.getIdentity(identityId);
-      var sharerDisplayName = identity.profile.name;
-      var outerResult = {successes: [], failures: []};
+      const accountId = this.userId;
+      const identity = globalDb.getIdentity(identityId);
+      const sharerDisplayName = identity.profile.name;
+      const outerResult = {successes: [], failures: []};
       contacts.forEach(function(contact) {
         if (contact.isDefault && contact.profile.service === 'email') {
-          var emailAddress = contact.profile.intrinsicName;
-          var result = SandstormPermissions.createNewApiToken(
+          const emailAddress = contact.profile.intrinsicName;
+          const result = SandstormPermissions.createNewApiToken(
             globalDb, {identityId: identityId, accountId: accountId}, grainId,
             'email invitation for ' + emailAddress,
             roleAssignment, {webkey: {forSharing: true}});
-          var url = origin + '/shared/' + result.token;
-          var html = message.html + '<br><br>' +
+          const url = origin + '/shared/' + result.token;
+          const html = message.html + '<br><br>' +
               "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
               'font-family:sans-serif;width:200px;min-height:30px;line-height:30px;' +
               "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
@@ -341,12 +366,12 @@ Meteor.methods({
             'direct invitation to ' + contact.profile.intrinsicName,
             roleAssignment, {user: {identityId: contact._id, title: title}});
           try {
-            var identity = Meteor.users.findOne({_id: contact._id});
-            var emailAddress = SandstormDb.getVerifiedEmails(identity)[0];
-            var url = origin + '/grain/' + grainId;
+            const identity = Meteor.users.findOne({_id: contact._id});
+            const emailAddress = SandstormDb.getVerifiedEmails(identity)[0];
+            const url = origin + '/grain/' + grainId;
             if (emailAddress) {
-              var intrinsicName = contact.profile.intrinsicName;
-              var loginNote;
+              const intrinsicName = contact.profile.intrinsicName;
+              let loginNote;
               if (contact.profile.service === 'google') {
                 loginNote = 'Google account with address ' + emailAddress;
               } else if (contact.profile.service === 'github') {
@@ -357,7 +382,7 @@ Meteor.methods({
                 throw new Meteor.Error(500, 'Unknown service to email share link.');
               }
 
-              var html = message.html + '<br><br>' +
+              const html = message.html + '<br><br>' +
                   "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
                   'font-family:sans-serif;width:200px;min-height:30px;line-height:30px;' +
                   "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
@@ -395,17 +420,17 @@ if (Meteor.isClient) {
   Tracker.autorun(function() {
     // We need to keep track of certain data about each grain we can view.
     // TODO(cleanup): Do these in GrainView to avoid spurious resubscribes.
-    var grains = globalGrains.get();
+    const grains = globalGrains.get();
     grains.forEach(function(grain) {
       grain.depend();
-      var grainId = grain.grainId();
+      const grainId = grain.grainId();
       if (grainId) {
         Meteor.subscribe('grainTopBar', grainId);
         if (grain.isOwner()) {
           Meteor.subscribe('packageByGrainId', grainId);
         }
 
-        var token = grain.token();
+        const token = grain.token();
         if (token) {
           Meteor.subscribe('tokenInfo', token);
         }
@@ -416,8 +441,8 @@ if (Meteor.isClient) {
   Template.layout.events({
     'click .incognito-button': function(event) {
       console.log(event);
-      var grains = globalGrains.get();
-      var token = event.currentTarget.getAttribute('data-token');
+      const grains = globalGrains.get();
+      const token = event.currentTarget.getAttribute('data-token');
       if (token) {
         grains.forEach(function(grain) {
           if (grain.token() == token) {
@@ -430,15 +455,15 @@ if (Meteor.isClient) {
     },
   });
 
-  var promptNewTitle = function() {
-    var grain = getActiveGrain(globalGrains.get());
+  const promptNewTitle = function() {
+    const grain = getActiveGrain(globalGrains.get());
     if (grain) {
-      var prompt = 'Set new title:';
+      let prompt = 'Set new title:';
       if (!grain.isOwner()) {
         prompt = "Set a new personal title: (does not change the owner's title for this grain)";
       }
 
-      var title = window.prompt(prompt, grain.title());
+      const title = window.prompt(prompt, grain.title());
       if (title) {
         grain.setTitle(title);
       }
@@ -462,10 +487,10 @@ if (Meteor.isClient) {
 
   Template.grainDeleteButton.events({
     'click button': function(event) {
-      var grains = globalGrains.get();
-      var activeIndex = activeGrainIndex(grains);
-      var activeGrain = grains[activeIndex];
-      var newActiveIndex = (activeIndex == grains.length - 1) ? activeIndex - 1 : activeIndex;
+      const grains = globalGrains.get();
+      const activeIndex = activeGrainIndex(grains);
+      const activeGrain = grains[activeIndex];
+      const newActiveIndex = (activeIndex == grains.length - 1) ? activeIndex - 1 : activeIndex;
       if (activeGrain.isOwner()) {
         if (window.confirm('Really delete this grain?')) {
           Meteor.call('deleteGrain', activeGrain.grainId());
@@ -483,7 +508,7 @@ if (Meteor.isClient) {
         }
       } else {
         if (window.confirm('Really forget this grain?')) {
-          var identityId = activeGrain.identityId();
+          const identityId = activeGrain.identityId();
           if (identityId) {
             Meteor.call('forgetGrain', activeGrain.grainId(), identityId);
           }
@@ -506,7 +531,7 @@ if (Meteor.isClient) {
   Template.grainDebugLogButton.events({
     'click button': function(event) {
       this.reset();
-      var activeGrain = getActiveGrain(globalGrains.get());
+      const activeGrain = getActiveGrain(globalGrains.get());
       window.open('/grainlog/' + activeGrain.grainId(), '_blank',
           'menubar=no,status=no,toolbar=no,width=700,height=700');
     },
@@ -526,7 +551,7 @@ if (Meteor.isClient) {
     'click button': function(event, template) {
       template.isLoading.set(true);
       this.reset();
-      var activeGrain = getActiveGrain(globalGrains.get());
+      const activeGrain = getActiveGrain(globalGrains.get());
       Meteor.call('backupGrain', activeGrain.grainId(), function(err, id) {
         template.isLoading.set(false);
         if (err) {
@@ -534,14 +559,14 @@ if (Meteor.isClient) {
         } else {
           // Firefox for some reason decides to kill all websockets when we try to download the file
           // by navigating there. So we're left doing a dirty hack to get around the popup blocker.
-          var isFirefox = typeof InstallTrigger !== 'undefined';
+          const isFirefox = typeof InstallTrigger !== 'undefined';
 
           if (isFirefox) {
-            var save = document.createElement('a');
+            const save = document.createElement('a');
             save.href = '/downloadBackup/' + id;
 
             save.download = activeGrain.title() + '.zip';
-            var event = document.createEvent('MouseEvents');
+            const event = document.createEvent('MouseEvents');
             event.initMouseEvent(
                     'click', true, false, window, 0, 0, 0, 0, 0,
                     false, false, false, false, 0, null
@@ -558,16 +583,16 @@ if (Meteor.isClient) {
   Template.grainRestartButton.events({
     'click button': function(event) {
       this.reset();
-      var activeGrain = getActiveGrain(globalGrains.get());
-      var grainId = activeGrain.grainId();
+      const activeGrain = getActiveGrain(globalGrains.get());
+      const grainId = activeGrain.grainId();
 
       Meteor.call('shutdownGrain', grainId, function(err) {
         if (err) {
           alert('Restart failed: ' + err); // TODO(someday): make this better UI
         } else {
-          var frames = document.getElementsByClassName('grain-frame');
-          for (var i = 0; i < frames.length; i++) {
-            var frame = frames[i];
+          const frames = document.getElementsByClassName('grain-frame');
+          for (let i = 0; i < frames.length; i++) {
+            const frame = frames[i];
             if (frame.dataset.grainid == grainId) {
               frame.src = frame.src;
             }
@@ -579,12 +604,12 @@ if (Meteor.isClient) {
 
   function selectElementContents(element) {
     if (document.body.createTextRange) {
-      var range = document.body.createTextRange();
+      const range = document.body.createTextRange();
       range.moveToElementText(element);
       range.select();
     } else if (window.getSelection) {
-      var selection = window.getSelection();
-      var range = document.createRange();
+      const selection = window.getSelection();
+      const range = document.createRange();
       range.selectNodeContents(element);
       selection.removeAllRanges();
       selection.addRange(range);
@@ -601,12 +626,12 @@ if (Meteor.isClient) {
     'focus .copy-me': selectTargetContents,
     'submit .newApiToken': function(event) {
       event.preventDefault();
-      var activeGrain = getActiveGrain(globalGrains.get());
-      var grainId = activeGrain.grainId();
+      const activeGrain = getActiveGrain(globalGrains.get());
+      const grainId = activeGrain.grainId();
       activeGrain.setGeneratedApiToken('pending');
-      var roleList = document.getElementById('api-token-role');
+      const roleList = document.getElementById('api-token-role');
       // TODO(cleanup): avoid using global ids; select a child of the current template instead
-      var assignment = {allAccess: null};
+      let assignment = {allAccess: null};
       if (roleList && roleList.selectedIndex > 0) {
         assignment = {roleId: roleList.selectedIndex - 1};
       }
@@ -626,7 +651,7 @@ if (Meteor.isClient) {
     },
 
     'click #resetApiToken': function(event) {
-      var activeGrain = getActiveGrain(globalGrains.get());
+      const activeGrain = getActiveGrain(globalGrains.get());
       activeGrain.setGeneratedApiToken(undefined);
     },
 
@@ -638,7 +663,7 @@ if (Meteor.isClient) {
     'click .token-petname': function(event) {
       // TODO(soon): Find a less-annoying way to get this input, perhaps by allowing the user
       //   to edit the petname in place.
-      var petname = window.prompt('Set new label:', this.petname);
+      const petname = window.prompt('Set new label:', this.petname);
       if (petname) {
         Meteor.call('updateApiToken', event.currentTarget.getAttribute('data-token-id'),
                     {petname: petname});
@@ -655,7 +680,7 @@ if (Meteor.isClient) {
 
     'click button.who-has-access': function(event, instance) {
       event.preventDefault();
-      var closer = globalTopbar.addItem({
+      const closer = globalTopbar.addItem({
         name: 'who-has-access',
         template: Template.whoHasAccess,
         popupTemplate: Template.whoHasAccessPopup,
@@ -676,7 +701,7 @@ if (Meteor.isClient) {
     this.find('[role=tab]').focus();
   });
 
-  var activateTargetTab = function(event, instance) {
+  const activateTargetTab = function(event, instance) {
     // Deactivate all tabs and all tab panels.
     instance.findAll('ul[role=tablist]>li[role=tab]').forEach(function(element) {
       element.setAttribute('aria-selected', false);
@@ -689,8 +714,8 @@ if (Meteor.isClient) {
     // Activate the tab header the user selected.
     event.currentTarget.setAttribute('aria-selected', true);
     // Show the corresponding tab panel.
-    var idToShow = event.currentTarget.getAttribute('aria-controls');
-    var tabPanelToShow = instance.find('#' + idToShow);
+    const idToShow = event.currentTarget.getAttribute('aria-controls');
+    const tabPanelToShow = instance.find('#' + idToShow);
     tabPanelToShow.setAttribute('aria-hidden', false);
   };
 
@@ -702,10 +727,10 @@ if (Meteor.isClient) {
         event.preventDefault();
       }
 
-      var focus = $(template.find(':focus'));
-      var items = template.$('[role=tab]:visible');
-      var focusIndex = items.index(focus);
-      var newFocusIndex;
+      const focus = $(template.find(':focus'));
+      const items = template.$('[role=tab]:visible');
+      const focusIndex = items.index(focus);
+      let newFocusIndex;
       if (event.keyCode == 37) { // left arrow
         event.preventDefault();
         newFocusIndex = focusIndex - 1;
@@ -734,10 +759,10 @@ if (Meteor.isClient) {
 
   Template.shareableLinkTab.events({
     'change .share-token-role': function(event, instance) {
-      var success = instance.completionState.get().success;
+      const success = instance.completionState.get().success;
       if (success) {
-        var roleList = event.target;
-        var assignment;
+        const roleList = event.target;
+        let assignment;
         if (roleList) {
           assignment = {roleId: roleList.selectedIndex};
         } else {
@@ -753,9 +778,9 @@ if (Meteor.isClient) {
     },
 
     'change .label': function(event, instance) {
-      var success = instance.completionState.get().success;
+      const success = instance.completionState.get().success;
       if (success) {
-        var label = event.target.value;
+        const label = event.target.value;
         Meteor.call('updateApiToken', success.id, {petname: label}, function(error) {
           if (error) {
             console.error(error.stack);
@@ -770,10 +795,10 @@ if (Meteor.isClient) {
         return;
       }
 
-      var currentGrain = getActiveGrain(globalGrains.get());
-      var grainId = currentGrain.grainId();
-      var roleList = event.target.getElementsByClassName('share-token-role')[0];
-      var assignment;
+      const currentGrain = getActiveGrain(globalGrains.get());
+      const grainId = currentGrain.grainId();
+      const roleList = event.target.getElementsByClassName('share-token-role')[0];
+      let assignment;
       if (roleList) {
         assignment = {roleId: roleList.selectedIndex};
       } else {
@@ -792,7 +817,7 @@ if (Meteor.isClient) {
           instance.completionState.set({success: result});
           // On the next render, .copy-me will exist, and we should focus it then.
           Meteor.defer(function() {
-            var element = instance.find('.copy-me');
+            const element = instance.find('.copy-me');
             element.focus();
             selectElementContents(element);
           });
@@ -810,8 +835,9 @@ if (Meteor.isClient) {
   Template.grainPowerboxRequestPopup.events({
     'submit #powerbox-request-form': function(event) {
       event.preventDefault();
-      var powerboxRequestInfo = this;
-      var identityId = getActiveGrain(globalGrains.get()).identityId();
+      const _this = this;
+      const powerboxRequestInfo = _this;
+      const identityId = getActiveGrain(globalGrains.get()).identityId();
       Meteor.call('finishPowerboxRequest', event.target.token.value, powerboxRequestInfo.saveLabel,
                   identityId, powerboxRequestInfo.grainId,
         function(err, token) {
@@ -832,7 +858,7 @@ if (Meteor.isClient) {
 
   Template.grainPowerboxOfferPopup.events({
     'click button.dismiss': function(event, instance) {
-      var sessionId = instance.data.sessionId;
+      const sessionId = instance.data.sessionId;
       if (sessionId) {
         Meteor.call('finishPowerboxOffer', sessionId, function(err) {
           // TODO(someday): display the error nicely to the user
@@ -862,8 +888,8 @@ if (Meteor.isClient) {
     },
 
     identityPickerData: function() {
-      var identities = SandstormDb.getUserIdentityIds(Meteor.user()).map(function(id) {
-        var identity = Meteor.users.findOne({_id: id});
+      const identities = SandstormDb.getUserIdentityIds(Meteor.user()).map(function(id) {
+        const identity = Meteor.users.findOne({_id: id});
         if (identity) {
           SandstormDb.fillInProfileDefaults(identity);
           SandstormDb.fillInIntrinsicName(identity);
@@ -872,7 +898,7 @@ if (Meteor.isClient) {
         }
       });
 
-      var grain = getActiveGrain(globalGrains.get());
+      const grain = getActiveGrain(globalGrains.get());
       return {identities: identities,
               onPicked: function(identityId) { grain.revealIdentity(identityId); }, };
     },
@@ -884,13 +910,13 @@ if (Meteor.isClient) {
     },
 
     isOwner: function() {
-      var current = getActiveGrain(globalGrains.get());
+      const current = getActiveGrain(globalGrains.get());
       return current && current.isOwner();
     },
 
     grainSize: function() {
-      var current = getActiveGrain(globalGrains.get());
-      var sizeBytes = current && current.size();
+      const current = getActiveGrain(globalGrains.get());
+      const sizeBytes = current && current.size();
       if (sizeBytes !== undefined) {
         return '(' + prettySize(sizeBytes) + ')';
       } else {
@@ -899,7 +925,7 @@ if (Meteor.isClient) {
     },
 
     setGrainWindowTitle:  function() {
-      var current = getActiveGrain(globalGrains.get());
+      const current = getActiveGrain(globalGrains.get());
       if (current) {
         current.updateDocumentTitle();
       }
@@ -911,9 +937,9 @@ if (Meteor.isClient) {
     },
 
     showPowerboxOffer: function() {
-      var current = getActiveGrain(globalGrains.get());
+      const current = getActiveGrain(globalGrains.get());
       if (current) {
-        var session = Sessions.findOne({_id: current.sessionId()}, {fields: {powerboxView: 1}});
+        const session = Sessions.findOne({_id: current.sessionId()}, {fields: {powerboxView: 1}});
         return session && session.powerboxView && !!session.powerboxView.offer;
       }
 
@@ -924,7 +950,7 @@ if (Meteor.isClient) {
 
   Template.grainTitle.helpers({
     title: function() {
-      var grain = getActiveGrain(globalGrains.get());
+      const grain = getActiveGrain(globalGrains.get());
       return (grain && grain.title()) || 'Untitled grain';
     },
   });
@@ -935,34 +961,39 @@ if (Meteor.isClient) {
     },
 
     existingTokens: function() {
-      var current = getActiveGrain(globalGrains.get());
-      return current && ApiTokens.find({grainId: current.grainId(),
-                                        identityId: current.identityId(),
-                                        forSharing: {$ne: true},
-                                        $or: [{owner: {webkey: null}},
-                                              {owner: {$exists: false}},],
-                                        expiresIfUnused: null, });
+      const current = getActiveGrain(globalGrains.get());
+      return current && ApiTokens.find({
+        grainId: current.grainId(),
+        identityId: current.identityId(),
+        forSharing: {$ne: true},
+        $or: [
+          {owner: {webkey: null}},
+          {owner: {$exists: false}},
+        ],
+        expiresIfUnused: null,
+      });
     },
 
     generatedApiToken: function() {
-      var current = getActiveGrain(globalGrains.get());
+      const current = getActiveGrain(globalGrains.get());
       return current && current.generatedApiToken();
     },
 
     generatedApiTokenPending: function() {
-      var current = getActiveGrain(globalGrains.get());
+      const current = getActiveGrain(globalGrains.get());
       return (current && current.generatedApiToken()) == 'pending';
     },
 
     viewInfo: function() {
-      var current = getActiveGrain(globalGrains.get());
+      const current = getActiveGrain(globalGrains.get());
       return current && current.viewInfo();
     },
   });
 
   Template.whoHasAccessPopup.onCreated(function() {
-    var instance = this;
-    var currentGrain = getActiveGrain(globalGrains.get());
+    const _this = this;
+    const instance = _this;
+    const currentGrain = getActiveGrain(globalGrains.get());
     instance.identityId = currentGrain.identityId();
     instance.grainId = currentGrain.grainId();
     instance.transitiveShares = new ReactiveVar(null);
@@ -972,15 +1003,15 @@ if (Meteor.isClient) {
         if (error) {
           console.error(error.stack);
         } else {
-          var sharesByRecipient = {};
+          const sharesByRecipient = {};
           downstream.forEach(function(token) {
             if (Match.test(token.owner, {user: Match.ObjectIncluding({identityId: String})})) {
-              var recipient = token.owner.user.identityId;
+              const recipient = token.owner.user.identityId;
               if (!sharesByRecipient[recipient]) {
                 sharesByRecipient[recipient] = {recipient: recipient, shares: []};
               }
 
-              var shares = sharesByRecipient[recipient].shares;
+              const shares = sharesByRecipient[recipient].shares;
               if (!shares.some(function(share) { return share.identityId === token.identityId; })) {
 
                 sharesByRecipient[recipient].shares.push(token);
@@ -988,7 +1019,7 @@ if (Meteor.isClient) {
             }
           });
 
-          var result = _.values(sharesByRecipient);
+          let result = _.values(sharesByRecipient);
           if (result.length == 0) {
             result = {empty: true};
           }
@@ -1003,8 +1034,8 @@ if (Meteor.isClient) {
 
   Template.whoHasAccessPopup.events({
     'change .share-token-role': function(event, instance) {
-      var roleList = event.target;
-      var assignment;
+      const roleList = event.target;
+      let assignment;
       if (roleList) {
         assignment = {roleId: roleList.selectedIndex};
       } else {
@@ -1028,7 +1059,7 @@ if (Meteor.isClient) {
     'click .token-petname': function(event) {
       // TODO(soon): Find a less-annoying way to get this input, perhaps by allowing the user
       //   to edit the petname in place.
-      var petname = window.prompt('Set new label:', this.petname);
+      const petname = window.prompt('Set new label:', this.petname);
       if (petname) {
         Meteor.call('updateApiToken', event.currentTarget.getAttribute('data-token-id'),
                     {petname: petname});
@@ -1041,7 +1072,7 @@ if (Meteor.isClient) {
       return true;
     }
 
-    for (var ii = 0; ii < permissionSet.length; ++ii) {
+    for (let ii = 0; ii < permissionSet.length; ++ii) {
       if (permissionSet[ii]) {
         return false;
       }
@@ -1053,12 +1084,15 @@ if (Meteor.isClient) {
   Template.whoHasAccessPopup.helpers({
     existingShareTokens: function() {
       if (Meteor.userId()) {
-        return ApiTokens.find({grainId: Template.instance().grainId,
-                               identityId: Template.instance().identityId,
-                               forSharing: true,
-                               $or: [{owner: {webkey:null}},
-                                     {owner: {$exists: false}},],
-                              }).fetch();
+        return ApiTokens.find({
+          grainId: Template.instance().grainId,
+          identityId: Template.instance().identityId,
+          forSharing: true,
+          $or: [
+            {owner: {webkey:null}},
+            {owner: {$exists: false}},
+          ],
+        }).fetch();
       }
     },
 
@@ -1071,7 +1105,7 @@ if (Meteor.isClient) {
     },
 
     displayName: function(identityId) {
-      var name = DisplayNames.findOne(identityId);
+      const name = DisplayNames.findOne(identityId);
       if (name) {
         return name.displayName;
       } else {
@@ -1084,11 +1118,11 @@ if (Meteor.isClient) {
     },
 
     indexedRoles: function() {
-      var result = [];
-      var instance = Template.instance();
-      var currentGrain = getActiveGrain(globalGrains.get());
-      var roles = currentGrain.viewInfo().roles;
-      for (var ii = 0; ii < roles.length; ++ii) {
+      const result = [];
+      const instance = Template.instance();
+      const currentGrain = getActiveGrain(globalGrains.get());
+      const roles = currentGrain.viewInfo().roles;
+      for (let ii = 0; ii < roles.length; ++ii) {
         result.push({idx: ii, title: roles[ii].title, verbPhrase: roles[ii].verbPhrase});
       }
 
@@ -1104,7 +1138,7 @@ if (Meteor.isClient) {
     },
 
     hasCustomRole: function(token) {
-      var role = token.roleAssignment;
+      const role = token.roleAssignment;
       if ('roleId' in role &&
           isEmptyPermissionSet(role.addPermissions) &&
           isEmptyPermissionSet(role.removePermissions)) {
@@ -1115,7 +1149,7 @@ if (Meteor.isClient) {
     },
 
     hasCurrentRole: function(token) {
-      var role = token.roleAssignment;
+      const role = token.roleAssignment;
       if ('roleId' in role && role.roleId == this.idx &&
           isEmptyPermissionSet(role.addPermissions) &&
           isEmptyPermissionSet(role.removePermissions)) {
@@ -1130,7 +1164,7 @@ if (Meteor.isClient) {
     },
 
     viewInfo: function() {
-      var activeGrain = getActiveGrain(globalGrains.get());
+      const activeGrain = getActiveGrain(globalGrains.get());
       return activeGrain && activeGrain.viewInfo();
     },
   });
@@ -1156,13 +1190,13 @@ if (Meteor.isClient) {
 
   Template.shareableLinkTab.helpers({
     completionState: function() {
-      var instance = Template.instance();
+      const instance = Template.instance();
       return instance.completionState.get();
     },
   });
   Template.emailInviteTab.helpers({
     completionState: function() {
-      var instance = Template.instance();
+      const instance = Template.instance();
       return instance.completionState.get();
     },
 
@@ -1183,30 +1217,30 @@ if (Meteor.isClient) {
         return;
       }
 
-      var grainId = instance.data.grainId;
-      var title = instance.data.title;
+      const grainId = instance.data.grainId;
+      const title = instance.data.title;
 
-      var roleList = instance.find('.share-token-role');
-      var assignment;
+      const roleList = instance.find('.share-token-role');
+      let assignment;
       if (roleList) {
         assignment = {roleId: roleList.selectedIndex};
       } else {
         assignment = {none: null};
       }
 
-      var message = instance.find('.personal-message').value;
+      const message = instance.find('.personal-message').value;
       instance.completionState.set({pending: true});
 
-      var currentGrain = getActiveGrain(globalGrains.get());
+      const currentGrain = getActiveGrain(globalGrains.get());
 
       // HTML-escape the message.
-      var div = document.createElement('div');
+      const div = document.createElement('div');
       div.appendChild(document.createTextNode(message));
-      var htmlMessage = div.innerHTML.replace(/\n/g, '<br>');
+      const htmlMessage = div.innerHTML.replace(/\n/g, '<br>');
 
-      var contacts = instance.contacts.get();
-      var emails = instance.find('input.emails');
-      var emailsValue = emails.value;
+      const contacts = instance.contacts.get();
+      const emails = instance.find('input.emails');
+      const emailsValue = emails.value;
       if (emailsValue) {
         if (emailsValue.match(/.+\@.+\..+/)) {
           contacts.push({
@@ -1235,15 +1269,15 @@ if (Meteor.isClient) {
           instance.completionState.set({error: error.toString()});
         } else {
           if (result.failures.length > 0) {
-            var message = 'Failed to send to: ';
-            for (var ii = 0; ii < result.failures.length; ++ii) {
+            let message = 'Failed to send to: ';
+            for (let ii = 0; ii < result.failures.length; ++ii) {
               console.error(result.failures[ii].error);
               if (ii != 0) {
                 message += ', ';
               }
 
               message += result.failures[ii].contact.profile.name;
-              var warning = result.failures[ii].warning;
+              let warning = result.failures[ii].warning;
               if (warning) {
                 message += '. ' + warning;
               }
@@ -1276,15 +1310,15 @@ if (Meteor.isClient) {
         return this.powerboxOfferUrl;
       }
 
-      var activeGrain = getActiveGrain(globalGrains.get());
-      var session = Sessions.findOne({_id: activeGrain.sessionId()}, {fields: {powerboxView: 1}});
+      const activeGrain = getActiveGrain(globalGrains.get());
+      const session = Sessions.findOne({_id: activeGrain.sessionId()}, {fields: {powerboxView: 1}});
       return session && session.powerboxView && session.powerboxView.offer;
     },
   });
 
   // Send a keep-alive for each grain every now and then.
   Meteor.setInterval(function() {
-    var grains = globalGrains.get();
+    const grains = globalGrains.get();
     if (!grains) return;
 
     // Meteor has an exponential backoff of up to 5 minutes for reconnect. This is unnacceptable
@@ -1308,7 +1342,7 @@ if (Meteor.isClient) {
 
   // Message handler for Sandstorm's client-side postMessage API.
   Meteor.startup(function() {
-    var messageListener = function(event) {
+    const messageListener = function(event) {
       if (event.origin === getOrigin()) {
         // Meteor likes to postMessage() to itself sometimes, so we ignore these messages.
         return;
@@ -1316,18 +1350,18 @@ if (Meteor.isClient) {
 
       // Look up the grain index of which grain this postmessage came from, so we can map behavior
       // into that particular grain's state
-      var grains = globalGrains.get();
-      var senderGrainIndex = grainOriginToIndex(grains, event.origin);
+      const grains = globalGrains.get();
+      const senderGrainIndex = grainOriginToIndex(grains, event.origin);
       if (senderGrainIndex == -1) {
         // We got a postMessage from an origin that is not a grain we currently believe is open.
         // Ignore it. (It may be aimed at some other message listener registered elsewhere...)
         return;
       }
 
-      var senderGrain = grains[senderGrainIndex];
+      const senderGrain = grains[senderGrainIndex];
 
       if (event.data.setPath || event.data.setPath === '') {
-        var path = event.data.setPath || '/';
+        const path = event.data.setPath || '/';
         check(path, String);
         check(path.charAt(0), '/');
         // TODO(security): More sanitization of this path. E.g. reject "/../../".
@@ -1336,7 +1370,7 @@ if (Meteor.isClient) {
         // Allow the current grain to request that the "Share Access" menu be shown.
         // Only show this popup if no other popup is currently active.
         // TODO(security): defend against malicious apps spamming this call, blocking all other UI.
-        var currentGrain = getActiveGrain(globalGrains.get());
+        const currentGrain = getActiveGrain(globalGrains.get());
         if (senderGrain === currentGrain && !globalTopbar.isPopupOpen()) {
           globalTopbar.openPopup('share');
         }
@@ -1351,9 +1385,9 @@ if (Meteor.isClient) {
         // privileged token contained within.  By providing this templating in
         // the platform, we can ensure that the token is only visible to the
         // shell's origin.
-        var call = event.data.renderTemplate;
+        const call = event.data.renderTemplate;
         check(call, Object);
-        var rpcId = call.rpcId;
+        const rpcId = call.rpcId;
         try {
           check(call, {rpcId: String, template: String, petname: Match.Optional(String),
                        roleAssignment: Match.Optional(roleAssignmentPattern),
@@ -1363,44 +1397,48 @@ if (Meteor.isClient) {
           return;
         }
 
-        var template = call.template;
-        var petname = 'connected external app';
+        const template = call.template;
+        let petname = 'connected external app';
         if (call.petname) {
           petname = call.petname;
         }
 
-        var assignment = {allAccess: null};
+        let assignment = {allAccess: null};
         if (call.roleAssignment) {
           assignment = call.roleAssignment;
         }
 
-        var forSharing = call.forSharing ? call.forSharing : false;
+        const forSharing = call.forSharing ? call.forSharing : false;
         // Tokens expire by default in 5 minutes from generation date
-        var selfDestructDuration = 5 * 60 * 1000;
+        const selfDestructDuration = 5 * 60 * 1000;
 
-        var provider;
+        let provider;
         if (Router.current().route.getName() === 'shared') {
           provider = {rawParentToken: Router.current().params.token};
         } else {
           provider = {identityId: senderGrain.identityId()};
         }
 
-        var owner = {webkey: {forSharing: forSharing,
-                              expiresIfUnusedDuration: selfDestructDuration, }, };
+        const owner = {
+          webkey: {
+            forSharing: forSharing,
+            expiresIfUnusedDuration: selfDestructDuration,
+          },
+        };
 
         Meteor.call('newApiToken', provider, senderGrain.grainId(), petname, assignment, owner,
                     function(error, result) {
           if (error) {
             event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
           } else {
-            var tokenId = result.token;
+            const tokenId = result.token;
             // Generate random key id2.
-            var id2 = Random.secret();
+            const id2 = Random.secret();
             // Store apitoken id1 and template in session storage in the offer
             // template namespace under key id2.
-            var key = 'offerTemplate' + id2;
-            var renderedTemplate = template.replace(/\$API_TOKEN/g, tokenId)
-                                           .replace(/\$API_HOST/g, makeWildcardHost('api'));
+            const key = 'offerTemplate' + id2;
+            const renderedTemplate = template.replace(/\$API_TOKEN/g, tokenId)
+                                             .replace(/\$API_HOST/g, makeWildcardHost('api'));
             sessionStorage.setItem(key, JSON.stringify({
                 token: tokenId,
                 renderedTemplate: renderedTemplate,
@@ -1416,11 +1454,11 @@ if (Meteor.isClient) {
         });
       } else if (event.data.powerboxRequest) {
         // TODO(now): make this work with GrainView
-        var powerboxRequest = event.data.powerboxRequest;
+        const powerboxRequest = event.data.powerboxRequest;
         check(powerboxRequest, Object);
-        var rpcId = powerboxRequest.rpcId;
+        const rpcId = powerboxRequest.rpcId;
 
-        var powerboxRequestInfo = {
+        const powerboxRequestInfo = {
           source: event.source,
           rpcId: rpcId,
           grainId: senderGrain.grainId(),
@@ -1456,7 +1494,7 @@ if (Meteor.isClient) {
 
 if (Meteor.isClient) {
   function maybeScrollLog() {
-    var elem = document.getElementById('grainLog');
+    const elem = document.getElementById('grainLog');
     if (elem) {
       // The log already exists. It's about to be updated. Check if it's scrolled to the bottom
       // before the update.
@@ -1468,7 +1506,7 @@ if (Meteor.isClient) {
       // No element exists yet, but it's probably about to be created, in which case we definitely
       // want to scroll it.
       Tracker.afterFlush(function() {
-        var elem2 = document.getElementById('grainLog');
+        const elem2 = document.getElementById('grainLog');
         if (elem2) scrollLogToBottom(elem2);
       });
     }
@@ -1480,9 +1518,9 @@ if (Meteor.isClient) {
 }
 
 function makeGrainIdActive(grainId) {
-  var grains = globalGrains.get();
-  for (var i = 0; i < grains.length; i++) {
-    var grain = grains[i];
+  const grains = globalGrains.get();
+  for (let i = 0; i < grains.length; i++) {
+    const grain = grains[i];
     if (grain.grainId() === grainId) {
       if (!grain.isActive()) {
         grain.setActive(true);
@@ -1496,12 +1534,12 @@ function makeGrainIdActive(grainId) {
 }
 
 function getActiveGrain(grains) {
-  var idx = activeGrainIndex(grains);
+  const idx = activeGrainIndex(grains);
   return idx == -1 ? undefined : grains[idx];
 }
 
 function activeGrainIndex(grains) {
-  for (var i = 0; i < grains.length; i++) {
+  for (let i = 0; i < grains.length; i++) {
     if (grains[i].isActive()) {
       return i;
     }
@@ -1511,7 +1549,7 @@ function activeGrainIndex(grains) {
 }
 
 function grainOriginToIndex(grains, origin) {
-  for (var i = 0; i < grains.length; i++) {
+  for (let i = 0; i < grains.length; i++) {
     if (grains[i].origin() === origin) {
       return i;
     }
@@ -1521,8 +1559,8 @@ function grainOriginToIndex(grains, origin) {
 }
 
 function grainIdToIndex(grains, grainId) {
-  for (var i = 0; i < grains.length; i++) {
-    var grain = grains[i];
+  for (let i = 0; i < grains.length; i++) {
+    const grain = grains[i];
     if (grains[i].grainId() === grainId) {
       return i;
     }
@@ -1532,7 +1570,7 @@ function grainIdToIndex(grains, grainId) {
 }
 
 function mapGrainStateToTemplateData(grainState) {
-  var templateData = {
+  const templateData = {
     grainId: grainState.grainId(),
     active: grainState.isActive(),
     title: grainState.title(),
@@ -1601,19 +1639,19 @@ Router.map(function() {
 
       this.state.set('beforeActionHookRan', true);
 
-      var grainId = this.params.grainId;
-      var path = '/' + (this.params.path || '') + (this.originalUrl.match(/[#?].*$/) || '');
-      var grains = globalGrains.get();
-      var grainIndex = grainIdToIndex(grains, grainId);
+      const grainId = this.params.grainId;
+      const path = '/' + (this.params.path || '') + (this.originalUrl.match(/[#?].*$/) || '');
+      const grains = globalGrains.get();
+      let grainIndex = grainIdToIndex(grains, grainId);
       if (grainIndex == -1) {
         // The element we need to attach our Blaze view to may not exist yet.
         // In that case, defer creating the GrainView until we're sure it's
         // had a chance to render.
-        var openView = function openView() {
-          var mainContentElement = document.querySelector('body>.main-content');
+        const openView = function openView() {
+          const mainContentElement = document.querySelector('body>.main-content');
           if (mainContentElement) {
-            var grains = globalGrains.get();
-            var grainToOpen = new GrainView(grainId, path, undefined, mainContentElement);
+            const grains = globalGrains.get();
+            const grainToOpen = new GrainView(grainId, path, undefined, mainContentElement);
             grainToOpen.openSession();
             grainIndex = grains.push(grainToOpen) - 1;
             globalGrains.set(grains);
@@ -1651,7 +1689,7 @@ Router.map(function() {
         Meteor.subscribe('devPackages'),
         Meteor.subscribe('tokenInfo', this.params.token),
 
-        Meteor.subscribe('grainsMenu')
+        Meteor.subscribe('grainsMenu'),
         // This subscription gives us the data we need for deciding whether to automatically reveal
         // our identity.
         // TODO(soon): Subscribe to contacts instead.
@@ -1666,21 +1704,21 @@ Router.map(function() {
 
       this.state.set('beforeActionHookRan', true);
 
-      var token = this.params.token;
-      var path = '/' + (this.params.path || '') + (this.originalUrl.match(/[#?].*$/) || '');
-      var hash = this.params.hash;
+      const token = this.params.token;
+      const path = '/' + (this.params.path || '') + (this.originalUrl.match(/[#?].*$/) || '');
+      const hash = this.params.hash;
 
-      var tokenInfo = TokenInfo.findOne({_id: token});
+      const tokenInfo = TokenInfo.findOne({_id: token});
       if (tokenInfo && tokenInfo.apiToken) {
-        var grainId = tokenInfo.apiToken.grainId;
-        var grains = globalGrains.get();
-        var grainIndex = grainIdToIndex(grains, grainId);
+        const grainId = tokenInfo.apiToken.grainId;
+        const grains = globalGrains.get();
+        let grainIndex = grainIdToIndex(grains, grainId);
         if (grainIndex == -1) {
-          var openView = function openView() {
-            var mainContentElement = document.querySelector('body>.main-content');
+          const openView = function openView() {
+            const mainContentElement = document.querySelector('body>.main-content');
             if (mainContentElement) {
-              var grains = globalGrains.get();
-              var grainToOpen = new GrainView(grainId, path, token, mainContentElement);
+              const grains = globalGrains.get();
+              const grainToOpen = new GrainView(grainId, path, token, mainContentElement);
               grainToOpen.openSession();
               grainIndex = grains.push(grainToOpen) - 1;
               globalGrains.set(grains);
@@ -1734,9 +1772,10 @@ Router.map(function() {
     },
 
     data: function() {
+      // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
       if (this.ready()) {
         maybeScrollLog();
-        var grain = Grains.findOne(this.params.grainId);
+        const grain = Grains.findOne(this.params.grainId);
         return {
           title: grain ? grain.title : '(deleted grain)',
           html: AnsiUp.ansi_to_html(GrainLog.find({}, {$sort: {_id: 1}})
@@ -1744,6 +1783,7 @@ Router.map(function() {
               .join(''), {use_classes:true}),
         };
       }
+      // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
     },
   });
 

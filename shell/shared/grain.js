@@ -1218,7 +1218,6 @@ if (Meteor.isClient) {
       if (grain.sessionId()) {
         // TODO(soon):  Investigate what happens in background tabs.  Maybe arrange to re-open the
         //   app if it dies while in the background.
-        console.log("keepalive: ", new Date());
         Meteor.call("keepSessionAlive", grain.sessionId(), function (error, result) {
           // Sessions will automatically resume if possible, otherwise they will refresh.
         });
@@ -1509,7 +1508,6 @@ Router.map(function () {
       // Run this hook only once.
       if (this.state.get("beforeActionHookRan")) { return this.next(); }
       this.state.set("beforeActionHookRan", true);
-
       var grainId = this.params.grainId;
       var path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
       var grains = globalGrains.get();

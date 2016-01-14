@@ -459,6 +459,13 @@ SandstormTopbar.prototype.addItem = function (item) {
     throw new Error("duplicate top bar item name:", item.name);
   }
 
+  // We need inline style to convert the topbar "priority" into an "order" for the flexbox.
+  item.inlineStyle = "";
+  if (item.priority) {
+    item.inlineStyle = 'order: ' + item.priority + ';'
+  }
+
+
   this._items[item.name] = item;
   this._itemsTracker.changed();
 

@@ -203,6 +203,7 @@ body>.topbar {
     overflow: hidden;
     @media #{$desktop} {
       height: $topbar-height-desktop;
+      display: flex;
     }
 
     >.home-button {
@@ -366,7 +367,8 @@ body>.topbar {
 
     >.notifications {
       @media #{$desktop} {
-        float: right;
+        // The notification bell and everything after it are right-aligned.
+        margin-left: auto;
       }
 
       @media #{$mobile} {
@@ -416,9 +418,6 @@ body>.topbar {
       }
 
       @media #{$desktop} {
-        float: right;
-        display: block;
-
         >button.show-popup {
           >a {
             padding: 0 8px;

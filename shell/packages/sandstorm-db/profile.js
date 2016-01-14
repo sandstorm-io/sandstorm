@@ -49,6 +49,7 @@ if (Meteor.isServer) {
         "profile":1,
         "unverifiedEmail":1,
         "expires": 1,
+        "createdAt": 1,
 
         "services.dev.name":1,
 
@@ -202,7 +203,7 @@ SandstormDb.fillInIntrinsicName = function(user) {
   } else if (profile.service === "dev") {
     profile.intrinsicName = user.services.dev.name;
   } else if (profile.service === "demo") {
-    // No intrinsic name.
+    profile.intrinsicName = "demo on " + user.createdAt.toISOString().substring(0,10);
   } else {
     throw new Error("unrecognized identity service: ", profile.service);
   }

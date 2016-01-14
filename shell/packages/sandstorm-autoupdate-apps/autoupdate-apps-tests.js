@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var Crypto = Npm.require("crypto");
+var Crypto = Npm.require('crypto');
 
 var globalDb = new SandstormDb();
 // TODO(cleanup): Use a lightweight fake (minimongo-based?) database here and construct a clean
@@ -28,91 +28,92 @@ Meteor.users.remove({});
 // Note that `meteor test-packages` starts with a fresh Mongo instance. That instance, however,
 // does not automatically get cleared on hot code reload.
 
-globalDb.collections.settings.upsert({_id: "appMarketUrl"},
-                                     {$set: {value: "https://apps.sandstorm.io"}});
-globalDb.collections.settings.upsert({_id: "appIndexUrl"},
-                                     {$set: {value: "https://app-index.sandstorm.io"}});
-globalDb.collections.settings.upsert({_id: "appUpdatesEnabled"},
+globalDb.collections.settings.upsert({_id: 'appMarketUrl'},
+                                     {$set: {value: 'https://apps.sandstorm.io'}});
+globalDb.collections.settings.upsert({_id: 'appIndexUrl'},
+                                     {$set: {value: 'https://app-index.sandstorm.io'}});
+globalDb.collections.settings.upsert({_id: 'appUpdatesEnabled'},
                                      {$set: {value: true}});
 
-var aliceUserId = Accounts.insertUserDoc({profile: {name: "Alice"},
-                                          service: {dev: {name: "alice" + Crypto.randomBytes(10).toString("hex")}}},
+var aliceUserId = Accounts.insertUserDoc({profile: {name: 'Alice'},
+                                          service: {dev: {name: 'alice' + Crypto.randomBytes(10).toString('hex')}}, },
                                          {});
-var bobUserId = Accounts.insertUserDoc({profile: {name: "Bob"},
-                                        service: {dev: {name: "Bob" + Crypto.randomBytes(10).toString("hex")}}},
+var bobUserId = Accounts.insertUserDoc({profile: {name: 'Bob'},
+                                        service: {dev: {name: 'Bob' + Crypto.randomBytes(10).toString('hex')}}, },
                                        {});
 
-var packageV0 = { _id: "mock-package-id1",
-  status: "ready",
+var packageV0 = { _id: 'mock-package-id1',
+  status: 'ready',
   progress: 1,
   isAutoUpdated: false,
   error: null,
   manifest:
    { minApiVersion: 0,
      maxApiVersion: 0,
-     appMarketingVersion: { defaultText: "0.1" },
-     appTitle: { defaultText: "Mock App" },
+     appMarketingVersion: { defaultText: '0.1' },
+     appTitle: { defaultText: 'Mock App' },
      actions: [{
        input: { none: null },
-       title: { defaultText: "New Mock App" } }],
+       title: { defaultText: 'New Mock App' }, }, ],
      appVersion: 0,
-     minUpgradableAppVersion: 0 },
-  appId: "mock-app-id",
+     minUpgradableAppVersion: 0, },
+  appId: 'mock-app-id',
 };
 
-var packageV1 = { _id: "mock-package-id2",
-  status: "ready",
+var packageV1 = { _id: 'mock-package-id2',
+  status: 'ready',
   progress: 1,
   isAutoUpdated: false,
   error: null,
   manifest:
    { minApiVersion: 0,
      maxApiVersion: 0,
-     appMarketingVersion: { defaultText: "0.2" },
-     appTitle: { defaultText: "Mock App" },
-     actions: [{title: { defaultText: "New Mock App" } }],
+     appMarketingVersion: { defaultText: '0.2' },
+     appTitle: { defaultText: 'Mock App' },
+     actions: [{title: { defaultText: 'New Mock App' } }],
      appVersion: 2,
-     minUpgradableAppVersion: 0 },
-  appId: "mock-app-id",
+     minUpgradableAppVersion: 0, },
+  appId: 'mock-app-id',
 };
 
 globalDb.collections.packages.insert(packageV0);
 globalDb.collections.packages.insert(packageV1);
 
 function stubUser(test, userId) {
-  test.stub(Meteor, "userId", function() {
+  test.stub(Meteor, 'userId', function() {
     return userId;
   });
 }
 
-Tinytest.add("test update notifications", function (test) {
+Tinytest.add('test update notifications', function(test) {
   globalDb.collections.appIndex.remove({});
   globalDb.collections.userActions.remove({});
   globalDb.collections.notifications.remove({});
 
-  sinon.test(function (test2) {
-    this.stub(Meteor, "call", function() {});
+  sinon.test(function(test2) {
+    this.stub(Meteor, 'call', function() {});
+
     stubUser(this, aliceUserId);
-    this.stub(HTTP, "get", function () {
+    this.stub(HTTP, 'get', function() {
       return {data: { apps: [{
-        appId: "mock-app-id",
+        appId: 'mock-app-id',
         versionNumber: 1,
-        version: "0.2",
-        packageId: "mock-package-id2",
-        name: "Mock App",
-      }]}};
+        version: '0.2',
+        packageId: 'mock-package-id2',
+        name: 'Mock App',
+      }, ], }, };
     });
 
-    globalDb.addUserActions("mock-package-id1");
+    globalDb.addUserActions('mock-package-id1');
     SandstormAutoupdateApps.updateAppIndex(globalDb);
   })(test);
 
   // This blocking call to findOne was having some weird interaction with sinon.test. I've moved it,
   // and the rest of the test out of the sinon.test block.
   var notification = globalDb.collections.notifications.findOne();
-  var appUpdate = notification.appUpdates["mock-app-id"];
+  var appUpdate = notification.appUpdates['mock-app-id'];
   test.isNotNull(appUpdate);
-  test.equal(appUpdate.name, "Mock App");
-  test.equal(appUpdate.marketingVersion, "0.2");
+  test.equal(appUpdate.name, 'Mock App');
+  test.equal(appUpdate.marketingVersion, '0.2');
 });
 

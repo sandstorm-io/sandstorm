@@ -1,1 +1,1 @@
-this.Connect = Npm.require("connect");
+this.Connect = Npm.require('connect');

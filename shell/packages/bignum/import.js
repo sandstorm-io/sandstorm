@@ -1,1 +1,1 @@
-this.Bignum = Npm.require("bignum");
+this.Bignum = Npm.require('bignum');

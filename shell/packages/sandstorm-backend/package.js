@@ -15,13 +15,13 @@
 // limitations under the License.
 
 Package.describe({
-  summary: "Sandstorm package for interacting with the backend.",
-  version: "0.1.0"
+  summary: 'Sandstorm package for interacting with the backend.',
+  version: '0.1.0',
 });
 
-Package.onUse(function (api) {
-  api.use(["accounts-base", "sandstorm-db", "sandstorm-permissions"], ["server"]);
-  api.addFiles(["sandstorm-backend.js"], ["server"]);
-  api.export("SandstormBackend");
+Package.onUse(function(api) {
+  api.use(['accounts-base', 'sandstorm-db', 'sandstorm-permissions'], ['server']);
+  api.addFiles(['sandstorm-backend.js'], ['server']);
+  api.export('SandstormBackend');
 });
 

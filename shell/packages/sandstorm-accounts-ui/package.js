@@ -1,12 +1,12 @@
 Package.describe({
-  summary: "Sandstorm fork of accounts-ui",
-  version: "0.1.0"
+  summary: 'Sandstorm fork of accounts-ui',
+  version: '0.1.0',
 });
 
-Package.onUse(function (api) {
+Package.onUse(function(api) {
   api.use(['check', 'tracker', 'service-configuration', 'accounts-base',
-           'underscore', 'templating', 'session', 'http', 'sandstorm-db'], 'client');
-  api.use(['check', 'accounts-base', "accounts-identity"], 'server');
+           'underscore', 'templating', 'session', 'http', 'sandstorm-db', ], 'client');
+  api.use(['check', 'accounts-base', 'accounts-identity'], 'server');
 
   // Export Accounts (etc) to packages using this one.
   api.imply('accounts-base', ['client', 'server']);
@@ -33,10 +33,10 @@ Package.onUse(function (api) {
     'account-settings.js',
     'accounts-ui-methods.js',
 
-    'accounts_ui.js'], 'client');
+    'accounts_ui.js', ], 'client');
 
-  api.addFiles(["accounts-ui-server.js", "accounts-ui-methods.js"], "server");
+  api.addFiles(['accounts-ui-server.js', 'accounts-ui-methods.js'], 'server');
 
-  api.export("AccountsUi");
-  api.export("SandstormAccountSettingsUi");
+  api.export('AccountsUi');
+  api.export('SandstormAccountSettingsUi');
 });

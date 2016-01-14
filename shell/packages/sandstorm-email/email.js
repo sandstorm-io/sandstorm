@@ -4,8 +4,8 @@ var MailComposer = Npm.require('mailcomposer').MailComposer;
 
 SandstormEmail = {};
 
-var getSmtpUrl = function () {
-  var setting = Settings.findOne({_id: "smtpUrl"});
+var getSmtpUrl = function() {
+  var setting = Settings.findOne({_id: 'smtpUrl'});
   if (setting) {
     return setting.value;
   } else {
@@ -13,10 +13,10 @@ var getSmtpUrl = function () {
   }
 };
 
-var makePool = function (mailUrlString) {
+var makePool = function(mailUrlString) {
   var mailUrl = urlModule.parse(mailUrlString);
   if (mailUrl.protocol !== 'smtp:')
-    throw new Error("Email protocol in $MAIL_URL (" +
+    throw new Error('Email protocol in $MAIL_URL (' +
                     mailUrlString + ") must be 'smtp'");
 
   var port = +(mailUrl.port);
@@ -24,7 +24,7 @@ var makePool = function (mailUrlString) {
   if (mailUrl.auth) {
     var parts = mailUrl.auth.split(':', 2);
     auth = {user: parts[0],
-            pass: parts[1]};
+            pass: parts[1], };
   }
 
   var simplesmtp = Npm.require('simplesmtp');
@@ -33,7 +33,7 @@ var makePool = function (mailUrlString) {
     mailUrl.hostname,  // Defaults to "localhost"
     { secureConnection: (port === 465),
       // XXX allow maxConnections to be configured?
-      auth: auth });
+      auth: auth, });
 
   pool._future_wrapped_sendMail = _.bind(Future.wrap(pool.sendMail), pool);
   return pool;
@@ -45,23 +45,25 @@ var pool;
 var configured = false;
 
 Meteor.startup(function() {
-  Settings.find({_id: "smtpUrl"}).observeChanges({
-    removed : function () {
+  Settings.find({_id: 'smtpUrl'}).observeChanges({
+    removed: function() {
       configured = false;
     },
-    changed : function () {
+
+    changed: function() {
       configured = false;
     },
-    added : function () {
+
+    added: function() {
       configured = false;
-    }
+    },
   });
 
   // Accounts.emailToken is set to use "Email" by default. Change it to use our mail service.
-  Accounts.emailToken.setEmailPackage("SandstormEmail");
+  Accounts.emailToken.setEmailPackage('SandstormEmail');
 });
 
-var getPool = function (smtpUrl) {
+var getPool = function(smtpUrl) {
   if (smtpUrl) {
     return makePool(smtpUrl);
   } else if (!configured) {
@@ -78,26 +80,27 @@ var getPool = function (smtpUrl) {
 var next_devmode_mail_id = 0;
 var output_stream = process.stdout;
 
-var devModeSend = function (mc) {
+var devModeSend = function(mc) {
   var devmode_mail_id = next_devmode_mail_id++;
 
   var stream = output_stream;
 
   // This approach does not prevent other writers to stdout from interleaving.
-  stream.write("====== BEGIN MAIL #" + devmode_mail_id + " ======\n");
-  stream.write("(Mail not sent; to enable sending, set the MAIL_URL " +
-               "environment variable.)\n");
+  stream.write('====== BEGIN MAIL #' + devmode_mail_id + ' ======\n');
+  stream.write('(Mail not sent; to enable sending, set the MAIL_URL ' +
+               'environment variable.)\n');
   mc.streamMessage();
   mc.pipe(stream, {end: false});
   var future = new Future;
-  mc.on('end', function () {
-    stream.write("====== END MAIL #" + devmode_mail_id + " ======\n");
+  mc.on('end', function() {
+    stream.write('====== END MAIL #' + devmode_mail_id + ' ======\n');
     future['return']();
   });
+
   future.wait();
 };
 
-var smtpSend = function (pool, mc) {
+var smtpSend = function(pool, mc) {
   pool._future_wrapped_sendMail(mc).wait();
 };
 
@@ -137,7 +140,7 @@ var smtpSend = function (pool, mc) {
  * @param {Object} [options.headers] Dictionary of custom headers
  * @param {String} [options.smtpUrl] SMTP server to use. Otherwise defaults to configured one.
  */
-SandstormEmail.send = function (options) {
+SandstormEmail.send = function(options) {
   var mc = new MailComposer();
 
   // setup message data
@@ -151,10 +154,10 @@ SandstormEmail.send = function (options) {
     replyTo: options.replyTo,
     subject: options.subject,
     text: options.text,
-    html: options.html
+    html: options.html,
   });
 
-  _.each(options.headers, function (value, name) {
+  _.each(options.headers, function(value, name) {
     mc.addHeader(name, value);
   });
 
@@ -170,15 +173,15 @@ SandstormEmail.send = function (options) {
  * @param {Object} mc A MailCompser object that you wish to send
  * @param {String} smtpUrl SMTP server to use. If falsey, defaults to configured one.
 */
-SandstormEmail.rawSend = function (mc, smtpUrl) {
+SandstormEmail.rawSend = function(mc, smtpUrl) {
   // SimpleSmtp does not add leading dots, so we need to.
   // See http://tools.ietf.org/html/rfc5321#section-4.5.2
-  mc._message.body = mc._message.body.replace(/(^|\n)\./g, "$1..");
+  mc._message.body = mc._message.body.replace(/(^|\n)\./g, '$1..');
 
   var pool = getPool(smtpUrl);
   if (pool) {
     smtpSend(pool, mc);
   } else {
-    throw new Error("SMTP pool is misconfigured.");
+    throw new Error('SMTP pool is misconfigured.');
   }
 };

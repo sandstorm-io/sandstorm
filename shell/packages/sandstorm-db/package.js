@@ -15,20 +15,20 @@
 // limitations under the License.
 
 Package.describe({
-  summary: "Sandstorm database layer",
-  version: "0.1.0"
+  summary: 'Sandstorm database layer',
+  version: '0.1.0',
 });
 
-Npm.depends({ "content-type": "1.0.1" });
+Npm.depends({ 'content-type': '1.0.1' });
 
-Package.onUse(function (api) {
-  api.use(["mongo", "random", "check", "underscore"], ["client", "server"]);
-  api.use(["accounts-base", "fongandrew:find-and-modify", "http"], ["server"]);
-  api.use(["sandstorm-identicons"], ["client"]);
+Package.onUse(function(api) {
+  api.use(['mongo', 'random', 'check', 'underscore'], ['client', 'server']);
+  api.use(['accounts-base', 'fongandrew:find-and-modify', 'http'], ['server']);
+  api.use(['sandstorm-identicons'], ['client']);
 
-  api.addFiles(["db.js", "profile.js"]);
-  api.addFiles(["user.js", "migrations.js"], "server");
-  api.export("SandstormDb");
+  api.addFiles(['db.js', 'profile.js']);
+  api.addFiles(['user.js', 'migrations.js'], 'server');
+  api.export('SandstormDb');
 });
 
 // TODO(test): tests

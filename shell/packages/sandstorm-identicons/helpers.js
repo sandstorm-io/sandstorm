@@ -1,6 +1,6 @@
-var VALID_USAGES = ["appGrid", "grain"];
+var VALID_USAGES = ['appGrid', 'grain'];
 var checkUsage = function(usage) {
-  if (VALID_USAGES.indexOf(usage) === -1) throw new Error("Invalid icon usage.");
+  if (VALID_USAGES.indexOf(usage) === -1) throw new Error('Invalid icon usage.');
 };
 
 var iconFromManifest = function(manifest, usage) {
@@ -8,71 +8,77 @@ var iconFromManifest = function(manifest, usage) {
   var icons = manifest && manifest.metadata && manifest.metadata.icons ?
       manifest.metadata.icons : undefined;
   if (icons) {
-    if (usage === "appGrid") {
+    if (usage === 'appGrid') {
       return icons.appGrid;
-    } else if (usage === "grain") {
+    } else if (usage === 'grain') {
       return icons.grain || icons.appGrid;
     }
   }
+
   return undefined;
 };
 
-var hashAppIdForIdenticon = function (id) {
+var hashAppIdForIdenticon = function(id) {
   // "Hash" an app ID to a 32-digit hex string for the purpose of
   // producing an identicon. Since app IDs are already high-
   // entropy base32 strings, we simply turn each of the first
   // 32 digits to base16 by chopping off a bit.
   result = [];
-  var digits16 = "0123456789abcdef";
-  var digits32 = "0123456789acdefghjkmnpqrstuvwxyz";
+  var digits16 = '0123456789abcdef';
+  var digits32 = '0123456789acdefghjkmnpqrstuvwxyz';
   for (var i = 0; i < 32; i++) {
     result.push(digits16[digits32.indexOf(id[i]) % 16]);
   }
-  return result.join("");
-}
+
+  return result.join('');
+};
 
 // Keep a static global cache of all app identicons produced in this way.
 // If memory usage is excessive, we can revisit this decision.
 var cachedIdenticons = {};
 var cachedIdenticon = function(hashedAppId, size) {
-  var cacheKey = hashedAppId + "-" + size;
+  var cacheKey = hashedAppId + '-' + size;
   if (!cachedIdenticons[cacheKey]) {
     var data = new Identicon(hashedAppId, size).toString();
-    cachedIdenticons[cacheKey] = "data:image/png;base64," + data;
+    cachedIdenticons[cacheKey] = 'data:image/png;base64,' + data;
   }
-  return cachedIdenticons[cacheKey];
-}
 
-var identiconForApp = function (appId, usage) {
-  var size = (usage === "appGrid" ? 128 : 24);
+  return cachedIdenticons[cacheKey];
+};
+
+var identiconForApp = function(appId, usage) {
+  var size = (usage === 'appGrid' ? 128 : 24);
   return cachedIdenticon(hashAppIdForIdenticon(appId), size);
 };
 
 var bytesToBase64 = function(bytes) {
   var arr = new Array(bytes.length);
-  for (var i = 0; i < bytes.length ; i++) {
+  for (var i = 0; i < bytes.length; i++) {
     arr[i] = String.fromCharCode(bytes[i]);
   }
   // Note that btoa is not available in IE9.  We may want to polyfill this.
-  var result = btoa(arr.join(""));
+  var result = btoa(arr.join(''));
   return result;
 };
 
-var iconSrcFor = function (appId, iconObj, staticHost, usage) {
+var iconSrcFor = function(appId, iconObj, staticHost, usage) {
   if (iconObj === undefined) {
     // Return a identicon src based on hashing appId instead.
     // (We hash the appID even though it's already a hash because it's not hex)
     return identiconForApp(appId, usage);
   }
+
   if (iconObj.assetId) {
-    var src = window.location.protocol + "//" + staticHost + "/" + iconObj.assetId;
+    var src = window.location.protocol + '//' + staticHost + '/' + iconObj.assetId;
     return src;
   }
+
   if (iconObj.svg) {
     // iconObj.svg is a text string, so we can base64 it directly
     // Note that btoa is not available in IE9.  We may want to polyfill this.
-    return "data:image/svg+xml;base64," + btoa(iconObj.svg);
+    return 'data:image/svg+xml;base64,' + btoa(iconObj.svg);
   }
+
   if (iconObj.png) {
     var png = iconObj.png.dpi2x || iconObj.png.dpi1x;
     var data;
@@ -80,7 +86,7 @@ var iconSrcFor = function (appId, iconObj, staticHost, usage) {
       // png is a Uint8Array, so we need to convert it to text before calling btoa.
       // Yes, the irony is profound.
       data = bytesToBase64(png);
-      return "data:image/png;base64," + data;
+      return 'data:image/png;base64,' + data;
     }
   }
   // We should never reach here, but do something sensible anyway
@@ -91,14 +97,14 @@ Identicon.identiconForApp = function(appId, usage) {
   return identiconForApp(appId, usage);
 };
 
-Identicon.iconSrcForPackage = function (pkg, usage, staticHost) {
+Identicon.iconSrcForPackage = function(pkg, usage, staticHost) {
   checkUsage(usage);
   // N.B. only works for installed packages, for dev packages use iconSrcForDevPackage
   var iconObj = iconFromManifest(pkg.manifest, usage);
   return iconSrcFor(pkg.appId, iconObj, staticHost, usage);
 };
 
-Identicon.iconSrcForDevPackage = function (devpkg, usage, staticHost) {
+Identicon.iconSrcForDevPackage = function(devpkg, usage, staticHost) {
   checkUsage(usage);
   var iconObj = iconFromManifest(devpkg.manifest, usage);
   return iconSrcFor(devpkg._id, iconObj, staticHost, usage);

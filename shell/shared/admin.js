@@ -14,110 +14,115 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
-var publicAdminSettings = ["google", "github", "emailToken", "splashUrl", "signupDialog",
-                           "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
-                           "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled"];
+const ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
+const publicAdminSettings = [
+  'google', 'github', 'emailToken', 'splashUrl', 'signupDialog',
+  'adminAlert', 'adminAlertTime', 'adminAlertUrl', 'termsUrl',
+  'privacyUrl', 'appMarketUrl', 'appIndexUrl', 'appUpdatesEnabled',
+];
 
 DEFAULT_SIGNUP_DIALOG = "You've been invited to join this Sandstorm server!";
 
-var adminRoute = RouteController.extend({
-  template: "admin",
-  waitOn: function () {
-    var subs = [
-      Meteor.subscribe("admin", this.params._token),
-      Meteor.subscribe("adminServiceConfiguration", this.params._token),
-      Meteor.subscribe("allUsers", this.params._token)
+const adminRoute = RouteController.extend({
+  template: 'admin',
+  waitOn: function() {
+    const subs = [
+      Meteor.subscribe('admin', this.params._token),
+      Meteor.subscribe('adminServiceConfiguration', this.params._token),
+      Meteor.subscribe('allUsers', this.params._token),
     ];
     if (this.params._token) {
-      subs.push(Meteor.subscribe("adminToken", this.params._token));
+      subs.push(Meteor.subscribe('adminToken', this.params._token));
     }
+
     return subs;
   },
 
-  data: function () {
-    var adminToken = AdminToken.findOne();
+  data: function() {
+    const adminToken = AdminToken.findOne();
     return {
       settings: Settings.find(),
       token: this.params._token,
-      isUserPermitted: isAdmin() || (adminToken && adminToken.tokenIsValid)
+      isUserPermitted: isAdmin() || (adminToken && adminToken.tokenIsValid),
     };
   },
 
-  action: function () {
-    var state = this.state;
-    Meteor.call("getSmtpUrl", this.params._token, function(error, result){
-      state.set("smtpUrl", result);
+  action: function() {
+    const state = this.state;
+    Meteor.call('getSmtpUrl', this.params._token, function(error, result) {
+      state.set('smtpUrl', result);
     });
-    var user = Meteor.user();
+
+    const user = Meteor.user();
     if (user && user.loginIdentities) {
       if (this.params._token && (!user.signupKey || !user.isAdmin)) {
-        Meteor.call("signUpAsAdmin", this.params._token);
+        Meteor.call('signUpAsAdmin', this.params._token);
       }
     }
+
     resetResult(state);
-    state.set("configurationServiceName", null);
-    state.set("token", this.params._token);
+    state.set('configurationServiceName', null);
+    state.set('token', this.params._token);
     this.render();
-  }
+  },
 });
 
-Router.map(function () {
-  this.route("adminSettings", {
-    path: "/admin/settings/:_token?",
-    controller: adminRoute
+Router.map(function() {
+  this.route('adminSettings', {
+    path: '/admin/settings/:_token?',
+    controller: adminRoute,
   });
-  this.route("adminUsers", {
-    path: "/admin/users/:_token?",
-    controller: adminRoute
+  this.route('adminUsers', {
+    path: '/admin/users/:_token?',
+    controller: adminRoute,
   });
-  this.route("adminStats", {
-    path: "/admin/stats/:_token?",
-    controller: adminRoute
+  this.route('adminStats', {
+    path: '/admin/stats/:_token?',
+    controller: adminRoute,
   });
-  this.route("adminLog", {
-    path: "/admin/log/:_token?",
-    controller: adminRoute
+  this.route('adminLog', {
+    path: '/admin/log/:_token?',
+    controller: adminRoute,
   });
-  this.route("adminInvites", {
-    path: "/admin/invites/:_token?",
-    controller: adminRoute
+  this.route('adminInvites', {
+    path: '/admin/invites/:_token?',
+    controller: adminRoute,
   });
-  this.route("adminCaps", {
-    path: "/admin/capabilities/:_token?",
-    controller: adminRoute
+  this.route('adminCaps', {
+    path: '/admin/capabilities/:_token?',
+    controller: adminRoute,
   });
-  this.route("adminAdvanced", {
-    path: "/admin/advanced/:_token?",
-    controller: adminRoute
+  this.route('adminAdvanced', {
+    path: '/admin/advanced/:_token?',
+    controller: adminRoute,
   });
-  this.route("adminOld", {
-    path: "/admin/:_token?",
-    action: function () {
-      this.redirect("adminSettings", this.params)
-    }
+  this.route('adminOld', {
+    path: '/admin/:_token?',
+    action: function() {
+      this.redirect('adminSettings', this.params);
+    },
   });
 });
 
 if (Meteor.isClient) {
-  AdminToken = new Mongo.Collection("adminToken");  // see Meteor.publish("adminToken")
-  AdminLog = new Meteor.Collection("adminLog");
-  Meteor.subscribe("publicAdminSettings");
+  AdminToken = new Mongo.Collection('adminToken');  // see Meteor.publish("adminToken")
+  AdminLog = new Meteor.Collection('adminLog');
+  Meteor.subscribe('publicAdminSettings');
 
-  var resetResult = function (state) {
+  const resetResult = function(state) {
     state = state || Iron.controller().state;
-    state.set("numSettings", 1);
-    state.set("successes", 0);
-    state.set("failures", 0);
-    state.set("errors", []);
-    state.set("fadeAlert", false);
-    state.set("successMessage", "Your settings have been saved.");
-    state.set("powerboxOfferUrl", null);
+    state.set('numSettings', 1);
+    state.set('successes', 0);
+    state.set('failures', 0);
+    state.set('errors', []);
+    state.set('fadeAlert', false);
+    state.set('successMessage', 'Your settings have been saved.');
+    state.set('powerboxOfferUrl', null);
   };
 
-  var getToken = function () {
-    var state = Iron.controller().state;
-    var token = state.get("token");
+  const getToken = function() {
+    const state = Iron.controller().state;
+    const token = state.get('token');
     if (!token) {
       return;
     } else {
@@ -126,240 +131,275 @@ if (Meteor.isClient) {
   };
 
   Template.admin.helpers({
-    adminTab: function () {
+    adminTab: function() {
       return Router.current().route.getName();
     },
-    success: function () {
-      var state = Iron.controller().state;
-      return state.get("successes") == state.get("numSettings");
+
+    success: function() {
+      const state = Iron.controller().state;
+      return state.get('successes') == state.get('numSettings');
     },
-    failure: function () {
-      return Iron.controller().state.get("failures");
+
+    failure: function() {
+      return Iron.controller().state.get('failures');
     },
-    errors: function () {
-      return Iron.controller().state.get("errors");
+
+    errors: function() {
+      return Iron.controller().state.get('errors');
     },
-    fadeAlert: function () {
-      return Iron.controller().state.get("fadeAlert");
+
+    fadeAlert: function() {
+      return Iron.controller().state.get('fadeAlert');
     },
-    successMessage: function () {
-      return Iron.controller().state.get("successMessage");
+
+    successMessage: function() {
+      return Iron.controller().state.get('successMessage');
     },
-    settingsActive: function () {
-      return Router.current().route.getName() == "adminSettings";
+
+    settingsActive: function() {
+      return Router.current().route.getName() == 'adminSettings';
     },
-    usersActive: function () {
-      return Router.current().route.getName() == "adminUsers";
+
+    usersActive: function() {
+      return Router.current().route.getName() == 'adminUsers';
     },
-    invitesActive: function () {
-      return Router.current().route.getName() == "adminInvites";
+
+    invitesActive: function() {
+      return Router.current().route.getName() == 'adminInvites';
     },
-    statsActive: function () {
-      return Router.current().route.getName() == "adminStats";
+
+    statsActive: function() {
+      return Router.current().route.getName() == 'adminStats';
     },
-    logActive: function () {
-      return Router.current().route.getName() == "adminLog";
+
+    logActive: function() {
+      return Router.current().route.getName() == 'adminLog';
     },
-    capsActive: function () {
-      return Router.current().route.getName() == "adminCaps";
+
+    capsActive: function() {
+      return Router.current().route.getName() == 'adminCaps';
     },
-    advancedActive: function () {
-      return Router.current().route.getName() == "adminAdvanced";
+
+    advancedActive: function() {
+      return Router.current().route.getName() == 'adminAdvanced';
     },
-    getToken: getToken
+
+    getToken: getToken,
   });
 
-  var handleError = function (err) {
-    var state = this;
-    Meteor.setTimeout(function () {
-      state.set("fadeAlert", true);
+  const handleError = function(err) {
+    const _this = this;
+    Meteor.setTimeout(function() {
+      _this.set('fadeAlert', true);
     }, 3000);
+
     if (err) {
-      this.set("failures", this.get("failures") + 1);
+      this.set('failures', this.get('failures') + 1);
       console.error(err);
-      var errors = this.get("errors");
+      const errors = this.get('errors');
       errors.push(err);
-      this.set("errors", errors);
+      this.set('errors', errors);
     } else {
-      this.set("successes", this.get("successes") + 1);
+      this.set('successes', this.get('successes') + 1);
     }
   };
 
   Template.adminSettings.events({
-    "click .oauth-checkbox": function (event) {
-      var state = Iron.controller().state;
-      var serviceName = event.target.getAttribute("data-servicename");
-      var config = Package["service-configuration"].ServiceConfiguration.configurations.findOne({service: serviceName});
+    'click .oauth-checkbox': function(event) {
+      const state = Iron.controller().state;
+      const serviceName = event.target.getAttribute('data-servicename');
+      const config = Package['service-configuration'].ServiceConfiguration.configurations.findOne({service: serviceName});
 
       if (!config && event.target.checked) {
-        state.set("configurationServiceName", serviceName);
+        state.set('configurationServiceName', serviceName);
       }
     },
-    "click .configure-oauth": function (event) {
-      var state = Iron.controller().state;
-      state.set("configurationServiceName", event.target.getAttribute("data-servicename"));
-    },
-    "click .reset-login-tokens": function (event) {
-      var state = Iron.controller().state;
-      resetResult(state);
-      var handleErrorBound = handleError.bind(state);
-      Meteor.call("clearResumeTokensForService", this.token,
-        event.target.getAttribute("data-servicename"), handleErrorBound);
-    },
-    "click #admin-settings-send-toggle": function (event) {
-      var state = Iron.controller().state;
-      state.set("isEmailTestActive", !state.get("isEmailTestActive"));
-      return false; // prevent form from submitting
-    },
-    "click #admin-settings-send-test": function (event) {
-      var state = Iron.controller().state;
-      resetResult(state);
-      var handleErrorBound = handleError.bind(state);
-      state.set("successMessage", "Email has been sent.");
-      Meteor.call("testSend", this.token, document.getElementById("smptUrl").value,
-                  document.getElementById("email-test-to").value, handleErrorBound);
-      return false; // prevent form from submitting
-    },
-    "submit #admin-settings-form": function (event) {
-      var state = Iron.controller().state;
-      var token = this.token;
-      resetResult(state);
-      state.set("numSettings", 4);
 
-      var handleErrorBound = handleError.bind(state);
+    'click .configure-oauth': function(event) {
+      const state = Iron.controller().state;
+      state.set('configurationServiceName', event.target.getAttribute('data-servicename'));
+    },
+
+    'click .reset-login-tokens': function(event) {
+      const state = Iron.controller().state;
+      resetResult(state);
+      const handleErrorBound = handleError.bind(state);
+      Meteor.call('clearResumeTokensForService', this.token,
+        event.target.getAttribute('data-servicename'), handleErrorBound);
+    },
+
+    'click #admin-settings-send-toggle': function(event) {
+      const state = Iron.controller().state;
+      state.set('isEmailTestActive', !state.get('isEmailTestActive'));
+      return false; // prevent form from submitting
+    },
+
+    'click #admin-settings-send-test': function(event) {
+      const state = Iron.controller().state;
+      resetResult(state);
+      const handleErrorBound = handleError.bind(state);
+      state.set('successMessage', 'Email has been sent.');
+      Meteor.call('testSend', this.token, document.getElementById('smptUrl').value,
+                  document.getElementById('email-test-to').value, handleErrorBound);
+      return false; // prevent form from submitting
+    },
+
+    'submit #admin-settings-form': function(event) {
+      const state = Iron.controller().state;
+      const token = this.token;
+      resetResult(state);
+      state.set('numSettings', 4);
+
+      const handleErrorBound = handleError.bind(state);
       if (event.target.emailTokenLogin.checked && !event.target.smtpUrl.value) {
         handleErrorBound(new Meteor.Error(400,
-          "You must configure an SMTP server to use email login."));
+          'You must configure an SMTP server to use email login.'));
         return false;
       }
-      Meteor.call("setAccountSetting", token, "google", event.target.googleLogin.checked, handleErrorBound);
-      Meteor.call("setAccountSetting", token, "github", event.target.githubLogin.checked, handleErrorBound);
-      Meteor.call("setAccountSetting", token, "emailToken", event.target.emailTokenLogin.checked, handleErrorBound);
-      Meteor.call("setSetting", token, "smtpUrl", event.target.smtpUrl.value, handleErrorBound);
+
+      Meteor.call('setAccountSetting', token, 'google', event.target.googleLogin.checked, handleErrorBound);
+      Meteor.call('setAccountSetting', token, 'github', event.target.githubLogin.checked, handleErrorBound);
+      Meteor.call('setAccountSetting', token, 'emailToken', event.target.emailTokenLogin.checked, handleErrorBound);
+      Meteor.call('setSetting', token, 'smtpUrl', event.target.smtpUrl.value, handleErrorBound);
       return false;
     },
   });
 
   Template.adminSettings.helpers({
-    setDocumentTitle: function () {
-      document.title = "Settings · Admin · Sandstorm";
+    setDocumentTitle: function() {
+      document.title = 'Settings · Admin · Sandstorm';
     },
-    googleEnabled: function () {
-      var setting = Settings.findOne({_id: "google"});
+
+    googleEnabled: function() {
+      const setting = Settings.findOne({_id: 'google'});
       if (setting) {
         return setting.value;
       } else {
         return false;
       }
     },
-    githubEnabled: function () {
-      var setting = Settings.findOne({_id: "github"});
+
+    githubEnabled: function() {
+      const setting = Settings.findOne({_id: 'github'});
       if (setting) {
         return setting.value;
       } else {
         return false;
       }
     },
-    emailTokenEnabled: function () {
-      var setting = Settings.findOne({_id: "emailToken"});
+
+    emailTokenEnabled: function() {
+      const setting = Settings.findOne({_id: 'emailToken'});
       if (setting) {
         return setting.value;
       } else {
         return false;
       }
     },
-    smtpUrl: function () {
-      return Iron.controller().state.get("smtpUrl");
+
+    smtpUrl: function() {
+      return Iron.controller().state.get('smtpUrl');
     },
-    isEmailTestActive: function () {
-      return Iron.controller().state.get("isEmailTestActive");
+
+    isEmailTestActive: function() {
+      return Iron.controller().state.get('isEmailTestActive');
     },
-    getToken: getToken
+
+    getToken: getToken,
   });
 
-  var updateUser = function (options) {
-    var state = Iron.controller().state;
-    var token = state.get("token");
+  const updateUser = function(options) {
+    const state = Iron.controller().state;
+    const token = state.get('token');
     resetResult(state);
-    state.set("successMessage", "User has been updated.");
-    var handleErrorBound = handleError.bind(state);
-    Meteor.call("adminUpdateUser", token, options, handleErrorBound);
+    state.set('successMessage', 'User has been updated.');
+    const handleErrorBound = handleError.bind(state);
+    Meteor.call('adminUpdateUser', token, options, handleErrorBound);
   };
-  Template.adminUsers.events({
-    "change select.user-class": function (event) {
-      var value = event.target.selectedOptions[0].value;
 
-      if (value == "admin") {
+  Template.adminUsers.events({
+    'change select.user-class': function(event) {
+      const value = event.target.selectedOptions[0].value;
+
+      if (value == 'admin') {
         updateUser({userId: this._id, signupKey: true, isAdmin: true});
-      } else if (value == "invited") {
+      } else if (value == 'invited') {
         updateUser({userId: this._id, signupKey: true, isAdmin: false});
-      } else if (value == "guest") {
+      } else if (value == 'guest') {
         updateUser({userId: this._id, signupKey: false, isAdmin: false});
       } else {
-        console.error("unrecognized user class");
+        console.error('unrecognized user class');
       }
     },
-    "change .is-signedup-checkbox": function (event) {
+
+    'change .is-signedup-checkbox': function(event) {
       // The userid is stored on the the <tr>, which is always 2 nodes up
-      var userId = event.target.parentElement.parentElement.getAttribute("data-userid");
-    }
+      const userId = event.target.parentElement.parentElement.getAttribute('data-userid');
+    },
   });
   Template.adminUsers.helpers({
-    setDocumentTitle: function () {
-      document.title = "Users · Admin · Sandstorm";
+    setDocumentTitle: function() {
+      document.title = 'Users · Admin · Sandstorm';
     },
-    users: function () {
+
+    users: function() {
       return Meteor.users.find({loginIdentities: {$exists: 1}}, {sort: {createdAt: 1}});
     },
-    userIdentity: function () {
-      var identityId = SandstormDb.getUserIdentityIds(this)[0];
-      var identity = Meteor.users.findOne({_id: identityId});
+
+    userIdentity: function() {
+      const identityId = SandstormDb.getUserIdentityIds(this)[0];
+      const identity = Meteor.users.findOne({_id: identityId});
       if (identity) {
         SandstormDb.fillInProfileDefaults(identity);
         SandstormDb.fillInIntrinsicName(identity);
         return identity;
       }
     },
-    userSignupNote: function () {
+
+    userSignupNote: function() {
       if (this.signupEmail) {
         return this.signupEmail;
       } else if (this.signupNote) {
         return this.signupNote;
       } else {
-        return "";
+        return '';
       }
     },
-    userIsAdmin: function () {
+
+    userIsAdmin: function() {
       return !!this.isAdmin;
     },
-    userIsInvited: function () {
+
+    userIsInvited: function() {
       return !this.isAdmin && !!this.signupKey;
     },
-    userIsGuest: function () {
+
+    userIsGuest: function() {
       return !this.isAdmin && !this.signupKey;
     },
-    userStorageUsage: function () {
-      return (typeof this.storageUsage === "number") ? prettySize(this.storageUsage) : "";
+
+    userStorageUsage: function() {
+      return (typeof this.storageUsage === 'number') ? prettySize(this.storageUsage) : '';
     },
   });
 
-  var configureLoginServiceDialogTemplateForService = function (serviceName) {
+  const configureLoginServiceDialogTemplateForService = function(serviceName) {
     return Template['configureLoginServiceDialogFor' + capitalize(serviceName)];
   };
 
-  var configurationFields = function (serviceName) {
-    var template = configureLoginServiceDialogTemplateForService(serviceName);
+  const configurationFields = function(serviceName) {
+    const template = configureLoginServiceDialogTemplateForService(serviceName);
     return template ? template.fields() : [];
   };
 
   Template._adminConfigureLoginServiceDialog.helpers({
-    configurationFields: function () {
-      var serviceName = Iron.controller().state.get("configurationServiceName");
-      var configurations = Package['service-configuration'].ServiceConfiguration.configurations;
-      var configuration = configurations.findOne({service: serviceName});
-      var fields = configurationFields(serviceName);
+    configurationFields: function() {
+      const serviceName = Iron.controller().state.get('configurationServiceName');
+      const configurations = Package['service-configuration'].ServiceConfiguration.configurations;
+      const configuration = configurations.findOne({service: serviceName});
+      const fields = configurationFields(serviceName);
       if (configuration) {
-        return _.map(fields, function (field) {
+        return _.map(fields, function(field) {
           field.value = configuration[field.property];
           return field;
         });
@@ -367,383 +407,425 @@ if (Meteor.isClient) {
         return fields;
       }
     },
-    visible: function () {
-      return Iron.controller().state.get("configurationServiceName") !== null;
+
+    visible: function() {
+      return Iron.controller().state.get('configurationServiceName') !== null;
     },
-    configurationSteps: function () {
+
+    configurationSteps: function() {
       // renders the appropriate template
       return configureLoginServiceDialogTemplateForService(
-        Iron.controller().state.get("configurationServiceName"));
-    }
+        Iron.controller().state.get('configurationServiceName'));
+    },
   });
 
-  var capitalize = function(str){
+  const capitalize = function(str) {
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
 
   Template._adminConfigureLoginServiceDialog.events({
-    'click .configure-login-service-dismiss-button': function () {
-      Iron.controller().state.set("configurationServiceName", null);
+    'click .configure-login-service-dismiss-button': function() {
+      Iron.controller().state.set('configurationServiceName', null);
     },
-    'click #configure-login-service-dialog-save-configuration': function () {
-      var state = Iron.controller().state;
+
+    'click #configure-login-service-dialog-save-configuration': function() {
+      const state = Iron.controller().state;
       resetResult(state);
 
       // This is a bit of a hack, but we set the number high so that a success message is never displayed
-      state.set("numSettings", 100);
+      state.set('numSettings', 100);
 
-      var handleErrorBound = handleError.bind(state);
-      var serviceName = state.get("configurationServiceName");
-      var token = this.token;
-      var configuration = {
-        service: serviceName
+      const handleErrorBound = handleError.bind(state);
+      const serviceName = state.get('configurationServiceName');
+      const token = this.token;
+      const configuration = {
+        service: serviceName,
       };
 
       // Fetch the value of each input field
       _.each(configurationFields(serviceName), function(field) {
         configuration[field.property] = document.getElementById(
-          'configure-login-service-dialog-' + field.property).value.trim()
+          'configure-login-service-dialog-' + field.property).value.trim();
       });
 
-      configuration.loginStyle = "redirect";
+      configuration.loginStyle = 'redirect';
 
-      Meteor.call("adminConfigureLoginService", token, configuration, function (err) {
+      Meteor.call('adminConfigureLoginService', token, configuration, function(err) {
         handleErrorBound(err);
-        state.set("configurationServiceName", null);
+        state.set('configurationServiceName', null);
       });
-      Meteor.call("setAccountSetting", token, serviceName, true, handleErrorBound);
-    }
+
+      Meteor.call('setAccountSetting', token, serviceName, true, handleErrorBound);
+    },
   });
 
   Template.adminInvites.events({
-    "click #send": function (event) {
-      var state = Iron.controller().state;
-      var from = document.getElementById("invite-from").value;
-      var list = document.getElementById("invite-emails").value;
-      var subject = document.getElementById("invite-subject").value;
-      var message = document.getElementById("invite-message").value;
-      var quotaInput = document.getElementById("invite-quota");
-      var quota;
-      if (quotaInput && quotaInput.value.trim() !== "") {
+    'click #send': function(event) {
+      const state = Iron.controller().state;
+      const from = document.getElementById('invite-from').value;
+      const list = document.getElementById('invite-emails').value;
+      const subject = document.getElementById('invite-subject').value;
+      const message = document.getElementById('invite-message').value;
+      const quotaInput = document.getElementById('invite-quota');
+      let quota;
+      if (quotaInput && quotaInput.value.trim() !== '') {
         quota = parseInt(quotaInput.value);
       }
 
-      var sendButton = event.currentTarget;
+      const sendButton = event.currentTarget;
       sendButton.disabled = true;
-      var oldContent = sendButton.textContent;
-      sendButton.textContent = "Sending...";
+      const oldContent = sendButton.textContent;
+      sendButton.textContent = 'Sending...';
 
-      Meteor.call("sendInvites", state.get("token"), getOrigin(), from, list, subject, message,
-                  quota, function (error, results) {
+      Meteor.call('sendInvites', state.get('token'), getOrigin(), from, list, subject, message,
+                  quota, function(error, results) {
         sendButton.disabled = false;
         sendButton.textContent = oldContent;
         if (error) {
-          state.set("inviteMessage", { error: error.toString() });
+          state.set('inviteMessage', { error: error.toString() });
         } else {
-          state.set("inviteMessage", results);
+          state.set('inviteMessage', results);
         }
       });
     },
 
-    "click #create": function (event) {
-      var state = Iron.controller().state;
-      var note = document.getElementById("key-note").value;
-      var quotaInput = document.getElementById("key-quota");
-      var quota;
-      if (quotaInput && quotaInput.value.trim() !== "") {
+    'click #create': function(event) {
+      const state = Iron.controller().state;
+      const note = document.getElementById('key-note').value;
+      const quotaInput = document.getElementById('key-quota');
+      let quota;
+      if (quotaInput && quotaInput.value.trim() !== '') {
         quota = parseInt(quotaInput.value);
       }
 
-      Meteor.call("createSignupKey", state.get("token"), note, quota, function (error, key) {
+      Meteor.call('createSignupKey', state.get('token'), note, quota, function(error, key) {
         if (error) {
-          state.set("inviteMessage", { error: error.toString() });
+          state.set('inviteMessage', { error: error.toString() });
         } else {
-          state.set("inviteMessage", {
-            url: getOrigin() + Router.routes.signup.path({key: key})
+          state.set('inviteMessage', {
+            url: getOrigin() + Router.routes.signup.path({key: key}),
           });
         }
       });
     },
 
-    "click #set-quota-submit": function (event) {
-      var state = Iron.controller().state;
-      var list = document.getElementById("set-quota-emails").value;
-      var quotaInput = document.getElementById("set-quota-quota");
-      var quota;
-      if (quotaInput && quotaInput.value.trim() !== "") {
+    'click #set-quota-submit': function(event) {
+      const state = Iron.controller().state;
+      const list = document.getElementById('set-quota-emails').value;
+      const quotaInput = document.getElementById('set-quota-quota');
+      let quota;
+      if (quotaInput && quotaInput.value.trim() !== '') {
         quota = parseInt(quotaInput.value);
       }
 
-      var updateButton = event.currentTarget;
+      const updateButton = event.currentTarget;
       updateButton.disabled = true;
-      var oldContent = updateButton.textContent;
-      updateButton.textContent = "Updating...";
+      const oldContent = updateButton.textContent;
+      updateButton.textContent = 'Updating...';
 
-      Meteor.call("updateQuotas", state.get("token"), list, quota, function (error, results) {
+      Meteor.call('updateQuotas', state.get('token'), list, quota, function(error, results) {
         updateButton.disabled = false;
         updateButton.textContent = oldContent;
         if (error) {
-          state.set("inviteMessage", { error: error.toString() });
+          state.set('inviteMessage', { error: error.toString() });
         } else {
-          document.getElementById("set-quota-emails").value = "";
+          document.getElementById('set-quota-emails').value = '';
         }
       });
     },
 
-    "click .autoSelect": function (event) {
+    'click .autoSelect': function(event) {
       event.currentTarget.select();
     },
 
-    "click #retry": function (event) {
-      Iron.controller().state.set("inviteMessage", undefined);
+    'click #retry': function(event) {
+      Iron.controller().state.set('inviteMessage', undefined);
     },
   });
 
   Template.adminInvites.helpers({
-    setDocumentTitle: function () {
-      document.title = "Invites · Admin · Sandstorm";
+    setDocumentTitle: function() {
+      document.title = 'Invites · Admin · Sandstorm';
     },
-    error: function () {
-      var res = Iron.controller().state.get("inviteMessage");
+
+    error: function() {
+      const res = Iron.controller().state.get('inviteMessage');
       return res && res.error;
     },
-    email: function () {
-      var me = Meteor.user();
-      var email = (me.services && me.services.google && me.services.google.email) ||
+
+    email: function() {
+      const me = Meteor.user();
+      let email = (me.services && me.services.google && me.services.google.email) ||
                   (me.services && me.services.github && me.services.github.email);
       if (email && me.profile.name) {
-        email = me.profile.name + " <" + email + ">";
+        email = me.profile.name + ' <' + email + '>';
       }
-      email = email || "";
+
+      email = email || '';
       return email;
     },
-    url: function () {
-      var res = Iron.controller().state.get("inviteMessage");
+
+    url: function() {
+      const res = Iron.controller().state.get('inviteMessage');
       return res && res.url;
     },
-    sent: function () {
-      var res = Iron.controller().state.get("inviteMessage");
+
+    sent: function() {
+      const res = Iron.controller().state.get('inviteMessage');
       return res && res.sent;
     },
   });
-  var maybeScrollLog = function() {
-    var elem = document.getElementById("adminLog");
+  const maybeScrollLog = function() {
+    const elem = document.getElementById('adminLog');
     if (elem) {
       // The log already exists. It's about to be updated. Check if it's scrolled to the bottom
       // before the update.
       if (elem.scrollHeight - elem.scrollTop === elem.clientHeight) {
         // Indeed, so we want to scroll it back to the bottom after the update.
-        Tracker.afterFlush(function () { scrollLogToBottom(elem); });
+        Tracker.afterFlush(function() { scrollLogToBottom(elem); });
       }
     } else {
       // No element exists yet, but it's probably about to be created, in which case we definitely
       // want to scroll it.
-      Tracker.afterFlush(function () {
-        var elem2 = document.getElementById("adminLog");
+      Tracker.afterFlush(function() {
+        const elem2 = document.getElementById('adminLog');
         if (elem2) scrollLogToBottom(elem2);
       });
     }
   };
 
-  var scrollLogToBottom = function (elem) {
+  const scrollLogToBottom = function(elem) {
     elem.scrollTop = elem.scrollHeight;
   };
 
-  Template.adminLog.onCreated(function () {
-    var state = Iron.controller().state;
-    var token = state.get("token");
-    this.subscribe("adminLog", token);
-  });
-  Template.adminLog.helpers({
-    setDocumentTitle: function () {
-      document.title = "Log · Admin · Sandstorm";
-    },
-    html: function () {
-      return AnsiUp.ansi_to_html(AdminLog.find({}, {$sort: {_id: 1}})
-              .map(function (entry) { return entry.text; })
-              .join(""), {use_classes:true});
-    }
+  Template.adminLog.onCreated(function() {
+    const state = Iron.controller().state;
+    const token = state.get('token');
+    this.subscribe('adminLog', token);
   });
 
-  Template.adminCaps.onCreated(function () {
-    var state = Iron.controller().state;
-    var token = state.get("token");
-    this.subscribe("adminApiTokens", token);
+  Template.adminLog.helpers({
+    setDocumentTitle: function() {
+      document.title = 'Log · Admin · Sandstorm';
+    },
+
+    html: function() {
+      // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
+      return AnsiUp.ansi_to_html(AdminLog.find({}, {$sort: {_id: 1}})
+              .map(function(entry) { return entry.text; })
+              .join(''), {use_classes:true});
+      // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
+    },
+  });
+
+  Template.adminCaps.onCreated(function() {
+    const state = Iron.controller().state;
+    const token = state.get('token');
+    this.subscribe('adminApiTokens', token);
   });
 
   Template.adminCaps.helpers({
-    setDocumentTitle: function () {
-      document.title = "Capabilities · Admin · Sandstorm";
+    setDocumentTitle: function() {
+      document.title = 'Capabilities · Admin · Sandstorm';
     },
-    powerboxOfferUrl: function () {
-      var state = Iron.controller().state;
-      return state.get("powerboxOfferUrl");
+
+    powerboxOfferUrl: function() {
+      const state = Iron.controller().state;
+      return state.get('powerboxOfferUrl');
     },
-    caps: function () {
-      return ApiTokens.find({$or: [{"frontendRef.ipNetwork": {$exists: true}},
-                                   {"frontendRef.ipInterface": {$exists: true}}]});
+
+    caps: function() {
+      return ApiTokens.find({
+        $or: [
+          {'frontendRef.ipNetwork': {$exists: true}},
+          {'frontendRef.ipInterface': {$exists: true}},
+        ],
+      });
     },
-    userName: function () {
-      var userId = findAdminUserForToken(this);
-      var user = Meteor.users.findOne({_id: userId});
+
+    userName: function() {
+      const userId = findAdminUserForToken(this);
+      const user = Meteor.users.findOne({_id: userId});
       if (!user) {
-        return "no user";
+        return 'no user';
       }
-      var identityId = SandstormDb.getUserIdentityIds(user)[0];
-      var identity = Meteor.users.findOne({_id: identityId});
+
+      const identityId = SandstormDb.getUserIdentityIds(user)[0];
+      const identity = Meteor.users.findOne({_id: identityId});
       if (identity) {
         SandstormDb.fillInProfileDefaults(identity);
         return identity.profile.name;
       }
     },
-    isDisabled: function () {
+
+    isDisabled: function() {
       return !this.userId;
     },
-    disabled: function () {
-      return this.revoked;
-    }
-  })
 
-  var updateCap = function (capId, value) {
-    var state = Iron.controller().state;
+    disabled: function() {
+      return this.revoked;
+    },
+  });
+
+  const updateCap = function(capId, value) {
+    const state = Iron.controller().state;
     resetResult(state);
     if (!value) {
-      state.set("successMessage", "Capability has been re-enabled.");
+      state.set('successMessage', 'Capability has been re-enabled.');
     } else {
-      state.set("successMessage", "Capability has been disabled.");
+      state.set('successMessage', 'Capability has been disabled.');
     }
-    var handleErrorBound = handleError.bind(state);
-    Meteor.call("adminToggleDisableCap", state.get("token"), capId, value, handleErrorBound)
-  }
+
+    const handleErrorBound = handleError.bind(state);
+    Meteor.call('adminToggleDisableCap', state.get('token'), capId, value, handleErrorBound);
+  };
 
   Template.adminCaps.events({
-    "click #offer-ipnetwork": function (event) {
-      var state = Iron.controller().state;
+    'click #offer-ipnetwork': function(event) {
+      const state = Iron.controller().state;
       resetResult(state);
-      state.set("successMessage", "IpNetwork webkey created. Look for it in the top bar.");
-      Meteor.call("offerIpNetwork", this.token, function (err, webkey) {
-        state.set("powerboxOfferUrl", webkey);
+      state.set('successMessage', 'IpNetwork webkey created. Look for it in the top bar.');
+      Meteor.call('offerIpNetwork', this.token, function(err, webkey) {
+        state.set('powerboxOfferUrl', webkey);
         handleError.call(state, err);
       });
+
       return false; // prevent form from submitting
     },
-    "click #offer-ipinterface": function (event) {
-      var state = Iron.controller().state;
+
+    'click #offer-ipinterface': function(event) {
+      const state = Iron.controller().state;
       resetResult(state);
-      state.set("successMessage", "IpInterface webkey created. Look for it in the top bar.");
-      Meteor.call("offerIpInterface", this.token, function (err, webkey) {
-        state.set("powerboxOfferUrl", webkey);
+      state.set('successMessage', 'IpInterface webkey created. Look for it in the top bar.');
+      Meteor.call('offerIpInterface', this.token, function(err, webkey) {
+        state.set('powerboxOfferUrl', webkey);
         handleError.call(state, err);
       });
+
       return false; // prevent form from submitting
     },
-    "click #powerbox-offer-popup-closer": function (event) {
-      var state = Iron.controller().state;
-      return state.set("powerboxOfferUrl", null);
+
+    'click #powerbox-offer-popup-closer': function(event) {
+      const state = Iron.controller().state;
+      return state.set('powerboxOfferUrl', null);
     },
-    "click .disable-cap": function (event) {
-      var capId = event.target.getAttribute("data-id");
-      var token = ApiTokens.findOne({_id: capId});
+
+    'click .disable-cap': function(event) {
+      const capId = event.target.getAttribute('data-id');
+      const token = ApiTokens.findOne({_id: capId});
 
       updateCap(capId, !token.revoked);
     },
   });
 
   Template.adminAdvanced.events({
-    "submit #admin-settings-form": function (event) {
-      var state = Iron.controller().state;
-      var token = this.token;
+    'submit #admin-settings-form': function(event) {
+      const state = Iron.controller().state;
+      const token = this.token;
       resetResult(state);
-      state.set("numSettings", 10);
+      state.set('numSettings', 10);
 
-      var handleErrorBound = handleError.bind(state);
-      Meteor.call("setSetting", token, "splashUrl", event.target.splashUrl.value, handleErrorBound);
-      Meteor.call("setSetting", token, "signupDialog", event.target.signupDialog.value, handleErrorBound);
-      Meteor.call("setSetting", token, "termsUrl", event.target.termsUrl.value, handleErrorBound);
-      Meteor.call("setSetting", token, "privacyUrl", event.target.privacyUrl.value, handleErrorBound);
-      Meteor.call("setSetting", token, "adminAlert", event.target.adminAlert.value, handleErrorBound);
-      Meteor.call("setSetting", token, "appMarketUrl", event.target.appMarketUrl.value, handleErrorBound);
-      Meteor.call("setSetting", token, "appIndexUrl", event.target.appIndexUrl.value, handleErrorBound);
-      Meteor.call("setSetting", token, "appUpdatesEnabled", event.target.appUpdatesEnabled.checked, handleErrorBound);
-      var alertTimeString = event.target.alertTime.value.trim();
+      const handleErrorBound = handleError.bind(state);
+      Meteor.call('setSetting', token, 'splashUrl', event.target.splashUrl.value, handleErrorBound);
+      Meteor.call('setSetting', token, 'signupDialog', event.target.signupDialog.value, handleErrorBound);
+      Meteor.call('setSetting', token, 'termsUrl', event.target.termsUrl.value, handleErrorBound);
+      Meteor.call('setSetting', token, 'privacyUrl', event.target.privacyUrl.value, handleErrorBound);
+      Meteor.call('setSetting', token, 'adminAlert', event.target.adminAlert.value, handleErrorBound);
+      Meteor.call('setSetting', token, 'appMarketUrl', event.target.appMarketUrl.value, handleErrorBound);
+      Meteor.call('setSetting', token, 'appIndexUrl', event.target.appIndexUrl.value, handleErrorBound);
+      Meteor.call('setSetting', token, 'appUpdatesEnabled', event.target.appUpdatesEnabled.checked, handleErrorBound);
+      const alertTimeString = event.target.alertTime.value.trim();
       if (alertTimeString) {
-        var alertTime = new Date(alertTimeString);
+        let alertTime = new Date(alertTimeString);
         if (isNaN(alertTime.getTime())) {
           // Assume only time and not date was set.
-          alertTime = new Date(new Date().toLocaleDateString() + " " + alertTimeString);
+          alertTime = new Date(new Date().toLocaleDateString() + ' ' + alertTimeString);
         }
+
         if (isNaN(alertTime.getTime())) {
           handleErrorBound(new Meteor.Error(
               400, "Couldn't parse alert time, please be more precise."));
         } else {
-          Meteor.call("setSetting", token, "adminAlertTime", alertTime, handleErrorBound);
+          Meteor.call('setSetting', token, 'adminAlertTime', alertTime, handleErrorBound);
         }
       } else {
-        Meteor.call("setSetting", token, "adminAlertTime", null, handleErrorBound);
+        Meteor.call('setSetting', token, 'adminAlertTime', null, handleErrorBound);
       }
-      Meteor.call("setSetting", token, "adminAlertUrl", event.target.alertUrl.value, handleErrorBound);
+
+      Meteor.call('setSetting', token, 'adminAlertUrl', event.target.alertUrl.value, handleErrorBound);
       return false;
-    }
+    },
   });
 
   Template.adminAdvanced.helpers({
-    setDocumentTitle: function () {
-      document.title = "Advanced · Admin · Sandstorm";
+    setDocumentTitle: function() {
+      document.title = 'Advanced · Admin · Sandstorm';
     },
+
     splashUrl: function() {
-      var setting = Settings.findOne({_id: "splashUrl"});
-      return (setting && setting.value) || "";
+      const setting = Settings.findOne({_id: 'splashUrl'});
+      return (setting && setting.value) || '';
     },
-    origin: function () { return getOrigin(); },
+
+    origin: function() { return getOrigin(); },
+
     signupDialog: function() {
-      var setting = Settings.findOne({_id: "signupDialog"});
+      const setting = Settings.findOne({_id: 'signupDialog'});
       return (setting && setting.value) || DEFAULT_SIGNUP_DIALOG;
     },
+
     termsUrl: function() {
-      var setting = Settings.findOne({_id: "termsUrl"});
+      const setting = Settings.findOne({_id: 'termsUrl'});
       return setting && setting.value;
     },
+
     privacyUrl: function() {
-      var setting = Settings.findOne({_id: "privacyUrl"});
+      const setting = Settings.findOne({_id: 'privacyUrl'});
       return setting && setting.value;
     },
+
     adminAlert: function() {
-      var setting = Settings.findOne({_id: "adminAlert"});
+      const setting = Settings.findOne({_id: 'adminAlert'});
       return (setting && setting.value);
     },
+
     alertTime: function() {
-      var setting = Settings.findOne({_id: "adminAlertTime"});
+      const setting = Settings.findOne({_id: 'adminAlertTime'});
       if (setting && setting.value) {
-        return setting.value.toLocaleDateString() + " " + setting.value.toLocaleTimeString();
+        return setting.value.toLocaleDateString() + ' ' + setting.value.toLocaleTimeString();
       } else {
-        return "";
+        return '';
       }
     },
+
     alertUrl: function() {
-      var setting = Settings.findOne({_id: "adminAlertUrl"});
+      const setting = Settings.findOne({_id: 'adminAlertUrl'});
       return (setting && setting.value);
     },
+
     appMarketUrl: function() {
-      var setting = Settings.findOne({_id: "appMarketUrl"});
+      const setting = Settings.findOne({_id: 'appMarketUrl'});
       return (setting && setting.value);
     },
+
     appIndexUrl: function() {
-      var setting = Settings.findOne({_id: "appIndexUrl"});
+      const setting = Settings.findOne({_id: 'appIndexUrl'});
       return (setting && setting.value);
     },
+
     appUpdatesEnabled: function() {
-      var setting = Settings.findOne({_id: "appUpdatesEnabled"});
+      const setting = Settings.findOne({_id: 'appUpdatesEnabled'});
       return (setting && setting.value);
     },
   });
 }
 
 if (Meteor.isServer) {
-  var Fs = Npm.require("fs");
-  var SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + "/adminToken";
+  const Fs = Npm.require('fs');
+  const SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + '/adminToken';
 
-  var getSmtpUrl = function () {
-    var setting = Settings.findOne({_id: "smtpUrl"});
+  const getSmtpUrl = function() {
+    const setting = Settings.findOne({_id: 'smtpUrl'});
     if (setting) {
       return setting.value;
     } else {
@@ -751,34 +833,36 @@ if (Meteor.isServer) {
     }
   };
 
-  var tokenIsValid = function(token) {
+  const tokenIsValid = function(token) {
     if (token && Fs.existsSync(SANDSTORM_ADMIN_TOKEN)) {
-      var stats = Fs.statSync(SANDSTORM_ADMIN_TOKEN);
-      var expireTime = new Date(Date.now() - ADMIN_TOKEN_EXPIRATION_TIME);
+      const stats = Fs.statSync(SANDSTORM_ADMIN_TOKEN);
+      const expireTime = new Date(Date.now() - ADMIN_TOKEN_EXPIRATION_TIME);
       if (stats.mtime < expireTime) {
         return false;
       } else {
-        return Fs.readFileSync(SANDSTORM_ADMIN_TOKEN, {encoding: "utf8"}) === token;
+        return Fs.readFileSync(SANDSTORM_ADMIN_TOKEN, {encoding: 'utf8'}) === token;
       }
     } else {
       return false;
     }
   };
 
-  var checkAuth = function (token) {
+  const checkAuth = function(token) {
     check(token, Match.OneOf(undefined, null, String));
     if (!isAdmin() && !tokenIsValid(token)) {
-      throw new Meteor.Error(403, "User must be admin or provide a valid token");
+      throw new Meteor.Error(403, 'User must be admin or provide a valid token');
     }
   };
+
   function clearAdminToken(token) {
     if (tokenIsValid(token)) {
       Fs.unlinkSync(SANDSTORM_ADMIN_TOKEN);
-      console.log("Admin token deleted.");
+      console.log('Admin token deleted.');
     }
   }
+
   Meteor.methods({
-    setAccountSetting: function (token, serviceName, value) {
+    setAccountSetting: function(token, serviceName, value) {
       checkAuth(token);
       check(serviceName, String);
       check(value, Boolean);
@@ -788,96 +872,106 @@ if (Meteor.isServer) {
       // multiple login methods/identities are allowed for a single account.
       if (!value && !tokenIsValid(token) && (serviceName in Meteor.user().services)) {
         throw new Meteor.Error(403,
-          "You can not disable the login service that your account uses.");
+          'You can not disable the login service that your account uses.');
       }
 
       // Only check configurations for OAuth services.
-      var oauthServices = ["google", "github"];
+      const oauthServices = ['google', 'github'];
       if (value && (oauthServices.indexOf(serviceName) != -1)) {
-        var ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
-        var config = ServiceConfiguration.configurations.findOne({service: serviceName});
+        const ServiceConfiguration = Package['service-configuration'].ServiceConfiguration;
+        const config = ServiceConfiguration.configurations.findOne({service: serviceName});
         if (!config) {
-          throw new Meteor.Error(403, "You must configure the " + serviceName +
-            " service before you can enable it. Click the \"configure\" link.");
+          throw new Meteor.Error(403, 'You must configure the ' + serviceName +
+            ' service before you can enable it. Click the "configure" link.');
         }
       }
+
       Settings.upsert({_id: serviceName}, {$set: {value: value}});
     },
-    setSetting: function (token, name, value) {
+
+    setSetting: function(token, name, value) {
       checkAuth(token);
       check(name, String);
       check(value, Match.OneOf(null, String, Date, Boolean));
 
       Settings.upsert({_id: name}, {$set: {value: value}});
     },
-    getSmtpUrl: function (token) {
+
+    getSmtpUrl: function(token) {
       checkAuth(token);
 
       return getSmtpUrl();
     },
-    "adminConfigureLoginService": function (token, options) {
+
+    adminConfigureLoginService: function(token, options) {
       checkAuth(token);
       check(options, Match.ObjectIncluding({service: String}));
 
-      var ServiceConfiguration = Package["service-configuration"].ServiceConfiguration;
+      const ServiceConfiguration = Package['service-configuration'].ServiceConfiguration;
 
       ServiceConfiguration.configurations.upsert({service: options.service}, options);
     },
-    clearResumeTokensForService: function (token, serviceName) {
+
+    clearResumeTokensForService: function(token, serviceName) {
       checkAuth(token);
       check(serviceName, String);
 
-      var query = {};
-      query["services." + serviceName] = {$exists: true};
+      const query = {};
+      query['services.' + serviceName] = {$exists: true};
       Meteor.users.find(query).forEach(function(identity) {
         if (identity.services.resume && identity.services.resume.loginTokens &&
             identity.services.resume.loginTokens.length > 0) {
-          Meteor.users.update({_id: identity._id}, {$set: {"services.resume.loginTokens": []}});
+          Meteor.users.update({_id: identity._id}, {$set: {'services.resume.loginTokens': []}});
         }
-        Meteor.users.update({"loginIdentities.id": identity._id},
-                            {$set: {"services.resume.loginTokens": []}});
+
+        Meteor.users.update({'loginIdentities.id': identity._id},
+                            {$set: {'services.resume.loginTokens': []}});
       });
     },
-    adminUpdateUser: function (token, userInfo) {
+
+    adminUpdateUser: function(token, userInfo) {
       checkAuth(token);
       check(userInfo, {
         userId: String,
         signupKey: Boolean,
-        isAdmin: Boolean
+        isAdmin: Boolean,
       });
 
-      var userId = userInfo.userId;
+      const userId = userInfo.userId;
       if (userId === Meteor.userId() && !userInfo.isAdmin) {
-        throw new Meteor.Error(403, "User cannot remove admin permissions from itself.");
+        throw new Meteor.Error(403, 'User cannot remove admin permissions from itself.');
       }
 
-      Meteor.users.update({_id: userId}, {$set: _.omit(userInfo, ["_id", "userId"])});
+      Meteor.users.update({_id: userId}, {$set: _.omit(userInfo, ['_id', 'userId'])});
     },
-    testSend: function (token, smtpUrl, to) {
+
+    testSend: function(token, smtpUrl, to) {
       checkAuth(token);
       check(smtpUrl, String);
       check(to, String);
 
       SandstormEmail.send({
         to: to,
-        from: "Sandstorm Test <no-reply@" + HOSTNAME + ">",
+        from: 'Sandstorm Test <no-reply@' + HOSTNAME + '>',
         subject: "Testing your Sandstorm's SMTP setting",
-        text: "Success! Your outgoing SMTP is working.",
-        smtpUrl: smtpUrl
+        text: 'Success! Your outgoing SMTP is working.',
+        smtpUrl: smtpUrl,
       });
     },
-    createSignupKey: function (token, note, quota) {
+
+    createSignupKey: function(token, note, quota) {
       checkAuth(token);
       check(note, String);
       check(quota, Match.OneOf(undefined, null, Number));
 
-      var key = Random.id();
-      var content = {_id: key, used: false, note: note};
-      if (typeof quota === "number") content.quota = quota;
+      const key = Random.id();
+      const content = {_id: key, used: false, note: note};
+      if (typeof quota === 'number') content.quota = quota;
       SignupKeys.insert(content);
       return key;
     },
-    sendInvites: function (token, origin, from, list, subject, message, quota) {
+
+    sendInvites: function(token, origin, from, list, subject, message, quota) {
       checkAuth(token);
       check([origin, from, list, subject, message], [String]);
       check(quota, Match.OneOf(undefined, null, Number));
@@ -892,22 +986,22 @@ if (Meteor.isServer) {
 
       this.unblock();
 
-      list = list.split("\n");
-      for (var i in list) {
-        var email = list[i].trim();
+      list = list.split('\n');
+      for (const i in list) {
+        const email = list[i].trim();
 
         if (email) {
-          var key = Random.id();
+          const key = Random.id();
 
-          var content = {_id: key, used: false, note: "E-mail invite to " + email,
-                         email: email, definitelySent: false};
-          if (typeof quota === "number") content.quota = quota;
+          const content = {_id: key, used: false, note: 'E-mail invite to ' + email,
+                         email: email, definitelySent: false, };
+          if (typeof quota === 'number') content.quota = quota;
           SignupKeys.insert(content);
           SandstormEmail.send({
             to: email,
             from: from,
             subject: subject,
-            text: message.replace(/\$KEY/g, origin + Router.routes.signup.path({key: key}))
+            text: message.replace(/\$KEY/g, origin + Router.routes.signup.path({key: key})),
           });
           SignupKeys.update(key, {$set: {definitelySent: true}});
         }
@@ -915,35 +1009,38 @@ if (Meteor.isServer) {
 
       return { sent: true };
     },
-    offerIpNetwork: function (token) {
+
+    offerIpNetwork: function(token) {
       checkAuth(token);
       if (!isAdmin()) {
-        throw new Meteor.Error(403, "Offering IpNetwork is only allowed for logged in users " +
-          "(a token is not sufficient). Please sign in with an admin account");
+        throw new Meteor.Error(403, 'Offering IpNetwork is only allowed for logged in users ' +
+          '(a token is not sufficient). Please sign in with an admin account');
       }
 
-      var requirements = [{
-        userIsAdmin: Meteor.userId()
-      }];
-      var sturdyRef = waitPromise(saveFrontendRef({ipNetwork: true}, {webkey: null},
+      const requirements = [
+        { userIsAdmin: Meteor.userId() },
+      ];
+      const sturdyRef = waitPromise(saveFrontendRef({ipNetwork: true}, {webkey: null},
                                   requirements)).sturdyRef;
-      return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
+      return ROOT_URL.protocol + '//' + makeWildcardHost('api') + '#' + sturdyRef;
     },
-    offerIpInterface: function (token) {
+
+    offerIpInterface: function(token) {
       checkAuth(token);
       if (!isAdmin()) {
-        throw new Meteor.Error(403, "Offering IpInterface is only allowed for logged in users " +
-          "(a token is not sufficient). Please sign in with an admin account");
+        throw new Meteor.Error(403, 'Offering IpInterface is only allowed for logged in users ' +
+          '(a token is not sufficient). Please sign in with an admin account');
       }
 
-      var requirements = [{
-        userIsAdmin: Meteor.userId()
-      }];
-      var sturdyRef = waitPromise(saveFrontendRef({ipInterface: true}, {webkey: null},
+      const requirements = [
+        { userIsAdmin: Meteor.userId() },
+      ];
+      const sturdyRef = waitPromise(saveFrontendRef({ipInterface: true}, {webkey: null},
                                   requirements)).sturdyRef;
-      return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
+      return ROOT_URL.protocol + '//' + makeWildcardHost('api') + '#' + sturdyRef;
     },
-    adminToggleDisableCap: function (token, capId, value) {
+
+    adminToggleDisableCap: function(token, capId, value) {
       checkAuth(token);
       check(capId, String);
       check(value, Boolean);
@@ -954,133 +1051,141 @@ if (Meteor.isServer) {
         ApiTokens.update({_id: capId}, {$set: {revoked: false}});
       }
     },
-    updateQuotas: function (token, list, quota) {
+
+    updateQuotas: function(token, list, quota) {
       checkAuth(token);
       check(list, String);
       check(quota, Match.OneOf(undefined, null, Number));
 
       if (!list.trim()) {
-        throw new Meteor.Error(400, "Must enter addresses.");
+        throw new Meteor.Error(400, 'Must enter addresses.');
       }
 
-      list = list.split("\n");
-      var invalid = [];
-      for (var i in list) {
-        var modifier = (typeof quota === "number") ? {$set: {quota: quota}}
-                                                   : {$unset: {quota: ""}};
-        var n = SignupKeys.update({email: list[i]}, modifier, {multi: true});
-        n += Meteor.users.update({signupEmail: list[i]}, modifier, {multi: true});
+      const items = list.split('\n');
+      const invalid = [];
+      for (const i in items) {
+        const modifier = (typeof quota === 'number') ? {$set: {quota: quota}}
+                                                   : {$unset: {quota: ''}};
+        let n = SignupKeys.update({email: items[i]}, modifier, {multi: true});
+        n += Meteor.users.update({signupEmail: items[i]}, modifier, {multi: true});
 
-        if (n < 1) invalid.push(list[i]);
+        if (n < 1) invalid.push(items[i]);
       }
 
       if (invalid.length > 0) {
-        throw new Meteor.Error(404, "These addresses did not map to any user nor invite: " +
-            invalid.join(", "));
+        throw new Meteor.Error(404, 'These addresses did not map to any user nor invite: ' +
+            invalid.join(', '));
       }
     },
-    dismissAdminStatsNotifications: function (token) {
+
+    dismissAdminStatsNotifications: function(token) {
       checkAuth(token);
-      globalDb.collections.notifications.remove({"admin.type": "reportStats"});
+      globalDb.collections.notifications.remove({'admin.type': 'reportStats'});
     },
-    signUpAsAdmin: function (token) {
+
+    signUpAsAdmin: function(token) {
       check(token, String);
       checkAuth(token);
       if (!this.userId) {
-        throw new Meteor.Error(403, "Must be logged in to sign up as admin.");
+        throw new Meteor.Error(403, 'Must be logged in to sign up as admin.');
       }
+
       if (!Meteor.user().loginIdentities) {
-        throw new Meteor.Error(403, "Must be logged into an account to sign up as admin.");
+        throw new Meteor.Error(403, 'Must be logged into an account to sign up as admin.');
       }
-      Meteor.users.update({_id: this.userId}, {$set: {isAdmin: true, signupKey: "admin"}});
+
+      Meteor.users.update({_id: this.userId}, {$set: {isAdmin: true, signupKey: 'admin'}});
       clearAdminToken(token);
-    }
+    },
   });
 
-  var authorizedAsAdmin = function (token, userId) {
+  const authorizedAsAdmin = function(token, userId) {
     return Match.test(token, Match.OneOf(undefined, null, String)) &&
            ((userId && isAdminById(userId)) || tokenIsValid(token));
   };
-  Meteor.publish("admin", function (token) {
+
+  Meteor.publish('admin', function(token) {
     if (!authorizedAsAdmin(token, this.userId)) return [];
     return Settings.find();
   });
 
-  Meteor.publish("adminServiceConfiguration", function (token) {
+  Meteor.publish('adminServiceConfiguration', function(token) {
     if (!authorizedAsAdmin(token, this.userId)) return [];
     return Package['service-configuration'].ServiceConfiguration.configurations.find();
   });
 
-  Meteor.publish("publicAdminSettings", function () {
+  Meteor.publish('publicAdminSettings', function() {
     return Settings.find({_id: { $in: publicAdminSettings}});
   });
 
-  Meteor.publish("adminToken", function (token) {
+  Meteor.publish('adminToken', function(token) {
     check(token, String);
-    this.added("adminToken", "adminToken", {tokenIsValid: tokenIsValid(token)});
+    this.added('adminToken', 'adminToken', {tokenIsValid: tokenIsValid(token)});
     this.ready();
   });
 
-  Meteor.publish("allUsers", function (token) {
+  Meteor.publish('allUsers', function(token) {
     if (!authorizedAsAdmin(token, this.userId)) return [];
     return Meteor.users.find();
   });
-  Meteor.publish("activityStats", function (token) {
+
+  Meteor.publish('activityStats', function(token) {
     if (!authorizedAsAdmin(token, this.userId)) return [];
     return ActivityStats.find();
   });
 
-  Meteor.publish("statsTokens", function (token) {
+  Meteor.publish('statsTokens', function(token) {
     if (!authorizedAsAdmin(token, this.userId)) return [];
     return StatsTokens.find();
   });
 
-  Meteor.publish("allPackages", function (token) {
+  Meteor.publish('allPackages', function(token) {
     if (!authorizedAsAdmin(token, this.userId)) return [];
     return Packages.find({manifest: {$exists: true}},
-        {fields: {appId: 1, "manifest.appVersion": 1,
-        "manifest.actions": 1, "manifest.appTitle": 1}});
+        {fields: {appId: 1, 'manifest.appVersion': 1,
+        'manifest.actions': 1, 'manifest.appTitle': 1, }, });
   });
 
-  Meteor.publish("realTimeStats", function (token) {
+  Meteor.publish('realTimeStats', function(token) {
     if (!authorizedAsAdmin(token, this.userId)) return [];
 
     // Last five minutes.
-    this.added("realTimeStats", "now", computeStats(new Date(Date.now() - 5*60*1000)));
+    this.added('realTimeStats', 'now', computeStats(new Date(Date.now() - 5 * 60 * 1000)));
 
     // Since last sample.
-    var lastSample = ActivityStats.findOne({}, {sort: {timestamp: -1}});
-    var lastSampleTime = lastSample ? lastSample.timestamp : new Date(0);
-    this.added("realTimeStats", "today", computeStats(lastSampleTime));
+    const lastSample = ActivityStats.findOne({}, {sort: {timestamp: -1}});
+    const lastSampleTime = lastSample ? lastSample.timestamp : new Date(0);
+    this.added('realTimeStats', 'today', computeStats(lastSampleTime));
 
     // TODO(someday): Update every few minutes?
 
     this.ready();
   });
-  Meteor.publish("adminLog", function (token) {
+
+  Meteor.publish('adminLog', function(token) {
     if (!authorizedAsAdmin(token, this.userId)) return [];
 
-    var logfile = SANDSTORM_LOGDIR + "/sandstorm.log";
+    const logfile = SANDSTORM_LOGDIR + '/sandstorm.log';
 
-    var fd = Fs.openSync(logfile, "r");
-    var startSize = Fs.fstatSync(fd).size;
+    const fd = Fs.openSync(logfile, 'r');
+    const startSize = Fs.fstatSync(fd).size;
 
     // Start tailing at EOF - 8k.
-    var offset = Math.max(0, startSize - 8192);
+    let offset = Math.max(0, startSize - 8192);
 
-    var self = this;
+    const _this = this;
     function doTail() {
       for (;;) {
-        var buf = new Buffer(Math.max(1024, startSize - offset));
-        var n = Fs.readSync(fd, buf, 0, buf.length, offset);
+        const buf = new Buffer(Math.max(1024, startSize - offset));
+        const n = Fs.readSync(fd, buf, 0, buf.length, offset);
         if (n <= 0) break;
-        self.added("adminLog", offset, {text: buf.toString("utf8", 0, n)});
+        _this.added('adminLog', offset, {text: buf.toString('utf8', 0, n)});
         offset += n;
       }
     }
 
     // Watch the file for changes.
-    var watcher = Fs.watch(logfile, {persistent: false}, Meteor.bindEnvironment(doTail));
+    const watcher = Fs.watch(logfile, {persistent: false}, Meteor.bindEnvironment(doTail));
 
     // When the subscription stops, stop watching the file.
     this.onStop(function() {
@@ -1094,16 +1199,22 @@ if (Meteor.isServer) {
     // Notify ready.
     this.ready();
   });
-  Meteor.publish("adminApiTokens", function (token) {
+
+  Meteor.publish('adminApiTokens', function(token) {
     if (!authorizedAsAdmin(token, this.userId)) return [];
-    return ApiTokens.find({$or: [{"frontendRef.ipNetwork": {$exists: true}},
-                                 {"frontendRef.ipInterface": {$exists: true}}]},
-                          {fields: {frontendRef: 1, created: 1, requirements: 1, revoked: 1}});
+    return ApiTokens.find({
+      $or: [
+        {'frontendRef.ipNetwork': {$exists: true}},
+        {'frontendRef.ipInterface': {$exists: true}},
+      ],
+    }, {
+      fields: {frontendRef: 1, created: 1, requirements: 1, revoked: 1},
+    });
   });
 }
 
 function serviceEnabled(name) {
-  var setting = Settings.findOne({_id: name});
+  const setting = Settings.findOne({_id: name});
   return setting && !!setting.value;
 }
 
@@ -1114,52 +1225,57 @@ if (Meteor.server) {
         // Tell the oauth library it should accept login attempts from this service.
         Accounts.oauth.registerService(name);
       },
+
       removed: function() {
         // Tell the oauth library it should deny login attempts from this service.
         Accounts.oauth.deregisterService(name);
-      }
+      },
     });
   }
-  observeOauthService("github");
-  observeOauthService("google");
+
+  observeOauthService('github');
+  observeOauthService('google');
 }
 
 Accounts.identityServices.github = {
-  isEnabled: function () {
-    return serviceEnabled("github");
+  isEnabled: function() {
+    return serviceEnabled('github');
   },
+
   loginTemplate: {
-    name: "oauthLoginButton",
+    name: 'oauthLoginButton',
     priority: 1,
     data: {
-      method: "loginWithGithub",
-      name: "github",
-      displayName: "GitHub",
-    }
-  }
+      method: 'loginWithGithub',
+      name: 'github',
+      displayName: 'GitHub',
+    },
+  },
 };
 
 Accounts.identityServices.google = {
-  isEnabled: function () {
-    return serviceEnabled("google");
+  isEnabled: function() {
+    return serviceEnabled('google');
   },
+
   loginTemplate: {
-    name: "oauthLoginButton",
+    name: 'oauthLoginButton',
     priority: 2,
     data: {
-      method: "loginWithGoogle",
-      name: "google",
-      displayName: "Google",
-    }
-  }
+      method: 'loginWithGoogle',
+      name: 'google',
+      displayName: 'Google',
+    },
+  },
 };
 
 Accounts.identityServices.email = {
-  isEnabled: function () {
-    return serviceEnabled("emailToken");
+  isEnabled: function() {
+    return serviceEnabled('emailToken');
   },
+
   loginTemplate: {
-    name: "emailLoginForm",
+    name: 'emailLoginForm',
     priority: 10, // Put it at the bottom of the list.
   },
-}
+};

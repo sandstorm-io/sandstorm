@@ -15,17 +15,17 @@
 // limitations under the License.
 
 Package.describe({
-  summary: "Sandstorm package for managing permissions of users on grains.",
-  version: "0.1.0"
+  summary: 'Sandstorm package for managing permissions of users on grains.',
+  version: '0.1.0',
 });
 
-Package.onUse(function (api) {
-  api.use(["check", "random", "underscore", "sandstorm-db"], ["server"]);
-  api.addFiles(["permissions.js"], "server");
-  api.export("SandstormPermissions");
+Package.onUse(function(api) {
+  api.use(['check', 'random', 'underscore', 'sandstorm-db'], ['server']);
+  api.addFiles(['permissions.js'], 'server');
+  api.export('SandstormPermissions');
 });
 
-Package.onTest(function (api) {
-  api.use(["check", "random", "accounts-base", "underscore", "sandstorm-db", "tinytest", "sandstorm-permissions"], ["server"]);
+Package.onTest(function(api) {
+  api.use(['check', 'random', 'accounts-base', 'underscore', 'sandstorm-db', 'tinytest', 'sandstorm-permissions'], ['server']);
   api.addFiles('permissions-tests.js', 'server');
 });

@@ -8,15 +8,15 @@ var VALID_KEYS = [
   'configureLoginServiceDialogVisible',
   'configureLoginServiceDialogServiceName',
   'configureLoginServiceDialogSaveDisabled',
-  'configureOnDesktopVisible'
+  'configureOnDesktopVisible',
 ];
 
-var validateKey = function (key) {
+var validateKey = function(key) {
   if (!_.contains(VALID_KEYS, key))
-    throw new Error("Invalid key in loginButtonsSession: " + key);
+    throw new Error('Invalid key in loginButtonsSession: ' + key);
 };
 
-var KEY_PREFIX = "Meteor.loginButtons.";
+var KEY_PREFIX = 'Meteor.loginButtons.';
 
 // TODO(now): Don't put this under `Accounts`.
 Accounts._loginButtonsSession = {
@@ -37,35 +37,35 @@ Accounts._loginButtonsSession = {
     return Session.get(KEY_PREFIX + key);
   },
 
-  closeDropdown: function () {
+  closeDropdown: function() {
     this.resetMessages();
     // TODO(now): Close the popup
   },
 
   infoMessage: function(message) {
-    this._set("errorMessage", null);
-    this._set("infoMessage", message);
+    this._set('errorMessage', null);
+    this._set('infoMessage', message);
     this.ensureMessageVisible();
   },
 
   errorMessage: function(message) {
-    this._set("errorMessage", message);
-    this._set("infoMessage", null);
+    this._set('errorMessage', message);
+    this._set('infoMessage', null);
     this.ensureMessageVisible();
   },
 
-  ensureMessageVisible: function () {
+  ensureMessageVisible: function() {
     // TODO(now): Force open popup.
   },
 
-  resetMessages: function () {
-    this._set("errorMessage", null);
-    this._set("infoMessage", null);
+  resetMessages: function() {
+    this._set('errorMessage', null);
+    this._set('infoMessage', null);
   },
 
-  configureService: function (name) {
+  configureService: function(name) {
     this.set('configureLoginServiceDialogVisible', true);
     this.set('configureLoginServiceDialogServiceName', name);
     this.set('configureLoginServiceDialogSaveDisabled', true);
-  }
+  },
 };

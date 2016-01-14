@@ -14,20 +14,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var Capnp = Npm.require("capnp");
-var Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
-var Crypto = Npm.require("crypto");
-var Future = Npm.require("fibers/future");
-var Promise = Npm.require("es6-promise").Promise;
+var Capnp = Npm.require('capnp');
+var Backend = Capnp.importSystem('sandstorm/backend.capnp').Backend;
+var Crypto = Npm.require('crypto');
+var Future = Npm.require('fibers/future');
+var Promise = Npm.require('es6-promise').Promise;
 
-var inMeteorInternal = Meteor.bindEnvironment(function (callback) {
+var inMeteorInternal = Meteor.bindEnvironment(function(callback) {
   callback();
 });
 
-inMeteor = function (callback) {
+inMeteor = function(callback) {
   // Calls the callback in a Meteor context.  Returns a Promise for its result.
-  return new Promise(function (resolve, reject) {
-    inMeteorInternal(function () {
+  return new Promise(function(resolve, reject) {
+    inMeteorInternal(function() {
       try {
         resolve(callback());
       } catch (err) {
@@ -35,63 +35,63 @@ inMeteor = function (callback) {
       }
     });
   });
-}
+};
 
-promiseToFuture = function (promise) {
+promiseToFuture = function(promise) {
   var result = new Future();
   promise.then(result.return.bind(result), result.throw.bind(result));
   return result;
-}
+};
 
-waitPromise = function (promise) {
+waitPromise = function(promise) {
   return promiseToFuture(promise).wait();
-}
+};
 
 SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 
 SandstormBackend = function(db, backendCap) {
   this._db = db;
   this.runningGrains = {};
-  this._backendCap = backendCap
-}
+  this._backendCap = backendCap;
+};
 
 SandstormBackend.prototype.cap = function() {
   return this._backendCap;
-}
+};
 
-SandstormBackend.prototype.deleteUser = function (userId) {
+SandstormBackend.prototype.deleteUser = function(userId) {
   return waitPromise(this._backendCap.deleteUser());
-}
+};
 
-SandstormBackend.prototype.shutdownGrain = function (grainId, ownerId, keepSessions) {
+SandstormBackend.prototype.shutdownGrain = function(grainId, ownerId, keepSessions) {
   if (!keepSessions) {
     Sessions.remove({grainId: grainId});
     delete this.runningGrains[grainId];
   }
 
   var grain = this._backendCap.getGrain(ownerId, grainId).supervisor;
-  return grain.shutdown().then(function () {
+  return grain.shutdown().then(function() {
     grain.close();
-    throw new Error("expected shutdown() to throw disconnected");
-  }, function (err) {
+    throw new Error('expected shutdown() to throw disconnected');
+  }, function(err) {
+
     grain.close();
-    if (err.kjType !== "disconnected") {
+    if (err.kjType !== 'disconnected') {
       throw err;
     }
   });
-}
+};
 
-SandstormBackend.prototype.deleteGrain = function (grainId, ownerId) {
+SandstormBackend.prototype.deleteGrain = function(grainId, ownerId) {
   // We leave it up to the caller if they want to actually wait, but some don't so we report
   // exceptions.
-  return this._backendCap.deleteGrain(ownerId, grainId).catch(function (err) {
-    console.error("problem deleting grain " + grainId + ":", err.message);
+  return this._backendCap.deleteGrain(ownerId, grainId).catch(function(err) {
+    console.error('problem deleting grain ' + grainId + ':', err.message);
     throw err;
   });
-}
+};
 
-
-SandstormBackend.prototype.openGrain = function (grainId, isRetry) {
+SandstormBackend.prototype.openGrain = function(grainId, isRetry) {
   // Create a Cap'n Proto connection to the given grain. Note that this function does not actually
   // verify that the connection succeeded. Instead, if an RPC call to the connection fails, check
   // shouldRestartGrain(). If it returns true, call continueGrain() and then openGrain()
@@ -111,29 +111,29 @@ SandstormBackend.prototype.openGrain = function (grainId, isRetry) {
       return this.continueGrain(grainId);
     }
   }
-}
+};
 
-SandstormBackend.shouldRestartGrain = function (error, retryCount) {
+SandstormBackend.shouldRestartGrain = function(error, retryCount) {
   // Given an error thrown by an RPC call to a grain, return whether or not it makes sense to try
   // to restart the grain and retry. `retryCount` is the number of times that the request has
   // already gone through this cycle (should be zero for the first call).
 
-  return error.kjType === "disconnected" && retryCount < 1;
-}
+  return error.kjType === 'disconnected' && retryCount < 1;
+};
 
-SandstormBackend.prototype.maybeRetryUseGrain = function (grainId, cb, retryCount, err) {
+SandstormBackend.prototype.maybeRetryUseGrain = function(grainId, cb, retryCount, err) {
   var self = this;
   if (SandstormBackend.shouldRestartGrain(err, retryCount)) {
-    return inMeteor(function () {
+    return inMeteor(function() {
       return cb(self.openGrain(grainId, true).supervisor)
           .catch(self.maybeRetryUseGrain.bind(self, grainId, cb, retryCount + 1));
     });
   } else {
     throw err;
   }
-}
+};
 
-SandstormBackend.prototype.useGrain = function (grainId, cb) {
+SandstormBackend.prototype.useGrain = function(grainId, cb) {
   // This will open a grain for you, handling restarts if needed, and call the passed function with
   // the supervisor capability as the only parameter. The callback must return a promise that used
   // the supervisor, so that we can check if a disconnect error occurred, and retry if possible.
@@ -144,21 +144,21 @@ SandstormBackend.prototype.useGrain = function (grainId, cb) {
   var runningGrain = this.runningGrains[grainId];
   var self = this;
   if (runningGrain) {
-    return runningGrain.then(function (grainInfo) {
+    return runningGrain.then(function(grainInfo) {
       return cb(grainInfo.supervisor);
     }).catch(self.maybeRetryUseGrain.bind(self, grainId, cb, 0));
   } else {
-    return inMeteor(function () {
+    return inMeteor(function() {
       return cb(self.openGrain(grainId, false).supervisor)
           .catch(self.maybeRetryUseGrain.bind(self, grainId, cb, 0));
     });
   }
-}
+};
 
 SandstormBackend.prototype.continueGrain = function(grainId) {
   var grain = Grains.findOne(grainId);
   if (!grain) {
-    throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainId);
+    throw new Meteor.Error(404, 'Grain Not Found', 'Grain ID: ' + grainId);
   }
 
   // If a DevPackage with the same app ID is currently active, we let it override the installed
@@ -173,20 +173,21 @@ SandstormBackend.prototype.continueGrain = function(grainId) {
     pkg = Packages.findOne(grain.packageId);
     if (!pkg) {
       throw new Meteor.Error(500, "Grain's package not installed",
-                             "Package ID: " + grain.packageId);
+                             'Package ID: ' + grain.packageId);
     }
   }
+
   var manifest = pkg.manifest;
   var packageId = pkg._id;
 
-  if (!("continueCommand" in manifest)) {
-    throw new Meteor.Error(500, "Package manifest defines no continueCommand.",
-                           "Package ID: " + packageId);
+  if (!('continueCommand' in manifest)) {
+    throw new Meteor.Error(500, 'Package manifest defines no continueCommand.',
+                           'Package ID: ' + packageId);
   }
 
   return this.startGrainInternal(
       packageId, grainId, grain.userId, manifest.continueCommand, false, isDev);
-}
+};
 
 SandstormBackend.prototype.startGrainInternal = function(packageId, grainId, ownerId, command, isNew, isDev) {
   // Starts the grain supervisor.  Must be executed in a Meteor context.  Blocks until grain is
@@ -196,35 +197,38 @@ SandstormBackend.prototype.startGrainInternal = function(packageId, grainId, own
   if (isUserExcessivelyOverQuota(Meteor.users.findOne(ownerId))) {
     throw new Meteor.Error(402,
                            ("Cannot start grain because owner's storage is exhausted.\n" +
-                            "Please ask them to upgrade."));
+                            'Please ask them to upgrade.'));
   }
 
   // Ugly: Stay backwards-compatible with old manifests that had "executablePath" and "args" rather
   //   than just "argv".
-  if ("args" in command) {
-    if (!("argv" in command)) {
+  if ('args' in command) {
+    if (!('argv' in command)) {
       command.argv = command.args;
     }
+
     delete command.args;
   }
-  if ("executablePath" in command) {
-    if (!("deprecatedExecutablePath" in command)) {
+
+  if ('executablePath' in command) {
+    if (!('deprecatedExecutablePath' in command)) {
       command.deprecatedExecutablePath = command.executablePath;
     }
+
     delete command.executablePath;
   }
 
   var whenReady = this._backendCap.startGrain(ownerId, grainId, packageId, command, isNew, isDev)
-      .then(function (results) {
+      .then(function(results) {
     return {
       owner: ownerId,
-      supervisor: results.supervisor
+      supervisor: results.supervisor,
     };
   });
 
   this.runningGrains[grainId] = whenReady;
   return waitPromise(whenReady);
-}
+};
 
 SandstormBackend.prototype.updateLastActive = function(grainId, userId, identityId) {
   // Update the lastActive date on the grain, any relevant API tokens, and the user,
@@ -240,14 +244,16 @@ SandstormBackend.prototype.updateLastActive = function(grainId, userId, identity
     // Grain must have been deleted. Ignore.
     return;
   }
+
   if (userId) {
     Meteor.users.update(userId, {$set: {lastActive: now}});
   }
+
   if (identityId) {
     Meteor.users.update({_id: identityId}, {$set: {lastActive: now}});
     // Update any API tokens that match this user/grain pairing as well
-    ApiTokens.update({"grainId": grainId, "owner.user.identityId": identityId},
-        {$set: {"owner.user.lastUsed": now }});
+    ApiTokens.update({grainId: grainId, 'owner.user.identityId': identityId},
+        {$set: {'owner.user.lastUsed': now }});
   }
 
   if (Meteor.settings.public.quotaEnabled) {
@@ -258,24 +264,24 @@ SandstormBackend.prototype.updateLastActive = function(grainId, userId, identity
       // TODO(security): Consider actively killing grains if the user is excessively over quota?
       //   Otherwise a constantly-active grain could consume arbitrary space without being stopped.
     } catch (err) {
-      if (err.kjType !== "unimplemented") {
-        console.error("error getting user storage usage:", err.stack);
+      if (err.kjType !== 'unimplemented') {
+        console.error('error getting user storage usage:', err.stack);
       }
     }
   }
-}
-
+};
 
 function generateSessionId(grainId, userId, salt) {
   var sessionParts = [grainId, salt];
   if (userId) {
     sessionParts.push(userId);
   }
-  var sessionInput = sessionParts.join(":");
-  return Crypto.createHash("sha256").update(sessionInput).digest("hex");
+
+  var sessionInput = sessionParts.join(':');
+  return Crypto.createHash('sha256').update(sessionInput).digest('hex');
 }
 
-SandstormBackend.prototype.openSessionInternal = function (grainId, userId, identityId, title, apiToken, cachedSalt) {
+SandstormBackend.prototype.openSessionInternal = function(grainId, userId, identityId, title, apiToken, cachedSalt) {
 
   // Start the grain if it is not running. This is an optimization: if we didn't start it here,
   // it would start on the first request to the session host, but we'd like to get started before
@@ -297,7 +303,7 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
     // TODO(someday): also do some more checks for anonymous sessions (sessions without a userId).
     if ((session.identityId && session.identityId !== identityId) ||
         (session.grainId !== grainId)) {
-      var e = new Meteor.Error(500, "Duplicate SessionId");
+      var e = new Meteor.Error(500, 'Duplicate SessionId');
       console.error(e);
       throw e;
     } else {
@@ -308,9 +314,9 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
   session = {
     _id: sessionId,
     grainId: grainId,
-    hostId: Crypto.createHash("sha256").update(sessionId).digest("hex").slice(0, 32),
+    hostId: Crypto.createHash('sha256').update(sessionId).digest('hex').slice(0, 32),
     timestamp: new Date().getTime(),
-    hasLoaded: false
+    hasLoaded: false,
   };
 
   if (userId) {
@@ -325,4 +331,4 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
   Sessions.insert(session);
 
   return {sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId, salt: cachedSalt};
-}
+};

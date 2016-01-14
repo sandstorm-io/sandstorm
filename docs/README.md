@@ -17,12 +17,13 @@ Then visit http://localhost:8000/
 
 ## How to deploy to docs.sandstorm.io
 
-- Ask Asheesh to share a particular GitWeb Pages grain with you.
+- Ask Asheesh to share a particular GitWeb Pages grain with you. It's
+  located on https://alpha.sandstorm.io/.
 
 - Do a `git clone` of that repository into a directory, like:
 
 ```
-git clone https://my_repo@api.sandstorm.example.com sandstorm-docs
+git clone https://my_repo@alpha-api.sandstorm.io/ sandstorm-docs
 ```
 
 - Run `generate.sh` to re-generate the docs, then commit them to this git repo.

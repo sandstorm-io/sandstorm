@@ -17,7 +17,8 @@
 var ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
 var publicAdminSettings = ["google", "github", "emailToken", "splashUrl", "signupDialog",
                            "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
-                           "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled"];
+                           "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled",
+                           "serverTitle", "returnAddress"];
 
 DEFAULT_SIGNUP_DIALOG = "You've been invited to join this Sandstorm server!";
 
@@ -654,9 +655,13 @@ if (Meteor.isClient) {
       var state = Iron.controller().state;
       var token = this.token;
       resetResult(state);
-      state.set("numSettings", 10);
+      state.set("numSettings", 12);
 
       var handleErrorBound = handleError.bind(state);
+      Meteor.call("setSetting", token, "serverTitle",
+                  event.target.serverTitle.value, handleErrorBound);
+      Meteor.call("setSetting", token, "returnAddress",
+                  event.target.returnAddress.value, handleErrorBound);
       Meteor.call("setSetting", token, "splashUrl", event.target.splashUrl.value, handleErrorBound);
       Meteor.call("setSetting", token, "signupDialog", event.target.signupDialog.value, handleErrorBound);
       Meteor.call("setSetting", token, "termsUrl", event.target.termsUrl.value, handleErrorBound);
@@ -689,6 +694,14 @@ if (Meteor.isClient) {
   Template.adminAdvanced.helpers({
     setDocumentTitle: function () {
       document.title = "Advanced · Admin · Sandstorm";
+    },
+    serverTitle: function() {
+      var setting = Settings.findOne({_id: "serverTitle"});
+      return (setting && setting.value) || "";
+    },
+    returnAddress: function() {
+      var setting = Settings.findOne({_id: "returnAddress"});
+      return (setting && setting.value) || "";
     },
     splashUrl: function() {
       var setting = Settings.findOne({_id: "splashUrl"});
@@ -860,7 +873,7 @@ if (Meteor.isServer) {
 
       SandstormEmail.send({
         to: to,
-        from: "Sandstorm Test <no-reply@" + HOSTNAME + ">",
+        from: globalDb.getServerTitle() + " <" + globalDb.getReturnAddress() + ">",
         subject: "Testing your Sandstorm's SMTP setting",
         text: "Success! Your outgoing SMTP is working.",
         smtpUrl: smtpUrl

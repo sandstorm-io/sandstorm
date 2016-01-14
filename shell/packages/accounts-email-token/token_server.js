@@ -101,7 +101,7 @@ var makeTokenUrl = function (email, token, linkingIdentity) {
 ///
 /// EMAIL VERIFICATION
 ///
-var sendTokenEmail = function (email, token, linkingIdentity) {
+var sendTokenEmail = function (db, email, token, linkingIdentity) {
   var subject;
   var text;
   if (!linkingIdentity) {
@@ -118,7 +118,7 @@ var sendTokenEmail = function (email, token, linkingIdentity) {
 
   var options = {
     to:  email,
-    from: HOSTNAME + " <no-reply@" + HOSTNAME + ">",
+    from: db.getServerTitle() + " <" + db.getReturnAddress() + ">",
     subject: subject,
     text: text,
   };
@@ -130,7 +130,7 @@ var sendTokenEmail = function (email, token, linkingIdentity) {
 /// CREATING USERS
 ///
 // returns the user id
-var createAndEmailTokenForUser = function (email, linkingIdentity) {
+var createAndEmailTokenForUser = function (db, email, linkingIdentity) {
   check(email, String);
   check(linkingIdentity, Boolean);
   var atIndex = email.indexOf("@");
@@ -166,7 +166,7 @@ var createAndEmailTokenForUser = function (email, linkingIdentity) {
     userId = Accounts.insertUserDoc(options, user);
   }
 
-  sendTokenEmail(email, token, linkingIdentity);
+  sendTokenEmail(db, email, token, linkingIdentity);
 
   return userId;
 };
@@ -184,7 +184,7 @@ Meteor.methods({
       throw new Meteor.Error(403, "Email identity service is disabled.");
     }
     // Create user. result contains id and token.
-    var user = createAndEmailTokenForUser(email, linkingIdentity);
+    var user = createAndEmailTokenForUser(this.connection.sandstormDb, email, linkingIdentity);
   },
 
   linkEmailIdentityToAccount: function (email, token) {

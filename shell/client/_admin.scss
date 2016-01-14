@@ -73,8 +73,10 @@
   @extend %button-secondary;
 }
 
-#admin-settings-form input[type="text"] {
-  width: 100%;
+#admin-settings-form {
+  input[type="text"], input[type="email"] {
+    width: 100%;
+  }
 }
 
 #settings-content {

@@ -17,6 +17,11 @@
         <p class="grains-size"><strong>My grains' total size:</strong> {{ myGrainsSize }}</p>
       {{/if}}
     </div>
+    <div class="buttons">
+      <button class='restore-button'>Restore backup...
+        <input type="file" style="display:none">
+      </button>
+    </div>
 
     {{>sandstormGrainTable grains=filteredSortedGrains onGrainClicked=onGrainClicked}}
 

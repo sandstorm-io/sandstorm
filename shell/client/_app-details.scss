@@ -162,12 +162,13 @@
         display: block;
         float: left;
       }
-      >button.uninstall-button {
+      >button.uninstall-button, >button.restore-button {
         @extend %button-base;
         @extend %button-secondary;
         display: block;
         float: right;
         min-height: 32px;
+        margin-left: 4px;
       }
     }
     >div.publisher-details {

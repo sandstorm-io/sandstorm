@@ -70,8 +70,9 @@ var loginResultCallback = function (serviceName, err) {
     // do nothing
   } else if (err instanceof ServiceConfiguration.ConfigError) {
     loginButtonsSession.errorMessage(
-        "The " + serviceName + " login service has a configuration problem (" + err.message + ")." +
-        "\n\n\n Please contact your server administrator. ");
+      "Configuration problem: " + err.message + ". Please visit the Admin Settings page within " +
+      "Sandstorm, or ask your administrator to do so. You may need an admin token. Read more by " +
+      "clicking Troubleshooting below.");
   } else {
     loginButtonsSession.errorMessage(err.reason || "Unknown error");
   }

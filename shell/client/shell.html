@@ -110,18 +110,27 @@ limitations under the License.
 
   {{/with}} {{!-- firstTimeBillingPromptState --}}
   {{/if}} {{!-- firstLogin --}}
-
-  {{!-- If the main-content div were inside the {{#if firstLogin}} block, then grain views could be
-        blanked out when a demo user upgrades to a real account by linking an email identity.
-   --}}
-  <div class="main-content {{#if hideNavbar}}hide-navbar{{else}}{{#if shrinkNavbar}}shrink-navbar{{/if}}{{/if}}">
-    {{#unless firstLogin}}
-      {{> yield}}
-    {{/unless}}
-  </div>
-
   {{/if}} {{!-- identityUser --}}
   {{/with}} {{!-- demoExpired --}}
+
+  {{!-- Make sure to always render the main-content div, but only yield if there is no interstitial
+        to render on top. The main-content div needs to be stable so that any GrainView that gets
+        attached does not get orphaned. For example, if the main-content div were inside the
+        {{#if firstLogin}} block, then grain views could appear to become blanked out when a demo
+        user upgrades to a real account by linking an email identity.
+   --}}
+  <div class="main-content {{#if hideNavbar}}hide-navbar{{else}}{{#if shrinkNavbar}}shrink-navbar{{/if}}{{/if}}">
+  {{#unless demoExpired}}
+    {{#unless identityUser}}
+      {{#unless firstLogin}}
+        {{#unless firstTimeBillingPromptState}}
+          {{> yield}}
+        {{/unless}}
+      {{/unless}}
+    {{/unless}}
+  {{/unless}}
+  </div>
+
 </template>
 
 <template name="grainView">
@@ -142,14 +151,31 @@ limitations under the License.
         {{> _grainSpinner}}
       {{/if}}
     {{else}}
-    {{#if interstitial}}
+    {{#if interstitial.chooseIdentity}}
       <div class="interstitial-button-box">
         <p>With which of your identities would you like to open this grain?</p>
         {{> identityPicker identityPickerData}}
         <button class="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
       </div>
     {{else}}
-      {{> _grainSpinner}}
+      {{#if interstitial.directShare}}
+        <div class="direct-share-denied">
+          <p>Access Denied.</p>
+          {{#if currentUser}}
+            <p>
+              This grain was shared to the following identity,
+              which is not linked to the current account.
+            </p>
+          {{else}}
+            <p>
+              This grain was shared to the following identity. Please sign in to gain access.
+            </p>
+          {{/if}}
+          {{> identityCard interstitial.directShare.recipient }}
+        </div>
+      {{else}}
+        {{> _grainSpinner}}
+      {{/if}}
     {{/if}}
     {{/if}}
     {{/if}}

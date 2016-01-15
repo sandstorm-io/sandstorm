@@ -27,7 +27,13 @@ Meteor.startup(() => {
     Misc.insert(baseUrlRow);
   } else if (baseUrlRow.value !== ROOT_URL) {
     console.log('resetting oauth');
-    Accounts.loginServiceConfiguration.remove({});
+    Settings.find({_id: {$in: ["google", "github"]}}).forEach((setting) => {
+      if (!!setting.value) {
+        Settings.update({_id: setting._id},
+                        {$set: {value: false,
+                                resetReason: "BASE_URL changed"}});
+      }
+    });
     baseUrlRow = {_id: 'BASE_URL', value: ROOT_URL};
     Misc.update({_id: 'BASE_URL'}, {$set: {value: ROOT_URL}});
   }

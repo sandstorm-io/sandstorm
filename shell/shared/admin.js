@@ -250,21 +250,11 @@ if (Meteor.isClient) {
     setDocumentTitle: function () {
       document.title = "Settings · Admin · Sandstorm";
     },
-    googleEnabled: function () {
-      var setting = Settings.findOne({_id: "google"});
-      if (setting) {
-        return setting.value;
-      } else {
-        return false;
-      }
+    googleSetting: function () {
+      return Settings.findOne({_id: "google"});
     },
-    githubEnabled: function () {
-      var setting = Settings.findOne({_id: "github"});
-      if (setting) {
-        return setting.value;
-      } else {
-        return false;
-      }
+    githubSetting: function () {
+      return Settings.findOne({_id: "github"});
     },
     emailTokenEnabled: function () {
       var setting = Settings.findOne({_id: "emailToken"});
@@ -818,8 +808,15 @@ if (Meteor.isServer) {
           throw new Meteor.Error(403, "You must configure the " + serviceName +
             " service before you can enable it. Click the \"configure\" link.");
         }
+        if (!config.clientId || !config.secret) {
+          throw new Meteor.Error(403, "You must provide a non-empty clientId and secret for the " +
+            serviceName + " service before you can enable it. Click the \"configure\" link.");
+        }
       }
       Settings.upsert({_id: serviceName}, {$set: {value: value}});
+      if (value) {
+        Settings.update({_id: serviceName}, {$unset: {resetReason: 1}});
+      }
     },
     setSetting: function (token, name, value) {
       checkAuth(token);

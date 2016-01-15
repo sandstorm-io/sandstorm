@@ -904,6 +904,7 @@ body>.popup {
         border: 0px;
         outline: 0px;
         width: 100%;
+        box-sizing: border-box;
       }
       &.active {
         outline: $focus-outline-color solid 1px;

@@ -62,6 +62,14 @@ shell/packages/sandstorm-identicons/pnglib.js
     License: BSD 2-clause
     License URL: http://opensource.org/licenses/bsd-license.php
 
+shell/packages/introjs/client/*
+    What: intro.js
+    Source URL: https://github.com/usablica/intro.js
+    Copyright: Afshin Mehrabani
+    License: MIT
+    License URL: https://github.com/usablica/intro.js/blob/master/README.md
+                 (at bottom)
+
 src/joyent-http/*
     What: Node.js HTTP parsing library
     Source URL: https://github.com/joyent/http-parser

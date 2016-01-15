@@ -903,7 +903,7 @@ body>.popup {
       input.emails {
         border: 0px;
         outline: 0px;
-        width: 200px;
+        width: 100%;
       }
       &.active {
         outline: $focus-outline-color solid 1px;

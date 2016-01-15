@@ -1063,6 +1063,10 @@ limitations under the License.
 <template name="adminAdvanced">
   {{setDocumentTitle}}
   <form id="admin-settings-form">
+    <p>Server Title: <input type="text" name="serverTitle" value="{{serverTitle}}"><br>
+      <span class="details">The name of this server, for use when communicating with users. Example: "Bob's Sandstorm Server"</span></p>
+    <p>Return Address: <input type="email" name="returnAddress" value="{{returnAddress}}"><br>
+      <span class="details">E-mail address to place in the "From" header of email notifications from this server. You can specify a "no-reply" address, but we suggest using an address that users can mail if they need help.</span></p>
     <p>Splash URL: <input type="text" name="splashUrl" value="{{splashUrl}}" placeholder="https://example.com"><br>
       <span class="details">This web page will be displayed in the background behind the login dialog (the home page when logged out). For security reasons, the page must be hosted within this Sandstorm server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We suggest using a static web publishing app like <a href="https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh?host={{origin}}" target="_blank">Hacker CMS</a> to host the content. <strong>WARNING: This feature is experimental; in particular the style and positioning of the login box is subject to change without notice.</strong> Please <a href="https://github.com/sandstorm-io/sandstorm/issues" target="_blank">let us know</a> if you'd like to see it stabilize.</span></p>
     <p>Signup Dialog: <input type="text" name="signupDialog" value="{{signupDialog}}"><br>

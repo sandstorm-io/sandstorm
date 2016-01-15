@@ -5,6 +5,7 @@
 // idempotent and safe to accidentally run multiple times.
 
 var Future = Npm.require("fibers/future");
+var Url = Npm.require("url");
 
 var updateLoginStyleToRedirect = function() {
   var configurations = Package["service-configuration"].ServiceConfiguration.configurations;
@@ -404,6 +405,12 @@ function cleanUpApiTokens() {
                   parentToken: {$exists: false}}).forEach(repairChain);
 }
 
+function initServerTitleAndReturnAddress() {
+  var hostname = Url.parse(process.env.ROOT_URL).hostname;
+  Settings.insert({_id: "serverTitle", value: hostname});
+  Settings.insert({_id: "returnAddress", value: "no-reply@" + hostname});
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -425,6 +432,7 @@ var MIGRATIONS = [
   splitAccountUsersAndIdentityUsers,
   populateContactsFromApiTokens,
   cleanUpApiTokens,
+  initServerTitleAndReturnAddress
 ];
 
 function migrateToLatest() {

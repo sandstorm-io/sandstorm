@@ -1037,6 +1037,14 @@ _.extend(SandstormDb.prototype, {
   getKeybaseProfile: function (keyFingerprint) {
     return this.collections.keybaseProfiles.findOne(keyFingerprint) || {};
   },
+
+  getServerTitle: function () {
+    return Settings.findOne({_id: "serverTitle"}).value;
+  },
+
+  getReturnAddress: function () {
+    return Settings.findOne({_id: "returnAddress"}).value;
+  }
 });
 
 var appNameFromPackage = function(packageObj) {

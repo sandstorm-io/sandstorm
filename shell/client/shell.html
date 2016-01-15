@@ -172,6 +172,13 @@ limitations under the License.
             </p>
           {{/if}}
           {{> identityCard interstitial.directShare.recipient }}
+          {{#if currentUser}}
+            <p>
+              To gain access,
+              try <a href="/account">linking the above identity to your account</a>
+              or signing in with a different account.
+            </p>
+          {{/if}}
         </div>
       {{else}}
         {{> _grainSpinner}}

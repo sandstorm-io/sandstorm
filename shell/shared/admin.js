@@ -52,8 +52,13 @@ var adminRoute = RouteController.extend({
     });
     var user = Meteor.user();
     if (user && user.loginIdentities) {
-      if (this.params._token && (!user.signupKey || !user.isAdmin)) {
-        Meteor.call("signUpAsAdmin", this.params._token);
+      if (this.params._token) {
+        if (!user.signupKey || !user.isAdmin) {
+          Meteor.call("signUpAsAdmin", this.params._token);
+        } else if (user.isAdmin) {
+          // We don't need the token. Redirect to the current route, minus the token parameter.
+          Router.go(this.route.getName(), {}, _.pick(this.params, "query", "hash"));
+        }
       }
     }
     resetResult(state);

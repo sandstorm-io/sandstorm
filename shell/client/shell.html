@@ -160,23 +160,19 @@ limitations under the License.
     {{else}}
       {{#if interstitial.directShare}}
         <div class="direct-share-denied">
-          <p>Access Denied.</p>
-          {{#if currentUser}}
-            <p>
-              This grain was shared to the following identity,
-              which is not linked to the current account.
-            </p>
-          {{else}}
-            <p>
-              This grain was shared to the following identity. Please sign in to gain access.
-            </p>
-          {{/if}}
+          <p>
+            Access through this URL is restricted to this identity:
+          </p>
           {{> identityCard interstitial.directShare.recipient }}
           {{#if currentUser}}
             <p>
               To gain access,
-              try <a href="/account">linking the above identity to your account</a>
-              or signing in with a different account.
+              <a href="/account">link the above identity to your account</a>
+              or sign in with the appropriate account.
+            </p>
+          {{else}}
+            <p>
+              Please sign in to gain access.
             </p>
           {{/if}}
         </div>

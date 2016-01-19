@@ -844,10 +844,16 @@ limitations under the License.
         (<a class="configure-oauth" data-servicename="google" href="">configure</a>)
         (<a class="reset-login-tokens" data-servicename="google" href="">log out all users</a>)
       </label><br>
-      {{#with googleSetting.resetReason}}
+      {{#with googleSetting.automaticallyReset}}
         <p class="alert-danger reset-reason">
-          Google login has been automatically disabled because: {{.}}.
+          Google login was automatically disabled
+          {{#with baseUrlChangedFrom}}
+            because this server's BASE_URL has been updated. Its old value was {{.}}.
+          {{else}}
+            for an unknown reason.
+          {{/with}}
           Please make sure the configuration is correct before re-enabling.
+          You will likely need to update the OAuth redirect URL in the Google Developer Console.
         </p>
       {{/with}}
       <label><input type="checkbox" class="oauth-checkbox" name="githubLogin"
@@ -856,10 +862,16 @@ limitations under the License.
         (<a class="configure-oauth" data-servicename="github" href="">configure</a>)
         (<a class="reset-login-tokens" data-servicename="github" href="">log out all users</a>)
       </label><br>
-      {{#with githubSetting.resetReason}}
+      {{#with githubSetting.automaticallyReset}}
         <p class="alert-danger reset-reason">
-          GitHub login had been automatically disabled because: {{.}}.
+          GitHub login was automatically disabled
+          {{#with baseUrlChangedFrom}}
+            because this server's BASE_URL has been updated. Its old value was {{.}}.
+          {{else}}
+            for an unknown reason.
+          {{/with}}
           Please make sure the configuration is correct before re-enabling.
+          You will likely need to update the OAuth redirect URL in GitHub application settings.
         </p>
       {{/with}}
       <label><input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login</label><br>

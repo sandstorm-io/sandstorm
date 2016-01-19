@@ -197,7 +197,8 @@ if (Meteor.isClient) {
       var serviceName = event.target.getAttribute("data-servicename");
       var config = Package["service-configuration"].ServiceConfiguration.configurations.findOne({service: serviceName});
 
-      if (!config && event.target.checked) {
+      var setting = Settings.findOne({_id: serviceName});
+      if (event.target.checked && (!config || (setting && setting.automaticallyReset))) {
         state.set("configurationServiceName", serviceName);
       }
     },
@@ -815,7 +816,7 @@ if (Meteor.isServer) {
       }
       Settings.upsert({_id: serviceName}, {$set: {value: value}});
       if (value) {
-        Settings.update({_id: serviceName}, {$unset: {resetReason: 1}});
+        Settings.update({_id: serviceName}, {$unset: {automaticallyReset: 1}});
       }
     },
     setSetting: function (token, name, value) {

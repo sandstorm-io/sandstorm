@@ -31,7 +31,7 @@ Meteor.startup(() => {
       if (!!setting.value) {
         Settings.update({_id: setting._id},
                         {$set: {value: false,
-                                resetReason: "BASE_URL changed"}});
+                                automaticallyReset: {baseUrlChangedFrom: baseUrlRow.value}}});
       }
     });
     baseUrlRow = {_id: 'BASE_URL', value: ROOT_URL};

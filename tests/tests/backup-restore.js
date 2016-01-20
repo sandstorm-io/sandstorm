@@ -186,5 +186,6 @@ module.exports["Test backup and restore"] = function(browser) {
     .frame('grain-frame')
     .waitForElementPresent('#randomId', medium_wait)
     .assert.containsText('#randomId', randomValue)
-    .frame(null);
+    .frame(null)
+    .end();
 }

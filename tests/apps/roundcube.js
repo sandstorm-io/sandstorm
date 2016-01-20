@@ -78,5 +78,6 @@ module.exports["Sending Mail"] = function (browser) {
       to: to,
       subject: subject,
       text: text + "\n..\n"
-    });
+    })
+    .end();
 };

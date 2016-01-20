@@ -157,5 +157,6 @@ module.exports['Test renderTemplate'] = function (browser) {
           });
         })
       .frameParent()
-    .frameParent();
+    .frameParent()
+    .end();
 }

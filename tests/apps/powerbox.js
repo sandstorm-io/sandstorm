@@ -54,8 +54,8 @@ module.exports["Test Powerbox"] = function (browser) {
           .setValue("#powerbox-request-input", result.value)
           .click("#powerbox-request-form button")
           .frame("grain-frame")
-            .waitForElementVisible("#request-result", short_wait)
-            .assert.containsText("#request-result", "request: footest");
+          .waitForElementVisible("#request-result", short_wait)
+          .assert.containsText("#request-result", "request: footest");
     });
 };
 
@@ -86,8 +86,8 @@ module.exports["Test PowerboxSave"] = function (browser) {
           .setValue("#powerbox-request-input", result.value)
           .click("#powerbox-request-form button")
           .frame("grain-frame")
-            .waitForElementVisible("#request-result", short_wait)
-            .assert.containsText("#request-result", "request: footest");
+          .waitForElementVisible("#request-result", short_wait)
+          .assert.containsText("#request-result", "request: footest");
     });
 };
 
@@ -130,5 +130,6 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
                 .waitForElementVisible(".grainlog-contents > pre", short_wait)
                 .assert.containsText(".grainlog-contents > pre", "Error: Requirements not satisfied")
             });
-    });
+    })
+    .end();
 };

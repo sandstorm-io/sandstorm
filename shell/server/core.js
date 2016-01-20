@@ -226,6 +226,38 @@ Meteor.methods({
 
     Notifications.update({userId: Meteor.userId()}, {$set: {isUnread: false}}, {multi: true});
   },
+  offerExternalWebSession(grainId, identityId, url) {
+    check(grainId, String);
+    check(identityId, String);
+    check(url, String);
+
+    const db = this.connection.sandstormDb;
+
+    // Check that the the identityId matches and has permission to view this grain
+    if (!db.userHasIdentity(Meteor.userId(), identityId)) {
+      throw new Meteor.Error(403, "Logged in user doesn't own the supplied identity.");
+    }
+    const requirement = {
+      permissionsHeld: {
+        grainId: grainId,
+        identityId: identityId,
+        permissions: [], // We only want to check for the implicit view permission
+      },
+    };
+    if (!checkRequirements([requirement])) {
+      throw new Meteor.Error(403, "This identity doesn't have view permissions to the grain.");
+    }
+    const requirements = []; // We don't actually want the user's permission check as a requirement.
+    const grainOwner = {grain: {
+      grainId: grainId,
+      introducerIdentity: identityId,
+      saveLabel: url + " websession",
+    }};
+    const sturdyRef = waitPromise(saveFrontendRef(
+      {externalWebSession: {url: url}}, grainOwner, requirements)).sturdyRef;
+
+    return sturdyRef.toString();
+  }
 });
 
 saveFrontendRef = (frontendRef, owner, requirements) => {
@@ -320,6 +352,8 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
       return {cap: makeIpNetwork(tokenId)};
     } else if (token.frontendRef.ipInterface) {
       return {cap: makeIpInterface(tokenId)};
+    } else if (token.frontendRef.externalWebSession) {
+      return {cap: makeExternalWebSession(token.frontendRef.externalWebSession.url)};
     } else {
       throw new Meteor.Error(500, 'Unknown frontend token type.');
     }

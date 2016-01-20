@@ -814,6 +814,80 @@ if (Meteor.isClient) {
     }
   });
 
+  Template.grainView.onCreated(function () {
+    var template = Template.instance();
+    template.savedKeys = [];
+    this.autorun(function () {
+      var inlinePowerbox = template.data.enableInlinePowerbox.get();
+      if (inlinePowerbox) {
+        template.find(".inline-powerbox").focus();
+      }
+    });
+  });
+  function handleInlinePowerboxKey (event, template) {
+    var state = template.data.inlinePowerboxState;
+    switch (event.keyCode) {
+    case 13: // Enter
+    case 32: // Space
+      var url = template.savedKeys.map(function (char) {
+        return String.fromCharCode(char);
+      }).join("");
+      if (url.lastIndexOf("http", 0) === 0) {
+        var activeGrain = getActiveGrain(globalGrains.get());
+        Meteor.call("offerExternalWebSession",
+          activeGrain.grainId(), activeGrain.identityId(), url, function (err, sturdyRef) {
+            if (err) {
+              // TODO(someday): do something
+              return;
+            }
+            state.source.postMessage({
+              rpcId: state.rpcId,
+              event: {
+                webSession: {
+                  token: sturdyRef,
+                },
+              },
+            }, state.origin);
+          }
+        );
+      }
+      // Start over
+      template.savedKeys = [];
+      break;
+    default:
+      template.savedKeys.push(event.keyCode);
+    }
+    state.source.postMessage({
+      rpcId: state.rpcId,
+      event: {
+        keyCode: event.keyCode,
+      },
+    }, state.origin);
+  }
+  Template.grainView.events({
+    "blur .inline-powerbox": function (event, template) {
+      template.data.enableInlinePowerbox.set(false);
+    },
+    "keydown .inline-powerbox": function (event, template) {
+      var keyCode = event.keyCode;
+      if (keyCode === 8) { // backspace
+        handleInlinePowerboxKey(event, template);
+      }
+    },
+    "keypress .inline-powerbox": handleInlinePowerboxKey,
+    "testInput .inline-powerbox": function (ev, template) {
+      // This custom event is used solely for testing purposes. See tests/apps/powerbox.js.
+      _.each(ev.originalEvent.detail.keys, function (key) {
+        handleInlinePowerboxKey({keyCode: key.charCodeAt(0)}, template);
+      });
+    },
+    "paste .inline-powerbox": function (event, template) {
+      _.each(event.originalEvent.clipboardData.getData('text'), function (key) {
+        handleInlinePowerboxKey({keyCode: key.charCodeAt(0)}, template);
+      });
+    },
+  })
+
   Template.grainView.helpers({
     unpackedGrainState: function () {
       return mapGrainStateToTemplateData(this);
@@ -831,7 +905,7 @@ if (Meteor.isClient) {
       var grain = getActiveGrain(globalGrains.get());
       return {identities: identities,
               onPicked: function(identityId) { grain.revealIdentity(identityId) }};
-    }
+    },
   });
 
   Template.grain.helpers({
@@ -1358,6 +1432,19 @@ if (Meteor.isClient) {
             return "remove";
           }
         });
+      } else if (event.data.inlinePowerbox) {
+        var inlinePowerbox = event.data.inlinePowerbox;
+        check(inlinePowerbox, Object);
+        var rpcId = inlinePowerbox.rpcId;
+        var currentGrain = getActiveGrain(globalGrains.get());
+        var inlinePowerboxState = {
+          source: event.source,
+          rpcId: rpcId,
+          grainId: senderGrain.grainId(),
+          origin: event.origin,
+          isForeground: senderGrain === currentGrain,
+        };
+        senderGrain.startInlinePowerbox(inlinePowerboxState);
       } else {
         console.log("postMessage from app not understood: " + event.data);
         console.log(event);

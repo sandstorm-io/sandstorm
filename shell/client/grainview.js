@@ -42,6 +42,8 @@ GrainView = class GrainView {
       this.revealIdentity();
     }
 
+    this.enableInlinePowerbox = new ReactiveVar(false);
+
     // We manage our Blaze view directly in order to get more control over when iframes get
     // re-rendered. E.g. if we were to instead use a template with {{#each grains}} iterating over
     // the list of open grains, all grains might get re-rendered whenever a grain is removed from the
@@ -616,6 +618,18 @@ GrainView = class GrainView {
   setGeneratedApiToken(newApiToken) {
     this._generatedApiToken = newApiToken;
     this._dep.changed();
+  }
+
+  startInlinePowerbox(inlinePowerboxState) {
+    this.inlinePowerboxState = inlinePowerboxState;
+    if (inlinePowerboxState.isForeground) {
+      this.enableInlinePowerbox.set(true);
+    } else {
+      state.source.postMessage({
+        rpcId: inlinePowerboxState.rpcId,
+        error: "Cannot start inline powerbox when app is not in foreground",
+      }, inlinePowerboxState.origin);
+    }
   }
 };
 

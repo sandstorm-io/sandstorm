@@ -53,6 +53,7 @@ module.exports["Test Notification"] = function (browser) {
         .assert.containsText(".grainlog-contents > pre", "Grain has enabled backgrounding")
         .assert.containsText(".grainlog-contents > pre", "Grain's backgrounding has been disabled")
         .closeWindow()
+        .end();
     });
 };
 

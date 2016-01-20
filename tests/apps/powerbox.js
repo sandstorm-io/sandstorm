@@ -130,5 +130,6 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
                 .waitForElementVisible(".grainlog-contents > pre", short_wait)
                 .assert.containsText(".grainlog-contents > pre", "Error: Requirements not satisfied")
             });
-    });
+    })
+    .end();
 };

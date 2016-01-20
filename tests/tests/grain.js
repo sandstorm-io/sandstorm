@@ -121,6 +121,7 @@ module.exports = utils.testAllLogins({
       .click('#confirmInstall')
       .waitForElementVisible(appDetailsTitleSelector, short_wait)
       .assert.containsText(appDetailsTitleSelector, 'Hacker CMS')
+      .end();
   },
 
   "Test new grain" : function (browser) {
@@ -128,7 +129,8 @@ module.exports = utils.testAllLogins({
       .waitForElementVisible(actionSelector, short_wait)
       .click(actionSelector)
       .waitForElementVisible('#grainTitle', medium_wait)
-      .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle);
+      .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+      .end();
   },
 
   "Test grain frame" : function (browser) {
@@ -137,7 +139,8 @@ module.exports = utils.testAllLogins({
       .frame('grain-frame')
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
-      .frameParent();
+      .frameParent()
+      .end();
   },
 
   "Test grain restart" : function (browser) {
@@ -147,7 +150,8 @@ module.exports = utils.testAllLogins({
       .frame('grain-frame')
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
-      .frameParent();
+      .frameParent()
+      .end();
   },
 
   "Test grain debug" : function (browser) {
@@ -197,6 +201,7 @@ module.exports["Test grain anonymous user"] = function (browser) {
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
+        .end();
     });
 }
 
@@ -279,6 +284,7 @@ module.exports["Test roleless sharing"] = function (browser) {
             .waitForElementVisible('.popup.who-has-access', medium_wait)
             .waitForElementVisible('.popup.who-has-access .people td', medium_wait)
             .assert.containsText('.popup.who-has-access .people td', secondUserName)
+            .end();
         });
     });
 }
@@ -346,6 +352,7 @@ module.exports["Test role sharing"] = function (browser) {
             .assert.valueContains("#shareable-link-tab .share-token-role", "can edit")
             .submitForm('.new-share-token')
             .waitForElementVisible('#share-token-text', medium_wait)
+            .end();
         });
     });
 }
@@ -395,5 +402,6 @@ module.exports["Test grain incognito interstitial"] = function (browser) {
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
+        .end();
     });
 }

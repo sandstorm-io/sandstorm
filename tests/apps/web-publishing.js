@@ -43,7 +43,8 @@ module.exports["Basic web publishing"] = function (browser) {
       this
         .url(result.value)
         .waitForElementVisible("#result", short_wait)
-        .assert.containsText("#result", "Success");
+        .assert.containsText("#result", "Success")
+        .end();
     });
 };
 
@@ -63,6 +64,7 @@ module.exports["Web publishing with grain shutdown"] = function (browser) {
         .pause(short_wait)
         .url(result.value)
         .waitForElementVisible("#result", short_wait)
-        .assert.containsText("#result", "Shutdown success");
+        .assert.containsText("#result", "Shutdown success")
+        .end();
     });
 };

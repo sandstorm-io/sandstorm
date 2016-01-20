@@ -37,6 +37,7 @@ module.exports["Test appdemo link"] = function (browser) {
     .click(".start")
     .waitForElementPresent("iframe.grain-frame", short_wait)
     .frame("grain-frame")
-      .waitForElementPresent("#publish", medium_wait)
-      .assert.containsText("#publish", "Publish");
+    .waitForElementPresent("#publish", medium_wait)
+    .assert.containsText("#publish", "Publish")
+    .end();
 };

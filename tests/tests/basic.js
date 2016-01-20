@@ -24,14 +24,16 @@ module.exports = {
   "Test title" : function (browser) {
     browser
       .init()
-      .assert.title('Sandstorm');
+      .assert.title('Sandstorm')
+      .end();
   },
 
   "Test login command" : function (browser) {
     browser
       .loginDevAccount("TestingLogin")
       .waitForElementVisible('.topbar .account>.show-popup>a', short_wait)
-      .assert.containsText(".topbar .account>.show-popup>a", "TestingLogin");
+      .assert.containsText(".topbar .account>.show-popup>a", "TestingLogin")
+      .end();
   },
 };
 if (!disable_demo) {
@@ -40,5 +42,6 @@ if (!disable_demo) {
       .loginDemo()
       .waitForElementVisible('.topbar .account>.show-popup>a', short_wait)
       .assert.containsText(".topbar .account>.show-popup>a", "Demo")
+      .end();
   };
 }

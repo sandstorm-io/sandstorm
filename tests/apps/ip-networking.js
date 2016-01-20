@@ -50,7 +50,8 @@ module.exports["Test Ip Networking"] = function (browser) {
         .click("#powerbox-request-form button.submit")
         .frame("grain-frame")
         .waitForElementVisible("#request-result", short_wait)
-        .assert.containsText("#request-result", "301 Moved Permanently");
+        .assert.containsText("#request-result", "301 Moved Permanently")
+        .end();
     });
 };
 
@@ -77,7 +78,8 @@ module.exports["Test Ip Interface"] = function (browser) {
         .frame("grain-frame")
         .waitForElementVisible("#request-result", short_wait)
         .assert.containsText("#request-result", "request:")
-        .assertTcpConnection(IP_INTERFACE_TEST_PORT, "tcptest");
+        .assertTcpConnection(IP_INTERFACE_TEST_PORT, "tcptest")
+        .end();
     });
 };
 

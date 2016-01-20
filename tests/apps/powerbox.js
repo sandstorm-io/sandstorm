@@ -54,8 +54,9 @@ module.exports["Test Powerbox"] = function (browser) {
           .setValue("#powerbox-request-input", result.value)
           .click("#powerbox-request-form button")
           .frame("grain-frame")
-            .waitForElementVisible("#request-result", short_wait)
-            .assert.containsText("#request-result", "request: footest");
+          .waitForElementVisible("#request-result", short_wait)
+          .assert.containsText("#request-result", "request: footest")
+          .end();
     });
 };
 
@@ -64,7 +65,8 @@ module.exports["Install PowerboxSave"] = function (browser) {
   browser
     .init()
     .installApp("http://sandstorm.io/apps/jparyani/powerbox-save-0.spk", "5af2a3ca2a4e99ff082c458321c85105", "f6pf7a9my5vrcxk22f00msk97zss1ukz5fvesuh2mxfhs8uzvwu0")
-    .assert.containsText("#grainTitle", "Untitled PowerboxSaveTest");
+    .assert.containsText("#grainTitle", "Untitled PowerboxSaveTest")
+    .end();
 };
 
 module.exports["Test PowerboxSave"] = function (browser) {
@@ -86,8 +88,9 @@ module.exports["Test PowerboxSave"] = function (browser) {
           .setValue("#powerbox-request-input", result.value)
           .click("#powerbox-request-form button")
           .frame("grain-frame")
-            .waitForElementVisible("#request-result", short_wait)
-            .assert.containsText("#request-result", "request: footest");
+          .waitForElementVisible("#request-result", short_wait)
+          .assert.containsText("#request-result", "request: footest")
+          .end();
     });
 };
 
@@ -98,7 +101,8 @@ module.exports["Install Powerbox with failing requirements"] = function (browser
   browser
     .init()
     .installApp("http://sandstorm.io/apps/jparyani/powerbox-2.spk", "9d6493e63bc9919de3959fe0c5a131ad", "jm40yaw7zvnxyggqt2dddp5ztt0f5wku7a8wfz8uzn9cjus46ygh")
-    .assert.containsText("#grainTitle", "Untitled PowerboxTest sandstormtest");
+    .assert.containsText("#grainTitle", "Untitled PowerboxTest sandstormtest")
+    .end();
 };
 
 module.exports["Test Powerbox with failing requirements"] = function (browser) {

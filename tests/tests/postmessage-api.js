@@ -50,6 +50,7 @@ module.exports['Install and launch test app'] = function (browser) {
       var expectedGrainPrefix = browser.launch_url + '/grain/';
       browser.assert.ok(grainUrl.lastIndexOf(expectedGrainPrefix, 0) === 0, "url looks like a grain URL");
       grainId = grainUrl.slice(expectedGrainPrefix.length);
+      browser.end();
     });
 };
 
@@ -62,7 +63,8 @@ module.exports['Test setPath'] = function (browser) {
       .click('#setPath')
       .pause(very_short_wait)
     .frameParent()
-    .assert.urlEquals(expectedUrl);
+    .assert.urlEquals(expectedUrl)
+    .end();
     // Should link-sharing links be expected to also hold the current path?
     // If they don't, it's hard to link to specific pages in multi-page apps.
     // If they do, it might be surprising or problematic if the current view
@@ -81,7 +83,8 @@ module.exports['Test setTitle'] = function (browser) {
       .click('#setTitle')
       .pause(very_short_wait)
     .frameParent()
-    .assert.title(randomValue);
+    .assert.title(randomValue)
+    .end();
 };
 
 module.exports['Test setTitle to blank'] = function (browser) {
@@ -96,7 +99,8 @@ module.exports['Test setTitle to blank'] = function (browser) {
       .click('#setTitle')
       .pause(very_short_wait)
     .frameParent()
-    .assert.title(blank);
+    .assert.title(blank)
+    .end();
 };
 
 module.exports['Test startSharing'] = function (browser) {
@@ -107,6 +111,7 @@ module.exports['Test startSharing'] = function (browser) {
     .waitForElementVisible('.popup.share', short_wait)
     .click('button.close-popup')
     .waitForElementNotPresent('.popup.share', short_wait)
+    .end();
 };
 
 module.exports['Test renderTemplate'] = function (browser) {
@@ -157,5 +162,6 @@ module.exports['Test renderTemplate'] = function (browser) {
           });
         })
       .frameParent()
-    .frameParent();
+    .frameParent()
+    .end();
 }

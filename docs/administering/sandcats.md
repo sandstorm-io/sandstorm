@@ -69,11 +69,11 @@ repository.
 
 ## Finding debugging information
 
-By default, Sandstorm stores a log in a text file at `/opt/sandstorm/var/sandstorm/sandstorm.log`. You
-can read it by running this command:
+By default, Sandstorm stores a log in a text file at `/opt/sandstorm/var/log/sandstorm.log`. You can
+read it by running this command:
 
 ```bash
-sudo less /opt/sandstorm/var/sandstorm/sandstorm.log
+sudo less /opt/sandstorm/var/log/sandstorm.log
 ```
 
 This launches a tool called `less`; for help using `less`, read [this

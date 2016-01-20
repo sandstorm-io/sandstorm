@@ -69,7 +69,10 @@ var loginResultCallback = function (serviceName, err) {
   } else if (err instanceof Accounts.LoginCancelledError) {
     // do nothing
   } else if (err instanceof ServiceConfiguration.ConfigError) {
-    Router.go("adminSettings");
+    loginButtonsSession.errorMessage(
+      "Configuration problem: " + err.message + ". Please visit the Admin Settings page within " +
+      "Sandstorm, or ask your administrator to do so. You may need an admin token. Read more by " +
+      "clicking Troubleshooting below.");
   } else {
     loginButtonsSession.errorMessage(err.reason || "Unknown error");
   }
@@ -206,6 +209,7 @@ Template.oauthLoginButton.events({
 
     var loginWithService = Meteor[instance.data.data.method];
 
+    var serviceName = instance.data.data.displayName;
     loginWithService({}, function (err) {
       loginResultCallback(serviceName, err);
     });

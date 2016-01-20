@@ -62,7 +62,7 @@ module.exports['Test setPath'] = function (browser) {
       .click('#setPath')
       .pause(very_short_wait)
     .frameParent()
-    .assert.urlEquals(expectedUrl)
+    .assert.urlEquals(expectedUrl);
     // Should link-sharing links be expected to also hold the current path?
     // If they don't, it's hard to link to specific pages in multi-page apps.
     // If they do, it might be surprising or problematic if the current view
@@ -81,6 +81,7 @@ module.exports['Test setTitle'] = function (browser) {
       .click('#setTitle')
       .pause(very_short_wait)
     .frameParent()
+    .assert.title(randomValue);
 };
 
 module.exports['Test setTitle to blank'] = function (browser) {
@@ -95,7 +96,7 @@ module.exports['Test setTitle to blank'] = function (browser) {
       .click('#setTitle')
       .pause(very_short_wait)
     .frameParent()
-    .assert.title(blank)
+    .assert.title(blank);
 };
 
 module.exports['Test startSharing'] = function (browser) {

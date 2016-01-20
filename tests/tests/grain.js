@@ -120,8 +120,7 @@ module.exports = utils.testAllLogins({
       .waitForElementVisible('#step-confirm', very_long_wait)
       .click('#confirmInstall')
       .waitForElementVisible(appDetailsTitleSelector, short_wait)
-      .assert.containsText(appDetailsTitleSelector, 'Hacker CMS')
-      .end();
+      .assert.containsText(appDetailsTitleSelector, 'Hacker CMS');
   },
 
   "Test new grain" : function (browser) {
@@ -129,8 +128,7 @@ module.exports = utils.testAllLogins({
       .waitForElementVisible(actionSelector, short_wait)
       .click(actionSelector)
       .waitForElementVisible('#grainTitle', medium_wait)
-      .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
-      .end();
+      .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle);
   },
 
   "Test grain frame" : function (browser) {
@@ -139,8 +137,7 @@ module.exports = utils.testAllLogins({
       .frame('grain-frame')
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
-      .frameParent()
-      .end();
+      .frameParent();
   },
 
   "Test grain restart" : function (browser) {
@@ -150,8 +147,7 @@ module.exports = utils.testAllLogins({
       .frame('grain-frame')
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
-      .frameParent()
-      .end();
+      .frameParent();
   },
 
   "Test grain debug" : function (browser) {

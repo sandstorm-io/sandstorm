@@ -34,7 +34,6 @@ module.exports["Install"] = function (browser) {
     .init()
     .installApp("http://sandstorm.io/apps/jparyani/background-test-0.spk", "dbed78d1ef5ed4a4f8193e829672623e", "duvq9t519fdcpetkk2s1axe1hdy91zc5svhzas2yfqpn8df9cd40")
     .assert.containsText("#grainTitle", "Untitled SandstormTest")
-    .end();
 };
 
 module.exports["Test Notification"] = function (browser) {
@@ -54,7 +53,6 @@ module.exports["Test Notification"] = function (browser) {
         .assert.containsText(".grainlog-contents > pre", "Grain has enabled backgrounding")
         .assert.containsText(".grainlog-contents > pre", "Grain's backgrounding has been disabled")
         .closeWindow()
-        .end();
     });
 };
 
@@ -63,7 +61,6 @@ module.exports["Install Wakelock Dropper"] = function (browser) {
     .init()
     .installApp("http://sandstorm.io/apps/jparyani/background-test-drop-wakelock-1.spk", "963745fa41d602dfc7467cac2e1597b5", "duvq9t519fdcpetkk2s1axe1hdy91zc5svhzas2yfqpn8df9cd40")
     .assert.containsText("#grainTitle", "Untitled SandstormTest")
-    .end();
 };
 
 module.exports["Test Notification Wakelock Dropper"] = function (browser) {

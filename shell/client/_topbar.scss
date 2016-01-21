@@ -386,6 +386,10 @@ body>.topbar {
         @include webfont-icon(#CCCCCC, #CCCCCC);
         @extend .icon-notification;
 
+        span.button-helper-text {
+           position: absolute;
+           width: 0px;
+        }
         >.count {
           display: block;
           position: absolute;

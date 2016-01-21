@@ -62,9 +62,45 @@ error() {
 }
 
 fail() {
+  local error_code="$1"
+  shift
+  if [ "${SHOW_FAILURE_MSG:-yes}" = "yes" ] ; then
+    echo "*** INSTALLATION FAILED ***" >&2
+    echo ""
+  fi
   error "$@"
-  echo "*** INSTALLATION FAILED ***" >&2
-  echo "Report bugs at: http://github.com/sandstorm-io/sandstorm" >&2
+  echo "" >&2
+  # Temporarily: export REPORT=yes to get the error reporting behavior. Once it seems stable, adjust
+  # the default from disabledfornow to yes.
+  if [ "${REPORT:-disabledfornow}" = "yes" ] ; then
+    if prompt-yesno "Sorry that installation failed. Would it be OK to send an anonymous error report to the sandstorm.io team?
+It would only contain this error code: $error_code" "yes" ; then
+      echo "Sending problem report..." >&2
+      local BEARER_TOKEN="ZiV1jbwHBPfpIjF3LNFv9-glp53F7KcsvVvljgKxQAL"
+      local API_ENDPOINT="https://api.oasis.sandstorm.io/api"
+      local HTTP_STATUS=$(
+        dotdotdot_curl \
+          --silent \
+          --max-time 20 \
+          --data-raw "{\"error_code\":\"$error_code\",\"user-agent\":\"$CURL_USER_AGENT\"}" \
+          -H "Authorization: Bearer $BEARER_TOKEN" \
+          -X POST \
+          --output "/dev/null" \
+          -w '%{http_code}' \
+          "$API_ENDPOINT")
+      if [ "200" == "$HTTP_STATUS" ] ; then
+        echo "... success." >&2
+      elif [ "000" == "$HTTP_STATUS" ] ; then
+        error "Submitting error report failed. Maybe there is a connectivity problem."
+      else
+        error "Submitting error report resulted in strange HTTP status: $HTTP_STATUS"
+      fi
+    else
+      echo "Not sending report." >&2
+    fi
+    echo ""
+  fi
+  echo "You can report bugs at: http://github.com/sandstorm-io/sandstorm" >&2
   exit 1
 }
 
@@ -333,12 +369,12 @@ rerun_script_as_root() {
   fi
 
   # Don't know how to run the script. Let the user figure it out.
-  fail "Oops, I couldn't figure out how to switch to root. Please re-run the installer as root."
+  REPORT=no fail "E_CANT_SWITCH_TO_ROOT" "Oops, I couldn't figure out how to switch to root. Please re-run the installer as root."
 }
 
 assert_on_terminal() {
   if [ "no" = "$USE_DEFAULTS" ] && [ ! -t 1 ]; then
-    fail "This script is interactive. Please run it on a terminal."
+    REPORT=no fail "E_NO_TTY" "This script is interactive. Please run it on a terminal."
   fi
 
   # Hack: If the script is being read in from a pipe, then FD 0 is not the terminal input. But we
@@ -352,11 +388,11 @@ assert_on_terminal() {
 
 assert_linux_x86_64() {
   if [ "$(uname)" != Linux ]; then
-    fail "Sorry, the Sandstorm server only runs on Linux."
+    fail "E_NON_LINUX" "Sorry, the Sandstorm server only runs on Linux."
   fi
 
   if [ "$(uname -m)" != x86_64 ]; then
-    fail "Sorry, the Sandstorm server currently only runs on x86_64 machines."
+    fail "E_NON_X86_64" "Sorry, the Sandstorm server currently only runs on x86_64 machines."
   fi
 }
 
@@ -365,7 +401,7 @@ assert_usable_kernel() {
 
   if (( KVERSION[0] < 3 || (KVERSION[0] == 3 && KVERSION[1] < 13) )); then
     error "Detected Linux kernel version: $(uname -r)"
-    fail "Sorry, your kernel is too old to run Sandstorm. We require kernel" \
+    fail "E_KERNEL_OLDER_THAN_313" "Sorry, your kernel is too old to run Sandstorm. We require kernel" \
          "version 3.13 or newer."
   fi
 }
@@ -427,7 +463,7 @@ assert_userns_clone_works_or_can_be_made_to_work() {
 
   # If they don't have working unprivileged user namespaces, then we bail.
   if [ "$USERNS_CLONE_AT_ALL" = "no" ] ; then
-    fail "Your kernel does not appear to be compiled with" \
+    fail "E_NO_USERNS" "Your kernel does not appear to be compiled with" \
          "support for unprivileged user namespaces (CONFIG_USER_NS=y), or something else is" \
          "preventing creation of user namespaces. This feature is critical for sandboxing." \
          "Arch Linux is known to ship with a kernel that disables this feature; if you are" \
@@ -472,7 +508,7 @@ assert_userns_clone_works_or_can_be_made_to_work() {
     echo "  sysctl -w kernel.unprivileged_userns_clone=1"
     echo "  echo 'kernel.unprivileged_userns_clone = 1' >> /etc/sysctl.conf"
     echo ""
-    fail "You are using a Debian-derived Linux kernel, which needs a configuration option" \
+    fail "E_PROC_SYS_READ_ONLY" "You are using a Debian-derived Linux kernel, which needs a configuration option" \
          "set in order to run Sandstorm. To set that option, please run the shell commands" \
          "above as root. (If you are running this in a container through e.g. Docker, you will" \
          "have to run the above commands _outside_ the container.)"
@@ -516,7 +552,7 @@ enable_userns_sysctl_if_needed() {
   if [ "$ACCEPTED_SYSCTL_SWITCH" = "yes" ] ; then
     # Make the change first.
     sysctl -w kernel.unprivileged_userns_clone=1 >/dev/null \
-      || fail "'sysctl -w" \
+      || fail "E_SYSCTL_WRITING_FAILED" "'sysctl -w" \
               "kernel.unprivileged_userns_clone=1' failed. If you are inside docker, please run the" \
               "command manually inside your host and update /etc/sysctl.conf."
 
@@ -528,27 +564,27 @@ kernel.unprivileged_userns_clone = 1
 __EOF__
 
   else
-    fail "OK, please enable this option yourself and try again."
+    fail "E_USER_REFUSED_SYSCTL_WRITING" "OK, please enable this option yourself and try again."
   fi
 }
 
 assert_dependencies() {
   if [ -z "${BUNDLE_FILE:-}" ]; then
-    which curl > /dev/null|| fail "Please install curl(1). Sandstorm uses it to download updates."
+    which curl > /dev/null|| fail "E_CURL_MISSING" "Please install curl(1). Sandstorm uses it to download updates."
   fi
 
   if [ "yes" = "$USE_SANDCATS" ] ; then
     # To set up sandcats, we need `openssl` on the path. Check for that,
     # and if it is missing, bail out and tell the user they have to
     # install it.
-    which openssl > /dev/null|| fail "Please install openssl(1). Sandstorm uses it for the Sandcats.io dynamic DNS service."
+    which openssl > /dev/null|| fail "E_OPENSSL_MISSING" "Please install openssl(1). Sandstorm uses it for the Sandcats.io dynamic DNS service."
     # To find out if port 80 and 443 are available, we need `nc` on
     # the path.
-    which nc > /dev/null || fail "Please install nc(1). (Package may be called 'netcat-traditional' or 'netcat-openbsd'.)"
+    which nc > /dev/null || fail "E_NC_MISSING" "Please install nc(1). (Package may be called 'netcat-traditional' or 'netcat-openbsd'.)"
   fi
 
-  which tar > /dev/null || fail "Please install tar(1)."
-  which xz > /dev/null || fail "Please install xz(1). (Package may be called 'xz-utils'.)"
+  which tar > /dev/null || fail "E_TAR_MISSING" "Please install tar(1)."
+  which xz > /dev/null || fail "E_XZ_MISSING" "Please install xz(1). (Package may be called 'xz-utils'.)"
 }
 
 assert_valid_bundle_file() {
@@ -560,7 +596,7 @@ assert_valid_bundle_file() {
     # We use "|| true" here because tar is going to SIGPIPE when `head` exits.
     BUNDLE_DIR=$( (tar Jtf "$BUNDLE_FILE" || true) | head -n 1)
     if [[ ! "$BUNDLE_DIR" =~ sandstorm-([0-9]+)/ ]]; then
-      fail "$BUNDLE_FILE: Not a valid Sandstorm bundle"
+      fail "E_INVALID_BUNDLE" "$BUNDLE_FILE: Not a valid Sandstorm bundle"
     fi
 
     BUILD=${BASH_REMATCH[1]}
@@ -650,9 +686,11 @@ dev_server_install() {
       rerun_script_as_root CHOSEN_INSTALL_MODE=2
     else
       # Print a message that allows people to make an informed decision.
-      echo "If you are OK with a local Sandstorm install for testing"
-      echo "but not app development, re-run install.sh with -u to bypass this message."
-      fail "For developer mode to work, the script needs root, or read above to bypass."
+      SHOW_FAILURE_MSG=no REPORT=no fail "E_NEED_ROOT" "One development feature does require root. To install anyway, run:
+
+install.sh -u
+
+to install without using root access. In that case, Sandstorm will operate OK but package tracing ('spk dev') will not work."
     fi
   fi
 
@@ -730,20 +768,20 @@ full_server_install() {
   # you're not, you should choose the development server and customize
   # it to your heart's content.
   if [ "yes" != "${PREFER_ROOT}" ] ; then
-    fail "The automatic setup process requires sudo. Try again with option 2, development server, to customize."
+    REPORT=no fail "E_AUTO_NEEDS_SUDO" "The automatic setup process requires sudo. Try again with option 2, development server, to customize."
   fi
 
   if [ "yes" = "$USE_DEFAULTS" ] ; then
     if [ -z "${DESIRED_SANDCATS_NAME-}" ] ; then
       local MSG="For now, USE_DEFAULTS for full server installs requires a DESIRED_SANDCATS_NAME variable."
       MSG="$MSG If you need support for non-sandcats full-server unattended installs, please file a bug."
-      fail "$MSG"
+      fail "E_USE_DEFAULTS_NEEDS_DESIRED_SANDCATS_NAME" "$MSG"
     else
       if [ -z "${SANDCATS_DOMAIN_RESERVATION_TOKEN:-}" ] ; then
         local MSG="When operating in USE_DEFAULTS mode, if you want a sandcats.io domain,"
         MSG="$MSG you must pre-reserve it before running this script. Specify it via the"
         MSG="$MSG SANDCATS_DOMAIN_RESERVATION_TOKEN environment variable."
-        fail "$MSG"
+        fail "E_USE_DEFAULTS_NEEDS_DESIRED_SANDCATS_NAME" "$MSG"
       fi
     fi
 
@@ -803,7 +841,7 @@ full_server_install() {
       echo "      proceed if you want."
       echo ""
       if ! prompt-yesno "OK to skip automatic HTTPS setup & bind to port $DEFAULT_PORT instead?" "yes" ; then
-        fail "Exiting now. You can re-run the installer whenever you are ready."
+        fail "E_USER_REFUSED_DEFAULT_PORT" "Exiting now. You can re-run the installer whenever you are ready."
       fi
     fi
 
@@ -829,7 +867,8 @@ full_server_install() {
       echo "The automatic setup script needs root in order to:"
       echo "* Create a separate user to run Sandstorm as, and"
       echo "* Set up Sandstorm to start on system boot."
-      fail "Automatic setup requires root for now. Try installing in development mode instead."
+      fail "E_DECLINED_AUTO_SETUP_DETAILS" "For a customized install, please re-run install.sh, and choose option (2) "\
+           "to do a development install."
     fi
   fi
 
@@ -844,7 +883,7 @@ full_server_install() {
     PORT="6080"
     MONGO_PORT="6081"
   else
-    fail "If you prefer a more manual setup experience, try installing in development mode."
+    REPORT=no fail "E_USER_WANTS_CUSTOM_SETTINGS" "If you prefer a more manual setup experience, try installing in development mode."
   fi
 }
 
@@ -971,7 +1010,7 @@ choose_install_dir() {
 
     if [ -e "$DIR" ]; then
       echo "$DIR already exists. Sandstorm will assume ownership of all contents."
-      prompt-yesno "Is this OK?" yes || fail
+      prompt-yesno "Is this OK?" yes || fail "E_USER_ABORTED_OVERWRITE" "Aborting by user request to avoid over-writing existing data."
     fi
   fi
 
@@ -989,7 +1028,7 @@ load_existing_settings() {
   echo "Found existing sandstorm.conf. Using it."
   . sandstorm.conf
   if [ "${SERVER_USER:+set}" != set ]; then
-    fail "Existing config does not set SERVER_USER. Please fix or delete it."
+    fail "E_CONF_DOES_NOT_SET_SERVER_USER" "Existing config does not set SERVER_USER. Please fix or delete it."
   fi
 
   # If sandstorm.conf specifies an UPDATE_CHANNEL, then make that be
@@ -1174,7 +1213,7 @@ download_latest_bundle_and_extract_if_needed() {
   BUILD_DIR=sandstorm-$BUILD
 
   if [[ ! "$BUILD" =~ ^[0-9]+$ ]]; then
-    fail "Server returned invalid build number: $BUILD"
+    fail "E_INVALID_BUILD_NUM" "Server returned invalid build number: $BUILD"
   fi
 
   do-download() {
@@ -1229,7 +1268,7 @@ __EOF__
         echo "GPG signature is valid."
       else
         rm -rf sandstorm-$BUILD
-        fail "GPG signature is NOT valid! Please report to security@sandstorm.io immediately!"
+        fail "E_INVALID_GPG_SIG" "GPG signature is NOT valid! Please report to security@sandstorm.io immediately!"
       fi
 
       unset GNUPGHOME
@@ -1241,13 +1280,13 @@ __EOF__
     rm -rf "$WORK_DIR"
 
     if [ ! -e "$BUILD_DIR" ]; then
-      fail "Bad package -- did not contain $BUILD_DIR directory."
+      fail "E_BAD_PACKAGE" "Bad package -- did not contain $BUILD_DIR directory."
     fi
 
     if [ ! -e "$BUILD_DIR/buildstamp" ] || \
        [ $(stat --printf=%Y "$BUILD_DIR/buildstamp") -lt $(( $(date +%s) - 30*24*60*60 )) ]; then
       rm -rf "$BUILD_DIR"
-      fail "The downloaded package seems to be more than a month old. Please verify that your" \
+      fail "E_PKG_STALE" "The downloaded package seems to be more than a month old. Please verify that your" \
            "computer's clock is correct and try again. It could also be that an attacker is" \
            "trying to trick you into installing an old version. Please contact" \
            "security@sandstorm.io if the problem persists."
@@ -1513,6 +1552,8 @@ sandcats_provide_help() {
 
   # First, we attempt to send the user a domain recovery token.
   local LOG_PATH="var/sandcats/sendrecoverytoken-log"
+  touch "$LOG_PATH"
+  chmod 0640 "$LOG_PATH"
   HTTP_STATUS=$(
     dotdotdot_curl \
       --silent \
@@ -1526,7 +1567,6 @@ sandcats_provide_help() {
       -H 'X-Sand: cats' \
       -H "Accept: text/plain" \
       "${SANDCATS_API_BASE}/sendrecoverytoken")
-  chmod 0640 "$LOG_PATH"
 
   if [ "200" != "$HTTP_STATUS" ] ; then
     # Print out the error, and then send the user back to the top of
@@ -1555,7 +1595,9 @@ sandcats_provide_help() {
   # This action registers the new key as the authoritative key for
   # this hostname. It also sends an email to the user telling them
   # that we changed the key they have on file.
-  LOG_PATH="var/sandcats/recover-log"
+  local LOG_PATH="var/sandcats/recover-log"
+  touch "$LOG_PATH"
+  chmod 0640 "$LOG_PATH"
   HTTP_STATUS=$(
       dotdotdot_curl \
       --silent \
@@ -1571,7 +1613,6 @@ sandcats_provide_help() {
       -H "Accept: text/plain" \
       --cert var/sandcats/id_rsa.private_combined \
       "${SANDCATS_API_BASE}/recover")
-  chmod 0640 "$LOG_PATH"
 
   if [ "200" != "$HTTP_STATUS" ] ; then
     error "$(cat $LOG_PATH)"
@@ -1592,7 +1633,9 @@ sandcats_provide_help() {
   # user's behalf. This uses the new key we registered (via /recover)
   # and sets the IP address for this host in the sandcats.io DNS
   # service.
-  LOG_PATH="var/sandcats/update-log"
+  local LOG_PATH="var/sandcats/update-log"
+  touch "$LOG_PATH"
+  chmod 0640 "$LOG_PATH"
   HTTP_STATUS=$(
     dotdotdot_curl \
       --silent \
@@ -1607,7 +1650,6 @@ sandcats_provide_help() {
       -H "Accept: text/plain" \
       --cert var/sandcats/id_rsa.private_combined \
       "${SANDCATS_API_BASE}/update")
-  chmod 0640 "$LOG_PATH"
 
   if [ "200" != "$HTTP_STATUS" ] ; then
     error "$(cat $LOG_PATH)"
@@ -1634,6 +1676,8 @@ sandcats_registerreserved() {
   echo "Registering your pre-reserved domain."
   local LOG_PATH
   LOG_PATH="var/sandcats/registerreserved-log"
+  touch "$LOG_PATH"
+  chmod 0640 "$LOG_PATH"
   HTTP_STATUS=$(
     dotdotdot_curl \
       --silent \
@@ -1649,8 +1693,6 @@ sandcats_registerreserved() {
       -H "Accept: text/plain" \
       --cert var/sandcats/id_rsa.private_combined \
       "${SANDCATS_API_BASE}/registerreserved")
-
-  chmod 0640 "$LOG_PATH"
 
   if [ "200" = "$HTTP_STATUS" ]
   then
@@ -1671,7 +1713,7 @@ sandcats_registerreserved() {
     #
     # TODO(soon): Wait 1 minute in case the sandcats.io service had a brief hiccup, and retry (let's
     # say) 5 times.
-    fail "$(cat "$LOG_PATH")"
+    fail "E_SANDCATS_REGISTER_RESERVED_SRV_FAIL" "$(cat "$LOG_PATH")"
   fi
 }
 
@@ -1732,6 +1774,8 @@ sandcats_register_name() {
   echo "Registering your domain."
   local LOG_PATH
   LOG_PATH="var/sandcats/register-log"
+  touch "$LOG_PATH"
+  chmod 0640 "$LOG_PATH"
   HTTP_STATUS=$(
     dotdotdot_curl \
       --silent \
@@ -1747,15 +1791,6 @@ sandcats_register_name() {
       -H "Accept: text/plain" \
       --cert var/sandcats/id_rsa.private_combined \
       "${SANDCATS_API_BASE}/register")
-
-  # Make register-log be mode 0640; it is private log information that
-  # other users on the system don't particularly need to be able to
-  # see.
-  #
-  # There is a slight race between when curl creates the file and we
-  # chown it, but we mkdir'd the directory with a good mode, so this
-  # is merely belt-and-suspenders.
-  chmod 0640 "$LOG_PATH"
 
   if [ "200" = "$HTTP_STATUS" ]
   then
@@ -1906,7 +1941,7 @@ wait_for_server_bind_to_https_if_needed() {
   if [ "$ONLINE_YET" == "yes" ]; then
     return
   else
-    fail "Your server never started listening."
+    fail "E_NEVER_LISTENED" "Your server never started listening."
   fi
 }
 
@@ -1970,13 +2005,13 @@ sandcats_generate_keys() {
 
 # Now that the steps exist as functions, run them in an order that
 # would result in a working install.
+assert_on_terminal
 assert_linux_x86_64
 assert_usable_kernel
 detect_current_uid
 detect_userns_clone
 assert_userns_clone_works_or_can_be_made_to_work
 handle_args "$@"
-assert_on_terminal
 assert_dependencies
 assert_valid_bundle_file
 detect_init_system

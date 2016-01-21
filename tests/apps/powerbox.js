@@ -55,7 +55,8 @@ module.exports["Test Powerbox"] = function (browser) {
           .click("#powerbox-request-form button")
           .frame("grain-frame")
           .waitForElementVisible("#request-result", short_wait)
-          .assert.containsText("#request-result", "request: footest");
+          .assert.containsText("#request-result", "request: footest")
+          .end();
     });
 };
 
@@ -87,7 +88,8 @@ module.exports["Test PowerboxSave"] = function (browser) {
           .click("#powerbox-request-form button")
           .frame("grain-frame")
           .waitForElementVisible("#request-result", short_wait)
-          .assert.containsText("#request-result", "request: footest");
+          .assert.containsText("#request-result", "request: footest")
+          .end();
     });
 };
 
@@ -129,9 +131,9 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
                 .switchWindow(windows.value[1])
                 .waitForElementVisible(".grainlog-contents > pre", short_wait)
                 .assert.containsText(".grainlog-contents > pre", "Error: Requirements not satisfied")
+                .end();
             });
     })
-    .end();
 };
 
 // This tests the basic functionality of the inline powerbox.
@@ -193,5 +195,6 @@ module.exports["Test Faling Inline Powerbox"] = function (browser) {
     })
     .frame("grain-frame")
     .waitForElementPresent("#request-error", short_wait)
-    .assert.containsText("#request-error", "Domain resolved to an invalid IP");
+    .assert.containsText("#request-error", "Domain resolved to an invalid IP")
+    .end();
 };

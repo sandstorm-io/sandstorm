@@ -88,6 +88,7 @@ Accounts.onCreateUser(function (options, user) {
       user.experiments = {
         firstTimeBillingPrompt: Math.random() < 0.5 ? "control" : "test"
       };
+      sendReferralProgramNotification(user._id);
     }
 
     return user;

@@ -189,9 +189,11 @@ limitations under the License.
 
 <template name="notificationItem">
   <div class="notification-item">
-    <div class="notification-title">
-      {{notificationTitle}}:
-    </div>
+    {{#if notificationTitle}}
+      <div class="notification-title">
+        {{notificationTitle}}:
+      </div>
+    {{/if}}
     {{#if isAppUpdates}}
       <ul class="app-updates">
       {{#each appUpdatesList}}
@@ -202,7 +204,18 @@ limitations under the License.
       {{#if adminLink}}
         <a href="{{adminLink}}">{{text.defaultText}}</a>
       {{else}}
-        {{text.defaultText}}
+        {{#if referral}}
+          {{#if paidUser}}
+            Get up to 30 GB bonus with the
+          {{else}}
+            Unlimited grains &amp; up to 2 GB bonus with the
+          {{/if}}
+          {{#linkTo route="referrals" class="dismiss-notification"}}
+            referral program &raquo;
+          {{/linkTo}}
+        {{else}}
+          {{text.defaultText}}
+        {{/if}}
       {{/if}}
     {{/if}}
     <div class="notification-footer">
@@ -211,8 +224,8 @@ limitations under the License.
         <button title="Ignore the above updates" class="cancel-notification">Dismiss</button>
         <button title="Update all of the above apps" class="accept-notification">Apply Updates</button>
       {{else}}
-        {{#if showDismiss}}
-          <button title="{{titleHelperText}}" class="cancel-notification">Cancel</button>
+        {{#if dismissText}}
+          <button title="{{titleHelperText}}" class="cancel-notification">{{dismissText}}</button>
         {{/if}}
       {{/if}}
     </div>

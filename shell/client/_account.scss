@@ -158,7 +158,7 @@ body>.popup.account>.frame {
       background-image: url("/troubleshoot-m.svg");
     }
   }
-  >form.login.dev {
+  >form.login.dev,>button.login.dev {
     background-image: url("/debug.svg");
     background-position-y: 0px;
     height: auto;

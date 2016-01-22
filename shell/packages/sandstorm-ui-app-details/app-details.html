@@ -11,6 +11,7 @@
     {{>sandstormAppDetails
        showPublisherDetails=showPublisherDetails
        showUninstall=isAppNotInDevMode
+       showRestoreGrainBackup=true
        pkg=pkg
        staticHost=staticHost
        keybaseProfile=keybaseProfile
@@ -45,6 +46,7 @@
   {{!-- Arguments to this template are:
        showPublisherDetails: Boolean.  Show Keybase/PGP infomation.
        showUninstall: Boolean.  Show the uninstall button.
+       showRestoreGrainBackup: Boolean.  Show the "Restore grain backup" button.
        pkg: Object shaped like an element from the Packages collection.
        staticHost: String.  The static wildcard host, needed for identicons.
        keybaseProfile: Object shaped like an element from the KeybaseProfiles collection.
@@ -64,9 +66,11 @@
         {{#if showUninstall}}
         <button class="uninstall-button">Uninstall</button>
         {{/if}}
+        {{#if showRestoreGrainBackup}}
         <button class="restore-button">Restore grain backup...
           <input type="file" style="display:none">
         </button>
+        {{/if}}
         <ul class="package-info">
           <li class="version">
             <span class="label">Version</span>

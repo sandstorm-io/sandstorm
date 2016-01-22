@@ -3,6 +3,18 @@
 This guide provides an overview of essential topics you'll need to know to make productive use of
 your own Sandstorm self-install.
 
+## Customizing Sandstorm for your users
+
+See these topics elsewhere in the docs:
+
+- [Developing new apps for your Sandstorm server](../developing.md)
+
+- [Creating a custom page at the root of your Sandstorm server](faq.md#can-i-customize-the-root-page-of-my-sandstorm-install)
+
+- [Serving static content on domain names controlled by your users](../developing/web-publishing.md)
+
+- [Enabling HTTPS/SSL](ssl.md)
+
 ## File locations & service management
 
 By default, Sandstorm installs within **/opt/sandstorm**.

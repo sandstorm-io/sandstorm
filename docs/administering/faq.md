@@ -200,7 +200,7 @@ This is achieved by configuring a web page to be displayed in the background beh
 (the home page when logged out). To configure this setting, visit your server's **Admin Settings**
 screen and click **Advanced**. You can enter a URL as the **Splash URL** at the top of that screen.
 
-For security reasons, the page must be hosted within this Sandstorm server's wildcard host
+For security reasons, the page must be hosted within your Sandstorm server's wildcard host
 (otherwise it will be blocked by `Content-Security-Policy`). We suggest using a static web
 publishing app like [Hacker
 CMS](https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh) to host the

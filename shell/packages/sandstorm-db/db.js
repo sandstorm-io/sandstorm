@@ -450,11 +450,18 @@ Misc = new Mongo.Collection("misc");
 
 Settings = new Mongo.Collection("settings");
 // Settings for this Sandstorm instance go here. They are configured through the adminSettings
-// route. This collection differs from misc in that this collection is completely user controlled.
+// route. This collection differs from misc in that any admin user can update it through the admin
+// interface.
 //
 // Each contains:
 //   _id:       The name of the setting. eg. "MAIL_URL"
 //   value:     The value of the setting.
+//   automaticallyReset: Sometimes the server needs to automatically reset a setting. When it does
+//                       so, it will also write an object to this field indicating why the reset was
+//                       needed. That object can have the following variants:
+//       baseUrlChangedFrom: The reset was due to BASE_URL changing. This field contains a string
+//                           with the old BASE_URL.
+//
 //   potentially other fields that are unique to the setting
 
 Migrations = new Mongo.Collection("migrations");

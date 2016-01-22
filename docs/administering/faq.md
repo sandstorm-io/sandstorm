@@ -183,3 +183,33 @@ WILDCARD_HOST=*.yourname.sandcats.io:6080
 ```
 
 * **Make sure wildcard DNS works for your chosen domain**. See also [this issue in our repository](https://github.com/sandstorm-io/sandstorm/issues/114). If setting up wildcard DNS is a hassle for you, consider using our free [Sandcats dynamic DNS](sandcats.md) service for your `WILDCARD_HOST`.
+
+## Can I customize the root page of my Sandstorm install?
+
+You can definitely customize the root page of your Sandstorm install. You might have noticed that
+[Oasis](https://oasis.sandstorm.io/) has a customized front page.
+
+![Customized Oasis front page](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/customized-oasis.png)
+
+This is by contrast with the default, which you can see on our older
+[alpha.sandstorm.io](https://alpha.sandstorm.io/) service.
+
+![Uncustomized front page](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/uncustomized-home.png)
+
+This is achieved by configuring a web page to be displayed in the background behind the login dialog
+(the home page when logged out). To configure this setting, visit your server's **Admin Settings**
+screen and click **Advanced**. You can enter a URL as the **Splash URL** at the top of that screen.
+
+For security reasons, the page must be hosted within this Sandstorm server's wildcard host
+(otherwise it will be blocked by `Content-Security-Policy`). We suggest using a static web
+publishing app like [Hacker
+CMS](https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh) to host the
+content.
+
+This feature is experimental; in particular the style and positioning of the login box is subject to
+change without notice. Please [let us know](https://github.com/sandstorm-io/sandstorm/issues) if
+you'd like to see it stabilize.
+
+When creating your own page like this, we suggest using the Oasis splash URL as a starting point.
+Use your browser's DOM inspector to find the `IFRAME` that is on the background of Oasis. Use its
+CSS rules to guide your own.

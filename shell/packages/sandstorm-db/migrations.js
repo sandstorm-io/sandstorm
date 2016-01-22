@@ -411,6 +411,14 @@ function initServerTitleAndReturnAddress() {
   Settings.insert({_id: "returnAddress", value: "no-reply@" + hostname});
 }
 
+function sendReferralNotifications() {
+  if (Meteor.settings.public.quotaEnabled) {
+    Meteor.users.find({loginIdentities: {$exists: 1}}, {fields: {_id: 1}}).forEach(function (user) {
+      sendReferralProgramNotification(user._id);
+    });
+  }
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -432,7 +440,8 @@ var MIGRATIONS = [
   splitAccountUsersAndIdentityUsers,
   populateContactsFromApiTokens,
   cleanUpApiTokens,
-  initServerTitleAndReturnAddress
+  initServerTitleAndReturnAddress,
+  sendReferralNotifications,
 ];
 
 function migrateToLatest() {

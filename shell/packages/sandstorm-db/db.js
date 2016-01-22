@@ -426,6 +426,8 @@ Notifications = new Mongo.Collection("notifications");
 //       name: The name of the app. (appTitle from package.manifest)
 //       version: The app's version number. (appVersion from package.manifest)
 //       marketingVersion: String marketing version of this app. (appMarketingVersion from package.manifest)
+//   referral:     If this boolean field is true, then treat this notification as a referral
+//                 notification. This causes text to be ignored, since we need custom logic.
 
 StatsTokens = new Mongo.Collection("statsTokens");
 // Access tokens for the Stats collection
@@ -779,6 +781,15 @@ allowDevAccounts = function () {
     return Meteor.settings && Meteor.settings.public &&
            Meteor.settings.public.allowDevAccounts;
   }
+};
+
+sendReferralProgramNotification = function (userId) {
+  Notifications.insert({
+    userId: userId,
+    referral: true,
+    timestamp: new Date(),
+    isUnread: true,
+  });
 };
 
 roleAssignmentPattern = {
@@ -1379,6 +1390,8 @@ if (Meteor.isServer) {
     // package, we need to clean it up
     Meteor.call("deleteUnusedPackages", appId);
   };
+
+  SandstormDb.prototype.sendReferralProgramNotification = sendReferralProgramNotification;
 
   SandstormDb.prototype.upgradeGrains =  function (appId, version, packageId, backend) {
     check(appId, String);

@@ -82,7 +82,9 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //                the invite was sent to.
 //   hasCompletedSignup: True if this account has confirmed its profile and agreed to this server's
 //                       terms of service.
-//   plan: _id of an entry in the Plans table which determines the user's qutoa.
+//   plan: _id of an entry in the Plans table which determines the user's quota.
+//   planBonus: {storage, compute, grains} indicating bonus amounts to add to the user's plan,
+//              filled in by the payments module. (Missing fields should be treated as zeros.)
 //   storageUsage: Number of bytes this user is currently storing.
 //   payments: Object defined by payments module, if loaded.
 //   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
@@ -590,7 +592,7 @@ isSignedUpOrDemo = function () {
   return false;
 }
 
-var calculateReferralBonus = function(accountId, plan) {
+var calculateReferralBonus = function(user, plan) {
   // This function returns an object of the form:
   //
   // - {grains: 0, storage: 0}
@@ -598,11 +600,14 @@ var calculateReferralBonus = function(accountId, plan) {
   // which are extra resources this account gets as part of participating in the referral
   // program. (Storage is measured in bytes, as usual for plans.)
 
+  // TODO(cleanup): Consider moving referral bonus logic into Oasis payments module (since it's
+  //   payments-specific) and aggregating into `planBonus`.
+
 
   // Authorization note: Only call this if accountId is the current user!
   var isPaid = (plan && plan !== "free");
 
-  successfulReferralsCount = countReferrals(accountId);
+  successfulReferralsCount = countReferrals(user);
   if (isPaid) {
     var maxPaidStorageBonus = 30 * 1e9;
     return {grains: 0,
@@ -625,19 +630,19 @@ var calculateReferralBonus = function(accountId, plan) {
   }
 }
 
-var countReferrals = function (accountId) {
-  var referredIdentityIds = Meteor.users.findOne(
-    {_id: accountId},
-    {fields: {referredIdentityIds: 1}}).referredIdentityIds;
+var countReferrals = function (user) {
+  var referredIdentityIds = user.referredIdentityIds;
   return (referredIdentityIds && referredIdentityIds.length || 0);
 }
 
 getUserQuota = function (user) {
   var plan = Plans.findOne(user.plan || "free");
-  var referralBonus = calculateReferralBonus(user._id, plan);
-  var userQuota = {};
-  userQuota.storage = (plan.storage + referralBonus.storage);
-  userQuota.grains = (plan.grains + referralBonus.grains);
+  var referralBonus = calculateReferralBonus(user, plan);
+  var bonus = user.planBonus || {};
+  var userQuota = {
+    storage: plan.storage + referralBonus.storage + (bonus.storage || 0),
+    grains: plan.grains + referralBonus.grains + (bonus.grains || 0)
+  };
   return userQuota;
 }
 
@@ -947,7 +952,7 @@ _.extend(SandstormDb.prototype, {
       return noBonus;
     }
     if (Meteor.isServer) {
-      var x = calculateReferralBonus(user._id, user.plan);
+      var x = calculateReferralBonus(user, user.plan);
       return x;
     }
   },

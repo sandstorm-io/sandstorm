@@ -63,6 +63,11 @@ function linkIdentityToAccountInternal(db, backend, identityId, accountId) {
     modifier = {$push: {loginIdentities: {id: identityUser._id}},
                 $unset: {expires: 1},
                 $set: {upgradedFromDemo: Date.now()}};
+    if (Meteor.settings.public.quotaEnabled) {
+      // Demo users never got the referral notification. Send it now:
+      db.sendReferralProgramNotification(accountUser._id);
+    }
+
   } else {
     modifier = {$push: {nonloginIdentities: {id: identityUser._id}}};
   }

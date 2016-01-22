@@ -413,7 +413,10 @@ function initServerTitleAndReturnAddress() {
 
 function sendReferralNotifications() {
   if (Meteor.settings.public.quotaEnabled) {
-    Meteor.users.find({loginIdentities: {$exists: 1}}, {fields: {_id: 1}}).forEach(function (user) {
+    Meteor.users.find({
+      loginIdentities: {$exists: true},
+      expires: {$exists: false},
+    }, {fields: {_id: 1}}).forEach(function (user) {
       sendReferralProgramNotification(user._id);
     });
   }

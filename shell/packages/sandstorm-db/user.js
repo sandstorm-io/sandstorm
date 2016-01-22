@@ -88,7 +88,9 @@ Accounts.onCreateUser(function (options, user) {
       user.experiments = {
         firstTimeBillingPrompt: Math.random() < 0.5 ? "control" : "test"
       };
-      sendReferralProgramNotification(user._id);
+      if (!("expires" in user)) {
+        sendReferralProgramNotification(user._id);
+      }
     }
 
     return user;

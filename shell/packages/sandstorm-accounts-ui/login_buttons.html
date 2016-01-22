@@ -125,9 +125,9 @@
 </template>
 
 <template name="devLoginForm">
-  <form class="dev login expand">
-    with a Dev account {{#if expanded}}▴{{else}}▾{{/if}}
-    {{#if expanded}}
+  {{#if expanded}}
+  <form class="dev login expanded">
+    with a Dev account ▴
     <ul class="dev-identities">
       <li><button type="button" class="login-dev-account" data-name="Alice Dev Admin"
                   data-is-admin="true">
@@ -146,8 +146,12 @@
           Eve
       </button></li>
     </ul>
-    {{/if}}
   </form>
+  {{else}}
+  <button class="dev login expand">
+    with a Dev account ▾
+  </button>
+  {{/if}}
 </template>
 
 <template name="emailLoginForm">

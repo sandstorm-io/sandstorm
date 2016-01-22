@@ -284,9 +284,13 @@ Template.devLoginForm.helpers({
 });
 
 Template.devLoginForm.events({
-  "click form.expand": function (event, instance) {
+  "click button.expand": function (event, instance) {
     event.preventDefault();
-    instance._expanded.set(!instance._expanded.get());
+    instance._expanded.set(true);
+  },
+  "click form.expanded": function (event, instance) {
+    event.preventDefault();
+    instance._expanded.set(false);
   },
   "click button.login-dev-account": function (event, instance) {
     var displayName = event.currentTarget.getAttribute("data-name");

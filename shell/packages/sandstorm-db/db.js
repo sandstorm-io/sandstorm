@@ -791,7 +791,10 @@ allowDevAccounts = function () {
 };
 
 sendReferralProgramNotification = function (userId) {
-  Notifications.insert({
+  Notifications.upsert({
+    userId: userId,
+    referral: true,
+  }, {
     userId: userId,
     referral: true,
     timestamp: new Date(),

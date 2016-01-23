@@ -88,8 +88,9 @@ if (Meteor.isServer) {
     check(token, String);
 
     var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
-    var apiToken = ApiTokens.findOne({_id: hashedToken}, {fields: {grainId: 1, identityId: 1}});
-    if (!apiToken || (apiToken.owner && !("webkey" in apiToken.owner))) {
+    var apiToken = ApiTokens.findOne({_id: hashedToken},
+                                     {fields: {grainId: 1, owner: 1}});
+    if (!apiToken) {
       this.added("tokenInfo", token, {invalidToken: true});
     } else {
       var grainId = apiToken.grainId;
@@ -97,20 +98,37 @@ if (Meteor.isServer) {
       if (!grain) {
         this.added("tokenInfo", token, {invalidToken: true});
       } else {
-        var pkg = Packages.findOne({_id: grain.packageId}, {fields: {manifest: 1}});
-        var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ""};
-        var appIcon = undefined;
-        if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
-          var icons = pkg.manifest.metadata.icons;
-          appIcon = icons.grain || icons.appGrid;
+        if (apiToken.owner && apiToken.owner.user) {
+          let identity = globalDb.getIdentity(apiToken.owner.user.identityId);
+          let metadata = apiToken.owner.user.denormalizedGrainMetadata;
+          if (identity && metadata) {
+            this.added("tokenInfo", token,
+                       {identityOwner: _.pick(identity, "_id", "profile"),
+                        grainId: grainId,
+                        grainMetadata: metadata});
+          } else {
+            this.added("tokenInfo", token, {invalidToken: true});
+          }
+        } else if (!apiToken.owner || "webkey" in apiToken.owner) {
+          let pkg = Packages.findOne({_id: grain.packageId}, {fields: {manifest: 1}});
+          let appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ""};
+          let appIcon = undefined;
+          if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
+            let icons = pkg.manifest.metadata.icons;
+            appIcon = icons.grain || icons.appGrid;
+          }
+          let denormalizedGrainMetadata = {
+            appTitle: appTitle,
+            icon: appIcon,
+            appId: appIcon ? undefined : grain.appId,
+          };
+          this.added("tokenInfo", token,
+                     {webkey: true,
+                      grainId: grainId,
+                      grainMetadata: denormalizedGrainMetadata});
+        } else {
+          this.added("tokenInfo", token, {invalidToken: true});
         }
-        var denormalizedGrainMetadata = {
-          appTitle: appTitle,
-          icon: appIcon,
-          appId: appIcon ? undefined : grain.appId,
-        };
-        this.added("tokenInfo", token,
-                   {apiToken: apiToken, grainMetadata: denormalizedGrainMetadata});
       }
     }
     this.ready();
@@ -317,14 +335,14 @@ Meteor.methods({
             outerResult.failures.push({contact: contact, error: e.toString()});
           }
         } else {
-          SandstormPermissions.createNewApiToken(
+          let result = SandstormPermissions.createNewApiToken(
             globalDb, {identityId: identityId, accountId: accountId}, grainId,
             "direct invitation to " + contact.profile.intrinsicName,
             roleAssignment, {user: {identityId: contact._id, title: title}});
           try {
             var identity = Meteor.users.findOne({_id: contact._id});
             var emailAddress = SandstormDb.getVerifiedEmails(identity)[0];
-            var url = origin + "/grain/" + grainId;
+            var url = origin + "/shared/" + result.token;
             if (emailAddress) {
               var intrinsicName = contact.profile.intrinsicName;
               var loginNote;
@@ -1575,8 +1593,10 @@ Router.map(function () {
       var hash = this.params.hash;
 
       var tokenInfo = TokenInfo.findOne({_id: token});
-      if (tokenInfo && tokenInfo.apiToken) {
-        var grainId = tokenInfo.apiToken.grainId;
+      if (tokenInfo && tokenInfo.invalidToken) {
+        this.state.set("invalidToken", true);
+      } else {
+        var grainId = tokenInfo.grainId;
         var grains = globalGrains.get();
         var grainIndex = grainIdToIndex(grains, grainId);
         if (grainIndex == -1) {
@@ -1584,7 +1604,7 @@ Router.map(function () {
             var mainContentElement = document.querySelector("body>.main-content");
             if (mainContentElement) {
               var grains = globalGrains.get();
-              var grainToOpen = new GrainView(grainId, path, token, mainContentElement);
+              var grainToOpen = new GrainView(grainId, path, tokenInfo, mainContentElement);
               grainToOpen.openSession();
               grainIndex = grains.push(grainToOpen) - 1;
               globalGrains.set(grains);
@@ -1597,10 +1617,6 @@ Router.map(function () {
         } else {
           makeGrainIdActive(grainId);
         }
-      } else if (tokenInfo && tokenInfo.invalidToken) {
-        this.state.set("invalidToken", true);
-      } else {
-        console.error("unrecognized tokenInfo: " + tokenInfo);
       }
       this.next();
     },

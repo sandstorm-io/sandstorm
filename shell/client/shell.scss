@@ -175,9 +175,12 @@ button.revoke-token {
   color: red;
 }
 
-.main-content .interstitial-button-box {
+.main-content .interstitial-button-box,.direct-share-denied {
   text-align: center;
   background-color: $default-content-background-color;
+  .identity-card {
+    display: inline-block;
+  }
   & button.incognito-button {
     font-family: inherit;
     font-size: inherit;

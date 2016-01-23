@@ -1,7 +1,7 @@
 let counter = 0;
 
 GrainView = class GrainView {
-  constructor(grainId, path, token, parentElement) {
+  constructor(grainId, path, tokenInfo, parentElement) {
     // `path` starts with a slash and includes the query and fragment.
     //
     // Owned grains:
@@ -22,7 +22,8 @@ GrainView = class GrainView {
     this._grainId = grainId;
     this._originalPath = path;
     this._path = path;
-    this._token = token;
+    this._tokenInfo = tokenInfo;
+    this._token = tokenInfo && tokenInfo._id;
     this._parentElement = parentElement;
     this._status = 'closed';
     this._dep = new Tracker.Dependency();
@@ -31,7 +32,7 @@ GrainView = class GrainView {
     // `false` means incognito; `undefined` means we still need to decide whether to reveal
     // an identity.
 
-    if (token) {
+    if (this._tokenInfo && this._tokenInfo.webkey) {
       if (!Meteor.userId()) {
         this.doNotRevealIdentity();
 
@@ -232,8 +233,7 @@ GrainView = class GrainView {
       // TODO(someday) - shouldn't use defaultText
     } else {
       // Case 3
-      const tokenInfo = TokenInfo.findOne({_id: this._token});
-      const token = ApiTokens.findOne({_id: tokenInfo.apiToken});
+      const tokenInfo = this._tokenInfo;
       return tokenInfo && tokenInfo.grainMetadata && tokenInfo.grainMetadata.appTitle &&
              tokenInfo.grainMetadata.appTitle.defaultText;
       // TODO(someday) - shouldn't use defaultText
@@ -374,22 +374,57 @@ GrainView = class GrainView {
 
   shouldShowInterstitial() {
     this._dep.depend();
-
     // We only show the interstitial for /shared/ routes.
-    if (!this._token) {
-      return false;
+    if (!this._tokenInfo) {
+      return null;
     }
 
-    // If we have explictly set _userIdentityId, we don't need to show the interstitial.
-    if (this._userIdentityId.get() !== undefined) {
-      return false;
+    if (this._tokenInfo.webkey) {
+      // If we have explictly set _userIdentityId, we don't need to show the interstitial.
+      if (this._userIdentityId.get() !== undefined) {
+        return null;
+      }
+
+      // If we are not logged in, we don't need to show the interstitial - we'll go incognito by
+      // default.
+      if (!Meteor.userId()) {
+        return null;
+      }
+
+      // Otherwise, we should show it.
+      return {chooseIdentity: {}};
+    } else if (this._tokenInfo.identityOwner) {
+      if (Meteor.userId() &&
+          globalDb.userHasIdentity(Meteor.userId(), this._tokenInfo.identityOwner._id)) {
+        this._redirectFromShareLink();
+      } else {
+        return {
+          directShare: {
+            recipient: this._tokenInfo.identityOwner,
+          }
+        };
+      }
+    } else {
+      throw new Error("unrecognized tokenInfo: ", this._tokenInfo);
     }
-    // If we are not logged in, we don't need to show the interstitial - we'll go incognito by default.
-    if (!Meteor.userId()) {
-      return false;
+  }
+
+  _redirectFromShareLink() {
+
+    // We should remove this tab from the tab list, since the /grain/<grainId> route
+    // will set up its own tab for this grain.  There could even already be a tab open, if the
+    // user reuses a /shared/ link.
+    this.destroy();
+    const allGrains = globalGrains.get();
+    for (let i = 0; i < allGrains.length; i++) {
+      if (allGrains[i] === this) {
+        allGrains.splice(i, 1);
+        globalGrains.set(allGrains);
+      }
     }
-    // Otherwise, we should show it.
-    return true;
+
+    return Router.go('/grain/' + this._tokenInfo.grainId + this._path, {},
+                     {replaceState: true});
   }
 
   _addSessionObserver(sessionId) {
@@ -456,7 +491,7 @@ GrainView = class GrainView {
   _openApiTokenSession() {
     const _this = this;
     const condition = () => {
-      return _this._userIdentityId.get() !== undefined;
+      return _this._tokenInfo.webkey && _this._userIdentityId.get() !== undefined;
     };
 
     onceConditionIsTrue(condition, () => {
@@ -477,20 +512,7 @@ GrainView = class GrainView {
             _this._grainId = result.redirectToGrain;
             _this._dep.changed();
 
-            // We should remove this tab from the tab list, since the /grain/<grainId> route
-            // will set up its own tab for this grain.  There could even already be a tab open, if the
-            // user reuses a /shared/ link.
-            _this.destroy();
-            const allGrains = globalGrains.get();
-            for (let i = 0; i < allGrains.length; i++) {
-              if (allGrains[i] === _this) {
-                allGrains.splice(i, 1);
-                globalGrains.set(allGrains);
-              }
-            }
-
-            // OK, go to the grain.
-            return Router.go('/grain/' + result.redirectToGrain + _this._path, {}, {replaceState: true});
+            return _this._redirectFromShareLink();
           } else {
             // We are viewing this via just the /shared/ link, either as an anonymous user on in our
             // incognito mode (since we'd otherwise have redeemed the token and been redirected).
@@ -578,7 +600,7 @@ GrainView = class GrainView {
       }
     } else {
       // Case 3
-      const tokenInfo = TokenInfo.findOne({_id: this._token});
+      const tokenInfo = this._tokenInfo;
       if (tokenInfo && tokenInfo.grainMetadata) {
         const meta = tokenInfo.grainMetadata;
         if (meta.icon) return this._urlForAsset(meta.icon.assetId);

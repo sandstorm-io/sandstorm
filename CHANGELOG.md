@@ -1,3 +1,14 @@
+### v0.140 (2016-01-22)
+- When you opeon a sharing invitation sent to you by user identity, and you are not currently logged in as that identity, you'll now get an informative message rather than "403 Unauthorized".
+- Restoring a grain backup is now accomplished through a button on the grain list rather than the app list.
+- The button to upload (aka sideload) an app spk has been moved to the side, since it tended to confuse people who didn't need it.
+- When installing a new version of an app for which the appVersion hasn't changed, offer the option to upgrade existing grains. (Previously, the option was only provided if the appVersion was newer than existing grains. This primarily affects developers.)
+- Accessibility improvements in sign-in menu.
+- Consistently use the term "grain", not "file".
+- Self-hosting: Give more helpful messaging when OAuth login configuration is auto-reset due to BASE_URL change.
+- Self-hosting: Add ability to configure the server title and return address as used in, for example, login emails.
+- Oasis: Notify everyone about the existence of the referral program.
+
 ### v0.139 (2016-01-11)
 - Refactored authentication framework. No visible changes.
 - Improved UX for logging in as a dev user.

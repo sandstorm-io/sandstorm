@@ -18,9 +18,13 @@ To set up Sandstorm, we will use sudo to switch to root, then
 provide further information before doing the install.
 Sandstorm's database and web interface won't run as root.
 OK to continue? [yes] $[type]no
-If you are OK with a local Sandstorm install for testing
-but not app development, re-run install.sh with -u to bypass this message.
-For developer mode to work, the script needs root, or read above to bypass.
-*** INSTALLATION FAILED ***
-Report bugs at: http://github.com/sandstorm-io/sandstorm
+
+One development feature does require root. To install anyway, run:
+
+install.sh -u
+
+to install without using root access. In that case, Sandstorm will operate OK
+but package tracing ('spk dev') will not work.
+
+You can report bugs at: http://github.com/sandstorm-io/sandstorm
 $[exitcode]1

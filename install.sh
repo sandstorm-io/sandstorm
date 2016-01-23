@@ -686,7 +686,8 @@ dev_server_install() {
       rerun_script_as_root CHOSEN_INSTALL_MODE=2
     else
       # Print a message that allows people to make an informed decision.
-      SHOW_FAILURE_MSG=no REPORT=no fail "E_NEED_ROOT" "One development feature does require root. To install anyway, run:
+      SHOW_FAILURE_MSG=no REPORT=no fail "E_NEED_ROOT" "
+One development feature does require root. To install anyway, run:
 
 install.sh -u
 

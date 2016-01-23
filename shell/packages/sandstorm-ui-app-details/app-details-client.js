@@ -352,9 +352,22 @@ Template.sandstormAppDetailsPage.helpers({
     var ref = Template.instance().data;
     var pkg = latestPackageForAppId(ref._db, ref._appId);
     if (!pkg) return false;
+
+    // Don't offer upgrading grains to a dev app. The dev app already overrides the regular app
+    // for all grains executed while spk dev is active.
+    if (pkg.dev) return false;
+
     var grains = appGrains(ref._db, ref._appId);
     return _.some(grains, function (grain) {
-      return grain.appVersion < pkg.manifest.appVersion;
+      // Note that we consider a different package with the same appVersion to be "older" because
+      // this usually happens when the developer is iterating on their own app and isn't bumping
+      // the version number for every iteration. The developer will likely want to be able to
+      // upgrade their grains with each iteration, so we want to show them the upgrade button.
+      // The app market will refuse to publish two spks of the same app with the same appVersion,
+      // so this logic should rarely affect end users.
+      return grain.appVersion < pkg.manifest.appVersion ||
+          (grain.appVersion === pkg.manifest.appVersion &&
+           grain.packageId !== pkg._id);
     });
   },
 });

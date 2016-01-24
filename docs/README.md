@@ -7,6 +7,7 @@ https://docs.sandstorm.io/
 Run the following.
 
 ```
+cd ~/projects/sandstorm/docs
 virtualenv env
 env/bin/pip install mkdocs
 env/bin/pip install markdown-inline-graphviz
@@ -29,12 +30,12 @@ git clone https://my_repo@alpha-api.sandstorm.io/ sandstorm-docs
 - Run `generate.sh` to re-generate the docs, then commit them to this git repo.
 
 ```
-bash docs/generate.sh -d sandstorm-docs
+PATH=$PATH:docs/env/bin bash docs/generate.sh -d sandstorm-docs
 ```
 
 
 - Run `generate.sh` with the `-p` flag to actually push them to the live site.
 
 ```
-bash docs/generate.sh -d sandstorm-docs
+PATH=$PATH:docs/env/bin bash docs/generate.sh -d sandstorm-docs -p
 ```

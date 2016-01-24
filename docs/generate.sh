@@ -83,6 +83,10 @@ run_mkdocs_build() {
   rm -rf "$OUTPUT_DIR/en/latest"
   mkdir -p "$OUTPUT_DIR/en/latest/"
   mkdocs build --site-dir "$OUTPUT_DIR/en/latest/"
+  # Clean up after virtualenv mess.
+  rm -rf "$OUTPUT_DIR/en/latest/env"
+  # Clean up after weird readthedocs theme __init__.py.
+  rm -rf "$OUTPUT_DIR/en/latest/__init__.py" "$OUTPUT_DIR/en/latest/__init__.pyc"
 }
 
 git_push_if_desired() {

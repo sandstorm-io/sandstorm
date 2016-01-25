@@ -54,7 +54,7 @@ SIGNING_KEY_ID=160D2D577518B58D94C9800B63F227499DA8CCBD
 
 # Verify that the changelog has been updated.
 EXPECTED_CHANGELOG="### $TAG_NAME ($(date '+%Y-%m-%d'))"
-if [ "$(head -n 1 CHANGELOG.md)" != "$EXPECTED_CHANGELOG" ]; then
+if [[ "$(head -n 1 CHANGELOG.md)" != "$EXPECTED_CHANGELOG"* ]]; then
   echo "Changelog not updated. First line should be:" >&2
   echo "$EXPECTED_CHANGELOG" >&2
   exit 1

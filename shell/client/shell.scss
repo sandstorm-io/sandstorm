@@ -103,7 +103,8 @@ button.revoke-token {
   background-image: url("/close.svg");
 }
 
-.main-content, .first-sign-in-main-content, .demo-expired-main-content {
+.main-content, .first-sign-in-main-content, .demo-expired-main-content,
+.identity-login-interstitial {
   margin: 0;
   padding: 0;
   position: fixed;
@@ -414,6 +415,7 @@ div.popup h2 {
 }
 
 #demo-expired {
+  z-index: 1;
   >p, >h1, >h2, >h3, >h4 {
     margin-left: auto;
     margin-right: auto;

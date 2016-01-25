@@ -1381,6 +1381,7 @@ body>.popup.billing-prompt>.frame, .first-time-billing-prompt {
 }
 
 .identity-login-interstitial {
+  z-index: 1;
   background-color: #efefef;
   height: 100%;
   div.centered-content{

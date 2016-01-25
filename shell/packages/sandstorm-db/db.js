@@ -1521,7 +1521,6 @@ if (Meteor.isServer) {
         !ApiTokens.findOne({accountId: account._id}) &&
         (!account.plan || account.plan === "free") &&
         !account.payments &&
-        !Notifications.findOne({userId: account._id}) &&
         !Contacts.findOne({ownerId: account._id})) {
       Meteor.users.remove({_id: account._id});
       backend.deleteUser(account._id);

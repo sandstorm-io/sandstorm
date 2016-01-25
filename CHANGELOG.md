@@ -21,11 +21,11 @@
 - Sidebar tabs now have tooltips with titles (for when sidebar is shrunk).
 - Fix `setPath` postMessage API when passed an empty string.
 
-### v0.138 (2015-12-18)
+### v0.138 (2015-12-18) [bugfixes]
 - Fix bug in new sharing interface where if you typed an email address but did not press "enter" to turn it into a chip, then tried to send the invite, nothing was sent.
 - Oasis: Referral program page is now designed.
 
-### v0.137 (2015-12-15)
+### v0.137 (2015-12-15) [bugfixes]
 - Tweak wording of app update notification.
 - Bug fixes for servers running demo mode (probably only Oasis).
 
@@ -36,13 +36,13 @@
 - Icons for shared grains should now appear correctly in the sidebar (for new shares, at least).
 - Oasis: Experimenting with showing payment plan selector on initial account creation. (You can still choose "free".)
 
-### v0.135 (2015-12-08)
+### v0.135 (2015-12-08) [bugfixes]
 - When visiting a share link anonymously, we now gently encourage the user to log in, since most apps work better when users are logged in.
 - Fixed various problems that could cause blank gray screens (no error message) when visiting sharing links.
 - Fixed double-counting of users in server stats, introduced in 0.133.
 - Fixed recent regression in first-time setup flow which forced the admin to create two or even three admin tokens in order to complete setup. Only one should be required (which the install script auto-generates).
 
-### v0.134 (2015-12-07)
+### v0.134 (2015-12-07) [bugfixes]
 - Fix signup key consumption.
 - Fix bug where sharing links didn't work after the owner unlinked the identity under which the grain was created.
 - Sandcats: Fix bug that sometimes caused certificate rotation not to happen on time.
@@ -58,7 +58,7 @@
 - Demo mode now features a prominent timer in the sidebar. We found that people did not notice the timer in its previous upper-right location.
 - `spk verify` now defaults to printing extended details, previously gated by the `--detail` flag.
 
-### v0.132 (2015-11-11)
+### v0.132 (2015-11-11) [bugfixes]
 - Fixed regression where app detail page showed "last updated" as "unknown" for all apps.
 - Fixed SMTP escaping issue that was otherwise causing errors when sending from Roundcube through Mailgun.
 
@@ -68,7 +68,7 @@
 - Work around bug where web publishing could stop working on a particular grain saying that the capability had been closed. (Proper fix requires some refactoring, but at least now it will reconnect.)
 - Started to transition icons to a font rather than lots of separate SVGs.
 
-### v0.130 (2015-11-03)
+### v0.130 (2015-11-03) [bugfixes]
 - Fix regression in v0.129 preventing the first user to log in from using Google or Github as the login service.
 
 ### v0.129 (2015-11-03)
@@ -79,10 +79,10 @@
 - Attempt to fix "session was never opened" error.
 - Fix regression where "first user becomes admin" could apply to dev accounts.
 
-### v0.128 (2015-10-28)
+### v0.128 (2015-10-28) [bugfixes]
 - Internal bugfixes.
 
-### v0.127 (2015-10-26)
+### v0.127 (2015-10-26) [bugfixes]
 - Fix bug in app details page causing pages to be blank in the presence of very old sharing tokens that lacked certain expected metadata.
 
 ### v0.126 (2015-10-26)
@@ -90,23 +90,23 @@
 - Fixed problem where some apps would refresh to a 404 page when resuming a laptop from suspend.
 - Sandstorm will now automatically repair its Mongo database after a dirty shutdown (e.g. power outage), rather than go into an infinite loop of Mongo failing to start.
 
-### v0.125 (2015-10-21)
+### v0.125 (2015-10-21) [bugfixes]
 - Fix bug causing Sandcats servers not to update their IP dynamically.
 
-### v0.124 (2015-10-19)
+### v0.124 (2015-10-19) [bugfixes]
 - Harden back-end code against possible front-end bugs that could inadvertently delete data. We do not believe any such bugs exist, but we like having extra layers of protection.
 
-### v0.123 (2015-10-18)
+### v0.123 (2015-10-18) [bugfixes]
 - Fixed regression introduced in v0.119 where `X-Sandstorm-User-Id` (as reported to apps) was computed incorrectly for email login users, causing apps to think the user was a different person than they were before the change. E.g. Etherpad would assign the user a different color from before. For some apps, this problem triggered app bugs of varying severity, such as Wekan making the board read-only and Laverna refusing to save changes. (Unfortunately, fixing this bug means that any grains created during the time when the bug was present will now show the same problems.)
 
-### v0.122 (2015-10-16)
+### v0.122 (2015-10-16) [bugfixes]
 - Fix formatting of app update notification.
 - Add temporary debug logging aimed at diagnosing the rare event loop stalling bug which is apparently still not fixed.
 
-### v0.121 (2015-10-15)
+### v0.121 (2015-10-15) [bugfixes]
 - Fix regression where `spk dev` might fail to override normally-installed versions of the app. (Only affects development servers.)
 
-### v0.120 (2015-10-15)
+### v0.120 (2015-10-15) [bugfixes]
 - Fix bug causing intermittent timeouts in web publishing.
 
 ### v0.119 (2015-10-15)
@@ -119,7 +119,7 @@
 - HTTP proxy now passes through ETags and ETag preconditions, probably improving performance for some apps.
 - Attempt again to fix rare bug where front-end stops talking to back-end, apparently not fixed by 0.116 as we thought. Most likely still not fixed, but new logging has been added to try to debug.
 
-### v0.118 (2015-10-07)
+### v0.118 (2015-10-07) [bugfixes]
 - Fixed problem where Sandcats-HTTPS-enabled servers would request new certificates too often.
 - This is a cherry-pick release -- no other changes merged in the last week are included.
 
@@ -127,14 +127,14 @@
 - Self-hosters using Sandcats now get automatic free HTTPS certificates. This is normally set up automatically during install. If you first installed before this release, [see the docs to find out how to enable HTTPS](https://docs.sandstorm.io/en/latest/administering/ssl/).
 
 ### v0.116 (2015-09-29)
-- (Probably) fix very rare bug in which front-end stops talking to back-end causing grains to fail to load until the next front-end restart. The bug was in node-capnp's use of libuv.
+- (Probably) fix very rare bug in which front-end stops talking to back-end causing grains to fail to load until the next front-end restart. The bug was in node-capnp's use of libuv. [EDIT: Did not fix problem. :(]
 - Check PGP signatures on packages on install and store them in the database (not yet surfaced in UI).
 
-### v0.115 (2015-09-24)
+### v0.115 (2015-09-24) [bugfixes]
 - Attempt to work around very rare problem where front-end inexplicably stops talking to back-end by monitoring and recreating the connection.
 - Oasis: Fix "download backup", which broke due to unexpected interaction between security hardening to the sandbox in which zip/unzip runs and security settings on Oasis.
 
-### v0.114 (2015-09-23)
+### v0.114 (2015-09-23) [bugfixes]
 - No-op release just to test end-to-end that the new signed update mechanism works. (We did lots of tests in advance, but touching the updater code always makes me nervous, so test again!)
 
 ### v0.113 (2015-09-23)
@@ -144,17 +144,17 @@
 - Oasis: Fixed storage bug that was causing random app restarts (but no data loss).
 - Various small UI usability tweaks.
 
-### v0.112 (2015-09-16)
+### v0.112 (2015-09-16) [bugfixes]
 - Fix another stats bug causing stats recording to sometimes be interrupted by an exception.
 
-### v0.111 (2015-09-16)
+### v0.111 (2015-09-16) [bugfixes]
 - Fix bug preventing "who has access" table from displaying properly.
 
-### v0.110 (2015-09-16)
+### v0.110 (2015-09-16) [bugfixes]
 - Fix problem with display of app stats (in admin panel) in presence of broken package uploads.
 
 ### v0.109 (2015-09-15)
-- You now uninstall apps again.
+- You can now uninstall apps again.
 - Suspending your machine for a few minutes or more and then resuming will no longer cause all your open Sandstorm grains to stop working until you reload them.
 - Fixed brief display of "Reveal your identity?" prompt when loading your own grains (where this prompt makes no sense).
 - Clicking on an app in the app list will now immediately show the loading spinner without waiting for the server to respond. (Previously, when the server was overloaded, there could be a delay with no feedback. People would often click the app repeatedly, causing multiple grains to be created.)
@@ -173,7 +173,7 @@
 - Placed grain title first in title bar, rather than app title.
 - Updated wording of app install prompt.
 
-### v0.107 (2015-08-31)
+### v0.107 (2015-08-31) [bugfixes]
 - Fix sign-out button.
 
 ### v0.106 (2015-08-30)
@@ -195,10 +195,10 @@
 - Fixed bug where logging in while viewing a sharing link did not correctly update the app to notify it that the user was now logged in.
 - Lots of code refactoring in preparation for big changes coming soon.
 
-### v0.104 (2015-08-03)
+### v0.104 (2015-08-03) [bugfixes]
 - Fix sudden increase in log spam in 0.102 -- unnecessarily large full-HTML DNS TXT lookup error messages were being logged to the console; no more. In fact, now these are properly 404 errors as they should be.
 
-### v0.103 (2015-08-03)
+### v0.103 (2015-08-03) [bugfixes]
 - Emergency fix for bug that can cause startup failure in the presence of users that apparently have a `services` entry but no `profile`. The alpha server seems to have these but none of the test servers did.
 
 ### v0.102 (2015-08-03)
@@ -211,16 +211,16 @@
 - Refactored CSS styling and accounts drop-down code. Please be on the lookout for bugs.
 - Fixed bug where the admin settings page would simply say "Loading..." forever if the user was not authorized.
 
-### v0.100 (2015-07-22)
+### v0.100 (2015-07-22) [bugfixes]
 - Fix inability to configure Google/Github login accidentally introduced in v0.97 during security tightening.
 - Add missing changelog for 0.99.
 
-### v0.99 (2015-07-21)
+### v0.99 (2015-07-21) [bugfixes]
 - Fix app scrolling on iOS.
 - Fix popups being onclosable on iOS.
 - Fix app selection on mobile.
 
-### v0.98 (2015-07-19)
+### v0.98 (2015-07-19) [bugfixes]
 - Fix grain title misalignment on Firefox.
 
 ### v0.97 (2015-07-19)
@@ -238,7 +238,7 @@
 - Introduced admin UI for creating raw IP networking capabilities, which can be passed into apps.
 - Offer templates can now specify that the offered token is meant to be used by users other than the creating user, like sharing tokens.
 
-### v0.95 (2015-07-11)
+### v0.95 (2015-07-11) [bugfixes]
 - Reverted "loading" spinner because it interacted badly with the "reveal your identity?" interstitial.
 
 ### v0.94 (2015-07-11)
@@ -263,10 +263,10 @@
 - Improved display of admin alerts on mobile.
 - Admin alerts can now include the current app name in their text and link; useful for clickthrough metrics.
 
-### v0.91 (2015-06-20)
+### v0.91 (2015-06-20) [bugfixes]
 - Bug: The first bug in v0.90 was not fully fixed: query parameters and fragments were still being dropped. This is blocking a thing, so we're pushing another fix. Sorry.
 
-### v0.90 (2015-06-20)
+### v0.90 (2015-06-20) [bugfixes]
 - Bug: Share links with paths would lose the path if the user was logged in and consumed the link (redirecting them to /grain/whatever). The path is now preserved in this redirect.
 - Bug: The API by which apps set paths did the wrong thing when viewing anonymously via a share link: it would overwrite the URL with a /grain URL, which would lead to an unauthorized error if the user refreshed.
 - Bug: On server restart/upgrade, logged in users viewing grains not owned by them had their view force-reloaded. Buggy code perceived the user's permissions to be changing.
@@ -281,11 +281,11 @@
 - "Admin alert" feature lets you define a banner to show to all users, possibly including a time and countdown, e.g. to announce scheduled downtime.
 - Various Admin panel usability improvements.
 
-### v0.88 (2015-06-18)
+### v0.88 (2015-06-18) [bugfixes]
 - Fix real-time activity stats not being displayed (in admin settings).
 - Fix issue on Oasis where worker could get into a bad state and refuse to start grains.
 
-### v0.87 (2015-06-13)
+### v0.87 (2015-06-13) [bugfixes]
 - Emergency fix to race condition which caused the login control to claim no login services were configured when communicating with a server far-away on the network. This wasn't caught in testing because we usually test against localhost servers. The fix is to make the list of enabled services reactive, where it wasn't before. This update should entirely resolve the problem.
 
 ### v0.86 (2015-06-13)

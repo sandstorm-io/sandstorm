@@ -1,3 +1,7 @@
+### v0.141 (2016-01-25) [bugfixes]
+- Fix blank screen when trying to log in as an identity that is connected to one or more accounts as a non-login identity.
+- Oasis: Fix regression that prevented linking an identity to your account which had already been logged into in the past but never created any grains. In this case, the old empty account is supposed to be deleted so that the identity can be added to the current account, however the recent referral program notification that was sent to everyone caused these accounts to be considered non-empty and thus not elligible for auto-deletion.
+
 ### v0.140 (2016-01-22)
 - When you opeon a sharing invitation sent to you by user identity, and you are not currently logged in as that identity, you'll now get an informative message rather than "403 Unauthorized".
 - Restoring a grain backup is now accomplished through a button on the grain list rather than the app list.

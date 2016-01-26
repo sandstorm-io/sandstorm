@@ -35,6 +35,8 @@ module.exports["Incoming Mail"] = function (browser) {
   browser
     .waitForElementVisible('.grain-frame', short_wait)
     .frame("grain-frame")
+    .waitForElementVisible(".button-settings", short_wait)
+    .pause(short_wait) // Roundcube seems to swallow the click if you click while it's doing the initial mailbox load AJAX, sadly.
     .click(".button-settings")
     .waitForElementVisible("#settings-tabs .identities > a", short_wait)
     .click("#settings-tabs .identities > a")

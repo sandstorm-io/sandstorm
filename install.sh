@@ -717,7 +717,7 @@ to install without using root access. In that case, Sandstorm will operate OK bu
     if [ "unknown" == "$INIT_SYSTEM" ]; then
       echo "*** WARNING: Could not detect how to run Sandstorm at startup on your system. ***"
     else
-        echo "* Configure Sandstorm to start on System boot (with $INIT_SYSTEM)."
+        echo "* Configure Sandstorm to start on system boot (with $INIT_SYSTEM)."
     fi
     echo ""
 
@@ -805,7 +805,7 @@ full_server_install() {
     if [ "unknown" == "$INIT_SYSTEM" ]; then
       echo "*** WARNING: Could not detect how to run Sandstorm at startup on your system. ***"
     else
-      echo "* Configure Sandstorm to start on System boot (with $INIT_SYSTEM)"
+      echo "* Configure Sandstorm to start on system boot (with $INIT_SYSTEM)"
     fi
     if [ "yes" == "$USERNS_CLONE_UNPRIVILEGED_NEEDS_SYSCTL_SET" ] ; then
       echo "* Configure your system to enable unprivileged user namespaces, via sysctl."

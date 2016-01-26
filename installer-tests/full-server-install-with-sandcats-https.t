@@ -18,7 +18,7 @@ We're going to:
 * Automatically keep Sandstorm up-to-date
 * Configure auto-renewing HTTPS
 * Create a service user (sandstorm) that owns Sandstorm's files
-* Configure Sandstorm to start on System boot (with sysvinit)
+* Configure Sandstorm to start on system boot (with sysvinit)
 * Configure your system to enable unprivileged user namespaces, via sysctl.
 
 OK to continue? [yes] $[type]

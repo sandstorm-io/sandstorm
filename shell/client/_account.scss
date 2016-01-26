@@ -158,25 +158,48 @@ body>.popup.account>.frame {
       background-image: url("/troubleshoot-m.svg");
     }
   }
-  >form.login.dev,>button.login.dev {
+
+  >form.login.dev:hover {
+    background-color: white;
+    cursor: auto
+  }
+
+  >form.login.dev, >button.login.dev {
     background-image: url("/debug.svg");
-    background-position-y: 0px;
+    background-position: 16px 0px;
     height: auto;
+    button.unexpand {
+      @extend %unstyled-button;
+    }
     &:hover {
       background-image: url("/debug-m.svg");
     }
+    button.login-dev-account {
+      @extend %button-base;
+      @extend %button-secondary;
+      width: 100%;
+    }
+    .flex-box {
+      display: flex;
+      justify-content: space-between;
+    }
+    input.custom-name {
+      width: 50%;
+      display: inline-block;
+    }
+    button.login-dev-account-custom {
+      @extend %button-base;
+      @extend %button-secondary;
+      width: 45%;
+    }
+
     ul.dev-identities {
       text-indent: 0;
       list-style-type: none;
       padding-left: 0;
       li {
-        margin: 0;
+        margin: 2px;
         width: auto;
-        button {
-          @extend %button-base;
-          @extend %button-secondary;
-          width: 100%;
-        }
       }
     }
   }
@@ -373,6 +396,10 @@ body>.popup.account>.frame {
     >button.login.github {
       background-image: url("/github-color.svg");
       color: #191919;
+    }
+
+    >form.dev {
+      background-position: 48px 0px;
     }
 
     >form.email {

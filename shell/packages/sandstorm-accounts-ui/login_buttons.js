@@ -283,21 +283,30 @@ Template.devLoginForm.helpers({
   }
 });
 
+function loginDevHelper(name, isAdmin, linkingNewIdentity) {
+  if (linkingNewIdentity) {
+    sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
+  }
+  loginDevAccount(name, isAdmin);
+}
+
 Template.devLoginForm.events({
   "click button.expand": function (event, instance) {
     event.preventDefault();
     instance._expanded.set(true);
   },
-  "click form.expanded": function (event, instance) {
+  "click button.unexpand": function (event, instance) {
     event.preventDefault();
     instance._expanded.set(false);
   },
   "click button.login-dev-account": function (event, instance) {
     var displayName = event.currentTarget.getAttribute("data-name");
     var isAdmin = !!event.currentTarget.getAttribute("data-is-admin");
-    if (instance.data.linkingNewIdentity) {
-      sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
-    }
-    loginDevAccount(displayName, isAdmin);
+    loginDevHelper(displayName, isAdmin, instance.data.linkingNewIdentity);
   },
+  "submit form": function (event, instance) {
+    event.preventDefault();
+    var form = instance.find("form");
+    loginDevHelper(form.name.value, false, instance.data.linkingNewIdentity);
+  }
 });

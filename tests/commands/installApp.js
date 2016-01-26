@@ -36,6 +36,11 @@ exports.command = function(url, packageId, appId, dontStartGrain, callback) {
 
   if (!dontStartGrain) {
     ret = ret
+      .execute(function ()  {
+        // The introjs overlay often doesn't destroy itself fast enough and intercepts
+        // clicks that we don't want it to intercept. So we manually disable it here.
+        Session.set('dismissedGrainTableGuidedTour', true);
+      })
       .click(appSelector(appId))
       .waitForElementVisible(actionSelector, short_wait)
       .click(actionSelector)

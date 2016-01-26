@@ -1162,12 +1162,23 @@ private:
 
     // The environment inherited from the host is probably no good for us. E.g. an oddball
     // locale setting can crash Mongo because we don't have the appropriate locale files available.
+    //
+    // That said, there are a few environment variables that we do re-export.
+    char * http_proxy, * https_proxy;
+    KJ_SYSCALL(http_proxy = getenv("https_proxy"));
+    KJ_SYSCALL(https_proxy = getenv("https_proxy"));
     KJ_SYSCALL(clearenv());
 
     // Set up an environment appropriate for us.
     KJ_SYSCALL(setenv("LANG", "C.UTF-8", true));
     KJ_SYSCALL(setenv("PATH", "/usr/bin:/bin", true));
     KJ_SYSCALL(setenv("LD_LIBRARY_PATH", "/usr/local/lib:/usr/lib:/lib", true));
+    if (http_proxy) {
+      KJ_SYSCALL(setenv("http_proxy", http_proxy, true));
+    }
+    if (https_proxy) {
+      KJ_SYSCALL(setenv("https_proxy", https_proxy, true));
+    }
 
     // See if /etc/resolv.conf exists, and if not, try replacing it with the backup made earlier.
     restoreResolvConfIfNeeded();

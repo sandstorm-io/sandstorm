@@ -310,92 +310,74 @@ AppInstaller = class AppInstaller {
     };
 
     let protocol;
-    if (url.protocol === 'http:') {
-      protocol = Http;
-    } else if (url.protocol === 'https:') {
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      protocol = Request.defaults({
+        maxRedirects: 1,
       // Since we will verify the download against a hash anyway, we don't need to verify the server's
       // certificate. In fact, the only reason we support HTTPS at all here is because some servers
       // refuse to serve over HTTP (which is, in general, a good thing). Skipping the certificate check
       // here is helpful in that it means we don't have to worry about having a reasonable list of trusted
       // CAs available to Sandstorm.
-      options.rejectUnauthorized = false;
-      protocol = Https;
+        strictSSL: false
+      });
     } else {
       throw new Error('Protocol not supported: ' + url.protocol);
     }
 
     // TODO(security):  It could arguably be a security problem that it's possible to probe the
     //   server's local network (behind any firewalls) by presenting URLs here.
-    const request = protocol.get(options, this.wrapCallback((response) => {
-      if (response.statusCode === 301 ||
-          response.statusCode === 302 ||
-          response.statusCode === 303 ||
-          response.statusCode === 307 ||
-          response.statusCode === 308) {
-        // jscs:disable requireDotNotation
-        // Got redirect. Follow it.
-        this.url = Url.resolve(this.url, response.headers['location']);
-        this.doDownloadTo(out);
-        return;
+    let bytesExpected = undefined;
+    let bytesReceived = 0;
+    const hasher = Crypto.createHash('sha256');
+    let done = false;
+    const updateDownloadProgress = _.throttle(this.wrapCallback(() => {
+      if (!done) {
+        if (bytesExpected) {
+          this.updateProgress('download', bytesReceived / bytesExpected);
+        } else {
+          this.updateProgress('download', bytesReceived);
+        }
       }
+    }), 500);
 
-      if (response.statusCode !== 200) {
-        throw new Error('Download failed with HTTP status code: ' + response.statusCode);
-      }
+    const request = protocol.get(this.url);
 
-      let bytesExpected = undefined;
-      let bytesReceived = 0;
-
+    request.on('response', this.wrapCallback((response) => {
       if ('content-length' in response.headers) {
         bytesExpected = parseInt(response.headers['content-length']);
       }
-
-      let done = false;
-      const hasher = Crypto.createHash('sha256');
-
-      const updateDownloadProgress = _.throttle(this.wrapCallback(() => {
-        if (!done) {
-          if (bytesExpected) {
-            this.updateProgress('download', bytesReceived / bytesExpected);
-          } else {
-            this.updateProgress('download', bytesReceived);
-          }
-        }
-      }), 500);
-
-      response.on('data', this.wrapCallback((chunk) => {
-        hasher.update(chunk);
-        out.write(chunk);
-        bytesReceived += chunk.length;
-        updateDownloadProgress();
-      }));
-
-      response.on('end', this.wrapCallback(() => {
-        out.done();
-
-        if (hasher.digest('hex').slice(0, 32) !== this.packageId) {
-          throw new Error('Package hash did not match.');
-        }
-
-        done = true;
-        delete this.downloadRequest;
-
-        this.updateProgress('unpack');
-        out.saveAs(this.packageId).then(this.wrapCallback((info) => {
-          this.appId = info.appId;
-          this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
-          this.done(info.manifest);
-        }), this.wrapCallback((err) => {
-          throw err;
-        }));
-      }));
-
-      response.on('error', this.wrapCallback((err) => { throw err; }));
     }));
 
-    this.downloadRequest = request;
+    request.on('data', this.wrapCallback((chunk) => {
+      hasher.update(chunk);
+      out.write(chunk);
+      bytesReceived += chunk.length;
+      updateDownloadProgress();
+    }));
+
+    request.on('end', this.wrapCallback(() => {
+      out.done();
+
+      if (hasher.digest('hex').slice(0, 32) !== this.packageId) {
+        throw new Error('Package hash did not match.');
+      }
+
+      done = true;
+      delete this.downloadRequest;
+
+      this.updateProgress('unpack');
+      out.saveAs(this.packageId).then(this.wrapCallback((info) => {
+        this.appId = info.appId;
+        this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
+        this.done(info.manifest);
+      }), this.wrapCallback((err) => {
+        throw err;
+      }));
+    }));
 
     request.on('error', this.wrapCallback((err) => { throw err; }));
+
+    this.downloadRequest = request;
   }
 
   done(manifest) {

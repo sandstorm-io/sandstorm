@@ -213,3 +213,49 @@ you'd like to see it stabilize.
 When creating your own page like this, we suggest using the Oasis splash URL as a starting point.
 Use your browser's DOM inspector to find the `IFRAME` that is on the background of Oasis. Use its
 CSS rules to guide your own.
+
+## Can Sandstorm use a HTTP proxy for outgoing connections?
+
+Yes. Set the `http_proxy` and `https_proxy` environment variables in your systemd service or init
+script. Right now, this can be used to install apps, but other uses of the proxy are untested. If
+you discover problems with the HTTP proxy support, please [file a
+bug](https://github.com/sandstorm-io/sandstorm/issues).
+
+As background, a Sandstorm server uses Internet access to achieve tasks like:
+
+- Downloading apps to install.
+
+- Automatically updating itself.
+
+- Automatically downloading app updates.
+
+- Updating your IP address on file with the sandcats service.
+
+If your environment requires configuring a HTTP proxy for outbound Internet connectivity, and you
+are using systemd, then you can edit `/etc/systemd/system/sandstorm.service` to look like the
+following. You will then need to run `sudo systemctl daemon-reload` then `sudo systemctl restart
+sandstorm`.
+
+```
+[Unit]
+Description=Sandstorm server
+After=local-fs.target remote-fs.target network.target
+Requires=local-fs.target remote-fs.target network.target
+
+[Service]
+Type=forking
+ExecStart=/opt/sandstorm/sandstorm start
+ExecStop=/opt/sandstorm/sandstorm stop
+Environment=http_proxy=http://127.0.0.1:3128/
+Environment=https_proxy=http://127.0.0.1:3128/
+
+[Install]
+WantedBy=multi-user.target
+```
+
+If you use `sysvinit` or a different init system, then make whatever similar change results in
+the `http_proxy` and `https_proxy` environment variables being set.
+
+**Note** that the sandcats.io dynamic DNS protocol requires the ability to send UDP packets to the
+Internet, so if the system cannot do that, then its IP address will not auto-update. If your IP
+address does not change frequently, this should be OK.

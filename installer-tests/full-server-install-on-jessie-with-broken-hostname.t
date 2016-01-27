@@ -20,7 +20,7 @@ We're going to:
 * Install Sandstorm in /opt/sandstorm
 * Automatically keep Sandstorm up-to-date
 * Create a service user (sandstorm) that owns Sandstorm's files
-* Configure Sandstorm to start on System boot (with sysvinit)
+* Configure Sandstorm to start on system boot (with sysvinit)
 * Configure your system to enable unprivileged user namespaces, via sysctl.
 
 To set up Sandstorm, we will need to use sudo.

@@ -27,7 +27,7 @@ var path = require('path');
 var assetsPath = path.resolve(__dirname, '../assets');
 var expectedHackerCMSButtonText = 'New Hacker CMS site';
 var expectedHackerCMSGrainTitle = 'Untitled Hacker CMS site';
-var expectedEtherpadGrainTitle = 'Untitled Etherpad document';
+var expectedGitWebGrainTitle = 'Untitled GitWeb repository';
 
 module.exports = utils.testAllLogins({
   // TODO(soon): Uploading tests are broken. Waiting on refactor of upload input to fix.
@@ -207,18 +207,10 @@ module.exports["Test roleless sharing"] = function (browser) {
   var secondUserName;
   browser
   // Upload app as 1st user
-    .loginDevAccount()
+    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .execute(function () { return globalDb.getIdentity(Meteor.user().loginIdentities[0].id).profile.intrinsicName; }, [], function(result) {
       firstUserName = result.value;
     })
-    .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
-    .waitForElementVisible('#step-confirm', very_long_wait)
-    .click('#confirmInstall')
-    .waitForElementVisible(appDetailsTitleSelector, short_wait)
-    .assert.containsText(appDetailsTitleSelector, 'Hacker CMS')
-    // Create grain with that user
-    .waitForElementVisible(actionSelector, short_wait)
-    .click(actionSelector)
     .waitForElementVisible('.grain-frame', medium_wait)
     .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
     .click('.topbar .share > .show-popup')
@@ -287,27 +279,19 @@ module.exports["Test roleless sharing"] = function (browser) {
 
 // Test sharing between multiple users. The users here are different from those in the
 // "Test roleless sharing" case to ensure that the incognito interstitial always appears.
-// TODO(soon): this test is failing intermittently. It seems to be a bug in etherpad? Re-write test using a different app.
 module.exports["Test role sharing"] = function (browser) {
   browser
     // Upload app as 1st user
-    .loginDevAccount()
-    .url(browser.launch_url + "/install/21f8dba75cf1bd9f51b97311ae64aaca?url=http://sandstorm.io/apps/etherpad9.spk")
-    .waitForElementVisible('#step-confirm', very_long_wait)
-    .click('#confirmInstall')
-    .waitForElementVisible(appDetailsTitleSelector, short_wait)
-    .assert.containsText(appDetailsTitleSelector, 'Etherpad')
-    // Create grain with that user
-    .waitForElementVisible(actionSelector, short_wait)
-    .click(actionSelector)
-
+    .installApp("http://sandstorm.io/apps/david/gitweb5.spk",
+                "26eb486a44085512a678c543fc7c1fdd",
+                "6va4cjamc21j0znf5h5rrgnv0rpyvh1vaxurkrgknefvj0x63ash")
     .waitForElementVisible('.grain-frame', medium_wait)
-    .assert.containsText('#grainTitle', expectedEtherpadGrainTitle)
+    .assert.containsText('#grainTitle', expectedGitWebGrainTitle)
     .click('.topbar .share > .show-popup')
     .waitForElementVisible("#shareable-link-tab-header", short_wait)
     .click("#shareable-link-tab-header")
     .waitForElementVisible("#shareable-link-tab .share-token-role", medium_wait)
-    .assert.valueContains("#shareable-link-tab .share-token-role", "can edit")
+    .assert.valueContains("#shareable-link-tab .share-token-role", "can read and write")
     .submitForm('.new-share-token')
     .waitForElementVisible('#share-token-text', medium_wait)
      // Navigate to the url with 2nd user
@@ -318,15 +302,15 @@ module.exports["Test role sharing"] = function (browser) {
         .waitForElementVisible("button.pick-identity", short_wait)
         .click("button.pick-identity")
         .waitForElementVisible('.grain-frame', medium_wait)
-        .assert.containsText('#grainTitle', expectedEtherpadGrainTitle)
+        .assert.containsText('#grainTitle', expectedGitWebGrainTitle)
         .frame('grain-frame')
-        .waitForElementPresent('#editorcontainerbox', medium_wait)
+        .waitForElementPresent('#offer-iframe', medium_wait) // Wait for GitWeb's offer iframe.
         .frame(null)
         .click('.topbar .share > .show-popup')
         .waitForElementVisible("#shareable-link-tab-header", short_wait)
         .click("#shareable-link-tab-header")
         .waitForElementVisible("#shareable-link-tab .share-token-role", medium_wait)
-        .assert.valueContains("#shareable-link-tab .share-token-role", "can edit")
+        .assert.valueContains("#shareable-link-tab .share-token-role", "can read and write")
         .submitForm('.new-share-token')
         .waitForElementVisible('#share-token-text', medium_wait)
         // Navigate to the re-shared url with 3rd user
@@ -337,15 +321,15 @@ module.exports["Test role sharing"] = function (browser) {
             .waitForElementVisible("button.pick-identity", short_wait)
             .click("button.pick-identity")
             .waitForElementVisible('.grain-frame', medium_wait)
-            .assert.containsText('#grainTitle', expectedEtherpadGrainTitle)
+            .assert.containsText('#grainTitle', expectedGitWebGrainTitle)
             .frame('grain-frame')
-            .waitForElementPresent('#editorcontainerbox', medium_wait)
+            .waitForElementPresent('#offer-iframe', medium_wait) // Wait for GitWeb's offer iframe.
             .frame(null)
             .click('.topbar .share > .show-popup')
             .waitForElementVisible("#shareable-link-tab-header", short_wait)
             .click("#shareable-link-tab-header")
             .waitForElementVisible("#shareable-link-tab .share-token-role", medium_wait)
-            .assert.valueContains("#shareable-link-tab .share-token-role", "can edit")
+            .assert.valueContains("#shareable-link-tab .share-token-role", "can read and write")
             .submitForm('.new-share-token')
             .waitForElementVisible('#share-token-text', medium_wait)
             .end();
@@ -356,15 +340,7 @@ module.exports["Test role sharing"] = function (browser) {
 module.exports["Test grain incognito interstitial"] = function (browser) {
   browser
     // Upload app as normal user
-    .loginDevAccount()
-    .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
-    .waitForElementVisible('#step-confirm', very_long_wait)
-    .click('#confirmInstall')
-    .waitForElementVisible(appDetailsTitleSelector, short_wait)
-    .assert.containsText(appDetailsTitleSelector, 'Hacker CMS')
-    // Create grain with that user
-    .waitForElementVisible(actionSelector, short_wait)
-    .click(actionSelector)
+    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
     .waitForElementVisible('.grain-frame', medium_wait)
     .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
     .click('.topbar .share > .show-popup')

@@ -1160,6 +1160,12 @@ private:
     KJ_SYSCALL(chdir("/"));
     KJ_SYSCALL(umount2("tmp", MNT_DETACH));
 
+    // Capture 2 things from the envion.
+    char * http_proxy;
+    KJ_SYSCALL(http_proxy = getenv("https_proxy"));
+    char * https_proxy;
+    KJ_SYSCALL(https_proxy = getenv("https_proxy"));
+
     // The environment inherited from the host is probably no good for us. E.g. an oddball
     // locale setting can crash Mongo because we don't have the appropriate locale files available.
     KJ_SYSCALL(clearenv());
@@ -1168,6 +1174,12 @@ private:
     KJ_SYSCALL(setenv("LANG", "C.UTF-8", true));
     KJ_SYSCALL(setenv("PATH", "/usr/bin:/bin", true));
     KJ_SYSCALL(setenv("LD_LIBRARY_PATH", "/usr/local/lib:/usr/lib:/lib", true));
+    if (http_proxy) {
+      KJ_SYSCALL(setenv("http_proxy", http_proxy, true));
+    }
+    if (https_proxy) {
+      KJ_SYSCALL(setenv("https_proxy", https_proxy, true));
+    }
 
     // See if /etc/resolv.conf exists, and if not, try replacing it with the backup made earlier.
     restoreResolvConfIfNeeded();
@@ -1877,6 +1889,16 @@ private:
             kj::str("mongodb://", authPrefix, "127.0.0.1:", config.mongoPort,
                     "/local", authSuffix).cStr(),
             true));
+      }
+
+      char * proxy;
+      KJ_SYSCALL(proxy = getenv("http_proxy"));
+      if (proxy) {
+        KJ_SYSCALL(setenv("http_proxy", proxy, true));
+      }
+      KJ_SYSCALL(proxy = getenv("https_proxy"));
+      if (proxy) {
+        KJ_SYSCALL(setenv("https_proxy", proxy, true));
       }
 
       KJ_SYSCALL(setenv("PORT", kj::strArray(config.ports, ",").cStr(), true));

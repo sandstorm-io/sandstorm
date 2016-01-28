@@ -460,7 +460,8 @@ body>.main-content>.account {
 
   h3.title-bar {
     background-color: white;
-    width: 650px;
+    width: 660px;
+    box-sizing: border-box;
     margin-bottom: 5px;
     border: none;
     font-size: 12pt;
@@ -565,17 +566,19 @@ body>.main-content>.account {
           white-space: nowrap;
           margin-top: 4px;
           span.email {
+            box-sizing: border-box;
             line-height: 30px;
             overflow: hidden;
             text-overflow: ellipsis;
             padding-left: 3%;
             float: left;
-            width: 63%;
+            width: 66%;
           }
           button.make-primary {
             @extend %button-base;
             @extend %button-secondary;
-            width: 32%;
+            box-sizing: border-box;
+            width: 33%;
             height: 26px;
             margin-top: 2px;
           }
@@ -600,7 +603,7 @@ body>.main-content>.account {
       }
       input[name="email"] {
         width: 200px;
-        height: 20px;
+        height: 26px;
       }
       div.button-box {
         display: inline-block;
@@ -619,12 +622,13 @@ div.billing {
   >section.payment-methods {
     display: inline-block;
     vertical-align: top;
+    box-sizing: border-box;
 
     h3 {
       margin: 0.5em 0;
     }
 
-    max-width: 400px;
+    max-width: 432px;
     padding: 0 16px;
 
     >.balance {
@@ -773,12 +777,13 @@ div.billing {
     display: inline-block;
     vertical-align: top;
     margin-right: 32px;
+    box-sizing: border-box;
 
     h3 {
       margin: 0.5em 0;
     }
 
-    max-width: 450px;
+    max-width: 482px;
     padding: 0 16px;
 
     span.plan-name {
@@ -908,7 +913,8 @@ div.billing {
 }
 
 div.identity-editor {
-  width: 391px;
+  width: 435px;
+  box-sizing: border-box;
   background-color: white;
   padding: 15px 22px;
 
@@ -1137,9 +1143,10 @@ body>.popup.billing-prompt>.frame, .first-time-billing-prompt {
   }
 
   >p.success-note {
+    box-sizing: border-box;
     background-color: #cff4c6;
     padding: 32px;
-    max-width: 500px;
+    max-width: 564px;
     margin: 1em auto;
 
     >strong {

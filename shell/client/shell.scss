@@ -30,6 +30,7 @@
 html {
   width: 100%;
   height: 100%;
+  box-sizing: border-box;
 }
 
 body {
@@ -40,6 +41,10 @@ body {
   font-family: "Source Sans Pro", sans-serif;
   font-weight: normal;
   background-color: white;
+}
+
+*, *:before, *:after {
+  box-sizing: inherit;
 }
 
 // Styles used by sandstorm-ui-topbar

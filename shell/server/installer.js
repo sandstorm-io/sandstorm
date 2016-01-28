@@ -312,12 +312,12 @@ AppInstaller = class AppInstaller {
     let protocol;
     if (url.protocol === 'http:' || url.protocol === 'https:') {
       protocol = Request.defaults({
-        maxRedirects: 1,
-      // Since we will verify the download against a hash anyway, we don't need to verify the server's
-      // certificate. In fact, the only reason we support HTTPS at all here is because some servers
-      // refuse to serve over HTTP (which is, in general, a good thing). Skipping the certificate check
-      // here is helpful in that it means we don't have to worry about having a reasonable list of trusted
-      // CAs available to Sandstorm.
+        maxRedirects: 20,
+        // Since we will verify the download against a hash anyway, we don't need to verify the
+        // server's certificate. In fact, the only reason we support HTTPS at all here is because
+        // some servers refuse to serve over HTTP (which is, in general, a good thing). Skipping the
+        // certificate check here is helpful in that it means we don't have to worry about having a
+        // reasonable list of trusted CAs available to Sandstorm.
         strictSSL: false
       });
     } else {

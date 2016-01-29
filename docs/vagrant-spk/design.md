@@ -62,8 +62,6 @@ Turns out NSIS offers a way to modify %PATH%, if we need to go down that road:
 
 # Create packaging template files, with vagrant-spk init
 
-```
-
 If you see the following instead:
 
 ```

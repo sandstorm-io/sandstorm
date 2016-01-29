@@ -25,6 +25,7 @@ THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 METEOR_DEV_BUNDLE=$("$THIS_DIR/../find-meteor-dev-bundle.sh")
 NODEJS="$METEOR_DEV_BUNDLE/bin/node"
 NPM="$METEOR_DEV_BUNDLE/bin/npm"
+SELENIUM_JAR="selenium-server-standalone-2.50.0.jar"
 
 cleanExit () {
   rc=$1
@@ -41,7 +42,7 @@ cleanExit () {
     # Send SIGINT to the selenium-server child of the backgrounded xvfb-run, so
     # it will exit cleanly and the Xvfb process will also be cleaned up.
     # We don't actually know that PID, so we find it with pgrep.
-    kill -SIGINT $(pgrep --parent $XVFB_PID node)
+    kill $(pgrep --parent $XVFB_PID java)
     wait $XVFB_PID
   fi
   exit $rc
@@ -93,7 +94,8 @@ if [ "$RUN_SELENIUM" != "false" ] ; then
   checkInstalled java default-jre-headless
   checkInstalled xvfb-run Xvfb
   checkInstalled pgrep procps
-  xvfb-run ./node_modules/selenium-standalone/bin/selenium-standalone start &
+  test -e ./$SELENIUM_JAR || curl -o $SELENIUM_JAR "http://selenium-release.storage.googleapis.com/2.50/$SELENIUM_JAR"
+  xvfb-run --server-args="-screen 0, 1280x1024x24" java -jar ./$SELENIUM_JAR &
   XVFB_PID=$!
 fi
 

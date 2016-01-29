@@ -4,7 +4,20 @@ Template.contactInputBox.onCreated(function () {
   this.selectedContacts = this.data.contacts;
   this.selectedContactsIds = new ReactiveVar([]);
   this.highlightedContact = new ReactiveVar({ _id: null });
-  this.subscribe("contactProfiles");
+  this.subscribe("contactProfiles", {onReady: () => {
+    if (this.data.preselectedIdentityId) {
+      const contact = ContactProfiles.findOne({_id: this.data.preselectedIdentityId});
+      if (contact) {
+        const contacts = this.selectedContacts.get();
+        contacts.push(contact);
+        this.selectedContacts.set(contacts);
+
+        const ids = this.selectedContactsIds.get();
+        ids.push(contact._id);
+        this.selectedContactsIds.set(ids);
+      }
+    }
+  }});
   this.randomId = Random.id();  // For use with aria requiring ids in html
   this.autoCompleteContacts = new ReactiveVar([]);
   this.autorun(generateAutoCompleteContacts.bind(this, this));

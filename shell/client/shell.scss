@@ -184,13 +184,13 @@ button.revoke-token, button.revoke-access {
   color: red;
 }
 
-.main-content .interstitial-button-box,.direct-share-denied {
+.main-content .grain-interstitial {
   text-align: center;
   background-color: $default-content-background-color;
   .identity-card {
     display: inline-block;
   }
-  & button.incognito-button {
+  button.incognito-button, button.request-access {
     font-family: inherit;
     font-size: inherit;
     font-weight: 600;

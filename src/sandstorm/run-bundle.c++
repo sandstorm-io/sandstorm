@@ -1166,7 +1166,7 @@ private:
     // That said, there are a few environment variables that we do re-export.
     std::map<const char *, kj::String> envVars;
     const char * keepTheseVars[] = {"http_proxy", "https_proxy"};
-    for (char * varName: keepTheseVars) {
+    for (const char * varName: keepTheseVars) {
       const char * envValue = getenv(varName);
       if (envValue) {
         envVars.insert(std::make_pair(varName, kj::str(envValue)));

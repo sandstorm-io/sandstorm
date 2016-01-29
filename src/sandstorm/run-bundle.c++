@@ -1162,12 +1162,27 @@ private:
 
     // The environment inherited from the host is probably no good for us. E.g. an oddball
     // locale setting can crash Mongo because we don't have the appropriate locale files available.
+    //
+    // That said, there are a few environment variables that we do re-export.
+    std::map<const char*, kj::String> envVars;
+    static const char* const KEEP_VARS[] = {"http_proxy", "https_proxy"};
+    for (const char* varName: KEEP_VARS) {
+      const char* envValue = getenv(varName);
+      if (envValue != nullptr) {
+        envVars.insert(std::make_pair(varName, kj::str(envValue)));
+      }
+    }
     KJ_SYSCALL(clearenv());
 
     // Set up an environment appropriate for us.
     KJ_SYSCALL(setenv("LANG", "C.UTF-8", true));
     KJ_SYSCALL(setenv("PATH", "/usr/bin:/bin", true));
     KJ_SYSCALL(setenv("LD_LIBRARY_PATH", "/usr/local/lib:/usr/lib:/lib", true));
+
+    // Copy any remaining environment variables in that we captured.
+    for (auto& entry: envVars) {
+      KJ_SYSCALL(setenv(entry.first, entry.second.cStr(), true));
+    }
 
     // See if /etc/resolv.conf exists, and if not, try replacing it with the backup made earlier.
     restoreResolvConfIfNeeded();

@@ -1166,11 +1166,10 @@ private:
     // That said, there are a few environment variables that we do re-export.
     std::map<const char *, kj::String> envVars;
     const char * keepTheseVars[] = {"http_proxy", "https_proxy"};
-    auto numberOfVarsToKeep = 2; // FIXME: How am I supposed to express this & the previous line?
-    for (int i = 0; i < numberOfVarsToKeep; i++) {
-      const char * envValue = getenv(keepTheseVars[i]);
+    for (char * varName: keepTheseVars) {
+      const char * envValue = getenv(varName);
       if (envValue) {
-        envVars.insert(std::make_pair(keepTheseVars[i], kj::str(envValue)));
+        envVars.insert(std::make_pair(varName, kj::str(envValue)));
       }
     }
     KJ_SYSCALL(clearenv());

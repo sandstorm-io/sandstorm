@@ -152,13 +152,15 @@ limitations under the License.
             <label>@ Handle:
               <div class="input-container">
                 <input type="text" name="handle" value="{{identity.profile.handle}}"
-                       placeholder="handle" pattern="^[a-z_][a-z0-9_]*$" required>
+                       placeholder="handle" pattern="^[a-z_][a-z0-9_]*$"
+                       title="Handles must start with a lower-case letter and contain only lower-case letters, digits, and underscores." required>
               </div>
             </label>
             <span class="details">
               For use in apps that use handles (often, chat apps).
               This is only your first choice; an app may make you rename if someone has
-              already taken this name within the specific grain.
+              already taken this name within the specific grain. Your handle must start
+              with a letter and contain only lower-case letters, digits, and underscores.
             </span>
           </li>
           <li class="email">

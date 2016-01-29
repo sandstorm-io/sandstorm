@@ -9,9 +9,8 @@ this tutorial, you'll learn:
 * How to take an existing web application and turn into a Sandstorm
   package (SPK).
 
-* How our packaging helper (`vagrant-spk`) lets you edit the app's files on your
-  main operating system (Mac or Linux; working on Windows support), even though Sandstorm apps always
-  run on Linux.
+* How our packaging helper (`vagrant-spk`) lets you edit the app's files on your main operating
+  system (we support Mac OS, Linux, and Windows), even though Sandstorm apps always run on Linux.
 
 The tutorial uses a PHP app as an example. **Sandstorm supports any
 programming language that runs on Linux**, not just PHP, such as
@@ -331,5 +330,5 @@ might be interested in any of the following:
 * How do I learn more about the technical underpinnings of `vagrant-spk`? How do I make `vagrant-spk` faster?
 Read about [understanding & customizing vagrant-spk](customizing.md).
 * How do I package-up a Python, Meteor, or other non-PHP app? Read about [platform stacks](platform-stacks.md).
-* Will this work on Windows? No, not yet. Sorry, we're working on it.
+* Will this work on Windows? Yes, but you might experience issues with symbolic links or long filenames. There are often known workarounds for these issues, so if you run into them, please [request help on the development group](https://groups.google.com/forum/#!forum/sandstorm-dev) or IRC.
 * Will this work if I typically run Sandstorm-related programs in a virtual machine? We don't know, but we hope so.

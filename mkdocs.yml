@@ -45,6 +45,7 @@ pages:
     - "Demo mode": "administering/demo.md"
     - "Backups": "administering/backups.md"
     - "Wildcard hosts": "administering/wildcard.md"
-    - "Reverse Proxy": "administering/reverse-proxy.md"
     - "HTTPS & SSL": "administering/ssl.md"
+    - "Reverse Proxy": "administering/reverse-proxy.md"
+    - "Self-signed certificates": "administering/self-signed.md"
     - "Frequently asked questions": "administering/faq.md"

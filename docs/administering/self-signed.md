@@ -1,10 +1,8 @@
 ## Self-hosted HTTPS with a custom certificate authority
 
-Note: these instructions were written before Sandcats offered [free HTTPS](ssl.md).
+The following is a process for self-hosted instances of Sandstorm to use SSL with any DNS name, including a sandcats.io hostname. These steps create a Certificate Authority (CA), corresponding CA Certificate, and the private and public keys for the `[anything]` and `*.[anything]` domains.
 
-The following is a process for self-hosted instances of Sandstorm to use SSL with sandcats.io DNS. These steps create a Certificate Authority (CA), corresponding CA Certificate, and the private and public keys for the `[anything].sandcats.io` and `*.[anything].sandcats.io` domains.
-
-**Note**: Web browsers will display a big red certificate error when you try to connect to this install. This tutorial is appropriate if you are OK with reconfiguring web browsers to trust a custom certificate authority that you will create during this tutorial. For automatically-trusted SSL configuration, you will need to use a sandcats.io hostname or follow instructions from a certificate authority.
+**Note**: Web browsers will display a big red certificate error when you try to connect to this install. This tutorial is appropriate if you are OK with reconfiguring web browsers to trust a custom certificate authority that you will create during this tutorial. To read about other options for configuring HTTPS/SSL, including a free auto-renewing HTTPS certificate, visit the [HTTPS/SSL topic guide](ssl.md).
 
 1. **Make a copy openssl.cnf:**
 
@@ -25,8 +23,8 @@ The following is a process for self-hosted instances of Sandstorm to use SSL wit
         subjectAltName = @alt_names
 
         [alt_names]
-        DNS.1 = [your-domain-name].sandcats.io
-        DNS.2 = *.[your-domain-name].sandcats.io
+        DNS.1 = [your-domain-name]
+        DNS.2 = *.[your-domain-name]
 
 3. **Create the Certificate Authority (CA) Key:**
 

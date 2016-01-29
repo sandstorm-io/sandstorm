@@ -1334,7 +1334,7 @@ Proxy = class Proxy {
     // Redirect to the app's root URL.
     // Note:  All browsers support relative locations and the next update to HTTP/1.1 will officially
     //   make them valid.  http://tools.ietf.org/html/draft-ietf-httpbis-p2-semantics-26#page-67
-    response.writeHead(303, 'See Other', {'Location': path});
+    response.writeHead(303, 'See Other', {'Location': encodeURI(path)});
     response.end();
   }
 

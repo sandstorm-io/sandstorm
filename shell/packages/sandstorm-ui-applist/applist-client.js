@@ -110,6 +110,7 @@ Template.sandstormAppListPage.helpers({
     return _.chain(apps)
             .map(appToTemplateObject)
             .sortBy(function (appTemplateObj) { return appTemplateObj.appTitle.toLowerCase(); })
+            .sortBy(function (appTemplateObj) { return appTemplateObj.dev ? 0 : 1; })
             .value();
   },
   popularApps: function() {

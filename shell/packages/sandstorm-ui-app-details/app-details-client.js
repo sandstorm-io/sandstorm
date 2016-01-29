@@ -233,7 +233,7 @@ Template.sandstormAppDetails.helpers({
 Template.sandstormAppDetailsPage.helpers({
   setDocumentTitle: function() {
     var ref = Template.instance().data;
-    document.title = (getAppTitle(ref) + " details · Sandstorm");
+    document.title = (getAppTitle(ref) + " details · " + ref._db.getServerTitle());
   },
   pkg: function() {
     var ref = Template.instance().data;

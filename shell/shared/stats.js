@@ -294,6 +294,9 @@ if (Meteor.isClient) {
     this.subscribe("allPackages", token);
   });
   Template.adminStats.helpers({
+    setDocumentTitle: function () {
+      document.title = "Stats · Admin · " + globalDb.getServerTitle();
+    },
     points: function () {
       return ActivityStats.find({}, {sort: {timestamp: -1}}).map(function (point) {
         return _.extend({

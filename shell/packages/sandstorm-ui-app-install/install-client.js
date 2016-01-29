@@ -157,7 +157,8 @@ Template.sandstormAppInstallPage.onDestroyed(function() {
 
 Template.sandstormAppInstallPage.helpers({
   setDocumentTitle() {
-    document.title = 'Installing app · Sandstorm';
+    var ref = Template.instance().data;
+    document.title = 'Installing app · ' + ref._db.getServerTitle();
   },
 
   error() {

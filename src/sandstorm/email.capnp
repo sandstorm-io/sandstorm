@@ -31,7 +31,7 @@ struct EmailAddress {
   address @0 :Text;
   name @1 :Text;
 
-  # TODO(someday): We could add a field `token` which is a capability representing "email captial",
+  # TODO(someday): We could add a field `token` which is a capability representing "email capital",
   #   which you can think of like "political capital", but specifically representing some social
   #   permission to send email to this address. A token can be used some small number of times to
   #   send email to a particular address. Tokens can be requested using the inline powerbox: if a

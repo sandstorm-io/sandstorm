@@ -79,32 +79,3 @@ interface WebSite {
 
   # TODO(someday): Allow transactionally changing a bunch of things at once.
 }
-
-interface WebResource {
-  # Represents an HTTP resource. Although StaticResource is an interface, an implementation must
-  # be immutable, returning exactly the same data any time its methods are called -- even after
-  # being saved and then restored. The only reason StaticResource is an interface and not a struct
-  # is to allow the caller to choose to fetch only a subset of the content and to re-fetch content
-  # later.
-
-  getEntities @0 (cacheHandle :Handle) -> (entities :List(Entity));
-  # Gets a list of entities representing the resource. Different entities may have e.g. different
-  # types, languages, or encodings, and the best entity to return to a client may be chosen based
-  # on the `Accept-*` headers sent by the client.
-
-  struct Entity {
-    encoding @0 :Text;  # Content-Encoding header (optional).
-    language @1 :Text;  # Content-Language header (optional).
-    mimeType @2 :Text;  # Content-Type header.
-
-    content @3 :Data;
-  }
-
-  getChild @1 (name :Text, cacheHandle :Handle) -> (resource :WebResource);
-  listChildren @2 (cacheHandle :Handle) -> (children :List(Child));
-
-  struct Child {
-    name @0 :Text;
-    resource @1 :WebResource;
-  }
-}

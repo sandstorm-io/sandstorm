@@ -1164,20 +1164,25 @@ private:
     // locale setting can crash Mongo because we don't have the appropriate locale files available.
     //
     // That said, there are a few environment variables that we do re-export.
-    char * http_proxy, * https_proxy;
-    KJ_SYSCALL(http_proxy = getenv("https_proxy"));
-    KJ_SYSCALL(https_proxy = getenv("https_proxy"));
+    std::map<const char *, kj::String> envVars;
+    const char * keepTheseVars[] = {"http_proxy", "https_proxy"};
+    auto numberOfVarsToKeep = 2; // FIXME: How am I supposed to express this & the previous line?
+    for (int i = 0; i < numberOfVarsToKeep; i++) {
+      const char * envValue = getenv(keepTheseVars[i]);
+      if (envValue) {
+        envVars.insert(std::make_pair(keepTheseVars[i], kj::str(envValue)));
+      }
+    }
     KJ_SYSCALL(clearenv());
 
     // Set up an environment appropriate for us.
     KJ_SYSCALL(setenv("LANG", "C.UTF-8", true));
     KJ_SYSCALL(setenv("PATH", "/usr/bin:/bin", true));
     KJ_SYSCALL(setenv("LD_LIBRARY_PATH", "/usr/local/lib:/usr/lib:/lib", true));
-    if (http_proxy) {
-      KJ_SYSCALL(setenv("http_proxy", http_proxy, true));
-    }
-    if (https_proxy) {
-      KJ_SYSCALL(setenv("https_proxy", https_proxy, true));
+
+    // Copy any remaining environment variables in that we captured.
+    for (auto iterator = envVars.begin(); iterator != envVars.end(); iterator++) {
+      KJ_SYSCALL(setenv(iterator->first, iterator->second.cStr(), true));
     }
 
     // See if /etc/resolv.conf exists, and if not, try replacing it with the backup made earlier.

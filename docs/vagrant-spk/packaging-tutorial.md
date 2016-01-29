@@ -331,5 +331,5 @@ might be interested in any of the following:
 * How do I learn more about the technical underpinnings of `vagrant-spk`? How do I make `vagrant-spk` faster?
 Read about [understanding & customizing vagrant-spk](customizing.md).
 * How do I package-up a Python, Meteor, or other non-PHP app? Read about [platform stacks](platform-stacks.md).
-* Will this work on Windows? No, not yet. Sorry, we're working on it.
+* Will this work on Windows? Yes, mostly. File paths have to be adjusted, but vagrant-spk up/dev/pack work.
 * Will this work if I typically run Sandstorm-related programs in a virtual machine? We don't know, but we hope so.

@@ -211,7 +211,7 @@ public:
         auto request = responseStream.writeRequest();
         auto dst = request.initData(body.size());
         memcpy(dst.begin(), body.begin(), body.size());
-        taskSet.add(request.send().then([](auto x){}));
+        taskSet.add(request.send().then([](auto x) -> void {}));
         body.resize(0);
       }
 
@@ -458,7 +458,7 @@ private:
         KJ_FAIL_ASSERT("Failed to parse HTTP response from sandboxed app.", error);
       } else if (messageComplete || actual == 0) {
         // The parser is done or the stream has closed.
-        taskSet.add(responseStream.doneRequest().send().then([](auto x){}));
+        taskSet.add(responseStream.doneRequest().send().then([](auto x) -> void {}));
         return kj::READY_NOW;
       } else {
         taskSet.add(pumpStreamInternal(kj::mv(stream)));
@@ -592,7 +592,7 @@ private:
       auto request = responseStream.writeRequest();
       auto dst = request.initData(data.size());
       memcpy(dst.begin(), data.begin(), data.size());
-      taskSet.add(request.send().then([](auto x){}));
+      taskSet.add(request.send().then([](auto x) -> void {}));
     } else {
       body.addAll(data);
     }
@@ -692,7 +692,7 @@ public:
     auto request = clientStream.sendBytesRequest(
         capnp::MessageSize { data.size() / sizeof(capnp::word) + 8, 0 });
     request.setMessage(data);
-    tasks.add(request.send().then([](auto response) {}));
+    tasks.add(request.send().then([](auto response) -> void {}));
   }
 
 protected:

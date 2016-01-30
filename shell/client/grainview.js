@@ -243,18 +243,18 @@ GrainView = class GrainView {
   frameTitle() {
     this._dep.depend();
     if (this._frameTitle !== undefined) {
-      return this._frameTitle;
+      return this._frameTitle + ' · ' + globalDb.getServerTitle();
     }
 
     const appTitle = this.appTitle();
     const grainTitle = this.title();
     // Actually set the values
     if (appTitle && grainTitle) {
-      return grainTitle + ' · ' + appTitle + ' · Sandstorm';
+      return grainTitle + ' · ' + appTitle + ' · ' + globalDb.getServerTitle();
     } else if (grainTitle) {
-      return grainTitle + ' · Sandstorm';
+      return grainTitle + ' · ' + globalDb.getServerTitle();
     } else {
-      return 'Sandstorm';
+      return globalDb.getServerTitle();
     }
   }
 

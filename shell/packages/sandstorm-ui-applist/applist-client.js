@@ -94,7 +94,8 @@ var matchApps = function (searchString) {
 
 Template.sandstormAppListPage.helpers({
   setDocumentTitle: function() {
-    document.title = "Apps · Sandstorm";
+    var ref = Template.instance().data;
+    document.title = "Apps · " + ref._db.getServerTitle();
   },
   searching: function() {
     var ref = Template.instance().data;

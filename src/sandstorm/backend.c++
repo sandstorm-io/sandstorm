@@ -243,7 +243,7 @@ kj::Promise<void> BackendImpl::deleteGrain(DeleteGrainContext context) {
   if (iter != supervisors.end()) {
     shutdownPromise = iter->second.promise.addBranch()
         .then([context](Supervisor::Client client) mutable {
-      return client.shutdownRequest().send().then([](auto) {});
+      return client.shutdownRequest().send().then([](auto) { return; });
     }).then([]() -> kj::Promise<void> {
       return KJ_EXCEPTION(FAILED, "expected shutdown() to throw disconnected exception");
     }, [](kj::Exception&& e) -> kj::Promise<void> {

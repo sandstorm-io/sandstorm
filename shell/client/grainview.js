@@ -61,15 +61,10 @@ GrainView = class GrainView {
     this._hostId = undefined;
     this._sessionId = null;
     this._sessionSalt = null;
-    if (this._sessionObserver) {
-      this._sessionObserver.stop();
-      this._sessionObserver = undefined;
-    }
 
-    if (this._sessionSub) {
-      this._sessionSub.stop();
-      this._sessionSub = undefined;
-    }
+    this._grainSizeSub = undefined;
+    this._sessionObserver = undefined;
+    this._sessionSub = undefined;
 
     this._status = 'closed';
     this._userIdentityId = new ReactiveVar(undefined);
@@ -134,7 +129,15 @@ GrainView = class GrainView {
     // rendering the iframe forever, even if it is no longer linked into the page DOM.
 
     Blaze.remove(this._blazeView);
-    if (this._grainSizeSub) this._grainSizeSub.stop();
+    if (this._grainSizeSub) {
+      this._grainSizeSub.stop();
+    }
+    if (this._sessionObserver) {
+      this._sessionObserver.stop();
+    }
+    if (this._sessionSub) {
+      this._sessionSub.stop();
+    }
   }
 
   isActive() {

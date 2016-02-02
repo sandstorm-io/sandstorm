@@ -85,7 +85,9 @@ cat > $SETTINGS << __EOF__
     "stripePublicKey": "${STRIPE_PUBLIC_KEY:-}"
   },
   "home": "$SANDSTORM_HOME",
-  "stripeKey": "${STRIPE_KEY:-}"
+  "stripeKey": "${STRIPE_KEY:-}",
+  "mailchimpListId": "${MAILCHIMP_LIST_ID:-}",
+  "mailchimpKey": "${MAILCHIMP_KEY:-}"
 }
 __EOF__
 

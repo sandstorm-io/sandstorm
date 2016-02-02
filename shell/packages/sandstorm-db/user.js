@@ -151,9 +151,3 @@ Accounts.onCreateUser(function (options, user) {
 
   return user;
 });
-
-// TODO delete this obsolete index.
-Meteor.users._ensureIndex("identities.id", {unique: 1, sparse: 1});
-
-Meteor.users._ensureIndex("loginIdentities.id", {unique: 1, sparse: 1});
-Meteor.users._ensureIndex("nonloginIdentities.id", {sparse: 1});

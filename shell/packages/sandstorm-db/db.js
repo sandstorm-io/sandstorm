@@ -26,6 +26,15 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
   }
 }
 
+// Helper so that we don't have to if (Meteor.isServer) before declaring indexes.
+if (Meteor.isServer) {
+  Mongo.Collection.prototype.ensureIndexOnServer = Mongo.Collection.prototype._ensureIndex;
+} else {
+  Mongo.Collection.prototype.ensureIndexOnServer = function () {};
+}
+
+// TODO(soon): Systematically go through this file and add ensureIndexOnServer() as needed.
+
 // Users = new Mongo.Collection("users");
 // The users collection is special and can be accessed through `Meteor.users`.
 // See https://docs.meteor.com/#/full/meteor_users.
@@ -110,6 +119,17 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //               prompt scares users away -- and also whether it increases paid signups.
 //   stashedOldUser: A complete copy of this user from before the accounts/identities migration.
 //                   TODO(cleanup): Delete this field once we're sure it's safe to do so.
+
+Meteor.users.ensureIndexOnServer("services.google.email", {sparse: 1});
+Meteor.users.ensureIndexOnServer("services.github.emails.email", {sparse: 1});
+Meteor.users.ensureIndexOnServer("services.email.email", {unique: 1, sparse: 1});
+Meteor.users.ensureIndexOnServer("loginIdentities.id", {unique: 1, sparse: 1});
+Meteor.users.ensureIndexOnServer("nonloginIdentities.id", {sparse: 1});
+Meteor.users.ensureIndexOnServer("services.google.id", {unique: 1, sparse: 1});
+Meteor.users.ensureIndexOnServer("services.github.id", {unique: 1, sparse: 1});
+
+// TODO(cleanup): This index is obsolete; delete it.
+Meteor.users.ensureIndexOnServer("identities.id", {unique: 1, sparse: 1});
 
 Packages = new Mongo.Collection("packages");
 // Packages which are installed or downloading.

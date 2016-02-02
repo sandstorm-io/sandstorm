@@ -207,5 +207,3 @@ Meteor.methods({
                                    identity._id, account._id);
   }
 });
-
-Meteor.users._ensureIndex("services.email.email", {unique: 1, sparse: 1});

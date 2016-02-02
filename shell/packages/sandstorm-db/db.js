@@ -549,7 +549,7 @@ if (Meteor.isServer) {
       return [
         Meteor.users.find({_id: this.userId},
             {fields: {signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1,
-                      plan: 1, hasCompletedSignup: 1, experiments: 1}}),
+                      plan: 1, planBonus: 1, hasCompletedSignup: 1, experiments: 1}}),
         Plans.find()
       ];
     } else {
@@ -614,6 +614,11 @@ var calculateReferralBonus = function(user) {
   // TODO(cleanup): Consider moving referral bonus logic into Oasis payments module (since it's
   //   payments-specific) and aggregating into `planBonus`.
 
+  if (Meteor.isClient) {
+    // We don't have the information to caculate this client-side, but we subscribe to a
+    // calculation done on the server.
+    return user.pseudoReferralBonus || {grains: 0, storage: 0};
+  }
 
   // Authorization note: Only call this if accountId is the current user!
   var isPaid = (user.plan && user.plan !== "free");
@@ -652,7 +657,8 @@ getUserQuota = function (user) {
   var bonus = user.planBonus || {};
   var userQuota = {
     storage: plan.storage + referralBonus.storage + (bonus.storage || 0),
-    grains: plan.grains + referralBonus.grains + (bonus.grains || 0)
+    grains: plan.grains + referralBonus.grains + (bonus.grains || 0),
+    compute: plan.compute + (bonus.compute || 0)
   };
   return userQuota;
 }
@@ -855,6 +861,7 @@ _.extend(SandstormDb.prototype, {
   isDemoUser: isDemoUser,
   isSignedUp: isSignedUp,
   isSignedUpOrDemo: isSignedUpOrDemo,
+  getUserQuota: getUserQuota,
   isUserOverQuota: isUserOverQuota,
   isUserExcessivelyOverQuota: isUserExcessivelyOverQuota,
   isAdmin: isAdmin,
@@ -959,25 +966,9 @@ _.extend(SandstormDb.prototype, {
   getMyReferralBonus: function(user) {
     // This function is called from the server and from the client, similar to getMyPlan().
     //
-    // When called from the server, calculate the user's actual referral bonus. We use this
-    // elsewhere to store a value in user.pseudoReferralBonus.
-    //
-    // When called from the client, return the value of user.pseudoReferralBonus (if it exists).
-    if (Meteor.isClient) {
-      // If called on the client side, always use the currently logged-in user.
-      user = Meteor.user();
+    // The parameter may be omitted in which case the current user is assumed.
 
-      if (user && user.pseudoReferralBonus) {
-        return user.pseudoReferralBonus;
-      }
-      // If we get to this, the subscriptions haven't arrived yet.
-      var noBonus = {grains: 0, storage: 0};
-      return noBonus;
-    }
-    if (Meteor.isServer) {
-      var x = calculateReferralBonus(user);
-      return x;
-    }
+    return calculateReferralBonus(user || Meteor.user());
   },
 
   getMyUsage: function (user) {

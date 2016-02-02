@@ -124,8 +124,8 @@ function collectEdges(db, vertex) {
   // trivial and its `roleAssignments` field is an empty list. If `terminalEdge` is not present,
   // then there is no such link.
   //
-  // TODO(someday): Once UiView tokens can have membrane requirements, we'll need to account for
-  // them in this computation.
+  // TODO(now): UiView tokens can have membrane requirements; we need to account for them in this
+  // computation.
   check(vertex,
         Match.OneOf({token: Match.ObjectIncluding({_id: String, grainId: String})},
                     {grain: Match.ObjectIncluding(

@@ -79,7 +79,7 @@ if (Meteor.isServer) {
 
       var counts = ApiTokens.aggregate([
         {$match: {"owner.user.lastUsed": timeConstraint, "grainId": {$in: grainIds}}},
-        {$group: {_id: "$owner.user.userId"}},
+        {$group: {_id: "$owner.user.identityId"}},
         {$group: {_id: "count", count: {$sum: 1}}}
       ]);
 

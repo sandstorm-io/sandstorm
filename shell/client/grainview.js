@@ -588,7 +588,7 @@ GrainView = class GrainView {
       // Case 2
       const apiToken = ApiTokens.findOne({
         grainId: this._grainId,
-        'owner.user.userId': Meteor.userId(),
+        'owner.user.identityId': this.identityId(),
       }, {
         sort: {created: 1},
       });

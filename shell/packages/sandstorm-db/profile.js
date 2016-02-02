@@ -223,6 +223,30 @@ SandstormDb.getVerifiedEmails = function(identity) {
   return [];
 }
 
+SandstormDb.prototype.findIdentitiesByEmail = function(email) {
+  // Returns an array of identities which have the given email address as one of their verified
+  // addresses.
+
+  check(email, String);
+
+  return Meteor.users.find({$or: [
+    {"services.google.email": email},
+    {"services.email.email": email},
+    {"services.github.emails.email": email},
+  ]}).fetch().filter(function (identity) {
+    // Verify that the email is verified, since our query doesn't technically do that.
+    return SandstormDb.getVerifiedEmails(identity).indexOf(email) >= 0;
+  });
+}
+
+SandstormDb.prototype.findAccountsByEmail = function(email) {
+  var identityIds = _.pluck(this.findIdentitiesByEmail(email), "_id");
+  return Meteor.users.find({$or: [
+    {"loginIdentities.id": {$in: identityIds}},
+    {"nonloginIdentities.id": {$in: identityIds}},
+  ]}).fetch();
+};
+
 SandstormDb.fillInPictureUrl = function(user) {
   var staticHost = httpProtocol + "//" + makeWildcardHost("static");
   user.profile.pictureUrl = staticAssetUrl(user.profile.picture, staticHost) ||

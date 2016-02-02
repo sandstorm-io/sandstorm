@@ -249,7 +249,7 @@ if (Meteor.isClient) {
 
   Template.adminSettings.helpers({
     setDocumentTitle: function () {
-      document.title = "Settings · Admin · Sandstorm";
+      document.title = "Settings · Admin · " + globalDb.getServerTitle();
     },
     googleSetting: function () {
       return Settings.findOne({_id: "google"});
@@ -303,7 +303,7 @@ if (Meteor.isClient) {
   });
   Template.adminUsers.helpers({
     setDocumentTitle: function () {
-      document.title = "Users · Admin · Sandstorm";
+      document.title = "Users · Admin · " + globalDb.getServerTitle();
     },
     users: function () {
       return Meteor.users.find({loginIdentities: {$exists: 1}}, {sort: {createdAt: 1}});
@@ -498,7 +498,7 @@ if (Meteor.isClient) {
 
   Template.adminInvites.helpers({
     setDocumentTitle: function () {
-      document.title = "Invites · Admin · Sandstorm";
+      document.title = "Invites · Admin · " + globalDb.getServerTitle();
     },
     error: function () {
       var res = Iron.controller().state.get("inviteMessage");
@@ -553,7 +553,7 @@ if (Meteor.isClient) {
   });
   Template.adminLog.helpers({
     setDocumentTitle: function () {
-      document.title = "Log · Admin · Sandstorm";
+      document.title = "Log · Admin · " + globalDb.getServerTitle();
     },
     html: function () {
       return AnsiUp.ansi_to_html(AdminLog.find({}, {$sort: {_id: 1}})
@@ -570,7 +570,7 @@ if (Meteor.isClient) {
 
   Template.adminCaps.helpers({
     setDocumentTitle: function () {
-      document.title = "Capabilities · Admin · Sandstorm";
+      document.title = "Capabilities · Admin · " + globalDb.getServerTitle();
     },
     powerboxOfferUrl: function () {
       var state = Iron.controller().state;
@@ -689,7 +689,7 @@ if (Meteor.isClient) {
 
   Template.adminAdvanced.helpers({
     setDocumentTitle: function () {
-      document.title = "Advanced · Admin · Sandstorm";
+      document.title = "Advanced · Admin · " + globalDb.getServerTitle();
     },
     serverTitle: function() {
       var setting = Settings.findOne({_id: "serverTitle"});

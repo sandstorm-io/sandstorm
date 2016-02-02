@@ -79,7 +79,7 @@ if (Meteor.isServer) {
 
       var counts = ApiTokens.aggregate([
         {$match: {"owner.user.lastUsed": timeConstraint, "grainId": {$in: grainIds}}},
-        {$group: {_id: "$owner.user.userId"}},
+        {$group: {_id: "$owner.user.identityId"}},
         {$group: {_id: "count", count: {$sum: 1}}}
       ]);
 
@@ -294,6 +294,9 @@ if (Meteor.isClient) {
     this.subscribe("allPackages", token);
   });
   Template.adminStats.helpers({
+    setDocumentTitle: function () {
+      document.title = "Stats · Admin · " + globalDb.getServerTitle();
+    },
     points: function () {
       return ActivityStats.find({}, {sort: {timestamp: -1}}).map(function (point) {
         return _.extend({

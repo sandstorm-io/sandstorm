@@ -81,7 +81,9 @@ module.exports['Test setTitle'] = function (browser) {
       .click('#setTitle')
       .pause(very_short_wait)
     .frameParent()
-    .assert.title(randomValue);
+    .getTitle(function (title) {
+      this.assert.equal(title.slice(0, randomValue.length), randomValue);
+    });
 };
 
 module.exports['Test setTitle to blank'] = function (browser) {
@@ -96,7 +98,11 @@ module.exports['Test setTitle to blank'] = function (browser) {
       .click('#setTitle')
       .pause(very_short_wait)
     .frameParent()
-    .assert.title(blank);
+    .getTitle(function (title) {
+      // The title ends up starting with ·, which is the separator between the (empty) requested
+      // title and the server title.
+      this.assert.equal(title.slice(0, 1), "·");
+    });
 };
 
 module.exports['Test startSharing'] = function (browser) {

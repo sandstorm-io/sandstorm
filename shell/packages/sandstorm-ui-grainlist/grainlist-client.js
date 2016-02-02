@@ -89,7 +89,7 @@ var filteredSortedGrains = function() {
 };
 Template.sandstormGrainListPage.helpers({
   setDocumentTitle: function() {
-    document.title = "Grains · Sandstorm";
+    document.title = "Grains · " + Template.instance().data._db.getServerTitle();
   },
   filteredSortedGrains: filteredSortedGrains,
   searchText: function() {

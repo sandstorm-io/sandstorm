@@ -53,7 +53,7 @@ GENDERS = {male: "male", female: "female", neutral: "neutral", robot: "robot"};
 
 var helpers = {
   setDocumentTitle: function () {
-    document.title = "Account settings · Sandstorm";
+    document.title = "Account settings · " + Template.instance().data._db.getServerTitle();
   },
   identities: function () {
     return SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {

@@ -382,13 +382,13 @@ if (Meteor.isClient) {
 
   Template.about.helpers({
     setDocumentTitle: function () {
-      document.title = "About · Sandstorm";
+      document.title = "About · " + globalDb.getServerTitle();
     }
   });
 
   Template.referrals.helpers({
     setDocumentTitle: function () {
-      document.title = "Referral Program · Sandstorm";
+      document.title = "Referral Program · " + globalDb.getServerTitle();
     }
   });
 

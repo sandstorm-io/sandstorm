@@ -83,8 +83,10 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
 //   hasCompletedSignup: True if this account has confirmed its profile and agreed to this server's
 //                       terms of service.
 //   plan: _id of an entry in the Plans table which determines the user's quota.
-//   planBonus: {storage, compute, grains} indicating bonus amounts to add to the user's plan,
-//              filled in by the payments module. (Missing fields should be treated as zeros.)
+//   planBonus: {storage, compute, grains} bonus amounts to add to the user's plan. The payments
+//              module writes data here; we merely read it. Missing fields should be treated as
+//              zeroes. Does not yet include referral bonus, which is calculated separately.
+//              TODO(cleanup): Use for referral bonus too.
 //   storageUsage: Number of bytes this user is currently storing.
 //   payments: Object defined by payments module, if loaded.
 //   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
@@ -592,7 +594,7 @@ isSignedUpOrDemo = function () {
   return false;
 }
 
-var calculateReferralBonus = function(user, plan) {
+var calculateReferralBonus = function(user) {
   // This function returns an object of the form:
   //
   // - {grains: 0, storage: 0}
@@ -605,7 +607,7 @@ var calculateReferralBonus = function(user, plan) {
 
 
   // Authorization note: Only call this if accountId is the current user!
-  var isPaid = (plan && plan !== "free");
+  var isPaid = (user.plan && user.plan !== "free");
 
   successfulReferralsCount = countReferrals(user);
   if (isPaid) {
@@ -637,7 +639,7 @@ var countReferrals = function (user) {
 
 getUserQuota = function (user) {
   var plan = Plans.findOne(user.plan || "free");
-  var referralBonus = calculateReferralBonus(user, plan);
+  var referralBonus = calculateReferralBonus(user);
   var bonus = user.planBonus || {};
   var userQuota = {
     storage: plan.storage + referralBonus.storage + (bonus.storage || 0),
@@ -952,7 +954,7 @@ _.extend(SandstormDb.prototype, {
       return noBonus;
     }
     if (Meteor.isServer) {
-      var x = calculateReferralBonus(user, user.plan);
+      var x = calculateReferralBonus(user);
       return x;
     }
   },

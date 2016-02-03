@@ -71,5 +71,5 @@ change will disable them. Make sure to visit **Admin Settings** within your Sand
 install and re-enable them.
 
 If OAuth providers were your only way to log in, you might need to get a login token via the command
-line. See the answer in the (frequently-asked questions
-page.)[faq.md#how-do-i-log-in-if-theres-a-problem-with-logging-in-via-the-web]
+line. See the answer in the [frequently-asked questions
+page.](faq.md#how-do-i-log-in-if-theres-a-problem-with-logging-in-via-the-web)

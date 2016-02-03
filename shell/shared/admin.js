@@ -581,7 +581,9 @@ if (Meteor.isClient) {
       return {
         get: function() {
           return {
-            url: state.get("powerboxOfferUrl"),
+            offer: {
+              url: state.get("powerboxOfferUrl"),
+            },
             onDismiss: () => {
               state.set("powerboxOfferUrl", null);
             },

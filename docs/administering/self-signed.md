@@ -64,7 +64,8 @@ Note: Web browsers will display a big red certificate error when you try to conn
 
 9. Copy (FTP/SSH) the Sandstorm Certificate and Sandstorm Private Key to the nginx ssl directory, it may be `/etc/nginx/ssl`.
 
-10. Change these lines in your nginx conf file to reflect the new Sandstorm Certificate and Private Key filenames:
+10. Make sure these lines in your nginx conf file reflect the new Sandstorm Certificate and Private Key filenames. (See
+[nginx-example.conf.](https://github.com/sandstorm-io/sandstorm/blob/master/docs/administering/sample-config/nginx-example.conf))
 
         ssl_certificate /etc/nginx/ssl/sandstorm.crt;
         ssl_certificate_key /etc/nginx/ssl/sandstorm.key;

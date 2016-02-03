@@ -5,7 +5,7 @@ If you use this document to set up HTTPS, note that it results in nginx having y
 key. If you want [**free, auto-renewing sandcats.io HTTPS certificates**,](ssl.md) you will need to
 use `sniproxy` instead of `nginx`; see the [note at the bottom of the HTTPS overview page](ssl.md).
 This tutorial works properly with certificates you purchase, or with [self-signed
-SSL.](self-signed.md).
+SSL.](self-signed.md)
 
 Through this process, you can remove the `:6080` of the URL if your Sandstorm is listening on port
 6080.

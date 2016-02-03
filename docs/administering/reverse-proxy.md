@@ -43,9 +43,10 @@ Test your nginx configuration:
 `sudo nginx -t`
 
 ### Configure Sandstorm's configuration files
-Specify HTTPS, and remove port numbers from the base URL and wildcard host.
 
-`/opt/sandstorm/sandstorm.conf`
+Specify HTTPS, and remove port numbers from the base URL and wildcard host. To do that, edit
+`/opt/sandstorm/sandstorm.conf` and adjust these lines.
+
 ```
 BASE_URL=https://example.com
 WILDCARD_HOST=*.example.com

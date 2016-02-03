@@ -271,20 +271,20 @@ Template.sandstormAppDetailsPage.helpers({
     if (pkg.dev) {
       // Dev mode.  Only show dev mode actions.
       var actions = [];
+      var launchDevAction = function (actionIndex) {
+        ref._quotaEnforcer.ifQuotaAvailable(function () {
+          ref._newGrainIsLaunching.set(true);
+          // TODO(soon): this calls a global function in shell.js, refactor
+          launchAndEnterGrainByActionId(undefined, pkg._id, actionIndex);
+        });
+      };
       for (var i = 0; i < pkg.manifest.actions.length ; i++) {
-        var index = i; // for use inside the closure below
         actions.push({
           buttonText: "(Dev) Create new " + SandstormDb.nounPhraseForActionAndAppTitle(
             pkg.manifest.actions[i],
             appTitle
           ),
-          onClick: function () {
-            ref._quotaEnforcer.ifQuotaAvailable(function () {
-              ref._newGrainIsLaunching.set(true);
-              // TODO(soon): this calls a global function in shell.js, refactor
-              launchAndEnterGrainByActionId(undefined, pkg._id, index);
-            });
-          },
+          onClick: launchDevAction.bind(this, i),
         });
       }
       return actions;

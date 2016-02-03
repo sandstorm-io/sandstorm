@@ -29,17 +29,10 @@ module.exports = {
 
 module.exports['Install and launch test app'] = function (browser) {
   browser
-    .loginDevAccount()
+    .init()
     // test-3 introduces the JSON-formatted renderTemplate output
-    .url(browser.launch_url + '/install/072f8f84638d03e4de150e8fc4d3bd15?url=https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-3.spk')
-    .waitForElementVisible('#step-confirm', very_long_wait)
-    .click('#confirmInstall')
-    .url(browser.launch_url + "/apps/rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh")
-    .waitForElementVisible(appDetailsTitleSelector, short_wait)
-    .assert.containsText(appDetailsTitleSelector, 'Test App')
-    .waitForElementVisible(actionSelector, short_wait)
-    .click(actionSelector)
-    .waitForElementVisible('#grainTitle', medium_wait)
+    .installApp("https://alpha-hlngxit86q1mrs2iplnx.sandstorm.io/test-3.spk", "072f8f84638d03e4de150e8fc4d3bd15", "rwyva77wj1pnj01cjdj2kvap7c059n9ephyyg5k4s5enh5yw9rxh")
+
     .assert.containsText('#grainTitle', 'Untitled Test App test page')
     .frame('grain-frame')
       .waitForElementPresent('#randomId', medium_wait)

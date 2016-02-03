@@ -117,6 +117,7 @@ module.exports = utils.testAllLogins({
   "Test remote install" : function (browser) {
     browser
       .url(browser.launch_url + "/install/ca690ad886bf920026f8b876c19539c1?url=http://sandstorm.io/apps/ssjekyll8.spk")
+      .disableGuidedTour()
       .waitForElementVisible('#step-confirm', very_long_wait)
       .click('#confirmInstall')
       .waitForElementVisible(appDetailsTitleSelector, short_wait)

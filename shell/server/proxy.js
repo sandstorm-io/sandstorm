@@ -853,7 +853,7 @@ tryProxyRequest = (hostId, req, res) => {
       // overly complicated.
 
       const accessControlHeaders = {
-        'Access-Control-Allow-Methods': 'GET, HEAD, POST, PUT, DELETE',
+        'Access-Control-Allow-Methods': 'GET, HEAD, POST, PUT, PATCH, DELETE',
         'Access-Control-Max-Age': '3600',
       };
 
@@ -866,7 +866,7 @@ tryProxyRequest = (hostId, req, res) => {
       // Add the requested method to the allowed methods list, if it's not there already.
       const requestedMethod = req.headers['access-control-request-method'];
       if (requestedMethod &&
-          !(_.contains(['GET', 'HEAD', 'POST', 'PUT', 'DELETE'], requestedMethod))) {
+          !(_.contains(['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'], requestedMethod))) {
         accessControlHeaders['Access-Control-Allow-Methods'] += ', ' + requestedMethod;
       }
 
@@ -1611,6 +1611,8 @@ Proxy = class Proxy {
         return session.post(path, requestContent(), context);
       } else if (request.method === 'PUT') {
         return session.put(path, requestContent(), context);
+      } else if (request.method === 'PATCH') {
+        return session.patch(path, requestContent(), context);
       } else if (request.method === 'DELETE') {
         return session.delete(path, context);
       } else if (request.method === 'PROPFIND') {
@@ -1646,7 +1648,7 @@ Proxy = class Proxy {
           // Return no response; we already handled everything.
         });
       } else {
-        throw new Error('Sandstorm only supports the following methods: GET, POST, PUT, DELETE, HEAD, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK, ACL, REPORT, and OPTIONS.');
+        throw new Error('Sandstorm only supports the following methods: GET, POST, PUT, PATCH, DELETE, HEAD, PROPFIND, PROPPATCH, MKCOL, COPY, MOVE, LOCK, UNLOCK, ACL, REPORT, and OPTIONS.');
       }
     }).then((rpcResponse) => {
       if (rpcResponse !== undefined) {  // Will be undefined for OPTIONS request.
@@ -2063,6 +2065,7 @@ const errorCodes = {
   requestUriTooLong:     { id: 414, title: 'Request-URI Too Long' },
   unsupportedMediaType:  { id: 415, title: 'Unsupported Media Type' },
   imATeapot:             { id: 418, title: 'I\'m a teapot' },
+  unprocessableEntity:   { id: 422, title: 'Unprocessable Entity' },
 };
 
 ResponseStream = class ResponseStream {

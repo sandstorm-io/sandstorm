@@ -952,6 +952,16 @@ public:
     return sendRequest(toBytes(httpRequest, content.getContent()), context);
   }
 
+  kj::Promise<void> patch(PatchContext context) override {
+    PatchParams::Reader params = context.getParams();
+    auto content = params.getContent();
+    kj::String httpRequest = makeHeaders("PATCH", params.getPath(), params.getContext(),
+      kj::str("Content-Type: ", content.getMimeType()),
+      kj::str("Content-Length: ", content.getContent().size()),
+      content.hasEncoding() ? kj::str("Content-Encoding: ", content.getEncoding()) : nullptr);
+    return sendRequest(toBytes(httpRequest, content.getContent()), context);
+  }
+
   kj::Promise<void> delete_(DeleteContext context) override {
     DeleteParams::Reader params = context.getParams();
     kj::String httpRequest = makeHeaders("DELETE", params.getPath(), params.getContext());

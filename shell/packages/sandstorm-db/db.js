@@ -1078,11 +1078,13 @@ _.extend(SandstormDb.prototype, {
   },
 
   getServerTitle: function () {
-    return Settings.findOne({_id: "serverTitle"}).value;
+    var setting = Settings.findOne({_id: "serverTitle"});
+    return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getReturnAddress: function () {
-    return Settings.findOne({_id: "returnAddress"}).value;
+    var setting = Settings.findOne({_id: "returnAddress"});
+    return setting ? setting.value : "";  // empty if subscription is not ready.
   }
 });
 

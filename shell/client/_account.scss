@@ -787,6 +787,7 @@ div.billing {
 
     tr:first-of-type {
       height: 48px;
+      font-size: 18px;
     }
     td {
       vertical-align: top;
@@ -805,17 +806,13 @@ div.billing {
     }
 
     span.grain-count {
-      border: 1px solid #b2b2b2;
-      background-color: white;
-      padding: 2px 8px;
       color: #6d6d6d;
-      border-radius: 2px;
 
       .used {
-        color: #65468e;
+        color: #444;
       }
       .total {
-        text-transform: uppercase;
+        text-transform: capitalize;
       }
     }
 
@@ -987,6 +984,11 @@ div.identity-editor {
         label {
           display: block;
           font-weight: bold;
+        }
+
+        &.terms, &.mailingListOptin {
+          padding-left: 24px;
+          label { font-weight: inherit; text-indent: -24px; }
         }
 
         input[type="text"], select {

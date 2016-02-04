@@ -278,6 +278,16 @@ var submitProfileForm = function (event, cb) {
       cb();
     }
   });
+
+  // Stop here unless payments module is loaded.
+  try {
+    BlackrockPayments;
+  } catch (e) {
+    return;
+  }
+
+  // Pass off to payments module.
+  BlackrockPayments.processOptins(form);
 }
 
 Template._accountProfileEditor.events({

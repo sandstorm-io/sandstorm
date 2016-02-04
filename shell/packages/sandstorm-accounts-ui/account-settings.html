@@ -117,7 +117,7 @@ limitations under the License.
   <h1>Confirm your profile</h1>
   <div class="single-identity-editor">
     {{>_accountProfileEditor identity=identityToConfirm termsAndPrivacy=termsAndPrivacy
-                             staticHost=_staticHost}}
+                             staticHost=_staticHost db=_db}}
   </div>
 </template>
 
@@ -192,17 +192,15 @@ limitations under the License.
           <li class="terms">
             <label>
               <input type="checkbox" name="agreedToTerms" required> I have read and agree to the
-              {{#if termsUrl}}
-              <a target="_blank" href="{{termsUrl}}">Terms of Service</a>
-              {{#if privacyUrl}} and
-              {{/if}}
-              {{/if}}
-              {{#if privacyUrl}}
-              <a target="_blank" href="{{privacyUrl}}">Privacy policy</a>
-              {{/if}}.
+              {{#if termsUrl}}<a target="_blank" href="{{termsUrl}}">Terms of Service</a>
+              {{#if privacyUrl}} and {{/if}}{{/if}}{{#if privacyUrl}}
+              <a target="_blank" href="{{privacyUrl}}">Privacy policy</a>{{/if}}.
             </label>
           </li>
           {{/with}}
+          {{#if isPaymentsEnabled}}
+            {{> billingOptins}}
+          {{/if}}
           {{/unless}}
           <li class="save">
             <button disabled="{{profileSaved}}">

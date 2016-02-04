@@ -1,3 +1,12 @@
+### v0.142 (2016-02-03) [bugfixes]
+- Page titles (as in document.title) now use the server's title as specified in the admin settings rather than just "Sandstorm".
+- Dev apps now appear first in the app list.
+- Fixed apps with multiple "new" actions always using the last action when launched in dev mode.
+- Fixed icon in sidebar for shared grains.
+- Fixed computation of sharing stats (part of admin stats).
+- Oasis: Fixed bug where free users were not getting infinite grains as promised after referring someone. :(
+- Oasis: Users subscribed to our announcement mailing list will now receive 1GB bonus storage.
+
 ### v0.141 (2016-01-25) [bugfixes]
 - Fix blank screen when trying to log in as an identity that is connected to one or more accounts as a non-login identity.
 - Oasis: Fix regression that prevented linking an identity to your account which had already been logged into in the past but never created any grains. In this case, the old empty account is supposed to be deleted so that the identity can be added to the current account, however the recent referral program notification that was sent to everyone caused these accounts to be considered non-empty and thus not elligible for auto-deletion.

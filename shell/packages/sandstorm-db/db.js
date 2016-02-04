@@ -572,7 +572,8 @@ if (Meteor.isServer) {
       return [
         Meteor.users.find({_id: this.userId},
             {fields: {signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1,
-                      plan: 1, planBonus: 1, hasCompletedSignup: 1, experiments: 1}}),
+                      plan: 1, planBonus: 1, hasCompletedSignup: 1, experiments: 1,
+                      referredIdentityIds: 1}}),
         Plans.find()
       ];
     } else {
@@ -636,12 +637,6 @@ var calculateReferralBonus = function(user) {
 
   // TODO(cleanup): Consider moving referral bonus logic into Oasis payments module (since it's
   //   payments-specific) and aggregating into `planBonus`.
-
-  if (Meteor.isClient) {
-    // We don't have the information to caculate this client-side, but we subscribe to a
-    // calculation done on the server.
-    return user.pseudoReferralBonus || {grains: 0, storage: 0};
-  }
 
   // Authorization note: Only call this if accountId is the current user!
   var isPaid = (user.plan && user.plan !== "free");

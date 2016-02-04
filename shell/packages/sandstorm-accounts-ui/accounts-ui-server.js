@@ -28,10 +28,8 @@ Meteor.publish("getMyUsage", function () {
     // TODO(someday): Make this reactive.
     var user = Meteor.users.findOne(this.userId);
     var usage = db.getMyUsage(user);
-    var referralBonus = db.getMyReferralBonus(user);
     this.added("users", this.userId, {
       pseudoUsage: usage,
-      pseudoReferralBonus: referralBonus,
     });
   }
   this.ready();

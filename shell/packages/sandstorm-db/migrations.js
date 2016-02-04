@@ -422,6 +422,12 @@ function sendReferralNotifications() {
   }
 }
 
+function assignBonuses() {
+  if (Meteor.settings.public.quotaEnabled && SandstormDb.bonusesMigrationHook) {
+    SandstormDb.bonusesMigrationHook();
+  }
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -445,6 +451,7 @@ var MIGRATIONS = [
   cleanUpApiTokens,
   initServerTitleAndReturnAddress,
   sendReferralNotifications,
+  assignBonuses,
 ];
 
 function migrateToLatest() {

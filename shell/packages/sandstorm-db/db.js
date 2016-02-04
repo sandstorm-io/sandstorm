@@ -452,6 +452,9 @@ Notifications = new Mongo.Collection("notifications");
 //       marketingVersion: String marketing version of this app. (appMarketingVersion from package.manifest)
 //   referral:     If this boolean field is true, then treat this notification as a referral
 //                 notification. This causes text to be ignored, since we need custom logic.
+//   mailingListBonus: Like `referral`, but notify the user about the mailing list bonus. This is
+//                 a one-time notification only to Oasis users who existed when the bonus program
+//                 was implemented.
 
 StatsTokens = new Mongo.Collection("statsTokens");
 // Access tokens for the Stats collection

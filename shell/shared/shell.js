@@ -144,7 +144,7 @@ if (Meteor.isServer) {
   Meteor.publish("notifications", function () {
     return Notifications.find({userId: this.userId},
       {fields: {timestamp: 1, text: 1, grainId: 1, userId: 1, isUnread: 1, appUpdates: 1,
-                admin: 1, referral: 1}});
+                admin: 1, referral: 1, mailingListBonus: 1}});
   });
 
 
@@ -936,7 +936,7 @@ if (Meteor.isClient) {
         return "Notification from System";
       } else if (this.appUpdates) {
         return "App updates are available";
-      } else if (this.referral) {
+      } else if (this.referral || this.mailingListBonus) {
         return false;
       }
 
@@ -1016,6 +1016,13 @@ if (Meteor.isClient) {
         })
       );
     });
+  });
+
+  Meteor.methods({
+    dismissNotification(notificationId) {
+      // Client-side simulation of dismissNotification.
+      Notifications.remove({_id: notificationId});
+    }
   });
 }
 Router.configure({

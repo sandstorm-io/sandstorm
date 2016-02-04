@@ -243,7 +243,11 @@ limitations under the License.
             referral program &raquo;
           {{/linkTo}}
         {{else}}
-          {{text.defaultText}}
+          {{#if mailingListBonus}}
+            {{> mailingListBonusNotification}}
+          {{else}}
+            {{text.defaultText}}
+          {{/if}}
         {{/if}}
       {{/if}}
     {{/if}}
@@ -253,8 +257,12 @@ limitations under the License.
         <button title="Ignore the above updates" class="cancel-notification">Dismiss</button>
         <button title="Update all of the above apps" class="accept-notification">Apply Updates</button>
       {{else}}
-        {{#if dismissText}}
-          <button title="{{titleHelperText}}" class="cancel-notification">{{dismissText}}</button>
+        {{#if mailingListBonus}}
+          {{> mailingListBonusNotificationButtons}}
+        {{else}}
+          {{#if dismissText}}
+            <button title="{{titleHelperText}}" class="cancel-notification">{{dismissText}}</button>
+          {{/if}}
         {{/if}}
       {{/if}}
     </div>

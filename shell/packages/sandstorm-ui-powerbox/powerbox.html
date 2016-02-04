@@ -21,10 +21,10 @@
           <input class="search-bar" type="text" placeholder="search" value="{{ searchText }}">
         </label>
       </div>
-      <ul class="candidate-grains">
-      {{#each grains}}
-        <li class="grain-card">
-          {{>grainCardButton title=title iconSrc=iconSrc id=_id onClick=callback}}
+      <ul class="candidate-cards">
+      {{#each cards}}
+        <li class="powerbox-card">
+          {{>powerboxCardButton title=title iconSrc=iconSrc id=_id onClick=callback}}
         </li>
       {{/each}}
       </ul>
@@ -35,38 +35,39 @@
   {{/if}}
 </template>
 
-<template name="grainCardButton">
+<template name="powerboxCardButton">
   {{!-- Pure template. Expects:
-        title: String     The grain title to show in the button.
+        title: String     The title to show in the button.
       iconSrc: String     The URL for the icon image.
-           id: String     The grain id associated with this grain.  Used primarily for tests.
+           id: String     The card id associated with this card.  Used primarily for tests.
       onClick: Function   A parameterless callback function triggered on button activation.
                           Note that Blaze will unhelpfully invoke the function if it's in the data
                           context, so you may need to use a function which returns your actual
                           callback function.
   --}}
-    <button class="grain-button" data-grain-id="{{ id }}" style="background-image: url({{ iconSrc }});">{{ title }}</button>
+    <button class="card-button" data-card-id="{{ id }}" style="background-image: url({{ iconSrc }});">{{ title }}</button>
 </template>
 
-<template name="grainCard">
+<template name="powerboxCard">
   {{!-- Pure template  Expects:
-        title: String  The grain title to show in the button.
-           id: String  The grain id associated with this grain.  Used primarily for tests.
+        title: String  The title to show in the button.
+           id: String  The card id associated with this card.  Used primarily for tests.
       iconSrc: String  The URL for the icon image.
   --}}
-    <div class="grain-card" data-grain-id="{{ id }}" style="background-image: url({{ iconSrc }});">{{ title }}</div>
+    <div class="powerbox-card" data-card-id="{{ id }}" style="background-image: url({{ iconSrc }});">{{ title }}</div>
 </template>
 
 <template name="powerboxProviderUiView">
   {{!-- Pure template.  Expects:
-             _id: String     Grain ID.
-           title: String     Grain title.
-         iconSrc: String     URL to grain's app icon.
+             _id: String     Card ID.
+           title: String     Selected grain title.
+         iconSrc: String     URL to app icon.
+        viewInfo: Object     JSON rendition of Grain.UiView.ViewInfo.
       onComplete: Function   Takes a single argument, which is a roleAssignment.  Called when the
                              form is submitted.
   --}}
-  <div class="selected-grain">
-    {{>grainCard id=_id title=title iconSrc=iconSrc}}
+  <div class="selected-card">
+    {{>powerboxCard id=_id title=title iconSrc=iconSrc}}
     <form>
     <p>with permissions:</p>
     {{#each role in viewInfo.roles}}

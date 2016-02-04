@@ -368,7 +368,7 @@ Template.powerboxRequest.onRendered(function () {
 });
 
 Template.powerboxRequest.helpers({
-  grains: function () {
+  cards: function () {
     const ref = Template.instance().data.get();
     return ref && ref.filteredCardData() || [];
   },
@@ -471,8 +471,8 @@ Template.powerboxProviderUiView.events({
   },
 });
 
-Template.grainCardButton.events({
-  "click .grain-button": function (event) {
+Template.powerboxCardButton.events({
+  "click .card-button": function (event) {
     const ref = Template.instance().data;
     ref && ref.onClick && ref.onClick();
   },

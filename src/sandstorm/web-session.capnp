@@ -258,6 +258,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
       requestUriTooLong     @8 $httpStatus(id = 414, title = "Request-URI Too Long");
       unsupportedMediaType  @9 $httpStatus(id = 415, title = "Unsupported Media Type");
       imATeapot            @10 $httpStatus(id = 418, title = "I'm a teapot");
+      unprocessableEntity  @12 $httpStatus(id = 422, title = "Unprocessable Entity");
 
       # Not applicable:
       #   401 Unauthorized:  We don't do HTTP authentication.

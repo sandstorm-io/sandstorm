@@ -2065,6 +2065,7 @@ const errorCodes = {
   requestUriTooLong:     { id: 414, title: 'Request-URI Too Long' },
   unsupportedMediaType:  { id: 415, title: 'Unsupported Media Type' },
   imATeapot:             { id: 418, title: 'I\'m a teapot' },
+  unprocessableEntity:   { id: 422, title: 'Unprocessable Entity' },
 };
 
 ResponseStream = class ResponseStream {

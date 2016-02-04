@@ -113,7 +113,7 @@ On Debian or Ubuntu, you should be able to get all these with:
 ### Get the source code
 
 Get the source code from the git repository:
-    
+
     git clone https://github.com/sandstorm-io/sandstorm.git
 
 ### Building / installing the binaries
@@ -172,19 +172,14 @@ If you suspect you'll be hacking on Sandstorm's dependencies as well, you may wa
 
 ## Tips
 
-* If installing Sandstorm under LXC / Docker, you will need to choose the option to
-  install as a non-root user. Unfortunately, this means the development tools will not
-  work. This is due to the interaction between Sandstorm and Docker's use of Linux
-  containerization features and missing features in the Linux kernel which we
-  hope will be fixed eventually. For non-development purposes, Sandstorm should run just fine
-  under Docker.
-* If you want to run on port 80, we recommend setting up an [nginx](http://nginx.org/) reverse
-  proxy rather than trying to get Node to open port 80 directly.  Make sure to configure
-  [WebSocket forwarding](http://nginx.org/en/docs/http/websocket.html), which requires nginx
-  1.3.13 or better.
-* If you want SSL, then you will definitely need an nginx proxy (or something equivalent). You will
-  further need to use a wildcard certificate.
+* If installing Sandstorm under LXC / Docker, you will need to choose the option to install as a
+  non-root user. Unfortunately, this means the development tools will not work. This is due to the
+  interaction between Sandstorm and Docker's use of Linux containerization features and missing
+  features in the Linux kernel which we hope will be fixed eventually. For non-development purposes,
+  Sandstorm should run just fine under Docker.
 
-For reference,
-[nginx-example.conf](https://github.com/sandstorm-io/sandstorm/tree/master/nginx-example.conf)
-contains the http server part of nginx config used by Sandstorm Alpha.
+* If you want to run on port 80, set `PORT=80` in your `sandstorm.conf` or look into a [reverse
+  proxy](administering/reverse-proxy.md).
+
+* If you want HTTPS/SSL, consider using our [free SSL certificate & dynamic DNS service](administering/ssl.md) or
+  setting up a [reverse proxy](administering/reverse-proxy.md).

@@ -945,9 +945,11 @@ if (Meteor.isClient) {
     titleHelperText: function () {
       if (this.admin) {
         return "Dismiss this system notification";
+      } else if (this.referral) {
+        return "Dismiss this referral notification";
+      } else {
+        return "Stop the background app";
       }
-
-      return "Stops the background app";
     },
     dismissText: function () {
       if (this.admin && this.admin.type === "reportStats") {

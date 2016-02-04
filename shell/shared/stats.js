@@ -122,7 +122,7 @@ if (Meteor.isServer) {
     var now = new Date();
 
     var planStats = _.countBy(
-      Meteor.users.find({expires: {$exists: false}, payments: {$exists: true}},
+      Meteor.users.find({expires: {$exists: false}, "payments.id": {$exists: true}},
                         {fields: {plan: 1}}).fetch(),
       "plan"
     );

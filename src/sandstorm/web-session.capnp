@@ -64,7 +64,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   post @1 (path :Text, content :PostContent, context :Context) -> Response;
   put @3 (path :Text, content :PutContent, context :Context) -> Response;
   delete @4 (path :Text, context :Context) -> Response;
-  patch @17 (path :Text, content :PatchContent, context :Context) -> Response;
+  patch @17 (path :Text, content :PostContent, context :Context) -> Response;
 
   postStreaming @5 (path :Text, mimeType :Text, context :Context, encoding :Text)
       -> (stream :RequestStream);
@@ -166,14 +166,6 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
   }
 
   struct PutContent {
-    # TODO(apibump): Remove this and replace it with `PostContent` (renamed to `Content`).
-
-    mimeType @0 :Text;
-    content @1 :Data;
-    encoding @2 :Text;  # Content-Encoding header (optional).
-  }
-
-  struct PatchContent {
     # TODO(apibump): Remove this and replace it with `PostContent` (renamed to `Content`).
 
     mimeType @0 :Text;

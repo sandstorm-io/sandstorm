@@ -631,7 +631,6 @@ div.billing {
       margin-left: 16px;
       box-sizing: border-box;
       margin: 1em auto 2em;
-      padding-left: 150px;
       text-align: left;
 
       >.amount {
@@ -779,17 +778,30 @@ div.billing {
       margin: 0.5em 0;
     }
 
-    max-width: 400px;
+    max-width: 450px;
     padding: 0 16px;
 
-    tr {
-      height: 64px;
+    span.plan-name {
+      text-transform: capitalize;
+    }
+
+    tr:first-of-type {
+      height: 48px;
     }
     td {
       vertical-align: top;
+      padding-bottom: 1em;
+
+      p {
+        margin-top: 0;
+        margin-bottom: 0.7em;
+      }
+      p:last-child {
+        margin-bottom: 0;
+      }
     }
-    td:first-child {
-      width: 90px;
+    td:first-of-type {
+      width: 140px;
     }
 
     span.grain-count {
@@ -841,34 +853,47 @@ div.billing {
       border-bottom: 1px solid #6d6d6d;
     }
 
-    >p {
-      color: #6d6d6d;
-      font-size: 90%;
-
-      &.bonus {
-        margin: 0;
-        &:first-of-type { margin-top: 1em; }
-        &:last-of-type { margin-bottom: 1em; }
-      }
-
-      .plan-name {
-        text-transform: uppercase;
-        color: #191919;
-      }
-
-      button.change-plan {
-        @extend %unstyled-button;
+    button {
+      &.change-plan {
+        @extend %button-base;
+        @extend %button-primary;
         float: right;
         font-size: 16px;
-        border: 1px solid #9e9e9e;
-        color: #5d5d5d;
-        border-radius: 3px;
-        padding: 4px 8px;
-        text-transform: uppercase;
+        width: 125px;
+      }
 
-        &:hover {
-          background-color: white;
-        }
+      &.subscribe {
+        @extend %button-base;
+        @extend %button-primary;
+        font-size: 16px;
+        width: 125px;
+      }
+
+      &.unsubscribe {
+        @extend %button-base;
+        @extend %button-secondary;
+        font-size: 90%;
+        padding: 4px 16px;
+        margin-left: 16px;
+      }
+    }
+
+    tr.bonus, div.subscribe-prompt {
+      color: #6d6d6d;
+      font-size: 90%;
+    }
+
+    .subscribe-prompt {
+      display: flex;
+
+      >p { margin: 0; }
+
+      >p:first-of-type {
+        flex: 1 1 70%;
+      }
+      >p:last-of-type {
+        flex: 1 1 30%;
+        text-align: right;
       }
     }
   }
@@ -1120,7 +1145,11 @@ body>.popup.billing-prompt>.frame, .first-time-billing-prompt {
     }
   }
 
-  >button.continue {
+  >p.bonus-note {
+    max-width: 550px;
+  }
+
+  button.continue, button.subscribe {
     @extend %unstyled-button;
 
     display: table;
@@ -1130,6 +1159,18 @@ body>.popup.billing-prompt>.frame, .first-time-billing-prompt {
     text-transform: uppercase;
     color: white;
     border-radius: 3px;
+  }
+
+  .subscribe-option button {
+    display: inline-block;
+    margin: 0 0 64px;
+
+    &.continue {
+      border: 1px solid #9e9e9e;
+      color: #5d5d5d;
+      text-transform: uppercase;
+      background-color: transparent;
+    }
   }
 
   >.subscriptions {

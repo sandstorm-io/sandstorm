@@ -26,6 +26,8 @@
         <li class="powerbox-card">
           {{>powerboxCardButton title=title iconSrc=iconSrc id=_id onClick=callback}}
         </li>
+      {{else}}
+        <p>No grains can provide the requested interface.</p>
       {{/each}}
       </ul>
       {{else}}

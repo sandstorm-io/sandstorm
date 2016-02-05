@@ -7,6 +7,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
       // For reasons I don't understand, Match.Optional does not work here.
       query: Match.OneOf(undefined, [Object]),
       saveLabel: Match.Optional(Match.Any),
+      sessionId: String,
       grainId: String,
       identityId: String,
       onCompleted: Function,
@@ -229,7 +230,118 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     viewInfo.roles = removeObsolete(viewInfo.roles);
   }
 
+
   filteredCardData() {
+    // TODO(soon): also pull in card data from grains that purport to implement the interface requested.
+
+    if (this.requestedInterfaceMatchesTag({ id: "15831515641881813735" })) { // UiView
+      return this.uiViewCardData();
+    } else if (this.requestedInterfaceMatchesTag({ id: "12214421258504904768" })) {
+      return this.ipNetworkCardData();
+    } else if (this.requestedInterfaceMatchesTag({ id: "16369547182874744570" })) {
+      return this.ipInterfaceCardData();
+    } else {
+      return [];
+    }
+  }
+
+  ipNetworkCardData() {
+    const cards = [];
+    const _this = this;
+    if (this._db.isAdmin()) {
+      cards.push({
+        _id: "frontendref-ipnetwork",
+        title: "Admin: grant all outgoing network access",
+        iconSrc: "/settings.svg",
+        callback: () => {
+          // Because Blaze always invokes functions when referenced as values from the data context, we
+          // need to double-wrap this callback.
+          return () => {
+            this.completeNewIpNetwork();
+          }
+        },
+      });
+    }
+
+    return cards;
+  }
+
+  completeNewIpNetwork() {
+    Meteor.call("newFrontendRef",
+      this._requestInfo.sessionId,
+      { ipNetwork: true },
+      (err, token) => {
+        if (err) {
+          console.log(err);
+          this._error.set(err.toString());
+        } else {
+          this._completed = true;
+          this._requestInfo.source.postMessage({
+            rpcId: this._requestInfo.rpcId,
+            token: token,
+            descriptor: {
+              tags: [
+                { id: "12214421258504904768" }, // IpNetwork
+              ],
+              quality: "acceptable",
+            },
+          }, this._requestInfo.origin);
+          // Completion event closes popup.
+          this._requestInfo.onCompleted();
+        }
+      }
+    );
+  }
+
+  ipInterfaceCardData() {
+    const cards = [];
+    const _this = this;
+    if (this._db.isAdmin()) {
+      cards.push({
+        _id: "frontendref-ipinterface",
+        title: "Admin: grant all incoming network access",
+        iconSrc: "/settings.svg",
+        callback: () => {
+          // Because Blaze always invokes functions when referenced as values from the data context, we
+          // need to double-wrap this callback.
+          return () => {
+            this.completeNewIpInterface();
+          }
+        },
+      });
+    }
+
+    return cards;
+  }
+
+  completeNewIpInterface() {
+    Meteor.call("newFrontendRef",
+      this._requestInfo.sessionId,
+      { ipInterface: true },
+      (err, token) => {
+        if (err) {
+          console.log(err);
+          this._error.set(err.toString());
+        } else {
+          this._completed = true;
+          this._requestInfo.source.postMessage({
+            rpcId: this._requestInfo.rpcId,
+            token: token,
+            descriptor: {
+              tags: [
+                { id: "16369547182874744570" }, // IpInterface
+              ],
+              quality: "acceptable",
+            },
+          }, this._requestInfo.origin);
+          // Completion event closes popup.
+          this._requestInfo.onCompleted();
+        }
+      }
+    );
+  }
+
+  uiViewCardData() {
     // Map user grains into card data
     const ownedGrains = this._db.currentUserGrains().fetch();
     const ownedGrainIds = _.pluck(ownedGrains, "_id");
@@ -391,9 +503,8 @@ Template.powerboxRequest.helpers({
   requestedInterfaceIsImplementedByFrontendRef: function () {
     const ref = Template.instance().data.get();
     return (
-      // TODO: support additional frontendref types
-      //ref.requestedInterfaceMatchesTag({id: "12214421258504904768"}) || // IpNetwork
-      //ref.requestedInterfaceMatchesTag({id: "16369547182874744570"}) || // IpInterface
+      ref.requestedInterfaceMatchesTag({ id: "12214421258504904768" }) || // IpNetwork
+      ref.requestedInterfaceMatchesTag({ id: "16369547182874744570" }) || // IpInterface
       ref.requestedInterfaceMatchesTag({ id: "15831515641881813735" }) // UiView
     );
   },

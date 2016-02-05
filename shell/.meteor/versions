@@ -1,6 +1,7 @@
 accounts-base@1.2.2
 accounts-email-token@0.1.0
 accounts-identity@0.1.0
+accounts-oauth@1.1.8
 application-configuration@1.0.4
 autoupdate@1.2.4
 babel-compiler@5.8.24_1
@@ -79,7 +80,6 @@ reactive-var@1.0.6
 reload@1.1.4
 retry@1.0.4
 routepolicy@1.0.6
-sandstorm-accounts-oauth@1.1.4
 sandstorm-accounts-packages@0.1.0
 sandstorm-accounts-ui@0.1.0
 sandstorm-autoupdate-apps@0.1.0

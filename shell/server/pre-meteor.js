@@ -362,7 +362,9 @@ Meteor.startup(() => {
 
   WebApp.httpServer.on('upgrade', (req, socket, head) => {
     Promise.resolve(undefined).then(() => {
-      if (isSandstormShell(req.headers.host.split(':')[0])) {
+      if (!req.headers.host) {
+        throw new Meteor.Error(400, 'Missing Host header');
+      } else if (isSandstormShell(req.headers.host.split(':')[0])) {
         // Go on to Meteor.
         for (let ii = 0; ii < meteorUpgradeListeners.length; ++ii) {
           meteorUpgradeListeners[ii](req, socket, head);
@@ -434,6 +436,11 @@ Meteor.startup(() => {
   }
 
   const dispatchToMeteorOrStaticPublishing = (req, res, next, redirectRatherThanServeShell) => {
+    if (!req.headers.host) {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('Missing Host header');
+      return;
+    }
     const hostname = req.headers.host.split(':')[0];
     if (isSandstormShell(hostname)) {
       // Go on to Meteor, or serve a redirect.

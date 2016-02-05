@@ -133,3 +133,65 @@ module.exports["Test Powerbox with failing requirements"] = function (browser) {
     })
     .end();
 };
+
+// This tests the basic functionality of the inline powerbox.
+// Source: https://github.com/jparyani/sandstorm-test-app/tree/inline-powerbox
+module.exports["Install Inline Powerbox"] = function (browser) {
+  browser
+    .init()
+    .installApp("http://sandstorm.io/apps/jparyani/inline-powebox-test-1.spk", "b58a280b3ca4dc72c8fc4c7b41d3e03d", "8stkfx4ez54109qzmzjtthaq105nf7f4sqfdzzp00g22p1r3uxg0")
+    .assert.containsText("#grainTitle", "Untitled InlinePowerboxTest");
+};
+
+module.exports["Test Inline Powerbox"] = function (browser) {
+  browser
+    .waitForElementVisible("#grain-frame", short_wait)
+    .frame("grain-frame")
+    .waitForElementVisible("#inline-powerbox", short_wait)
+    .click("#inline-powerbox")
+    .frame()
+    .execute(function () {
+      // Sandstorm's inline powerbox defines a special event called testInput for testing purposes
+      var ev = new CustomEvent("testInput", {
+        detail: {
+          keys: "https://sandstorm.io/apps/jparyani/test_inline_powerbox ",
+        },
+        bubbles: false,
+        cancelable: true,
+      });
+      document.querySelector(".inline-powerbox").dispatchEvent(ev);
+    })
+    .frame("grain-frame")
+    .waitForElementVisible("#request-result", short_wait)
+    .assert.containsText("#request-result", "successfully fetched page");
+};
+
+module.exports["Install Faling Inline Powerbox"] = function (browser) {
+  browser
+    .init()
+    .installApp("http://sandstorm.io/apps/jparyani/inline-powebox-test-1.spk", "b58a280b3ca4dc72c8fc4c7b41d3e03d", "8stkfx4ez54109qzmzjtthaq105nf7f4sqfdzzp00g22p1r3uxg0")
+    .assert.containsText("#grainTitle", "Untitled InlinePowerboxTest");
+};
+
+module.exports["Test Faling Inline Powerbox"] = function (browser) {
+  browser
+    .waitForElementVisible("#grain-frame", short_wait)
+    .frame("grain-frame")
+    .waitForElementVisible("#inline-powerbox", short_wait)
+    .click("#inline-powerbox")
+    .frame()
+    .execute(function () {
+      // Sandstorm's inline powerbox defines a special event called testInput for testing purposes
+      var ev = new CustomEvent("testInput", {
+        detail: {
+          keys: "http://local.sandstorm.io " // This resolves to 127.0.0.1
+        },
+        bubbles: false,
+        cancelable: true,
+      });
+      document.querySelector(".inline-powerbox").dispatchEvent(ev);
+    })
+    .frame("grain-frame")
+    .waitForElementPresent("#request-error", short_wait)
+    .assert.containsText("#request-error", "Domain resolved to an invalid IP");
+};

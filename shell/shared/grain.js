@@ -450,17 +450,20 @@ Meteor.methods({
       const identity = globalDb.getIdentity(identityId);
       globalDb.addContact(grainOwner._id, identityId);
 
-      const fromEmail = "Sandstorm server <no-reply@" + HOSTNAME + ">";
+      const envelopeFrom = globalDb.getReturnAddress();
+      let fromEmail = globalDb.getServerTitle() + " <" + globalDb.getReturnAddress() + ">";
       const senderEmails = SandstormDb.getVerifiedEmails(identity);
-      const replyTo = senderEmails.length > 0 ? senderEmails[0] : fromEmail;
+      if (senderEmails.length > 0) {
+        fromEmail = senderEmails[0];
+      }
 
       // TODO(soon): In the HTML version, we should display an identity card.
       let identityNote = "";
       if (identity.profile.service === "google") {
-        identityNote = " (" + identity.privateIntrinsicName + " on Google)";
+        identityNote = " (" + identity.privateIntrinsicName + ")";
       } else if (identity.profile.service === "github") {
         identityNote = " (" + identity.profile.intrinsicName + " on GitHub)";
-      } else if (contact.profile.service === "email") {
+      } else if (identity.profile.service === "email") {
         identityNote = " (" + identity.profile.intrinsicName + ")";
       }
 
@@ -474,8 +477,8 @@ Meteor.methods({
 
       SandstormEmail.send({
         to: emailAddress,
+        envelopeFrom: envelopeFrom,
         from: fromEmail,
-        replyTo: replyTo,
         subject: "Request for access to " + grain.title,
         text: message + "\n\nFollow this link to share access:\n\n" + url,
         html: html,
@@ -940,8 +943,6 @@ if (Meteor.isClient) {
       let identityId = Accounts.getCurrentIdentityId();
       let grainId = getActiveGrain(globalGrains.get()).grainId();
       Meteor.call("requestAccess", getOrigin(), grainId, identityId, function(error, result) {
-        console.log("result", result);
-        console.log("error", error);
         if (error) {
           instance._status.set({error: error});
         } else {

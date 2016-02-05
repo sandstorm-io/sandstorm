@@ -1132,7 +1132,7 @@ if (Meteor.server) {
       },
       removed: function() {
         // Tell the oauth library it should deny login attempts from this service.
-        Accounts.oauth.deregisterService(name);
+        Accounts.oauth.unregisterService(name);
       }
     });
   }

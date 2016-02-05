@@ -401,8 +401,15 @@ limitations under the License.
             <td> {{displayName recipient}} </td>
             <td> added by
               <ul>
-                {{#each shares}}
-                  <li>{{displayName identityId}}</li>
+                {{#each dedupedShares}}
+                  <li>
+                    {{displayName identityId}}
+                    {{#if isCurrentIdentity identityId}}
+                      <button class="revoke-access" title="revoke" data-recipient="{{../recipient}}">
+                        revoke
+                      </button>
+                    {{/if}}
+                  </li>
                 {{/each}}
               </ul>
             </td>

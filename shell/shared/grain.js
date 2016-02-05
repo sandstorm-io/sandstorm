@@ -28,33 +28,10 @@ if (Meteor.isServer) {
     var result = [Grains.find({_id : grainId, $or: [{userId: this.userId}, {private: {$ne: true}}]},
                               {fields: {title: 1, userId: 1, identityId: 1, private: 1}})];
     if (this.userId) {
-      var myIdentityIds =SandstormDb.getUserIdentityIds(globalDb.getUser(this.userId));
-      myIdentityIds.forEach(function(id) {
-        var identity = globalDb.getUser(id);
-        self.added("displayNames", identity._id, {displayName: identity.profile.name});
-      });
-
-      // Alice is allowed to know Bob's display name if Bob has received a UiView from Alice
-      // for *any* grain.
-      var handle = ApiTokens.find({identityId: {$in: myIdentityIds},
-                                   "owner.user.identityId": {$exists: true}}).observe({
-        added: function(token) {
-          var user = Meteor.users.findOne({_id: token.owner.user.identityId});
-          if (user) {
-            var identity = globalDb.getUser(token.owner.user.identityId);
-            if (identity) {
-              self.added("displayNames", identity._id, {displayName: identity.profile.name});
-            }
-
-          }
-        },
-      });
-      this.onStop(function() { handle.stop(); });
-
+      var myIdentityIds = SandstormDb.getUserIdentityIds(globalDb.getUser(this.userId));
       result.push(ApiTokens.find({grainId: grainId,
                                   $or : [{"owner.user.identityId": {$in: myIdentityIds}},
                                          {identityId: {$in: myIdentityIds}}]}));
-
     }
     return result;
   });
@@ -195,7 +172,6 @@ if (Meteor.isServer) {
 
 // GrainSizes is used by grainview.js
 GrainSizes = new Mongo.Collection("grainSizes");
-var DisplayNames = new Mongo.Collection("displayNames");
 // TokenInfo is used by grainview.js
 TokenInfo = new Mongo.Collection("tokenInfo");
 // Pseudo-collections published above.
@@ -930,26 +906,35 @@ if (Meteor.isClient) {
 
   Template.whoHasAccessPopup.onCreated(function () {
     var instance = this;
+    this.subscribe("contactProfiles");
     var currentGrain = getActiveGrain(globalGrains.get());
     instance.identityId = currentGrain.identityId();
     instance.grainId = currentGrain.grainId();
     instance.transitiveShares = new ReactiveVar(null);
+    instance.downstreamTokensById = new ReactiveVar({});
     this.resetTransitiveShares = function() {
       Meteor.call("transitiveShares", instance.identityId, instance.grainId,
                   function(error, downstream) {
         if (error) {
           console.error(error.stack);
         } else {
-          var sharesByRecipient = {};
+          let downstreamTokensById = {};
+          let sharesByRecipient = {};
           downstream.forEach(function (token) {
+            downstreamTokensById[token._id] = token;
             if (Match.test(token.owner, {user: Match.ObjectIncluding({identityId: String})})) {
               var recipient = token.owner.user.identityId;
               if (!sharesByRecipient[recipient]) {
-                sharesByRecipient[recipient] = {recipient: recipient, shares: []};
+                sharesByRecipient[recipient] = {
+                  recipient: recipient,
+                  dedupedShares: [],
+                  allShares: [],
+                };
               }
-              var shares = sharesByRecipient[recipient].shares;
-              if (!shares.some(function(share) { return share.identityId === token.identityId; })) {
-                sharesByRecipient[recipient].shares.push(token);
+              sharesByRecipient[recipient].allShares.push(token);
+              var dedupedShares = sharesByRecipient[recipient].dedupedShares;
+              if (!dedupedShares.some((share) => share.identityId === token.identityId)) {
+                dedupedShares.push(token);
               }
             }
           });
@@ -958,6 +943,7 @@ if (Meteor.isClient) {
             result = {empty: true};
           }
           instance.transitiveShares.set(result);
+          instance.downstreamTokensById.set(downstreamTokensById);
         }
       });
     }
@@ -985,7 +971,116 @@ if (Meteor.isClient) {
                   {revoked: true});
       instance.resetTransitiveShares();
     },
-    "click .token-petname": function (event) {
+    "click button.revoke-access": function (event, instance) {
+      const recipient = event.currentTarget.getAttribute("data-recipient");
+      const transitiveShares = instance.transitiveShares.get();
+      const tokensById = instance.downstreamTokensById.get();
+      const recipientShares = _.findWhere(transitiveShares, {recipient: recipient});
+      const currentIdentityId = Accounts.getCurrentIdentityId();
+      const recipientTokens = _.where(recipientShares.allShares, {identityId: currentIdentityId});
+
+      // Two cases:
+      // 1. All of the tokens are direct shares. Easy. Just revoke them.
+      // 2. Some of the links are child tokens. For each, we walk up the chain of parents to the
+      //    root. Then we walk downwards to see whether an other identities would be immediately
+      //    affected by revoking those roots. We then collect that data and display it in a
+      //    confirmation dialog.
+
+      let directTokens = [];
+      // Direct shares from the current identity to the recipient.
+
+      let rootTokens = [];
+      // Roots of chains of child tokens starting at the current identity and leading to the
+      // recipient.
+
+      recipientTokens.forEach((token) => {
+        if (token.parentToken) {
+          let currentToken = token;
+          do {
+            currentToken = tokensById[token.parentToken];
+          } while (currentToken.parentToken);
+
+          rootTokens.push(currentToken);
+        } else {
+          directTokens.push(token);
+        }
+      });
+
+      if (rootTokens.length > 0) {
+        // Some of the shares are not direct.
+
+        let tokensByParent = {};
+        for (let id in tokensById) {
+          let token = tokensById[id];
+          if (token.parentToken) {
+            if (!tokensByParent[token.parentToken]) {
+              tokensByParent[token.parentToken] = [];
+            }
+            tokensByParent[token.parentToken].push(token);
+          }
+        }
+
+        let otherAffectedIdentities = {};
+        let tokenStack = rootTokens.slice(0);
+        while (tokenStack.length > 0) {
+          let current = tokenStack.pop();
+          if (Match.test(current.owner,
+                         {user: Match.ObjectIncluding({identityId: String})})) {
+            if (current.owner.user.identityId != recipient) {
+              otherAffectedIdentities[current.owner.user.identityId] = true;
+            }
+          } else {
+            if (tokensByParent[current._id]) {
+              let children = tokensByParent[current._id];
+              children.forEach(child => {
+                tokenStack.push(child);
+              });
+            }
+          }
+        }
+
+        const recipientIdentity = ContactProfiles.findOne({_id: recipient});
+        const recipientName = (recipientIdentity && recipientIdentity.profile.name) ||
+            "Unknown User";
+        const singular = rootTokens.length == 1;
+
+        const tokenLabels = _.pluck(rootTokens, "petname")
+            .map(petname => petname || "Unlabeled Link")
+            .map(petname => "\"" + petname + "\"")
+            .join(", ");
+
+        let confirmText = "This will revoke the following sharing link" + (singular ? "" : "s") +
+            ":\n\n    " + tokenLabels + "\n\n";
+
+        let othersNote = "(No signed-in user other than " + recipientName + " has opened " +
+            (singular ? "this link" : "these links") + " yet.)";
+        if (Object.keys(otherAffectedIdentities).length > 0) {
+          const othersNames = Object.keys(otherAffectedIdentities)
+              .map(identityId => ContactProfiles.findOne({_id: identityId}))
+              .map(identity => (identity && identity.profile.name) || "Unknown User")
+              .join(", ");
+          othersNote = (singular ? "This link has" : "These links have") +
+            " also been opened by:\n\n    " + othersNames;
+        }
+
+        if (window.confirm(confirmText + othersNote)) {
+          rootTokens.forEach((token) => {
+            Meteor.call("updateApiToken", token._id, {revoked: true});
+          });
+        } else {
+          // Cancel.
+          return;
+        }
+      }
+
+      directTokens.forEach((token) => {
+        Meteor.call("updateApiToken", token._id, {revoked: true});
+      });
+
+      instance.resetTransitiveShares();
+    },
+
+    "click .token-petname": function (event, instance) {
       // TODO(soon): Find a less-annoying way to get this input, perhaps by allowing the user
       //   to edit the petname in place.
       var petname = window.prompt("Set new label:", this.petname);
@@ -993,6 +1088,7 @@ if (Meteor.isClient) {
         Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
                     {petname: petname});
       }
+      instance.resetTransitiveShares();
     },
   });
 
@@ -1019,6 +1115,11 @@ if (Meteor.isClient) {
                               }).fetch();
       }
     },
+    isCurrentIdentity: function () {
+      if (this.identityId === Accounts.getCurrentIdentityId()) {
+        return true;
+      }
+    },
     getPetname: function () {
       if (this.petname) {
         return this.petname;
@@ -1027,9 +1128,12 @@ if (Meteor.isClient) {
       }
     },
     displayName: function (identityId) {
-      var name = DisplayNames.findOne(identityId);
-      if (name) {
-        return name.displayName;
+      var identity = ContactProfiles.findOne({_id: identityId});
+      if (!identity) {
+        identity = Meteor.users.findOne({_id: identityId});
+      }
+      if (identity) {
+        return identity.profile.name;
       } else {
         return "Unknown User (" + identityId.slice(0,16) + ")";
       }

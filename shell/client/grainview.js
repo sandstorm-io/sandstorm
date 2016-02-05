@@ -43,7 +43,7 @@ GrainView = class GrainView {
       this.revealIdentity();
     }
 
-    this.enableInlinePowerbox = new ReactiveVar(false);
+    this.inlinePowerbox = new ReactiveVar(undefined);
 
     // We manage our Blaze view directly in order to get more control over when iframes get
     // re-rendered. E.g. if we were to instead use a template with {{#each grains}} iterating over
@@ -643,13 +643,25 @@ GrainView = class GrainView {
   }
 
   startInlinePowerbox(inlinePowerboxState) {
-    this.inlinePowerboxState = inlinePowerboxState;
-    if (inlinePowerboxState.isForeground) {
-      this.enableInlinePowerbox.set(true);
+    // Verify that the grain frame is focused.
+    let isFocused = false;
+    if (document.activeElement) {
+      let view = Blaze.getView(document.activeElement);
+      while (view) {
+        if (view === this._blazeView) {
+          isFocused = true;
+          break;
+        }
+        view = view.parentView;
+      }
+    }
+
+    if (isFocused) {
+      this.inlinePowerbox.set(inlinePowerboxState);
     } else {
-      state.source.postMessage({
+      inlinePowerboxState.source.postMessage({
         rpcId: inlinePowerboxState.rpcId,
-        error: "Cannot start inline powerbox when app is not in foreground",
+        error: "Cannot start inline powerbox when app is not focused",
       }, inlinePowerboxState.origin);
     }
   }

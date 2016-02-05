@@ -836,24 +836,26 @@ if (Meteor.isClient) {
     var template = Template.instance();
     template.savedKeys = [];
     this.autorun(function () {
-      var inlinePowerbox = template.data.enableInlinePowerbox.get();
-      if (inlinePowerbox) {
+      if (template.data.inlinePowerbox.get()) {
         template.find(".inline-powerbox").focus();
       }
     });
   });
-  function handleInlinePowerboxKey (event, template) {
-    var state = template.data.inlinePowerboxState;
+  function handleInlinePowerboxKey(event, template) {
+    var grain = template.data;
+    var state = grain.inlinePowerbox.get();
+    if (!state) return;  // inline powerbox not enabled
+
     switch (event.keyCode) {
     case 13: // Enter
     case 32: // Space
       var url = template.savedKeys.map(function (char) {
         return String.fromCharCode(char);
       }).join("");
-      if (url.lastIndexOf("http", 0) === 0) {
-        var activeGrain = getActiveGrain(globalGrains.get());
+      if (url.lastIndexOf("http://", 0) === 0 ||
+          url.lastIndexOf("https://", 0) === 0) {
         Meteor.call("offerExternalWebSession",
-          activeGrain.grainId(), activeGrain.identityId(), url, function (err, sturdyRef) {
+          grain.grainId(), grain.identityId(), url, function (err, sturdyRef) {
             if (err) {
               // TODO(someday): do something
               return;
@@ -884,7 +886,7 @@ if (Meteor.isClient) {
   }
   Template.grainView.events({
     "blur .inline-powerbox": function (event, template) {
-      template.data.enableInlinePowerbox.set(false);
+      template.data.inlinePowerbox.set(undefined);
     },
     "keydown .inline-powerbox": function (event, template) {
       var keyCode = event.keyCode;
@@ -1362,14 +1364,14 @@ if (Meteor.isClient) {
         // the platform, we can ensure that the token is only visible to the
         // shell's origin.
         var call = event.data.renderTemplate;
-        check(call, Object);
-        var rpcId = call.rpcId;
         try {
-          check(call, {rpcId: String, template: String, petname: Match.Optional(String),
+          check(call, {rpcId: Match.Any, template: String, petname: Match.Optional(String),
                        roleAssignment: Match.Optional(roleAssignmentPattern),
                        forSharing: Match.Optional(Boolean)});
         } catch (error) {
-          event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
+          console.error("App sent invalid postMessage:", error);
+          event.source.postMessage({rpcId: call && call.rpcId, error: error.toString()},
+                                   event.origin);
           return;
         }
         var template = call.template;
@@ -1423,7 +1425,17 @@ if (Meteor.isClient) {
       } else if (event.data.powerboxRequest) {
         // TODO(now): make this work with GrainView
         var powerboxRequest = event.data.powerboxRequest;
-        check(powerboxRequest, Object);
+        try {
+          check(powerboxRequest, {
+            rpcId: Match.Any,
+            saveLabel: Match.Optional(Match.OneOf(undefined, null, String))
+          });
+        } catch (error) {
+          console.error("App sent invalid postMessage:", error);
+          event.source.postMessage({rpcId: call && call.rpcId, error: error.toString()},
+                                   event.origin);
+          return;
+        }
         var rpcId = powerboxRequest.rpcId;
 
         var powerboxRequestInfo = {
@@ -1452,17 +1464,19 @@ if (Meteor.isClient) {
         });
       } else if (event.data.inlinePowerbox) {
         var inlinePowerbox = event.data.inlinePowerbox;
-        check(inlinePowerbox, Object);
-        var rpcId = inlinePowerbox.rpcId;
-        var currentGrain = getActiveGrain(globalGrains.get());
-        var inlinePowerboxState = {
+        try {
+          check(inlinePowerbox, {rpcId: Match.Any});
+        } catch (error) {
+          console.error("App sent invalid postMessage:", error);
+          event.source.postMessage({rpcId: call && call.rpcId, error: error.toString()},
+                                   event.origin);
+          return;
+        }
+        senderGrain.startInlinePowerbox({
           source: event.source,
-          rpcId: rpcId,
-          grainId: senderGrain.grainId(),
-          origin: event.origin,
-          isForeground: senderGrain === currentGrain,
-        };
-        senderGrain.startInlinePowerbox(inlinePowerboxState);
+          rpcId: inlinePowerbox.rpcId,
+          origin: event.origin
+        });
       } else {
         console.log("postMessage from app not understood: " + event.data);
         console.log(event);

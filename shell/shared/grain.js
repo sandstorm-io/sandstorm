@@ -982,7 +982,7 @@ if (Meteor.isClient) {
       // Two cases:
       // 1. All of the tokens are direct shares. Easy. Just revoke them.
       // 2. Some of the links are child tokens. For each, we walk up the chain of parents to the
-      //    root. Then we walk downwards to see whether an other identities would be immediately
+      //    root. Then we walk downwards to see whether any other identities would be immediately
       //    affected by revoking those roots. We then collect that data and display it in a
       //    confirmation dialog.
 

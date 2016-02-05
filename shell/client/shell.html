@@ -368,7 +368,7 @@ limitations under the License.
             <span class="token-petname" data-token-id="{{_id}}">
               {{petname}} ({{dateString created}})
             </span>
-            <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
+            <button class="revoke-token" title="Revoke" data-token-id="{{_id}}">revoke</button>
           </li>
         {{/if}}
       {{/each}}
@@ -405,7 +405,7 @@ limitations under the License.
                   <li>
                     {{displayName identityId}}
                     {{#if isCurrentIdentity identityId}}
-                      <button class="revoke-access" title="revoke" data-recipient="{{../recipient}}">
+                      <button class="revoke-access" title="Revoke" data-recipient="{{../recipient}}">
                         revoke
                       </button>
                     {{/if}}
@@ -448,7 +448,7 @@ limitations under the License.
                 {{/if}}
               </td>
               <td>
-                <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
+                <button class="revoke-token" title="Revoke" data-token-id="{{_id}}">revoke</button>
               </td>
             </tr>
           {{/if}}

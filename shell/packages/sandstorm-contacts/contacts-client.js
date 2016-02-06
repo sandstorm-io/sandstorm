@@ -1,5 +1,5 @@
 // Sandstorm - Personal Cloud Sandbox
-// Copyright (c) 2015 Sandstorm Development Group, Inc. and contributors
+// Copyright (c) 2016 Sandstorm Development Group, Inc. and contributors
 // All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,13 +14,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-Package.describe({
-  summary: "Sandstorm UI autocomplete input",
-  version: "0.1.0"
-});
+function transform(contact) {
+  SandstormDb.fillInPictureUrl(contact);
+  return contact;
+}
 
-Package.onUse(function (api) {
-  api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-ui-topbar", "sandstorm-autoupdate-apps", "mongo"], "client");
-  api.use(["sandstorm-db", "sandstorm-contacts"], ["client", "server"]);
-  api.addFiles(["autocomplete.html", "autocomplete-client.js"], "client");
-});
+ContactProfiles = new Mongo.Collection("contactProfiles", {transform: transform});
+// A psuedo-collection used to store the results of joining Contacts with identity profiles.
+//
+// Each contains:
+//   _id: the id of identity (from Meteor.users collection)
+//   profile: the profile of the identity (see db.js for fields in this object) with profile
+//     default values, `intrinsicName`, and `pictureUrl` filled in.

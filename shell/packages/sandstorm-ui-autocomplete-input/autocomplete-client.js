@@ -1,11 +1,3 @@
-var UserContacts = new Mongo.Collection("userContacts");
-// A psuedo-collection used to store the results of joining Contacts with identity profiles
-//
-// Each contains:
-//   _id: the id of identity (from Meteor.users collection)
-//   profile: the profile of the identity (see db.js for fields in this object) with profile
-//     default values and `intrinsicName` added.
-
 Template.contactInputBox.onCreated(function () {
   var self = this;
   this.currentText = new ReactiveVar(null);
@@ -13,7 +5,7 @@ Template.contactInputBox.onCreated(function () {
   this.selectedContacts = this.data.contacts;
   this.selectedContactsIds = new ReactiveVar([]);
   this.highlightedContact = new ReactiveVar({_id: null});
-  this.subscribe("userContacts");
+  this.subscribe("contactProfiles");
   this.randomId = Random.id();  // For use with aria requiring ids in html
   this.autoCompleteContacts = new ReactiveVar([]);
   this.autorun(generateAutoCompleteContacts.bind(this, this));
@@ -41,7 +33,7 @@ function generateAutoCompleteContacts(template) {
   }
   currentText = currentText.toLowerCase();
   var selectedContactsIds = template.selectedContactsIds.get();
-  var contacts = UserContacts.find({_id: {$nin: selectedContactsIds}}).fetch();
+  var contacts = ContactProfiles.find({_id: {$nin: selectedContactsIds}}).fetch();
   var results;
   if (currentText.lastIndexOf("@", 0) === 0) {
     var textWithoutAt = currentText.slice(1);
@@ -55,9 +47,6 @@ function generateAutoCompleteContacts(template) {
         contact.profile.intrinsicName.toLowerCase().indexOf(currentText) !== -1;
     });
   }
-  results.forEach(function (contact) {
-    SandstormDb.fillInPictureUrl(contact);
-  })
   template.autoCompleteContacts.set(defaults.concat(results));
   if (results.length > 0) {
     template.highlightedContact.set(results[0]);

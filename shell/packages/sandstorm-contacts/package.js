@@ -1,5 +1,5 @@
 // Sandstorm - Personal Cloud Sandbox
-// Copyright (c) 2015 Sandstorm Development Group, Inc. and contributors
+// Copyright (c) 2016 Sandstorm Development Group, Inc. and contributors
 // All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,12 +15,14 @@
 // limitations under the License.
 
 Package.describe({
-  summary: "Sandstorm UI autocomplete input",
+  summary: "Sandstorm Contacts",
   version: "0.1.0"
 });
 
 Package.onUse(function (api) {
-  api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-ui-topbar", "sandstorm-autoupdate-apps", "mongo"], "client");
-  api.use(["sandstorm-db", "sandstorm-contacts"], ["client", "server"]);
-  api.addFiles(["autocomplete.html", "autocomplete-client.js"], "client");
+  api.use(["check", "tracker", "underscore", "mongo"], "client");
+  api.use(["sandstorm-db"], ["client", "server"]);
+  api.addFiles(["contacts-client.js"], "client");
+  api.addFiles(["contacts-server.js"], "server");
+  api.export("ContactProfiles");
 });

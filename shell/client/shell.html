@@ -368,7 +368,7 @@ limitations under the License.
             <span class="token-petname" data-token-id="{{_id}}">
               {{petname}} ({{dateString created}})
             </span>
-            <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
+            <button class="revoke-token" title="Revoke" data-token-id="{{_id}}">Revoke</button>
           </li>
         {{/if}}
       {{/each}}
@@ -401,8 +401,15 @@ limitations under the License.
             <td> {{displayName recipient}} </td>
             <td> added by
               <ul>
-                {{#each shares}}
-                  <li>{{displayName identityId}}</li>
+                {{#each dedupedShares}}
+                  <li>
+                    {{displayName identityId}}
+                    {{#if isCurrentIdentity identityId}}
+                      <button class="revoke-access" title="Revoke" data-recipient="{{../recipient}}">
+                        Revoke
+                      </button>
+                    {{/if}}
+                  </li>
                 {{/each}}
               </ul>
             </td>
@@ -441,7 +448,7 @@ limitations under the License.
                 {{/if}}
               </td>
               <td>
-                <button class="revoke-token" title="revoke" data-token-id="{{_id}}">revoke</button>
+                <button class="revoke-token" title="Revoke" data-token-id="{{_id}}">Revoke</button>
               </td>
             </tr>
           {{/if}}

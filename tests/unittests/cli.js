@@ -55,14 +55,6 @@ module.exports = {
       done();
     });
   },
-  "sandstorm reset-oauth" : function (client, done) {
-    execSandstorm(["reset-oauth"], function (err, stdout, stderr) {
-      if (err) throw err;
-
-      assert.include(stdout, "reset OAuth configuration", "`reset-oauth` contains the expected output");
-      done();
-    });
-  },
 };
 
 

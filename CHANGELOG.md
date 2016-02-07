@@ -1,3 +1,8 @@
+### v0.143 (2016-02-06) [bugfixes]
+- Added support for HTTP PATCH method.
+- Fixed inability to revoke some types of shares in the "who has access" dialog.
+- Removed obsolete and confusing `sandstorm reset-oauth` shell command.
+
 ### v0.142 (2016-02-03) [bugfixes]
 - Page titles (as in document.title) now use the server's title as specified in the admin settings rather than just "Sandstorm".
 - Dev apps now appear first in the app list.

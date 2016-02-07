@@ -14,13 +14,6 @@ the default recommendation. If not, remove the `sudo` from the
 instructions below.
 
 * Use e.g. `ssh` to log into the server running Sandstorm.
-* Run this command to deconfigure all existing OAuth-based login providers.
-
-        sudo sandstorm reset-oauth
-
-  On success, it will print:
-
-      reset OAuth configuration
 
 * Run this command to generate a token you can use to log in as an admin, for emergency administration.
 

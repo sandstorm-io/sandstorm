@@ -1048,7 +1048,6 @@ void SupervisorMain::setupSeccomp() {
      SCMP_A0(SCMP_CMP_EQ, AF_SECURITY)));
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EAFNOSUPPORT), SCMP_SYS(socket), 1,
      SCMP_A0(SCMP_CMP_EQ, AF_KEY)));
-#pragma GCC diagnostic pop
 
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(add_key), 0));
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(request_key), 0));
@@ -1097,6 +1096,18 @@ void SupervisorMain::setupSeccomp() {
   // Utterly terrifying profiling operations
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(perf_event_open), 0));
 
+  // Don't let apps specify their own seccomp filters, since seccomp filters are literally programs
+  // that run in-kernel (albeit with a very limited instruction set).
+  CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EINVAL), SCMP_SYS(prctl), 1,
+      SCMP_A0(SCMP_CMP_EQ, PR_SET_SECCOMP)));
+  CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(seccomp), 0));
+  CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(bpf), 0));
+
+  // New syscalls that don't seem useful to Sandstorm apps therefore we will disallow them.
+  // TODO(cleanup): Can we somehow specify "disallow all calls greater than N" to preemptively
+  //   disable things until we've reviewed them?
+  CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(userfaultfd), 0));
+
   // TOOD(someday): See if we can get away with turning off mincore, madvise, sysinfo etc.
 
   // TODO(someday): Turn off POSIX message queues and other such esoteric features.
@@ -1107,6 +1118,7 @@ void SupervisorMain::setupSeccomp() {
 
   CHECK_SECCOMP(seccomp_load(ctx));
 
+#pragma GCC diagnostic pop
 #undef CHECK_SECCOMP
 }
 

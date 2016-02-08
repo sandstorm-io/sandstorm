@@ -399,7 +399,7 @@ Meteor.methods({
     const session = Sessions.findAndModify({
       query: {_id: sessionId},
       update: {$set: {timestamp: new Date().getTime()}},
-      fields: {grainId: 1},
+      fields: {grainId: 1, identityId: 1},
     });
 
     if (session) {

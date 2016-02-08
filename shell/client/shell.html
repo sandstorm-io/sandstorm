@@ -570,7 +570,29 @@ limitations under the License.
 </template>
 
 <template name="grainSharePopup">
-  {{> shareWithOthers grain=currentGrain}}
+  {{#if incognito}}
+    <p>
+      You are viewing this grain anonymously.
+    </p>
+    <p>
+      To share access, copy this link:
+      {{#with currentTokenUrl}}
+        <a id="share-token-text" class="copy-me" href="{{.}}">{{.}}</a>
+      {{/with}}
+    </p>
+    <p>
+      {{#if currentUser}}
+        For more sharing options, you must
+        <a class="open-non-anonymously" href="{{currentTokenUrl}}">
+          open this grain non-anonymously
+        </a>.
+      {{else}}
+        For more sharing options, please sign in.
+      {{/if}}
+    </p>
+  {{else}}
+    {{> shareWithOthers grain=currentGrain}}
+  {{/if}}
 </template>
 
 <template name="grainPowerboxRequest">
@@ -610,9 +632,9 @@ limitations under the License.
 
   {{setGrainWindowTitle}}
 
+  {{>sandstormTopbarItem name="share" topbar=globalTopbar template="grainShareButton"
+      popupTemplate="grainSharePopup"}}
   {{#if currentUser}}
-    {{>sandstormTopbarItem name="share" topbar=globalTopbar
-          template="grainShareButton" popupTemplate="grainSharePopup"}}
     {{>sandstormTopbarItem name="delete" topbar=globalTopbar template="grainDeleteButton"}}
   {{/if}}
   {{#if isOwner}}

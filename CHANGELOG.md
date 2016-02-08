@@ -1,4 +1,4 @@
-### v0.143 (2016-02-06) [bugfixes]
+### v0.143 (2016-02-07) [bugfixes]
 - Added support for HTTP PATCH method.
 - Fixed inability to revoke some types of shares in the "who has access" dialog.
 - Removed obsolete and confusing `sandstorm reset-oauth` shell command.

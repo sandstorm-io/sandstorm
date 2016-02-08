@@ -70,6 +70,13 @@ shell/packages/introjs/client/*
     License URL: https://github.com/usablica/intro.js/blob/master/README.md
                  (at bottom)
 
+shell/packages/accounts-ldap/*
+    What: intro.js
+    Source URL: https://github.com/typ90/meteor-accounts-ldap
+    Copyright: Eric Typaldos
+    License: MIT
+    License URL: https://github.com/typ90/meteor-accounts-ldap/blob/master/LICENSE
+
 src/joyent-http/*
     What: Node.js HTTP parsing library
     Source URL: https://github.com/joyent/http-parser
@@ -301,4 +308,3 @@ Google's Android.
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-

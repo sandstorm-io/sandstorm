@@ -479,7 +479,7 @@ Meteor.methods({
         to: emailAddress,
         envelopeFrom: envelopeFrom,
         from: fromEmail,
-        subject: "Request for access to " + grain.title,
+        subject: grain.title + " - Request for access",
         text: message + "\n\nFollow this link to share access:\n\n" + url,
         html: html,
       });

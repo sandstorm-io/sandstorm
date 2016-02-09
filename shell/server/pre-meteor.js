@@ -214,11 +214,13 @@ function serveSelfTest(req, res) {
   inMeteor(() => {
     if (req.method === 'GET' &&
         req.url === '/') {
-      return serveStaticAsset(req, res, {
-        content: new Buffer("Self-test OK.")
+      const content = new Buffer("Self-test OK.");
+      res.writeHead(200, {
+        'Content-Type': 'text/plain',
+        'Content-Length': content.length,
+        'Access-Control-Allow-Origin': process.env.ROOT_URL,
       });
-    } else if (req.method === 'OPTIONS') {
-      return serveStaticAsset(req, res);
+      res.end(content);
     } else {
       res.writeHead(400, { 'Content-Type': 'text/plain' });
       res.end('Bad request to self-test subdomain.');
@@ -227,7 +229,7 @@ function serveSelfTest(req, res) {
   });
 }
 
-function serveStaticAsset(req, res, overrideAsset) {
+function serveStaticAsset(req, res) {
   inMeteor(() => {
     if (req.method === 'GET') {
       // jscs:disable validateQuoteMarks
@@ -247,13 +249,8 @@ function serveStaticAsset(req, res, overrideAsset) {
         return;
       }
 
-      let asset;
-      if (overrideAsset) {
-        asset = overrideAsset;
-      } else {
-        const url = Url.parse(req.url);
-        asset = globalDb.getStaticAsset(url.pathname.slice(1));
-      }
+      const url = Url.parse(req.url);
+      const asset = globalDb.getStaticAsset(url.pathname.slice(1));
 
       if (asset) {
         const headers = {

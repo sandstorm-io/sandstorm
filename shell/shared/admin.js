@@ -51,22 +51,22 @@ var adminRoute = RouteController.extend({
       if (Session.get("alreadyTestedWildcardHost")) {
         return;
       }
-      let req = new XMLHttpRequest();
-      req.timeout = 2000;
-      const fail = () => {
-        Session.set("alreadyTestedWildcardHost", true);
-        Session.set("wildcardHostWorks", false);
-      };
-      const succeed = () => {
-        Session.set("alreadyTestedWildcardHost", true);
-        Session.set("wildcardHostWorks", true);
-      };
-      req.addEventListener("load", succeed);
-      req.addEventListener("error", fail);
-      req.addEventListener("abort", fail);
-      req.open("GET", "//" + makeWildcardHost("selftest" + Random.hexString(20)));
-      req.overrideMimeType('text/plain');
-      req.send();
+      HTTP.call('GET', "//" + makeWildcardHost("selftest" + Random.hexString(20)),
+                {timeout: 2000}, (error, response) => {
+                  Session.set("alreadyTestedWildcardHost", true);
+                  let looksGood;
+                  if (error) {
+                    looksGood = false;
+                  } else {
+                    if (response.statusCode === 200) {
+                      looksGood = true;
+                    } else {
+                      console.log("Surpring status code from self test domain", response.statusCode);
+                      looksGood = false;
+                    }
+                  }
+                  Session.set("wildcardHostWorks", looksGood);
+                });
     });
 
     var state = this.state;

@@ -210,7 +210,24 @@ function checkMagic(buf, magic) {
   return true;
 }
 
-function serveStaticAsset(req, res) {
+function serveSelfTest(req, res) {
+  inMeteor(() => {
+    if (req.method === 'GET' &&
+        req.url === '/') {
+      return serveStaticAsset(req, res, {
+        content: new Buffer("Self-test OK.")
+      });
+    } else if (req.method === 'OPTIONS') {
+      return serveStaticAsset(req, res);
+    } else {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('Bad request to self-test subdomain.');
+      return;
+    }
+  });
+}
+
+function serveStaticAsset(req, res, overrideAsset) {
   inMeteor(() => {
     if (req.method === 'GET') {
       // jscs:disable validateQuoteMarks
@@ -230,8 +247,13 @@ function serveStaticAsset(req, res) {
         return;
       }
 
-      const url = Url.parse(req.url);
-      const asset = globalDb.getStaticAsset(url.pathname.slice(1));
+      let asset;
+      if (overrideAsset) {
+        asset = overrideAsset;
+      } else {
+        const url = Url.parse(req.url);
+        asset = globalDb.getStaticAsset(url.pathname.slice(1));
+      }
 
       if (asset) {
         const headers = {
@@ -468,6 +490,12 @@ Meteor.startup(() => {
       if (id === 'static') {
         // Static assets domain.
         serveStaticAsset(req, res);
+        return;
+      }
+
+      if (id.match(/^selftest/)) {
+        // Self test domain pattern.
+        serveSelfTest(req, res);
         return;
       }
 

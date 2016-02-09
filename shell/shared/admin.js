@@ -46,6 +46,29 @@ var adminRoute = RouteController.extend({
   },
 
   action: function () {
+    // Test the WILDCARD_HOST for sanity.
+    Deps.nonreactive(function() {
+      if (Session.get("alreadyTestedWildcardHost")) {
+        return;
+      }
+      let req = new XMLHttpRequest();
+      req.timeout = 2000;
+      const fail = () => {
+        Session.set("alreadyTestedWildcardHost", true);
+        Session.set("wildcardHostWorks", false);
+      };
+      const succeed = () => {
+        Session.set("alreadyTestedWildcardHost", true);
+        Session.set("wildcardHostWorks", true);
+      };
+      req.addEventListener("load", succeed);
+      req.addEventListener("error", fail);
+      req.addEventListener("abort", fail);
+      req.open("GET", "//" + makeWildcardHost("selftest" + Random.hexString(20)));
+      req.overrideMimeType('text/plain');
+      req.send();
+    });
+
     var state = this.state;
     Meteor.call("getSmtpUrl", this.params._token, function(error, result){
       state.set("smtpUrl", result);
@@ -171,6 +194,13 @@ if (Meteor.isClient) {
     },
     advancedActive: function () {
       return Router.current().route.getName() == "adminAdvanced";
+    },
+    wildcardHostSeemsBroken: function() {
+      if (Session.get("alreadyTestedWildcardHost") &&
+          ! Session.get("wildcardHostWorks")) {
+        return true;
+      }
+      return false;
     },
     getToken: getToken
   });

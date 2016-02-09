@@ -841,6 +841,16 @@ limitations under the License.
 <template name="admin">
   {{>title "Admin Settings"}}
 
+  {{#if wildcardHostSeemsBroken}}
+  <div class="wildcard-host-warning">
+    WARNING: Your Sandstorm install seems to have its WILDCARD_HOST misconfigured. Please see
+    the <a href="https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine">
+    documentation on wildcard hosts.</a>  Once you fix the issue, you can re-run this self-test by
+    reloading this webpage. Email support@sandstorm.io for further help; we want to help you
+    succeed.
+  </div>
+  {{/if}}
+
   {{> _adminConfigureLoginServiceDialog}}
   <div id="admin-settings" class="centered-box">
     {{#if isUserPermitted}}

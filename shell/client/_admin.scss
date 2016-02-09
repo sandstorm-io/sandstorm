@@ -219,3 +219,16 @@ button#offer-ipnetwork, button#offer-ipinterface {
   font-size: 14px;
   min-height: 32px;
 }
+
+.wildcard-host-warning {
+  min-height: 3em;
+  width: 100%;
+  padding: 0.3em;
+  background-color: red;
+  color: white;
+
+  a {
+    color: white;
+    text-decoration: underline;
+  }
+}

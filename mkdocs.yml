@@ -1,8 +1,11 @@
-site_name: Sandstorm
+site_name: Docs
+theme_dir: 'docs/sandstorm_readthedocs_modified_theme'
 theme: 'readthedocs'
 repo_url: https://github.com/sandstorm-io/sandstorm/tree/master/docs
 markdown_extensions:
     - inline_graphviz
+extra_css:
+    - "extra.css"
 pages:
 - "Home": "index.md"
 - Using:

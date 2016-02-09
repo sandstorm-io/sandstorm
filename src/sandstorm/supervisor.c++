@@ -1100,6 +1100,9 @@ void SupervisorMain::setupSeccomp() {
   // that run in-kernel (albeit with a very limited instruction set).
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EINVAL), SCMP_SYS(prctl), 1,
       SCMP_A0(SCMP_CMP_EQ, PR_SET_SECCOMP)));
+#ifndef __NR_seccomp
+#define __NR_seccomp 317
+#endif
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(seccomp), 0));
 #ifndef __NR_bpf
 #define __NR_bpf 321

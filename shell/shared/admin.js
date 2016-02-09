@@ -51,7 +51,7 @@ var adminRoute = RouteController.extend({
       if (Session.get("alreadyTestedWildcardHost")) {
         return;
       }
-      HTTP.call('GET', "//" + makeWildcardHost("selftest" + Random.hexString(20)),
+      HTTP.call('GET', "//" + makeWildcardHost("selftest-" + Random.hexString(20)),
                 {timeout: 2000}, (error, response) => {
                   Session.set("alreadyTestedWildcardHost", true);
                   let looksGood;

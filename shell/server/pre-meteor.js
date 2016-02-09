@@ -490,8 +490,9 @@ Meteor.startup(() => {
         return;
       }
 
-      if (id.match(/^selftest/)) {
-        // Self test domain pattern.
+      if (id.match(/^selftest-/)) {
+        // Self test domain pattern. Starts w/ hyphen to avoid ambiguity with grain session/static
+        // publishing wildcard hosts.
         serveSelfTest(req, res);
         return;
       }

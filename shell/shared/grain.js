@@ -468,7 +468,7 @@ Meteor.methods({
       }
 
       const message = identity.profile.name + identityNote +
-            " has requested access to your grain: " + grain.title + ".";
+            " is requesting access to your grain: " + grain.title + ".";
 
       const url = origin + "/share/" + grainId + "/" + identityId;
 

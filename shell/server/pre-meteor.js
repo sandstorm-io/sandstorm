@@ -218,7 +218,7 @@ function serveSelfTest(req, res) {
       res.writeHead(200, {
         'Content-Type': 'text/plain',
         'Content-Length': content.length,
-        'Access-Control-Allow-Origin': process.env.ROOT_URL,
+        'Access-Control-Allow-Origin': '*'
       });
       res.end(content);
     } else {

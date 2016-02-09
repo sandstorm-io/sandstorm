@@ -486,6 +486,27 @@ Meteor.methods({
       let html = message + "<br><br>" +
           emailLinkWithInlineStyle(url, "Open Sharing Menu");
 
+      const user = Meteor.user();
+      const ACCESS_REQUEST_LIMIT = 10;
+      let resetCount = true;
+      if (user.accessRequests) {
+        if (user.accessRequests.resetOn < new Date()) {
+          Meteor.users.update({_id: user._id}, {$unset: {accessRequests: 1}});
+        } else if (user.accessRequests.count >= ACCESS_REQUEST_LIMIT) {
+            throw new Meteor.Error(403, "For spam control reasons, you are not allowed to make " +
+                                   "more than " + ACCESS_REQUEST_LIMIT +
+                                   " access requests per day.");
+        } else {
+          resetCount = false;
+        }
+      }
+      let modifier = {$inc: {"accessRequests.count": 1}};
+      if (resetCount) {
+        let tomorrow = new Date(Date.now() + 86400000);
+        modifier["$set"] = {"accessRequests.resetOn": tomorrow};
+      }
+      Meteor.users.update({_id: user._id}, modifier);
+
       SandstormEmail.send({
         to: emailAddress,
         envelopeFrom: envelopeFrom,

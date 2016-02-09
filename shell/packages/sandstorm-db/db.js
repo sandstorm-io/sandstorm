@@ -99,6 +99,9 @@ if (Meteor.isServer) {
 //   storageUsage: Number of bytes this user is currently storing.
 //   payments: Object defined by payments module, if loaded.
 //   dailySentMailCount: Number of emails sent by this user today; used to limit spam.
+//   accessRequests: Object containing the following fields; used to limit spam.
+//       count: Number of "request access" emails during sent during the current interval.
+//       resetAt: Date when the count should be reset.
 //   referredByComplete: ID of the Account that referred this Account. If this is set, we
 //                        stop writing new referredBy values onto Identities for this account.
 //   referredCompleteDate: The Date at which the completed referral occurred.

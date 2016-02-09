@@ -47,7 +47,7 @@ var adminRoute = RouteController.extend({
 
   action: function () {
     // Test the WILDCARD_HOST for sanity.
-    Deps.nonreactive(function() {
+    Tracker.nonreactive(() => {
       if (Session.get("alreadyTestedWildcardHost")) {
         return;
       }

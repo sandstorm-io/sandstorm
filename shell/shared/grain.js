@@ -634,6 +634,12 @@ if (Meteor.isClient) {
     "click #privatize-grain": function (event) {
       Meteor.call("privatizeGrain", getActiveGrain(globalGrains.get()).grainId());
     },
+    "click a.open-non-anonymously": function (event) {
+      event.preventDefault();
+      globalTopbar.closePopup();
+      getActiveGrain(globalGrains.get()).reset();
+      getActiveGrain(globalGrains.get()).openSession();
+    }
   });
 
   Template.shareWithOthers.onRendered(function () {
@@ -803,6 +809,12 @@ if (Meteor.isClient) {
   });
 
   Template.grainSharePopup.helpers({
+    "incognito": function () {
+      return !Accounts.getCurrentIdentityId();
+    },
+    "currentTokenUrl": function() {
+      return getOrigin() + "/shared/" + getActiveGrain(globalGrains.get()).token();
+    },
     "currentGrain": function() {
       return getActiveGrain(globalGrains.get());
     }

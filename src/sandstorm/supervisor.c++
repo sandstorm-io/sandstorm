@@ -1101,6 +1101,9 @@ void SupervisorMain::setupSeccomp() {
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EINVAL), SCMP_SYS(prctl), 1,
       SCMP_A0(SCMP_CMP_EQ, PR_SET_SECCOMP)));
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(seccomp), 0));
+#ifndef __NR_bpf
+#define __NR_bpf 321
+#endif
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(bpf), 0));
 
   // New syscalls that don't seem useful to Sandstorm apps therefore we will disallow them.

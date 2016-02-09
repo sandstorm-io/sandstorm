@@ -211,7 +211,7 @@ function checkMagic(buf, magic) {
 }
 
 function serveSelfTest(req, res) {
-  inMeteor(() => {
+  try {
     if (req.method === 'GET' &&
         req.url === '/') {
       const content = new Buffer("Self-test OK.");
@@ -226,7 +226,9 @@ function serveSelfTest(req, res) {
       res.end('Bad request to self-test subdomain.');
       return;
     }
-  });
+  } catch (err) {
+    console.log("WARNING: An error occurred while serving self-test; proceeding anyway:", err);
+  }
 }
 
 function serveStaticAsset(req, res) {

@@ -401,6 +401,14 @@ interface UiView @0xdbb4d798ea67e2e7 {
     # two UiViews are really the same view with different permissions applied, and can then combine
     # them in the UI as appropriate.
     #
+    # Implementation-wise, in addition to the permissions enumerated here, there is an additional
+    # "is human" pseudopermission provided by the Sandstorm platform, which is invisible to apps,
+    # but affects how UiView capabilities may be used.  In particular, all users are said to possess
+    # the "is human" pseudopermission, whereas all other ApiTokenOwners do not, and by default, the
+    # privilege is not passed on.  All method calls on UiView require that the caller have the "is
+    # human" permission.  In practical terms, this means that grains can pass around UiView
+    # capabilities, but only users can actually use them to open sessions.
+    #
     # It is actually entirely possible to implement a traditional filtering membrane around a
     # UiView, perhaps to implement a kind of access that can't be expressed using the permission
     # bits defined by the app.  But doing so will be awkward, slow, and confusing for all the

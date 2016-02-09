@@ -182,6 +182,10 @@ class PersistentUiViewImpl {
     });
     return res;
   }
+
+  // All other UiView methods are currently unimplemented, which, while not strictly correct,
+  // results in the same overall behavior, since users can't call restore() on a PersistentUiView,
+  // and grains can't call methods on UiViews because they lack the "is human" pseudopermission.
 }
 
 const makePersistentUiView = function (token) {

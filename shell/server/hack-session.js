@@ -29,7 +29,7 @@ const Supervisor = Capnp.importSystem('sandstorm/supervisor.capnp').Supervisor;
 const SystemPersistent = Capnp.importSystem('sandstorm/supervisor.capnp').SystemPersistent;
 const IpRpc = Capnp.importSystem('sandstorm/ip.capnp');
 const EmailSendPort = EmailRpc.EmailSendPort;
-const Sealed = Capnp.importSystem("sandstorm/sealed.capnp");
+const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 
 const Url = Npm.require('url');
 
@@ -52,15 +52,15 @@ SessionContextImpl = class SessionContextImpl {
 
       const castedCap = cap.castAs(SystemPersistent);
       let apiTokenOwner = {webkey: null};
-      const isSealedUiView = descriptor && descriptor.tags && descriptor.tags.length === 1 &&
+      const isUiView = descriptor && descriptor.tags && descriptor.tags.length === 1 &&
           descriptor.tags[0] && descriptor.tags[0].id &&
-          descriptor.tags[0].id === Sealed.SealedUiView.typeId;
-      if (isSealedUiView) {
+          descriptor.tags[0].id === Grain.UiView.typeId;
+      if (isUiView) {
         apiTokenOwner = {
           user: {
             identityId: this.identityId,
             lastUsed: new Date(),
-            // The following fields will be overwritten by PersistentSealedUiView.save()
+            // The following fields will be overwritten by PersistentUiView.save()
             title: "", // This will be replaced by the token's title
             denormalizedGrainMetadata: {}, // This will look up the package for the grain referenced.
           },
@@ -85,7 +85,7 @@ SessionContextImpl = class SessionContextImpl {
       }
 
       ApiTokens.update({_id: hashSturdyRef(sturdyRef)}, {$push: {requirements: requirement}});
-      const powerboxView = isSealedUiView ? {
+      const powerboxView = isUiView ? {
         offer: {
           uiView: {
             token: sturdyRef.toString(),

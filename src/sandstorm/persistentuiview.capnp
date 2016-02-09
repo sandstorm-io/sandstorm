@@ -19,11 +19,9 @@
 $import "/capnp/c++.capnp".namespace("sandstorm");
 
 using SystemPersistent = import "supervisor.capnp".SystemPersistent;
+using UiView = import "grain.capnp".UiView;
 
-interface SealedUiView @0x8ccbcb3c38aa1574 {}
-# An empty interface which the frontend is capable of automatically sealing for UiViews and
-# unsealing when offered.
-
-interface PersistentSealedUiView @0xa6511bdccae691a6 extends (SealedUiView, SystemPersistent) {}
-# The interface which can be restored into a SealedUiView again.
-
+interface PersistentUiView extends (UiView, SystemPersistent) {}
+# An interface which can be restored into a UiView again.
+# Note that when restored by a grain, the UiView restored will not by default carry the `isHuman`
+# pseudoprivilege, which is required to actually make any calls on a UiView.

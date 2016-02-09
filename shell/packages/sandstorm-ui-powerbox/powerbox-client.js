@@ -61,9 +61,9 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     return false;
   }
 
-  completeSealedUiView(roleAssignment) {
+  completeUiView(roleAssignment) {
     const fulfillingProvider = this._selectedProvider.get();
-    if (fulfillingProvider.type === "frontendref-sealeduiview") {
+    if (fulfillingProvider.type === "frontendref-uiview") {
       const fulfillingGrainId = fulfillingProvider.grainId;
       const fulfillingApiToken = fulfillingProvider.apiToken; // Possibly irrelevant?
       const fulfillingGrainTitle = fulfillingProvider.title;
@@ -74,7 +74,6 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
           grainId: this._requestInfo.grainId,
           saveLabel: saveLabel,
           introducerIdentity: this._requestInfo.identityId,
-          sealed: this.requestedInterfaceMatchesTag({ id: "10145426045091321204" }), // SealedUiView
         },
       };
       const provider = {
@@ -98,7 +97,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
               token: apiToken,
               descriptor: {
                 tags: [
-                  { id: "10145426045091321204" }, // SealedUiView
+                  { id: "15831515641881813735" }, // UiView
                 ],
                 quality: "acceptable",
               },
@@ -115,10 +114,10 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
 
   selectGrain(grainCard) {
     this._selectedProvider.set({
-      type: "frontendref-sealeduiview",
+      type: "frontendref-uiview",
       grainId: grainCard.grainId,
       title: grainCard.title,
-      templateName: "powerboxProviderSealedUiView",
+      templateName: "powerboxProviderUiView",
       templateData: () => {
         const grain = this._db.collections.grains.findOne(grainCard.grainId);
         const viewInfo = grain.cachedViewInfo;
@@ -131,7 +130,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
           lastUsed: grainCard.lastUsed,
           viewInfo: viewInfo,
           onComplete: (roleAssignment) => {
-            this.completeSealedUiView(roleAssignment);
+            this.completeUiView(roleAssignment);
           },
         };
       },
@@ -147,11 +146,11 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
         const viewInfo = result;
         this.annotateViewInfo(viewInfo);
         this._selectedProvider.set({
-          type: "frontendref-sealeduiview",
+          type: "frontendref-uiview",
           grainId: apiTokenCard.grainId,
           apiToken: apiTokenCard._id,
           title: apiTokenCard.title,
-          templateName: "powerboxProviderSealedUiView",
+          templateName: "powerboxProviderUiView",
           templateData: () => {
             return {
               _id: apiTokenCard._id,
@@ -161,7 +160,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
               lastUsed: apiTokenCard.lastUsed,
               viewInfo: viewInfo,
               onComplete: (roleAssignment) => {
-                this.completeSealedUiView(roleAssignment);
+                this.completeUiView(roleAssignment);
               }
             }
           }
@@ -344,7 +343,7 @@ Template.powerboxRequest.helpers({
       // TODO: support additional frontendref types
       //ref.requestedInterfaceMatchesTag({id: "12214421258504904768"}) || // IpNetwork
       //ref.requestedInterfaceMatchesTag({id: "16369547182874744570"}) || // IpInterface
-      ref.requestedInterfaceMatchesTag({ id: "10145426045091321204" }) // SealedUiView
+      ref.requestedInterfaceMatchesTag({ id: "15831515641881813735" }) // UiView
     );
   },
 
@@ -405,7 +404,7 @@ Template.powerboxRequest.events({
   },
 });
 
-Template.powerboxProviderSealedUiView.events({
+Template.powerboxProviderUiView.events({
   "click .connect-button": function (event) {
     event.preventDefault();
     const ref = Template.instance().data;

@@ -21,7 +21,7 @@ const PersistentHandle = Capnp.importSystem('sandstorm/supervisor.capnp').Persis
 const SandstormCore = Capnp.importSystem('sandstorm/supervisor.capnp').SandstormCore;
 const SandstormCoreFactory = Capnp.importSystem('sandstorm/backend.capnp').SandstormCoreFactory;
 const PersistentOngoingNotification = Capnp.importSystem('sandstorm/supervisor.capnp').PersistentOngoingNotification;
-const Sealed = Capnp.importSystem("sandstorm/sealed.capnp");
+const PersistentUiView = Capnp.importSystem("sandstorm/persistentuiview.capnp").PersistentUiView;
 
 class SandstormCoreImpl {
   constructor(grainId) {
@@ -148,7 +148,7 @@ class NotificationHandle {
   }
 }
 
-class PersistentSealedUiViewImpl {
+class PersistentUiViewImpl {
   constructor(token, membraneRequirements) {
     this._token = token;
     // TODO: implement SystemPersistent.addRequirements() in a way that collects requirements, and
@@ -184,8 +184,8 @@ class PersistentSealedUiViewImpl {
   }
 }
 
-const makePersistentSealedUiView = function (token) {
-  return new Capnp.Capability(new PersistentSealedUiViewImpl(token, []), Sealed.PersistentSealedUiView);
+const makePersistentUiView = function (token) {
+  return new Capnp.Capability(new PersistentUiViewImpl(token, []), PersistentUiView);
 };
 
 function makeNotificationHandle(notificationId, saved) {
@@ -383,9 +383,15 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
     // A token which chains to some parent token.  Restore the parent token (possibly recursively),
     // checking requirements on the way up.
     return restoreInternal(token.parentToken, Match.Any, requirements, parentToken);
-  } else if (token && token.owner && token.owner.grain && token.owner.grain.sealed) {
-    // A sealed UiView is being restored.  This is implemented by the shell.
-    return {cap: makePersistentSealedUiView(token)};
+  }
+
+  // Note that hereafter, `token` should be, by process of elimination, a UiView token.
+
+  if (token.owner && token.owner.grain) {
+    // If a grain is attempting to restore a UiView, it gets a UiView which filters out all
+    // the method calls.  In the future, if we allow grains to restore fully-privileged UiViews
+    // (say, to allow embedding grains inside other grains), then we'll need to adjust this check.
+    return {cap: makePersistentUiView(token)};
   } else {
     throw new Meteor.Error(500, "Unknown token type.");
     // This is a token for a grain's main UiView.  Ensure the grain is running, then

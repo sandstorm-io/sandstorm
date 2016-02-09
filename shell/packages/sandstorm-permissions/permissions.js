@@ -420,8 +420,7 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
                                    title: String}},
                            {grain: {grainId: String,
                                     saveLabel: Match.ObjectIncluding({defaultText: String}),
-                                    introducerIdentity: String,
-                                    sealed: Boolean}}));
+                                    introducerIdentity: String,}}));
 
   var grain = db.getGrain(grainId);
   if (!grain) {

@@ -382,7 +382,6 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //           identityId :Text;
 //           roleAssignment :RoleAssignment;
 //           forSharing :Bool;
-//           sealed :Bool; // If true, this is a SealedUiView capability
 //         }
 //         objectId :SupervisorObjectId;
 //       }

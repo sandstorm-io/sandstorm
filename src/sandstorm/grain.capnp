@@ -752,17 +752,7 @@ struct RoleDef {
   # "default", then such sharing actions will be treated as having an empty permissions set (the
   # user can open the grain, but the grain is told that the user has no permissions).
   #
-  # This field should *not* be used to specify a default role hint for sharing!  For that, use
-  # `defaultSelection` immediately below.
-  #
   # See also `ViewSharingLink.RoleAssignment.none`, below.
-
-  defaultSelection @6 :Bool = false;
-  # If true, this role should be hinted as the default option when presenting a user with a choice
-  # of RoleAssignments.  This should only be set to true on a single role for a given package.
-  #
-  # It is unfortunate that this field cannot be named "default" without changing the behavior of
-  # existing text pkgdefs.
 }
 
 interface SharingLink {

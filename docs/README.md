@@ -7,11 +7,11 @@ https://docs.sandstorm.io/
 Run the following.
 
 ```
-cd ~/projects/sandstorm/docs
-virtualenv env
-env/bin/pip install mkdocs
-env/bin/pip install markdown-inline-graphviz
-(cd .. ; docs/env/bin/mkdocs serve)
+cd ~/projects/sandstorm
+virtualenv tmp/docs-virtualenv
+tmp/docs-virtualenv/bin/pip install mkdocs
+tmp/docs-virtualenv/bin/pip install markdown-inline-graphviz
+tmp/docs-virtualenv/bin/mkdocs serve
 ```
 
 Then visit http://localhost:8000/
@@ -30,12 +30,12 @@ git clone https://my_repo@alpha-api.sandstorm.io/ sandstorm-docs
 - Run `generate.sh` to re-generate the docs, then commit them to this git repo.
 
 ```
-PATH=$PATH:docs/env/bin bash docs/generate.sh -d sandstorm-docs
+PATH=$PATH:$PWD/tmp/docs-virtualenv/bin bash docs/generate.sh -d sandstorm-docs
 ```
 
 
 - Run `generate.sh` with the `-p` flag to actually push them to the live site.
 
 ```
-PATH=$PATH:docs/env/bin bash docs/generate.sh -d sandstorm-docs -p
+PATH=$PATH:$PWD/tmp/docs-virtualenv/bin bash docs/generate.sh -d sandstorm-docs -p
 ```

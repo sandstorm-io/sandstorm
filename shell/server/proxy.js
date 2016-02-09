@@ -1946,7 +1946,11 @@ const parseETagList = (input) => {
 
   while (input.length > 0) {
     const match = input.match(/^\s*(W\/)?"(([^"\\]|\\.)*)"\s*($|,)/);
-    if (!match) throw new Meteor.Error(400, 'invalid etag');
+    if (!match) {
+        console.log('invalid etag '+input);
+        input = input.slice(1);
+        continue;
+    }
 
     input = input.slice(match[0].length).trim();
     results.push({ weak: !!match[1], value: match[2].replace(/\\(.)/g, '$1') });

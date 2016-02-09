@@ -436,6 +436,12 @@ Meteor.methods({
     check(grainId, String);
     check(identityId, String);
     if (!this.isSimulation) {
+      if (!this.userId) {
+         throw new Meteor.Error(403, "Must be logged in to request access.");
+      }
+      if (!globalDb.userHasIdentity(this.userId, identityId)) {
+        throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
+      }
       const grain = Grains.findOne(grainId);
       if (!grain) {
         throw new Meteor.Error(404, "No such grain");
@@ -454,7 +460,12 @@ Meteor.methods({
       let fromEmail = globalDb.getServerTitle() + " <" + globalDb.getReturnAddress() + ">";
       const senderEmails = SandstormDb.getVerifiedEmails(identity);
       if (senderEmails.length > 0) {
-        fromEmail = senderEmails[0];
+        const primaryEmail = Meteor.user().primaryEmail;
+        if (senderEmails.indexOf(primaryEmail) >= 0) {
+          fromEmail = primaryEmail;
+        } else {
+          fromEmail = senderEmails[0];
+        }
       }
 
       // TODO(soon): In the HTML version, we should display an identity card.

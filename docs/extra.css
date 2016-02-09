@@ -1,0 +1,41 @@
+.wy-side-nav-search>.home-and-project {
+    display: flex;
+    text-align: left;
+}
+
+.home-and-project>a.docs-home {
+    /* Push anything else in the flexbox as far right as possible. */
+    flex: 1 0;
+}
+
+
+.wy-side-nav-search>.home-and-project>a {
+    /* Fix vertical alignment problem */
+    line-height: initial;
+    /* Use default A styling for .wy-side-nav-search from theme.css */
+    color: #fcfcfc;
+    font-size: 100%;
+    font-weight: bold;
+    display: inline-block;
+    padding: 4px 6px;
+    margin-bottom: 0.809em;
+}
+
+.wy-side-nav-search>.home-and-project>a:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+@media screen and (max-width: 768px) {
+    .wy-nav-top {
+        text-align: left;
+        display: flex;
+    }
+}
+
+.wy-nav-top>.nav-toggle-and-docs-home-link {
+    flex: 1 0;
+}
+.wy-nav-top>.nav-toggle-and-docs-home-link>* {
+    float: none;
+    vertical-align: middle;
+}

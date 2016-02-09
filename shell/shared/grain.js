@@ -869,6 +869,14 @@ if (Meteor.isClient) {
       const current = getActiveGrain(globalGrains.get());
       return current && current.powerboxRequestData();
     },
+
+    cancelPowerboxRequest: function () {
+      return () => {
+        const current = getActiveGrain(globalGrains.get());
+        current.setPowerboxRequest(undefined);
+        return "remove";
+      };
+    },
   });
 
   Template.grainTitle.helpers({

@@ -319,22 +319,22 @@ Template.powerboxRequest.onRendered(function () {
 Template.powerboxRequest.helpers({
   grains: function () {
     const ref = Template.instance().data.get();
-    return ref.filteredCardData();
+    return ref && ref.filteredCardData() || [];
   },
 
   selectedProvider: function () {
     const ref = Template.instance().data.get();
-    return ref._selectedProvider.get();
+    return ref && ref._selectedProvider && ref._selectedProvider.get();
   },
 
   selectedProviderTemplate: function () {
     const ref = Template.instance().data.get();
-    return ref._selectedProvider.get().templateName;
+    return ref && ref._selectedProvider && ref._selectedProvider.get().templateName;
   },
 
   selectedProviderTemplateData: function () {
     const ref = Template.instance().data.get();
-    return ref._selectedProvider.get().templateData();
+    return ref && ref._selectedProvider && ref._selectedProvider.get().templateData();
   },
 
   requestedInterfaceIsImplementedByFrontendRef: function () {
@@ -352,7 +352,7 @@ Template.powerboxRequest.helpers({
     // empty list, as requests for webkeys.  Later, we"ll want to transition the test apps to
     // specify interfaces, and implement frontendrefs to support those interfaces.
     const ref = Template.instance().data.get();
-    return !ref._requestInfo.query;
+    return !(ref && ref._requestInfo && ref._requestInfo.query);
   },
 
   webkeyError: function () {

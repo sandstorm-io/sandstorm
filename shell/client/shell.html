@@ -602,7 +602,8 @@ limitations under the License.
   {{/if}}
   {{#if showPowerboxRequest}}
   {{>sandstormTopbarItem name="request" topbar=globalTopbar template="grainPowerboxRequest"
-        startOpen=true popupTemplate="grainPowerboxRequestPopup" data=powerboxRequestData}}
+        startOpen=true popupTemplate="grainPowerboxRequestPopup" data=powerboxRequestData
+        onDismiss=cancelPowerboxRequest}}
   {{/if}}
   {{#if showPowerboxOffer}}
     {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"

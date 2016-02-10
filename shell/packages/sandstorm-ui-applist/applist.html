@@ -63,6 +63,15 @@
     </a>
     {{/if}}
     {{/each}}
+    {{#if searching}}
+    {{#unless apps}}
+    <p>
+      <span class="app-title">You don't seem to have an app with that name. Try
+        <a href="{{appMarketUrl}}">searching on the app market &raquo;</a>
+      </span>
+    </p>
+    {{/unless}}
+    {{/if}}
   </div>
   {{else}}
     {{#if Template.subscriptionsReady}}

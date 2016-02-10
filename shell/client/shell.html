@@ -982,6 +982,8 @@ limitations under the License.
 
 <template name="adminUsers">
   {{setDocumentTitle}}
+
+  {{#if Template.subscriptionsReady}}
   <table class="admin-table">
     <thead>
       <tr>
@@ -1024,6 +1026,7 @@ limitations under the License.
       {{/each}}
     </tbody>
   </table>
+  {{/if}}
 </template>
 
 <template name="adminStats">

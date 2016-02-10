@@ -27,8 +27,7 @@ var adminRoute = RouteController.extend({
   waitOn: function () {
     var subs = [
       Meteor.subscribe("admin", this.params._token),
-      Meteor.subscribe("adminServiceConfiguration", this.params._token),
-      Meteor.subscribe("allUsers", this.params._token)
+      Meteor.subscribe("adminServiceConfiguration", this.params._token)
     ];
     if (this.params._token) {
       subs.push(Meteor.subscribe("adminToken", this.params._token));
@@ -312,6 +311,12 @@ if (Meteor.isClient) {
     var handleErrorBound = handleError.bind(state);
     Meteor.call("adminUpdateUser", token, options, handleErrorBound);
   };
+  Template.adminUsers.onCreated(function () {
+    var state = Iron.controller().state;
+    var token = state.get("token");
+    // TODO(perf): Paginate.
+    this.subscribe("allUsers", token);
+  });
   Template.adminUsers.events({
     "change select.user-class": function (event) {
       var value = event.target.selectedOptions[0].value;
@@ -596,8 +601,11 @@ if (Meteor.isClient) {
     var state = Iron.controller().state;
     var token = state.get("token");
     this.subscribe("adminApiTokens", token);
-  });
 
+    // TODO(perf): Don't subscribe to all users, just to the ones that are referenced from
+    //   the relevant ApiTokens.
+    this.subscribe("allUsers", token);
+  });
   Template.adminCaps.helpers({
     setDocumentTitle: function () {
       document.title = "Capabilities · Admin · " + globalDb.getServerTitle();

@@ -149,11 +149,15 @@ class NotificationHandle {
 }
 
 class PersistentUiViewImpl {
-  constructor(token, membraneRequirements) {
+  constructor(token, sturdyRef, membraneRequirements) {
     this._token = token;
-    // TODO: implement SystemPersistent.addRequirements() in a way that collects requirements, and
-    // then saves them appropriately in save().
+    this._sturdyRef = sturdyRef;
+    // We need this token so we can later pass it to SandstormPermissions.createNewApiToken, which
+    // requires the sturdyRef of the token it's producing a child for, not just the hashed token id.
+
     this._membraneRequirements = membraneRequirements || [];
+    // TODO(someday): implement SystemPersistent.addRequirements() in a way that collects
+    // requirements, and then saves them appropriately in save().
   }
 
   save(params) {
@@ -163,7 +167,7 @@ class PersistentUiViewImpl {
     // * if params.sealFor is a user, then the user must still have access to the grain that offered
     //   this cap.  Today, this is handled by offer() in SessionContextImpl.
     const res = inMeteor(() => {
-      const owner = _.extend({}, params.sealFor);
+      let owner = _.extend({}, params.sealFor);
       const grainId = this._token.grainId;
 
       if (owner.user) {
@@ -173,12 +177,22 @@ class PersistentUiViewImpl {
           owner.user.title = this._token.owner.grain.saveLabel.defaultText;
         }
 
-        // Denormalize this grain's app metadata into owner.user.
-        owner.user.denormalizedGrainMetadata = globalDb.getDenormalizedGrainInfo(grainId);
+        // createNewApiToken() expects only these fields if owner is a user, and will add the rest itself.
+        owner = { user: {
+          identityId: owner.user.identityId,
+          title: owner.user.title,
+        }};
       }
 
-      const ret = makeChildTokenInternal(this._token._id, owner, this._membraneRequirements, grainId);
-      return {sturdyRef: ret.token};
+      const ret = SandstormPermissions.createNewApiToken(
+          globalDb,
+          {rawParentToken: this._sturdyRef.toString()},
+          this._token.grainId,
+          this._token.petname,
+          this._token.roleAssignment,
+          owner);
+
+      return {sturdyRef: new Buffer(ret.token)};
     });
     return res;
   }
@@ -188,8 +202,8 @@ class PersistentUiViewImpl {
   // and grains can't call methods on UiViews because they lack the "is human" pseudopermission.
 }
 
-const makePersistentUiView = function (token) {
-  return new Capnp.Capability(new PersistentUiViewImpl(token, []), PersistentUiView);
+const makePersistentUiView = function (token, sturdyRef) {
+  return new Capnp.Capability(new PersistentUiViewImpl(token, sturdyRef, []), PersistentUiView);
 };
 
 function makeNotificationHandle(notificationId, saved) {
@@ -395,7 +409,7 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
     // If a grain is attempting to restore a UiView, it gets a UiView which filters out all
     // the method calls.  In the future, if we allow grains to restore fully-privileged UiViews
     // (say, to allow embedding grains inside other grains), then we'll need to adjust this check.
-    return {cap: makePersistentUiView(token)};
+    return {cap: makePersistentUiView(token, parentToken)};
   } else {
     throw new Meteor.Error(500, "Unknown token type.");
     // This is a token for a grain's main UiView.  Ensure the grain is running, then

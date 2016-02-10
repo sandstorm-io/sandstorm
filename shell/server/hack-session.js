@@ -59,10 +59,11 @@ SessionContextImpl = class SessionContextImpl {
         apiTokenOwner = {
           user: {
             identityId: this.identityId,
-            lastUsed: new Date(),
-            // The following fields will be overwritten by PersistentUiView.save()
-            title: "", // This will be replaced by the token's title
-            denormalizedGrainMetadata: {}, // This will look up the package for the grain referenced.
+            // The following fields will be overwritten by PersistentUiView.save(), so no need to
+            // pass them in:
+            //lastUsed: new Date(),
+            //title: "", // This will be replaced by the token's title
+            //denormalizedGrainMetadata: {}, // This will look up the package for the grain referenced.
           },
         };
       }

@@ -480,7 +480,6 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
         grainId: owner.grain.grainId,
         saveLabel: owner.grain.saveLabel,
         introducerIdentity: owner.grain.introducerIdentity,
-        sealed: owner.grain.sealed,
       },
     };
   }

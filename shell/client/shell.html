@@ -196,7 +196,14 @@ limitations under the License.
   {{#if currentUser}}
     {{#with status}}
       {{#if showButton}}
-        <button class="request-access">Request Access</button>
+        <button class="request-access" title="Request access">
+          Request Access
+        </button>
+      {{/if}}
+      {{#if chooseIdentity}}
+        <p>Requesting access will reveal your identity to the grain owner.</p>
+        <p> {{chooseIdentityText}} </p>
+        {{> identityPicker identityPickerData}}
       {{/if}}
       {{#if waiting}}
          <p>Sending your request...</p>

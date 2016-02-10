@@ -972,22 +972,40 @@ if (Meteor.isClient) {
 
   Template.requestAccess.events({
     "click button.request-access": function (event, instance) {
-      let identityId = Accounts.getCurrentIdentityId();
-      let grainId = getActiveGrain(globalGrains.get()).grainId();
-      Meteor.call("requestAccess", getOrigin(), grainId, identityId, function(error, result) {
-        if (error) {
-          instance._status.set({error: error});
-        } else {
-          instance._status.set({success: true});
-        }
-      });
-      instance._status.set({waiting: true});
+      instance._status.set({chooseIdentity: true});
     },
   });
 
   Template.requestAccess.helpers({
     status: function () {
       return Template.instance()._status.get();
+    },
+    chooseIdentityText: function () {
+      if (SandstormDb.getUserIdentityIds(Meteor.user()).length > 1 ){
+        return "Please select an identity with which to request access.";
+      } else {
+        return "To confirm, please click on your identity below.";
+      }
+    },
+    identityPickerData: function () {
+      const identities = SandstormDb.getUserIdentityIds(Meteor.user())
+            .map(id => globalDb.getIdentity(id));
+      const instance = Template.instance();
+      function onPicked(identityId) {
+        let grainId = getActiveGrain(globalGrains.get()).grainId();
+        Meteor.call("requestAccess", getOrigin(), grainId, identityId, function(error, result) {
+          if (error) {
+            instance._status.set({error: error});
+          } else {
+            instance._status.set({success: true});
+          }
+        });
+        instance._status.set({waiting: true});
+      }
+      return {
+        identities: identities,
+        onPicked: onPicked,
+      };
     },
   });
 

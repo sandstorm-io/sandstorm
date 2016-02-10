@@ -404,6 +404,9 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
   }
 
   // Note that hereafter, `token` should be, by process of elimination, a UiView token.
+  if (!token.grainId) {
+    throw new Meteor.Error(500, "Expected token " + token._id + " to have a grainId");
+  }
 
   if (token.owner && token.owner.grain) {
     // If a grain is attempting to restore a UiView, it gets a UiView which filters out all

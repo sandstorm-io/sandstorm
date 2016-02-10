@@ -1928,6 +1928,10 @@ const parsePreconditionHeader = (request) => {
   }
 
   if (request.headers['if-none-match']) {
+    if (request.headers['if-none-match'].trim() === '*') {
+      return { doesntExist: null };
+    }
+
     const noneMatches = parseETagList(request.headers['if-none-match']);
     if (noneMatches.length > 0) {
       return { matchesNoneOf: noneMatches };

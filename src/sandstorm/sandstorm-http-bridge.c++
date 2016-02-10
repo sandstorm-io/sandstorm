@@ -1258,6 +1258,9 @@ private:
       case WebSession::Context::ETagPrecondition::EXISTS:
         lines.add(kj::str("If-Match: *"));
         break;
+      case WebSession::Context::ETagPrecondition::DOESNT_EXIST:
+        lines.add(kj::str("If-None-Match: *"));
+        break;
       case WebSession::Context::ETagPrecondition::MATCHES_ONE_OF:
         lines.add(kj::str("If-Match: ", kj::strArray(
               KJ_MAP(e, eTagPrecondition.getMatchesOneOf()) {

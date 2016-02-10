@@ -24,8 +24,8 @@ using UiView = import "grain.capnp".UiView;
 interface PersistentUiView extends (UiView, SystemPersistent) {}
 # An interface which can be restored into a UiView.
 # Note that when restored by a grain, the UiView restored will not by default carry the `isHuman`
-# pseudoprivilege, which is required to actually make any calls on a UiView.
-# However, when offered to a user, the user has the `isHuman` pseudoprivilege, which allows them to
+# pseudopermission, which is required to actually make any calls on a UiView.
+# However, when offered to a user, the user has the `isHuman` pseudopermission, which allows them to
 # open sessions on the UiView.
 #
 # Note that this interface lives in a separate file because while it logically belongs in grain.capnp,

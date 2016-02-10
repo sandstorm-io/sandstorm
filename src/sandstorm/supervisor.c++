@@ -1920,6 +1920,7 @@ public:
   }
 
   kj::Promise<void> shutdown(ShutdownContext context) override {
+    SANDSTORM_LOG("Grain shutdown requested.");
     killChildAndExit(0);
   }
 

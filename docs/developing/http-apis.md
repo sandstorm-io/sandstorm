@@ -84,62 +84,66 @@ the app can use as the `SRC` of the `IFRAME`.
 
 To create an offer template:
 
-* Create an `IFRAME` element within your page with a memorable ID. For example:
+1. Create an `IFRAME` element within your page with a memorable ID. For example:
 
-```html
-<iframe style="width: 100%; height: 55px; margin: 0; border: 0;" id="offer-iframe">
-</iframe>
-```
+  ```html
+  <iframe style="width: 100%; height: 55px; margin: 0; border: 0;" id="offer-iframe">
+  </iframe>
+  ```
 
-* Add JavaScript to your page to ask Sandstorm to fill the iframe with
+2. Add JavaScript to your page to ask Sandstorm to fill the iframe with
   content. For example:
 
-```html
-<script>
-function fillIframe() {
-  var template = "You can use the $API_TOKEN key to reach me at $API_HOST.";
-  window.parent.postMessage({renderTemplate: {rpcId: "0", template: template}}, "*");
-}
-</script>
-```
+  ```html
+  <script>
+    function fillIframe() {
+      var template = "You can use the $API_TOKEN key to reach me at $API_HOST.";
+      window.parent.postMessage({renderTemplate: {
+        rpcId: "0",
+        template: template,
+        clipboardButton: 'left'
+      }}, "*");
+    }
+  </script>
+  ```
 
-* Add a window event listener so the Sandstorm shell can provide the
+3. Add a window event listener so the Sandstorm shell can provide the
   URL to you.
 
-```html
-<script>
-var messageListener = function(event) {
-  if (event.data.rpcId === "0") {
-    if (event.data.error) {
-      console.log("ERROR: " + event.data.error);
-    } else {
-      var el = document.getElementById("offer-iframe");
-      el.setAttribute("src", event.data.uri);
-    }
-  }
-};
+  ```html
+  <script>
+    var messageListener = function(event) {
+      if (event.data.rpcId === "0") {
+        if (event.data.error) {
+          console.log("ERROR: " + event.data.error);
+        } else {
+          var el = document.getElementById("offer-iframe");
+          el.setAttribute("src", event.data.uri);
+        }
+      }
+    };
 
-window.addEventListener("message", messageListener);
-</script>
-```
+    window.addEventListener("message", messageListener);
+  </script>
+  ```
 
-As an implementation detail: the `rpcId` in the `event.data` response
-is the same as the value provided to the `renderTemplate` request. We
-used `"0"` here; you can choose any value.
+  As an implementation detail: the `rpcId` in the `event.data` response
+  is the same as the value provided to the `renderTemplate` request. We
+  used `"0"` here; you can choose any value.
 
-* When your page loads, make the request.
+4. When your page loads, make the request.
 
-```html
-<script>
-document.addEventListener("DOMContentLoaded", fillIframe);
-</script>
-```
+  ```html
+  <script>
+  document.addEventListener("DOMContentLoaded", fillIframe);
+  </script>
+  ```
 
-* Your offer template will now contain text such as:
+5. Your offer template will now contain text such as:
 
-```html
-You can use the 49Np9sqkYV4g_FpOQk1p0j1yJlvoHrZm9SVhQt7H2-9 key to reach me at https://alpha-api.sandstorm.io/.
-```
+  ```html
+  You can use the 49Np9sqkYV4g_FpOQk1p0j1yJlvoHrZm9SVhQt7H2-9 key to reach me at https://alpha-api.sandstorm.io/.
+  ```
 
 **Note**: API tokens created this way must be used within 5 minutes,
 or else they [automatically

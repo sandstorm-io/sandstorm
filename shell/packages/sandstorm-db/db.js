@@ -778,7 +778,7 @@ matchWildcardHost = function(host) {
       host.indexOf(suffix, -suffix.length) >= 0 &&
       host.length >= prefix.length + suffix.length) {
     var id = host.slice(prefix.length, -suffix.length);
-    if (id.match(/^[a-z0-9]*$/)) {
+    if (id.match(/^[-a-z0-9]*$/)) {
       return id;
     }
   }

@@ -210,6 +210,27 @@ function checkMagic(buf, magic) {
   return true;
 }
 
+function serveSelfTest(req, res) {
+  try {
+    if (req.method === 'GET' &&
+        req.url === '/') {
+      const content = new Buffer("Self-test OK.");
+      res.writeHead(200, {
+        'Content-Type': 'text/plain',
+        'Content-Length': content.length,
+        'Access-Control-Allow-Origin': process.env.ROOT_URL,
+      });
+      res.end(content);
+    } else {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('Bad request to self-test subdomain.');
+      return;
+    }
+  } catch (err) {
+    console.log("WARNING: An error occurred while serving self-test; proceeding anyway:", err);
+  }
+}
+
 function serveStaticAsset(req, res) {
   inMeteor(() => {
     if (req.method === 'GET') {
@@ -468,6 +489,13 @@ Meteor.startup(() => {
       if (id === 'static') {
         // Static assets domain.
         serveStaticAsset(req, res);
+        return;
+      }
+
+      if (id.match(/^selftest-/)) {
+        // Self test domain pattern. Starts w/ hyphen to avoid ambiguity with grain session/static
+        // publishing wildcard hosts.
+        serveSelfTest(req, res);
         return;
       }
 

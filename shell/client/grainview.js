@@ -68,7 +68,9 @@ GrainView = class GrainView {
 
     this._status = 'closed';
     this._userIdentityId = new ReactiveVar(undefined);
-    this.revealIdentity(identityId);
+    if (identityId) {
+      this.revealIdentity(identityId);
+    }
     // We want the iframe to receive the most recently-set path whenever we rerender.
     this._originalPath = this._path;
     this._blazeView = Blaze.renderWithData(Template.grainView, this, this._parentElement);

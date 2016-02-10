@@ -171,6 +171,10 @@ automatically refreshes the IFRAME every 5 minutes.
   to redeem it as a sharing link of the form
   `https://sandstorm.example.com/shared/$API_TOKEN`.
 
+* `clipboardButton`: **String (optional)** to display a copy-to-clipboard
+  button in either the top left or top right corner of the `IFRAME`.
+  Valid values are `left` and `right`. Left unspecified, no button is shown.
+
 ## Getting the user IP address
 
 By default, for privacy, Sandstorm removes the user's IP address from

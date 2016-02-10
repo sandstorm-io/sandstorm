@@ -210,7 +210,7 @@
         margin-left: 5px;
       }
     }
-    >.app-title, >.action-title, >.no-matching-app {
+    >.app-title, >.action-title {
       @extend %apptext;
       @media #{$desktop} {
         top: 148px;

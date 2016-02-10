@@ -68,9 +68,6 @@ SessionContextImpl = class SessionContextImpl {
         };
       }
 
-      const save = castedCap.save(apiTokenOwner);
-      const sturdyRef = waitPromise(save).sturdyRef;
-
       // TODO(soon): This will eventually use SystemPersistent.addRequirements when membranes
       // are fully implemented for supervisors.
       const requirement = {
@@ -85,6 +82,8 @@ SessionContextImpl = class SessionContextImpl {
         throw new Meteor.Error(403, 'Permissions not satisfied.');
       }
 
+      const save = castedCap.save(apiTokenOwner);
+      const sturdyRef = waitPromise(save).sturdyRef;
       ApiTokens.update({_id: hashSturdyRef(sturdyRef)}, {$push: {requirements: requirement}});
       const powerboxView = isUiView ? {
         offer: {

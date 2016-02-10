@@ -130,6 +130,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     eTagPrecondition :union {
       none @4 :Void;  # No precondition.
       exists @5 :Void;  # If-Match: *
+      doesntExist @8 :Void;  # If-None-Match: *
       matchesOneOf @6 :List(ETag);  # If-Match
       matchesNoneOf @7 :List(ETag);  # If-None-Match
     }

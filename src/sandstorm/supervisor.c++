@@ -1112,9 +1112,6 @@ void SupervisorMain::setupSeccomp() {
   // New syscalls that don't seem useful to Sandstorm apps therefore we will disallow them.
   // TODO(cleanup): Can we somehow specify "disallow all calls greater than N" to preemptively
   //   disable things until we've reviewed them?
-#ifndef __NR_userfaultfd
-#define __NR_userfaultfd 323
-#endif
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(userfaultfd), 0));
 
   // TOOD(someday): See if we can get away with turning off mincore, madvise, sysinfo etc.

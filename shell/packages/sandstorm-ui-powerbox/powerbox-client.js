@@ -36,7 +36,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     if (typeof n != "string") {
         throw new Error("Expected string.");
     }
-    if (n.length != 18 || n.lastIndexOf("0x", 0) !== 0) {
+    if (n.length != 18 || !n.match(/0x[0-9a-fA-F]{16}/)) {
         throw new Error("Expected '0x' followed by 16 hexadecimal digits");
     }
     var upper32 = parseInt(n.substring(0, 10));

@@ -1536,7 +1536,7 @@ sandcats_provide_help() {
   echo "* Recover access to a domain you once registered with sandcats"
   echo ""
   echo "* Just press enter to go to the previous question."
-  DESIRED_SANDCATS_NAME=$(prompt "What Sandcats domain do you want to recover?" "none")
+  DESIRED_SANDCATS_NAME=$(prompt "What Sandcats subdomain do you want to recover?" "none")
 
   # If the user wants none of our help, then go back to registration.
   if [ "none" = "$DESIRED_SANDCATS_NAME" ] ; then

@@ -32,16 +32,53 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     }
   }
 
-  hexValueForWellKnownTagId(decimalString) {
-    // Since there's not a convenient way to convert between the decimal and hex representations of
-    // 64-bit integers in Javascript due to Javascript's numeric type only having 53 bits of
-    // precision, we hardcode the integer and hex values of the interface IDs implemented by
-    // frontendrefs so we can match them in the browser immediately.
-    return {
-      "15831515641881813735": "0xdbb4d798ea67e2e7", // UiView
-      "12214421258504904768": "0xa982576b7a2a2040", // IpNetwork
-      "16369547182874744570": "0xe32c506ee93ed6fa", // IpInterface
-    }[decimalString];
+  hex64ToDecimal(n) {
+    if (typeof n != "string") {
+        throw new Error("Expected string.");
+    }
+    if (n.length != 18 || n.lastIndexOf("0x", 0) !== 0) {
+        throw new Error("Expected '0x' followed by 16 hexadecimal digits");
+    }
+    var upper32 = parseInt(n.substring(0, 10));
+    var lower32 = parseInt("0x" + n.substring(10, 18));
+
+    var result = "";
+    for (var exponent = 0; exponent < 22; exponent += 1 ) {
+        var w = Math.floor(upper32 / 10);
+        var x = upper32 % 10;
+
+        var lowerPlusRemainder = (x * Math.pow(2, 32)) + lower32;
+        var y = Math.floor(lowerPlusRemainder / 10);
+        var z = lowerPlusRemainder % 10;
+
+        result = z.toString() + result;
+
+        upper32 = w;
+        lower32 = y;
+
+        if (upper32 == 0 && lower32 == 0) {
+            break;
+        }
+    }
+    return result;
+  }
+
+  decimalify(interfaceId) {
+    if (interfaceId.lastIndexOf("0x", 0) === 0 && interfaceId.length === 18) {
+      try {
+        return this.hex64ToDecimal(interfaceId);
+      } catch (e) {
+        return interfaceId;
+      }
+    }
+    return interfaceId;
+  }
+
+  interfaceIdsMatch(a, b) {
+    // Compares two interface IDs which may be either decimal strings or 0x-prefixed hexadecimal
+    // strings.  Strictly speaking, node-capnp would also accept octal strings, but there's not
+    // a great reason for wanting anything besides hex or decimal here.
+    return this.decimalify(a) === this.decimalify(b);
   }
 
   requestedInterfaceMatchesTag(target) {
@@ -64,10 +101,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
           // TODO: implement the more precise request matching algorithm in grain.capnp
           // which also considers tag values
           if (tag.id) {
-            // Since Cap'n Proto 64-bit integer types are canonically represented as strings, but
-            // node-capnp also accepts string of any base, we special-case matching the hex value of
-            // a few well-known tag ids.
-            if (tag.id === target.id || tag.id === this.hexValueForWellKnownTagId(target.id)) {
+            if (this.interfaceIdsMatch(tag.id, target.id)) {
               return true;
             }
           }

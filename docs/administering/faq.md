@@ -252,3 +252,64 @@ the `http_proxy` and `https_proxy` environment variables being set.
 **Note** that the sandcats.io dynamic DNS protocol requires the ability to send UDP packets to the
 Internet, so if the system cannot do that, then its IP address will not auto-update. If your IP
 address does not change frequently, this should be OK.
+
+## How do I use Sandstorm with an internal IP address?
+
+Since Sandstorm [relies on wildcard DNS](wildcard.md), you will need to modify your `sandstorm.conf`
+to point at a hostname that resolves to your internal IP address. If your organization cannot
+provide one, you can either use our free [sandcats.io DNS service & HTTPS that uses public IP
+addresses](sandcats.md), or use [xip.io](http://xip.io)'s free wildcard DNS for internal IP
+addresses.
+
+To use xip.io, if your Sandstorm server is at (for example) 10.0.0.2, then you should:
+
+- Open `/opt/sandstorm/sandstorm.conf` in your favorite text editor, for example by running
+  `sudo nano /opt/sandstorm/sandstorm.conf`
+
+- Find the line containing `BASE_URL` and modify it to say:
+
+```bash
+BASE_URL=http://10.0.0.2.xip.io:6080
+```
+
+- Make sure the port number above corresponds to the port in your `PORT=...` line.
+
+- Find the line containing `WILDCARD_HOST` and modify it to say:
+
+```bash
+WILDCARD_HOST=*.10.0.0.2.xip.ip:6080
+```
+
+- Make sure the port number is the same as the port number in `BASE_URL`.
+
+- Make sure your configuration file does **not** use the `HTTPS_PORT` or `SANDCATS_BASE_DOMAIN`
+  setttings, which refer to integrating with the sandcats.io DNS & HTTPS service. If you see them,
+  comment them out or remove them.
+
+```bash
+#HTTPS_PORT=443
+#SANDCATS_BASE_DOMAIN=sandcats.io
+```
+
+
+- Save and exit your text editor (for example with `Ctrl-o` and `Ctrl-x` in nano).
+
+- Restart Sandstorm by running this command in a terminal.
+
+```
+sudo sandstorm restart
+```
+
+- Visit your Sandstorm install at http://10.0.0.2.xip.io/ and make sure it is working OK.
+
+Note that you might not have to do this! For the purpose of this question, an internal IP address is
+something like 192.168.x.y or 10.x.y.z; see [Wikipedia's article on private
+networks](https://en.wikipedia.org/wiki/Private_network).  Many organizations use global IP
+addresses like 18.x.y.z and rely on their organization firewall to prevent external access; in that
+case, our free [sandcats.io DNS service](sandcats.md) should work fine.
+
+Keep in mind that xip.io is maintained by the kind and gracious [Sam Stephenson](http://xip.io/),
+not by a member of the Sandstorm team. If you want to run your own wildcard DNS service similar to
+xip.io inside your own organization, you can do so by [downloading
+xipd](https://github.com/sstephenson/xipd) which Sam generously licenses as open source software.
+You can also set up your own `*.sandstorm.example.com` subdomain within your organization's domain.

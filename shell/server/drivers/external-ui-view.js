@@ -20,7 +20,9 @@ const Capnp = Npm.require('capnp');
 const Url = Npm.require('url');
 const Http = Npm.require('http');
 const Https = Npm.require('https');
+const Dns = Npm.require('dns');
 const ApiSession = Capnp.importSystem('sandstorm/api-session.capnp').ApiSession;
+const WebSession = Capnp.importSystem('sandstorm/web-session.capnp').WebSession;
 
 WrappedUiView = class WrappedUiView {
   constructor(token, proxy) {
@@ -83,7 +85,7 @@ ExternalUiView = class ExternalUiView {
       };
     }
 
-    return {session: new Capnp.Capability(new ExternalWebSession(this.url, this.grainId, options), ApiSession)};
+    return {session: new Capnp.Capability(new ExternalWebSession(this.url, options), ApiSession)};
   }
 };
 
@@ -125,13 +127,17 @@ const responseCodes = {
   505: {type: 'serverError'},
 };
 
+makeExternalWebSession = function (url, options) {
+  return new Capnp.Capability(new ExternalWebSession(url, options), WebSession);
+}
+
 ExternalWebSession = class ExternalWebSession {
-  constructor(url, grainId, options) {
+  constructor(url, options) {
     const parsedUrl = Url.parse(url);
     this.host = parsedUrl.hostname;
     this.port = parsedUrl.port;
     this.protocol = parsedUrl.protocol;
-    this.grainId = grainId;
+    this.path = parsedUrl.path;
     this.options = options || {};
   }
 
@@ -165,129 +171,151 @@ ExternalWebSession = class ExternalWebSession {
     const _this = this;
     const session = _this;
     return new Promise((resolve, reject) => {
-      const options = _.clone(session.options);
-      options.headers = options.headers || {};
-      options.path = path;
-      options.method = method;
-      if (contentType) {
-        options.headers['content-type'] = contentType;
-      }
+      Dns.lookup(_this.host, 4, (err, address) => { // TODO(someday): handle ipv6
+        if (err) {
+          reject(err);
+          return;
+        }
+        if (address.lastIndexOf("10.", 0) === 0 ||
+            address.lastIndexOf("127.", 0) === 0 ||
+            address.lastIndexOf("192.168.", 0) === 0) {
+          // Block the most commonly used private ip ranges as a security measure.
+          reject("Domain resolved to an invalid IP: " + address);
+          return;
+        }
+        const options = _.clone(session.options);
+        options.headers = options.headers || {};
+        if (_this.path) {
+          options.path = _this.path;
+          if (_this.path[_this.path.length - 1] !== "/") {
+            options.path += "/";
+          }
+          options.path += path;
+        } else {
+          options.path = path;
+        }
+        options.path = (_this.path || "") + path;
+        options.method = method;
+        if (contentType) {
+          options.headers['content-type'] = contentType;
+        }
 
-      // set accept header
-      if ('accept' in context) {
-        options.headers.accept = context.accept.map((acceptedType) => {
-          return acceptedType.mimeType + '; ' + acceptedType.qValue;
-        }).join(', ');
-      } else if (!('accept' in options.headers)) {
-        options.headers.accept = '*/*';
-      }
+        // set accept header
+        if ('accept' in context) {
+          options.headers.accept = context.accept.map((acceptedType) => {
+            return acceptedType.mimeType + '; ' + acceptedType.qValue;
+          }).join(', ');
+        } else if (!('accept' in options.headers)) {
+          options.headers.accept = '*/*';
+        }
 
-      // set cookies
-      if (context.cookies && context.cookies.length > 0) {
-        options.headers.cookies = options.headers.cookies || '';
-        context.cookies.forEach((keyVal) => {
-          options.headers.cookies += keyVal.key + '=' + keyVal.val + ',';
-        });
-        options.headers.cookies = options.headers.cookies.slice(0, -1);
-      }
+        // set cookies
+        if (context.cookies && context.cookies.length > 0) {
+          options.headers.cookies = options.headers.cookies || '';
+          context.cookies.forEach((keyVal) => {
+            options.headers.cookies += keyVal.key + '=' + keyVal.val + ',';
+          });
+          options.headers.cookies = options.headers.cookies.slice(0, -1);
+        }
 
-      options.host = session.host;
-      options.port = session.port;
+        options.host = session.host;
+        options.port = session.port;
 
-      let requestMethod = Http.request;
-      if (session.protocol === 'https:') {
-        requestMethod = Https.request;
-      }
+        let requestMethod = Http.request;
+        if (session.protocol === 'https:') {
+          requestMethod = Https.request;
+        }
 
-      req = requestMethod(options, (resp) => {
-        const buffers = [];
-        const statusInfo = responseCodes[resp.statusCode];
+        req = requestMethod(options, (resp) => {
+          const buffers = [];
+          const statusInfo = responseCodes[resp.statusCode];
 
-        const rpcResponse = {};
+          const rpcResponse = {};
 
-        switch (statusInfo.type) {
-          case 'content':
-            resp.on('data', (buf) => {
-              buffers.push(buf);
-            });
+          switch (statusInfo.type) {
+            case 'content':
+              resp.on('data', (buf) => {
+                buffers.push(buf);
+              });
 
-            resp.on('end', () => {
-              const content = {};
-              rpcResponse.content = content;
+              resp.on('end', () => {
+                const content = {};
+                rpcResponse.content = content;
 
-              content.statusCode = statusInfo.code;
-              if ('content-encoding' in resp.headers) content.encoding = resp.headers['content-encoding'];
-              if ('content-language' in resp.headers) content.language = resp.headers['content-language'];
-              if ('content-type' in resp.headers) content.language = resp.headers['content-type'];
-              if ('content-disposition' in resp.headers) {
-                const disposition = resp.headers['content-disposition'];
-                const parts = disposition.split(';');
-                if (parts[0].toLowerCase().trim() === 'attachment') {
-                  parts.forEach((part) => {
-                    const splitPart = part.split('=');
-                    if (splitPart[0].toLowerCase().trim() === 'filename') {
-                      content.disposition = {download: splitPart[1].trim()};
-                    }
-                  });
+                content.statusCode = statusInfo.code;
+                if ('content-encoding' in resp.headers) content.encoding = resp.headers['content-encoding'];
+                if ('content-language' in resp.headers) content.language = resp.headers['content-language'];
+                if ('content-type' in resp.headers) content.language = resp.headers['content-type'];
+                if ('content-disposition' in resp.headers) {
+                  const disposition = resp.headers['content-disposition'];
+                  const parts = disposition.split(';');
+                  if (parts[0].toLowerCase().trim() === 'attachment') {
+                    parts.forEach((part) => {
+                      const splitPart = part.split('=');
+                      if (splitPart[0].toLowerCase().trim() === 'filename') {
+                        content.disposition = {download: splitPart[1].trim()};
+                      }
+                    });
+                  }
                 }
-              }
 
-              content.body = {};
-              content.body.bytes = Buffer.concat(buffers);
+                content.body = {};
+                content.body.bytes = Buffer.concat(buffers);
 
+                resolve(rpcResponse);
+              });
+              break;
+            case 'noContent':
+              const noContent = {};
+              rpcResponse.noContent = noContent;
+              noContent.setShouldResetForm = statusInfo.shouldResetForm;
               resolve(rpcResponse);
-            });
-            break;
-          case 'noContent':
-            const noContent = {};
-            rpcResponse.noContent = noContent;
-            noContent.setShouldResetForm = statusInfo.shouldResetForm;
-            resolve(rpcResponse);
-            break;
-          case 'redirect':
-            const redirect = {};
-            rpcResponse.redirect = redirect;
-            redirect.isPermanent = statusInfo.isPermanent;
-            redirect.switchToGet = statusInfo.switchToGet;
-            if ('location' in resp.headers) redirect.location = resp.headers.location;
-            resolve(rpcResponse);
-            break;
-          case 'clientError':
-            const clientError = {};
-            rpcResponse.clientError = clientError;
-            clientError.statusCode = statusInfo.clientErrorCode;
-            clientError.descriptionHtml = statusInfo.descriptionHtml;
-            resolve(rpcResponse);
-            break;
-          case 'serverError':
-            const serverError = {};
-            rpcResponse.serverError = serverError;
-            clientError.descriptionHtml = statusInfo.descriptionHtml;
-            resolve(rpcResponse);
-            break;
-          default: // ???
-            err = new Error('Invalid status code ' + resp.statusCode + ' received in response.');
-            reject(err);
-            break;
+              break;
+            case 'redirect':
+              const redirect = {};
+              rpcResponse.redirect = redirect;
+              redirect.isPermanent = statusInfo.isPermanent;
+              redirect.switchToGet = statusInfo.switchToGet;
+              if ('location' in resp.headers) redirect.location = resp.headers.location;
+              resolve(rpcResponse);
+              break;
+            case 'clientError':
+              const clientError = {};
+              rpcResponse.clientError = clientError;
+              clientError.statusCode = statusInfo.clientErrorCode;
+              clientError.descriptionHtml = statusInfo.descriptionHtml;
+              resolve(rpcResponse);
+              break;
+            case 'serverError':
+              const serverError = {};
+              rpcResponse.serverError = serverError;
+              clientError.descriptionHtml = statusInfo.descriptionHtml;
+              resolve(rpcResponse);
+              break;
+            default: // ???
+              err = new Error('Invalid status code ' + resp.statusCode + ' received in response.');
+              reject(err);
+              break;
+          }
+        });
+
+        req.on('error', (e) => {
+          reject(e);
+        });
+
+        req.setTimeout(15000, () => {
+          req.abort();
+          err = new Error('Request timed out.');
+          err.kjType = 'overloaded';
+          reject(err);
+        });
+
+        if (content) {
+          req.end(content);
+        } else {
+          req.end();
         }
       });
-
-      req.on('error', (e) => {
-        reject(e);
-      });
-
-      req.setTimeout(15000, () => {
-        req.abort();
-        err = new Error('Request timed out.');
-        err.kjType = 'overloaded';
-        reject(err);
-      });
-
-      if (content) {
-        req.end(content);
-      } else {
-        req.end();
-      }
     });
   }
 };

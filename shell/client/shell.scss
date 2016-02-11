@@ -451,3 +451,8 @@ body>.popup.admin-alert>.frame>p {
     font-size: 30px;
   }
 }
+
+.inline-powerbox {
+  // Hack to make it effectively invisible, but not be treated as un-focusable by browsers
+  margin: -10000px;
+}

@@ -1536,11 +1536,27 @@ sandcats_provide_help() {
   echo "* Recover access to a domain you once registered with sandcats"
   echo ""
   echo "* Just press enter to go to the previous question."
+  sandcats_recover_domain
+}
+
+sandcats_recover_domain() {
   DESIRED_SANDCATS_NAME=$(prompt "What Sandcats subdomain do you want to recover?" "none")
 
   # If the user wants none of our help, then go back to registration.
   if [ "none" = "$DESIRED_SANDCATS_NAME" ] ; then
     sandcats_register_name
+    return
+  fi
+
+  # If the user gave us a hostname that contains a dot, tell them they need to re-enter it.
+  if [[ $DESIRED_SANDCATS_NAME =~ [.] ]] ; then
+    echo ""
+    echo "You entered: $DESIRED_SANDCATS_NAME"
+    echo ""
+    echo "but this function just wants the name of your subdomain, not including any dot characters."
+    echo "Please try again."
+    echo ""
+    sandcats_recover_domain
     return
   fi
 
@@ -1570,10 +1586,8 @@ sandcats_provide_help() {
       "${SANDCATS_API_BASE}/sendrecoverytoken")
 
   if [ "200" != "$HTTP_STATUS" ] ; then
-    # Print out the error, and then send the user back to the top of
-    # help.
     error "$(cat $LOG_PATH)"
-    sandcats_provide_help
+    sandcats_recover_domain
     return
   fi
 
@@ -1587,7 +1601,7 @@ sandcats_provide_help() {
   # If the token is empty, then they just hit enter; take them to the start of help.
   if [ -z "$TOKEN" ] ; then
     error "Empty tokens are not valid."
-    sandcats_provide_help
+    sandcats_recover_domain
     return
   fi
 
@@ -1617,10 +1631,7 @@ sandcats_provide_help() {
 
   if [ "200" != "$HTTP_STATUS" ] ; then
     error "$(cat $LOG_PATH)"
-    sandcats_provide_help
-    # We could have a little loop in case the user submitted a typo'd
-    # token, and let them retry, but for simplicity, we'll go back to
-    # the top of this help function.
+    sandcats_recover_domain
     return
   fi
 
@@ -1654,10 +1665,7 @@ sandcats_provide_help() {
 
   if [ "200" != "$HTTP_STATUS" ] ; then
     error "$(cat $LOG_PATH)"
-    sandcats_provide_help
-    # We could have a little loop in case the user submitted a typo'd
-    # token, and let them retry, but for simplicity, we'll go back to
-    # the top of this help function.
+    sandcats_recover_domain
     return
   fi
 

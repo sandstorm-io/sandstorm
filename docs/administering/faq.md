@@ -277,7 +277,7 @@ BASE_URL=http://10.0.0.2.xip.io:6080
 - Find the line containing `WILDCARD_HOST` and modify it to say:
 
 ```bash
-WILDCARD_HOST=*.10.0.0.2.xip.ip:6080
+WILDCARD_HOST=*.10.0.0.2.xip.io:6080
 ```
 
 - Make sure the port number is the same as the port number in `BASE_URL`.

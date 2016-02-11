@@ -1,14 +1,16 @@
 <template name="loginButtons">
   {{!-- Data context is an instance of AccountsUi. --}}
   {{#if isDemoUser}}
-    <a>Create account ▾</a>
+    <button class="show-popup">Create account ▾</button>
   {{else}}
-    <a>Sign in ▾</a>
+    <button class="show-popup">Sign in ▾</button>
   {{/if}}
 </template>
 
 <template name="accountButtons">
-  <a>{{displayName}} ▾</a>
+  <button class="show-popup">
+    {{displayName}} ▾
+  </button>
 </template>
 
 <template name="loginButtonsPopup">

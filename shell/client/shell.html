@@ -197,10 +197,12 @@ limitations under the License.
 </template>
 
 <template name="notifications">
+  <button class="show-popup" title="Notifications">
   {{#if notificationCount}}
     <span class="count">{{notificationCount}}</span>
   {{/if}}
   Notifications
+  </button>
 </template>
 
 <template name="notificationsPopup">
@@ -325,7 +327,9 @@ limitations under the License.
 </template>
 
 <template name="grainApiTokenButton">
-  Get&nbsp;Webkey
+  <button class="show-popup" title="Get webkey">
+    Get&nbsp;Webkey
+  </button>
 </template>
 
 <template name="grainApiTokenPopup">
@@ -378,7 +382,9 @@ limitations under the License.
 </template>
 
 <template name="grainShareButton">
-  Share access
+  <button class="show-popup" title="Share access to this grain">
+    Share access
+  </button>
 </template>
 
 <template name="whoHasAccess">
@@ -596,14 +602,18 @@ limitations under the License.
 </template>
 
 <template name="grainPowerboxRequest">
-  P
+  <button class="show-popup" title="Powerbox request">
+    P
+  </button>
 </template>
 <template name="grainPowerboxRequestPopup">
   {{>powerboxRequest . }}
 </template>
 
 <template name="grainPowerboxOffer">
-  P
+  <button class="show-popup" title="Powerbox offer">
+    P
+  </button>
 </template>
 <template name="grainPowerboxOfferPopup">
   <h4>Powerbox Offer</h4>

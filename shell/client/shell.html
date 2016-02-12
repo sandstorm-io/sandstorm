@@ -973,10 +973,10 @@ limitations under the License.
         <label>
           <input type="checkbox" name="ldapLogin" value="value" checked={{ldapEnabled}}> Enable LDAP Login
         </label><br>
-          LDAP Url: <input id="ldapUrl" type="text" name="ldapUrl" value="{{ldapUrl}}">
-          LDAP DN Pattern ($USERNAME will be replaced): <input id="ldapDnPattern" type="text" name="ldapDnPattern" value="{{ldapDnPattern}}">
-          LDAP Base Search Dn: <input id="ldapBase" type="text" name="ldapBase" value="{{ldapBase}}">
-          LDAP Name Field: <input id="ldapNameField" type="text" name="ldapNameField" value="{{ldapNameField}}">
+          <label>LDAP Url: <input id="ldapUrl" type="text" name="ldapUrl" value="{{ldapUrl}}"></label>
+          <label>LDAP DN Pattern ($USERNAME will be replaced): <input id="ldapDnPattern" type="text" name="ldapDnPattern" value="{{ldapDnPattern}}"></label>
+          <label>LDAP Base Search Dn: <input id="ldapBase" type="text" name="ldapBase" value="{{ldapBase}}"></label>
+          <label>LDAP Name Field: <input id="ldapNameField" type="text" name="ldapNameField" value="{{ldapNameField}}"></label>
         <hr>
       {{/if}}
       <span class="details">Choose which services users may use to identify themselves. Anyone can log in, but only users you {{#linkTo route="adminInvites" data=getToken}}invite{{/linkTo}} will be able to install apps or create files.</span></p>

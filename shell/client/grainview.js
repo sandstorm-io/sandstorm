@@ -647,7 +647,7 @@ GrainView = class GrainView {
 
   setPowerboxRequest(powerboxRequest) {
     // If a previous powerboxRequest was set, clean it up before starting this new one.
-    var previous = this._powerboxRequest.get();
+    const previous = this._powerboxRequest.get();
     if (previous) previous.finalize();
     this._powerboxRequest.set(powerboxRequest);
   }

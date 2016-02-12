@@ -138,6 +138,13 @@ BASIC_AUTH_USER_AGENTS = [
   'Mozilla\\/5\\.0 \\(iOS\\) ownCloud-iOS\\/',
   'Mozilla\\/5\\.0 \\(Android\\) ownCloud-android\\/',
   'litmus\\/',
+  'curl',
+  '.*iOS\\/.+dataaccessd', //also for iOS UA check compatibility mode employed by some clients
+  'CalDAV-Sync',
+  'CardDAV-Sync',
+  'MSFT-', //windows phones, and other MS clients
+  '.+Thunderbird\\/.+Lightning\\/',
+  'Jakarta Commons-HttpClient', //generic java clients who didn't bother to override default UA
 ];
 BASIC_AUTH_USER_AGENTS_REGEX = new RegExp('^(' + BASIC_AUTH_USER_AGENTS.join('|') + ')', '');
 

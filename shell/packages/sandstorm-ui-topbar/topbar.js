@@ -419,7 +419,7 @@ SandstormTopbar.prototype.addItem = function (item) {
     // of that box.
 
     data: Match.Optional(ReactiveVar),
-    // Data context for `template` and `popupTempelate`.
+    // Data context for `template` and `popupTemplate`.
 
     startOpen: Match.Optional(Boolean),
     // If true, this item's popup should start out open.

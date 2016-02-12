@@ -25,11 +25,11 @@ const Capnp = Npm.require('capnp');
 
 const EmailRpc = Capnp.importSystem('sandstorm/email.capnp');
 const HackSessionContext = Capnp.importSystem('sandstorm/hack-session.capnp').HackSessionContext;
-const PowerboxCapability = Capnp.importSystem('sandstorm/grain.capnp').PowerboxCapability;
 const Supervisor = Capnp.importSystem('sandstorm/supervisor.capnp').Supervisor;
 const SystemPersistent = Capnp.importSystem('sandstorm/supervisor.capnp').SystemPersistent;
 const IpRpc = Capnp.importSystem('sandstorm/ip.capnp');
 const EmailSendPort = EmailRpc.EmailSendPort;
+const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 
 const Url = Npm.require('url');
 
@@ -43,24 +43,37 @@ SessionContextImpl = class SessionContextImpl {
     this.identityId = identityId;
   }
 
-  offer(cap, requiredPermissions) {
-    const _this = this;
+  offer(cap, requiredPermissions, descriptor, displayInfo) {
     return inMeteor(() => {
-      if (!_this.identityId) {
+      if (!this.identityId) {
         // TODO(soon): allow non logged in users?
         throw new Meteor.Error(400, 'Only logged in users can offer capabilities.');
       }
 
       const castedCap = cap.castAs(SystemPersistent);
-      const save = castedCap.save({webkey: null});
-      const sturdyRef = waitPromise(save).sturdyRef;
+      let apiTokenOwner = {webkey: null};
+      const isUiView = descriptor && descriptor.tags && descriptor.tags.length === 1 &&
+          descriptor.tags[0] && descriptor.tags[0].id &&
+          descriptor.tags[0].id === Grain.UiView.typeId;
+      if (isUiView) {
+        apiTokenOwner = {
+          user: {
+            identityId: this.identityId,
+            // The following fields will be overwritten by PersistentUiView.save(), so no need to
+            // pass them in:
+            //lastUsed: new Date(),
+            //title: "", // This will be replaced by the token's title
+            //denormalizedGrainMetadata: {}, // This will look up the package for the grain referenced.
+          },
+        };
+      }
 
       // TODO(soon): This will eventually use SystemPersistent.addRequirements when membranes
       // are fully implemented for supervisors.
       const requirement = {
         permissionsHeld: {
-          grainId: _this.grainId,
-          identityId: _this.identityId,
+          grainId: this.grainId,
+          identityId: this.identityId,
           permissions: requiredPermissions,
         },
       };
@@ -69,13 +82,25 @@ SessionContextImpl = class SessionContextImpl {
         throw new Meteor.Error(403, 'Permissions not satisfied.');
       }
 
+      const save = castedCap.save(apiTokenOwner);
+      const sturdyRef = waitPromise(save).sturdyRef;
       ApiTokens.update({_id: hashSturdyRef(sturdyRef)}, {$push: {requirements: requirement}});
-      Sessions.update({_id: _this.sessionId},
+      const powerboxView = isUiView ? {
+        offer: {
+          uiView: {
+            token: sturdyRef.toString(),
+            tokenId: hashSturdyRef(sturdyRef.toString()),
+          },
+        },
+      } : {
+        offer: {
+          url: ROOT_URL.protocol + '//' + makeWildcardHost('api') + '#' + sturdyRef,
+        },
+      };
+      Sessions.update({_id: this.sessionId},
         {
           $set: {
-            powerboxView: {
-              offer: ROOT_URL.protocol + '//' + makeWildcardHost('api') + '#' + sturdyRef,
-            },
+            powerboxView: powerboxView,
           },
         },
       );
@@ -134,6 +159,21 @@ Meteor.methods({
 
     Sessions.update({_id: sessionId}, {$unset: {powerboxView: null}});
   },
+
+  getViewInfoForApiToken(apiTokenId) {
+    check(apiTokenId, String);
+    const token = globalDb.collections.apiTokens.findOne(apiTokenId);
+    if (!token) {
+      throw new Meteor.Error(400, "No such token.");
+    }
+
+    const grain = globalDb.collections.grains.findOne(token.grainId);
+    if (!grain) {
+      throw new Meteor.Error(500, "No grain found for token.");
+    }
+
+    return grain.cachedViewInfo;
+  }
 });
 
 HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl {

@@ -713,6 +713,10 @@ body>.popup {
   }
 
   >.frame {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-begin;
+    justify-content: flex-begin;
     max-height: calc(100vh - 64px);
     min-width: 250px;
     line-height: normal;
@@ -763,7 +767,9 @@ body>.popup {
 
     >.close-popup {
       display: block;
-      float: right;
+      position: absolute;
+      top: 0;
+      right: 0;
       width: 32px;
       height: 32px;
       color: transparent;

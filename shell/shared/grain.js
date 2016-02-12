@@ -766,43 +766,10 @@ if (Meteor.isClient) {
     },
   });
 
-  Template.grainPowerboxRequestPopup.events({
-    "submit #powerbox-request-form": function (event) {
-      event.preventDefault();
-      var powerboxRequestInfo = this;
-      var identityId = getActiveGrain(globalGrains.get()).identityId();
-      Meteor.call("finishPowerboxRequest", event.target.token.value, powerboxRequestInfo.saveLabel,
-                  identityId, powerboxRequestInfo.grainId,
-        function (err, token) {
-          if (err) {
-            powerboxRequestInfo.error.set(err.toString());
-          } else {
-            powerboxRequestInfo.source.postMessage(
-              {
-                rpcId: powerboxRequestInfo.rpcId,
-                token: token
-              }, powerboxRequestInfo.origin);
-            powerboxRequestInfo.closer.close();
-          }
-        }
-      );
-    }
-  });
-
   Template.grainPowerboxOfferPopup.events({
-    "click button.dismiss": function (event, instance) {
-      var sessionId = instance.data.sessionId;
-      if (sessionId) {
-        Meteor.call("finishPowerboxOffer", sessionId, function (err) {
-          // TODO(someday): display the error nicely to the user
-          if (err) {
-            console.error(err);
-          }
-        });
-      } else {
-        // TODO(cleanup): This path is used by the admin UI. This is really hacky, though.
-        Iron.controller().state.set("powerboxOfferUrl", null);
-      }
+    "click button.dismiss": function (event) {
+      const data = Template.instance().data.get();
+      data.onDismiss();
     },
     "click .copy-me": selectTargetContents,
     "focus .copy-me": selectTargetContents
@@ -872,14 +839,32 @@ if (Meteor.isClient) {
     },
 
     showPowerboxOffer: function () {
-      var current = getActiveGrain(globalGrains.get());
-      if (current) {
-        var session = Sessions.findOne({_id: current.sessionId()}, {fields: {powerboxView: 1}});
-        return session && session.powerboxView && !!session.powerboxView.offer;
-      }
-      return false;
+      const current = getActiveGrain(globalGrains.get());
+      return current && current.showPowerboxOffer();
     },
 
+    powerboxOfferData: function() {
+      const current = getActiveGrain(globalGrains.get());
+      return current && current.powerboxOfferData();
+    },
+
+    showPowerboxRequest: function () {
+      const current = getActiveGrain(globalGrains.get());
+      return current && current.showPowerboxRequest();
+    },
+
+    powerboxRequestData: function () {
+      const current = getActiveGrain(globalGrains.get());
+      return current && current.powerboxRequestData();
+    },
+
+    cancelPowerboxRequest: function () {
+      return () => {
+        const current = getActiveGrain(globalGrains.get());
+        current.setPowerboxRequest(undefined);
+        return "remove";
+      };
+    },
   });
 
   Template.grainTitle.helpers({
@@ -1325,14 +1310,8 @@ if (Meteor.isClient) {
 
   Template.grainPowerboxOfferPopup.helpers({
     powerboxOfferUrl: function () {
-      if (this.powerboxOfferUrl) {
-        // TODO(cleanup): This path is used by the admin UI. This is really hacky, though.
-        return this.powerboxOfferUrl;
-      }
-
-      var activeGrain = getActiveGrain(globalGrains.get());
-      var session = Sessions.findOne({_id: activeGrain.sessionId()}, {fields: {powerboxView: 1}});
-      return session && session.powerboxView && session.powerboxView.offer;
+      const offer = Template.instance().data.get().offer;
+      return offer && offer.url;
     },
   });
 
@@ -1463,37 +1442,36 @@ if (Meteor.isClient) {
           }
         });
       } else if (event.data.powerboxRequest) {
-        // TODO(now): make this work with GrainView
         var powerboxRequest = event.data.powerboxRequest;
-        check(powerboxRequest, Object);
-        var rpcId = powerboxRequest.rpcId;
+        check(powerboxRequest, {
+          // TODO: be more strict, and check more fields, once the test apps are more conformant
+          rpcId: Match.Any,
+          query: Match.Optional([Object]), // TODO: be more precise, and also make non-optional once tests are updated to provide a query
+          saveLabel: Match.Optional(String),
+        });
 
         var powerboxRequestInfo = {
           source: event.source,
-          rpcId: rpcId,
-          grainId: senderGrain.grainId(),
           origin: event.origin,
-          saveLabel: powerboxRequest.saveLabel,
-          error: new ReactiveVar(null)
-        };
+          // We'll need these to post a reply message
 
-        powerboxRequestInfo.closer = globalTopbar.addItem({
-          name: "request",
-          template: Template.grainPowerboxRequest,
-          popupTemplate: Template.grainPowerboxRequestPopup,
-          data: new ReactiveVar(powerboxRequestInfo),
-          startOpen: true,
-          onDismiss: function () {
-            powerboxRequestInfo.source.postMessage(
-              {
-                rpcId: powerboxRequestInfo.rpcId,
-                error: "User canceled request"
-              }, powerboxRequestInfo.origin);
-            return "remove";
-          }
-        });
+          rpcId: powerboxRequest.rpcId,
+          query: powerboxRequest.query,
+          saveLabel: powerboxRequest.saveLabel,
+          // These data come from the grain
+
+          grainId: senderGrain.grainId(),
+          identityId: senderGrain.identityId(),
+          // Attach grain context to the request.
+
+          onCompleted: function () { globalTopbar.closePopup(); },
+          // Allow the grain to close the popup when we've completed the request.
+        };
+        var requestContext = new SandstormPowerboxRequest(globalDb, powerboxRequestInfo);
+        senderGrain.setPowerboxRequest(requestContext);
+        globalTopbar.openPopup("request");
       } else {
-        console.log("postMessage from app not understood: " + event.data);
+        console.log("postMessage from app not understood: ", event.data);
         console.log(event);
       }
     };

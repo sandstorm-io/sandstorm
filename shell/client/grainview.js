@@ -28,6 +28,8 @@ GrainView = class GrainView {
     this._status = 'closed';
     this._dep = new Tracker.Dependency();
 
+    this._powerboxRequest = new ReactiveVar(undefined);
+
     this._userIdentityId = new ReactiveVar(undefined);
     // `false` means incognito; `undefined` means we still need to decide whether to reveal
     // an identity.
@@ -266,10 +268,6 @@ GrainView = class GrainView {
   updateDocumentTitle() {
     this._dep.depend();
     document.title = this.frameTitle();
-  }
-
-  showPowerboxOffer() {
-    //TODO(now): implement
   }
 
   error() {
@@ -643,6 +641,76 @@ GrainView = class GrainView {
   setGeneratedApiToken(newApiToken) {
     this._generatedApiToken = newApiToken;
     this._dep.changed();
+  }
+
+  setPowerboxRequest(powerboxRequest) {
+    // If a previous powerboxRequest was set, clean it up before starting this new one.
+    var previous = this._powerboxRequest.get();
+    if (previous) previous.finalize();
+    this._powerboxRequest.set(powerboxRequest);
+  }
+
+  showPowerboxRequest() {
+    return !!this._powerboxRequest.get();
+  }
+
+  powerboxRequestData() {
+    // The topbar template demands a ReactiveVar, so let it have a ReactiveVar :/
+    return this._powerboxRequest;
+  }
+
+  showPowerboxOffer() {
+    this._dep.depend();
+    const session = Sessions.findOne({
+      _id: this._sessionId,
+    }, {
+      fields: {
+        powerboxView: 1,
+      },
+    });
+    return !!(session && session.powerboxView && session.powerboxView.offer);
+  }
+
+  powerboxOfferData() {
+    this._dep.depend();
+    const sessionId = this._sessionId
+    const session = Sessions.findOne({
+      _id: sessionId,
+    }, {
+      fields: {
+        powerboxView: 1,
+      },
+    });
+
+    const offer = session && session.powerboxView && session.powerboxView.offer;
+    if (offer && offer.uiView) {
+      // If this is an offer of a UiView, immediately dismiss the popup and open the grain.
+      const apiToken = ApiTokens.findOne(offer.uiView.tokenId);
+      if (apiToken && apiToken.grainId) {
+        Meteor.call("finishPowerboxOffer", sessionId, function (err) {
+          if (err) {
+            console.error(err);
+          }
+
+          Router.go("grain", {grainId: apiToken.grainId});
+        })
+      }
+    }
+    return {
+      get: function() {
+        return {
+          offer: offer,
+          onDismiss: () => {
+            Meteor.call("finishPowerboxOffer", sessionId, function (err) {
+              // TODO(someday): display the error nicely to the user
+              if (err) {
+                console.error(err);
+              }
+            });
+          },
+        };
+      },
+    };
   }
 };
 

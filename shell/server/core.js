@@ -21,6 +21,7 @@ const PersistentHandle = Capnp.importSystem('sandstorm/supervisor.capnp').Persis
 const SandstormCore = Capnp.importSystem('sandstorm/supervisor.capnp').SandstormCore;
 const SandstormCoreFactory = Capnp.importSystem('sandstorm/backend.capnp').SandstormCoreFactory;
 const PersistentOngoingNotification = Capnp.importSystem('sandstorm/supervisor.capnp').PersistentOngoingNotification;
+const PersistentUiView = Capnp.importSystem("sandstorm/persistentuiview.capnp").PersistentUiView;
 
 class SandstormCoreImpl {
   constructor(grainId) {
@@ -146,6 +147,64 @@ class NotificationHandle {
     return saveFrontendRef({notificationHandle: this.notificationId}, params.sealFor);
   }
 }
+
+class PersistentUiViewImpl {
+  constructor(token, sturdyRef, membraneRequirements) {
+    this._token = token;
+    this._sturdyRef = sturdyRef;
+    // We need this token so we can later pass it to SandstormPermissions.createNewApiToken, which
+    // requires the sturdyRef of the token it's producing a child for, not just the hashed token id.
+
+    this._membraneRequirements = membraneRequirements || [];
+    // TODO(someday): implement SystemPersistent.addRequirements() in a way that collects
+    // requirements, and then saves them appropriately in save().
+  }
+
+  save(params) {
+    // Create a new child apiToken for the user whose session attempted to save this capability.
+    // The token should specify this.token as the parent token, and needs to gain an additional membrane
+    // requirement (TODO):
+    // * if params.sealFor is a user, then the user must still have access to the grain that offered
+    //   this cap.  Today, this is handled by offer() in SessionContextImpl.
+    const res = inMeteor(() => {
+      let owner = _.extend({}, params.sealFor);
+      const grainId = this._token.grainId;
+
+      if (owner.user) {
+        // Copy the owner's save label for this capability, if available, to be the new title.
+        if (this._token && this._token.owner && this._token.owner.grain &&
+            this._token.owner.grain.saveLabel && this._token.owner.grain.saveLabel.defaultText) {
+          owner.user.title = this._token.owner.grain.saveLabel.defaultText;
+        }
+
+        // createNewApiToken() expects only these fields if owner is a user, and will add the rest itself.
+        owner = { user: {
+          identityId: owner.user.identityId,
+          title: owner.user.title,
+        }};
+      }
+
+      const ret = SandstormPermissions.createNewApiToken(
+          globalDb,
+          {rawParentToken: this._sturdyRef.toString()},
+          this._token.grainId,
+          this._token.petname,
+          this._token.roleAssignment,
+          owner);
+
+      return {sturdyRef: new Buffer(ret.token)};
+    });
+    return res;
+  }
+
+  // All other UiView methods are currently unimplemented, which, while not strictly correct,
+  // results in the same overall behavior, since users can't call restore() on a PersistentUiView,
+  // and grains can't call methods on UiViews because they lack the "is human" pseudopermission.
+}
+
+const makePersistentUiView = function (token, sturdyRef) {
+  return new Capnp.Capability(new PersistentUiViewImpl(token, sturdyRef, []), PersistentUiView);
+};
 
 function makeNotificationHandle(notificationId, saved) {
   return new Capnp.Capability(new NotificationHandle(notificationId, saved), PersistentHandle);
@@ -293,7 +352,7 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
   if (token.revoked) {
     throw new Meteor.Error(403, 'Token has been revoked');
   }
-
+  // The ownerPattern should specify the appropriate user or grain involved, if appropriate.
   check(token.owner, ownerPattern);
   if (!checkRequirements(token.requirements)) {
     throw new Meteor.Error(403, 'Requirements not satisfied.');
@@ -313,6 +372,7 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
   }
 
   if (token.frontendRef) {
+    // A token which represents a capability implemented by a pseudo-driver.
     if (token.frontendRef.notificationHandle) {
       const notificationId = token.frontendRef.notificationHandle;
       return {cap: makeNotificationHandle(notificationId, true)};
@@ -324,6 +384,7 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
       throw new Meteor.Error(500, 'Unknown frontend token type.');
     }
   } else if (token.objectId) {
+    // A token which represents a specific capability exported by a grain.
     if (!checkRequirements(requirements)) {
       throw new Meteor.Error(403, 'Requirements not satisfied.');
     }
@@ -332,14 +393,26 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
       token.objectId.appRef = new Buffer(token.objectId.appRef);
     }
 
+    // Ensure the grain is running, then restore the capability.
     return waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
       return supervisor.restore(token.objectId, requirements, parentToken);
     }));
   } else if (token.parentToken) {
+    // A token which chains to some parent token.  Restore the parent token (possibly recursively),
+    // checking requirements on the way up.
     return restoreInternal(token.parentToken, Match.Any, requirements, parentToken);
-  } else {
-    throw new Meteor.Error(500, 'Unknown token type.');
   }
+
+  // Note that hereafter, `token` should be, by process of elimination, a UiView token.
+  if (!token.grainId) {
+    throw new Meteor.Error(500, "Expected token " + token._id + " to have a grainId");
+  }
+
+  // If a grain is attempting to restore a UiView, it gets a UiView which filters out all
+  // the method calls.  In the future, we may allow grains to restore UiViews that pass along the
+  // "is human" pseudopermission (say, to allow embedding grains inside other grains), which will
+  // return a different capability.
+  return {cap: makePersistentUiView(token, parentToken)};
 };
 
 function dropInternal(sturdyRef, ownerPattern) {

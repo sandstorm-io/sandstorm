@@ -408,20 +408,11 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
     throw new Meteor.Error(500, "Expected token " + token._id + " to have a grainId");
   }
 
-  if (token.owner && token.owner.grain) {
-    // If a grain is attempting to restore a UiView, it gets a UiView which filters out all
-    // the method calls.  In the future, if we allow grains to restore fully-privileged UiViews
-    // (say, to allow embedding grains inside other grains), then we'll need to adjust this check.
-    return {cap: makePersistentUiView(token, parentToken)};
-  } else {
-    throw new Meteor.Error(500, "Unknown token type.");
-    // This is a token for a grain's main UiView.  Ensure the grain is running, then
-    // ask the supervisor for the main UiView.  Right now this is unsafe, so we don't
-    // expose UiViews directly.
-    //return waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
-    //  return supervisor.getMainView();
-    //}));
-  }
+  // If a grain is attempting to restore a UiView, it gets a UiView which filters out all
+  // the method calls.  In the future, we may allow grains to restore UiViews that pass along the
+  // "is human" pseudopermission (say, to allow embedding grains inside other grains), which will
+  // return a different capability.
+  return {cap: makePersistentUiView(token, parentToken)};
 };
 
 function dropInternal(sturdyRef, ownerPattern) {

@@ -17,16 +17,18 @@
 // This file implements the common shell components such as the top bar.
 // It also covers the root page.
 
-var getNamesFromIdentityIds = function (identityIds) {
+const getNamesFromIdentityIds = function (identityIds) {
   check(identityIds, [String]);
   if (identityIds.length === 0) {
     return [];
   }
 
-  var identities = Meteor.users.find(
-    { _id: { $in: identityIds } });
+  const identities = Meteor.users.find({
+    _id: { $in: identityIds },
+  });
   return identities.map(function (identity) {
-    return { name: identity.profile.name };});
+    return { name: identity.profile.name };
+  });
 };
 
 browseHome = function () {
@@ -49,7 +51,7 @@ if (Meteor.isClient) {
   ];
 
   Tracker.autorun(function () {
-    var me = Meteor.user();
+    const me = Meteor.user();
     if (me) {
       if (me.profile) {
         Meteor.subscribe("identityProfile", me._id);
@@ -94,9 +96,9 @@ if (Meteor.isServer) {
   BrowserPolicy.content.allowFrameOrigin(getWildcardOrigin());
 
   // Allow anything to be loaded from the static asset host.
-  var Url = Npm.require("url");
-  var staticAssetHost = Url.parse(process.env.ROOT_URL).protocol + "//" +
-                        globalDb.makeWildcardHost("static");
+  const Url = Npm.require("url");
+  const staticAssetHost = Url.parse(process.env.ROOT_URL).protocol + "//" +
+                          globalDb.makeWildcardHost("static");
   BrowserPolicy.content.allowImageOrigin(staticAssetHost);
   BrowserPolicy.content.allowScriptOrigin(staticAssetHost);
   BrowserPolicy.content.allowFontOrigin(staticAssetHost);
@@ -109,7 +111,7 @@ if (Meteor.isServer) {
         //   front page.
         // TODO(someday): Implement the ability to reactively subscribe to storage usage from the
         //   back-end?
-        var userId = this.userId;
+        const userId = this.userId;
         globalBackend.cap().getUserStorageUsage(userId).then(function (results) {
           inMeteor(function () {
             Meteor.users.update(userId, { $set: { storageUsage: parseInt(results.size) } });
@@ -121,7 +123,7 @@ if (Meteor.isServer) {
         });
       }
 
-      var identityIds = SandstormDb.getUserIdentityIds(globalDb.getUser(this.userId));
+      const identityIds = SandstormDb.getUserIdentityIds(globalDb.getUser(this.userId));
       return [
         UserActions.find({ userId: this.userId }),
         Grains.find({ userId: this.userId }),
@@ -154,10 +156,14 @@ if (Meteor.isServer) {
     // Since publishes can't be reactive, we leave it to the client to subscribe to both
     // "notifications" and "notificationGrains" reactively.
     check(notificationIds, [String]);
-    var notifications =  Notifications.find({ _id: { $in: notificationIds }, userId: this.userId },
-      { fields: { grainId: 1 } });
+    const notifications =  Notifications.find({
+      _id: { $in: notificationIds },
+      userId: this.userId,
+    }, {
+      fields: { grainId: 1 },
+    });
 
-    var grainIds = notifications.map(function (row) {
+    const grainIds = notifications.map(function (row) {
       return row.grainId;
     });
 
@@ -168,24 +174,23 @@ if (Meteor.isServer) {
     // Publish pseudo-collection which tells the client if there are any users at all.
     //
     // TODO(cleanup):  This seems overcomplicated.  Does Meteor have a better way?
-    var cursor = Meteor.users.find();
-    var self = this;
+    const cursor = Meteor.users.find();
     if (cursor.count() > 0) {
-      self.added("hasUsers", "hasUsers", { hasUsers: true });
+      this.added("hasUsers", "hasUsers", { hasUsers: true });
     } else {
-      var handle = cursor.observeChanges({
-        added: function (id) {
-          self.added("hasUsers", "hasUsers", { hasUsers: true });
+      let handle = cursor.observeChanges({
+        added: (id) => {
+          this.added("hasUsers", "hasUsers", { hasUsers: true });
           handle.stop();
           handle = null;
         },
       });
-      self.onStop(function () {
+      this.onStop(function () {
         if (handle) handle.stop();
       });
     }
 
-    self.ready();
+    this.ready();
   });
 
   Meteor.publish("referralInfoPseudo", function () {
@@ -207,28 +212,31 @@ if (Meteor.isServer) {
     // the (2) completed: true case.
 
     // Case 1. Publish information about not-yet-complete referrals.
-    var self = this;
-    var notCompletedReferralIdentitiesCursor = Meteor.users.find(
-      { referredBy: this.userId,
-       "profile.name": { $exists: true }, },
-      { fields: {
+    const notCompletedReferralIdentitiesCursor = Meteor.users.find({
+      referredBy: this.userId,
+      "profile.name": { $exists: true },
+    }, {
+      fields: {
         _id: 1,
         referredBy: 1,
-        "profile.name": 1, }, });
-    var notCompletedReferralIdentitiesHandle = notCompletedReferralIdentitiesCursor.observeChanges({
+        "profile.name": 1,
+      },
+    });
+    const notCompletedReferralIdentitiesHandle = notCompletedReferralIdentitiesCursor.observeChanges({
       // The added function gets called with the id of Bob when Alice refers Bob.
-      added: function (id, fields) {
-        self.added("referralInfo", id, { name: fields.profile.name, completed: false });
+      added: (id, fields) => {
+        this.added("referralInfo", id, { name: fields.profile.name, completed: false });
       },
       // The removed function gets called when Bob is no longer an uncompleted referral.  Note that
       // this will get more complicated once we support sending completed referrals to the client.
-      removed: function (id) {
-        self.removed("referralInfo", id);
+      removed: (id) => {
+        this.removed("referralInfo", id);
       },
       // The modified function gets called when Bob's profile.name changed.
-      modified: function (id, fields) {
-        self.modified("referralInfo", id, { name: fields.profile.name, completed: false });
-      }, });
+      modified: (id, fields) => {
+        this.modified("referralInfo", id, { name: fields.profile.name, completed: false });
+      },
+    });
 
     // Case 2. Handle completed referrals.
     //
@@ -238,97 +246,105 @@ if (Meteor.isServer) {
     //   case its profile.name changes.
     //
     // - Also watch the first query, since the list of completed identities might change.
-    var handleForProfileNameByIdentityId = {};
-    var stopWatchingAllIdentities = function () {
-      Object.keys(handleForProfileNameByIdentityId).forEach(function (identityId) {
+    const handleForProfileNameByIdentityId = {};
+    const stopWatchingAllIdentities = () => {
+      Object.keys(handleForProfileNameByIdentityId).forEach((identityId) => {
         stopWatchingIdentity(identityId);
       });
     };
 
-    var stopWatchingIdentity = function (identityId) {
-      var handleForProfileName = handleForProfileNameByIdentityId[identityId];
+    const stopWatchingIdentity = (identityId) => {
+      const handleForProfileName = handleForProfileNameByIdentityId[identityId];
       if (handleForProfileName) {
-        self.removed("referralInfo", identityId);
+        this.removed("referralInfo", identityId);
         handleForProfileName.stop();
         // delete is safe because we iterate across `Object.keys()` which returns a copy.
         delete handleForProfileNameByIdentityId[identityId];
       }
     };
 
-    var watchIdentityAndPublishReferralSuccess = function (identityId) {
-      var handleForProfileName = handleForProfileNameByIdentityId[identityId];
+    const watchIdentityAndPublishReferralSuccess = (identityId) => {
+      let handleForProfileName = handleForProfileNameByIdentityId[identityId];
       if (handleForProfileName) {
         return;
       }
 
-      handleForProfileName = Meteor.users.find(
-        { _id: identityId },
-        { fields: {
-          "profile.name": 1, }, }).observeChanges({
-            added: function (id, fields) {
-              self.added("referralInfo", id, { name: fields.profile.name, completed: true });
-            },
+      handleForProfileName = Meteor.users.find({
+        _id: identityId,
+      }, {
+        fields: {
+          "profile.name": 1,
+        },
+      }).observeChanges({
+        added: (id, fields) => {
+          this.added("referralInfo", id, { name: fields.profile.name, completed: true });
+        },
 
-            changed: function (id, fields) {
-              self.changed("referralInfo", id, { name: fields.profile.name, completed: true });
-            },
+        changed: (id, fields) => {
+          this.changed("referralInfo", id, { name: fields.profile.name, completed: true });
+        },
 
-            removed: function (id) {
-              stopWatchingIdentity(id);
-            }, });
+        removed: (id) => {
+          stopWatchingIdentity(id);
+        },
+      });
 
       handleForProfileNameByIdentityId[identityId] = handleForProfileName;
     };
 
-    var completedIdentityIdsHandle = Meteor.users.find(
-      { _id: this.userId,
-       referredIdentityIds: { $exists: true }, },
-      { fields: {
-        referredIdentityIds: true, }, }).observeChanges({
-          // `added` gets called when a user gets their first completed referral.
-          added: function (id, fields) {
-            for (var i = 0; i < fields.referredIdentityIds.length; i++) {
-              // Unconditionally mark these as successful referrals and start watching.
-              watchIdentityAndPublishReferralSuccess(
-                fields.referredIdentityIds[i]);
-            }
-          },
-          // `changed` gets called when a user adds/removes referredIdentityIds, usually when a
-          // referral becomes complete.
-          changed: function (id, fields) {
-            // Two major tasks.
-            //
-            // 1. Look for identityIds to unsubscribe from & send removed notices to the client.
-            //
-            // 2. Look for identityIds to subscribe to.
+    const completedIdentityIdsHandle = Meteor.users.find({
+      _id: this.userId,
+      referredIdentityIds: { $exists: true },
+    }, {
+      fields: {
+        referredIdentityIds: true,
+      },
+    }).observeChanges({
+      // `added` gets called when a user gets their first completed referral.
+      added: (id, fields) => {
+        for (let i = 0; i < fields.referredIdentityIds.length; i++) {
+          // Unconditionally mark these as successful referrals and start watching.
+          watchIdentityAndPublishReferralSuccess(
+            fields.referredIdentityIds[i]);
+        }
+      },
+      // `changed` gets called when a user adds/removes referredIdentityIds, usually when a
+      // referral becomes complete.
+      changed: (id, fields) => {
+        // Two major tasks.
+        //
+        // 1. Look for identityIds to unsubscribe from & send removed notices to the client.
+        //
+        // 2. Look for identityIds to subscribe to.
 
-            // Task 1. Unsubscribe where needed.
-            var referredIdentityIdsAsObject = {};
-            fields.referredIdentityIds.forEach(function (i) { referredIdentityIdsAsObject[i] = true; });
+        // Task 1. Unsubscribe where needed.
+        const referredIdentityIdsAsObject = {};
+        fields.referredIdentityIds.forEach((i) => { referredIdentityIdsAsObject[i] = true; });
 
-            Object.keys(handleForProfileNameByIdentityId).forEach(function (identityId) {
-              // If the handle doesn't show up in the new list of referredIdentityIds, then remove
-              // info from the client & stop it on the server & make it null.
-              var handleForProfileName = handleForProfileNameByIdentityId[identityId];
-              if (referredIdentityIdsAsObject.hasOwnProperty(identityId)) {
-                stopWatchingIdentity(identityId);
-              }
-            });
+        Object.keys(handleForProfileNameByIdentityId).forEach((identityId) => {
+          // If the handle doesn't show up in the new list of referredIdentityIds, then remove
+          // info from the client & stop it on the server & make it null.
+          const handleForProfileName = handleForProfileNameByIdentityId[identityId];
+          if (referredIdentityIdsAsObject.hasOwnProperty(identityId)) {
+            stopWatchingIdentity(identityId);
+          }
+        });
 
-            // Task 2. Subscribe where needed.
-            for (var i = 0; i < fields.referredIdentityIds.length; i++) {
-              // The watch... function will avoid double-creating subscriptions, so this is safe.
-              watchIdentityAndPublishReferralSuccess(fields.referredIdentityIds[i]);
-            }
-          },
-          // `removed` gets called when a User suddenly has no referredIdentityIds.
-          removed: function () {
-            // Remove all data from client; stop all handles.
-            stopWatchingAllIdentities();
-          }, });
+        // Task 2. Subscribe where needed.
+        for (let i = 0; i < fields.referredIdentityIds.length; i++) {
+          // The watch... function will avoid double-creating subscriptions, so this is safe.
+          watchIdentityAndPublishReferralSuccess(fields.referredIdentityIds[i]);
+        }
+      },
+      // `removed` gets called when a User suddenly has no referredIdentityIds.
+      removed: () => {
+        // Remove all data from client; stop all handles.
+        stopWatchingAllIdentities();
+      },
+    });
 
     // With cases 1 and 2 handled, register a cleanup function, then declare victory.
-    self.onStop(function () {
+    this.onStop(() => {
       stopWatchingAllIdentities();
       notCompletedReferralIdentitiesHandle.stop();
       completedIdentityIdsHandle.stop();
@@ -338,26 +354,25 @@ if (Meteor.isServer) {
   });
 
   Meteor.publish("backers", function () {
-    var backers = Assets.getText("backers.txt");
-    var self = this;
-    var anonCount = 0;
-    var counter = 0;
+    const backers = Assets.getText("backers.txt");
+    let anonCount = 0;
+    let counter = 0;
 
-    backers.split("\n").forEach(function (name) {
+    backers.split("\n").forEach((name) => {
       name = name.trim();
       if (name === "") {
         ++anonCount;
       } else {
-        self.added("backers", counter++, { name: name });
+        this.added("backers", counter++, { name: name });
       }
     });
 
     // Text file ends in \n but that shouldn't count.
     --anonCount;
 
-    self.added("backers", "anonymous", { count: anonCount - 1 });
+    this.added("backers", "anonymous", { count: anonCount - 1 });
 
-    self.ready();
+    this.ready();
   });
 }
 
@@ -413,28 +428,24 @@ if (Meteor.isClient) {
     }
   });
 
-  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-  var formatInCountdown = function (template, countdownDatetime) {
-    var days = 0;
-    var hours = 0;
-    var minutes = 0;
-    var seconds = 0;
-    var diff = countdownDatetime.getTime() - Date.now();
+  const formatInCountdown = function (template, countdownDatetime) {
+    const diff = countdownDatetime.getTime() - Date.now();
 
-    var units = {
+    const units = {
       day: 86400000,
       hour: 3600000,
       minute: 60000,
       second: 1000,
     };
 
-    for (var unit in units) {
+    for (const unit in units) {
       // If it's more than one full unit away, then we'll print in terms of this unit. This does
       // mean that we write e.g. "1 minute" for the whole range between 2 minutes and 1 minute, but
       // whatever, this is typical of these sorts of displays.
       if (diff >= units[unit]) {
-        var count = Math.floor(diff / units[unit]);
+        const count = Math.floor(diff / units[unit]);
         // Update next 1ms after the point where `count` would change.
         setTopBarTimeout(template, diff - count * units[unit] + 1);
         return {
@@ -454,16 +465,16 @@ if (Meteor.isClient) {
     }
   };
 
-  var formatAccountExpires = function () {
-    var expires = Meteor.user().expires;
+  const formatAccountExpires = function () {
+    const expires = Meteor.user().expires;
     return (expires && expires.toLocaleTimeString()) || null;
   };
 
-  var formatAccountExpiresIn = function (template, currentDatetime) {
+  const formatAccountExpiresIn = function (template, currentDatetime) {
     // TODO(someday): formatInCountdown will set the interval to match account expiration time, and
     // completely overwrite the previous interval for $IN_COUNTDOWN
-    var user = Meteor.user() || {};
-    var expires = user.expires || null;
+    const user = Meteor.user() || {};
+    const expires = user.expires || null;
     if (!expires) {
       return null;
     } else {
@@ -473,7 +484,7 @@ if (Meteor.isClient) {
 
   Template.layout.onCreated(function () {
     this.timer = new Tracker.Dependency();
-    var resizeTracker = this.resizeTracker = new Tracker.Dependency();
+    const resizeTracker = this.resizeTracker = new Tracker.Dependency();
     this.resizeFunc = function () {
       resizeTracker.changed();
     };
@@ -481,7 +492,7 @@ if (Meteor.isClient) {
     window.addEventListener("resize", this.resizeFunc, false);
   });
 
-  var setTopBarTimeout = function (template, delay) {
+  const setTopBarTimeout = function (template, delay) {
     Meteor.clearTimeout(template.timeout);
     template.timeout = Meteor.setTimeout(function () {
       template.timer.changed();
@@ -510,19 +521,19 @@ if (Meteor.isClient) {
     },
   });
 
-  var determineAppName = function (grainId) {
+  const determineAppName = function (grainId) {
     // Returns:
     //
     // - The current app title, if we can determine it, or
     //
     // - The empty string "", if we can't determine the current app title.
-    var params = "";
+    let params = "";
 
     // Try our hardest to find the package's name, falling back on the default if needed.
     if (grainId) {
-      var grain = Grains.findOne({ _id: grainId });
+      const grain = Grains.findOne({ _id: grainId });
       if (grain && grain.packageId) {
-        var thisPackage = Packages.findOne({ _id: grain.packageId });
+        const thisPackage = Packages.findOne({ _id: grain.packageId });
         if (thisPackage) {
           params = SandstormDb.appNameFromPackage(thisPackage);
         }
@@ -532,9 +543,9 @@ if (Meteor.isClient) {
     return params;
   };
 
-  var billingPromptState = new ReactiveVar(null);
+  const billingPromptState = new ReactiveVar(null);
 
-  var showBillingPrompt = function (reason, next) {
+  const showBillingPrompt = function (reason, next) {
     billingPromptState.set({
       reason: reason,
       db: globalDb,
@@ -547,8 +558,8 @@ if (Meteor.isClient) {
     });
   };
 
-  var ifQuotaAvailable = function (next) {
-    var reason = isUserOverQuota(Meteor.user());
+  const ifQuotaAvailable = function (next) {
+    const reason = isUserOverQuota(Meteor.user());
     if (reason) {
       if (window.BlackrockPayments) {
         showBillingPrompt(reason, function () {
@@ -565,7 +576,7 @@ if (Meteor.isClient) {
     }
   };
 
-  ifPlanAllowsCustomApps = function (next) {
+  const ifPlanAllowsCustomApps = function (next) {
     if (globalDb.isDemoUser() || globalDb.isUninvitedFreeUser()) {
       if (window.BlackrockPayments) {
         showBillingPrompt("customApp", function () {
@@ -587,14 +598,14 @@ if (Meteor.isClient) {
     ifPlanAllowsCustomApps: ifPlanAllowsCustomApps,
   };
 
-  var isDemoExpired = function () {
-    var user = Meteor.user();
+  const isDemoExpired = function () {
+    const user = Meteor.user();
     if (!user) return false;
-    var expires = user.expires;
+    let expires = user.expires;
     if (!expires) return false;
     expires = expires.getTime() - Date.now();
     if (expires <= 0) return true;
-    var comp = Tracker.currentComputation;
+    const comp = Tracker.currentComputation;
     if (expires && comp) {
       Meteor.setTimeout(comp.invalidate.bind(comp), expires);
     }
@@ -607,7 +618,7 @@ if (Meteor.isClient) {
       sessionStorage.removeItem("linkingIdentityLoginToken");
       Accounts._loginButtonsSession.closeDropdown();
       globalTopbar.closePopup();
-      var openGrains = globalGrains.get();
+      const openGrains = globalGrains.get();
       openGrains.forEach(function (grain) {
         grain.destroy();
       });
@@ -625,7 +636,7 @@ if (Meteor.isClient) {
   Template.layout.helpers({
     adminAlertIsTooLarge: function () {
       Template.instance().resizeTracker.depend();
-      var setting = Settings.findOne({ _id: "adminAlert" });
+      const setting = Settings.findOne({ _id: "adminAlert" });
       if (!setting || !setting.value) {
         return false;
       }
@@ -636,23 +647,23 @@ if (Meteor.isClient) {
     },
 
     adminAlert: function () {
-      var setting = Settings.findOne({ _id: "adminAlert" });
+      const setting = Settings.findOne({ _id: "adminAlert" });
       if (!setting || !setting.value) {
         return null;
       }
 
-      var text = setting.value;
+      let text = setting.value;
 
-      var alertTimeSetting = Settings.findOne({ _id: "adminAlertTime" });
-      var alertTime = alertTimeSetting && alertTimeSetting.value;
+      const alertTimeSetting = Settings.findOne({ _id: "adminAlertTime" });
+      const alertTime = alertTimeSetting && alertTimeSetting.value;
 
-      var alertUrlSetting = Settings.findOne({ _id: "adminAlertUrl" });
-      var alertUrl = alertUrlSetting ? alertUrlSetting.value.trim() : null;
+      const alertUrlSetting = Settings.findOne({ _id: "adminAlertUrl" });
+      let alertUrl = alertUrlSetting ? alertUrlSetting.value.trim() : null;
       if (!alertUrl) alertUrl = null;
 
-      var template = Template.instance();
-      var param;
-      var className;
+      const template = Template.instance();
+      let param;
+      let className;
       if (text.indexOf("$TIME") !== -1) {
         if (!alertTime) return null;
         text = text.replace("$TIME", alertTime.toLocaleTimeString());
@@ -692,7 +703,11 @@ if (Meteor.isClient) {
         alertUrl = alertUrl.replace("$APPNAME", determineAppName(this.grainId));
       }
 
-      return { text: text, className: className, alertUrl: alertUrl };
+      return {
+        text,
+        className,
+        alertUrl,
+      };
     },
 
     billingPromptState: function () {
@@ -709,7 +724,7 @@ if (Meteor.isClient) {
     },
 
     identityUser: function () {
-      var user = Meteor.user();
+      const user = Meteor.user();
       return user && user.profile;
     },
 
@@ -736,7 +751,7 @@ if (Meteor.isClient) {
       // Don't show if billing is not enabled.
       if (!window.BlackrockPayments) return;
 
-      var user = Meteor.user();
+      const user = Meteor.user();
 
       // Don't show if not logged in.
       if (!user) return;
@@ -755,7 +770,7 @@ if (Meteor.isClient) {
 
       // Don't show when viewing another user's grain. We don't want to scare people away from
       // logging in to collaborate.
-      var route = Router.current().route.getName();
+      const route = Router.current().route.getName();
       if (route === "shared") return;
       if (route === "grain") {
         if (_.some(globalGrains.get(), function (grain) {
@@ -802,10 +817,10 @@ if (Meteor.isClient) {
       return "";
     }
 
-    var result;
+    let result;
 
-    var now = new Date();
-    var diff = now.valueOf() - date.valueOf();
+    const now = new Date();
+    const diff = now.valueOf() - date.valueOf();
 
     if (diff < 86400000 && now.getDate() === date.getDate()) {
       result = date.toLocaleTimeString();
@@ -836,7 +851,7 @@ if (Meteor.isClient) {
   });
 
   prettySize = function (size) {
-    var suffix = "B";
+    let suffix = "B";
     if (size >= 1000000000) {
       size = size / 1000000000;
       suffix = "GB";
@@ -852,7 +867,7 @@ if (Meteor.isClient) {
   };
 
   launchAndEnterGrainByPackageId = function (packageId) {
-    var action = UserActions.findOne({ packageId: packageId });
+    const action = UserActions.findOne({ packageId: packageId });
     if (!action) {
       alert("Somehow, you seem to have attempted to launch a package you have not installed.");
       return;
@@ -864,39 +879,39 @@ if (Meteor.isClient) {
   launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex) {
     // Note that this takes a devPackageId and a devIndex as well. If provided,
     // they override the actionId.
-    var packageId;
-    var command;
-    var appTitle;
-    var nounPhrase;
+    let packageId;
+    let command;
+    let appTitle;
+    let nounPhrase;
     if (devPackageId) {
-      var devPackage = DevPackages.findOne(devPackageId);
+      const devPackage = DevPackages.findOne(devPackageId);
       if (!devPackage) {
         console.error("no such dev package: ", devPackageId);
         return;
       }
 
-      var devAction = devPackage.manifest.actions[devIndex];
+      const devAction = devPackage.manifest.actions[devIndex];
       packageId = devPackageId;
       command = devAction.command;
       appTitle = SandstormDb.appNameFromPackage(devPackage);
       nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(devAction, appTitle);
     } else {
-      var action = UserActions.findOne(actionId);
+      const action = UserActions.findOne(actionId);
       if (!action) {
         console.error("no such action:", actionId);
         return;
       }
 
       packageId = action.packageId;
-      var pkg = Packages.findOne(packageId);
+      const pkg = Packages.findOne(packageId);
       command = action.command;
       appTitle = SandstormDb.appNameFromPackage(pkg);
       nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(action, appTitle);
     }
 
-    var title = "Untitled " + appTitle + " " + nounPhrase;
+    const title = "Untitled " + appTitle + " " + nounPhrase;
 
-    var identityId = Accounts.getCurrentIdentityId();
+    const identityId = Accounts.getCurrentIdentityId();
 
     // We need to ask the server to start a new grain, then browse to it.
     Meteor.call("newGrain", packageId, command, title, identityId, function (error, grainId) {
@@ -915,7 +930,7 @@ if (Meteor.isClient) {
     },
 
     storageQuota: function () {
-      var plan = globalDb.getMyPlan();
+      const plan = globalDb.getMyPlan();
       return plan ? prettySize(plan.storage) : undefined;
     },
 
@@ -928,7 +943,7 @@ if (Meteor.isClient) {
     "click .uninstall-app-button": function (event) {
       // TODO(cleanup): This event handler is no longer used, but the new UI does not yet implement
       //   uninstall. Leave this code here for reference until it does.
-      var appId = event.currentTarget.getAttribute("data-appid");
+      const appId = event.currentTarget.getAttribute("data-appid");
       if (window.confirm("Really uninstall this app?")) {
         UserActions.find({ appId: appId, userId: Meteor.userId() }).forEach(function (action) {
           UserActions.remove(action._id);
@@ -943,7 +958,7 @@ if (Meteor.isClient) {
     notifications: function () {
       Meteor.call("readAllNotifications");
       return Notifications.find({ userId: Meteor.userId() }, { sort: { timestamp: -1 } }).map(function (row) {
-        var grain = Grains.findOne({ _id: row.grainId });
+        const grain = Grains.findOne({ _id: row.grainId });
         if (grain) {
           row.grainTitle = grain.title;
         }
@@ -1024,10 +1039,9 @@ if (Meteor.isClient) {
 
     "click .accept-notification": function (event) {
       if (this.appUpdates) {
-        var self = this;
-        Meteor.call("updateApps", this.appUpdates, function (err) {
+        Meteor.call("updateApps", this.appUpdates, (err) => {
           // TODO(someday): if (err)
-          Meteor.call("dismissNotification", self._id);
+          Meteor.call("dismissNotification", this._id);
         });
       }
 
@@ -1056,7 +1070,6 @@ if (Meteor.isClient) {
         "\nWe can also provide personal assistance! Get in touch: https://sandstorm.io/community",
       "font-size: large; background-color: yellow;");
 
-    var self = this;
     Meteor.subscribe("notifications");
 
     Meteor.autorun(function () {
@@ -1087,8 +1100,8 @@ if (Meteor.isClient) {
 }
 
 function getBuildInfo() {
-  var build = Meteor.settings && Meteor.settings.public && Meteor.settings.public.build;
-  var isNumber = typeof build === "number";
+  let build = Meteor.settings && Meteor.settings.public && Meteor.settings.public.build;
+  const isNumber = typeof build === "number";
   if (!build) {
     build = "(unknown)";
   } else if (isNumber) {
@@ -1101,7 +1114,7 @@ function getBuildInfo() {
   };
 }
 
-var promptForFile = function (input, callback) {
+const promptForFile = function (input, callback) {
   // TODO(cleanup): Share code with "upload picture" and other upload buttons.
   function listener(e) {
     input.removeEventListener("change", listener);
@@ -1112,13 +1125,13 @@ var promptForFile = function (input, callback) {
   input.click();
 };
 
-var startUpload = function (file, endpoint, onComplete) {
+const startUpload = function (file, endpoint, onComplete) {
   // TODO(cleanup): Use Meteor's HTTP, although this may require sending them a PR to support
   //   progress callbacks (and officially document that binary input is accepted).
 
   Session.set("uploadStatus", "Uploading");
 
-  var xhr = new XMLHttpRequest();
+  const xhr = new XMLHttpRequest();
 
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4) {
@@ -1153,7 +1166,7 @@ restoreBackup = function (file) {
   // This function is global so tests can call it
   startUpload(file, "/uploadBackup", function (response) {
     Session.set("uploadStatus", "Unpacking");
-    var identityId = Accounts.getCurrentIdentityId();
+    const identityId = Accounts.getCurrentIdentityId();
     Meteor.call("restoreGrain", response, identityId, function (err, grainId) {
       if (err) {
         console.log(err);
@@ -1226,7 +1239,7 @@ Router.map(function () {
     path: "/link-handler/:url",
 
     data: function () {
-      var url = this.params.url;
+      let url = this.params.url;
       if (url.lastIndexOf("web+sandstorm:", 0) === 0) {
         url = url.slice("web+sandstorm:".length);
       }
@@ -1239,19 +1252,19 @@ Router.map(function () {
   this.route("about", {
     path: "/about",
     data: function () {
-      var result = getBuildInfo();
+      const result = getBuildInfo();
 
-      var backers = Session.get("backers");
+      const backers = Session.get("backers");
       if (backers) {
         result.backers = backers.names;
         result.anonCount = backers.anonCount;
       } else {
         HTTP.get("/sandstorm-backers.txt", function (err, response) {
-          var names = response.content.split("\n").sort(function (a, b) {
+          let names = response.content.split("\n").sort(function (a, b) {
             return a.toLowerCase().localeCompare(b.toLowerCase());
           });
 
-          var anonCount = 0;
+          let anonCount = 0;
           while (anonCount < names.length && names[anonCount] === "") {
             ++anonCount;
           }
@@ -1262,7 +1275,10 @@ Router.map(function () {
           // anonymous contributor.
           --anonCount;
 
-          Session.set("backers", { names: names, anonCount: anonCount });
+          Session.set("backers", {
+            names,
+            anonCount,
+          });
         });
       }
 

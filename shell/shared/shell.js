@@ -17,26 +17,26 @@
 // This file implements the common shell components such as the top bar.
 // It also covers the root page.
 
-var getNamesFromIdentityIds = function(identityIds) {
+var getNamesFromIdentityIds = function (identityIds) {
   check(identityIds, [String]);
   if (identityIds.length === 0) {
     return [];
   }
 
   var identities = Meteor.users.find(
-    {_id: {$in: identityIds }});
-  return identities.map(function(identity) {
-    return {name: identity.profile.name}});
-}
+    { _id: { $in: identityIds } });
+  return identities.map(function (identity) {
+    return { name: identity.profile.name };});
+};
 
-browseHome = function() {
+browseHome = function () {
   Router.go("root");
-}
+};
 
 if (Meteor.isClient) {
-  getOrigin = function() {
+  getOrigin = function () {
     return document.location.protocol + "//" + document.location.host;
-  }
+  };
 
   // Subscribe to basic grain information first and foremost, since
   // without it we might e.g. redirect to the wrong place on login.
@@ -54,15 +54,17 @@ if (Meteor.isClient) {
       if (me.profile) {
         Meteor.subscribe("identityProfile", me._id);
       }
+
       if (me.loginIdentities) {
         me.loginIdentities.forEach(function (identity) {
           Meteor.subscribe("identityProfile", identity.id);
-        })
+        });
       }
+
       if (me.nonloginIdentities) {
         me.nonloginIdentities.forEach(function (identity) {
           Meteor.subscribe("identityProfile", identity.id);
-        })
+        });
       }
     }
   });
@@ -110,7 +112,7 @@ if (Meteor.isServer) {
         var userId = this.userId;
         globalBackend.cap().getUserStorageUsage(userId).then(function (results) {
           inMeteor(function () {
-            Meteor.users.update(userId, {$set: {storageUsage: parseInt(results.size)}});
+            Meteor.users.update(userId, { $set: { storageUsage: parseInt(results.size) } });
           });
         }).catch(function (err) {
           if (err.kjType !== "unimplemented") {
@@ -118,11 +120,12 @@ if (Meteor.isServer) {
           }
         });
       }
+
       var identityIds = SandstormDb.getUserIdentityIds(globalDb.getUser(this.userId));
       return [
-        UserActions.find({userId: this.userId}),
-        Grains.find({userId: this.userId}),
-        ApiTokens.find({'owner.user.identityId': {$in: identityIds}}),
+        UserActions.find({ userId: this.userId }),
+        Grains.find({ userId: this.userId }),
+        ApiTokens.find({ "owner.user.identityId": { $in: identityIds } }),
       ];
     } else {
       return [];
@@ -134,7 +137,7 @@ if (Meteor.isServer) {
     // a backup we only publish the session to its owner. Note that `userId` can be null if the
     // user is not logged in or is using incognito mode.
     check(sessionId, String);
-    return Sessions.find({_id: sessionId, $or: [{userId: this.userId}, {userId: null}]});
+    return Sessions.find({ _id: sessionId, $or: [{ userId: this.userId }, { userId: null }] });
   });
 
   Meteor.publish("devPackages", function () {
@@ -142,23 +145,23 @@ if (Meteor.isServer) {
   });
 
   Meteor.publish("notifications", function () {
-    return Notifications.find({userId: this.userId},
-      {fields: {timestamp: 1, text: 1, grainId: 1, userId: 1, isUnread: 1, appUpdates: 1,
-                admin: 1, referral: 1, mailingListBonus: 1}});
+    return Notifications.find({ userId: this.userId },
+      { fields: { timestamp: 1, text: 1, grainId: 1, userId: 1, isUnread: 1, appUpdates: 1,
+                admin: 1, referral: 1, mailingListBonus: 1, }, });
   });
-
 
   Meteor.publish("notificationGrains", function (notificationIds) {
     // Since publishes can't be reactive, we leave it to the client to subscribe to both
     // "notifications" and "notificationGrains" reactively.
     check(notificationIds, [String]);
-    var notifications =  Notifications.find({_id: {$in: notificationIds}, userId: this.userId},
-      {fields: {grainId: 1}});
+    var notifications =  Notifications.find({ _id: { $in: notificationIds }, userId: this.userId },
+      { fields: { grainId: 1 } });
 
     var grainIds = notifications.map(function (row) {
       return row.grainId;
     });
-    return Grains.find({_id: {$in: grainIds}}, {fields: {title: 1}});
+
+    return Grains.find({ _id: { $in: grainIds } }, { fields: { title: 1 } });
   });
 
   Meteor.publish("hasUsers", function () {
@@ -168,23 +171,24 @@ if (Meteor.isServer) {
     var cursor = Meteor.users.find();
     var self = this;
     if (cursor.count() > 0) {
-      self.added("hasUsers", "hasUsers", {hasUsers: true});
+      self.added("hasUsers", "hasUsers", { hasUsers: true });
     } else {
       var handle = cursor.observeChanges({
         added: function (id) {
-          self.added("hasUsers", "hasUsers", {hasUsers: true});
+          self.added("hasUsers", "hasUsers", { hasUsers: true });
           handle.stop();
           handle = null;
-        }
+        },
       });
       self.onStop(function () {
         if (handle) handle.stop();
       });
     }
+
     self.ready();
   });
 
-  Meteor.publish("referralInfoPseudo", function() {
+  Meteor.publish("referralInfoPseudo", function () {
     // This publishes a pseudo-collection called referralInfo whose documents have the following
     // form:
     //
@@ -193,7 +197,7 @@ if (Meteor.isServer) {
     // - completed: (Boolean) if this referral is complete
 
     //  If the user is not logged in, then we have no referralInfo.
-    if (! this.userId) {
+    if (!this.userId) {
       return [];
     }
 
@@ -205,26 +209,26 @@ if (Meteor.isServer) {
     // Case 1. Publish information about not-yet-complete referrals.
     var self = this;
     var notCompletedReferralIdentitiesCursor = Meteor.users.find(
-      {referredBy: this.userId,
-       "profile.name": {$exists: true}},
-      {fields: {
-        "_id": 1,
-        "referredBy": 1,
-        "profile.name": 1}});
+      { referredBy: this.userId,
+       "profile.name": { $exists: true }, },
+      { fields: {
+        _id: 1,
+        referredBy: 1,
+        "profile.name": 1, }, });
     var notCompletedReferralIdentitiesHandle = notCompletedReferralIdentitiesCursor.observeChanges({
       // The added function gets called with the id of Bob when Alice refers Bob.
-      added: function(id, fields) {
-        self.added("referralInfo", id, {name: fields.profile.name, completed: false});
+      added: function (id, fields) {
+        self.added("referralInfo", id, { name: fields.profile.name, completed: false });
       },
       // The removed function gets called when Bob is no longer an uncompleted referral.  Note that
       // this will get more complicated once we support sending completed referrals to the client.
-      removed: function(id) {
+      removed: function (id) {
         self.removed("referralInfo", id);
       },
       // The modified function gets called when Bob's profile.name changed.
-      modified: function(id, fields) {
-        self.modified("referralInfo", id, {name: fields.profile.name, completed: false});
-      }});
+      modified: function (id, fields) {
+        self.modified("referralInfo", id, { name: fields.profile.name, completed: false });
+      }, });
 
     // Case 2. Handle completed referrals.
     //
@@ -235,12 +239,13 @@ if (Meteor.isServer) {
     //
     // - Also watch the first query, since the list of completed identities might change.
     var handleForProfileNameByIdentityId = {};
-    var stopWatchingAllIdentities = function() {
-      Object.keys(handleForProfileNameByIdentityId).forEach(function(identityId) {
+    var stopWatchingAllIdentities = function () {
+      Object.keys(handleForProfileNameByIdentityId).forEach(function (identityId) {
         stopWatchingIdentity(identityId);
       });
     };
-    var stopWatchingIdentity = function(identityId) {
+
+    var stopWatchingIdentity = function (identityId) {
       var handleForProfileName = handleForProfileNameByIdentityId[identityId];
       if (handleForProfileName) {
         self.removed("referralInfo", identityId);
@@ -249,35 +254,39 @@ if (Meteor.isServer) {
         delete handleForProfileNameByIdentityId[identityId];
       }
     };
-    var watchIdentityAndPublishReferralSuccess = function(identityId) {
+
+    var watchIdentityAndPublishReferralSuccess = function (identityId) {
       var handleForProfileName = handleForProfileNameByIdentityId[identityId];
       if (handleForProfileName) {
         return;
       }
 
       handleForProfileName = Meteor.users.find(
-        {_id: identityId},
-        {fields: {
-          "profile.name": 1}}).observeChanges({
-            added: function(id, fields) {
-              self.added("referralInfo", id, {name: fields.profile.name, completed: true});
+        { _id: identityId },
+        { fields: {
+          "profile.name": 1, }, }).observeChanges({
+            added: function (id, fields) {
+              self.added("referralInfo", id, { name: fields.profile.name, completed: true });
             },
-            changed: function(id, fields) {
-              self.changed("referralInfo", id, {name: fields.profile.name, completed: true});
+
+            changed: function (id, fields) {
+              self.changed("referralInfo", id, { name: fields.profile.name, completed: true });
             },
-            removed: function(id) {
+
+            removed: function (id) {
               stopWatchingIdentity(id);
-            }});
+            }, });
+
       handleForProfileNameByIdentityId[identityId] = handleForProfileName;
     };
 
     var completedIdentityIdsHandle = Meteor.users.find(
-      {_id: this.userId,
-       referredIdentityIds: {$exists: true}},
-      {fields: {
-        referredIdentityIds: true}}).observeChanges({
+      { _id: this.userId,
+       referredIdentityIds: { $exists: true }, },
+      { fields: {
+        referredIdentityIds: true, }, }).observeChanges({
           // `added` gets called when a user gets their first completed referral.
-          added: function(id, fields) {
+          added: function (id, fields) {
             for (var i = 0; i < fields.referredIdentityIds.length; i++) {
               // Unconditionally mark these as successful referrals and start watching.
               watchIdentityAndPublishReferralSuccess(
@@ -286,7 +295,7 @@ if (Meteor.isServer) {
           },
           // `changed` gets called when a user adds/removes referredIdentityIds, usually when a
           // referral becomes complete.
-          changed: function(id, fields) {
+          changed: function (id, fields) {
             // Two major tasks.
             //
             // 1. Look for identityIds to unsubscribe from & send removed notices to the client.
@@ -295,8 +304,9 @@ if (Meteor.isServer) {
 
             // Task 1. Unsubscribe where needed.
             var referredIdentityIdsAsObject = {};
-            fields.referredIdentityIds.forEach(function(i) { referredIdentityIdsAsObject[i] = true; });
-            Object.keys(handleForProfileNameByIdentityId).forEach(function(identityId) {
+            fields.referredIdentityIds.forEach(function (i) { referredIdentityIdsAsObject[i] = true; });
+
+            Object.keys(handleForProfileNameByIdentityId).forEach(function (identityId) {
               // If the handle doesn't show up in the new list of referredIdentityIds, then remove
               // info from the client & stop it on the server & make it null.
               var handleForProfileName = handleForProfileNameByIdentityId[identityId];
@@ -312,13 +322,13 @@ if (Meteor.isServer) {
             }
           },
           // `removed` gets called when a User suddenly has no referredIdentityIds.
-          removed: function() {
+          removed: function () {
             // Remove all data from client; stop all handles.
             stopWatchingAllIdentities();
-          }});
+          }, });
 
     // With cases 1 and 2 handled, register a cleanup function, then declare victory.
-    self.onStop(function() {
+    self.onStop(function () {
       stopWatchingAllIdentities();
       notCompletedReferralIdentitiesHandle.stop();
       completedIdentityIdsHandle.stop();
@@ -326,7 +336,6 @@ if (Meteor.isServer) {
 
     self.ready();
   });
-
 
   Meteor.publish("backers", function () {
     var backers = Assets.getText("backers.txt");
@@ -339,14 +348,14 @@ if (Meteor.isServer) {
       if (name === "") {
         ++anonCount;
       } else {
-        self.added("backers", counter++, {name: name});
+        self.added("backers", counter++, { name: name });
       }
     });
 
     // Text file ends in \n but that shouldn't count.
     --anonCount;
 
-    self.added("backers", "anonymous", {count: anonCount - 1});
+    self.added("backers", "anonymous", { count: anonCount - 1 });
 
     self.ready();
   });
@@ -360,7 +369,7 @@ if (Meteor.isClient) {
   if (Meteor.settings.public.quotaEnabled) {
     window.testDisableQuotaClientSide = function () {
       Meteor.settings.public.quotaEnabled = false;
-    }
+    };
   }
 
   Router.onRun(function () {
@@ -377,21 +386,20 @@ if (Meteor.isClient) {
       if (!event.isDefaultPrevented()) {
         globalTopbar.reset();
       }
-    }
+    },
   });
 
   Template.about.helpers({
     setDocumentTitle: function () {
       document.title = "About · " + globalDb.getServerTitle();
-    }
+    },
   });
 
   Template.referrals.helpers({
     setDocumentTitle: function () {
       document.title = "Referral Program · " + globalDb.getServerTitle();
-    }
+    },
   });
-
 
   Template.body.onRendered(function () {
     // If we're on iOS, set a class name on <body> so we can use CSS styles to work around mobile
@@ -418,7 +426,7 @@ if (Meteor.isClient) {
       day: 86400000,
       hour: 3600000,
       minute: 60000,
-      second: 1000
+      second: 1000,
     };
 
     for (var unit in units) {
@@ -431,7 +439,7 @@ if (Meteor.isClient) {
         setTopBarTimeout(template, diff - count * units[unit] + 1);
         return {
           text: "in " + count + " " + unit + (count > 1 ? "s" : ""),
-          className: "countdown-" + unit
+          className: "countdown-" + unit,
         };
       }
     }
@@ -466,9 +474,10 @@ if (Meteor.isClient) {
   Template.layout.onCreated(function () {
     this.timer = new Tracker.Dependency();
     var resizeTracker = this.resizeTracker = new Tracker.Dependency();
-    this.resizeFunc = function() {
+    this.resizeFunc = function () {
       resizeTracker.changed();
     };
+
     window.addEventListener("resize", this.resizeFunc, false);
   });
 
@@ -488,14 +497,16 @@ if (Meteor.isClient) {
   });
 
   Template.referrals.helpers({
-    isPaid: function() {
+    isPaid: function () {
       return (Meteor.user() && Meteor.user().plan && Meteor.user().plan !== "free");
     },
-    notYetCompleteReferralNames: function() {
-      return ReferralInfo.find({completed: false});
+
+    notYetCompleteReferralNames: function () {
+      return ReferralInfo.find({ completed: false });
     },
-    completeReferralNames: function() {
-      return ReferralInfo.find({completed: true});
+
+    completeReferralNames: function () {
+      return ReferralInfo.find({ completed: true });
     },
   });
 
@@ -509,9 +520,9 @@ if (Meteor.isClient) {
 
     // Try our hardest to find the package's name, falling back on the default if needed.
     if (grainId) {
-      var grain = Grains.findOne({_id: grainId});
+      var grain = Grains.findOne({ _id: grainId });
       if (grain && grain.packageId) {
-        var thisPackage = Packages.findOne({_id: grain.packageId});
+        var thisPackage = Packages.findOne({ _id: grain.packageId });
         if (thisPackage) {
           params = SandstormDb.appNameFromPackage(thisPackage);
         }
@@ -532,7 +543,7 @@ if (Meteor.isClient) {
       onComplete: function () {
         billingPromptState.set(null);
         if (next) next();
-      }
+      },
     });
   };
 
@@ -552,7 +563,7 @@ if (Meteor.isClient) {
     } else {
       next();
     }
-  }
+  };
 
   ifPlanAllowsCustomApps = function (next) {
     if (globalDb.isDemoUser() || globalDb.isUninvitedFreeUser()) {
@@ -569,11 +580,11 @@ if (Meteor.isClient) {
     } else {
       next();
     }
-  }
+  };
 
   globalQuotaEnforcer = {
     ifQuotaAvailable: ifQuotaAvailable,
-    ifPlanAllowsCustomApps: ifPlanAllowsCustomApps
+    ifPlanAllowsCustomApps: ifPlanAllowsCustomApps,
   };
 
   var isDemoExpired = function () {
@@ -587,6 +598,7 @@ if (Meteor.isClient) {
     if (expires && comp) {
       Meteor.setTimeout(comp.invalidate.bind(comp), expires);
     }
+
     return false;
   };
 
@@ -596,13 +608,14 @@ if (Meteor.isClient) {
       Accounts._loginButtonsSession.closeDropdown();
       globalTopbar.closePopup();
       var openGrains = globalGrains.get();
-      openGrains.forEach(function(grain) {
+      openGrains.forEach(function (grain) {
         grain.destroy();
       });
+
       globalGrains.set([]);
       Router.go("root");
     });
-  }
+  };
 
   function makeAccountSettingsUi() {
     return new SandstormAccountSettingsUi(globalTopbar, globalDb,
@@ -612,7 +625,7 @@ if (Meteor.isClient) {
   Template.layout.helpers({
     adminAlertIsTooLarge: function () {
       Template.instance().resizeTracker.depend();
-      var setting = Settings.findOne({_id: "adminAlert"});
+      var setting = Settings.findOne({ _id: "adminAlert" });
       if (!setting || !setting.value) {
         return false;
       }
@@ -621,17 +634,19 @@ if (Meteor.isClient) {
       // calculated based on actual sizes of things in the topbar.
       return (window.innerWidth - setting.value.length * 10) < 850;
     },
+
     adminAlert: function () {
-      var setting = Settings.findOne({_id: "adminAlert"});
+      var setting = Settings.findOne({ _id: "adminAlert" });
       if (!setting || !setting.value) {
         return null;
       }
+
       var text = setting.value;
 
-      var alertTimeSetting = Settings.findOne({_id: "adminAlertTime"});
+      var alertTimeSetting = Settings.findOne({ _id: "adminAlertTime" });
       var alertTime = alertTimeSetting && alertTimeSetting.value;
 
-      var alertUrlSetting = Settings.findOne({_id: "adminAlertUrl"});
+      var alertUrlSetting = Settings.findOne({ _id: "adminAlertUrl" });
       var alertUrl = alertUrlSetting ? alertUrlSetting.value.trim() : null;
       if (!alertUrl) alertUrl = null;
 
@@ -642,10 +657,12 @@ if (Meteor.isClient) {
         if (!alertTime) return null;
         text = text.replace("$TIME", alertTime.toLocaleTimeString());
       }
+
       if (text.indexOf("$DATE") !== -1) {
         if (!alertTime) return null;
         text = text.replace("$DATE", alertTime.toLocaleDateString());
       }
+
       if (text.indexOf("$IN_COUNTDOWN") !== -1) {
         if (!alertTime) return null;
         param = formatInCountdown(template, alertTime);
@@ -653,52 +670,66 @@ if (Meteor.isClient) {
         text = text.replace("$IN_COUNTDOWN", param.text);
         className = param.className;
       }
+
       if (text.indexOf("$ACCOUNT_EXPIRES_IN") !== -1) {
         param = formatAccountExpiresIn(template);
         if (!param) return null;
         text = text.replace("$ACCOUNT_EXPIRES_IN", param.text);
         className = param.className;
       }
+
       if (text.indexOf("$ACCOUNT_EXPIRES") !== -1) {
         param = formatAccountExpires();
         if (!param) return null;
         text = text.replace("$ACCOUNT_EXPIRES", param);
       }
+
       if (text.indexOf("$APPNAME") !== -1) {
         text = text.replace("$APPNAME", determineAppName(this.grainId));
       }
+
       if (alertUrl && alertUrl.indexOf("$APPNAME") !== -1) {
         alertUrl = alertUrl.replace("$APPNAME", determineAppName(this.grainId));
       }
-      return {text: text, className: className, alertUrl: alertUrl};
+
+      return { text: text, className: className, alertUrl: alertUrl };
     },
+
     billingPromptState: function () {
       return billingPromptState.get();
     },
+
     demoExpired: isDemoExpired,
     canUpgradeDemo: function () {
       return Meteor.settings.public.allowUninvited;
     },
+
     globalAccountsUi: function () {
       return globalAccountsUi;
     },
+
     identityUser: function () {
       var user = Meteor.user();
       return user && user.profile;
     },
+
     showAccountButtons: function () {
       return Meteor.user() && !Meteor.loggingIn() && !isDemoUser();
     },
+
     accountButtonsData: function () {
-      return {isAdmin: globalDb.isAdmin()};
+      return { isAdmin: globalDb.isAdmin() };
     },
+
     firstLogin: function () {
       return credentialsSubscription.ready() && !isDemoUser() && !Meteor.loggingIn()
           && Meteor.user() && !Meteor.user().hasCompletedSignup;
     },
+
     accountSettingsUi: function () {
       return makeAccountSettingsUi();
     },
+
     firstTimeBillingPromptState: function () {
       // Should we show the first-time billing plan selector?
 
@@ -730,6 +761,7 @@ if (Meteor.isClient) {
         if (_.some(globalGrains.get(), function (grain) {
           return grain.isActive() && !grain.isOwner();
         })) {
+
           return;
         }
       }
@@ -744,21 +776,21 @@ if (Meteor.isClient) {
         accountsUi: globalAccountsUi,
         onComplete: function () {
           Session.set("firstTimeBillingPromptOpen", false);
-        }
+        },
       };
-    }
+    },
   });
 
   Template.layout.events({
     "click #demo-expired .logout": function (event) {
       logoutSandstorm();
-    }
+    },
   });
 
   Template.root.events({
     "click #logo": function (event) {
       doLogoAnimation(event.shiftKey, 0);
-    }
+    },
   });
 
   credentialsSubscription = Meteor.subscribe("credentials");
@@ -787,17 +819,19 @@ if (Meteor.isClient) {
 
     return result;
   };
+
   Template.registerHelper("dateString", makeDateString);
-  Template.registerHelper("hideNavbar", function() {
+  Template.registerHelper("hideNavbar", function () {
     // Hide navbar if user is not logged in, since they can't go anywhere with it.
     return !Meteor.userId() || isDemoExpired();
   });
-  Template.registerHelper("shrinkNavbar", function() {
+
+  Template.registerHelper("shrinkNavbar", function () {
     // Shrink the navbar if the user clicked the button to do so.
     return Session.get("shrink-navbar");
   });
 
-  Template.registerHelper("quotaEnabled", function() {
+  Template.registerHelper("quotaEnabled", function () {
     return Meteor.settings.public.quotaEnabled;
   });
 
@@ -813,11 +847,12 @@ if (Meteor.isClient) {
       size = size / 1000;
       suffix = "kB";
     }
-    return size.toPrecision(3) + suffix;
-  }
 
-  launchAndEnterGrainByPackageId = function(packageId) {
-    var action = UserActions.findOne({packageId: packageId});
+    return size.toPrecision(3) + suffix;
+  };
+
+  launchAndEnterGrainByPackageId = function (packageId) {
+    var action = UserActions.findOne({ packageId: packageId });
     if (!action) {
       alert("Somehow, you seem to have attempted to launch a package you have not installed.");
       return;
@@ -826,7 +861,7 @@ if (Meteor.isClient) {
     }
   };
 
-  launchAndEnterGrainByActionId = function(actionId, devPackageId, devIndex) {
+  launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex) {
     // Note that this takes a devPackageId and a devIndex as well. If provided,
     // they override the actionId.
     var packageId;
@@ -839,8 +874,9 @@ if (Meteor.isClient) {
         console.error("no such dev package: ", devPackageId);
         return;
       }
+
       var devAction = devPackage.manifest.actions[devIndex];
-      packageId = devPackageId
+      packageId = devPackageId;
       command = devAction.command;
       appTitle = SandstormDb.appNameFromPackage(devPackage);
       nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(devAction, appTitle);
@@ -868,24 +904,24 @@ if (Meteor.isClient) {
         console.error(error);
         alert(error.message);
       } else {
-        Router.go("grain", {grainId: grainId});
+        Router.go("grain", { grainId: grainId });
       }
     });
   };
 
   Template.root.helpers({
-    storageUsage: function() {
+    storageUsage: function () {
       return Meteor.userId() ? prettySize(Meteor.user().storageUsage || 0) : undefined;
     },
 
-    storageQuota: function() {
+    storageQuota: function () {
       var plan = globalDb.getMyPlan();
       return plan ? prettySize(plan.storage) : undefined;
     },
 
-    overQuota: function() {
+    overQuota: function () {
       return !window.BlackrockPayments && isUserOverQuota(Meteor.user());
-    }
+    },
   });
 
   Template.root.events({
@@ -894,9 +930,10 @@ if (Meteor.isClient) {
       //   uninstall. Leave this code here for reference until it does.
       var appId = event.currentTarget.getAttribute("data-appid");
       if (window.confirm("Really uninstall this app?")) {
-        UserActions.find({appId: appId, userId: Meteor.userId()}).forEach(function (action) {
+        UserActions.find({ appId: appId, userId: Meteor.userId() }).forEach(function (action) {
           UserActions.remove(action._id);
         });
+
         Meteor.call("deleteUnusedPackages", appId);
       }
     },
@@ -905,11 +942,12 @@ if (Meteor.isClient) {
   Template.notificationsPopup.helpers({
     notifications: function () {
       Meteor.call("readAllNotifications");
-      return Notifications.find({userId: Meteor.userId()}, {sort: {timestamp: -1}}).map(function (row) {
-        var grain = Grains.findOne({_id: row.grainId});
+      return Notifications.find({ userId: Meteor.userId() }, { sort: { timestamp: -1 } }).map(function (row) {
+        var grain = Grains.findOne({ _id: row.grainId });
         if (grain) {
           row.grainTitle = grain.title;
         }
+
         return row;
       });
     },
@@ -917,20 +955,21 @@ if (Meteor.isClient) {
 
   Template.notifications.helpers({
     notificationCount: function () {
-      return Notifications.find({userId: Meteor.userId(), isUnread: true}).count();
+      return Notifications.find({ userId: Meteor.userId(), isUnread: true }).count();
     },
   });
 
   Template.notificationsPopup.events({
     "click #notification-dropdown": function (event) {
       return false;
-    }
+    },
   });
 
   Template.notificationItem.helpers({
     isAppUpdates: function () {
       return !!this.appUpdates;
     },
+
     notificationTitle: function () {
       if (this.admin) {
         return "Notification from System";
@@ -942,6 +981,7 @@ if (Meteor.isClient) {
 
       return this.grainTitle + " is backgrounded";
     },
+
     titleHelperText: function () {
       if (this.admin) {
         return "Dismiss this system notification";
@@ -951,20 +991,25 @@ if (Meteor.isClient) {
         return "Stop the background app";
       }
     },
+
     dismissText: function () {
       if (this.admin && this.admin.type === "reportStats") {
         return false;
       } else if (this.referral) {
         return "Dismiss";
       }
+
       return "Cancel";
     },
+
     adminLink: function () {
       return this.admin && this.admin.action;
     },
+
     appUpdatesList: function () {
       return _.values(this.appUpdates);
     },
+
     paidUser: function () {
       const plan = Meteor.user().plan;
       return plan && plan !== "free";
@@ -976,6 +1021,7 @@ if (Meteor.isClient) {
       Meteor.call("dismissNotification", this._id);
       return false;
     },
+
     "click .accept-notification": function (event) {
       if (this.appUpdates) {
         var self = this;
@@ -984,8 +1030,10 @@ if (Meteor.isClient) {
           Meteor.call("dismissNotification", self._id);
         });
       }
+
       return false;
     },
+
     "click .dismiss-notification": function (event) {
       Meteor.call("dismissNotification", this._id);
     },
@@ -1023,14 +1071,15 @@ if (Meteor.isClient) {
   Meteor.methods({
     dismissNotification(notificationId) {
       // Client-side simulation of dismissNotification.
-      Notifications.remove({_id: notificationId});
-    }
+      Notifications.remove({ _id: notificationId });
+    },
   });
 }
+
 Router.configure({
-  layoutTemplate: 'layout',
+  layoutTemplate: "layout",
   notFoundTemplate: "notFound",
-  loadingTemplate: "loading"
+  loadingTemplate: "loading",
 });
 
 if (Meteor.isClient) {
@@ -1045,9 +1094,10 @@ function getBuildInfo() {
   } else if (isNumber) {
     build = String(Math.floor(build / 1000)) + "." + String(build % 1000);
   }
+
   return {
     build: build,
-    isUnofficial: !isNumber
+    isUnofficial: !isNumber,
   };
 }
 
@@ -1057,9 +1107,10 @@ var promptForFile = function (input, callback) {
     input.removeEventListener("change", listener);
     callback(e.currentTarget.files[0]);
   }
+
   input.addEventListener("change", listener);
   input.click();
-}
+};
 
 var startUpload = function (file, endpoint, onComplete) {
   // TODO(cleanup): Use Meteor's HTTP, although this may require sending them a PR to support
@@ -1079,7 +1130,7 @@ var startUpload = function (file, endpoint, onComplete) {
         Session.set("uploadError", {
           status: xhr.status,
           statusText: xhr.statusText,
-          response: xhr.responseText
+          response: xhr.responseText,
         });
       }
     }
@@ -1096,9 +1147,9 @@ var startUpload = function (file, endpoint, onComplete) {
   xhr.send(file);
 
   Router.go("uploadStatus");
-}
+};
 
-restoreBackup = function(file) {
+restoreBackup = function (file) {
   // This function is global so tests can call it
   startUpload(file, "/uploadBackup", function (response) {
     Session.set("uploadStatus", "Unpacking");
@@ -1109,16 +1160,16 @@ restoreBackup = function(file) {
         Session.set("uploadStatus", undefined);
         Session.set("uploadError", {
           status: "",
-          statusText: err.message
+          statusText: err.message,
         });
       } else {
-        Router.go("grain", {grainId: grainId});
+        Router.go("grain", { grainId: grainId });
       }
     });
   });
 };
 
-promptRestoreBackup = function(input) {
+promptRestoreBackup = function (input) {
   promptForFile(input, restoreBackup);
 };
 
@@ -1131,7 +1182,7 @@ uploadApp = function (file) {
     } else {
       startUpload(file, "/upload/" + token, function (response) {
         Session.set("uploadStatus", undefined);
-        Router.go("install", {packageId: response})
+        Router.go("install", { packageId: response });
       });
     }
   });
@@ -1139,7 +1190,7 @@ uploadApp = function (file) {
 
 promptUploadApp = function (input) {
   promptForFile(input, uploadApp);
-}
+};
 
 Router.map(function () {
   this.route("root", {
@@ -1147,27 +1198,28 @@ Router.map(function () {
     waitOn: function () {
       return [
         Meteor.subscribe("hasUsers"),
-        Meteor.subscribe("grainsMenu")
+        Meteor.subscribe("grainsMenu"),
       ];
     },
+
     data: function () {
       // If the user is logged-in, and can create new grains, and
       // has no grains yet, then send them to "new".
       if (this.ready() && Meteor.userId() && !Meteor.loggingIn()) {
         if (globalDb.currentUserGrains({}, {}).count() === 0 &&
             globalDb.currentUserApiTokens().count() === 0) {
-          Router.go("apps", {}, {replaceState: true});
+          Router.go("apps", {}, { replaceState: true });
         } else {
-          Router.go("grains", {}, {replaceState: true});
+          Router.go("grains", {}, { replaceState: true });
         }
       }
 
       return {
         needsAdminTokenLogin: this.ready() && !HasUsers.findOne("hasUsers") && !globalDb.allowDevAccounts(),
         build: getBuildInfo().build,
-        splashUrl: (Settings.findOne("splashUrl") || {}).value
+        splashUrl: (Settings.findOne("splashUrl") || {}).value,
       };
-    }
+    },
   });
 
   this.route("linkHandler", {
@@ -1181,7 +1233,7 @@ Router.map(function () {
       // TODO(cleanup):  Didn't use Router.go() because the url may contain a query term.
       document.location = "/install/" + url;
       return {};
-    }
+    },
   });
 
   this.route("about", {
@@ -1203,13 +1255,14 @@ Router.map(function () {
           while (anonCount < names.length && names[anonCount] === "") {
             ++anonCount;
           }
+
           names = names.slice(anonCount);
 
           // File ends in trailing newline, but that last blank line does not represent an
           // anonymous contributor.
           --anonCount;
 
-          Session.set("backers", {names: names, anonCount: anonCount});
+          Session.set("backers", { names: names, anonCount: anonCount });
         });
       }
 
@@ -1217,7 +1270,7 @@ Router.map(function () {
       result.privacyUrl = globalDb.getSetting("privacyUrl");
 
       return result;
-    }
+    },
   });
 
   this.route("uploadStatus", {
@@ -1231,17 +1284,17 @@ Router.map(function () {
       return {
         progress: Session.get("uploadProgress"),
         status: Session.get("uploadStatus"),
-        error: Session.get("uploadError")
+        error: Session.get("uploadError"),
       };
-    }
+    },
   });
 
   this.route("referrals", {
     path: "/referrals",
 
-    waitOn: function() {
+    waitOn: function () {
       return Meteor.subscribe("referralInfoPseudo");
-    }
+    },
   });
 
   this.route("account", {
@@ -1253,11 +1306,11 @@ Router.map(function () {
       // page to a demo user could make some sense for editing their profile, but we really do not
       // want them signing up for subscription plans!
       if ((!Meteor.user() && !Meteor.loggingIn()) || globalDb.isDemoUser()) {
-        Router.go("root", {}, {replaceState: true});
+        Router.go("root", {}, { replaceState: true });
       } else {
         return makeAccountSettingsUi();
       }
-    }
+    },
   });
 
   this.route("accountUsage", {

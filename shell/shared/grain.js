@@ -25,14 +25,15 @@ if (Meteor.isServer) {
     check(grainId, String);
     var self = this;
 
-    var result = [Grains.find({_id : grainId, $or: [{userId: this.userId}, {private: {$ne: true}}]},
-                              {fields: {title: 1, userId: 1, identityId: 1, private: 1}})];
+    var result = [Grains.find({ _id: grainId, $or: [{ userId: this.userId }, { private: { $ne: true } }] },
+                              { fields: { title: 1, userId: 1, identityId: 1, private: 1 } }),];
     if (this.userId) {
       var myIdentityIds = SandstormDb.getUserIdentityIds(globalDb.getUser(this.userId));
-      result.push(ApiTokens.find({grainId: grainId,
-                                  $or : [{"owner.user.identityId": {$in: myIdentityIds}},
-                                         {identityId: {$in: myIdentityIds}}]}));
+      result.push(ApiTokens.find({ grainId: grainId,
+                                  $or: [{ "owner.user.identityId": { $in: myIdentityIds } },
+                                         { identityId: { $in: myIdentityIds } },], }));
     }
+
     return result;
   });
 
@@ -45,13 +46,13 @@ if (Meteor.isServer) {
     var publishThis = [];
     // We need to publish the packageId so that client-side code can
     // find the right package.
-    var thisGrainCursor = Grains.find({_id: grainId, userId: this.userId},
-                                      {fields: {packageId: 1}});
+    var thisGrainCursor = Grains.find({ _id: grainId, userId: this.userId },
+                                      { fields: { packageId: 1 } });
     publishThis.push(thisGrainCursor);
 
     if (thisGrainCursor.count()) {
       var thisGrain = thisGrainCursor.fetch()[0];
-      var thisPackageCursor = Packages.find({_id: thisGrain.packageId});
+      var thisPackageCursor = Packages.find({ _id: thisGrain.packageId });
       publishThis.push(thisPackageCursor);
     }
 
@@ -65,49 +66,51 @@ if (Meteor.isServer) {
     check(token, String);
 
     var hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
-    var apiToken = ApiTokens.findOne({_id: hashedToken},
-                                     {fields: {grainId: 1, owner: 1}});
+    var apiToken = ApiTokens.findOne({ _id: hashedToken },
+                                     { fields: { grainId: 1, owner: 1 } });
     if (!apiToken) {
-      this.added("tokenInfo", token, {invalidToken: true});
+      this.added("tokenInfo", token, { invalidToken: true });
     } else {
       var grainId = apiToken.grainId;
-      var grain = Grains.findOne({_id: grainId}, {fields: {packageId: 1, appId: 1}});
+      var grain = Grains.findOne({ _id: grainId }, { fields: { packageId: 1, appId: 1 } });
       if (!grain) {
-        this.added("tokenInfo", token, {invalidToken: true});
+        this.added("tokenInfo", token, { invalidToken: true });
       } else {
         if (apiToken.owner && apiToken.owner.user) {
           let identity = globalDb.getIdentity(apiToken.owner.user.identityId);
           let metadata = apiToken.owner.user.denormalizedGrainMetadata;
           if (identity && metadata) {
             this.added("tokenInfo", token,
-                       {identityOwner: _.pick(identity, "_id", "profile"),
+                       { identityOwner: _.pick(identity, "_id", "profile"),
                         grainId: grainId,
-                        grainMetadata: metadata});
+                        grainMetadata: metadata, });
           } else {
-            this.added("tokenInfo", token, {invalidToken: true});
+            this.added("tokenInfo", token, { invalidToken: true });
           }
         } else if (!apiToken.owner || "webkey" in apiToken.owner) {
-          let pkg = Packages.findOne({_id: grain.packageId}, {fields: {manifest: 1}});
-          let appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ""};
+          let pkg = Packages.findOne({ _id: grain.packageId }, { fields: { manifest: 1 } });
+          let appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: "" };
           let appIcon = undefined;
           if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
             let icons = pkg.manifest.metadata.icons;
             appIcon = icons.grain || icons.appGrid;
           }
+
           let denormalizedGrainMetadata = {
             appTitle: appTitle,
             icon: appIcon,
             appId: appIcon ? undefined : grain.appId,
           };
           this.added("tokenInfo", token,
-                     {webkey: true,
+                     { webkey: true,
                       grainId: grainId,
-                      grainMetadata: denormalizedGrainMetadata});
+                      grainMetadata: denormalizedGrainMetadata, });
         } else {
-          this.added("tokenInfo", token, {invalidToken: true});
+          this.added("tokenInfo", token, { invalidToken: true });
         }
       }
     }
+
     this.ready();
     return;
   });
@@ -132,11 +135,13 @@ if (Meteor.isServer) {
       promise.then(function (size) {
         if (!stopped) {
           if (size !== oldSize) {  // sometimes there are false alarms
-            self.changed("grainSizes", grainId, {size: size});
+            self.changed("grainSizes", grainId, { size: size });
           }
+
           getNext(size);
         }
       }, function (err) {
+
         if (!stopped) {
           if (err.kjType === "disconnected") {
             self.stop();
@@ -149,11 +154,12 @@ if (Meteor.isServer) {
 
     promise.then(function (size) {
       if (!stopped) {
-        self.added("grainSizes", grainId, {size: size});
+        self.added("grainSizes", grainId, { size: size });
         self.ready();
         getNext(size);
       }
     }, function (err) {
+
       if (!stopped) {
         if (err.kjType === "disconnected") {
           self.stop();
@@ -181,15 +187,16 @@ Meteor.methods({
     check(grainId, String);
 
     if (this.userId) {
-      var grain = Grains.findOne({_id: grainId, userId: this.userId});
+      var grain = Grains.findOne({ _id: grainId, userId: this.userId });
       if (grain) {
         Grains.remove(grainId);
-        ApiTokens.remove({grainId : grainId, $or: [{owner: {$exists: false}},
-                                                   {owner: {webkey: null}}]});
+        ApiTokens.remove({ grainId: grainId, $or: [{ owner: { $exists: false } },
+                                                   { owner: { webkey: null } },], });
         if (grain.lastUsed) {
-          DeleteStats.insert({type: isDemoUser() ? "demoGrain" : "grain",
-                              lastActive: grain.lastUsed, appId: grain.appId});
+          DeleteStats.insert({ type: isDemoUser() ? "demoGrain" : "grain",
+                              lastActive: grain.lastUsed, appId: grain.appId, });
         }
+
         if (!this.isSimulation) {
           waitPromise(globalBackend.deleteGrain(grainId, this.userId));
           Meteor.call("deleteUnusedPackages", grain.appId);
@@ -197,6 +204,7 @@ Meteor.methods({
       }
     }
   },
+
   forgetGrain: function (grainId, identityId) {
     // TODO(cleanup): For now we are ignoring `identityId`, but maybe we should expose finer-grained
     //  forgetting.
@@ -207,22 +215,27 @@ Meteor.methods({
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to forget a grain.");
     }
+
     SandstormDb.getUserIdentityIds(Meteor.user()).forEach(function (identityId) {
-      ApiTokens.remove({grainId: grainId, "owner.user.identityId": identityId});
+      ApiTokens.remove({ grainId: grainId, "owner.user.identityId": identityId });
     });
   },
+
   updateGrainPreferredIdentity: function (grainId, identityId) {
     check(grainId, String);
     check(identityId, String);
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in.");
     }
+
     var grain = globalDb.getGrain(grainId) || {};
     if (!grain.userId === this.userId) {
       throw new Meteor.Error(403, "Grain not owned by current user.");
     }
-    Grains.update({_id: grainId}, {$set: {identityId: identityId}});
+
+    Grains.update({ _id: grainId }, { $set: { identityId: identityId } });
   },
+
   updateGrainTitle: function (grainId, newTitle, identityId) {
     check(grainId, String);
     check(newTitle, String);
@@ -231,27 +244,30 @@ Meteor.methods({
       var grain = Grains.findOne(grainId);
       if (grain) {
         if (grain.userId === this.userId) {
-          Grains.update({_id: grainId, userId: this.userId}, {$set: {title: newTitle}});
+          Grains.update({ _id: grainId, userId: this.userId }, { $set: { title: newTitle } });
         } else {
           if (!globalDb.userHasIdentity(this.userId, identityId)) {
             throw new Meteor.Error(403, "Current user does not have identity " + identityId);
           }
-          var token = ApiTokens.findOne({grainId: grainId, objectId: {$exists: false},
-                                         "owner.user.identityId": identityId},
-                                        {sort:{created:1}});
+
+          var token = ApiTokens.findOne({ grainId: grainId, objectId: { $exists: false },
+                                         "owner.user.identityId": identityId, },
+                                        { sort:{ created:1 } });
           if (token) {
-            ApiTokens.update(token._id, {$set: {"owner.user.title": newTitle}});
+            ApiTokens.update(token._id, { $set: { "owner.user.title": newTitle } });
           }
         }
       }
     }
   },
+
   privatizeGrain: function (grainId) {
     check(grainId, String);
     if (this.userId) {
-      Grains.update({_id: grainId, userId: this.userId}, {$set: {private: true}});
+      Grains.update({ _id: grainId, userId: this.userId }, { $set: { private: true } });
     }
   },
+
   inviteUsersToGrain: function (origin, identityId, grainId, title, roleAssignment,
                                 contacts, message) {
     if (!this.isSimulation) {
@@ -267,28 +283,31 @@ Meteor.methods({
           service: String,
           name: String,
           intrinsicName: String,
-      })}]);
-      check(message, {text: String, html: String});
+        }), },]);
+      check(message, { text: String, html: String });
       if (!this.userId) {
         throw new Meteor.Error(403, "Must be logged in to share by email.");
       }
+
       if (!globalDb.userHasIdentity(this.userId, identityId)) {
         throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
       }
+
       if (contacts.length === 0) {
         throw new Meteor.Error(400, "No contacts were provided.");
       }
-      var accountId = this.userId
+
+      var accountId = this.userId;
       var identity = globalDb.getIdentity(identityId);
       var sharerDisplayName = identity.profile.name;
-      var outerResult = {successes: [], failures: []};
-      contacts.forEach(function(contact) {
+      var outerResult = { successes: [], failures: [] };
+      contacts.forEach(function (contact) {
         if (contact.isDefault && contact.profile.service === "email") {
           var emailAddress = contact.profile.intrinsicName;
           var result = SandstormPermissions.createNewApiToken(
-            globalDb, {identityId: identityId, accountId: accountId}, grainId,
+            globalDb, { identityId: identityId, accountId: accountId }, grainId,
             "email invitation for " + emailAddress,
-            roleAssignment, {webkey: {forSharing: true}});
+            roleAssignment, { webkey: { forSharing: true } });
           var url = origin + "/shared/" + result.token;
           var html = message.html + "<br><br>" +
               "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
@@ -308,15 +327,15 @@ Meteor.methods({
               html: html,
             });
           } catch (e) {
-            outerResult.failures.push({contact: contact, error: e.toString()});
+            outerResult.failures.push({ contact: contact, error: e.toString() });
           }
         } else {
           let result = SandstormPermissions.createNewApiToken(
-            globalDb, {identityId: identityId, accountId: accountId}, grainId,
+            globalDb, { identityId: identityId, accountId: accountId }, grainId,
             "direct invitation to " + contact.profile.intrinsicName,
-            roleAssignment, {user: {identityId: contact._id, title: title}});
+            roleAssignment, { user: { identityId: contact._id, title: title } });
           try {
-            var identity = Meteor.users.findOne({_id: contact._id});
+            var identity = Meteor.users.findOne({ _id: contact._id });
             var emailAddress = SandstormDb.getVerifiedEmails(identity)[0];
             var url = origin + "/shared/" + result.token;
             if (emailAddress) {
@@ -329,15 +348,16 @@ Meteor.methods({
               } else if (contact.profile.service === "email") {
                 loginNote = "email address " + intrinsicName;
               } else {
-                throw new Meteor.Error(500, "Unknown service to email share link.")
+                throw new Meteor.Error(500, "Unknown service to email share link.");
               }
+
               var html = message.html + "<br><br>" +
                   "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
                   "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
                   "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
                   "Open Shared Grain</a><div style='font-size:8pt;font-style:italic;color:gray'>" +
                   "Note: You will need to log in with your " + loginNote +
-                  " to access this grain."
+                  " to access this grain.";
               SandstormEmail.send({
                 to: emailAddress,
                 from: "Sandstorm server <no-reply@" + HOSTNAME + ">",
@@ -348,28 +368,29 @@ Meteor.methods({
                 html: html,
               });
             } else {
-              outerResult.failures.push({contact: contact, warning: "User does not have a " +
+              outerResult.failures.push({ contact: contact, warning: "User does not have a " +
                 "verified email, so notification of this share was not sent to them. Please " +
-                "manually share " + url + " with them."});
+                "manually share " + url + " with them.", });
             }
           } catch (e) {
-            outerResult.failures.push({contact: contact, error: e.toString(),
+            outerResult.failures.push({ contact: contact, error: e.toString(),
               warning: "Share succeeded, but there was an error emailing the user. Please " +
-              "manually share " + url + " with them."});
+              "manually share " + url + " with them.", });
           }
         }
       });
+
       return outerResult;
     }
   },
 });
 
 if (Meteor.isClient) {
-  Tracker.autorun(function() {
+  Tracker.autorun(function () {
     // We need to keep track of certain data about each grain we can view.
     // TODO(cleanup): Do these in GrainView to avoid spurious resubscribes.
     var grains = globalGrains.get();
-    grains.forEach(function(grain) {
+    grains.forEach(function (grain) {
       grain.depend();
       var grainId = grain.grainId();
       if (grainId) {
@@ -377,13 +398,14 @@ if (Meteor.isClient) {
         if (grain.isOwner()) {
           Meteor.subscribe("packageByGrainId", grainId);
         }
+
         var token = grain.token();
         if (token) {
           Meteor.subscribe("tokenInfo", token);
         }
       }
     });
-  })
+  });
 
   Template.layout.events({
     "click .incognito-button": function (event) {
@@ -402,24 +424,27 @@ if (Meteor.isClient) {
     },
   });
 
-  var promptNewTitle = function() {
+  var promptNewTitle = function () {
     var grain = getActiveGrain(globalGrains.get());
     if (grain) {
       var prompt = "Set new title:";
       if (!grain.isOwner()) {
         prompt = "Set a new personal title: (does not change the owner's title for this grain)";
       }
+
       var title = window.prompt(prompt, grain.title());
       if (title) {
         grain.setTitle(title);
       }
     }
   };
+
   Template.grainTitle.events({
-    "click": function (event) {
+    click: function (event) {
       promptNewTitle();
     },
-    "keydown": function (event) {
+
+    keydown: function (event) {
       if ((event.keyCode === 13) || (event.keyCode === 32)) {
         // Allow space or enter to trigger renaming the grain - Firefox doesn't treat enter on the
         // focused element as click().
@@ -488,7 +513,7 @@ if (Meteor.isClient) {
   Template.grainBackupButton.helpers({
     isLoading: function () {
       return Template.instance().isLoading.get();
-    }
+    },
   });
 
   Template.grainBackupButton.events({
@@ -535,7 +560,7 @@ if (Meteor.isClient) {
           alert("Restart failed: " + err); // TODO(someday): make this better UI
         } else {
           var frames = document.getElementsByClassName("grain-frame");
-          for (var i = 0 ; i < frames.length ; i++) {
+          for (var i = 0; i < frames.length; i++) {
             var frame = frames[i];
             if (frame.dataset.grainid == grainId) {
               frame.src = frame.src;
@@ -575,13 +600,14 @@ if (Meteor.isClient) {
       activeGrain.setGeneratedApiToken("pending");
       var roleList = document.getElementById("api-token-role");
       // TODO(cleanup): avoid using global ids; select a child of the current template instead
-      var assignment = {allAccess: null};
+      var assignment = { allAccess: null };
       if (roleList && roleList.selectedIndex > 0) {
-        assignment = {roleId: roleList.selectedIndex - 1};
+        assignment = { roleId: roleList.selectedIndex - 1 };
       }
-      Meteor.call("newApiToken", {identityId: activeGrain.identityId()}, grainId,
+
+      Meteor.call("newApiToken", { identityId: activeGrain.identityId() }, grainId,
                   document.getElementById("api-token-petname").value,
-                  assignment, {webkey: {forSharing: false}},
+                  assignment, { webkey: { forSharing: false } },
                   function (error, result) {
         if (error) {
           activeGrain.setGeneratedApiToken(undefined);
@@ -592,13 +618,15 @@ if (Meteor.isClient) {
         }
       });
     },
+
     "click #resetApiToken": function (event) {
       var activeGrain = getActiveGrain(globalGrains.get());
       activeGrain.setGeneratedApiToken(undefined);
     },
+
     "click button.revoke-token": function (event) {
       Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
-                  {revoked: true});
+                  { revoked: true });
     },
 
     "click .token-petname": function (event) {
@@ -607,7 +635,7 @@ if (Meteor.isClient) {
       var petname = window.prompt("Set new label:", this.petname);
       if (petname) {
         Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
-                    {petname: petname});
+                    { petname: petname });
       }
     },
   });
@@ -618,6 +646,7 @@ if (Meteor.isClient) {
     "click #share-grain-popup-closer": function (event) {
       Session.set("show-share-grain", false);
     },
+
     "click button.who-has-access": function (event, instance) {
       event.preventDefault();
       var closer = globalTopbar.addItem({
@@ -628,28 +657,32 @@ if (Meteor.isClient) {
         startOpen: true,
         onDismiss: function () {
           return "remove";
-        }
+        },
       });
     },
+
     "click #privatize-grain": function (event) {
       Meteor.call("privatizeGrain", getActiveGrain(globalGrains.get()).grainId());
     },
+
     "click a.open-non-anonymously": function (event) {
       event.preventDefault();
       globalTopbar.closePopup();
       getActiveGrain(globalGrains.get()).reset();
       getActiveGrain(globalGrains.get()).openSession();
-    }
+    },
   });
 
   Template.shareWithOthers.onRendered(function () {
     this.find("[role=tab]").focus();
   });
-  var activateTargetTab = function(event, instance) {
+
+  var activateTargetTab = function (event, instance) {
     // Deactivate all tabs and all tab panels.
     instance.findAll("ul[role=tablist]>li[role=tab]").forEach(function (element) {
       element.setAttribute("aria-selected", false);
     });
+
     instance.findAll(".tabpanel").forEach(function (element) {
       element.setAttribute("aria-hidden", true);
     });
@@ -661,26 +694,28 @@ if (Meteor.isClient) {
     var tabPanelToShow = instance.find("#" + idToShow);
     tabPanelToShow.setAttribute("aria-hidden", false);
   };
+
   Template.shareWithOthers.events({
     "click #send-invite-tab-header": activateTargetTab,
     "click #shareable-link-tab-header": activateTargetTab,
-    "keydown [role=tab]": function(event, template) {
+    "keydown [role=tab]": function (event, template) {
       if (event.keyCode == 38 || event.keyCode == 40) { // up and down arrows
         event.preventDefault();
       }
+
       var focus = $(template.find(":focus"));
       var items = template.$("[role=tab]:visible");
       var focusIndex = items.index(focus);
       var newFocusIndex;
       if (event.keyCode == 37) { // left arrow
         event.preventDefault();
-        newFocusIndex = focusIndex-1;
+        newFocusIndex = focusIndex - 1;
         if (newFocusIndex == -1) {
-          newFocusIndex = items.length-1;
+          newFocusIndex = items.length - 1;
         }
       } else if (event.keyCode == 39) { // right arrow
         event.preventDefault();
-        newFocusIndex = focusIndex+1;
+        newFocusIndex = focusIndex + 1;
         if (newFocusIndex >= items.length) {
           newFocusIndex = 0;
         }
@@ -688,10 +723,11 @@ if (Meteor.isClient) {
         event.preventDefault();
         activateTargetTab(event, template);
       }
+
       if (newFocusIndex != null) {
         items.attr("tabindex", "-1");
         newFocus = $(items[newFocusIndex]);
-        newFocus.attr("tabindex", "0")
+        newFocus.attr("tabindex", "0");
         newFocus.focus();
       }
     },
@@ -704,63 +740,69 @@ if (Meteor.isClient) {
         var roleList = event.target;
         var assignment;
         if (roleList) {
-          assignment = {roleId: roleList.selectedIndex};
+          assignment = { roleId: roleList.selectedIndex };
         } else {
-          assignment = {none: null};
+          assignment = { none: null };
         }
-        Meteor.call("updateApiToken", success.id, {roleAssignment: assignment}, function (error) {
+
+        Meteor.call("updateApiToken", success.id, { roleAssignment: assignment }, function (error) {
           if (error) {
             console.error(error.stack);
           }
         });
       }
     },
+
     "change .label": function (event, instance) {
       var success = instance.completionState.get().success;
       if (success) {
         var label = event.target.value;
-        Meteor.call("updateApiToken", success.id, {petname: label}, function (error) {
+        Meteor.call("updateApiToken", success.id, { petname: label }, function (error) {
           if (error) {
             console.error(error.stack);
           }
         });
       }
     },
+
     "submit form.new-share-token": function (event, instance) {
       event.preventDefault();
       if (!instance.completionState.get().clear) {
         return;
       }
+
       var currentGrain = getActiveGrain(globalGrains.get());
       var grainId = currentGrain.grainId();
       var roleList = event.target.getElementsByClassName("share-token-role")[0];
       var assignment;
       if (roleList) {
-        assignment = {roleId: roleList.selectedIndex};
+        assignment = { roleId: roleList.selectedIndex };
       } else {
-        assignment = {none: null};
+        assignment = { none: null };
       }
-      instance.completionState.set({"pending": true});
-      Meteor.call("newApiToken", {identityId: currentGrain.identityId()}, grainId,
+
+      instance.completionState.set({ pending: true });
+      Meteor.call("newApiToken", { identityId: currentGrain.identityId() }, grainId,
                   event.target.getElementsByClassName("label")[0].value,
-                  assignment, {webkey: {forSharing: true}},
+                  assignment, { webkey: { forSharing: true } },
                   function (error, result) {
         if (error) {
           console.error(error.stack);
         } else {
           result.url = getOrigin() + "/shared/" + result.token;
-          instance.completionState.set({"success": result});
+          instance.completionState.set({ success: result });
           // On the next render, .copy-me will exist, and we should focus it then.
-          Meteor.defer(function() {
-            var element = instance.find(".copy-me")
+          Meteor.defer(function () {
+            var element = instance.find(".copy-me");
             element.focus();
             selectElementContents(element);
           });
         }
       });
     },
+
     "click .reset-share-token": function (event, instance) {
-      instance.completionState.set({clear: true});
+      instance.completionState.set({ clear: true });
       instance.find("form").reset();
       instance.find("form option[data-default-selected=true]").selected = true;
     },
@@ -771,29 +813,33 @@ if (Meteor.isClient) {
       const data = Template.instance().data.get();
       data.onDismiss();
     },
+
     "click .copy-me": selectTargetContents,
-    "focus .copy-me": selectTargetContents
+    "focus .copy-me": selectTargetContents,
   });
 
   Template.grainSharePopup.helpers({
-    "incognito": function () {
+    incognito: function () {
       return !Accounts.getCurrentIdentityId();
     },
-    "currentTokenUrl": function() {
+
+    currentTokenUrl: function () {
       return getOrigin() + "/shared/" + getActiveGrain(globalGrains.get()).token();
     },
-    "currentGrain": function() {
+
+    currentGrain: function () {
       return getActiveGrain(globalGrains.get());
-    }
+    },
   });
 
   Template.grainView.helpers({
     unpackedGrainState: function () {
       return mapGrainStateToTemplateData(this);
     },
+
     identityPickerData: function () {
       var identities = SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {
-        var identity = Meteor.users.findOne({_id: id});
+        var identity = Meteor.users.findOne({ _id: id });
         if (identity) {
           SandstormDb.fillInProfileDefaults(identity);
           SandstormDb.fillInIntrinsicName(identity);
@@ -801,16 +847,18 @@ if (Meteor.isClient) {
           return identity;
         }
       });
+
       var grain = getActiveGrain(globalGrains.get());
-      return {identities: identities,
-              onPicked: function(identityId) { grain.revealIdentity(identityId) }};
-    }
+      return { identities: identities,
+              onPicked: function (identityId) { grain.revealIdentity(identityId); }, };
+    },
   });
 
   Template.grain.helpers({
     currentGrain: function () {
       return getActiveGrain(globalGrains.get());
     },
+
     isOwner: function () {
       var current = getActiveGrain(globalGrains.get());
       return current && current.isOwner();
@@ -826,7 +874,7 @@ if (Meteor.isClient) {
       }
     },
 
-    setGrainWindowTitle:  function() {
+    setGrainWindowTitle:  function () {
       var current = getActiveGrain(globalGrains.get());
       if (current) {
         current.updateDocumentTitle();
@@ -843,7 +891,7 @@ if (Meteor.isClient) {
       return current && current.showPowerboxOffer();
     },
 
-    powerboxOfferData: function() {
+    powerboxOfferData: function () {
       const current = getActiveGrain(globalGrains.get());
       return current && current.powerboxOfferData();
     },
@@ -871,34 +919,38 @@ if (Meteor.isClient) {
     title: function () {
       var grain = getActiveGrain(globalGrains.get());
       return (grain && grain.title()) || "Untitled grain";
-    }
+    },
   });
 
   Template.grainApiTokenPopup.helpers({
-    displayToken: function() {
+    displayToken: function () {
       return !this.revoked && !this.expiresIfUnused && !this.parentToken;
     },
+
     existingTokens: function () {
       var current = getActiveGrain(globalGrains.get());
-      return current && ApiTokens.find({grainId: current.grainId(),
+      return current && ApiTokens.find({ grainId: current.grainId(),
                                         identityId: current.identityId(),
-                                        forSharing: {$ne: true},
-                                        $or: [{owner: {webkey: null}},
-                                              {owner: {$exists: false}}],
-                                        expiresIfUnused: null});
+                                        forSharing: { $ne: true },
+                                        $or: [{ owner: { webkey: null } },
+                                              { owner: { $exists: false } },],
+                                        expiresIfUnused: null, });
     },
+
     generatedApiToken: function () {
       var current = getActiveGrain(globalGrains.get());
       return current && current.generatedApiToken();
     },
-    generatedApiTokenPending: function() {
+
+    generatedApiTokenPending: function () {
       var current = getActiveGrain(globalGrains.get());
       return (current && current.generatedApiToken()) == "pending";
     },
+
     viewInfo: function () {
       var current = getActiveGrain(globalGrains.get());
       return current && current.viewInfo();
-    }
+    },
   });
 
   Template.whoHasAccessPopup.onCreated(function () {
@@ -909,9 +961,9 @@ if (Meteor.isClient) {
     instance.grainId = currentGrain.grainId();
     instance.transitiveShares = new ReactiveVar(null);
     instance.downstreamTokensById = new ReactiveVar({});
-    this.resetTransitiveShares = function() {
+    this.resetTransitiveShares = function () {
       Meteor.call("transitiveShares", instance.identityId, instance.grainId,
-                  function(error, downstream) {
+                  function (error, downstream) {
         if (error) {
           console.error(error.stack);
         } else {
@@ -919,7 +971,7 @@ if (Meteor.isClient) {
           let sharesByRecipient = {};
           downstream.forEach(function (token) {
             downstreamTokensById[token._id] = token;
-            if (Match.test(token.owner, {user: Match.ObjectIncluding({identityId: String})})) {
+            if (Match.test(token.owner, { user: Match.ObjectIncluding({ identityId: String }) })) {
               var recipient = token.owner.user.identityId;
               if (!sharesByRecipient[recipient]) {
                 sharesByRecipient[recipient] = {
@@ -928,6 +980,7 @@ if (Meteor.isClient) {
                   allShares: [],
                 };
               }
+
               sharesByRecipient[recipient].allShares.push(token);
               var dedupedShares = sharesByRecipient[recipient].dedupedShares;
               if (!dedupedShares.some((share) => share.identityId === token.identityId)) {
@@ -935,15 +988,18 @@ if (Meteor.isClient) {
               }
             }
           });
+
           var result = _.values(sharesByRecipient);
           if (result.length == 0) {
-            result = {empty: true};
+            result = { empty: true };
           }
+
           instance.transitiveShares.set(result);
           instance.downstreamTokensById.set(downstreamTokensById);
         }
       });
-    }
+    };
+
     this.resetTransitiveShares();
   });
 
@@ -952,29 +1008,32 @@ if (Meteor.isClient) {
       var roleList = event.target;
       var assignment;
       if (roleList) {
-        assignment = {roleId: roleList.selectedIndex};
+        assignment = { roleId: roleList.selectedIndex };
       } else {
-        assignment = {none: null};
+        assignment = { none: null };
       }
+
       Meteor.call("updateApiToken", roleList.getAttribute("data-token-id"),
-                  {roleAssignment: assignment}, function (error) {
+                  { roleAssignment: assignment }, function (error) {
         if (error) {
           console.error(error.stack);
         }
       });
     },
+
     "click button.revoke-token": function (event, instance) {
       Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
-                  {revoked: true});
+                  { revoked: true });
       instance.resetTransitiveShares();
     },
+
     "click button.revoke-access": function (event, instance) {
       const recipient = event.currentTarget.getAttribute("data-recipient");
       const transitiveShares = instance.transitiveShares.get();
       const tokensById = instance.downstreamTokensById.get();
-      const recipientShares = _.findWhere(transitiveShares, {recipient: recipient});
+      const recipientShares = _.findWhere(transitiveShares, { recipient: recipient });
       const currentIdentityId = Accounts.getCurrentIdentityId();
-      const recipientTokens = _.where(recipientShares.allShares, {identityId: currentIdentityId});
+      const recipientTokens = _.where(recipientShares.allShares, { identityId: currentIdentityId });
 
       // Two cases:
       // 1. All of the tokens are direct shares. Easy. Just revoke them.
@@ -1013,6 +1072,7 @@ if (Meteor.isClient) {
             if (!tokensByParent[token.parentToken]) {
               tokensByParent[token.parentToken] = [];
             }
+
             tokensByParent[token.parentToken].push(token);
           }
         }
@@ -1022,7 +1082,7 @@ if (Meteor.isClient) {
         while (tokenStack.length > 0) {
           let current = tokenStack.pop();
           if (Match.test(current.owner,
-                         {user: Match.ObjectIncluding({identityId: String})})) {
+                         { user: Match.ObjectIncluding({ identityId: String }) })) {
             if (current.owner.user.identityId != recipient) {
               otherAffectedIdentities[current.owner.user.identityId] = true;
             }
@@ -1036,7 +1096,7 @@ if (Meteor.isClient) {
           }
         }
 
-        const recipientIdentity = ContactProfiles.findOne({_id: recipient});
+        const recipientIdentity = ContactProfiles.findOne({ _id: recipient });
         const recipientName = (recipientIdentity && recipientIdentity.profile.name) ||
             "Unknown User";
         const singular = rootTokens.length == 1;
@@ -1053,7 +1113,7 @@ if (Meteor.isClient) {
             (singular ? "this link" : "these links") + " yet.)";
         if (Object.keys(otherAffectedIdentities).length > 0) {
           const othersNames = Object.keys(otherAffectedIdentities)
-              .map(identityId => ContactProfiles.findOne({_id: identityId}))
+              .map(identityId => ContactProfiles.findOne({ _id: identityId }))
               .map(identity => (identity && identity.profile.name) || "Unknown User")
               .join(", ");
           othersNote = (singular ? "This link has" : "These links have") +
@@ -1062,7 +1122,7 @@ if (Meteor.isClient) {
 
         if (window.confirm(confirmText + othersNote)) {
           rootTokens.forEach((token) => {
-            Meteor.call("updateApiToken", token._id, {revoked: true});
+            Meteor.call("updateApiToken", token._id, { revoked: true });
           });
         } else {
           // Cancel.
@@ -1071,7 +1131,7 @@ if (Meteor.isClient) {
       }
 
       directTokens.forEach((token) => {
-        Meteor.call("updateApiToken", token._id, {revoked: true});
+        Meteor.call("updateApiToken", token._id, { revoked: true });
       });
 
       instance.resetTransitiveShares();
@@ -1083,8 +1143,9 @@ if (Meteor.isClient) {
       var petname = window.prompt("Set new label:", this.petname);
       if (petname) {
         Meteor.call("updateApiToken", event.currentTarget.getAttribute("data-token-id"),
-                    {petname: petname});
+                    { petname: petname });
       }
+
       instance.resetTransitiveShares();
     },
   });
@@ -1093,30 +1154,34 @@ if (Meteor.isClient) {
     if (!permissionSet) {
       return true;
     }
+
     for (var ii = 0; ii < permissionSet.length; ++ii) {
       if (permissionSet[ii]) {
         return false;
       }
     }
+
     return true;
   }
 
   Template.whoHasAccessPopup.helpers({
     existingShareTokens: function () {
       if (Meteor.userId()) {
-        return ApiTokens.find({grainId: Template.instance().grainId,
+        return ApiTokens.find({ grainId: Template.instance().grainId,
                                identityId: Template.instance().identityId,
                                forSharing: true,
-                               $or: [{owner: {webkey:null}},
-                                     {owner: {$exists: false}}],
+                               $or: [{ owner: { webkey:null } },
+                                     { owner: { $exists: false } },],
                               }).fetch();
       }
     },
+
     isCurrentIdentity: function () {
       if (this.identityId === Accounts.getCurrentIdentityId()) {
         return true;
       }
     },
+
     getPetname: function () {
       if (this.petname) {
         return this.petname;
@@ -1124,30 +1189,36 @@ if (Meteor.isClient) {
         return "Unlabeled Link";
       }
     },
+
     displayName: function (identityId) {
-      var identity = ContactProfiles.findOne({_id: identityId});
+      var identity = ContactProfiles.findOne({ _id: identityId });
       if (!identity) {
-        identity = Meteor.users.findOne({_id: identityId});
+        identity = Meteor.users.findOne({ _id: identityId });
       }
+
       if (identity) {
         return identity.profile.name;
       } else {
-        return "Unknown User (" + identityId.slice(0,16) + ")";
+        return "Unknown User (" + identityId.slice(0, 16) + ")";
       }
     },
+
     transitiveShares: function () {
       return Template.instance().transitiveShares.get();
     },
+
     indexedRoles: function () {
       var result = [];
       var instance = Template.instance();
       var currentGrain = getActiveGrain(globalGrains.get());
       var roles = currentGrain.viewInfo().roles;
       for (var ii = 0; ii < roles.length; ++ii) {
-        result.push({idx: ii, title: roles[ii].title, verbPhrase: roles[ii].verbPhrase});
+        result.push({ idx: ii, title: roles[ii].title, verbPhrase: roles[ii].verbPhrase });
       }
+
       return result;
     },
+
     roleText: function () {
       if (this.verbPhrase) {
         return this.verbPhrase.defaultText;
@@ -1155,28 +1226,34 @@ if (Meteor.isClient) {
         return "is " + this.title.defaultText;
       }
     },
-    hasCustomRole: function(token) {
+
+    hasCustomRole: function (token) {
       var role = token.roleAssignment;
       if ("roleId" in role &&
           isEmptyPermissionSet(role.addPermissions) &&
           isEmptyPermissionSet(role.removePermissions)) {
         return false;
       }
+
       return true;
     },
-    hasCurrentRole: function(token) {
+
+    hasCurrentRole: function (token) {
       var role = token.roleAssignment;
       if ("roleId" in role && role.roleId == this.idx &&
           isEmptyPermissionSet(role.addPermissions) &&
           isEmptyPermissionSet(role.removePermissions)) {
         return true;
       }
+
       return false;
     },
-    displayToken: function() {
+
+    displayToken: function () {
       return !this.revoked && !this.expiresIfUnused && !this.parentToken;
     },
-    viewInfo: function() {
+
+    viewInfo: function () {
       var activeGrain = getActiveGrain(globalGrains.get());
       return activeGrain && activeGrain.viewInfo();
     },
@@ -1193,28 +1270,29 @@ if (Meteor.isClient) {
   });
 
   Template.shareableLinkTab.onCreated(function () {
-    this.completionState = new ReactiveVar({clear: true});
+    this.completionState = new ReactiveVar({ clear: true });
   });
 
   Template.emailInviteTab.onCreated(function () {
-    this.completionState = new ReactiveVar({clear: true});
+    this.completionState = new ReactiveVar({ clear: true });
     this.contacts = new ReactiveVar([]);
   });
 
   Template.shareableLinkTab.helpers({
-    completionState: function() {
-      var instance = Template.instance();
-      return instance.completionState.get();
-    }
-  });
-  Template.emailInviteTab.helpers({
-    completionState: function() {
+    completionState: function () {
       var instance = Template.instance();
       return instance.completionState.get();
     },
-    contacts: function() {
+  });
+  Template.emailInviteTab.helpers({
+    completionState: function () {
+      var instance = Template.instance();
+      return instance.completionState.get();
+    },
+
+    contacts: function () {
       return Template.instance().contacts;
-    }
+    },
   });
 
   Template.emailInviteTab.events({
@@ -1222,28 +1300,31 @@ if (Meteor.isClient) {
       event.preventDefault();
       return false;
     },
+
     "click form.email-invite button": function (event, instance) {
       event.preventDefault();
       if (!instance.completionState.get().clear) {
         return;
       }
+
       var grainId = instance.data.grainId;
       var title = instance.data.title;
 
       var roleList = instance.find(".share-token-role");
       var assignment;
       if (roleList) {
-        assignment = {roleId: roleList.selectedIndex};
+        assignment = { roleId: roleList.selectedIndex };
       } else {
-        assignment = {none: null};
+        assignment = { none: null };
       }
+
       var message = instance.find(".personal-message").value;
-      instance.completionState.set({pending: true});
+      instance.completionState.set({ pending: true });
 
       var currentGrain = getActiveGrain(globalGrains.get());
 
       // HTML-escape the message.
-      var div = document.createElement('div');
+      var div = document.createElement("div");
       div.appendChild(document.createTextNode(message));
       var htmlMessage = div.innerHTML.replace(/\n/g, "<br>");
 
@@ -1266,16 +1347,16 @@ if (Meteor.isClient) {
           emails.value = "";
         } else {
           instance.completionState.set(
-            {error: "Invalid text in contact input box: " + emailsValue});
+            { error: "Invalid text in contact input box: " + emailsValue });
           return;
         }
       }
 
       Meteor.call("inviteUsersToGrain", getOrigin(), currentGrain.identityId(),
                   grainId, title, assignment, contacts,
-                  {text: message, html: htmlMessage}, function (error, result) {
+                  { text: message, html: htmlMessage }, function (error, result) {
         if (error) {
-          instance.completionState.set({error: error.toString()});
+          instance.completionState.set({ error: error.toString() });
         } else {
           if (result.failures.length > 0) {
             var message = "Failed to send to: ";
@@ -1284,27 +1365,31 @@ if (Meteor.isClient) {
               if (ii != 0) {
                 message += ", ";
               }
+
               message += result.failures[ii].contact.profile.name;
               var warning = result.failures[ii].warning;
               if (warning) {
                 message += ". " + warning;
               }
             }
-            instance.completionState.set({error: message});
+
+            instance.completionState.set({ error: message });
           } else {
-            instance.completionState.set({success: "success"});
+            instance.completionState.set({ success: "success" });
           }
         }
       });
     },
+
     "click .reset-invite": function (event, instance) {
       instance.contacts.set([]);
-      instance.completionState.set({clear: true});
+      instance.completionState.set({ clear: true });
       instance.find("form").reset();
       instance.find("form option[data-default-selected=true]").selected = true;
     },
+
     "click .start-over-invite": function (event, instance) {
-      instance.completionState.set({clear: true});
+      instance.completionState.set({ clear: true });
     },
   });
 
@@ -1355,12 +1440,13 @@ if (Meteor.isClient) {
         // Ignore it. (It may be aimed at some other message listener registered elsewhere...)
         return;
       }
+
       var senderGrain = grains[senderGrainIndex];
 
-      if (event.data.setPath || event.data.setPath === '') {
-        var path = event.data.setPath || '/';
+      if (event.data.setPath || event.data.setPath === "") {
+        var path = event.data.setPath || "/";
         check(path, String);
-        check(path.charAt(0), '/');
+        check(path.charAt(0), "/");
         // TODO(security): More sanitization of this path. E.g. reject "/../../".
         senderGrain.setPath(path);
       } else if (event.data.startSharing) {
@@ -1371,7 +1457,7 @@ if (Meteor.isClient) {
         if (senderGrain === currentGrain && !globalTopbar.isPopupOpen()) {
           globalTopbar.openPopup("share");
         }
-      } else if (event.data.setTitle || event.data.setTitle === '') {
+      } else if (event.data.setTitle || event.data.setTitle === "") {
         senderGrain.setFrameTitle(event.data.setTitle);
       } else if (event.data.renderTemplate) {
         // Request creation of a single-use template with a privileged API token.
@@ -1386,39 +1472,43 @@ if (Meteor.isClient) {
         check(call, Object);
         var rpcId = call.rpcId;
         try {
-          check(call, {rpcId: String, template: String, petname: Match.Optional(String),
+          check(call, { rpcId: String, template: String, petname: Match.Optional(String),
                        roleAssignment: Match.Optional(roleAssignmentPattern),
-                       forSharing: Match.Optional(Boolean)});
+                       forSharing: Match.Optional(Boolean), });
         } catch (error) {
-          event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
+          event.source.postMessage({ rpcId: rpcId, error: error.toString() }, event.origin);
           return;
         }
+
         var template = call.template;
         var petname = "connected external app";
         if (call.petname) {
           petname = call.petname;
         }
-        var assignment = {allAccess: null};
+
+        var assignment = { allAccess: null };
         if (call.roleAssignment) {
           assignment = call.roleAssignment;
         }
+
         var forSharing = call.forSharing ? call.forSharing : false;
         // Tokens expire by default in 5 minutes from generation date
         var selfDestructDuration = 5 * 60 * 1000;
 
         var provider;
         if (Router.current().route.getName() === "shared") {
-          provider = {rawParentToken: Router.current().params.token};
+          provider = { rawParentToken: Router.current().params.token };
         } else {
-          provider = {identityId: senderGrain.identityId()};
+          provider = { identityId: senderGrain.identityId() };
         }
-        var owner = {webkey: {forSharing: forSharing,
-                              expiresIfUnusedDuration: selfDestructDuration}};
+
+        var owner = { webkey: { forSharing: forSharing,
+                              expiresIfUnusedDuration: selfDestructDuration, }, };
 
         Meteor.call("newApiToken", provider, senderGrain.grainId(), petname, assignment, owner,
                     function (error, result) {
           if (error) {
-            event.source.postMessage({rpcId: rpcId, error: error.toString()}, event.origin);
+            event.source.postMessage({ rpcId: rpcId, error: error.toString() }, event.origin);
           } else {
             var tokenId = result.token;
             // Generate random key id2.
@@ -1429,16 +1519,16 @@ if (Meteor.isClient) {
             var renderedTemplate = template.replace(/\$API_TOKEN/g, tokenId)
                                            .replace(/\$API_HOST/g, makeWildcardHost("api"));
             sessionStorage.setItem(key, JSON.stringify({
-                "token": tokenId,
-                "renderedTemplate": renderedTemplate,
-                "expires": Date.now() + selfDestructDuration
+                token: tokenId,
+                renderedTemplate: renderedTemplate,
+                expires: Date.now() + selfDestructDuration,
               })
             );
             sessionStorage.setItem("apiHost", makeWildcardHost("api"));
 
             // Send message to event.source with URL containing id2
             templateLink = window.location.origin + "/offer-template.html#" + id2;
-            event.source.postMessage({rpcId: rpcId, uri: templateLink}, event.origin);
+            event.source.postMessage({ rpcId: rpcId, uri: templateLink }, event.origin);
           }
         });
       } else if (event.data.powerboxRequest) {
@@ -1507,7 +1597,7 @@ if (Meteor.isClient) {
 
 function makeGrainIdActive(grainId) {
   var grains = globalGrains.get();
-  for (var i = 0 ; i < grains.length ; i++) {
+  for (var i = 0; i < grains.length; i++) {
     var grain = grains[i];
     if (grain.grainId() === grainId) {
       if (!grain.isActive()) {
@@ -1527,30 +1617,33 @@ function getActiveGrain(grains) {
 }
 
 function activeGrainIndex(grains) {
-  for (var i = 0; i < grains.length ; i++) {
+  for (var i = 0; i < grains.length; i++) {
     if (grains[i].isActive()) {
       return i;
     }
   }
+
   return -1;
 }
 
 function grainOriginToIndex(grains, origin) {
-  for (var i = 0; i < grains.length ; i++) {
+  for (var i = 0; i < grains.length; i++) {
     if (grains[i].origin() === origin) {
       return i;
     }
   }
+
   return -1;
 }
 
 function grainIdToIndex(grains, grainId) {
-  for (var i = 0; i < grains.length ; i++) {
+  for (var i = 0; i < grains.length; i++) {
     var grain = grains[i];
     if (grains[i].grainId() === grainId) {
       return i;
     }
   }
+
   return -1;
 }
 
@@ -1578,10 +1671,11 @@ Router.map(function () {
   this.route("apps", {
     path: "/apps",
     waitOn: function () { return globalSubs; },
+
     data: function () {
       if (!this.ready()) return;
       if (!Meteor.userId() && !Meteor.loggingIn()) {
-        Router.go("root", {}, {replaceState: true});
+        Router.go("root", {}, { replaceState: true });
       }
 
       return new SandstormAppList(globalDb, globalQuotaEnforcer);
@@ -1593,16 +1687,17 @@ Router.map(function () {
     // case anyone has the old link saved somewhere.
     path: "/grain/new",
     onBeforeAction: function () {
-      Router.go("apps", {}, {replaceState: true});
+      Router.go("apps", {}, { replaceState: true });
     },
   });
   this.route("grains", {
     path: "/grain",
     waitOn: function () { return globalSubs; },
+
     data: function () {
       if (!this.ready()) return;
       if (!Meteor.userId() && !Meteor.loggingIn()) {
-        Router.go("root", {}, {replaceState: true});
+        Router.go("root", {}, { replaceState: true });
       }
 
       return new SandstormGrainListPage(globalDb, globalQuotaEnforcer);
@@ -1619,6 +1714,7 @@ Router.map(function () {
     onBeforeAction: function () {
       // Run this hook only once.
       if (this.state.get("beforeActionHookRan")) { return this.next(); }
+
       this.state.set("beforeActionHookRan", true);
       var grainId = this.params.grainId;
       var path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
@@ -1641,10 +1737,12 @@ Router.map(function () {
             Meteor.defer(openView);
           }
         };
+
         openView();
       } else {
         makeGrainIdActive(grainId);
       }
+
       this.next();
     },
 
@@ -1655,7 +1753,7 @@ Router.map(function () {
           grain.setActive(false);
         }
       });
-    }
+    },
   });
 
   this.route("/shared/:token/:path(.*)?", {
@@ -1680,13 +1778,14 @@ Router.map(function () {
       // and waiting for `this.ready()`, but for some reason that fails in the case when a user
       // logs in while visiting a /shared/ link.
       if (this.state.get("beforeActionHookRan")) { return this.next(); }
+
       this.state.set("beforeActionHookRan", true);
 
       var token = this.params.token;
       var path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
       var hash = this.params.hash;
 
-      var tokenInfo = TokenInfo.findOne({_id: token});
+      var tokenInfo = TokenInfo.findOne({ _id: token });
       if (tokenInfo && tokenInfo.invalidToken) {
         this.state.set("invalidToken", true);
       } else {
@@ -1707,17 +1806,19 @@ Router.map(function () {
               Meteor.defer(openView);
             }
           };
+
           openView();
         } else {
           makeGrainIdActive(grainId);
         }
       }
+
       this.next();
     },
 
     action: function () {
       if (this.state.get("invalidToken")) {
-        this.render("invalidToken", {data: {token: this.params.token}});
+        this.render("invalidToken", { data: { token: this.params.token } });
       } else {
         this.render();
       }
@@ -1731,7 +1832,7 @@ Router.map(function () {
           grain.setActive(false);
         }
       });
-    }
+    },
   });
 
   this.route("grainLog", {
@@ -1741,7 +1842,7 @@ Router.map(function () {
     waitOn: function () {
       return [
         Meteor.subscribe("grainTopBar", this.params.grainId),
-        Meteor.subscribe("grainLog", this.params.grainId)
+        Meteor.subscribe("grainLog", this.params.grainId),
       ];
     },
 
@@ -1751,12 +1852,12 @@ Router.map(function () {
         var grain = Grains.findOne(this.params.grainId);
         return {
           title: grain ? grain.title : "(deleted grain)",
-          html: AnsiUp.ansi_to_html(GrainLog.find({}, {$sort: {_id: 1}})
+          html: AnsiUp.ansi_to_html(GrainLog.find({}, { $sort: { _id: 1 } })
               .map(function (entry) { return entry.text; })
-              .join(""), {use_classes:true})
+              .join(""), { use_classes:true }),
         };
       }
-    }
+    },
   });
 
   this.route("appDetails", {
@@ -1766,6 +1867,7 @@ Router.map(function () {
       return globalSubs.concat(
         Meteor.subscribe("appIndex", this.params.appId));
     },
+
     data: function () {
       return new SandstormAppDetails(globalDb, globalQuotaEnforcer, this.params.appId);
     },

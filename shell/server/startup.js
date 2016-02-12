@@ -19,22 +19,22 @@
 const ROOT_URL = process.env.ROOT_URL;
 
 Meteor.startup(() => {
-  let baseUrlRow = Misc.findOne({_id: 'BASE_URL'});
+  let baseUrlRow = Misc.findOne({ _id: "BASE_URL" });
 
   if (!baseUrlRow) {
     // Fill data with current value in the case this is a first run
-    baseUrlRow = {_id: 'BASE_URL', value: ROOT_URL};
+    baseUrlRow = { _id: "BASE_URL", value: ROOT_URL };
     Misc.insert(baseUrlRow);
   } else if (baseUrlRow.value !== ROOT_URL) {
-    console.log('resetting oauth');
-    Settings.find({_id: {$in: ["google", "github"]}}).forEach((setting) => {
+    console.log("resetting oauth");
+    Settings.find({ _id: { $in: ["google", "github"] } }).forEach((setting) => {
       if (!!setting.value) {
-        Settings.update({_id: setting._id},
-                        {$set: {value: false,
-                                automaticallyReset: {baseUrlChangedFrom: baseUrlRow.value}}});
+        Settings.update({ _id: setting._id },
+                        { $set: { value: false,
+                                automaticallyReset: { baseUrlChangedFrom: baseUrlRow.value }, }, });
       }
     });
-    baseUrlRow = {_id: 'BASE_URL', value: ROOT_URL};
-    Misc.update({_id: 'BASE_URL'}, {$set: {value: ROOT_URL}});
+    baseUrlRow = { _id: "BASE_URL", value: ROOT_URL };
+    Misc.update({ _id: "BASE_URL" }, { $set: { value: ROOT_URL } });
   }
 });

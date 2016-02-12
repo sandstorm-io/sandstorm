@@ -14,13 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const Crypto = Npm.require('crypto');
-const Capnp = Npm.require('capnp');
+const Crypto = Npm.require("crypto");
+const Capnp = Npm.require("capnp");
 
-const PersistentHandle = Capnp.importSystem('sandstorm/supervisor.capnp').PersistentHandle;
-const SandstormCore = Capnp.importSystem('sandstorm/supervisor.capnp').SandstormCore;
-const SandstormCoreFactory = Capnp.importSystem('sandstorm/backend.capnp').SandstormCoreFactory;
-const PersistentOngoingNotification = Capnp.importSystem('sandstorm/supervisor.capnp').PersistentOngoingNotification;
+const PersistentHandle = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentHandle;
+const SandstormCore = Capnp.importSystem("sandstorm/supervisor.capnp").SandstormCore;
+const SandstormCoreFactory = Capnp.importSystem("sandstorm/backend.capnp").SandstormCoreFactory;
+const PersistentOngoingNotification = Capnp.importSystem("sandstorm/supervisor.capnp").PersistentOngoingNotification;
 const PersistentUiView = Capnp.importSystem("sandstorm/persistentuiview.capnp").PersistentUiView;
 
 class SandstormCoreImpl {
@@ -50,7 +50,7 @@ class SandstormCoreImpl {
       }
 
       return restoreInternal(hashedSturdyRef,
-                             {grain: Match.ObjectIncluding({grainId: _this.grainId})},
+                             { grain: Match.ObjectIncluding({ grainId: _this.grainId }) },
                              requirements, sturdyRef);
     });
   }
@@ -58,7 +58,7 @@ class SandstormCoreImpl {
   drop(sturdyRef) {
     const _this = this;
     return inMeteor(() => {
-      return dropInternal(sturdyRef, {grain: Match.ObjectIncluding({grainId: _this.grainId})});
+      return dropInternal(sturdyRef, { grain: Match.ObjectIncluding({ grainId: _this.grainId }) });
     });
   }
 
@@ -95,9 +95,9 @@ class SandstormCoreImpl {
       owner: {
         addOngoing: (displayInfo, notification) => {
           return inMeteor(() => {
-            const grain = Grains.findOne({_id: grainId});
+            const grain = Grains.findOne({ _id: grainId });
             if (!grain) {
-              throw new Error('Grain not found.');
+              throw new Error("Grain not found.");
             }
 
             const castedNotification = notification.castAs(PersistentOngoingNotification);
@@ -116,7 +116,7 @@ class SandstormCoreImpl {
               isUnread: true,
             });
 
-            return {handle: makeNotificationHandle(notificationId, false)};
+            return { handle: makeNotificationHandle(notificationId, false) };
           });
         },
       },
@@ -144,7 +144,7 @@ class NotificationHandle {
   }
 
   save(params) {
-    return saveFrontendRef({notificationHandle: this.notificationId}, params.sealFor);
+    return saveFrontendRef({ notificationHandle: this.notificationId }, params.sealFor);
   }
 }
 
@@ -181,18 +181,18 @@ class PersistentUiViewImpl {
         owner = { user: {
           identityId: owner.user.identityId,
           title: owner.user.title,
-        }};
+        }, };
       }
 
       const ret = SandstormPermissions.createNewApiToken(
           globalDb,
-          {rawParentToken: this._sturdyRef.toString()},
+          { rawParentToken: this._sturdyRef.toString() },
           this._token.grainId,
           this._token.petname,
           this._token.roleAssignment,
           owner);
 
-      return {sturdyRef: new Buffer(ret.token)};
+      return { sturdyRef: new Buffer(ret.token) };
     });
     return res;
   }
@@ -212,31 +212,31 @@ function makeNotificationHandle(notificationId, saved) {
 
 function dropWakelock(grainId, wakeLockNotificationId) {
   waitPromise(globalBackend.useGrain(grainId, (supervisor) => {
-    return supervisor.drop({wakeLockNotification: wakeLockNotificationId});
+    return supervisor.drop({ wakeLockNotification: wakeLockNotificationId });
   }));
 }
 
 function dismissNotification(notificationId, callCancel) {
-  const notification = Notifications.findOne({_id: notificationId});
+  const notification = Notifications.findOne({ _id: notificationId });
   if (notification) {
-    Notifications.remove({_id: notificationId});
+    Notifications.remove({ _id: notificationId });
     if (notification.ongoing) {
       // For some reason, Mongo returns an object that looks buffer-like, but isn't a buffer.
       // Only way to fix seems to be to copy it.
       const id = new Buffer(notification.ongoing);
 
       if (!callCancel) {
-        dropInternal(id, {frontend: null});
+        dropInternal(id, { frontend: null });
       } else {
-        const notificationCap = restoreInternal(hashSturdyRef(id), {frontend: null}).cap;
+        const notificationCap = restoreInternal(hashSturdyRef(id), { frontend: null }).cap;
         const castedNotification = notificationCap.castAs(PersistentOngoingNotification);
-        dropInternal(id, {frontend: null});
+        dropInternal(id, { frontend: null });
         try {
           waitPromise(castedNotification.cancel());
           castedNotification.close();
           notificationCap.close();
         } catch (err) {
-          if (err.kjType !== 'disconnected') {
+          if (err.kjType !== "disconnected") {
             // ignore disconnected errors, since cancel may shutdown the grain before the supervisor
             // responds.
             throw err;
@@ -252,7 +252,7 @@ function dismissNotification(notificationId, callCancel) {
 }
 
 hashSturdyRef = (sturdyRef) => {
-  return Crypto.createHash('sha256').update(sturdyRef).digest('base64');
+  return Crypto.createHash("sha256").update(sturdyRef).digest("base64");
 };
 
 function generateSturdyRef() {
@@ -267,11 +267,11 @@ Meteor.methods({
 
     check(notificationId, String);
 
-    const notification = Notifications.findOne({_id: notificationId});
+    const notification = Notifications.findOne({ _id: notificationId });
     if (!notification) {
-      throw new Meteor.Error(404, 'Notification id not found.');
+      throw new Meteor.Error(404, "Notification id not found.");
     } else if (notification.userId !== Meteor.userId()) {
-      throw new Meteor.Error(403, 'Notification does not belong to current user.');
+      throw new Meteor.Error(403, "Notification does not belong to current user.");
     } else {
       dismissNotification(notificationId, true);
     }
@@ -280,10 +280,10 @@ Meteor.methods({
   readAllNotifications() {
     // Marks all notifications as read for the current user.
     if (!Meteor.userId()) {
-      throw new Meteor.Error(403, 'User not logged in.');
+      throw new Meteor.Error(403, "User not logged in.");
     }
 
-    Notifications.update({userId: Meteor.userId()}, {$set: {isUnread: false}}, {multi: true});
+    Notifications.update({ userId: Meteor.userId() }, { $set: { isUnread: false } }, { multi: true });
   },
 });
 
@@ -298,7 +298,7 @@ saveFrontendRef = (frontendRef, owner, requirements) => {
       created: new Date(),
       requirements: requirements,
     });
-    return {sturdyRef: sturdyRef};
+    return { sturdyRef: sturdyRef };
   });
 };
 
@@ -310,15 +310,15 @@ checkRequirements = (requirements) => {
   for (let i in requirements) {
     const requirement = requirements[i];
     if (requirement.tokenValid) {
-      const token = ApiTokens.findOne({_id: requirement.tokenValid}, {fields: {requirements: 1}});
+      const token = ApiTokens.findOne({ _id: requirement.tokenValid }, { fields: { requirements: 1 } });
       if (!checkRequirements(token.requirements)) {
         return false;
       }
     } else if (requirement.permissionsHeld) {
       const p = requirement.permissionsHeld;
-      const viewInfo = Grains.findOne(p.grainId, {fields: {cachedViewInfo: 1}}).cachedViewInfo;
+      const viewInfo = Grains.findOne(p.grainId, { fields: { cachedViewInfo: 1 } }).cachedViewInfo;
       const currentPermissions = SandstormPermissions.grainPermissions(
-        globalDb, {grain: {_id: p.grainId, identityId: p.identityId}}, viewInfo || {});
+        globalDb, { grain: { _id: p.grainId, identityId: p.identityId } }, viewInfo || {});
       if (!currentPermissions) {
         return false;
       }
@@ -333,7 +333,7 @@ checkRequirements = (requirements) => {
         return false;
       }
     } else {
-      throw new Meteor.Error(403, 'Unknown requirement');
+      throw new Meteor.Error(403, "Unknown requirement");
     }
   }
 
@@ -346,28 +346,28 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
   // token
   const token = ApiTokens.findOne(tokenId);
   if (!token) {
-    throw new Meteor.Error(403, 'No token found to restore');
+    throw new Meteor.Error(403, "No token found to restore");
   }
 
   if (token.revoked) {
-    throw new Meteor.Error(403, 'Token has been revoked');
+    throw new Meteor.Error(403, "Token has been revoked");
   }
   // The ownerPattern should specify the appropriate user or grain involved, if appropriate.
   check(token.owner, ownerPattern);
   if (!checkRequirements(token.requirements)) {
-    throw new Meteor.Error(403, 'Requirements not satisfied.');
+    throw new Meteor.Error(403, "Requirements not satisfied.");
   }
 
   if (token.expires && token.expires.getTime() <= Date.now()) {
-    throw new Meteor.Error(403, 'Authorization token expired');
+    throw new Meteor.Error(403, "Authorization token expired");
   }
 
   if (token.expiresIfUnused) {
     if (token.expiresIfUnused.getTime() <= Date.now()) {
-      throw new Meteor.Error(403, 'Authorization token expired');
+      throw new Meteor.Error(403, "Authorization token expired");
     } else {
       // It's getting used now, so clear the expiresIfUnused field.
-      ApiTokens.update(token._id, {$set: {expiresIfUnused: null}});
+      ApiTokens.update(token._id, { $set: { expiresIfUnused: null } });
     }
   }
 
@@ -375,18 +375,18 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
     // A token which represents a capability implemented by a pseudo-driver.
     if (token.frontendRef.notificationHandle) {
       const notificationId = token.frontendRef.notificationHandle;
-      return {cap: makeNotificationHandle(notificationId, true)};
+      return { cap: makeNotificationHandle(notificationId, true) };
     } else if (token.frontendRef.ipNetwork) {
-      return {cap: makeIpNetwork(tokenId)};
+      return { cap: makeIpNetwork(tokenId) };
     } else if (token.frontendRef.ipInterface) {
-      return {cap: makeIpInterface(tokenId)};
+      return { cap: makeIpInterface(tokenId) };
     } else {
-      throw new Meteor.Error(500, 'Unknown frontend token type.');
+      throw new Meteor.Error(500, "Unknown frontend token type.");
     }
   } else if (token.objectId) {
     // A token which represents a specific capability exported by a grain.
     if (!checkRequirements(requirements)) {
-      throw new Meteor.Error(403, 'Requirements not satisfied.');
+      throw new Meteor.Error(403, "Requirements not satisfied.");
     }
 
     if (token.objectId.appRef) {
@@ -412,14 +412,14 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
   // the method calls.  In the future, we may allow grains to restore UiViews that pass along the
   // "is human" pseudopermission (say, to allow embedding grains inside other grains), which will
   // return a different capability.
-  return {cap: makePersistentUiView(token, parentToken)};
+  return { cap: makePersistentUiView(token, parentToken) };
 };
 
 function dropInternal(sturdyRef, ownerPattern) {
   // Drops `sturdyRef`, checking first that its owner matches `ownerPattern`.
 
   const hashedSturdyRef = hashSturdyRef(sturdyRef);
-  const token = ApiTokens.findOne({_id: hashedSturdyRef});
+  const token = ApiTokens.findOne({ _id: hashedSturdyRef });
   if (!token) {
     return;
   }
@@ -429,23 +429,23 @@ function dropInternal(sturdyRef, ownerPattern) {
   if (token.frontendRef) {
     if (token.frontendRef.notificationHandle) {
       const notificationId = token.frontendRef.notificationHandle;
-      ApiTokens.remove({_id: hashedSturdyRef});
-      const anyToken = ApiTokens.findOne({'frontendRef.notificationHandle': notificationId});
+      ApiTokens.remove({ _id: hashedSturdyRef });
+      const anyToken = ApiTokens.findOne({ "frontendRef.notificationHandle": notificationId });
       if (!anyToken) {
         // No other tokens referencing this notification exist, so dismiss the notification
         dismissNotification(notificationId);
       }
     } else {
-      throw new Error('Unknown frontend token type.');
+      throw new Error("Unknown frontend token type.");
     }
   } else if (token.objectId) {
     if (token.objectId.wakeLockNotification) {
       dropWakelock(token.grainId, token.objectId.wakeLockNotification);
     } else {
-      throw new Error('Unknown objectId token type.');
+      throw new Error("Unknown objectId token type.");
     }
   } else {
-    throw new Error('Unknown token type.');
+    throw new Error("Unknown token type.");
   }
 }
 
@@ -479,7 +479,7 @@ function SandstormCoreFactoryImpl() {
 }
 
 SandstormCoreFactoryImpl.prototype.getSandstormCore = (grainId) => {
-  return {core: makeSandstormCore(grainId)};
+  return { core: makeSandstormCore(grainId) };
 };
 
 makeSandstormCoreFactory = () => {

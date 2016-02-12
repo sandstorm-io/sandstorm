@@ -21,11 +21,12 @@ Accounts.identityServices.dev = {
   isEnabled: function () {
     return allowDevAccounts;
   },
+
   loginTemplate: {
     name: "devLoginForm",
     priority: -10, // Put it at the top.
-  }
-}
+  },
+};
 
 if (allowDevAccounts) {
   if (Meteor.isServer) {
@@ -46,28 +47,28 @@ if (allowDevAccounts) {
         profile.name = profile.name || displayName;
         var hasCompletedSignup = !!unverifiedEmail && !!profile.pronoun && !!profile.handle;
 
-        var user = Meteor.users.findOne({"services.dev.name": displayName});
+        var user = Meteor.users.findOne({ "services.dev.name": displayName });
         var userId;
 
         if (user) {
           userId = user._id;
         } else {
           userId = Accounts.insertUserDoc({ profile: profile,
-                                            unverifiedEmail: unverifiedEmail},
+                                            unverifiedEmail: unverifiedEmail, },
                                           { services:
-                                              {dev: {name: displayName,
+                                              { dev: { name: displayName,
                                                      isAdmin: isAdmin,
-                                                     hasCompletedSignup: hasCompletedSignup}}});
+                                                     hasCompletedSignup: hasCompletedSignup, }, }, });
         }
         // Log them in on this connection.
         return Accounts._loginMethod(this, "createDevAccount", arguments,
             "dev", function () { return { userId: userId }; });
-      }
+      },
     });
   }
 
   if (Meteor.isClient) {
-    loginDevAccount = function(displayName, isAdmin) {
+    loginDevAccount = function (displayName, isAdmin) {
       Accounts.callLoginMethod({
         methodName: "createDevAccount",
         methodArguments: [displayName, isAdmin],
@@ -75,17 +76,17 @@ if (allowDevAccounts) {
           if (err) {
             window.alert(err);
           }
-        }
+        },
       });
     };
 
-    loginDevAccountFast = function(displayName, isAdmin) {
+    loginDevAccountFast = function (displayName, isAdmin) {
       return new Promise(function (resolve, reject) {
         // This skips the firstSignUp page. Mostly used for testing purposes.
         var profile = {
           name: displayName,
           pronoun: "robot",
-          handle: "_" + displayName.toLowerCase()
+          handle: "_" + displayName.toLowerCase(),
         };
 
         Accounts.callLoginMethod({
@@ -98,7 +99,7 @@ if (allowDevAccounts) {
               Router.go("apps");
               resolve();
             }
-          }
+          },
         });
       });
     };

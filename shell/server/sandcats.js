@@ -16,15 +16,15 @@
 
 Sandcats = {};
 
-const querystring = Npm.require('querystring');
-const https = Npm.require('https');
-const fs = Npm.require('fs');
-const dgram = Npm.require('dgram');
-const Url = Npm.require('url');
+const querystring = Npm.require("querystring");
+const https = Npm.require("https");
+const fs = Npm.require("fs");
+const dgram = Npm.require("dgram");
+const Url = Npm.require("url");
 
 const SANDCATS_HOSTNAME = (Meteor.settings && Meteor.settings.public &&
                          Meteor.settings.public.sandcatsHostname);
-const SANDCATS_VARDIR = (SANDSTORM_ALTHOME || '') + '/var/sandcats';
+const SANDCATS_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandcats";
 
 const ROOT_URL = Url.parse(process.env.ROOT_URL);
 const HOSTNAME = ROOT_URL.hostname;
@@ -33,36 +33,36 @@ let SANDCATS_NAME; // Look at `startup` below to see where this is set
 const updateSandcatsIp = () => {
   const responseCallback = (res) => {
     if (res.statusCode === 200) {
-      console.log('Successfully updated sandcats IP');
+      console.log("Successfully updated sandcats IP");
     } else {
-      console.error('Failed to update sandcats IP:', res.headers);
+      console.error("Failed to update sandcats IP:", res.headers);
     }
   };
 
   const errorCallback = (err) => {
-    console.error('Couldn\'t send update sandcats hostname', err);
+    console.error("Couldn't send update sandcats hostname", err);
   };
 
-  performSandcatsRequest('/update', SANDCATS_HOSTNAME, {rawHostname: SANDCATS_NAME},
+  performSandcatsRequest("/update", SANDCATS_HOSTNAME, { rawHostname: SANDCATS_NAME },
                          errorCallback, responseCallback);
 };
 
 const pingUdp = () => {
-  const socket = dgram.createSocket('udp4');
+  const socket = dgram.createSocket("udp4");
   const secret = Random.secret(16);
 
-  message = new Buffer(SANDCATS_NAME + ' ' + secret);
-  socket.on('message', (buf) => {
+  message = new Buffer(SANDCATS_NAME + " " + secret);
+  socket.on("message", (buf) => {
     if (buf.toString() === secret) {
       updateSandcatsIp();
     } else {
-      console.error('Received unexpected response in UDP sandcats ping:', buf.toString());
+      console.error("Received unexpected response in UDP sandcats ping:", buf.toString());
     }
   });
 
   socket.send(message, 0, message.length, 8080, SANDCATS_HOSTNAME, (err) => {
     if (err) {
-      console.error('Couldn\'t send UDP sandcats ping', err);
+      console.error("Couldn't send UDP sandcats ping", err);
     }
   });
 
@@ -75,28 +75,28 @@ const performSandcatsRequest = (path, hostname, postData, errorCallback, respons
   const options = {
     hostname: hostname,
     path: path,
-    method: 'POST',
+    method: "POST",
     agent: false,
-    key: fs.readFileSync(SANDCATS_VARDIR + '/id_rsa'),
-    cert: fs.readFileSync(SANDCATS_VARDIR + '/id_rsa.pub'),
+    key: fs.readFileSync(SANDCATS_VARDIR + "/id_rsa"),
+    cert: fs.readFileSync(SANDCATS_VARDIR + "/id_rsa.pub"),
     headers: {
-      'X-Sand': 'cats',
-      'Content-Type': 'application/x-www-form-urlencoded',
+      "X-Sand": "cats",
+      "Content-Type": "application/x-www-form-urlencoded",
     },
   };
 
   if (postData.certificateSigningRequest) {
-    console.log('Submitting certificate request for host',
-                postData.rawHostname, 'where the request has length',
+    console.log("Submitting certificate request for host",
+                postData.rawHostname, "where the request has length",
                 postData.certificateSigningRequest.length);
   }
 
   const newPostData = querystring.stringify(postData);
-  if ((SANDCATS_HOSTNAME === 'sandcats-dev.sandstorm.io') &&
+  if ((SANDCATS_HOSTNAME === "sandcats-dev.sandstorm.io") &&
       !process.env.NODE_TLS_REJECT_UNAUTHORIZED) {
-    console.log('You are using the Sandcats dev server but have full HTTPS ' +
-                'certificate checking enabled. Probably you will get an HTTPS ' +
-                'error. Proceeding anyway.');
+    console.log("You are using the Sandcats dev server but have full HTTPS " +
+                "certificate checking enabled. Probably you will get an HTTPS " +
+                "error. Proceeding anyway.");
   }
 
   const req = https.request(options, responseCallback);
@@ -104,7 +104,7 @@ const performSandcatsRequest = (path, hostname, postData, errorCallback, respons
   req.end();
 
   if (errorCallback) {
-    req.on('error', errorCallback);
+    req.on("error", errorCallback);
   }
 
   return req;
@@ -122,19 +122,19 @@ const generateKeyAndCsr = (commonName) => {
 
   // I could pick an `e`[xponent] value for the resulting RSA key, but
   // I will refrain.
-  const keys = wrappedGenerateKeyPair({bits: 2048});
+  const keys = wrappedGenerateKeyPair({ bits: 2048 });
 
   // Create a certificate request (CSR).
   const csr = this.forge.pki.createCertificationRequest();
   csr.publicKey = keys.publicKey;
   csr.setSubject([
     {
-      name: 'commonName',
+      name: "commonName",
       value: commonName,
     },
   ]);
   csr.sign(keys.privateKey);
-  console.log('generateKeyAndCsr created new key & certificate request for', commonName);
+  console.log("generateKeyAndCsr created new key & certificate request for", commonName);
   return {
     privateKeyAsPem: this.forge.pki.privateKeyToPem(keys.privateKey),
     csrAsPem: this.forge.pki.certificationRequestToPem(csr),
@@ -149,17 +149,17 @@ Sandcats.storeNewKeyAndCsr = (hostname, basePath) => {
   // just as a simplistic way to pick a filename that probably no one
   // else has created yet.
   const keyNumber = new Date().getTime();
-  const keyFilename = basePath + '/' + keyNumber;
-  const csrFilename = keyFilename + '.csr';
-  const responseFilename = keyFilename + '.response-json';
-  const withWildcard = '*.' + hostname;
+  const keyFilename = basePath + "/" + keyNumber;
+  const csrFilename = keyFilename + ".csr";
+  const responseFilename = keyFilename + ".response-json";
+  const withWildcard = "*." + hostname;
   const keyAndCsr = generateKeyAndCsr(withWildcard);
   fs.writeFileSync(keyFilename, keyAndCsr.privateKeyAsPem,
-                   {mode: 0400});
+                   { mode: 0400 });
   fs.writeFileSync(csrFilename, keyAndCsr.csrAsPem);
-  console.log('storeNewKeyAndCsr successfully saved key and certificate request to',
-              keyFilename, 'and', csrFilename, 'respectively of length',
-              keyAndCsr.privateKeyAsPem.length, 'and',
+  console.log("storeNewKeyAndCsr successfully saved key and certificate request to",
+              keyFilename, "and", csrFilename, "respectively of length",
+              keyAndCsr.privateKeyAsPem.length, "and",
               keyAndCsr.csrAsPem.length);
   return {
     csrFilename: csrFilename,
@@ -171,77 +171,77 @@ Sandcats.storeNewKeyAndCsr = (hostname, basePath) => {
 Sandcats.renewHttpsCertificateIfNeeded = () => {
   const renewHttpsCertificate = () => {
     const hostname = Url.parse(process.env.ROOT_URL).hostname;
-    const basePath = '/var/sandcats/https/' + (hostname);
+    const basePath = "/var/sandcats/https/" + (hostname);
     const filenames = Sandcats.storeNewKeyAndCsr(hostname, basePath);
 
     const errorCallback = (err) => {
-      console.error('Error while renewing HTTPS certificate (will continue to retry)', err);
+      console.error("Error while renewing HTTPS certificate (will continue to retry)", err);
     };
 
     const responseCallback = (res) => {
       if (res.statusCode == 200) {
         // Save the response, chunk by chunk, then store it on disk
         // for later use.
-        let responseBody = '';
-        res.on('data', (chunk) => {
+        let responseBody = "";
+        res.on("data", (chunk) => {
           responseBody += chunk;
         });
 
-        res.on('end', () => {
+        res.on("end", () => {
           // For sanity, make sure it parses as JSON, since we're
           // going to need it to do that.
           try {
             JSON.parse(responseBody);
           } catch (e) {
-            console.error('JSON parse error receiving new HTTPS certificate. Discarding:',
+            console.error("JSON parse error receiving new HTTPS certificate. Discarding:",
                           responseBody,
-                          'due to exception:',
+                          "due to exception:",
                           e);
             // Overwrite the responseBody with the empty JSON object
             // and continue with the process of saving it to disk.
-            responseBody = '{}';
+            responseBody = "{}";
           }
 
           try {
-            fs.writeFileSync(filenames.responseFilename, responseBody, 'utf-8');
+            fs.writeFileSync(filenames.responseFilename, responseBody, "utf-8");
           } catch (err) {
-            return console.error('Failure while saveing new HTTPS certificate to',
+            return console.error("Failure while saveing new HTTPS certificate to",
                                  filenames.responseFilename,
-                                 'will continue to retry. Exception was:',
+                                 "will continue to retry. Exception was:",
                                  err);
           }
 
           // Tell Sandcats that now is a good time to update its info
           // about which keys are available.
           if (!global.sandcats) {
-            console.error('When getting new certificate, could not find callback to request re-keying! Certs will probably become invalid soon.');
+            console.error("When getting new certificate, could not find callback to request re-keying! Certs will probably become invalid soon.");
           } else {
             // Call the sandcats rekeying function.
             global.sandcats.rekey();
             // That's that.
-            console.log('Successfully renewed HTTPS certificate into',
+            console.log("Successfully renewed HTTPS certificate into",
                         filenames.responseFilename);
           }
         });
       } else {
-        console.log('Received HTTP error while renewing certificate (will keep retrying)',
+        console.log("Received HTTP error while renewing certificate (will keep retrying)",
                     res.statusCode);
-        res.on('data', (chunk) => {
-          console.log('Error response contained information', chunk.toString('utf-8'));
+        res.on("data", (chunk) => {
+          console.log("Error response contained information", chunk.toString("utf-8"));
         });
       }
     };
 
     const wrappedReadFile = Meteor.wrapAsync(fs.readFile);
 
-    performSandcatsRequest('/getcertificate', SANDCATS_HOSTNAME, {
+    performSandcatsRequest("/getcertificate", SANDCATS_HOSTNAME, {
       rawHostname: SANDCATS_NAME,
-      certificateSigningRequest: wrappedReadFile(filenames.csrFilename, 'utf-8'),
+      certificateSigningRequest: wrappedReadFile(filenames.csrFilename, "utf-8"),
     }, errorCallback, responseCallback);
   };
 
   if (global.sandcats.shouldGetAnotherCertificate()) {
-    console.log('renewHttpsCertificateIfNeeded: Happily choosing to renew certificate.');
+    console.log("renewHttpsCertificateIfNeeded: Happily choosing to renew certificate.");
     return renewHttpsCertificate();
   }
 };
@@ -249,7 +249,7 @@ Sandcats.renewHttpsCertificateIfNeeded = () => {
 Sandcats.initializeSandcats = () => {
   const i = HOSTNAME.lastIndexOf(SANDCATS_HOSTNAME);
   if (i < 0) {
-    console.error('SANDCATS_BASE_DOMAIN is configured but your HOSTNAME doesn\'t appear to contain it:',
+    console.error("SANDCATS_BASE_DOMAIN is configured but your HOSTNAME doesn't appear to contain it:",
                   SANDCATS_HOSTNAME, HOSTNAME);
   } else {
     const oneMinute = 60 * 1000;

@@ -63,7 +63,7 @@ struct FeatureKey {
 
   isElasticBilling @5 :Bool;
   # If true, then userLimit is a ceiling, but the customer will actually be billed based on
-  # monthly active user count at the end of each month.
+  # observed active user count at the end of each billing cycle.
 
   isTrial @6 :Bool;
   # Is this a trial key? For display purposes only.

@@ -127,7 +127,8 @@
         }
       }
       &.td-app-icon {
-        width: 48px;
+        box-sizing: border-box;
+        width: 64px;
         padding-left: 16px;
       }
     }
@@ -148,7 +149,7 @@
           width: 24px;
           height: 24px;
         }
-        width: 48px;
+        width: 64px;
         padding-left: 16px;
       }
       &.last-used {

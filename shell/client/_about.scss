@@ -88,12 +88,14 @@
         img {
           padding: 0 16px;
           display: block;
-          max-width: 122px;
+          box-sizing: border-box;
+          max-width: 154px;
           max-height: 121px;
         }
         .uniregistry-image {
           @extend %pseudo-img-tag;
-          width: 122px;
+          width: 154px;
+          box-sizing: border-box;
           height: 121px;
           background-image: url("/logos/uniregistry.svg");
         }
@@ -102,13 +104,16 @@
   }
 
   >section.developers {
-    max-width: 616px;
+    max-width: 632px;
+    box-sizing: border-box;
   }
   >section.advisors {
-    max-width: 462px;
+    max-width: 478px;
+    box-sizing: border-box;
   }
   >section.corporate, >section.individual {
-    width: 539px;
+    box-sizing: border-box;
+    width: 555px;
     @media (max-width: 560px) {
       width: auto;
     }
@@ -260,7 +265,8 @@
   color: #191919;
 
   padding: 64px;
-  max-width: 1110px;
+  max-width: 1238px;
+  box-sizing: border-box;
   @media #{$mobile} {
     padding: 8px;
   }

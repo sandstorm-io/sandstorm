@@ -14,9 +14,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var isTesting = Meteor.settings && Meteor.settings.public &&
-                Meteor.settings.public.isTesting;
+const isTesting = Meteor.settings && Meteor.settings.public &&
+                  Meteor.settings.public.isTesting;
 
+// jscs:disable requireCamelCaseOrUpperCaseIdentifiers
 if (isTesting) {
   if (Meteor.isServer) {
     function clearUser(id) {

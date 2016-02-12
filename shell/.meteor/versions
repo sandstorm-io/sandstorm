@@ -1,6 +1,7 @@
 accounts-base@1.2.2
 accounts-email-token@0.1.0
 accounts-identity@0.1.0
+accounts-ldap@1.0.1
 accounts-oauth@1.1.8
 application-configuration@1.0.4
 autoupdate@1.2.4
@@ -106,6 +107,7 @@ standard-minifiers@1.0.2
 templating@1.1.5
 templating-tools@1.0.0
 tracker@1.0.9
+typ:ldapjs@0.7.3
 ui@1.0.8
 underscore@1.0.4
 url@1.0.5

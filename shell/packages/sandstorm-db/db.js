@@ -1106,6 +1106,30 @@ _.extend(SandstormDb.prototype, {
     const setting = Settings.findOne({ _id: "returnAddress" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
+
+  isFeatureKeyValid: function () {
+    return Meteor.settings.public.isFeatureKeyValid;
+  },
+
+  getLdapUrl: function () {
+    const setting = Settings.findOne({ _id: "ldapUrl" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
+  getLdapBase: function () {
+    const setting = Settings.findOne({ _id: "ldapBase" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
+  getLdapDnPattern: function () {
+    const setting = Settings.findOne({ _id: "ldapDnPattern" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
+  getLdapNameField: function () {
+    const setting = Settings.findOne({ _id: "ldapNameField" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
 });
 
 const appNameFromPackage = function (packageObj) {

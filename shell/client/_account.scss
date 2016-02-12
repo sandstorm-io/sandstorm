@@ -211,7 +211,7 @@ body>.popup.account>.frame {
     background-repeat: no-repeat;
   }
 
-  >form.email {
+  >form.email, >form.ldap {
     line-height: 32px;
     height: auto;
     background-size: 24px 24px;
@@ -247,6 +247,20 @@ body>.popup.account>.frame {
       line-height: normal;
     }
 
+    .info {
+      margin-top: 7px;
+      margin-bottom: -2px;
+
+      border-radius: 50%;
+      background-color: #444;
+      color: white;
+      width: 10px;
+      height: 10px;
+      font-size: 10px;
+      display: inline-block;
+      text-align: center;
+    }
+
     .button-box {
       text-align: right;
       padding: 0 6px;
@@ -280,20 +294,6 @@ body>.popup.account>.frame {
 
   >a {
     line-height: 24px;
-  }
-
-  .email .info {
-    margin-top: 7px;
-    margin-bottom: -2px;
-
-    border-radius: 50%;
-    background-color: #444;
-    color: white;
-    width: 10px;
-    height: 10px;
-    font-size: 10px;
-    display: inline-block;
-    text-align: center;
   }
 
   .login-button-form-submit { margin-top: 8px; }

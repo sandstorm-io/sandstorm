@@ -144,6 +144,9 @@ Accounts.onCreateUser(function (options, user) {
   } else if (user.services && "github" in user.services) {
     serviceUserId = user.services.github.id;
     user.profile.service = "github";
+  } else if (user.services && "ldap" in user.services) {
+    serviceUserId = user.services.ldap.id;
+    user.profile.service = "ldap";
   } else {
     throw new Meteor.Error(400, "user does not have a recognized identity provider: " +
                            JSON.stringify(user));

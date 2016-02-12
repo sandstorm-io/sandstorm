@@ -82,7 +82,8 @@ cat > $SETTINGS << __EOF__
     "isTesting": true,
     "wildcardHost": "$WILDCARD_HOST",
     "quotaEnabled": ${QUOTA_ENABLED:-false},
-    "stripePublicKey": "${STRIPE_PUBLIC_KEY:-}"
+    "stripePublicKey": "${STRIPE_PUBLIC_KEY:-}",
+    "isFeatureKeyValid": true
   },
   "home": "$SANDSTORM_HOME",
   "stripeKey": "${STRIPE_KEY:-}",

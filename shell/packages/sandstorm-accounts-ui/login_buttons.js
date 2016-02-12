@@ -278,6 +278,22 @@ Template.emailAuthenticationForm.helpers({
   },
 });
 
+Template.ldapLoginForm.events({
+  "submit form": function (event, instance) {
+    event.preventDefault();
+    var form = event.currentTarget;
+
+    var username = form.username.value;
+    var password = form.password.value;
+
+    Meteor.loginWithLDAP(username, password, {}, function (err) {
+      if (err) {
+        loginButtonsSession.errorMessage(err.reason || "Unknown error");
+      }
+    });
+  },
+});
+
 Template.devLoginForm.onCreated(function () {
   this._expanded = new ReactiveVar(false);
 });

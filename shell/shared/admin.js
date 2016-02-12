@@ -134,31 +134,61 @@ Router.map(function () {
   });
 });
 
+const resetResult = function (state) {
+  state = state || Iron.controller().state;
+  state.set("numSettings", 1);
+  state.set("successes", 0);
+  state.set("failures", 0);
+  state.set("errors", []);
+  state.set("fadeAlert", false);
+  state.set("successMessage", "Your settings have been saved.");
+  state.set("powerboxOfferUrl", null);
+};
+
+const getToken = function () {
+  const state = Iron.controller().state;
+  const token = state.get("token");
+  if (!token) {
+    return;
+  } else {
+    return { _token: token };
+  }
+};
+
+const handleError = function (err) {
+  Meteor.setTimeout(() => {
+    this.set("fadeAlert", true);
+  }, 3000);
+
+  if (err) {
+    this.set("failures", this.get("failures") + 1);
+    console.error(err);
+    const errors = this.get("errors");
+    errors.push(err);
+    this.set("errors", errors);
+  } else {
+    this.set("successes", this.get("successes") + 1);
+  }
+};
+
+const updateUser = function (options) {
+  const state = Iron.controller().state;
+  const token = state.get("token");
+  resetResult(state);
+  state.set("successMessage", "User has been updated.");
+  const handleErrorBound = handleError.bind(state);
+  Meteor.call("adminUpdateUser", token, options, handleErrorBound);
+};
+
+const capitalize = function (str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+
 if (Meteor.isClient) {
   AdminToken = new Mongo.Collection("adminToken");  // see Meteor.publish("adminToken")
   AdminLog = new Meteor.Collection("adminLog");
   Meteor.subscribe("publicAdminSettings");
-
-  const resetResult = function (state) {
-    state = state || Iron.controller().state;
-    state.set("numSettings", 1);
-    state.set("successes", 0);
-    state.set("failures", 0);
-    state.set("errors", []);
-    state.set("fadeAlert", false);
-    state.set("successMessage", "Your settings have been saved.");
-    state.set("powerboxOfferUrl", null);
-  };
-
-  const getToken = function () {
-    const state = Iron.controller().state;
-    const token = state.get("token");
-    if (!token) {
-      return;
-    } else {
-      return { _token: token };
-    }
-  };
 
   Template.admin.helpers({
     adminTab: function () {
@@ -225,23 +255,6 @@ if (Meteor.isClient) {
 
     getToken: getToken,
   });
-
-  const handleError = function (err) {
-    const _this = this;
-    Meteor.setTimeout(() => {
-      _this.set("fadeAlert", true);
-    }, 3000);
-
-    if (err) {
-      this.set("failures", this.get("failures") + 1);
-      console.error(err);
-      const errors = this.get("errors");
-      errors.push(err);
-      this.set("errors", errors);
-    } else {
-      this.set("successes", this.get("successes") + 1);
-    }
-  };
 
   Template.adminSettings.events({
     "click .oauth-checkbox": function (event) {
@@ -337,15 +350,6 @@ if (Meteor.isClient) {
 
     getToken: getToken,
   });
-
-  const updateUser = function (options) {
-    const state = Iron.controller().state;
-    const token = state.get("token");
-    resetResult(state);
-    state.set("successMessage", "User has been updated.");
-    const handleErrorBound = handleError.bind(state);
-    Meteor.call("adminUpdateUser", token, options, handleErrorBound);
-  };
 
   Template.adminUsers.onCreated(function () {
     const state = Iron.controller().state;
@@ -455,10 +459,6 @@ if (Meteor.isClient) {
         Iron.controller().state.get("configurationServiceName"));
     },
   });
-
-  const capitalize = function (str) {
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  };
 
   Template._adminConfigureLoginServiceDialog.events({
     "click .configure-login-service-dismiss-button": function () {
@@ -612,8 +612,14 @@ if (Meteor.isClient) {
       return res && res.sent;
     },
   });
+
   const maybeScrollLog = function () {
+    // This function appears unused.  TODO: verify safe to delete
     const elem = document.getElementById("adminLog");
+    const scrollLogToBottom = function (elem) {
+      elem.scrollTop = elem.scrollHeight;
+    };
+
     if (elem) {
       // The log already exists. It's about to be updated. Check if it's scrolled to the bottom
       // before the update.
@@ -629,10 +635,6 @@ if (Meteor.isClient) {
         if (elem2) scrollLogToBottom(elem2);
       });
     }
-  };
-
-  const scrollLogToBottom = function (elem) {
-    elem.scrollTop = elem.scrollHeight;
   };
 
   Template.adminLog.onCreated(function () {
@@ -925,7 +927,7 @@ if (Meteor.isServer) {
     }
   };
 
-  function clearAdminToken(token) {
+  const clearAdminToken = function (token) {
     if (tokenIsValid(token)) {
       Fs.unlinkSync(SANDSTORM_ADMIN_TOKEN);
       console.log("Admin token deleted.");
@@ -1309,7 +1311,7 @@ function serviceEnabled(name) {
   return setting && !!setting.value;
 }
 
-if (Meteor.server) {
+if (Meteor.isServer) {
   function observeOauthService(name) {
     Settings.find({ _id: name, value: true }).observe({
       added: function () {

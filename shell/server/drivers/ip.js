@@ -14,13 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const Future = Npm.require('fibers/future');
-const Net = Npm.require('net');
-const Dgram = Npm.require('dgram');
-const Promise = Npm.require('es6-promise').Promise;
-const Capnp = Npm.require('capnp');
+const Future = Npm.require("fibers/future");
+const Net = Npm.require("net");
+const Dgram = Npm.require("dgram");
+const Promise = Npm.require("es6-promise").Promise;
+const Capnp = Npm.require("capnp");
 
-const IpRpc = Capnp.importSystem('sandstorm/ip.capnp');
+const IpRpc = Capnp.importSystem("sandstorm/ip.capnp");
 
 ByteStreamConnection = class ByteStreamConnection{
   constructor(connection) {
@@ -48,7 +48,7 @@ IpInterfaceImpl = class IpInterfaceImpl {
     const _this = this;
     return inMeteor(() => {
       const ret = makeChildTokenInternal(_this.parentToken, params.sealFor, []);
-      return {sturdyRef: ret.token};
+      return { sturdyRef: ret.token };
     });
   }
 
@@ -59,15 +59,15 @@ IpInterfaceImpl = class IpInterfaceImpl {
         const wrappedConnection = new ByteStreamConnection(connection);
         const upstream = port.connect(wrappedConnection).upstream;
 
-        connection.on('data', (data) => {
+        connection.on("data", (data) => {
           upstream.write(data);
         });
 
-        connection.on('close', (hadError) => {
+        connection.on("close", (hadError) => {
           upstream.done();
         });
 
-        connection.on('error', (err) => {
+        connection.on("error", (err) => {
           if (resolved) {
             connection.write = errorWrite;
           } else {
@@ -79,10 +79,10 @@ IpInterfaceImpl = class IpInterfaceImpl {
 
       server.listen(portNum, () => {
         resolved = true;
-        resolve({handle: server}); // server has a close method which is all we want from a handle
+        resolve({ handle: server }); // server has a close method which is all we want from a handle
       });
 
-      server.on('error', (err) => {
+      server.on("error", (err) => {
         if (!resolved) {
           reject(err);
         }
@@ -94,28 +94,28 @@ IpInterfaceImpl = class IpInterfaceImpl {
     return new Promise((resolve, reject) => {
       const portMap = {};
       let resolved = false;
-      const server = Dgram.createSocket('udp4'); // TODO(someday): handle ipv6 sockets too
+      const server = Dgram.createSocket("udp4"); // TODO(someday): handle ipv6 sockets too
       server.bind(portNum);
 
-      server.on('listening', () => {
+      server.on("listening", () => {
         // Although UDP is connectionless, we don't resolve until here so that we can handle bind
         // errors such as invalid host
         resolved = true;
-        resolve({handle: server}); // server has a close method which is all we want from a handle
+        resolve({ handle: server }); // server has a close method which is all we want from a handle
       });
 
-      server.on('error', (err) => {
+      server.on("error", (err) => {
         // TODO(someday): do something about errors after the promise is resolved
         if (!resolved) {
           reject(err);
         } else {
-          console.error('error in listenUdp: ' + err);
+          console.error("error in listenUdp: " + err);
         }
       });
 
       const returnMap = {};
-      server.on('message', (msg, rinfo) => {
-        const address = rinfo.address + ']:' + rinfo.port;
+      server.on("message", (msg, rinfo) => {
+        const address = rinfo.address + "]:" + rinfo.port;
         let returnPort = returnMap[address];
 
         if (!returnPort) {
@@ -156,7 +156,7 @@ const intToIpv4 = (num) => {
   const part3 = ((num >> 16) & 255);
   const part4 = ((num >> 24) & 255);
 
-  return part4 + '.' + part3 + '.' + part2 + '.' + part1;
+  return part4 + "." + part3 + "." + part2 + "." + part1;
 };
 
 const addressToString = (address) => {
@@ -170,33 +170,33 @@ const addressToString = (address) => {
 
   const hex = ipv6num.toString(16);
   let numColons = 0;
-  let out = '';
+  let out = "";
 
   for (let i = 0; i < hex.length; ++i) {
     // start with lower bits of address and build the output in reverse
     // this ensures that we can place a colon every 4 characters
     out += hex[hex.length - 1 - i];
     if ((i + 1) % 4 === 0) {
-      out += ':';
+      out += ":";
       ++numColons;
     }
   }
 
   // Double colon represents all bits being 0
   if (numColons < 7) {
-    out += '::';
+    out += "::";
   }
 
-  return out.split('').reverse().join('');
+  return out.split("").reverse().join("");
 };
 
 const addressType = (address) => {
-  let type = 'udp4';
+  let type = "udp4";
 
   // Check if it's an ipv6 address
   // TODO(someday): make this less hacky and change address to explicitly pass this information
-  if (address.indexOf(':') != -1) {
-    type = 'udp6';
+  if (address.indexOf(":") != -1) {
+    type = "udp6";
   }
 
   return type;
@@ -211,16 +211,16 @@ IpNetworkImpl = class IpNetworkImpl {
     const _this = this;
     return inMeteor(() => {
       const ret = makeChildTokenInternal(_this.parentToken, params.sealFor, []);
-      return {sturdyRef: ret.token};
+      return { sturdyRef: ret.token };
     });
   }
 
   getRemoteHost(address) {
-    return {host: new IpRemoteHostImpl(address)};
+    return { host: new IpRemoteHostImpl(address) };
   }
 
   getRemoteHostByName(address) {
-    return {host: new IpRemoteHostImpl(address)};
+    return { host: new IpRemoteHostImpl(address) };
   }
 };
 
@@ -239,11 +239,11 @@ IpRemoteHostImpl = class IpRemoteHostImpl {
   }
 
   getTcpPort(portNum) {
-    return {port: new TcpPortImpl(this.address, portNum)};
+    return { port: new TcpPortImpl(this.address, portNum) };
   }
 
   getUdpPort(portNum) {
-    return {port: new UdpPortImpl(this.address, portNum)};
+    return { port: new UdpPortImpl(this.address, portNum) };
   }
 };
 
@@ -257,20 +257,20 @@ TcpPortImpl = class TcpPortImpl {
     const _this = this;
     let resolved = false;
     return new Promise((resolve, reject) => {
-      const client = Net.connect({host: _this.address, port: _this.port}, () => {
+      const client = Net.connect({ host: _this.address, port: _this.port }, () => {
         resolved = true;
-        resolve({upstream: new ByteStreamConnection(client)});
+        resolve({ upstream: new ByteStreamConnection(client) });
       });
 
-      client.on('data', (data) => {
+      client.on("data", (data) => {
         downstream.write(data);
       });
 
-      client.on('close', (hadError) => {
+      client.on("close", (hadError) => {
         downstream.done();
       });
 
-      client.on('error', (err) => {
+      client.on("error", (err) => {
         if (resolved) {
           client.write = errorWrite;
         } else {
@@ -283,7 +283,7 @@ TcpPortImpl = class TcpPortImpl {
 };
 
 const errorWrite = (data) => {
-  throw new Error('error occurred in connection');
+  throw new Error("error occurred in connection");
 };
 
 UdpPortImpl = class UdpPortImpl {
@@ -303,7 +303,7 @@ UdpPortImpl = class UdpPortImpl {
     this.returnPort = null;
 
     const _this = this;
-    this.socket.on('message', (msg, rinfo) => {
+    this.socket.on("message", (msg, rinfo) => {
       if (_this.returnPort) {
         _this.returnPort.send(msg, _this);
       }

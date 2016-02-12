@@ -14,17 +14,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const Fs = Npm.require('fs');
-const Path = Npm.require('path');
-const Crypto = Npm.require('crypto');
-const ChildProcess = Npm.require('child_process');
-const Http = Npm.require('http');
-const Https = Npm.require('https');
-const Url = Npm.require('url');
-const Promise = Npm.require('es6-promise').Promise;
-const Capnp = Npm.require('capnp');
+const Fs = Npm.require("fs");
+const Path = Npm.require("path");
+const Crypto = Npm.require("crypto");
+const ChildProcess = Npm.require("child_process");
+const Http = Npm.require("http");
+const Https = Npm.require("https");
+const Url = Npm.require("url");
+const Promise = Npm.require("es6-promise").Promise;
+const Capnp = Npm.require("capnp");
 
-const Manifest = Capnp.importSystem('sandstorm/package.capnp').Manifest;
+const Manifest = Capnp.importSystem("sandstorm/package.capnp").Manifest;
 
 let installers;  // set to {} on main replica
 // To protect against race conditions, we require that each row in the Packages
@@ -35,20 +35,20 @@ let installers;  // set to {} on main replica
 
 const verifyIsMainReplica = () => {
   if (Meteor.settings.replicaNumber) {
-    throw new Error('This can only be called on the main front-end replica.');
+    throw new Error("This can only be called on the main front-end replica.");
   }
 };
 
 Meteor.methods({
   deleteUnusedPackages(appId) {
     check(appId, String);
-    Packages.find({appId:appId}).forEach((pkg) => {deletePackage(pkg._id);});
+    Packages.find({ appId:appId }).forEach((pkg) => {deletePackage(pkg._id);});
   },
 });
 
 deletePackage = (packageId) => {
   // Mark package for possible deletion;
-  Packages.update({_id: packageId, status: 'ready'}, {$set: {shouldCleanup: true}});
+  Packages.update({ _id: packageId, status: "ready" }, { $set: { shouldCleanup: true } });
 };
 
 const deletePackageInternal = (pkg) => {
@@ -60,15 +60,15 @@ const deletePackageInternal = (pkg) => {
     return;
   }
 
-  installers[packageId] = 'uninstalling';
+  installers[packageId] = "uninstalling";
 
   try {
-    const action = UserActions.findOne({packageId:packageId});
-    const grain = Grains.findOne({packageId:packageId});
+    const action = UserActions.findOne({ packageId:packageId });
+    const grain = Grains.findOne({ packageId:packageId });
     const notificationQuery = {};
-    notificationQuery['appUpdates.' + pkg.appId] = {$exists: true};
+    notificationQuery["appUpdates." + pkg.appId] = { $exists: true };
     if (!grain && !action && !(pkg.isAutoUpdated && Notifications.findOne(notificationQuery))) {
-      Packages.update({_id:packageId}, {$set: {status:'delete'}, $unset: {shouldCleanup: ''}});
+      Packages.update({ _id:packageId }, { $set: { status:"delete" }, $unset: { shouldCleanup: "" } });
       waitPromise(globalBackend.cap().deletePackage(packageId));
       Packages.remove(packageId);
 
@@ -77,7 +77,7 @@ const deletePackageInternal = (pkg) => {
         globalDb.unrefStaticAsset(assetId);
       });
     } else {
-      Packages.update({_id:packageId}, {$unset: {shouldCleanup: ''}});
+      Packages.update({ _id:packageId }, { $unset: { shouldCleanup: "" } });
     }
 
     delete installers[packageId];
@@ -100,7 +100,7 @@ const startInstallInternal = (pkg) => {
 };
 
 cancelDownload = (packageId) => {
-  Packages.remove({_id: packageId, status: 'download'});
+  Packages.remove({ _id: packageId, status: "download" });
 };
 
 const cancelDownloadInternal = (pkg) => {
@@ -112,7 +112,7 @@ const cancelDownloadInternal = (pkg) => {
   if (installer && installer.downloadRequest) {
     // OK, effect cancellation by faking an error.
     installer.wrapCallback(() => {
-      throw new Error('Canceled');
+      throw new Error("Canceled");
     })();
   }
 };
@@ -122,16 +122,16 @@ if (!Meteor.settings.replicaNumber) {
 
   Meteor.startup(() => {
     // Restart any deletions that were killed while in-progress.
-    Packages.find({status: 'delete'}).forEach(deletePackageInternal);
+    Packages.find({ status: "delete" }).forEach(deletePackageInternal);
 
     // Watch for new installation requests and fulfill them.
-    Packages.find({status: {$in: ['download', 'verify', 'unpack', 'analyze']}}).observe({
+    Packages.find({ status: { $in: ["download", "verify", "unpack", "analyze"] } }).observe({
       added: startInstallInternal,
       removed: cancelDownloadInternal,
     });
 
     // Watch for new cleanup requests and fulfill them.
-    Packages.find({status: 'ready', shouldCleanup: true}).observe({
+    Packages.find({ status: "ready", shouldCleanup: true }).observe({
       added: deletePackageInternal,
     });
   });
@@ -142,9 +142,9 @@ doClientUpload = (stream) => {
     const id = Random.id();
 
     const backendStream = globalBackend.cap().installPackage().stream;
-    const hasher = Crypto.createHash('sha256');
+    const hasher = Crypto.createHash("sha256");
 
-    stream.on('data', (chunk) => {
+    stream.on("data", (chunk) => {
       try {
         hasher.update(chunk);
         backendStream.write(chunk);
@@ -153,10 +153,10 @@ doClientUpload = (stream) => {
       }
     });
 
-    stream.on('end', () => {
+    stream.on("end", () => {
       try {
         backendStream.done();
-        const packageId = hasher.digest('hex').slice(0, 32);
+        const packageId = hasher.digest("hex").slice(0, 32);
         resolve(backendStream.saveAs(packageId).then(() => {
           return packageId;
         }));
@@ -166,7 +166,7 @@ doClientUpload = (stream) => {
       }
     });
 
-    stream.on('error', (err) => {
+    stream.on("error", (err) => {
       // TODO(soon):  This event does't seem to fire if the user leaves the page mid-upload.
       try {
         backendStream.close();
@@ -237,18 +237,18 @@ AppInstaller = class AppInstaller {
     // Note that the function below must not be an arrow function, since arrow functions do not have
     // access to the context's arguments array.
     const _this = this;
-    return function() {
+    return function () {
       if (_this.failed) return;
       try {
         return method.apply(_this, _.toArray(arguments));
       } catch (err) {
         _this.failed = true;
         _this.cleanup();
-        _this.updateProgress('failed', 0, err);
+        _this.updateProgress("failed", 0, err);
         _this.writeChain = _this.writeChain.then(() => {
           delete installers[_this.packageId];
         });
-        console.error('Failed to install app:', err.stack);
+        console.error("Failed to install app:", err.stack);
       }
     };
   }
@@ -291,11 +291,11 @@ AppInstaller = class AppInstaller {
 
   doDownload() {
     if (!this.url) {
-      throw new Error('Unknown package ID, and no URL was provided.');
+      throw new Error("Unknown package ID, and no URL was provided.");
     }
 
-    console.log('Downloading app:', this.url);
-    this.updateProgress('download');
+    console.log("Downloading app:", this.url);
+    this.updateProgress("download");
 
     this.uploadStream = globalBackend.cap().installPackage().stream;
     return this.doDownloadTo(this.uploadStream);
@@ -310,7 +310,7 @@ AppInstaller = class AppInstaller {
     };
 
     let protocol;
-    if (url.protocol === 'http:' || url.protocol === 'https:') {
+    if (url.protocol === "http:" || url.protocol === "https:") {
       protocol = Request.defaults({
         maxRedirects: 20,
         // Since we will verify the download against a hash anyway, we don't need to verify the
@@ -318,54 +318,54 @@ AppInstaller = class AppInstaller {
         // some servers refuse to serve over HTTP (which is, in general, a good thing). Skipping the
         // certificate check here is helpful in that it means we don't have to worry about having a
         // reasonable list of trusted CAs available to Sandstorm.
-        strictSSL: false
+        strictSSL: false,
       });
     } else {
-      throw new Error('Protocol not supported: ' + url.protocol);
+      throw new Error("Protocol not supported: " + url.protocol);
     }
 
     // TODO(security):  It could arguably be a security problem that it's possible to probe the
     //   server's local network (behind any firewalls) by presenting URLs here.
     let bytesExpected = undefined;
     let bytesReceived = 0;
-    const hasher = Crypto.createHash('sha256');
+    const hasher = Crypto.createHash("sha256");
     let done = false;
     const updateDownloadProgress = _.throttle(this.wrapCallback(() => {
       if (!done) {
         if (bytesExpected) {
-          this.updateProgress('download', bytesReceived / bytesExpected);
+          this.updateProgress("download", bytesReceived / bytesExpected);
         } else {
-          this.updateProgress('download', bytesReceived);
+          this.updateProgress("download", bytesReceived);
         }
       }
     }), 500);
 
     const request = protocol.get(this.url);
 
-    request.on('response', this.wrapCallback((response) => {
-      if ('content-length' in response.headers) {
-        bytesExpected = parseInt(response.headers['content-length']);
+    request.on("response", this.wrapCallback((response) => {
+      if ("content-length" in response.headers) {
+        bytesExpected = parseInt(response.headers["content-length"]);
       }
     }));
 
-    request.on('data', this.wrapCallback((chunk) => {
+    request.on("data", this.wrapCallback((chunk) => {
       hasher.update(chunk);
       out.write(chunk);
       bytesReceived += chunk.length;
       updateDownloadProgress();
     }));
 
-    request.on('end', this.wrapCallback(() => {
+    request.on("end", this.wrapCallback(() => {
       out.done();
 
-      if (hasher.digest('hex').slice(0, 32) !== this.packageId) {
-        throw new Error('Package hash did not match.');
+      if (hasher.digest("hex").slice(0, 32) !== this.packageId) {
+        throw new Error("Package hash did not match.");
       }
 
       done = true;
       delete this.downloadRequest;
 
-      this.updateProgress('unpack');
+      this.updateProgress("unpack");
       out.saveAs(this.packageId).then(this.wrapCallback((info) => {
         this.appId = info.appId;
         this.authorPgpKeyFingerprint = info.authorPgpKeyFingerprint;
@@ -375,14 +375,14 @@ AppInstaller = class AppInstaller {
       }));
     }));
 
-    request.on('error', this.wrapCallback((err) => { throw err; }));
+    request.on("error", this.wrapCallback((err) => { throw err; }));
 
     this.downloadRequest = request;
   }
 
   done(manifest) {
-    console.log('App ready:', this.packageId);
-    this.updateProgress('ready', 1, undefined, manifest);
+    console.log("App ready:", this.packageId);
+    this.updateProgress("ready", 1, undefined, manifest);
     const _this = this;
     _this.writeChain = _this.writeChain.then(() => {
       return inMeteor(() => {
@@ -406,20 +406,20 @@ extractManifestAssets = (manifest) => {
   if (icons) {
     const handleIcon = (icon) => {
       if (icon.svg) {
-        icon.assetId = globalDb.addStaticAsset({mimeType: 'image/svg+xml'}, icon.svg);
-        icon.format = 'svg';
+        icon.assetId = globalDb.addStaticAsset({ mimeType: "image/svg+xml" }, icon.svg);
+        icon.format = "svg";
         delete icon.svg;
         return true;
       } else if (icon.png) {
         // Use the 1x version for 'normal' DPI, unless 1x isn't provided, in which case use 2x.
         const normalDpi = icon.png.dpi1x || icon.png.dpi2x;
         if (!normalDpi) return false;
-        icon.format = 'png';
-        icon.assetId = globalDb.addStaticAsset({mimeType: 'image/png'}, normalDpi);
+        icon.format = "png";
+        icon.assetId = globalDb.addStaticAsset({ mimeType: "image/png" }, normalDpi);
 
         if (icon.png.dpi1x && icon.png.dpi2x) {
           // Icon specifies both resolutions, so also record a 2x DPI option.
-          icon.assetId2xDpi = globalDb.addStaticAsset({mimeType: 'image/png'}, icon.png.dpi2x);
+          icon.assetId2xDpi = globalDb.addStaticAsset({ mimeType: "image/png" }, icon.png.dpi2x);
         }
 
         delete icon.png;
@@ -440,7 +440,7 @@ extractManifestAssets = (manifest) => {
 
   const handleLocalizedText = (text) => {
     if (text.defaultText) {
-      text.defaultTextAssetId = globalDb.addStaticAsset({mimeType: 'text/plain'}, text.defaultText);
+      text.defaultTextAssetId = globalDb.addStaticAsset({ mimeType: "text/plain" }, text.defaultText);
       delete text.defaultText;
     }
 
@@ -448,7 +448,7 @@ extractManifestAssets = (manifest) => {
       text.localizations.forEach((localization) => {
         if (localization.text) {
           localization.assetId = globalDb.addStaticAsset(
-              {mimeType: 'text/plain'}, localization.text);
+              { mimeType: "text/plain" }, localization.text);
           delete localization.text;
         }
       });

@@ -14,12 +14,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const ChildProcess = Npm.require('child_process');
-const Future = Npm.require('fibers/future');
-const Promise = Npm.require('es6-promise').Promise;
-const Capnp = Npm.require('capnp');
+const ChildProcess = Npm.require("child_process");
+const Future = Npm.require("fibers/future");
+const Promise = Npm.require("es6-promise").Promise;
+const Capnp = Npm.require("capnp");
 
-const GrainInfo = Capnp.importSystem('sandstorm/grain.capnp').GrainInfo;
+const GrainInfo = Capnp.importSystem("sandstorm/grain.capnp").GrainInfo;
 
 const TOKEN_CLEANUP_MINUTES = 15;
 const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
@@ -27,7 +27,7 @@ const TOKEN_CLEANUP_TIMER = TOKEN_CLEANUP_MINUTES * 60 * 1000;
 function cleanupToken(tokenId) {
   check(tokenId, String);
   waitPromise(globalBackend.cap().deleteBackup(tokenId));
-  FileTokens.remove({_id: tokenId});
+  FileTokens.remove({ _id: tokenId });
 }
 
 Meteor.startup(() => {
@@ -35,7 +35,7 @@ Meteor.startup(() => {
   SandstormDb.periodicCleanup(TOKEN_CLEANUP_TIMER, () => {
     const queryDate = new Date(Date.now() - TOKEN_CLEANUP_TIMER);
 
-    FileTokens.find({timestamp: {$lt: queryDate}}).forEach((token) => {
+    FileTokens.find({ timestamp: { $lt: queryDate } }).forEach((token) => {
       cleanupToken(token._id);
     });
   });
@@ -46,7 +46,7 @@ Meteor.methods({
     check(grainId, String);
     const grain = Grains.findOne(grainId);
     if (!grain || !this.userId || grain.userId !== this.userId) {
-      throw new Meteor.Error(403, 'Unauthorized', 'User is not the owner of this grain');
+      throw new Meteor.Error(403, "Unauthorized", "User is not the owner of this grain");
     }
 
     this.unblock();
@@ -59,7 +59,7 @@ Meteor.methods({
 
     // TODO(soon): does the grain need to be offline?
 
-    const grainInfo = _.pick(grain, 'appId', 'appVersion', 'title');
+    const grainInfo = _.pick(grain, "appId", "appVersion", "title");
 
     FileTokens.insert(token);
     waitPromise(globalBackend.cap().backupGrain(token._id, this.userId, grainId, grainInfo));
@@ -72,13 +72,13 @@ Meteor.methods({
     check(identityId, String);
     const token = FileTokens.findOne(tokenId);
     if (!token || !isSignedUpOrDemo()) {
-      throw new Meteor.Error(403, 'Unauthorized',
-          'Token was not found, or user cannot create grains');
+      throw new Meteor.Error(403, "Unauthorized",
+          "Token was not found, or user cannot create grains");
     }
 
     if (isUserOverQuota(Meteor.user())) {
       throw new Meteor.Error(402,
-          'You are out of storage space. Please delete some things and try again.');
+          "You are out of storage space. Please delete some things and try again.");
     }
 
     this.unblock();
@@ -88,22 +88,22 @@ Meteor.methods({
     try {
       const grainInfo = waitPromise(globalBackend.cap().restoreGrain(
           tokenId, this.userId, grainId).catch((err) => {
-            console.error('Unzip failure:', err.message);
-            throw new Meteor.Error(500, 'Invalid backup file.');
+            console.error("Unzip failure:", err.message);
+            throw new Meteor.Error(500, "Invalid backup file.");
           })).info;
       if (!grainInfo.appId) {
         globalBackend.deleteGrain(grainId, this.userId);
-        throw new Meteor.Error(500, 'Metadata object for uploaded grain has no AppId');
+        throw new Meteor.Error(500, "Metadata object for uploaded grain has no AppId");
       }
 
-      const action = UserActions.findOne({appId: grainInfo.appId, userId: this.userId});
+      const action = UserActions.findOne({ appId: grainInfo.appId, userId: this.userId });
 
       // Create variables we'll use for later Mongo query.
       let packageId;
       let appVersion;
 
       // DevPackages are system-wide, so we do not check the user ID.
-      const devPackage = DevPackages.findOne({appId: grainInfo.appId});
+      const devPackage = DevPackages.findOne({ appId: grainInfo.appId });
       if (devPackage) {
         // If the dev app package exists, it should override the user action.
         packageId = devPackage.packageId;
@@ -117,17 +117,17 @@ Meteor.methods({
         // If the package isn't installed at all, bail out.
         globalBackend.deleteGrain(grainId, this.userId);
         throw new Meteor.Error(500,
-                               'App id for uploaded grain not installed',
-                               'App Id: ' + grainInfo.appId);
+                               "App id for uploaded grain not installed",
+                               "App Id: " + grainInfo.appId);
       }
 
       if (appVersion < grainInfo.appVersion) {
         globalBackend.deleteGrain(grainId, this.userId);
         throw new Meteor.Error(500,
-                               'App version for uploaded grain is newer than any ' +
-                               'installed version. You need to upgrade your app first',
-                               'New version: ' + grainInfo.appVersion +
-                               ', Old version: ' + appVersion);
+                               "App version for uploaded grain is newer than any " +
+                               "installed version. You need to upgrade your app first",
+                               "New version: " + grainInfo.appVersion +
+                               ", Old version: " + appVersion);
       }
 
       Grains.insert({
@@ -148,20 +148,20 @@ Meteor.methods({
   },
 });
 
-Router.map(function() {
-  this.route('downloadBackup', {
-    where: 'server',
-    path: '/downloadBackup/:tokenId',
+Router.map(function () {
+  this.route("downloadBackup", {
+    where: "server",
+    path: "/downloadBackup/:tokenId",
     action() {
       const token = FileTokens.findOne(this.params.tokenId);
       const response = this.response;
       if (!token) {
-        response.writeHead(404, {'Content-Type': 'text/plain'});
-        return response.end('File does not exist');
+        response.writeHead(404, { "Content-Type": "text/plain" });
+        return response.end("File does not exist");
       }
 
       let started = false;
-      const filename = (token.name.replace(/["\n]/g, '') || 'backup') + '.zip';
+      const filename = (token.name.replace(/["\n]/g, "") || "backup") + ".zip";
       let sawEnd = false;
 
       const stream = {
@@ -169,9 +169,9 @@ Router.map(function() {
           if (!started) {
             started = true;
             response.writeHead(200, {
-              'Content-Length': size,
-              'Content-Type': 'application/zip',
-              'Content-Disposition': 'attachment;filename=\"' + filename + '\"',
+              "Content-Length": size,
+              "Content-Type": "application/zip",
+              "Content-Disposition": 'attachment;filename=\"' + filename + '\"',
             });
           }
         },
@@ -180,8 +180,8 @@ Router.map(function() {
           if (!started) {
             started = true;
             response.writeHead(200, {
-              'Content-Type': 'application/zip',
-              'Content-Disposition': 'attachment;filename=\"' + filename + '\"',
+              "Content-Type": "application/zip",
+              "Content-Disposition": 'attachment;filename=\"' + filename + '\"',
             });
           }
 
@@ -192,9 +192,9 @@ Router.map(function() {
           if (!started) {
             started = true;
             response.writeHead(200, {
-              'Content-Length': 0,
-              'Content-Type': 'application/zip',
-              'Content-Disposition': 'attachment;filename=\"' + filename + '\"',
+              "Content-Length": 0,
+              "Content-Type": "application/zip",
+              "Content-Disposition": 'attachment;filename=\"' + filename + '\"',
             });
           }
 
@@ -206,9 +206,9 @@ Router.map(function() {
       waitPromise(globalBackend.cap().downloadBackup(this.params.tokenId, stream));
 
       if (!sawEnd) {
-        console.error('backend failed to call done() when downloading backup');
+        console.error("backend failed to call done() when downloading backup");
         if (!started) {
-          throw new Meteor.Error(500, 'backend failed to produce data');
+          throw new Meteor.Error(500, "backend failed to produce data");
         }
 
         response.end();
@@ -218,11 +218,11 @@ Router.map(function() {
     },
   });
 
-  this.route('uploadBackup', {
-    where: 'server',
-    path: '/uploadBackup',
+  this.route("uploadBackup", {
+    where: "server",
+    path: "/uploadBackup",
     action() {
-      if (this.request.method === 'POST') {
+      if (this.request.method === "POST") {
         const request = this.request;
         try {
           const token = {
@@ -234,36 +234,36 @@ Router.map(function() {
           FileTokens.insert(token);
 
           waitPromise(new Promise((resolve, reject) => {
-            request.on('data', (data) => {
+            request.on("data", (data) => {
               stream.write(data);
             });
-            request.on('end', () => {
+            request.on("end", () => {
               resolve(stream.done());
             });
-            request.on('error', (err) => {
+            request.on("error", (err) => {
               stream.close();
             });
           }));
 
           this.response.writeHead(200, {
-            'Content-Length': token._id.length,
-            'Content-Type': 'text/plain',
+            "Content-Length": token._id.length,
+            "Content-Type": "text/plain",
           });
           this.response.write(token._id);
           this.response.end();
         } catch (error) {
           console.error(error.stack);
           this.response.writeHead(500, {
-            'Content-Type': 'text/plain',
+            "Content-Type": "text/plain",
           });
           this.response.write(error.stack);
           this.response.end();
         }
       } else {
         this.response.writeHead(405, {
-          'Content-Type': 'text/plain',
+          "Content-Type": "text/plain",
         });
-        this.response.write('You can only POST here.');
+        this.response.write("You can only POST here.");
         this.response.end();
       }
     },

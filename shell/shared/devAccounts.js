@@ -14,22 +14,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var allowDevAccounts = Meteor.settings && Meteor.settings.public &&
-                 Meteor.settings.public.allowDevAccounts;
+const allowDevAccounts = Meteor.settings && Meteor.settings.public &&
+                         Meteor.settings.public.allowDevAccounts;
 
 Accounts.identityServices.dev = {
   isEnabled: function () {
     return allowDevAccounts;
   },
+
   loginTemplate: {
     name: "devLoginForm",
     priority: -10, // Put it at the top.
-  }
-}
+  },
+};
 
 if (allowDevAccounts) {
   if (Meteor.isServer) {
-    var Crypto = Npm.require("crypto");
+    const Crypto = Npm.require("crypto");
 
     Meteor.methods({
       createDevAccount: function (displayName, isAdmin, profile, unverifiedEmail) {
@@ -44,30 +45,30 @@ if (allowDevAccounts) {
 
         profile = profile || {};
         profile.name = profile.name || displayName;
-        var hasCompletedSignup = !!unverifiedEmail && !!profile.pronoun && !!profile.handle;
+        const hasCompletedSignup = !!unverifiedEmail && !!profile.pronoun && !!profile.handle;
 
-        var user = Meteor.users.findOne({"services.dev.name": displayName});
-        var userId;
+        const user = Meteor.users.findOne({ "services.dev.name": displayName });
+        let userId;
 
         if (user) {
           userId = user._id;
         } else {
           userId = Accounts.insertUserDoc({ profile: profile,
-                                            unverifiedEmail: unverifiedEmail},
+                                            unverifiedEmail: unverifiedEmail, },
                                           { services:
-                                              {dev: {name: displayName,
+                                              { dev: { name: displayName,
                                                      isAdmin: isAdmin,
-                                                     hasCompletedSignup: hasCompletedSignup}}});
+                                                     hasCompletedSignup: hasCompletedSignup, }, }, });
         }
         // Log them in on this connection.
         return Accounts._loginMethod(this, "createDevAccount", arguments,
             "dev", function () { return { userId: userId }; });
-      }
+      },
     });
   }
 
   if (Meteor.isClient) {
-    loginDevAccount = function(displayName, isAdmin) {
+    loginDevAccount = function (displayName, isAdmin) {
       Accounts.callLoginMethod({
         methodName: "createDevAccount",
         methodArguments: [displayName, isAdmin],
@@ -75,17 +76,17 @@ if (allowDevAccounts) {
           if (err) {
             window.alert(err);
           }
-        }
+        },
       });
     };
 
-    loginDevAccountFast = function(displayName, isAdmin) {
+    loginDevAccountFast = function (displayName, isAdmin) {
       return new Promise(function (resolve, reject) {
         // This skips the firstSignUp page. Mostly used for testing purposes.
-        var profile = {
+        const profile = {
           name: displayName,
           pronoun: "robot",
-          handle: "_" + displayName.toLowerCase()
+          handle: "_" + displayName.toLowerCase(),
         };
 
         Accounts.callLoginMethod({
@@ -98,7 +99,7 @@ if (allowDevAccounts) {
               Router.go("apps");
               resolve();
             }
-          }
+          },
         });
       });
     };

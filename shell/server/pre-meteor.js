@@ -17,12 +17,12 @@
 // This file implements logic that we place in front of our main Meteor application,
 // including routing of requests to proxies and handling of static web publishing.
 
-const Url = Npm.require('url');
-const Fs = Npm.require('fs');
-const Dns = Npm.require('dns');
-const Promise = Npm.require('es6-promise').Promise;
-const Future = Npm.require('fibers/future');
-const Http = Npm.require('http');
+const Url = Npm.require("url");
+const Fs = Npm.require("fs");
+const Dns = Npm.require("dns");
+const Promise = Npm.require("es6-promise").Promise;
+const Future = Npm.require("fibers/future");
+const Http = Npm.require("http");
 
 const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 const DDP_HOSTNAME = process.env.DDP_DEFAULT_CONNECTION_URL &&
@@ -53,23 +53,23 @@ function wwwHandlerForGrain(grainId) {
     let path = request.url;
 
     // If a directory, open 'index.html'.
-    if (path.slice(-1) === '/') {
-      path = path + 'index.html';
+    if (path.slice(-1) === "/") {
+      path = path + "index.html";
     }
 
     // Strip leading '/'.
-    if (path[0] === '/') path = path.slice(1);
+    if (path[0] === "/") path = path.slice(1);
 
     // Strip query.
-    path = path.split('?')[0];
+    path = path.split("?")[0];
 
     let type = mime.lookup(path);
     const charset = mime.charsets.lookup(type);
     if (charset) {
-      type = type + '; charset=' + charset;
-    } else if (type === 'application/json') {
+      type = type + "; charset=" + charset;
+    } else if (type === "application/json") {
       // HACK: Apparently the MIME module does not assume UTF-8 for JSON. :(
-      type = type + '; charset=utf-8';
+      type = type + "; charset=utf-8";
     }
 
     let started = false;
@@ -79,12 +79,12 @@ function wwwHandlerForGrain(grainId) {
     //   Note that nginx will also auto-compress things...
 
     const headers = {
-      'Content-Type': type,
-      'Cache-Control': 'public, max-age=' + CACHE_TTL_SECONDS,
+      "Content-Type": type,
+      "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS,
     };
 
-    if (path === 'apps/index.json' ||
-        path === 'apps/index-experimental.json' ||
+    if (path === "apps/index.json" ||
+        path === "apps/index-experimental.json" ||
         path.match(/apps\/[a-z0-9]{52}[.]json/)) {
       // TODO(cleanup): Extra special terrible hack: The app index needs to serve these JSON files
       //   cross-origin. We could almost just make all web sites allow cross-origin since generally
@@ -92,14 +92,14 @@ function wwwHandlerForGrain(grainId) {
       //   problematic, though: sites behind a firewall. Those sites could potentially be read
       //   by outside sites if CORS is enabled on them. Some day we should make it so apps can
       //   explicitly opt-in to allowing cross-origin queries but that day is not today.
-      headers['Access-Control-Allow-Origin'] = '*';
+      headers["Access-Control-Allow-Origin"] = "*";
     }
 
     const stream = {
       expectSize(size) {
         if (!started) {
           started = true;
-          response.writeHead(200, _.extend(headers, { 'Content-Length': size }));
+          response.writeHead(200, _.extend(headers, { "Content-Length": size }));
         }
       },
 
@@ -115,7 +115,7 @@ function wwwHandlerForGrain(grainId) {
       done(data) {
         if (!started) {
           started = true;
-          response.writeHead(200, _.extend(headers, { 'Content-Length': 0, }));
+          response.writeHead(200, _.extend(headers, { "Content-Length": 0, }));
         }
 
         sawEnd = true;
@@ -127,51 +127,51 @@ function wwwHandlerForGrain(grainId) {
       return supervisor.getWwwFileHack(path, stream).then((result) => {
         // jscs:disable disallowQuotedKeysInObjects
         const status = result.status;
-        if (status === 'file') {
+        if (status === "file") {
           if (!sawEnd) {
-            console.error('getWwwFileHack didn\'t write file to stream');
+            console.error("getWwwFileHack didn't write file to stream");
             if (!started) {
               response.writeHead(500, {
-                'Content-Type': 'text/plain',
+                "Content-Type": "text/plain",
               });
-              response.end('Internal server error');
+              response.end("Internal server error");
             }
 
             response.end();
           }
-        } else if (status === 'directory') {
+        } else if (status === "directory") {
           if (started) {
-            console.error('getWwwFileHack wrote to stream for directory');
+            console.error("getWwwFileHack wrote to stream for directory");
             if (!sawEnd) {
               response.end();
             }
           } else {
             response.writeHead(303, {
-              'Content-Type': 'text/plain',
-              'Location': '/' + path + '/',
-              'Cache-Control': 'public, max-age=' + CACHE_TTL_SECONDS,
+              "Content-Type": "text/plain",
+              "Location": "/" + path + "/",
+              "Cache-Control": "public, max-age=" + CACHE_TTL_SECONDS,
             });
-            response.end('redirect: /' + path + '/');
+            response.end("redirect: /" + path + "/");
           }
-        } else if (status === 'notFound') {
+        } else if (status === "notFound") {
           if (started) {
-            console.error('getWwwFileHack wrote to stream for notFound');
+            console.error("getWwwFileHack wrote to stream for notFound");
             if (!sawEnd) {
               response.end();
             }
           } else {
             response.writeHead(404, {
-              'Content-Type': 'text/plain',
+              "Content-Type": "text/plain",
             });
-            response.end('404 not found: /' + path);
+            response.end("404 not found: /" + path);
           }
         } else {
-          console.error('didn\'t understand result of getWwwFileHack:', status);
+          console.error("didn't understand result of getWwwFileHack:", status);
           if (!started) {
             response.writeHead(500, {
-              'Content-Type': 'text/plain',
+              "Content-Type": "text/plain",
             });
-            response.end('Internal server error');
+            response.end("Internal server error");
           }
         }
       });
@@ -183,7 +183,7 @@ function wwwHandlerForGrain(grainId) {
 
 function writeErrorResponse(res, err) {
   let status = 500;
-  if (err instanceof Meteor.Error && typeof err.error === 'number' &&
+  if (err instanceof Meteor.Error && typeof err.error === "number" &&
       err.error >= 400 && err.error < 600) {
     status = err.error;
   } else if (err.httpErrorCode) {
@@ -193,7 +193,7 @@ function writeErrorResponse(res, err) {
   // Log errors that are our fault, but not errors that are the client's fault.
   if (status >= 500) console.error(err.stack);
 
-  res.writeHead(status, { 'Content-Type': err.htmlMessage ? 'text/html' : 'text/plain' });
+  res.writeHead(status, { "Content-Type": err.htmlMessage ? "text/html" : "text/plain" });
   res.end(err.htmlMessage || err.message);
 }
 
@@ -212,18 +212,18 @@ function checkMagic(buf, magic) {
 
 function serveSelfTest(req, res) {
   try {
-    if (req.method === 'GET' &&
-        req.url === '/') {
+    if (req.method === "GET" &&
+        req.url === "/") {
       const content = new Buffer("Self-test OK.");
       res.writeHead(200, {
-        'Content-Type': 'text/plain',
-        'Content-Length': content.length,
-        'Access-Control-Allow-Origin': process.env.ROOT_URL,
+        "Content-Type": "text/plain",
+        "Content-Length": content.length,
+        "Access-Control-Allow-Origin": process.env.ROOT_URL,
       });
       res.end(content);
     } else {
-      res.writeHead(400, { 'Content-Type': 'text/plain' });
-      res.end('Bad request to self-test subdomain.');
+      res.writeHead(400, { "Content-Type": "text/plain" });
+      res.end("Bad request to self-test subdomain.");
       return;
     }
   } catch (err) {
@@ -233,7 +233,7 @@ function serveSelfTest(req, res) {
 
 function serveStaticAsset(req, res) {
   inMeteor(() => {
-    if (req.method === 'GET') {
+    if (req.method === "GET") {
       // jscs:disable validateQuoteMarks
       const assetCspHeader = "default-src 'none'; style-src 'unsafe-inline'; sandbox";
       if (req.headers['if-none-match'] === 'permanent') {
@@ -288,7 +288,7 @@ function serveStaticAsset(req, res) {
         res.writeHead(200, headers);
         res.end(asset.content);
       } else {
-        res.writeHead(404, {'Content-Type': 'text/plain'});
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('not found');
       }
     } else if (req.method === 'POST') {
@@ -339,11 +339,11 @@ function serveStaticAsset(req, res) {
         return;
       }
 
-      const assetId = globalDb.addStaticAsset({mimeType: type}, content);
+      const assetId = globalDb.addStaticAsset({ mimeType: type }, content);
       const old = Meteor.users.findAndModify({
-        query: {'_id': identityId},
-        update: {$set: {'profile.picture': assetId}},
-        fields: {'profile.picture': 1},
+        query: { '_id': identityId },
+        update: { $set: { 'profile.picture': assetId } },
+        fields: { 'profile.picture': 1 },
       });
 
       if (old && old.profile && old.profile.picture) {
@@ -453,7 +453,7 @@ Meteor.startup(() => {
   for (let i = 0; i < getNumberOfAlternatePorts(); i++) {
     // Call createServerForSandstorm() to skip our monkey patching.
     const alternatePortServer = Http.createServerForSandstorm(redirectToMeteorOrServeStaticPublishing);
-    alternatePortServer.listen({fd: i + 4});
+    alternatePortServer.listen({ fd: i + 4 });
   }
 
   const dispatchToMeteorOrStaticPublishing = (req, res, next, redirectRatherThanServeShell) => {
@@ -462,11 +462,12 @@ Meteor.startup(() => {
       res.end('Missing Host header');
       return;
     }
+
     const hostname = req.headers.host.split(':')[0];
     if (isSandstormShell(hostname)) {
       // Go on to Meteor, or serve a redirect.
       if (redirectRatherThanServeShell) {
-        res.writeHead(302, {'Location': canonicalizeShellOrWildcardUrl(hostname, req.url)});
+        res.writeHead(302, { 'Location': canonicalizeShellOrWildcardUrl(hostname, req.url) });
         res.end();
         return;
       } else {
@@ -481,7 +482,7 @@ Meteor.startup(() => {
     if (id) {
       // Match!
       if (redirectRatherThanServeShell) {
-        res.writeHead(302, {'Location': canonicalizeShellOrWildcardUrl(hostname, req.url)});
+        res.writeHead(302, { 'Location': canonicalizeShellOrWildcardUrl(hostname, req.url) });
         res.end();
         return;
       }
@@ -521,7 +522,7 @@ Meteor.startup(() => {
           } else {
             // We don't have a handler for this publicId, so look it up in the grain DB.
             return inMeteor(() => {
-              const grain = Grains.findOne({publicId: publicId}, {fields: {_id: 1}});
+              const grain = Grains.findOne({ publicId: publicId }, { fields: { _id: 1 } });
               if (!grain) {
                 throw new Meteor.Error(404, 'No such grain for public ID: ' + publicId);
               }

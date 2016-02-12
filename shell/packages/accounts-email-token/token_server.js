@@ -1,22 +1,29 @@
-var TOKEN_EXPIRATION_MS = 15 * 60 * 1000;
+const TOKEN_EXPIRATION_MS = 15 * 60 * 1000;
 
-var cleanupExpiredTokens = function() {
-  Meteor.users.update(
-      {"services.email.tokens.createdAt": {$lt: new Date(Date.now() - TOKEN_EXPIRATION_MS)}},
-      {$pull: {
-        "services.email.tokens": {
-          createdAt: {$lt: new Date(Date.now() - TOKEN_EXPIRATION_MS)}}}},
-    { multi: true });
+const cleanupExpiredTokens = function () {
+  Meteor.users.update({
+    "services.email.tokens.createdAt": {
+      $lt: new Date(Date.now() - TOKEN_EXPIRATION_MS),
+    },
+  }, {
+    $pull: {
+      "services.email.tokens": {
+        createdAt: { $lt: new Date(Date.now() - TOKEN_EXPIRATION_MS) },
+      },
+    },
+  }, {
+    multi: true,
+  });
 };
 
 Meteor.startup(cleanupExpiredTokens);
 // Tokens can actually last up to 2 * TOKEN_EXPIRATION_MS
 SandstormDb.periodicCleanup(TOKEN_EXPIRATION_MS, cleanupExpiredTokens);
 
-var checkToken = function (tokens, token) {
-  var found = false;
+const checkToken = function (tokens, token) {
+  let found = false;
   tokens.forEach(function (userToken) {
-    if((userToken.algorithm === token.algorithm) &&
+    if ((userToken.algorithm === token.algorithm) &&
        (userToken.digest === token.digest)) {
       found = true;
     }
@@ -26,18 +33,18 @@ var checkToken = function (tokens, token) {
 };
 
 // The name of the email package to use. It refers to a variable named in the global scope.
-var EMAIL_PACKAGE= "Email";
+let EMAIL_PACKAGE = "Email";
 
 Accounts.emailToken.setEmailPackage = function (packageName) {
   EMAIL_PACKAGE = packageName;
 };
 
-function consumeToken (user, token) {
-  var hashedToken = Accounts.emailToken._hashToken(token);
-  var found = checkToken(user.services.email.tokens, hashedToken);
+function consumeToken(user, token) {
+  const hashedToken = Accounts.emailToken._hashToken(token);
+  const found = checkToken(user.services.email.tokens, hashedToken);
 
   if (found) {
-    Meteor.users.update({_id: user._id}, {$pull: {"services.email.tokens": hashedToken}});
+    Meteor.users.update({ _id: user._id }, { $pull: { "services.email.tokens": hashedToken } });
   }
 
   return found;
@@ -51,44 +58,49 @@ Accounts.registerLoginHandler("email", function (options) {
   options = options.email;
   check(options, {
     email: String,
-    token: String
+    token: String,
   });
 
-  var user = Meteor.users.findOne({"services.email.email": options.email},
-                                  {fields: {"services.email": 1}});
+  const user = Meteor.users.findOne({
+    "services.email.email": options.email,
+  }, {
+    fields: {
+      "services.email": 1,
+    },
+  });
 
   if (!user) {
     console.error("User not found:", options.email);
     return {
-      error: new Meteor.Error(403, "User not found")
+      error: new Meteor.Error(403, "User not found"),
     };
   }
 
   if (!user.services.email.tokens) {
     console.error("User has no token set:", options.email);
     return {
-      error: new Meteor.Error(403, "User has no token set")
+      error: new Meteor.Error(403, "User has no token set"),
     };
   }
 
   if (!consumeToken(user, options.token.trim())) {
     console.error("Token not found:", options.email);
     return {
-      error: new Meteor.Error(403, "Invalid authentication code")
+      error: new Meteor.Error(403, "Invalid authentication code"),
     };
   }
 
   return {
-    userId: user._id
+    userId: user._id,
   };
 });
 
-var Url = Npm.require("url");
+const Url = Npm.require("url");
 
-var ROOT_URL = Url.parse(process.env.ROOT_URL);
-var HOSTNAME = ROOT_URL.hostname;
+const ROOT_URL = Url.parse(process.env.ROOT_URL);
+const HOSTNAME = ROOT_URL.hostname;
 
-var makeTokenUrl = function (email, token, linkingIdentity) {
+const makeTokenUrl = function (email, token, linkingIdentity) {
   if (linkingIdentity) {
     return process.env.ROOT_URL + "/_emailLinkIdentity/" + encodeURIComponent(email) + "/" +
         encodeURIComponent(token) + "/" + Meteor.userId();
@@ -101,9 +113,9 @@ var makeTokenUrl = function (email, token, linkingIdentity) {
 ///
 /// EMAIL VERIFICATION
 ///
-var sendTokenEmail = function (db, email, token, linkingIdentity) {
-  var subject;
-  var text;
+const sendTokenEmail = function (db, email, token, linkingIdentity) {
+  let subject;
+  let text;
   if (!linkingIdentity) {
     subject = "Log in to " + HOSTNAME;
     text = "To confirm this email address on ";
@@ -111,12 +123,13 @@ var sendTokenEmail = function (db, email, token, linkingIdentity) {
     subject = "Confirm this email address on " + HOSTNAME;
     text = "To confirm this email address on ";
   }
+
   text = text + HOSTNAME + ", click on the following link:\n\n" +
       makeTokenUrl(email, token, linkingIdentity) + "\n\n" +
       "Alternatively, enter the following one-time authentication code into the log-in form:\n\n" +
       token;
 
-  var options = {
+  const options = {
     to:  email,
     from: db.getServerTitle() + " <" + db.getReturnAddress() + ">",
     subject: subject,
@@ -130,21 +143,21 @@ var sendTokenEmail = function (db, email, token, linkingIdentity) {
 /// CREATING USERS
 ///
 // returns the user id
-var createAndEmailTokenForUser = function (db, email, linkingIdentity) {
+const createAndEmailTokenForUser = function (db, email, linkingIdentity) {
   check(email, String);
   check(linkingIdentity, Boolean);
-  var atIndex = email.indexOf("@");
+  const atIndex = email.indexOf("@");
   if (atIndex === -1) {
     throw new Meteor.Error(400, "No @ symbol was found in your email");
   }
 
-  var user = Meteor.users.findOne({"services.email.email": email},
-                                  {fields: {"services.email": 1}});
-  var userId;
+  let user = Meteor.users.findOne({ "services.email.email": email },
+                                  { fields: { "services.email": 1 } });
+  let userId;
 
   // TODO(someday): make this shorter, and handle requests that try to brute force it.
-  var token = Random.id(12);
-  var tokenObj = Accounts.emailToken._hashToken(token);
+  const token = Random.id(12);
+  const tokenObj = Accounts.emailToken._hashToken(token);
   tokenObj.createdAt = new Date();
 
   if (user) {
@@ -153,15 +166,20 @@ var createAndEmailTokenForUser = function (db, email, linkingIdentity) {
         "ago. Please use the one that was already sent (check your spam folder if you can't find " +
         "it), or wait a while and try again");
     }
+
     userId = user._id;
 
-    Meteor.users.update({_id: user._id}, {$push: {"services.email.tokens": tokenObj}});
+    Meteor.users.update({ _id: user._id }, { $push: { "services.email.tokens": tokenObj } });
   } else {
-    var options = {};
-    user = {services: {email: {
-      tokens: [tokenObj],
-      email: email
-    }}};
+    const options = {};
+    user = {
+      services: {
+        email: {
+          tokens: [tokenObj],
+          email: email,
+        },
+      },
+    };
 
     userId = Accounts.insertUserDoc(options, user);
   }
@@ -184,26 +202,29 @@ Meteor.methods({
       throw new Meteor.Error(403, "Email identity service is disabled.");
     }
     // Create user. result contains id and token.
-    var user = createAndEmailTokenForUser(this.connection.sandstormDb, email, linkingIdentity);
+    const user = createAndEmailTokenForUser(this.connection.sandstormDb, email, linkingIdentity);
   },
 
   linkEmailIdentityToAccount: function (email, token) {
     // Links the email identity with address `email` and login token `token` to the current account.
     check(email, String);
     check(token, String);
-    var account = Meteor.user();
+    const account = Meteor.user();
     if (!account || !account.loginIdentities) {
       throw new Meteor.Error(403, "Must be logged in to an account to link an email identity.");
     }
-    var identity = Meteor.users.findOne({"services.email.email": email},
-                                        {fields: {"services.email": 1}});
+
+    const identity = Meteor.users.findOne({ "services.email.email": email },
+                                          { fields: { "services.email": 1 } });
     if (!identity) {
       throw new Meteor.Error(403, "Invalid authentication code.");
     }
+
     if (!consumeToken(identity, token)) {
       throw new Meteor.Error(403, "Invalid authentication code.");
     }
+
     Accounts.linkIdentityToAccount(this.connection.sandstormDb, this.connection.sandstormBackend,
                                    identity._id, account._id);
-  }
+  },
 });

@@ -1,7 +1,9 @@
 {
   "preset": "airbnb",
+  "esnext": true,
+  "verbose": true,
   "fileExtensions": [".js"],
-  "validateQuoteMarks": {"mark": "'", "escape": true},
+  "validateQuoteMarks": {"mark": "\"", "escape": true},
   "disallowVar": true,
   "requirePaddingNewLinesBeforeLineComments": false,
   "excludeFiles": ['.meteor', '**/node_modules']

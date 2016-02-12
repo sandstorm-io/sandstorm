@@ -17,15 +17,15 @@
 allowDemo = Meteor.settings && Meteor.settings.public &&
                 Meteor.settings.public.allowDemoAccounts;
 
-var DEMO_EXPIRATION_MS = 60 * 60 * 1000;
-var DEMO_GRACE_MS = 10 * 60 * 1000;  // time between expiration and deletion
+const DEMO_EXPIRATION_MS = 60 * 60 * 1000;
+const DEMO_GRACE_MS = 10 * 60 * 1000;  // time between expiration and deletion
 
 if (Meteor.isServer) {
   Accounts.validateLoginAttempt(function (attempt) {
     // Enforce expiration times for demo accounts.
 
     if (attempt.user && attempt.user.expires) {
-      var expireIn = attempt.user.expires.getTime() - Date.now() + DEMO_GRACE_MS;
+      const expireIn = attempt.user.expires.getTime() - Date.now() + DEMO_GRACE_MS;
       if (expireIn < 0) {
         throw new Meteor.Error(403, "This demo account has expired.");
       }
@@ -38,8 +38,9 @@ if (Meteor.isServer) {
 
       // Force connection close when account expires, so that the client reconnects and
       // re-authenticates, which fails.
-      var connection = attempt.connection;
-      var handle = Meteor.setTimeout(function () { connection.close(); }, expireIn);
+      const connection = attempt.connection;
+      const handle = Meteor.setTimeout(function () { connection.close(); }, expireIn);
+
       connection.onClose(function () { Meteor.clearTimeout(handle); });
     }
 
@@ -49,41 +50,43 @@ if (Meteor.isServer) {
   function cleanupExpiredUsers() {
     // Delete expired demo accounts and all their grains.
 
-    var now = new Date(Date.now() - DEMO_GRACE_MS);
-    Meteor.users.find({expires: {$lt: now}},
-                      {fields: {_id: 1, loginIdentities: 1, lastActive: 1, appDemoId: 1}})
+    const now = new Date(Date.now() - DEMO_GRACE_MS);
+    Meteor.users.find({ expires: { $lt: now } },
+                      { fields: { _id: 1, loginIdentities: 1, lastActive: 1, appDemoId: 1 } })
                 .forEach(function (user) {
-      Grains.find({userId: user._id}, {fields: {_id: 1, lastUsed: 1, appId: 1}})
+      Grains.find({ userId: user._id }, { fields: { _id: 1, lastUsed: 1, appId: 1 } })
             .forEach(function (grain) {
         console.log("delete grain: " + grain._id);
-        ApiTokens.remove({grainId: grain._id});
+        ApiTokens.remove({ grainId: grain._id });
         Grains.remove(grain._id);
         if (grain.lastUsed) {
-          DeleteStats.insert({type: "demoGrain", lastActive: grain.lastUsed, appId: grain.appId});
+          DeleteStats.insert({ type: "demoGrain", lastActive: grain.lastUsed, appId: grain.appId });
         }
+
         globalBackend.deleteGrain(grain._id, user._id);
       });
+
       console.log("delete user: " + user._id);
       // We intentionally do not do `ApiTokens.remove({accountId: user._id})`, because some such
       // tokens might still play an active role in the sharing graph.
-      Contacts.remove({ownerId: user._id});
-      UserActions.remove({userId: user._id});
-      Notifications.remove({userId: user._id});
+      Contacts.remove({ ownerId: user._id });
+      UserActions.remove({ userId: user._id });
+      Notifications.remove({ userId: user._id });
       Meteor.users.remove(user._id);
       waitPromise(globalBackend.cap().deleteUser(user._id));
       if (user.loginIdentities && user.lastActive) {
         // When deleting a user, we can specify it as a "normal" user
         // (type: user) or as a user who started out by using the app
         // demo feature (type: appDemoUser).
-        var deleteStatsType = "demoUser";
-        var isAppDemoUser = !! user.appDemoId;
+        let deleteStatsType = "demoUser";
+        const isAppDemoUser = !!user.appDemoId;
         if (isAppDemoUser) {
           deleteStatsType = "appDemoUser";
         }
 
         // Intentionally record deleted users at time of deletion to avoid miscounting users that
         // were demoing just before the day rolled over.
-        DeleteStats.insert({type: deleteStatsType, lastActive: new Date(), appId: user.appDemoId});
+        DeleteStats.insert({ type: deleteStatsType, lastActive: new Date(), appId: user.appDemoId });
       }
     });
   }
@@ -99,11 +102,12 @@ if (Meteor.isServer) {
         check(appDemoId, Match.OneOf(undefined, null, String));
 
         // Create the new user.
-        var newUser = { expires: new Date(Date.now() + DEMO_EXPIRATION_MS) };
+        const newUser = { expires: new Date(Date.now() + DEMO_EXPIRATION_MS) };
         if (appDemoId) {
           newUser.appDemoId = appDemoId;
         }
-        var userId = Accounts.insertUserDoc({ profile: { name: displayName } }, newUser);
+
+        const userId = Accounts.insertUserDoc({ profile: { name: displayName } }, newUser);
 
         // Log them in on this connection.
         return Accounts._loginMethod(this, "createDemoUser", arguments,
@@ -113,12 +117,13 @@ if (Meteor.isServer) {
       testExpireDemo: function () {
         if (!isDemoUser()) throw new Meteor.Error(403, "not a demo user");
 
-        var newExpires = new Date(Date.now() + 15000);
+        const newExpires = new Date(Date.now() + 15000);
         if (Meteor.user().expires.getTime() < newExpires.getTime()) {
           throw new Meteor.Error(403, "can't exend demo");
         }
-        Meteor.users.update(this.userId, {$set: {expires: newExpires}});
-      }
+
+        Meteor.users.update(this.userId, { $set: { expires: newExpires } });
+      },
     });
 
     // If demo mode is enabled, we permit the client to subscribe to
@@ -131,17 +136,17 @@ if (Meteor.isServer) {
       // list of UserActions.
       check(appId, String);
 
-      var packageCursor = Packages.find(
-        {appId: appId},
-        {sort: {"manifest.appVersion": -1}});
+      const packageCursor = Packages.find(
+        { appId: appId },
+        { sort: { "manifest.appVersion": -1 } });
 
-      var pkg = packageCursor.fetch()[0];
+      const pkg = packageCursor.fetch()[0];
 
       // This allows us to avoid creating duplicate UserActions.
       if (this.userId) {
         return [
           packageCursor,
-          UserActions.find({userId: this.userId, appId: appId})
+          UserActions.find({ userId: this.userId, appId: appId }),
         ];
       }
 
@@ -159,25 +164,25 @@ if (Meteor.isClient && allowDemo) {
   Meteor.loginWithDemo = function (options, callback) {
     Router.go("demo");
     callback();
-  }
+  };
   // Note: We intentionally don't register the demo service with Accounts.registerService(); we
   //   don't want it to appear in the sign-in drop-down.
 
   window.testExpireDemo = function () {
     Meteor.call("testExpireDemo");
-  }
+  };
 
   Template.demo.events({
     "click button.start": function (event) {
-      var displayName = "Demo User";
+      const displayName = "Demo User";
 
-      var userCallbackFunction = function (err) {
+      const userCallbackFunction = function (err) {
         if (err) {
           window.alert(err);
         } else {
           Router.go("root");
         }
-      }
+      };
 
       if (isSignedUpOrDemo()) {
         userCallbackFunction();
@@ -185,10 +190,10 @@ if (Meteor.isClient && allowDemo) {
         Accounts.callLoginMethod({
           methodName: "createDemoUser",
           methodArguments: ["Demo User", null],
-          userCallback: userCallbackFunction
+          userCallback: userCallbackFunction,
         });
       }
-    }
+    },
   });
 
   Template.appdemo.events({
@@ -209,8 +214,8 @@ if (Meteor.isClient && allowDemo) {
       // calculate the appId
 
       // We copy the appId into the scope so the autorun function can access it.
-      var appId = this.appId;
-      var signingIn = false;
+      const appId = this.appId;
+      let signingIn = false;
 
       // TODO(cleanup): Is there a better way to do this? Before multi-identity, we could use the
       //   `userCallback` option of `Accounts.callLoginMethod()`, but now that doesn't work because
@@ -218,8 +223,8 @@ if (Meteor.isClient && allowDemo) {
       //
       // Note that we don't use Template.instance().autorun() because the template gets destroyed
       // and recreated during account creation.
-      var done = false;
-      var handle = Tracker.autorun(function () {
+      let done = false;
+      const handle = Tracker.autorun(function () {
         if (done) return;
 
         if (!isSignedUpOrDemo()) {
@@ -238,16 +243,18 @@ if (Meteor.isClient && allowDemo) {
           // But we definitely don't want the callback to run again. So we have to resort to
           // setting a flag that disables subsequent runs, and then deferring the actual stop. Ick.
           done = true;
-          Meteor.defer(function() { handle.stop(); });
+          Meteor.defer(function () { handle.stop(); });
 
           // First, find the package ID, since that is what
           // addUserActions takes. Choose the package ID with
           // highest version number.
-          var packageId = Packages.findOne({appId: appId},
-                                           {sort: {"manifest.appVersion": -1}})._id;
+          const packageId = Packages.findOne(
+            { appId: appId },
+            { sort: { "manifest.appVersion": -1 } }
+          )._id;
 
           // 3. Install this app for the user, if needed.
-          if (UserActions.find({appId: appId, userId: Meteor.userId()}).count() == 0) {
+          if (UserActions.find({ appId: appId, userId: Meteor.userId() }).count() == 0) {
             globalDb.addUserActions(packageId);
           }
 
@@ -255,7 +262,7 @@ if (Meteor.isClient && allowDemo) {
           launchAndEnterGrainByPackageId(packageId);
         }
       });
-    }
+    },
   });
 }
 
@@ -265,13 +272,14 @@ Router.map(function () {
     waitOn: function () {
       return Meteor.subscribe("credentials");
     },
+
     data: function () {
       return {
         allowDemo: allowDemo,
         pageTitle: "Demo",
-        isDemoUser: isDemoUser()
+        isDemoUser: isDemoUser(),
       };
-    }
+    },
   });
 
   this.route("demoRestart", {
@@ -279,10 +287,11 @@ Router.map(function () {
     waitOn: function () {
       return Meteor.subscribe("credentials");
     },
+
     data: function () {
       Meteor.logout();
       Router.go("demo");
-    }
+    },
   });
 });
 
@@ -292,15 +301,19 @@ Router.map(function () {
     waitOn: function () {
       return Meteor.subscribe("appInfo", this.params.appId);
     },
+
     data: function () {
       // find the newest (highest version, so "first" when sorting by
       // inverse order) matching package.
-      var thisPackage = Packages.findOne({appId: this.params.appId},
-                                        {sort: {"manifest.appVersion": -1}});
+      const thisPackage = Packages.findOne({
+        appId: this.params.appId,
+      }, {
+        sort: { "manifest.appVersion": -1 },
+      });
 
       // In the case that the app requested is not present, we show
       // this string as the app name.
-      var appName = 'missing package';
+      let appName = "missing package";
 
       if (thisPackage) {
         appName = SandstormDb.appNameFromPackage(thisPackage);
@@ -318,8 +331,8 @@ Router.map(function () {
         appName: appName,
         pageTitle: appName + " Demo on Sandstorm",
         appId: this.params.appId,
-        isDemoUser: isDemoUser()
+        isDemoUser: isDemoUser(),
       };
-    }
+    },
   });
 });

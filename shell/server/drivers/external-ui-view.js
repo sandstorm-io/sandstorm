@@ -14,13 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-const Future = Npm.require('fibers/future');
-const Promise = Npm.require('es6-promise').Promise;
-const Capnp = Npm.require('capnp');
-const Url = Npm.require('url');
-const Http = Npm.require('http');
-const Https = Npm.require('https');
-const ApiSession = Capnp.importSystem('sandstorm/api-session.capnp').ApiSession;
+const Future = Npm.require("fibers/future");
+const Promise = Npm.require("es6-promise").Promise;
+const Capnp = Npm.require("capnp");
+const Url = Npm.require("url");
+const Http = Npm.require("http");
+const Https = Npm.require("https");
+const ApiSession = Capnp.importSystem("sandstorm/api-session.capnp").ApiSession;
 
 WrappedUiView = class WrappedUiView {
   constructor(token, proxy) {
@@ -32,7 +32,7 @@ WrappedUiView = class WrappedUiView {
 
   newSession(userInfo, context, sessionType, sessionParams, retryCount) {
     if (sessionType !== ApiSession.typeId) {
-      throw new Error('SessionType must be ApiSession.');
+      throw new Error("SessionType must be ApiSession.");
     }
 
     retryCount = retryCount || 0;
@@ -46,7 +46,7 @@ WrappedUiView = class WrappedUiView {
       // granted by the token, which is useful to protect against bugs.
       const session = _this.proxy.uiView.newSession(
           _this.proxy.userInfo, context, sessionType, sessionParams).session;
-      return {session: session};
+      return { session: session };
     }).catch((error) => {
       return _this.proxy.maybeRetryAfterError(error, retryCount).then(() => {
         return _this.newSession(userInfo, context, sessionType, sessionParams, retryCount + 1);
@@ -59,7 +59,7 @@ getWrappedUiViewForToken = (token) => {
   const proxyPromise = getProxyForApiToken(token);
 
   return proxyPromise.then((proxy) => {
-    return {view: new WrappedUiView(token, proxy)};
+    return { view: new WrappedUiView(token, proxy) };
   });
 };
 
@@ -72,57 +72,57 @@ ExternalUiView = class ExternalUiView {
 
   newSession(userInfo, context, sessionType, sessionParams) {
     if (sessionType !== ApiSession.typeId) {
-      throw new Error('SessionType must be ApiSession.');
+      throw new Error("SessionType must be ApiSession.");
     }
 
     const options = {};
 
     if (this.token) {
       options.headers = {
-        authorization: 'Bearer ' + this.token,
+        authorization: "Bearer " + this.token,
       };
     }
 
-    return {session: new Capnp.Capability(new ExternalWebSession(this.url, this.grainId, options), ApiSession)};
+    return { session: new Capnp.Capability(new ExternalWebSession(this.url, this.grainId, options), ApiSession) };
   }
 };
 
 const responseCodes = {
-  200: {type: 'content', code: 'ok'},
-  201: {type: 'content', code: 'created'},
-  202: {type: 'content', code: 'accepted'},
-  204: {type: 'noContent', shouldResetForm: false},
-  205: {type: 'noContent', shouldResetForm: true},
+  200: { type: "content", code: "ok" },
+  201: { type: "content", code: "created" },
+  202: { type: "content", code: "accepted" },
+  204: { type: "noContent", shouldResetForm: false },
+  205: { type: "noContent", shouldResetForm: true },
 
   // Unsupported until something demonstrates need.
   // 206: {type: 'noContent'},
   // 300: {type: 'redirect'},
-  301: {type: 'redirect', switchToGet: true, isPermanent: true},
-  302: {type: 'redirect', switchToGet: true, isPermanent: false},
-  303: {type: 'redirect', switchToGet: true, isPermanent: false},
+  301: { type: "redirect", switchToGet: true, isPermanent: true },
+  302: { type: "redirect", switchToGet: true, isPermanent: false },
+  303: { type: "redirect", switchToGet: true, isPermanent: false },
 
   // Unsupported until something demonstrates need.
   // 304: {type: 'redirect'},
   // 305: {type: 'redirect'},
-  307: {type: 'redirect', switchToGet: false, isPermanent: false},
-  308: {type: 'redirect', switchToGet: false, isPermanent: true},
-  400: {type: 'clientError', clientErrorCode: 'badRequest', descriptionHtml: 'Bad Request'},
-  403: {type: 'clientError', clientErrorCode: 'forbidden', descriptionHtml: 'Forbidden'},
-  404: {type: 'clientError', clientErrorCode: 'notFound', descriptionHtml: 'Not Found'},
-  405: {type: 'clientError', clientErrorCode: 'methodNotAllowed', descriptionHtml: 'Method Not Allowed'},
-  406: {type: 'clientError', clientErrorCode: 'notAcceptable', descriptionHtml: 'Not Acceptable'},
-  409: {type: 'clientError', clientErrorCode: 'conflict', descriptionHtml: 'Conflict'},
-  410: {type: 'clientError', clientErrorCode: 'gone', descriptionHtml: 'Gone'},
-  413: {type: 'clientError', clientErrorCode: 'requestEntityTooLarge', descriptionHtml: 'Request Entity Too Large'},
-  414: {type: 'clientError', clientErrorCode: 'requestUriTooLong', descriptionHtml: 'Request-URI Too Long'},
-  415: {type: 'clientError', clientErrorCode: 'unsupportedMediaType', descriptionHtml: 'Unsupported Media Type'},
-  418: {type: 'clientError', clientErrorCode: 'imATeapot', descriptionHtml: 'I\'m a teapot'},
-  500: {type: 'serverError'},
-  501: {type: 'serverError'},
-  502: {type: 'serverError'},
-  503: {type: 'serverError'},
-  504: {type: 'serverError'},
-  505: {type: 'serverError'},
+  307: { type: "redirect", switchToGet: false, isPermanent: false },
+  308: { type: "redirect", switchToGet: false, isPermanent: true },
+  400: { type: "clientError", clientErrorCode: "badRequest", descriptionHtml: "Bad Request" },
+  403: { type: "clientError", clientErrorCode: "forbidden", descriptionHtml: "Forbidden" },
+  404: { type: "clientError", clientErrorCode: "notFound", descriptionHtml: "Not Found" },
+  405: { type: "clientError", clientErrorCode: "methodNotAllowed", descriptionHtml: "Method Not Allowed" },
+  406: { type: "clientError", clientErrorCode: "notAcceptable", descriptionHtml: "Not Acceptable" },
+  409: { type: "clientError", clientErrorCode: "conflict", descriptionHtml: "Conflict" },
+  410: { type: "clientError", clientErrorCode: "gone", descriptionHtml: "Gone" },
+  413: { type: "clientError", clientErrorCode: "requestEntityTooLarge", descriptionHtml: "Request Entity Too Large" },
+  414: { type: "clientError", clientErrorCode: "requestUriTooLong", descriptionHtml: "Request-URI Too Long" },
+  415: { type: "clientError", clientErrorCode: "unsupportedMediaType", descriptionHtml: "Unsupported Media Type" },
+  418: { type: "clientError", clientErrorCode: "imATeapot", descriptionHtml: "I'm a teapot" },
+  500: { type: "serverError" },
+  501: { type: "serverError" },
+  502: { type: "serverError" },
+  503: { type: "serverError" },
+  504: { type: "serverError" },
+  505: { type: "serverError" },
 };
 
 ExternalWebSession = class ExternalWebSession {
@@ -136,19 +136,19 @@ ExternalWebSession = class ExternalWebSession {
   }
 
   get(path, context) {
-    return this._requestHelper('GET', path, context);
+    return this._requestHelper("GET", path, context);
   }
 
   post(path, content, context) {
-    return this._requestHelper('POST', path, context, content.content, content.mimeType);
+    return this._requestHelper("POST", path, context, content.content, content.mimeType);
   }
 
   put(path, content, context) {
-    return this._requestHelper('PUT', path, context, content.content, content.mimeType);
+    return this._requestHelper("PUT", path, context, content.content, content.mimeType);
   }
 
   delete(path, context) {
-    return this._requestHelper('DELETE', path, context);
+    return this._requestHelper("DELETE", path, context);
   }
 
 // TODO(someday): implement streaming and websockets for ExternalWebSession
@@ -170,23 +170,23 @@ ExternalWebSession = class ExternalWebSession {
       options.path = path;
       options.method = method;
       if (contentType) {
-        options.headers['content-type'] = contentType;
+        options.headers["content-type"] = contentType;
       }
 
       // set accept header
-      if ('accept' in context) {
+      if ("accept" in context) {
         options.headers.accept = context.accept.map((acceptedType) => {
-          return acceptedType.mimeType + '; ' + acceptedType.qValue;
-        }).join(', ');
-      } else if (!('accept' in options.headers)) {
-        options.headers.accept = '*/*';
+          return acceptedType.mimeType + "; " + acceptedType.qValue;
+        }).join(", ");
+      } else if (!("accept" in options.headers)) {
+        options.headers.accept = "*/*";
       }
 
       // set cookies
       if (context.cookies && context.cookies.length > 0) {
-        options.headers.cookies = options.headers.cookies || '';
+        options.headers.cookies = options.headers.cookies || "";
         context.cookies.forEach((keyVal) => {
-          options.headers.cookies += keyVal.key + '=' + keyVal.val + ',';
+          options.headers.cookies += keyVal.key + "=" + keyVal.val + ",";
         });
         options.headers.cookies = options.headers.cookies.slice(0, -1);
       }
@@ -195,7 +195,7 @@ ExternalWebSession = class ExternalWebSession {
       options.port = session.port;
 
       let requestMethod = Http.request;
-      if (session.protocol === 'https:') {
+      if (session.protocol === "https:") {
         requestMethod = Https.request;
       }
 
@@ -206,27 +206,27 @@ ExternalWebSession = class ExternalWebSession {
         const rpcResponse = {};
 
         switch (statusInfo.type) {
-          case 'content':
-            resp.on('data', (buf) => {
+          case "content":
+            resp.on("data", (buf) => {
               buffers.push(buf);
             });
 
-            resp.on('end', () => {
+            resp.on("end", () => {
               const content = {};
               rpcResponse.content = content;
 
               content.statusCode = statusInfo.code;
-              if ('content-encoding' in resp.headers) content.encoding = resp.headers['content-encoding'];
-              if ('content-language' in resp.headers) content.language = resp.headers['content-language'];
-              if ('content-type' in resp.headers) content.language = resp.headers['content-type'];
-              if ('content-disposition' in resp.headers) {
-                const disposition = resp.headers['content-disposition'];
-                const parts = disposition.split(';');
-                if (parts[0].toLowerCase().trim() === 'attachment') {
+              if ("content-encoding" in resp.headers) content.encoding = resp.headers["content-encoding"];
+              if ("content-language" in resp.headers) content.language = resp.headers["content-language"];
+              if ("content-type" in resp.headers) content.language = resp.headers["content-type"];
+              if ("content-disposition" in resp.headers) {
+                const disposition = resp.headers["content-disposition"];
+                const parts = disposition.split(";");
+                if (parts[0].toLowerCase().trim() === "attachment") {
                   parts.forEach((part) => {
-                    const splitPart = part.split('=');
-                    if (splitPart[0].toLowerCase().trim() === 'filename') {
-                      content.disposition = {download: splitPart[1].trim()};
+                    const splitPart = part.split("=");
+                    if (splitPart[0].toLowerCase().trim() === "filename") {
+                      content.disposition = { download: splitPart[1].trim() };
                     }
                   });
                 }
@@ -238,48 +238,48 @@ ExternalWebSession = class ExternalWebSession {
               resolve(rpcResponse);
             });
             break;
-          case 'noContent':
+          case "noContent":
             const noContent = {};
             rpcResponse.noContent = noContent;
             noContent.setShouldResetForm = statusInfo.shouldResetForm;
             resolve(rpcResponse);
             break;
-          case 'redirect':
+          case "redirect":
             const redirect = {};
             rpcResponse.redirect = redirect;
             redirect.isPermanent = statusInfo.isPermanent;
             redirect.switchToGet = statusInfo.switchToGet;
-            if ('location' in resp.headers) redirect.location = resp.headers.location;
+            if ("location" in resp.headers) redirect.location = resp.headers.location;
             resolve(rpcResponse);
             break;
-          case 'clientError':
+          case "clientError":
             const clientError = {};
             rpcResponse.clientError = clientError;
             clientError.statusCode = statusInfo.clientErrorCode;
             clientError.descriptionHtml = statusInfo.descriptionHtml;
             resolve(rpcResponse);
             break;
-          case 'serverError':
+          case "serverError":
             const serverError = {};
             rpcResponse.serverError = serverError;
             clientError.descriptionHtml = statusInfo.descriptionHtml;
             resolve(rpcResponse);
             break;
           default: // ???
-            err = new Error('Invalid status code ' + resp.statusCode + ' received in response.');
+            err = new Error("Invalid status code " + resp.statusCode + " received in response.");
             reject(err);
             break;
         }
       });
 
-      req.on('error', (e) => {
+      req.on("error", (e) => {
         reject(e);
       });
 
       req.setTimeout(15000, () => {
         req.abort();
-        err = new Error('Request timed out.');
-        err.kjType = 'overloaded';
+        err = new Error("Request timed out.");
+        err.kjType = "overloaded";
         reject(err);
       });
 

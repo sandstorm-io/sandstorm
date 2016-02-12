@@ -25,7 +25,7 @@ GrainView = class GrainView {
     this._tokenInfo = tokenInfo;
     this._token = tokenInfo && tokenInfo._id;
     this._parentElement = parentElement;
-    this._status = 'closed';
+    this._status = "closed";
     this._dep = new Tracker.Dependency();
 
     this._powerboxRequest = new ReactiveVar(undefined);
@@ -39,7 +39,7 @@ GrainView = class GrainView {
         this.doNotRevealIdentity();
 
         // Suggest to the user that they log in by opening the login menu.
-        globalTopbar.openPopup('login');
+        globalTopbar.openPopup("login");
       }
     } else {
       this.revealIdentity();
@@ -68,7 +68,7 @@ GrainView = class GrainView {
     this._sessionObserver = undefined;
     this._sessionSub = undefined;
 
-    this._status = 'closed';
+    this._status = "closed";
     this._userIdentityId = new ReactiveVar(undefined);
     if (identityId) {
       this.revealIdentity(identityId);
@@ -88,9 +88,9 @@ GrainView = class GrainView {
       _this.reset(identityId);
       _this.openSession();
     } else if (this.isOwner()) {
-      Meteor.call('updateGrainPreferredIdentity', grainId, identityId, (err, result) => {
+      Meteor.call("updateGrainPreferredIdentity", grainId, identityId, (err, result) => {
         if (err) {
-          console.log('error:', err);
+          console.log("error:", err);
         } else {
           _this.reset(identityId);
           _this.openSession();
@@ -99,8 +99,8 @@ GrainView = class GrainView {
     } else {
       if (ApiTokens.findOne({
         grainId: grainId,
-        'owner.user.identityId': identityId,
-        revoked: {$ne: true},
+        "owner.user.identityId": identityId,
+        revoked: { $ne: true },
       })) {
         // just do the switch
         _this.reset(identityId);
@@ -109,15 +109,15 @@ GrainView = class GrainView {
         // Should we maybe prompt the user first?
         //  'That identity does not already have access to this grain. Would you like to share access
         //   from your current identity? Y/ cancel.'
-        Meteor.call('newApiToken',
-            {identityId: currentIdentityId},
+        Meteor.call("newApiToken",
+            { identityId: currentIdentityId },
             grainId,
-            'direct share',
-            {allAccess: null},
-            {user: {identityId: identityId, title: _this.title()}},
+            "direct share",
+            { allAccess: null },
+            { user: { identityId: identityId, title: _this.title() } },
             (err, result) => {
               if (err) {
-                console.log('error:', err);
+                console.log("error:", err);
               } else {
                 _this.reset(identityId);
                 _this.openSession();
@@ -136,9 +136,11 @@ GrainView = class GrainView {
     if (this._grainSizeSub) {
       this._grainSizeSub.stop();
     }
+
     if (this._sessionObserver) {
       this._sessionObserver.stop();
     }
+
     if (this._sessionSub) {
       this._sessionSub.stop();
     }
@@ -156,7 +158,7 @@ GrainView = class GrainView {
 
   isOldSharingModel() {
     this._dep.depend();
-    const grain = Grains.findOne({_id: this._grainId});
+    const grain = Grains.findOne({ _id: this._grainId });
     return grain && !grain.private;
   }
 
@@ -165,7 +167,7 @@ GrainView = class GrainView {
     // See if this is one of our own grains.
     // If we're not logged in, we can't be the owner.
     if (!Meteor.userId()) return false;
-    const grain = Grains.findOne({_id: this._grainId, userId: Meteor.userId()});
+    const grain = Grains.findOne({ _id: this._grainId, userId: Meteor.userId() });
     return grain != undefined;
   }
 
@@ -176,7 +178,7 @@ GrainView = class GrainView {
     }
 
     if (!Meteor.userId() && !this._token) {
-      console.error('should never happen: anonymous, but no token either.');
+      console.error("should never happen: anonymous, but no token either.");
     }
 
     return !!this._token;
@@ -196,15 +198,15 @@ GrainView = class GrainView {
     this._dep.depend();
     if (this.isOwner() || this.isOldSharingModel()) {
       // Case 1.
-      const grain = Grains.findOne({_id: this._grainId});
+      const grain = Grains.findOne({ _id: this._grainId });
       return grain && grain.title;
     } else if (!this._isUsingAnonymously()) {
       // Case 2.
       const apiToken = ApiTokens.findOne({
         grainId: this._grainId,
-        'owner.user.identityId': this.identityId(),
+        "owner.user.identityId": this.identityId(),
       }, {
-        sort: {created: 1},
+        sort: { created: 1 },
       });
 
       return apiToken && apiToken.owner && apiToken.owner.user && apiToken.owner.user.title;
@@ -223,16 +225,16 @@ GrainView = class GrainView {
     this._dep.depend();
     if (this.isOwner()) {
       // Case 1.
-      const grain = Grains.findOne({_id: this._grainId});
-      const pkg = grain && Packages.findOne({_id: grain.packageId});
+      const grain = Grains.findOne({ _id: this._grainId });
+      const pkg = grain && Packages.findOne({ _id: grain.packageId });
       return pkg && pkg.manifest && pkg.manifest.appTitle && pkg.manifest.appTitle.defaultText;
     } else if (!this._isUsingAnonymously()) {
       // Case 2
       const token = ApiTokens.findOne({
         grainId: this._grainId,
-        'owner.user.identityId': this.identityId(),
+        "owner.user.identityId": this.identityId(),
       }, {
-        sort: {created: 1},
+        sort: { created: 1 },
       });
 
       return (token && token.owner && token.owner.user && token.owner.user.denormalizedGrainMetadata &&
@@ -250,16 +252,16 @@ GrainView = class GrainView {
   frameTitle() {
     this._dep.depend();
     if (this._frameTitle !== undefined) {
-      return this._frameTitle + ' · ' + globalDb.getServerTitle();
+      return this._frameTitle + " · " + globalDb.getServerTitle();
     }
 
     const appTitle = this.appTitle();
     const grainTitle = this.title();
     // Actually set the values
     if (appTitle && grainTitle) {
-      return grainTitle + ' · ' + appTitle + ' · ' + globalDb.getServerTitle();
+      return grainTitle + " · " + appTitle + " · " + globalDb.getServerTitle();
     } else if (grainTitle) {
-      return grainTitle + ' · ' + globalDb.getServerTitle();
+      return grainTitle + " · " + globalDb.getServerTitle();
     } else {
       return globalDb.getServerTitle();
     }
@@ -281,7 +283,7 @@ GrainView = class GrainView {
       return true;
     }
 
-    const session = Sessions.findOne({_id: this._sessionId});
+    const session = Sessions.findOne({ _id: this._sessionId });
     // TODO(soon): this is a hack to cache hasLoaded. Consider moving it to an autorun.
     this._hasLoaded = session && session.hasLoaded;
 
@@ -290,7 +292,7 @@ GrainView = class GrainView {
 
   origin() {
     this._dep.depend();
-    return this._hostId && (window.location.protocol + '//' + makeWildcardHost(this._hostId));
+    return this._hostId && (window.location.protocol + "//" + makeWildcardHost(this._hostId));
   }
 
   viewInfo() {
@@ -311,7 +313,7 @@ GrainView = class GrainView {
   setTitle(newTitle) {
     this._title = newTitle;
     if (this._userIdentityId.get()) {
-      Meteor.call('updateGrainTitle', this._grainId, newTitle, this._userIdentityId.get());
+      Meteor.call("updateGrainTitle", this._grainId, newTitle, this._userIdentityId.get());
     }
 
     this._dep.changed();
@@ -320,7 +322,7 @@ GrainView = class GrainView {
   setPath(newPath) {
     this._path = newPath;
     if (this.isActive()) {
-      window.history.replaceState({}, '', this.route());
+      window.history.replaceState({}, "", this.route());
     }
 
     this._dep.changed();
@@ -346,9 +348,9 @@ GrainView = class GrainView {
     } else {
       const token = ApiTokens.findOne({
         grainId: this._grainId,
-        'owner.user.identityId': {$in: myIdentityIds},
+        "owner.user.identityId": { $in: myIdentityIds },
       }, {
-        sort:{'owner.user.lastUsed': -1},
+        sort:{ "owner.user.lastUsed": -1 },
       });
 
       if (token) {
@@ -395,7 +397,7 @@ GrainView = class GrainView {
       }
 
       // Otherwise, we should show it.
-      return {chooseIdentity: {}};
+      return { chooseIdentity: {} };
     } else if (this._tokenInfo.identityOwner) {
       if (Meteor.userId() &&
           globalDb.userHasIdentity(Meteor.userId(), this._tokenInfo.identityOwner._id)) {
@@ -404,7 +406,7 @@ GrainView = class GrainView {
         return {
           directShare: {
             recipient: this._tokenInfo.identityOwner,
-          }
+          },
         };
       }
     } else {
@@ -426,18 +428,18 @@ GrainView = class GrainView {
       }
     }
 
-    return Router.go('/grain/' + this._tokenInfo.grainId + this._path, {},
-                     {replaceState: true});
+    return Router.go("/grain/" + this._tokenInfo.grainId + this._path, {},
+                     { replaceState: true });
   }
 
   _addSessionObserver(sessionId) {
     const _this = this;
-    _this._sessionSub = Meteor.subscribe('sessions', sessionId);
-    _this._sessionObserver = Sessions.find({_id: sessionId}).observe({
+    _this._sessionSub = Meteor.subscribe("sessions", sessionId);
+    _this._sessionObserver = Sessions.find({ _id: sessionId }).observe({
       removed(session) {
         _this._sessionSub.stop();
         _this._sessionSub = undefined;
-        _this._status = 'closed';
+        _this._status = "closed";
         _this._dep.changed();
         if (_this._sessionObserver) {
           _this._sessionObserver.stop();
@@ -455,7 +457,7 @@ GrainView = class GrainView {
       added(session) {
         _this._viewInfo = session.viewInfo || _this._viewInfo;
         _this._permissions = session.permissions || _this._permissions;
-        _this._status = 'opened';
+        _this._status = "opened";
         _this._dep.changed();
       },
     });
@@ -465,11 +467,11 @@ GrainView = class GrainView {
   _openGrainSession() {
     const _this = this;
     const identityId = _this.identityId();
-    Meteor.call('openSession', _this._grainId, identityId, _this._sessionSalt, (error, result) => {
+    Meteor.call("openSession", _this._grainId, identityId, _this._sessionSalt, (error, result) => {
       if (error) {
-        console.error('openSession error', error);
+        console.error("openSession error", error);
         _this._error = error.message;
-        _this._status = 'error';
+        _this._status = "error";
         _this._dep.changed();
       } else {
         // result is an object containing sessionId, initial title, and grainId.
@@ -485,7 +487,7 @@ GrainView = class GrainView {
         _this._addSessionObserver(result.sessionId);
 
         if (_this._grainSizeSub) _this._grainSizeSub.stop();
-        _this._grainSizeSub = Meteor.subscribe('grainSize', result.grainId);
+        _this._grainSizeSub = Meteor.subscribe("grainSize", result.grainId);
         _this._dep.changed();
       }
     });
@@ -503,15 +505,15 @@ GrainView = class GrainView {
         token: _this._token,
         incognito: !identityId,
       };
-      Meteor.call('openSessionFromApiToken',
+      Meteor.call("openSessionFromApiToken",
         openSessionArg, identityId, _this._sessionSalt, (error, result) => {
           if (error) {
-            console.log('openSessionFromApiToken error');
+            console.log("openSessionFromApiToken error");
             _this._error = error.message;
-            _this._status = 'error';
+            _this._status = "error";
             _this._dep.changed();
           } else if (result.redirectToGrain) {
-            console.log('openSessionFromApiToken redirectToGrain');
+            console.log("openSessionFromApiToken redirectToGrain");
             _this._grainId = result.redirectToGrain;
             _this._dep.changed();
 
@@ -519,7 +521,7 @@ GrainView = class GrainView {
           } else {
             // We are viewing this via just the /shared/ link, either as an anonymous user on in our
             // incognito mode (since we'd otherwise have redeemed the token and been redirected).
-            console.log('openSessionFromApiToken success');
+            console.log("openSessionFromApiToken success");
             _this._title = result.title;
             _this._grainId = result.grainId;
             _this._sessionId = result.sessionId;
@@ -534,12 +536,12 @@ GrainView = class GrainView {
   }
 
   openSession() {
-    if (this._status !== 'closed') {
-      console.error('GrainView: openSession() called but state was ' + this._status);
+    if (this._status !== "closed") {
+      console.error("GrainView: openSession() called but state was " + this._status);
       return;
     }
 
-    this._status = 'opening';
+    this._status = "opening";
     if (this._token === undefined) {
       // Opening a grain session.
       this._openGrainSession();
@@ -558,19 +560,19 @@ GrainView = class GrainView {
   route() {
     this._dep.depend();
     if (this._token) {
-      return '/shared/' + this._token + this._path;
+      return "/shared/" + this._token + this._path;
     } else {
-      return '/grain/' + this._grainId + this._path;
+      return "/grain/" + this._grainId + this._path;
     }
   }
 
   _fallbackIdenticon() {
     // identifier is SHA1('');
-    return Identicon.identiconForApp('da39a3ee5e6b4b0d3255bfef95601890afd80709', 'grain');
+    return Identicon.identiconForApp("da39a3ee5e6b4b0d3255bfef95601890afd80709", "grain");
   }
 
   _urlForAsset(assetId) {
-    return window.location.protocol + '//' + makeWildcardHost('static') + '/' + assetId;
+    return window.location.protocol + "//" + makeWildcardHost("static") + "/" + assetId;
   }
 
   iconSrc() {
@@ -581,25 +583,25 @@ GrainView = class GrainView {
     this._dep.depend();
     if (this.isOwner()) {
       // Case 1
-      const grain = Grains.findOne({_id: this._grainId});
+      const grain = Grains.findOne({ _id: this._grainId });
       if (grain) {
-        const pkg = DevPackages.findOne({appId: grain.appId}) ||
-                  Packages.findOne({_id: grain.packageId});
-        if (pkg) return Identicon.iconSrcForPackage(pkg, 'grain', makeWildcardHost('static'));
+        const pkg = DevPackages.findOne({ appId: grain.appId }) ||
+                  Packages.findOne({ _id: grain.packageId });
+        if (pkg) return Identicon.iconSrcForPackage(pkg, "grain", makeWildcardHost("static"));
       }
     } else if (!this._isUsingAnonymously()) {
       // Case 2
       const apiToken = ApiTokens.findOne({
         grainId: this._grainId,
-        'owner.user.identityId': this.identityId(),
+        "owner.user.identityId": this.identityId(),
       }, {
-        sort: {created: 1},
+        sort: { created: 1 },
       });
 
       if (apiToken) {
         const meta = apiToken.owner.user.denormalizedGrainMetadata;
         if (meta && meta.icon && meta.icon.assetId) return this._urlForAsset(meta.icon.assetId);
-        if (meta && meta.appId) return Identicon.identiconForApp(meta.appId, 'grain');
+        if (meta && meta.appId) return Identicon.identiconForApp(meta.appId, "grain");
       }
     } else {
       // Case 3
@@ -607,7 +609,7 @@ GrainView = class GrainView {
       if (tokenInfo && tokenInfo.grainMetadata) {
         const meta = tokenInfo.grainMetadata;
         if (meta.icon) return this._urlForAsset(meta.icon.assetId);
-        if (meta.appId) return Identicon.identiconForApp(meta.appId, 'grain');
+        if (meta.appId) return Identicon.identiconForApp(meta.appId, "grain");
       }
     }
 
@@ -645,7 +647,7 @@ GrainView = class GrainView {
 
   setPowerboxRequest(powerboxRequest) {
     // If a previous powerboxRequest was set, clean it up before starting this new one.
-    var previous = this._powerboxRequest.get();
+    const previous = this._powerboxRequest.get();
     if (previous) previous.finalize();
     this._powerboxRequest.set(powerboxRequest);
   }
@@ -673,7 +675,7 @@ GrainView = class GrainView {
 
   powerboxOfferData() {
     this._dep.depend();
-    const sessionId = this._sessionId
+    const sessionId = this._sessionId;
     const session = Sessions.findOne({
       _id: sessionId,
     }, {
@@ -692,12 +694,13 @@ GrainView = class GrainView {
             console.error(err);
           }
 
-          Router.go("grain", {grainId: apiToken.grainId});
-        })
+          Router.go("grain", { grainId: apiToken.grainId });
+        });
       }
     }
+
     return {
-      get: function() {
+      get: function () {
         return {
           offer: offer,
           onDismiss: () => {

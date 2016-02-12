@@ -72,33 +72,33 @@ if (Meteor.isServer) {
 }
 
 if (Meteor.isClient) {
-  Session.setDefault('shrink-navbar', false);
+  Session.setDefault("shrink-navbar", false);
   globalGrains = new ReactiveVar([]);
   globalTopbar = new SandstormTopbar(globalDb,
     {
       get() {
-        return Session.get('topbar-expanded');
+        return Session.get("topbar-expanded");
       },
 
       set(value) {
-        Session.set('topbar-expanded', value);
+        Session.set("topbar-expanded", value);
       },
     },
     globalGrains,
     {
       get() {
-        return Session.get('shrink-navbar');
+        return Session.get("shrink-navbar");
       },
 
       set(value) {
-        Session.set('shrink-navbar', value);
+        Session.set("shrink-navbar", value);
       },
     });
 
   globalAccountsUi = new AccountsUi(globalDb);
 
-  Template.registerHelper('globalTopbar', () => { return globalTopbar; });
-  Template.registerHelper('globalAccountsUi', () => { return globalAccountsUi; });
+  Template.registerHelper("globalTopbar", () => { return globalTopbar; });
+  Template.registerHelper("globalAccountsUi", () => { return globalAccountsUi; });
 } else {
   // TODO(cleanup): Refactor accounts registration stuff so that this doesn't need to be defined
   //   at all on the server.

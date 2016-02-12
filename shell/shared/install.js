@@ -21,6 +21,8 @@ const localizedTextPattern = {
   localizations: Match.Optional([{ locale: String, text: String }]),
 };
 
+const uploadTokens = {};
+
 if (Meteor.isServer) {
   UserActions.allow({
     insert: function (userId, action) {
@@ -51,7 +53,6 @@ if (Meteor.isServer) {
     },
   });
 
-  const uploadTokens = {};
   // Not all users are allowed to upload apps. We need to manually implement authorization
   // because Meteor.userId() is not available in server-side routes.
 

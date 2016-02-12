@@ -32,7 +32,7 @@ struct FeatureKey {
   # 2) Sign it using libsodium's crypto_box_easy().
   # 3) Base64 the whole thing, for easy copy/paste.
   # 4) Optionally insert newlines or other whitespace for readability.
-  # 5) Optionally add lines beginning with '-', which will be ighnored. (Commonly, lines like
+  # 5) Optionally add lines beginning with '-', which will be ignored. (Commonly, lines like
   #    "---- BEGIN SANDSTORM FEATURE KEY ----" are added to delimit the whole cert.)
 
   secret @0 :Data;

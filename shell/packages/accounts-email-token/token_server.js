@@ -52,8 +52,13 @@ function consumeToken(user, token) {
 
 // Handler to login with a token.
 Accounts.registerLoginHandler("email", function (options) {
-  if (!options.email)
+  if (!options.email) {
     return undefined; // don't handle
+  }
+
+  if (!Accounts.identityServices.email.isEnabled()) {
+    throw new Meteor.Error(403, "Email identity service is disabled.");
+  }
 
   options = options.email;
   check(options, {

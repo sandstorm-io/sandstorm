@@ -35,11 +35,11 @@ browseHome = function () {
   Router.go("root");
 };
 
-if (Meteor.isClient) {
-  getOrigin = function () {
-    return document.location.protocol + "//" + document.location.host;
-  };
+getOrigin = function () {
+  return document.location.protocol + "//" + document.location.host;
+};
 
+if (Meteor.isClient) {
   // Subscribe to basic grain information first and foremost, since
   // without it we might e.g. redirect to the wrong place on login.
   globalSubs = [
@@ -376,6 +376,285 @@ if (Meteor.isServer) {
   });
 }
 
+const makeAccountSettingsUi = function () {
+  return new SandstormAccountSettingsUi(globalTopbar, globalDb,
+      window.location.protocol + "//" + makeWildcardHost("static"));
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+const formatInCountdown = function (template, countdownDatetime) {
+  const diff = countdownDatetime.getTime() - Date.now();
+
+  const units = {
+    day: 86400000,
+    hour: 3600000,
+    minute: 60000,
+    second: 1000,
+  };
+
+  for (const unit in units) {
+    // If it's more than one full unit away, then we'll print in terms of this unit. This does
+    // mean that we write e.g. "1 minute" for the whole range between 2 minutes and 1 minute, but
+    // whatever, this is typical of these sorts of displays.
+    if (diff >= units[unit]) {
+      const count = Math.floor(diff / units[unit]);
+      // Update next 1ms after the point where `count` would change.
+      setTopBarTimeout(template, diff - count * units[unit] + 1);
+      return {
+        text: "in " + count + " " + unit + (count > 1 ? "s" : ""),
+        className: "countdown-" + unit,
+      };
+    }
+  }
+
+  // We're within a second of the countdown, or past it.
+  if (diff < -3600000) {
+    // Notification appears stale.
+    return null;
+  } else {
+    setTopBarTimeout(template, diff + 3600001);
+    return { text: "any moment", className: "countdown-now" };
+  }
+};
+
+const formatAccountExpires = function () {
+  const expires = Meteor.user().expires;
+  return (expires && expires.toLocaleTimeString()) || null;
+};
+
+const formatAccountExpiresIn = function (template, currentDatetime) {
+  // TODO(someday): formatInCountdown will set the interval to match account expiration time, and
+  // completely overwrite the previous interval for $IN_COUNTDOWN
+  const user = Meteor.user() || {};
+  const expires = user.expires || null;
+  if (!expires) {
+    return null;
+  } else {
+    return formatInCountdown(template, expires, currentDatetime);
+  }
+};
+
+const setTopBarTimeout = function (template, delay) {
+  Meteor.clearTimeout(template.timeout);
+  template.timeout = Meteor.setTimeout(function () {
+    template.timer.changed();
+  }, delay);
+
+  // Make sure we re-run when the timeout triggers.
+  template.timer.depend();
+};
+
+const determineAppName = function (grainId) {
+  // Returns:
+  //
+  // - The current app title, if we can determine it, or
+  //
+  // - The empty string "", if we can't determine the current app title.
+  let params = "";
+
+  // Try our hardest to find the package's name, falling back on the default if needed.
+  if (grainId) {
+    const grain = Grains.findOne({ _id: grainId });
+    if (grain && grain.packageId) {
+      const thisPackage = Packages.findOne({ _id: grain.packageId });
+      if (thisPackage) {
+        params = SandstormDb.appNameFromPackage(thisPackage);
+      }
+    }
+  }
+
+  return params;
+};
+
+const billingPromptState = new ReactiveVar(null);
+
+const showBillingPrompt = function (reason, next) {
+  billingPromptState.set({
+    reason: reason,
+    db: globalDb,
+    topbar: globalTopbar,
+    accountsUi: globalAccountsUi,
+    onComplete: function () {
+      billingPromptState.set(null);
+      if (next) next();
+    },
+  });
+};
+
+const ifQuotaAvailable = function (next) {
+  const reason = isUserOverQuota(Meteor.user());
+  if (reason) {
+    if (window.BlackrockPayments) {
+      showBillingPrompt(reason, function () {
+        // If the user successfully raised their quota, continue the operation.
+        if (!isUserOverQuota(Meteor.user())) {
+          next();
+        }
+      });
+    } else {
+      alert("You are out of storage space. Please delete some things and try again.");
+    }
+  } else {
+    next();
+  }
+};
+
+const ifPlanAllowsCustomApps = function (next) {
+  if (globalDb.isDemoUser() || globalDb.isUninvitedFreeUser()) {
+    if (window.BlackrockPayments) {
+      showBillingPrompt("customApp", function () {
+        // If the user successfully chose a plan, continue the operation.
+        if (!globalDb.isDemoUser() && !globalDb.isUninvitedFreeUser()) {
+          next();
+        }
+      });
+    } else {
+      alert("Sorry, demo users cannot upload custom apps.");
+    }
+  } else {
+    next();
+  }
+};
+
+const isDemoExpired = function () {
+  const user = Meteor.user();
+  if (!user) return false;
+  let expires = user.expires;
+  if (!expires) return false;
+  expires = expires.getTime() - Date.now();
+  if (expires <= 0) return true;
+  const comp = Tracker.currentComputation;
+  if (expires && comp) {
+    Meteor.setTimeout(comp.invalidate.bind(comp), expires);
+  }
+
+  return false;
+};
+
+// export: called by sandstorm-accounts-ui/login_buttons.js
+logoutSandstorm = function () {
+  Meteor.logout(function () {
+    sessionStorage.removeItem("linkingIdentityLoginToken");
+    Accounts._loginButtonsSession.closeDropdown();
+    globalTopbar.closePopup();
+    const openGrains = globalGrains.get();
+    openGrains.forEach(function (grain) {
+      grain.destroy();
+    });
+
+    globalGrains.set([]);
+    Router.go("root");
+  });
+};
+
+// export: this is also used by grain.js
+makeDateString = function (date) {
+  if (!date) {
+    return "";
+  }
+
+  let result;
+
+  const now = new Date();
+  const diff = now.valueOf() - date.valueOf();
+
+  if (diff < 86400000 && now.getDate() === date.getDate()) {
+    result = date.toLocaleTimeString();
+  } else {
+    result = MONTHS[date.getMonth()] + " " + date.getDate() + " ";
+
+    if (now.getFullYear() !== date.getFullYear()) {
+      result = date.getFullYear() + " " + result;
+    }
+  }
+
+  return result;
+};
+
+// export: used in sandstorm-ui-grainlist
+prettySize = function (size) {
+  let suffix = "B";
+  if (size >= 1000000000) {
+    size = size / 1000000000;
+    suffix = "GB";
+  } else if (size >= 1000000) {
+    size = size / 1000000;
+    suffix = "MB";
+  } else if (size >= 1000) {
+    size = size / 1000;
+    suffix = "kB";
+  }
+
+  return size.toPrecision(3) + suffix;
+};
+
+// export: used in shared/demo.js
+launchAndEnterGrainByPackageId = function (packageId) {
+  const action = UserActions.findOne({ packageId: packageId });
+  if (!action) {
+    alert("Somehow, you seem to have attempted to launch a package you have not installed.");
+    return;
+  } else {
+    launchAndEnterGrainByActionId(action._id, null, null);
+  }
+};
+
+// export: used in sandstorm-ui-app-details
+launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex) {
+  // Note that this takes a devPackageId and a devIndex as well. If provided,
+  // they override the actionId.
+  let packageId;
+  let command;
+  let appTitle;
+  let nounPhrase;
+  if (devPackageId) {
+    const devPackage = DevPackages.findOne(devPackageId);
+    if (!devPackage) {
+      console.error("no such dev package: ", devPackageId);
+      return;
+    }
+
+    const devAction = devPackage.manifest.actions[devIndex];
+    packageId = devPackageId;
+    command = devAction.command;
+    appTitle = SandstormDb.appNameFromPackage(devPackage);
+    nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(devAction, appTitle);
+  } else {
+    const action = UserActions.findOne(actionId);
+    if (!action) {
+      console.error("no such action:", actionId);
+      return;
+    }
+
+    packageId = action.packageId;
+    const pkg = Packages.findOne(packageId);
+    command = action.command;
+    appTitle = SandstormDb.appNameFromPackage(pkg);
+    nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(action, appTitle);
+  }
+
+  const title = "Untitled " + appTitle + " " + nounPhrase;
+
+  const identityId = Accounts.getCurrentIdentityId();
+
+  // We need to ask the server to start a new grain, then browse to it.
+  Meteor.call("newGrain", packageId, command, title, identityId, function (error, grainId) {
+    if (error) {
+      console.error(error);
+      alert(error.message);
+    } else {
+      Router.go("grain", { grainId: grainId });
+    }
+  });
+};
+
+// export global - used in grain.js
+globalQuotaEnforcer = {
+  ifQuotaAvailable: ifQuotaAvailable,
+  ifPlanAllowsCustomApps: ifPlanAllowsCustomApps,
+};
+
 if (Meteor.isClient) {
   HasUsers = new Mongo.Collection("hasUsers");  // dummy collection defined above
   Backers = new Mongo.Collection("backers");  // pseudo-collection defined above
@@ -428,60 +707,6 @@ if (Meteor.isClient) {
     }
   });
 
-  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-  const formatInCountdown = function (template, countdownDatetime) {
-    const diff = countdownDatetime.getTime() - Date.now();
-
-    const units = {
-      day: 86400000,
-      hour: 3600000,
-      minute: 60000,
-      second: 1000,
-    };
-
-    for (const unit in units) {
-      // If it's more than one full unit away, then we'll print in terms of this unit. This does
-      // mean that we write e.g. "1 minute" for the whole range between 2 minutes and 1 minute, but
-      // whatever, this is typical of these sorts of displays.
-      if (diff >= units[unit]) {
-        const count = Math.floor(diff / units[unit]);
-        // Update next 1ms after the point where `count` would change.
-        setTopBarTimeout(template, diff - count * units[unit] + 1);
-        return {
-          text: "in " + count + " " + unit + (count > 1 ? "s" : ""),
-          className: "countdown-" + unit,
-        };
-      }
-    }
-
-    // We're within a second of the countdown, or past it.
-    if (diff < -3600000) {
-      // Notification appears stale.
-      return null;
-    } else {
-      setTopBarTimeout(template, diff + 3600001);
-      return { text: "any moment", className: "countdown-now" };
-    }
-  };
-
-  const formatAccountExpires = function () {
-    const expires = Meteor.user().expires;
-    return (expires && expires.toLocaleTimeString()) || null;
-  };
-
-  const formatAccountExpiresIn = function (template, currentDatetime) {
-    // TODO(someday): formatInCountdown will set the interval to match account expiration time, and
-    // completely overwrite the previous interval for $IN_COUNTDOWN
-    const user = Meteor.user() || {};
-    const expires = user.expires || null;
-    if (!expires) {
-      return null;
-    } else {
-      return formatInCountdown(template, expires, currentDatetime);
-    }
-  };
-
   Template.layout.onCreated(function () {
     this.timer = new Tracker.Dependency();
     const resizeTracker = this.resizeTracker = new Tracker.Dependency();
@@ -491,16 +716,6 @@ if (Meteor.isClient) {
 
     window.addEventListener("resize", this.resizeFunc, false);
   });
-
-  const setTopBarTimeout = function (template, delay) {
-    Meteor.clearTimeout(template.timeout);
-    template.timeout = Meteor.setTimeout(function () {
-      template.timer.changed();
-    }, delay);
-
-    // Make sure we re-run when the timeout triggers.
-    template.timer.depend();
-  };
 
   Template.layout.onDestroyed(function () {
     Meteor.clearTimeout(this.timeout);
@@ -520,118 +735,6 @@ if (Meteor.isClient) {
       return ReferralInfo.find({ completed: true });
     },
   });
-
-  const determineAppName = function (grainId) {
-    // Returns:
-    //
-    // - The current app title, if we can determine it, or
-    //
-    // - The empty string "", if we can't determine the current app title.
-    let params = "";
-
-    // Try our hardest to find the package's name, falling back on the default if needed.
-    if (grainId) {
-      const grain = Grains.findOne({ _id: grainId });
-      if (grain && grain.packageId) {
-        const thisPackage = Packages.findOne({ _id: grain.packageId });
-        if (thisPackage) {
-          params = SandstormDb.appNameFromPackage(thisPackage);
-        }
-      }
-    }
-
-    return params;
-  };
-
-  const billingPromptState = new ReactiveVar(null);
-
-  const showBillingPrompt = function (reason, next) {
-    billingPromptState.set({
-      reason: reason,
-      db: globalDb,
-      topbar: globalTopbar,
-      accountsUi: globalAccountsUi,
-      onComplete: function () {
-        billingPromptState.set(null);
-        if (next) next();
-      },
-    });
-  };
-
-  const ifQuotaAvailable = function (next) {
-    const reason = isUserOverQuota(Meteor.user());
-    if (reason) {
-      if (window.BlackrockPayments) {
-        showBillingPrompt(reason, function () {
-          // If the user successfully raised their quota, continue the operation.
-          if (!isUserOverQuota(Meteor.user())) {
-            next();
-          }
-        });
-      } else {
-        alert("You are out of storage space. Please delete some things and try again.");
-      }
-    } else {
-      next();
-    }
-  };
-
-  const ifPlanAllowsCustomApps = function (next) {
-    if (globalDb.isDemoUser() || globalDb.isUninvitedFreeUser()) {
-      if (window.BlackrockPayments) {
-        showBillingPrompt("customApp", function () {
-          // If the user successfully chose a plan, continue the operation.
-          if (!globalDb.isDemoUser() && !globalDb.isUninvitedFreeUser()) {
-            next();
-          }
-        });
-      } else {
-        alert("Sorry, demo users cannot upload custom apps.");
-      }
-    } else {
-      next();
-    }
-  };
-
-  globalQuotaEnforcer = {
-    ifQuotaAvailable: ifQuotaAvailable,
-    ifPlanAllowsCustomApps: ifPlanAllowsCustomApps,
-  };
-
-  const isDemoExpired = function () {
-    const user = Meteor.user();
-    if (!user) return false;
-    let expires = user.expires;
-    if (!expires) return false;
-    expires = expires.getTime() - Date.now();
-    if (expires <= 0) return true;
-    const comp = Tracker.currentComputation;
-    if (expires && comp) {
-      Meteor.setTimeout(comp.invalidate.bind(comp), expires);
-    }
-
-    return false;
-  };
-
-  logoutSandstorm = function () {
-    Meteor.logout(function () {
-      sessionStorage.removeItem("linkingIdentityLoginToken");
-      Accounts._loginButtonsSession.closeDropdown();
-      globalTopbar.closePopup();
-      const openGrains = globalGrains.get();
-      openGrains.forEach(function (grain) {
-        grain.destroy();
-      });
-
-      globalGrains.set([]);
-      Router.go("root");
-    });
-  };
-
-  function makeAccountSettingsUi() {
-    return new SandstormAccountSettingsUi(globalTopbar, globalDb,
-        window.location.protocol + "//" + makeWildcardHost("static"));
-  }
 
   Template.layout.helpers({
     adminAlertIsTooLarge: function () {
@@ -802,38 +905,7 @@ if (Meteor.isClient) {
     },
   });
 
-  Template.root.events({
-    "click #logo": function (event) {
-      doLogoAnimation(event.shiftKey, 0);
-    },
-  });
-
   credentialsSubscription = Meteor.subscribe("credentials");
-
-  makeDateString = function (date) {
-    // Note: this is also used by grain.js.
-
-    if (!date) {
-      return "";
-    }
-
-    let result;
-
-    const now = new Date();
-    const diff = now.valueOf() - date.valueOf();
-
-    if (diff < 86400000 && now.getDate() === date.getDate()) {
-      result = date.toLocaleTimeString();
-    } else {
-      result = MONTHS[date.getMonth()] + " " + date.getDate() + " ";
-
-      if (now.getFullYear() !== date.getFullYear()) {
-        result = date.getFullYear() + " " + result;
-      }
-    }
-
-    return result;
-  };
 
   Template.registerHelper("dateString", makeDateString);
   Template.registerHelper("hideNavbar", function () {
@@ -849,80 +921,6 @@ if (Meteor.isClient) {
   Template.registerHelper("quotaEnabled", function () {
     return Meteor.settings.public.quotaEnabled;
   });
-
-  prettySize = function (size) {
-    let suffix = "B";
-    if (size >= 1000000000) {
-      size = size / 1000000000;
-      suffix = "GB";
-    } else if (size >= 1000000) {
-      size = size / 1000000;
-      suffix = "MB";
-    } else if (size >= 1000) {
-      size = size / 1000;
-      suffix = "kB";
-    }
-
-    return size.toPrecision(3) + suffix;
-  };
-
-  launchAndEnterGrainByPackageId = function (packageId) {
-    const action = UserActions.findOne({ packageId: packageId });
-    if (!action) {
-      alert("Somehow, you seem to have attempted to launch a package you have not installed.");
-      return;
-    } else {
-      launchAndEnterGrainByActionId(action._id, null, null);
-    }
-  };
-
-  launchAndEnterGrainByActionId = function (actionId, devPackageId, devIndex) {
-    // Note that this takes a devPackageId and a devIndex as well. If provided,
-    // they override the actionId.
-    let packageId;
-    let command;
-    let appTitle;
-    let nounPhrase;
-    if (devPackageId) {
-      const devPackage = DevPackages.findOne(devPackageId);
-      if (!devPackage) {
-        console.error("no such dev package: ", devPackageId);
-        return;
-      }
-
-      const devAction = devPackage.manifest.actions[devIndex];
-      packageId = devPackageId;
-      command = devAction.command;
-      appTitle = SandstormDb.appNameFromPackage(devPackage);
-      nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(devAction, appTitle);
-    } else {
-      const action = UserActions.findOne(actionId);
-      if (!action) {
-        console.error("no such action:", actionId);
-        return;
-      }
-
-      packageId = action.packageId;
-      const pkg = Packages.findOne(packageId);
-      command = action.command;
-      appTitle = SandstormDb.appNameFromPackage(pkg);
-      nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(action, appTitle);
-    }
-
-    const title = "Untitled " + appTitle + " " + nounPhrase;
-
-    const identityId = Accounts.getCurrentIdentityId();
-
-    // We need to ask the server to start a new grain, then browse to it.
-    Meteor.call("newGrain", packageId, command, title, identityId, function (error, grainId) {
-      if (error) {
-        console.error(error);
-        alert(error.message);
-      } else {
-        Router.go("grain", { grainId: grainId });
-      }
-    });
-  };
 
   Template.root.helpers({
     storageUsage: function () {

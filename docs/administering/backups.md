@@ -32,13 +32,16 @@ snapshots you can make a quick backup by running:
 
     cp -a /opt/sandstorm $HOME/sandstorm-snapshot-from-$(date -I)
 
-Alternatively one can make a backup using tar
+Alternatively, one can make a backup using tar.
 
     tar -cf $HOME/sandstorm-snapshot-from-$(date -I).tar /opt/sandstorm
 
 Then restart Sandstorm to end the interruption:
 
     sudo service start sandstorm
+
+This guide uses `$(date -I)`, which is a way to embed the current date into a filename, in a format
+such as `2005-10-30`.
 
 ### To restore a Sandstorm server backup
 

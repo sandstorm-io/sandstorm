@@ -152,6 +152,12 @@ body>.popup.account>.frame {
       background-image: url("/email-m.svg");
     }
   }
+  >form.ldap {
+    background-image: url("/ldap.svg");
+    &:hover {
+      background-image: url("/ldap-m.svg");
+    }
+  }
   >a.troubleshooting {
     background-image: url("/troubleshoot.svg");
     &:hover {
@@ -401,7 +407,7 @@ body>.popup.account>.frame {
       background-position: 48px 0px;
     }
 
-    >form.email {
+    >form.email, >form.ldap {
       background-position: 48px 4px;
 
       .button-box {

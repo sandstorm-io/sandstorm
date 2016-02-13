@@ -411,9 +411,6 @@ body>.topbar {
     >.account, >.login {
       >button.show-popup {
         @extend %hamburger-menu-item;
-        >a.expiring-soon {
-          color: #e82538;
-        }
       }
 
       @media #{$desktop} {
@@ -421,14 +418,12 @@ body>.topbar {
         display: block;
 
         >button.show-popup {
-          >a {
-            padding: 0 8px;
-            display: block;
-          }
+          padding: 0 8px;
+          display: block;
         }
       }
       @media #{$mobile} {
-        >a {
+        >button.show-popup {
           font-weight: normal;
         }
       }

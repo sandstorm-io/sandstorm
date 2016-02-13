@@ -31,8 +31,8 @@ module.exports = {
   "Test login command" : function (browser) {
     browser
       .loginDevAccount("TestingLogin")
-      .waitForElementVisible('.topbar .account>.show-popup>a', short_wait)
-      .assert.containsText(".topbar .account>.show-popup>a", "TestingLogin")
+      .waitForElementVisible('.topbar .account>.show-popup', short_wait)
+      .assert.containsText(".topbar .account>.show-popup", "TestingLogin")
       .end();
   },
 };
@@ -40,8 +40,8 @@ if (!disable_demo) {
   module.exports["Test demo login command"] = function (browser) {
     browser
       .loginDemo()
-      .waitForElementVisible('.topbar .account>.show-popup>a', short_wait)
-      .assert.containsText(".topbar .account>.show-popup>a", "Demo")
+      .waitForElementVisible('.topbar .account>.show-popup', short_wait)
+      .assert.containsText(".topbar .account>.show-popup", "Demo")
       .end();
   };
 }

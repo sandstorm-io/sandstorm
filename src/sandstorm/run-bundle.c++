@@ -1691,7 +1691,7 @@ private:
     // If we got here, mongod either exited non-zero, or has no PID in its pidfile. In that case,
     // we do not know how proceed.
     KJ_FAIL_ASSERT("**mongod failed to start. Initial exit code: ", status,
-                   "bailing out now.");
+                   "bailing out now. Note: MongoDB needs about 500MB of disk free to operate!");
     return 0;
   }
 

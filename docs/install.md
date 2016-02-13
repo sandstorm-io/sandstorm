@@ -1,12 +1,28 @@
-# Installation
+# Installation and removal
 
-There are many options for installing Sandstorm with various trade-offs. Choose the one that is most comfortable for you.
+There are many options for installing Sandstorm with various trade-offs. Choose the one that is most comfortable for you. This document also covers [uninstallation](#uninstall).
 
 Sandstorm requires Linux x86_64, with kernel version 3.13 or later.
 
 ## Option 1: HTTPS-verified install
 
 The easiest way to install Sandstorm is by running:
+
+```bash
+curl https://install.sandstorm.io | bash
+```
+
+If you accept the defaults, this will:
+
+- Create a directory, `/opt/sandstorm`, that contains Sandstorm and all data created within Sandstorm. Therefore, this is the most essential directory when performing [backups](administering/backups.md).
+- Download (and verify) the current release of Sandstorm, place it into `/opt/sandstorm`, and enable auto-updates.
+- Create two symbolic links in `/usr/local/bin` to add `spk` and `sandstorm` to your $PATH.
+- Create a service (using `sysvinit` or `systemd`) to make Sandstorm start on system boot.
+- Enable free HTTPS and dynamic DNS if you choose to use a [sandcats.io](administering/sandcats.md) subdomain, which we hope you do!
+- Run a small process as root for containerization and binding to ports, and run the rest of Sandstorm as a non-root user.
+- Listen on port 80 & 443 if available, otherwise a different port.
+
+You can read more about [administering Sandstorm](administering.md). Or you can jump straight into the install by running:
 
 ```bash
 curl https://install.sandstorm.io | bash
@@ -183,3 +199,63 @@ If you suspect you'll be hacking on Sandstorm's dependencies as well, you may wa
 
 * If you want HTTPS/SSL, consider using our [free SSL certificate & dynamic DNS service](administering/ssl.md) or
   setting up a [reverse proxy](administering/reverse-proxy.md).
+
+# Uninstall
+
+If you installed Sandstorm with default options, the following actions will fully remove
+Sandstorm. If you customized the install, you'll need to change these commands accordingly.
+
+If you want to _change settings_, you can edit `/opt/sandstorm/sandstorm.conf`.
+
+- Stop the service.
+
+```bash
+sudo sandstorm stop
+sudo service sandstorm stop
+```
+
+- Remove the service file(s).
+
+For systemd:
+
+```bash
+sudo systemctl disable sandstorm.service
+sudo rm -f /etc/systemd/system/sandstorm.service
+sudo systemctl daemon-reload
+```
+
+For sysvinit:
+
+```bash
+sudo update-rc.d sandstorm remove
+sudo rm -f /etc/init.d/sandstorm
+```
+
+- Remove the two symlinks Sandstorm creates.
+
+```bash
+sudo rm -f /usr/local/bin/spk
+sudo rm -f /usr/local/bin/sandstorm
+```
+
+- Edit `/etc/sysctl.conf` to remove any changes. `install.sh` can optionally customize that file. It
+  will leave behind a comment indicating that it did so, if it did so.
+
+```bash
+sudo nano /etc/sysctl.conf
+```
+
+- Remove the sandstorm user ID and group ID.
+
+```bash
+sudo groupdel sandstorm
+sudo userdel sandstorm
+
+```
+- Finally, remove Sandstorm and all its files.
+
+```bash
+sudo rm -rf /opt/sandstorm
+```
+
+Thanks for using Sandstorm!

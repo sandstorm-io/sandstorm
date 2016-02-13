@@ -18,7 +18,7 @@ pages:
 - Developing apps:
     - "Overview": "developing.md"
     - "Overview of vagrant-spk": "vagrant-spk/index.md"
-    - "Installation": "vagrant-spk/installation.md"
+    - "Installing vagrant-spk for package dev": "vagrant-spk/installation.md"
     - "Packaging tutorial": "vagrant-spk/packaging-tutorial.md"
     - "Packaging tutorial (Meteor)": "vagrant-spk/packaging-tutorial-meteor.md"
     - "App publishing guide": "developing/publishing-apps.md"
@@ -41,7 +41,7 @@ pages:
     - "Raw integration of pure client apps": "developing/raw-pure-client-apps.md"
 - Administering:
     - "Overview": "administering.md"
-    - "Installation": "install.md"
+    - "Installation & uninstall": "install.md"
     - "Administrator's guide": "administering/guide.md"
     - "Sandcats dynamic DNS": "administering/sandcats.md"
     - "Email": "administering/email.md"

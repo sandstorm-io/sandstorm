@@ -36,7 +36,7 @@ Alternatively one can make a backup using tar
 
     tar -cf $HOME/sandstorm-snapshot-from-$(date -I).tar /opt/sandstorm
 
-Then restart sandstorm to end the interruption:
+Then restart Sandstorm to end the interruption:
 
     sudo service start sandstorm
 

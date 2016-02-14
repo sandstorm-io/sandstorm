@@ -7,16 +7,16 @@ SandstormGrainListPage = function (db, quotaEnforcer) {
 
 SandstormGrainListPage.mapGrainsToTemplateObject = function (grains, db) {
   // Do package lookup all at once, rather than doing N queries for N grains
-  var packageIds = _.chain(grains)
+  const packageIds = _.chain(grains)
       .pluck("packageId")
       .uniq()
       .value();
-  var packages = db.collections.packages.find({ _id: { $in: packageIds } }).fetch();
-  var packagesById = _.indexBy(packages, "_id");
+  const packages = db.collections.packages.find({ _id: { $in: packageIds } }).fetch();
+  const packagesById = _.indexBy(packages, "_id");
   return grains.map(function (grain) {
-    var pkg = packagesById[grain.packageId];
-    var iconSrc = pkg ? db.iconSrcForPackage(pkg, "grain") : "";
-    var appTitle = pkg ? SandstormDb.appNameFromPackage(pkg) : "";
+    const pkg = packagesById[grain.packageId];
+    const iconSrc = pkg ? db.iconSrcForPackage(pkg, "grain") : "";
+    const appTitle = pkg ? SandstormDb.appNameFromPackage(pkg) : "";
     return {
       _id: grain._id,
       title: grain.title,
@@ -29,18 +29,18 @@ SandstormGrainListPage.mapGrainsToTemplateObject = function (grains, db) {
 };
 
 SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, staticAssetHost) {
-  var tokensForGrain = _.groupBy(apiTokens, "grainId");
-  var grainIdsForApiTokens = Object.keys(tokensForGrain);
+  const tokensForGrain = _.groupBy(apiTokens, "grainId");
+  const grainIdsForApiTokens = Object.keys(tokensForGrain);
   return grainIdsForApiTokens.map(function (grainId) {
     // Pick the most recently used one.
-    var token = _.sortBy(tokensForGrain[grainId], function (t) {
+    const token = _.sortBy(tokensForGrain[grainId], function (t) {
       if (t.owner && t.owner.user && t.owner.user.lastUsed) { return -t.owner.user.lastUsed; }    else {return 0; } })[0];
 
-    var ownerData = token.owner.user;
-    var grainInfo = ownerData.denormalizedGrainMetadata;
-    var appTitle = (grainInfo && grainInfo.appTitle && grainInfo.appTitle.defaultText) || "";
+    const ownerData = token.owner.user;
+    const grainInfo = ownerData.denormalizedGrainMetadata;
+    const appTitle = (grainInfo && grainInfo.appTitle && grainInfo.appTitle.defaultText) || "";
     // TODO(someday): use source sets and the dpi2x value
-    var iconSrc = (grainInfo && grainInfo.icon && grainInfo.icon.assetId) ?
+    const iconSrc = (grainInfo && grainInfo.icon && grainInfo.icon.assetId) ?
         (window.location.protocol + "//" + staticAssetHost + "/" + grainInfo.icon.assetId) :
         Identicon.identiconForApp((grainInfo && grainInfo.appId) || "00000000000000000000000000000000");
     return {
@@ -54,15 +54,15 @@ SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, stati
   });
 };
 
-var matchesAppOrGrainTitle = function (needle, grain) {
+const matchesAppOrGrainTitle = function (needle, grain) {
   if (grain.title && grain.title.toLowerCase().indexOf(needle) !== -1) return true;
   if (grain.appTitle && grain.appTitle.toLowerCase().indexOf(needle) !== -1) return true;
   return false;
 };
 
-var compileMatchFilter = function (searchString) {
+const compileMatchFilter = function (searchString) {
   // split up searchString into an array of regexes, use them to match against item
-  var searchKeys = searchString.toLowerCase()
+  const searchKeys = searchString.toLowerCase()
       .split(" ")
       .filter(function (k) { return k !== "";});
 
@@ -75,14 +75,14 @@ var compileMatchFilter = function (searchString) {
   };
 };
 
-var filteredSortedGrains = function () {
-  var ref = Template.instance().data;
-  var db = ref._db;
-  var grains = db.currentUserGrains().fetch();
-  var itemsFromGrains = SandstormGrainListPage.mapGrainsToTemplateObject(grains, db);
-  var apiTokens = db.currentUserApiTokens().fetch();
-  var itemsFromSharedGrains = SandstormGrainListPage.mapApiTokensToTemplateObject(apiTokens, ref._staticHost);
-  var filter = compileMatchFilter(Template.instance().data._filter.get());
+const filteredSortedGrains = function () {
+  const ref = Template.instance().data;
+  const db = ref._db;
+  const grains = db.currentUserGrains().fetch();
+  const itemsFromGrains = SandstormGrainListPage.mapGrainsToTemplateObject(grains, db);
+  const apiTokens = db.currentUserApiTokens().fetch();
+  const itemsFromSharedGrains = SandstormGrainListPage.mapApiTokensToTemplateObject(apiTokens, ref._staticHost);
+  const filter = compileMatchFilter(Template.instance().data._filter.get());
   return _.chain([itemsFromGrains, itemsFromSharedGrains])
       .flatten()
       .filter(filter)
@@ -106,7 +106,7 @@ Template.sandstormGrainListPage.helpers({
   },
 
   hasAnyGrainsCreatedOrSharedWithMe: function () {
-    var _db = Template.instance().data._db;
+    const _db = Template.instance().data._db;
     return !!(_db.currentUserGrains().count() ||
                _db.currentUserApiTokens().count());
   },
@@ -129,7 +129,7 @@ Template.sandstormGrainListPage.onRendered(function () {
   // but not desktop browsers, but some mobile browsers don't support it, so we also check
   // clientWidth. Note that it's better to err on the side of not auto-focusing.
   if (window.orientation === undefined && window.innerWidth > 600) {
-    var searchbar = this.findAll(".search-bar")[0];
+    const searchbar = this.findAll(".search-bar")[0];
     if (searchbar) searchbar.focus();
   }
 });
@@ -142,10 +142,10 @@ Template.sandstormGrainListPage.events({
   "keypress .search-bar": function (event) {
     if (event.keyCode === 13) {
       // Enter pressed.  If a single grain is shown, open it.
-      var grains = filteredSortedGrains();
+      const grains = filteredSortedGrains();
       if (grains.length === 1) {
         // Unique grain found with current filter.  Activate it!
-        var grainId = grains[0]._id;
+        const grainId = grains[0]._id;
         // router.go grain/grainId?
         Router.go("grain", { grainId: grainId });
       }
@@ -155,8 +155,12 @@ Template.sandstormGrainListPage.events({
 
 Template.sandstormGrainListPage.events({
   "click .restore-button": function (event, instance) {
-    var input = instance.find(".restore-button input");
-    if (input == event.target) { return; } // Click event generated by upload handler.
+    const input = instance.find(".restore-button input");
+    if (input == event.target) {
+      // Click event generated by upload handler.
+      return;
+    }
+
     instance.data._quotaEnforcer.ifQuotaAvailable(function () {
       // N.B.: this calls into a global in shell.js.
       // TODO(cleanup): refactor into a safer dependency.
@@ -171,7 +175,7 @@ Template.sandstormGrainTable.events({
   },
 
   "click tbody tr.grain": function (event) {
-    var context = Template.instance().data;
+    const context = Template.instance().data;
     context.onGrainClicked && context.onGrainClicked(this._id);
   },
 });
@@ -182,7 +186,7 @@ Template.sandstormGrainTable.onRendered(function () {
     return;
   }
 
-  var _db = Template.instance().data._db;
+  const _db = Template.instance().data._db;
   if (!_db) {
     return;
   }
@@ -194,10 +198,10 @@ Template.sandstormGrainTable.onRendered(function () {
   // We could abort this function if (! globalSubs['grainsMenu'].ready()). However, at the moment,
   // we already waitOn the globalSubs, so that would be a no-op.
 
-  var hasGrains = !!(_db.currentUserGrains().count() ||
+  const hasGrains = !!(_db.currentUserGrains().count() ||
                       _db.currentUserApiTokens().count());
   if (!hasGrains) {
-    var intro = Template.instance().data.intro = introJs();
+    const intro = Template.instance().data.intro = introJs();
     intro.setOptions({
       steps: [
         {

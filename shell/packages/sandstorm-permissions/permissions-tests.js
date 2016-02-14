@@ -14,6 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Until David is done working on this:
+// jscs:disable
+
 var Crypto = Npm.require("crypto");
 
 var globalDb = new SandstormDb();

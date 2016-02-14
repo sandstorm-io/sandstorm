@@ -11,6 +11,7 @@ Npm.depends({
   "stream-buffers": "0.2.5", });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use("underscore", "server");
   api.use("application-configuration");
   api.export("SandstormEmail", "server");;

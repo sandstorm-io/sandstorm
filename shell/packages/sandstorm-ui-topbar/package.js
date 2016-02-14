@@ -20,6 +20,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-identicons"], "client");
   api.addFiles(["topbar.html", "topbar.js"], "client");
   api.export("SandstormTopbar");

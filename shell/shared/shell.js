@@ -379,7 +379,7 @@ if (Meteor.isServer) {
 const makeAccountSettingsUi = function () {
   return new SandstormAccountSettingsUi(globalTopbar, globalDb,
       window.location.protocol + "//" + makeWildcardHost("static"));
-}
+};
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 

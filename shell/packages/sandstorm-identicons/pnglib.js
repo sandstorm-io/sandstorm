@@ -11,6 +11,7 @@
 
 // (Used by identicon.js.)
 // (Trivially modified for Meteor context by Kenton Varda.)
+// jscs:disable
 
 PNGlib = (function() {
 

@@ -20,6 +20,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.addFiles(["pnglib.js", "identicon.js", "helpers.js"], "client");
   api.export(["Identicon"]);
 });

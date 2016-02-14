@@ -6,7 +6,7 @@ if (Meteor.isClient) {
       options = null;
     }
 
-    var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback);
+    const credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback);
     Google.requestCredential(options, credentialRequestCompleteCallback);
   };
 
@@ -17,7 +17,7 @@ if (Meteor.isClient) {
       options = null;
     }
 
-    var credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback);
+    const credentialRequestCompleteCallback = Accounts.oauth.credentialRequestCompleteHandler(callback);
     Github.requestCredential(options, credentialRequestCompleteCallback);
   };
 }

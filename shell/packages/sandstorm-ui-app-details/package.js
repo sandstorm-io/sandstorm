@@ -20,6 +20,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-db", "sandstorm-identicons", "sandstorm-ui-topbar"], "client");
   api.addFiles(["app-details.html", "app-details-client.js"], "client");
   api.export("SandstormAppDetails");

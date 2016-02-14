@@ -350,7 +350,7 @@ if (Meteor.isServer) {
       completedIdentityIdsHandle.stop();
     });
 
-    self.ready();
+    this.ready();
   });
 
   Meteor.publish("backers", function () {

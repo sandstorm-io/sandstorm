@@ -41,17 +41,17 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
       throw new Error("Expected '0x' followed by 16 hexadecimal digits");
     }
 
-    var upper32 = parseInt(n.substring(0, 10));
-    var lower32 = parseInt("0x" + n.substring(10, 18));
+    let upper32 = parseInt(n.substring(0, 10));
+    let lower32 = parseInt("0x" + n.substring(10, 18));
 
-    var result = "";
-    for (var exponent = 0; exponent < 22; exponent += 1) {
-      var w = Math.floor(upper32 / 10);
-      var x = upper32 % 10;
+    let result = "";
+    for (let exponent = 0; exponent < 22; exponent += 1) {
+      const w = Math.floor(upper32 / 10);
+      const x = upper32 % 10;
 
-      var lowerPlusRemainder = (x * Math.pow(2, 32)) + lower32;
-      var y = Math.floor(lowerPlusRemainder / 10);
-      var z = lowerPlusRemainder % 10;
+      const lowerPlusRemainder = (x * Math.pow(2, 32)) + lower32;
+      const y = Math.floor(lowerPlusRemainder / 10);
+      const z = lowerPlusRemainder % 10;
 
       result = z.toString() + result;
 

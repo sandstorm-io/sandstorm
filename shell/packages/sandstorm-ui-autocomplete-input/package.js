@@ -20,6 +20,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-ui-topbar", "sandstorm-autoupdate-apps", "mongo"], "client");
   api.use(["sandstorm-db", "sandstorm-contacts"], ["client", "server"]);
   api.addFiles(["autocomplete.html", "autocomplete-client.js"], "client");

@@ -1,8 +1,8 @@
 Meteor.publish("packageInfo", function (packageId) {
   check(packageId, String);
-  var db = this.connection.sandstormDb;
-  var pkgCursor = db.collections.packages.find(packageId);
-  var pkg = pkgCursor.fetch()[0];
+  const db = this.connection.sandstormDb;
+  const pkgCursor = db.collections.packages.find(packageId);
+  const pkg = pkgCursor.fetch()[0];
   if (pkg && this.userId) {
     return [
       pkgCursor,

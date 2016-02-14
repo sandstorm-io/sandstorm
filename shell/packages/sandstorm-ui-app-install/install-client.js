@@ -1,5 +1,5 @@
-var INSTALL_STEPS = ["download", "verify", "unpack", "analyze", "ready", "failed", "delete"];
-var checkStep = function (step) {
+const INSTALL_STEPS = ["download", "verify", "unpack", "analyze", "ready", "failed", "delete"];
+const checkStep = function (step) {
   if (INSTALL_STEPS.indexOf(step) === -1) throw new Error("Invalid step " + step + ".");
 };
 
@@ -19,7 +19,7 @@ SandstormAppInstall = class SandstormAppInstall {
   }
 
   appId() {
-    var pkg = this.pkg();
+    const pkg = this.pkg();
     return pkg && pkg.appId;
   }
 
@@ -45,13 +45,13 @@ SandstormAppInstall = class SandstormAppInstall {
   }
 
   appVersion() {
-    var pkg = this.pkg();
+    const pkg = this.pkg();
     return pkg && pkg.manifest && pkg.manifest.appVersion;
   }
 
   step() {
     if (this._error.get() !== "") return "error"; // Some error not associated with the package in the DB
-    var pkg = this.pkg();
+    const pkg = this.pkg();
     if (!pkg) return "wait"; // Awaiting write access
     checkStep(pkg.status); // Expect no novel package statuses.
     if (pkg.status !== "ready") return pkg.status;
@@ -63,10 +63,10 @@ SandstormAppInstall = class SandstormAppInstall {
   }
 
   hasOlderVersion() {
-    var existingGrains = this._db.collections.grains.find({ userId: Meteor.userId(), appId: this.appId() }).fetch();
-    var thisVersion = this.appVersion();
-    for (var i in existingGrains) {
-      var grain = existingGrains[i];
+    const existingGrains = this._db.collections.grains.find({ userId: Meteor.userId(), appId: this.appId() }).fetch();
+    const thisVersion = this.appVersion();
+    for (let i in existingGrains) {
+      const grain = existingGrains[i];
       if (grain.packageId !== this.packageId()) {
         // Some other package version.
         if (grain.appVersion <= thisVersion) {
@@ -79,10 +79,10 @@ SandstormAppInstall = class SandstormAppInstall {
   }
 
   hasNewerVersion() {
-    var existingGrains = this._db.collections.grains.find({ userId: Meteor.userId(), appId: this.appId() }).fetch();
-    var thisVersion = this.appVersion();
-    for (var i in existingGrains) {
-      var grain = existingGrains[i];
+    const existingGrains = this._db.collections.grains.find({ userId: Meteor.userId(), appId: this.appId() }).fetch();
+    const thisVersion = this.appVersion();
+    for (let i in existingGrains) {
+      const grain = existingGrains[i];
       if (grain.packageId !== this.packageId()) {
         // Some other package version.
         if (grain.appVersion > thisVersion) {
@@ -95,20 +95,20 @@ SandstormAppInstall = class SandstormAppInstall {
   }
 
   hasFractionalProgress() {
-    var pkg = this.pkg();
-    var progress = pkg && pkg.progress;
+    const pkg = this.pkg();
+    const progress = pkg && pkg.progress;
     return (progress > 0 && progress < 1);
   }
 
   progressFraction() {
-    var pkg = this.pkg();
-    var progress = pkg && pkg.progress;
+    const pkg = this.pkg();
+    const progress = pkg && pkg.progress;
     return progress;
   }
 
   progressText() {
-    var pkg = this.pkg();
-    var progress = pkg && pkg.progress;
+    const pkg = this.pkg();
+    const progress = pkg && pkg.progress;
     if (!progress) return "";
     if (progress < 0) return ""; // -1 means no progress to report
     if (progress > 1) {
@@ -123,20 +123,20 @@ SandstormAppInstall = class SandstormAppInstall {
 };
 
 Template.sandstormAppInstallPage.onCreated(function () {
-  var ref = Template.instance().data;
+  const ref = Template.instance().data;
   this.autorun(() => {
-    var pkg = ref.pkg();
+    const pkg = ref.pkg();
     if (ref._keybaseSubscription) {
       ref._keybaseSubscription.stop();
       ref._keybaseSubscription = undefined;
     }
 
-    var fingerprint = pkg && pkg.authorPgpKeyFingerprint;
+    const fingerprint = pkg && pkg.authorPgpKeyFingerprint;
     if (fingerprint) {
       ref._keybaseSubscription = Meteor.subscribe("keybaseProfile", fingerprint);
     }
 
-    var appId = pkg && pkg.appId;
+    const appId = pkg && pkg.appId;
     if (appId) {
       ref._appIndexSubscription = Meteor.subscribe("appIndex", pkg.appId);
     }
@@ -157,17 +157,17 @@ Template.sandstormAppInstallPage.onDestroyed(function () {
 
 Template.sandstormAppInstallPage.helpers({
   setDocumentTitle() {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     document.title = "Installing app · " + ref._db.getServerTitle();
   },
 
   error() {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     return ref.error();
   },
 
   step() {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     return ref.step();
   },
 
@@ -176,89 +176,89 @@ Template.sandstormAppInstallPage.helpers({
   },
 
   packageId() {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     return ref.packageId();
   },
 
   packageUrl() {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     return ref.packageUrl();
   },
 
   isCurrentStep(step) {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     return ref.step() === step;
   },
 
   hasFractionalProgress() {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     return ref.hasFractionalProgress();
   },
 
   progressFraction() {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     return ref.progressFraction();
   },
 
   progressText() {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     return ref.progressText();
   },
 
   pkg() {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     return ref.pkg();
   },
 
   staticHost() {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     return ref._db.makeWildcardHost("static");
   },
 
   keybaseProfile() {
-    var ref = Template.instance().data;
-    var pkg = ref.pkg();
-    var fingerprint = pkg && pkg.authorPgpKeyFingerprint;
-    var profile = fingerprint && ref._db.getKeybaseProfile(fingerprint);
+    const ref = Template.instance().data;
+    const pkg = ref.pkg();
+    const fingerprint = pkg && pkg.authorPgpKeyFingerprint;
+    const profile = fingerprint && ref._db.getKeybaseProfile(fingerprint);
     return profile;
   },
 
   lastUpdated() {
-    var ref = Template.instance().data;
-    var pkg = ref.pkg();
+    const ref = Template.instance().data;
+    const pkg = ref.pkg();
     if (!pkg) return undefined;
     if (pkg.dev) return new Date(); // Might as well just indicate 'now'
-    var db = ref._db;
-    var appIndexEntry = db.collections.appIndex.findOne({ packageId: pkg._id });
+    const db = ref._db;
+    const appIndexEntry = db.collections.appIndex.findOne({ packageId: pkg._id });
     return appIndexEntry && appIndexEntry.createdAt && new Date(appIndexEntry.createdAt);
   },
 
   appTitle() {
-    var ref = Template.instance().data;
-    var pkg = ref.pkg();
+    const ref = Template.instance().data;
+    const pkg = ref.pkg();
     return pkg && SandstormDb.appNameFromPackage(pkg);
   },
 
   appId() {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     return ref.appId();
   },
 });
 
 Template.sandstormAppInstallPage.events({
   "click #retry": function (event) {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     Meteor.call("ensureInstalled", ref._packageId, ref._packageUrl, true);
   },
 
   "click #cancelDownload": function (event) {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     Meteor.call("cancelDownload", ref.packageId());
     Router.go("apps");
   },
 
   "click #confirmInstall": function (event) {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     ref._db.addUserActions(ref.packageId());
   },
 });

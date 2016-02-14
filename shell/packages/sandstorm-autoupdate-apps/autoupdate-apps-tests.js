@@ -14,9 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var Crypto = Npm.require("crypto");
+const Crypto = Npm.require("crypto");
 
-var globalDb = new SandstormDb();
+const globalDb = new SandstormDb();
 // TODO(cleanup): Use a lightweight fake (minimongo-based?) database here and construct a clean
 // instance at the start of each test case.
 
@@ -35,14 +35,14 @@ globalDb.collections.settings.upsert({ _id: "appIndexUrl" },
 globalDb.collections.settings.upsert({ _id: "appUpdatesEnabled" },
                                      { $set: { value: true } });
 
-var aliceUserId = Accounts.insertUserDoc({ profile: { name: "Alice" },
+const aliceUserId = Accounts.insertUserDoc({ profile: { name: "Alice" },
                                           service: { dev: { name: "alice" + Crypto.randomBytes(10).toString("hex") } }, },
                                          {});
-var bobUserId = Accounts.insertUserDoc({ profile: { name: "Bob" },
+const bobUserId = Accounts.insertUserDoc({ profile: { name: "Bob" },
                                         service: { dev: { name: "Bob" + Crypto.randomBytes(10).toString("hex") } }, },
                                        {});
 
-var packageV0 = { _id: "mock-package-id1",
+const packageV0 = { _id: "mock-package-id1",
   status: "ready",
   progress: 1,
   isAutoUpdated: false,
@@ -52,15 +52,18 @@ var packageV0 = { _id: "mock-package-id1",
      maxApiVersion: 0,
      appMarketingVersion: { defaultText: "0.1" },
      appTitle: { defaultText: "Mock App" },
-     actions: [{
-       input: { none: null },
-       title: { defaultText: "New Mock App" }, },],
+     actions: [
+       {
+         input: { none: null },
+         title: { defaultText: "New Mock App" },
+       },
+     ],
      appVersion: 0,
      minUpgradableAppVersion: 0, },
   appId: "mock-app-id",
 };
 
-var packageV1 = { _id: "mock-package-id2",
+const packageV1 = { _id: "mock-package-id2",
   status: "ready",
   progress: 1,
   isAutoUpdated: false,
@@ -95,13 +98,19 @@ Tinytest.add("test update notifications", function (test) {
 
     stubUser(this, aliceUserId);
     this.stub(HTTP, "get", function () {
-      return { data: { apps: [{
-        appId: "mock-app-id",
-        versionNumber: 1,
-        version: "0.2",
-        packageId: "mock-package-id2",
-        name: "Mock App",
-      },], }, };
+      return {
+        data: {
+          apps: [
+            {
+              appId: "mock-app-id",
+              versionNumber: 1,
+              version: "0.2",
+              packageId: "mock-package-id2",
+              name: "Mock App",
+            },
+          ],
+        },
+      };
     });
 
     globalDb.addUserActions("mock-package-id1");
@@ -110,8 +119,8 @@ Tinytest.add("test update notifications", function (test) {
 
   // This blocking call to findOne was having some weird interaction with sinon.test. I've moved it,
   // and the rest of the test out of the sinon.test block.
-  var notification = globalDb.collections.notifications.findOne();
-  var appUpdate = notification.appUpdates["mock-app-id"];
+  const notification = globalDb.collections.notifications.findOne();
+  const appUpdate = notification.appUpdates["mock-app-id"];
   test.isNotNull(appUpdate);
   test.equal(appUpdate.name, "Mock App");
   test.equal(appUpdate.marketingVersion, "0.2");

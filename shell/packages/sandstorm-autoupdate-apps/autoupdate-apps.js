@@ -17,27 +17,27 @@
 SandstormAutoupdateApps = {};
 
 SandstormAutoupdateApps.updateAppIndex = function (db) {
-  var appUpdatesEnabledSetting = db.collections.settings.findOne({ _id: "appUpdatesEnabled" });
-  var appUpdatesEnabled = appUpdatesEnabledSetting && appUpdatesEnabledSetting.value;
+  const appUpdatesEnabledSetting = db.collections.settings.findOne({ _id: "appUpdatesEnabled" });
+  const appUpdatesEnabled = appUpdatesEnabledSetting && appUpdatesEnabledSetting.value;
   if (!appUpdatesEnabled) {
     // It's much simpler to check appUpdatesEnabled here rather than reactively deactivate the
     // timer that triggers this call.
     return;
   }
 
-  var appIndexUrl = db.collections.settings.findOne({ _id: "appIndexUrl" }).value;
-  var appIndex = db.collections.appIndex;
-  var data = HTTP.get(appIndexUrl + "/apps/index.json").data;
+  const appIndexUrl = db.collections.settings.findOne({ _id: "appIndexUrl" }).value;
+  const appIndex = db.collections.appIndex;
+  const data = HTTP.get(appIndexUrl + "/apps/index.json").data;
   data.apps.forEach(function (app) {
     app._id = app.appId;
 
-    var oldApp = appIndex.findOne({ _id: app.appId });
+    const oldApp = appIndex.findOne({ _id: app.appId });
     app.hasSentNotifications = false;
     appIndex.upsert({ _id: app._id }, app);
     if ((!oldApp || app.versionNumber > oldApp.versionNumber) &&
         db.collections.userActions.findOne({ appId: app.appId })) {
-      var pack = db.collections.packages.findOne({ _id: app.packageId });
-      var url = appIndexUrl + "/packages/" + app.packageId;
+      const pack = db.collections.packages.findOne({ _id: app.packageId });
+      const url = appIndexUrl + "/packages/" + app.packageId;
       if (pack) {
         if (pack.status === "ready") {
           if (pack.appId && pack.appId !== app.appId) {
@@ -48,7 +48,7 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
               app.version);
           }
         } else {
-          var newPack = Packages.findAndModify({
+          const newPack = Packages.findAndModify({
             query: { _id: app.packageId },
             update: { $set: { isAutoUpdated: true } },
           });
@@ -77,11 +77,11 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
 
 Meteor.methods({
   updateApps: function (appUpdates) {
-    var db = this.connection.sandstormDb;
-    var backend = this.connection.sandstormBackend;
+    const db = this.connection.sandstormDb;
+    const backend = this.connection.sandstormBackend;
 
     _.forEach(appUpdates, function (val, appId) {
-      var pack = db.collections.packages.findOne({ _id: val.packageId, appId: appId });
+      const pack = db.collections.packages.findOne({ _id: val.packageId, appId: appId });
       if (!pack || !pack.manifest) {
         console.error("Newer app not installed", val.name);
       } else {

@@ -20,6 +20,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-db", "sandstorm-ui-topbar", "sandstorm-autoupdate-apps"], "client");
   api.addFiles(["applist.html", "applist-client.js"], "client");
   api.export("SandstormAppList");

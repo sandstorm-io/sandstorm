@@ -7,25 +7,25 @@ SandstormAppList = function (db, quotaEnforcer) {
   this._uninstalling = new ReactiveVar(false);
 };
 
-var matchesApp = function (needle, app) {
-  var pkg = app && app.pkg;
-  var appTitle = SandstormDb.appNameFromPackage(pkg);
+const matchesApp = function (needle, app) {
+  const pkg = app && app.pkg;
+  const appTitle = SandstormDb.appNameFromPackage(pkg);
   // We match if the app title is matched...
   if (appTitle.toLowerCase().indexOf(needle) !== -1) return true;
   // ...or the metadata's shortDescription matches...
-  var shortDesc = SandstormDb.appShortDescriptionFromPackage(pkg);
+  const shortDesc = SandstormDb.appShortDescriptionFromPackage(pkg);
   if (shortDesc && shortDesc.toLowerCase().indexOf(needle) !== -1) return true;
   // ...or any of the app's action's nouns match.
-  for (var i = 0; i < pkg.manifest.actions.length; i++) {
-    var nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(pkg.manifest.actions[i], appTitle);
+  for (let i = 0; i < pkg.manifest.actions.length; i++) {
+    const nounPhrase = SandstormDb.nounPhraseForActionAndAppTitle(pkg.manifest.actions[i], appTitle);
     if (nounPhrase.toLowerCase().indexOf(needle) !== -1) return true;
   }
   // Otherwise, nope.
   return false;
 };
 
-var compileMatchFilter = function (searchString) {
-  var searchKeys = searchString.toLowerCase()
+const compileMatchFilter = function (searchString) {
+  const searchKeys = searchString.toLowerCase()
       .split(" ")
       .filter(function (k) { return k !== "";});
 
@@ -38,8 +38,8 @@ var compileMatchFilter = function (searchString) {
   };
 };
 
-var appToTemplateObject = function (app) {
-  var ref = Template.instance().data;
+const appToTemplateObject = function (app) {
+  const ref = Template.instance().data;
   return {
     iconSrc: app.pkg ? ref._db.iconSrcForPackage(app.pkg, "appGrid") : "",
     appTitle: SandstormDb.appNameFromPackage(app.pkg),
@@ -49,16 +49,16 @@ var appToTemplateObject = function (app) {
   };
 };
 
-var matchApps = function (searchString) {
-  var filter = compileMatchFilter(searchString);
+const matchApps = function (searchString) {
+  const filter = compileMatchFilter(searchString);
 
-  var db = Template.instance().data._db;
-  var allActions = db.currentUserActions().fetch();
-  var appsFromUserActionsByAppId = _.chain(allActions)
+  const db = Template.instance().data._db;
+  const allActions = db.currentUserActions().fetch();
+  const appsFromUserActionsByAppId = _.chain(allActions)
                              .groupBy("packageId")
                              .pairs()
                              .map(function (pair) {
-                               var pkg = db.collections.packages.findOne(pair[0]);
+                               const pkg = db.collections.packages.findOne(pair[0]);
                                return {
                                   packageId: pair[0],
                                   actions: pair[1],
@@ -69,7 +69,7 @@ var matchApps = function (searchString) {
                              })
                              .indexBy("appId")
                              .value();
-  var devPackagesByAppId = _.chain(db.collections.devPackages.find().fetch())
+  const devPackagesByAppId = _.chain(db.collections.devPackages.find().fetch())
                         .map(function (devPackage) {
                           return {
                             packageId: devPackage._id,
@@ -82,12 +82,12 @@ var matchApps = function (searchString) {
                         .indexBy("appId")
                         .value();
   // Merge, making sure that dev apps overwrite user actions if they share appId
-  var allApps = _.chain({})
+  const allApps = _.chain({})
                  .extend(appsFromUserActionsByAppId, devPackagesByAppId)
                  .values()
                  .value();
 
-  var matchingApps = _.chain(allApps)
+  const matchingApps = _.chain(allApps)
                       .filter(filter)
                       .value();
   return matchingApps;
@@ -95,23 +95,23 @@ var matchApps = function (searchString) {
 
 Template.sandstormAppListPage.helpers({
   setDocumentTitle: function () {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     document.title = "Apps · " + ref._db.getServerTitle();
   },
 
   searching: function () {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     return ref._filter.get().length > 0;
   },
 
   actionsCount: function () {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     return ref._db.currentUserActions().count();
   },
 
   apps: function () {
-    var ref = Template.instance().data;
-    var apps = matchApps(ref._filter.get());
+    const ref = Template.instance().data;
+    const apps = matchApps(ref._filter.get());
     return _.chain(apps)
             .map(appToTemplateObject)
             .sortBy(function (appTemplateObj) { return appTemplateObj.appTitle.toLowerCase(); })
@@ -120,14 +120,14 @@ Template.sandstormAppListPage.helpers({
   },
 
   popularApps: function () {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     // Count the number of grains owned by this user created by each app.
-    var actions = ref._db.currentUserActions().fetch();
-    var appIds = _.pluck(actions, "appId");
-    var grains = ref._db.currentUserGrains().fetch();
-    var appCounts = _.countBy(grains, function (x) { return x.appId; });
+    const actions = ref._db.currentUserActions().fetch();
+    const appIds = _.pluck(actions, "appId");
+    const grains = ref._db.currentUserGrains().fetch();
+    const appCounts = _.countBy(grains, function (x) { return x.appId; });
     // Sort apps by the number of grains created, descending.
-    var apps = matchApps(ref._filter.get());
+    const apps = matchApps(ref._filter.get());
     return _.chain(apps)
         .sortBy(function (app) { return appCounts[app.appId] || 0; })
         .reverse()
@@ -140,7 +140,7 @@ Template.sandstormAppListPage.helpers({
   },
 
   appMarketUrl: function () {
-    var appMarket = Settings.findOne({ _id: "appMarketUrl" });
+    const appMarket = Settings.findOne({ _id: "appMarketUrl" });
     if (!appMarket) {
       return "#";
     }
@@ -154,7 +154,7 @@ Template.sandstormAppListPage.helpers({
 
   showMostPopular: function () {
     // Only show if not searching, not uninstalling, and you have apps installed
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     return (ref._filter.get().length === 0) &&
            (!ref._uninstalling.get()) &&
            (ref._db.currentUserActions().count() > 0);
@@ -179,8 +179,12 @@ Template.sandstormAppListPage.events({
   },
 
   "click .upload-button": function (event, instance) {
-    var input = instance.find(instance.find(".upload-button input"));
-    if (input == event.target) { return; } // Click event generated by upload handler.
+    const input = instance.find(instance.find(".upload-button input"));
+    if (input == event.target) {
+      // Click event generated by upload handler.
+      return;
+    }
+
     instance.data._quotaEnforcer.ifPlanAllowsCustomApps(function () {
       // N.B.: this calls into a global in shell.js.
       // TODO(cleanup): refactor into a safer dependency.
@@ -189,8 +193,8 @@ Template.sandstormAppListPage.events({
   },
 
   "click .uninstall-action": function (event) {
-    var db = Template.instance().data._db;
-    var appId = this.appId;
+    const db = Template.instance().data._db;
+    const appId = this.appId;
     // Untrusted client code may only remove entries by ID.
     db.collections.userActions.find({ appId: this.appId }).forEach(function (action) {
       db.collections.userActions.remove(action._id);
@@ -200,7 +204,7 @@ Template.sandstormAppListPage.events({
   },
 
   "click button.toggle-uninstall": function (event) {
-    var uninstallVar = Template.instance().data._uninstalling;
+    const uninstallVar = Template.instance().data._uninstalling;
     uninstallVar.set(!uninstallVar.get());
   },
   // We use keyup rather than keypress because keypress's event.currentTarget.value will not
@@ -211,10 +215,10 @@ Template.sandstormAppListPage.events({
   },
 
   "keypress .search-bar": function (event, template) {
-    var ref = Template.instance().data;
+    const ref = Template.instance().data;
     if (event.keyCode === 13) {
       // Enter pressed.  If a single grain is shown, open it.
-      var apps = matchApps(ref._filter.get());
+      const apps = matchApps(ref._filter.get());
       if (apps.length === 1) {
         Router.go("appDetails", { appId: apps[0].appId });
       }
@@ -228,12 +232,12 @@ Template.sandstormAppListPage.onRendered(function () {
   // clientWidth. Note that it's better to err on the side of not auto-focusing.
   if (window.orientation === undefined && window.innerWidth > 600) {
     // If there are no apps available, don't bother focusing it.
-    var db = Template.instance().data._db;
+    const db = Template.instance().data._db;
     if (db.collections.userActions.find().count() === 0) {
       return;
     }
 
-    var searchbar = this.findAll(".search-bar")[0];
+    const searchbar = this.findAll(".search-bar")[0];
     if (searchbar) searchbar.focus();
   }
 });

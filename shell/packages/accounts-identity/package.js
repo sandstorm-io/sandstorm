@@ -20,6 +20,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use(["underscore", "random", "sandstorm-db", "sandstorm-backend", "mongo"]);
   api.use("accounts-base", ["client", "server"]);
   api.use(["session", "templating"], ["client"]);

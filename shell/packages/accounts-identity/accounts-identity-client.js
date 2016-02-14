@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var LoginIdentitiesOfLinkedAccounts = new Mongo.Collection("loginIdentitiesOfLinkedAccounts");
+const LoginIdentitiesOfLinkedAccounts = new Mongo.Collection("loginIdentitiesOfLinkedAccounts");
 // Pseudocollection populated by the `accountsOfIdentity(sourceIdentityId)` subscription. Contains
 // information about all login identities for all accounts that have the "source identity" linked.
 //   _id: Identity ID of the login identity;
@@ -25,7 +25,7 @@ var LoginIdentitiesOfLinkedAccounts = new Mongo.Collection("loginIdentitiesOfLin
 
 Template.identityLoginInterstitial.onCreated(function () {
   this._state = new ReactiveVar({ justLoggingIn: true });
-  var token = sessionStorage.getItem("linkingIdentityLoginToken");
+  const token = sessionStorage.getItem("linkingIdentityLoginToken");
   if (token) {
     this._state.set({ linkingIdentity: true });
     sessionStorage.removeItem("linkingIdentityLoginToken");
@@ -40,13 +40,13 @@ Template.identityLoginInterstitial.onCreated(function () {
       Meteor.loginWithToken(token);
     });
   } else {
-    var self = this;
-    var sub = this.subscribe("accountsOfIdentity", Meteor.userId());
-    this.autorun(function () {
+    const sub = this.subscribe("accountsOfIdentity", Meteor.userId());
+    this.autorun(() => {
       if (sub.ready()) {
-        var loginAccount =
-            LoginIdentitiesOfLinkedAccounts.findOne({ sourceIdentityId: Meteor.userId(),
-                                                     _id: Meteor.userId(), });
+        const loginAccount = LoginIdentitiesOfLinkedAccounts.findOne({
+          _id: Meteor.userId(),
+          sourceIdentityId: Meteor.userId(),
+        });
         if (loginAccount) {
           Meteor.loginWithIdentity(loginAccount.loginAccountId);
         } else if (!LoginIdentitiesOfLinkedAccounts.findOne({ sourceIdentityId: Meteor.userId() })) {
@@ -55,8 +55,8 @@ Template.identityLoginInterstitial.onCreated(function () {
               console.log("error", err);
             }
           });
-        } else if ("justLoggingIn" in self._state.get()) {
-          self._state.set({ needInput: true });
+        } else if ("justLoggingIn" in this._state.get()) {
+          this._state.set({ needInput: true });
         }
       }
     });
@@ -73,7 +73,7 @@ Template.identityLoginInterstitial.helpers({
   },
 
   currentIdentity: function () {
-    var identity = Meteor.user();
+    const identity = Meteor.user();
     SandstormDb.fillInProfileDefaults(identity);
     SandstormDb.fillInIntrinsicName(identity);
     SandstormDb.fillInPictureUrl(identity);
@@ -94,11 +94,11 @@ Template.identityLoginInterstitial.events({
   },
 
   "click button.unlink": function () {
-    var userId = event.target.getAttribute("data-user-id");
-    var user = Meteor.user();
-    var identityId = user && user._id;
-    var loginIdentity = LoginIdentitiesOfLinkedAccounts.findOne({ loginAccountId: userId });
-    var name = loginIdentity.profile.name;
+    const userId = event.target.getAttribute("data-user-id");
+    const user = Meteor.user();
+    const identityId = user && user._id;
+    const loginIdentity = LoginIdentitiesOfLinkedAccounts.findOne({ loginAccountId: userId });
+    const name = loginIdentity.profile.name;
     if (window.confirm("Are you sure you want to unlink your identity from the account of " +
                        name + " ?")) {
       Meteor.call("unlinkIdentity", userId, identityId, function (err, result) {
@@ -116,7 +116,7 @@ Template.identityManagementButtons.events({
       window.alert("You are not allowed to unlink your only login identity.");
     } else if (window.confirm("Are you sure you want to unlink this identity? " +
                               "You will lose access to grains that were shared to this identity.")) {
-      var identityId = event.target.getAttribute("data-identity-id");
+      const identityId = event.target.getAttribute("data-identity-id");
       Meteor.call("unlinkIdentity", Meteor.userId(), identityId, function (err, result) {
         if (err) {
           console.log("err: ", err);
@@ -126,7 +126,7 @@ Template.identityManagementButtons.events({
   },
 
   "change input.toggle-login": function (event, instance) {
-    var identityId = event.target.getAttribute("data-identity-id");
+    const identityId = event.target.getAttribute("data-identity-id");
     Meteor.call("setIdentityAllowsLogin", identityId, event.target.checked, function (err, result) {
       if (err) {
         instance.data.setActionCompleted({ error: err });
@@ -170,7 +170,7 @@ Template.loginIdentitiesOfLinkedAccounts.helpers({
   },
 
   getOtherAccounts: function () {
-    var id = Template.instance().data._id;
+    const id = Template.instance().data._id;
     return LoginIdentitiesOfLinkedAccounts.find({ sourceIdentityId: id,
                                                  loginAccountId: { $ne: Meteor.userId() }, })
         .fetch().map(function (identity) {
@@ -190,10 +190,10 @@ Template.loginIdentitiesOfLinkedAccounts.events({
   },
 
   "click button.unlink": function (event, instance) {
-    var userId = event.target.getAttribute("data-user-id");
-    var identityId = instance.data._id;
-    var loginIdentity = LoginIdentitiesOfLinkedAccounts.findOne({ loginAccountId: userId });
-    var name = loginIdentity.profile.name;
+    const userId = event.target.getAttribute("data-user-id");
+    const identityId = instance.data._id;
+    const loginIdentity = LoginIdentitiesOfLinkedAccounts.findOne({ loginAccountId: userId });
+    const name = loginIdentity.profile.name;
     if (window.confirm("Are you sure you want to unlink this identity from the account of " +
                        name + " ?")) {
       Meteor.call("unlinkIdentity", userId, identityId, function (err, result) {
@@ -231,7 +231,7 @@ Meteor.loginWithIdentity = function (accountId, callback) {
   // Attempts to log into the account with ID `accountId`.
 
   check(accountId, String);
-  var identity = Meteor.user();
+  const identity = Meteor.user();
 
   Accounts.callLoginMethod({
     methodName: "loginWithIdentity",
@@ -250,20 +250,20 @@ Meteor.loginWithIdentity = function (accountId, callback) {
   });
 };
 
-var CURRENT_IDENTITY_KEY = "Accounts.CurrentIdentityId";
+const CURRENT_IDENTITY_KEY = "Accounts.CurrentIdentityId";
 
 Accounts.getCurrentIdentityId = function () {
   // TODO(cleanup): `globalGrains` is only in scope here because of a Meteor bug. We should figure
   //   out a better way to track a reference to it.
-  var grainList = globalGrains.get();
-  for (var i = 0; i < grainList.length; i++) {
+  const grainList = globalGrains.get();
+  for (let i = 0; i < grainList.length; i++) {
     if (grainList[i].isActive()) {
       return grainList[i].identityId();
     }
   }
 
-  var identityId = Session.get(CURRENT_IDENTITY_KEY);
-  var identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
+  const identityId = Session.get(CURRENT_IDENTITY_KEY);
+  const identityIds = SandstormDb.getUserIdentityIds(Meteor.user());
   if (identityId && (identityIds.indexOf(identityId) != -1)) {
     return identityId;
   } else {
@@ -276,8 +276,8 @@ Accounts.setCurrentIdentityId = function (identityId) {
 
   // TODO(cleanup): `globalGrains` is only in scope here because of a Meteor bug. We should figure
   //   out a better way to track a reference to it.
-  var grainList = globalGrains.get();
-  for (var i = 0; i < grainList.length; i++) {
+  const grainList = globalGrains.get();
+  for (let i = 0; i < grainList.length; i++) {
     if (grainList[i].isActive()) {
       return grainList[i].switchIdentity(identityId);
     }

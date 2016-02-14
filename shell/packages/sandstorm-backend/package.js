@@ -20,6 +20,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use(["accounts-base", "sandstorm-db", "sandstorm-permissions"], ["server"]);
   api.addFiles(["sandstorm-backend.js"], ["server"]);
   api.export("SandstormBackend");

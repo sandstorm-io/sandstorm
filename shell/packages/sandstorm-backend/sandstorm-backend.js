@@ -14,13 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var Capnp = Npm.require("capnp");
-var Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
-var Crypto = Npm.require("crypto");
-var Future = Npm.require("fibers/future");
-var Promise = Npm.require("es6-promise").Promise;
+const Capnp = Npm.require("capnp");
+const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
+const Crypto = Npm.require("crypto");
+const Future = Npm.require("fibers/future");
+const Promise = Npm.require("es6-promise").Promise;
 
-var inMeteorInternal = Meteor.bindEnvironment(function (callback) {
+const inMeteorInternal = Meteor.bindEnvironment(function (callback) {
   callback();
 });
 
@@ -38,7 +38,7 @@ inMeteor = function (callback) {
 };
 
 promiseToFuture = function (promise) {
-  var result = new Future();
+  const result = new Future();
   promise.then(result.return.bind(result), result.throw.bind(result));
   return result;
 };
@@ -69,7 +69,7 @@ SandstormBackend.prototype.shutdownGrain = function (grainId, ownerId, keepSessi
     delete this.runningGrains[grainId];
   }
 
-  var grain = this._backendCap.getGrain(ownerId, grainId).supervisor;
+  const grain = this._backendCap.getGrain(ownerId, grainId).supervisor;
   return grain.shutdown().then(function () {
     grain.close();
     throw new Error("expected shutdown() to throw disconnected");
@@ -104,7 +104,7 @@ SandstormBackend.prototype.openGrain = function (grainId, isRetry) {
     return this.continueGrain(grainId);
   } else {
     // Start the grain if it is not running.
-    var runningGrain = this.runningGrains[grainId];
+    const runningGrain = this.runningGrains[grainId];
     if (runningGrain) {
       return waitPromise(runningGrain);
     } else {
@@ -122,11 +122,11 @@ SandstormBackend.shouldRestartGrain = function (error, retryCount) {
 };
 
 SandstormBackend.prototype.maybeRetryUseGrain = function (grainId, cb, retryCount, err) {
-  var self = this;
+  const _this = this;
   if (SandstormBackend.shouldRestartGrain(err, retryCount)) {
     return inMeteor(function () {
-      return cb(self.openGrain(grainId, true).supervisor)
-          .catch(self.maybeRetryUseGrain.bind(self, grainId, cb, retryCount + 1));
+      return cb(_this.openGrain(grainId, true).supervisor)
+          .catch(_this.maybeRetryUseGrain.bind(_this, grainId, cb, retryCount + 1));
     });
   } else {
     throw err;
@@ -141,31 +141,31 @@ SandstormBackend.prototype.useGrain = function (grainId, cb) {
   //
   // This function is NOT expected to be run in a meteor context.
 
-  var runningGrain = this.runningGrains[grainId];
-  var self = this;
+  const runningGrain = this.runningGrains[grainId];
+  const _this = this;
   if (runningGrain) {
     return runningGrain.then(function (grainInfo) {
       return cb(grainInfo.supervisor);
-    }).catch(self.maybeRetryUseGrain.bind(self, grainId, cb, 0));
+    }).catch(_this.maybeRetryUseGrain.bind(_this, grainId, cb, 0));
   } else {
     return inMeteor(function () {
-      return cb(self.openGrain(grainId, false).supervisor)
-          .catch(self.maybeRetryUseGrain.bind(self, grainId, cb, 0));
+      return cb(_this.openGrain(grainId, false).supervisor)
+          .catch(_this.maybeRetryUseGrain.bind(_this, grainId, cb, 0));
     });
   }
 };
 
 SandstormBackend.prototype.continueGrain = function (grainId) {
-  var grain = Grains.findOne(grainId);
+  const grain = Grains.findOne(grainId);
   if (!grain) {
     throw new Meteor.Error(404, "Grain Not Found", "Grain ID: " + grainId);
   }
 
   // If a DevPackage with the same app ID is currently active, we let it override the installed
   // package, so that the grain runs using the dev app.
-  var devPackage = DevPackages.findOne({ appId: grain.appId });
-  var isDev;
-  var pkg;
+  const devPackage = DevPackages.findOne({ appId: grain.appId });
+  let isDev;
+  let pkg;
   if (devPackage) {
     isDev = true;
     pkg = devPackage;
@@ -177,8 +177,8 @@ SandstormBackend.prototype.continueGrain = function (grainId) {
     }
   }
 
-  var manifest = pkg.manifest;
-  var packageId = pkg._id;
+  const manifest = pkg.manifest;
+  const packageId = pkg._id;
 
   if (!("continueCommand" in manifest)) {
     throw new Meteor.Error(500, "Package manifest defines no continueCommand.",
@@ -218,7 +218,7 @@ SandstormBackend.prototype.startGrainInternal = function (packageId, grainId, ow
     delete command.executablePath;
   }
 
-  var whenReady = this._backendCap.startGrain(ownerId, grainId, packageId, command, isNew, isDev)
+  const whenReady = this._backendCap.startGrain(ownerId, grainId, packageId, command, isNew, isDev)
       .then(function (results) {
     return {
       owner: ownerId,
@@ -234,12 +234,12 @@ SandstormBackend.prototype.updateLastActive = function (grainId, userId, identit
   // Update the lastActive date on the grain, any relevant API tokens, and the user,
   // and also update the user's storage usage.
 
-  var storagePromise = undefined;
+  let storagePromise = undefined;
   if (Meteor.settings.public.quotaEnabled) {
     storagePromise = globalBackend._backendCap.getUserStorageUsage(userId);
   }
 
-  var now = new Date();
+  const now = new Date();
   if (Grains.update(grainId, { $set: { lastUsed: now } }) === 0) {
     // Grain must have been deleted. Ignore.
     return;
@@ -258,8 +258,8 @@ SandstormBackend.prototype.updateLastActive = function (grainId, userId, identit
 
   if (Meteor.settings.public.quotaEnabled) {
     try {
-      var ownerId = Grains.findOne(grainId).userId;
-      var size = parseInt(waitPromise(storagePromise).size);
+      const ownerId = Grains.findOne(grainId).userId;
+      const size = parseInt(waitPromise(storagePromise).size);
       Meteor.users.update(ownerId, { $set: { storageUsage: size } });
       // TODO(security): Consider actively killing grains if the user is excessively over quota?
       //   Otherwise a constantly-active grain could consume arbitrary space without being stopped.
@@ -272,12 +272,12 @@ SandstormBackend.prototype.updateLastActive = function (grainId, userId, identit
 };
 
 function generateSessionId(grainId, userId, salt) {
-  var sessionParts = [grainId, salt];
+  const sessionParts = [grainId, salt];
   if (userId) {
     sessionParts.push(userId);
   }
 
-  var sessionInput = sessionParts.join(":");
+  const sessionInput = sessionParts.join(":");
   return Crypto.createHash("sha256").update(sessionInput).digest("hex");
 }
 
@@ -286,8 +286,8 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
   // Start the grain if it is not running. This is an optimization: if we didn't start it here,
   // it would start on the first request to the session host, but we'd like to get started before
   // the round trip.
-  var runningGrain = this.runningGrains[grainId];
-  var grainInfo;
+  const runningGrain = this.runningGrains[grainId];
+  let grainInfo;
   if (runningGrain) {
     grainInfo = waitPromise(runningGrain);
   } else {
@@ -297,13 +297,13 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
   this.updateLastActive(grainId, userId, identityId);
 
   cachedSalt = cachedSalt || Random.id(22);
-  var sessionId = generateSessionId(grainId, userId, cachedSalt);
-  var session = Sessions.findOne({ _id: sessionId });
+  const sessionId = generateSessionId(grainId, userId, cachedSalt);
+  let session = Sessions.findOne({ _id: sessionId });
   if (session) {
     // TODO(someday): also do some more checks for anonymous sessions (sessions without a userId).
     if ((session.identityId && session.identityId !== identityId) ||
         (session.grainId !== grainId)) {
-      var e = new Meteor.Error(500, "Duplicate SessionId");
+      const e = new Meteor.Error(500, "Duplicate SessionId");
       console.error(e);
       throw e;
     } else {
@@ -326,7 +326,7 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
     session.hashedToken = apiToken._id;
   } else {
     // Must be old-style sharing, i.e. !grain.private.
-  }
+  } // jscs:ignore disallowEmptyBlocks
 
   Sessions.insert(session);
 

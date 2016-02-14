@@ -1,3 +1,13 @@
+### v0.144 (2016-02-13)
+- Initial version of Picker Powerbox implemented. A grain can now prompt the user to choose one of their other grains to share, and then the requesting grain can present that grain to other users. This could be used e.g. to share securely through a chat room or message board. Look for apps to start using this soon.
+- When app search gives no results, we now suggest the user try the app market.
+- HTTP headers `If-Match: *` and `If-None-Match: *` are now correctly passed through to the app.
+- Added tooltips to all topbar items.
+- The "share access" button now works in incognito mode (and suggests copy/pasting the link).
+- Significant internal refactoring: Now using more ES6 features, and using `box-sizing: border-box` everywhere.
+- Self-hosting: We now show an explanatory error message in the admin panel if `WILDCARD_HOST` is misconfigured, which we've found is a common mistake.
+- Oasis: Fixed bug where grains could get stuck at "loading" spinner forever.
+
 ### v0.143 (2016-02-07) [bugfixes]
 - Added support for HTTP PATCH method.
 - Fixed inability to revoke some types of shares in the "who has access" dialog.

@@ -20,6 +20,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use(["check", "tracker", "underscore", "mongo"], "client");
   api.use(["sandstorm-db"], ["client", "server"]);
   api.addFiles(["contacts-client.js"], "client");

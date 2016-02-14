@@ -15,35 +15,34 @@
 // limitations under the License.
 
 Meteor.publish("contactProfiles", function () {
-  var db = this.connection.sandstormDb;
-  var self = this;
+  const db = this.connection.sandstormDb;
+  const _this = this;
 
   // We maintain a map from identity IDs to live query handles that track profile changes.
-  var contactIdentities = {};
+  const contactIdentities = {};
 
-  var self = this;
   function addIdentityOfContact(contact) {
     if (!(contact.identityId in contactIdentities)) {
-      var user = Meteor.users.findOne({ _id: contact.identityId });
+      const user = Meteor.users.findOne({ _id: contact.identityId });
       if (user) {
         SandstormDb.fillInProfileDefaults(user);
         SandstormDb.fillInIntrinsicName(user);
-        var filteredUser = _.pick(user, "_id", "profile");
-        self.added("contactProfiles", user._id, filteredUser);
+        const filteredUser = _.pick(user, "_id", "profile");
+        _this.added("contactProfiles", user._id, filteredUser);
       }
 
       contactIdentities[contact.identityId] =
         Meteor.users.find({ _id: contact.identityId }, { fields: { profile: 1 } }).observeChanges({
           changed: function (id, fields) {
-            self.changed("contactProfiles", id, fields);
+            _this.changed("contactProfiles", id, fields);
           },
         });
     }
   }
 
-  var cursor = db.collections.contacts.find({ ownerId: this.userId });
+  const cursor = db.collections.contacts.find({ ownerId: this.userId });
 
-  var handle = cursor.observe({
+  const handle = cursor.observe({
     added: function (contact) {
       addIdentityOfContact(contact);
     },
@@ -53,7 +52,7 @@ Meteor.publish("contactProfiles", function () {
     },
 
     removed: function (contact) {
-      self.removed("contactProfiles", contact.identityId);
+      _this.removed("contactProfiles", contact.identityId);
       contactIdentities[contact.identityId].stop();
       delete contactIdentities[contact.identityId];
     },

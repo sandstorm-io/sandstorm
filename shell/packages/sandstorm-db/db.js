@@ -19,7 +19,7 @@
 // Useful for debugging: Set the env variable LOG_MONGO_QUERIES to have the server write every
 // query it makes, so you can see if it's doing queries too often, etc.
 if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
-  var oldFind = Mongo.Collection.prototype.find;
+  const oldFind = Mongo.Collection.prototype.find;
   Mongo.Collection.prototype.find = function () {
     console.log(this._prefix, arguments);
     return oldFind.apply(this, arguments);
@@ -585,7 +585,7 @@ if (Meteor.isServer) {
 isDemoUser = function () {
   // Returns true if this is a demo user.
 
-  var user = Meteor.user();
+  const user = Meteor.user();
   if (user && user.expires) {
     return true;
   } else {
@@ -596,7 +596,7 @@ isDemoUser = function () {
 isSignedUp = function () {
   // Returns true if the user has presented an invite key.
 
-  var user = Meteor.user();
+  const user = Meteor.user();
 
   if (!user) return false;  // not signed in
 
@@ -612,7 +612,7 @@ isSignedUp = function () {
 };
 
 isSignedUpOrDemo = function () {
-  var user = Meteor.user();
+  const user = Meteor.user();
 
   if (!user) return false;  // not signed in
 
@@ -627,7 +627,12 @@ isSignedUpOrDemo = function () {
   return false;
 };
 
-var calculateReferralBonus = function (user) {
+const countReferrals = function (user) {
+  const referredIdentityIds = user.referredIdentityIds;
+  return (referredIdentityIds && referredIdentityIds.length || 0);
+};
+
+const calculateReferralBonus = function (user) {
   // This function returns an object of the form:
   //
   // - {grains: 0, storage: 0}
@@ -639,18 +644,18 @@ var calculateReferralBonus = function (user) {
   //   payments-specific) and aggregating into `planBonus`.
 
   // Authorization note: Only call this if accountId is the current user!
-  var isPaid = (user.plan && user.plan !== "free");
+  const isPaid = (user.plan && user.plan !== "free");
 
   successfulReferralsCount = countReferrals(user);
   if (isPaid) {
-    var maxPaidStorageBonus = 30 * 1e9;
+    const maxPaidStorageBonus = 30 * 1e9;
     return { grains: 0,
             storage: Math.min(
               successfulReferralsCount * 2 * 1e9,
               maxPaidStorageBonus), };
   } else {
-    var maxFreeStorageBonus = 2 * 1e9;
-    var bonus = {
+    const maxFreeStorageBonus = 2 * 1e9;
+    const bonus = {
       storage: Math.min(
         successfulReferralsCount * 50 * 1e6,
         maxFreeStorageBonus),
@@ -665,16 +670,11 @@ var calculateReferralBonus = function (user) {
   }
 };
 
-var countReferrals = function (user) {
-  var referredIdentityIds = user.referredIdentityIds;
-  return (referredIdentityIds && referredIdentityIds.length || 0);
-};
-
 getUserQuota = function (user) {
-  var plan = Plans.findOne(user.plan || "free");
-  var referralBonus = calculateReferralBonus(user);
-  var bonus = user.planBonus || {};
-  var userQuota = {
+  const plan = Plans.findOne(user.plan || "free");
+  const referralBonus = calculateReferralBonus(user);
+  const bonus = user.planBonus || {};
+  const userQuota = {
     storage: plan.storage + referralBonus.storage + (bonus.storage || 0),
     grains: plan.grains + referralBonus.grains + (bonus.grains || 0),
     compute: plan.compute + (bonus.compute || 0),
@@ -691,9 +691,9 @@ isUserOverQuota = function (user) {
 
   if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
 
-  var plan = getUserQuota(user);
+  const plan = getUserQuota(user);
   if (plan.grains < Infinity) {
-    var count = Grains.find({ userId: user._id }, { fields: {}, limit: plan.grains }).count();
+    const count = Grains.find({ userId: user._id }, { fields: {}, limit: plan.grains }).count();
     if (count >= plan.grains) return "outOfGrains";
   }
 
@@ -708,11 +708,11 @@ isUserExcessivelyOverQuota = function (user) {
 
   if (!Meteor.settings.public.quotaEnabled || user.isAdmin) return false;
 
-  var quota = getUserQuota(user);
+  const quota = getUserQuota(user);
 
   // quota.grains = Infinity means unlimited grains. IEEE754 defines Infinity == Infinity.
   if (quota.grains < Infinity) {
-    var count = Grains.find({ userId: user._id }, { fields: {}, limit: quota.grains * 2 }).count();
+    const count = Grains.find({ userId: user._id }, { fields: {}, limit: quota.grains * 2 }).count();
     if (count >= quota.grains * 2) return "outOfGrains";
   }
 
@@ -722,7 +722,7 @@ isUserExcessivelyOverQuota = function (user) {
 isAdmin = function () {
   // Returns true if the user is the administrator.
 
-  var user = Meteor.user();
+  const user = Meteor.user();
   if (user && user.isAdmin) {
     return true;
   } else {
@@ -733,7 +733,7 @@ isAdmin = function () {
 isAdminById = function (id) {
   // Returns true if the user's id is the administrator.
 
-  var user = Meteor.users.findOne({ _id: id }, { fields: { isAdmin: 1 } });
+  const user = Meteor.users.findOne({ _id: id }, { fields: { isAdmin: 1 } });
   if (user && user.isAdmin) {
     return true;
   } else {
@@ -746,7 +746,7 @@ findAdminUserForToken = function (token) {
     return;
   }
 
-  var requirements = token.requirements.filter(function (requirement) {
+  const requirements = token.requirements.filter(function (requirement) {
     return "userIsAdmin" in requirement;
   });
 
@@ -761,7 +761,7 @@ findAdminUserForToken = function (token) {
   return requirements[0].userIsAdmin;
 };
 
-var wildcardHost = Meteor.settings.public.wildcardHost.toLowerCase().split("*");
+const wildcardHost = Meteor.settings.public.wildcardHost.toLowerCase().split("*");
 
 if (wildcardHost.length != 2) {
   throw new Error("Wildcard host must contain exactly one asterisk.");
@@ -770,18 +770,16 @@ if (wildcardHost.length != 2) {
 matchWildcardHost = function (host) {
   // See if the hostname is a member of our wildcard. If so, extract the ID.
 
-  var prefix = wildcardHost[0];
-  var suffix = wildcardHost[1];
-
   // We remove everything after the first ":" character so that our
   // comparison logic ignores port numbers.
-  suffix = suffix.split(":")[0];
-  host = host.split(":")[0];
+  const prefix = wildcardHost[0];
+  const suffix = wildcardHost[1].split(":")[0];
+  const hostSansPort = host.split(":")[0];
 
-  if (host.lastIndexOf(prefix, 0) >= 0 &&
-      host.indexOf(suffix, -suffix.length) >= 0 &&
-      host.length >= prefix.length + suffix.length) {
-    var id = host.slice(prefix.length, -suffix.length);
+  if (hostSansPort.lastIndexOf(prefix, 0) >= 0 &&
+      hostSansPort.indexOf(suffix, -suffix.length) >= 0 &&
+      hostSansPort.length >= prefix.length + suffix.length) {
+    const id = hostSansPort.slice(prefix.length, -suffix.length);
     if (id.match(/^[-a-z0-9]*$/)) {
       return id;
     }
@@ -795,7 +793,7 @@ makeWildcardHost = function (id) {
 };
 
 if (Meteor.isServer) {
-  var Url = Npm.require("url");
+  const Url = Npm.require("url");
   getWildcardOrigin = function () {
     // The wildcard URL can be something like "foo-*-bar.example.com", but sometimes when we're
     // trying to specify a pattern matching hostnames (say, a Content-Security-Policy directive),
@@ -804,9 +802,9 @@ if (Meteor.isServer) {
     // really do. We also add the protocol to the front (again, that's what CSP wants).
 
     // TODO(cleanup): `protocol` is computed in other files, like proxy.js. Put it somewhere common.
-    var protocol = Url.parse(process.env.ROOT_URL).protocol;
+    const protocol = Url.parse(process.env.ROOT_URL).protocol;
 
-    var dotPos = wildcardHost[1].indexOf(".");
+    const dotPos = wildcardHost[1].indexOf(".");
     if (dotPos < 0) {
       return protocol + "//*";
     } else {
@@ -816,7 +814,7 @@ if (Meteor.isServer) {
 }
 
 allowDevAccounts = function () {
-  var setting = Settings.findOne({ _id: "devAccounts" });
+  const setting = Settings.findOne({ _id: "devAccounts" });
   if (setting) {
     return setting.value;
   } else {
@@ -912,7 +910,7 @@ _.extend(SandstormDb.prototype, {
 
   getIdentity: function getIdentity(identityId) {
     check(identityId, String);
-    var identity = Meteor.users.findOne({ _id: identityId });
+    const identity = Meteor.users.findOne({ _id: identityId });
     if (identity) {
       SandstormDb.fillInProfileDefaults(identity);
       SandstormDb.fillInIntrinsicName(identity);
@@ -927,7 +925,7 @@ _.extend(SandstormDb.prototype, {
 
     if (userId === identityId) return true;
 
-    var user = Meteor.users.findOne(userId);
+    const user = Meteor.users.findOne(userId);
     return SandstormDb.getUserIdentityIds(user).indexOf(identityId) != -1;
   },
 
@@ -947,7 +945,7 @@ _.extend(SandstormDb.prototype, {
 
   userApiTokens: function userApiTokens(userId) {
     check(userId, Match.OneOf(String, undefined, null));
-    var identityIds = SandstormDb.getUserIdentityIds(this.getUser(userId));
+    const identityIds = SandstormDb.getUserIdentityIds(this.getUser(userId));
     return this.collections.apiTokens.find({ "owner.user.identityId": { $in: identityIds } });
   },
 
@@ -968,13 +966,13 @@ _.extend(SandstormDb.prototype, {
   },
 
   getDenormalizedGrainInfo: function getDenormalizedGrainInfo(grainId) {
-    var grain = this.getGrain(grainId);
-    var pkg = this.collections.packages.findOne(grain.packageId);
-    var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: "" };
-    var grainInfo = { appTitle: appTitle };
+    const grain = this.getGrain(grainId);
+    const pkg = this.collections.packages.findOne(grain.packageId);
+    const appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: "" };
+    const grainInfo = { appTitle: appTitle };
 
     if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
-      var icons = pkg.manifest.metadata.icons;
+      const icons = pkg.manifest.metadata.icons;
       grainInfo.icon = icons.grain || icons.appGrid;
     }
 
@@ -988,7 +986,7 @@ _.extend(SandstormDb.prototype, {
 
   getPlan: function (id) {
     check(id, String);
-    var plan = Plans.findOne(id);
+    const plan = Plans.findOne(id);
     if (!plan) {
       throw new Error("no such plan: " + id);
     }
@@ -1001,7 +999,7 @@ _.extend(SandstormDb.prototype, {
   },
 
   getMyPlan: function () {
-    var user = Meteor.user();
+    const user = Meteor.user();
     return user && Plans.findOne(user.plan || "free");
   },
 
@@ -1024,7 +1022,7 @@ _.extend(SandstormDb.prototype, {
         return {
           grains: Grains.find({ userId: user._id }).count(),
           storage: user.storageUsage || 0,
-          compute: 0   // not tracked yet
+          compute: 0,  // not tracked yet
         };
       }
     } else {
@@ -1035,18 +1033,18 @@ _.extend(SandstormDb.prototype, {
   isUninvitedFreeUser: function () {
     if (!Meteor.settings.public.allowUninvited) return false;
 
-    var user = Meteor.user();
+    const user = Meteor.user();
     return user && !user.expires && (!user.plan || user.plan === "free");
   },
 
   getSetting: function (name) {
-    var setting = Settings.findOne(name);
+    const setting = Settings.findOne(name);
     return setting && setting.value;
   },
 
   addUserActions: function (packageId) {
     //TODO(cleanup): implement this with meteor methods rather than client-side inserts/removes.
-    var pack = Packages.findOne(packageId);
+    const pack = Packages.findOne(packageId);
     if (pack) {
       // Remove old versions.
       UserActions.find({ userId: Meteor.userId(), appId: pack.appId })
@@ -1055,11 +1053,11 @@ _.extend(SandstormDb.prototype, {
       });
 
       // Install new.
-      var actions = pack.manifest.actions;
-      for (i in actions) {
-        var action = actions[i];
+      const actions = pack.manifest.actions;
+      for (const i in actions) {
+        const action = actions[i];
         if ("none" in action.input) {
-          var userAction = {
+          const userAction = {
             userId: Meteor.userId(),
             packageId: pack._id,
             appId: pack.appId,
@@ -1073,7 +1071,7 @@ _.extend(SandstormDb.prototype, {
           UserActions.insert(userAction);
         } else {
           // TODO(someday):  Implement actions with capability inputs.
-        }
+        } //jscs:ignore disallowEmptyBlocks
       }
 
       Meteor.call("deleteUnusedPackages", pack.appId);
@@ -1100,28 +1098,28 @@ _.extend(SandstormDb.prototype, {
   },
 
   getServerTitle: function () {
-    var setting = Settings.findOne({ _id: "serverTitle" });
+    const setting = Settings.findOne({ _id: "serverTitle" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getReturnAddress: function () {
-    var setting = Settings.findOne({ _id: "returnAddress" });
+    const setting = Settings.findOne({ _id: "returnAddress" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 });
 
-var appNameFromPackage = function (packageObj) {
+const appNameFromPackage = function (packageObj) {
   // This function takes a Package object from Mongo and returns an
   // app title.
-  var manifest = packageObj.manifest;
+  const manifest = packageObj.manifest;
   if (!manifest) return packageObj.appId || packageObj._id || "unknown";
-  var action = manifest.actions[0];
+  const action = manifest.actions[0];
   appName = (manifest.appTitle && manifest.appTitle.defaultText) ||
     appNameFromActionName(action.title.defaultText);
   return appName;
 };
 
-var appNameFromActionName = function (name) {
+const appNameFromActionName = function (name) {
   // Hack: Historically we only had action titles, like "New Etherpad Document", not app
   //   titles. But for this UI we want app titles. As a transitionary measure, try to
   //   derive the app title from the action title.
@@ -1137,7 +1135,7 @@ var appNameFromActionName = function (name) {
   if (name.lastIndexOf("Hacker CMS", 0) === 0) {
     name = "Hacker CMS";
   } else {
-    var space = name.indexOf(" ");
+    const space = name.indexOf(" ");
     if (space > 0) {
       name = name.slice(0, space);
     }
@@ -1146,13 +1144,13 @@ var appNameFromActionName = function (name) {
   return name;
 };
 
-var appShortDescriptionFromPackage = function (pkg) {
+const appShortDescriptionFromPackage = function (pkg) {
   return pkg && pkg.manifest && pkg.manifest.metadata &&
          pkg.manifest.metadata.shortDescription &&
          pkg.manifest.metadata.shortDescription.defaultText;
 };
 
-var nounPhraseForActionAndAppTitle = function (action, appTitle) {
+const nounPhraseForActionAndAppTitle = function (action, appTitle) {
   // A hack to deal with legacy apps not including fields in their manifests.
   // I look forward to the day I can remove most of this code.
   // Attempt to figure out the appropriate noun that this action will create.
@@ -1160,13 +1158,13 @@ var nounPhraseForActionAndAppTitle = function (action, appTitle) {
   if (action.nounPhrase) return action.nounPhrase.defaultText;
   // Otherwise, try to guess one from the structure of the action title field
   if (action.title && action.title.defaultText) {
-    var text = action.title.defaultText;
+    const text = action.title.defaultText;
     // Strip a leading "New "
     if (text.lastIndexOf("New ", 0) === 0) {
-      var candidate = text.slice(4);
+      const candidate = text.slice(4);
       // Strip a leading appname too, if provided
       if (candidate.lastIndexOf(appTitle, 0) === 0) {
-        var newCandidate = candidate.slice(appTitle.length);
+        const newCandidate = candidate.slice(appTitle.length);
         // Unless that leaves you with no noun, in which case, use "grain"
         if (newCandidate.length > 0) {
           return newCandidate.toLowerCase();
@@ -1195,13 +1193,13 @@ _.extend(SandstormDb, {
 });
 
 if (Meteor.isServer) {
-  var Crypto = Npm.require("crypto");
-  var ContentType = Npm.require("content-type");
-  var Zlib = Npm.require("zlib");
+  const Crypto = Npm.require("crypto");
+  const ContentType = Npm.require("content-type");
+  const Zlib = Npm.require("zlib");
 
-  var replicaNumber = Meteor.settings.replicaNumber || 0;
+  const replicaNumber = Meteor.settings.replicaNumber || 0;
 
-  var computeStagger = function (n) {
+  const computeStagger = function (n) {
     // Compute a fraction in the range [0, 1) such that, for any natural number k, the values
     // of computeStagger(n) for all n in [1, 2^k) are uniformly distributed between 0 and 1.
     // The sequence looks like:
@@ -1211,13 +1209,13 @@ if (Meteor.isServer) {
     // Notice that this allows us to compute a stagger which is independent of the number of
     // front-end replicas present; we can add more replicas to the end without affecting how the
     // earlier ones schedule their events.
-    var denom = 1;
+    let denom = 1;
     while (denom <= n) denom <<= 1;
-    var num = n * 2 - denom + 1;
+    const num = n * 2 - denom + 1;
     return num / denom;
   };
 
-  var stagger = computeStagger(replicaNumber);
+  const stagger = computeStagger(replicaNumber);
 
   SandstormDb.periodicCleanup = function (intervalMs, callback) {
     // Register a database cleanup function than should run periodically, roughly once every
@@ -1237,7 +1235,7 @@ if (Meteor.isServer) {
 
     // Schedule first cleanup to happen at the next intervalMs interval from the epoch, so that
     // the schedule is independent of the exact startup time.
-    var first = intervalMs - Date.now() % intervalMs;
+    let first = intervalMs - Date.now() % intervalMs;
 
     // Stagger cleanups across replicas so that we don't have all replicas trying to clean the
     // same data at the same time.
@@ -1253,16 +1251,16 @@ if (Meteor.isServer) {
   };
 
   // TODO(cleanup): Node 0.12 has a `gzipSync` but 0.10 (which Meteor still uses) does not.
-  var gzipSync = Meteor.wrapAsync(Zlib.gzip, Zlib);
+  const gzipSync = Meteor.wrapAsync(Zlib.gzip, Zlib);
 
-  var BufferSmallerThan = function (limit) {
+  const BufferSmallerThan = function (limit) {
     return Match.Where(function (buf) {
       check(buf, Buffer);
       return buf.length < limit;
     });
   };
 
-  var DatabaseId = Match.Where(function (s) {
+  const DatabaseId = Match.Where(function (s) {
     check(s, String);
     return !!s.match(/^[a-zA-Z0-9_]+$/);
   });
@@ -1285,12 +1283,12 @@ if (Meteor.isServer) {
     // Validate content type.
     metadata.mimeType = ContentType.format(ContentType.parse(metadata.mimeType));
 
-    var hasher = Crypto.createHash("sha256");
+    const hasher = Crypto.createHash("sha256");
     hasher.update(metadata.mimeType + "\n" + metadata.encoding + "\n", "utf8");
     hasher.update(content);
-    var hash = hasher.digest("base64");
+    const hash = hasher.digest("base64");
 
-    var existing = StaticAssets.findAndModify({
+    const existing = StaticAssets.findAndModify({
       query: { hash: hash, refcount: { $gte: 1 } },
       update: { $inc: { refcount: 1 } },
       fields: { _id: 1, refcount: 1 },
@@ -1317,7 +1315,7 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    var existing = StaticAssets.findAndModify({
+    const existing = StaticAssets.findAndModify({
       query: { hash: hash },
       update: { $inc: { refcount: 1 } },
       fields: { _id: 1, refcount: 1 },
@@ -1336,7 +1334,7 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    var existing = StaticAssets.findAndModify({
+    const existing = StaticAssets.findAndModify({
       query: { _id: id },
       update: { $inc: { refcount: -1 } },
       fields: { _id: 1, refcount: 1 },
@@ -1354,7 +1352,7 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    var asset = StaticAssets.findOne(id, { fields: { _id: 0, mimeType: 1, encoding: 1, content: 1 } });
+    const asset = StaticAssets.findOne(id, { fields: { _id: 0, mimeType: 1, encoding: 1, content: 1 } });
     if (asset) {
       // TODO(perf): Mongo converts buffers to something else. Figure out a way to avoid a copy
       //   here.
@@ -1379,7 +1377,7 @@ if (Meteor.isServer) {
 
     check(id, String);
 
-    var upload = AssetUploadTokens.findAndModify({
+    const upload = AssetUploadTokens.findAndModify({
       query: { _id: id },
       remove: true,
     });
@@ -1398,7 +1396,7 @@ if (Meteor.isServer) {
   // Cleanup tokens every hour.
   SandstormDb.periodicCleanup(3600000, cleanupExpiredAssetUploads);
 
-  var packageCache = {};
+  const packageCache = {};
   // Package info is immutable. Let's cache to save on mongo queries.
 
   SandstormDb.prototype.getPackage = function (packageId) {
@@ -1410,7 +1408,7 @@ if (Meteor.isServer) {
       return packageCache[packageId];
     }
 
-    var pkg = Packages.findOne(packageId);
+    const pkg = Packages.findOne(packageId);
     if (pkg && pkg.status === "ready") {
       packageCache[packageId] = pkg;
     }
@@ -1420,12 +1418,12 @@ if (Meteor.isServer) {
 
   SandstormDb.prototype.sendAppUpdateNotifications = function (appId, packageId, name,
                                                                versionNumber, marketingVersion) {
-    var db = this;
-    var actions = db.collections.userActions.find({ appId: appId, appVersion: { $lt: versionNumber } },
+    const _this = this;
+    const actions = _this.collections.userActions.find({ appId: appId, appVersion: { $lt: versionNumber } },
       { fields: { userId: 1 } });
     actions.forEach(function (action) {
-      var userId = action.userId;
-      var updater = {
+      const userId = action.userId;
+      const updater = {
         userId: userId,
         timestamp: new Date(),
         isUnread: true,
@@ -1439,10 +1437,10 @@ if (Meteor.isServer) {
         name: name,
         version: versionNumber,
       };
-      db.collections.notifications.upsert({ userId: userId }, { $set: updater });
+      _this.collections.notifications.upsert({ userId: userId }, { $set: updater });
     });
 
-    db.collections.appIndex.update({ _id: appId }, { $set: { hasSentNotifications: true } });
+    _this.collections.appIndex.update({ _id: appId }, { $set: { hasSentNotifications: true } });
 
     // In the case where we replaced a previous notification and that was the only reference to the
     // package, we need to clean it up
@@ -1456,7 +1454,7 @@ if (Meteor.isServer) {
     check(version, Match.Integer);
     check(packageId, String);
 
-    var selector = {
+    const selector = {
       userId: Meteor.userId(),
       appId: appId,
       appVersion: { $lte: version },
@@ -1475,7 +1473,12 @@ if (Meteor.isServer) {
   SandstormDb.prototype.startInstall = function (packageId, url, retryFailed, isAutoUpdated) {
     // Mark package for possible installation.
 
-    var fields = { status: "download", progress: 0, url: url, isAutoUpdated: !!isAutoUpdated };
+    const fields = {
+      status: "download",
+      progress: 0,
+      url: url,
+      isAutoUpdated: !!isAutoUpdated,
+    };
 
     if (retryFailed) {
       Packages.update({ _id: packageId, status: "failed" }, { $set: fields });
@@ -1489,7 +1492,7 @@ if (Meteor.isServer) {
     }
   };
 
-  var ValidKeyFingerprint = Match.Where(function (keyFingerprint) {
+  const ValidKeyFingerprint = Match.Where(function (keyFingerprint) {
     check(keyFingerprint, String);
     return !!keyFingerprint.match(/^[0-9A-F]{40}$/);
   });
@@ -1516,19 +1519,21 @@ if (Meteor.isServer) {
         return;
       }
 
-      var profile = (keybaseResponse.data.them || [])[0];
+      const profile = (keybaseResponse.data.them || [])[0];
 
       if (profile) {
-        var record = {
+        // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
+        const record = {
           displayName: (profile.profile || {}).full_name,
           handle: (profile.basics || {}).username,
           proofs: (profile.proofs_summary || {}).all || [],
         };
+        // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
 
         record.proofs.forEach(function (proof) {
           // Remove potentially Mongo-incompatible stuff. (Currently Keybase returns nothing that
           // this would filter.)
-          for (var field in proof) {
+          for (let field in proof) {
             // Don't allow field names containing '.' or '$'. Also don't allow sub-objects mainly
             // because I'm too lazy to check the field names recursively (and Keybase doesn't
             // return any objects anyway).
@@ -1561,7 +1566,7 @@ if (Meteor.isServer) {
     // If there is an *unused* account that has `identityId` as a login identity, deletes it.
 
     check(identityId, String);
-    var account = Meteor.users.findOne({ "loginIdentities.id": identityId });
+    const account = Meteor.users.findOne({ "loginIdentities.id": identityId });
     if (account &&
         account.loginIdentities.length == 1 &&
         account.nonloginIdentities.length == 0 &&
@@ -1577,9 +1582,9 @@ if (Meteor.isServer) {
 
   Meteor.publish("keybaseProfile", function (keyFingerprint) {
     check(keyFingerprint, ValidKeyFingerprint);
-    var db = this.connection.sandstormDb;
+    const db = this.connection.sandstormDb;
 
-    var cursor = db.collections.keybaseProfiles.find(keyFingerprint);
+    const cursor = db.collections.keybaseProfiles.find(keyFingerprint);
     if (cursor.count() === 0) {
       // Fire off async update.
       db.updateKeybaseProfileAsync(keyFingerprint);
@@ -1590,8 +1595,8 @@ if (Meteor.isServer) {
 
   Meteor.publish("appIndex", function (appId) {
     check(appId, String);
-    var db = this.connection.sandstormDb;
-    var cursor = db.collections.appIndex.find({ _id: appId });
+    const db = this.connection.sandstormDb;
+    const cursor = db.collections.appIndex.find({ _id: appId });
     return cursor;
   });
 
@@ -1599,8 +1604,7 @@ if (Meteor.isServer) {
     // Users should be able to see packages that are either:
     // 1. referenced by one of their userActions
     // 2. referenced by one of their grains
-    var self = this;
-    var db = this.connection.sandstormDb;
+    const db = this.connection.sandstormDb;
 
     // Note that package information, once it is in the database, is static. There's no need to
     // reactively subscribe to changes to a package since they don't change. It's also unecessary
@@ -1612,16 +1616,16 @@ if (Meteor.isServer) {
     //
     // Alternatively, we could subscribe to each individual package query, but this would waste
     // lots of server-side resources watching for events that will never happen or don't matter.
-    var hasPackage = {};
-    var refPackage = function (packageId) {
+    const hasPackage = {};
+    const refPackage = (packageId) => {
       // Ignore dev apps.
       if (packageId.lastIndexOf("dev-", 0) === 0) return;
 
       if (!hasPackage[packageId]) {
         hasPackage[packageId] = true;
-        var pkg = db.getPackage(packageId);
+        const pkg = db.getPackage(packageId);
         if (pkg) {
-          self.added("packages", packageId, pkg);
+          this.added("packages", packageId, pkg);
         } else {
           console.error(
               "shouldn't happen: missing package referenced by user's stuff:", packageId);
@@ -1630,8 +1634,8 @@ if (Meteor.isServer) {
     };
 
     // package source 1: packages referred to by actions
-    var actions = db.userActions(this.userId);
-    var actionsHandle = actions.observe({
+    const actions = db.userActions(this.userId);
+    const actionsHandle = actions.observe({
       added: function (newAction) {
         refPackage(newAction.packageId);
       },
@@ -1642,8 +1646,8 @@ if (Meteor.isServer) {
     });
 
     // package source 2: packages referred to by grains directly
-    var grains = db.userGrains(this.userId);
-    var grainsHandle = grains.observe({
+    const grains = db.userGrains(this.userId);
+    const grainsHandle = grains.observe({
       added: function (newGrain) {
         refPackage(newGrain.packageId);
       },

@@ -14,19 +14,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var Crypto = Npm.require("crypto");
-var Future = Npm.require("fibers/future");
+const Crypto = Npm.require("crypto");
+const Future = Npm.require("fibers/future");
 
 userPictureUrl = function (user) {
   if (user.services && !(user.profile && user.profile.picture)) {
     // Try to determine user's avatar URL from login service.
 
-    var google = user.services.google;
+    const google = user.services.google;
     if (google && google.picture) {
       return google.picture;
     }
 
-    var github = user.services.github;
+    const github = user.services.github;
     if (github && github.id) {
       return "https://avatars.githubusercontent.com/u/" + github.id;
     }
@@ -40,12 +40,12 @@ userPictureUrl = function (user) {
 
 fetchPicture = function (url) {
   try {
-    var result = HTTP.get(url, {
+    const result = HTTP.get(url, {
       npmRequestOptions: { encoding: null },
       timeout: 5000,
     });
 
-    var metadata = {};
+    const metadata = {};
 
     metadata.mimeType = result.headers["content-type"];
     if (metadata.mimeType.lastIndexOf("image/png", 0) === -1 &&
@@ -53,7 +53,7 @@ fetchPicture = function (url) {
       throw new Error("unexpected Content-Type:", metadata.mimeType);
     }
 
-    var enc = result.headers["content-encoding"];
+    const enc = result.headers["content-encoding"];
     if (enc && enc !== "identity") {
       metadata.encoding = enc;
     }
@@ -64,7 +64,7 @@ fetchPicture = function (url) {
   }
 };
 
-var ValidHandle = Match.Where(function (handle) {
+const ValidHandle = Match.Where(function (handle) {
   check(handle, String);
   return !!handle.match(/^[a-z_][a-z0-9_]*$/);
 });
@@ -116,15 +116,15 @@ Accounts.onCreateUser(function (options, user) {
   user.profile = _.pick(options.profile || {}, "name", "handle", "pronouns");
 
   // Try downloading avatar.
-  var url = userPictureUrl(user);
+  const url = userPictureUrl(user);
   if (url) {
-    var assetId = fetchPicture(url);
+    const assetId = fetchPicture(url);
     if (assetId) {
       user.profile.picture = assetId;
     }
   }
 
-  var serviceUserId;
+  let serviceUserId;
   if (user.services && user.services.dev) {
     check(user.services.dev, { name: String, isAdmin: Boolean, hasCompletedSignup: Boolean });
     serviceUserId = user.services.dev.name;

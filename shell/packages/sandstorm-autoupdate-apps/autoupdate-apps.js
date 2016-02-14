@@ -17,25 +17,26 @@
 SandstormAutoupdateApps = {};
 
 SandstormAutoupdateApps.updateAppIndex = function (db) {
-  var appUpdatesEnabledSetting = db.collections.settings.findOne({_id: "appUpdatesEnabled"});
+  var appUpdatesEnabledSetting = db.collections.settings.findOne({ _id: "appUpdatesEnabled" });
   var appUpdatesEnabled = appUpdatesEnabledSetting && appUpdatesEnabledSetting.value;
   if (!appUpdatesEnabled) {
     // It's much simpler to check appUpdatesEnabled here rather than reactively deactivate the
     // timer that triggers this call.
     return;
   }
-  var appIndexUrl = db.collections.settings.findOne({_id: "appIndexUrl"}).value;
+
+  var appIndexUrl = db.collections.settings.findOne({ _id: "appIndexUrl" }).value;
   var appIndex = db.collections.appIndex;
   var data = HTTP.get(appIndexUrl + "/apps/index.json").data;
   data.apps.forEach(function (app) {
     app._id = app.appId;
 
-    var oldApp = appIndex.findOne({_id: app.appId});
+    var oldApp = appIndex.findOne({ _id: app.appId });
     app.hasSentNotifications = false;
-    appIndex.upsert({_id: app._id}, app);
+    appIndex.upsert({ _id: app._id }, app);
     if ((!oldApp || app.versionNumber > oldApp.versionNumber) &&
-        db.collections.userActions.findOne({appId: app.appId})) {
-      var pack = db.collections.packages.findOne({_id: app.packageId});
+        db.collections.userActions.findOne({ appId: app.appId })) {
+      var pack = db.collections.packages.findOne({ _id: app.packageId });
       var url = appIndexUrl + "/packages/" + app.packageId;
       if (pack) {
         if (pack.status === "ready") {
@@ -48,8 +49,8 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
           }
         } else {
           var newPack = Packages.findAndModify({
-            query: {_id: app.packageId},
-            update: {$set: {isAutoUpdated: true}},
+            query: { _id: app.packageId },
+            update: { $set: { isAutoUpdated: true } },
           });
           if (newPack.status === "ready") {
             // The package was marked as ready before we applied isAutoUpdated=true. We should send
@@ -75,12 +76,12 @@ SandstormAutoupdateApps.updateAppIndex = function (db) {
 };
 
 Meteor.methods({
-  updateApps: function(appUpdates) {
+  updateApps: function (appUpdates) {
     var db = this.connection.sandstormDb;
     var backend = this.connection.sandstormBackend;
 
     _.forEach(appUpdates, function (val, appId) {
-      var pack = db.collections.packages.findOne({_id: val.packageId, appId: appId});
+      var pack = db.collections.packages.findOne({ _id: val.packageId, appId: appId });
       if (!pack || !pack.manifest) {
         console.error("Newer app not installed", val.name);
       } else {

@@ -1,6 +1,6 @@
 Package.describe({
   summary: "Sandstorm package that provides hooks to activate many Account services",
-  version: "0.1.0"
+  version: "0.1.0",
 });
 
 Package.onUse(function (api) {

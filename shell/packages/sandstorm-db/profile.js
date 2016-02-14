@@ -18,7 +18,7 @@ var makeIdenticon;
 var httpProtocol;
 
 if (Meteor.isServer) {
-  SandstormDb.ensureSubscriberHasIdentity = function(publishHandler, identityId) {
+  SandstormDb.ensureSubscriberHasIdentity = function (publishHandler, identityId) {
     // Helper for publish functions that need to restrict access based on whether the subscriber
     // has a given identity linked. Automatically stops the subscription if the user loses the
     // identity. Returns a boolean indicating whether the user initially has the identity.
@@ -28,28 +28,31 @@ if (Meteor.isServer) {
       return true;
     } else {
       var hasIdentityCursor =
-          Meteor.users.find({$or: [{_id: userId, "loginIdentities.id": identityId},
-                                   {_id: userId, "nonloginIdentities.id": identityId}]});
+          Meteor.users.find({ $or: [{ _id: userId, "loginIdentities.id": identityId },
+                                   { _id: userId, "nonloginIdentities.id": identityId },], });
       if (hasIdentityCursor.count() == 0) {
         publishHandler.stop();
         return false;
       }
-      var handle = hasIdentityCursor.observe({removed: function () { publishHandler.stop(); }});
+
+      var handle = hasIdentityCursor.observe({ removed: function () { publishHandler.stop(); } });
+
       publishHandler.onStop(function () { handle.stop(); });
+
       return true;
     }
-  }
+  };
 
   Meteor.publish("identityProfile", function (identityId) {
     check(identityId, String);
     if (!SandstormDb.ensureSubscriberHasIdentity(this, identityId)) return;
 
-    return Meteor.users.find({_id: identityId},
-      {fields: {
-        "profile":1,
-        "unverifiedEmail":1,
-        "expires": 1,
-        "createdAt": 1,
+    return Meteor.users.find({ _id: identityId },
+      { fields: {
+        profile:1,
+        unverifiedEmail:1,
+        expires: 1,
+        createdAt: 1,
 
         "services.dev.name":1,
 
@@ -66,7 +69,7 @@ if (Meteor.isServer) {
         "services.github.username":1,
 
         "services.email.email":1,
-      }});
+      }, });
   }),
 
   Meteor.publish("accountIdentities", function () {
@@ -75,21 +78,21 @@ if (Meteor.isServer) {
     if (!this.userId) return [];
 
     return Meteor.users.find(
-      {_id: this.userId},
-      {fields: {
-        "profile": 1,
-        "verifiedEmail": 1,
-        "loginIdentities": 1,
-        "nonloginIdentities": 1,
-        "expires": 1,
-        "primaryEmail": 1,
-      }});
+      { _id: this.userId },
+      { fields: {
+        profile: 1,
+        verifiedEmail: 1,
+        loginIdentities: 1,
+        nonloginIdentities: 1,
+        expires: 1,
+        primaryEmail: 1,
+      }, });
   });
 
   makeIdenticon = function (id) {
     // We only make identicons client-side.
     return undefined;
-  }
+  };
 
   var Url = Npm.require("url");
   httpProtocol = Url.parse(process.env.ROOT_URL).protocol;
@@ -115,12 +118,12 @@ if (Meteor.isServer) {
     var result = "data:image/png;base64," + data;
     identiconCache[id] = result;
     return result;
-  }
+  };
 
   httpProtocol = window.location.protocol;
 }
 
-var GENDERS = {male: "male", female: "female", neutral: "neutral", robot: "robot"};
+var GENDERS = { male: "male", female: "female", neutral: "neutral", robot: "robot" };
 
 function staticAssetUrl(id, staticHost) {
   if (id) {
@@ -145,12 +148,12 @@ function emailToHandle(email) {
   var parts = email.split("@");
   var base = filterHandle(parts[0].split("+")[0]);
 
-  var domain = (parts[1]||"").split(".");
+  var domain = (parts[1] || "").split(".");
   if (domain[domain.length - 1] === "name") {
     // Oh, a .name domain. Let's use
     base = filterHandle(domain.slice(0, domain.length - 1).join("."));
   } else if (_.contains(["me", "self", "contact", "admin", "administrator", "root", "info",
-                         "sandstorm", "sandstormio", "inbox", "indiegogo", "mail", "email"],
+                         "sandstorm", "sandstormio", "inbox", "indiegogo", "mail", "email",],
                          base)) {
     // This is probably an address at a vanity domain. Use the domain itself as the handle.
     base = filterHandle(domain[0]);
@@ -159,7 +162,7 @@ function emailToHandle(email) {
   return filterHandle(base);
 }
 
-SandstormDb.fillInProfileDefaults = function(user) {
+SandstormDb.fillInProfileDefaults = function (user) {
   var profile = user.profile;
   if (profile.service === "github") {
     profile.name = profile.name || user.services.github.username || "Name Unknown";
@@ -171,7 +174,7 @@ SandstormDb.fillInProfileDefaults = function(user) {
         filterHandle(profile.name);
     profile.pronoun = profile.pronoun || GENDERS[user.services.google.gender] || "neutral";
   } else if (profile.service === "email") {
-    var email = user.services.email.email
+    var email = user.services.email.email;
     profile.name = profile.name || email.split("@")[0];
     profile.handle = profile.handle || emailToHandle(email);
   } else if (profile.service === "dev") {
@@ -189,9 +192,9 @@ SandstormDb.fillInProfileDefaults = function(user) {
   }
 
   profile.pronoun = profile.pronoun || "neutral";
-}
+};
 
-SandstormDb.fillInIntrinsicName = function(user) {
+SandstormDb.fillInIntrinsicName = function (user) {
   var profile = user.profile;
   if (profile.service === "github") {
     profile.intrinsicName = user.services.github.username;
@@ -199,17 +202,17 @@ SandstormDb.fillInIntrinsicName = function(user) {
     profile.intrinsicName = user.services.google.name;
     user.privateIntrinsicName = user.services.google.email;
   } else if (profile.service === "email") {
-    profile.intrinsicName = user.services.email.email
+    profile.intrinsicName = user.services.email.email;
   } else if (profile.service === "dev") {
     profile.intrinsicName = user.services.dev.name;
   } else if (profile.service === "demo") {
-    profile.intrinsicName = "demo on " + user.createdAt.toISOString().substring(0,10);
+    profile.intrinsicName = "demo on " + user.createdAt.toISOString().substring(0, 10);
   } else {
     throw new Error("unrecognized identity service: ", profile.service);
   }
-}
+};
 
-SandstormDb.getVerifiedEmails = function(identity) {
+SandstormDb.getVerifiedEmails = function (identity) {
   if (identity.services.google && identity.services.google.email &&
       identity.services.google.verified_email) {
     return [identity.services.google.email];
@@ -217,41 +220,43 @@ SandstormDb.getVerifiedEmails = function(identity) {
     return [identity.services.email.email];
   } else if (identity.services.github && identity.services.github.emails) {
     return _.pluck(_.filter(identity.services.github.emails,
-                            function(email) { return email.verified; }),
+                            function (email) { return email.verified; }),
+
                    "email");
   }
-  return [];
-}
 
-SandstormDb.prototype.findIdentitiesByEmail = function(email) {
+  return [];
+};
+
+SandstormDb.prototype.findIdentitiesByEmail = function (email) {
   // Returns an array of identities which have the given email address as one of their verified
   // addresses.
 
   check(email, String);
 
-  return Meteor.users.find({$or: [
-    {"services.google.email": email},
-    {"services.email.email": email},
-    {"services.github.emails.email": email},
-  ]}).fetch().filter(function (identity) {
+  return Meteor.users.find({ $or: [
+    { "services.google.email": email },
+    { "services.email.email": email },
+    { "services.github.emails.email": email },
+  ], }).fetch().filter(function (identity) {
     // Verify that the email is verified, since our query doesn't technically do that.
     return SandstormDb.getVerifiedEmails(identity).indexOf(email) >= 0;
   });
-}
-
-SandstormDb.prototype.findAccountsByEmail = function(email) {
-  var identityIds = _.pluck(this.findIdentitiesByEmail(email), "_id");
-  return Meteor.users.find({$or: [
-    {"loginIdentities.id": {$in: identityIds}},
-    {"nonloginIdentities.id": {$in: identityIds}},
-  ]}).fetch();
 };
 
-SandstormDb.fillInPictureUrl = function(user) {
+SandstormDb.prototype.findAccountsByEmail = function (email) {
+  var identityIds = _.pluck(this.findIdentitiesByEmail(email), "_id");
+  return Meteor.users.find({ $or: [
+    { "loginIdentities.id": { $in: identityIds } },
+    { "nonloginIdentities.id": { $in: identityIds } },
+  ], }).fetch();
+};
+
+SandstormDb.fillInPictureUrl = function (user) {
   var staticHost = httpProtocol + "//" + makeWildcardHost("static");
   user.profile.pictureUrl = staticAssetUrl(user.profile.picture, staticHost) ||
     makeIdenticon(user._id);
-}
+};
 
 SandstormDb.getUserIdentityIds = function (user) {
   // Given an account user object, returns an array containing the ID of each identity linked to the
@@ -279,14 +284,15 @@ SandstormDb.getUserEmails = function (user) {
   unverifiedEmails = {};
 
   identityIds.forEach(function (id) {
-    var identity = Meteor.users.findOne({_id: id});
+    var identity = Meteor.users.findOne({ _id: id });
     if (identity && identity.services) {
-      SandstormDb.getVerifiedEmails(identity).forEach(function(verifiedEmail) {
+      SandstormDb.getVerifiedEmails(identity).forEach(function (verifiedEmail) {
         if (verifiedEmail) {
           verifiedEmails[verifiedEmail] = true;
         }
       });
     }
+
     if (identity && identity.unverifiedEmail) {
       unverifiedEmails[identity.unverifiedEmail] = true;
     }
@@ -294,30 +300,32 @@ SandstormDb.getUserEmails = function (user) {
 
   var result = [];
   _.keys(verifiedEmails).map(function (email) {
-    result.push({email: email,
+    result.push({ email: email,
                  verified: true,
-                 primary: email === user.primaryEmail});
+                 primary: email === user.primaryEmail, });
   });
+
   _.keys(unverifiedEmails).map(function (email) {
-    if (!(email in verifiedEmails)) { result.push({email: email, verified: false}) }
+    if (!(email in verifiedEmails)) { result.push({ email: email, verified: false }); }
   });
 
   // If `user.primaryEmail` is not among the verified emails, mark the first as primary.
   if (!(user.primaryEmail in verifiedEmails) && result.length > 0) {
     result[0].primary = true;
   }
-  return result;
-}
 
-SandstormDb.prototype.addContact = function addContact (ownerId, identityId) {
+  return result;
+};
+
+SandstormDb.prototype.addContact = function addContact(ownerId, identityId) {
   check(ownerId, String);
   check(identityId, String);
   var db = this;
   var profile = db.getIdentity(identityId).profile;
-  db.collections.contacts.upsert({ownerId: ownerId, identityId: identityId}, {
+  db.collections.contacts.upsert({ ownerId: ownerId, identityId: identityId }, {
     ownerId: ownerId,
     petname: profile && profile.name,
     created: new Date(),
     identityId: identityId,
   });
-}
+};

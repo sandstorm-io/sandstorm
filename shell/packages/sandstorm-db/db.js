@@ -23,7 +23,7 @@ if (Meteor.isServer && process.env.LOG_MONGO_QUERIES) {
   Mongo.Collection.prototype.find = function () {
     console.log(this._prefix, arguments);
     return oldFind.apply(this, arguments);
-  }
+  };
 }
 
 // Helper so that we don't have to if (Meteor.isServer) before declaring indexes.
@@ -120,16 +120,16 @@ if (Meteor.isServer) {
 //   stashedOldUser: A complete copy of this user from before the accounts/identities migration.
 //                   TODO(cleanup): Delete this field once we're sure it's safe to do so.
 
-Meteor.users.ensureIndexOnServer("services.google.email", {sparse: 1});
-Meteor.users.ensureIndexOnServer("services.github.emails.email", {sparse: 1});
-Meteor.users.ensureIndexOnServer("services.email.email", {unique: 1, sparse: 1});
-Meteor.users.ensureIndexOnServer("loginIdentities.id", {unique: 1, sparse: 1});
-Meteor.users.ensureIndexOnServer("nonloginIdentities.id", {sparse: 1});
-Meteor.users.ensureIndexOnServer("services.google.id", {unique: 1, sparse: 1});
-Meteor.users.ensureIndexOnServer("services.github.id", {unique: 1, sparse: 1});
+Meteor.users.ensureIndexOnServer("services.google.email", { sparse: 1 });
+Meteor.users.ensureIndexOnServer("services.github.emails.email", { sparse: 1 });
+Meteor.users.ensureIndexOnServer("services.email.email", { unique: 1, sparse: 1 });
+Meteor.users.ensureIndexOnServer("loginIdentities.id", { unique: 1, sparse: 1 });
+Meteor.users.ensureIndexOnServer("nonloginIdentities.id", { sparse: 1 });
+Meteor.users.ensureIndexOnServer("services.google.id", { unique: 1, sparse: 1 });
+Meteor.users.ensureIndexOnServer("services.github.id", { unique: 1, sparse: 1 });
 
 // TODO(cleanup): This index is obsolete; delete it.
-Meteor.users.ensureIndexOnServer("identities.id", {unique: 1, sparse: 1});
+Meteor.users.ensureIndexOnServer("identities.id", { unique: 1, sparse: 1 });
 
 Packages = new Mongo.Collection("packages");
 // Packages which are installed or downloading.
@@ -570,11 +570,11 @@ if (Meteor.isServer) {
 
     if (this.userId) {
       return [
-        Meteor.users.find({_id: this.userId},
-            {fields: {signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1,
+        Meteor.users.find({ _id: this.userId },
+            { fields: { signupKey: 1, isAdmin: 1, expires: 1, storageUsage: 1,
                       plan: 1, planBonus: 1, hasCompletedSignup: 1, experiments: 1,
-                      referredIdentityIds: 1}}),
-        Plans.find()
+                      referredIdentityIds: 1, }, }),
+        Plans.find(),
       ];
     } else {
       return [];
@@ -582,7 +582,7 @@ if (Meteor.isServer) {
   });
 }
 
-isDemoUser = function() {
+isDemoUser = function () {
   // Returns true if this is a demo user.
 
   var user = Meteor.user();
@@ -591,9 +591,9 @@ isDemoUser = function() {
   } else {
     return false;
   }
-}
+};
 
-isSignedUp = function() {
+isSignedUp = function () {
   // Returns true if the user has presented an invite key.
 
   var user = Meteor.user();
@@ -609,7 +609,7 @@ isSignedUp = function() {
   if (user.signupKey) return true;  // user is invited
 
   return false;
-}
+};
 
 isSignedUpOrDemo = function () {
   var user = Meteor.user();
@@ -625,9 +625,9 @@ isSignedUpOrDemo = function () {
   if (user.signupKey) return true;  // user is invited
 
   return false;
-}
+};
 
-var calculateReferralBonus = function(user) {
+var calculateReferralBonus = function (user) {
   // This function returns an object of the form:
   //
   // - {grains: 0, storage: 0}
@@ -644,30 +644,31 @@ var calculateReferralBonus = function(user) {
   successfulReferralsCount = countReferrals(user);
   if (isPaid) {
     var maxPaidStorageBonus = 30 * 1e9;
-    return {grains: 0,
+    return { grains: 0,
             storage: Math.min(
               successfulReferralsCount * 2 * 1e9,
-              maxPaidStorageBonus)};
+              maxPaidStorageBonus), };
   } else {
     var maxFreeStorageBonus = 2 * 1e9;
     var bonus = {
       storage: Math.min(
         successfulReferralsCount * 50 * 1e6,
-        maxFreeStorageBonus)
+        maxFreeStorageBonus),
     };
     if (successfulReferralsCount > 0) {
       bonus.grains = Infinity;
     } else {
       bonus.grains = 0;
     }
+
     return bonus;
   }
-}
+};
 
 var countReferrals = function (user) {
   var referredIdentityIds = user.referredIdentityIds;
   return (referredIdentityIds && referredIdentityIds.length || 0);
-}
+};
 
 getUserQuota = function (user) {
   var plan = Plans.findOne(user.plan || "free");
@@ -676,10 +677,10 @@ getUserQuota = function (user) {
   var userQuota = {
     storage: plan.storage + referralBonus.storage + (bonus.storage || 0),
     grains: plan.grains + referralBonus.grains + (bonus.grains || 0),
-    compute: plan.compute + (bonus.compute || 0)
+    compute: plan.compute + (bonus.compute || 0),
   };
   return userQuota;
-}
+};
 
 isUserOverQuota = function (user) {
   // Return false if user has quota space remaining, true if it is full. When this returns true,
@@ -692,12 +693,12 @@ isUserOverQuota = function (user) {
 
   var plan = getUserQuota(user);
   if (plan.grains < Infinity) {
-    var count = Grains.find({userId: user._id}, {fields: {}, limit: plan.grains}).count();
+    var count = Grains.find({ userId: user._id }, { fields: {}, limit: plan.grains }).count();
     if (count >= plan.grains) return "outOfGrains";
   }
 
   return plan && user.storageUsage && user.storageUsage >= plan.storage && "outOfStorage";
-}
+};
 
 isUserExcessivelyOverQuota = function (user) {
   // Return true if user is so far over quota that we should prevent their existing grains from
@@ -711,14 +712,14 @@ isUserExcessivelyOverQuota = function (user) {
 
   // quota.grains = Infinity means unlimited grains. IEEE754 defines Infinity == Infinity.
   if (quota.grains < Infinity) {
-    var count = Grains.find({userId: user._id}, {fields: {}, limit: quota.grains * 2}).count();
+    var count = Grains.find({ userId: user._id }, { fields: {}, limit: quota.grains * 2 }).count();
     if (count >= quota.grains * 2) return "outOfGrains";
   }
 
   return quota && user.storageUsage && user.storageUsage >= quota.storage * 1.2 && "outOfStorage";
-}
+};
 
-isAdmin = function() {
+isAdmin = function () {
   // Returns true if the user is the administrator.
 
   var user = Meteor.user();
@@ -727,23 +728,24 @@ isAdmin = function() {
   } else {
     return false;
   }
-}
+};
 
-isAdminById = function(id) {
+isAdminById = function (id) {
   // Returns true if the user's id is the administrator.
 
-  var user = Meteor.users.findOne({_id: id}, {fields: {isAdmin: 1}})
+  var user = Meteor.users.findOne({ _id: id }, { fields: { isAdmin: 1 } });
   if (user && user.isAdmin) {
     return true;
   } else {
     return false;
   }
-}
+};
 
 findAdminUserForToken = function (token) {
   if (!token.requirements) {
     return;
   }
+
   var requirements = token.requirements.filter(function (requirement) {
     return "userIsAdmin" in requirement;
   });
@@ -751,9 +753,11 @@ findAdminUserForToken = function (token) {
   if (requirements.length > 1) {
     return;
   }
+
   if (requirements.length === 0) {
     return;
   }
+
   return requirements[0].userIsAdmin;
 };
 
@@ -763,7 +767,7 @@ if (wildcardHost.length != 2) {
   throw new Error("Wildcard host must contain exactly one asterisk.");
 }
 
-matchWildcardHost = function(host) {
+matchWildcardHost = function (host) {
   // See if the hostname is a member of our wildcard. If so, extract the ID.
 
   var prefix = wildcardHost[0];
@@ -784,11 +788,11 @@ matchWildcardHost = function(host) {
   }
 
   return null;
-}
+};
 
 makeWildcardHost = function (id) {
   return wildcardHost[0] + id + wildcardHost[1];
-}
+};
 
 if (Meteor.isServer) {
   var Url = Npm.require("url");
@@ -808,11 +812,11 @@ if (Meteor.isServer) {
     } else {
       return protocol + "//*" + wildcardHost[1].slice(dotPos);
     }
-  }
+  };
 }
 
 allowDevAccounts = function () {
-  var setting = Settings.findOne({_id: "devAccounts"});
+  var setting = Settings.findOne({ _id: "devAccounts" });
   if (setting) {
     return setting.value;
   } else {
@@ -834,7 +838,7 @@ sendReferralProgramNotification = function (userId) {
 };
 
 roleAssignmentPattern = {
-  none : Match.Optional(null),
+  none: Match.Optional(null),
   allAccess: Match.Optional(null),
   roleId: Match.Optional(Match.Integer),
   addPermissions: Match.Optional([Boolean]),
@@ -899,16 +903,16 @@ if (Meteor.isServer) {
 // Below this point are newly-written or refactored functions.
 
 _.extend(SandstormDb.prototype, {
-  getUser: function getUser (userId) {
+  getUser: function getUser(userId) {
     check(userId, Match.OneOf(String, undefined, null));
     if (userId) {
       return Meteor.users.findOne(userId);
     }
   },
 
-  getIdentity: function getIdentity (identityId) {
+  getIdentity: function getIdentity(identityId) {
     check(identityId, String);
-    var identity = Meteor.users.findOne({_id: identityId});
+    var identity = Meteor.users.findOne({ _id: identityId });
     if (identity) {
       SandstormDb.fillInProfileDefaults(identity);
       SandstormDb.fillInIntrinsicName(identity);
@@ -927,46 +931,46 @@ _.extend(SandstormDb.prototype, {
     return SandstormDb.getUserIdentityIds(user).indexOf(identityId) != -1;
   },
 
-  userGrains: function userGrains (userId) {
+  userGrains: function userGrains(userId) {
     check(userId, Match.OneOf(String, undefined, null));
-    return this.collections.grains.find({userId: userId});
+    return this.collections.grains.find({ userId: userId });
   },
 
-  currentUserGrains: function currentUserGrains () {
+  currentUserGrains: function currentUserGrains() {
     return this.userGrains(Meteor.userId());
   },
 
-  getGrain: function getGrain (grainId) {
+  getGrain: function getGrain(grainId) {
     check(grainId, String);
     return this.collections.grains.findOne(grainId);
   },
 
-  userApiTokens: function userApiTokens (userId) {
+  userApiTokens: function userApiTokens(userId) {
     check(userId, Match.OneOf(String, undefined, null));
     var identityIds = SandstormDb.getUserIdentityIds(this.getUser(userId));
-    return this.collections.apiTokens.find({'owner.user.identityId': {$in: identityIds}});
+    return this.collections.apiTokens.find({ "owner.user.identityId": { $in: identityIds } });
   },
 
-  currentUserApiTokens: function currentUserApiTokens () {
+  currentUserApiTokens: function currentUserApiTokens() {
     return this.userApiTokens(Meteor.userId());
   },
 
-  userActions: function userActions (user) {
-    return this.collections.userActions.find({userId: user});
+  userActions: function userActions(user) {
+    return this.collections.userActions.find({ userId: user });
   },
 
-  currentUserActions: function currentUserActions () {
+  currentUserActions: function currentUserActions() {
     return this.userActions(Meteor.userId());
   },
 
-  iconSrcForPackage: function iconSrcForPackage (pkg, usage) {
+  iconSrcForPackage: function iconSrcForPackage(pkg, usage) {
     return Identicon.iconSrcForPackage(pkg, usage, this.makeWildcardHost("static"));
   },
 
   getDenormalizedGrainInfo: function getDenormalizedGrainInfo(grainId) {
     var grain = this.getGrain(grainId);
     var pkg = this.collections.packages.findOne(grain.packageId);
-    var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: ""};
+    var appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: "" };
     var grainInfo = { appTitle: appTitle };
 
     if (pkg && pkg.manifest && pkg.manifest.metadata && pkg.manifest.metadata.icons) {
@@ -988,11 +992,12 @@ _.extend(SandstormDb.prototype, {
     if (!plan) {
       throw new Error("no such plan: " + id);
     }
+
     return plan;
   },
 
   listPlans: function () {
-    return Plans.find({}, {sort: {price: 1}});
+    return Plans.find({}, { sort: { price: 1 } });
   },
 
   getMyPlan: function () {
@@ -1000,7 +1005,7 @@ _.extend(SandstormDb.prototype, {
     return user && Plans.findOne(user.plan || "free");
   },
 
-  getMyReferralBonus: function(user) {
+  getMyReferralBonus: function (user) {
     // This function is called from the server and from the client, similar to getMyPlan().
     //
     // The parameter may be omitted in which case the current user is assumed.
@@ -1017,13 +1022,13 @@ _.extend(SandstormDb.prototype, {
         return user.pseudoUsage;
       } else {
         return {
-          grains: Grains.find({userId: user._id}).count(),
+          grains: Grains.find({ userId: user._id }).count(),
           storage: user.storageUsage || 0,
           compute: 0   // not tracked yet
         };
       }
     } else {
-      return {grains: 0, storage: 0, compute: 0};
+      return { grains: 0, storage: 0, compute: 0 };
     }
   },
 
@@ -1039,12 +1044,12 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value;
   },
 
-  addUserActions: function(packageId) {
+  addUserActions: function (packageId) {
     //TODO(cleanup): implement this with meteor methods rather than client-side inserts/removes.
     var pack = Packages.findOne(packageId);
     if (pack) {
       // Remove old versions.
-      UserActions.find({userId: Meteor.userId(), appId: pack.appId})
+      UserActions.find({ userId: Meteor.userId(), appId: pack.appId })
           .forEach(function (action) {
         UserActions.remove(action._id);
       });
@@ -1063,7 +1068,7 @@ _.extend(SandstormDb.prototype, {
             appVersion: pack.manifest.appVersion,
             title: action.title,
             nounPhrase: action.nounPhrase,
-            command: action.command
+            command: action.command,
           };
           UserActions.insert(userAction);
         } else {
@@ -1076,14 +1081,14 @@ _.extend(SandstormDb.prototype, {
   },
 
   sendAdminNotification: function (message, link) {
-    Meteor.users.find({isAdmin: true}, {fields: {_id: 1}}).forEach(function (user) {
+    Meteor.users.find({ isAdmin: true }, { fields: { _id: 1 } }).forEach(function (user) {
       Notifications.insert({
         admin: {
           action: link,
           type: "reportStats",
         },
         userId: user._id,
-        text: {defaultText: message},
+        text: { defaultText: message },
         timestamp: new Date(),
         isUnread: true,
       });
@@ -1095,17 +1100,17 @@ _.extend(SandstormDb.prototype, {
   },
 
   getServerTitle: function () {
-    var setting = Settings.findOne({_id: "serverTitle"});
+    var setting = Settings.findOne({ _id: "serverTitle" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
   getReturnAddress: function () {
-    var setting = Settings.findOne({_id: "returnAddress"});
+    var setting = Settings.findOne({ _id: "returnAddress" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
-  }
+  },
 });
 
-var appNameFromPackage = function(packageObj) {
+var appNameFromPackage = function (packageObj) {
   // This function takes a Package object from Mongo and returns an
   // app title.
   var manifest = packageObj.manifest;
@@ -1116,7 +1121,7 @@ var appNameFromPackage = function(packageObj) {
   return appName;
 };
 
-var appNameFromActionName = function(name) {
+var appNameFromActionName = function (name) {
   // Hack: Historically we only had action titles, like "New Etherpad Document", not app
   //   titles. But for this UI we want app titles. As a transitionary measure, try to
   //   derive the app title from the action title.
@@ -1124,9 +1129,11 @@ var appNameFromActionName = function(name) {
   if (!name) {
     return "(unnamed)";
   }
+
   if (name.lastIndexOf("New ", 0) === 0) {
     name = name.slice(4);
   }
+
   if (name.lastIndexOf("Hacker CMS", 0) === 0) {
     name = "Hacker CMS";
   } else {
@@ -1135,6 +1142,7 @@ var appNameFromActionName = function(name) {
       name = name.slice(0, space);
     }
   }
+
   return name;
 };
 
@@ -1144,7 +1152,7 @@ var appShortDescriptionFromPackage = function (pkg) {
          pkg.manifest.metadata.shortDescription.defaultText;
 };
 
-var nounPhraseForActionAndAppTitle = function(action, appTitle) {
+var nounPhraseForActionAndAppTitle = function (action, appTitle) {
   // A hack to deal with legacy apps not including fields in their manifests.
   // I look forward to the day I can remove most of this code.
   // Attempt to figure out the appropriate noun that this action will create.
@@ -1166,6 +1174,7 @@ var nounPhraseForActionAndAppTitle = function(action, appTitle) {
           return "grain";
         }
       }
+
       return candidate.toLowerCase();
     }
     // Some other verb phrase was given.  Just use it verbatim, and hope the app author updates
@@ -1206,7 +1215,7 @@ if (Meteor.isServer) {
     while (denom <= n) denom <<= 1;
     var num = n * 2 - denom + 1;
     return num / denom;
-  }
+  };
 
   var stagger = computeStagger(replicaNumber);
 
@@ -1241,7 +1250,7 @@ if (Meteor.isServer) {
       callback();
       Meteor.setInterval(callback, intervalMs);
     }, first);
-  }
+  };
 
   // TODO(cleanup): Node 0.12 has a `gzipSync` but 0.10 (which Meteor still uses) does not.
   var gzipSync = Meteor.wrapAsync(Zlib.gzip, Zlib);
@@ -1251,7 +1260,7 @@ if (Meteor.isServer) {
       check(buf, Buffer);
       return buf.length < limit;
     });
-  }
+  };
 
   var DatabaseId = Match.Where(function (s) {
     check(s, String);
@@ -1269,7 +1278,7 @@ if (Meteor.isServer) {
 
     check(metadata, {
       mimeType: String,
-      encoding: Match.Optional("gzip")
+      encoding: Match.Optional("gzip"),
     });
     check(content, BufferSmallerThan(1 << 20));
 
@@ -1282,9 +1291,9 @@ if (Meteor.isServer) {
     var hash = hasher.digest("base64");
 
     var existing = StaticAssets.findAndModify({
-      query: {hash: hash, refcount: {$gte: 1}},
-      update: {$inc: {refcount: 1}},
-      fields: {_id: 1, refcount: 1},
+      query: { hash: hash, refcount: { $gte: 1 } },
+      update: { $inc: { refcount: 1 } },
+      fields: { _id: 1, refcount: 1 },
     });
     if (existing) {
       return existing._id;
@@ -1293,9 +1302,9 @@ if (Meteor.isServer) {
     return StaticAssets.insert(_.extend({
       hash: hash,
       content: content,
-      refcount: 1
+      refcount: 1,
     }, metadata));
-  }
+  };
 
   SandstormDb.prototype.addStaticAsset = addStaticAsset;
 
@@ -1309,14 +1318,14 @@ if (Meteor.isServer) {
     check(id, String);
 
     var existing = StaticAssets.findAndModify({
-      query: {hash: hash},
-      update: {$inc: {refcount: 1}},
-      fields: {_id: 1, refcount: 1},
+      query: { hash: hash },
+      update: { $inc: { refcount: 1 } },
+      fields: { _id: 1, refcount: 1 },
     });
     if (!existing) {
       throw new Error("refStaticAsset() called on asset that doesn't exist");
     }
-  }
+  };
 
   SandstormDb.prototype.unrefStaticAsset = function (id) {
     // Decrement refcount on a static asset and delete if it has reached zero.
@@ -1328,40 +1337,41 @@ if (Meteor.isServer) {
     check(id, String);
 
     var existing = StaticAssets.findAndModify({
-      query: {_id: id},
-      update: {$inc: {refcount: -1}},
-      fields: {_id: 1, refcount: 1},
+      query: { _id: id },
+      update: { $inc: { refcount: -1 } },
+      fields: { _id: 1, refcount: 1 },
       new: true,
     });
     if (!existing) {
       console.error(new Error("unrefStaticAsset() called on asset that doesn't exist").stack);
     } else if (existing.refcount <= 0) {
-      StaticAssets.remove({_id: existing._id});
+      StaticAssets.remove({ _id: existing._id });
     }
-  }
+  };
 
   SandstormDb.prototype.getStaticAsset = function (id) {
     // Get a static asset's mimeType, encoding, and raw content.
 
     check(id, String);
 
-    var asset = StaticAssets.findOne(id, {fields: {_id: 0, mimeType: 1, encoding: 1, content: 1}});
+    var asset = StaticAssets.findOne(id, { fields: { _id: 0, mimeType: 1, encoding: 1, content: 1 } });
     if (asset) {
       // TODO(perf): Mongo converts buffers to something else. Figure out a way to avoid a copy
       //   here.
       asset.content = new Buffer(asset.content);
     }
+
     return asset;
-  }
+  };
 
   SandstormDb.prototype.newAssetUpload = function (purpose) {
-    check(purpose, {profilePicture: {userId: DatabaseId, identityId: DatabaseId}});
+    check(purpose, { profilePicture: { userId: DatabaseId, identityId: DatabaseId } });
 
     return AssetUploadTokens.insert({
       purpose: purpose,
       expires: new Date(Date.now() + 300000),  // in 5 minutes
     });
-  }
+  };
 
   SandstormDb.prototype.fulfillAssetUpload = function (id) {
     // Indicates that the given asset upload has completed. It will be removed and its purpose
@@ -1370,8 +1380,8 @@ if (Meteor.isServer) {
     check(id, String);
 
     var upload = AssetUploadTokens.findAndModify({
-      query: {_id: id},
-      remove: true
+      query: { _id: id },
+      remove: true,
     });
 
     if (upload.expires.valueOf() < Date.now()) {
@@ -1379,10 +1389,10 @@ if (Meteor.isServer) {
     } else {
       return upload.purpose;
     }
-  }
+  };
 
   function cleanupExpiredAssetUploads() {
-    AssetUploadTokens.remove({expires: {$lt: Date.now()}});
+    AssetUploadTokens.remove({ expires: { $lt: Date.now() } });
   }
 
   // Cleanup tokens every hour.
@@ -1404,14 +1414,15 @@ if (Meteor.isServer) {
     if (pkg && pkg.status === "ready") {
       packageCache[packageId] = pkg;
     }
+
     return pkg;
-  }
+  };
 
   SandstormDb.prototype.sendAppUpdateNotifications = function (appId, packageId, name,
                                                                versionNumber, marketingVersion) {
     var db = this;
-    var actions = db.collections.userActions.find({appId: appId, appVersion: {$lt: versionNumber}},
-      {fields: {userId: 1}});
+    var actions = db.collections.userActions.find({ appId: appId, appVersion: { $lt: versionNumber } },
+      { fields: { userId: 1 } });
     actions.forEach(function (action) {
       var userId = action.userId;
       var updater = {
@@ -1428,10 +1439,10 @@ if (Meteor.isServer) {
         name: name,
         version: versionNumber,
       };
-      db.collections.notifications.upsert({userId: userId}, { $set: updater});
+      db.collections.notifications.upsert({ userId: userId }, { $set: updater });
     });
 
-    db.collections.appIndex.update({_id: appId}, {$set: {hasSentNotifications: true}});
+    db.collections.appIndex.update({ _id: appId }, { $set: { hasSentNotifications: true } });
 
     // In the case where we replaced a previous notification and that was the only reference to the
     // package, we need to clean it up
@@ -1449,7 +1460,7 @@ if (Meteor.isServer) {
       userId: Meteor.userId(),
       appId: appId,
       appVersion: { $lte: version },
-      packageId: { $ne: packageId }
+      packageId: { $ne: packageId },
     };
 
     if (!this.isSimulation) {
@@ -1458,16 +1469,16 @@ if (Meteor.isServer) {
       });
     }
 
-    Grains.update(selector, { $set: { appVersion: version, packageId: packageId }}, {multi: true});
+    Grains.update(selector, { $set: { appVersion: version, packageId: packageId } }, { multi: true });
   };
 
   SandstormDb.prototype.startInstall = function (packageId, url, retryFailed, isAutoUpdated) {
     // Mark package for possible installation.
 
-    var fields = {status: "download", progress: 0, url: url, isAutoUpdated: !!isAutoUpdated};
+    var fields = { status: "download", progress: 0, url: url, isAutoUpdated: !!isAutoUpdated };
 
     if (retryFailed) {
-      Packages.update({_id: packageId, status: "failed"}, {$set: fields});
+      Packages.update({ _id: packageId, status: "failed" }, { $set: fields });
     } else {
       try {
         fields._id = packageId;
@@ -1493,7 +1504,7 @@ if (Meteor.isServer) {
     HTTP.get(
         "https://keybase.io/_/api/1.0/user/lookup.json?key_fingerprint=" + keyFingerprint +
         "&fields=basics,profile,proofs_summary", {
-      timeout: 5000
+      timeout: 5000,
     }, function (err, keybaseResponse) {
       if (err) {
         console.log("keybase lookup error:", err.stack);
@@ -1511,7 +1522,7 @@ if (Meteor.isServer) {
         var record = {
           displayName: (profile.profile || {}).full_name,
           handle: (profile.basics || {}).username,
-          proofs: (profile.proofs_summary || {}).all || []
+          proofs: (profile.proofs_summary || {}).all || [],
         };
 
         record.proofs.forEach(function (proof) {
@@ -1521,7 +1532,7 @@ if (Meteor.isServer) {
             // Don't allow field names containing '.' or '$'. Also don't allow sub-objects mainly
             // because I'm too lazy to check the field names recursively (and Keybase doesn't
             // return any objects anyway).
-            if (field.match(/[.$]/) || typeof(proof[field]) === "object") {
+            if (field.match(/[.$]/) || typeof (proof[field]) === "object") {
               delete proof[field];
             }
           }
@@ -1532,7 +1543,7 @@ if (Meteor.isServer) {
           proof.status = "unverified";
         });
 
-        KeybaseProfiles.update(keyFingerprint, {$set: record}, {upsert: true});
+        KeybaseProfiles.update(keyFingerprint, { $set: record }, { upsert: true });
       } else {
         // Keybase reports no match, so remove what we know of this user. We don't want to remove
         // the item entirely from the cache as this will cause us to repeatedly re-fetch the data
@@ -1541,28 +1552,28 @@ if (Meteor.isServer) {
         // TODO(someday): We could perhaps keep the proofs if we can still verify them directly,
         //   but at present we don't have the ability to verify proofs.
         KeybaseProfiles.update(keyFingerprint,
-            {$unset: {displayName: "", handle: "", proofs: ""}}, {upsert: true});
+            { $unset: { displayName: "", handle: "", proofs: "" } }, { upsert: true });
       }
     });
   };
 
-  SandstormDb.prototype.deleteUnusedAccount = function(backend, identityId) {
+  SandstormDb.prototype.deleteUnusedAccount = function (backend, identityId) {
     // If there is an *unused* account that has `identityId` as a login identity, deletes it.
 
     check(identityId, String);
-    var account = Meteor.users.findOne({"loginIdentities.id": identityId});
+    var account = Meteor.users.findOne({ "loginIdentities.id": identityId });
     if (account &&
         account.loginIdentities.length == 1 &&
         account.nonloginIdentities.length == 0 &&
-        !Grains.findOne({userId: account._id}) &&
-        !ApiTokens.findOne({accountId: account._id}) &&
+        !Grains.findOne({ userId: account._id }) &&
+        !ApiTokens.findOne({ accountId: account._id }) &&
         (!account.plan || account.plan === "free") &&
         !account.payments &&
-        !Contacts.findOne({ownerId: account._id})) {
-      Meteor.users.remove({_id: account._id});
+        !Contacts.findOne({ ownerId: account._id })) {
+      Meteor.users.remove({ _id: account._id });
       backend.deleteUser(account._id);
     }
-  }
+  };
 
   Meteor.publish("keybaseProfile", function (keyFingerprint) {
     check(keyFingerprint, ValidKeyFingerprint);
@@ -1580,11 +1591,11 @@ if (Meteor.isServer) {
   Meteor.publish("appIndex", function (appId) {
     check(appId, String);
     var db = this.connection.sandstormDb;
-    var cursor = db.collections.appIndex.find({_id: appId});
+    var cursor = db.collections.appIndex.find({ _id: appId });
     return cursor;
   });
 
-  Meteor.publish("userPackages", function() {
+  Meteor.publish("userPackages", function () {
     // Users should be able to see packages that are either:
     // 1. referenced by one of their userActions
     // 2. referenced by one of their grains
@@ -1621,29 +1632,32 @@ if (Meteor.isServer) {
     // package source 1: packages referred to by actions
     var actions = db.userActions(this.userId);
     var actionsHandle = actions.observe({
-      added: function(newAction) {
+      added: function (newAction) {
         refPackage(newAction.packageId);
       },
-      changed: function(oldAction, newAction) {
+
+      changed: function (oldAction, newAction) {
         refPackage(newAction.packageId);
-      }
+      },
     });
 
     // package source 2: packages referred to by grains directly
     var grains = db.userGrains(this.userId);
     var grainsHandle = grains.observe({
-      added: function(newGrain) {
+      added: function (newGrain) {
         refPackage(newGrain.packageId);
       },
-      changed: function(oldGrain, newGrain) {
+
+      changed: function (oldGrain, newGrain) {
         refPackage(newGrain.packageId);
-      }
+      },
     });
 
     this.onStop(function () {
       actionsHandle.stop();
       grainsHandle.stop();
     });
+
     this.ready();
   });
 }

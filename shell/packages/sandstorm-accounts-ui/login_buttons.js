@@ -5,9 +5,10 @@ var helpers = {
   isCurrentRoute: function (routeName) {
     return Router.current().route.getName() == routeName;
   },
+
   isDemoUser: function () {
     return this._db.isDemoUser();
-  }
+  },
 };
 
 Template.loginButtons.helpers(helpers);
@@ -15,24 +16,24 @@ Template.loginButtonsPopup.helpers(helpers);
 Template._loginButtonsLoggedOutDropdown.helpers(helpers);
 Template._loginButtonsLoggedInDropdown.helpers(helpers);
 
-Template.loginButtonsPopup.onRendered(function() {
+Template.loginButtonsPopup.onRendered(function () {
   this.find(".login-buttons-list :first-child").focus();
 });
 
-Template.accountButtonsPopup.onRendered(function() {
+Template.accountButtonsPopup.onRendered(function () {
   this.find(".account-buttons-list :first-child").focus();
 });
 
 Template.accountButtonsPopup.events({
-  'click button.logout': function() {
+  "click button.logout": function () {
     // TODO(cleanup): Don't rely on global var set in outermost package!
     logoutSandstorm();
-  }
+  },
 });
 
 var displayName = function () {
   var currentIdentityId = Accounts.getCurrentIdentityId();
-  var user = Meteor.users.findOne({_id: currentIdentityId});
+  var user = Meteor.users.findOne({ _id: currentIdentityId });
   if (!user) return "(incognito)";
 
   SandstormDb.fillInProfileDefaults(user);
@@ -40,12 +41,12 @@ var displayName = function () {
 };
 
 Template.accountButtons.helpers({
-  displayName: displayName
+  displayName: displayName,
 });
 
 function getServices() {
   return _.keys(Accounts.identityServices).map(function (key) {
-    return _.extend(Accounts.identityServices[key], {name: key});
+    return _.extend(Accounts.identityServices[key], { name: key });
   }).filter(function (service) {
     return service.isEnabled() && !!service.loginTemplate;
   }).sort(function (s1, s2) { return s1.loginTemplate.priority - s2.loginTemplate.priority; });
@@ -53,14 +54,14 @@ function getServices() {
 
 Template._loginButtonsMessages.helpers({
   errorMessage: function () {
-    return loginButtonsSession.get('errorMessage');
-  }
+    return loginButtonsSession.get("errorMessage");
+  },
 });
 
 Template._loginButtonsMessages.helpers({
   infoMessage: function () {
-    return loginButtonsSession.get('infoMessage');
-  }
+    return loginButtonsSession.get("infoMessage");
+  },
 });
 
 var loginResultCallback = function (serviceName, err) {
@@ -91,12 +92,12 @@ Accounts.onPageLoadLogin(function (attemptInfo) {
 });
 
 // XXX from http://epeli.github.com/underscore.string/lib/underscore.string.js
-var capitalize = function(str){
-  str = str == null ? '' : String(str);
+var capitalize = function (str) {
+  str = str == null ? "" : String(str);
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
-Template._loginButtonsLoggedOutDropdown.onCreated(function() {
+Template._loginButtonsLoggedOutDropdown.onCreated(function () {
   this._topbar = Template.parentData(3);
   this._choseLogin = new ReactiveVar(false);
 });
@@ -104,7 +105,7 @@ Template._loginButtonsLoggedOutDropdown.onCreated(function() {
 Template._loginButtonsLoggedOutDropdown.helpers({
   choseLogin: function () {
     return Template.instance()._choseLogin.get();
-  }
+  },
 });
 
 Template._loginButtonsLoggedOutDropdown.events({
@@ -114,24 +115,26 @@ Template._loginButtonsLoggedOutDropdown.events({
 
   "click .login-suggestion>button.dismiss": function (event, instance) {
     instance._topbar.closePopup();
-  }
+  },
 });
 
-Template._loginButtonsLoggedInDropdown.onCreated(function() {
+Template._loginButtonsLoggedInDropdown.onCreated(function () {
   this._identitySwitcherExpanded = new ReactiveVar(false);
 });
 
 Template._loginButtonsLoggedInDropdown.helpers({
   displayName: displayName,
-  showIdentitySwitcher: function() {
+  showIdentitySwitcher: function () {
     return SandstormDb.getUserIdentityIds(Meteor.user()).length > 1;
   },
+
   identitySwitcherExpanded: function () {
     return Template.instance()._identitySwitcherExpanded.get();
   },
+
   identitySwitcherData: function () {
     var identities = SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {
-      var identity = Meteor.users.findOne({_id: id});
+      var identity = Meteor.users.findOne({ _id: id });
       if (identity) {
         SandstormDb.fillInProfileDefaults(identity);
         SandstormDb.fillInIntrinsicName(identity);
@@ -139,25 +142,26 @@ Template._loginButtonsLoggedInDropdown.helpers({
         return identity;
       }
     });
+
     function onPicked(identityId) {
       Accounts.setCurrentIdentityId(identityId);
     }
-    return { identities: identities, onPicked: onPicked,
-             currentIdentityId: Accounts.getCurrentIdentityId() };
-  },
 
+    return { identities: identities, onPicked: onPicked,
+             currentIdentityId: Accounts.getCurrentIdentityId(), };
+  },
 
 });
 
 Template._loginButtonsLoggedInDropdown.events({
-  "click button.switch-identity" : function (event, instance) {
+  "click button.switch-identity": function (event, instance) {
     instance._identitySwitcherExpanded.set(!instance._identitySwitcherExpanded.get());
   },
 });
 
 var sendEmail = function (email, linkingNewIdentity) {
   loginButtonsSession.infoMessage("Sending email...");
-  Accounts.createAndEmailTokenForUser(email, linkingNewIdentity, function(err) {
+  Accounts.createAndEmailTokenForUser(email, linkingNewIdentity, function (err) {
     if (err) {
       loginButtonsSession.errorMessage(err.reason || "Unknown error");
       if (err.error === 409) {
@@ -188,12 +192,12 @@ var loginWithToken = function (email, token) {
 Template.loginButtonsDialog.helpers({
   allowUninvited: function () {
     return Meteor.settings.public.allowUninvited;
-  }
+  },
 });
 
-Template.loginButtonsList.onCreated(function() {
+Template.loginButtonsList.onCreated(function () {
   if (isDemoUser()) {
-    this._linkingNewIdentity = { doneCallback: function() {} };
+    this._linkingNewIdentity = { doneCallback: function () {} };
   } else if (Template.parentData(1).linkingNewIdentity) {
     this._linkingNewIdentity = Template.parentData(1).linkingNewIdentity;
   }
@@ -218,7 +222,7 @@ Template.oauthLoginButton.events({
 
 Template.loginButtonsList.helpers({
   configured: function () {
-    return !!ServiceConfiguration.configurations.findOne({service: this.name}) ||
+    return !!ServiceConfiguration.configurations.findOne({ service: this.name }) ||
            Template.instance().data._services.get(this.name);
   },
 
@@ -231,7 +235,7 @@ Template.loginButtonsList.helpers({
 
   linkingNewIdentity: function () {
     return Template.instance()._linkingNewIdentity;
-  }
+  },
 });
 
 Template.emailAuthenticationForm.events({
@@ -268,8 +272,9 @@ Template.emailAuthenticationForm.helpers({
   disabled: function () {
     return !(Accounts.identityServices.email && Accounts.identityServices.email.isEnabled());
   },
+
   awaitingToken: function () {
-    return loginButtonsSession.get('inSignupFlow');
+    return loginButtonsSession.get("inSignupFlow");
   },
 });
 
@@ -280,13 +285,14 @@ Template.devLoginForm.onCreated(function () {
 Template.devLoginForm.helpers({
   expanded: function () {
     return Template.instance()._expanded.get();
-  }
+  },
 });
 
 function loginDevHelper(name, isAdmin, linkingNewIdentity) {
   if (linkingNewIdentity) {
     sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
   }
+
   loginDevAccount(name, isAdmin);
 }
 
@@ -295,18 +301,21 @@ Template.devLoginForm.events({
     event.preventDefault();
     instance._expanded.set(true);
   },
+
   "click button.unexpand": function (event, instance) {
     event.preventDefault();
     instance._expanded.set(false);
   },
+
   "click button.login-dev-account": function (event, instance) {
     var displayName = event.currentTarget.getAttribute("data-name");
     var isAdmin = !!event.currentTarget.getAttribute("data-is-admin");
     loginDevHelper(displayName, isAdmin, instance.data.linkingNewIdentity);
   },
+
   "submit form": function (event, instance) {
     event.preventDefault();
     var form = instance.find("form");
     loginDevHelper(form.name.value, false, instance.data.linkingNewIdentity);
-  }
+  },
 });

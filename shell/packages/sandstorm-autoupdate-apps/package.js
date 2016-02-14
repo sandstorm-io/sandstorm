@@ -27,6 +27,6 @@ Package.onUse(function (api) {
 
 Package.onTest(function (api) {
   api.use(["http", "practicalmeteor:sinon", "accounts-base", "sandstorm-db",
-    "tinytest", "sandstorm-autoupdate-apps"], ["server"]);
+    "tinytest", "sandstorm-autoupdate-apps",], ["server"]);
   api.addFiles("autoupdate-apps-tests.js", "server");
 });

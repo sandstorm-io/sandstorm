@@ -18,7 +18,7 @@ SandstormAccountSettingsUi = function (topbar, db, staticHost) {
   this._topbar = topbar;
   this._db = db;
   this._staticHost = staticHost;
-}
+};
 
 Template.sandstormAccountSettings.onCreated(function () {
   this._isLinkingNewIdentity = new ReactiveVar(false);
@@ -30,7 +30,7 @@ Template.sandstormAccountSettings.onCreated(function () {
   //   the URL?
   if (Session.get("linkingIdentityError")) {
     this._actionCompleted.set(
-      {error: "Error linking identity: " + Session.get("linkingIdentityError")});
+      { error: "Error linking identity: " + Session.get("linkingIdentityError") });
     Session.set("linkingIdentityError");
   }
 
@@ -40,7 +40,7 @@ Template.sandstormAccountSettings.onCreated(function () {
     if (user && user.loginIdentities) {
       var identities = user.loginIdentities.concat(user.nonloginIdentities);
       var currentlySelected = self._selectedIdentityId.get();
-      if (!currentlySelected || !_.findWhere(identities, {id: currentlySelected})) {
+      if (!currentlySelected || !_.findWhere(identities, { id: currentlySelected })) {
         if (identities.length > 0) {
           self._selectedIdentityId.set(identities[0].id);
         }
@@ -49,15 +49,16 @@ Template.sandstormAccountSettings.onCreated(function () {
   });
 });
 
-GENDERS = {male: "male", female: "female", neutral: "neutral", robot: "robot"};
+GENDERS = { male: "male", female: "female", neutral: "neutral", robot: "robot" };
 
 var helpers = {
   setDocumentTitle: function () {
     document.title = "Account settings · " + Template.instance().data._db.getServerTitle();
   },
+
   identities: function () {
     return SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {
-      var identity = Meteor.users.findOne({_id: id});
+      var identity = Meteor.users.findOne({ _id: id });
       if (identity) {
         SandstormDb.fillInProfileDefaults(identity);
         SandstormDb.fillInIntrinsicName(identity);
@@ -66,12 +67,17 @@ var helpers = {
       }
     });
   },
+
   isNeutral: function () {
     return this.pronoun === "neutral" || !(this.pronoun in GENDERS);
   },
+
   isMale: function () { return this.pronoun === "male"; },
+
   isFemale: function () { return this.pronoun === "female"; },
+
   isRobot: function () { return this.pronoun === "robot"; },
+
   isPaymentsEnabled: function () {
     try {
       BlackrockPayments; // This checks that BlackrockPayments is defined.
@@ -81,9 +87,10 @@ var helpers = {
     }
   },
 
-  isAccountUser: function() {
+  isAccountUser: function () {
     return Meteor.user() && !!Meteor.user().loginIdentities;
   },
+
   profileSaved: function () {
     return Meteor.user() && Meteor.user().hasCompletedSignup &&
       Template.instance()._profileSaved.get();
@@ -99,54 +106,63 @@ Template.sandstormAccountSettings.helpers(helpers);
 Template._accountProfileEditor.helpers(helpers);
 
 Template.sandstormAccountSettings.helpers({
-  isIdentitySelected: function(id) {
+  isIdentitySelected: function (id) {
     return Template.instance()._selectedIdentityId.get() === id;
   },
-  isIdentityHidden: function(id) {
+
+  isIdentityHidden: function (id) {
     return Template.instance()._selectedIdentityId.get() != id;
   },
-  isLinkingNewIdentity: function() {
-    return Template.instance()._isLinkingNewIdentity.get()
+
+  isLinkingNewIdentity: function () {
+    return Template.instance()._isLinkingNewIdentity.get();
   },
+
   verifiedEmails: function () {
     return Meteor.user() && SandstormDb.getUserEmails(Meteor.user())
       .filter(function (e) { return !!e.verified; });
   },
+
   needsVerifiedEmail: function () {
     return Meteor.user() && SandstormDb.getUserEmails(Meteor.user())
       .filter(function (e) { return !!e.verified; }).length == 0;
   },
+
   actionCompleted: function () {
     return Template.instance()._actionCompleted.get();
   },
+
   setActionCompleted: function () {
     var actionCompleted = Template.instance()._actionCompleted;
     return function (x) { actionCompleted.set(x); };
   },
+
   linkingNewIdentityData: function () {
     var instance = Template.instance();
     return {
       doneCallback: function () {
         instance._isLinkingNewIdentity.set(false);
-        instance._actionCompleted.set({success: "identity added"});
-      }
+        instance._actionCompleted.set({ success: "identity added" });
+      },
     };
   },
+
   emailLoginFormData: function () {
     var instance = Template.instance();
     return {
       linkingNewIdentity: {
-        doneCallback: function() {
+        doneCallback: function () {
           var input = instance.find("input[name='email']");
           if (input) {
             input.value = "";
           };
-          instance._actionCompleted.set({success: "identity added"});
-        }
+
+          instance._actionCompleted.set({ success: "identity added" });
+        },
       },
       sendButtonText: "Confirm",
-    }
-  }
+    };
+  },
 });
 
 Template._accountProfileEditor.helpers({
@@ -154,23 +170,26 @@ Template._accountProfileEditor.helpers({
     var user = Meteor.user();
     return user && user.hasCompletedSignup;
   },
+
   identityManagementButtonsData: function () {
     if (this.identity) {
       var user = Meteor.user();
       var identityId = this.identity._id;
       return {
         _id: identityId,
-        isLogin: user.loginIdentities && !!_.findWhere(user.loginIdentities, {id: identityId}),
+        isLogin: user.loginIdentities && !!_.findWhere(user.loginIdentities, { id: identityId }),
         isDemo: this.identity.profile.service === "demo",
         setActionCompleted: Template.instance()._setActionCompleted,
       };
     }
   },
-  verifiedEmails: function() {
+
+  verifiedEmails: function () {
     if (this.identity) {
       return SandstormDb.getVerifiedEmails(this.identity);
     }
   },
+
   emailDetails: function () {
     if (this.identity) {
       var emails = SandstormDb.getVerifiedEmails(this.identity);
@@ -182,31 +201,33 @@ Template._accountProfileEditor.helpers({
         return "E-mails attached to this identity";
       }
     }
-  }
+  },
 });
 
 Template.sandstormAccountSettings.events({
-  "click [role='tab']": function(event, instance) {
+  "click [role='tab']": function (event, instance) {
     instance._actionCompleted.set();
     instance._selectedIdentityId.set(event.currentTarget.getAttribute("data-identity-id"));
   },
-  "click button.link-new-identity": function(event, instance) {
+
+  "click button.link-new-identity": function (event, instance) {
     instance._isLinkingNewIdentity.set(true);
   },
-  "click button.cancel-link-new-identity": function(event, instance) {
+
+  "click button.cancel-link-new-identity": function (event, instance) {
     instance._isLinkingNewIdentity.set(false);
   },
 
-  "click button.logout-other-sessions": function(event, instance) {
-    Meteor.logoutOtherClients(function(err) {
+  "click button.logout-other-sessions": function (event, instance) {
+    Meteor.logoutOtherClients(function (err) {
       if (err) {
-        instance._actionCompleted.set({error: err});
+        instance._actionCompleted.set({ error: err });
       } else {
-        Meteor.call("logoutIdentitiesOfCurrentAccount", function(err) {
+        Meteor.call("logoutIdentitiesOfCurrentAccount", function (err) {
           if (err) {
-            instance._actionCompleted.set({error: err});
+            instance._actionCompleted.set({ error: err });
           } else {
-            instance._actionCompleted.set({success: "logged out other sessions"});
+            instance._actionCompleted.set({ success: "logged out other sessions" });
           }
         });
       }
@@ -218,11 +239,10 @@ Template.sandstormAccountSettings.events({
   },
 });
 
-
 Template.sandstormAccountsFirstSignIn.helpers({
   identityToConfirm: function () {
     var identityId = SandstormDb.getUserIdentityIds(Meteor.user())[0];
-    var identity = Meteor.users.findOne({_id: identityId});
+    var identity = Meteor.users.findOne({ _id: identityId });
     if (identity) {
       SandstormDb.fillInProfileDefaults(identity);
       SandstormDb.fillInIntrinsicName(identity);
@@ -230,6 +250,7 @@ Template.sandstormAccountsFirstSignIn.helpers({
       return identity;
     }
   },
+
   termsAndPrivacy: function () {
     var result = {
       termsUrl: Template.currentData()._db.getSetting("termsUrl"),
@@ -269,6 +290,7 @@ var submitProfileForm = function (event, cb) {
           "underscores, and must not start with a digit.");
     return;
   }
+
   var identityId = form.getAttribute("data-identity-id");
 
   Meteor.call("updateProfile", identityId, newProfile, function (err) {
@@ -288,16 +310,17 @@ var submitProfileForm = function (event, cb) {
 
   // Pass off to payments module.
   BlackrockPayments.processOptins(form);
-}
+};
 
 Template._accountProfileEditor.events({
   "submit form.account-profile-editor": function (event, instance) {
     submitProfileForm(event, function () {
       instance._profileSaved.set(true);
-      instance._setActionCompleted({success: "profile saved"});
+      instance._setActionCompleted({ success: "profile saved" });
     });
   },
-  "change": function (event, instance) {
+
+  change: function (event, instance) {
     // Pictures get saved right away.
     //
     // TODO(someday): Upload pictures to a staging area, perhaps allowing the user to resize
@@ -306,13 +329,15 @@ Template._accountProfileEditor.events({
 
     instance._profileSaved.set(false);
   },
+
   "input input": function () { Template.instance()._profileSaved.set(false); },
-  "keypress": function () { Template.instance()._profileSaved.set(false); },
+
+  keypress: function () { Template.instance()._profileSaved.set(false); },
 
   "click .logout": function (event, instance) {
     event.preventDefault();
     Meteor.logout();
-  }
+  },
 });
 
 Template._accountProfileEditor.onCreated(function () {
@@ -340,10 +365,10 @@ Template._accountProfileEditor.events({
         } else if (result.statusCode >= 400) {
           alert("Upload failed: " + result.statusCode + " " + result.content);
         } else {
-          instance._setActionCompleted({success: "picture updated"});
+          instance._setActionCompleted({ success: "picture updated" });
         }
       });
-    }
+    };
 
     Meteor.call("uploadProfilePicture", instance.data.identity._id, function (err, result) {
       if (err) {
@@ -359,7 +384,8 @@ Template._accountProfileEditor.events({
       file = event.currentTarget.files[0];
       if (file && token) doUpload();
     }
+
     input.addEventListener("change", listener);
     input.click();
-  }
+  },
 });

@@ -1,11 +1,11 @@
-var Future = Npm.require('fibers/future');
-var urlModule = Npm.require('url');
-var MailComposer = Npm.require('mailcomposer').MailComposer;
+var Future = Npm.require("fibers/future");
+var urlModule = Npm.require("url");
+var MailComposer = Npm.require("mailcomposer").MailComposer;
 
 SandstormEmail = {};
 
 var getSmtpUrl = function () {
-  var setting = Settings.findOne({_id: "smtpUrl"});
+  var setting = Settings.findOne({ _id: "smtpUrl" });
   if (setting) {
     return setting.value;
   } else {
@@ -15,25 +15,25 @@ var getSmtpUrl = function () {
 
 var makePool = function (mailUrlString) {
   var mailUrl = urlModule.parse(mailUrlString);
-  if (mailUrl.protocol !== 'smtp:')
+  if (mailUrl.protocol !== "smtp:")
     throw new Error("Email protocol in $MAIL_URL (" +
                     mailUrlString + ") must be 'smtp'");
 
   var port = +(mailUrl.port);
   var auth = false;
   if (mailUrl.auth) {
-    var parts = mailUrl.auth.split(':', 2);
-    auth = {user: parts[0],
-            pass: parts[1]};
+    var parts = mailUrl.auth.split(":", 2);
+    auth = { user: parts[0],
+            pass: parts[1], };
   }
 
-  var simplesmtp = Npm.require('simplesmtp');
+  var simplesmtp = Npm.require("simplesmtp");
   var pool = simplesmtp.createClientPool(
     port,  // Defaults to 25
     mailUrl.hostname,  // Defaults to "localhost"
     { secureConnection: (port === 465),
       // XXX allow maxConnections to be configured?
-      auth: auth });
+      auth: auth, });
 
   pool._future_wrapped_sendMail = _.bind(Future.wrap(pool.sendMail), pool);
   return pool;
@@ -44,17 +44,19 @@ var makePool = function (mailUrlString) {
 var pool;
 var configured = false;
 
-Meteor.startup(function() {
-  Settings.find({_id: "smtpUrl"}).observeChanges({
-    removed : function () {
+Meteor.startup(function () {
+  Settings.find({ _id: "smtpUrl" }).observeChanges({
+    removed: function () {
       configured = false;
     },
-    changed : function () {
+
+    changed: function () {
       configured = false;
     },
-    added : function () {
+
+    added: function () {
       configured = false;
-    }
+    },
   });
 
   // Accounts.emailToken is set to use "Email" by default. Change it to use our mail service.
@@ -88,12 +90,13 @@ var devModeSend = function (mc) {
   stream.write("(Mail not sent; to enable sending, set the MAIL_URL " +
                "environment variable.)\n");
   mc.streamMessage();
-  mc.pipe(stream, {end: false});
+  mc.pipe(stream, { end: false });
   var future = new Future;
-  mc.on('end', function () {
+  mc.on("end", function () {
     stream.write("====== END MAIL #" + devmode_mail_id + " ======\n");
-    future['return']();
+    future["return"]();
   });
+
   future.wait();
 };
 
@@ -151,7 +154,7 @@ SandstormEmail.send = function (options) {
     replyTo: options.replyTo,
     subject: options.subject,
     text: options.text,
-    html: options.html
+    html: options.html,
   });
 
   _.each(options.headers, function (value, name) {

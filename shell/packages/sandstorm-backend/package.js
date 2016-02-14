@@ -16,7 +16,7 @@
 
 Package.describe({
   summary: "Sandstorm package for interacting with the backend.",
-  version: "0.1.0"
+  version: "0.1.0",
 });
 
 Package.onUse(function (api) {

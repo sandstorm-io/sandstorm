@@ -1,4 +1,4 @@
-Meteor.publish('packageInfo', function(packageId) {
+Meteor.publish("packageInfo", function (packageId) {
   check(packageId, String);
   var db = this.connection.sandstormDb;
   var pkgCursor = db.collections.packages.find(packageId);
@@ -7,7 +7,7 @@ Meteor.publish('packageInfo', function(packageId) {
     return [
       pkgCursor,
       db.collections.userActions.find({ userId: this.userId, appId: pkg.appId }),
-      db.collections.grains.find({ userId: this.userId, appId: pkg.appId}),
+      db.collections.grains.find({ userId: this.userId, appId: pkg.appId }),
     ];
   } else {
     return pkgCursor;

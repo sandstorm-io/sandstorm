@@ -34,32 +34,35 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
 
   hex64ToDecimal(n) {
     if (typeof n != "string") {
-        throw new Error("Expected string.");
+      throw new Error("Expected string.");
     }
+
     if (n.length != 18 || !n.match(/0x[0-9a-fA-F]{16}/)) {
-        throw new Error("Expected '0x' followed by 16 hexadecimal digits");
+      throw new Error("Expected '0x' followed by 16 hexadecimal digits");
     }
+
     var upper32 = parseInt(n.substring(0, 10));
     var lower32 = parseInt("0x" + n.substring(10, 18));
 
     var result = "";
-    for (var exponent = 0; exponent < 22; exponent += 1 ) {
-        var w = Math.floor(upper32 / 10);
-        var x = upper32 % 10;
+    for (var exponent = 0; exponent < 22; exponent += 1) {
+      var w = Math.floor(upper32 / 10);
+      var x = upper32 % 10;
 
-        var lowerPlusRemainder = (x * Math.pow(2, 32)) + lower32;
-        var y = Math.floor(lowerPlusRemainder / 10);
-        var z = lowerPlusRemainder % 10;
+      var lowerPlusRemainder = (x * Math.pow(2, 32)) + lower32;
+      var y = Math.floor(lowerPlusRemainder / 10);
+      var z = lowerPlusRemainder % 10;
 
-        result = z.toString() + result;
+      result = z.toString() + result;
 
-        upper32 = w;
-        lower32 = y;
+      upper32 = w;
+      lower32 = y;
 
-        if (upper32 == 0 && lower32 == 0) {
-            break;
-        }
+      if (upper32 == 0 && lower32 == 0) {
+        break;
+      }
     }
+
     return result;
   }
 
@@ -71,6 +74,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
         return interfaceId;
       }
     }
+
     return interfaceId;
   }
 
@@ -212,9 +216,9 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
               viewInfo: viewInfo,
               onComplete: (roleAssignment) => {
                 this.completeUiView(roleAssignment);
-              }
-            }
-          }
+              },
+            };
+          },
         });
       }
     });
@@ -289,8 +293,9 @@ const mapApiTokensToGrainCardData = function (apiTokens, db, selectApiToken) {
       // need to double-wrap this callback.
       return function () {
         selectApiToken(grainCard);
-      }
+      };
     };
+
     return grainCard;
   });
 };

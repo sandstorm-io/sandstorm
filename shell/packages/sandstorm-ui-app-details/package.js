@@ -16,7 +16,7 @@
 
 Package.describe({
   summary: "Sandstorm UI app details page",
-  version: "0.1.0"
+  version: "0.1.0",
 });
 
 Package.onUse(function (api) {

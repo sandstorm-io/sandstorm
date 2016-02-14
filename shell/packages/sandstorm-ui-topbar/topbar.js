@@ -37,6 +37,7 @@ function unblockUpdate() {
 }
 
 Template.sandstormTopbarBlockReload.onCreated(function () { ++reloadBlockingCount; });
+
 Template.sandstormTopbarBlockReload.onDestroyed(function () {
   if (--reloadBlockingCount == 0) {
     unblockUpdate();
@@ -52,6 +53,7 @@ Template.sandstormTopbar.onCreated(function () {
       topbar.closePopup();
     }
   };
+
   document.getElementsByTagName("body")[0].addEventListener("keydown", this.escapeHandler);
 });
 
@@ -90,8 +92,10 @@ Template.sandstormTopbar.helpers({
         appTitle: grain.appTitle(),
       };
     });
+
     return data;
   },
+
   grainCount: function () {
     var topbar = Template.instance().data;
     var grains = topbar._grains.get();
@@ -142,7 +146,7 @@ Template.sandstormTopbar.helpers({
 
           if (item.name == "account") {
             // account should always be flush right
-            instance.popupPosition.set({ name: item.name, align: "right", px: 0});
+            instance.popupPosition.set({ name: item.name, align: "right", px: 0 });
           } else {
             var rect = element.getBoundingClientRect();
             var currentWindowWidth = windowWidth.get();
@@ -151,7 +155,7 @@ Template.sandstormTopbar.helpers({
             instance.popupPosition.set(itemMid < windowMid
                 ? { name: item.name, align: "left", px: Math.max(itemMid - 50, 0) }
                 : { name: item.name, align: "right",
-                    px: Math.max(currentWindowWidth - itemMid - 50, 0) });
+                    px: Math.max(currentWindowWidth - itemMid - 50, 0), });
           }
         }
       });
@@ -178,11 +182,12 @@ Template.sandstormTopbar.helpers({
     if (comp) {
       Meteor.setTimeout(comp.invalidate.bind(comp), 1000);
     }
+
     return {
       // We put zero-width spaces on either side of the : in order to allow wrapping when the
       // sidebar is shrunk.
       countdown: min + "\u200b:\u200b" + sec,
-      urgent: ms < 600000
+      urgent: ms < 600000,
     };
   },
 });
@@ -254,10 +259,11 @@ Template.sandstormTopbar.events({
 
     var activeIndex = -1;
     var closeIndex = -1;
-    grains.forEach(function(grain, i){
+    grains.forEach(function (grain, i) {
       if (grain.isActive()) {
         activeIndex = i;
       }
+
       if (grain.grainId() == grainId) {
         closeIndex = i;
         grain.destroy();
@@ -270,6 +276,7 @@ Template.sandstormTopbar.events({
       if (activeIndex == 0) {
         Router.go("grains");
       }
+
       return;
     }
 
@@ -301,6 +308,7 @@ Template.sandstormTopbarItem.onCreated(function () {
   if (typeof item.template === "string") {
     item.template = Template[item.template];
   }
+
   if (typeof item.popupTemplate === "string") {
     item.popupTemplate = Template[item.popupTemplate];
   }
@@ -312,6 +320,7 @@ Template.sandstormTopbarItem.onCreated(function () {
   if (!item.template && view.templateContentBlock) {
     item.template = view.templateContentBlock;
   }
+
   if (!item.popupTemplate && view.templateElseBlock) {
     item.popupTemplate = view.templateElseBlock;
   }
@@ -320,7 +329,7 @@ Template.sandstormTopbarItem.onCreated(function () {
   if ("data" in item) {
     // Changes to the input data do not cause this template to get created anew, so we must
     // propagate such changes to the item.
-    instance.autorun(function() {
+    instance.autorun(function () {
       dataVar.set(Template.currentData().data);
     });
   } else {
@@ -329,6 +338,7 @@ Template.sandstormTopbarItem.onCreated(function () {
       dataVar.set(Template.parentData(1));
     });
   }
+
   item.data = dataVar;
 
   instance.topbarCloser = topbar.addItem(item);
@@ -345,7 +355,7 @@ SandstormTopbar = function (db, expandedVar, grainsVar, shrinkNavbarVar) {
   // `expandedVar` is an optional object that behaves like a `ReactiveVar` and will be used to
   // track which popup is currently open. (The caller may wish to back this with a Session
   // variable.)
-  this._staticHost = db.makeWildcardHost('static');
+  this._staticHost = db.makeWildcardHost("static");
 
   this._items = {};
   this._itemsTracker = new Tracker.Dependency();
@@ -360,12 +370,12 @@ SandstormTopbar = function (db, expandedVar, grainsVar, shrinkNavbarVar) {
   this._shrinkNavbar = shrinkNavbarVar || new ReactiveVar(true);
   this._grains = grainsVar || new ReactiveVar([]);
 
-}
+};
 
 SandstormTopbar.prototype.reset = function () {
   this._menuExpanded.set(false);
   this.closePopup();
-}
+};
 
 SandstormTopbar.prototype.closePopup = function () {
   var name = this._expanded.get();
@@ -387,20 +397,20 @@ SandstormTopbar.prototype.closePopup = function () {
   }
 
   this._expanded.set(null);
-}
+};
 
 SandstormTopbar.prototype.isPopupOpen = function () {
   return !!this._expanded.get();
-}
+};
 
-SandstormTopbar.prototype.openPopup = function(name) {
+SandstormTopbar.prototype.openPopup = function (name) {
   this._expanded.set(name);
   this._menuExpanded.set(false);
-}
+};
 
 SandstormTopbar.prototype.isUpdateBlocked = function () {
   return !!blockedReload.get();
-}
+};
 
 SandstormTopbar.prototype.addItem = function (item) {
   // Adds a new item to the top bar, such as a button or a menu.
@@ -468,7 +478,7 @@ SandstormTopbar.prototype.addItem = function (item) {
 
   var self = this;
   return {
-    close: function() {
+    close: function () {
       if (self._items[item.name] === item) {
         if (self._expanded.get() === item.name) {
           self._expanded.set(null);
@@ -477,6 +487,6 @@ SandstormTopbar.prototype.addItem = function (item) {
         delete self._items[item.name];
         self._itemsTracker.changed();
       }
-    }
+    },
   };
 };

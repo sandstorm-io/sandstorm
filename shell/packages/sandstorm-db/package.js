@@ -16,7 +16,7 @@
 
 Package.describe({
   summary: "Sandstorm database layer",
-  version: "0.1.0"
+  version: "0.1.0",
 });
 
 Npm.depends({ "content-type": "1.0.1" });

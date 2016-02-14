@@ -17,9 +17,12 @@
 // Meteor permits users to modify their own profile by default, for some reason.
 Meteor.users.deny({
   insert: function () { return true; },
+
   update: function () { return true; },
+
   remove: function () { return true; },
-  fetch: []
+
+  fetch: [],
 });
 
 Meteor.publish("getMyUsage", function () {
@@ -32,5 +35,6 @@ Meteor.publish("getMyUsage", function () {
       pseudoUsage: usage,
     });
   }
+
   this.ready();
 });

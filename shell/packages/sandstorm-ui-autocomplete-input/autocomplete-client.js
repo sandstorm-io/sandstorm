@@ -4,7 +4,7 @@ Template.contactInputBox.onCreated(function () {
   this.inputActive = new ReactiveVar(false);
   this.selectedContacts = this.data.contacts;
   this.selectedContactsIds = new ReactiveVar([]);
-  this.highlightedContact = new ReactiveVar({_id: null});
+  this.highlightedContact = new ReactiveVar({ _id: null });
   this.subscribe("contactProfiles");
   this.randomId = Random.id();  // For use with aria requiring ids in html
   this.autoCompleteContacts = new ReactiveVar([]);
@@ -15,7 +15,7 @@ function generateAutoCompleteContacts(template) {
   var currentText = template.currentText.get();
   if (!currentText) {
     template.autoCompleteContacts.set([]);
-    template.highlightedContact.set({_id: null});
+    template.highlightedContact.set({ _id: null });
     return;
   }
   // TODO(someday): handle defaults for google/github/etc
@@ -26,14 +26,15 @@ function generateAutoCompleteContacts(template) {
       profile: {
         name: currentText,
         service: "email",
-        intrinsicName: "Email address"
+        intrinsicName: "Email address",
       },
       isDefault: true,
     });
   }
+
   currentText = currentText.toLowerCase();
   var selectedContactsIds = template.selectedContactsIds.get();
-  var contacts = ContactProfiles.find({_id: {$nin: selectedContactsIds}}).fetch();
+  var contacts = ContactProfiles.find({ _id: { $nin: selectedContactsIds } }).fetch();
   var results;
   if (currentText.lastIndexOf("@", 0) === 0) {
     var textWithoutAt = currentText.slice(1);
@@ -47,13 +48,14 @@ function generateAutoCompleteContacts(template) {
         contact.profile.intrinsicName.toLowerCase().indexOf(currentText) !== -1;
     });
   }
+
   template.autoCompleteContacts.set(defaults.concat(results));
   if (results.length > 0) {
     template.highlightedContact.set(results[0]);
   } else if (defaults.length > 0) {
     template.highlightedContact.set(defaults[0]);
   } else {
-    template.highlightedContact.set({_id: null});
+    template.highlightedContact.set({ _id: null });
   }
 };
 
@@ -61,20 +63,24 @@ Template.contactInputBox.helpers({
   completedContacts: function () {
     return Template.instance().selectedContacts.get();
   },
+
   autoCompleteContacts: function () {
     return Template.instance().autoCompleteContacts.get();
   },
+
   inputActive: function () {
     return Template.instance().inputActive.get();
   },
+
   isCurrentlySelected: function () {
     var selectedContactId = Template.instance().highlightedContact.get()._id;
 
     return selectedContactId === this._id;
   },
+
   templateId: function () {
     return Template.instance().randomId;
-  }
+  },
 });
 
 function selectContact(template, highlightedContact, inputBox) {
@@ -86,6 +92,7 @@ function selectContact(template, highlightedContact, inputBox) {
       highlightedContact.profile.pictureUrl = "/email.svg";
     }
   }
+
   var contacts = template.selectedContacts.get();
   contacts.push(highlightedContact);
   template.selectedContacts.set(contacts);
@@ -94,10 +101,11 @@ function selectContact(template, highlightedContact, inputBox) {
   selectedContactsIds.push(highlightedContact._id);
   template.selectedContactsIds.set(selectedContactsIds);
 
-  template.highlightedContact.set({_id: null});
+  template.highlightedContact.set({ _id: null });
   inputBox.value = "";
   template.currentText.set(null);
 }
+
 function deleteSelected(contact, template) {
   var self = contact;
   var contacts = template.selectedContacts.get();
@@ -109,6 +117,7 @@ function deleteSelected(contact, template) {
   template.selectedContactsIds.set(_.filter(selectedContactsIds, function (id) {
     return id !== self._id;
   }));
+
   template.find("input").focus();
 }
 
@@ -117,13 +126,16 @@ Template.contactInputBox.events({
     // Clicking anywhere inside the fake contact-box should focus the input
     template.find("input").focus();
   },
+
   "click .completed-contact": function (event, template) {
     // Prevent clicking on completed contacts from triggering the above focus
     return false;
   },
+
   "input input": function (event, template) {
     template.currentText.set(event.target.value);
   },
+
   "keydown .completed-contact": function (event, template) {
     if (event.keyCode === 8 || event.keyCode == 46) { // Backspace or Delete
       deleteSelected(this, template);
@@ -142,10 +154,12 @@ Template.contactInputBox.events({
       }
     }
   },
+
   "click .closer": function (event, template) {
     deleteSelected(this, template);
     return false;
   },
+
   "keyup input": function (event, template) {
     if (event.keyCode === 8) { // Backspace
       if (!event.target.value) {
@@ -153,23 +167,27 @@ Template.contactInputBox.events({
         if (chip) {
           chip.focus();
         }
+
         return false;
       }
     }
   },
-  "keydown input": function(event, template) {
+
+  "keydown input": function (event, template) {
     if ((event.keyCode === 37 || event.keyCode === 38) && // Left or Up
         event.currentTarget.selectionStart === 0) { // Check that cursor is at beginning of input
       var chip = template.find(".completed-contacts>li:last-child");
       if (chip) {
         chip.focus();
       }
+
       return false;
     } else if (event.keyCode === 38) { // Up
       var contacts = template.autoCompleteContacts.get();
       if (contacts.length === 0) {
         return true;
       }
+
       var contactId = template.highlightedContact.get()._id;
       var ids = _.pluck(contacts, "_id");
       var index = ids.indexOf(contactId);
@@ -191,6 +209,7 @@ Template.contactInputBox.events({
       if (contacts.length === 0) {
         return true;
       }
+
       var contactId = template.highlightedContact.get()._id;
       var ids = _.pluck(contacts, "_id");
       var index = ids.indexOf(contactId);
@@ -204,6 +223,7 @@ Template.contactInputBox.events({
       } else if (contacts.length > 0) {
         newContact = contacts[contacts.length - 1];
       }
+
       template.highlightedContact.set(newContact);
       return false;
     } else if (event.keyCode === 13) { // Enter
@@ -211,16 +231,20 @@ Template.contactInputBox.events({
       if (highlightedContact._id) {
         selectContact(template, highlightedContact, event.target);
       }
+
       return false;
     }
   },
-  "focus input": function(event, template) {
+
+  "focus input": function (event, template) {
     template.inputActive.set(true);
   },
-  "blur input": function(event, template) {
+
+  "blur input": function (event, template) {
     template.inputActive.set(false);
   },
-  "mousedown .autocomplete": function(event, template) {
+
+  "mousedown .autocomplete": function (event, template) {
     selectContact(template, this, template.find("input"));
     template.find("input").focus();
 

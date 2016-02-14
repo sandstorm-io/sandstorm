@@ -36,13 +36,13 @@ userPictureUrl = function (user) {
     // Github are different because they are actually the identity providers, so they already know
     // the user logged in.
   }
-}
+};
 
 fetchPicture = function (url) {
   try {
     var result = HTTP.get(url, {
       npmRequestOptions: { encoding: null },
-      timeout: 5000
+      timeout: 5000,
     });
 
     var metadata = {};
@@ -52,6 +52,7 @@ fetchPicture = function (url) {
         metadata.mimeType.lastIndexOf("image/jpeg", 0) === -1) {
       throw new Error("unexpected Content-Type:", metadata.mimeType);
     }
+
     var enc = result.headers["content-encoding"];
     if (enc && enc !== "identity") {
       metadata.encoding = enc;
@@ -61,7 +62,7 @@ fetchPicture = function (url) {
   } catch (err) {
     console.error("failed to fetch user profile picture:", url, err.stack);
   }
-}
+};
 
 var ValidHandle = Match.Where(function (handle) {
   check(handle, String);
@@ -71,7 +72,7 @@ var ValidHandle = Match.Where(function (handle) {
 Accounts.onCreateUser(function (options, user) {
   if (user.loginIdentities) {
     // it's an account
-    check(user, {_id: String,
+    check(user, { _id: String,
                  createdAt: Date,
                  isAdmin: Match.Optional(Boolean),
                  hasCompletedSignup: Match.Optional(Boolean),
@@ -80,13 +81,13 @@ Accounts.onCreateUser(function (options, user) {
                  signupEmail: Match.Optional(String),
                  expires: Match.Optional(Date),
                  appDemoId: Match.Optional(String),
-                 loginIdentities: [{id: String}],
-                 nonloginIdentities: [{id: String}]});
+                 loginIdentities: [{ id: String }],
+                 nonloginIdentities: [{ id: String }], });
 
     if (Meteor.settings.public.quotaEnabled) {
       user.experiments = user.experiments || {};
       user.experiments = {
-        firstTimeBillingPrompt: Math.random() < 0.5 ? "control" : "test"
+        firstTimeBillingPrompt: Math.random() < 0.5 ? "control" : "test",
       };
       if (!("expires" in user)) {
         sendReferralProgramNotification(user._id);
@@ -111,6 +112,7 @@ Accounts.onCreateUser(function (options, user) {
   if (options.unverifiedEmail) {
     user.unverifiedEmail = options.unverifiedEmail;
   }
+
   user.profile = _.pick(options.profile || {}, "name", "handle", "pronouns");
 
   // Try downloading avatar.
@@ -124,7 +126,7 @@ Accounts.onCreateUser(function (options, user) {
 
   var serviceUserId;
   if (user.services && user.services.dev) {
-    check(user.services.dev, {name: String, isAdmin: Boolean, hasCompletedSignup: Boolean});
+    check(user.services.dev, { name: String, isAdmin: Boolean, hasCompletedSignup: Boolean });
     serviceUserId = user.services.dev.name;
     user.profile.service = "dev";
   } else if ("expires" in user) {
@@ -132,8 +134,8 @@ Accounts.onCreateUser(function (options, user) {
     user.profile.service = "demo";
   } else if (user.services && user.services.email) {
     check(user.services.email,
-          {email: String,
-           tokens: [{digest: String, algorithm: String, createdAt: Date}]});
+          { email: String,
+           tokens: [{ digest: String, algorithm: String, createdAt: Date }], });
     serviceUserId = user.services.email.email;
     user.profile.service = "email";
   } else if (user.services && "google" in user.services) {
@@ -146,6 +148,7 @@ Accounts.onCreateUser(function (options, user) {
     throw new Meteor.Error(400, "user does not have a recognized identity provider: " +
                            JSON.stringify(user));
   }
+
   user._id = Crypto.createHash("sha256")
     .update(user.profile.service + ":" + serviceUserId).digest("hex");
 

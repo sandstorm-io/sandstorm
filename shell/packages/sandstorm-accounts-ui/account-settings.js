@@ -24,7 +24,7 @@ Template.sandstormAccountSettings.onCreated(function () {
   this._isLinkingNewIdentity = new ReactiveVar(false);
   this._selectedIdentityId = new ReactiveVar();
   this._actionCompleted = new ReactiveVar();
-  var self = this;
+  const _this = this;
 
   // TODO(cleanup): Figure out a better way to pass in this data. Perhaps it should be part of
   //   the URL?
@@ -36,13 +36,13 @@ Template.sandstormAccountSettings.onCreated(function () {
 
   this.autorun(function () {
     // Reset the selected identity ID when appropriate.
-    var user = Meteor.user();
+    const user = Meteor.user();
     if (user && user.loginIdentities) {
-      var identities = user.loginIdentities.concat(user.nonloginIdentities);
-      var currentlySelected = self._selectedIdentityId.get();
+      const identities = user.loginIdentities.concat(user.nonloginIdentities);
+      const currentlySelected = _this._selectedIdentityId.get();
       if (!currentlySelected || !_.findWhere(identities, { id: currentlySelected })) {
         if (identities.length > 0) {
-          self._selectedIdentityId.set(identities[0].id);
+          _this._selectedIdentityId.set(identities[0].id);
         }
       }
     }
@@ -51,14 +51,14 @@ Template.sandstormAccountSettings.onCreated(function () {
 
 GENDERS = { male: "male", female: "female", neutral: "neutral", robot: "robot" };
 
-var helpers = {
+const helpers = {
   setDocumentTitle: function () {
     document.title = "Account settings · " + Template.instance().data._db.getServerTitle();
   },
 
   identities: function () {
     return SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {
-      var identity = Meteor.users.findOne({ _id: id });
+      const identity = Meteor.users.findOne({ _id: id });
       if (identity) {
         SandstormDb.fillInProfileDefaults(identity);
         SandstormDb.fillInIntrinsicName(identity);
@@ -133,12 +133,12 @@ Template.sandstormAccountSettings.helpers({
   },
 
   setActionCompleted: function () {
-    var actionCompleted = Template.instance()._actionCompleted;
+    const actionCompleted = Template.instance()._actionCompleted;
     return function (x) { actionCompleted.set(x); };
   },
 
   linkingNewIdentityData: function () {
-    var instance = Template.instance();
+    const instance = Template.instance();
     return {
       doneCallback: function () {
         instance._isLinkingNewIdentity.set(false);
@@ -148,11 +148,11 @@ Template.sandstormAccountSettings.helpers({
   },
 
   emailLoginFormData: function () {
-    var instance = Template.instance();
+    const instance = Template.instance();
     return {
       linkingNewIdentity: {
         doneCallback: function () {
-          var input = instance.find("input[name='email']");
+          const input = instance.find("input[name='email']");
           if (input) {
             input.value = "";
           };
@@ -167,14 +167,14 @@ Template.sandstormAccountSettings.helpers({
 
 Template._accountProfileEditor.helpers({
   hasCompletedSignup: function () {
-    var user = Meteor.user();
+    const user = Meteor.user();
     return user && user.hasCompletedSignup;
   },
 
   identityManagementButtonsData: function () {
     if (this.identity) {
-      var user = Meteor.user();
-      var identityId = this.identity._id;
+      const user = Meteor.user();
+      const identityId = this.identity._id;
       return {
         _id: identityId,
         isLogin: user.loginIdentities && !!_.findWhere(user.loginIdentities, { id: identityId }),
@@ -192,7 +192,7 @@ Template._accountProfileEditor.helpers({
 
   emailDetails: function () {
     if (this.identity) {
-      var emails = SandstormDb.getVerifiedEmails(this.identity);
+      const emails = SandstormDb.getVerifiedEmails(this.identity);
       if (emails.length == 0) {
         return "This identity has no attached e-mail.";
       } else if (emails.length == 1) {
@@ -241,8 +241,8 @@ Template.sandstormAccountSettings.events({
 
 Template.sandstormAccountsFirstSignIn.helpers({
   identityToConfirm: function () {
-    var identityId = SandstormDb.getUserIdentityIds(Meteor.user())[0];
-    var identity = Meteor.users.findOne({ _id: identityId });
+    const identityId = SandstormDb.getUserIdentityIds(Meteor.user())[0];
+    const identity = Meteor.users.findOne({ _id: identityId });
     if (identity) {
       SandstormDb.fillInProfileDefaults(identity);
       SandstormDb.fillInIntrinsicName(identity);
@@ -252,7 +252,7 @@ Template.sandstormAccountsFirstSignIn.helpers({
   },
 
   termsAndPrivacy: function () {
-    var result = {
+    const result = {
       termsUrl: Template.currentData()._db.getSetting("termsUrl"),
       privacyUrl: Template.currentData()._db.getSetting("privacyUrl"),
     };
@@ -264,16 +264,16 @@ Template.sandstormAccountsFirstSignIn.helpers({
   },
 });
 
-var submitProfileForm = function (event, cb) {
+const submitProfileForm = function (event, cb) {
   event.preventDefault();
-  var form = Template.instance().find("form");
+  const form = Template.instance().find("form");
 
   if (form.agreedToTerms && !form.agreedToTerms.checked) {
     alert("You must agree to the terms to continue.");
     return;
   }
 
-  var newProfile = {
+  const newProfile = {
     name: form.nameInput.value,
     handle: form.handle.value,
     pronoun: form.pronoun.value,
@@ -291,7 +291,7 @@ var submitProfileForm = function (event, cb) {
     return;
   }
 
-  var identityId = form.getAttribute("data-identity-id");
+  const identityId = form.getAttribute("data-identity-id");
 
   Meteor.call("updateProfile", identityId, newProfile, function (err) {
     if (err) {
@@ -349,16 +349,16 @@ Template._accountProfileEditor.events({
   "click .picture button": function (event, instance) {
     event.preventDefault();
 
-    var staticHost = Template.currentData().staticHost;
+    const staticHost = Template.currentData().staticHost;
     if (!staticHost) throw new Error("missing _staticHost");
 
     // TODO(cleanup): Share code with "restore backup" and other upload buttons.
-    var input = instance.find("input[name='picture']");
+    const input = instance.find("input[name='picture']");
 
-    var file = undefined;
-    var token = undefined;
+    let file = undefined;
+    let token = undefined;
 
-    var doUpload = function () {
+    const doUpload = function () {
       HTTP.post(staticHost + "/" + token, { content: file, }, function (err, result) {
         if (err) {
           alert("Upload failed: " + err.message);

@@ -1,7 +1,7 @@
 // for convenience
-var loginButtonsSession = Accounts._loginButtonsSession;
+const loginButtonsSession = Accounts._loginButtonsSession;
 
-var helpers = {
+const helpers = {
   isCurrentRoute: function (routeName) {
     return Router.current().route.getName() == routeName;
   },
@@ -31,9 +31,9 @@ Template.accountButtonsPopup.events({
   },
 });
 
-var displayName = function () {
-  var currentIdentityId = Accounts.getCurrentIdentityId();
-  var user = Meteor.users.findOne({ _id: currentIdentityId });
+const displayName = function () {
+  const currentIdentityId = Accounts.getCurrentIdentityId();
+  const user = Meteor.users.findOne({ _id: currentIdentityId });
   if (!user) return "(incognito)";
 
   SandstormDb.fillInProfileDefaults(user);
@@ -64,12 +64,12 @@ Template._loginButtonsMessages.helpers({
   },
 });
 
-var loginResultCallback = function (serviceName, err) {
+const loginResultCallback = function (serviceName, err) {
   if (!err) {
     loginButtonsSession.closeDropdown();
   } else if (err instanceof Accounts.LoginCancelledError) {
     // do nothing
-  } else if (err instanceof ServiceConfiguration.ConfigError) {
+  } else if (err instanceof ServiceConfiguration.ConfigError) { // jscs:ignore disallowEmptyBlocks
     loginButtonsSession.errorMessage(
       "Configuration problem: " + err.message + ". Please visit the Admin Settings page within " +
       "Sandstorm, or ask your administrator to do so. You may need an admin token. Read more by " +
@@ -92,7 +92,7 @@ Accounts.onPageLoadLogin(function (attemptInfo) {
 });
 
 // XXX from http://epeli.github.com/underscore.string/lib/underscore.string.js
-var capitalize = function (str) {
+const capitalize = function (str) {
   str = str == null ? "" : String(str);
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
@@ -133,8 +133,8 @@ Template._loginButtonsLoggedInDropdown.helpers({
   },
 
   identitySwitcherData: function () {
-    var identities = SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {
-      var identity = Meteor.users.findOne({ _id: id });
+    const identities = SandstormDb.getUserIdentityIds(Meteor.user()).map(function (id) {
+      const identity = Meteor.users.findOne({ _id: id });
       if (identity) {
         SandstormDb.fillInProfileDefaults(identity);
         SandstormDb.fillInIntrinsicName(identity);
@@ -159,7 +159,7 @@ Template._loginButtonsLoggedInDropdown.events({
   },
 });
 
-var sendEmail = function (email, linkingNewIdentity) {
+const sendEmail = function (email, linkingNewIdentity) {
   loginButtonsSession.infoMessage("Sending email...");
   Accounts.createAndEmailTokenForUser(email, linkingNewIdentity, function (err) {
     if (err) {
@@ -177,7 +177,7 @@ var sendEmail = function (email, linkingNewIdentity) {
   });
 };
 
-var loginWithToken = function (email, token) {
+const loginWithToken = function (email, token) {
   loginButtonsSession.infoMessage("Logging in...");
   Meteor.loginWithEmailToken(email, token, function (err) {
     if (err) {
@@ -211,9 +211,9 @@ Template.oauthLoginButton.events({
 
     loginButtonsSession.resetMessages();
 
-    var loginWithService = Meteor[instance.data.data.method];
+    const loginWithService = Meteor[instance.data.data.method];
 
-    var serviceName = instance.data.data.displayName;
+    const serviceName = instance.data.data.displayName;
     loginWithService({}, function (err) {
       loginResultCallback(serviceName, err);
     });
@@ -241,8 +241,8 @@ Template.loginButtonsList.helpers({
 Template.emailAuthenticationForm.events({
   "submit form": function (event, instance) {
     event.preventDefault();
-    var form = event.currentTarget;
-    var email = loginButtonsSession.get("inSignupFlow");
+    const form = event.currentTarget;
+    const email = loginButtonsSession.get("inSignupFlow");
     if (email) {
       if (instance.data.linkingNewIdentity) {
         Meteor.call("linkEmailIdentityToAccount", email, form.token.value, function (err, result) {
@@ -308,14 +308,14 @@ Template.devLoginForm.events({
   },
 
   "click button.login-dev-account": function (event, instance) {
-    var displayName = event.currentTarget.getAttribute("data-name");
-    var isAdmin = !!event.currentTarget.getAttribute("data-is-admin");
+    const displayName = event.currentTarget.getAttribute("data-name");
+    const isAdmin = !!event.currentTarget.getAttribute("data-is-admin");
     loginDevHelper(displayName, isAdmin, instance.data.linkingNewIdentity);
   },
 
   "submit form": function (event, instance) {
     event.preventDefault();
-    var form = instance.find("form");
+    const form = instance.find("form");
     loginDevHelper(form.name.value, false, instance.data.linkingNewIdentity);
   },
 });

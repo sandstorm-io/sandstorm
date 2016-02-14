@@ -1,5 +1,5 @@
 // for convenience
-var loginButtonsSession = Accounts._loginButtonsSession;
+const loginButtonsSession = Accounts._loginButtonsSession;
 
 //
 // configureLoginServiceDialog template
@@ -14,8 +14,8 @@ Template._configureLoginServiceDialog.events({
     if (loginButtonsSession.get("configureLoginServiceDialogVisible") &&
         !loginButtonsSession.get("configureLoginServiceDialogSaveDisabled")) {
       // Prepare the configuration document for this login service
-      var serviceName = loginButtonsSession.get("configureLoginServiceDialogServiceName");
-      var configuration = {
+      const serviceName = loginButtonsSession.get("configureLoginServiceDialogServiceName");
+      const configuration = {
         service: serviceName,
       };
 
@@ -56,8 +56,8 @@ Template._configureLoginServiceDialog.events({
 // check whether the 'save configuration' button should be enabled.
 // this is a really strange way to implement this and a Forms
 // Abstraction would make all of this reactive, and simpler.
-var updateSaveDisabled = function () {
-  var anyFieldEmpty = _.any(configurationFields(), function (field) {
+const updateSaveDisabled = function () {
+  const anyFieldEmpty = _.any(configurationFields(), function (field) {
     return document.getElementById(
       "configure-login-service-dialog-" + field.property).value === "";
   });
@@ -67,8 +67,8 @@ var updateSaveDisabled = function () {
 
 // Returns the appropriate template for this login service.  This
 // template should be defined in the service's package
-var configureLoginServiceDialogTemplateForService = function () {
-  var serviceName = loginButtonsSession.get("configureLoginServiceDialogServiceName");
+const configureLoginServiceDialogTemplateForService = function () {
+  const serviceName = loginButtonsSession.get("configureLoginServiceDialogServiceName");
   // XXX Service providers should be able to specify their configuration
   // template name.
   return Template["configureLoginServiceDialogFor" +
@@ -77,8 +77,8 @@ var configureLoginServiceDialogTemplateForService = function () {
                    capitalize(serviceName))];
 };
 
-var configurationFields = function () {
-  var template = configureLoginServiceDialogTemplateForService();
+const configurationFields = function () {
+  const template = configureLoginServiceDialogTemplateForService();
   return template.fields();
 };
 
@@ -102,7 +102,7 @@ Template._configureLoginServiceDialog.helpers({
 });
 
 // XXX from http://epeli.github.com/underscore.string/lib/underscore.string.js
-var capitalize = function (str) {
+const capitalize = function (str) {
   str = str == null ? "" : String(str);
   return str.charAt(0).toUpperCase() + str.slice(1);
 };

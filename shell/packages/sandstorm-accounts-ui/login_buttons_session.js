@@ -1,4 +1,4 @@
-var VALID_KEYS = [
+const VALID_KEYS = [
   "dropdownVisible",
   "inSignupFlow",
 
@@ -11,12 +11,12 @@ var VALID_KEYS = [
   "configureOnDesktopVisible",
 ];
 
-var validateKey = function (key) {
+const validateKey = function (key) {
   if (!_.contains(VALID_KEYS, key))
     throw new Error("Invalid key in loginButtonsSession: " + key);
 };
 
-var KEY_PREFIX = "Meteor.loginButtons.";
+const KEY_PREFIX = "Meteor.loginButtons.";
 
 // TODO(now): Don't put this under `Accounts`.
 Accounts._loginButtonsSession = {

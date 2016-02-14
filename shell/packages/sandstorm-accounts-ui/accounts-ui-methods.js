@@ -17,7 +17,7 @@
 // This file contains method definitions which are available on both client and server (on the
 // client for prediction purposes, on the server for actual execution).
 
-var ValidHandle = Match.Where(function (handle) {
+const ValidHandle = Match.Where(function (handle) {
   check(handle, String);
   return !!handle.match(/^[a-z_][a-z0-9_]*$/);
 });
@@ -38,14 +38,14 @@ Meteor.methods({
       throw new Meteor.Error(403, "not logged in");
     }
 
-    var userToUpdate = Meteor.users.findOne({ _id: identityId });
+    const userToUpdate = Meteor.users.findOne({ _id: identityId });
 
     if (!this.isSimulation &&
         !this.connection.sandstormDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "identity is not linked to current user: " + identityId);
     }
 
-    var newValues = {
+    const newValues = {
       "profile.name": profile.name,
       "profile.handle": profile.handle,
       "profile.pronoun": profile.pronoun,
@@ -99,7 +99,7 @@ if (Meteor.isServer) {
         throw new Meteor.Error(403, "Not logged in.");
       }
 
-      var emails = SandstormDb.getUserEmails(Meteor.user());
+      const emails = SandstormDb.getUserEmails(Meteor.user());
       if (!_.findWhere(emails, { email: email, verified: true })) {
         throw new Meteor.Error(403, "Not a verified email of the current user: " + email);
       }

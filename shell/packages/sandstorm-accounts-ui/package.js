@@ -4,8 +4,11 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
-  api.use(["check", "tracker", "service-configuration", "accounts-base",
-           "underscore", "templating", "session", "http", "sandstorm-db",], "client");
+  api.use("ecmascript");
+  api.use([
+    "check", "tracker", "service-configuration", "accounts-base",
+    "underscore", "templating", "session", "http", "sandstorm-db",
+  ], "client");
   api.use(["check", "accounts-base", "accounts-identity"], "server");
 
   // Export Accounts (etc) to packages using this one.
@@ -33,7 +36,8 @@ Package.onUse(function (api) {
     "account-settings.js",
     "accounts-ui-methods.js",
 
-    "accounts_ui.js",], "client");
+    "accounts_ui.js",
+  ], "client");
 
   api.addFiles(["accounts-ui-server.js", "accounts-ui-methods.js"], "server");
 

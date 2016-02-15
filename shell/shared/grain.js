@@ -149,6 +149,34 @@ if (Meteor.isServer) {
     return;
   });
 
+  Meteor.publish("requestingAccess", function(grainId, identityId) {
+    check(grainId, String);
+    check(identityId, String);
+
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Must be logged in to request access.");
+    }
+    if (!globalDb.userHasIdentity(this.userId, identityId)) {
+      throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
+    }
+    const grain = globalDb.getGrain(grainId);
+    if (!grain) {
+      throw new Meteor.Error(404, "Grain not found.");
+    }
+    const _this = this;
+    const query = ApiTokens.find({grainId: grainId, accountId: grain.userId,
+                                  "owner.user.identityId": identityId,
+                                  revoked: {$ne: true}});
+    const handle = query.observe({
+      added(apiToken) {
+        _this.added("grantedAccessRequests",
+                    Random.id(), {grainId: grainId, identityId: identityId});
+      }
+    });
+
+    this.onStop(() => handle.stop());
+  });
+
   Meteor.publish("grainSize", function (grainId) {
     // Publish pseudo-collection containing the size of the grain opened in the given session.
     check(grainId, String);
@@ -214,6 +242,7 @@ if (Meteor.isServer) {
 GrainSizes = new Mongo.Collection("grainSizes");
 // TokenInfo is used by grainview.js
 TokenInfo = new Mongo.Collection("tokenInfo");
+GrantedAccessRequests = new Mongo.Collection("grantedAccessRequests");
 // Pseudo-collections published above.
 
 function emailLinkWithInlineStyle(url, text) {
@@ -968,6 +997,7 @@ if (Meteor.isClient) {
 
   Template.requestAccess.onCreated(function () {
     this._status = new ReactiveVar({showButton: true});
+    this._grain = getActiveGrain(globalGrains.get());
   });
 
   Template.requestAccess.events({
@@ -992,12 +1022,21 @@ if (Meteor.isClient) {
             .map(id => globalDb.getIdentity(id));
       const instance = Template.instance();
       function onPicked(identityId) {
-        let grainId = getActiveGrain(globalGrains.get()).grainId();
+        let grainId = instance._grain.grainId();
         Meteor.call("requestAccess", getOrigin(), grainId, identityId, function(error, result) {
           if (error) {
             instance._status.set({error: error});
           } else {
             instance._status.set({success: true});
+            instance.subscribe("requestingAccess", grainId, identityId);
+            instance.autorun(() => {
+              const granted = GrantedAccessRequests.findOne({grainId: grainId,
+                                                             identityId: identityId});
+              if (granted) {
+                instance._grain.reset(granted.identityId);
+                instance._grain.openSession();
+              }
+            });
           }
         });
         instance._status.set({waiting: true});

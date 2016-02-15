@@ -64,6 +64,7 @@ GrainView = class GrainView {
     this._dep.changed();
     this.destroy();
     this._hasLoaded = undefined;
+    this._error = undefined;
     this._hostId = undefined;
     this._sessionId = null;
     this._sessionSalt = null;

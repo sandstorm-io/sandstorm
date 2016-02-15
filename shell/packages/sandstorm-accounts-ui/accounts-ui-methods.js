@@ -17,7 +17,7 @@
 // This file contains method definitions which are available on both client and server (on the
 // client for prediction purposes, on the server for actual execution).
 
-var ValidHandle = Match.Where(function (handle) {
+const ValidHandle = Match.Where(function (handle) {
   check(handle, String);
   return !!handle.match(/^[a-z_][a-z0-9_]*$/);
 });
@@ -31,30 +31,30 @@ Meteor.methods({
       name: String,
       handle: ValidHandle,
       pronoun: Match.OneOf("male", "female", "neutral", "robot"),
-      unverifiedEmail: Match.Optional(String)
+      unverifiedEmail: Match.Optional(String),
     });
 
     if (!this.userId) {
       throw new Meteor.Error(403, "not logged in");
     }
 
-    var userToUpdate = Meteor.users.findOne({_id: identityId});
+    const userToUpdate = Meteor.users.findOne({ _id: identityId });
 
     if (!this.isSimulation &&
         !this.connection.sandstormDb.userHasIdentity(this.userId, identityId)) {
-      throw new Meteor.Error(403, "identity is not linked to current user: "+ identityId);
+      throw new Meteor.Error(403, "identity is not linked to current user: " + identityId);
     }
 
-    var newValues = {
+    const newValues = {
       "profile.name": profile.name,
       "profile.handle": profile.handle,
       "profile.pronoun": profile.pronoun,
     };
 
-    Meteor.users.update({_id: userToUpdate._id}, {$set: newValues});
+    Meteor.users.update({ _id: userToUpdate._id }, { $set: newValues });
 
     if (!Meteor.user().hasCompletedSignup) {
-      Meteor.users.update({_id: this.userId}, {$set: {hasCompletedSignup: true}});
+      Meteor.users.update({ _id: this.userId }, { $set: { hasCompletedSignup: true } });
     }
   },
 
@@ -63,14 +63,14 @@ Meteor.methods({
       throw new Meteor.Error(403, "not logged in");
     }
 
-    Meteor.users.update(this.userId, {$unset: {hasCompletedSignup: ""}});
+    Meteor.users.update(this.userId, { $unset: { hasCompletedSignup: "" } });
   },
 });
 
 if (Meteor.isClient) {
   window.testFirstSignup = function () {
     Meteor.call("testFirstSignup");
-  }
+  };
 }
 
 if (Meteor.isServer) {
@@ -84,7 +84,7 @@ if (Meteor.isServer) {
       }
 
       return this.connection.sandstormDb.newAssetUpload({
-        profilePicture: { userId: this.userId, identityId: identityId }
+        profilePicture: { userId: this.userId, identityId: identityId },
       });
     },
 
@@ -93,17 +93,18 @@ if (Meteor.isServer) {
       this.connection.sandstormDb.fulfillAssetUpload(id);
     },
 
-    setPrimaryEmail: function(email) {
+    setPrimaryEmail: function (email) {
       check(email, String);
       if (!this.userId) {
         throw new Meteor.Error(403, "Not logged in.");
       }
-      var emails = SandstormDb.getUserEmails(Meteor.user());
-      if (!_.findWhere(emails, {email: email, verified: true})) {
+
+      const emails = SandstormDb.getUserEmails(Meteor.user());
+      if (!_.findWhere(emails, { email: email, verified: true })) {
         throw new Meteor.Error(403, "Not a verified email of the current user: " + email);
       }
 
-      Meteor.users.update({_id: this.userId}, {$set: {primaryEmail: email}});
+      Meteor.users.update({ _id: this.userId }, { $set: { primaryEmail: email } });
     },
   });
 }

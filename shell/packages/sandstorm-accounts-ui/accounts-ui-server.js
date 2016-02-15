@@ -17,20 +17,24 @@
 // Meteor permits users to modify their own profile by default, for some reason.
 Meteor.users.deny({
   insert: function () { return true; },
+
   update: function () { return true; },
+
   remove: function () { return true; },
-  fetch: []
+
+  fetch: [],
 });
 
 Meteor.publish("getMyUsage", function () {
-  var db = this.connection.sandstormDb;
+  const db = this.connection.sandstormDb;
   if (this.userId) {
     // TODO(someday): Make this reactive.
-    var user = Meteor.users.findOne(this.userId);
-    var usage = db.getMyUsage(user);
+    const user = Meteor.users.findOne(this.userId);
+    const usage = db.getMyUsage(user);
     this.added("users", this.userId, {
       pseudoUsage: usage,
     });
   }
+
   this.ready();
 });

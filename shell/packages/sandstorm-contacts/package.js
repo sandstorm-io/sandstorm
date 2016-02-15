@@ -16,10 +16,11 @@
 
 Package.describe({
   summary: "Sandstorm Contacts",
-  version: "0.1.0"
+  version: "0.1.0",
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use(["check", "tracker", "underscore", "mongo"], "client");
   api.use(["sandstorm-db"], ["client", "server"]);
   api.addFiles(["contacts-client.js"], "client");

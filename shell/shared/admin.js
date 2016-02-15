@@ -184,7 +184,6 @@ const capitalize = function (str) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 };
 
-
 if (Meteor.isClient) {
   AdminToken = new Mongo.Collection("adminToken");  // see Meteor.publish("adminToken")
   AdminLog = new Meteor.Collection("adminLog");
@@ -932,7 +931,7 @@ if (Meteor.isServer) {
       Fs.unlinkSync(SANDSTORM_ADMIN_TOKEN);
       console.log("Admin token deleted.");
     }
-  }
+  };
 
   Meteor.methods({
     setAccountSetting: function (token, serviceName, value) {

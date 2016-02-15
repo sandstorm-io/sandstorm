@@ -1,7 +1,7 @@
 Npm.depends({
-    "bignum": "0.9.0",
+  bignum: "0.9.0",
 });
 
-Package.onUse(function(api) {
+Package.onUse(function (api) {
   api.addFiles("import.js", "server");
 });

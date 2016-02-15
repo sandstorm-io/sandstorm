@@ -1,11 +1,11 @@
-var Future = Npm.require('fibers/future');
-var urlModule = Npm.require('url');
-var MailComposer = Npm.require('mailcomposer').MailComposer;
+const Future = Npm.require("fibers/future");
+const urlModule = Npm.require("url");
+const MailComposer = Npm.require("mailcomposer").MailComposer;
 
 SandstormEmail = {};
 
-var getSmtpUrl = function () {
-  var setting = Settings.findOne({_id: "smtpUrl"});
+const getSmtpUrl = function () {
+  const setting = Settings.findOne({ _id: "smtpUrl" });
   if (setting) {
     return setting.value;
   } else {
@@ -13,60 +13,62 @@ var getSmtpUrl = function () {
   }
 };
 
-var makePool = function (mailUrlString) {
-  var mailUrl = urlModule.parse(mailUrlString);
-  if (mailUrl.protocol !== 'smtp:')
+const makePool = function (mailUrlString) {
+  const mailUrl = urlModule.parse(mailUrlString);
+  if (mailUrl.protocol !== "smtp:")
     throw new Error("Email protocol in $MAIL_URL (" +
                     mailUrlString + ") must be 'smtp'");
 
-  var port = +(mailUrl.port);
-  var auth = false;
+  const port = +(mailUrl.port);
+  let auth = false;
   if (mailUrl.auth) {
-    var parts = mailUrl.auth.split(':', 2);
-    auth = {user: parts[0],
-            pass: parts[1]};
+    const parts = mailUrl.auth.split(":", 2);
+    auth = { user: parts[0],
+            pass: parts[1], };
   }
 
-  var simplesmtp = Npm.require('simplesmtp');
-  var pool = simplesmtp.createClientPool(
+  const simplesmtp = Npm.require("simplesmtp");
+  const pool = simplesmtp.createClientPool(
     port,  // Defaults to 25
     mailUrl.hostname,  // Defaults to "localhost"
     { secureConnection: (port === 465),
       // XXX allow maxConnections to be configured?
-      auth: auth });
+      auth: auth, });
 
-  pool._future_wrapped_sendMail = _.bind(Future.wrap(pool.sendMail), pool);
+  pool._futureWrappedSendMail = _.bind(Future.wrap(pool.sendMail), pool);
   return pool;
 };
 
 // We construct smtpPool at the first call to Email.send, so that
 // Meteor.startup code can set $MAIL_URL.
-var pool;
-var configured = false;
+let pool;
+let configured = false;
 
-Meteor.startup(function() {
-  Settings.find({_id: "smtpUrl"}).observeChanges({
-    removed : function () {
+Meteor.startup(function () {
+  Settings.find({ _id: "smtpUrl" }).observeChanges({
+    removed: function () {
       configured = false;
     },
-    changed : function () {
+
+    changed: function () {
       configured = false;
     },
-    added : function () {
+
+    added: function () {
       configured = false;
-    }
+    },
   });
 
   // Accounts.emailToken is set to use "Email" by default. Change it to use our mail service.
   Accounts.emailToken.setEmailPackage("SandstormEmail");
 });
 
-var getPool = function (smtpUrl) {
+const getPool = function (smtpUrl) {
   if (smtpUrl) {
     return makePool(smtpUrl);
   } else if (!configured) {
     configured = true;
-    var url = getSmtpUrl();
+    const url = getSmtpUrl();
     if (url) {
       pool = makePool(url);
     }
@@ -75,30 +77,32 @@ var getPool = function (smtpUrl) {
   return pool;
 };
 
-var next_devmode_mail_id = 0;
-var output_stream = process.stdout;
+let nextDevmodeMailId = 0;
+const outputStream = process.stdout;
 
-var devModeSend = function (mc) {
-  var devmode_mail_id = next_devmode_mail_id++;
+const devModeSend = function (mc) {
+  // This seems to be dead code.
+  const devmodeMailId = nextDevmodeMailId++;
 
-  var stream = output_stream;
+  const stream = outputStream;
 
   // This approach does not prevent other writers to stdout from interleaving.
-  stream.write("====== BEGIN MAIL #" + devmode_mail_id + " ======\n");
+  stream.write("====== BEGIN MAIL #" + devmodeMailId + " ======\n");
   stream.write("(Mail not sent; to enable sending, set the MAIL_URL " +
                "environment variable.)\n");
   mc.streamMessage();
-  mc.pipe(stream, {end: false});
-  var future = new Future;
-  mc.on('end', function () {
-    stream.write("====== END MAIL #" + devmode_mail_id + " ======\n");
-    future['return']();
+  mc.pipe(stream, { end: false });
+  const future = new Future;
+  mc.on("end", function () {
+    stream.write("====== END MAIL #" + devmodeMailId + " ======\n");
+    future["return"]();
   });
+
   future.wait();
 };
 
-var smtpSend = function (pool, mc) {
-  pool._future_wrapped_sendMail(mc).wait();
+const smtpSend = function (pool, mc) {
+  pool._futureWrappedSendMail(mc).wait();
 };
 
 // Old comment below
@@ -140,7 +144,7 @@ var smtpSend = function (pool, mc) {
  *   https://github.com/nodemailer/mailcomposer/tree/v0.1.15#add-attachments
  */
 SandstormEmail.send = function (options) {
-  var mc = new MailComposer();
+  const mc = new MailComposer();
 
   // setup message data
   mc.setMessageOption({
@@ -151,7 +155,7 @@ SandstormEmail.send = function (options) {
     replyTo: options.replyTo,
     subject: options.subject,
     text: options.text,
-    html: options.html
+    html: options.html,
   });
 
   _.each(options.headers, function (value, name) {
@@ -179,7 +183,7 @@ SandstormEmail.rawSend = function (mc, smtpUrl) {
   // See http://tools.ietf.org/html/rfc5321#section-4.5.2
   mc._message.body = mc._message.body.replace(/(^|\n)\./g, "$1..");
 
-  var pool = getPool(smtpUrl);
+  const pool = getPool(smtpUrl);
   if (pool) {
     smtpSend(pool, mc);
   } else {

@@ -16,10 +16,11 @@
 
 Package.describe({
   summary: "Sandstorm UI top bar",
-  version: "0.1.0"
+  version: "0.1.0",
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-identicons"], "client");
   api.addFiles(["topbar.html", "topbar.js"], "client");
   api.export("SandstormTopbar");

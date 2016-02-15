@@ -16,10 +16,11 @@
 
 Package.describe({
   summary: "Sandstorm UI app list",
-  version: "0.1.0"
+  version: "0.1.0",
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use(["check", "reactive-var", "reload", "templating", "tracker", "underscore", "sandstorm-db", "sandstorm-ui-topbar", "sandstorm-autoupdate-apps"], "client");
   api.addFiles(["applist.html", "applist-client.js"], "client");
   api.export("SandstormAppList");

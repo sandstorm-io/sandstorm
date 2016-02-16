@@ -313,3 +313,23 @@ not by a member of the Sandstorm team. If you want to run your own wildcard DNS 
 xip.io inside your own organization, you can do so by [downloading
 xipd](https://github.com/sstephenson/xipd) which Sam generously licenses as open source software.
 You can also set up your own `*.sandstorm.example.com` subdomain within your organization's domain.
+
+## mongod failed to start. What's going on?
+
+If your Sandstorm server isn't working, and you find this text in `/opt/sandstorm/var/log/sandstorm.log`:
+
+```
+**mongod failed to start. Initial exit code: 100, bailing out now.
+```
+
+then MongoDB is unable to start. Sandstorm operates an embedded MongoDB database instance to store
+information like what user accounts exist and what permissions they have. Keep the following in mind
+to address the issue.
+
+- Your system might not have enough free disk space. Sandstorm requires about 500 MB available space
+  to start successfully.
+
+- If your system _does_ have 500 MB available space, your Sandstorm database (stored in
+  `/opt/sandstorm/var/mongo`) might be corrupted. You can likely recover from this issue. Please
+  email support@sandstorm.io so we can help you. Keep in mind that grain data is safely stored
+  separately from this database.

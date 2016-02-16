@@ -1691,7 +1691,7 @@ private:
     // If we got here, mongod either exited non-zero, or has no PID in its pidfile. In that case,
     // we do not know how proceed.
     KJ_FAIL_ASSERT("**mongod failed to start. Initial exit code: ", status,
-                   "bailing out now. Note: Sandstorm needs about 500MB of disk free to operate!");
+                   "bailing out now. For troubleshooting, visit: https://docs.sandstorm.io/en/latest/search.html?q=mongod+failed+to+start");
     return 0;
   }
 

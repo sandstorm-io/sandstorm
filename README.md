@@ -3,6 +3,7 @@
 Sandstorm makes it easy to run your own server.
 
 Drew is testing Jenkins.
+Drew is testing Jenkins more.
 
 Use Sandstorm to install apps to create [documents](http://etherpad.org/),
 [spreadsheets](https://ethercalc.net/), [blogs](https://wordpress.org),

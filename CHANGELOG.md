@@ -1,3 +1,7 @@
+### v0.145 (2016-02-16)
+- Updated glibc for CVE-2015-7547.
+- Oasis: Fixed a bug that prevented adding an identity that is already attached to an empty account.
+
 ### v0.144 (2016-02-13)
 - Initial version of Picker Powerbox implemented. A grain can now prompt the user to choose one of their other grains to share, and then the requesting grain can present that grain to other users. This could be used e.g. to share securely through a chat room or message board. Look for apps to start using this soon.
 - When app search gives no results, we now suggest the user try the app market.

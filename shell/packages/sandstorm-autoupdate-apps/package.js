@@ -20,13 +20,17 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use("http");
   api.addFiles(["autoupdate-apps.js"], ["server"]);
   api.export("SandstormAutoupdateApps");
 });
 
 Package.onTest(function (api) {
-  api.use(["http", "practicalmeteor:sinon", "accounts-base", "sandstorm-db",
-    "tinytest", "sandstorm-autoupdate-apps"], ["server"]);
+  api.use("ecmascript");
+  api.use([
+    "http", "practicalmeteor:sinon", "accounts-base", "sandstorm-db",
+    "tinytest", "sandstorm-autoupdate-apps",
+  ], ["server"]);
   api.addFiles("autoupdate-apps-tests.js", "server");
 });

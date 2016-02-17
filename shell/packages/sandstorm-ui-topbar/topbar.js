@@ -14,9 +14,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-var reloadBlockingCount = 0;
-var blockedReload = new ReactiveVar(null);
-var explicitlyUnblocked = false;
+let reloadBlockingCount = 0;
+const blockedReload = new ReactiveVar(null);
+let explicitlyUnblocked = false;
 Reload._onMigrate(undefined, function (retry, options) {
   if (reloadBlockingCount > 0 && !explicitlyUnblocked && !options.immediateMigration) {
     console.log("New version ready, but blocking reload because an app is open.");
@@ -28,7 +28,7 @@ Reload._onMigrate(undefined, function (retry, options) {
 });
 
 function unblockUpdate() {
-  var retry = blockedReload.get();
+  const retry = blockedReload.get();
   if (retry) {
     blockedReload.set(null);
     explicitlyUnblocked = true;
@@ -37,6 +37,7 @@ function unblockUpdate() {
 }
 
 Template.sandstormTopbarBlockReload.onCreated(function () { ++reloadBlockingCount; });
+
 Template.sandstormTopbarBlockReload.onDestroyed(function () {
   if (--reloadBlockingCount == 0) {
     unblockUpdate();
@@ -46,12 +47,13 @@ Template.sandstormTopbarBlockReload.onDestroyed(function () {
 Template.sandstormTopbar.onCreated(function () {
   Template.instance().popupPosition = new ReactiveVar(undefined, _.isEqual);
 
-  var topbar = this.data;
+  const topbar = this.data;
   this.escapeHandler = function (ev) {
     if (ev.keyCode === 27) {
       topbar.closePopup();
     }
   };
+
   document.getElementsByTagName("body")[0].addEventListener("keydown", this.escapeHandler);
 });
 
@@ -77,9 +79,9 @@ Template.sandstormTopbar.helpers({
   },
 
   grains: function () {
-    var topbar = Template.instance().data;
-    var grains = topbar._grains.get();
-    var data = grains.map(function (grain) {
+    const topbar = Template.instance().data;
+    const grains = topbar._grains.get();
+    const data = grains.map(function (grain) {
       grain.depend();
       return {
         grainId: grain.grainId(),
@@ -90,16 +92,18 @@ Template.sandstormTopbar.helpers({
         appTitle: grain.appTitle(),
       };
     });
+
     return data;
   },
+
   grainCount: function () {
-    var topbar = Template.instance().data;
-    var grains = topbar._grains.get();
+    const topbar = Template.instance().data;
+    const grains = topbar._grains.get();
     return grains.length;
   },
 
   currentPopup: function () {
-    var name = this._expanded.get();
+    const name = this._expanded.get();
     if (name) {
       this._itemsTracker.depend();
       return this._items[name];
@@ -111,27 +115,27 @@ Template.sandstormTopbar.helpers({
   template: function () {
     // Spacebars' {{>foo bar}} passes `bar` by pushing it onto the data context stack rather than
     // passing it as a parameter. The original data context must be accessed via `parentData()`.
-    var item = Template.parentData(1);
+    const item = Template.parentData(1);
     return item.template;
   },
 
   popupTemplate: function () {
-    var item = Template.parentData(1);
+    const item = Template.parentData(1);
     return item.popupTemplate;
   },
 
   popupTemplateNested: function () {
     // Here we need parentData(2) because we've also pushed `position` onto the stack.
-    var item = Template.parentData(2);
+    const item = Template.parentData(2);
     return item.popupTemplate;
   },
 
   position: function () {
-    var instance = Template.instance();
-    var item = instance.data._items[instance.data._expanded.get()];
+    const instance = Template.instance();
+    const item = instance.data._items[instance.data._expanded.get()];
     if (item) {
       Meteor.defer(function () {
-        var element = instance.find(".topbar>.menubar>." + item.name);
+        const element = instance.find(".topbar>.menubar>." + item.name);
         if (element) {
           // This positions the popup under the topbar item that spawned it. As a hacky heuristic,
           // we position the popup from the left if the item is closer to the left of the window,
@@ -142,22 +146,22 @@ Template.sandstormTopbar.helpers({
 
           if (item.name == "account") {
             // account should always be flush right
-            instance.popupPosition.set({ name: item.name, align: "right", px: 0});
+            instance.popupPosition.set({ name: item.name, align: "right", px: 0 });
           } else {
-            var rect = element.getBoundingClientRect();
-            var currentWindowWidth = windowWidth.get();
-            var windowMid = currentWindowWidth / 2;
-            var itemMid = (rect.left + rect.right) / 2;
+            const rect = element.getBoundingClientRect();
+            const currentWindowWidth = windowWidth.get();
+            const windowMid = currentWindowWidth / 2;
+            const itemMid = (rect.left + rect.right) / 2;
             instance.popupPosition.set(itemMid < windowMid
                 ? { name: item.name, align: "left", px: Math.max(itemMid - 50, 0) }
                 : { name: item.name, align: "right",
-                    px: Math.max(currentWindowWidth - itemMid - 50, 0) });
+                    px: Math.max(currentWindowWidth - itemMid - 50, 0), });
           }
         }
       });
     }
 
-    var result = instance.popupPosition.get();
+    const result = instance.popupPosition.get();
     if (item && result && result.name === item.name) {
       return result;
     } else {
@@ -167,27 +171,28 @@ Template.sandstormTopbar.helpers({
   },
 
   accountExpires: function () {
-    var user = Meteor.user();
+    const user = Meteor.user();
     if (!user || !Meteor.user().expires) return null;
 
-    var ms = Meteor.user().expires.getTime() - Date.now();
-    var sec = Math.floor(ms / 1000) % 60;
+    const ms = Meteor.user().expires.getTime() - Date.now();
+    let sec = Math.floor(ms / 1000) % 60;
     if (sec < 10) sec = "0" + sec;
-    var min = Math.floor(ms / 60000);
-    var comp = Tracker.currentComputation;
+    const min = Math.floor(ms / 60000);
+    const comp = Tracker.currentComputation;
     if (comp) {
       Meteor.setTimeout(comp.invalidate.bind(comp), 1000);
     }
+
     return {
       // We put zero-width spaces on either side of the : in order to allow wrapping when the
       // sidebar is shrunk.
       countdown: min + "\u200b:\u200b" + sec,
-      urgent: ms < 600000
+      urgent: ms < 600000,
     };
   },
 });
 
-var windowWidth = new ReactiveVar(window.innerWidth);
+const windowWidth = new ReactiveVar(window.innerWidth);
 window.addEventListener("resize", function () {
   windowWidth.set(window.innerWidth);
 });
@@ -198,12 +203,12 @@ Template.sandstormTopbar.events({
   },
 
   "click .topbar>.menubar>li": function (event) {
-    var data = Blaze.getData(event.currentTarget);
+    const data = Blaze.getData(event.currentTarget);
     if (data.popupTemplate) {
       event.stopPropagation();
       event.preventDefault();
 
-      var topbar = Template.instance().data;
+      const topbar = Template.instance().data;
       topbar._expanded.set(data.name);
       topbar._menuExpanded.set(false);
     }
@@ -233,31 +238,32 @@ Template.sandstormTopbar.events({
   },
 
   "click .toggle-navbar": function (event) {
-    var topbar = Template.instance().data;
+    const topbar = Template.instance().data;
     topbar._shrinkNavbar.set(!topbar._shrinkNavbar.get());
   },
 
   "click .menu-button": function (event) {
-    var topbar = Template.instance().data;
+    const topbar = Template.instance().data;
     topbar._menuExpanded.set(!topbar._menuExpanded.get());
   },
 
   "click .navbar-shrink": function (event) {
-    var topbar = Template.instance().data;
+    const topbar = Template.instance().data;
     topbar._shrinkNavbar.set(!topbar._shrinkNavbar.get());
   },
 
   "click .navbar .close-button": function (event) {
-    var grainId = event.currentTarget.parentNode.getAttribute("data-grainid");
-    var topbar = Template.instance().data;
-    var grains = topbar._grains.get();
+    const grainId = event.currentTarget.parentNode.getAttribute("data-grainid");
+    const topbar = Template.instance().data;
+    const grains = topbar._grains.get();
 
-    var activeIndex = -1;
-    var closeIndex = -1;
-    grains.forEach(function(grain, i){
+    let activeIndex = -1;
+    let closeIndex = -1;
+    grains.forEach(function (grain, i) {
       if (grain.isActive()) {
         activeIndex = i;
       }
+
       if (grain.grainId() == grainId) {
         closeIndex = i;
         grain.destroy();
@@ -270,12 +276,13 @@ Template.sandstormTopbar.events({
       if (activeIndex == 0) {
         Router.go("grains");
       }
+
       return;
     }
 
     if (activeIndex == closeIndex) {
       // If the user closed the active grain, redirect to the next one after closing this one.
-      var newActiveIndex = (activeIndex == grains.length - 1) ? activeIndex - 1 : activeIndex;
+      const newActiveIndex = (activeIndex == grains.length - 1) ? activeIndex - 1 : activeIndex;
       // Unless the active grain was the last one, in which case redirect to the previous one.
       grains.splice(closeIndex, 1);
       grains[newActiveIndex].setActive(true);
@@ -288,39 +295,41 @@ Template.sandstormTopbar.events({
   },
 
   "click .demo-notice .sign-in": function (event) {
-    var topbar = Template.instance().data;
+    const topbar = Template.instance().data;
     topbar.openPopup("login");
   },
 });
 
 Template.sandstormTopbarItem.onCreated(function () {
-  var item = _.clone(this.data);
-  var topbar = item.topbar;
+  const item = _.clone(this.data);
+  const topbar = item.topbar;
   delete item.topbar;
 
   if (typeof item.template === "string") {
     item.template = Template[item.template];
   }
+
   if (typeof item.popupTemplate === "string") {
     item.popupTemplate = Template[item.popupTemplate];
   }
 
-  var instance = Template.instance();
+  const instance = Template.instance();
 
   // Support inline definitions using {{#sandstormTopbarItem}}.
-  var view = instance.view;
+  const view = instance.view;
   if (!item.template && view.templateContentBlock) {
     item.template = view.templateContentBlock;
   }
+
   if (!item.popupTemplate && view.templateElseBlock) {
     item.popupTemplate = view.templateElseBlock;
   }
 
-  var dataVar = new ReactiveVar(null, _.isEqual);
+  const dataVar = new ReactiveVar(null, _.isEqual);
   if ("data" in item) {
     // Changes to the input data do not cause this template to get created anew, so we must
     // propagate such changes to the item.
-    instance.autorun(function() {
+    instance.autorun(function () {
       dataVar.set(Template.currentData().data);
     });
   } else {
@@ -329,6 +338,7 @@ Template.sandstormTopbarItem.onCreated(function () {
       dataVar.set(Template.parentData(1));
     });
   }
+
   item.data = dataVar;
 
   instance.topbarCloser = topbar.addItem(item);
@@ -345,7 +355,7 @@ SandstormTopbar = function (db, expandedVar, grainsVar, shrinkNavbarVar) {
   // `expandedVar` is an optional object that behaves like a `ReactiveVar` and will be used to
   // track which popup is currently open. (The caller may wish to back this with a Session
   // variable.)
-  this._staticHost = db.makeWildcardHost('static');
+  this._staticHost = db.makeWildcardHost("static");
 
   this._items = {};
   this._itemsTracker = new Tracker.Dependency();
@@ -360,20 +370,20 @@ SandstormTopbar = function (db, expandedVar, grainsVar, shrinkNavbarVar) {
   this._shrinkNavbar = shrinkNavbarVar || new ReactiveVar(true);
   this._grains = grainsVar || new ReactiveVar([]);
 
-}
+};
 
 SandstormTopbar.prototype.reset = function () {
   this._menuExpanded.set(false);
   this.closePopup();
-}
+};
 
 SandstormTopbar.prototype.closePopup = function () {
-  var name = this._expanded.get();
+  const name = this._expanded.get();
   if (!name) return;
 
-  var item = this._items[name];
+  const item = this._items[name];
   if (item && item.onDismiss) {
-    var result = item.onDismiss();
+    const result = item.onDismiss();
     if (typeof result === "string") {
       if (result === "block") {
         return;
@@ -387,20 +397,20 @@ SandstormTopbar.prototype.closePopup = function () {
   }
 
   this._expanded.set(null);
-}
+};
 
 SandstormTopbar.prototype.isPopupOpen = function () {
   return !!this._expanded.get();
-}
+};
 
-SandstormTopbar.prototype.openPopup = function(name) {
+SandstormTopbar.prototype.openPopup = function (name) {
   this._expanded.set(name);
   this._menuExpanded.set(false);
-}
+};
 
 SandstormTopbar.prototype.isUpdateBlocked = function () {
   return !!blockedReload.get();
-}
+};
 
 SandstormTopbar.prototype.addItem = function (item) {
   // Adds a new item to the top bar, such as a button or a menu.
@@ -466,17 +476,16 @@ SandstormTopbar.prototype.addItem = function (item) {
     this._expanded.set(item.name);
   }
 
-  var self = this;
   return {
-    close: function() {
-      if (self._items[item.name] === item) {
-        if (self._expanded.get() === item.name) {
-          self._expanded.set(null);
+    close: () => {
+      if (this._items[item.name] === item) {
+        if (this._expanded.get() === item.name) {
+          this._expanded.set(null);
         }
 
-        delete self._items[item.name];
-        self._itemsTracker.changed();
+        delete this._items[item.name];
+        this._itemsTracker.changed();
       }
-    }
+    },
   };
 };

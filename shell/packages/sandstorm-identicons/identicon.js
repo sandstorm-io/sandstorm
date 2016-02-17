@@ -11,6 +11,7 @@
  */
 
 // (Trivially modified for Meteor context by Kenton Varda.)
+// jscs:disable
 
 Identicon = function(hash, size, margin){
     this.hash   = hash;

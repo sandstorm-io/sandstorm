@@ -3,5 +3,5 @@ AccountsUi = function (db) {
   // and `loginButtonsPopup` templates.
 
   this._db = db;
-}
+};
 

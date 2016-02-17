@@ -16,10 +16,11 @@
 
 Package.describe({
   summary: "Sandstorm UI grain list",
-  version: "0.1.0"
+  version: "0.1.0",
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use(["check", "reactive-var", "reload", "templating", "tracker", "sandstorm-db", "sandstorm-identicons", "sandstorm-ui-topbar", "underscore"], "client");
   api.addFiles(["grainlist.html", "grainlist-client.js"], "client");
   api.export("SandstormGrainListPage");

@@ -5,6 +5,7 @@
  *
  * Copyright (C) 2013 usabli.ca - A weekend project by Afshin Mehrabani (@afshinmeh)
  */
+// jscs:disable
 
 (function (root, factory) {
   if (typeof exports === 'object') {

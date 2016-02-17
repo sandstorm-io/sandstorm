@@ -165,17 +165,23 @@ even when the app management interface seems to work fine:
 
 ![Skinny Sandstorm admin interface, showing your app instance](http://rose.makesad.us/~paulproteus/tmp/works-fine.png)
 
-This typically relates to Sandstorm's need for [wildcard
-DNS](wildcard.md). Sandstorm runs each app _session_ on a unique,
+This typically relates to Sandstorm's need for **wildcard DNS**. If you use HTTPS, you
+will also need **wildcard HTTPS**. Keep reading for more information.
+
+**Wildcard DNS.** Sandstorm runs each app _session_ on a unique,
 temporary subdomain. Here's what to check:
 
-* **Make sure the `WILDCARD_HOST` has valid syntax.** In the Sandstorm config file (typically `/opt/sandstorm/sandstorm.conf`, look for the `WILDCARD_HOST` config item. Note that this should not have a protocol as part of it. A valid line might be:
+- **Make sure the `WILDCARD_HOST` has valid syntax.** In the Sandstorm config file (typically `/opt/sandstorm/sandstorm.conf`, look for the `WILDCARD_HOST` config item. Note that this should not have a protocol as part of it. A valid line might be:
 
 ```
 WILDCARD_HOST=*.yourname.sandcats.io:6080
 ```
 
-* **Make sure wildcard DNS works for your chosen domain**. See also [this issue in our repository](https://github.com/sandstorm-io/sandstorm/issues/114). If setting up wildcard DNS is a hassle for you, consider using our free [Sandcats dynamic DNS](sandcats.md) service for your `WILDCARD_HOST`.
+- **Make sure wildcard DNS works for your chosen domain**. See also [this issue in our repository](https://github.com/sandstorm-io/sandstorm/issues/114). If setting up wildcard DNS is a hassle for you, consider using our free [Sandcats dynamic DNS](sandcats.md) service for your `WILDCARD_HOST`.
+
+- You can read [more about Sandstorm and wildcard DNS](wildcard.md).
+
+**Wildcard HTTPS.** If wildcard DNS is configured properly, and you can access the Sandstorm shell, but you get an error accessing grains, keep in mind that your browser must trust `*.sandstorm.example.com` not just `sandstorm.example.com`. You can test this by visiting a random HTTPS URL within your Sandstorm domain, such as [https://just-testing.sandstorm.example.com](https://just-testing.sandstorm.example.com). If you see a browser certificate warning, then that is the root of your problem. You can read more about configuring HTTPS in our [HTTPS topic guide](ssl.md).
 
 ## Can I customize the root page of my Sandstorm install?
 

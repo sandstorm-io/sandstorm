@@ -1693,7 +1693,7 @@ private:
     KJ_FAIL_ASSERT("**mongod failed to start. Initial exit code: ", status,
                    "bailing out now. For troubleshooting, read "
                    "/opt/sandstorm/var/log/mongo.log (or var/log/mongo.log within your Sandstorm "
-                   " if installed to a different place) and visit: "
+                   "if installed to a different place) and visit: "
                    "https://docs.sandstorm.io/en/latest/search.html?q=mongod+failed+to+start");
     return 0;
   }

@@ -87,11 +87,11 @@ Bugs *not* mitigated:
 
 ## Tiny Tiny RSS
 
-When using Tiny Tiny RSS in Sandstorm, every user's feed lives in a unique grain. 
+When using Tiny Tiny RSS in Sandstorm, every user's feed lives in a unique grain.
 
 Bugs mitigated:
 
-* [2016-02-15 (No CVE number)](http://seclists.org/fulldisclosure/2016/Feb/73): SQL injection vulnerability allows a user to take control of a TTRSS server. On Sansdtorm, this bug is irrelevant, since each user's feed is a separate instance, so if the user has access to the TTRSS server at all, they already have full control over it.
+* [2016-02-15 (No CVE number)](http://seclists.org/fulldisclosure/2016/Feb/73): SQL injection vulnerability allows a user to take control of a TTRSS server. On Sandstorm, this bug is irrelevant, since each user's feed is a separate instance, so if the user has access to the TTRSS server at all, they already have full control over it.
 
 Bugs *not* mitigated:
 

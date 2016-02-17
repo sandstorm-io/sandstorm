@@ -203,8 +203,8 @@ SandstormDb.fillInProfileDefaults = function (user) {
     profile.name = profile.name || "Demo User";
     profile.handle = profile.handle || "demo";
   } else if (profile.service === "ldap") {
-    var setting = Settings.findOne({_id: "ldapNameField"});
-    var key = setting ? setting.value : "";
+    const setting = Settings.findOne({ _id: "ldapNameField" });
+    const key = setting ? setting.value : "";
     profile.name = profile.name || user.services.ldap.rawAttrs[key] || "Name Unknown";
     profile.handle = profile.handle || filterHandle(profile.name);
   } else {

@@ -4,8 +4,8 @@
 // You'll likely want to set the dn value here {dn: "..."}
 Meteor.loginWithLDAP = function (user, password, customLdapOptions, callback) {
   // Retrieve arguments as array
-  var args = [];
-  for (var i = 0; i < arguments.length; i++) {
+  let args = [];
+  for (let i = 0; i < arguments.length; i++) {
     args.push(arguments[i]);
   }
   // Pull username and password
@@ -20,7 +20,7 @@ Meteor.loginWithLDAP = function (user, password, customLdapOptions, callback) {
   if (args.length > 0) customLdapOptions = args.shift(); else customLdapOptions = {};
 
   // Set up loginRequest object
-  var loginRequest = _.defaults({
+  let loginRequest = _.defaults({
     username: user,
     ldapPass: password,
   }, {

@@ -324,6 +324,7 @@ if (Meteor.isClient) {
         Meteor.call("setSetting", token, "ldapDnPattern", event.target.ldapDnPattern.value, handleErrorBound);
         Meteor.call("setSetting", token, "ldapNameField", event.target.ldapNameField.value, handleErrorBound);
       }
+
       return false;
     },
   });
@@ -351,22 +352,26 @@ if (Meteor.isClient) {
     },
 
     ldapEnabled: function () {
-      var setting = Settings.findOne({_id: "ldap"});
+      const setting = Settings.findOne({ _id: "ldap" });
       if (setting) {
         return setting.value;
       } else {
         return false;
       }
     },
+
     ldapUrl: function () {
       return globalDb.getLdapUrl() || "ldap://localhost:389";
     },
+
     ldapBase: function () {
       return globalDb.getLdapBase() || "OU=People,DC=example,DC=com";
     },
+
     ldapDnPattern: function () {
       return globalDb.getLdapDnPattern() || "uid=$USERNAME,OU=People,DC=example,DC=com";
     },
+
     ldapNameField: function () {
       return globalDb.getLdapNameField() || "cn";
     },
@@ -1017,9 +1022,10 @@ if (Meteor.isServer) {
       check(name, String);
       check(value, Match.OneOf(null, String, Date, Boolean));
 
-      Settings.upsert({_id: "ldap" + name}, {$set: {value: value}});
+      Settings.upsert({ _id: "ldap" + name }, { $set: { value: value } });
       LDAP_DEFAULTS[name.toLowerCase()] = value;
     },
+
     getSmtpUrl: function (token) {
       checkAuth(token);
 
@@ -1413,13 +1419,13 @@ Accounts.identityServices.email = {
     name: "emailLoginForm",
     priority: 10,
   },
-}
-
+};
 
 Accounts.identityServices.ldap = {
   isEnabled: function () {
     return serviceEnabled("ldap") && globalDb.isFeatureKeyValid();
   },
+
   loginTemplate: {
     name: "ldapLoginForm",
     priority: 20, // Put it at the bottom of the list.

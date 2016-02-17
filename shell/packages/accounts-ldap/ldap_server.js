@@ -22,7 +22,7 @@ LDAP_DEFAULTS = {
  @class LDAP
  @constructor
  */
-var LDAP = function (options) {
+let LDAP = function (options) {
   // Set options
   this.options = _.clone(LDAP_DEFAULTS);
 
@@ -53,32 +53,32 @@ var LDAP = function (options) {
  */
 LDAP.prototype.ldapCheck = function (db, options) {
 
-  var self = this;
+  let _this = this;
 
   options = options || {};
 
   if (options.hasOwnProperty("username") && options.hasOwnProperty("ldapPass")) {
-    self.options.base = db.getLdapBase();
-    self.options.dn = db.getLdapDnPattern().replace("$USERNAME", options.username);
-    self.options.searchBeforeBind = {
+    _this.options.base = db.getLdapBase();
+    _this.options.dn = db.getLdapDnPattern().replace("$USERNAME", options.username);
+    _this.options.searchBeforeBind = {
       uid: options.username,
     };
 
-    var ldapAsyncFut = new Future();
+    let ldapAsyncFut = new Future();
 
     // Create ldap client
-    var fullUrl = self.options.url + ":" + self.options.port;
-    var client = null;
+    let fullUrl = _this.options.url + ":" + _this.options.port;
+    let client = null;
 
-    if (self.options.url.indexOf("ldaps://") === 0) {
-      client = self.ldapjs.createClient({
+    if (_this.options.url.indexOf("ldaps://") === 0) {
+      client = _this.ldapjs.createClient({
         url: fullUrl,
         tlsOptions: {
-          ca: [self.options.ldapsCertificate],
+          ca: [_this.options.ldapsCertificate],
         },
       });
     } else {
-      client = self.ldapjs.createClient({
+      client = _this.ldapjs.createClient({
         url: fullUrl,
       });
     }
@@ -91,9 +91,9 @@ LDAP.prototype.ldapCheck = function (db, options) {
 
     // Slide @xyz.whatever from username if it was passed in
     // and replace it with the domain specified in defaults
-    var emailSliceIndex = options.username.indexOf("@");
-    var username;
-    var domain = self.options.defaultDomain;
+    let emailSliceIndex = options.username.indexOf("@");
+    let username;
+    let domain = _this.options.defaultDomain;
 
     // If user appended email domain, strip it out
     // And use the defaults.defaultDomain if set
@@ -105,9 +105,9 @@ LDAP.prototype.ldapCheck = function (db, options) {
     }
 
     // If DN is provided, use it to bind
-    if (!self.options.base) {
+    if (!_this.options.base) {
       // Attempt to bind to ldap server with provided info
-      client.bind(self.options.searchDN || self.options.dn, self.options.searchCredentials ||
+      client.bind(_this.options.searchDN || _this.options.dn, _this.options.searchCredentials ||
           options.ldapPass,
           function (err) {
         try {
@@ -116,15 +116,15 @@ LDAP.prototype.ldapCheck = function (db, options) {
             throw new Meteor.Error(err.code, err.message);
           }
 
-          var handleSearchProfile = function (retObject, bindAfterSearch) {
+          let handleSearchProfile = function (retObject, bindAfterSearch) {
             retObject.emptySearch = true;
 
             // use dn if given, else use the base for the ldap search
-            var searchBase = self.options.dn || self.options.base;
-            var searchOptions = {
+            let searchBase = _this.options.dn || _this.options.base;
+            let searchOptions = {
               scope: "sub",
               sizeLimit: 1,
-              filter: self.options.search,
+              filter: _this.options.search,
             };
 
             client.search(searchBase, searchOptions, function (err, res) {
@@ -170,14 +170,14 @@ LDAP.prototype.ldapCheck = function (db, options) {
             });
           };
 
-          var retObject = {
+          let retObject = {
             username: username,
             searchResults: null,
             email: domain ? username + "@" + domain : false,
-            dn: self.options.dn,
+            dn: _this.options.dn,
           };
 
-          if (self.options.searchDN) {
+          if (_this.options.searchDN) {
             handleSearchProfile(retObject, true);
           } else {
             handleSearchProfile(retObject, false);
@@ -192,26 +192,26 @@ LDAP.prototype.ldapCheck = function (db, options) {
     // DN not provided, search for DN and use result to bind
     else {
       // initialize result
-      var retObject = {
+      let retObject = {
         username: username,
         email: domain ? username + "@" + domain : false,
         emptySearch: true,
         searchResults: {},
       };
 
-      var filter = self.options.search;
-      Object.keys(self.options.searchBeforeBind).forEach(function (searchKey) {
-        filter = "&" + filter + "(" + searchKey + "=" + self.options.searchBeforeBind[searchKey] + ")";
+      let filter = _this.options.search;
+      Object.keys(_this.options.searchBeforeBind).forEach(function (searchKey) {
+        filter = "&" + filter + "(" + searchKey + "=" + _this.options.searchBeforeBind[searchKey] + ")";
       });
 
-      var searchOptions = {
+      let searchOptions = {
         scope: "sub",
         sizeLimit: 1,
         filter: filter,
       };
 
       // perform LDAP search to determine DN
-      client.search(self.options.base, searchOptions, function (err, res) {
+      client.search(_this.options.base, searchOptions, function (err, res) {
         if (err) {
           ldapAsyncFut.return({
             error: err,
@@ -276,11 +276,11 @@ Accounts.registerLoginHandler("ldap", function (loginRequest) {
   }
 
   // Instantiate LDAP with options
-  var userOptions = loginRequest.ldapOptions || {};
-  var ldapObj = new LDAP(userOptions);
+  let userOptions = loginRequest.ldapOptions || {};
+  let ldapObj = new LDAP(userOptions);
 
   // Call ldapCheck and get response
-  var ldapResponse = ldapObj.ldapCheck(this.connection.sandstormDb, loginRequest);
+  let ldapResponse = ldapObj.ldapCheck(this.connection.sandstormDb, loginRequest);
 
   if (ldapResponse.error) {
     return {
@@ -295,7 +295,7 @@ Accounts.registerLoginHandler("ldap", function (loginRequest) {
   }  else {
     // Set initial userId and token vals
     return Accounts.updateOrCreateUserFromExternalService("ldap",
-      {id: ldapResponse.dn, rawAttrs: ldapResponse.searchResults}, {});
+      { id: ldapResponse.dn, rawAttrs: ldapResponse.searchResults }, {});
   }
 
 });

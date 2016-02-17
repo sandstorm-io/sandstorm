@@ -281,10 +281,10 @@ Template.emailAuthenticationForm.helpers({
 Template.ldapLoginForm.events({
   "submit form": function (event, instance) {
     event.preventDefault();
-    var form = event.currentTarget;
+    const form = event.currentTarget;
 
-    var username = form.username.value;
-    var password = form.password.value;
+    const username = form.username.value;
+    const password = form.password.value;
 
     Meteor.loginWithLDAP(username, password, {}, function (err) {
       if (err) {

@@ -95,7 +95,7 @@ Bugs mitigated:
 
 Bugs *not* mitigated:
 
-* **WE aren't aware of any.** However, Tiny Tiny RSS does not have a well-organized security advisory list. In theory, Tiny Tiny RSS could be vulnerable to XSS attacks embedded in malicious feeds. A Sandstorm user concerned about such attacks might consider running multiple instances of Tiny Tiny RSS to separate untrustworthy feeds from sensitive feeds, so that an attack from an untrustworthy feed cannot get access to a sensitive feed.
+* **We aren't aware of any.** However, Tiny Tiny RSS does not have a well-organized security advisory list. In theory, Tiny Tiny RSS could be vulnerable to XSS attacks embedded in malicious feeds. A Sandstorm user concerned about such attacks might consider running multiple instances of Tiny Tiny RSS to separate untrustworthy feeds from sensitive feeds, so that an attack from an untrustworthy feed cannot get access to a sensitive feed.
 
 ## Linux kernel
 

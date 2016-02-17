@@ -85,6 +85,18 @@ Bugs *not* mitigated:
 
 * **We aren't aware of any.** In theory, the situation is similar to Etherpad.
 
+## Tiny Tiny RSS
+
+When using Tiny Tiny RSS in Sandstorm, every user's feed lives in a unique grain. 
+
+Bugs mitigated:
+
+* [2016-02-15 (No CVE number)](http://seclists.org/fulldisclosure/2016/Feb/73): SQL injection vulnerability allows a user to take control of a TTRSS server. On Sansdtorm, this bug is irrelevant, since each user's feed is a separate instance, so if the user has access to the TTRSS server at all, they already have full control over it.
+
+Bugs *not* mitigated:
+
+* **WE aren't aware of any.** However, Tiny Tiny RSS does not have a well-organized security advisory list. In theory, Tiny Tiny RSS could be vulnerable to XSS attacks embedded in malicious feeds. A Sandstorm user concerned about such attacks might consider running multiple instances of Tiny Tiny RSS to separate untrustworthy feeds from sensitive feeds, so that an attack from an untrustworthy feed cannot get access to a sensitive feed.
+
 ## Linux kernel
 
 The Linux kernel has had many bugs that could allow any local process to gain root privileges or otherwise bypass security rules. Sandstorm blocks most of these vulnerabilities by virtue of its [server-side sandbox](security-practices.md#server-sandboxing) which disables much of the Linux kernel API thereby reducing the surface of attack only to core, well-reviewed functionality.

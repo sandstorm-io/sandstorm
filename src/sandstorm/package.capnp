@@ -412,7 +412,7 @@ struct Metadata {
   # Where `<key-id>` is a PGP key ID or email address associated with the key.
 
   description @14 :Util.LocalizedText;
-  # The app's description description in Github-flavored Markdown format, to be displayed e.g.
+  # The app's description in Github-flavored Markdown format, to be displayed e.g.
   # in an app store. Note that the Markdown is not permitted to cotnain HTML nor image tags (but
   # you can include a list of screenshots separately).
 

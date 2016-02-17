@@ -329,7 +329,20 @@ to address the issue.
 - Your system might not have enough free disk space. Sandstorm requires about 500 MB available space
   to start successfully.
 
-- If your system _does_ have 500 MB available space, your Sandstorm database (stored in
-  `/opt/sandstorm/var/mongo`) might be corrupted. You can likely recover from this issue. Please
-  email support@sandstorm.io so we can help you. Keep in mind that grain data is safely stored
-  separately from this database.
+- You can read `/opt/sandstorm/var/log/mongo.log` to find out MongoDB's true error
+  message. Specifically, the file will be in `var/log/mongo.log` underneath wherever Sandstorm is
+  installed; most Sandstorm installations are at `/opt/sandstorm`.
+
+- You might be running into a bug in Sandstorm where it is unable to start MongoDB successfully. If
+  so, this is a bug in Sandstorm that probably affects many, many people, and if you report this
+  issue, we will be grateful; your bug report could lead to a code change that fixes many people's
+  Sandstorm servers. To do that, we need to hear from you.
+
+- In theory, this error message can occur if your Sandstorm database (stored in
+  `/opt/sandstorm/var/mongo`) has become corrupted. So far, we have seen no instances of this in the
+  wild. If it does occur, you can likely recover from the situation. Even if there is a problem with
+  the Sandstorm MongoDB instance, note that grain data is safely stored separately, so any grain data
+  would not be affected.
+
+To get further help, please email support@sandstorm.io. Please include the most recent 100 lines
+from the MongoDB log file, if you can.

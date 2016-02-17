@@ -1607,6 +1607,7 @@ if (Meteor.isClient) {
           saveLabel: powerboxRequest.saveLabel,
           // These data come from the grain
 
+          sessionId: senderGrain.sessionId(),
           grainId: senderGrain.grainId(),
           identityId: senderGrain.identityId(),
           // Attach grain context to the request.

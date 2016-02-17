@@ -43,20 +43,20 @@ body>.popup.request>.frame {
       }
     }
   }
-  >ul.candidate-grains {
+  >ul.candidate-cards {
     flex: 1;
     overflow-y: auto;
     padding: 0px;
     margin: 10px;
     margin-top: 10px;
-    >li.grain-card {
-      @extend %grain-card;
+    >li.powerbox-card {
+      @extend %powerbox-card;
     }
   }
-  >.selected-grain {
+  >.selected-card {
     flex: none;
     box-sizing: border-box;
-    >div.grain-card {
+    >div.powerbox-card {
       box-sizing: border-box;
       border: 1px solid #dddddd;
       background-color: #eeeeee;
@@ -90,7 +90,7 @@ body>.popup.request>.frame {
   }
 }
 
-%grain-card {
+%powerbox-card {
   border-top: 1px solid #dddddd;
   border-left: 1px solid #dddddd;
   border-right: 1px solid #dddddd;
@@ -101,7 +101,7 @@ body>.popup.request>.frame {
   display: block;
   vertical-align: middle;
   height: 32px;
-  >button.grain-button {
+  >button.card-button {
     @extend %unstyled-button;
     @extend %overflow-ellipsis;
     width: 100%;

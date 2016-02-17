@@ -990,7 +990,7 @@ private:
         "      # Where `<key-id>` is a PGP key ID or email address associated with the key.\n"
         "\n"
         "      #description = (defaultText = embed \"path/to/description.md\"),\n"
-        "      # The app's description description in Github-flavored Markdown format, to be displayed e.g.\n"
+        "      # The app's description in Github-flavored Markdown format, to be displayed e.g.\n"
         "      # in an app store. Note that the Markdown is not permitted to contain HTML nor image tags (but\n"
         "      # you can include a list of screenshots separately).\n"
         "\n"

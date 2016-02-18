@@ -234,7 +234,6 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     viewInfo.roles = removeObsolete(viewInfo.roles);
   }
 
-
   filteredCardData() {
     // TODO(soon): also pull in card data from grains that purport to implement the interface requested.
 
@@ -251,7 +250,6 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
 
   ipNetworkCardData() {
     const cards = [];
-    const _this = this;
     if (this._db.isAdmin()) {
       cards.push({
         _id: "frontendref-ipnetwork",
@@ -262,7 +260,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
           // need to double-wrap this callback.
           return () => {
             this.completeNewIpNetwork();
-          }
+          };
         },
       });
     }
@@ -299,7 +297,6 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
 
   ipInterfaceCardData() {
     const cards = [];
-    const _this = this;
     if (this._db.isAdmin()) {
       cards.push({
         _id: "frontendref-ipinterface",
@@ -310,7 +307,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
           // need to double-wrap this callback.
           return () => {
             this.completeNewIpInterface();
-          }
+          };
         },
       });
     }

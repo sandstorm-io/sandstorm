@@ -22,14 +22,14 @@ Meteor.methods({
     const apiTokenOwner = {
       grain: {
         grainId: grainId,
-        saveLabel: {defaultText: "Admin-provided raw outgoing network access"},
+        saveLabel: { defaultText: "Admin-provided raw outgoing network access" },
         introducerIdentity: session.identityId,
       },
     };
 
-    const requirements = [{
-      userIsAdmin: Meteor.userId(),
-    }];
+    const requirements = [
+      { userIsAdmin: Meteor.userId() },
+    ];
 
     // TODO: refactor: reaches out into core.js
     const sturdyRef = waitPromise(saveFrontendRef(frontendRefVariety, apiTokenOwner, requirements)).sturdyRef;

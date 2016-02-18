@@ -1,0 +1,15 @@
+{
+  "dependencies": {
+    "ed25519": {
+      "version": "0.0.4",
+      "dependencies": {
+        "bindings": {
+          "version": "1.2.1"
+        },
+        "nan": {
+          "version": "2.2.0"
+        }
+      }
+    }
+  }
+}

@@ -885,6 +885,38 @@ div.billing {
       font-size: 90%;
     }
 
+    div.free-stuff-section-header {
+      padding-bottom: 0.6em;
+    }
+
+    div.free-stuff {
+      /* "Get free storage" area of /account */
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+
+      >p {
+        color: #6d6d6d;
+        font-size: 90%;
+        padding-right: 0.3em;
+
+        .reward-amount {
+          font-weight: bold;
+        }
+      }
+
+      a.like-a-button, button {
+        @extend %button-base;
+        @extend %button-primary;
+        font-family: Arial;
+        font-size: 16px;
+        font-weight: normal;
+        width: 125px;
+        flex-shrink: 0;
+      }
+    }
+
+
     .subscribe-prompt {
       display: flex;
 

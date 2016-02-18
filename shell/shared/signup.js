@@ -52,7 +52,7 @@ if (Meteor.isServer) {
         throw new Meteor.Error(403, "Invalid key or already used.");
       }
 
-      if (isSignedUp() && user.payments) {
+      if (isSignedUp() && user.payments && user.payments.id) {
         // This user is already signed up with a payment account. Possibly, they signed up before
         // using their invite, and then went back and clicked on the invite. As a result they
         // probably now have two payment accounts. Mark this invite as used but also add a special
@@ -79,7 +79,7 @@ if (Meteor.isServer) {
       }
 
       if (keyInfo.payments) {
-        userFields.payments = keyInfo.payments;
+        userFields["payments.id"] = keyInfo.payments.id;
       }
 
       Meteor.users.update(this.userId, { $set: userFields });

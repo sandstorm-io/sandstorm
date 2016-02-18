@@ -884,6 +884,10 @@ if (Meteor.isClient) {
         }
       }
 
+      // Don't show if user is trying to use a signup key. We're probably going to assign them
+      // a plan shortly.
+      if (route === "signup") return;
+
       // Don't let the plan chooser disappear instantly once user.plan is set.
       Session.set("firstTimeBillingPromptOpen", true);
 

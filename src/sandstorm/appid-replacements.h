@@ -31,6 +31,12 @@ void applyAppidReplacements(
 // The third argument can be used to specify an alternate replacement list for testing purposes,
 // but the intent is that production use should use the default list.
 
+kj::Array<kj::byte> getPublicKeyForApp(kj::ArrayPtr<const kj::byte> appId,
+    capnp::List<spk::AppIdReplacement>::Reader replacements = *spk::APP_ID_REPLACEMENT_LIST);
+// Gets the public key associated with the given app ID. This is the reverse operation from
+// applyAppidReplacements(): given a canonical app ID, it finds the key that is currently being
+// used to sign new versions of the app.
+
 } // namespace sandstorm
 
 #endif // SANDSTORM_APPID_REPLACEMENTS_H_

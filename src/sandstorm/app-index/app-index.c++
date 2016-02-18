@@ -122,7 +122,7 @@ public:
 
         capnp::MallocMessageBuilder response;
         byte appPublicKey[crypto_sign_PUBLICKEYBYTES];
-        if (indexer.tryGetAppId(packageId, appPublicKey)) {
+        if (indexer.tryGetPublicKey(packageId, appPublicKey)) {
           KJ_ASSERT(
               crypto_sign_verify_detached(signature.begin(),
                   requestBytes.begin(), requestBytes.size(), appPublicKey) == 0,

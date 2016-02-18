@@ -18,10 +18,24 @@
 # This file is used to recover from lost or stolen app keys.
 #
 # If you are an app developer and you have lost access to your key or suspect it may have been
-# compromised, add a line to this file and submit a pull request. Please either use git PGP
-# signing to sign the request, or include with the request a PGP-signed copy of the diff. Use the
-# same PGP key that you used to sign the app listing on the app market, if possible (if not, we
-# will ask for other verification).
+# compromised, do the following:
+# 1. Generate a new key using `spk keygen`. The new key ID will be printed.
+# 2. Use `spk getkey <key-id> > backup.key` to make a backup copy of the key. Put `backup.key`
+#    somewhere safe! Of course, do NOT make this file public!
+# 3. Add an entry to `appIdReplacementList` below with `original` being your old key ID (app ID)
+#    and `replacement` being the new key ID (as printed when you generated it).
+# 4. PGP-sign your git commit using the `-S` flag, using the same PGP key you used to sign older
+#    versions of your app as published to the app market. (If you can't do this, we'll need to
+#    verify your identity in some other way.)
+# 5. Submit a pull request.
+#
+# Things you should NOT do:
+# * Do NOT change sandstorm-pkgdef.capnp to the new key. Once Sandstorm is updated with your PR,
+#   the spk tool will automatically use the new key where appropriate.
+# * Do NOT update your `pgpSignature` file. The signature should still assert ownership of the
+#   original app ID.
+# * Do NOT update links to the app market or anywhere else that incorporate the app ID. Your app ID
+#   is not changing; only the signing key is changing.
 
 $import "/capnp/c++.capnp".namespace("sandstorm::spk");
 

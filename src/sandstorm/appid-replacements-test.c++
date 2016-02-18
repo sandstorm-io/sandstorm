@@ -93,6 +93,10 @@ kj::String doReplacement(kj::StringPtr appId, kj::StringPtr packageId) {
   return appIdString(bytes);
 }
 
+kj::String doGetPublicKey(kj::StringPtr appId) {
+  return appIdString(getPublicKeyForApp(appidBytes(appId), *TEST_APP_ID_REPLACEMENT_LIST));
+}
+
 KJ_TEST("logic: unlisted (normal) app ID") {
   KJ_ASSERT(doReplacement(TestIds::UNUSED_APP, TestIds::UNUSED_PKG) == TestIds::UNUSED_APP);
 }
@@ -125,6 +129,16 @@ KJ_TEST("logic: double-replacement app ID") {
 
 KJ_TEST("logic: double-replacement app ID, replacement revoked") {
   KJ_ASSERT(doReplacement(TestIds::APP6, TestIds::UNUSED_PKG) == TestIds::APP4);
+}
+
+KJ_TEST("logic: get public key for app") {
+  KJ_ASSERT(doGetPublicKey(TestIds::UNUSED_APP) == TestIds::UNUSED_APP);
+  KJ_ASSERT(doGetPublicKey(TestIds::APP1) == TestIds::APP3);
+  KJ_ASSERT(doGetPublicKey(TestIds::APP2) == TestIds::APP3);
+  KJ_ASSERT(doGetPublicKey(TestIds::APP3) == TestIds::APP3);
+  KJ_ASSERT(doGetPublicKey(TestIds::APP4) == TestIds::APP6);
+  KJ_ASSERT(doGetPublicKey(TestIds::APP5) == TestIds::APP6);
+  KJ_ASSERT(doGetPublicKey(TestIds::APP6) == TestIds::APP6);
 }
 
 }  // namespace

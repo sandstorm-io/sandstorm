@@ -406,7 +406,19 @@ private:
     return raiiOpen(filename, flags, 0600);
   }
 
-  spk::KeyFile::Reader lookupKey(kj::StringPtr appid) {
+  spk::KeyFile::Reader lookupKey(kj::StringPtr appid, bool withReplacements = true) {
+    // We actually want to sign packages using the current replacement key for the app ID.
+    byte appidBytes[APP_ID_BYTE_SIZE];
+    KJ_REQUIRE(tryParseAppId(appid, appidBytes), "invalid appid", appid);
+    auto replacement = appIdString(getPublicKeyForApp(appidBytes));
+    if (withReplacements) {
+      appid = replacement;
+    } else {
+      if (appid != replacement) {
+        KJ_LOG(WARNING, "the requested key is obsolote", appid, replacement);
+      }
+    }
+
     if (keyringMapping == nullptr) {
       auto mapping = kj::heap<MemoryMapping>(openKeyring(O_RDONLY), "(keyring)");
       kj::ArrayPtr<const capnp::word> words = *mapping;
@@ -506,7 +518,7 @@ private:
              "really intended to write it to your terminal. :)";
     }
 
-    auto key = lookupKey(appid);
+    auto key = lookupKey(appid, false);  // Don't get a replacement; get the original.
     capnp::MallocMessageBuilder builder(key.totalSize().wordCount + 4);
     builder.setRoot(key);
     capnp::writeMessageToFd(STDOUT_FILENO, builder);

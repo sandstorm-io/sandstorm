@@ -74,4 +74,23 @@ checkReplacements:
   }
 }
 
+kj::Array<kj::byte> getPublicKeyForApp(kj::ArrayPtr<const kj::byte> appId,
+    capnp::List<spk::AppIdReplacement>::Reader replacements) {
+  KJ_REQUIRE(appId.size() == APP_ID_BYTE_SIZE);
+  auto appidOwnStr = appIdString(appId);
+  kj::StringPtr appidStr = appidOwnStr;
+  auto result = kj::heapArray(appId);
+
+retry:
+  for (auto item: replacements) {
+    if (item.getOriginal() == appidStr) {
+      appidStr = item.getReplacement();
+      KJ_ASSERT(tryParseAppId(appidStr, result));
+      goto retry;
+    }
+  }
+
+  return result;
+}
+
 }  // namespace sandstorm

@@ -34,6 +34,7 @@
 #include <sys/mman.h>
 #include <errno.h>
 #include <sandstorm/package.capnp.h>
+#include <sandstorm/appid-replacements.capnp.h>
 #include <stdlib.h>
 #include <dirent.h>
 #include <set>
@@ -56,6 +57,7 @@
 #include "send-fd.h"
 #include "util.h"
 #include "id-to-text.h"
+#include "appid-replacements.h"
 
 namespace sandstorm {
 
@@ -1380,6 +1382,17 @@ private:
     // Read package form spkfd, check the validity and signature, and return the appId. Also write
     // the uncompressed archive to `tmpfile`.
 
+    // Compute hash of input package (for package ID).
+    // TODO(perf): Hash and decompress in a single pass.
+    byte packageHash[crypto_hash_sha256_BYTES];
+    {
+      MemoryMapping spkMapping(spkfd, "(spk file)");
+      kj::ArrayPtr<const byte> bytes = spkMapping;
+      crypto_hash_sha256(packageHash, bytes.begin(), bytes.size());
+    }
+    static_assert(PACKAGE_ID_BYTE_SIZE <= crypto_hash_sha256_BYTES, "package ID size changed?");
+    auto packageIdBytes = kj::arrayPtr(packageHash, PACKAGE_ID_BYTE_SIZE);
+
     // Check the magic number.
     auto expectedMagic = spk::MAGIC_NUMBER.get();
     byte magic[expectedMagic.size()];
@@ -1432,6 +1445,10 @@ private:
       return validationError("Wrong signature size.");
     }
 
+    // Get the canonical app ID based on the replacements table (see appid-replacements.capnp).
+    // This also throws if the key is revoked.
+    applyAppidReplacements(publicKey, packageIdBytes);
+
     // Copy archive part to a temp file, computing hash in the meantime.
     crypto_hash_sha512_state hashState;
     crypto_hash_sha512_init(&hashState);
@@ -1459,14 +1476,6 @@ private:
     auto appIdString = sandstorm::appIdString(publicKey);
 
     KJ_IF_MAYBE(info, maybeInfo) {
-      // Compute hash of input package (for package ID).
-      byte hash[crypto_hash_sha256_BYTES];
-      {
-        MemoryMapping spkMapping(spkfd, "(spk file)");
-        kj::ArrayPtr<const byte> bytes = spkMapping;
-        crypto_hash_sha256(hash, bytes.begin(), bytes.size());
-      }
-
       // mmap the temp file.
       MemoryMapping tmpMapping(tmpfile, "(temp file)");
 
@@ -1504,8 +1513,8 @@ private:
           }
           {
             auto packageId = capnp::AnyStruct::Builder(info->initPackageId()).getDataSection();
-            KJ_ASSERT(packageId.size() == sizeof(hash) / 2);
-            memcpy(packageId.begin(), hash, sizeof(hash) / 2);
+            KJ_ASSERT(packageId.size() == packageIdBytes.size());
+            memcpy(packageId.begin(), packageIdBytes.begin(), packageIdBytes.size());
           }
 
           info->setTitle(manifest.getAppTitle());

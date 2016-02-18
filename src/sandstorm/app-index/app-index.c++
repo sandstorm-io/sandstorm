@@ -42,6 +42,7 @@
 #include <sandstorm/util.h>
 #include <sandstorm/app-index/app-index.capnp.h>
 #include <sandstorm/spk.h>
+#include <sandstorm/id-to-text.h>
 
 #include "indexer.h"
 

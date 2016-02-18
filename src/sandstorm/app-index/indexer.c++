@@ -17,6 +17,7 @@
 #include "indexer.h"
 #include <sandstorm/app-index/app-index.capnp.h>
 #include <sandstorm/spk.h>
+#include <sandstorm/id-to-text.h>
 #include <capnp/serialize.h>
 #include <stdlib.h>
 #include <map>
@@ -184,32 +185,6 @@ void Indexer::getSubmissionStatus(kj::StringPtr packageId, capnp::MessageBuilder
 // =======================================================================================
 
 namespace {
-
-class AppIdJsonHandler: public capnp::JsonCodec::Handler<spk::AppId> {
-public:
-  void encode(const capnp::JsonCodec& codec, spk::AppId::Reader input,
-              capnp::JsonValue::Builder output) const override {
-    output.setString(appIdString(input));
-  }
-
-  void decode(const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
-              spk::AppId::Builder output) const override {
-    KJ_UNIMPLEMENTED("AppIdJsonHandler::decode");
-  }
-};
-
-class PackageIdJsonHandler: public capnp::JsonCodec::Handler<spk::PackageId> {
-public:
-  void encode(const capnp::JsonCodec& codec, spk::PackageId::Reader input,
-              capnp::JsonValue::Builder output) const override {
-    output.setString(packageIdString(input));
-  }
-
-  void decode(const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
-              spk::PackageId::Builder output) const override {
-    KJ_UNIMPLEMENTED("PackageIdJsonHandler::decode");
-  }
-};
 
 class DataHandler: public capnp::JsonCodec::Handler<capnp::Data> {
 public:

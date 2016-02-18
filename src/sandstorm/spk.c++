@@ -1382,21 +1382,32 @@ private:
     // Read package form spkfd, check the validity and signature, and return the appId. Also write
     // the uncompressed archive to `tmpfile`.
 
-    // Compute hash of input package (for package ID).
-    // TODO(perf): Hash and decompress in a single pass.
+    // We need to compute the hash of the input. The input could be a pipe (not a file), therefore
+    // we need to read it in chunks, hash the content, and write back out to the pipe that xz will
+    // use as input below. We'll do all that in a thread to keep the code simple.
     byte packageHash[crypto_hash_sha256_BYTES];
-    {
-      MemoryMapping spkMapping(spkfd, "(spk file)");
-      kj::ArrayPtr<const byte> bytes = spkMapping;
-      crypto_hash_sha256(packageHash, bytes.begin(), bytes.size());
-    }
-    static_assert(PACKAGE_ID_BYTE_SIZE <= crypto_hash_sha256_BYTES, "package ID size changed?");
-    auto packageIdBytes = kj::arrayPtr(packageHash, PACKAGE_ID_BYTE_SIZE);
+    Pipe spkPipe = Pipe::make();
+    auto hashThread = new kj::Thread([&]() {
+      crypto_hash_sha256_state packageHashState;
+      KJ_ASSERT(crypto_hash_sha256_init(&packageHashState) == 0);
+
+      byte buffer[8192];
+      kj::FdOutputStream out(kj::mv(spkPipe.writeEnd));
+      for (;;) {
+        ssize_t n;
+        KJ_SYSCALL(n = read(spkfd, buffer, sizeof(buffer)));
+        if (n == 0) break;
+        KJ_ASSERT(crypto_hash_sha256_update(&packageHashState, buffer, n) == 0);
+        out.write(buffer, n);
+      }
+
+      KJ_ASSERT(crypto_hash_sha256_final(&packageHashState, packageHash));
+    });
 
     // Check the magic number.
     auto expectedMagic = spk::MAGIC_NUMBER.get();
     byte magic[expectedMagic.size()];
-    kj::FdInputStream(spkfd).read(magic, expectedMagic.size());
+    kj::FdInputStream(spkPipe.readEnd.get()).read(magic, expectedMagic.size());
     for (uint i: kj::indices(expectedMagic)) {
       if (magic[i] != expectedMagic[i]) {
         return validationError("Does not appear to be an .spk (bad magic number).");
@@ -1407,10 +1418,11 @@ private:
     Pipe pipe = Pipe::make();
 
     Subprocess::Options childOptions({"xz", "-dc"});
-    childOptions.stdin = spkfd;
+    childOptions.stdin = spkPipe.readEnd;
     childOptions.stdout = pipe.writeEnd;
     Subprocess child(kj::mv(childOptions));
 
+    spkPipe.readEnd = nullptr;
     pipe.writeEnd = nullptr;
     kj::FdInputStream in(kj::mv(pipe.readEnd));
 
@@ -1445,10 +1457,6 @@ private:
       return validationError("Wrong signature size.");
     }
 
-    // Get the canonical app ID based on the replacements table (see appid-replacements.capnp).
-    // This also throws if the key is revoked.
-    applyAppidReplacements(publicKey, packageIdBytes);
-
     // Copy archive part to a temp file, computing hash in the meantime.
     crypto_hash_sha512_state hashState;
     crypto_hash_sha512_init(&hashState);
@@ -1465,6 +1473,11 @@ private:
     }
 
     child.waitForSuccess();
+    hashThread = nullptr;  // joins thread
+
+    // The spk pipe thread should have exited now, completing the hash.
+    static_assert(PACKAGE_ID_BYTE_SIZE <= crypto_hash_sha256_BYTES, "package ID size changed?");
+    auto packageIdBytes = kj::arrayPtr(packageHash, PACKAGE_ID_BYTE_SIZE);
 
     // Check that hashes match.
     byte hash[crypto_hash_sha512_BYTES];
@@ -1472,6 +1485,10 @@ private:
     if (memcmp(expectedHash, hash, crypto_hash_sha512_BYTES) != 0) {
       return validationError("Signature didn't match package contents.");
     }
+
+    // Get the canonical app ID based on the replacements table (see appid-replacements.capnp).
+    // This also throws if the key is revoked.
+    applyAppidReplacements(publicKey, packageIdBytes);
 
     auto appIdString = sandstorm::appIdString(publicKey);
 

@@ -184,23 +184,15 @@ button.revoke-token, button.revoke-access {
   color: red;
 }
 
-.main-content .interstitial-button-box,.direct-share-denied {
+.main-content .grain-interstitial {
   text-align: center;
   background-color: $default-content-background-color;
-  .identity-card {
-    display: inline-block;
-  }
-  & button.incognito-button {
-    font-family: inherit;
-    font-size: inherit;
+  button.request-access, button.incognito-button {
+    @extend %button-base;
+    @extend %button-primary;
     font-weight: 600;
-    background-color: $sandstorm-purple-color;
     padding: 8px;
     line-height: 1.33;
-    border-radius: 4px;
-    border: none;
-    color: white;
-    cursor: pointer;
   }
 }
 

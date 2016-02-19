@@ -141,7 +141,11 @@ limitations under the License.
   {{#with unpackedGrainState}}
     <div class="grain-container {{#if active}}active-grain{{else}}inactive-grain{{/if}}">
     {{#if error}}
-      <pre>{{error}}</pre>
+      {{#if unauthorized}}
+        {{> requestAccess}}
+      {{else}}
+        <pre>{{error}}</pre>
+      {{/if}}
     {{else}}
     {{#if appOrigin}}
       {{!-- Selenium requires iframes to have an id in order to select them. id="grain-frame" is only
@@ -152,14 +156,14 @@ limitations under the License.
       {{/if}}
     {{else}}
     {{#if interstitial.chooseIdentity}}
-      <div class="interstitial-button-box">
+      <div class="grain-interstitial">
         <p>With which of your identities would you like to open this grain?</p>
         {{> identityPicker identityPickerData}}
         <button class="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
       </div>
     {{else}}
       {{#if interstitial.directShare}}
-        <div class="direct-share-denied">
+        <div class="grain-interstitial">
           <p>
             Access through this URL is restricted to this identity:
           </p>
@@ -184,6 +188,39 @@ limitations under the License.
     {{/if}}
     </div>
   {{/with}}
+</template>
+
+<template name="requestAccess">
+  <div class="grain-interstitial">
+  <p>You do not have permission to access this grain.</p>
+  {{#if currentUser}}
+    {{#with status}}
+      {{#if showButton}}
+        <button class="request-access" title="Request access">
+          Request Access
+        </button>
+      {{/if}}
+      {{#if chooseIdentity}}
+        <p>Requesting access will reveal your identity to the grain owner.</p>
+        <p> {{chooseIdentityText}} </p>
+        {{> identityPicker identityPickerData}}
+      {{/if}}
+      {{#if waiting}}
+         <p>Sending your request...</p>
+      {{/if}}
+      {{#if success}}
+        <p>
+          Your request has been sent. You will receive an email if your request is approved.
+        </p>
+      {{/if}}
+      {{#with error}}
+        <p>Your request failed because: {{.}}</p>
+      {{/with}}
+    {{/with}}
+  {{else}}
+    Please sign in to request access.
+  {{/if}}
+  </div>
 </template>
 
 <template name="invalidToken">
@@ -486,7 +523,7 @@ limitations under the License.
   <form class="email-invite">
     <p>
     <img class="inline-icon" src="/people-m.svg" role="presentation">
-    {{> contactInputBox contacts=contacts}}
+    {{> contactInputBox contacts=contacts preselectedIdentityId=preselectedIdentityId}}
     {{> selectRole viewInfo=viewInfo}}
     </p>
     <div>
@@ -655,6 +692,16 @@ limitations under the License.
   {{#if showPowerboxOffer}}
     {{>sandstormTopbarItem name="offer" topbar=globalTopbar template="grainPowerboxOffer"
         startOpen=true popupTemplate="grainPowerboxOfferPopup" data=powerboxOfferData}}
+  {{/if}}
+</template>
+
+<template name="share">
+  {{#if currentUser}}
+    {{#with grainNotFound}}
+      No grain found with ID {{.}}. Maybe you need to sign in to a different account?
+    {{/with}}
+  {{else}}
+    You must be signed in to grant access to a grain.
   {{/if}}
 </template>
 

@@ -1,7 +1,7 @@
 let counter = 0;
 
 GrainView = class GrainView {
-  constructor(grainId, path, tokenInfo, parentElement) {
+  constructor(grainId, path, tokenInfo, parentElement, initialPopup) {
     // `path` starts with a slash and includes the query and fragment.
     //
     // Owned grains:
@@ -52,6 +52,10 @@ GrainView = class GrainView {
     this._blazeView = Blaze.renderWithData(Template.grainView, this, parentElement);
 
     this.id = counter++;
+
+    if (initialPopup) {
+      globalTopbar.openPopup(initialPopup);
+    }
   }
 
   reset(identityId) {
@@ -60,6 +64,7 @@ GrainView = class GrainView {
     this._dep.changed();
     this.destroy();
     this._hasLoaded = undefined;
+    this._error = undefined;
     this._hostId = undefined;
     this._sessionId = null;
     this._sessionSalt = null;
@@ -84,7 +89,12 @@ GrainView = class GrainView {
     const grainId = this.grainId();
     if (currentIdentityId === identityId) return;
     const _this = this;
-    if (this._token) {
+    if (this._status === "error") {
+      // This case applies when the user switches their identity before clicking on the
+      // "request access" button.
+      this._userIdentityId.set(identityId);
+    } else if (this._token) {
+      // We're currently viewing the grain incognito.
       _this.reset(identityId);
       _this.openSession();
     } else if (this.isOwner()) {
@@ -470,7 +480,7 @@ GrainView = class GrainView {
     Meteor.call("openSession", _this._grainId, identityId, _this._sessionSalt, (error, result) => {
       if (error) {
         console.error("openSession error", error);
-        _this._error = error.message;
+        _this._error = error;
         _this._status = "error";
         _this._dep.changed();
       } else {
@@ -509,7 +519,7 @@ GrainView = class GrainView {
         openSessionArg, identityId, _this._sessionSalt, (error, result) => {
           if (error) {
             console.log("openSessionFromApiToken error");
-            _this._error = error.message;
+            _this._error = error;
             _this._status = "error";
             _this._dep.changed();
           } else if (result.redirectToGrain) {

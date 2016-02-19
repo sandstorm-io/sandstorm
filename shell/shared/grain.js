@@ -149,6 +149,37 @@ if (Meteor.isServer) {
     return;
   });
 
+  Meteor.publish("requestingAccess", function (grainId, identityId) {
+    check(grainId, String);
+    check(identityId, String);
+
+    if (!this.userId) {
+      throw new Meteor.Error(403, "Must be logged in to request access.");
+    }
+
+    if (!globalDb.userHasIdentity(this.userId, identityId)) {
+      throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
+    }
+
+    const grain = globalDb.getGrain(grainId);
+    if (!grain) {
+      throw new Meteor.Error(404, "Grain not found.");
+    }
+
+    const _this = this;
+    const query = ApiTokens.find({ grainId: grainId, accountId: grain.userId,
+                                  "owner.user.identityId": identityId,
+                                  revoked: { $ne: true }, });
+    const handle = query.observe({
+      added(apiToken) {
+        _this.added("grantedAccessRequests",
+                    Random.id(), { grainId: grainId, identityId: identityId });
+      },
+    });
+
+    this.onStop(() => handle.stop());
+  });
+
   Meteor.publish("grainSize", function (grainId) {
     // Publish pseudo-collection containing the size of the grain opened in the given session.
     check(grainId, String);
@@ -214,7 +245,15 @@ if (Meteor.isServer) {
 GrainSizes = new Mongo.Collection("grainSizes");
 // TokenInfo is used by grainview.js
 TokenInfo = new Mongo.Collection("tokenInfo");
+GrantedAccessRequests = new Mongo.Collection("grantedAccessRequests");
 // Pseudo-collections published above.
+
+function emailLinkWithInlineStyle(url, text) {
+  return "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
+   "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
+   "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
+   text + "</a>";
+}
 
 Meteor.methods({
   deleteGrain: function (grainId) {
@@ -356,10 +395,8 @@ Meteor.methods({
             roleAssignment, { webkey: { forSharing: true } });
           const url = origin + "/shared/" + result.token;
           const html = message.html + "<br><br>" +
-              "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
-              "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
-              "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
-              "Open Shared Grain</a><div style='font-size:8pt;font-style:italic;color:gray'>" +
+              emailLinkWithInlineStyle(url, "Open Shared Grain") +
+              "<div style='font-size:8pt;font-style:italic;color:gray'>" +
               "Note: If you forward this email to other people, they will be able to access " +
               "the share as well. To prevent this, remove the button before forwarding.</div>";
           try {
@@ -398,10 +435,8 @@ Meteor.methods({
               }
 
               const html = message.html + "<br><br>" +
-                  "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
-                  "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
-                  "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
-                  "Open Shared Grain</a><div style='font-size:8pt;font-style:italic;color:gray'>" +
+                  emailLinkWithInlineStyle(url, "Open Shared Grain") +
+                  "<div style='font-size:8pt;font-style:italic;color:gray'>" +
                   "Note: You will need to log in with your " + loginNote +
                   " to access this grain.";
               SandstormEmail.send({
@@ -427,6 +462,99 @@ Meteor.methods({
       });
 
       return outerResult;
+    }
+  },
+
+  requestAccess: function (origin, grainId, identityId) {
+    check(origin, String);
+    check(grainId, String);
+    check(identityId, String);
+    if (!this.isSimulation) {
+      if (!this.userId) {
+        throw new Meteor.Error(403, "Must be logged in to request access.");
+      }
+
+      if (!globalDb.userHasIdentity(this.userId, identityId)) {
+        throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
+      }
+
+      const grain = Grains.findOne(grainId);
+      if (!grain) {
+        throw new Meteor.Error(404, "No such grain");
+      }
+
+      const grainOwner = globalDb.getUser(grain.userId);
+      const email = _.findWhere(SandstormDb.getUserEmails(grainOwner), { primary: true });
+      if (!email) {
+        throw new Meteor.Error("no email", "Grain owner has no email address.");
+      }
+
+      const emailAddress = email.email;
+
+      const identity = globalDb.getIdentity(identityId);
+      globalDb.addContact(grainOwner._id, identityId);
+
+      const envelopeFrom = globalDb.getReturnAddress();
+      let fromEmail = globalDb.getServerTitle() + " <" + globalDb.getReturnAddress() + ">";
+      const senderEmails = SandstormDb.getVerifiedEmails(identity);
+      if (senderEmails.length > 0) {
+        const primaryEmail = Meteor.user().primaryEmail;
+        if (senderEmails.indexOf(primaryEmail) >= 0) {
+          fromEmail = primaryEmail;
+        } else {
+          fromEmail = senderEmails[0];
+        }
+      }
+
+      // TODO(soon): In the HTML version, we should display an identity card.
+      let identityNote = "";
+      if (identity.profile.service === "google") {
+        identityNote = " (" + identity.privateIntrinsicName + ")";
+      } else if (identity.profile.service === "github") {
+        identityNote = " (" + identity.profile.intrinsicName + " on GitHub)";
+      } else if (identity.profile.service === "email") {
+        identityNote = " (" + identity.profile.intrinsicName + ")";
+      }
+
+      const message = identity.profile.name + identityNote +
+            " is requesting access to your grain: " + grain.title + ".";
+
+      const url = origin + "/share/" + grainId + "/" + identityId;
+
+      let html = message + "<br><br>" +
+          emailLinkWithInlineStyle(url, "Open Sharing Menu");
+
+      const user = Meteor.user();
+      const ACCESS_REQUEST_LIMIT = 10;
+      let resetCount = true;
+      if (user.accessRequests) {
+        if (user.accessRequests.resetOn < new Date()) {
+          Meteor.users.update({ _id: user._id }, { $unset: { accessRequests: 1 } });
+        } else if (user.accessRequests.count >= ACCESS_REQUEST_LIMIT) {
+          throw new Meteor.Error(403, "For spam control reasons, you are not allowed to make " +
+                                 "more than " + ACCESS_REQUEST_LIMIT +
+                                 " access requests per day.");
+        } else {
+          resetCount = false;
+        }
+      }
+
+      let modifier = { $inc: { "accessRequests.count": 1 } };
+      if (resetCount) {
+        let tomorrow = new Date(Date.now() + 86400000);
+        modifier.$set = { "accessRequests.resetOn": tomorrow };
+      }
+
+      Meteor.users.update({ _id: user._id }, modifier);
+
+      SandstormEmail.send({
+        to: emailAddress,
+        envelopeFrom: envelopeFrom,
+        from: fromEmail,
+        subject: grain.title + " - Request for access",
+        text: message + "\n\nFollow this link to share access:\n\n" + url,
+        html: html,
+      });
     }
   },
 });
@@ -875,6 +1003,63 @@ if (Meteor.isClient) {
 
     currentGrain: function () {
       return getActiveGrain(globalGrains.get());
+    },
+  });
+
+  Template.requestAccess.onCreated(function () {
+    this._status = new ReactiveVar({ showButton: true });
+    this._grain = getActiveGrain(globalGrains.get());
+  });
+
+  Template.requestAccess.events({
+    "click button.request-access": function (event, instance) {
+      instance._status.set({ chooseIdentity: true });
+    },
+  });
+
+  Template.requestAccess.helpers({
+    status: function () {
+      return Template.instance()._status.get();
+    },
+
+    chooseIdentityText: function () {
+      if (SandstormDb.getUserIdentityIds(Meteor.user()).length > 1) {
+        return "Please select an identity with which to request access.";
+      } else {
+        return "To confirm, please click on your identity below.";
+      }
+    },
+
+    identityPickerData: function () {
+      const identities = SandstormDb.getUserIdentityIds(Meteor.user())
+            .map(id => globalDb.getIdentity(id));
+      const instance = Template.instance();
+      function onPicked(identityId) {
+        let grainId = instance._grain.grainId();
+        Meteor.call("requestAccess", getOrigin(), grainId, identityId, function (error, result) {
+          if (error) {
+            instance._status.set({ error: error });
+          } else {
+            instance._status.set({ success: true });
+            instance.subscribe("requestingAccess", grainId, identityId);
+            instance.autorun(() => {
+              const granted = GrantedAccessRequests.findOne({ grainId: grainId,
+                                                              identityId: identityId, });
+              if (granted) {
+                instance._grain.reset(granted.identityId);
+                instance._grain.openSession();
+              }
+            });
+          }
+        });
+
+        instance._status.set({ waiting: true });
+      }
+
+      return {
+        identities: identities,
+        onPicked: onPicked,
+      };
     },
   });
 
@@ -1329,6 +1514,11 @@ if (Meteor.isClient) {
   Template.emailInviteTab.onCreated(function () {
     this.completionState = new ReactiveVar({ clear: true });
     this.contacts = new ReactiveVar([]);
+    this.grain = getActiveGrain(globalGrains.get());
+  });
+
+  Template.emailInviteTab.onDestroyed(function () {
+    Session.set("share-grain-" + Template.instance().grain.grainId(), undefined);
   });
 
   Template.shareableLinkTab.helpers({
@@ -1345,6 +1535,10 @@ if (Meteor.isClient) {
 
     contacts: function () {
       return Template.instance().contacts;
+    },
+
+    preselectedIdentityId: function () {
+      return Session.get("share-grain-" + Template.instance().grain.grainId());
     },
   });
 
@@ -1706,11 +1900,13 @@ function grainIdToIndex(grains, grainId) {
 }
 
 function mapGrainStateToTemplateData(grainState) {
+  const error = grainState.error();
   const templateData = {
     grainId: grainState.grainId(),
     active: grainState.isActive(),
     title: grainState.title(),
-    error: grainState.error(),
+    error: error && error.message,
+    unauthorized: error && (error.error == 403),
     appOrigin: grainState.origin(),
     hasNotLoaded: !(grainState.hasLoaded()),
     sessionId: grainState.sessionId(),
@@ -1775,6 +1971,12 @@ Router.map(function () {
 
       this.state.set("beforeActionHookRan", true);
       const grainId = this.params.grainId;
+      let initialPopup = null;
+      let shareGrain = Session.get("share-grain-" + grainId);
+      if (shareGrain) {
+        initialPopup = "share";
+      }
+
       const path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
       const grains = globalGrains.get();
       let grainIndex = grainIdToIndex(grains, grainId);
@@ -1786,7 +1988,8 @@ Router.map(function () {
           const mainContentElement = document.querySelector("body>.main-content");
           if (mainContentElement) {
             const grains = globalGrains.get();
-            const grainToOpen = new GrainView(grainId, path, undefined, mainContentElement);
+            const grainToOpen = new GrainView(grainId, path, undefined, mainContentElement,
+                                            initialPopup);
             grainToOpen.openSession();
             grainIndex = grains.push(grainToOpen) - 1;
             globalGrains.set(grains);
@@ -1930,6 +2133,27 @@ Router.map(function () {
 
     data: function () {
       return new SandstormAppDetails(globalDb, globalQuotaEnforcer, this.params.appId);
+    },
+  });
+
+  this.route("share", {
+    path: "/share/:grainId/:identityId",
+    template: "share",
+    waitOn: function () {
+      return Meteor.subscribe("grainTopBar", this.params.grainId);
+    },
+
+    data: function () {
+      let userId = Meteor.userId();
+      let grainId = this.params.grainId;
+      let identityId = this.params.identityId;
+      let grain = Grains.findOne({ _id: grainId });
+      if (!grain) {
+        return { grainNotFound: grainId };
+      } else {
+        Session.set("share-grain-" + grainId, identityId);
+        Router.go("/grain/" + grainId);
+      }
     },
   });
 });

@@ -142,6 +142,7 @@ const smtpSend = function (pool, mc) {
  * @param {String} [options.smtpUrl] SMTP server to use. Otherwise defaults to configured one.
  * @param {Object} [options.attachments] Attachments. See:
  *   https://github.com/nodemailer/mailcomposer/tree/v0.1.15#add-attachments
+ * @param {String} [options.envelopeFrom] Envelope sender.
  */
 SandstormEmail.send = function (options) {
   const mc = new MailComposer();
@@ -157,6 +158,14 @@ SandstormEmail.send = function (options) {
     text: options.text,
     html: options.html,
   });
+
+  if (options.envelopeSender) {
+    const envelope = mc.getEnvelope();
+    envelope.from = options.envelopeFrom;
+    mc.setMessageOption({
+      envelope: envelope,
+    });
+  }
 
   _.each(options.headers, function (value, name) {
     mc.addHeader(name, value);

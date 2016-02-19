@@ -8,32 +8,42 @@ some of these to adapt their behavior to make the most sense for your app.
 ### global-setup.sh
 This installs Sandstorm using the official installer script, enables developer
 accounts, and stops unneeded services on the VM.  It caches the Sandstorm
-bundle to speed up subsequent runs. You should not need to change this script.
+bundle to speed up subsequent runs.
+
+You should not need to change this script.
 
 ### setup.sh
-This script runs when you set up the VM by `vagrant-spk up` the first time and
-does stack-specific setup, like installing tools or daemons needed to build and
-run your app.  `vagrant-spk` provides some defaults based on commonly-used platform
-stacks, but you'll likely want to modify this script as suitable for your package.
 
-This is the ideal place to `apt-get install` system packages your app relies on,
-like:
+This script controls stack-specific setup, like tools to download and install. It runs **once when
+you run `vagrant-spk up`**. When you modify this file, you must **manually re-execute it**. See
+below for details.
 
-  - language runtimes (PHP, Node, Python, etc.)
-  - database engines (MySQL, PostgreSQL, Redis, etc.)
-  - frontend web servers (nginx, Apache)
+Each platform stack in `vagrant-spk` provides a reasonable default for `setup.sh`, but if you need
+to download & install more system-level dependencies, then you will need to modify this script. This
+is the ideal place to `apt-get install` system packages your app relies on, or run other installers
+via `curl|bash` etc. Use this file to install:
 
-and so on.  Please note that this script is run only once for the lifetime of
-the VM, and will not be run again when running `vagrant-spk dev` or starting a
-grain.
+- language runtimes (PHP, Node, Python, etc.)
+- database engines (MySQL, PostgreSQL, Redis, etc.)
+- frontend web servers (nginx, Apache)
 
-If you make changes to this script, you should destroy your VM (`vagrant-spk destroy`)
-and rebuild it cleanly from scratch (`vagrant-spk up`) to make sure your
-changes take effect and work as desired.
+When you **modify this script, you must manually re-provision the Vagrant box** as follows.
 
-If you find yourself destroying and creating VMs from scratch frequently,
-consider running an instance of `apt-cacher-ng` on your host to speed up
-package downloads.
+```bash
+cd .sandstorm
+vagrant provision
+cd ..
+```
+
+This is because `vagrant-spk` currently has no way to auto-detect that the `setup.sh` script needs
+to be re-executed.
+
+To verify your `setup.sh` for reproducibility, run `vagrant-spk destroy` then `vagrant-spk up` and
+manually test your package.
+
+As a performance optimization, you can use `apt-cacher-ng` to speed up package downloads. This can
+help if you frequently destroy your VM. For more information on that, read the last few lines of
+`global-setup.sh`.
 
 ### build.sh
 This script runs each time you run `vagrant-spk dev` before exposing your app

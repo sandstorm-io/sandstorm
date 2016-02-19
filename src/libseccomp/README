@@ -18,6 +18,12 @@ Luckily libseccomp doesn't appear to change much. We'll just update things
 if there's a breakage.
 
 As a second hack, we symlink the original source tree's seccomp.h.in to
-include/seccomp.h. This means that the version numbers won't have been
-properly substituted. Luckily we don't use those, so whatever.
+include/seccomp-in.h. Since we haven't run the configure scirpt, the version
+number macros in this file won't have been #defined correctly, but we also
+provide the header include/seccomp.h which includes seccomp-in.h then fixes
+the macros. Note that as of this writing, libseccomp actually sets the
+version number to 0.0.0 in its configure script, making these macros fairly
+useless. Luckily we don't use them anywhere, and libseccomp uses them only
+in a function that returns the version at runtime, which no one uses.
 
+We should probably find a less-ugly solution eventually.

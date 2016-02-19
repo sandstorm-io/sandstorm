@@ -319,8 +319,8 @@ if (Meteor.isClient) {
       Meteor.call("setSetting", token, "smtpUrl", event.target.smtpUrl.value, handleErrorBound);
       if (globalDb.isFeatureKeyValid()) {
         Meteor.call("setAccountSetting", token, "ldap", event.target.ldapLogin.checked, handleErrorBound);
-        Meteor.call("setLdapSetting", token, "Url", event.target.ldapUrl.value, handleErrorBound);
-        Meteor.call("setLdapSetting", token, "Base", event.target.ldapBase.value, handleErrorBound);
+        Meteor.call("setSetting", token, "ldapUrl", event.target.ldapUrl.value, handleErrorBound);
+        Meteor.call("setSetting", token, "ldapBase", event.target.ldapBase.value, handleErrorBound);
         Meteor.call("setSetting", token, "ldapDnPattern", event.target.ldapDnPattern.value, handleErrorBound);
         Meteor.call("setSetting", token, "ldapNameField", event.target.ldapNameField.value, handleErrorBound);
       }
@@ -1015,15 +1015,13 @@ if (Meteor.isServer) {
       check(value, Match.OneOf(null, String, Date, Boolean));
 
       Settings.upsert({ _id: name }, { $set: { value: value } });
-    },
-
-    setLdapSetting: function (token, name, value) {
-      checkAuth(token);
-      check(name, String);
-      check(value, Match.OneOf(null, String, Date, Boolean));
-
-      Settings.upsert({ _id: "ldap" + name }, { $set: { value: value } });
-      LDAP_DEFAULTS[name.toLowerCase()] = value;
+      if (name.lastIndexOf("ldap", 0) === 0) {
+        // some ldap settings need to be set for the accounts-ldap package
+        const ldapSetting = name.slice(4);
+        if (ldapSetting === "Url" || ldapSetting === "Base") {
+          LDAP_DEFAULTS[ldapSetting.toLowerCase()] = value;
+        }
+      }
     },
 
     getSmtpUrl: function (token) {

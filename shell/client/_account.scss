@@ -783,6 +783,10 @@ div.billing {
       margin: 0.5em 0;
     }
 
+    h4 {
+      margin: 0;
+    }
+
     max-width: 482px;
     padding: 0 16px;
 
@@ -880,22 +884,39 @@ div.billing {
       }
     }
 
-    tr.bonus, div.subscribe-prompt {
+    tr.bonus {
       color: #6d6d6d;
       font-size: 90%;
     }
 
-    .subscribe-prompt {
+    h4.free-stuff-section-header {
+      padding-bottom: 0.5em;
+    }
+
+    div.free-stuff {
+      /* "Get free storage" area of /account */
       display: flex;
+      align-items: center;
+      justify-content: space-between;
 
-      >p { margin: 0; }
+      >p {
+        color: #6d6d6d;
+        font-size: 90%;
+        padding-right: 0.3em;
 
-      >p:first-of-type {
-        flex: 1 1 70%;
+        .reward-amount {
+          font-weight: bold;
+        }
       }
-      >p:last-of-type {
-        flex: 1 1 30%;
-        text-align: right;
+
+      a.like-a-button, button {
+        @extend %button-base;
+        @extend %button-primary;
+        font-family: Arial;
+        font-size: 16px;
+        font-weight: normal;
+        width: 125px;
+        flex-shrink: 0;
       }
     }
   }

@@ -919,21 +919,6 @@ div.billing {
         flex-shrink: 0;
       }
     }
-
-
-    .subscribe-prompt {
-      display: flex;
-
-      >p { margin: 0; }
-
-      >p:first-of-type {
-        flex: 1 1 70%;
-      }
-      >p:last-of-type {
-        flex: 1 1 30%;
-        text-align: right;
-      }
-    }
   }
 }
 

@@ -124,6 +124,10 @@ Template.admin.helpers({
     return Router.current().route.getName() == "adminAdvanced";
   },
 
+  featureKeyActive: function () {
+    return Router.current().route.getName() == "adminFeatureKey";
+  },
+
   wildcardHostSeemsBroken: function () {
     if (Session.get("alreadyTestedWildcardHost") &&
         !Session.get("wildcardHostWorks")) {
@@ -812,12 +816,126 @@ Template.adminAdvanced.helpers({
   },
 });
 
+Template.featureKeyUploadForm.onCreated(function () {
+  this.error = new ReactiveVar(undefined);
+});
+
+Template.featureKeyUploadForm.events({
+  "submit form": function (evt) {
+    evt.preventDefault();
+    const instance = Template.instance();
+    const text = instance.find("textarea").value;
+    Meteor.call("submitFeatureKey", text, (err) => {
+      if (err) {
+        instance.error.set(err.message);
+      } else {
+        instance.data.successCb && instance.data.successCb();
+      }
+    });
+  },
+
+  "change input[type='file']": function (evt) {
+    const file = evt.currentTarget.files[0];
+    const instance = Template.instance();
+    if (file) {
+      // Read the file into memory, then call submitFeatureKey with the file's contents.
+      const reader = new FileReader();
+      reader.addEventListener("load", () => {
+        console.log(reader.result);
+        Meteor.call("submitFeatureKey", reader.result, (err) => {
+          if (err) {
+            instance.error.set(err.message);
+          } else {
+            instance.data.successCb && instance.data.successCb();
+          }
+        });
+      });
+      reader.readAsText(file);
+    }
+  },
+});
+
+Template.featureKeyUploadForm.helpers({
+  currentError: function () {
+    return Template.instance().error.get();
+  },
+});
+
+Template.adminFeatureKey.onCreated(function () {
+  this.showForm = new ReactiveVar(false);
+});
+
+Template.adminFeatureKey.events({
+  "click button.feature-key-upload-button": function (evt) {
+    Template.instance().showForm.set(true);
+  },
+});
+
+Template.adminFeatureKey.helpers({
+  setDocumentTitle: function () {
+    document.title = "Features · Admin · " + globalDb.getServerTitle();
+  },
+
+  currentFeatureKey: function () {
+    return globalDb.collections.featureKey.findOne();
+  },
+
+  showForm: function () {
+    return Template.instance().showForm.get();
+  },
+
+  hideFormCb: function () {
+    const instance = Template.instance();
+    return () => {
+      instance.showForm.set(false);
+    };
+  },
+
+  computeValidity: function (featureKey) {
+    const now = new Date().getTime();
+    if (featureKey.expires >= now) {
+      const soonWindowLengthSec = 60 * 60 * 24 * 7; // one week
+      if (featureKey.expires < now + soonWindowLengthSec) {
+        return {
+          className: "expires-soon",
+          labelText: "Expires soon",
+        };
+      } else {
+        return {
+          className: "valid",
+          labelText: "Valid",
+        };
+      }
+    } else {
+      return {
+        className: "expired",
+        labelText: "Expired",
+      };
+    }
+  },
+
+  renderDateString: function (stringSecondsSinceEpoch) {
+    if (stringSecondsSinceEpoch === "18446744073709551615") { // UINT64_MAX means "never expires"
+      return "Never";
+    }
+
+    // TODO: deduplicate this with the one in shared/shell.js or just import moment.js
+    const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    const d = new Date();
+    d.setTime(parseInt(stringSecondsSinceEpoch) * 1000);
+
+    return MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+  },
+});
+
 const adminRoute = RouteController.extend({
   template: "admin",
   waitOn: function () {
     const subs = [
       Meteor.subscribe("admin", this.params._token),
       Meteor.subscribe("adminServiceConfiguration", this.params._token),
+      Meteor.subscribe("featureKey"),
     ];
     if (this.params._token) {
       subs.push(Meteor.subscribe("adminToken", this.params._token));
@@ -912,6 +1030,10 @@ Router.map(function () {
   });
   this.route("adminAdvanced", {
     path: "/admin/advanced/:_token?",
+    controller: adminRoute,
+  });
+  this.route("adminFeatureKey", {
+    path: "/admin/features/:_token?",
     controller: adminRoute,
   });
   this.route("adminOld", {

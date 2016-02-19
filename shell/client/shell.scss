@@ -47,6 +47,9 @@ body {
   box-sizing: inherit;
 }
 
+// Some reusable components that we make use of in multiple places
+@import "_widgets.scss";
+
 // Styles used by sandstorm-ui-topbar
 @import "_topbar.scss";
 
@@ -148,7 +151,7 @@ button.revoke-token, button.revoke-access {
 
 .centered-box {
   margin: 16px auto;
-  max-width: 600px;
+  max-width: 800px;
   font-size: 125%;
   h2 {
     margin-top: 0;

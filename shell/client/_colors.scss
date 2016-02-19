@@ -6,6 +6,10 @@ $sandstorm-purple-color: #762F87;
 // The color that we use to outline focused elements, for accessibility
 $focus-outline-color: $sandstorm-purple-color;
 
+// Colors for success/error message box backgrounds.
+$error-background-color: #ffdddd;
+$success-background-color: #ddffdd;
+
 ////////  General shell elements
 // Default shell background and text colors
 $topbar-background-color: #191919;

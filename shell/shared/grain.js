@@ -149,29 +149,32 @@ if (Meteor.isServer) {
     return;
   });
 
-  Meteor.publish("requestingAccess", function(grainId, identityId) {
+  Meteor.publish("requestingAccess", function (grainId, identityId) {
     check(grainId, String);
     check(identityId, String);
 
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to request access.");
     }
+
     if (!globalDb.userHasIdentity(this.userId, identityId)) {
       throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
     }
+
     const grain = globalDb.getGrain(grainId);
     if (!grain) {
       throw new Meteor.Error(404, "Grain not found.");
     }
+
     const _this = this;
-    const query = ApiTokens.find({grainId: grainId, accountId: grain.userId,
+    const query = ApiTokens.find({ grainId: grainId, accountId: grain.userId,
                                   "owner.user.identityId": identityId,
-                                  revoked: {$ne: true}});
+                                  revoked: { $ne: true }, });
     const handle = query.observe({
       added(apiToken) {
         _this.added("grantedAccessRequests",
-                    Random.id(), {grainId: grainId, identityId: identityId});
-      }
+                    Random.id(), { grainId: grainId, identityId: identityId });
+      },
     });
 
     this.onStop(() => handle.stop());
@@ -246,10 +249,10 @@ GrantedAccessRequests = new Mongo.Collection("grantedAccessRequests");
 // Pseudo-collections published above.
 
 function emailLinkWithInlineStyle(url, text) {
-   return "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
-    "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
-    "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
-    text + "</a>";
+  return "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
+   "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
+   "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
+   text + "</a>";
 }
 
 Meteor.methods({
@@ -389,7 +392,7 @@ Meteor.methods({
           const result = SandstormPermissions.createNewApiToken(
             globalDb, { identityId: identityId, accountId: accountId }, grainId,
             "email invitation for " + emailAddress,
-            roleAssignment, {webkey: {forSharing: true}});
+            roleAssignment, { webkey: { forSharing: true } });
           const url = origin + "/shared/" + result.token;
           const html = message.html + "<br><br>" +
               emailLinkWithInlineStyle(url, "Open Shared Grain") +
@@ -430,6 +433,7 @@ Meteor.methods({
               } else {
                 throw new Meteor.Error(500, "Unknown service to email share link.");
               }
+
               const html = message.html + "<br><br>" +
                   emailLinkWithInlineStyle(url, "Open Shared Grain") +
                   "<div style='font-size:8pt;font-style:italic;color:gray'>" +
@@ -460,26 +464,31 @@ Meteor.methods({
       return outerResult;
     }
   },
+
   requestAccess: function (origin, grainId, identityId) {
     check(origin, String);
     check(grainId, String);
     check(identityId, String);
     if (!this.isSimulation) {
       if (!this.userId) {
-         throw new Meteor.Error(403, "Must be logged in to request access.");
+        throw new Meteor.Error(403, "Must be logged in to request access.");
       }
+
       if (!globalDb.userHasIdentity(this.userId, identityId)) {
         throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
       }
+
       const grain = Grains.findOne(grainId);
       if (!grain) {
         throw new Meteor.Error(404, "No such grain");
       }
+
       const grainOwner = globalDb.getUser(grain.userId);
-      const email = _.findWhere(SandstormDb.getUserEmails(grainOwner), {primary: true});
+      const email = _.findWhere(SandstormDb.getUserEmails(grainOwner), { primary: true });
       if (!email) {
         throw new Meteor.Error("no email", "Grain owner has no email address.");
       }
+
       const emailAddress = email.email;
 
       const identity = globalDb.getIdentity(identityId);
@@ -520,21 +529,23 @@ Meteor.methods({
       let resetCount = true;
       if (user.accessRequests) {
         if (user.accessRequests.resetOn < new Date()) {
-          Meteor.users.update({_id: user._id}, {$unset: {accessRequests: 1}});
+          Meteor.users.update({ _id: user._id }, { $unset: { accessRequests: 1 } });
         } else if (user.accessRequests.count >= ACCESS_REQUEST_LIMIT) {
-            throw new Meteor.Error(403, "For spam control reasons, you are not allowed to make " +
-                                   "more than " + ACCESS_REQUEST_LIMIT +
-                                   " access requests per day.");
+          throw new Meteor.Error(403, "For spam control reasons, you are not allowed to make " +
+                                 "more than " + ACCESS_REQUEST_LIMIT +
+                                 " access requests per day.");
         } else {
           resetCount = false;
         }
       }
-      let modifier = {$inc: {"accessRequests.count": 1}};
+
+      let modifier = { $inc: { "accessRequests.count": 1 } };
       if (resetCount) {
         let tomorrow = new Date(Date.now() + 86400000);
-        modifier["$set"] = {"accessRequests.resetOn": tomorrow};
+        modifier.$set = { "accessRequests.resetOn": tomorrow };
       }
-      Meteor.users.update({_id: user._id}, modifier);
+
+      Meteor.users.update({ _id: user._id }, modifier);
 
       SandstormEmail.send({
         to: emailAddress,
@@ -996,13 +1007,13 @@ if (Meteor.isClient) {
   });
 
   Template.requestAccess.onCreated(function () {
-    this._status = new ReactiveVar({showButton: true});
+    this._status = new ReactiveVar({ showButton: true });
     this._grain = getActiveGrain(globalGrains.get());
   });
 
   Template.requestAccess.events({
     "click button.request-access": function (event, instance) {
-      instance._status.set({chooseIdentity: true});
+      instance._status.set({ chooseIdentity: true });
     },
   });
 
@@ -1010,28 +1021,30 @@ if (Meteor.isClient) {
     status: function () {
       return Template.instance()._status.get();
     },
+
     chooseIdentityText: function () {
-      if (SandstormDb.getUserIdentityIds(Meteor.user()).length > 1 ){
+      if (SandstormDb.getUserIdentityIds(Meteor.user()).length > 1) {
         return "Please select an identity with which to request access.";
       } else {
         return "To confirm, please click on your identity below.";
       }
     },
+
     identityPickerData: function () {
       const identities = SandstormDb.getUserIdentityIds(Meteor.user())
             .map(id => globalDb.getIdentity(id));
       const instance = Template.instance();
       function onPicked(identityId) {
         let grainId = instance._grain.grainId();
-        Meteor.call("requestAccess", getOrigin(), grainId, identityId, function(error, result) {
+        Meteor.call("requestAccess", getOrigin(), grainId, identityId, function (error, result) {
           if (error) {
-            instance._status.set({error: error});
+            instance._status.set({ error: error });
           } else {
-            instance._status.set({success: true});
+            instance._status.set({ success: true });
             instance.subscribe("requestingAccess", grainId, identityId);
             instance.autorun(() => {
-              const granted = GrantedAccessRequests.findOne({grainId: grainId,
-                                                             identityId: identityId});
+              const granted = GrantedAccessRequests.findOne({ grainId: grainId,
+                                                              identityId: identityId, });
               if (granted) {
                 instance._grain.reset(granted.identityId);
                 instance._grain.openSession();
@@ -1039,8 +1052,10 @@ if (Meteor.isClient) {
             });
           }
         });
-        instance._status.set({waiting: true});
+
+        instance._status.set({ waiting: true });
       }
+
       return {
         identities: identities,
         onPicked: onPicked,
@@ -1521,6 +1536,7 @@ if (Meteor.isClient) {
     contacts: function () {
       return Template.instance().contacts;
     },
+
     preselectedIdentityId: function () {
       return Session.get("share-grain-" + Template.instance().grain.grainId());
     },
@@ -2131,13 +2147,13 @@ Router.map(function () {
       let userId = Meteor.userId();
       let grainId = this.params.grainId;
       let identityId = this.params.identityId;
-      let grain = Grains.findOne({_id: grainId});
+      let grain = Grains.findOne({ _id: grainId });
       if (!grain) {
-        return {grainNotFound: grainId}
+        return { grainNotFound: grainId };
       } else {
         Session.set("share-grain-" + grainId, identityId);
         Router.go("/grain/" + grainId);
       }
-    }
+    },
   });
 });

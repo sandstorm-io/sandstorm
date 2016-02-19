@@ -89,7 +89,7 @@ GrainView = class GrainView {
     const grainId = this.grainId();
     if (currentIdentityId === identityId) return;
     const _this = this;
-    if (this._status === 'error') {
+    if (this._status === "error") {
       // This case applies when the user switches their identity before clicking on the
       // "request access" button.
       this._userIdentityId.set(identityId);

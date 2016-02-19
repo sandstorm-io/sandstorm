@@ -34,6 +34,7 @@
 #include <sys/mman.h>
 #include <errno.h>
 #include <sandstorm/package.capnp.h>
+#include <sandstorm/appid-replacements.capnp.h>
 #include <stdlib.h>
 #include <dirent.h>
 #include <set>
@@ -55,6 +56,8 @@
 #include "union-fs.h"
 #include "send-fd.h"
 #include "util.h"
+#include "id-to-text.h"
+#include "appid-replacements.h"
 
 namespace sandstorm {
 
@@ -69,206 +72,8 @@ static const uint32_t MAX_DEFINED_APIVERSION = 0;
 // we can't possibly know what the constraints are on that API.
 
 // =======================================================================================
-// base32 encode/decode derived from google-authenticator code, Apache 2.0 license:
-//   https://code.google.com/p/google-authenticator/source/browse/libpam/base32.c
-//
-// Modifications:
-// - Prefer to output in lower-case letters.
-// - Use Douglas Crockford's alphabet mapping, except instead of excluding 'u', consider 'B' to
-//   be a misspelling of '8'.
-// - Use a lookup table for decoding (in addition to encoding).  Generate this table
-//   programmatically at compile time.  C++14 constexpr is awesome.
-// - Convert to KJ style.
-//
-// TODO(test):  This could use a unit test.
-
-constexpr char BASE32_ENCODE_TABLE[] = "0123456789acdefghjkmnpqrstuvwxyz";
-
-kj::String base32Encode(kj::ArrayPtr<const byte> data) {
-  // We'll need a character for every 5 bits, rounded up.
-  auto result = kj::heapString((data.size() * 8 + 4) / 5);
-
-  uint count = 0;
-  if (data.size() > 0) {
-    uint buffer = data[0];
-    uint next = 1;
-    uint bitsLeft = 8;
-    while (bitsLeft > 0 || next < data.size()) {
-      if (bitsLeft < 5) {
-        if (next < data.size()) {
-          buffer <<= 8;
-          buffer |= data[next++] & 0xFF;
-          bitsLeft += 8;
-        } else {
-          // No more input; pad with zeros.
-          uint pad = 5 - bitsLeft;
-          buffer <<= pad;
-          bitsLeft += pad;
-        }
-      }
-      uint index = 0x1F & (buffer >> (bitsLeft - 5));
-      bitsLeft -= 5;
-      KJ_ASSERT(count < result.size());
-      result[count++] = BASE32_ENCODE_TABLE[index];
-    }
-  }
-
-  return result;
-}
-
-class Base32Decoder {
-public:
-  constexpr Base32Decoder(): decodeTable() {
-    // Cool, we can generate our lookup table at compile time.
-
-    for (byte& b: decodeTable) {
-      b = 255;
-    }
-
-    for (uint i = 0; i < sizeof(BASE32_ENCODE_TABLE) - 1; i++) {
-      unsigned char c = BASE32_ENCODE_TABLE[i];
-      decodeTable[c] = i;
-      if ('a' <= c && c <= 'z') {
-        decodeTable[c - 'a' + 'A'] = i;
-      }
-    }
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wchar-subscripts"
-    decodeTable['o'] = decodeTable['O'] = 0;
-    decodeTable['i'] = decodeTable['I'] = 1;
-    decodeTable['l'] = decodeTable['L'] = 1;
-    decodeTable['b'] = decodeTable['B'] = 8;
-#pragma GCC diagnostic pop
-  }
-
-  constexpr bool verifyTable() const {
-    // Verify that all letters and digits have a decoding.
-    //
-    // Oh cool, this can also be done at compile time, and then checked with a static_assert below.
-    //
-    // C++14 is awesome.
-
-    for (unsigned char c = '0'; c <= '9'; c++) {
-      if (decodeTable[c] == 255) return false;
-    }
-    for (unsigned char c = 'a'; c <= 'z'; c++) {
-      if (decodeTable[c] == 255) return false;
-    }
-    for (unsigned char c = 'A'; c <= 'Z'; c++) {
-      if (decodeTable[c] == 255) return false;
-    }
-    return true;
-  }
-
-  kj::Array<byte> decode(kj::StringPtr encoded) const {
-    // We intentionally round the size down.  Leftover bits are presumably zero.
-    auto result = kj::heapArray<byte>(encoded.size() * 5 / 8);
-
-    uint buffer = 0;
-    uint bitsLeft = 0;
-    uint count = 0;
-    for (char c: encoded) {
-      byte decoded = decodeTable[(byte)c];
-      KJ_ASSERT(decoded <= 32, "Invalid base32.");
-
-      buffer <<= 5;
-      buffer |= decoded;
-      bitsLeft += 5;
-      if (bitsLeft >= 8) {
-        KJ_ASSERT(count < encoded.size());
-        bitsLeft -= 8;
-        result[count++] = buffer >> bitsLeft;
-      }
-    }
-
-    buffer &= (1 << bitsLeft) - 1;
-    KJ_REQUIRE(buffer == 0, "Base32 decode failed: extra bits at end.");
-
-    return result;
-  }
-
-private:
-  byte decodeTable[256];
-};
-
-constexpr Base32Decoder BASE32_DECODER;
-static_assert(BASE32_DECODER.verifyTable(), "Base32 decode table is incomplete.");
-
-kj::String appIdString(spk::AppId::Reader appId) {
-  auto bytes = capnp::AnyStruct::Reader(appId).getDataSection();
-  KJ_ASSERT(bytes.size() == 32);
-  return base32Encode(bytes);
-}
-
-kj::String packageIdString(spk::PackageId::Reader packageId) {
-  auto bytes = capnp::AnyStruct::Reader(packageId).getDataSection();
-  KJ_ASSERT(bytes.size() == 16);
-  return hexEncode(bytes);
-}
-
-static kj::Maybe<uint> parseHexDigit(char c) {
-  if ('0' <= c && c <= '9') {
-    return static_cast<uint>(c - '0');
-  } else if ('a' <= c && c <= 'f') {
-    return static_cast<uint>(c - 'a');
-  } else {
-    return nullptr;
-  }
-}
-
-static bool tryParsePackageId(kj::StringPtr in, spk::PackageId::Builder out) {
-  if (in.size() != 32) return false;
-
-  auto bytes = capnp::AnyStruct::Builder(kj::mv(out)).getDataSection();
-  KJ_ASSERT(bytes.size() == 16);
-
-  for (auto i: kj::indices(bytes)) {
-    byte b = 0;
-    KJ_IF_MAYBE(d, parseHexDigit(in[i*2])) {
-      b = *d;
-    } else {
-      return false;
-    }
-    KJ_IF_MAYBE(d, parseHexDigit(in[i*2+1])) {
-      b |= *d << 4;
-    } else {
-      return false;
-    }
-    bytes[i] = b;
-  }
-
-  return true;
-}
-
-// =======================================================================================
-// JSON handlers for AppId and PackageId, converting them to their standard textual form.
-
-class AppIdJsonHandler: public capnp::JsonCodec::Handler<spk::AppId> {
-public:
-  void encode(const capnp::JsonCodec& codec, spk::AppId::Reader input,
-              capnp::JsonValue::Builder output) const override {
-    output.setString(appIdString(input));
-  }
-
-  void decode(const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
-              spk::AppId::Builder output) const override {
-    KJ_UNIMPLEMENTED("AppIdJsonHandler::decode");
-  }
-};
-
-class PackageIdJsonHandler: public capnp::JsonCodec::Handler<spk::PackageId> {
-public:
-  void encode(const capnp::JsonCodec& codec, spk::PackageId::Reader input,
-              capnp::JsonValue::Builder output) const override {
-    output.setString(packageIdString(input));
-  }
-
-  void decode(const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
-              spk::PackageId::Builder output) const override {
-    KJ_UNIMPLEMENTED("PackageIdJsonHandler::decode");
-  }
-};
+// JSON handlers for very large data or text blobs, which we don't want to print along with
+// `spk verify`. Also base64's data blobs (if they are small enough).
 
 class OversizeDataHandler: public capnp::JsonCodec::Handler<capnp::Data> {
 public:
@@ -563,7 +368,7 @@ private:
     static_assert(crypto_sign_PUBLICKEYBYTES == 32, "Signing algorithm changed?");
     KJ_REQUIRE(publicKey.size() == crypto_sign_PUBLICKEYBYTES);
 
-    printAppId(base32Encode(publicKey));
+    printAppId(appIdString(publicKey));
   }
 
   kj::MainBuilder::Validity setKeyringPath(kj::StringPtr arg) {
@@ -601,7 +406,19 @@ private:
     return raiiOpen(filename, flags, 0600);
   }
 
-  spk::KeyFile::Reader lookupKey(kj::StringPtr appid) {
+  spk::KeyFile::Reader lookupKey(kj::StringPtr appid, bool withReplacements = true) {
+    // We actually want to sign packages using the current replacement key for the app ID.
+    byte appidBytes[APP_ID_BYTE_SIZE];
+    KJ_REQUIRE(tryParseAppId(appid, appidBytes), "invalid appid", appid);
+    auto replacement = appIdString(getPublicKeyForApp(appidBytes));
+    if (withReplacements) {
+      appid = replacement;
+    } else {
+      if (appid != replacement) {
+        KJ_LOG(WARNING, "the requested key is obsolote", appid, replacement);
+      }
+    }
+
     if (keyringMapping == nullptr) {
       auto mapping = kj::heap<MemoryMapping>(openKeyring(O_RDONLY), "(keyring)");
       kj::ArrayPtr<const capnp::word> words = *mapping;
@@ -611,7 +428,7 @@ private:
         auto reader = kj::heap<capnp::FlatArrayMessageReader>(words);
         auto key = reader->getRoot<spk::KeyFile>();
         words = kj::arrayPtr(reader->getEnd(), words.end());
-        keyMap.insert(std::make_pair(base32Encode(key.getPublicKey()), kj::mv(reader)));
+        keyMap.insert(std::make_pair(appIdString(key.getPublicKey()), kj::mv(reader)));
       }
     }
 
@@ -652,7 +469,7 @@ private:
 
     capnp::writeMessageToFd(openKeyring(O_WRONLY | O_APPEND | O_CREAT), message);
 
-    return base32Encode(builder.getPublicKey());
+    return appIdString(builder.getPublicKey());
   }
 
   kj::MainBuilder::Validity doKeygen() {
@@ -701,7 +518,7 @@ private:
              "really intended to write it to your terminal. :)";
     }
 
-    auto key = lookupKey(appid);
+    auto key = lookupKey(appid, false);  // Don't get a replacement; get the original.
     capnp::MallocMessageBuilder builder(key.totalSize().wordCount + 4);
     builder.setRoot(key);
     capnp::writeMessageToFd(STDOUT_FILENO, builder);
@@ -1577,10 +1394,32 @@ private:
     // Read package form spkfd, check the validity and signature, and return the appId. Also write
     // the uncompressed archive to `tmpfile`.
 
+    // We need to compute the hash of the input. The input could be a pipe (not a file), therefore
+    // we need to read it in chunks, hash the content, and write back out to the pipe that xz will
+    // use as input below. We'll do all that in a thread to keep the code simple.
+    byte packageHash[crypto_hash_sha256_BYTES];
+    Pipe spkPipe = Pipe::make();
+    auto hashThread = new kj::Thread([&]() {
+      crypto_hash_sha256_state packageHashState;
+      KJ_ASSERT(crypto_hash_sha256_init(&packageHashState) == 0);
+
+      byte buffer[8192];
+      kj::FdOutputStream out(kj::mv(spkPipe.writeEnd));
+      for (;;) {
+        ssize_t n;
+        KJ_SYSCALL(n = read(spkfd, buffer, sizeof(buffer)));
+        if (n == 0) break;
+        KJ_ASSERT(crypto_hash_sha256_update(&packageHashState, buffer, n) == 0);
+        out.write(buffer, n);
+      }
+
+      KJ_ASSERT(crypto_hash_sha256_final(&packageHashState, packageHash));
+    });
+
     // Check the magic number.
     auto expectedMagic = spk::MAGIC_NUMBER.get();
     byte magic[expectedMagic.size()];
-    kj::FdInputStream(spkfd).read(magic, expectedMagic.size());
+    kj::FdInputStream(spkPipe.readEnd.get()).read(magic, expectedMagic.size());
     for (uint i: kj::indices(expectedMagic)) {
       if (magic[i] != expectedMagic[i]) {
         return validationError("Does not appear to be an .spk (bad magic number).");
@@ -1591,10 +1430,11 @@ private:
     Pipe pipe = Pipe::make();
 
     Subprocess::Options childOptions({"xz", "-dc"});
-    childOptions.stdin = spkfd;
+    childOptions.stdin = spkPipe.readEnd;
     childOptions.stdout = pipe.writeEnd;
     Subprocess child(kj::mv(childOptions));
 
+    spkPipe.readEnd = nullptr;
     pipe.writeEnd = nullptr;
     kj::FdInputStream in(kj::mv(pipe.readEnd));
 
@@ -1645,6 +1485,11 @@ private:
     }
 
     child.waitForSuccess();
+    hashThread = nullptr;  // joins thread
+
+    // The spk pipe thread should have exited now, completing the hash.
+    static_assert(PACKAGE_ID_BYTE_SIZE <= crypto_hash_sha256_BYTES, "package ID size changed?");
+    auto packageIdBytes = kj::arrayPtr(packageHash, PACKAGE_ID_BYTE_SIZE);
 
     // Check that hashes match.
     byte hash[crypto_hash_sha512_BYTES];
@@ -1653,17 +1498,13 @@ private:
       return validationError("Signature didn't match package contents.");
     }
 
-    auto appIdString = base32Encode(publicKey);
+    // Get the canonical app ID based on the replacements table (see appid-replacements.capnp).
+    // This also throws if the key is revoked.
+    applyAppidReplacements(publicKey, packageIdBytes);
+
+    auto appIdString = sandstorm::appIdString(publicKey);
 
     KJ_IF_MAYBE(info, maybeInfo) {
-      // Compute hash of input package (for package ID).
-      byte hash[crypto_hash_sha256_BYTES];
-      {
-        MemoryMapping spkMapping(spkfd, "(spk file)");
-        kj::ArrayPtr<const byte> bytes = spkMapping;
-        crypto_hash_sha256(hash, bytes.begin(), bytes.size());
-      }
-
       // mmap the temp file.
       MemoryMapping tmpMapping(tmpfile, "(temp file)");
 
@@ -1701,8 +1542,8 @@ private:
           }
           {
             auto packageId = capnp::AnyStruct::Builder(info->initPackageId()).getDataSection();
-            KJ_ASSERT(packageId.size() == sizeof(hash) / 2);
-            memcpy(packageId.begin(), hash, sizeof(hash) / 2);
+            KJ_ASSERT(packageId.size() == packageIdBytes.size());
+            memcpy(packageId.begin(), packageIdBytes.begin(), packageIdBytes.size());
           }
 
           info->setTitle(manifest.getAppTitle());

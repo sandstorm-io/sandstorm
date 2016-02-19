@@ -38,9 +38,6 @@ kj::Maybe<kj::String> checkPgpSignature(kj::StringPtr appIdString, spk::Metadata
 // and returns the PGP key fingerprint. Returns null if there is no signature. Throws if there is
 // an invalid signature.
 
-kj::String appIdString(spk::AppId::Reader appId);
-kj::String packageIdString(spk::PackageId::Reader packageId);
-
 }  // namespace sandstorm
 
 #endif  // SANDSTORM_SPK_H_

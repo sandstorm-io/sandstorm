@@ -29,7 +29,8 @@ class Indexer: public AppIndex::Server {
 public:
   void addKeybaseProfile(kj::StringPtr fingerprint, capnp::MallocMessageBuilder& message);
 
-  bool tryGetAppId(kj::StringPtr packageId, byte appId[32]);
+  bool tryGetPublicKey(kj::StringPtr packageId, byte publicKey[32]);
+  // Get the public key which is allowed to submit requests modifying the given package's state.
 
   void approve(kj::StringPtr packageId, kj::StringPtr url);
   void unapprove(kj::StringPtr packageId);

@@ -17,6 +17,8 @@
 #include "indexer.h"
 #include <sandstorm/app-index/app-index.capnp.h>
 #include <sandstorm/spk.h>
+#include <sandstorm/id-to-text.h>
+#include <sandstorm/appid-replacements.h>
 #include <capnp/serialize.h>
 #include <stdlib.h>
 #include <map>
@@ -73,7 +75,7 @@ void Indexer::addKeybaseProfile(kj::StringPtr fingerprint, capnp::MallocMessageB
   file.finalize(kj::str("/var/keybase/", fingerprint));
 }
 
-bool Indexer::tryGetAppId(kj::StringPtr packageId, byte appId[crypto_sign_PUBLICKEYBYTES]) {
+bool Indexer::tryGetPublicKey(kj::StringPtr packageId, byte publicKey[crypto_sign_PUBLICKEYBYTES]) {
   KJ_REQUIRE(packageId.size() == 32, "invalid package ID", packageId);
   for (auto c: packageId) {
     KJ_REQUIRE(isalnum(c), "invalid package ID", packageId);
@@ -97,7 +99,8 @@ bool Indexer::tryGetAppId(kj::StringPtr packageId, byte appId[crypto_sign_PUBLIC
   auto bytes = capnp::AnyStruct::Reader(
       infoMessage.getRoot<spk::VerifiedInfo>().getAppId()).getDataSection();
   KJ_ASSERT(bytes.size() == crypto_sign_PUBLICKEYBYTES);
-  memcpy(appId, bytes.begin(), bytes.size());
+  static_assert(crypto_sign_PUBLICKEYBYTES == APP_ID_BYTE_SIZE, "app ID size changed?");
+  memcpy(publicKey, sandstorm::getPublicKeyForApp(bytes).begin(), crypto_sign_PUBLICKEYBYTES);
 
   return true;
 }
@@ -184,32 +187,6 @@ void Indexer::getSubmissionStatus(kj::StringPtr packageId, capnp::MessageBuilder
 // =======================================================================================
 
 namespace {
-
-class AppIdJsonHandler: public capnp::JsonCodec::Handler<spk::AppId> {
-public:
-  void encode(const capnp::JsonCodec& codec, spk::AppId::Reader input,
-              capnp::JsonValue::Builder output) const override {
-    output.setString(appIdString(input));
-  }
-
-  void decode(const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
-              spk::AppId::Builder output) const override {
-    KJ_UNIMPLEMENTED("AppIdJsonHandler::decode");
-  }
-};
-
-class PackageIdJsonHandler: public capnp::JsonCodec::Handler<spk::PackageId> {
-public:
-  void encode(const capnp::JsonCodec& codec, spk::PackageId::Reader input,
-              capnp::JsonValue::Builder output) const override {
-    output.setString(packageIdString(input));
-  }
-
-  void decode(const capnp::JsonCodec& codec, capnp::JsonValue::Reader input,
-              spk::PackageId::Builder output) const override {
-    KJ_UNIMPLEMENTED("PackageIdJsonHandler::decode");
-  }
-};
 
 class DataHandler: public capnp::JsonCodec::Handler<capnp::Data> {
 public:

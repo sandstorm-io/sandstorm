@@ -399,14 +399,19 @@ Meteor.methods({
     const session = Sessions.findAndModify({
       query: { _id: sessionId },
       update: { $set: { timestamp: new Date().getTime() } },
-      fields: { grainId: 1, identityId: 1 },
+      fields: { grainId: 1, identityId: 1, hostId: 1 },
     });
 
     if (session) {
       // Session still present in database, so send keep-alive to backend.
       try {
         const grainId = session.grainId;
-        waitPromise(globalBackend.openGrain(grainId, false).supervisor.keepAlive());
+        const hostId = session.hostId;
+        let supervisor = proxiesByHostId[hostId] && proxiesByHostId[hostId].supervisor;
+        if (!supervisor) {
+          supervisor = globalBackend.continueGrain(grainId).supervisor;
+        }
+        waitPromise(supervisor.keepAlive());
         globalBackend.updateLastActive(grainId, this.userId, session.identityId);
       } catch (err) {
         // Ignore disconnects, which imply that the grain shut down already. It'll start back up on
@@ -973,12 +978,11 @@ tryProxyRequest = (hostId, req, res) => {
 // Connects to a grain and exports it on a wildcard host.
 //
 
-Proxy = class Proxy {
-  constructor(grainId, ownerId, sessionId, hostId, identityId, isApi, supervisor) {
+class Proxy {
+  constructor(grainId, ownerId, sessionId, hostId, identityId, isApi) {
     this.grainId = grainId;
     this.ownerId = ownerId;
     this.identityId = identityId;
-    this.supervisor = supervisor;  // note: optional parameter; we can reconnect
     this.sessionId = sessionId;
     this.isApi = isApi;
     this.hasLoaded = false;
@@ -1324,7 +1328,6 @@ Proxy = class Proxy {
 
     if (this.supervisor) {
       this.supervisor.close();
-      delete globalBackend.runningGrains[this.grainId];
       delete this.supervisor;
     }
   }

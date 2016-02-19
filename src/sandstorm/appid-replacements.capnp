@@ -19,9 +19,9 @@
 #
 # If you are an app developer and you have lost access to your key or suspect it may have been
 # compromised, do the following:
-# 1. Generate a new key using `spk keygen`. The new key ID will be printed.
-# 2. Use `spk getkey <key-id> > backup.key` to make a backup copy of the key. Put `backup.key`
-#    somewhere safe! Of course, do NOT make this file public!
+# 1. Generate a new key using `vagrant-spk keygen`. The new key ID will be printed.
+# 2. Use `vagrant-spk getkey <key-id> > backup.key` to make a backup copy of the key. Put
+#    `backup.key` somewhere safe! Of course, do NOT make this file public!
 # 3. Add an entry to `appIdReplacementList` below with `original` being your old key ID (app ID)
 #    and `replacement` being the new key ID (as printed when you generated it).
 # 4. PGP-sign your git commit using the `-S` flag, using the same PGP key you used to sign older
@@ -78,7 +78,7 @@ const appIdReplacementList :List(AppIdReplacement) = [
   # it was accidentally committed to the app's public git repo. Only one version ("b5bb...") had
   # ever been published.
 
-  # ---- end exmaple; real entries follow ----
+  # ---- end example; real entries follow ----
 
   # Add your entry here!
 ];

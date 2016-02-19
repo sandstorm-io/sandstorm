@@ -1573,15 +1573,16 @@ if (Meteor.isClient) {
             // Store apitoken id1 and template in session storage in the offer
             // template namespace under key id2.
             const key = "offerTemplate" + id2;
+            const host = globalDb.makeApiHost(tokenId);
             const renderedTemplate = template.replace(/\$API_TOKEN/g, tokenId)
-                                             .replace(/\$API_HOST/g, makeWildcardHost("api"));
+                                             .replace(/\$API_HOST/g, host);
             sessionStorage.setItem(key, JSON.stringify({
                 token: tokenId,
                 renderedTemplate: renderedTemplate,
                 expires: Date.now() + selfDestructDuration,
               })
             );
-            sessionStorage.setItem("apiHost", makeWildcardHost("api"));
+            sessionStorage.setItem(key + "-host", host);
 
             // Send message to event.source with URL containing id2
             templateLink = window.location.origin + "/offer-template.html#" + id2;

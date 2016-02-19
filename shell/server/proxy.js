@@ -757,22 +757,53 @@ getProxyForApiToken = (token) => {
   });
 };
 
-const apiUseBasicAuth = (req) => {
-  // For clients with no convenient way to add an 'Authorization: Bearer' header, we allow the token
-  // to be transmitted as a basic auth password.
+const apiUseBasicAuth = (req, hostId) => {
+  // If the request was to a token-specific host *and* the request has no Origin header (meaning
+  // it is not an XHR from a web site), then we permit the use of HTTP basic auth. The reason we
+  // prohibit XHRs is because we want to discourage people from using basic auth in a browser,
+  // because the browser will cache the credentials, which exposes the hostname to XSRF attack
+  // (which is mostly, but not completely, mitigated by the unguessable hostname). The reason we
+  // want to allow basic auth at all is because a lot of existing client apps support only basic
+  // auth. New clients and web-based clients should use `Authorization: bearer <token>` instead.
+  if (globalDb.isTokenSpecificHostId(hostId) && !req.headers.origin) {
+    return true;
+  }
+
+  // Historically, all API tokens were served from the same host rather than have token-specific
+  // hosts. In this model, basic auth in browsers was far more dangerous since the hostname was
+  // not a secret -- in fact, even benign attempts to use two APIs on the same server from the same
+  // browser could interfere if using basic auth. Hence, basic auth was prohibited except when
+  // coming from certain whitelisted clients known not to be browsers, e.g. Mirall, the ownCloud
+  // client app.
+  //
+  // Since many clients in the wild have already been configured to use the shared API host, we
+  // must continue to support them, so this logic remains.
   const agent = req.headers["user-agent"];
   return agent.match(BASIC_AUTH_USER_AGENTS_REGEX);
 };
 
-const apiTokenForRequest = (req) => {
+const apiTokenForRequest = (req, hostId) => {
+  // Extract the API token from the request.
+
   const auth = req.headers.authorization;
+  let token;
   if (auth && auth.slice(0, 7).toLowerCase() === "bearer ") {
-    return auth.slice(7).trim();
-  } else if (auth && auth.slice(0, 6).toLowerCase() === "basic " && apiUseBasicAuth(req)) {
-    return (new Buffer(auth.slice(6).trim(), "base64")).toString().split(":")[1];
+    token = auth.slice(7).trim();
+  } else if (auth && auth.slice(0, 6).toLowerCase() === "basic " &&
+             apiUseBasicAuth(req, hostId)) {
+    token = (new Buffer(auth.slice(6).trim(), "base64")).toString().split(":")[1];
   } else {
-    return undefined;
+    token = undefined;
   }
+
+  if (token && hostId !== "api") {
+    // Verify that the token matches the specific host.
+    if (hostId !== globalDb.apiHostIdForToken(token)) {
+      token = undefined;
+    }
+  }
+
+  return token;
 };
 
 // =======================================================================================
@@ -786,8 +817,8 @@ tryProxyUpgrade = (hostId, req, socket, head) => {
   // should consider other host types, like static web publishing), or throws an error if the
   // request is definitely invalid.
 
-  if (hostId === "api") {
-    const token = apiTokenForRequest(req);
+  if (globalDb.isApiHostId(hostId)) {
+    const token = apiTokenForRequest(req, hostId);
     if (token) {
       return getProxyForApiToken(token).then((proxy) => {
         // Meteor sets the timeout to five seconds. Change that back to two
@@ -830,7 +861,7 @@ tryProxyRequest = (hostId, req, res) => {
   // should consider other host types, like static web publishing), or throws an error if the
   // request is definitely invalid.
 
-  if (hostId === "api") {
+  if (globalDb.isApiHostId(hostId)) {
     // This is a request for the API host.
 
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -886,7 +917,7 @@ tryProxyRequest = (hostId, req, res) => {
       res.end(err.stack);
     };
 
-    const token = apiTokenForRequest(req);
+    const token = apiTokenForRequest(req, hostId);
     if (token && req.headers["x-sandstorm-token-keepalive"]) {
       inMeteor(() => {
         const keepaliveDuration = parseInt(req.headers["x-sandstorm-token-keepalive"]);
@@ -906,7 +937,7 @@ tryProxyRequest = (hostId, req, res) => {
       res.writeHead(200, {});
       res.end();
     } else {
-      if (apiUseBasicAuth(req)) {
+      if (apiUseBasicAuth(req, hostId)) {
         res.writeHead(401, {
           "Content-Type": "text/plain",
           "WWW-Authenticate": "Basic realm='Sandstorm API'",

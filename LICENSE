@@ -71,7 +71,7 @@ shell/packages/introjs/client/*
                  (at bottom)
 
 shell/packages/accounts-ldap/*
-    What: intro.js
+    What: Meteor accounts-ldap package
     Source URL: https://github.com/typ90/meteor-accounts-ldap
     Copyright: Eric Typaldos
     License: MIT

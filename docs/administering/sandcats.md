@@ -98,7 +98,7 @@ Remove that line entirely, then save and quit your editor. Run `sudo service san
 cause Sandstorm to notice your changes to its configuration file.
 
 That will disable the sandcats-related functionality in your Sandstorm server on your system. This
-means your domain will stop automatically its IP address.
+means your domain will stop automatically updating its IP address.
 
 Note that this does not delete any domains you registered. That's OK with us; from our perspective,
 there's no need to email us to delete your domain.

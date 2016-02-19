@@ -228,7 +228,7 @@ SandstormDb.fillInIntrinsicName = function (user) {
   } else if (profile.service === "demo") {
     profile.intrinsicName = "demo on " + user.createdAt.toISOString().substring(0, 10);
   } else if (profile.service === "ldap") {
-    profile.intrinsicName = user.services.ldap.username || "ldap user";
+    profile.intrinsicName = user.services.ldap.username;
   } else {
     throw new Error("unrecognized identity service: ", profile.service);
   }

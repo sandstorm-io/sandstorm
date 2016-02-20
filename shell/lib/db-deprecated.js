@@ -69,6 +69,8 @@ if (Meteor.isServer) {
   });
 
   Meteor.startup(() => { globalDb.migrateToLatest(); });
+  LDAP_DEFAULTS.url = globalDb.getLdapUrl();
+  LDAP_DEFAULTS.base = globalDb.getLdapBase();
 }
 
 if (Meteor.isClient) {

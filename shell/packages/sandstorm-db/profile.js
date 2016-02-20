@@ -78,6 +78,9 @@ if (Meteor.isServer) {
         "services.github.username":1,
 
         "services.email.email":1,
+
+        "services.ldap.id":1,
+        "services.ldap.rawAttrs":1,
       }, });
   }),
 
@@ -199,6 +202,11 @@ SandstormDb.fillInProfileDefaults = function (user) {
   } else if (profile.service === "demo") {
     profile.name = profile.name || "Demo User";
     profile.handle = profile.handle || "demo";
+  } else if (profile.service === "ldap") {
+    const setting = Settings.findOne({ _id: "ldapNameField" });
+    const key = setting ? setting.value : "";
+    profile.name = profile.name || user.services.ldap.rawAttrs[key] || "Name Unknown";
+    profile.handle = profile.handle || filterHandle(profile.name);
   } else {
     throw new Error("unrecognized identity service: ", profile.service);
   }
@@ -219,6 +227,8 @@ SandstormDb.fillInIntrinsicName = function (user) {
     profile.intrinsicName = user.services.dev.name;
   } else if (profile.service === "demo") {
     profile.intrinsicName = "demo on " + user.createdAt.toISOString().substring(0, 10);
+  } else if (profile.service === "ldap") {
+    profile.intrinsicName = user.services.ldap.username;
   } else {
     throw new Error("unrecognized identity service: ", profile.service);
   }

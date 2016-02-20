@@ -194,6 +194,25 @@
   </form>
 </template>
 
+<template name="ldapLoginForm">
+  <form class="ldap">
+    with ldap
+
+    <label class="username">username
+      <span title="This is your LDAP username. It will be the name that you normally use to login to other internal services at your company." class="info">i</span>
+      <input name="username" type="text">
+    </label>
+
+    <label class="password">password
+      <span title="This is your LDAP password. It will be the password that you normally use to login to other internal services at your company." class="info">i</span>
+      <input name="password" type="password">
+    </label>
+    <div class="button-box">
+      <button class="login email">Login</button>
+    </div>
+  </form>
+</template>
+
 <template name="_loginButtonsSeparator">
   <div class="or">
     <span class="hline">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>

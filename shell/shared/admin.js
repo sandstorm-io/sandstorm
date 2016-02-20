@@ -16,10 +16,10 @@
 
 const ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
 const publicAdminSettings = [
-  "google", "github", "emailToken", "splashUrl", "signupDialog",
+  "google", "github", "ldap", "emailToken", "splashUrl", "signupDialog",
   "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
   "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled",
-  "serverTitle", "returnAddress",
+  "serverTitle", "returnAddress", "ldapNameField",
 ];
 
 DEFAULT_SIGNUP_DIALOG = "You've been invited to join this Sandstorm server!";
@@ -300,7 +300,11 @@ if (Meteor.isClient) {
       const state = Iron.controller().state;
       const token = this.token;
       resetResult(state);
-      state.set("numSettings", 4);
+      if (globalDb.isFeatureKeyValid()) {
+        state.set("numSettings", 9);
+      } else {
+        state.set("numSettings", 4);
+      }
 
       const handleErrorBound = handleError.bind(state);
       if (event.target.emailTokenLogin.checked && !event.target.smtpUrl.value) {
@@ -313,6 +317,14 @@ if (Meteor.isClient) {
       Meteor.call("setAccountSetting", token, "github", event.target.githubLogin.checked, handleErrorBound);
       Meteor.call("setAccountSetting", token, "emailToken", event.target.emailTokenLogin.checked, handleErrorBound);
       Meteor.call("setSetting", token, "smtpUrl", event.target.smtpUrl.value, handleErrorBound);
+      if (globalDb.isFeatureKeyValid()) {
+        Meteor.call("setAccountSetting", token, "ldap", event.target.ldapLogin.checked, handleErrorBound);
+        Meteor.call("setSetting", token, "ldapUrl", event.target.ldapUrl.value, handleErrorBound);
+        Meteor.call("setSetting", token, "ldapBase", event.target.ldapBase.value, handleErrorBound);
+        Meteor.call("setSetting", token, "ldapDnPattern", event.target.ldapDnPattern.value, handleErrorBound);
+        Meteor.call("setSetting", token, "ldapNameField", event.target.ldapNameField.value, handleErrorBound);
+      }
+
       return false;
     },
   });
@@ -339,6 +351,31 @@ if (Meteor.isClient) {
       }
     },
 
+    ldapEnabled: function () {
+      const setting = Settings.findOne({ _id: "ldap" });
+      if (setting) {
+        return setting.value;
+      } else {
+        return false;
+      }
+    },
+
+    ldapUrl: function () {
+      return globalDb.getLdapUrl() || "ldap://localhost:389";
+    },
+
+    ldapBase: function () {
+      return globalDb.getLdapBase() || "OU=People,DC=example,DC=com";
+    },
+
+    ldapDnPattern: function () {
+      return globalDb.getLdapDnPattern() || "uid=$USERNAME,OU=People,DC=example,DC=com";
+    },
+
+    ldapNameField: function () {
+      return globalDb.getLdapNameField() || "cn";
+    },
+
     smtpUrl: function () {
       return Iron.controller().state.get("smtpUrl");
     },
@@ -348,6 +385,9 @@ if (Meteor.isClient) {
     },
 
     getToken: getToken,
+    isFeatureKeyValid: function () {
+      return globalDb.isFeatureKeyValid();
+    },
   });
 
   Template.adminUsers.onCreated(function () {
@@ -975,6 +1015,13 @@ if (Meteor.isServer) {
       check(value, Match.OneOf(null, String, Date, Boolean));
 
       Settings.upsert({ _id: name }, { $set: { value: value } });
+      if (name.lastIndexOf("ldap", 0) === 0) {
+        // some ldap settings need to be set for the accounts-ldap package
+        const ldapSetting = name.slice(4);
+        if (ldapSetting === "Url" || ldapSetting === "Base") {
+          LDAP_DEFAULTS[ldapSetting.toLowerCase()] = value;
+        }
+      }
     },
 
     getSmtpUrl: function (token) {
@@ -1368,6 +1415,17 @@ Accounts.identityServices.email = {
 
   loginTemplate: {
     name: "emailLoginForm",
-    priority: 10, // Put it at the bottom of the list.
+    priority: 10,
+  },
+};
+
+Accounts.identityServices.ldap = {
+  isEnabled: function () {
+    return serviceEnabled("ldap") && globalDb.isFeatureKeyValid();
+  },
+
+  loginTemplate: {
+    name: "ldapLoginForm",
+    priority: 20, // Put it at the bottom of the list.
   },
 };

@@ -55,6 +55,7 @@ IMAGES= \
     shell/public/github.svg \
     shell/public/google.svg \
     shell/public/key.svg \
+    shell/public/ldap.svg \
     shell/public/link.svg \
     shell/public/menu.svg \
     shell/public/notification.svg \

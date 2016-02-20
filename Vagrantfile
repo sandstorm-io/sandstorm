@@ -5,11 +5,8 @@
 VAGRANTFILE_API_VERSION = "2"
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
-  # We base ourselves off the trusty (Ubuntu 14.04) base box.
-  config.vm.box = "trusty64"
-
-  # The url from which to fetch that base box.
-  config.vm.box_url = "https://cloud-images.ubuntu.com/vagrant/trusty/current/trusty-server-cloudimg-amd64-vagrant-disk1.box"
+  # We base ourselves off a Debian fork of the official Debian jessie64 base box.
+  config.vm.box = "sandstorm/debian-jessie64"
 
   # We forward port 6080, the Sandstorm web port, so that developers can
   # visit their sandstorm app from their browser as local.sandstorm.io:6080
@@ -22,14 +19,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # work.
   config.vm.network :private_network, ip: "169.254.254.2"
 
-  # Use a shell script to "provision" the box. This install Sandstorm using
+  # Use a shell script to "provision" the box. This installs Sandstorm using
   # the bundled installer.
   config.vm.provision "shell",
-    inline: "cd /vagrant && echo localhost > /etc/hostname && hostname localhost && sudo ./install.sh -d -e && sudo sed --in-place='' --expression='s/^BIND_IP=.*/BIND_IP=0.0.0.0/' /opt/sandstorm/sandstorm.conf && sudo service sandstorm restart"
-
-  # Make the vagrant user part of the sandstorm group so that commands like
-  # `spk dev` work.
-  config.vm.provision "shell", inline: "usermod -a -G 'sandstorm' 'vagrant'"
+    inline: "cd /vagrant && echo localhost > /etc/hostname && hostname localhost && sudo OVERRIDE_DEFAULT_SERVER_USER=vagrant ./install.sh -d -e > /dev/null && sudo sed --in-place='' --expression='s/^BIND_IP=.*/BIND_IP=0.0.0.0/' /opt/sandstorm/sandstorm.conf && sudo service sandstorm restart && printf '\nYour server is online. It has the dev accounts feature enabled, so anyone can log in.\n\nDetails and customization instructions are available here:\n- https://github.com/sandstorm-io/sandstorm/wiki/Using-the-Vagrantfile\n\nVisit it at:\n  http://local.sandstorm.io:6080/'"
 
   # Use NFS for the /vagrant shared directory, for performance and
   # compatibility.

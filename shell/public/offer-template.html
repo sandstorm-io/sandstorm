@@ -45,8 +45,7 @@ for (i = 0; i < toDelete.length; i++) {
 
 var selfDestructDuration = 5 * 60 * 1000;
 
-var apiHost = sessionStorage.getItem("apiHost");
-var apiUrl = window.location.protocol + "//" + apiHost;
+var apiUrl = window.location.protocol + "//" + record.host;
 setInterval(function() {
   var xhr = new XMLHttpRequest();
   xhr.onreadystatechange = function () {

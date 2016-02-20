@@ -795,6 +795,42 @@ makeWildcardHost = function (id) {
   return wildcardHost[0] + id + wildcardHost[1];
 };
 
+const isApiHostId = function (hostId) {
+  return hostId && hostId.split("-")[0] === "api";
+};
+
+const isTokenSpecificHostId = function (hostId) {
+  return hostId.lastIndexOf("api-", 0) === 0;
+};
+
+let apiHostIdForToken;
+if (Meteor.isServer) {
+  const Crypto = Npm.require("crypto");
+  apiHostIdForToken = function (token) {
+    // Given an API token, compute the host ID that must be used when requesting this token.
+
+    // We add a leading 'x' to the hash so that knowing the hostname alone is not sufficient to
+    // find the corresponding API token in the ApiTokens table (whose _id values are also hashes
+    // of tokens). This doesn't technically add any security, but helps prove that we don't have
+    // any bugs which would allow someone who knows only the hostname to access the app API.
+    return "api-" + Crypto.createHash("sha256").update("x" + token).digest("hex").slice(0, 32);
+  };
+} else {
+  apiHostIdForToken = function (token) {
+    // Given an API token, compute the host ID that must be used when requesting this token.
+
+    // We add a leading 'x' to the hash so that knowing the hostname alone is not sufficient to
+    // find the corresponding API token in the ApiTokens table (whose _id values are also hashes
+    // of tokens). This doesn't technically add any security, but helps prove that we don't have
+    // any bugs which would allow someone who knows only the hostname to access the app API.
+    return "api-" + SHA256("x" + token).slice(0, 32);
+  };
+}
+
+const makeApiHost = function (token) {
+  return makeWildcardHost(apiHostIdForToken(token));
+};
+
 if (Meteor.isServer) {
   const Url = Npm.require("url");
   getWildcardOrigin = function () {
@@ -892,6 +928,10 @@ _.extend(SandstormDb.prototype, {
   findAdminUserForToken: findAdminUserForToken,
   matchWildcardHost: matchWildcardHost,
   makeWildcardHost: makeWildcardHost,
+  isApiHostId: isApiHostId,
+  isTokenSpecificHostId: isTokenSpecificHostId,
+  apiHostIdForToken: apiHostIdForToken,
+  makeApiHost: makeApiHost,
   allowDevAccounts: allowDevAccounts,
   roleAssignmentPattern: roleAssignmentPattern,
 });

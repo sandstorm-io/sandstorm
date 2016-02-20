@@ -1155,7 +1155,7 @@ if (Meteor.isServer) {
       const sturdyRef = waitPromise(
         saveFrontendRef({ ipNetwork: true }, { webkey: null }, requirements)
       ).sturdyRef;
-      return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
+      return ROOT_URL.protocol + "//" + globalDb.makeApiHost(sturdyRef) + "#" + sturdyRef;
     },
 
     offerIpInterface: function (token) {
@@ -1171,7 +1171,7 @@ if (Meteor.isServer) {
       const sturdyRef = waitPromise(
         saveFrontendRef({ ipInterface: true }, { webkey: null }, requirements)
       ).sturdyRef;
-      return ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef;
+      return ROOT_URL.protocol + "//" + globalDb.makeApiHost(sturdyRef) + "#" + sturdyRef;
     },
 
     adminToggleDisableCap: function (token, capId, value) {

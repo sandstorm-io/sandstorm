@@ -94,7 +94,7 @@ SessionContextImpl = class SessionContextImpl {
         },
       } : {
         offer: {
-          url: ROOT_URL.protocol + "//" + makeWildcardHost("api") + "#" + sturdyRef,
+          url: ROOT_URL.protocol + "//" + globalDb.makeApiHost(sturdyRef) + "#" + sturdyRef,
         },
       };
       Sessions.update({ _id: this.sessionId },
@@ -121,8 +121,8 @@ Meteor.methods({
     }
 
     const parsedWebkey = Url.parse(webkeyUrl.trim());
-    if (parsedWebkey.host !== makeWildcardHost("api")) {
-      console.log(parsedWebkey.hostname, makeWildcardHost("api"));
+    const hostId = matchWildcardHost(parsedWebkey.host);
+    if (!hostId || !globalDb.isApiHostId(hostId)) {
       throw new Meteor.Error(500, "Hostname does not match this server. External webkeys are not " +
         "supported (yet)");
     }
@@ -134,6 +134,13 @@ Meteor.methods({
     }
 
     token = token.slice(1);
+    if (globalDb.isTokenSpecificHostId(hostId) && hostId !== globalDb.apiHostIdForToken(token)) {
+      // Note: This case is not security-sensitive. The client could easily compute the correct
+      //   host ID for this token. But since they've passed one that doesn't match, we assume
+      //   something is wrong and stop here.
+      throw new Meteor.Error(400, "Invalid webkey: token doesn't match hostname.");
+    }
+
     const cap = restoreInternal(hashSturdyRef(token),
                                 Match.Optional({ webkey: Match.Optional(Match.Any) }), [],
                                 new Buffer(token)).cap;
@@ -363,12 +370,14 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
         throw new Error("Webkey urls cannot contain a path.");
       }
 
-      const apiHost = ROOT_URL.protocol + "//" + makeWildcardHost("api");
-      const urlProtoAndHost = parsedUrl.protocol + "//" + parsedUrl.host;
       const token = parsedUrl.hash.slice(1); // Get rid of # which is always the first character
-      if (urlProtoAndHost === apiHost) {
+      const hostId = matchWildcardHost(parsedUrl.host);
+      if (hostId && globalDb.isApiHostId(hostId)) {
+        // Connecting to a local capability.
         return getWrappedUiViewForToken(token);
       } else {
+        // Connecting to a remote server with a bearer token.
+        // TODO(someday): Negotiate server-to-server Cap'n Proto connection.
         return { view: new ExternalUiView(url, this.grainId, token) };
       }
     } else {

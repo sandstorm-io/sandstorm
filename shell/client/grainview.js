@@ -477,29 +477,38 @@ GrainView = class GrainView {
   _openGrainSession() {
     const _this = this;
     const identityId = _this.identityId();
-    Meteor.call("openSession", _this._grainId, identityId, _this._sessionSalt, (error, result) => {
-      if (error) {
-        console.error("openSession error", error);
-        _this._error = error;
-        _this._status = "error";
-        _this._dep.changed();
-      } else {
-        // result is an object containing sessionId, initial title, and grainId.
-        if (result.title) {
-          _this._title = result.title;
+
+    const condition = () => {
+      // Make sure we don't call openSession before the user is logged in.
+      // Legacy shares don't have an identityId.
+      return !identityId || (Meteor.userId() && !Meteor.loggingIn());
+    };
+
+    onceConditionIsTrue(condition, () => {
+      Meteor.call("openSession", _this._grainId, identityId, _this._sessionSalt, (error, result) => {
+        if (error) {
+          console.error("openSession error", error);
+          _this._error = error;
+          _this._status = "error";
+          _this._dep.changed();
+        } else {
+          // result is an object containing sessionId, initial title, and grainId.
+          if (result.title) {
+            _this._title = result.title;
+          }
+
+          _this._grainId = result.grainId;
+          _this._sessionId = result.sessionId;
+          _this._hostId = result.hostId;
+          _this._sessionSalt = result.salt;
+
+          _this._addSessionObserver(result.sessionId);
+
+          if (_this._grainSizeSub) _this._grainSizeSub.stop();
+          _this._grainSizeSub = Meteor.subscribe("grainSize", result.grainId);
+          _this._dep.changed();
         }
-
-        _this._grainId = result.grainId;
-        _this._sessionId = result.sessionId;
-        _this._hostId = result.hostId;
-        _this._sessionSalt = result.salt;
-
-        _this._addSessionObserver(result.sessionId);
-
-        if (_this._grainSizeSub) _this._grainSizeSub.stop();
-        _this._grainSizeSub = Meteor.subscribe("grainSize", result.grainId);
-        _this._dep.changed();
-      }
+      });
     });
   }
 

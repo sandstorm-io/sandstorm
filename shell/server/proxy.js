@@ -305,7 +305,13 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
-    return globalBackend.openSessionInternal(grainId, this.userId, identityId, null, null, cachedSalt);
+    const opened = globalBackend.openSessionInternal(grainId, this.userId, identityId,
+                                                     null, null, cachedSalt);
+    const result = opened.methodResult;
+    const proxy = new Proxy(grainId, this.userId, result.sessionId,
+                            result.hostId, identityId, false, opened.supervisor);
+    proxiesByHostId[result.hostId] = proxy;
+    return result;
   },
 
   openSessionFromApiToken(params, identityId, cachedSalt) {
@@ -387,7 +393,15 @@ Meteor.methods({
                                "User is not authorized to open this grain.");
       }
 
-      return globalBackend.openSessionInternal(apiToken.grainId, null, null, title, apiToken, cachedSalt);
+      const opened = globalBackend.openSessionInternal(apiToken.grainId, null, null,
+                                                       title, apiToken, cachedSalt);
+
+      const result = opened.methodResult;
+      const proxy = new Proxy(apiToken.grainId, grain.userId, result.sessionId,
+                              result.hostId, identityId, false);
+      proxy.apiToken = apiToken;
+      proxiesByHostId[result.hostId] = proxy;
+      return result;
     }
   },
 
@@ -980,10 +994,11 @@ tryProxyRequest = (hostId, req, res) => {
 //
 
 class Proxy {
-  constructor(grainId, ownerId, sessionId, hostId, identityId, isApi) {
+  constructor(grainId, ownerId, sessionId, hostId, identityId, isApi, supervisor) {
     this.grainId = grainId;
     this.ownerId = ownerId;
     this.identityId = identityId;
+    this.supervisor = supervisor;  // note: optional parameter; we can reconnect
     this.sessionId = sessionId;
     this.isApi = isApi;
     this.hasLoaded = false;

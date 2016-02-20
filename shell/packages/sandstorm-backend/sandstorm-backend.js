@@ -245,7 +245,7 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
   // Start the grain if it is not running. This is an optimization: if we didn't start it here,
   // it would start on the first request to the session host, but we'd like to get started before
   // the round trip.
-  this.continueGrain(grainId);
+  const supervisor = this.continueGrain(grainId).supervisor;
 
   this.updateLastActive(grainId, userId, identityId);
 
@@ -260,7 +260,15 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
       console.error(e);
       throw e;
     } else {
-      return { sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId, salt: cachedSalt };
+      return { supervisor: supervisor,
+               methodResult: {
+                 sessionId: session._id,
+                 title: title,
+                 grainId: grainId,
+                 hostId: session.hostId,
+                 salt: cachedSalt,
+               },
+             };
     }
   }
 
@@ -283,5 +291,13 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
 
   Sessions.insert(session);
 
-  return { sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId, salt: cachedSalt };
+  return { supervisor: supervisor,
+           methodResult: {
+             sessionId: session._id,
+             title: title,
+             grainId: grainId,
+             hostId: session.hostId,
+             salt: cachedSalt,
+           },
+         };
 };

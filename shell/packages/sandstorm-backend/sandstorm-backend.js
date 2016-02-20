@@ -51,7 +51,6 @@ SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 
 SandstormBackend = function (db, backendCap) {
   this._db = db;
-  this.runningGrains = {};
   this._backendCap = backendCap;
 };
 
@@ -66,7 +65,6 @@ SandstormBackend.prototype.deleteUser = function (userId) {
 SandstormBackend.prototype.shutdownGrain = function (grainId, ownerId, keepSessions) {
   if (!keepSessions) {
     Sessions.remove({ grainId: grainId });
-    delete this.runningGrains[grainId];
   }
 
   const grain = this._backendCap.getGrain(ownerId, grainId).supervisor;
@@ -91,28 +89,6 @@ SandstormBackend.prototype.deleteGrain = function (grainId, ownerId) {
   });
 };
 
-SandstormBackend.prototype.openGrain = function (grainId, isRetry) {
-  // Create a Cap'n Proto connection to the given grain. Note that this function does not actually
-  // verify that the connection succeeded. Instead, if an RPC call to the connection fails, check
-  // shouldRestartGrain(). If it returns true, call continueGrain() and then openGrain()
-  // again with isRetry = true, and then retry.
-  //
-  // Must be called in a Meteor context.
-
-  if (isRetry) {
-    // Since this is a retry, try starting the grain even if we think it's already running.
-    return this.continueGrain(grainId);
-  } else {
-    // Start the grain if it is not running.
-    const runningGrain = this.runningGrains[grainId];
-    if (runningGrain) {
-      return waitPromise(runningGrain);
-    } else {
-      return this.continueGrain(grainId);
-    }
-  }
-};
-
 SandstormBackend.shouldRestartGrain = function (error, retryCount) {
   // Given an error thrown by an RPC call to a grain, return whether or not it makes sense to try
   // to restart the grain and retry. `retryCount` is the number of times that the request has
@@ -125,7 +101,7 @@ SandstormBackend.prototype.maybeRetryUseGrain = function (grainId, cb, retryCoun
   const _this = this;
   if (SandstormBackend.shouldRestartGrain(err, retryCount)) {
     return inMeteor(function () {
-      return cb(_this.openGrain(grainId, true).supervisor)
+      return cb(_this.continueGrain(grainId).supervisor)
           .catch(_this.maybeRetryUseGrain.bind(_this, grainId, cb, retryCount + 1));
     });
   } else {
@@ -141,18 +117,10 @@ SandstormBackend.prototype.useGrain = function (grainId, cb) {
   //
   // This function is NOT expected to be run in a meteor context.
 
-  const runningGrain = this.runningGrains[grainId];
-  const _this = this;
-  if (runningGrain) {
-    return runningGrain.then(function (grainInfo) {
-      return cb(grainInfo.supervisor);
-    }).catch(_this.maybeRetryUseGrain.bind(_this, grainId, cb, 0));
-  } else {
-    return inMeteor(function () {
-      return cb(_this.openGrain(grainId, false).supervisor)
-          .catch(_this.maybeRetryUseGrain.bind(_this, grainId, cb, 0));
-    });
-  }
+  return inMeteor(() => {
+    return cb(this.continueGrain(grainId).supervisor)
+      .catch(this.maybeRetryUseGrain.bind(this, grainId, cb, 0));
+  });
 };
 
 SandstormBackend.prototype.continueGrain = function (grainId) {
@@ -218,16 +186,7 @@ SandstormBackend.prototype.startGrainInternal = function (packageId, grainId, ow
     delete command.executablePath;
   }
 
-  const whenReady = this._backendCap.startGrain(ownerId, grainId, packageId, command, isNew, isDev)
-      .then(function (results) {
-    return {
-      owner: ownerId,
-      supervisor: results.supervisor,
-    };
-  });
-
-  this.runningGrains[grainId] = whenReady;
-  return waitPromise(whenReady);
+  return this._backendCap.startGrain(ownerId, grainId, packageId, command, isNew, isDev);
 };
 
 SandstormBackend.prototype.updateLastActive = function (grainId, userId, identityId) {
@@ -286,13 +245,7 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
   // Start the grain if it is not running. This is an optimization: if we didn't start it here,
   // it would start on the first request to the session host, but we'd like to get started before
   // the round trip.
-  const runningGrain = this.runningGrains[grainId];
-  let grainInfo;
-  if (runningGrain) {
-    grainInfo = waitPromise(runningGrain);
-  } else {
-    grainInfo = this.continueGrain(grainId);
-  }
+  const supervisor = this.continueGrain(grainId).supervisor;
 
   this.updateLastActive(grainId, userId, identityId);
 
@@ -307,7 +260,15 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
       console.error(e);
       throw e;
     } else {
-      return { sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId, salt: cachedSalt };
+      return { supervisor: supervisor,
+               methodResult: {
+                 sessionId: session._id,
+                 title: title,
+                 grainId: grainId,
+                 hostId: session.hostId,
+                 salt: cachedSalt,
+               },
+             };
     }
   }
 
@@ -330,5 +291,13 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
 
   Sessions.insert(session);
 
-  return { sessionId: session._id, title: title, grainId: grainId, hostId: session.hostId, salt: cachedSalt };
+  return { supervisor: supervisor,
+           methodResult: {
+             sessionId: session._id,
+             title: title,
+             grainId: grainId,
+             hostId: session.hostId,
+             salt: cachedSalt,
+           },
+         };
 };

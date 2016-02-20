@@ -128,7 +128,7 @@ Meteor.startup(function () {
               const grain = Grains.findOne({ publicId: publicId }, { fields: {} });
               if (grain) {
                 grainId = grain._id;
-                return globalBackend.openGrain(grainId, retryCount > 0);
+                return globalBackend.continueGrain(grainId, retryCount > 0);
               } else {
                 // TODO(someday): We really ought to rig things up so that the 'RCPT TO' SMTP command
                 //   fails in this case, but simplesmtp doesn't appear to support that.

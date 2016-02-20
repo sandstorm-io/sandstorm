@@ -305,7 +305,13 @@ Meteor.methods({
       throw new Meteor.Error(403, "Unauthorized", "User is not authorized to open this grain.");
     }
 
-    return globalBackend.openSessionInternal(grainId, this.userId, identityId, null, null, cachedSalt);
+    const opened = globalBackend.openSessionInternal(grainId, this.userId, identityId,
+                                                     null, null, cachedSalt);
+    const result = opened.methodResult;
+    const proxy = new Proxy(grainId, this.userId, result.sessionId,
+                            result.hostId, identityId, false, opened.supervisor);
+    proxiesByHostId[result.hostId] = proxy;
+    return result;
   },
 
   openSessionFromApiToken(params, identityId, cachedSalt) {
@@ -387,7 +393,15 @@ Meteor.methods({
                                "User is not authorized to open this grain.");
       }
 
-      return globalBackend.openSessionInternal(apiToken.grainId, null, null, title, apiToken, cachedSalt);
+      const opened = globalBackend.openSessionInternal(apiToken.grainId, null, null,
+                                                       title, apiToken, cachedSalt);
+
+      const result = opened.methodResult;
+      const proxy = new Proxy(apiToken.grainId, grain.userId, result.sessionId,
+                              result.hostId, identityId, false);
+      proxy.apiToken = apiToken;
+      proxiesByHostId[result.hostId] = proxy;
+      return result;
     }
   },
 
@@ -399,14 +413,20 @@ Meteor.methods({
     const session = Sessions.findAndModify({
       query: { _id: sessionId },
       update: { $set: { timestamp: new Date().getTime() } },
-      fields: { grainId: 1, identityId: 1 },
+      fields: { grainId: 1, identityId: 1, hostId: 1 },
     });
 
     if (session) {
       // Session still present in database, so send keep-alive to backend.
       try {
         const grainId = session.grainId;
-        waitPromise(globalBackend.openGrain(grainId, false).supervisor.keepAlive());
+        const hostId = session.hostId;
+        let supervisor = proxiesByHostId[hostId] && proxiesByHostId[hostId].supervisor;
+        if (!supervisor) {
+          supervisor = globalBackend.continueGrain(grainId).supervisor;
+        }
+
+        waitPromise(supervisor.keepAlive());
         globalBackend.updateLastActive(grainId, this.userId, session.identityId);
       } catch (err) {
         // Ignore disconnects, which imply that the grain shut down already. It'll start back up on
@@ -973,7 +993,7 @@ tryProxyRequest = (hostId, req, res) => {
 // Connects to a grain and exports it on a wildcard host.
 //
 
-Proxy = class Proxy {
+class Proxy {
   constructor(grainId, ownerId, sessionId, hostId, identityId, isApi, supervisor) {
     this.grainId = grainId;
     this.ownerId = ownerId;
@@ -1324,7 +1344,6 @@ Proxy = class Proxy {
 
     if (this.supervisor) {
       this.supervisor.close();
-      delete globalBackend.runningGrains[this.grainId];
       delete this.supervisor;
     }
   }

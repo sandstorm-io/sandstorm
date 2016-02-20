@@ -51,7 +51,11 @@ SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
 
 SandstormBackend = function (db, backendCap) {
   this._db = db;
+
   this.runningGrains = {};
+  // Map from grain IDs to objects holding a supervisor capability. These supervisor capabilities
+  // may be shared among many `Proxy` objects.
+
   this._backendCap = backendCap;
 };
 

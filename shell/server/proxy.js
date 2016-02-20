@@ -1090,7 +1090,6 @@ Proxy = class Proxy {
     }
 
     if (this.supervisor) {
-      this.supervisor.close();
       delete this.supervisor;
     }
   }
@@ -1323,7 +1322,6 @@ Proxy = class Proxy {
     }
 
     if (this.supervisor) {
-      this.supervisor.close();
       delete globalBackend.runningGrains[this.grainId];
       delete this.supervisor;
     }

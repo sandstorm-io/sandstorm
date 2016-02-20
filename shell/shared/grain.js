@@ -1476,6 +1476,14 @@ if (Meteor.isClient) {
     });
   }, 60000);
 
+  const memoizedNewApiToken = {};
+  // Maps sha256(JSON.stringify(parameters)) -> {timestamp, promise}
+  //
+  // This memoizes calls to the Meteor method "newApiToken", so that multiple calls in rapid
+  // succession will not create multiple tokens. `parameters` above is an array containing the
+  // calls parameters in order (excluding the method name and callback), and `promise` is a promise
+  // for the result of the call.
+
   // Message handler for Sandstorm's client-side postMessage API.
   Meteor.startup(function () {
     const messageListener = function (event) {
@@ -1562,32 +1570,53 @@ if (Meteor.isClient) {
           },
         };
 
-        Meteor.call("newApiToken", provider, senderGrain.grainId(), petname, assignment, owner,
-                    function (error, result) {
-          if (error) {
-            event.source.postMessage({ rpcId: rpcId, error: error.toString() }, event.origin);
-          } else {
-            const tokenId = result.token;
-            // Generate random key id2.
-            const id2 = Random.secret();
-            // Store apitoken id1 and template in session storage in the offer
-            // template namespace under key id2.
-            const key = "offerTemplate" + id2;
-            const host = globalDb.makeApiHost(tokenId);
-            const renderedTemplate = template.replace(/\$API_TOKEN/g, tokenId)
-                                             .replace(/\$API_HOST/g, host);
-            sessionStorage.setItem(key, JSON.stringify({
-                token: tokenId,
-                renderedTemplate: renderedTemplate,
-                expires: Date.now() + selfDestructDuration,
-              })
-            );
-            sessionStorage.setItem(key + "-host", host);
+        const params = [provider, senderGrain.grainId(), petname, assignment, owner];
 
-            // Send message to event.source with URL containing id2
-            templateLink = window.location.origin + "/offer-template.html#" + id2;
-            event.source.postMessage({ rpcId: rpcId, uri: templateLink }, event.origin);
-          }
+        const memoizeKey = SHA256(JSON.stringify(params));
+        let memoizeResult = memoizedNewApiToken[memoizeKey];
+        if (memoizeResult && (Date.now() - memoizeResult.timestamp > selfDestructDuration / 2)) {
+          // Memoized result is too old. Discard.
+          memoizeResult = undefined;
+        }
+        if (!memoizeResult) {
+          memoizedNewApiToken[memoizeKey] = memoizeResult = {
+            timestamp: Date.now(),
+            promise: new Promise(function (resolve, reject) {
+              const callback = (err, result) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve(result);
+                }
+              };
+              Meteor.call.apply(Meteor, ["newApiToken"].concat(params, callback));
+            })
+          };
+        }
+
+        memoizeResult.promise.then((result) => {
+          const tokenId = result.token;
+          // Generate random key id2.
+          const id2 = Random.secret();
+          // Store apitoken id1 and template in session storage in the offer
+          // template namespace under key id2.
+          const key = "offerTemplate" + id2;
+          const host = globalDb.makeApiHost(tokenId);
+          const renderedTemplate = template.replace(/\$API_TOKEN/g, tokenId)
+                                           .replace(/\$API_HOST/g, host);
+          sessionStorage.setItem(key, JSON.stringify({
+              token: tokenId,
+              renderedTemplate: renderedTemplate,
+              expires: Date.now() + selfDestructDuration,
+            })
+          );
+          sessionStorage.setItem(key + "-host", host);
+
+          // Send message to event.source with URL containing id2
+          templateLink = window.location.origin + "/offer-template.html#" + id2;
+          event.source.postMessage({ rpcId: rpcId, uri: templateLink }, event.origin);
+        }, (error) => {
+          event.source.postMessage({ rpcId: rpcId, error: error.toString() }, event.origin);
         });
       } else if (event.data.powerboxRequest) {
         const powerboxRequest = event.data.powerboxRequest;

@@ -1610,9 +1610,9 @@ if (Meteor.isClient) {
               token: tokenId,
               renderedTemplate: renderedTemplate,
               expires: Date.now() + selfDestructDuration,
+              host,
             })
           );
-          sessionStorage.setItem(key + "-host", host);
 
           // Send message to event.source with URL containing id2
           templateLink = window.location.origin + "/offer-template.html#" + id2;

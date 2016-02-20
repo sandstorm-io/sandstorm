@@ -411,6 +411,7 @@ Meteor.methods({
         if (!supervisor) {
           supervisor = globalBackend.continueGrain(grainId).supervisor;
         }
+
         waitPromise(supervisor.keepAlive());
         globalBackend.updateLastActive(grainId, this.userId, session.identityId);
       } catch (err) {

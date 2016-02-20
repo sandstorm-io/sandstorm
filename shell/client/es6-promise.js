@@ -1,3 +1,4 @@
+// jscs:disable
 // Fetched from: https://raw.githubusercontent.com/stefanpenner/es6-promise/master/dist/es6-promise.min.js
 // Feb 19, 2016
 

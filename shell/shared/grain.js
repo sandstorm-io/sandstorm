@@ -1578,6 +1578,7 @@ if (Meteor.isClient) {
           // Memoized result is too old. Discard.
           memoizeResult = undefined;
         }
+
         if (!memoizeResult) {
           memoizedNewApiToken[memoizeKey] = memoizeResult = {
             timestamp: Date.now(),
@@ -1589,8 +1590,9 @@ if (Meteor.isClient) {
                   resolve(result);
                 }
               };
+
               Meteor.call.apply(Meteor, ["newApiToken"].concat(params, callback));
-            })
+            }),
           };
         }
 

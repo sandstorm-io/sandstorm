@@ -810,7 +810,7 @@ if (Meteor.isServer) {
     // find the corresponding API token in the ApiTokens table (whose _id values are also hashes
     // of tokens). This doesn't technically add any security, but helps prove that we don't have
     // any bugs which would allow someone who knows only the hostname to access the app API.
-    return "api-" + Crypto.createHash("sha256").update('x' + token).digest("hex").slice(0, 32);
+    return "api-" + Crypto.createHash("sha256").update("x" + token).digest("hex").slice(0, 32);
   };
 } else {
   apiHostIdForToken = function (token) {
@@ -820,7 +820,7 @@ if (Meteor.isServer) {
     // find the corresponding API token in the ApiTokens table (whose _id values are also hashes
     // of tokens). This doesn't technically add any security, but helps prove that we don't have
     // any bugs which would allow someone who knows only the hostname to access the app API.
-    return "api-" + SHA256('x' + token).slice(0, 32);
+    return "api-" + SHA256("x" + token).slice(0, 32);
   };
 }
 

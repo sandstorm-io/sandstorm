@@ -432,6 +432,15 @@ body>.topbar {
 
   >.navbar {
     @media #{$desktop} {
+      .navbar-shrink-item {
+        &:hover {
+          button.navbar-shrink {
+            background-color: #717171;
+            border-color: #343434;
+          }
+        }
+      }
+
       button.navbar-shrink {
         @extend %unstyled-button;
         display: block;

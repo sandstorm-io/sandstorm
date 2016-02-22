@@ -432,12 +432,6 @@ body>.topbar {
 
   >.navbar {
     @media #{$desktop} {
-      &:hover {
-        button.navbar-shrink {
-          background-color: #717171;
-          border-color: #343434;
-        }
-      }
       button.navbar-shrink {
         @extend %unstyled-button;
         display: block;
@@ -450,8 +444,6 @@ body>.topbar {
         text-align: center;
         line-height: $navbar-shrink-button-height;
         padding: 0;
-        font-size: 12px;
-        font-weight: 900;
 
         transition: border-left-width 0.2s;
       }

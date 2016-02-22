@@ -45,6 +45,8 @@ public:
 
   kj::String getReviewQueueJson();
 
+  kj::String getAppTitle(kj::StringPtr packageId);
+
   AppIndex::Submission::Client getSubmission(spk::PackageId::Reader packageId);
   // Temporary interface allowing caller to get access to Submission capability. Only callable
   // in-process. The caller is expected to verify signatures by checking the app ID. Eventually

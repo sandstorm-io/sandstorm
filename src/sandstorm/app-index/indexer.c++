@@ -184,6 +184,12 @@ void Indexer::getSubmissionStatus(kj::StringPtr packageId, capnp::MessageBuilder
   capnp::readMessageCopyFromFd(raiiOpen(statusFile, O_RDONLY), output);
 }
 
+kj::String Indexer::getAppTitle(kj::StringPtr packageId) {
+  capnp::StreamFdMessageReader message(
+      sandstorm::raiiOpen(kj::str("/var/packages/", packageId, "/metadata"), O_RDONLY));
+  return kj::str(message.getRoot<spk::VerifiedInfo>().getTitle().getDefaultText());
+}
+
 // =======================================================================================
 
 namespace {

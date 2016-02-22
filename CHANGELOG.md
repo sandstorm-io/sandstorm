@@ -1,4 +1,16 @@
-### v0.145 (2016-02-16)
+### v0.146 (2016-02-21)
+- If you open a grain URL to which you do not have access -- presumably becaues the owner forgot to share it with you, and thought that just copy/pasting the URL would work -- you will now be presented with the ability to send an access request email.
+- Client apps accessing Sandstorm grains via HTTP APIs no longer need to be whitelisted for use of HTTP Basic Auth. As part of this, Sandstorm now allocates a new random hostname for every API key. This change was made so that an upcoming CalDAV apps can be used with any standard CalDAV client. We still prefer new apps use bearer token authorization rather than basic auth.
+- IP network capabilities can now be granted through the powerbox, opening the door to apps that need to operate at the raw TCP or UDP level -- however, only the server admin is able to grant such capabilities, since it could be a security problem for large shared servers.
+- Shrinking the sidebar is now sticky (remembered by your browser, not by the server).
+- It is now possible for developers to recover from losing their app signing key by submitting a pull request against `src/sandstorm/appid-replacements.capnp` in the Sandstorm repository.
+- More large internal refactoring to switch to ES6 with JSCS-enforced style checking.
+- Fixed another issue that could cause spurious errors when returning to grains after losing internet connectivity for a bit.
+- Fixed problem that caused Groove Basin streams to disconnect.
+- Oasis: Fixed another problem preventing adding an identity to your account which was already attached to some other empty account.
+- Oasis: Fixed problem preventing signup keys from being consumed (applies to preorders and Indiegogo customers who hadn't claimed their invites yet).
+
+### v0.145 (2016-02-16) [bugfixes]
 - Updated glibc for CVE-2015-7547.
 - Oasis: Fixed a bug that prevented adding an identity that is already attached to an empty account.
 

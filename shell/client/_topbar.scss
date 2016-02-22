@@ -1,13 +1,13 @@
-@mixin webfont-icon ($color, $mobile-color) {
+@mixin webfont-icon ($color, $mobile-color, $font-size, $mobile-font-size) {
   text-align: center;
   @extend .icon;
   &:before {
-    font-size: 24px;
+    font-size: $font-size;
     color: $color;
     font-family: "icons";
 
     @media #{$mobile} {
-      font-size: 40px;
+      font-size: $mobile-font-size;
       color: $mobile-color;
     }
   }
@@ -383,7 +383,7 @@ body>.topbar {
         @extend %icon-button;
         @extend %mobile-icon-button;
 
-        @include webfont-icon(#CCCCCC, #CCCCCC);
+        @include webfont-icon(#CCCCCC, #CCCCCC, 24px, 40px);
         @extend .icon-notification;
 
         >.count {
@@ -443,6 +443,8 @@ body>.topbar {
 
       button.navbar-shrink {
         @extend %unstyled-button;
+        @include webfont-icon(#CCCCCC, #CCCCCC, 28px, 28px);
+        @extend .icon-arrow;
         display: block;
         width: 100%;
         height: $navbar-shrink-button-height;
@@ -455,6 +457,13 @@ body>.topbar {
         padding: 0;
 
         transition: border-left-width 0.2s;
+
+        &.shrunk {
+          &::before {
+            display: inline-block; // this is needed to allow transforms.
+            transform: rotate(180deg);
+          }
+        }
       }
 
       &.shrink-desktop {

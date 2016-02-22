@@ -39,10 +39,8 @@ limitations under the License.
       <li class="navitem-open-grain {{#if isCurrentRoute 'grains'}}current{{/if}}"><a href="{{pathFor route='grains'}}"><span>Grains</span></a></li>
 
       <li class="navbar-shrink-item">
-        <button class="navbar-shrink" title="{{#if shrinkNavbar}}Grow{{else}}Shrink{{/if}} sidebar">
-          {{!-- TODO(cleanup): Use a background-image, and make the button label semantic. --}}
-          {{#if shrinkNavbar}}&gt;{{else}}&lt;{{/if}}
-        </button>
+        <button class="navbar-shrink {{#if shrinkNavbar}}shrunk{{/if}}"
+                title="{{#if shrinkNavbar}}Grow{{else}}Shrink{{/if}} sidebar"></button>
       </li>
 
       {{!-- TODO(cleanup): ul's can only contain li's, so this ul is not really valid --}}

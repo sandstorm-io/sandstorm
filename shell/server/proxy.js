@@ -632,7 +632,84 @@ const getProxyForHostId = (hostId, isAlreadyOpened) => {
 // =======================================================================================
 // API tokens
 
-const proxiesByApiToken = {};
+class ApiSessionProxies {
+  // Class that caches proxies for requests that come in through HTTP API endpoints. Such
+  // requests are not associated with any entry in the `Sessions` collection, so we need
+  // some other means of detecting unused proxies and closing them. This class works by keeping
+  // the proxies in two buckets. When a proxy is used, it is put in the new bucket. Periodically,
+  // the old bucket is emptied and the contents of new bucket are moved to the old bucket.
+  //
+  // Each bucket is a two-level map, keyed by hashes of the tokens and their `ApiSession.Params`
+  // structs.
+
+  constructor(intervalMillis) {
+    check(intervalMillis, Number);
+    this.newBucket = {};
+    this.oldBucket = {};
+    this.interval = Meteor.setInterval(() => {
+      for (const oldHashedToken in this.oldBucket) {
+        for (const oldHashedParams in this.oldBucket[oldHashedToken]) {
+          const newProxy = this.newBucket[oldHashedToken] &&
+                this.newBucket[oldHashedToken][oldHashedParams];
+          const oldProxy = this.oldBucket[oldHashedToken][oldHashedParams];
+          if (oldProxy && !newProxy) {
+            if (Object.keys(oldProxy.websockets).length > 0) {
+              // A client has an open websocket. Keep the proxy around.
+              this.put(oldHashedToken, oldHashedParams, oldProxy);
+            } else {
+              // We can close this proxy and forget about it.
+              oldProxy.close();
+            }
+          }
+        }
+      }
+
+      this.oldBucket = this.newBucket;
+      this.newBucket = {};
+    }, intervalMillis);
+  }
+
+  get(hashedToken, hashedParams) {
+    if (this.newBucket[hashedToken] && this.newBucket[hashedToken][hashedParams]) {
+      return this.newBucket[hashedToken][hashedParams];
+    } else if (this.oldBucket[hashedToken] && this.oldBucket[hashedToken][hashedParams]) {
+      const proxy = this.oldBucket[hashedToken][hashedParams];
+      delete this.oldBucket[hashedToken][hashedParams];
+      this.put(hashedToken, hashedParams, proxy);
+      return proxy;
+    } else {
+      return null;
+    }
+  }
+
+  put(hashedToken, hashedParams, proxy) {
+    if (!this.newBucket[hashedToken]) {
+      this.newBucket[hashedToken] = {};
+    }
+
+    this.newBucket[hashedToken][hashedParams] = proxy;
+  }
+
+  removeProxiesOfToken(hashedToken) {
+    if (hashedToken in this.oldBucket) {
+      for (const hashedParams in this.oldBucket[hashedToken]) {
+        this.oldBucket[hashedToken][hashedParams].close();
+      }
+
+      delete this.oldBucket[hashedToken];
+    }
+
+    if (hashedToken in this.newBucket) {
+      for (const hashedParams in this.newBucket[hashedToken]) {
+        this.newBucket[hashedToken][hashedParams].close();
+      }
+
+      delete this.newBucket[hashedToken];
+    }
+  }
+}
+
+const apiSessionProxies = new ApiSessionProxies(3 * 60 * 1000);
 
 Meteor.startup(() => {
   const clearSessionsAndProxies = (token) => {
@@ -645,12 +722,8 @@ Meteor.startup(() => {
     const tokenIds = [];
 
     downstream.forEach((token) => {
-      const proxy = proxiesByApiToken[token._id];
-      if (proxy) {
-        proxy.close();
-      }
+      apiSessionProxies.removeProxiesOfToken(token._id);
 
-      delete proxiesByApiToken[token._id];
       tokenIds.push(token._id);
       if (token.owner && token.owner.user) {
         identityIds.push(token.owner.user.identityId);
@@ -687,7 +760,7 @@ Meteor.startup(() => {
       if (oldGrain.private != newGrain.private) {
         Sessions.remove({ grainId: oldGrain._id, identityId: { $ne: oldGrain.identityId } });
         ApiTokens.find({ grainId: oldGrain._id }).forEach((apiToken) => {
-          delete proxiesByApiToken[apiToken._id];
+          apiSessionProxies.removeProxiesOfToken(apiToken._id);
         });
       }
     },
@@ -719,12 +792,102 @@ Meteor.startup(() => {
   });
 });
 
+function getApiSessionParams(request) {
+  const params = {};
+  if ("x-sandstorm-passthrough" in request.headers) {
+    const optIns = request.headers["x-sandstorm-passthrough"]
+          .split(",")
+          .map((s) => { return s.trim(); });
+    // The only currently supported passthrough value is 'address', but others could be useful in
+    // the future.
+
+    if (optIns.indexOf("address") !== -1) {
+      // Sadly, we can't use request.socket.remoteFamily because it's not available in the
+      // (rather-old) version of node that comes in the Meteor bundle we're using. Hence this
+      // hackery.
+      let addressToPass = request.socket.remoteAddress;
+      if (isRfc1918OrLocal(addressToPass) && "x-real-ip" in request.headers) {
+        // Allow overriding the socket's remote address with X-Real-IP header if the request comes
+        // from either localhost or an RFC1918 address. These are not useful for geolocation anyway.
+        addressToPass = request.headers["x-real-ip"];
+      }
+
+      if (Net.isIPv4(addressToPass)) {
+        // Map IPv4 addresses in IPv6.
+        // This conveniently comes out to a 48-bit number, which is precisely representable in a
+        // double (which has 53 mantissa bits). Thus we can avoid using Bignum/strings, which we
+        // might otherwise need to precisely represent 64-bit fields.
+        const v4Int = 0xFFFF00000000 + addressToPass.split(".")
+              .map((x) => { return parseInt(x, 10); })
+              .reduce((a, b) => { return (256 * a) + b; });
+        params.remoteAddress = {
+          lower64: v4Int,
+          upper64: 0,
+        };
+      } else if (Net.isIPv6(addressToPass)) {
+        // TODO(test): Unit test this
+        // Parse a valid v6 address.
+        // Split into groups, then insert an appropriate number of 0's if :: was used.
+        const groups = addressToPass.split(":");
+
+        // Strip extra empty group in the case of a leading or trailing '::'.
+        if (groups[0] === "") {
+          groups.shift();
+        }
+
+        if (groups[groups.length - 1] === "") {
+          groups.pop();
+        }
+
+        const lastGroup = groups[groups.length - 1];
+        // Handle IPv4-mapped IPv6 addresses.  These end in a dotted-quad IPv4 address, which we
+        // should expand into two groups of 4-character hex strings, like the rest of the address.
+        if (Net.isIPv4(lastGroup)) {
+          groups.pop();
+          const quad = lastGroup.split(".").map((x) => { return parseInt(x, 10); });
+          groups.push(((quad[0] * 256) + quad[1]).toString(16));
+          groups.push(((quad[2] * 256) + quad[3]).toString(16));
+        }
+
+        const groupsToAdd = 8 - groups.length;
+        const emptyGroupIndex = groups.indexOf("");
+        let cleanGroups;
+        if (emptyGroupIndex !== -1) {
+          const head = groups.slice(0, emptyGroupIndex);
+          // groupsToAdd + 1 because we sliced out the empty element
+          const mid = Array(groupsToAdd + 1);
+          for (let i = 0; i < groupsToAdd + 1; i++) {
+            mid[i] = "0";
+          }
+
+          const tail = groups.slice(emptyGroupIndex + 1, groups.length);
+          cleanGroups = [].concat(head, mid, tail);
+        } else {
+          cleanGroups = groups;
+        }
+
+        const ints = cleanGroups.map((x) => { return parseInt(x, 16); });
+        // We use strings because we'd lose data from loss of precision casting the 64-bit uints
+        // into 53-bit-mantissa doubles.
+        params.remoteAddress = {
+          upper64: quadToIntString(ints.slice(0, 4)),
+          lower64: quadToIntString(ints.slice(4, 8)),
+        };
+      }
+    }
+  }
+
+  return Capnp.serialize(ApiSession.Params, params);
+}
+
 // Used by server/drivers/external-ui/view.js
-getProxyForApiToken = (token) => {
+getProxyForApiToken = (token, request) => {
   check(token, String);
   const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
+  const serializedParams = getApiSessionParams(request);
+  const hashedParams = Crypto.createHash("sha256").update(serializedParams).digest("base64");
   return Promise.resolve(undefined).then(() => {
-    const proxy = proxiesByApiToken[hashedToken];
+    const proxy = apiSessionProxies.get(hashedToken, hashedParams);
     if (proxy) {
       if (proxy.expires && proxy.expires.getTime() <= Date.now()) {
         throw new Meteor.Error(403, "Authorization token expired");
@@ -732,9 +895,6 @@ getProxyForApiToken = (token) => {
 
       return proxy;
     } else {
-      // Set table entry to null for now so that we can detect if it is concurrently deleted.
-      proxiesByApiToken[hashedToken] = null;
-
       return inMeteor(() => {
         const tokenInfo = ApiTokens.findOne(hashedToken);
         validateWebkey(tokenInfo);
@@ -756,6 +916,7 @@ getProxyForApiToken = (token) => {
 
           proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, identityId, true);
           proxy.apiToken = tokenInfo;
+          proxy.apiSessionParams = serializedParams;
         }
 
         if (!SandstormPermissions.mayOpenGrain(globalDb, { token: tokenInfo })) {
@@ -767,13 +928,7 @@ getProxyForApiToken = (token) => {
           proxy.expires = tokenInfo.expires;
         }
 
-        // Only add the proxy to the table if it was not concurrently deleted (which could happen
-        // e.g. if the token was revoked).
-        if (hashedToken in proxiesByApiToken) {
-          proxiesByApiToken[hashedToken] = proxy;
-        } else {
-          throw new Meteor.Error(403, "Token was concurrently revoked.");
-        }
+        apiSessionProxies.put(hashedToken, hashedParams, proxy);
 
         return proxy;
       });
@@ -953,7 +1108,7 @@ tryProxyRequest = (hostId, req, res) => {
         res.end();
       }, errorHandler);
     } else if (token) {
-      getProxyForApiToken(token).then((proxy) => {
+      getProxyForApiToken(token, req).then((proxy) => {
         proxy.requestHandler(req, res);
       }, errorHandler);
     } else if (req.method === "OPTIONS") {
@@ -1006,7 +1161,8 @@ class Proxy {
     this.sessionId = sessionId;
     this.isApi = isApi;
     this.hasLoaded = false;
-    this.websockets = [];
+    this.websockets = {};
+    this.websocketCounter = 0; // Used for generating unique socket IDs.
     if (sessionId) {
       if (!hostId) throw new Error("sessionId must come with hostId");
       if (isApi) throw new Error("API proxy shouldn't have sessionId");
@@ -1097,11 +1253,11 @@ class Proxy {
   }
 
   close() {
-    this.websockets.forEach((socket) => {
-      socket.destroy();
-    });
+    for (const socketIdx in this.websockets) {
+      this.websockets[socketIdx].destroy();
+    };
 
-    this.websockets = [];
+    this.websockets = {};
 
     if (this.session) {
       this.session.close();
@@ -1146,92 +1302,10 @@ class Proxy {
   }
 
   _callNewApiSession(request, userInfo) {
-    const _this = this;
-    const params = {};
-
-    if ("x-sandstorm-passthrough" in request.headers) {
-      const optIns = request.headers["x-sandstorm-passthrough"]
-          .split(",")
-          .map((s) => { return s.trim(); });
-      // The only currently supported passthrough value is 'address', but others could be useful in
-      // the future
-      if (optIns.indexOf("address") !== -1) {
-        // Sadly, we can't use request.socket.remoteFamily because it's not available in the (rather-old)
-        // version of node that comes in the Meteor bundle we're using.  Hence this hackery.
-        let addressToPass = request.socket.remoteAddress;
-        if (isRfc1918OrLocal(addressToPass) && "x-real-ip" in request.headers) {
-          // Allow overriding the socket's remote address with X-Real-IP header if the request comes
-          // from either localhost or an RFC1918 address.  These are not useful for geolocation
-          // anyway.
-          addressToPass = request.headers["x-real-ip"];
-        }
-
-        if (Net.isIPv4(addressToPass)) {
-          // Map IPv4 addresses in IPv6.
-          // This conveniently comes out to a 48-bit number, which is precisely representable in a
-          // double (which has 53 mantissa bits). Thus we can avoid using Bignum/strings, which we
-          // might otherwise need to precisely represent 64-bit fields.
-          const v4Int = 0xFFFF00000000 + addressToPass.split(".")
-              .map((x) => { return parseInt(x, 10); })
-              .reduce((a, b) => { return (256 * a) + b; });
-          params.remoteAddress = {
-            lower64: v4Int,
-            upper64: 0,
-          };
-        } else if (Net.isIPv6(addressToPass)) {
-          // TODO(test): Unit test this
-          // Parse a valid v6 address.
-          // Split into groups, then insert an appropriate number of 0's if :: was used.
-          const groups = addressToPass.split(":");
-
-          // Strip extra empty group in the case of a leading or trailing '::'.
-          if (groups[0] === "") {
-            groups.shift();
-          }
-
-          if (groups[groups.length - 1] === "") {
-            groups.pop();
-          }
-
-          const lastGroup = groups[groups.length - 1];
-          // Handle IPv4-mapped IPv6 addresses.  These end in a dotted-quad IPv4 address, which we
-          // should expand into two groups of 4-character hex strings, like the rest of the address.
-          if (Net.isIPv4(lastGroup)) {
-            groups.pop();
-            const quad = lastGroup.split(".").map((x) => { return parseInt(x, 10); });
-            groups.push(((quad[0] * 256) + quad[1]).toString(16));
-            groups.push(((quad[2] * 256) + quad[3]).toString(16));
-          }
-
-          const groupsToAdd = 8 - groups.length;
-          const emptyGroupIndex = groups.indexOf("");
-          let cleanGroups;
-          if (emptyGroupIndex !== -1) {
-            const head = groups.slice(0, emptyGroupIndex);
-            // groupsToAdd + 1 because we sliced out the empty element
-            const mid = Array(groupsToAdd + 1);
-            for (let i = 0; i < groupsToAdd + 1; i++) {
-              mid[i] = "0";
-            }
-
-            const tail = groups.slice(emptyGroupIndex + 1, groups.length);
-            cleanGroups = [].concat(head, mid, tail);
-          } else {
-            cleanGroups = groups;
-          }
-
-          const ints = cleanGroups.map((x) => { return parseInt(x, 16); });
-          // We use strings because we'd lose data from loss of precision casting the 64-bit uints
-          // into 53-bit-mantissa doubles.
-          params.remoteAddress = {
-            upper64: quadToIntString(ints.slice(0, 4)),
-            lower64: quadToIntString(ints.slice(4, 8)),
-          };
-        }
-      }
+    const serializedParams = this.apiSessionParams;
+    if (!serializedParams) {
+      throw new Meteor.Error(500, "Should have already computed apiSessionParams.");
     }
-
-    const serializedParams = Capnp.serialize(ApiSession.Params, params);
 
     // TODO(someday): We are currently falling back to WebSession if we get any kind of error upon
     // calling newSession with an ApiSession._id.
@@ -1861,8 +1935,6 @@ class Proxy {
       }
 
       const receiver = new WebSocketReceiver(socket);
-      // TODO(someday): do we want to make these be weak references somehow?
-      _this.websockets.push(socket);
 
       const promise = session.openWebSocket(path, context, protocols, receiver);
 
@@ -1870,7 +1942,10 @@ class Proxy {
         promise.serverStream.sendBytes(head);
       }
 
-      pumpWebSocket(socket, promise.serverStream);
+      const socketIdx = _this.websocketCounter.toString();
+      _this.websockets[socketIdx] = socket;
+      _this.websocketCounter += 1;
+      pumpWebSocket(socket, promise.serverStream, () => { delete _this.websockets[socketIdx]; });
 
       return promise.then((response) => {
         const headers = [
@@ -2190,7 +2265,7 @@ WebSocketReceiver = class WebSocketReceiver {
   }
 };
 
-pumpWebSocket = (socket, rpcStream) => {
+pumpWebSocket = (socket, rpcStream, destructor) => {
   socket.on('data', (chunk) => {
     rpcStream.sendBytes(chunk).catch((err) => {
       if (err.kjType !== 'disconnected') {
@@ -2203,6 +2278,10 @@ pumpWebSocket = (socket, rpcStream) => {
 
   socket.on('end', (chunk) => {
     rpcStream.close();
+  });
+
+  socket.on("close", () => {
+    destructor();
   });
 };
 

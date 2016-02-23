@@ -149,13 +149,14 @@
             @extend %unstyled-button;
             padding-left: 8px;
             padding-right: 24px;
-            background-repeat: no-repeat;
-            background-position: right center;
-            background-size: 24px 24px;
-            background-image: url("/down-m.svg");
-            &.expanded {
-              background-image: url("/up-m.svg");
-              background-color: #ffffff;
+
+            >.expanded-icon {
+              font-size: 10px;
+              @extend .icon;
+              @extend .icon-down;
+            }
+            &.expanded>.expanded-icon {
+              @extend .icon-up;
             }
           }
         }

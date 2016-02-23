@@ -298,6 +298,10 @@ Meteor.methods({
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
+    if (!Grains.findOne({ _id: grainId })) {
+      throw new Meteor.Error(404, "Grain not found", "Grain ID: " + grainId);
+    }
+
     const db = this.connection.sandstormDb;
     check(cachedSalt, Match.OneOf(undefined, null, String));
     if (!SandstormPermissions.mayOpenGrain(db,

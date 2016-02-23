@@ -1941,6 +1941,7 @@ function mapGrainStateToTemplateData(grainState) {
     title: grainState.title(),
     error: error && error.message,
     unauthorized: error && (error.error == 403),
+    notFound: error && (error.error == 404),
     appOrigin: grainState.origin(),
     hasNotLoaded: !(grainState.hasLoaded()),
     sessionId: grainState.sessionId(),

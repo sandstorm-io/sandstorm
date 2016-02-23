@@ -144,7 +144,13 @@ limitations under the License.
       {{#if unauthorized}}
         {{> requestAccess}}
       {{else}}
-        <pre>{{error}}</pre>
+        {{#if notFound}}
+           <p class="grain-not-found grain-interstitial">
+             No grain found with ID "{{grainId}}".
+           </p>
+        {{else}}
+          <pre>{{error}}</pre>
+        {{/if}}
       {{/if}}
     {{else}}
     {{#if appOrigin}}

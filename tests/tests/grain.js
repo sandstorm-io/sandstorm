@@ -165,6 +165,18 @@ module.exports = utils.testAllLogins({
   },
 });
 
+module.exports["Test grain not found"] = function (browser) {
+  browser
+    .url(browser.launch_url + "/grain/BogusGrainId")
+    .waitForElementVisible(".grain-not-found", medium_wait)
+    .assert.containsText(".grain-not-found", "No grain found")
+    .loginDevAccount()
+    .url(browser.launch_url + "/grain/BogusGrainId")
+    .waitForElementVisible(".grain-not-found", medium_wait)
+    .assert.containsText(".grain-not-found", "No grain found")
+    .end()
+}
+
 module.exports["Test grain anonymous user"] = function (browser) {
   browser
     // Upload app as normal user

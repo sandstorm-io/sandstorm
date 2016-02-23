@@ -321,6 +321,7 @@ public:
       } else if (path.startsWith("reject/")) {
         indexer.reject(path.slice(strlen("reject/")),
             kj::str(params.getContent().getContent().asChars()));
+        indexer.updateIndex();  // remove from experimental
         context.getResults().initNoContent();
       } else if (path.startsWith("unapprove/")) {
         indexer.unapprove(path.slice(strlen("unapprove/")));

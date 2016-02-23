@@ -210,8 +210,7 @@ public:
 
 }  // namespace
 
-void Indexer::updateIndexInternal(kj::StringPtr outputFilename, kj::StringPtr outputDir,
-                                  bool approvedApps) {
+void Indexer::updateIndexInternal(kj::StringPtr outputDir, bool experimental) {
   capnp::MallocMessageBuilder scratch;
   auto orphanage = scratch.getOrphanage();
 
@@ -233,8 +232,8 @@ void Indexer::updateIndexInternal(kj::StringPtr outputFilename, kj::StringPtr ou
 
       capnp::StreamFdMessageReader statusMessage(raiiOpen(statusFile, O_RDONLY));
       auto status = statusMessage.getRoot<SubmissionStatus>();
-      if (status.getRequestState() == SubmissionState::PUBLISH &&
-          status.isApproved() == approvedApps) {
+      auto include = experimental ? status.isPending() : status.isApproved();
+      if (include && status.getRequestState() == SubmissionState::PUBLISH) {
         capnp::StreamFdMessageReader metadataMessage(raiiOpen(metadataFile, O_RDONLY));
         auto info = metadataMessage.getRoot<spk::VerifiedInfo>();
         auto metadata = info.getMetadata();
@@ -395,7 +394,7 @@ void Indexer::updateIndexInternal(kj::StringPtr outputFilename, kj::StringPtr ou
     kj::FdOutputStream(file.getFd()).write(text.begin(), text.size());
     file.finalize(kj::str(outputDir, "/", appEntry.first, ".json"));
 
-    if (approvedApps) {
+    if (!experimental) {
       // Write the symlink under /var/apps.
       auto target = kj::str("../packages/",
           packageIdString(appEntry.second.summary.getReader().getPackageId()));
@@ -409,14 +408,14 @@ void Indexer::updateIndexInternal(kj::StringPtr outputFilename, kj::StringPtr ou
   KJ_ASSERT(i == apps.size());
 
   auto text = json.encode(indexData);
-  StagingFile file("/var/www/apps");
+  StagingFile file(outputDir);
   kj::FdOutputStream(file.getFd()).write(text.begin(), text.size());
-  file.finalize(kj::str("/var/www/apps/", outputFilename));
+  file.finalize(kj::str(outputDir, "/index.json"));
 }
 
 void Indexer::updateIndex() {
-  updateIndexInternal("index.json", "/var/www/apps", true);
-  updateIndexInternal("index-experimental.json", "/var/www/experimental", false);
+  updateIndexInternal("/var/www/apps", false);
+  updateIndexInternal("/var/www/experimental", true);
 }
 
 kj::String Indexer::writeIcon(spk::Metadata::Icon::Reader icon) {

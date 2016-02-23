@@ -788,7 +788,9 @@ if (Meteor.isClient) {
           window.alert("Failed to create token.\n" + error);
           console.error(error.stack);
         } else {
-          activeGrain.setGeneratedApiToken(result.endpointUrl + "#" + result.token);
+          activeGrain.setGeneratedApiToken(
+              window.location.protocol + "//" +
+              globalDb.makeApiHost(result.token) + "#" + result.token);
         }
       });
     },

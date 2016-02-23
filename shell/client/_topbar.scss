@@ -23,8 +23,8 @@
     background-position: center;
     background-repeat: no-repeat;
     background-size: 32px 32px;
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     padding: 4px;
     color: transparent;
     cursor: pointer;
@@ -190,7 +190,7 @@ body>.topbar {
       display: block;
       float: none;
       width: 100%;
-      height: 48px;
+      height: 49px;
       border-bottom: 1px solid #ddd;
       padding: 0;
     }
@@ -288,20 +288,34 @@ body>.topbar {
       @extend %topbar-button;
       @extend %hamburger-menu-item;
 
-      background-image: url("/share.svg");
-      background-repeat: no-repeat;
+      @extend .icon-share;
+      &::before {
+        @extend .icon;
+      }
+
       @media #{$desktop} {
         background-position: 2px center;
         color: #cccccc; // Have the text match the icon.
                         // This is the single place the button text is visible.
-        padding-left: 36px;
+        padding-left: 8px;
         padding-right: 8px;
         height: 32px;
-        line-height: 28px;
+        line-height: 32px;
         font-size: 12pt;
+        &::before {
+          font-size: 32px;
+          vertical-align: top;
+        }
       }
       @media #{$mobile} {
         background-position: 10px center;
+        position: relative;
+        &::before {
+          position: absolute;
+          left: 8px;
+          top: 8px;
+          font-size: 32px;
+        }
       }
     }
 
@@ -334,7 +348,7 @@ body>.topbar {
         top: 0;
         right: 48px;
         width: 48px;
-        height: 48px;
+        height: 49px;
         text-align: center;
       }
 
@@ -375,7 +389,7 @@ body>.topbar {
         top: 0;
         right: 0;
         width: 48px;
-        height: 48px;
+        height: 49px;
         background-color: $topbar-background-color; // needed to cover an overflowing title
       }
 
@@ -954,9 +968,10 @@ body>.popup {
           margin: 0;
           padding: 3px;
           width: 45%;
-          text-align: center;
+          text-align: left;
           font-size: 14px; // Size must be the same on mobile and desktop for correct absolute position.
           top: -26px;
+          height: 25px;
           background-position: 15px 2px, left;
           background-size: 20px, 20px;
           background-repeat: no-repeat;
@@ -967,15 +982,28 @@ body>.popup {
         }
         #send-invite-tab-header {
           left: 2%;
-          background-image: url(/email-m.svg);
+
+          &::before {
+            @extend .icon;
+            font-size: 18px;
+            padding: 0 8px 2px 12px;
+          }
+          @extend .icon-email;
         }
         #shareable-link-tab-header {
           right: 2%;
-          background-image: url(/link-m.svg);
+
+          &::before {
+            @extend .icon;
+            font-size: 20px;
+            padding: 0 8px 2px 12px;
+          }
+          @extend .icon-link;
         }
         [aria-selected=true] {
           background-color: white;
           border-bottom: 1px solid white;
+          height: 26px;
         }
       }
       >div.tabpanel {
@@ -1069,7 +1097,9 @@ body>.popup {
       font-style: italic;
     }
 
-    .inline-icon { width: 20px; }
+    .icon-people {
+      font-size: 20px;
+    }
 
     >.footer {
       background-color: $popup-background-color;

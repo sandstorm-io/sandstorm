@@ -41,7 +41,8 @@ related to user identity and permissions:
   header is **not sent at all for anonymous users**.
 
 * `X-Sandstorm-Permissions`: This contains a list of the permissions
-  held by the current user. Permissions are defined in the package's
+  held by the current user, joined with a comma such as `edit,read` or
+  `read`. Permissions are defined in the package's
   `sandstorm-pkgdef.capnp`. The grain's owner holds every permission
   and can use the "Share" button to authorize other users.
 

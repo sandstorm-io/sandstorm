@@ -237,14 +237,14 @@ SandstormDb.fillInIntrinsicName = function (user) {
 SandstormDb.getVerifiedEmails = function (identity) {
   if (identity.services.google && identity.services.google.email &&
       identity.services.google.verified_email) { // jscs:ignore requireCamelCaseOrUpperCaseIdentifiers
-    return [identity.services.google.email];
+    return [{ email: identity.services.google.email, primary: true }];
   } else if (identity.services.email) {
-    return [identity.services.email.email];
+    return [{ email: identity.services.email.email, primary: true }];
   } else if (identity.services.github && identity.services.github.emails) {
     return _.chain(identity.services.github.emails)
-            .filter(function (email) { return email.verified; })
-            .pluck("email")
-            .value();
+      .filter(function (email) { return email.verified; })
+      .map((email) => _.pick(email, "email", "primary"))
+      .value();
   }
 
   return [];
@@ -262,7 +262,7 @@ SandstormDb.prototype.findIdentitiesByEmail = function (email) {
     { "services.github.emails.email": email },
   ], }).fetch().filter(function (identity) {
     // Verify that the email is verified, since our query doesn't technically do that.
-    return SandstormDb.getVerifiedEmails(identity).indexOf(email) >= 0;
+    return !!_findWhere(SandstormDb.getVerifiedEmails(identity), { email: email });
   });
 };
 
@@ -310,7 +310,7 @@ SandstormDb.getUserEmails = function (user) {
     if (identity && identity.services) {
       SandstormDb.getVerifiedEmails(identity).forEach(function (verifiedEmail) {
         if (verifiedEmail) {
-          verifiedEmails[verifiedEmail] = true;
+          verifiedEmails[verifiedEmail.email] = true;
         }
       });
     }

@@ -186,7 +186,7 @@ Template._accountProfileEditor.helpers({
 
   verifiedEmails: function () {
     if (this.identity) {
-      return SandstormDb.getVerifiedEmails(this.identity);
+      return _.pluck(SandstormDb.getVerifiedEmails(this.identity), "email");
     }
   },
 

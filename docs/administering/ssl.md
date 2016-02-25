@@ -22,7 +22,7 @@ You have a few options.
 To share port 443 with other services on the same machine:
 
 - You [can install `sniproxy` to share port
-  443](https://xamar.sandcats.io/shared/Bqa9dftNbc1Ni06D-SgBdkFuM_iky8VHAlTw0Rk1lzN) between your
+  443](sniproxy.md) between your
   existing server and Sandstorm so that Sandstorm can manage (and autorenew) its own certificates.
   This allows you to combine an **existing web server on port 443** with free sandcats.io HTTPS.
   

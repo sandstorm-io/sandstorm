@@ -20,6 +20,5 @@ You have a few options.
   self-signed SSL. This will only be valid for browsers that you configure accordingly.
 
 If you have an **existing web server on port 443**, and you want to use free sandcats.io HTTPS, you
-[can install `sniproxy` to share port
-443](https://xamar.sandcats.io/shared/Bqa9dftNbc1Ni06D-SgBdkFuM_iky8VHAlTw0Rk1lzN) between your
-existing server and Sandstorm so that Sandstorm can manage (and autorenew) its own certificates.
+[can install `sniproxy` to share port 443](sniproxy.md) between your existing server and Sandstorm
+so that Sandstorm can manage (and autorenew) its own certificates.

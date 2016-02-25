@@ -199,7 +199,37 @@ module.exports["Sign in at grain URL"] = function (browser) {
             .waitForElementPresent("#publish", medium_wait)
             .assert.containsText("#publish", "Publish")
             .frame(null)
-            .end();
+            // Now try it with a /shared/ path.
+            .click('.topbar .share > .show-popup')
+            .waitForElementVisible('#shareable-link-tab-header', short_wait)
+            .click('#shareable-link-tab-header')
+            .waitForElementVisible(".new-share-token", short_wait)
+            .submitForm('.new-share-token')
+            .waitForElementVisible('#share-token-text', medium_wait)
+            .getText('#share-token-text', function(response) {
+              browser
+                .execute("window.Meteor.logout()")
+                .loginDevAccount(null, false, function (otherName) { // Generate a new user.
+                  browser
+                    .execute("window.Meteor.logout()")
+                    .url(browser.launch_url)
+                    .url(response.value)
+                    .waitForElementVisible("#grain-frame", medium_wait)
+                    .waitForElementVisible("#grainTitle", medium_wait)
+                    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+                    .execute(function (name) { window.loginDevAccount(name) }, [otherName])
+                    .waitForElementVisible("button.pick-identity", medium_wait)
+                    .click("button.pick-identity")
+                    .waitForElementVisible("#grain-frame", medium_wait)
+                    .waitForElementVisible("#grainTitle", medium_wait)
+                    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+                    .frame("grain-frame")
+                    .waitForElementPresent("#publish", medium_wait)
+                    .assert.containsText("#publish", "Publish")
+                    .frame(null)
+                    .end()
+                })
+            });
         });
     });
 }

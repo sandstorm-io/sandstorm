@@ -70,6 +70,31 @@ if (Meteor.isClient) {
       }
     }
   });
+
+  // export: called by sandstorm-accounts-ui/login_buttons.js
+  logoutSandstorm = function () {
+    Meteor.logout(function () {
+      sessionStorage.removeItem("linkingIdentityLoginToken");
+      Accounts._loginButtonsSession.closeDropdown();
+      globalTopbar.closePopup();
+      const openGrains = globalGrains.get();
+      openGrains.forEach(function (grain) {
+        grain.destroy();
+      });
+
+      globalGrains.set([]);
+      Router.go("root");
+    });
+  };
+
+  Accounts.onLogin(() => {
+    const openGrains = globalGrains.get();
+    openGrains.forEach(function (grain) {
+      grain.destroy();
+    });
+
+    globalGrains.set([]);
+  });
 }
 
 if (Meteor.isServer) {
@@ -530,22 +555,6 @@ const isDemoExpired = function () {
   }
 
   return false;
-};
-
-// export: called by sandstorm-accounts-ui/login_buttons.js
-logoutSandstorm = function () {
-  Meteor.logout(function () {
-    sessionStorage.removeItem("linkingIdentityLoginToken");
-    Accounts._loginButtonsSession.closeDropdown();
-    globalTopbar.closePopup();
-    const openGrains = globalGrains.get();
-    openGrains.forEach(function (grain) {
-      grain.destroy();
-    });
-
-    globalGrains.set([]);
-    Router.go("root");
-  });
 };
 
 // export: this is also used by grain.js

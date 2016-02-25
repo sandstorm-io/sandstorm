@@ -2001,10 +2001,10 @@ Router.map(function () {
     },
 
     onBeforeAction: function () {
-      // Run this hook only once.
-      if (this.state.get("beforeActionHookRan")) { return this.next(); }
-
-      this.state.set("beforeActionHookRan", true);
+      // Only rerun the hook if we've logged in as a different user.
+      const userId = Meteor.userId() || "NotSignedIn";
+      if (this.state.get("beforeActionHookRanForUser") === userId) return this.next();
+      this.state.set("beforeActionHookRanForUser", userId);
       const grainId = this.params.grainId;
       let initialPopup = null;
       let shareGrain = Session.get("share-grain-" + grainId);

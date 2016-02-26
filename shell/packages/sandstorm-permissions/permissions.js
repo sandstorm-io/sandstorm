@@ -497,7 +497,7 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
 SandstormPermissions.cleanupSelfDestructing = function (db) {
   return function () {
     var now = new Date();
-    db.collections.apiTokens.remove({expiresIfUnused: {$lt: now}});
+    db.removeApiTokens({expiresIfUnused: {$lt: now}});
   }
 }
 

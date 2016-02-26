@@ -22,7 +22,7 @@ if (isTesting) {
   if (Meteor.isServer) {
     function clearUser(id) {
       UserActions.remove({ userId: id });
-      ApiTokens.remove({ userId: id });
+      globalDb.removeApiTokens({ userId: id });
       Grains.find({ userId: id }).forEach(function (grain) {
         globalBackend.deleteGrain(grain._id);
       });

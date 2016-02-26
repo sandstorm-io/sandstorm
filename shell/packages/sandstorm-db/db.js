@@ -391,6 +391,8 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              be considered revoked, and all live refs and sturdy refs obtained transitively
 //              through it must also become revoked. Each item is the JSON serialization of the
 //              `MembraneRequirement` structure defined in `supervisor.capnp`.
+//   hasApiHost: If true, there is an entry in ApiHosts for this token, which will need to be
+//              cleaned up when the token is.
 //
 // It is important to note that a token's owner and provider are independent from each other. To
 // illustrate, here is an approximate definition of ApiToken in pseudo Cap'n Proto schema language:
@@ -971,6 +973,20 @@ _.extend(SandstormDb.prototype, {
 
 if (Meteor.isServer) {
   SandstormDb.prototype.getWildcardOrigin = getWildcardOrigin;
+
+  const Crypto = Npm.require("crypto");
+  SandstormDb.prototype.removeApiTokens = function (query) {
+    // Remove all API tokens matching the query, making sure to clean up ApiHosts as well.
+
+    this.collections.apiTokens.find(query).forEach(function (token) {
+      // Clean up ApiHosts for webkey tokens.
+      if (token.hasApiHost) {
+        var hash2 = Crypto.createHash("sha256").update(token._id).digest("base64");
+        ApiHosts.remove({hash2: hash2});
+      }
+    });
+    this.collections.apiTokens.remove(query);
+  }
 }
 
 // =======================================================================================

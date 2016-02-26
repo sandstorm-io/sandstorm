@@ -265,7 +265,7 @@ Meteor.methods({
       const grain = Grains.findOne({ _id: grainId, userId: this.userId });
       if (grain) {
         Grains.remove(grainId);
-        ApiTokens.remove({
+        globalDb.removeApiTokens({
           grainId: grainId,
           $or: [
             { owner: { $exists: false } },
@@ -297,7 +297,7 @@ Meteor.methods({
     }
 
     SandstormDb.getUserIdentityIds(Meteor.user()).forEach(function (identityId) {
-      ApiTokens.remove({ grainId: grainId, "owner.user.identityId": identityId });
+      globalDb.removeApiTokens({ grainId: grainId, "owner.user.identityId": identityId });
     });
   },
 

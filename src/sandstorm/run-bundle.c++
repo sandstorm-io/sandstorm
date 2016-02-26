@@ -1816,25 +1816,47 @@ private:
   }
 
   void bindSocketToFd(const Config& config, uint port, uint targetFdNum) {
+    sockaddr_storage sa;
+    sockaddr_in* sa4 = reinterpret_cast<sockaddr_in*>(&sa);
+    sockaddr_in6* sa6 = reinterpret_cast<sockaddr_in6*>(&sa);
+
+    // Various syscalls require slightly different arguments for v4 and v6 addresses.
+    // Keep track of which we're trying.
+    bool useV6 = false;
+
+    memset(&sa, 0, sizeof sa);
+
+    sa.ss_family = AF_INET;
+    int rc = inet_pton(AF_INET, config.bindIp.cStr(), &(sa4->sin_addr));
+
+    if (rc == 0) {
+      // If IPv4 address parsing fails, try IPv6
+      useV6 = true;
+      sa.ss_family = AF_INET6;
+      rc = inet_pton(AF_INET6, config.bindIp.cStr(), &(sa6->sin6_addr));
+      KJ_REQUIRE(rc == 1, "Bind IP is an invalid IP address:", config.bindIp);
+    }
+
     int sockFd;
-    KJ_SYSCALL(sockFd = socket(PF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
+
+    if (useV6) {
+      KJ_SYSCALL(sockFd = socket(AF_INET6, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
+    } else {
+      KJ_SYSCALL(sockFd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, IPPROTO_TCP));
+    }
 
     // Enable SO_REUSEADDR so that `sandstorm restart` doesn't take minutes to succeed.
     int optval = 1;
     KJ_SYSCALL(setsockopt(sockFd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)));
 
-    sockaddr_in sa;
-    memset(&sa, 0, sizeof sa);
-    sa.sin_family = AF_INET;
-    sa.sin_port = htons(port);
-    int rc = inet_pton(AF_INET, config.bindIp.cStr(), &(sa.sin_addr));
-    // If ipv4 address parsing fails, try ipv6
-    if (rc == 0) {
-      rc = inet_pton(AF_INET6, config.bindIp.cStr(), &(sa.sin_addr));
-      KJ_REQUIRE(rc == 1, "Bind IP is an invalid IP address:", config.bindIp);
+    if (useV6) {
+      sa6->sin6_port = htons(port);
+      KJ_SYSCALL(bind(sockFd, reinterpret_cast<sockaddr *>(&sa), sizeof(sockaddr_in6)));
+    } else {
+      sa4->sin_port = htons(port);
+      KJ_SYSCALL(bind(sockFd, reinterpret_cast<sockaddr *>(&sa), sizeof(sockaddr_in)));
     }
 
-    KJ_SYSCALL(bind(sockFd, reinterpret_cast<sockaddr *>(&sa), sizeof sa));
     KJ_SYSCALL(listen(sockFd, 511)); // 511 is what node uses as its default backlog
 
     if (sockFd != targetFdNum) {

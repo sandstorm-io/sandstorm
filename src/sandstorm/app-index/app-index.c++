@@ -67,12 +67,13 @@ template <typename Context>
 void handleError(Context& context, kj::Exception&& e) {
   KJ_LOG(ERROR, e);
   auto error = context.getResults().initServerError();
-  error.setDescriptionHtml(kj::str("Error: ", htmlEscape(e.getDescription())));
+  error.setDescriptionHtml(kj::str("Error: ", htmlEscape(e.getDescription()), "\n"));
 }
 
 class SubmissionSession final: public ApiSession::Server {
 public:
-  explicit SubmissionSession(Indexer& indexer): indexer(indexer) {}
+  explicit SubmissionSession(Indexer& indexer, HackSessionContext::Client session)
+      : indexer(indexer), session(kj::mv(session)) {}
 
   kj::Promise<void> post(PostContext context) override {
     return kj::evalNow([&]() -> kj::Promise<void> {
@@ -163,7 +164,38 @@ public:
         httpResponse.setMimeType("application/octet-stream");
         httpResponse.initBody().setBytes(outStream.getArray());
 
-        return kj::READY_NOW;
+        if (!req.isSetState() ||
+            !response.getRoot<SubmissionStatus>().isPending()) {
+          return kj::READY_NOW;
+        }
+
+        // Send notification email to app index reviewers.
+        auto appTitle = indexer.getAppTitle(packageId);
+        auto notificationText = kj::str(
+            "An app package is pending review in the app index.\n\n"
+            "https://alpha.sandstorm.io/grain/NujwEZfut8oZoSdcrFzy9p/\n\n"
+            "title: ", appTitle, "\n"
+            "packageId: ", packageIdString(req.getPackageId()), "\n"
+            "requested state: ", req.getSetState().getNewState(), "\n");
+
+        return session.getPublicIdRequest().send()
+            .then([this,KJ_MVCAP(appTitle),KJ_MVCAP(notificationText)](auto&& publicId) mutable {
+          return session.getUserAddressRequest().send()
+              .then([this,KJ_MVCAP(appTitle),KJ_MVCAP(notificationText),KJ_MVCAP(publicId)]
+                    (auto&& response) mutable {
+            auto emailReq = session.sendRequest();
+            auto email = emailReq.initEmail();
+            auto from = email.initFrom();
+            from.setName("App Index");
+            from.setAddress(kj::str(publicId.getPublicId(), "@", publicId.getHostname()));
+            auto to = email.initTo(1)[0];
+            to.setAddress("app-index@corp.sandstorm.io");
+            to.setName("App Index Notifications");
+            email.setSubject(kj::str("App index: ", appTitle));
+            email.setText(notificationText);
+            return emailReq.send().ignoreResult();
+          });
+        });
       } else {
         auto error = context.getResults().initClientError();
         error.setStatusCode(WebSession::Response::ClientErrorCode::NOT_FOUND);
@@ -194,6 +226,7 @@ public:
 
 private:
   Indexer& indexer;
+  HackSessionContext::Client session;
 
   class StreamWrapper final: public WebSession::RequestStream::Server {
   public:
@@ -288,6 +321,7 @@ public:
       } else if (path.startsWith("reject/")) {
         indexer.reject(path.slice(strlen("reject/")),
             kj::str(params.getContent().getContent().asChars()));
+        indexer.updateIndex();  // remove from experimental
         context.getResults().initNoContent();
       } else if (path.startsWith("unapprove/")) {
         indexer.unapprove(path.slice(strlen("unapprove/")));
@@ -383,7 +417,8 @@ public:
     if (params.getSessionType() == capnp::typeId<ApiSession>()) {
       KJ_REQUIRE(hasPermission(SUBMIT_PERMISSION),
                  "client does not have permission to submit apps; can't use API");
-      result = kj::heap<SubmissionSession>(indexer);
+      result = kj::heap<SubmissionSession>(
+          indexer, params.getContext().castAs<HackSessionContext>());
     } else if (params.getSessionType() == capnp::typeId<WebSession>()) {
       KJ_REQUIRE(hasPermission(REVIEW_PERMISSION),
                  "client does not have permission to review apps; can't use web interface");

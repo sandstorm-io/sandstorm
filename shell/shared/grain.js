@@ -2001,10 +2001,10 @@ Router.map(function () {
     },
 
     onBeforeAction: function () {
-      // Run this hook only once.
-      if (this.state.get("beforeActionHookRan")) { return this.next(); }
-
-      this.state.set("beforeActionHookRan", true);
+      // Only rerun the hook if we've logged in as a different user.
+      const userId = Meteor.userId() || "NotSignedIn";
+      if (this.state.get("beforeActionHookRanForUser") === userId) return this.next();
+      this.state.set("beforeActionHookRanForUser", userId);
       const grainId = this.params.grainId;
       let initialPopup = null;
       let shareGrain = Session.get("share-grain-" + grainId);
@@ -2073,9 +2073,9 @@ Router.map(function () {
       // Run this hook only once. We could accomplish the same thing by using the `onRun()` hook
       // and waiting for `this.ready()`, but for some reason that fails in the case when a user
       // logs in while visiting a /shared/ link.
-      if (this.state.get("beforeActionHookRan")) { return this.next(); }
-
-      this.state.set("beforeActionHookRan", true);
+      const userId = Meteor.userId() || "NotSignedIn";
+      if (this.state.get("beforeActionHookRanForUser") === userId) return this.next();
+      this.state.set("beforeActionHookRanForUser", userId);
 
       const token = this.params.token;
       const path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");

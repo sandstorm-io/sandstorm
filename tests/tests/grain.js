@@ -177,6 +177,63 @@ module.exports["Test grain not found"] = function (browser) {
     .end()
 }
 
+module.exports["Sign in at grain URL"] = function (browser) {
+  browser
+    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
+    .waitForElementVisible("#grainTitle", medium_wait)
+    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .getDevName(function (devName) {
+      browser
+        .url(function (grainUrl) {
+          browser
+            .execute("window.Meteor.logout()")
+            .url(browser.launch_url)
+            .url(grainUrl.value)
+            .waitForElementVisible(".request-access", medium_wait)
+            .assert.containsText(".request-access", "Please sign in to request access.")
+            .execute(function (name) { window.loginDevAccount(name) }, [devName.value])
+            .waitForElementVisible("#grain-frame", medium_wait)
+            .waitForElementVisible("#grainTitle", medium_wait)
+            .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+            .frame("grain-frame")
+            .waitForElementPresent("#publish", medium_wait)
+            .assert.containsText("#publish", "Publish")
+            .frame(null)
+            // Now try it with a /shared/ path.
+            .click('.topbar .share > .show-popup')
+            .waitForElementVisible('#shareable-link-tab-header', short_wait)
+            .click('#shareable-link-tab-header')
+            .waitForElementVisible(".new-share-token", short_wait)
+            .submitForm('.new-share-token')
+            .waitForElementVisible('#share-token-text', medium_wait)
+            .getText('#share-token-text', function(response) {
+              browser
+                .execute("window.Meteor.logout()")
+                .loginDevAccount(null, false, function (otherName) { // Generate a new user.
+                  browser
+                    .execute("window.Meteor.logout()")
+                    .url(browser.launch_url)
+                    .url(response.value)
+                    .waitForElementVisible("#grain-frame", medium_wait)
+                    .waitForElementVisible("#grainTitle", medium_wait)
+                    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+                    .execute(function (name) { window.loginDevAccount(name) }, [otherName])
+                    .waitForElementVisible("button.pick-identity", medium_wait)
+                    .click("button.pick-identity")
+                    .waitForElementVisible("#grain-frame", medium_wait)
+                    .waitForElementVisible("#grainTitle", medium_wait)
+                    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+                    .frame("grain-frame")
+                    .waitForElementPresent("#publish", medium_wait)
+                    .assert.containsText("#publish", "Publish")
+                    .frame(null)
+                    .end()
+                })
+            });
+        });
+    });
+}
+
 module.exports["Test grain anonymous user"] = function (browser) {
   browser
     // Upload app as normal user
@@ -221,7 +278,7 @@ module.exports["Test roleless sharing"] = function (browser) {
   browser
   // Upload app as 1st user
     .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
-    .execute(function () { return globalDb.getIdentity(Meteor.user().loginIdentities[0].id).profile.intrinsicName; }, [], function(result) {
+    .getDevName(function (result) {
       firstUserName = result.value;
     })
     .waitForElementVisible('.grain-frame', medium_wait)
@@ -236,7 +293,7 @@ module.exports["Test roleless sharing"] = function (browser) {
     .getText('#share-token-text', function(response) {
       browser
         .loginDevAccount()
-        .execute(function () { return globalDb.getIdentity(Meteor.user().loginIdentities[0].id).profile.intrinsicName; }, [], function(result) {
+        .getDevName(function(result) {
           secondUserName = result.value;
         })
         .url(response.value)

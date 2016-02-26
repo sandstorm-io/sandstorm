@@ -419,7 +419,8 @@ Meteor.methods({
             roleAssignment, { user: { identityId: contact._id, title: title } });
           try {
             const identity = Meteor.users.findOne({ _id: contact._id });
-            const emailAddress = SandstormDb.getVerifiedEmails(identity)[0];
+            const emailAddress = _.findWhere(SandstormDb.getVerifiedEmails(identity),
+                                             { primary: true });
             const url = origin + "/shared/" + result.token;
             if (emailAddress) {
               const intrinsicName = contact.profile.intrinsicName;
@@ -499,10 +500,10 @@ Meteor.methods({
       const senderEmails = SandstormDb.getVerifiedEmails(identity);
       if (senderEmails.length > 0) {
         const primaryEmail = Meteor.user().primaryEmail;
-        if (senderEmails.indexOf(primaryEmail) >= 0) {
+        if (_.findWhere(senderEmails, { email: primaryEmail })) {
           fromEmail = primaryEmail;
         } else {
-          fromEmail = senderEmails[0];
+          fromEmail = _.findWhere(senderEmails, { primary: true });
         }
       }
 

@@ -80,5 +80,13 @@ const appIdReplacementList :List(AppIdReplacement) = [
 
   # ---- end example; real entries follow ----
 
+  # ---- Paperwork entry ----
+
+  (original = "vxe8awcxvtj6yu0vgjpm1tsaeu7x8v8tfp71tyvnm6ykkephu9q0",
+   replacement = "n8cn71407n4mezn7mg0k5kkm21juuphhecc24hdf9kf56zyxm4ah"),
+  # This is the ID for the Paperwork app by JJ. The old app key was destroyed
+
+  # ---- end Paperwork entry ----
+
   # Add your entry here!
 ];

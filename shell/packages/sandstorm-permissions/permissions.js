@@ -407,8 +407,34 @@ SandstormPermissions.downstreamTokens = function(db, root) {
   return result;
 }
 
+var HeaderSafeString = Match.Where(function (str) {
+  check(str, String);
+  return str.match(/^[\x20-\x7E]*$/);
+});
+
+var DavClass = Match.Where(function (str) {
+  check(str, String);
+  return str.match(/^[a-zA-Z0-9!#$%&'*+.^_`|~-]+$/) ||
+         str.match(/^<[\x21-\x7E]*>$/);  // supposed to be a URL
+});
+
+var ResourceMap = Match.Where(function (map) {
+  for (path in map) {
+    if (!path.match(/^\/[\x21-\x7E]*$/)) {
+      return false;
+    }
+    check(map[path], {
+      type: HeaderSafeString,
+      language: Match.Optional(HeaderSafeString),
+      encoding: Match.Optional(HeaderSafeString),
+      body: String
+    });
+  }
+  return true;
+});
+
 SandstormPermissions.createNewApiToken = function (db, provider, grainId, petname,
-                                                   roleAssignment, owner) {
+                                                   roleAssignment, owner, static) {
   // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
   check(grainId, String);
   check(petname, String);
@@ -424,6 +450,14 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
                            {grain: {grainId: String,
                                     saveLabel: Match.ObjectIncluding({defaultText: String}),
                                     introducerIdentity: String,}}));
+  check(static, Match.OneOf(undefined, null, {
+    options: Match.Optional({ dav: [Match.Optional(DavClass)] }),
+    resources: Match.Optional(ResourceMap),
+  }));
+
+  if (static && JSON.stringify(static).length > 4096) {
+    throw new Meteor.Error(400, "Static params too large; limit 4kb.");
+  }
 
   var grain = db.getGrain(grainId);
   if (!grain) {
@@ -487,6 +521,13 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
     };
   }
 
+  if (static) {
+    static._id = db.apiHostIdHashForToken(token);
+    static.hash2 = Crypto.createHash("sha256").update(apiToken._id).digest("base64");
+    db.collections.apiHosts.insert(static);
+    apiToken.hasApiHost = true;
+  }
+
   db.collections.apiTokens.insert(apiToken);
 
   return {id: apiToken._id, token: token, parentApiToken: parentApiToken};
@@ -512,8 +553,9 @@ Meteor.methods({
     }
   },
 
-  newApiToken: function (provider, grainId, petname, roleAssignment, owner) {
+  newApiToken: function (provider, grainId, petname, roleAssignment, owner, static) {
     check(provider, Match.OneOf({identityId: String}, {rawParentToken: String}));
+    // other check()s happen in SandstormPermissions.createNewApiToken().
     var db = this.connection.sandstormDb;
     if (provider.identityId) {
       if (!this.userId || !db.userHasIdentity(this.userId, provider.identityId)) {
@@ -524,7 +566,7 @@ Meteor.methods({
       provider.accountId = this.userId;
     }
     return SandstormPermissions.createNewApiToken(
-      this.connection.sandstormDb, provider, grainId, petname, roleAssignment, owner);
+      this.connection.sandstormDb, provider, grainId, petname, roleAssignment, owner, static);
   },
 
   updateApiToken: function (token, newFields) {

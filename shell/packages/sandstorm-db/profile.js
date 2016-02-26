@@ -71,6 +71,7 @@ if (Meteor.isServer) {
         "services.google.name":1,
         "services.google.picture":1,
         "services.google.gender":1,
+        "services.google.hd":1,
 
         "services.github.id":1,
         "services.github.email":1,

@@ -622,6 +622,54 @@ if (Meteor.isServer) {
   });
 }
 
+function getOrganizationEmail() {
+  const setting = Settings.findOne({ _id: "organizationEmail" });
+  return setting && setting.value;
+};
+
+function getOrganizationGoogle() {
+  const setting = Settings.findOne({ _id: "organizationGoogle" });
+  return setting && setting.value;
+};
+
+function getOrganizationLdap() {
+  const setting = Settings.findOne({ _id: "organizationLdap" });
+  return setting ? setting.value : false;
+};
+
+function identityInOrganization(identityId) {
+  let identity = Meteor.users.findOne({ _id: identityId });
+  if (!identity || !identity.services) {
+    return false;
+  }
+
+  if (identity.services.email && getOrganizationEmail()) {
+    let domain = "@" + getOrganizationEmail();
+    if (identity.services.email.email.toLowerCase().endsWith(domain)) {
+      return true;
+    }
+  } else if (identity.services.ldap && getOrganizationLdap()) {
+    return true;
+  } else if (identity.services.google && getOrganizationGoogle()) {
+    let domain = getOrganizationGoogle();
+    if (identity.services.google.hd.toLowerCase() === domain) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+isUserInOrganization = function (user) {
+  for (let i = 0; i < user.loginIdentities.length; i++) {
+    if (identityInOrganization(user.loginIdentities[i].id)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 isDemoUser = function () {
   // Returns true if this is a demo user.
 
@@ -648,6 +696,8 @@ isSignedUp = function () {
 
   if (user.signupKey) return true;  // user is invited
 
+  if (isUserInOrganization(user)) return true;
+
   return false;
 };
 
@@ -663,6 +713,8 @@ isSignedUpOrDemo = function () {
   if (Meteor.settings.public.allowUninvited) return true;  // all accounts qualify
 
   if (user.signupKey) return true;  // user is invited
+
+  if (isUserInOrganization(user)) return true;
 
   return false;
 };
@@ -1244,6 +1296,12 @@ _.extend(SandstormDb.prototype, {
     const setting = Settings.findOne({ _id: "ldapNameField" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
+
+  getOrganizationEmail: getOrganizationEmail,
+
+  getOrganizationGoogle: getOrganizationGoogle,
+
+  getOrganizationLdap: getOrganizationLdap,
 });
 
 SandstormDb.escapeMongoKey = (key) => {

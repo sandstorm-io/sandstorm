@@ -186,7 +186,7 @@ Template.adminSettings.events({
     const token = this.token;
     resetResult(state);
     if (globalDb.isFeatureKeyValid()) {
-      state.set("numSettings", 9);
+      state.set("numSettings", 12);
     } else {
       state.set("numSettings", 4);
     }
@@ -208,6 +208,12 @@ Template.adminSettings.events({
       Meteor.call("setSetting", token, "ldapBase", event.target.ldapBase.value, handleErrorBound);
       Meteor.call("setSetting", token, "ldapDnPattern", event.target.ldapDnPattern.value, handleErrorBound);
       Meteor.call("setSetting", token, "ldapNameField", event.target.ldapNameField.value, handleErrorBound);
+      Meteor.call("setSetting", token, "organizationGoogle",
+        event.target.organizationGoogle.value.toLowerCase(), handleErrorBound);
+      Meteor.call("setSetting", token, "organizationEmail",
+        event.target.organizationEmail.value.toLowerCase(), handleErrorBound);
+      Meteor.call("setSetting", token, "organizationLdap",
+        event.target.organizationLdap.checked, handleErrorBound);
     }
 
     return false;
@@ -234,6 +240,50 @@ Template.adminSettings.helpers({
     } else {
       return false;
     }
+  },
+
+  organizationGoogle: function () {
+    const val = globalDb.getOrganizationGoogle();
+    if (!val && val !== "") {
+      // Setting has never been set before. Show a reasonable default
+      const user = Meteor.user();
+      const identityIds = SandstormDb.getUserIdentityIds(user);
+
+      for (let i = 0; i < identityIds.length; i++) {
+        const identity = Meteor.users.findOne({ _id: identityIds[i] });
+        if (identity && identity.services.google && identity.services.google.hd) {
+          return identity.services.google.hd;
+        }
+      }
+
+      return "";
+    }
+
+    return val;
+  },
+
+  organizationEmail: function () {
+    const val = globalDb.getOrganizationEmail();
+    if (!val && val !== "") {
+      // Setting has never been set before. Show a reasonable default
+      const user = Meteor.user();
+      const identityIds = SandstormDb.getUserIdentityIds(user);
+
+      for (let i = 0; i < identityIds.length; i++) {
+        const identity = Meteor.users.findOne({ _id: identityIds[i] });
+        if (identity && identity.services.email) {
+          return identity.services.email.email.split("@")[1];
+        }
+      }
+
+      return "";
+    }
+
+    return val;
+  },
+
+  organizationLdap: function () {
+    return globalDb.getOrganizationLdap();
   },
 
   ldapEnabled: function () {

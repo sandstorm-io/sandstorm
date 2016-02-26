@@ -86,15 +86,6 @@ if (Meteor.isClient) {
       Router.go("root");
     });
   };
-
-  Accounts.onLogin(() => {
-    const openGrains = globalGrains.get();
-    openGrains.forEach(function (grain) {
-      grain.destroy();
-    });
-
-    globalGrains.set([]);
-  });
 }
 
 if (Meteor.isServer) {

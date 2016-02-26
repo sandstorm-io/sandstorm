@@ -76,6 +76,7 @@ IMAGES= \
     shell/public/apps-m.svg \
     shell/public/appmarket-m.svg \
     shell/public/bug-m.svg \
+    shell/public/clipboard-m.svg \
     shell/public/close-m.svg \
     shell/public/copy-m.svg \
     shell/public/down-m.svg \

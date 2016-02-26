@@ -21,13 +21,6 @@ shell/public/spinner_96.gif
     License: MIT
     License URL: https://github.com/sjhcockrell/spinners/blob/master/README.md
 
-shell/public/clippy.svg
-    What: Clipboard icon from Octicons
-    Copyright: Github
-    Source URL: https://octicons.github.com/
-    License: SIL Open Font License, Version 1.1
-    License URL: https://github.com/github/octicons/blob/master/LICENSE.txt
-
 shell/public/clipboard.js
     What: clipboard.js
     Copyright: Zeno Rocha

@@ -528,7 +528,7 @@ limitations under the License.
 <template name="emailInviteTab">
   <form class="email-invite">
     <p>
-    <img class="inline-icon" src="/people-m.svg" role="presentation">
+    <span class="icon icon-people"></span>
     {{> contactInputBox contacts=contacts preselectedIdentityId=preselectedIdentityId}}
     {{> selectRole viewInfo=viewInfo}}
     </p>
@@ -560,7 +560,7 @@ limitations under the License.
 <template name="shareableLinkTab">
   <form class="new-share-token">
     <p>
-      <img class="inline-icon" src="/people-m.svg" role="presentation">
+      <span class="icon icon-people"></span>
       Anyone with this link{{#if viewInfo.roles}}:{{else}} can access the grain.{{/if}}
       {{> selectRole viewInfo=viewInfo}}
     </p>
@@ -575,7 +575,7 @@ limitations under the License.
   </form>
   {{#with completionState}}
     {{#if success}}
-      <p><img class="inline-icon" src="/copy-m.svg" role="presentation"> Copy this link:</p>
+      <p><span class="icon icon-copy"></span> Copy this link:</p>
       <a id="share-token-text" class="copy-me" href="{{success.url}}">{{success.url}}</a>
       <p><button class="reset-share-token">+ Create another link</button></p>
     {{/if}}
@@ -612,7 +612,7 @@ limitations under the License.
   </div>
 
   <div class="footer">
-    <img class="inline-icon" src="/people-m.svg">
+    <span class="icon icon-people"></span>
     <button class="who-has-access">See who has access</button>
   </div>
   {{/if}}

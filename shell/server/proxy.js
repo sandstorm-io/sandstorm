@@ -1316,7 +1316,7 @@ class Proxy {
                       .then((session) => {
                         return session.session;
                       }, (err) => {
-                        return _this._callNewWebSession(request, userInfo);
+                        return this._callNewWebSession(request, userInfo);
                       }
     );
   };

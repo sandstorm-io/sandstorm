@@ -822,9 +822,10 @@ makeWildcardHost = function (id) {
 
 const isApiHostId = function (hostId) {
   if (hostId) {
-    var split = hostId.split("-");
+    const split = hostId.split("-");
     if (split[0] === "api") return split[1];
   }
+
   return false;
 };
 
@@ -858,7 +859,7 @@ if (Meteor.isServer) {
 
 const apiHostIdForToken = function (token) {
   return "api-" + apiHostIdHashForToken(token);
-}
+};
 
 const makeApiHost = function (token) {
   return makeWildcardHost(apiHostIdForToken(token));
@@ -981,12 +982,13 @@ if (Meteor.isServer) {
     this.collections.apiTokens.find(query).forEach(function (token) {
       // Clean up ApiHosts for webkey tokens.
       if (token.hasApiHost) {
-        var hash2 = Crypto.createHash("sha256").update(token._id).digest("base64");
-        ApiHosts.remove({hash2: hash2});
+        const hash2 = Crypto.createHash("sha256").update(token._id).digest("base64");
+        ApiHosts.remove({ hash2: hash2 });
       }
     });
+
     this.collections.apiTokens.remove(query);
-  }
+  };
 }
 
 // =======================================================================================

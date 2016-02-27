@@ -1040,7 +1040,7 @@ tryProxyRequest = (hostId, req, res) => {
   // should consider other host types, like static web publishing), or throws an error if the
   // request is definitely invalid.
 
-  var hostIdHash = globalDb.isApiHostId(hostId);
+  const hostIdHash = globalDb.isApiHostId(hostId);
   if (hostIdHash) {
     // This is a request for the API host.
 
@@ -1136,7 +1136,7 @@ tryProxyRequest = (hostId, req, res) => {
             if (resource.language) res.setHeader("Content-Language", resource.language);
             if (resource.encoding) res.setHeader("Content-Encoding", resource.encoding);
             res.writeHead(200, {
-              "Content-Type": resource.type
+              "Content-Type": resource.type,
             });
             res.end(resource.body);
           } else {
@@ -1801,6 +1801,7 @@ class Proxy {
               }
             });
           }
+
           if (dav.length > 0) response.setHeader('DAV', dav.join(', '));
           response.end();
           // Return no response; we already handled everything.

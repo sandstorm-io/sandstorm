@@ -216,10 +216,17 @@ function serveSelfTest(req, res) {
     if (req.method === "GET" &&
         req.url === "/") {
       const content = new Buffer("Self-test OK.");
+
+      // Convert the ROOT_URL to something that is a valid origin.
+      let rootUrlAsOrigin = process.env.ROOT_URL;
+      if (rootUrlAsOrigin.slice(-1) === "/") {
+        rootUrlAsOrigin = rootUrlAsOrigin.slice(0, -1);
+      }
+
       res.writeHead(200, {
         "Content-Type": "text/plain",
         "Content-Length": content.length,
-        "Access-Control-Allow-Origin": process.env.ROOT_URL,
+        "Access-Control-Allow-Origin": rootUrlAsOrigin,
       });
       res.end(content);
     } else {

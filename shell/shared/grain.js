@@ -501,7 +501,10 @@ Meteor.methods({
       let fromEmail = globalDb.getServerTitle() + " <" + globalDb.getReturnAddress() + ">";
       const senderEmails = SandstormDb.getVerifiedEmails(identity);
       const senderPrimaryEmail = _.findWhere(senderEmails, { primary: true });
-      if (senderPrimaryEmail) {
+      const accountPrimaryEmailAddress = Meteor.user().primaryEmail;
+      if (_.findWhere(senderEmails, { email: accountPrimaryEmailAddress })) {
+        fromEmail = accountPrimaryEmailAddress;
+      } else if (senderPrimaryEmail) {
         fromEmail = senderPrimaryEmail.email;
       }
 

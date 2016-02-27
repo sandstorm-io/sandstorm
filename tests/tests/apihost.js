@@ -30,6 +30,7 @@ module.exports = {
 module.exports['Install and launch test app'] = function (browser) {
   browser
     .init()
+    // Test app code: https://github.com/kentonv/apihost-testapp
     .installApp("https://alpha-qkhxczi7kki1x49pfakw.sandstorm.io/apihost-testapp.spk", "e148b304d9642e8c98ef8ea2df2f72ca", "w304h9n5rjx1pzfa8e4guheue5mq3dkwv63aajy1rscupw6e38mh")
     .assert.containsText('#grainTitle', 'Untitled ApiHost test app instance')
     .frame('grain-frame')
@@ -56,7 +57,7 @@ module.exports['Test renderTemplate with static host info'] = function (browser)
           this.assert.equal(result.status, 0);
           var renderedTemplate = result.value;
           var endpoint = renderedTemplate.split("#")[0];
-          
+
           // Inject some JS into the browser that does an XHR and returns the body.
           this
             .timeouts("script", 5000)
@@ -86,6 +87,35 @@ module.exports['Test renderTemplate with static host info'] = function (browser)
             this.assert.equal(typeof result.value, "object")
             this.assert.equal(result.value.type, "text/plain");
             this.assert.equal(result.value.content, "test static resource");
+          });
+
+          // Also test an OPTIONS request.
+          this
+            .timeouts("script", 5000)
+            .executeAsync(function(endpoint, done) {
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function () {
+              if (xhr.readyState == 4) {
+                if (xhr.status === 200) {
+                  console.log("ok!")
+                  console.log(xhr.responseText);
+                  done({
+                    dav: xhr.getResponseHeader("DAV")
+                  });
+                } else {
+                  console.log("failed");
+                  done(null);
+                }
+              }
+            };
+            xhr.open("OPTIONS", endpoint, true);
+            xhr.send();
+          }, [endpoint], function (result) {
+            this.assert.equal(typeof result, "object");
+            console.log(result);
+            this.assert.equal(result.status, 0);
+            this.assert.equal(typeof result.value, "object")
+            this.assert.equal(result.value.dav, "1, calendar-access");
           });
         })
       .frameParent()

@@ -1123,6 +1123,7 @@ tryProxyRequest = (hostId, req, res) => {
           const dav = ((apiHost || {}).options || {}).dav || [];
           if (dav.length > 0) {
             res.setHeader("DAV", dav.join(", "));
+            res.setHeader("Access-Control-Expose-Headers", "DAV");
           }
 
           res.writeHead(200, {});
@@ -1802,7 +1803,11 @@ class Proxy {
             });
           }
 
-          if (dav.length > 0) response.setHeader('DAV', dav.join(', '));
+          if (dav.length > 0) {
+            response.setHeader("DAV", dav.join(", "));
+            response.setHeader("Access-Control-Expose-Headers", "DAV");
+          }
+
           response.end();
           // Return no response; we already handled everything.
         }, (err) => {

@@ -422,13 +422,13 @@ Meteor.methods({
           const url = origin + "/shared/" + result.token;
           try {
             const identity = Meteor.users.findOne({ _id: contact._id });
-            const emailAddress = _.findWhere(SandstormDb.getVerifiedEmails(identity),
-                                             { primary: true }).email;
-            if (emailAddress) {
+            const email = _.findWhere(SandstormDb.getVerifiedEmails(identity),
+                                      { primary: true });
+            if (email) {
               const intrinsicName = contact.profile.intrinsicName;
               let loginNote;
               if (contact.profile.service === "google") {
-                loginNote = "Google account with address " + emailAddress;
+                loginNote = "Google account with address " + email.email;
               } else if (contact.profile.service === "github") {
                 loginNote = "Github account with username " + intrinsicName;
               } else if (contact.profile.service === "email") {
@@ -443,7 +443,7 @@ Meteor.methods({
                   "Note: You will need to log in with your " + loginNote +
                   " to access this grain.";
               SandstormEmail.send({
-                to: emailAddress,
+                to: email.email,
                 from: "Sandstorm server <no-reply@" + HOSTNAME + ">",
                 subject: sharerDisplayName + " has invited you to join a grain: " + title,
                 text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
@@ -500,13 +500,9 @@ Meteor.methods({
       const envelopeFrom = globalDb.getReturnAddress();
       let fromEmail = globalDb.getServerTitle() + " <" + globalDb.getReturnAddress() + ">";
       const senderEmails = SandstormDb.getVerifiedEmails(identity);
-      if (senderEmails.length > 0) {
-        const primaryEmail = Meteor.user().primaryEmail;
-        if (_.findWhere(senderEmails, { email: primaryEmail })) {
-          fromEmail = primaryEmail;
-        } else {
-          fromEmail = _.findWhere(senderEmails, { primary: true }).email;
-        }
+      const senderPrimaryEmail = _.findWhere(senderEmails, { primary: true });
+      if (senderPrimaryEmail) {
+        fromEmail = senderPrimaryEmail.email;
       }
 
       // TODO(soon): In the HTML version, we should display an identity card.

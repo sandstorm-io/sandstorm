@@ -222,6 +222,7 @@ function serveSelfTest(req, res) {
       if (rootUrlAsOrigin.slice(-1) === "/") {
         rootUrlAsOrigin = rootUrlAsOrigin.slice(0, -1);
       }
+
       res.writeHead(200, {
         "Content-Type": "text/plain",
         "Content-Length": content.length,

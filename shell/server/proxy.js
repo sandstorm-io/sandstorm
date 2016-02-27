@@ -1794,6 +1794,13 @@ class Proxy {
           if (options.davClass1) dav.push('1');
           if (options.davClass2) dav.push('2');
           if (options.davClass3) dav.push('3');
+          if (options.davExtensions) {
+            options.davExtensions.forEach((token) => {
+              if (token.match(/^([a-zA-Z0-9!#$%&'*+.^_`|~-]+|<[\x21-\x7E]*>)$/)) {
+                dav.push(token);
+              }
+            });
+          }
           if (dav.length > 0) response.setHeader('DAV', dav.join(', '));
           response.end();
           // Return no response; we already handled everything.

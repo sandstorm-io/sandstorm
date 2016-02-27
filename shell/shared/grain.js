@@ -149,31 +149,33 @@ if (Meteor.isServer) {
     return;
   });
 
-  Meteor.publish("requestingAccess", function (grainId, identityId) {
+  Meteor.publish("requestingAccess", function (grainId) {
     check(grainId, String);
-    check(identityId, String);
 
     if (!this.userId) {
       throw new Meteor.Error(403, "Must be logged in to request access.");
     }
 
-    if (!globalDb.userHasIdentity(this.userId, identityId)) {
-      throw new Meteor.Error(403, "Not an identity of the current user: " + identityId);
-    }
+    const identityIds = SandstormDb.getUserIdentityIds(Meteor.users.findOne({ _id: this.userId }));
 
     const grain = globalDb.getGrain(grainId);
     if (!grain) {
       throw new Meteor.Error(404, "Grain not found.");
     }
 
+    if (grain.userId === this.userId) {
+      this.added("grantedAccessRequests",
+                 Random.id(), { grainId: grainId, identityId: grain.identityId });
+    }
+
     const _this = this;
     const query = ApiTokens.find({ grainId: grainId, accountId: grain.userId,
-                                  "owner.user.identityId": identityId,
+                                   "owner.user.identityId": { $in: identityIds },
                                   revoked: { $ne: true }, });
     const handle = query.observe({
       added(apiToken) {
         _this.added("grantedAccessRequests",
-                    Random.id(), { grainId: grainId, identityId: identityId });
+                    Random.id(), { grainId: grainId, identityId: apiToken.owner.user.identityId });
       },
     });
 
@@ -417,16 +419,16 @@ Meteor.methods({
             globalDb, { identityId: identityId, accountId: accountId }, grainId,
             "direct invitation to " + contact.profile.intrinsicName,
             roleAssignment, { user: { identityId: contact._id, title: title } });
+          const url = origin + "/shared/" + result.token;
           try {
             const identity = Meteor.users.findOne({ _id: contact._id });
-            const emailAddress = _.findWhere(SandstormDb.getVerifiedEmails(identity),
-                                             { primary: true });
-            const url = origin + "/shared/" + result.token;
-            if (emailAddress) {
+            const email = _.findWhere(SandstormDb.getVerifiedEmails(identity),
+                                      { primary: true });
+            if (email) {
               const intrinsicName = contact.profile.intrinsicName;
               let loginNote;
               if (contact.profile.service === "google") {
-                loginNote = "Google account with address " + emailAddress;
+                loginNote = "Google account with address " + email.email;
               } else if (contact.profile.service === "github") {
                 loginNote = "Github account with username " + intrinsicName;
               } else if (contact.profile.service === "email") {
@@ -441,7 +443,7 @@ Meteor.methods({
                   "Note: You will need to log in with your " + loginNote +
                   " to access this grain.";
               SandstormEmail.send({
-                to: emailAddress,
+                to: email.email,
                 from: "Sandstorm server <no-reply@" + HOSTNAME + ">",
                 subject: sharerDisplayName + " has invited you to join a grain: " + title,
                 text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
@@ -498,13 +500,12 @@ Meteor.methods({
       const envelopeFrom = globalDb.getReturnAddress();
       let fromEmail = globalDb.getServerTitle() + " <" + globalDb.getReturnAddress() + ">";
       const senderEmails = SandstormDb.getVerifiedEmails(identity);
-      if (senderEmails.length > 0) {
-        const primaryEmail = Meteor.user().primaryEmail;
-        if (_.findWhere(senderEmails, { email: primaryEmail })) {
-          fromEmail = primaryEmail;
-        } else {
-          fromEmail = _.findWhere(senderEmails, { primary: true });
-        }
+      const senderPrimaryEmail = _.findWhere(senderEmails, { primary: true });
+      const accountPrimaryEmailAddress = Meteor.user().primaryEmail;
+      if (_.findWhere(senderEmails, { email: accountPrimaryEmailAddress })) {
+        fromEmail = accountPrimaryEmailAddress;
+      } else if (senderPrimaryEmail) {
+        fromEmail = senderPrimaryEmail.email;
       }
 
       // TODO(soon): In the HTML version, we should display an identity card.
@@ -1012,6 +1013,16 @@ if (Meteor.isClient) {
   Template.requestAccess.onCreated(function () {
     this._status = new ReactiveVar({ showButton: true });
     this._grain = getActiveGrain(globalGrains.get());
+
+    this.autorun(() => {
+      Meteor.userId(); // Read this value so that we resubscribe on login.
+      this.subscribe("requestingAccess", this._grain.grainId());
+      const granted = GrantedAccessRequests.findOne({ grainId: this._grain.grainId() });
+      if (granted) {
+        this._grain.reset(granted.identityId);
+        this._grain.openSession();
+      }
+    });
   });
 
   Template.requestAccess.events({
@@ -1044,15 +1055,6 @@ if (Meteor.isClient) {
             instance._status.set({ error: error });
           } else {
             instance._status.set({ success: true });
-            instance.subscribe("requestingAccess", grainId, identityId);
-            instance.autorun(() => {
-              const granted = GrantedAccessRequests.findOne({ grainId: grainId,
-                                                              identityId: identityId, });
-              if (granted) {
-                instance._grain.reset(granted.identityId);
-                instance._grain.openSession();
-              }
-            });
           }
         });
 
@@ -2009,10 +2011,9 @@ Router.map(function () {
     },
 
     onBeforeAction: function () {
-      // Only rerun the hook if we've logged in as a different user.
-      const userId = Meteor.userId() || "NotSignedIn";
-      if (this.state.get("beforeActionHookRanForUser") === userId) return this.next();
-      this.state.set("beforeActionHookRanForUser", userId);
+      // Only run the hook once.
+      if (this.state.get("beforeActionHookRan")) return this.next();
+      this.state.set("beforeActionHookRan", true);
       const grainId = this.params.grainId;
       let initialPopup = null;
       let shareGrain = Session.get("share-grain-" + grainId);
@@ -2081,9 +2082,8 @@ Router.map(function () {
       // Run this hook only once. We could accomplish the same thing by using the `onRun()` hook
       // and waiting for `this.ready()`, but for some reason that fails in the case when a user
       // logs in while visiting a /shared/ link.
-      const userId = Meteor.userId() || "NotSignedIn";
-      if (this.state.get("beforeActionHookRanForUser") === userId) return this.next();
-      this.state.set("beforeActionHookRanForUser", userId);
+      if (this.state.get("beforeActionHookRan")) return this.next();
+      this.state.set("beforeActionHookRan", true);
 
       const token = this.params.token;
       const path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");

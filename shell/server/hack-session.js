@@ -241,8 +241,8 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
 
     const identity = globalDb.getIdentity(grain.identityId);
 
-    const emails = SandstormDb.getVerifiedEmails(identity);
-    const email = _.findWhere(emails, { primary: true }) || identity.unverifiedEmail;
+    const primaryEmail = _.findWhere(SandstormDb.getVerifiedEmails(identity), { primary: true });
+    const email = (primaryEmail && primaryEmail.email) || identity.unverifiedEmail;
 
     const result = {};
     if (email) {

@@ -218,10 +218,17 @@ module.exports["Sign in at grain URL"] = function (browser) {
                     .waitForElementVisible("#grainTitle", medium_wait)
                     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
                     .execute(function (name) { window.loginDevAccount(name) }, [otherName])
-                    .waitForElementVisible("button.pick-identity", medium_wait)
-                    .click("button.pick-identity")
-                    .waitForElementVisible("#grain-frame", medium_wait)
+
+                    // It's unclear whether there should be an identity chooser here.
+                    // See https://github.com/sandstorm-io/sandstorm/issues/1076
+                    // .waitForElementVisible("button.pick-identity", medium_wait)
+                    // .click("button.pick-identity")
+
+                    .waitForElementNotPresent(".request-access", medium_wait)
+                    // The forget grain button only appears once we've logged in.
+                    .waitForElementVisible("#deleteGrain", medium_wait)
                     .waitForElementVisible("#grainTitle", medium_wait)
+                    .waitForElementVisible("#grain-frame", medium_wait)
                     .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
                     .frame("grain-frame")
                     .waitForElementPresent("#publish", medium_wait)

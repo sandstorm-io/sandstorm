@@ -1730,9 +1730,14 @@ if (Meteor.isClient) {
         check(call, Object);
         const rpcId = call.rpcId;
         try {
-          check(call, { rpcId: String, template: String, petname: Match.Optional(String),
-                       roleAssignment: Match.Optional(roleAssignmentPattern),
-                       forSharing: Match.Optional(Boolean), });
+          check(call, {
+            rpcId: String,
+            template: String,
+            petname: Match.Optional(String),
+            roleAssignment: Match.Optional(roleAssignmentPattern),
+            forSharing: Match.Optional(Boolean),
+            clipboardButton: Match.Optional(Match.OneOf(undefined, null, "left", "right")),
+          });
         } catch (error) {
           event.source.postMessage({ rpcId: rpcId, error: error.toString() }, event.origin);
           return;
@@ -1745,6 +1750,7 @@ if (Meteor.isClient) {
         }
 
         let assignment = { allAccess: null };
+        const clipboardButton = call.clipboardButton;
         if (call.roleAssignment) {
           assignment = call.roleAssignment;
         }
@@ -1806,6 +1812,7 @@ if (Meteor.isClient) {
           sessionStorage.setItem(key, JSON.stringify({
               token: tokenId,
               renderedTemplate: renderedTemplate,
+              clipboardButton: clipboardButton,
               expires: Date.now() + selfDestructDuration,
               host,
             })

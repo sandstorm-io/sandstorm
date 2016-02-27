@@ -21,6 +21,14 @@ shell/public/spinner_96.gif
     License: MIT
     License URL: https://github.com/sjhcockrell/spinners/blob/master/README.md
 
+shell/public/clipboard.js
+    What: clipboard.js
+    Copyright: Zeno Rocha
+    Source URL: https://github.com/zenorocha/clipboard.js/
+    License: MIT
+    License URL: https://github.com/zenorocha/clipboard.js/blob/master/readme.md
+                 (at bottom)
+
 shell/public/fonts/WOFF/OTF/SourceSansPro-Regular.otf.woff
 shell/public/fonts/WOFF/OTF/SourceSansPro-It.otf.woff
 shell/public/fonts/WOFF/OTF/SourceSansPro-Semibold.otf.woff

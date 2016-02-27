@@ -10,19 +10,91 @@ body {
   border-spacing: 0;
   border: 0;
 }
-pre {
+#text {
   margin: 0;
   padding: 0;
+}
+#clipboard {
+  display: none;
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: #FFFFFF url(clipboard-m.svg) 50% 50% no-repeat;
+  cursor: pointer;
+  border: 0;
+}
+#clipboard:focus {
+  outline: 0;
+}
+#clipboardSuccess {
+  display: none;
+  position: absolute;
+  top: 0;
+  font-family: monospace;
+  background-color: #000;
+  color: #FFF;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.clipboardLeft #clipboard {
+  display: block;
+  top: 0;
+  left: 0;
+}
+.clipboardLeft #container {
+  overflow: auto;
+  margin-left: 20px;
+}
+.clipboardLeft #clipboardSuccess {
+  left: 20px;
+}
+.clipboardRight #clipboard {
+  display: block;
+  top: 0;
+  right: 0;
+}
+.clipboardRight #container {
+  overflow: auto;
+  margin-right: 20px;
+}
+.clipboardRight #clipboardSuccess {
+  right: 20px;
 }
     </style>
   </head>
   <body>
-    <pre id="text"></pre>
+    <div id="container">
+      <pre id="text"></pre>
+    </div>
+    <button id="clipboard" aria-label="Copy" data-clipboard-target="#text"></button>
+    <div id="clipboardSuccess">copied</div>
+
+<script src="clipboard.js"></script>
 <script>
 // Templates are namespaced in sessionStorage by the prefix "offerTemplate"
 var templateToken = "offerTemplate" + window.location.hash.substring(1);
 var record = JSON.parse(sessionStorage.getItem(templateToken));
+
 document.getElementById("text").textContent = record.renderedTemplate;
+
+if(record.clipboardButton && record.clipboardButton !== "none") {
+  if(record.clipboardButton === "left") {
+    document.body.className = document.body.className + " clipboardLeft";
+  }
+  if(record.clipboardButton === "right") {
+    document.body.className = document.body.className + " clipboardRight";
+  }
+
+  var clipboard = new Clipboard("#clipboard");
+  clipboard.on('success', function() {
+    var success = document.getElementById("clipboardSuccess");
+    success.style.display = 'block';
+    setTimeout(function() {
+      success.style.display = 'none';
+    }, 1000);
+  });
+}
 
 // Clean up sessionStorage templates that have expired.
 // First, collect expired template keys

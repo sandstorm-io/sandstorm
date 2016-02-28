@@ -158,8 +158,8 @@ automatically refreshes the IFRAME every 5 minutes.
 * `rpcId`: **String** of a message ID that will be passed back to your
   code.
 
-* `template`: **String** to display to the user, where `$API_HOST`
-  and `$API_TOKEN` will be replaced.
+* `template`: **String** to display to the user, where `$API_HOST`,
+  `$API_TOKEN`, and `$GRAIN_TITLE_SLUG` will be replaced.
 
 * `petname`: **String (optional)** of a name that this API token will
   have, when the user lists the API tokens and sharing links they have

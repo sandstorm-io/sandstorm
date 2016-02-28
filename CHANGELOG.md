@@ -1,3 +1,6 @@
+### v0.148 (2016-02-27) [bugfixes]
+- Fix new offer template unauthenticated host properties feature to support mapping resource paths containing periods. This was failing because periods are not permitted in Mongo keys.
+
 ### v0.147 (2016-02-27)
 - Offer templates can now define some static properties of the API host to be served statically in response to unauthenticated requests, such as the DAV header for OPTIONS requests as well as simple resources. This should allow DAV apps like Davros and Radicale to fix incompatibilities with certain client apps.
 - Offer templates can now include a clipboard button which copies the text to the clipboard.

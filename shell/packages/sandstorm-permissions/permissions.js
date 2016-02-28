@@ -434,7 +434,7 @@ var ResourceMap = Match.Where(function (map) {
 });
 
 SandstormPermissions.createNewApiToken = function (db, provider, grainId, petname,
-                                                   roleAssignment, owner, static) {
+                                                   roleAssignment, owner, unauthenticated) {
   // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
   check(grainId, String);
   check(petname, String);
@@ -450,13 +450,13 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
                            {grain: {grainId: String,
                                     saveLabel: Match.ObjectIncluding({defaultText: String}),
                                     introducerIdentity: String,}}));
-  check(static, Match.OneOf(undefined, null, {
+  check(unauthenticated, Match.OneOf(undefined, null, {
     options: Match.Optional({ dav: [Match.Optional(DavClass)] }),
     resources: Match.Optional(ResourceMap),
   }));
 
-  if (static && JSON.stringify(static).length > 4096) {
-    throw new Meteor.Error(400, "Static params too large; limit 4kb.");
+  if (unauthenticated && JSON.stringify(unauthenticated).length > 4096) {
+    throw new Meteor.Error(400, "Unauthenticated params too large; limit 4kb.");
   }
 
   var grain = db.getGrain(grainId);
@@ -521,10 +521,10 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
     };
   }
 
-  if (static) {
-    static._id = db.apiHostIdHashForToken(token);
-    static.hash2 = Crypto.createHash("sha256").update(apiToken._id).digest("base64");
-    db.collections.apiHosts.insert(static);
+  if (unauthenticated) {
+    unauthenticated._id = db.apiHostIdHashForToken(token);
+    unauthenticated.hash2 = Crypto.createHash("sha256").update(apiToken._id).digest("base64");
+    db.collections.apiHosts.insert(unauthenticated);
     apiToken.hasApiHost = true;
   }
 
@@ -553,7 +553,7 @@ Meteor.methods({
     }
   },
 
-  newApiToken: function (provider, grainId, petname, roleAssignment, owner, static) {
+  newApiToken: function (provider, grainId, petname, roleAssignment, owner, unauthenticated) {
     check(provider, Match.OneOf({identityId: String}, {rawParentToken: String}));
     // other check()s happen in SandstormPermissions.createNewApiToken().
     var db = this.connection.sandstormDb;
@@ -566,7 +566,8 @@ Meteor.methods({
       provider.accountId = this.userId;
     }
     return SandstormPermissions.createNewApiToken(
-      this.connection.sandstormDb, provider, grainId, petname, roleAssignment, owner, static);
+      this.connection.sandstormDb, provider, grainId, petname, roleAssignment, owner,
+      unauthenticated);
   },
 
   updateApiToken: function (token, newFields) {

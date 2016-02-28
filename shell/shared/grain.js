@@ -1739,8 +1739,9 @@ if (Meteor.isClient) {
             roleAssignment: Match.Optional(roleAssignmentPattern),
             forSharing: Match.Optional(Boolean),
             clipboardButton: Match.Optional(Match.OneOf(undefined, null, "left", "right")),
-            static: Match.Optional(Object),
-            // Note: `static` will be validated on the server. We just pass it through here.
+            unauthenticated: Match.Optional(Object),
+            // Note: `unauthenticated` will be validated on the server. We just pass it through
+            //   here.
           });
         } catch (error) {
           event.source.postMessage({ rpcId: rpcId, error: error.toString() }, event.origin);
@@ -1777,7 +1778,9 @@ if (Meteor.isClient) {
           },
         };
 
-        const params = [provider, senderGrain.grainId(), petname, assignment, owner, call.static];
+        const params = [
+          provider, senderGrain.grainId(), petname, assignment, owner, call.unauthenticated
+        ];
 
         const memoizeKey = SHA256(JSON.stringify(params));
         let memoizeResult = memoizedNewApiToken[memoizeKey];

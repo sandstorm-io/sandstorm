@@ -1137,7 +1137,6 @@ const startUpload = function (file, endpoint, onComplete) {
 
   xhr.onreadystatechange = function () {
     if (xhr.readyState == 4) {
-      console.log(xhr.status);
       if (xhr.status == 200) {
         Session.set("uploadProgress", 0);
         onComplete(xhr.responseText);

@@ -31,7 +31,7 @@ module.exports['Install and launch test app'] = function (browser) {
   browser
     .init()
     // Test app code: https://github.com/kentonv/apihost-testapp
-    .installApp("https://alpha-qkhxczi7kki1x49pfakw.sandstorm.io/apihost-testapp.spk", "e148b304d9642e8c98ef8ea2df2f72ca", "w304h9n5rjx1pzfa8e4guheue5mq3dkwv63aajy1rscupw6e38mh")
+    .installApp("https://alpha-qkhxczi7kki1x49pfakw.sandstorm.io/apihost-testapp.spk", "279b88c2fb56de4174fe3214866ea70a", "w304h9n5rjx1pzfa8e4guheue5mq3dkwv63aajy1rscupw6e38mh")
     .assert.containsText('#grainTitle', 'Untitled ApiHost test app instance')
     .frame('grain-frame')
       .waitForElementPresent('iframe', medium_wait)

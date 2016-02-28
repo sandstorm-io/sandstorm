@@ -825,7 +825,7 @@ makeWildcardHost = function (id) {
 const isApiHostId = function (hostId) {
   if (hostId) {
     const split = hostId.split("-");
-    if (split[0] === "api") return split[1];
+    if (split[0] === "api") return split[1] || "*";
   }
 
   return false;

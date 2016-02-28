@@ -1,3 +1,14 @@
+### v0.147 (2016-02-27)
+- Offer templates can now define some static properties of the API host to be served statically in response to unauthenticated requests, such as the DAV header for OPTIONS requests as well as simple resources. This should allow DAV apps like Davros and Radicale to fix incompatibilities with certain client apps.
+- Offer templates can now include a clipboard button which copies the text to the clipboard.
+- Sharing emails to/from Github identities will now use the Github account's primary email address, rather than the first-listed address.
+- Setting BIND_IP to an ipv6 address should now work.
+- Improved styling of "shrink sidebar" button.
+- Fixed that if you visited a grain URL when not logged in, saw the "request access" screen, then logged in as an identity that already has access, the "request access" screen would continue to display until refresh.
+- Fixed that "request access" would display for non-existent grain IDs.
+- Fixed several icons displaying incorrectly on IE, especially in the sharing UI.
+- Fixed that the API endpoint URL in the (obscure) webkey dialog was showing up as `undefined`.
+
 ### v0.146 (2016-02-21)
 - If you open a grain URL to which you do not have access -- presumably becaues the owner forgot to share it with you, and thought that just copy/pasting the URL would work -- you will now be presented with the ability to send an access request email.
 - Client apps accessing Sandstorm grains via HTTP APIs no longer need to be whitelisted for use of HTTP Basic Auth. As part of this, Sandstorm now allocates a new random hostname for every API key. This change was made so that an upcoming CalDAV apps can be used with any standard CalDAV client. We still prefer new apps use bearer token authorization rather than basic auth.

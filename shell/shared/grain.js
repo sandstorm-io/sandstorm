@@ -265,7 +265,7 @@ Meteor.methods({
       const grain = Grains.findOne({ _id: grainId, userId: this.userId });
       if (grain) {
         Grains.remove(grainId);
-        ApiTokens.remove({
+        globalDb.removeApiTokens({
           grainId: grainId,
           $or: [
             { owner: { $exists: false } },
@@ -297,7 +297,7 @@ Meteor.methods({
     }
 
     SandstormDb.getUserIdentityIds(Meteor.user()).forEach(function (identityId) {
-      ApiTokens.remove({ grainId: grainId, "owner.user.identityId": identityId });
+      globalDb.removeApiTokens({ grainId: grainId, "owner.user.identityId": identityId });
     });
   },
 
@@ -1739,6 +1739,8 @@ if (Meteor.isClient) {
             roleAssignment: Match.Optional(roleAssignmentPattern),
             forSharing: Match.Optional(Boolean),
             clipboardButton: Match.Optional(Match.OneOf(undefined, null, "left", "right")),
+            static: Match.Optional(Object),
+            // Note: `static` will be validated on the server. We just pass it through here.
           });
         } catch (error) {
           event.source.postMessage({ rpcId: rpcId, error: error.toString() }, event.origin);
@@ -1775,7 +1777,7 @@ if (Meteor.isClient) {
           },
         };
 
-        const params = [provider, senderGrain.grainId(), petname, assignment, owner];
+        const params = [provider, senderGrain.grainId(), petname, assignment, owner, call.static];
 
         const memoizeKey = SHA256(JSON.stringify(params));
         let memoizeResult = memoizedNewApiToken[memoizeKey];

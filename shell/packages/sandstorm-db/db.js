@@ -391,6 +391,8 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //              be considered revoked, and all live refs and sturdy refs obtained transitively
 //              through it must also become revoked. Each item is the JSON serialization of the
 //              `MembraneRequirement` structure defined in `supervisor.capnp`.
+//   hasApiHost: If true, there is an entry in ApiHosts for this token, which will need to be
+//              cleaned up when the token is.
 //
 // It is important to note that a token's owner and provider are independent from each other. To
 // illustrate, here is an approximate definition of ApiToken in pseudo Cap'n Proto schema language:
@@ -429,6 +431,29 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   requirements: List(Supervisor.MembraneRequirement);
 //   ...
 // }
+
+ApiHosts = new Mongo.Collection("apiHosts");
+// Allows defining some limited static behavior for an API host when accessed unauthenticated. This
+// mainly exists to allow backwards-compatibility with client applications that expect to be able
+// to probe an API host without authentication to determine capabilities such as DAV protocols
+// supported, before authenticating to perform real requests. An app can specify these properties
+// when creating an offerTemplate.
+//
+// Each contains:
+//   _id:          apiHostIdHashForToken() of the corresponding API token.
+//   hash2:        hash(hash(token)), aka hash(ApiToken._id). Used to allow ApiHosts to be cleaned
+//                 up when ApiTokens are deleted.
+//   options:      Specifies how to respond to unauthenticated OPTIONS requests on this host.
+//                 This is an object containing fields:
+//     dav:        List of strings specifying DAV header `compliance-class`es, e.g. "1" or
+//                 "calendar-access". https://tools.ietf.org/html/rfc4918#section-10.1
+//   resources:    Object mapping URL paths (including initial '/') to static HTTP responses to
+//                 give when those paths are accessed unauthenticated. Each value in this map is an
+//                 object with fields:
+//     type:       Conent-Type.
+//     language:   Content-Language.
+//     encoding:   Content-Encoding.
+//     body:       Entity-body as a string or buffer.
 
 Notifications = new Mongo.Collection("notifications");
 // Notifications for a user.
@@ -796,36 +821,45 @@ makeWildcardHost = function (id) {
 };
 
 const isApiHostId = function (hostId) {
-  return hostId && hostId.split("-")[0] === "api";
+  if (hostId) {
+    const split = hostId.split("-");
+    if (split[0] === "api") return split[1];
+  }
+
+  return false;
 };
 
 const isTokenSpecificHostId = function (hostId) {
   return hostId.lastIndexOf("api-", 0) === 0;
 };
 
-let apiHostIdForToken;
+let apiHostIdHashForToken;
 if (Meteor.isServer) {
   const Crypto = Npm.require("crypto");
-  apiHostIdForToken = function (token) {
+  apiHostIdHashForToken = function (token) {
     // Given an API token, compute the host ID that must be used when requesting this token.
 
     // We add a leading 'x' to the hash so that knowing the hostname alone is not sufficient to
     // find the corresponding API token in the ApiTokens table (whose _id values are also hashes
     // of tokens). This doesn't technically add any security, but helps prove that we don't have
     // any bugs which would allow someone who knows only the hostname to access the app API.
-    return "api-" + Crypto.createHash("sha256").update("x" + token).digest("hex").slice(0, 32);
+    return Crypto.createHash("sha256").update("x" + token).digest("hex").slice(0, 32);
   };
 } else {
-  apiHostIdForToken = function (token) {
+  apiHostIdHashForToken = function (token) {
     // Given an API token, compute the host ID that must be used when requesting this token.
 
     // We add a leading 'x' to the hash so that knowing the hostname alone is not sufficient to
     // find the corresponding API token in the ApiTokens table (whose _id values are also hashes
     // of tokens). This doesn't technically add any security, but helps prove that we don't have
     // any bugs which would allow someone who knows only the hostname to access the app API.
-    return "api-" + SHA256("x" + token).slice(0, 32);
+    return SHA256("x" + token).slice(0, 32);
   };
 }
+
+const apiHostIdForToken = function (token) {
+  return "api-" + apiHostIdHashForToken(token);
+};
 
 const makeApiHost = function (token) {
   return makeWildcardHost(apiHostIdForToken(token));
@@ -900,6 +934,7 @@ SandstormDb = function () {
     deleteStats: DeleteStats,
     fileTokens: FileTokens,
     apiTokens: ApiTokens,
+    apiHosts: ApiHosts,
     notifications: Notifications,
     statsTokens: StatsTokens,
     misc: Misc,
@@ -930,6 +965,7 @@ _.extend(SandstormDb.prototype, {
   makeWildcardHost: makeWildcardHost,
   isApiHostId: isApiHostId,
   isTokenSpecificHostId: isTokenSpecificHostId,
+  apiHostIdHashForToken: apiHostIdHashForToken,
   apiHostIdForToken: apiHostIdForToken,
   makeApiHost: makeApiHost,
   allowDevAccounts: allowDevAccounts,
@@ -938,6 +974,21 @@ _.extend(SandstormDb.prototype, {
 
 if (Meteor.isServer) {
   SandstormDb.prototype.getWildcardOrigin = getWildcardOrigin;
+
+  const Crypto = Npm.require("crypto");
+  SandstormDb.prototype.removeApiTokens = function (query) {
+    // Remove all API tokens matching the query, making sure to clean up ApiHosts as well.
+
+    this.collections.apiTokens.find(query).forEach(function (token) {
+      // Clean up ApiHosts for webkey tokens.
+      if (token.hasApiHost) {
+        const hash2 = Crypto.createHash("sha256").update(token._id).digest("base64");
+        ApiHosts.remove({ hash2: hash2 });
+      }
+    });
+
+    this.collections.apiTokens.remove(query);
+  };
 }
 
 // =======================================================================================

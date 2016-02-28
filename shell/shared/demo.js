@@ -57,7 +57,7 @@ if (Meteor.isServer) {
       Grains.find({ userId: user._id }, { fields: { _id: 1, lastUsed: 1, appId: 1 } })
             .forEach(function (grain) {
         console.log("delete grain: " + grain._id);
-        ApiTokens.remove({ grainId: grain._id });
+        globalDb.removeApiTokens({ grainId: grain._id });
         Grains.remove(grain._id);
         if (grain.lastUsed) {
           DeleteStats.insert({ type: "demoGrain", lastActive: grain.lastUsed, appId: grain.appId });

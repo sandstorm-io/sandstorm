@@ -1040,7 +1040,8 @@ tryProxyRequest = (hostId, req, res) => {
   // should consider other host types, like static web publishing), or throws an error if the
   // request is definitely invalid.
 
-  if (globalDb.isApiHostId(hostId)) {
+  const hostIdHash = globalDb.isApiHostId(hostId);
+  if (hostIdHash) {
     // This is a request for the API host.
 
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -1111,25 +1112,52 @@ tryProxyRequest = (hostId, req, res) => {
       getProxyForApiToken(token, req).then((proxy) => {
         proxy.requestHandler(req, res);
       }, errorHandler);
-    } else if (req.method === "OPTIONS") {
-      // OPTIONS request with no authorization token. Fine to end here.
-      res.writeHead(200, {});
-      res.end();
     } else {
-      if (apiUseBasicAuth(req, hostId)) {
-        res.writeHead(401, {
-          "Content-Type": "text/plain",
-          "WWW-Authenticate": "Basic realm='Sandstorm API'",
-        });
-      } else {
-        // TODO(someday): Display some sort of nifty API browser.
-        res.writeHead(403, { "Content-Type": "text/plain" });
-      }
+      // No token. Look up static API host info.
+      inMeteor(() => {
+        const apiHost = globalDb.collections.apiHosts.findOne(hostIdHash);
 
-      res.end("Missing or invalid authorization header.\n\n" +
-          "This address serves APIs, which allow external apps (such as a phone app) to\n" +
-          "access data on your Sandstorm server. This address is not meant to be opened\n" +
-          "in a regular browser.");
+        if (req.method === "OPTIONS") {
+          // OPTIONS request with no authorization token.
+
+          const dav = ((apiHost || {}).options || {}).dav || [];
+          if (dav.length > 0) {
+            res.setHeader("DAV", dav.join(", "));
+            res.setHeader("Access-Control-Expose-Headers", "DAV");
+          }
+
+          res.writeHead(200, {});
+          res.end();
+        } else {
+          const resources = (apiHost || {}).resources || {};
+          const path = req.url.split("?")[0];
+          if (path in resources) {
+            // Serve a static resource.
+            const resource = resources[path];
+            if (resource.language) res.setHeader("Content-Language", resource.language);
+            if (resource.encoding) res.setHeader("Content-Encoding", resource.encoding);
+            res.writeHead(200, {
+              "Content-Type": resource.type,
+            });
+            res.end(resource.body);
+          } else {
+            if (apiUseBasicAuth(req, hostId)) {
+              res.writeHead(401, {
+                "Content-Type": "text/plain",
+                "WWW-Authenticate": "Basic realm='Sandstorm API'",
+              });
+            } else {
+              // TODO(someday): Display some sort of nifty API browser.
+              res.writeHead(403, { "Content-Type": "text/plain" });
+            }
+
+            res.end("Missing or invalid authorization header.\n\n" +
+                "This address serves APIs, which allow external apps (such as a phone app) to\n" +
+                "access data on your Sandstorm server. This address is not meant to be opened\n" +
+                "in a regular browser.");
+          }
+        }
+      }).then(() => {}, errorHandler);
     }
 
     return Promise.resolve(true);
@@ -1316,7 +1344,7 @@ class Proxy {
                       .then((session) => {
                         return session.session;
                       }, (err) => {
-                        return _this._callNewWebSession(request, userInfo);
+                        return this._callNewWebSession(request, userInfo);
                       }
     );
   };
@@ -1767,7 +1795,19 @@ class Proxy {
           if (options.davClass1) dav.push('1');
           if (options.davClass2) dav.push('2');
           if (options.davClass3) dav.push('3');
-          if (dav.length > 0) response.setHeader('DAV', dav.join(', '));
+          if (options.davExtensions) {
+            options.davExtensions.forEach((token) => {
+              if (token.match(/^([a-zA-Z0-9!#$%&'*+.^_`|~-]+|<[\x21-\x7E]*>)$/)) {
+                dav.push(token);
+              }
+            });
+          }
+
+          if (dav.length > 0) {
+            response.setHeader("DAV", dav.join(", "));
+            response.setHeader("Access-Control-Expose-Headers", "DAV");
+          }
+
           response.end();
           // Return no response; we already handled everything.
         }, (err) => {

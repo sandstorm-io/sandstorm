@@ -429,7 +429,7 @@ function dropInternal(sturdyRef, ownerPattern) {
   if (token.frontendRef) {
     if (token.frontendRef.notificationHandle) {
       const notificationId = token.frontendRef.notificationHandle;
-      ApiTokens.remove({ _id: hashedSturdyRef });
+      globalDb.removeApiTokens({ _id: hashedSturdyRef });
       const anyToken = ApiTokens.findOne({ "frontendRef.notificationHandle": notificationId });
       if (!anyToken) {
         // No other tokens referencing this notification exist, so dismiss the notification

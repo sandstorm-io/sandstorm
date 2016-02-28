@@ -394,6 +394,7 @@ public:
         "Sandboxed app attempted to upgrade protocol when client did not request this.");
 
     KJ_IF_MAYBE(dav, findHeader("dav")) {
+      kj::Vector<kj::String> extensions;
       for (auto level: split(*dav, ',')) {
         auto trimmed = trim(level);
         if (trimmed == "1") {
@@ -402,6 +403,14 @@ public:
           builder.setDavClass2(true);
         } else if (trimmed == "3") {
           builder.setDavClass3(true);
+        } else {
+          extensions.add(kj::mv(trimmed));
+        }
+      }
+      if (extensions.size() > 0) {
+        auto list = builder.initDavExtensions(extensions.size());
+        for (auto i: kj::indices(extensions)) {
+          list.set(i, extensions[i]);
         }
       }
     }

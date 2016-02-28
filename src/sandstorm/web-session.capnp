@@ -454,6 +454,7 @@ interface WebSession @0xa50711a14d35a8ce extends(Grain.UiSession) {
     davClass1 @0 :Bool = false;
     davClass2 @1 :Bool = false;
     davClass3 @2 :Bool = false;
+    davExtensions @3 :List(Text);
   }
 
   enum PropfindDepth {

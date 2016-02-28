@@ -1,5 +1,5 @@
 ### v0.149 (2016-02-27) [bugfixes]
-- Fix non-token-specific API host, i.e. all API tokens cerated before 0.146.
+- Fix non-token-specific API host, i.e. all API tokens created before 0.146.
 
 ### v0.148 (2016-02-27) [bugfixes]
 - Fix new offer template unauthenticated host properties feature to support mapping resource paths containing periods. This was failing because periods are not permitted in Mongo keys.

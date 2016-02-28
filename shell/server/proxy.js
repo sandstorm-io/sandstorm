@@ -1130,10 +1130,11 @@ tryProxyRequest = (hostId, req, res) => {
           res.end();
         } else {
           const resources = (apiHost || {}).resources || {};
-          const path = req.url.split("?")[0];
+          const path = SandstormDb.escapeMongoKey(req.url.split("?")[0]);
           if (path in resources) {
             // Serve a static resource.
             const resource = resources[path];
+            console.log(path, resources, resource);
             if (resource.language) res.setHeader("Content-Language", resource.language);
             if (resource.encoding) res.setHeader("Content-Encoding", resource.encoding);
             res.writeHead(200, {

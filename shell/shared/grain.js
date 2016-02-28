@@ -1779,7 +1779,7 @@ if (Meteor.isClient) {
         };
 
         const params = [
-          provider, senderGrain.grainId(), petname, assignment, owner, call.unauthenticated
+          provider, senderGrain.grainId(), petname, assignment, owner, call.unauthenticated,
         ];
 
         const memoizeKey = SHA256(JSON.stringify(params));

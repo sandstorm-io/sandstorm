@@ -522,9 +522,22 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   }
 
   if (unauthenticated) {
-    unauthenticated._id = db.apiHostIdHashForToken(token);
-    unauthenticated.hash2 = Crypto.createHash("sha256").update(apiToken._id).digest("base64");
-    db.collections.apiHosts.insert(unauthenticated);
+    const apiHost = {
+      _id: db.apiHostIdHashForToken(token),
+      hash2: Crypto.createHash("sha256").update(apiToken._id).digest("base64"),
+    };
+    if (unauthenticated.options) {
+      apiHost.options = unauthenticated.options;
+    }
+    if (unauthenticated.resources) {
+      // Mongo requires keys in objects to be escaped. Ugh.
+      apiHost.resources = {};
+      for (var key in unauthenticated.resources) {
+        apiHost.resources[SandstormDb.escapeMongoKey(key)] = unauthenticated.resources[key];
+      }
+    }
+
+    db.collections.apiHosts.insert(apiHost);
     apiToken.hasApiHost = true;
   }
 

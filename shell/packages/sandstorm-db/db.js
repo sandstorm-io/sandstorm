@@ -448,9 +448,11 @@ ApiHosts = new Mongo.Collection("apiHosts");
 //     dav:        List of strings specifying DAV header `compliance-class`es, e.g. "1" or
 //                 "calendar-access". https://tools.ietf.org/html/rfc4918#section-10.1
 //   resources:    Object mapping URL paths (including initial '/') to static HTTP responses to
-//                 give when those paths are accessed unauthenticated. Each value in this map is an
-//                 object with fields:
-//     type:       Conent-Type.
+//                 give when those paths are accessed unauthenticated. Due to Mongo disliking '.'
+//                 and '$' in keys, these characters must be escaped as '\uFF0E' and '\uFF04'
+//                 (see SandstormDb.escapeMongoKey). Each value in this map is an object with
+//                 fields:
+//     type:       Content-Type.
 //     language:   Content-Language.
 //     encoding:   Content-Encoding.
 //     body:       Entity-body as a string or buffer.
@@ -1225,6 +1227,14 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 });
+
+SandstormDb.escapeMongoKey = (key) => {
+  // This incredibly poor mechanism for escaping Mongo keys is recommended by the Mongo docs here:
+  //   https://docs.mongodb.org/manual/faq/developers/#dollar-sign-operator-escaping
+  // and seems to be a de facto standard, for example:
+  //   https://www.npmjs.com/package/mongo-key-escape
+  return key.replace(".", "\uFF0E").replace("$", "\uFF04");
+};
 
 const appNameFromPackage = function (packageObj) {
   // This function takes a Package object from Mongo and returns an

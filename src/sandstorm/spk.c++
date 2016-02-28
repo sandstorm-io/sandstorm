@@ -167,6 +167,8 @@ public:
     exePath = kj::heapString(buf, n);
     if (exePath.endsWith("/sandstorm")) {
       installHome = kj::heapString(buf, n - strlen("/sandstorm"));
+    } else if (exePath.endsWith("/bin/spk")) {
+      installHome = kj::heapString(buf, n - strlen("/bin/spk"));
     }
   }
 

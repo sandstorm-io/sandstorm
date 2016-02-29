@@ -170,8 +170,9 @@ if (Meteor.isServer) {
 
     const _this = this;
     const query = ApiTokens.find({ grainId: grainId, accountId: grain.userId,
+                                   parentToken: { $exists: false },
                                    "owner.user.identityId": { $in: identityIds },
-                                  revoked: { $ne: true }, });
+                                   revoked: { $ne: true }, });
     const handle = query.observe({
       added(apiToken) {
         _this.added("grantedAccessRequests",

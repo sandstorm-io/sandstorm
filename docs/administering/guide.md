@@ -22,7 +22,7 @@ By default, Sandstorm installs within **/opt/sandstorm**.
 - Now is a good time to `cd /opt/sandstorm` and use `ls` take a look around!
 
 **Note:** If you are having trouble finding `/opt/sandstorm`, it could be because you need to `vagrant
-ssh` into the virtual machine that runs Sandstorm for you.
+vm ssh` into the virtual machine that runs Sandstorm for you.
 
 The [install script](https://github.com/sandstorm-io/sandstorm/tree/master/install.sh) creates a system
 service to run Sandstorm, by default.

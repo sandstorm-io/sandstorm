@@ -144,7 +144,7 @@ connection.
 
 ```bash
 cd ~/projects/sandstorm-packaging-tutorial/clock
-vagrant-spk up
+vagrant-spk vm up
 ```
 
 You will see a _lot_ of messages printed out. Some of them are not
@@ -154,7 +154,7 @@ noise.
 Eventually, you will get your shell back. At this point, you can
 continue to the next step.
 
-**Troubleshooting note**: If the `vagrant-spk up` command fails, it
+**Troubleshooting note**: If the `vagrant-spk vm up` command fails, it
 could be because you already have Sandstorm installed on your
 laptop. You can recognize this error via the following red text:
 
@@ -396,7 +396,7 @@ it's safe to stop it. Run this command:
 
 ```bash
 cd ~/projects/sandstorm-packaging-tutorial/clock
-vagrant-spk halt
+vagrant-spk vm halt
 ```
 
 This shuts down the whole virtual machine used for developing your
@@ -409,7 +409,7 @@ it online by running:
 
 ```bash
 cd ~/projects/sandstorm-packaging-tutorial/clock
-vagrant-spk up
+vagrant-spk vm up
 ```
 
 If you ever are confused about which Vagrant virtual machines are

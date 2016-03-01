@@ -839,13 +839,12 @@ Template.featureKeyUploadForm.events({
   "change input[type='file']": function (evt) {
     const file = evt.currentTarget.files[0];
     const instance = Template.instance();
+    const state = Iron.controller().state;
+    const token = state.get("token");
     if (file) {
       // Read the file into memory, then call submitFeatureKey with the file's contents.
       const reader = new FileReader();
       reader.addEventListener("load", () => {
-        console.log(reader.result);
-        const state = Iron.controller().state;
-        const token = state.get("token");
         Meteor.call("submitFeatureKey", token, reader.result, (err) => {
           if (err) {
             instance.error.set(err.message);

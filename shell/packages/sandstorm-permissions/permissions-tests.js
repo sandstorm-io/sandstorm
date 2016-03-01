@@ -14,160 +14,373 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Until David is done working on this:
-// jscs:disable
+const Crypto = Npm.require("crypto");
 
-var Crypto = Npm.require("crypto");
-
-var globalDb = new SandstormDb();
+const globalDb = new SandstormDb();
 // TODO(cleanup): Use a lightweight fake (minimongo-based?) database here and construct a clean
 // instance at the start of each test case.
+
+const viewInfo = {
+  permissions: [{ name: "one" }, { name: "two" }, { name: "three" }],
+  roles: [{ permissions: [true, true, true] },
+          { permissions: [true, false, false], default: true },
+          { permissions: [false, false, true] },
+          { permissions: [false, false, false] },
+         ],
+};
 
 function initializeDb() {
   globalDb.collections.grains.remove({});
   globalDb.collections.apiTokens.remove({});
 
-  var aliceIdentityId = Accounts.insertUserDoc(
-    {profile: {name: "Alice"}},
-    {services: {dev: {name: "alice" + Crypto.randomBytes(10).toString("hex"),
-                      isAdmin: false, hasCompletedSignup: true}}});
-  var aliceAccountId = Accounts.insertUserDoc({},
-    {loginIdentities: [{id: aliceIdentityId}], nonloginIdentities: []});
-  var bobIdentityId = Accounts.insertUserDoc(
-    {profile: {name: "Bob"}},
-    {services: {dev: {name: "Bob" + Crypto.randomBytes(10).toString("hex"),
-                      isAdmin: false, hasCompletedSignup: true}}});
-  var carolIdentityId = Accounts.insertUserDoc(
-    {profile: {name: "Carol"}},
-    {services: {dev:{name: "Carol" + Crypto.randomBytes(10).toString("hex"),
-                     isAdmin: false, hasCompletedSignup: true}}});
+  const aliceIdentityId = Accounts.insertUserDoc(
+    { profile: { name: "Alice" }, },
+    { services: { dev: { name: "alice" + Crypto.randomBytes(10).toString("hex"),
+                         isAdmin: false, hasCompletedSignup: true, }, }, });
+  const aliceAccountId = Accounts.insertUserDoc(
+    {},
+    { loginIdentities: [{ id: aliceIdentityId }], nonloginIdentities: [] });
 
-  var grain = { _id: "mock-grain-id", packageId: "mock-package-id", appId: "mock-app-id",
-                appVersion: 0, userId: aliceAccountId,
-                identityId: carolIdentityId, // Shouldn't affect permissions computations.
-                title: "mock-grain-title", private: true };
+  const bobIdentityId = Accounts.insertUserDoc(
+    { profile: { name: "Bob" } },
+    { services: { dev: { name: "Bob" + Crypto.randomBytes(10).toString("hex"),
+                         isAdmin: false, hasCompletedSignup: true, }, }, });
+  const bobAccountId = Accounts.insertUserDoc(
+    {},
+    { loginIdentities: [{ id: bobIdentityId }], nonloginIdentities: [] });
 
-  globalDb.collections.grains.insert(grain);
-  return {grainId: grain._id,
-          aliceUserId: aliceAccountId,
-          aliceIdentityId: aliceIdentityId,
-          bobIdentityId: bobIdentityId,
-          carolIdentityId: carolIdentityId};
+  const carolIdentityId = Accounts.insertUserDoc(
+    { profile: { name: "Carol" } },
+    { services: { dev:{ name: "Carol" + Crypto.randomBytes(10).toString("hex"),
+                     isAdmin: false, hasCompletedSignup: true, }, }, });
+
+  const grain0 = { _id: "mock-grain-id-0", packageId: "mock-package-id", appId: "mock-app-id",
+                   appVersion: 0, userId: aliceAccountId,
+                   identityId: carolIdentityId, // Shouldn't affect permissions computations.
+                   title: "mock-grain-title", private: true,
+                   cachedViewInfo: viewInfo, };
+
+  const grain1 = { _id: "mock-grain-id-1", packageId: "mock-package-id", appId: "mock-app-id",
+                   appVersion: 0, userId: bobAccountId,
+                   identityId: carolIdentityId, // Shouldn't affect permissions computations.
+                   title: "mock-grain-title", private: true,
+                   cachedViewInfo: viewInfo, };
+
+  const publicGrain = { _id: "mock-public-grain", packageId: "mock-package-id", appId: "mock-app-id",
+                        appVersion: 0, userId: aliceAccountId,
+                        identityId: carolIdentityId, // Shouldn't affect permissions computations.
+                        title: "mock-grain-title",
+                        cachedViewInfo: viewInfo, };
+
+  globalDb.collections.grains.insert(grain0);
+  globalDb.collections.grains.insert(grain1);
+  globalDb.collections.grains.insert(publicGrain);
+
+  return { grainIds: [grain0._id, grain1._id],
+           publicGrainId: publicGrain._id,
+           aliceUserId: aliceAccountId,
+           aliceIdentityId: aliceIdentityId,
+           bobUserId: bobAccountId,
+           bobIdentityId: bobIdentityId,
+           carolIdentityId: carolIdentityId, };
 }
 
-var viewInfo = {
-  permissions: [{name: "one"}, {name: "two"}, {name: "three"}],
-  roles: [ {permissions: [true, true, true]},
-           {permissions: [true, false, false], default: true},
-           {permissions: [false, false, true]},
-           {permissions: [false, false, false]}]
-};
-
-Tinytest.add('permissions: only owner may open private non-shared grain', function (test) {
-  var data = initializeDb();
+Tinytest.add("permissions: legacy public grain", function (test) {
+  const data = initializeDb();
   test.isTrue(
-    SandstormPermissions.mayOpenGrain(globalDb, {grain: {_id: data.grainId,
-                                                         identityId: data.aliceIdentityId}}));
-  test.isFalse(
-    SandstormPermissions.mayOpenGrain(globalDb, {grain: {_id: data.grainId,
-                                                         identityId: data.bobIdentityId}}));
+    SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: data.publicGrainId,
+                                                           identityId: data.aliceIdentityId, }, }));
+  test.isTrue(
+    SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: data.publicGrainId,
+                                                           identityId: data.bobIdentityId, }, }));
 
-  test.isFalse(
-    SandstormPermissions.mayOpenGrain(globalDb, {grain: {_id: data.grainId,
-                                                         identityId: data.carolIdentityId}}));
+  test.isTrue(
+    SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: data.publicGrainId,
+                                                           identityId: null, }, }));
+
+  test.equal(SandstormPermissions.grainPermissions(globalDb,
+                                                   { grain: { _id: data.publicGrainId,
+                                                              identityId: data.aliceIdentityId, }, },
+                                                   viewInfo).permissions,
+             [true, true, true]);
+
+  test.equal(SandstormPermissions.grainPermissions(globalDb,
+                                                   { grain: { _id: data.publicGrainId,
+                                                              identityId: data.bobIdentityId, }, },
+                                                   viewInfo).permissions,
+             [true, false, false]);
+
+  test.equal(SandstormPermissions.grainPermissions(globalDb,
+                                                   { grain: { _id: data.publicGrainId,
+                                                              identityId: null, }, },
+                                                   viewInfo).permissions,
+             [true, false, false]);
 
 });
 
-Tinytest.add('permissions: owner gets all permissions', function (test) {
-  var data = initializeDb();
+Tinytest.add("permissions: only owner may open private non-shared grain", function (test) {
+  const data = initializeDb();
+  test.isTrue(
+    SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: data.grainIds[0],
+                                                         identityId: data.aliceIdentityId, }, }));
+  test.isFalse(
+    SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: data.grainIds[0],
+                                                         identityId: data.bobIdentityId, }, }));
+  test.isFalse(
+    SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: data.grainIds[0],
+                                                         identityId: data.carolIdentityId, }, }));
+
+});
+
+Tinytest.add("permissions: owner gets all permissions", function (test) {
+  const data = initializeDb();
   test.equal(SandstormPermissions.grainPermissions(globalDb,
-                                                   {grain: {_id: data.grainId,
-                                                            identityId: data.aliceIdentityId}},
-                                                   viewInfo),
+                                                   { grain: { _id: data.grainIds[0],
+                                                            identityId: data.aliceIdentityId, }, },
+                                                   viewInfo).permissions,
              [true, true, true]);
 });
 
-
-Tinytest.add('permissions: default role', function (test) {
-  var data = initializeDb();
-  var token = SandstormPermissions.createNewApiToken(globalDb,
-                                                     {identityId: data.aliceIdentityId,
-                                                      accountId: data.aliceUserId},
-                                                     data.grainId,
-                                                     "test default permissions",
-                                                     {none: null}, // default role
-                                                     {webkey: {forSharing: true}});
+Tinytest.add("permissions: default role", function (test) {
+  const data = initializeDb();
+  const token = SandstormPermissions.createNewApiToken(globalDb,
+                                                       { identityId: data.aliceIdentityId,
+                                                         accountId: data.aliceUserId, },
+                                                       data.grainIds[0],
+                                                       "test default permissions",
+                                                       { none: null }, // default role
+                                                       { webkey: { forSharing: true } });
 
   test.isTrue(
-    SandstormPermissions.mayOpenGrain(globalDb, {token: {_id: token.id, grainId: data.grainId}}));
+    SandstormPermissions.mayOpenGrain(globalDb, { token: { _id: token.id, grainId: data.grainIds[0] } }));
 
   test.equal(SandstormPermissions.grainPermissions(globalDb,
-                                                   {token: {_id: token.id, grainId: data.grainId}},
-                                                   viewInfo),
+                                                   { token: { _id: token.id, grainId: data.grainIds[0] } },
+                                                   viewInfo).permissions,
              [true, false, false]);
 });
 
-
-Tinytest.add('permissions: parentToken', function(test) {
-  var data = initializeDb();
-  var token = SandstormPermissions.createNewApiToken(globalDb,
-                                                     {identityId: data.aliceIdentityId,
-                                                      accountId: data.aliceUserId},
-                                                 data.grainId,
-                                                 "test parent permissions",
-                                                 {allAccess: null},
-                                                 {webkey: {forSharing: true}});
+Tinytest.add("permissions: parentToken", function (test) {
+  const data = initializeDb();
+  const token = SandstormPermissions.createNewApiToken(globalDb,
+                                                       { identityId: data.aliceIdentityId,
+                                                         accountId: data.aliceUserId, },
+                                                       data.grainIds[0],
+                                                       "test parent permissions",
+                                                       { allAccess: null },
+                                                       { webkey: { forSharing: true } });
 
   test.isTrue(
-    SandstormPermissions.mayOpenGrain(globalDb, {token: {_id: token.id, grainId: data.grainId}}));
+    SandstormPermissions.mayOpenGrain(globalDb, { token: { _id: token.id, grainId: data.grainIds[0] } }));
   test.equal(SandstormPermissions.grainPermissions(globalDb,
-                                                   {token: {_id: token.id, grainId: data.grainId}},
-                                                   viewInfo),
+                                                   { token: { _id: token.id, grainId: data.grainIds[0] } },
+                                                   viewInfo).permissions,
              [true, true, true]);
 
-  var childToken = SandstormPermissions.createNewApiToken(globalDb,
-                                                          {rawParentToken: token.token},
-                                                          data.grainId,
+  const childToken = SandstormPermissions.createNewApiToken(globalDb,
+                                                          { rawParentToken: token.token },
+                                                          data.grainIds[0],
                                                           "test child permissions",
-                                                          {roleId: 2},
-                                                          {webkey: {forSharing: true}});
+                                                          { roleId: 2 },
+                                                          { webkey: { forSharing: true } });
 
   test.isTrue(
-    SandstormPermissions.mayOpenGrain(globalDb, {token: {_id: childToken.id,
-                                                         grainId: data.grainId}}));
+    SandstormPermissions.mayOpenGrain(globalDb, { token: { _id: childToken.id,
+                                                         grainId: data.grainIds[0], }, }));
   test.equal(SandstormPermissions.grainPermissions(globalDb,
-                                                   {token: {_id: childToken.id,
-                                                            grainId: data.grainId}},
-                                                   viewInfo),
+                                                   { token: { _id: childToken.id,
+                                                            grainId: data.grainIds[0], }, },
+                                                   viewInfo).permissions,
              [false, false, true]);
 
-  globalDb.collections.apiTokens.update(token.id, {$set: {revoked: true}});
+  globalDb.collections.apiTokens.update(token.id, { $set: { revoked: true } });
   test.isFalse(
-    SandstormPermissions.mayOpenGrain(globalDb, {token: {_id: token.id, grainId: data.grainId}}));
+    SandstormPermissions.mayOpenGrain(globalDb, { token: { _id: token.id, grainId: data.grainIds[0] } }));
   test.isFalse(
-    SandstormPermissions.mayOpenGrain(globalDb, {token: {_id: childToken.id,
-                                                         grainId: data.grainId}}));
+    SandstormPermissions.mayOpenGrain(globalDb, { token: { _id: childToken.id,
+                                                         grainId: data.grainIds[0], }, }));
 });
 
-Tinytest.add('permissions: merge user permissions', function(test) {
-  var data = initializeDb();
+Tinytest.add("permissions: merge user permissions", function (test) {
+  const data = initializeDb();
 
-  var owner = {user: {identityId: data.bobIdentityId, title: "bob's shared view"}};
-  SandstormPermissions.createNewApiToken(globalDb, {identityId: data.aliceIdentityId,
-                                                    accountId: data.aliceUserId},
-                                         data.grainId,
-                                         "new token petname 1", {roleId: 1}, owner);
-  SandstormPermissions.createNewApiToken(globalDb, {identityId: data.aliceIdentityId,
-                                                    accountId: data.aliceUserId},
-                                         data.grainId,
-                                         "new token petname 2", {roleId: 2}, owner);
+  const owner = { user: { identityId: data.bobIdentityId, title: "bob's shared view" } };
+  const parent1 = SandstormPermissions.createNewApiToken(globalDb,
+                                                         { identityId: data.aliceIdentityId,
+                                                           accountId: data.aliceUserId, },
+                                                         data.grainIds[0],
+                                                         "new token petname 1",
+                                                         { allAccess: null },
+                                                         { webkey: { forSharing: true } });
+
+  SandstormPermissions.createNewApiToken(globalDb, { rawParentToken: parent1.token },
+                                         data.grainIds[0],
+                                         "new token petname 2", { roleId: 1 }, owner);
+
+  const parent2 = SandstormPermissions.createNewApiToken(globalDb,
+                                                         { identityId: data.aliceIdentityId,
+                                                           accountId: data.aliceUserId, },
+                                                         data.grainIds[0],
+                                                         "new token petname 3",
+                                                         { allAccess: null },
+                                                         { webkey: { forSharing: true } });
+
+  SandstormPermissions.createNewApiToken(globalDb, { rawParentToken: parent2.token },
+                                         data.grainIds[0],
+                                         "new token petname 4", { roleId: 2 }, owner);
 
   test.isTrue(
-    SandstormPermissions.mayOpenGrain(globalDb, {grain: {_id: data.grainId,
-                                                         identityId: data.bobIdentityId}}));
+    SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: data.grainIds[0],
+                                                         identityId: data.bobIdentityId, }, }));
   test.equal(SandstormPermissions.grainPermissions(globalDb,
-                                                   {grain: {_id: data.grainId,
-                                                            identityId: data.bobIdentityId}},
-                                                   viewInfo),
+                                                   { grain: { _id: data.grainIds[0],
+                                                            identityId: data.bobIdentityId, }, },
+                                                   viewInfo).permissions,
              [true, false, true]);
+});
+
+Tinytest.add("permissions: membrane requirements", function (test) {
+  const data = initializeDb();
+
+  const token = SandstormPermissions.createNewApiToken(globalDb,
+                                                       { identityId: data.aliceIdentityId,
+                                                         accountId: data.aliceUserId, },
+                                                       data.grainIds[0],
+                                                       "test membrane requirements",
+                                                       { allAccess: null },
+                                                       { webkey: { forSharing: true } });
+
+  const requirement = {
+    permissionsHeld: {
+      grainId: data.grainIds[1],
+      identityId: data.carolIdentityId,
+      permissions: [true, false, false],
+    },
+  };
+
+  globalDb.collections.apiTokens.update({ _id: token.id },
+                                        { $push: { requirements: requirement } });
+
+  test.isFalse(
+    SandstormPermissions.mayOpenGrain(globalDb, { token: { _id: token.id,
+                                                           grainId: data.grainIds[0], }, }));
+
+  const token1 = SandstormPermissions.createNewApiToken(globalDb,
+                                                       { identityId: data.bobIdentityId,
+                                                         accountId: data.bobUserId, },
+                                                       data.grainIds[1],
+                                                       "test membrane requirements",
+                                                       { roleId: 1 },
+                                                       { user: {
+                                                         identityId: data.carolIdentityId,
+                                                         title: "direct share to Carol",
+                                                       }, });
+  test.isTrue(
+    SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: data.grainIds[1],
+                                                           identityId: data.carolIdentityId, }, }));
+
+  test.isTrue(
+    SandstormPermissions.mayOpenGrain(globalDb, { token: { _id: token.id,
+                                                           grainId: data.grainIds[0], }, }));
+  globalDb.collections.apiTokens.update(
+    { _id: token1.id },
+    { $push: { requirements: {
+      permissionsHeld: {
+        grainId: data.grainIds[1],
+        identityId: data.aliceIdentityId,
+        permissions: [true, false, false],
+      },
+    }, }, });
+
+  test.isFalse(
+    SandstormPermissions.mayOpenGrain(globalDb, { token: { _id: token.id,
+                                                           grainId: data.grainIds[0], }, }));
+
+  SandstormPermissions.createNewApiToken(globalDb,
+                                         { identityId: data.bobIdentityId,
+                                           accountId: data.bobUserId, },
+                                         data.grainIds[1],
+                                         "test membrane requirements",
+                                         { roleId: 1 },
+                                         { user: {
+                                           identityId: data.aliceIdentityId,
+                                           title: "direct share to Carol",
+                                         }, });
+
+  test.isTrue(
+    SandstormPermissions.mayOpenGrain(globalDb, { token: { _id: token.id,
+                                                           grainId: data.grainIds[0], }, }));
+
+});
+
+Tinytest.add("permissions: membrane requirements sequence", function (test) {
+  const data = initializeDb();
+
+  const token = SandstormPermissions.createNewApiToken(globalDb,
+                                                       { identityId: data.aliceIdentityId,
+                                                         accountId: data.aliceUserId, },
+                                                       data.grainIds[0],
+                                                       "test membrane requirements sequence",
+                                                       { allAccess: null },
+                                                       { webkey: { forSharing: true } });
+
+  globalDb.collections.apiTokens.update(
+    { _id: token.id },
+    { $push: { requirements: {
+      permissionsHeld: {
+        grainId: data.grainIds[1],
+        identityId: data.carolIdentityId,
+        permissions: [true, false, false],
+      },
+    }, }, });
+
+  const childToken = SandstormPermissions.createNewApiToken(globalDb,
+                                                            { rawParentToken: token.token },
+                                                            data.grainIds[0],
+                                                            "test membrane requirements sequence",
+                                                            { allAccess: null },
+                                                            { webkey: { forSharing: true } });
+
+  globalDb.collections.apiTokens.update(
+    { _id: childToken.id },
+    { $push: { requirements: {
+      permissionsHeld: {
+        grainId: data.grainIds[1],
+        identityId: data.carolIdentityId,
+        permissions: [true, false, true],
+      },
+    }, }, });
+
+  test.isFalse(
+    SandstormPermissions.mayOpenGrain(globalDb, { token: { _id: childToken.id,
+                                                           grainId: data.grainIds[0], }, }));
+
+  SandstormPermissions.createNewApiToken(globalDb,
+                                         { identityId: data.bobIdentityId,
+                                           accountId: data.bobUserId, },
+                                         data.grainIds[1],
+                                         "test membrane requirements",
+                                         { roleId: 1 },
+                                         { user: {
+                                           identityId: data.carolIdentityId,
+                                           title: "direct share to Carol",
+                                         }, });
+
+  test.isFalse(
+    SandstormPermissions.mayOpenGrain(globalDb, { token: { _id: childToken.id,
+                                                           grainId: data.grainIds[0], }, }));
+
+  SandstormPermissions.createNewApiToken(globalDb,
+                                         { identityId: data.bobIdentityId,
+                                           accountId: data.bobUserId, },
+                                         data.grainIds[1],
+                                         "test membrane requirements",
+                                         { roleId: 2 },
+                                         { user: {
+                                           identityId: data.carolIdentityId,
+                                           title: "direct share to Carol",
+                                         }, });
+  test.isTrue(
+    SandstormPermissions.mayOpenGrain(globalDb, { token: { _id: childToken.id,
+                                                           grainId: data.grainIds[0], }, }));
 });

@@ -284,7 +284,8 @@ checkRequirements = (requirements) => {
       const p = requirement.permissionsHeld;
       const viewInfo = Grains.findOne(p.grainId, { fields: { cachedViewInfo: 1 } }).cachedViewInfo;
       const currentPermissions = SandstormPermissions.grainPermissions(
-        globalDb, { grain: { _id: p.grainId, identityId: p.identityId } }, viewInfo || {});
+        globalDb,
+        { grain: { _id: p.grainId, identityId: p.identityId } }, viewInfo || {}).permissions;
       if (!currentPermissions) {
         return false;
       }

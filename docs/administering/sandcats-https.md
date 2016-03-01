@@ -120,14 +120,14 @@ a reverse proxy, you would typically use `BIND_IP=127.0.0.1` and
 **Server Name Indication (SNI) is required.** Sandstorm's built-in
 HTTPS support requires its clients to support Server Name Indication
 (SNI), which at the time of writing is supported by [over 97% of web
-clients[(http://caniuse.com/#feat=sni).  This is because Sandstorm
+clients](http://caniuse.com/#feat=sni).  This is because Sandstorm
 relies on nodejs's `SNICallback` API to smoothly start using new
 certificates without restarting the server. Therefore, Sandstorm's
 built-in HTTPS support presents an invalid certificate for
 `client-does-not-support-sni.sandstorm-requires-sni.invalid` to
 clients that can't speak SNI to clarify that SNI is required. If you
 need your Sandstorm installation to support non-SNI clients, you will
-need to use a custom HTTPS teminator, or file a bug against Sandstorm.
+need to use a custom HTTPS terminator, or file a bug against Sandstorm.
 
 **Duplicate content on multiple ports.** If you are publishing content
 at `example.com` and specify multiple values for `PORT=`, the content

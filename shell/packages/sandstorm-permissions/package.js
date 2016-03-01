@@ -20,6 +20,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
+  api.use("ecmascript");
   api.use(["check", "random", "underscore", "sandstorm-db"], ["server"]);
   api.addFiles(["permissions.js"], "server");
   api.export("SandstormPermissions");

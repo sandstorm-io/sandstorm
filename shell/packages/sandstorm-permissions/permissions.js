@@ -347,23 +347,6 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
     destinationPermissions[clause.hash()] = new MembranedPermissionSet(permissionSet, clause);
   }
 
-  if (!grain.private) { // legacy public grain
-    const defaultPermissions = PermissionSet.fromRoleAssignment({ none: null }, viewInfo);
-    defaultPermissions.intersect(permissionSet);
-    const clause = new Clause();
-    const otherPermissions = new MembranedPermissionSet(defaultPermissions, clause);
-    if (vertex.token) {
-      const token = context.tokensById[vertex.token._id];
-      if (!token || token.accountId !== grain.userId) {
-        destinationPermissions[clause.hash()] = otherPermissions;
-      }
-    } else if (!vertex.grain.identityId || ownerIdentityIds.indexOf(vertex.grain.identityId) == -1) {
-      destinationPermissions[clause.hash()] = otherPermissions;
-    }
-
-    return destinationPermissions;
-  }
-
   const permissionsMap = {};
   // Map<vertexId, Map<membraneHash, MembranedPermissionSet>>.
   // May from vertex ID to permissions that we've already shown flow from that vertex to our
@@ -399,7 +382,12 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
         incomingEdges = [tokenToEdge(token)];
       }
     } else if (ownerIdentityIds.indexOf(vertexId.slice(2)) >= 0) {
-      const p = new MembranedPermissionSet(PermissionSet.fromRoleAssignment({ allAccess:null },
+      const p = new MembranedPermissionSet(PermissionSet.fromRoleAssignment({ allAccess: null },
+                                                                            viewInfo),
+                                           new Clause());
+      incomingEdges = [{ sharerId: "o:Owner", membranedPermissions: p }];
+    } else if (!grain.private) { // legacy public grain
+      const p = new MembranedPermissionSet(PermissionSet.fromRoleAssignment({ none: null },
                                                                             viewInfo),
                                            new Clause());
       incomingEdges = [{ sharerId: "o:Owner", membranedPermissions: p }];

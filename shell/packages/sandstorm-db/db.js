@@ -1162,7 +1162,14 @@ _.extend(SandstormDb.prototype, {
   },
 
   isFeatureKeyValid: function () {
-    return Meteor.settings.public.isFeatureKeyValid;
+    if (Meteor.settings.public.isFeatureKeyValid) return true;
+    const featureKey = globalDb.currentFeatureKey();
+    return !!featureKey;
+  },
+
+  isFeatureKeyValidAndNotExpired: function () {
+    const featureKey = globalDb.currentFeatureKey();
+    return featureKey && (parseInt(featureKey.expires) > (Date.now() / 1000));
   },
 
   getLdapUrl: function () {
@@ -1742,4 +1749,21 @@ if (Meteor.isServer) {
 
     this.ready();
   });
+}
+
+if (Meteor.isServer) {
+  SandstormDb.prototype.currentFeatureKey = function () {
+    // Returns an object with all of the current signed feature key properties,
+    // or undefined, if the feature key is missing or not correctly signed.
+    const doc = this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
+    if (!doc) return undefined;
+    const buf = new Buffer(doc.value);
+    // We use loadSignedFeatureKey from server/feature-key.js.  This should probably get refactored
+    // once we can use ES6 modules.
+    return loadSignedFeatureKey(buf);
+  };
+} else {
+  SandstormDb.prototype.currentFeatureKey = function () {
+    return this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
+  };
 }

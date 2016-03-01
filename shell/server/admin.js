@@ -22,6 +22,10 @@ const publicAdminSettings = [
   "serverTitle", "returnAddress", "ldapNameField",
 ];
 
+const FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS = [
+  "customer", "expires", "features", "isElasticBilling", "isTrial", "issued", "userLimit",
+];
+
 const Fs = Npm.require("fs");
 const SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + "/adminToken";
 
@@ -111,6 +115,38 @@ Meteor.methods({
         LDAP_DEFAULTS[ldapSetting.toLowerCase()] = value;
       }
     }
+  },
+
+  submitFeatureKey: function (token, textBlock) {
+    checkAuth(token);
+    check(textBlock, String);
+
+    // textBlock is a base64'd string, possibly with newlines and comment lines starting with "-"
+    const featureKeyBase64 = _.chain(textBlock.split("\n"))
+        .filter(line => (line.length > 0 && line[0] !== "-"))
+        .value()
+        .join("");
+
+    const buf = new Buffer(featureKeyBase64, "base64");
+    if (buf.length < 64) {
+      throw new Meteor.Error(401, "Invalid feature key");
+    }
+
+    // verifyFeatureKeySignature is provided in feature-key.js
+    const verifiedFeatureKeyBlob = verifyFeatureKeySignature(buf);
+    if (!verifiedFeatureKeyBlob) {
+      throw new Meteor.Error(401, "Invalid feature key");
+    }
+
+    // Persist the feature key in the database.
+    const db = this.connection.sandstormDb;
+    db.collections.featureKey.upsert(
+      "currentFeatureKey",
+      {
+        _id: "currentFeatureKey",
+        value: buf,
+      }
+    );
   },
 
   getSmtpUrl: function (token) {
@@ -438,6 +474,51 @@ Meteor.publish("adminApiTokens", function (token) {
       revoked: 1,
     },
   });
+});
+
+Meteor.publish("featureKey", function (token) {
+  if (!authorizedAsAdmin(token, this.userId)) return [];
+
+  const db = this.connection.sandstormDb;
+  const featureKeyQuery = db.collections.featureKey.find({ _id: "currentFeatureKey" });
+  const observeHandle = featureKeyQuery.observe({
+    added: (doc) => {
+      // Load and verify the signed feature key.
+      const buf = new Buffer(doc.value);
+      const featureKey = loadSignedFeatureKey(buf);
+
+      if (featureKey) {
+        // If the signature is valid, publish the feature key information.
+        const filteredFeatureKey = _.pick(featureKey, ...FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS);
+        this.added("featureKey", doc._id, filteredFeatureKey);
+      }
+    },
+
+    changed: (newDoc, oldDoc) => {
+      // Load and reverify the new signed feature key.
+      const buf = new Buffer(newDoc.value);
+      const featureKey = loadSignedFeatureKey(buf);
+
+      if (featureKey) {
+        // If the signature is valid, call this.changed() with the interesting fields.
+        const filteredFeatureKey = _.pick(featureKey, ...FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS);
+        this.changed("featureKey", newDoc._id, filteredFeatureKey);
+      } else {
+        // Otherwise, call this.removed(), since the new feature key is invalid.
+        this.removed("featureKey", oldDoc._id);
+      }
+    },
+
+    removed: (oldDoc) => {
+      this.removed("featureKey", oldDoc._id);
+    },
+  });
+
+  this.onStop(() => {
+    observeHandle.stop();
+  });
+
+  this.ready();
 });
 
 function observeOauthService(name) {

@@ -822,10 +822,12 @@ Template.featureKeyUploadForm.onCreated(function () {
 
 Template.featureKeyUploadForm.events({
   "submit form": function (evt) {
+    const state = Iron.controller().state;
+    const token = state.get("token");
     evt.preventDefault();
     const instance = Template.instance();
     const text = instance.find("textarea").value;
-    Meteor.call("submitFeatureKey", text, (err) => {
+    Meteor.call("submitFeatureKey", token, text, (err) => {
       if (err) {
         instance.error.set(err.message);
       } else {
@@ -842,7 +844,9 @@ Template.featureKeyUploadForm.events({
       const reader = new FileReader();
       reader.addEventListener("load", () => {
         console.log(reader.result);
-        Meteor.call("submitFeatureKey", reader.result, (err) => {
+        const state = Iron.controller().state;
+        const token = state.get("token");
+        Meteor.call("submitFeatureKey", token, reader.result, (err) => {
           if (err) {
             instance.error.set(err.message);
           } else {
@@ -892,10 +896,11 @@ Template.adminFeatureKey.helpers({
   },
 
   computeValidity: function (featureKey) {
-    const now = new Date().getTime();
-    if (featureKey.expires >= now) {
+    const nowSec = Date.now() / 1000;
+    const expires = parseInt(featureKey.expires);
+    if (expires >= nowSec) {
       const soonWindowLengthSec = 60 * 60 * 24 * 7; // one week
-      if (featureKey.expires < now + soonWindowLengthSec) {
+      if (expires < (nowSec + soonWindowLengthSec)) {
         return {
           className: "expires-soon",
           labelText: "Expires soon",
@@ -935,7 +940,7 @@ const adminRoute = RouteController.extend({
     const subs = [
       Meteor.subscribe("admin", this.params._token),
       Meteor.subscribe("adminServiceConfiguration", this.params._token),
-      Meteor.subscribe("featureKey"),
+      Meteor.subscribe("featureKey", this.params._token),
     ];
     if (this.params._token) {
       subs.push(Meteor.subscribe("adminToken", this.params._token));

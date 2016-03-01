@@ -29,7 +29,8 @@ const signingKey = bits0.shiftLeft(64 * 3)
     .add(bits3)
     .toBuffer();
 
-const verifyFeatureKeySignature = function (buf) {
+// Export for use in Meteor method in admin.js
+verifyFeatureKeySignature = function (buf) {
   // buf is a Buffer containing an feature key with attached signature.
   // This function returns the signed data if the signature is valid,
   // or undefined if the signature is invalid.
@@ -46,91 +47,16 @@ const verifyFeatureKeySignature = function (buf) {
   }
 };
 
-Meteor.methods({
-  submitFeatureKey: function (textBlock) {
-    check(textBlock, String);
-
-    // Only allow admins to submit feature keys.
-    if (!this.userId) throw new Meteor.Error(401, "Not logged in");
-    const db = this.connection.sandstormDb;
-    if (!db.isAdminById(this.userId)) throw new Meteor.Error(401, "Only admins may upload feature keys");
-
-    // textBlock is a base64'd string, possibly with newlines and comment lines starting with "-"
-    const featureKeyBase64 = _.chain(textBlock.split("\n"))
-        .filter(line => (line.length > 0 && line[0] !== "-"))
-        .value()
-        .join("");
-
-    const buf = new Buffer(featureKeyBase64, "base64");
-    if (buf.length < 64) {
-      throw new Meteor.Error(401, "Invalid feature key");
-    }
-
-    const verifiedFeatureKeyBlob = verifyFeatureKeySignature(buf);
-    if (!verifiedFeatureKeyBlob) {
-      throw new Meteor.Error(401, "Invalid feature key");
-    }
-
-    // Persist the feature key in the database.
-    db.collections.featureKey.upsert(
-      "currentFeatureKey",
-      {
-        _id: "currentFeatureKey",
-        value: buf,
-      }
-    );
-  },
-});
-
-const FIELDS_PUBLISHED_TO_ADMINS = [
-  "customer", "expires", "features", "isElasticBilling", "isTrial", "issued", "userLimit",
-];
-
-Meteor.publish("featureKey", function () {
-  if (!this.userId) return [];
-
-  const db = this.connection.sandstormDb;
-  if (!db.isAdminById(this.userId)) return [];
-
-  const featureKeyQuery = db.collections.featureKey.find({ _id: "currentFeatureKey" });
-  const observeHandle = featureKeyQuery.observe({
-    added: (doc) => {
-      // Load and verify the signed feature key.
-      const buf = new Buffer(doc.value);
-      const verifiedFeatureKeyBlob = verifyFeatureKeySignature(buf);
-
-      if (verifiedFeatureKeyBlob) {
-        // If the signature is valid, publish the feature key information.
-        const featureKey = Capnp.parsePacked(FeatureKey, verifiedFeatureKeyBlob);
-        const filteredFeatureKey = _.pick(featureKey, ...FIELDS_PUBLISHED_TO_ADMINS);
-        this.added("featureKey", doc._id, filteredFeatureKey);
-      }
-    },
-
-    changed: (newDoc, oldDoc) => {
-      // Load and reverify the new signed feature key.
-      const buf = new Buffer(newDoc.value);
-      const verifiedFeatureKeyBlob = verifyFeatureKeySignature(buf);
-
-      if (verifiedFeatureKeyBlob) {
-        // If the signature is valid, call this.changed() with the interesting fields.
-        const featureKey = Capnp.parsePacked(FeatureKey, verifiedFeatureKeyBlob);
-        const filteredFeatureKey = _.pick(featureKey, ...FIELDS_PUBLISHED_TO_ADMINS);
-        this.changed("featureKey", newDoc._id, filteredFeatureKey);
-      } else {
-        // Otherwise, call this.removed(), since the new feature key is invalid.
-        this.removed("featureKey", oldDoc._id);
-      }
-    },
-
-    removed: (oldDoc) => {
-      this.removed("featureKey", oldDoc._id);
-    },
-  });
-
-  this.onStop(() => {
-    observeHandle.stop();
-  });
-
-  this.ready();
-});
+// Export for use in db.js and server/admin.js
+loadSignedFeatureKey = function (buf) {
+  // Given a Buffer containing a signed feature key, verifies and parses the feature key.
+  // Returns the parsed FeatureKey if it was signed by a trusted key, or
+  // undefined if the signature did not pass verification.
+  const verifiedFeatureKeyBlob = verifyFeatureKeySignature(buf);
+  if (verifiedFeatureKeyBlob) {
+    const featureKey = Capnp.parsePacked(FeatureKey, verifiedFeatureKeyBlob);
+    return featureKey;
+  } else {
+    return undefined;
+  }
+};

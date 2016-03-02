@@ -594,6 +594,16 @@ KeybaseProfiles = new Mongo.Collection("keybaseProfiles");
 //     WARNING: Currently verification is NOT IMPLEMENTED, so all proofs will be "unverified"
 //       for now and we just trust Keybase.
 
+FeatureKey = new Mongo.Collection("featureKey");
+// Responsible for storing the current feature key that is active on the server.  Contains a single
+// document with two keys:
+//
+//   _id: "currentFeatureKey"
+//   value: the still-signed, binary-encoded feature key
+//          (a feature key with comments removed and base64 decoded)
+//
+// This is only intended to be visible on the server.
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.
@@ -943,6 +953,7 @@ SandstormDb = function () {
     settings: Settings,
     appIndex: AppIndex,
     keybaseProfiles: KeybaseProfiles,
+    featureKey: FeatureKey,
 
     // Intentionally omitted:
     // - Migrations, since it's used only within this package.
@@ -1204,7 +1215,14 @@ _.extend(SandstormDb.prototype, {
   },
 
   isFeatureKeyValid: function () {
-    return Meteor.settings.public.isFeatureKeyValid;
+    if (Meteor.settings.public.isFeatureKeyValid) return true;
+    const featureKey = globalDb.currentFeatureKey();
+    return !!featureKey;
+  },
+
+  isFeatureKeyValidAndNotExpired: function () {
+    const featureKey = globalDb.currentFeatureKey();
+    return featureKey && (parseInt(featureKey.expires) > (Date.now() / 1000));
   },
 
   getLdapUrl: function () {
@@ -1792,4 +1810,21 @@ if (Meteor.isServer) {
 
     this.ready();
   });
+}
+
+if (Meteor.isServer) {
+  SandstormDb.prototype.currentFeatureKey = function () {
+    // Returns an object with all of the current signed feature key properties,
+    // or undefined, if the feature key is missing or not correctly signed.
+    const doc = this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
+    if (!doc) return undefined;
+    const buf = new Buffer(doc.value);
+    // We use loadSignedFeatureKey from server/feature-key.js.  This should probably get refactored
+    // once we can use ES6 modules.
+    return loadSignedFeatureKey(buf);
+  };
+} else {
+  SandstormDb.prototype.currentFeatureKey = function () {
+    return this.collections.featureKey.findOne({ _id: "currentFeatureKey" });
+  };
 }

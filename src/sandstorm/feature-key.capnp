@@ -29,7 +29,7 @@ struct FeatureKey {
   # A complete key is formed by:
   # 1) Serialize a FeatureKey in Cap'n Proto packed format. (Note that canonicalization
   #    is not necessary, since we don't use detached signatures.)
-  # 2) Sign it using libsodium's crypto_box_easy().
+  # 2) Sign it using libsodium's crypto_sign().
   # 3) Base64 the whole thing, for easy copy/paste.
   # 4) Optionally insert newlines or other whitespace for readability.
   # 5) Optionally add lines beginning with '-', which will be ignored. (Commonly, lines like

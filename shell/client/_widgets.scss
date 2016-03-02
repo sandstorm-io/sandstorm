@@ -1,0 +1,23 @@
+
+.button-primary {
+  @extend %button-base;
+  @extend %button-primary;
+}
+
+.button-secondary {
+  @extend %button-base;
+  @extend %button-secondary;
+}
+
+.flash-message {
+  border-radius: 5px;
+  padding: 16px;
+}
+
+.error-message {
+  background-color: $error-background-color;
+}
+
+.success-message {
+  background-color: $success-background-color;
+}

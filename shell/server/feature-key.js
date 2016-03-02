@@ -1,0 +1,62 @@
+// Sandstorm - Personal Cloud Sandbox
+// Copyright (c) 2016 Sandstorm Development Group, Inc. and contributors
+// All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+const Capnp = Npm.require("capnp");
+const FeatureKey = Capnp.importSystem("sandstorm/feature-key.capnp").FeatureKey;
+
+// These byte-packing tricks that are so convenient in non-memory-safe languages are a
+// bit of a pain in memory-safe languages.  Argh.  At least I have bignums on the server.
+const bits0 = Bignum(FeatureKey.signingKey.key0);
+const bits1 = Bignum(FeatureKey.signingKey.key1);
+const bits2 = Bignum(FeatureKey.signingKey.key2);
+const bits3 = Bignum(FeatureKey.signingKey.key3);
+const signingKey = bits0.shiftLeft(64 * 3)
+    .add(bits1.shiftLeft(64 * 2))
+    .add(bits2.shiftLeft(64))
+    .add(bits3)
+    .toBuffer();
+
+// Export for use in Meteor method in admin.js
+verifyFeatureKeySignature = function (buf) {
+  // buf is a Buffer containing an feature key with attached signature.
+  // This function returns the signed data if the signature is valid,
+  // or undefined if the signature is invalid.
+
+  // Per crypto_sign, the first 64 bytes are the ed25519 signature
+  // and the rest of the blob is the signed data.
+  const signature = buf.slice(0, 64);
+  const signedData = buf.slice(64);
+
+  if (!Ed25519.Verify(signedData, signature, signingKey)) {
+    return undefined;
+  } else {
+    return signedData;
+  }
+};
+
+// Export for use in db.js and server/admin.js
+loadSignedFeatureKey = function (buf) {
+  // Given a Buffer containing a signed feature key, verifies and parses the feature key.
+  // Returns the parsed FeatureKey if it was signed by a trusted key, or
+  // undefined if the signature did not pass verification.
+  const verifiedFeatureKeyBlob = verifyFeatureKeySignature(buf);
+  if (verifiedFeatureKeyBlob) {
+    const featureKey = Capnp.parsePacked(FeatureKey, verifiedFeatureKeyBlob);
+    return featureKey;
+  } else {
+    return undefined;
+  }
+};

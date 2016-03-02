@@ -52,5 +52,6 @@ sandstorm-ui-powerbox
 meteor-node-forge
 fourseven:scss
 introjs
+npm-ed25519
 npm-request
 sha

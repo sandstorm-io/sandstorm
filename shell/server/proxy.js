@@ -32,10 +32,6 @@ const HackSession = Capnp.importSystem("sandstorm/hack-session.capnp");
 const Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
 const Backend = Capnp.importSystem("sandstorm/backend.capnp").Backend;
 
-SANDSTORM_ALTHOME = Meteor.settings && Meteor.settings.home;
-SANDSTORM_LOGDIR = (SANDSTORM_ALTHOME || "") + "/var/log";
-SANDSTORM_VARDIR = (SANDSTORM_ALTHOME || "") + "/var/sandstorm";
-
 const storeReferralProgramInfoApiTokenCreated = (db, accountId, identityId, apiTokenAccountId) => {
   // From the Referral program's perspective, if Bob's Account has no referredByComplete, then we
   // update Bob's Identity to say it's referredBy Alice's Account (which is apiTokenAccountId).

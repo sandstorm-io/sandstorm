@@ -15,8 +15,8 @@
 // limitations under the License.
 
 function linkIdentityToAccountInternal(db, backend, identityId, accountId) {
-  // Links the identity to the account. If the account is a demo account, makes the account durable
-  // and gives the identity login access to it.
+  // Links the identity to the account and grants it login access if possible. Makes the account
+  // durable if it is a demo account.
 
   check(db, SandstormDb);
   check(backend, SandstormBackend);
@@ -53,28 +53,35 @@ function linkIdentityToAccountInternal(db, backend, identityId, accountId) {
                            "Cannot link an identity that can already log into another account");
   }
 
+  const alreadyLinked = !!Meteor.users.findOne({ "nonloginIdentities.id": identityUser._id });
+
+  const pushModifier = alreadyLinked
+        ? { nonloginIdentities: { id: identityUser._id } }
+        : { loginIdentities: { id: identityUser._id } };
+
   let modifier;
   if (accountUser.expires) {
-    if (Meteor.users.findOne({ "nonloginIdentities.id": identityUser._id })) {
+    if (alreadyLinked) {
       throw new Meteor.Error(403, "Cannot create an account for an identity that's " +
                                   "already linked to another account.");
     }
 
-    modifier = { $push: { loginIdentities: { id: identityUser._id } },
-                $unset: { expires: 1 },
-                $set: { upgradedFromDemo: Date.now() }, };
+    modifier = { $push: pushModifier,
+                 $unset: { expires: 1 },
+                 $set: { upgradedFromDemo: Date.now() }, };
     if (Meteor.settings.public.quotaEnabled) {
       // Demo users never got the referral notification. Send it now:
       db.sendReferralProgramNotification(accountUser._id);
     }
 
   } else {
-    modifier = { $push: { nonloginIdentities: { id: identityUser._id } } };
+    modifier = { $push: pushModifier };
   }
 
   // Make sure not to add the same identity twice.
-  Meteor.users.update({ _id: accountUser._id, "nonloginIdentities.id": { $ne: identityUser._id },
-                       "loginIdentities.id": { $ne: identityUser._id }, },
+  Meteor.users.update({ _id: accountUser._id,
+                        "nonloginIdentities.id": { $ne: identityUser._id },
+                        "loginIdentities.id": { $ne: identityUser._id }, },
                       modifier);
 
   if (accountUser.expires) {

@@ -35,10 +35,6 @@ browseHome = function () {
   Router.go("root");
 };
 
-getOrigin = function () {
-  return document.location.protocol + "//" + document.location.host;
-};
-
 if (Meteor.isClient) {
   // Subscribe to basic grain information first and foremost, since
   // without it we might e.g. redirect to the wrong place on login.

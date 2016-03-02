@@ -17,20 +17,6 @@
 // This file implements the common shell components such as the top bar.
 // It also covers the root page.
 
-const getNamesFromIdentityIds = function (identityIds) {
-  check(identityIds, [String]);
-  if (identityIds.length === 0) {
-    return [];
-  }
-
-  const identities = Meteor.users.find({
-    _id: { $in: identityIds },
-  });
-  return identities.map(function (identity) {
-    return { name: identity.profile.name };
-  });
-};
-
 if (Meteor.isClient) {
   // Subscribe to basic grain information first and foremost, since
   // without it we might e.g. redirect to the wrong place on login.

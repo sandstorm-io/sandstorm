@@ -7,7 +7,7 @@ module.exports = function(grunt) {
       icons: {
         src: "./*.svg",
         dest: "../shell/public/icons",
-        destCss: "../shell/client",
+        destCss: "../shell/client/styles",
         options: {
           font: "icons",
           engine: "node",

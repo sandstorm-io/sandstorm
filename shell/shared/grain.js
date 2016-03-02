@@ -1815,8 +1815,18 @@ if (Meteor.isClient) {
           // template namespace under key id2.
           const key = "offerTemplate" + id2;
           const host = globalDb.makeApiHost(tokenId);
+          const grain = getActiveGrain(globalGrains.get());
+          const grainTitle = grain.title();
+          // grainTitleSlug is the grain title with url-unsafe characters replaced
+          let grainTitleSlug = grainTitle.toLowerCase().trim();
+          grainTitleSlug = grainTitleSlug.replace(/\s+/g, "-")
+                                         .replace(/[^\w\-]+/g, "")
+                                         .replace(/\-\-+/g, "-")
+                                         .replace(/^-+/, "")
+                                         .replace(/-+$/, "");
           const renderedTemplate = template.replace(/\$API_TOKEN/g, tokenId)
-                                           .replace(/\$API_HOST/g, host);
+                                           .replace(/\$API_HOST/g, host)
+                                           .replace(/\$GRAIN_TITLE_SLUG/g, grainTitleSlug);
           sessionStorage.setItem(key, JSON.stringify({
               token: tokenId,
               renderedTemplate: renderedTemplate,

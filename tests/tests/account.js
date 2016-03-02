@@ -143,3 +143,30 @@ module.exports["Test try login with non-login identity"] = function (browser) {
                          "is not a login identity")
     .end();
 }
+
+module.exports["Test link identity from unused account"] = function (browser) {
+  browser
+    .loginDevAccount(null, null, function (firstIdentityName) {
+      var firstIdentityId = crypto.createHash("sha256")
+          .update("dev:" + firstIdentityName).digest("hex");
+      browser
+        .execute("window.Meteor.logout()")
+        .loginDevAccount()
+        .url(browser.launch_url + "/account")
+        .waitForElementVisible("button.link-new-identity", short_wait)
+        .click("button.link-new-identity")
+        .waitForElementVisible(".login-buttons-list button.dev", short_wait)
+        .click(".login-buttons-list button.dev")
+        .waitForElementVisible("input[name=name]", short_wait)
+        .setValue("input[name=name]", firstIdentityName)
+        .submitForm(".login-buttons-list form.dev")
+        .waitForElementVisible(".identities-tabs li[data-identity-id='" + firstIdentityId + "']",
+                               medium_wait)
+        .click(".identities-tabs li[data-identity-id='" + firstIdentityId + "']")
+        .waitForElementPresent("input.toggle-login[data-identity-id='" + firstIdentityId + "']",
+                               short_wait)
+        .assert.elementPresent(
+          "input.toggle-login[data-identity-id='" + firstIdentityId + "']:checked")
+        .end()
+    });
+}

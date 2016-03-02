@@ -622,103 +622,6 @@ if (Meteor.isServer) {
   });
 }
 
-function getOrganizationEmail() {
-  const setting = Settings.findOne({ _id: "organizationEmail" });
-  return setting && setting.value;
-};
-
-function getOrganizationGoogle() {
-  const setting = Settings.findOne({ _id: "organizationGoogle" });
-  return setting && setting.value;
-};
-
-function getOrganizationLdap() {
-  const setting = Settings.findOne({ _id: "organizationLdap" });
-  return setting ? setting.value : false;
-};
-
-function identityInOrganization(identityId) {
-  let identity = Meteor.users.findOne({ _id: identityId });
-  if (!identity || !identity.services) {
-    return false;
-  }
-
-  if (identity.services.email && getOrganizationEmail()) {
-    let domain = "@" + getOrganizationEmail();
-    if (identity.services.email.email.toLowerCase().endsWith(domain)) {
-      return true;
-    }
-  } else if (identity.services.ldap && getOrganizationLdap()) {
-    return true;
-  } else if (identity.services.google && getOrganizationGoogle()) {
-    let domain = getOrganizationGoogle();
-    if (identity.services.google.hd.toLowerCase() === domain) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-isUserInOrganization = function (user) {
-  for (let i = 0; i < user.loginIdentities.length; i++) {
-    if (identityInOrganization(user.loginIdentities[i].id)) {
-      return true;
-    }
-  }
-
-  return false;
-};
-
-isDemoUser = function () {
-  // Returns true if this is a demo user.
-
-  const user = Meteor.user();
-  if (user && user.expires) {
-    return true;
-  } else {
-    return false;
-  }
-};
-
-isSignedUp = function () {
-  // Returns true if the user has presented an invite key.
-
-  const user = Meteor.user();
-
-  if (!user) return false;  // not signed in
-
-  if (!user.loginIdentities) return false;  // not an account
-
-  if (user.expires) return false;  // demo user.
-
-  if (Meteor.settings.public.allowUninvited) return true;  // all accounts qualify
-
-  if (user.signupKey) return true;  // user is invited
-
-  if (isUserInOrganization(user)) return true;
-
-  return false;
-};
-
-isSignedUpOrDemo = function () {
-  const user = Meteor.user();
-
-  if (!user) return false;  // not signed in
-
-  if (!user.loginIdentities) return false;  // not an account
-
-  if (user.expires) return true;  // demo user.
-
-  if (Meteor.settings.public.allowUninvited) return true;  // all accounts qualify
-
-  if (user.signupKey) return true;  // user is invited
-
-  if (isUserInOrganization(user)) return true;
-
-  return false;
-};
-
 const countReferrals = function (user) {
   const referredIdentityIds = user.referredIdentityIds;
   return (referredIdentityIds && referredIdentityIds.length || 0);
@@ -1017,9 +920,6 @@ SandstormDb = function () {
 //   objects created in SandstormDb's constructor rather than globals.
 
 _.extend(SandstormDb.prototype, {
-  isDemoUser: isDemoUser,
-  isSignedUp: isSignedUp,
-  isSignedUpOrDemo: isSignedUpOrDemo,
   getUserQuota: getUserQuota,
   isUserOverQuota: isUserOverQuota,
   isUserExcessivelyOverQuota: isUserExcessivelyOverQuota,
@@ -1035,6 +935,92 @@ _.extend(SandstormDb.prototype, {
   makeApiHost: makeApiHost,
   allowDevAccounts: allowDevAccounts,
   roleAssignmentPattern: roleAssignmentPattern,
+
+  isDemoUser: function () {
+    // Returns true if this is a demo user.
+
+    const user = Meteor.user();
+    if (user && user.expires) {
+      return true;
+    } else {
+      return false;
+    }
+  },
+
+  isSignedUp: function () {
+    // Returns true if the user has presented an invite key.
+
+    const user = Meteor.user();
+
+    if (!user) return false;  // not signed in
+
+    if (!user.loginIdentities) return false;  // not an account
+
+    if (user.expires) return false;  // demo user.
+
+    if (Meteor.settings.public.allowUninvited) return true;  // all accounts qualify
+
+    if (user.signupKey) return true;  // user is invited
+
+    if (this.isUserInOrganization(user)) return true;
+
+    return false;
+  },
+
+  isSignedUpOrDemo: function () {
+    const user = Meteor.user();
+
+    if (!user) return false;  // not signed in
+
+    if (!user.loginIdentities) return false;  // not an account
+
+    if (user.expires) return true;  // demo user.
+
+    if (Meteor.settings.public.allowUninvited) return true;  // all accounts qualify
+
+    if (user.signupKey) return true;  // user is invited
+
+    if (this.isUserInOrganization(user)) return true;
+
+    return false;
+  },
+
+  identityInOrganization: function (identityId) {
+    let identity = Meteor.users.findOne({ _id: identityId });
+    if (!identity || !identity.services) {
+      return false;
+    }
+
+    if (identity.services.email && this.getOrganizationEmail()) {
+      let domain = "@" + this.getOrganizationEmail();
+      if (identity.services.email.email.toLowerCase().endsWith(domain)) {
+        return true;
+      }
+    } else if (identity.services.ldap && this.getOrganizationLdap()) {
+      return true;
+    } else if (identity.services.google && this.getOrganizationGoogle()) {
+      let domain = this.getOrganizationGoogle();
+      if (identity.services.google.hd.toLowerCase() === domain) {
+        return true;
+      }
+    }
+
+    return false;
+  },
+
+  isUserInOrganization: function (user) {
+    if (!this.isFeatureKeyValid()) {
+      return false;
+    }
+
+    for (let i = 0; i < user.loginIdentities.length; i++) {
+      if (this.identityInOrganization(user.loginIdentities[i].id)) {
+        return true;
+      }
+    }
+
+    return false;
+  },
 });
 
 if (Meteor.isServer) {
@@ -1297,11 +1283,20 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getOrganizationEmail: getOrganizationEmail,
+  getOrganizationEmail: function () {
+    const setting = Settings.findOne({ _id: "organizationEmail" });
+    return setting && setting.value;
+  },
 
-  getOrganizationGoogle: getOrganizationGoogle,
+  getOrganizationGoogle: function () {
+    const setting = Settings.findOne({ _id: "organizationGoogle" });
+    return setting && setting.value;
+  },
 
-  getOrganizationLdap: getOrganizationLdap,
+  getOrganizationLdap: function () {
+    const setting = Settings.findOne({ _id: "organizationLdap" });
+    return setting ? setting.value : false;
+  },
 });
 
 SandstormDb.escapeMongoKey = (key) => {

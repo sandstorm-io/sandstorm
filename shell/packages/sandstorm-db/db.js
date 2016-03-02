@@ -1216,12 +1216,12 @@ _.extend(SandstormDb.prototype, {
 
   isFeatureKeyValid: function () {
     if (Meteor.settings.public.isFeatureKeyValid) return true;
-    const featureKey = globalDb.currentFeatureKey();
+    const featureKey = this.currentFeatureKey();
     return !!featureKey;
   },
 
   isFeatureKeyValidAndNotExpired: function () {
-    const featureKey = globalDb.currentFeatureKey();
+    const featureKey = this.currentFeatureKey();
     return featureKey && (parseInt(featureKey.expires) > (Date.now() / 1000));
   },
 

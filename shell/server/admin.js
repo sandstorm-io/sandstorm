@@ -19,7 +19,8 @@ const publicAdminSettings = [
   "google", "github", "ldap", "emailToken", "splashUrl", "signupDialog",
   "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
   "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled",
-  "serverTitle", "returnAddress", "ldapNameField",
+  "serverTitle", "returnAddress", "ldapNameField", "organizationEmail", "organizationLdap",
+  "organizationGoogle",
 ];
 
 const FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS = [

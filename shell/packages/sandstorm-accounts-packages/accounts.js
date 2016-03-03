@@ -22,6 +22,12 @@ if (Meteor.isClient) {
   };
 }
 
+if (Meteor.isServer) {
+  Google.whitelistedFields = Google.whitelistedFields.concat(["hd"]);
+  // hd is the "hosted domain" parameter. It is only present for google accounts that are part of a
+  // google apps for work domain.
+}
+
 Accounts.identityServices = {};
 // A dictionary of identity services. At the moment, this is mainly used for rendering login UI
 // components. Each key in the dictionary is the name of the service, e.g. "github", exactly as it

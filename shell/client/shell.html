@@ -993,10 +993,14 @@ limitations under the License.
         (<a class="configure-oauth" data-servicename="google" href="">configure</a>)
         (<a class="reset-login-tokens" data-servicename="google" href="">log out all users</a>)
       </label><br>
+
+      {{#if isFeatureKeyValid}}
       <label>
         Google Organization Domain:
         <input type="text" name="organizationGoogle" value="{{organizationGoogle}}">
       </label>
+      {{/if}}
+
       <span class="details">Users within this Google Apps for Work domain will automatically be upgraded to full accounts upon logging in. Leave blank to disable.</span>
       <br>
       {{#with googleSetting.automaticallyReset}}
@@ -1030,13 +1034,13 @@ limitations under the License.
         </p>
       {{/with}}
       <label><input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login</label><br>
-      <label>
-        Email Organization Domain:
-        <input type="text" name="organizationEmail" value="{{organizationEmail}}">
-      </label>
-      <span class="details">Users within this email domain will automatically be upgraded to full accounts upon logging in. Leave blank to disable.</span>
-      <br>
       {{#if isFeatureKeyValid}}
+        <label>
+          Email Organization Domain:
+          <input type="text" name="organizationEmail" value="{{organizationEmail}}">
+        </label>
+        <span class="details">Users within this email domain will automatically be upgraded to full accounts upon logging in. Leave blank to disable.</span>
+        <br>
         <hr>
         <label>
           <input type="checkbox" name="ldapLogin" value="value" checked={{ldapEnabled}}> Enable LDAP Login

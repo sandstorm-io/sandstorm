@@ -962,7 +962,7 @@ _.extend(SandstormDb.prototype, {
 
     if (user.signupKey) return true;  // user is invited
 
-    if (this.isFeatureKeyValid() && this.isUserInOrganization(user)) return true;
+    if (this.isUserInOrganization(user)) return true;
 
     return false;
   },
@@ -980,7 +980,7 @@ _.extend(SandstormDb.prototype, {
 
     if (user.signupKey) return true;  // user is invited
 
-    if (this.isFeatureKeyValid() && this.isUserInOrganization(user)) return true;
+    if (this.isUserInOrganization(user)) return true;
 
     return false;
   },
@@ -1009,6 +1009,10 @@ _.extend(SandstormDb.prototype, {
   },
 
   isUserInOrganization: function (user) {
+    if (!this.isFeatureKeyValid()) {
+      return false;
+    }
+
     for (let i = 0; i < user.loginIdentities.length; i++) {
       if (this.identityInOrganization(user.loginIdentities[i].id)) {
         return true;

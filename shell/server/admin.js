@@ -133,9 +133,9 @@ Meteor.methods({
       throw new Meteor.Error(401, "Invalid feature key");
     }
 
-    // verifyFeatureKeySignature is provided in feature-key.js
-    const verifiedFeatureKeyBlob = verifyFeatureKeySignature(buf);
-    if (!verifiedFeatureKeyBlob) {
+    // loadSignedFeatureKey is provided in feature-key.js
+    const featureKey = loadSignedFeatureKey(buf);
+    if (!featureKey) {
       throw new Meteor.Error(401, "Invalid feature key");
     }
 

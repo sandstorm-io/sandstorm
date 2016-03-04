@@ -48,6 +48,7 @@ if (!Meteor.settings.replicaNumber) {  // only first replica
 
 Meteor.startup(function () {
   const SANDSTORM_SMTP_PORT = parseInt(process.env.SANDSTORM_SMTP_PORT, 10) || 30025;
+  const BIND_IP = process.env.BIND_IP || "127.0.0.1";
 
   simplesmtp.createSimpleServer({ SMTPBanner:"Sandstorm Mail Server" }, (req) => {
     const mailparser = new MailParser();
@@ -175,7 +176,7 @@ Meteor.startup(function () {
         req.reject(err.message);
       });
     });
-  }).listen(SANDSTORM_SMTP_PORT);
+  }).listen(SANDSTORM_SMTP_PORT, BIND_IP);
 });
 
 function formatAddress(field) {

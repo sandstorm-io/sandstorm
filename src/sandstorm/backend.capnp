@@ -88,7 +88,7 @@ interface Backend {
   # Download a stored backup, writing it to `stream`.
 
   deleteBackup @10 (backupId :Text);
-  # Delete a stored backup form disk. Succeeds silently if the backup doesn't exist.
+  # Delete a stored backup from disk. Succeeds silently if the backup doesn't exist.
 
   # ----------------------------------------------------------------------------
 

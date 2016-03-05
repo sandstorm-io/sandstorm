@@ -234,8 +234,10 @@ kj::Array<uint> parsePorts(kj::Maybe<uint> httpsPort, kj::StringPtr portList) {
   return kj::mv(result);
 }
 
-kj::Maybe<UserIds> getUserIds(kj::StringPtr name) {
+kj::Maybe<UserIds> getUserIds(kj::Maybe<kj::StringPtr> name) {
   // We can't use getpwnam() in a statically-linked binary, so we shell out to id(1).  lol.
+  // This returns the UserIds for the passed name, or the user this process is running as if nullptr
+  // is passed.
 
   int fds[2];
   KJ_SYSCALL(pipe2(fds, O_CLOEXEC));
@@ -250,7 +252,11 @@ kj::Maybe<UserIds> getUserIds(kj::StringPtr name) {
     KJ_SYSCALL(unsetenv("LC_MESSAGES"));
 
     KJ_SYSCALL(dup2(fds[1], STDOUT_FILENO));
-    KJ_SYSCALL(execlp("id", "id", name.cStr(), EXEC_END_ARGS));
+    KJ_IF_MAYBE(n, name) {
+      KJ_SYSCALL(execlp("id", "id", n->cStr(), EXEC_END_ARGS));
+    } else {
+      KJ_SYSCALL(execlp("id", "id", EXEC_END_ARGS));
+    }
     KJ_UNREACHABLE;
   }
 
@@ -1268,9 +1274,15 @@ private:
     KJ_REQUIRE(changedDir);
 
     Config config;
+    UserIds currentUids;
 
-    config.uids.uid = getuid();
-    config.uids.gid = getgid();
+    KJ_IF_MAYBE(u, getUserIds(nullptr)) {
+      currentUids = kj::mv(*u);
+      config.uids.uid = currentUids.uid;
+      config.uids.gid = currentUids.gid;
+    } else {
+      KJ_FAIL_REQUIRE("Couldn't find our own user id.");
+    }
 
     // Store the PORT and HTTPS_PORT values in variables here so we can
     // process them at the end.
@@ -1283,7 +1295,7 @@ private:
       auto value = trim(line.slice(equalsPos + 1));
 
       if (key == "SERVER_USER") {
-        KJ_IF_MAYBE(u, getUserIds(value)) {
+        KJ_IF_MAYBE(u, getUserIds(kj::StringPtr(value))) {
           config.uids = kj::mv(*u);
           KJ_REQUIRE(config.uids.uid != 0, "Sandstorm cannot run as root.");
         } else {
@@ -1361,9 +1373,25 @@ private:
 
     if (runningAsRoot) {
       KJ_REQUIRE(config.uids.uid != 0, "config missing SERVER_USER; can't run as root");
+    } else {
+      KJ_REQUIRE(isMember(config.uids.gid, currentUids),
+                 "Sandstorm must be run as root or a member of SERVER_USER's group.");
     }
 
     return config;
+  }
+
+  bool isMember(gid_t gid, UserIds const& uids) {
+    // Returns true if uids is a member of gid.
+    if (uids.gid == gid) {
+      return true;
+    }
+    for (auto it = uids.groups.begin(); it != uids.groups.end(); ++it) {
+      if (*it == gid) {
+        return true;
+      }
+    }
+    return false;
   }
 
   [[noreturn]] void runUpdateMonitor(const Config& config, int pidfile) {

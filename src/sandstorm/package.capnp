@@ -499,6 +499,7 @@ enum OpenSourceLicense {
   cddl      @15 $osiInfo(id = "CDDL-1.0", title = "CDDL", requireSource = true);
   epl       @16 $osiInfo(id = "EPL-1.0" , title = "Eclipse Public License", requireSource = true);
   cpal      @17 $osiInfo(id = "CPAL-1.0" , title = "Common Public Attribution License", requireSource = true);
+  zlib      @18 $osiInfo(id = "Zlib" , title = "Zlib/libpng License");
 
   # Is your preferred license not on the list? We are happy to add any OSI-approved license; that
   # is, anything on this page:

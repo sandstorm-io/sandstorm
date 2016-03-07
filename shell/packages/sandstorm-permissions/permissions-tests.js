@@ -384,3 +384,78 @@ Tinytest.add("permissions: membrane requirements sequence", function (test) {
     SandstormPermissions.mayOpenGrain(globalDb, { token: { _id: childToken.id,
                                                            grainId: data.grainIds[0], }, }));
 });
+
+Tinytest.add("permissions: membrane requirements loop", function (test) {
+
+  // Create two tokens with membrane requirements that depend on each other.
+  // A naive permissions computation could get into a loop here.
+
+  const data = initializeDb();
+
+  const token1 = SandstormPermissions.createNewApiToken(globalDb,
+                                                        { identityId: data.aliceIdentityId,
+                                                          accountId: data.aliceUserId, },
+                                                        data.grainIds[0],
+                                                        "test membrane requirements loop",
+                                                        { allAccess: null },
+                                                        { user: {
+                                                          identityId: data.bobIdentityId,
+                                                          title: "direct share to Bob",
+                                                        }, });
+
+  globalDb.collections.apiTokens.update(
+    { _id: token1.id },
+    { $push: { requirements: {
+      permissionsHeld: {
+        grainId: data.grainIds[1],
+        identityId: data.aliceIdentityId,
+        permissions: [],
+      },
+    }, }, });
+
+  const token2 = SandstormPermissions.createNewApiToken(globalDb,
+                                                        { identityId: data.bobIdentityId,
+                                                          accountId: data.bobUserId, },
+                                                        data.grainIds[1],
+                                                        "test membrane requirements loop",
+                                                        { allAccess: null },
+                                                        { user: {
+                                                          identityId: data.aliceIdentityId,
+                                                          title: "direct share to Alice",
+                                                        }, });
+
+  globalDb.collections.apiTokens.update(
+    { _id: token2.id },
+    { $push: { requirements: {
+      permissionsHeld: {
+        grainId: data.grainIds[0],
+        identityId: data.bobIdentityId,
+        permissions: [],
+      },
+    }, }, });
+
+  test.isTrue(
+    SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: data.grainIds[0],
+                                                           identityId: data.aliceIdentityId, }, }));
+  test.isFalse(
+    SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: data.grainIds[0],
+                                                           identityId: data.bobIdentityId, }, }));
+
+  test.isTrue(
+    SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: data.grainIds[1],
+                                                           identityId: data.bobIdentityId, }, }));
+  test.isFalse(
+    SandstormPermissions.mayOpenGrain(globalDb, { grain: { _id: data.grainIds[1],
+                                                           identityId: data.aliceIdentityId, }, }));
+
+  test.equal(SandstormPermissions.grainPermissions(globalDb,
+                                                   { grain: { _id: data.grainIds[1],
+                                                              identityId: data.aliceIdentityId, }, },
+                                                   viewInfo).permissions,
+             undefined);
+  test.equal(SandstormPermissions.grainPermissions(globalDb,
+                                                   { grain: { _id: data.grainIds[0],
+                                                              identityId: data.bobIdentityId, }, },
+                                                   viewInfo).permissions,
+             undefined);
+});

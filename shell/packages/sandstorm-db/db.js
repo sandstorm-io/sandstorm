@@ -130,8 +130,6 @@ Meteor.users.ensureIndexOnServer("loginIdentities.id", { unique: 1, sparse: 1 })
 Meteor.users.ensureIndexOnServer("nonloginIdentities.id", { sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.google.id", { unique: 1, sparse: 1 });
 Meteor.users.ensureIndexOnServer("services.github.id", { unique: 1, sparse: 1 });
-Meteor.users.ensureIndexOnServer("apiTokens.grainId", { sparse: 1 });
-Meteor.users.ensureIndexOnServer("apiTokens.owner.user.identityId", { sparse: 1 });
 
 // TODO(cleanup): This index is obsolete; delete it.
 Meteor.users.ensureIndexOnServer("identities.id", { unique: 1, sparse: 1 });
@@ -452,6 +450,9 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   requirements: List(Supervisor.MembraneRequirement);
 //   ...
 // }
+
+ApiTokens.ensureIndexOnServer("grainId", { sparse: 1 });
+ApiTokens.ensureIndexOnServer("owner.user.identityId", { sparse: 1 });
 
 ApiHosts = new Mongo.Collection("apiHosts");
 // Allows defining some limited static behavior for an API host when accessed unauthenticated. This

@@ -644,7 +644,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
   function measureElapsedTime(result) {
     const elapsedMilliseconds = (new Date()) - startTime;
     if (elapsedMilliseconds > 200) {
-      console.log("Warning: SandstormDb.grainPermissions() took " + elapsedMilliseconds +
+      console.log("Warning: SandstormPermissions.grainPermissions() took " + elapsedMilliseconds +
                   " milliseconds to complete for the vertex " + JSON.stringify(vertex));
     }
   }

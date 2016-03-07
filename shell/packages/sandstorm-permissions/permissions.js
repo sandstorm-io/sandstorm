@@ -640,6 +640,15 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
   let observeHandle;
   let onInvalidatedActive = false;
 
+  const startTime = new Date();
+  function measureElapsedTime(result) {
+    const elapsedMilliseconds = (new Date()) - startTime;
+    if (elapsedMilliseconds > 200) {
+      console.log("Warning: SandstormDb.grainPermissions() took " + elapsedMilliseconds +
+                  " milliseconds to complete for the vertex " + JSON.stringify(vertex));
+    }
+  }
+
   // Our computation proceeds in two phases. In the first, we determine which permissions the vertex
   // appears to have and we compute set of tokens which appears to be sufficent to prove those
   // permissions. However, concurrent database modifications may render the computation invalid, so
@@ -698,6 +707,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
 
     if (!resultPermissions) {
       // deny access
+      measureElapsedTime();
       return {};
     }
 
@@ -765,6 +775,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
   const result = {};
   if (resultPermissions) result.permissions = resultPermissions.array;
   if (observeHandle) result.observeHandle = observeHandle;
+  measureElapsedTime();
   return result;
 };
 

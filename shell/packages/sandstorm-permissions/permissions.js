@@ -576,7 +576,7 @@ function proveClauses(db, context, goalClauses) {
 
     // For each new clause, conjoin it with the remaining goals in `clause`.
     // If we end up with something empty, then we're done! Otherwise, check whether
-    // we already have this claus. If not, add it to `clauses` and push its ID onto clauseStack.
+    // we already have this clause. If not, add it to `clauses` and push its ID onto clauseStack.
 
     for (const newClauseHash in newGoals) {
       const newGoal = newGoals[newClauseHash];

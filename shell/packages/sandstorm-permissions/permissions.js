@@ -77,7 +77,7 @@ class PermissionSet {
     for (let ii = 0; ii < this.array.length; ++ii) {
       const mine = this.array[ii];
       const yours = other.array[ii] || false;
-      if (mine != yours) {
+      if (mine && !yours) {
         return false;
       }
     }
@@ -92,9 +92,9 @@ class PermissionSet {
     check(other, PermissionSet);
     let changed = false;
     for (let ii = 0; ii < other.array.length; ++ii) {
-      const old = this.array[ii];
-      this.array[ii] = this.array[ii] || other.array[ii];
-      if (old != this.array[ii]) {
+      const old = !!this.array[ii];
+      this.array[ii] = !!this.array[ii] || other.array[ii];
+      if (old !== this.array[ii]) {
         changed = true;
       }
     }
@@ -106,9 +106,9 @@ class PermissionSet {
     check(other, PermissionSet);
     let changed = false;
     for (let ii = 0; ii < other.array.length && ii < this.array.length; ++ii) {
-      const old = this.array[ii];
-      this.array[ii] = this.array[ii] && !other.array[ii];
-      if (old != this.array[ii]) {
+      const old = !!this.array[ii];
+      this.array[ii] = !!this.array[ii] && !other.array[ii];
+      if (old !== this.array[ii]) {
         changed = true;
       }
     }
@@ -120,9 +120,9 @@ class PermissionSet {
     check(other, PermissionSet);
     let changed = false;
     for (let ii = 0; ii < this.array.length; ++ii) {
-      const old = this.array[ii];
-      this.array[ii] = this.array[ii] && other.array[ii];
-      if (old != this.array[ii]) {
+      const old = !!this.array[ii];
+      this.array[ii] = !!this.array[ii] && other.array[ii];
+      if (old !== this.array[ii]) {
         changed = true;
       }
     }
@@ -143,13 +143,13 @@ class Clause {
     // It is often useful to form sets of clauses. This method returns a hash that is suitable to
     // be used as a key for such a set.
     //
-    // TODO(soon): Investigate other approaches. We do not need this hash to be cryptographically
+    // TODO(perf): Investigate other approaches. We do not need this hash to be cryptographically
     //   secure; we just need it to avoid accidental collisions. Maybe we should instead represent
     //   sets of clauses as ordered maps, or maybe as proper hash maps with bucketing?
     const hasher = Crypto.createHash("sha256");
-    for (let grainId in this.identityPermissions) {
+    Object.keys(this.identityPermissions).sort().forEach((grainId) => {
       hasher.update(grainId + "{");
-      for (let identityId in this.identityPermissions[grainId]) {
+      Object.keys(this.identityPermissions[grainId]).sort().forEach((identityId) => {
         hasher.update(identityId + "(");
         const permissionArray = this.identityPermissions[grainId][identityId].array;
         for (let i = 0; i < permissionArray.length; ++i) {
@@ -159,10 +159,10 @@ class Clause {
         }
 
         hasher.update(")");
-      }
+      });
 
       hasher.update("}");
-    }
+    });
 
     return hasher.digest("hex");
   }
@@ -244,8 +244,8 @@ class Clause {
 }
 
 class MembranedPermissionSet {
-  // A PermissionSet that is contingent upon some membrane requirements. The membrane is repesented
-  // as a Clause.
+  // A PermissionSet that is contingent upon some membrane requirements. The membrane reuirements
+  // are repesented as a Clause.
 
   constructor(permissions, membrane) {
     check(permissions, PermissionSet);
@@ -256,6 +256,13 @@ class MembranedPermissionSet {
   }
 
   static fromToken(token, viewInfo) {
+    // A token is an edge in the sharing graph, propagating some permissions P from vertex A
+    // to vertex B, perhaps conditioned on some membrane requirements M. This function constructs
+    // a MembranedPermissionSet from a token, taking into account the permissions P and the
+    // membrane requirements M. The result does not carry any information about the vertices
+    // A and B, even though the input `token` may contain information about them, for example
+    // in the `parentToken` field.
+
     const permissions = PermissionSet.fromRoleAssignment(token.roleAssignment, viewInfo);
     const result = new MembranedPermissionSet(permissions, new Clause());
     result.membrane.addMembraneRequirements(token.requirements);
@@ -339,7 +346,7 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
   const grain = context.grains[grainId];
   const ownerIdentityIds = context.userIdentityIds[grain.userId];
 
-  // A vertex ID is of the form "i:<identityId>" or "t:<tokenId>".
+  // A vertex ID is of the form "i:<identityId>",  "t:<tokenId>", or "o:Owner".
   const destinationId = vertex.token ? ("t:" + vertex.token._id) : ("i:" + vertex.grain.identityId);
   const destinationPermissions = {};
   {
@@ -349,7 +356,7 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
 
   const permissionsMap = {};
   // Map<vertexId, Map<membraneHash, MembranedPermissionSet>>.
-  // May from vertex ID to permissions that we've already shown flow from that vertex to our
+  // Map from vertex ID to permissions that we've already shown flow from that vertex to our
   // destination vertex.
 
   const vertexStack = []; // Vertex IDs that we need to explore.
@@ -362,37 +369,36 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
     let incomingEdges = [];
 
     function tokenToEdge(token) {
-      let sharerId = "i:" + token.identityId;
-      if (token.parentToken) {
-        sharerId = "t:" + token.parentToken;
-      }
-
       return {
-        sharerId: sharerId,
+        sharerId: token.parentToken ? "t:" + token.parentToken : "i:" + token.identityId,
         membranedPermissions: MembranedPermissionSet.fromToken(token, viewInfo),
       };
     }
 
-    if (vertexId.slice(0, 2) == "o:") {
+    if (vertexId.slice(0, 2) === "o:") {
       // Owner. We don't need to do anything.
       incomingEdges = [];
-    } else if (vertexId.slice(0, 2) == "t:") {
+    } else if (vertexId.slice(0, 2) === "t:") {
       const token = context.tokensById[vertexId.slice(2)];
       if (token) {
         incomingEdges = [tokenToEdge(token)];
       }
-    } else if (ownerIdentityIds.indexOf(vertexId.slice(2)) >= 0) {
-      const p = new MembranedPermissionSet(PermissionSet.fromRoleAssignment({ allAccess: null },
-                                                                            viewInfo),
-                                           new Clause());
-      incomingEdges = [{ sharerId: "o:Owner", membranedPermissions: p }];
-    } else if (!grain.private) { // legacy public grain
-      const p = new MembranedPermissionSet(PermissionSet.fromRoleAssignment({ none: null },
-                                                                            viewInfo),
-                                           new Clause());
-      incomingEdges = [{ sharerId: "o:Owner", membranedPermissions: p }];
+    } else if (vertexId.slice(0, 2) === "i:") {
+      if (ownerIdentityIds.indexOf(vertexId.slice(2)) >= 0) {
+        const p = new MembranedPermissionSet(PermissionSet.fromRoleAssignment({ allAccess: null },
+                                                                              viewInfo),
+                                             new Clause());
+        incomingEdges = [{ sharerId: "o:Owner", membranedPermissions: p }];
+      } else if (!grain.private) { // legacy public grain
+        const p = new MembranedPermissionSet(PermissionSet.fromRoleAssignment({ none: null },
+                                                                              viewInfo),
+                                             new Clause());
+        incomingEdges = [{ sharerId: "o:Owner", membranedPermissions: p }];
+      } else {
+        incomingEdges = (context.tokensByRecipient[vertexId.slice(2)] || []).map(tokenToEdge);
+      }
     } else {
-      incomingEdges = (context.tokensByRecipient[vertexId.slice(2)] || []).map(tokenToEdge);
+      throw new Meteor.Error(500, "Unrecognized vertex ID: " + vertexId);
     }
 
     incomingEdges.forEach((edge) => {
@@ -499,7 +505,7 @@ function normalize(membranedClauseSet, permissionSet) {
     for (const removedHashedClause in chosen) {
       const newChosen = {};
       for (const hashedClause in chosen) {
-        if (hashedClause != removedHashedClause) {
+        if (hashedClause !== removedHashedClause) {
           newChosen[hashedClause] = chosen[hashedClause];
         }
       }

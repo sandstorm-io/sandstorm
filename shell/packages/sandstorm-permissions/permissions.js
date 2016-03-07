@@ -463,11 +463,11 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
   return permissionsMap["o:Owner"] || {};
 }
 
-function normalize(membranedClauseSet, permissionSet) {
-  // `membranedClauseSet` is the set of permissions flowing from a grain owner to a vertex,
+function normalize(membranedPermissionSetMap, desiredPermissions) {
+  // `membranedPermissionSetMap` represents the permissions flowing from a grain owner to a vertex,
   // exactly in the format of the output of `backpropagateVertex()`.
   //
-  // `permissionSet` is the set of permissions that we are currently interested in.
+  // `desiredPermissions` is the set of permissions that we are currently interested in.
   //
   // Returns a set of clauses in a minimal disjunctive normal form, representing the possible
   // ways that the desired permissions could be achieved. The result is a map from hashed clause
@@ -480,15 +480,15 @@ function normalize(membranedClauseSet, permissionSet) {
 
     const accum = new PermissionSet([]);
     for (const hashedClause in chosen) {
-      accum.add(membranedClauseSet[hashedClause].permissions);
+      accum.add(membranedPermissionSetMap[hashedClause].permissions);
     }
 
-    return permissionSet.isSubsetOf(accum);
+    return desiredPermissions.isSubsetOf(accum);
   }
 
   const chooseAll = {};
-  for (const hashedClause in membranedClauseSet) {
-    const pclause = membranedClauseSet[hashedClause];
+  for (const hashedClause in membranedPermissionSetMap) {
+    const pclause = membranedPermissionSetMap[hashedClause];
     chooseAll[hashedClause] = { clause: pclause.membrane, tokensUsed: pclause.tokensUsed };
   }
 

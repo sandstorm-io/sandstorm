@@ -204,11 +204,23 @@ body>.topbar {
     overflow: hidden;
     @media #{$desktop} {
       height: $topbar-height-desktop;
+      &.shrink-desktop {
+        >.home-button {
+          width: $navbar-width-desktop-shrunk !important;
+          >a {
+            width: $navbar-width-desktop-shrunk !important;
+            padding-right: 0;
+          }
+        }
+      }
     }
 
     >.home-button {
       @media #{$desktop} {
+        width: $navbar-width-desktop;
+        transition: width 0.2s;
         float:left;
+        overflow: hidden;
 
         >a {
           display: block;
@@ -216,14 +228,13 @@ body>.topbar {
           margin: 0px;
           text-decoration: none;
           height: $topbar-height-desktop;
-          padding-left: 32px;
+          padding-left: $navbar-width-desktop-shrunk;
           padding-right: 8px;
 
           background-image: url("/icon.png");
           background-repeat: no-repeat;
-          background-position: 8px center, 6px 24px;
+          background-position: 16px center, 6px 24px;
           background-size: auto, 16px 8px;
-          border-right: 1px solid #666;
 
           &:hover {
             background-color: $topbar-background-color-hover;
@@ -245,6 +256,7 @@ body>.topbar {
         // Heuristically try to prevent the title from bumping everything else off the top bar.
         // The size of 700px was empirically found to provide enough space for "everything else".
         max-width: calc(100% - 700px);
+        border-left: 1px solid #666;
       }
       @media #{$mobile} {
         width: 100%; // needs to span the whole row because the border-bottom is needed to draw

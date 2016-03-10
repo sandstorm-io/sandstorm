@@ -1249,9 +1249,14 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  getSmtpConfig() {
+    const setting = Settings.findOne({ _id: "smtpConfig" });
+    return setting ? setting.value : undefined; // undefined if subscription is not ready.
+  },
+
   getReturnAddress: function () {
-    const setting = Settings.findOne({ _id: "returnAddress" });
-    return setting ? setting.value : "";  // empty if subscription is not ready.
+    const config = this.getSmtpConfig();
+    return config && config.returnAddress || ""; // empty if subscription is not ready.
   },
 
   isFeatureKeyValid: function () {

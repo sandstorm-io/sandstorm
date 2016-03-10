@@ -438,6 +438,48 @@ function assignBonuses() {
   }
 }
 
+function splitSmtpUrl() {
+  const smtpUrl = Settings.findOne({ _id: "smtpUrl" });
+  const returnAddress = Settings.findOne({ _id: "returnAddress" });
+
+  // Default values.
+  const smtpConfig = {
+    hostname: "localhost",
+    port: "25",
+    auth: undefined,
+    returnAddress: returnAddress.value,
+  };
+
+  if (smtpUrl) {
+    // If there was a SMTP URL previously defined, import its data.
+    const parsed = Url.parse(smtpUrl);
+    let auth = undefined;
+    if (parsed.auth) {
+      const colonIndex = parsed.auth.indexOf(":");
+      let user = undefined;
+      let pass = undefined;
+      if (colonIndex !== -1) {
+        user = parsed.auth.slice(0, colonIndex);
+        pass = parsed.auth.slice(colonIndex + 1);
+      }
+
+      auth = {
+        user,
+        pass,
+      };
+    }
+
+    // Override defaults with previous config's values.
+    smtpConfig.hostname = parsed.hostname || "localhost";
+    smtpConfig.port = parsed.port || "25";
+    smtpConfig.auth = auth;
+  }
+
+  Settings.upsert({ _id: "smtpConfig" }, { value: smtpConfig });
+  Settings.remove({ _id: "returnAddress" });
+  Settings.remove({ _id: "smtpUrl" });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -462,6 +504,7 @@ const MIGRATIONS = [
   initServerTitleAndReturnAddress,
   sendReferralNotifications,
   assignBonuses,
+  splitSmtpUrl,
 ];
 
 function migrateToLatest() {

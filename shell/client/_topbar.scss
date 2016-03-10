@@ -784,7 +784,7 @@ body>.popup {
     }
 
     @media #{$mobile} {
-      position: static;
+      position: relative;
       margin: 64px auto 32px;
       font-size: 20px;
       width: 90%;

@@ -25,7 +25,7 @@ limitations under the License.
   {{!-- Becomes hamburger menu button in mobile view. --}}
   <div class="menu-button"></div>
   <ul class="topbar {{#if _menuExpanded.get}}expanded{{/if}}">
-    <ul class="menubar">
+    <ul class="menubar {{#if shrinkNavbar}}shrink-desktop{{/if}}">
       {{#each items}}
         {{#unless onlyPopup}}
           <li class="{{name}}">

@@ -1253,7 +1253,6 @@ _.extend(SandstormDb.prototype, {
   },
 
   isFeatureKeyValid: function () {
-    if (Meteor.settings.public.isFeatureKeyValid) return true;
     const featureKey = this.currentFeatureKey();
     return !!featureKey;
   },

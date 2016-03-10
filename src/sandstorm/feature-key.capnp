@@ -68,6 +68,11 @@ struct FeatureKey {
   isTrial @6 :Bool;
   # Is this a trial key? For display purposes only.
 
+  isForTesting @10 :Bool = false;
+  # Is this key meant for use by Sandstorm core developers for testing purposes? Test keys will
+  # only work when the server is in testing mode. Testing mode forfeits security, so you don't want
+  # to run a real server in this mode.
+
   features :group {
     # Individual features enabled.
 
@@ -77,7 +82,7 @@ struct FeatureKey {
   }
 
   const signingKey :PublicSigningKey =
-      (key0 = 0xa87bfaf12af68423, key1 = 0xc42d2e56f009d882,
-       key2 = 0x62298178d76d746b, key3 = 0xfe7ee882ec3d945a);
+      (key0 = 0x86ada8b5d9f65036, key1 = 0x183909ba08aac323,
+       key2 = 0x6d778da453c9560d, key3 = 0xdf94f532f33a7ea8);
   # The Ed25519 public key used to verify FeatureKeys.
 }

@@ -69,7 +69,7 @@ public:
           bytes.begin() + i * crypto_sign_ed25519_SEEDBYTES) == 0);
 
       if (i < publicKeys.size()) {
-        if (memcmp(publicKey, structToBytes(publicKeys[i], crypto_sign_ed25519_PUBLICKEYBYTES),
+        if (memcmp(publicKey, getUnderlyingBytes(publicKeys[i], crypto_sign_ed25519_PUBLICKEYBYTES),
                    crypto_sign_ed25519_PUBLICKEYBYTES) != 0) {
           return kj::str("keyring does not match public key #", i);
         }
@@ -100,7 +100,7 @@ public:
 
     for (auto i: kj::indices(keyring)) {
       KJ_ASSERT(crypto_sign_ed25519_detached(
-          structToBytes(signatures[i], crypto_sign_ed25519_BYTES),
+          getUnderlyingBytes(signatures[i], crypto_sign_ed25519_BYTES),
           nullptr, data.begin(), data.size(), keyring[i].key) == 0);
     }
 
@@ -130,9 +130,9 @@ public:
         context.error(kj::str("key ", i, ": NO SIGNATURE"));
         continue;
       } else if (crypto_sign_ed25519_verify_detached(
-          structToBytes(signatures[i], crypto_sign_ed25519_BYTES),
+          getUnderlyingBytes(signatures[i], crypto_sign_ed25519_BYTES),
           data.begin(), data.size(),
-          structToBytes(keys[i], crypto_sign_ed25519_PUBLICKEYBYTES)) == 0) {
+          getUnderlyingBytes(keys[i], crypto_sign_ed25519_PUBLICKEYBYTES)) == 0) {
         context.warning(kj::str("key ", i, ": PASS"));
       } else {
         context.error(kj::str("key ", i, ": FAIL"));
@@ -170,7 +170,7 @@ public:
     // Write key.
     capnp::MallocMessageBuilder message;
     auto key = message.getRoot<PublicSigningKey>();
-    memcpy(structToBytes(kj::cp(key), sizeof(random)), random, sizeof(random));
+    memcpy(getUnderlyingBytes(kj::cp(key), sizeof(random)), random, sizeof(random));
     printKey(key);
     context.exitInfo("*** Don't forget to back up the keyring! ***");
   }
@@ -193,7 +193,7 @@ public:
           .initAs<capnp::List<PublicSigningKey>>(keyring.size());
       for (auto i: kj::indices(keyring)) {
         KJ_ASSERT(crypto_sign_ed25519_sk_to_pk(
-            structToBytes(keys[i], crypto_sign_ed25519_PUBLICKEYBYTES), keyring[i].key) == 0);
+            getUnderlyingBytes(keys[i], crypto_sign_ed25519_PUBLICKEYBYTES), keyring[i].key) == 0);
       }
       for (auto key: keys) printKey(key);
     }
@@ -208,13 +208,13 @@ private:
   };
   kj::Array<PrivateKey> keyring;
 
-  const byte* structToBytes(capnp::AnyStruct::Reader reader, size_t size) {
+  const byte* getUnderlyingBytes(capnp::AnyStruct::Reader reader, size_t size) {
     auto data = reader.getDataSection();
     KJ_REQUIRE(data.size() == size);
     return data.begin();
   }
 
-  byte* structToBytes(capnp::AnyStruct::Builder builder, size_t size) {
+  byte* getUnderlyingBytes(capnp::AnyStruct::Builder builder, size_t size) {
     auto data = builder.getDataSection();
     KJ_REQUIRE(data.size() == size);
     return data.begin();

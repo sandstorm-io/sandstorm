@@ -17,20 +17,24 @@
 const Capnp = Npm.require("capnp");
 const FeatureKey = Capnp.importSystem("sandstorm/feature-key.capnp").FeatureKey;
 
-// These byte-packing tricks that are so convenient in non-memory-safe languages are a
-// bit of a pain in memory-safe languages.  Argh.  At least I have bignums on the server.
+// We don't currently have a way of reading the raw bytes of a capnp struct in Javascript the
+// way we do in C++. Awkwardly, what we end up with is four 64-bit ints that have been stringified
+// since JS can't actually deal with 64-bit ints. We have to laboriously reconstruct the underlying
+// bytes using Bignum. Don't forget that everything is little-endian, as DJBeesus intended.
 const bits0 = Bignum(FeatureKey.signingKey.key0);
 const bits1 = Bignum(FeatureKey.signingKey.key1);
 const bits2 = Bignum(FeatureKey.signingKey.key2);
 const bits3 = Bignum(FeatureKey.signingKey.key3);
-const signingKey = bits0.shiftLeft(64 * 3)
-    .add(bits1.shiftLeft(64 * 2))
-    .add(bits2.shiftLeft(64))
-    .add(bits3)
-    .toBuffer();
+const signingKey = bits0
+    .add(bits1.shiftLeft(64 * 1))
+    .add(bits2.shiftLeft(64 * 2))
+    .add(bits3.shiftLeft(64 * 3))
+    .toBuffer({ endian: "little", size: 32 });
 
-// Export for use in Meteor method in admin.js
-verifyFeatureKeySignature = function (buf) {
+const isTesting = Meteor.settings && Meteor.settings.public &&
+                  Meteor.settings.public.isTesting;
+
+function verifyFeatureKeySignature(buf) {
   // buf is a Buffer containing an feature key with attached signature.
   // This function returns the signed data if the signature is valid,
   // or undefined if the signature is invalid.
@@ -41,6 +45,7 @@ verifyFeatureKeySignature = function (buf) {
   const signedData = buf.slice(64);
 
   if (!Ed25519.Verify(signedData, signature, signingKey)) {
+    console.error("feature key failed signature check", bits0, bits1, bits2, bits3);
     return undefined;
   } else {
     return signedData;
@@ -55,6 +60,12 @@ loadSignedFeatureKey = function (buf) {
   const verifiedFeatureKeyBlob = verifyFeatureKeySignature(buf);
   if (verifiedFeatureKeyBlob) {
     const featureKey = Capnp.parsePacked(FeatureKey, verifiedFeatureKeyBlob);
+    if (featureKey.isForTesting && !isTesting) {
+      // This key is for testing only, but the server is not running in testing mode. Note that
+      // enabling testing mode forfeits up all security.
+      return undefined;
+    }
+
     return featureKey;
   } else {
     return undefined;

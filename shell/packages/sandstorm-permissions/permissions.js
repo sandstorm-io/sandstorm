@@ -728,10 +728,11 @@ function proveClauses(db, context, goalClauses) {
 
   const clausesAlreadySeen = {};
   // Set of clauses we've already seen, keyed by clause hash, initialized to be equal to
-  // `goalClauses`. The basic idea of our algorithm is to expand `clausesAlreadySeen` until either
-  // it contains an empty clause (i.e. "true") or it can fruitfully be expanded no more. If it
-  // contains an empty clause, then we've successfully found a proof. If it maxes out without an
-  // empty clause, then there is no proof.
+  // `goalClauses`. Proving any one of these clauses is sufficient to prove our end goal. The basic
+  // idea of our algorithm is to expand `clausesAlreadySeen` until either it contains an empty
+  // clause (i.e. "true") or it can fruitfully be expanded no more. If it contains an empty
+  // clause, then we've successfully found a proof. If it maxes out without an empty clause,
+  // then there is no proof.
   //
   // For example, if we want to prove A, and if our sharing graphs has the facts
   //

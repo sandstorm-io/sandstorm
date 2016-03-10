@@ -48,7 +48,7 @@ shell/packages/sandstorm-accounts-ui
     License: MIT
     License URL: https://github.com/meteor/meteor/blob/devel/LICENSE.txt
 
-shell/client/ansi-up.js
+shell/client/vendor/ansi-up.js
     What: ansi_up library (converts ANSI escape codes to HTML)
     Source URL: http://github.com/drudru/ansi_up
     Copyright: Dru Nelson
@@ -56,7 +56,7 @@ shell/client/ansi-up.js
     License URL: https://github.com/drudru/ansi_up/blob/master/Readme.md
                  (at bottom)
 
-shell/client/es6-promise.js
+shell/client/vendor/es6-promise.js
     What: ES6 Promise polyfill
     Source URL: https://github.com/stefanpenner/es6-promise
     Copyright: Yehuda Katz, Tom Dale, Stefan Penner and contributors

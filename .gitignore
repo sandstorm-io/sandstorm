@@ -3,7 +3,7 @@ tmp
 deps
 node_modules
 shell/client/changelog.html
-shell/client/_icons.scss
+shell/client/styles/_icons.scss
 shell/sandstorm-shell.config
 shell/sandstorm-shell.creator
 shell/sandstorm-shell.creator.user

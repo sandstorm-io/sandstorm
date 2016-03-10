@@ -14,12 +14,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-isSafeDemoAppUrl = function isSafeDemoAppUrl(url) {
-  // For demo accounts, we allow using a bare hash with no URL (which will never upload a new app)
-  // and we allow specifying a sandstorm.io URL.
-  return !url ||
-      url.lastIndexOf("http://sandstorm.io/", 0) === 0 ||
-      url.lastIndexOf("https://sandstorm.io/", 0) === 0 ||
-      url.lastIndexOf("https://alpha-j7uny7u376jnimcsx34c.sandstorm.io/", 0) === 0 ||
-      url.lastIndexOf("https://app-index.sandstorm.io/", 0) === 0;
-};
+// Used in both client/demo.js and server/demo.js, as well as install.js
+allowDemo = Meteor.settings && Meteor.settings.public &&
+                Meteor.settings.public.allowDemoAccounts;

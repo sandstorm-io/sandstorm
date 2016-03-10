@@ -587,30 +587,6 @@ Template.adminInvites.helpers({
   },
 });
 
-const maybeScrollLog = function () {
-  // This function appears unused.  TODO: verify safe to delete
-  const elem = document.getElementById("adminLog");
-  const scrollLogToBottom = function (elem) {
-    elem.scrollTop = elem.scrollHeight;
-  };
-
-  if (elem) {
-    // The log already exists. It's about to be updated. Check if it's scrolled to the bottom
-    // before the update.
-    if (elem.scrollHeight - elem.scrollTop === elem.clientHeight) {
-      // Indeed, so we want to scroll it back to the bottom after the update.
-      Tracker.afterFlush(function () { scrollLogToBottom(elem); });
-    }
-  } else {
-    // No element exists yet, but it's probably about to be created, in which case we definitely
-    // want to scroll it.
-    Tracker.afterFlush(function () {
-      const elem2 = document.getElementById("adminLog");
-      if (elem2) scrollLogToBottom(elem2);
-    });
-  }
-};
-
 Template.adminLog.onCreated(function () {
   const state = Iron.controller().state;
   const token = state.get("token");

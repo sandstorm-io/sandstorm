@@ -14,12 +14,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-isSafeDemoAppUrl = function isSafeDemoAppUrl(url) {
-  // For demo accounts, we allow using a bare hash with no URL (which will never upload a new app)
-  // and we allow specifying a sandstorm.io URL.
-  return !url ||
-      url.lastIndexOf("http://sandstorm.io/", 0) === 0 ||
-      url.lastIndexOf("https://sandstorm.io/", 0) === 0 ||
-      url.lastIndexOf("https://alpha-j7uny7u376jnimcsx34c.sandstorm.io/", 0) === 0 ||
-      url.lastIndexOf("https://app-index.sandstorm.io/", 0) === 0;
+Accounts.identityServices.dev = {
+  isEnabled: function () {
+    return globalDb.allowDevAccounts();
+  },
+
+  loginTemplate: {
+    name: "devLoginForm",
+    priority: -10, // Put it at the top.
+  },
 };

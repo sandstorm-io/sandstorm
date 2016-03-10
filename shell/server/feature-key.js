@@ -34,7 +34,6 @@ const signingKey = bits0
 const isTesting = Meteor.settings && Meteor.settings.public &&
                   Meteor.settings.public.isTesting;
 
-// Export for use in Meteor method in admin.js
 function verifyFeatureKeySignature(buf) {
   // buf is a Buffer containing an feature key with attached signature.
   // This function returns the signed data if the signature is valid,

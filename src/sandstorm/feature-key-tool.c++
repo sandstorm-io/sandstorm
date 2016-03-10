@@ -120,7 +120,7 @@ public:
     auto unsign = kj::heapArray<byte>(sign.size());
     unsigned long long length;
 
-    auto pk = structToBytes(*FeatureKey::SIGNING_KEY, crypto_sign_ed25519_PUBLICKEYBYTES);
+    auto pk = getUnderlyingBytes(*FeatureKey::SIGNING_KEY, crypto_sign_ed25519_PUBLICKEYBYTES);
 
     if (crypto_sign_ed25519_open(unsign.begin(), &length, sign.begin(), sign.size(), pk) != 0) {
       return "signature check failed";
@@ -158,7 +158,7 @@ public:
     capnp::MallocMessageBuilder builder;
     auto pk = builder.getRoot<PublicSigningKey>();
 
-    memcpy(structToBytes(kj::cp(pk), crypto_sign_ed25519_PUBLICKEYBYTES), publicKey,
+    memcpy(getUnderlyingBytes(kj::cp(pk), crypto_sign_ed25519_PUBLICKEYBYTES), publicKey,
            crypto_sign_ed25519_PUBLICKEYBYTES);
     auto msg = kj::str(
         "(key0 = 0x", kj::hex(pk.getKey0()), ","
@@ -178,13 +178,13 @@ private:
   byte key[crypto_sign_ed25519_SECRETKEYBYTES];
   byte publicKey[crypto_sign_ed25519_PUBLICKEYBYTES];
 
-  const byte* structToBytes(capnp::AnyStruct::Reader reader, size_t size) {
+  const byte* getUnderlyingBytes(capnp::AnyStruct::Reader reader, size_t size) {
     auto data = reader.getDataSection();
     KJ_REQUIRE(data.size() == size);
     return data.begin();
   }
 
-  byte* structToBytes(capnp::AnyStruct::Builder builder, size_t size) {
+  byte* getUnderlyingBytes(capnp::AnyStruct::Builder builder, size_t size) {
     auto data = builder.getDataSection();
     KJ_REQUIRE(data.size() == size);
     return data.begin();

@@ -721,14 +721,36 @@ function proveClauses(db, context, goalClauses) {
   // `Map<ClauseId, {clause: Clause, tokensUsed: [tokenId]}>`.
   //
   // This function attempts to determine whether at least one of the input clauses holds.
-  // If a proof is found, returns `{yes: {tokensUsed: [tokenId]}}`.
-  // otherwise, returns {no: {}}
+  // If a proof is found, returns `{yes: {tokensUsed: [tokenId]}}`. Otherwise, returns `{no: {}}`.
   //
   // The `db` parameter is optional. If it is present, the database will be queried as needed.
   // If left out, the computation will proceed with only the tokens already present in `context`.
 
-  const clauses = {};
-  const clauseStack = []; // clause IDs
+  const clausesAlreadySeen = {};
+  // Set of clauses we've already seen, keyed by clause hash, initialized to be equal to
+  // `goalClauses`. The basic idea of our algorithm is to expand `clausesAlreadySeen` until either
+  // it contains an empty clause (i.e. "true") or it can fruitfully be expanded no more. If it
+  // contains an empty clause, then we've successfully found a proof. If it maxes out without an
+  // empty clause, then there is no proof.
+  //
+  // For example, if we want to prove A, and if our sharing graphs has the facts
+  //
+  //     A <= B or C   (1)
+  //     B <= A        (2)
+  //     C <= true     (3)
+  //
+  // then the evolution of `clausesAlreadySeen` through our computation would proceed like this:
+  //
+  //     {A}              (start)
+  //     {A, B, C}        (apply (1))
+  //     {A, B, C, true}  (apply (3))
+  //
+  // and the proof is successful. Notice that applying (2) would not have an effect, because A
+  // is already in `clausesAlreadySeen`.
+
+  const clauseStack = [];
+  // Array of clause IDs, referring to elements of `clausesAlreadySeen` that we still need to
+  // explore.
 
   for (const hashedClause in goalClauses) {
     const goalClause = goalClauses[hashedClause];
@@ -738,7 +760,7 @@ function proveClauses(db, context, goalClauses) {
       return { yes: { tokensUsed: tokensUsed } };
     }
 
-    clauses[hashedClause] = { clause: goalClause.clause, tokensUsed: tokensUsed };
+    clausesAlreadySeen[hashedClause] = { clause: goalClause.clause, tokensUsed: tokensUsed };
     clauseStack.push(hashedClause);
   }
 
@@ -747,8 +769,8 @@ function proveClauses(db, context, goalClauses) {
   while (clauseStack.length > 0) {
     const hashedClause = clauseStack.pop();
     const clause = new Clause();
-    clause.conjoin(clauses[hashedClause].clause);
-    const tokensUsed = clauses[hashedClause].tokensUsed;
+    clause.conjoin(clausesAlreadySeen[hashedClause].clause);
+    const tokensUsed = clausesAlreadySeen[hashedClause].tokensUsed;
     const goal = clause.popFirstGoal();
     const grainId = goal.vertex.grain._id;
 
@@ -762,9 +784,13 @@ function proveClauses(db, context, goalClauses) {
     const result = backpropagateVertex(context, goal.vertex, goal.permissions, viewInfo);
     const newGoals = normalize(result, goal.permissions);
 
-    // For each new clause, conjoin it with the remaining goals in `clause`.
+    // TODO(perf): We might end up trying to prove the same `goal` many times, so it probably makes
+    //   sense to memoize the above computation of `newGoals`.
+
+    // Now, for each new clause, conjoin it with the remaining goals in `clause`.
     // If we end up with something empty, then we're done! Otherwise, check whether
-    // we already have this clause. If not, add it to `clauses` and push its ID onto clauseStack.
+    // we already have this clause. If not, add it to `clausesAlreadySeen` and push its ID onto
+    // `clauseStack`.
 
     for (const newClauseHash in newGoals) {
       const newGoal = newGoals[newClauseHash];
@@ -778,9 +804,12 @@ function proveClauses(db, context, goalClauses) {
         return { yes: { tokensUsed: newGoal.tokensUsed } };
       }
 
+      // TODO(perf): This checks whether `newClause` is equal to any clause `clausesAlreadySeen`,
+      //  but it would be better if we could somehow check whether `newClause` is a superset of any
+      //  clause in `clausesAlreadySeen`.
       const newHash = newClause.hash();
-      if (!(newHash in clauses)) {
-        clauses[newHash] = { clause: newClause, tokensUsed: newGoal.tokensUsed };
+      if (!(newHash in clausesAlreadySeen)) {
+        clausesAlreadySeen[newHash] = { clause: newClause, tokensUsed: newGoal.tokensUsed };
         clauseStack.push(newHash);
       }
     }

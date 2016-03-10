@@ -20,7 +20,15 @@ const Url = Npm.require("url");
 SandstormPermissions = {};
 
 class PermissionSet {
-  // A wrapper around an array of booleans.
+  // A wrapper around an array of booleans representing a set of permissions like "read" or
+  // "write". This might represent the permissions held by some user on some grain, or it might
+  // represent the permissions that one user has chosen to share with another user.
+  //
+  // In our model, permissions are independent. You can have "read" without "write" and you can
+  // have "write" without "read". Many apps don't actually allow arbitrary permutations, and
+  // instead define "roles" like "editor" or "viewer", where "editor" implies both read and write
+  // permission while "viewer" implies only read. Roles, however, are just aliases for sets of
+  // permissions; all actual computation is done on permissions.
 
   constructor(array) {
     if (!array) {
@@ -33,9 +41,21 @@ class PermissionSet {
   }
 
   static fromRoleAssignment(roleAssignment, viewInfo) {
+    // Create a PermissionSet based on a ViewSharingLink.RoleAssignment and a UiView.ViewInfo (as
+    // defined in grain.capnp). ViewInfo defines a mapping from roles to permission sets for a
+    // particular grain type. RoleAssignment represents the permissions passed from one user to
+    // another -- usually it specifies a single role, but sometimes also specifies permissions to
+    // add or remove as well.
+    //
+    // A falsy value for `roleAssignment` is considered equivalent to a "none" value, which means
+    // that no role was explicitly chosen, so the default role should be assigned.
+
     let result = new PermissionSet([]);
 
     if (!roleAssignment || "none" in roleAssignment) {
+      // No role explicitly chosen, e.g. because the app did not define any roles at the time
+      // the sharing took place. Assign the default role, if there is one.
+
       if (viewInfo.roles) {
         for (let ii = 0; ii < viewInfo.roles.length; ++ii) {
           const roleDef = viewInfo.roles[ii];
@@ -46,6 +66,8 @@ class PermissionSet {
         }
       }
     } else if ("allAccess" in roleAssignment) {
+      // All permissions are shared, even if there is no explicitly-defined role for this.
+
       let length = 0;
       if (viewInfo.permissions) {
         length = viewInfo.permissions.length;
@@ -58,6 +80,8 @@ class PermissionSet {
 
       result = new PermissionSet(array);
     } else if ("roleId" in roleAssignment && viewInfo.roles && viewInfo.roles.length > 0) {
+      // A specific role was chosen.
+
       const roleDef = viewInfo.roles[roleAssignment.roleId];
       if (roleDef) {
         result = new PermissionSet(roleDef.permissions);
@@ -65,6 +89,7 @@ class PermissionSet {
     }
 
     if (roleAssignment) {
+      // Add or remove specific permissions. This is uncommon.
       result.add(new PermissionSet(roleAssignment.addPermissionSet));
       result.remove(new PermissionSet(roleAssignment.removePermissionSet));
     }
@@ -133,6 +158,23 @@ class PermissionSet {
 
 class Clause {
   // A conjunction of permissions for identities on grains.
+  //
+  // This typcially represents a list of `MembraneRequirement`s, as defined in `supervisor.capnp`.
+  // These represent conditions under which some connection formed between grains remains valid.
+  // When a capability travels from grain to grain, it passes across these connections -- if any
+  // of the connections becomes invalid (is revoked), then the capability must be revoked as well.
+  // The word "membrane" comes from the concept of revokable membranes; the capability is passing
+  // across such membranes as it travels.
+  //
+  // For example, a clause might represent the statement "Alice has read access to Foo, Bob has
+  // write access to Foo, and Bob has read access to Bar". Specifically, this example situation
+  // would come about if:
+  // - Bob used his read access to Bar to extract a capability from it.
+  // - Bob embedded that capability into Foo, using his write access.
+  // - Alice extracted the capability from Foo, using her read access.
+  // If any of these permissions are revoked, then the capability needs to be revoked as well.
+  //
+  // TODO(cleanup): Consider renaming to RequirementSet for readability.
 
   constructor() {
     this.identityPermissions = {};
@@ -144,8 +186,11 @@ class Clause {
     // be used as a key for such a set.
     //
     // TODO(perf): Investigate other approaches. We do not need this hash to be cryptographically
-    //   secure; we just need it to avoid accidental collisions. Maybe we should instead represent
+    //   opaque, but we do need it to avoid collisions. Maybe we should instead represent
     //   sets of clauses as ordered maps, or maybe as proper hash maps with bucketing?
+    //   Note that a representation that allows for efficient matching by subset or superset would
+    //   be useful for some computations marked with TODO(perf) later in this file, but I'm not
+    //   sure what such a representation would look like.
     const hasher = Crypto.createHash("sha256");
     Object.keys(this.identityPermissions).sort().forEach((grainId) => {
       hasher.update(grainId + "{");
@@ -178,7 +223,8 @@ class Clause {
   }
 
   addMembraneRequirements(membraneRequirements) {
-    // Updates this clause to include the permissions required by `membraneRequirements`.
+    // Updates this clause to include the permissions required by `membraneRequirements`, which
+    // is a decoded Cap'n Proto List(MembraneRequirement).
 
     if (!membraneRequirements) return;
     membraneRequirements.forEach((requirement) => {
@@ -244,8 +290,11 @@ class Clause {
 }
 
 class MembranedPermissionSet {
-  // A PermissionSet that is contingent upon some membrane requirements. The membrane reuirements
+  // A PermissionSet that is contingent upon some membrane requirements. The membrane requirements
   // are repesented as a Clause.
+  //
+  // TODO(cleanup): Consider renaming the member `membrane` to `requirements`.
+  // TODO(cleanup): Consider renaming the class to `ConditionalPermissionSet`.
 
   constructor(permissions, membrane) {
     check(permissions, PermissionSet);
@@ -281,6 +330,13 @@ class MembranedPermissionSet {
 
   sequence(other) {
     // Updates this MembranedPermissionSet to apply `other` in sequence.
+    //
+    // That is, given two edges in the sharing graph, each represented by a MembranedPermissionSet,
+    // we are unifying them into a single edge, by intersecting both the requirements and the
+    // permissions granted.
+    //
+    // TODO(cleanup): Consider renaming to `join()`?
+
     check(other, MembranedPermissionSet);
     this.permissions.intersect(other.permissions);
     this.membrane.conjoin(other.membrane);
@@ -289,6 +345,17 @@ class MembranedPermissionSet {
     }
   }
 }
+
+// pseudo-class PermissionFlow
+//
+// A PermissionFlow is an object whose keys are Clause.hash()es and whose values are
+// MembranePermissionSets.
+//
+// A PermissionFlow represents the permissions flowing from one vertex in the sharing graph to
+// another (e.g. between one user and another), possibly across multiple edges (in series and/or
+// parallel). This is not simply a PermissionSet because some permissions may be conditional.
+// Instead, PermissionFlow is a set of MembranedPermissionSets; that is, a set of pairs of
+// PermissionSets and requirements for said permissions to be granted.
 
 class Context {
   // Cached database state for use during permissions computations.
@@ -333,11 +400,43 @@ const vertexPattern = Match.OneOf({ token: Match.ObjectIncluding({ _id: String, 
                                   { grain: Match.ObjectIncluding(
                                     { _id: String,
                                      identityId: Match.OneOf(String, null, undefined), }), });
+// A vertex in the sharing graph is a principal, e.g. a user (identity) or a token. Complicating
+// matters, we may have to traverse sharing graphs for multiple grains in the same computation. A
+// token is specific to one grain, but a user of course can have access to multiple grains, so in
+// the case of a user we represent the vertex as a (user, grain) pair.
+//
+// TODO(cleanup): Perhaps `grain` should be renamed to `user` or `identity`? In the common case
+//   where only a single grain's shares need to be considered, it feels weird to think of the
+//   grain ID as being the primary distinguishing feature of the vertex.
 
 function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
   // Computes the flow of the permissions in `permissionSet` from the grain owner to `vertex`.
-  // Returns a map whose values are MembranedPermissionSets and whose keys are the Clause.hash()
-  // of the corresponding membrane.
+  // Returns a PermissionFlow representing all permissions flowing into the vertex.
+  //
+  // That is to say, this computes the permissions held by a particular user or token (`vertex`)
+  // by traversing the sharing graph. The results may be conditional -- we compute permissions
+  // held under varying sets of conditions, and return a map of condition -> permissions. The
+  // caller may need to check if the conditions hold in order to compute the final permissions.
+  //
+  // For the purpose of the call, we only consider permissions in `permissionSet`; we won't bother
+  // following edges that aren't relevant to this set.
+  //
+  // `viewInfo` is the grain's `UiView.ViewInfo`, which maps roles to permissions.
+  //
+  // `context` contains all the information from the database which is available for now. This call
+  // will not make any new database lookups; edges not listed in `context` will not be considered
+  // (as if they'd been revoked).
+  //
+  // Note that we perform the graph traversal "backwards": We start from the destination vertex
+  // and search towards the grain owner. Hence "backpropagate". The reason we do this is because
+  // with typical sharing graphs, this allows us to avoid considering much of the graph. Sharing
+  // graphs typically involve lots of "fan out", so if we searched down from the owner we would
+  // end up touching many irrelevant leaf nodes, whereas searching up from the destination avoids
+  // this.
+  //
+  // TODO(cleanup): Consider renaming to "computePermissionFlowToVertex()". "backpropagate"
+  //     describes an implementation detail.
+
   check(context, Context);
   check(vertex, vertexPattern);
   check(permissionSet, PermissionSet);
@@ -346,29 +445,50 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
   const grain = context.grains[grainId];
   const ownerIdentityIds = context.userIdentityIds[grain.userId];
 
-  // A vertex ID is of the form "i:<identityId>",  "t:<tokenId>", or "o:Owner".
+  // A vertex ID is a string encoding of a vertex. It is of the form "i:<identityId>",
+  // "t:<tokenId>", or "o:Owner".
   const destinationId = vertex.token ? ("t:" + vertex.token._id) : ("i:" + vertex.grain.identityId);
   const destinationPermissions = {};
   {
+    // Initialize the destination in permissionsMap (see below) to indicate that all permissions
+    // flow from it to the destination (i.e. to itself) unconditionally. We need this to start
+    // our search.
     const clause = new Clause();
     destinationPermissions[clause.hash()] = new MembranedPermissionSet(permissionSet, clause);
   }
 
   const permissionsMap = {};
-  // Map<vertexId, Map<membraneHash, MembranedPermissionSet>>.
+  // Map<vertexId, PermissionFlow>.
   // Map from vertex ID to permissions that we've already shown flow from that vertex to our
   // destination vertex.
+  //
+  // Careful, this is a bit brain-bending. The map tells us which permissions the given vertex
+  // *intends* to share to the destination, but this does not mean that the source vertex actually
+  // has those permissions to share! E.g. Alice may share read-write access to Bob, Bob might
+  // reshare that access to Carol, and then Alice might retroactively reduce Bob's access to
+  // read-only. The flow from Bob to Carol is still read-write, but the flow from Alice to Carol
+  // (through Bob) is read-only, because no write permission ever flows to Bob.
 
   const vertexStack = []; // Vertex IDs that we need to explore.
 
   permissionsMap[destinationId] = destinationPermissions;
   vertexStack.push(destinationId);
 
+  // Repeatedly pop a vertex from the stack, find all its incoming edges (i.e. all other vertexes
+  // that share permissions to this vertex), determine what permissions might flow from those
+  // to the destination, and push those vertexes onto the stack.
   while (vertexStack.length > 0) {
     const vertexId = vertexStack.pop();
+
     let incomingEdges = [];
+    // List of edges in the sharing graph ending at this vertex. Each edge is an object of two
+    // fields:
+    // sharerId: The vertex ID of the edge's source.
+    // membranePermissions: MembranedPermissionSet representing the permissions flowing over this
+    //     edge and the conditions restricting that permission flow.
 
     function tokenToEdge(token) {
+      // Convert an ApiToken into an edge.
       return {
         sharerId: token.parentToken ? "t:" + token.parentToken : "i:" + token.identityId,
         membranedPermissions: MembranedPermissionSet.fromToken(token, viewInfo),
@@ -379,41 +499,81 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
       // Owner. We don't need to do anything.
       incomingEdges = [];
     } else if (vertexId.slice(0, 2) === "t:") {
+      // A token. Extract it from the context (or ignore if it isn't present).
       const token = context.tokensById[vertexId.slice(2)];
       if (token) {
         incomingEdges = [tokenToEdge(token)];
       }
     } else if (vertexId.slice(0, 2) === "i:") {
+      // An identity.
       if (ownerIdentityIds.indexOf(vertexId.slice(2)) >= 0) {
+        // This is one of the owner's identities.
         const p = new MembranedPermissionSet(PermissionSet.fromRoleAssignment({ allAccess: null },
                                                                               viewInfo),
                                              new Clause());
         incomingEdges = [{ sharerId: "o:Owner", membranedPermissions: p }];
-      } else if (!grain.private) { // legacy public grain
+      } else if (!grain.private) {
+        // This is a legacy "public" grain, meaning that any user who knows the grain ID receives
+        // the grain's default role. If the user doesn't know the grain ID then they are unable
+        // to express a request to open the grain in the first place and we'll never get to the
+        // point of this permissions computation, so for this purpose we can assume all users
+        // have the default role. (Similarly, a user who doesn't know the grain ID couldn't
+        // possibly be the subject of any MembraneRequirements against the grain because they
+        // have never interacted with the grain and so couldn't have caused such
+        // MembraneRequiments to come about. Note that this is kind of shaky non-local reasoning,
+        // but literally no such legacy grain has been created since early 2015 and none will ever
+        // be created again, so it's not a huge deal.)
         const p = new MembranedPermissionSet(PermissionSet.fromRoleAssignment({ none: null },
                                                                               viewInfo),
                                              new Clause());
         incomingEdges = [{ sharerId: "o:Owner", membranedPermissions: p }];
       } else {
+        // Not a special case. Gather all tokens where this user is the recipient.
         incomingEdges = (context.tokensByRecipient[vertexId.slice(2)] || []).map(tokenToEdge);
       }
     } else {
       throw new Meteor.Error(500, "Unrecognized vertex ID: " + vertexId);
     }
 
+    // For each edge incoming to this vertex, bacgkpropagate this vertex's PermissionFlow to the
+    // source vertex, joining it with the edge's constraints.
     incomingEdges.forEach((edge) => {
       const sharerId = edge.sharerId;
       let needToPush = false;
       // For each MembranedPermissionSet in permissionsMap[vertexId],
-      // apply edge.membranedPermissions in sequence.
-      const sequenced = {};
+      // apply edge.membranedPermissions in sequence, in order to create a PermissionFlow
+      // representing the flow through this edge to the final destination.
+      const sequenced = {};  // A PermissionFlow.
       for (const clauseHash in permissionsMap[vertexId]) {
         const newPermissions = edge.membranedPermissions.clone();
         newPermissions.sequence(permissionsMap[vertexId][clauseHash]);
         const newHash = newPermissions.membrane.hash();
         if (sequenced[newHash]) {
+          // Adding the new requirements of this edge to the variour requirements of vertexId's
+          // PermissionFlow caused two of the components to collide. For example, maybe vertexId's
+          // PermissionFlow had "read unconditionally" and "write if Alice has write on Foo", while
+          // the new edge we're adding itself has the requirement "Alice has write on Foo",
+          // therefore now both the read and write parts have this requirement, so we union them
+          // into one PermissionSet.
+          //
+          // TODO(perf): An exact match between clauses is really only one case where items in a
+          //   PermissionFlow might interact. If one clause is a superset of another then the
+          //   superset clause is strictly only true when the subset clause is also true; in this
+          //   case we ought to remove the subset's permissions from the superset's PermissionSet
+          //   because it would be redundant to search for the same permission under both sets of
+          //   requirements. The most important case of this is the empty clause: if a permission
+          //   flows unconditionally, then we shouldn't bother finding out if it also flows
+          //   conditionally. Detecting and removing these redundancies could reduce the size of
+          //   the PermissionFlow, which would both speed up backpropagation and help us avoid
+          //   doing unnecessary requirements checks later.
           sequenced[newHash].permissions.add(newPermissions.permissions);
           for (tokenId in newPermissions.tokensUsed) {
+            // We merge the "tokens used" sets. Technically this isn't quite right, because this
+            // means we're saying the tokens from both paths were used, but in fact in may be the
+            // case that only the tokens from one path or the other are ultimately needed. Tracking
+            // this distinction probably requires too much bookkeeping to be worthwhile.
+            // TODO(perf): Could be worth studying further if we find that we're grossly
+            //   overestimating the set of tokens needed to prove a permission.
             sequenced[newHash].tokensUsed[tokenId] = true;
           }
         } else {
@@ -421,7 +581,13 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
         }
       };
 
-      // Optimization: we don't care about permissions that we've already proven the opener has.
+      // Optimization: we don't care about permissions that we've already proven the opener has
+      // (with the same conditions). So, remove those from the flow.
+      //
+      // TODO(perf): Similar to above, we could detect subset clauses here. If we already know that
+      //   a permission flows from the owner under requirement X, then we also know that in flows
+      //   under requirement "X and Y". Most importantly, if a permission flows from the owner
+      //   unconditionally, then there's no reason to check if it also flows conditionally.
       if (permissionsMap["o:Owner"]) {
         for (const hashedClause in permissionsMap["o:Owner"]) {
           const membranedPermissionSet = permissionsMap["o:Owner"][hashedClause];
@@ -436,9 +602,12 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
       }
 
       if (!permissionsMap[sharerId]) {
+        // Never saw this vertex before.
         permissionsMap[sharerId] = sequenced;
         needToPush = true;
       } else {
+        // Vertex has been seen previously. Merge new PermissionFlow into it. If there are any
+        // changes, then we'll need to visit the vertex again.
         for (const clauseHash in sequenced) {
           const mp = permissionsMap[sharerId][clauseHash];
           if (mp && mp.permissions.add(sequenced[clauseHash].permissions)) {
@@ -452,6 +621,10 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
             needToPush = true;
           }
         }
+
+        // TODO(perf): We may have set needToPush true when `sharerId` is already on `vertexStack`.
+        //   This means we'll redundantly double-visit it. That's not terrible but we could
+        //   probably avoid it easily?
       }
 
       if (needToPush) {
@@ -464,8 +637,8 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
 }
 
 function normalize(membranedPermissionSetMap, desiredPermissions) {
-  // `membranedPermissionSetMap` represents the permissions flowing from a grain owner to a vertex,
-  // exactly in the format of the output of `backpropagateVertex()`.
+  // `membranedPermissionSetMap` is a PermissionFlow representing the permissions flowing from a
+  // grain owner to a vertex (e.g. as returned by `backpropagateVertex()`).
   //
   // `desiredPermissions` is the set of permissions that we are currently interested in.
   //
@@ -476,6 +649,13 @@ function normalize(membranedPermissionSetMap, desiredPermissions) {
   const result = {};
 
   function fullCover(chosen) {
+    // `chosen` is a set of clause hashes (an object where each key is a clause hash; the values
+    // don't matter). The function returns true if the set of clauses -- if all satisfied --
+    // is sufficient to cover all permissions.
+
+    // TODO(perf): I wonder if this early return actually hurts more than it helps -- the rest of
+    //   this function should be pretty cheap when `chosen` is empty, and calling `Object.keys`
+    //   here allocates a list which is not free.
     if (Object.keys(chosen).length == 0) return false;
 
     const accum = new PermissionSet([]);
@@ -486,6 +666,7 @@ function normalize(membranedPermissionSetMap, desiredPermissions) {
     return desiredPermissions.isSubsetOf(accum);
   }
 
+  // Construct a proposal containing all the clauses we know about.
   const chooseAll = {};
   for (const hashedClause in membranedPermissionSetMap) {
     const pclause = membranedPermissionSetMap[hashedClause];
@@ -493,6 +674,7 @@ function normalize(membranedPermissionSetMap, desiredPermissions) {
   }
 
   if (!fullCover(chooseAll)) {
+    // The permissions aren't satisfied even if all known requirements are met.
     return {};
   }
 
@@ -672,7 +854,8 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
     for (const hashedClause in result) {
       const membranedPermissionSet = result[hashedClause];
 
-      // first: see whether we should even bother
+      // First: see whether we should even bother. If we've already proved all the permissions
+      // that this clause would get us, don't bother.
       let shouldBother = false;
       if (!resultPermissions) {
         shouldBother = true;

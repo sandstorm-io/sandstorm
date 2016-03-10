@@ -58,9 +58,6 @@ Meteor.startup(function () {
       configured = false;
     },
   });
-
-  // Accounts.emailToken is set to use "Email" by default. Change it to use our mail service.
-  Accounts.emailToken.setEmailPackage("SandstormEmail");
 });
 
 const getPool = function (smtpUrl) {

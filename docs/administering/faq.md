@@ -49,7 +49,6 @@ MONGO_PORT=6081
 BIND_IP=127.0.0.1
 BASE_URL=http://mydomain.com:6080
 WILDCARD_HOST=*.mydomain.com:6080
-MAIL_URL=
 UPDATE_CHANNEL=dev
 ```
 

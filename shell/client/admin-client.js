@@ -208,12 +208,26 @@ Template.adminSettings.events({
       Meteor.call("setSetting", token, "ldapBase", event.target.ldapBase.value, handleErrorBound);
       Meteor.call("setSetting", token, "ldapDnPattern", event.target.ldapDnPattern.value, handleErrorBound);
       Meteor.call("setSetting", token, "ldapNameField", event.target.ldapNameField.value, handleErrorBound);
-      Meteor.call("setSetting", token, "organizationGoogle",
-        event.target.organizationGoogle.value.toLowerCase(), handleErrorBound);
-      Meteor.call("setSetting", token, "organizationEmail",
-        event.target.organizationEmail.value.toLowerCase(), handleErrorBound);
-      Meteor.call("setSetting", token, "organizationLdap",
-        event.target.organizationLdap.checked, handleErrorBound);
+
+      if (event.currentTarget.isOrganizationLdap.checked) {
+        Meteor.call("setSetting", token, "organizationLdap", true, handleErrorBound);
+      } else {
+        Meteor.call("setSetting", token, "organizationLdap", false, handleErrorBound);
+      }
+
+      if (event.currentTarget.isOrganizationGoogle.checked) {
+        Meteor.call("setSetting", token, "organizationGoogle",
+            event.currentTarget.organizationGoogle.value.toLowerCase(), handleErrorBound);
+      } else {
+        Meteor.call("setSetting", token, "organizationGoogle", null, handleErrorBound);
+      }
+
+      if (event.currentTarget.isOrganizationEmail.checked) {
+        Meteor.call("setSetting", token, "organizationEmail",
+            event.currentTarget.organizationEmail.value.toLowerCase(), handleErrorBound);
+      } else {
+        Meteor.call("setSetting", token, "organizationEmail", null, handleErrorBound);
+      }
     }
 
     return false;
@@ -242,9 +256,13 @@ Template.adminSettings.helpers({
     }
   },
 
+  isOrganizationGoogle: function () {
+    return !!globalDb.getOrganizationGoogle();
+  },
+
   organizationGoogle: function () {
     const val = globalDb.getOrganizationGoogle();
-    if (!val && val !== "") {
+    if (!val) {
       // Setting has never been set before. Show a reasonable default
       const user = Meteor.user();
       const identityIds = SandstormDb.getUserIdentityIds(user);
@@ -262,9 +280,13 @@ Template.adminSettings.helpers({
     return val;
   },
 
+  isOrganizationEmail: function () {
+    return !!globalDb.getOrganizationEmail();
+  },
+
   organizationEmail: function () {
     const val = globalDb.getOrganizationEmail();
-    if (!val && val !== "") {
+    if (!val) {
       // Setting has never been set before. Show a reasonable default
       const user = Meteor.user();
       const identityIds = SandstormDb.getUserIdentityIds(user);
@@ -282,7 +304,7 @@ Template.adminSettings.helpers({
     return val;
   },
 
-  organizationLdap: function () {
+  isOrganizationLdap: function () {
     return globalDb.getOrganizationLdap();
   },
 
@@ -322,6 +344,12 @@ Template.adminSettings.helpers({
   getToken: getToken,
   isFeatureKeyValid: function () {
     return globalDb.isFeatureKeyValid();
+  },
+
+  featuresPath: function () {
+    const state = Iron.controller().state;
+    const token = state.get("token");
+    return "/admin/features" + (token ? "/" + token : "");
   },
 });
 
@@ -898,6 +926,14 @@ Template.adminFeatureKey.events({
   "click button.feature-key-upload-button": function (evt) {
     Template.instance().showForm.set(true);
   },
+
+  "click button.feature-key-delete-button": function (evt) {
+    const state = Iron.controller().state;
+    const token = state.get("token");
+    if (window.confirm("Delete feature key? This will disable Sandstorm for Work features!")) {
+      Meteor.call("submitFeatureKey", token, null);
+    }
+  },
 });
 
 Template.adminFeatureKey.helpers({
@@ -957,6 +993,12 @@ Template.adminFeatureKey.helpers({
 
     return MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
   },
+
+  settingsPath: function () {
+    const state = Iron.controller().state;
+    const token = state.get("token");
+    return "/admin/settings" + (token ? "/" + token : "");
+  },
 });
 
 const adminRoute = RouteController.extend({
@@ -965,7 +1007,7 @@ const adminRoute = RouteController.extend({
     const subs = [
       Meteor.subscribe("admin", this.params._token),
       Meteor.subscribe("adminServiceConfiguration", this.params._token),
-      Meteor.subscribe("featureKey", this.params._token),
+      Meteor.subscribe("featureKey", true, this.params._token),
     ];
     if (this.params._token) {
       subs.push(Meteor.subscribe("adminToken", this.params._token));

@@ -986,6 +986,10 @@ limitations under the License.
 <template name="adminSettings">
   {{setDocumentTitle}}
   <form id="admin-settings-form">
+    <h4>Basic login providers</h4>
+
+    <p>Choose which services users may use to identify themselves. Anyone can log in, but only users you {{#linkTo route="adminInvites" data=getToken}}invite{{/linkTo}} will be able to install apps or create files.</p>
+
     <p>
       <label><input type="checkbox" class="oauth-checkbox" name="googleLogin"
                     value="value" checked={{googleSetting.value}} data-servicename="google">
@@ -993,16 +997,6 @@ limitations under the License.
         (<a class="configure-oauth" data-servicename="google" href="">configure</a>)
         (<a class="reset-login-tokens" data-servicename="google" href="">log out all users</a>)
       </label><br>
-
-      {{#if isFeatureKeyValid}}
-      <label>
-        Google Organization Domain:
-        <input type="text" name="organizationGoogle" value="{{organizationGoogle}}">
-      </label>
-      {{/if}}
-
-      <span class="details">Users within this Google Apps for Work domain will automatically be upgraded to full accounts upon logging in. Leave blank to disable.</span>
-      <br>
       {{#with googleSetting.automaticallyReset}}
         <p class="alert-danger reset-reason">
           Google login was automatically disabled
@@ -1034,25 +1028,7 @@ limitations under the License.
         </p>
       {{/with}}
       <label><input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login</label><br>
-      {{#if isFeatureKeyValid}}
-        <label>
-          Email Organization Domain:
-          <input type="text" name="organizationEmail" value="{{organizationEmail}}">
-        </label>
-        <span class="details">Users within this email domain will automatically be upgraded to full accounts upon logging in. Leave blank to disable.</span>
-        <br>
-        <hr>
-        <label>
-          <input type="checkbox" name="ldapLogin" value="value" checked={{ldapEnabled}}> Enable LDAP Login
-        </label><br>
-          <label>LDAP Url: <input id="ldapUrl" type="text" name="ldapUrl" value="{{ldapUrl}}"></label>
-          <label>LDAP DN Pattern ($USERNAME will be replaced): <input id="ldapDnPattern" type="text" name="ldapDnPattern" value="{{ldapDnPattern}}"></label>
-          <label>LDAP Base Search Dn: <input id="ldapBase" type="text" name="ldapBase" value="{{ldapBase}}"></label>
-          <label>LDAP Name Field: <input id="ldapNameField" type="text" name="ldapNameField" value="{{ldapNameField}}"></label>
-          <label>Auto-upgrade LDAP accounts: <input type="checkbox" name="organizationLdap" value="value" checked={{organizationLdap}}></label>
-        <hr>
-      {{/if}}
-      <span class="details">Choose which services users may use to identify themselves. Anyone can log in, but only users you {{#linkTo route="adminInvites" data=getToken}}invite{{/linkTo}} will be able to install apps or create files.</span></p>
+    </p>
     <p>SMTP Url: <button id="admin-settings-send-toggle">Test</button><input id="smptUrl" type="text" name="smtpUrl" value="{{smtpUrl}}"><br>
       <span class="details">Address of an SMTP relay server, like <code>smtp://user:pass@host:port</code>, which will be used by email apps and to send {{#linkTo route="adminInvites" data=getToken}}email invites{{/linkTo}}. The SMTP server should be configured to allow sending email from your Sandstorm domain and from email addresses that will be used to send invites. Read the <a href="https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp">docs</a> for more details.</span>
     </p>
@@ -1061,6 +1037,37 @@ limitations under the License.
         Send test email to: <input id="email-test-to" type="text">
         <p><button id="admin-settings-send-test">Send</button></p>
       </p>
+    {{/if}}
+    {{#if isFeatureKeyValid}}
+      <h4>LDAP login</h4>
+      <p class="forwork-note">Sandstorm for Work feature</p>
+
+      <p><label>
+        <input type="checkbox" name="ldapLogin" value="value" checked={{ldapEnabled}}> Enable LDAP Login
+      </label><br>
+        <label>LDAP Url: <input id="ldapUrl" type="text" name="ldapUrl" value="{{ldapUrl}}"></label>
+        <label>LDAP DN Pattern ($USERNAME will be replaced): <input id="ldapDnPattern" type="text" name="ldapDnPattern" value="{{ldapDnPattern}}"></label>
+        <label>LDAP Base Search Dn: <input id="ldapBase" type="text" name="ldapBase" value="{{ldapBase}}"></label>
+        <label>LDAP Name Field: <input id="ldapNameField" type="text" name="ldapNameField" value="{{ldapNameField}}"></label></p>
+
+      <h4>SAML login</h4>
+      <p class="forwork-note">Sandstorm for Work feature</p>
+
+      <p>Coming soon!</p>
+
+      <h4>Define oragnization</h4>
+      <p class="forwork-note">Sandstorm for Work feature</p>
+
+      <p>These users will be considered part of your organization. They will automatically be
+        able to log in, install apps, and create grains.</p>
+
+      <p>
+        <label><input type="checkbox" name="isOrganizationLdap" value="value" checked={{isOrganizationLdap}}> Users authenticated via LDAP.</label><br>
+        <label><input type="checkbox" name="isOrganizationGoogle" value="value" checked={{isOrganizationGoogle}}> Users authenticated via Google Apps for Work domain:</label> <input type="text" name="organizationGoogle" value="{{organizationGoogle}}" placeholder="example.com">
+        <label><input type="checkbox" name="isOrganizationEmail" value="value" checked={{isOrganizationEmail}}>Users authenticated via passwordless email login with addresses at domain:</label> <input type="text" name="organizationEmail" value="{{organizationEmail}}" placeholder="example.com"></p>
+    {{else}}
+      <p>To get support for LDAP, SAML, and organization management, enable
+        <a href="{{featuresPath}}">Sandstorm for Work</a>.</p>
     {{/if}}
     <p><button id="admin-settings-save">Save</button></p>
   </form>
@@ -1354,8 +1361,12 @@ limitations under the License.
     {{else}}
       <div class="feature-key-button-row">
         <button class="button-primary feature-key-upload-button">Upload new feature key...</button>
+        <button class="button-secondary feature-key-delete-button">Delete feature key</button>
       </div>
     {{/if}}
+
+    <p><a href="{{settingsPath}}">Go to the settings page to configure Sandstorm for Work features.</a></p>
+
   {{else}}
     <h4>Upload feature key</h4>
     <p>To make use of Sandstorm for Work features like LDAP and SAML login and organization

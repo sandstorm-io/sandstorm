@@ -155,7 +155,7 @@ const emailConfigFromForm = function (form) {
     returnAddress: form.smtpReturnAddress.value,
   };
   return mailConfig;
-}
+};
 
 Template.adminSettings.events({
   "click .oauth-checkbox": function (event) {

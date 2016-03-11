@@ -26,14 +26,6 @@ let LDAP = function (options) {
   // Set options
   this.options = _.clone(LDAP_DEFAULTS);
 
-  // Make sure options have been set
-  try {
-    check(this.options.url, String);
-    //check(this.options.dn, String);
-  } catch (e) {
-    throw new Meteor.Error("Bad Defaults", "Options not set. Make sure to set LDAP_DEFAULTS.url and LDAP_DEFAULTS.dn!");
-  }
-
   // Because NPM ldapjs module has some binary builds,
   // We had to create a wraper package for it and build for
   // certain architectures. The package typ:ldap-js exports
@@ -68,7 +60,7 @@ LDAP.prototype.ldapCheck = function (db, options) {
     let ldapAsyncFut = new Future();
 
     // Create ldap client
-    let fullUrl = _this.options.url + ":" + _this.options.port;
+    let fullUrl = db.getLdapUrl();
     let client = null;
 
     let errorFunc = function (err) {
@@ -81,7 +73,7 @@ LDAP.prototype.ldapCheck = function (db, options) {
       }
     };
 
-    if (_this.options.url.indexOf("ldaps://") === 0) {
+    if (fullUrl.indexOf("ldaps://") === 0) {
       client = _this.ldapjs.createClient({
         url: fullUrl,
         tlsOptions: {

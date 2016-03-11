@@ -85,6 +85,7 @@ IMAGES= \
     shell/public/email-m.svg \
     shell/public/github-m.svg \
     shell/public/key-m.svg \
+    shell/public/ldap-m.svg \
     shell/public/keybase-m.svg \
     shell/public/link-m.svg \
     shell/public/notification-m.svg \

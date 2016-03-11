@@ -27,6 +27,10 @@ const FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS = [
   "customer", "expires", "features", "isElasticBilling", "isTrial", "issued", "userLimit",
 ];
 
+const PUBLIC_FEATURE_KEY_FIELDS = [
+  "expires", "features",
+];
+
 const Fs = Npm.require("fs");
 const SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + "/adminToken";
 
@@ -120,7 +124,15 @@ Meteor.methods({
 
   submitFeatureKey: function (token, textBlock) {
     checkAuth(token);
-    check(textBlock, String);
+    check(textBlock, Match.OneOf(null, String));
+
+    const db = this.connection.sandstormDb;
+
+    if (!textBlock) {
+      // Delete the feature key.
+      db.collections.featureKey.remove("currentFeatureKey");
+      return;
+    }
 
     // textBlock is a base64'd string, possibly with newlines and comment lines starting with "-"
     const featureKeyBase64 = _.chain(textBlock.split("\n"))
@@ -140,7 +152,6 @@ Meteor.methods({
     }
 
     // Persist the feature key in the database.
-    const db = this.connection.sandstormDb;
     db.collections.featureKey.upsert(
       "currentFeatureKey",
       {
@@ -477,8 +488,11 @@ Meteor.publish("adminApiTokens", function (token) {
   });
 });
 
-Meteor.publish("featureKey", function (token) {
-  if (!authorizedAsAdmin(token, this.userId)) return [];
+Meteor.publish("featureKey", function (forAdmin, token) {
+  if (forAdmin && !authorizedAsAdmin(token, this.userId)) return [];
+
+  const fields = forAdmin ? FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS
+                          : PUBLIC_FEATURE_KEY_FIELDS;
 
   const db = this.connection.sandstormDb;
   const featureKeyQuery = db.collections.featureKey.find({ _id: "currentFeatureKey" });
@@ -490,7 +504,7 @@ Meteor.publish("featureKey", function (token) {
 
       if (featureKey) {
         // If the signature is valid, publish the feature key information.
-        const filteredFeatureKey = _.pick(featureKey, ...FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS);
+        const filteredFeatureKey = _.pick(featureKey, ...fields);
         this.added("featureKey", doc._id, filteredFeatureKey);
       }
     },
@@ -502,7 +516,7 @@ Meteor.publish("featureKey", function (token) {
 
       if (featureKey) {
         // If the signature is valid, call this.changed() with the interesting fields.
-        const filteredFeatureKey = _.pick(featureKey, ...FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS);
+        const filteredFeatureKey = _.pick(featureKey, ...fields);
         this.changed("featureKey", newDoc._id, filteredFeatureKey);
       } else {
         // Otherwise, call this.removed(), since the new feature key is invalid.

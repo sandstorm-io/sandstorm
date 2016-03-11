@@ -25,6 +25,7 @@ globalSubs = [
   Meteor.subscribe("devPackages"),
   Meteor.subscribe("credentials"),
   Meteor.subscribe("accountIdentities"),
+  Meteor.subscribe("featureKey", false),
 ];
 
 Tracker.autorun(function () {

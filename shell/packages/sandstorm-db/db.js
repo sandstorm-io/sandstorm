@@ -991,14 +991,16 @@ _.extend(SandstormDb.prototype, {
       return false;
     }
 
-    if (identity.services.email && this.getOrganizationEmail()) {
-      let domain = "@" + this.getOrganizationEmail();
-      if (identity.services.email.email.toLowerCase().endsWith(domain)) {
+    const googleDomain = this.getOrganizationGoogle();
+    const emailDomain = this.getOrganizationEmail();
+
+    if (emailDomain && identity.services.email) {
+      if (identity.services.email.email.toLowerCase().split("@").pop() === emailDomain) {
         return true;
       }
-    } else if (identity.services.ldap && this.getOrganizationLdap()) {
+    } else if (this.getOrganizationLdap() && identity.services.ldap) {
       return true;
-    } else if (identity.services.google && this.getOrganizationGoogle()) {
+    } else if (googleDomain && identity.services.google && identity.services.google.hd) {
       let domain = this.getOrganizationGoogle();
       if (identity.services.google.hd.toLowerCase() === domain) {
         return true;

@@ -50,10 +50,14 @@ LDAP.prototype.ldapCheck = function (db, options) {
   options = options || {};
 
   if (options.hasOwnProperty("username") && options.hasOwnProperty("ldapPass")) {
-    _this.options.base = db.getLdapBase();
-    _this.options.dn = db.getLdapDnPattern().replace("$USERNAME", options.username);
-    _this.options.searchBeforeBind = {};
-    _this.options.searchBeforeBind[db.getLdapSearchUsername()] = options.username;
+    let explicitDnSelected = db.getLdapExplicitDnSelected();
+    if (explicitDnSelected) {
+      _this.options.dn = db.getLdapDnPattern().replace("$USERNAME", options.username);
+    } else {
+      _this.options.base = db.getLdapBase();
+      _this.options.searchBeforeBind = {};
+      _this.options.searchBeforeBind[db.getLdapSearchUsername()] = options.username;
+    }
 
     let resolved = false;
     let ldapAsyncFut = new Future();
@@ -103,7 +107,7 @@ LDAP.prototype.ldapCheck = function (db, options) {
     }
 
     // If DN is provided, use it to bind
-    if (!_this.options.base) {
+    if (explicitDnSelected) {
       // Attempt to bind to ldap server with provided info
       client.bind(_this.options.searchDN || _this.options.dn, _this.options.searchCredentials ||
           options.ldapPass,

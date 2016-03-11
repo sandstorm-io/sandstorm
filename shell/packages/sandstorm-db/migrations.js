@@ -439,7 +439,8 @@ function assignBonuses() {
 }
 
 function splitSmtpUrl() {
-  const smtpUrl = Settings.findOne({ _id: "smtpUrl" });
+  const smtpUrlSetting = Settings.findOne({ _id: "smtpUrl" });
+  const smtpUrl = smtpUrlSetting ? smtpUrlSetting.value : process.env.MAIL_URL;
   const returnAddress = Settings.findOne({ _id: "returnAddress" });
 
   // Default values.

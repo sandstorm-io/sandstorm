@@ -34,15 +34,6 @@ const PUBLIC_FEATURE_KEY_FIELDS = [
 const Fs = Npm.require("fs");
 const SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + "/adminToken";
 
-const getSmtpUrl = function () {
-  const setting = Settings.findOne({ _id: "smtpUrl" });
-  if (setting) {
-    return setting.value;
-  } else {
-    return process.env.MAIL_URL;
-  }
-};
-
 const tokenIsValid = function (token) {
   if (token && Fs.existsSync(SANDSTORM_ADMIN_TOKEN)) {
     const stats = Fs.statSync(SANDSTORM_ADMIN_TOKEN);
@@ -107,6 +98,21 @@ Meteor.methods({
     }
   },
 
+  setSmtpConfig: function (token, config) {
+    checkAuth(token);
+    check(config, {
+      hostname: String,
+      port: String,
+      auth: {
+        user: String,
+        pass: String,
+      },
+      returnAddress: String,
+    });
+
+    Settings.upsert({ _id: "smtpConfig" }, { $set: { value: config } });
+  },
+
   setSetting: function (token, name, value) {
     checkAuth(token);
     check(name, String);
@@ -154,12 +160,6 @@ Meteor.methods({
     );
   },
 
-  getSmtpUrl: function (token) {
-    checkAuth(token);
-
-    return getSmtpUrl();
-  },
-
   adminConfigureLoginService: function (token, options) {
     checkAuth(token);
     check(options, Match.ObjectIncluding({ service: String }));
@@ -202,17 +202,26 @@ Meteor.methods({
     Meteor.users.update({ _id: userId }, { $set: _.omit(userInfo, ["_id", "userId"]) });
   },
 
-  testSend: function (token, smtpUrl, to) {
+  testSend: function (token, smtpConfig, to) {
     checkAuth(token);
-    check(smtpUrl, String);
+    check(smtpConfig, {
+      hostname: String,
+      port: String,
+      auth: {
+        user: String,
+        pass: String,
+      },
+      returnAddress: String,
+    });
     check(to, String);
+    const {returnAddress, ...restConfig} = smtpConfig;
 
     SandstormEmail.send({
       to: to,
-      from: globalDb.getServerTitle() + " <" + globalDb.getReturnAddress() + ">",
+      from: globalDb.getServerTitle() + " <" + returnAddress + ">",
       subject: "Testing your Sandstorm's SMTP setting",
       text: "Success! Your outgoing SMTP is working.",
-      smtpUrl: smtpUrl,
+      smtpConfig: restConfig,
     });
   },
 

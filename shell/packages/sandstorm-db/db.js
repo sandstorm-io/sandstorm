@@ -511,7 +511,7 @@ Settings = new Mongo.Collection("settings");
 // interface.
 //
 // Each contains:
-//   _id:       The name of the setting. eg. "MAIL_URL"
+//   _id:       The name of the setting. eg. "smtpConfig"
 //   value:     The value of the setting.
 //   automaticallyReset: Sometimes the server needs to automatically reset a setting. When it does
 //                       so, it will also write an object to this field indicating why the reset was

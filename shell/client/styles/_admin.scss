@@ -27,6 +27,8 @@
   }
   .details {
     font-size: 70%;
+    display: block;
+    margin-bottom: 8px;
   }
   .forwork-note {
     margin-top: 0;
@@ -84,7 +86,7 @@
 }
 
 #admin-settings-form {
-  input[type="text"], input[type="email"] {
+  input[type="text"], input[type="email"], input[type="password"] {
     width: 100%;
   }
 }
@@ -340,5 +342,17 @@ form.feature-key-form {
     display: block;
     margin-top: 8px;
     margin-bottom: 8px;
+  }
+}
+
+.login-providers {
+  label {
+    display: block;
+  }
+}
+
+.legacy-email-config {
+  label {
+    display: block;
   }
 }

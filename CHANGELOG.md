@@ -1,3 +1,11 @@
+### v0.150 (2016-03-13)
+- **Sandstorm for Work:** For self-hosters in a business setting. Initial release supports LDAP and basic organization managament. Requires a feature key to enable. See the "For Work" section of the admin settings.
+- Your set of open grains will now be preserved through refreshes and closing/reopening the browser.
+- The "home" button is now aligned with the sidebar and collapses with it, which maybe makes it clearer that the rest of the top bar is attached to the content.
+- The file-open dialogs when uploading an SPK or a grain backup now filter for the desired file type.
+- Offer templates can now substitute a sluggified grain title into the template body.
+- Browser's autocomplete will no longer draw over sharing autocomplete.
+
 ### v0.149 (2016-02-27) [bugfixes]
 - Fix non-token-specific API host, i.e. all API tokens created before 0.146.
 

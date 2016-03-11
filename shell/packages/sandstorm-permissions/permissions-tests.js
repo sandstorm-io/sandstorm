@@ -459,9 +459,7 @@ Tinytest.add("permissions: membrane requirements long chain", function (test) {
 
   const grains = [];
 
-  // Currently, increasing this value to 10 causes the permissions computation to take a
-  // very long time. Once we've fixed that problem, we should increase this number.
-  const NUM_GRAINS = 6;
+  const NUM_GRAINS = 50;
 
   for (let idx = 0; idx < NUM_GRAINS; ++idx) {
     grains.push(new Grain(globalDb, aliceAccount, alice, commonViewInfo));

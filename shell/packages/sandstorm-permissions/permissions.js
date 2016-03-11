@@ -375,18 +375,23 @@ class Context {
   constructor() {
     this.grains = {};            // Map from grain ID to entry in Grains table.
     this.userIdentityIds = {};   // Map from user ID to list of identity IDs.
-    this.tokensById = {};
-    this.tokensByRecipient = {};
+    this.tokensById = {};        // Map from token ID to token.
+    this.tokensByRecipient = {}; // Map from grain ID and identity ID to token array.
   }
 
   addToken(token) {
+    check(token, Match.ObjectIncluding({ grainId: String }));
     this.tokensById[token._id] = token;
     if (token.owner && token.owner.user) {
-      if (!this.tokensByRecipient[token.owner.user.identityId]) {
-        this.tokensByRecipient[token.owner.user.identityId] = [];
+      if (!this.tokensByRecipient[token.grainId]) {
+        this.tokensByRecipient[token.grainId] = {};
       }
 
-      this.tokensByRecipient[token.owner.user.identityId].push(token);
+      if (!this.tokensByRecipient[token.grainId][token.owner.user.identityId]) {
+        this.tokensByRecipient[token.grainId][token.owner.user.identityId] = [];
+      }
+
+      this.tokensByRecipient[token.grainId][token.owner.user.identityId].push(token);
     }
   }
 
@@ -541,7 +546,8 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
         incomingEdges = [{ sharerId: "o:Owner", membranedPermissions: p }];
       } else {
         // Not a special case. Gather all tokens where this user is the recipient.
-        incomingEdges = (context.tokensByRecipient[vertexId.slice(2)] || []).map(tokenToEdge);
+        incomingEdges = ((context.tokensByRecipient[grainId] || {})[vertexId.slice(2)] || [])
+          .map(tokenToEdge);
       }
     } else {
       throw new Meteor.Error(500, "Unrecognized vertex ID: " + vertexId);

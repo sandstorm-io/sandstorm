@@ -98,7 +98,7 @@ class PermissionSet {
   }
 
   hash() {
-    // See the comment for Clause.hash().
+    // See the comment for RequirementSet.hash().
 
     const hasher = Crypto.createHash("sha256");
     this.updateHasher(hasher);
@@ -175,7 +175,7 @@ class PermissionSet {
   }
 }
 
-class Clause {
+class RequirementSet {
   // A conjunction of permissions for identities on grains.
   //
   // This typcially represents a list of `MembraneRequirement`s, as defined in `supervisor.capnp`.
@@ -192,8 +192,6 @@ class Clause {
   // - Bob embedded that capability into Foo, using his write access.
   // - Alice extracted the capability from Foo, using her read access.
   // If any of these permissions are revoked, then the capability needs to be revoked as well.
-  //
-  // TODO(cleanup): Consider renaming to RequirementSet for readability.
 
   constructor() {
     this.identityPermissions = {};
@@ -289,7 +287,7 @@ class Clause {
 
   conjoin(other) {
     // Updates this clause to include the permissions contained in `other`.
-    check(other, Clause);
+    check(other, RequirementSet);
 
     for (let grainId in other.identityPermissions) {
       for (let identityId in other.identityPermissions[grainId]) {
@@ -301,57 +299,53 @@ class Clause {
   }
 }
 
-class MembranedPermissionSet {
-  // A PermissionSet that is contingent upon some membrane requirements. The membrane requirements
-  // are repesented as a Clause.
-  //
-  // TODO(cleanup): Consider renaming the member `membrane` to `requirements`.
-  // TODO(cleanup): Consider renaming the class to `ConditionalPermissionSet`.
+class ConditionalPermissionSet {
+  // A PermissionSet that is contingent upon some requirements.
 
-  constructor(permissions, membrane) {
+  constructor(permissions, requirements) {
     check(permissions, PermissionSet);
-    check(membrane, Clause);
+    check(requirements, RequirementSet);
     this.permissions = permissions;
-    this.membrane = membrane;
+    this.requirements = requirements;
     this.tokensUsed = {}; // Token IDs for the tokens that these permissions depend upon.
   }
 
   static fromToken(token, viewInfo) {
     // A token is an edge in the sharing graph, propagating some permissions P from vertex A
     // to vertex B, perhaps conditioned on some membrane requirements M. This function constructs
-    // a MembranedPermissionSet from a token, taking into account the permissions P and the
+    // a ConditionalPermissionSet from a token, taking into account the permissions P and the
     // membrane requirements M. The result does not carry any information about the vertices
     // A and B, even though the input `token` may contain information about them, for example
     // in the `parentToken` field.
 
     const permissions = PermissionSet.fromRoleAssignment(token.roleAssignment, viewInfo);
-    const result = new MembranedPermissionSet(permissions, new Clause());
-    result.membrane.addMembraneRequirements(token.requirements);
+    const result = new ConditionalPermissionSet(permissions, new RequirementSet());
+    result.requirements.addMembraneRequirements(token.requirements);
     result.tokensUsed[token._id] = true;
     return result;
   }
 
   clone() {
     // Returns a deep copy of `this`.
-    const result = new MembranedPermissionSet(new PermissionSet(), new Clause());
+    const result = new ConditionalPermissionSet(new PermissionSet(), new RequirementSet());
     result.permissions.add(this.permissions);
-    result.membrane.conjoin(this.membrane);
+    result.requirements.conjoin(this.requirements);
     result.tokensUsed = _.clone(this.tokensUsed);
     return result;
   }
 
   sequence(other) {
-    // Updates this MembranedPermissionSet to apply `other` in sequence.
+    // Updates this ConditionalPermissionSet to apply `other` in sequence.
     //
-    // That is, given two edges in the sharing graph, each represented by a MembranedPermissionSet,
+    // That is, given two edges in the sharing graph, each represented by a ConditionalPermissionSet,
     // we are unifying them into a single edge, by intersecting both the requirements and the
     // permissions granted.
     //
     // TODO(cleanup): Consider renaming to `join()`?
 
-    check(other, MembranedPermissionSet);
+    check(other, ConditionalPermissionSet);
     this.permissions.intersect(other.permissions);
-    this.membrane.conjoin(other.membrane);
+    this.requirements.conjoin(other.requirements);
     for (const tokenId in other.tokensUsed) {
       this.tokensUsed[tokenId] = true;
     }
@@ -360,13 +354,13 @@ class MembranedPermissionSet {
 
 // pseudo-class PermissionFlow
 //
-// A PermissionFlow is an object whose keys are Clause.hash()es and whose values are
-// MembranePermissionSets.
+// A PermissionFlow is an object whose keys are RequirementSet.hash()es and whose values are
+// ConditionalPermissionSets.
 //
 // A PermissionFlow represents the permissions flowing from one vertex in the sharing graph to
 // another (e.g. between one user and another), possibly across multiple edges (in series and/or
 // parallel). This is not simply a PermissionSet because some permissions may be conditional.
-// Instead, PermissionFlow is a set of MembranedPermissionSets; that is, a set of pairs of
+// Instead, PermissionFlow is a set of ConditionalPermissionSets; that is, a set of pairs of
 // PermissionSets and requirements for said permissions to be granted.
 
 class Context {
@@ -470,8 +464,8 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
     // Initialize the destination in permissionsMap (see below) to indicate that all permissions
     // flow from it to the destination (i.e. to itself) unconditionally. We need this to start
     // our search.
-    const clause = new Clause();
-    destinationPermissions[clause.hash()] = new MembranedPermissionSet(permissionSet, clause);
+    const clause = new RequirementSet();
+    destinationPermissions[clause.hash()] = new ConditionalPermissionSet(permissionSet, clause);
   }
 
   const permissionsMap = {};
@@ -501,14 +495,14 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
     // List of edges in the sharing graph ending at this vertex. Each edge is an object of two
     // fields:
     // sharerId: The vertex ID of the edge's source.
-    // membranePermissions: MembranedPermissionSet representing the permissions flowing over this
+    // conditionalPermissions: ConditionalPermissionSet representing the permissions flowing over this
     //     edge and the conditions restricting that permission flow.
 
     function tokenToEdge(token) {
       // Convert an ApiToken into an edge.
       return {
         sharerId: token.parentToken ? "t:" + token.parentToken : "i:" + token.identityId,
-        membranedPermissions: MembranedPermissionSet.fromToken(token, viewInfo),
+        conditionalPermissions: ConditionalPermissionSet.fromToken(token, viewInfo),
       };
     }
 
@@ -525,10 +519,10 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
       // An identity.
       if (ownerIdentityIds.indexOf(vertexId.slice(2)) >= 0) {
         // This is one of the owner's identities.
-        const p = new MembranedPermissionSet(PermissionSet.fromRoleAssignment({ allAccess: null },
+        const p = new ConditionalPermissionSet(PermissionSet.fromRoleAssignment({ allAccess: null },
                                                                               viewInfo),
-                                             new Clause());
-        incomingEdges = [{ sharerId: "o:Owner", membranedPermissions: p }];
+                                             new RequirementSet());
+        incomingEdges = [{ sharerId: "o:Owner", conditionalPermissions: p }];
       } else if (!grain.private) {
         // This is a legacy "public" grain, meaning that any user who knows the grain ID receives
         // the grain's default role. If the user doesn't know the grain ID then they are unable
@@ -540,10 +534,10 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
         // MembraneRequiments to come about. Note that this is kind of shaky non-local reasoning,
         // but literally no such legacy grain has been created since early 2015 and none will ever
         // be created again, so it's not a huge deal.)
-        const p = new MembranedPermissionSet(PermissionSet.fromRoleAssignment({ none: null },
+        const p = new ConditionalPermissionSet(PermissionSet.fromRoleAssignment({ none: null },
                                                                               viewInfo),
-                                             new Clause());
-        incomingEdges = [{ sharerId: "o:Owner", membranedPermissions: p }];
+                                             new RequirementSet());
+        incomingEdges = [{ sharerId: "o:Owner", conditionalPermissions: p }];
       } else {
         // Not a special case. Gather all tokens where this user is the recipient.
         incomingEdges = ((context.tokensByRecipient[grainId] || {})[vertexId.slice(2)] || [])
@@ -558,14 +552,14 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
     incomingEdges.forEach((edge) => {
       const sharerId = edge.sharerId;
       let needToPush = false;
-      // For each MembranedPermissionSet in permissionsMap[vertexId],
-      // apply edge.membranedPermissions in sequence, in order to create a PermissionFlow
+      // For each ConditionalPermissionSet in permissionsMap[vertexId],
+      // apply edge.conditionalPermissions in sequence, in order to create a PermissionFlow
       // representing the flow through this edge to the final destination.
       const sequenced = {};  // A PermissionFlow.
       for (const clauseHash in permissionsMap[vertexId]) {
-        const newPermissions = edge.membranedPermissions.clone();
+        const newPermissions = edge.conditionalPermissions.clone();
         newPermissions.sequence(permissionsMap[vertexId][clauseHash]);
-        const newHash = newPermissions.membrane.hash();
+        const newHash = newPermissions.requirements.hash();
         if (sequenced[newHash]) {
           // Adding the new requirements of this edge to the variour requirements of vertexId's
           // PermissionFlow caused two of the components to collide. For example, maybe vertexId's
@@ -662,7 +656,7 @@ function normalize(membranedPermissionSetMap, desiredPermissions) {
   //
   // Returns a set of clauses in a minimal disjunctive normal form, representing the possible
   // ways that the desired permissions could be achieved. The result is a map from hashed clause
-  // to objects of the form { clause: Clause, tokensUsed: [String] }.
+  // to objects of the form { clause: RequirementSet, tokensUsed: [String] }.
 
   const result = {};
 
@@ -688,7 +682,7 @@ function normalize(membranedPermissionSetMap, desiredPermissions) {
   const chooseAll = {};
   for (const hashedClause in membranedPermissionSetMap) {
     const pclause = membranedPermissionSetMap[hashedClause];
-    chooseAll[hashedClause] = { clause: pclause.membrane, tokensUsed: pclause.tokensUsed };
+    chooseAll[hashedClause] = { clause: pclause.requirements, tokensUsed: pclause.tokensUsed };
   }
 
   if (!fullCover(chooseAll)) {
@@ -697,7 +691,7 @@ function normalize(membranedPermissionSetMap, desiredPermissions) {
   }
 
   const stack = [chooseAll];
-  // Array of Map<hashedClause, { clause: Clause, tokensUsed: [String] }>.
+  // Array of Map<hashedClause, { clause: RequirementSet, tokensUsed: [String] }>.
 
   while (stack.length > 0) {
     const chosen = stack.pop();
@@ -718,7 +712,7 @@ function normalize(membranedPermissionSetMap, desiredPermissions) {
     }
 
     if (minimal) {
-      const resultClause = new Clause();
+      const resultClause = new RequirementSet();
       const tokensUsed = {};
       for (const hashedClause in chosen) {
         resultClause.conjoin(chosen[hashedClause].clause);
@@ -736,7 +730,7 @@ function normalize(membranedPermissionSetMap, desiredPermissions) {
 
 function proveClauses(db, context, goalClauses) {
   // `goalClauses` is of the form of a result of `normalize()`, that is:
-  // `Map<ClauseId, {clause: Clause, tokensUsed: [tokenId]}>`.
+  // `Map<ClauseId, {clause: RequirementSet, tokensUsed: [tokenId]}>`.
   //
   // This function attempts to determine whether at least one of the input clauses holds.
   // If a proof is found, returns `{yes: {tokensUsed: [tokenId]}}`. Otherwise, returns `{no: {}}`.
@@ -787,7 +781,7 @@ function proveClauses(db, context, goalClauses) {
 
   while (clauseStack.length > 0) {
     const hashedClause = clauseStack.pop();
-    const clause = new Clause();
+    const clause = new RequirementSet();
     clause.conjoin(clausesAlreadySeen[hashedClause].clause);
     const tokensUsed = clausesAlreadySeen[hashedClause].tokensUsed;
     const goal = clause.popFirstGoal();
@@ -918,7 +912,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
       if (shouldBother) {
         const goalClauses = {};
         goalClauses[hashedClause] = {
-          clause: membranedPermissionSet.membrane,
+          clause: membranedPermissionSet.requirements,
           tokensUsed: membranedPermissionSet.tokensUsed,
         };
         const proofResult = proveClauses(db, context, goalClauses);

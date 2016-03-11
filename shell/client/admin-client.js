@@ -183,14 +183,17 @@ Template.adminSettings.events({
   },
 
   "click #admin-settings-send-toggle": function (event) {
+    // prevent form from submitting
     event.preventDefault();
+    event.stopImmediatePropagation();
     const state = Iron.controller().state;
     state.set("isEmailTestActive", !state.get("isEmailTestActive"));
-    return false; // prevent form from submitting
   },
 
   "click #admin-settings-send-test": function (event) {
+    // prevent form from submitting
     event.preventDefault();
+    event.stopImmediatePropagation();
     const state = Iron.controller().state;
     resetResult(state);
     const handleErrorBound = handleError.bind(state);
@@ -203,6 +206,7 @@ Template.adminSettings.events({
 
   "submit #admin-settings-form": function (event, template) {
     event.preventDefault();
+    event.stopImmediatePropagation();
     const state = Iron.controller().state;
     const token = this.token;
     resetResult(state);

@@ -15,7 +15,6 @@
 // limitations under the License.
 
 const Crypto = Npm.require("crypto");
-const Url = Npm.require("url");
 
 SandstormPermissions = {};
 

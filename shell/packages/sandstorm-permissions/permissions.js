@@ -836,7 +836,7 @@ function proveClauses(db, context, goalClauses) {
       return { yes: { tokensUsed: tokensUsed } };
     }
 
-    clausesAlreadySeen[hashedClause] = { clause: goalClause.clause, tokensUsed: tokensUsed };
+    clausesAlreadySeen[hashedClause] = goalClause;
     clauseStack.push(hashedClause);
   }
 

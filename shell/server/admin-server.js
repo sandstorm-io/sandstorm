@@ -113,13 +113,6 @@ Meteor.methods({
     check(value, Match.OneOf(null, String, Date, Boolean));
 
     Settings.upsert({ _id: name }, { $set: { value: value } });
-    if (name.lastIndexOf("ldap", 0) === 0) {
-      // some ldap settings need to be set for the accounts-ldap package
-      const ldapSetting = name.slice(4);
-      if (ldapSetting === "Url" || ldapSetting === "Base") {
-        LDAP_DEFAULTS[ldapSetting.toLowerCase()] = value;
-      }
-    }
   },
 
   submitFeatureKey: function (token, textBlock) {

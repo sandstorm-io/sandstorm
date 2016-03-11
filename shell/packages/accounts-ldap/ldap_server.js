@@ -26,14 +26,6 @@ let LDAP = function (options) {
   // Set options
   this.options = _.clone(LDAP_DEFAULTS);
 
-  // Make sure options have been set
-  try {
-    check(this.options.url, String);
-    //check(this.options.dn, String);
-  } catch (e) {
-    throw new Meteor.Error("Bad Defaults", "Options not set. Make sure to set LDAP_DEFAULTS.url and LDAP_DEFAULTS.dn!");
-  }
-
   // Because NPM ldapjs module has some binary builds,
   // We had to create a wraper package for it and build for
   // certain architectures. The package typ:ldap-js exports
@@ -64,30 +56,37 @@ LDAP.prototype.ldapCheck = function (db, options) {
       uid: options.username,
     };
 
+    let resolved = false;
     let ldapAsyncFut = new Future();
 
     // Create ldap client
-    let fullUrl = _this.options.url + ":" + _this.options.port;
+    let fullUrl = db.getLdapUrl();
     let client = null;
 
-    if (_this.options.url.indexOf("ldaps://") === 0) {
+    let errorFunc = function (err) {
+      if (err) {
+        if (resolved) return;
+        resolved = true;
+        ldapAsyncFut.return({
+          error: err,
+        });
+      }
+    };
+
+    if (fullUrl.indexOf("ldaps://") === 0) {
       client = _this.ldapjs.createClient({
         url: fullUrl,
         tlsOptions: {
           ca: [_this.options.ldapsCertificate],
         },
-      });
+      }, errorFunc);
     } else {
       client = _this.ldapjs.createClient({
         url: fullUrl,
-      });
+      }, errorFunc);
     }
 
-    client.on("error", function (err) {
-      ldapAsyncFut.return({
-        error: err,
-      });
-    });
+    client.on("error", errorFunc);
 
     // Slide @xyz.whatever from username if it was passed in
     // and replace it with the domain specified in defaults
@@ -129,6 +128,8 @@ LDAP.prototype.ldapCheck = function (db, options) {
 
             client.search(searchBase, searchOptions, function (err, res) {
               if (err) {
+                if (resolved) return;
+                resolved = true;
                 ldapAsyncFut.return({
                   error: err,
                 });
@@ -149,18 +150,26 @@ LDAP.prototype.ldapCheck = function (db, options) {
                         throw new Meteor.Error(err.code, err.message);
                       }
 
+                      resolved = true;
                       ldapAsyncFut.return(retObject);
                     } catch (e) {
+                      resolved = true;
                       ldapAsyncFut.return({
                         error: e,
                       });
                     }
                   });
-                } else ldapAsyncFut.return(retObject);
+                } else {
+                  resolved = true;
+                  ldapAsyncFut.return(retObject);
+                }
               });
+
+              res.on("error", errorFunc);
 
               res.on("end", function () {
                 if (!found) {
+                  resolved = true;
                   ldapAsyncFut.return({
                     error: new Meteor.Error(500, "No user found"),
                   });
@@ -183,6 +192,8 @@ LDAP.prototype.ldapCheck = function (db, options) {
             handleSearchProfile(retObject, false);
           }
         } catch (e) {
+          if (resolved) return;
+          resolved = true;
           ldapAsyncFut.return({
             error: e,
           });
@@ -213,6 +224,8 @@ LDAP.prototype.ldapCheck = function (db, options) {
       // perform LDAP search to determine DN
       client.search(_this.options.base, searchOptions, function (err, res) {
         if (err) {
+          if (resolved) return;
+          resolved = true;
           ldapAsyncFut.return({
             error: err,
           });
@@ -233,19 +246,26 @@ LDAP.prototype.ldapCheck = function (db, options) {
               if (err) {
                 throw new Meteor.Error(err.code, err.message);
               }              else {
+                resolved = true;
                 ldapAsyncFut.return(retObject);
               }
             }
             catch (e) {
+              if (resolved) return;
+              resolved = true;
               ldapAsyncFut.return({
                 error: e,
               });
             }
           });
         });
+
+        res.on("error", errorFunc);
+
         // If no dn is found, return as is.
         res.on("end", function (result) {
           if (retObject.dn === undefined) {
+            resolved = true;
             ldapAsyncFut.return(retObject);
           }
         });

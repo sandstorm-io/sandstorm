@@ -27,6 +27,7 @@ Package.onUse(function (api) {
 });
 
 Package.onTest(function (api) {
+  api.use("ecmascript");
   api.use(["check", "random", "accounts-base", "underscore", "sandstorm-db", "tinytest", "sandstorm-permissions"], ["server"]);
   api.addFiles("permissions-tests.js", "server");
 });

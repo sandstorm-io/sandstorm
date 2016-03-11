@@ -246,6 +246,8 @@ makeDateString = function (date) {
 
 // export: used in sandstorm-ui-grainlist
 prettySize = function (size) {
+  if (!size) return "";
+
   let suffix = "B";
   if (size >= 1000000000) {
     size = size / 1000000000;

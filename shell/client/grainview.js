@@ -58,6 +58,14 @@ GrainView = class GrainView {
     }
   }
 
+  save() {
+    // Returns a JSON-able argument array that can be passed to GrainView's constructor to
+    // reconstruct the same view later. However, the parentElement and initialPopup arguments
+    // can't be included since they are live objects, not data.
+
+    return [ this._grainId, this._path, this._tokenInfo ];
+  }
+
   reset(identityId) {
     // TODO(cleanup): This duplicates some code from the GrainView constructor.
 
@@ -561,7 +569,7 @@ GrainView = class GrainView {
     }
 
     this._status = "opening";
-    if (this._token === undefined) {
+    if (!this._token) {
       // Opening a grain session.
       this._openGrainSession();
     } else {
@@ -748,3 +756,57 @@ const onceConditionIsTrue = (condition, continuation) => {
     });
   });
 };
+
+window.addEventListener("unload", () => {
+  // If more than one grain is open, save a list to restore later. We don't save if just one grain
+  // because people who like to open grains in separate browser tabs probably don't want this
+  // feature. Also, anonymous users who can only open one grain at a time (because they have no
+  // sidebar) would probably be surprised to find the grain re-open if they return to Sandstorm
+  // later.
+
+  var grains = globalGrains.get();
+  if (grains.length >= 2) {
+    Meteor._localStorage.setItem("lastOpenedGrains",
+        JSON.stringify(grains.map(grain => grain.save())));
+  }
+});
+
+function restoreOpenedGrains(old) {
+  // Load last-opened grain list, if any.
+
+  const mainContentElement = document.querySelector("body>.main-content");
+  if (!mainContentElement) {
+    // Main content doesn't exist yet. Defer.
+    Meteor.defer(() => restoreOpenedGrains(old));
+    return;
+  }
+
+  const ready = () => {
+    if (Meteor.loggingIn()) return false;
+
+    for (const i in globalSubs) {
+      if (!globalSubs[i].ready()) return false;
+    }
+
+    return true;
+  };
+
+  // Open all view sessions as soon as we're fully loaded.
+  onceConditionIsTrue(ready, () => {
+    globalGrains.set(JSON.parse(old).map(args => {
+      var view = new GrainView(args[0], args[1], args[2], mainContentElement);
+      view.openSession();
+      return view;
+    }));
+  });
+
+  Meteor._localStorage.removeItem("lastOpenedGrains");
+}
+
+{
+  // Meteor has a nice package for detecting if localStorage is available, but it's internal.
+  // We use it anyway. If it goes away, this will throw an exception at startup which will should
+  // be really obvious and well fix it.
+  const old = Meteor._localStorage.getItem("lastOpenedGrains");
+  if (old) Meteor.startup(() => restoreOpenedGrains(old));
+}

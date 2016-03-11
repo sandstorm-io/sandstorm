@@ -49,15 +49,6 @@ const viewInfoPattern = {
   matchOffers: Match.Optional(Object),   // TODO
 };
 
-const viewInfo = {
-  permissions: [{ name: "one" }, { name: "two" }, { name: "three" }],
-  roles: [{ permissions: [true, true, true] },
-          { permissions: [true, false, false], default: true },
-          { permissions: [false, false, true] },
-          { permissions: [false, false, false] },
-         ],
-};
-
 class Grain {
   constructor(db, account, identity, viewInfo, public) {
     check(db, SandstormDb);
@@ -426,4 +417,122 @@ Tinytest.add("permissions: membrane requirements loop", function (test) {
 
   test.equal(alice.grainPermissions(bobGrain), undefined);
   test.equal(bob.grainPermissions(aliceGrain), undefined);
+});
+
+Tinytest.add("permissions: many membrane requirements", function (test) {
+  const alice = new Identity(globalDb);
+  const aliceAccount = new Account(globalDb, [alice]);
+  const bob = new Identity(globalDb);
+
+  const grain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+  const otherGrains = [];
+
+  // Currently, increasing this value to 10 causes the permissions computation to take a
+  // very long time. Once we've fixed that problem, we should increase this number.
+  const NUM_OTHER_GRAINS = 5;
+
+  for (let idx = 0; idx < NUM_OTHER_GRAINS; ++idx) {
+    const otherGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+    const requirement = {
+      permissionsHeld: {
+        grainId: otherGrain.id,
+        identityId: bob.id,
+        permissions: [],
+      },
+    };
+
+    alice.shareToIdentity(grain, bob, { allAccess: null }, [requirement]);
+    otherGrains.push(otherGrain);
+  }
+
+  test.isFalse(bob.mayOpenGrain(grain));
+
+  alice.shareToIdentity(otherGrains[0], bob, { allAccess: null });
+
+  test.isTrue(bob.mayOpenGrain(grain));
+});
+
+Tinytest.add("permissions: membrane requirements long chain", function (test) {
+  const alice = new Identity(globalDb);
+  const aliceAccount = new Account(globalDb, [alice]);
+  const bob = new Identity(globalDb);
+
+  const grains = [];
+
+  // Currently, increasing this value to 10 causes the permissions computation to take a
+  // very long time. Once we've fixed that problem, we should increase this number.
+  const NUM_GRAINS = 6;
+
+  for (let idx = 0; idx < NUM_GRAINS; ++idx) {
+    grains.push(new Grain(globalDb, aliceAccount, alice, commonViewInfo));
+  }
+
+  // Bob's access to grain[i] is depedent on his access to grain[i+1];
+  for (let idx = 0; idx < NUM_GRAINS - 1; ++idx) {
+    const requirement = {
+      permissionsHeld: {
+        grainId: grains[idx + 1].id,
+        identityId: bob.id,
+        permissions: [],
+      },
+    };
+    alice.shareToIdentity(grains[idx], bob, { allAccess: null }, [requirement]);
+  }
+
+  test.isFalse(bob.mayOpenGrain(grains[0]));
+
+  alice.shareToIdentity(grains[grains.length - 1], bob, { allAccess: null });
+
+  test.isTrue(bob.mayOpenGrain(grains[0]));
+});
+
+Tinytest.add("permissions: membrane requirements many permissions", function (test) {
+  const permissionDefs = [];
+  const roleDefs = [];
+  const NUM_PERMISSIONS = 20;
+
+  for (let ii = 0; ii < NUM_PERMISSIONS; ++ii) {
+    permissionDefs.push({ name: ii.toString() });
+    const roleDefPermissions = [];
+    for (let jj = 0; jj < NUM_PERMISSIONS; ++jj) {
+      roleDefPermissions.push(ii !== jj);
+    }
+
+    const roleDef = { permissions: roleDefPermissions };
+    if (ii == 0) {
+      roleDef.default = true;
+    }
+
+    roleDefs.push(roleDef);
+  }
+
+  const viewInfo = { permissions: permissionDefs, roles: roleDefs };
+
+  const alice = new Identity(globalDb);
+  const aliceAccount = new Account(globalDb, [alice]);
+  const bob = new Identity(globalDb);
+
+  const grain0 = new Grain(globalDb, aliceAccount, alice, viewInfo);
+  const grain1 = new Grain(globalDb, aliceAccount, alice, viewInfo);
+
+  const requirementPermissions = [];
+  for (let idx = 0; idx < NUM_PERMISSIONS; ++idx) {
+    requirementPermissions.push(idx % 2 == 0);
+  }
+
+  const requirement = {
+    permissionsHeld: {
+      grainId: grain1.id,
+      identityId: bob.id,
+      permissions: requirementPermissions,
+    },
+  };
+
+  alice.shareToIdentity(grain0, bob, { allAccess: null }, [requirement]);
+  test.isFalse(bob.mayOpenGrain(grain0));
+  for (let idx = 0; idx < NUM_PERMISSIONS; ++idx) {
+    alice.shareToIdentity(grain1, bob, { roleId: idx });
+  }
+
+  test.isTrue(bob.mayOpenGrain(grain0));
 });

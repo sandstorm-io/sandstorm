@@ -193,10 +193,13 @@ class Webkey {
 
 const commonViewInfo = {
   permissions: [{ name: "one" }, { name: "two" }, { name: "three" }],
-  roles: [{ permissions: [true, true, true] },
-          { permissions: [true, false, false], default: true },
-          { permissions: [false, false, true] },
-          { permissions: [false, false, false] },
+  roles: [{ permissions: [true, true, true] },  // 0
+          { permissions: [true, false, false], default: true }, // 1
+          { permissions: [false, false, true] },  // 2
+          { permissions: [false, false, false] }, // 3
+          { permissions: [true, true, false] },   // 4
+          { permissions: [true, false, true] },   // 5
+          { permissions: [false, true, true] },   // 6
          ],
 };
 
@@ -419,6 +422,70 @@ Tinytest.add("permissions: membrane requirements loop", function (test) {
   test.equal(bob.grainPermissions(aliceGrain), undefined);
 });
 
+Tinytest.add("permissions: membrane requirements nontrivial normalization", function (test) {
+  const alice = new Identity(globalDb);
+  const aliceAccount = new Account(globalDb, [alice]);
+  const bob = new Identity(globalDb);
+  const bobAccount = new Account(globalDb, [bob]);
+  const carol = new Identity(globalDb);
+  const aliceGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+  const bobGrain = new Grain(globalDb, bobAccount, bob, commonViewInfo);
+
+  const requirement1 = {
+    permissionsHeld: {
+      grainId: aliceGrain.id,
+      identityId: carol.id,
+      permissions: [true, true, true],
+    },
+  };
+
+  const webkey = alice.shareToWebkey(aliceGrain, { roleId: 2 }, [requirement1]);
+
+  test.isFalse(webkey.mayOpenGrain());
+
+  const requirement2 = {
+    permissionsHeld: {
+        grainId: aliceGrain.id,
+        identityId: bob.id,
+        permissions: [true, true, false],
+      },
+  };
+
+  alice.shareToIdentity(aliceGrain, carol, { roleId: 1 }, [requirement2]);
+  test.isFalse(webkey.mayOpenGrain());
+
+  const requirement3 = {
+    permissionsHeld: {
+        grainId: aliceGrain.id,
+        identityId: bob.id,
+        permissions: [true, false, true],
+      },
+  };
+
+  alice.shareToIdentity(aliceGrain, carol, { roleId: 2 }, [requirement3]);
+  test.isFalse(webkey.mayOpenGrain());
+
+  const requirement4 = {
+    permissionsHeld: {
+        grainId: aliceGrain.id,
+        identityId: bob.id,
+        permissions: [true, true, true],
+      },
+  };
+
+  alice.shareToIdentity(aliceGrain, carol, { roleId: 4 }, [requirement4]);
+  test.isFalse(webkey.mayOpenGrain());
+
+  alice.shareToIdentity(aliceGrain, bob, { roleId: 1 });
+  test.isFalse(webkey.mayOpenGrain());
+
+  alice.shareToIdentity(aliceGrain, bob, { roleId: 4 });
+  test.isFalse(webkey.mayOpenGrain());
+
+  alice.shareToIdentity(aliceGrain, bob, { allAccess: null });
+  test.isTrue(webkey.mayOpenGrain());
+});
+
 Tinytest.add("permissions: many membrane requirements", function (test) {
   const alice = new Identity(globalDb);
   const aliceAccount = new Account(globalDb, [alice]);
@@ -427,9 +494,7 @@ Tinytest.add("permissions: many membrane requirements", function (test) {
   const grain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
   const otherGrains = [];
 
-  // Currently, increasing this value to 10 causes the permissions computation to take a
-  // very long time. Once we've fixed that problem, we should increase this number.
-  const NUM_OTHER_GRAINS = 5;
+  const NUM_OTHER_GRAINS = 30;
 
   for (let idx = 0; idx < NUM_OTHER_GRAINS; ++idx) {
     const otherGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);

@@ -106,7 +106,7 @@ class PermissionSet {
 
   updateHasher(hasher) {
     hasher.update("(");
-    for (let i = 0; i < this.array; ++i) {
+    for (let i = 0; i < this.array.length; ++i) {
       if (this.array[i]) {
         hasher.update("" + i + ",");
       }
@@ -647,6 +647,79 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
   return permissionsMap["o:Owner"] || {};
 }
 
+function findAllMinimalCovers(permissionSets, desiredPermissions) {
+  // `permissionSets` is a map containing PermissionSets, keyed by their PermissionSet.hash().
+  //
+  // This function computes every minimal way to union together elements of `permissionSets` such
+  // that the resulting PermissionSet covers `desiredPermissions`.
+  //
+  // Each minimal cover is returned as an array of PermissionSet hashes. The result of this function
+  // is an array of such arrays.
+
+  check(desiredPermissions, PermissionSet);
+
+  function fullCover(chosen) {
+    // `chosen` is an array of PermissionSet hashes. Returns true if this array is nonempty and
+    // if unioning together its PermissionSets results in a PermissionSet that is a superset of
+    // `desiredPermissions`.
+
+    if (chosen.length == 0) return false; // Lacks the implicit "can access at all" permission.
+
+    const accum = new PermissionSet([]);
+    chosen.forEach((hashedPermissionSet) => {
+      accum.add(permissionSets[hashedPermissionSet]);
+    });
+
+    return desiredPermissions.isSubsetOf(accum);
+  }
+
+  // Construct a proposal containing all the PermissionSets we know about.
+  const chooseAll = [];
+  for (const hashedPermissionSet in permissionSets) {
+    chooseAll.push(hashedPermissionSet);
+  }
+
+  if (!fullCover(chooseAll)) {
+    // The permissions aren't satisfied even if all known requirements are met.
+    return [];
+  }
+
+  const stack = [chooseAll]; // Array of arrays of hashed permission sets.
+
+  const result = [];
+
+  let iter = 0;
+  while (stack.length > 0) {
+    const chosen = stack.pop();
+    let minimal = true;
+    chosen.forEach((removedHashedPermissionSet) => {
+      const newChosen = [];
+      chosen.forEach((hashedPermissionSet) => {
+        if (hashedPermissionSet !== removedHashedPermissionSet) {
+          newChosen.push(hashedPermissionSet);
+        }
+      });
+
+      if (fullCover(newChosen)) {
+        minimal = false;
+        // TODO(perf): keep track of values we've already explored.
+        stack.push(newChosen);
+      }
+    });
+
+    if (minimal) {
+      result.push(chosen);
+    }
+
+    iter += 1;
+    if (iter > 1000) {
+      throw new Meteor.Error(500, "Permissions computation exceeded maximum iteration count.");
+    }
+  }
+
+  return result;
+}
+
 function normalize(permissionFlow, desiredPermissions) {
   // `permissionFlow` is a PermissionFlow representing the permissions flowing from a
   // grain owner to a vertex (e.g. as returned by `backpropagateVertex()`).
@@ -658,69 +731,51 @@ function normalize(permissionFlow, desiredPermissions) {
   // to objects of the form { clause: RequirementSet, tokensUsed: [String] }.
 
   check(desiredPermissions, PermissionSet);
-  const result = {};
 
-  function fullCover(chosen) {
-    // `chosen` is a set of clause hashes (an object where each key is a clause hash; the values
-    // don't matter). The function returns true if the set of clauses -- if all satisfied --
-    // is nonempty and sufficient to cover `desiredPermissions`.
-
-    let canAccessAtAll = false; // Implicit permission.
-    const accum = new PermissionSet([]);
-    for (const hashedClause in chosen) {
-      canAccessAtAll = true;
-      accum.add(permissionFlow[hashedClause].permissions);
-    }
-
-    return canAccessAtAll && desiredPermissions.isSubsetOf(accum);
-  }
-
-  // Construct a proposal containing all the clauses we know about.
-  const chooseAll = {};
+  const flowByPermissionSet = {};
+  const permissionSets = {};
   for (const hashedClause in permissionFlow) {
     const pclause = permissionFlow[hashedClause];
-    chooseAll[hashedClause] = { clause: pclause.requirements, tokensUsed: pclause.tokensUsed };
-  }
-
-  if (!fullCover(chooseAll)) {
-    // The permissions aren't satisfied even if all known requirements are met.
-    return {};
-  }
-
-  const stack = [chooseAll];
-  // Array of Map<hashedClause, { clause: RequirementSet, tokensUsed: [String] }>.
-
-  while (stack.length > 0) {
-    const chosen = stack.pop();
-    let minimal = true;
-    for (const removedHashedClause in chosen) {
-      const newChosen = {};
-      for (const hashedClause in chosen) {
-        if (hashedClause !== removedHashedClause) {
-          newChosen[hashedClause] = chosen[hashedClause];
-        }
-      }
-
-      if (fullCover(newChosen)) {
-        minimal = false;
-        // TODO(perf): keep track of values we've already explored.
-        stack.push(newChosen);
-      }
+    const hashedPermissionSet = pclause.permissions.hash();
+    if (!flowByPermissionSet[hashedPermissionSet]) {
+      flowByPermissionSet[hashedPermissionSet] = [];
+      permissionSets[hashedPermissionSet] = pclause.permissions;
     }
 
-    if (minimal) {
+    flowByPermissionSet[hashedPermissionSet].push(pclause);
+  }
+
+  const covers = findAllMinimalCovers(permissionSets, desiredPermissions);
+  const result = {};
+
+  covers.forEach((cover) => {
+    // For each PermissionSet in the cover, we need to choose a ConditionalPermissionSet
+    // from `permissionFlow` that provides those permissions.
+
+    const choices = [];
+    let numNewResults = 1;
+    cover.forEach((hashedPermissionSet) => {
+      const conditionalPermissionSets = flowByPermissionSet[hashedPermissionSet];
+      numNewResults *= conditionalPermissionSets.length;
+      choices.push(conditionalPermissionSets);
+    });
+
+    for (let ii = 0; ii < numNewResults; ++ii) {
       const resultClause = new RequirementSet();
       const tokensUsed = {};
-      for (const hashedClause in chosen) {
-        resultClause.conjoin(chosen[hashedClause].clause);
-        for (const tokenId in chosen[hashedClause].tokensUsed) {
+      let quotient = ii;
+      choices.forEach((choice) => {
+        const conditionalPermissionSet = choice[quotient % choice.length];
+        resultClause.conjoin(conditionalPermissionSet.requirements);
+        for (const tokenId in conditionalPermissionSet.tokensUsed) {
           tokensUsed[tokenId] = true;
         }
-      }
 
+        quotient = Math.floor(quotient / choice.length);
+      });
       result[resultClause.hash()] = { clause: resultClause, tokensUsed: tokensUsed };
     }
-  }
+  });
 
   return result;
 }

@@ -28,9 +28,16 @@ Template.sandstormAccountSettings.onCreated(function () {
 
   // TODO(cleanup): Figure out a better way to pass in this data. Perhaps it should be part of
   //   the URL?
-  if (Session.get("linkingIdentityError")) {
-    this._actionCompleted.set(
-      { error: "Error linking identity: " + Session.get("linkingIdentityError") });
+  let err = Session.get("linkingIdentityError");
+  if (err) {
+    if (err.alreadyLinked) {
+      this._actionCompleted.set(
+        { success: "Identity was already linked to this account" });
+    } else {
+      this._actionCompleted.set(
+        { error: "Error linking identity: " + err });
+    }
+
     Session.set("linkingIdentityError");
   }
 

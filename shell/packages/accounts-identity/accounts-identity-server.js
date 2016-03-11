@@ -34,7 +34,8 @@ function linkIdentityToAccountInternal(db, backend, identityId, accountId) {
 
   if (!!_.findWhere(accountUser.loginIdentities, { id: identityId }) ||
       !!_.findWhere(accountUser.nonloginIdentities, { id: identityId })) {
-    throw new Meteor.Error(400, "Cannot link an identity that's alread linked to this account.");
+    throw new Meteor.Error("alreadyLinked",
+      "Cannot link an identity that's alread linked to this account.");
   }
 
   const identityUser = Meteor.users.findOne({ _id: identityId });

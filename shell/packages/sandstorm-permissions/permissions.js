@@ -647,8 +647,8 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
   return permissionsMap["o:Owner"] || {};
 }
 
-function normalize(membranedPermissionSetMap, desiredPermissions) {
-  // `membranedPermissionSetMap` is a PermissionFlow representing the permissions flowing from a
+function normalize(permissionFlow, desiredPermissions) {
+  // `permissionFlow` is a PermissionFlow representing the permissions flowing from a
   // grain owner to a vertex (e.g. as returned by `backpropagateVertex()`).
   //
   // `desiredPermissions` is the set of permissions that we are currently interested in.
@@ -657,30 +657,28 @@ function normalize(membranedPermissionSetMap, desiredPermissions) {
   // ways that the desired permissions could be achieved. The result is a map from hashed clause
   // to objects of the form { clause: RequirementSet, tokensUsed: [String] }.
 
+  check(desiredPermissions, PermissionSet);
   const result = {};
 
   function fullCover(chosen) {
     // `chosen` is a set of clause hashes (an object where each key is a clause hash; the values
     // don't matter). The function returns true if the set of clauses -- if all satisfied --
-    // is sufficient to cover all permissions.
+    // is nonempty and sufficient to cover `desiredPermissions`.
 
-    // TODO(perf): I wonder if this early return actually hurts more than it helps -- the rest of
-    //   this function should be pretty cheap when `chosen` is empty, and calling `Object.keys`
-    //   here allocates a list which is not free.
-    if (Object.keys(chosen).length == 0) return false;
-
+    let canAccessAtAll = false; // Implicit permission.
     const accum = new PermissionSet([]);
     for (const hashedClause in chosen) {
-      accum.add(membranedPermissionSetMap[hashedClause].permissions);
+      canAccessAtAll = true;
+      accum.add(permissionFlow[hashedClause].permissions);
     }
 
-    return desiredPermissions.isSubsetOf(accum);
+    return canAccessAtAll && desiredPermissions.isSubsetOf(accum);
   }
 
   // Construct a proposal containing all the clauses we know about.
   const chooseAll = {};
-  for (const hashedClause in membranedPermissionSetMap) {
-    const pclause = membranedPermissionSetMap[hashedClause];
+  for (const hashedClause in permissionFlow) {
+    const pclause = permissionFlow[hashedClause];
     chooseAll[hashedClause] = { clause: pclause.requirements, tokensUsed: pclause.tokensUsed };
   }
 

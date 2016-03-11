@@ -1279,6 +1279,11 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  getLdapSearchUsername: function () {
+    const setting = Settings.findOne({ _id: "ldapSearchUsername" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
   getLdapNameField: function () {
     const setting = Settings.findOne({ _id: "ldapNameField" });
     return setting ? setting.value : "";  // empty if subscription is not ready.

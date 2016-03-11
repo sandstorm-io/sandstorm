@@ -186,7 +186,7 @@ Template.adminSettings.events({
     const token = this.token;
     resetResult(state);
     if (globalDb.isFeatureKeyValid()) {
-      state.set("numSettings", 12);
+      state.set("numSettings", 13);
     } else {
       state.set("numSettings", 4);
     }
@@ -208,6 +208,7 @@ Template.adminSettings.events({
       Meteor.call("setSetting", token, "ldapBase", event.target.ldapBase.value, handleErrorBound);
       Meteor.call("setSetting", token, "ldapDnPattern", event.target.ldapDnPattern.value, handleErrorBound);
       Meteor.call("setSetting", token, "ldapNameField", event.target.ldapNameField.value, handleErrorBound);
+      Meteor.call("setSetting", token, "ldapSearchUsername", event.target.ldapSearchUsername.value, handleErrorBound);
 
       if (event.currentTarget.isOrganizationLdap.checked) {
         Meteor.call("setSetting", token, "organizationLdap", true, handleErrorBound);
@@ -331,6 +332,10 @@ Template.adminSettings.helpers({
 
   ldapNameField: function () {
     return globalDb.getLdapNameField() || "cn";
+  },
+
+  ldapSearchUsername: function () {
+    return globalDb.getLdapSearchUsername() || "uid";
   },
 
   smtpUrl: function () {

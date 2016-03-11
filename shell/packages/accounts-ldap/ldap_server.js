@@ -52,9 +52,8 @@ LDAP.prototype.ldapCheck = function (db, options) {
   if (options.hasOwnProperty("username") && options.hasOwnProperty("ldapPass")) {
     _this.options.base = db.getLdapBase();
     _this.options.dn = db.getLdapDnPattern().replace("$USERNAME", options.username);
-    _this.options.searchBeforeBind = {
-      uid: options.username,
-    };
+    _this.options.searchBeforeBind = {};
+    _this.options.searchBeforeBind[db.getLdapSearchUsername()] = options.username;
 
     let resolved = false;
     let ldapAsyncFut = new Future();

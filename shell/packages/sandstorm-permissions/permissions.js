@@ -115,6 +115,17 @@ class PermissionSet {
     hasher.update(")");
   }
 
+  isEmpty() {
+    let result = true;
+    this.array.forEach((p) => {
+      if (p) {
+        result = false;
+      }
+    });
+
+    return result;
+  }
+
   isSubsetOf(other) {
     check(other, PermissionSet);
     for (let ii = 0; ii < this.array.length; ++ii) {
@@ -601,11 +612,11 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
       //   unconditionally, then there's no reason to check if it also flows conditionally.
       if (permissionsMap["o:Owner"]) {
         for (const hashedClause in permissionsMap["o:Owner"]) {
-          const membranedPermissionSet = permissionsMap["o:Owner"][hashedClause];
+          const conditionalPermissionSet = permissionsMap["o:Owner"][hashedClause];
           if (hashedClause in sequenced) {
             const smps = sequenced[hashedClause];
-            smps.permissions.remove(membranedPermissionSet.permissions);
-            if (smps.permissions.array.length == 0) {
+            smps.permissions.remove(conditionalPermissionSet.permissions);
+            if (smps.permissions.isEmpty()) {
               delete sequenced[hashedClause];
             }
           }
@@ -946,7 +957,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
     // not make sense. Instead, we attempt to prove each of the clauses in `result` and then
     // union together the resulting permissions.
     for (const hashedClause in result) {
-      const membranedPermissionSet = result[hashedClause];
+      const conditionalPermissionSet = result[hashedClause];
 
       // First: see whether we should even bother. If we've already proved all the permissions
       // that this clause would get us, don't bother.
@@ -956,7 +967,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
       } else {
         const tmp = new PermissionSet([]);
         tmp.add(resultPermissions);
-        if (tmp.add(membranedPermissionSet.permissions)) {
+        if (tmp.add(conditionalPermissionSet.permissions)) {
           shouldBother = true;
         }
       }
@@ -964,8 +975,8 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
       if (shouldBother) {
         const goalClauses = {};
         goalClauses[hashedClause] = {
-          clause: membranedPermissionSet.requirements,
-          tokensUsed: membranedPermissionSet.tokensUsed,
+          clause: conditionalPermissionSet.requirements,
+          tokensUsed: conditionalPermissionSet.tokensUsed,
         };
         const proofResult = proveClauses(db, context, goalClauses);
         if (proofResult.yes) {
@@ -977,7 +988,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
             resultPermissions = new PermissionSet([]);
           }
 
-          resultPermissions.add(membranedPermissionSet.permissions);
+          resultPermissions.add(conditionalPermissionSet.permissions);
         }
       }
     }

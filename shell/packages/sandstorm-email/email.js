@@ -13,7 +13,6 @@ const makePool = function (mailConfig) {
   const simplesmtp = Npm.require("simplesmtp");
   let auth = false;
   if (mailConfig.auth && (mailConfig.auth.user || mailConfig.auth.pass)) {
-    console.log("using auth object", mailConfig.auth);
     auth = mailConfig.auth;
   }
 

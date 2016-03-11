@@ -230,7 +230,6 @@ Template.adminSettings.events({
 
     // Construct state from email form.
     const mailConfig = emailConfigFromForm(event.target);
-    console.log(mailConfig);
 
     Meteor.call("setAccountSetting", token, "google", event.target.googleLogin.checked, handleErrorBound);
     Meteor.call("setAccountSetting", token, "github", event.target.githubLogin.checked, handleErrorBound);

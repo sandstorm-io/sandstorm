@@ -97,6 +97,25 @@ class PermissionSet {
     return result;
   }
 
+  hash() {
+    // See the comment for Clause.hash().
+
+    const hasher = Crypto.createHash("sha256");
+    this.updateHasher(hasher);
+    return hasher.digest("hex");
+  }
+
+  updateHasher(hasher) {
+    hasher.update("(");
+    for (let i = 0; i < this.array; ++i) {
+      if (this.array[i]) {
+        hasher.update("" + i + ",");
+      }
+    }
+
+    hasher.update(")");
+  }
+
   isSubsetOf(other) {
     check(other, PermissionSet);
     for (let ii = 0; ii < this.array.length; ++ii) {
@@ -195,15 +214,8 @@ class Clause {
     Object.keys(this.identityPermissions).sort().forEach((grainId) => {
       hasher.update(grainId + "{");
       Object.keys(this.identityPermissions[grainId]).sort().forEach((identityId) => {
-        hasher.update(identityId + "(");
-        const permissionArray = this.identityPermissions[grainId][identityId].array;
-        for (let i = 0; i < permissionArray.length; ++i) {
-          if (permissionArray[i]) {
-            hasher.update("" + i + ",");
-          }
-        }
-
-        hasher.update(")");
+        hasher.update(identityId);
+        this.identityPermissions[grainId][identityId].updateHasher(hasher);
       });
 
       hasher.update("}");

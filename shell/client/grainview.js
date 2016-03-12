@@ -58,6 +58,14 @@ GrainView = class GrainView {
     }
   }
 
+  save() {
+    // Returns a JSON-able argument array that can be passed to GrainView's constructor to
+    // reconstruct the same view later. However, the parentElement and initialPopup arguments
+    // can't be included since they are live objects, not data.
+
+    return [this._grainId, this._path, this._tokenInfo];
+  }
+
   reset(identityId) {
     // TODO(cleanup): This duplicates some code from the GrainView constructor.
 
@@ -561,7 +569,7 @@ GrainView = class GrainView {
     }
 
     this._status = "opening";
-    if (this._token === undefined) {
+    if (!this._token) {
       // Opening a grain session.
       this._openGrainSession();
     } else {
@@ -748,3 +756,125 @@ const onceConditionIsTrue = (condition, continuation) => {
     });
   });
 };
+
+window.addEventListener("unload", () => {
+  // If more than one grain is open, save a list to restore later. We don't save if just one grain
+  // because people who like to open grains in separate browser tabs probably don't want this
+  // feature. Also, anonymous users who can only open one grain at a time (because they have no
+  // sidebar) would probably be surprised to find the grain re-open if they return to Sandstorm
+  // later.
+
+  // Don't save anything if the user isn't logged in, because users who aren't logged in can't
+  // see the sidebar and probably would be surprised that Sandstorm remembers what they had
+  // opened.
+  if (!Meteor.userId()) return;
+
+  const grains = globalGrains.get();
+  const key = "openGrains-" + SHA256(window.location.toString());
+
+  const old = Meteor._localStorage.getItem(key);
+  if (old) {
+    const oldParsed = JSON.parse(old);
+
+    if (oldParsed.time > Date.now() - 5000) {
+      // Crap. It seems that some other tab was closed in the last 5 seconds that had the same
+      // URL (perhaps a common one like "/apps"). We have no way to distinguish our tab from this
+      // other tab. Rather than arbitrarily clobber one tab's grains list with the other -- which
+      // will likely confuse the user, opening grains in multiple places that weren't previously --
+      // we will have to give up and not restore anything. :(
+      Meteor._localStorage.setItem(key, JSON.stringify({ time: Date.now(), grains: [] }));
+      return;
+    }
+  }
+
+  Meteor._localStorage.setItem(key,
+      JSON.stringify({ time: Date.now(), grains: grains.map(grain => grain.save()) }));
+});
+
+function restoreOpenGrains(old) {
+  // Load last-opened grain list, if any.
+
+  if (old.grains.length === 0) return;
+
+  const mainContentElement = document.querySelector("body>.main-content");
+  if (!mainContentElement) {
+    // Main content doesn't exist yet. Defer.
+    Meteor.defer(() => restoreOpenGrains(old));
+    return;
+  }
+
+  const ready = () => {
+    if (Meteor.loggingIn()) return false;
+
+    for (const i in globalSubs) {
+      if (!globalSubs[i].ready()) return false;
+    }
+
+    return true;
+  };
+
+  // Open all view sessions as soon as we're fully loaded.
+  onceConditionIsTrue(ready, () => {
+    const alreadyOpen = globalGrains.get();
+
+    if (alreadyOpen.length > 1) {
+      // It would be bad to overwrite the grain list if something is open already. This should
+      // never happen, though, because the /grain and /shared routes won't begin to render until
+      // all subscriptions are ready.
+      console.error("Couldn't restore grain list because multiple grains are already open.");
+    } else {
+      let alreadyOpenGrain = alreadyOpen[0];  // maybe undefined
+
+      const newGrains = old.grains.map(args => {
+        if (alreadyOpenGrain && alreadyOpenGrain.grainId() === args[0]) {
+          // Inject the already-open grain into the grain list here to maintain ordering.
+          const result = alreadyOpenGrain;
+          alreadyOpenGrain = undefined;
+          return result;
+        } else {
+          const view = new GrainView(args[0], args[1], args[2], mainContentElement);
+          view.openSession();
+          return view;
+        }
+      });
+      if (alreadyOpenGrain) newGrains.push(alreadyOpenGrain);
+      globalGrains.set(newGrains);
+    }
+  });
+}
+
+try {
+  // We want to clear "openGrains" entries more than a week old since those windows are
+  // probably never going to be restored. We can't use Meteor._localStorage for this because
+  // it doesn't provide a way to iterate over all keys. So we use window.localStorage in a
+  // try/catch.
+  const keys = new Array(window.localStorage.length);
+  for (let i = 0; i < keys.length; i++) {
+    keys[i] = window.localStorage.key(i);
+  }
+
+  keys.forEach(key => {
+    if (key.startsWith("openGrains-")) {
+      if (JSON.parse(window.localStorage.getItem(key)).time < Date.now() - 86400000 * 7) {
+        // This is more than a week old. Delete.
+        delete window.localStorage[key];
+      }
+    }
+  });
+} catch (e) {
+  console.error(e);
+}
+
+{
+  // Restore last-open grain list for the same URL.
+
+  // Meteor has a nice package for detecting if localStorage is available, but it's internal.
+  // We use it anyway. If it goes away, this will throw an exception at startup which will should
+  // be really obvious and well fix it.
+  const key = "openGrains-" + SHA256(window.location.toString());
+  const old = Meteor._localStorage.getItem(key);
+  if (old) {
+    Meteor.startup(() => restoreOpenGrains(JSON.parse(old)));
+    Meteor._localStorage.removeItem(key);
+  }
+}

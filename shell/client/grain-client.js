@@ -93,6 +93,7 @@ const mapGrainStateToTemplateData = function (grainState) {
     interstitial: grainState.shouldShowInterstitial(),
     token: grainState.token(),
     viewInfo: grainState.viewInfo(),
+    grainView: grainState,
   };
   return templateData;
 };
@@ -532,7 +533,7 @@ Template.grainSharePopup.helpers({
 
 Template.requestAccess.onCreated(function () {
   this._status = new ReactiveVar({ showButton: true });
-  this._grain = getActiveGrain(globalGrains.get());
+  this._grain = this.data.grainView;
 
   this.autorun(() => {
     Meteor.userId(); // Read this value so that we resubscribe on login.

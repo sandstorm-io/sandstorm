@@ -32,7 +32,11 @@ Template.identityLoginInterstitial.onCreated(function () {
     Meteor.call("linkIdentityToAccount", token, function (err, result) {
       if (err) {
         // TODO(cleanup): Figure out a better way to get this data to the /account page.
-        Session.set("linkingIdentityError", err.toString());
+        if (err.error === "alreadyLinked") {
+          Session.set("linkingIdentityError", { alreadyLinked: true });
+        } else {
+          Session.set("linkingIdentityError", err.toString());
+        }
       } else {
         Session.set("linkingIdentityError");
       }

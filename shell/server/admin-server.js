@@ -214,7 +214,7 @@ Meteor.methods({
       returnAddress: String,
     });
     check(to, String);
-    const {returnAddress, ...restConfig} = smtpConfig;
+    const { returnAddress, ...restConfig } = smtpConfig;
 
     SandstormEmail.send({
       to: to,

@@ -63,7 +63,7 @@ GrainView = class GrainView {
     // reconstruct the same view later. However, the parentElement and initialPopup arguments
     // can't be included since they are live objects, not data.
 
-    return [ this._grainId, this._path, this._tokenInfo ];
+    return [this._grainId, this._path, this._tokenInfo];
   }
 
   reset(identityId) {
@@ -782,13 +782,13 @@ window.addEventListener("unload", () => {
       // other tab. Rather than arbitrarily clobber one tab's grains list with the other -- which
       // will likely confuse the user, opening grains in multiple places that weren't previously --
       // we will have to give up and not restore anything. :(
-      Meteor._localStorage.setItem(JSON.stringify({time: Date.now(), grains: []}));
+      Meteor._localStorage.setItem(JSON.stringify({ time: Date.now(), grains: [] }));
       return;
     }
   }
 
   Meteor._localStorage.setItem(key,
-      JSON.stringify({time: Date.now(), grains: grains.map(grain => grain.save())}));
+      JSON.stringify({ time: Date.now(), grains: grains.map(grain => grain.save()) }));
 });
 
 function restoreOpenGrains(old) {
@@ -832,6 +832,7 @@ function restoreOpenGrains(old) {
           alreadyOpenGrain = undefined;
           return result;
         }
+
         const view = new GrainView(args[0], args[1], args[2], mainContentElement);
         view.openSession();
         return view;

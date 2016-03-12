@@ -108,7 +108,7 @@ Sandstorm, that you will develop the package with. To do that, run the following
 command:
 
 ```bash
-vagrant-spk up
+vagrant-spk vm up
 ```
 
 (You should be running it from the `~/projects/php-app-to-package-for-sandstorm` directory.)
@@ -300,7 +300,7 @@ In our case, we're done using the virtual machine running this app, so
 it's safe to stop it. Run this command:
 
 ```bash
-vagrant-spk halt
+vagrant-spk vm halt
 ```
 
 (You should be running it from the `~/projects/php-app-to-package-for-sandstorm` directory.)
@@ -309,7 +309,7 @@ Now port 6080 is available for other app packaging projects. If you ever want to
 this app's packaging again, you can bring it up by running:
 
 ```bash
-vagrant-spk up
+vagrant-spk vm up
 ```
 
 If you ever are confused about which Vagrant virtual machines are

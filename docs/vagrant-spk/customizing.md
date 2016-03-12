@@ -15,7 +15,7 @@ You should not need to change this script.
 ### setup.sh
 
 This script controls stack-specific setup, like tools to download and install. It runs **once when
-you run `vagrant-spk up`**. When you modify this file, you must **manually re-execute it**. See
+you run `vagrant-spk vm up`**. When you modify this file, you must **manually re-execute it**. See
 below for details.
 
 Each platform stack in `vagrant-spk` provides a reasonable default for `setup.sh`, but if you need
@@ -38,7 +38,7 @@ cd ..
 This is because `vagrant-spk` currently has no way to auto-detect that the `setup.sh` script needs
 to be re-executed.
 
-To verify your `setup.sh` for reproducibility, run `vagrant-spk destroy` then `vagrant-spk up` and
+To verify your `setup.sh` for reproducibility, run `vagrant-spk vm destroy` then `vagrant-spk vm up` and
 manually test your package.
 
 As a performance optimization, you can use `apt-cacher-ng` to speed up package downloads. This can

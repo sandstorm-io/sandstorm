@@ -37,7 +37,7 @@ change it.
 To find out if you have the key material, you can run:
 
 ```bash
-$ vagrant-spk ssh
+$ vagrant-spk vm ssh
 $ spk listkeys -k ~/.sandstorm/sandstorm-keyring
 ```
 
@@ -47,7 +47,7 @@ If you want to change the app ID before publishing the app, you
 can run:
 
 ```bash
-$ vagrant-spk ssh
+$ vagrant-spk vm ssh
 $ spk keygen -k ~/.sandstorm/sandstorm-keyring
 ```
 

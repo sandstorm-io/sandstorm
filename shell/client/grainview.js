@@ -770,7 +770,7 @@ window.addEventListener("unload", () => {
   if (!Meteor.userId()) return;
 
   const grains = globalGrains.get();
-  const key = "openGrains-" + SHA256(window.location);
+  const key = "openGrains-" + SHA256(window.location.toString());
 
   const old = Meteor._localStorage.getItem(key);
   if (old) {
@@ -782,7 +782,7 @@ window.addEventListener("unload", () => {
       // other tab. Rather than arbitrarily clobber one tab's grains list with the other -- which
       // will likely confuse the user, opening grains in multiple places that weren't previously --
       // we will have to give up and not restore anything. :(
-      Meteor._localStorage.setItem(JSON.stringify({ time: Date.now(), grains: [] }));
+      Meteor._localStorage.setItem(key, JSON.stringify({ time: Date.now(), grains: [] }));
       return;
     }
   }
@@ -831,11 +831,11 @@ function restoreOpenGrains(old) {
           const result = alreadyOpenGrain;
           alreadyOpenGrain = undefined;
           return result;
+        } else {
+          const view = new GrainView(args[0], args[1], args[2], mainContentElement);
+          view.openSession();
+          return view;
         }
-
-        const view = new GrainView(args[0], args[1], args[2], mainContentElement);
-        view.openSession();
-        return view;
       });
       if (alreadyOpenGrain) newGrains.push(alreadyOpenGrain);
       globalGrains.set(newGrains);
@@ -871,7 +871,7 @@ try {
   // Meteor has a nice package for detecting if localStorage is available, but it's internal.
   // We use it anyway. If it goes away, this will throw an exception at startup which will should
   // be really obvious and well fix it.
-  const key = "openGrains-" + SHA256(window.location);
+  const key = "openGrains-" + SHA256(window.location.toString());
   const old = Meteor._localStorage.getItem(key);
   if (old) {
     Meteor.startup(() => restoreOpenGrains(JSON.parse(old)));

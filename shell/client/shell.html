@@ -1046,8 +1046,17 @@ limitations under the License.
         <input type="checkbox" name="ldapLogin" value="value" checked={{ldapEnabled}}> Enable LDAP Login
       </label><br>
         <label>LDAP Url: <input id="ldapUrl" type="text" name="ldapUrl" value="{{ldapUrl}}"></label>
+
+        <input type="radio" name="ldapExplicitDn" checked="{{searchDnSelected}}"
+               value="ldapSearchDn"> Specify a Dn search query<br>
+        <input type="radio" name="ldapExplicitDn" checked="{{explicitDnSelected}}"
+               value="ldapExplicitDn"> Specify explicit Dn<br>
+        {{#if explicitDnSelected}}
         <label>LDAP DN Pattern ($USERNAME will be replaced): <input id="ldapDnPattern" type="text" name="ldapDnPattern" value="{{ldapDnPattern}}"></label>
+        {{else}}
         <label>LDAP Base Search Dn: <input id="ldapBase" type="text" name="ldapBase" value="{{ldapBase}}"></label>
+        <label>LDAP Search Username Field: <input id="ldapSearchUsername" type="text" name="ldapNameField" value="{{ldapSearchUsername}}"></label>
+        {{/if}}
         <label>LDAP Name Field: <input id="ldapNameField" type="text" name="ldapNameField" value="{{ldapNameField}}"></label></p>
 
       <h4>SAML login</h4>

@@ -815,17 +815,29 @@ function restoreOpenGrains(old) {
 
   // Open all view sessions as soon as we're fully loaded.
   onceConditionIsTrue(ready, () => {
-    if (globalGrains.get().length > 0) {
+    const alreadyOpen = globalGrains.get();
+
+    if (alreadyOpen.length > 1) {
       // It would be bad to overwrite the grain list if something is open already. This should
       // never happen, though, because the /grain and /shared routes won't begin to render until
       // all subscriptions are ready.
-      console.error("Couldn't restore grain list because grains are already open.");
+      console.error("Couldn't restore grain list because multiple grains are already open.");
     } else {
-      globalGrains.set(old.grains.map(args => {
-        var view = new GrainView(args[0], args[1], args[2], mainContentElement);
+      let alreadyOpenGrain = alreadyOpen[0];  // maybe undefined
+
+      const newGrains = old.grains.map(args => {
+        if (alreadyOpenGrain && alreadyOpenGrain.grainId() === args[0]) {
+          // Inject the already-open grain into the grain list here to maintain ordering.
+          const result = alreadyOpenGrain;
+          alreadyOpenGrain = undefined;
+          return result;
+        }
+        const view = new GrainView(args[0], args[1], args[2], mainContentElement);
         view.openSession();
         return view;
-      }));
+      });
+      if (alreadyOpenGrain) newGrains.push(alreadyOpenGrain);
+      globalGrains.set(newGrains);
     }
   });
 }

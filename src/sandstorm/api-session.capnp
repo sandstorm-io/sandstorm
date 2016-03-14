@@ -37,8 +37,8 @@ interface ApiSession @0xc879e379c625cdc7 extends(WebSession.WebSession) {
 
   struct PowerboxTag {
     # A tag used for PowerboxDescriptors describing HTTP APIs. Such descriptors should typically
-    # indicate `ApiSession` as the requested interface and use HttpApiTag to specify what API is
-    # expected.
+    # indicate `ApiSession` as the requested interface and use PowerboxTag to specify what API is
+    # expected (so, the tag ID is ApiSession's ID, but the tag value is an ApiSession.PowerboxTag).
     #
     # Usually, this tag is used to request APIs implemented by internet services external to
     # Sandstorm. However, a Sandstorm grain may advertise itself as supporting a compatible API
@@ -65,7 +65,7 @@ interface ApiSession @0xc879e379c625cdc7 extends(WebSession.WebSession) {
     # GitHub API.
     #
     # If you include a path in the URL, requests will automatically be prefixed with that path. You
-    # should usually include enough path components to identity a specific product and version, but
+    # should usually include enough path components to identify a specific product and version, but
     # usually not specific collection types within that product. For example, you would request the
     # Google Calendar API version 2 as "https://apidata.googleusercontent.com/caldav/v2". However,
     # you would not normally request "https://api.github.com/users" because "GitHub users" is not

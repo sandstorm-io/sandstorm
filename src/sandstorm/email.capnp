@@ -27,8 +27,17 @@ using Util = import "util.capnp";
 struct EmailAddress {
   # Email addresses are (usually) of the form "Full Name <example@example.org>".
   # This struct separates the display name and address into distinct fields.
+
   address @0 :Text;
   name @1 :Text;
+
+  # TODO(someday): We could add a field `token` which is a capability representing "email capital",
+  #   which you can think of like "political capital", but specifically representing some social
+  #   permission to send email to this address. A token can be used some small number of times to
+  #   send email to a particular address. Tokens can be requested using the inline powerbox: if a
+  #   human user types (or selects from autocomplete) an address, this is good enough to allow the
+  #   app to send a few messages to that address. Tokens would also be received as part of incoming
+  #   messages, representing permission to reply (and reply-all).
 }
 
 struct EmailAttachment {
@@ -53,6 +62,8 @@ struct EmailMessage {
   references @7 :List(Text);
   inReplyTo @8 :List(Text); # header is actually in-reply-to
 
+  # TODO(someday): Add list-id.
+
   subject @9 :Text;
 
   # Separate body into text and html fields.
@@ -65,10 +76,62 @@ struct EmailMessage {
 interface EmailSendPort @0xec831dbf4cc9bcca {
   # Represents a destination for e-mail.
   #
-  # Usually, a port you get from the user through the powerbox will
-  # represent a particular address owned by the user.  All messages
-  # sent through the port will have the `from` field overwritten with the
-  # user's address.
+  # Make a Powerbox request for `EmailSendPort` when you want to request permission to send email
+  # to the current user. For example, a mailing list app would request this when a user indicates
+  # they wish to subscribe to the list.
+  #
+  # Make a Powerbox offer of an `EmailSendPort` when you want to receive email on that port.
+  # The user will be prompted to assign your port to an address. For example, a mailing list app
+  # would offer an `EmailSendPort` to the owner during initial setup.
 
   send @0 (email :EmailMessage);
+  # Send a message through this port.
+
+  hintAddress @1 (address :EmailAddress);
+  # Hint to the port that it is now receiving email sent to the given address. The email driver
+  # will call this after the port has been bound to an address after being offered through the
+  # Powerbox. The purpose is to allow the app to display back to the user what address it is
+  # bound to. Implementing this is optional.
+
+  struct PowerboxTag {
+    # Tag which can be set on `PowerboxDescriptor`s when requesting an `EmailSendPort`.
+
+    fromHint @0 :EmailAddress;
+    # The user will be offered the ability to override the "from" address on emails sent through
+    # this port. The application requesting the port may provide `fromHint` to suggest an override
+    # address to the user. Do not provide a `fromHint` if you do not want `from` addresses to be
+    # overridden, but note that the user may choose to do so anyway.
+    #
+    # It does not make sense to fill in this field when making a Powerbox offer.
+
+    listIdHint @1 :Text;
+    # The user will be offered the ability to set the "list-id" on emails sent through this port.
+    # The application requesting the port may provide 'listIdHint' to suggest a list ID to use.
+    # Do not provide a `listIdHint` if you do not want the list ID to be set, but note that the
+    # user may choose to set it anyway.
+    #
+    # It does not make sense to fill in this field when making a Powerbox offer.
+  }
 }
+
+interface EmailAgent @0x8b6f158d70cbc773 {
+  # Represents the ability to send and receive email as some user.
+  #
+  # Make a Powerbox request for `EmailAgent` when you want to request the ability to send and
+  # receive email under some address. For example, an email client app would request this.
+
+  send @0 (email :EmailMessage);
+  # Send a message from this user to all the addresses listed in the message's `to`, `cc`, and
+  # `bcc` fields. `email.from` is ignored; it will be replaced with the address associated with
+  # this capability. `email.bcc` will not be revealed to recipients.
+
+  addReceiver @1 (port :EmailSendPort) -> (handle :Util.Handle);
+  # Arrange for future mail sent to this user to be delivered to `port`.
+  #
+  # Drop the returned handle to unsubscribe. This handle is persistent (can be saved as a
+  # SturdyRef).
+  #
+  # Multiple `port`s can be added; each will receive a copy.
+}
+
+# TODO(someday): Support remote mailboxes, e.g. IMAP. Look at Nylas API for design hints!

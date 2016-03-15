@@ -1210,7 +1210,11 @@ download_latest_bundle_and_extract_if_needed() {
   fi
 
   echo "Finding latest build for $DEFAULT_UPDATE_CHANNEL channel..."
-  BUILD=$(curl -A "$CURL_USER_AGENT" -fs "https://install.sandstorm.io/$DEFAULT_UPDATE_CHANNEL?from=0&type=install")
+  # NOTE: The type is install_v2. We use the "type" value when calculating how many people attempted
+  # to do a Sandstorm install. We had to stop using "install" because vagrant-spk happens to use
+  # &type=install during situations that we do not want to categorize as an attempt by a human to
+  # install Sandstorm.
+  BUILD=$(curl -A "$CURL_USER_AGENT" -fs "https://install.sandstorm.io/$DEFAULT_UPDATE_CHANNEL?from=0&type=install_v2")
   BUILD_DIR=sandstorm-$BUILD
 
   if [[ ! "$BUILD" =~ ^[0-9]+$ ]]; then

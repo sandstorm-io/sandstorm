@@ -958,6 +958,7 @@ Template.whoHasAccessPopup.helpers({
     let identity = ContactProfiles.findOne({ _id: identityId });
     if (!identity) {
       identity = Meteor.users.findOne({ _id: identityId });
+      SandstormDb.fillInProfileDefaults(identity);
     }
 
     if (identity) {

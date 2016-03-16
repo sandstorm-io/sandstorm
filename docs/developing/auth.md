@@ -40,6 +40,13 @@ related to user identity and permissions:
   SHA-256. For example: `0ba26e59c64ec75dedbc11679f267a40`.  This
   header is **not sent at all for anonymous users**.
 
+* `X-Sandstorm-Tab-Id`: Unique identifier for the grain tab in which
+  this request is taking place. This can be used to correlate multiple
+  requests being performed in the same tab even when the user is
+  anonymous. Also, for HTTP APIs, requests using the same API token
+  will have the same tab ID, to allow you to correlate requests from
+  the same client.
+
 * `X-Sandstorm-Permissions`: This contains a list of the permissions
   held by the current user, joined with a comma such as `edit,read` or
   `read`. Permissions are defined in the package's

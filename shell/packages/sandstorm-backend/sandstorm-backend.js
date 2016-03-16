@@ -266,16 +266,21 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
                  title: title,
                  grainId: grainId,
                  hostId: session.hostId,
+                 tabId: session.tabId,
                  salt: cachedSalt,
                },
              };
     }
   }
 
+  // TODO(someday): Allow caller to specify the parent session from which to inherit the tab ID, or
+  //   something.
+
   session = {
     _id: sessionId,
     grainId: grainId,
     hostId: Crypto.createHash("sha256").update(sessionId).digest("hex").slice(0, 32),
+    tabId: Crypto.createHash("sha256").update("tab:").update(sessionId).digest("hex").slice(0, 32),
     timestamp: new Date().getTime(),
     hasLoaded: false,
   };
@@ -297,6 +302,7 @@ SandstormBackend.prototype.openSessionInternal = function (grainId, userId, iden
              title: title,
              grainId: grainId,
              hostId: session.hostId,
+             tabId: session.tabId,
              salt: cachedSalt,
            },
          };

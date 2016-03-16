@@ -37,10 +37,11 @@ ROOT_URL = Url.parse(process.env.ROOT_URL);
 HOSTNAME = ROOT_URL.hostname;
 
 SessionContextImpl = class SessionContextImpl {
-  constructor(grainId, sessionId, identityId) {
+  constructor(grainId, sessionId, identityId, tabId) {
     this.grainId = grainId;
     this.sessionId = sessionId;
     this.identityId = identityId;
+    this.tabId = tabId;
   }
 
   offer(cap, requiredPermissions, descriptor, displayInfo) {
@@ -184,8 +185,8 @@ Meteor.methods({
 });
 
 HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl {
-  constructor(grainId, sessionId, identityId) {
-    super(grainId, sessionId, identityId);
+  constructor(grainId, sessionId, identityId, tabId) {
+    super(grainId, sessionId, identityId, tabId);
   }
 
   _getPublicId() {
@@ -386,8 +387,8 @@ HackSessionContextImpl = class HackSessionContextImpl extends SessionContextImpl
   }
 };
 
-makeHackSessionContext = (grainId, sessionId, identityId) => {
-  return new Capnp.Capability(new HackSessionContextImpl(grainId, sessionId, identityId),
+makeHackSessionContext = (grainId, sessionId, identityId, tabId) => {
+  return new Capnp.Capability(new HackSessionContextImpl(grainId, sessionId, identityId, tabId),
                               HackSessionContext);
 };
 

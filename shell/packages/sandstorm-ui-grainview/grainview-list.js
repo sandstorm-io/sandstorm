@@ -48,17 +48,17 @@ GrainViewList = class GrainViewList {
           JSON.stringify({ time: Date.now(), grains: grains.map(grain => grain.save()) }));
     });
 
-    let lastUserId = Meteor.userId();
+    this._grainsUserId = new ReactiveVar(Meteor.userId());
     Tracker.autorun(() => {
       const currentUserId = Meteor.userId();
-      if (currentUserId !== lastUserId) {
+      if (currentUserId !== this._grainsUserId.get()) {
         const current = Router.current();
         if (current.route.getName() === "grain" || current.route.getName() === "shared") {
           current.state.set("beforeActionHookRan", false);
         }
 
         this.clear();
-        lastUserId = currentUserId;
+        this._grainsUserId.set(currentUserId);
       }
     });
   }
@@ -182,7 +182,11 @@ GrainViewList = class GrainViewList {
     }
 
     const ready = () => {
-      if (Meteor.loggingIn()) return false;
+      if (Meteor.loggingIn() || Accounts.isLinkingNewIdentity()) return false;
+
+      // The list auto-clears when Meteor.userId() changes. Make sure that we wait until the dust
+      // has settled.
+      if (this._grainsUserId.get() !== Meteor.userId()) return false;
 
       for (const i in globalSubs) {
         if (!globalSubs[i].ready()) return false;
@@ -192,7 +196,10 @@ GrainViewList = class GrainViewList {
     };
 
     // Open all view sessions as soon as we're fully loaded.
-    onceConditionIsTrue(ready, () => this.restore(old, mainContentElement));
+    onceConditionIsTrue(ready, () => {
+      console.log("is ready: " + JSON.stringify(old));
+      this.restore(old, mainContentElement);
+    });
   }
 
   restore(old, mainContentElement) {

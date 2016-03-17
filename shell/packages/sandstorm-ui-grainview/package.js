@@ -21,7 +21,8 @@ Package.describe({
 
 Package.onUse(function (api) {
   api.use(["ecmascript"]);
-  api.use(["check", "underscore", "tracker", "accounts-base", "sha", "iron:router"], ["client"]);
+  api.use(["check", "underscore", "tracker", "accounts-base", "sha",
+           "reactive-var", "iron:router", "accounts-identity",], ["client"]);
   api.addFiles(["grainview.js", "grainview-list.js"], "client");
   api.export("GrainView");
   api.export("GrainViewList");

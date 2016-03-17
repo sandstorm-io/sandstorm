@@ -259,11 +259,9 @@ const CURRENT_IDENTITY_KEY = "Accounts.CurrentIdentityId";
 Accounts.getCurrentIdentityId = function () {
   // TODO(cleanup): `globalGrains` is only in scope here because of a Meteor bug. We should figure
   //   out a better way to track a reference to it.
-  const grainList = globalGrains.get();
-  for (let i = 0; i < grainList.length; i++) {
-    if (grainList[i].isActive()) {
-      return grainList[i].identityId();
-    }
+  const activeGrain = globalGrains.getActive();
+  if (activeGrain) {
+    return activeGrain.identityId();
   }
 
   const identityId = Session.get(CURRENT_IDENTITY_KEY);
@@ -280,11 +278,9 @@ Accounts.setCurrentIdentityId = function (identityId) {
 
   // TODO(cleanup): `globalGrains` is only in scope here because of a Meteor bug. We should figure
   //   out a better way to track a reference to it.
-  const grainList = globalGrains.get();
-  for (let i = 0; i < grainList.length; i++) {
-    if (grainList[i].isActive()) {
-      return grainList[i].switchIdentity(identityId);
-    }
+  const activeGrain = globalGrains.getActive();
+  if (activeGrain) {
+    return activeGrain.switchIdentity(identityId);
   }
 
   Session.set(CURRENT_IDENTITY_KEY, identityId);

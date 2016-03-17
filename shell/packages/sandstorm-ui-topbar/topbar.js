@@ -80,7 +80,7 @@ Template.sandstormTopbar.helpers({
 
   grains: function () {
     const topbar = Template.instance().data;
-    const grains = topbar._grains.get();
+    const grains = topbar._grains.getAll();
     const data = grains.map(function (grain) {
       grain.depend();
       return {
@@ -98,7 +98,7 @@ Template.sandstormTopbar.helpers({
 
   grainCount: function () {
     const topbar = Template.instance().data;
-    const grains = topbar._grains.get();
+    const grains = topbar._grains.getAll();
     return grains.length;
   },
 
@@ -255,43 +255,7 @@ Template.sandstormTopbar.events({
   "click .navbar .close-button": function (event) {
     const grainId = event.currentTarget.parentNode.getAttribute("data-grainid");
     const topbar = Template.instance().data;
-    const grains = topbar._grains.get();
-
-    let activeIndex = -1;
-    let closeIndex = -1;
-    grains.forEach(function (grain, i) {
-      if (grain.isActive()) {
-        activeIndex = i;
-      }
-
-      if (grain.grainId() == grainId) {
-        closeIndex = i;
-        grain.destroy();
-      }
-    });
-
-    if (grains.length == 1) {
-      // Redirect to /grain/ after closing the last grain, if it was the active view.
-      topbar._grains.set([]);
-      if (activeIndex == 0) {
-        Router.go("grains");
-      }
-
-      return;
-    }
-
-    if (activeIndex == closeIndex) {
-      // If the user closed the active grain, redirect to the next one after closing this one.
-      const newActiveIndex = (activeIndex == grains.length - 1) ? activeIndex - 1 : activeIndex;
-      // Unless the active grain was the last one, in which case redirect to the previous one.
-      grains.splice(closeIndex, 1);
-      grains[newActiveIndex].setActive(true);
-      topbar._grains.set(grains);
-      Router.go(grains[newActiveIndex].route());
-    } else {
-      grains.splice(closeIndex, 1);
-      topbar._grains.set(grains);
-    }
+    topbar._grains.remove(grainId, true);
   },
 
   "click .demo-notice .sign-in": function (event) {

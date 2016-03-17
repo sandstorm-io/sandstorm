@@ -89,5 +89,5 @@ module.exports["Test restore open grains"] = function (browser) {
               });
           });
       });
-    })
+    });
 }

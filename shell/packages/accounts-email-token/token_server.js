@@ -32,13 +32,6 @@ const checkToken = function (tokens, token) {
   return found;
 };
 
-// The name of the email package to use. It refers to a variable named in the global scope.
-let EMAIL_PACKAGE = "Email";
-
-Accounts.emailToken.setEmailPackage = function (packageName) {
-  EMAIL_PACKAGE = packageName;
-};
-
 function consumeToken(user, token) {
   const hashedToken = Accounts.emailToken._hashToken(token);
   const found = checkToken(user.services.email.tokens, hashedToken);
@@ -141,7 +134,7 @@ const sendTokenEmail = function (db, email, token, linkingIdentity) {
     text: text,
   };
 
-  global[EMAIL_PACKAGE].send(options);
+  SandstormEmail.send(options);
 };
 
 ///

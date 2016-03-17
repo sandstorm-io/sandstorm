@@ -19,14 +19,14 @@ are available in
 
 ## Outgoing SMTP
 
-All you need to do is configure the `SMTP Url` field under Admin Settings to a working SMTP server that will accept e-mails with the SMTP envelope's bounce address set to your grain's local address. If running at home, you can usually use your ISP's SMTP server. Otherwise, [Sendgrid](https://sendgrid.com/), [Mailgun](http://www.mailgun.com/), and [Mandrill](http://mandrill.com/) also provide such services, some with free tiers. The SMTP Url looks like this:
+All you need to do is provide an appropriate SMTP relay in the `SMTP Configuration` fields under
+Admin Settings.  Your configuration should point Sandstorm to a working SMTP server that will accept
+e-mails with the SMTP envelope's bounce address set to your grain's local address, or to the "Return
+Address" address.
 
-```bash
-smtp://USERNAME:PASSWORD@SMTP_HOST:SMTP_PORT
-```
-
-If `USERNAME` is in the form of an email address, like
-`user@example.com`, then the `@` will need to be URL-encoded as `%40`.
+If running at home, you can usually use your ISP's SMTP server.
+Otherwise, [Sendgrid](https://sendgrid.com/), [Mailgun](http://www.mailgun.com/), and
+[Mandrill](http://mandrill.com/) also provide such services, some with free tiers.
 
 ## Receiving email into Sandstorm app instances
 

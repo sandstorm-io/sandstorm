@@ -990,13 +990,14 @@ limitations under the License.
 
     <p>Choose which services users may use to identify themselves. Anyone can log in, but only users you {{#linkTo route="adminInvites" data=getToken}}invite{{/linkTo}} will be able to install apps or create files.</p>
 
-    <p>
+    <p class="login-providers">
       <label><input type="checkbox" class="oauth-checkbox" name="googleLogin"
                     value="value" checked={{googleSetting.value}} data-servicename="google">
         Enable Google Login
         (<a class="configure-oauth" data-servicename="google" href="">configure</a>)
         (<a class="reset-login-tokens" data-servicename="google" href="">log out all users</a>)
-      </label><br>
+      </label>
+
       {{#with googleSetting.automaticallyReset}}
         <p class="alert-danger reset-reason">
           Google login was automatically disabled
@@ -1014,7 +1015,7 @@ limitations under the License.
         Enable Github Login
         (<a class="configure-oauth" data-servicename="github" href="">configure</a>)
         (<a class="reset-login-tokens" data-servicename="github" href="">log out all users</a>)
-      </label><br>
+      </label>
       {{#with githubSetting.automaticallyReset}}
         <p class="alert-danger reset-reason">
           GitHub login was automatically disabled
@@ -1027,17 +1028,8 @@ limitations under the License.
           You will likely need to update the OAuth redirect URL in GitHub application settings.
         </p>
       {{/with}}
-      <label><input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login</label><br>
+      <label><input type="checkbox" name="emailTokenLogin" value="value" checked={{emailTokenEnabled}}> Enable Passwordless Email Login</label>
     </p>
-    <p>SMTP Url: <button id="admin-settings-send-toggle">Test</button><input id="smptUrl" type="text" name="smtpUrl" value="{{smtpUrl}}"><br>
-      <span class="details">Address of an SMTP relay server, like <code>smtp://user:pass@host:port</code>, which will be used by email apps and to send {{#linkTo route="adminInvites" data=getToken}}email invites{{/linkTo}}. The SMTP server should be configured to allow sending email from your Sandstorm domain and from email addresses that will be used to send invites. Read the <a href="https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp">docs</a> for more details.</span>
-    </p>
-    {{#if isEmailTestActive}}
-      <p>
-        Send test email to: <input id="email-test-to" type="text">
-        <p><button id="admin-settings-send-test">Send</button></p>
-      </p>
-    {{/if}}
     {{#if isFeatureKeyValid}}
       <h4>LDAP login</h4>
       <p class="forwork-note">Sandstorm for Work feature</p>
@@ -1064,7 +1056,7 @@ limitations under the License.
 
       <p>Coming soon!</p>
 
-      <h4>Define oragnization</h4>
+      <h4>Define organization</h4>
       <p class="forwork-note">Sandstorm for Work feature</p>
 
       <p>These users will be considered part of your organization. They will automatically be
@@ -1078,6 +1070,51 @@ limitations under the License.
       <p>To get support for LDAP, SAML, and organization management, enable
         <a href="{{featuresPath}}">Sandstorm for Work</a>.</p>
     {{/if}}
+    <div class="legacy-email-config">
+      <h4>SMTP Configuration: <button id="admin-settings-send-toggle">Test</button></h4>
+      {{#if isEmailTestActive}}
+        <label>
+          Send test email to: <input id="email-test-to" type="text">
+        </label>
+        <button id="admin-settings-send-test">Send</button>
+      {{/if}}
+
+      {{#let smtp=smtpConfig}}
+      <label>Relay hostname:
+        <input type="text" name="smtpHostname" value="{{smtp.hostname}}" />
+      </label>
+      <span class="details">The address of the SMTP relay server to be used to send email login
+          messages, sharing links,
+          {{#linkTo route="adminInvites" data=getToken}}invitations{{/linkTo}},
+          and other notification emails.
+          The SMTP server should be configured to allow sending email from your Sandstorm domain and
+          from email addresses that will be used to send invites. Read the
+          <a href="https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp">docs</a>
+          for more details.
+      </span>
+
+      <label>Relay port:
+        <input type="text" name="smtpPort" value="{{smtp.port}}" />
+      </label>
+      <span class="details">SMTP (unencrypted or with StartTLS) uses port 25, TLS-encrypted SMTPS
+          uses port 465.</span>
+
+      <label>Username:
+        <input type="text" name="smtpUsername" value="{{smtp.auth.user}}" />
+      </label>
+      <span class="details">Optional.  Use if your email relay requires authentication.</span>
+
+      <label>Password:
+        <input type="password" name="smtpPassword" value="{{smtp.auth.pass}}" />
+      </label>
+      <span class="details">Optional.  Use if your email relay requires authentication.</span>
+
+      <label>Return Address:
+        <input type="email" name="smtpReturnAddress" value="{{smtp.returnAddress}}">
+      </label>
+      <span class="details">E-mail address to place in the "From" header of email notifications from this server. You can specify a "no-reply" address, but we suggest using an address that users can mail if they need help.</span>
+      {{/let}}
+    </div>
     <p><button id="admin-settings-save">Save</button></p>
   </form>
 </template>
@@ -1287,8 +1324,6 @@ limitations under the License.
   <form id="admin-settings-form">
     <p>Server Title: <input type="text" name="serverTitle" value="{{serverTitle}}"><br>
       <span class="details">The name of this server, for use when communicating with users. Example: "Bob's Sandstorm Server"</span></p>
-    <p>Return Address: <input type="email" name="returnAddress" value="{{returnAddress}}"><br>
-      <span class="details">E-mail address to place in the "From" header of email notifications from this server. You can specify a "no-reply" address, but we suggest using an address that users can mail if they need help.</span></p>
     <p>Splash URL: <input type="text" name="splashUrl" value="{{splashUrl}}" placeholder="https://example.com"><br>
       <span class="details">This web page will be displayed in the background behind the login dialog (the home page when logged out). For security reasons, the page must be hosted within this Sandstorm server's wildcard host (otherwise it will be blocked by <code>Content-Security-Policy</code>). We suggest using a static web publishing app like <a href="https://apps.sandstorm.io/app/nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh?host={{origin}}" target="_blank">Hacker CMS</a> to host the content. <strong>WARNING: This feature is experimental; in particular the style and positioning of the login box is subject to change without notice.</strong> Please <a href="https://github.com/sandstorm-io/sandstorm/issues" target="_blank">let us know</a> if you'd like to see it stabilize.</span></p>
     <p>Signup Dialog: <input type="text" name="signupDialog" value="{{signupDialog}}"><br>

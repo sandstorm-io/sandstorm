@@ -7,5 +7,6 @@
   "disallowVar": true,
   "maximumLineLength": 10000,
   "requirePaddingNewLinesBeforeLineComments": false,
+  "requireShorthandArrowFunctions": false,
   "excludeFiles": ['.meteor', '**/node_modules', 'public/*']
 }

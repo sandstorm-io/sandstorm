@@ -144,6 +144,19 @@ Template.adminSettings.onCreated(function () {
   this.explicitDnSelected = new ReactiveVar(globalDb.getLdapExplicitDnSelected());
 });
 
+const emailConfigFromForm = function (form) {
+  const mailConfig = {
+    hostname: form.smtpHostname.value,
+    port: form.smtpPort.value,
+    auth: {
+      user: form.smtpUsername.value,
+      pass: form.smtpPassword.value,
+    },
+    returnAddress: form.smtpReturnAddress.value,
+  };
+  return mailConfig;
+};
+
 Template.adminSettings.events({
   "click .oauth-checkbox": function (event) {
     const state = Iron.controller().state;
@@ -170,22 +183,30 @@ Template.adminSettings.events({
   },
 
   "click #admin-settings-send-toggle": function (event) {
+    // prevent form from submitting
+    event.preventDefault();
+    event.stopImmediatePropagation();
     const state = Iron.controller().state;
     state.set("isEmailTestActive", !state.get("isEmailTestActive"));
-    return false; // prevent form from submitting
   },
 
   "click #admin-settings-send-test": function (event) {
+    // prevent form from submitting
+    event.preventDefault();
+    event.stopImmediatePropagation();
     const state = Iron.controller().state;
     resetResult(state);
     const handleErrorBound = handleError.bind(state);
     state.set("successMessage", "Email has been sent.");
-    Meteor.call("testSend", this.token, document.getElementById("smptUrl").value,
+    const form = document.getElementById("admin-settings-form");
+    const mailConfig = emailConfigFromForm(form);
+    Meteor.call("testSend", this.token, mailConfig,
                 document.getElementById("email-test-to").value, handleErrorBound);
-    return false; // prevent form from submitting
   },
 
   "submit #admin-settings-form": function (event, template) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
     const state = Iron.controller().state;
     const token = this.token;
     resetResult(state);
@@ -200,16 +221,20 @@ Template.adminSettings.events({
     }
 
     const handleErrorBound = handleError.bind(state);
-    if (event.target.emailTokenLogin.checked && !event.target.smtpUrl.value) {
+    if (event.target.emailTokenLogin.checked &&
+            (!event.target.smtpHostname.value || !event.target.smtpPort.value)) {
       handleErrorBound(new Meteor.Error(400,
         "You must configure an SMTP server to use email login."));
       return false;
     }
 
+    // Construct state from email form.
+    const mailConfig = emailConfigFromForm(event.target);
+
     Meteor.call("setAccountSetting", token, "google", event.target.googleLogin.checked, handleErrorBound);
     Meteor.call("setAccountSetting", token, "github", event.target.githubLogin.checked, handleErrorBound);
     Meteor.call("setAccountSetting", token, "emailToken", event.target.emailTokenLogin.checked, handleErrorBound);
-    Meteor.call("setSetting", token, "smtpUrl", event.target.smtpUrl.value, handleErrorBound);
+    Meteor.call("setSmtpConfig", token, mailConfig, handleErrorBound);
     if (globalDb.isFeatureKeyValid()) {
       Meteor.call("setAccountSetting", token, "ldap", event.target.ldapLogin.checked, handleErrorBound);
       Meteor.call("setSetting", token, "ldapUrl", event.target.ldapUrl.value, handleErrorBound);
@@ -365,6 +390,11 @@ Template.adminSettings.helpers({
 
   smtpUrl: function () {
     return Iron.controller().state.get("smtpUrl");
+  },
+
+  smtpConfig() {
+    const config = Settings.findOne({ _id: "smtpConfig" });
+    return config && config.value;
   },
 
   isEmailTestActive: function () {
@@ -790,13 +820,11 @@ Template.adminAdvanced.events({
     const state = Iron.controller().state;
     const token = this.token;
     resetResult(state);
-    state.set("numSettings", 12);
+    state.set("numSettings", 11);
 
     const handleErrorBound = handleError.bind(state);
     Meteor.call("setSetting", token, "serverTitle",
                 event.target.serverTitle.value, handleErrorBound);
-    Meteor.call("setSetting", token, "returnAddress",
-                event.target.returnAddress.value, handleErrorBound);
     Meteor.call("setSetting", token, "splashUrl", event.target.splashUrl.value, handleErrorBound);
     Meteor.call("setSetting", token, "signupDialog", event.target.signupDialog.value, handleErrorBound);
     Meteor.call("setSetting", token, "termsUrl", event.target.termsUrl.value, handleErrorBound);
@@ -1081,11 +1109,6 @@ const adminRoute = RouteController.extend({
                 });
     });
 
-    const state = this.state;
-    Meteor.call("getSmtpUrl", this.params._token, function (error, result) {
-      state.set("smtpUrl", result);
-    });
-
     const user = Meteor.user();
     if (user && user.loginIdentities) {
       if (this.params._token) {
@@ -1098,6 +1121,7 @@ const adminRoute = RouteController.extend({
       }
     }
 
+    const state = this.state;
     resetResult(state);
     state.set("configurationServiceName", null);
     state.set("token", this.params._token);

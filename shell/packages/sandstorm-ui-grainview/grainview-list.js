@@ -49,7 +49,11 @@ GrainViewList = class GrainViewList {
     });
 
     this._grainsUserId = new ReactiveVar(Meteor.userId());
-    Tracker.autorun(() => {
+
+    // Although only ever construct a single global GrainViewList, and therefore we never need to
+    // stop() the below autorun(), it's probably a good idea keep a reference to the handle, just in
+    // case we need it someday.
+    this._autoclearHandle = Tracker.autorun(() => {
       const currentUserId = Meteor.userId();
       if (currentUserId !== this._grainsUserId.get()) {
         const current = Router.current();
@@ -61,7 +65,7 @@ GrainViewList = class GrainViewList {
         this._grainsUserId.set(currentUserId);
       }
     });
-  }
+  };
 
   clear() {
     const grains = this._grains.get();

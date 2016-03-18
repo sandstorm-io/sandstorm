@@ -126,7 +126,7 @@ const smtpSend = function (pool, mc) {
  * @param {Object} [options.headers] Dictionary of custom headers
  * @param {Object} [options.smtpConfig] SMTP server to use. Otherwise defaults to configured one.
  * @param {String} [options.smtpConfig.hostname] SMTP server hostname.
- * @param {String} [options.smtpConfig.port] SMTP server port.
+ * @param {Number} [options.smtpConfig.port] SMTP server port.
  * @param {Object} [options.smtpConfig.auth] SMTP server authentication tokens.  Optional.
  * @param {String} [options.smtpConfig.auth.user] Username of user to log in to SMTP server as.  Optional.
  * @param {String} [options.smtpConfig.auth.pass] Password of user to log in to SMTP server as.  Optional.

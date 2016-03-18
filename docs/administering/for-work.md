@@ -79,6 +79,28 @@ accessed what.
 If you're interested in these features, we'd love to hear from you. Please [contact
 us](https://sandstorm.io/business)!
 
+### All about feature keys
+
+A feature key is a text file of this format:
+
+```
+--------------------- BEGIN SANDSTORM FEATURE KEY ----------------------
+AAAAB3NzaC1yc2EAAAADAQABAAABAQC80vEoj2Mgpprswcj5WmWY4KLwU/SWb6UE+FVpHg6+
+qwVpCggjJiPYH/WZX7d4tuqXtifx6uuQp1Pm8So86ke3AQODHFmAVgqt19QcWu1LkEFEL1c2
+4RhL8gM8lxpzWBn/3eRZ+rdUNSaVJwrXHRetjetwksfyaByQwApSphip2+HGSMxlEqATg5uh
+mxR0PzpfIwLxun8rc18j8JZQLHUim1njS8X/p7E3s9/6HeGz
+---------------------- END SANDSTORM FEATURE KEY -----------------------
+```
+
+It is a text serialization of a [Cap'n Proto](https://capnproto.org/) structure, defined in
+[feature-key.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/feature-key.capnp).
+Feature keys are signed by an ed25519 signing key.
+
+If you are developing Sandstorm, and you need to enable Sandstorm for Work features, you can get a
+testing feature key by contacting Kenton Varda. You must also can enable testing mode by setting
+`IS_TESTING=yes` in `sandstorm.conf` for testing keys to be considered valid. Note that enabling
+testing mode forfeits all security.
+
 ### Open source
 
 The code for Sandstorm for Work is maintained in the Sandstorm open source project, under the Apache
@@ -113,28 +135,6 @@ Sandstorm install, even if you installed before Sandstorm for Work was avaiable.
 Once you've done this, you will see information about your feature key on the **For Work** tab. All
 Sandstorm features enabled by your feature key will be available to you in the most
 contextually-relevant location.
-
-### All about feature keys
-
-A feature key is a text file of this format:
-
-```
---------------------- BEGIN SANDSTORM FEATURE KEY ----------------------
-AAAAB3NzaC1yc2EAAAADAQABAAABAQC80vEoj2Mgpprswcj5WmWY4KLwU/SWb6UE+FVpHg6+
-qwVpCggjJiPYH/WZX7d4tuqXtifx6uuQp1Pm8So86ke3AQODHFmAVgqt19QcWu1LkEFEL1c2
-4RhL8gM8lxpzWBn/3eRZ+rdUNSaVJwrXHRetjetwksfyaByQwApSphip2+HGSMxlEqATg5uh
-mxR0PzpfIwLxun8rc18j8JZQLHUim1njS8X/p7E3s9/6HeGz
----------------------- END SANDSTORM FEATURE KEY -----------------------
-```
-
-It is a text serialization of a [Cap'n Proto](https://capnproto.org/) structure, defined in
-[feature-key.capnp](https://github.com/sandstorm-io/sandstorm/blob/master/src/sandstorm/feature-key.capnp).
-Feature keys are signed by an ed25519 signing key.
-
-If you are developing Sandstorm, and you need to enable Sandstorm for Work features, you can get a
-testing feature key by contacting Kenton Varda. You must also can enable testing mode by setting
-`IS_TESTING=yes` in `sandstorm.conf` for testing keys to be considered valid. Note that enabling
-testing mode forfeits all security.
 
 ### Special pricing
 

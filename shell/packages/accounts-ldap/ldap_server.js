@@ -57,6 +57,7 @@ LDAP.prototype.ldapCheck = function (db, options) {
       _this.options.base = db.getLdapBase();
       _this.options.searchBeforeBind = {};
       _this.options.searchBeforeBind[db.getLdapSearchUsername()] = options.username;
+      _this.options.filter = db.getLdapFilter() || "(objectclass=*)";
     }
 
     let resolved = false;
@@ -126,7 +127,6 @@ LDAP.prototype.ldapCheck = function (db, options) {
             let searchOptions = {
               scope: "sub",
               sizeLimit: 1,
-              filter: _this.options.search,
             };
 
             client.search(searchBase, searchOptions, function (err, res) {
@@ -213,7 +213,7 @@ LDAP.prototype.ldapCheck = function (db, options) {
         searchResults: {},
       };
 
-      let filter = _this.options.search;
+      let filter = _this.options.filter;
       Object.keys(_this.options.searchBeforeBind).forEach(function (searchKey) {
         filter = "&" + filter + "(" + searchKey + "=" + _this.options.searchBeforeBind[searchKey] + ")";
       });

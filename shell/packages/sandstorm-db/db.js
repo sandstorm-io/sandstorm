@@ -1299,6 +1299,11 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value;
   },
 
+  getLdapFilter: function () {
+    const setting = Settings.findOne({ _id: "ldapFilter" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
   getOrganizationEmail: function () {
     const setting = Settings.findOne({ _id: "organizationEmail" });
     return setting && setting.value;

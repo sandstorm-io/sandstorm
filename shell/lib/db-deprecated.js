@@ -75,7 +75,8 @@ if (Meteor.isServer) {
 
 if (Meteor.isClient) {
   Session.setDefault("shrink-navbar", false);
-  globalGrains = new ReactiveVar([]);
+  globalGrains = new GrainViewList();
+
   // If Meteor._localStorage disappears, we'll have to write our own localStorage wrapper, I guess.
   // Using window.localStorage is dangerous because it throws an exception if cookies are disabled.
   Session.set("shrink-navbar", Meteor._localStorage.getItem("shrink-navbar") === "true");

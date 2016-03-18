@@ -241,6 +241,17 @@ module.exports["Sign in at grain URL"] = function (browser) {
     });
 }
 
+module.exports["Logging out closes grain"] = function (browser) {
+  browser
+    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1", "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh")
+    .waitForElementVisible("#grainTitle", medium_wait)
+    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .execute("window.Meteor.logout()")
+    .waitForElementVisible(".request-access", medium_wait)
+    .assert.containsText(".request-access", "Please sign in to request access.")
+    .end()
+}
+
 module.exports["Test grain anonymous user"] = function (browser) {
   browser
     // Upload app as normal user

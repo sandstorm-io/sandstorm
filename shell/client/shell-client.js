@@ -55,12 +55,7 @@ logoutSandstorm = function () {
     sessionStorage.removeItem("linkingIdentityLoginToken");
     Accounts._loginButtonsSession.closeDropdown();
     globalTopbar.closePopup();
-    const openGrains = globalGrains.get();
-    openGrains.forEach(function (grain) {
-      grain.destroy();
-    });
-
-    globalGrains.set([]);
+    globalGrains.clear();
     Router.go("root");
   });
 };
@@ -550,7 +545,7 @@ Template.layout.helpers({
     const route = Router.current().route.getName();
     if (route === "shared") return;
     if (route === "grain") {
-      if (_.some(globalGrains.get(), function (grain) {
+      if (_.some(globalGrains.getAll(), function (grain) {
         return grain.isActive() && !grain.isOwner();
       })) {
 

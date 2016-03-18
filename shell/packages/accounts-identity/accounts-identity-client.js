@@ -23,12 +23,20 @@ const LoginIdentitiesOfLinkedAccounts = new Mongo.Collection("loginIdentitiesOfL
 //   loginAccountId: ID of the account that the login identity can log in to.
 //   sourceIdentityId: Identity ID of the source identity.
 
+const linkingNewIdentity = new ReactiveVar(false);
+
+Accounts.isLinkingNewIdentity = function () {
+  return linkingNewIdentity.get() || !!sessionStorage.getItem("linkingIdentityLoginToken");
+};
+
 Template.identityLoginInterstitial.onCreated(function () {
   this._state = new ReactiveVar({ justLoggingIn: true });
   const token = sessionStorage.getItem("linkingIdentityLoginToken");
   if (token) {
     this._state.set({ linkingIdentity: true });
     sessionStorage.removeItem("linkingIdentityLoginToken");
+    linkingNewIdentity.set(true);
+
     Meteor.call("linkIdentityToAccount", token, function (err, result) {
       if (err) {
         // TODO(cleanup): Figure out a better way to get this data to the /account page.
@@ -41,7 +49,7 @@ Template.identityLoginInterstitial.onCreated(function () {
         Session.set("linkingIdentityError");
       }
 
-      Meteor.loginWithToken(token);
+      Meteor.loginWithToken(token, () => linkingNewIdentity.set(false));
     });
   } else {
     const sub = this.subscribe("accountsOfIdentity", Meteor.userId());
@@ -259,11 +267,9 @@ const CURRENT_IDENTITY_KEY = "Accounts.CurrentIdentityId";
 Accounts.getCurrentIdentityId = function () {
   // TODO(cleanup): `globalGrains` is only in scope here because of a Meteor bug. We should figure
   //   out a better way to track a reference to it.
-  const grainList = globalGrains.get();
-  for (let i = 0; i < grainList.length; i++) {
-    if (grainList[i].isActive()) {
-      return grainList[i].identityId();
-    }
+  const activeGrain = globalGrains.getActive();
+  if (activeGrain) {
+    return activeGrain.identityId();
   }
 
   const identityId = Session.get(CURRENT_IDENTITY_KEY);
@@ -280,11 +286,9 @@ Accounts.setCurrentIdentityId = function (identityId) {
 
   // TODO(cleanup): `globalGrains` is only in scope here because of a Meteor bug. We should figure
   //   out a better way to track a reference to it.
-  const grainList = globalGrains.get();
-  for (let i = 0; i < grainList.length; i++) {
-    if (grainList[i].isActive()) {
-      return grainList[i].switchIdentity(identityId);
-    }
+  const activeGrain = globalGrains.getActive();
+  if (activeGrain) {
+    return activeGrain.switchIdentity(identityId);
   }
 
   Session.set(CURRENT_IDENTITY_KEY, identityId);

@@ -1,5 +1,5 @@
 // Sandstorm - Personal Cloud Sandbox
-// Copyright (c) 2015 Sandstorm Development Group, Inc. and contributors
+// Copyright (c) 2016 Sandstorm Development Group, Inc. and contributors
 // All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,18 +15,17 @@
 // limitations under the License.
 
 Package.describe({
-  summary: "Accounts with multiple associated identities.",
+  summary: "Sandstorm package containing GrainView and GrainViewList classes.",
   version: "0.1.0",
 });
 
 Package.onUse(function (api) {
-  api.use("ecmascript");
-  api.use(["underscore", "random", "reactive-var", "sandstorm-db", "sandstorm-backend", "mongo"]);
-  api.use("accounts-base", ["client", "server"]);
-  api.use(["session", "templating"], ["client"]);
-  api.imply("accounts-base", ["client", "server"]);
-  api.use("check");
-
-  api.addFiles(["accounts-identity.html", "accounts-identity-client.js"], ["client"]);
-  api.addFiles(["accounts-identity-server.js"], ["server"]);
+  api.use(["ecmascript"]);
+  api.use(["check", "underscore", "tracker", "accounts-base", "sha",
+           "reactive-var", "iron:router", "accounts-identity",
+          ], ["client"]);
+  api.addFiles(["grainview.js", "grainview-list.js"], "client");
+  api.export("GrainView");
+  api.export("GrainViewList");
 });
+

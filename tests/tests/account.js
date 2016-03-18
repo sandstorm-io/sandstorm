@@ -32,6 +32,7 @@ module.exports["Test link identities"] = function (browser) {
   var devName1 = "A" + crypto.randomBytes(10).toString("hex");
   var devName2 = "A" + crypto.randomBytes(10).toString("hex");
   var devName3 = "A" + crypto.randomBytes(10).toString("hex");
+  var devIdentityId1 = crypto.createHash("sha256").update("dev:" + devName1).digest("hex");
   var devIdentityId3 = crypto.createHash("sha256").update("dev:" + devName3).digest("hex");
   browser
     .init()
@@ -49,6 +50,9 @@ module.exports["Test link identities"] = function (browser) {
     .submitForm(".login-buttons-list form.dev")
     .waitForElementVisible("form.account-profile-editor", short_wait) // confirm profile
     .submitForm("form.account-profile-editor")
+    .execute(function () { return Accounts.getCurrentIdentityId(); }, [], function (response) {
+      browser.assert.equal(response.value, devIdentityId1)
+    })
     .execute("window.Meteor.logout()")
 
     // Linking the first identity to a new account should fail.

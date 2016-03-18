@@ -821,6 +821,7 @@ public:
 
   kj::MainBuilder::Validity adminToken() {
     changeToInstallDir();
+    checkAccess();
 
     // Get 20 random bytes for token.
     kj::byte bytes[20];
@@ -924,6 +925,19 @@ private:
   void changeToInstallDir() {
     KJ_SYSCALL(chdir(getInstallDir().cStr()));
     changedDir = true;
+  }
+
+  void checkAccess() {
+    KJ_ASSERT(changedDir);
+    if (access("../var/sandstorm", W_OK) == -1) {
+      if (errno == EACCES) {
+        KJ_FAIL_REQUIRE(
+            "Sandstorm was not run with appropriate privileges; rerun as root or the user for "
+            "which it was installed.");
+      } else {
+        KJ_FAIL_SYSCALL("access", errno);
+      }
+    }
   }
 
   void checkOwnedByRoot(kj::StringPtr path, kj::StringPtr title) {

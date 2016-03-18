@@ -481,6 +481,17 @@ function splitSmtpUrl() {
   Settings.remove({ _id: "smtpUrl" });
 }
 
+function smtpPortShouldBeNumber() {
+  const entry = Settings.findOne({ _id: "smtpConfig" });
+  if (entry) {
+    const setting = entry.value;
+    if (setting.port) {
+      setting.port = _.isNumber(setting.port) ? setting.port : parseInt(setting.port);
+      Settings.upsert({ _id: "smtpConfig" }, { value: setting });
+    }
+  }
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -506,6 +517,7 @@ const MIGRATIONS = [
   sendReferralNotifications,
   assignBonuses,
   splitSmtpUrl,
+  smtpPortShouldBeNumber,
 ];
 
 function migrateToLatest() {

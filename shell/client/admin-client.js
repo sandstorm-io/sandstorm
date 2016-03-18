@@ -145,9 +145,10 @@ Template.adminSettings.onCreated(function () {
 });
 
 const emailConfigFromForm = function (form) {
+  const portValue = parseInt(form.smtpPort.value);
   const mailConfig = {
     hostname: form.smtpHostname.value,
-    port: form.smtpPort.value,
+    port: _.isNaN(portValue) ? 25 : portValue,
     auth: {
       user: form.smtpUsername.value,
       pass: form.smtpPassword.value,

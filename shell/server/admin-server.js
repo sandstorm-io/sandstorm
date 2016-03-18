@@ -102,7 +102,7 @@ Meteor.methods({
     checkAuth(token);
     check(config, {
       hostname: String,
-      port: String,
+      port: Number,
       auth: {
         user: String,
         pass: String,
@@ -206,7 +206,7 @@ Meteor.methods({
     checkAuth(token);
     check(smtpConfig, {
       hostname: String,
-      port: String,
+      port: Number,
       auth: {
         user: String,
         pass: String,

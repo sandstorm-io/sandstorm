@@ -985,7 +985,7 @@ limitations under the License.
 
 <template name="adminSettings">
   {{setDocumentTitle}}
-  <form id="admin-settings-form">
+  <form id="admin-settings-form" autocomplete="off">
     <h4>Basic login providers</h4>
 
     <p>Choose which services users may use to identify themselves. Anyone can log in, but only users you {{#linkTo route="adminInvites" data=getToken}}invite{{/linkTo}} will be able to install apps or create files.</p>
@@ -1321,7 +1321,7 @@ limitations under the License.
 
 <template name="adminAdvanced">
   {{setDocumentTitle}}
-  <form id="admin-settings-form">
+  <form id="admin-settings-form" autocomplete="off">
     <p>Server Title: <input type="text" name="serverTitle" value="{{serverTitle}}"><br>
       <span class="details">The name of this server, for use when communicating with users. Example: "Bob's Sandstorm Server"</span></p>
     <p>Splash URL: <input type="text" name="splashUrl" value="{{splashUrl}}" placeholder="https://example.com"><br>

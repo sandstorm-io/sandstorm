@@ -19,7 +19,7 @@ const makePool = function (mailConfig) {
   const pool = simplesmtp.createClientPool(
     mailConfig.port,
     mailConfig.hostname,
-    { secureConnection: (mailConfig.port === 465),
+    { secureConnection: (mailConfig.port === "465"),
       // XXX allow maxConnections to be configured?
       auth, });
 

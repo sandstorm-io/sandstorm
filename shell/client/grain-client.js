@@ -1120,7 +1120,7 @@ Template.emailInviteTab.events({
         emails.value = "";
       } else {
         instance.completionState.set(
-          { error: "Invalid text in contact input box: " + emailsValue });
+          { error: "Unknown user \"" + emailsValue + "\". Try entering an e-mail address." });
         return;
       }
     }

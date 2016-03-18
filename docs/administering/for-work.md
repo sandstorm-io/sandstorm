@@ -2,26 +2,20 @@
 are typically used by companies. Customers can buy a _feature key_ to enable these features on a
 Sandstorm server running at their own organization. Special pricing, sometimes including free
 feature keys, are available to [non-profits and community groups](#special-pricing). For pricing,
-please read the information on the [main website](https://sandstorm.io/business). As an
-implementation detail, Sandstorm is fully open-source software.
+please read the information on the [main website](https://sandstorm.io/business).
 
-For now, feature keys are typically 60-day trial keys. This gives you time to evaluate Sandstorm for
+For now, feature keys are typically 90-day trial keys. This gives you time to evaluate Sandstorm for
 Work, and it gives us time to finish testing the payments system.
 
-## Sandstorm for Work features
+## Sandstorm for Work in depth
 
-### Authentication providers: LDAP and SAML
+### Authentication provider: LDAP
 
 LDAP is a protocol for storing information of nearly any kind; it is typically used to store data
 about people who work at a company, including login credentials.  Sandstorm's LDAP support allows
 you to log into Sandstorm with a username and password that is checked against an LDAP store. We
 expect Sandstorm's LDAP support to be compatible with Microsoft Active Directory, OpenLDAP, and many
 other systems.
-
-SAML is a protocol for exchanging information about access control. SAML support is coming soon. If
-you need this feature, please feel free to [request a feature key
-today][https://sandstorm.io/business]. SAML support should be compatible with Shibboleth and other
-systems.
 
 To enable either of these login providers, take the following steps:
 
@@ -33,15 +27,48 @@ To enable either of these login providers, take the following steps:
 
 You should now see a checkbox that allows you to enable LDAP login.
 
+## Organization management
+
+For users who are within your organization, Sandstorm for Work can automatically grant them a user
+account. This feature can be enabled or disabled per login provider.
+
+- **Google authentication.** All users who use a particular Google Apps domain of your choosing can
+  receive user status in Sandstorm.
+
+- **LDAP authentication.** All users who log in via LDAP can automatically receive user status in
+  Sandstorm.
+
+- **Passwordless email login.** All users who use a particular email address domain name
+  (e.g. @example.com) can receive user status in Sandstorm.
+
+To enable this feature:
+
+- Click **Admin Settings** within your Sandstorm server; this should take you to `/admin/settings`.
+
+- Scroll to the bottom to find **Define organization**.
+
+- Enable and configure your organization on a per-login-provider basis.
+
+This feature is important because, by default, when a user signs into a Sandstorm server for the
+first time, Sandstorm creates a _guest_ account for them. Guest users can see grains that have been
+shared with them but cannot create grains of their own.
+
+At the moment, this feature does not actively synchronize status; it checks for organization
+membership at the time the user's account is created. Therefore, when a person leaves your
+organization, you will need to visit the **Users** tab within admin settings and adjust their
+account level.
+
 ### Features coming soon
 
 We're still working on the following features:
 
-**Organization management.** Choose an LDAP group that, upon login, should automatically be given
-_user_ status on this Sandstorm server.
+**SAML login.** SAML is a protocol for exchanging information about access control, typically used
+for single sign-on. If you need this feature, please feel free to [request a feature key
+today][https://sandstorm.io/business]. SAML support should be compatible with Shibboleth and other
+systems.
 
-**Group Management.** This will allow you to share a grain with everyone in an LDAP/Active Directory
-group, such as the marketing department.
+**Group Management.** This will allow you to share a grain with everyone in a group, such as the
+marketing department, using groups from Google or LDAP.
 
 **Global Access Control.** Configure organization-wide access control policies, such as prohibiting
 your employees from sharing grains outside of the organization.
@@ -51,6 +78,11 @@ accessed what.
 
 If you're interested in these features, we'd love to hear from you. Please [contact
 us](https://sandstorm.io/business)!
+
+### Open source
+
+The code for Sandstorm for Work is maintained in the Sandstorm open source project, under the Apache
+License 2.0. Feel free to read [the code in GitHub](https://github.com/sandstorm-io/sandstorm).
 
 ## How to get Sandstorm for Work
 

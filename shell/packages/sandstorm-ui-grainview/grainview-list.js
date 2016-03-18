@@ -107,10 +107,12 @@ GrainViewList = class GrainViewList {
     return null;
   }
 
-  add(grainview) {
+  addNewGrainView(grainId, path, tokenInfo, parentElement, initialPopup) {
     const grains = this._grains.get();
+    const grainview = new GrainView(this, grainId, path, tokenInfo, parentElement, initialPopup);
     grains.push(grainview);
     this._grains.set(grains);
+    return grainview;
   }
 
   remove(grainId, updateActive) {
@@ -200,10 +202,7 @@ GrainViewList = class GrainViewList {
     };
 
     // Open all view sessions as soon as we're fully loaded.
-    onceConditionIsTrue(ready, () => {
-      console.log("is ready: " + JSON.stringify(old));
-      this.restore(old, mainContentElement);
-    });
+    onceConditionIsTrue(ready, () => this.restore(old, mainContentElement));
   }
 
   restore(old, mainContentElement) {

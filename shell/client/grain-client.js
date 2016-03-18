@@ -1431,9 +1431,8 @@ Router.map(function () {
         const openView = function openView() {
           const mainContentElement = document.querySelector("body>.main-content");
           if (mainContentElement) {
-            const grainToOpen = new GrainView(globalGrains, grainId, path, undefined,
-                                              mainContentElement, initialPopup);
-            globalGrains.add(grainToOpen);
+            const grainToOpen = globalGrains.addNewGrainView(grainId, path, undefined,
+                                                             mainContentElement, initialPopup);
             grainToOpen.openSession();
             globalGrains.setActive(grainId);
           } else {
@@ -1493,10 +1492,9 @@ Router.map(function () {
           const openView = function openView() {
             const mainContentElement = document.querySelector("body>.main-content");
             if (mainContentElement) {
-              const grainToOpen = new GrainView(globalGrains, grainId, path, tokenInfo,
-                                                mainContentElement);
+              const grainToOpen = globalGrains.addNewGrainView(grainId, path, tokenInfo,
+                                                               mainContentElement);
               grainToOpen.openSession();
-              globalGrains.add(grainToOpen);
               globalGrains.setActive(grainId);
             } else {
               Meteor.defer(openView);

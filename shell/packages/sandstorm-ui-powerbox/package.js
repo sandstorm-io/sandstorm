@@ -20,7 +20,7 @@ Package.describe({
 });
 
 Package.onUse(function (api) {
-  api.use(["ecmascript", "check", "reactive-var", "templating", "tracker", "underscore", "sandstorm-db", "sandstorm-ui-topbar"], "client");
+  api.use(["ecmascript", "check", "reactive-var", "templating", "tracker", "underscore", "sandstorm-db", "sandstorm-ui-topbar", "mongo"], "client");
   api.use(["ecmascript", "check"], "server");
   api.addFiles(["powerbox.html", "powerbox-client.js"], "client");
   api.addFiles(["powerbox-server.js"], "server");

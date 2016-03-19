@@ -20,6 +20,9 @@ GrainView = class GrainView {
     //                 grainId, sessionId, title, and session Sub on success
 
     check(grains, GrainViewList);
+    if (Tracker.active) {
+      throw new Error("Can't construct a GrainView inside a reactive computation.");
+    }
 
     this._grains = grains;
     this._grainId = grainId;
@@ -59,6 +62,20 @@ GrainView = class GrainView {
     if (initialPopup) {
       globalTopbar.openPopup(initialPopup);
     }
+
+    // Whenever a dev package is published or removed, reset the view.
+    this._devAppObserver = Tracker.autorun(() => {
+      const grain = Grains.findOne(grainId);
+      const devApp = grain && DevPackages.findOne({appId: grain.appId});
+      const id = devApp ? devApp._id : "none";
+      if (this._devAppId !== id) {
+        if (this._status !== "closed") {
+          this.reset();
+          this.openSession();
+        }
+      }
+      this._devAppId = id;
+    });
   }
 
   save() {
@@ -73,7 +90,7 @@ GrainView = class GrainView {
     // TODO(cleanup): This duplicates some code from the GrainView constructor.
 
     this._dep.changed();
-    this.destroy();
+    this.destroy(true);
     this._hasLoaded = undefined;
     this._error = undefined;
     this._hostId = undefined;
@@ -149,7 +166,7 @@ GrainView = class GrainView {
     }
   }
 
-  destroy() {
+  destroy(forReset) {
     // This must be called when the GrainView is removed from the list otherwise Blaze will go on
     // rendering the iframe forever, even if it is no longer linked into the page DOM.
 
@@ -164,6 +181,10 @@ GrainView = class GrainView {
 
     if (this._sessionSub) {
       this._sessionSub.stop();
+    }
+
+    if (this._devAppObserver && !forReset) {
+      this._devAppObserver.stop();
     }
   }
 

@@ -58,6 +58,8 @@ LDAP.prototype.ldapCheck = function (db, options) {
       _this.options.searchBeforeBind = {};
       _this.options.searchBeforeBind[db.getLdapSearchUsername()] = options.username;
       _this.options.filter = db.getLdapFilter() || "(objectclass=*)";
+      _this.options.searchBindDn = db.getLdapSearchBindDn();
+      _this.options.searchBindPassword =  db.getLdapSearchBindPassword();
     }
 
     let resolved = false;
@@ -205,6 +207,24 @@ LDAP.prototype.ldapCheck = function (db, options) {
     }
     // DN not provided, search for DN and use result to bind
     else {
+      if (_this.options.searchBindDn) {
+        let ldapBindFut = new Future();
+        client.bind(_this.options.searchBindDn, _this.options.searchBindPassword,
+          function (err) {
+            if (err) {
+              ldapBindFut.throw(err);
+            } else {
+              ldapBindFut.return();
+            }
+          }
+        );
+
+        try {
+          ldapBindFut.wait();
+        } catch (err) {
+          return { error: err };
+        }
+      }
       // initialize result
       let retObject = {
         username: username,

@@ -1304,6 +1304,16 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  getLdapSearchBindDn: function () {
+    const setting = Settings.findOne({ _id: "ldapSearchBindDn" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
+  getLdapSearchBindPassword: function () {
+    const setting = Settings.findOne({ _id: "ldapSearchBindPassword" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
   getOrganizationEmail: function () {
     const setting = Settings.findOne({ _id: "organizationEmail" });
     return setting && setting.value;

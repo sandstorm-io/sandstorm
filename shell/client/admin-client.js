@@ -215,7 +215,7 @@ Template.adminSettings.events({
       if (template.explicitDnSelected.get()) {
         state.set("numSettings", 12);
       } else {
-        state.set("numSettings", 13);
+        state.set("numSettings", 16);
       }
     } else {
       state.set("numSettings", 4);
@@ -244,6 +244,9 @@ Template.adminSettings.events({
       } else {
         Meteor.call("setSetting", token, "ldapBase", event.target.ldapBase.value, handleErrorBound);
         Meteor.call("setSetting", token, "ldapSearchUsername", event.target.ldapSearchUsername.value, handleErrorBound);
+        Meteor.call("setSetting", token, "ldapFilter", event.target.ldapFilter.value, handleErrorBound);
+        Meteor.call("setSetting", token, "ldapSearchBindDn", event.target.ldapSearchBindDn.value, handleErrorBound);
+        Meteor.call("setSetting", token, "ldapSearchBindPassword", event.target.ldapSearchBindPassword.value, handleErrorBound);
       }
 
       Meteor.call("setSetting", token, "ldapNameField", event.target.ldapNameField.value, handleErrorBound);
@@ -375,6 +378,18 @@ Template.adminSettings.helpers({
 
   ldapNameField: function () {
     return globalDb.getLdapNameField() || "cn";
+  },
+
+  ldapFilter: function () {
+    return globalDb.getLdapFilter();
+  },
+
+  ldapSearchBindDn: function () {
+    return globalDb.getLdapSearchBindDn();
+  },
+
+  ldapSearchBindPassword: function () {
+    return globalDb.getLdapSearchBindPassword();
   },
 
   ldapSearchUsername: function () {

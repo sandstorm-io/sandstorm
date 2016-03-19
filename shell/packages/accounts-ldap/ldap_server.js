@@ -57,6 +57,9 @@ LDAP.prototype.ldapCheck = function (db, options) {
       _this.options.base = db.getLdapBase();
       _this.options.searchBeforeBind = {};
       _this.options.searchBeforeBind[db.getLdapSearchUsername()] = options.username;
+      _this.options.filter = db.getLdapFilter() || "(objectclass=*)";
+      _this.options.searchBindDn = db.getLdapSearchBindDn();
+      _this.options.searchBindPassword =  db.getLdapSearchBindPassword();
     }
 
     let resolved = false;
@@ -126,7 +129,6 @@ LDAP.prototype.ldapCheck = function (db, options) {
             let searchOptions = {
               scope: "sub",
               sizeLimit: 1,
-              filter: _this.options.search,
             };
 
             client.search(searchBase, searchOptions, function (err, res) {
@@ -205,6 +207,24 @@ LDAP.prototype.ldapCheck = function (db, options) {
     }
     // DN not provided, search for DN and use result to bind
     else {
+      if (_this.options.searchBindDn) {
+        let ldapBindFut = new Future();
+        client.bind(_this.options.searchBindDn, _this.options.searchBindPassword,
+          function (err) {
+            if (err) {
+              ldapBindFut.throw(err);
+            } else {
+              ldapBindFut.return();
+            }
+          }
+        );
+
+        try {
+          ldapBindFut.wait();
+        } catch (err) {
+          return { error: err };
+        }
+      }
       // initialize result
       let retObject = {
         username: username,
@@ -213,7 +233,7 @@ LDAP.prototype.ldapCheck = function (db, options) {
         searchResults: {},
       };
 
-      let filter = _this.options.search;
+      let filter = _this.options.filter;
       Object.keys(_this.options.searchBeforeBind).forEach(function (searchKey) {
         filter = "&" + filter + "(" + searchKey + "=" + _this.options.searchBeforeBind[searchKey] + ")";
       });

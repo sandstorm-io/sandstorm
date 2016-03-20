@@ -1,3 +1,13 @@
+### v0.151 (2016-03-20) [bugfixes]
+- Expanded LDAP config for search-query-based user matching to support authenticating the search and adding a search filter. LDAP is nuts.
+- Worked around bug in Chrome 50 which was causing app installs to sometimes fail complaining that no URL was provided.
+- Worked around an unexplained bug observed in the wild causing Sandstorm to fail to load in a browser claiming "no such route", apparently when accessed from behind certain proxies.
+- Worked around bug in libseccomp which could cause Sandstorm binaries built using older kernel headers to fail to filter newer syscalls, possibly making systems insecure. All of our releases have been built against up-to-date headers, so we don't believe our release builds have been affected.
+- Fixed a case where "who has access" dialog could show users named "null".
+- Self-hosting: STMP config has been broken out into components rather than using a "URL" format.
+- Development: Restarting `spk dev` will now reload all grains of the app without the need to manually refresh.
+- Internal refactoring of grain tab management.
+
 ### v0.150 (2016-03-13)
 - **Sandstorm for Work:** For self-hosters in a business setting. Initial release supports LDAP and basic organization managament. Requires a feature key to enable. See the "For Work" section of the admin settings.
 - Your set of open grains will now be preserved through refreshes and closing/reopening the browser.

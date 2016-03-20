@@ -158,7 +158,7 @@ GrainView = class GrainView {
         }
       });
     } else {
-      if (this.db.collections.apiTokens.findOne({
+      if (this._db.collections.apiTokens.findOne({
         grainId: grainId,
         "owner.user.identityId": identityId,
         revoked: { $ne: true },

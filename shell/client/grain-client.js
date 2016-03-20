@@ -1411,37 +1411,40 @@ Router.map(function () {
     onBeforeAction: function () {
       // Only run the hook once.
       if (this.state.get("beforeActionHookRan")) return this.next();
-      this.state.set("beforeActionHookRan", true);
-      const grainId = this.params.grainId;
-      let grain = globalGrains.getById(grainId);
-      if (grain) {
-        globalGrains.setActive(grainId);
-      } else {
-        let initialPopup = null;
-        let shareGrain = Session.get("share-grain-" + grainId);
-        if (shareGrain) {
-          initialPopup = "share";
-        }
 
-        const path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
-
-        // The element we need to attach our Blaze view to may not exist yet.
-        // In that case, defer creating the GrainView until we're sure it's
-        // had a chance to render.
-        const openView = function openView() {
-          const mainContentElement = document.querySelector("body>.main-content");
-          if (mainContentElement) {
-            const grainToOpen = globalGrains.addNewGrainView(grainId, path, undefined,
-                                                             mainContentElement, initialPopup);
-            grainToOpen.openSession();
-            globalGrains.setActive(grainId);
-          } else {
-            Meteor.defer(openView);
+      Tracker.nonreactive(() => {
+        this.state.set("beforeActionHookRan", true);
+        const grainId = this.params.grainId;
+        let grain = globalGrains.getById(grainId);
+        if (grain) {
+          globalGrains.setActive(grainId);
+        } else {
+          let initialPopup = null;
+          let shareGrain = Session.get("share-grain-" + grainId);
+          if (shareGrain) {
+            initialPopup = "share";
           }
-        };
 
-        openView();
-      }
+          const path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
+
+          // The element we need to attach our Blaze view to may not exist yet.
+          // In that case, defer creating the GrainView until we're sure it's
+          // had a chance to render.
+          const openView = function openView() {
+            const mainContentElement = document.querySelector("body>.main-content");
+            if (mainContentElement) {
+              const grainToOpen = globalGrains.addNewGrainView(grainId, path, undefined,
+                                                               mainContentElement, initialPopup);
+              grainToOpen.openSession();
+              globalGrains.setActive(grainId);
+            } else {
+              Meteor.defer(openView);
+            }
+          };
+
+          openView();
+        }
+      });
 
       this.next();
     },
@@ -1474,36 +1477,38 @@ Router.map(function () {
       if (this.state.get("beforeActionHookRan")) return this.next();
       this.state.set("beforeActionHookRan", true);
 
-      const token = this.params.token;
-      const path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
-      const hash = this.params.hash;
+      Tracker.nonreactive(() => {
+        const token = this.params.token;
+        const path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
+        const hash = this.params.hash;
 
-      const tokenInfo = TokenInfo.findOne({ _id: token });
-      if (!tokenInfo) {
-        return this.next();
-      } else if (tokenInfo.invalidToken) {
-        this.state.set("invalidToken", true);
-      } else if (tokenInfo.grainId) {
-        const grainId = tokenInfo.grainId;
-        const grain = globalGrains.getById(grainId);
-        if (grain) {
-          globalGrains.setActive(grainId);
-        } else {
-          const openView = function openView() {
-            const mainContentElement = document.querySelector("body>.main-content");
-            if (mainContentElement) {
-              const grainToOpen = globalGrains.addNewGrainView(grainId, path, tokenInfo,
-                                                               mainContentElement);
-              grainToOpen.openSession();
-              globalGrains.setActive(grainId);
-            } else {
-              Meteor.defer(openView);
-            }
-          };
+        const tokenInfo = TokenInfo.findOne({ _id: token });
+        if (!tokenInfo) {
+          return this.next();
+        } else if (tokenInfo.invalidToken) {
+          this.state.set("invalidToken", true);
+        } else if (tokenInfo.grainId) {
+          const grainId = tokenInfo.grainId;
+          const grain = globalGrains.getById(grainId);
+          if (grain) {
+            globalGrains.setActive(grainId);
+          } else {
+            const openView = function openView() {
+              const mainContentElement = document.querySelector("body>.main-content");
+              if (mainContentElement) {
+                const grainToOpen = globalGrains.addNewGrainView(grainId, path, tokenInfo,
+                                                                 mainContentElement);
+                grainToOpen.openSession();
+                globalGrains.setActive(grainId);
+              } else {
+                Meteor.defer(openView);
+              }
+            };
 
-          openView();
+            openView();
+          }
         }
-      }
+      });
 
       this.next();
     },

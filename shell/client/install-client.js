@@ -28,7 +28,7 @@ Router.map(function () {
     },
 
     data: function () {
-      if (!this.ready()) return;
+      if (!this.ready() || Meteor.loggingIn()) return;
 
       const packageId = this.params.packageId;
       const packageUrl = this.params.query && this.params.query.url;
@@ -56,10 +56,15 @@ Router.map(function () {
           // pointer to the tab which opened this tab, and we can actually reach right into it and
           // call functions in it. So, we redirect the original tab to install the app, then close
           // this one.
-          if (globalGrains.get().length === 0 &&
+          if (globalGrains.getAll().length === 0 &&
               window.opener.location.hostname === window.location.hostname &&
               window.opener.Router) {
-            window.opener.Router.go("install", { packageId: packageId }, { query: this.params.query });
+            // Work-around for https://bugs.chromium.org/p/chromium/issues/detail?id=596301
+            // If we convert the query to a string, we don't hit the bug. Once this issue is fixed
+            // we can go back to passing the query object (`this.params.query`).
+            const queryCopy = packageUrl ? "url=" + encodeURIComponent(packageUrl) : {};
+
+            window.opener.Router.go("install", { packageId: packageId }, { query: queryCopy });
             window.close();
             return handle;
           }

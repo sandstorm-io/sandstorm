@@ -17,8 +17,6 @@
 // This file implements /grain, i.e. the main view into an app.
 
 // Pseudo-collections.
-GrainSizes = new Mongo.Collection("grainSizes");
-// GrainSizes is used by grainview.js
 TokenInfo = new Mongo.Collection("tokenInfo");
 // TokenInfo is used by grainview.js
 GrantedAccessRequests = new Mongo.Collection("grantedAccessRequests");

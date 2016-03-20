@@ -1,7 +1,26 @@
+// Sandstorm - Personal Cloud Sandbox
+// Copyright (c) 2016 Sandstorm Development Group, Inc. and contributors
+// All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 let counter = 0;
 
+// Pseudo-collection, published in shell/server/grain-server.js.
+GrainSizes = new Mongo.Collection("grainSizes");
+
 GrainView = class GrainView {
-  constructor(grains, grainId, path, tokenInfo, parentElement, initialPopup) {
+  constructor(grains, db, topbar, grainId, path, tokenInfo, parentElement, initialPopup) {
     // `path` starts with a slash and includes the query and fragment.
     //
     // Owned grains:
@@ -20,11 +39,14 @@ GrainView = class GrainView {
     //                 grainId, sessionId, title, and session Sub on success
 
     check(grains, GrainViewList);
+    check(db, SandstormDb);
     if (Tracker.active) {
       throw new Error("Can't construct a GrainView inside a reactive computation.");
     }
 
     this._grains = grains;
+    this._db = db;
+    this._topbar = topbar;
     this._grainId = grainId;
     this._originalPath = path;
     this._path = path;
@@ -65,8 +87,8 @@ GrainView = class GrainView {
 
     // Whenever a dev package is published or removed, reset the view.
     this._devAppObserver = Tracker.autorun(() => {
-      const grain = Grains.findOne(grainId);
-      const devApp = grain && DevPackages.findOne({ appId: grain.appId });
+      const grain = this._db.getGrain(grainId);
+      const devApp = grain && this._db.collections.devPackages.findOne({ appId: grain.appId });
       const id = devApp ? devApp._id : "none";
       if (this._devAppId !== id) {
         if (this._status !== "closed") {
@@ -136,7 +158,7 @@ GrainView = class GrainView {
         }
       });
     } else {
-      if (ApiTokens.findOne({
+      if (this.db.collections.apiTokens.findOne({
         grainId: grainId,
         "owner.user.identityId": identityId,
         revoked: { $ne: true },
@@ -201,7 +223,7 @@ GrainView = class GrainView {
 
   isOldSharingModel() {
     this._dep.depend();
-    const grain = Grains.findOne({ _id: this._grainId });
+    const grain = this._db.getGrain(this._grainId);
     return grain && !grain.private;
   }
 
@@ -210,7 +232,8 @@ GrainView = class GrainView {
     // See if this is one of our own grains.
     // If we're not logged in, we can't be the owner.
     if (!Meteor.userId()) return false;
-    const grain = Grains.findOne({ _id: this._grainId, userId: Meteor.userId() });
+    const grain = this._db.collections.grains.findOne({ _id: this._grainId,
+                                                        userId: Meteor.userId(), });
     return grain != undefined;
   }
 
@@ -241,11 +264,11 @@ GrainView = class GrainView {
     this._dep.depend();
     if (this.isOwner() || this.isOldSharingModel()) {
       // Case 1.
-      const grain = Grains.findOne({ _id: this._grainId });
+      const grain = this._db.getGrain(this._grainId);
       return grain && grain.title;
     } else if (!this._isUsingAnonymously()) {
       // Case 2.
-      const apiToken = ApiTokens.findOne({
+      const apiToken = this._db.collections.apiTokens.findOne({
         grainId: this._grainId,
         "owner.user.identityId": this.identityId(),
       }, {
@@ -268,12 +291,12 @@ GrainView = class GrainView {
     this._dep.depend();
     if (this.isOwner()) {
       // Case 1.
-      const grain = Grains.findOne({ _id: this._grainId });
-      const pkg = grain && Packages.findOne({ _id: grain.packageId });
+      const grain = this._db.getGrain(this._grainId);
+      const pkg = grain && this._db.collections.packages.findOne({ _id: grain.packageId });
       return pkg && pkg.manifest && pkg.manifest.appTitle && pkg.manifest.appTitle.defaultText;
     } else if (!this._isUsingAnonymously()) {
       // Case 2
-      const token = ApiTokens.findOne({
+      const token = this._db.collections.apiTokens.findOne({
         grainId: this._grainId,
         "owner.user.identityId": this.identityId(),
       }, {
@@ -382,14 +405,14 @@ GrainView = class GrainView {
 
     const myIdentityIds = SandstormDb.getUserIdentityIds(Meteor.user());
     let resultIdentityId = myIdentityIds[0];
-    const grain = Grains.findOne(this._grainId);
+    const grain = this._db.getGrain(this._grainId);
     if (identityId && myIdentityIds.indexOf(identityId) != -1) {
       resultIdentityId = identityId;
     } else if (grain && myIdentityIds.indexOf(grain.identityId) != -1) {
       // If we own the grain, open it as the owning identity.
       resultIdentityId = grain.identityId;
     } else {
-      const token = ApiTokens.findOne({
+      const token = this._db.collections.apiTokens.findOne({
         grainId: this._grainId,
         "owner.user.identityId": { $in: myIdentityIds },
       }, {
@@ -627,15 +650,15 @@ GrainView = class GrainView {
     this._dep.depend();
     if (this.isOwner()) {
       // Case 1
-      const grain = Grains.findOne({ _id: this._grainId });
+      const grain = this._db.getGrain(this._grainId);
       if (grain) {
-        const pkg = DevPackages.findOne({ appId: grain.appId }) ||
-                  Packages.findOne({ _id: grain.packageId });
+        const pkg = this._db.collections.devPackages.findOne({ appId: grain.appId }) ||
+                  this._db.collections.packages.findOne({ _id: grain.packageId });
         if (pkg) return Identicon.iconSrcForPackage(pkg, "grain", makeWildcardHost("static"));
       }
     } else if (!this._isUsingAnonymously()) {
       // Case 2
-      const apiToken = ApiTokens.findOne({
+      const apiToken = this._db.collections.apiTokens.findOne({
         grainId: this._grainId,
         "owner.user.identityId": this.identityId(),
       }, {
@@ -731,7 +754,7 @@ GrainView = class GrainView {
     const offer = session && session.powerboxView && session.powerboxView.offer;
     if (offer && offer.uiView) {
       // If this is an offer of a UiView, immediately dismiss the popup and open the grain.
-      const apiToken = ApiTokens.findOne(offer.uiView.tokenId);
+      const apiToken = this._db.collections.apiTokens.findOne(offer.uiView.tokenId);
       if (apiToken && apiToken.grainId) {
         Meteor.call("finishPowerboxOffer", sessionId, function (err) {
           if (err) {

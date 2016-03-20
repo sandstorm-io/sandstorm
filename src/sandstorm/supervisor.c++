@@ -49,13 +49,25 @@
 #include <pwd.h>
 #include <grp.h>
 #include <sys/inotify.h>
-#include <seccomp.h>
 #include <map>
 #include <unordered_map>
 #include <execinfo.h>
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
 #include <sys/eventfd.h>
+
+// We need to define these constants before libseccomp has a chance to inject bogus
+// values for them. See https://github.com/seccomp/libseccomp/issues/27
+#ifndef __NR_seccomp
+#define __NR_seccomp 317
+#endif
+#ifndef __NR_bpf
+#define __NR_bpf 321
+#endif
+#ifndef __NR_userfaultfd
+#define __NR_userfaultfd 323
+#endif
+#include <seccomp.h>
 
 #include <sandstorm/grain.capnp.h>
 #include <sandstorm/supervisor.capnp.h>
@@ -1100,21 +1112,12 @@ void SupervisorMain::setupSeccomp() {
   // that run in-kernel (albeit with a very limited instruction set).
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(EINVAL), SCMP_SYS(prctl), 1,
       SCMP_A0(SCMP_CMP_EQ, PR_SET_SECCOMP)));
-#ifndef __NR_seccomp
-#define __NR_seccomp 317
-#endif
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(seccomp), 0));
-#ifndef __NR_bpf
-#define __NR_bpf 321
-#endif
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(bpf), 0));
 
   // New syscalls that don't seem useful to Sandstorm apps therefore we will disallow them.
   // TODO(cleanup): Can we somehow specify "disallow all calls greater than N" to preemptively
   //   disable things until we've reviewed them?
-#ifndef __NR_userfaultfd
-#define __NR_userfaultfd 323
-#endif
   CHECK_SECCOMP(seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOSYS), SCMP_SYS(userfaultfd), 0));
 
   // TOOD(someday): See if we can get away with turning off mincore, madvise, sysinfo etc.

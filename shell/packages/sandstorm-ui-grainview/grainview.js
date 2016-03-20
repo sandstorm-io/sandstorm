@@ -66,7 +66,7 @@ GrainView = class GrainView {
     // Whenever a dev package is published or removed, reset the view.
     this._devAppObserver = Tracker.autorun(() => {
       const grain = Grains.findOne(grainId);
-      const devApp = grain && DevPackages.findOne({appId: grain.appId});
+      const devApp = grain && DevPackages.findOne({ appId: grain.appId });
       const id = devApp ? devApp._id : "none";
       if (this._devAppId !== id) {
         if (this._status !== "closed") {
@@ -74,6 +74,7 @@ GrainView = class GrainView {
           this.openSession();
         }
       }
+
       this._devAppId = id;
     });
   }

@@ -1433,9 +1433,13 @@ Router.map(function () {
             const mainContentElement = document.querySelector("body>.main-content");
             if (mainContentElement) {
               const grainToOpen = globalGrains.addNewGrainView(grainId, path, undefined,
-                                                               mainContentElement, initialPopup);
+                                                               mainContentElement);
               grainToOpen.openSession();
               globalGrains.setActive(grainId);
+
+              if (initialPopup) {
+                globalTopbar.openPopup(initialPopup);
+              }
             } else {
               Meteor.defer(openView);
             }
@@ -1499,6 +1503,11 @@ Router.map(function () {
                                                                  mainContentElement);
                 grainToOpen.openSession();
                 globalGrains.setActive(grainId);
+
+                if (!Meteor.userId()) {
+                  // Suggest to the user that they log in by opening the login menu.
+                  globalTopbar.openPopup("login");
+                }
               } else {
                 Meteor.defer(openView);
               }

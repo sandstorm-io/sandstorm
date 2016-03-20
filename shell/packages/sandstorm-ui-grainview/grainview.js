@@ -20,7 +20,7 @@ let counter = 0;
 GrainSizes = new Mongo.Collection("grainSizes");
 
 GrainView = class GrainView {
-  constructor(grains, db, topbar, grainId, path, tokenInfo, parentElement, initialPopup) {
+  constructor(grains, db, grainId, path, tokenInfo, parentElement) {
     // `path` starts with a slash and includes the query and fragment.
     //
     // Owned grains:
@@ -46,7 +46,6 @@ GrainView = class GrainView {
 
     this._grains = grains;
     this._db = db;
-    this._topbar = topbar;
     this._grainId = grainId;
     this._originalPath = path;
     this._path = path;
@@ -65,9 +64,6 @@ GrainView = class GrainView {
     if (this._tokenInfo && this._tokenInfo.webkey) {
       if (!Meteor.userId()) {
         this.doNotRevealIdentity();
-
-        // Suggest to the user that they log in by opening the login menu.
-        globalTopbar.openPopup("login");
       }
     } else {
       this.revealIdentity();
@@ -80,10 +76,6 @@ GrainView = class GrainView {
     this._blazeView = Blaze.renderWithData(Template.grainView, this, parentElement);
 
     this.id = counter++;
-
-    if (initialPopup) {
-      globalTopbar.openPopup(initialPopup);
-    }
 
     // Whenever a dev package is published or removed, reset the view.
     this._devAppObserver = Tracker.autorun(() => {
@@ -103,8 +95,8 @@ GrainView = class GrainView {
 
   save() {
     // Returns a JSON-able argument array that can be passed to GrainView's constructor to
-    // reconstruct the same view later. However, the parentElement and initialPopup arguments
-    // can't be included since they are live objects, not data.
+    // reconstruct the same view later. However, the parentElement argument can't be included
+    // since it is a live object, not data.
 
     return [this._grainId, this._path, this._tokenInfo];
   }

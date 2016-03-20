@@ -333,7 +333,6 @@ SandstormTopbar = function (db, expandedVar, grainsVar, shrinkNavbarVar) {
   //    and show it when the user clicks the menu button
   this._shrinkNavbar = shrinkNavbarVar || new ReactiveVar(true);
   this._grains = grainsVar;
-  this._grains.setTopbar(this);
 };
 
 SandstormTopbar.prototype.reset = function () {

@@ -85,15 +85,6 @@ GrainViewList = class GrainViewList {
     });
   };
 
-  setTopbar(topbar) {
-    // A SandstormTopbar wants a reference to its GrainViewList, and a GrainViewList wants a
-    // reference to its SandstormTopbar. To break the cycle, we construct the GrainViewList first
-    // and then require that the contructor to SandstormTopbar call this method. This all happens
-    // before Meteor.startup(). Luckily, a GrainViewList never needs to refer to its topbar before
-    // Meteor.startup().
-    this._topbar = topbar;
-  }
-
   clear() {
     const grains = this._grains.get();
     grains.forEach(function (grain) {
@@ -134,10 +125,9 @@ GrainViewList = class GrainViewList {
     return null;
   }
 
-  addNewGrainView(grainId, path, tokenInfo, parentElement, initialPopup) {
+  addNewGrainView(grainId, path, tokenInfo, parentElement) {
     const grains = this._grains.get();
-    const grainview = new GrainView(this, this._db, this._topbar, grainId, path, tokenInfo,
-                                    parentElement, initialPopup);
+    const grainview = new GrainView(this, this._db, grainId, path, tokenInfo, parentElement);
     grains.push(grainview);
     this._grains.set(grains);
     return grainview;
@@ -251,8 +241,7 @@ GrainViewList = class GrainViewList {
           alreadyOpenGrain = undefined;
           return result;
         } else {
-          const view = new GrainView(this, this._db, this._topbar, args[0], args[1], args[2],
-                                     mainContentElement);
+          const view = new GrainView(this, this._db, args[0], args[1], args[2], mainContentElement);
           view.openSession();
           return view;
         }

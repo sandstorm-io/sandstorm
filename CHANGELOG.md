@@ -1,3 +1,8 @@
+### v0.152 (2016-03-21) [bugfixes]
+- Self-hosting: Fixed sending server invites by email (from the "send invites" tabh in the admin settings).
+- Improved error message seen when static publishing TXT records are misconfigured.
+- Improved error message when trying to send a sharing invite to an invalid email address.
+
 ### v0.151 (2016-03-20) [bugfixes]
 - Expanded LDAP config for search-query-based user matching to support authenticating the search and adding a search filter. LDAP is nuts.
 - Worked around bug in Chrome 50 which was causing app installs to sometimes fail complaining that no URL was provided.

@@ -530,7 +530,7 @@ Tinytest.add("permissions: membrane requirements long chain", function (test) {
     grains.push(new Grain(globalDb, aliceAccount, alice, commonViewInfo));
   }
 
-  // Bob's access to grain[i] is depedent on his access to grain[i+1];
+  // Bob's access to grain[i] is dependent on his access to grain[i+1];
   for (let idx = 0; idx < NUM_GRAINS - 1; ++idx) {
     const requirement = {
       permissionsHeld: {

@@ -43,9 +43,9 @@ Implementation notes for LDAP that may apply to your site:
 - Some LDAP servers require authentication before permitting a search. In that case, you will need
   to configure an **LDAP Search Bind Dn** and **LDAP Search Bind Password**.
 
-- Typically LDAP servers use the `cn` (also known as `commonName`) field to store the name of the
-  person who is successfully logging in. If your LDAP server is configured differently, please adjust
-  the **LDAP Name Field**.
+- Typically LDAP servers use the `cn` field to store the name of the person who is successfully
+  logging in. `cn` is short for common name. If your LDAP server is configured differently, please
+  adjust the **LDAP Name Field**.
 
 ## Organization management
 

@@ -21,8 +21,8 @@ const Ip = Capnp.importSystem("sandstorm/ip.capnp");
 function encodePowerboxDescriptor(desc) {
   return Capnp.serializePacked(Grain.PowerboxDescriptor, desc)
               .toString("base64")
-              .replace("+", "-")
-              .replace("/", "_");
+              .replace(/\+/g, "-")
+              .replace(/\//g, "_");
 }
 
 Meteor.methods({
@@ -219,11 +219,9 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
       // Decode the descriptor.
       // TODO(now): Also single-segment? Canonical?
 
-      // Use URL-safe base64.
-      unUrlsafe = packedDescriptor.replace("-", "+").replace("_", "/");
-
+      // Note: Node's base64 decoder also accepts URL-safe base64, so no need to translate.
       const descriptor = Capnp.parsePacked(
-          Grain.PowerboxDescriptor, new Buffer(unUrlsafe, "base64"));
+          Grain.PowerboxDescriptor, new Buffer(packedDescriptor, "base64"));
 
       if (!descriptor.tags || descriptor.tags.length === 0) return {};
 

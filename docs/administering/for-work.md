@@ -27,6 +27,26 @@ To enable either of these login providers, take the following steps:
 
 You should now see a checkbox that allows you to enable LDAP login.
 
+Implementation notes for LDAP that may apply to your site:
+
+- A typical LDAP configuration (e.g. Active Directory) will use an **LDAP Base Search Dn** of
+  `ou=People` followed by the LDAP version of your domain name. For `example.com`, this would be
+  `ou=People,dc=example,dc=com`.
+
+- When logging in with LDAP, you might run hit this error: `Exception while invoking method 'login'
+  SizeLimitExceededError`. In our testing, this seems to occur with LDAP sites where multiple LDAP
+  objects match the username. In this case, you probably need to add a custom **LDAP Search
+  Filter**. Your search filter should typically take the form of `(&(something))` so that it is
+  AND'd against the default Sandstorm LDAP query used when a user is logging in. Contact us at
+  support@sandstorm.io if you need help.
+
+- Some LDAP servers require authentication before permitting a search. In that case, you will need
+  to configure an **LDAP Search Bind Dn** and **LDAP Search Bind Password**.
+
+- Typically LDAP servers use the `cn` (also known as `commonName`) field to store the name of the
+  person who is successfully logging in. If your LDAP server is configured differently, please adjust
+  the **LDAP Name Field**.
+
 ## Organization management
 
 For users who are within your organization, Sandstorm for Work can automatically grant them a user

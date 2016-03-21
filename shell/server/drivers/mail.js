@@ -20,8 +20,11 @@ const Promise = Npm.require("es6-promise").Promise;
 const Capnp = Npm.require("capnp");
 
 const EmailRpc = Capnp.importSystem("sandstorm/email.capnp");
+const EmailImpl = Capnp.importSystem("sandstorm/email-impl.capnp");
 const HackSessionContext = Capnp.importSystem("sandstorm/hack-session.capnp").HackSessionContext;
-const Supervisor = Capnp.importSystem("sandstorm/supervisor.capnp").Supervisor;
+const SupervisorCapnp = Capnp.importSystem("sandstorm/supervisor.capnp");
+const Supervisor = SupervisorCapnp.Supervisor;
+const SystemPersistent = SupervisorCapnp.SystemPersistent;
 const EmailSendPort = EmailRpc.EmailSendPort;
 
 const Url = Npm.require("url");
@@ -298,4 +301,75 @@ hackSendEmail = (session, email) => {
     console.error("Error sending e-mail:", err.stack);
     throw err;
   });
+};
+
+class EmailVerifierImpl {
+  constructor(persistentMethods, id, params) {
+    _.extend(this, persistentMethods);
+    this._id = id;
+    this._services = params.services;
+  }
+
+  getId() {
+    return { id: new Buffer(this._id, "base64") };
+  }
+
+  verifyEmail(tabId, verification) {
+    // For now, we save() the verification and then dig through ApiTokens to find where it leads.
+    // TODO(cleanup): In theory we should be using something like CapabilityServerSet, but it is
+    //   not available in Javascript yet and even if it were, it wouldn't work in the case where
+    //   there are multiple front-end replicas, since the verification could be on a different
+    //   replica.
+    return verification.castAs(SystemPersistent).save({frontend: null}).then(saveResult => {
+      return inMeteor(() => {
+        const tokenId = hashSturdyRef(saveResult.sturdyRef);
+        let tokenInfo = ApiTokens.findOne(tokenId);
+
+        // Delete the token now since it's not needed.
+        ApiTokens.remove(tokenId);
+
+        for (;;) {
+          if (!tokenInfo) throw new Error("missing token?");
+          if (!tokenInfo.parentToken) break;
+          tokenInfo = ApiTokens.findOne(tokenInfo.parentToken);
+        }
+
+        if (!tokenInfo.frontendRef || !tokenInfo.frontendRef.verifiedEmail) {
+          throw new Error("not a VerifiedEmail capability");
+        }
+
+        let verification = tokenInfo.frontendRef.verifiedEmail;
+        if (verification.tabId !== tabId.toString("hex")) {
+          throw new Error("VerifiedEmail is from a different tab");
+        }
+
+        if (this._services) {
+          // Since this verifier is restricted to specific services, only indicate a match if the
+          // VerifiedEmail was for the correct verifier ID. (If our _services is null, then we
+          // match all services, and therefore all VerifiedEmails.)
+          if (verification.verifierId !== this._id) {
+            throw new Error("VerifierEmail is for a different EmailVerifier.");
+          }
+        }
+
+        return verification.address;
+      });
+    });
+  }
+};
+
+class VerifiedEmailImpl {
+  constructor(persistentMethods, id) {
+    _.extend(this, persistentMethods);
+  }
+}
+
+makeEmailVerifier = (persistentMethods, id, params) => {
+  return new Capnp.Capability(new EmailVerifierImpl(persistentMethods, id, params),
+                              EmailImpl.PersistentEmailVerifier);
+};
+
+makeVerifiedEmail = (persistentMethods) => {
+  return new Capnp.Capability(new VerifiedEmailImpl(persistentMethods),
+                              EmailImpl.PersistentVerifiedEmail);
 };

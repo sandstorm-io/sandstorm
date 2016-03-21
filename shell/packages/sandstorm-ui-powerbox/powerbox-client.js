@@ -54,7 +54,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
       // postMessage back to the origin frame that the request was cancelled.
       this._requestInfo.source.postMessage({
         rpcId: this._requestInfo.rpcId,
-        error: this._error.get() || "User cancelled request",
+        canceled: true
       }, this._requestInfo.origin);
     }
   }
@@ -161,6 +161,28 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
           cardData.title = "Admin: grant all outgoing network access";
         } else if (cardData.frontendRef.ipInterface) {
           cardData.title = "Admin: grant all incoming network access";
+        } else if (cardData.frontendRef.emailVerifier) {
+          const services = cardData.frontendRef.emailVerifier.services;
+          if (services) {
+            const name = services[0];
+            const service = Accounts.identityServices[name];
+            if (service.loginTemplate.name === "oauthLoginButton") {
+              cardData.title = "Verify e-mail addresses using " +
+                  service.loginTemplate.data.displayName;
+            } else if (name === "email") {
+              cardData.title = "Verify e-mail addresses using passwordless e-mail login";
+            } else if (name === "ldap") {
+              cardData.title = "Verify e-mail addresses using LDAP";
+            } else {
+              cardData.title = "Verify e-mail addresses using " + name;
+            }
+          } else  {
+            cardData.title = "Verify e-mail addresses using any login service";
+          }
+          cardData.iconSrc = "/email-m.svg";
+        } else if (cardData.frontendRef.verifiedEmail) {
+          cardData.title = cardData.frontendRef.verifiedEmail.address;
+          cardData.iconSrc = "/email-m.svg";
         }
 
         cardData.callback = () => () => {

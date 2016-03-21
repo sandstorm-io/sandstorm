@@ -135,7 +135,7 @@ class PowerboxOption {
 const specialCaseTypes = {
   // This object maps tag IDs to functions which return lists of matches for that tag.
 
-  15831515641881813735(db, userId, value) {  // UiView
+  "15831515641881813735"(db, userId, value) {  // UiView
     if (!userId) return [];
 
     // TODO(someday): Allow `value` to specify app IDs to filter for.
@@ -152,7 +152,7 @@ const specialCaseTypes = {
     });
   },
 
-  12214421258504904768(db, userId, value) {  // IpNetwork
+  "12214421258504904768"(db, userId, value) {  // IpNetwork
     if (Meteor.users.findOne(userId).isAdmin) {
       return [
         new PowerboxOption({
@@ -165,7 +165,7 @@ const specialCaseTypes = {
     }
   },
 
-  16369547182874744570(db, userId, value) {  // IpInterface
+  "16369547182874744570"(db, userId, value) {  // IpInterface
     if (Meteor.users.findOne(userId).isAdmin) {
       return [
         new PowerboxOption({

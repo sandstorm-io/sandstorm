@@ -561,16 +561,17 @@ Meteor.startup(() => {
 });
 
 const errorTxtMapping = {};
-errorTxtMapping[Dns.NOTFOUND] = '<br>\n' +
-    'If you were trying to connect this address to a Sandstorm app hosted at this server,<br>\n' +
-    'you either have not set your DNS TXT records correctly or the DNS cache has not<br>\n' +
-    'updated yet (may take a while).<br>\n';
+errorTxtMapping[Dns.NOTFOUND] = '<p>' +
+    'If you were trying to configure static publishing for a blog or website, powered ' +
+    'by a Sandstorm app hosted at this server, you either have not added DNS TXT records ' +
+    'correctly, or the DNS cache has not updated yet (may take a while, like 5 minutes to one ' +
+    'hour).</p>';
 errorTxtMapping[Dns.NODATA] = errorTxtMapping[Dns.NOTFOUND];
-errorTxtMapping[Dns.TIMEOUT] = '<br>\n' +
-    'The DNS query has timed out, which may be a sign of poorly configured DNS on the server.<br>\n';
-errorTxtMapping[Dns.CONNREFUSED] = '<br>\n' +
-    'The DNS server refused the connection, which means either your DNS server is down/unreachable,<br>\n' +
-    'or the server has misconfigured their DNS.<br>\n';
+errorTxtMapping[Dns.TIMEOUT] = '<p>' +
+    'The DNS query has timed out, which may be a sign of poorly configured DNS on the server.</p>';
+errorTxtMapping[Dns.CONNREFUSED] = '<p>' +
+    'The DNS server refused the connection, which means either your DNS server is down/unreachable, ' +
+    'or the server has misconfigured their DNS.</p>';
 
 function lookupPublicIdFromDns(hostname) {
   // Given a hostname, determine its public ID.
@@ -598,18 +599,24 @@ function lookupPublicIdFromDns(hostname) {
         const error = new Error(
             'Error looking up DNS TXT records for host "' + hostname + '": ' + err.message);
         error.htmlMessage =
-          '<p>Error looking up DNS TXT records for host "' + hostname + '": ' + err.message + '<br>\n' +
-          '<br>\n' +
-          'This Sandstorm server\'s main interface is at: <a href=\'' + process.env.ROOT_URL + '\'>' +
-          process.env.ROOT_URL + '</a><br>\n' +
-          errorMsg +
-          '<br>\n' +
-          'If you are the server admin and want to use this address as the main interface,<br>\n' +
-          'edit /opt/sandstorm/sandstorm.conf, modify the BASE_URL setting, and restart.<br>\n' +
-          '<br>\n' +
-          'If you got here after trying to log in via OAuth (e.g. through Github or Google),<br>\n' +
-          'the problem is probably that the OAuth callback URL was set wrong. You need to<br>\n' +
-          'update it through the respective login provider\'s management console.</p>';
+	  '<style type="text/css">h2, h3, p { max-width: 600px; }</style>' +
+	  '<h2>Sandstorm static publishing needs further configuration (or wrong URL)</h2>' +
+	  errorMsg +
+          '<p>To visit this Sandstorm server\'s main interface, go to: <a href=\'' + process.env.ROOT_URL + '\'>' +
+          process.env.ROOT_URL + '</a></p>' +
+	  '<h3>DNS details</h3>' +
+          '<p>Error looking up DNS TXT records for host "' + hostname + '": ' + err.message + '</p>' +
+	  '<p>If you have the <tt>dig</tt> tool, you can run this command to learn more:</p>' +
+	  '<p><tt>dig TXT sandstorm-www.' + hostname + '</tt></p>' +
+	  '<h3>Changing the server URL, or troubleshooting OAuth login</h3>' +
+          '<p>If you are the server admin and want to use this address as the main interface, ' +
+          'edit /opt/sandstorm/sandstorm.conf, modify the BASE_URL setting, and restart ' +
+	  'Sandstorm.</p>' +
+          '<p>If you got here after trying to log in via OAuth (e.g. through GitHub or Google), ' +
+          'the problem is probably that the OAuth callback URL was set wrong. You need to ' +
+          'update it through the respective login provider\'s management console. The ' +
+	  'easiest way to do that is to run <tt>sudo sandstorm admin-token</tt>, then ' +
+          'reconfigure the OAuth provider.</p>';
         error.httpErrorCode = (_.contains(['ENOTFOUND', 'ENODATA'], err.code)) ? 404 : 500;
         reject(error);
       } else if (records.length !== 1) {

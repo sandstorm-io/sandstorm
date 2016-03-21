@@ -134,6 +134,20 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
   }
 
   filteredCardData() {
+    // Returns an array of "cards" (options from which the user can pick), sorted in the order in
+    // which they should appear. Each has the fields described in the comments for
+    // Meteor.publish("powerboxOptions") in powerbox-server.js as well as the following fields
+    // added client-side:
+    //
+    // _id: Unique identifier for this card among the results.
+    // title: Human-readable title string.
+    // appTitle (optional): Human-readable title of the app serving this option.
+    // iconSrc (optional): URL of an icon.
+    // lastUsed (optional): Date when this item was last accessed.
+    // callback: Function returning a function to call if this card is chosen. (The double-function
+    //     is necessary because when a function value is named in a Blaze template, Blaze calls
+    //     the function, thinking it is a helper.)
+
     const cards = PowerboxOptions.find({ requestId: this._requestId }).map(cardData => {
       // Use ID as title if we don't find anything better.
       cardData.title = cardData._id;

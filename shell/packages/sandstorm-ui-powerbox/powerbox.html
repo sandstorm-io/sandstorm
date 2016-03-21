@@ -13,8 +13,6 @@
     {{#if selectedProvider }}
       {{> Template.dynamic template=selectedProviderTemplate data=selectedProviderTemplateData }}
     {{else}}
-      {{#if requestedInterfaceIsImplementedByFrontendRef}}
-      {{!-- TODO: switch this to support all interfaces --}}
       <div class="search-row">
         <label>
           <span title="Search" class="search-icon"></span>
@@ -30,9 +28,6 @@
         <p>No grains can provide the requested interface.</p>
       {{/each}}
       </ul>
-      {{else}}
-      <p>Requests for arbitrary interfaces not yet supported.  (Soon!)</p>
-      {{/if}}
     {{/if}}
   {{/if}}
 </template>

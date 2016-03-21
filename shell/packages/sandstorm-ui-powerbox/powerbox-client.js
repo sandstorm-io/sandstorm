@@ -316,11 +316,6 @@ Template.powerboxRequest.helpers({
     return ref && ref._selectedProvider && ref._selectedProvider.get().templateData();
   },
 
-  requestedInterfaceIsImplementedByFrontendRef: function () {
-    const ref = Template.instance().data.get();
-    return true;
-  },
-
   showWebkeyInput: function () {
     // Transitional feature: treat requests that specified no query patterns to match, not even the
     // empty list, as requests for webkeys.  Later, we"ll want to transition the test apps to

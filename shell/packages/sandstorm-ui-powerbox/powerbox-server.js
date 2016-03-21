@@ -17,6 +17,13 @@
 const Capnp = Npm.require("capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 
+function encodePowerboxDescriptor(desc) {
+  return Capnp.serializePacked(Grain.PowerboxDescriptor, desc)
+              .toString("base64")
+              .replace("+", "-")
+              .replace("/", "_");
+}
+
 Meteor.methods({
   newFrontendRef(sessionId, frontendRefVariety, saveLabel) {
     // Checks if the requester is an admin, and if so, provides a new frontendref of the desired
@@ -39,13 +46,13 @@ Meteor.methods({
         throw new Meteor.Error(403, "User must be an admin to powerbox offer IpNetwork");
       }
 
-      descriptor = "EAZQAQEAABEBF1EEAQH_QCAqemtXgqkAAAA";
+      descriptor = encodePowerboxDescriptor({tags: [{id: "12214421258504904768"}]});
     } else if (frontendRefVariety.ipInterface) {
       if (!db.isAdmin(this.userId)) {
         throw new Meteor.Error(403, "User must be an admin to powerbox offer IpInterface");
       }
 
-      descriptor = "EAZQAQEAABEBF1EEAQH_-tY-6W5QLOMAAAA";
+      descriptor = encodePowerboxDescriptor({tags: [{id: "16369547182874744570"}]});
     } else {
       throw new Meteor.Error(500, "Unimplemented frontendRef type");
     }

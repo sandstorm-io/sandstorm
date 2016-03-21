@@ -92,6 +92,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
             this._requestInfo.source.postMessage({
               rpcId: this._requestInfo.rpcId,
               token: apiToken,
+              // encoded/packed/base64url of (tags = [(id = 15831515641881813735)])
               descriptor: "EAZQAQEAABEBF1EEAQH_5-Jn6pjXtNsAAAA",
             }, this._requestInfo.origin);
             // Completion event closes popup.

@@ -597,25 +597,25 @@ function lookupPublicIdFromDns(hostname) {
       if (err) {
         const errorMsg = errorTxtMapping[err.code] || '';
         const error = new Error(
-            'Error looking up DNS TXT records for host "' + hostname + '": ' + err.message);
+          'Error looking up DNS TXT records for host "' + hostname + '": ' + err.message);
         error.htmlMessage =
-	  '<style type="text/css">h2, h3, p { max-width: 600px; }</style>' +
-	  '<h2>Sandstorm static publishing needs further configuration (or wrong URL)</h2>' +
-	  errorMsg +
+          '<style type="text/css">h2, h3, p { max-width: 600px; }</style>' +
+          '<h2>Sandstorm static publishing needs further configuration (or wrong URL)</h2>' +
+          errorMsg +
           '<p>To visit this Sandstorm server\'s main interface, go to: <a href=\'' + process.env.ROOT_URL + '\'>' +
           process.env.ROOT_URL + '</a></p>' +
-	  '<h3>DNS details</h3>' +
+          '<h3>DNS details</h3>' +
           '<p>Error looking up DNS TXT records for host "' + hostname + '": ' + err.message + '</p>' +
-	  '<p>If you have the <tt>dig</tt> tool, you can run this command to learn more:</p>' +
-	  '<p><tt>dig TXT sandstorm-www.' + hostname + '</tt></p>' +
-	  '<h3>Changing the server URL, or troubleshooting OAuth login</h3>' +
+          '<p>If you have the <tt>dig</tt> tool, you can run this command to learn more:</p>' +
+          '<p><tt>dig TXT sandstorm-www.' + hostname + '</tt></p>' +
+          '<h3>Changing the server URL, or troubleshooting OAuth login</h3>' +
           '<p>If you are the server admin and want to use this address as the main interface, ' +
           'edit /opt/sandstorm/sandstorm.conf, modify the BASE_URL setting, and restart ' +
-	  'Sandstorm.</p>' +
+          'Sandstorm.</p>' +
           '<p>If you got here after trying to log in via OAuth (e.g. through GitHub or Google), ' +
           'the problem is probably that the OAuth callback URL was set wrong. You need to ' +
           'update it through the respective login provider\'s management console. The ' +
-	  'easiest way to do that is to run <tt>sudo sandstorm admin-token</tt>, then ' +
+          'easiest way to do that is to run <tt>sudo sandstorm admin-token</tt>, then ' +
           'reconfigure the OAuth provider.</p>';
         error.httpErrorCode = (_.contains(['ENOTFOUND', 'ENODATA'], err.code)) ? 404 : 500;
         reject(error);

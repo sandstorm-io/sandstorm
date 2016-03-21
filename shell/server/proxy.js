@@ -309,7 +309,7 @@ Meteor.methods({
                                                      null, null, cachedSalt);
     const result = opened.methodResult;
     const proxy = new Proxy(grainId, this.userId, result.sessionId,
-                            result.hostId, identityId, false, opened.supervisor);
+                            result.hostId, result.tabId, identityId, false, opened.supervisor);
     proxiesByHostId[result.hostId] = proxy;
     return result;
   },
@@ -398,7 +398,7 @@ Meteor.methods({
 
       const result = opened.methodResult;
       const proxy = new Proxy(apiToken.grainId, grain.userId, result.sessionId,
-                              result.hostId, identityId, false);
+                              result.hostId, result.tabId, identityId, false);
       proxy.apiToken = apiToken;
       proxiesByHostId[result.hostId] = proxy;
       return result;
@@ -608,7 +608,8 @@ const getProxyForHostId = (hostId, isAlreadyOpened) => {
         // Note that we don't need to call mayOpenGrain() because the existence of a session
         // implies this check was already performed.
 
-        const proxy = new Proxy(grain._id, grain.userId, session._id, hostId, session.identityId, false);
+        const proxy = new Proxy(grain._id, grain.userId, session._id, hostId, session.tabId,
+                                session.identityId, false);
         if (apiToken) proxy.apiToken = apiToken;
 
         // Only add the proxy to the table if it was not concurrently deleted (which could happen
@@ -880,6 +881,8 @@ function getApiSessionParams(request) {
 getProxyForApiToken = (token, request) => {
   check(token, String);
   const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");
+  const tabId = Crypto.createHash("sha256").update("tab:").update(hashedToken)
+      .digest("hex").slice(0, 32);
   const serializedParams = getApiSessionParams(request);
   const hashedParams = Crypto.createHash("sha256").update(serializedParams).digest("base64");
   return Promise.resolve(undefined).then(() => {
@@ -910,7 +913,7 @@ getProxyForApiToken = (token, request) => {
             identityId = tokenInfo.identityId;
           }
 
-          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, identityId, true);
+          proxy = new Proxy(tokenInfo.grainId, grain.userId, null, null, tabId, identityId, true);
           proxy.apiToken = tokenInfo;
           proxy.apiSessionParams = serializedParams;
         }
@@ -1178,12 +1181,13 @@ tryProxyRequest = (hostId, req, res) => {
 //
 
 class Proxy {
-  constructor(grainId, ownerId, sessionId, hostId, identityId, isApi, supervisor) {
+  constructor(grainId, ownerId, sessionId, hostId, tabId, identityId, isApi, supervisor) {
     this.grainId = grainId;
     this.ownerId = ownerId;
     this.identityId = identityId;
     this.supervisor = supervisor;  // note: optional parameter; we can reconnect
     this.sessionId = sessionId;
+    this.tabId = tabId;
     this.isApi = isApi;
     this.hasLoaded = false;
     this.websockets = {};
@@ -1322,8 +1326,8 @@ class Proxy {
           : ["en-US", "en"],
     });
     return this.uiView.newSession(userInfo,
-                                  makeHackSessionContext(this.grainId, this.sessionId, this.identityId),
-                                  WebSession.typeId, params).session;
+         makeHackSessionContext(this.grainId, this.sessionId, this.identityId, this.tabId),
+         WebSession.typeId, params, new Buffer(this.tabId, "hex")).session;
   }
 
   _callNewApiSession(request, userInfo) {
@@ -1336,14 +1340,13 @@ class Proxy {
     // calling newSession with an ApiSession._id.
     // Eventually we'll remove this logic once we're sure apps have updated.
     return this.uiView.newSession(userInfo,
-                                  makeHackSessionContext(this.grainId, this.sessionId, this.identityId),
-                                  ApiSession.typeId, serializedParams)
-                      .then((session) => {
-                        return session.session;
-                      }, (err) => {
-                        return this._callNewWebSession(request, userInfo);
-                      }
-    );
+         makeHackSessionContext(this.grainId, this.sessionId, this.identityId, this.tabId),
+         ApiSession.typeId, serializedParams, new Buffer(this.tabId, "hex"))
+        .then((session) => {
+          return session.session;
+        }, (err) => {
+          return this._callNewWebSession(request, userInfo);
+        });
   };
 
   _callNewSession(request, viewInfo) {

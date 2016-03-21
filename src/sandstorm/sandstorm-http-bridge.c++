@@ -903,13 +903,14 @@ class WebSessionImpl final: public WebSession::Server {
 public:
   WebSessionImpl(kj::NetworkAddress& serverAddr,
                  UserInfo::Reader userInfo, SessionContext::Client sessionContext,
-                 SessionContextMap& sessionContextMap, kj::String&& sessionId,
+                 SessionContextMap& sessionContextMap, kj::String&& sessionId, kj::String&& tabId,
                  kj::String&& basePath, kj::String&& userAgent, kj::String&& acceptLanguages,
                  kj::String&& rootPath, kj::String&& permissions, kj::Maybe<kj::String> remoteAddress)
       : serverAddr(serverAddr),
         sessionContext(kj::mv(sessionContext)),
         sessionContextMap(sessionContextMap),
         sessionId(kj::mv(sessionId)),
+        tabId(kj::mv(tabId)),
         userDisplayName(percentEncode(userInfo.getDisplayName().getDefaultText())),
         userHandle(kj::heapString(userInfo.getPreferredHandle())),
         userPicture(kj::heapString(userInfo.getPictureUrl())),
@@ -1156,6 +1157,7 @@ private:
   SessionContext::Client sessionContext;
   SessionContextMap& sessionContextMap;
   kj::String sessionId;
+  kj::String tabId;
   kj::String userDisplayName;
   kj::String userHandle;
   kj::String userPicture;
@@ -1201,6 +1203,7 @@ private:
     if (userAgent.size() > 0) {
       lines.add(kj::str("User-Agent: ", userAgent));
     }
+    lines.add(kj::str("X-Sandstorm-Tab-Id: ", tabId));
     lines.add(kj::str("X-Sandstorm-Username: ", userDisplayName));
     KJ_IF_MAYBE(u, userId) {
       lines.add(kj::str("X-Sandstorm-User-Id: ", *u));
@@ -1597,6 +1600,7 @@ public:
       context.getResults(capnp::MessageSize {2, 1}).setSession(
           kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
                                    sessionContextMap, kj::str(sessionIdCounter++),
+                                   hexEncode(params.getTabId()),
                                    kj::heapString(sessionParams.getBasePath()),
                                    kj::heapString(sessionParams.getUserAgent()),
                                    kj::strArray(sessionParams.getAcceptableLanguages(), ","),
@@ -1614,6 +1618,7 @@ public:
       context.getResults(capnp::MessageSize {2, 1}).setSession(
           kj::heap<WebSessionImpl>(serverAddress, params.getUserInfo(), params.getContext(),
                                    sessionContextMap, kj::str(sessionIdCounter++),
+                                   hexEncode(params.getTabId()),
                                    kj::heapString(""), kj::heapString(""), kj::heapString(""),
                                    kj::heapString(config.getApiPath()),
                                    formatPermissions(userPermissions),

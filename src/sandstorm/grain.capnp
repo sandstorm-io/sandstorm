@@ -452,7 +452,8 @@ interface UiView @0xdbb4d798ea67e2e7 {
   }
 
   newSession @1 (userInfo :UserInfo, context :SessionContext,
-                 sessionType :UInt64, sessionParams :AnyPointer)
+                 sessionType :UInt64, sessionParams :AnyPointer,
+                 tabId :Data)
              -> (session :UiSession);
   # Start a new user interface session.  This happens when a user first opens the view, or when
   # the user returns to a tab that has been inactive long enough that the server was killed off in
@@ -470,10 +471,23 @@ interface UiView @0xdbb4d798ea67e2e7 {
   # `sessionParams` is a struct whose type is specified by the session type.  By convention, this
   # struct should be defined nested in the session interface type with name "Params", e.g.
   # `WebSession.Params`.  This struct contains some arbitrary startup information.
+  #
+  # `tabId` is a stable identifier for the "tab" (as in, Sandstorm sidebar tab) in which the grain
+  # is being displayed. A single tab may span multiple UiSessions, for instance if the user
+  # suspends their laptop and then restores later, or if the grain crashes. More importantly,
+  # `tabId` allows multiple grains being composed in the same tab to coordinate. For example, when
+  # a grain is embedded in the powerbox UI to respond to a request, it sees the same `tabId` as
+  # the requesting grain. Similarly, when a grain embeds other grains within iframes within its
+  # own UI, they will all see the same `tabId`. One particular case where `tabId` is useful is
+  # in implementing an `EmailVerifier` that cannot be MITM'd. NOTE: `tabId` should NOT be presumed
+  # to be a secret, although no two tabs in all of time will have the same `tabId`.
+  #
+  # For API requests, `tabId` uniquely identifies the token, as so can be used to correlate
+  # multiple requests from the same client.
 
   newRequestSession @2 (userInfo :UserInfo, context :SessionContext,
                         sessionType :UInt64, sessionParams :AnyPointer,
-                        requestInfo :List(PowerboxDescriptor))
+                        requestInfo :List(PowerboxDescriptor), tabId :Data)
                     -> (session :UiSession);
   # Creates a new session based on a powerbox request. `requestInfo` is the subset of the original
   # request description which matched descriptors that this grain indicated it provides via
@@ -484,10 +498,13 @@ interface UiView @0xdbb4d798ea67e2e7 {
   # disconnected randomly and the front-end will then reconnect by calling `newRequestSession()`
   # again with the same parameters. Generally, apps should avoid storing any session-related state
   # on the server side; it's easy to use client-side sessionStorage instead.
+  #
+  # The `tabId` passed here identifies the requesting tab; see docs under `newSession()`.
 
   newOfferSession @3 (userInfo :UserInfo, context :SessionContext,
                       sessionType :UInt64, sessionParams :AnyPointer,
-                      offer :Capability, descriptor :PowerboxDescriptor)
+                      offer :Capability, descriptor :PowerboxDescriptor,
+                      tabId :Data)
                   -> (session :UiSession);
   # Creates a new session based on a powerbox offer. `offer` is the capability being offered and
   # `descriptor` describes it.
@@ -509,6 +526,8 @@ interface UiView @0xdbb4d798ea67e2e7 {
   # on the server side; it's easy to use client-side sessionStorage instead. (Of course, if the
   # session calls `SessionContext.openView()`, the new view will be opened as a regular session,
   # not an offer session.)
+  #
+  # The `tabId` passed here identifies the offering tab; see docs under `newSession()`.
 }
 
 # ========================================================================================

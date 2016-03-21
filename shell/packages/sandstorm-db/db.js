@@ -249,6 +249,9 @@ Sessions = new Mongo.Collection("sessions");
 //   grainId:  _id of the grain to which this session is connected.
 //   hostId: ID part of the hostname from which this grain is being served. I.e. this replaces the
 //       '*' in WILDCARD_HOST.
+//   tabId: Random value unique to the grain tab in which this session is displayed. Typically
+//       every session has a different `tabId`, but embedded sessions (including in the powerbox)
+//       have the same `tabId` as the outer session.
 //   timestamp:  Time of last keep-alive message to this session.  Sessions time out after some
 //       period.
 //   userId:  User ID of the user who owns this session.

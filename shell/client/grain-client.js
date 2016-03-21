@@ -1298,6 +1298,8 @@ Meteor.startup(function () {
         );
 
         // Send message to event.source with URL containing id2
+        // TODO(someday): Send back the tabId that requests to this token will use? Could be
+        //   useful.
         templateLink = window.location.origin + "/offer-template.html#" + id2;
         event.source.postMessage({ rpcId: rpcId, uri: templateLink }, event.origin);
       }, (error) => {

@@ -16,6 +16,7 @@
 
 const Capnp = Npm.require("capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
+const Ip = Capnp.importSystem("sandstorm/ip.capnp");
 
 function encodePowerboxDescriptor(desc) {
   return Capnp.serializePacked(Grain.PowerboxDescriptor, desc)
@@ -46,13 +47,13 @@ Meteor.methods({
         throw new Meteor.Error(403, "User must be an admin to powerbox offer IpNetwork");
       }
 
-      descriptor = encodePowerboxDescriptor({tags: [{id: "12214421258504904768"}]});
+      descriptor = encodePowerboxDescriptor({ tags: [{ id: Ip.IpNetwork.typeId }] });
     } else if (frontendRefVariety.ipInterface) {
       if (!db.isAdmin(this.userId)) {
         throw new Meteor.Error(403, "User must be an admin to powerbox offer IpInterface");
       }
 
-      descriptor = encodePowerboxDescriptor({tags: [{id: "16369547182874744570"}]});
+      descriptor = encodePowerboxDescriptor({ tags: [{ id: Ip.IpInterface.typeId }] });
     } else {
       throw new Meteor.Error(500, "Unimplemented frontendRef type");
     }
@@ -139,52 +140,51 @@ class PowerboxOption {
   }
 }
 
-const specialCaseTypes = {
-  // This object maps tag IDs to functions which return lists of matches for that tag.
+const specialCaseTypes = {};
+// This object maps tag IDs to functions which return lists of matches for that tag.
 
-  "15831515641881813735"(db, userId, value) {  // UiView
-    if (!userId) return [];
+specialCaseTypes[Grain.UiView.typeId] = function (db, userId, value) {
+  if (!userId) return [];
 
-    // TODO(someday): Allow `value` to specify app IDs to filter for.
+  // TODO(someday): Allow `value` to specify app IDs to filter for.
 
-    const sharedGrainIds = db.userApiTokens(userId).map(token => token.grainId);
-    const ownedGrainIds = Grains.find({ userId: userId }, { fields: { _id: 1 } }).map(grain => grain._id);
+  const sharedGrainIds = db.userApiTokens(userId).map(token => token.grainId);
+  const ownedGrainIds = Grains.find({ userId: userId }, { fields: { _id: 1 } }).map(grain => grain._id);
 
-    return _.uniq(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
-      return new PowerboxOption({
-        _id: "grain-" + grainId,
-        grainId: grainId,
-        uiView: {},
-      });
+  return _.uniq(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
+    return new PowerboxOption({
+      _id: "grain-" + grainId,
+      grainId: grainId,
+      uiView: {},
     });
-  },
+  });
+},
 
-  "12214421258504904768"(db, userId, value) {  // IpNetwork
-    if (Meteor.users.findOne(userId).isAdmin) {
-      return [
-        new PowerboxOption({
-          _id: "frontendref-ipnetwork",
-          frontendRef: { ipNetwork: true },
-        }),
-      ];
-    } else {
-      return [];
-    }
-  },
+specialCaseTypes[Ip.IpNetwork.typeId] = function (db, userId, value) {
+  if (Meteor.users.findOne(userId).isAdmin) {
+    return [
+      new PowerboxOption({
+        _id: "frontendref-ipnetwork",
+        frontendRef: { ipNetwork: true },
+      }),
+    ];
+  } else {
+    return [];
+  }
+},
 
-  "16369547182874744570"(db, userId, value) {  // IpInterface
-    if (Meteor.users.findOne(userId).isAdmin) {
-      return [
-        new PowerboxOption({
-          _id: "frontendref-ipinterface",
-          frontendRef: { ipInterface: true },
-        }),
-      ];
-    } else {
-      return [];
-    }
-  },
-};
+specialCaseTypes[Ip.IpInterface.typeId] = function (db, userId, value) {
+  if (Meteor.users.findOne(userId).isAdmin) {
+    return [
+      new PowerboxOption({
+        _id: "frontendref-ipinterface",
+        frontendRef: { ipInterface: true },
+      }),
+    ];
+  } else {
+    return [];
+  }
+},
 
 Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
   // Performs a powerbox query, returning options to present to the user in the powerbox.

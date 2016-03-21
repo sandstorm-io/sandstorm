@@ -272,7 +272,7 @@ Meteor.methods({
           to: email,
           from: from,
           subject: subject,
-          text: message.replace(/\$KEY/g, origin + Router.routes.signup.path({ key: key })),
+          text: message.replace(/\$KEY/g, origin + "/signup/" + key),
         });
         SignupKeys.update(key, { $set: { definitelySent: true } });
       }

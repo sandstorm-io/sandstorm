@@ -1308,8 +1308,8 @@ Meteor.startup(function () {
       check(powerboxRequest, {
         // TODO: be more strict, and check more fields, once the test apps are more conformant
         rpcId: Match.Any,
-        query: Match.Optional([Object]), // TODO: be more precise, and also make non-optional once tests are updated to provide a query
-        saveLabel: Match.Optional(String),
+        query: Match.Optional([String]),
+        saveLabel: Match.Optional(Match.ObjectIncluding({ defaultText: String })),
       });
 
       const powerboxRequestInfo = {

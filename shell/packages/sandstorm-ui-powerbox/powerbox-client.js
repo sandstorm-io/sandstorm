@@ -1,3 +1,21 @@
+// Sandstorm - Personal Cloud Sandbox
+// Copyright (c) 2016 Sandstorm Development Group, Inc. and contributors
+// All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+const PowerboxOptions = new Mongo.Collection("powerboxOptions");
+
 SandstormPowerboxRequest = class SandstormPowerboxRequest {
   constructor(db, requestInfo) {
     check(requestInfo, Match.ObjectIncluding({
@@ -5,7 +23,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
       origin: Match.Any,
       rpcId: Match.Any,
       // For reasons I don't understand, Match.Optional does not work here.
-      query: Match.OneOf(undefined, [Object]),
+      query: Match.OneOf(undefined, [String]),
       saveLabel: Match.Optional(Match.Any),
       sessionId: String,
       grainId: String,
@@ -21,6 +39,14 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     // State to track UI status.
     this._filter = new ReactiveVar("");
     this._selectedProvider = new ReactiveVar(undefined);
+
+    this._requestId = Random.id();
+  }
+
+  subscribe(tmpl) {
+    if (this._requestInfo.query) {
+      tmpl.subscribe("powerboxOptions", this._requestId, this._requestInfo.query);
+    }
   }
 
   finalize() {
@@ -33,95 +59,10 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     }
   }
 
-  hex64ToDecimal(n) {
-    if (typeof n != "string") {
-      throw new Error("Expected string.");
-    }
-
-    if (n.length != 18 || !n.match(/0x[0-9a-fA-F]{16}/)) {
-      throw new Error("Expected '0x' followed by 16 hexadecimal digits");
-    }
-
-    let upper32 = parseInt(n.substring(0, 10));
-    let lower32 = parseInt("0x" + n.substring(10, 18));
-
-    let result = "";
-    for (let exponent = 0; exponent < 22; exponent += 1) {
-      const w = Math.floor(upper32 / 10);
-      const x = upper32 % 10;
-
-      const lowerPlusRemainder = (x * Math.pow(2, 32)) + lower32;
-      const y = Math.floor(lowerPlusRemainder / 10);
-      const z = lowerPlusRemainder % 10;
-
-      result = z.toString() + result;
-
-      upper32 = w;
-      lower32 = y;
-
-      if (upper32 == 0 && lower32 == 0) {
-        break;
-      }
-    }
-
-    return result;
-  }
-
-  decimalify(interfaceId) {
-    if (interfaceId.lastIndexOf("0x", 0) === 0 && interfaceId.length === 18) {
-      try {
-        return this.hex64ToDecimal(interfaceId);
-      } catch (e) {
-        return interfaceId;
-      }
-    }
-
-    return interfaceId;
-  }
-
-  interfaceIdsMatch(a, b) {
-    // Compares two interface IDs which may be either decimal strings or 0x-prefixed hexadecimal
-    // strings.  Strictly speaking, node-capnp would also accept octal strings, but there's not
-    // a great reason for wanting anything besides hex or decimal here.
-    return this.decimalify(a) === this.decimalify(b);
-  }
-
-  requestedInterfaceMatchesTag(target) {
-    // This whole function should probably be migrated to use the powerbox interface matching code,
-    // once that exists.
-
-    // target is (the JS equivalent of) a PowerboxDescriptor.Tag struct.
-    check(target, {
-      id: String,
-      value: Match.Optional(Match.Any),
-    });
-    if (!this._requestInfo.query) return false;
-    for (let i = 0; i < this._requestInfo.query.length; i++) {
-      const powerboxDescriptor = this._requestInfo.query[i];
-      const tags = powerboxDescriptor.tags;
-      const quality = powerboxDescriptor.quality || "acceptable";
-      if (quality === "acceptable" || quality === "preferred") {
-        for (let j = 0; j < tags.length; j++) {
-          const tag = tags[j];
-          // TODO: implement the more precise request matching algorithm in grain.capnp
-          // which also considers tag values
-          if (tag.id) {
-            if (this.interfaceIdsMatch(tag.id, target.id)) {
-              return true;
-            }
-          }
-        }
-      }
-    }
-
-    return false;
-  }
-
   completeUiView(roleAssignment) {
     const fulfillingProvider = this._selectedProvider.get();
     if (fulfillingProvider.type === "frontendref-uiview") {
       const fulfillingGrainId = fulfillingProvider.grainId;
-      const fulfillingApiToken = fulfillingProvider.apiToken; // Possibly irrelevant?
       const fulfillingGrainTitle = fulfillingProvider.title;
 
       const saveLabel = this._requestInfo.saveLabel || { defaultText: fulfillingGrainTitle };
@@ -151,12 +92,8 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
             this._requestInfo.source.postMessage({
               rpcId: this._requestInfo.rpcId,
               token: apiToken,
-              descriptor: {
-                tags: [
-                  { id: "15831515641881813735" }, // UiView
-                ],
-                quality: "acceptable",
-              },
+              // encoded/packed/base64url of (tags = [(id = 15831515641881813735)])
+              descriptor: "EAZQAQEAABEBF1EEAQH_5-Jn6pjXtNsAAAA",
             }, this._requestInfo.origin);
             // Completion event closes popup.
             this._requestInfo.onCompleted();
@@ -168,18 +105,22 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     }
   }
 
-  selectGrain(grainCard) {
+  selectGrain(grainCard, viewInfo) {
+    if (viewInfo.permissions) indexElements(viewInfo.permissions);
+    // It's essential that we index the roles *before* hiding obsolete roles,
+    // or else we'll produce the incorrect roleAssignment for roles that are
+    // described after obsolete roles in the pkgdef.
+    if (viewInfo.roles) indexElements(viewInfo.roles);
+    viewInfo.roles = removeObsolete(viewInfo.roles);
+
     this._selectedProvider.set({
       type: "frontendref-uiview",
       grainId: grainCard.grainId,
       title: grainCard.title,
       templateName: "powerboxProviderUiView",
       templateData: () => {
-        const grain = this._db.collections.grains.findOne(grainCard.grainId);
-        const viewInfo = grain.cachedViewInfo;
-        this.annotateViewInfo(viewInfo);
         return {
-          _id: grainCard.grainId,
+          _id: grainCard._id,
           title: grainCard.title,
           appTitle: grainCard.appTitle,
           iconSrc: grainCard.iconSrc,
@@ -193,252 +134,133 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
     });
   }
 
-  selectApiToken(apiTokenCard) {
-    Meteor.call("getViewInfoForApiToken", apiTokenCard._id, (err, result) => {
-      if (err) {
-        console.log(err);
-        this._error.set(err.toString());
-      } else {
-        const viewInfo = result;
-        this.annotateViewInfo(viewInfo);
-        this._selectedProvider.set({
-          type: "frontendref-uiview",
-          grainId: apiTokenCard.grainId,
-          apiToken: apiTokenCard._id,
-          title: apiTokenCard.title,
-          templateName: "powerboxProviderUiView",
-          templateData: () => {
-            return {
-              _id: apiTokenCard._id,
-              title: apiTokenCard.title,
-              appTitle: apiTokenCard.appTitle,
-              iconSrc: apiTokenCard.iconSrc,
-              lastUsed: apiTokenCard.lastUsed,
-              viewInfo: viewInfo,
-              onComplete: (roleAssignment) => {
-                this.completeUiView(roleAssignment);
-              },
-            };
-          },
-        });
-      }
-    });
-  }
-
-  annotateViewInfo(viewInfo) {
-    if (viewInfo.permissions) indexElements(viewInfo.permissions);
-    // It's essential that we index the roles *before* hiding obsolete roles,
-    // or else we'll produce the incorrect roleAssignment for roles that are
-    // described after obsolete roles in the pkgdef.
-    if (viewInfo.roles) indexElements(viewInfo.roles);
-    viewInfo.roles = removeObsolete(viewInfo.roles);
-  }
-
   filteredCardData() {
-    // TODO(soon): also pull in card data from grains that purport to implement the interface requested.
+    // Returns an array of "cards" (options from which the user can pick), sorted in the order in
+    // which they should appear. Each has the fields described in the comments for
+    // Meteor.publish("powerboxOptions") in powerbox-server.js as well as the following fields
+    // added client-side:
+    //
+    // _id: Unique identifier for this card among the results.
+    // title: Human-readable title string.
+    // appTitle (optional): Human-readable title of the app serving this option.
+    // iconSrc (optional): URL of an icon.
+    // lastUsed (optional): Date when this item was last accessed.
+    // callback: Function returning a function to call if this card is chosen. (The double-function
+    //     is necessary because when a function value is named in a Blaze template, Blaze calls
+    //     the function, thinking it is a helper.)
 
-    if (this.requestedInterfaceMatchesTag({ id: "15831515641881813735" })) { // UiView
-      return this.uiViewCardData();
-    } else if (this.requestedInterfaceMatchesTag({ id: "12214421258504904768" })) {
-      return this.ipNetworkCardData();
-    } else if (this.requestedInterfaceMatchesTag({ id: "16369547182874744570" })) {
-      return this.ipInterfaceCardData();
-    } else {
-      return [];
-    }
-  }
+    const cards = PowerboxOptions.find({ requestId: this._requestId }).map(cardData => {
+      // Use ID as title if we don't find anything better.
+      cardData.title = cardData._id;
 
-  ipNetworkCardData() {
-    const cards = [];
-    if (this._db.isAdmin()) {
-      cards.push({
-        _id: "frontendref-ipnetwork",
-        title: "Admin: grant all outgoing network access",
-        iconSrc: "/settings.svg",
-        callback: () => {
-          // Because Blaze always invokes functions when referenced as values from the data context, we
-          // need to double-wrap this callback.
-          return () => {
-            this.completeNewIpNetwork();
-          };
-        },
-      });
-    }
-
-    return cards;
-  }
-
-  completeNewIpNetwork() {
-    Meteor.call("newFrontendRef",
-      this._requestInfo.sessionId,
-      { ipNetwork: true },
-      (err, token) => {
-        if (err) {
-          console.log(err);
-          this._error.set(err.toString());
-        } else {
-          this._completed = true;
-          this._requestInfo.source.postMessage({
-            rpcId: this._requestInfo.rpcId,
-            token: token,
-            descriptor: {
-              tags: [
-                { id: "12214421258504904768" }, // IpNetwork
-              ],
-              quality: "acceptable",
-            },
-          }, this._requestInfo.origin);
-          // Completion event closes popup.
-          this._requestInfo.onCompleted();
+      if (cardData.grainId) {
+        this.extendWithGrainInfo(cardData);
+      } else if (cardData.frontendRef) {
+        // TODO(cleanup): English text probably desn't belong in source files.
+        if (cardData.frontendRef.ipNetwork) {
+          cardData.title = "Admin: grant all outgoing network access";
+        } else if (cardData.frontendRef.ipInterface) {
+          cardData.title = "Admin: grant all incoming network access";
         }
+
+        cardData.callback = () => () => {
+          return this.completeNewFrontendRef(cardData.frontendRef, cardData.title);
+        };
       }
-    );
-  }
 
-  ipInterfaceCardData() {
-    const cards = [];
-    if (this._db.isAdmin()) {
-      cards.push({
-        _id: "frontendref-ipinterface",
-        title: "Admin: grant all incoming network access",
-        iconSrc: "/settings.svg",
-        callback: () => {
-          // Because Blaze always invokes functions when referenced as values from the data context, we
-          // need to double-wrap this callback.
-          return () => {
-            this.completeNewIpInterface();
-          };
-        },
-      });
-    }
-
-    return cards;
-  }
-
-  completeNewIpInterface() {
-    Meteor.call("newFrontendRef",
-      this._requestInfo.sessionId,
-      { ipInterface: true },
-      (err, token) => {
-        if (err) {
-          console.log(err);
-          this._error.set(err.toString());
-        } else {
-          this._completed = true;
-          this._requestInfo.source.postMessage({
-            rpcId: this._requestInfo.rpcId,
-            token: token,
-            descriptor: {
-              tags: [
-                { id: "16369547182874744570" }, // IpInterface
-              ],
-              quality: "acceptable",
-            },
-          }, this._requestInfo.origin);
-          // Completion event closes popup.
-          this._requestInfo.onCompleted();
-        }
-      }
-    );
-  }
-
-  uiViewCardData() {
-    // Map user grains into card data
-    const ownedGrains = this._db.currentUserGrains().fetch();
-    const ownedGrainIds = _.pluck(ownedGrains, "_id");
-    const ownedGrainCardData = mapGrainsToGrainCardData(ownedGrains, this._db, this.selectGrain.bind(this));
-
-    // Also map API tokens.  Be careful to only include tokens for grains that aren't in the grain
-    // list, and only include one token for each grain.
-    const apiTokens = this._db.currentUserApiTokens().fetch();
-    const tokensForGrain = _.groupBy(apiTokens, "grainId");
-    const grainIdsForApiTokens = Object.keys(tokensForGrain);
-    const grainIdsForApiTokensForNonOwnedGrains = _.filter(grainIdsForApiTokens, (grainId) => {
-      return !_.contains(ownedGrainIds, grainId);
+      return cardData;
     });
-    const tokensToList = grainIdsForApiTokensForNonOwnedGrains.map((grainId) => {
-      return _.sortBy(tokensForGrain[grainId], function (t) {
-        if (t.owner && t.owner.user && t.owner.user.lastUsed) {
-          return -t.owner.user.lastUsed;
-        } else {
-          return 0;
-        }
-      })[0];
-    });
-    const apiTokenCardData = mapApiTokensToGrainCardData(tokensToList, this._db, this.selectApiToken.bind(this));
 
-    // Filter cards to match search, then sort cards by recency of usage
-    const sortedFilteredCardData = _.chain([ownedGrainCardData, apiTokenCardData])
-        .flatten()
+    const now = new Date();
+    return _.chain(cards)
         .filter(compileMatchFilter(this._filter.get()))
-        .sortBy((card) => card.lastUsed)
-        .reverse()
+        .sortBy(card => -(card.lastUsed || now).getTime())
         .value();
+  }
 
-    return sortedFilteredCardData;
-  };
-};
+  extendWithGrainInfo(cardData) {
+    // Extend a grain card with display info.
 
-const mapApiTokensToGrainCardData = function (apiTokens, db, selectApiToken) {
-  const staticAssetHost = db.makeWildcardHost("static");
-  return apiTokens.map((apiToken) => {
-    const ownerData = apiToken.owner.user;
-    const grainInfo = ownerData.denormalizedGrainMetadata;
-    const appTitle = (grainInfo && grainInfo.appTitle && grainInfo.appTitle.defaultText) || "";
-    const iconSrc = (grainInfo && grainInfo.icon && grainInfo.icon.assetId) ?
-        (window.location.protocol + "//" + staticAssetHost + "/" + grainInfo.icon.assetId) :
-        Identicon.identiconForApp((grainInfo && grainInfo.appId) || "00000000000000000000000000000000");
-    const grainCard = {
-      type: "apiToken",
-      _id: apiToken._id,
-      grainId: apiToken.grainId,
-      title: ownerData.title,
-      appTitle: appTitle,
-      iconSrc: iconSrc,
-      lastUsed: ownerData.lastUsed,
-    };
-    grainCard.callback = function () {
+    // Look for an owned grain.
+    const grain = this._db.collections.grains.findOne(cardData.grainId);
+    if (grain && grain.userId === Meteor.userId()) {
+      cardData.title = grain.title;
+      const pkg = this._db.collections.packages.findOne(grain.packageId);
+      cardData.appTitle = pkg ? SandstormDb.appNameFromPackage(pkg) : "";
+      cardData.iconSrc = pkg ? this._db.iconSrcForPackage(pkg, "grain") : "";
+      cardData.lastUsed = grain.lastUsed;
+
       // Because Blaze always invokes functions when referenced as values from the data context, we
       // need to double-wrap this callback.
-      return function () {
-        selectApiToken(grainCard);
+      cardData.callback = () => () => {
+        return this.selectGrain(cardData, grain.cachedViewInfo || {});
       };
-    };
 
-    return grainCard;
-  });
-};
+      return;
+    }
 
-const mapGrainsToGrainCardData = function (grains, db, selectGrain) {
-  const packageIds = _.chain(grains)
-      .pluck("packageId")
-      .uniq()
-      .value();
-  const packages = db.collections.packages.find({ _id: { $in: packageIds } }).fetch();
-  const packagesById = _.indexBy(packages, "_id");
-  return grains.map(function (grain) {
-    const pkg = packagesById[grain.packageId];
-    const iconSrc = pkg ? db.iconSrcForPackage(pkg, "grain") : "";
-    const appTitle = pkg ? SandstormDb.appNameFromPackage(pkg) : "";
-    const cardData = {
-      type: "grain",
-      _id: grain._id,
-      grainId: grain._id,
-      title: grain.title,
-      appTitle: appTitle,
-      iconSrc: iconSrc,
-      lastUsed: grain.lastUsed,
-    };
-    cardData.callback = function () {
-      // Because Blaze always invokes functions when referenced as values from the data context, we
-      // need to double-wrap this callback.
-      return function () {
-        selectGrain(cardData);
+    // Look for an ApiToken.
+    const apiToken = this._db.collections.apiTokens.findOne(
+        { grainId: cardData.grainId, "owner.user": { $exists: true } });
+    if (apiToken) {
+      const ownerData = apiToken.owner.user;
+      const grainInfo = ownerData.denormalizedGrainMetadata;
+      const staticAssetHost = this._db.makeWildcardHost("static");
+
+      cardData.title = ownerData.title;
+      cardData.appTitle =
+          (grainInfo && grainInfo.appTitle && grainInfo.appTitle.defaultText) || "";
+      cardData.iconSrc = (grainInfo && grainInfo.icon && grainInfo.icon.assetId) ?
+          (window.location.protocol + "//" + staticAssetHost + "/" + grainInfo.icon.assetId) :
+          Identicon.identiconForApp(
+              (grainInfo && grainInfo.appId) || "00000000000000000000000000000000");
+      cardData.lastUsed = ownerData.lastUsed;
+      cardData.apiTokenId = apiToken._id;
+
+      cardData.callback = () => () => {
+        Meteor.call("getViewInfoForApiToken", grainCard.tokenId, (err, result) => {
+          if (err) {
+            console.log(err);
+            this._error.set(err.toString());
+          } else {
+            this.selectGrain(grainCard, result || {});
+          }
+        });
       };
-    };
 
-    return cardData;
-  });
+      return;
+    }
+
+    // Didn't find either. Don't know why this option was returned but oh well.
+    cardData.callback = () => () => {
+      this.selectGrain(cardData, {});
+    };
+  }
+
+  completeNewFrontendRef(frontendRef, defaultLabel) {
+    const saveLabel = this._requestInfo.saveLabel || { defaultText: defaultLabel };
+
+    Meteor.call("newFrontendRef",
+      this._requestInfo.sessionId,
+      frontendRef,
+      saveLabel,
+      (err, result) => {
+        if (err) {
+          console.log(err);
+          this._error.set(err.toString());
+        } else {
+          this._completed = true;
+          this._requestInfo.source.postMessage({
+            rpcId: this._requestInfo.rpcId,
+            token: result.sturdyRef,
+            descriptor: result.descriptor,
+          }, this._requestInfo.origin);
+          // Completion event closes popup.
+          this._requestInfo.onCompleted();
+        }
+      }
+    );
+  }
 };
 
 const matchesAppOrGrainTitle = function (needle, cardData) {
@@ -476,6 +298,13 @@ const removeObsolete = function (arr) {
   });
 };
 
+Template.powerboxRequest.onCreated(function () {
+  this.autorun(() => {
+    const request = this.data.get();
+    if (request) request.subscribe(this);
+  });
+});
+
 Template.powerboxRequest.onRendered(function () {
   const searchbar = this.findAll(".search-bar")[0];
   if (searchbar) searchbar.focus();
@@ -500,15 +329,6 @@ Template.powerboxRequest.helpers({
   selectedProviderTemplateData: function () {
     const ref = Template.instance().data.get();
     return ref && ref._selectedProvider && ref._selectedProvider.get().templateData();
-  },
-
-  requestedInterfaceIsImplementedByFrontendRef: function () {
-    const ref = Template.instance().data.get();
-    return (
-      ref.requestedInterfaceMatchesTag({ id: "12214421258504904768" }) || // IpNetwork
-      ref.requestedInterfaceMatchesTag({ id: "16369547182874744570" }) || // IpInterface
-      ref.requestedInterfaceMatchesTag({ id: "15831515641881813735" }) // UiView
-    );
   },
 
   showWebkeyInput: function () {
@@ -585,8 +405,8 @@ Template.powerboxProviderUiView.events({
 });
 
 Template.powerboxCardButton.events({
-  "click .card-button": function (event) {
-    const ref = Template.instance().data;
+  "click .card-button": function (event, tmpl) {
+    const ref = tmpl.data;
     ref && ref.onClick && ref.onClick();
   },
 });

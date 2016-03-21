@@ -8,5 +8,6 @@
   "maximumLineLength": 10000,
   "requirePaddingNewLinesBeforeLineComments": false,
   "requireShorthandArrowFunctions": false,
+  "disallowQuotedKeysInObjects": false,  # https://github.com/jscs-dev/node-jscs/issues/2183
   "excludeFiles": ['.meteor', '**/node_modules', 'public/*']
 }

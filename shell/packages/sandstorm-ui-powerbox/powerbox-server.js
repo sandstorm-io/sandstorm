@@ -1,16 +1,61 @@
+// Sandstorm - Personal Cloud Sandbox
+// Copyright (c) 2016 Sandstorm Development Group, Inc. and contributors
+// All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+const Capnp = Npm.require("capnp");
+const Grain = Capnp.importSystem("sandstorm/grain.capnp");
+const Ip = Capnp.importSystem("sandstorm/ip.capnp");
+
+function encodePowerboxDescriptor(desc) {
+  return Capnp.serializePacked(Grain.PowerboxDescriptor, desc)
+              .toString("base64")
+              .replace(/\+/g, "-")
+              .replace(/\//g, "_");
+}
+
 Meteor.methods({
-  newFrontendRef(sessionId, frontendRefVariety) {
+  newFrontendRef(sessionId, frontendRefVariety, saveLabel) {
     // Checks if the requester is an admin, and if so, provides a new frontendref of the desired
     // variety, provided by the requesting user, owned by the grain for this session.
     check(sessionId, String);
     check(frontendRefVariety, Match.OneOf(
-      { ipNetwork: Boolean },
-      { ipInterface: Boolean },
+      { ipNetwork: true },
+      { ipInterface: true },
     ));
+    check(saveLabel, {
+      defaultText: String,
+      localizations: Match.Optional([{ locale: String, text: String }]),
+    });
 
     const db = this.connection.sandstormDb;
-    if (!db.isAdmin(this.userId)) {
-      throw new Meteor.Error(403, "User must be an admin to powerbox offer frontendrefs");
+
+    let descriptor;
+    if (frontendRefVariety.ipNetwork) {
+      if (!db.isAdmin(this.userId)) {
+        throw new Meteor.Error(403, "User must be an admin to powerbox offer IpNetwork");
+      }
+
+      descriptor = encodePowerboxDescriptor({ tags: [{ id: Ip.IpNetwork.typeId }] });
+    } else if (frontendRefVariety.ipInterface) {
+      if (!db.isAdmin(this.userId)) {
+        throw new Meteor.Error(403, "User must be an admin to powerbox offer IpInterface");
+      }
+
+      descriptor = encodePowerboxDescriptor({ tags: [{ id: Ip.IpInterface.typeId }] });
+    } else {
+      throw new Meteor.Error(500, "Unimplemented frontendRef type");
     }
 
     const session = db.collections.sessions.findOne(sessionId);
@@ -22,7 +67,7 @@ Meteor.methods({
     const apiTokenOwner = {
       grain: {
         grainId: grainId,
-        saveLabel: { defaultText: "Admin-provided raw outgoing network access" },
+        saveLabel: saveLabel,
         introducerIdentity: session.identityId,
       },
     };
@@ -31,8 +76,237 @@ Meteor.methods({
       { userIsAdmin: Meteor.userId() },
     ];
 
-    // TODO: refactor: reaches out into core.js
-    const sturdyRef = waitPromise(saveFrontendRef(frontendRefVariety, apiTokenOwner, requirements)).sturdyRef;
-    return sturdyRef.toString();
+    // TODO(cleanup): refactor: reaches out into core.js
+    const sturdyRef = waitPromise(saveFrontendRef(frontendRefVariety, apiTokenOwner, requirements)).sturdyRef.toString();
+    return { sturdyRef, descriptor };
   },
+});
+
+class PowerboxOption {
+  constructor(fields) {
+    _.extend(this, fields);
+  }
+
+  intersect(other) {
+    // Intersect two options with the same ID. Used when combining matches from multiple tags
+    // in the same descriptor. The tags are a conjunction.
+    //
+    // Returns true if there was any overlap, or false if there was no overlap and therefore the
+    // option should be dropped.
+
+    if (other._id != this._id) {
+      throw new Error("can only merge options with the same ID");
+    }
+
+    if (other.grainId) {
+      if (this.uiView && !other.uiView) delete this.uiView;
+      if (this.hostedObject && !other.hostedObject) delete this.hostedObject;
+      return !!(this.uiView || this.hostedObject);
+    } else {
+      // No intersection logic needed for other types.
+      return true;
+    }
+  }
+
+  union(other) {
+    // Union two options with the same ID. Used when combining matches from multiple descriptors.
+    // The descriptors are a disjunction.
+
+    if (other._id != this._id) {
+      throw new Error("can only merge options with the same ID");
+    }
+
+    if (other.grainId) {
+      if (!this.uiView && other.uiView) this.uiView = other.uiView;
+      if (!this.hostedObject && other.hostedObject) this.hostedObject = other.hostedObject;
+    }
+  }
+
+  subtract(other) {
+    // Remove `other` from this. Used when `other` is a match deemed unacceptable. Returns true
+    // if there's anything left, false otherwise.
+
+    if (other._id != this._id) {
+      throw new Error("can only merge options with the same ID");
+    }
+
+    if (other.grainId) {
+      if (this.uiView && other.uiView) delete this.uiView;
+      if (this.hostedObject && other.hostedObject) delete this.hostedObject;
+      return !!(this.uiView || this.hostedObject);
+    } else {
+      return false;
+    }
+  }
+}
+
+const specialCaseTypes = {};
+// This object maps tag IDs to functions which return lists of matches for that tag.
+
+specialCaseTypes[Grain.UiView.typeId] = function (db, userId, value) {
+  if (!userId) return [];
+
+  // TODO(someday): Allow `value` to specify app IDs to filter for.
+
+  const sharedGrainIds = db.userApiTokens(userId).map(token => token.grainId);
+  const ownedGrainIds = Grains.find({ userId: userId }, { fields: { _id: 1 } }).map(grain => grain._id);
+
+  return _.uniq(sharedGrainIds.concat(ownedGrainIds)).map(grainId => {
+    return new PowerboxOption({
+      _id: "grain-" + grainId,
+      grainId: grainId,
+      uiView: {},
+    });
+  });
+},
+
+specialCaseTypes[Ip.IpNetwork.typeId] = function (db, userId, value) {
+  if (Meteor.users.findOne(userId).isAdmin) {
+    return [
+      new PowerboxOption({
+        _id: "frontendref-ipnetwork",
+        frontendRef: { ipNetwork: true },
+      }),
+    ];
+  } else {
+    return [];
+  }
+},
+
+specialCaseTypes[Ip.IpInterface.typeId] = function (db, userId, value) {
+  if (Meteor.users.findOne(userId).isAdmin) {
+    return [
+      new PowerboxOption({
+        _id: "frontendref-ipinterface",
+        frontendRef: { ipInterface: true },
+      }),
+    ];
+  } else {
+    return [];
+  }
+},
+
+Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
+  // Performs a powerbox query, returning options to present to the user in the powerbox.
+  // `descriptorList` is an array of `PowerboxDescriptor`s, each individually serialized in
+  // packed format and base64-encoded. The publish populates a pseudo-collection called
+  // `powerboxOptions`. Each item has the following fields:
+  //
+  //   _id: Object with two fields: `requestId` (as passed when subscribing) and `optionId` (a
+  //       unique identifier for the option).
+  //   matchQuality: "preferred" or "acceptable" ("unacceptable" options aren't returned).
+  //   frontendRef: If present, selecting this option means creating a simple frontendRef. The
+  //       field value should be passed back to the method `newFrontendRef` verbatim. The format
+  //       of the field is the same as ApiTokens.frontendRef.
+  //   grainId: If present, this option selects a grain to satisfy the request. One or both of
+  //       `uiView` and `hostedObject` will be present. Mutually exclusive with `frontendRef`.
+  //   uiView: If present, this option creates a UiView for a grain. The UI should allow the user
+  //       to choose a role to grant. Only present when `grainId` is also present. `uiView` is an
+  //       object with the fields:
+  //     TODO(someday): Some sort of indication of what options the powerbox should give the user
+  //         as far as which permissions to grant? Unclear if any app would ever want to specify
+  //         permissions when requesting a plain UiView.
+  //   hostedObject: If present, this grain advertises that it publishes capabilities that might
+  //       match the query. If selected, a request session to the grain embedded should be shown
+  //       embedded in the powerbox and the same request should be passed to it. Only present when
+  //       `grainId` is also present. `hostedObject`, when present, is (for now) an empty object.
+
+  const results = {};
+  const db = this.connection.sandstormDb;
+
+  if (descriptorList.length > 0) {
+    const descriptorMatches = descriptorList.map(packedDescriptor => {
+      // Decode the descriptor.
+      // TODO(now): Also single-segment? Canonical?
+
+      // Note: Node's base64 decoder also accepts URL-safe base64, so no need to translate.
+      const descriptor = Capnp.parsePacked(
+          Grain.PowerboxDescriptor, new Buffer(packedDescriptor, "base64"));
+
+      if (!descriptor.tags || descriptor.tags.length === 0) return {};
+
+      // Expand each tag into a match map.
+      const tagMatches = descriptor.tags.map(tag => {
+        const type = specialCaseTypes[tag.id];
+        const result = {};
+
+        if (type) {
+          type(db, this.userId, tag.value).forEach(option => {
+            result[option._id] = option;
+          });
+        }
+
+        return result;
+      });
+
+      // Intersect two tags' matches.
+      const matches = tagMatches.reduce((a, b) => {
+        for (const id in a) {
+          if (id in b) {
+            if (!a[id].intersect(b[id])) {
+              // Empty intersection.
+              delete a[id];
+            }
+          } else {
+            // This match only exists in a, not b, so delete it.
+            delete a[id];
+          }
+        }
+
+        return a;
+      });
+
+      return { descriptor, matches };
+    });
+
+    // TODO(someday): The implementation of matchQuality here is not quite right. In theory, we're
+    //   supposed to compare descriptors to determine which ones are more specific than which
+    //   others, and prefer the most-specific match. For now, though, I've implemented a heuristic:
+    //   consider each descriptor in order. If it is "unacceptable", have it cancel out any
+    //   matches seen previously. Otherwise, take the maximum match quality. This will usually
+    //   produce the same results as long as "unacceptable" descriptors are placed last in the
+    //   list.
+
+    const matches = descriptorMatches.reduce((finalMatches, clause) => {
+      if (clause.matchQuality === "unacceptable") {
+        // Remove b's matches from a.
+        for (const id in clause.matches) {
+          if (id in finalMatches) {
+            if (!finalMatches[id].subtract(clause.matches[id])) {
+              delete finalMatches[id];
+            }
+          }
+        }
+
+        return finalMatches;
+      } else {
+        for (const id in clause.matches) {
+          if (id in finalMatches) {
+            finalMatches[id].union(clause.matches[id]);
+          } else {
+            finalMatches[id] = clause.matches[id];
+          }
+
+          if (clause.matchQuality === "preferred") {
+            finalMatches[id].matchQuality = "preferred";
+          }
+        }
+
+        return finalMatches;
+      }
+    }, {});
+
+    for (const id in matches) {
+      if (!matches[id].matchQuality) {
+        matches[id].matchQuality = "acceptable";
+      }
+
+      matches[id].requestId = requestId;
+      this.added("powerboxOptions", id, matches[id]);
+    }
+  }
+
+  // TODO(someday): Make reactive? Seems annoying.
+
+  this.ready();
 });

@@ -189,7 +189,7 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
   //       unique identifier for the option).
   //   matchQuality: "preferred" or "acceptable" ("unacceptable" options aren't returned).
   //   frontendRef: If present, selecting this option means creating a simple frontendRef. The
-  //       field value should be passed back to the method `newFrontendRef` verbatim. The fromat
+  //       field value should be passed back to the method `newFrontendRef` verbatim. The format
   //       of the field is the same as ApiTokens.frontendRef.
   //   grainId: If present, this option selects a grain to satisfy the request. One or both of
   //       `uiView` and `hostedObject` will be present. Mutually exclusive with `frontendRef`.
@@ -259,7 +259,7 @@ Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
     //   others, and prefer the most-specific match. For now, though, I've implemented a heuristic:
     //   consider each descriptor in order. If it is "unacceptable", have it cancel out any
     //   matches seen previously. Otherwise, take the maximum match quality. This will usually
-    //   produce the same results as long as "unacceptable" descrtiptors are placed last in the
+    //   produce the same results as long as "unacceptable" descriptors are placed last in the
     //   list.
 
     const matches = descriptorMatches.reduce((finalMatches, clause) => {

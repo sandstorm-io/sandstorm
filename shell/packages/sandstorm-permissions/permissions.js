@@ -430,7 +430,7 @@ const vertexPattern = Match.OneOf({ token: Match.ObjectIncluding({ _id: String, 
 //   where only a single grain's shares need to be considered, it feels weird to think of the
 //   grain ID as being the primary distinguishing feature of the vertex.
 
-function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
+function computePermissionFlowToVertex(context, vertex, permissionSet, viewInfo) {
   // Computes the flow of the permissions in `permissionSet` from the grain owner to `vertex`.
   // Returns a PermissionFlow representing all permissions flowing into the vertex.
   //
@@ -449,14 +449,10 @@ function backpropagateVertex(context, vertex, permissionSet, viewInfo) {
   // (as if they'd been revoked).
   //
   // Note that we perform the graph traversal "backwards": We start from the destination vertex
-  // and search towards the grain owner. Hence "backpropagate". The reason we do this is because
-  // with typical sharing graphs, this allows us to avoid considering much of the graph. Sharing
-  // graphs typically involve lots of "fan out", so if we searched down from the owner we would
-  // end up touching many irrelevant leaf nodes, whereas searching up from the destination avoids
-  // this.
-  //
-  // TODO(cleanup): Consider renaming to "computePermissionFlowToVertex()". "backpropagate"
-  //     describes an implementation detail.
+  // and search towards the grain owner. The reason we do this is because with typical sharing
+  // graphs, this allows us to avoid considering much of the graph. Sharing graphs typically
+  // involve lots of "fan out", so if we searched down from the owner we would end up touching
+  // many irrelevant leaf nodes, whereas searching up from the destination avoids this.
 
   check(context, Context);
   check(vertex, vertexPattern);
@@ -733,7 +729,7 @@ function findAllMinimalCovers(permissionSets, desiredPermissions) {
 
 function normalize(permissionFlow, desiredPermissions) {
   // `permissionFlow` is a PermissionFlow representing the permissions flowing from a
-  // grain owner to a vertex (e.g. as returned by `backpropagateVertex()`).
+  // grain owner to a vertex (e.g. as returned by `computePermissionFlowToVertex()`).
   //
   // `desiredPermissions` is the set of permissions that we are currently interested in.
   //
@@ -857,7 +853,7 @@ function proveClauses(db, context, goalClauses) {
     grainsFullyQueried[grainId] = true;
 
     const viewInfo = context.grains[grainId].cachedViewInfo || {};
-    const result = backpropagateVertex(context, goal.vertex, goal.permissions, viewInfo);
+    const result = computePermissionFlowToVertex(context, goal.vertex, goal.permissions, viewInfo);
     const newGoals = normalize(result, goal.permissions);
 
     // TODO(perf): We might end up trying to prove the same `goal` many times, so it probably makes
@@ -903,7 +899,7 @@ SandstormPermissions.mayOpenGrain = function (db, vertex) {
   const context = new Context();
   const emptyPermissions = new PermissionSet([]);
   context.addGrain(db, grainId);
-  const result = backpropagateVertex(context, vertex, emptyPermissions, {});
+  const result = computePermissionFlowToVertex(context, vertex, emptyPermissions, {});
   const normalizedResult = normalize(result, emptyPermissions);
   const proven = proveClauses(db, context, normalizedResult);
   return "yes" in proven;
@@ -945,7 +941,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
   for (let attemptCount = 0; attemptCount < 3; ++attemptCount) {
     const context = new Context();
     context.addGrain(db, grainId);
-    const result = backpropagateVertex(context, vertex,
+    const result = computePermissionFlowToVertex(context, vertex,
                                        PermissionSet.fromRoleAssignment({ allAccess:null },
                                                                         viewInfo),
                                        viewInfo);
@@ -1040,9 +1036,9 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
     // TODO(someday): Also account for possible concurrent linking/unlinking of identities,
     //   and grains going from (legacy) public to private.
 
-    const newResult = backpropagateVertex(newContext, vertex,
-                                          resultPermissions,
-                                          viewInfo);
+    const newResult = computePermissionFlowToVertex(newContext, vertex,
+                                                    resultPermissions,
+                                                    viewInfo);
 
     const normalizedNewResult = normalize(newResult, resultPermissions);
     const proofResult = proveClauses(null, newContext, normalizedNewResult);

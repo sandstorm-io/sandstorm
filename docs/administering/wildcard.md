@@ -1,13 +1,84 @@
-To run Sandstorm, you must assign it a wildcard host, in which it can
-generate new hostnames as-needed. For instance, you might set up
-Sandstorm to run at `example.com` and assign it the wildcard
-`*.example.com`.
+To run Sandstorm, you must assign it a wildcard host, in which it can generate new hostnames
+as-needed. For instance, you might set up Sandstorm to run at `example.com` and assign it the
+wildcard `*.example.com`.
 
-Setting up wildcard DNS and especially SSL can be difficult and
-costly, which commonly leads to the question: "Why does Sandstorm need
-this?" This page seeks to answer the questions.
+This page explains how to configure this and why it is needed.
 
-## It's all about security.
+## How to configure and test your own wildcard DNS record for Sandstorm
+
+If your Sandstorm server is at `example.com` you might have the following lines in your
+`/opt/sandstorm/sandstorm.conf`.
+
+```
+BASE_URL=https://example.com
+WILDCARD_HOST=*.example.com
+```
+
+In order for Sandstorm grains to load, DNS lookups for domains within the `WILDCARD_HOST` need to
+resolve to your Sandstorm server. You can manually test this on many systems. Open a terminal and
+run this comand.
+
+```
+host arbitrary.example.com
+```
+
+You should see a message like:
+
+```
+arbitrary.example.com has address 93.184.216.34
+```
+
+If you see something like that, then a `WILDCARD_HOST` of `*.example.com` exists. The IP address
+printed by the `host` command should match the IP address for your Sandstorm server. If `host` tells
+you the domain is `not found: 3(NXDOMAIN)`, then you probably need to adjust your DNS zone to create
+a wildcard record. If your system does not have `host`, you can try `dig` or `ping` which serve
+similar functions.
+
+To learn how to add a new wildcard DNS record, consider reading this [tutorial on setting up
+Sandstorm using the DigitalOcean DNS control
+panel](https://www.digitalocean.com/community/tutorials/how-to-install-sandstorm-on-ubuntu-14-04). Your
+domain's DNS configuration tool might look different, but the fundamentals are probably the
+same. Text-based DNS configuration systems might need a record like the following, for a Sandstorm
+server running at 93.184.216.34.
+
+```
+* IN A 93.184.216.34
+```
+
+Once you add a wildcard record, you can re-run the test with `host` to see if your wildcard record
+is working. You can try looking up other subdomains than `arbitrary`, such as `arbitrary2`, to make
+sure that all subdomains resolve to the right IP address.
+
+**Sandstorm can use a BASE_URL within a wildcard DNS record.** If `*.example.com` maps to the right
+IP address, then you can configure Sandstorm to use a BASE_URL that is part of a wildcard DNS
+record. This can be convenient if you already have one wildcard DNS record. Note that the
+`WILDCARD_HOST` and the `BASE_URL` must be within the same domain name because otherwise web
+browsers may prevent Sandstorm from setting a cookie with the wildcard subdomains, as part of a web
+browser privacy protection feature (third-party cookies). One such configuration would look like
+this.
+
+```
+BASE_URL=https://sandstorm.example.com
+WILDCARD_HOST=sandstorm-*.example.com
+```
+
+**Raw IP address users can use xip.io.** If your Sandstorm BASE_URL is a base IP address, consider
+reading about [how to use Sandstorm with an internal IP address and
+xip.io](faq.md#how-do-i-use-sandstorm-with-an-internal-ip-address).
+
+## local.sandstorm.io and sandcats.io provide wildcard DNS
+
+If you are using `vagrant-spk` to develop Sandstorm apps, or are developing Sandstorm itself, you
+will likely use `local.sandstorm.io` as the `BASE_URL` for your Sandstorm server. Sandstorm.io (the
+company behind Sandstorm) maintains `local.sandstorm.io` as a wildcard domain where both
+`local.sandstorm.io` and all of its subdomains (`*.local.sandstorm.io`) point to `127.0.0.1`, the
+same as `localhost`. This allows you to run Sandstorm for development without needing to own a
+domain name or configure wildcard DNS for a subdomain.
+
+Within the `sandcats.io` DNS service, each domain is also a wildcard domain. This allows a
+self-hosted Sandstorm domain to operate correctly.
+
+## Why Sandstorm needs wildcard DNS
 
 Sandstorm is designed to implement strong sandboxing of apps, such
 that users need not worry about the risk that a malicious -- or simply
@@ -18,22 +89,6 @@ we trust Sandstorm to keep things secure."
 
 Using a wildcard host is just one part of [Sandstorm's security
 model](../using/security-practices.md).
-
-## Sandstorm handles this for localhost + sandcats users
-
-Sandstorm runs `local.sandstorm.io` as a wildcard domain where
-both `local.sandstorm.io` and all of its subdomains
-(`*.local.sandstorm.io`) point to `127.0.0.1`, the same as
-`localhost`. This allows you to conveniently run Sandstorm on
-your own computer or a virtual machine for development and
-testing by configuring it to use `local.sandstorm.io` and
-`*.local.sandstorm.io`, without needing to own a domain and
-configure wildcard DNS for a subdomain.
-
-For the `sandcats.io` DNS service, each domain is also a wildcard
-domain. This allows a self-hosted Sandstorm domain to operate
-correctly.
-
 
 ## Frequently-asked questions about wildcards
 

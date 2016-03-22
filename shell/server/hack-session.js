@@ -142,9 +142,8 @@ Meteor.methods({
       throw new Meteor.Error(400, "Invalid webkey: token doesn't match hostname.");
     }
 
-    const cap = restoreInternal(hashSturdyRef(token),
-                                Match.Optional({ webkey: Match.Optional(Match.Any) }), [],
-                                new Buffer(token)).cap;
+    const cap = restoreInternal(new Buffer(token),
+                                Match.Optional({ webkey: Match.Optional(Match.Any) }), []).cap;
     const castedCap = cap.castAs(SystemPersistent);
     const grainOwner = {
       grainId: grainId,

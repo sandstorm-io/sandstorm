@@ -1050,7 +1050,7 @@ limitations under the License.
         <label>LDAP Search Username Field: <input id="ldapSearchUsername" type="text" name="ldapNameField" value="{{ldapSearchUsername}}"></label>
         <label>LDAP Search Bind Dn: (optional, needed if your server doesn't allow unauthenticated searches): <input type="text" name="ldapSearchBindDn" value="{{ldapSearchBindDn}}" placeholder="eg. uid=admin,OU=Users,DC=example,DC=com"></label>
         <label>LDAP Search Bind Password: (optional, needed if specifying bind Dn above): <input type="password" name="ldapSearchBindPassword" value="{{ldapSearchBindPassword}}" ></label>
-        <label>LDAP Search Filter (optional, see <a href="http://www.ietf.org/rfc/rfc2254.txt">RFC2254</a>): <input id="ldapFilter" type="text" name="ldapFilter" value="{{ldapFilter}}" placeholder="eg. (&(email=*@bar.com)(!(ou=students))"></label>
+        <label>LDAP Search Filter (optional, see <a href="https://tools.ietf.org/search/rfc4515">RFC 4515</a>): <input id="ldapFilter" type="text" name="ldapFilter" value="{{ldapFilter}}" placeholder="eg. (&(email=*@bar.com)(!(ou=students))"></label>
         {{/if}}
         <label>LDAP Name Field: <input id="ldapNameField" type="text" name="ldapNameField" value="{{ldapNameField}}"></label></p>
 

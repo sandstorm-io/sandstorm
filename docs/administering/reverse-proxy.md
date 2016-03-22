@@ -19,8 +19,8 @@ This tutorial provides links to sample configuration files where relevant. The e
 configure nginx to listen on ports 80 (HTTP) and 443 (HTTPS). On port 443, nginx routes the traffic
 to Sandstorm; on port 80, nginx serves a HTTP redirect to upgrade the request to HTTPS.
 
-If you prefer to not use HTTPS, there are comments in the example coniguration file that indicates
-what changes to make.
+If you prefer to not use HTTPS, read the example configuration files and look for comments that
+indicates what changes to make.
 
 ### Prerequisites for HTTPS
 

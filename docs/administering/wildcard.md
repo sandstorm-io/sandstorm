@@ -28,11 +28,11 @@ You should see a message like:
 arbitrary.example.com has address 93.184.216.34
 ```
 
-If you see something like that, then a `WILDCARD_HOST` of `*.example.com` exists. The IP address
-printed by the `host` command should match the IP address for your Sandstorm server. If `host` tells
-you the domain is `not found: 3(NXDOMAIN)`, then you probably need to adjust your DNS zone to create
-a wildcard record. If your system does not have `host`, you can try `dig` or `ping` which serve
-similar functions.
+This looks good: in the example, we see that a `WILDCARD_HOST` of `*.example.com` exists. The IP
+address printed by the `host` command should match the IP address for your Sandstorm server. If
+`host` tells you the domain is `not found: 3(NXDOMAIN)`, then you probably need to adjust your DNS
+zone to create a wildcard record. If your system does not have `host`, you can try `dig` or `ping`
+which serve similar functions.
 
 To learn how to add a new wildcard DNS record, consider reading this [tutorial on setting up
 Sandstorm using the DigitalOcean DNS control
@@ -50,20 +50,22 @@ is working. You can try looking up other subdomains than `arbitrary`, such as `a
 sure that all subdomains resolve to the right IP address.
 
 **Sandstorm can use a BASE_URL within a wildcard DNS record.** If `*.example.com` maps to the right
-IP address, then you can configure Sandstorm to use a BASE_URL that is part of a wildcard DNS
-record. This can be convenient if you already have one wildcard DNS record. Note that the
-`WILDCARD_HOST` and the `BASE_URL` must be within the same domain name because otherwise web
-browsers may prevent Sandstorm from setting a cookie with the wildcard subdomains, as part of a web
-browser privacy protection feature (third-party cookies). One such configuration would look like
-this.
+IP address, then you can configure Sandstorm to use a BASE_URL like `sandstorm.example.com` that is
+part of a wildcard DNS record; you could set WILDCARD_HOST to `ss-*.example.com` or
+`sandstorm-*.example.com`, etc.. This can be convenient if you already have one wildcard DNS
+record. Note that the `WILDCARD_HOST` and the `BASE_URL` must be within the same domain name because
+otherwise web browsers may prevent Sandstorm from setting a cookie with the wildcard subdomains, as
+part of a web browser privacy protection feature (third-party cookies). One such configuration would
+look like this.
 
 ```
 BASE_URL=https://sandstorm.example.com
 WILDCARD_HOST=sandstorm-*.example.com
 ```
 
-**Raw IP address users can use xip.io.** If your Sandstorm BASE_URL is a base IP address, consider
-reading about [how to use Sandstorm with an internal IP address and
+**If you can't set up wildcard DNS, try xip.io.** If your Sandstorm BASE_URL needs to contain a
+numeric IP address because you cannot configure wildcard DNS, consider reading about [how to use
+Sandstorm with an internal IP address and
 xip.io](faq.md#how-do-i-use-sandstorm-with-an-internal-ip-address).
 
 ## local.sandstorm.io and sandcats.io provide wildcard DNS

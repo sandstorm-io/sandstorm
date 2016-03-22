@@ -35,16 +35,27 @@ Copy [nginx-example.conf](https://github.com/sandstorm-io/sandstorm/blob/master/
 
 `nginx-example.conf` may be renamed to anything, such as `example.com.conf`. You'll need to make the following changes.
 
-
 - All `server_name` lines should match the DNS hostnames for your Sandstorm install.
+
 - Point `ssl_certificate` and `ssl_certificate_key` to your corresponding TLS certificate and key files.
 
 Test your nginx configuration:
+
 `sudo nginx -t`
 
 ### Configure Sandstorm's configuration files
 
-Specify HTTPS, and remove port numbers from the base URL and wildcard host. To do that, edit
+First, **configure Sandstorm to speak HTTP on port 6080 on localhost.** To do that, you will need to
+edit `/opt/sandstorm/sandstorm.conf`. Make sure `HTTPS_PORT=...` line is **not** set, as Sandstorm's
+HTTPS is designed for users of [sandcats.io free SSL](../sandcats.md), where Sandstorm manages HTTPS
+keys. The `PORT` and `BIND_IP` settings should look like this.
+
+```
+PORT=6080
+BIND_IP=127.0.0.1
+```
+
+Then, **configure Sandstorm to use your new base URL and wildcard host.** To do that, edit
 `/opt/sandstorm/sandstorm.conf` and adjust these lines.
 
 ```
@@ -52,7 +63,7 @@ BASE_URL=https://example.com
 WILDCARD_HOST=*.example.com
 ```
 
-If you need a custom port number, you should place it in `WILDCARD_HOST` as well as `BASE_URL`.
+If you need a custom port number, you should place it in both `WILDCARD_HOST` and `BASE_URL`.
 
 ### Run
 

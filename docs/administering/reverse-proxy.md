@@ -49,26 +49,31 @@ Test your nginx configuration:
 
 ### Configure Sandstorm's configuration files
 
-First, **configure Sandstorm to listen on localhost, port 6080, for HTTP requests.** To do that, you
-will need to edit `/opt/sandstorm/sandstorm.conf`. Make sure `HTTPS_PORT=...` line is **not** set,
-as Sandstorm's HTTPS is designed for users of [sandcats.io free SSL](sandcats.md). Your `PORT`
-and `BIND_IP` settings should look like this.
+First, **configure Sandstorm to listen on localhost, port 6080, for HTTP requests.** We use port
+6080 here to match the example nginx configuration. You will need to edit
+`/opt/sandstorm/sandstorm.conf`. Make sure there is no `HTTPS_PORT=...` line, as the
+`HTTPS_PORT=...` configuration option enables Sandstorm's [auto-renewing sandcats.io free
+SSL](sandcats.md). The `PORT` and `BIND_IP` settings should look like this.
 
 ```
 PORT=6080
 BIND_IP=127.0.0.1
 ```
 
-Then, **configure Sandstorm to use your new base URL and wildcard host.** To do that, edit
-`/opt/sandstorm/sandstorm.conf` and adjust those settings. Here is an example for a Sandstorm server
-that would be accessed by visiting `example.com` over HTTPS.
+Then, **configure Sandstorm to use your new base URL and wildcard host.** You might also need to add
+a new DNS record to your domain; read more about [wildcard DNS for Sandstorm.](wildcard.md) Here is
+an example pair of lines from `/opt/sandstorm/sandstorm.conf` for a Sandstorm server that would be
+accessed by visiting `example.com` over HTTPS.
 
 ```
 BASE_URL=https://example.com
 WILDCARD_HOST=*.example.com
 ```
 
-If you need a custom port number, you should place it in both `WILDCARD_HOST` and `BASE_URL`.
+**If you are serving HTTPS or HTTP on non-default port numbers,** then you will need to add a port
+number to both `WILDCARD_HOST` and `BASE_URL`.  In the example configuration, nginx listens for
+HTTPS on port 443 and HTTP on port 80, which are the default ports, so you do not need add a port
+number unless you are doing an unusual Sandstorm install.
 
 ### Run
 
@@ -79,13 +84,15 @@ sudo service nginx restart
 sudo service sandstorm restart
 ```
 
-### Reconfigure login within Sandstorm, if necessary
+### Test your Sandstorm install
 
-Make sure to test your Sandstorm install by visiting it on the web. If this operation
-probably your `BASE_URL`, and if you are using OAuth providers for login, then this
-change will disable them. Make sure to visit **Admin Settings** within your Sandstorm
-install and re-enable them.
+Make sure to test your Sandstorm install by visiting it on the web.
 
-If OAuth providers were your only way to log in, you might need to get a login token via the command
-line. See the answer in the [frequently-asked questions
-page.](faq.md#how-do-i-log-in-if-theres-a-problem-with-logging-in-via-the-web)
+**Make sure login works.** If you changed your `BASE_URL`, Sandstorm will temporarily disable any
+OAuth providers like Google or GitHub so that you can ensure they are configured correctly. Make
+sure to visit **Admin Settings** within your Sandstorm install and re-enable them. If OAuth
+providers were your only way to log in, you might need to get a [login token via the command
+line.](faq.md#how-do-i-log-in-if-theres-a-problem-with-logging-in-via-the-web)
+
+**Make sure grains can start.** Visit a grain, or create a new one, and ensure it loads properly. If
+it does not, you might have an issue with [wildcard DNS.](wildcard.md)

@@ -20,11 +20,15 @@ configure nginx to listen on ports 80 (HTTP) and 443 (HTTPS). On port 443, nginx
 to Sandstorm; on port 80, nginx serves a HTTP redirect to upgrade the request to HTTPS.
 
 If you prefer to not use HTTPS, read the example configuration files and look for comments that
-indicates what changes to make.
+indicate what changes to make.
+
+### Create DNS entries
+
+If you are going to run Sandstorm at `example.com`, you may need to create a DNS record for
+`example.com`. You will usually also need to add a wildcard DNS record for `*.example.com`. You can
+read more about [wildcard DNS for Sandstorm.](wildcard.md)
 
 ### Prerequisites for HTTPS
-
-Create DNS entries for `example.com` and `*.example.com`.
 
 Obtain or generate a key and TLS certificate with `example.com` and `*.example.com` in
 subjectAltName. You can do that by [buying a wildcard HTTPS
@@ -60,10 +64,9 @@ PORT=6080
 BIND_IP=127.0.0.1
 ```
 
-Then, **configure Sandstorm to use your new base URL and wildcard host.** You might also need to add
-a new DNS record to your domain; read more about [wildcard DNS for Sandstorm.](wildcard.md) Here is
-an example pair of lines from `/opt/sandstorm/sandstorm.conf` for a Sandstorm server that would be
-accessed by visiting `example.com` over HTTPS.
+Then, **configure Sandstorm to use your new base URL and wildcard host.** Here is an example pair of
+lines from `/opt/sandstorm/sandstorm.conf` for a Sandstorm server that would be accessed by visiting
+`example.com` over HTTPS.
 
 ```
 BASE_URL=https://example.com
@@ -95,4 +98,4 @@ providers were your only way to log in, you might need to get a [login token via
 line.](faq.md#how-do-i-log-in-if-theres-a-problem-with-logging-in-via-the-web)
 
 **Make sure grains can start.** Visit a grain, or create a new one, and ensure it loads properly. If
-it does not, you might have an issue with [wildcard DNS.](wildcard.md)
+it does not, you might have an issue with [wildcard DNS or SSL.](wildcard.md)

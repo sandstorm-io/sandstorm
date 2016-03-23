@@ -351,3 +351,22 @@ to address the issue.
 
 To get further help, please email support@sandstorm.io. Please include the most recent 100 lines
 from the MongoDB log file, if you can.
+
+## How do I enable WebSockets proxying? or, Why do some apps seem to crash & reload?
+
+Some Sandstorm users find that apps like Telescope and Groove Basin seem to load an initial screen
+and then refresh the page, in a loop. This is typically a symptom of Sandstorm running behind a
+reverse proxy that needs WebSockets proxying to be enabled.
+
+For `nginx`: consult the
+[nginx-example.conf](https://github.com/sandstorm-io/sandstorm/blob/master/docs/administering/sample-config/nginx-example.conf)
+that we provide. Pay special attention to:
+
+- The `map $http_upgrade $connection_upgrade` section. You need to add this to the config
+  file for this site.
+
+- The two `proxy_set_header` lines relating to `Upgrade` and `Connection`.
+
+For `apache2`: consult the
+[apache-virtualhost.conf](https://github.com/sandstorm-io/sandstorm/blob/master/docs/administering/sample-config/nginx-example.conf)
+that we provide. Pay special attention to the `RewriteRule` stanzas.

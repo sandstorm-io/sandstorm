@@ -1,0 +1,67 @@
+// Sandstorm - Personal Cloud Sandbox
+// Copyright (c) 2016 Sandstorm Development Group, Inc. and contributors
+// All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+"use strict";
+
+var crypto = require("crypto");
+var utils = require("../utils"),
+    short_wait = utils.short_wait,
+    medium_wait = utils.medium_wait,
+    long_wait = utils.long_wait,
+    very_long_wait = utils.very_long_wait;
+var expectedHackerCMSGrainTitle = "Untitled Hacker CMS site";
+var expectedGitWebGrainTitle = "Untitled GitWeb repository";
+var hackerCmsAppId = "nqmcqs9spcdpmqyuxemf0tsgwn8awfvswc58wgk375g4u25xv6yh";
+
+module.exports["Test open direct share link"] = function (browser) {
+  // The first dev user will be automatically created with the call to installApp().
+  // We need to prepend 'A' so that the default handle is always valid.
+  var devName2 = "A" + crypto.randomBytes(10).toString("hex");
+  var devIdentityId2 = crypto.createHash("sha256").update("dev:" + devName2).digest("hex");
+  browser
+    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
+                hackerCmsAppId)
+    .waitForElementVisible("#grainTitle", medium_wait)
+    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .executeAsync(function (data, done) {
+      var grainId = Grains.findOne()._id;
+      var identityId = Meteor.user().loginIdentities[0].id;
+      Meteor.call("newApiToken", { identityId: identityId },
+                  grainId, "petname", { allAccess: null },
+                  { user: { identityId: data, title: "user2 title", } },
+                  function(error, result) {
+                    Meteor.logout();
+                    done({ error: error, result: result, });
+                  });
+    }, [devIdentityId2], function (result) {
+      browser
+        .loginDevAccount(devName2)
+        .url(browser.launch_url + "/shared/" + result.value.result.token)
+        .waitForElementVisible("#grain-frame", medium_wait)
+        .waitForElementVisible("#grainTitle", medium_wait)
+        .assert.containsText("#grainTitle", "user2 title")
+        .url(function(grainUrl) {
+          browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
+        })
+        .frame("grain-frame")
+        .waitForElementPresent("#publish", medium_wait)
+        .assert.containsText("#publish", "Publish")
+        .frame(null)
+        .end()
+    });
+}
+
+// TODO(cleanup): Move other sharing tests into this file.

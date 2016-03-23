@@ -549,15 +549,14 @@ Tinytest.add("permissions: membrane requirements long chain", function (test) {
   test.isTrue(bob.mayOpenGrain(grains[0]));
 });
 
-Tinytest.add("permissions: membrane requirements many permissions", function (test) {
+function createViewInfo(numPermissions) {
   const permissionDefs = [];
   const roleDefs = [];
-  const NUM_PERMISSIONS = 20;
 
-  for (let ii = 0; ii < NUM_PERMISSIONS; ++ii) {
+  for (let ii = 0; ii < numPermissions; ++ii) {
     permissionDefs.push({ name: ii.toString() });
     const roleDefPermissions = [];
-    for (let jj = 0; jj < NUM_PERMISSIONS; ++jj) {
+    for (let jj = 0; jj < numPermissions; ++jj) {
       roleDefPermissions.push(ii !== jj);
     }
 
@@ -569,8 +568,12 @@ Tinytest.add("permissions: membrane requirements many permissions", function (te
     roleDefs.push(roleDef);
   }
 
-  const viewInfo = { permissions: permissionDefs, roles: roleDefs };
+  return { permissions: permissionDefs, roles: roleDefs };
+}
 
+Tinytest.add("permissions: membrane requirements many permissions", function (test) {
+  const NUM_PERMISSIONS = 20;
+  const viewInfo = createViewInfo(NUM_PERMISSIONS);
   const alice = new Identity(globalDb);
   const aliceAccount = new Account(globalDb, [alice]);
   const bob = new Identity(globalDb);
@@ -598,4 +601,69 @@ Tinytest.add("permissions: membrane requirements many permissions", function (te
   }
 
   test.isTrue(bob.mayOpenGrain(grain0));
+});
+
+Tinytest.add("permissions: blow up disjunctive normal form", function (test) {
+
+  const NUM_PERMISSIONS = 5;
+  // TODO(perf): Improve the permissions computation so that it can handle higher values for
+  //   this number N. This test creates approximately N tokens, each carrying approximately N
+  //   permissions. Reduced to a HORNSAT problem, that gives roughly N^2 clauses, so ideally
+  //   our performance would be O(N^2). Unfortunately, we currently have an exponential blowup.
+
+  const viewInfo = createViewInfo(NUM_PERMISSIONS);
+  const alice = new Identity(globalDb);
+  const aliceAccount = new Account(globalDb, [alice]);
+  const bob = new Identity(globalDb);
+
+  const grain1 = new Grain(globalDb, aliceAccount, alice, viewInfo);
+  const grain2 = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+  const allPermissions = new Array(NUM_PERMISSIONS);
+  for (let idx = 0; idx < NUM_PERMISSIONS; ++idx) {
+    allPermissions[idx] = true;
+  }
+
+  const requirement = {
+    permissionsHeld: {
+      grainId: grain1.id,
+      identityId: bob.id,
+      permissions: allPermissions,
+    },
+  };
+
+  alice.shareToIdentity(grain2, bob, { allAccess: null }, [requirement]);
+
+  test.isFalse(bob.mayOpenGrain(grain1));
+  test.isFalse(bob.mayOpenGrain(grain2));
+
+  const otherGrains = [];
+
+  const NUM_OTHER_GRAINS = NUM_PERMISSIONS; // Also equals number of roles.
+
+  for (let idx = 0; idx < NUM_OTHER_GRAINS; ++idx) {
+    const otherGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
+    const requirement = {
+      permissionsHeld: {
+        grainId: otherGrain.id,
+        identityId: bob.id,
+        permissions: [],
+      },
+    };
+
+    alice.shareToIdentity(grain1, bob, { roleId: idx }, [requirement]);
+    otherGrains.push(otherGrain);
+  }
+
+  test.isFalse(bob.mayOpenGrain(grain1));
+  test.isFalse(bob.mayOpenGrain(grain2));
+
+  alice.shareToIdentity(otherGrains[0], bob, { allAccess: null });
+
+  test.isTrue(bob.mayOpenGrain(grain1));
+  test.isFalse(bob.mayOpenGrain(grain2));
+
+  alice.shareToIdentity(otherGrains[otherGrains.length - 1], bob, { allAccess: null });
+
+  test.isTrue(bob.mayOpenGrain(grain1));
+  test.isTrue(bob.mayOpenGrain(grain2));
 });

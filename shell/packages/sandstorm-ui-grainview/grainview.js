@@ -442,16 +442,11 @@ GrainView = class GrainView {
       // Otherwise, we should show it.
       return { chooseIdentity: {} };
     } else if (this._tokenInfo.identityOwner) {
-      if (Meteor.userId() &&
-          globalDb.userHasIdentity(Meteor.userId(), this._tokenInfo.identityOwner._id)) {
-        this._redirectFromShareLink();
-      } else {
-        return {
-          directShare: {
-            recipient: this._tokenInfo.identityOwner,
-          },
-        };
-      }
+      return {
+        directShare: {
+          recipient: this._tokenInfo.identityOwner,
+        },
+      };
     } else {
       throw new Error("unrecognized tokenInfo: ", this._tokenInfo);
     }

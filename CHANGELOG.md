@@ -1,3 +1,6 @@
+### v0.153 (2016-03-22) [bugfixes]
+- Fix blank screen when clicking through a share-by-identity email.
+
 ### v0.152 (2016-03-21) [bugfixes]
 - Self-hosting: Fixed sending server invites by email (from the "send invites" tabh in the admin settings).
 - Improved error message seen when static publishing TXT records are misconfigured.

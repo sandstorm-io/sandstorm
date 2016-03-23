@@ -1490,6 +1490,9 @@ Router.map(function () {
           return this.next();
         } else if (tokenInfo.invalidToken) {
           this.state.set("invalidToken", true);
+        } else if (tokenInfo.identityOwner && tokenInfo.grainId && Meteor.userId() &&
+                   globalDb.userHasIdentity(Meteor.userId(), tokenInfo.identityOwner._id)) {
+          Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
         } else if (tokenInfo.grainId) {
           const grainId = tokenInfo.grainId;
           const grain = globalGrains.getById(grainId);

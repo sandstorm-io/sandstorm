@@ -8,6 +8,10 @@ HTTPS certificates.  This tutorial works properly with certificates you purchase
 certificates**,](ssl.md) you will need to use `sniproxy` instead of `nginx`; see the [note at the
 bottom of the HTTPS overview page](ssl.md).
 
+If you have problems with apps seeming to constantly reload
+themselves, you might need to [read about WebSocket connections in our
+FAQ](faq.md#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-crash-reload).
+
 ## Configuring nginx and Sandstorm for reverse proxying
 
 ### HTTPS or not: you choose

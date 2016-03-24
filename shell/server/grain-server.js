@@ -95,10 +95,13 @@ Meteor.publish("tokenInfo", function (token) {
     fields: {
       grainId: 1,
       owner: 1,
+      revoked: 1,
     },
   });
   if (!apiToken) {
     this.added("tokenInfo", token, { invalidToken: true });
+  } else if (apiToken.revoked) {
+    this.added("tokenInfo", token, { revoked: true });
   } else {
     const grainId = apiToken.grainId;
     const grain = Grains.findOne({
@@ -118,12 +121,24 @@ Meteor.publish("tokenInfo", function (token) {
         if (identity && metadata) {
           this.added("tokenInfo", token,
                      { identityOwner: _.pick(identity, "_id", "profile"),
-                      grainId: grainId,
-                      grainMetadata: metadata, });
+                       grainId: grainId,
+                       grainMetadata: metadata, });
         } else {
           this.added("tokenInfo", token, { invalidToken: true });
         }
       } else if (!apiToken.owner || "webkey" in apiToken.owner) {
+        if (this.userId) {
+          const user = Meteor.users.findOne({ _id: this.userId });
+          const identityIds = SandstormDb.getUserIdentityIds(user);
+          const childToken = ApiTokens.findOne({ "owner.user.identityId": { $in: identityIds },
+                                                 parentToken: apiToken._id, });
+          if (childToken) {
+            this.added("tokenInfo", token, { alreadyRedeemed: true, grainId: apiToken.grainId, });
+            this.ready();
+            return;
+          }
+        }
+
         let pkg = Packages.findOne({ _id: grain.packageId }, { fields: { manifest: 1 } });
         let appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: "" };
         let appIcon = undefined;
@@ -139,8 +154,8 @@ Meteor.publish("tokenInfo", function (token) {
         };
         this.added("tokenInfo", token,
                    { webkey: true,
-                    grainId: grainId,
-                    grainMetadata: denormalizedGrainMetadata, });
+                     grainId: grainId,
+                     grainMetadata: denormalizedGrainMetadata, });
       } else {
         this.added("tokenInfo", token, { invalidToken: true });
       }

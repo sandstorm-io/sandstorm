@@ -142,7 +142,11 @@ limitations under the License.
     <div class="grain-container {{#if active}}active-grain{{else}}inactive-grain{{/if}}">
     {{#if error}}
       {{#if unauthorized}}
-        {{> requestAccess}}
+        {{#if token}}
+          {{> revokedShareLink}}
+        {{else}}
+          {{> requestAccess}}
+        {{/if}}
       {{else}}
         {{#if notFound}}
            <p class="grain-not-found grain-interstitial">
@@ -231,6 +235,10 @@ limitations under the License.
 
 <template name="invalidToken">
    <pre> Invalid token: {{token}} </pre>
+</template>
+
+<template name="revokedShareLink">
+  <p class="grain-interstitial">Sorry, this link has been revoked.</p>
 </template>
 
 <template name="noLayout">

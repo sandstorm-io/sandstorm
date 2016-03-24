@@ -480,9 +480,10 @@ Template.requestAccess.onCreated(function () {
 
   this.autorun(() => {
     Meteor.userId(); // Read this value so that we resubscribe on login.
-    this.subscribe("requestingAccess", this._grain.grainId());
-    const granted = GrantedAccessRequests.findOne({ grainId: this._grain.grainId() });
-    if (granted) {
+    const grainId = this._grain.grainId();
+    this.subscribe("requestingAccess", grainId);
+    const granted = GrantedAccessRequests.findOne({ grainId: grainId });
+    if (granted && !this._grain.token()) {
       this._grain.reset(granted.identityId);
       this._grain.openSession();
     }
@@ -1490,8 +1491,12 @@ Router.map(function () {
           return this.next();
         } else if (tokenInfo.invalidToken) {
           this.state.set("invalidToken", true);
+        } else if (tokenInfo.revoked) {
+          this.state.set("revoked", true);
         } else if (tokenInfo.identityOwner && tokenInfo.grainId && Meteor.userId() &&
                    globalDb.userHasIdentity(Meteor.userId(), tokenInfo.identityOwner._id)) {
+          Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
+        } else if (tokenInfo.alreadyRedeemed) {
           Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
         } else if (tokenInfo.grainId) {
           const grainId = tokenInfo.grainId;
@@ -1522,6 +1527,8 @@ Router.map(function () {
     action: function () {
       if (this.state.get("invalidToken")) {
         this.render("invalidToken", { data: { token: this.params.token } });
+      } else if (this.state.get("revoked")) {
+        this.render("revokedShareLink");
       } else {
         this.render();
       }

@@ -448,16 +448,29 @@ module.exports["Test grain incognito interstitial"] = function (browser) {
         .click(".incognito-button")
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+        .execute(function() {
+          return Accounts.getCurrentIdentityId();
+        }, [], function (response) {
+          browser.assert.equal(response.value, null);
+        })
         .frame('grain-frame')
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         // Try redeeming as current user
         // TODO(someday): pick a better app that shows off the different userid/username
-        .url(response.value)
+        .frame(null)
+        .click(".topbar .share > .show-popup")
+        .waitForElementVisible('a.open-non-anonymously', short_wait)
+        .click("a.open-non-anonymously")
         .waitForElementVisible("button.pick-identity", short_wait)
         .click("button.pick-identity")
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+        .execute(function() {
+          return Accounts.getCurrentIdentityId();
+        }, [], function (response) {
+          browser.assert.equal(!!response.value, true);
+        })
         .frame('grain-frame')
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')

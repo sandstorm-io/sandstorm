@@ -368,5 +368,5 @@ that we provide. Pay special attention to:
 - The two `proxy_set_header` lines relating to `Upgrade` and `Connection`.
 
 For `apache2`: consult the
-[apache-virtualhost.conf](https://github.com/sandstorm-io/sandstorm/blob/master/docs/administering/sample-config/nginx-example.conf)
+[apache-virtualhost.conf](https://github.com/sandstorm-io/sandstorm/blob/master/docs/administering/sample-config/apache-virtualhost.conf)
 that we provide. Pay special attention to the `RewriteRule` stanzas.

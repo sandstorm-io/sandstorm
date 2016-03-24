@@ -1369,6 +1369,31 @@ _.extend(SandstormDb.prototype, {
     const setting = Settings.findOne({ _id: "samlPublicCert" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
+
+  getPrimaryEmailWithDisplayName: function (accountId, identityId) {
+    check(accountId, String);
+    check(identityId, String);
+
+    function addDisplayName(displayName, email) {
+      // First remove any instances of characters that cause trouble for SimpleSmtp. Ideally,
+      // we could escape such characters with a backslash, but that does not seem to help here.
+      const sanitized = displayName.replace(/"|<|>|\\|\r/g, "");
+      return "\"" + sanitized + "\" <" + email + ">";
+    }
+
+    const identity = this.getIdentity(identityId);
+    const senderEmails = SandstormDb.getVerifiedEmails(identity);
+    const senderPrimaryEmail = _.findWhere(senderEmails, { primary: true });
+    const accountPrimaryEmailAddress = this.getUser(accountId).primaryEmail;
+    if (_.findWhere(senderEmails, { email: accountPrimaryEmailAddress })) {
+      return addDisplayName(identity.profile.name, accountPrimaryEmailAddress);
+    } else if (senderPrimaryEmail) {
+      return addDisplayName(identity.profile.name, senderPrimaryEmail.email);
+    } else {
+      return addDisplayName(identity.profile.name + " (via " + this.getServerTitle() + ")",
+                            this.getReturnAddress());
+    }
+  },
 });
 
 SandstormDb.escapeMongoKey = (key) => {

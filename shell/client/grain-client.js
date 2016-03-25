@@ -17,8 +17,6 @@
 // This file implements /grain, i.e. the main view into an app.
 
 // Pseudo-collections.
-GrainSizes = new Mongo.Collection("grainSizes");
-// GrainSizes is used by grainview.js
 TokenInfo = new Mongo.Collection("tokenInfo");
 // TokenInfo is used by grainview.js
 GrantedAccessRequests = new Mongo.Collection("grantedAccessRequests");
@@ -1438,9 +1436,13 @@ Router.map(function () {
             const mainContentElement = document.querySelector("body>.main-content");
             if (mainContentElement) {
               const grainToOpen = globalGrains.addNewGrainView(grainId, path, undefined,
-                                                               mainContentElement, initialPopup);
+                                                               mainContentElement);
               grainToOpen.openSession();
               globalGrains.setActive(grainId);
+
+              if (initialPopup) {
+                globalTopbar.openPopup(initialPopup);
+              }
             } else {
               Meteor.defer(openView);
             }
@@ -1511,6 +1513,11 @@ Router.map(function () {
                                                                  mainContentElement);
                 grainToOpen.openSession();
                 globalGrains.setActive(grainId);
+
+                if (!Meteor.userId()) {
+                  // Suggest to the user that they log in by opening the login menu.
+                  globalTopbar.openPopup("login");
+                }
               } else {
                 Meteor.defer(openView);
               }

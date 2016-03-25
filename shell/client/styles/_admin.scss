@@ -229,11 +229,12 @@ button#offer-ipnetwork, button#offer-ipinterface {
   min-height: 32px;
 }
 
-.wildcard-host-warning {
+.websocket-broken-warning, .wildcard-host-warning {
   box-sizing: border-box;
   min-height: 3em;
   width: 100%;
   padding: 0.5em;
+  margin-bottom: 0.5em;
   background-color: red;
   color: white;
 

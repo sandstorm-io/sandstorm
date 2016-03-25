@@ -2,19 +2,19 @@ if (!Accounts.saml) {
   Accounts.saml = {};
 }
 
-Accounts.saml.initiateLogin = function(options, callback, dimensions) {
+Accounts.saml.initiateLogin = function (options, callback, dimensions) {
   // default dimensions that worked well for facebook and google
-  var popup = openCenteredPopup(
-    Meteor.absoluteUrl("_saml/authorize/"+options.provider+"/"+options.credentialToken),
+  const popup = openCenteredPopup(
+    Meteor.absoluteUrl("_saml/authorize/" + options.provider + "/" + options.credentialToken),
     (dimensions && dimensions.width) || 650,
     (dimensions && dimensions.height) || 500);
 
-  var checkPopupOpen = setInterval(function() {
+  const checkPopupOpen = setInterval(function () {
     try {
       // Fix for #328 - added a second test criteria (popup.closed === undefined)
       // to humour this Android quirk:
       // http://code.google.com/p/android/issues/detail?id=21061
-      var popupClosed = popup.closed || popup.closed === undefined;
+      let popupClosed = popup.closed || popup.closed === undefined;
     } catch (e) {
       // For some unknown reason, IE9 (and others?) sometimes (when
       // the popup closes too quickly?) throws "SCRIPT16386: No such
@@ -30,40 +30,39 @@ Accounts.saml.initiateLogin = function(options, callback, dimensions) {
   }, 100);
 };
 
-
-var openCenteredPopup = function(url, width, height) {
-  var screenX = typeof window.screenX !== 'undefined'
+const openCenteredPopup = function (url, width, height) {
+  const screenX = typeof window.screenX !== "undefined"
         ? window.screenX : window.screenLeft;
-  var screenY = typeof window.screenY !== 'undefined'
+  const screenY = typeof window.screenY !== "undefined"
         ? window.screenY : window.screenTop;
-  var outerWidth = typeof window.outerWidth !== 'undefined'
+  const outerWidth = typeof window.outerWidth !== "undefined"
         ? window.outerWidth : document.body.clientWidth;
-  var outerHeight = typeof window.outerHeight !== 'undefined'
+  const outerHeight = typeof window.outerHeight !== "undefined"
         ? window.outerHeight : (document.body.clientHeight - 22);
   // XXX what is the 22?
 
   // Use `outerWidth - width` and `outerHeight - height` for help in
   // positioning the popup centered relative to the current window
-  var left = screenX + (outerWidth - width) / 2;
-  var top = screenY + (outerHeight - height) / 2;
-  var features = ('width=' + width + ',height=' + height +
-                  ',left=' + left + ',top=' + top + ',scrollbars=yes');
+  const left = screenX + (outerWidth - width) / 2;
+  const top = screenY + (outerHeight - height) / 2;
+  const features = ("width=" + width + ",height=" + height +
+                  ",left=" + left + ",top=" + top + ",scrollbars=yes");
 
-  var newwindow = window.open(url, 'Login', features);
+  const newwindow = window.open(url, "Login", features);
   if (newwindow.focus)
     newwindow.focus();
   return newwindow;
 };
 
-Meteor.loginWithSaml = function(options, callback) {
+Meteor.loginWithSaml = function (options, callback) {
   options = options || {};
-  var credentialToken = Random.id();
+  const credentialToken = Random.id();
   options.credentialToken = credentialToken;
 
-  Accounts.saml.initiateLogin(options, function(error, result){
-     Accounts.callLoginMethod({
-      methodArguments: [{saml:true,credentialToken:credentialToken}],
-      userCallback: callback
+  Accounts.saml.initiateLogin(options, function (error, result) {
+    Accounts.callLoginMethod({
+      methodArguments: [{ saml:true, credentialToken:credentialToken }],
+      userCallback: callback,
     });
   });
 };

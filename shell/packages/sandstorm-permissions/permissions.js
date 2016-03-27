@@ -433,6 +433,13 @@ var ResourceMap = Match.Where(function (map) {
   return true;
 });
 
+var LocalizedString = {
+  defaultText: String,
+  localizations: Match.Optional([
+     { locale: String, text: String }
+  ]),
+};
+
 SandstormPermissions.createNewApiToken = function (db, provider, grainId, petname,
                                                    roleAssignment, owner, unauthenticated) {
   // Creates a new UiView API token. If `rawParentToken` is set, creates a child token.
@@ -442,14 +449,15 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   // Meteor bug #3877: we get null here instead of undefined when we
   // explicitly pass in undefined.
   check(provider, Match.OneOf({identityId: String, accountId: String},
-                              {rawParentToken: String}));
-  check(owner, Match.OneOf({webkey: {forSharing: Boolean,
-                                     expiresIfUnusedDuration: Match.Optional(Number)}},
+                              {rawParentToken: Match.OneOf(String, Buffer)}));
+  check(owner, Match.OneOf({webkey: Match.OneOf(null, {forSharing: Boolean,
+                                     expiresIfUnusedDuration: Match.Optional(Number)})},
                            {user: {identityId: String,
                                    title: String}},
                            {grain: {grainId: String,
-                                    saveLabel: Match.ObjectIncluding({defaultText: String}),
-                                    introducerIdentity: String,}}));
+                                    saveLabel: LocalizedString,
+                                    introducerIdentity: String,}},
+                           {frontend: null}));
   check(unauthenticated, Match.OneOf(undefined, null, {
     options: Match.Optional({ dav: [Match.Optional(DavClass)] }),
     resources: Match.Optional(ResourceMap),
@@ -496,6 +504,8 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
   }
 
   if (owner.webkey) {
+    // Non-null webkey is a special case not covered in ApiTokenOwner.
+    // TODO(cleanup): Maybe ApiTokenOwner.webkey should be extended with these fields?
     apiToken.owner = {webkey: null};
     apiToken.forSharing = parentForSharing || owner.webkey.forSharing;
     if (owner.webkey.expiresIfUnusedDuration) {
@@ -511,14 +521,9 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
         denormalizedGrainMetadata: grainInfo,
       }
     };
-  } else if (owner.grain) {
-    apiToken.owner = {
-      grain: {
-        grainId: owner.grain.grainId,
-        saveLabel: owner.grain.saveLabel,
-        introducerIdentity: owner.grain.introducerIdentity,
-      },
-    };
+  } else {
+    // Note: Also covers the case of `webkey: null`.
+    apiToken.owner = owner;
   }
 
   if (unauthenticated) {

@@ -332,8 +332,7 @@ SandstormTopbar = function (db, expandedVar, grainsVar, shrinkNavbarVar) {
   //  - on mobile, we wish to hide the menu by default,
   //    and show it when the user clicks the menu button
   this._shrinkNavbar = shrinkNavbarVar || new ReactiveVar(true);
-  this._grains = grainsVar || new ReactiveVar([]);
-
+  this._grains = grainsVar;
 };
 
 SandstormTopbar.prototype.reset = function () {

@@ -47,6 +47,7 @@ module.exports["Test open direct share link"] = function (browser) {
                     done({ error: error, result: result, });
                   });
     }, [devIdentityId2], function (result) {
+      browser.assert.equal(!result.value.error, true)
       browser
         .loginDevAccount(devName2)
         .url(browser.launch_url + "/shared/" + result.value.result.token)
@@ -60,7 +61,43 @@ module.exports["Test open direct share link"] = function (browser) {
         .waitForElementPresent("#publish", medium_wait)
         .assert.containsText("#publish", "Publish")
         .frame(null)
-        .end()
+    });
+}
+
+module.exports["Test revoked share link"] = function (browser) {
+  browser
+    .installApp("http://sandstorm.io/apps/ssjekyll8.spk", "ca690ad886bf920026f8b876c19539c1",
+                hackerCmsAppId)
+    .waitForElementVisible("#grainTitle", medium_wait)
+    .assert.containsText("#grainTitle", expectedHackerCMSGrainTitle)
+    .executeAsync(function (done) {
+      var grainId = Grains.findOne()._id;
+      var identityId = Meteor.user().loginIdentities[0].id;
+      Meteor.call("newApiToken", { identityId: identityId },
+                  grainId, "petname", { allAccess: null },
+                  { webkey: { forSharing: true }, },
+                  function(error, result) {
+                    done({ error: error, result: result, });
+                  });
+    }, [], function (result) {
+      browser.assert.equal(!result.value.error, true)
+      browser.executeAsync(function(tokenId, done) {
+        Meteor.call("updateApiToken", tokenId, { revoked: true }, function (error) {
+          Meteor.logout();
+          done(error)
+        });
+      }, [result.value.result.id], function(error) {
+        browser.assert.equal(!error.value, true);
+        browser
+          .url(browser.launch_url + "/shared/" + result.value.result.token)
+          .waitForElementVisible(".grain-interstitial", medium_wait)
+          .assert.containsText(".grain-interstitial", "Sorry, this link has been revoked")
+          .loginDevAccount()
+          .url(browser.launch_url + "/shared/" + result.value.result.token)
+          .waitForElementVisible(".grain-interstitial", medium_wait)
+          .assert.containsText(".grain-interstitial", "Sorry, this link has been revoked")
+          .end()
+      });
     });
 }
 

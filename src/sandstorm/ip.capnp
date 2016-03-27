@@ -42,7 +42,6 @@ $import "/capnp/c++.capnp".namespace("sandstorm");
 
 using Util = import "util.capnp";
 using SystemPersistent = import "supervisor.capnp".SystemPersistent;
-using PowerboxCapability = import "grain.capnp".PowerboxCapability;
 
 interface IpNetwork @0xa982576b7a2a2040 {
   # Capability to connect or send messages to arbitrary destinations on an IP network.

@@ -40,16 +40,8 @@ ByteStreamConnection = class ByteStreamConnection{
 };
 
 IpInterfaceImpl = class IpInterfaceImpl {
-  constructor(parentToken) {
-    this.parentToken = parentToken;
-  }
-
-  save(params) {
-    const _this = this;
-    return inMeteor(() => {
-      const ret = makeChildTokenInternal(_this.parentToken, params.sealFor, []);
-      return { sturdyRef: ret.token };
-    });
+  constructor(persistentMethods) {
+    _.extend(this, persistentMethods);
   }
 
   listenTcp(portNum, port) {
@@ -128,8 +120,8 @@ IpInterfaceImpl = class IpInterfaceImpl {
   }
 };
 
-makeIpInterface = (parentToken, grainId) => {
-  return new Capnp.Capability(new IpInterfaceImpl(parentToken), IpRpc.PersistentIpInterface);
+makeIpInterface = (persistentMethods) => {
+  return new Capnp.Capability(new IpInterfaceImpl(persistentMethods), IpRpc.PersistentIpInterface);
 };
 
 BoundUdpPortImpl = class BoundUdpPortImpl {
@@ -203,16 +195,8 @@ const addressType = (address) => {
 };
 
 IpNetworkImpl = class IpNetworkImpl {
-  constructor(parentToken) {
-    this.parentToken = parentToken;
-  }
-
-  save(params) {
-    const _this = this;
-    return inMeteor(() => {
-      const ret = makeChildTokenInternal(_this.parentToken, params.sealFor, []);
-      return { sturdyRef: ret.token };
-    });
+  constructor(persistentMethods) {
+    _.extend(this, persistentMethods);
   }
 
   getRemoteHost(address) {
@@ -224,8 +208,8 @@ IpNetworkImpl = class IpNetworkImpl {
   }
 };
 
-makeIpNetwork = (parentToken, grainId) => {
-  return new Capnp.Capability(new IpNetworkImpl(parentToken), IpRpc.PersistentIpNetwork);
+makeIpNetwork = (persistentMethods) => {
+  return new Capnp.Capability(new IpNetworkImpl(persistentMethods), IpRpc.PersistentIpNetwork);
 };
 
 IpRemoteHostImpl = class IpRemoteHostImpl {

@@ -32,13 +32,17 @@ class SandstormCoreImpl {
     const _this = this;
     return inMeteor(() => {
       const hashedSturdyRef = hashSturdyRef(sturdyRef);
-      const token = ApiTokens.findOne(hashedSturdyRef);
-      const requirements = [
-        {
-          tokenValid: hashedSturdyRef,
-        },
-      ];
+      const token = ApiTokens.findOne({
+        _id: hashedSturdyRef,
+        "owner.grain.grainId": this.grainId,
+      });
 
+      if (!token) {
+        throw new Error("no such token");
+      }
+
+      // Honor `requiredPermissions`.
+      const requirements = [];
       if (requiredPermissions && token.owner.grain.introducerIdentity) {
         requirements.push({
           permissionsHeld: {
@@ -49,9 +53,9 @@ class SandstormCoreImpl {
         });
       }
 
-      return restoreInternal(hashedSturdyRef,
+      return restoreInternal(sturdyRef,
                              { grain: Match.ObjectIncluding({ grainId: _this.grainId }) },
-                             requirements, sturdyRef);
+                             requirements, hashedSturdyRef);
     });
   }
 
@@ -85,7 +89,9 @@ class SandstormCoreImpl {
   makeChildToken(parent, owner, requirements) {
     const _this = this;
     return inMeteor(() => {
-      return makeChildTokenInternal(hashSturdyRef(parent), owner, requirements, _this.grainId);
+      return {
+        token: new Buffer(makeChildTokenInternal(parent, owner, requirements)),
+      };
     });
   }
 
@@ -116,7 +122,13 @@ class SandstormCoreImpl {
               isUnread: true,
             });
 
-            return { handle: makeNotificationHandle(notificationId, false) };
+            const persistentMethods = {
+              save(params) {
+                return saveFrontendRef({ notificationHandle: notificationId }, params.sealFor);
+              },
+            };
+
+            return { handle: makeNotificationHandle(notificationId, false, persistentMethods) };
           });
         },
       },
@@ -129,9 +141,10 @@ const makeSandstormCore = (grainId) => {
 };
 
 class NotificationHandle {
-  constructor(notificationId, saved) {
+  constructor(notificationId, saved, persistentMethods) {
     this.notificationId = notificationId;
     this.saved = saved;
+    _.extend(this, persistentMethods);
   }
 
   close() {
@@ -142,59 +155,11 @@ class NotificationHandle {
       }
     });
   }
-
-  save(params) {
-    return saveFrontendRef({ notificationHandle: this.notificationId }, params.sealFor);
-  }
 }
 
 class PersistentUiViewImpl {
-  constructor(token, sturdyRef, membraneRequirements) {
-    this._token = token;
-    this._sturdyRef = sturdyRef;
-    // We need this token so we can later pass it to SandstormPermissions.createNewApiToken, which
-    // requires the sturdyRef of the token it's producing a child for, not just the hashed token id.
-
-    this._membraneRequirements = membraneRequirements || [];
-    // TODO(someday): implement SystemPersistent.addRequirements() in a way that collects
-    // requirements, and then saves them appropriately in save().
-  }
-
-  save(params) {
-    // Create a new child apiToken for the user whose session attempted to save this capability.
-    // The token should specify this.token as the parent token, and needs to gain an additional membrane
-    // requirement (TODO):
-    // * if params.sealFor is a user, then the user must still have access to the grain that offered
-    //   this cap.  Today, this is handled by offer() in SessionContextImpl.
-    const res = inMeteor(() => {
-      let owner = _.extend({}, params.sealFor);
-      const grainId = this._token.grainId;
-
-      if (owner.user) {
-        // Copy the owner's save label for this capability, if available, to be the new title.
-        if (this._token && this._token.owner && this._token.owner.grain &&
-            this._token.owner.grain.saveLabel && this._token.owner.grain.saveLabel.defaultText) {
-          owner.user.title = this._token.owner.grain.saveLabel.defaultText;
-        }
-
-        // createNewApiToken() expects only these fields if owner is a user, and will add the rest itself.
-        owner = { user: {
-          identityId: owner.user.identityId,
-          title: owner.user.title,
-        }, };
-      }
-
-      const ret = SandstormPermissions.createNewApiToken(
-          globalDb,
-          { rawParentToken: this._sturdyRef.toString() },
-          this._token.grainId,
-          this._token.petname,
-          this._token.roleAssignment,
-          owner);
-
-      return { sturdyRef: new Buffer(ret.token) };
-    });
-    return res;
+  constructor(persistentMethods) {
+    _.extend(this, persistentMethods);
   }
 
   // All other UiView methods are currently unimplemented, which, while not strictly correct,
@@ -202,12 +167,13 @@ class PersistentUiViewImpl {
   // and grains can't call methods on UiViews because they lack the "is human" pseudopermission.
 }
 
-const makePersistentUiView = function (token, sturdyRef) {
-  return new Capnp.Capability(new PersistentUiViewImpl(token, sturdyRef, []), PersistentUiView);
+const makePersistentUiView = function (persistentMethods) {
+  return new Capnp.Capability(new PersistentUiViewImpl(persistentMethods), PersistentUiView);
 };
 
-function makeNotificationHandle(notificationId, saved) {
-  return new Capnp.Capability(new NotificationHandle(notificationId, saved), PersistentHandle);
+function makeNotificationHandle(notificationId, saved, persistentMethods) {
+  return new Capnp.Capability(new NotificationHandle(notificationId, saved, persistentMethods),
+                              PersistentHandle);
 }
 
 function dropWakelock(grainId, wakeLockNotificationId) {
@@ -228,7 +194,7 @@ function dismissNotification(notificationId, callCancel) {
       if (!callCancel) {
         dropInternal(id, { frontend: null });
       } else {
-        const notificationCap = restoreInternal(hashSturdyRef(id), { frontend: null }).cap;
+        const notificationCap = restoreInternal(id, { frontend: null }, []).cap;
         const castedNotification = notificationCap.castAs(PersistentOngoingNotification);
         dropInternal(id, { frontend: null });
         try {
@@ -340,10 +306,26 @@ checkRequirements = (requirements) => {
   return true;
 };
 
-restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
-  // Restores `sturdyRef`, checking first that its owner matches `ownerPattern`.
-  // parentToken and requirements are optional params that are only used in the case of an objectId
-  // token
+restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
+  // Restores the token `originalToken`, which is a Buffer.
+  //
+  // `ownerPattern` is a match pattern (i.e. used with check()) that the token's owner must match.
+  // This is used to enforce than an entity can't use tokens owned by some other entity.
+  //
+  // `requirements` is a list of additional MembraneRequirements to add to the returned capability,
+  // beyond what's already stored in ApiTokens. This is often an empty list.
+  //
+  // `tokenId` is optional. If specified, it should be hashSturdyRef(originalToken); only specify
+  // it if you happen to have computed this already.
+  //
+  // (When the token turns out to have a parent, this function will call itself recursively. When
+  // it does, `originalToken` stays the same, but `tokenId` is replaced with the parent. This is
+  // because the capability we ultimately restore needs to become a child of the token that is
+  // being restored.)
+
+  tokenId = tokenId || hashSturdyRef(originalToken);
+  requirements = requirements || [];
+
   const token = ApiTokens.findOne(tokenId);
   if (!token) {
     throw new Meteor.Error(403, "No token found to restore");
@@ -352,12 +334,16 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
   if (token.revoked) {
     throw new Meteor.Error(403, "Token has been revoked");
   }
+
   // The ownerPattern should specify the appropriate user or grain involved, if appropriate.
   check(token.owner, ownerPattern);
+
+  // Check requirements on the token.
   if (!checkRequirements(token.requirements)) {
     throw new Meteor.Error(403, "Requirements not satisfied.");
   }
 
+  // Check expiration.
   if (token.expires && token.expires.getTime() <= Date.now()) {
     throw new Meteor.Error(403, "Authorization token expired");
   }
@@ -367,52 +353,77 @@ restoreInternal = (tokenId, ownerPattern, requirements, parentToken) => {
       throw new Meteor.Error(403, "Authorization token expired");
     } else {
       // It's getting used now, so clear the expiresIfUnused field.
-      ApiTokens.update(token._id, { $set: { expiresIfUnused: null } });
+      ApiTokens.update(token._id, { $unset: { expiresIfUnused: "" } });
     }
   }
 
+  // If this token has a parent, go ahead and recurse to it now.
+  if (token.parentToken) {
+    // A token which chains to some parent token.  Restore the parent token (possibly recursively),
+    // checking requirements on the way up.
+    return restoreInternal(originalToken, Match.Any, requirements, token.parentToken);
+  }
+
+  // Check the passed-in `requirements`.
+  if (!checkRequirements(requirements)) {
+    throw new Meteor.Error(403, "Requirements not satisfied.");
+  }
+
+  // The capability we restore must implement SystemPersistent, and we already know what the
+  // implementation will look like. So, construct it here.
+  //
+  // TODO(cleanup): It would probably be a lot cleaner to have a common base class that these
+  //   inherit, and to pass down some common parameters to the constructor.
+  const persistentMethods = {
+    save(params) {
+      return inMeteor(() => {
+        const sturdyRef = new Buffer(makeChildTokenInternal(
+            originalToken, params.sealFor, requirements, token));
+        return { sturdyRef };
+      });
+    },
+
+    // TODO(someday): Implement SystemPersistent.addRequirements().
+  };
+
   if (token.frontendRef) {
     // A token which represents a capability implemented by a pseudo-driver.
+
     if (token.frontendRef.notificationHandle) {
       const notificationId = token.frontendRef.notificationHandle;
-      return { cap: makeNotificationHandle(notificationId, true) };
+      return { cap: makeNotificationHandle(notificationId, true, persistentMethods) };
     } else if (token.frontendRef.ipNetwork) {
-      return { cap: makeIpNetwork(tokenId) };
+      return { cap: makeIpNetwork(persistentMethods) };
     } else if (token.frontendRef.ipInterface) {
-      return { cap: makeIpInterface(tokenId) };
+      return { cap: makeIpInterface(persistentMethods) };
     } else {
       throw new Meteor.Error(500, "Unknown frontend token type.");
     }
   } else if (token.objectId) {
     // A token which represents a specific capability exported by a grain.
-    if (!checkRequirements(requirements)) {
-      throw new Meteor.Error(403, "Requirements not satisfied.");
-    }
 
+    // Fix Mongo converting Buffers to Uint8Arrays.
     if (token.objectId.appRef) {
       token.objectId.appRef = new Buffer(token.objectId.appRef);
     }
 
     // Ensure the grain is running, then restore the capability.
     return waitPromise(globalBackend.useGrain(token.grainId, (supervisor) => {
-      return supervisor.restore(token.objectId, requirements, parentToken);
+      // Note that in this case it is the supervisor's job to implement SystemPersistent, so we
+      // discard persistentMethods.
+      return supervisor.restore(token.objectId, requirements, originalToken);
     }));
-  } else if (token.parentToken) {
-    // A token which chains to some parent token.  Restore the parent token (possibly recursively),
-    // checking requirements on the way up.
-    return restoreInternal(token.parentToken, Match.Any, requirements, parentToken);
-  }
+  } else if (token.grainId) {
+    // It's a UiView.
 
-  // Note that hereafter, `token` should be, by process of elimination, a UiView token.
-  if (!token.grainId) {
-    throw new Meteor.Error(500, "Expected token " + token._id + " to have a grainId");
+    // If a grain is attempting to restore a UiView, it gets a UiView which filters out all
+    // the method calls.  In the future, we may allow grains to restore UiViews that pass along the
+    // "is human" pseudopermission (say, to allow an app to proxy all requests to some grain and
+    // do some transformation), which will return a different capability.
+    return { cap: makePersistentUiView(persistentMethods) };
+  } else {
+    throw new Meteor.Error(500, "Unknown token type. ID: " + token._id);
   }
-
-  // If a grain is attempting to restore a UiView, it gets a UiView which filters out all
-  // the method calls.  In the future, we may allow grains to restore UiViews that pass along the
-  // "is human" pseudopermission (say, to allow embedding grains inside other grains), which will
-  // return a different capability.
-  return { cap: makePersistentUiView(token, parentToken) };
 };
 
 function dropInternal(sturdyRef, ownerPattern) {
@@ -449,30 +460,66 @@ function dropInternal(sturdyRef, ownerPattern) {
   }
 }
 
-makeChildTokenInternal = (hashedParent, owner, requirements, grainId) => {
-  const sturdyRef = new Buffer(generateSturdyRef());
+function makeChildTokenInternal(rawParentToken, owner, requirements, tokenInfo) {
+  const hashedParent = hashSturdyRef(rawParentToken);
+
+  // If we don't have tokenInfo (we were called from SandstormCore.makeChildToken()), look up
+  // the parent token now and use that.
+  // TODO(someday): I think this makeChildToken() will lose titles because of this.
+  //   Option 1: Somehow pass info through the supervisor for it to pass back through
+  //       makeChildToken().
+  //   Option 2: Follow the chain of parentTokens here.
+  //   Option 3: Maybe the title should actually be passed in a PowerboxDescriptor which the app
+  //       is expected to thread through to offer(). This is analogous to how file transfers
+  //       work: the file name is not normally stored in the content. Our petname system for
+  //       grains already matches that model better -- and if we decide to get rid of said petname
+  //       system and instead have everyone see the author's title, then we'd presumably stop
+  //       storing it in the token `owner` field altogether, so this becomes moot.
+  tokenInfo = tokenInfo || ApiTokens.findOne(hashedParent);
+  if (!tokenInfo) {
+    throw new Error("parent token doesn't exist");
+  }
+
+  if (tokenInfo.identityId) {
+    // This is a UiView capability. We need to use SandstormPermissions to create it in order
+    // to properly denormalize fields.
+
+    if (owner.user) {
+      // Initialize the grain's title to a copy of the title set by the human user closest in the
+      // sharing graph. It turns out that the "root token" is actually the token representing that
+      // user, not the grain owner, because user-to-user sharing relationships are not parent-child
+      // token relationships.
+      const rootTitle = (((tokenInfo.owner || {}).grain || {}).saveLabel || {}).defaultText;
+      if (!owner.user.title && rootTitle) {
+        owner.user.title = rootTitle;
+      }
+    }
+
+    return SandstormPermissions.createNewApiToken(globalDb, { rawParentToken },
+        tokenInfo.grainId, tokenInfo.petname, { allAccess: null }, owner).token;
+  }
+
+  if (owner.user) {
+    throw new Error("can't save non-UiView with user as owner");
+  }
+
+  const sturdyRef = generateSturdyRef();
   const hashedSturdyRef = hashSturdyRef(sturdyRef);
 
-  requirements = requirements.filter((requirement) => {
-    return requirement.tokenValid !== hashedParent;
-  });
-
-  const tokenInfo = {
+  const newTokenInfo = {
     _id: hashedSturdyRef,
     parentToken: hashedParent,
     owner: owner,
     created: new Date(),
     requirements: requirements,
   };
-  if (grainId) {
-    tokenInfo.grainId = grainId;
-  }
 
-  ApiTokens.insert(tokenInfo);
+  // For non-UiView capabilities, we need not denormalize grainId, identityId, etc. into the child
+  // token.
 
-  return {
-    token: sturdyRef,
-  };
+  ApiTokens.insert(newTokenInfo);
+
+  return sturdyRef;
 };
 
 function SandstormCoreFactoryImpl() {

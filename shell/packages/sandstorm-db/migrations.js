@@ -451,9 +451,13 @@ function splitSmtpUrl() {
     returnAddress: returnAddress.value,
   };
 
-  if (smtpUrl) {
+  let parsed;
+  try {
+    parsed = smtpUrl && Url.parse(smtpUrl);
+  } catch (e) {}
+
+  if (parsed) {
     // If there was a SMTP URL previously defined, import its data.
-    const parsed = Url.parse(smtpUrl);
     let auth = undefined;
     if (parsed.auth) {
       const colonIndex = parsed.auth.indexOf(":");

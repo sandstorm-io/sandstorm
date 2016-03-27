@@ -342,7 +342,7 @@ Template.powerboxRequest.helpers({
   webkeyError: function () {
     // Transitional function:
     const ref = Template.instance().data.get();
-    return ref._error.get();
+    return ref && ref._error.get();
   },
 });
 

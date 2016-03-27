@@ -149,7 +149,7 @@ SandstormEmail.send = function (options) {
     html: options.html,
   });
 
-  if (options.envelopeSender) {
+  if (options.envelopeFrom) {
     const envelope = mc.getEnvelope();
     envelope.from = options.envelopeFrom;
     mc.setMessageOption({

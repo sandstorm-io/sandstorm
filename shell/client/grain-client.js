@@ -17,8 +17,6 @@
 // This file implements /grain, i.e. the main view into an app.
 
 // Pseudo-collections.
-GrainSizes = new Mongo.Collection("grainSizes");
-// GrainSizes is used by grainview.js
 TokenInfo = new Mongo.Collection("tokenInfo");
 // TokenInfo is used by grainview.js
 GrantedAccessRequests = new Mongo.Collection("grantedAccessRequests");
@@ -480,9 +478,10 @@ Template.requestAccess.onCreated(function () {
 
   this.autorun(() => {
     Meteor.userId(); // Read this value so that we resubscribe on login.
-    this.subscribe("requestingAccess", this._grain.grainId());
-    const granted = GrantedAccessRequests.findOne({ grainId: this._grain.grainId() });
-    if (granted) {
+    const grainId = this._grain.grainId();
+    this.subscribe("requestingAccess", grainId);
+    const granted = GrantedAccessRequests.findOne({ grainId: grainId });
+    if (granted && !this._grain.token()) {
       this._grain.reset(granted.identityId);
       this._grain.openSession();
     }
@@ -1437,9 +1436,13 @@ Router.map(function () {
             const mainContentElement = document.querySelector("body>.main-content");
             if (mainContentElement) {
               const grainToOpen = globalGrains.addNewGrainView(grainId, path, undefined,
-                                                               mainContentElement, initialPopup);
+                                                               mainContentElement);
               grainToOpen.openSession();
               globalGrains.setActive(grainId);
+
+              if (initialPopup) {
+                globalTopbar.openPopup(initialPopup);
+              }
             } else {
               Meteor.defer(openView);
             }
@@ -1490,8 +1493,12 @@ Router.map(function () {
           return this.next();
         } else if (tokenInfo.invalidToken) {
           this.state.set("invalidToken", true);
+        } else if (tokenInfo.revoked) {
+          this.state.set("revoked", true);
         } else if (tokenInfo.identityOwner && tokenInfo.grainId && Meteor.userId() &&
                    globalDb.userHasIdentity(Meteor.userId(), tokenInfo.identityOwner._id)) {
+          Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
+        } else if (tokenInfo.alreadyRedeemed) {
           Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
         } else if (tokenInfo.grainId) {
           const grainId = tokenInfo.grainId;
@@ -1506,6 +1513,11 @@ Router.map(function () {
                                                                  mainContentElement);
                 grainToOpen.openSession();
                 globalGrains.setActive(grainId);
+
+                if (!Meteor.userId()) {
+                  // Suggest to the user that they log in by opening the login menu.
+                  globalTopbar.openPopup("login");
+                }
               } else {
                 Meteor.defer(openView);
               }
@@ -1522,6 +1534,8 @@ Router.map(function () {
     action: function () {
       if (this.state.get("invalidToken")) {
         this.render("invalidToken", { data: { token: this.params.token } });
+      } else if (this.state.get("revoked")) {
+        this.render("revokedShareLink");
       } else {
         this.render();
       }

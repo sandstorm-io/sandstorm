@@ -271,6 +271,7 @@ Meteor.methods({
         SandstormEmail.send({
           to: email,
           from: from,
+          envelopeFrom: globalDb.getReturnAddress(),
           subject: subject,
           text: message.replace(/\$KEY/g, origin + "/signup/" + key),
         });

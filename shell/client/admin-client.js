@@ -137,6 +137,21 @@ Template.admin.helpers({
     return false;
   },
 
+  websocketSeemsBroken: function () {
+    // This returns true if Meteor is using a connection that is *not* a websocket,
+    // so long as we have verified that the attributes we expect are in place.
+    if (Meteor &&
+        Meteor.connection &&
+        Meteor.connection._stream &&
+        Meteor.connection._stream.socket &&
+        Meteor.connection._stream.socket.protocol &&
+        Meteor.connection._stream.socket.protocol !== "websocket") {
+      return true;
+    } else {
+      return false;
+    }
+  },
+
   getToken: getToken,
 });
 

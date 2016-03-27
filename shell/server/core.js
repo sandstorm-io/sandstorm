@@ -371,6 +371,9 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
 
   // The capability we restore must implement SystemPersistent, and we already know what the
   // implementation will look like. So, construct it here.
+  //
+  // TODO(cleanup): It would probably be a lot cleaner to have a common base class that these
+  //   inherit, and to pass down some common parameters to the constructor.
   const persistentMethods = {
     save(params) {
       return inMeteor(() => {

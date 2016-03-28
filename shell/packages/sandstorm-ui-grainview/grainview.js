@@ -94,8 +94,6 @@ GrainView = class GrainView {
         });
       }
 
-      console.log(devApp, this._status, this._devAppId, this.appTitle(), this._tokenInfo);
-
       const id = devApp ? devApp._id : "none";
       if (this._devAppId !== id) {
         if (this._status !== "closed") {

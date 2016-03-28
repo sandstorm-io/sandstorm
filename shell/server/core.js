@@ -398,7 +398,7 @@ restoreInternal = (originalToken, ownerPattern, requirements, tokenId) => {
       return { cap: makeIpInterface(persistentMethods) };
     } else if (token.frontendRef.emailVerifier) {
       return { cap: makeEmailVerifier(
-          persistentMethods, tokenId, token.frontendRef.emailVerifier) };
+          persistentMethods, tokenId, token.frontendRef.emailVerifier), };
     } else if (token.frontendRef.verifiedEmail) {
       return { cap: makeVerifiedEmail(persistentMethods) };
     } else {

@@ -54,7 +54,7 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
       // postMessage back to the origin frame that the request was cancelled.
       this._requestInfo.source.postMessage({
         rpcId: this._requestInfo.rpcId,
-        canceled: true
+        canceled: true,
       }, this._requestInfo.origin);
     }
   }
@@ -176,9 +176,10 @@ SandstormPowerboxRequest = class SandstormPowerboxRequest {
             } else {
               cardData.title = "Verify e-mail addresses using " + name;
             }
-          } else  {
+          } else {
             cardData.title = "Verify e-mail addresses using any login service";
           }
+
           cardData.iconSrc = "/email-m.svg";
         } else if (cardData.frontendRef.verifiedEmail) {
           cardData.title = cardData.frontendRef.verifiedEmail.address;

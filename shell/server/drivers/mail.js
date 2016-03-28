@@ -320,7 +320,7 @@ class EmailVerifierImpl {
     //   not available in Javascript yet and even if it were, it wouldn't work in the case where
     //   there are multiple front-end replicas, since the verification could be on a different
     //   replica.
-    return verification.castAs(SystemPersistent).save({frontend: null}).then(saveResult => {
+    return verification.castAs(SystemPersistent).save({ frontend: null }).then(saveResult => {
       return inMeteor(() => {
         const tokenId = hashSturdyRef(saveResult.sturdyRef);
         let tokenInfo = ApiTokens.findOne(tokenId);

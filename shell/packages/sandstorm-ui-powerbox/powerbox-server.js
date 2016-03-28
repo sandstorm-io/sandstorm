@@ -91,9 +91,9 @@ Meteor.methods({
       // Build the descriptor, which contains the verifier ID.
       const tagValue = frontendRefVariety.verifiedEmail.verifierId &&
           Capnp.serialize(Email.VerifiedEmail.PowerboxTag,
-              {verifierId: new Buffer(frontendRefVariety.verifiedEmail.verifierId, "hex")});
+              { verifierId: new Buffer(frontendRefVariety.verifiedEmail.verifierId, "hex") });
       descriptor = encodePowerboxDescriptor({
-        tags: [{ id: Email.VerifiedEmail.typeId, value: tagValue }]
+        tags: [{ id: Email.VerifiedEmail.typeId, value: tagValue }],
       });
     } else {
       throw new Meteor.Error(500, "Unimplemented frontendRef type");
@@ -146,6 +146,7 @@ class PowerboxOption {
         // the verifierId.
         this.frontendRef.verifiedEmail.verifierId = other.frontendRef.verifiedEmail.verifierId;
       }
+
       return true;
     } else {
       // No intersection logic needed for other types.
@@ -242,14 +243,14 @@ specialCaseTypes[Email.EmailVerifier.typeId] = function (db, userId, value) {
 
   results.push({
     _id: "emailverifier-all",
-    frontendRef: { emailVerifier: {} }
+    frontendRef: { emailVerifier: {} },
   });
 
   for (const name in Accounts.identityServices) {
     if (Accounts.identityServices[name].isEnabled()) {
       results.push({
         _id: "emailverifier-" + name,
-        frontendRef: { emailVerifier: { services: [name] } }
+        frontendRef: { emailVerifier: { services: [name] } },
       });
     }
   };
@@ -262,7 +263,7 @@ specialCaseTypes[Email.VerifiedEmail.typeId] = function (db, userId, value) {
       Capnp.parse(Email.VerifiedEmail.PowerboxTag, value).verifierId.toString("base64");
   return getVerifiedEmails(db, userId, verifierId).map(address => ({
     _id: "email-" + address,
-    frontendRef: { verifiedEmail: { verifierId, address } }
+    frontendRef: { verifiedEmail: { verifierId, address } },
   }));
 };
 
@@ -286,7 +287,7 @@ function getVerifiedEmails(db, userId, verifierId) {
 
   const user = Meteor.users.findOne(userId);
   const emails = {};  // map address -> true, for uniquification
-  Meteor.users.find({_id: {$in: SandstormDb.getUserIdentityIds(user)}}).forEach(identity => {
+  Meteor.users.find({ _id: { $in: SandstormDb.getUserIdentityIds(user) } }).forEach(identity => {
     if (!services || services[identity.profile.service]) {
       SandstormDb.getVerifiedEmails(identity).forEach(email => { emails[email.email] = true; });
     }

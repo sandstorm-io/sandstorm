@@ -351,8 +351,6 @@ module.exports["Test roleless sharing"] = function (browser) {
 
             .loginDevAccount(firstUserName)
             .url(response.value)
-            .waitForElementVisible("button.pick-identity", short_wait)
-            .click("button.pick-identity")
             .waitForElementVisible('.grain-frame', medium_wait)
             .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
             .click('.topbar .share > .show-popup')

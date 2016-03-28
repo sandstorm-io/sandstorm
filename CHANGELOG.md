@@ -1,3 +1,6 @@
+### v0.155 (2016-03-27) [bugfixes]
+- Remove chatty console.log() recently added for debugging. Oops.
+
 ### v0.154 (2016-03-27)
 - Apps can now verify a user's email address via a Powerbox interaction.
 - Apps can now more easily tell when multiple sessions originate from the same grain tab (e.g. because the user closed their laptop and then opened it later and continued using the tab). Previously the app had to save a cookie to do this, but now Sandstorm will give it a `tabId`.

@@ -1331,6 +1331,17 @@ _.extend(SandstormDb.prototype, {
     const setting = Settings.findOne({ _id: "organizationLdap" });
     return setting ? setting.value : false;
   },
+
+  getReturnAddressWithDisplayName: function (identityId) {
+    check(identityId, String);
+    const identity = this.getIdentity(identityId);
+
+    // First remove any instances of characters that cause trouble for SimpleSmtp. Ideally,
+    // we could escape such characters with a backslash, but that does not seem to help here.
+    const sanitized = identity.profile.name.replace(/"|<|>|\\|\r/g, "");
+    const displayName = sanitized + " (via " + this.getServerTitle() + ")";
+    return "\"" + displayName + "\" <" + this.getReturnAddress() + ">";
+  },
 });
 
 SandstormDb.escapeMongoKey = (key) => {

@@ -288,7 +288,7 @@ function getVerifiedEmails(db, userId, verifierId) {
   const emails = {};  // map address -> true, for uniquification
   Meteor.users.find({_id: {$in: SandstormDb.getUserIdentityIds(user)}}).forEach(identity => {
     if (!services || services[identity.profile.service]) {
-      SandstormDb.getVerifiedEmails(identity).forEach(email => emails[email.email] = true);
+      SandstormDb.getVerifiedEmails(identity).forEach(email => { emails[email.email] = true; });
     }
   });
 

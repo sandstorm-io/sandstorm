@@ -437,9 +437,19 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
     .waitForElementVisible(".new-share-token", short_wait)
     .submitForm('.new-share-token')
     .waitForElementVisible('#share-token-text', medium_wait)
-    // Navigate to the url with an anonymous user
     .getText('#share-token-text', function(shareLink) {
       browser
+        .url(shareLink.value)
+         // Identity picker should not come up on visiting our own link.
+        .url(shareLink.value)
+        .waitForElementVisible('.grain-frame', medium_wait)
+        .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+        .frame('grain-frame')
+        .waitForElementPresent('#publish', medium_wait)
+        .assert.containsText('#publish', 'Publish')
+        .frame(null)
+
+        // Navigate to the url with an anonymous user
         .loginDevAccount()
         .pause(short_wait)
         // Try incognito
@@ -480,6 +490,25 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .waitForElementPresent('#publish', medium_wait)
         .assert.containsText('#publish', 'Publish')
         .frame(null)
-        .end();
+
+        .click('.topbar .share > .show-popup')
+        .waitForElementVisible("#shareable-link-tab-header", short_wait)
+        .click("#shareable-link-tab-header")
+        .waitForElementVisible(".new-share-token", short_wait)
+        .submitForm('.new-share-token')
+        .waitForElementVisible('#share-token-text', medium_wait)
+        .getText('#share-token-text', function(shareLink) {
+          browser
+            .url(shareLink.value)
+             // Identity picker should not come up on visiting our own link.
+            .url(shareLink.value)
+            .waitForElementVisible('.grain-frame', medium_wait)
+            .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+            .frame('grain-frame')
+            .waitForElementPresent('#publish', medium_wait)
+            .assert.containsText('#publish', 'Publish')
+            .frame(null)
+            .end()
+        });
     });
 }

@@ -1,3 +1,13 @@
+### v0.154 (2016-03-27)
+- Apps can now verify a user's email address via a Powerbox interaction.
+- Apps can now more easily tell when multiple sessions originate from the same grain tab (e.g. because the user closed their laptop and then opened it later and continued using the tab). Previously the app had to save a cookie to do this, but now Sandstorm will give it a `tabId`.
+- Sandstorm will now warn you in the admin panel if Websockets aren't working, which tends to break many apps.
+- The Picker Powerbox's query format has changed. Queries are now specified as base64-packed-capnp rather than JSON. This is necessary since the Sandstorm system does not necessarily know the schema of these descriptors and so won't be able to perform a JSON->capnp translation itself.
+- Fixed a refresh loop that could occur when visiting a sharing link that had been revoked.
+- Fixed some email deliverability issues. (Envelope sender was not always being set correctly.)
+- Self-hosting: Fixed possible (but obscure) exception during startup migrations introduced in 0.151.
+- Sandstorm for Work: Fixed "LDAP Search Username Field" not saving.
+
 ### v0.153 (2016-03-22) [bugfixes]
 - Fix blank screen when clicking through a share-by-identity email.
 

@@ -80,11 +80,26 @@ GrainView = class GrainView {
     // Whenever a dev package is published or removed, reset the view.
     this._devAppObserver = Tracker.autorun(() => {
       const grain = this._db.getGrain(grainId);
-      const devApp = grain && this._db.collections.devPackages.findOne({ appId: grain.appId });
+
+      let devApp;
+      if (grain) {
+        devApp = grain && this._db.collections.devPackages.findOne({ appId: grain.appId });
+      } else {
+        // Probably, we aren't the owner of the grain. In this case we actually intentionally
+        // cannot determine the grain's appId, so we have to heuristically use appTitle instead.
+        // TODO(someday): This still doesn't work for anonymous users since they don't have any
+        //   denormalized grain metadata! But if we fix that bug this should suddenly work.
+        devApp = this._db.collections.devPackages.findOne({
+          "manifest.appTitle.defaultText": this.appTitle(),
+        });
+      }
+
+      console.log(devApp, this._status, this._devAppId, this.appTitle(), this._tokenInfo);
+
       const id = devApp ? devApp._id : "none";
       if (this._devAppId !== id) {
         if (this._status !== "closed") {
-          this.reset();
+          this.reset(this.identityId());
           this.openSession();
         }
       }

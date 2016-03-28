@@ -1117,7 +1117,12 @@ _.extend(SandstormDb.prototype, {
 
   getDenormalizedGrainInfo: function getDenormalizedGrainInfo(grainId) {
     const grain = this.getGrain(grainId);
-    const pkg = this.collections.packages.findOne(grain.packageId);
+    let pkg = this.collections.packages.findOne(grain.packageId);
+
+    if (!pkg) {
+      pkg = this.collections.devPackages.findOne(grain.packageId);
+    }
+
     const appTitle = (pkg && pkg.manifest && pkg.manifest.appTitle) || { defaultText: "" };
     const grainInfo = { appTitle: appTitle };
 

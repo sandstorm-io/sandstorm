@@ -368,6 +368,14 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //                  database when that happens. This field contains the boolean true to signify that
 //                  it has been set.
 //       ipInterface: Ditto IpNetwork, except it's an IpInterface.
+//       emailVerifier: An EmailVerifier capability that is implemented by the frontend. The
+//                      value is an object containing the field `services`, which itself is a
+//                      list of names of identity providers that are trusted to verify addresses.
+//                      If `services` is omitted or falsy, all configured identity providers are
+//                      trusted. Note that a malicious user could specify invalid names in the
+//                      list; they should be ignored.
+//       verifiedEmail: An VerifiedEmail capability that is implemented by the frontend.
+//                      An object containing `verifierId`, `tabId`, and `address`.
 //   parentToken: If present, then this token represents exactly the capability represented by
 //              the ApiToken with _id = parentToken, except possibly (if it is a UiView) attenuated
 //              by `roleAssignment` (if present). To facilitate permissions computations, if the
@@ -415,9 +423,17 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //       }
 //     }
 //     frontendRef :union {
-//        notificationHandle :Text;
-//        ipNetwork :Bool;
-//        ipInterface :Bool;
+//       notificationHandle :Text;
+//       ipNetwork :Bool;
+//       ipInterface :Bool;
+//       emailVerifier :group {
+//         services :List(String);
+//       }
+//       verifiedEmail :group {
+//         verifierId :Text;
+//         tabId :Text;
+//         address :Text;
+//       }
 //     }
 //     child :group {
 //       parentToken :Text;

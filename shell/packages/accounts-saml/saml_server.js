@@ -2,9 +2,13 @@ if (!Accounts.saml) {
   Accounts.saml = {};
 }
 
+const Url = Npm.require("url");
 const Fiber = Npm.require("fibers");
 const connect = Npm.require("connect");
+
 RoutePolicy.declare("/_saml/", "network");
+
+const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 
 Accounts.registerLoginHandler(function (loginRequest) {
   if (!loginRequest.saml || !loginRequest.credentialToken) {
@@ -13,23 +17,9 @@ Accounts.registerLoginHandler(function (loginRequest) {
 
   const loginResult = Accounts.saml.retrieveCredential(loginRequest.credentialToken);
   if (loginResult && loginResult.profile && loginResult.profile.email) {
-    const user = Meteor.users.findOne({ "emails.address":loginResult.profile.email });
-
-    if (!user)
-      throw new Error("Could not find an existing user with supplied email " + loginResult.profile.email);
-
-    //creating the token and adding to the user
-    const stampedToken = Accounts._generateStampedLoginToken();
-    Meteor.users.update(user,
-      { $push: { "services.resume.loginTokens": stampedToken } }
-    );
-
-    //sending token along with the userId
-    return {
-        id: user._id,
-        token: stampedToken.token,
-      };
-
+    let user = _.pick(loginResult.profile, "nameID", "email");
+    user.id = user.email;
+    return Accounts.updateOrCreateUserFromExternalService("saml", user, {});
   } else {
     throw new Error("SAML Profile did not contain an email address");
   }
@@ -69,16 +59,20 @@ middleware = function (req, res, next) {
     if (!samlObject.actionName)
       throw new Error("Missing SAML action");
 
-    const service = _.find(Meteor.settings.saml, function (samlSetting) {
-      return samlSetting.provider === samlObject.serviceName;
-    });
+    const service = {
+    "provider":"default",
+    "entryPoint": SandstormDb.prototype.getSamlEntryPoint(),
+    // TODO(someday): find a better way to inject the DB
+    "issuer": HOSTNAME,
+    "cert": SandstormDb.prototype.getSamlPublicCert(),
+  };
 
     // Skip everything if there's no service set by the saml middleware
     if (!service)
       throw new Error("Unexpected SAML service " + samlObject.serviceName);
 
     if (samlObject.actionName === "authorize") {
-      service.callbackUrl = Meteor.absoluteUrl("_saml/validate/" + service.provider + "/" + samlObject.credentialToken);
+      service.callbackUrl = Meteor.absoluteUrl("_saml/validate/" + service.provider);
       service.id = samlObject.credentialToken;
       _saml = new SAML(service);
       _saml.getAuthorizeUrl(req, function (err, url) {
@@ -132,7 +126,7 @@ const samlUrlToObject = function (url) {
 
 const closePopup = function (res, err) {
   res.writeHead(200, { "Content-Type": "text/html" });
-  const content =
+  let content =
         "<html><head><script>window.close()</script></head></html>";
   if (err)
     content = "<html><body><h2>Sorry, an error occured</h2><div>" + err + '</div><a onclick="window.close();">Close Window</a></body></html>';

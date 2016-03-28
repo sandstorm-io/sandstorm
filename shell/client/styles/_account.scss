@@ -152,7 +152,8 @@ body>.popup.account>.frame {
       background-image: url("/email-m.svg");
     }
   }
-  >form.ldap {
+  >form.ldap,
+  >button.login.saml {
     background-image: url("/ldap.svg");
     &:hover {
       background-image: url("/ldap-m.svg");

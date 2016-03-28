@@ -1,17 +1,17 @@
 Package.describe({
-  name:"natestrauser:accounts-saml",
+  name:"accounts-saml",
   summary: "saml login provider for meteor",
-  version: "0.1.1",
-  git: "https://github.com/nate-strauser/meteor-accounts-saml.git",
+  version: "0.2.0",
+  git: "https://github.com/nate-strauser/meteor-accounts-saml.git", // package was forked from here
 });
 
 Package.onUse(function (api) {
-  api.versionsFrom("METEOR@0.9.0");
-  api.use(["routepolicy", "webapp", "underscore", "service-configuration"], "server");
-  api.use(["http", "accounts-base"], ["client", "server"]);
+  api.use(["routepolicy", "webapp", "underscore", "service-configuration", "sandstorm-db"], "server");
+  api.use(["http", "accounts-base", "random"], ["client", "server"]);
 
   api.addFiles(["saml_server.js", "saml_utils.js"], "server");
   api.addFiles("saml_client.js", "client");
+  api.use("ecmascript");
 });
 
 Npm.depends({

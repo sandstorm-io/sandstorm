@@ -8,13 +8,14 @@ Accounts.saml.initiateLogin = function (options, callback, dimensions) {
     Meteor.absoluteUrl("_saml/authorize/" + options.provider + "/" + options.credentialToken),
     (dimensions && dimensions.width) || 650,
     (dimensions && dimensions.height) || 500);
+  let popupClosed;
 
   const checkPopupOpen = setInterval(function () {
     try {
       // Fix for #328 - added a second test criteria (popup.closed === undefined)
       // to humour this Android quirk:
       // http://code.google.com/p/android/issues/detail?id=21061
-      let popupClosed = popup.closed || popup.closed === undefined;
+      popupClosed = popup.closed || popup.closed === undefined;
     } catch (e) {
       // For some unknown reason, IE9 (and others?) sometimes (when
       // the popup closes too quickly?) throws "SCRIPT16386: No such

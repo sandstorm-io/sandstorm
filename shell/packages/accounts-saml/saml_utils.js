@@ -35,7 +35,7 @@ SAML.prototype.initialize = function (options) {
 
 SAML.prototype.generateUniqueID = function () {
   const chars = "abcdef0123456789";
-  const uniqueID = "";
+  let uniqueID = "";
   for (let i = 0; i < 20; i++) {
     uniqueID += chars.substr(Math.floor((Math.random() * 15)), 1);
   }
@@ -55,7 +55,7 @@ SAML.prototype.signRequest = function (xml) {
 };
 
 SAML.prototype.generateAuthorizeRequest = function (req) {
-  const id = "_" + this.generateUniqueID();
+  let id = "_" + this.generateUniqueID();
   const instant = this.generateInstant();
 
   let callbackUrl;
@@ -115,7 +115,7 @@ SAML.prototype.requestToUrl = function (request, operation, callback) {
     }
 
     const base64 = buffer.toString("base64");
-    const target = _this.options.entryPoint;
+    let target = _this.options.entryPoint;
 
     if (operation === "logout") {
       if (_this.options.logoutUrl) {

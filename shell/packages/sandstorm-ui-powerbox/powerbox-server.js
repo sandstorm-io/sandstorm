@@ -17,6 +17,7 @@
 const Capnp = Npm.require("capnp");
 const Grain = Capnp.importSystem("sandstorm/grain.capnp");
 const Ip = Capnp.importSystem("sandstorm/ip.capnp");
+const Email = Capnp.importSystem("sandstorm/email.capnp");
 
 function encodePowerboxDescriptor(desc) {
   return Capnp.serializePacked(Grain.PowerboxDescriptor, desc)
@@ -33,6 +34,8 @@ Meteor.methods({
     check(frontendRefVariety, Match.OneOf(
       { ipNetwork: true },
       { ipInterface: true },
+      { emailVerifier: { services: Match.Optional([String]) } },
+      { verifiedEmail: { verifierId: Match.Optional(String), address: String } },
     ));
     check(saveLabel, {
       defaultText: String,
@@ -41,26 +44,59 @@ Meteor.methods({
 
     const db = this.connection.sandstormDb;
 
+    const session = db.collections.sessions.findOne(sessionId);
+    if (!session) {
+      throw new Meteor.Error(403, "Invalid session ID");
+    }
+
     let descriptor;
+    let requirements = [];
     if (frontendRefVariety.ipNetwork) {
       if (!db.isAdmin(this.userId)) {
         throw new Meteor.Error(403, "User must be an admin to powerbox offer IpNetwork");
       }
 
       descriptor = encodePowerboxDescriptor({ tags: [{ id: Ip.IpNetwork.typeId }] });
+      requirements.push({ userIsAdmin: Meteor.userId() });
     } else if (frontendRefVariety.ipInterface) {
       if (!db.isAdmin(this.userId)) {
         throw new Meteor.Error(403, "User must be an admin to powerbox offer IpInterface");
       }
 
       descriptor = encodePowerboxDescriptor({ tags: [{ id: Ip.IpInterface.typeId }] });
+      requirements.push({ userIsAdmin: Meteor.userId() });
+    } else if (frontendRefVariety.emailVerifier) {
+      const services = frontendRefVariety.emailVerifier.services;
+      if (services) {
+        services.forEach(service => {
+          if (!Accounts.identityServices[service]) {
+            throw new Error("No such identity service: " + service);
+          }
+        });
+      }
+
+      descriptor = encodePowerboxDescriptor({ tags: [{ id: Email.EmailVerifier.typeId }] });
+    } else if (frontendRefVariety.verifiedEmail) {
+      // Verify that the address actually belongs to the user.
+
+      if (!_.contains(
+          getVerifiedEmails(db, this.userId, frontendRefVariety.verifiedEmail.verifierId),
+          frontendRefVariety.verifiedEmail.address)) {
+        throw new Meteor.Error(403, "User has no such verified address");
+      }
+
+      // Add the session's tabId.
+      frontendRefVariety.verifiedEmail.tabId = session.tabId;
+
+      // Build the descriptor, which contains the verifier ID.
+      const tagValue = frontendRefVariety.verifiedEmail.verifierId &&
+          Capnp.serialize(Email.VerifiedEmail.PowerboxTag,
+              { verifierId: new Buffer(frontendRefVariety.verifiedEmail.verifierId, "hex") });
+      descriptor = encodePowerboxDescriptor({
+        tags: [{ id: Email.VerifiedEmail.typeId, value: tagValue }],
+      });
     } else {
       throw new Meteor.Error(500, "Unimplemented frontendRef type");
-    }
-
-    const session = db.collections.sessions.findOne(sessionId);
-    if (!session) {
-      throw new Meteor.Error(403, "Invalid session ID");
     }
 
     const grainId = session.grainId;
@@ -71,10 +107,6 @@ Meteor.methods({
         introducerIdentity: session.identityId,
       },
     };
-
-    const requirements = [
-      { userIsAdmin: Meteor.userId() },
-    ];
 
     // TODO(cleanup): refactor: reaches out into core.js
     const sturdyRef = waitPromise(saveFrontendRef(frontendRefVariety, apiTokenOwner, requirements)).sturdyRef.toString();
@@ -102,6 +134,20 @@ class PowerboxOption {
       if (this.uiView && !other.uiView) delete this.uiView;
       if (this.hostedObject && !other.hostedObject) delete this.hostedObject;
       return !!(this.uiView || this.hostedObject);
+    } else if ((this.frontendRef || {}).verifiedEmail) {
+      // Try to hint which verifierId matched.
+      if (this.frontendRef.verifiedEmail.verifierId) {
+        if (other.frontendRef.verifiedEmail.verifierId) {
+          // Can't match multiple verifiers at once.
+          return false;
+        }
+      } else if (other.frontendRef.verifiedEmail.verifierId) {
+        // One request did not specify any verifierId, the other did, and both matched, so use
+        // the verifierId.
+        this.frontendRef.verifiedEmail.verifierId = other.frontendRef.verifiedEmail.verifierId;
+      }
+
+      return true;
     } else {
       // No intersection logic needed for other types.
       return true;
@@ -119,6 +165,12 @@ class PowerboxOption {
     if (other.grainId) {
       if (!this.uiView && other.uiView) this.uiView = other.uiView;
       if (!this.hostedObject && other.hostedObject) this.hostedObject = other.hostedObject;
+    } else if ((this.frontendRef || {}).verifiedEmail) {
+      // If this doesn't have a verifierId but other does, copy it over.
+      if (!this.frontendRef.verifiedEmail.verifierId &&
+          other.frontendRef.verifiedEmail.verifierId) {
+        this.frontendRef.verifiedEmail.verifierId = other.frontendRef.verifiedEmail.verifierId;
+      }
     }
   }
 
@@ -158,7 +210,7 @@ specialCaseTypes[Grain.UiView.typeId] = function (db, userId, value) {
       uiView: {},
     });
   });
-},
+};
 
 specialCaseTypes[Ip.IpNetwork.typeId] = function (db, userId, value) {
   if (Meteor.users.findOne(userId).isAdmin) {
@@ -171,7 +223,7 @@ specialCaseTypes[Ip.IpNetwork.typeId] = function (db, userId, value) {
   } else {
     return [];
   }
-},
+};
 
 specialCaseTypes[Ip.IpInterface.typeId] = function (db, userId, value) {
   if (Meteor.users.findOne(userId).isAdmin) {
@@ -184,7 +236,65 @@ specialCaseTypes[Ip.IpInterface.typeId] = function (db, userId, value) {
   } else {
     return [];
   }
-},
+};
+
+specialCaseTypes[Email.EmailVerifier.typeId] = function (db, userId, value) {
+  const results = [];
+
+  results.push({
+    _id: "emailverifier-all",
+    frontendRef: { emailVerifier: {} },
+  });
+
+  for (const name in Accounts.identityServices) {
+    if (Accounts.identityServices[name].isEnabled()) {
+      results.push({
+        _id: "emailverifier-" + name,
+        frontendRef: { emailVerifier: { services: [name] } },
+      });
+    }
+  };
+
+  return results;
+};
+
+specialCaseTypes[Email.VerifiedEmail.typeId] = function (db, userId, value) {
+  const verifierId = value &&
+      Capnp.parse(Email.VerifiedEmail.PowerboxTag, value).verifierId.toString("base64");
+  return getVerifiedEmails(db, userId, verifierId).map(address => ({
+    _id: "email-" + address,
+    frontendRef: { verifiedEmail: { verifierId, address } },
+  }));
+};
+
+function getVerifiedEmails(db, userId, verifierId) {
+  // Get all of the email addresses verified as belonging to the given user using the given
+  // verifier.
+
+  let services = null;
+
+  if (verifierId) {
+    const verifier = db.collections.apiTokens.findOne(verifierId);
+    const verifierInfo = ((verifier || {}).frontendRef || {}).emailVerifier;
+    if (!verifierInfo) return [];  // invalid verifier
+
+    if (verifierInfo.services) {
+      // Limit to the listed services.
+      services = {};
+      verifierInfo.services.forEach(service => services[service] = true);
+    }
+  }
+
+  const user = Meteor.users.findOne(userId);
+  const emails = {};  // map address -> true, for uniquification
+  Meteor.users.find({ _id: { $in: SandstormDb.getUserIdentityIds(user) } }).forEach(identity => {
+    if (!services || services[identity.profile.service]) {
+      SandstormDb.getVerifiedEmails(identity).forEach(email => { emails[email.email] = true; });
+    }
+  });
+
+  return Object.keys(emails);
+}
 
 Meteor.publish("powerboxOptions", function (requestId, descriptorList) {
   // Performs a powerbox query, returning options to present to the user in the powerbox.

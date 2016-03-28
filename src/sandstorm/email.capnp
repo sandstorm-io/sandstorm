@@ -114,6 +114,100 @@ interface EmailSendPort @0xec831dbf4cc9bcca {
   }
 }
 
+interface VerifiedEmail @0xf88bf102464dfa5a {
+  # By default, an app is not told a user's email address. You may, however, request that the user
+  # provide their verified email address through the powerbox.
+  #
+  # First, you need an `EmailVerifier`. See that class for info on how to get one.
+  #
+  # To verify a user, make a powerbox request for `VerifiedEmail`. In your `PowerboxDescriptor`,
+  # set the tag value to a `VerifiedEmail.PowerboxTag` which has `authority` set to the
+  # capability returned by you `EmailVerifier`'s `getAuthority()` method. The user will be asked to
+  # choose one of their addresses. The Powerbox returns an `VerifiedEmail` for the address they
+  # chose. You must then pass this object to `EmailVerifier.verifyEmail()` to verify that
+  # the capability really is attached to the user's account and obtain the final address.
+  #
+  # You might wonder why the `EmailVerifier.verifyEmail()` step is necessary -- why not just
+  # have a `getAddress()` method on `VerifiedEmail` itself? The answer is that although the
+  # powerbox will only offer the user a choice of addresses associated with their account, the
+  # powerbox code runs client-side, and thus a malicious user could inject an arbitrary capability
+  # in place of the powerbox's response. So, they could respond with a fake `VerifiedEmail`
+  # capability.
+
+  struct PowerboxTag {
+    # Use this type as the tag value when requesting an VerifiedEmail in order to narrow the
+    # choices presented to the user.
+
+    verifierId @0 :Data;
+    # Value returned by `EmailVerifier.getId()`. Pass this to ensure that only
+    # addresses which can be verified by this verifier are offered as options.
+
+    address @1 :Text;
+    # Specify a complete address (like "foo@example.com") in a Powerbox request to request that
+    # the user verify this specific address and no other. The user will still have the choice to
+    # refuse verification, but will not be offered other addresses.
+    #
+    # This field will NOT be present in the tag returned with the powerbox response, because the
+    # field could be spoofed by the user. You must invoke `EmailVerifier.verifyEmail()` to find out
+    # the matching address.
+
+    domain @2 :Text;
+    # Specify a domain (like "example.com") in a Powerbox request to requiure that the user choose
+    # an address under the specified domain. The user will still have the choice to refuse
+    # verification, but will not be offered addresses under other domains.
+    #
+    # This field will NOT be present in the tag returned with the powerbox response, because the
+    # field could be spoofed by the user. You must invoke `EmailVerifier.verifyEmail()` to find out
+    # the matching address.
+  }
+}
+
+interface VerifiedEmailSendPort @0xa3cc885445aed8e9 extends(VerifiedEmail, EmailSendPort) {
+  # Make a PowerboxRequest for this type when you want to both verify an email and request
+  # the ability to send messages to it.
+
+  struct PowerboxTag {
+    verification @0 :VerifiedEmail.PowerboxTag;
+    port @1 :EmailSendPort.PowerboxTag;
+  }
+}
+
+interface EmailVerifier @0xd458f7ca9d1ba9ff {
+  # Object which can verify users' email addresses.
+  #
+  # To obtain an `EmailVerifier`, do a powerbox request for one, usually during first-time
+  # setup of your app. The user will be asked what kinds of address verification mechanisms they
+  # wish to trust -- e.g., do they trust that if Github says it has verified an address, it really
+  # has, or do they want Sandstorm do directly verify addresses? SECURITY NOTE: The user from whom
+  # you request the `EmailVerifier` will have the ability to spoof verifications, so only
+  # request it from the grain owner!
+  #
+  # Once you have a verifier, you can verify a user's address by making a powerbox request for
+  # an `VerifiedEmail` from that user; see the docs for `VerifiedEmail` for info.
+
+  getId @0 () -> (id :Data);
+  # Place the returned value in your `VerifiedEmail.PowerboxTag` when making a powerbox
+  # request. This tells the powerbox to filter for options that will be accepted by this
+  # `EmailVerifier`.
+  #
+  # Implementations of EmailVerifier should generate this value randomly to prevent collisions,
+  # but note that the ID need not be kept secret, since it's really only a filtering hint.
+
+  verifyEmail @1 (tabId :Data, verification :VerifiedEmail) -> (address :Text);
+  # Unpack the given verification to read the address that was verified.
+  #
+  # `tabId` comes from `UiView.newSession()`; verification only succeeds if it was in fact this
+  # tab's user whose address was verified. This exists to prevent the following MITM attack: Alice
+  # wants to falsely verify to a grain belonging to Carol that she owns Bob's address. So, she
+  # creates a grain of her own running an app that requests email verification and sends it to Bob.
+  # Bob willingly verifies his email to Alice's grain since Alice already knows his address anyway.
+  # However, Alice's grain actually stashes the VerifiedEmail capability. Alice then visits
+  # Carol's grain which requests email verification. Alice directs her malicious grain to respond
+  # to the powerbox request with Bob's VerifiedEmail. This doesn't work because Bob's
+  # VerifiedEmail was created in Bob's tab (against Alice's grain), and therefore when Carol's
+  # grain tries to verify it passing Alice's `tabId`, they don't match, and the verification fails.
+}
+
 interface EmailAgent @0x8b6f158d70cbc773 {
   # Represents the ability to send and receive email as some user.
   #

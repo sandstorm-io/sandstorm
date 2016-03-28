@@ -575,12 +575,11 @@ GrainView = class GrainView {
       Meteor.call("openSessionFromApiToken",
         openSessionArg, identityId, _this._sessionSalt, (error, result) => {
           if (error) {
-            console.log("openSessionFromApiToken error");
+            console.error("openSessionFromApiToken error", error);
             _this._error = error;
             _this._status = "error";
             _this._dep.changed();
           } else if (result.redirectToGrain) {
-            console.log("openSessionFromApiToken redirectToGrain");
             _this._grainId = result.redirectToGrain;
             _this._dep.changed();
 
@@ -588,7 +587,6 @@ GrainView = class GrainView {
           } else {
             // We are viewing this via just the /shared/ link, either as an anonymous user on in our
             // incognito mode (since we'd otherwise have redeemed the token and been redirected).
-            console.log("openSessionFromApiToken success");
             _this._title = result.title;
             _this._grainId = result.grainId;
             _this._sessionId = result.sessionId;

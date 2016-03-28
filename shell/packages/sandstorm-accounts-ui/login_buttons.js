@@ -17,11 +17,16 @@ Template._loginButtonsLoggedOutDropdown.helpers(helpers);
 Template._loginButtonsLoggedInDropdown.helpers(helpers);
 
 Template.loginButtonsPopup.onRendered(function () {
-  this.find(".login-buttons-list :first-child").focus();
+  let element = this.find(".login-buttons-list :first-child");
+  if (!element) {
+    element = this.find(".login-suggestion button.login");
+  }
+  if (element) element.focus();
 });
 
 Template.accountButtonsPopup.onRendered(function () {
-  this.find(".account-buttons-list :first-child").focus();
+  const element = this.find(".account-buttons-list :first-child");
+  if (element) element.focus();
 });
 
 Template.accountButtonsPopup.events({

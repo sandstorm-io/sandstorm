@@ -11,6 +11,10 @@ RoutePolicy.declare("/_saml/", "network");
 const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 
 Accounts.registerLoginHandler(function (loginRequest) {
+  if (!Accounts.identityServices.saml.isEnabled()) {
+    throw new Meteor.Error(403, "SAML service is disabled.");
+  }
+
   if (!loginRequest.saml || !loginRequest.credentialToken) {
     return undefined;
   }
@@ -50,6 +54,11 @@ middleware = function (req, res, next) {
   // Make sure to catch any exceptions because otherwise we'd crash
   // the runner
   try {
+    if (!Accounts.identityServices.saml.isEnabled()) {
+      next();
+      return;
+    }
+
     const samlObject = samlUrlToObject(req.url);
     if (!samlObject || !samlObject.serviceName) {
       next();

@@ -1,4 +1,4 @@
-body>.popup.login>.frame {
+body>.popup.login>.frame-container>.frame {
   width: 200px;
   border: none;
   min-width: 200px;
@@ -15,7 +15,7 @@ body>.popup.login>.frame {
   }
 }
 
-body>.popup.account>.frame {
+body>.popup.account>.frame-container>.frame {
   width: 250px;
   border: none;
 
@@ -1093,7 +1093,7 @@ body>.popup,
   }
 }
 
-body>.popup.billing-prompt>.frame {
+body>.popup.billing-prompt>.frame-container>.frame {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 
@@ -1117,7 +1117,7 @@ body>.popup.billing-prompt>.frame {
   overflow: hidden;
 }
 
-body>.popup.billing-prompt>.frame, .first-time-billing-prompt {
+body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
   text-align: center;
 
   >h2 {

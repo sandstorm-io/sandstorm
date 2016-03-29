@@ -232,7 +232,7 @@ Template.sandstormTopbar.events({
     }
   },
 
-  "click .popup>.frame>.close-popup": function (event) {
+  "click .popup>.frame-container>.frame>.close-popup": function (event) {
     event.stopPropagation();
     Template.instance().data.closePopup();
   },

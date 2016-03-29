@@ -27,7 +27,7 @@ SAML.prototype.initialize = function (options) {
   }
 
   if (options.identifierFormat === undefined) {
-    options.identifierFormat = "urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress";
+    options.identifierFormat = "urn:oasis:names:tc:SAML:2.0:nameid-format:persistent";
   }
 
   return options;

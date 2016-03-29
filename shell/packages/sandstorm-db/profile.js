@@ -83,8 +83,9 @@ if (Meteor.isServer) {
         "services.ldap.id":1,
         "services.ldap.rawAttrs":1,
 
-        "services.saml.nameID":1,
+        "services.saml.id":1,
         "services.saml.email":1,
+        "services.saml.displayName":1,
       }, });
   }),
 
@@ -212,7 +213,7 @@ SandstormDb.fillInProfileDefaults = function (user) {
     profile.name = profile.name || user.services.ldap.rawAttrs[key] || "Name Unknown";
     profile.handle = profile.handle || filterHandle(profile.name);
   } else if (profile.service === "saml") {
-    profile.name = profile.name || user.services.saml.email || "Name Unknown";
+    profile.name = profile.name || user.services.saml.displayName || "Name Unknown";
     profile.handle = profile.handle || filterHandle(profile.name);
   } else {
     throw new Error("unrecognized identity service: ", profile.service);
@@ -237,7 +238,7 @@ SandstormDb.fillInIntrinsicName = function (user) {
   } else if (profile.service === "ldap") {
     profile.intrinsicName = user.services.ldap.username;
   } else if (profile.service === "saml") {
-    profile.intrinsicName = user.services.saml.nameID;
+    profile.intrinsicName = user.services.saml.id;
   } else {
     throw new Error("unrecognized identity service: ", profile.service);
   }
@@ -254,6 +255,8 @@ SandstormDb.getVerifiedEmails = function (identity) {
       .filter(function (email) { return email.verified; })
       .map((email) => _.pick(email, "email", "primary"))
       .value();
+  } else if (identity.services.saml && identity.services.saml.email) {
+    return [{ email: identity.services.saml.email, primary: true }];
   }
 
   return [];
@@ -269,6 +272,7 @@ SandstormDb.prototype.findIdentitiesByEmail = function (email) {
     { "services.google.email": email },
     { "services.email.email": email },
     { "services.github.emails.email": email },
+    { "services.github.saml.email": email },
   ], }).fetch().filter(function (identity) {
     // Verify that the email is verified, since our query doesn't technically do that.
     return !!_findWhere(SandstormDb.getVerifiedEmails(identity), { email: email });

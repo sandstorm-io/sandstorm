@@ -21,8 +21,8 @@ Accounts.registerLoginHandler(function (loginRequest) {
 
   const loginResult = Accounts.saml.retrieveCredential(loginRequest.credentialToken);
   if (loginResult && loginResult.profile && loginResult.profile.email) {
-    let user = _.pick(loginResult.profile, "nameID", "email");
-    user.id = user.email;
+    let user = _.pick(loginResult.profile, "displayName", "email");
+    user.id = loginResult.profile.nameID;
     return Accounts.updateOrCreateUserFromExternalService("saml", user, {});
   } else {
     throw new Error("SAML Profile did not contain an email address");

@@ -1,5 +1,3 @@
-# App publishing guide
-
 After you've completed developing and testing your app's package for Sandstorm, you can publish it in the [Sandstorm App Market](https://apps.sandstorm.io/).
 
 ## Get feedback on your app

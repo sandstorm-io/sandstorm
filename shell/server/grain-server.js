@@ -94,6 +94,7 @@ Meteor.publish("tokenInfo", function (token) {
   }, {
     fields: {
       grainId: 1,
+      identityId: 1,
       owner: 1,
       revoked: 1,
     },
@@ -110,6 +111,7 @@ Meteor.publish("tokenInfo", function (token) {
       fields: {
         packageId: 1,
         appId: 1,
+        userId: 1,
       },
     });
     if (!grain) {
@@ -132,7 +134,8 @@ Meteor.publish("tokenInfo", function (token) {
           const identityIds = SandstormDb.getUserIdentityIds(user);
           const childToken = ApiTokens.findOne({ "owner.user.identityId": { $in: identityIds },
                                                  parentToken: apiToken._id, });
-          if (childToken) {
+          if (childToken || this.userId === grain.userId ||
+              identityIds.indexOf(apiToken.identityId) >= 0) {
             this.added("tokenInfo", token, { alreadyRedeemed: true, grainId: apiToken.grainId, });
             this.ready();
             return;

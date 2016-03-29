@@ -65,8 +65,8 @@ provide:
   the GitWeb creates a git repository you can clone from your laptop.
 
 * A user might use a Sandstorm app for personal communication. An
-  example is email; right now, there are two email apps in the
-  Sandstorm app list, Roundcube and Mailpile.
+  example is email; right now, there is one email app in the
+  Sandstorm app market, Roundcube.
 
 These categories are just examples; there are surely other kinds of
 apps that people will dream up.

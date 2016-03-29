@@ -21,6 +21,7 @@ Template.loginButtonsPopup.onRendered(function () {
   if (!element) {
     element = this.find(".login-suggestion button.login");
   }
+
   if (element) element.focus();
 });
 

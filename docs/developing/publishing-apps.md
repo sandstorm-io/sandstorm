@@ -129,7 +129,7 @@ Your app's manifest, or package definition file, (`sandstorm-pkgdef.capnp`) cont
 
 You can embed both SVGs or PNGs, and Sandstorm will use the best version provided for the use in question. Using PNGs requires a slightly different structure, which you can find an example of [here](https://github.com/dwrensha/sharelatex/blob/sandstorm-app/sandstorm-pkgdef.capnp#L26).
 
-<img src="https://inozs8hbcttx5fdveukc.oasis.sandstorm.io/docs/docs-package-icons.png"></img>
+![Screenshot of icons of various types and sizes](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/docs-package-icons.png)
 
 * The `appGrid` icon represents your app on the "New" screen on Sandstorm. It should be 128 x 128 pixels, and no larger than 64 KB.
 * The `grain` icon represents individual grains on both the navbar and the grain list. It should be 24 x 24 pixels, and no larger than 4 KB. If you omit this, the appGrid icon will be used.

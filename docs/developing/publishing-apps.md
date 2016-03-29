@@ -1,5 +1,3 @@
-# App publishing guide
-
 After you've completed developing and testing your app's package for Sandstorm, you can publish it in the [Sandstorm App Market](https://apps.sandstorm.io/).
 
 ## Get feedback on your app
@@ -130,6 +128,8 @@ Your app's manifest, or package definition file, (`sandstorm-pkgdef.capnp`) cont
 #### icons
 
 You can embed both SVGs or PNGs, and Sandstorm will use the best version provided for the use in question. Using PNGs requires a slightly different structure, which you can find an example of [here](https://github.com/dwrensha/sharelatex/blob/sandstorm-app/sandstorm-pkgdef.capnp#L26).
+
+![Screenshot of icons of various types and sizes](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/docs-package-icons.png)
 
 * The `appGrid` icon represents your app on the "New" screen on Sandstorm. It should be 128 x 128 pixels, and no larger than 64 KB.
 * The `grain` icon represents individual grains on both the navbar and the grain list. It should be 24 x 24 pixels, and no larger than 4 KB. If you omit this, the appGrid icon will be used.

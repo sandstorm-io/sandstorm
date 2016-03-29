@@ -158,11 +158,11 @@ Sometimes Sandstorm seems to be working fine but can launch no apps.
 
 If you see an error screen like this:
 
-![Unable to resolve the server's DNS address, screenshot in Chromium](http://rose.makesad.us/~paulproteus/tmp/unable-to-resolve.png)
+![Unable to resolve the server's DNS address, screenshot in Chromium](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/unable-to-resolve.png)
 
 even when the app management interface seems to work fine:
 
-![Skinny Sandstorm admin interface, showing your app instance](http://rose.makesad.us/~paulproteus/tmp/works-fine.png)
+![Skinny Sandstorm admin interface, showing your app instance](https://alpha-evgl4wnivwih0k6mzxt3.sandstorm.io/works-fine.png)
 
 This typically relates to Sandstorm's need for **wildcard DNS**. If you use HTTPS, you
 will also need **wildcard HTTPS**. Keep reading for more information.

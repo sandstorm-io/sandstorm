@@ -1009,6 +1009,15 @@ Template.emailInviteTab.helpers({
   preselectedIdentityId: function () {
     return Session.get("share-grain-" + Template.instance().grain.grainId());
   },
+
+  invitationExplanation: function () {
+    const primaryEmail = globalDb.getPrimaryEmail(Meteor.userId(), Accounts.getCurrentIdentityId());
+    if (primaryEmail) {
+      return "Invitation will be sent from " + primaryEmail;
+    } else {
+      return null;
+    }
+  },
 });
 
 Template.emailInviteTab.events({

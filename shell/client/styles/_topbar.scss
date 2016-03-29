@@ -1061,20 +1061,19 @@ body>.popup {
     }
 
     .button-container {
-      position: relative;
-      margin-top: 5px;
-      margin-bottom: 45px;
+      display: flex;
+      justify-content: space-between;
       margin-top: 10px;
     }
     .share-tabs form button {
       @extend %unstyled-button;
+      @extend %button-primary;
       border: 1px solid #ccc;
       border-radius: 4px;
       padding: 5px 16px;
       font-size: 10pt;
-      position: absolute;
-      right: 0;
       text-transform: uppercase;
+      margin-left: auto;
     }
     .share-token-role {
       width: 40%;
@@ -1128,7 +1127,12 @@ body>.popup {
     .personal-message {
       height: 100px;
     }
-    .label-explanation {
+    .invitation-explanation {
+      max-width: 80%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .invitation-explanation, .label-explanation {
       font-size: 8pt;
       font-style: italic;
     }

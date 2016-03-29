@@ -1370,6 +1370,23 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  getPrimaryEmail: function (accountId, identityId) {
+    check(accountId, String);
+    check(identityId, String);
+
+    const identity = this.getIdentity(identityId);
+    const senderEmails = SandstormDb.getVerifiedEmails(identity);
+    const senderPrimaryEmail = _.findWhere(senderEmails, { primary: true });
+    const accountPrimaryEmailAddress = this.getUser(accountId).primaryEmail;
+    if (_.findWhere(senderEmails, { email: accountPrimaryEmailAddress })) {
+      return accountPrimaryEmailAddress;
+    } else if (senderPrimaryEmail) {
+      return senderPrimaryEmail.email;
+    } else {
+      return null;
+    }
+  },
+
   getPrimaryEmailWithDisplayName: function (accountId, identityId) {
     check(accountId, String);
     check(identityId, String);
@@ -1381,14 +1398,10 @@ _.extend(SandstormDb.prototype, {
       return "\"" + sanitized + "\" <" + email + ">";
     }
 
+    const primaryEmail = this.getPrimaryEmail(accountId, identityId);
     const identity = this.getIdentity(identityId);
-    const senderEmails = SandstormDb.getVerifiedEmails(identity);
-    const senderPrimaryEmail = _.findWhere(senderEmails, { primary: true });
-    const accountPrimaryEmailAddress = this.getUser(accountId).primaryEmail;
-    if (_.findWhere(senderEmails, { email: accountPrimaryEmailAddress })) {
-      return addDisplayName(identity.profile.name, accountPrimaryEmailAddress);
-    } else if (senderPrimaryEmail) {
-      return addDisplayName(identity.profile.name, senderPrimaryEmail.email);
+    if (primaryEmail) {
+      return addDisplayName(identity.profile.name, primaryEmail);
     } else {
       return addDisplayName(identity.profile.name + " (via " + this.getServerTitle() + ")",
                             this.getReturnAddress());

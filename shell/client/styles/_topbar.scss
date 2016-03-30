@@ -960,6 +960,10 @@ body>.popup {
     }
   }
 
+  &.share>.frame-container {
+    width: 400px;
+  }
+
   &.share>.frame-container>.frame, &.who-has-access>.frame-container>.frame {
     $popup-background-color: #ededed;
 

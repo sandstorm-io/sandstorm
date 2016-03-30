@@ -26,9 +26,9 @@ $[slow]Choose your desired Sandcats subdomain (alphanumeric, max 20 characters).
 Type the word none to skip this step, or help for help.
 What *.sandcats-dev.sandstorm.io subdomain would you like? []$[type]help
 Sandcats.io is a free dynamic DNS service run by the Sandstorm development team.
-What Sandcats domain do you want to recover? [none] $[type]example.has.periods.in.it.example.com
+What Sandcats subdomain do you want to recover? [none] $[type]example.has.periods.in.it.example.com
 this function just wants the name of your subdomain
-What Sandcats domain do you want to recover? [none] $[type]none
+What Sandcats subdomain do you want to recover? [none] $[type]none
 What *.sandcats-dev.sandstorm.io subdomain would you like? []$[type]gensym
 We need your email on file so we can help you recover your domain if you lose access. No spam.
 Enter your email address: [] $[type]install-script@asheesh.org

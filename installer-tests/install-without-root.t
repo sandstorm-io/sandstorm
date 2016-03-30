@@ -6,8 +6,8 @@ Cleanup: uninstall_sandstorm
 $[run]CURL_USER_AGENT=testing /vagrant/install.sh -u
 $[slow]Sandstorm makes it easy to run web apps on your own server. You can have:
 
-1. A full server with automatic setup (press enter to accept this default)
-2. A development server, for writing apps.
+1. A typical install, to use Sandstorm (press enter to accept this default)
+2. A development server, for working on Sandstorm itself or localhost-based app development
 
 How are you going to use this Sandstorm install? [1] $[type]2
 Expose to localhost only? [yes] $[type]

@@ -7,6 +7,8 @@ $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]0
 $[run]sudo dpkg --configure -a && sudo apt-get -f -y install && echo dpkg-fixed
 $[veryslow]dpkg-fixed
+$[run]sudo DEBIAN_FRONTEND=noninteractive apt-get install -d -y --no-install-recommends nmap && echo nmap-downloaded
+$[veryslow]nmap-downloaded
 $[run]sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nmap && echo nmap-installed
 $[veryslow]nmap-installed
 $[run]CURL_USER_AGENT=testing OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k OVERRIDE_NC_PATH=/usr/bin/ncat bash /vagrant/install.sh -i

@@ -51,5 +51,7 @@ done
 (vagrant box list | grep -q 'precise64') || vagrant box add precise64 https://vagrantcloud.com/hashicorp/boxes/precise64/versions/1.1.0/providers/virtualbox.box
 (vagrant box list | grep -q 'precise64.*libvirt') || vagrant mutate precise64 libvirt
 
-# Download the latest released version of Asheesh's stodgy-tester tool.
-pip install --user --upgrade git+https://github.com/paulproteus/stodgy-tester.git#egg=stodgy-tester
+# Download the latest released version of Asheesh's stodgy-tester tool, if it is absent.
+if [ ! -f ~/.local/bin/stodgy-tester ] ; then
+  pip install --user --upgrade git+https://github.com/paulproteus/stodgy-tester.git#egg=stodgy-tester
+fi

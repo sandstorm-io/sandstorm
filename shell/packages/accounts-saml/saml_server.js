@@ -11,12 +11,12 @@ RoutePolicy.declare("/_saml/", "network");
 const HOSTNAME = Url.parse(process.env.ROOT_URL).hostname;
 
 Accounts.registerLoginHandler(function (loginRequest) {
-  if (!Accounts.identityServices.saml.isEnabled()) {
-    throw new Meteor.Error(403, "SAML service is disabled.");
-  }
-
   if (!loginRequest.saml || !loginRequest.credentialToken) {
     return undefined;
+  }
+
+  if (!Accounts.identityServices.saml.isEnabled()) {
+    throw new Meteor.Error(403, "SAML service is disabled.");
   }
 
   const loginResult = Accounts.saml.retrieveCredential(loginRequest.credentialToken);

@@ -19,8 +19,7 @@ const publicAdminSettings = [
   "google", "github", "ldap", "saml", "emailToken", "splashUrl", "signupDialog",
   "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
   "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled",
-  "serverTitle", "returnAddress", "ldapNameField", "organizationEmail", "organizationLdap",
-  "organizationGoogle", "organizationSaml",
+  "serverTitle", "returnAddress", "ldapNameField", "organizationMembership",
 ];
 
 const FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS = [
@@ -158,6 +157,34 @@ Meteor.methods({
         value: buf,
       }
     );
+  },
+
+  saveOrganizationSettings(token, params) {
+    checkAuth(token);
+    check(params, {
+      membership: {
+        emailToken: {
+          enabled: Boolean,
+          domain: String,
+        },
+        google: {
+          enabled: Boolean,
+          domain: String,
+        },
+        ldap: {
+          enabled: Boolean,
+        },
+        saml: {
+          enabled: Boolean,
+        },
+      },
+      // Disabled until we've actually implemented the feature.
+      //settings: {
+      //  publishContacts: Boolean,
+      //},
+    });
+
+    this.connection.sandstormDb.collections.settings.upsert({ _id: "organizationMembership" }, { value: params.membership });
   },
 
   adminConfigureLoginService: function (token, options) {

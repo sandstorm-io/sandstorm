@@ -223,7 +223,7 @@ Template.adminSettings.events({
     const token = this.token;
     resetResult(state);
     if (globalDb.isFeatureKeyValid()) {
-      state.set("numSettings", 20);
+      state.set("numSettings", 17);
     } else {
       state.set("numSettings", 4);
     }
@@ -259,23 +259,29 @@ Template.adminSettings.events({
       Meteor.call("setSetting", token, "samlEntryPoint", event.target.samlEntryPoint.value, handleErrorBound);
       Meteor.call("setSetting", token, "samlPublicCert", event.target.samlPublicCert.value, handleErrorBound);
 
-      Meteor.call("setSetting", token, "organizationLdap", event.currentTarget.isOrganizationLdap.checked, handleErrorBound);
-
-      Meteor.call("setSetting", token, "organizationSaml", event.currentTarget.isOrganizationSaml.checked, handleErrorBound);
-
-      if (event.currentTarget.isOrganizationGoogle.checked) {
-        Meteor.call("setSetting", token, "organizationGoogle",
-            event.currentTarget.organizationGoogle.value.toLowerCase(), handleErrorBound);
-      } else {
-        Meteor.call("setSetting", token, "organizationGoogle", null, handleErrorBound);
-      }
-
-      if (event.currentTarget.isOrganizationEmail.checked) {
-        Meteor.call("setSetting", token, "organizationEmail",
-            event.currentTarget.organizationEmail.value.toLowerCase(), handleErrorBound);
-      } else {
-        Meteor.call("setSetting", token, "organizationEmail", null, handleErrorBound);
-      }
+      const orgSettings = {
+        membership: {
+          emailToken: {
+            enabled: event.currentTarget.isOrganizationEmail.checked,
+            domain: event.currentTarget.organizationEmail.value.toLowerCase(),
+          },
+          google: {
+            enabled: event.currentTarget.isOrganizationGoogle.checked,
+            domain: event.currentTarget.organizationGoogle.value.toLowerCase(),
+          },
+          ldap: {
+            enabled: event.currentTarget.isOrganizationLdap.checked,
+          },
+          saml: {
+            enabled: event.currentTarget.isOrganizationSaml.checked,
+          },
+        },
+        // Disabled until we've actually implemented the feature.
+        //settings: {
+        //  publishContacts: Boolean,
+        //},
+      };
+      Meteor.call("saveOrganizationSettings", token, orgSettings, handleErrorBound);
     }
 
     return false;
@@ -305,11 +311,11 @@ Template.adminSettings.helpers({
   },
 
   isOrganizationGoogle: function () {
-    return !!globalDb.getOrganizationGoogle();
+    return globalDb.getOrganizationGoogleEnabled();
   },
 
   organizationGoogle: function () {
-    const val = globalDb.getOrganizationGoogle();
+    const val = globalDb.getOrganizationGoogleDomain();
     if (!val) {
       // Setting has never been set before. Show a reasonable default
       const user = Meteor.user();
@@ -329,11 +335,11 @@ Template.adminSettings.helpers({
   },
 
   isOrganizationEmail: function () {
-    return !!globalDb.getOrganizationEmail();
+    return globalDb.getOrganizationEmailEnabled();
   },
 
   organizationEmail: function () {
-    const val = globalDb.getOrganizationEmail();
+    const val = globalDb.getOrganizationEmailDomain();
     if (!val) {
       // Setting has never been set before. Show a reasonable default
       const user = Meteor.user();
@@ -353,11 +359,11 @@ Template.adminSettings.helpers({
   },
 
   isOrganizationLdap: function () {
-    return globalDb.getOrganizationLdap();
+    return globalDb.getOrganizationLdapEnabled();
   },
 
   isOrganizationSaml: function () {
-    return globalDb.getOrganizationSam();
+    return globalDb.getOrganizationSamlEnabled();
   },
 
   ldapEnabled: function () {

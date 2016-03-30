@@ -126,7 +126,7 @@ The following are valid body directives:
   of providng the string `gensym` to the program, we generate a
   (non-cryptographically-secure) random string of 10 alphanumeric
   characters. This way, we can type something different in every time
-  the test runs, which is helpful for choosing a Sandcats domain name.
+  the test runs, which is helpful for choosing a Sandcats subdomain name.
 
 * `$[exitcode] n`: Verify that the command most recently run via
   `$[run]` has exited, and that it exited with the status code `n`

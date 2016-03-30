@@ -732,7 +732,7 @@ body>.topbar {
 
 // =======================================================================================
 
-body>.popup.who-has-access>.frame {
+body>.popup.who-has-access>.frame-container {
   width: 500px;
 }
 
@@ -751,11 +751,7 @@ body>.popup {
     background-color: rgba(0, 0, 0, 0.5);
   }
 
-  >.frame {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-begin;
-    justify-content: flex-begin;
+  >.frame-container {
     max-height: calc(100vh - 64px);
     min-width: 250px;
     line-height: normal;
@@ -763,16 +759,68 @@ body>.popup {
     background-color: white;
     font-weight: normal;
     color: black;
-    width: 400px;
     box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
     border-left: 1px solid #E0E0E0;
     border-right: 1px solid #E0E0E0;
     border-bottom: 1px solid #E0E0E0;
 
+    >.frame {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-begin;
+      justify-content: flex-begin;
+      >.close-popup {
+        display: block;
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 32px;
+        height: 32px;
+        color: transparent;
+        overflow: hidden;
+        background-image: url("/close-m.svg");
+        background-size: 20px 20px;
+        background-repeat: no-repeat;
+        background-position: center;
+        border: none;
+        border-radius: 16px;
+        background-color: transparent;
+        margin: 0;
+      }
+
+      >.close-popup:hover {
+        background-color: #eee;
+        cursor: pointer;
+      }
+
+      >h4 {
+        margin: 0px;
+        font-size: 14px;
+        padding-left: $topbar-popup-padding;
+        line-height: 32px;
+        border-bottom: 1px solid #ccc;
+        margin-bottom: 16px;
+
+        @media #{$mobile} {
+          font-size: 14pt;
+        }
+      }
+
+      >* {
+        margin-left: $topbar-popup-padding;
+        margin-right: $topbar-popup-padding;
+      }
+
+      >*:last-child {
+        margin-bottom: $topbar-popup-padding;
+      }
+    }
+
     @media #{$desktop} {
+      // Adds a small white arrow pointing at the element this popup "descends" from.
       position: fixed;
       top: 32px;
-      max-width: 50%;
 
       &::before {
         content: " ";
@@ -796,58 +844,12 @@ body>.popup {
     }
 
     @media #{$mobile} {
-      position: relative;
+      position: static;
       margin: 64px auto 32px;
       font-size: 20px;
       width: 90%;
       border: 1px solid #ccc;
       overflow-y: auto;
-    }
-
-    >.close-popup {
-      display: block;
-      position: absolute;
-      top: 0;
-      right: 0;
-      width: 32px;
-      height: 32px;
-      color: transparent;
-      overflow: hidden;
-      background-image: url("/close-m.svg");
-      background-size: 20px 20px;
-      background-repeat: no-repeat;
-      background-position: center;
-      border: none;
-      border-radius: 16px;
-      background-color: transparent;
-      margin: 0;
-    }
-
-    >.close-popup:hover {
-      background-color: #eee;
-      cursor: pointer;
-    }
-
-    >h4 {
-      margin: 0px;
-      font-size: 14px;
-      padding-left: $topbar-popup-padding;
-      line-height: 32px;
-      border-bottom: 1px solid #ccc;
-      margin-bottom: 16px;
-
-      @media #{$mobile} {
-        font-size: 14pt;
-      }
-    }
-
-    >* {
-      margin-left: $topbar-popup-padding;
-      margin-right: $topbar-popup-padding;
-    }
-
-    >*:last-child {
-      margin-bottom: $topbar-popup-padding;
     }
 
     &.centered {
@@ -958,7 +960,7 @@ body>.popup {
     }
   }
 
-  &.share>.frame, &.who-has-access>.frame {
+  &.share>.frame-container>.frame, &.who-has-access>.frame-container>.frame {
     $popup-background-color: #ededed;
 
     >h4 {

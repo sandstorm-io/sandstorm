@@ -74,15 +74,19 @@ limitations under the License.
   {{#with currentPopup}}
     <div class="popup {{name}}">
       {{#if onlyPopup}}
-        <div class="frame centered">
-          <button class="close-popup">Close</button>
-          {{>popupTemplate data.get}}
+        <div class="frame-container centered">
+          <div class="frame">
+            <button class="close-popup">Close</button>
+            {{>popupTemplate data.get}}
+          </div>
         </div>
       {{else}}
         {{#with position}}
-          <div class="frame align-{{align}}" style="{{align}}: {{px}}px">
-            <button class="close-popup">Close</button>
-            {{>popupTemplateNested ../data.get}}
+          <div class="frame-container align-{{align}}" style="{{align}}: {{px}}px">
+            <div class="frame">
+              <button class="close-popup">Close</button>
+              {{>popupTemplateNested ../data.get}}
+            </div>
           </div>
         {{/with}}
       {{/if}}

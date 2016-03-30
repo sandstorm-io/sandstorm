@@ -272,7 +272,7 @@ SandstormDb.prototype.findIdentitiesByEmail = function (email) {
     { "services.google.email": email },
     { "services.email.email": email },
     { "services.github.emails.email": email },
-    { "services.github.saml.email": email },
+    { "services.saml.email": email },
   ], }).fetch().filter(function (identity) {
     // Verify that the email is verified, since our query doesn't technically do that.
     return !!_findWhere(SandstormDb.getVerifiedEmails(identity), { email: email });

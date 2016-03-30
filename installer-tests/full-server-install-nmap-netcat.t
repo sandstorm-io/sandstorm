@@ -7,13 +7,15 @@ $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]0
 $[run]sudo dpkg --configure -a && sudo apt-get -f -y install && echo dpkg-fixed
 $[veryslow]dpkg-fixed
+$[run]sudo DEBIAN_FRONTEND=noninteractive apt-get install -d -y --no-install-recommends nmap && echo nmap-downloaded
+$[veryslow]nmap-downloaded
 $[run]sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends nmap && echo nmap-installed
 $[veryslow]nmap-installed
 $[run]CURL_USER_AGENT=testing OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k OVERRIDE_NC_PATH=/usr/bin/ncat bash /vagrant/install.sh -i
 $[slow]Sandstorm makes it easy to run web apps on your own server. You can have:
 
-1. A full server with automatic setup (press enter to accept this default)
-2. A development server, for writing apps.
+1. A typical install, to use Sandstorm (press enter to accept this default)
+2. A development server, for working on Sandstorm itself or localhost-based app development
 
 How are you going to use this Sandstorm install? [1] $[type]1
 We're going to:

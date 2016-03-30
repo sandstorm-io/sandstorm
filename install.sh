@@ -635,8 +635,8 @@ choose_install_mode() {
   if [ -z "${CHOSEN_INSTALL_MODE:-}" ]; then
     echo "Sandstorm makes it easy to run web apps on your own server. You can have:"
     echo ""
-    echo "1. A full server with automatic setup (press enter to accept this default)"
-    echo "2. A development server, for writing apps."
+    echo "1. A typical install, to use Sandstorm (press enter to accept this default)"
+    echo "2. A development server, for working on Sandstorm itself or localhost-based app development"
     echo ""
     CHOSEN_INSTALL_MODE=$(prompt "How are you going to use this Sandstorm install?" "1")
   fi

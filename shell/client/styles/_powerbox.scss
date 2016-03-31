@@ -44,7 +44,7 @@ body>.popup.request>.frame-container>.frame {
     }
   }
   >ul.candidate-cards {
-    flex: 1;
+    flex: 1 1 auto;
     overflow-y: auto;
     padding: 0px;
     margin: 10px;

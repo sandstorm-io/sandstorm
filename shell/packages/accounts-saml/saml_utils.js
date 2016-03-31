@@ -217,6 +217,15 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
         profile.inResponseToId = response.$.InResponseTo;
       }
 
+      if (response.$ && response.$.Destination) {
+        if (!response.$.Destination.startsWith(process.env.ROOT_URL)) {
+          return callback(new Error("SAML Response received with invalid Destination: " +
+            response.$.Destination));
+        }
+      } else {
+        console.log("WARNING: No Destination attribute in saml response. Your SAML IDP should send this attribute, otherwise you're vulnerable to replay attacks.");
+      }
+
       const issuer = _this.getElement(assertion[0], "Issuer");
       if (issuer) {
         profile.issuer = issuer[0];

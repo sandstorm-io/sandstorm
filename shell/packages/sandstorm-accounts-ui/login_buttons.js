@@ -341,3 +341,15 @@ Template.devLoginForm.events({
     loginDevHelper(form.name.value, false, instance.data.linkingNewIdentity);
   },
 });
+
+Template.samlLoginForm.events({
+  "click button": function (event, instance) {
+    Meteor.loginWithSaml({
+      provider: "default",
+    }, function (error, result) {
+      if (error) {
+        loginButtonsSession.errorMessage(error.reason || "Unknown error");
+      }
+    });
+  },
+});

@@ -3,6 +3,7 @@ accounts-email-token@0.1.0
 accounts-identity@0.1.0
 accounts-ldap@1.0.1
 accounts-oauth@1.1.8
+accounts-saml@0.2.0
 application-configuration@1.0.4
 autoupdate@1.2.4
 babel-compiler@5.8.24_1

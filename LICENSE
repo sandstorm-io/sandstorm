@@ -92,6 +92,13 @@ shell/packages/accounts-ldap/*
     License: MIT
     License URL: https://github.com/typ90/meteor-accounts-ldap/blob/master/LICENSE
 
+shell/packages/accounts-saml/*
+    What: Meteor accounts-saml package
+    Source URL: https://github.com/nate-strauser/meteor-accounts-saml
+    Copyright: Nathan Strauser
+    License: MIT
+    License URL: https://github.com/nate-strauser/meteor-accounts-saml/blob/master/LICENSE
+
 src/joyent-http/*
     What: Node.js HTTP parsing library
     Source URL: https://github.com/joyent/http-parser

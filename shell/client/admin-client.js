@@ -228,9 +228,9 @@ Template.adminSettings.events({
     resetResult(state);
     if (globalDb.isFeatureKeyValid()) {
       if (template.explicitDnSelected.get()) {
-        state.set("numSettings", 12);
-      } else {
         state.set("numSettings", 16);
+      } else {
+        state.set("numSettings", 20);
       }
     } else {
       state.set("numSettings", 4);
@@ -267,11 +267,13 @@ Template.adminSettings.events({
       Meteor.call("setSetting", token, "ldapNameField", event.target.ldapNameField.value, handleErrorBound);
       Meteor.call("setSetting", token, "ldapExplicitDnSelected", event.target.ldapExplicitDn.value === "ldapExplicitDn", handleErrorBound);
 
-      if (event.currentTarget.isOrganizationLdap.checked) {
-        Meteor.call("setSetting", token, "organizationLdap", true, handleErrorBound);
-      } else {
-        Meteor.call("setSetting", token, "organizationLdap", false, handleErrorBound);
-      }
+      Meteor.call("setAccountSetting", token, "saml", event.target.samlLogin.checked, handleErrorBound);
+      Meteor.call("setSetting", token, "samlEntryPoint", event.target.samlEntryPoint.value, handleErrorBound);
+      Meteor.call("setSetting", token, "samlPublicCert", event.target.samlPublicCert.value, handleErrorBound);
+
+      Meteor.call("setSetting", token, "organizationLdap", event.currentTarget.isOrganizationLdap.checked, handleErrorBound);
+
+      Meteor.call("setSetting", token, "organizationSaml", event.currentTarget.isOrganizationSaml.checked, handleErrorBound);
 
       if (event.currentTarget.isOrganizationGoogle.checked) {
         Meteor.call("setSetting", token, "organizationGoogle",
@@ -370,6 +372,10 @@ Template.adminSettings.helpers({
     return globalDb.getOrganizationLdap();
   },
 
+  isOrganizationSaml: function () {
+    return globalDb.getOrganizationSam();
+  },
+
   ldapEnabled: function () {
     const setting = Settings.findOne({ _id: "ldap" });
     if (setting) {
@@ -417,6 +423,23 @@ Template.adminSettings.helpers({
 
   searchDnSelected: function () {
     return !Template.instance().explicitDnSelected.get();
+  },
+
+  samlEnabled: function () {
+    const setting = Settings.findOne({ _id: "saml" });
+    if (setting) {
+      return setting.value;
+    } else {
+      return false;
+    }
+  },
+
+  samlEntryPoint: function () {
+    return globalDb.getSamlEntryPoint();
+  },
+
+  samlPublicCert: function () {
+    return globalDb.getSamlPublicCert();
   },
 
   smtpUrl: function () {

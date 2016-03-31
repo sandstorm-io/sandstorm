@@ -1077,7 +1077,14 @@ limitations under the License.
       <h4>SAML login</h4>
       <p class="forwork-note">Sandstorm for Work feature</p>
 
-      <p>Coming soon!</p>
+      <p>Your SAML IDP should be configured to return a persistent nameID. In addition you <b>*must*</b> configure your IDP to provide two extra attributes, 'email' and 'displayName'.</p><br>
+
+      <label>
+        <input type="checkbox" name="samlLogin" value="value" checked={{samlEnabled}}> Enable SAML Login
+      </label><br>
+      <label>SAML provider entry point URL: <input type="text" name="samlEntryPoint" value="{{samlEntryPoint}}" placeholder="(eg. https://YOUR_SAML_PROVIDER.com/sso/saml)"></label>
+      <label>SAML cert for above provider: <textarea name="samlPublicCert" value="{{samlPublicCert}}" placeholder="base64 encoded cert (eg. MIID...8F==)" rows="4"></textarea></label>
+      <!-- TODO(someday): allow a private cert to be provided for signing messages in the other direction (or autogenerate one and provide admins the public cert here?) -->
 
       <h4>Define organization</h4>
       <p class="forwork-note">Sandstorm for Work feature</p>
@@ -1087,6 +1094,7 @@ limitations under the License.
 
       <p>
         <label><input type="checkbox" name="isOrganizationLdap" value="value" checked={{isOrganizationLdap}}> Users authenticated via LDAP.</label><br>
+        <label><input type="checkbox" name="isOrganizationSaml" value="value" checked={{isOrganizationSaml}}> Users authenticated via SAML.</label><br>
         <label><input type="checkbox" name="isOrganizationGoogle" value="value" checked={{isOrganizationGoogle}}> Users authenticated via Google Apps for Work domain:</label> <input type="text" name="organizationGoogle" value="{{organizationGoogle}}" placeholder="example.com">
         <label><input type="checkbox" name="isOrganizationEmail" value="value" checked={{isOrganizationEmail}}>Users authenticated via passwordless email login with addresses at domain:</label> <input type="text" name="organizationEmail" value="{{organizationEmail}}" placeholder="example.com"></p>
     {{else}}

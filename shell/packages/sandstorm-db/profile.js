@@ -82,6 +82,10 @@ if (Meteor.isServer) {
 
         "services.ldap.id":1,
         "services.ldap.rawAttrs":1,
+
+        "services.saml.id":1,
+        "services.saml.email":1,
+        "services.saml.displayName":1,
       }, });
   }),
 
@@ -208,6 +212,9 @@ SandstormDb.fillInProfileDefaults = function (user) {
     const key = setting ? setting.value : "";
     profile.name = profile.name || user.services.ldap.rawAttrs[key] || "Name Unknown";
     profile.handle = profile.handle || filterHandle(profile.name);
+  } else if (profile.service === "saml") {
+    profile.name = profile.name || user.services.saml.displayName || "Name Unknown";
+    profile.handle = profile.handle || filterHandle(profile.name);
   } else {
     throw new Error("unrecognized identity service: ", profile.service);
   }
@@ -230,6 +237,8 @@ SandstormDb.fillInIntrinsicName = function (user) {
     profile.intrinsicName = "demo on " + user.createdAt.toISOString().substring(0, 10);
   } else if (profile.service === "ldap") {
     profile.intrinsicName = user.services.ldap.username;
+  } else if (profile.service === "saml") {
+    profile.intrinsicName = user.services.saml.id;
   } else {
     throw new Error("unrecognized identity service: ", profile.service);
   }
@@ -246,6 +255,8 @@ SandstormDb.getVerifiedEmails = function (identity) {
       .filter(function (email) { return email.verified; })
       .map((email) => _.pick(email, "email", "primary"))
       .value();
+  } else if (identity.services.saml && identity.services.saml.email) {
+    return [{ email: identity.services.saml.email, primary: true }];
   }
 
   return [];
@@ -261,6 +272,7 @@ SandstormDb.prototype.findIdentitiesByEmail = function (email) {
     { "services.google.email": email },
     { "services.email.email": email },
     { "services.github.emails.email": email },
+    { "services.saml.email": email },
   ], }).fetch().filter(function (identity) {
     // Verify that the email is verified, since our query doesn't technically do that.
     return !!_findWhere(SandstormDb.getVerifiedEmails(identity), { email: email });

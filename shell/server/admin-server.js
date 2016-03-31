@@ -16,11 +16,11 @@
 
 const ADMIN_TOKEN_EXPIRATION_TIME = 15 * 60 * 1000;
 const publicAdminSettings = [
-  "google", "github", "ldap", "emailToken", "splashUrl", "signupDialog",
+  "google", "github", "ldap", "saml", "emailToken", "splashUrl", "signupDialog",
   "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
   "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled",
   "serverTitle", "returnAddress", "ldapNameField", "organizationEmail", "organizationLdap",
-  "organizationGoogle",
+  "organizationGoogle", "organizationSaml",
 ];
 
 const FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS = [

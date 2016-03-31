@@ -1019,6 +1019,8 @@ _.extend(SandstormDb.prototype, {
       }
     } else if (this.getOrganizationLdap() && identity.services.ldap) {
       return true;
+    } else if (this.getOrganizationSaml() && identity.services.saml) {
+      return true;
     } else if (googleDomain && identity.services.google && identity.services.google.hd) {
       let domain = this.getOrganizationGoogle();
       if (identity.services.google.hd.toLowerCase() === domain) {
@@ -1351,6 +1353,21 @@ _.extend(SandstormDb.prototype, {
   getOrganizationLdap: function () {
     const setting = Settings.findOne({ _id: "organizationLdap" });
     return setting ? setting.value : false;
+  },
+
+  getOrganizationSaml: function () {
+    const setting = Settings.findOne({ _id: "organizationSaml" });
+    return setting ? setting.value : false;
+  },
+
+  getSamlEntryPoint: function () {
+    const setting = Settings.findOne({ _id: "samlEntryPoint" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
+  },
+
+  getSamlPublicCert: function () {
+    const setting = Settings.findOne({ _id: "samlPublicCert" });
+    return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 });
 

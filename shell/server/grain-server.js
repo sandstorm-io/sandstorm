@@ -392,8 +392,8 @@ Meteor.methods({
 
       const accountId = this.userId;
       const outerResult = { successes: [], failures: [] };
-      const envelopeFrom = globalDb.getReturnAddress();
-      const fromEmail = globalDb.getPrimaryEmailWithDisplayName(accountId, identityId);
+      const fromEmail = globalDb.getReturnAddressWithDisplayName(identityId);
+      const replyTo = globalDb.getPrimaryEmail(accountId, identityId);
       contacts.forEach(function (contact) {
         if (contact.isDefault && contact.profile.service === "email") {
           const emailAddress = contact.profile.intrinsicName;
@@ -411,7 +411,7 @@ Meteor.methods({
             SandstormEmail.send({
               to: emailAddress,
               from: fromEmail,
-              envelopeFrom: envelopeFrom,
+              replyTo: replyTo,
               subject: title + " - Invitation to collaborate",
               text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
                 "\n\nNote: If you forward this email to other people, they will be able to " +
@@ -452,7 +452,7 @@ Meteor.methods({
               SandstormEmail.send({
                 to: email.email,
                 from: fromEmail,
-                envelopeFrom: envelopeFrom,
+                replyTo: replyTo,
                 subject: title + " - Invitation to collaborate",
                 text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
                   "\n\nNote: You will need to log in with your " + loginNote +
@@ -505,8 +505,8 @@ Meteor.methods({
       const identity = globalDb.getIdentity(identityId);
       globalDb.addContact(grainOwner._id, identityId);
 
-      const envelopeFrom = globalDb.getReturnAddress();
-      const fromEmail = globalDb.getPrimaryEmailWithDisplayName(Meteor.userId(), identityId);
+      const fromEmail = globalDb.getReturnAddressWithDisplayName(identityId);
+      const replyTo = globalDb.getPrimaryEmail(Meteor.userId(), identityId);
 
       // TODO(soon): In the HTML version, we should display an identity card.
       let identityNote = "";
@@ -551,8 +551,8 @@ Meteor.methods({
 
       SandstormEmail.send({
         to: emailAddress,
-        envelopeFrom: envelopeFrom,
         from: fromEmail,
+        replyTo: replyTo,
         subject: grain.title + " - Request for access",
         text: message + "\n\nFollow this link to share access:\n\n" + url,
         html: html,

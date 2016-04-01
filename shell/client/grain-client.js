@@ -1013,7 +1013,7 @@ Template.emailInviteTab.helpers({
   invitationExplanation: function () {
     const primaryEmail = globalDb.getPrimaryEmail(Meteor.userId(), Accounts.getCurrentIdentityId());
     if (primaryEmail) {
-      return "Invitation will be sent from " + primaryEmail;
+      return "Invitation will be from " + primaryEmail;
     } else {
       return null;
     }

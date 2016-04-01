@@ -1285,6 +1285,35 @@ _.extend(SandstormDb.prototype, {
     return config && config.returnAddress || ""; // empty if subscription is not ready.
   },
 
+  getReturnAddressWithDisplayName: function (identityId) {
+    check(identityId, String);
+    const identity = this.getIdentity(identityId);
+    const displayName = identity.profile.name + " (via " + this.getServerTitle() + ")";
+
+    // First remove any instances of characters that cause trouble for SimpleSmtp. Ideally,
+    // we could escape such characters with a backslash, but that does not seem to help here.
+    const sanitized = displayName.replace(/"|<|>|\\|\r/g, "");
+
+    return "\"" + sanitized + "\" <" + this.getReturnAddress() + ">";
+  },
+
+  getPrimaryEmail: function (accountId, identityId) {
+    check(accountId, String);
+    check(identityId, String);
+
+    const identity = this.getIdentity(identityId);
+    const senderEmails = SandstormDb.getVerifiedEmails(identity);
+    const senderPrimaryEmail = _.findWhere(senderEmails, { primary: true });
+    const accountPrimaryEmailAddress = this.getUser(accountId).primaryEmail;
+    if (_.findWhere(senderEmails, { email: accountPrimaryEmailAddress })) {
+      return accountPrimaryEmailAddress;
+    } else if (senderPrimaryEmail) {
+      return senderPrimaryEmail.email;
+    } else {
+      return null;
+    }
+  },
+
   isFeatureKeyValid: function () {
     const featureKey = this.currentFeatureKey();
     return !!featureKey;
@@ -1368,44 +1397,6 @@ _.extend(SandstormDb.prototype, {
   getSamlPublicCert: function () {
     const setting = Settings.findOne({ _id: "samlPublicCert" });
     return setting ? setting.value : "";  // empty if subscription is not ready.
-  },
-
-  getPrimaryEmail: function (accountId, identityId) {
-    check(accountId, String);
-    check(identityId, String);
-
-    const identity = this.getIdentity(identityId);
-    const senderEmails = SandstormDb.getVerifiedEmails(identity);
-    const senderPrimaryEmail = _.findWhere(senderEmails, { primary: true });
-    const accountPrimaryEmailAddress = this.getUser(accountId).primaryEmail;
-    if (_.findWhere(senderEmails, { email: accountPrimaryEmailAddress })) {
-      return accountPrimaryEmailAddress;
-    } else if (senderPrimaryEmail) {
-      return senderPrimaryEmail.email;
-    } else {
-      return null;
-    }
-  },
-
-  getPrimaryEmailWithDisplayName: function (accountId, identityId) {
-    check(accountId, String);
-    check(identityId, String);
-
-    function addDisplayName(displayName, email) {
-      // First remove any instances of characters that cause trouble for SimpleSmtp. Ideally,
-      // we could escape such characters with a backslash, but that does not seem to help here.
-      const sanitized = displayName.replace(/"|<|>|\\|\r/g, "");
-      return "\"" + sanitized + "\" <" + email + ">";
-    }
-
-    const primaryEmail = this.getPrimaryEmail(accountId, identityId);
-    const identity = this.getIdentity(identityId);
-    if (primaryEmail) {
-      return addDisplayName(identity.profile.name, primaryEmail);
-    } else {
-      return addDisplayName(identity.profile.name + " (via " + this.getServerTitle() + ")",
-                            this.getReturnAddress());
-    }
   },
 });
 

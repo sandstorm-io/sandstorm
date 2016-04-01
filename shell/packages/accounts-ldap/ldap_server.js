@@ -22,7 +22,7 @@ LDAP_DEFAULTS = {
  @class LDAP
  @constructor
  */
-let LDAP = function (options) {
+let LDAP = function () {
   // Set options
   this.options = _.clone(LDAP_DEFAULTS);
 
@@ -318,9 +318,14 @@ Accounts.registerLoginHandler("ldap", function (loginRequest) {
     throw new Meteor.Error(403, "LDAP service is disabled.");
   }
 
-  // Instantiate LDAP with options
-  let userOptions = loginRequest.ldapOptions || {};
-  let ldapObj = new LDAP(userOptions);
+  check(loginRequest, {
+    ldap: true,
+    username: String,
+    ldapPass: String,
+  });
+
+  // Instantiate LDAP
+  let ldapObj = new LDAP();
 
   // Call ldapCheck and get response
   let ldapResponse = ldapObj.ldapCheck(this.connection.sandstormDb, loginRequest);

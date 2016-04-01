@@ -211,11 +211,11 @@ SandstormDb.fillInProfileDefaults = function (user) {
   } else if (profile.service === "ldap") {
     const setting = Settings.findOne({ _id: "ldapNameField" });
     const key = setting ? setting.value : "";
-    profile.name = profile.name || user.services.ldap.rawAttrs[key] || "Name Unknown";
     profile.handle = profile.handle || user.services.ldap.username;
+    profile.name = profile.name || user.services.ldap.rawAttrs[key] || profile.handle;
   } else if (profile.service === "saml") {
-    profile.name = profile.name || user.services.saml.displayName || "Name Unknown";
     profile.handle = profile.handle || emailToHandle(user.services.saml.email);
+    profile.name = profile.name || user.services.saml.displayName || profile.handle;
   } else {
     throw new Error("unrecognized identity service: ", profile.service);
   }

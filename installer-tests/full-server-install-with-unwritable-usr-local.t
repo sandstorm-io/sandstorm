@@ -5,6 +5,8 @@ Cleanup: uninstall_sandstorm
 
 $[run]sudo cat /proc/sys/kernel/unprivileged_userns_clone
 $[slow]0
+$[run]sudo chattr +i /usr/local/bin && echo now-unwritable
+now-unwritable
 $[run]CURL_USER_AGENT=testing OVERRIDE_SANDCATS_BASE_DOMAIN=sandcats-dev.sandstorm.io OVERRIDE_SANDCATS_API_BASE=https://sandcats-dev-machine.sandstorm.io OVERRIDE_SANDCATS_CURL_PARAMS=-k bash /vagrant/install.sh -i
 $[slow]Sandstorm makes it easy to run web apps on your own server. You can have:
 
@@ -34,13 +36,12 @@ $[slow]Congratulations! We have registered your
 Your credentials to use it are in /opt/sandstorm/var/sandcats; consider making a backup.
 $[veryslow]Downloading: https://dl.sandstorm.io
 $[veryslow]GPG signature is valid.
+$[slow]*** WARNING: /usr/local/bin was not writeable.
 $[veryslow]Sandstorm started. PID =
 $[veryslow]Visit this link to configure it:
   http://
 To learn how to control the server, run:
   sandstorm help
 $[exitcode]0
-$[run]which sandstorm
-/usr/local/bin/sandstorm
 $[run]for i in `seq 0 20`; do nc -z localhost 6080 && { echo yay; break; } || sleep 1 ; done
 $[slow]yay

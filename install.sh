@@ -1360,9 +1360,24 @@ install_sandstorm_symlinks() {
     return
   fi
 
+  local FAILED_TO_WRITE_SYMLINK="no"
+
   # Install tools.
-  ln -sfT $PWD/sandstorm /usr/local/bin/sandstorm
-  ln -sfT $PWD/sandstorm /usr/local/bin/spk
+  ln -sfT $PWD/sandstorm /usr/local/bin/sandstorm || FAILED_TO_WRITE_SYMLINK=yes
+  ln -sfT $PWD/sandstorm /usr/local/bin/spk || FAILED_TO_WRITE_SYMLINK=yes
+
+  # If /usr/local/bin is not actually writeable, even though we are root, then bail on this for now.
+  # That can happen on e.g. CoreOS; see https://github.com/sandstorm-io/sandstorm/issues/1660
+  # the bash "-w" does not detect read-only mounts, so we use a behavior check above.
+  if [ "${FAILED_TO_WRITE_SYMLINK}" = "yes" ] ; then
+    echo ""
+    echo "*** WARNING: /usr/local/bin was not writeable. To run sandstorm or spk manually, use:"
+    echo " - $PWD/sandstorm"
+    echo " - $PWD/spk"
+    echo ""
+    return
+  fi
+
 }
 
 ask_about_starting_at_boot() {

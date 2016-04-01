@@ -1079,7 +1079,7 @@ limitations under the License.
       <h4>SAML login</h4>
       <p class="forwork-note">Sandstorm for Work feature</p>
 
-      <p>Your SAML IDP should be configured to return a persistent nameID. In addition you <b>*must*</b> configure your IDP to provide two extra attributes, 'email' and 'displayName'.</p><br>
+      <p>Your SAML IDP should be configured to return a persistent nameID. In addition you <b>*must*</b> configure your IDP to provide two extra attributes, "email" and "displayName". If your SAML provider asks for the single sign on url of this service provider, then supply it with "{{rootUrl}}/_saml/validate/default".</p><br>
 
       <label>
         <input type="checkbox" name="samlLogin" value="value" checked={{samlEnabled}}> Enable SAML Login

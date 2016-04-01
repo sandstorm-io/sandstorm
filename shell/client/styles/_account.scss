@@ -541,9 +541,16 @@ body>.main-content>.account {
       height: 30px;
 
       &.link-new-identity {
-        background-image: url("link-m.svg");
-        background-repeat: no-repeat;
-        background-position: 25px;
+        position: relative;
+
+        @extend .icon-link;
+        &::before {
+          position: absolute;
+          left: 30px;
+          top: 2px;
+          font-size: 24px;
+          @extend .icon;
+        }
       }
     }
   }
@@ -1564,9 +1571,17 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
     @extend %button-secondary;
     width: 200px;
     height: 30px;
-    background-image: url("unlink-m.svg");
-    background-repeat: no-repeat;
-    background-position: 10px;
+
+    position: relative;
+
+    @extend .icon-unlink;
+    &::before {
+      position: absolute;
+      left: 10px;
+      top: 2px;
+      font-size: 24px;
+      @extend .icon;
+    }
   }
 }
 

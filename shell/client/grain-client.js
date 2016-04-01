@@ -1417,39 +1417,44 @@ Router.map(function () {
       Tracker.nonreactive(() => {
         this.state.set("beforeActionHookRan", true);
         const grainId = this.params.grainId;
-        let grain = globalGrains.getById(grainId);
-        if (grain) {
-          globalGrains.setActive(grainId);
-        } else {
-          let initialPopup = null;
-          let shareGrain = Session.get("share-grain-" + grainId);
-          if (shareGrain) {
-            initialPopup = "share";
+
+        let initialPopup = null;
+        let shareGrain = Session.get("share-grain-" + grainId);
+        if (shareGrain) {
+          initialPopup = "share";
+        }
+
+        const path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
+
+        // The element we need to attach our Blaze view to may not exist yet.
+        // In that case, defer creating the GrainView until we're sure it's
+        // had a chance to render.
+        const openView = function openView() {
+          // If the grain is already open in a tab, switch to that tab. We have to re-check this
+          // every time we defer to avoid race conditions (especially at startup, with the
+          // restore-last-opened code).
+          let grain = globalGrains.getById(grainId);
+          if (grain) {
+            globalGrains.setActive(grainId);
+            return;
           }
 
-          const path = "/" + (this.params.path || "") + (this.originalUrl.match(/[#?].*$/) || "");
+          const mainContentElement = document.querySelector("body>.main-content");
+          if (mainContentElement) {
+            const grainToOpen = globalGrains.addNewGrainView(grainId, path, undefined,
+                                                             mainContentElement);
+            grainToOpen.openSession();
+            globalGrains.setActive(grainId);
 
-          // The element we need to attach our Blaze view to may not exist yet.
-          // In that case, defer creating the GrainView until we're sure it's
-          // had a chance to render.
-          const openView = function openView() {
-            const mainContentElement = document.querySelector("body>.main-content");
-            if (mainContentElement) {
-              const grainToOpen = globalGrains.addNewGrainView(grainId, path, undefined,
-                                                               mainContentElement);
-              grainToOpen.openSession();
-              globalGrains.setActive(grainId);
-
-              if (initialPopup) {
-                globalTopbar.openPopup(initialPopup);
-              }
-            } else {
-              Meteor.defer(openView);
+            if (initialPopup) {
+              globalTopbar.openPopup(initialPopup);
             }
-          };
+          } else {
+            Meteor.defer(openView);
+          }
+        };
 
-          openView();
-        }
+        openView();
       });
 
       this.next();
@@ -1502,29 +1507,34 @@ Router.map(function () {
           Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
         } else if (tokenInfo.grainId) {
           const grainId = tokenInfo.grainId;
-          const grain = globalGrains.getById(grainId);
-          if (grain) {
-            globalGrains.setActive(grainId);
-          } else {
-            const openView = function openView() {
-              const mainContentElement = document.querySelector("body>.main-content");
-              if (mainContentElement) {
-                const grainToOpen = globalGrains.addNewGrainView(grainId, path, tokenInfo,
-                                                                 mainContentElement);
-                grainToOpen.openSession();
-                globalGrains.setActive(grainId);
 
-                if (!Meteor.userId()) {
-                  // Suggest to the user that they log in by opening the login menu.
-                  globalTopbar.openPopup("login");
-                }
-              } else {
-                Meteor.defer(openView);
+          const openView = function openView() {
+            // If the grain is already open in a tab, switch to that tab. We have to re-check this
+            // every time we defer to avoid race conditions (especially at startup, with the
+            // restore-last-opened code).
+            const grain = globalGrains.getById(grainId);
+            if (grain) {
+              globalGrains.setActive(grainId);
+              return;
+            }
+
+            const mainContentElement = document.querySelector("body>.main-content");
+            if (mainContentElement) {
+              const grainToOpen = globalGrains.addNewGrainView(grainId, path, tokenInfo,
+                                                               mainContentElement);
+              grainToOpen.openSession();
+              globalGrains.setActive(grainId);
+
+              if (!Meteor.userId()) {
+                // Suggest to the user that they log in by opening the login menu.
+                globalTopbar.openPopup("login");
               }
-            };
+            } else {
+              Meteor.defer(openView);
+            }
+          };
 
-            openView();
-          }
+          openView();
         }
       });
 

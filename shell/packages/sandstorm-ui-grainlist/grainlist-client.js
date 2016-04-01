@@ -201,7 +201,7 @@ Template.sandstormGrainTable.onRendered(function () {
   const hasGrains = !!(_db.currentUserGrains().count() ||
                       _db.currentUserApiTokens().count());
   if (!hasGrains) {
-    const intro = Template.instance().data.intro = introJs();
+    const intro = Template.instance().intro = introJs();
     intro.setOptions({
       steps: [
         {
@@ -240,8 +240,8 @@ Template.sandstormGrainTable.onRendered(function () {
 });
 
 Template.sandstormGrainTable.onDestroyed(function () {
-  if (Template.instance().data.intro) {
-    Template.instance().data.intro.exit();
-    Template.instance().data.intro = undefined;
+  if (Template.instance().intro) {
+    Template.instance().intro.exit();
+    Template.instance().intro = undefined;
   }
 });

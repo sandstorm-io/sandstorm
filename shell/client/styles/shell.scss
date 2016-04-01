@@ -126,6 +126,12 @@ button.revoke-token, button.revoke-access {
   background-color: $default-content-background-color;
   overflow: auto;
 
+  // intro.js needs this element to have some numeric z-index, so that
+  // it knows to add the introjs-fixParent class to it. We use 0 because
+  // that is the value Chrome gives this element anyway, without specifying
+  // it explicitly.
+  z-index: 0;
+
   @media #{$desktop} {
     top: 32px;
     left: $navbar-width-desktop;

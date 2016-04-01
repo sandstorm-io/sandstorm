@@ -255,6 +255,11 @@ SandstormDb.getVerifiedEmails = function (identity) {
       .filter(function (email) { return email.verified; })
       .map((email) => _.pick(email, "email", "primary"))
       .value();
+  } else if (identity.services.ldap) {
+    const email = identity.services.ldap.rawAttrs[SandstormDb.prototype.getLdapEmailField()];
+    if (email) {
+      return [{ email: email, primary: true }];
+    }
   } else if (identity.services.saml && identity.services.saml.email) {
     return [{ email: identity.services.saml.email, primary: true }];
   }

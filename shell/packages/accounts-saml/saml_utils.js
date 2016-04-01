@@ -239,6 +239,10 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
 
           if (nameID[0].$.Format) {
             profile.nameIDFormat = nameID[0].$.Format;
+            if (profile.nameIDFormat.toLowerCase().indexOf("transient") !== -1) {
+              return callback(new Error("SAML Response's with Transient NameIDs " +
+                "are not allowed"));
+            }
           }
         }
       }

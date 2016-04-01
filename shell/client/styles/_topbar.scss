@@ -753,7 +753,6 @@ body>.popup {
 
   >.frame-container {
     max-height: calc(100vh - 64px);
-    min-width: 250px;
     line-height: normal;
     white-space: normal;
     background-color: white;
@@ -768,8 +767,8 @@ body>.popup {
       position: relative;
       display: flex;
       flex-direction: column;
-      align-items: flex-begin;
-      justify-content: flex-begin;
+      align-items: flex-start;
+      justify-content: flex-start;
       >.close-popup {
         display: block;
         position: absolute;
@@ -795,6 +794,7 @@ body>.popup {
       }
 
       >h4 {
+        width: 100%;
         margin: 0px;
         font-size: 14px;
         padding-left: $topbar-popup-padding;
@@ -847,7 +847,7 @@ body>.popup {
       position: static;
       margin: 64px auto 32px;
       font-size: 20px;
-      width: 90%;
+      max-width: 90%;
       border: 1px solid #ccc;
       overflow-y: auto;
     }
@@ -988,6 +988,7 @@ body>.popup {
     }
 
     .share-tabs {
+      width: 100%;
       padding: $topbar-popup-padding;
       border-top: 1px solid #ccc;
       position: relative;
@@ -1138,6 +1139,7 @@ body>.popup {
     }
 
     >.footer {
+      width: 100%;
       background-color: $popup-background-color;
       border-top: 1px solid #ccc;
       margin: 0px;

@@ -1,33 +1,39 @@
-body>.popup.login>.frame-container>.frame {
-  width: 200px;
-  border: none;
-  min-width: 200px;
+body>.popup.login>.frame-container {
+  width: 202px; // 2px of border
+  >.frame {
+    width: 200px;
+    border: none;
+    min-width: 200px;
 
-  >p.demo-note {
-    border-bottom: 1px solid #c1c1c1;
-    font-size: 80%;
-    color: #444;
-    padding: 4px 16px;
-  }
+    >p.demo-note {
+      border-bottom: 1px solid #c1c1c1;
+      font-size: 80%;
+      color: #444;
+      padding: 4px 16px;
+    }
 
-  >* {
-    margin: 0;
+    >* {
+      margin: 0;
+    }
   }
 }
 
-body>.popup.account>.frame-container>.frame {
-  width: 250px;
-  border: none;
+body>.popup.account>.frame-container {
+  width: 252px; // includes 2px of border
+  >.frame {
+    width: 250px;
+    border: none;
 
-  >p.demo-note {
-    border-bottom: 1px solid #c1c1c1;
-    font-size: 80%;
-    color: #444;
-    padding: 4px 16px;
-  }
+    >p.demo-note {
+      border-bottom: 1px solid #c1c1c1;
+      font-size: 80%;
+      color: #444;
+      padding: 4px 16px;
+    }
 
-  >* {
-    margin: 0;
+    >* {
+      margin: 0;
+    }
   }
 }
 

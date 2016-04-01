@@ -228,9 +228,9 @@ Template.adminSettings.events({
     resetResult(state);
     if (globalDb.isFeatureKeyValid()) {
       if (template.explicitDnSelected.get()) {
-        state.set("numSettings", 16);
+        state.set("numSettings", 17);
       } else {
-        state.set("numSettings", 20);
+        state.set("numSettings", 21);
       }
     } else {
       state.set("numSettings", 4);
@@ -265,6 +265,7 @@ Template.adminSettings.events({
       }
 
       Meteor.call("setSetting", token, "ldapNameField", event.target.ldapNameField.value, handleErrorBound);
+      Meteor.call("setSetting", token, "ldapEmailField", event.target.ldapEmailField.value, handleErrorBound);
       Meteor.call("setSetting", token, "ldapExplicitDnSelected", event.target.ldapExplicitDn.value === "ldapExplicitDn", handleErrorBound);
 
       Meteor.call("setAccountSetting", token, "saml", event.target.samlLogin.checked, handleErrorBound);
@@ -399,6 +400,10 @@ Template.adminSettings.helpers({
 
   ldapNameField: function () {
     return globalDb.getLdapNameField() || "cn";
+  },
+
+  ldapEmailField: function () {
+    return globalDb.getLdapEmailField();
   },
 
   ldapFilter: function () {

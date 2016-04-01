@@ -1320,6 +1320,12 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
+  getLdapEmailField: function () {
+    const setting = Settings.findOne({ _id: "ldapEmailField" });
+    return setting ? setting.value : "mail";
+    // default to "mail". This setting was added later, and so could potentially be unset.
+  },
+
   getLdapExplicitDnSelected: function () {
     const setting = Settings.findOne({ _id: "ldapExplicitDnSelected" });
     return setting && setting.value;

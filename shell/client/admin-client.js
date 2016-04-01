@@ -155,10 +155,6 @@ Template.admin.helpers({
   getToken: getToken,
 });
 
-Template.adminSettings.onCreated(function () {
-  this.explicitDnSelected = new ReactiveVar(globalDb.getLdapExplicitDnSelected());
-});
-
 const emailConfigFromForm = function (form) {
   const portValue = parseInt(form.smtpPort.value);
   const mailConfig = {
@@ -227,11 +223,7 @@ Template.adminSettings.events({
     const token = this.token;
     resetResult(state);
     if (globalDb.isFeatureKeyValid()) {
-      if (template.explicitDnSelected.get()) {
-        state.set("numSettings", 17);
-      } else {
-        state.set("numSettings", 21);
-      }
+      state.set("numSettings", 20);
     } else {
       state.set("numSettings", 4);
     }
@@ -254,19 +246,14 @@ Template.adminSettings.events({
     if (globalDb.isFeatureKeyValid()) {
       Meteor.call("setAccountSetting", token, "ldap", event.target.ldapLogin.checked, handleErrorBound);
       Meteor.call("setSetting", token, "ldapUrl", event.target.ldapUrl.value, handleErrorBound);
-      if (template.explicitDnSelected.get()) {
-        Meteor.call("setSetting", token, "ldapDnPattern", event.target.ldapDnPattern.value, handleErrorBound);
-      } else {
-        Meteor.call("setSetting", token, "ldapBase", event.target.ldapBase.value, handleErrorBound);
-        Meteor.call("setSetting", token, "ldapSearchUsername", event.target.ldapSearchUsername.value, handleErrorBound);
-        Meteor.call("setSetting", token, "ldapFilter", event.target.ldapFilter.value, handleErrorBound);
-        Meteor.call("setSetting", token, "ldapSearchBindDn", event.target.ldapSearchBindDn.value, handleErrorBound);
-        Meteor.call("setSetting", token, "ldapSearchBindPassword", event.target.ldapSearchBindPassword.value, handleErrorBound);
-      }
+      Meteor.call("setSetting", token, "ldapBase", event.target.ldapBase.value, handleErrorBound);
+      Meteor.call("setSetting", token, "ldapSearchUsername", event.target.ldapSearchUsername.value, handleErrorBound);
+      Meteor.call("setSetting", token, "ldapFilter", event.target.ldapFilter.value, handleErrorBound);
+      Meteor.call("setSetting", token, "ldapSearchBindDn", event.target.ldapSearchBindDn.value, handleErrorBound);
+      Meteor.call("setSetting", token, "ldapSearchBindPassword", event.target.ldapSearchBindPassword.value, handleErrorBound);
 
       Meteor.call("setSetting", token, "ldapNameField", event.target.ldapNameField.value, handleErrorBound);
       Meteor.call("setSetting", token, "ldapEmailField", event.target.ldapEmailField.value, handleErrorBound);
-      Meteor.call("setSetting", token, "ldapExplicitDnSelected", event.target.ldapExplicitDn.value === "ldapExplicitDn", handleErrorBound);
 
       Meteor.call("setAccountSetting", token, "saml", event.target.samlLogin.checked, handleErrorBound);
       Meteor.call("setSetting", token, "samlEntryPoint", event.target.samlEntryPoint.value, handleErrorBound);
@@ -292,10 +279,6 @@ Template.adminSettings.events({
     }
 
     return false;
-  },
-
-  "change input[name=\"ldapExplicitDn\"]": function (event, template) {
-    template.explicitDnSelected.set(event.target.value === "ldapExplicitDn");
   },
 });
 
@@ -420,14 +403,6 @@ Template.adminSettings.helpers({
 
   ldapSearchUsername: function () {
     return globalDb.getLdapSearchUsername() || "uid";
-  },
-
-  explicitDnSelected: function () {
-    return Template.instance().explicitDnSelected.get();
-  },
-
-  searchDnSelected: function () {
-    return !Template.instance().explicitDnSelected.get();
   },
 
   samlEnabled: function () {

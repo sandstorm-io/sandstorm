@@ -81,6 +81,7 @@ if (Meteor.isServer) {
         "services.email.email":1,
 
         "services.ldap.id":1,
+        "services.ldap.username":1,
         "services.ldap.rawAttrs":1,
 
         "services.saml.id":1,
@@ -211,7 +212,7 @@ SandstormDb.fillInProfileDefaults = function (user) {
     const setting = Settings.findOne({ _id: "ldapNameField" });
     const key = setting ? setting.value : "";
     profile.name = profile.name || user.services.ldap.rawAttrs[key] || "Name Unknown";
-    profile.handle = profile.handle || filterHandle(profile.name);
+    profile.handle = profile.handle || user.services.ldap.username;
   } else if (profile.service === "saml") {
     profile.name = profile.name || user.services.saml.displayName || "Name Unknown";
     profile.handle = profile.handle || user.services.saml.email.split("@")[0];

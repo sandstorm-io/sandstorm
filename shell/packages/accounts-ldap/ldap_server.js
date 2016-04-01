@@ -343,7 +343,8 @@ Accounts.registerLoginHandler("ldap", function (loginRequest) {
   }  else {
     // Set initial userId and token vals
     return Accounts.updateOrCreateUserFromExternalService("ldap",
-      { id: ldapResponse.dn, rawAttrs: ldapResponse.searchResults }, {});
+      { id: ldapResponse.dn, username: loginRequest.username,
+        rawAttrs: ldapResponse.searchResults, }, {});
   }
 
 });

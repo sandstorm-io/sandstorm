@@ -1011,18 +1011,19 @@ _.extend(SandstormDb.prototype, {
     }
 
     const orgMembership = this.getOrganizationMembership();
-    const googleEnabled = orgMembership.google.enabled;
-    const googleDomain = orgMembership.google.domain;
-    const emailEnabled = orgMembership.emailToken.enabled;
-    const emailDomain = orgMembership.emailToken.domain;
-
+    const googleEnabled = orgMembership && orgMembership.google && orgMembership.google.enabled;
+    const googleDomain = orgMembership && orgMembership.google && orgMembership.google.domain;
+    const emailEnabled = orgMembership && orgMembership.emailToken && orgMembership.emailToken.enabled;
+    const emailDomain = orgMembership && orgMembership.emailToken && orgMembership.emailToken.domain;
+    const ldapEnabled = orgMembership && orgMembership.ldap && orgMembership.ldap.enabled;
+    const samlEnabled = orgMembership && orgMembership.saml && orgMembership.saml.enabled;
     if (emailEnabled && emailDomain && identity.services.email) {
       if (identity.services.email.email.toLowerCase().split("@").pop() === emailDomain) {
         return true;
       }
-    } else if (orgMembership.ldap.enabled && identity.services.ldap) {
+    } else if (ldapEnabled && identity.services.ldap) {
       return true;
-    } else if (orgMembership.saml.enabled && identity.services.saml) {
+    } else if (samlEnabled && identity.services.saml) {
       return true;
     } else if (googleEnabled && googleDomain && identity.services.google && identity.services.google.hd) {
       if (identity.services.google.hd.toLowerCase() === googleDomain) {

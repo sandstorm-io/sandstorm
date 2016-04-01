@@ -214,7 +214,7 @@ SandstormDb.fillInProfileDefaults = function (user) {
     profile.handle = profile.handle || filterHandle(profile.name);
   } else if (profile.service === "saml") {
     profile.name = profile.name || user.services.saml.displayName || "Name Unknown";
-    profile.handle = profile.handle || filterHandle(profile.name);
+    profile.handle = profile.handle || user.services.saml.email.split("@")[0];
   } else {
     throw new Error("unrecognized identity service: ", profile.service);
   }

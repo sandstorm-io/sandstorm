@@ -196,7 +196,7 @@ SandstormDb.fillInProfileDefaults = function (user) {
     profile.pronoun = profile.pronoun || GENDERS[user.services.google.gender] || "neutral";
   } else if (profile.service === "email") {
     const email = user.services.email.email;
-    profile.name = profile.name || email.split("@")[0];
+    profile.name = profile.name || emailToHandle(email);
     profile.handle = profile.handle || emailToHandle(email);
   } else if (profile.service === "dev") {
     const lowerCaseName = user.services.dev.name.split(" ")[0].toLowerCase();
@@ -215,7 +215,7 @@ SandstormDb.fillInProfileDefaults = function (user) {
     profile.handle = profile.handle || user.services.ldap.username;
   } else if (profile.service === "saml") {
     profile.name = profile.name || user.services.saml.displayName || "Name Unknown";
-    profile.handle = profile.handle || user.services.saml.email.split("@")[0];
+    profile.handle = profile.handle || emailToHandle(user.services.saml.email);
   } else {
     throw new Error("unrecognized identity service: ", profile.service);
   }

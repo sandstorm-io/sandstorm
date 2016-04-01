@@ -292,7 +292,7 @@ Template.ldapLoginForm.events({
     const username = form.username.value;
     const password = form.password.value;
 
-    Meteor.loginWithLDAP(username, password, {}, function (err) {
+    Meteor.loginWithLDAP(username, password, function (err) {
       if (err) {
         loginButtonsSession.errorMessage(err.reason || "Unknown error");
       }

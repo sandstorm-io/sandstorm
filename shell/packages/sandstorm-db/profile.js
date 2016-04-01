@@ -81,6 +81,7 @@ if (Meteor.isServer) {
         "services.email.email":1,
 
         "services.ldap.id":1,
+        "services.ldap.username":1,
         "services.ldap.rawAttrs":1,
 
         "services.saml.id":1,
@@ -195,7 +196,7 @@ SandstormDb.fillInProfileDefaults = function (user) {
     profile.pronoun = profile.pronoun || GENDERS[user.services.google.gender] || "neutral";
   } else if (profile.service === "email") {
     const email = user.services.email.email;
-    profile.name = profile.name || email.split("@")[0];
+    profile.name = profile.name || emailToHandle(email);
     profile.handle = profile.handle || emailToHandle(email);
   } else if (profile.service === "dev") {
     const lowerCaseName = user.services.dev.name.split(" ")[0].toLowerCase();
@@ -210,11 +211,11 @@ SandstormDb.fillInProfileDefaults = function (user) {
   } else if (profile.service === "ldap") {
     const setting = Settings.findOne({ _id: "ldapNameField" });
     const key = setting ? setting.value : "";
-    profile.name = profile.name || user.services.ldap.rawAttrs[key] || "Name Unknown";
-    profile.handle = profile.handle || filterHandle(profile.name);
+    profile.handle = profile.handle || user.services.ldap.username;
+    profile.name = profile.name || user.services.ldap.rawAttrs[key] || profile.handle;
   } else if (profile.service === "saml") {
-    profile.name = profile.name || user.services.saml.displayName || "Name Unknown";
-    profile.handle = profile.handle || filterHandle(profile.name);
+    profile.handle = profile.handle || emailToHandle(user.services.saml.email);
+    profile.name = profile.name || user.services.saml.displayName || profile.handle;
   } else {
     throw new Error("unrecognized identity service: ", profile.service);
   }

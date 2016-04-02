@@ -1373,7 +1373,7 @@ install_sandstorm_symlinks() {
     echo ""
     echo "*** WARNING: /usr/local/bin was not writeable. To run sandstorm or spk manually, use:"
     echo " - $PWD/sandstorm"
-    echo " - $PWD/spk"
+    echo " - $PWD/sandstorm spk"
     echo ""
     return
   fi

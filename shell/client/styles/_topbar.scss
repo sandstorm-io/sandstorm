@@ -1158,11 +1158,15 @@ body>.popup {
   }
 
   &.notifications {
+    >.frame-container {
+      width: 400px;
+    }
 
     ul.notification-list {
       list-style: outside none none;
       padding: 0px;
       margin: $topbar-popup-padding;
+      width: calc(100% - #{$topbar-popup-padding} * 2);
 
       >li {
         margin: 10px 0px;

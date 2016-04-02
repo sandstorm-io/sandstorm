@@ -391,9 +391,9 @@ Meteor.methods({
       }
 
       const accountId = this.userId;
-      const identity = globalDb.getIdentity(identityId);
-      const sharerDisplayName = identity.profile.name;
       const outerResult = { successes: [], failures: [] };
+      const fromEmail = globalDb.getReturnAddressWithDisplayName(identityId);
+      const replyTo = globalDb.getPrimaryEmail(accountId, identityId);
       contacts.forEach(function (contact) {
         if (contact.isDefault && contact.profile.service === "email") {
           const emailAddress = contact.profile.intrinsicName;
@@ -410,8 +410,9 @@ Meteor.methods({
           try {
             SandstormEmail.send({
               to: emailAddress,
-              from: "Sandstorm server <no-reply@" + HOSTNAME + ">",
-              subject: sharerDisplayName + " has invited you to join a grain: " + title,
+              from: fromEmail,
+              replyTo: replyTo,
+              subject: title + " - Invitation to collaborate",
               text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
                 "\n\nNote: If you forward this email to other people, they will be able to " +
                 "access the share as well. To prevent this, remove the link before forwarding.",
@@ -450,8 +451,9 @@ Meteor.methods({
                   " to access this grain.";
               SandstormEmail.send({
                 to: email.email,
-                from: "Sandstorm server <no-reply@" + HOSTNAME + ">",
-                subject: sharerDisplayName + " has invited you to join a grain: " + title,
+                from: fromEmail,
+                replyTo: replyTo,
+                subject: title + " - Invitation to collaborate",
                 text: message.text + "\n\nFollow this link to open the shared grain:\n\n" + url +
                   "\n\nNote: You will need to log in with your " + loginNote +
                   " to access this grain.",
@@ -503,16 +505,8 @@ Meteor.methods({
       const identity = globalDb.getIdentity(identityId);
       globalDb.addContact(grainOwner._id, identityId);
 
-      const envelopeFrom = globalDb.getReturnAddress();
-      let fromEmail = globalDb.getServerTitle() + " <" + globalDb.getReturnAddress() + ">";
-      const senderEmails = SandstormDb.getVerifiedEmails(identity);
-      const senderPrimaryEmail = _.findWhere(senderEmails, { primary: true });
-      const accountPrimaryEmailAddress = Meteor.user().primaryEmail;
-      if (_.findWhere(senderEmails, { email: accountPrimaryEmailAddress })) {
-        fromEmail = accountPrimaryEmailAddress;
-      } else if (senderPrimaryEmail) {
-        fromEmail = senderPrimaryEmail.email;
-      }
+      const fromEmail = globalDb.getReturnAddressWithDisplayName(identityId);
+      const replyTo = globalDb.getPrimaryEmail(Meteor.userId(), identityId);
 
       // TODO(soon): In the HTML version, we should display an identity card.
       let identityNote = "";
@@ -557,8 +551,8 @@ Meteor.methods({
 
       SandstormEmail.send({
         to: emailAddress,
-        envelopeFrom: envelopeFrom,
         from: fromEmail,
+        replyTo: replyTo,
         subject: grain.title + " - Request for access",
         text: message + "\n\nFollow this link to share access:\n\n" + url,
         html: html,

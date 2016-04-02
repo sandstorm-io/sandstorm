@@ -546,6 +546,11 @@ limitations under the License.
     </div>
     {{#if completionState.clear}}
     <div class="button-container" role="presentation">
+      {{#with invitationExplanation}}
+        {{!-- Display the entire message in the hover text, in case "overflow: ellipsis" causes
+              part of the message to be hidden in the main view. --}}
+        <p class="invitation-explanation" title="{{.}}">{{.}}</p>
+      {{/with}}
       <button>Send</button>
     </div>
     {{/if}}

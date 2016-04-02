@@ -230,6 +230,33 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
 
           if (nameID[0].$.Format) {
             profile.nameIDFormat = nameID[0].$.Format;
+            if (profile.nameIDFormat.toLowerCase().indexOf("transient") !== -1) {
+              return callback(new Error("SAML Response's with Transient NameIDs " +
+                "are not allowed"));
+            }
+          }
+        }
+
+        const subjectConfirmation = _this.getElement(subject[0], "SubjectConfirmation");
+        if (subjectConfirmation) {
+          const subjectConfirmationData = _this.getElement(subjectConfirmation[0],
+            "SubjectConfirmationData")[0];
+          if (subjectConfirmationData) {
+            const recipient = subjectConfirmationData.$.Recipient;
+            if (recipient && !recipient.startsWith(process.env.ROOT_URL)) {
+              return callback(new Error("SAML sent to wrong recipient"));
+            }
+
+            const nowMs = Date.now();
+            const notOnOrBefore = subjectConfirmationData.$.NotOnOrBefore;
+            if (notOnOrBefore && nowMs <= Date.parse(notOnOrBefore)) {
+              return callback(new Error("SAML assertion was signed for the future."));
+            }
+
+            const notOnOrAfter = subjectConfirmationData.$.NotOnOrAfter;
+            if (notOnOrAfter && nowMs >= Date.parse(notOnOrAfter)) {
+              return callback(new Error("SAML assertion was signed for the past."));
+            }
           }
         }
       }

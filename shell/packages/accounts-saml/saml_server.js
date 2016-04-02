@@ -93,8 +93,10 @@ middleware = function (req, res, next) {
     }else if (samlObject.actionName === "validate") {
       _saml = new SAML(service);
       _saml.validateResponse(req.body.SAMLResponse, function (err, profile, loggedOut) {
-        if (err)
+        if (err) {
+          console.error("Error validating SAML response", err.toString());
           throw new Error("Unable to validate response url");
+        }
 
         const credentialToken = profile.inResponseToId || profile.InResponseTo || samlObject.credentialToken;
         if (!credentialToken)

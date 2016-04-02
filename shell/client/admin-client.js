@@ -451,6 +451,10 @@ Template.adminSettings.helpers({
     const token = state.get("token");
     return "/admin/features" + (token ? "/" + token : "");
   },
+
+  rootUrl: function () {
+    return window.location.protocol + "//" + window.location.host;
+  },
 });
 
 Template.adminUsers.onCreated(function () {

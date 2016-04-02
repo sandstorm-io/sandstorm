@@ -69,15 +69,15 @@ middleware = function (req, res, next) {
       throw new Error("Missing SAML action");
 
     const service = {
-    "provider":"default",
-    "entryPoint": SandstormDb.prototype.getSamlEntryPoint(),
-    // TODO(someday): find a better way to inject the DB
-    "issuer": HOSTNAME,
-    "cert": SandstormDb.prototype.getSamlPublicCert(),
-  };
+      "provider":"default",
+      "entryPoint": SandstormDb.prototype.getSamlEntryPoint(),
+      // TODO(someday): find a better way to inject the DB
+      "issuer": HOSTNAME,
+      "cert": SandstormDb.prototype.getSamlPublicCert(),
+    };
 
     // Skip everything if there's no service set by the saml middleware
-    if (!service)
+    if (!service || samlObject.serviceName !== service.provider)
       throw new Error("Unexpected SAML service " + samlObject.serviceName);
 
     if (samlObject.actionName === "authorize") {

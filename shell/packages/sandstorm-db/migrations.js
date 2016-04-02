@@ -496,6 +496,36 @@ function smtpPortShouldBeNumber() {
   }
 }
 
+function consolidateOrgSettings() {
+  const orgGoogleDomain = Settings.findOne({ _id: "organizationGoogle" });
+  const orgEmailDomain = Settings.findOne({ _id: "organizationEmail" });
+  const orgLdap = Settings.findOne({ _id: "organizationLdap" });
+  const orgSaml = Settings.findOne({ _id: "organizationSaml" });
+
+  const orgMembership = {
+    google: {
+      enabled: orgGoogleDomain ? !!orgGoogleDomain.value : false,
+      domain: orgGoogleDomain ? orgGoogleDomain.value : "",
+    },
+    email: {
+      enabled: orgEmailDomain ? !!orgEmailDomain.value : false,
+      domain: orgEmailDomain ? orgEmailDomain.value : "",
+    },
+    ldap: {
+      enabled: orgLdap ? orgLdap.value : false,
+    },
+    saml: {
+      enabled: orgSaml ? orgSaml.value : false,
+    },
+  };
+
+  Settings.upsert({ _id: "organizationMembership" }, { value: orgMembership });
+  Settings.remove({ _id: "organizationGoogle" });
+  Settings.remove({ _id: "organizationEmail" });
+  Settings.remove({ _id: "organizationLdap" });
+  Settings.remove({ _id: "organizationSaml" });
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -522,6 +552,7 @@ const MIGRATIONS = [
   assignBonuses,
   splitSmtpUrl,
   smtpPortShouldBeNumber,
+  consolidateOrgSettings,
 ];
 
 function migrateToLatest() {

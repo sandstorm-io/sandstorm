@@ -1010,20 +1010,23 @@ _.extend(SandstormDb.prototype, {
       return false;
     }
 
-    const googleDomain = this.getOrganizationGoogle();
-    const emailDomain = this.getOrganizationEmail();
-
-    if (emailDomain && identity.services.email) {
+    const orgMembership = this.getOrganizationMembership();
+    const googleEnabled = orgMembership && orgMembership.google && orgMembership.google.enabled;
+    const googleDomain = orgMembership && orgMembership.google && orgMembership.google.domain;
+    const emailEnabled = orgMembership && orgMembership.emailToken && orgMembership.emailToken.enabled;
+    const emailDomain = orgMembership && orgMembership.emailToken && orgMembership.emailToken.domain;
+    const ldapEnabled = orgMembership && orgMembership.ldap && orgMembership.ldap.enabled;
+    const samlEnabled = orgMembership && orgMembership.saml && orgMembership.saml.enabled;
+    if (emailEnabled && emailDomain && identity.services.email) {
       if (identity.services.email.email.toLowerCase().split("@").pop() === emailDomain) {
         return true;
       }
-    } else if (this.getOrganizationLdap() && identity.services.ldap) {
+    } else if (ldapEnabled && identity.services.ldap) {
       return true;
-    } else if (this.getOrganizationSaml() && identity.services.saml) {
+    } else if (samlEnabled && identity.services.saml) {
       return true;
-    } else if (googleDomain && identity.services.google && identity.services.google.hd) {
-      let domain = this.getOrganizationGoogle();
-      if (identity.services.google.hd.toLowerCase() === domain) {
+    } else if (googleEnabled && googleDomain && identity.services.google && identity.services.google.hd) {
+      if (identity.services.google.hd.toLowerCase() === googleDomain) {
         return true;
       }
     }
@@ -1346,24 +1349,39 @@ _.extend(SandstormDb.prototype, {
     return setting ? setting.value : "";  // empty if subscription is not ready.
   },
 
-  getOrganizationEmail: function () {
-    const setting = Settings.findOne({ _id: "organizationEmail" });
+  getOrganizationMembership: function () {
+    const setting = Settings.findOne({ _id: "organizationMembership" });
     return setting && setting.value;
   },
 
-  getOrganizationGoogle: function () {
-    const setting = Settings.findOne({ _id: "organizationGoogle" });
-    return setting && setting.value;
+  getOrganizationEmailEnabled: function () {
+    const membership = this.getOrganizationMembership();
+    return membership && membership.emailToken && membership.emailToken.enabled;
   },
 
-  getOrganizationLdap: function () {
-    const setting = Settings.findOne({ _id: "organizationLdap" });
-    return setting ? setting.value : false;
+  getOrganizationEmailDomain: function () {
+    const membership = this.getOrganizationMembership();
+    return membership && membership.emailToken && membership.emailToken.domain;
   },
 
-  getOrganizationSaml: function () {
-    const setting = Settings.findOne({ _id: "organizationSaml" });
-    return setting ? setting.value : false;
+  getOrganizationGoogleEnabled: function () {
+    const membership = this.getOrganizationMembership();
+    return membership && membership.google && membership.google.enabled;
+  },
+
+  getOrganizationGoogleDomain: function () {
+    const membership = this.getOrganizationMembership();
+    return membership && membership.google && membership.google.domain;
+  },
+
+  getOrganizationLdapEnabled: function () {
+    const membership = this.getOrganizationMembership();
+    return membership && membership.ldap && membership.ldap.enabled;
+  },
+
+  getOrganizationSamlEnabled: function () {
+    const membership = this.getOrganizationMembership();
+    return membership && membership.ldap && membership.saml.enabled;
   },
 
   getSamlEntryPoint: function () {

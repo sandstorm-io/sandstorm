@@ -98,9 +98,14 @@ middleware = function (req, res, next) {
           throw new Error("Unable to validate response url");
         }
 
-        const credentialToken = profile.inResponseToId || profile.InResponseTo || samlObject.credentialToken;
-        if (!credentialToken)
-          throw new Error("Unable to determine credentialToken");
+        // Do NOT use samlObject.credentialToken; it isn't signed!
+        const credentialToken = profile.inResponseToId || profile.InResponseTo;
+        if (!credentialToken) {
+          throw new Error(
+              "SAML response missing InResponseTo attribute. Sandstorm does not support " +
+              "IdP-initiated authentication; authentication requests must start " +
+              "from the user choosing SAML login in the Sandstorm UI.");
+        }
 
         Accounts.saml._loginResultForCredentialToken[credentialToken] = {
           profile: profile,

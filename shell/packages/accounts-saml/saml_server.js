@@ -69,15 +69,15 @@ middleware = function (req, res, next) {
       throw new Error("Missing SAML action");
 
     const service = {
-    "provider":"default",
-    "entryPoint": SandstormDb.prototype.getSamlEntryPoint(),
-    // TODO(someday): find a better way to inject the DB
-    "issuer": HOSTNAME,
-    "cert": SandstormDb.prototype.getSamlPublicCert(),
-  };
+      "provider":"default",
+      "entryPoint": SandstormDb.prototype.getSamlEntryPoint(),
+      // TODO(someday): find a better way to inject the DB
+      "issuer": HOSTNAME,
+      "cert": SandstormDb.prototype.getSamlPublicCert(),
+    };
 
     // Skip everything if there's no service set by the saml middleware
-    if (!service)
+    if (!service || samlObject.serviceName !== service.provider)
       throw new Error("Unexpected SAML service " + samlObject.serviceName);
 
     if (samlObject.actionName === "authorize") {
@@ -98,9 +98,14 @@ middleware = function (req, res, next) {
           throw new Error("Unable to validate response url");
         }
 
-        const credentialToken = profile.inResponseToId || profile.InResponseTo || samlObject.credentialToken;
-        if (!credentialToken)
-          throw new Error("Unable to determine credentialToken");
+        // Do NOT use samlObject.credentialToken; it isn't signed!
+        const credentialToken = profile.inResponseToId || profile.InResponseTo;
+        if (!credentialToken) {
+          throw new Error(
+              "SAML response missing InResponseTo attribute. Sandstorm does not support " +
+              "IdP-initiated authentication; authentication requests must start " +
+              "from the user choosing SAML login in the Sandstorm UI.");
+        }
 
         Accounts.saml._loginResultForCredentialToken[credentialToken] = {
           profile: profile,

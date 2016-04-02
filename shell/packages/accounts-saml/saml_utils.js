@@ -217,6 +217,13 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
         profile.inResponseToId = response.$.InResponseTo;
       }
 
+      if (response.$ && response.$.Destination) {
+        if (!response.$.Destination.startsWith(process.env.ROOT_URL)) {
+          return callback(new Error("SAML Response received with invalid Destination: " +
+            response.$.Destination));
+        }
+      }
+
       const issuer = _this.getElement(assertion[0], "Issuer");
       if (issuer) {
         profile.issuer = issuer[0];
@@ -231,8 +238,9 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
           if (nameID[0].$.Format) {
             profile.nameIDFormat = nameID[0].$.Format;
             if (profile.nameIDFormat.toLowerCase().indexOf("transient") !== -1) {
-              return callback(new Error("SAML Response's with Transient NameIDs " +
-                "are not allowed"));
+              return callback(new Error(
+                  "SAML returned a transient NameID. Sandstorm requires a persistent NameID. " +
+                  "Please check your IdP config."));
             }
           }
         }

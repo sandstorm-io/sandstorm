@@ -217,6 +217,13 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
         profile.inResponseToId = response.$.InResponseTo;
       }
 
+      if (response.$ && response.$.Destination) {
+        if (!response.$.Destination.startsWith(process.env.ROOT_URL)) {
+          return callback(new Error("SAML Response received with invalid Destination: " +
+            response.$.Destination));
+        }
+      }
+
       const issuer = _this.getElement(assertion[0], "Issuer");
       if (issuer) {
         profile.issuer = issuer[0];

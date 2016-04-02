@@ -1,3 +1,13 @@
+### v0.156 (2016-04-02)
+- Sandstorm for Work: Added support for SAML login.
+- Sandstorm for Work: LDAP identities now have email addresses.
+- Sandstorm for Work: Removed the option to specify an LDAP DN pattern in favor of the search query approach. DN patterns were going to create problems for future planned features and none of our users so far used the feature to our knowledge.
+- Sharing emails are now sent under the name of the sharer, with their email address specified in reply-to.
+- Fixed several display bugs in Internet Explorer.
+- Fixed that opening your own sharing link would sometimes prompt you to choose incognito mode.
+- Fixed regression causing some popup windows to display partially-off-screen on mobile.
+- Fixed minor display bugs with first-time usage tips on IE and Firefox.
+
 ### v0.155 (2016-03-27) [bugfixes]
 - Remove chatty console.log() recently added for debugging. Oops.
 

@@ -1164,8 +1164,7 @@ void SupervisorMain::unshareNetwork() {
 
   // Check if iptables module is available, skip the rest if not.
   if (!isIpTablesAvailable) {
-    KJ_LOG(WARNING,
-        "ip_tables kernel module not loaded; cannot set up transparent network forwarding.");
+    // TODO(soon): Put a runtime warning here, so that people can notice if this code won't work.
     return;
   }
 

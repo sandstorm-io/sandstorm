@@ -765,10 +765,7 @@ body>.popup {
 
     >.frame {
       position: relative;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: flex-start;
+      overflow: hidden;  // prevent margin-collapse
       >.close-popup {
         display: block;
         position: absolute;
@@ -962,6 +959,9 @@ body>.popup {
 
   &.share>.frame-container {
     width: 400px;
+  }
+  &.webkey>.frame-container {
+    width: 450px;
   }
 
   &.share>.frame-container>.frame, &.who-has-access>.frame-container>.frame {
@@ -1160,17 +1160,22 @@ body>.popup {
   &.notifications {
     >.frame-container {
       width: 400px;
+      >.frame>h4 {
+        margin: 0;
+      }
     }
 
     ul.notification-list {
       list-style: outside none none;
       padding: 0px;
-      margin: $topbar-popup-padding;
-      width: calc(100% - #{$topbar-popup-padding} * 2);
+      margin: 0;
+      &:last-child {
+        margin: 0;
+      }
 
       >li {
-        margin: 10px 0px;
-        border-bottom: 1px solid black;
+        padding: $topbar-popup-padding;
+        border-bottom: 1px solid #ccc;
         &:last-child {
           border-bottom: 0px;
         }

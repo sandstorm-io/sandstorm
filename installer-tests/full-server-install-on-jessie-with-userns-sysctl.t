@@ -40,7 +40,5 @@ $[veryslow]Visit this link to configure it:
 To learn how to control the server, run:
   sandstorm help
 $[exitcode]0
-$[run]hash -r && which sandstorm
-/usr/local/bin/sandstorm
 $[run]for i in `seq 0 20`; do nc -z localhost 6080 && { echo yay; break; } || sleep 1 ; done
 $[slow]yay

@@ -162,3 +162,7 @@ We're grateful for all the work of non-profits and community groups. For that re
 charities, and small unincorporated community groups can often receive feature keys for free. Please
 [contact us via the Sandstorm for Work page](https://sandstorm.io/business) and tell us one to two
 sentences about your nonprofit or community group. It'll be our honor to help.
+
+Free feature keys don't come with priority support, but they do come with our standard
+`support@sandstorm.io` best-effort email support, as well as community support via the sandstorm-dev
+Google Group and GitHub issues.

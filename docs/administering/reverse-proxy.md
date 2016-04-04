@@ -14,6 +14,19 @@ FAQ](faq.md#how-do-i-enable-websockets-proxying-or-why-do-some-apps-seem-to-cras
 
 ## Configuring nginx and Sandstorm for reverse proxying
 
+### nginx optional: Apache2 and other choices available
+
+This tutorial covers the use of nginx. If you prefer Apache2 or another reverse proxy, you can read
+this document to get an overview.
+
+For Apache2 in particular, feel free to use our
+[sample VirtualHost configuration for Apache2](https://github.com/sandstorm-io/sandstorm/blob/master/docs/administering/sample-config/apache-virtualhost.conf)
+Sandstorm requires WebSockets support; to enable that, make sure to pay attention to the
+`RewriteRule` stanzas in the example configuration.
+
+If you use a non-nginx, non-Apache2 reverse proxy, we'd love for you to
+[email us](mailto:community@sandstorm.io) so we can publish example configuration files.
+
 ### HTTPS or not: you choose
 
 When running Sandstorm behind a reverse proxy such as nginx, you can configure HTTPS in the reverse

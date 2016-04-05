@@ -102,7 +102,6 @@ Accounts.onCreateUser(function (options, user) {
   }
 
   if (localSandstormDb.getOrganizationDisallowGuests() &&
-      localSandstormDb.isFeatureKeyValid() &&
       !localSandstormDb.isIdentityInOrganization(user)) {
     throw new Meteor.Error(400, "User not in organization.");
   }

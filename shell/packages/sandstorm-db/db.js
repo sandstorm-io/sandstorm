@@ -1414,6 +1414,10 @@ _.extend(SandstormDb.prototype, {
   },
 
   getOrganizationDisallowGuests: function () {
+    return this.getOrganizationDisallowGuestsRaw() && this.isFeatureKeyValid();
+  },
+
+  getOrganizationDisallowGuestsRaw: function () {
     const setting = Settings.findOne({ _id: "organizationSettings" });
     return setting && setting.value && setting.value.disallowGuests;
   },

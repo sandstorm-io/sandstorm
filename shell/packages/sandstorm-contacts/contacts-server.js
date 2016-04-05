@@ -14,16 +14,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-Meteor.publish("contactProfiles", function () {
+Meteor.publish("contactProfiles", function (showAll) {
   const db = this.connection.sandstormDb;
   const _this = this;
 
   // We maintain a map from identity IDs to live query handles that track profile changes.
   const contactIdentities = {};
+  const disallowGuests = db.getOrganizationDisallowGuests();
 
   function addIdentityOfContact(contact) {
     if (!(contact.identityId in contactIdentities)) {
       const user = Meteor.users.findOne({ _id: contact.identityId });
+
+      if (disallowGuests && !showAll) {
+        if (!db.isIdentityInOrganization(user)) {
+          return;
+        }
+      }
+
       if (user) {
         SandstormDb.fillInProfileDefaults(user);
         SandstormDb.fillInIntrinsicName(user);

@@ -366,7 +366,7 @@ Template.adminSettings.helpers({
   },
 
   disallowGuests: function () {
-    return globalDb.getOrganizationDisallowGuests();
+    return globalDb.getOrganizationDisallowGuestsRaw();
   },
 
   ldapEnabled: function () {

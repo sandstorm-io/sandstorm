@@ -226,7 +226,6 @@ Tinytest.add("permissions: legacy public grain", function (test) {
                                                               identityId: null, }, },
                                                    commonViewInfo).permissions,
              [true, false, false]);
-
 });
 
 Tinytest.add("permissions: only owner may open private non-shared grain", function (test) {
@@ -418,8 +417,8 @@ Tinytest.add("permissions: membrane requirements loop", function (test) {
   test.isTrue(bob.mayOpenGrain(bobGrain));
   test.isFalse(alice.mayOpenGrain(bobGrain));
 
-  test.equal(alice.grainPermissions(bobGrain), undefined);
-  test.equal(bob.grainPermissions(aliceGrain), undefined);
+  test.equal(alice.grainPermissions(bobGrain), null);
+  test.equal(bob.grainPermissions(aliceGrain), null);
 });
 
 Tinytest.add("permissions: membrane requirements nontrivial normalization", function (test) {
@@ -429,7 +428,6 @@ Tinytest.add("permissions: membrane requirements nontrivial normalization", func
   const bobAccount = new Account(globalDb, [bob]);
   const carol = new Identity(globalDb);
   const aliceGrain = new Grain(globalDb, aliceAccount, alice, commonViewInfo);
-  const bobGrain = new Grain(globalDb, bobAccount, bob, commonViewInfo);
 
   const requirement1 = {
     permissionsHeld: {
@@ -547,6 +545,7 @@ Tinytest.add("permissions: membrane requirements long chain", function (test) {
   alice.shareToIdentity(grains[grains.length - 1], bob, { allAccess: null });
 
   test.isTrue(bob.mayOpenGrain(grains[0]));
+  test.equal(bob.grainPermissions(grains[0]), [true, true, true]);
 });
 
 function createViewInfo(numPermissions) {
@@ -572,7 +571,7 @@ function createViewInfo(numPermissions) {
 }
 
 Tinytest.add("permissions: membrane requirements many permissions", function (test) {
-  const NUM_PERMISSIONS = 20;
+  const NUM_PERMISSIONS = 25;
   const viewInfo = createViewInfo(NUM_PERMISSIONS);
   const alice = new Identity(globalDb);
   const aliceAccount = new Account(globalDb, [alice]);
@@ -604,12 +603,11 @@ Tinytest.add("permissions: membrane requirements many permissions", function (te
 });
 
 Tinytest.add("permissions: blow up disjunctive normal form", function (test) {
+  // In a previous version of our permissions computation, the time this test took to complete
+  // was at least exponential in `NUM_PERMISSIONS`, and effectively took forever if
+  // `NUM_PERMISSIONS` was greater than 10.
 
-  const NUM_PERMISSIONS = 5;
-  // TODO(perf): Improve the permissions computation so that it can handle higher values for
-  //   this number N. This test creates approximately N tokens, each carrying approximately N
-  //   permissions. Reduced to a HORNSAT problem, that gives roughly N^2 clauses, so ideally
-  //   our performance would be O(N^2). Unfortunately, we currently have an exponential blowup.
+  const NUM_PERMISSIONS = 30;
 
   const viewInfo = createViewInfo(NUM_PERMISSIONS);
   const alice = new Identity(globalDb);

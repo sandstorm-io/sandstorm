@@ -655,9 +655,9 @@ interface SessionContext {
   # powerboxRequest:
   #   rpcId: A unique string that should identify this rpc message to the app. You will receive this
   #          id in the callback to verify which message it is referring to.
-  #   query: A list of PowerboxDescriptor objects, serialized as a Javascript array OR a
-  #          base64-encoded powerbox query created using the `spk query` tool.
-  #   saveLabel: A string petname to give this label. This will be displayed to the user as the name
+  #   query: A list of PowerboxDescriptor objects, serialized as a Javascript array of
+  #          base64-encoded packed powerbox query descriptors created using the `spk query` tool.
+  #   saveLabel: A petname to give this label. This will be displayed to the user as the name
   #          for this capability.
   #
   # e.g.:
@@ -667,11 +667,12 @@ interface SessionContext {
   #       query: [
   #         {
   #           tags: [
-  #             { id: "10145426045091321204" },
+  #             // encoded/packed/base64url of (tags = [(id = 15831515641881813735)])
+  #             "EAZQAQEAABEBF1EEAQH_5-Jn6pjXtNsAAAA",
   #           ],
   #         },
   #       ],
-  #       saveLabel: "Linked grain",
+  #       saveLabel: { defaultText: "Linked grain" },
   #     },
   #   }, "*");
   #

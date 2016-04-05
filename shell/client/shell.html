@@ -169,7 +169,9 @@ limitations under the License.
       <div class="grain-interstitial">
         <p>With which of your identities would you like to open this grain?</p>
         {{> identityPicker identityPickerData}}
+        {{#if interstitial.showIncognito}}
         <button class="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
+        {{/if}}
       </div>
     {{else}}
       {{#if interstitial.directShare}}

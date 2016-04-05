@@ -467,8 +467,21 @@ GrainView = class GrainView {
         return null;
       }
 
+      const disallowGuests = globalDb.getOrganizationDisallowGuests();
+      if (disallowGuests) {
+        // If guests are disallowed, we can skip the interstitial if there's only 1 identitiy.
+        const user = Meteor.user();
+        if ((user.loginIdentities.length + user.nonloginIdentities.length) === 1) {
+          this._userIdentityId.set(user.loginIdentities[0].id);
+          return null;
+        }
+      }
+
       // Otherwise, we should show it.
-      return { chooseIdentity: {} };
+      return {
+        chooseIdentity: {},
+        showIncognito: !disallowGuests,
+      };
     } else if (this._tokenInfo.identityOwner) {
       return {
         directShare: {
@@ -794,4 +807,3 @@ onceConditionIsTrue = (condition, continuation) => {
     });
   });
 };
-

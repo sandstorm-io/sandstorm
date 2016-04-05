@@ -329,6 +329,13 @@ Meteor.methods({
       throw new Meteor.Error(403, "Current user does not own the identity: " + identityId);
     }
 
+    if (!identityId &&
+        globalDb.getOrganizationDisallowGuests() &&
+        globalDb.isFeatureKeyValid()) {
+      throw new Meteor.Error("guestDisallowed", "This Sandstorm server does not allow " +
+        "guests or anonymous users");
+    }
+
     const token = params.token;
     const incognito = params.incognito;
     const hashedToken = Crypto.createHash("sha256").update(token).digest("base64");

@@ -55,7 +55,7 @@ const tokenIsSetupSession = function (token) {
       const hash = Crypto.createHash("sha256").update(token).digest("base64");
       const now = new Date();
       const sessionLifetime = 24 * 60 * 60 * 1000; // length of setup session validity, in milliseconds: 1 day
-      if (setupSession.hashedSessionId === hash && (now - setupSession.creationDate < sessionLifetime)) {
+      if (setupSession.hashedSessionId === hash && ((now - setupSession.creationDate) < sessionLifetime)) {
         return true;
       }
     }

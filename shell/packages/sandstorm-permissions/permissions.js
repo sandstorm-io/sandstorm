@@ -96,25 +96,6 @@ class PermissionSet {
     return result;
   }
 
-  hash() {
-    // See the comment for RequirementSet.hash().
-
-    const hasher = Crypto.createHash("sha256");
-    this.updateHasher(hasher);
-    return hasher.digest("hex");
-  }
-
-  updateHasher(hasher) {
-    hasher.update("(");
-    for (let i = 0; i < this.array.length; ++i) {
-      if (this.array[i]) {
-        hasher.update("" + i + ",");
-      }
-    }
-
-    hasher.update(")");
-  }
-
   isEmpty() {
     let result = true;
     this.array.forEach((p) => {
@@ -188,15 +169,15 @@ class PermissionSet {
 class RequirementSet {
   // A conjunction of permissions for identities on grains.
   //
-  // This typcially represents a list of `MembraneRequirement`s, as defined in `supervisor.capnp`.
+  // This typically represents a set of `MembraneRequirement`s, as defined in `supervisor.capnp`.
   // These represent conditions under which some connection formed between grains remains valid.
   // When a capability travels from grain to grain, it passes across these connections -- if any
   // of the connections becomes invalid (is revoked), then the capability must be revoked as well.
   // The word "membrane" comes from the concept of revokable membranes; the capability is passing
   // across such membranes as it travels.
   //
-  // For example, a clause might represent the statement "Alice has read access to Foo, Bob has
-  // write access to Foo, and Bob has read access to Bar". Specifically, this example situation
+  // For example, a RequirementSet might represent the statement "Alice has read access to Foo, Bob
+  // has write access to Foo, and Bob has read access to Bar". Specifically, this example situation
   // would come about if:
   // - Bob used his read access to Bar to extract a capability from it.
   // - Bob embedded that capability into Foo, using his write access.
@@ -206,30 +187,6 @@ class RequirementSet {
   constructor() {
     this.identityPermissions = {};
     // Two-level map. Maps a pair of a grain ID and an identity ID to a PermissionSet.
-  }
-
-  hash() {
-    // It is often useful to form sets of clauses. This method returns a hash that is suitable to
-    // be used as a key for such a set.
-    //
-    // TODO(perf): Investigate other approaches. We do not need this hash to be cryptographically
-    //   opaque, but we do need it to avoid collisions. Maybe we should instead represent
-    //   sets of clauses as ordered maps, or maybe as proper hash maps with bucketing?
-    //   Note that a representation that allows for efficient matching by subset or superset would
-    //   be useful for some computations marked with TODO(perf) later in this file, but I'm not
-    //   sure what such a representation would look like.
-    const hasher = Crypto.createHash("sha256");
-    Object.keys(this.identityPermissions).sort().forEach((grainId) => {
-      hasher.update(grainId + "{");
-      Object.keys(this.identityPermissions[grainId]).sort().forEach((identityId) => {
-        hasher.update(identityId);
-        this.identityPermissions[grainId][identityId].updateHasher(hasher);
-      });
-
-      hasher.update("}");
-    });
-
-    return hasher.digest("hex");
   }
 
   isEmpty() {
@@ -242,12 +199,12 @@ class RequirementSet {
     return true;
   }
 
-  addMembraneRequirements(membraneRequirements) {
-    // Updates this clause to include the permissions required by `membraneRequirements`, which
+  addRequirements(requirements) {
+    // Updates this RequirementSet to include the permissions required by `requirements`, which
     // is a decoded Cap'n Proto List(MembraneRequirement).
 
-    if (!membraneRequirements) return;
-    membraneRequirements.forEach((requirement) => {
+    if (!requirements) return;
+    requirements.forEach((requirement) => {
       if (requirement.permissionsHeld) {
         const grainId = requirement.permissionsHeld.grainId;
         const identityId = requirement.permissionsHeld.identityId;
@@ -255,7 +212,7 @@ class RequirementSet {
         this._ensureEntryExists(grainId, identityId);
         this.identityPermissions[grainId][identityId].add(permissions);
       } else {
-        throw new Error("unsupported membrane requirement: " + JSON.toString(requirement));
+        throw new Error("unsupported requirement: " + JSON.toString(requirement));
       }
     });
   }
@@ -273,16 +230,20 @@ class RequirementSet {
     }
   }
 
-  popFirstGoal() {
-    // Returns the first (grain, identity) -> PermissionSet obligation that we need to prove
-    // in order to prove that this clause holds, and drops that obligation from this clause.
+  getGrainIds() {
+    return Object.keys(this.identityPermissions);
+  }
+
+  pop() {
+    // Chooses one (grainId, identityId) pair in this RequirementSet, removes it, and returns the
+    // corresponding PermissionSet.
 
     if (this.isEmpty()) {
-      throw new Error("popFirstGoal() called on empty clause");
+      throw new Error("pop() called on empty RequirementSet");
     }
 
-    const grainId = Object.keys(this.identityPermissions).sort()[0];
-    const identityId = Object.keys(this.identityPermissions[grainId]).sort()[0];
+    const grainId = Object.keys(this.identityPermissions)[0];
+    const identityId = Object.keys(this.identityPermissions[grainId])[0];
 
     const permissions = this.identityPermissions[grainId][identityId];
 
@@ -291,100 +252,173 @@ class RequirementSet {
       delete this.identityPermissions[grainId];
     }
 
-    return { vertex: { grain: { _id: grainId, identityId: identityId } },
-             permissions: permissions, };
+    return { grainId: grainId, identityId: identityId, permissionSet: permissions, };
+  }
+}
+
+const permissionIdPattern = Match.OneOf({ canAccess: null }, { appDefined: Match.Integer });
+// As we compute a flow of permissions, we need to be able to explicitly refer to not only
+// the permissions enumerated in a grain's `ViewInfo`, but also the usually-implicit "can
+// access the grain at all" permission. A permission ID, defined here, allows us to refer
+// to either of these types of permissions.
+
+function forEachPermission(permissions, f) {
+  check(permissions, [Boolean]);
+  f({ canAccess: null });
+  for (let ii = 0; ii < permissions.length; ++ii) {
+    if (permissions[ii]) {
+      f({ appDefined: ii });
+    }
+  }
+}
+
+// A vertex is a principal in the sharing graph. A "vertex ID" is either "i:" + an identity ID,
+// or "t:" + a token ID. In some limited contexts, "o:Owner" is also allowed, signifying the
+// *account* of the grain owner, from which all permissions flow.
+
+function vertexIdOfTokenOwner(token) {
+  let result = "t:" + token._id;
+  if (token.owner && token.owner.user) {
+    result = "i:" + token.owner.user.identityId;
   }
 
-  conjoin(other) {
-    // Updates this clause to include the permissions contained in `other`.
-    check(other, RequirementSet);
+  return result;
+}
 
-    for (let grainId in other.identityPermissions) {
-      for (let identityId in other.identityPermissions[grainId]) {
-        let otherPermissions = other.identityPermissions[grainId][identityId];
-        this._ensureEntryExists(grainId, identityId);
-        this.identityPermissions[grainId][identityId].add(otherPermissions);
+class Variable {
+  // Our permissions computation can be framed as a propositional HORNSAT problem; this `Variable`
+  // class represents a variable in that sense. There is a variable for every (grain ID, vertex ID,
+  // permission ID) triple. In any given computation, we only explicitly construct those
+  // variables that know might actually be relevant to the result.
+  //
+  // The value of a variable represents an answer to the question "does this vertex in the sharing
+  // graph receive this permission at this grain?" We start out by setting all variables to `false`,
+  // and we only set a variable to `true` when an edge in the sharing graph forces us to. If
+  // this forward-chaining eventually forces us to set our end goal variables to `true`, then the
+  // HORNSAT problem is unsatisfiable and we have proved what we wanted. Otherwise, the HORNSAT
+  // problem is satisfiable, i.e. there is a consistent way to set values to variables in which
+  // our goal nodes do *not* receive the permissions we wanted them to.
+
+  constructor() {
+    this.value = false;
+
+    this.directTailList = [];
+    // List of token IDs for outgoing edges that need to be looked at once this variable gets set
+    // to `true`.
+
+    this.requirementsTailList = [];
+    // List of token IDs for tokens that have requirements that get fulfilled once this variable
+    // gets set to `true`.
+  }
+}
+
+class ActiveToken {
+  // An "active token" is one that we allow to propagate permissions because we've decided
+  // that it might be relevant to our current computation. This class tracks which permissions
+  // the token carries, which of those permissions we've actually proved to arrive at the source
+  // end of the token, and how many of the token's requirements are still unmet.
+
+  constructor(numUnmetRequirements, permissions) {
+    check(numUnmetRequirements, Match.Integer);
+    check(permissions, [Boolean]);
+
+    this.numUnmetRequirements = numUnmetRequirements;
+
+    // The following fields have a "permission status" value, one of:
+    // {unmet: null}, {met: null}, or { doesNotCarry: null }.
+    this.canAccess = { unmet: null };
+    this.appDefined = [];
+
+    for (let ii = 0; ii < permissions.length; ++ii) {
+      if (permissions[ii]) {
+        this.appDefined.push({ unmet: null });
+      } else {
+        this.appDefined.push({ doesNotCarry: null });
       }
     }
   }
-}
 
-class ConditionalPermissionSet {
-  // A PermissionSet that is contingent upon some requirements.
-
-  constructor(permissions, requirements) {
-    check(permissions, PermissionSet);
-    check(requirements, RequirementSet);
-    this.permissions = permissions;
-    this.requirements = requirements;
-    this.tokensUsed = {}; // Token IDs for the tokens that these permissions depend upon.
+  requirementsAreMet() {
+    return this.numUnmetRequirements <= 0;
   }
 
-  static fromToken(token, viewInfo) {
-    // A token is an edge in the sharing graph, propagating some permissions P from vertex A
-    // to vertex B, perhaps conditioned on some membrane requirements M. This function constructs
-    // a ConditionalPermissionSet from a token, taking into account the permissions P and the
-    // membrane requirements M. The result does not carry any information about the vertices
-    // A and B, even though the input `token` may contain information about them, for example
-    // in the `parentToken` field.
-
-    const permissions = PermissionSet.fromRoleAssignment(token.roleAssignment, viewInfo);
-    const result = new ConditionalPermissionSet(permissions, new RequirementSet());
-    result.requirements.addMembraneRequirements(token.requirements);
-    result.tokensUsed[token._id] = true;
-    return result;
+  decrementRequirements() {
+    this.numUnmetRequirements -= 1;
   }
 
-  clone() {
-    // Returns a deep copy of `this`.
-    const result = new ConditionalPermissionSet(new PermissionSet(), new RequirementSet());
-    result.permissions.add(this.permissions);
-    result.requirements.conjoin(this.requirements);
-    result.tokensUsed = _.clone(this.tokensUsed);
-    return result;
+  directIsMet(permissionId) {
+    check(permissionId, permissionIdPattern);
+    if ("canAccess" in permissionId) {
+      return "met" in this.canAccess;
+    } else if ("appDefined" in permissionId) {
+      return "met" in this.appDefined[permissionId.appDefined];
+    }
   }
 
-  sequence(other) {
-    // Updates this ConditionalPermissionSet to apply `other` in sequence.
-    //
-    // That is, given two edges in the sharing graph, each represented by a ConditionalPermissionSet,
-    // we are unifying them into a single edge, by intersecting both the requirements and the
-    // permissions granted.
-    //
-    // TODO(cleanup): Consider renaming to `join()`?
+  decrementDirect(permissionId) {
+    check(permissionId, permissionIdPattern);
+    if ("canAccess" in permissionId) {
+      this.canAccess = { met: null };
+    } else if ("appDefined" in permissionId) {
+      this.appDefined[permissionId.appDefined] = { met: null };
+    }
+  }
 
-    check(other, ConditionalPermissionSet);
-    this.permissions.intersect(other.permissions);
-    this.requirements.conjoin(other.requirements);
-    for (const tokenId in other.tokensUsed) {
-      this.tokensUsed[tokenId] = true;
+  forEachPermission(func) {
+    // `func` takes a permission ID and a permission status.
+
+    func({ canAccess: null }, this.canAccess);
+    for (let ii = 0; ii < this.appDefined.length; ++ii) {
+      func({ appDefined: ii }, this.appDefined[ii]);
     }
   }
 }
 
-// pseudo-class PermissionFlow
-//
-// A PermissionFlow is an object whose keys are RequirementSet.hash()es and whose values are
-// ConditionalPermissionSets.
-//
-// A PermissionFlow represents the permissions flowing from one vertex in the sharing graph to
-// another (e.g. between one user and another), possibly across multiple edges (in series and/or
-// parallel). This is not simply a PermissionSet because some permissions may be conditional.
-// Instead, PermissionFlow is a set of ConditionalPermissionSets; that is, a set of pairs of
-// PermissionSets and requirements for said permissions to be granted.
-
 class Context {
-  // Cached database state for use during permissions computations.
+  // An ongoing permissions computation, including cached database state.
 
   constructor() {
     this.grains = {};            // Map from grain ID to entry in Grains table.
-    this.userIdentityIds = {};   // Map from user ID to list of identity IDs.
+    this.userIdentityIds = {};   // Map from account ID to list of linked identity IDs.
     this.tokensById = {};        // Map from token ID to token.
     this.tokensByRecipient = {}; // Map from grain ID and identity ID to token array.
+
+    this.variables = {};
+    // GrainId -> VertexId -> { canAccess: Variable, appDefined: [Variable] }
+
+    this.activeTokens = {};      // TokenId -> ActiveToken
+
+    this.setToTrueStack = [];
+    // Variables enqueued to be set to true.
+    // Array of { grainId: String, vertexId: String, permissionId: PermissionId,
+    //            responsibleTokenId: Optional(String) }
+
+    this.unmetRequirements = new RequirementSet();
+    // As we run our forward-chaining algorithm, when we encounter a token with unmet requirements
+    // we add those requirements to this set. Then, if we find that our current knowledge base
+    // is not large enough to prove our goal, we can expand our search by following these
+    // requirements backwards and activating tokens that might help prove that they are met.
+    // `unmetRequirements` is allowed to be an overestimate, as might happen if we add
+    // some requirements to it and then prove that they hold before we get around to draining it.
+  }
+
+  reset() {
+    // Resets all state except this.grains and this.userIdentityIds.
+    this.tokensById = {};
+    this.tokensByRecipient = {};
+    this.unmetRequirements = new RequirementSet();
+    this.setToTrueStack = [];
+    this.variables = {};
+    this.activeTokens = {};
   }
 
   addToken(token) {
+    // Retrives a token from the database. Does not activate it.
+
     check(token, Match.ObjectIncluding({ grainId: String }));
+
+    if (this.tokensById[token._id]) return;
+
     this.tokensById[token._id] = token;
     if (token.owner && token.owner.user) {
       if (!this.tokensByRecipient[token.grainId]) {
@@ -399,22 +433,514 @@ class Context {
     }
   }
 
-  addGrain(db, grainId) {
+  addGrains(db, grainIds) {
+    // Retrieves grains from the database.
+
     check(db, SandstormDb);
-    check(grainId, String);
-    const grain = db.getGrain(grainId);
-    this.grains[grainId] = grain;
+    check(grainIds, [String]);
+    db.collections.grains.find({ _id: { $in: grainIds } }).forEach((grain) => {
+      this.grains[grain._id] = grain;
+      if (!this.userIdentityIds[grain.userId]) {
+        this.userIdentityIds[grain.userId] = SandstormDb.getUserIdentityIds(
+          Meteor.users.findOne({ _id: grain.userId }));
+      }
+    });
 
-    this.userIdentityIds[grain.userId] = SandstormDb.getUserIdentityIds(
-      Meteor.users.findOne({ _id: grain.userId }));
-
-    const query = { grainId: grainId, revoked: { $ne: true }, objectId: { $exists: false } };
+    const query = { grainId: { $in: grainIds },
+                    revoked: { $ne: true }, objectId: { $exists: false }, };
     db.collections.apiTokens.find(query).forEach((token) => this.addToken(token));
   }
 
   addTokensFromCursor(cursor) {
     cursor.forEach((token) => this.addToken(token));
   }
+
+  activateOwnerEdges(grainId, edges) {
+    check(edges, [{ identityId: String, role: SandstormDb.prototype.roleAssignmentPattern }]);
+
+    edges.forEach((edge) => {
+      const viewInfo = this.grains[grainId].cachedViewInfo || {};
+      const permissions = PermissionSet.fromRoleAssignment(edge.role, viewInfo);
+      const vertexId = "i:" + edge.identityId;
+      forEachPermission(permissions.array, (permissionId) => {
+        this.setToTrueStack.push({ grainId: grainId, vertexId: vertexId,
+                                   permissionId: permissionId, });
+      });
+    });
+  }
+
+  activateToken(tokenId) {
+    // Includes a new token (which must already be in `this.tokensById`) in our computation. The
+    // tricky part here is dealing with our already-accumulated knowledge; we need to compute how
+    // many of the token's requirements are currently unmet and whether we need to push anything new
+    // onto `setToTrueStack`.
+
+    check(tokenId, String);
+    if (tokenId in this.activeTokens) {
+      return false;
+    }
+
+    const token = this.tokensById[tokenId];
+    const grainId = token.grainId;
+    const viewInfo = this.grains[grainId].cachedViewInfo || {};
+    const tokenPermissions = PermissionSet.fromRoleAssignment(token.roleAssignment, viewInfo);
+
+    const sharerId = token.parentToken ? "t:" + token.parentToken : "i:" + token.identityId;
+    const recipientId = vertexIdOfTokenOwner(token);
+
+    let numUnmetRequirements = 0;
+    if (token.requirements) {
+      token.requirements.forEach((requirement) => {
+        if (requirement.permissionsHeld) {
+          const reqGrainId = requirement.permissionsHeld.grainId;
+          const reqVertexId = "i:" + requirement.permissionsHeld.identityId;
+          const reqPermissions = requirement.permissionsHeld.permissions || [];
+
+          forEachPermission(reqPermissions, (permissionId) => {
+            const variable = this.getVariable(reqGrainId, reqVertexId, permissionId);
+            if (!variable.value) {
+              numUnmetRequirements += 1;
+              variable.requirementsTailList.push(tokenId);
+            }
+          });
+        }
+      });
+    }
+
+    const activeToken = new ActiveToken(numUnmetRequirements, tokenPermissions.array);
+    let needToExploreUnmet = false;
+
+    activeToken.forEachPermission((permissionId, status) => {
+      if (!("doesNotCarry" in status)) {
+        const recipientVariable = this.getVariable(grainId, recipientId, permissionId);
+        if (!recipientVariable.value) {
+          const sharerVariable = this.getVariable(grainId, sharerId, permissionId);
+          if (!sharerVariable.value) {
+            sharerVariable.directTailList.push(tokenId);
+          } else {
+            activeToken.decrementDirect(permissionId);
+            if (numUnmetRequirements == 0) {
+              this.setToTrueStack.push({ grainId: grainId,
+                                         vertexId: vertexIdOfTokenOwner(token),
+                                         permissionId: permissionId,
+                                         responsibleTokenId: tokenId, });
+            } else {
+              needToExploreUnmet = true;
+            }
+          }
+        }
+      }
+    });
+
+    if (needToExploreUnmet) {
+      this.unmetRequirements.addRequirements(token.requirements);
+    }
+
+    this.activeTokens[tokenId] = activeToken;
+
+    return true;
+  }
+
+  _ensureVariableExists(grainId, vertexId, permissionId) {
+    if (!this.variables[grainId]) {
+      this.variables[grainId] = {};
+    }
+
+    if (!this.variables[grainId][vertexId]) {
+      this.variables[grainId][vertexId] = { canAccess: new Variable(),
+                                            appDefined: [], };
+    }
+
+    const variables = this.variables[grainId][vertexId];
+
+    if ("appDefined" in permissionId) {
+      while (permissionId.appDefined >= variables.appDefined.length) {
+        variables.appDefined.push(new Variable());
+      }
+    }
+  }
+
+  getVariable(grainId, vertexId, permissionId) {
+    check(grainId, String);
+    check(vertexId, String);
+    check(permissionId, permissionIdPattern);
+
+    this._ensureVariableExists(grainId, vertexId, permissionId);
+
+    const nodeVariables = this.variables[grainId][vertexId];
+    if ("canAccess" in permissionId) {
+      return nodeVariables.canAccess;
+    } else if ("appDefined" in permissionId) {
+      return nodeVariables.appDefined[permissionId.appDefined];
+    } else {
+      throw new Meteor.Error(500, "unknown permissionId: " + JSON.stringify(permissionId));
+    }
+  }
+
+  getPermissions(grainId, vertexId) {
+    // Looks up the permissions that have already been proven for the `vertexId` on `grainId`.
+
+    check(grainId, String);
+    check(vertexId, String);
+
+    this._ensureVariableExists(grainId, vertexId, { canAccess: null });
+
+    const nodeVariables = this.variables[grainId][vertexId];
+    if (!nodeVariables.canAccess.value) {
+      return null;
+    } else {
+      return new PermissionSet(nodeVariables.appDefined.map((variable) => variable.value));
+    }
+  }
+
+  runForwardChaining(grainId, vertexId, permissionSet) {
+    // TODO(perf): Exit early if we've already proven that permissionSet is fulfilled.
+
+    check(grainId, String);
+    check(vertexId, String);
+    check(permissionSet, PermissionSet);
+
+    if (permissionSet.array.length > 0) {
+      // Make sure that the result of this call, retrieved through `this.getPermissions()`,
+      // will have a full array of permissions, even if they aren't all set to `true`.
+      this._ensureVariableExists(grainId, vertexId, { appDefined: permissionSet.array.length - 1 });
+    }
+
+    while (this.setToTrueStack.length > 0) {
+      const current = this.setToTrueStack.pop();
+      const variable = this.getVariable(current.grainId, current.vertexId, current.permissionId);
+      if (variable.value) {
+        continue;
+      }
+
+      variable.value = true;
+      variable.responsibleTokenId = current.responsibleTokenId;
+      variable.directTailList.forEach((tokenId) => {
+        const activeToken = this.activeTokens[tokenId];
+        activeToken.decrementDirect(current.permissionId);
+        // We know this permission must be met now.
+
+        const token = this.tokensById[tokenId];
+        if (activeToken.requirementsAreMet()) {
+          // We've triggered a new edge! Push it onto the queue.
+          this.setToTrueStack.push({ grainId: token.grainId,
+                                     vertexId: vertexIdOfTokenOwner(token),
+                                     permissionId: current.permissionId,
+                                     responsibleTokenId: tokenId, });
+        } else {
+          this.unmetRequirements.addRequirements(token.requirements);
+        }
+      });
+
+      variable.requirementsTailList.forEach((tokenId) => {
+        const token = this.tokensById[tokenId];
+        const activeToken = this.activeTokens[tokenId];
+        activeToken.decrementRequirements(current.permissionId);
+        if (activeToken.requirementsAreMet()) {
+          activeToken.forEachPermission((permissionId, status) => {
+            if ("met" in status) {
+              // We've triggered a new edge! Push it onto the queue.
+              this.setToTrueStack.push({ grainId: token.grainId,
+                                        vertexId: vertexIdOfTokenOwner(token),
+                                        permissionId: permissionId,
+                                        responsibleTokenId: tokenId, });
+            }
+          });
+        }
+      });
+    }
+
+    return this.getPermissions(grainId, vertexId);
+  }
+
+  activateRelevantTokens(grainId, vertexId) {
+    // Returns true if more computation might yield more progress.
+
+    check(grainId, String);
+    check(vertexId, String);
+
+    let result = false;
+    const relevant = computeRelevantTokens(this, grainId, vertexId);
+    this.activateOwnerEdges(grainId, relevant.ownerEdges);
+    relevant.tokenIds.forEach((tokenId) => {
+      if (this.activateToken(tokenId)) {
+        result = true;
+      }
+    });
+
+    return result;
+  }
+
+  processUnmetRequirements(db) {
+    // Returns true if more computation might yield more progress.
+
+    const grainIds = this.unmetRequirements.getGrainIds()
+          .filter((grainId) => !(grainId in this.grains));
+
+    if (db) {
+      this.addGrains(db, grainIds);
+    }
+
+    let result = false;
+
+    while (!this.unmetRequirements.isEmpty()) {
+      const next = this.unmetRequirements.pop();
+      if (this.activateRelevantTokens(next.grainId, "i:" + next.identityId)) {
+        result = true;
+      }
+    }
+
+    return result;
+  }
+
+  tryToProve(grainId, vertexId, permissionSet, db) {
+    // Tries to prove that `vertexId` has the given permissions on the given grain. Returns a
+    // `PermissionSet` representing the permissions proven, or null if it has not been proved
+    // yet that the vertex even has access to the grain.
+
+    check(grainId, String);
+    check(vertexId, String);
+    check(permissionSet, PermissionSet);
+    check(db, Match.OneOf(undefined, SandstormDb));
+    // If `db` is not provided, then this function will make no database queries.
+
+    if (db) {
+      this.addGrains(db, [grainId]);
+    }
+
+    this.activateRelevantTokens(grainId, vertexId, permissionSet);
+    while (true) {
+      const result = this.runForwardChaining(grainId, vertexId, permissionSet);
+      if (result && permissionSet.isSubsetOf(result)) {
+        return result;
+      }
+
+      if (!this.processUnmetRequirements(db)) {
+        return result;
+      }
+    }
+  }
+
+  getResponsibleTokens(grainId, vertexId) {
+    // For the permissions that we've already proven must be held by `vertexId`, transitively finds
+    // the tokens that we have used in that proof, including tokens responsible for fulfilling
+    // membrane requirements.
+    //
+    // Whenever we prove a fact, we keep track of the immediately responsible token for that fact,
+    // This function works by walking backwards in the sharing graph, following this trail of
+    // "responsible tokens".
+    //
+    // Returns the result as a list of token IDs.
+
+    check(grainId, String);
+    check(vertexId, String);
+
+    const stack = []; // [{ grainId: String, vertexId: String, permissionId: PermissionId }]
+    const visited = {}; // grainId -> vertexId -> { canAccess: bool, appDefined: [bool] }
+
+    function pushVertex(grainId, vertexId, permissionId) {
+      if (!visited[grainId]) {
+        visited[grainId] = {};
+      }
+
+      if (!visited[grainId][vertexId]) {
+        visited[grainId][vertexId] = { canAccess: false, appDefined: [], };
+      }
+
+      const vertex = visited[grainId][vertexId];
+      if ("canAccess" in permissionId) {
+        if (!vertex.canAccess) {
+          vertex.canAccess = true;
+          stack.push({ grainId: grainId, vertexId: vertexId, permissionId: permissionId });
+        }
+      } else if ("appDefined" in permissionId) {
+        while (permissionId.appDefined >= vertex.appDefined.length) {
+          vertex.appDefined.push(false);
+        }
+
+        if (!vertex.appDefined[permissionId.appDefined]) {
+          vertex.appDefined[permissionId.appDefined] = true;
+          stack.push({ grainId: grainId, vertexId: vertexId, permissionId: permissionId });
+        }
+      } else {
+        throw new Error("Unsupported permission ID: " + JSON.stringify(permissionId));
+      }
+    }
+
+    const neededTokens = {}; // TokenId -> bool
+
+    forEachPermission(this.getPermissions(grainId, vertexId).array, (permissionId) => {
+      stack.push({ grainId: grainId, vertexId: vertexId, permissionId: permissionId });
+    });
+
+    while (stack.length > 0) {
+      const current = stack.pop();
+      const variable = this.getVariable(current.grainId, current.vertexId, current.permissionId);
+      const tokenId = variable.responsibleTokenId;
+      if (tokenId) {
+        const token = this.tokensById[tokenId];
+
+        let sharerId = (token.parentToken && "t:" + token.parentToken) || ("i:" + token.identityId);
+        pushVertex(token.grainId, sharerId, current.permissionId);
+
+        if (!neededTokens[tokenId]) {
+          neededTokens[tokenId] = true;
+          if (token.requirements) {
+            token.requirements.forEach((requirement) => {
+              if (requirement.permissionsHeld) {
+                const reqVertexId = "i:" + requirement.permissionsHeld.identityId;
+                forEachPermission(requirement.permissionsHeld.permissions, (permissionId) => {
+                  pushVertex(requirement.permissionsHeld.grainId, reqVertexId, permissionId);
+                });
+              }
+            });
+          }
+        }
+      }
+    }
+
+    return Object.keys(neededTokens);
+  }
+}
+
+function computeRelevantTokens(context, grainId, vertexId) {
+  // Finds all tokens in `context` that could possibly carry permissions of the grain `grainId` to
+  // the vertex `vertexId` -- that is, all tokens that are contained in a path starting at the
+  // grain owner and ending at `vertexId`. Ignores any requirements that those tokens might be
+  // conditional upon.
+  //
+  // Returns an object with two fields:
+  //    tokenIds: list of relevant token IDs.
+  //    ownerEdges: objects of the form { identityId: String, role: RoleAssignment }, representing
+  //                initial pseudo-edges in the graph. `identityId` is typically an identity of
+  //                the grain's owning user, but for the case of a legacy public grain it could
+  //                be any identity.
+  //
+  // Works by traversing the sharing graph twice: first backwards starting from `vertexId`, then
+  // forwards starting from the grain owner using only those tokens touched in the first step.
+  //
+  // `context` contains all the information from the database which is available for now. This call
+  // will not make any new database lookups; edges not listed in `context` will not be considered
+  // (as if they'd been revoked).
+
+  check(context, Context);
+  check(grainId, String);
+  check(vertexId, String);
+
+  const grain = context.grains[grainId];
+  const viewInfo = grain.cachedViewInfo || {};
+  const ownerIdentityIds = context.userIdentityIds[grain.userId];
+
+  const vertexStack = []; // Vertex IDs that we need to explore.
+  const visitedVertexIds = {}; // Set of vertex IDs that we have already enqueued to get explored.
+
+  visitedVertexIds[vertexId] = true;
+  vertexStack.push(vertexId);
+
+  const visitedTokensBySharerId = {};
+  const ownerEdges = [];
+
+  // Repeatedly pop a vertex from the stack, find all its incoming edges (i.e. all other vertexes
+  // that share permissions to this vertex), and push those vertexes onto the stack.
+  while (vertexStack.length > 0) {
+    const vertexId = vertexStack.pop();
+
+    let incomingEdges = [];
+    // List of edges in the sharing graph ending at this vertex. Each is an object with the fields:
+    //     sharerId: The vertex ID of the edge's source.
+    //     token: the token object backing this edge, if there is one.
+
+    function tokenToEdge(token) {
+      // Convert an ApiToken into an edge.
+      return {
+        token: token,
+        sharerId: token.parentToken ? "t:" + token.parentToken : "i:" + token.identityId,
+      };
+    }
+
+    if (vertexId.slice(0, 2) === "o:") {
+      // Owner. We don't need to do anything.
+      incomingEdges = [];
+    } else if (vertexId.slice(0, 2) === "t:") {
+      // A webkey token. Extract it from the context (or ignore if it isn't present).
+      const token = context.tokensById[vertexId.slice(2)];
+      if (token) {
+        incomingEdges = [tokenToEdge(token)];
+      }
+    } else if (vertexId.slice(0, 2) === "i:") {
+      // An identity.
+      const identityId = vertexId.slice(2);
+      if (ownerIdentityIds.indexOf(identityId) >= 0) {
+        // This is one of the owner's identities.
+        incomingEdges = [{ sharerId: "o:Owner" }];
+        ownerEdges.push({ identityId: identityId, role: { allAccess: null } });
+      } else if (!grain.private) {
+        // This is a legacy "public" grain, meaning that any user who knows the grain ID receives
+        // the grain's default role. If the user doesn't know the grain ID then they are unable
+        // to express a request to open the grain in the first place and we'll never get to the
+        // point of this permissions computation, so for this purpose we can assume all users
+        // have the default role. (Similarly, a user who doesn't know the grain ID couldn't
+        // possibly be the subject of any MembraneRequirements against the grain because they
+        // have never interacted with the grain and so couldn't have caused such
+        // MembraneRequiments to come about. Note that this is kind of shaky non-local reasoning,
+        // but literally no such legacy grain has been created since early 2015 and none will ever
+        // be created again, so it's not a huge deal.)
+        incomingEdges = [{ sharerId: "o:Owner" }];
+        ownerEdges.push({ identityId: identityId, role: { none: null } });
+      } else {
+        // Not a special case. Gather all tokens where this user is the recipient.
+        incomingEdges = ((context.tokensByRecipient[grainId] || {})[vertexId.slice(2)] || [])
+          .map(tokenToEdge);
+      }
+    } else {
+      throw new Meteor.Error(500, "Unrecognized vertex ID: " + vertexId);
+    }
+
+    // For each edge incoming to this vertex, backpropagate this vertex's PermissionFlow to the
+    // source vertex, joining it with the edge's constraints.
+    incomingEdges.forEach((edge) => {
+      const sharerId = edge.sharerId;
+      if (edge.token) {
+        if (!visitedTokensBySharerId[sharerId]) {
+          visitedTokensBySharerId[sharerId] = {};
+        }
+
+        visitedTokensBySharerId[sharerId][edge.token._id] = edge.token;
+      }
+
+      if (!visitedVertexIds[sharerId]) {
+        // Never saw this vertex before.
+        visitedVertexIds[sharerId] = true;
+        vertexStack.push(sharerId);
+      }
+
+    });
+  }
+
+  // Now walk forward from the owner.
+  const relevantTokens = {};
+  const visitedSharers = {};
+
+  const sharerStack = [];
+  ownerIdentityIds.forEach((identityId) => { sharerStack.push("i:" + identityId); });
+  while (sharerStack.length > 0) {
+    const sharerId = sharerStack.pop();
+    for (const tokenId in visitedTokensBySharerId[sharerId]) {
+      relevantTokens[tokenId] = true;
+      const token = visitedTokensBySharerId[sharerId][tokenId];
+      const recipientId = vertexIdOfTokenOwner(token);
+
+      if (!visitedSharers[recipientId]) {
+        visitedSharers[recipientId] = true;
+        sharerStack.push(recipientId);
+      }
+    }
+  }
+
+  return {
+    tokenIds: Object.keys(relevantTokens),
+    ownerEdges: ownerEdges,
+  };
 }
 
 const vertexPattern = Match.OneOf({ token: Match.ObjectIncluding({ _id: String, grainId: String }) },
@@ -430,479 +956,16 @@ const vertexPattern = Match.OneOf({ token: Match.ObjectIncluding({ _id: String, 
 //   where only a single grain's shares need to be considered, it feels weird to think of the
 //   grain ID as being the primary distinguishing feature of the vertex.
 
-function computePermissionFlowToVertex(context, vertex, permissionSet, viewInfo) {
-  // Computes the flow of the permissions in `permissionSet` from the grain owner to `vertex`.
-  // Returns a PermissionFlow representing all permissions flowing into the vertex.
-  //
-  // That is to say, this computes the permissions held by a particular user or token (`vertex`)
-  // by traversing the sharing graph. The results may be conditional -- we compute permissions
-  // held under varying sets of conditions, and return a map of condition -> permissions. The
-  // caller may need to check if the conditions hold in order to compute the final permissions.
-  //
-  // For the purpose of the call, we only consider permissions in `permissionSet`; we won't bother
-  // following edges that aren't relevant to this set.
-  //
-  // `viewInfo` is the grain's `UiView.ViewInfo`, which maps roles to permissions.
-  //
-  // `context` contains all the information from the database which is available for now. This call
-  // will not make any new database lookups; edges not listed in `context` will not be considered
-  // (as if they'd been revoked).
-  //
-  // Note that we perform the graph traversal "backwards": We start from the destination vertex
-  // and search towards the grain owner. The reason we do this is because with typical sharing
-  // graphs, this allows us to avoid considering much of the graph. Sharing graphs typically
-  // involve lots of "fan out", so if we searched down from the owner we would end up touching
-  // many irrelevant leaf nodes, whereas searching up from the destination avoids this.
-
-  check(context, Context);
-  check(vertex, vertexPattern);
-  check(permissionSet, PermissionSet);
-
-  const grainId = vertex.token ? vertex.token.grainId : vertex.grain._id;
-  const grain = context.grains[grainId];
-  const ownerIdentityIds = context.userIdentityIds[grain.userId];
-
-  // A vertex ID is a string encoding of a vertex. It is of the form "i:<identityId>",
-  // "t:<tokenId>", or "o:Owner".
-  const destinationId = vertex.token ? ("t:" + vertex.token._id) : ("i:" + vertex.grain.identityId);
-  const destinationPermissions = {};
-  {
-    // Initialize the destination in permissionsMap (see below) to indicate that all permissions
-    // flow from it to the destination (i.e. to itself) unconditionally. We need this to start
-    // our search.
-    const clause = new RequirementSet();
-    destinationPermissions[clause.hash()] = new ConditionalPermissionSet(permissionSet, clause);
-  }
-
-  const permissionsMap = {};
-  // Map<vertexId, PermissionFlow>.
-  // Map from vertex ID to permissions that we've already shown flow from that vertex to our
-  // destination vertex.
-  //
-  // Careful, this is a bit brain-bending. The map tells us which permissions the given vertex
-  // *intends* to share to the destination, but this does not mean that the source vertex actually
-  // has those permissions to share! E.g. Alice may share read-write access to Bob, Bob might
-  // reshare that access to Carol, and then Alice might retroactively reduce Bob's access to
-  // read-only. The flow from Bob to Carol is still read-write, but the flow from Alice to Carol
-  // (through Bob) is read-only, because no write permission ever flows to Bob.
-
-  const vertexStack = []; // Vertex IDs that we need to explore.
-
-  permissionsMap[destinationId] = destinationPermissions;
-  vertexStack.push(destinationId);
-
-  // Repeatedly pop a vertex from the stack, find all its incoming edges (i.e. all other vertexes
-  // that share permissions to this vertex), determine what permissions might flow from those
-  // to the destination, and push those vertexes onto the stack.
-  while (vertexStack.length > 0) {
-    const vertexId = vertexStack.pop();
-
-    let incomingEdges = [];
-    // List of edges in the sharing graph ending at this vertex. Each edge is an object of two
-    // fields:
-    // sharerId: The vertex ID of the edge's source.
-    // conditionalPermissions: ConditionalPermissionSet representing the permissions flowing over this
-    //     edge and the conditions restricting that permission flow.
-
-    function tokenToEdge(token) {
-      // Convert an ApiToken into an edge.
-      return {
-        sharerId: token.parentToken ? "t:" + token.parentToken : "i:" + token.identityId,
-        conditionalPermissions: ConditionalPermissionSet.fromToken(token, viewInfo),
-      };
-    }
-
-    if (vertexId.slice(0, 2) === "o:") {
-      // Owner. We don't need to do anything.
-      incomingEdges = [];
-    } else if (vertexId.slice(0, 2) === "t:") {
-      // A token. Extract it from the context (or ignore if it isn't present).
-      const token = context.tokensById[vertexId.slice(2)];
-      if (token) {
-        incomingEdges = [tokenToEdge(token)];
-      }
-    } else if (vertexId.slice(0, 2) === "i:") {
-      // An identity.
-      if (ownerIdentityIds.indexOf(vertexId.slice(2)) >= 0) {
-        // This is one of the owner's identities.
-        const p = new ConditionalPermissionSet(PermissionSet.fromRoleAssignment({ allAccess: null },
-                                                                              viewInfo),
-                                             new RequirementSet());
-        incomingEdges = [{ sharerId: "o:Owner", conditionalPermissions: p }];
-      } else if (!grain.private) {
-        // This is a legacy "public" grain, meaning that any user who knows the grain ID receives
-        // the grain's default role. If the user doesn't know the grain ID then they are unable
-        // to express a request to open the grain in the first place and we'll never get to the
-        // point of this permissions computation, so for this purpose we can assume all users
-        // have the default role. (Similarly, a user who doesn't know the grain ID couldn't
-        // possibly be the subject of any MembraneRequirements against the grain because they
-        // have never interacted with the grain and so couldn't have caused such
-        // MembraneRequiments to come about. Note that this is kind of shaky non-local reasoning,
-        // but literally no such legacy grain has been created since early 2015 and none will ever
-        // be created again, so it's not a huge deal.)
-        const p = new ConditionalPermissionSet(PermissionSet.fromRoleAssignment({ none: null },
-                                                                              viewInfo),
-                                             new RequirementSet());
-        incomingEdges = [{ sharerId: "o:Owner", conditionalPermissions: p }];
-      } else {
-        // Not a special case. Gather all tokens where this user is the recipient.
-        incomingEdges = ((context.tokensByRecipient[grainId] || {})[vertexId.slice(2)] || [])
-          .map(tokenToEdge);
-      }
-    } else {
-      throw new Meteor.Error(500, "Unrecognized vertex ID: " + vertexId);
-    }
-
-    // For each edge incoming to this vertex, bacgkpropagate this vertex's PermissionFlow to the
-    // source vertex, joining it with the edge's constraints.
-    incomingEdges.forEach((edge) => {
-      const sharerId = edge.sharerId;
-      let needToPush = false;
-      // For each ConditionalPermissionSet in permissionsMap[vertexId],
-      // apply edge.conditionalPermissions in sequence, in order to create a PermissionFlow
-      // representing the flow through this edge to the final destination.
-      const sequenced = {};  // A PermissionFlow.
-      for (const clauseHash in permissionsMap[vertexId]) {
-        const newPermissions = edge.conditionalPermissions.clone();
-        newPermissions.sequence(permissionsMap[vertexId][clauseHash]);
-        const newHash = newPermissions.requirements.hash();
-        if (sequenced[newHash]) {
-          // Adding the new requirements of this edge to the variour requirements of vertexId's
-          // PermissionFlow caused two of the components to collide. For example, maybe vertexId's
-          // PermissionFlow had "read unconditionally" and "write if Alice has write on Foo", while
-          // the new edge we're adding itself has the requirement "Alice has write on Foo",
-          // therefore now both the read and write parts have this requirement, so we union them
-          // into one PermissionSet.
-          //
-          // TODO(perf): An exact match between clauses is really only one case where items in a
-          //   PermissionFlow might interact. If one clause is a superset of another then the
-          //   superset clause is strictly only true when the subset clause is also true; in this
-          //   case we ought to remove the subset's permissions from the superset's PermissionSet
-          //   because it would be redundant to search for the same permission under both sets of
-          //   requirements. The most important case of this is the empty clause: if a permission
-          //   flows unconditionally, then we shouldn't bother finding out if it also flows
-          //   conditionally. Detecting and removing these redundancies could reduce the size of
-          //   the PermissionFlow, which would both speed up backpropagation and help us avoid
-          //   doing unnecessary requirements checks later.
-          sequenced[newHash].permissions.add(newPermissions.permissions);
-          for (tokenId in newPermissions.tokensUsed) {
-            // We merge the "tokens used" sets. Technically this isn't quite right, because this
-            // means we're saying the tokens from both paths were used, but in fact in may be the
-            // case that only the tokens from one path or the other are ultimately needed. Tracking
-            // this distinction probably requires too much bookkeeping to be worthwhile.
-            // TODO(perf): Could be worth studying further if we find that we're grossly
-            //   overestimating the set of tokens needed to prove a permission.
-            sequenced[newHash].tokensUsed[tokenId] = true;
-          }
-        } else {
-          sequenced[newHash] = newPermissions;
-        }
-      };
-
-      // Optimization: we don't care about permissions that we've already proven the opener has
-      // (with the same conditions). So, remove those from the flow.
-      //
-      // TODO(perf): Similar to above, we could detect subset clauses here. If we already know that
-      //   a permission flows from the owner under requirement X, then we also know that in flows
-      //   under requirement "X and Y". Most importantly, if a permission flows from the owner
-      //   unconditionally, then there's no reason to check if it also flows conditionally.
-      if (permissionsMap["o:Owner"]) {
-        for (const hashedClause in permissionsMap["o:Owner"]) {
-          const conditionalPermissionSet = permissionsMap["o:Owner"][hashedClause];
-          if (hashedClause in sequenced) {
-            const smps = sequenced[hashedClause];
-            smps.permissions.remove(conditionalPermissionSet.permissions);
-            if (smps.permissions.isEmpty()) {
-              delete sequenced[hashedClause];
-            }
-          }
-        }
-      }
-
-      if (!permissionsMap[sharerId]) {
-        // Never saw this vertex before.
-        permissionsMap[sharerId] = sequenced;
-        needToPush = true;
-      } else {
-        // Vertex has been seen previously. Merge new PermissionFlow into it. If there are any
-        // changes, then we'll need to visit the vertex again.
-        for (const clauseHash in sequenced) {
-          const mp = permissionsMap[sharerId][clauseHash];
-          if (mp && mp.permissions.add(sequenced[clauseHash].permissions)) {
-            for (tokenId in sequenced[clauseHash].tokensUsed) {
-              mp.tokensUsed[tokenId] = true;
-            }
-
-            needToPush = true;
-          } else if (!mp) {
-            permissionsMap[sharerId][clauseHash] = sequenced[clauseHash];
-            needToPush = true;
-          }
-        }
-
-        // TODO(perf): We may have set needToPush true when `sharerId` is already on `vertexStack`.
-        //   This means we'll redundantly double-visit it. That's not terrible but we could
-        //   probably avoid it easily?
-      }
-
-      if (needToPush) {
-        vertexStack.push(sharerId);
-      }
-    });
-  }
-
-  return permissionsMap["o:Owner"] || {};
-}
-
-function findAllMinimalCovers(permissionSets, desiredPermissions) {
-  // `permissionSets` is a map containing PermissionSets, keyed by their PermissionSet.hash().
-  //
-  // This function computes every minimal way to union together elements of `permissionSets` such
-  // that the resulting PermissionSet covers `desiredPermissions`.
-  //
-  // Each minimal cover is returned as an array of PermissionSet hashes. The result of this function
-  // is an array of such arrays.
-
-  check(desiredPermissions, PermissionSet);
-
-  function fullCover(chosen) {
-    // `chosen` is an array of PermissionSet hashes. Returns true if this array is nonempty and
-    // if unioning together its PermissionSets results in a PermissionSet that is a superset of
-    // `desiredPermissions`.
-
-    if (chosen.length == 0) return false; // Lacks the implicit "can access at all" permission.
-
-    const accum = new PermissionSet([]);
-    chosen.forEach((hashedPermissionSet) => {
-      accum.add(permissionSets[hashedPermissionSet]);
-    });
-
-    return desiredPermissions.isSubsetOf(accum);
-  }
-
-  // Construct a proposal containing all the PermissionSets we know about.
-  const chooseAll = [];
-  for (const hashedPermissionSet in permissionSets) {
-    chooseAll.push(hashedPermissionSet);
-  }
-
-  if (!fullCover(chooseAll)) {
-    // The permissions aren't satisfied even if all known requirements are met.
-    return [];
-  }
-
-  const stack = [chooseAll]; // Array of arrays of hashed permission sets.
-
-  const result = [];
-
-  let iter = 0;
-  while (stack.length > 0) {
-    const chosen = stack.pop();
-    let minimal = true;
-    chosen.forEach((removedHashedPermissionSet) => {
-      const newChosen = [];
-      chosen.forEach((hashedPermissionSet) => {
-        if (hashedPermissionSet !== removedHashedPermissionSet) {
-          newChosen.push(hashedPermissionSet);
-        }
-      });
-
-      if (fullCover(newChosen)) {
-        minimal = false;
-        // TODO(perf): keep track of values we've already explored.
-        stack.push(newChosen);
-      }
-    });
-
-    if (minimal) {
-      result.push(chosen);
-    }
-
-    iter += 1;
-    if (iter > 1000) {
-      throw new Meteor.Error(500, "Permissions computation exceeded maximum iteration count.");
-    }
-  }
-
-  return result;
-}
-
-function normalize(permissionFlow, desiredPermissions) {
-  // `permissionFlow` is a PermissionFlow representing the permissions flowing from a
-  // grain owner to a vertex (e.g. as returned by `computePermissionFlowToVertex()`).
-  //
-  // `desiredPermissions` is the set of permissions that we are currently interested in.
-  //
-  // Returns a set of clauses in a minimal disjunctive normal form, representing the possible
-  // ways that the desired permissions could be achieved. The result is a map from hashed clause
-  // to objects of the form { clause: RequirementSet, tokensUsed: [String] }.
-
-  check(desiredPermissions, PermissionSet);
-
-  const flowByPermissionSet = {};
-  const permissionSets = {};
-  for (const hashedClause in permissionFlow) {
-    const pclause = permissionFlow[hashedClause];
-    const hashedPermissionSet = pclause.permissions.hash();
-    if (!flowByPermissionSet[hashedPermissionSet]) {
-      flowByPermissionSet[hashedPermissionSet] = [];
-      permissionSets[hashedPermissionSet] = pclause.permissions;
-    }
-
-    flowByPermissionSet[hashedPermissionSet].push(pclause);
-  }
-
-  const covers = findAllMinimalCovers(permissionSets, desiredPermissions);
-  const result = {};
-
-  covers.forEach((cover) => {
-    // For each PermissionSet in the cover, we need to choose a ConditionalPermissionSet
-    // from `permissionFlow` that provides those permissions.
-
-    const choices = [];
-    let numNewResults = 1;
-    cover.forEach((hashedPermissionSet) => {
-      const conditionalPermissionSets = flowByPermissionSet[hashedPermissionSet];
-      numNewResults *= conditionalPermissionSets.length;
-      choices.push(conditionalPermissionSets);
-    });
-
-    for (let ii = 0; ii < numNewResults; ++ii) {
-      const resultClause = new RequirementSet();
-      const tokensUsed = {};
-      let quotient = ii;
-      choices.forEach((choice) => {
-        const conditionalPermissionSet = choice[quotient % choice.length];
-        resultClause.conjoin(conditionalPermissionSet.requirements);
-        for (const tokenId in conditionalPermissionSet.tokensUsed) {
-          tokensUsed[tokenId] = true;
-        }
-
-        quotient = Math.floor(quotient / choice.length);
-      });
-      result[resultClause.hash()] = { clause: resultClause, tokensUsed: tokensUsed };
-    }
-  });
-
-  return result;
-}
-
-function proveClauses(db, context, goalClauses) {
-  // `goalClauses` is of the form of a result of `normalize()`, that is:
-  // `Map<ClauseId, {clause: RequirementSet, tokensUsed: [tokenId]}>`.
-  //
-  // This function attempts to determine whether at least one of the input clauses holds.
-  // If a proof is found, returns `{yes: {tokensUsed: [tokenId]}}`. Otherwise, returns `{no: {}}`.
-  //
-  // The `db` parameter is optional. If it is present, the database will be queried as needed.
-  // If left out, the computation will proceed with only the tokens already present in `context`.
-
-  const clausesAlreadySeen = {};
-  // Set of clauses we've already seen, keyed by clause hash, initialized to be equal to
-  // `goalClauses`. Proving any one of these clauses is sufficient to prove our end goal. The basic
-  // idea of our algorithm is to expand `clausesAlreadySeen` until either it contains an empty
-  // clause (i.e. "true") or it can fruitfully be expanded no more. If it contains an empty
-  // clause, then we've successfully found a proof. If it maxes out without an empty clause,
-  // then there is no proof.
-  //
-  // For example, if we want to prove A, and if our sharing graphs has the facts
-  //
-  //     A <= B or C   (1)
-  //     B <= A        (2)
-  //     C <= true     (3)
-  //
-  // then the evolution of `clausesAlreadySeen` through our computation would proceed like this:
-  //
-  //     {A}              (start)
-  //     {A, B, C}        (apply (1))
-  //     {A, B, C, true}  (apply (3))
-  //
-  // and the proof is successful. Notice that applying (2) would not have an effect, because A
-  // is already in `clausesAlreadySeen`.
-
-  const clauseStack = [];
-  // Array of clause IDs, referring to elements of `clausesAlreadySeen` that we still need to
-  // explore.
-
-  for (const hashedClause in goalClauses) {
-    const goalClause = goalClauses[hashedClause];
-    const tokensUsed = goalClause.tokensUsed;
-    if (goalClause.clause.isEmpty()) {
-      // We have an empty goal. Trivially true.
-      return { yes: { tokensUsed: tokensUsed } };
-    }
-
-    clausesAlreadySeen[hashedClause] = goalClause;
-    clauseStack.push(hashedClause);
-  }
-
-  const grainsFullyQueried = {};
-
-  while (clauseStack.length > 0) {
-    const hashedClause = clauseStack.pop();
-    const clause = new RequirementSet();
-    clause.conjoin(clausesAlreadySeen[hashedClause].clause);
-    const tokensUsed = clausesAlreadySeen[hashedClause].tokensUsed;
-    const goal = clause.popFirstGoal();
-    const grainId = goal.vertex.grain._id;
-
-    if (db && !(grainId in grainsFullyQueried)) {
-      context.addGrain(db, grainId);
-    }
-
-    grainsFullyQueried[grainId] = true;
-
-    const viewInfo = context.grains[grainId].cachedViewInfo || {};
-    const result = computePermissionFlowToVertex(context, goal.vertex, goal.permissions, viewInfo);
-    const newGoals = normalize(result, goal.permissions);
-
-    // TODO(perf): We might end up trying to prove the same `goal` many times, so it probably makes
-    //   sense to memoize the above computation of `newGoals`.
-
-    // Now, for each new clause, conjoin it with the remaining goals in `clause`.
-    // If we end up with something empty, then we're done! Otherwise, check whether
-    // we already have this clause. If not, add it to `clausesAlreadySeen` and push its ID onto
-    // `clauseStack`.
-
-    for (const newClauseHash in newGoals) {
-      const newGoal = newGoals[newClauseHash];
-      const newClause = newGoal.clause;
-      newClause.conjoin(clause);
-      for (tokenId in tokensUsed) {
-        newGoal.tokensUsed[tokenId] = true;
-      }
-
-      if (newClause.isEmpty()) {
-        return { yes: { tokensUsed: newGoal.tokensUsed } };
-      }
-
-      // TODO(perf): This checks whether `newClause` is equal to any clause `clausesAlreadySeen`,
-      //  but it would be better if we could somehow check whether `newClause` is a superset of any
-      //  clause in `clausesAlreadySeen`.
-      const newHash = newClause.hash();
-      if (!(newHash in clausesAlreadySeen)) {
-        clausesAlreadySeen[newHash] = { clause: newClause, tokensUsed: newGoal.tokensUsed };
-        clauseStack.push(newHash);
-      }
-    }
-  }
-
-  return { no: {} };
-}
-
 SandstormPermissions.mayOpenGrain = function (db, vertex) {
   // Determines whether the vertex is allowed to open the grain. May make multiple database
   // queries.
 
   check(vertex, vertexPattern);
   const grainId = vertex.token ? vertex.token.grainId : vertex.grain._id;
+  const vertexId = vertex.token ? ("t:" + vertex.token._id) : "i:" + vertex.grain.identityId;
   const context = new Context();
   const emptyPermissions = new PermissionSet([]);
-  context.addGrain(db, grainId);
-  const result = computePermissionFlowToVertex(context, vertex, emptyPermissions, {});
-  const normalizedResult = normalize(result, emptyPermissions);
-  const proven = proveClauses(db, context, normalizedResult);
-  return "yes" in proven;
+  return !!context.tryToProve(grainId, vertexId, emptyPermissions, db);
 };
 
 SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvalidated) {
@@ -918,6 +981,7 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
   check(db, SandstormDb);
   check(vertex, vertexPattern);
   const grainId = vertex.token ? vertex.token.grainId : vertex.grain._id;
+  const vertexId = vertex.token ? ("t:" + vertex.token._id) : "i:" + vertex.grain.identityId;
 
   let resultPermissions;
   let observeHandle;
@@ -939,61 +1003,20 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
   // to be called when necessary. This is an optimisistic approach to concurrency. If the
   // verification phase fails, we try again before giving up entirely.
   for (let attemptCount = 0; attemptCount < 3; ++attemptCount) {
+    if (observeHandle) {
+      observeHandle.stop();
+      observeHandle = null;
+    }
+
     const context = new Context();
-    context.addGrain(db, grainId);
-    const result = computePermissionFlowToVertex(context, vertex,
-                                       PermissionSet.fromRoleAssignment({ allAccess:null },
-                                                                        viewInfo),
-                                       viewInfo);
+    const allPermissions = PermissionSet.fromRoleAssignment({ allAccess: null }, viewInfo);
+    const firstPhasePermissions = context.tryToProve(grainId, vertexId, allPermissions, db);
 
-    resultPermissions = null;
-    const resultTokensUsed = {};
+    if (!firstPhasePermissions) return { permissions: null };
 
-    // We don't yet know which permissions we'll be able to prove, so calling `normalize()` does
-    // not make sense. Instead, we attempt to prove each of the clauses in `result` and then
-    // union together the resulting permissions.
-    for (const hashedClause in result) {
-      const conditionalPermissionSet = result[hashedClause];
+    const neededTokens = context.getResponsibleTokens(grainId, vertexId);
 
-      // First: see whether we should even bother. If we've already proved all the permissions
-      // that this clause would get us, don't bother.
-      let shouldBother = false;
-      if (!resultPermissions) {
-        shouldBother = true;
-      } else {
-        const tmp = new PermissionSet([]);
-        tmp.add(resultPermissions);
-        if (tmp.add(conditionalPermissionSet.permissions)) {
-          shouldBother = true;
-        }
-      }
-
-      if (shouldBother) {
-        const goalClauses = {};
-        goalClauses[hashedClause] = {
-          clause: conditionalPermissionSet.requirements,
-          tokensUsed: conditionalPermissionSet.tokensUsed,
-        };
-        const proofResult = proveClauses(db, context, goalClauses);
-        if (proofResult.yes) {
-          for (tokenId in proofResult.yes.tokensUsed) {
-            resultTokensUsed[tokenId] = true;
-          }
-
-          if (!resultPermissions) {
-            resultPermissions = new PermissionSet([]);
-          }
-
-          resultPermissions.add(conditionalPermissionSet.permissions);
-        }
-      }
-    }
-
-    if (!resultPermissions) {
-      // deny access
-      measureElapsedTime();
-      return {};
-    }
+    // Phase 2: Now let's verify those permissions.
 
     let invalidated = false;
     function guardedOnInvalidated() {
@@ -1003,9 +1026,8 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
       }
     }
 
-    const tokenIds = Object.keys(resultTokensUsed);
     const cursor = db.collections.apiTokens.find({
-      _id: { $in: tokenIds },
+      _id: { $in: neededTokens },
       revoked: { $ne: true },
       objectId: { $exists: false },
     });
@@ -1027,32 +1049,18 @@ SandstormPermissions.grainPermissions = function (db, vertex, viewInfo, onInvali
       });
     }
 
-    // Phase 2: Now let's verify those permissions.
-    const newContext = new Context();
-    newContext.addTokensFromCursor(cursor);
-    newContext.grains = context.grains;
-    newContext.userIdentityIds = context.userIdentityIds;
+    context.reset();
+    context.addTokensFromCursor(cursor);
 
     // TODO(someday): Also account for possible concurrent linking/unlinking of identities,
-    //   and grains going from (legacy) public to private.
+    //   and legacy publis grains becoming private.
 
-    const newResult = computePermissionFlowToVertex(newContext, vertex,
-                                                    resultPermissions,
-                                                    viewInfo);
+    resultPermissions = context.tryToProve(grainId, vertexId, firstPhasePermissions);
 
-    const normalizedNewResult = normalize(newResult, resultPermissions);
-    const proofResult = proveClauses(null, newContext, normalizedNewResult);
-    if (proofResult.yes && !invalidated) {
+    if (resultPermissions && firstPhasePermissions.isSubsetOf(resultPermissions)) {
+      // We've confirmed the permissions that we found the in the first phase. Done!
       break;
-    } else {
-      if (observeHandle) {
-        observeHandle.stop();
-        observeHandle = null;
-      }
-
-      resultPermissions = null;
     }
-
   } // for (let attemptCount ...) {
 
   onInvalidatedActive = true;
@@ -1172,10 +1180,10 @@ const ResourceMap = Match.Where(function (map) {
   return true;
 });
 
-var LocalizedString = {
+const LocalizedString = {
   defaultText: String,
   localizations: Match.Optional([
-     { locale: String, text: String }
+     { locale: String, text: String },
   ]),
 };
 
@@ -1194,7 +1202,7 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
                            { user: { identityId: String,
                                    title: String, }, },
                            { grain: { grainId: String,
-                                    saveLabel: Match.ObjectIncluding({ defaultText: String }),
+                                      saveLabel: LocalizedString,
                                       introducerIdentity: String, }, },
                            { frontend: null }));
   check(unauthenticated, Match.OneOf(undefined, null, {

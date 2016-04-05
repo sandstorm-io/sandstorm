@@ -142,7 +142,10 @@ GrainView = class GrainView {
     this._userIdentityId = new ReactiveVar(undefined);
     if (identityId) {
       this.revealIdentity(identityId);
+    } else if (this._tokenInfo && this._tokenInfo.webkey && !Meteor.userId()) {
+      this.doNotRevealIdentity();
     }
+
     // We want the iframe to receive the most recently-set path whenever we rerender.
     this._originalPath = this._path;
     this._blazeView = Blaze.renderWithData(Template.grainView, this, this._parentElement);
@@ -526,7 +529,10 @@ GrainView = class GrainView {
           _this._sessionObserver.stop();
         }
 
-        Meteor.defer(() => { _this.openSession(); });
+        Meteor.defer(() => {
+          _this.reset(_this.identityId());
+          _this.openSession();
+        });
       },
 
       changed(session) {

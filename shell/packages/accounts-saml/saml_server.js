@@ -25,7 +25,7 @@ Accounts.registerLoginHandler(function (loginRequest) {
     user.id = loginResult.profile.nameID;
     return Accounts.updateOrCreateUserFromExternalService("saml", user, {});
   } else {
-    throw new Error("SAML Profile did not contain an email address");
+    throw new Meteor.Error(500, "SAML profile did not contain an email address");
   }
 });
 

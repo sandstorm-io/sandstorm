@@ -20,7 +20,12 @@ Accounts.registerLoginHandler(function (loginRequest) {
   }
 
   const loginResult = Accounts.saml.retrieveCredential(loginRequest.credentialToken);
-  if (loginResult && loginResult.profile && loginResult.profile.email) {
+
+  if (!loginResult) {
+    throw new Meteor.Error(500, "Login failed.");
+  }
+
+  if (loginResult.profile && loginResult.profile.email) {
     let user = _.pick(loginResult.profile, "displayName", "email");
     user.id = loginResult.profile.nameID;
     return Accounts.updateOrCreateUserFromExternalService("saml", user, {});

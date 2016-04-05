@@ -1,0 +1,54 @@
+<template name="newAdminEmailConfig">
+  <h1>Email Configuration</h1>
+
+  <h2>Email relay</h2>
+
+  <p>This is the server that Sandstorm will use to send email.</p>
+
+  {{#if hasSuccess}}<p class="flash-message success-message">Saved changes.</p>{{/if}}
+  {{#if hasError}}<p class="flash-message error-message">Failed to save changes: {{errorMessage}}</p>{{/if}}
+
+  <form class="email-form">
+
+    <div class="input-group host-port">
+      <label>
+        SMTP host
+        <input class="hostname" type="text" value="{{hostname}}" required />
+      </label>
+      <label>
+        Port
+        <input class="port" type="number" value="{{port}}" required />
+      </label>
+    </div>
+
+    <div class="input-group">
+      <label>
+        Username
+        <input class="username" type="text" value="{{username}}" />
+      </label>
+    </div>
+
+    <div class="input-group">
+      <label>
+        Password
+        <input class="password" type="password" value="{{password}}" />
+      </label>
+    </div>
+
+    <div class="input-group">
+      <label>
+        Support email address
+        <input class="from-address" type="text" value="{{returnAddress}}" required />
+      </label>
+      <span class="form-subtext">
+        Enter a single email address.  Email sent by this Sandstorm
+        instance will appear to come from this address.
+      </span>
+    </div>
+
+    <div class="form-buttons">
+      <button class="form-submit" type="submit">Save Configuration</button>
+    </div>
+
+  </form>
+</template>

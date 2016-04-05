@@ -31,6 +31,7 @@ Accounts.identityServices.github = {
       method: "loginWithGithub",
       name: "github",
       displayName: "GitHub",
+      linkingNewIdentity: false,
     },
   },
 };
@@ -47,6 +48,7 @@ Accounts.identityServices.google = {
       method: "loginWithGoogle",
       name: "google",
       displayName: "Google",
+      linkingNewIdentity: false,
     },
   },
 };

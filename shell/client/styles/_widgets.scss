@@ -9,6 +9,17 @@
   @extend %button-secondary;
 }
 
+.button-link {
+  background: none;
+  border: none;
+  display: inline;
+  font-weight: normal;
+  font-size: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
 .flash-message {
   border-radius: 5px;
   padding: 16px;

@@ -31,6 +31,7 @@ const PUBLIC_FEATURE_KEY_FIELDS = [
 ];
 
 const Fs = Npm.require("fs");
+const Crypto = Npm.require("crypto");
 const SANDSTORM_ADMIN_TOKEN = SANDSTORM_VARDIR + "/adminToken";
 
 const tokenIsValid = function (token) {
@@ -47,18 +48,53 @@ const tokenIsValid = function (token) {
   }
 };
 
-const checkAuth = function (token) {
+const tokenIsSetupSession = function (token) {
+  if (token) {
+    const setupSession = globalDb.collections.setupSession.findOne({ _id: "current-session" });
+    if (setupSession) {
+      const hash = Crypto.createHash("sha256").update(token).digest("base64");
+      const now = new Date();
+      const sessionLifetime = 24 * 60 * 60 * 1000; // length of setup session validity, in milliseconds: 1 day
+      if (setupSession.hashedSessionId === hash && (now - setupSession.creationDate < sessionLifetime)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+};
+
+// Export for use in other admin/ routes
+checkAuth = function (token) {
   check(token, Match.OneOf(undefined, null, String));
-  if (!isAdmin() && !tokenIsValid(token)) {
+  if (!isAdmin() && !tokenIsValid(token) && !tokenIsSetupSession(token)) {
     throw new Meteor.Error(403, "User must be admin or provide a valid token");
   }
 };
 
 const clearAdminToken = function (token) {
+  if (tokenIsSetupSession(token)) {
+    const hash = Crypto.createHash("sha256").update(token).digest("base64");
+    globalDb.collections.setupSession.remove({
+      _id: "current-session",
+      hashedSessionId: hash,
+    });
+  }
+
   if (tokenIsValid(token)) {
     Fs.unlinkSync(SANDSTORM_ADMIN_TOKEN);
     console.log("Admin token deleted.");
   }
+};
+
+const smtpConfigShape = {
+  hostname: String,
+  port: Number,
+  auth: {
+    user: String,
+    pass: String,
+  },
+  returnAddress: String,
 };
 
 Meteor.methods({
@@ -70,7 +106,7 @@ Meteor.methods({
     // TODO(someday): currently this relies on the fact that an account is tied to a single
     // identity, and thus has only that entry in "services". This will need to be looked at when
     // multiple login methods/identities are allowed for a single account.
-    if (!value && !tokenIsValid(token) && (serviceName in Meteor.user().services)) {
+    if (!value && !tokenIsValid(token) && !tokenIsSetupSession(token) && (serviceName in Meteor.user().services)) {
       throw new Meteor.Error(403,
         "You can not disable the login service that your account uses.");
     }
@@ -99,15 +135,7 @@ Meteor.methods({
 
   setSmtpConfig: function (token, config) {
     checkAuth(token);
-    check(config, {
-      hostname: String,
-      port: Number,
-      auth: {
-        user: String,
-        pass: String,
-      },
-      returnAddress: String,
-    });
+    check(config, smtpConfigShape);
 
     Settings.upsert({ _id: "smtpConfig" }, { $set: { value: config } });
   },
@@ -231,15 +259,7 @@ Meteor.methods({
 
   testSend: function (token, smtpConfig, to) {
     checkAuth(token);
-    check(smtpConfig, {
-      hostname: String,
-      port: Number,
-      auth: {
-        user: String,
-        pass: String,
-      },
-      returnAddress: String,
-    });
+    check(smtpConfig, smtpConfigShape);
     check(to, String);
     const { returnAddress, ...restConfig } = smtpConfig;
 
@@ -398,11 +418,32 @@ Meteor.methods({
     Meteor.users.update({ _id: this.userId }, { $set: { isAdmin: true, signupKey: "admin" } });
     clearAdminToken(token);
   },
+
+  redeemSetupToken(token) {
+    // Redeem an admin token into a setup session.
+    check(token, String);
+    if (tokenIsValid(token)) {
+      const sessId = Random.secret();
+      const creationDate = new Date();
+      const hashedSessionId = Crypto.createHash("sha256").update(sessId).digest("base64");
+      this.connection.sandstormDb.collections.setupSession.upsert({
+        _id: "current-session",
+      }, {
+        creationDate,
+        hashedSessionId,
+      });
+      // Then, invalidate the token, so one one else can use it.
+      Fs.unlinkSync(SANDSTORM_ADMIN_TOKEN);
+      return sessId;
+    } else {
+      throw new Meteor.Error(401, "Invalid setup token");
+    }
+  },
 });
 
 const authorizedAsAdmin = function (token, userId) {
   return Match.test(token, Match.OneOf(undefined, null, String)) &&
-         ((userId && isAdminById(userId)) || tokenIsValid(token));
+         ((userId && isAdminById(userId)) || tokenIsValid(token) || tokenIsSetupSession(token));
 };
 
 Meteor.publish("admin", function (token) {
@@ -421,7 +462,7 @@ Meteor.publish("publicAdminSettings", function () {
 
 Meteor.publish("adminToken", function (token) {
   check(token, String);
-  this.added("adminToken", "adminToken", { tokenIsValid: tokenIsValid(token) });
+  this.added("adminToken", "adminToken", { tokenIsValid: tokenIsValid(token) || tokenIsSetupSession(token) });
   this.ready();
 });
 
@@ -562,6 +603,30 @@ Meteor.publish("featureKey", function (forAdmin, token) {
   this.onStop(() => {
     observeHandle.stop();
   });
+
+  this.ready();
+});
+
+Meteor.publish("hasAdmin", function (token) {
+  // Like hasUsers, but for admins, and with token auth required.
+  if (!authorizedAsAdmin(token, this.userId)) return [];
+
+  // Query if there are any admin users.
+  const cursor = Meteor.users.find({ isAdmin: true });
+  if (cursor.count() > 0) {
+    this.added("hasAdmin", "hasAdmin", { hasAdmin: true });
+  } else {
+    let handle = cursor.observeChanges({
+      added: (id) => {
+        this.added("hasAdmin", "hasAdmin", { hasAdmin: true });
+        handle.stop();
+        handle = null;
+      },
+    });
+    this.onStop(function () {
+      if (handle) handle.stop();
+    });
+  }
 
   this.ready();
 });

@@ -22,8 +22,6 @@ limitations under the License.
       Sandstorm has been updated &mdash; Click here to reload
     </div>
   {{/if}}
-  {{!-- Becomes hamburger menu button in mobile view. --}}
-  <div class="menu-button"></div>
   <ul class="topbar {{#if _menuExpanded.get}}expanded{{/if}}">
     <ul class="menubar {{#if shrinkNavbar}}shrink-desktop{{/if}}">
       {{#each items}}
@@ -66,6 +64,10 @@ limitations under the License.
       </ul>
     </ul>
   </ul>
+  {{!-- Becomes hamburger menu button in mobile view.  Placed after the topbar so it stacks above
+        the other topbar items without needing z-index, which would make it impossible to have
+        modals cover this button. --}}
+  <div class="menu-button {{#if _menuExpanded.get}}expanded{{/if}}"></div>
   {{!-- We wish to block reload if there are *any* grains open, regardless of the current route --}}
   {{#if grainCount }}
     {{>sandstormTopbarBlockReload}}

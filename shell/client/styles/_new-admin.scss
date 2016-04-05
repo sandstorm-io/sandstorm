@@ -1,0 +1,48 @@
+// The purple used for the new design's nav pills.
+$darker-purple-color: #65468e;
+
+.admin-settings {
+  padding: 32px;
+
+  h1 {
+    font-weight: normal;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #a2a2a2;
+  }
+
+  h2 {
+    font-size: 24px;
+    font-weight: normal;
+  }
+}
+
+.nav-pills {
+  margin: 0;
+  padding: 0;
+  >li {
+    display: inline-block;
+    list-style-type: none;
+    height: 32px;
+    margin: 2px;
+    a {
+      display: inline-block;
+      height: 32px;
+      border: 1px solid #dddddd;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-weight: normal;
+      color: black;
+      background-color: white;
+    }
+
+    &.active a {
+      color: white;
+      background-color: $darker-purple-color;
+    }
+  }
+}
+
+@import "_admin-identity.scss";
+@import "_admin-email.scss";
+@import "_admin-status.scss";

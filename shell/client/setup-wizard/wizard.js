@@ -507,7 +507,10 @@ Template.setupWizardEmailConfig.events({
 
 Template.setupWizardEmailTestPopup.onCreated(function () {
   this.testAddress = new ReactiveVar("");
-  this.feedbackMessage = new ReactiveVar(undefined);
+  this.formStatus = new ReactiveVar({
+    state: "input",
+    message: undefined,
+  });
 });
 
 Template.setupWizardEmailTestPopup.onRendered(function () {
@@ -522,32 +525,35 @@ Template.setupWizardEmailTestPopup.helpers({
 
   hasError() {
     const instance = Template.instance();
-    const message = instance.feedbackMessage.get();
-    if (message && message.type === "error") {
-      return true;
-    }
-
-    return false;
+    const state = instance.formStatus.get();
+    return state && state.state === "error";
   },
 
   hasSuccess() {
     const instance = Template.instance();
-    const message = instance.feedbackMessage.get();
-    if (message && message.type === "success") {
-      return true;
-    }
+    const state = instance.formStatus.get();
+    return state && state.state === "success";
+  },
 
-    return false;
+  isSubmitting() {
+    const instance = Template.instance();
+    const state = instance.formStatus.get();
+    return state && state.state === "submitting";
   },
 
   message() {
     const instance = Template.instance();
-    const message = instance.feedbackMessage.get();
-    return message && message.text;
+    const state = instance.formStatus.get();
+    return state && state.message;
   },
 
   htmlDisabled() {
     const instance = Template.instance();
+    const state = instance.formStatus.get();
+    if (state.state === "submitting") {
+      return "disabled";
+    }
+
     return instance.testAddress.get() ? "" : "disabled";
   },
 });
@@ -562,16 +568,20 @@ Template.setupWizardEmailTestPopup.events({
     evt.preventDefault();
     evt.stopPropagation();
     const instance = Template.instance();
+    instance.formStatus.set({
+      state: "submitting",
+      message: undefined,
+    });
     Meteor.call("testSend", instance.data.token, instance.data.smtpConfig, instance.testAddress.get(), (err) => {
       if (err) {
-        instance.feedbackMessage.set({
-          type: "error",
-          text: err.message,
+        instance.formStatus.set({
+          state: "error",
+          message: err.message,
         });
       } else {
-        instance.feedbackMessage.set({
-          type: "success",
-          text: "Sent a test email to " + instance.testAddress.get() + ".  It should arrive shortly.",
+        instance.formStatus.set({
+          state: "success",
+          message: "Sent a test email to " + instance.testAddress.get() + ".  It should arrive shortly.",
         });
       }
     });

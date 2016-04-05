@@ -376,7 +376,13 @@
       <input class="test-address" type="email" name="test-address" value="{{testAddress}}" required />
     </label>
   </div>
-  <button class="send-test-email" {{htmlDisabled}}>Send test email</button>
+  <button class="send-test-email" {{htmlDisabled}}>
+    {{#if isSubmitting}}
+    Sending...
+    {{else}}
+    Send test email
+    {{/if}}
+  </button>
 </form>
 </template>
 

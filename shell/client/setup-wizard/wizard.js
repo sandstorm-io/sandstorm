@@ -242,12 +242,17 @@ Template.setupWizardIdentity.events({
 });
 
 Template.setupWizardOrganization.onCreated(function () {
-  const ldapChecked = globalDb.getOrganizationLdapEnabled();
-  const samlChecked = globalDb.getOrganizationSamlEnabled();
-  const gappsChecked = globalDb.getOrganizationGoogleEnabled();
-  const emailChecked = globalDb.getOrganizationEmailEnabled();
-  const gappsDomain = globalDb.getOrganizationGoogleDomain();
-  const emailDomain = globalDb.getOrganizationEmailDomain();
+  const ldapChecked = globalDb.getOrganizationLdapEnabled() || false;
+  const samlChecked = globalDb.getOrganizationSamlEnabled() || false;
+  const gappsChecked = globalDb.getOrganizationGoogleEnabled() || false;
+  const emailChecked = globalDb.getOrganizationEmailEnabled() || false;
+
+  const featureKey = globalDb.collections.featureKey.findOne();
+  const featureKeyContactAddress = featureKey && featureKey.customer && featureKey.customer.contactEmail;
+  const inferredDomain = featureKeyContactAddress && featureKeyContactAddress.split("@")[1] || "";
+
+  const gappsDomain = globalDb.getOrganizationGoogleDomain() || inferredDomain;
+  const emailDomain = globalDb.getOrganizationEmailDomain() || inferredDomain;
 
   this.ldapChecked = new ReactiveVar(ldapChecked);
   this.samlChecked = new ReactiveVar(samlChecked);

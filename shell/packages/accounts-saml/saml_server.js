@@ -20,7 +20,9 @@ Accounts.registerLoginHandler(function (loginRequest) {
   }
 
   const loginResult = Accounts.saml.retrieveCredential(loginRequest.credentialToken);
-  if (loginResult && loginResult.profile && loginResult.profile.email) {
+  if (!loginResult) {
+    throw new Meteor.Error(500, "SAML login did not complete.");
+  } else if (loginResult.profile && loginResult.profile.email) {
     let user = _.pick(loginResult.profile, "displayName", "email");
     user.id = loginResult.profile.nameID;
     return Accounts.updateOrCreateUserFromExternalService("saml", user, {});
@@ -29,6 +31,8 @@ Accounts.registerLoginHandler(function (loginRequest) {
   }
 });
 
+// TODO(soon): This may need to be a Mongo collection in order to work when the frontend is
+//   replicated (but currently Sandstorm for Work is not replicated).
 Accounts.saml._loginResultForCredentialToken = {};
 
 Accounts.saml.hasCredential = function (credentialToken) {

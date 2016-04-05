@@ -16,12 +16,14 @@ Template.newAdminStatus.helpers({
   },
 
   logHtml() {
+    // jscs:disable requireCamelCaseOrUpperCaseIdentifiers
     return AnsiUp.ansi_to_html(
       AdminLog.find({}, { $sort: { _id: 1 } })
           .map(entry => entry.text)
           .join(""),
       { use_classes: true }
     );
+    // jscs:enable requireCamelCaseOrUpperCaseIdentifiers
   },
 });
 

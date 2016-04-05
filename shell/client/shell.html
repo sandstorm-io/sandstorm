@@ -1097,6 +1097,8 @@ limitations under the License.
         <label><input type="checkbox" name="isOrganizationSaml" value="value" checked={{isOrganizationSaml}}> Users authenticated via SAML.</label><br>
         <label><input type="checkbox" name="isOrganizationGoogle" value="value" checked={{isOrganizationGoogle}}> Users authenticated via Google Apps for Work domain:</label> <input type="text" name="organizationGoogle" value="{{organizationGoogle}}" placeholder="example.com">
         <label><input type="checkbox" name="isOrganizationEmail" value="value" checked={{isOrganizationEmail}}>Users authenticated via passwordless email login with addresses at domain:</label> <input type="text" name="organizationEmail" value="{{organizationEmail}}" placeholder="example.com"></p>
+        <br>
+        <label><input type="checkbox" name="disallowGuests" value="value" checked={{disallowGuests}}> Disallow users outside organization from logging in.</label><br>
     {{else}}
       <p>To get support for LDAP, SAML, and organization management, enable
         <a href="{{featuresPath}}">Sandstorm for Work</a>.</p>

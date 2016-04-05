@@ -178,13 +178,13 @@ Meteor.methods({
           enabled: Boolean,
         },
       },
-      // Disabled until we've actually implemented the feature.
-      //settings: {
-      //  publishContacts: Boolean,
-      //},
+      settings: {
+        disallowGuests: Boolean,
+      },
     });
 
     this.connection.sandstormDb.collections.settings.upsert({ _id: "organizationMembership" }, { value: params.membership });
+    this.connection.sandstormDb.collections.settings.upsert({ _id: "organizationSettings" }, { value: params.settings });
   },
 
   adminConfigureLoginService: function (token, options) {

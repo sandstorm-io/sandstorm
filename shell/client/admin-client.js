@@ -276,10 +276,9 @@ Template.adminSettings.events({
             enabled: event.currentTarget.isOrganizationSaml.checked,
           },
         },
-        // Disabled until we've actually implemented the feature.
-        //settings: {
-        //  publishContacts: Boolean,
-        //},
+        settings: {
+          disallowGuests: event.currentTarget.disallowGuests.checked,
+        },
       };
       Meteor.call("saveOrganizationSettings", token, orgSettings, handleErrorBound);
     }
@@ -364,6 +363,10 @@ Template.adminSettings.helpers({
 
   isOrganizationSaml: function () {
     return globalDb.getOrganizationSamlEnabled();
+  },
+
+  disallowGuests: function () {
+    return globalDb.getOrganizationDisallowGuests();
   },
 
   ldapEnabled: function () {

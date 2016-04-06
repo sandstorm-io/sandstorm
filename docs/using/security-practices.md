@@ -133,11 +133,11 @@ channel by leaking plain bits -- in technical terms, _capabilities_ in
 Sandstorm are never just bits, and therefore you cannot leak
 _capabilities_ via covert channels.
 
-_**Alpha Notice:** As of this writing (May 2015), Sandstorm is in
-alpha. Key features allowing a user to easily grant an application
-access to external resources are still in development. In order to
-make Sandstorm more useful to alpha testers and early adopters, we
-have temporarily opened some intentional holes in our confinement
+_**Pre-1.0 Notice:** As of this writing (May 2015), Sandstorm is not
+yet at 1.0. Key features allowing a user to easily grant an
+application access to external resources are still in development. In
+order to make Sandstorm more useful to early adopters, we have
+temporarily opened some intentional holes in our confinement
 model. For example, we have allowed outgoing HTTP to arbitrary servers
 in order to permit the TinyTiny RSS app to fetch RSS feeds, and we
 have allowed incoming and outgoing SMTP (with certain restrictions) to

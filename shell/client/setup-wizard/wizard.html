@@ -496,7 +496,13 @@
 {{else}}
   {{#if currentUser}}
     {{#if currentUserFirstLogin}}
-      {{> sandstormAccountsFirstSignIn accountSettingsUi}}
+      <h1>Confirm your profile</h1>
+      <div class="single-identity-editor">
+        {{#with accountProfileEditorData}}
+          {{> _accountProfileEditor}}
+        {{/with}}
+      </div>
+
       {{#unless serverHasAdmin}}
         {{redeemSessionForAdmin}}
       {{/unless}}
@@ -526,7 +532,7 @@
       {{!-- The loginButtonsDialog apparently requires this in the parent data context, which seems
             wrong.  It should probably be passed in explicitly instead.  --}}
       {{#with linkingNewIdentity=notLinkingNewIdentity}}
-        {{> loginButtonsDialog globalAccountsUi}}
+        {{> loginButtonsDialog freshAccountsUi}}
       {{/with}}
     </div>
   {{/if}}

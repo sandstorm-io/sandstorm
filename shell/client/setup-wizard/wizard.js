@@ -677,8 +677,26 @@ Template.setupWizardLoginUser.onCreated(function () {
 });
 
 Template.setupWizardLoginUser.helpers({
-  globalAccountsUi() {
-    return globalAccountsUi;
+  freshAccountsUi() {
+    return new AccountsUi(globalDb);
+  },
+
+  accountProfileEditorData() {
+    // copied from packages/sandstorm-accounts-ui/account-settings.js
+    const identityId = SandstormDb.getUserIdentityIds(Meteor.user())[0];
+    const identity = Meteor.users.findOne({ _id: identityId });
+    if (identity) {
+      SandstormDb.fillInProfileDefaults(identity);
+      SandstormDb.fillInIntrinsicName(identity);
+      SandstormDb.fillInPictureUrl(identity);
+    }
+
+    return {
+      identity,
+      staticHost: window.location.protocol + "//" + makeWildcardHost("static"),
+      db: globalDb,
+      hideButtons: true,
+    };
   },
 
   currentUserIsAdmin() {
@@ -763,7 +781,18 @@ Template.setupWizardLoginUser.events({
   },
 
   "click .setup-next-button"() {
-    Router.go(getRouteAfter("user"));
+    const instance = Template.instance();
+    const isFirstLogin = Meteor.user() && !Meteor.user().hasCompletedSignup;
+    if (isFirstLogin) {
+      // If your profile is unconfirmed, attempt to save it.
+      const form = instance.find("form");
+      const profileEditorInstance = Blaze.getView(form).templateInstance();
+      profileEditorInstance.submitProfileForm(form, () => {
+        Router.go(getRouteAfter("user"));
+      });
+    } else {
+      Router.go(getRouteAfter("user"));
+    }
   },
 });
 

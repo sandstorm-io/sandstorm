@@ -317,9 +317,9 @@ const submitProfileForm = function (form, cb) {
 };
 
 Template._accountProfileEditor.onCreated(function () {
+  this.submitProfileForm = submitProfileForm; // Stored on the object so setup wizard can call it directly.
   this._profileSaved = new ReactiveVar(true);
   this._setActionCompleted = this.data.setActionCompleted || function () {};
-  this.submitProfileForm = submitProfileForm; // Stored on the object so setup wizard can call it directly.
 });
 
 Template._accountProfileEditor.events({

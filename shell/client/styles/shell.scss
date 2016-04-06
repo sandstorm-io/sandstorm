@@ -41,6 +41,10 @@ body {
   font-family: "Source Sans Pro", sans-serif;
   font-weight: normal;
   background-color: white;
+  &.modal-shown {
+    // When a modal is being shown, make it so only the modal scrolls.
+    overflow-y: hidden;
+  }
 }
 
 *, *:before, *:after {
@@ -432,6 +436,10 @@ div.popup h2 {
 
 // Admin settings styles
 @import "_admin.scss";
+@import "_new-admin.scss";
+
+// Setup wizard styles
+@import "_setup-wizard.scss";
 
 body>.popup.admin-alert>.frame>p {
   display: block;

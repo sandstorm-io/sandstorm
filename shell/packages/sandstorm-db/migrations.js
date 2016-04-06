@@ -526,6 +526,23 @@ function consolidateOrgSettings() {
   Settings.remove({ _id: "organizationSaml" });
 }
 
+function unsetSmtpDefaultHostnameIfNoUsersExist() {
+  // We don't actually want to have the default hostname "localhost" set.
+  // If the user has already finished configuring their server, then this migration should do
+  // nothing (since we might break their deployment), but for new installs (which will have no users
+  // at the time this migration runs) we'll unset the hostname if it's still the previously-filled
+  // default value.
+  const hasUsers = Meteor.users.findOne();
+  if (!hasUsers) {
+    const entry = Settings.findOne({ _id: "smtpConfig" });
+    const smtpConfig = entry.value;
+    if (smtpConfig.hostname === "localhost") {
+      smtpConfig.hostname = "";
+      Settings.upsert({ _id: "smtpConfig" }, { value: smtpConfig });
+    }
+  }
+}
+
 // This must come after all the functions named within are defined.
 // Only append to this list!  Do not modify or remove list entries;
 // doing so is likely change the meaning and semantics of user databases.
@@ -553,6 +570,7 @@ const MIGRATIONS = [
   splitSmtpUrl,
   smtpPortShouldBeNumber,
   consolidateOrgSettings,
+  unsetSmtpDefaultHostnameIfNoUsersExist,
 ];
 
 function migrateToLatest() {

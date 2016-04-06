@@ -1,0 +1,625 @@
+<template name="focusingErrorBox">
+{{!-- An error message which focuses itself and scrolls itself on screen each
+      time it is rendered, for accessibility. --}}
+<p class="flash-message error-message" tabindex="-1">
+  {{> Template.contentBlock}}
+</p>
+</template>
+
+<template name="focusingSuccessBox">
+{{!-- A success message which focuses itself and scrolls itself on screen each
+      time it is rendered, for accessibility. --}}
+<p class="flash-message success-message" tabindex="-1">
+  {{> Template.contentBlock}}
+</p>
+</template>
+
+<template name="setupWizardButtonRow">
+<div class="setup-button-row">
+  {{>Template.contentBlock }}
+</div>
+</template>
+
+<template name="setupWizardProgressBarItem">
+{{!-- pure template, takes args:
+        stepName: String   lowercase name of this step, to be used in class names an
+   isCurrentStep: Boolean  Is stepName the current step?
+       mayJumpTo: Boolean  Should this be linked, or just text?
+           route: String   Name of the route to link to, if this is rendered as a link.
+       className: String   Additional classes to place on the rendered li element.
+
+    and a content block, which should be safe to place inside a <span>.
+--}}
+<li class="setup-progress-step step-{{stepName}} {{className}}">
+  {{#if isCurrentStep}}
+    <span>
+      {{> Template.contentBlock}}
+    </span>
+  {{else}}
+    {{#if mayJumpTo}}
+      {{#linkTo route=route class=linkClassName}}
+        {{> Template.contentBlock}}
+      {{/linkTo}}
+    {{else}}
+      <span>
+        {{> Template.contentBlock}}
+      </span>
+    {{/if}}
+  {{/if}}
+</li>
+</template>
+
+<template name="setupWizardProgressBar">
+{{!-- expected arguments:
+   currentStep: String, should be one of ["intro", "identity", "organization", "email", "user", "success"]
+--}}
+<div class="setup-progress">
+  <ol class="setup-progress-labels">
+    {{#setupWizardProgressBarItem stepName="identity"
+                                   isCurrentStep=(currentStepIs "identity")
+                                   mayJumpTo=(mayJumpTo "identity")
+                                   route="setupWizardIdentity"
+                                   className=itemClassName}}
+      Login provider(s)
+    {{/setupWizardProgressBarItem}}
+
+    {{#if hasFeatureKey}}
+      {{#setupWizardProgressBarItem stepName="organization"
+                                     isCurrentStep=(currentStepIs "organization")
+                                     mayJumpTo=(mayJumpTo "organization")
+                                     route="setupWizardOrganization"
+                                     className=itemClassName}}
+        Organization
+      {{/setupWizardProgressBarItem}}
+    {{/if}}
+
+    {{#setupWizardProgressBarItem stepName="email"
+                                   isCurrentStep=(currentStepIs "email")
+                                   mayJumpTo=(mayJumpTo "email")
+                                   route="setupWizardEmailConfig"
+                                   className=itemClassName
+                                   }}
+      Set up email
+    {{/setupWizardProgressBarItem}}
+
+    {{#setupWizardProgressBarItem stepName="user"
+                                   isCurrentStep=(currentStepIs "user")
+                                   mayJumpTo=(mayJumpTo "user")
+                                   route="setupWizardLoginUser"
+                                   className=itemClassName
+                                   }}
+      Create admin account
+    {{/setupWizardProgressBarItem}}
+  </ol>
+  <div class="setup-progress-bar">
+    <div class="{{#if currentStepAtOrPast "identity"    }}complete{{else}}incomplete{{/if}}"></div>
+    {{#if hasFeatureKey}}
+    <div class="{{#if currentStepAtOrPast "organization"}}complete{{else}}incomplete{{/if}}"></div>
+    {{/if}}
+    <div class="{{#if currentStepAtOrPast "email"       }}complete{{else}}incomplete{{/if}}"></div>
+    <div class="{{#if currentStepAtOrPast "user"        }}complete{{else}}incomplete{{/if}}"></div>
+    <div class="{{#if currentStepAtOrPast "success"     }}complete{{else}}incomplete{{/if}}"></div>
+  </div>
+</div>
+</template>
+
+<template name="setupWizardHelpFooter">
+<div class="setup-help-row">
+  <span class="setup-help-label">Need help?</span>
+  <a class="setup-help-link" target="_blank" href="https://docs.sandstorm.io/en/latest/administering/">Documentation</a>
+  <a class="setup-help-link" href="mailto:support@sandstorm.io">Email support</a>
+  {{!-- TODO(someday): Live Chat link --}}
+</div>
+</template>
+
+<template name="setupWizardLayout">
+<div class="setup-root">
+  {{> yield}}
+  {{> setupWizardHelpFooter }}
+  <div class="sandstorm-logo-row">
+    <div class="sandstorm-logo"></div>
+  </div>
+</div>
+</template>
+
+<template name="setupWizardIntro">
+<div class="setup-page-content">
+  <h1 class="setup-page-title">Welcome to Sandstorm!</h1>
+
+  {{#if initialSetupComplete}}
+    <p>
+      This Sandstorm server is ready to roll.
+      You can adjust server settings, including which providers are
+      enabled and how Sandstorm sends email.
+
+      {{#unless currentUserIsAdmin}}
+      You can also turn an existing user into an administrator.
+      {{/unless}}
+    </p>
+
+    {{#if errorMessage}}
+      {{#focusingErrorBox}}
+        {{errorMessage}}
+      {{/focusingErrorBox}}
+    {{/if}}
+
+    {{#if successMessage}}
+      {{#focusingSuccessBox}}
+        {{successMessage}}
+      {{/focusingSuccessBox}}
+    {{/if}}
+
+    {{#if currentUser}}
+      {{#if currentUserIsAdmin}}
+        <p class="center">
+          {{#linkTo route="adminSettings" class="admin-settings-button"}}Proceed to Admin Panel{{/linkTo}}
+        </p>
+      {{else}}
+        {{#if identityUser}}
+          {{> identityLoginInterstitial }}
+        {{else}}
+          <p class="center">
+            <button class="make-self-admin">Give yourself admin privileges</button>
+          </p>
+        {{/if}}
+      {{/if}}
+    {{else}}
+      <p>
+        To make an account into an admin account, please sign in:
+      </p>
+      <p>
+        <div class="center">
+          {{#if showSignInPanel}}
+            {{#with linkingNewIdentity=notLinkingNewIdentity}}
+              {{> loginButtonsDialog freshAccountsUi}}
+            {{/with}}
+          {{else}}
+          <button class="sign-in-button">Sign in to become admin</button>
+          {{/if}}
+        </div>
+      </p>
+    {{/if}}
+
+    <p class="center">
+      {{#linkTo route="setupWizardIdentity" class="rerun-wizard-button"}}Revisit setup wizard{{/linkTo}}
+    </p>
+
+  {{else}}
+    <p>Choose what type of Sandstorm server to set up:</p>
+
+    <div class="setup-type-selection">
+      <div class="setup-type">
+        <h3>Standard</h3>
+        <ul class="setup-features">
+          <li>Login with Google, GitHub, or email address</li>
+          <li>Each user gets their own workspace</li>
+          <li>Share grains with anyone</li>
+        </ul>
+        <div class="setup-pricing-block">
+          <p class="setup-price">Free</p>
+          <p class="subheader">Open source</p>
+          <p class="subheader">&nbsp;</p>
+        </div>
+        <button class="setup-sandstorm-standard">Begin Standard Setup</button>
+      </div>
+      <div class="setup-type">
+        <h3>Sandstorm for Work</h3>
+        <ul class="setup-features">
+          <li>Includes everything in Standard</li>
+          <li class="setup-additional-feature">+ Single sign-on: email/LDAP/SAML</li>
+          <li class="setup-additional-feature">+ Automatic user provisioning</li>
+        </ul>
+        <div class="setup-pricing-block">
+          <p class="setup-price">$15/user/month</p>
+          <p class="subheader">Free trial for every organization</p>
+          <p class="subheader">Special pricing/discounts for non-profits</p>
+        </div>
+        <button class="setup-sandstorm-for-work">Begin Sandstorm for Work Setup</button>
+      </div>
+    </div>
+  {{/if}}
+</div>
+</template>
+
+<template name="setupWizardFeatureKey">
+<div class="setup-page-content">
+  <h1 class="setup-page-title">Sandstorm for Work feature key</h1>
+
+  {{!-- feature key form --}}
+  {{> adminFeatureKey }}
+
+  {{#setupWizardButtonRow}}
+    <button class="setup-next-button" {{nextButtonClass}}>
+      Next
+    </button>
+    <button class="setup-back-button">
+      Back
+    </button>
+  {{/setupWizardButtonRow}}
+</div>
+</template>
+
+<template name="setupWizardIdentity">
+<div class="setup-page-content">
+  <h1 class="setup-page-title">Configure Identity Provider(s)</h1>
+  {{> setupWizardProgressBar currentStep="identity"}}
+
+  <p>
+    To use Sandstorm, you need to create a user account.  Every user account on
+    Sandstorm is backed by an identity provider.  You'll use this identity provider
+    to authenticate as the first administrator of this Sandstorm install.
+  </p>
+
+  <p>
+    Configure the identity provider(s) you wish to enable.
+  </p>
+
+  {{> adminIdentityProviderTable idpData=idpData}}
+
+  {{#setupWizardButtonRow}}
+    <button class="setup-next-button" {{nextHtmlDisabled}}>
+      Next
+    </button>
+    <button class="setup-back-button">
+      Back
+    </button>
+  {{/setupWizardButtonRow}}
+</div>
+</template>
+
+<template name="setupWizardOrganization">
+<div class="setup-page-content">
+  <h1 class="setup-page-title">Configure Organization</h1>
+
+{{#if hasFeatureKey}}
+  {{> setupWizardProgressBar currentStep="organization"}}
+
+  <p>
+    Sandstorm for Work allows you to define an organization.
+    You can automatically apply some settings to all members of your organization.
+    Users within the organization will automatically be able to log in, install apps, and create grains.
+  </p>
+
+  {{#if errorMessage}}
+    {{#focusingErrorBox}}
+      Failed to save changes: {{errorMessage}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  <form class="setup-organization-management-form">
+  <h4>Organization membership</h4>
+  <div class="org-membership">
+    <div class="org-options-group">
+        <label><input type="checkbox" name="email-toggle" checked="{{emailChecked}}" {{emailHtmlDisabled}}>Users authenticated via email address</label>
+      {{#if emailDisabled }}
+      <span class="form-subtext">Note: disabled because email login is not configured.</span>
+      {{/if}}
+      <div class="form-group">
+        <label>Domain:
+          <input type="text" name="email-domain" value="{{emailDomain}}" {{emailHtmlDisabled}}>
+        </label>
+        <span class="form-subtext">
+          Users with an email address at this domain will be members of this server's organization.
+        </span>
+      </div>
+    </div>
+
+    <div class="org-options-group">
+        <label><input type="checkbox" name="gapps-toggle" checked="{{gappsChecked}}" {{gappsHtmlDisabled}}>Users authenticated via Google Apps for Work</label>
+      {{#if gappsDisabled }}
+      <span class="form-subtext">Note: disabled because Google login is not configured.</span>
+      {{/if}}
+      <div class="form-group">
+        <label>Domain:
+          <input type="text" name="gapps-domain" value="{{gappsDomain}}" {{gappsHtmlDisabled}}>
+        </label>
+        <span class="form-subtext">
+          Users with a Google Apps for Work account under this domain will be members of this server's organization.
+        </span>
+      </div>
+    </div>
+
+    <div class="org-options-group">
+        <label><input type="checkbox" name="ldap-toggle" checked="{{ldapChecked}}" {{ldapHtmlDisabled}}>Users authenticated via LDAP</label>
+      {{#if ldapDisabled }}
+      <span class="form-subtext">Note: disabled because LDAP login is not configured.</span>
+      {{/if}}
+    </div>
+
+    <div class="org-options-group">
+        <label><input type="checkbox" name="saml-toggle" checked="{{samlChecked}}" {{samlHtmlDisabled}}>Users authenticated via SAML</label>
+      {{#if samlDisabled }}
+      <span class="form-subtext">Note: disabled because SAML login is not configured.</span>
+      {{/if}}
+    </div>
+  </div>
+
+  {{!-- Disabled until the feature is implemented.
+  <h4>Organization-wide settings (coming soon!)</h4>
+  <div class="org-options-group">
+    <label>
+      <input type="checkbox" name="share-contacts" checked="{{shareContacts}}" disabled>Make all organization users visible to each other
+    </label>
+    <span class="form-subtext">
+      This setting automatically adds users within the organization to each
+      other's contact list so that they can share grains with each other.  Disable
+      this if you have some users whose identity should stay hidden from other users.
+    </span>
+  </div>
+  --}}
+
+  </form>
+  {{#setupWizardButtonRow}}
+    <button class="setup-next-button">
+      Save and continue
+    </button>
+    <button class="setup-back-button">
+      Back
+    </button>
+  {{/setupWizardButtonRow}}
+{{else}}
+  <p>Sandstorm for Work allows you to define an organization.  To use Sandstorm for Work, please
+  {{#linkTo route="setupWizardFeatureKey"}}
+    provide a feature key
+  {{/linkTo}}.</p>
+{{/if}}
+</div>
+</template>
+
+<template name="setupWizardEmailTestPopup">
+{{!-- Expects a single String argument "token" to be passed in via the data context. --}}
+<h2>Send a test email</h2>
+{{#if hasError}}
+  {{#focusingErrorBox}}
+    {{message}}
+  {{/focusingErrorBox}}
+{{/if}}
+{{#if hasSuccess}}
+  {{#focusingSuccessBox}}
+    {{message}}
+  {{/focusingSuccessBox}}
+{{/if}}
+<form class="email-test-form">
+  <div class="form-group">
+    <label>
+      Send test mail to:
+      <input class="test-address" type="email" name="test-address" value="{{testAddress}}" required />
+    </label>
+  </div>
+  <button class="send-test-email" {{htmlDisabled}}>
+    {{#if isSubmitting}}
+    Sending...
+    {{else}}
+    Send test email
+    {{/if}}
+  </button>
+</form>
+</template>
+
+<template name="setupWizardEmailConfig">
+<div class="setup-page-content">
+  <h1 class="setup-page-title">Outbound Email Setup</h1>
+  {{> setupWizardProgressBar currentStep="email"}}
+
+  <p>
+    Sandstorm needs a way to send email.  You can skip this step (unless you're using email login),
+    but email-related features will be unavailable until you configure email in the future.
+  </p>
+
+  <p>
+    <strong>How Sandstorm uses email:</strong>
+    Sandstorm sends email notifications, and Sandstorm apps can send email notifications, too.
+    Every app receives a unique email address, so Sandstorm needs to send email from a variety of "From:" addresses.
+    Therefore, Gmail SMTP won't work, but there are other free services.
+    See more info in <a target="_blank" href="https://docs.sandstorm.io/en/latest/administering/email/#outgoing-smtp">the docs</a>.
+  </p>
+
+  {{#if errorMessage}}
+    {{#focusingErrorBox}}
+      Failed to save changes: {{errorMessage}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  <form class="email-form">
+    <div class="input-group">
+      <div class="host-port">
+        <label>
+          SMTP host
+          <input class="hostname" type="text" name="smtp-hostname" value="{{smtpHostname}}" required />
+        </label>
+        <label>
+          Port
+          <input class="port" type="number" name="smtp-port" value="{{smtpPort}}" required />
+        </label>
+      </div>
+      <div class="form-subtext">Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS.</div>
+    </div>
+
+    <div class="input-group">
+      <label>
+        Username (optional)
+        <input class="username" type="text" name="smtp-username" value="{{smtpUsername}}" />
+      </label>
+    </div>
+
+    <div class="input-group">
+      <label>
+        Password (optional)
+        <input class="password" type="password" name="smtp-password" value="{{smtpPassword}}" />
+      </label>
+    </div>
+
+    <div class="input-group">
+      <label>
+        Sandstorm server's own email address
+        <input class="from-address" type="email" name="smtp-return-address" value="{{smtpReturnAddress}}" required />
+      </label>
+      <div class="form-subtext">
+        Sandstorm will send login emails, notifications of granted access requests, and other emails from this address.
+        It will also use this address in the SMTP envelope.
+      </div>
+    </div>
+  </form>
+
+  {{#if showTestSendEmailPopup}}
+    {{#modalDialogWithBackdrop onDismiss=closePopupCallback}}
+      {{> setupWizardEmailTestPopup token=token smtpConfig=getSmtpConfig }}
+    {{/modalDialogWithBackdrop}}
+  {{/if}}
+
+  {{#setupWizardButtonRow}}
+    <button class="setup-next-button" {{nextHtmlDisabled}}>
+      Save and continue
+    </button>
+    <button class="setup-skip-email" {{skipHtmlDisabled}}>
+      Skip for now
+    </button>
+    <button class="setup-test-email-button" {{testHtmlDisabled}}>
+      Test
+    </button>
+    <button class="setup-back-button">
+      Back
+    </button>
+  {{/setupWizardButtonRow}}
+</div>
+</template>
+
+<template name="setupWizardLoginUser">
+<div class="setup-page-content">
+  <h1 class="setup-page-title">Create admin account</h1>
+  {{> setupWizardProgressBar currentStep="user"}}
+
+  {{#if errorMessage}}
+    {{#focusingErrorBox}}
+      {{errorMessage}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  {{#if successMessage}}
+    {{#focusingSuccessBox}}
+      {{successMessage}}
+    {{/focusingSuccessBox}}
+  {{/if}}
+
+{{#if identityUser}}
+  {{> identityLoginInterstitial }}
+{{else}}
+  {{#if currentUser}}
+    {{#if currentUserFirstLogin}}
+      <h1>Confirm your profile</h1>
+      <div class="single-identity-editor">
+        {{#with accountProfileEditorData}}
+          {{> _accountProfileEditor}}
+        {{/with}}
+      </div>
+
+      {{#unless serverHasAdmin}}
+        {{redeemSessionForAdmin}}
+      {{/unless}}
+    {{else}}
+      {{#if currentUserIsAdmin}}
+        <p>Great! Your account has admin privileges.</p>
+      {{else}}
+        {{#if serverHasAdmin}}
+          <p>
+            This Sandstorm server already has an admin user, but if you want, you can also make
+            yourself an admin.
+          </p>
+          <div class="center">
+            <button class="make-self-admin">Become an admin</button>
+          </div>
+        {{else}}
+          <p>Making you an admin on this server...</p>
+          {{redeemSessionForAdmin}}
+        {{/if}}
+      {{/if}}
+    {{/if}}
+  {{else}}
+    <p>You can now create an admin account on this Sandstorm server.</p>
+    <div class="center">
+      <p>Log in to create your admin account</p>
+
+      {{!-- The loginButtonsDialog apparently requires this in the parent data context, which seems
+            wrong.  It should probably be passed in explicitly instead.  --}}
+      {{#with linkingNewIdentity=notLinkingNewIdentity}}
+        {{> loginButtonsDialog freshAccountsUi}}
+      {{/with}}
+    </div>
+  {{/if}}
+{{/if}}
+
+  {{#setupWizardButtonRow}}
+    <button class="setup-next-button" {{nextHtmlDisabled}}>
+      Finish
+    </button>
+    <button class="setup-back-button">
+      Back
+    </button>
+  {{/setupWizardButtonRow}}
+</div>
+</template>
+
+<template name="setupWizardSuccess">
+<div class="setup-page-content">
+  <h1 class="setup-page-title">Ready to roll!</h1>
+  <p>Your Sandstorm server is now ready to use.</p>
+  <p>What would you like to do next?</p>
+
+  <div class="setup-next-steps">
+    {{#unless someOrgMembershipEnabled}}
+      {{#linkTo route="adminInvites" class="setup-button-secondary"}}
+        Add users
+      {{/linkTo}}
+    {{/unless}}
+    {{#linkTo route="adminSettings" class="setup-button-secondary"}}
+      Edit other settings
+    {{/linkTo}}
+    {{#linkTo route="apps" class="setup-button-primary"}}
+      Start using Sandstorm
+    {{/linkTo}}
+  </div>
+
+  {{#setupWizardButtonRow}}
+    <button class="setup-back-button">
+      Back
+    </button>
+  {{/setupWizardButtonRow}}
+</div>
+</template>
+
+<template name="setupWizardVerifyToken">
+<div class="setup-page-content">
+  <h1 class="setup-page-title">Verifying token...</h1>
+  {{#if rejected}}
+  <p>
+    Sorry, it looks like your setup token has expired.
+  </p>
+
+  <p>
+    Generate a new one now from the command line by running <code>sandstorm admin-token</code> to
+    access the setup wizard.
+  </p>
+  {{/if}}
+</div>
+</template>
+
+<template name="setupWizardTokenExpired">
+<div class="setup-page-content">
+  <h1 class="setup-page-title">Setup token required</h1>
+  {{#if hasUsers}}
+  <p>
+  This server is already set up, so we recommend administering it via the main
+  {{#linkTo route="adminSettings"}}administration panel{{/linkTo}}.
+  </p>
+  {{/if}}
+
+  <p>
+    To use this server's setup page, you need a valid setup token.
+  </p>
+
+  <p>
+    Generate a new one now from the command line by running <code>sandstorm admin-token</code> and
+    following the link it outputs.
+  </p>
+</div>
+</template>

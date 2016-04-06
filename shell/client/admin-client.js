@@ -27,7 +27,8 @@ const resetResult = function (state) {
   state.set("powerboxOfferUrl", null);
 };
 
-const getToken = function () {
+// Export for use in other admin/ routes
+getToken = function () {
   const state = Iron.controller().state;
   const token = state.get("token");
   if (!token) {
@@ -125,7 +126,7 @@ Template.admin.helpers({
   },
 
   featureKeyActive: function () {
-    return Router.current().route.getName() == "adminFeatureKey";
+    return Router.current().route.getName() == "adminFeatureKeyPage";
   },
 
   wildcardHostSeemsBroken: function () {
@@ -990,7 +991,8 @@ Template.featureKeyUploadForm.events({
       if (err) {
         instance.error.set(err.message);
       } else {
-        instance.data.successCb && instance.data.successCb();
+        instance.error.set(undefined);
+        instance.data && instance.data.successCb && instance.data.successCb();
       }
     });
   },
@@ -1008,7 +1010,7 @@ Template.featureKeyUploadForm.events({
           if (err) {
             instance.error.set(err.message);
           } else {
-            instance.data.successCb && instance.data.successCb();
+            instance.data && instance.data.successCb && instance.data.successCb();
           }
         });
       });
@@ -1041,11 +1043,23 @@ Template.adminFeatureKey.events({
   },
 });
 
-Template.adminFeatureKey.helpers({
+Template.adminFeatureKeyPage.helpers({
   setDocumentTitle: function () {
-    document.title = "Features · Admin · " + globalDb.getServerTitle();
+    document.title = "Feature Key · Admin · " + globalDb.getServerTitle();
   },
 
+  settingsPath: function () {
+    const state = Iron.controller().state;
+    const token = state.get("token");
+    return "/admin/settings" + (token ? "/" + token : "");
+  },
+
+  hasFeatureKey: function () {
+    return !!globalDb.collections.featureKey.findOne();
+  },
+});
+
+Template.adminFeatureKey.helpers({
   currentFeatureKey: function () {
     return globalDb.collections.featureKey.findOne();
   },
@@ -1097,12 +1111,6 @@ Template.adminFeatureKey.helpers({
     d.setTime(parseInt(stringSecondsSinceEpoch) * 1000);
 
     return MONTHS[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
-  },
-
-  settingsPath: function () {
-    const state = Iron.controller().state;
-    const token = state.get("token");
-    return "/admin/settings" + (token ? "/" + token : "");
   },
 });
 
@@ -1205,7 +1213,7 @@ Router.map(function () {
     path: "/admin/advanced/:_token?",
     controller: adminRoute,
   });
-  this.route("adminFeatureKey", {
+  this.route("adminFeatureKeyPage", {
     path: "/admin/features/:_token?",
     controller: adminRoute,
   });
@@ -1214,5 +1222,118 @@ Router.map(function () {
     action: function () {
       this.redirect("adminSettings", this.params);
     },
+  });
+});
+
+const newAdminRoute = RouteController.extend({
+  template: "newAdmin",
+  waitOn: function () {
+    const subs = [
+      Meteor.subscribe("admin", this.params._token),
+      Meteor.subscribe("adminServiceConfiguration", this.params._token),
+      Meteor.subscribe("featureKey", true, this.params._token),
+    ];
+    if (this.params._token) {
+      subs.push(Meteor.subscribe("adminToken", this.params._token));
+    }
+
+    return subs;
+  },
+
+  data: function () {
+    const adminToken = AdminToken.findOne();
+    return {
+      settings: Settings.find(),
+      token: this.params._token,
+      isUserPermitted: isAdmin() || (adminToken && adminToken.tokenIsValid),
+    };
+  },
+
+  action: function () {
+    // Test the WILDCARD_HOST for sanity.
+    Tracker.nonreactive(() => {
+      if (Session.get("alreadyTestedWildcardHost")) {
+        return;
+      }
+
+      HTTP.call("GET", "//" + makeWildcardHost("selftest-" + Random.hexString(20)),
+                { timeout: 2000 }, (error, response) => {
+                  Session.set("alreadyTestedWildcardHost", true);
+                  let looksGood;
+                  if (error) {
+                    looksGood = false;
+                  } else {
+                    if (response.statusCode === 200) {
+                      looksGood = true;
+                    } else {
+                      console.log("Surpring status code from self test domain", response.statusCode);
+                      looksGood = false;
+                    }
+                  }
+
+                  Session.set("wildcardHostWorks", looksGood);
+                });
+    });
+
+    const state = this.state;
+    Meteor.call("getSmtpUrl", this.params._token, function (error, result) {
+      state.set("smtpUrl", result);
+    });
+
+    const user = Meteor.user();
+    if (user && user.loginIdentities) {
+      if (this.params._token) {
+        if (!user.signupKey || !user.isAdmin) {
+          Meteor.call("signUpAsAdmin", this.params._token);
+        } else if (user.isAdmin) {
+          // We don't need the token. Redirect to the current route, minus the token parameter.
+          Router.go(this.route.getName(), {}, _.pick(this.params, "query", "hash"));
+        }
+      }
+    }
+
+    resetResult(state);
+    state.set("configurationServiceName", null);
+    state.set("token", this.params._token);
+    this.render();
+  },
+});
+
+Router.map(function () {
+  this.route("newAdminIdentity", {
+    path: "/admin-new/identity/:_token?",
+    controller: newAdminRoute,
+  });
+  this.route("newAdminEmailConfig", {
+    path: "/admin-new/email/:_token?",
+    controller: newAdminRoute,
+  });
+  this.route("newAdminUsers", {
+    path: "/admin-new/users/:_token?",
+    controller: newAdminRoute,
+  });
+  this.route("newAdminAppConfig", {
+    path: "/admin-new/app-config/:_token?",
+    controller: newAdminRoute,
+  });
+  this.route("newAdminAlerts", {
+    path: "/admin-new/alerts/:_token?",
+    controller: newAdminRoute,
+  });
+  this.route("newAdminStatus", {
+    path: "/admin-new/status/:_token?",
+    controller: newAdminRoute,
+  });
+  this.route("newAdminNetworkCapabilities", {
+    path: "/admin-new/network-capabilities/:_token?",
+    controller: newAdminRoute,
+  });
+  this.route("newAdminStats", {
+    path: "/admin-new/stats/:_token?",
+    controller: newAdminRoute,
+  });
+  this.route("newAdminFeatureKey", {
+    path: "/admin-new/feature-key/:_token?",
+    controller: newAdminRoute,
   });
 });

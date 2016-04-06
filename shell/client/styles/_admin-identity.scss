@@ -1,0 +1,145 @@
+%idp-status {
+  display: inline-block;
+  padding-left: 8px;
+  padding-right: 8px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  height: 28px;
+}
+
+%idp-table-row {
+  min-height: 32px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 1px;
+}
+
+.identity-provider-table {
+  width: 100%;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-begin;
+
+  margin-bottom: 32px;
+
+  .idp-table-header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .idp-header-row {
+    width: 100%;
+    @extend %idp-table-row;
+    span {
+      min-height: 32px;
+      color: black;
+      background-color: #d3d3d3;
+      margin-right: 1px;
+    }
+  }
+  .idp-table-row {
+    @extend %idp-table-row;
+    color: #5b5b5b;
+    background-color: white;
+    button {
+      @extend %button-base;
+      @extend %button-secondary;
+      height: 26px;
+    }
+  }
+  .idp {
+    padding-left: 16px;
+    width: 200px;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+  .idp-status {
+    padding-left: 16px;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .idp-enabled {
+    @extend %idp-status;
+    color: #366456;
+    background-color: #d9ebcd;
+  }
+  .idp-disabled {
+    @extend %idp-status;
+    color: #656565;
+    background-color: #e9e9e9;
+  }
+}
+
+.setup-idp-form {
+  margin-bottom: 10px;
+
+  .idp-options-group {
+    display: block;
+    position: relative;
+    padding-left: 24px;
+    margin-bottom: 20px;
+    input[type=checkbox] {
+      position: absolute;
+      margin-left: -24px;
+    }
+    &::after {
+      border-bottom: 1px solid #ddd;
+    }
+  }
+
+  .form-group {
+    margin-bottom: 10px;
+  }
+
+  label {
+    display: block;
+    font-weight: normal;
+    font-size: 20px;
+  }
+
+  input[type="text"], textarea {
+    display: block;
+    width: 100%;
+    background-color: white;
+    padding: 4px;
+    font-size: 16px;
+    border-radius: 2px;
+    border: 1px solid #d3d3d3;
+  }
+
+  textarea {
+    min-height: 200px;
+  }
+
+  .form-subtext {
+    font-size: 14px;
+    color: #666;
+  }
+}
+
+.idp-modal-button-row {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: flex-start;
+  justify-content: flex-start;
+  .idp-modal-save {
+    @extend %button-base;
+    @extend %button-primary;
+    margin-left: 10px;
+  }
+  .idp-modal-cancel {
+    @extend %button-base;
+    @extend %button-secondary;
+    margin-left: 10px;
+  }
+}
+
+

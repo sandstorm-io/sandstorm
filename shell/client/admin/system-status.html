@@ -1,0 +1,12 @@
+<template name="newAdminStatus">
+  <h1>System Status</h1>
+
+  <h2>Current Usage</h2>
+  <p>{{grainsActive}} open grains</p>
+  <p>{{usersActive}} users with grains open</p>
+
+  <h2>System Log</h2>
+  <div class="admin-log-box" aria-live="polite">
+    <pre>...{{{logHtml}}}</pre>
+  </div>
+</template>

@@ -983,7 +983,7 @@ limitations under the License.
           {{#linkTo route="adminAdvanced" data=getToken}}Advanced{{/linkTo}}
         </li>
         <li id="featurekey-tab" class="{{#if featureKeyActive}}active{{/if}}">
-          {{#linkTo route="adminFeatureKey" data=getToken}}For Work{{/linkTo}}
+          {{#linkTo route="adminFeatureKeyPage" data=getToken}}For Work{{/linkTo}}
         </li>
       </ul>
       {{> Template.dynamic template=adminTab}}
@@ -1393,9 +1393,17 @@ limitations under the License.
   </form>
 </template>
 
-<template name="adminFeatureKey">
+<template name="adminFeatureKeyPage">
   {{setDocumentTitle}}
 
+  {{> adminFeatureKey . }}
+
+  {{#if hasFeatureKey }}
+    <p><a href="{{settingsPath}}">Go to the settings page to configure Sandstorm for Work features.</a></p>
+  {{/if}}
+</template>
+
+<template name="adminFeatureKey">
   {{#if currentFeatureKey}}
     <h4>Current feature key</h4>
     {{#with featureKey=currentFeatureKey}}
@@ -1445,9 +1453,6 @@ limitations under the License.
         <button class="button-secondary feature-key-delete-button">Delete feature key</button>
       </div>
     {{/if}}
-
-    <p><a href="{{settingsPath}}">Go to the settings page to configure Sandstorm for Work features.</a></p>
-
   {{else}}
     <h4>Upload feature key</h4>
     <p>To make use of Sandstorm for Work features like LDAP and SAML login and organization

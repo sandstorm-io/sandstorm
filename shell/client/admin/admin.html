@@ -1,0 +1,74 @@
+<template name="adminNavPill">
+{{!--
+  Takes as arguments:
+
+  routeName: String
+       data: String
+--}}
+<li class="nav-pill {{#if currentRouteNameIs routeName}}active{{/if}}">
+  {{#linkTo route=routeName data=data}}{{> Template.contentBlock}}{{/linkTo}}
+</li>
+</template>
+
+<template name="newAdmin">
+  {{>title "(new) Admin Settings"}}
+  {{#if wildcardHostSeemsBroken}}
+  <div class="wildcard-host-warning">
+    WARNING: This server seems to have its WILDCARD_HOST misconfigured.  Until you fix it, you will
+    not be able to use any apps.
+    <a target="_blank"
+       href="https://docs.sandstorm.io/en/latest/administering/faq/#why-do-i-see-an-error-when-i-try-to-launch-an-app-even-when-the-sandstorm-interface-works-fine">
+      Learn more.</a>  You'll need to adjust DNS, SSL/TLS certificates, or edit the sandstorm.conf
+    file. Once you have addressed the issue, reload this page. If you're still having problems,
+    email us at support@sandstorm.io.
+  </div>
+  {{/if}}
+
+  {{> _adminConfigureLoginServiceDialog}}
+  <div class="admin-settings">
+    {{#if isUserPermitted}}
+      <ul class="nav-pills">
+        {{#adminNavPill routeName="newAdminIdentity" data=getToken}}Identity Providers{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminEmailConfig" data=getToken}}Email Configuration{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminUsers" data=getToken}}User Accounts{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminAppConfig" data=getToken}}App Configuration{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminAlerts" data=getToken}}Admin Alerts{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminStatus" data=getToken}}System Status{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminNetworkCapabilities" data=getToken}}Network Capabilities{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminStats" data=getToken}}Stats{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminFeatureKey" data=getToken}}For Work{{/adminNavPill}}
+      </ul>
+      {{> Template.dynamic template=adminTab}}
+    {{else}}
+      <p>
+        You are not logged in as admin and there isn't a valid token specified. You should
+        either log in as an admin user or generate a token from the command line by doing
+        `sandstorm admin-token` in order to access the admin settings page.
+      </p>
+    {{/if}}
+  </div>
+</template>
+
+<template name="newAdminUsers">
+  <h1>User Accounts</h1>
+</template>
+
+<template name="newAdminAppConfig">
+  <h1>App Configuration</h1>
+</template>
+
+<template name="newAdminAlerts">
+  <h1>Admin Alerts</h1>
+</template>
+
+<template name="newAdminNetworkCapabilities">
+  <h1>Network Capabilities</h1>
+</template>
+
+<template name="newAdminStats">
+  <h1>Stats</h1>
+</template>
+
+<template name="newAdminFeatureKey">
+  <h1>Sandstorm for Work</h1>
+</template>

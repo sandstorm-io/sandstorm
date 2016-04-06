@@ -1,0 +1,382 @@
+.setup-root {
+  display: block;
+  width: 100%;
+  min-height: 100%; // An explicit height: 100% loses the background color behind the logo when scrolling.
+  position: relative;
+  padding-left: 64px;
+  padding-right: 64px;
+  padding-top: 32px;
+  padding-bottom: 32px;
+  background-color: #303030;
+}
+
+.setup-page-content {
+  background-color: #efefef;
+  padding: 32px;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 900px;
+}
+
+.setup-page-title {
+  margin-top: 0;
+  margin-bottom: 32px;
+  font-weight: normal;
+  text-align: center;
+}
+
+.setup-help-row {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 900px;
+
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-begin;
+
+  background-color: #303030;
+  color: #ffffff;
+
+  .setup-help-label {
+    display: inline-block;
+    margin-right: 1em;
+    font-size: 13px;
+  }
+
+  .setup-help-link {
+    display: inline-block;
+    @extend %button-base;
+    @extend %button-dark;
+    font-weight: normal; // overriding default bold links
+    margin: 4px;
+    text-decoration: none;
+  }
+}
+
+.setup-progress {
+  margin-bottom: 32px;
+}
+
+.setup-progress-labels {
+  margin-top: 0;
+  margin-bottom: 8px;
+  padding: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-begin;
+  justify-content: center;
+}
+
+.setup-progress-step {
+  // base percent to flex: should be 100%/(num_steps + 1) to make the steps' labels line up with
+  // the endpoints of the progress bars below, but the number of steps varies, so we need to set
+  // the size depending on how many there are.
+  &.of-four {
+    flex: 0 1 25%;
+  }
+  &.of-five {
+    flex: 0 1 20%;
+  }
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-begin;
+  /* border: 1px solid #000; */
+}
+
+.setup-progress-bar {
+  display: flex;
+  >* {
+    flex: 1;
+    height: 12px;
+    border-left: 1px solid #9A94A0;
+  }
+  :last-child {
+    border-right: 1px solid #9A94A0;
+  }
+
+  .complete {
+    background-color: #6e3c8e;
+  }
+  .incomplete {
+    background-color: #e9e4ef;
+  }
+}
+
+.setup-welcome {
+  text-align: center;
+}
+
+.setup-type-selection {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-begin;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.setup-type {
+  flex: 1 1 auto;
+  min-width: 300px;
+  background-color: #fff;
+  border: 1px solid #d0d0d0;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  margin: 10px;
+
+  h3 {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 600;
+    margin-left: 0px;
+    margin-right: 0px;
+    margin-top: 0px;
+    margin-bottom: 8px;
+  }
+
+  .setup-features {
+    width: 100%;
+    flex: 1 1 auto;
+    list-style-type: none;
+    padding-left: 12px;
+    margin-top: 0;
+    margin-bottom: 16px;
+
+    .setup-additional-feature {
+      color: #888;
+    }
+    >li {
+      margin-bottom: 8px;
+    }
+
+    border-bottom: 1px solid #aaa
+  }
+
+  .setup-pricing-block {
+    text-align: center;
+    margin-bottom: 8px;
+    .setup-price {
+      font-size: 24px;
+      margin-top: 0px;
+      margin-bottom: 2px;
+    }
+    .subheader {
+      color: #444;
+      font-size: 12px;
+      margin-top: 2px;
+      margin-bottom: 2px;
+    }
+  }
+
+  button {
+    text-align: center;
+    width: 100%;
+    @extend %button-base;
+    @extend %button-primary;
+    height: 32px;
+    font-size: 16px;
+  }
+}
+
+.setup-organization-management-form {
+  h4 {
+    font-size: 20px;
+  }
+  .org-options-group {
+    display: block;
+    position: relative;
+    padding-left: 24px;
+    margin-bottom: 20px;
+    input[type=checkbox] {
+      position: absolute;
+      margin-left: -24px;
+      font-size: 16px;
+    }
+    &::after {
+      border-bottom: 1px solid #ddd;
+    }
+  }
+  .form-group {
+    margin-bottom: 10px;
+  }
+  label {
+    display: block;
+    font-weight: normal;
+    font-size: 20px;
+  }
+  input[type=text] {
+    display: block;
+    background-color: white;
+    padding: 4px;
+    font-size: 16px;
+    border-radius: 2px;
+    border: 1px solid #d3d3d3;
+  }
+  .form-subtext {
+    font-size: 14px;
+    color: #666;
+  }
+}
+
+.setup-next-steps {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-begin;
+  justify-content: center;
+  >* {
+    margin-left: 10px;
+  }
+}
+
+.setup-button-row {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: flex-begin;
+}
+
+.setup-next-button {
+  @extend %button-base;
+  @extend %button-primary;
+  margin-left: 10px;
+  margin-bottom: 15px;
+}
+
+.setup-back-button {
+  @extend %button-base;
+  @extend %button-secondary;
+  margin-bottom: 15px;
+  margin-right: auto;
+}
+
+.setup-test-email-button, .setup-skip-email {
+  @extend %button-base;
+  @extend %button-secondary;
+  margin-bottom: 15px;
+  margin-left: 10px;
+}
+
+.setup-get-feature-key {
+  @extend %button-base;
+  @extend %button-secondary;
+}
+
+.setup-button-primary {
+  @extend %button-base;
+  @extend %button-primary;
+}
+
+.setup-button-secondary {
+  @extend %button-base;
+  @extend %button-secondary;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.make-self-admin, .sign-in-button, .admin-settings-button, .rerun-wizard-button {
+  @extend %button-base;
+  display: block;
+  width: 200px;
+}
+
+.make-self-admin, .sign-in-button, .admin-settings-button {
+  @extend %button-primary;
+}
+
+.rerun-wizard-button {
+  @extend %button-secondary;
+}
+
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  background-color: #000;
+  opacity: .5;
+}
+
+.modal {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  opacity: 1;
+  z-index: 1010;
+  display: block;
+  overflow-y: auto;
+}
+
+.modal-dialog {
+  position: relative;
+  width: 600px;
+  margin-top: 36px;
+  margin-bottom: auto;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.modal-close-button {
+  display: block;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 32px;
+  height: 32px;
+  color: transparent;
+  overflow: hidden;
+  background-image: url("/close-m.svg");
+  background-size: 20px 20px;
+  background-repeat: no-repeat;
+  background-position: center;
+  border: none;
+  border-radius: 16px;
+  background-color: transparent;
+  margin: 0;
+  &:hover {
+    background-color: #eee;
+    cursor: pointer;
+  }
+}
+
+.modal-content {
+  min-height: 32px;
+  background-color: #fff;
+  opacity: 1;
+  padding: 24px;
+  >h2 {
+    font-weight: normal;
+    margin: 0;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #ddd;
+  }
+}
+
+.sandstorm-logo-row {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-begin;
+  align-items: center;
+}
+
+.sandstorm-logo {
+  display: block;
+  flex: none;
+  width: 200px;
+  height: 200px;
+  @extend %pseudo-img-tag;
+  background-image: url('/sandstorm-gradient-logo.svg')
+}

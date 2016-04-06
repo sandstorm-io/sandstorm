@@ -32,10 +32,12 @@
     position: fixed;
     left: 0;
     top: 0;
-    z-index: 1000;
-  }
-  body>.menu-button:hover {
-    background-color: $topbar-background-color-hover;
+    &:hover {
+      background-color: $topbar-background-color-hover;
+    }
+    &.expanded {
+      z-index: 101;
+    }
   }
 }
 
@@ -67,7 +69,6 @@ body>.topbar {
   padding: 0;
   width: 100%;
   text-align: left;
-  z-index: 100;
 
   line-height: 32px;
   height: 32px;
@@ -86,6 +87,9 @@ body>.topbar {
     &.expanded {
       height: 100%;
       box-shadow: 0px 2px 2px rgba(0, 0, 0, 0.2);
+      // We avoid placing a z-index on the topbar when not expanded, lest modal dialogs
+      // that don't live at the same depth in the DOM be made unable to cover the topbar.
+      z-index: 100;
     }
   }
 
@@ -616,7 +620,6 @@ body>.topbar {
     }
     margin: 0;
     padding: 0;
-    z-index: 100;
     >ul.navbar-grains {
       margin: 0;
       padding: 0;

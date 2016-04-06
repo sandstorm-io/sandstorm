@@ -1526,7 +1526,7 @@ print_success() {
     echo "Visit this link to configure it:"
   fi
   echo ""
-  echo "  ${BASE_URL:-(unknown; bad config)}/admin/settings/$ADMIN_TOKEN"
+  echo "  ${BASE_URL:-(unknown; bad config)}/setup/token/$ADMIN_TOKEN"
   if [ "${SANDCATS_HTTPS_SUCCESSFUL}" = "yes" ] ; then
     echo ""
     echo "(If your browser shows you an OCSP error, wait 10 minutes for it to auto-resolve"

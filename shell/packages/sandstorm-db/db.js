@@ -623,6 +623,14 @@ FeatureKey = new Mongo.Collection("featureKey");
 //
 // This is only intended to be visible on the server.
 
+SetupSession = new Mongo.Collection("setupSession");
+// Responsible for storing information about setup sessions.  Contains a single document with three
+// keys:
+//
+//   _id: "current-session"
+//   creationDate: Date object indicating when this session was created.
+//   hashedSessionId: the sha256 of the secret session id that was returned to the client
+
 if (Meteor.isServer) {
   Meteor.publish("credentials", function () {
     // Data needed for isSignedUp() and isAdmin() to work.
@@ -928,6 +936,7 @@ SandstormDb = function () {
     appIndex: AppIndex,
     keybaseProfiles: KeybaseProfiles,
     featureKey: FeatureKey,
+    setupSession: SetupSession,
 
     // Intentionally omitted:
     // - Migrations, since it's used only within this package.
@@ -1216,6 +1225,15 @@ _.extend(SandstormDb.prototype, {
   getSetting: function (name) {
     const setting = Settings.findOne(name);
     return setting && setting.value;
+  },
+
+  getSettingWithFallback: function (name, fallbackValue) {
+    const value = this.getSetting(name);
+    if (value === undefined) {
+      return fallbackValue;
+    }
+
+    return value;
   },
 
   addUserActions: function (packageId) {

@@ -50,18 +50,30 @@
   min-height: 26px;
   font-size: 13px;
   text-align: center;
+  text-decoration: none;
+}
+
+%button-disabled {
+  color: #777777;
+  background-color: #efefef;
+  border: 1px solid lighten(#afafaf, 10%);
+  &:hover {
+    color: #777777;
+    background-color: #efefef;
+    border: 1px solid lighten(#afafaf, 10%);
+  }
 }
 
 %button-primary {
   // A button coloring for the primary action of a form.
-  background-color: $sandstorm-purple-color;
+  background-color: #65468e;
   color: white;
   border: 1px solid darken($sandstorm-purple-color, 10%);
-  &:disabled {
-    background-color: #333333;
-  }
   &:hover {
-    background-color: darken($sandstorm-purple-color, 10%);
+    background-color: #714daa;
+  }
+  &:disabled {
+    @extend %button-disabled;
   }
 }
 
@@ -72,5 +84,18 @@
   border: 1px solid darken(white, 30%);
   &:hover {
     background-color: darken(white, 10%);
+  }
+  &:disabled {
+    @extend %button-disabled;
+  }
+}
+
+%button-dark {
+  background-color: #303030;
+  color: #ffffff;
+  border: 1px solid #4e4e4e;
+  transition: background-color .35s;
+  &:hover {
+    background-color: #4e4e4e;
   }
 }

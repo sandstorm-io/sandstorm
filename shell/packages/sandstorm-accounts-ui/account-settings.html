@@ -122,6 +122,14 @@ limitations under the License.
 </template>
 
 <template name="_accountProfileEditor">
+{{!-- Expected arguments to data context:
+          identity: Object.  Should contain the usual Meteor.user fields (_id, profile, etc.)
+setActionCompleted: (optional) Function.  Callback triggered on profile saved or picture updated.
+   termsAndPrivacy: (optional) Object containing Strings termsUrl and/or privacyUrl.
+        staticHost: String.  Used to generate avatar URL.
+                db: instance of SandstormDb (optional, but needed for sandstormAccountsFirstSignIn?)
+       hideButtons: Boolean (optional, default value is false)
+--}}
   <div class="identity-editor">
     <form class="account-profile-editor" data-identity-id="{{identity._id}}">
       <div class="editor">
@@ -202,6 +210,7 @@ limitations under the License.
             {{> billingOptins}}
           {{/if}}
           {{/unless}}
+          {{#unless hideButtons}}
           <li class="save">
             <button disabled="{{profileSaved}}">
               {{#if hasCompletedSignup}}Save{{else}}Continue{{/if}}
@@ -210,6 +219,7 @@ limitations under the License.
             <button class="logout">Cancel</button>
             {{/unless}}
           </li>
+          {{/unless}}
         </ul>
       </div>
     </form>

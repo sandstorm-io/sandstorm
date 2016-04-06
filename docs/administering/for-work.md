@@ -121,6 +121,12 @@ testing feature key by contacting Kenton Varda. You must also can enable testing
 `IS_TESTING=yes` in `sandstorm.conf` for testing keys to be considered valid. Note that enabling
 testing mode forfeits all security.
 
+To switch back to Sandstorm Standard, you can **remove the feature key from your system.** You can
+find this option within the admin settings area. This will disable Sandstorm for Work features. You
+can switch between Sandstorm Standard and Sandstorm for Work at any time, so long as you have a
+valid feature key and are complying with the
+[Sandstorm for Work terms of service](https://work.sandstorm.io/terms).
+
 ### Open source
 
 The code for Sandstorm for Work is maintained in the Sandstorm open source project, under the Apache

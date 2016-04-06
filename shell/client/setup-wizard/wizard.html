@@ -200,7 +200,15 @@
           <p class="subheader">Open source</p>
           <p class="subheader">&nbsp;</p>
         </div>
-        <button class="setup-sandstorm-standard">Begin Standard Setup</button>
+        {{#if hasFeatureKey}}
+          <button class="setup-sandstorm-standard" disabled>
+            Sandstorm for Work chosen
+          </button>
+        {{else}}
+          <button class="setup-sandstorm-standard">
+            Begin Standard Setup
+          </button>
+        {{/if}}
       </div>
       <div class="setup-type">
         <h3>Sandstorm for Work</h3>
@@ -214,7 +222,9 @@
           <p class="subheader">Free trial for every organization</p>
           <p class="subheader">Special pricing/discounts for non-profits</p>
         </div>
-        <button class="setup-sandstorm-for-work">Begin Sandstorm for Work Setup</button>
+        <button class="setup-sandstorm-for-work">
+          Begin Sandstorm for Work Setup
+        </button>
       </div>
     </div>
   {{/if}}

@@ -20,6 +20,7 @@ const publicAdminSettings = [
   "adminAlert", "adminAlertTime", "adminAlertUrl", "termsUrl",
   "privacyUrl", "appMarketUrl", "appIndexUrl", "appUpdatesEnabled",
   "serverTitle", "returnAddress", "ldapNameField", "organizationMembership",
+  "organizationSettings",
 ];
 
 const FEATURE_KEY_FIELDS_PUBLISHED_TO_ADMINS = [
@@ -178,13 +179,13 @@ Meteor.methods({
           enabled: Boolean,
         },
       },
-      // Disabled until we've actually implemented the feature.
-      //settings: {
-      //  publishContacts: Boolean,
-      //},
+      settings: {
+        disallowGuests: Boolean,
+      },
     });
 
     this.connection.sandstormDb.collections.settings.upsert({ _id: "organizationMembership" }, { value: params.membership });
+    this.connection.sandstormDb.collections.settings.upsert({ _id: "organizationSettings" }, { value: params.settings });
   },
 
   adminConfigureLoginService: function (token, options) {

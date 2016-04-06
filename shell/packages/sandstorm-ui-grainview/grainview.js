@@ -65,6 +65,15 @@ GrainView = class GrainView {
       if (!Meteor.userId()) {
         this.doNotRevealIdentity();
       }
+
+      const disallowGuests = globalDb.getOrganizationDisallowGuests();
+      if (disallowGuests) {
+        // If guests are disallowed, we can skip the interstitial if there's only 1 identitiy.
+        const user = Meteor.user();
+        if (user.loginIdentities.length === 1 && user.nonloginIdentities.length === 0) {
+          this.revealIdentity(user.loginIdentities[0].id);
+        }
+      }
     } else {
       this.revealIdentity();
     }
@@ -468,7 +477,10 @@ GrainView = class GrainView {
       }
 
       // Otherwise, we should show it.
-      return { chooseIdentity: {} };
+      return {
+        chooseIdentity: {},
+        showIncognito: !globalDb.getOrganizationDisallowGuests(),
+      };
     } else if (this._tokenInfo.identityOwner) {
       return {
         directShare: {
@@ -794,4 +806,3 @@ onceConditionIsTrue = (condition, continuation) => {
     });
   });
 };
-

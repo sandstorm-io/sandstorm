@@ -169,7 +169,9 @@ limitations under the License.
       <div class="grain-interstitial">
         <p>With which of your identities would you like to open this grain?</p>
         {{> identityPicker identityPickerData}}
+        {{#if interstitial.showIncognito}}
         <button class="incognito-button" data-token="{{token}}">Open in Incognito Mode</button>
+        {{/if}}
       </div>
     {{else}}
       {{#if interstitial.directShare}}
@@ -1097,6 +1099,10 @@ limitations under the License.
         <label><input type="checkbox" name="isOrganizationSaml" value="value" checked={{isOrganizationSaml}}> Users authenticated via SAML.</label><br>
         <label><input type="checkbox" name="isOrganizationGoogle" value="value" checked={{isOrganizationGoogle}}> Users authenticated via Google Apps for Work domain:</label> <input type="text" name="organizationGoogle" value="{{organizationGoogle}}" placeholder="example.com">
         <label><input type="checkbox" name="isOrganizationEmail" value="value" checked={{isOrganizationEmail}}>Users authenticated via passwordless email login with addresses at domain:</label> <input type="text" name="organizationEmail" value="{{organizationEmail}}" placeholder="example.com"></p>
+      <p>
+        <label><input type="checkbox" name="disallowGuests" value="value" checked={{disallowGuests}}> Disallow collaboration with users outside the organization.</label><br>
+        <span class="details">Users will be required to log in as a member of your organization to view sharing links. Guest access will be disabled.</span>
+      </p>
     {{else}}
       <p>To get support for LDAP, SAML, and organization management, enable
         <a href="{{featuresPath}}">Sandstorm for Work</a>.</p>

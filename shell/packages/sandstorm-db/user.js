@@ -69,6 +69,10 @@ const ValidHandle = Match.Where(function (handle) {
   return !!handle.match(/^[a-z_][a-z0-9_]*$/);
 });
 
+const localSandstormDb = new SandstormDb();
+// TODO(someday): fix this when SandstormDb actually stores meaningful state on the object.
+// Unfortunately, onCreateUser doesn't pass along the connection object.
+
 Accounts.onCreateUser(function (options, user) {
   if (user.loginIdentities) {
     // it's an account
@@ -95,6 +99,11 @@ Accounts.onCreateUser(function (options, user) {
     }
 
     return user;
+  }
+
+  if (localSandstormDb.getOrganizationDisallowGuests() &&
+      !localSandstormDb.isIdentityInOrganization(user)) {
+    throw new Meteor.Error(400, "User not in organization.");
   }
 
   // Check profile.
@@ -159,4 +168,27 @@ Accounts.onCreateUser(function (options, user) {
     .update(user.profile.service + ":" + serviceUserId).digest("hex");
 
   return user;
+});
+
+Accounts.validateLoginAttempt(function (attempt) {
+  if (!attempt.allowed) {
+    return false;
+  }
+
+  const db = attempt.connection.sandstormDb;
+  const user = attempt.user;
+  if (user.loginIdentities) {
+    // it's an account
+    if (db.getOrganizationDisallowGuests() &&
+        !db.isUserInOrganization(user)) {
+      throw new Meteor.Error(403, "User not in organization.");
+    }
+  } else {
+    if (db.getOrganizationDisallowGuests() &&
+        !db.isIdentityInOrganization(user)) {
+      throw new Meteor.Error(403, "User not in organization.");
+    }
+  }
+
+  return true;
 });

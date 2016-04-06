@@ -4,7 +4,7 @@ Template.contactInputBox.onCreated(function () {
   this.selectedContacts = this.data.contacts;
   this.selectedContactsIds = new ReactiveVar([]);
   this.highlightedContact = new ReactiveVar({ _id: null });
-  this.subscribe("contactProfiles", { onReady: () => {
+  this.subscribe("contactProfiles", false, { onReady: () => {
     if (this.data.preselectedIdentityId) {
       const contact = ContactProfiles.findOne({ _id: this.data.preselectedIdentityId });
       if (contact) {

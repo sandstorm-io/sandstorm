@@ -658,7 +658,7 @@ Template.grainApiTokenPopup.helpers({
 
 Template.whoHasAccessPopup.onCreated(function () {
   const _this = this;
-  this.subscribe("contactProfiles");
+  this.subscribe("contactProfiles", true);
   const currentGrain = globalGrains.getActive();
   _this.identityId = currentGrain.identityId();
   _this.grainId = currentGrain.grainId();

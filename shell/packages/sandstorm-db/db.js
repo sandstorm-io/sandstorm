@@ -1004,8 +1004,7 @@ _.extend(SandstormDb.prototype, {
     return false;
   },
 
-  identityInOrganization: function (identityId) {
-    let identity = Meteor.users.findOne({ _id: identityId });
+  isIdentityInOrganization: function (identity) {
     if (!identity || !identity.services) {
       return false;
     }
@@ -1040,7 +1039,8 @@ _.extend(SandstormDb.prototype, {
     }
 
     for (let i = 0; i < user.loginIdentities.length; i++) {
-      if (this.identityInOrganization(user.loginIdentities[i].id)) {
+      let identity = Meteor.users.findOne({ _id: user.loginIdentities[i].id });
+      if (this.isIdentityInOrganization(identity)) {
         return true;
       }
     }
@@ -1411,6 +1411,15 @@ _.extend(SandstormDb.prototype, {
   getOrganizationSamlEnabled: function () {
     const membership = this.getOrganizationMembership();
     return membership && membership.saml && membership.saml.enabled;
+  },
+
+  getOrganizationDisallowGuests: function () {
+    return this.getOrganizationDisallowGuestsRaw() && this.isFeatureKeyValid();
+  },
+
+  getOrganizationDisallowGuestsRaw: function () {
+    const setting = Settings.findOne({ _id: "organizationSettings" });
+    return setting && setting.value && setting.value.disallowGuests;
   },
 
   getSamlEntryPoint: function () {

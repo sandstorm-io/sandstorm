@@ -19,10 +19,10 @@ Sandstorm, understand the platform and provide the best experience
 possible. Before reading this document, we encourage you try
 Sandstorm, perhaps by visiting https://demo.sandstorm.io/.
 
-The platform is in alpha, so this document is likely to change. We
-will keep old versions of this document online, and we hope that you
-will watch this document over time to update your app as the platform
-updates. There will eventually be API deprecations and
+The platform is always evolving, so this document is likely to
+change. We will keep old versions of this document online, and we hope
+that you will watch this document over time to update your app as the
+platform updates. There will eventually be API deprecations and
 backwards-incompatible breakage, though we aim to keep that to a
 minimum.
 
@@ -400,7 +400,7 @@ of web applications can work.
 
 Thanks for reading this far!
 
-Sandstorm is currently in alpha, and we are continuously developing
+Sandstorm is continuously evolving, and we are continuously developing
 it, so some of these details may change. I hope this has been a useful
 overview of the platform and helps you understand the platform's
 goals. I'm always eager for feedback; email me at

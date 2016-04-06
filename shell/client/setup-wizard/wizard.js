@@ -767,6 +767,17 @@ Template.setupWizardLoginUser.events({
   },
 });
 
+Template.setupWizardSuccess.helpers({
+  someOrgMembershipEnabled() {
+    return (
+      globalDb.getOrganizationLdapEnabled() ||
+      globalDb.getOrganizationSamlEnabled() ||
+      globalDb.getOrganizationGoogleEnabled() ||
+      globalDb.getOrganizationEmailEnabled()
+    );
+  },
+});
+
 Template.setupWizardSuccess.events({
   "click .setup-back-button"() {
     Router.go(getRouteBefore("success"));

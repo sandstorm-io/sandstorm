@@ -550,9 +550,11 @@
   <p>What would you like to do next?</p>
 
   <div class="setup-next-steps">
-    {{#linkTo route="adminInvites" class="setup-button-secondary"}}
-      Add users
-    {{/linkTo}}
+    {{#unless someOrgMembershipEnabled}}
+      {{#linkTo route="adminInvites" class="setup-button-secondary"}}
+        Add users
+      {{/linkTo}}
+    {{/unless}}
     {{#linkTo route="adminSettings" class="setup-button-secondary"}}
       Edit other settings
     {{/linkTo}}

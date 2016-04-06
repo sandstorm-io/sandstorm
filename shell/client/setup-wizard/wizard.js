@@ -154,6 +154,7 @@ Template.setupWizardVerifyToken.helpers({
 Template.setupWizardIntro.onCreated(function () {
   this.errorMessage = new ReactiveVar(undefined);
   this.successMessage = new ReactiveVar(undefined);
+  this.showSignInPanel = new ReactiveVar(false);
 });
 
 Template.setupWizardIntro.helpers({
@@ -168,6 +169,16 @@ Template.setupWizardIntro.helpers({
     return isAdmin();
   },
 
+  showSignInPanel() {
+    const instance = Template.instance();
+    return instance.showSignInPanel.get();
+  },
+
+  identityUser: function () {
+    const user = Meteor.user();
+    return user && user.profile;
+  },
+
   errorMessage() {
     const instance = Template.instance();
     return instance.errorMessage.get();
@@ -176,6 +187,14 @@ Template.setupWizardIntro.helpers({
   successMessage() {
     const instance = Template.instance();
     return instance.successMessage.get();
+  },
+
+  notLinkingNewIdentity() {
+    return undefined;
+  },
+
+  freshAccountsUi() {
+    return new AccountsUi(globalDb);
   },
 });
 
@@ -199,6 +218,11 @@ Template.setupWizardIntro.events({
         instance.successMessage.set("You are now an admin.");
       }
     });
+  },
+
+  "click .sign-in-button"() {
+    const instance = Template.instance();
+    instance.showSignInPanel.set(true);
   },
 });
 

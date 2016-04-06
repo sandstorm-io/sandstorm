@@ -155,9 +155,13 @@
           {{#linkTo route="adminSettings" class="admin-settings-button"}}Proceed to Admin Panel{{/linkTo}}
         </p>
       {{else}}
-        <p class="center">
-          <button class="make-self-admin">Give yourself admin privileges</button>
-        </p>
+        {{#if identityUser}}
+          {{> identityLoginInterstitial }}
+        {{else}}
+          <p class="center">
+            <button class="make-self-admin">Give yourself admin privileges</button>
+          </p>
+        {{/if}}
       {{/if}}
     {{else}}
       <p>
@@ -165,7 +169,13 @@
       </p>
       <p>
         <div class="center">
+          {{#if showSignInPanel}}
+            {{#with linkingNewIdentity=notLinkingNewIdentity}}
+              {{> loginButtonsDialog freshAccountsUi}}
+            {{/with}}
+          {{else}}
           <button class="sign-in-button">Sign in to become admin</button>
+          {{/if}}
         </div>
       </p>
     {{/if}}

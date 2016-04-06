@@ -26,12 +26,7 @@ limitations under the License.
     {{/sandstormTopbarItem}}
 
     <div class="centered-content">
-      {{#if error}}
-      <h1>
-        Failed to login: {{error}}
-      </h1>
-      <button class="logout">Dismiss</button>
-      {{else}}{{#if needInput}}
+      {{#if needInput}}
       <br>
       <p>
         You have authenticated as this identity
@@ -59,7 +54,7 @@ limitations under the License.
       <h1>logging in to account...</h1>
       {{/if}}
       <button class="logout">Cancel</button>
-      {{/if}}{{/if}}
+      {{/if}}
     </div>
   </div>
 </template>

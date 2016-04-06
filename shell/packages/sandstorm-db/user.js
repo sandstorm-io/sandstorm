@@ -183,6 +183,11 @@ Accounts.validateLoginAttempt(function (attempt) {
         !db.isUserInOrganization(user)) {
       throw new Meteor.Error(403, "User not in organization.");
     }
+  } else {
+    if (db.getOrganizationDisallowGuests() &&
+        !db.isIdentityInOrganization(user)) {
+      throw new Meteor.Error(403, "User not in organization.");
+    }
   }
 
   return true;

@@ -30,8 +30,6 @@ Accounts.isLinkingNewIdentity = function () {
 };
 
 Template.identityLoginInterstitial.onCreated(function () {
-  const _this = this;
-  this.error = new ReactiveVar(null);
   this._state = new ReactiveVar({ justLoggingIn: true });
   const token = sessionStorage.getItem("linkingIdentityLoginToken");
   if (token) {
@@ -62,12 +60,7 @@ Template.identityLoginInterstitial.onCreated(function () {
           sourceIdentityId: Meteor.userId(),
         });
         if (loginAccount) {
-          Meteor.loginWithIdentity(loginAccount.loginAccountId, function (err) {
-            if (err) {
-              console.error("error", err);
-              _this.error.set(err.reason);
-            }
-          });
+          Meteor.loginWithIdentity(loginAccount.loginAccountId);
         } else if (!LoginIdentitiesOfLinkedAccounts.findOne({ sourceIdentityId: Meteor.userId() })) {
           Meteor.call("createAccountForIdentity", function (err, result) {
             if (err) {
@@ -104,10 +97,6 @@ Template.identityLoginInterstitial.helpers({
       SandstormDb.fillInPictureUrl(identity);
       return identity;
     });
-  },
-
-  error: function () {
-    return Template.instance().error.get();
   },
 });
 

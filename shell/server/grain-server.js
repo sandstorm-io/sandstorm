@@ -19,7 +19,7 @@ const Crypto = Npm.require("crypto");
 const emailLinkWithInlineStyle = function (url, text) {
   return "<a href='" + url + "' style='display:inline-block;text-decoration:none;" +
    "font-family:sans-serif;width:200px;min-height:30px;line-height:30px;" +
-   "border-radius:4px;text-align:center;background:#428bca;color:white'>" +
+   "border-radius:4px;text-align:center;background:#762F87;color:white'>" +
    text + "</a>";
 };
 

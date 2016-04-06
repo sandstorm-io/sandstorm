@@ -348,11 +348,6 @@ sandstorm-$(BUILD)-fast.tar.xz: bundle
 	@$(call color,compress fast bundle)
 	@tar c --transform="s,^bundle,sandstorm-$(BUILD)," bundle | xz -c -0 --threads=0 > sandstorm-$(BUILD)-fast.tar.xz
 
-.docker: Dockerfile
-	@$(call color,docker build)
-	@docker build -t sandstorm .
-	@touch .docker
-
 # ====================================================================
 # app-index.spk
 

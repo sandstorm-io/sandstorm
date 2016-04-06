@@ -1,3 +1,7 @@
+### v0.157 (2016-04-05)
+- Self-hosting: New, beautiful first-time setup wizard. (Sadly, if you already have a server, you'll never see it. But a redesign of the full admin UI is coming soon.)
+- Sandstorm for Work: Added ability to disallow sharing outside the organization, which also disallows guest accounts (since they only exist for external sharing purposes).
+
 ### v0.156 (2016-04-02)
 - Sandstorm for Work: Added support for SAML login.
 - Sandstorm for Work: LDAP identities now have email addresses.

@@ -278,12 +278,15 @@ Template.setupWizardOrganization.onCreated(function () {
   const gappsDomain = globalDb.getOrganizationGoogleDomain() || inferredDomain;
   const emailDomain = globalDb.getOrganizationEmailDomain() || inferredDomain;
 
+  const disallowGuests = globalDb.getOrganizationDisallowGuestsRaw() || false;
+
   this.ldapChecked = new ReactiveVar(ldapChecked);
   this.samlChecked = new ReactiveVar(samlChecked);
   this.gappsChecked = new ReactiveVar(gappsChecked);
   this.emailChecked = new ReactiveVar(emailChecked);
   this.gappsDomain = new ReactiveVar(gappsDomain);
   this.emailDomain = new ReactiveVar(emailDomain);
+  this.disallowGuests = new ReactiveVar(disallowGuests);
   this.shareContacts = new ReactiveVar(true);
   this.errorMessage = new ReactiveVar(undefined);
 });
@@ -355,6 +358,11 @@ Template.setupWizardOrganization.helpers({
     return instance.gappsDomain.get();
   },
 
+  disallowGuests() {
+    const instance = Template.instance();
+    return instance.disallowGuests.get();
+  },
+
   shareContacts() {
     const instance = Template.instance();
     return instance.shareContacts.get();
@@ -405,6 +413,13 @@ Template.setupWizardOrganization.events({
     instance.gappsDomain.set(evt.currentTarget.value);
   },
 
+  "click input[name=disallow-guests]"(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const instance = Template.instance();
+    instance.disallowGuests.set(!instance.disallowGuests.get());
+  },
+
   "click .setup-next-button"() {
     const instance = Template.instance();
     const params = {
@@ -424,10 +439,11 @@ Template.setupWizardOrganization.events({
           enabled: instance.samlChecked.get(),
         },
       },
-      // Disabled until we've actually implemented the feature.
-      //settings: {
-      //  publishContacts: instance.shareContacts.get(),
-      //},
+      settings: {
+        disallowGuests: instance.disallowGuests.get(),
+        // Disabled until we've actually implemented the feature.
+        //publishContacts: instance.shareContacts.get(),
+      },
     };
     const token = Iron.controller().state.get("token");
     Meteor.call("saveOrganizationSettings", token, params, (err) => {

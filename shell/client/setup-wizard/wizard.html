@@ -334,19 +334,31 @@
     </div>
   </div>
 
-  {{!-- Disabled until the feature is implemented.
-  <h4>Organization-wide settings (coming soon!)</h4>
-  <div class="org-options-group">
-    <label>
-      <input type="checkbox" name="share-contacts" checked="{{shareContacts}}" disabled>Make all organization users visible to each other
-    </label>
-    <span class="form-subtext">
-      This setting automatically adds users within the organization to each
-      other's contact list so that they can share grains with each other.  Disable
-      this if you have some users whose identity should stay hidden from other users.
-    </span>
+  <h4>Organization settings</h4>
+  <div class="org-settings">
+    <div class="org-options-group">
+      <label>
+        <input type="checkbox" name="disallow-guests" checked={{disallowGuests}}>Disallow collaboration with users outside the organization
+      </label>
+      <span class="form-subtext">
+        Users will be required to log in as a member of your organization to view sharing links.
+        Guest access will be disabled.
+      </span>
+    </div>
+
+    {{!-- Disabled until the feature is implemented.
+    <div class="org-options-group">
+      <label>
+        <input type="checkbox" name="share-contacts" checked="{{shareContacts}}" disabled>Make all organization users visible to each other
+      </label>
+      <span class="form-subtext">
+        This setting automatically adds users within the organization to each
+        other's contact list so that they can share grains with each other.  Disable
+        this if you have some users whose identity should stay hidden from other users.
+      </span>
+    </div>
+    --}}
   </div>
-  --}}
 
   </form>
   {{#setupWizardButtonRow}}

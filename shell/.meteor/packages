@@ -19,7 +19,6 @@ tracker
 check
 reload
 random
-standard-minifiers
 
 iron:router
 sandstorm-accounts-ui
@@ -57,3 +56,5 @@ introjs
 npm-ed25519
 npm-request
 sha
+standard-minifier-css
+standard-minifier-js

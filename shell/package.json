@@ -1,0 +1,15 @@
+{
+  "name": "sandstorm-shell",
+  "version": "1.0.0",
+  "description": "Sandstorm's user interface",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sandstorm-io/sandstorm"
+  },
+  "license": "Apache-2.0"
+}

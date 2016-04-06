@@ -18,6 +18,7 @@
 #include "send-fd.h"
 #include <linux/fuse.h>
 #include <kj/debug.h>
+#include <kj/one-of.h>
 #include <unordered_map>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -48,9 +49,9 @@ namespace sandstorm {
 
 using kj::uint;
 
-class FuseDriver final: private kj::TaskSet::ErrorHandler {
+class FuseDriver {
 public:
-  FuseDriver(kj::UnixEventPort& eventPort, int fuseFd, fuse::Node::Client&& root,
+  FuseDriver(kj::UnixEventPort& eventPort, int fuseFd, kj::Own<fuse::Node>&& root,
              FuseOptions options)
       : observer(eventPort, fuseFd, kj::UnixEventPort::FdObserver::OBSERVE_READ),
         fuseFd(fuseFd), options(options) {
@@ -75,16 +76,10 @@ private:
   kj::UnixEventPort::FdObserver observer;
   int fuseFd;
   FuseOptions options;
-  std::unordered_map<uint64_t, kj::Promise<void>> tasks;
   kj::Own<kj::PromiseFulfiller<void>> abortReadLoop;  // Reject this to stop reading early.
 
-  kj::Promise<void> lastCompletedTask = nullptr;
-  // Hack: A task usually removes itself from `tasks`, but deleting the promise on whose behalf
-  //   you are currently running is bad, so it is moved to this member instead, where we know it
-  //   won't be overwritten at least until after returning.
-
   struct NodeMapEntry {
-    fuse::Node::Client node;
+    kj::Own<fuse::Node> node;
     uint refcount = 0;  // number of "lookup" requests that have returned this node
 
     // TODO(cleanup):  Come up with better map implementation that doesn't freak out about the
@@ -95,7 +90,7 @@ private:
   };
 
   struct FileMapEntry {
-    fuse::File::Client cap;
+    kj::Own<fuse::File> cap;
 
     // TODO(cleanup):  Come up with better map implementation that doesn't freak out about the
     //   non-const copy constructor.
@@ -105,7 +100,7 @@ private:
   };
 
   struct DirectoryMapEntry {
-    fuse::Directory::Client cap;
+    kj::Own<fuse::Directory> cap;
 
     // TODO(cleanup):  Come up with better map implementation that doesn't freak out about the
     //   non-const copy constructor.
@@ -153,34 +148,28 @@ private:
   kj::byte buffer[65536 + 100];
 
   // =====================================================================================
-
-  void taskFailed(kj::Exception&& exception) override {
-    abortReadLoop->reject(kj::mv(exception));
-  }
-
-  void completeTask(uint64_t requestId) {
-    // Remove the task with the given ID from the task map, but don't delete it because we may
-    // be acting on behalf of that task right now.
-
-    auto iter = tasks.find(requestId);
-    KJ_ASSERT(iter != tasks.end());
-    lastCompletedTask = kj::mv(iter->second);
-    tasks.erase(iter);
-  }
-
-  // =====================================================================================
   // Write helpers
 
-  enum class IdType { NODE, FILE, DIRECTORY };
+  struct ObjToInsert {
+    ObjToInsert(uint64_t id, kj::Own<fuse::Node>&& node): id(id) {
+      obj.init<kj::Own<fuse::Node>>(kj::mv(node));
+    }
 
-  struct CapToInsert {
-    IdType idType;
+    ObjToInsert(uint64_t id, kj::Own<fuse::File>&& file): id(id) {
+      obj.init<kj::Own<fuse::File>>(kj::mv(file));
+    }
+
+    ObjToInsert(uint64_t id, kj::Own<fuse::Directory>&& directory): id(id) {
+      obj.init<kj::Own<fuse::Directory>>(kj::mv(directory));
+    }
+
     uint64_t id;
-    capnp::Capability::Client cap;
+    kj::OneOf<kj::Own<fuse::Node>, kj::Own<fuse::File>, kj::Own<fuse::Directory>> obj;
+
   };
 
   struct ResponseBase {
-    kj::Maybe<CapToInsert> newObject;
+    kj::Maybe<ObjToInsert> newObject;
     // If the operation created a new capability, this is it. It hasn't been added to the tables
     // yet; that should happen when the write() completes successfully, in case the operation is
     // canceled (and the promised dropped) before that.
@@ -277,30 +266,36 @@ private:
     return kj::heap<ResponseWithContent<T, ContentOwner>>(kj::mv(owner), content);
   }
 
-  void addReplyTask(uint64_t requestId, int defaultError,
-                    kj::Promise<kj::Own<ResponseBase>>&& task) {
-    auto promise = task.then([this, requestId](auto&& response) {
-      response->header.error = 0;
-      response->header.unique = requestId;
-      return kj::mv(response);
-    }, [this, requestId, defaultError](kj::Exception&& e) {
-      auto errorResponse = kj::heap<ResponseBase>();
-      errorResponse->header.error = -defaultError;  // TODO(someday): Real error numbers.
-      errorResponse->header.unique = requestId;
-      return kj::mv(errorResponse);
-    }).then([this, requestId](auto&& response) {
-      completeTask(requestId);
-      writeResponse(kj::mv(response));
-    }).eagerlyEvaluate([this](kj::Exception&& exception) {
-      // We only get here if the write failed. Abort.
-      abortReadLoop->reject(kj::mv(exception));
+  template <typename Function>
+  void performReplyTask(uint64_t requestId, int defaultError, Function&& task) {
+    kj::Maybe<kj::Own<ResponseBase>> maybeResponse;
+    auto exception = kj::runCatchingExceptions(
+        [&maybeResponse, requestId, KJ_MVCAP(task)]() mutable {
+      auto taskResponse = task(); // This is allowed to be an error response.
+      taskResponse->header.unique = requestId;
+      maybeResponse = kj::mv(taskResponse);
     });
 
-    KJ_ASSERT(tasks.insert(std::make_pair(requestId, kj::mv(promise))).second);
+    KJ_IF_MAYBE(e, exception) {
+      auto errorResponse = kj::heap<ResponseBase>();
+      errorResponse->header.error = -defaultError; // TODO(someday): Real error numbers.
+      errorResponse->header.unique = requestId;
+      maybeResponse = kj::mv(errorResponse);
+    }
+
+    KJ_IF_MAYBE (response, maybeResponse) {
+      auto writeException = kj::runCatchingExceptions([KJ_MVCAP(response), this] () {
+        writeResponse(kj::mv(*response));
+      });
+
+      KJ_IF_MAYBE(e, writeException) {
+        // We only get here if the write failed. Abort.
+        abortReadLoop->reject(kj::mv(*e));
+      }
+    }
   }
 
   void sendReply(uint64_t requestId, kj::Own<ResponseBase>&& response) {
-    response->header.error = 0;
     response->header.unique = requestId;
     writeResponse(kj::mv(response));
   }
@@ -340,21 +335,16 @@ private:
 
       // Message accepted. Make sure any new capability is added to the appropriate table.
       KJ_IF_MAYBE(newObj, response->newObject) {
-        switch (newObj->idType) {
-          case IdType::NODE: {
-            auto insertResult = nodeMap.insert(std::make_pair(newObj->id,
-                NodeMapEntry { newObj->cap.castAs<fuse::Node>(), 0 }));
-            ++insertResult.first->second.refcount;
-            break;
-          }
-          case IdType::FILE:
-            fileMap.insert(std::make_pair(newObj->id,
-                FileMapEntry { newObj->cap.castAs<fuse::File>() }));
-            break;
-          case IdType::DIRECTORY:
-            directoryMap.insert(std::make_pair(newObj->id,
-                DirectoryMapEntry { newObj->cap.castAs<fuse::Directory>() }));
-            break;
+        if (newObj->obj.is<kj::Own<fuse::Node>>()) {
+          auto insertResult = nodeMap.insert(std::make_pair(newObj->id,
+              NodeMapEntry { newObj->obj.get<kj::Own<fuse::Node>>()->addRef(), 0 }));
+          ++insertResult.first->second.refcount;
+        } else if (newObj->obj.is<kj::Own<fuse::File>>()) {
+          fileMap.insert(std::make_pair(newObj->id,
+              FileMapEntry { newObj->obj.get<kj::Own<fuse::File>>()->addRef() }));
+        } else if (newObj->obj.is<kj::Own<fuse::Directory>>()) {
+          directoryMap.insert(std::make_pair(newObj->id,
+              DirectoryMapEntry { newObj->obj.get<kj::Own<fuse::Directory>>()->addRef() }));
         }
       }
     }
@@ -408,10 +398,9 @@ private:
   }
 
   bool dispatch(struct fuse_in_header& header, kj::ArrayPtr<const kj::byte> body) {
-    auto iter = nodeMap.find(header.nodeid);
-    KJ_REQUIRE(header.nodeid == 0 || iter != nodeMap.end(),
+    auto node_iter = nodeMap.find(header.nodeid);
+    KJ_REQUIRE(header.nodeid == 0 || node_iter != nodeMap.end(),
         "Kernel asked for unknown node ID.", header.nodeid);
-    fuse::Node::Client node = header.nodeid == 0 ? nullptr : iter->second.node;
 
     switch (header.opcode) {
       case FUSE_INIT: {
@@ -439,8 +428,8 @@ private:
 
       case FUSE_FORGET: {
         auto requestBody = consumeStruct<struct fuse_forget_in>(body);
-        if ((iter->second.refcount -= requestBody.nlookup) == 0) {
-          nodeMap.erase(iter);
+        if ((node_iter->second.refcount -= requestBody.nlookup) == 0) {
+          nodeMap.erase(node_iter);
         }
         break;
       }
@@ -461,27 +450,19 @@ private:
 
       case FUSE_LOOKUP: {
         auto name = consumeString(body);
-        auto request = node.lookupRequest(
-            capnp::MessageSize { name.size() / sizeof(capnp::word) + 8, 0 });
-        request.setName(name);
-
         auto requestId = header.unique;
-        auto promise = request.send();
-        auto attrPromise = promise.getNode().getAttributesRequest(capnp::MessageSize {4, 0}).send();
-
-        kj::String ownName = kj::heapString(name);
         uint64_t parentId = header.nodeid;
+        kj::String ownName = kj::heapString(name);
 
-        addReplyTask(requestId, ENOENT, promise.then(
-            [this, parentId, KJ_MVCAP(ownName), KJ_MVCAP(attrPromise), requestId]
-            (auto&& lookupResult) mutable {
-          return attrPromise.then(
-              [this, parentId, KJ_MVCAP(ownName), KJ_MVCAP(lookupResult), requestId]
-              (auto&& attrResult) mutable -> kj::Own<ResponseBase> {
+        performReplyTask(requestId, EIO, [this, parentId, node_iter, KJ_MVCAP(ownName)]() mutable -> kj::Own<ResponseBase> {
+          auto maybeLookupResult = node_iter->second.node->lookup(ownName.slice(0));
+          KJ_IF_MAYBE(lookupResult, maybeLookupResult) {
+            auto result = lookupResult->node->getAttributes();
+            auto attributes = result.attributes;
+
             auto reply = allocResponse<struct fuse_entry_out>();
-            auto attributes = attrResult.getAttributes();
-            uint64_t inode = attributes.getInodeNumber();
 
+            uint64_t inode = attributes.inodeNumber;
             auto insertResult = childMap.insert(std::make_pair(
                 ChildKey { parentId, ownName }, ChildInfo()));
 
@@ -511,49 +492,51 @@ private:
             }
 
             reply->body.generation = 0;
-            reply->newObject = CapToInsert {
-                IdType::NODE, reply->body.nodeid, lookupResult.getNode() };
+            reply->newObject = ObjToInsert(reply->body.nodeid, kj::mv(lookupResult->node));
 
             translateAttrs(attributes, &reply->body.attr);
             if (options.cacheForever) {
               reply->body.entry_valid = 365 * kj::DAYS / kj::SECONDS;
               reply->body.attr_valid = 365 * kj::DAYS / kj::SECONDS;
             } else {
-              splitTime(lookupResult.getTtl(),
+              splitTime(lookupResult->ttl,
                   &reply->body.entry_valid, &reply->body.entry_valid_nsec);
-              splitTime(attrResult.getTtl(),
+              splitTime(result.ttl,
                   &reply->body.attr_valid, &reply->body.attr_valid_nsec);
             }
-
             return kj::mv(reply);
-          });
-        }));
-
+          } else {
+            auto reply = kj::heap<ResponseBase>();
+            reply->header.error = -ENOENT;  // Has to be negative. Just because.
+            return kj::mv(reply);
+          }
+        });
         break;
       }
 
-      case FUSE_GETATTR:
-        addReplyTask(header.unique, EIO, node.getAttributesRequest(capnp::MessageSize {4, 0}).send()
-            .then([this](auto&& response) -> kj::Own<ResponseBase> {
+      case FUSE_GETATTR: {
+        performReplyTask(header.unique, EIO, [this, node_iter]() -> kj::Own<ResponseBase> {
+          auto response = node_iter->second.node->getAttributes();
+
           auto reply = allocResponse<struct fuse_attr_out>();
           if (options.cacheForever) {
             reply->body.attr_valid = 365 * kj::DAYS / kj::SECONDS;
           } else {
-            splitTime(response.getTtl(), &reply->body.attr_valid, &reply->body.attr_valid_nsec);
+            splitTime(response.ttl, &reply->body.attr_valid, &reply->body.attr_valid_nsec);
           }
-          translateAttrs(response.getAttributes(), &reply->body.attr);
+          translateAttrs(response.attributes, &reply->body.attr);
           return kj::mv(reply);
-        }));
+        });
         break;
+      }
 
       case FUSE_READLINK:
         // No input.
-        addReplyTask(header.unique, EINVAL, node.readlinkRequest(capnp::MessageSize {4, 0}).send()
-            .then([this](auto&& response) -> kj::Own<ResponseBase> {
-          auto link = response.getLink();
+        performReplyTask(header.unique, EINVAL, [this, node_iter]() -> kj::Own<ResponseBase> {
+          auto link = node_iter->second.node->readlink();
           auto bytes = kj::arrayPtr(reinterpret_cast<const kj::byte*>(link.begin()), link.size());
-          return allocResponse<void>(kj::mv(response), bytes);
-        }));
+          return allocResponse<void>(kj::mv(link), bytes);
+        });
         break;
 
       case FUSE_OPEN: {
@@ -566,15 +549,20 @@ private:
 
         // TODO(perf): Can we assume the kernel will check permissions before open()? If so,
         //   perhaps we ought to assume this should always succeed and thus pipeline it?
-        addReplyTask(header.unique, EIO, node.openAsFileRequest(capnp::MessageSize {4, 0}).send()
-            .then([this](auto&& response) -> kj::Own<ResponseBase> {
-          auto reply = allocResponse<struct fuse_open_out>();
-          reply->body.fh = handleCounter++;
-          reply->newObject = CapToInsert { IdType::FILE, reply->body.fh, response.getFile() };
-          // TODO(someday):  Fill in open_flags, especially "nonseekable"?  See FOPEN_* in fuse.h.
-          if (options.cacheForever) reply->body.open_flags |= FOPEN_KEEP_CACHE;
-          return kj::mv(reply);
-        }));
+        performReplyTask(header.unique, EIO, [this, node_iter]() -> kj::Own<ResponseBase> {
+          auto response = node_iter->second.node->openAsFile();
+          KJ_IF_MAYBE(file, response) {
+            auto reply = allocResponse<struct fuse_open_out>();
+            reply->body.fh = handleCounter++;
+            reply->newObject = ObjToInsert(reply->body.fh, kj::mv(*file));
+
+            // TODO(someday):  Fill in open_flags, especially "nonseekable"?  See FOPEN_* in fuse.h.
+            if (options.cacheForever) reply->body.open_flags |= FOPEN_KEEP_CACHE;
+            return kj::mv(reply);
+          } else {
+            KJ_FAIL_REQUIRE("not a file");
+          }
+        });
         break;
       }
 
@@ -584,15 +572,12 @@ private:
         auto iter2 = fileMap.find(request.fh);
         KJ_REQUIRE(iter2 != fileMap.end(), "Kernel requested invalid file handle?");
 
-        auto rpc = iter2->second.cap.readRequest(capnp::MessageSize {4, 0});
-        rpc.setOffset(request.offset);
-        rpc.setSize(request.size);
-        addReplyTask(header.unique, EIO, rpc.send()
-            .then([this](auto&& response) -> kj::Own<ResponseBase> {
-          auto bytes = response.getData();
-          auto reply = allocResponse<void>(kj::mv(response), bytes);
-          return kj::mv(reply);
-        }));
+        performReplyTask(header.unique, EIO,
+            [this, KJ_MVCAP(request), iter2]() -> kj::Own<ResponseBase> {
+          auto bytes = iter2->second.cap->read(request.offset, request.size);
+          kj::ArrayPtr<kj::byte> slice = bytes.asPtr();
+          return allocResponse<void>(kj::mv(bytes), slice);
+        });
         break;
       }
 
@@ -615,15 +600,17 @@ private:
 
         // TODO(perf): Can we assume the kernel will check permissions before open()? If so,
         //   perhaps we ought to assume this should always succeed and thus pipeline it?
-        addReplyTask(header.unique, EIO,
-            node.openAsDirectoryRequest(capnp::MessageSize {4, 0}).send()
-            .then([this](auto&& response) -> kj::Own<ResponseBase> {
-          auto reply = allocResponse<struct fuse_open_out>();
-          reply->body.fh = handleCounter++;
-          reply->newObject = CapToInsert {
-              IdType::DIRECTORY, reply->body.fh, response.getDirectory() };
-          return kj::mv(reply);
-        }));
+        performReplyTask(header.unique, EIO, [this, node_iter]() -> kj::Own<ResponseBase> {
+          auto maybeDirectory = node_iter->second.node->openAsDirectory();
+          KJ_IF_MAYBE(directory, maybeDirectory) {
+            auto reply = allocResponse<struct fuse_open_out>();
+            reply->body.fh = handleCounter++;
+            reply->newObject = ObjToInsert(reply->body.fh, kj::mv(*directory));
+            return kj::mv(reply);
+          } else {
+            KJ_FAIL_REQUIRE("not a directory");
+          }
+        });
         break;
       }
 
@@ -632,9 +619,6 @@ private:
 
         auto iter2 = directoryMap.find(request.fh);
         KJ_REQUIRE(iter2 != directoryMap.end(), "Kernel requested invalid directory handle?");
-
-        auto rpc = iter2->second.cap.readRequest(capnp::MessageSize {4, 0});
-        rpc.setOffset(request.offset);
 
         // Annoyingly, request.size is actually a size, in bytes. How many entries fit into that
         // size is dependent on the entry names as well as the size of fuse_dirent. It would be
@@ -645,17 +629,21 @@ private:
         // If file names turn out to be longer, we may end up truncating the resulting list and
         // then re-requesting it.  Someday we could implement some sort of streaming here to fix
         // this, but that will be pretty ugly and it probably doesn't actually matter that much.
-        rpc.setCount(request.size / (sizeof(struct fuse_dirent) + 16));
 
         auto requestedSize = request.size;
-        addReplyTask(header.unique, EIO, rpc.send()
-            .then([this, requestedSize](auto&& response) -> kj::Own<ResponseBase> {
-          auto entries = response.getEntries();
+        auto requestedOffset = request.offset;
+
+        performReplyTask(header.unique, EIO,
+            [this, requestedSize, requestedOffset, iter2]() -> kj::Own<ResponseBase> {
+          auto entries = iter2->second.cap->read(
+              requestedOffset,
+              requestedSize / (sizeof(struct fuse_dirent) + 16));
+
           size_t totalBytes = 0;
-          for (auto entry: entries) {
-            // Carefulyl check whether we'll go over the requested size if we add this entry.  If
+          for (auto& entry: entries) {
+            // Carefully check whether we'll go over the requested size if we add this entry.  If
             // so, break now.
-            size_t next = totalBytes + FUSE_DIRENT_ALIGN(FUSE_NAME_OFFSET + entry.getName().size());
+            size_t next = totalBytes + FUSE_DIRENT_ALIGN(FUSE_NAME_OFFSET + entry.name.size());
             if (next > requestedSize) {
               break;
             }
@@ -666,15 +654,15 @@ private:
           kj::byte* pos = bytes.begin();
           memset(pos, 0, bytes.size());
 
-          for (auto entry: entries) {
+          for (auto& entry: entries) {
             auto& dirent = *reinterpret_cast<struct fuse_dirent*>(pos);
-            auto name = entry.getName();
+            auto& name = entry.name;
 
-            dirent.ino = entry.getInodeNumber();
-            dirent.off = entry.getNextOffset();
+            dirent.ino = entry.inodeNumber;
+            dirent.off = entry.nextOffset;
             dirent.namelen = name.size();
             dirent.type = DT_UNKNOWN;
-            switch (entry.getType()) {
+            switch (entry.type) {
               case fuse::Node::Type::UNKNOWN:                                 break;
               case fuse::Node::Type::BLOCK_DEVICE:     dirent.type = DT_BLK ; break;
               case fuse::Node::Type::CHARACTER_DEVICE: dirent.type = DT_CHR ; break;
@@ -698,7 +686,7 @@ private:
 
           auto bytesPtr = bytes.asPtr();  // Don't inline; param construction order is undefined.
           return allocResponse<void>(kj::mv(bytes), bytesPtr);
-        }));
+        });
         break;
       }
 
@@ -723,18 +711,20 @@ private:
           sendError(header.unique, EROFS);
         } else if (request.mask != 0) {
           // Need to check permissions.
-          addReplyTask(header.unique, EACCES,
-              node.getAttributesRequest(capnp::MessageSize {4, 0}).send()
-              .then([this, mask](auto&& response) -> kj::Own<ResponseBase> {
+          performReplyTask(header.unique, EACCES,
+              [this, node_iter, mask]() -> kj::Own<ResponseBase> {
+            auto result = node_iter->second.node->getAttributes();
+            auto attributes = result.attributes;
             // TODO(someday):  Account for uid/gid?  Currently irrelevant.
             if (mask & R_OK) {
-              KJ_REQUIRE(response.getAttributes().getPermissions() & S_IROTH);
+              KJ_REQUIRE(attributes.permissions & S_IROTH);
             }
             if (mask & X_OK) {
-              KJ_REQUIRE(response.getAttributes().getPermissions() & S_IXOTH);
+              KJ_REQUIRE(attributes.permissions & S_IXOTH);
             }
+
             return allocEmptyResponse();
-          }));
+          });
         } else {
           sendReply(header.unique, allocEmptyResponse());
         }
@@ -743,11 +733,8 @@ private:
       }
 
       case FUSE_INTERRUPT: {
-        auto request = consumeStruct<struct fuse_interrupt_in>(body);
-        if (tasks.erase(request.unique) > 0) {
-          // We successfully canceled this task, so indicate that it failed.
-          sendError(request.unique, EINTR);
-        }
+        // We deal with tasks sequentially, so whatever task this call was intended to interrupt
+        // has in fact already completed. Therefore there's nothing for us to do.
         break;
       }
 
@@ -819,20 +806,20 @@ private:
     *nsecs = signedNsec;
   }
 
-  void translateAttrs(fuse::Node::Attributes::Reader src, struct fuse_attr* dst) {
+  void translateAttrs(fuse::Node::Attributes& src, struct fuse_attr* dst) {
     memset(dst, 0, sizeof(*dst));
 
-    dst->ino = src.getInodeNumber();
-    dst->size = src.getSize();
-    dst->blocks = src.getBlockCount();
+    dst->ino = src.inodeNumber;
+    dst->size = src.size;
+    dst->blocks = src.blockCount;
 
-    splitTime(src.getLastAccessTime(), &dst->atime, &dst->atimensec);
-    splitTime(src.getLastModificationTime(), &dst->mtime, &dst->mtimensec);
-    splitTime(src.getLastStatusChangeTime(), &dst->ctime, &dst->ctimensec);
+    splitTime(src.lastAccessTime, &dst->atime, &dst->atimensec);
+    splitTime(src.lastModificationTime, &dst->mtime, &dst->mtimensec);
+    splitTime(src.lastStatusChangeTime, &dst->ctime, &dst->ctimensec);
 
-    dst->mode = src.getPermissions();
+    dst->mode = src.permissions;
 
-    switch (src.getType()) {
+    switch (src.type) {
       case fuse::Node::Type::UNKNOWN:                                break;
       case fuse::Node::Type::BLOCK_DEVICE:     dst->mode |= S_IFBLK; break;
       case fuse::Node::Type::CHARACTER_DEVICE: dst->mode |= S_IFCHR; break;
@@ -843,15 +830,15 @@ private:
       case fuse::Node::Type::SOCKET:           dst->mode |= S_IFSOCK; break;
     }
 
-    dst->nlink = src.getLinkCount();
-    dst->uid = src.getOwnerId();
-    dst->gid = src.getGroupId();
-    dst->rdev = makedev(src.getDeviceMajor(), src.getDeviceMinor());
-    dst->blksize = src.getBlockSize();
+    dst->nlink = src.linkCount;
+    dst->uid = src.ownerId;
+    dst->gid = src.groupId;
+    dst->rdev = makedev(src.deviceMajor, src.deviceMinor);
+    dst->blksize = src.blockSize;
   }
 };
 
-kj::Promise<void> bindFuse(kj::UnixEventPort& eventPort, int fuseFd, fuse::Node::Client root,
+kj::Promise<void> bindFuse(kj::UnixEventPort& eventPort, int fuseFd, kj::Own<fuse::Node> root,
                            FuseOptions options) {
   auto driver = kj::heap<FuseDriver>(eventPort, fuseFd, kj::mv(root), options);
   FuseDriver* driverPtr = driver.get();
@@ -866,7 +853,7 @@ inline int64_t toNanos(const struct timespec& ts) {
   return ts.tv_sec * 1000000000ll + ts.tv_nsec;
 }
 
-class FileImpl final: public fuse::File::Server {
+class FileImpl final: public fuse::File, public kj::Refcounted {
 public:
   explicit FileImpl(kj::StringPtr path) {
     int ifd;
@@ -874,18 +861,17 @@ public:
     fd = kj::AutoCloseFd(ifd);
   }
 
-protected:
-  kj::Promise<void> read(ReadContext context) override {
-    auto params = context.getParams();
-    auto size = params.getSize();
-    auto offset = params.getOffset();
+  kj::Own<fuse::File> addRef() override {
+    return kj::addRef(*this);
+  }
 
+protected:
+  kj::Array<uint8_t> read(uint64_t offset, uint32_t size) override {
     KJ_REQUIRE(size < (1 << 22), "read too large", size);
 
-    auto results = context.getResults(
-        capnp::MessageSize { size / sizeof(capnp::word) + 4 });
+    auto result = kj::heapArray<uint8_t>(size);
 
-    kj::byte* ptr = results.initData(size).begin();
+    kj::byte* ptr = result.begin();
 
     while (size > 0) {
       ssize_t n;
@@ -899,21 +885,18 @@ protected:
     }
 
     if (size > 0) {
-      // Oops, we hit EOF before filling the buffer. Truncate. Note that since this is the
-      // most recent allocation, this will actually un-allocate the space in the message. :)
-      auto orphan = results.disownData();
-      orphan.truncate(params.getSize() - size);
-      results.adoptData(kj::mv(orphan));
+      // Oops, we hit EOF before filling the buffer. Truncate.
+      return kj::heapArray<uint8_t>(result.slice(0, result.size() - size));
+    } else {
+      return result;
     }
-
-    return kj::READY_NOW;
   }
 
 private:
   kj::AutoCloseFd fd;
 };
 
-class DirectoryImpl final: public fuse::Directory::Server {
+class DirectoryImpl final: public fuse::Directory, public kj::Refcounted {
 public:
   DirectoryImpl(kj::StringPtr path) {
     dir = opendir(path.cStr());
@@ -927,22 +910,22 @@ public:
     closedir(dir);
   }
 
-protected:
-  kj::Promise<void> read(ReadContext context) {
-    auto params = context.getParams();
+  kj::Own<fuse::Directory> addRef() override {
+    return kj::addRef(*this);
+  }
 
-    if (params.getOffset() != currentOffset) {
-      seekdir(dir, params.getOffset());
-      currentOffset = params.getOffset();
+protected:
+  kj::Array<Entry> read(uint64_t offset, uint32_t requestedCount) override {
+    if (offset != currentOffset) {
+      seekdir(dir, offset);
+      currentOffset = offset;
     }
 
-    auto requestedCount = params.getCount();
     KJ_REQUIRE(requestedCount < 8192, "readdir too large", requestedCount);
 
     kj::Vector<struct dirent> entries(requestedCount);
 
     uint count = 0;
-    capnp::MessageSize messageSize = { 6, 0 };
     for (; count < requestedCount; count++) {
       struct dirent* ent = readdir(dir);
       if (ent == nullptr) {
@@ -953,36 +936,31 @@ protected:
       currentOffset = ent->d_off;
 
       entries.add(*ent);
-
-      // Don't forget NUL byte...
-      messageSize.wordCount += capnp::sizeInWords<fuse::Directory::Entry>() +
-          (strlen(ent->d_name) + sizeof(capnp::word)) / sizeof(capnp::word);
     }
 
-    auto builder = context.getResults(messageSize).initEntries(count);
+    auto result = kj::heapArray<Entry>(count);
 
     for (size_t i: kj::indices(entries)) {
-      auto entryBuilder = builder[i];
       auto& entry = entries[i];
 
-      entryBuilder.setInodeNumber(entry.d_ino);
-      entryBuilder.setNextOffset(entry.d_off);
+      result[i].inodeNumber = entry.d_ino;
+      result[i].nextOffset = entry.d_off;
 
       switch (entry.d_type) {
-        case DT_BLK:  entryBuilder.setType(fuse::Node::Type::BLOCK_DEVICE); break;
-        case DT_CHR:  entryBuilder.setType(fuse::Node::Type::CHARACTER_DEVICE); break;
-        case DT_DIR:  entryBuilder.setType(fuse::Node::Type::DIRECTORY); break;
-        case DT_FIFO: entryBuilder.setType(fuse::Node::Type::FIFO); break;
-        case DT_LNK:  entryBuilder.setType(fuse::Node::Type::SYMLINK); break;
-        case DT_REG:  entryBuilder.setType(fuse::Node::Type::REGULAR); break;
-        case DT_SOCK: entryBuilder.setType(fuse::Node::Type::SOCKET); break;
-        default:      entryBuilder.setType(fuse::Node::Type::UNKNOWN); break;
+        case DT_BLK:  result[i].type = fuse::Node::Type::BLOCK_DEVICE; break;
+        case DT_CHR:  result[i].type = fuse::Node::Type::CHARACTER_DEVICE; break;
+        case DT_DIR:  result[i].type = fuse::Node::Type::DIRECTORY; break;
+        case DT_FIFO: result[i].type = fuse::Node::Type::FIFO; break;
+        case DT_LNK:  result[i].type = fuse::Node::Type::SYMLINK; break;
+        case DT_REG:  result[i].type = fuse::Node::Type::REGULAR; break;
+        case DT_SOCK: result[i].type = fuse::Node::Type::SOCKET; break;
+        default:      result[i].type = fuse::Node::Type::UNKNOWN; break;
       }
 
-      entryBuilder.setName(entry.d_name);
+      result[i].name = kj::str(entry.d_name);
     }
 
-    return kj::READY_NOW;
+    return kj::mv(result);
   }
 
 private:
@@ -990,79 +968,83 @@ private:
   size_t currentOffset;
 };
 
-class NodeImpl final: public fuse::Node::Server {
+class NodeImpl final: public fuse::Node, public kj::Refcounted {
 public:
   NodeImpl(kj::StringPtr path, kj::Duration ttl)
-      : path(kj::heapString(path)), ttl(ttl) {
-    updateStats();  // Mainly to throw an exception if it doesn't exist.
+    : path(kj::heapString(path)), ttl(ttl) { }
+
+  kj::Own<fuse::Node> addRef() override {
+    return kj::addRef(*this);
   }
 
 protected:
-  kj::Promise<void> lookup(LookupContext context) override {
-    auto name = context.getParams().getName();
-
+  kj::Maybe<LookupResults> lookup(kj::StringPtr name) override {
     KJ_REQUIRE(name != "." && name != "..", "Please implement . and .. at a higher level.");
 
-    auto results = context.getResults(capnp::MessageSize {8, 1});
-    results.setNode(kj::heap<NodeImpl>(kj::str(path, '/', name), ttl));
-    results.setTtl(ttl / kj::NANOSECONDS);
-    return kj::READY_NOW;
+    auto fullPath = kj::str(path, '/', name);
+    struct stat new_stats;
+    auto n = lstat(fullPath.cStr(), &new_stats);
+
+    if (n < 0 && errno == ENOENT) {
+      return nullptr;
+    } else {
+      uint64_t xttl = ttl / kj::NANOSECONDS;
+
+      return LookupResults { kj::refcounted<NodeImpl>(kj::mv(fullPath), ttl), xttl };
+    }
   }
 
-  kj::Promise<void> getAttributes(GetAttributesContext context) override {
+  GetAttributesResults getAttributes() override {
     updateStats();
 
-    auto results = context.getResults(capnp::MessageSize { 16, 0 });
-    auto attrs = results.getAttributes();
-    attrs.setInodeNumber(stats.st_ino);
+    auto results = GetAttributesResults { };
+    auto& attrs = results.attributes;
+    attrs.inodeNumber = stats.st_ino;
 
     switch (stats.st_mode & S_IFMT) {
-      case S_IFBLK:  attrs.setType(fuse::Node::Type::BLOCK_DEVICE); break;
-      case S_IFCHR:  attrs.setType(fuse::Node::Type::CHARACTER_DEVICE); break;
-      case S_IFDIR:  attrs.setType(fuse::Node::Type::DIRECTORY); break;
-      case S_IFIFO:  attrs.setType(fuse::Node::Type::FIFO); break;
-      case S_IFLNK:  attrs.setType(fuse::Node::Type::SYMLINK); break;
-      case S_IFREG:  attrs.setType(fuse::Node::Type::REGULAR); break;
-      case S_IFSOCK: attrs.setType(fuse::Node::Type::SOCKET); break;
-      default:       attrs.setType(fuse::Node::Type::UNKNOWN); break;
+      case S_IFBLK:  attrs.type = fuse::Node::Type::BLOCK_DEVICE; break;
+      case S_IFCHR:  attrs.type = fuse::Node::Type::CHARACTER_DEVICE; break;
+      case S_IFDIR:  attrs.type = fuse::Node::Type::DIRECTORY; break;
+      case S_IFIFO:  attrs.type = fuse::Node::Type::FIFO; break;
+      case S_IFLNK:  attrs.type = fuse::Node::Type::SYMLINK; break;
+      case S_IFREG:  attrs.type = fuse::Node::Type::REGULAR; break;
+      case S_IFSOCK: attrs.type = fuse::Node::Type::SOCKET; break;
+      default:       attrs.type = fuse::Node::Type::UNKNOWN; break;
     }
 
-    attrs.setPermissions(stats.st_mode & ~S_IFMT);
-    attrs.setLinkCount(stats.st_nlink);
-    attrs.setOwnerId(stats.st_uid);
-    attrs.setGroupId(stats.st_gid);
-    attrs.setDeviceMajor(major(stats.st_rdev));
-    attrs.setDeviceMinor(minor(stats.st_rdev));
-    attrs.setSize(stats.st_size);
-    attrs.setBlockCount(stats.st_blocks);
-    attrs.setBlockSize(stats.st_blksize);
-    attrs.setLastAccessTime(toNanos(stats.st_atim));
-    attrs.setLastModificationTime(toNanos(stats.st_mtim));
-    attrs.setLastStatusChangeTime(toNanos(stats.st_ctim));
-    results.setTtl(ttl / kj::NANOSECONDS);
+    attrs.permissions = stats.st_mode & ~S_IFMT;
+    attrs.linkCount = stats.st_nlink;
+    attrs.ownerId = stats.st_uid;
+    attrs.groupId = stats.st_gid;
+    attrs.deviceMajor = major(stats.st_rdev);
+    attrs.deviceMinor = minor(stats.st_rdev);
+    attrs.size = stats.st_size;
+    attrs.blockCount = stats.st_blocks;
+    attrs.blockSize = stats.st_blksize;
+    attrs.lastAccessTime = toNanos(stats.st_atim);
+    attrs.lastModificationTime = toNanos(stats.st_mtim);
+    attrs.lastStatusChangeTime = toNanos(stats.st_ctim);
+    results.ttl = ttl / kj::NANOSECONDS;
 
-    return kj::READY_NOW;
+    return kj::mv(results);
   }
 
-  kj::Promise<void> openAsFile(OpenAsFileContext context) override {
-    auto file = kj::heap<FileImpl>(path);
-    context.getResults(capnp::MessageSize {2, 1}).setFile(kj::mv(file));
-    return kj::READY_NOW;
+  kj::Maybe<kj::Own<fuse::File>> openAsFile() override {
+    kj::Own<fuse::File> result =  kj::refcounted<FileImpl>(path);
+    return kj::mv(result);
   }
 
-  kj::Promise<void> openAsDirectory(OpenAsDirectoryContext context) override {
-    auto directory = kj::heap<DirectoryImpl>(path);
-    context.getResults(capnp::MessageSize {2, 1}).setDirectory(kj::mv(directory));
-    return kj::READY_NOW;
+  kj::Maybe<kj::Own<fuse::Directory>> openAsDirectory() override {
+    kj::Own<fuse::Directory> result = kj::refcounted<DirectoryImpl>(path);
+    return kj::mv(result);
   }
 
-  kj::Promise<void> readlink(ReadlinkContext context) override {
+  kj::String readlink() override {
     char buffer[PATH_MAX + 1];
     int n;
     KJ_SYSCALL(n = ::readlink(path.cStr(), buffer, PATH_MAX));
     buffer[n] = '\0';
-    context.getResults(capnp::MessageSize {n / sizeof(capnp::word) + 4, 0}).setLink(buffer);
-    return kj::READY_NOW;
+    return kj::heapString(buffer);
   }
 
 private:
@@ -1084,8 +1066,8 @@ private:
 
 }  // namespace
 
-fuse::Node::Client newLoopbackFuseNode(kj::StringPtr path, kj::Duration cacheTtl) {
-  return kj::heap<NodeImpl>(path, cacheTtl);
+kj::Own<fuse::Node> newLoopbackFuseNode(kj::StringPtr path, kj::Duration cacheTtl) {
+  return kj::refcounted<NodeImpl>(path, cacheTtl);
 }
 
 // =======================================================================================

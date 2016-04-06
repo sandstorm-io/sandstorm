@@ -17,12 +17,88 @@
 #ifndef SANDSTORM_FUSE_H_
 #define SANDSTORM_FUSE_H_
 
-#include <sandstorm/fuse.capnp.h>
 #include <kj/time.h>
 #include <kj/io.h>
 #include <kj/function.h>
+#include <kj/refcount.h>
 
 namespace kj { class UnixEventPort; }
+
+namespace fuse {
+class File;
+class Directory;
+
+class Node {
+public:
+  virtual kj::Own<Node> addRef() = 0;
+
+  struct LookupResults {
+    kj::Own<Node> node;
+    uint64_t ttl;
+  };
+
+  virtual kj::Maybe<LookupResults> lookup(kj::StringPtr name) = 0;
+
+  enum class Type {
+    UNKNOWN = 0,
+    BLOCK_DEVICE = 1,
+    CHARACTER_DEVICE = 2,
+    DIRECTORY = 3,
+    FIFO = 4,
+    SYMLINK = 5,
+    REGULAR = 6,
+    SOCKET = 7,
+  };
+
+  struct Attributes {
+    uint64_t inodeNumber;
+    Type type;
+    uint32_t permissions;
+    uint32_t linkCount;
+    uint32_t ownerId;
+    uint32_t groupId;
+    uint32_t deviceMajor;
+    uint32_t deviceMinor;
+    uint64_t size;
+    uint64_t blockCount;
+    uint32_t blockSize;
+    int64_t lastAccessTime;
+    int64_t lastModificationTime;
+    int64_t lastStatusChangeTime;
+  };
+
+  struct GetAttributesResults {
+    Attributes attributes;
+    uint64_t ttl;
+  };
+
+  virtual GetAttributesResults getAttributes() = 0;
+  virtual kj::Maybe<kj::Own<File>> openAsFile() = 0;
+  virtual kj::Maybe<kj::Own<Directory>> openAsDirectory() = 0;
+  virtual kj::String readlink() = 0;
+};
+
+class File {
+public:
+  virtual kj::Own<File> addRef() = 0;
+  virtual kj::Array<uint8_t> read(uint64_t offset, uint32_t size) = 0;
+};
+
+class Directory {
+public:
+  virtual kj::Own<Directory> addRef() = 0;
+
+  struct Entry {
+    uint64_t inodeNumber;
+    uint64_t nextOffset;
+    Node::Type type;
+    kj::String name;
+  };
+
+  virtual kj::Array<Entry> read(uint64_t offset, uint32_t count) = 0;
+};
+
+} // namespace fuse
 
 namespace sandstorm {
 
@@ -33,7 +109,7 @@ struct FuseOptions {
   // page cache will not be flushed when a file is reopened.
 };
 
-kj::Promise<void> bindFuse(kj::UnixEventPort& eventPort, int fuseFd, fuse::Node::Client root,
+kj::Promise<void> bindFuse(kj::UnixEventPort& eventPort, int fuseFd, kj::Own<fuse::Node> root,
                            FuseOptions options = FuseOptions());
 // Export the filesystem represented by `root` on the given /dev/fuse file descriptor.
 //
@@ -50,7 +126,7 @@ kj::Promise<void> bindFuse(kj::UnixEventPort& eventPort, int fuseFd, fuse::Node:
 // error code that it returns for all errors.  In the future, this situation may be improved if
 // kj::Exception gains a notion of error codes and error code namespaces.
 
-fuse::Node::Client newLoopbackFuseNode(kj::StringPtr path, kj::Duration cacheTtl);
+kj::Own<fuse::Node> newLoopbackFuseNode(kj::StringPtr path, kj::Duration cacheTtl);
 // Returns a "loopback" fuse node which simply mirrors the directory (or file) at the given path.
 // Throws an exception if the path doesn't exist.
 //

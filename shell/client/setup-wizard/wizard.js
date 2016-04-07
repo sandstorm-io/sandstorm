@@ -441,8 +441,8 @@ Template.setupWizardOrganization.events({
       },
       settings: {
         disallowGuests: instance.disallowGuests.get(),
-      // Disabled until we've actually implemented the feature.
-      //  publishContacts: instance.shareContacts.get(),
+        // Disabled until we've actually implemented the feature.
+        //publishContacts: instance.shareContacts.get(),
       },
     };
     const token = Iron.controller().state.get("token");

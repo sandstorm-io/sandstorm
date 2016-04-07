@@ -84,7 +84,7 @@ We're still working on the following features:
 
 **SAML login.** SAML is a protocol for exchanging information about access control, typically used
 for single sign-on. If you need this feature, please feel free to [request a feature key
-today][https://sandstorm.io/business]. SAML support should be compatible with Shibboleth and other
+today](https://sandstorm.io/business). SAML support should be compatible with Shibboleth and other
 systems.
 
 **Group Management.** This will allow you to share a grain with everyone in a group, such as the

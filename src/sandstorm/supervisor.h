@@ -18,6 +18,7 @@
 #define SANDSTORM_SUPERVISOR_H_
 
 #include "abstract-main.h"
+#include "util.h"
 #include <kj/vector.h>
 #include <kj/async-io.h>
 #include <capnp/capability.h>
@@ -57,13 +58,9 @@ public:
 
   class SystemConnector {
   public:
-    struct RunResult {
-      kj::Promise<void> task;
-      SandstormCore::Client sandstormCore;
-    };
-
-    virtual RunResult run(kj::AsyncIoContext& ioContext,
-                          Supervisor::Client mainCapability) const = 0;
+    virtual kj::Promise<void> run(kj::AsyncIoContext& ioContext,
+                                  Supervisor::Client mainCapability,
+                                  kj::Own<CapRedirector> coreRedirector) const = 0;
     // Begin accepting RPCs from the system.
 
     virtual void checkIfAlreadyRunning() const = 0;
@@ -128,13 +125,13 @@ private:
 
   class DefaultSystemConnector: public SystemConnector {
   public:
-    RunResult run(kj::AsyncIoContext& ioContext, Supervisor::Client mainCapability) const override;
+    kj::Promise<void> run(kj::AsyncIoContext& ioContext, Supervisor::Client mainCapability,
+                          kj::Own<CapRedirector> coreRedirector) const override;
     void checkIfAlreadyRunning() const override;
     kj::Maybe<int> getSaveFd() const override { return nullptr; }
 
   private:
     class Listener;
-    struct AcceptedConnection;
     class ErrorHandlerImpl;
     kj::Promise<void> acceptLoop(kj::ConnectionReceiver& serverPort,
                                  Supervisor::Client bootstrapInterface,

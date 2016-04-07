@@ -68,8 +68,13 @@ kj::Promise<Supervisor::Client> BackendImpl::bootGrain(
     // Supervisor for this grain is already running. Join that.
     return iter->second.promise.addBranch()
         .then([=](Supervisor::Client&& client) mutable {
-      // We should send a keepAlive() to make sure the supervisor is still up.
-      auto promise = client.keepAliveRequest().send();
+      // We should send a keepAlive() to make sure the supervisor is still up. We should also
+      // send a new SandstormCore capability in case the front-end has restarted.
+      auto coreReq = coreFactory.getSandstormCoreRequest();
+      coreReq.setGrainId(grainId);
+      auto keepAliveReq = client.keepAliveRequest();
+      keepAliveReq.setCore(coreReq.send().getCore());
+      auto promise = keepAliveReq.send();
       return promise.then([KJ_MVCAP(client)](auto) mutable -> kj::Promise<Supervisor::Client> {
         // Success.
         return kj::mv(client);
@@ -225,11 +230,29 @@ kj::Promise<void> BackendImpl::startGrain(StartGrainContext context) {
 }
 
 kj::Promise<void> BackendImpl::getGrain(GetGrainContext context) {
-  auto iter = supervisors.find(validateId(context.getParams().getGrainId()));
+  auto grainId = context.getParams().getGrainId();
+  auto iter = supervisors.find(validateId(grainId));
   if (iter != supervisors.end()) {
     return iter->second.promise.addBranch()
-        .then([context](Supervisor::Client client) mutable {
-      context.getResults().setSupervisor(kj::mv(client));
+        .then([this,context,grainId](Supervisor::Client client) mutable {
+      // We should send a keepAlive() to make sure the supervisor is still up. We should also
+      // send a new SandstormCore capability in case the front-end has restarted.
+      auto coreReq = coreFactory.getSandstormCoreRequest();
+      coreReq.setGrainId(grainId);
+      auto keepAliveReq = client.keepAliveRequest();
+      keepAliveReq.setCore(coreReq.send().getCore());
+      return keepAliveReq.send()
+          .then([context,KJ_MVCAP(client)](auto&&) mutable -> kj::Promise<void> {
+        context.getResults().setSupervisor(kj::mv(client));
+        return kj::READY_NOW;
+      }, [](kj::Exception&& e) -> kj::Promise<void> {
+        if (e.getType() != kj::Exception::Type::DISCONNECTED) {
+          KJ_LOG(ERROR, "Exception when trying to keepAlive() a supervisor in getGrain().", e);
+          return KJ_EXCEPTION(DISCONNECTED, "grain is not running");
+        } else {
+          return kj::mv(e);
+        }
+      });
     });
   }
 

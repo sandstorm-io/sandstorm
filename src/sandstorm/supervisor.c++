@@ -1596,7 +1596,7 @@ public:
   SaveWrapper(AppPersistent<>::Client&& cap, capnp::List<MembraneRequirement>::Reader _requirements,
               capnp::Data::Reader parentToken, SandstormCore::Client sandstormCore)
       : cap(kj::mv(cap)), parentToken(kj::heapArray<const byte>(parentToken)),
-        sandstormCore(sandstormCore) {
+        sandstormCore(kj::mv(sandstormCore)) {
     builder.setRoot(kj::mv(_requirements));
     requirements = builder.getRoot<capnp::List<MembraneRequirement>>().asReader();
   }
@@ -1919,10 +1919,11 @@ class SupervisorMain::SupervisorImpl final: public Supervisor::Server {
 public:
   inline SupervisorImpl(kj::UnixEventPort& eventPort, MainView<>::Client&& mainView,
                         DiskUsageWatcher& diskWatcher, WakelockSet& wakelockSet,
-                        kj::AutoCloseFd startAppEvent, SandstormCore::Client& sandstormCore)
+                        kj::AutoCloseFd startAppEvent, SandstormCore::Client sandstormCore,
+                        kj::Own<CapRedirector> coreRedirector)
       : eventPort(eventPort), mainView(kj::mv(mainView)), diskWatcher(diskWatcher),
         wakelockSet(wakelockSet), sandstormCore(sandstormCore),
-        startAppEvent(kj::mv(startAppEvent)) {}
+        coreRedirector(kj::mv(coreRedirector)), startAppEvent(kj::mv(startAppEvent)) {}
 
   kj::Promise<void> getMainView(GetMainViewContext context) override {
     ensureStarted();
@@ -1932,6 +1933,12 @@ public:
 
   kj::Promise<void> keepAlive(KeepAliveContext context) override {
     sandstorm::keepAlive = true;
+
+    auto params = context.getParams();
+    if (params.hasCore()) {
+      coreRedirector->setTarget(params.getCore());
+    }
+
     return kj::READY_NOW;
   }
 
@@ -2065,6 +2072,7 @@ private:
   DiskUsageWatcher& diskWatcher;
   WakelockSet& wakelockSet;
   SandstormCore::Client sandstormCore;
+  kj::Own<CapRedirector> coreRedirector;
   kj::AutoCloseFd startAppEvent;
 
   void ensureStarted() {
@@ -2161,26 +2169,14 @@ public:
   }
 };
 
-struct SupervisorMain::DefaultSystemConnector::AcceptedConnection {
-  kj::Own<kj::AsyncIoStream> connection;
-  capnp::TwoPartyVatNetwork network;
-  capnp::RpcSystem<capnp::rpc::twoparty::VatId> rpcSystem;
-
-  explicit AcceptedConnection(capnp::Capability::Client bootstrapInterface,
-                              kj::Own<kj::AsyncIoStream>&& connectionParam)
-      : connection(kj::mv(connectionParam)),
-        network(*connection, capnp::rpc::twoparty::Side::SERVER),
-        rpcSystem(capnp::makeRpcServer(network, kj::mv(bootstrapInterface))) {}
-};
-
-auto SupervisorMain::DefaultSystemConnector::run(
-    kj::AsyncIoContext& ioContext, Supervisor::Client mainCap) const
-    -> SystemConnector::RunResult {
-  auto listener = kj::heap<TwoPartyServerWithClientBootstrap>(kj::mv(mainCap));
-  auto core = listener->getBootstrap().castAs<SandstormCore>();
+kj::Promise<void> SupervisorMain::DefaultSystemConnector::run(
+    kj::AsyncIoContext& ioContext, Supervisor::Client mainCap,
+    kj::Own<CapRedirector> coreRedirector) const {
+  auto listener = kj::heap<TwoPartyServerWithClientBootstrap>(
+      kj::mv(mainCap), kj::mv(coreRedirector));
 
   unlink("socket");  // Clear stale socket, if any.
-  auto acceptTask = ioContext.provider->getNetwork().parseAddress("unix:socket", 0).then(
+  return ioContext.provider->getNetwork().parseAddress("unix:socket", 0).then(
       [KJ_MVCAP(listener)](kj::Own<kj::NetworkAddress>&& addr) mutable {
     auto serverPort = addr->listen();
 
@@ -2190,8 +2186,6 @@ auto SupervisorMain::DefaultSystemConnector::run(
     auto promise = listener->listen(kj::mv(serverPort));
     return promise.attach(kj::mv(listener));
   });
-
-  return { kj::mv(acceptTask), kj::mv(core) };
 }
 
 // -----------------------------------------------------------------------------
@@ -2264,11 +2258,10 @@ auto SupervisorMain::DefaultSystemConnector::run(
   //   want to wrap the UiView and cache session objects.  Perhaps we could do this by making
   //   them persistable, though it's unclear how that would work with SessionContext.
   Supervisor::Client mainCap = kj::heap<SupervisorImpl>(
-      ioContext.unixEventPort, kj::mv(app), diskWatcher, wakelockSet, kj::mv(startEventFd), coreCap);
+      ioContext.unixEventPort, kj::mv(app), diskWatcher, wakelockSet, kj::mv(startEventFd),
+      coreCap, kj::addRef(*coreRedirector));
 
-  auto runner = systemConnector->run(ioContext, kj::mv(mainCap));
-  auto acceptTask = kj::mv(runner.task);
-  coreRedirector->setTarget(runner.sandstormCore);
+  auto acceptTask = systemConnector->run(ioContext, kj::mv(mainCap), kj::mv(coreRedirector));
 
   // Wait for disconnect or accept loop failure or disk watch failure, then exit.
   acceptTask.exclusiveJoin(kj::mv(diskWatcherTask))

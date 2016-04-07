@@ -84,7 +84,7 @@ We're still working on the following features:
 
 **SAML login.** SAML is a protocol for exchanging information about access control, typically used
 for single sign-on. If you need this feature, please feel free to [request a feature key
-today][https://sandstorm.io/business]. SAML support should be compatible with Shibboleth and other
+today](https://sandstorm.io/business). SAML support should be compatible with Shibboleth and other
 systems.
 
 **Group Management.** This will allow you to share a grain with everyone in a group, such as the
@@ -117,7 +117,7 @@ It is a text serialization of a [Cap'n Proto](https://capnproto.org/) structure,
 Feature keys are signed by an ed25519 signing key.
 
 If you are developing Sandstorm, and you need to enable Sandstorm for Work features, you can get a
-testing feature key by contacting Kenton Varda. You must also can enable testing mode by setting
+testing feature key by contacting Kenton Varda. You must also enable testing mode by setting
 `IS_TESTING=yes` in `sandstorm.conf` for testing keys to be considered valid. Note that enabling
 testing mode forfeits all security.
 

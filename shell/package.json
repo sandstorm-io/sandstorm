@@ -11,5 +11,8 @@
     "type": "git",
     "url": "https://github.com/sandstorm-io/sandstorm"
   },
-  "license": "Apache-2.0"
+  "license": "Apache-2.0",
+  "dependencies": {
+    "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#sandstorm"
+  }
 }

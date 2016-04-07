@@ -1,5 +1,11 @@
 {
   "name": "sandstorm-shell",
   "version": "1.0.0",
-  "dependencies": {}
+  "dependencies": {
+    "intro.js": {
+      "version": "2.0.0",
+      "from": "git+https://github.com/sandstorm-io/intro.js.git#sandstorm",
+      "resolved": "git+https://github.com/sandstorm-io/intro.js.git#8e1c7604f251ec874bf4ae4d7b4f11a14cee697e"
+    }
+  }
 }

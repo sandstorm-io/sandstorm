@@ -55,6 +55,7 @@
 #include <linux/netlink.h>
 #include <linux/rtnetlink.h>
 #include <sys/eventfd.h>
+#include <sys/resource.h>
 
 // We need to define these constants before libseccomp has a chance to inject bogus
 // values for them. See https://github.com/seccomp/libseccomp/issues/27
@@ -719,6 +720,7 @@ void SupervisorMain::setupSupervisor() {
   KJ_SYSCALL(prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0));
 
   closeFds();
+  setResourceLimits();
   checkPaths();
   unshareOuter();
   setupFilesystem();
@@ -780,6 +782,14 @@ void SupervisorMain::closeFds() {
       close(fd);
     }
   }
+}
+
+void SupervisorMain::setResourceLimits() {
+  struct rlimit limit;
+  memset(&limit, 0, sizeof(limit));
+  limit.rlim_cur = 1024;
+  limit.rlim_max = 4096;
+  KJ_SYSCALL(setrlimit(RLIMIT_NOFILE, &limit));
 }
 
 void SupervisorMain::checkPaths() {

@@ -108,6 +108,7 @@ private:
   kj::String realPath(kj::StringPtr path);
   void setupSupervisor();
   void closeFds();
+  void setResourceLimits();
   void checkPaths();
   void writeSetgroupsIfPresent(const char *contents);
   void writeUserNSMap(const char *type, kj::StringPtr contents);

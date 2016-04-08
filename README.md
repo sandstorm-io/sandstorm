@@ -41,3 +41,4 @@ See [the packaging tutorial in the Sandstorm documentation](https://docs.sandsto
 ## Contribute
 
 Want to help?  See our [community page](https://sandstorm.io/community) or get on our [discussion group](https://groups.google.com/group/sandstorm-dev) and let us know!
+test

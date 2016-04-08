@@ -1506,6 +1506,11 @@ __EOF__
 }
 
 generate_admin_token() {
+  # If dev accounts are enabled, the user does not need an admin token.
+  if [ "yes" = "${ALLOW_DEV_ACCOUNTS}" ] ; then
+    return
+  fi
+
   # Allow the person running the install.sh script to pre-generate an admin token, specified as an
   # environment variable, so that they can ignore the output text of install.sh.
   if [ ! -z "${ADMIN_TOKEN:-}" ] ; then
@@ -1532,8 +1537,18 @@ print_success() {
     fi
     echo "Visit this link to configure it:"
   fi
+
   echo ""
-  echo "  ${BASE_URL:-(unknown; bad config)}/setup/token/$ADMIN_TOKEN"
+
+  # If there is an admin token at this point, print an admin token URL.  Otherwise, don't. Note that
+  # when dev accounts are enabled, it is advantageous to not print an admin token URL.
+  if [ ! -z "${ADMIN_TOKEN:-}" ] ; then
+    echo "  ${BASE_URL:-(unknown; bad config)}/setup/token/$ADMIN_TOKEN"
+  else
+    echo "  ${BASE_URL:-(unknown; bad config)}/"
+  fi
+  echo ""
+
   if [ "${SANDCATS_HTTPS_SUCCESSFUL}" = "yes" ] ; then
     echo ""
     echo "(If your browser shows you an OCSP error, wait 10 minutes for it to auto-resolve"

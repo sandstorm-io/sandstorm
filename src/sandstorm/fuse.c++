@@ -398,8 +398,8 @@ private:
   }
 
   bool dispatch(struct fuse_in_header& header, kj::ArrayPtr<const kj::byte> body) {
-    auto node_iter = nodeMap.find(header.nodeid);
-    KJ_REQUIRE(header.nodeid == 0 || node_iter != nodeMap.end(),
+    auto nodeIter = nodeMap.find(header.nodeid);
+    KJ_REQUIRE(header.nodeid == 0 || nodeIter != nodeMap.end(),
         "Kernel asked for unknown node ID.", header.nodeid);
 
     switch (header.opcode) {
@@ -428,8 +428,8 @@ private:
 
       case FUSE_FORGET: {
         auto requestBody = consumeStruct<struct fuse_forget_in>(body);
-        if ((node_iter->second.refcount -= requestBody.nlookup) == 0) {
-          nodeMap.erase(node_iter);
+        if ((nodeIter->second.refcount -= requestBody.nlookup) == 0) {
+          nodeMap.erase(nodeIter);
         }
         break;
       }
@@ -454,8 +454,9 @@ private:
         uint64_t parentId = header.nodeid;
         kj::String ownName = kj::heapString(name);
 
-        performReplyTask(requestId, EIO, [this, parentId, node_iter, KJ_MVCAP(ownName)]() mutable -> kj::Own<ResponseBase> {
-          auto maybeLookupResult = node_iter->second.node->lookup(ownName.slice(0));
+        performReplyTask(requestId, EIO,
+            [this, parentId, nodeIter, KJ_MVCAP(ownName)]() mutable -> kj::Own<ResponseBase> {
+          auto maybeLookupResult = nodeIter->second.node->lookup(ownName.slice(0));
           KJ_IF_MAYBE(lookupResult, maybeLookupResult) {
             auto result = lookupResult->node->getAttributes();
             auto attributes = result.attributes;
@@ -515,8 +516,8 @@ private:
       }
 
       case FUSE_GETATTR: {
-        performReplyTask(header.unique, EIO, [this, node_iter]() -> kj::Own<ResponseBase> {
-          auto response = node_iter->second.node->getAttributes();
+        performReplyTask(header.unique, EIO, [this, nodeIter]() -> kj::Own<ResponseBase> {
+          auto response = nodeIter->second.node->getAttributes();
 
           auto reply = allocResponse<struct fuse_attr_out>();
           if (options.cacheForever) {
@@ -532,8 +533,8 @@ private:
 
       case FUSE_READLINK:
         // No input.
-        performReplyTask(header.unique, EINVAL, [this, node_iter]() -> kj::Own<ResponseBase> {
-          auto link = node_iter->second.node->readlink();
+        performReplyTask(header.unique, EINVAL, [this, nodeIter]() -> kj::Own<ResponseBase> {
+          auto link = nodeIter->second.node->readlink();
           auto bytes = kj::arrayPtr(reinterpret_cast<const kj::byte*>(link.begin()), link.size());
           return allocResponse<void>(kj::mv(link), bytes);
         });
@@ -549,8 +550,8 @@ private:
 
         // TODO(perf): Can we assume the kernel will check permissions before open()? If so,
         //   perhaps we ought to assume this should always succeed and thus pipeline it?
-        performReplyTask(header.unique, EIO, [this, node_iter]() -> kj::Own<ResponseBase> {
-          auto response = node_iter->second.node->openAsFile();
+        performReplyTask(header.unique, EIO, [this, nodeIter]() -> kj::Own<ResponseBase> {
+          auto response = nodeIter->second.node->openAsFile();
           KJ_IF_MAYBE(file, response) {
             auto reply = allocResponse<struct fuse_open_out>();
             reply->body.fh = handleCounter++;
@@ -600,8 +601,8 @@ private:
 
         // TODO(perf): Can we assume the kernel will check permissions before open()? If so,
         //   perhaps we ought to assume this should always succeed and thus pipeline it?
-        performReplyTask(header.unique, EIO, [this, node_iter]() -> kj::Own<ResponseBase> {
-          auto maybeDirectory = node_iter->second.node->openAsDirectory();
+        performReplyTask(header.unique, EIO, [this, nodeIter]() -> kj::Own<ResponseBase> {
+          auto maybeDirectory = nodeIter->second.node->openAsDirectory();
           KJ_IF_MAYBE(directory, maybeDirectory) {
             auto reply = allocResponse<struct fuse_open_out>();
             reply->body.fh = handleCounter++;
@@ -712,8 +713,8 @@ private:
         } else if (request.mask != 0) {
           // Need to check permissions.
           performReplyTask(header.unique, EACCES,
-              [this, node_iter, mask]() -> kj::Own<ResponseBase> {
-            auto result = node_iter->second.node->getAttributes();
+              [this, nodeIter, mask]() -> kj::Own<ResponseBase> {
+            auto result = nodeIter->second.node->getAttributes();
             auto attributes = result.attributes;
             // TODO(someday):  Account for uid/gid?  Currently irrelevant.
             if (mask & R_OK) {

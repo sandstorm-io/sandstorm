@@ -39,7 +39,7 @@ $[veryslow]GPG signature is valid.
 $[slow]Setup complete. To start your server now, run:
 sandstorm start
 Once that's done, visit this link to configure it:
-  http://local.sandstorm.io:6080/admin/
+  http://local.sandstorm.io:6080/
 NOTE: This URL expires in 15 minutes.
 
 To learn how to control the server, run:

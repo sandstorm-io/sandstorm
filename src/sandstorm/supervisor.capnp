@@ -30,9 +30,16 @@ interface Supervisor {
   getMainView @0 () -> (view :Grain.UiView);
   # Get the grain's main UiView.
 
-  keepAlive @1 ();
+  keepAlive @1 (core :SandstormCore);
   # Must call periodically to prevent supervisor from killing itself off.  Call at least once
   # per minute.
+  #
+  # `core` may be null. If not null, then it is a new copy of the SandstormCore capability which
+  # should replace the old one. This allows the grain to recover if the original SandstormCore
+  # becomes disconnected.
+  #
+  # TODO(reliability): Passing `core` here is an ugly hack. The supervisor really needs a way to
+  #   proactively reconnect.
 
   syncStorage @8 ();
   # Calls syncfs() on /var.

@@ -410,38 +410,15 @@ class CapRedirector
 
 public:
   CapRedirector(kj::PromiseFulfillerPair<capnp::Capability::Client> paf =
-                kj::newPromiseAndFulfiller<capnp::Capability::Client>())
-      : target(kj::mv(paf.promise)),
-        fulfiller(kj::mv(paf.fulfiller)) {}
+                kj::newPromiseAndFulfiller<capnp::Capability::Client>());
 
-  uint setTarget(capnp::Capability::Client newTarget) {
-    ++iteration;
-    target = newTarget;
+  uint setTarget(capnp::Capability::Client newTarget);
 
-    // If the previous target was a promise target, fulfill it.
-    fulfiller->fulfill(kj::mv(newTarget));
-
-    return iteration;
-  }
-
-  void setDisconnected(uint oldIteration) {
-    if (iteration == oldIteration) {
-      // Our current client was disconnected.
-      ++iteration;
-      auto paf = kj::newPromiseAndFulfiller<capnp::Capability::Client>();
-      target = kj::mv(paf.promise);
-      fulfiller = kj::mv(paf.fulfiller);
-    }
-  }
+  void setDisconnected(uint oldIteration);
 
   kj::Promise<void> dispatchCall(
       uint64_t interfaceId, uint16_t methodId,
-      capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) override {
-    capnp::AnyPointer::Reader params = context.getParams();
-    auto req = target.typelessRequest(interfaceId, methodId, params.targetSize());
-    req.set(params);
-    return context.tailCall(kj::mv(req));
-  }
+      capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) override;
 
 private:
   uint iteration = 0;
@@ -454,7 +431,14 @@ class TwoPartyServerWithClientBootstrap: private kj::TaskSet::ErrorHandler {
   // and/or allows you to call getBootstrap to get the client bootstrap.
 
 public:
-  explicit TwoPartyServerWithClientBootstrap(capnp::Capability::Client bootstrapInterface);
+  explicit TwoPartyServerWithClientBootstrap(
+      capnp::Capability::Client bootstrapInterface,
+      kj::Own<CapRedirector> redirector = kj::refcounted<CapRedirector>());
+  // If `redirector` is provided, its `setTarget()` method will be called every time a new
+  // connection is opened, passing the new bootstrap interface.
+  //
+  // TODO(cleanup): This is pretty ugly, but is currently used to implement Supervisor.keepAlive()
+  //   to redirect the `SandstormCore` capability, which is itself a hack.
 
   kj::Promise<void> listen(kj::Own<kj::ConnectionReceiver>&& listener);
   // Listens for connections on the given listener. The returned promise never resolves unless an

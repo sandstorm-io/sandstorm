@@ -998,9 +998,77 @@ void SubprocessSet::alreadyReaped(pid_t pid) {
 
 // =======================================================================================
 
+CapRedirector::CapRedirector(kj::PromiseFulfillerPair<capnp::Capability::Client> paf)
+    : target(kj::mv(paf.promise)),
+      fulfiller(kj::mv(paf.fulfiller)) {}
+
+uint CapRedirector::setTarget(capnp::Capability::Client newTarget) {
+  ++iteration;
+  target = newTarget;
+
+  // If the previous target was a promise target, fulfill it.
+  fulfiller->fulfill(kj::mv(newTarget));
+
+  return iteration;
+}
+
+void CapRedirector::setDisconnected(uint oldIteration) {
+  if (iteration == oldIteration) {
+    // Our current client was disconnected.
+    ++iteration;
+    auto paf = kj::newPromiseAndFulfiller<capnp::Capability::Client>();
+    target = kj::mv(paf.promise);
+    fulfiller = kj::mv(paf.fulfiller);
+  }
+}
+
+kj::Promise<void> CapRedirector::dispatchCall(
+    uint64_t interfaceId, uint16_t methodId,
+    capnp::CallContext<capnp::AnyPointer, capnp::AnyPointer> context) {
+  capnp::AnyPointer::Reader params = context.getParams();
+  auto req = target.typelessRequest(interfaceId, methodId, params.targetSize());
+  req.set(params);
+
+  auto oldIteration = iteration;
+
+  return req.send().then([context](auto&& response) mutable -> kj::Promise<void> {
+    context.initResults(response.targetSize()).set(response);
+    return kj::READY_NOW;
+  }, [this,oldIteration](kj::Exception&& e) -> kj::Promise<void> {
+    if (e.getType() != kj::Exception::Type::DISCONNECTED) {
+      return kj::mv(e);
+    }
+
+    // Disconnected. Did we notice already?
+    if (iteration > oldIteration) {
+      // Yes, so stop here.
+      return kj::mv(e);
+    }
+
+    // OK, this disconnect is new to us. We need to determine if this disconnected capability
+    // is our direct target or something else that was accessed as part of the call. So, send
+    // a dummy call to check.
+    auto ping = target.typelessRequest(0, 65535, capnp::MessageSize { 4, 0 });
+    ping.initAsAnyStruct(0, 0);
+    return ping.send().then([](auto&&) -> void {
+      KJ_LOG(ERROR, "dummy ping request should have failed with UNIMPLEMENTED");
+      // But clearly we are still connected, so don't call setDisconnected()...
+    }, [this,oldIteration](kj::Exception&& e2) {
+      if (e2.getType() == kj::Exception::Type::DISCONNECTED) {
+        // Yep, really disconnected.
+        setDisconnected(oldIteration);
+      }
+    }).then([KJ_MVCAP(e)]() mutable -> kj::Promise<void> {
+      return kj::mv(e);
+    });
+  });
+}
+
+// =======================================================================================
+
 TwoPartyServerWithClientBootstrap::TwoPartyServerWithClientBootstrap(
-  capnp::Capability::Client bootstrapInterface)
-    : bootstrapInterface(kj::mv(bootstrapInterface)), redirector(kj::refcounted<CapRedirector>()),
+  capnp::Capability::Client bootstrapInterface, kj::Own<CapRedirector> redirector)
+    : bootstrapInterface(kj::mv(bootstrapInterface)), redirector(kj::mv(redirector)),
       tasks(*this) {}
 
 struct TwoPartyServerWithClientBootstrap::AcceptedConnection {

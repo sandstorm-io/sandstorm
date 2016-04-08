@@ -196,6 +196,10 @@ Template.setupWizardIntro.helpers({
   freshAccountsUi() {
     return new AccountsUi(globalDb);
   },
+
+  hasFeatureKey() {
+    return globalDb.isFeatureKeyValid();
+  },
 });
 
 Template.setupWizardIntro.events({

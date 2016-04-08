@@ -1381,9 +1381,13 @@ install_sandstorm_symlinks() {
 }
 
 ask_about_starting_at_boot() {
-  # If we already know we want to start the thing at boot, we can
-  # skip asking.
-  if [ "yes" = "${START_AT_BOOT:-}" ] ; then
+  # Starting Sandstorm at boot cannot work if we are not root by this point.
+  if [ "$CURRENTLY_UID_ZERO" != "yes" ] ; then
+    START_AT_BOOT="no"
+  fi
+
+  # If we already know if we want to start the thing at boot, we can skip asking.
+  if [ ! -z "${START_AT_BOOT:-}" ] ; then
     return
   fi
 
@@ -1398,12 +1402,6 @@ configure_start_at_boot_if_desired() {
   # If the user doesn't want us to start Sandstorm at boot, then we
   # don't run anything in this function.
   if [ "yes" != "${START_AT_BOOT:-}" ] ; then
-    return
-  fi
-
-  # Also, if we are not running as root, we do not bother with these
-  # steps.
-  if [ "yes" != "${CURRENTLY_UID_ZERO}" ] ; then
     return
   fi
 

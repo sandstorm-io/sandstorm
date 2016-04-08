@@ -42,45 +42,42 @@ namespace {
 
 typedef unsigned int uint;
 
-class DelegatingNode: public fuse::Node::Server {
+class DelegatingNode: public fuse::Node, public kj::Refcounted {
   // A node that delegates all method calls to some other node.
-  //
-  // TODO(cleanup): Cap'n Proto should have a more general way to do this.
 
 public:
-  explicit DelegatingNode(fuse::Node::Client delegate): delegate(kj::mv(delegate)) {}
+  explicit DelegatingNode(kj::Own<fuse::Node>&& delegate): delegate(kj::mv(delegate)) {}
 
-protected:
-  kj::Promise<void> lookup(LookupContext context) override {
-    // TODO(cleanup): Extend Cap'n Proto with a better way to delegate requests.
-    // TODO(cleanup): Above TODO applies to other methods as well.
-    auto params = context.getParams();
-    auto subRequest = delegate.lookupRequest(params.totalSize());
-    subRequest.setName(params.getName());
-    return context.tailCall(kj::mv(subRequest));
-  }
-
-  kj::Promise<void> getAttributes(GetAttributesContext context) override {
-    return context.tailCall(delegate.getAttributesRequest(context.getParams().totalSize()));
-  }
-
-  kj::Promise<void> openAsFile(OpenAsFileContext context) override {
-    return context.tailCall(delegate.openAsFileRequest(context.getParams().totalSize()));
-  }
-
-  kj::Promise<void> openAsDirectory(OpenAsDirectoryContext context) override {
-    return context.tailCall(delegate.openAsDirectoryRequest(context.getParams().totalSize()));
-  }
-
-  kj::Promise<void> readlink(ReadlinkContext context) override {
-    return context.tailCall(delegate.readlinkRequest(context.getParams().totalSize()));
+  kj::Own<fuse::Node> addRef() override {
+    return kj::addRef(*this);
   }
 
 protected:
-  fuse::Node::Client delegate;
+  kj::Maybe<LookupResults> lookup(kj::StringPtr name) override {
+    return delegate->lookup(name);
+  }
+
+  GetAttributesResults getAttributes() override {
+    return delegate->getAttributes();
+  }
+
+  kj::Maybe<kj::Own<fuse::File>> openAsFile() override {
+    return delegate->openAsFile();
+  }
+
+  kj::Maybe<kj::Own<fuse::Directory>> openAsDirectory() override {
+    return delegate->openAsDirectory();
+  }
+
+  kj::String readlink() override {
+    return delegate->readlink();
+  }
+
+protected:
+  kj::Own<fuse::Node> delegate;
 };
 
-class SimpleDirecotry: public fuse::Directory::Server {
+class SimpleDirecotry: public fuse::Directory, public kj::Refcounted {
   // Implementation of fuse::Directory that is easier to implement because it just calls a
   // method that returns the whole content as an array.
 
@@ -91,91 +88,73 @@ public:
     fuse::Node::Type type;
   };
 
-  virtual kj::Promise<kj::Array<SimpleEntry>> simpleRead() = 0;
+  kj::Own<fuse::Directory> addRef() override {
+    return kj::addRef(*this);
+  }
+
+  virtual kj::Array<SimpleEntry> simpleRead() = 0;
   // Read the complete contents of the directory.
 
-  static kj::Promise<kj::Array<SimpleEntry>> readFrom(
-      fuse::Directory::Client directory, uint64_t offset = 0,
+  static kj::Array<SimpleEntry> readFrom(
+      fuse::Directory& directory, uint64_t offset = 0,
       kj::Vector<SimpleEntry>&& alreadyRead = kj::Vector<SimpleEntry>(16)) {
     // Convenience to read the contents of some other directory. Adds all entries to *target.
 
-    auto request = directory.readRequest();
-    request.setOffset(offset);
-
     static const uint DEFAULT_COUNT = 128;
-    request.setCount(DEFAULT_COUNT);
+    auto entries = directory.read(offset, DEFAULT_COUNT);
 
-    return request.send().then([KJ_MVCAP(directory), KJ_MVCAP(alreadyRead)](
-        capnp::Response<ReadResults>&& response) mutable
-        -> kj::Promise<kj::Array<SimpleEntry>> {
-      auto entries = response.getEntries();
-      uint64_t newOffset = 0;
-      for (auto entry: entries) {
-        alreadyRead.add(SimpleEntry {
-          entry.getInodeNumber(),
-          kj::heapString(entry.getName()),
-          entry.getType()
-        });
-        newOffset = entry.getNextOffset();
-      }
+    uint64_t newOffset = 0;
+    for (auto& entry: entries) {
+      alreadyRead.add(SimpleEntry {
+          entry.inodeNumber,
+            kj::heapString(entry.name),
+            entry.type
+            });
+        newOffset = entry.nextOffset;
+    }
 
-      if (entries.size() == DEFAULT_COUNT) {
-        // Could be more to read.
-        return readFrom(kj::mv(directory), newOffset, kj::mv(alreadyRead));
-      } else {
-        return alreadyRead.releaseAsArray();
-      }
-    });
+    if (entries.size() == DEFAULT_COUNT) {
+      // Could be more to read.
+      return readFrom(directory, newOffset, kj::mv(alreadyRead));
+    } else {
+      return alreadyRead.releaseAsArray();
+    }
   }
 
 protected:
-  kj::Promise<void> read(ReadContext context) {
+  kj::Array<Entry> read(uint64_t offset, uint32_t count) override {
     KJ_IF_MAYBE(c, cachedResults) {
-      fillResponse(*c, context);
-      return kj::READY_NOW;
+      return fillResponse(offset, count, *c);
     } else {
-      return simpleRead().then([this, context](kj::Array<SimpleEntry>&& entries) mutable {
-        fillResponse(entries, context);
-        cachedResults = kj::mv(entries);
-      });
+      auto entries = simpleRead();
+      auto result = fillResponse(offset, count, entries);
+      cachedResults = kj::mv(entries);
+      return result;
     }
   }
 
 private:
   kj::Maybe<kj::Array<SimpleEntry>> cachedResults;
 
-  static void fillResponse(const kj::Array<SimpleEntry>& entries, ReadContext context) {
-    auto params = context.getParams();
-
+  static kj::Array<Entry> fillResponse(uint64_t offset, uint32_t count,
+                                       const kj::Array<SimpleEntry>& entries) {
     // Slice down to the list we're returning now.
-    auto startOffset = kj::min(entries.size(), params.getOffset());
+    auto startOffset = kj::min(entries.size(), offset);
     auto slice = entries.slice(startOffset, entries.size());
-    slice = slice.slice(0, kj::min(slice.size(), params.getCount()));
-
-    context.releaseParams();
-
-    // Calculate space needs;
-    capnp::MessageSize spaceNeeded = {
-      capnp::sizeInWords<ReadResults>() +
-          slice.size() * capnp::sizeInWords<fuse::Directory::Entry>(),
-      0
-    };
-    for (auto& entry: slice) {
-      spaceNeeded.wordCount += entry.name.size() / sizeof(capnp::word) + 1;
-    }
+    slice = slice.slice(0, kj::min(slice.size(), count));
 
     // Fill in results.
-    auto results = context.getResults(spaceNeeded);
-    auto builder = results.initEntries(slice.size());
+    kj::Array<Entry> results = kj::heapArray<Entry>(slice.size());
     for (size_t i: kj::indices(slice)) {
-      auto entryBuilder = builder[i];
       auto& entry = slice[i];
 
-      entryBuilder.setInodeNumber(entry.inodeNumber);
-      entryBuilder.setNextOffset(startOffset + i + 1);
-      entryBuilder.setType(entry.type);
-      entryBuilder.setName(entry.name);
+      results[i].inodeNumber = entry.inodeNumber;
+      results[i].nextOffset = startOffset + i + 1;
+      results[i].type = entry.type;
+      results[i].name = kj::str(entry.name);
     }
+
+    return results;
   }
 };
 
@@ -183,143 +162,103 @@ class UnionDirectory final: public SimpleDirecotry {
   // Directory that merges the contents of several directories.
 
 public:
-  explicit UnionDirectory(kj::Array<fuse::Directory::Client> layers)
+  explicit UnionDirectory(kj::Array<kj::Own<fuse::Directory>>&& layers)
       : layers(kj::mv(layers)) {}
 
-  kj::Promise<kj::Array<SimpleEntry>> simpleRead() override {
+  kj::Array<SimpleEntry> simpleRead() override {
     // Read from each delegate.
-    auto subRequests =
-        kj::heapArrayBuilder<kj::Promise<kj::Array<SimpleEntry>>>(layers.size());
+    std::map<kj::StringPtr, SimpleEntry> entryMap;
     for (auto& layer: layers) {
-      subRequests.add(readFrom(layer).then([](auto&& result) {
-        // Success.
-        return kj::mv(result);
-      }, [](kj::Exception&& exception) {
-        // Perhaps this layer is not a directory. Treat it as empty.
-        return kj::Array<SimpleEntry>();
-      }));
+      auto sublist = readFrom(*layer);
+      for (auto& entry: sublist) {
+        entryMap.insert(std::make_pair(kj::StringPtr(entry.name), kj::mv(entry)));
+      }
     }
 
-    return kj::joinPromises(subRequests.finish())
-        .then([](kj::Array<kj::Array<SimpleEntry>>&& allEntries) {
-      // Compile all the sub-lists into a single list, merging duplicate names. In case of dups,
-      // we prefer entries from earlier layers.
-      std::map<kj::StringPtr, SimpleEntry*> entryMap;
+    auto results = kj::heapArrayBuilder<SimpleEntry>(entryMap.size());
+    for (auto& mapEntry: entryMap) {
+      results.add(kj::mv(mapEntry.second));
+    }
 
-      for (auto& sublist: allEntries) {
-        for (auto& entry: sublist) {
-          entryMap.insert(std::make_pair(kj::StringPtr(entry.name), &entry));
-        }
-      }
-
-      auto results = kj::heapArrayBuilder<SimpleEntry>(entryMap.size());
-      for (auto& mapEntry: entryMap) {
-        results.add(kj::mv(*mapEntry.second));
-      }
-
-      return results.finish();
-    });
+    return results.finish();
   }
 
 private:
-  kj::Array<fuse::Directory::Client> layers;
+  kj::Array<kj::Own<fuse::Directory>> layers;
 };
 
 class UnionNode final: public DelegatingNode {
   // Merges several nodes into one.
 
 public:
-  explicit UnionNode(kj::Array<fuse::Node::Client> layers)
-      : DelegatingNode(layers[0]), layers(kj::mv(layers)) {}
+  explicit UnionNode(kj::Array<kj::Own<fuse::Node>> layers)
+    : DelegatingNode(layers[0]->addRef()), layers(kj::mv(layers)) {}
 
 protected:
-  kj::Promise<void> lookup(LookupContext context) override {
-    auto params = context.getParams();
-    auto name = params.getName();
-    auto paramsSize = params.totalSize();
+  kj::Maybe<LookupResults> lookup(kj::StringPtr name) override {
 
     // Forward the lookup request to each node in our list.
-    auto promises =
-        kj::Vector<kj::Promise<kj::Maybe<capnp::Response<LookupResults>>>>(layers.size());
+    kj::Vector<kj::Own<fuse::Node>> outLayers(layers.size());
+    uint64_t ttl = kj::maxValue;
     for (auto& layer: layers) {
-      auto request = layer.lookupRequest(paramsSize);
-      request.setName(name);
-      promises.add(request.send()
-          .then([](capnp::Response<LookupResults>&& results) mutable
-                -> kj::Maybe<capnp::Response<LookupResults>> {
-        return kj::mv(results);
-      }, [](kj::Exception&& e) -> kj::Maybe<capnp::Response<LookupResults>> {
-        // Lookup failed. Apparently this node doesn't exist in this layer.
-        return nullptr;
-      }));
-    }
-
-    context.releaseParams();
-
-    return kj::joinPromises(promises.releaseAsArray())
-        .then([context](auto&& layerResults) mutable {
-      kj::Vector<fuse::Node::Client> outLayers(layerResults.size());
-      uint64_t ttl = kj::maxValue;
-
-      for (auto& maybeLayer: layerResults) {
-        KJ_IF_MAYBE(layer, maybeLayer) {
-          outLayers.add(layer->getNode());
-          ttl = kj::min(ttl, layer->getTtl());
-        }
+      auto maybeLayer = layer->lookup(name);
+      KJ_IF_MAYBE(newLayer, maybeLayer) {
+        outLayers.add(newLayer->node->addRef());
+        ttl = kj::min(ttl, newLayer->ttl);
       }
 
-      KJ_REQUIRE(outLayers.size() > 0, "no such file or directory");
+    }
 
-      auto outResults = context.getResults(capnp::MessageSize {2, 1});
-      outResults.setNode(kj::heap<UnionNode>(outLayers.releaseAsArray()));
-      outResults.setTtl(ttl);
-    });
+    if (outLayers.size() == 0) {
+      return nullptr;
+    } else {
+      return LookupResults { kj::refcounted<UnionNode>(outLayers.releaseAsArray()), ttl };
+    }
   }
 
-  kj::Promise<void> openAsDirectory(OpenAsDirectoryContext context) override {
+  kj::Maybe<kj::Own<fuse::Directory>> openAsDirectory() override {
     // Call openAsDirectory() on all children and then return a UnionDirectory of the pipelined
     // results. No need to wait; if pipelined requests on the layers fail then we simply treat
     // them as empty directories anyway.
-    auto dirLayers = kj::heapArrayBuilder<fuse::Directory::Client>(layers.size());
+
+    auto dirLayers = kj::heapArrayBuilder<kj::Own<fuse::Directory>>(layers.size());
     for (auto& layer: layers) {
-      dirLayers.add(layer.openAsDirectoryRequest(capnp::MessageSize {4,0})
-          .send().getDirectory());
+      auto maybeAsDir = layer->openAsDirectory();
+      KJ_IF_MAYBE(asDir, maybeAsDir) {
+        dirLayers.add(kj::mv(*asDir));
+      }
     }
 
-    context.releaseParams();
-
-    auto results = context.getResults(capnp::MessageSize {4,1});
-    results.setDirectory(kj::heap<UnionDirectory>(dirLayers.finish()));
-    return kj::READY_NOW;
+    kj::Own<fuse::Directory> result = kj::refcounted<UnionDirectory>(dirLayers.finish());
+    return kj::mv(result);
   }
 
 private:
-  kj::Array<fuse::Node::Client> layers;
+  kj::Array<kj::Own<fuse::Node>> layers;
 };
 
 class HidingDirectory final: public SimpleDirecotry {
   // Directory that filters out a set of hidden paths from its contents.
 
 public:
-  HidingDirectory(fuse::Directory::Client delegate, std::set<kj::StringPtr> hidePaths)
+  HidingDirectory(kj::Own<fuse::Directory> delegate, std::set<kj::StringPtr> hidePaths)
       : delegate(kj::mv(delegate)), hidePaths(kj::mv(hidePaths)) {}
 
-  kj::Promise<kj::Array<SimpleEntry>> simpleRead() override {
-    return readFrom(delegate).then([this](kj::Array<SimpleEntry>&& entries) {
-      kj::Vector<SimpleEntry> outEntries(entries.size());
+  kj::Array<SimpleEntry> simpleRead() override {
+    auto entries = readFrom(*delegate);
+    kj::Vector<SimpleEntry> outEntries(entries.size());
 
-      for (auto& entry: entries) {
-        if (hidePaths.count(entry.name) == 0) {
-          outEntries.add(kj::mv(entry));
-        }
+    for (auto& entry: entries) {
+      if (hidePaths.count(entry.name) == 0) {
+        outEntries.add(kj::mv(entry));
       }
+    }
 
-      return outEntries.releaseAsArray();
-    });
+    return outEntries.releaseAsArray();
   }
 
 private:
-  fuse::Directory::Client delegate;
+  kj::Own<fuse::Directory> delegate;
   std::set<kj::StringPtr> hidePaths;
 };
 
@@ -327,36 +266,32 @@ class HidingNode final: public DelegatingNode {
   // A node which hides some set of its contents.
 
 public:
-  HidingNode(fuse::Node::Client delegate, std::set<kj::StringPtr> hidePaths)
-      : DelegatingNode(delegate), hidePaths(kj::mv(hidePaths)) {}
+  HidingNode(kj::Own<fuse::Node>&& delegate, std::set<kj::StringPtr> hidePaths)
+    : DelegatingNode(kj::mv(delegate)), hidePaths(kj::mv(hidePaths)) {}
 
 protected:
-  kj::Promise<void> lookup(LookupContext context) override {
-    auto params = context.getParams();
-    auto name = params.getName();
-
-    KJ_REQUIRE(hidePaths.count(name) == 0, "path hidden");
-
-    auto subRequest = delegate.lookupRequest(params.totalSize());
-    subRequest.setName(name);
-
-    std::set<kj::StringPtr> subHides;
-    for (auto& hidden: hidePaths) {
-      if (hidden.size() > name.size() &&
-          hidden.startsWith(name) &&
-          hidden[name.size()] == '/') {
-        subHides.insert(hidden.slice(name.size() + 1));
-      }
+  kj::Maybe<LookupResults> lookup(kj::StringPtr name) override {
+    if (hidePaths.count(name) != 0) {
+      return nullptr;
     }
 
-    context.releaseParams();
+    auto maybeResult = delegate->lookup(name);
 
-    return subRequest.send().then([KJ_MVCAP(name), KJ_MVCAP(subHides), context](
-        capnp::Response<LookupResults>&& results) mutable {
-      auto outResults = context.getResults(results.totalSize());
-      outResults.setNode(kj::heap<HidingNode>(results.getNode(), kj::mv(subHides)));
-      outResults.setTtl(results.getTtl());
-    });
+    KJ_IF_MAYBE(result, maybeResult) {
+
+      std::set<kj::StringPtr> subHides;
+      for (auto& hidden: hidePaths) {
+        if (hidden.size() > name.size() &&
+            hidden.startsWith(name) &&
+            hidden[name.size()] == '/') {
+          subHides.insert(hidden.slice(name.size() + 1));
+        }
+      }
+
+      return LookupResults { kj::refcounted<HidingNode>(kj::mv(result->node), kj::mv(subHides)), result->ttl };
+    } else {
+      return nullptr;
+    }
   }
 
 private:
@@ -367,27 +302,26 @@ class TrackingNode final: public DelegatingNode {
   // A node which tracks what nodes are ultimately opened.
 
 public:
-  TrackingNode(fuse::Node::Client delegate, kj::String path,
+  TrackingNode(kj::Own<fuse::Node> delegate, kj::String path,
                kj::Function<void(kj::StringPtr)>& callback)
-      : DelegatingNode(delegate), path(kj::mv(path)), callback(callback) {}
+    : DelegatingNode(kj::mv(delegate)), path(kj::mv(path)), callback(callback) {}
 
 protected:
-  kj::Promise<void> lookup(LookupContext context) override {
-    auto params = context.getParams();
-    auto name = params.getName();
+  kj::Maybe<LookupResults> lookup(kj::StringPtr name) override {
     auto subPath = path == nullptr ? kj::heapString(name) : kj::str(path, '/', name);
-    auto request = delegate.lookupRequest(params.totalSize());
-    request.setName(name);
-    context.releaseParams();
-    auto& callback = this->callback;
-    return request.send().then([context, KJ_MVCAP(subPath), &callback](auto&& response) mutable {
-      auto results = context.getResults(capnp::MessageSize {4, 1});
-      results.setNode(kj::heap<TrackingNode>(response.getNode(), kj::mv(subPath), callback));
-      results.setTtl(response.getTtl());
-    });
+    auto maybeResponse = delegate->lookup(name);
+    KJ_IF_MAYBE(response, maybeResponse) {
+      auto& callback = this->callback;
+      return LookupResults {
+        kj::refcounted<TrackingNode>(kj::mv(response->node), kj::mv(subPath), callback),
+          response->ttl
+          };
+    } else {
+      return nullptr;
+    }
   }
 
-  kj::Promise<void> getAttributes(GetAttributesContext context) override {
+  GetAttributesResults getAttributes() override {
     // Normally, we don't want to mark a file as "used" just because it was stat()ed, because it
     // is normal to stat() every file in a directory when listing that directory, and this doesn't
     // necessarily mean the file is used by the app. However, we make a special exception for
@@ -398,29 +332,27 @@ protected:
     // In particular, RubyGems has been observed to care about the presence or absence of zero-size
     // ".build_complete" files.
 
-    return delegate.getAttributesRequest(context.getParams().totalSize()).send()
-        .then([this,context](capnp::Response<GetAttributesResults>&& results) mutable {
-      auto attributes = results.getAttributes();
-      if (attributes.getType() == fuse::Node::Type::REGULAR && attributes.getSize() == 0) {
-        markUsed();
-      }
-      context.setResults(results);
-    });
+    auto subresult = delegate->getAttributes();
+    auto& attributes = subresult.attributes;
+    if (attributes.type == fuse::Node::Type::REGULAR && attributes.size == 0) {
+      markUsed();
+    }
+    return subresult;
   }
 
-  kj::Promise<void> openAsFile(OpenAsFileContext context) override {
+  kj::Maybe<kj::Own<fuse::File>> openAsFile() override {
     markUsed();
-    return DelegatingNode::openAsFile(kj::mv(context));
+    return DelegatingNode::openAsFile();
   }
 
-  kj::Promise<void> openAsDirectory(OpenAsDirectoryContext context) override {
+  kj::Maybe<kj::Own<fuse::Directory>> openAsDirectory() override {
     markUsed();
-    return DelegatingNode::openAsDirectory(kj::mv(context));
+    return DelegatingNode::openAsDirectory();
   }
 
-  kj::Promise<void> readlink(ReadlinkContext context) override {
+  kj::String readlink() override {
     markUsed();
-    return DelegatingNode::readlink(kj::mv(context));
+    return DelegatingNode::readlink();
   }
 
 private:
@@ -442,7 +374,7 @@ class SingletonDirectory final: public SimpleDirecotry {
 public:
   explicit SingletonDirectory(kj::StringPtr path): path(path) {}
 
-  kj::Promise<kj::Array<SimpleEntry>> simpleRead() override {
+  kj::Array<SimpleEntry> simpleRead() override {
     auto result = kj::heapArray<SimpleEntry>(3);
 
     result[0].name = kj::str(".");
@@ -464,71 +396,62 @@ private:
   kj::StringPtr path;
 };
 
-class SingletonNode final: public fuse::Node::Server {
+class SingletonNode final: public fuse::Node, public kj::Refcounted {
   // A directory node which contains only one member mapped at some path.
 
 public:
-  SingletonNode(fuse::Node::Client member, kj::StringPtr path)
+  SingletonNode(kj::Own<fuse::Node> member, kj::StringPtr path)
       : member(kj::mv(member)), path(path) {}
 
-protected:
-  kj::Promise<void> lookup(LookupContext context) override {
-    auto params = context.getParams();
-    auto name = params.getName();
+  kj::Own<fuse::Node> addRef() override {
+    return kj::addRef(*this);
+  }
 
+protected:
+  kj::Maybe<LookupResults> lookup(kj::StringPtr name) override {
     if (path.startsWith(name)) {
       auto sub = path.slice(name.size());
       if (sub.size() == 0) {
         // This is the exact path.
-        auto results = context.getResults(capnp::MessageSize {4, 1});
-        results.setNode(member);
-        results.setTtl(kj::maxValue);
-        return kj::READY_NOW;
+        return LookupResults { member->addRef(), kj::maxValue };
       } else if (sub.startsWith("/")) {
         sub = sub.slice(1);
-        auto results = context.getResults(capnp::MessageSize {4, 1});
-        results.setNode(kj::heap<SingletonNode>(member, sub));
-        results.setTtl(kj::maxValue);
-        return kj::READY_NOW;
+        return LookupResults { kj::refcounted<SingletonNode>(member->addRef(), sub), kj::maxValue };
       }
     }
 
-    KJ_FAIL_REQUIRE("no such file or directory");
+    return nullptr;
   }
 
-  kj::Promise<void> getAttributes(GetAttributesContext context) override {
-    auto results = context.getResults(capnp::MessageSize {
-      capnp::sizeInWords<GetAttributesResults>() +
-          capnp::sizeInWords<fuse::Node::Attributes>(),
-      0
-    });
-    results.setTtl(kj::maxValue);
+  GetAttributesResults getAttributes() override {
 
-    auto attr = results.initAttributes();
-    attr.setInodeNumber(0);
-    attr.setType(fuse::Node::Type::DIRECTORY);
-    attr.setPermissions(0555);
-    attr.setLinkCount(1);
+    auto result = GetAttributesResults {};
+    result.ttl = kj::maxValue;
+    auto& attr = result.attributes;
 
-    return kj::READY_NOW;
+    attr.inodeNumber = 0;
+    attr.type = fuse::Node::Type::DIRECTORY;
+    attr.permissions = 0555;
+    attr.linkCount = 1;
+
+    return result;
   }
 
-  kj::Promise<void> openAsFile(OpenAsFileContext context) override {
-    KJ_FAIL_REQUIRE("not a file");
+  kj::Maybe<kj::Own<fuse::File>> openAsFile() override {
+    return nullptr;
   }
 
-  kj::Promise<void> openAsDirectory(OpenAsDirectoryContext context) override {
-    auto results = context.getResults(capnp::MessageSize { 4, 1 });
-    results.setDirectory(kj::heap<SingletonDirectory>(path));
-    return kj::READY_NOW;
+  kj::Maybe<kj::Own<fuse::Directory>> openAsDirectory() override {
+    kj::Own<fuse::Directory> result = kj::refcounted<SingletonDirectory>(path);
+    return kj::mv(result);
   }
 
-  kj::Promise<void> readlink(ReadlinkContext context) override {
+  kj::String readlink() override {
     KJ_FAIL_REQUIRE("not a symlink");
   }
 
 private:
-  fuse::Node::Client member;
+  kj::Own<fuse::Node> member;
   kj::StringPtr path;
 };
 
@@ -536,7 +459,7 @@ class EmptyDirectory final: public SimpleDirecotry {
 public:
   EmptyDirectory() = default;
 
-  kj::Promise<kj::Array<SimpleEntry>> simpleRead() override {
+  kj::Array<SimpleEntry> simpleRead() override {
     auto result = kj::heapArray<SimpleEntry>(2);
 
     result[0].name = kj::str(".");
@@ -548,111 +471,108 @@ public:
   }
 };
 
-class EmptyNode final: public fuse::Node::Server {
-  // A directory node which contains only one member mapped at some path.
+class EmptyNode final: public fuse::Node {
+  // A directory node which contains nothing.
 
 public:
   EmptyNode() = default;
 
+
+  kj::Own<fuse::Node> addRef() override {
+    return kj::heap<EmptyNode>();
+  }
+
 protected:
-  kj::Promise<void> lookup(LookupContext context) override {
-    KJ_FAIL_REQUIRE("no such file or directory");
+  kj::Maybe<LookupResults> lookup(kj::StringPtr name) override {
+    return nullptr;
   }
 
-  kj::Promise<void> getAttributes(GetAttributesContext context) override {
-    auto results = context.getResults(capnp::MessageSize {
-      capnp::sizeInWords<GetAttributesResults>() +
-          capnp::sizeInWords<fuse::Node::Attributes>(),
-      0
-    });
-    results.setTtl(kj::maxValue);
+  GetAttributesResults getAttributes() override {
+    auto results = GetAttributesResults {};
+    results.ttl = kj::maxValue;
+    auto& attr = results.attributes;
 
-    auto attr = results.initAttributes();
-    attr.setInodeNumber(0);
-    attr.setType(fuse::Node::Type::DIRECTORY);
-    attr.setPermissions(0555);
-    attr.setLinkCount(1);
+    attr.inodeNumber = 0;
+    attr.type = fuse::Node::Type::DIRECTORY;
+    attr.permissions = 0555;
+    attr.linkCount = 1;
 
-    return kj::READY_NOW;
+    return results;
   }
 
-  kj::Promise<void> openAsFile(OpenAsFileContext context) override {
-    KJ_FAIL_REQUIRE("not a file");
+  kj::Maybe<kj::Own<fuse::File>> openAsFile() override {
+    return nullptr;
   }
 
-  kj::Promise<void> openAsDirectory(OpenAsDirectoryContext context) override {
-    auto results = context.getResults(capnp::MessageSize { 4, 1 });
-    results.setDirectory(kj::heap<EmptyDirectory>());
-    return kj::READY_NOW;
+  kj::Maybe<kj::Own<fuse::Directory>> openAsDirectory() override {
+    kj::Own<fuse::Directory> result = kj::refcounted<EmptyDirectory>();
+    return kj::mv(result);
   }
 
-  kj::Promise<void> readlink(ReadlinkContext context) override {
+  kj::String readlink() override {
     KJ_FAIL_REQUIRE("not a symlink");
   }
 };
 
-class SimpleDataFile final: public fuse::File::Server {
+class SimpleDataFile final: public fuse::File, public kj::Refcounted {
 public:
   SimpleDataFile(kj::ArrayPtr<const capnp::word> data)
       : data(kj::arrayPtr(reinterpret_cast<const kj::byte*>(data.begin()),
                           data.size() * sizeof(capnp::word))) {}
 
+  kj::Own<fuse::File> addRef() override {
+    return kj::addRef(*this);
+  }
+
 protected:
-  kj::Promise<void> read(ReadContext context) {
-    auto params = context.getParams();
-    auto offset = kj::min(data.size(), params.getOffset());
-    auto size = kj::min(data.size() - offset, params.getSize());
-
-    auto results = context.getResults(capnp::MessageSize { size / sizeof(capnp::word) + 4, 0 });
-    results.setData(data.slice(offset, offset + size));
-
-    return kj::READY_NOW;
+  kj::Array<uint8_t> read(uint64_t offset0, uint32_t size0) override {
+    auto offset = kj::min(data.size(), offset0);
+    auto size = kj::min(data.size() - offset, size0);
+    return kj::heapArray(data.slice(offset, offset + size));
   }
 
 private:
   kj::ArrayPtr<const kj::byte> data;
 };
 
-class SimpleDataNode final: public fuse::Node::Server {
+class SimpleDataNode final: public fuse::Node, public kj::Refcounted {
   // A node wrapping a byte array and exposing it as a file.
 
 public:
   SimpleDataNode(kj::Array<capnp::word> data): data(kj::mv(data)) {}
 
+  kj::Own<fuse::Node> addRef() override {
+    return kj::addRef(*this);
+  }
+
 protected:
-  kj::Promise<void> lookup(LookupContext context) override {
-    KJ_FAIL_REQUIRE("not a directory");
+  kj::Maybe<LookupResults> lookup(kj::StringPtr name) override {
+    return nullptr;
   }
 
-  kj::Promise<void> getAttributes(GetAttributesContext context) override {
-    auto results = context.getResults(capnp::MessageSize {
-      capnp::sizeInWords<GetAttributesResults>() +
-          capnp::sizeInWords<fuse::Node::Attributes>(),
-      0
-    });
-    results.setTtl(kj::maxValue);
+  GetAttributesResults getAttributes() override {
+    auto result = GetAttributesResults {};
+    result.ttl = kj::maxValue;
+    auto& attr = result.attributes;
+    attr.inodeNumber = 0;
+    attr.type = fuse::Node::Type::REGULAR;
+    attr.permissions = 0444;
+    attr.linkCount = 1;
+    attr.size = data.size() * sizeof(capnp::word);
 
-    auto attr = results.initAttributes();
-    attr.setInodeNumber(0);
-    attr.setType(fuse::Node::Type::REGULAR);
-    attr.setPermissions(0444);
-    attr.setLinkCount(1);
-    attr.setSize(data.size() * sizeof(capnp::word));
-
-    return kj::READY_NOW;
+    return result;
   }
 
-  kj::Promise<void> openAsFile(OpenAsFileContext context) override {
-    auto results = context.getResults(capnp::MessageSize { 4, 1 });
-    results.setFile(kj::heap<SimpleDataFile>(data));
-    return kj::READY_NOW;
+  kj::Maybe<kj::Own<fuse::File>> openAsFile() override {
+    kj::Own<fuse::File> result = kj::refcounted<SimpleDataFile>(data);
+    return kj::mv(result);
   }
 
-  kj::Promise<void> openAsDirectory(OpenAsDirectoryContext context) override {
-    KJ_FAIL_REQUIRE("not a directory");
+  kj::Maybe<kj::Own<fuse::Directory>> openAsDirectory() override {
+    return nullptr;
   }
 
-  kj::Promise<void> readlink(ReadlinkContext context) override {
+  kj::String readlink() override {
     KJ_FAIL_REQUIRE("not a symlink");
   }
 
@@ -662,36 +582,36 @@ private:
 
 }  // namespace
 
-fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap,
+kj::Own<fuse::Node> makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader sourceMap,
                                spk::Manifest::Reader manifest,
                                spk::BridgeConfig::Reader bridgeConfig, kj::StringPtr bridgePath,
                                kj::Function<void(kj::StringPtr)>& callback) {
   auto searchPath = sourceMap.getSearchPath();
-  auto layers = kj::Vector<fuse::Node::Client>(searchPath.size() + 10);
+  auto layers = kj::Vector<kj::Own<fuse::Node>>(searchPath.size() + 10);
 
   {
     capnp::MallocMessageBuilder manifestCopy(manifest.totalSize().wordCount + 4);
     manifestCopy.setRoot(manifest);
-    layers.add(kj::heap<SingletonNode>(kj::heap<SimpleDataNode>(
+    layers.add(kj::refcounted<SingletonNode>(kj::refcounted<SimpleDataNode>(
         capnp::messageToFlatArray(manifestCopy)), "sandstorm-manifest"));
   }
 
   {
     capnp::MallocMessageBuilder bridgeConfigCopy(bridgeConfig.totalSize().wordCount + 4);
     bridgeConfigCopy.setRoot(bridgeConfig);
-    layers.add(kj::heap<SingletonNode>(kj::heap<SimpleDataNode>(
+    layers.add(kj::refcounted<SingletonNode>(kj::refcounted<SimpleDataNode>(
         capnp::messageToFlatArray(bridgeConfigCopy)), "sandstorm-http-bridge-config"));
   }
 
-  layers.add(kj::heap<SingletonNode>(
+  layers.add(kj::refcounted<SingletonNode>(
       newLoopbackFuseNode(bridgePath, kj::maxValue), "sandstorm-http-bridge"));
 
-  layers.add(kj::heap<SingletonNode>(kj::heap<EmptyNode>(), "dev"));
-  layers.add(kj::heap<SingletonNode>(kj::heap<EmptyNode>(), "tmp"));
-  layers.add(kj::heap<SingletonNode>(kj::heap<EmptyNode>(), "var"));
+  layers.add(kj::refcounted<SingletonNode>(kj::heap<EmptyNode>(), "dev"));
+  layers.add(kj::refcounted<SingletonNode>(kj::heap<EmptyNode>(), "tmp"));
+  layers.add(kj::refcounted<SingletonNode>(kj::heap<EmptyNode>(), "var"));
 
   // Empty /proc/cpuinfo will be overmounted by the supervisor.
-  layers.add(kj::heap<SingletonNode>(kj::heap<SimpleDataNode>(nullptr), "proc/cpuinfo"));
+  layers.add(kj::refcounted<SingletonNode>(kj::refcounted<SimpleDataNode>(nullptr), "proc/cpuinfo"));
 
   for (auto mapping: searchPath) {
     kj::StringPtr sourcePath = mapping.getSourcePath();
@@ -720,7 +640,7 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
 
     // Create the filesystem node.
     // We set a low TTL here, but note that the spk tool overrides it anyway.
-    fuse::Node::Client node = newLoopbackFuseNode(sourcePath, 1 * kj::SECONDS);
+    kj::Own<fuse::Node> node = newLoopbackFuseNode(sourcePath, 1 * kj::SECONDS);
 
     // If any contents are hidden, wrap in a hiding node.
     auto hides = mapping.getHidePaths();
@@ -729,21 +649,21 @@ fuse::Node::Client makeUnionFs(kj::StringPtr sourceDir, spk::SourceMap::Reader s
       for (auto hide: hides) {
         hideSet.insert(hide);
       }
-      node = kj::heap<HidingNode>(kj::mv(node), kj::mv(hideSet));
+      node = kj::refcounted<HidingNode>(kj::mv(node), kj::mv(hideSet));
     }
 
     // If the contents are mapped to a non-root location, wrap in a singleton node.
     KJ_ASSERT(!packagePath.startsWith("/"),
               "`packagePath` in source map should not start with '/'.");
     if (packagePath.size() > 0) {
-      node = kj::heap<SingletonNode>(kj::mv(node), packagePath);
+      node = kj::refcounted<SingletonNode>(kj::mv(node), packagePath);
     }
 
     layers.add(kj::mv(node));
   }
 
-  auto merged = kj::heap<UnionNode>(layers.releaseAsArray());
-  return kj::heap<TrackingNode>(kj::mv(merged), nullptr, callback);
+  auto merged = kj::refcounted<UnionNode>(layers.releaseAsArray());
+  return kj::refcounted<TrackingNode>(kj::mv(merged), nullptr, callback);
 }
 
 static kj::String joinPaths(kj::StringPtr a, kj::StringPtr b) {

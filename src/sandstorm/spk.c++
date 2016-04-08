@@ -2072,7 +2072,7 @@ private:
         context.warning("App is now available from Sandstorm server. Ctrl+C to disconnect.");
       }
 
-      bindFuse(eventPort, fuseFd, rootNode, options)
+      bindFuse(eventPort, fuseFd, kj::mv(rootNode), options)
           .then([&]() {
             context.warning("Unmounted cleanly.");
             KJ_IF_MAYBE(m, fuseMount) {

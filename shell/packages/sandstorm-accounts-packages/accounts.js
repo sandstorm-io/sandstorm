@@ -44,7 +44,7 @@ Accounts.identityServices = {};
 //       data: An object to pass along to the template when it is rendered. The value of this
 //             field will be placed in the `data` field. In addition, there will be a
 //             boolean `linkingNewIdentity` field, which is true if the component is currently being
-//             used to link an new identity, rather than just to log in.
+//             used to link a new identity, rather than just to log in.
 //
 // TODO(someday): It probably makes sense also to collect in these objects the service-specific
 // user initialization logic currently found in sandstorm-db/user.js and sandstorm-db/profile.js.

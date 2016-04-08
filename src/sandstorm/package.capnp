@@ -588,7 +588,7 @@ enum Category {
   # Content consumption
 
   media @8 $categoryInfo(title = "Media");
-  # Content *consuption*: Apps that aren't used to create content, but are used to display and
+  # Content *consumption*: Apps that aren't used to create content, but are used to display and
   # consume it. Music players, photo galleries, video, feed readers, etc.
 
   games @9 $categoryInfo(title = "Games");

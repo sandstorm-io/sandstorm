@@ -4,7 +4,7 @@ Vagrant-Destroy-If-bash: -d $HOME/sandstorm
 Cleanup: uninstall_sandstorm
 
 $[run]CURL_USER_AGENT=testing /vagrant/install.sh -u
-Sandstorm makes it easy to run web apps on your own server.
+$[slow]Sandstorm makes it easy to run web apps on your own server.
 Expose to localhost only? [yes] $[type]
 Where would you like to put Sandstorm? $[type]
 Automatically keep Sandstorm updated? [yes]$[type]

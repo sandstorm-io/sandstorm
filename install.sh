@@ -628,12 +628,21 @@ detect_init_system() {
 }
 
 choose_install_mode() {
+  echo -n 'Sandstorm makes it easy to run web apps on your own server. '
+
   if [ "yes" = "$USE_DEFAULTS" ] ; then
     CHOSEN_INSTALL_MODE="${CHOSEN_INSTALL_MODE:-2}"  # dev server mode by default
   fi
 
+  if [ "no" = "${PREFER_ROOT:-}" ] ; then
+    echo ""
+    echo "NOTE: Showing you all options, including development options, but omitting "
+    echo "      init script automation, because you chose to install without using root."
+    CHOSEN_INSTALL_MODE="${CHOSEN_INSTALL_MODE:-2}"  # dev server mode by default
+  fi
+
   if [ -z "${CHOSEN_INSTALL_MODE:-}" ]; then
-    echo "Sandstorm makes it easy to run web apps on your own server. You can have:"
+    echo "You can have:"
     echo ""
     echo "1. A typical install, to use Sandstorm (press enter to accept this default)"
     echo "2. A development server, for working on Sandstorm itself or localhost-based app development"
@@ -1381,9 +1390,13 @@ install_sandstorm_symlinks() {
 }
 
 ask_about_starting_at_boot() {
-  # If we already know we want to start the thing at boot, we can
-  # skip asking.
-  if [ "yes" = "${START_AT_BOOT:-}" ] ; then
+  # Starting Sandstorm at boot cannot work if we are not root by this point.
+  if [ "$CURRENTLY_UID_ZERO" != "yes" ] ; then
+    START_AT_BOOT="no"
+  fi
+
+  # If we already know if we want to start the thing at boot, we can skip asking.
+  if [ ! -z "${START_AT_BOOT:-}" ] ; then
     return
   fi
 
@@ -1398,12 +1411,6 @@ configure_start_at_boot_if_desired() {
   # If the user doesn't want us to start Sandstorm at boot, then we
   # don't run anything in this function.
   if [ "yes" != "${START_AT_BOOT:-}" ] ; then
-    return
-  fi
-
-  # Also, if we are not running as root, we do not bother with these
-  # steps.
-  if [ "yes" != "${CURRENTLY_UID_ZERO}" ] ; then
     return
   fi
 
@@ -1499,6 +1506,11 @@ __EOF__
 }
 
 generate_admin_token() {
+  # If dev accounts are enabled, the user does not need an admin token.
+  if [ "yes" = "${ALLOW_DEV_ACCOUNTS}" ] ; then
+    return
+  fi
+
   # Allow the person running the install.sh script to pre-generate an admin token, specified as an
   # environment variable, so that they can ignore the output text of install.sh.
   if [ ! -z "${ADMIN_TOKEN:-}" ] ; then
@@ -1525,8 +1537,18 @@ print_success() {
     fi
     echo "Visit this link to configure it:"
   fi
+
   echo ""
-  echo "  ${BASE_URL:-(unknown; bad config)}/setup/token/$ADMIN_TOKEN"
+
+  # If there is an admin token at this point, print an admin token URL.  Otherwise, don't. Note that
+  # when dev accounts are enabled, it is advantageous to not print an admin token URL.
+  if [ ! -z "${ADMIN_TOKEN:-}" ] ; then
+    echo "  ${BASE_URL:-(unknown; bad config)}/setup/token/$ADMIN_TOKEN"
+  else
+    echo "  ${BASE_URL:-(unknown; bad config)}/"
+  fi
+  echo ""
+
   if [ "${SANDCATS_HTTPS_SUCCESSFUL}" = "yes" ] ; then
     echo ""
     echo "(If your browser shows you an OCSP error, wait 10 minutes for it to auto-resolve"

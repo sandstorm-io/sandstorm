@@ -1,15 +1,10 @@
 Title: Can install without root, with -u
-Vagrant-Box: trusty64
+Vagrant-Box: jessie
 Vagrant-Destroy-If-bash: -d $HOME/sandstorm
 Cleanup: uninstall_sandstorm
 
 $[run]CURL_USER_AGENT=testing /vagrant/install.sh -u
-$[slow]Sandstorm makes it easy to run web apps on your own server. You can have:
-
-1. A typical install, to use Sandstorm (press enter to accept this default)
-2. A development server, for working on Sandstorm itself or localhost-based app development
-
-How are you going to use this Sandstorm install? [1] $[type]2
+$[slow]Sandstorm makes it easy to run web apps on your own server.
 Expose to localhost only? [yes] $[type]
 Where would you like to put Sandstorm? $[type]
 Automatically keep Sandstorm updated? [yes]$[type]
@@ -41,11 +36,10 @@ Config written to
 Finding latest build for dev channel...
 $[veryslow]Downloading: https://dl.sandstorm.io/sandstorm-
 $[veryslow]GPG signature is valid.
-$[veryslow]Start sandstorm at system boot (using sysvinit)? [yes] $[type]
-Setup complete. To start your server now, run:
+$[slow]Setup complete. To start your server now, run:
 sandstorm start
 Once that's done, visit this link to configure it:
-  http://local.sandstorm.io:6080/admin/
+  http://local.sandstorm.io:6080/
 NOTE: This URL expires in 15 minutes.
 
 To learn how to control the server, run:

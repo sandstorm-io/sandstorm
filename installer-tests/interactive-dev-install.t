@@ -17,7 +17,7 @@ $[veryslow]Downloading: https://dl.sandstorm.io/
 $[veryslow]GPG signature is valid.
 $[veryslow]Sandstorm started.
 Visit this link to configure it:
-  http://local.sandstorm.io:6080/admin/
+  http://local.sandstorm.io:6080/
 To learn how to control the server, run:
   sandstorm help
 $[exitcode]0

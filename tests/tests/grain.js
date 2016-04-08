@@ -474,6 +474,10 @@ module.exports["Test grain identity chooser interstitial"] = function (browser) 
         .click("button.pick-identity")
         .waitForElementVisible('.grain-frame', medium_wait)
         .assert.containsText('#grainTitle', expectedHackerCMSGrainTitle)
+        .frame('grain-frame')
+        .waitForElementPresent('#publish', medium_wait)
+        .assert.containsText('#publish', 'Publish')
+        .frame(null)
 
          // Identity picker should not come up on reloading the page.
         .url(shareLink.value)

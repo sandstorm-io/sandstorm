@@ -1609,24 +1609,38 @@ ul.identity-card-list {
   color: black;
   font-family: "Source Sans Pro", sans-serif;
   background-color: white;
-  background-repeat: no-repeat;
-  background-position: 50px 30px;
-  background-size: 16px 16px;
+
+  &::before {
+    color: #9E9E9E;
+    position: absolute;
+    left: 50px;
+    top: 30px;
+    font-size: 16px;
+    @extend .icon;
+  }
 
   &[data-service-name=github] {
-    background-image: url("/github-9E9E9E.svg");
+    @extend .icon-github;
   }
 
   &[data-service-name=google] {
-    background-image: url("/google-9E9E9E.svg");
+    @extend .icon-google;
   }
 
   &[data-service-name=dev] {
-    background-image: url("/debug-9E9E9E.svg");
+    @extend .icon-debug;
   }
 
   &[data-service-name=email] {
-    background-image: url("/email-9E9E9E.svg");
+    @extend .icon-email;
+  }
+
+  &[data-service-name=ldap] {
+    @extend .icon-ldap;
+  }
+
+  &[data-service-name=saml] {
+    @extend .icon-ldap;
   }
 
   .picture {

@@ -1036,8 +1036,8 @@ Template.featureKeyUploadForm.helpers({
     return Template.instance().text.get();
   },
 
-  htmlDisabled() {
-    return Template.instance().text.get() ? "" : "disabled";
+  disabled() {
+    return !Template.instance().text.get();
   },
 });
 

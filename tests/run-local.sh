@@ -25,7 +25,8 @@ THIS_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
 METEOR_DEV_BUNDLE=$("$THIS_DIR/../find-meteor-dev-bundle.sh")
 NODEJS="$METEOR_DEV_BUNDLE/bin/node"
 NPM="$METEOR_DEV_BUNDLE/bin/npm"
-SELENIUM_JAR="selenium-server-standalone-2.50.0.jar"
+SELENIUM_JAR="selenium-server-standalone-2.53.0.jar"
+SELENIUM_DOWNLOAD_URL="http://selenium-release.storage.googleapis.com/2.53/$SELENIUM_JAR"
 
 cleanExit () {
   rc=$1
@@ -94,7 +95,7 @@ if [ "$RUN_SELENIUM" != "false" ] ; then
   checkInstalled java default-jre-headless
   checkInstalled xvfb-run Xvfb
   checkInstalled pgrep procps
-  test -e ./$SELENIUM_JAR || curl -o $SELENIUM_JAR "http://selenium-release.storage.googleapis.com/2.50/$SELENIUM_JAR"
+  test -e ./$SELENIUM_JAR || curl -o $SELENIUM_JAR $SELENIUM_DOWNLOAD_URL
   xvfb-run --server-args="-screen 0, 1280x1024x24" java -jar ./$SELENIUM_JAR &
   XVFB_PID=$!
 fi

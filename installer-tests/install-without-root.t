@@ -36,7 +36,7 @@ Config written to
 Finding latest build for dev channel...
 $[veryslow]Downloading: https://dl.sandstorm.io/sandstorm-
 $[veryslow]GPG signature is valid.
-Setup complete. To start your server now, run:
+$[slow]Setup complete. To start your server now, run:
 sandstorm start
 Once that's done, visit this link to configure it:
   http://local.sandstorm.io:6080/admin/

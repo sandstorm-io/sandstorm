@@ -363,7 +363,7 @@ private:
           case EINTR:
             continue;
           case ENOENT:
-            // libfuse simply rentries on ENOENT. Comment says that ENOENT means "the operation
+            // libfuse simply retries on ENOENT. Comment says that ENOENT means "the operation
             // was interrupted", but I can't tell what that's supposed to mean. It makes sense
             // for write() but what operation is being interrupted on read()? Well, anyway, we do
             // what libfuse does and retry in this case.

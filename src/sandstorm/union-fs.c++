@@ -98,7 +98,7 @@ public:
   static kj::Array<SimpleEntry> readFrom(
       fuse::Directory& directory, uint64_t offset = 0,
       kj::Vector<SimpleEntry>&& alreadyRead = kj::Vector<SimpleEntry>(16)) {
-    // Convenience to read the contents of some other directory. Adds all entries to *target.
+    // Convenience to read the contents of some other directory. Adds all entries to *alreadyRead.
 
     static const uint DEFAULT_COUNT = 128;
     auto entries = directory.read(offset, DEFAULT_COUNT);

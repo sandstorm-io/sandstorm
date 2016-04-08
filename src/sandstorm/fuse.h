@@ -24,7 +24,9 @@
 
 namespace kj { class UnixEventPort; }
 
+namespace sandstorm {
 namespace fuse {
+
 class File;
 class Directory;
 
@@ -99,8 +101,6 @@ public:
 };
 
 } // namespace fuse
-
-namespace sandstorm {
 
 struct FuseOptions {
   bool cacheForever = false;

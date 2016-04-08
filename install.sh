@@ -628,12 +628,21 @@ detect_init_system() {
 }
 
 choose_install_mode() {
+  echo -n 'Sandstorm makes it easy to run web apps on your own server. '
+
   if [ "yes" = "$USE_DEFAULTS" ] ; then
     CHOSEN_INSTALL_MODE="${CHOSEN_INSTALL_MODE:-2}"  # dev server mode by default
   fi
 
+  if [ "no" = "${PREFER_ROOT:-}" ] ; then
+    echo ""
+    echo "NOTE: Showing you all options, including development options, but omitting "
+    echo "      init script automation, because you chose to install without using root."
+    CHOSEN_INSTALL_MODE="${CHOSEN_INSTALL_MODE:-2}"  # dev server mode by default
+  fi
+
   if [ -z "${CHOSEN_INSTALL_MODE:-}" ]; then
-    echo "Sandstorm makes it easy to run web apps on your own server. You can have:"
+    echo "You can have:"
     echo ""
     echo "1. A typical install, to use Sandstorm (press enter to accept this default)"
     echo "2. A development server, for working on Sandstorm itself or localhost-based app development"

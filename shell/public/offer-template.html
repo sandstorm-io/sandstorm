@@ -64,9 +64,10 @@ body {
     </style>
   </head>
   <body>
-    <div id="container">
-      <pre id="text"></pre>
-    </div>
+    <!-- Since <pre> doesn't bound selection, this needs to all be on the same line,
+         or copying by triple-click or the clipboard button will capture additional
+         newlines in Firefox. -->
+    <div id="container"><pre id="text"></pre></div>
     <button id="clipboard" aria-label="Copy" data-clipboard-target="#text"></button>
     <div id="clipboardSuccess">copied</div>
 

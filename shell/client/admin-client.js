@@ -978,15 +978,18 @@ Template.adminAdvanced.helpers({
 
 Template.featureKeyUploadForm.onCreated(function () {
   this.error = new ReactiveVar(undefined);
+  this.text = new ReactiveVar("");
 });
 
 Template.featureKeyUploadForm.events({
   "submit form": function (evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
     const state = Iron.controller().state;
     const token = state.get("token");
-    evt.preventDefault();
+
     const instance = Template.instance();
-    const text = instance.find("textarea").value;
+    const text = instance.text.get();
     Meteor.call("submitFeatureKey", token, text, (err) => {
       if (err) {
         instance.error.set(err.message);
@@ -1017,11 +1020,24 @@ Template.featureKeyUploadForm.events({
       reader.readAsText(file);
     }
   },
+
+  "input textarea"(evt) {
+    const instance = Template.instance();
+    instance.text.set(evt.currentTarget.value);
+  },
 });
 
 Template.featureKeyUploadForm.helpers({
   currentError: function () {
     return Template.instance().error.get();
+  },
+
+  text() {
+    return Template.instance().text.get();
+  },
+
+  htmlDisabled() {
+    return Template.instance().text.get() ? "" : "disabled";
   },
 });
 

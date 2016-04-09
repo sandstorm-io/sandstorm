@@ -27,6 +27,7 @@ SendEmail.prototype.command = function(message, timeout, cb) {
       cb.call(self.client.api, new Error("Timed out while trying to send email"));
     }
 
+    pool.close();
     self.emit("complete");
   }, timeout);
 
@@ -38,6 +39,7 @@ SendEmail.prototype.command = function(message, timeout, cb) {
       cb.call(self.client.api, err);
     }
 
+    pool.close();
     self.emit("complete");
   });
 

@@ -1,3 +1,11 @@
+### v0.158 (2016-04-08) [bugfixes]
+- Massively improved performance of `spk dev` filesystem tracing.
+- Fixed that an app's SandstormCore capability could get disconnected if the frontend restarted without restarting the app, leaving the app in a state where certain features (especially powerbox-related) did not work.
+- Fixed that clicking the clipboard button to copy an offer template would include extra whitespace on Firefox, which was especially bad when copying passwords e.g. from Davros.
+- Stop printing spurrious warning about missing iptables module that just confused everyone.
+- Sandstorm for Work: LDAP and SAML users ID cards will now show LDAP/SAML icon.
+- Oasis: Increased file descriptor limits to improve reliability.
+
 ### v0.157 (2016-04-05)
 - Self-hosting: New, beautiful first-time setup wizard. (Sadly, if you already have a server, you'll never see it. But a redesign of the full admin UI is coming soon.)
 - Sandstorm for Work: Added ability to disallow sharing outside the organization, which also disallows guest accounts (since they only exist for external sharing purposes).

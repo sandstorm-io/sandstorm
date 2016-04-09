@@ -638,6 +638,7 @@ choose_install_mode() {
     echo ""
     echo "NOTE: Showing you all options, including development options, but omitting "
     echo "      init script automation, because you chose to install without using root."
+    CHOSEN_INSTALL_MODE="${CHOSEN_INSTALL_MODE:-2}"  # dev server mode by default
   fi
 
   if [ -z "${CHOSEN_INSTALL_MODE:-}" ]; then

@@ -42,8 +42,9 @@ grain.  To be specific:
 
 * Example ephemeral domain URL: https://96cab9109791f1254002ac1f857ecee7.sandstorm.example.com/awesomeinfo#section3
 
-The grain user's web browser will show the grain URL (with the path and fragment) in the address bar. Your app
-can update this URL itself.
+The grain user's web browser will show the grain URL (with the path and fragment) in the address
+bar. By default, this URL will not change, even as the user clicks around within the app. To address
+that, the app can update this URL.
 
 ## Updating the URL & page title from your app
 

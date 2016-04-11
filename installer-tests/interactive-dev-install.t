@@ -1,4 +1,4 @@
-Title: Install on Debian jessie, in dev mode, showing $SUDO_USER
+Title: Ensure a dev-mode install works, escalating to root, and adding $USER (aka $SUDO_USER) to the sandstorm group
 Vagrant-Box: jessie
 Precondition: sandstorm_not_installed
 Cleanup: uninstall_sandstorm

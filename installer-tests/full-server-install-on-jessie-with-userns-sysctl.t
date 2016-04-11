@@ -1,4 +1,4 @@
-Title: Can install with root on Debian jessie, in full server mode
+Title: Ensure Sandstorm installs fine, in a typical case: escalate to root, running on Debian jessie, mode (1) typical server install, sandcats HTTPS
 Vagrant-Box: jessie
 Precondition: sandstorm_not_installed
 Cleanup: uninstall_sandstorm

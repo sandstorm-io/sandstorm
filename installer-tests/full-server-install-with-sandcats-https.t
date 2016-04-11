@@ -1,4 +1,4 @@
-Title: Can enable sandcats HTTPS when installing in full server mode
+Title: Ensure a typical install works when started as root (including sandcats HTTPS)
 Vagrant-Box: jessie
 Precondition: sandstorm_not_installed
 Cleanup: uninstall_sandstorm

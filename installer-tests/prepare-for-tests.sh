@@ -21,7 +21,7 @@ fail() {
 }
 
 # Look for executable dependencies.
-for dep in vagrant ; do
+for dep in vagrant pip ; do
     which $dep > /dev/null || fail "Please install $dep(1)."
 done
 

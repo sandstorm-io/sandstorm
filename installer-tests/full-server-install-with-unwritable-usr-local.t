@@ -1,4 +1,4 @@
-Title: Can install with root on Debian jessie, in full server mode
+Title: Ensure Sandstorm installs OK if /usr/local is unwritable (e.g. on CoreOS)
 Vagrant-Box: jessie
 Precondition: sandstorm_not_installed
 Cleanup: uninstall_sandstorm

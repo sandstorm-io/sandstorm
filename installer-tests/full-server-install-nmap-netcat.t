@@ -1,4 +1,4 @@
-Title: Can enable sandcats HTTPS when netcat-nmap is the default nmap
+Title: Ensure that netcat from 'nmap' can detect which ports are available, when setting up sandcats HTTPS
 Vagrant-Box: jessie
 Precondition: sandstorm_not_installed
 Cleanup: uninstall_sandstorm

@@ -1,4 +1,4 @@
-Title: Can install without root, with -u
+Title: Ensure a non-root install with -u can succeed, prompting for all questions
 Vagrant-Box: jessie
 Vagrant-Destroy-If-bash: -d $HOME/sandstorm
 Cleanup: uninstall_sandstorm

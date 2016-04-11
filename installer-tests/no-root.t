@@ -1,4 +1,4 @@
-Title: Can't install Sandstorm without root, by default
+Title: Ensure install.sh bails out early if user wants a typical install but refuses to let installer escalate to root
 Vagrant-Box: trusty64
 Precondition: sandstorm_not_installed
 Vagrant-Postcondition-bash: ! -d $HOME/sandstorm

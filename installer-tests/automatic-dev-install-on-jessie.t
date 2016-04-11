@@ -1,4 +1,4 @@
-Title: Auto-install with root on Debian jessie, in dev mode
+Title: Ensure that installing with defaults succeeds (here we run it as root)
 Vagrant-Box: jessie
 Precondition: sandstorm_not_installed
 Cleanup: uninstall_sandstorm

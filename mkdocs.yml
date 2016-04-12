@@ -42,6 +42,7 @@ pages:
 - Administering:
     - "Overview": "administering.md"
     - "Installation & uninstall": "install.md"
+    - "Reference docs for install.sh": "administering/install-script.md"
     - "Administrator's guide": "administering/guide.md"
     - "Sandcats dynamic DNS": "administering/sandcats.md"
     - "Email": "administering/email.md"

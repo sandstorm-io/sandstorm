@@ -1,7 +1,9 @@
 {
   "dependencies": {
     "content-type": {
-      "version": "1.0.1"
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/content-type/-/content-type-1.0.1.tgz",
+      "from": "content-type@1.0.1"
     }
   }
 }

@@ -15,7 +15,7 @@ var net = require('net');
 var url = require('url');
 
 // Borrow the "node-forge" dependency of our meteor-node-forge package.
-var forge = require('./programs/server/npm/meteor-node-forge/node_modules/node-forge');
+var forge = require('./programs/server/npm/node_modules/meteor/meteor-node-forge/node_modules/node-forge');
 
 function sandstormMain() {
   monkeypatchHttpAndHttps();

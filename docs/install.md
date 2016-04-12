@@ -22,11 +22,14 @@ If you accept the defaults, this will:
 - Run a small process as root for containerization and binding to ports, and run the rest of Sandstorm as a non-root user.
 - Listen on port 80 & 443 if available, otherwise a different port.
 
-You can read more about [administering Sandstorm](administering.md). Or you can jump straight into the install by running:
+You can jump straight into the install by running:
 
 ```bash
 curl https://install.sandstorm.io | bash
 ```
+You can also read [technical documentation on how the install script
+works](administering/install-script.md), including non-interactive modes, or learn [how to
+administer Sandstorm](administering.md) once it is installed.
 
 ## Option 2: GitHub-verified install
 

@@ -56,6 +56,11 @@ you provide that option by itself, you will get a `sandstorm.conf` configured to
 - `BASE_URL=http://local.sandstorm.io:6080`
 - `BIND_IP=127.0.0.1` (or `BIND_IP=0.0.0.0` if you pass `-e`)
 
+and other defaults. One way to get a fully-automated install is to use `-d`, accept all defaults,
+and stop Sandstorm, modify `/opt/sandstorm/sandstorm.conf` to your liking, and then start Sandstorm.
+
+Another way is to request specific custom behavior from `install.sh`.
+
 ### Environment variables to request custom behavior
 
 Over the time we have spent maintaining the install script, we hae found it easier to provide

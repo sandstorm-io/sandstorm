@@ -176,8 +176,6 @@ Meteor.publish("requestingAccess", function (grainId) {
     throw new Meteor.Error(403, "Must be logged in to request access.");
   }
 
-  const identityIds = SandstormDb.getUserIdentityIds(Meteor.users.findOne({ _id: this.userId }));
-
   const grain = globalDb.getGrain(grainId);
   if (!grain) {
     throw new Meteor.Error(404, "Grain not found.");
@@ -188,8 +186,12 @@ Meteor.publish("requestingAccess", function (grainId) {
                Random.id(), { grainId: grainId, identityId: grain.identityId });
   }
 
+  const identityIds = SandstormDb.getUserIdentityIds(Meteor.users.findOne({ _id: this.userId }));
+  const ownerIdentityIds = SandstormDb.getUserIdentityIds(
+      Meteor.users.findOne({ _id: grain.userId }));
+
   const _this = this;
-  const query = ApiTokens.find({ grainId: grainId, accountId: grain.userId,
+  const query = ApiTokens.find({ grainId: grainId, identityId: { $in: ownerIdentityIds },
                                  parentToken: { $exists: false },
                                  "owner.user.identityId": { $in: identityIds },
                                  revoked: { $ne: true }, });

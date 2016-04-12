@@ -18,7 +18,7 @@ The job of `install.sh` is to:
 - Create a directory to unpack that bundle, and unpack it there.
 
 - If desired, request free dynamic DNS and/or HTTPS certificates from the Sandstorm company's own
-  [sandstorm.io](sandstorm.md) service.
+  [sandcats.io](sandcats.md) service.
 
 - Create a Sandstorm configuration file embodying the user's preferences on how this Sandstorm
   server should be configured, including enabling automatic updates if desired.

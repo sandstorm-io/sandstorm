@@ -6,8 +6,8 @@
   .host-port {
     display: flex;
     flex-direction: row;
-    align-items: flex-begin;
-    justify-content: flex-begin;
+    align-items: flex-start;
+    justify-content: flex-start;
     >* {
       margin-right: 16px;
     }

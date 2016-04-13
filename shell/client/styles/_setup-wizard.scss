@@ -33,7 +33,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: flex-begin;
+  justify-content: flex-start;
 
   background-color: #303030;
   color: #ffffff;
@@ -64,7 +64,7 @@
   padding: 0;
   display: flex;
   flex-direction: row;
-  align-items: flex-begin;
+  align-items: flex-start;
   justify-content: center;
 }
 
@@ -81,7 +81,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-begin;
+  justify-content: flex-start;
   /* border: 1px solid #000; */
 }
 
@@ -111,7 +111,7 @@
 .setup-type-selection {
   display: flex;
   flex-direction: row;
-  align-items: flex-begin;
+  align-items: flex-start;
   justify-content: center;
   flex-wrap: wrap;
 }
@@ -226,7 +226,7 @@
 .setup-next-steps {
   display: flex;
   flex-direction: row;
-  align-items: flex-begin;
+  align-items: flex-start;
   justify-content: center;
   >* {
     margin-left: 10px;
@@ -237,7 +237,7 @@
   display: flex;
   flex-direction: row-reverse;
   align-items: center;
-  justify-content: flex-begin;
+  justify-content: flex-start;
 }
 
 .setup-next-button {
@@ -368,7 +368,7 @@
 .sandstorm-logo-row {
   display: flex;
   flex-direction: column;
-  justify-content: flex-begin;
+  justify-content: flex-start;
   align-items: center;
 }
 

@@ -248,7 +248,7 @@
     Configure the identity provider(s) you wish to enable.
   </p>
 
-  {{> adminIdentityProviderTable idpData=idpData}}
+  {{> adminIdentityProviderTable idpData=idpData featureKeyRoute="setupWizardFeatureKey" }}
 
   {{#setupWizardButtonRow}}
     <button class="setup-next-button" {{nextHtmlDisabled}}>

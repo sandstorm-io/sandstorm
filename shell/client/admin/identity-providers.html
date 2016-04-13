@@ -1,7 +1,7 @@
 <template name="newAdminIdentity">
   <h1>Identity Providers</h1>
   <p>Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.</p>
-  {{>adminIdentityProviderTable idpData=idpData}}
+  {{>adminIdentityProviderTable idpData=idpData featureKeyRoute="newAdminFeatureKey"}}
 </template>
 
 <template name="adminIdentityProviderConfigureEmail">
@@ -293,6 +293,10 @@
 </template>
 
 <template name="adminIdentityProviderTable">
+{{!-- Expects a single argument in the data context:
+   featureKeyRoute: String.  Name of the route that the "Get Sandstorm for Work" button should
+                             redirect you to.
+--}}
 <div class="identity-provider-table" role="grid">
   <div class="idp-table-header" role="rowgroup">
     <div class="idp-header-row" role="row">
@@ -302,7 +306,7 @@
   </div>
   <div class="idp-table-rows" role="rowgroup">
   {{#each idp in idpData}}
-    {{> adminIdentityRow idp=idp}}
+    {{> adminIdentityRow idp=idp featureKeyRoute=featureKeyRoute}}
   {{/each}}
   {{#each idp in idpData}}
     {{#if currentPopupIs idp.id}}
@@ -326,7 +330,7 @@
     {{/if}}
 
     {{#if needsFeatureKey}}
-      <button class="get-feature-key" title="Get feature key to configure {{idp.label}} login">Get feature key to configure</button>
+      <button class="get-feature-key" title="Configure Sandstorm for Work">Configure Sandstorm for Work</button>
     {{else}}
       <button class="configure-idp" title="Configure {{idp.label}} login">Configure</button>
     {{/if}}

@@ -100,7 +100,11 @@ Template.adminIdentityRow.events({
 
   "click button.get-feature-key"() {
     // TODO: non-setup-UI probably shouldn't do this.  Pass in a callback instead?
-    Router.go("setupWizardFeatureKey");
+    const instance = Template.instance();
+    const route = instance.data.featureKeyRoute;
+    if (route) {
+      Router.go(instance.data.featureKeyRoute);
+    }
   },
 });
 

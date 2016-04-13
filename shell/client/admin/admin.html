@@ -31,7 +31,7 @@
         {{#adminNavPill routeName="newAdminIdentity" data=getToken}}Identity Providers{{/adminNavPill}}
         {{#adminNavPill routeName="newAdminEmailConfig" data=getToken}}Email Configuration{{/adminNavPill}}
         {{#adminNavPill routeName="newAdminUsers" data=getToken}}User Accounts{{/adminNavPill}}
-        {{#adminNavPill routeName="newAdminAppConfig" data=getToken}}App Configuration{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminAppSources" data=getToken}}App Sources{{/adminNavPill}}
         {{#adminNavPill routeName="newAdminAlerts" data=getToken}}Admin Alerts{{/adminNavPill}}
         {{#adminNavPill routeName="newAdminStatus" data=getToken}}System Status{{/adminNavPill}}
         {{#adminNavPill routeName="newAdminNetworkCapabilities" data=getToken}}Network Capabilities{{/adminNavPill}}
@@ -51,10 +51,6 @@
 
 <template name="newAdminUsers">
   <h1>User Accounts</h1>
-</template>
-
-<template name="newAdminAppConfig">
-  <h1>App Configuration</h1>
 </template>
 
 <template name="newAdminAlerts">

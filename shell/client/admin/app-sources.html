@@ -1,0 +1,52 @@
+<template name="newAdminAppSources">
+  <h1>App Sources</h1>
+  {{#if hasSuccess}}
+    {{#focusingSuccessBox}}
+      {{message}}
+    {{/focusingSuccessBox}}
+  {{/if}}
+  {{#if hasError}}
+    {{#focusingErrorBox}}
+      {{message}}
+    {{/focusingErrorBox}}
+  {{/if}}
+  <form class="admin-app-sources">
+    <div class="form-group">
+      <label>
+        App Market URL
+        <input type="text" name="appMarketUrl" value="{{appMarketUrl}}" />
+      </label>
+      <span class="form-subtext">
+        The "Install..." button on the Apps page will link to this URL.
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>
+        <input type="checkbox" name="enableAppUpdates" checked="{{enableAppUpdates}}" />
+        Enable app update notifications
+      </label>
+      <span class="form-subtext">
+        Updates to apps will be automatically downloaded by the Sandstorm server daily and
+        notifications sent to users asking if they want to update their installed apps.
+      </span>
+    </div>
+
+    {{#if enableAppUpdates}}
+    <div class="form-group">
+      <label>
+        App Index URL
+        <input type="text" name="appIndexUrl" value="{{appIndexUrl}}" />
+      </label>
+      <span class="form-subtext">
+        This is the URL that the Sandstorm server will check to learn about app updates.
+      </span>
+    </div>
+    {{/if}}
+
+    <div class="button-row">
+      <button type="submit" class="save" disabled="{{saveDisabled}}">Save</button>
+      <button type="button" class="restore" disabled="{{restoreDisabled}}">Restore defaults</button>
+    </div>
+  </form>
+</template>

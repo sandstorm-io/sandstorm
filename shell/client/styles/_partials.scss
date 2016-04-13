@@ -100,3 +100,43 @@
     background-color: #4e4e4e;
   }
 }
+
+%standard-form {
+  // Styles that we tend to reuse in forms, particularly in the admin panel.
+  margin-bottom: 10px;
+
+  .form-group {
+    margin-bottom: 10px;
+  }
+
+  label {
+    display: block;
+    font-weight: normal;
+    font-size: 20px;
+  }
+
+  input[type=text], input[type=password], input[type=number], textarea {
+    display: block;
+    width: 100%;
+    color: #222;
+    background-color: white;
+    padding: 4px;
+    font-size: 16px;
+    font-family: 'Source Sans Pro', sans-serif;
+    border-radius: 2px;
+    border: 1px solid #d3d3d3;
+  }
+
+  .form-subtext {
+    font-size: 14px;
+    color: #666;
+  }
+
+  .button-row {
+    width: 100%;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: flex-start;
+    justify-content: flex-start;
+  }
+}

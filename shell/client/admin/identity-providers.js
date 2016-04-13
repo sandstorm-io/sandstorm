@@ -198,6 +198,17 @@ Template.adminIdentityProviderConfigureEmail.helpers({
   },
 });
 
+Template.googleLoginSetupInstructions.helpers({
+  siteUrlNoSlash() {
+    // Google complains if the Javascript origin contains a trailing slash - it wants just the
+    // scheme/host/port, no path.
+    const urlWithTrailingSlash = Meteor.absoluteUrl();
+    return urlWithTrailingSlash[urlWithTrailingSlash.length - 1] === "/" ?
+           urlWithTrailingSlash.slice(0, urlWithTrailingSlash.length - 1) :
+           urlWithTrailingSlash;
+  },
+});
+
 // Google form.
 Template.adminIdentityProviderConfigureGoogle.onCreated(function () {
   const googleChecked = globalDb.getSettingWithFallback("google", false);
@@ -298,6 +309,12 @@ Template.adminIdentityProviderConfigureGoogle.events({
     // double invocation because there's no way to pass a callback function around in Blaze without
     // invoking it, and we need to pass it to modalDialogWithBackdrop
     instance.data.onDismiss()();
+  },
+});
+
+Template.githubLoginSetupInstructions.helpers({
+  siteUrl() {
+    return Meteor.absoluteUrl();
   },
 });
 

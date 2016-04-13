@@ -4,26 +4,6 @@
   {{>adminIdentityProviderTable idpData=idpData}}
 </template>
 
-<template name="modalDialogWithBackdrop">
-{{!-- expects some arguments:
-   onDismiss: Function.  A callback to trigger when the user requests that this modal be dismissed,
-                         by clicking on a close button or outside the boundary of the modal.
-   A content block of what to put inside the modal.
---}}
-<div class="modal" role="dialog">
-  {{!-- TODO: animate --}}
-  <div class="modal-backdrop"></div>
-  <div class="fade in modal" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <button class="modal-close-button"></button>
-        {{> Template.contentBlock }}
-      </div>
-    </div>
-  </div>
-</div>
-</template>
-
 <template name="adminIdentityProviderConfigureEmail">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   <h2>Email Login Configuration</h2>

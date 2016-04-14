@@ -2,6 +2,13 @@
   <h1>Identity Providers</h1>
   <p>Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.</p>
   {{>adminIdentityProviderTable idpData=idpData featureKeyRoute="newAdminFeatureKey"}}
+
+  {{#if hasFeatureKey}}
+    <p>
+    To configure organization membership and settings, see
+    {{#linkTo route="newAdminOrganization"}}Organization Settings{{/linkTo}}.
+    </p>
+  {{/if}}
 </template>
 
 <template name="adminIdentityProviderConfigureEmail">

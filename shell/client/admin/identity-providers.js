@@ -1,5 +1,11 @@
 /* global Settings */
 
+Template.newAdminIdentity.helpers({
+  hasFeatureKey() {
+    return globalDb.isFeatureKeyValid();
+  },
+});
+
 const idpData = function (configureCallback) {
   const emailTokenEnabled = globalDb.getSettingWithFallback("emailToken", false);
   const googleEnabled = globalDb.getSettingWithFallback("google", false);

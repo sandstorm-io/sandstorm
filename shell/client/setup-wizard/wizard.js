@@ -272,6 +272,7 @@ Template.setupWizardOrganization.onCreated(function () {
   const emailDomain = globalDb.getOrganizationEmailDomain() || inferredDomain;
 
   const disallowGuests = globalDb.getOrganizationDisallowGuestsRaw() || false;
+  const shareContacts = globalDb.getOrganizationShareContactsRaw() || false;
 
   this.ldapChecked = new ReactiveVar(ldapChecked);
   this.samlChecked = new ReactiveVar(samlChecked);
@@ -280,7 +281,7 @@ Template.setupWizardOrganization.onCreated(function () {
   this.gappsDomain = new ReactiveVar(gappsDomain);
   this.emailDomain = new ReactiveVar(emailDomain);
   this.disallowGuests = new ReactiveVar(disallowGuests);
-  this.shareContacts = new ReactiveVar(true);
+  this.shareContacts = new ReactiveVar(shareContacts);
   this.errorMessage = new ReactiveVar(undefined);
 });
 
@@ -413,6 +414,13 @@ Template.setupWizardOrganization.events({
     instance.disallowGuests.set(!instance.disallowGuests.get());
   },
 
+  "click input[name=share-contacts]"(evt) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const instance = Template.instance();
+    instance.shareContacts.set(!instance.shareContacts.get());
+  },
+
   "click .setup-next-button"() {
     const instance = Template.instance();
     const params = {
@@ -434,8 +442,7 @@ Template.setupWizardOrganization.events({
       },
       settings: {
         disallowGuests: instance.disallowGuests.get(),
-        // Disabled until we've actually implemented the feature.
-        //publishContacts: instance.shareContacts.get(),
+        shareContacts: instance.shareContacts.get(),
       },
     };
     const token = Iron.controller().state.get("token");

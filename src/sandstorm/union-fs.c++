@@ -77,7 +77,7 @@ protected:
   kj::Own<fuse::Node> delegate;
 };
 
-class SimpleDirecotry: public fuse::Directory, public kj::Refcounted {
+class SimpleDirectory: public fuse::Directory, public kj::Refcounted {
   // Implementation of fuse::Directory that is easier to implement because it just calls a
   // method that returns the whole content as an array.
 
@@ -158,7 +158,7 @@ private:
   }
 };
 
-class UnionDirectory final: public SimpleDirecotry {
+class UnionDirectory final: public SimpleDirectory {
   // Directory that merges the contents of several directories.
 
 public:
@@ -237,7 +237,7 @@ private:
   kj::Array<kj::Own<fuse::Node>> layers;
 };
 
-class HidingDirectory final: public SimpleDirecotry {
+class HidingDirectory final: public SimpleDirectory {
   // Directory that filters out a set of hidden paths from its contents.
 
 public:
@@ -289,6 +289,16 @@ protected:
       }
 
       return LookupResults { kj::refcounted<HidingNode>(kj::mv(result->node), kj::mv(subHides)), result->ttl };
+    } else {
+      return nullptr;
+    }
+  }
+
+  kj::Maybe<kj::Own<fuse::Directory>> openAsDirectory() override {
+    KJ_IF_MAYBE(delegate, DelegatingNode::openAsDirectory()) {
+      kj::Own<fuse::Directory> result =
+          kj::refcounted<HidingDirectory>(kj::mv(*delegate), hidePaths);
+      return kj::mv(result);
     } else {
       return nullptr;
     }
@@ -370,7 +380,7 @@ private:
   }
 };
 
-class SingletonDirectory final: public SimpleDirecotry {
+class SingletonDirectory final: public SimpleDirectory {
 public:
   explicit SingletonDirectory(kj::StringPtr path): path(path) {}
 
@@ -455,7 +465,7 @@ private:
   kj::StringPtr path;
 };
 
-class EmptyDirectory final: public SimpleDirecotry {
+class EmptyDirectory final: public SimpleDirectory {
 public:
   EmptyDirectory() = default;
 

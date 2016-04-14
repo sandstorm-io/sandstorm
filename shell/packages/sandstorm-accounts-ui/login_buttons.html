@@ -159,7 +159,8 @@
 
 <template name="emailLoginForm">
   {{> emailAuthenticationForm linkingNewIdentity=linkingNewIdentity description="with e-mail"
-                              prompt="email" sendButtonText="send Login Email"}}
+                              prompt="email" sendButtonText="send Login Email"
+                              loginFormInitializer=loginFormInitializer}}
 </template>
 
 <template name="emailAuthenticationForm">
@@ -168,7 +169,7 @@
 
     <label class="email {{#if awaitingToken}}hidden{{/if}}">{{prompt}}
       <span title="Passwordless E-mail Login allows you to log in using an e-mail address. No password is required; instead, every time you log in, we send you a new email confirmation code. You will only need to log in once per device." class="info">i</span>
-      <input name="email" type="email" disabled={{disabled}}>
+      <input name="email" type="email" disabled={{disabled}} value={{loginFormInitializer}}>
     </label>
 
     {{#with awaitingToken}}
@@ -200,7 +201,7 @@
 
     <label class="username">username
       <span title="This is your LDAP username. It will be the name that you normally use to log in to other internal services at your company." class="info">i</span>
-      <input name="username" type="text">
+      <input name="username" type="text" value="{{loginFormInitializer}}">
     </label>
 
     <label class="password">password

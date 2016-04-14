@@ -472,6 +472,40 @@ Template.grainSharePopup.helpers({
   },
 });
 
+Template.wrongIdentity.onCreated(function () {
+  this._clicked = new ReactiveVar(false);
+});
+
+Template.wrongIdentity.events({
+  "click button.sign-in": function (event, instance) {
+    instance._clicked.set(true);
+
+    const oneClick = instance.data.login.oneClick;
+    if (oneClick) {
+      const obj = oneClick.windowMethod ? window : Meteor;
+      obj[oneClick.method].apply(null, oneClick.args);
+    }
+  },
+});
+
+Template.wrongIdentity.helpers({
+  clicked: function () {
+    return Template.instance()._clicked.get();
+  },
+
+  loginTemplate: function () {
+    const data = Template.instance().data;
+    const login = data.login;
+    if (login.form) {
+      const name = data.recipient.profile.service;
+      const service = Accounts.identityServices[name];
+      if (service.isEnabled()) {
+        return service.loginTemplate;
+      }
+    }
+  },
+});
+
 Template.requestAccess.onCreated(function () {
   this._status = new ReactiveVar({ showButton: true });
   this._grain = this.data.grainView;
@@ -1509,9 +1543,14 @@ Router.map(function () {
           this.state.set("invalidToken", true);
         } else if (tokenInfo.revoked) {
           this.state.set("revoked", true);
-        } else if (tokenInfo.identityOwner && tokenInfo.grainId && Meteor.userId() &&
-                   globalDb.userHasIdentity(Meteor.userId(), tokenInfo.identityOwner._id)) {
-          Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
+        } else if (tokenInfo.identityOwner) {
+          if (tokenInfo.grainId && Meteor.userId() &&
+              globalDb.userHasIdentity(Meteor.userId(), tokenInfo.identityOwner._id)) {
+            Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
+          } else {
+            SandstormDb.fillInPictureUrl(tokenInfo.identityOwner);
+            this.state.set("identityOwner", tokenInfo);
+          }
         } else if (tokenInfo.alreadyRedeemed) {
           Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
         } else if (tokenInfo.grainId) {
@@ -1555,6 +1594,13 @@ Router.map(function () {
         this.render("invalidToken", { data: { token: this.params.token } });
       } else if (this.state.get("revoked")) {
         this.render("revokedShareLink");
+      } else if (this.state.get("identityOwner")) {
+        const tokenInfo = this.state.get("identityOwner");
+        this.render("wrongIdentity",
+                    { data: {
+                      recipient: tokenInfo.identityOwner,
+                      login: tokenInfo.login,
+                    }, });
       } else {
         this.render();
       }
@@ -1563,6 +1609,7 @@ Router.map(function () {
     onStop: function () {
       this.state.set("beforeActionHookRan", false);
       this.state.set("invalidToken", undefined);
+      this.state.set("identityOwner", undefined);
       globalGrains.setAllInactive();
     },
   });

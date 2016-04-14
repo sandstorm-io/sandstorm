@@ -937,6 +937,7 @@ SandstormDb = function () {
     keybaseProfiles: KeybaseProfiles,
     featureKey: FeatureKey,
     setupSession: SetupSession,
+    users: Meteor.users,
 
     // Intentionally omitted:
     // - Migrations, since it's used only within this package.

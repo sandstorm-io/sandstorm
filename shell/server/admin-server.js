@@ -209,6 +209,7 @@ Meteor.methods({
       },
       settings: {
         disallowGuests: Boolean,
+        shareContacts: Boolean,
       },
     });
 

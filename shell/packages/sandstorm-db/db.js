@@ -937,6 +937,7 @@ SandstormDb = function () {
     keybaseProfiles: KeybaseProfiles,
     featureKey: FeatureKey,
     setupSession: SetupSession,
+    users: Meteor.users,
 
     // Intentionally omitted:
     // - Migrations, since it's used only within this package.
@@ -1438,6 +1439,17 @@ _.extend(SandstormDb.prototype, {
   getOrganizationDisallowGuestsRaw: function () {
     const setting = Settings.findOne({ _id: "organizationSettings" });
     return setting && setting.value && setting.value.disallowGuests;
+  },
+
+  getOrganizationShareContacts: function () {
+    return this.getOrganizationShareContactsRaw() && this.isFeatureKeyValid();
+  },
+
+  getOrganizationShareContactsRaw: function () {
+    const setting = Settings.findOne({ _id: "organizationSettings" });
+    return setting && setting.value &&
+           (setting.value.shareContacts || setting.value.shareContacts === undefined);
+    // default to true if undefined
   },
 
   getSamlEntryPoint: function () {

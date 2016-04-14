@@ -279,6 +279,7 @@ Template.adminSettings.events({
         },
         settings: {
           disallowGuests: event.currentTarget.disallowGuests.checked,
+          shareContacts: event.currentTarget.autoShareContacts.checked,
         },
       };
       Meteor.call("saveOrganizationSettings", token, orgSettings, handleErrorBound);
@@ -368,6 +369,10 @@ Template.adminSettings.helpers({
 
   disallowGuests: function () {
     return globalDb.getOrganizationDisallowGuestsRaw();
+  },
+
+  autoShareContacts: function () {
+    return globalDb.getOrganizationShareContactsRaw();
   },
 
   ldapEnabled: function () {

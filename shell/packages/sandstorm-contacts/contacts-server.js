@@ -17,14 +17,15 @@
 Meteor.publish("contactProfiles", function (showAll) {
   const db = this.connection.sandstormDb;
   const _this = this;
+  const userId = this.userId;
 
   // We maintain a map from identity IDs to live query handles that track profile changes.
   const contactIdentities = {};
   const disallowGuests = db.getOrganizationDisallowGuests();
 
-  function addIdentityOfContact(contact) {
-    if (!(contact.identityId in contactIdentities)) {
-      const user = Meteor.users.findOne({ _id: contact.identityId });
+  function addIdentityOfContact(identityId) {
+    if (!(identityId in contactIdentities)) {
+      const user = Meteor.users.findOne({ _id: identityId });
 
       if (disallowGuests && !showAll) {
         if (!db.isIdentityInOrganization(user)) {
@@ -39,8 +40,8 @@ Meteor.publish("contactProfiles", function (showAll) {
         _this.added("contactProfiles", user._id, filteredUser);
       }
 
-      contactIdentities[contact.identityId] =
-        Meteor.users.find({ _id: contact.identityId }, { fields: { profile: 1 } }).observeChanges({
+      contactIdentities[identityId] =
+        Meteor.users.find({ _id: identityId }, { fields: { profile: 1 } }).observeChanges({
           changed: function (id, fields) {
             _this.changed("contactProfiles", id, fields);
           },
@@ -48,27 +49,66 @@ Meteor.publish("contactProfiles", function (showAll) {
     }
   }
 
-  const cursor = db.collections.contacts.find({ ownerId: this.userId });
+  const cursor = db.collections.contacts.find({ ownerId: userId });
 
   const handle = cursor.observe({
     added: function (contact) {
-      addIdentityOfContact(contact);
+      addIdentityOfContact(contact.identityId);
     },
 
     changed: function (contact) {
-      addIdentityOfContact(contact);
+      addIdentityOfContact(contact.identityId);
     },
 
     removed: function (contact) {
       _this.removed("contactProfiles", contact.identityId);
-      contactIdentities[contact.identityId].stop();
+      const contactIdentity = contactIdentities[contact.identityId];
+      if (contactIdentity) contactIdentities[contact.identityId].stop();
       delete contactIdentities[contact.identityId];
     },
   });
+
+  let orgHandle;
+
+  if (db.getOrganizationShareContacts() &&
+      db.isUserInOrganization(db.collections.users.findOne({ _id: userId }))) {
+    const orgCursor = db.collections.users.find({ profile: { $exists: 1 } });
+    // TODO(perf): make a mongo query that can find all identities in an organization and add
+    // indices for it. Currently, we do some case insensitive matching which mongo can't
+    // handle well.
+
+    orgHandle = orgCursor.observe({
+      added: function (user) {
+        if (db.isIdentityInOrganization(user) && !db.userHasIdentity(userId, user._id)) {
+          addIdentityOfContact(user._id);
+        }
+      },
+
+      changed: function (user) {
+        if (db.isIdentityInOrganization(user) && !db.userHasIdentity(userId, user._id)) {
+          addIdentityOfContact(user._id);
+        }
+      },
+
+      removed: function (user) {
+        if (db.isIdentityInOrganization(user) && !db.userHasIdentity(userId, user._id)) {
+          _this.removed("contactProfiles", user._id);
+          const contactIdentity = contactIdentities[contact.identityId];
+          if (contactIdentity) contactIdentities[contact.identityId].stop();
+          delete contactIdentities[user._id];
+        }
+      },
+    });
+  }
+
   this.ready();
 
   this.onStop(function () {
     handle.stop();
+    if (orgHandle) {
+      orgHandle.stop();
+    }
+
     Object.keys(contactIdentities).forEach(function (identityId) {
       contactIdentities[identityId].stop();
       delete contactIdentities[identityId];

@@ -929,6 +929,8 @@ body>.popup {
         list-style: outside none none;
         padding: 0px;
         margin: 2px 0px;
+        overflow-y: auto;
+        max-height: 200px;
         >li {
           display: block;
           border: 1px solid rgba(0, 0, 0, 0);

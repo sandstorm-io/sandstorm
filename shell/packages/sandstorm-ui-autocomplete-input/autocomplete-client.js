@@ -212,8 +212,12 @@ Template.contactInputBox.events({
       } else if (contacts.length > 0) {
         newContact = contacts[0];
       }
-      // TODO(someday): call scrollintoview on the now highlighted contact
+
       template.highlightedContact.set(newContact);
+      Meteor.defer(function () {
+        template.find("#" + template.randomId + "contact-selected").scrollIntoView(false);
+      });
+
       return false;
     } else if (event.keyCode === 40) { // Down
       const contacts = template.autoCompleteContacts.get();
@@ -236,6 +240,10 @@ Template.contactInputBox.events({
       }
 
       template.highlightedContact.set(newContact);
+      Meteor.defer(function () {
+        template.find("#" + template.randomId + "contact-selected").scrollIntoView(false);
+      });
+
       return false;
     } else if (event.keyCode === 13) { // Enter
       const highlightedContact = template.highlightedContact.get();

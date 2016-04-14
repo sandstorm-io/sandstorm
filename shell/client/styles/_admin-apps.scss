@@ -1,0 +1,15 @@
+.admin-app-sources {
+  @extend %standard-form;
+
+  .save {
+    @extend %button-base;
+    @extend %button-primary;
+    margin-left: 10px;
+  }
+
+  .restore {
+    @extend %button-base;
+    @extend %button-secondary;
+    margin-left: 10px;
+  }
+}

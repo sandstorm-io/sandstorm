@@ -1317,39 +1317,39 @@ const newAdminRoute = RouteController.extend({
 
 Router.map(function () {
   this.route("newAdminIdentity", {
-    path: "/admin-new/identity/:_token?",
+    path: "/admin-new/identity",
     controller: newAdminRoute,
   });
   this.route("newAdminEmailConfig", {
-    path: "/admin-new/email/:_token?",
+    path: "/admin-new/email",
     controller: newAdminRoute,
   });
   this.route("newAdminUsers", {
-    path: "/admin-new/users/:_token?",
+    path: "/admin-new/users",
     controller: newAdminRoute,
   });
-  this.route("newAdminAppConfig", {
-    path: "/admin-new/app-config/:_token?",
+  this.route("newAdminAppSources", {
+    path: "/admin-new/app-sources",
     controller: newAdminRoute,
   });
   this.route("newAdminAlerts", {
-    path: "/admin-new/alerts/:_token?",
+    path: "/admin-new/alerts",
     controller: newAdminRoute,
   });
   this.route("newAdminStatus", {
-    path: "/admin-new/status/:_token?",
+    path: "/admin-new/status",
     controller: newAdminRoute,
   });
   this.route("newAdminNetworkCapabilities", {
-    path: "/admin-new/network-capabilities/:_token?",
+    path: "/admin-new/network-capabilities",
     controller: newAdminRoute,
   });
   this.route("newAdminStats", {
-    path: "/admin-new/stats/:_token?",
+    path: "/admin-new/stats",
     controller: newAdminRoute,
   });
   this.route("newAdminFeatureKey", {
-    path: "/admin-new/feature-key/:_token?",
+    path: "/admin-new/feature-key",
     controller: newAdminRoute,
   });
 });

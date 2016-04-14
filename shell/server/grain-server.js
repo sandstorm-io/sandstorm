@@ -518,6 +518,10 @@ Meteor.methods({
         identityNote = " (" + identity.profile.intrinsicName + " on GitHub)";
       } else if (identity.profile.service === "email") {
         identityNote = " (" + identity.profile.intrinsicName + ")";
+      } else if (identity.profile.service === "ldap") {
+        identityNote = " (" + identity.profile.intrinsicName + " on LDAP)";
+      } else if (identity.profile.service === "saml") {
+        identityNote = " (" + identity.profile.intrinsicName + " on SAML)";
       }
 
       const message = identity.profile.name + identityNote +

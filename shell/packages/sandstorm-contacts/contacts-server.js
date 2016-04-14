@@ -17,6 +17,7 @@
 Meteor.publish("contactProfiles", function (showAll) {
   const db = this.connection.sandstormDb;
   const _this = this;
+  const userId = this.userId;
 
   // We maintain a map from identity IDs to live query handles that track profile changes.
   const contactIdentities = {};
@@ -48,7 +49,7 @@ Meteor.publish("contactProfiles", function (showAll) {
     }
   }
 
-  const cursor = db.collections.contacts.find({ ownerId: this.userId });
+  const cursor = db.collections.contacts.find({ ownerId: userId });
 
   const handle = cursor.observe({
     added: function (contact) {
@@ -70,7 +71,7 @@ Meteor.publish("contactProfiles", function (showAll) {
   let orgHandle;
 
   if (db.getOrganizationShareContacts() &&
-      db.isUserInOrganization(db.collections.users.findOne({ _id: this.userId }))) {
+      db.isUserInOrganization(db.collections.users.findOne({ _id: userId }))) {
     const orgCursor = db.collections.users.find({ profile: { $exists: 1 } });
     // TODO(perf): make a mongo query that can find all identities in an organization and add
     // indices for it. Currently, we do some case insensitive matching which mongo can't
@@ -78,19 +79,19 @@ Meteor.publish("contactProfiles", function (showAll) {
 
     orgHandle = orgCursor.observe({
       added: function (user) {
-        if (db.isIdentityInOrganization(user)) {
+        if (db.isIdentityInOrganization(user) && !db.userHasIdentity(userId, user._id)) {
           addIdentityOfContact(user._id);
         }
       },
 
       changed: function (user) {
-        if (db.isIdentityInOrganization(user)) {
+        if (db.isIdentityInOrganization(user) && !db.userHasIdentity(userId, user._id)) {
           addIdentityOfContact(user._id);
         }
       },
 
       removed: function (user) {
-        if (db.isIdentityInOrganization(user)) {
+        if (db.isIdentityInOrganization(user) && !db.userHasIdentity(userId, user._id)) {
           _this.removed("contactProfiles", user._id);
           const contactIdentity = contactIdentities[contact.identityId];
           if (contactIdentity) contactIdentities[contact.identityId].stop();

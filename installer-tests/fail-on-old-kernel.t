@@ -1,4 +1,4 @@
-Title: Can't install Sandstorm on old kernels
+Title: Ensure that Sandstorm bails early on old kernels, with an error message
 Vagrant-Box: precise64
 
 $[run]CURL_USER_AGENT=testing /vagrant/install.sh

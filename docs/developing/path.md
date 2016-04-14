@@ -32,6 +32,20 @@ HTTP APIs](http-apis.md)** on a fixed hostname.
 Sharing links operate the same way, except they use a `/shared/{{sharingToken}}`
 URL pattern.
 
+## Navigating to paths within a grain
+
+Sandstorm respects paths within grains. If a user visits a grain URL with a path appended, or a
+fragment (e.g. `#foo`, also known as `location.hash`) appended, Sandstorm passes this through to the
+grain.  To be specific:
+
+* Example URL: https://sandstorm.example.com/grain/TPeYUde5rioE5keWM/awesomeinfo#section3
+
+* Example ephemeral domain URL: https://96cab9109791f1254002ac1f857ecee7.sandstorm.example.com/awesomeinfo#section3
+
+The grain user's web browser will show the grain URL (with the path and fragment) in the address
+bar. By default, this URL will not change, even as the user clicks around within the app. To address
+that, the app can update this URL.
+
 ## Updating the URL & page title from your app
 
 By default, when someone interacts with a grain, **the URL and page title stay
@@ -45,12 +59,11 @@ following code snippet:
 window.parent.postMessage({'setPath': location.pathname + location.hash}, '*');
 ```
 
-In general, Sandstorm respects **deep links into grains** by copying the path
-from a grain URL into the ephemeral domain URL. For example:
+This will copy the path and fragment from the grain into the browser's address bar.
 
-* Grain URL: https://sandstorm.example.com/grain/TPeYUde5rioE5keWM/foo
+* Example ephemeral domain URL: https://96cab9109791f1254002ac1f857ecee7.sandstorm.example.com/foo#bar
 
-* Ephemeral domain URL: https://96cab9109791f1254002ac1f857ecee7.sandstorm.example.com/foo
+* URL: https://sandstorm.example.com/grain/TPeYUde5rioE5keWM/foo#bar
 
 The `IFRAME` also prevents the page title from propagating up into the web
 browser. You can push the current page's title into the browser's TITLE with
@@ -79,13 +92,9 @@ window.parent.postMessage({'startSharing': {}}, '*');
 This shares at the app's default permission level. In the future, we may extend
 this API to permit the app to choose a permission level.
 
-## Handling requests to your app's ephemeral domain
+## Embedding references to in-app resources, despite the ephemeral domain name
 
-The only stable URL is the grain URL, which wraps your app in the Sandstorm
-interface. However, your app might need to use its current domain name (also
-known as base URL) for:
-
-Your app might need to use base URLs for:
+Your app might need to use its current domain name (also known as base URL) for:
 
 * **Redirects**, for example after a user POSTs some data.
 
@@ -95,6 +104,10 @@ Your app might need to use base URLs for:
   app, and the app wants to create a `href=` link to some other page,
   it needs to know what string to place into the `<a href>` tag.
 
+However, the Sandstorm ephemeral domain only applies to one particular user session of one
+particular grain of the app. Given that, your can either use the empty string as the base URL, or it
+can generate these URLs as needed, on each request.
+
 ### Recommendation: Use the empty string as your base URL
 
 The **easiest** way to handle Sandstorm's dynamic base URL is to use the empty
@@ -103,7 +116,7 @@ decisions at runtime. Many web frameworks support this.
 
 ### Detecting the base URL at runtime with `X-Sandstorm-Base-Path`
 
-If you can't use the empty string, you can detect the base URL at runtime for
+If your app can't use the empty string as a base URL, you can detect the base URL at runtime during
 every request by looking at a HTTP header.
 
 `sandstorm-http-bridge` provides the base URL for this particular request into

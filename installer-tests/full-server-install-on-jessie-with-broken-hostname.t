@@ -1,4 +1,4 @@
-Title: Can install even if hostname is misconfigured on Debian jessie, in full server mode
+Title: Ensure that Sandstorm installs OK when hostname is misconfigured (install.sh used to crash in this case)
 Vagrant-Box: jessie
 Precondition: sandstorm_not_installed
 Cleanup: uninstall_sandstorm

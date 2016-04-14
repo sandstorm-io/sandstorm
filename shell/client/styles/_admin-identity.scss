@@ -8,6 +8,7 @@
 }
 
 %idp-table-row {
+  width: 100%;
   min-height: 32px;
   display: flex;
   flex-direction: row;
@@ -20,18 +21,17 @@
 
   display: flex;
   flex-direction: column;
-  align-items: flex-begin;
+  align-items: flex-start;
 
   margin-bottom: 32px;
 
   .idp-table-header {
+    width: 100%;
     display: flex;
     flex-direction: row;
     align-items: center;
   }
-
   .idp-header-row {
-    width: 100%;
     @extend %idp-table-row;
     span {
       min-height: 32px;
@@ -39,6 +39,9 @@
       background-color: #d3d3d3;
       margin-right: 1px;
     }
+  }
+  .idp-table-rows {
+    width: 100%;
   }
   .idp-table-row {
     @extend %idp-table-row;
@@ -142,4 +145,7 @@
   }
 }
 
-
+.idp-config-url {
+  display: block;
+  font-family: monospace;
+}

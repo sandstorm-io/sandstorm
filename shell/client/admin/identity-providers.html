@@ -4,26 +4,6 @@
   {{>adminIdentityProviderTable idpData=idpData}}
 </template>
 
-<template name="modalDialogWithBackdrop">
-{{!-- expects some arguments:
-   onDismiss: Function.  A callback to trigger when the user requests that this modal be dismissed,
-                         by clicking on a close button or outside the boundary of the modal.
-   A content block of what to put inside the modal.
---}}
-<div class="modal" role="dialog">
-  {{!-- TODO: animate --}}
-  <div class="modal-backdrop"></div>
-  <div class="fade in modal" role="dialog">
-    <div class="modal-dialog">
-      <div class="modal-content">
-        <button class="modal-close-button"></button>
-        {{> Template.contentBlock }}
-      </div>
-    </div>
-  </div>
-</div>
-</template>
-
 <template name="adminIdentityProviderConfigureEmail">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   <h2>Email Login Configuration</h2>
@@ -54,6 +34,21 @@
 {{/modalDialogWithBackdrop}}
 </template>
 
+<template name="googleLoginSetupInstructions">
+  <p>
+    First, you'll need to get a Google Client ID. Follow these steps:
+  </p>
+  <ol>
+    <li>Visit <a href="https://console.developers.google.com/" target="blank">https://console.developers.google.com/</a></li>
+    <li>"Create Project", if needed. Wait for Google to finish provisioning.</li>
+    <li>On the left sidebar, go to "Credentials" and, on the right, "OAuth Consent Screen". Make sure to enter an email address and a product name, and save.</li>
+    <li>On the left sidebar, go to "Credentials".  Press the "Create credentials" button, then select "Web application" as the type.</li>
+    <li>Set Authorized Javascript Origins to: <span class="idp-config-url">{{siteUrlNoSlash}}</span></li>
+    <li>Set Authorized Redirect URI to: <span class="idp-config-url">{{siteUrlNoSlash}}/_oauth/google</span></li>
+    <li>Finish by clicking "Create".</li>
+  </ol>
+</template>
+
 <template name="adminIdentityProviderConfigureGoogle">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   <h2>Google Login Configuration</h2>
@@ -65,16 +60,15 @@
   {{/if}}
 
   <form class="setup-idp-form">
+    {{> googleLoginSetupInstructions }}
+
+    <p>Then, copy over your Client ID and Client Secret below:</p>
+
     <div class="form-group">
       <label>
         <input type="checkbox" name="enableGoogle" checked="{{googleChecked}}"/>Enable login with Google
       </label>
     </div>
-
-    {{!-- TODO: replace these instructions with our own, which we can keep more up-to-date. --}}
-    {{> configureLoginServiceDialogForGoogle}}
-
-    <p>Now, copy over some details:</p>
     <div class="form-group">
       <label>
         Client ID:
@@ -100,21 +94,30 @@
 {{/modalDialogWithBackdrop}}
 </template>
 
+<template name="githubLoginSetupInstructions">
+  <p>
+    First, you'll need to get a Github Client ID and Client Secret. Follow these steps:
+  </p>
+  <ol>
+    <li>Visit <a href="https://github.com/settings/applications/new" target="blank">https://github.com/settings/applications/new</a></li>
+    <li>Set Homepage URL to: <span class="idp-config-url">{{siteUrl}}</span></li>
+    <li>Set Authorization callback URL to: <span class="idp-config-url">{{siteUrl}}_oauth/github</span></li>
+  </ol>
+</template>
+
 <template name="adminIdentityProviderConfigureGitHub">
 {{#modalDialogWithBackdrop onDismiss=onDismiss}}
   <h2>GitHub Configuration</h2>
 
   <form class="setup-idp-form">
+    {{> githubLoginSetupInstructions }}
+
+    <p>Then, copy over your Client ID and Client Secret below:</p>
     <div class="form-group">
       <label>
         <input type="checkbox" name="enableGithub" checked="{{githubChecked}}"/>Enable login with GitHub
       </label>
     </div>
-
-    {{!-- TODO: replace these instructions with our own, which we can keep more up-to-date. --}}
-    {{> configureLoginServiceDialogForGithub}}
-
-    <p>Now, copy over some details:</p>
     <div class="form-group">
       <label>
         Client ID:

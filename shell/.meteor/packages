@@ -19,7 +19,6 @@ tracker
 check
 reload
 random
-standard-minifiers
 
 iron:router
 sandstorm-accounts-ui
@@ -53,7 +52,8 @@ sandstorm-ui-autocomplete-input
 sandstorm-ui-powerbox
 meteor-node-forge
 fourseven:scss
-introjs
 npm-ed25519
 npm-request
 sha
+standard-minifier-css
+standard-minifier-js

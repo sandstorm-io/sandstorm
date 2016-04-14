@@ -112,39 +112,6 @@ Template.adminIdentityRow.helpers({
   },
 });
 
-Template.modalDialogWithBackdrop.onCreated(function () {
-  // This keypress event listener which closes the dialog when Escape is pressed should be scoped to
-  // the browser window, not this template.
-  this.keypressListener = (evt) => {
-    if (evt.keyCode === 27) {
-      this.data.onDismiss && this.data.onDismiss();
-    }
-  };
-
-  window.addEventListener("keydown", this.keypressListener);
-  document.getElementsByTagName("body")[0].classList.add("modal-shown");
-});
-
-Template.modalDialogWithBackdrop.onDestroyed(function () {
-  window.removeEventListener("keydown", this.keypressListener);
-  document.getElementsByTagName("body")[0].classList.remove("modal-shown");
-});
-
-Template.modalDialogWithBackdrop.events({
-  "click .modal"(evt) {
-    if (evt.currentTarget === evt.target) {
-      // Only dismiss if the click was on the backdrop, not the main form.
-      const instance = Template.instance();
-      instance.data.onDismiss && instance.data.onDismiss();
-    }
-  },
-
-  "click .modal-close-button"(evt) {
-    const instance = Template.instance();
-    instance.data.onDismiss && instance.data.onDismiss();
-  },
-});
-
 // Email form.
 Template.adminIdentityProviderConfigureEmail.onCreated(function () {
   const emailEnabled = globalDb.getSettingWithFallback("emailToken", false);
@@ -195,6 +162,17 @@ Template.adminIdentityProviderConfigureEmail.helpers({
   errorMessage() {
     const instance = Template.instance();
     return instance.errorMessage.get();
+  },
+});
+
+Template.googleLoginSetupInstructions.helpers({
+  siteUrlNoSlash() {
+    // Google complains if the Javascript origin contains a trailing slash - it wants just the
+    // scheme/host/port, no path.
+    const urlWithTrailingSlash = Meteor.absoluteUrl();
+    return urlWithTrailingSlash[urlWithTrailingSlash.length - 1] === "/" ?
+           urlWithTrailingSlash.slice(0, urlWithTrailingSlash.length - 1) :
+           urlWithTrailingSlash;
   },
 });
 
@@ -298,6 +276,12 @@ Template.adminIdentityProviderConfigureGoogle.events({
     // double invocation because there's no way to pass a callback function around in Blaze without
     // invoking it, and we need to pass it to modalDialogWithBackdrop
     instance.data.onDismiss()();
+  },
+});
+
+Template.githubLoginSetupInstructions.helpers({
+  siteUrl() {
+    return Meteor.absoluteUrl();
   },
 });
 

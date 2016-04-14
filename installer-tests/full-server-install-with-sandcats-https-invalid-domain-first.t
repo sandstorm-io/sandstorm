@@ -1,4 +1,4 @@
-Title: Can enable sandcats HTTPS when installing in full server mode
+Title: Ensure that the prompt for a hostname (for sandcats.io subdomain) prompt can re-prompt the user on invalid input
 Vagrant-Box: jessie
 Precondition: sandstorm_not_installed
 Cleanup: uninstall_sandstorm

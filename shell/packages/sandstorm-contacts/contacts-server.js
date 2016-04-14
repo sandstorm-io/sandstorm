@@ -67,13 +67,16 @@ Meteor.publish("contactProfiles", function (showAll) {
     },
   });
 
-  if (true) {
+  let orgHandle;
+
+  if (db.getOrganizationShareContacts() &&
+      db.isUserInOrganization(db.collections.users.findOne({ _id: this.userId }))) {
+    const orgCursor = db.collections.users.find({ profile: { $exists: 1 } });
     // TODO(perf): make a mongo query that can find all identities in an organization and add
     // indices for it. Currently, we do some case insensitive matching which mongo can't
     // handle well.
-    const orgCursor = db.collections.users.find({ profile: { $exists: 1 } });
 
-    const orgHandle = orgCursor.observe({
+    orgHandle = orgCursor.observe({
       added: function (user) {
         if (db.isIdentityInOrganization(user)) {
           addIdentityOfContact(user._id);

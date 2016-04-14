@@ -1441,6 +1441,17 @@ _.extend(SandstormDb.prototype, {
     return setting && setting.value && setting.value.disallowGuests;
   },
 
+  getOrganizationShareContacts: function () {
+    return this.getOrganizationShareContactsRaw() && this.isFeatureKeyValid();
+  },
+
+  getOrganizationShareContactsRaw: function () {
+    const setting = Settings.findOne({ _id: "organizationSettings" });
+    return setting && setting.value &&
+           (setting.value.shareContacts || setting.value.shareContacts === undefined);
+    // default to true if undefined
+  },
+
   getSamlEntryPoint: function () {
     const setting = Settings.findOne({ _id: "samlEntryPoint" });
     return setting ? setting.value : "";  // empty if subscription is not ready.

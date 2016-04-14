@@ -49,9 +49,9 @@
   box-sizing: border-box;
   min-height: 26px;
   font-size: 13px;
+  font-family: inherit;
   text-align: center;
   text-decoration: none;
-  font-family: 'Source Sans Pro', sans-serif;
 }
 
 %button-disabled {
@@ -122,7 +122,7 @@
     background-color: white;
     padding: 4px;
     font-size: 16px;
-    font-family: 'Source Sans Pro', sans-serif;
+    font-family: inherit;
     border-radius: 2px;
     border: 1px solid #d3d3d3;
   }

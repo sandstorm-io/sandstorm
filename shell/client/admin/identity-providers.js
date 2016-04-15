@@ -105,7 +105,6 @@ Template.adminIdentityRow.events({
   },
 
   "click button.get-feature-key"() {
-    // TODO: non-setup-UI probably shouldn't do this.  Pass in a callback instead?
     const instance = Template.instance();
     const route = instance.data.featureKeyRoute;
     if (route) {
@@ -194,6 +193,7 @@ Template.adminIdentityProviderConfigureGoogle.onCreated(function () {
   this.clientId = new ReactiveVar(clientId);
   this.clientSecret = new ReactiveVar(clientSecret);
   this.errorMessage = new ReactiveVar(undefined);
+  this.formChanged = new ReactiveVar(false);
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
@@ -219,7 +219,8 @@ Template.adminIdentityProviderConfigureGoogle.helpers({
 
   saveDisabled() {
     const instance = Template.instance();
-    return !instance.clientId.get() || !instance.clientSecret.get();
+    const googleEnabled = globalDb.getSettingWithFallback("google", false);
+    return (googleEnabled && !instance.formChanged.get()) || !instance.clientId.get() || !instance.clientSecret.get();
   },
 
   errorMessage() {
@@ -232,11 +233,13 @@ Template.adminIdentityProviderConfigureGoogle.events({
   "input input[name=clientId]"(evt) {
     const instance = Template.instance();
     instance.clientId.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=clientSecret]"(evt) {
     const instance = Template.instance();
     instance.clientSecret.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "click .idp-modal-disable"(evt) {
@@ -288,6 +291,7 @@ Template.adminIdentityProviderConfigureGitHub.onCreated(function () {
   this.clientId = new ReactiveVar(clientId);
   this.clientSecret = new ReactiveVar(clientSecret);
   this.errorMessage = new ReactiveVar(undefined);
+  this.formChanged = new ReactiveVar(false);
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
@@ -313,7 +317,8 @@ Template.adminIdentityProviderConfigureGitHub.helpers({
 
   saveDisabled() {
     const instance = Template.instance();
-    return !instance.clientId.get() || !instance.clientSecret.get();
+    const githubEnabled = globalDb.getSettingWithFallback("github", false);
+    return (githubEnabled && !instance.formChanged.get()) || !instance.clientId.get() || !instance.clientSecret.get();
   },
 
   errorMessage() {
@@ -323,21 +328,16 @@ Template.adminIdentityProviderConfigureGitHub.helpers({
 });
 
 Template.adminIdentityProviderConfigureGitHub.events({
-  "click input[name=enableGithub]"(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
-    const instance = Template.instance();
-    instance.githubChecked.set(!instance.githubChecked.get());
-  },
-
   "input input[name=clientId]"(evt) {
     const instance = Template.instance();
     instance.clientId.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=clientSecret]"(evt) {
     const instance = Template.instance();
     instance.clientSecret.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "click .idp-modal-save"(evt) {
@@ -393,6 +393,7 @@ Template.adminIdentityProviderConfigureLdap.onCreated(function () {
   this.ldapEmailField = new ReactiveVar(emailField);
   this.ldapFilter = new ReactiveVar(filter);
   this.errorMessage = new ReactiveVar(undefined);
+  this.formChanged = new ReactiveVar(false);
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
@@ -453,7 +454,9 @@ Template.adminIdentityProviderConfigureLdap.helpers({
     // * a nonempty username attribute
     // * a nonempty given name attribute
     // * a nonempty email attribute
-    return (!instance.ldapUrl.get() ||
+    const ldapEnabled = globalDb.getSettingWithFallback("ldap", false);
+    return ((ldapEnabled && !instance.formChanged.get()) ||
+        !instance.ldapUrl.get() ||
         !instance.ldapSearchUsername.get() ||
         !instance.ldapNameField.get() ||
         !instance.ldapEmailField.get());
@@ -469,41 +472,49 @@ Template.adminIdentityProviderConfigureLdap.events({
   "input input[name=ldapUrl]"(evt) {
     const instance = Template.instance();
     instance.ldapUrl.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=ldapSearchBindDn]"(evt) {
     const instance = Template.instance();
     instance.ldapSearchBindDn.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=ldapSearchBindPassword]"(evt) {
     const instance = Template.instance();
     instance.ldapSearchBindPassword.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=ldapBase]"(evt) {
     const instance = Template.instance();
     instance.ldapBase.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=ldapSearchUsername]"(evt) {
     const instance = Template.instance();
     instance.ldapSearchUsername.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=ldapNameField]"(evt) {
     const instance = Template.instance();
     instance.ldapNameField.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=ldapEmailField]"(evt) {
     const instance = Template.instance();
     instance.ldapEmailField.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=ldapFilter]"(evt) {
     const instance = Template.instance();
     instance.ldapFilter.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "click .idp-modal-disable"(evt) {
@@ -571,6 +582,7 @@ Template.adminIdentityProviderConfigureSaml.onCreated(function () {
   this.samlEntryPoint = new ReactiveVar(samlEntryPoint);
   this.samlPublicCert = new ReactiveVar(samlPublicCert);
   this.errorMessage = new ReactiveVar(undefined);
+  this.formChanged = new ReactiveVar(false);
   this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
@@ -596,7 +608,8 @@ Template.adminIdentityProviderConfigureSaml.helpers({
 
   saveDisabled() {
     const instance = Template.instance();
-    return !instance.samlEntryPoint.get() || !instance.samlPublicCert.get();
+    const samlEnabled = globalDb.getSettingWithFallback("saml", false);
+    return (samlEnabled && !instance.formChanged.get()) || !instance.samlEntryPoint.get() || !instance.samlPublicCert.get();
   },
 
   errorMessage() {
@@ -609,11 +622,13 @@ Template.adminIdentityProviderConfigureSaml.events({
   "input input[name=entryPoint]"(evt) {
     const instance = Template.instance();
     instance.samlEntryPoint.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input textarea[name=publicCert]"(evt) {
     const instance = Template.instance();
     instance.samlPublicCert.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "click .idp-modal-disable"(evt) {

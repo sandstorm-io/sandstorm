@@ -344,7 +344,7 @@ Template.devLoginForm.events({
 
 Template.samlLoginForm.events({
   "click button": function (event, instance) {
-    if (linkingNewIdentity) {
+    if (instance.data.linkingNewIdentity) {
       sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
     }
 

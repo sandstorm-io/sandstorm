@@ -41,7 +41,6 @@
         background-size: 24px 24px;
         background-position: center;
         display: inline-block;
-        box-sizing: border-box;
         width: 32px;
         height: 32px;
         vertical-align: top;
@@ -54,7 +53,6 @@
         height: 32px;
         background-color: $grainlist-searchbar-background-color;
         border: 1px solid $grainlist-searchbar-outline-color;
-        box-sizing: border-box;
         &:focus {
           border: 1px solid $grainlist-searchbar-outline-color-focus;
         }

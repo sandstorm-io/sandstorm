@@ -8,7 +8,6 @@
       float: left;
       position: relative;
       display: block;
-      box-sizing: border-box;
       >a {
         padding: 10px;
         border-radius: 4px;
@@ -140,7 +139,6 @@ input.autoSelect {
     font: inherit;
     font-size: inherit;
     width: 80%;
-    box-sizing: border-box;
   }
   input#key-quota {
     width: 40%;
@@ -152,7 +150,6 @@ input.autoSelect {
     height: 200px;
     font: inherit;
     font-size: inherit;
-    box-sizing: border-box;
   }
   button {
     @extend %button-base;
@@ -235,7 +232,6 @@ button#offer-ipnetwork, button#offer-ipinterface {
 }
 
 .websocket-broken-warning, .wildcard-host-warning {
-  box-sizing: border-box;
   min-height: 3em;
   width: 100%;
   padding: 0.5em;

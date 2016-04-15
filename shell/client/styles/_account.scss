@@ -46,7 +46,6 @@ body>.popup.account>.frame-container {
     display: block;
     width: 250px;
     height: 32px;
-    box-sizing: border-box;
     text-decoration: none;
     color: black;
     font-weight: normal;
@@ -102,7 +101,6 @@ body>.popup.account>.frame-container {
     display: block;
     width: 100%;
     height: 32px;
-    box-sizing: border-box;
     text-decoration: none;
     color: black;
     font-weight: normal;
@@ -251,7 +249,6 @@ body>.popup.account>.frame-container {
     }
 
     input {
-      box-sizing: border-box;
       width: 100%;
       padding: 2px 4px;
       border: 1px solid #9e9e9e;
@@ -473,7 +470,6 @@ body>.main-content>.account {
   h3.title-bar {
     background-color: white;
     width: 660px;
-    box-sizing: border-box;
     margin-bottom: 5px;
     border: none;
     font-size: 12pt;
@@ -585,7 +581,6 @@ body>.main-content>.account {
           white-space: nowrap;
           margin-top: 4px;
           span.email {
-            box-sizing: border-box;
             line-height: 30px;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -596,7 +591,6 @@ body>.main-content>.account {
           button.make-primary {
             @extend %button-base;
             @extend %button-secondary;
-            box-sizing: border-box;
             width: 33%;
             height: 26px;
             margin-top: 2px;
@@ -641,7 +635,6 @@ div.billing {
   >section.payment-methods {
     display: inline-block;
     vertical-align: top;
-    box-sizing: border-box;
 
     h3 {
       margin: 0.5em 0;
@@ -652,7 +645,6 @@ div.billing {
 
     >.balance {
       margin-left: 16px;
-      box-sizing: border-box;
       margin: 1em auto 2em;
       text-align: left;
 
@@ -796,7 +788,6 @@ div.billing {
     display: inline-block;
     vertical-align: top;
     margin-right: 32px;
-    box-sizing: border-box;
 
     h3 {
       margin: 0.5em 0;
@@ -954,7 +945,6 @@ div.billing {
 
 div.identity-editor {
   width: 435px;
-  box-sizing: border-box;
   background-color: white;
   padding: 15px 22px;
 
@@ -1040,7 +1030,6 @@ div.identity-editor {
         input[type="text"], select {
           display: block;
           width: 230px;
-          box-sizing: border-box;
           font-size: inherit;
           line-height: inherit;
           background-color: white;
@@ -1183,7 +1172,6 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
   }
 
   >p.success-note {
-    box-sizing: border-box;
     background-color: #cff4c6;
     padding: 32px;
     max-width: 564px;

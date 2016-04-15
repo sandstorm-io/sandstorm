@@ -154,7 +154,6 @@ body>.topbar {
 
   %hamburger-menu-item {
     // Common styling for topbar items that are displayed as a hamburger menu item on mobile.
-    box-sizing: border-box;
     @media #{$desktop} {
       height: $topbar-height-desktop;
     }
@@ -203,7 +202,6 @@ body>.topbar {
   >.menubar {
     padding-left: 0;
     margin-left: 0;
-    box-sizing: border-box;
     border-bottom: 1px solid $topbar-border-color;
     overflow: hidden;
     @media #{$desktop} {
@@ -540,11 +538,9 @@ body>.topbar {
         position: relative;
         border-bottom: 1px solid $topbar-border-color;
         margin: 0;
-        box-sizing: border-box;
         list-style-type: none;
         a {
           display: block;
-          box-sizing: border-box;
           min-height: 32px;
           padding-left: $navbar-width-desktop-shrunk;
           text-decoration: none;
@@ -603,10 +599,8 @@ body>.topbar {
         position: relative;
         border-bottom: 1px solid #676767;
         margin: 0;
-        box-sizing: border-box;
         a {
           display: block;
-          box-sizing: border-box;
           padding-left: 48px;
           text-decoration: none;
           text-overflow: ellipsis;
@@ -659,7 +653,6 @@ body>.topbar {
         }
         .close-button {
           @extend %unstyled-button;
-          box-sizing: border-box;
           position: absolute;
           top: 1px;
           right: 0px;
@@ -681,7 +674,6 @@ body>.topbar {
     .demo-notice {
       width: 100%;
       overflow: hidden;
-      box-sizing: border-box;
 
       p {
         color: $topbar-foreground-color;
@@ -722,7 +714,6 @@ body>.topbar {
         border: 1px solid $topbar-foreground-color;
         border-radius: 4px;
         width: 100%;
-        box-sizing: border-box;
         text-align: center;
         padding: 4px;
         background-color: $topbar-background-color-active;
@@ -935,7 +926,6 @@ body>.popup {
           display: block;
           border: 1px solid rgba(0, 0, 0, 0);
           border-bottom: 1px solid #e4e4e4;
-          box-sizing: border-box;
           cursor: pointer;
 
           &.selected {
@@ -954,7 +944,6 @@ body>.popup {
         border: 0px;
         outline: 0px;
         width: 100%;
-        box-sizing: border-box;
       }
       &.active {
         outline: $focus-outline-color solid 1px;
@@ -1128,7 +1117,6 @@ body>.popup {
 
     .label, .personal-message {
       width: 100%;
-      box-sizing: border-box;
     }
     .personal-message {
       height: 100px;

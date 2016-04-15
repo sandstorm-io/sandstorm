@@ -37,7 +37,6 @@
         background-size: 24px 24px;
         background-position: center;
         display: inline-block;
-        box-sizing: border-box;
         width: 32px;
         height: 32px;
         vertical-align: top;
@@ -45,7 +44,6 @@
       >input.search-bar {
         font-size: 16pt;
         height: 32px;
-        box-sizing: border-box;
         background-color: $app-details-searchbar-background-color;
         border: 1px solid $app-details-searchbar-outline-color;
         &:focus {
@@ -201,7 +199,6 @@
           display: block;
           width: 100%;
         }
-        box-sizing: border-box;
         padding: 8px;
         list-style: none;
         >li.publisher-proof {

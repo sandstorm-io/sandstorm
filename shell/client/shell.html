@@ -185,23 +185,9 @@ limitations under the License.
 <template name="wrongIdentity">
   <div class="grain-interstitial">
     <p>
-      Access through this URL is restricted to this identity:
+      Access through this URL is restricted to the identity:
     </p>
-    <button class="sign-in" title="sign in as {{recipient.profile.name}}" disabled={{clicked}}>
-      {{> identityCard recipient }}
-    </button>
-    {{#if clicked}}
-    {{#if login.form}}
-       <h4>Sign in</h4>
-       <div class="login-buttons-list">
-       {{#with data=loginTemplate.data name=loginTemplate.name
-              loginFormInitializer=login.form.initializer}}
-         {{> Template.dynamic template=name}}
-       {{/with}}
-       </div>
-     {{/if}}
-    {{> _loginButtonsMessages}}
-   {{/if}}
+    {{> identityCardSignInButton identity=recipient unclickedMessage=unclickedMessage}}
   </div>
 </template>
 

@@ -69,7 +69,7 @@ module.exports["Test open direct share link"] = function (browser) {
         .url(browser.launch_url + "/shared/" + result.value.result.token)
         .waitForElementVisible(".grain-interstitial", short_wait)
         .assert.containsText(".grain-interstitial",
-                             "Access through this URL is restricted to this identity:")
+                             "Access through this URL is restricted to the identity:")
         .click(".grain-interstitial button.sign-in")
         .waitForElementVisible("#grain-frame", medium_wait)
         .waitForElementVisible("#grainTitle", medium_wait)
@@ -88,7 +88,7 @@ module.exports["Test open direct share link"] = function (browser) {
         .url(browser.launch_url + "/shared/" + result.value.result.token)
         .waitForElementVisible(".grain-interstitial", short_wait)
         .assert.containsText(".grain-interstitial",
-                             "Access through this URL is restricted to this identity:")
+                             "Access through this URL is restricted to the identity:")
         .click(".grain-interstitial button.sign-in")
         .waitForElementVisible("#grain-frame", medium_wait)
         .waitForElementVisible("#grainTitle", medium_wait)

@@ -472,36 +472,12 @@ Template.grainSharePopup.helpers({
   },
 });
 
-Template.wrongIdentity.onCreated(function () {
-  this._clicked = new ReactiveVar(false);
-});
-
-Template.wrongIdentity.events({
-  "click button.sign-in": function (event, instance) {
-    instance._clicked.set(true);
-
-    const oneClick = instance.data.login.oneClick;
-    if (oneClick) {
-      const obj = oneClick.windowMethod ? window : Meteor;
-      obj[oneClick.method].apply(null, oneClick.args);
-    }
-  },
-});
-
 Template.wrongIdentity.helpers({
-  clicked: function () {
-    return Template.instance()._clicked.get();
-  },
-
-  loginTemplate: function () {
-    const data = Template.instance().data;
-    const login = data.login;
-    if (login.form) {
-      const name = data.recipient.profile.service;
-      const service = Accounts.identityServices[name];
-      if (service.isEnabled()) {
-        return service.loginTemplate;
-      }
+  unclickedMessage: function () {
+    if (Meteor.userId()) {
+      return "Click to sign out of your current session and sign in as the above identity.";
+    } else {
+      return "Click to sign in.";
     }
   },
 });

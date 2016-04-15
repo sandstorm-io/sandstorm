@@ -121,33 +121,11 @@ Meteor.publish("tokenInfo", function (token) {
         let identity = globalDb.getIdentity(apiToken.owner.user.identityId);
         let metadata = apiToken.owner.user.denormalizedGrainMetadata;
         if (identity && metadata) {
-          const login = {};
-          // TODO(cleanup): This switching logic does not belong here. Perhaps it should go
-          //   in sandstorm-db/profile.js or be added as a method on Accounts.identityServices[].
-          if (identity.profile.service === "google") {
-            login.oneClick = { method: "loginWithGoogle",
-                               args: [{ loginHint: identity.services.google.email }], };
-          } else if (identity.profile.service === "github") {
-            login.oneClick = { method: "loginWithGithub", args: [] };
-          } else if (identity.profile.service === "email") {
-            login.form = { initializer: identity.services.email.email };
-          } else if (identity.profile.service === "ldap") {
-            login.form = { initializer: identity.services.ldap.username };
-          } else if (identity.profile.service === "saml") {
-            login.oneClick = { method: "loginWithSaml", args: [{ provider: "default" }] };
-          } else if (identity.profile.service === "dev") {
-            // TODO(cleanup): The dev login method is unusual in that it lives on the global
-            //   `window` object rather than the global `Meteor` object. Perhaps we should
-            //   move it to `Meteor`.
-            login.oneClick = { method: "loginDevAccount", args: [identity.services.dev.name],
-                               windowMethod: true, };
-          }
-
+          SandstormDb.fillInLoginId(identity);
           this.added("tokenInfo", token,
-                     { identityOwner: _.pick(identity, "_id", "profile"),
+                     { identityOwner: _.pick(identity, "_id", "profile", "loginId"),
                        grainId: grainId,
                        grainMetadata: metadata,
-                       login: login,
                      });
         } else {
           this.added("tokenInfo", token, { invalidToken: true });

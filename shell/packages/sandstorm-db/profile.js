@@ -245,6 +245,11 @@ SandstormDb.fillInIntrinsicName = function (user) {
   }
 };
 
+SandstormDb.fillInLoginId = function (identity) {
+  const service = identity.profile.service;
+  identity.loginId = Accounts.identityServices[service].getLoginId(identity);
+};
+
 SandstormDb.getVerifiedEmails = function (identity) {
   if (identity.services.google && identity.services.google.email &&
       identity.services.google.verified_email) { // jscs:ignore requireCamelCaseOrUpperCaseIdentifiers

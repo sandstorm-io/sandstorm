@@ -211,13 +211,6 @@ button.revoke-token, button.revoke-access {
     padding: 8px;
     line-height: 1.33;
   }
-  button.sign-in {
-    @extend %button-base;
-    background-color: white;
-  }
-  h4 {
-    margin-bottom: 5px;
-  }
 }
 
 #intro {

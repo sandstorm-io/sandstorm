@@ -19,6 +19,15 @@ Accounts.identityServices.dev = {
     return globalDb.allowDevAccounts();
   },
 
+  getLoginId: function (identity) {
+    return identity.services.dev.name;
+  },
+
+  initiateLogin: function (loginId) {
+    loginDevAccount(loginId);
+    return { oneClick: true };
+  },
+
   loginTemplate: {
     name: "devLoginForm",
     priority: -10, // Put it at the top.

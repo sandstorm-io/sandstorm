@@ -143,6 +143,11 @@
     @extend %button-secondary;
     margin-left: 10px;
   }
+  .idp-modal-disable {
+    @extend %button-base;
+    @extend %button-danger;
+    margin-left: 10px;
+  }
 }
 
 .idp-config-url {

@@ -1337,8 +1337,8 @@ Router.map(function () {
     path: "/admin-new/app-sources",
     controller: newAdminRoute,
   });
-  this.route("newAdminAlerts", {
-    path: "/admin-new/alerts",
+  this.route("newAdminMaintenance", {
+    path: "/admin-new/maintenance",
     controller: newAdminRoute,
   });
   this.route("newAdminStatus", {

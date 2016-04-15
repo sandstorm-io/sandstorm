@@ -1,0 +1,68 @@
+<template name="newAdminMaintenance">
+  <h1>Maintenance message</h1>
+
+  <p>
+    You can set a maintenance message which will be shown to all users in the menu bar, on the top right.
+    This is useful for announcing scheduled maintenance so users can be prepared to tolerate downtime.
+    If the message text is empty, no message will be displayed.
+  </p>
+
+  <p>
+    You may use the following variables in the "Message Text" field, which will be automatically
+    substituted with useful values:
+  </p>
+
+  <ul>
+    <li><code>$TIME</code> : The time component of "Maintenance Time", converted to the user's local time (eg. "1:15:45 PM")</li>
+    <li><code>$DATE</code> : The date component of "Maintenance Time", converted to the user's local time (eg. "6/19/2015")</li>
+    <li><code>$IN_COUNTDOWN</code> : An active countdown until "Maintenance Time" (eg. "in 3 days" or "in 1 minute"). Displays "any moment" at the time specified in "Maintenance Time" and then disappears after an hour.</li>
+  </ul>
+
+  {{#if hasSuccess}}
+    {{#focusingSuccessBox}}
+      {{statusMessage}}
+    {{/focusingSuccessBox}}
+  {{/if}}
+  {{#if hasError}}
+    {{#focusingErrorBox}}
+      {{statusMessage}}
+    {{/focusingErrorBox}}
+  {{/if}}
+
+  <form class="maintenance-message-form">
+    <div class="form-group">
+      <label>
+        Message Text:
+        <input type="text" name="message-text" value="{{messageText}}" />
+      </label>
+      <span class="form-subtext">
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Maintenance Time:
+        <input type="text" name="maintenance-time" value="{{maintenanceTime}}" />
+      </label>
+      <span class="form-subtext">
+		The time you intend to start performing maintenance, formatted like "{{ exampleDate }}".
+      </span>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Link Url (optional):
+        <input type="text" name="url" value="{{linkUrl}}" />
+      </label>
+      <span class="form-subtext">
+        If given, the maintenance message will render as a clickable link to the provided URL.
+      </span>
+    </div>
+
+    <div class="button-row">
+      <button class="save" disabled="{{saveDisabled}}">
+        Set message
+      </button>
+    </div>
+  </form>
+</template>

@@ -1,0 +1,9 @@
+.maintenance-message-form {
+  @extend %standard-form;
+
+  .save {
+    @extend %button-base;
+    @extend %button-primary;
+    margin-left: 10px;
+  }
+}

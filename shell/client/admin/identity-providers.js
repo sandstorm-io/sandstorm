@@ -1,5 +1,11 @@
 /* global Settings */
 
+Template.newAdminIdentity.helpers({
+  hasFeatureKey() {
+    return globalDb.isFeatureKeyValid();
+  },
+});
+
 const idpData = function (configureCallback) {
   const emailTokenEnabled = globalDb.getSettingWithFallback("emailToken", false);
   const googleEnabled = globalDb.getSettingWithFallback("google", false);
@@ -99,8 +105,11 @@ Template.adminIdentityRow.events({
   },
 
   "click button.get-feature-key"() {
-    // TODO: non-setup-UI probably shouldn't do this.  Pass in a callback instead?
-    Router.go("setupWizardFeatureKey");
+    const instance = Template.instance();
+    const route = instance.data.featureKeyRoute;
+    if (route) {
+      Router.go(instance.data.featureKeyRoute);
+    }
   },
 });
 
@@ -112,37 +121,36 @@ Template.adminIdentityRow.helpers({
   },
 });
 
+const setAccountSettingCallback = function (err) {
+  if (err) {
+    this.errorMessage.set(err.message);
+  } else {
+    this.data.onDismiss()();
+  }
+};
+
 // Email form.
 Template.adminIdentityProviderConfigureEmail.onCreated(function () {
-  const emailEnabled = globalDb.getSettingWithFallback("emailToken", false);
-  this.emailChecked = new ReactiveVar(emailEnabled);
   this.errorMessage = new ReactiveVar(undefined);
+  this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
 Template.adminIdentityProviderConfigureEmail.onRendered(function () {
   // Focus the first input when the form is shown.
-  this.find("input").focus();
+  this.find("button.idp-modal-save").focus();
 });
 
 Template.adminIdentityProviderConfigureEmail.events({
-  "click input[name=enableEmail]"(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
+  "click .idp-modal-disable"(evt) {
     const instance = Template.instance();
-    instance.emailChecked.set(!instance.emailChecked.get());
+    const token = Iron.controller().state.get("token");
+    Meteor.call("setAccountSetting", token, "emailToken", false, instance.setAccountSettingCallback);
   },
 
   "click .idp-modal-save"(evt) {
     const instance = Template.instance();
-    const enableEmail = instance.emailChecked.get();
     const token = Iron.controller().state.get("token");
-    Meteor.call("setAccountSetting", token, "emailToken", enableEmail, (err) => {
-      if (err) {
-        instance.errorMessage.set(err.message);
-      } else {
-        instance.data.onDismiss()();
-      }
-    });
+    Meteor.call("setAccountSetting", token, "emailToken", true, instance.setAccountSettingCallback);
   },
 
   "click .idp-modal-cancel"(evt) {
@@ -154,9 +162,8 @@ Template.adminIdentityProviderConfigureEmail.events({
 });
 
 Template.adminIdentityProviderConfigureEmail.helpers({
-  emailChecked() {
-    const instance = Template.instance();
-    return instance.emailChecked.get();
+  emailEnabled() {
+    return globalDb.getSettingWithFallback("emailToken", false);
   },
 
   errorMessage() {
@@ -178,17 +185,16 @@ Template.googleLoginSetupInstructions.helpers({
 
 // Google form.
 Template.adminIdentityProviderConfigureGoogle.onCreated(function () {
-  const googleChecked = globalDb.getSettingWithFallback("google", false);
-
   const configurations = Package["service-configuration"].ServiceConfiguration.configurations;
   const googleConfiguration = configurations.findOne({ service: "google" });
   const clientId = googleConfiguration && googleConfiguration.clientId;
   const clientSecret = googleConfiguration && googleConfiguration.secret;
 
-  this.googleChecked = new ReactiveVar(googleChecked);
   this.clientId = new ReactiveVar(clientId);
   this.clientSecret = new ReactiveVar(clientSecret);
   this.errorMessage = new ReactiveVar(undefined);
+  this.formChanged = new ReactiveVar(false);
+  this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
 Template.adminIdentityProviderConfigureGoogle.onRendered(function () {
@@ -197,9 +203,8 @@ Template.adminIdentityProviderConfigureGoogle.onRendered(function () {
 });
 
 Template.adminIdentityProviderConfigureGoogle.helpers({
-  googleChecked() {
-    const instance = Template.instance();
-    return instance.googleChecked.get();
+  googleEnabled() {
+    return globalDb.getSettingWithFallback("google", false);
   },
 
   clientId() {
@@ -212,13 +217,10 @@ Template.adminIdentityProviderConfigureGoogle.helpers({
     return instance.clientSecret.get();
   },
 
-  saveHtmlDisabled() {
+  saveDisabled() {
     const instance = Template.instance();
-    if (instance.googleChecked.get() && (!instance.clientId.get() || !instance.clientSecret.get())) {
-      return "disabled";
-    }
-
-    return "";
+    const googleEnabled = globalDb.getSettingWithFallback("google", false);
+    return (googleEnabled && !instance.formChanged.get()) || !instance.clientId.get() || !instance.clientSecret.get();
   },
 
   errorMessage() {
@@ -228,26 +230,26 @@ Template.adminIdentityProviderConfigureGoogle.helpers({
 });
 
 Template.adminIdentityProviderConfigureGoogle.events({
-  "click input[name=enableGoogle]"(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
-    const instance = Template.instance();
-    instance.googleChecked.set(!instance.googleChecked.get());
-  },
-
   "input input[name=clientId]"(evt) {
     const instance = Template.instance();
     instance.clientId.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=clientSecret]"(evt) {
     const instance = Template.instance();
     instance.clientSecret.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
+  "click .idp-modal-disable"(evt) {
+    const instance = Template.instance();
+    const token = Iron.controller().state.get("token");
+    Meteor.call("setAccountSetting", token, "google", false, instance.setAccountSettingCallback);
   },
 
   "click .idp-modal-save"(evt) {
     const instance = Template.instance();
-    const enableGoogle = instance.googleChecked.get();
     const token = Iron.controller().state.get("token");
     const configuration = {
       service: "google",
@@ -260,13 +262,7 @@ Template.adminIdentityProviderConfigureGoogle.events({
       if (err) {
         instance.errorMessage.set(err.message);
       } else {
-        Meteor.call("setAccountSetting", token, "google", enableGoogle, (err) => {
-          if (err) {
-            instance.errorMessage.set(err.message);
-          } else {
-            instance.data.onDismiss()();
-          }
-        });
+        Meteor.call("setAccountSetting", token, "google", true, instance.setAccountSettingCallback);
       }
     });
   },
@@ -287,17 +283,16 @@ Template.githubLoginSetupInstructions.helpers({
 
 // GitHub form.
 Template.adminIdentityProviderConfigureGitHub.onCreated(function () {
-  const githubChecked = globalDb.getSettingWithFallback("github", false);
-
   const configurations = Package["service-configuration"].ServiceConfiguration.configurations;
   const githubConfiguration = configurations.findOne({ service: "github" });
   const clientId = githubConfiguration && githubConfiguration.clientId;
   const clientSecret = githubConfiguration && githubConfiguration.secret;
 
-  this.githubChecked = new ReactiveVar(githubChecked);
   this.clientId = new ReactiveVar(clientId);
   this.clientSecret = new ReactiveVar(clientSecret);
   this.errorMessage = new ReactiveVar(undefined);
+  this.formChanged = new ReactiveVar(false);
+  this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
 Template.adminIdentityProviderConfigureGitHub.onRendered(function () {
@@ -306,9 +301,8 @@ Template.adminIdentityProviderConfigureGitHub.onRendered(function () {
 });
 
 Template.adminIdentityProviderConfigureGitHub.helpers({
-  githubChecked() {
-    const instance = Template.instance();
-    return instance.githubChecked.get();
+  githubEnabled() {
+    return globalDb.getSettingWithFallback("github", false);
   },
 
   clientId() {
@@ -321,13 +315,10 @@ Template.adminIdentityProviderConfigureGitHub.helpers({
     return instance.clientSecret.get();
   },
 
-  saveHtmlDisabled() {
+  saveDisabled() {
     const instance = Template.instance();
-    if (instance.githubChecked.get() && (!instance.clientId.get() || !instance.clientSecret.get())) {
-      return "disabled";
-    }
-
-    return "";
+    const githubEnabled = globalDb.getSettingWithFallback("github", false);
+    return (githubEnabled && !instance.formChanged.get()) || !instance.clientId.get() || !instance.clientSecret.get();
   },
 
   errorMessage() {
@@ -337,26 +328,20 @@ Template.adminIdentityProviderConfigureGitHub.helpers({
 });
 
 Template.adminIdentityProviderConfigureGitHub.events({
-  "click input[name=enableGithub]"(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
-    const instance = Template.instance();
-    instance.githubChecked.set(!instance.githubChecked.get());
-  },
-
   "input input[name=clientId]"(evt) {
     const instance = Template.instance();
     instance.clientId.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=clientSecret]"(evt) {
     const instance = Template.instance();
     instance.clientSecret.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "click .idp-modal-save"(evt) {
     const instance = Template.instance();
-    const enableGithub = instance.githubChecked.get();
     const token = Iron.controller().state.get("token");
     const configuration = {
       service: "github",
@@ -369,15 +354,15 @@ Template.adminIdentityProviderConfigureGitHub.events({
       if (err) {
         instance.errorMessage.set(err.message);
       } else {
-        Meteor.call("setAccountSetting", token, "github", enableGithub, (err) => {
-          if (err) {
-            instance.errorMessage.set(err.message);
-          } else {
-            instance.data.onDismiss()();
-          }
-        });
+        Meteor.call("setAccountSetting", token, "github", true, instance.setAccountSettingCallback);
       }
     });
+  },
+
+  "click .idp-modal-disable"(evt) {
+    const instance = Template.instance();
+    const token = Iron.controller().state.get("token");
+    Meteor.call("setAccountSetting", token, "github", false, instance.setAccountSettingCallback);
   },
 
   "click .idp-modal-cancel"(evt) {
@@ -390,7 +375,6 @@ Template.adminIdentityProviderConfigureGitHub.events({
 
 // LDAP form.
 Template.adminIdentityProviderConfigureLdap.onCreated(function () {
-  const ldapChecked = globalDb.getSettingWithFallback("ldap", false);
   const url = globalDb.getLdapUrl();
   const searchBindDn = globalDb.getLdapSearchBindDn();
   const searchBindPassword = globalDb.getLdapSearchBindPassword();
@@ -400,7 +384,6 @@ Template.adminIdentityProviderConfigureLdap.onCreated(function () {
   const emailField = globalDb.getLdapEmailField() || "mail";
   const filter = globalDb.getLdapFilter();
 
-  this.ldapChecked = new ReactiveVar(ldapChecked);
   this.ldapUrl = new ReactiveVar(url);
   this.ldapSearchBindDn = new ReactiveVar(searchBindDn);
   this.ldapSearchBindPassword = new ReactiveVar(searchBindPassword);
@@ -410,6 +393,8 @@ Template.adminIdentityProviderConfigureLdap.onCreated(function () {
   this.ldapEmailField = new ReactiveVar(emailField);
   this.ldapFilter = new ReactiveVar(filter);
   this.errorMessage = new ReactiveVar(undefined);
+  this.formChanged = new ReactiveVar(false);
+  this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
 Template.adminIdentityProviderConfigureLdap.onRendered(function () {
@@ -418,9 +403,8 @@ Template.adminIdentityProviderConfigureLdap.onRendered(function () {
 });
 
 Template.adminIdentityProviderConfigureLdap.helpers({
-  ldapChecked() {
-    const instance = Template.instance();
-    return instance.ldapChecked.get();
+  ldapEnabled() {
+    return globalDb.getSettingWithFallback("ldap", false);
   },
 
   ldapUrl() {
@@ -463,26 +447,19 @@ Template.adminIdentityProviderConfigureLdap.helpers({
     return instance.ldapEmailField.get();
   },
 
-  saveHtmlDisabled() {
+  saveDisabled() {
     const instance = Template.instance();
-    // Anything goes if the provider is disabled.
-    if (!instance.ldapChecked.get()) {
-      return "";
-    }
-
-    // If the provider is enabled, then you must provide:
+    // To enable/save LDAP settings, you must provide:
     // * a nonempty URL
     // * a nonempty username attribute
     // * a nonempty given name attribute
     // * a nonempty email attribute
-    if (!instance.ldapUrl.get() ||
+    const ldapEnabled = globalDb.getSettingWithFallback("ldap", false);
+    return ((ldapEnabled && !instance.formChanged.get()) ||
+        !instance.ldapUrl.get() ||
         !instance.ldapSearchUsername.get() ||
         !instance.ldapNameField.get() ||
-        !instance.ldapEmailField.get()) {
-      return "disabled";
-    }
-
-    return "";
+        !instance.ldapEmailField.get());
   },
 
   errorMessage() {
@@ -492,51 +469,58 @@ Template.adminIdentityProviderConfigureLdap.helpers({
 });
 
 Template.adminIdentityProviderConfigureLdap.events({
-  "click input[name=enableLdap]"(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
-    const instance = Template.instance();
-    instance.ldapChecked.set(!instance.ldapChecked.get());
-  },
-
   "input input[name=ldapUrl]"(evt) {
     const instance = Template.instance();
     instance.ldapUrl.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=ldapSearchBindDn]"(evt) {
     const instance = Template.instance();
     instance.ldapSearchBindDn.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=ldapSearchBindPassword]"(evt) {
     const instance = Template.instance();
     instance.ldapSearchBindPassword.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=ldapBase]"(evt) {
     const instance = Template.instance();
     instance.ldapBase.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=ldapSearchUsername]"(evt) {
     const instance = Template.instance();
     instance.ldapSearchUsername.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=ldapNameField]"(evt) {
     const instance = Template.instance();
     instance.ldapNameField.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=ldapEmailField]"(evt) {
     const instance = Template.instance();
     instance.ldapEmailField.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input input[name=ldapFilter]"(evt) {
     const instance = Template.instance();
     instance.ldapFilter.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
+  "click .idp-modal-disable"(evt) {
+    const instance = Template.instance();
+    const token = Iron.controller().state.get("token");
+    Meteor.call("setAccountSetting", token, "ldap", false, instance.setAccountSettingCallback);
   },
 
   "click .idp-modal-save"(evt) {
@@ -577,13 +561,7 @@ Template.adminIdentityProviderConfigureLdap.events({
 
       () => {
         // ldap requires the "setAccountSetting" method, so it's separated out here.
-        Meteor.call("setAccountSetting", token, "ldap", instance.ldapChecked.get(), (err) => {
-          if (err) {
-            instance.errorMessage.set(err.message);
-          } else {
-            instance.data.onDismiss()();
-          }
-        });
+        Meteor.call("setAccountSetting", token, "ldap", true, instance.setAccountSettingCallback);
       }
     );
   },
@@ -598,14 +576,14 @@ Template.adminIdentityProviderConfigureLdap.events({
 
 // SAML form.
 Template.adminIdentityProviderConfigureSaml.onCreated(function () {
-  const samlChecked = globalDb.getSettingWithFallback("saml", false);
   const samlEntryPoint = globalDb.getSamlEntryPoint();
   const samlPublicCert = globalDb.getSamlPublicCert();
 
-  this.samlChecked = new ReactiveVar(samlChecked);
   this.samlEntryPoint = new ReactiveVar(samlEntryPoint);
   this.samlPublicCert = new ReactiveVar(samlPublicCert);
   this.errorMessage = new ReactiveVar(undefined);
+  this.formChanged = new ReactiveVar(false);
+  this.setAccountSettingCallback = setAccountSettingCallback.bind(this);
 });
 
 Template.adminIdentityProviderConfigureSaml.onRendered(function () {
@@ -614,9 +592,8 @@ Template.adminIdentityProviderConfigureSaml.onRendered(function () {
 });
 
 Template.adminIdentityProviderConfigureSaml.helpers({
-  samlChecked() {
-    const instance = Template.instance();
-    return instance.samlChecked.get();
+  samlEnabled() {
+    return globalDb.getSettingWithFallback("saml", false);
   },
 
   samlEntryPoint() {
@@ -629,14 +606,10 @@ Template.adminIdentityProviderConfigureSaml.helpers({
     return instance.samlPublicCert.get();
   },
 
-  saveHtmlDisabled() {
+  saveDisabled() {
     const instance = Template.instance();
-    if (instance.samlChecked.get() &&
-            (!instance.samlEntryPoint.get() || !instance.samlPublicCert.get())) {
-      return "disabled";
-    }
-
-    return "";
+    const samlEnabled = globalDb.getSettingWithFallback("saml", false);
+    return (samlEnabled && !instance.formChanged.get()) || !instance.samlEntryPoint.get() || !instance.samlPublicCert.get();
   },
 
   errorMessage() {
@@ -646,26 +619,26 @@ Template.adminIdentityProviderConfigureSaml.helpers({
 });
 
 Template.adminIdentityProviderConfigureSaml.events({
-  "click input[name=enableSaml]"(evt) {
-    evt.preventDefault();
-    evt.stopPropagation();
-    const instance = Template.instance();
-    instance.samlChecked.set(!instance.samlChecked.get());
-  },
-
   "input input[name=entryPoint]"(evt) {
     const instance = Template.instance();
     instance.samlEntryPoint.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
   },
 
   "input textarea[name=publicCert]"(evt) {
     const instance = Template.instance();
     instance.samlPublicCert.set(evt.currentTarget.value);
+    instance.formChanged.set(true);
+  },
+
+  "click .idp-modal-disable"(evt) {
+    const instance = Template.instance();
+    const token = Iron.controller().state.get("token");
+    Meteor.call("setAccountSetting", token, "saml", false, instance.setAccountSettingCallback);
   },
 
   "click .idp-modal-save"(evt) {
     const instance = Template.instance();
-    const enableSaml = instance.samlChecked.get();
     const samlEntryPoint = instance.samlEntryPoint.get();
     const samlPublicCert = instance.samlPublicCert.get();
     const token = Iron.controller().state.get("token");
@@ -678,13 +651,7 @@ Template.adminIdentityProviderConfigureSaml.events({
           if (err) {
             instance.errorMessage.set(err.message);
           } else {
-            Meteor.call("setAccountSetting", token, "saml", enableSaml, (err) => {
-              if (err) {
-                instance.errorMessage.set(err.message);
-              } else {
-                instance.data.onDismiss()();
-              }
-            });
+            Meteor.call("setAccountSetting", token, "saml", true, instance.setAccountSettingCallback);
           }
         });
       }

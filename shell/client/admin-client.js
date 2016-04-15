@@ -1357,4 +1357,8 @@ Router.map(function () {
     path: "/admin-new/feature-key",
     controller: newAdminRoute,
   });
+  this.route("newAdminOrganization", {
+    path: "/admin-new/organization",
+    controller: newAdminRoute,
+  });
 });

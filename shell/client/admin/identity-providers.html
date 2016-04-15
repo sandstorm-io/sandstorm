@@ -1,7 +1,14 @@
 <template name="newAdminIdentity">
   <h1>Identity Providers</h1>
   <p>Choose which services users may use to identify themselves.  Anyone can log in, but only users you invite will be able to install apps or create grains.</p>
-  {{>adminIdentityProviderTable idpData=idpData}}
+  {{>adminIdentityProviderTable idpData=idpData featureKeyRoute="newAdminFeatureKey"}}
+
+  {{#if hasFeatureKey}}
+    <p>
+    To configure organization membership and settings, see
+    {{#linkTo route="newAdminOrganization"}}Organization Settings{{/linkTo}}.
+    </p>
+  {{/if}}
 </template>
 
 <template name="adminIdentityProviderConfigureEmail">
@@ -15,21 +22,25 @@
   {{/if}}
 
   <form class="setup-idp-form">
-    <div class="form-group">
-      <label><input type="checkbox" name="enableEmail" checked="{{emailChecked}}"/>Enable login with email</label>
-      <span class="form-subtext">
-        To use email login, you'll also need to configure an email relay.
-      </span>
-    </div>
+    <p>To use email login, you'll also need to configure an email relay.</p>
   </form>
 
   <div class="idp-modal-button-row">
     <button class="idp-modal-save">
+      {{#if emailEnabled}}
       Save
+      {{else}}
+      Enable
+      {{/if}}
     </button>
     <button class="idp-modal-cancel">
       Cancel
     </button>
+    {{#if emailEnabled}}
+    <button class="idp-modal-disable">
+      Disable
+    </button>
+    {{/if}}
   </div>
 {{/modalDialogWithBackdrop}}
 </template>
@@ -66,11 +77,6 @@
 
     <div class="form-group">
       <label>
-        <input type="checkbox" name="enableGoogle" checked="{{googleChecked}}"/>Enable login with Google
-      </label>
-    </div>
-    <div class="form-group">
-      <label>
         Client ID:
         <input type="text" name="clientId" value="{{clientId}}"/>
       </label>
@@ -84,12 +90,21 @@
   </form>
 
   <div class="idp-modal-button-row">
-    <button class="idp-modal-save" {{saveHtmlDisabled}}>
+    <button class="idp-modal-save" disabled="{{saveDisabled}}">
+      {{#if googleEnabled}}
       Save
+      {{else}}
+      Enable
+      {{/if}}
     </button>
     <button class="idp-modal-cancel">
       Cancel
     </button>
+    {{#if googleEnabled}}
+    <button class="idp-modal-disable">
+      Disable
+    </button>
+    {{/if}}
   </div>
 {{/modalDialogWithBackdrop}}
 </template>
@@ -115,11 +130,6 @@
     <p>Then, copy over your Client ID and Client Secret below:</p>
     <div class="form-group">
       <label>
-        <input type="checkbox" name="enableGithub" checked="{{githubChecked}}"/>Enable login with GitHub
-      </label>
-    </div>
-    <div class="form-group">
-      <label>
         Client ID:
         <input type="text" name="clientId" value="{{clientId}}"/>
       </label>
@@ -133,12 +143,21 @@
   </form>
 
   <div class="idp-modal-button-row">
-    <button class="idp-modal-save" {{saveHtmlDisabled}}>
+    <button class="idp-modal-save" disabled="{{saveDisabled}}">
+      {{#if githubEnabled}}
       Save
+      {{else}}
+      Enable
+      {{/if}}
     </button>
     <button class="idp-modal-cancel">
       Cancel
     </button>
+    {{#if githubEnabled}}
+    <button class="idp-modal-disable">
+      Disable
+    </button>
+    {{/if}}
   </div>
 {{/modalDialogWithBackdrop}}
 </template>
@@ -154,10 +173,6 @@
   {{/if}}
 
   <form class="setup-idp-form">
-    <div class="form-group">
-      <label><input type="checkbox" name="enableLdap" checked="{{ldapChecked}}"/>Enable login with LDAP</label>
-    </div>
-
     <div class="form-group">
       <label>LDAP server URL:
         <input type="text" name="ldapUrl" value="{{ldapUrl}}" />
@@ -238,12 +253,21 @@
   </form>
 
   <div class="idp-modal-button-row">
-    <button class="idp-modal-save" {{saveHtmlDisabled}}>
+    <button class="idp-modal-save" disabled="{{saveDisabled}}">
+      {{#if ldapEnabled}}
       Save
+      {{else}}
+      Enable
+      {{/if}}
     </button>
     <button class="idp-modal-cancel">
       Cancel
     </button>
+    {{#if ldapEnabled}}
+    <button class="idp-modal-disable">
+      Disable
+    </button>
+    {{/if}}
   </div>
 {{/modalDialogWithBackdrop}}
 </template>
@@ -265,10 +289,6 @@
 
   <form class="setup-idp-form">
     <div class="form-group">
-      <label><input type="checkbox" name="enableSaml" checked="{{samlChecked}}"/>Enable login with SAML</label>
-    </div>
-
-    <div class="form-group">
       <label>SAML provider entry point URL:
         <input type="text" name="entryPoint" value="{{samlEntryPoint}}" placeholder="https://YOUR_SAML_PROVIDER.com/sso/saml" />
       </label>
@@ -282,17 +302,30 @@
   </form>
 
   <div class="idp-modal-button-row">
-    <button class="idp-modal-save" {{saveHtmlDisabled}}>
+    <button class="idp-modal-save" disabled="{{saveDisabled}}">
+      {{#if samlEnabled}}
       Save
+      {{else}}
+      Enable
+      {{/if}}
     </button>
     <button class="idp-modal-cancel">
       Cancel
     </button>
+    {{#if samlEnabled}}
+    <button class="idp-modal-disable">
+      Disable
+    </button>
+    {{/if}}
   </div>
 {{/modalDialogWithBackdrop}}
 </template>
 
 <template name="adminIdentityProviderTable">
+{{!-- Expects a single argument in the data context:
+   featureKeyRoute: String.  Name of the route that the "Get Sandstorm for Work" button should
+                             redirect you to.
+--}}
 <div class="identity-provider-table" role="grid">
   <div class="idp-table-header" role="rowgroup">
     <div class="idp-header-row" role="row">
@@ -302,7 +335,7 @@
   </div>
   <div class="idp-table-rows" role="rowgroup">
   {{#each idp in idpData}}
-    {{> adminIdentityRow idp=idp}}
+    {{> adminIdentityRow idp=idp featureKeyRoute=featureKeyRoute}}
   {{/each}}
   {{#each idp in idpData}}
     {{#if currentPopupIs idp.id}}
@@ -326,7 +359,7 @@
     {{/if}}
 
     {{#if needsFeatureKey}}
-      <button class="get-feature-key" title="Get feature key to configure {{idp.label}} login">Get feature key to configure</button>
+      <button class="get-feature-key" title="Configure Sandstorm for Work">Configure Sandstorm for Work</button>
     {{else}}
       <button class="configure-idp" title="Configure {{idp.label}} login">Configure</button>
     {{/if}}

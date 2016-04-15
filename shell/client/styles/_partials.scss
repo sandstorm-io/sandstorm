@@ -91,6 +91,18 @@
   }
 }
 
+%button-danger {
+  background-color: red;
+  color: white;
+  border: 1px solid darken(red, 30%);
+  &:hover {
+    background-color: darken(red, 10%);
+  }
+  &:disabled {
+    @extend %button-disabled;
+  }
+}
+
 %button-dark {
   background-color: #303030;
   color: #ffffff;

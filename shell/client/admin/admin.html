@@ -28,15 +28,16 @@
   <div class="admin-settings">
     {{#if isUserPermitted}}
       <ul class="nav-pills">
-        {{#adminNavPill routeName="newAdminIdentity" data=getToken}}Identity Providers{{/adminNavPill}}
-        {{#adminNavPill routeName="newAdminEmailConfig" data=getToken}}Email Configuration{{/adminNavPill}}
-        {{#adminNavPill routeName="newAdminUsers" data=getToken}}User Accounts{{/adminNavPill}}
-        {{#adminNavPill routeName="newAdminAppSources" data=getToken}}App Sources{{/adminNavPill}}
-        {{#adminNavPill routeName="newAdminAlerts" data=getToken}}Admin Alerts{{/adminNavPill}}
-        {{#adminNavPill routeName="newAdminStatus" data=getToken}}System Status{{/adminNavPill}}
-        {{#adminNavPill routeName="newAdminNetworkCapabilities" data=getToken}}Network Capabilities{{/adminNavPill}}
-        {{#adminNavPill routeName="newAdminStats" data=getToken}}Stats{{/adminNavPill}}
-        {{#adminNavPill routeName="newAdminFeatureKey" data=getToken}}For Work{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminIdentity"}}Identity Providers{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminOrganization"}}Organization Settings{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminEmailConfig"}}Email Configuration{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminUsers"}}User Accounts{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminAppSources"}}App Sources{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminAlerts"}}Admin Alerts{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminStatus"}}System Status{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminNetworkCapabilities"}}Network Capabilities{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminStats"}}Stats{{/adminNavPill}}
+        {{#adminNavPill routeName="newAdminFeatureKey"}}For Work{{/adminNavPill}}
       </ul>
       {{> Template.dynamic template=adminTab}}
     {{else}}
@@ -51,6 +52,10 @@
 
 <template name="newAdminUsers">
   <h1>User Accounts</h1>
+</template>
+
+<template name="newAdminOrganization">
+  <h1>Organization Settings</h1>
 </template>
 
 <template name="newAdminAlerts">

@@ -256,14 +256,52 @@ SAML.prototype.validateResponse = function (samlResponse, callback) {
             }
 
             const nowMs = Date.now();
-            const notOnOrBefore = subjectConfirmationData.$.NotOnOrBefore;
-            if (notOnOrBefore && nowMs <= Date.parse(notOnOrBefore)) {
+            const notBefore = subjectConfirmationData.$.NotBefore;
+            if (notBefore && nowMs < Date.parse(notBefore)) {
               return callback(new Error("SAML assertion was signed for the future."));
             }
 
             const notOnOrAfter = subjectConfirmationData.$.NotOnOrAfter;
             if (notOnOrAfter && nowMs >= Date.parse(notOnOrAfter)) {
               return callback(new Error("SAML assertion was signed for the past."));
+            }
+          }
+        }
+      }
+
+      const conditions = _this.getElement(assertion[0], "Conditions")[0];
+      if (conditions) {
+        for (const key in conditions) {
+          if (conditions.hasOwnProperty(key)) {
+            const value = conditions[key];
+            if (key === "$") {
+              const nowMs = Date.now();
+              const notBefore = value.NotBefore;
+              if (notBefore && nowMs < Date.parse(notBefore)) {
+                return callback(new Error("SAML condition NotBefore is in the future."));
+              }
+
+              const notOnOrAfter = value.NotOnOrAfter;
+              if (notOnOrAfter && nowMs >= Date.parse(notOnOrAfter)) {
+                return callback(new Error("SAML condition notOnOrAfter is in the past."));
+              }
+            } else if (key.endsWith(":AudienceRestriction") ||
+                       key.endsWith(":OneTimeUse") ||
+                       key.endsWith(":ProxyRestriction")) {
+              continue;
+              // Do nothing.
+              // We already check both Destination and SubjectConfirmation.Recipient, so
+              // the Audience constraint isn't as important, and is tricky to handle
+              // correctly.
+              // OneTimeUse is actually very tricky to get right, and requires a cache of
+              // previously seen assertions (or at least their hashes). In Sandstorm's case,
+              // we would probably need to stuff it in Mongo to make it robust across multiple
+              // front-ends. It is a very rarely used constraint anyways.
+              // ProxyRestriction constraints only govern the future use of the assertion by the
+              // SP. We don't fall under this constraint so it's meaningless to us. As per the
+              // spec, it is always considered valid.
+            } else {
+              return callback(new Error("Unrecognized SAML constraint: " + key));
             }
           }
         }

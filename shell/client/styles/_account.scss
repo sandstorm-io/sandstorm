@@ -100,7 +100,7 @@ body>.popup.account>.frame-container {
 
   >button.login, >form, >a {
     display: block;
-    width: 200px;
+    width: 100%;
     height: 32px;
     box-sizing: border-box;
     text-decoration: none;
@@ -232,7 +232,6 @@ body>.popup.account>.frame-container {
 
     label {
       display: block;
-      height: 32px;
       line-height: normal;
       font-size: 8pt;
       text-indent: 0;
@@ -1497,8 +1496,8 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
     text-align: center;
     width: 400px;
     background-color: white;
-    h1 {
-      padding: 20px;
+    >.identity-card {
+      border: 1px solid gray;
     }
     .warning-banner {
       padding: 10px;
@@ -1515,19 +1514,31 @@ body>.popup.billing-prompt>.frame-container>.frame, .first-time-billing-prompt {
           @extend %button-base;
           @extend %button-secondary;
           position: absolute;
-          right: 30px;
-          top: 15px;
+          right: 25px;
+          top: 20px;
         }
       }
-    }
-    .identity-card {
-      margin: auto;
-      border: 2px solid gray;
     }
     button.logout {
       @extend %button-base;
       @extend %button-primary;
     }
+  }
+}
+
+.identity-card-sign-in {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  button.sign-in {
+    @extend %button-base;
+    background-color: white;
+  }
+  h4 {
+    margin-bottom: 5px;
+  }
+  .light-border {
+    border: 1px solid gray;
   }
 }
 

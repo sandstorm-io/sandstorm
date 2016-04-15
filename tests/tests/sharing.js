@@ -49,8 +49,47 @@ module.exports["Test open direct share link"] = function (browser) {
     }, [devIdentityId2], function (result) {
       browser.assert.equal(!result.value.error, true)
       browser
+
+         // First, try visiting the link while already logged in.
         .loginDevAccount(devName2)
         .url(browser.launch_url + "/shared/" + result.value.result.token)
+        .waitForElementVisible("#grain-frame", medium_wait)
+        .waitForElementVisible("#grainTitle", medium_wait)
+        .assert.containsText("#grainTitle", "user2 title")
+        .url(function(grainUrl) {
+          browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
+        })
+        .frame("grain-frame")
+        .waitForElementPresent("#publish", medium_wait)
+        .assert.containsText("#publish", "Publish")
+        .frame(null)
+
+        // Next, try visiting the link while not logged in.
+        .execute("window.Meteor.logout()")
+        .url(browser.launch_url + "/shared/" + result.value.result.token)
+        .waitForElementVisible(".grain-interstitial", short_wait)
+        .assert.containsText(".grain-interstitial",
+                             "Access through this URL is restricted to the identity:")
+        .click(".grain-interstitial button.sign-in")
+        .waitForElementVisible("#grain-frame", medium_wait)
+        .waitForElementVisible("#grainTitle", medium_wait)
+        .assert.containsText("#grainTitle", "user2 title")
+        .url(function(grainUrl) {
+          browser.assert.equal(0, grainUrl.value.indexOf(browser.launch_url + "/grain/"));
+        })
+        .frame("grain-frame")
+        .waitForElementPresent("#publish", medium_wait)
+        .assert.containsText("#publish", "Publish")
+        .frame(null)
+
+        // Now try while logged in as a third user.
+        .execute("window.Meteor.logout()")
+        .loginDevAccount()
+        .url(browser.launch_url + "/shared/" + result.value.result.token)
+        .waitForElementVisible(".grain-interstitial", short_wait)
+        .assert.containsText(".grain-interstitial",
+                             "Access through this URL is restricted to the identity:")
+        .click(".grain-interstitial button.sign-in")
         .waitForElementVisible("#grain-frame", medium_wait)
         .waitForElementVisible("#grainTitle", medium_wait)
         .assert.containsText("#grainTitle", "user2 title")

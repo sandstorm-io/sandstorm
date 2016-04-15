@@ -174,32 +174,21 @@ limitations under the License.
         {{/if}}
       </div>
     {{else}}
-      {{#if interstitial.directShare}}
-        <div class="grain-interstitial">
-          <p>
-            Access through this URL is restricted to this identity:
-          </p>
-          {{> identityCard interstitial.directShare.recipient }}
-          {{#if currentUser}}
-            <p>
-              To gain access,
-              <a href="/account">link the above identity to your account</a>
-              or sign in with the appropriate account.
-            </p>
-          {{else}}
-            <p>
-              Please sign in to gain access.
-            </p>
-          {{/if}}
-        </div>
-      {{else}}
-        {{> _grainSpinner}}
-      {{/if}}
+      {{> _grainSpinner}}
     {{/if}}
     {{/if}}
     {{/if}}
     </div>
   {{/with}}
+</template>
+
+<template name="wrongIdentity">
+  <div class="grain-interstitial">
+    <p>
+      Access through this URL is restricted to the identity:
+    </p>
+    {{> identityCardSignInButton identity=recipient unclickedMessage=unclickedMessage}}
+  </div>
 </template>
 
 <template name="requestAccess">

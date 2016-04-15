@@ -200,7 +200,9 @@ button.revoke-token, button.revoke-access {
 }
 
 .main-content .grain-interstitial {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
   background-color: $default-content-background-color;
   button.request-access, button.incognito-button {
     @extend %button-base;

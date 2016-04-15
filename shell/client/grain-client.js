@@ -472,6 +472,16 @@ Template.grainSharePopup.helpers({
   },
 });
 
+Template.wrongIdentity.helpers({
+  unclickedMessage: function () {
+    if (Meteor.userId()) {
+      return "Click to sign out of your current session and sign in as the above identity.";
+    } else {
+      return "Click to sign in.";
+    }
+  },
+});
+
 Template.requestAccess.onCreated(function () {
   this._status = new ReactiveVar({ showButton: true });
   this._grain = this.data.grainView;
@@ -1509,9 +1519,14 @@ Router.map(function () {
           this.state.set("invalidToken", true);
         } else if (tokenInfo.revoked) {
           this.state.set("revoked", true);
-        } else if (tokenInfo.identityOwner && tokenInfo.grainId && Meteor.userId() &&
-                   globalDb.userHasIdentity(Meteor.userId(), tokenInfo.identityOwner._id)) {
-          Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
+        } else if (tokenInfo.identityOwner) {
+          if (tokenInfo.grainId && Meteor.userId() &&
+              globalDb.userHasIdentity(Meteor.userId(), tokenInfo.identityOwner._id)) {
+            Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
+          } else {
+            SandstormDb.fillInPictureUrl(tokenInfo.identityOwner);
+            this.state.set("identityOwner", tokenInfo);
+          }
         } else if (tokenInfo.alreadyRedeemed) {
           Router.go("/grain/" + tokenInfo.grainId + path, {}, { replaceState: true });
         } else if (tokenInfo.grainId) {
@@ -1555,6 +1570,13 @@ Router.map(function () {
         this.render("invalidToken", { data: { token: this.params.token } });
       } else if (this.state.get("revoked")) {
         this.render("revokedShareLink");
+      } else if (this.state.get("identityOwner")) {
+        const tokenInfo = this.state.get("identityOwner");
+        this.render("wrongIdentity",
+                    { data: {
+                      recipient: tokenInfo.identityOwner,
+                      login: tokenInfo.login,
+                    }, });
       } else {
         this.render();
       }
@@ -1563,6 +1585,7 @@ Router.map(function () {
     onStop: function () {
       this.state.set("beforeActionHookRan", false);
       this.state.set("invalidToken", undefined);
+      this.state.set("identityOwner", undefined);
       globalGrains.setAllInactive();
     },
   });

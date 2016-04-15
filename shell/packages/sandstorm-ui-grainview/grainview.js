@@ -481,12 +481,6 @@ GrainView = class GrainView {
         chooseIdentity: {},
         showIncognito: !globalDb.getOrganizationDisallowGuests(),
       };
-    } else if (this._tokenInfo.identityOwner) {
-      return {
-        directShare: {
-          recipient: this._tokenInfo.identityOwner,
-        },
-      };
     } else {
       throw new Error("unrecognized tokenInfo: ", this._tokenInfo);
     }

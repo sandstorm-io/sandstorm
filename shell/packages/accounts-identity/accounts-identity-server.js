@@ -281,7 +281,8 @@ Meteor.publish("accountsOfIdentity", function (identityId) {
         if (user) {
           SandstormDb.fillInProfileDefaults(user);
           SandstormDb.fillInIntrinsicName(user);
-          const filteredUser = _.pick(user, "_id", "profile");
+          SandstormDb.fillInLoginId(user);
+          const filteredUser = _.pick(user, "_id", "profile", "loginId");
           filteredUser.loginAccountId = account._id;
           filteredUser.sourceIdentityId = identityId;
           _this.added("loginIdentitiesOfLinkedAccounts", user._id, filteredUser);

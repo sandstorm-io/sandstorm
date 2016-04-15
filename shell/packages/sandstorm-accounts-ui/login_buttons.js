@@ -97,12 +97,6 @@ Accounts.onPageLoadLogin(function (attemptInfo) {
     loginResultCallback(attemptInfo.type, attemptInfo.error);
 });
 
-// XXX from http://epeli.github.com/underscore.string/lib/underscore.string.js
-const capitalize = function (str) {
-  str = str == null ? "" : String(str);
-  return str.charAt(0).toUpperCase() + str.slice(1);
-};
-
 Template._loginButtonsLoggedOutDropdown.onCreated(function () {
   this._topbar = Template.parentData(3);
   this._choseLogin = new ReactiveVar(false);
@@ -287,6 +281,12 @@ Template.emailAuthenticationForm.helpers({
 Template.ldapLoginForm.events({
   "submit form": function (event, instance) {
     event.preventDefault();
+    if (instance.data.linkingNewIdentity) {
+      sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
+    }
+
+    loginButtonsSession.resetMessages();
+
     const form = event.currentTarget;
 
     const username = form.username.value;
@@ -344,6 +344,12 @@ Template.devLoginForm.events({
 
 Template.samlLoginForm.events({
   "click button": function (event, instance) {
+    if (linkingNewIdentity) {
+      sessionStorage.setItem("linkingIdentityLoginToken", Accounts._storedLoginToken());
+    }
+
+    loginButtonsSession.resetMessages();
+
     Meteor.loginWithSaml({
       provider: "default",
     }, function (error, result) {

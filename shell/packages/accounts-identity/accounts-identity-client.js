@@ -52,8 +52,8 @@ Template.identityLoginInterstitial.onCreated(function () {
       Meteor.loginWithToken(token, () => linkingNewIdentity.set(false));
     });
   } else {
-    const sub = this.subscribe("accountsOfIdentity", Meteor.userId());
     this.autorun(() => {
+      const sub = this.subscribe("accountsOfIdentity", Meteor.userId());
       if (sub.ready()) {
         const loginAccount = LoginIdentitiesOfLinkedAccounts.findOne({
           _id: Meteor.userId(),
@@ -236,6 +236,37 @@ Template.identityCard.helpers({
     } else {
       return this.profile && this.profile.intrinsicName;
     }
+  },
+});
+
+Template.identityCardSignInButton.onCreated(function () {
+  this._clicked = new ReactiveVar(false);
+  this._form = new ReactiveVar();
+});
+
+Template.identityCardSignInButton.events({
+  "click button.sign-in": function (event, instance) {
+    instance._clicked.set(true);
+
+    const data = Template.instance().data;
+    const name = data.identity.profile.service;
+    const result = Accounts.identityServices[name].initiateLogin(data.identity.loginId);
+    if ("form" in result) {
+      const loginTemplate = Accounts.identityServices[name].loginTemplate;
+      instance._form.set({ loginId: data.identity.loginId,
+                           data: loginTemplate.data,
+                           name: loginTemplate.name, });
+    }
+  },
+});
+
+Template.identityCardSignInButton.helpers({
+  clicked: function () {
+    return Template.instance()._clicked.get();
+  },
+
+  form: function () {
+    return Template.instance()._form.get();
   },
 });
 

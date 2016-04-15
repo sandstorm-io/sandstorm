@@ -121,10 +121,12 @@ Meteor.publish("tokenInfo", function (token) {
         let identity = globalDb.getIdentity(apiToken.owner.user.identityId);
         let metadata = apiToken.owner.user.denormalizedGrainMetadata;
         if (identity && metadata) {
+          SandstormDb.fillInLoginId(identity);
           this.added("tokenInfo", token,
-                     { identityOwner: _.pick(identity, "_id", "profile"),
+                     { identityOwner: _.pick(identity, "_id", "profile", "loginId"),
                        grainId: grainId,
-                       grainMetadata: metadata, });
+                       grainMetadata: metadata,
+                     });
         } else {
           this.added("tokenInfo", token, { invalidToken: true });
         }
@@ -442,6 +444,10 @@ Meteor.methods({
                 loginNote = "Github account with username " + intrinsicName;
               } else if (contact.profile.service === "email") {
                 loginNote = "email address " + intrinsicName;
+              } else if (contact.profile.service === "ldap") {
+                loginNote = "LDAP username " + intrinsicName;
+              } else if (contact.profile.service === "saml") {
+                loginNote = "SAML ID " + intrinsicName;
               } else {
                 throw new Meteor.Error(500, "Unknown service to email share link.");
               }

@@ -24,6 +24,15 @@ Accounts.identityServices.github = {
     return serviceEnabled("github");
   },
 
+  getLoginId: function (identity) {
+    return identity.services.github.username;
+  },
+
+  initiateLogin: function (loginId) {
+    Meteor.loginWithGithub();
+    return { oneClick: true };
+  },
+
   loginTemplate: {
     name: "oauthLoginButton",
     priority: 1,
@@ -39,6 +48,15 @@ Accounts.identityServices.github = {
 Accounts.identityServices.google = {
   isEnabled: function () {
     return serviceEnabled("google");
+  },
+
+  getLoginId: function (identity) {
+    return identity.services.google.email;
+  },
+
+  initiateLogin: function (loginId) {
+    Meteor.loginWithGoogle({ loginHint: loginId });
+    return { oneClick: true };
   },
 
   loginTemplate: {
@@ -58,6 +76,14 @@ Accounts.identityServices.email = {
     return serviceEnabled("emailToken");
   },
 
+  getLoginId: function (identity) {
+    return identity.services.email.email;
+  },
+
+  initiateLogin: function (loginId) {
+    return { form: true };
+  },
+
   loginTemplate: {
     name: "emailLoginForm",
     priority: 10,
@@ -67,6 +93,14 @@ Accounts.identityServices.email = {
 Accounts.identityServices.ldap = {
   isEnabled: function () {
     return serviceEnabled("ldap") && globalDb.isFeatureKeyValid();
+  },
+
+  getLoginId: function (identity) {
+    return identity.services.ldap.username;
+  },
+
+  initiateLogin: function (loginId) {
+    return { form: true };
   },
 
   loginTemplate: {
@@ -80,8 +114,33 @@ Accounts.identityServices.saml = {
     return serviceEnabled("saml") && globalDb.isFeatureKeyValid();
   },
 
+  getLoginId: function (identity) {
+    return user.services.saml.id;
+  },
+
+  initiateLogin: function (loginId) {
+    Meteor.loginWithSaml();
+    return { oneClick: true };
+  },
+
   loginTemplate: {
     name: "samlLoginForm",
     priority: 20, // Put it at the bottom of the list.
   },
+};
+
+Accounts.identityServices.demo = {
+  isEnabled: function () {
+    return false; // You can never authenticate as a demo user.
+  },
+
+  getLoginId: function (identity) {
+    return identity._id;
+  },
+
+  initiateLogin: function (loginId) {
+    return { demoCannotLogin: true };
+  },
+
+  loginTemplate: {},
 };

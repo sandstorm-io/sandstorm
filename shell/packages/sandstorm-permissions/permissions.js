@@ -289,7 +289,7 @@ class Variable {
   // Our permissions computation can be framed as a propositional HORNSAT problem; this `Variable`
   // class represents a variable in that sense. There is a variable for every (grain ID, vertex ID,
   // permission ID) triple. In any given computation, we only explicitly construct those
-  // variables that know might actually be relevant to the result.
+  // variables that we know might actually be relevant to the result.
   //
   // The value of a variable represents an answer to the question "does this vertex in the sharing
   // graph receive this permission at this grain?" We start out by setting all variables to `false`,
@@ -339,11 +339,14 @@ class ActiveToken {
   }
 
   requirementsAreMet() {
-    return this.numUnmetRequirements <= 0;
+    return this.numUnmetRequirements == 0;
   }
 
   decrementRequirements() {
     this.numUnmetRequirements -= 1;
+    if (this.numUnmetRequirements < 0) {
+      throw new Meteor.Error(500, "numUnmetRequirements is negative");
+    }
   }
 
   directIsMet(permissionId) {

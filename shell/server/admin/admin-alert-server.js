@@ -12,6 +12,6 @@ Meteor.methods({
     // TODO(soon): make this a single write to a single settings object
     db.collections.settings.upsert({ _id: "adminAlertTime" }, { value: params.time });
     db.collections.settings.upsert({ _id: "adminAlertUrl" }, { value: params.url });
-    db.collections.settings.upsert({ _id: "adminAlert"}, { value: params.text });
+    db.collections.settings.upsert({ _id: "adminAlert" }, { value: params.text });
   },
 });

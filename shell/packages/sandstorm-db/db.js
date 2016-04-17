@@ -1447,9 +1447,12 @@ _.extend(SandstormDb.prototype, {
 
   getOrganizationShareContactsRaw: function () {
     const setting = Settings.findOne({ _id: "organizationSettings" });
-    return setting && setting.value &&
-           (setting.value.shareContacts || setting.value.shareContacts === undefined);
-    // default to true if undefined
+    if (!setting || !setting.value || setting.value.shareContacts === undefined) {
+      // default to true if undefined
+      return true;
+    } else {
+      return setting.value.shareContacts;
+    }
   },
 
   getSamlEntryPoint: function () {

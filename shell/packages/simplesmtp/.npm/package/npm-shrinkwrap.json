@@ -126,7 +126,7 @@
     "simplesmtp": {
       "version": "0.3.35",
       "resolved": "https://registry.npmjs.org/simplesmtp/-/simplesmtp-0.3.35.tgz",
-      "from": "simplesmtp@0.3.35",
+      "from": "https://registry.npmjs.org/simplesmtp/-/simplesmtp-0.3.35.tgz",
       "dependencies": {
         "rai": {
           "version": "0.1.12",

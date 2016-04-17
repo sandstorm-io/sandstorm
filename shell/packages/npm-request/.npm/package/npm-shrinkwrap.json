@@ -8,7 +8,7 @@
         "aws-sign2": {
           "version": "0.6.0",
           "resolved": "https://registry.npmjs.org/aws-sign2/-/aws-sign2-0.6.0.tgz",
-          "from": "aws-sign2@0.6.0"
+          "from": "https://registry.npmjs.org/aws-sign2/-/aws-sign2-0.6.0.tgz"
         },
         "bl": {
           "version": "1.0.1",
@@ -18,12 +18,12 @@
             "readable-stream": {
               "version": "2.0.5",
               "resolved": "https://registry.npmjs.org/readable-stream/-/readable-stream-2.0.5.tgz",
-              "from": "readable-stream@2.0.5",
+              "from": "https://registry.npmjs.org/readable-stream/-/readable-stream-2.0.5.tgz",
               "dependencies": {
                 "core-util-is": {
                   "version": "1.0.2",
                   "resolved": "https://registry.npmjs.org/core-util-is/-/core-util-is-1.0.2.tgz",
-                  "from": "core-util-is@1.0.2"
+                  "from": "https://registry.npmjs.org/core-util-is/-/core-util-is-1.0.2.tgz"
                 },
                 "inherits": {
                   "version": "2.0.1",
@@ -38,7 +38,7 @@
                 "process-nextick-args": {
                   "version": "1.0.6",
                   "resolved": "https://registry.npmjs.org/process-nextick-args/-/process-nextick-args-1.0.6.tgz",
-                  "from": "process-nextick-args@1.0.6"
+                  "from": "https://registry.npmjs.org/process-nextick-args/-/process-nextick-args-1.0.6.tgz"
                 },
                 "string_decoder": {
                   "version": "0.10.31",
@@ -57,17 +57,17 @@
         "caseless": {
           "version": "0.11.0",
           "resolved": "https://registry.npmjs.org/caseless/-/caseless-0.11.0.tgz",
-          "from": "caseless@0.11.0"
+          "from": "https://registry.npmjs.org/caseless/-/caseless-0.11.0.tgz"
         },
         "combined-stream": {
           "version": "1.0.5",
           "resolved": "https://registry.npmjs.org/combined-stream/-/combined-stream-1.0.5.tgz",
-          "from": "combined-stream@1.0.5",
+          "from": "https://registry.npmjs.org/combined-stream/-/combined-stream-1.0.5.tgz",
           "dependencies": {
             "delayed-stream": {
               "version": "1.0.0",
               "resolved": "https://registry.npmjs.org/delayed-stream/-/delayed-stream-1.0.0.tgz",
-              "from": "delayed-stream@1.0.0"
+              "from": "https://registry.npmjs.org/delayed-stream/-/delayed-stream-1.0.0.tgz"
             }
           }
         },
@@ -116,12 +116,12 @@
                 "has-ansi": {
                   "version": "2.0.0",
                   "resolved": "https://registry.npmjs.org/has-ansi/-/has-ansi-2.0.0.tgz",
-                  "from": "has-ansi@2.0.0",
+                  "from": "https://registry.npmjs.org/has-ansi/-/has-ansi-2.0.0.tgz",
                   "dependencies": {
                     "ansi-regex": {
                       "version": "2.0.0",
                       "resolved": "https://registry.npmjs.org/ansi-regex/-/ansi-regex-2.0.0.tgz",
-                      "from": "ansi-regex@2.0.0"
+                      "from": "https://registry.npmjs.org/ansi-regex/-/ansi-regex-2.0.0.tgz"
                     }
                   }
                 },
@@ -133,14 +133,14 @@
                     "ansi-regex": {
                       "version": "2.0.0",
                       "resolved": "https://registry.npmjs.org/ansi-regex/-/ansi-regex-2.0.0.tgz",
-                      "from": "ansi-regex@2.0.0"
+                      "from": "https://registry.npmjs.org/ansi-regex/-/ansi-regex-2.0.0.tgz"
                     }
                   }
                 },
                 "supports-color": {
                   "version": "2.0.0",
                   "resolved": "https://registry.npmjs.org/supports-color/-/supports-color-2.0.0.tgz",
-                  "from": "supports-color@2.0.0"
+                  "from": "https://registry.npmjs.org/supports-color/-/supports-color-2.0.0.tgz"
                 }
               }
             },
@@ -152,7 +152,7 @@
                 "graceful-readlink": {
                   "version": "1.0.1",
                   "resolved": "https://registry.npmjs.org/graceful-readlink/-/graceful-readlink-1.0.1.tgz",
-                  "from": "graceful-readlink@1.0.1"
+                  "from": "https://registry.npmjs.org/graceful-readlink/-/graceful-readlink-1.0.1.tgz"
                 }
               }
             },
@@ -164,7 +164,7 @@
                 "generate-function": {
                   "version": "2.0.0",
                   "resolved": "https://registry.npmjs.org/generate-function/-/generate-function-2.0.0.tgz",
-                  "from": "generate-function@2.0.0"
+                  "from": "https://registry.npmjs.org/generate-function/-/generate-function-2.0.0.tgz"
                 },
                 "generate-object-property": {
                   "version": "1.2.0",
@@ -174,7 +174,7 @@
                     "is-property": {
                       "version": "1.0.2",
                       "resolved": "https://registry.npmjs.org/is-property/-/is-property-1.0.2.tgz",
-                      "from": "is-property@1.0.2"
+                      "from": "https://registry.npmjs.org/is-property/-/is-property-1.0.2.tgz"
                     }
                   }
                 },
@@ -217,7 +217,7 @@
             "cryptiles": {
               "version": "2.0.5",
               "resolved": "https://registry.npmjs.org/cryptiles/-/cryptiles-2.0.5.tgz",
-              "from": "cryptiles@2.0.5"
+              "from": "https://registry.npmjs.org/cryptiles/-/cryptiles-2.0.5.tgz"
             },
             "hoek": {
               "version": "2.16.3",
@@ -249,7 +249,7 @@
                 "extsprintf": {
                   "version": "1.0.2",
                   "resolved": "https://registry.npmjs.org/extsprintf/-/extsprintf-1.0.2.tgz",
-                  "from": "extsprintf@1.0.2"
+                  "from": "https://registry.npmjs.org/extsprintf/-/extsprintf-1.0.2.tgz"
                 },
                 "json-schema": {
                   "version": "0.2.2",
@@ -310,7 +310,7 @@
         "isstream": {
           "version": "0.1.2",
           "resolved": "https://registry.npmjs.org/isstream/-/isstream-0.1.2.tgz",
-          "from": "isstream@0.1.2"
+          "from": "https://registry.npmjs.org/isstream/-/isstream-0.1.2.tgz"
         },
         "json-stringify-safe": {
           "version": "5.0.1",
@@ -357,7 +357,7 @@
         "tunnel-agent": {
           "version": "0.4.2",
           "resolved": "https://registry.npmjs.org/tunnel-agent/-/tunnel-agent-0.4.2.tgz",
-          "from": "tunnel-agent@0.4.2"
+          "from": "https://registry.npmjs.org/tunnel-agent/-/tunnel-agent-0.4.2.tgz"
         }
       }
     }

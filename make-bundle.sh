@@ -102,10 +102,6 @@ cp $METEOR_DEV_BUNDLE/bin/node bundle/bin
 cp $METEOR_DEV_BUNDLE/mongodb/bin/{mongo,mongod} bundle/bin
 cp $(which zip unzip xz gpg) bundle/bin
 
-if [ ! -z "${EXTRA_SANDSTORM_BUNDLE_BIN:-}" ]; then
-  cp $EXTRA_SANDSTORM_BUNDLE_BIN bundle/bin
-fi
-
 # Older installs might be symlinking /usr/local/bin/spk to
 # /opt/sandstorm/latest/bin/spk, while newer installs link it to
 # /opt/sandstorm/sandstorm. We should keep creating the old symlink to avoid

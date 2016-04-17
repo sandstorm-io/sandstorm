@@ -36,7 +36,6 @@
           background-size: 24px 24px;
           background-position: center;
           display: inline-block;
-          box-sizing: border-box;
           width: 32px;
           height: 32px;
           vertical-align: top;
@@ -44,7 +43,6 @@
         >input.search-bar {
           font-size: 16pt;
           height: 32px;
-          box-sizing: border-box;
           background-color: $grainlist-searchbar-background-color;
           border: 1px solid $grainlist-searchbar-outline-color;
           &:focus {
@@ -127,7 +125,6 @@
         }
       }
       &.td-app-icon {
-        box-sizing: border-box;
         width: 64px;
         padding-left: 16px;
       }

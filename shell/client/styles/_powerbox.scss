@@ -17,7 +17,6 @@ body>.popup.request>.frame-container>.frame {
     margin: 0px;
     padding-left: 10px;
     padding-right: 10px;
-    box-sizing: border-box;
     vertical-align: top;
     >label {
       >span.search-icon {
@@ -26,7 +25,6 @@ body>.popup.request>.frame-container>.frame {
         background-size: 24px 24px;
         background-position: center;
         display: inline-block;
-        box-sizing: border-box;
         width: 32px;
         height: 32px;
         vertical-align: top;
@@ -35,7 +33,6 @@ body>.popup.request>.frame-container>.frame {
         font-size: 16pt;
         height: 32px;
         width: calc(100% - 36px);
-        box-sizing: border-box;
         background-color: $grainlist-searchbar-background-color;
         border: 1px solid $grainlist-searchbar-outline-color;
         &:focus {
@@ -57,9 +54,7 @@ body>.popup.request>.frame-container>.frame {
   }
   >.selected-card {
     flex: none;
-    box-sizing: border-box;
     >div.powerbox-card {
-      box-sizing: border-box;
       border: 1px solid #dddddd;
       background-color: #eeeeee;
       display: block;

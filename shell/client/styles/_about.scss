@@ -24,7 +24,6 @@
     background-position: top left;
     background-repeat: no-repeat;
     padding-left: 200px;
-    box-sizing: border-box;
 
     @media (max-width: 625px) {
       padding-left: 0;
@@ -88,14 +87,12 @@
         img {
           padding: 0 16px;
           display: block;
-          box-sizing: border-box;
           max-width: 154px;
           max-height: 121px;
         }
         .uniregistry-image {
           @extend %pseudo-img-tag;
           width: 154px;
-          box-sizing: border-box;
           height: 121px;
           background-image: url("/logos/uniregistry.svg");
         }
@@ -105,14 +102,11 @@
 
   >section.developers {
     max-width: 632px;
-    box-sizing: border-box;
   }
   >section.advisors {
     max-width: 478px;
-    box-sizing: border-box;
   }
   >section.corporate, >section.individual {
-    box-sizing: border-box;
     width: 555px;
     @media (max-width: 560px) {
       width: auto;
@@ -266,7 +260,6 @@
 
   padding: 64px;
   max-width: 1238px;
-  box-sizing: border-box;
   @media #{$mobile} {
     padding: 8px;
   }

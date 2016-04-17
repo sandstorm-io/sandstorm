@@ -57,6 +57,10 @@ const openCenteredPopup = function (url, width, height) {
 
 Meteor.loginWithSaml = function (options, callback) {
   options = options || {};
+
+  // TODO(cleanup): AFAICT "default" is the only provider; why is this an option?
+  if (!options.proivder) options.provider = "default";
+
   const credentialToken = "_" + Random.hexString(40);
   options.credentialToken = credentialToken;
 

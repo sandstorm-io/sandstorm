@@ -115,7 +115,7 @@ Accounts.identityServices.saml = {
   },
 
   getLoginId: function (identity) {
-    return user.services.saml.id;
+    return identity.services.saml.id;
   },
 
   initiateLogin: function (loginId) {

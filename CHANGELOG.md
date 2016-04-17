@@ -1,3 +1,14 @@
+### v0.159 (2016-04-16)
+- Sandstorm for Work: The sharing dialog auto-complete will now automatically be populated with all known members of your organization. (This can be turned off in the admin settings if the membership of your organization should be kept secret from its own members.)
+- Error messages informing the user that they need to log in as a different identity now allow the identity cards to be clicked to immediately initiate login as that identity, rather than requiring the user to use the sign-in menu manually.
+- Improved login provider first-time setup UI.
+- Updated to Meteor 1.3.x, a major Meteor update. No changes to Sandstorm, but many dependencies have changed, possibly introducing new bugs.
+- Fixed redirect loop that could happen when following a sharing link after the sharer has unlinked from their account the identity that they had used when sharing.
+- Fixed that paths marked hidden in a package's `sandstorm-pkgdef.capnp` would still appear under `spk dev` when listing the parent directory (though the paths were not actually accessible).
+- Sandstorm for Work: Fixed some cases where LDAP and SAML users were being handled incorrectly, such as when trying to auto-complete such users in the sharing dialog.
+- Oasis: Fixed subtle storage-related bug causing a small number of grains to get stuck in an unbootable state.
+- Oasis: Fixed related bug that caused grains created in the last few weeks to consume many more megabytes in a user's total storage quota than the actual size of the grain as reported in the top bar. If you feel that your total storage usage is being misreported, please try opening each of your grains created in the last three weeks to trigger a recount.
+
 ### v0.158 (2016-04-08) [bugfixes]
 - Massively improved performance of `spk dev` filesystem tracing.
 - Fixed that an app's SandstormCore capability could get disconnected if the frontend restarted without restarting the app, leaving the app in a state where certain features (especially powerbox-related) did not work.

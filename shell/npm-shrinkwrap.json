@@ -2,6 +2,42 @@
   "name": "sandstorm-shell",
   "version": "1.0.0",
   "dependencies": {
+    "dragula": {
+      "version": "3.6.8",
+      "from": "dragula@latest",
+      "resolved": "https://registry.npmjs.org/dragula/-/dragula-3.6.8.tgz",
+      "dependencies": {
+        "contra": {
+          "version": "1.9.1",
+          "from": "contra@1.9.1",
+          "resolved": "https://registry.npmjs.org/contra/-/contra-1.9.1.tgz",
+          "dependencies": {
+            "atoa": {
+              "version": "1.0.0",
+              "from": "atoa@1.0.0",
+              "resolved": "https://registry.npmjs.org/atoa/-/atoa-1.0.0.tgz"
+            },
+            "ticky": {
+              "version": "1.0.0",
+              "from": "ticky@1.0.0",
+              "resolved": "https://registry.npmjs.org/ticky/-/ticky-1.0.0.tgz"
+            }
+          }
+        },
+        "crossvent": {
+          "version": "1.5.4",
+          "from": "crossvent@1.5.4",
+          "resolved": "https://registry.npmjs.org/crossvent/-/crossvent-1.5.4.tgz",
+          "dependencies": {
+            "custom-event": {
+              "version": "1.0.0",
+              "from": "custom-event@1.0.0",
+              "resolved": "https://registry.npmjs.org/custom-event/-/custom-event-1.0.0.tgz"
+            }
+          }
+        }
+      }
+    },
     "intro.js": {
       "version": "2.0.0",
       "from": "git+https://github.com/sandstorm-io/intro.js.git#sandstorm",

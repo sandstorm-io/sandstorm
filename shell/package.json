@@ -13,6 +13,7 @@
   },
   "license": "Apache-2.0",
   "dependencies": {
+    "dragula": "^3.6.8",
     "intro.js": "git+https://github.com/sandstorm-io/intro.js.git#sandstorm"
   }
 }

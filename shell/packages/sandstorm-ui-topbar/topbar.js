@@ -14,6 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import dragula from "dragula";
+
 let reloadBlockingCount = 0;
 const blockedReload = new ReactiveVar(null);
 let explicitlyUnblocked = false;
@@ -44,6 +46,10 @@ Template.sandstormTopbarBlockReload.onDestroyed(function () {
   }
 });
 
+Template.sandstormTopbar.onRendered(function () {
+  this.drag = dragula([document.getElementById("navbar-grains")]);
+});
+
 Template.sandstormTopbar.onCreated(function () {
   Template.instance().popupPosition = new ReactiveVar(undefined, _.isEqual);
 
@@ -59,6 +65,7 @@ Template.sandstormTopbar.onCreated(function () {
 
 Template.sandstormTopbar.onDestroyed(function () {
   document.getElementsByTagName("body")[0].removeEventListener("keydown", this.escapeHandler);
+  this.drag.destroy();
 });
 
 Template.sandstormTopbar.helpers({

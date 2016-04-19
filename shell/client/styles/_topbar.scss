@@ -62,56 +62,6 @@ body>.topbar-update {
   }
 }
 
-body>li.navitem-grain {
-  height: 32px;
-  line-height: 32px;
-  list-style-type: none;
-
-  a {
-    color: inherit;
-    display: block;
-    overflow-x: hidden;
-    overflow-y: hidden;
-    padding-left: 48px;
-    padding-right: 32px;
-    position: relative;
-    text-decoration: none;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  background-color: $topbar-background-color-hover;
-  color: $topbar-foreground-color-hover;
-
-  &.current {
-    background-color: $topbar-background-color-active;
-    color: $topbar-foreground-color-active;
-  }
-
-  .app-icon {
-    @extend %pseudo-img-tag;
-    position: absolute;
-    top: 4px;
-    left: (($navbar-width-desktop-shrunk - 24px) / 2);
-    width: 24px;
-    height: 24px;
-  }
-
-  .close-button {
-    @extend %unstyled-button;
-    position: absolute;
-    top: 1px;
-    right: 0px;
-    width: 24px;
-    height: 24px;
-    margin: 2px;
-    display: block;
-    background-image: url("/close.svg");
-    border: 1px transparent;
-    border-radius: 4px;
-  }
-}
-
 body>.topbar {
   position: fixed;
   top: 0;

@@ -48,7 +48,10 @@ Template.sandstormTopbarBlockReload.onDestroyed(function () {
 
 Template.sandstormTopbar.onRendered(function () {
   if (this.drag !== undefined) this.drag.destroy();
-  this.drag = dragula([document.getElementById("navbar-grains")]);
+  this.drag = dragula({
+    containers: [document.getElementById("navbar-grains")],
+    mirrorContainer: document.getElementById("navbar-grains")
+  });
 });
 
 Template.sandstormTopbar.onCreated(function () {

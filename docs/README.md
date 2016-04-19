@@ -41,18 +41,18 @@ for now, we don't store the images the main Sandstorm git repo.
 - Do a `git clone` of that repository into a directory, like:
 
 ```
-git clone https://my_repo@alpha-api.sandstorm.io/ sandstorm-docs
+git clone https://my_repo@alpha-api.sandstorm.io/ tmp/sandstorm-docs
 ```
 
 - Run `generate.sh` to re-generate the docs, then commit them to this git repo.
 
 ```
-PATH=$PATH:$PWD/tmp/docs-virtualenv/bin bash docs/generate.sh -d sandstorm-docs
+PATH=$PATH:$PWD/tmp/docs-virtualenv/bin bash docs/generate.sh -d tmp/sandstorm-docs
 ```
 
 
 - Run `generate.sh` with the `-p` flag to actually push them to the live site.
 
 ```
-PATH=$PATH:$PWD/tmp/docs-virtualenv/bin bash docs/generate.sh -d sandstorm-docs -p
+PATH=$PATH:$PWD/tmp/docs-virtualenv/bin bash docs/generate.sh -d tmp/sandstorm-docs -p
 ```

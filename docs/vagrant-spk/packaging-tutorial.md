@@ -6,7 +6,7 @@ This tutorial will show you how to package an app for
 [Sandstorm](https://sandstorm.io) in five minutes. Going through
 this tutorial, you'll learn:
 
-* How to take an existing web application and turn into a Sandstorm
+* How to take an existing web application and turn it into a Sandstorm
   package (SPK).
 
 * How our packaging helper (`vagrant-spk`) lets you edit the app's files on your main operating

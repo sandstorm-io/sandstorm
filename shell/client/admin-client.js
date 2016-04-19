@@ -1167,7 +1167,7 @@ const adminRoute = RouteController.extend({
       }
 
       HTTP.call("GET", "//" + makeWildcardHost("selftest-" + Random.hexString(20)),
-                { timeout: 2000 }, (error, response) => {
+                { timeout: 4000 }, (error, response) => {
                   Session.set("alreadyTestedWildcardHost", true);
                   let looksGood;
                   if (error) {
@@ -1278,7 +1278,7 @@ const newAdminRoute = RouteController.extend({
       }
 
       HTTP.call("GET", "//" + makeWildcardHost("selftest-" + Random.hexString(20)),
-                { timeout: 2000 }, (error, response) => {
+                { timeout: 4000 }, (error, response) => {
                   Session.set("alreadyTestedWildcardHost", true);
                   let looksGood;
                   if (error) {

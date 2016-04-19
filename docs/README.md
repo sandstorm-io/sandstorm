@@ -11,6 +11,8 @@ cd ~/projects/sandstorm
 virtualenv tmp/docs-virtualenv
 tmp/docs-virtualenv/bin/pip install mkdocs
 tmp/docs-virtualenv/bin/pip install markdown-inline-graphviz
+# Get an unreleased version of mkdocs because we need the readthedocs theme 'Searching...' fix
+tmp/docs-virtualenv/bin/pip install --upgrade git+https://github.com/mkdocs/mkdocs.git#egg=mkdocs
 tmp/docs-virtualenv/bin/mkdocs serve
 ```
 

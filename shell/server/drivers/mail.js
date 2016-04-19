@@ -179,7 +179,7 @@ Meteor.startup(function () {
         req.reject(err.message);
       });
     });
-  }).listen({fd: SANDSTORM_SMTP_FD_NUM});
+  }).listen({ fd: SANDSTORM_SMTP_FD_NUM });
 });
 
 function formatAddress(field) {

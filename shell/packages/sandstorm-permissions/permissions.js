@@ -517,7 +517,6 @@ SandstormPermissions.createNewApiToken = function (db, provider, grainId, petnam
       user: {
         identityId: owner.user.identityId,
         title: owner.user.title,
-        // lastUsed: ??
         denormalizedGrainMetadata: grainInfo,
       }
     };

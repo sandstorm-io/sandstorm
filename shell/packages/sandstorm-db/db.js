@@ -390,6 +390,7 @@ ApiTokens = new Mongo.Collection("apiTokens");
 //   revoked:   If true, then this sturdyref has been revoked and can no longer be restored. It may
 //              become un-revoked in the future.
 //   expires:   Optional expiration Date. If undefined, the token does not expire.
+//   lastUsed:  Optional Date when this token was last used.
 //   owner:     A `ApiTokenOwner` (defined in `supervisor.capnp`, stored as a JSON object)
 //              as passed to the `save()` call that created this token. If not present, treat
 //              as `webkey` (the default for `ApiTokenOwner`).

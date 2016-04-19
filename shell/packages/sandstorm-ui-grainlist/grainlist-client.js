@@ -35,8 +35,9 @@ SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, stati
   const grainIdsForApiTokens = Object.keys(tokensForGrain);
   return grainIdsForApiTokens.map(function (grainId) {
     // Pick the most recently used one.
-    const token = _.sortBy(tokensForGrain[grainId], function (t) {
-      if (t.owner && t.owner.user && t.owner.user.lastUsed) { return -t.owner.user.lastUsed; }    else {return 0; } })[0];
+    const token = _.sortBy(tokensForGrain[grainId], (t) => {
+      return t.lastUsed ? -t.lastUsed : 0;
+    })[0];
 
     const ownerData = token.owner.user;
     const grainInfo = ownerData.denormalizedGrainMetadata;
@@ -49,7 +50,7 @@ SandstormGrainListPage.mapApiTokensToTemplateObject = function (apiTokens, stati
       _id: grainId,
       title: ownerData.title,
       appTitle: appTitle,
-      lastUsed: ownerData.lastUsed,
+      lastUsed: token.lastUsed,
       iconSrc: iconSrc,
       isOwnedByMe: false,
     };

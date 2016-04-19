@@ -93,7 +93,7 @@ Try them out!
 * Find _WordPress_ or _Ghost_ on the page, and click **Install*.
 * Click **New WordPress site** (or similar for Ghost).
 
-This takes you to WordPress running on your server. You are automatically logged-in and can start writing. You can click **Regenerate public site** and this snapshots your blog as static HTML and exports it at a random hostname.
+This takes you to WordPress running on your server. You are automatically logged-in and can start writing. You can click **Rebuild public site** and this snapshots your blog as static HTML and exports it at a random hostname.
 
 You can also configure a custom domain to map to the same static content. Only people with whom you **share** the WordPress instance can interact with WordPress's PHP code. The result is that WordPress becomes a security-hardened collaborative static site generator.
 

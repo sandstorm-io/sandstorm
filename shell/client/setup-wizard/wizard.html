@@ -369,36 +369,6 @@
 </div>
 </template>
 
-<template name="setupWizardEmailTestPopup">
-{{!-- Expects a single String argument "token" to be passed in via the data context. --}}
-<h2>Send a test email</h2>
-{{#if hasError}}
-  {{#focusingErrorBox}}
-    {{message}}
-  {{/focusingErrorBox}}
-{{/if}}
-{{#if hasSuccess}}
-  {{#focusingSuccessBox}}
-    {{message}}
-  {{/focusingSuccessBox}}
-{{/if}}
-<form class="email-test-form">
-  <div class="form-group">
-    <label>
-      Send test mail to:
-      <input class="test-address" type="email" name="test-address" value="{{testAddress}}" required />
-    </label>
-  </div>
-  <button class="send-test-email" {{htmlDisabled}}>
-    {{#if isSubmitting}}
-    Sending...
-    {{else}}
-    Send test email
-    {{/if}}
-  </button>
-</form>
-</template>
-
 <template name="setupWizardEmailConfig">
 <div class="setup-page-content">
   <h1 class="setup-page-title">Outbound Email Setup</h1>
@@ -424,13 +394,13 @@
   {{/if}}
 
   <form class="email-form">
-    <div class="input-group">
+    <div class="form-group">
       <div class="host-port">
-        <label>
+        <label class="host-box">
           SMTP host
           <input class="hostname" type="text" name="smtp-hostname" value="{{smtpHostname}}" required />
         </label>
-        <label>
+        <label class="port-box">
           Port
           <input class="port" type="number" name="smtp-port" value="{{smtpPort}}" required />
         </label>
@@ -438,21 +408,21 @@
       <div class="form-subtext">Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS.</div>
     </div>
 
-    <div class="input-group">
+    <div class="form-group">
       <label>
         Username (optional)
         <input class="username" type="text" name="smtp-username" value="{{smtpUsername}}" />
       </label>
     </div>
 
-    <div class="input-group">
+    <div class="form-group">
       <label>
         Password (optional)
         <input class="password" type="password" name="smtp-password" value="{{smtpPassword}}" />
       </label>
     </div>
 
-    <div class="input-group">
+    <div class="form-group">
       <label>
         Sandstorm server's own email address
         <input class="from-address" type="email" name="smtp-return-address" value="{{smtpReturnAddress}}" required />
@@ -466,7 +436,7 @@
 
   {{#if showTestSendEmailPopup}}
     {{#modalDialogWithBackdrop onDismiss=closePopupCallback}}
-      {{> setupWizardEmailTestPopup token=token smtpConfig=getSmtpConfig }}
+      {{> emailTestPopup token=token smtpConfig=getSmtpConfig }}
     {{/modalDialogWithBackdrop}}
   {{/if}}
 

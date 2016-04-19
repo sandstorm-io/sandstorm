@@ -1,54 +1,105 @@
 <template name="newAdminEmailConfig">
   <h1>Email Configuration</h1>
 
-  <h2>Email relay</h2>
+  <h2>Outbound email</h2>
 
-  <p>This is the server that Sandstorm will use to send email.</p>
+  <p>
+    Sandstorm needs a way to send email. You can leave email unconfigured, but email-related
+    features like email login, notifications, sharing by identity, requesting access and will be
+    unavailable until you configure email in the future.
+  </p>
+
+  <p>
+    How Sandstorm uses email: Sandstorm sends email notifications, and Sandstorm apps can send email
+    notifications, too. Every app receives a unique email address, so Sandstorm needs to send email
+    from a variety of "From:" addresses. Therefore, Gmail SMTP won't work, but there are other free
+    services. See more info in the docs.
+  </p>
 
   {{#if hasSuccess}}<p class="flash-message success-message">Saved changes.</p>{{/if}}
   {{#if hasError}}<p class="flash-message error-message">Failed to save changes: {{errorMessage}}</p>{{/if}}
 
   <form class="email-form">
-
-    <div class="input-group host-port">
-      <label>
-        SMTP host
-        <input class="hostname" type="text" value="{{hostname}}" required />
-      </label>
-      <label>
-        Port
-        <input class="port" type="number" value="{{port}}" required />
-      </label>
-    </div>
-
-    <div class="input-group">
-      <label>
-        Username
-        <input class="username" type="text" value="{{username}}" />
-      </label>
-    </div>
-
-    <div class="input-group">
-      <label>
-        Password
-        <input class="password" type="password" value="{{password}}" />
-      </label>
-    </div>
-
-    <div class="input-group">
-      <label>
-        Support email address
-        <input class="from-address" type="text" value="{{returnAddress}}" required />
-      </label>
+    <div class="form-group">
+      <div class="host-port">
+        <label class="host-box">
+          SMTP host
+          <input class="hostname" type="text" name="hostname" value="{{hostname}}" required />
+        </label>
+        <label class="port-box">
+          Port
+          <input class="port" type="number" name="port" value="{{port}}" required />
+        </label>
+      </div>
       <span class="form-subtext">
-        Enter a single email address.  Email sent by this Sandstorm
-        instance will appear to come from this address.
+        Use port 25 for SMTP (unencrypted or with StartTLS), port 465 for TLS-encrypted SMTPS.
       </span>
     </div>
 
-    <div class="form-buttons">
-      <button class="form-submit" type="submit">Save Configuration</button>
+    <div class="form-group">
+      <label>
+        Username (optional)
+        <input class="username" type="text" name="username" value="{{username}}" />
+      </label>
     </div>
 
+    <div class="form-group">
+      <label>
+        Password (optional)
+        <input class="password" type="password" name="password" value="{{password}}" />
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>
+        Sandstorm server's own email address
+        <input class="from-address" type="email" name="return-address" value="{{returnAddress}}" required />
+      </label>
+      <span class="form-subtext">
+        Sandstorm will send login emails, notifications of granted access requests, and other
+        emails from this address. It will also use this address in the SMTP envelope.
+      </span>
+    </div>
+
+    <div class="button-row">
+      <button class="submit" type="submit" disabled={{saveDisabled}}>Save Configuration</button>
+      <button class="test" type="button" disabled={{testDisabled}}>Test</button>
+    </div>
   </form>
+
+  {{#if showTestSendEmailPopup}}
+    {{#modalDialogWithBackdrop onDismiss=closePopupCallback}}
+      {{> emailTestPopup smtpConfig=getSmtpConfig }}
+    {{/modalDialogWithBackdrop}}
+  {{/if}}
+</template>
+
+<template name="emailTestPopup">
+{{!-- Expects a single String argument "token" to be passed in via the data context. --}}
+<h2>Send a test email</h2>
+{{#if hasError}}
+  {{#focusingErrorBox}}
+    {{message}}
+  {{/focusingErrorBox}}
+{{/if}}
+{{#if hasSuccess}}
+  {{#focusingSuccessBox}}
+    {{message}}
+  {{/focusingSuccessBox}}
+{{/if}}
+<form class="email-test-form">
+  <div class="form-group">
+    <label>
+      Send test mail to:
+      <input class="test-address" type="email" name="test-address" value="{{testAddress}}" required />
+    </label>
+  </div>
+  <button type="submit" class="send-test-email" {{htmlDisabled}}>
+    {{#if isSubmitting}}
+    Sending...
+    {{else}}
+    Send test email
+    {{/if}}
+  </button>
+</form>
 </template>
